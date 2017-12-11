@@ -1,0 +1,90 @@
+import logging, fastavro
+from operator import itemgetter
+
+class ZIAlertLoader:
+	"""
+		ZI is a shortcut for ZTF IPAC.
+
+		This class is responsible for:
+			* Loading IPAC generated ZTF Alerts (using fastavro)
+			* Possibly filtering 'prv_candidates' photopoints 
+
+		For now, alerts are loaded from local files (simulated test alerts),
+		later, they will be loaded through a Kafka consumer.
+
+		The static method load_flat_pps_list() returns the transient id 
+		and the associated photopoints as list of dictionaries
+		The static method load_raw_dict_from_file() returns the raw avro dict structure
+	"""
+	logger = logging.getLogger("Ampel")
+
+
+	@staticmethod
+	def load_raw_dict_from_file(file_path):
+		"""	Load avro alert using fastavro. A dictionary instance (or None) is returned """	
+		ZIAlertLoader.logger.debug("Loading alert avro content")
+		with open(file_path, "rb") as fo:
+			reader = fastavro.reader(fo)
+			zavro_dict = next(reader, None)
+
+		return zavro_dict
+
+
+	@staticmethod
+	def get_flat_pps_list_from_file(file_path):
+	#def load_flat_pps_list(file_path, filter_pps_history=False, chrono_sort=False):
+		"""	
+			Loads an avro alert (file_path) using fastavro. 
+			Returns a tupple: first element is the alert ID and second element is 
+			a flat list of dictionaries (each containing photopoints information).
+			The dictionary with index 0 in the list is the most recent photopoint.
+			Optional parameter: 
+				filter_pps_history: if true, filter_previous_candidates() will be used
+				chrono_sort: sort photopoints chronologically based on 'jd' parameter
+		"""	
+		ZIAlertLoader.logger.debug("Loading alert avro content")
+		with open(file_path, "rb") as fo:
+			reader = fastavro.reader(fo)
+			zavro_dict = next(reader, None)
+
+		# Efficient way of creating the flat list of pps required for AmpelAlert
+		zavro_dict['prv_candidates'].insert(0, zavro_dict['candidate'])
+
+		# TODO: change alertId to objectId
+		return zavro_dict['alertId'], zavro_dict['prv_candidates']
+
+		
+	@staticmethod
+	def filter_previous_candidates(prv_cd):
+		""" Checks for None candids or photopoints with pdiffimfilename starting with /stage 
+			delete the matching candidates from the previous_candidates list
+			This function might not be needed for production	
+		"""	
+		for i in range(len(prv_cd) - 1, -1, -1):
+			el = prv_cd[i]
+			if el['candid'] is None or el['pdiffimfilename'].startswith('/stage'):
+				del prv_cd[i]
+
+
+#	@staticmethod
+#	def load_alert_from_file(file_path, filter_pps_history=True, chrono_sort=False):
+#		"""	
+#		Load and parse a ZTF avro alert.
+#		Returns an instance of AmpelAlert
+#		Required parameter: file path of the avro alert
+#		Optional parameter: 
+#			filter_pps_history: if true, filter_previous_candidates() will be used
+#			chrono_sort: sort photopoints chronologically based on 'jd' parameter
+#		"""	
+#		zavro_dict = ZIAlertLoader.load_raw_dict_from_file(file_path)
+#
+#		if filter_pps_history:
+#			ZIAlertLoader.logger.debug("Filtering previous photopoints")
+#			ZIAlertLoader.filter_previous_candidates(zavro_dict['prv_candidates'])
+#
+#		# Not sure we need that for production 
+#		ZIAlertLoader.logger.debug("Alert contains " + str(len(zavro_dict['prv_candidates'])+1) + " photopoints")
+#
+#		# quicker than sorted(zavro_dict['prv_candidates'], key=lambda k: k['jd'])
+#		return prv_cd if chrono_sort is False else sorted(prv_cd, key=itemgetter("jd"))
+#
