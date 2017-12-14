@@ -1,3 +1,10 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+# File              : /Users/hu/Documents/ZTF/Ampel/src/ampel/pipeline/common/db/FlagUtils.py
+# Author            : vb <vbrinnel@physik.hu-berlin.de>
+# Date              : 14.12.2017
+# Last Modified Date: 14.12.2017
+# Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 from bson import Binary
 
 class FlagUtils():

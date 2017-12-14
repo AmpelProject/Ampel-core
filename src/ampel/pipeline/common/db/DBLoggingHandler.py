@@ -1,3 +1,10 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+# File              : /Users/hu/Documents/ZTF/Ampel/src/ampel/pipeline/common/db/DBLoggingHandler.py
+# Author            : vb <vbrinnel@physik.hu-berlin.de>
+# Date              : 14.12.2017
+# Last Modified Date: 14.12.2017
+# Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 from ampel.pipeline.common.flags.LogRecordFlags import LogRecordFlags
 from ampel.pipeline.common.flags.JobFlags import JobFlags
 import logging
@@ -25,7 +32,7 @@ class DBLoggingHandler(logging.Handler):
 		self.temp_flags = LogRecordFlags(0)
 		self.flush_len = flush_len
 		self.compoundId = None
-		self.transId = None
+		self.tranId = None
 		self.records = []
 		self.filters = []  # required when extending logging.Handler
 		self.lock = None   # required when extending logging.Handler
@@ -54,13 +61,13 @@ class DBLoggingHandler(logging.Handler):
 		""" """
 		self.compoundId = None
 
-	def set_transId(self, arg):
+	def set_tranId(self, arg):
 		""" """
-		self.transId = arg
+		self.tranId = arg
 
-	def unset_transId(self):
+	def unset_tranId(self):
 		""" """
-		self.transId = None
+		self.tranId = None
 
 	def emit(self, record):
 		""" """
@@ -73,8 +80,8 @@ class DBLoggingHandler(logging.Handler):
 			'msg': self.format(record)
 		}
 
-		if self.transId is not None:
-			rec['transId'] = self.transId
+		if self.tranId is not None:
+			rec['tranId'] = self.tranId
 
 		if self.compoundId is not None:
 			rec['compoundId'] = self.compoundId

@@ -1,5 +1,11 @@
-from ampel.pipeline import AbstractTransientsFilter
-from random import randint
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+# File              : /Users/hu/Documents/ZTF/Ampel/src/ampel/pipeline/t0/filters/NoFilter.py
+# Author            : vb <vbrinnel@physik.hu-berlin.de>
+# Date              : 14.12.2017
+# Last Modified Date: 14.12.2017
+# Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
+from ampel.pipeline.t0.filters.AbstractTransientsFilter import AbstractTransientsFilter
 
 class NoFilter(AbstractTransientsFilter):
 

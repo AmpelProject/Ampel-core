@@ -1,4 +1,12 @@
-import importlib, logging, time
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+# File              : /Users/hu/Documents/ZTF/Ampel/src/ampel/pipeline/t0/AlertProcessor.py
+# Author            : vb <vbrinnel@physik.hu-berlin.de>
+# Date              : 14.12.2017
+# Last Modified Date: 14.12.2017
+# Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
+import logging
+import importlib, time
 from ampel.pipeline.t0.AmpelAlert import AmpelAlert
 from ampel.pipeline.t0.AlertFlags import AlertFlags
 from ampel.pipeline.common.LoggingUtils import LoggingUtils
@@ -59,6 +67,8 @@ class AlertProcessor:
 		else:
 			import json
 			self.config = json.load(open(config_file))
+			db = self.mongo_client.get_database("Ampel")
+			db['config'].insert_one(self.config)
 
 		if load_channels:
 			self.load_channels()
@@ -71,7 +81,7 @@ class AlertProcessor:
 				self.alert_loading_func = ZIAlertLoader.get_flat_pps_list_from_file
 
 				# Update AmpelAlert static alert flags
-				AmpelAlert.add_alert_flags(AlertFlags.ALERT_IPAC)
+				AmpelAlert.add_class_flags(AlertFlags.ALERT_IPAC)
 
 			# more alert_issuers may be defined later
 			else:
@@ -85,7 +95,7 @@ class AlertProcessor:
 				)
 
 				# Update AmpelAlert static alert flags
-				AmpelAlert.add_alert_flags(AlertFlags.INST_ZTF|AlertFlags.PP_IPAC)
+				AmpelAlert.add_class_flags(AlertFlags.INST_ZTF|AlertFlags.PP_IPAC)
 
 				# Load PipelineDispatcher with default flags
 				self.load_dispatcher()
@@ -230,6 +240,7 @@ class AlertProcessor:
 				or the dispatcher instance set by the method set_dispatcher(obj)
 		"""
 
+		self.logger.info("#######     Processing alerts     #######")
 		# Save current time to later evaluate how low was the pipeline processing time
 		start_time = int(time.time())
 
@@ -254,10 +265,10 @@ class AlertProcessor:
 		# python micro-optimization
 		loginfo = self.logger.info
 		logdebug = self.logger.debug
-		dblh_set_transId = self.db_log_handler.set_transId
+		dblh_set_tranId = self.db_log_handler.set_tranId
 		dblh_set_temp_flags = self.db_log_handler.set_temp_flags
 		dblh_unset_temp_flags = self.db_log_handler.unset_temp_flags
-		dblh_unset_transId = self.db_log_handler.unset_transId
+		dblh_unset_tranId = self.db_log_handler.unset_tranId
 		alert_loading_func = self.alert_loading_func
 		dispatch = self.dispatcher.dispatch
 
@@ -275,7 +286,7 @@ class AlertProcessor:
 				alert = AmpelAlert(trans_id, pps_list)
 
 				# Associate upcoming log entries with the current transient id
-				dblh_set_transId(trans_id)
+				dblh_set_tranId(trans_id)
 
 				# Loop through initialized channels
 				for i, channel in enumerate(self.t0_channels):
@@ -305,7 +316,7 @@ class AlertProcessor:
 					dispatch(trans_id, pps_list, t2_scheduling_flags)
 
 				# Unset log entries association with transient id
-				dblh_unset_transId()
+				dblh_unset_tranId()
 
 			except:
 				self.logger.exception("")

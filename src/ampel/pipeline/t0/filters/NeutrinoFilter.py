@@ -1,4 +1,11 @@
-from ampel.pipeline import AbstractTransientsFilter
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+# File              : ampel/pipeline/t0/filters/NeutrinoFilter.py
+# Author            : vb <vbrinnel@physik.hu-berlin.de>
+# Date              : 14.12.2017
+# Last Modified Date: 14.12.2017
+# Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
+from ampel.pipeline.t0.filters.AbstractTransientsFilter import AbstractTransientsFilter
 
 class NeutrinoFilter(AbstractTransientsFilter):
 

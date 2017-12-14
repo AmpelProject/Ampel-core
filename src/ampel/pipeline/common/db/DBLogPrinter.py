@@ -1,3 +1,10 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+# File              : /Users/hu/Documents/ZTF/Ampel/src/ampel/pipeline/common/db/DBLogPrinter.py
+# Author            : vb <vbrinnel@physik.hu-berlin.de>
+# Date              : 14.12.2017
+# Last Modified Date: 14.12.2017
+# Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 from ampel.pipeline.common.flags.LogRecordFlags import LogRecordFlags
 from ampel.pipeline.common.db.DBLoggingHandler import DBLoggingHandler
 
@@ -28,19 +35,19 @@ class DBLogPrinter:
 		"""
 		self.log_filter_flags |= log_record_flag
 
-	def get_alertid_logs(self, alertid):
+	def get_logs_with_tranId(self, tran_id):
 		import datetime
 
 		#cursor = self.col.find({'records.alertid': alertid})
 		lres = list(self.col.aggregate([ 
-			{"$match": {"records.alertid": alertid}}, 
+			{"$match": {"records.tranId": tran_id}}, 
 			{"$project": {
 				"records": {
 					"$filter": {
 						"input": "$records",
 						"as": "records",
 						"cond": {
-							"$eq": ['$$records.alertid', alertid]
+							"$eq": ['$$records.tranId', tran_id]
 						}
 					}
 				}

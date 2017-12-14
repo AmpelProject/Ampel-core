@@ -1,3 +1,10 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+# File              : /Users/hu/Documents/ZTF/Ampel/src/ampel/pipeline/t0/dispatchers/AmpelDispatcher.py
+# Author            : vb <vbrinnel@physik.hu-berlin.de>
+# Date              : 14.12.2017
+# Last Modified Date: 14.12.2017
+# Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 import logging, importlib, hashlib
 from pymongo import UpdateOne, InsertOne
 from pymongo.errors import BulkWriteError
@@ -243,8 +250,6 @@ class AmpelDispatcher(AbtractTransientsDispatcher):
 
 
 		# Create compoundId
-		self.logger.info("Generating compoundId")
-
 		compound = []
 		requests = []
 		hash_payload = ""
@@ -265,8 +270,10 @@ class AmpelDispatcher(AbtractTransientsDispatcher):
 
 		compoundId = hashlib.md5(bytes(hash_payload, "utf-8")).hexdigest()
 
+		self.logger.info("Generated compoundId: %s", compoundId)
 
-		self.logger.info("Generating T2 documents")
+
+		self.logger.debug("Generating T2 docs")
 		dict_t2_modules = {}
 
 		# loop through all channels, 
@@ -331,7 +338,7 @@ class AmpelDispatcher(AbtractTransientsDispatcher):
 				)
 
 		# Insert generated t2 docs into collection
-		self.logger.info("Inserting T2 documents into DB")
+		self.logger.info("Inserting %i T2 docs into DB", len(requests))
 
 		try: 
 			self.col_t2.bulk_write(requests)

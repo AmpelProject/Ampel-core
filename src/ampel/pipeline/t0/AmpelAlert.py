@@ -1,3 +1,10 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+# File              : /Users/hu/Documents/ZTF/Ampel/src/ampel/pipeline/t0/AmpelAlert.py
+# Author            : vb <vbrinnel@physik.hu-berlin.de>
+# Date              : 14.12.2017
+# Last Modified Date: 14.12.2017
+# Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 from ampel.pipeline.t0.AlertFlags import AlertFlags
 from werkzeug.datastructures import ImmutableDict, ImmutableList
 
@@ -11,7 +18,7 @@ class AmpelAlert:
 	"""	 
 
 	__isfrozen = False
-	alert_flags = AlertFlags.NO_FLAG
+	flags = AlertFlags.NO_FLAG
 
 
 	@staticmethod
@@ -25,13 +32,13 @@ class AmpelAlert:
 
 
 	@classmethod
-	def add_alert_flags(cls, arg_flags):
+	def add_class_flags(cls, arg_flags):
 		"""
 			Set alert flags (t0.AlertFlags) of this alert.
 			Typically: observing instrument, photopoints source and alert issuer.
 			For example: AlertFlags.INST_ZTF | AlertFlags.PP_IPAC | AlertFlags.ALERT_IPAC 
 		"""
-		cls.alert_flags |= arg_flags
+		cls.flags |= arg_flags
 
 
 	@classmethod
@@ -51,7 +58,7 @@ class AmpelAlert:
 
 	@classmethod
 	def has_flags(cls, arg_flags):
-		return arg_flags in cls.alert_flags
+		return arg_flags in cls.flags
 
 
 	def __init__(self, tran_id, list_of_pps_dicts):
