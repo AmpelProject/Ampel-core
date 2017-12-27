@@ -1,24 +1,28 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : /Users/hu/Documents/ZTF/Ampel/src/ampel/pipeline/t0/AlertProcessor.py
+# File              : ampel/pipeline/t0/AlertProcessor.py
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 14.12.2017
-# Last Modified Date: 14.12.2017
+# Last Modified Date: 26.12.2017
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
-import logging
-import importlib, time
+import logging, importlib, time
+
 from ampel.pipeline.t0.AmpelAlert import AmpelAlert
-from ampel.pipeline.t0.AlertFlags import AlertFlags
-from ampel.pipeline.common.LoggingUtils import LoggingUtils
-from ampel.pipeline.common.flags.TransientFlags import TransientFlags
-from ampel.pipeline.common.flags.LogRecordFlags import LogRecordFlags
-from ampel.pipeline.common.flags.PhotoPointFlags import PhotoPointFlags
-from ampel.pipeline.common.flags.T2SchedulingFlags import T2SchedulingFlags
-from ampel.pipeline.common.flags.JobFlags import JobFlags
 from ampel.pipeline.t0.AlertFileList import AlertFileList
-from ampel.pipeline.common.db.DBJobReporter import DBJobReporter
-from ampel.pipeline.t0.dispatchers.AmpelDispatcher import AmpelDispatcher
 from ampel.pipeline.t0.loaders.ZIAlertLoader import ZIAlertLoader
+from ampel.pipeline.t0.dispatchers.ZIAlertDispatcher import ZIAlertDispatcher
+
+from ampel.flags.AlertFlags import AlertFlags
+from ampel.flags.TransientFlags import TransientFlags
+from ampel.flags.LogRecordFlags import LogRecordFlags
+from ampel.flags.PhotoPointFlags import PhotoPointFlags
+from ampel.flags.T2ModuleIds import T2ModuleIds
+from ampel.flags.JobFlags import JobFlags
+
+from ampel.pipeline.common.LoggingUtils import LoggingUtils
+from ampel.pipeline.common.db.DBJobReporter import DBJobReporter
+
+
 
 
 class AlertProcessor:
@@ -33,10 +37,10 @@ class AlertProcessor:
 
 		Ampel makes sure that each dictionary contains an alflags key 
 	"""
-	version = 0.12
+	version = 0.14
 
 	def __init__(
-		self, instrument="ZTF", photopoint_source="IPAC", alert_issuer="IPAC", 
+		self, instrument="ZTF", alert_format="IPAC", 
 		load_channels=True, config_file=None, mock_db=False
 	):
 		"""
@@ -75,35 +79,27 @@ class AlertProcessor:
 
 		if instrument == "ZTF":
 
-			if alert_issuer == "IPAC":
+			if alert_format == "IPAC":
 
 				# Reference to the function loading IPAC generated avro alerts
 				self.alert_loading_func = ZIAlertLoader.get_flat_pps_list_from_file
 
-				# Update AmpelAlert static alert flags
-				AmpelAlert.add_class_flags(AlertFlags.ALERT_IPAC)
+				# Set static AmpelAlert alert flags
+				AmpelAlert.add_class_flags(
+					AlertFlags.INST_ZTF | AlertFlags.ALERT_IPAC | AlertFlags.PP_IPAC
+				)
 
-			# more alert_issuers may be defined later
-			else:
-				raise ValueError("No implementation exists for the alert issuing entity: " + alert_issuer)
-
-			if photopoint_source == "IPAC":
-
-				# Set AmpelAlert static alert dict keywords description
+				# Set static AmpelAlert dict keywords
 				AmpelAlert.set_pp_dict_keywords(
 					self.config['global']['photoPoints']['ZTFIPAC']['dictKeywords']
 				)
+	
+				# Set dispatcher metaclass
+				self.dispatcher_meta = ZIAlertDispatcher
 
-				# Update AmpelAlert static alert flags
-				AmpelAlert.add_class_flags(AlertFlags.INST_ZTF|AlertFlags.PP_IPAC)
-
-				# Load PipelineDispatcher with default flags
-				self.load_dispatcher()
-
-			# more alert_issuers may be defined later
+			# more alert_formats may be defined later
 			else:
-				raise ValueError("No implementation exists for the photopoints source: " + photopoint_source)
-
+				raise ValueError("No implementation exists for the alert issuing entity: " + alert_format)
 
 		# more instruments may be defined later
 		else:
@@ -173,9 +169,9 @@ class AlertProcessor:
 
 		# Create the enum flags that will be associated with matching transients
 		# (The flags are defined in the DB and can thus be easily customized)
-		tf = T2SchedulingFlags(0)
+		tf = T2ModuleIds(0)
 		for t2_module in d_channels[channel_name]['t2Modules']:
-			tf |= T2SchedulingFlags[t2_module['module']]
+			tf |= T2ModuleIds[t2_module['module']]
 
 		self.logger.info("On match flags: " + str(tf))
 
@@ -196,28 +192,27 @@ class AlertProcessor:
 		return channel
 
 
-	def set_custom_dispatcher(self, dispatcher):
+	def set_dispatcher_instance(self, dispatcher_instance):
 		"""
-			Sets the dispatcher instance to be used in the method run().
-			If unspecified, a new instance of PipelineDispatcher is used
+			Sets custom dispatcher instance to be used in the method run().
+			If unspecified, a new instance of ZIAlertDispatcher() is used
 			Known dispatcher (as for Sept 2017) are:
 				* t0.dispatchers.MemoryDispatcher
-				* t0.dispatchers.AmpelDispatcher
+				* t0.dispatchers.ZIAlertDispatcher
 		"""
-		self.dispatcher = dispatcher
+		self.dispatcher = dispatcher_instance
 
 
-	def load_dispatcher(
-		self, pps_default_flags = 
-			PhotoPointFlags.INST_ZTF | 
-			PhotoPointFlags.ALERT_IPAC | 
-			PhotoPointFlags.PP_IPAC
-	):
-
-		self.logger.info("Loading AmpelDispatcher")
-		self.dispatcher = AmpelDispatcher(self.mongo_client)
-		# TODO: depreciated
-		#self.dispatcher.set_common_flags(pps_default_flags)
+	def load_dispatcher(self, dispatcher_meta):
+		"""
+			Loads a dispatcher intance using the provided metoclass
+		"""
+		self.logger.info("Loading %s", dispatcher_meta.__name__)
+		self.dispatcher = dispatcher_meta(
+			self.mongo_client, 
+			self.config,
+			[channel['name'] for channel in self.t0_channels]
+		)
 
 
 	def get_iterable_paths(self, base_dir="/Users/hu/Documents/ZTF/Ampel/alerts/", extension="*.avro"):
@@ -246,7 +241,11 @@ class AlertProcessor:
 
 		# Check if a dispatcher instance was defined
 		if not hasattr(self, 'dispatcher'):
-			raise ValueError('Dispatcher instance missing')
+			if not hasattr(self, 'dispatcher_meta'):
+				raise ValueError('Dispatcher instance and/or metaclass is/are missing')
+			else:
+				self.dispatcher = self.load_dispatcher(self.dispatcher_meta)
+
 
 		# Create new "job" document in the DB
 		self.db_job_reporter.insert_new(self)
@@ -294,7 +293,7 @@ class AlertProcessor:
 					# Associate upcoming log entries with the current channel
 					dblh_set_temp_flags(channel['log_flag'])
 
-					# Apply filter (returns None in case of rejection or flags in case of match)
+					# Apply filter (returns None in case of rejection or t2 modules ids in case of match)
 					t2_scheduling_flags[i] = channel['filter_func'](alert)
 
 					# Log feedback

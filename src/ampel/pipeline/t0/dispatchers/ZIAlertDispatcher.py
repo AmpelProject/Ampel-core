@@ -1,89 +1,131 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : /Users/hu/Documents/ZTF/Ampel/src/ampel/pipeline/t0/dispatchers/AmpelDispatcher.py
+# File              : ampel/pipeline/t0/dispatchers/ZIAlertDispatcher.py
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 14.12.2017
-# Last Modified Date: 14.12.2017
+# Last Modified Date: 27.12.2017
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
-import logging, importlib, hashlib
+import logging, hashlib
 from pymongo import UpdateOne, InsertOne
 from pymongo.errors import BulkWriteError
-from ampel.pipeline.t0.dispatchers.AbtractTransientsDispatcher import AbtractTransientsDispatcher
-from ampel.pipeline.common.flags.T2SchedulingFlags import T2SchedulingFlags
-from ampel.pipeline.common.flags.PhotoPointFlags import PhotoPointFlags
-from ampel.pipeline.common.flags.TransientFlags import TransientFlags
-from ampel.pipeline.common.flags.RunStates import RunStates
+from ampel.pipeline.t0.dispatchers.AbstractAmpelDispatcher import AbstractAmpelDispatcher
+from ampel.pipeline.t0.stampers.ZIPhotoPointStamper import ZIPhotoPointStamper
+from ampel.flags.T2ModuleIds import T2ModuleIds
+from ampel.flags.PhotoPointFlags import PhotoPointFlags
+from ampel.flags.TransientFlags import TransientFlags
+from ampel.flags.RunStates import RunStates
 
-class AmpelDispatcher(AbtractTransientsDispatcher):
+class ZIAlertDispatcher(AbstractAmpelDispatcher):
 	"""
 		Dispatcher class used by t0.AlertProcessor in 'online' mode.
 		This class re-route transient candidates into the NoSQL database
 		if they have passed the configured filter.
 	"""
 
-	def __init__(self, mongo_client, dispatching_what="ZTFIPAC"):
+	def __init__(self, mongo_client, db_config, channel_names):
 		"""
 			The parameter mongo_client (instance of pymongo.MongoClient) is required for database operations.
 			Transient info will be stored the collection 'incoming' from the 'T0' database
-			Arguments:
-				dispatching_what: A string made of an instrument description (ex: ZTF) 
-				and photopoints source (ex: IPAC). Example: ZTFIPAC, ZTFNUGENS, ...
 		"""
 		self.logger = logging.getLogger("Ampel")
 		self.set_mongo(mongo_client)
+		self.pps_stamper = ZIPhotoPointStamper()
 
-		db_conf = next(self.db["config"].find({}))
-		ppts_conf = db_conf["global"]["photoPoints"][dispatching_what]
-		self.set_pp_dict_keywords(ppts_conf['dictKeywords'])
-
-		module = importlib.import_module("ampel.pipeline.t0.stampers." + ppts_conf['stamperClass'])
-		self.pps_stamper = getattr(module, ppts_conf['stamperClass'])()
-
-		for flag in ppts_conf["alFlags"].split("|"):
-			self.pps_stamper.append_base_flags(PhotoPointFlags[flag])
-
+		# create t2s_params_channels root dict
 		self.t2s_params_channels = {}
 
+		# t2s_params_channels:
+		# -------------------
+		#	
+		# To insert t2 docs in a way that is efficient and not prone to race conditions
+		# (see end part of the dispatch method) we need the following dict structure:
+		#	
+		# - SCM_LC_FIT
+		# 	- default
+		#		CHANNEL_SN|CHANNEL_LENS
+		# 	- mySetting
+		#		CHANNEL_GRB
+		# - SCM_PHOTO_Z 
+		# 	- default
+		#		CHANNEL_SN|CHANNEL_LENS|CHANNEL_GRB
+		#	
+		# Each root entry in the t2s_params_channels dict is also a dict 
+		# (with the different possible paramIds as key)
+		#	
+		# 1st dict key: t2 module id (integer)
+		# 2nd key: t2 module paramId (string)
+		#	
+		# Values are combinations of T2ModuleIds flags
+
 		# Loop through schedulable t2 modules 
-		for t2_module_sf in T2SchedulingFlags:
+		for t2_module_id in T2ModuleIds:
 
-			# Each entry in the t2s_params_channels dict is also a dict 
-			# (with the different possible paramIds as key)
-			# 1st key: scheduling flag  2nd key: paramId 
-			self.t2s_params_channels[t2_module_sf] = {}
+			# Each entry of t2s_params_channels is also a dict (1st dict key: t2 module id)
+			self.t2s_params_channels[t2_module_id] = {}
 
-			# Loop through the t0 channels (TODO: provide list of *used* T0 channels 
-			# rather than looping through everything)
-			for t0_channel in [keys for keys in db_conf["T0"]["channels"]]:
+			# Loop through the t0 channels 
+			for t0_channel in channel_names:
 
-				# Extract the paramerter ID associated with the t2_module 
+				# Reset paramId
 				paramId = None
-				for t0_t2_module in db_conf["T0"]["channels"][t0_channel]["t2Modules"]:
-					if t0_t2_module["module"] == t2_module_sf.name:
-						paramId = t0_t2_module["paramId"]
+
+				# Extract default parameter ID (paramId) associated with current T0 channel
+				for registered_t2_module in db_config["T0"]["channels"][t0_channel]["t2Modules"]:
+					
+					# t2_module_id is of type 'enum', we access the flag label with the attribute 'name'
+					if registered_t2_module["module"] == t2_module_id.name:
+					
+						# paramId is the name of the wished configuration set for this registered module
+						paramId = registered_t2_module["paramId"]
 
 				# if paramId was not found, it means the current t0_channel 
-				# has not registered the current t2_module
+				# has not registered the current t2_module_id
 				if paramId is None:
 					continue
 				
-				if not paramId in self.t2s_params_channels[t2_module_sf]:
-					self.t2s_params_channels[t2_module_sf][paramId] = TransientFlags(0)
+				# if paramId key was not yet used in t2s_params_channels struct, create empty T2ModuleIds flag
+				if not paramId in self.t2s_params_channels[t2_module_id]:
+					self.t2s_params_channels[t2_module_id][paramId] = T2ModuleIds(0)
 
-				self.t2s_params_channels[t2_module_sf][paramId] |= TransientFlags[
-					db_conf["T0"]["channels"][t0_channel]['flagLabel']
+				# Add current t0 channel to t2s_params_channels
+				# For example: t2s_params_channels[SCM_LC_FIT]["default"] |= CHANNEL_SN
+				self.t2s_params_channels[t2_module_id][paramId] |= T2ModuleIds[
+					db_config["T0"]["channels"][t0_channel]['flagLabel']
 				]
 
 
-	def set_jobId(self, jobId):
-		self.jobId = jobId
+	def set_job_id(self, job_id):
+		"""
+			A dispatcher class creates/updates several documents in the DB for each alert.
+			Among other things, it updates the main transient document, 
+			which contains a list of jobIds associated with the processing of the given transient.
+			We thus need to know what is the current jobId to perform this update.
+			The provided parameter should be a mongoDB ObjectId.
+		"""
+		self.job_id = job_id
 
 
 	def set_photopoints_stamper(self, arg_pps_stamper):
+		"""
+			Before the dispatcher instance inserts new photopoints into the photopoint collection, 
+			it 'customizes' (or 'ampelizes' if you will) the photopoints in order to later enable
+			the use of performant/flexible queries. 
+			The cutomizations are minimal, most of the original photopoint structure is kept.
+			For exmample, in the case of ZIPhotoPointStamper:
+				* The field candid is renamed in _id 
+				* A new field 'alFlags' (AmpelFlags) is created (integer value of ampel.flags.PhotoPointFlags)
+			A photopoint stamper class (t0.pipeline.stampers.*) performs these operations.
+			This method allows to customize the PhotoPointStamper instance to be used.
+			By default, ZIPhotoPointStamper is used.
+		"""
 		self.pps_stamper = arg_pps_stamper
 
 
 	def get_photopoints_stamper(self):
+		"""
+			Get the PhotoPointStamper instance associated with this class instance.
+			For more information, please check the set_photopoints_stamper docstring
+		"""
 		return self.pps_stamper
 
 
@@ -91,25 +133,14 @@ class AmpelDispatcher(AbtractTransientsDispatcher):
 		self.channel_tranflag_map = transient_flag_list
 
 
-	def set_pp_dict_keywords(self, keywords):
-		"""
-		"""
-		self.tran_id_kw = keywords["tranId"]
-		self.ppt_id_kw = keywords["pptId"]
-		self.obs_date_kw = keywords["obsDate"]
-		self.filter_id_kw = keywords["filterId"]
-
-
 	def set_mongo(self, mongo_client):
 		"""
 			Sets the mongo client (instance of pymongo.MongoClient) for database operations.
-			Transient info will be stored the collection 'incoming' from the 'T0' database
 		"""
 		self.db = mongo_client["Ampel"]
 		self.col_pps = self.db["photopoints"]
 		self.col_tran = self.db["transients"]
 		self.col_t2 = self.db["t2"]
-
 
 
 	def dispatch(self, tran_id, alert_pps_list, all_channels_t2_flags, force=False):
@@ -123,11 +154,8 @@ class AmpelDispatcher(AbtractTransientsDispatcher):
 		# TODO remove this when going to production
 		alert_pps_list = [el for el in alert_pps_list if 'candid' in el and el['candid'] is not None]
 
-		# micro optimization: local variable shortcut
-		ppt_id_kw = self.ppt_id_kw
-
 		# All candids from the alert
-		ppt_ids_in_alert = {el[ppt_id_kw] for el in alert_pps_list}
+		ppt_ids_in_alert = {el['candid'] for el in alert_pps_list}
 
 		# Check existing photopoints in DB
 		self.logger.info("Checking DB for existing ppts")
@@ -196,17 +224,17 @@ class AmpelDispatcher(AbtractTransientsDispatcher):
 
 				# Match these with the photopoints from the alert
 				for superseeded_db_ppt in superseeded_db_ppts:
-					for alert_ppt in alert_pps_list:
+					for ppt_in_alert in alert_pps_list:
 						if (
-							superseeded_db_ppt["jd"] == alert_ppt["jd"] and
-							superseeded_db_ppt["pid"] == alert_ppt["pid"] and
-							superseeded_db_ppt["fid"] == alert_ppt["fid"] 
+							superseeded_db_ppt["jd"] == ppt_in_alert["jd"] and
+							superseeded_db_ppt["pid"] == ppt_in_alert["pid"] and
+							superseeded_db_ppt["fid"] == ppt_in_alert["fid"] 
 						):
 
 							self.logger.info(
 								"Marking ppt %s as superseeded by %s",
 								superseeded_db_ppt["_id"], 
-								alert_ppt['candid']
+								ppt_in_alert['candid']
 							)
 
 							# Update set of excluded ids (will be used when creating t2 docs)
@@ -217,7 +245,7 @@ class AmpelDispatcher(AbtractTransientsDispatcher):
 									{'_id': superseeded_db_ppt["_id"]}, 
 									{
 										'$addToSet': {
-											'newid': alert_ppt['candid'],
+											'newid': ppt_in_alert['candid'],
 										},
 										'$set': {
 											'alFlags':
@@ -238,7 +266,7 @@ class AmpelDispatcher(AbtractTransientsDispatcher):
 				self.logger.info("Transient has PPTs older than 30days")
 
 		# Create of list photopoint dicts with photopoints matching the provided list of ppt_ids_to_insert
-		new_ppts_dicts = [el for el in alert_pps_list if el[ppt_id_kw] in ppt_ids_to_insert]
+		new_ppts_dicts = [el for el in alert_pps_list if el['candid'] in ppt_ids_to_insert]
 
 		# Set _id to candid, append tran_id, flag each photopoint
 		self.pps_stamper.stamp(tran_id, new_ppts_dicts)
@@ -284,25 +312,25 @@ class AmpelDispatcher(AbtractTransientsDispatcher):
 			if single_channel_t2_flags is None:
 				continue
 
-			# loop through all possible scheduling flags 
-			for t2_module_sf in T2SchedulingFlags:
+			# loop through schedulable module ids
+			for t2_module_id in T2ModuleIds:
 
 				# Ignore scheduling flags not set for this channel
-				if not t2_module_sf in single_channel_t2_flags:
+				if not t2_module_id in single_channel_t2_flags:
 					continue
 				
-				if not t2_module_sf in dict_t2_modules:
-					dict_t2_modules[t2_module_sf] = {}
+				if not t2_module_id in dict_t2_modules:
+					dict_t2_modules[t2_module_id] = {}
 
 				# loop through all known paramIds for this t2 module
-				for paramId in self.t2s_params_channels[t2_module_sf].keys():
+				for paramId in self.t2s_params_channels[t2_module_id].keys():
 				
 					# If the transientFlag of the current channel (index i)
 					# is registered in t2s_params_channels
-					if self.channel_tranflag_map[i] in self.t2s_params_channels[t2_module_sf][paramId]:
-						if not paramId in dict_t2_modules[t2_module_sf]:
-							dict_t2_modules[t2_module_sf][paramId] = []
-						dict_t2_modules[t2_module_sf][paramId].append(self.channel_tranflag_map[i].value)
+					if self.channel_tranflag_map[i] in self.t2s_params_channels[t2_module_id][paramId]:
+						if not paramId in dict_t2_modules[t2_module_id]:
+							dict_t2_modules[t2_module_id][paramId] = []
+						dict_t2_modules[t2_module_id][paramId].append(self.channel_tranflag_map[i].value)
 
 
 		# Create T2 documents
@@ -314,9 +342,9 @@ class AmpelDispatcher(AbtractTransientsDispatcher):
 				requests.append(
 					UpdateOne(
 						{
-						"t2Module": t2_module.value, 
-						"paramId": paramId, 
-						"compoundId": compoundId,
+							"t2Module": t2_module.value, 
+							"paramId": paramId, 
+							"compoundId": compoundId,
 						},
 						{
 							"$setOnInsert": {
@@ -363,7 +391,7 @@ class AmpelDispatcher(AbtractTransientsDispatcher):
 							if el is not None
 						]
 					},
-					'jobIds': self.jobId
+					'jobIds': self.job_id
 				},
 				"$max": { 
 					"lastPPDate": alert_pps_list[0]["jd"]

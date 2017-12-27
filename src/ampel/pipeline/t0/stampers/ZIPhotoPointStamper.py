@@ -1,16 +1,16 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : /Users/hu/Documents/ZTF/Ampel/src/ampel/pipeline/t0/stampers/ZIPhotoPointStamper.py
+# File              : ampel/pipeline/t0/stampers/ZIPhotoPointStamper.py
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 14.12.2017
-# Last Modified Date: 14.12.2017
+# Last Modified Date: 25.12.2017
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
-from ampel.pipeline.common.flags.PhotoPointFlags import PhotoPointFlags
+from ampel.flags.PhotoPointFlags import PhotoPointFlags
 
 class ZIPhotoPointStamper:
 
 	def __init__(self):
-		self.base_flags = PhotoPointFlags.NO_FLAG
+		self.base_flags = PhotoPointFlags.INST_ZTF|PhotoPointFlags.PP_IPAC
 
 	def append_base_flags(self, flags):
 		self.base_flags |= flags
