@@ -20,10 +20,10 @@ class AbstractAmpelDispatcher(metaclass=AmpelABC):
 	def dispatch(self, tran_id, alert_pps_list, all_channels_t2_flags, force=False):
 		return
 
-
-	def __new__(cls, *args, **kwargs):
-		if cls is AbstractAmpelDispatcher:
-			raise TypeError("Class AbstractAmpelDispatcher cannot be instantiated")
+#	def __new__(cls, *args, **kwargs):
+#		if cls is AbstractAmpelDispatcher:
+#			raise TypeError("Class AbstractAmpelDispatcher cannot be instantiated")
+#		return object.__new__(cls)
 
 
 #	def __init_subclass__(cls):

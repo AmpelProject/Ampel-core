@@ -20,4 +20,3 @@ class TestDispatcher(AbstractAmpelDispatcher):
 	#def dispatch(self, transient):
 	def dispatch(self, tran_id, alert_pps_list, all_channels_t2_flags, force=False):
 		print("apply")
-

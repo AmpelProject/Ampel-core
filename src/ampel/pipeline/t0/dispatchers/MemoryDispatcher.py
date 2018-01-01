@@ -3,12 +3,14 @@
 # File              : ampel/pipeline/t0/dispatchers/MemoryDispatcher.py
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 14.12.2017
-# Last Modified Date: 26.12.2017
+# Last Modified Date: 27.12.2017
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
+
 from ampel.flags.TransientFlags import TransientFlags
+from ampel.pipeline.t0.dispatchers.AbstractAmpelDispatcher import AbstractAmpelDispatcher
 
 
-class MemoryDispatcher():
+class MemoryDispatcher(AbstractAmpelDispatcher):
 
 	"""
 		Dispatcher class called by t0.AlertProcessor.

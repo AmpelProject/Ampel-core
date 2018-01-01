@@ -3,7 +3,7 @@
 # File              : ampel/pipeline/t0/dispatchers/ZIAlertDispatcher.py
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 14.12.2017
-# Last Modified Date: 27.12.2017
+# Last Modified Date: 29.12.2017
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 import logging, hashlib
 from pymongo import UpdateOne, InsertOne
@@ -146,12 +146,12 @@ class ZIAlertDispatcher(AbstractAmpelDispatcher):
 	def dispatch(self, tran_id, alert_pps_list, all_channels_t2_flags, force=False):
 		"""
 			This method is called by t0.AmpelProcessor for 
-			transients that passe at leat one T0 channel filter. 
+			transients that pass at leat one T0 channel filter. 
 			Then photopoints, transients and  t2 documents are pushed to the DB.
 			A duplicate check is performed before DB insertions
 		"""
 
-		# TODO remove this when going to production
+		# TODO remove this for production
 		alert_pps_list = [el for el in alert_pps_list if 'candid' in el and el['candid'] is not None]
 
 		# All candids from the alert
@@ -159,32 +159,32 @@ class ZIAlertDispatcher(AbstractAmpelDispatcher):
 
 		# Check existing photopoints in DB
 		self.logger.info("Checking DB for existing ppts")
-		db_ppts_lookup = self.col_pps.find(
+		ppts_in_db = self.col_pps.find(
 			{"tranId": tran_id}, 
 			{"_id": 1, "alFlags": 1}
 		)
 
 		ppt_ids_in_db = set()
-		excluded_ppt_ids = set()
+		ppt_excluded_ids = set()
 		wzm_ids = set()
 
 		# If no photopoint exists in the DB, then this is a new transient 
-		if db_ppts_lookup.count() == 0:
+		if ppts_in_db.count() == 0:
 			ppt_ids_to_insert = ppt_ids_in_alert
 			self.logger.info("Transient is new")
 		else:
 
-			for db_ppt in db_ppts_lookup:
+			for ppt_db in ppts_in_db:
 
-				ppt_ids_in_db.add(db_ppt["_id"])
-				alFlags = PhotoPointFlags(db_ppt["alFlags"])
+				ppt_ids_in_db.add(ppt_db["_id"])
+				alFlags = PhotoPointFlags(ppt_db["alFlags"])
 
 				if PhotoPointFlags.PP_EXCLUDE in alFlags:
-					self.logger.info("Following PPT is marked for exclusion: %s", db_ppt["_id"])
-					excluded_ppt_ids.add(db_ppt["_id"])
+					self.logger.info("Following PPT is marked for exclusion: %s", ppt_db["_id"])
+					ppt_excluded_ids.add(ppt_db["_id"])
 				if PhotoPointFlags.HAS_WEIZMANN_PHOTO in alFlags:
-					self.logger.info("Follwing PPT has WZM photometry: %s", db_ppt["_id"])
-					wzm_ids.add(db_ppt["_id"])
+					self.logger.info("Following PPT has WZM photometry: %s", ppt_db["_id"])
+					wzm_ids.add(ppt_db["_id"])
 
 			# Difference between candids from the alert and candids present in DB 
 			ppt_ids_to_insert = ppt_ids_in_alert - ppt_ids_in_db
@@ -210,7 +210,7 @@ class ZIAlertDispatcher(AbstractAmpelDispatcher):
 				)
 			}
 
-			# If set db_ppt_ids_not_in_alert not empty, ppts reprocessing occured at IPAC
+			# If db_ppt_ids_not_in_alert set is not empty, ppts reprocessing occured at IPAC
 			if db_ppt_ids_not_in_alert:
 
 				# Get photopoints younger than 30 days, that exist in the DB and not in the alert
@@ -238,7 +238,7 @@ class ZIAlertDispatcher(AbstractAmpelDispatcher):
 							)
 
 							# Update set of excluded ids (will be used when creating t2 docs)
-							excluded_ppt_ids.add(superseeded_db_ppt["_id"])
+							ppt_excluded_ids.add(superseeded_db_ppt["_id"])
 
 							requests.append(
 								UpdateOne(
@@ -283,12 +283,12 @@ class ZIAlertDispatcher(AbstractAmpelDispatcher):
 		hash_payload = ""
 
 		# If this is a new transient 
-		if db_ppts_lookup.count() == 0:
+		if ppts_in_db.count() == 0:
 			for ppt_id in sorted(ppt_ids_to_insert):
 				hash_payload += '%i' % ppt_id
 				compound.append({'ppt': ppt_id})
 		else:
-			for ppt_id in sorted(set().union(ppt_ids_in_db, ppt_ids_in_alert) - excluded_ppt_ids):
+			for ppt_id in sorted(set().union(ppt_ids_in_db, ppt_ids_in_alert) - ppt_excluded_ids):
 				hash_payload += '%i' % ppt_id
 				if ppt_id in wzm_ids:
 					hash_payload += "wzm:1"
@@ -393,7 +393,7 @@ class ZIAlertDispatcher(AbstractAmpelDispatcher):
 					},
 					'jobIds': self.job_id
 				},
-				"$max": { 
+				"$max": {
 					"lastPPDate": alert_pps_list[0]["jd"]
 				}
 			},
