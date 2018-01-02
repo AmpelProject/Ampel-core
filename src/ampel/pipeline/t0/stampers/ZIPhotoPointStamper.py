@@ -3,9 +3,11 @@
 # File              : ampel/pipeline/t0/stampers/ZIPhotoPointStamper.py
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 14.12.2017
-# Last Modified Date: 25.12.2017
+# Last Modified Date: 02.01.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 from ampel.flags.PhotoPointFlags import PhotoPointFlags
+from ampel.flags.AlDocTypes import AlDocTypes
+from ampel.flags.FlagUtils import FlagUtils
 
 class ZIPhotoPointStamper:
 
@@ -26,6 +28,9 @@ class ZIPhotoPointStamper:
 			# Append tran_id to each photopoint
 			pp_dict['tranId'] = tran_id
 
+			# Set alDocType to PHOTOPOINT
+			pp_dict['alDocType'] = AlDocTypes.PHOTOPOINT
+
 			# Base flags
 			ppflags = self.base_flags
 	
@@ -42,6 +47,6 @@ class ZIPhotoPointStamper:
 				ppflags |= PhotoPointFlags.ZTF_I
 	
 			# Add ampel flags
-			pp_dict['alFlags'] = ppflags.value
+			pp_dict['alFlags'] = FlagUtils.enumflag_to_mongoflag(ppflags)
 
 			# HIGH_CADENCE

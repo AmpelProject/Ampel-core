@@ -3,7 +3,7 @@
 # File              : ampel/pipeline/t0/AlertProcessor.py
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 14.12.2017
-# Last Modified Date: 26.12.2017
+# Last Modified Date: 02.01.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 import logging, importlib, time
 
@@ -18,6 +18,7 @@ from ampel.flags.LogRecordFlags import LogRecordFlags
 from ampel.flags.PhotoPointFlags import PhotoPointFlags
 from ampel.flags.T2ModuleIds import T2ModuleIds
 from ampel.flags.JobFlags import JobFlags
+from ampel.flags.ChannelFlags import ChannelFlags
 
 from ampel.pipeline.common.LoggingUtils import LoggingUtils
 from ampel.pipeline.common.db.DBJobReporter import DBJobReporter
@@ -183,7 +184,7 @@ class AlertProcessor:
 
 		# LogRecordFlag and TransienFlag associated with the current channel
 		channel['log_flag'] = LogRecordFlags[d_channels[channel_name]['flagLabel']]
-		channel['transient_flag'] = TransientFlags[d_channels[channel_name]['flagLabel']]
+		channel['flag'] = ChannelFlags[d_channels[channel_name]['flagLabel']]
 
 		# Build these two log entries once and for all (outside the main loop in run())
 		channel['log_accepted'] = " -> Channel '" + channel_name + "': alert passes filter criteria"
@@ -256,9 +257,9 @@ class AlertProcessor:
 		)
 
 		# Array of JobFlags. Each element is set by each T0 channel 
-		t2_scheduling_flags = [None] * len(self.t0_channels) 
-		self.dispatcher.map_channel_to_transient_flag(
-			[channel['transient_flag'] for channel in self.t0_channels]
+		scheduled_t2_modules = [None] * len(self.t0_channels) 
+		self.dispatcher.set_alertproc_channel_list(
+			[channel['flag'] for channel in self.t0_channels]
 		)
 
 		# python micro-optimization
@@ -294,10 +295,10 @@ class AlertProcessor:
 					dblh_set_temp_flags(channel['log_flag'])
 
 					# Apply filter (returns None in case of rejection or t2 modules ids in case of match)
-					t2_scheduling_flags[i] = channel['filter_func'](alert)
+					scheduled_t2_modules[i] = channel['filter_func'](alert)
 
 					# Log feedback
-					if t2_scheduling_flags[i] is not None:
+					if scheduled_t2_modules[i] is not None:
 						loginfo(channel['log_accepted'])
 						# TODO push transient journal entry
 					else:
@@ -306,13 +307,13 @@ class AlertProcessor:
 					# Unset channel id <-> log entries association
 					dblh_unset_temp_flags(channel['log_flag'])
 
-				if not any(t2_scheduling_flags):
+				if not any(scheduled_t2_modules):
 					# TODO: implement AlertDisposer class ?
 					self.logger.info("Disposing rejected candidates not implemented yet")
 				else:
 					# Dispatch alert (
 					logdebug(" -> Dispatching alert")
-					dispatch(trans_id, pps_list, t2_scheduling_flags)
+					dispatch(trans_id, pps_list, scheduled_t2_modules)
 
 				# Unset log entries association with transient id
 				dblh_unset_tranId()
