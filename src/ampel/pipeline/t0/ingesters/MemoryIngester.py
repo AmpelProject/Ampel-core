@@ -1,19 +1,19 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/pipeline/t0/dispatchers/MemoryDispatcher.py
+# File              : ampel/pipeline/t0/ingesters/MemoryIngester.py
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 14.12.2017
-# Last Modified Date: 27.12.2017
+# Last Modified Date: 03.01.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from ampel.flags.TransientFlags import TransientFlags
-from ampel.pipeline.t0.dispatchers.AbstractAmpelDispatcher import AbstractAmpelDispatcher
+from ampel.pipeline.t0.ingesters.AbstractIngester import AbstractIngester
 
 
-class MemoryDispatcher(AbstractAmpelDispatcher):
+class MemoryIngester(AbstractIngester):
 
 	"""
-		Dispatcher class called by t0.AlertProcessor.
+		Ingester class called by t0.AlertProcessor.
 		This class is intended to be used for developing and testing filters.
 		It stores transient candidates into accepted and rejected array 
 		based on the configured filter outcomes.
@@ -27,7 +27,7 @@ class MemoryDispatcher(AbstractAmpelDispatcher):
 		self.flag_index = flag_index
 
 
-	def dispatch(self, tran_id, alert_pps_list, all_channels_t2_flags, force=False):
+	def ingest(self, tran_id, alert_pps_list, all_channels_t2_flags, force=False):
 
 		if all_channels_t2_flags[self.flag_index] is not None:
 			self.accepted_transients.append(alert_pps_list)

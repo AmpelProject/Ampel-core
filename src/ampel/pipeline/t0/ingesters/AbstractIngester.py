@@ -1,14 +1,14 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/pipeline/t0/dispatchers/AbstractAmpelDispatcher.py
+# File              : ampel/pipeline/t0/ingesters/AbstractIngester.py
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 14.12.2017
-# Last Modified Date: 27.12.2017
+# Last Modified Date: 03.01.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 import inspect
 from ampel.pipeline.common.AmpelABC import AmpelABC, abstractmethod
 
-class AbstractAmpelDispatcher(metaclass=AmpelABC):
+class AbstractIngester(metaclass=AmpelABC):
 
 
 	@abstractmethod
@@ -17,7 +17,7 @@ class AbstractAmpelDispatcher(metaclass=AmpelABC):
 
 
 	@abstractmethod
-	def dispatch(self, tran_id, alert_pps_list, all_channels_t2_flags, force=False):
+	def ingest(self, tran_id, alert_pps_list, all_channels_t2_flags, force=False):
 		return
 
 #	def __new__(cls, *args, **kwargs):

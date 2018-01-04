@@ -2,15 +2,63 @@
 # -*- coding: utf-8 -*-
 # File              : ampel/pipeline/t0/AlertProcessor.py
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
+# Date              : 04.01.2018
+# Last Modified Date: 04.01.2018
+# Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
+# -*- coding: utf-8 -*-
+# File              : ampel/pipeline/t0/AlertProcessor.py
+# Author            : vb <vbrinnel@physik.hu-berlin.de>
+# Date              : 04.01.2018
+# Last Modified Date: 04.01.2018
+# Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
+# -*- coding: utf-8 -*-
+# File              : ampel/pipeline/t0/AlertProcessor.py
+# Author            : vb <vbrinnel@physik.hu-berlin.de>
+# Date              : 04.01.2018
+# Last Modified Date: 04.01.2018
+# Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
+# -*- coding: utf-8 -*-
+# File              : ampel/pipeline/t0/AlertProcessor.py
+# Author            : vb <vbrinnel@physik.hu-berlin.de>
+# Date              : 04.01.2018
+# Last Modified Date: 04.01.2018
+# Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
+# -*- coding: utf-8 -*-
+# File              : ampel/pipeline/t0/AlertProcessor.py
+# Author            : vb <vbrinnel@physik.hu-berlin.de>
+# Date              : 03.01.2018
+# Last Modified Date: 03.01.2018
+# Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
+# -*- coding: utf-8 -*-
+# File              : ampel/pipeline/t0/AlertProcessor.py
+# Author            : vb <vbrinnel@physik.hu-berlin.de>
+# Date              : 03.01.2018
+# Last Modified Date: 03.01.2018
+# Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
+# -*- coding: utf-8 -*-
+# File              : ampel/pipeline/t0/AlertProcessor.py
+# Author            : vb <vbrinnel@physik.hu-berlin.de>
+# Date              : 03.01.2018
+# Last Modified Date: 03.01.2018
+# Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
+# -*- coding: utf-8 -*-
+# File              : ampel/pipeline/t0/AlertProcessor.py
+# Author            : vb <vbrinnel@physik.hu-berlin.de>
+# Date              : 03.01.2018
+# Last Modified Date: 03.01.2018
+# Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
+# -*- coding: utf-8 -*-
+# File              : ampel/pipeline/t0/AlertProcessor.py
+# Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 14.12.2017
-# Last Modified Date: 02.01.2018
+# Last Modified Date: 03.01.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 import logging, importlib, time
 
 from ampel.pipeline.t0.AmpelAlert import AmpelAlert
 from ampel.pipeline.t0.AlertFileList import AlertFileList
 from ampel.pipeline.t0.loaders.ZIAlertLoader import ZIAlertLoader
-from ampel.pipeline.t0.dispatchers.ZIAlertDispatcher import ZIAlertDispatcher
+from ampel.pipeline.t0.ingesters.ZIAlertIngester import ZIAlertIngester
 
 from ampel.flags.AlertFlags import AlertFlags
 from ampel.flags.TransientFlags import TransientFlags
@@ -21,6 +69,7 @@ from ampel.flags.JobFlags import JobFlags
 from ampel.flags.ChannelFlags import ChannelFlags
 
 from ampel.pipeline.common.LoggingUtils import LoggingUtils
+from ampel.pipeline.common.ChannelsConfig import ChannelsConfig
 from ampel.pipeline.common.db.DBJobReporter import DBJobReporter
 
 
@@ -34,7 +83,7 @@ class AlertProcessor:
 			* Load the alert
 			* Filter alert based on the configured filter
 			* Set policies
-			* Dispatch alert based on the configured dispatcher
+			* Ingest alert based on the configured ingester
 
 		Ampel makes sure that each dictionary contains an alflags key 
 	"""
@@ -75,6 +124,8 @@ class AlertProcessor:
 			db = self.mongo_client.get_database("Ampel")
 			db['config'].insert_one(self.config)
 
+		self.channels_config = ChannelsConfig(self.config['channels'])
+
 		if load_channels:
 			self.load_channels()
 
@@ -82,7 +133,7 @@ class AlertProcessor:
 
 			if alert_format == "IPAC":
 
-				# Reference to the function loading IPAC generated avro alerts
+				# Reference to function loading IPAC generated avro alerts
 				self.alert_loading_func = ZIAlertLoader.get_flat_pps_list_from_file
 
 				# Set static AmpelAlert alert flags
@@ -95,8 +146,8 @@ class AlertProcessor:
 					self.config['global']['photoPoints']['ZTFIPAC']['dictKeywords']
 				)
 	
-				# Set dispatcher metaclass
-				self.dispatcher_meta = ZIAlertDispatcher
+				# Set ingester class
+				self.ingester_class = ZIAlertIngester
 
 			# more alert_formats may be defined later
 			else:
@@ -119,11 +170,14 @@ class AlertProcessor:
 		"""
 			Loads all T0 channel configs defined in the T0 config 
 		"""
-		channels_ids = self.config["T0"]["channels"].keys()
+		channels_ids = self.config["channels"].keys()
 		self.t0_channels = [None] * len(channels_ids)
 
 		for i, channel_name in enumerate(channels_ids):
 			self.t0_channels[i] = self.__create_channel(channel_name)
+
+		if hasattr(self, 'ingester'):
+			self.active_chanlist_change = True
 
 
 	def load_channel(self, channel_name):
@@ -145,6 +199,17 @@ class AlertProcessor:
 			self.__create_channel(channel_name)
 		)
 
+		if hasattr(self, 'ingester'):
+			self.active_chanlist_change = True
+
+
+	def reset_channels(self):
+		"""
+		"""
+		self.t0_channels = []
+		if hasattr(self, 'ingester'):
+			self.active_chanlist_change = True
+
 
 	def __create_channel(self, channel_name):
 		"""
@@ -155,12 +220,11 @@ class AlertProcessor:
 		# Feedback
 		self.logger.info("Setting up channel: " + channel_name)
 
-		# Shortcuts
-		d_channels  = self.config["T0"]["channels"]
-		d_filter = d_channels[channel_name]['filter']
+		# Shortcut
+		d_filter = self.channels_config.get_filter_config(channel_name)
 
-		# Instanciate new channel dict
-		channel = { "name": channel_name }
+		# New channel dict
+		channel = {"name": channel_name}
 
 		# Instanciate filter class associated with this channel
 		self.logger.info("Loading filter: " + d_filter['className'])
@@ -169,22 +233,18 @@ class AlertProcessor:
 		fobj.set_filter_parameters(d_filter['parameters'])
 
 		# Create the enum flags that will be associated with matching transients
-		# (The flags are defined in the DB and can thus be easily customized)
-		tf = T2ModuleIds(0)
-		for t2_module in d_channels[channel_name]['t2Modules']:
-			tf |= T2ModuleIds[t2_module['module']]
+		t2s = self.channels_config.get_channel_t2s_flag(channel_name)
+		self.logger.info("On match flags: " + str(t2s))
 
-		self.logger.info("On match flags: " + str(tf))
-
-		# Associate bitmask with the filter instance
-		fobj.set_on_match_default_flags(tf)
+		# Associate enum flag with the filter instance
+		fobj.set_on_match_default_flags(t2s)
 
 		# Reference to the "apply()" function of the T0 filter (used in run())
 		channel['filter_func'] = fobj.apply
 
 		# LogRecordFlag and TransienFlag associated with the current channel
-		channel['log_flag'] = LogRecordFlags[d_channels[channel_name]['flagLabel']]
-		channel['flag'] = ChannelFlags[d_channels[channel_name]['flagLabel']]
+		channel['log_flag'] = LogRecordFlags[self.channels_config.get_channel_flag_label(channel_name)]
+		channel['flag'] = self.channels_config.get_channel_flag(channel_name)
 
 		# Build these two log entries once and for all (outside the main loop in run())
 		channel['log_accepted'] = " -> Channel '" + channel_name + "': alert passes filter criteria"
@@ -193,26 +253,24 @@ class AlertProcessor:
 		return channel
 
 
-	def set_dispatcher_instance(self, dispatcher_instance):
+	def set_ingester_instance(self, ingester_instance):
 		"""
-			Sets custom dispatcher instance to be used in the method run().
-			If unspecified, a new instance of ZIAlertDispatcher() is used
-			Known dispatcher (as for Sept 2017) are:
-				* t0.dispatchers.MemoryDispatcher
-				* t0.dispatchers.ZIAlertDispatcher
+			Sets custom ingester instance to be used in the method run().
+			If unspecified, a new instance of ZIAlertIngester() is used
+			Known ingester (as for Sept 2017) are:
+				* t0.ingesters.MemoryIngester
+				* t0.ingesters.ZIAlertIngester
 		"""
-		self.dispatcher = dispatcher_instance
+		self.ingester = ingester_instance
 
 
-	def load_dispatcher(self, dispatcher_meta):
+	def load_ingester(self, ingester_class):
 		"""
-			Loads a dispatcher intance using the provided metoclass
+			Loads and returns an ingester intance using the provided metoclass
 		"""
-		self.logger.info("Loading %s", dispatcher_meta.__name__)
-		self.dispatcher = dispatcher_meta(
-			self.mongo_client, 
-			self.config,
-			[channel['name'] for channel in self.t0_channels]
+		self.logger.info("Loading %s", ingester_class.__name__)
+		return ingester_class(
+			self.mongo_client, self.config, self.t0_channels
 		)
 
 
@@ -232,35 +290,39 @@ class AlertProcessor:
 			For each alert:
 				* Load the alert
 				* Filter alert and set policies for every configured channels (defined by load_config())
-				* Dispatch alert based on PipelineDispatcher (default) 
-				or the dispatcher instance set by the method set_dispatcher(obj)
+				* Ingest alert based on PipelineIngester (default) 
+				or the ingester instance set by the method set_ingester(obj)
 		"""
 
 		self.logger.info("#######     Processing alerts     #######")
+
 		# Save current time to later evaluate how low was the pipeline processing time
 		start_time = int(time.time())
 
-		# Check if a dispatcher instance was defined
-		if not hasattr(self, 'dispatcher'):
-			if not hasattr(self, 'dispatcher_meta'):
-				raise ValueError('Dispatcher instance and/or metaclass is/are missing')
+
+		# Check if a ingester instance was defined
+		if not hasattr(self, 'ingester'):
+			if not hasattr(self, 'ingester_class'):
+				raise ValueError('Ingester instance and class are missing. Please provide either one.')
 			else:
-				self.dispatcher = self.load_dispatcher(self.dispatcher_meta)
+				self.ingester = self.load_ingester(self.ingester_class)
+		else:
+			if hasattr(self, 'active_chanlist_change'):
+				self.ingester = self.load_ingester(self.ingester_class)
+				del self.active_chanlist_change
+				
 
 
 		# Create new "job" document in the DB
 		self.db_job_reporter.insert_new(self)
 
-		# Set dispatcher jobId 	(will be inserted in the transient documents)
-		self.dispatcher.set_jobId(
+		# Set ingester jobId 	(will be inserted in the transient documents)
+		self.ingester.set_jobId(
 			self.db_job_reporter.getJobId()
 		)
 
 		# Array of JobFlags. Each element is set by each T0 channel 
 		scheduled_t2_modules = [None] * len(self.t0_channels) 
-		self.dispatcher.set_alertproc_channel_list(
-			[channel['flag'] for channel in self.t0_channels]
-		)
 
 		# python micro-optimization
 		loginfo = self.logger.info
@@ -270,7 +332,7 @@ class AlertProcessor:
 		dblh_unset_temp_flags = self.db_log_handler.unset_temp_flags
 		dblh_unset_tranId = self.db_log_handler.unset_tranId
 		alert_loading_func = self.alert_loading_func
-		dispatch = self.dispatcher.dispatch
+		ingest = self.ingester.ingest
 
 		# Iterate over alerts
 		for element in iterable:
@@ -311,9 +373,9 @@ class AlertProcessor:
 					# TODO: implement AlertDisposer class ?
 					self.logger.info("Disposing rejected candidates not implemented yet")
 				else:
-					# Dispatch alert (
-					logdebug(" -> Dispatching alert")
-					dispatch(trans_id, pps_list, scheduled_t2_modules)
+					# Ingest alert
+					logdebug(" -> Ingesting alert")
+					ingest(trans_id, pps_list, scheduled_t2_modules)
 
 				# Unset log entries association with transient id
 				dblh_unset_tranId()

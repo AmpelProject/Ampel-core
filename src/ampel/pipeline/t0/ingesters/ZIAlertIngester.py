@@ -1,110 +1,51 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/pipeline/t0/dispatchers/ZIAlertDispatcher.py
+# File              : ampel/pipeline/t0/ingesters/ZIAlertIngester.py
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 14.12.2017
-# Last Modified Date: 02.01.2018
+# Last Modified Date: 04.01.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 import logging, hashlib
 from pymongo import UpdateOne, InsertOne
 from pymongo.errors import BulkWriteError
-from ampel.pipeline.t0.dispatchers.AbstractAmpelDispatcher import AbstractAmpelDispatcher
+from ampel.pipeline.t0.ingesters.AbstractIngester import AbstractIngester
+from ampel.pipeline.t0.ingesters.utils.CompoundGenerator import CompoundGenerator
+from ampel.pipeline.t0.ingesters.utils.T2DocsBuilder import T2DocsBuilder
 from ampel.pipeline.t0.stampers.ZIPhotoPointStamper import ZIPhotoPointStamper
-from ampel.pipeline.t0.CompoundGenerator import CompoundGenerator
 from ampel.flags.T2ModuleIds import T2ModuleIds
 from ampel.flags.PhotoPointFlags import PhotoPointFlags
 from ampel.flags.TransientFlags import TransientFlags
 from ampel.flags.T2RunStates import T2RunStates
 from ampel.flags.AlDocTypes import AlDocTypes
 from ampel.flags.FlagUtils import FlagUtils
+from ampel.flags.ChannelFlags import ChannelFlags
 
 logger = logging.getLogger("Ampel")
 
 # https://github.com/AmpelProject/Ampel/wiki/Ampel-Flags
 SUPERSEEDED = FlagUtils.get_flag_position_in_enumflag(PhotoPointFlags.SUPERSEEDED)
 
-class ZIAlertDispatcher(AbstractAmpelDispatcher):
+class ZIAlertIngester(AbstractIngester):
 	"""
-		Dispatcher class used by t0.AlertProcessor in 'online' mode.
-		This class re-route transient candidates into the NoSQL database
-		if they have passed the configured filter.
+		Ingester class used by t0.AlertProcessor in 'online' mode.
+		This class 'ingests' alerts (if they have passed the configured filter),
+		In other words, it compares info between alert and BD and creates several documents 
+		in the DB that are used in later processing stages (T2, T3)
 	"""
 
-	def __init__(self, mongo_client, db_config, channel_names):
+	def __init__(self, mongo_client, db_config, t0_channels):
 		"""
-			The parameter mongo_client (instance of pymongo.MongoClient) is required for database operations.
-			Transient info will be stored the collection 'incoming' from the 'T0' database
-
-			channel_names: list of channel names (associated properties are defined in the config DB document)
-					       used by AlertProcessor (for example: ["SN", "LENS"])
+			mongo_client: (instance of pymongo.MongoClient) is required for database operations
 		"""
 		self.set_mongo(mongo_client)
 		self.pps_stamper = ZIPhotoPointStamper()
+		self.t2_docs_builder = T2DocsBuilder(db_config, active_chanlist)
 
-		# create dd_full_t2Ids_paramIds_chanlist root dict
-		self.dd_full_t2Ids_paramIds_chanlist = {}
+		self.active_chanlist_ipos = [
+			FlagUtils.get_flag_position_in_enumflag(el['flag'])
+			for el in t0_channels
+		]
 
-		# self.dd_full_t2Ids_paramIds_chanlist:
-		# --------------------------------
-		#	
-		# To insert t2 docs in a way that is efficient and not prone to race conditions
-		# (see end part of the dispatch method) we need the following dict structure:
-		#	
-		# - SNCOSMO 
-		# 	- default
-		#		CHANNEL_SN|CHANNEL_LENS
-		# 	- mySetting
-		#		CHANNEL_GRB
-		# - PHOTO_Z 
-		# 	- default
-		#		CHANNEL_SN|CHANNEL_LENS|CHANNEL_GRB
-		#	
-		# Each root entry in the dd_full_t2Ids_paramIds_chanlist dict is also a dict 
-		# (with the different possible paramIds as key)
-		#	
-		# 1st dict key: t2 module id (integer)
-		# 2nd key: t2 module paramId (string)
-		#	
-		# Values are combinations of channel flags
-
-		# Loop through schedulable t2 modules 
-		for t2_module_id in T2ModuleIds:
-
-			# Each entry of dd_full_t2Ids_paramIds_chanlist is also a dict (1st dict key: t2 module id)
-			self.dd_full_t2Ids_paramIds_chanlist[t2_module_id] = {}
-
-			# Loop through the t0 channels 
-			for t0_channel in channel_names:
-
-				# Reset paramId
-				paramId = None
-
-				# Extract default parameter ID (paramId) associated with current T0 channel
-				for registered_t2_module in db_config["T0"]["channels"][t0_channel]["t2Modules"]:
-					
-					# t2_module_id is of type 'enum', we access the flag label with the attribute 'name'
-					if registered_t2_module["module"] == t2_module_id.name:
-					
-						# paramId is the name of the wished configuration set for this registered module
-						paramId = registered_t2_module["paramId"]
-
-				# if paramId was not found, it means the current t0_channel 
-				# has not registered the current t2_module_id
-				if paramId is None:
-					continue
-				
-				# if paramId key was not yet stored in dd_full_t2Ids_paramIds_chanlist struct
-				# create an empty ChannelFlags enum flag
-				if not paramId in self.dd_full_t2Ids_paramIds_chanlist[t2_module_id]:
-					self.dd_full_t2Ids_paramIds_chanlist[t2_module_id][paramId] = ChannelFlags(0)
-
-				# Add current t0 channel to dd_full_t2Ids_paramIds_chanlist
-				# For example: dd_full_t2Ids_paramIds_chanlist[SCM_LC_FIT]["default"] |= CHANNEL_SN
-				self.dd_full_t2Ids_paramIds_chanlist[t2_module_id][paramId] |= ChannelFlags[
-					db_config["T0"]["channels"][t0_channel]['flagLabel']
-				]
-
-		
 		#CompoundGenerator.cm_set_channel_configs(
 		#	[db_config["T0"]["channels"][t0_channel]['flagLabel'] for t0_channel in channel_names]
 		#)
@@ -146,13 +87,6 @@ class ZIAlertDispatcher(AbstractAmpelDispatcher):
 		return self.pps_stamper
 
 
-	def set_alertproc_channel_list(self, alertproc_channel_list):
-		self.alertproc_channel_list = alertproc_channel_list
-		CompoundGenerator.cm_set_channel_configs(
-			[db_config["T0"]["channels"][t0_channel]['flagLabel'] for t0_channel in channel_names]
-		)
-
-
 	def set_mongo(self, mongo_client):
 		"""
 			Sets the mongo client (instance of pymongo.MongoClient) for database operations.
@@ -161,7 +95,7 @@ class ZIAlertDispatcher(AbstractAmpelDispatcher):
 		self.col = self.db["main"]
 
 
-	def dispatch(self, tran_id, pps_alert, array_of_scheduled_t2_modules):
+	def ingest(self, tran_id, pps_alert, array_of_scheduled_t2_modules):
 		"""
 			This method is called by t0.AmpelProcessor for 
 			transients that pass at leat one T0 channel filter. 
@@ -170,13 +104,16 @@ class ZIAlertDispatcher(AbstractAmpelDispatcher):
 		"""
 
 		###############################################
-		##   Part 0: Gather info from DB and alert   ##
+		##   Part 1: Gather info from DB and alert   ##
 		###############################################
 
 		# TODO remove this for production
 		pps_alert = [el for el in pps_alert if 'candid' in el and el['candid'] is not None]
 
-		# Check existing photopoints in DB
+		# Create set with pp ids from alert
+		ids_pps_alert = {pp['candid'] for pp in pps_alert}
+
+		# Evtly load existing photopoints from DB
 		logger.info("Checking DB for existing pps")
 		pps_db = self.col.find(
 			{
@@ -186,14 +123,11 @@ class ZIAlertDispatcher(AbstractAmpelDispatcher):
 			{"_id": 1, "alFlags": 1}
 		)
 
-		# photopoint Ids from mongodb collection
-		ids_pps_db = {pp["_id"] for pp in pps_db}
-
-		# Photopoint Ids from alert
-		ids_pps_alert = {pp['candid'] for pp in pps_alert}
-
 		# Instanciate CompoundGenerator (used later for creating compounds and t2 docs)
-		compound_gen = CompoundGenerator(pps_db, ids_pps_db, ids_pps_alert)
+		compound_gen = CompoundGenerator(pps_db, ids_pps_alert)
+
+		# photopoint Ids from mongodb collection
+		ids_pps_db = compound_gen.get_set_of_db_pp_ids()
 
 		# If no photopoint exists in the DB, then this is a new transient 
 		if not ids_pps_db:
@@ -202,7 +136,7 @@ class ZIAlertDispatcher(AbstractAmpelDispatcher):
 
 
 		###################################################
-		##   Part 1: Check for reprocessed photopoints   ##
+		##   Part 2: Check for reprocessed photopoints   ##
 		###################################################
 
 		# Difference between candids from db and candids from alert
@@ -272,7 +206,7 @@ class ZIAlertDispatcher(AbstractAmpelDispatcher):
 
 
 		################################################
-		##   Part 2: Insert new PhotoPoints into DB   ##
+		##   Part 3: Insert new PhotoPoints into DB   ##
 		################################################
 
 		# Difference between candids from the alert and candids present in DB 
@@ -303,54 +237,31 @@ class ZIAlertDispatcher(AbstractAmpelDispatcher):
 
 
 
-		####################################################
-		##   Part 3: Generate t2 and compound documents   ##
-		####################################################
+		#############################################
+		##   Part 4: Generate compound documents   ##
+		#############################################
 
 		compoundId = hashlib.md5(bytes(hash_payload, "utf-8")).hexdigest()
 
 		logger.info("Generated compoundId: %s", compoundId)
 
 
+		################################################
+		##   Part 5: Prepare t2 documents generation  ##
+		################################################
+
+	
+
 		logger.debug("Generating T2 docs")
-		dd_eff_t2s_paramIds_chanlist = {}
+		dd_eff_t2s_paramIds_chanlist = self.t2_docs_builder.reduce(
+			compound_gen, array_of_scheduled_t2_modules
+		)
 
 
-		# ----------------------------------------------------------------------------------
-		# The following task is bit complex, so is the associated explanation, sorry for that.
-		# ----------------------------------------------------------------------------------
-		#	
-		# - On the one side, we have scheduled T2s for each "active" channel, say:
-		#
-		# CHANNEL_SN: SNCOSMO & PHOTO_Z
-		# CHANNEL_GRB: GRB_FIT & PHOTO_Z & SNCOSMO 
-		#
-		#     But since T0 filters can 'customize' scheduled T2s, we could have alternatively:
-		#     CHANNEL_SN: SNCOSMO 
-		#     CHANNEL_GRB: GRB_FIT & PHOTO_Z 
-		#	
+
 		# ----------------------------------------------------------------------------------
 		#	
-		# - On the other side, we have self.dd_full_t2Ids_paramIds_chanlist 
-		#   dynamically created for every possible channel based on the ampel config entries:
-		#	
-		# - SNCOSMO 
-		# 	- default
-		#		CHANNEL_SN|CHANNEL_LENS
-		# 	- mySetting
-		#		CHANNEL_GRB
-		# - PHOTO_Z 
-		# 	- default
-		#		CHANNEL_SN|CHANNEL_LENS|CHANNEL_GRB
-		# - GRB_FIT:
-		#   - default
-		#       CHANNEL_GRB
-		#	
-		# ----------------------------------------------------------------------------------
-		#	
-		# The following section matches array_of_scheduled_t2_modules with self.dd_full_t2Ids_paramIds_chanlist 
-		# in order to create dd_eff_t2s_paramIds_chanlist (eff=effective) which - following the example with 
-		# 'customized' scheduled T2s - would look like this:
+		# We have a struct like this:
 		#	
 		# - SNCOSMO 
 		# 	- default
@@ -362,44 +273,23 @@ class ZIAlertDispatcher(AbstractAmpelDispatcher):
 		#   - default
 		#       CHANNEL_GRB
 		#	
+		# But for PHOTO_Z with param "default", we have to make sure that CHANNEL_SN & CHANNEL_GRB
+		# are associated with the same compound (by checking compoundId equality), 
+		# otherwise different t2 docs should be created:
+		#	
+		# - ...                                            - ... 
+		# - PHOTO_Z                                        - PHOTO_Z
+		# 	- default                                        - default
+		#	  - compoundid: a1b2c3                             - compoundid: a1b2c3
+		#			CHANNEL_SN               VS                  CHANNEL_SN|CHANNEL_GRB
+		#	  - compoundid: d4c3b2a1                       - ...
+		#			CHANNEL_GRB
+		# - ...
+		#
+		#	-> Two t2 docs will be created                 -> One t2 doc will be created
+		#                	
 		# ----------------------------------------------------------------------------------
 	
-
-		# loop through all channels, 
-		# get scheduled T2s (single_channel_scheduled_t2s) for each channel (self.alertproc_channel_list[i])
-		for i, single_channel_scheduled_t2s in enumerate(array_of_scheduled_t2_modules):
-
-			# Skip Nones (current channel with index i has rejected this transient)
-			if single_channel_scheduled_t2s is None:
-				continue
-
-			# loop through schedulable module ids (T2ModuleIds enum)
-			# (the enum flag instance single_channel_scheduled_t2s is not iterable)
-			# Therefore we loop over T2ModuleIds and check which flag is in single_channel_scheduled_t2s
-			for t2_module_id in T2ModuleIds:
-
-				# consider only t2 modules scheduled by this channel (single_channel_scheduled_t2s)
-				if not t2_module_id in single_channel_scheduled_t2s:
-					continue
-			
-				# Create dict instance if necessary	
-				if not t2_module_id in dd_eff_t2s_paramIds_chanlist:
-					dd_eff_t2s_paramIds_chanlist[t2_module_id] = {}
-
-				# loop through all known paramIds for this t2 module
-				for paramId in self.dd_full_t2Ids_paramIds_chanlist[t2_module_id].keys():
-				
-					# If the transientFlag of the current channel (index i)
-					# is registered in dd_full_t2Ids_paramIds_chanlist
-					if self.alertproc_channel_list[i] in self.dd_full_t2Ids_paramIds_chanlist[t2_module_id][paramId]:
-
-						if not paramId in dd_eff_t2s_paramIds_chanlist[t2_module_id]:
-							dd_eff_t2s_paramIds_chanlist[t2_module_id][paramId] = []
-
-						dd_eff_t2s_paramIds_chanlist[t2_module_id][paramId].append(
-							self.alertproc_channel_list[i].value
-						)
-
 
 		# Create T2 documents
 		#####################
@@ -410,31 +300,38 @@ class ZIAlertDispatcher(AbstractAmpelDispatcher):
 			# Loop over parameter Ids
 			for paramId in dd_eff_t2s_paramIds_chanlist[t2_module].keys():
 			
-				requests.append(
-					UpdateOne(
-						{
-							"t2Module": t2_module.value, 
-							"paramId": paramId, 
-							"compoundId": compoundId,
-						},
-						{
-							"$setOnInsert": {
-								"tranId": tran_id,
+				for t0_chan in dd_eff_t2s_paramIds_chanlist[t2_module][paramId].as_list():
+
+					# TODO NEXT
+					# add func to CompoundGenerator: getListOfcompoundIdForChanList(chan_list)
+					# get_compounds_for_channels(chan_list)
+					# returns: d[compoundId] = CHANNEL_SN | CHANNEL_LENS
+					# 		   d[other_compoundId] = CHANNEL_GRB
+					requests.append(
+						UpdateOne(
+							{
 								"t2Module": t2_module.value, 
 								"paramId": paramId, 
-								"compoundId": compoundId, 
-								"compound": compound,
-								"runState": T2RunStates.TO_RUN,
+								"compoundId": compoundId,
 							},
-							"$addToSet": {
-								"channels": {
-									"$each": dd_eff_t2s_paramIds_chanlist[t2_module][paramId]
+							{
+								"$setOnInsert": {
+									"tranId": tran_id,
+									"t2Module": t2_module.value, 
+									"paramId": paramId, 
+									"compoundId": compoundId, 
+									"compound": compound,
+									"runState": T2RunStates.TO_RUN,
+								},
+								"$addToSet": {
+									"channels": {
+										"$each": dd_eff_t2s_paramIds_chanlist[t2_module][paramId]
+									}
 								}
-							}
-						},
-						upsert=True
+							},
+							upsert=True
+						)
 					)
-				)
 
 		# Insert generated t2 docs into collection
 		logger.info("Inserting %i T2 docs into DB", len(requests))
@@ -447,6 +344,10 @@ class ZIAlertDispatcher(AbstractAmpelDispatcher):
 
 
 
+		############################################
+		##   Part 6: Update transient documents   ##
+		############################################
+
 		# Insert/Update transient document into 'transients' collection
 		logger.info("Updating transient document")
 
@@ -457,7 +358,7 @@ class ZIAlertDispatcher(AbstractAmpelDispatcher):
 				'$addToSet': {
 					'channels': {
 						"$each": [
-							self.alertproc_channel_list[i].value
+							self.active_chanlist_ipos[i]
 							for i, el in enumerate(array_of_scheduled_t2_modules) 
 							if el is not None
 						]
