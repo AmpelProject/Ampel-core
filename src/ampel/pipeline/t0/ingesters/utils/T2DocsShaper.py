@@ -1,21 +1,25 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/pipeline/t0/ingesters/utils/T2DocsBuilder.py
+# File              : ampel/pipeline/t0/ingesters/utils/T2DocsShaper.py
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 14.12.2017
-# Last Modified Date: 04.01.2018
+# Last Modified Date: 06.01.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 import logging, hashlib
 from ampel.flags.T2ModuleIds import T2ModuleIds
 from ampel.flags.ChannelFlags import ChannelFlags
 
 
-class T2DocsBuilder():
+class T2DocsShaper():
 	"""
 	"""
 
 	def __init__(self, channels_config, channel_names_to_load):
 		"""
+		NOTE: order of channel_names_to_load matters.
+		The parameter array_of_scheduled_t2_modules used in method 'recude' 
+		should have the same channel order 
+
 		Creates the variable 'dd_full_t2Ids_paramIds_chanlist'
 
         To insert t2 docs in a way that is not prone to race conditions (and optimizes T2 computations)
@@ -43,7 +47,7 @@ class T2DocsBuilder():
 		self.dd_full_t2Ids_paramIds_chanlist = dict()
 
 		self.active_chan_flags = [
-			channels_config.get_channel_flag(chan_name) 
+			channels_config.get_channel_flag_instance(chan_name) 
 			for chan_name in channel_names_to_load
 		]
 
@@ -59,7 +63,7 @@ class T2DocsBuilder():
 				# Extract default paramId (= parameter ID = wished configuration) associated with 
 				# with current T2 module and for the current T0 channel only.
 				# t2_module_id is of type 'enum', we access the flag label with the attribute 'name'
-				paramId = channels_config.get_t2_module_param(chan_name, t2_module_id.name)
+				paramId = channels_config.get_channel_t2_param(chan_name, t2_module_id.name)
 
 				# if paramId was not found, it means the current t2_module_id 
 				# was not registered for the present channel
@@ -90,10 +94,10 @@ class T2DocsBuilder():
 				if key == chan_flag:
 					array_of_scheduled_t2_modules.append(dict_of_scheduled_t2_modules[key])	
 
-		self.reduce(compound_gen, array_of_scheduled_t2_modules)
+		self.get_struct(compound_gen, array_of_scheduled_t2_modules)
 	
 
-	def reduce(self, compound_gen, array_of_scheduled_t2_modules):
+	def get_struct(self, compound_gen, array_of_scheduled_t2_modules):
 		"""
 		----------------------------------------------------------------------------------
 		The following task is bit complex, hence the lengthy explanation.

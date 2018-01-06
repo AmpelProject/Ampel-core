@@ -3,7 +3,7 @@
 # File              : ampel/pipeline/t0/ingesters/utils/CompoundGenerator.py
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 01.01.2018
-# Last Modified Date: 04.01.2018
+# Last Modified Date: 06.01.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 import logging, hashlib, json
 from ampel.flags.T2ModuleIds import T2ModuleIds
@@ -15,89 +15,107 @@ from ampel.flags.FlagUtils import FlagUtils
 from ampel.flags.ChannelFlags import ChannelFlags
 
 
-HAS_HUMBOLDT_ZP = FlagUtils.get_flag_position_in_enumflag(PhotoPointFlags.HAS_HUMBOLDT_ZP)
-HAS_WEIZMANN_SUB = FlagUtils.get_flag_position_in_enumflag(PhotoPointFlags.HAS_WEIZMANN_SUB)
-SUPERSEEDED = FlagUtils.get_flag_position_in_enumflag(PhotoPointFlags.SUPERSEEDED)
-ZTF_PARTNERSHIP = FlagUtils.get_flag_position_in_enumflag(PhotoPointFlags.ZTF_PARTNERSHIP)
-SRC_T1 = FlagUtils.get_flag_position_in_enumflag(PhotoPointFlags.SRC_T1)
+HAS_HUMBOLDT_ZP = FlagUtils.get_flag_pos_in_enumflag(PhotoPointFlags.HAS_HUMBOLDT_ZP)
+HAS_WEIZMANN_SUB = FlagUtils.get_flag_pos_in_enumflag(PhotoPointFlags.HAS_WEIZMANN_SUB)
+SUPERSEEDED = FlagUtils.get_flag_pos_in_enumflag(PhotoPointFlags.SUPERSEEDED)
+ZTF_PARTNERSHIP = FlagUtils.get_flag_pos_in_enumflag(PhotoPointFlags.ZTF_PARTNERSHIP)
+SRC_T1 = FlagUtils.get_flag_pos_in_enumflag(PhotoPointFlags.SRC_T1)
 
 logger = logging.getLogger("Ampel")
 
 class CompoundGenerator():
 	"""
-		TODO: documentate code
+		Documentation will follow eventually
 	"""
 
 	channel_options = dict()
-	channel_options_ids = dict()
+	channel_options_sig = dict()
 	flags_to_check = {SUPERSEEDED}
 
 
 	@classmethod
-	def cm_set_channels(cls, channel_flag, partnership, arg_channel_options):
-		pass
+	def cm_init_channels(cls, channels_config, channel_names):
+		"""
+			Sets required internal static variables.
+			For T0: channel_names must contain the active channels.
+			channels_config: instance of ampel.pipeline.common.ChannelsConfig
+			channel_names: list of channnel names (string) as defined in the ampel config 
+						   in the DB (collection: 'config', dict key: 'channels')
+		"""
+		for channel_name in channel_names:
+			cls.cm_init_channel(channels_config, channel_name)
+
 
 	@classmethod
-	def cm_add_channel_options(cls, channel_flag, partnership, arg_channel_options):
+	def cm_init_channel(cls, channels_config, channel_name):
+		"""
+			Sets required internal static variables.
+			(For T0: each 'active' channel must be added) 
+			channels_config: instance of ampel.pipeline.common.ChannelsConfig
+			channel_name: single channnel name (string) as defined in the ampel config 
+						  in the DB (collection: 'config', dict key: 'channels')
+		"""
 
-		if channel_flag in cls.channel_options:
-			del cls.channel_options[channel_flag]
+		chan_flag = channels_config.get_channel_flag_instance(channel_name)
 
-		cls.channel_options[channel_flag] = arg_channel_options.copy()
-		cls.channel_options[channel_flag]['partnership'] = partnership
+		if chan_flag in cls.channel_options:
+			del cls.channel_options[chan_flag]
 
-		# Build option_id (example: "10011")
-		options_id = ""
-		for key in sorted(cls.channel_options[channel_flag].keys()):
-			options_id += "1" if cls.channel_options[channel_flag][key] else "0"
+		# get channel parameters from ChannelsConfig instance
+		cls.channel_options[chan_flag] = channels_config.get_channel_parameters(channel_name)
 
-		cls.channel_options_ids[channel_flag] = options_id
+		# shortcut
+		chan_opts = cls.channel_options[chan_flag]
 
-		if partnership is False:
+		# Generate options signature (example: "10011")
+		options_sig = ""
+		for key in sorted(chan_opts.keys()):
+			options_sig += "1" if chan_opts[key] else "0"
+
+		# Save it as static variable
+		cls.channel_options_sig[chan_flag] = options_sig
+
+		if chan_opts['partnership'] is False:
 			cls.flags_to_check.add(ZTF_PARTNERSHIP)
 
-		if arg_channel_options['autoComplete'] is False:
+		if chan_opts['autoComplete'] is False:
 			cls.flags_to_check.add(SRC_T1)
 
-		if arg_channel_options['updatedHUZP'] is True:
+		if chan_opts['updatedHUZP'] is True:
 			cls.flags_to_check.add(HAS_HUMBOLDT_ZP)
 
-		if arg_channel_options['weizmannSub'] is True:
+		if chan_opts['weizmannSub'] is True:
 			cls.flags_to_check.add(HAS_WEIZMANN_SUB)
 
 
 	def __init__(self, pps_db, ids_alert=None):
 
-		# Set of photopoint ids in the DB (list of db pps provided as func parameter)
+		# Create set for DB photopoint ids (list of db pps provided as func parameter)
 		self.ids_db = set()
 
-		# Channel dependant exclusions are activated by default 
-		# and thus independant from channel configurations. 
+		# Channel based exclusions (implemented using d_ids_excluded) are a 
+		# default feature of Ampel and thus independant from channel configurations. 
+		# Dict key is a channel flag and the value is the associated set of photopoint ids
 		self.d_ids_excluded = dict()
 
-		self.d_compounds = dict()
-		
-		self.d_compoundid_chans = dict()
-		self.dd_chan_flavor = dict()
-		self.dd_flavor_compound = dict()
-
-		# Create ids sets 
+		# Dict with flag index pos (integer) as key (such as SRC_T1, ZTF_PARTNERSHIP, ...)
+		# and the corresponding set of ids as value
 		self.d_ids_sets = dict()
 
 		# We need a set for the ids of superseeded pps
 		self.d_ids_sets[SUPERSEEDED] = set()
 
-		# flags_to_check was set during *static* init depending on 
-		# the *configuration* of each *active* channel
-		# We only need sets of ids for each flags_to_check since it could 
-		# happen that no channel requires to check for say 'updatedHUZP'
+		# flags_to_check was set during static init depending on the configuration of 
+		# each added channel. We need ids sets not for every existing option but only 
+		# for the flags defined in flags_to_check since it could happen that no channel 
+		# has activated the option say 'updatedHUZP'
 		for flag in CompoundGenerator.flags_to_check:
 			self.d_ids_sets[flag] = set()
 
 		# Loop through provided list of pps in order to populate the different set of ids
 		for pp in pps_db:
 
-			# Build set of ids
+			# Build set of DB ids
 			self.ids_db.add(pp["_id"])
 
 			# Check photopoint flags defined in flags_to_check and populate associated sets
@@ -119,8 +137,30 @@ class CompoundGenerator():
 		else:
 			self.raw_compound_ids = sorted(self.ids_db.union(ids_alert))
 
+
+		# 1
+		self.d_effid_comp = dict()
+
+		# 2
+		self.d_effid_chanflags = dict()
+
+		# 3
+		self.d_effid_stidnchan = dict()
+
+		# 4
+		self.d_stid_compdiff = dict()
+
+		# 5
+		self.d_optsig_effid = dict()
+
+		# 6
+		self.d_optsig_stid = dict()
+
 			
-	def get_set_of_db_pp_ids(self):
+	def get_db_ids(self):
+		""" 
+			Returns a python set containing the "_id" of every photopoint contained in the DB
+		"""
 		return self.ids_db
 
 
@@ -128,28 +168,38 @@ class CompoundGenerator():
 		self.d_ids_sets[SUPERSEEDED].add(superseeded_id)
 
 
-	def set_db_inserted_ids(self, ids_inserted):
-		self.ids_inserted = ids_inserted
+	def get_eff_compound(self, compound_id):
+		return self.d_effid_comp[compound_id]
 
 
-	def get_t2_docs_flavors(self, compound_id):
+	def get_t2_flavors(self, compound_id):
 		"""	
 		"""	
-		out = []
-		d = self.dd_chan_flavor[compound_id]
-		for key in d:
-			out.append({'flavor': d[key], 'channel': key.name})
-		return out
+		return [
+			{'channel': el[0], 'flavor': el[1]} 
+			for el in self.d_effid_stidnchan[compound_id]
+		]
 
 
-	def get_compound_doc_flavors(self, compound_id):
+	def has_flavors(self, compound_id):
 		"""	
 		"""	
-		out = []
-		d = self.dd_flavor_compound[compound_id]
-		for key in d:
-			out.append({'flavor': key.name, 'compound': d[key]})
-		return out
+		if compound_id not in self.d_effid_stidnchan:
+			return False
+
+		if len(self.d_effid_stidnchan[compound_id]) == 0:
+			return False
+
+		return True
+
+
+	def get_compound_flavors(self, compound_id):
+		"""	
+		"""	
+		return [
+			{'flavor': el[1], 'omitted': self.d_stid_compdiff[el[1]]}
+			for el in self.d_effid_stidnchan[compound_id]
+		]
 
 	
 	def get_compound_ids(self, channel_flags):
@@ -157,8 +207,8 @@ class CompoundGenerator():
 		compound_ids = set()
 
 		for chan_flag in channel_flags.as_list():
-			options_id = CompoundGenerator.channel_options_ids[chan_flag]
-			compound_ids.add(self.d_compounds[options_id][0])
+			options_sig = CompoundGenerator.channel_options_sig[chan_flag]
+			compound_ids.add(self.d_optsig_effid[options_sig])
 
 		return compound_ids
 
@@ -166,97 +216,114 @@ class CompoundGenerator():
 	def get_channels_for_compoundid(self, compound_id):
 		"""
 		"""
-		return self.d_compoundid_chans[compound_id]
+		return self.d_effid_chanflags[compound_id]
 
 
-	def generate(self, channel_flag):
+	def generate(self, list_of_channel_flag):
 		"""
 		"""
 
-		#######################################################
-		# Check for identical previously generated compound
-		# (several channels can use the same config parameters)
-		#######################################################
+		for channel_flag in list_of_channel_flag:
 
-		options_id = CompoundGenerator.channel_options_ids[channel_flag]
-
-		if options_id in self.d_compounds:
+			#######################################################
+			# Check for identical previously generated compound
+			# (several channels can have the same config parameters)
+			#######################################################
+	
+			chan_opts_sig = CompoundGenerator.channel_options_sig[channel_flag]
+	
+			if chan_opts_sig in self.d_optsig_effid:
+				
+				eff_id = self.d_optsig_effid[chan_opts_sig]
+				self.d_effid_chanflags[eff_id] |= channel_flag
+	
+				if chan_opts_sig in self.d_optsig_stid:
+					strict_id = self.d_optsig_stid[chan_opts_sig]
+					log_output = "(eff: " + eff_id + ", strict: " + strict_id + ")"
+					self.d_effid_stidnchan[eff_id].add((channel_flag, strict_id))
+				else:
+					log_output = eff_id 
+	
+				logger.info(
+					"Using previoulsy generated compound for channel %s. CompoundId: %s", 
+					channel_flag.name, log_output
+				)
+	
+				return 
+	
+	
+			##########################################
+			# Generate compoundId, flavor and compound
+			##########################################
+	
+			eff_comp = []
+			strict_comp = []
+			eff_hash_payload = ""
+			strict_hash_payload = ""
+			chan_options = CompoundGenerator.channel_options[channel_flag]
+	
+			# Create compound and compoundId
+			for pp_id in self.raw_compound_ids:
+	
+				d = {'pp': pp_id}
+	
+				#  Check for exclusions
+				if pp_id in self.d_ids_sets[SUPERSEEDED]:
+					d['excl'] = SUPERSEEDED
+				elif chan_options['partnership'] is False and pp_id in self.d_ids_sets[ZTF_PARTNERSHIP]:
+					d['excl'] = ZTF_PARTNERSHIP
+				elif chan_options['autoComplete'] is False and pp_id in self.d_ids_sets[SRC_T1]:
+					d['excl'] = SRC_T1
+				elif pp_id in self.d_ids_excluded[channel_flag]:
+					d['excl'] = FlagUtils.get_flag_pos_in_enumflag(channel_flag)
+	
+				#  Photopoint option: check if updated zero point should be used
+				if chan_options['updatedHUZP'] is True and pp_id in self.d_ids_sets[HAS_HUMBOLDT_ZP]:
+					d['huZP'] = 1
+	
+				#  Photopoint option: check if alternative subtraction method should be used
+				if chan_options['weizmannSub'] is True and pp_id in self.d_ids_sets[HAS_WEIZMANN_SUB]:
+					d['wzm'] = 1
+	
+				eff_comp.append(d)
+	
+				if len(d) == 1:
+					sppid = str(pp_id)
+					eff_hash_payload += sppid
+					strict_hash_payload += sppid
+				else:
+					strict_hash_payload += json.dumps(d, sort_keys=True)
+					if not 'excl' in d:
+						eff_hash_payload += json.dumps(d, sort_keys=True)
+					else:
+						strict_comp.append(d)
+	
+			eff_id = hashlib.md5(bytes(eff_hash_payload, "utf-8")).hexdigest()
+			strict_id = hashlib.md5(bytes(strict_hash_payload, "utf-8")).hexdigest()
+	
 			
-			compound_id = self.d_compounds[options_id][0]
-			flavor = self.d_compounds[options_id][1]
-			self.d_compoundid_chans[compound_id] |= channel_flag
-
-			if compound_id != flavor:
-				self.dd_chan_flavor[compound_id][channel_flag] = flavor
-				log_output = compound_id + ", flavor: " +flavor
+			##################
+			# Record results #
+			##################
+	
+			self.d_effid_chanflags[eff_id] |= channel_flag
+			self.d_effid_comp[eff_id] = eff_comp
+			self.d_optsig_effid[chan_opts_sig] = eff_id
+	
+			if eff_id != strict_id:
+	
+				logger.info(
+					"Compound generated for channel %s. CompoundId: (eff: %s, strict: %s)", 
+					channel_flag.name, eff_id, strict_id
+				)
+	
+				self.d_optsig_stid[chan_opts_sig] = strict_id
+				self.d_effid_stidnchan[eff_id].add((channel_flag, strict_id))
+				self.d_stid_compdiff[strict_id] = strict_comp
+	
 			else:
-				log_output = compound_id 
-
-			logger.info(
-				"Re-using previoulsy generated compound for channel %s. CompoundId: %s", 
-				channel_flag.name, log_output
-			)
-
-			return 
-
-		options = CompoundGenerator.channel_options[channel_flag]
-
-
-		##########################################
-		# Generate compoundId, flavor and compound
-		##########################################
-
-		# Create compoundId
-		compound = []
-		compound_hash_payload = ""
-		flavor_hash_payload = ""
-
-		# Loop through avail pps ids	
-		for pp_id in self.raw_compound_ids:
-
-			d = {'pp': pp_id}
-
-			#  Check for exclusions
-			if pp_id in self.d_ids_sets[SUPERSEEDED]:
-				d['excl'] = SUPERSEEDED
-			elif options['partnership'] is False and pp_id in self.d_ids_sets[ZTF_PARTNERSHIP]:
-				d['excl'] = ZTF_PARTNERSHIP
-			elif options['autoComplete'] is False and pp_id in self.d_ids_sets[SRC_T1]:
-				d['excl'] = SRC_T1
-			elif pp_id in self.d_ids_excluded[channel_flag]:
-				d['excl'] = FlagUtils.get_flag_position_in_enumflag(channel_flag)
-
-			#  Photopoint option: check if updated zero point should be used
-			if options['updatedHUZP'] is True and pp_id in self.d_ids_sets[HAS_HUMBOLDT_ZP]:
-				d['huZP'] = 1
-
-			#  Photopoint option: check if alternative subtraction method should be used
-			if options['weizmannSub'] is True and pp_id in self.d_ids_sets[HAS_WEIZMANN_SUB]:
-				d['wzm'] = 1
-
-			compound.append(d)
-
-			if len(d) == 1:
-				sppid = str(pp_id)
-				compound_hash_payload += sppid
-				flavor_hash_payload += sppid
-			else:
-				flavor_hash_payload += json.dumps(d, sort_keys=True)
-				if not 'excl' in d:
-					compound_hash_payload += json.dumps(d, sort_keys=True)
-
-		compound_id = hashlib.md5(bytes(compound_hash_payload, "utf-8")).hexdigest()
-		flavor = hashlib.md5(bytes(flavor_hash_payload, "utf-8")).hexdigest()
-
-		logger.info(
-			"Compound generated for channel %s. CompoundId: %s, flavor: %s", 
-			channel_flag.name, compound_id, flavor
-		)
-
-		self.d_compounds[options_id] = (compound_id, flavor, compound)
-		self.d_compoundid_chans[compound_id] |= channel_flag
-
-		if compound_id != flavor:
-			self.dd_chan_flavor[compound_id][channel_flag] = flavor
-			self.dd_flavor_compound[compound_id][flavor] = compound
-
+	
+				logger.info(
+					"Compound generated for channel %s. CompoundId: %s", 
+					channel_flag.name, eff_id
+				)

@@ -3,14 +3,14 @@
 # File              : ampel/pipeline/t0/ingesters/ZIAlertIngester.py
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 14.12.2017
-# Last Modified Date: 04.01.2018
+# Last Modified Date: 06.01.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 import logging, hashlib
 from pymongo import UpdateOne, InsertOne
 from pymongo.errors import BulkWriteError
 from ampel.pipeline.t0.ingesters.AbstractIngester import AbstractIngester
 from ampel.pipeline.t0.ingesters.utils.CompoundGenerator import CompoundGenerator
-from ampel.pipeline.t0.ingesters.utils.T2DocsBuilder import T2DocsBuilder
+from ampel.pipeline.t0.ingesters.utils.T2DocsShaper import T2DocsShaper
 from ampel.pipeline.t0.stampers.ZIPhotoPointStamper import ZIPhotoPointStamper
 from ampel.flags.T2ModuleIds import T2ModuleIds
 from ampel.flags.PhotoPointFlags import PhotoPointFlags
@@ -23,32 +23,35 @@ from ampel.flags.ChannelFlags import ChannelFlags
 logger = logging.getLogger("Ampel")
 
 # https://github.com/AmpelProject/Ampel/wiki/Ampel-Flags
-SUPERSEEDED = FlagUtils.get_flag_position_in_enumflag(PhotoPointFlags.SUPERSEEDED)
+SUPERSEEDED = FlagUtils.get_flag_pos_in_enumflag(PhotoPointFlags.SUPERSEEDED)
 
 class ZIAlertIngester(AbstractIngester):
 	"""
 		Ingester class used by t0.AlertProcessor in 'online' mode.
-		This class 'ingests' alerts (if they have passed the configured filter),
-		In other words, it compares info between alert and BD and creates several documents 
+		This class 'ingests' alerts (if they have passed the alert filter):
+		it compares info between alert and DB and creates several documents 
 		in the DB that are used in later processing stages (T2, T3)
 	"""
 
-	def __init__(self, mongo_client, db_config, t0_channels):
+	def __init__(self, mongo_client, channels_config, names_of_active_channels):
 		"""
 			mongo_client: (instance of pymongo.MongoClient) is required for database operations
 		"""
 		self.set_mongo(mongo_client)
 		self.pps_stamper = ZIPhotoPointStamper()
-		self.t2_docs_builder = T2DocsBuilder(db_config, active_chanlist)
+		self.t2docs_shaper = T2DocsShaper(channels_config, names_of_active_channels)
 
-		self.active_chanlist_ipos = [
-			FlagUtils.get_flag_position_in_enumflag(el['flag'])
-			for el in t0_channels
-		]
+		self.l_chanflag_pos = []
+		self.l_chanflags = []
 
-		#CompoundGenerator.cm_set_channel_configs(
-		#	[db_config["T0"]["channels"][t0_channel]['flagLabel'] for t0_channel in channel_names]
-		#)
+		for chan_name in names_of_active_channels:
+			flag = channels_config.get_channel_flag_instance(chan_name)
+			self.l_chanflags.append(flag)
+			self.l_chanflag_pos.append(
+				FlagUtils.get_flag_pos_in_enumflag(flag)
+			)
+
+		CompoundGenerator.cm_init_channels(channels_config, names_of_active_channels)
 
 
 	def set_job_id(self, job_id):
@@ -107,6 +110,8 @@ class ZIAlertIngester(AbstractIngester):
 		##   Part 1: Gather info from DB and alert   ##
 		###############################################
 
+		db_ops = []
+
 		# TODO remove this for production
 		pps_alert = [el for el in pps_alert if 'candid' in el and el['candid'] is not None]
 
@@ -124,10 +129,10 @@ class ZIAlertIngester(AbstractIngester):
 		)
 
 		# Instanciate CompoundGenerator (used later for creating compounds and t2 docs)
-		compound_gen = CompoundGenerator(pps_db, ids_pps_alert)
+		comp_gen = CompoundGenerator(pps_db, ids_pps_alert)
 
-		# photopoint Ids from mongodb collection
-		ids_pps_db = compound_gen.get_set_of_db_pp_ids()
+		# python set of ids from DB photopoints 
+		ids_pps_db = comp_gen.get_db_ids()
 
 		# If no photopoint exists in the DB, then this is a new transient 
 		if not ids_pps_db:
@@ -154,8 +159,6 @@ class ZIAlertIngester(AbstractIngester):
 			# pps reprocessing occured at IPAC
 			if ids_flag_pp_as_superseeded:
 
-				requests = []
-
 				# Match these with the photopoints from the alert
 				for id_flag_pp_as_superseeded in ids_flag_pp_as_superseeded:
 
@@ -178,11 +181,11 @@ class ZIAlertIngester(AbstractIngester):
 							)
 
 							# Update set of superseeded ids (required for t2 & compounds doc creation)
-							compound_gen.add_newly_superseeded_id(
+							comp_gen.add_newly_superseeded_id(
 								pp_db_set_superseeded["_id"]
 							)
 
-							requests.append(
+							db_ops.append(
 								UpdateOne(
 									{'_id': pp_db_set_superseeded["_id"]}, 
 									{
@@ -193,13 +196,6 @@ class ZIAlertIngester(AbstractIngester):
 									}
 								)
 							)
-
-				try: 
-					self.col.bulk_write(requests)
-				except BulkWriteError as bwe: 
-					logger.info(bwe.details) 
-					# TODO add error flag to Job and Transient
-					# TODO add return code 
 			else:
 				logger.info("Transient has pps older than 30days")
 
@@ -212,135 +208,155 @@ class ZIAlertIngester(AbstractIngester):
 		# Difference between candids from the alert and candids present in DB 
 		ids_pps_to_insert = ids_pps_alert - ids_pps_db
 
-		# Avoid unnecessary recomputations of set difference needed by CompoundGenerator 
-		compound_gen.set_db_inserted_ids(ids_pps_to_insert)
-
 		# If the photopoints already exist in DB 
 		if not ids_pps_to_insert:
 			logger.info("No new photo point to insert in DB")
 		else:
-			logger.info("Inserting new pps: %s", ids_pps_to_insert)
+			logger.info("Inserting %i new pp(s) into DB: %s" % (len(ids_pps_to_insert), ids_pps_to_insert))
 
 			# Create of list photopoint dicts with photopoints matching the provided list of ids_pps_to_insert
-			new_ppts_dicts = [el for el in pps_alert if el['candid'] in ids_pps_to_insert]
+			new_pps_dicts = [el for el in pps_alert if el['candid'] in ids_pps_to_insert]
 
 			# ForEach 'new' photopoint (non existing in DB): 
 			# Rename candid into _id, add tranId, alDocType and alFlags
 			# Attention: this procedure *modifies* the dictionaries loaded by fastavro
-			# (that's why you should not invert part 1 and 2 (in part 1, we access pp_alert['candid'] in
+			# (that's why you should not invert part 2 and 3 (in part 2, we access pp_alert['candid'] in
 			# the case of IPAC reprocessing) unless you accept the performance penalty 
 			# of copying (deep copy won't be necessary) the pp dicts from the alert)
-			self.pps_stamper.stamp(tran_id, new_ppts_dicts)
+			self.pps_stamper.stamp(tran_id, new_pps_dicts)
 
 			# Insert new photopoint documents into 'photopoints' collection
-			self.col.insert_many(new_ppts_dicts)
+			for pp in new_pps_dicts:
+				db_ops.append(
+					UpdateOne(
+						{
+							"_id": pp["_id"], 
+						},
+						{
+							"$setOnInsert": pp
+						},
+						upsert=True
+					)
+				)
+				
 
 
 
-		#############################################
-		##   Part 4: Generate compound documents   ##
-		#############################################
+		#####################################################
+		##   Part 4: Generate compound ids and compounds   ##
+		#####################################################
 
-		compoundId = hashlib.md5(bytes(hash_payload, "utf-8")).hexdigest()
+		chan_flags = ChannelFlags(0)
+		db_chan_flags = []
 
-		logger.info("Generated compoundId: %s", compoundId)
+		for i, el in enumerate(array_of_scheduled_t2_modules):
+			if el is None:
+				continue
+			chan_flags |= self.l_chanflags[i]
+			db_chan_flags.append(self.l_chanflag_pos[i])
+
+		# Generate compound info for channels having passed T0 filters (i.e being not None)
+		comp_gen.generate(chan_flags)
+
+		# See how many different compound_id were generated (possibly a single one)
+		# and generate corresponding ampel document to be inserted later
+		for compound_id in comp_gen.get_compound_ids(chan_flags):
+		
+			d_addtoset = {
+				"channels": {
+					"$each": [
+						FlagUtils.get_flag_pos_in_enumflag(flag)
+						for flag in comp_gen.get_channels_for_compoundid(compound_id).as_list()
+					]
+				}
+			}
+
+			if comp_gen.has_flavors(compound_id):
+				d_addtoset["flavors"]: {
+					"$each": [
+						comp_gen.get_compound_flavors(compound_id)
+					]
+				}
+			
+			db_ops.append(
+				UpdateOne(
+					{
+						"_id": compound_id, 
+					},
+					{
+						"$setOnInsert": {
+							"_id": compound_id,
+							"alDocType": AlDocTypes.COMPOUND,
+							"pps": comp_gen.get_eff_compound(compound_id)
+						},
+						"$addToSet": d_addtoset
+					},
+					upsert=True
+				)
+			)
+			
 
 
-		################################################
-		##   Part 5: Prepare t2 documents generation  ##
-		################################################
-
-	
+		#####################################
+		##   Part 5: Generate t2 documents ##
+		#####################################
 
 		logger.debug("Generating T2 docs")
-		dd_eff_t2s_paramIds_chanlist = self.t2_docs_builder.reduce(
-			compound_gen, array_of_scheduled_t2_modules
+		ddd_t2_struct = self.t2docs_shaper.get_struct(
+			comp_gen, array_of_scheduled_t2_modules
 		)
-
-
-
-		# ----------------------------------------------------------------------------------
-		#	
-		# We have a struct like this:
-		#	
-		# - SNCOSMO 
-		# 	- default
-		#		CHANNEL_SN
-		# - PHOTO_Z 
-		# 	- default
-		#		CHANNEL_SN|CHANNEL_GRB
-		# - GRB_FIT:
-		#   - default
-		#       CHANNEL_GRB
-		#	
-		# But for PHOTO_Z with param "default", we have to make sure that CHANNEL_SN & CHANNEL_GRB
-		# are associated with the same compound (by checking compoundId equality), 
-		# otherwise different t2 docs should be created:
-		#	
-		# - ...                                            - ... 
-		# - PHOTO_Z                                        - PHOTO_Z
-		# 	- default                                        - default
-		#	  - compoundid: a1b2c3                             - compoundid: a1b2c3
-		#			CHANNEL_SN               VS                  CHANNEL_SN|CHANNEL_GRB
-		#	  - compoundid: d4c3b2a1                       - ...
-		#			CHANNEL_GRB
-		# - ...
-		#
-		#	-> Two t2 docs will be created                 -> One t2 doc will be created
-		#                	
-		# ----------------------------------------------------------------------------------
-	
-
-		# Create T2 documents
-		#####################
+		
+		# counter for user feedback (after next loop)
+		db_ops_len = len(db_ops)
 
 		# Loop over t2 modules
-		for t2_module in dd_eff_t2s_paramIds_chanlist.keys():
+		for t2_id in ddd_t2_struct.keys():
 
 			# Loop over parameter Ids
-			for paramId in dd_eff_t2s_paramIds_chanlist[t2_module].keys():
+			for param_id in ddd_t2_struct[t2_id].keys():
 			
-				for t0_chan in dd_eff_t2s_paramIds_chanlist[t2_module][paramId].as_list():
+				# Loop over compound Ids
+				for compound_id in ddd_t2_struct[t2_id][param_id]:
 
-					# TODO NEXT
-					# add func to CompoundGenerator: getListOfcompoundIdForChanList(chan_list)
-					# get_compounds_for_channels(chan_list)
-					# returns: d[compoundId] = CHANNEL_SN | CHANNEL_LENS
-					# 		   d[other_compoundId] = CHANNEL_GRB
-					requests.append(
+					d_addtoset = {
+						"channels": {
+							"$each": [
+								FlagUtils.get_flag_pos_in_enumflag(el) 
+								for el in ddd_t2_struct[t2_id][param_id][compound_id].as_list()
+							]
+						}
+					}
+
+					if comp_gen.has_flavors(compound_id):
+						d_addtoset["flavors"]: {
+							"$each": [
+								comp_gen.get_t2_flavors(compound_id)
+							]
+						}
+
+					db_ops.append(
 						UpdateOne(
 							{
-								"t2Module": t2_module.value, 
-								"paramId": paramId, 
-								"compoundId": compoundId,
+								"t2Module": t2_id.value, 
+								"paramId": param_id, 
+								"compoundId": compound_id,
 							},
 							{
 								"$setOnInsert": {
 									"tranId": tran_id,
-									"t2Module": t2_module.value, 
-									"paramId": paramId, 
-									"compoundId": compoundId, 
-									"compound": compound,
+									"t2Module": t2_id.value, 
+									"paramId": param_id, 
+									"compoundId": compound_id, 
 									"runState": T2RunStates.TO_RUN,
 								},
-								"$addToSet": {
-									"channels": {
-										"$each": dd_eff_t2s_paramIds_chanlist[t2_module][paramId]
-									}
-								}
+								"$addToSet": d_addtoset
 							},
 							upsert=True
 						)
 					)
 
 		# Insert generated t2 docs into collection
-		logger.info("Inserting %i T2 docs into DB", len(requests))
-
-		try: 
-			self.col.bulk_write(requests)
-		except BulkWriteError as bwe: 
-			logger.info(bwe.details) 
-			# TODO add error flag to Job and Transient
+		logger.info("%i T2 docs will be inserted into DB", len(db_ops) - db_ops_len)
 
 
 
@@ -352,23 +368,29 @@ class ZIAlertIngester(AbstractIngester):
 		logger.info("Updating transient document")
 
 		# TODO add alFlags
-		self.col.update_one(
-			{"_id": tran_id},
-			{
-				'$addToSet': {
-					'channels': {
-						"$each": [
-							self.active_chanlist_ipos[i]
-							for i, el in enumerate(array_of_scheduled_t2_modules) 
-							if el is not None
-						]
+		db_ops.append(
+			UpdateOne(
+				{"_id": tran_id},
+				{
+					'$addToSet': {
+						'channels': {
+							"$each": db_chan_flags
+						},
+						'jobIds': self.job_id
 					},
-					'jobIds': self.job_id
+					"$max": {
+						"lastPPDate": pps_alert[0]["jd"]
+					}
 				},
-				"$max": {
-					"lastPPDate": pps_alert[0]["jd"]
-				}
-			},
-			upsert=True
+				upsert=True
+			)
 		)
 
+
+
+		try: 
+			self.col.bulk_write(db_ops)
+		except BulkWriteError as bwe: 
+			logger.info(bwe.details) 
+			# TODO add error flag to Job and Transient
+			# TODO add return code 
