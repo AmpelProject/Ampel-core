@@ -2,30 +2,6 @@
 # -*- coding: utf-8 -*-
 # File              : ampel/pipeline/t0/AlertProcessor.py
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
-# Date              : 07.01.2018
-# Last Modified Date: 07.01.2018
-# Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
-# -*- coding: utf-8 -*-
-# File              : ampel/pipeline/t0/AlertProcessor.py
-# Author            : vb <vbrinnel@physik.hu-berlin.de>
-# Date              : 07.01.2018
-# Last Modified Date: 07.01.2018
-# Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
-# -*- coding: utf-8 -*-
-# File              : ampel/pipeline/t0/AlertProcessor.py
-# Author            : vb <vbrinnel@physik.hu-berlin.de>
-# Date              : 07.01.2018
-# Last Modified Date: 07.01.2018
-# Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
-# -*- coding: utf-8 -*-
-# File              : ampel/pipeline/t0/AlertProcessor.py
-# Author            : vb <vbrinnel@physik.hu-berlin.de>
-# Date              : 07.01.2018
-# Last Modified Date: 07.01.2018
-# Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
-# -*- coding: utf-8 -*-
-# File              : ampel/pipeline/t0/AlertProcessor.py
-# Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 14.12.2017
 # Last Modified Date: 07.01.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>

@@ -176,7 +176,10 @@ class CompoundGenerator():
 		"""	
 		"""	
 		return [
-			{'channel': el[0], 'flavor': el[1]} 
+			{
+				'channel': FlagUtils.get_flag_pos_in_enumflag(el[0]),
+				'flavor': el[1]
+			} 
 			for el in self.d_effid_stidnchan[compound_id]
 		]
 
@@ -184,7 +187,7 @@ class CompoundGenerator():
 	def has_flavors(self, compound_id):
 		"""	
 		"""	
-		if compound_id not in self.d_effid_stidnchan:
+		if not compound_id in self.d_effid_stidnchan:
 			return False
 
 		if len(self.d_effid_stidnchan[compound_id]) == 0:
@@ -240,6 +243,8 @@ class CompoundGenerator():
 				if chan_opts_sig in self.d_optsig_stid:
 					strict_id = self.d_optsig_stid[chan_opts_sig]
 					log_output = "(eff: " + eff_id + ", strict: " + strict_id + ")"
+					if not eff_id in self.d_effid_stidnchan:
+						self.d_effid_stidnchan[eff_id] = set()
 					self.d_effid_stidnchan[eff_id].add((channel_flag, strict_id))
 				else:
 					log_output = eff_id 
@@ -322,6 +327,8 @@ class CompoundGenerator():
 				)
 	
 				self.d_optsig_stid[chan_opts_sig] = strict_id
+				if not eff_id in self.d_effid_stidnchan:
+					self.d_effid_stidnchan[eff_id] = set()
 				self.d_effid_stidnchan[eff_id].add((channel_flag, strict_id))
 				self.d_stid_compdiff[strict_id] = strict_comp
 	

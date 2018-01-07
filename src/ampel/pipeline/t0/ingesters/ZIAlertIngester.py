@@ -24,6 +24,7 @@ logger = logging.getLogger("Ampel")
 
 # https://github.com/AmpelProject/Ampel/wiki/Ampel-Flags
 SUPERSEEDED = FlagUtils.get_flag_pos_in_enumflag(PhotoPointFlags.SUPERSEEDED)
+TO_RUN = FlagUtils.get_flag_pos_in_enumflag(T2RunStates.TO_RUN)
 
 class ZIAlertIngester(AbstractIngester):
 	"""
@@ -120,12 +121,21 @@ class ZIAlertIngester(AbstractIngester):
 
 		# Evtly load existing photopoints from DB
 		logger.info("Checking DB for existing pps")
-		pps_db = self.col.find(
-			{
-				"tranId": tran_id, 
-				"alDocType": AlDocTypes.PHOTOPOINT
-			}, 
-			{"_id": 1, "alFlags": 1}
+		pps_db = list(
+			self.col.find(
+				{
+					"tranId": tran_id, 
+					"alDocType": AlDocTypes.PHOTOPOINT
+				}, 
+				{	
+					"_id": 1, 
+					"alFlags": 1, 
+					"jd": 1, 
+					"fid": 1, 
+					"pid": 1,
+					"alExcluded": 1
+				}
+			)
 		)
 
 		# Instanciate CompoundGenerator (used later for creating compounds and t2 docs)
@@ -163,7 +173,7 @@ class ZIAlertIngester(AbstractIngester):
 				for id_flag_pp_as_superseeded in ids_flag_pp_as_superseeded:
 
 					pp_db_set_superseeded = next(
-						filter(lambda el: el['_id'] == id_flag_pp_as_superseeded, pps_db)
+						filter(lambda x: x['_id'] == id_flag_pp_as_superseeded, pps_db)
 					)
 
 					for pp_alert in pps_alert:
@@ -272,7 +282,7 @@ class ZIAlertIngester(AbstractIngester):
 			}
 
 			if comp_gen.has_flavors(compound_id):
-				d_addtoset["flavors"]: {
+				d_addtoset["flavors"] = {
 					"$each": [
 						comp_gen.get_compound_flavors(compound_id)
 					]
@@ -287,6 +297,7 @@ class ZIAlertIngester(AbstractIngester):
 						"$setOnInsert": {
 							"_id": compound_id,
 							"alDocType": AlDocTypes.COMPOUND,
+							"tranId": tran_id,
 							"tier": 0,
 							"pps": comp_gen.get_eff_compound(compound_id)
 						},
@@ -329,7 +340,7 @@ class ZIAlertIngester(AbstractIngester):
 					}
 
 					if comp_gen.has_flavors(compound_id):
-						d_addtoset["flavors"]: {
+						d_addtoset["flavors"] = {
 							"$each": [
 								comp_gen.get_t2_flavors(compound_id)
 							]
@@ -338,7 +349,8 @@ class ZIAlertIngester(AbstractIngester):
 					db_ops.append(
 						UpdateOne(
 							{
-								"t2Module": t2_id.value, 
+								"tranId": tran_id, 
+								"t2Module": FlagUtils.get_flag_pos_in_enumflag(t2_id), 
 								"paramId": param_id, 
 								"compoundId": compound_id,
 							},
@@ -346,10 +358,10 @@ class ZIAlertIngester(AbstractIngester):
 								"$setOnInsert": {
 									"tranId": tran_id,
 									"alDocType": AlDocTypes.T2_RECORD,
-									"t2Module": t2_id.value, 
+									"t2Module": FlagUtils.get_flag_pos_in_enumflag(t2_id), 
 									"paramId": param_id, 
 									"compoundId": compound_id, 
-									"runState": T2RunStates.TO_RUN,
+									"runState": TO_RUN,
 								},
 								"$addToSet": d_addtoset
 							},
