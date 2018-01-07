@@ -280,7 +280,7 @@ class CompoundGenerator():
 				elif chan_options['autoComplete'] is False and pp_id in self.d_ids_sets[SRC_T1]:
 					d['excl'] = SRC_T1
 				elif channel_flag in self.d_ids_excluded and pp_id in self.d_ids_excluded[channel_flag]:
-					d['excl'] = FlagUtils.get_flag_pos_in_enumflag(channel_flag)
+					d['excl'] = "c" + str(FlagUtils.get_flag_pos_in_enumflag(channel_flag))
 	
 				#  Photopoint option: check if updated zero point should be used
 				if chan_options['updatedHUZP'] is True and pp_id in self.d_ids_sets[HAS_HUMBOLDT_ZP]:

@@ -283,9 +283,7 @@ class ZIAlertIngester(AbstractIngester):
 
 			if comp_gen.has_flavors(compound_id):
 				d_addtoset["flavors"] = {
-					"$each": [
-						comp_gen.get_compound_flavors(compound_id)
-					]
+					"$each": comp_gen.get_compound_flavors(compound_id) # returns a list
 				}
 			
 			db_ops.append(
@@ -341,9 +339,7 @@ class ZIAlertIngester(AbstractIngester):
 
 					if comp_gen.has_flavors(compound_id):
 						d_addtoset["flavors"] = {
-							"$each": [
-								comp_gen.get_t2_flavors(compound_id)
-							]
+							"$each": comp_gen.get_t2_flavors(compound_id) # returns a list
 						}
 
 					db_ops.append(
