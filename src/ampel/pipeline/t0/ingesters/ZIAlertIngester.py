@@ -3,7 +3,7 @@
 # File              : ampel/pipeline/t0/ingesters/ZIAlertIngester.py
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 14.12.2017
-# Last Modified Date: 06.01.2018
+# Last Modified Date: 07.01.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 import logging, hashlib
 from pymongo import UpdateOne, InsertOne
@@ -98,7 +98,7 @@ class ZIAlertIngester(AbstractIngester):
 		self.col = self.db["main"]
 
 
-	def ingest(self, tran_id, pps_alert, array_of_scheduled_t2_modules):
+	def ingest(self, tran_id, pps_alert, list_of_t2_modules):
 		"""
 			This method is called by t0.AmpelProcessor for 
 			transients that pass at leat one T0 channel filter. 
@@ -249,7 +249,7 @@ class ZIAlertIngester(AbstractIngester):
 		chan_flags = ChannelFlags(0)
 		db_chan_flags = []
 
-		for i, el in enumerate(array_of_scheduled_t2_modules):
+		for i, el in enumerate(list_of_t2_modules):
 			if el is None:
 				continue
 			chan_flags |= self.l_chanflags[i]
@@ -287,6 +287,7 @@ class ZIAlertIngester(AbstractIngester):
 						"$setOnInsert": {
 							"_id": compound_id,
 							"alDocType": AlDocTypes.COMPOUND,
+							"tier": 0,
 							"pps": comp_gen.get_eff_compound(compound_id)
 						},
 						"$addToSet": d_addtoset
@@ -303,7 +304,7 @@ class ZIAlertIngester(AbstractIngester):
 
 		logger.debug("Generating T2 docs")
 		ddd_t2_struct = self.t2docs_shaper.get_struct(
-			comp_gen, array_of_scheduled_t2_modules
+			comp_gen, list_of_t2_modules
 		)
 		
 		# counter for user feedback (after next loop)
@@ -344,6 +345,7 @@ class ZIAlertIngester(AbstractIngester):
 							{
 								"$setOnInsert": {
 									"tranId": tran_id,
+									"alDocType": AlDocTypes.T2_RECORD,
 									"t2Module": t2_id.value, 
 									"paramId": param_id, 
 									"compoundId": compound_id, 
@@ -370,8 +372,14 @@ class ZIAlertIngester(AbstractIngester):
 		# TODO add alFlags
 		db_ops.append(
 			UpdateOne(
-				{"_id": tran_id},
 				{
+					"_id": tran_id
+				},
+				{
+					"$setOnInsert": {
+						"tranId": tran_id,
+						"alDocType": AlDocTypes.TRANSIENT
+					},
 					'$addToSet': {
 						'channels': {
 							"$each": db_chan_flags
@@ -385,8 +393,6 @@ class ZIAlertIngester(AbstractIngester):
 				upsert=True
 			)
 		)
-
-
 
 		try: 
 			self.col.bulk_write(db_ops)

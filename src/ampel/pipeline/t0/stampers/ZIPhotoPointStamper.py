@@ -3,7 +3,7 @@
 # File              : ampel/pipeline/t0/stampers/ZIPhotoPointStamper.py
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 14.12.2017
-# Last Modified Date: 02.01.2018
+# Last Modified Date: 07.01.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 from ampel.flags.PhotoPointFlags import PhotoPointFlags
 from ampel.flags.AlDocTypes import AlDocTypes
@@ -12,7 +12,7 @@ from ampel.flags.FlagUtils import FlagUtils
 class ZIPhotoPointStamper:
 
 	def __init__(self):
-		self.base_flags = PhotoPointFlags.INST_ZTF|PhotoPointFlags.PP_IPAC
+		self.base_flags = PhotoPointFlags.INST_ZTF|PhotoPointFlags.SRC_IPAC
 
 	def append_base_flags(self, flags):
 		self.base_flags |= flags
@@ -47,6 +47,6 @@ class ZIPhotoPointStamper:
 				ppflags |= PhotoPointFlags.ZTF_I
 	
 			# Add ampel flags
-			pp_dict['alFlags'] = FlagUtils.enumflag_to_mongoflag(ppflags)
+			pp_dict['alFlags'] = FlagUtils.enumflag_to_dbflag(ppflags)
 
 			# HIGH_CADENCE

@@ -2,8 +2,32 @@
 # -*- coding: utf-8 -*-
 # File              : ampel/pipeline/t0/AlertProcessor.py
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
+# Date              : 07.01.2018
+# Last Modified Date: 07.01.2018
+# Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
+# -*- coding: utf-8 -*-
+# File              : ampel/pipeline/t0/AlertProcessor.py
+# Author            : vb <vbrinnel@physik.hu-berlin.de>
+# Date              : 07.01.2018
+# Last Modified Date: 07.01.2018
+# Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
+# -*- coding: utf-8 -*-
+# File              : ampel/pipeline/t0/AlertProcessor.py
+# Author            : vb <vbrinnel@physik.hu-berlin.de>
+# Date              : 07.01.2018
+# Last Modified Date: 07.01.2018
+# Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
+# -*- coding: utf-8 -*-
+# File              : ampel/pipeline/t0/AlertProcessor.py
+# Author            : vb <vbrinnel@physik.hu-berlin.de>
+# Date              : 07.01.2018
+# Last Modified Date: 07.01.2018
+# Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
+# -*- coding: utf-8 -*-
+# File              : ampel/pipeline/t0/AlertProcessor.py
+# Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 14.12.2017
-# Last Modified Date: 04.01.2018
+# Last Modified Date: 07.01.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 import logging, importlib, time
 
@@ -47,9 +71,6 @@ class AlertProcessor:
 	):
 		"""
 			Parameters:
-				* filter : 
-					ID of the filter to be used in the method run().
-					For a list of avail filter IDs, see the docstring of set_filter_id()
 				* mock_db: 
 					If True, every database operation will be run by mongomock rather than pymongo 
 
@@ -173,7 +194,7 @@ class AlertProcessor:
 		self.logger.info("Setting up channel: " + channel_name)
 
 		# Shortcut
-		d_filter = self.channels_config.get_filter_config(channel_name)
+		d_filter = self.channels_config.get_channel_filter_config(channel_name)
 
 		# New channel dict
 		channel = {"name": channel_name}
@@ -195,8 +216,8 @@ class AlertProcessor:
 		channel['filter_func'] = fobj.apply
 
 		# LogRecordFlag and TransienFlag associated with the current channel
-		channel['log_flag'] = LogRecordFlags[self.channels_config.get_channel_flag_label(channel_name)]
-		channel['flag'] = self.channels_config.get_channel_flag(channel_name)
+		channel['log_flag'] = LogRecordFlags[self.channels_config.get_channel_flag_name(channel_name)]
+		channel['flag'] = self.channels_config.get_channel_flag_instance(channel_name)
 
 		# Build these two log entries once and for all (outside the main loop in run())
 		channel['log_accepted'] = " -> Channel '" + channel_name + "': alert passes filter criteria"
@@ -222,7 +243,9 @@ class AlertProcessor:
 		"""
 		self.logger.info("Loading %s", ingester_class.__name__)
 		return ingester_class(
-			self.mongo_client, self.config, self.t0_channels
+			self.mongo_client, 
+			self.channels_config, 
+			[chan['name'] for chan in self.t0_channels]
 		)
 
 
@@ -269,7 +292,7 @@ class AlertProcessor:
 		self.db_job_reporter.insert_new(self)
 
 		# Set ingester jobId 	(will be inserted in the transient documents)
-		self.ingester.set_jobId(
+		self.ingester.set_job_id(
 			self.db_job_reporter.getJobId()
 		)
 

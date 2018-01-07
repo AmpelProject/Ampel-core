@@ -3,7 +3,7 @@
 # File              : ampel/pipeline/common/ChannelsConfig.py
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 04.01.2018
-# Last Modified Date: 06.01.2018
+# Last Modified Date: 07.01.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from ampel.flags.T2ModuleIds import T2ModuleIds
@@ -93,7 +93,7 @@ class ChannelsConfig:
 
 		t2s_flag = T2ModuleIds(0)
 
-		for d_entry in self.config[channel_name]['t2Modules'].values():
+		for d_entry in self.config[channel_name]['t2Modules']:
 			t2s_flag |= T2ModuleIds[d_entry['module']]
 
 		self.d_chanlabel_t2sflag[channel_name] = t2s_flag

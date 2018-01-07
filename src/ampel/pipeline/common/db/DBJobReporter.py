@@ -3,7 +3,7 @@
 # File              : ampel/pipeline/common/db/DBJobReporter.py
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 14.12.2017
-# Last Modified Date: 24.12.2017
+# Last Modified Date: 07.01.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 import logging
 from bson import ObjectId
@@ -57,7 +57,7 @@ class DBJobReporter:
 			"PPLversion": self.ppl_version,
 			"flags": self.flags.value,
 			"PPLparams": {
-				"dispatcherId": str(ppl_processor.dispatcher.__class__)
+				"ingesterId": str(ppl_processor.ingester.__class__)
 			}
 		}
 
@@ -73,18 +73,32 @@ class DBJobReporter:
 		""" 
 		"""
 		self.col.update_one(
-			{ "_id": self.jobId },
- 			{ "$set": {"duration": duration}}
+			{ 
+				"_id": self.jobId 
+			},
+ 			{ 
+				"$set": {
+					"duration": duration
+				}
+			}
  		)
 
 	def push_logs(self, records):
 		""" 
 		"""
 		self.col.update_one(
-			{ "_id": self.jobId },
+			{ 
+				"_id": self.jobId 
+			},
 			{
-				"$set": {"flags": self.flags.value},
-				"$pushAll": {"records": records}
+				"$set": {
+					"flags": self.flags.value
+				},
+				"$push": {
+					"records": { 
+						"$each": records
+					}
+				}
 			},
 			upsert=True
 		)

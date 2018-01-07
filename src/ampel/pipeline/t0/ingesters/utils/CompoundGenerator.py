@@ -3,7 +3,7 @@
 # File              : ampel/pipeline/t0/ingesters/utils/CompoundGenerator.py
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 01.01.2018
-# Last Modified Date: 06.01.2018
+# Last Modified Date: 07.01.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 import logging, hashlib, json
 from ampel.flags.T2ModuleIds import T2ModuleIds
@@ -223,7 +223,7 @@ class CompoundGenerator():
 		"""
 		"""
 
-		for channel_flag in list_of_channel_flag:
+		for channel_flag in list_of_channel_flag.as_list():
 
 			#######################################################
 			# Check for identical previously generated compound
@@ -274,7 +274,7 @@ class CompoundGenerator():
 					d['excl'] = ZTF_PARTNERSHIP
 				elif chan_options['autoComplete'] is False and pp_id in self.d_ids_sets[SRC_T1]:
 					d['excl'] = SRC_T1
-				elif pp_id in self.d_ids_excluded[channel_flag]:
+				elif channel_flag in self.d_ids_excluded and pp_id in self.d_ids_excluded[channel_flag]:
 					d['excl'] = FlagUtils.get_flag_pos_in_enumflag(channel_flag)
 	
 				#  Photopoint option: check if updated zero point should be used
@@ -306,7 +306,11 @@ class CompoundGenerator():
 			# Record results #
 			##################
 	
-			self.d_effid_chanflags[eff_id] |= channel_flag
+			if eff_id in self.d_effid_chanflags:
+				self.d_effid_chanflags[eff_id] |= channel_flag
+			else:
+				self.d_effid_chanflags[eff_id] = channel_flag
+
 			self.d_effid_comp[eff_id] = eff_comp
 			self.d_optsig_effid[chan_opts_sig] = eff_id
 	
