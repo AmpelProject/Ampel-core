@@ -9,16 +9,18 @@ from ampel.flags.PhotoPointFlags import PhotoPointFlags
 from ampel.flags.AlDocTypes import AlDocTypes
 from ampel.flags.FlagUtils import FlagUtils
 
-class ZIPhotoPointStamper:
+class ZIPhotoPointShaper:
+
 
 	def __init__(self):
 		self.base_flags = PhotoPointFlags.INST_ZTF|PhotoPointFlags.SRC_IPAC
 
+
 	def append_base_flags(self, flags):
 		self.base_flags |= flags
 
-	#def ampelize(...):
-	def stamp(self, tran_id, pps_list):
+
+	def ampelize(self, tran_id, pps_list):
 
 		for pp_dict in pps_list:
 

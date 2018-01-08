@@ -3,16 +3,20 @@
 # File              : ampel/pipeline/t0/ingesters/ZIAlertIngester.py
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 14.12.2017
-# Last Modified Date: 08.01.2018
+# Last Modified Date: 09.01.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
+
 import logging
+
 from pymongo import UpdateOne, InsertOne, MongoClient
 from pymongo.errors import BulkWriteError
+
 from ampel.pipeline.t0.ingesters.AbstractIngester import AbstractIngester
-from ampel.pipeline.t0.ingesters.utils.CompoundGenerator import CompoundGenerator
-from ampel.pipeline.t0.ingesters.utils.T2DocsShaper import T2DocsShaper
-from ampel.pipeline.t0.stampers.ZIPhotoPointStamper import ZIPhotoPointStamper
+from ampel.pipeline.t0.ingesters.ZIPhotoPointShaper import ZIPhotoPointShaper
+from ampel.pipeline.common.CompoundGenerator import CompoundGenerator
+from ampel.pipeline.common.T2DocsShaper import T2DocsShaper
 from ampel.pipeline.common.ChannelsConfig import ChannelsConfig
+
 from ampel.flags.T2ModuleIds import T2ModuleIds
 from ampel.flags.PhotoPointFlags import PhotoPointFlags
 from ampel.flags.TransientFlags import TransientFlags
@@ -26,6 +30,7 @@ logger = logging.getLogger("Ampel")
 # https://github.com/AmpelProject/Ampel/wiki/Ampel-Flags
 SUPERSEEDED = FlagUtils.get_flag_pos_in_enumflag(PhotoPointFlags.SUPERSEEDED)
 TO_RUN = FlagUtils.get_flag_pos_in_enumflag(T2RunStates.TO_RUN)
+
 
 class ZIAlertIngester(AbstractIngester):
 	"""
@@ -52,7 +57,7 @@ class ZIAlertIngester(AbstractIngester):
 			raise ValueError("The parameter names_of_active_channels must be of type: list")
 
 		self.set_mongo(mongo_client)
-		self.pps_stamper = ZIPhotoPointStamper()
+		self.pps_shaper = ZIPhotoPointShaper()
 		self.t2docs_shaper = T2DocsShaper(channels_config, names_of_active_channels)
 
 		self.l_chanflag_pos = []
@@ -65,12 +70,14 @@ class ZIAlertIngester(AbstractIngester):
 				FlagUtils.get_flag_pos_in_enumflag(flag)
 			)
 
-		CompoundGenerator.cm_init_channels(channels_config, names_of_active_channels)
+		CompoundGenerator.cm_init_channels(
+			channels_config, names_of_active_channels
+		)
 
 
 	def set_job_id(self, job_id):
 		"""
-			A dispatcher class creates/updates several documents in the DB for each alert.
+			An ingester class creates/updates several documents in the DB for each alert.
 			Among other things, it updates the main transient document, 
 			which contains a list of jobIds associated with the processing of the given transient.
 			We thus need to know what is the current jobId to perform this update.
@@ -79,9 +86,9 @@ class ZIAlertIngester(AbstractIngester):
 		self.job_id = job_id
 
 
-	def set_photopoints_stamper(self, arg_pps_stamper):
+	def set_photopoints_shaper(self, arg_pps_shaper):
 		"""
-			Before the dispatcher instance inserts new photopoints into the photopoint collection, 
+			Before the ingester instance inserts new photopoints into the photopoint collection, 
 			it 'customizes' (or 'ampelizes' if you will) the photopoints in order to later enable
 			the use of short and flexible queries. 
 			The cutomizations are minimal, most of the original photopoint structure is kept.
@@ -93,15 +100,15 @@ class ZIAlertIngester(AbstractIngester):
 			This method allows to customize the PhotoPointStamper instance to be used.
 			By default, ZIPhotoPointStamper is used.
 		"""
-		self.pps_stamper = arg_pps_stamper
+		self.pps_shaper = arg_pps_shaper
 
 
-	def get_photopoints_stamper(self):
+	def get_photopoints_shaper(self):
 		"""
-			Get the PhotoPointStamper instance associated with this class instance.
-			For more information, please check the set_photopoints_stamper docstring
+			Get the PhotoPointShaper instance associated with this class instance.
+			For more information, please check the set_photopoints_shaper docstring
 		"""
-		return self.pps_stamper
+		return self.pps_shaper
 
 
 	def set_mongo(self, mongo_client):
@@ -246,7 +253,7 @@ class ZIAlertIngester(AbstractIngester):
 			# (that's why you should not invert part 2 and 3 (in part 2, we access pp_alert['candid'] in
 			# the case of IPAC reprocessing) unless you accept the performance penalty 
 			# of copying (deep copy won't be necessary) the pp dicts from the alert)
-			self.pps_stamper.stamp(tran_id, new_pps_dicts)
+			self.pps_shaper.ampelize(tran_id, new_pps_dicts)
 
 			# Insert new photopoint documents into 'photopoints' collection
 			for pp in new_pps_dicts:
@@ -273,10 +280,9 @@ class ZIAlertIngester(AbstractIngester):
 		db_chan_flags = []
 
 		for i, el in enumerate(list_of_t2_modules):
-			if el is None:
-				continue
-			chan_flags |= self.l_chanflags[i]
-			db_chan_flags.append(self.l_chanflag_pos[i])
+			if not el is None:
+				chan_flags |= self.l_chanflags[i]
+				db_chan_flags.append(self.l_chanflag_pos[i])
 
 		# Generate compound info for channels having passed T0 filters (i.e being not None)
 		comp_gen.generate(chan_flags)

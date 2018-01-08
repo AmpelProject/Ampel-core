@@ -5,9 +5,11 @@
 # Date              : 14.12.2017
 # Last Modified Date: 24.12.2017
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
+
+import logging
 from ampel.flags.LogRecordFlags import LogRecordFlags
 from ampel.flags.JobFlags import JobFlags
-import logging
+
 
 class DBLoggingHandler(logging.Handler):
 	"""
@@ -88,12 +90,12 @@ class DBLoggingHandler(logging.Handler):
 
 		self.records.append(rec)
 
-		if (record.levelno == 40):
+		if record.levelno == 40:
 			self.db_job_updater.add_flags(JobFlags.HAS_ERROR)
-		elif (record.levelno == 50):
+		elif record.levelno == 50:
 			self.db_job_updater.add_flags(JobFlags.HAS_CRITICAL)
 
-		if (len(self.records) > self.flush_len):
+		if len(self.records) > self.flush_len:
 			self.flush()
 
 	def flush(self):

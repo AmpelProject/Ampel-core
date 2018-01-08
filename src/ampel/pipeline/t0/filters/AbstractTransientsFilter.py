@@ -23,5 +23,5 @@ class AbstractTransientsFilter(metaclass=AmpelABC):
 		pass
 
 	@abstractmethod
-	def apply(self, transient_candidate):
+	def apply(self, ampel_alert):
 		pass

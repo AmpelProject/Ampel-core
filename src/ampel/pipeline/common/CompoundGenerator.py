@@ -1,10 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/pipeline/t0/ingesters/utils/CompoundGenerator.py
+# File              : ampel/pipeline/common/CompoundGenerator.py
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 01.01.2018
-# Last Modified Date: 07.01.2018
+# Last Modified Date: 09.01.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
+
 import logging, hashlib, json
 from ampel.flags.T2ModuleIds import T2ModuleIds
 from ampel.flags.PhotoPointFlags import PhotoPointFlags
@@ -14,7 +15,6 @@ from ampel.flags.AlDocTypes import AlDocTypes
 from ampel.flags.FlagUtils import FlagUtils
 from ampel.flags.ChannelFlags import ChannelFlags
 
-
 HAS_HUMBOLDT_ZP = FlagUtils.get_flag_pos_in_enumflag(PhotoPointFlags.HAS_HUMBOLDT_ZP)
 HAS_WEIZMANN_SUB = FlagUtils.get_flag_pos_in_enumflag(PhotoPointFlags.HAS_WEIZMANN_SUB)
 SUPERSEEDED = FlagUtils.get_flag_pos_in_enumflag(PhotoPointFlags.SUPERSEEDED)
@@ -22,6 +22,7 @@ ZTF_PARTNERSHIP = FlagUtils.get_flag_pos_in_enumflag(PhotoPointFlags.ZTF_PARTNER
 SRC_T1 = FlagUtils.get_flag_pos_in_enumflag(PhotoPointFlags.SRC_T1)
 
 logger = logging.getLogger("Ampel")
+
 
 class CompoundGenerator():
 	"""
