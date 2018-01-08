@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : /Users/hu/Documents/ZTF/Ampel/src/ampel/pipeline/common/flags/JobFlags.py
+# File              : ampel/flags/JobFlags.py
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 14.12.2017
-# Last Modified Date: 14.12.2017
+# Last Modified Date: 09.01.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 from enum import Flag
 
