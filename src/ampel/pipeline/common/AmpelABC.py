@@ -3,7 +3,7 @@
 # File              : ampel/pipeline/common/AmpelABC.py
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 27.12.2017
-# Last Modified Date: 27.12.2017
+# Last Modified Date: 08.01.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 import inspect
 
@@ -78,11 +78,12 @@ class AmpelABC(type):
 				abstract_sig = inspect.signature(getattr(abclass, method_name))
 				child_sig = inspect.signature(getattr(cls, method_name))
 	
-				if not abstract_sig == child_sig:
+				# Check that number of parameters are equal rather than checking 
+				# if parameter names are identical (if abstract_sig != child_sig)
+				if len(abstract_sig.parameters) != len(child_sig.parameters):
 					raise NotImplementedError(
-						"Signature is wrong for method " + 
-						method_name  + 
-						", please check defined arguments"
+						"Method " + method_name +
+						" has a wrong signature, please check defined arguments"
 					)
 
 		return __init_subclass__

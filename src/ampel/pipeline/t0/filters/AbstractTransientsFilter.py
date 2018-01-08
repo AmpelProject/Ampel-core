@@ -3,12 +3,12 @@
 # File              : ampel/pipeline/t0/filters/AbstractTransientsFilter.py
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 14.12.2017
-# Last Modified Date: 07.01.2018
+# Last Modified Date: 08.01.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
-from abc import ABC, abstractmethod
+from ampel.pipeline.common.AmpelABC import AmpelABC, abstractmethod
 from ampel.flags.T2ModuleIds import T2ModuleIds
 
-class AbstractTransientsFilter(ABC):
+class AbstractTransientsFilter(metaclass=AmpelABC):
 
 	on_match_default_flags = T2ModuleIds(0)
 

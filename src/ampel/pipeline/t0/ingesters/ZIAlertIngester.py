@@ -3,15 +3,16 @@
 # File              : ampel/pipeline/t0/ingesters/ZIAlertIngester.py
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 14.12.2017
-# Last Modified Date: 07.01.2018
+# Last Modified Date: 08.01.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
-import logging, hashlib
-from pymongo import UpdateOne, InsertOne
+import logging
+from pymongo import UpdateOne, InsertOne, MongoClient
 from pymongo.errors import BulkWriteError
 from ampel.pipeline.t0.ingesters.AbstractIngester import AbstractIngester
 from ampel.pipeline.t0.ingesters.utils.CompoundGenerator import CompoundGenerator
 from ampel.pipeline.t0.ingesters.utils.T2DocsShaper import T2DocsShaper
 from ampel.pipeline.t0.stampers.ZIPhotoPointStamper import ZIPhotoPointStamper
+from ampel.pipeline.common.ChannelsConfig import ChannelsConfig
 from ampel.flags.T2ModuleIds import T2ModuleIds
 from ampel.flags.PhotoPointFlags import PhotoPointFlags
 from ampel.flags.TransientFlags import TransientFlags
@@ -38,6 +39,18 @@ class ZIAlertIngester(AbstractIngester):
 		"""
 			mongo_client: (instance of pymongo.MongoClient) is required for database operations
 		"""
+
+		if not type(mongo_client) is MongoClient:
+			import mongomock
+			if not type(mongo_client) is mongomock.MongoClient:
+				raise ValueError("The parameter mongo_client must be of type: MongoClient")
+
+		if not type(channels_config) is ChannelsConfig:
+			raise ValueError("The parameter channels_config must be of type: ampel.pipeline.common.ChannelsConfig")
+
+		if not type(names_of_active_channels) is list:
+			raise ValueError("The parameter names_of_active_channels must be of type: list")
+
 		self.set_mongo(mongo_client)
 		self.pps_stamper = ZIPhotoPointStamper()
 		self.t2docs_shaper = T2DocsShaper(channels_config, names_of_active_channels)

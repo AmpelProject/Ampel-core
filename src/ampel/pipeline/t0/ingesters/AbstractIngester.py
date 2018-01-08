@@ -3,9 +3,8 @@
 # File              : ampel/pipeline/t0/ingesters/AbstractIngester.py
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 14.12.2017
-# Last Modified Date: 07.01.2018
+# Last Modified Date: 08.01.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
-import inspect
 from ampel.pipeline.common.AmpelABC import AmpelABC, abstractmethod
 
 class AbstractIngester(metaclass=AmpelABC):
@@ -17,32 +16,5 @@ class AbstractIngester(metaclass=AmpelABC):
 
 
 	@abstractmethod
-	def ingest(self, tran_id, pps_alert, list_of_t2_modules):
+	def ingest(self, tran_id, pps_alert, list_of_t2_module):
 		return
-
-#	def __new__(cls, *args, **kwargs):
-#		if cls is AbstractAmpelDispatcher:
-#			raise TypeError("Class AbstractAmpelDispatcher cannot be instantiated")
-#		return object.__new__(cls)
-
-
-#	def __init_subclass__(cls):
-#
-#		for method_name in AbstractAmpelDispatcher.abstract_methods:
-#
-#			func = getattr(cls, method_name, False)
-#			if func:
-#				if func.__qualname__.split(".")[0] == AbstractAmpelDispatcher.__name__:
-#					raise NotImplementedError(
-#						"Method " + method_name  + " is not implemented"
-#					)
-#
-#			abstract_sig = inspect.signature(getattr(AbstractAmpelDispatcher, method_name))
-#			child_sig = inspect.signature(getattr(cls, method_name))
-#
-#			if not abstract_sig == child_sig:
-#				raise NotImplementedError(
-#					"Signature is wrong for method " + 
-#					method_name  + 
-#					", please check defined arguments"
-#				)
