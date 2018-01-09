@@ -1,0 +1,3 @@
+werkzeug
+pymongo
+fastavro
