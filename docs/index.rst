@@ -10,9 +10,15 @@
    :caption: Contents:
 
    motivations
-   flags
-   tier2
-   docs
+   roadmap
+   science
+   contribute
+   structure
+   current_dev
+   planned_dev
+   requirements
+   people
+   hardware
 
 
 Indices and tables

@@ -1,6 +1,6 @@
 
 Ampel flags
------------
+===========
 
 Ampel flags are twofold.
 
