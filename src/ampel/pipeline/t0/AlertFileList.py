@@ -49,19 +49,17 @@ class AlertFileList:
 
 		if self.min_index is not None:
 			self.logger.debug("Filtering files using min_index criterium")
-			import ntpath
 			out_files = []
 			for f in all_files:
-				if int(ntpath.basename(f).split(".")[0]) >= self.min_index:
+				if int(os.path.basename(f).split(".")[0]) >= self.min_index:
 					out_files.append(f)
 			all_files = out_files
 
 		if self.max_index is not None:
 			self.logger.debug("Filtering files using max_index criterium")
-			import ntpath
 			out_files = []
 			for f in all_files:
-				if int(ntpath.basename(f).split(".")[0]) <= self.max_index:
+				if int(os.path.basename(f).split(".")[0]) <= self.max_index:
 					out_files.append(f)
 			all_files = out_files
 
