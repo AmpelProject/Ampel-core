@@ -9,6 +9,7 @@
    :maxdepth: 2
    :caption: Contents:
 
+   motivations
    flags
    tier2
    docs
