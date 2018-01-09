@@ -5,7 +5,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>Ampel flags &#8212; Ampel 0.1 documentation</title>
+    <title>Ongoing Developement &#8212; Ampel 0.1 documentation</title>
     <link rel="stylesheet" href="_static/sphinxdoc.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <script type="text/javascript">
@@ -58,59 +58,22 @@
         <div class="bodywrapper">
           <div class="body" role="main">
             
-  <div class="section" id="ampel-flags">
-<h1>Ampel flags<a class="headerlink" href="#ampel-flags" title="Permalink to this headline">¶</a></h1>
-<p>Ampel flags are twofold.</p>
+  <div class="section" id="ongoing-developement">
+<h1>Ongoing Developement<a class="headerlink" href="#ongoing-developement" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="t0-filters">
+<h2>T0 filters<a class="headerlink" href="#t0-filters" title="Permalink to this headline">¶</a></h2>
 <ul class="simple">
-<li>On the Python side, those are implemented using Flag enumerations (enum.Flag).
-As a consequence, flags are quite convenient to manipulate. Since python has no
-integer size limitation, Flag enumerations can grow above 64 elements.</li>
-<li>On the Mongo DB side, the situation is more complicated. Following restrictions
-apply:<ul>
-<li>The <cite>$bit</cite> update operator is not usable for numbers no longer
-representable as <cite>int64_t</cite>. (<a class="reference external" href="https://jira.mongodb.org/browse/SERVER-15680">https://jira.mongodb.org/browse/SERVER-15680</a>).
-It means that if the number of flag values of a given enum exceeds 63,
-updates have to be performed using the $set operator which can lead to race
-conditions.</li>
-<li>Bitwise query operators (for example <cite>$bitsAnySet</cite>) are not available in the
-aggregation framework (<a class="reference external" href="https://jira.mongodb.org/browse/SERVER-25823">https://jira.mongodb.org/browse/SERVER-25823</a>).</li>
-<li>There is no index support for Bitwise query operations
-(<a class="reference external" href="https://jira.mongodb.org/browse/SERVER-24749">https://jira.mongodb.org/browse/SERVER-24749</a>).</li>
+<li>Matteo Giomi is currently working on including PS1 into T0 matching capabilities</li>
+<li>Ludwig Rauch is working in the T0 neutrino filter</li>
 </ul>
-</li>
-</ul>
-<p>That’s why ampel converts Flag enumerations into an array of flag index
-positions before saving flags into the mongo database. A (bijective) conversion
-from Flag enumeration values (powers of two) into index position is used to
-avoid having to deal with BinData encoding of numbers no longer representable
-as <cite>int64_t</cite>.</p>
-<p>Example:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span>In [0]: from ampel.flags.PhotoPointFlags import PhotoPointFlags
-
-In [1]: PhotoPointFlags??
-Out[1]:
-class PhotoPointFlags(Flag):
-
-        DATE_JD = 1
-        FLUX_MAG_VEGA = 2
-        FLUX_MAG_AB = 4
-        INST_ZTF  = 8
-        ZTF_G = 16
-        ...
-
-In [2]: f = PhotoPointFlags.FLUX_MAG_AB | PhotoPointFlags.ZTF_G
-
-In [3]: f
-Out[3]: &lt;PhotoPointFlags.INST_ZTF|FLUX_MAG_AB: 12&gt;
-
-In [4]: from ampel.pipeline.common.db.FlagUtils import FlagUtils
-
-In [5]: FlagUtils.enumflag_to_mongoflag(f)
-Out[5]: [3, 4]
-
-In [6]: FlagUtils.mongoflag_to_enumflag([3,5], PhotoPointFlags)
-Out[6]: &lt;PhotoPointFlags.ZTF_G|FLUX_MAG_AB: 20&gt;
-</pre></div>
+</div>
+<div class="section" id="t2s">
+<h2>T2s<a class="headerlink" href="#t2s" title="Permalink to this headline">¶</a></h2>
+<p>Photo-Z by Ludwig Rauch</p>
+</div>
+<div class="section" id="t3">
+<h2>T3<a class="headerlink" href="#t3" title="Permalink to this headline">¶</a></h2>
+<p>soon</p>
 </div>
 </div>
 
