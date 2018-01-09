@@ -14,8 +14,7 @@
    science
    contribute
    structure
-   current_dev
-   planned_dev
+   dev
    requirements
    people
    hardware
