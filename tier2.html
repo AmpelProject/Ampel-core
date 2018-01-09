@@ -1,0 +1,125 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>Creating a T2 &#8212; Ampel 0.1 documentation</title>
+    <link rel="stylesheet" href="_static/sphinxdoc.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Updating the documentation on GitHub" href="docs.html" />
+    <link rel="prev" title="Ampel flags" href="flags.html" /> 
+  </head>
+  <body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="docs.html" title="Updating the documentation on GitHub"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="flags.html" title="Ampel flags"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">Ampel 0.1 documentation</a> &#187;</li> 
+      </ul>
+    </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="index.html">
+              <img class="logo" src="_static/ampel.png" alt="Logo"/>
+            </a></p>
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="flags.html"
+                        title="previous chapter">Ampel flags</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="docs.html"
+                        title="next chapter">Updating the documentation on GitHub</a></p>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="creating-a-t2">
+<h1>Creating a T2<a class="headerlink" href="#creating-a-t2" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="basic-structure">
+<h2>Basic structure<a class="headerlink" href="#basic-structure" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="t2-module-inputs">
+<h3>T2 module inputs<a class="headerlink" href="#t2-module-inputs" title="Permalink to this headline">¶</a></h3>
+<p>The input of any T2 module is a <code class="xref py py-class docutils literal"><span class="pre">ampel.Transient</span></code></p>
+<p>The typical methods of Transient are:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">get_radec</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="c1"># this could be a list of RA/Dec</span>
+<span class="n">get_photopoint</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="c1"># Photopoint or list of</span>
+<span class="n">get_t2results</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="c1"># queries already ran T2 module results</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="t2-module-output">
+<h3>T2 module output<a class="headerlink" href="#t2-module-output" title="Permalink to this headline">¶</a></h3>
+<p>It returns a dictionary of key values (no object instances inside). That means,
+you dictionaries must be serializable, so for simplicity, the output dictionary
+should only contain native Python types (<cite>float</cite>, <cite>int</cite>, <cite>string</cite>, <cite>list</cite>,
+<cite>tuple</cite>, <cite>dict</cite>).</p>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="docs.html" title="Updating the documentation on GitHub"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="flags.html" title="Ampel flags"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">Ampel 0.1 documentation</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2018, Ampel Project.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.6.6.
+    </div>
+  </body>
+</html>
