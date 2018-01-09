@@ -5,7 +5,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>Updating the documentation on GitHub &#8212; Ampel 0.1 documentation</title>
+    <title>Motivations &#8212; Ampel 0.1 documentation</title>
     <link rel="stylesheet" href="_static/sphinxdoc.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <script type="text/javascript">
@@ -24,7 +24,8 @@
     <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="prev" title="Creating a T2" href="tier2.html" /> 
+    <link rel="next" title="Ampel flags" href="flags.html" />
+    <link rel="prev" title="Ampel: Alert Management, Photometry and Evaluation of Light curves" href="index.html" /> 
   </head>
   <body>
     <div class="related" role="navigation" aria-label="related navigation">
@@ -34,7 +35,10 @@
           <a href="genindex.html" title="General Index"
              accesskey="I">index</a></li>
         <li class="right" >
-          <a href="tier2.html" title="Creating a T2"
+          <a href="flags.html" title="Ampel flags"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="index.html" title="Ampel: Alert Management, Photometry and Evaluation of Light curves"
              accesskey="P">previous</a> |</li>
         <li class="nav-item nav-item-0"><a href="index.html">Ampel 0.1 documentation</a> &#187;</li> 
       </ul>
@@ -45,8 +49,11 @@
               <img class="logo" src="_static/ampel.png" alt="Logo"/>
             </a></p>
   <h4>Previous topic</h4>
-  <p class="topless"><a href="tier2.html"
-                        title="previous chapter">Creating a T2</a></p>
+  <p class="topless"><a href="index.html"
+                        title="previous chapter">Ampel: Alert Management, Photometry and Evaluation of Light curves</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="flags.html"
+                        title="next chapter">Ampel flags</a></p>
 <div id="searchbox" style="display: none" role="search">
   <h3>Quick search</h3>
     <form class="search" action="search.html" method="get">
@@ -65,39 +72,8 @@
         <div class="bodywrapper">
           <div class="body" role="main">
             
-  <div class="section" id="updating-the-documentation-on-github">
-<h1>Updating the documentation on GitHub<a class="headerlink" href="#updating-the-documentation-on-github" title="Permalink to this headline">¶</a></h1>
-<p>The project documentation is rendered with Sphinx and hosted on GitHub using
-the <cite>gh-pages</cite> branch mechanism. The workflow for updating the rendered
-documentation mostly follows <a class="reference external" href="https://daler.github.io/sphinxdoc-test/includeme.html">this
-tutorial</a>.</p>
-<ol class="arabic">
-<li><p class="first">Clone the master branch of the Ampel repository to your machine:</p>
-<div class="highlight-shell"><div class="highlight"><pre><span></span>git clone git@github.com:AmpelProject/Ampel.git Ampel
-</pre></div>
-</div>
-</li>
-<li><p class="first">Clone the gh-pages branch into a directory Ampel-docs/html at the same level
-(the relative path is important, since it’s hard-coded into the documentation
-Makefile):</p>
-<div class="highlight-shell"><div class="highlight"><pre><span></span>git clone -b gh-pages --single-branch https://github.com/AmpelProject/Ampel/ Ampel-docs/html
-</pre></div>
-</div>
-</li>
-<li><p class="first">Build the documentation:</p>
-<div class="highlight-shell"><div class="highlight"><pre><span></span><span class="nb">cd</span> Ampel/docs
-make html
-</pre></div>
-</div>
-</li>
-<li><p class="first">Commit and push the changes to the gh-pages branch:</p>
-<div class="highlight-shell"><div class="highlight"><pre><span></span><span class="nb">cd</span> ../../Ampel-docs/html
-git commit -m <span class="s2">&quot;Updated docs&quot;</span> *
-git push origin gh-pages
-</pre></div>
-</div>
-</li>
-</ol>
+  <div class="section" id="motivations">
+<h1>Motivations<a class="headerlink" href="#motivations" title="Permalink to this headline">¶</a></h1>
 </div>
 
 
@@ -113,7 +89,10 @@ git push origin gh-pages
           <a href="genindex.html" title="General Index"
              >index</a></li>
         <li class="right" >
-          <a href="tier2.html" title="Creating a T2"
+          <a href="flags.html" title="Ampel flags"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="index.html" title="Ampel: Alert Management, Photometry and Evaluation of Light curves"
              >previous</a> |</li>
         <li class="nav-item nav-item-0"><a href="index.html">Ampel 0.1 documentation</a> &#187;</li> 
       </ul>
