@@ -8,6 +8,7 @@
 from ampel.flags.AlertFlags import AlertFlags
 from werkzeug.datastructures import ImmutableDict, ImmutableList
 from ampel.pipeline.t0.loaders.ZIAlertLoader import ZIAlertLoader
+import operator
 
 class AmpelAlert:
 	"""	
@@ -20,6 +21,13 @@ class AmpelAlert:
 	__isfrozen = False
 	flags = AlertFlags.NO_FLAG
 
+	ops = {
+		'>': operator.gt,
+		'<': operator.lt,
+		'>=': operator.ge,
+		'<=': operator.le,
+		'=': operator.eq
+	}
 
 	@staticmethod
 	def load_ztf_alert(arg):
@@ -45,12 +53,12 @@ class AmpelAlert:
 			Set using ampel config values.
 			For ZTF IPAC alerts:
 			keywords = {
-                "transient_id" : "alertid",
-                "photopoint_id" : "candid",
-                "obs_date" : "jd",
-                "filter_id" : "fid",
-                "mag" : "magpsf"
-            }
+				"transient_id" : "alertid",
+				"photopoint_id" : "candid",
+				"obs_date" : "jd",
+				"filter_id" : "fid",
+				"mag" : "magpsf"
+			}
 		"""
 		AmpelAlert.alert_keywords = alert_keywords
 
@@ -85,21 +93,42 @@ class AmpelAlert:
 		object.__setattr__(self, key, value)
 
 
-	def get_values(self, param_name):
+	def get_values(self, param_name, filters=None):
 		"""
 			ex: instance.get_values("mag")
 		"""
 
 		if param_name in AmpelAlert.alert_keywords:
 			param_name = AmpelAlert.alert_keywords[param_name]
-		
+
+		filtered_pps = self.pps if filters is None else self.filter_pps(filters)
+	
 		return [
 			el[param_name] 
-			for el in self.pps if param_name in el
+			for el in filtered_pps if param_name in el
 		]
 
 
-	def get_tuples(self, param1, param2):
+	def filter_pps(self, filters):
+
+		filtered_pps = self.pps
+
+		if type(filters) is dict:
+			filters = [filters]
+
+		for filter_el in filters:
+
+			operator = AmpelAlert.ops[filter_el['op']] 
+			del filter_el['op']
+
+			for fkey in filter_el.keys():
+				akey = fkey if not fkey in AmpelAlert.alert_keywords else AmpelAlert.alert_keywords[fkey]
+				filtered_pps = filter(lambda el: akey in el and operator(el[akey], filter_el[fkey]), filtered_pps)
+
+		return filtered_pps
+
+
+	def get_tuples(self, param1, param2, filters=None):
 		"""
 			ex: instance.get_tuples("obs_date", "mag")
 		"""
@@ -109,9 +138,11 @@ class AmpelAlert:
 		if param2 in AmpelAlert.alert_keywords:
 			param2 = AmpelAlert.alert_keywords[param2]
 
+		filtered_pps = self.pps if filters is None else self.filter_pps(filters)
+
 		return [
 			(el[param1], el[param2]) 
-			for el in self.pps if param1 in el and param2 in el
+			for el in filtered_pps if param1 in el and param2 in el
 		]
 
 
@@ -127,3 +158,4 @@ class AmpelAlert:
 			returns the transient Id (ZTF: objectId)
 		"""
 		return self.tran_id
+
