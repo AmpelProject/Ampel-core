@@ -20,11 +20,9 @@ from ampel.flags.T2ModuleIds import T2ModuleIds
 from ampel.flags.JobFlags import JobFlags
 from ampel.flags.ChannelFlags import ChannelFlags
 
-from ampel.pipeline.common.LoggingUtils import LoggingUtils
-from ampel.pipeline.common.ChannelsConfig import ChannelsConfig
-from ampel.pipeline.common.db.DBJobReporter import DBJobReporter
-
-
+from ampel.pipeline.utils.ChannelsConfig import ChannelsConfig
+from ampel.pipeline.logging.LoggingUtils import LoggingUtils
+from ampel.pipeline.logging.DBJobReporter import DBJobReporter
 
 
 class AlertProcessor:

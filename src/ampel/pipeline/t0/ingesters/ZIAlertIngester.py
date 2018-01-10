@@ -3,7 +3,7 @@
 # File              : ampel/pipeline/t0/ingesters/ZIAlertIngester.py
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 14.12.2017
-# Last Modified Date: 09.01.2018
+# Last Modified Date: 10.01.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import logging
@@ -11,11 +11,11 @@ import logging
 from pymongo import UpdateOne, InsertOne, MongoClient
 from pymongo.errors import BulkWriteError
 
-from ampel.pipeline.t0.ingesters.AbstractIngester import AbstractIngester
+from ampel.base.AbstractAlertIngester import AbstractAlertIngester
 from ampel.pipeline.t0.ingesters.ZIPhotoPointShaper import ZIPhotoPointShaper
-from ampel.pipeline.common.CompoundGenerator import CompoundGenerator
-from ampel.pipeline.common.T2DocsShaper import T2DocsShaper
-from ampel.pipeline.common.ChannelsConfig import ChannelsConfig
+from ampel.pipeline.utils.CompoundGenerator import CompoundGenerator
+from ampel.pipeline.utils.T2DocsShaper import T2DocsShaper
+from ampel.pipeline.utils.ChannelsConfig import ChannelsConfig
 
 from ampel.flags.T2ModuleIds import T2ModuleIds
 from ampel.flags.PhotoPointFlags import PhotoPointFlags
@@ -32,7 +32,7 @@ SUPERSEEDED = FlagUtils.get_flag_pos_in_enumflag(PhotoPointFlags.SUPERSEEDED)
 TO_RUN = FlagUtils.get_flag_pos_in_enumflag(T2RunStates.TO_RUN)
 
 
-class ZIAlertIngester(AbstractIngester):
+class ZIAlertIngester(AbstractAlertIngester):
 	"""
 		Ingester class used by t0.AlertProcessor in 'online' mode.
 		This class 'ingests' alerts (if they have passed the alert filter):

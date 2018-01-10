@@ -6,10 +6,10 @@
 # Last Modified Date: 03.01.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-from ampel.pipeline.t0.ingesters.AbstractIngester import AbstractIngester
+from ampel.base.AbstractAlertIngester import AbstractAlertIngester
 
 
-class TestIngester(AbstractIngester):
+class TestIngester(AbstractAlertIngester):
 
 	def __init__(self):
 		print("init")

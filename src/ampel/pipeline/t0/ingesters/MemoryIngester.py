@@ -7,10 +7,10 @@
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from ampel.flags.TransientFlags import TransientFlags
-from ampel.pipeline.t0.ingesters.AbstractIngester import AbstractIngester
+from ampel.base.AbstractAlertIngester import AbstractAlertIngester
 
 
-class MemoryIngester(AbstractIngester):
+class MemoryIngester(AbstractAlertIngester):
 
 	"""
 		Ingester class called by t0.AlertProcessor.
