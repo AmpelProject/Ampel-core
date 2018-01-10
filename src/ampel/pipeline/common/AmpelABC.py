@@ -83,7 +83,7 @@ class AmpelABC(type):
 				if len(abstract_sig.parameters) != len(child_sig.parameters):
 					raise NotImplementedError(
 						"Method " + method_name +
-						" has a wrong signature, please check defined arguments"
+						"() has a wrong signature, please check defined arguments"
 					)
 
 		return __init_subclass__

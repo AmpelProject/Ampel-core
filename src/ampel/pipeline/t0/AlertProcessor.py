@@ -3,7 +3,7 @@
 # File              : ampel/pipeline/t0/AlertProcessor.py
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 14.12.2017
-# Last Modified Date: 07.01.2018
+# Last Modified Date: 10.01.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 import logging, importlib, time
 
@@ -39,7 +39,7 @@ class AlertProcessor:
 
 		Ampel makes sure that each dictionary contains an alflags key 
 	"""
-	version = 0.14
+	version = 0.15
 
 	def __init__(
 		self, instrument="ZTF", alert_format="IPAC", 
@@ -87,11 +87,11 @@ class AlertProcessor:
 
 				# Set static AmpelAlert alert flags
 				AmpelAlert.add_class_flags(
-					AlertFlags.INST_ZTF | AlertFlags.ALERT_IPAC | AlertFlags.PP_IPAC
+					AlertFlags.INST_ZTF | AlertFlags.SRC_IPAC
 				)
 
 				# Set static AmpelAlert dict keywords
-				AmpelAlert.set_pp_dict_keywords(
+				AmpelAlert.set_alert_keywords(
 					self.config['global']['photoPoints']['ZTFIPAC']['dictKeywords']
 				)
 	

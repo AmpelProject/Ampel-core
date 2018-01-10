@@ -6,11 +6,11 @@
 # Last Modified Date: 14.12.2017
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 import logging, fastavro
-from operator import itemgetter
+#from operator import itemgetter
 
 class ZIAlertLoader:
 	"""
-		ZI is a shortcut for ZTF IPAC.
+		ZI: shortcut for ZTF IPAC.
 
 		This class is responsible for:
 			* Loading IPAC generated ZTF Alerts (using fastavro)
@@ -21,14 +21,17 @@ class ZIAlertLoader:
 
 		The static method load_flat_pps_list() returns the transient id 
 		and the associated photopoints as list of dictionaries
-		The static method load_raw_dict_from_file() returns the raw avro dict structure
+		The static method load_raw_dict_from_file returns the raw avro dict structure
 	"""
 	logger = logging.getLogger("Ampel")
 
 
 	@staticmethod
 	def load_raw_dict_from_file(file_path):
-		"""	Load avro alert using fastavro. A dictionary instance (or None) is returned """	
+		"""	
+			Load avro alert using fastavro. 
+			A dictionary instance (or None) is returned 
+		"""	
 		ZIAlertLoader.logger.debug("Loading alert avro content")
 		with open(file_path, "rb") as fo:
 			reader = fastavro.reader(fo)
@@ -39,15 +42,11 @@ class ZIAlertLoader:
 
 	@staticmethod
 	def get_flat_pps_list_from_file(file_path):
-	#def load_flat_pps_list(file_path, filter_pps_history=False, chrono_sort=False):
 		"""	
-			Loads an avro alert (file_path) using fastavro. 
+			Loads an avro alert (with path file_path) using fastavro. 
 			Returns a tupple: first element is the alert ID and second element is 
 			a flat list of dictionaries (each containing photopoints information).
 			The dictionary with index 0 in the list is the most recent photopoint.
-			Optional parameter: 
-				filter_pps_history: if true, filter_previous_candidates() will be used
-				chrono_sort: sort photopoints chronologically based on 'jd' parameter
 		"""	
 		ZIAlertLoader.logger.debug("Loading alert avro content")
 		with open(file_path, "rb") as fo:
@@ -57,8 +56,7 @@ class ZIAlertLoader:
 		# Efficient way of creating the flat list of pps required for AmpelAlert
 		zavro_dict['prv_candidates'].insert(0, zavro_dict['candidate'])
 
-		# TODO: change alertId to objectId
-		return zavro_dict['alertId'], zavro_dict['prv_candidates']
+		return zavro_dict['objectId'], zavro_dict['prv_candidates']
 
 		
 	@staticmethod
@@ -89,9 +87,5 @@ class ZIAlertLoader:
 #			ZIAlertLoader.logger.debug("Filtering previous photopoints")
 #			ZIAlertLoader.filter_previous_candidates(zavro_dict['prv_candidates'])
 #
-#		# Not sure we need that for production 
-#		ZIAlertLoader.logger.debug("Alert contains " + str(len(zavro_dict['prv_candidates'])+1) + " photopoints")
-#
 #		# quicker than sorted(zavro_dict['prv_candidates'], key=lambda k: k['jd'])
 #		return prv_cd if chrono_sort is False else sorted(prv_cd, key=itemgetter("jd"))
-#

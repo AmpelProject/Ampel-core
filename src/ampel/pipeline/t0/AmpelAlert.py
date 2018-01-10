@@ -1,21 +1,21 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/pipeline/t0/AmpelAlert.py
+# File              : /Users/hu/Documents/ZTF/Ampel/src/ampel/pipeline/t0/AmpelAlert.py
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 14.12.2017
-# Last Modified Date: 24.12.2017
+# Last Modified Date: 10.01.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 from ampel.flags.AlertFlags import AlertFlags
 from werkzeug.datastructures import ImmutableDict, ImmutableList
-
+from ampel.pipeline.t0.loaders.ZIAlertLoader import ZIAlertLoader
 
 class AmpelAlert:
-	"""	 
-		T0 base class containing a read-only list of read-only photopoints dictionaries.
-		The read-only conversion occurs in the contructor.
-		Typically, during pipeline processing, an alert is loaded and used to instanciate this class. 
+	"""	
+		T0 base class containing a read-only list of read-only photopoint dictionaries.
+		(read-only convertion occurs in constructor).
+		During pipeline processing, an alert is loaded and its content used to instanciate this class. 
 		Then, the AmpelAlert instance is fed to every active T0 filter.
-	"""	 
+	"""	
 
 	__isfrozen = False
 	flags = AlertFlags.NO_FLAG
@@ -23,55 +23,58 @@ class AmpelAlert:
 
 	@staticmethod
 	def load_ztf_alert(arg):
-		"""	 
+		"""	
 			Convenience method. 
-			The import statement impacts performance, don't use this method in a loop 
 		"""
-		from ampel.pipeline.t0.loaders.ZIAlertLoader import ZIAlertLoader
 		return AmpelAlert(*ZIAlertLoader.get_flat_pps_list_from_file(arg))
 
 
 	@classmethod
 	def add_class_flags(cls, arg_flags):
 		"""
-			Set alert flags (t0.AlertFlags) of this alert.
-			Typically: observing instrument, photopoints source and alert issuer.
-			For example: AlertFlags.INST_ZTF | AlertFlags.PP_IPAC | AlertFlags.ALERT_IPAC 
+			Set alert flags (ampel.flags.AlertFlags) of this alert.
+			Typically: observing instrument, alert issuer.
+			For example: AlertFlags.INST_ZTF | AlertFlags.SRC_IPAC
 		"""
 		cls.flags |= arg_flags
 
 
 	@classmethod
-	def set_pp_dict_keywords(cls, keywords):
+	def set_alert_keywords(cls, alert_keywords):
 		"""
+			Set using ampel config values.
+			For ZTF IPAC alerts:
+			keywords = {
+                "transient_id" : "alertid",
+                "photopoint_id" : "candid",
+                "obs_date" : "jd",
+                "filter_id" : "fid",
+                "mag" : "magpsf"
+            }
 		"""
-		AmpelAlert.tran_id = keywords["tranId"]
-		AmpelAlert.pp_id = keywords["pptId"]
-		AmpelAlert.obs_date = keywords["obsDate"]
-		AmpelAlert.filter_id = keywords["filterId"]
+		AmpelAlert.alert_keywords = alert_keywords
 
-
-	@classmethod
-	def set_pp_dict_keyword(cls, arg, val):
-		setattr(AmpelAlert, arg, val)
 
 
 	@classmethod
 	def has_flags(cls, arg_flags):
+		"""
+			ex: AmpelAlert.has_flags(AlertFlags.INST_ZTF)
+		"""
 		return arg_flags in cls.flags
 
 
-	def __init__(self, tran_id, list_of_pps_dicts):
+	def __init__(self, tran_id, list_of_pps):
 		""" 
 			tran_id: the astronomical transient object ID, for ZTF IPAC alerts 'objId'
-			list_of_pps_dicts: a flat list of dictionaries. 
-			Ampel makes sure that each dictionary contains an alflags key 
+			list_of_pps: a flat list of photopoint dictionaries. 
+			Ampel makes sure that each dictionary contains an alFlags key 
 		"""
 		self.tran_id = tran_id
 
-		# TODO: remove is not None for production (should not happen)
+		# TODO: remove "is not None" check for production 
 		self.pps = ImmutableList(
-			[ImmutableDict(el) for el in list_of_pps_dicts if 'candid' in el and el['candid'] is not None]
+			[ImmutableDict(el) for el in list_of_pps if 'candid' in el and el['candid'] is not None]
 		)
 		self.__isfrozen = True
 
@@ -82,30 +85,45 @@ class AmpelAlert:
 		object.__setattr__(self, key, value)
 
 
-	def get_subres_ids(self, ignore_none=False):
-		return self.get_parameter(AmpelAlert.pp_id, ignore_none=True)
+	def get_values(self, param_name):
+		"""
+			ex: instance.get_values("mag")
+		"""
+
+		if param_name in AmpelAlert.alert_keywords:
+			param_name = AmpelAlert.alert_keywords[param_name]
+		
+		return [
+			el[param_name] 
+			for el in self.pps if param_name in el
+		]
 
 
-	def get_parameter(self, param_name, ignore_none=False):
-		return [el[param_name] for el in self.pps if param_name in el]
+	def get_tuples(self, param1, param2):
+		"""
+			ex: instance.get_tuples("obs_date", "mag")
+		"""
+		if param1 in AmpelAlert.alert_keywords:
+			param1 = AmpelAlert.alert_keywords[param1]
 
+		if param2 in AmpelAlert.alert_keywords:
+			param2 = AmpelAlert.alert_keywords[param2]
 
-	def get_tupple(self, p1, p2):
-		return [[el[p1], el[p2]] for el in self.pps if p1 in el and p2 in el]
-
-
-	def plot_tupple(self, p1, p2):
-		import matplotlib.pyplot as plt
-		plt.scatter(*zip(*self.get_tupple(p1, p2)))
-		plt.xlabel(p1)
-		plt.ylabel(p2)
-		plt.grid(True)
-		plt.show()
+		return [
+			(el[param1], el[param2]) 
+			for el in self.pps if param1 in el and param2 in el
+		]
 
 
 	def get_photopoints(self):
+		"""
+			returns a list of dicts
+		"""
 		return self.pps
 
 
 	def get_id(self):
+		"""
+			returns the transient Id (ZTF: objectId)
+		"""
 		return self.tran_id
