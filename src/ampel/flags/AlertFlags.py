@@ -11,7 +11,7 @@ class AlertFlags(Flag):
 	"""
 		Flags used by the static AmpelAlert class variable 'flags',
 		whose value is not transfered or synced with DB.
-		Theses flags allow T0 filters to query what kind of alerts they are dealing with.
+		Theses flags allow T0 filters to gain knowledge of the origin of alerts
 	"""
 
 	NO_FLAG				= 0
