@@ -1,6 +1,6 @@
 {
 "candid": 1000020, 
-"alertId": 123, 
+"objectId": 123, 
 "candidate": {
 	"jd": 58082.1078124996, "magpsf": 20.588474220085388, "candid": 1000015, "programpi": "Kulkarni", "fid": 641, "pid": 0 
 }, 
