@@ -1,3 +1,5 @@
 werkzeug
 pymongo
 fastavro
+pytest
+pykafka
