@@ -4,14 +4,7 @@ import pykafka
 import subprocess
 import time
 import os
-
-def singularity_run(image, env=dict()):
-    env = {'SINGULARITYENV_'+k: v for k,v in env.items()}
-    env.update(os.environ)
-    try:
-        return subprocess.Popen(['singularity', 'run', '--cleanenv', '--contain', image], env=env, preexec_fn=os.setsid)
-    except FileNotFoundError:
-        pytest.skip("requires singularity")
+import tempfile
 
 def feed_alerts():
     # wait for singularity to start up
@@ -30,14 +23,42 @@ def feed_alerts():
 
 @pytest.fixture(scope="session")
 def kafka_server():
-    proc = singularity_run('docker://spotify/kafka', env=dict(ADVERTISED_HOST='localhost'))
+    """
+    Start a kafka server on localhost from a Singularity container imported
+    from DockerHub.
+    """
+    # check whether singularity exists
     try:
-        feed_alerts()
-        yield
-    finally:
-        proc.terminate()
-        proc.wait()
-        # killing the start-kafka script does not kill the kafka server
-        # reliably. remove any lingering java with extreme prejudice.
-        subprocess.call(['killall', '-9', 'java'])
+        subprocess.check_call(['singularity', '--version'], stdout=subprocess.DEVNULL)
+    except subprocess.CalledProcessError:
+        pytest.skip("requires singularity")
     
+    # pull the image for faster startup
+    if 'SINGULARITY_CACHEDIR' not in os.environ:
+        raise RuntimeError("SINGULARITY_CACHEDIR is not set in your environment. Set it to a directory on a large and fast filesystem.")
+    image = os.path.join(os.environ['SINGULARITY_CACHEDIR'], "kafka.img")
+    if not os.path.exists(image):
+        subprocess.check_call(['singularity', 'pull', 'docker://spotify/kafka'], cwd=os.environ['SINGULARITY_CACHEDIR'])
+    
+    with tempfile.TemporaryDirectory() as tmpdir:
+        # supervisord, zookeeper, and kafka all want to write to a bunch of
+        # paths that are owned by root in the source Docker image. Bind them
+        # to a temporary directory to make them writable by the current user.
+        binds = []
+        for path in ['/run', '/var/log/supervisor', '/var/log/zookeeper', '/var/log/kafka', '/var/lib/zookeeper']:
+            binds += ['-B', tmpdir+':'+path]
+        
+        # let singularity itself see the environment, but clean it for the
+        # contained process (except for the keys explicitly listed below)
+        env=dict(ADVERTISED_HOST='localhost')
+        env = {'SINGULARITYENV_'+k: v for k,v in env.items()}
+        env.update(os.environ)
+        
+        proc = subprocess.Popen(['singularity', 'run', '--containall', '--cleanenv', '-W', tmpdir]+binds+[image], env=env)
+        
+        try:
+            feed_alerts()
+            yield
+        finally:
+            proc.terminate()
+            proc.wait()
