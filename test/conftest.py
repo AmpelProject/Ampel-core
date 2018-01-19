@@ -6,21 +6,6 @@ import time
 import os
 import tempfile
 
-def feed_alerts():
-    # wait for singularity to start up
-    for i in range(10):
-        try:
-            client = pykafka.KafkaClient(hosts='localhost:9092')
-        except pykafka.exceptions.NoBrokersAvailableError:
-            time.sleep(5)
-            continue
-        break
-    with client.topics[b'test'].get_sync_producer() as producer:
-        for i in range(4):
-            msg = 'test message {}'.format(i)
-            producer.produce(msg.encode('utf-8'))
-            
-
 @pytest.fixture(scope="session")
 def kafka_server():
     """
@@ -56,8 +41,18 @@ def kafka_server():
         
         proc = subprocess.Popen(['singularity', 'run', '--containall', '--cleanenv', '-W', tmpdir]+binds+[image], env=env)
         
+        # wait for kafka to become available
+        for i in range(30):
+            try:
+                client = pykafka.KafkaClient(hosts='localhost:9092')
+            except pykafka.exceptions.NoBrokersAvailableError:
+                time.sleep(1)
+                continue
+            break
+        else:
+            raise pykafka.exceptions.NoBrokersAvailableError
+        
         try:
-            feed_alerts()
             yield
         finally:
             proc.terminate()
