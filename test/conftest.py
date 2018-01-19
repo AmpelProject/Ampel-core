@@ -7,11 +7,7 @@ import os
 import tempfile
 
 @pytest.fixture(scope="session")
-def kafka_server():
-    """
-    Start a kafka server on localhost from a Singularity container imported
-    from DockerHub.
-    """
+def kafka_singularity_image():
     # check whether singularity exists
     try:
         subprocess.check_call(['singularity', '--version'], stdout=subprocess.DEVNULL)
@@ -25,6 +21,18 @@ def kafka_server():
     if not os.path.exists(image):
         subprocess.check_call(['singularity', 'pull', 'docker://spotify/kafka'], cwd=os.environ['SINGULARITY_CACHEDIR'])
     
+    return image
+
+def create_topic(name, partitions=1):
+    subprocess.check_call(['singularity', 'exec', '--containall', '--cleanenv', kafka_singularity_image(), '/bin/sh', '-c', "$KAFKA_HOME/bin/kafka-topics.sh --topic '{}' --create --partitions {:d} --replication-factor 1 --zookeeper localhost:2181".format(name, partitions)])
+
+@pytest.fixture(scope="session")
+def kafka_server(kafka_singularity_image):
+    """
+    Start a kafka server on localhost from a Singularity container imported
+    from DockerHub.
+    """
+  
     with tempfile.TemporaryDirectory() as tmpdir:
         # supervisord, zookeeper, and kafka all want to write to a bunch of
         # paths that are owned by root in the source Docker image. Bind them
@@ -39,7 +47,7 @@ def kafka_server():
         env = {'SINGULARITYENV_'+k: v for k,v in env.items()}
         env.update(os.environ)
         
-        proc = subprocess.Popen(['singularity', 'run', '--containall', '--cleanenv', '-W', tmpdir]+binds+[image], env=env)
+        proc = subprocess.Popen(['singularity', 'run', '--containall', '--cleanenv', '-W', tmpdir]+binds+[kafka_singularity_image], env=env)
         
         # wait for kafka to become available
         for i in range(30):
@@ -51,6 +59,8 @@ def kafka_server():
             break
         else:
             raise pykafka.exceptions.NoBrokersAvailableError
+        
+        create_topic('test', 1)
         
         try:
             yield
