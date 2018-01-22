@@ -1,12 +1,13 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : /Users/hu/Documents/ZTF/Ampel/src/ampel/pipeline/common/LoggingUtils.py
+# File              : ampel/pipeline/logging/LoggingUtils.py
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 14.12.2017
-# Last Modified Date: 14.12.2017
+# Last Modified Date: 21.01.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
-import logging
-from ampel.pipeline.common.db.DBLoggingHandler import DBLoggingHandler
+import logging, sys
+from datetime import datetime
+from ampel.pipeline.logging.DBLoggingHandler import DBLoggingHandler
 
 
 class LoggingUtils:
@@ -15,7 +16,7 @@ class LoggingUtils:
 	"""
 
 	@staticmethod
-	def get_ampel_console_logger():
+	def get_console_logger(unique=True):
 		"""
 			Returns a logger (registered as 'Ampel' in the module logging)
 			with the following parameters:
@@ -23,31 +24,38 @@ class LoggingUtils:
 				* Logging format:
 					'%(asctime)s %(filename)s:%(lineno)s %(funcName)s() %(levelname)s %(message)s'
 		"""
-		if "Ampel" in logging.Logger.manager.loggerDict:
-			logging.Logger.manager.loggerDict.pop("Ampel")
 
-		logger = logging.getLogger("Ampel")
-		shandler = logging.StreamHandler()
-		shandler.setLevel(logging.DEBUG)
-		formatter = logging.Formatter(
-			'%(asctime)s %(filename)s:%(lineno)s %(funcName)s() %(levelname)s %(message)s',
-			"%Y-%m-%d %H:%M:%S"
-		)
-		shandler.setFormatter(formatter)
+		logger_name = "Ampel-"+str(datetime.now().time()) if unique is True else "Ampel"
 
-		logger.addHandler(shandler)
-		logger.setLevel(logging.DEBUG)
+		# if logger_name in logging.Logger.manager.loggerDict:
+		#	return logging.getLogger(logger_name)
+
+		logger = logging.getLogger(logger_name)
+		logger.propagate = False
+
+		if not len(logger.handlers):
+			shandler = logging.StreamHandler(sys.stdout)
+			shandler.setLevel(logging.DEBUG)
+			formatter = logging.Formatter(
+				'%(asctime)s %(filename)s:%(lineno)s %(funcName)s() %(levelname)s %(message)s',
+				"%Y-%m-%d %H:%M:%S"
+			)
+			shandler.setFormatter(formatter)
+
+			logger.addHandler(shandler)
+			logger.setLevel(logging.DEBUG)
 
 		return logger
 
+
 	@staticmethod
-	def add_db_log_handler(logger, db_job_info):
+	def add_db_log_handler(logger, db_job_reporter):
 		"""
 			Adds a new logging handler (instance of common.db.DBLoggingHandler) to the logger 'Ampel'.
-			Argument must be an instance of common.db.DBJobInfo
+			Argument must be an instance of common.db.DBJobReporter
 		"""
 		logger.info("Attaching mongo log handler to Ampel logger")
-		dblh = DBLoggingHandler(db_job_info)
+		dblh = DBLoggingHandler(db_job_reporter)
 		dblh.setLevel(logging.DEBUG)
 		dblh.setFormatter(logging.Formatter('%(message)s'))
 		logger.addHandler(dblh)

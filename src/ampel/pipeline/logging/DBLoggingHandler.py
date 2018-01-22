@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/pipeline/common/db/DBLoggingHandler.py
+# File              : ampel/pipeline/logging/DBLoggingHandler.py
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 14.12.2017
-# Last Modified Date: 24.12.2017
+# Last Modified Date: 19.01.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import logging
@@ -27,9 +27,9 @@ class DBLoggingHandler(logging.Handler):
 		50: LogRecordFlags.CRITICAL
 	}
 
-	def __init__(self, db_job_updater, flush_len=50):
+	def __init__(self, db_job_reporter, previous_logs=None, flush_len=50):
 		""" """
-		self.db_job_updater = db_job_updater
+		self.db_job_reporter = db_job_reporter
 		self.global_flags = LogRecordFlags(0)
 		self.temp_flags = LogRecordFlags(0)
 		self.flush_len = flush_len
@@ -38,6 +38,17 @@ class DBLoggingHandler(logging.Handler):
 		self.records = []
 		self.filters = []  # required when extending logging.Handler
 		self.lock = None   # required when extending logging.Handler
+		self._name = None
+
+		self.setLevel(logging.DEBUG)
+		self.setFormatter(logging.Formatter('%(message)s'))
+
+		if previous_logs is not None:
+			self.prepend_logs(previous_logs)
+
+	def set_db_job_reporter(self, arg):
+		""" """
+		self.db_job_reporter = arg
 
 	def set_global_flags(self, arg):
 		""" """
@@ -76,9 +87,9 @@ class DBLoggingHandler(logging.Handler):
 		rec = {
 			'date': int(record.created),
 			'flags': (self.global_flags | self.temp_flags | DBLoggingHandler.severity_map[record.levelno]).value,
-			'filename': record.filename,
-			'lineno': record.lineno,
-			'funcName': record.funcName,
+			#'filename': record.filename,
+			#'lineno': record.lineno,
+			#'funcName': record.funcName,
 			'msg': self.format(record)
 		}
 
@@ -91,14 +102,24 @@ class DBLoggingHandler(logging.Handler):
 		self.records.append(rec)
 
 		if record.levelno == 40:
-			self.db_job_updater.add_flags(JobFlags.HAS_ERROR)
+			self.db_job_reporter.add_flags(JobFlags.HAS_ERROR)
 		elif record.levelno == 50:
-			self.db_job_updater.add_flags(JobFlags.HAS_CRITICAL)
+			self.db_job_reporter.add_flags(JobFlags.HAS_CRITICAL)
 
-		if len(self.records) > self.flush_len:
+		if len(self.records) > self.flush_len and self.db_job_reporter.getJobId() is not None:
 			self.flush()
+
+
+	def prepend_logs(self, logs):
+		"""
+		"""
+		if not type(logs) is list:
+			logs = [logs]
+			
+		self.records[0:0] = logs
+
 
 	def flush(self):
 		""" """
-		self.db_job_updater.push_logs(self.records)
+		self.db_job_reporter.push_logs(self.records)
 		self.records = []

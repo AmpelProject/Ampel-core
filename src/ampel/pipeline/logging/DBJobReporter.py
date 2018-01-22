@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/pipeline/common/db/DBJobReporter.py
+# File              : ampel/pipeline/logging/DBJobReporter.py
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 14.12.2017
-# Last Modified Date: 07.01.2018
+# Last Modified Date: 21.01.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 import logging
 from bson import ObjectId
@@ -13,40 +13,42 @@ class DBJobReporter:
 	""" 
 		Inserts/Updates a job info entry into the NoSQL DB
 		A job entry contains various info about the current job 
-		and the associated array of log entries 
+		and an array of log entries produced by this job
 	"""
 
-	def __init__(self, mongo_client, pipeline_version):
+	def __init__(self, mongo_client, job_flags=None):
 		""" 
 		"""
 		db = mongo_client['events']
 		self.col = db['jobs']
-		self.logger = logging.getLogger("Ampel")
-		self.flags = JobFlags(0)
+		self.job_flags = JobFlags(0) if job_flags is None else job_flags
 		self.job_name = "Not set"
-		self.ppl_version = pipeline_version
+
 
 	def add_flags(self, job_flags):
 		""" 
 			Add flags (common.flags.JobFlags) to this job
 		"""
-		self.flags |= job_flags
+		self.job_flags |= job_flags
+
 
 	def set_job_name(self, job_name):
 		self.job_name = job_name
 
+
 	def set_grid_name(self, grid_name):
 		self.grid_name = grid_name
+
 
 	def set_arguments(self, args):
 		self.arguments = args
 
-	def getJobId(self):
-		if hasattr(self, "jobId"):
-			return self.jobId
-		return None
 
-	def insert_new(self, ppl_processor):
+	def getJobId(self):
+		return getattr(self, "jobId", None)
+
+
+	def insert_new(self, al_params):
 		""" 
 		"""
 		self.jobId = ObjectId()
@@ -54,11 +56,8 @@ class DBJobReporter:
 		jdict = {
 			"_id": self.jobId,
 			"jobName": self.job_name,
-			"PPLversion": self.ppl_version,
-			"flags": self.flags.value,
-			"PPLparams": {
-				"ingesterId": str(ppl_processor.ingester.__class__)
-			}
+			"jobFlags": self.job_flags.value,
+			"ALParams": al_params
 		}
 
 		if hasattr(self, "arguments"):
@@ -68,6 +67,7 @@ class DBJobReporter:
 			jdict['gridName'] = self.grid_name
 
 		self.col.insert_one(jdict)
+
 
 	def set_duration(self, duration):
 		""" 
@@ -83,6 +83,7 @@ class DBJobReporter:
 			}
  		)
 
+
 	def push_logs(self, records):
 		""" 
 		"""
@@ -92,7 +93,7 @@ class DBJobReporter:
 			},
 			{
 				"$set": {
-					"flags": self.flags.value
+					"jobFlags": self.job_flags.value
 				},
 				"$push": {
 					"records": { 

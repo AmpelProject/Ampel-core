@@ -3,11 +3,10 @@
 # File              : ampel/pipeline/t0/ingesters/ZIAlertIngester.py
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 14.12.2017
-# Last Modified Date: 10.01.2018
+# Last Modified Date: 21.01.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import logging
-
 from pymongo import UpdateOne, InsertOne, MongoClient
 from pymongo.errors import BulkWriteError
 
@@ -25,8 +24,6 @@ from ampel.flags.AlDocTypes import AlDocTypes
 from ampel.flags.FlagUtils import FlagUtils
 from ampel.flags.ChannelFlags import ChannelFlags
 
-logger = logging.getLogger("Ampel")
-
 # https://github.com/AmpelProject/Ampel/wiki/Ampel-Flags
 SUPERSEEDED = FlagUtils.get_flag_pos_in_enumflag(PhotoPointFlags.SUPERSEEDED)
 TO_RUN = FlagUtils.get_flag_pos_in_enumflag(T2RunStates.TO_RUN)
@@ -40,7 +37,7 @@ class ZIAlertIngester(AbstractAlertIngester):
 		in the DB that are used in later processing stages (T2, T3)
 	"""
 
-	def __init__(self, mongo_client, channels_config, names_of_active_channels):
+	def __init__(self, mongo_client, channels_config, names_of_active_channels, logger):
 		"""
 			mongo_client: (instance of pymongo.MongoClient) is required for database operations
 		"""
@@ -56,6 +53,7 @@ class ZIAlertIngester(AbstractAlertIngester):
 		if not type(names_of_active_channels) is list:
 			raise ValueError("The parameter names_of_active_channels must be of type: list")
 
+		self.logger = logger
 		self.set_mongo(mongo_client)
 		self.pps_shaper = ZIPhotoPointShaper()
 		self.t2docs_shaper = T2DocsShaper(channels_config, names_of_active_channels)
@@ -140,7 +138,7 @@ class ZIAlertIngester(AbstractAlertIngester):
 		ids_pps_alert = {pp['candid'] for pp in pps_alert}
 
 		# Evtly load existing photopoints from DB
-		logger.info("Checking DB for existing pps")
+		self.logger.info("Checking DB for existing pps")
 		pps_db = list(
 			self.col.find(
 				{
@@ -159,14 +157,14 @@ class ZIAlertIngester(AbstractAlertIngester):
 		)
 
 		# Instanciate CompoundGenerator (used later for creating compounds and t2 docs)
-		comp_gen = CompoundGenerator(pps_db, ids_pps_alert)
+		comp_gen = CompoundGenerator(pps_db, self.logger, ids_pps_alert)
 
 		# python set of ids from DB photopoints 
 		ids_pps_db = comp_gen.get_db_ids()
 
 		# If no photopoint exists in the DB, then this is a new transient 
 		if not ids_pps_db:
-			logger.info("Transient is new")
+			self.logger.info("Transient is new")
 
 
 
@@ -204,7 +202,7 @@ class ZIAlertIngester(AbstractAlertIngester):
 							pp_db_set_superseeded["fid"] == pp_alert["fid"] 
 						):
 
-							logger.info(
+							self.logger.info(
 								"Marking photopoint %s as superseeded by %s",
 								pp_db_set_superseeded["_id"], 
 								pp_alert['candid']
@@ -227,7 +225,7 @@ class ZIAlertIngester(AbstractAlertIngester):
 								)
 							)
 			else:
-				logger.info("Transient has pps older than 30days")
+				self.logger.info("Transient has pps older than 30 days")
 
 
 
@@ -240,9 +238,9 @@ class ZIAlertIngester(AbstractAlertIngester):
 
 		# If the photopoints already exist in DB 
 		if not ids_pps_to_insert:
-			logger.info("No new photo point to insert in DB")
+			self.logger.info("No new photo point to insert in DB")
 		else:
-			logger.info("Inserting %i new pp(s) into DB: %s" % (len(ids_pps_to_insert), ids_pps_to_insert))
+			self.logger.info("%i new pp(s) will be inserted into DB: %s" % (len(ids_pps_to_insert), ids_pps_to_insert))
 
 			# Create of list photopoint dicts with photopoints matching the provided list of ids_pps_to_insert
 			new_pps_dicts = [el for el in pps_alert if el['candid'] in ids_pps_to_insert]
@@ -330,7 +328,7 @@ class ZIAlertIngester(AbstractAlertIngester):
 		##   Part 5: Generate t2 documents ##
 		#####################################
 
-		logger.debug("Generating T2 docs")
+		self.logger.debug("Generating T2 docs")
 		ddd_t2_struct = self.t2docs_shaper.get_struct(
 			comp_gen, list_of_t2_modules
 		)
@@ -385,7 +383,7 @@ class ZIAlertIngester(AbstractAlertIngester):
 					)
 
 		# Insert generated t2 docs into collection
-		logger.info("%i T2 docs will be inserted into DB", len(db_ops) - db_ops_len)
+		self.logger.info("%i T2 docs will be inserted into DB", len(db_ops) - db_ops_len)
 
 
 
@@ -394,7 +392,7 @@ class ZIAlertIngester(AbstractAlertIngester):
 		############################################
 
 		# Insert/Update transient document into 'transients' collection
-		logger.info("Updating transient document")
+		self.logger.info("Updating transient document")
 
 		# TODO add alFlags
 		db_ops.append(
@@ -424,6 +422,6 @@ class ZIAlertIngester(AbstractAlertIngester):
 		try: 
 			self.col.bulk_write(db_ops)
 		except BulkWriteError as bwe: 
-			logger.info(bwe.details) 
+			self.logger.info(bwe.details) 
 			# TODO add error flag to Job and Transient
 			# TODO add return code 

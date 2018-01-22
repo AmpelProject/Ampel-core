@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/pipeline/common/CompoundGenerator.py
+# File              : ampel/pipeline/utils/CompoundGenerator.py
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 01.01.2018
-# Last Modified Date: 09.01.2018
+# Last Modified Date: 21.01.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import logging, hashlib, json
@@ -20,8 +20,6 @@ HAS_WEIZMANN_SUB = FlagUtils.get_flag_pos_in_enumflag(PhotoPointFlags.HAS_WEIZMA
 SUPERSEEDED = FlagUtils.get_flag_pos_in_enumflag(PhotoPointFlags.SUPERSEEDED)
 ZTF_PARTNERSHIP = FlagUtils.get_flag_pos_in_enumflag(PhotoPointFlags.ZTF_PARTNERSHIP)
 SRC_T1 = FlagUtils.get_flag_pos_in_enumflag(PhotoPointFlags.SRC_T1)
-
-logger = logging.getLogger("Ampel")
 
 
 class CompoundGenerator():
@@ -89,7 +87,9 @@ class CompoundGenerator():
 			cls.flags_to_check.add(HAS_WEIZMANN_SUB)
 
 
-	def __init__(self, pps_db, ids_alert=None):
+	def __init__(self, pps_db, logger, ids_alert=None):
+
+		self.logger = logger
 
 		# Create set for DB photopoint ids (list of db pps provided as func parameter)
 		self.ids_db = set()
@@ -250,7 +250,7 @@ class CompoundGenerator():
 				else:
 					log_output = eff_id 
 	
-				logger.info(
+				self.logger.info(
 					"Using previoulsy generated compound for channel %s. CompoundId: %s", 
 					channel_flag.name, log_output
 				)
@@ -322,7 +322,7 @@ class CompoundGenerator():
 	
 			if eff_id != strict_id:
 	
-				logger.info(
+				self.logger.info(
 					"Compound generated for channel %s. CompoundId: (eff: %s, strict: %s)", 
 					channel_flag.name, eff_id, strict_id
 				)
@@ -335,7 +335,7 @@ class CompoundGenerator():
 	
 			else:
 	
-				logger.info(
+				self.logger.info(
 					"Compound generated for channel %s. CompoundId: %s", 
 					channel_flag.name, eff_id
 				)

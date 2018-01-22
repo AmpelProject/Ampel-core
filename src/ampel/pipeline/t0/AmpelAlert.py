@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : /Users/hu/Documents/ZTF/Ampel/src/ampel/pipeline/t0/AmpelAlert.py
+# File              : ampel/pipeline/t0/AmpelAlert.py
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 14.12.2017
-# Last Modified Date: 10.01.2018
+# Last Modified Date: 21.01.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 from ampel.flags.AlertFlags import AlertFlags
 from werkzeug.datastructures import ImmutableDict, ImmutableList
@@ -18,7 +18,6 @@ class AmpelAlert:
 		Then, the AmpelAlert instance is fed to every active T0 filter.
 	"""	
 
-	__isfrozen = False
 	flags = AlertFlags.NO_FLAG
 
 	ops = {
@@ -40,9 +39,9 @@ class AmpelAlert:
 	@classmethod
 	def add_class_flags(cls, arg_flags):
 		"""
-			Set alert flags (ampel.flags.AlertFlags) of this alert.
-			Typically: observing instrument, alert issuer.
-			For example: AlertFlags.INST_ZTF | AlertFlags.SRC_IPAC
+		Set alert flags (ampel.flags.AlertFlags) of this alert.
+		Typically: observing instrument, alert issuer.
+		For example: AlertFlags.INST_ZTF | AlertFlags.SRC_IPAC
 		"""
 		cls.flags |= arg_flags
 
@@ -50,18 +49,16 @@ class AmpelAlert:
 	@classmethod
 	def set_alert_keywords(cls, alert_keywords):
 		"""
-			Set using ampel config values.
-			For ZTF IPAC alerts:
-			keywords = {
-				"transient_id" : "alertid",
-				"photopoint_id" : "candid",
-				"obs_date" : "jd",
-				"filter_id" : "fid",
-				"mag" : "magpsf"
-			}
+		Set using ampel config values. For ZTF IPAC alerts:
+		alert_keywords = {
+			"transient_id" : "objectId",
+			"photopoint_id" : "candid",
+			"obs_date" : "jd",
+			"filter_id" : "fid",
+			"mag" : "magpsf"
+		}
 		"""
 		AmpelAlert.alert_keywords = alert_keywords
-
 
 
 	@classmethod
@@ -74,9 +71,11 @@ class AmpelAlert:
 
 	def __init__(self, tran_id, list_of_pps):
 		""" 
-			tran_id: the astronomical transient object ID, for ZTF IPAC alerts 'objId'
-			list_of_pps: a flat list of photopoint dictionaries. 
-			Ampel makes sure that each dictionary contains an alFlags key 
+		AmpelAlert constructor
+		Parameters:
+		tran_id: the astronomical transient object ID, for ZTF IPAC alerts 'objId'
+		list_of_pps: a flat list of photopoint dictionaries. 
+		Ampel makes sure that each dictionary contains an alFlags key 
 		"""
 		self.tran_id = tran_id
 
@@ -84,18 +83,24 @@ class AmpelAlert:
 		self.pps = ImmutableList(
 			[ImmutableDict(el) for el in list_of_pps if 'candid' in el and el['candid'] is not None]
 		)
+
+		# Freeze this instance
 		self.__isfrozen = True
 
 
 	def __setattr__(self, key, value):
-		if self.__isfrozen:
+		"""
+		Overrride python's default __setattr__ method to enable frozen instances
+		"""
+		# '_AmpelAlert__isfrozen' and not simply '__isfrozen' due to 'Private name mangling'
+		if getattr(self, "_AmpelAlert__isfrozen", None) is not None:
 			raise TypeError( "%r is a frozen instance " % self )
 		object.__setattr__(self, key, value)
 
 
 	def get_values(self, param_name, filters=None):
 		"""
-			ex: instance.get_values("mag")
+		ex: instance.get_values("mag")
 		"""
 
 		if param_name in AmpelAlert.alert_keywords:
@@ -110,7 +115,8 @@ class AmpelAlert:
 
 
 	def filter_pps(self, filters):
-
+		"""
+		"""
 		filtered_pps = self.pps
 
 		if type(filters) is dict:
@@ -123,14 +129,19 @@ class AmpelAlert:
 
 			for fkey in filter_el.keys():
 				akey = fkey if not fkey in AmpelAlert.alert_keywords else AmpelAlert.alert_keywords[fkey]
-				filtered_pps = filter(lambda el: akey in el and operator(el[akey], filter_el[fkey]), filtered_pps)
+				filtered_pps = list(
+					filter(
+						lambda el: akey in el and operator(el[akey], filter_el[fkey]), 
+						filtered_pps
+					)
+				)
 
 		return filtered_pps
 
 
 	def get_tuples(self, param1, param2, filters=None):
 		"""
-			ex: instance.get_tuples("obs_date", "mag")
+		ex: instance.get_tuples("obs_date", "mag")
 		"""
 		if param1 in AmpelAlert.alert_keywords:
 			param1 = AmpelAlert.alert_keywords[param1]
@@ -148,14 +159,14 @@ class AmpelAlert:
 
 	def get_photopoints(self):
 		"""
-			returns a list of dicts
+		returns a list of dicts
 		"""
 		return self.pps
 
 
 	def get_id(self):
 		"""
-			returns the transient Id (ZTF: objectId)
+		returns the transient Id (ZTF: objectId)
 		"""
 		return self.tran_id
 

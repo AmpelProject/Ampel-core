@@ -3,7 +3,7 @@
 # File              : ampel/pipeline/t0/loaders/ZIAlertLoader.py
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 14.12.2017
-# Last Modified Date: 10.01.2018
+# Last Modified Date: 21.01.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 import logging, fastavro
 #from operator import itemgetter
@@ -23,7 +23,6 @@ class ZIAlertLoader:
 		and the associated photopoints as list of dictionaries
 		The static method load_raw_dict_from_file returns the raw avro dict structure
 	"""
-	logger = logging.getLogger("Ampel")
 
 
 	@staticmethod
@@ -32,7 +31,6 @@ class ZIAlertLoader:
 			Load avro alert using fastavro. 
 			A dictionary instance (or None) is returned 
 		"""	
-		ZIAlertLoader.logger.debug("Loading alert avro content")
 		with open(file_path, "rb") as fo:
 			reader = fastavro.reader(fo)
 			zavro_dict = next(reader, None)
@@ -48,7 +46,6 @@ class ZIAlertLoader:
 			a flat list of dictionaries (each containing photopoints information).
 			The dictionary with index 0 in the list is the most recent photopoint.
 		"""	
-		ZIAlertLoader.logger.debug("Loading alert avro content")
 		with open(file_path, "rb") as fo:
 			reader = fastavro.reader(fo)
 			zavro_dict = next(reader, None)
@@ -84,7 +81,6 @@ class ZIAlertLoader:
 #		zavro_dict = ZIAlertLoader.load_raw_dict_from_file(file_path)
 #
 #		if filter_pps_history:
-#			ZIAlertLoader.logger.debug("Filtering previous photopoints")
 #			ZIAlertLoader.filter_previous_candidates(zavro_dict['prv_candidates'])
 #
 #		# quicker than sorted(zavro_dict['prv_candidates'], key=lambda k: k['jd'])

@@ -3,7 +3,7 @@
 # File              : ampel/pipeline/t0/AlertProcessor.py
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 14.12.2017
-# Last Modified Date: 10.01.2018
+# Last Modified Date: 21.01.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 import logging, importlib, time
 
@@ -23,6 +23,8 @@ from ampel.flags.ChannelFlags import ChannelFlags
 from ampel.pipeline.utils.ChannelsConfig import ChannelsConfig
 from ampel.pipeline.logging.LoggingUtils import LoggingUtils
 from ampel.pipeline.logging.DBJobReporter import DBJobReporter
+from ampel.pipeline.logging.DBLoggingHandler import DBLoggingHandler
+from ampel.pipeline.logging.InitLogBuffer import InitLogBuffer
 
 
 class AlertProcessor:
@@ -34,10 +36,8 @@ class AlertProcessor:
 			* Filter alert based on the configured filter
 			* Set policies
 			* Ingest alert based on the configured ingester
-
-		Ampel makes sure that each dictionary contains an alflags key 
 	"""
-	version = 0.15
+	version = 0.16
 
 	def __init__(
 		self, instrument="ZTF", alert_format="IPAC", 
@@ -49,7 +49,10 @@ class AlertProcessor:
 					If True, every database operation will be run by mongomock rather than pymongo 
 
 		"""
-		self.logger = LoggingUtils.get_ampel_console_logger()
+		self.logger = LoggingUtils.get_console_logger(unique=True)
+		self.ilb = InitLogBuffer(LogRecordFlags.T0)
+		self.logger.addHandler(self.ilb)
+		self.logger.info("Setting up new AlertProcessor instance")
 
 		if mock_db:
 			from mongomock import MongoClient
@@ -57,9 +60,6 @@ class AlertProcessor:
 			from pymongo import MongoClient
 
 		self.mongo_client = MongoClient()
-		self.db_job_reporter = DBJobReporter(self.mongo_client, AlertProcessor.version)
-		self.db_job_reporter.add_flags(JobFlags.T0)
-		self.db_log_handler = LoggingUtils.add_db_log_handler(self.logger, self.db_job_reporter)
 
 		if config_file is None:
 			db = self.mongo_client.get_database("Ampel")
@@ -103,6 +103,8 @@ class AlertProcessor:
 		# more instruments may be defined later
 		else:
 			raise ValueError("No implementation exists for the instrument: "+instrument)
+
+		self.logger.info("AlertProcessor initial setup completed")
 
 
 	def load_config_from_file(self, file_name):
@@ -174,10 +176,11 @@ class AlertProcessor:
 		channel = {"name": channel_name}
 
 		# Instanciate filter class associated with this channel
-		self.logger.info("Loading filter: " + d_filter['className'])
-		module = importlib.import_module("ampel.pipeline.t0.filters." + d_filter['className'])
-		fobj = getattr(module, d_filter['className'])()
+		self.logger.info("Loading filter: " + d_filter['classFullPath'])
+		module = importlib.import_module(d_filter['classFullPath'])
+		fobj = getattr(module, d_filter['classFullPath'].split(".")[-1])()
 		fobj.set_filter_parameters(d_filter['parameters'])
+		fobj.set_logger(self.logger)
 
 		# Create the enum flags that will be associated with matching transients
 		t2s = self.channels_config.get_channel_t2s_flag(channel_name)
@@ -215,23 +218,26 @@ class AlertProcessor:
 		"""
 			Loads and returns an ingester intance using the provided metoclass
 		"""
-		self.logger.info("Loading %s", ingester_class.__name__)
+		self.logger.info("Loading %s" % ingester_class.__name__)
 		return ingester_class(
 			self.mongo_client, 
 			self.channels_config, 
-			[chan['name'] for chan in self.t0_channels]
+			[chan['name'] for chan in self.t0_channels],
+			self.logger
 		)
 
 
-	def get_iterable_paths(self, base_dir="/Users/hu/Documents/ZTF/Ampel/alerts/", extension="*.avro"):
+	def run_iterable_paths(self, base_dir="/Users/hu/Documents/ZTF/Ampel/alerts/", extension="*.avro"):
 
 		# Container class allowing to conveniently iterate over local avro files 
-		aflist = AlertFileList()
+		aflist = AlertFileList(self.logger)
 		aflist.set_folder(base_dir)
 		aflist.set_extension(extension)
 		
-		self.logger.info("Returning iterable for file paths in folder: %s", base_dir)
-		return iter(aflist.get_files())
+		self.logger.info("Returning iterable for file paths in folder: %s" % base_dir)
+		return self.run(
+			iter(aflist.get_files())
+		)
 
 
 	def run(self, iterable):
@@ -242,6 +248,43 @@ class AlertProcessor:
 				* Ingest alert based on PipelineIngester (default) 
 				or the ingester instance set by the method set_ingester(obj)
 		"""
+
+
+		# Part 1: Setup logging 
+		#######################
+
+		self.logger.info("Executing run method")
+
+		# Remove logger saving "headers" before job(s) 
+		self.logger.removeHandler(self.ilb)
+
+		# Create JobReporter instance
+		db_job_reporter = DBJobReporter(
+			self.mongo_client, JobFlags.T0
+		)
+
+		# Create new "job" document in the DB
+		db_job_reporter.insert_new(
+			{
+				"alertProcVersion": str(self.version),
+				"ingesterId": str(self.ingester_class.__class__)
+			}
+		)
+	
+		# Create DB logging handler instance (logging.Handler child class)
+		# This class formats, saves and pushes log records into the DB
+		db_logging_handler = DBLoggingHandler(
+			db_job_reporter, 
+			previous_logs=self.ilb.get_logs()
+		)
+
+		# Add db logging handler to the logger stack of handlers 
+		self.logger.addHandler(db_logging_handler)
+
+
+
+		# Part 2: Setup divers
+		######################
 
 		self.logger.info("#######     Processing alerts     #######")
 
@@ -260,14 +303,10 @@ class AlertProcessor:
 				self.ingester = self.load_ingester(self.ingester_class)
 				del self.active_chanlist_change
 				
-
-
-		# Create new "job" document in the DB
-		self.db_job_reporter.insert_new(self)
-
-		# Set ingester jobId 	(will be inserted in the transient documents)
+		# Forward jobId to ingester instance 
+		# (will be inserted in the transient documents)
 		self.ingester.set_job_id(
-			self.db_job_reporter.getJobId()
+			db_job_reporter.getJobId()
 		)
 
 		# Array of JobFlags. Each element is set by each T0 channel 
@@ -276,12 +315,17 @@ class AlertProcessor:
 		# python micro-optimization
 		loginfo = self.logger.info
 		logdebug = self.logger.debug
-		dblh_set_tranId = self.db_log_handler.set_tranId
-		dblh_set_temp_flags = self.db_log_handler.set_temp_flags
-		dblh_unset_temp_flags = self.db_log_handler.unset_temp_flags
-		dblh_unset_tranId = self.db_log_handler.unset_tranId
+		dblh_set_tranId = db_logging_handler.set_tranId
+		dblh_set_temp_flags = db_logging_handler.set_temp_flags
+		dblh_unset_temp_flags = db_logging_handler.unset_temp_flags
+		dblh_unset_tranId = db_logging_handler.unset_tranId
 		alert_loading_func = self.alert_loading_func
 		ingest = self.ingester.ingest
+
+
+
+		# Part 3: Proceed alerts
+		########################
 
 		# Iterate over alerts
 		for element in iterable:
@@ -291,9 +335,9 @@ class AlertProcessor:
 
 				# Load avro file into python dict instance
 				trans_id, pps_list = alert_loading_func(element)
-				loginfo("Processing alert: " + str(trans_id))
 
 				# AmpelAlert will create an immutable list of immutable pp dictionaries
+				loginfo("Processing alert: " + str(trans_id))
 				alert = AmpelAlert(trans_id, pps_list)
 
 				# Associate upcoming log entries with the current transient id
@@ -321,6 +365,13 @@ class AlertProcessor:
 				if not any(scheduled_t2_modules):
 					# TODO: implement AlertDisposer class ?
 					self.logger.info("Disposing rejected candidates not implemented yet")
+
+					if len(pps_list) > 1:
+						# TODO check autocomplete set of ids !
+						# for each channel from db_transient:
+						# 		convert channel into i position
+						#		scheduled_t2_modules[i] = default_t2ModuleIds_for_this_channel
+						pass
 				else:
 					# Ingest alert
 					logdebug(" -> Ingesting alert")
@@ -333,9 +384,12 @@ class AlertProcessor:
 				self.logger.exception("")
 				self.logger.critical("Exception occured")
 
-		duration = int(time.time()) - start_time
 
-		self.db_job_reporter.set_duration(duration)
+		duration = int(time.time()) - start_time
+		db_job_reporter.set_duration(duration)
+		self.logger.addHandler(self.ilb)
 		loginfo("Pipeline processing completed (time required: " + str(duration) + "s)")
 
-		self.db_log_handler.flush()
+		# Remove DB logging handler
+		db_logging_handler.flush()
+		self.logger.removeHandler(db_logging_handler)
