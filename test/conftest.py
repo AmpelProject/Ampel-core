@@ -6,6 +6,10 @@ import time
 import os
 import tempfile
 
+import fastavro
+from glob import glob
+import fastavro
+
 @pytest.fixture(scope="session")
 def kafka_singularity_image():
     # check whether singularity exists
@@ -25,6 +29,24 @@ def kafka_singularity_image():
 
 def create_topic(name, partitions=1):
     subprocess.check_call(['singularity', 'exec', '--containall', '--cleanenv', kafka_singularity_image(), '/bin/sh', '-c', "$KAFKA_HOME/bin/kafka-topics.sh --topic '{}' --create --partitions {:d} --replication-factor 1 --zookeeper localhost:2181".format(name, partitions)])
+
+@pytest.fixture
+def alert_generator():
+    def alerts():
+        """
+        Generate alerts, filtering out anonymous photopoints (entries in
+        prv_candidates with no candid)
+        """
+        parent = os.path.dirname(os.path.realpath(__file__)) + '/../'
+        for fname in glob(parent+'alerts/ipac/*.avro'):
+            with open(fname, 'rb') as f:
+                for alert in fastavro.reader(f):
+                    alert['prv_candidates'] = [c for c in alert['prv_candidates'] if c['candid'] is not None]
+                    del alert['cutoutDifference']
+                    del alert['cutoutScience']
+                    del alert['cutoutTemplate']
+                    yield alert
+    return alerts
 
 @pytest.fixture(scope="session")
 def kafka_server(kafka_singularity_image):
