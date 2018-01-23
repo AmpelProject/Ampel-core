@@ -16,7 +16,7 @@ class LoggingUtils:
 	"""
 
 	@staticmethod
-	def get_console_logger(unique=True):
+	def get_logger(unique=True):
 		"""
 			Returns a logger (registered as 'Ampel' in the module logging)
 			with the following parameters:
@@ -25,26 +25,17 @@ class LoggingUtils:
 					'%(asctime)s %(filename)s:%(lineno)s %(funcName)s() %(levelname)s %(message)s'
 		"""
 
+		logging.basicConfig(
+			format='%(asctime)s %(filename)s:%(lineno)s %(funcName)s() %(levelname)s %(message)s', 
+			datefmt="%Y-%m-%d %H:%M:%S", 
+			level=logging.DEBUG,
+			handlers=[
+        		logging.StreamHandler(sys.stdout)
+    		]
+		)
+
 		logger_name = "Ampel-"+str(datetime.now().time()) if unique is True else "Ampel"
-
-		# if logger_name in logging.Logger.manager.loggerDict:
-		#	return logging.getLogger(logger_name)
-
 		logger = logging.getLogger(logger_name)
-		logger.propagate = False
-
-		if not len(logger.handlers):
-			shandler = logging.StreamHandler(sys.stdout)
-			shandler.setLevel(logging.DEBUG)
-			formatter = logging.Formatter(
-				'%(asctime)s %(filename)s:%(lineno)s %(funcName)s() %(levelname)s %(message)s',
-				"%Y-%m-%d %H:%M:%S"
-			)
-			shandler.setFormatter(formatter)
-
-			logger.addHandler(shandler)
-			logger.setLevel(logging.DEBUG)
-
 		return logger
 
 

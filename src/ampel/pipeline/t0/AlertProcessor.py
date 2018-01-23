@@ -49,7 +49,7 @@ class AlertProcessor:
 					If True, every database operation will be run by mongomock rather than pymongo 
 
 		"""
-		self.logger = LoggingUtils.get_console_logger(unique=True)
+		self.logger = LoggingUtils.get_logger(unique=True)
 		self.ilb = InitLogBuffer(LogRecordFlags.T0)
 		self.logger.addHandler(self.ilb)
 		self.logger.info("Setting up new AlertProcessor instance")
