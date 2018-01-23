@@ -9,7 +9,7 @@
                 "weizmannSub" : true
             },
             "alertFilter" : {
-                "className" : "SNFilter",
+                "classFullPath" : "ampel.pipeline.t0.filters.SNFilter",
                 "parameters" : {
                     "slopeMin" : 0,
                     "slopeMax" : 0
@@ -43,7 +43,7 @@
                 "weizmannSub" : false
             },
             "alertFilter" : {
-                "className" : "RandFilter",
+                "classFullPath" : "ampel.pipeline.t0.filters.RandFilter",
                 "parameters" : {
                     "threshold" : 1
                 }
