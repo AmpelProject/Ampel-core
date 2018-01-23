@@ -29,9 +29,7 @@ class LoggingUtils:
 			format='%(asctime)s %(filename)s:%(lineno)s %(funcName)s() %(levelname)s %(message)s', 
 			datefmt="%Y-%m-%d %H:%M:%S", 
 			level=logging.DEBUG,
-			handlers=[
-        		logging.StreamHandler(sys.stdout)
-    		]
+			stream=sys.stdout
 		)
 
 		logger_name = "Ampel-"+str(datetime.now().time()) if unique is True else "Ampel"
