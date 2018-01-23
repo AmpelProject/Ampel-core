@@ -45,10 +45,13 @@ class ZIAlertLoader:
 			Returns a tupple: first element is the alert ID and second element is 
 			a flat list of dictionaries (each containing photopoints information).
 			The dictionary with index 0 in the list is the most recent photopoint.
-		"""	
-		with open(file_path, "rb") as fo:
-			reader = fastavro.reader(fo)
-			zavro_dict = next(reader, None)
+		"""
+		if isinstance(file_path, dict):
+			zavro_dict = file_path
+		else:
+			with open(file_path, "rb") as fo:
+				reader = fastavro.reader(fo)
+				zavro_dict = next(reader, None)
 
 		# Efficient way of creating the flat list of pps required for AmpelAlert
 		zavro_dict['prv_candidates'].insert(0, zavro_dict['candidate'])
