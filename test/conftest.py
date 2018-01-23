@@ -6,7 +6,7 @@ import time
 import os
 import tempfile
 
-import fastavro
+from io import BytesIO
 from glob import glob
 import fastavro
 
@@ -30,6 +30,15 @@ def kafka_singularity_image():
 def create_topic(name, partitions=1):
     subprocess.check_call(['singularity', 'exec', '--containall', '--cleanenv', kafka_singularity_image(), '/bin/sh', '-c', "$KAFKA_HOME/bin/kafka-topics.sh --topic '{}' --create --partitions {:d} --replication-factor 1 --zookeeper localhost:2181".format(name, partitions)])
 
+def delete_topic(name, partitions=1):
+    subprocess.check_call(['singularity', 'exec', '--containall', '--cleanenv', kafka_singularity_image(), '/bin/sh', '-c', "$KAFKA_HOME/bin/kafka-topics.sh --topic '{}' --delete --zookeeper localhost:2181".format(name)])
+
+def alert_blobs():
+    parent = os.path.dirname(os.path.realpath(__file__)) + '/../'
+    for fname in glob(parent+'alerts/ipac/*.avro'):
+        with open(fname, 'rb') as f:
+            yield f.read()
+
 @pytest.fixture
 def alert_generator():
     def alerts():
@@ -47,6 +56,20 @@ def alert_generator():
                     del alert['cutoutTemplate']
                     yield alert
     return alerts
+
+@pytest.fixture
+def alert_stream(kafka_server, alert_generator):
+    create_topic('alerts', 2)
+    client = pykafka.KafkaClient(hosts='localhost:9092')
+    topic = client.topics[b'alerts']
+    assert len(topic.partitions) == 2
+    
+    with topic.get_producer() as producer:
+        for blob in alert_blobs():
+            # FIXME: add a timestamp (requires server.properties inter.broker.protocol.version=1)
+            producer.produce(blob)
+    yield
+    delete_topic('alerts')
 
 @pytest.fixture(scope="session")
 def kafka_server(kafka_singularity_image):
