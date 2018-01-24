@@ -72,9 +72,13 @@ def alert_generator():
 
 @pytest.fixture
 def alert_stream(kafka_server, alert_generator):
-    create_topic('alerts', 2)
+    topic_name = 'alerts'
+    try:
+        create_topic(topic_name, 2)
+    except subprocess.CalledProcessError:
+        pass
     client = pykafka.KafkaClient(hosts='localhost:9092')
-    topic = client.topics[b'alerts']
+    topic = client.topics[topic_name.encode()]
     assert len(topic.partitions) == 2
     
     with topic.get_producer() as producer:
@@ -82,7 +86,9 @@ def alert_stream(kafka_server, alert_generator):
             # FIXME: add a timestamp (requires server.properties inter.broker.protocol.version=1)
             producer.produce(blob)
     yield
-    delete_topic('alerts')
+    delete_topic(topic_name)
+    # delete.topic.enable=false by default, so deleting the topic is a no-op
+    # assert topic_name.encode() not in client.topics
 
 @pytest.fixture(scope="session")
 def kafka_server(kafka_singularity_image):
@@ -109,6 +115,8 @@ def kafka_server(kafka_singularity_image):
         
         # wait for kafka to become available (while suppressing noisy logging)
         for i in range(30):
+            if proc.poll() is not None:
+                raise pykafka.exceptions.NoBrokersAvailableError
             try:
                 client = pykafka.KafkaClient(hosts='localhost:9092')
             except pykafka.exceptions.NoBrokersAvailableError:

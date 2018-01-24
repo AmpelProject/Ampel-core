@@ -25,7 +25,7 @@ def test_consume_alert_stream(alert_stream):
     assert len(topic.partitions) == 2
     
     # exactly one consumer per partition
-    consumers = [topic.get_balanced_consumer(consumer_group=b'ampel', consumer_timeout_ms=1e3, auto_commit_enable=False) for p in topic.partitions]
+    consumers = [topic.get_balanced_consumer(consumer_group=b'testy', consumer_timeout_ms=1e3, auto_commit_enable=False) for p in topic.partitions]
     for c in consumers:
         assert len(c.partitions) == 1
         # fetch an alert, but don't commit the offset
@@ -34,7 +34,7 @@ def test_consume_alert_stream(alert_stream):
     del consumers
     
     # try again committing the offsets
-    consumers = [topic.get_balanced_consumer(consumer_group=b'ampel', consumer_timeout_ms=1e3, auto_commit_enable=False) for p in topic.partitions]
+    consumers = [topic.get_balanced_consumer(consumer_group=b'testy', consumer_timeout_ms=1e3, auto_commit_enable=False) for p in topic.partitions]
     for c in consumers:
         assert c.consume().offset == 0
         c.commit_offsets()
@@ -42,7 +42,7 @@ def test_consume_alert_stream(alert_stream):
     del consumers
     
     # verify restart
-    consumers = [topic.get_balanced_consumer(consumer_group=b'ampel', consumer_timeout_ms=1e3, auto_commit_enable=False) for p in topic.partitions]
+    consumers = [topic.get_balanced_consumer(consumer_group=b'testy', consumer_timeout_ms=1e3, auto_commit_enable=False) for p in topic.partitions]
     for c in consumers:
         assert c.consume().offset == 1
         c.commit_offsets()
