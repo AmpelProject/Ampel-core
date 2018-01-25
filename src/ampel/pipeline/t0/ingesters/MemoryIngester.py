@@ -3,11 +3,11 @@
 # File              : ampel/pipeline/t0/ingesters/MemoryIngester.py
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 14.12.2017
-# Last Modified Date: 03.01.2018
+# Last Modified Date: 25.01.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from ampel.flags.TransientFlags import TransientFlags
-from ampel.base.AbstractAlertIngester import AbstractAlertIngester
+from ampel.abstract.AbstractAlertIngester import AbstractAlertIngester
 
 
 class MemoryIngester(AbstractAlertIngester):
@@ -27,7 +27,7 @@ class MemoryIngester(AbstractAlertIngester):
 		self.flag_index = flag_index
 
 
-	def ingest(self, tran_id, alert_pps_list, all_channels_t2_flags, force=False):
+	def ingest(self, tran_id, alert_pps_list, all_channels_t2_flags):
 
 		if all_channels_t2_flags[self.flag_index] is not None:
 			self.accepted_transients.append(alert_pps_list)
