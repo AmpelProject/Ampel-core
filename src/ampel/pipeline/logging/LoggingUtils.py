@@ -11,11 +11,11 @@ from datetime import datetime
 
 class LoggingUtils:
 	"""
-		Class containing static util methods related to the pipeline logging mechanisms
+		Logging related static util method(s)
 	"""
 
 	@staticmethod
-	def get_logger(unique=True):
+	def get_logger(unique=False):
 		"""
 			Returns a logger (registered as 'Ampel' in the module logging is unique=False)
 			with the following parameters:

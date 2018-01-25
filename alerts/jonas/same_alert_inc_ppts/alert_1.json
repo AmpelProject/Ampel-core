@@ -1,10 +1,9 @@
 {
 "candid": 1000020, 
 "objectId": 1, 
-"candidate": {
-	"jd": 58094.11093749959, "magpsf": 20.786268906870195, "candid": 1000020, "programpi": "Kulkarni", "fid": 641
-}, 
-"prv_candidates": [
+"candidate": 
 	{"jd": 58037.11874999956, "magpsf": 23.856793629352122, "candid": 1000000, "programpi": "Kulkarni", "fid": 641}
+,
+"prv_candidates": [
 ]
 }

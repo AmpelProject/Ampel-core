@@ -3,7 +3,7 @@
 # File              : ampel/pipeline/logging/DBJobReporter.py
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 14.12.2017
-# Last Modified Date: 21.01.2018
+# Last Modified Date: 24.01.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 import logging
 from bson import ObjectId
@@ -11,15 +11,17 @@ from ampel.flags.JobFlags import JobFlags
 
 class DBJobReporter:
 	""" 
-		Inserts/Updates a job info entry into the NoSQL DB
-		A job entry contains various info about the current job 
-		and an array of log entries produced by this job
+	Inserts/Updates a job info entry into the NoSQL DB
+	A job entry contains various info about the current job 
+	and an array of log entries produced by this job
 	"""
 
-	def __init__(self, mongo_client, job_flags=None):
+	def __init__(self, db, job_flags=None):
 		""" 
+		Parameters:
+		db: instance of pymongo.database.Database
+		job_flags: instance of ampel.flags.JobFlags
 		"""
-		db = mongo_client['events']
 		self.col = db['jobs']
 		self.job_flags = JobFlags(0) if job_flags is None else job_flags
 		self.job_name = "Not set"
@@ -27,7 +29,7 @@ class DBJobReporter:
 
 	def add_flags(self, job_flags):
 		""" 
-			Add flags (common.flags.JobFlags) to this job
+		Add flags (common.flags.JobFlags) to this job
 		"""
 		self.job_flags |= job_flags
 

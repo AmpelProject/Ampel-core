@@ -9,7 +9,7 @@
                 "weizmannSub" : true
             },
             "alertFilter" : {
-                "classFullPath" : "ampel.pipeline.t0.filters.SNFilter",
+                "classFullPath" : "ampel.contrib.hu.t0.SNFilter",
                 "parameters" : {
                     "slopeMin" : 0,
                     "slopeMax" : 0
@@ -43,7 +43,7 @@
                 "weizmannSub" : false
             },
             "alertFilter" : {
-                "classFullPath" : "ampel.pipeline.t0.filters.RandFilter",
+                "classFullPath" : "ampel.contrib.hu.t0.RandFilter",
                 "parameters" : {
                     "threshold" : 1
                 }
@@ -65,6 +65,9 @@
         }
     },
     "global" : {
+        "logging" : {
+            "dbName" : "events"
+        },
         "photoPoints" : {
             "ZTFIPAC" : {
                 "alFlags" : "INST_ZTF|PP_IPAC",

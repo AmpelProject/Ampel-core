@@ -1,11 +1,9 @@
 {
 "candid": 1000020, 
 "objectId": 1, 
-"candidate": {
-	"jd": 58094.11093749959, "magpsf": 20.786268906870195, "candid": 1000020, "programpi": "Kulkarni", "fid": 641
-}, 
+"candidate": {"jd": 58091.110416666255, "magpsf": 20.439326745376466, "candid": 1000018, "programpi": "Kulkarni", "fid": 641}, 
 "prv_candidates": [
-	{"jd": 58091.110416666255, "magpsf": 20.439326745376466, "candid": 1000018, "programpi": "Kulkarni", "fid": 641}, 
+
 	{"jd": 58088.109895832924, "magpsf": 20.44917886560427, "candid": 1000017, "programpi": "Kulkarni", "fid": 641}, 
 	{"jd": 58085.10937499959, "magpsf": 20.556809476480602, "candid": 1000016, "programpi": "Kulkarni", "fid": 641}, 
 	{"jd": 58082.1078124996, "magpsf": 20.588474220085388, "candid": 1000015, "programpi": "Kulkarni", "fid": 641}, 

@@ -111,6 +111,16 @@ class ChannelsConfig:
 		return self.config[channel_name]['alertFilter']
 
 
+	def set_channel_filter_parameter(self, channel_name, param_name, param_value):
+		"""	
+			Dict path lookup shortcut function
+		"""	
+		if channel_name not in self.config:
+			raise ValueError('Channel %s not found' % channel_name)
+
+		self.config[channel_name]['alertFilter']['parameters'][param_name] = param_value
+
+
 	def get_channel_t2_param(self, channel_name, t2_module_name):
 		"""	
 			Dict path lookup shortcut function

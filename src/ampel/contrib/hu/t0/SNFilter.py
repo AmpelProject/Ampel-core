@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/pipeline/t0/filters/SNFilter.py
+# File              : ampel/contrib/hu/t0/SNFilter.py
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 14.12.2017
-# Last Modified Date: 21.01.2018
+# Last Modified Date: 25.01.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
-from ampel.base.AbstractTransientFilter import AbstractTransientFilter
+from ampel.abstract.AbstractTransientFilter import AbstractTransientFilter
 
 class SNFilter(AbstractTransientFilter):
 

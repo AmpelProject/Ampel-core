@@ -3,14 +3,14 @@
 # File              : ampel/pipeline/t0/ingesters/ZIAlertIngester.py
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 14.12.2017
-# Last Modified Date: 21.01.2018
+# Last Modified Date: 25.01.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-import logging
-from pymongo import UpdateOne, InsertOne, MongoClient
+import logging, pymongo
+from datetime import datetime
 from pymongo.errors import BulkWriteError
 
-from ampel.base.AbstractAlertIngester import AbstractAlertIngester
+from ampel.abstract.AbstractAlertIngester import AbstractAlertIngester
 from ampel.pipeline.t0.ingesters.ZIPhotoPointShaper import ZIPhotoPointShaper
 from ampel.pipeline.utils.CompoundGenerator import CompoundGenerator
 from ampel.pipeline.utils.T2DocsShaper import T2DocsShaper
@@ -31,21 +31,23 @@ TO_RUN = FlagUtils.get_flag_pos_in_enumflag(T2RunStates.TO_RUN)
 
 class ZIAlertIngester(AbstractAlertIngester):
 	"""
-		Ingester class used by t0.AlertProcessor in 'online' mode.
-		This class 'ingests' alerts (if they have passed the alert filter):
-		it compares info between alert and DB and creates several documents 
-		in the DB that are used in later processing stages (T2, T3)
+	Ingester class used by t0.AlertProcessor in 'online' mode.
+	This class 'ingests' alerts (if they have passed the alert filter):
+	it compares info between alert and DB and creates several documents 
+	in the DB that are used in later processing stages (T2, T3)
 	"""
 
-	def __init__(self, mongo_client, channels_config, names_of_active_channels, logger):
+	def __init__(self, db, channels_config, names_of_active_channels, logger):
 		"""
-			mongo_client: (instance of pymongo.MongoClient) is required for database operations
+		db: instance of pymongo.database.Database (required for database operations)
 		"""
 
-		if not type(mongo_client) is MongoClient:
+		if not type(db) is pymongo.database.Database:
 			import mongomock
-			if not type(mongo_client) is mongomock.MongoClient:
-				raise ValueError("The parameter mongo_client must be of type: MongoClient")
+			if not type(db) is mongomock.database.Database:
+				raise ValueError(
+					"The parameter db (%s) must be of type: pymongo.database.Database" % type(db)
+				)
 
 		if not type(channels_config) is ChannelsConfig:
 			raise ValueError("The parameter channels_config must be of type: ampel.pipeline.common.ChannelsConfig")
@@ -54,7 +56,7 @@ class ZIAlertIngester(AbstractAlertIngester):
 			raise ValueError("The parameter names_of_active_channels must be of type: list")
 
 		self.logger = logger
-		self.set_mongo(mongo_client)
+		self.set_mongo(db)
 		self.pps_shaper = ZIPhotoPointShaper()
 		self.t2docs_shaper = T2DocsShaper(channels_config, names_of_active_channels)
 
@@ -75,46 +77,45 @@ class ZIAlertIngester(AbstractAlertIngester):
 
 	def set_job_id(self, job_id):
 		"""
-			An ingester class creates/updates several documents in the DB for each alert.
-			Among other things, it updates the main transient document, 
-			which contains a list of jobIds associated with the processing of the given transient.
-			We thus need to know what is the current jobId to perform this update.
-			The provided parameter should be a mongoDB ObjectId.
+		An ingester class creates/updates several documents in the DB for each alert.
+		Among other things, it updates the main transient document, 
+		which contains a list of jobIds associated with the processing of the given transient.
+		We thus need to know what is the current jobId to perform this update.
+		The provided parameter should be a mongoDB ObjectId.
 		"""
 		self.job_id = job_id
 
 
 	def set_photopoints_shaper(self, arg_pps_shaper):
 		"""
-			Before the ingester instance inserts new photopoints into the photopoint collection, 
-			it 'customizes' (or 'ampelizes' if you will) the photopoints in order to later enable
-			the use of short and flexible queries. 
-			The cutomizations are minimal, most of the original photopoint structure is kept.
-			For exmample, in the case of ZIPhotoPointStamper:
-				* The field candid is renamed in _id 
-				* A new field 'alFlags' (AmpelFlags) is created (integer value of ampel.flags.PhotoPointFlags)
-				* A new field 'alDocType' is created (integer value of ampel.flags.AlDocTypes.PHOTOPOINT)
-			A photopoint stamper class (t0.pipeline.stampers.*) performs these operations.
-			This method allows to customize the PhotoPointStamper instance to be used.
-			By default, ZIPhotoPointStamper is used.
+		Before the ingester instance inserts new photopoints into the photopoint collection, 
+		it 'customizes' (or 'ampelizes' if you will) the photopoints in order to later enable
+		the use of short and flexible queries. 
+		The cutomizations are minimal, most of the original photopoint structure is kept.
+		For exmample, in the case of ZIPhotoPointStamper:
+			* The field candid is renamed in _id 
+			* A new field 'alFlags' (AmpelFlags) is created (integer value of ampel.flags.PhotoPointFlags)
+			* A new field 'alDocType' is created (integer value of ampel.flags.AlDocTypes.PHOTOPOINT)
+		A photopoint stamper class (t0.pipeline.stampers.*) performs these operations.
+		This method allows to customize the PhotoPointStamper instance to be used.
+		By default, ZIPhotoPointStamper is used.
 		"""
 		self.pps_shaper = arg_pps_shaper
 
 
 	def get_photopoints_shaper(self):
 		"""
-			Get the PhotoPointShaper instance associated with this class instance.
-			For more information, please check the set_photopoints_shaper docstring
+		Get the PhotoPointShaper instance associated with this class instance.
+		For more information, please check the set_photopoints_shaper docstring
 		"""
 		return self.pps_shaper
 
 
-	def set_mongo(self, mongo_client):
+	def set_mongo(self, db):
 		"""
-			Sets the mongo client (instance of pymongo.MongoClient) for database operations.
+		db: instance of pymongo.database.Database
 		"""
-		self.db = mongo_client["Ampel"]
-		self.col = self.db["main"]
+		self.col = db["main"]
 
 
 	def ingest(self, tran_id, pps_alert, list_of_t2_modules):
@@ -214,7 +215,7 @@ class ZIAlertIngester(AbstractAlertIngester):
 							)
 
 							db_ops.append(
-								UpdateOne(
+								pymongo.UpdateOne(
 									{'_id': pp_db_set_superseeded["_id"]}, 
 									{
 										'$addToSet': {
@@ -256,7 +257,7 @@ class ZIAlertIngester(AbstractAlertIngester):
 			# Insert new photopoint documents into 'photopoints' collection
 			for pp in new_pps_dicts:
 				db_ops.append(
-					UpdateOne(
+					pymongo.UpdateOne(
 						{
 							"_id": pp["_id"], 
 						},
@@ -304,16 +305,18 @@ class ZIAlertIngester(AbstractAlertIngester):
 				}
 			
 			db_ops.append(
-				UpdateOne(
+				pymongo.UpdateOne(
 					{
 						"_id": compound_id, 
 					},
 					{
 						"$setOnInsert": {
 							"_id": compound_id,
-							"alDocType": AlDocTypes.COMPOUND,
 							"tranId": tran_id,
+							"alDocType": AlDocTypes.COMPOUND,
 							"tier": 0,
+							"added": datetime.today().timestamp(),
+							"lastppdt": pps_alert[0]['jd'],
 							"pps": comp_gen.get_eff_compound(compound_id)
 						},
 						"$addToSet": d_addtoset
@@ -360,7 +363,7 @@ class ZIAlertIngester(AbstractAlertIngester):
 						}
 
 					db_ops.append(
-						UpdateOne(
+						pymongo.UpdateOne(
 							{
 								"tranId": tran_id, 
 								"t2Module": FlagUtils.get_flag_pos_in_enumflag(t2_id), 
@@ -396,7 +399,7 @@ class ZIAlertIngester(AbstractAlertIngester):
 
 		# TODO add alFlags
 		db_ops.append(
-			UpdateOne(
+			pymongo.UpdateOne(
 				{
 					"_id": tran_id
 				},
