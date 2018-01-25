@@ -363,7 +363,8 @@ class AlertProcessor:
 		for element in iterable:
 
 			try:
-				logdebug("Processing: " + element)
+				if isinstance(element, str):
+					logdebug("Processing: " + element)
 
 				# Load avro file into python dict instance
 				trans_id, pps_list = alert_loading_func(element)

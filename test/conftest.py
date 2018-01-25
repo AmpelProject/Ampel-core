@@ -44,13 +44,26 @@ def alert_generator():
     def alerts():
         """
         Generate alerts, filtering out anonymous photopoints (entries in
-        prv_candidates with no candid)
+        prv_candidates with no candid) and photopoints that appear to come
+        from an alternate pipeline where `isdiffpos` is 1/0 instead of t/f, and
+        `pdiffimfilename` is an absolute path in /ztf/archive rather than a
+        plain filename
         """
         parent = os.path.dirname(os.path.realpath(__file__)) + '/../'
-        for fname in glob(parent+'alerts/ipac/*.avro'):
+
+        for fname in sorted(glob(parent+'alerts/real/*.avro')):
             with open(fname, 'rb') as f:
+                
                 for alert in fastavro.reader(f):
-                    alert['prv_candidates'] = [c for c in alert['prv_candidates'] if c['candid'] is not None]
+                    def valid(c):
+                        if c['candid'] is None:
+                            return False
+                        elif c['isdiffpos'] is not None and c['isdiffpos'].isdigit():
+                            return False
+                        return True
+                            
+                    alert['prv_candidates'] = list(filter(valid, alert['prv_candidates']))
+                    
                     del alert['cutoutDifference']
                     del alert['cutoutScience']
                     del alert['cutoutTemplate']
@@ -59,9 +72,13 @@ def alert_generator():
 
 @pytest.fixture
 def alert_stream(kafka_server, alert_generator):
-    create_topic('alerts', 2)
+    topic_name = 'alerts'
+    try:
+        create_topic(topic_name, 2)
+    except subprocess.CalledProcessError:
+        pass
     client = pykafka.KafkaClient(hosts='localhost:9092')
-    topic = client.topics[b'alerts']
+    topic = client.topics[topic_name.encode()]
     assert len(topic.partitions) == 2
     
     with topic.get_producer() as producer:
@@ -69,7 +86,9 @@ def alert_stream(kafka_server, alert_generator):
             # FIXME: add a timestamp (requires server.properties inter.broker.protocol.version=1)
             producer.produce(blob)
     yield
-    delete_topic('alerts')
+    delete_topic(topic_name)
+    # delete.topic.enable=false by default, so deleting the topic is a no-op
+    # assert topic_name.encode() not in client.topics
 
 @pytest.fixture(scope="session")
 def kafka_server(kafka_singularity_image):
@@ -94,8 +113,10 @@ def kafka_server(kafka_singularity_image):
         
         proc = subprocess.Popen(['singularity', 'run', '--containall', '--cleanenv', '-W', tmpdir]+binds+[kafka_singularity_image], env=env)
         
-        # wait for kafka to become available
+        # wait for kafka to become available (while suppressing noisy logging)
         for i in range(30):
+            if proc.poll() is not None:
+                raise pykafka.exceptions.NoBrokersAvailableError
             try:
                 client = pykafka.KafkaClient(hosts='localhost:9092')
             except pykafka.exceptions.NoBrokersAvailableError:

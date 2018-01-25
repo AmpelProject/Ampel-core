@@ -35,7 +35,19 @@ def test_insert_unique_alerts(mock_database, alert_generator):
     processor_id = 0
     meta, connection = mock_database
     timestamps = []
+    candids = set()
     for alert in alert_generator():
+        # alerts are unique
+        assert alert['candid'] not in candids
+        candids.add(alert['candid'])
+        
+        # (candid,pid) is unique within an alert packet
+        prevs = dict()
+        for idx, candidate in enumerate([alert['candidate']] + alert['prv_candidates']):
+            key = (candidate['candid'], candidate['pid'])
+            assert key not in prevs
+            prevs[key] = candidate
+        
         timestamps.append(int(time.time()*1e6))
         archive.insert_alert(connection, meta, alert, processor_id, timestamps[-1])
     rows = connection.execute(select([meta.tables['alert'].c.ingestion_time])).fetchall()
@@ -78,6 +90,9 @@ def test_insert_duplicate_photopoints(mock_database, alert_generator):
 def test_get_alert(mock_database, alert_generator):
     processor_id = 0
     meta, connection = mock_database
+    
+    from sqlalchemy import select, and_
+    photopoint = meta.tables['photopoint']
     
     timestamps = []
     for alert in alert_generator():

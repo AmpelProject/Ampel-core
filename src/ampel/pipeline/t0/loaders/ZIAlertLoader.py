@@ -6,6 +6,8 @@
 # Last Modified Date: 21.01.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 import logging, fastavro
+import io
+import pykafka
 #from operator import itemgetter
 
 class ZIAlertLoader:
@@ -23,7 +25,31 @@ class ZIAlertLoader:
 		and the associated photopoints as list of dictionaries
 		The static method load_raw_dict_from_file returns the raw avro dict structure
 	"""
-
+	def __init__(self, brokers, topic, group_name=b"Ampel", timeout=1):
+		"""
+		:param brokers: Comma-separated list of kafka hosts to which to connect
+		:type brokers: str
+		:param topic: Topic of target Kafka stream
+		:type topic: bytes
+		:param group_name: Consumer group name to use for load-balancing
+		:type group_name: bytes
+		:param timeout: number of seconds to wait for a message
+		"""
+		client = pykafka.KafkaClient(brokers)
+		topic = client.topics[topic]
+		self._consumer = topic.get_balanced_consumer(consumer_group=group_name, consumer_timeout_ms=timeout*1e3)
+	
+	def alerts(self):
+		"""
+		Generate alerts until timeout is reached
+		"""
+		for message in self._consumer:
+			for alert in fastavro.reader(io.BytesIO(message.value)):
+				yield alert
+			self._consumer.commit_offsets()
+	
+	def __iter__(self):
+		return self.alerts()
 
 	@staticmethod
 	def load_raw_dict_from_file(file_path):
@@ -45,10 +71,13 @@ class ZIAlertLoader:
 			Returns a tupple: first element is the alert ID and second element is 
 			a flat list of dictionaries (each containing photopoints information).
 			The dictionary with index 0 in the list is the most recent photopoint.
-		"""	
-		with open(file_path, "rb") as fo:
-			reader = fastavro.reader(fo)
-			zavro_dict = next(reader, None)
+		"""
+		if isinstance(file_path, dict):
+			zavro_dict = file_path
+		else:
+			with open(file_path, "rb") as fo:
+				reader = fastavro.reader(fo)
+				zavro_dict = next(reader, None)
 
 		# Efficient way of creating the flat list of pps required for AmpelAlert
 		zavro_dict['prv_candidates'].insert(0, zavro_dict['candidate'])
