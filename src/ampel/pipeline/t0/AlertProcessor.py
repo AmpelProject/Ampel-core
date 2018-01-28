@@ -3,7 +3,7 @@
 # File              : ampel/pipeline/t0/AlertProcessor.py
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 14.12.2017
-# Last Modified Date: 25.01.2018
+# Last Modified Date: 27.01.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 import logging, importlib, time
 
@@ -16,7 +16,6 @@ from ampel.flags.AlertFlags import AlertFlags
 from ampel.flags.TransientFlags import TransientFlags
 from ampel.flags.LogRecordFlags import LogRecordFlags
 from ampel.flags.PhotoPointFlags import PhotoPointFlags
-from ampel.flags.T2ModuleIds import T2ModuleIds
 from ampel.flags.JobFlags import JobFlags
 from ampel.flags.ChannelFlags import ChannelFlags
 
@@ -342,7 +341,7 @@ class AlertProcessor:
 		)
 
 		# Array of JobFlags. Each element is set by each T0 channel 
-		scheduled_t2_modules = [None] * len(self.t0_channels) 
+		scheduled_t2_runnables = [None] * len(self.t0_channels) 
 
 		# python micro-optimization
 		loginfo = self.logger.info
@@ -382,11 +381,11 @@ class AlertProcessor:
 					# Associate upcoming log entries with the current channel
 					dblh_set_temp_flags(channel['log_flag'])
 
-					# Apply filter (returns None in case of rejection or t2 modules ids in case of match)
-					scheduled_t2_modules[i] = channel['filter_func'](alert)
+					# Apply filter (returns None in case of rejection or t2 runnable ids in case of match)
+					scheduled_t2_runnables[i] = channel['filter_func'](alert)
 
 					# Log feedback
-					if scheduled_t2_modules[i] is not None:
+					if scheduled_t2_runnables[i] is not None:
 						loginfo(channel['log_accepted'])
 						# TODO push transient journal entry
 					else:
@@ -395,7 +394,7 @@ class AlertProcessor:
 					# Unset channel id <-> log entries association
 					dblh_unset_temp_flags(channel['log_flag'])
 
-				if not any(scheduled_t2_modules):
+				if not any(scheduled_t2_runnables):
 					# TODO: implement AlertDisposer class ?
 					self.logger.info("Disposing rejected candidates not implemented yet")
 
@@ -403,12 +402,12 @@ class AlertProcessor:
 						# TODO check autocomplete set of ids !
 						# for each channel from db_transient:
 						# 		convert channel into i position
-						#		scheduled_t2_modules[i] = default_t2ModuleIds_for_this_channel
+						#		scheduled_t2_runnables[i] = default_t2RunnableIds_for_this_channel
 						pass
 				else:
 					# Ingest alert
 					logdebug(" -> Ingesting alert")
-					ingest(trans_id, pps_list, scheduled_t2_modules)
+					ingest(trans_id, pps_list, scheduled_t2_runnables)
 
 				# Unset log entries association with transient id
 				dblh_unset_tranId()

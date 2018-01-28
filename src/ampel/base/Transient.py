@@ -7,8 +7,8 @@
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from ampel.pipeline.logging.LoggingUtils import LoggingUtils
-from ampel.pipeline.common.PhotoPoint import PhotoPoint
-from ampel.pipeline.common.LightCurve import LightCurve
+from ampel.base.PhotoPoint import PhotoPoint
+from ampel.base.LightCurve import LightCurve
 from ampel.flags.PhotoPointFlags import PhotoPointFlags
 from ampel.flags.AlDocTypes import AlDocTypes
 from ampel.flags.FlagUtils import FlagUtils
@@ -34,20 +34,28 @@ class Transient:
 		cls.col = db["main"]
 
 
-	def __init__(self, tran_id, load_options, compound_id=None, logger=None):
+	def __init__(self, tran_id, logger=None):
 		"""
 		Parameters:
-		load_options: instance of ampel.pipeline.common.LoadOptions
 		tran_id: transient id (string)
 		compound_id: compound id
 		"""
 
 		self.tran_id = tran_id
-		self.al_pps = {}
-		self.lc = {}
+		self.compounds = {}
+		self.photopoints = {}
 		self.logger = LoggingUtils.get_logger() if logger is None else logger
 
 
+	def set_compound(self, compound):
+		self.compounds[compound.get_id()] = compound
+
+
+	def set_photopoints(self, list_of_photopoints):
+		for pp in list_of_photopoints:
+			self.photopoints[pp['_id']] = pp
+
+	
 	def get_latest_compound_id(self):
 		pass
 

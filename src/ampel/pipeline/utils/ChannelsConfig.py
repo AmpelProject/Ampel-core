@@ -1,12 +1,12 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/pipeline/common/ChannelsConfig.py
+# File              : ampel/pipeline/utils/ChannelsConfig.py
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 04.01.2018
-# Last Modified Date: 07.01.2018
+# Last Modified Date: 27.01.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-from ampel.flags.T2ModuleIds import T2ModuleIds
+from ampel.flags.T2RunnableIds import T2RunnableIds
 from ampel.flags.ChannelFlags import ChannelFlags
 
 
@@ -81,7 +81,7 @@ class ChannelsConfig:
 
 	def get_channel_t2s_flag(self, channel_name):
 		"""	
-			Generate T2ModuleIds for channel_name if not previously generated,
+			Generate T2RunnableIds flags for channel_name if not previously generated,
 			otherwise return previously generated enum flag
 		"""	
 		if channel_name not in self.config:
@@ -91,10 +91,10 @@ class ChannelsConfig:
 		if channel_name in self.d_chanlabel_t2sflag:
 			return self.d_chanlabel_t2sflag[channel_name] 
 
-		t2s_flag = T2ModuleIds(0)
+		t2s_flag = T2RunnableIds(0)
 
-		for d_entry in self.config[channel_name]['t2Modules']:
-			t2s_flag |= T2ModuleIds[d_entry['module']]
+		for d_entry in self.config[channel_name]['t2Compute']:
+			t2s_flag |= T2RunnableIds[d_entry['module']]
 
 		self.d_chanlabel_t2sflag[channel_name] = t2s_flag
 
@@ -121,15 +121,15 @@ class ChannelsConfig:
 		self.config[channel_name]['alertFilter']['parameters'][param_name] = param_value
 
 
-	def get_channel_t2_param(self, channel_name, t2_module_name):
+	def get_channel_t2_param(self, channel_name, t2_runnable_name):
 		"""	
 			Dict path lookup shortcut function
 		"""	
 		if channel_name not in self.config:
 			raise ValueError('Channel %s not found' % channel_name)
 
-		for el in self.config[channel_name]['t2Modules']:
-			if el['module'] == t2_module_name:
+		for el in self.config[channel_name]['t2Compute']:
+			if el['module'] == t2_runnable_name:
 				return el['paramId']
 
 		return None 

@@ -3,7 +3,7 @@
 # File              : ampel/pipeline/t0/ingesters/ZIAlertIngester.py
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 14.12.2017
-# Last Modified Date: 25.01.2018
+# Last Modified Date: 27.01.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import logging, pymongo
@@ -16,7 +16,6 @@ from ampel.pipeline.utils.CompoundGenerator import CompoundGenerator
 from ampel.pipeline.utils.T2DocsShaper import T2DocsShaper
 from ampel.pipeline.utils.ChannelsConfig import ChannelsConfig
 
-from ampel.flags.T2ModuleIds import T2ModuleIds
 from ampel.flags.PhotoPointFlags import PhotoPointFlags
 from ampel.flags.TransientFlags import TransientFlags
 from ampel.flags.T2RunStates import T2RunStates
@@ -118,7 +117,7 @@ class ZIAlertIngester(AbstractAlertIngester):
 		self.col = db["main"]
 
 
-	def ingest(self, tran_id, pps_alert, list_of_t2_modules):
+	def ingest(self, tran_id, pps_alert, list_of_t2_runnables):
 		"""
 			This method is called by t0.AmpelProcessor for 
 			transients that pass at leat one T0 channel filter. 
@@ -278,7 +277,7 @@ class ZIAlertIngester(AbstractAlertIngester):
 		chan_flags = ChannelFlags(0)
 		db_chan_flags = []
 
-		for i, el in enumerate(list_of_t2_modules):
+		for i, el in enumerate(list_of_t2_runnables):
 			if not el is None:
 				chan_flags |= self.l_chanflags[i]
 				db_chan_flags.append(self.l_chanflag_pos[i])
@@ -333,13 +332,13 @@ class ZIAlertIngester(AbstractAlertIngester):
 
 		self.logger.debug("Generating T2 docs")
 		ddd_t2_struct = self.t2docs_shaper.get_struct(
-			comp_gen, list_of_t2_modules
+			comp_gen, list_of_t2_runnables
 		)
 		
 		# counter for user feedback (after next loop)
 		db_ops_len = len(db_ops)
 
-		# Loop over t2 modules
+		# Loop over t2 runnables
 		for t2_id in ddd_t2_struct.keys():
 
 			# Loop over parameter Ids
@@ -366,7 +365,7 @@ class ZIAlertIngester(AbstractAlertIngester):
 						pymongo.UpdateOne(
 							{
 								"tranId": tran_id, 
-								"t2Module": FlagUtils.get_flag_pos_in_enumflag(t2_id), 
+								"t2Runnable": FlagUtils.get_flag_pos_in_enumflag(t2_id), 
 								"paramId": param_id, 
 								"compoundId": compound_id,
 							},
@@ -374,7 +373,7 @@ class ZIAlertIngester(AbstractAlertIngester):
 								"$setOnInsert": {
 									"tranId": tran_id,
 									"alDocType": AlDocTypes.T2_RECORD,
-									"t2Module": FlagUtils.get_flag_pos_in_enumflag(t2_id), 
+									"t2Runnable": FlagUtils.get_flag_pos_in_enumflag(t2_id), 
 									"paramId": param_id, 
 									"compoundId": compound_id, 
 									"runState": TO_RUN,

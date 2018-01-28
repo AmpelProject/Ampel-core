@@ -3,11 +3,10 @@
 # File              : ampel/pipeline/utils/CompoundGenerator.py
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 01.01.2018
-# Last Modified Date: 21.01.2018
+# Last Modified Date: 27.01.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import logging, hashlib, json
-from ampel.flags.T2ModuleIds import T2ModuleIds
 from ampel.flags.PhotoPointFlags import PhotoPointFlags
 from ampel.flags.TransientFlags import TransientFlags
 from ampel.flags.T2RunStates import T2RunStates
