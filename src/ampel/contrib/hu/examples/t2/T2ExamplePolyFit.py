@@ -71,6 +71,9 @@ class T2ExamplePolyFit(AbstractT2Runnable):
 		p = self.fit_function(x, y, run_parameters['degree'])
 		chi_squared = numpy.sum((numpy.polyval(p, x) - y) ** 2)
 
+		self.logger.info("Please use 'self.logger' for logging")
+		self.logger.debug("By doing that, log entries will be automatically recorded into the database!")
+
 		return {
 			"polyfit": list(p),
 			"chi2": numpy.sum((numpy.polyval(p, x) - y) ** 2)
