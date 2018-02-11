@@ -30,9 +30,10 @@ class LogRecordFlags(Flag):
 	T3		             = auto()
 
 	NO_CHANNEL			 = auto()
-	CHANNEL_SN			 = auto()
-	CHANNEL_NEUTRINO	 = auto()
-	CHANNEL_RANDOM		 = auto()
+	HU_EARLY_SN			 = auto()
+	HU_SN1			 	 = auto()
+	HU_SN2			 	 = auto()
+	HU_RANDOM			 = auto()
 	CHANNEL_OTHER1		 = auto()
 	CHANNEL_OTHER2		 = auto()
 	CHANNEL_OTHER3		 = auto()

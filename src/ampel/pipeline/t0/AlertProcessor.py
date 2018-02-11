@@ -177,8 +177,8 @@ class AlertProcessor:
 		self.logger.info("Loading filter: " + d_filter['classFullPath'])
 		module = importlib.import_module(d_filter['classFullPath'])
 		fobj = getattr(module, d_filter['classFullPath'].split(".")[-1])()
-		fobj.set_filter_parameters(d_filter['parameters'])
 		fobj.set_logger(self.logger)
+		fobj.set_filter_parameters(d_filter['parameters'])
 
 		# Create the enum flags that will be associated with matching transients
 		t2s = self.channels_config.get_channel_t2s_flag(channel_name)
@@ -191,7 +191,7 @@ class AlertProcessor:
 		channel['filter_func'] = fobj.apply
 
 		# LogRecordFlag and TransienFlag associated with the current channel
-		channel['log_flag'] = LogRecordFlags[self.channels_config.get_channel_flag_name(channel_name)]
+		channel['log_flag'] = LogRecordFlags[channel_name]
 		channel['flag'] = self.channels_config.get_channel_flag_instance(channel_name)
 
 		# Build these two log entries once and for all (outside the main loop in run())

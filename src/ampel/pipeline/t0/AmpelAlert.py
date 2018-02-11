@@ -124,11 +124,17 @@ class AmpelAlert:
 
 		for filter_el in filters:
 
-			operator = AmpelAlert.ops[filter_el['op']] 
-			del filter_el['op']
+			operator = AmpelAlert.ops[
+				filter_el['operator']
+			] 
 
 			for fkey in filter_el.keys():
+
+				if fkey == "operator":
+					continue
+
 				akey = fkey if not fkey in AmpelAlert.alert_keywords else AmpelAlert.alert_keywords[fkey]
+
 				filtered_pps = list(
 					filter(
 						lambda el: akey in el and operator(el[akey], filter_el[fkey]), 
@@ -169,4 +175,3 @@ class AmpelAlert:
 		returns the transient Id (ZTF: objectId)
 		"""
 		return self.tran_id
-

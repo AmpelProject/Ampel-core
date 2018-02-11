@@ -12,10 +12,10 @@ class ChannelFlags(Flag):
 	"""
 	"""
 	NO_CHANNEL					= 1
-	CHANNEL_SN					= 2
-	CHANNEL_NEUTRINO			= 4
-	CHANNEL_RANDOM				= 8
-	CHANNEL_LENS				= 16
+	HU_EARLY_SN					= 2
+	HU_SN1						= 4
+	HU_SN2						= 8
+	HU_RANDOM					= 16
 	CHANNEL_OTHER1				= 32
 	CHANNEL_OTHER2				= 64
 	CHANNEL_OTHER3				= 128

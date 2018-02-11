@@ -38,25 +38,19 @@ class ChannelsConfig:
 		return self.config["channels"].keys()
 
 	
-	def get_channel_parameters(self, channel_name):
+	def get_channel_input_parameters(self, channel_name, instrument="ZTF", alerts="IPAC"):
 		"""	
 			Dict path lookup shortcut function
 		"""	
 		if channel_name not in self.config:
 			raise ValueError('Channel %s not found' % channel_name)
 
-		return self.config[channel_name]['parameters']
+		for el in self.config[channel_name]['input']:
+			if el['instrument'] == instrument and el['alerts'] == alerts:
+				d = el
+
+		return d['parameters']
 		
-
-	def get_channel_flag_name(self, channel_name):
-		"""	
-			Dict path lookup shortcut function
-		"""	
-		if channel_name not in self.config:
-			raise ValueError('Channel %s not found' % channel_name)
-
-		return self.config[channel_name]['flagName']
-
 
 	def get_channel_flag_instance(self, channel_name):
 		"""	
@@ -73,7 +67,7 @@ class ChannelsConfig:
 			return self.d_chanlabel_chanflag[channel_name] 
 
 		# Create enum flag instance
-		flag = ChannelFlags[self.config[channel_name]['flagName']]
+		flag = ChannelFlags[channel_name]
 		self.d_chanlabel_chanflag[channel_name] = flag
 
 		return flag
@@ -94,7 +88,7 @@ class ChannelsConfig:
 		t2s_flag = T2RunnableIds(0)
 
 		for d_entry in self.config[channel_name]['t2Compute']:
-			t2s_flag |= T2RunnableIds[d_entry['module']]
+			t2s_flag |= T2RunnableIds[d_entry['id']]
 
 		self.d_chanlabel_t2sflag[channel_name] = t2s_flag
 
@@ -108,7 +102,7 @@ class ChannelsConfig:
 		if channel_name not in self.config:
 			raise ValueError('Channel %s not found' % channel_name)
 
-		return self.config[channel_name]['alertFilter']
+		return self.config[channel_name]['t0Filter']
 
 
 	def set_channel_filter_parameter(self, channel_name, param_name, param_value):
@@ -129,7 +123,7 @@ class ChannelsConfig:
 			raise ValueError('Channel %s not found' % channel_name)
 
 		for el in self.config[channel_name]['t2Compute']:
-			if el['module'] == t2_runnable_name:
+			if el['id'] == t2_runnable_name:
 				return el['paramId']
 
 		return None 

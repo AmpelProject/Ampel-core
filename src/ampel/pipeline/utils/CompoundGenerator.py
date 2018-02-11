@@ -3,7 +3,7 @@
 # File              : ampel/pipeline/utils/CompoundGenerator.py
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 01.01.2018
-# Last Modified Date: 27.01.2018
+# Last Modified Date: 11.02.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import logging, hashlib, json
@@ -60,11 +60,17 @@ class CompoundGenerator():
 			del cls.channel_options[chan_flag]
 
 		# get channel parameters from ChannelsConfig instance
-		cls.channel_options[chan_flag] = channels_config.get_channel_parameters(channel_name)
+		cls.channel_options[chan_flag] = channels_config.get_channel_input_parameters(channel_name)
 
 		# shortcut
 		chan_opts = cls.channel_options[chan_flag]
 
+		if "updatedHUZP" not in chan_opts:
+			chan_opts['updatedHUZP'] = False
+
+		if "weizmannSub" not in chan_opts:
+			chan_opts['weizmannSub'] = False
+			
 		# Generate options signature (example: "10011")
 		options_sig = ""
 		for key in sorted(chan_opts.keys()):
@@ -73,16 +79,16 @@ class CompoundGenerator():
 		# Save it as static variable
 		cls.channel_options_sig[chan_flag] = options_sig
 
-		if chan_opts['partnership'] is False:
+		if chan_opts['ZTFPartner'] is False:
 			cls.flags_to_check.add(ZTF_PARTNERSHIP)
 
 		if chan_opts['autoComplete'] is False:
 			cls.flags_to_check.add(SRC_T1)
 
-		if chan_opts['updatedHUZP'] is True:
+		if "updatedHUZP" in chan_opts and chan_opts['updatedHUZP'] is True:
 			cls.flags_to_check.add(HAS_HUMBOLDT_ZP)
 
-		if chan_opts['weizmannSub'] is True:
+		if "weizmannSub" in chan_opts and chan_opts['weizmannSub'] is True:
 			cls.flags_to_check.add(HAS_WEIZMANN_SUB)
 
 
@@ -275,7 +281,7 @@ class CompoundGenerator():
 				#  Check for exclusions
 				if pp_id in self.d_ids_sets[SUPERSEEDED]:
 					d['excl'] = SUPERSEEDED
-				elif chan_options['partnership'] is False and pp_id in self.d_ids_sets[ZTF_PARTNERSHIP]:
+				elif chan_options['ZTFPartner'] is False and pp_id in self.d_ids_sets[ZTF_PARTNERSHIP]:
 					d['excl'] = ZTF_PARTNERSHIP
 				elif chan_options['autoComplete'] is False and pp_id in self.d_ids_sets[SRC_T1]:
 					d['excl'] = SRC_T1
