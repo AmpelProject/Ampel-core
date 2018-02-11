@@ -3,12 +3,10 @@
 # File              : ampel/abstract/AbstractTransientFilter.py
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 14.12.2017
-# Last Modified Date: 27.01.2018
+# Last Modified Date: 11.02.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 from ampel.abstract.AmpelABC import AmpelABC, abstractmethod
 import logging
-
-logger = logging.getLogger("Ampel")
 
 class AbstractTransientFilter(metaclass=AmpelABC):
 
