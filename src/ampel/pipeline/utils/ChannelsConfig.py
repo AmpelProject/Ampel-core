@@ -3,7 +3,7 @@
 # File              : ampel/pipeline/utils/ChannelsConfig.py
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 04.01.2018
-# Last Modified Date: 27.01.2018
+# Last Modified Date: 11.02.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from ampel.flags.T2RunnableIds import T2RunnableIds

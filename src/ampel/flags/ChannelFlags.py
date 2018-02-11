@@ -3,7 +3,7 @@
 # File              : ampel/flags/ChannelFlags.py
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 01.01.2018
-# Last Modified Date: 03.01.2018
+# Last Modified Date: 11.02.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from enum import Flag
