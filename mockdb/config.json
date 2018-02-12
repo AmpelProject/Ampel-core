@@ -227,42 +227,36 @@
     },
     "T0" : {},
     "T2" : {
-        "modules" : {
+        "runnables" : {
             "SNCOSMO" : {
                 "param" : "value",
-                "parameters" : {
+                "classFullPath" : "ampel.contrib.hu.examples.t2.SNComso",
+                "base_parameters" : {
+                    "template" : "something"
+                },
+                "run_parameters" : {
                     "default" : {
-                        "catalog" : "some value"
+                        "something" : 3
+                    }
+                }
+            },
+            "POLYFIT" : {
+                "classFullPath" : "ampel.contrib.hu.examples.t2.T2ExamplePolyFit",
+                "base_parameters" : {
+                    "fit_function" : "polyfit"
+                },
+                "run_parameters" : {
+                    "default" : {
+                        "degree" : 3
                     },
-                    "other" : {
-                        "p1" : "v1"
+                    "advanced" : {
+                        "degree" : 5
                     }
                 }
             },
-            "AGN" : {
-                "param" : "value",
-                "parameters" : {
-                    "default" : {
-                        "catalog" : "some value"
-                    }
-                }
-            },
-            "PHOTO_Z" : {
-                "param" : "value",
-                "parameters" : {
-                    "default" : {
-                        "param" : "value"
-                    }
-                }
-            },
-            "PHOTO_TYPE" : {
-                "param" : "value",
-                "parameters" : {
-                    "default" : {
-                        "param" : "value"
-                    }
-                }
-            }
+            "AGN" : {},
+            "PHOTO_Z" : {},
+            "PHOTO_TYPE" : {}
         }
     }
 }
