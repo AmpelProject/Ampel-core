@@ -1,0 +1,48 @@
+version: '3'
+services:
+  mongo:
+    image: mongo
+    command: ["mongod", "--port", "27018"]
+    volumes:
+      - tmp:/data/db
+    ports:
+      - "27018:27018"
+    deploy:
+      restart_policy:
+        condition: on-failure
+        delay: 1s
+        max_attempts: 3
+  archivedb:
+    image: mysql
+    command: ["mysqld"]
+    volumes:
+      - /var/tmp:/run/mysqld
+      - tmp:/var/lib/mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: seekrit
+    ports:
+      - "3306:3306"
+    deploy:
+      restart_policy:
+        condition: on-failure
+        delay: 1s
+        max_attempts: 3
+  ampel:
+    image: continuumio/miniconda
+    command: ["./ampel-start.sh"]
+    volumes:
+      - envs:/opt/conda/envs
+      - tmp:/opt/conda/pkgs
+      - ..:Ampel
+      - ampel-start.sh
+    environment:
+      TINI_SUBREAPER: 1
+    deploy:
+      restart_policy:
+        condition: no
+        delay: 1s
+        max_attempts: 3
+    depends_on:
+      - mongo
+      - archivedb
+
