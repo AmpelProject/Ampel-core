@@ -69,7 +69,7 @@ class AlertProcessor:
 			self.db = self.mongo_client.get_database(db_name)
 			self.db['config'].insert_one(self.config)
 
-		self.channels_config = ChannelsConfig(self.config['channels'])
+		self.channels_config = ChannelsConfig(channels_config = self.config['channels'])
 
 		if load_channels:
 			self.load_channels()
@@ -265,9 +265,13 @@ class AlertProcessor:
 			aflist.set_max_entries(max_entries)
 		
 		self.logger.info("Returning iterable for file paths in folder: %s" % base_dir)
-		return self.run(
-			iter(aflist.get_files())
+
+		iterable = iter(
+			aflist.get_files()
 		)
+
+		while iterable.__length_hint__() > 0:
+			self.run(iterable)
 
 
 	def run(self, iterable):
@@ -355,13 +359,19 @@ class AlertProcessor:
 
 
 
-		# Part 3: Proceed alerts
+		# Part 3: Process alerts
 		########################
+
+		max_iter = 5000
+		iter_count = 0
 
 		# Iterate over alerts
 		for element in iterable:
 
+			iter_count += 1 
+
 			try:
+
 				if isinstance(element, str):
 					logdebug("Processing: " + element)
 
@@ -416,11 +426,15 @@ class AlertProcessor:
 				self.logger.exception("")
 				self.logger.critical("Exception occured")
 
+			if iter_count > max_iter:
+				self.logger.info("Reached max number of iterations")
+				break
+
 
 		duration = int(time.time()) - start_time
 		db_job_reporter.set_duration(duration)
 		self.logger.addHandler(self.ilb)
-		loginfo("Pipeline processing completed (time required: " + str(duration) + "s)")
+		loginfo("Alert processing completed (time required: " + str(duration) + "s)")
 
 		# Remove DB logging handler
 		db_logging_handler.flush()
