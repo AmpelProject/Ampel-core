@@ -79,8 +79,12 @@ class ZIAlertLoader:
 				reader = fastavro.reader(fo)
 				zavro_dict = next(reader, None)
 
-		# Efficient way of creating the flat list of pps required for AmpelAlert
-		zavro_dict['prv_candidates'].insert(0, zavro_dict['candidate'])
+		
+		if zavro_dict['prv_candidates'] is None:
+			zavro_dict['prv_candidates'] = [zavro_dict['candidate']]
+		else:
+			# Efficient way of creating the flat list of pps required for AmpelAlert
+			zavro_dict['prv_candidates'].insert(0, zavro_dict['candidate'])
 
 		return zavro_dict['objectId'], zavro_dict['prv_candidates']
 
