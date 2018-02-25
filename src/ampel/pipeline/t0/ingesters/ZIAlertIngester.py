@@ -3,7 +3,7 @@
 # File              : ampel/pipeline/t0/ingesters/ZIAlertIngester.py
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 14.12.2017
-# Last Modified Date: 27.01.2018
+# Last Modified Date: 22.02.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import logging, pymongo
@@ -35,6 +35,10 @@ class ZIAlertIngester(AbstractAlertIngester):
 	it compares info between alert and DB and creates several documents 
 	in the DB that are used in later processing stages (T2, T3)
 	"""
+
+	new_tran_dbflag = FlagUtils.enumflag_to_dbflag(
+		TransientFlags.INST_ZTF|TransientFlags.ALERT_IPAC
+	)
 
 	def __init__(self, db, channels_config, names_of_active_channels, logger):
 		"""
@@ -303,6 +307,7 @@ class ZIAlertIngester(AbstractAlertIngester):
 					"$each": comp_gen.get_compound_flavors(compound_id) # returns a list
 				}
 			
+			pps_dict = comp_gen.get_eff_compound(compound_id)
 			db_ops.append(
 				pymongo.UpdateOne(
 					{
@@ -316,7 +321,8 @@ class ZIAlertIngester(AbstractAlertIngester):
 							"tier": 0,
 							"added": datetime.today().timestamp(),
 							"lastppdt": pps_alert[0]['jd'],
-							"pps": comp_gen.get_eff_compound(compound_id)
+							"len": len(pps_dict),
+							"pps": pps_dict
 						},
 						"$addToSet": d_addtoset
 					},
@@ -372,7 +378,7 @@ class ZIAlertIngester(AbstractAlertIngester):
 							{
 								"$setOnInsert": {
 									"tranId": tran_id,
-									"alDocType": AlDocTypes.T2_RECORD,
+									"alDocType": AlDocTypes.T2RECORD,
 									"t2Runnable": FlagUtils.get_flag_pos_in_enumflag(t2_id), 
 									"paramId": param_id, 
 									"compoundId": compound_id, 
@@ -408,6 +414,9 @@ class ZIAlertIngester(AbstractAlertIngester):
 						"alDocType": AlDocTypes.TRANSIENT
 					},
 					'$addToSet': {
+						"alFlags": {
+							"$each": ZIAlertIngester.new_tran_dbflag
+						},
 						'channels': {
 							"$each": db_chan_flags
 						},
@@ -422,7 +431,8 @@ class ZIAlertIngester(AbstractAlertIngester):
 		)
 
 		try: 
-			self.col.bulk_write(db_ops)
+			result = self.col.bulk_write(db_ops)
+			self.logger.info(result.bulk_api_result)
 		except BulkWriteError as bwe: 
 			self.logger.info(bwe.details) 
 			# TODO add error flag to Job and Transient
