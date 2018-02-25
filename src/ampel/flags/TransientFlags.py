@@ -3,7 +3,7 @@
 # File              : ampel/flags/TransientFlags.py
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 14.12.2017
-# Last Modified Date: 01.01.2018
+# Last Modified Date: 20.02.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from enum import Flag
@@ -11,6 +11,8 @@ from enum import Flag
 class TransientFlags(Flag):
 	"""
 	"""
+
+	NO_FLAG						= 0
 
 	INST_ZTF					= 1
 	INST_OTHER1					= 2
@@ -27,15 +29,5 @@ class TransientFlags(Flag):
 	HAS_SUPERSEEDED_PPT			= 1024
 
 	ZTF_PARTNERSHIP				= 2048
-
-	NO_CHANNEL					= 4096
-	CHANNEL_SN					= 8192
-	CHANNEL_NEUTRINO			= 16384
-	CHANNEL_RANDOM				= 32768
-	CHANNEL_LENS				= 65536
-	CHANNEL_OTHER1				= 131072
-	CHANNEL_OTHER2				= 262144
-	CHANNEL_OTHER3				= 524288
-	CHANNEL_OTHER4				= 1048576
 
 	T1_AUTO_COMPLETE			= 2097152
