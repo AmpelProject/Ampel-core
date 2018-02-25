@@ -3,7 +3,7 @@
 # File              : ampel/pipeline/t0/AmpelAlert.py
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 14.12.2017
-# Last Modified Date: 11.02.2018
+# Last Modified Date: 12.02.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 from ampel.flags.AlertFlags import AlertFlags
 from werkzeug.datastructures import ImmutableDict, ImmutableList
@@ -19,6 +19,7 @@ class AmpelAlert:
 	"""	
 
 	flags = AlertFlags.NO_FLAG
+	alert_keywords = {}
 
 	ops = {
 		'>': operator.gt,
