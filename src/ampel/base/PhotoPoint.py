@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/pipeline/common/PhotoPoint.py
+# File              : ampel/base/PhotoPoint.py
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 13.01.2018
-# Last Modified Date: 16.01.2018
+# Last Modified Date: 15.02.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from ampel.flags.PhotoPointFlags import PhotoPointFlags
@@ -15,7 +15,25 @@ from werkzeug.datastructures import ImmutableDict
 
 class PhotoPoint:
 	"""
-		Documentation will follow
+	Wrapper class around a dict instance ususally originating from pymongo DB.
+
+	This class contains flags, convenience methods and should be able to 
+	accomodate different 'photopoint formats' as long as the photopoint 
+	content is encoded in a one-dimensional dict. 
+	The mapping between - let's call them ampel keywords such as 'photopoint_id' or 'mag'
+	and the keywords of the underlying photopoint dict such as - for ZTF-IPAC - 'candid' or 'magpsf'
+	is achieved using the static variable 'static_keywords'
+
+	An instance of this class can be frozen (by setting read_only to True) 
+	which should prevent unwilling modifications from happening.
+	More precisely, it means:
+		-> the internal dict will be casted into an ImmutableDict
+		-> a change of any existing internal variable of this instance will not be possible
+		-> the creation of new instance variables won't be possible as well
+	You can freeze an instance either directly by setting read_only to True in the constructor
+	parameters or later by using the method set_policy.
+
+	More doc will follow.
 	"""
 
 	static_keywords = {
@@ -49,8 +67,17 @@ class PhotoPoint:
 		PhotoPoint.static_keywords = pp_keywords
 
 
-	def __init__(self, db_doc):
+	def __init__(self, db_doc, read_only=True):
 		"""
+		'db_doc': 
+			-> dict instance 
+			   (usually resulting from a pymongo DB query)
+
+		'read_only': 
+			-> If True, db_doc will be casted into an ImmutableDict 
+			   and this class will be frozen
+			-> read_only can be set later using the method set_policy
+			   (should further modifications be required after class instanciation) 
 		"""
 
 		if db_doc["alDocType"] != AlDocTypes.PHOTOPOINT:
@@ -70,18 +97,34 @@ class PhotoPoint:
 		else:
 			raise NotImplementedError("Not implemented yet")
 
+		# Check wether to freeze this instance.
+		if read_only:
+			self.content = ImmutableDict(db_doc)
+			self.__isfrozen = True
+		else:
+			self.content = db_doc
 
-		self.content = db_doc
+
+	def get_policy(self):
+		"""
+		"""
+
+		if hasattr(self, 'policy_flags'):
+			return self.policy_flags
+		else:
+			return 0
 
 
-	def set_policy(self, options=None, read_only=False):
+	def set_policy(self, compound_pp_entry=None, read_only=False):
+		"""
+		"""
 
 		# Check if corrected / alternative magnitudes should be returned
-		if options is not None:
+		if compound_pp_entry is not None:
 			self.policy_flags = PhotoPointPolicy(0)
-			if 'wzm' in options:
+			if 'wzm' in compound_pp_entry:
 				self.policy_flags |= PhotoPointPolicy.USE_WEIZMANN_SUB
-			if 'huzp' in options:
+			if 'huzp' in compound_pp_entry:
 				self.policy_flags |= PhotoPointPolicy.USE_HUMBOLDT_ZP
 
 		if read_only:
@@ -157,7 +200,7 @@ class PhotoPoint:
 		]
 
 
-	def get_photopoint_id(self):
+	def get_id(self):
 		"""
 		"""
 		return self.content["_id"]

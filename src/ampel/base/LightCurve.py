@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/pipeline/common/LightCurve.py
+# File              : ampel/base/LightCurve.py
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 13.01.2018
-# Last Modified Date: 21.01.2018
+# Last Modified Date: 20.02.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from ampel.flags.PhotoPointFlags import PhotoPointFlags
@@ -28,21 +28,32 @@ class LightCurve:
 	}
 
 
-	def __init__(self, pps_obj_list, read_only=True, logger=None):
+	def __init__(self, compound_dict, al_pps_list, read_only=True, logger=None):
 		"""
-			pps_obj_list: list of ampel.pipeline.common.PhotoPoint instances
-			read_only: wether the provided list should be casted as ImmutableList 
-			and the class instance frozen
+		compound: dict instance loaded using compound DB dict
+		al_pps_list: list of ampel.base.PhotoPoint instances
+		read_only: wether the provided list should be casted as ImmutableList 
+		and the class instance frozen
 		"""
+
+		self.id = compound_dict['_id']
+		self.tier = compound_dict['tier']
+		self.added = compound_dict['added']
+		self.lastppdt = compound_dict['lastppdt']
 
 		if read_only:
-			self.pps_obj_list = ImmutableList(pps_obj_list)
+			self.al_pps_list = ImmutableList(al_pps_list)
 			self.is_frozen = True
 		else:
-			self.pps_obj_list = pps_obj_list
+			self.al_pps_list = al_pps_list
 
 		if logger is not None:
-			logger.info("LightCurve loaded with " + str(len(self.pps_obj_list)) + " PhotoPoints")
+			logger.info("LightCurve loaded with %i photopoints" % len(self.al_pps_list))
+
+	
+	def get_property(self, name):
+		""" """
+		return getattr(self, name, None)
 
 
 	def __setattr__(self, key, value):
@@ -51,13 +62,13 @@ class LightCurve:
 		"""
 		# '_LightCurve__isfrozen' and not simply '__isfrozen' due to 'Private name mangling'
 		if getattr(self, "_LightCurve__isfrozen", None) is not None:
-			raise TypeError( "%r is a frozen instance " % self )
+			raise TypeError("%r is a frozen instance " % self)
+
 		object.__setattr__(self, key, value)
 
 
 	def filter_pps(self, filters):
-		"""
-		"""
+		""" """
 
 		filtered_pps = []
 
@@ -73,7 +84,7 @@ class LightCurve:
 				filtered_pps = list(
 					filter(
 						lambda pp: pp.has_parameter(fkey) and operator(pp.get_value(fkey), filter_el[fkey]), 
-						self.pps_obj_list
+						self.al_pps_list
 					)
 				)
 
@@ -82,13 +93,13 @@ class LightCurve:
 
 	def get_values(self, field_name, filters=None):
 		"""
-			ex: instance.get_values('obs_date')
+		ex: instance.get_values('obs_date')
 		"""
 
 		if filters is not None and type(filters) is not dict and type(filters) is not list:
 			raise ValueError("filters must be of type dict or list")
 			
-		pps = self.pps_obj_list if filters is None else self.filter_pps(filters)
+		pps = self.al_pps_list if filters is None else self.filter_pps(filters)
 
 		return [
 			pp.get_value(field_name) 
@@ -98,13 +109,13 @@ class LightCurve:
 
 	def get_tuples(self, field1_name, field2_name, filters=None):
 		"""
-			ex: instance.get_values('obs_date', 'mag')
+		ex: instance.get_values('obs_date', 'mag')
 		"""
 
 		if filters is not None and type(filters) is not dict and type(filters) is not list:
 			raise ValueError("filters must be of type dict or list")
 
-		pps = self.filter_pps(filters) if filters is not None else self.pps_obj_list
+		pps = self.filter_pps(filters) if filters is not None else self.al_pps_list
 		return [
 			(pp.get_value(field1_name), pp.get_value(field2_name))
 			for pp in pps if pp.has_parameter(field1_name) and pp.has_parameter(field2_name)
@@ -112,18 +123,17 @@ class LightCurve:
 
 	
 	def get_photopoints(self, filters=None):
-		"""
-		"""
-		return self.filter_pps(filters) if filters is not None else self.pps_obj_list
+		""" """
+		return self.filter_pps(filters) if filters is not None else self.al_pps_list
 
 
 	def get_pos(self, ret="mean", filters=None):
 		"""
 		ret (for all methods, only matching PhotoPoint wrt the provided filter(s) are used!):
-			"raw": returns ((ra, dec), (ra, dec), ...)  
-			"mean": returns (<ra>, <dec>) 
-			"brightest": returns (ra, dec) 
-			"latest": returns (ra, dec) 
+			"raw": returns ((ra, dec), (ra, dec), ...)
+			"mean": returns (<ra>, <dec>)
+			"brightest": returns (ra, dec)
+			"latest": returns (ra, dec)
 
 		examples: 
 		instance.get_pos("brightest", {'alFlags': PhotoPointFlags.ZTF_G, 'in'})
@@ -137,19 +147,22 @@ class LightCurve:
 		if ret == "raw": 
 			return self.get_tuples("ra", "dec", filters=filters)
 
-		pps = self.filter_pps(filters) if filters is not None else self.pps_obj_list
+		pps = self.filter_pps(filters) if filters is not None else self.al_pps_list
 
 		if ret == "mean": 
 			ras = [pp.get_value("ra") for pp in pps]
 			decs = [pp.get_value("dec") for pp in pps]
 			return (ras/len(ras), decs/len(decs))
+
 		elif ret == "brightest": 
 			mags = pps.copy()
 			mags.sort(key=lambda x: x.get_value('magpsf'))
 			return (mags[-1].get_value('ra'), mags[-1].get_value('dec'))
+
 		elif ret == "latest": 
 			mags = pps.copy()
 			mags.sort(key=lambda x: x.get_value('obs_date'))
 			return (mags[-1].get_value('ra'), mags[-1].get_value('dec'))
+
 		else:
-			raise NotImplementedError("ret method: " + ret + " is not implemented")
+			raise NotImplementedError("ret method: %s is not implemented" % ret)
