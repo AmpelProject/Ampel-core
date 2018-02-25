@@ -3,3 +3,4 @@ pymongo
 fastavro
 pytest
 pykafka
+sqlalchemy

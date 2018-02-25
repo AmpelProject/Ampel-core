@@ -15,7 +15,7 @@ def kafka_singularity_image():
     # check whether singularity exists
     try:
         subprocess.check_call(['singularity', '--version'], stdout=subprocess.DEVNULL)
-    except subprocess.CalledProcessError:
+    except (FileNotFoundError, subprocess.CalledProcessError):
         pytest.skip("requires singularity")
     
     # pull the image for faster startup

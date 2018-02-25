@@ -2,7 +2,29 @@
 from sqlalchemy import Table, MetaData, Column, ForeignKey, ForeignKeyConstraint
 from sqlalchemy import String, Integer, BigInteger, Float
 from sqlalchemy import select, and_
+from sqlalchemy import create_engine
 from sqlalchemy.exc import IntegrityError
+import os, json
+import fastavro
+
+class ArchiveDB(object):
+    def __init__(self, *args, **kwargs):
+        """
+        Initialize and connect to archive database. Arguments will be passed on
+        to :py:func:`sqlalchemy.create_engine`.
+        """
+        with open(os.path.dirname(os.path.realpath(__file__)) + '/../../../alerts/schema.json') as f:
+            schema = json.load(f)
+        self._meta = create_metadata(schema)
+        engine = create_engine(*args, **kwargs)
+        self._meta.create_all(engine)
+        self._connection = engine.connect()
+    
+    def insert_alert(self, alert, processor_id, ingestion_time):
+        insert_alert(self._connection, self._meta, alert, processor_id, ingestion_time)
+    
+    def get_alert(self, alert_id):
+        return get_alert(self._connection, self._meta, alert_id)
 
 def create_metadata(alert_schema):
     """

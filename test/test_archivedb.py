@@ -106,3 +106,19 @@ def test_get_alert(mock_database, alert_generator):
             if isinstance(v, float) and isnan(v):
                 alert['candidate'][k] = None
         assert alert == reco_alert
+
+def test_archive_object(alert_generator):
+    db = archive.ArchiveDB("sqlite:///:memory:")
+    
+    from itertools import islice
+    for alert in islice(alert_generator(), 10):
+        db.insert_alert(alert, 0, 0)
+    
+    for alert in islice(alert_generator(), 10):
+        reco_alert = db.get_alert(alert['candid'])
+        # some necessary normalization on the alert
+        for k,v in alert['candidate'].items():
+            if isinstance(v, float) and isnan(v):
+                alert['candidate'][k] = None
+        assert alert == reco_alert
+    

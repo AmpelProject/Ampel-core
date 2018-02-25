@@ -25,8 +25,9 @@ class ZIAlertLoader:
 		and the associated photopoints as list of dictionaries
 		The static method load_raw_dict_from_file returns the raw avro dict structure
 	"""
-	def __init__(self, brokers, topic, group_name=b"Ampel", timeout=1):
+	def __init__(self, archive_db, brokers, topic, group_name=b"Ampel", timeout=1):
 		"""
+		:param archive_db: an instance of :py:class:`ampel.archive.ArchiveDB`
 		:param brokers: Comma-separated list of kafka hosts to which to connect
 		:type brokers: str
 		:param topic: Topic of target Kafka stream
@@ -38,6 +39,7 @@ class ZIAlertLoader:
 		client = pykafka.KafkaClient(brokers)
 		topic = client.topics[topic]
 		self._consumer = topic.get_balanced_consumer(consumer_group=group_name, consumer_timeout_ms=timeout*1e3)
+		self._archive = archive_db
 	
 	def alerts(self):
 		"""
@@ -45,6 +47,8 @@ class ZIAlertLoader:
 		"""
 		for message in self._consumer:
 			for alert in fastavro.reader(io.BytesIO(message.value)):
+				self.filter_previous_candidates(alert['prv_candidates'])
+				self._archive.insert_alert(alert, 0, 0)
 				yield alert
 			self._consumer.commit_offsets()
 	
