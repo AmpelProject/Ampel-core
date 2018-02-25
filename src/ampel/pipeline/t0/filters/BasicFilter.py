@@ -25,18 +25,20 @@ class BasicFilter(AbstractTransientFilter):
 		return BasicFilter.version
 
 
-	def set_filter_parameters(self, d):
+	def set_filter_parameters(self, filter_parameters):
 		"""
 		Doc will follow
 		"""
 
-		if type(d) is not dict:
+		if type(filter_parameters) is not dict:
 			raise ValueError("Method parameter must be a dict instance")
 
 		self.param = {
-			'operator': BasicFilter.ops[d['operator']],
-			'criteria': d['criteria'],
-			'len': d['len']
+			'operator': BasicFilter.ops[
+				filter_parameters['operator']
+			],
+			'criteria': filter_parameters['criteria'],
+			'len': filter_parameters['len']
 		}
 
 		self.logger.info("Following filter parameter was set: %s" % self.param)
