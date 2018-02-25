@@ -3,7 +3,7 @@
 # File              : ampel/view/DBDocVizualizer.py
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 07.01.2018
-# Last Modified Date: 27.01.2018
+# Last Modified Date: 18.02.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from ampel.flags.AlertFlags import AlertFlags
@@ -72,8 +72,8 @@ class DBDocVizualizer:
 				job_ids.append("ObjectId(" + str(el) + ")")
 			d['jobIds'] = job_ids
 
-		elif db_dict['alDocType'] == AlDocTypes.T2_RECORD:
-			self.set_dict_first_keys(db_dict, d, "T2_RECORD")
+		elif db_dict['alDocType'] == AlDocTypes.T2RECORD:
+			self.set_dict_first_keys(db_dict, d, "T2RECORD")
 			d['channels'] = db_dict['channels']
 			d['t2Compute'] = self.pretty_print_flag(
 				FlagUtils.dbflag_to_enumflag([db_dict['t2Compute']], T2RunnableIds)
@@ -141,7 +141,7 @@ class DBDocVizualizer:
 
 	def fine_tune_output(self, json_str):
 
- 		# replace "alDocType": "T2_RECORD"    with    "alDocType": T2_RECORD
+ 		# replace "alDocType": "T2RECORD"    with    "alDocType": T2RECORD
 		for el in ["alDocType", "alFlags", "channels", "t2Compute", "runState"]:
 			json_str = re.sub(el+"\": \"(.*)\"", el+"\": \\1", json_str)
   
