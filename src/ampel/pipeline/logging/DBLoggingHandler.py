@@ -3,7 +3,7 @@
 # File              : ampel/pipeline/logging/DBLoggingHandler.py
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 14.12.2017
-# Last Modified Date: 19.01.2018
+# Last Modified Date: 22.02.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import logging
@@ -27,7 +27,7 @@ class DBLoggingHandler(logging.Handler):
 		50: LogRecordFlags.CRITICAL
 	}
 
-	def __init__(self, db_job_reporter, previous_logs=None, flush_len=50):
+	def __init__(self, db_job_reporter, previous_logs=None, flush_len=500):
 		""" """
 		self.db_job_reporter = db_job_reporter
 		self.global_flags = LogRecordFlags(0)
