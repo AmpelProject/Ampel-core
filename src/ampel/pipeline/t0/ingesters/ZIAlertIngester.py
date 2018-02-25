@@ -406,7 +406,8 @@ class ZIAlertIngester(AbstractAlertIngester):
 		db_ops.append(
 			pymongo.UpdateOne(
 				{
-					"_id": tran_id
+					"tranId": tran_id,
+					"alDocType": AlDocTypes.TRANSIENT
 				},
 				{
 					"$setOnInsert": {

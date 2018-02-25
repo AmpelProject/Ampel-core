@@ -179,8 +179,8 @@ class DBQueryBuilder:
 	@staticmethod
 	def get_transients_query(
 		tran_flags=None, channel_flags=None, 
-		time_created={"now_minus": None, "from": None, "until": None},
-		time_modified={"now_minus": None, "from": None, "until": None}
+		time_created={"delta": None, "from": None, "until": None},
+		time_modified={"delta": None, "from": None, "until": None}
 	):
 		"""
 		'tran_flags': 
@@ -192,13 +192,13 @@ class DBQueryBuilder:
 		See FlagUtils.enumflag_to_dbquery docstring for more info
 
 		'time_created': 
-			-> provide either 'now_minus' or ('from' and/or 'until')
-			-> 'now_minus': instance of datetime.timedelta
+			-> provide either 'delta' or ('from' and/or 'until')
+			-> 'delta': instance of datetime.timedelta
 			-> 'from' and 'until' must be of type datetime.datetime
 
 		'time_modified': 
-			-> provide either 'now_minus' or ('from' and/or 'until')
-			-> 'now_minus': instance of datetime.timedelta
+			-> provide either 'delta' or ('from' and/or 'until')
+			-> 'delta': instance of datetime.timedelta
 			-> 'from' and 'until' must be of type datetime.datetime
 		"""
 
@@ -224,18 +224,21 @@ class DBQueryBuilder:
 	def _build_time_contraint(query, db_field_name, time_constraint, is_oid=False):
 		"""
 		"""
-		if time_constraint['now_minus'] is not None:
-			gen_time = datetime.today() - time_constraint['now_minus'] 
+		if time_constraint['delta'] is not None:
+			gen_time = datetime.today() + time_constraint['delta'] 
 			query[db_field_name] = {
 				"$gte": ObjectId.from_datetime(gen_time) if is_oid else gen_time
 			}
 
-		if time_constraint['from'] is not None or time_constraint['until'] is not None:
+		if (
+			('from' in time_constraint and time_constraint['from'] is not None) or 
+			('until' in time_constraint and time_constraint['until'] is not None)
+		):
 
 			if db_field_name in query:
 				raise ValueError(
 					"Wrong time_constraint criteria: " +
-					"please use either 'now_minus' or ('from' and/or 'until'))"
+					"please use either 'delta' or ('from' and/or 'until'))"
 				)
 
 			query[db_field_name] = {}
