@@ -3,7 +3,7 @@
 # File              : ampel/pipeline/t0/ingesters/MemoryIngester.py
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 14.12.2017
-# Last Modified Date: 25.01.2018
+# Last Modified Date: 27.02.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from ampel.flags.TransientFlags import TransientFlags
@@ -19,7 +19,7 @@ class MemoryIngester(AbstractAlertIngester):
 		based on the configured filter outcomes.
 	"""
 
-	def __init__(self, flag_index):
+	def __init__(self, flag_index=0):
 		self.accepted_transients = []
 		self.rejected_transients = []
 		self.accepted_transient_ids = []
@@ -42,10 +42,6 @@ class MemoryIngester(AbstractAlertIngester):
 
 
 	def set_job_id(self, job_id):
-		pass 
-
-
-	def map_channel_to_transient_flag(self, transient_flag_list):
 		pass 
 
 
