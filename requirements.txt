@@ -4,3 +4,4 @@ fastavro
 pytest
 pykafka
 sqlalchemy
+ipython
