@@ -4,7 +4,7 @@ services:
     image: mongo
     command: ["mongod", "--port", "27018"]
     volumes:
-      - tmp:/data/db
+      - tmp/mongo:/data/db
     ports:
       - "27018:27018"
     deploy:
@@ -35,8 +35,14 @@ services:
       - tmp:/opt/conda/pkgs
       - ..:Ampel
       - ampel-start.sh
+      - /lustre/fs19/group/icecube/jvs/ztf:/ztf
     environment:
       TINI_SUBREAPER: 1
+      MONGO: localhost:27018
+    extra_hosts:
+      - "kafka:128.95.79.19"
+      - "kafka2:128.95.79.19"
+      - "kafka3:128.95.79.19"
     deploy:
       restart_policy:
         condition: no

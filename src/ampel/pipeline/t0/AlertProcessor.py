@@ -40,7 +40,8 @@ class AlertProcessor:
 
 	def __init__(
 		self, instrument="ZTF", alert_format="IPAC", db_name="Ampel",
-		load_channels=True, mock_db=None
+		load_channels=True, mock_db=None,
+		db_host='localhost',
 	):
 		"""
 		Parameters:
@@ -58,7 +59,7 @@ class AlertProcessor:
 		else:
 			from pymongo import MongoClient
 
-		self.mongo_client = MongoClient()
+		self.mongo_client = MongoClient(db_host)
 		self.db = self.mongo_client[db_name]
 
 		if mock_db is not None:
@@ -443,3 +444,65 @@ class AlertProcessor:
 		# Remove DB logging handler
 		db_logging_handler.flush()
 		self.logger.removeHandler(db_logging_handler)
+		
+		return iter_count-1
+
+def init_db():
+	"""
+	Initialize a MongoDB for use with Ampel
+	"""
+	import os, glob
+	pattern = os.path.abspath(os.path.dirname(os.path.realpath(__file__)) + '/../../../../mockdb/*.json')
+	
+	from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
+	parser = ArgumentParser(description=__doc__, formatter_class=ArgumentDefaultsHelpFormatter)
+	parser.add_argument('--host', default='localhost:27017',
+	    help='MongoDB server address and port')
+	parser.add_argument('-d', '--database', default='Ampel',
+	    help='Database name')
+	parser.add_argument('--config', nargs='+', default=glob.glob(pattern),
+	    help='JSON files to be inserted into the "config" collection')
+	
+	opts = parser.parse_args()
+	
+	from pymongo import MongoClient, ASCENDING
+	import json
+	client = MongoClient(opts.host)
+	
+	db = client.get_database(opts.database)
+	db['main'].create_index([('tranId', ASCENDING), ('alDocType', ASCENDING)])
+	for config in opts.config:
+		with open(config) as f:
+			blob = json.load(f)
+			db['config'].replace_one({'_id':blob['_id']}, blob, upsert=True)
+
+def _ingest_slice(host, infile, start, stop):
+	loader = ZIAlertLoader.walk_tarball(infile, start, stop)
+	processor = AlertProcessor(db_host=host)
+	return processor.run(loader)
+
+def run_alertprocessor():
+
+	import os, time
+	from concurrent import futures
+	from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
+	parser = ArgumentParser(description=__doc__, formatter_class=ArgumentDefaultsHelpFormatter)
+	parser.add_argument('--host', default='localhost:27017')
+	parser.add_argument('--procs', type=int, default=1, help='Number of processes to start')
+	parser.add_argument('--chunksize', type=int, default=50, help='Number of alerts in each process')
+	
+	parser.add_argument('infile')
+	opts = parser.parse_args()
+	
+	executor = futures.ProcessPoolExecutor(opts.procs)
+	
+	start_time = time.time()
+	step = opts.chunksize
+	count = 0
+	jobs = [executor.submit(_ingest_slice, opts.host, opts.infile, start, start+step) for start in range(0, opts.procs*step, step)]
+	for future in futures.as_completed(jobs):
+		print(future.result())
+		count += future.result()
+	duration = int(time.time()) - start_time
+	print('Processed {} alerts in {} s ({}/s)'.format(count, duration, float(count)/duration))
+	
