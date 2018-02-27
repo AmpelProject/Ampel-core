@@ -1,0 +1,35 @@
+{
+    "_id" : "global",
+    "logging" : {
+        "dbName" : "events"
+    },
+    "photoPoints" : {
+        "ZTFIPAC" : {
+            "alFlags" : "INST_ZTF|PP_IPAC",
+            "dictKeywords" : {
+                "tranId" : "alertid",
+                "pptId" : "candid",
+                "obsDate" : "jd",
+                "filterId" : "fid",
+                "mag" : "magpsf"
+            },
+            "stamperClass" : "ZIPhotoPointStamper",
+            "formats" : {
+                "date" : "julian"
+            }
+        },
+        "ZTFHUMBOLDT" : {
+            "alFlags" : "INST_ZTF|PP_HUMBOLDT",
+            "dictKeywords" : {
+                "tranId" : "alertid",
+                "pptId" : "candid",
+                "obsDate" : "jd",
+                "filterId" : "fid"
+            },
+            "stamperClass" : "ZIPhotoPointStamper",
+            "formats" : {
+                "date" : "julian"
+            }
+        }
+    }
+}

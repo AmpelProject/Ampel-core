@@ -40,36 +40,40 @@ class AlertProcessor:
 
 	def __init__(
 		self, instrument="ZTF", alert_format="IPAC", db_name="Ampel",
-		load_channels=True, config_file=None, mock_db=False
+		load_channels=True, mock_db=None
 	):
 		"""
-			Parameters:
-				* mock_db: 
-					If True, every database operation will be run by mongomock rather than pymongo 
-
+		Parameters:
+		'mock_db': None or <path to mockdb folder>
+		If not None, every database operation will be run by mongomock rather than pymongo 
+		mockdb folder must contain the files channels.json and global.json
 		"""
 		self.logger = LoggingUtils.get_logger(unique=True)
 		self.ilb = InitLogBuffer(LogRecordFlags.T0)
 		self.logger.addHandler(self.ilb)
 		self.logger.info("Setting up new AlertProcessor instance")
 
-		if mock_db:
+		if mock_db is not None:
 			from mongomock import MongoClient
 		else:
 			from pymongo import MongoClient
 
 		self.mongo_client = MongoClient()
+		self.db = self.mongo_client[db_name]
 
-		if config_file is None:
-			self.db = self.mongo_client.get_database(db_name)
-			self.config = self.db.get_collection("config").find({}).next()
-		else:
+		if mock_db is not None:
+			print("hkh")
 			import json
-			self.config = json.load(open(config_file))
-			self.db = self.mongo_client.get_database(db_name)
-			self.db['config'].insert_one(self.config)
+			with open(mock_db+'/channels.json', 'r') as f:
+				self.db['config'].insert_one(json.load(f))
+			with open(mock_db+'/global.json', 'r') as f:
+				self.db['config'].insert_one(json.load(f))
 
-		self.channels_config = ChannelsConfig(channels_config = self.config['channels'])
+		self.channel_config_doc = self.db['config'].find({'_id': 'channels'}).next()
+		self.global_config_doc = self.db['config'].find({'_id': 'global'}).next()
+		del self.channel_config_doc['_id']
+		del self.global_config_doc['_id']
+		self.channels_config = ChannelsConfig(channels_config = self.channel_config_doc)
 
 		if load_channels:
 			self.load_channels()
@@ -88,7 +92,7 @@ class AlertProcessor:
 
 				# Set static AmpelAlert dict keywords
 				AmpelAlert.set_alert_keywords(
-					self.config['global']['photoPoints']['ZTFIPAC']['dictKeywords']
+					self.global_config_doc['photoPoints']['ZTFIPAC']['dictKeywords']
 				)
 	
 				# Set ingester class
@@ -117,7 +121,7 @@ class AlertProcessor:
 		"""
 			Loads all T0 channel configs defined in the T0 config 
 		"""
-		channels_ids = self.config["channels"].keys()
+		channels_ids = self.channel_config_doc.keys()
 		self.t0_channels = [None] * len(channels_ids)
 
 		for i, channel_name in enumerate(channels_ids):
@@ -294,7 +298,7 @@ class AlertProcessor:
 
 		# Create JobReporter instance
 		db_job_reporter = DBJobReporter(
-			self.mongo_client[self.config['global']['logging']['dbName']], 
+			self.mongo_client[self.global_config_doc['logging']['dbName']], 
 			JobFlags.T0
 		)
 

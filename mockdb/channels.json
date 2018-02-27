@@ -1,0 +1,193 @@
+{
+    "_id" : "channels",
+    "HU_EARLY_SN" : {
+        "input" : [ 
+            {
+                "instrument" : "ZTF",
+                "alerts" : "IPAC",
+                "parameters" : {
+                    "ZTFPartner" : true,
+                    "autoComplete" : true,
+                    "updatedHUZP" : false
+                }
+            }
+        ],
+        "t0Filter" : {
+            "classFullPath" : "ampel.contrib.hu.t0.SNFilter",
+            "parameters" : {
+                "slopeMin" : 0,
+                "slopeMax" : 0
+            }
+        },
+        "t2Compute" : [ 
+            {
+                "id" : "SNCOSMO",
+                "paramId" : "default"
+            }, 
+            {
+                "id" : "AGN",
+                "paramId" : "default"
+            }, 
+            {
+                "id" : "PHOTO_Z",
+                "paramId" : "default"
+            }, 
+            {
+                "id" : "PHOTO_TYPE",
+                "paramId" : "default"
+            }
+        ]
+    },
+    "HU_SN1" : {
+        "input" : [ 
+            {
+                "instrument" : "ZTF",
+                "alerts" : "IPAC",
+                "parameters" : {
+                    "ZTFPartner" : true,
+                    "autoComplete" : true,
+                    "updatedHUZP" : false
+                }
+            }
+        ],
+        "t0Filter" : {
+            "classFullPath" : "ampel.pipeline.t0.filters.BasicFilter",
+            "parameters" : {
+                "criteria" : [ 
+                    {
+                        "rb" : 0.8,
+                        "operator" : ">"
+                    }, 
+                    {
+                        "fid" : 1,
+                        "operator" : "="
+                    }, 
+                    {
+                        "mag" : 18,
+                        "operator" : "<"
+                    }
+                ],
+                "len" : 3,
+                "operator" : ">"
+            }
+        },
+        "t2Compute" : [ 
+            {
+                "id" : "SNCOSMO",
+                "paramId" : "default"
+            }, 
+            {
+                "id" : "AGN",
+                "paramId" : "default"
+            }, 
+            {
+                "id" : "PHOTO_Z",
+                "paramId" : "default"
+            }, 
+            {
+                "id" : "PHOTO_TYPE",
+                "paramId" : "default"
+            }
+        ]
+    },
+    "HU_SN2" : {
+        "input" : [ 
+            {
+                "instrument" : "ZTF",
+                "alerts" : "IPAC",
+                "parameters" : {
+                    "ZTFPartner" : true,
+                    "autoComplete" : true,
+                    "updatedHUZP" : false
+                }
+            }
+        ],
+        "t0Filter" : {
+            "classFullPath" : "ampel.pipeline.t0.filters.BasicMultiFilter",
+            "parameters" : {
+                "filters" : [ 
+                    {
+                        "criteria" : [ 
+                            {
+                                "rb" : 0.8,
+                                "operator" : ">"
+                            }, 
+                            {
+                                "fid" : 1,
+                                "operator" : "="
+                            }, 
+                            {
+                                "mag" : 18,
+                                "operator" : "<"
+                            }
+                        ],
+                        "len" : 3,
+                        "operator" : ">"
+                    }, 
+                    {
+                        "logicalConnection" : "AND",
+                        "criteria" : [ 
+                            {
+                                "magdiff" : 0.01,
+                                "operator" : ">"
+                            }
+                        ],
+                        "len" : 3,
+                        "operator" : ">"
+                    }
+                ]
+            }
+        },
+        "t2Compute" : [ 
+            {
+                "id" : "SNCOSMO",
+                "paramId" : "default"
+            }, 
+            {
+                "id" : "AGN",
+                "paramId" : "default"
+            }, 
+            {
+                "id" : "PHOTO_Z",
+                "paramId" : "default"
+            }, 
+            {
+                "id" : "PHOTO_TYPE",
+                "paramId" : "default"
+            }
+        ]
+    },
+    "HU_RANDOM" : {
+        "input" : [ 
+            {
+                "instrument" : "ZTF",
+                "alerts" : "IPAC",
+                "parameters" : {
+                    "ZTFPartner" : true,
+                    "autoComplete" : true,
+                    "updatedHUZP" : false
+                }
+            }
+        ],
+        "t0Filter" : {
+            "classFullPath" : "ampel.contrib.hu.t0.RandFilter",
+            "parameters" : {
+                "threshold" : 1
+            }
+        },
+        "t2Compute" : [ 
+            {
+                "id" : "SNCOSMO",
+                "paramId" : "other"
+            }, 
+            {
+                "id" : "AGN",
+                "paramId" : "default"
+            }, 
+            {
+                "id" : "PHOTO_TYPE",
+                "paramId" : "default"
+            }
+        ]
+    }
+}
