@@ -63,7 +63,6 @@ class AlertProcessor:
 		self.db = self.mongo_client[db_name]
 
 		if mock_db is not None:
-			print("hkh")
 			import json
 			with open(mock_db+'/channels.json', 'r') as f:
 				self.db['config'].insert_one(json.load(f))
