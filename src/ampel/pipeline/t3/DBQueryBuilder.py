@@ -3,7 +3,7 @@
 # File              : ampel/pipeline/t3/DBQueryBuilder.py
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 13.01.2018
-# Last Modified Date: 25.02.2018
+# Last Modified Date: 26.02.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from ampel.flags.AlDocTypes import AlDocTypes
@@ -12,8 +12,6 @@ from ampel.flags.FlagUtils import FlagUtils
 from bson.objectid import ObjectId
 import logging
 from datetime import datetime, timedelta
-
-
 
 
 class DBQueryBuilder:
@@ -140,18 +138,28 @@ class DBQueryBuilder:
 
 		if AlDocTypes.COMPOUND in content_types and comp_already_loaded is False:
 
+			if type(compound_id) is list:
+				match_val = compound_id[0] if len(compound_id) == 1 else {'$in': compound_id}
+			else:
+				match_val = compound_id
+
 			or_list.append(
 				{
 					'alDocType': AlDocTypes.COMPOUND, 
-					'_id': compound_id
+					'_id': match_val
 				}
 			)
 
 		if AlDocTypes.T2RECORD in content_types:
 
+			if type(compound_id) is list:
+				match_val = compound_id[0] if len(compound_id) == 1 else {'$in': compound_id}
+			else:
+				match_val = compound_id
+			
 			rec_dict = {
 				'alDocType': AlDocTypes.T2RECORD, 
-				'compoundId': compound_id
+				'compoundId': match_val
 			}
 
 			if t2_ids is not None:
@@ -175,21 +183,26 @@ class DBQueryBuilder:
 		return query
 
 
-
 	@staticmethod
 	def get_transients_query(
-		tran_flags=None, channel_flags=None, 
+		with_flags=None, without_flags=None, channel_flags=None, 
 		time_created={"delta": None, "from": None, "until": None},
 		time_modified={"delta": None, "from": None, "until": None}
 	):
 		"""
-		'tran_flags': 
+		'with_flags': 
 		-> instance of ampel.flags.TransientFlags or list of instances of TransientFlags
-		See FlagUtils.enumflag_to_dbquery docstring for more info
+		Transient matching the with_flags criteria will be included.
+		See FlagUtils.enumflags_to_dbquery docstring for more info
+
+		'without_flags': 
+		-> instance of ampel.flags.TransientFlags or list of instances of TransientFlags
+		Transient matching with the with_flags criteria will be excluded.
+		See FlagUtils.enumflags_to_dbquery docstring for more info
 
 		'channel_flags': 
 		-> instance of ampel.flags.ChannelFlags or list of instances of ChannelFlags
-		See FlagUtils.enumflag_to_dbquery docstring for more info
+		See FlagUtils.enumflags_to_dbquery docstring for more info
 
 		'time_created': 
 			-> provide either 'delta' or ('from' and/or 'until')
@@ -206,13 +219,15 @@ class DBQueryBuilder:
 			'alDocType': AlDocTypes.TRANSIENT
 		}
 
-		# TODO: generalize it and put it into FlagUtils!
-		# might be used for channelFlags as well!
-		if tran_flags is not None:
-			query['alFlags'] = FlagUtils.enumflag_to_dbquery(tran_flags, 'alFlags')
+		if with_flags is not None:
+			FlagUtils.enumflags_to_dbquery(with_flags, query, 'alFlags')
+
+		# Order matters, not_enumflags_to_dbquery() must be called after enumflags_to_dbquery()
+		if without_flags is not None:
+			FlagUtils.not_enumflags_to_dbquery(without_flags, query, 'alFlags')
 
 		if channel_flags is not None:
-			query['channels'] = FlagUtils.enumflag_to_dbquery(channel_flags, 'channels')
+			FlagUtils.enumflags_to_dbquery(channel_flags, query, 'channels')
 
 		DBQueryBuilder._build_time_contraint(query, '_id', time_created, is_oid=True)
 		DBQueryBuilder._build_time_contraint(query, 'modified', time_modified)
@@ -264,7 +279,7 @@ class DBQueryBuilder:
 			  (whereby the flags contained in on instance are 'AND' connected)
 			-> or list of instances of ampel.flags.ChannelFlags whereby the instances 
 			   are 'OR' connected between each other
-			Please see the doctring of FlagUtils.enumflag_to_dbquery for more info.
+			Please see the doctring of FlagUtils.enumflags_to_dbquery for more info.
 		Should perform faster than latest_compound_general_query.
 		Must be used on transients with compounds solely created by T0 
 		(i.e no T3 compounds)
@@ -284,7 +299,7 @@ class DBQueryBuilder:
 		)
 
 		if channel_flags is not None:
-			match_dict['channels'] = FlagUtils.enumflag_to_dbquery(channel_flags, 'channels')
+			FlagUtils.enumflags_to_dbquery(channel_flags, match_dict, 'channels')
 
 		return [
 			{
@@ -336,7 +351,7 @@ class DBQueryBuilder:
 		}
 
 		if channel_flags is not None:
-			match_dict['channels'] = FlagUtils.enumflag_to_dbquery(channel_flags, 'channels')
+			FlagUtils.enumflags_to_dbquery(channel_flags, match_dict, 'channels')
 
 		return [
 			{
