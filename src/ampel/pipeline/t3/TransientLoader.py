@@ -128,7 +128,8 @@ class TransientLoader:
 				tran_id, content_types, t2_ids=t2_ids
 			)
 
-		# Option 3: Load a user provided state
+
+		# Option 3: Load a user provided state(s)
 		else:
 
 			# Feedback
@@ -138,8 +139,8 @@ class TransientLoader:
 			)
 
 			# (Lousy/incomplete) check if md5 string was provided
-			if len(state) != 32:
-				raise ValueError("Provided state must be 16 alphanumerical characters")
+			if len(state) != 32 and type(state) is not list:
+				raise ValueError("Provided state must be 32 alphanumerical characters or a list")
 
 			# Build query parameters (will return adequate number of docs)
 			search_params = DBQueryBuilder.load_transient_state_query(
@@ -191,7 +192,7 @@ class TransientLoader:
 	):
 		"""
 			tailored_res: 
-				* results contain only docs for the given tran_id
+				* input (results) docs contain only docs for the given tran_id
 				* science_records were only retrieved for the required state
 		"""
 
@@ -218,8 +219,8 @@ class TransientLoader:
 		# Loading lightcurves was requested (happens based on DB compound documents)
 		if AlDocTypes.COMPOUND in content_types:
 
-			# Load all available compounds for this transient
-			if state == "all":
+			# Load all available/multiple compounds for this transient
+			if state == "all" or type(state) is list:
 
 				# This dict aims at avoiding unnecesssary re-instanciations 
 				# of PhotoPoints objects referenced in several different LightCurves. 
@@ -299,7 +300,7 @@ class TransientLoader:
 
 		if AlDocTypes.T2RECORD in content_types:
 
-			if state == "all" or tailored_res is True:
+			if state == "all" or type(state) is list or tailored_res is True:
 				for t2_doc in t2records:
 					al_tran.add_science_record(
 						ScienceRecord(t2_doc, read_only=True)
