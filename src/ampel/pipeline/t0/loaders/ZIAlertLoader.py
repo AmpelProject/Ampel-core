@@ -92,6 +92,30 @@ class ZIAlertLoader:
 
 		return zavro_dict['objectId'], zavro_dict['prv_candidates']
 
+	@classmethod
+	def walk_tarball(cls, tarpath, start=0, stop=None):
+		import tarfile
+		
+		def _walk(fileobj):
+			archive = tarfile.open(fileobj=fileobj, mode='r:gz')
+			for info in archive:
+				if info.isfile():
+					fo = archive.extractfile(info)
+					if info.name.endswith('.avro'):
+						yield fo
+					elif info.name.endswith('.tar.gz'):
+						yield from _walk(fo)
+		
+		count = -1
+		for fileobj in _walk(open(tarpath, 'rb')):
+			count += 1
+			if count < start:
+				continue
+			elif stop is not None and count > stop:
+				break
+			for alert in fastavro.reader(fileobj):
+				cls.filter_previous_candidates(alert['prv_candidates'])
+				yield alert
 		
 	@staticmethod
 	def filter_previous_candidates(prv_cd):

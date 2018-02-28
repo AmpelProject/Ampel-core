@@ -15,6 +15,8 @@ fi
 # outside the container
 find Ampel \( -iname \*.pyc -o -iname \*.pyo \) -delete
 
-# For lack of something better, run the test suite (which will fail, because
-# we didn't install mongomock)
-pytest Ampel/test
+# Create indices and insert config
+ampel-init-db --host $MONGO || exit 1
+
+# For lack of something better to do, spin through a tarball of alerts
+ampel-alertprocessor --host $MONGO /ztf/test_alerts.tar.gz --procs 10 --chunksize 5000
