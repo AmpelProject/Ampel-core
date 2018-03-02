@@ -4,7 +4,7 @@ from sqlalchemy import String, Integer, BigInteger, Float
 from sqlalchemy.dialects.postgresql import DOUBLE_PRECISION
 from sqlalchemy import select, and_
 from sqlalchemy import create_engine
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy.exc import IntegrityError, OperationalError
 import os, json
 import fastavro
 
@@ -168,21 +168,62 @@ def get_alert(connection, meta, alert_id):
     if result is None:
         return
     alert = dict(result)
+    
+    candidate = meta.tables['candidate']
+    result = connection.execute(candidate.select().where(candidate.c.candid == alert['candid'])).first()
+    alert['candidate'] = dict(result)
+    
     alert['prv_candidates'] = []
-    photopoint = meta.tables['photopoint']
-    pivot = meta.tables['alert_photopoint_pivot']
-    for result in connection.execute(select([photopoint]) \
-         .select_from(photopoint.join(pivot)) \
+    prv_candidate = meta.tables['prv_candidate']
+    pivot = meta.tables['alert_prv_candidate_pivot']
+    for result in connection.execute(select([prv_candidate]) \
+         .select_from(prv_candidate.join(pivot)) \
          .where(pivot.c.alert_id == alert_id) \
          .order_by(pivot.c.index)).fetchall():
-        candidate = dict(result)
-        if candidate['candid'] == alert_id:
-            alert['candidate'] = candidate
-        else:
-            # remove keys that should not appear in prv_candidates
-            # FIXME: store these in a separate table
-            for k in ('jdendhist', 'jdstarthist', 'ncovhist', 'ndethist', 'sgmag', 'sgscore', 'simag', 'srmag', 'szmag'):
-                del candidate[k]
-            alert['prv_candidates'].append(candidate)
+        alert['prv_candidates'].append(dict(result))
     
     return alert
+
+def init_db():
+	"""
+	Initialize archive db for use with Ampel
+	"""
+	import os, time
+	
+	from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
+	parser = ArgumentParser(description=__doc__, formatter_class=ArgumentDefaultsHelpFormatter)
+	parser.add_argument('--host', default='localhost:5432',
+	    help='Postgres server address and port')
+	parser.add_argument('-d', '--database', default='ztfarchive',
+	    help='Database name')
+	parser.add_argument('--schema', default=os.path.dirname(os.path.realpath(__file__)) + '/../../../alerts/schema.json',
+	    help='Alert schema in json format')
+	
+	opts = parser.parse_args()
+	
+	def env(var):
+		if '{}_FILE'.format(var) in os.environ:
+			with open(os.environ['{}_FILE'.format(var)]) as f:
+				return f.read().strip()
+		else:
+			return os.environ[var]
+	
+	user = 'ampel'
+	password = env('POSTGRES_PASSWORD')
+	for attempt in range(10):
+		try:
+			engine = create_engine('postgresql://{}:{}@{}/{}'.format(user, password, opts.host, opts.database))
+			break
+		except OperationalError:
+			if attempt == 9:
+				raise
+			else:
+				time.sleep(1)
+				continue
+	
+	with open(opts.schema) as f:
+		schema = json.load(f)
+	
+	meta = create_metadata(schema)
+	meta.create_all(engine)
+	

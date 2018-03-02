@@ -128,7 +128,16 @@ class ZIAlertLoader:
 			if el['candid'] is None or el['pdiffimfilename'].startswith('/stage'):
 				del prv_cd[i]
 
-
+def list_kafka():
+	
+	from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
+	parser = ArgumentParser(description=__doc__, formatter_class=ArgumentDefaultsHelpFormatter)
+	parser.add_argument("--broker", type=str, default="epyc.astro.washington.edu:9092")
+	opts = parser.parse_args()
+	
+	client = pykafka.KafkaClient(opts.broker)
+	print(client.topics.keys())
+	
 #	@staticmethod
 #	def load_alert_from_file(file_path, filter_pps_history=True, chrono_sort=False):
 #		"""	

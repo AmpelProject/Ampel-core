@@ -13,15 +13,17 @@ services:
         delay: 1s
         max_attempts: 3
   archivedb:
-    image: mysql
-    command: ["mysqld"]
+    image: postgres
+    command: ["postgres"]
     volumes:
-      - /var/tmp:/run/mysqld
-      - tmp:/var/lib/mysql
+      - /var/tmp:/run/postgresql
+      - tmp/postgres:/var/lib/postgresql/data
+    secrets:
+      - secrets/mysql-user-password
     environment:
-      MYSQL_ROOT_PASSWORD: seekrit
-    ports:
-      - "3306:3306"
+      POSTGRES_PASSWORD_FILE: /run/secrets/mysql-user-password
+      POSTGRES_USER: ampel
+      POSTGRES_DB: ztfarchive
     deploy:
       restart_policy:
         condition: on-failure
@@ -36,9 +38,13 @@ services:
       - ..:Ampel
       - ampel-start.sh
       - /lustre/fs19/group/icecube/jvs/ztf:/ztf
+    secrets:
+      - secrets/mysql-user-password
     environment:
       TINI_SUBREAPER: 1
       MONGO: localhost:27018
+      POSTGRES_PASSWORD_FILE: /run/secrets/mysql-user-password
+      POSTGRES_USER: ampel
     extra_hosts:
       - "kafka:128.95.79.19"
       - "kafka2:128.95.79.19"
