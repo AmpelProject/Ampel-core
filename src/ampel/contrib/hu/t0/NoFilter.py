@@ -8,6 +8,11 @@
 from ampel.abstract.AbstractTransientFilter import AbstractTransientFilter
 
 class NoFilter(AbstractTransientFilter):
+	
+	version = 0
+	
+	def get_version(self):
+		return NoFilter.version
 
 	def set_filter_parameters(self, d):
 		pass
