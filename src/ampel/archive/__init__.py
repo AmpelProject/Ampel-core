@@ -1,11 +1,29 @@
 
 from sqlalchemy import Table, MetaData, Column, ForeignKey, ForeignKeyConstraint
 from sqlalchemy import String, Integer, BigInteger, Float
+from sqlalchemy.dialects.postgresql import DOUBLE_PRECISION
 from sqlalchemy import select, and_
 from sqlalchemy import create_engine
 from sqlalchemy.exc import IntegrityError
 import os, json
 import fastavro
+
+from sqlalchemy.ext.compiler import compiles
+from sqlalchemy.sql.expression import Insert
+
+@compiles(Insert, 'postgresql')
+def ignore_duplicates(insert, compiler, **kw):
+    s = compiler.visit_insert(insert, **kw)
+    ignore = insert.kwargs.get('postgresql_ignore_duplicates', False)
+    return s if not ignore else s + ' ON CONFLICT DO NOTHING'
+Insert.argument_for('postgresql', 'ignore_duplicates', None)
+
+@compiles(Insert, 'sqlite')
+def ignore_duplicates(insert, compiler, **kw):
+    ignore = insert.kwargs.get('sqlite_ignore_duplicates', False)
+    my_insert = insert if not ignore else insert.prefix_with('OR IGNORE')
+    return compiler.visit_insert(my_insert, **kw)
+Insert.argument_for('sqlite', 'ignore_duplicates', None)
 
 class ArchiveDB(object):
     def __init__(self, *args, **kwargs):
@@ -17,7 +35,6 @@ class ArchiveDB(object):
             schema = json.load(f)
         self._meta = create_metadata(schema)
         engine = create_engine(*args, **kwargs)
-        self._meta.create_all(engine)
         self._connection = engine.connect()
     
     def insert_alert(self, alert, processor_id, ingestion_time):
@@ -36,7 +53,8 @@ def create_metadata(alert_schema):
     
     fields = {f['name'] : f for f in alert_schema['fields']}
 
-    types = {'float': Float(32), 'double': Float(64), 'int': Integer(), 'long': BigInteger(), 'string': String(255)}
+    double = Float(53).with_variant(DOUBLE_PRECISION(), "postgresql")
+    types = {'float': Float(), 'double': double, 'int': Integer(), 'long': BigInteger(), 'string': String(255)}
     def make_column(field):
         kwargs = {}
         if type(field['type']) is list:
@@ -55,7 +73,7 @@ def create_metadata(alert_schema):
     meta = MetaData()
 
     Alert = Table('alert', meta,
-        Column('candid', Integer(), primary_key=True, nullable=False),
+        Column('candid', BigInteger(), primary_key=True, nullable=False),
         Column('objectId', String(12), nullable=False),
         Column('processor_id', Integer(), nullable=False),
         Column('ingestion_time', BigInteger(), nullable=False)
@@ -63,19 +81,28 @@ def create_metadata(alert_schema):
 
     indices = {'candid', 'pid'}
     columns = filter(lambda c: c.name not in indices, map(make_column, fields['candidate']['type']['fields']))
-    PhotoPoint = Table('photopoint', meta,
+    PhotoPoint = Table('candidate', meta,
+        Column('candid', BigInteger(), primary_key=True, nullable=False),
+        Column('pid', BigInteger(), primary_key=True, nullable=False),
+        
+        *columns
+    )
+    
+    indices = {'candid', 'pid'}
+    columns = filter(lambda c: c.name not in indices, map(make_column, fields['prv_candidates']['type'][0]['items']['fields']))
+    PhotoPoint = Table('prv_candidate', meta,
         Column('candid', BigInteger(), primary_key=True, nullable=False),
         Column('pid', BigInteger(), primary_key=True, nullable=False),
         
         *columns
     )
 
-    Pivot = Table('alert_photopoint_pivot', meta,
+    Pivot = Table('alert_prv_candidate_pivot', meta,
         Column('alert_id', BigInteger(), ForeignKey("alert.candid"), primary_key=True, nullable=False),
         Column('candid', BigInteger(), primary_key=True, nullable=False),
         Column('pid', BigInteger(), primary_key=True, nullable=False),
         Column('index', Integer(), nullable=False),
-        ForeignKeyConstraint(['candid', 'pid'], ['photopoint.candid', 'photopoint.pid']),
+        ForeignKeyConstraint(['candid', 'pid'], ['prv_candidate.candid', 'prv_candidate.pid']),
     )
 
     return meta
@@ -107,26 +134,24 @@ def insert_alert(connection, meta, alert, processor_id, ingestion_time):
     
     """
     alert_id = alert['candid']
-    with connection.begin() as transaction:
-        try:
-            connection.execute(meta.tables['alert'].insert(),
-                candid=alert_id, objectId=alert['objectId'],
-                processor_id=processor_id, ingestion_time=ingestion_time)
-        except IntegrityError:
-            # abort on duplicate alerts
-            return
-        
+    try:
+        connection.execute(meta.tables['alert'].insert(),
+            candid=alert_id, objectId=alert['objectId'],
+            processor_id=processor_id, ingestion_time=ingestion_time)
+        connection.execute(meta.tables['candidate'].insert(), **alert['candidate'])
+    except IntegrityError:
+        # abort on duplicate alerts
+        return
+    
+    ignore = {'{}_ignore_duplicates'.format(connection.dialect.name): True}
+    
+    if len(alert['prv_candidates']) > 0:
         # entries in prv_candidates will often be duplicated, but may also
         # be updated without warning.
-        photopoint = meta.tables['photopoint']
-        for idx, candidate in enumerate([alert['candidate']] + alert['prv_candidates']):
-            condition = and_(photopoint.columns.pid == candidate['pid'], photopoint.columns.candid == candidate['candid'])
-            
-            result = connection.execute(select([photopoint.c.pid]).where(condition)).first()
-            if result is None:
-                # photopoint is distinct from known entries; insert it
-                photopoint_id = connection.execute(photopoint.insert(), **candidate)
-            connection.execute(meta.tables['alert_photopoint_pivot'].insert(), alert_id=alert_id, candid=candidate['candid'], pid=candidate['pid'], index=idx)
+        connection.execute(meta.tables['prv_candidate'].insert(**ignore), alert['prv_candidates'])
+        pivots = [dict(alert_id=alert_id, index=index, candid=v['candid'], pid=v['pid']) for index, v in enumerate(alert['prv_candidates'])]
+        connection.execute(meta.tables['alert_prv_candidate_pivot'].insert(), pivots)
+    return
 
 def get_alert(connection, meta, alert_id):
     """
