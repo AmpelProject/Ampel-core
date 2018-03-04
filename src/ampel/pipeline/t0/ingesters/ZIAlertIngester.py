@@ -340,17 +340,6 @@ class ZIAlertIngester(AbstractAlertIngester):
 		# counter for user feedback (after next loop)
 		db_ops_len = len(db_ops)
 
-
-		print("##########################")
-		print("##########################")
-		print("##########################")
-		print("##########################")
-		print(ddd_t2_struct)
-		print("##########################")
-		print("##########################")
-		print("##########################")
-		print("##########################")
-
 		# Loop over t2 runnables
 		for t2_id in ddd_t2_struct.keys():
 
