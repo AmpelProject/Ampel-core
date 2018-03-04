@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 # File              : ampel/pipeline/t0/ingesters/ZIAlertIngester.py
+# License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 14.12.2017
-# Last Modified Date: 22.02.2018
+# Last Modified Date: 04.03.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import logging, pymongo
@@ -13,15 +14,14 @@ from pymongo.errors import BulkWriteError
 from ampel.abstract.AbstractAlertIngester import AbstractAlertIngester
 from ampel.pipeline.t0.ingesters.ZIPhotoPointShaper import ZIPhotoPointShaper
 from ampel.pipeline.utils.CompoundGenerator import CompoundGenerator
-from ampel.pipeline.utils.T2DocsShaper import T2DocsShaper
-from ampel.pipeline.utils.ChannelsConfig import ChannelsConfig
+from ampel.pipeline.utils.T2MergeUtil import T2MergeUtil
+from ampel.pipeline.logging.LoggingUtils import LoggingUtils
 
 from ampel.flags.PhotoPointFlags import PhotoPointFlags
 from ampel.flags.TransientFlags import TransientFlags
 from ampel.flags.T2RunStates import T2RunStates
 from ampel.flags.AlDocTypes import AlDocTypes
 from ampel.flags.FlagUtils import FlagUtils
-from ampel.flags.ChannelFlags import ChannelFlags
 
 # https://github.com/AmpelProject/Ampel/wiki/Ampel-Flags
 SUPERSEEDED = FlagUtils.get_flag_pos_in_enumflag(PhotoPointFlags.SUPERSEEDED)
@@ -40,42 +40,40 @@ class ZIAlertIngester(AbstractAlertIngester):
 		TransientFlags.INST_ZTF|TransientFlags.ALERT_IPAC
 	)
 
-	def __init__(self, db, channels_config, names_of_active_channels, logger):
+
+	def __init__(self, output_collection, logger=None):
 		"""
-		db: instance of pymongo.database.Database (required for database operations)
+		output_collection: instance of pymongo.collection.Collection (required for database operations)
 		"""
-
-		if not type(db) is pymongo.database.Database:
-			import mongomock
-			if not type(db) is mongomock.database.Database:
-				raise ValueError(
-					"The parameter db (%s) must be of type: pymongo.database.Database" % type(db)
-				)
-
-		if not type(channels_config) is ChannelsConfig:
-			raise ValueError("The parameter channels_config must be of type: ampel.pipeline.common.ChannelsConfig")
-
-		if not type(names_of_active_channels) is list:
-			raise ValueError("The parameter names_of_active_channels must be of type: list")
-
-		self.logger = logger
-		self.set_mongo(db)
+		self.logger = LoggingUtils.get_logger() if logger is None else logger
+		self.col = output_collection
 		self.pps_shaper = ZIPhotoPointShaper()
-		self.t2docs_shaper = T2DocsShaper(channels_config, names_of_active_channels)
 
-		self.l_chanflag_pos = []
-		self.l_chanflags = []
 
-		for chan_name in names_of_active_channels:
-			flag = channels_config.get_channel_flag_instance(chan_name)
-			self.l_chanflags.append(flag)
-			self.l_chanflag_pos.append(
-				FlagUtils.get_flag_pos_in_enumflag(flag)
-			)
+	def configure(self, channels):
+		"""
+		This function must be called before ingest(...) can be used
+		channels: list of ampel.pipeline.config.Channel
+		"""
 
-		CompoundGenerator.cm_init_channels(
-			channels_config, names_of_active_channels
+		if not type(channels) is list:
+			raise ValueError("Parameter channels must be of type: list")
+
+		if len(channels) == 0:
+			raise ValueError("Parameter channels cannot be empty")
+
+		self.logger.info(
+			"Configuring ZIAlertIngester with channels %s" % 
+			[channel.name for channel in channels]
 		)
+
+		self.l_chanflags = [channel.get_flag() for channel in channels]
+
+		# Static init function so that instances of CompoundGenerator work properly
+		CompoundGenerator.cm_init_channels(channels)
+
+		# instanciate T2MergeUtil (helper class used in method ingest())
+		self.t2_merge_util = T2MergeUtil(channels)
 
 
 	def set_job_id(self, job_id):
@@ -114,19 +112,14 @@ class ZIAlertIngester(AbstractAlertIngester):
 		return self.pps_shaper
 
 
-	def set_mongo(self, db):
-		"""
-		db: instance of pymongo.database.Database
-		"""
-		self.col = db["main"]
-
-
 	def ingest(self, tran_id, pps_alert, list_of_t2_runnables):
 		"""
-			This method is called by t0.AmpelProcessor for 
-			transients that pass at leat one T0 channel filter. 
-			Then photopoints, transients and  t2 documents are pushed to the DB.
-			A duplicate check is performed before DB insertions
+		This method is called by t0.AmpelProcessor for 
+		transients that pass at leat one T0 channel filter. 
+		Then photopoints, transients and  t2 documents are pushed to the DB.
+		A duplicate check is performed before DB insertions
+
+		The function configure() must be called before this one can be used
 		"""
 
 		###############################################
@@ -278,13 +271,16 @@ class ZIAlertIngester(AbstractAlertIngester):
 		##   Part 4: Generate compound ids and compounds   ##
 		#####################################################
 
-		chan_flags = ChannelFlags(0)
+		chan_flags = None
 		db_chan_flags = []
 
 		for i, el in enumerate(list_of_t2_runnables):
 			if not el is None:
-				chan_flags |= self.l_chanflags[i]
-				db_chan_flags.append(self.l_chanflag_pos[i])
+				if chan_flags is None:
+					chan_flags = self.l_chanflags[i]
+				else:
+					chan_flags |= self.l_chanflags[i]
+				db_chan_flags.append(self.l_chanflags[i].name)
 
 		# Generate compound info for channels having passed T0 filters (i.e being not None)
 		comp_gen.generate(chan_flags)
@@ -296,7 +292,7 @@ class ZIAlertIngester(AbstractAlertIngester):
 			d_addtoset = {
 				"channels": {
 					"$each": [
-						FlagUtils.get_flag_pos_in_enumflag(flag)
+						flag.name
 						for flag in comp_gen.get_channels_for_compoundid(compound_id).as_list()
 					]
 				}
@@ -337,27 +333,37 @@ class ZIAlertIngester(AbstractAlertIngester):
 		#####################################
 
 		self.logger.debug("Generating T2 docs")
-		ddd_t2_struct = self.t2docs_shaper.get_struct(
+		ddd_t2_struct = self.t2_merge_util.get_struct(
 			comp_gen, list_of_t2_runnables
 		)
 		
 		# counter for user feedback (after next loop)
 		db_ops_len = len(db_ops)
 
+
+		print("##########################")
+		print("##########################")
+		print("##########################")
+		print("##########################")
+		print(ddd_t2_struct)
+		print("##########################")
+		print("##########################")
+		print("##########################")
+		print("##########################")
+
 		# Loop over t2 runnables
 		for t2_id in ddd_t2_struct.keys():
 
-			# Loop over parameter Ids
-			for param_id in ddd_t2_struct[t2_id].keys():
+			# Loop over run settings
+			for run_config in ddd_t2_struct[t2_id].keys():
 			
 				# Loop over compound Ids
-				for compound_id in ddd_t2_struct[t2_id][param_id]:
+				for compound_id in ddd_t2_struct[t2_id][run_config]:
 
 					d_addtoset = {
 						"channels": {
 							"$each": [
-								FlagUtils.get_flag_pos_in_enumflag(el) 
-								for el in ddd_t2_struct[t2_id][param_id][compound_id].as_list()
+								el.name for el in ddd_t2_struct[t2_id][run_config][compound_id].as_list()
 							]
 						}
 					}
@@ -371,16 +377,16 @@ class ZIAlertIngester(AbstractAlertIngester):
 						pymongo.UpdateOne(
 							{
 								"tranId": tran_id, 
-								"t2Runnable": FlagUtils.get_flag_pos_in_enumflag(t2_id), 
-								"paramId": param_id, 
+								"t2Unit": t2_id.name, 
+								"runConfig": run_config, 
 								"compoundId": compound_id,
 							},
 							{
 								"$setOnInsert": {
 									"tranId": tran_id,
 									"alDocType": AlDocTypes.T2RECORD,
-									"t2Runnable": FlagUtils.get_flag_pos_in_enumflag(t2_id), 
-									"paramId": param_id, 
+									"t2Unit": t2_id.name, 
+									"runConfig": run_config, 
 									"compoundId": compound_id, 
 									"runState": TO_RUN,
 								},

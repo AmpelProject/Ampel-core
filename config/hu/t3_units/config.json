@@ -1,0 +1,8 @@
+[{
+	"_id": "SLACKPUBLISHER",
+	"classFullPath": "ampel.contrib.hu.t3.SlackPublisher",
+	"base_parameters": {
+		"url": "http://something"
+	}
+}]
+

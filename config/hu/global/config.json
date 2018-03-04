@@ -1,0 +1,42 @@
+[{
+	"_id": "photoPoints",
+	"ZTFIPAC": {
+		"alFlags": "INST_ZTF|PP_IPAC",
+		"dictKeywords": {
+			"tranId": "alertid",
+			"pptId": "candid",
+			"obsDate": "jd",
+			"filterId": "fid",
+			"mag": "magpsf"
+		},
+		"stamperClass": "ZIPhotoPointStamper",
+		"formats": {
+			"date": "julian"
+		}
+	},
+	"ZTFHUMBOLDT": {
+		"alFlags": "INST_ZTF|PP_HUMBOLDT",
+		"dictKeywords": {
+			"tranId": "alertid",
+			"pptId": "candid",
+			"obsDate": "jd",
+			"filterId": "fid"
+		},
+		"stamperClass": "ZIPhotoPointStamper",
+		"formats": {
+			"date": "julian"
+		}
+	}
+},
+{
+	"_id": "dbSpecs",
+	"logs": {
+		"dbName": "Ampel_jobs",
+		"collectionName": "jobs"
+	},
+	"transients": {
+		"dbName": "Ampel",
+		"collectionName": "main"
+	}
+}]
+

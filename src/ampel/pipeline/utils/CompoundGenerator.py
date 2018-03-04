@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 # File              : ampel/pipeline/utils/CompoundGenerator.py
+# License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 01.01.2018
-# Last Modified Date: 11.02.2018
+# Last Modified Date: 04.03.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import logging, hashlib, json
@@ -12,7 +13,6 @@ from ampel.flags.TransientFlags import TransientFlags
 from ampel.flags.T2RunStates import T2RunStates
 from ampel.flags.AlDocTypes import AlDocTypes
 from ampel.flags.FlagUtils import FlagUtils
-from ampel.flags.ChannelFlags import ChannelFlags
 
 HAS_HUMBOLDT_ZP = FlagUtils.get_flag_pos_in_enumflag(PhotoPointFlags.HAS_HUMBOLDT_ZP)
 HAS_WEIZMANN_SUB = FlagUtils.get_flag_pos_in_enumflag(PhotoPointFlags.HAS_WEIZMANN_SUB)
@@ -23,48 +23,55 @@ SRC_T1 = FlagUtils.get_flag_pos_in_enumflag(PhotoPointFlags.SRC_T1)
 
 class CompoundGenerator():
 	"""
-		Documentation will follow eventually
+	This class requires documentation to be understood.
+	I'll to do that in the near future (have it on paper)
 	"""
 
-	channel_options = dict()
-	channel_options_sig = dict()
+	channel_options = {}
+	channel_options_sig = {}
 	flags_to_check = {SUPERSEEDED}
+	ChannelFlags = None
 
 
 	@classmethod
-	def cm_init_channels(cls, channels_config, channel_names):
-		"""
-			Sets required internal static variables.
-			For T0: channel_names must contain the active channels.
-			channels_config: instance of ampel.pipeline.common.ChannelsConfig
-			channel_names: list of channnel names (string) as defined in the ampel config 
-						   in the DB (collection: 'config', dict key: 'channels')
-		"""
-		for channel_name in channel_names:
-			cls.cm_init_channel(channels_config, channel_name)
+	def set_ChannelFlags(cls, arg):
+		CompoundGenerator.ChannelFlags = arg
 
 
 	@classmethod
-	def cm_init_channel(cls, channels_config, channel_name):
+	def cm_init_channels(cls, channels):
 		"""
-			Sets required internal static variables.
-			(For T0: each 'active' channel must be added) 
-			channels_config: instance of ampel.pipeline.common.ChannelsConfig
-			channel_name: single channnel name (string) as defined in the ampel config 
-						  in the DB (collection: 'config', dict key: 'channels')
+		Sets required internal static variables.
+		channels: list of instances of ampel.pipeline.config.Channel
+		For T0: channels must contain the active channels.
+		"""
+		for channel in channels:
+			cls.cm_init_channel(channel)
+
+
+	@classmethod
+	def cm_init_channel(cls, channel):
+		"""
+		Set required internal static variables.
+		channel: instance of ampel.pipeline.config.Channel
+		(For T0: each 'active' channel must be added) 
 		"""
 
-		chan_flag = channels_config.get_channel_flag_instance(channel_name)
+		chan_int = channel.get_flag().value
 
-		if chan_flag in cls.channel_options:
-			del cls.channel_options[chan_flag]
+		# In case this method is called multiple times
+		if chan_int in cls.channel_options:
+			del cls.channel_options[chan_int]
 
-		# get channel parameters from ChannelsConfig instance
-		cls.channel_options[chan_flag] = channels_config.get_channel_input_parameters(channel_name)
+		# get input parameters. example:
+		# { "ZTFPartner" : true, "autoComplete" : true, "updatedHUZP" : false }
+		cls.channel_options[chan_int] = channel.get_input_parameters()
 
 		# shortcut
-		chan_opts = cls.channel_options[chan_flag]
+		chan_opts = cls.channel_options[chan_int]
 
+		# Add default values for optional parameters that might not 
+		# be defined in the current channel
 		if "updatedHUZP" not in chan_opts:
 			chan_opts['updatedHUZP'] = False
 
@@ -77,8 +84,9 @@ class CompoundGenerator():
 			options_sig += "1" if chan_opts[key] else "0"
 
 		# Save it as static variable
-		cls.channel_options_sig[chan_flag] = options_sig
+		cls.channel_options_sig[chan_int] = options_sig
 
+		# flags_to_check is used for optimization of the init routine
 		if chan_opts['ZTFPartner'] is False:
 			cls.flags_to_check.add(ZTF_PARTNERSHIP)
 
@@ -93,6 +101,8 @@ class CompoundGenerator():
 
 
 	def __init__(self, pps_db, logger, ids_alert=None):
+		"""
+		"""
 
 		self.logger = logger
 
@@ -112,9 +122,9 @@ class CompoundGenerator():
 		self.d_ids_sets[SUPERSEEDED] = set()
 
 		# flags_to_check was set during static init depending on the configuration of 
-		# each added channel. We need ids sets not for every existing option but only 
-		# for the flags defined in flags_to_check since it could happen that no channel 
-		# has activated the option say 'updatedHUZP'
+		# each added channel. We need sets of ids not for every existing option but only 
+		# for the flags defined in flags_to_check since it can happen that no channel 
+		# uses the option say 'updatedHUZP'
 		for flag in CompoundGenerator.flags_to_check:
 			self.d_ids_sets[flag] = set()
 
@@ -129,13 +139,14 @@ class CompoundGenerator():
 				if flag in pp['alFlags']:
 					self.d_ids_sets[flag].add(pp['_id'])
 
-			# Channel specific photophoint exclusion. pp["alExcluded"] could look like this. 
-			# [CHANNEL_SN, CHANNEL_GRB] (whereby each value is a flag index position rather than a flag value)
+			# Channel specific photophoint exclusion. pp["alExcluded"] could look like this: 
+			# [CHANNEL_SN, CHANNEL_GRB]
 			if "alExcluded" in pp:
-				for chan_flag in FlagUtils.dbflag_to_enumflag(pp["alExcluded"], ChannelFlags).as_list():
-					if not chan_flag in self.d_ids_excluded:
-						self.d_ids_excluded[chan_flag] = set()
-					self.d_ids_excluded[chan_flag].add(pp['_id'])
+				for chan_str in pp["alExcluded"]:
+					chan_int = CompoundGenerator.ChannelFlags[chan_str].value
+					if not chan_int in self.d_ids_excluded:
+						self.d_ids_excluded[chan_int] = set()
+					self.d_ids_excluded[chan_int].add(pp['_id'])
 			
 		# Sort photopoints by id (type: long)
 		if ids_alert is None:
@@ -151,21 +162,21 @@ class CompoundGenerator():
 		self.d_effid_chanflags = dict()
 
 		# 3
-		self.d_effid_stidnchan = dict()
+		self.d_effid_strictid_plus_chan = dict()
 
 		# 4
 		self.d_stid_compdiff = dict()
 
 		# 5
-		self.d_optsig_effid = dict()
+		self.d_optionsig_effid = dict()
 
 		# 6
-		self.d_optsig_stid = dict()
+		self.d_optionsig_strictid = dict()
 
 			
 	def get_db_ids(self):
 		""" 
-			Returns a python set containing the "_id" of every photopoint contained in the DB
+		Returns a python set containing the "_id" of every photopoint contained in the DB
 		"""
 		return self.ids_db
 
@@ -183,20 +194,20 @@ class CompoundGenerator():
 		"""	
 		return [
 			{
-				'channel': FlagUtils.get_flag_pos_in_enumflag(el[0]),
+				'channel': [ell.name for ell in el[0].as_list()],
 				'flavor': el[1]
 			} 
-			for el in self.d_effid_stidnchan[compound_id]
+			for el in self.d_effid_strictid_plus_chan[compound_id]
 		]
 
 
 	def has_flavors(self, compound_id):
 		"""	
 		"""	
-		if not compound_id in self.d_effid_stidnchan:
+		if not compound_id in self.d_effid_strictid_plus_chan:
 			return False
 
-		if len(self.d_effid_stidnchan[compound_id]) == 0:
+		if len(self.d_effid_strictid_plus_chan[compound_id]) == 0:
 			return False
 
 		return True
@@ -207,7 +218,7 @@ class CompoundGenerator():
 		"""	
 		return [
 			{'flavor': el[1], 'omitted': self.d_stid_compdiff[el[1]]}
-			for el in self.d_effid_stidnchan[compound_id]
+			for el in self.d_effid_strictid_plus_chan[compound_id]
 		]
 
 	
@@ -216,8 +227,8 @@ class CompoundGenerator():
 		compound_ids = set()
 
 		for chan_flag in channel_flags.as_list():
-			options_sig = CompoundGenerator.channel_options_sig[chan_flag]
-			compound_ids.add(self.d_optsig_effid[options_sig])
+			options_sig = CompoundGenerator.channel_options_sig[chan_flag.value]
+			compound_ids.add(self.d_optionsig_effid[options_sig])
 
 		return compound_ids
 
@@ -228,39 +239,51 @@ class CompoundGenerator():
 		return self.d_effid_chanflags[compound_id]
 
 
-	def generate(self, list_of_channel_flag):
+	def generate(self, chan_flags):
 		"""
 		"""
 
-		for channel_flag in list_of_channel_flag.as_list():
+		for chan_flag in chan_flags.as_list():
 
 			#######################################################
 			# Check for identical previously generated compound
 			# (several channels can have the same config parameters)
 			#######################################################
 	
-			chan_opts_sig = CompoundGenerator.channel_options_sig[channel_flag]
+			# Get channel option signature (ex: "01101011")
+			chan_opts_sig = CompoundGenerator.channel_options_sig[chan_flag.value]
 	
-			if chan_opts_sig in self.d_optsig_effid:
-				
-				eff_id = self.d_optsig_effid[chan_opts_sig]
-				self.d_effid_chanflags[eff_id] |= channel_flag
+			# if, given the current channel options, effective id was already computed 
+			if chan_opts_sig in self.d_optionsig_effid:
+
+				# Retrieve previously computed effective id
+				eff_id = self.d_optionsig_effid[chan_opts_sig]
+
+				# Add current flag to the flags associated with this effective id
+				self.d_effid_chanflags[eff_id] |= chan_flag
 	
-				if chan_opts_sig in self.d_optsig_stid:
-					strict_id = self.d_optsig_stid[chan_opts_sig]
+				# if a strict id exists for the current channel options
+				if chan_opts_sig in self.d_optionsig_strictid:
+
+					# Retrieve strict id
+					strict_id = self.d_optionsig_strictid[chan_opts_sig]
+
+					# Feedback
 					log_output = "(eff: " + eff_id + ", strict: " + strict_id + ")"
-					if not eff_id in self.d_effid_stidnchan:
-						self.d_effid_stidnchan[eff_id] = set()
-					self.d_effid_stidnchan[eff_id].add((channel_flag, strict_id))
+
+					# Add tupple (chan_flag, strict id) to internal dict using eff_id as key
+					if not eff_id in self.d_effid_strictid_plus_chan:
+						self.d_effid_strictid_plus_chan[eff_id] = set()
+					self.d_effid_strictid_plus_chan[eff_id].add((chan_flag, strict_id))
 				else:
 					log_output = eff_id 
 	
 				self.logger.info(
 					"Using previoulsy generated compound for channel %s. CompoundId: %s", 
-					channel_flag.name, log_output
+					chan_flag.name, log_output
 				)
 	
-				return 
+				continue 
 	
 	
 			##########################################
@@ -271,7 +294,7 @@ class CompoundGenerator():
 			strict_comp = []
 			eff_hash_payload = ""
 			strict_hash_payload = ""
-			chan_options = CompoundGenerator.channel_options[channel_flag]
+			chan_options = CompoundGenerator.channel_options[chan_flag.value]
 	
 			# Create compound and compoundId
 			for pp_id in self.raw_compound_ids:
@@ -285,8 +308,8 @@ class CompoundGenerator():
 					d['excl'] = ZTF_PARTNERSHIP
 				elif chan_options['autoComplete'] is False and pp_id in self.d_ids_sets[SRC_T1]:
 					d['excl'] = SRC_T1
-				elif channel_flag in self.d_ids_excluded and pp_id in self.d_ids_excluded[channel_flag]:
-					d['excl'] = "c" + str(FlagUtils.get_flag_pos_in_enumflag(channel_flag))
+				elif chan_flag in self.d_ids_excluded and pp_id in self.d_ids_excluded[chan_flag.value]:
+					d['excl'] = chan_flag.name
 	
 				#  Photopoint option: check if updated zero point should be used
 				if chan_options['updatedHUZP'] is True and pp_id in self.d_ids_sets[HAS_HUMBOLDT_ZP]:
@@ -309,38 +332,46 @@ class CompoundGenerator():
 					else:
 						strict_comp.append(d)
 	
+			# eff_id = effective compound id = md5 hash of effective compound
 			eff_id = hashlib.md5(bytes(eff_hash_payload, "utf-8")).hexdigest()
+
+			# strict_id = strict compound id = md5 hash of strict compound
 			strict_id = hashlib.md5(bytes(strict_hash_payload, "utf-8")).hexdigest()
 	
 			
-			##################
-			# Record results #
-			##################
+			################
+			# Save results #
+			################
 	
+			# Save channel flag to dict using eff_id as key
 			if eff_id in self.d_effid_chanflags:
-				self.d_effid_chanflags[eff_id] |= channel_flag
+				self.d_effid_chanflags[eff_id] |= chan_flag
 			else:
-				self.d_effid_chanflags[eff_id] = channel_flag
+				self.d_effid_chanflags[eff_id] = chan_flag
 
 			self.d_effid_comp[eff_id] = eff_comp
-			self.d_optsig_effid[chan_opts_sig] = eff_id
+			self.d_optionsig_effid[chan_opts_sig] = eff_id
 	
 			if eff_id != strict_id:
 	
 				self.logger.info(
 					"Compound generated for channel %s. CompoundId: (eff: %s, strict: %s)", 
-					channel_flag.name, eff_id, strict_id
+					chan_flag.name, eff_id, strict_id
 				)
 	
-				self.d_optsig_stid[chan_opts_sig] = strict_id
-				if not eff_id in self.d_effid_stidnchan:
-					self.d_effid_stidnchan[eff_id] = set()
-				self.d_effid_stidnchan[eff_id].add((channel_flag, strict_id))
+				# Save strict id using channel option signature as key
+				self.d_optionsig_strictid[chan_opts_sig] = strict_id
+
+				# Add tupple (chan_flag, strict id) to internal dict using eff_id as key
+				if not eff_id in self.d_effid_strictid_plus_chan:
+					self.d_effid_strictid_plus_chan[eff_id] = set()
+				self.d_effid_strictid_plus_chan[eff_id].add((chan_flag, strict_id))
+
 				self.d_stid_compdiff[strict_id] = strict_comp
 	
 			else:
 	
 				self.logger.info(
 					"Compound generated for channel %s. CompoundId: %s", 
-					channel_flag.name, eff_id
+					chan_flag.name, eff_id
 				)

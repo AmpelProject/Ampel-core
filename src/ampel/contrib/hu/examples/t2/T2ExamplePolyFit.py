@@ -3,7 +3,7 @@
 # File              : ampel/contrib/hu/examples/t2/T2ExamplePolyFit.py
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 13.12.2017
-# Last Modified Date: 28.01.2018
+# Last Modified Date: 01.03.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 from ampel.abstract.AmpelABC import AmpelABC, abstractmethod
 from ampel.abstract.AbstractT2Runnable import AbstractT2Runnable
@@ -48,7 +48,7 @@ class T2ExamplePolyFit(AbstractT2Runnable):
 		base_parameters: dict loaded from ampel config section:
 		T2->runnables->POLYFIT->base_parameters
 		"""
-		self.fit_function = getattr(numpy, base_parameters['fit_function'])
+		self.fit_function = getattr(numpy, base_parameters['fitFunction'])
 
 
 	def get_version(self):

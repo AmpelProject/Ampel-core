@@ -10,10 +10,8 @@ from ampel.flags.AlertFlags import AlertFlags
 from ampel.flags.TransientFlags import TransientFlags
 from ampel.flags.LogRecordFlags import LogRecordFlags
 from ampel.flags.PhotoPointFlags import PhotoPointFlags
-from ampel.flags.T2RunnableIds import T2RunnableIds
 from ampel.flags.T2RunStates import T2RunStates
 from ampel.flags.JobFlags import JobFlags
-from ampel.flags.ChannelFlags import ChannelFlags
 from ampel.flags.AlDocTypes import AlDocTypes
 from ampel.flags.FlagUtils import FlagUtils
 
@@ -66,6 +64,10 @@ class DBDocVizualizer:
 
 		elif db_dict['alDocType'] == AlDocTypes.TRANSIENT:
 			self.set_dict_first_keys(db_dict, d, "TRANSIENT")
+			if "alFlags" in db_dict:
+				d['alFlags'] = self.pretty_print_flag(
+					FlagUtils.dbflag_to_enumflag(db_dict['alFlags'], TransientFlags)
+				)
 			self.copy_the_rest(db_dict, d)
 			job_ids = [] 
 			for el in db_dict['jobIds']:
@@ -75,10 +77,8 @@ class DBDocVizualizer:
 		elif db_dict['alDocType'] == AlDocTypes.T2RECORD:
 			self.set_dict_first_keys(db_dict, d, "T2RECORD")
 			d['channels'] = db_dict['channels']
-			d['t2Compute'] = self.pretty_print_flag(
-				FlagUtils.dbflag_to_enumflag([db_dict['t2Compute']], T2RunnableIds)
-			)
-			d['paramId'] = db_dict['paramId']
+			d['t2Unit'] = db_dict['t2Unit']
+			d['runConfig'] = db_dict['runConfig']
 			d['compoundId'] = db_dict['compoundId']
 			self.copy_the_rest(db_dict, d)
 
@@ -163,11 +163,6 @@ class DBDocVizualizer:
   
 
 	def copy_the_rest(self, d_src, d_dest):
-
-		if "channels" in d_src:
-			d_dest['channels'] = self.pretty_print_flag(
-				FlagUtils.dbflag_to_enumflag(d_src['channels'], ChannelFlags)
-			)
 
 		if "runState" in d_src:
 			d_dest['runState'] = self.pretty_print_flag(

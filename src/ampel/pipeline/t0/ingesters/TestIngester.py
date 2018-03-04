@@ -1,12 +1,13 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 # File              : ampel/pipeline/t0/ingesters/TestIngester.py
+# Licence           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
-# Date              : 14.12.2017
-# Last Modified Date: 03.01.2018
+# Date              : 02.03.2018
+# Last Modified Date: 02.03.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-from ampel.base.AbstractAlertIngester import AbstractAlertIngester
+from ampel.abstract.AbstractAlertIngester import AbstractAlertIngester
 
 
 class TestIngester(AbstractAlertIngester):

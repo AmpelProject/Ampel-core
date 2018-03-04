@@ -1,13 +1,16 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 # File              : ampel/pipeline/logging/DBJobReporter.py
+# License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 14.12.2017
-# Last Modified Date: 24.01.2018
+# Last Modified Date: 03.03.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
+
 import logging
 from bson import ObjectId
 from ampel.flags.JobFlags import JobFlags
+
 
 class DBJobReporter:
 	""" 
@@ -16,13 +19,13 @@ class DBJobReporter:
 	and an array of log entries produced by this job
 	"""
 
-	def __init__(self, db, job_flags=None):
+	def __init__(self, mongo_collection, job_flags=None):
 		""" 
 		Parameters:
-		db: instance of pymongo.database.Database
+		mongo_collection: instance of pymongo.collection.Collection
 		job_flags: instance of ampel.flags.JobFlags
 		"""
-		self.col = db['jobs']
+		self.col = mongo_collection
 		self.job_flags = JobFlags(0) if job_flags is None else job_flags
 		self.job_name = "Not set"
 

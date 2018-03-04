@@ -1,30 +1,32 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 # File              : ampel/pipeline/t0/AlertProcessor.py
+# License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 14.12.2017
-# Last Modified Date: 27.01.2018
+# Last Modified Date: 04.03.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
-import logging, importlib, time
+
+import time
 
 from ampel.pipeline.t0.AmpelAlert import AmpelAlert
 from ampel.pipeline.t0.AlertFileList import AlertFileList
 from ampel.pipeline.t0.loaders.ZIAlertLoader import ZIAlertLoader
 from ampel.pipeline.t0.ingesters.ZIAlertIngester import ZIAlertIngester
 
+from ampel.flags.FlagGenerator import FlagGenerator
 from ampel.flags.AlertFlags import AlertFlags
-from ampel.flags.TransientFlags import TransientFlags
 from ampel.flags.LogRecordFlags import LogRecordFlags
-from ampel.flags.PhotoPointFlags import PhotoPointFlags
 from ampel.flags.JobFlags import JobFlags
-from ampel.flags.ChannelFlags import ChannelFlags
 
-from ampel.pipeline.utils.ChannelsConfig import ChannelsConfig
+from ampel.pipeline.config.Channel import Channel
 from ampel.pipeline.logging.LoggingUtils import LoggingUtils
 from ampel.pipeline.logging.DBJobReporter import DBJobReporter
 from ampel.pipeline.logging.DBLoggingHandler import DBLoggingHandler
 from ampel.pipeline.logging.InitLogBuffer import InitLogBuffer
 
+from pymongo import MongoClient, database as pydb
+from mongomock import MongoClient as MockMongoClient, database as mmdb
 
 class AlertProcessor:
 	""" 
@@ -36,12 +38,11 @@ class AlertProcessor:
 			* Set policies
 			* Ingest alert based on the configured ingester
 	"""
-	version = 0.18
+	version = 0.2
 
 	def __init__(
-		self, instrument="ZTF", alert_format="IPAC", db_name="Ampel",
-		load_channels=True, mock_db=None,
-		db_host='localhost',
+		self, instrument="ZTF", alert_format="IPAC", load_channels=True,
+		db_host='localhost', input_db=None, output_db=None
 	):
 		"""
 		Parameters:
@@ -49,62 +50,29 @@ class AlertProcessor:
 		If not None, every database operation will be run by mongomock rather than pymongo 
 		mockdb folder must contain the files channels.json and global.json
 		"""
+
+		# Setup logger
 		self.logger = LoggingUtils.get_logger(unique=True)
 		self.ilb = InitLogBuffer(LogRecordFlags.T0)
 		self.logger.addHandler(self.ilb)
+
 		self.logger.info("Setting up new AlertProcessor instance")
 
-		if mock_db is not None:
-			from mongomock import MongoClient
-		else:
-			from pymongo import MongoClient
+		# Setup instance variable referencing the input database
+		self.plug_input_db(input_db, db_host)
 
-		self.mongo_client = MongoClient(db_host)
-		self.db = self.mongo_client[db_name]
+		# Load general config using the input config db
+		self.load_general_conf()
 
-		if mock_db is not None:
-			import json
-			with open(mock_db+'/channels.json', 'r') as f:
-				self.db['config'].insert_one(json.load(f))
-			with open(mock_db+'/global.json', 'r') as f:
-				self.db['config'].insert_one(json.load(f))
+		# Setup instance variables referencing the output databases
+		self.plug_output_dbs(output_db, db_host)
 
-		self.channel_config_doc = self.db['config'].find({'_id': 'channels'}).next()
-		self.global_config_doc = self.db['config'].find({'_id': 'global'}).next()
-		del self.channel_config_doc['_id']
-		del self.global_config_doc['_id']
-		self.channels_config = ChannelsConfig(channels_config = self.channel_config_doc)
-
+		# Setup channels
 		if load_channels:
 			self.load_channels()
 
-		if instrument == "ZTF":
-
-			if alert_format == "IPAC":
-
-				# Reference to function loading IPAC generated avro alerts
-				self.alert_loading_func = ZIAlertLoader.get_flat_pps_list_from_file
-
-				# Set static AmpelAlert alert flags
-				AmpelAlert.add_class_flags(
-					AlertFlags.INST_ZTF | AlertFlags.SRC_IPAC
-				)
-
-				# Set static AmpelAlert dict keywords
-				AmpelAlert.set_alert_keywords(
-					self.global_config_doc['photoPoints']['ZTFIPAC']['dictKeywords']
-				)
-	
-				# Set ingester class
-				self.ingester_class = ZIAlertIngester
-
-			# more alert_formats may be defined later
-			else:
-				raise ValueError("No implementation exists for the alert issuing entity: " + alert_format)
-
-		# more instruments may be defined later
-		else:
-			raise ValueError("No implementation exists for the instrument: "+instrument)
+		# Setup input type dependant parameters
+		self.set_input(instrument, alert_format)
 
 		self.logger.info("AlertProcessor initial setup completed")
 
@@ -117,92 +85,231 @@ class AlertProcessor:
 			self.config = json.load(data_file)
 
 
+	def plug_input_db(self, input_db=None, db_host='localhost'):
+		"""
+		"""
+
+		# Default setting
+		if input_db is None:
+			self.mongo_client = MongoClient(db_host)
+			self.config_db = self.mongo_client["Ampel_config"]
+
+		# The config database name was provided
+		elif type(input_db) is str:
+			self.mongo_client = MongoClient(db_host)
+			self.config_db = self.mongo_client[input_db]
+
+		# A reference to a MongoClient instance was provided
+		# -> Provided input_db type can be (pymongo or mongomock).mongo_client.MongoClient
+		elif type(input_db) in [MongoClient, MockMongoClient]:
+			self.config_db = input_db["Ampel_config"]
+
+		# A reference to a database instance (pymongo or mongomock) was provided
+		# -> Provided input_db type can be (pymongo or mongomock).database.Database
+		elif type(input_db) in [pydb.Database, mmdb.Database]:
+			self.config_db = input_db
+
+		# Illegal argument
+		else:
+			raise ValueError(
+				'type(input_db) must be either str, MongoClient or Database (from pymongo.database or mongomock.database)'
+			)
+
+
+	def load_general_conf(self, force_reload=False):
+		"""
+		"""
+		# Load global config
+		self.global_config = {}
+		for doc in self.config_db['global'].find({}):
+			self.global_config[doc['_id']] = doc
+
+		# Set static emum flag class
+		Channel.set_ChannelFlags(
+			# Generate ChannelFlags enum flag *class* based on DB info
+			FlagGenerator.get_ChannelFlags_class(
+				self.config_db['channels'],
+				force_create=force_reload
+			)
+		)
+
+		# Generate T2UnitIds enum flag *class* based on DB info
+		Channel.set_T2UnitIds(
+			FlagGenerator.get_T2UnitIds_class(
+				self.config_db['t2_units'],
+				force_create=force_reload
+			)
+		)
+
+
+	def plug_output_dbs(self, output_db, db_host='localhost'):
+		"""
+		"""
+
+		# Load transient DB based on entries from config DB
+		if output_db is None:
+			self.setattr_output_dbs(
+				self.mongo_client if hasattr(self, 'mongo_client') else MongoClient(db_host)
+			)
+
+		# A reference to a MongoClient instance (pymongo or mongomock) was provided
+		elif type(output_db) in [MongoClient, MockMongoClient]:
+			self.setattr_output_dbs(output_db)
+
+		elif type(output_db) is dict:
+
+			# Robustness check
+			if len(output_db) != 2 or "transient" not in output_db or "log" not in output_db:
+				raise ValueError(
+					'output_db dict must have 2 keys: "transient" and "log"'
+				)
+
+			if not hasattr(self, 'mongo_client'):
+				self.mongo_client = MongoClient(db_host)
+
+			self.setattr_output_db(output_db["transient"], "tran_db", self.mongo_client)
+			self.setattr_output_db(output_db["log"], "log_db", self.mongo_client)
+				
+		# Illegal argument type
+		else:
+			raise ValueError(
+				'type(output_db) must be either str, MongoClient '+
+				'or Database (from pymongo.database or mongomock.database)'
+			)
+
+
+	def setattr_output_db(self, output_db, local_varname, mongo_client):
+		"""
+		"""
+
+		# Collection name was provided
+		if type(output_db) is str:
+			setattr(self, local_varname, mongo_client[output_db])
+
+		# Collection instance was provided
+		elif type(output_db) in [pydb.Database, mmdb.Database]:
+			setattr(self, local_varname, output_db)
+
+		else:
+			# Illegal type for list member
+			raise ValueError(
+				'output_db elements must have the type: str or Database '+
+				'(from pymongo.database or mongomock.database)'
+			)
+				
+
+	def setattr_output_dbs(self, mongo_client):
+		"""
+		"""
+
+		db_specs = self.global_config['dbSpecs']
+
+		self.tran_db = mongo_client[
+			db_specs['transients']['dbName']
+		]
+
+		log_db = mongo_client[
+			db_specs['logs']['dbName']
+		]
+
+		self.log_col = log_db[
+			db_specs['logs']['collectionName']
+		]
+
+
+	def set_input(self, instrument, alert_format):
+		"""
+		Depending on which instrument and institution the alerts originate,
+		(as of March 2018 only ZTF & IPAC), this method performs the following:
+		-> defines the alert loading function.
+		-> sets required static settings in AmpelAlert
+		-> instanciates the adequate ingester class
+		"""
+
+		if instrument == "ZTF":
+
+			if alert_format == "IPAC":
+
+				# TODO: log something ? 
+
+				# Reference to function loading IPAC generated avro alerts
+				self.alert_loading_func = ZIAlertLoader.get_flat_pps_list_from_file
+
+				# Set static AmpelAlert alert flags
+				AmpelAlert.add_class_flags(
+					AlertFlags.INST_ZTF | AlertFlags.SRC_IPAC
+				)
+
+				# Set static AmpelAlert dict keywords
+				AmpelAlert.set_alert_keywords(
+					self.global_config['photoPoints']['ZTFIPAC']['dictKeywords']
+				)
+	
+				# Instanciate ingester
+				self.ingester = ZIAlertIngester(
+					self.tran_db['main'], self.logger
+				)
+
+				# Tell method run() that ingester method configure() must be called 
+				self.setup_ingester = True
+
+			# more alert_formats may be defined later
+			else:
+				raise ValueError("No implementation exists for the alert issuing entity: " + alert_format)
+
+		# more instruments may be defined later
+		else:
+			raise ValueError("No implementation exists for the instrument: "+instrument)
+
+
 	def load_channels(self):
 		"""
 			Loads all T0 channel configs defined in the T0 config 
 		"""
-		channels_ids = self.channel_config_doc.keys()
-		self.t0_channels = [None] * len(channels_ids)
+		channel_col = self.config_db['channels']
+		channel_docs = list(channel_col.find({}))
+		self.channels = [None] * len(channel_docs)
 
-		for i, channel_name in enumerate(channels_ids):
-			self.t0_channels[i] = self.__create_channel(channel_name)
+		for i, channel_doc in enumerate(channel_docs):
+			self.channels[i] = Channel(
+				channel_col, db_doc=channel_doc, 
+				t0_ready=True, logger=self.logger
+			)
 
 		if hasattr(self, 'ingester'):
-			self.active_chanlist_change = True
+			self.setup_ingester = True
 
 
 	def load_channel(self, channel_name):
 		"""
 			Loads a channel config, that will be used in the method run().
 			This method can be called multiple times with different channel names.
-			Known channels IDs (as for Sept 2017) are:
-			"NoFilter", "SN", "Random", "Neutrino" 
 		"""
-		if not hasattr(self, 't0_channels'):
-			self.t0_channels = []
+		if not hasattr(self, 'channels'):
+			self.channels = []
 		else:
-			for channel in self.t0_channels:
-				if channel["name"] == channel_name:
-					self.logger.info("Channel "+channel_name+" already loaded")
+			for channel in self.channels:
+				if channel.name == channel_name:
+					self.logger.info("Channel '%s' already loaded" % channel_name)
 					return
 
-		self.t0_channels.append(
-			self.__create_channel(channel_name)
+		self.channels.append(
+			Channel(
+				self.config_db['channels'], channel_name=channel_name, 
+				t0_ready=True, logger=self.logger
+			)
 		)
 
 		if hasattr(self, 'ingester'):
-			self.active_chanlist_change = True
+			self.setup_ingester = True
 
 
 	def reset_channels(self):
 		"""
 		"""
-		self.t0_channels = []
+		self.channels = []
 		if hasattr(self, 'ingester'):
-			self.active_chanlist_change = True
-
-
-	def __create_channel(self, channel_name):
-		"""
-			Creates T0 channel dictionary.
-			It contains mainly flag values and a reference 
-			to the method of an instanciated T0 filter class
-		"""
-		# Feedback
-		self.logger.info("Setting up channel: " + channel_name)
-
-		# Shortcut
-		d_filter = self.channels_config.get_channel_filter_config(channel_name)
-
-		# New channel dict
-		channel = {"name": channel_name}
-
-		# Instanciate filter class associated with this channel
-		self.logger.info("Loading filter: " + d_filter['classFullPath'])
-		module = importlib.import_module(d_filter['classFullPath'])
-		fobj = getattr(module, d_filter['classFullPath'].split(".")[-1])()
-		fobj.set_logger(self.logger)
-		fobj.set_filter_parameters(d_filter['parameters'])
-
-		# Create the enum flags that will be associated with matching transients
-		t2s = self.channels_config.get_channel_t2s_flag(channel_name)
-		self.logger.info("On match flags: " + str(t2s))
-
-		# Associate enum flag with the filter instance
-		fobj.set_on_match_default_flags(t2s)
-
-		# Reference to the "apply()" function of the T0 filter (used in run())
-		channel['filter_func'] = fobj.apply
-
-		# LogRecordFlag and TransienFlag associated with the current channel
-		channel['log_flag'] = LogRecordFlags[channel_name]
-		channel['flag'] = self.channels_config.get_channel_flag_instance(channel_name)
-
-		# Build these two log entries once and for all (outside the main loop in run())
-		channel['log_accepted'] = " -> Channel '" + channel_name + "': alert passes filter criteria"
-		channel['log_rejected'] = " -> Channel '" + channel_name + "': alert was rejected"
-
-		return channel
+			self.setup_ingester = True
 
 
 	def set_ingester_instance(self, ingester_instance):
@@ -216,26 +323,13 @@ class AlertProcessor:
 		self.ingester = ingester_instance
 
 
-	def load_ingester(self, ingester_class):
-		"""
-		Loads and returns an ingester intance using the provided metoclass
-		"""
-		self.logger.info("Loading %s" % ingester_class.__name__)
-		return ingester_class(
-			self.db, 
-			self.channels_config, 
-			[chan['name'] for chan in self.t0_channels],
-			self.logger
-		)
-
-
 	def set_alert_loading_func(self, alert_loading_func):
 		"""
 		Sets the alert loading function.
 		If the instrument is ZTF and alerts were generated by IPAC, 
 		then the default alert loading function is: 
 			ZIAlertLoader.get_flat_pps_list_from_file
-		If you like to load ZTF IPAC alerts formatted in JSON, use:
+		If you need to load ZTF IPAC alerts formatted in JSON, use:
 			ap.set_alert_loading_func(
     			ZIJSONLoader.get_flat_pps_list_from_json
 			)
@@ -293,20 +387,19 @@ class AlertProcessor:
 
 		self.logger.info("Executing run method")
 
-		# Remove logger saving "headers" before job(s) 
+		# Remove logger saving "log headers" before job(s) 
 		self.logger.removeHandler(self.ilb)
 
 		# Create JobReporter instance
 		db_job_reporter = DBJobReporter(
-			self.mongo_client[self.global_config_doc['logging']['dbName']], 
-			JobFlags.T0
+			self.log_col, JobFlags.T0
 		)
 
 		# Create new "job" document in the DB
 		db_job_reporter.insert_new(
 			{
-				"alertProcVersion": str(self.version),
-				"ingesterId": str(self.ingester_class.__class__)
+				"APVersion": str(self.version),
+				"ingesterClass": str(self.ingester.__class__)
 			}
 		)
 	
@@ -331,16 +424,13 @@ class AlertProcessor:
 		start_time = int(time.time())
 
 
-		# Check if a ingester instance was defined
+		# Check if a ingester instance was created/provided
 		if not hasattr(self, 'ingester'):
-			if not hasattr(self, 'ingester_class'):
-				raise ValueError('Ingester instance and class are missing. Please provide either one.')
-			else:
-				self.ingester = self.load_ingester(self.ingester_class)
-		else:
-			if hasattr(self, 'active_chanlist_change'):
-				self.ingester = self.load_ingester(self.ingester_class)
-				del self.active_chanlist_change
+			raise ValueError('Ingester instance missing.')
+
+		if hasattr(self, 'setup_ingester'):
+			self.ingester.configure(self.channels)
+			del self.setup_ingester
 				
 		# Forward jobId to ingester instance 
 		# (will be inserted in the transient documents)
@@ -349,7 +439,7 @@ class AlertProcessor:
 		)
 
 		# Array of JobFlags. Each element is set by each T0 channel 
-		scheduled_t2_runnables = [None] * len(self.t0_channels) 
+		scheduled_t2_runnables = [None] * len(self.channels) 
 
 		# python micro-optimization
 		loginfo = self.logger.info
@@ -390,23 +480,23 @@ class AlertProcessor:
 				dblh_set_tranId(trans_id)
 
 				# Loop through initialized channels
-				for i, channel in enumerate(self.t0_channels):
+				for i, channel in enumerate(self.channels):
 
 					# Associate upcoming log entries with the current channel
-					dblh_set_temp_flags(channel['log_flag'])
+					dblh_set_temp_flags(channel.log_flag)
 
 					# Apply filter (returns None in case of rejection or t2 runnable ids in case of match)
-					scheduled_t2_runnables[i] = channel['filter_func'](alert)
+					scheduled_t2_runnables[i] = channel.filter_func(alert)
 
 					# Log feedback
 					if scheduled_t2_runnables[i] is not None:
-						loginfo(channel['log_accepted'])
+						loginfo(channel.log_accepted)
 						# TODO push transient journal entry
 					else:
-						loginfo(channel['log_rejected'])
+						loginfo(channel.log_rejected)
 
 					# Unset channel id <-> log entries association
-					dblh_unset_temp_flags(channel['log_flag'])
+					dblh_unset_temp_flags(channel.log_flag)
 
 				if not any(scheduled_t2_runnables):
 					# TODO: implement AlertDisposer class ?

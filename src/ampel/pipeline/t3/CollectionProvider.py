@@ -98,7 +98,7 @@ class CollectionProvider:
 		}
 
 		if channel_flags is not None:
-			match_dict['channels'] = FlagUtils.enumflag_to_dbquery(channel_flags)
+			FlagUtils.enumflags_to_dbquery(channel_flags, match_dict, 'channels')
 
 		res = col.find(
 			match_dict, 

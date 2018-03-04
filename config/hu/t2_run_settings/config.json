@@ -1,0 +1,56 @@
+[{
+	"_id": "POLYFIT_advanced",
+	"t2Unit": "POLYFIT",
+	"runSettings": "advanced",
+	"author": "ztf-software@desy.de",
+	"version": 1.0,
+	"lastChange": "28.02.2018",
+	"parameters": {
+		"degree": 5
+	}
+},
+{
+	"_id": "POLYFIT_default",
+	"t2Unit": "POLYFIT",
+	"runSettings": "default",
+	"author": "ztf-software@desy.de",
+	"version": 1.0,
+	"lastChange": "28.02.2018",
+	"parameters": {
+		"degree": 3
+	}
+},
+{
+	"_id": "AGN_default",
+	"t2Unit": "AGN",
+	"runSettings": "default",
+	"author": "ztf-software@desy.de",
+	"version": 1.0,
+	"lastChange": "28.02.2018",
+	"parameters": {
+		"name": "value"
+	}
+},
+{
+	"_id": "PHOTO_Z_default",
+	"t2Unit": "PHOTO_Z",
+	"runSettings": "default",
+	"author": "ztf-software@desy.de",
+	"version": 1.0,
+	"lastChange": "28.02.2018",
+	"parameters": {
+		"name": "value"
+	}
+},
+{
+	"_id": "PHOTO_TYPE_default",
+	"t2Unit": "PHOTO_TYPE",
+	"runSettings": "default",
+	"author": "ztf-software@desy.de",
+	"version": 1.0,
+	"lastChange": "28.02.2018",
+	"parameters": {
+		"name": "value"
+	}
+}]
+
