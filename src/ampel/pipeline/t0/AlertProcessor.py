@@ -566,9 +566,18 @@ def init_db():
 			db['config'].replace_one({'_id':blob['_id']}, blob, upsert=True)
 
 def _ingest_slice(host, infile, start, stop):
-	loader = ZIAlertLoader.walk_tarball(infile, start, stop)
+	from ampel.archive import ArchiveDB
+	with open('/run/secrets/mysql-user-password') as f:
+		password = f.read().strip()
+	archive = ArchiveDB('postgresql://ampel:{}@localhost/ztfarchive'.format(password))
+	
+	def loader():
+		for alert in ZIAlertLoader.walk_tarball(infile, start, stop):
+			archive.insert_alert(alert, 0, 0)
+			yield alert
 	processor = AlertProcessor(db_host=host)
-	return processor.run(loader)
+	processor.logger.setLevel('WARN')
+	return processor.run(loader())
 
 def run_alertprocessor():
 
