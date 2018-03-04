@@ -9,16 +9,13 @@ from ampel.abstract.AbstractTransientFilter import AbstractTransientFilter
 
 class NoFilter(AbstractTransientFilter):
 	
-	version = 0
+	version = 1.0
 	
 	def get_version(self):
 		return NoFilter.version
 
 	def set_filter_parameters(self, d):
 		pass
-
-	def get_version(self):
-		return 1.0
 
 	def apply(self, ampel_alert):
 		return self.on_match_default_flags
