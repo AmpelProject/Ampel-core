@@ -46,9 +46,29 @@ class AlertProcessor:
 	):
 		"""
 		Parameters:
-		'mock_db': None or <path to mockdb folder>
-		If not None, every database operation will be run by mongomock rather than pymongo 
-		mockdb folder must contain the files channels.json and global.json
+		'instrument': name of instrument (string - see set_input() docstring)
+		'alert_format': format of input alerts (string - see set_input() docstring)
+		'db_host': dns name or ip address (plus optinal port) of the server hosting mongod
+		'load_channels': wether to load all the available channels in the config database 
+		 during class instanciation or not. Dedicated can be loaded afterwards using the 
+		 method load_channel(<channel name>)
+		'input_db': the database containing the Ampel config collections.
+		    Either:
+			-> None: default settings will be used 
+			   (pymongo MongoClient instance using 'db_host' and db name 'Ampel_config')
+			-> string: pymongo MongoClient instance using 'db_host' 
+			   and database with name identical to 'input_db' value
+			-> MongoClient instance: database with name 'Ampel_config' will be loaded from 
+			   the provided MongoClient instance (can originate from pymongo or mongomock)
+			-> Database instance (pymongo or mongomock): provided database will be used
+		'output_db': the output database (will typically contain the collections 'transients' and 'logs')
+		    Either:
+			-> string: pymongo MongoClient instance using 'db_host' 
+			   and database with name identical to 'output_db' value
+			-> MongoClient instance (pymongo or mongomock): the provided instance will be used 
+			-> dict: (example: {'transients': 'test_transients', 'logs': 'test_logs'})
+				-> must have the keys 'transients' and 'logs'
+				-> values must be either string or Database instance (pymongo or mongomock)
 		"""
 
 		# Setup logger
@@ -87,6 +107,15 @@ class AlertProcessor:
 
 	def plug_input_db(self, input_db=None, db_host='localhost'):
 		"""
+		Sets up the database containing the Ampel config collections.
+		Parameter 'input_db' must be one of these types: 
+			-> None: default settings will be used 
+			   (pymongo MongoClient instance using 'db_host' and db name 'Ampel_config')
+			-> string: pymongo MongoClient instance using 'db_host' 
+			   and database with name identical to 'input_db' value
+			-> MongoClient instance: database with name 'Ampel_config' will be loaded from 
+			   the provided MongoClient instance (can originate from pymongo or mongomock)
+			-> Database instance (pymongo or mongomock): provided database will be used
 		"""
 
 		# Default setting
@@ -143,7 +172,15 @@ class AlertProcessor:
 
 
 	def plug_output_dbs(self, output_db, db_host='localhost'):
-		"""
+		"""		
+		setup output database (will typically contain the collections 'transients' and 'logs')
+		Parameter 'output_db' must have of these types:
+			-> string: pymongo MongoClient instance using 'db_host' 
+			   and database with name identical to 'output_db' value
+			-> MongoClient instance (pymongo or mongomock): the provided instance will be used 
+			-> dict: (example: {'transients': 'test_transients', 'logs': 'test_logs'})
+				-> must have the keys 'transients' and 'logs'
+				-> values must be either string or Database instance (pymongo or mongomock)
 		"""
 
 		# Load transient DB based on entries from config DB
@@ -159,16 +196,16 @@ class AlertProcessor:
 		elif type(output_db) is dict:
 
 			# Robustness check
-			if len(output_db) != 2 or "transient" not in output_db or "log" not in output_db:
+			if len(output_db) != 2 or "transients" not in output_db or "logs" not in output_db:
 				raise ValueError(
-					'output_db dict must have 2 keys: "transient" and "log"'
+					'output_db dict must have 2 keys: "transients" and "logs"'
 				)
 
 			if not hasattr(self, 'mongo_client'):
 				self.mongo_client = MongoClient(db_host)
 
-			self.setattr_output_db(output_db["transient"], "tran_db", self.mongo_client)
-			self.setattr_output_db(output_db["log"], "log_db", self.mongo_client)
+			self.setattr_output_db(output_db["transients"], "tran_db", self.mongo_client)
+			self.setattr_output_db(output_db["logs"], "log_db", self.mongo_client)
 				
 		# Illegal argument type
 		else:
