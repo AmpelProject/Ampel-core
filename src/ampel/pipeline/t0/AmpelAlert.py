@@ -26,7 +26,8 @@ class AmpelAlert:
 		'<': operator.lt,
 		'>=': operator.ge,
 		'<=': operator.le,
-		'=': operator.eq
+		'=': operator.eq,
+		'!=': operator.ne
 	}
 
 	@staticmethod
