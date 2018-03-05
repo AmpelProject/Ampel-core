@@ -1,14 +1,13 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 # File              : ampel/pipeline/t0/loaders/ZIAlertLoader.py
+# License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 14.12.2017
-# Last Modified Date: 21.01.2018
+# Last Modified Date: 05.03.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
+
 import logging, fastavro
-import io
-import pykafka
-#from operator import itemgetter
 
 class ZIAlertLoader:
 	"""
@@ -25,35 +24,6 @@ class ZIAlertLoader:
 		and the associated photopoints as list of dictionaries
 		The static method load_raw_dict_from_file returns the raw avro dict structure
 	"""
-	def __init__(self, archive_db, brokers, topic, group_name=b"Ampel", timeout=1):
-		"""
-		:param archive_db: an instance of :py:class:`ampel.archive.ArchiveDB`
-		:param brokers: Comma-separated list of kafka hosts to which to connect
-		:type brokers: str
-		:param topic: Topic of target Kafka stream
-		:type topic: bytes
-		:param group_name: Consumer group name to use for load-balancing
-		:type group_name: bytes
-		:param timeout: number of seconds to wait for a message
-		"""
-		client = pykafka.KafkaClient(brokers)
-		topic = client.topics[topic]
-		self._consumer = topic.get_balanced_consumer(consumer_group=group_name, consumer_timeout_ms=timeout*1e3)
-		self._archive = archive_db
-	
-	def alerts(self):
-		"""
-		Generate alerts until timeout is reached
-		"""
-		for message in self._consumer:
-			for alert in fastavro.reader(io.BytesIO(message.value)):
-				self.filter_previous_candidates(alert['prv_candidates'])
-				self._archive.insert_alert(alert, 0, 0)
-				yield alert
-			self._consumer.commit_offsets()
-	
-	def __iter__(self):
-		return self.alerts()
 
 	@staticmethod
 	def load_raw_dict_from_file(file_path):
@@ -92,8 +62,11 @@ class ZIAlertLoader:
 
 		return zavro_dict['objectId'], zavro_dict['prv_candidates']
 
+
 	@classmethod
 	def walk_tarball(cls, tarpath, start=0, stop=None):
+		"""
+		"""
 		import tarfile
 		
 		def _walk(fileobj):
@@ -128,16 +101,6 @@ class ZIAlertLoader:
 			if el['candid'] is None or el['pdiffimfilename'].startswith('/stage'):
 				del prv_cd[i]
 
-def list_kafka():
-	
-	from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
-	parser = ArgumentParser(description=__doc__, formatter_class=ArgumentDefaultsHelpFormatter)
-	parser.add_argument("--broker", type=str, default="epyc.astro.washington.edu:9092")
-	opts = parser.parse_args()
-	
-	client = pykafka.KafkaClient(opts.broker)
-	print(client.topics.keys())
-	
 #	@staticmethod
 #	def load_alert_from_file(file_path, filter_pps_history=True, chrono_sort=False):
 #		"""	
