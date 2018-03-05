@@ -60,6 +60,7 @@ class AmpelAlert:
 		}
 		"""
 		AmpelAlert.alert_keywords = alert_keywords
+		AmpelAlert.alert_kws_set = set(alert_keywords.keys())
 
 
 	@classmethod
@@ -164,17 +165,18 @@ class AmpelAlert:
 		)
 
 
-	def get_ntuples(self, *params, filters=None):
+	def get_ntuples(self, params, filters=None):
 		"""
-		ex: instance.get_ntuples("fid", "obs_date", "mag")
+		params: list of strings
+		ex: instance.get_ntuples(["fid", "obs_date", "mag"])
 		"""
 
 		# Dict kw mapping
-		for i, param in enumerate(params):
-			if param in AmpelAlert.alert_keywords:
-				# Ignore pyling false-positive unsupported-assignment-operation
-				params[i] = AmpelAlert.alert_keywords[param]
-
+		if set(params) <= AmpelAlert.alert_kws_set:
+			for i, param in enumerate(params):
+				if param in AmpelAlert.alert_keywords:
+					params[i] = AmpelAlert.alert_keywords[param]
+	
 		# Filter photopoints if filter was provided
 		filtered_pps = self.pps if filters is None else self.filter_pps(filters)
 
