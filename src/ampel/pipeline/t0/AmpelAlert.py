@@ -59,8 +59,8 @@ class AmpelAlert:
 			"mag" : "magpsf"
 		}
 		"""
-		AmpelAlert.alert_keywords = alert_keywords
-		AmpelAlert.alert_kws_set = set(alert_keywords.keys())
+		cls.alert_keywords = alert_keywords
+		cls.alert_kws_set = set(alert_keywords.keys())
 
 
 	@classmethod
@@ -171,8 +171,8 @@ class AmpelAlert:
 		ex: instance.get_ntuples(["fid", "obs_date", "mag"])
 		"""
 
-		# Dict kw mapping
-		if set(params) <= AmpelAlert.alert_kws_set:
+		# If any of the provided parameter matches defined keyword mappings
+		if AmpelAlert.alert_kws_set & set(params):
 			for i, param in enumerate(params):
 				if param in AmpelAlert.alert_keywords:
 					params[i] = AmpelAlert.alert_keywords[param]
