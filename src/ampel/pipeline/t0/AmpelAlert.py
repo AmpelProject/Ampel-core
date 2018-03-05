@@ -109,10 +109,10 @@ class AmpelAlert:
 
 		filtered_pps = self.pps if filters is None else self.filter_pps(filters)
 	
-		return [
+		return tuple(
 			el[param_name] 
 			for el in filtered_pps if param_name in el
-		]
+		)
 
 
 	def filter_pps(self, filters):
@@ -136,7 +136,7 @@ class AmpelAlert:
 
 				akey = fkey if not fkey in AmpelAlert.alert_keywords else AmpelAlert.alert_keywords[fkey]
 
-				filtered_pps = list(
+				filtered_pps = tuple(
 					filter(
 						lambda el: akey in el and operator(el[akey], filter_el[fkey]), 
 						filtered_pps
@@ -158,10 +158,29 @@ class AmpelAlert:
 
 		filtered_pps = self.pps if filters is None else self.filter_pps(filters)
 
-		return [
+		return tuple(
 			(el[param1], el[param2]) 
 			for el in filtered_pps if param1 in el and param2 in el
-		]
+		)
+
+
+	def get_ntuples(self, *params, filters=None):
+		"""
+		ex: instance.get_ntuples("fid", "obs_date", "mag")
+		"""
+
+		# Dict kw mapping
+		for i, param in enumerate(params):
+			if param in AmpelAlert.alert_keywords:
+				# Ignore pyling false-positive unsupported-assignment-operation
+				params[i] = AmpelAlert.alert_keywords[param]
+
+		# Filter photopoints if filter was provided
+		filtered_pps = self.pps if filters is None else self.filter_pps(filters)
+
+		return tuple(
+			tuple(el[param] for param in params) for el in filtered_pps if all(param in el for param in params)
+		)
 
 
 	def get_photopoints(self):
