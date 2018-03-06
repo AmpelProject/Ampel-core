@@ -98,7 +98,7 @@ class AlertProcessor:
 		# Setup instance variables referencing the output databases
 		self.plug_output_dbs(output_db, db_host)
 
-		# Check if previous command did set up the config_db correctly
+		# Check if previous command did set up the output databases correctly
 		if not hasattr(self, 'tran_db'):
 
 			# Re-try using mongomock rather than pymongo
