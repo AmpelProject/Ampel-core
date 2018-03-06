@@ -26,7 +26,6 @@ from ampel.pipeline.logging.DBLoggingHandler import DBLoggingHandler
 from ampel.pipeline.logging.InitLogBuffer import InitLogBuffer
 
 import pymongo
-from mongomock import MongoClient as MockMongoClient, database as mmdb
 
 class AlertProcessor:
 	""" 
