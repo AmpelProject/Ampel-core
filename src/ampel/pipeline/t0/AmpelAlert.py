@@ -1,25 +1,28 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 # File              : ampel/pipeline/t0/AmpelAlert.py
+# License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 14.12.2017
-# Last Modified Date: 12.02.2018
+# Last Modified Date: 05.03.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
+
 from ampel.flags.AlertFlags import AlertFlags
 from werkzeug.datastructures import ImmutableDict, ImmutableList
 from ampel.pipeline.t0.loaders.ZIAlertLoader import ZIAlertLoader
 import operator
 
 class AmpelAlert:
-	"""	
-		T0 base class containing a read-only list of read-only photopoint dictionaries.
-		(read-only convertion occurs in constructor).
-		During pipeline processing, an alert is loaded and its content used to instanciate this class. 
-		Then, the AmpelAlert instance is fed to every active T0 filter.
-	"""	
+	"""
+	T0 base class containing a read-only list of read-only photopoint dictionaries.
+	(read-only convertion occurs in constructor).
+	During pipeline processing, an alert is loaded and its content used to instanciate this class. 
+	Then, the AmpelAlert instance is fed to every active T0 filter.
+	"""
 
 	flags = AlertFlags.NO_FLAG
 	alert_keywords = {}
+	alert_kws_set = set()
 
 	ops = {
 		'>': operator.gt,
@@ -29,6 +32,7 @@ class AmpelAlert:
 		'=': operator.eq,
 		'!=': operator.ne
 	}
+
 
 	@staticmethod
 	def load_ztf_alert(arg):

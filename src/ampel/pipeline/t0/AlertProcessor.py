@@ -25,18 +25,18 @@ from ampel.pipeline.logging.DBJobReporter import DBJobReporter
 from ampel.pipeline.logging.DBLoggingHandler import DBLoggingHandler
 from ampel.pipeline.logging.InitLogBuffer import InitLogBuffer
 
-from pymongo import MongoClient, database as pydb
+import pymongo
 from mongomock import MongoClient as MockMongoClient, database as mmdb
 
 class AlertProcessor:
 	""" 
-		Class handling T0 pipeline operations.
+	Class handling T0 pipeline operations.
 
-		For each alert, following tasks are performed:
-			* Load the alert
-			* Filter alert based on the configured filter
-			* Set policies
-			* Ingest alert based on the configured ingester
+	For each alert, following tasks are performed:
+		* Load the alert
+		* Filter alert based on the configured filter
+		* Set policies
+		* Ingest alert based on the configured ingester
 	"""
 	version = 0.2
 
@@ -81,11 +81,35 @@ class AlertProcessor:
 		# Setup instance variable referencing the input database
 		self.plug_input_db(input_db, db_host)
 
+		# Check if previous command did set up the config_db correctly
+		if not hasattr(self, 'config_db'):
+
+			# Re-try using mongomock rather than pymongo
+			import mongomock
+			if self.plug_input_db(
+				input_db, db_host, 
+				MongoClient=mongomock.mongo_client.MongoClient,
+				Database=mongomock.database.Database
+			):
+				raise ValueError("Illegal type provided for argument 'input_db'")
+
 		# Load general config using the input config db
 		self.load_general_conf()
 
 		# Setup instance variables referencing the output databases
 		self.plug_output_dbs(output_db, db_host)
+
+		# Check if previous command did set up the config_db correctly
+		if not hasattr(self, 'tran_db'):
+
+			# Re-try using mongomock rather than pymongo
+			import mongomock
+			if self.plug_output_dbs(
+				output_db, db_host, 
+				MongoClient=mongomock.mongo_client.MongoClient,
+				Database=mongomock.database.Database
+			):
+				raise ValueError("Illegal type provided for argument 'output_db'")
 
 		# Setup channels
 		if load_channels:
@@ -97,15 +121,11 @@ class AlertProcessor:
 		self.logger.info("AlertProcessor initial setup completed")
 
 
-	def load_config_from_file(self, file_name):
-		"""
-		"""
-		import json
-		with open(file_name, "r") as data_file:
-			self.config = json.load(data_file)
-
-
-	def plug_input_db(self, input_db=None, db_host='localhost'):
+	def plug_input_db(
+		self, input_db=None, db_host='localhost', 
+		MongoClient=pymongo.mongo_client.MongoClient,
+		Database=pymongo.database.Database
+	):
 		"""
 		Sets up the database containing the Ampel config collections.
 		Parameter 'input_db' must be one of these types: 
@@ -130,19 +150,17 @@ class AlertProcessor:
 
 		# A reference to a MongoClient instance was provided
 		# -> Provided input_db type can be (pymongo or mongomock).mongo_client.MongoClient
-		elif type(input_db) in [MongoClient, MockMongoClient]:
+		elif type(input_db) is MongoClient:
 			self.config_db = input_db["Ampel_config"]
 
 		# A reference to a database instance (pymongo or mongomock) was provided
 		# -> Provided input_db type can be (pymongo or mongomock).database.Database
-		elif type(input_db) in [pydb.Database, mmdb.Database]:
+		elif type(input_db) is Database:
 			self.config_db = input_db
 
 		# Illegal argument
 		else:
-			raise ValueError(
-				'type(input_db) must be either str, MongoClient or Database (from pymongo.database or mongomock.database)'
-			)
+			self.logger.info("input_db type is wether str, %s or %s" % (MongoClient, Database))
 
 
 	def load_general_conf(self, force_reload=False):
@@ -171,7 +189,11 @@ class AlertProcessor:
 		)
 
 
-	def plug_output_dbs(self, output_db, db_host='localhost'):
+	def plug_output_dbs(
+		self, output_db, db_host='localhost',
+		MongoClient=pymongo.mongo_client.MongoClient,
+		Database=pymongo.database.Database
+	):
 		"""		
 		setup output database (will typically contain the collections 'transients' and 'logs')
 		Parameter 'output_db' must have of these types:
@@ -190,7 +212,7 @@ class AlertProcessor:
 			)
 
 		# A reference to a MongoClient instance (pymongo or mongomock) was provided
-		elif type(output_db) in [MongoClient, MockMongoClient]:
+		elif type(output_db) is MongoClient:
 			self.setattr_output_dbs(output_db)
 
 		elif type(output_db) is dict:
@@ -209,13 +231,15 @@ class AlertProcessor:
 				
 		# Illegal argument type
 		else:
-			raise ValueError(
-				'type(output_db) must be either str, MongoClient '+
-				'or Database (from pymongo.database or mongomock.database)'
+			self.logger.info(
+				"type(output_db) is wether str, %s or %s" % (MongoClient, Database)
 			)
 
 
-	def setattr_output_db(self, output_db, local_varname, mongo_client):
+	def setattr_output_db(
+		self, output_db, local_varname, mongo_client,
+		Database=pymongo.database.Database
+	):
 		"""
 		"""
 
@@ -224,14 +248,13 @@ class AlertProcessor:
 			setattr(self, local_varname, mongo_client[output_db])
 
 		# Collection instance was provided
-		elif type(output_db) in [pydb.Database, mmdb.Database]:
+		elif type(output_db) is Database:
 			setattr(self, local_varname, output_db)
 
 		else:
 			# Illegal type for list member
-			raise ValueError(
-				'output_db elements must have the type: str or Database '+
-				'(from pymongo.database or mongomock.database)'
+			self.logger.info(
+				"output_db dict values are wether str, %s or %s" % Database
 			)
 				
 
@@ -301,7 +324,7 @@ class AlertProcessor:
 
 	def load_channels(self):
 		"""
-			Loads all T0 channel configs defined in the T0 config 
+		Loads all T0 channel configs defined in the T0 config 
 		"""
 		channel_col = self.config_db['channels']
 		channel_docs = list(channel_col.find({}))
@@ -319,8 +342,8 @@ class AlertProcessor:
 
 	def load_channel(self, channel_name):
 		"""
-			Loads a channel config, that will be used in the method run().
-			This method can be called multiple times with different channel names.
+		Loads a channel config, that will be used in the method run().
+		This method can be called multiple times with different channel names.
 		"""
 		if not hasattr(self, 'channels'):
 			self.channels = []
@@ -351,11 +374,11 @@ class AlertProcessor:
 
 	def set_ingester_instance(self, ingester_instance):
 		"""
-			Sets custom ingester instance to be used in the method run().
-			If unspecified, a new instance of ZIAlertIngester() is used
-			Known ingester (as for Sept 2017) are:
-				* t0.ingesters.MemoryIngester
-				* t0.ingesters.ZIAlertIngester
+		Sets custom ingester instance to be used in the method run().
+		If unspecified, a new instance of ZIAlertIngester() is used
+		Known ingester (as for Sept 2017) are:
+			* t0.ingesters.MemoryIngester
+			* t0.ingesters.ZIAlertIngester
 		"""
 		self.ingester = ingester_instance
 
@@ -411,11 +434,11 @@ class AlertProcessor:
 
 	def run(self, iterable):
 		"""
-			For each alert:
-				* Load the alert
-				* Filter alert and set policies for every configured channels (defined by load_config())
-				* Ingest alert based on PipelineIngester (default) 
-				or the ingester instance set by the method set_ingester(obj)
+		For each alert:
+			* Load the alert
+			* Filter alert and set policies for every configured channels (defined by load_config())
+			* Ingest alert based on PipelineIngester (default) 
+			or the ingester instance set by the method set_ingester(obj)
 		"""
 
 

@@ -5,6 +5,7 @@
 # Date              : 14.12.2017
 # Last Modified Date: 28.02.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
+
 from ampel.abstract.AbstractTransientFilter import AbstractTransientFilter
 
 class NoFilter(AbstractTransientFilter):
