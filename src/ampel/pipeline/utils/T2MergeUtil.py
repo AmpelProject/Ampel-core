@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 14.12.2017
-# Last Modified Date: 04.03.2018
+# Last Modified Date: 06.03.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import logging, hashlib
@@ -238,8 +238,6 @@ class T2MergeUtil():
 							# append t0 channel value
 							t2s_eff[t2_id][run_config] |= channel.get_flag()
 
-
-		print("llllllllllllll" + str(t2s_eff ))
 
 		##################
 		## INNER LOOP 2 ##
