@@ -600,7 +600,8 @@ def init_db():
 	Initialize a MongoDB for use with Ampel
 	"""
 	import os, glob
-	pattern = os.path.abspath(os.path.dirname(os.path.realpath(__file__)) + '/../../../../mockdb/*.json')
+	from os.path import basename, dirname
+	pattern = os.path.abspath(os.path.dirname(os.path.realpath(__file__)) + '/../../../../config/hu/*/*.json')
 	
 	from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
 	parser = ArgumentParser(description=__doc__, formatter_class=ArgumentDefaultsHelpFormatter)
@@ -614,15 +615,27 @@ def init_db():
 	opts = parser.parse_args()
 	
 	from pymongo import MongoClient, ASCENDING
+	from bson import ObjectId
 	import json
 	client = MongoClient(opts.host)
 	
+	def get_id(blob):
+		if isinstance(blob['_id'], dict) and '$oid' in blob['_id']:
+			return ObjectId(blob['_id']['$oid'])
+		else:
+			return blob['_id']
+	
 	db = client.get_database(opts.database)
 	db['main'].create_index([('tranId', ASCENDING), ('alDocType', ASCENDING)])
+	
+	db = client.get_database(opts.database+'_config')
 	for config in opts.config:
+		collection_name = basename(dirname(config))
+		collection = db[collection_name]
 		with open(config) as f:
-			blob = json.load(f)
-			db['config'].replace_one({'_id':blob['_id']}, blob, upsert=True)
+			for blob in json.load(f):
+				blob['_id'] = get_id(blob)
+				collection.replace_one({'_id':blob['_id']}, blob, upsert=True)
 
 def _ingest_slice(host, infile, start, stop):
 	from ampel.archive import ArchiveDB
