@@ -1,10 +1,10 @@
-version: '3'
+version: '3.4'
 services:
   mongo:
     image: mongo
     command: ["mongod", "--port", "27018"]
     volumes:
-      - tmp/mongo:/data/db
+      - ./tmp/mongo:/data/db
     ports:
       - "27018:27018"
     deploy:
@@ -17,11 +17,13 @@ services:
     command: ["postgres"]
     volumes:
       - /var/tmp:/run/postgresql
-      - tmp/postgres:/var/lib/postgresql/data
+      - ./tmp/postgres:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
     secrets:
-      - secrets/mysql-user-password
+      - archive-user-password
     environment:
-      POSTGRES_PASSWORD_FILE: /run/secrets/mysql-user-password
+      POSTGRES_PASSWORD_FILE: /run/secrets/archive-user-password
       POSTGRES_USER: ampel
       POSTGRES_DB: ztfarchive
     deploy:
@@ -33,17 +35,22 @@ services:
     image: continuumio/miniconda
     command: ["./ampel-start.sh"]
     volumes:
-      - envs:/opt/conda/envs
-      - tmp:/opt/conda/pkgs
-      - ..:Ampel
-      - ampel-start.sh
-      - /lustre/fs19/group/icecube/jvs/ztf:/ztf
+      - type: tmpfs
+        target: /opt/conda/pkgs
+      - type: volume
+        target: /opt/conda/envs
+        source: envs
+      - ..:/Ampel
+      - ./ampel-start.sh:/ampel-start.sh
+      - ./ztfdata:/ztf
+      
     secrets:
-      - secrets/mysql-user-password
+      - mysql-user-password
     environment:
       TINI_SUBREAPER: 1
-      MONGO: localhost:27018
-      POSTGRES_PASSWORD_FILE: /run/secrets/mysql-user-password
+      MONGO: mongo:27018
+      ARCHIVE: archivedb:5432
+      POSTGRES_PASSWORD_FILE: /run/secrets/archive-user-password
       POSTGRES_USER: ampel
     extra_hosts:
       - "kafka:128.95.79.19"
@@ -51,10 +58,14 @@ services:
       - "kafka3:128.95.79.19"
     deploy:
       restart_policy:
-        condition: no
         delay: 1s
         max_attempts: 3
     depends_on:
       - mongo
       - archivedb
 
+secrets:
+  archive-user-password:
+    file: secrets/archive-user-password.txt
+volumes:
+  envs:

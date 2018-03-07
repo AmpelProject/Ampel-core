@@ -637,11 +637,11 @@ def init_db():
 				blob['_id'] = get_id(blob)
 				collection.replace_one({'_id':blob['_id']}, blob, upsert=True)
 
-def _ingest_slice(host, infile, start, stop):
+def _ingest_slice(host, archive_host, infile, start, stop):
 	from ampel.archive import ArchiveDB
 	with open('/run/secrets/mysql-user-password') as f:
 		password = f.read().strip()
-	archive = ArchiveDB('postgresql://ampel:{}@localhost/ztfarchive'.format(password))
+	archive = ArchiveDB('postgresql://ampel:{}@{}/ztfarchive'.format(password, archive_host))
 	
 	def loader():
 		for alert in ZIAlertLoader.walk_tarball(infile, start, stop):
@@ -658,6 +658,7 @@ def run_alertprocessor():
 	from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
 	parser = ArgumentParser(description=__doc__, formatter_class=ArgumentDefaultsHelpFormatter)
 	parser.add_argument('--host', default='localhost:27017')
+	parser.add_argument('--archive-host', default='localhost:5432')
 	parser.add_argument('--procs', type=int, default=1, help='Number of processes to start')
 	parser.add_argument('--chunksize', type=int, default=50, help='Number of alerts in each process')
 	
@@ -669,7 +670,7 @@ def run_alertprocessor():
 	start_time = time.time()
 	step = opts.chunksize
 	count = 0
-	jobs = [executor.submit(_ingest_slice, opts.host, opts.infile, start, start+step) for start in range(0, opts.procs*step, step)]
+	jobs = [executor.submit(_ingest_slice, opts.host, opts.archive_host, opts.infile, start, start+step) for start in range(0, opts.procs*step, step)]
 	for future in futures.as_completed(jobs):
 		print(future.result())
 		count += future.result()
