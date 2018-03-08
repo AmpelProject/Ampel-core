@@ -232,6 +232,6 @@ class T2SNCosmo(AbsT2Unit):
                 "fit_lc_parameters": fit_parameters,
                 "model_analysis": sncosmo_tool.get_results_analysis(result, model=model),
                 "model":model,
-                "fit_acceptable": bool(np.any([ result['ndof']<-1 , result['chisq']/result['ndof']>3 or result['chisq']/result['ndof']<0.2, not result["success"]  ])),
+                "fit_acceptable": bool(~np.any([ result['ndof']<-1 , result['chisq']/result['ndof']>3 or result['chisq']/result['ndof']<0.2, not result["success"]  ])),
                 "fit_results":result_param
                 }
