@@ -26,14 +26,14 @@ class T3TaskConfig:
 
 		self.logger = LoggingUtils.get_logger() if logger is None else logger
 
-		# Creating T3UnitConfig instance
+		# Create T3UnitConfig instance
 		self.t3_unit = T3UnitConfig.load(
 			config_db[T3TaskConfig.t3_units_db_name], 
 			t3_task_doc['t3Unit'], 
 			logger
 		)
 
-		# Creating T3RunConfig instance
+		# Create T3RunConfig instance
 		self.run_config = T3RunConfig.load(
 			config_db[T3TaskConfig.run_config_db_name], 
 			t3_task_doc['runConfig'], 
@@ -55,3 +55,17 @@ class T3TaskConfig:
 		Returns transient sub-selection criteria, if available
 		"""
 		return self.select if hasattr(self, "select") else None
+
+
+	def get_t3_unit(self):
+		"""
+		returns an instance of T3UnitConfig (created in constructor)
+		"""
+		return self.t3_unit
+
+
+	def get_run_config(self):
+		"""
+		returns an instance of T3RunConfig (created in constructor)
+		"""
+		return self.run_config
