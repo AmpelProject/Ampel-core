@@ -1,23 +1,26 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 # File              : ampel/pipeline/t0/ingesters/MemoryIngester.py
+# License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 14.12.2017
-# Last Modified Date: 02.03.2018
+# Last Modified Date: 08.03.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from ampel.flags.TransientFlags import TransientFlags
-from ampel.abstract.AbstractAlertIngester import AbstractAlertIngester
+from ampel.abstract.AbsAlertIngester import AbsAlertIngester
 
 
-class MemoryIngester(AbstractAlertIngester):
+class MemoryIngester(AbsAlertIngester):
 
 	"""
-		Ingester class called by t0.AlertProcessor.
-		This class is intended to be used for developing and testing filters.
-		It stores transient candidates into accepted and rejected array 
-		based on the configured filter outcomes.
+	Ingester class called by t0.AlertProcessor.
+	This class is intended to be used for developing and testing filters.
+	It stores transient candidates into accepted and rejected array 
+	based on the configured filter outcomes.
 	"""
+
+	version = 1.0
 
 	def __init__(self, flag_index=0):
 		self.accepted_transients = []
@@ -25,9 +28,11 @@ class MemoryIngester(AbstractAlertIngester):
 		self.accepted_transient_ids = []
 		self.rejected_transient_ids = []
 		self.flag_index = flag_index
+	
 
 	def configure(self, config_db, channels):
 		pass
+
 
 	def ingest(self, tran_id, alert_pps_list, all_channels_t2_flags):
 

@@ -1,16 +1,18 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 # File              : ampel/abstract/AmpelABC.py
+# License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 27.12.2017
-# Last Modified Date: 25.01.2018
+# Last Modified Date: 08.03.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
+
 import inspect
 
 def abstractmethod(func):
 	"""
-		Custom decorator to mark selected method as abstract.
-		It populates the static array "_abstract_methods" of class AmpelABC.
+	Custom decorator to mark selected method as abstract.
+	It populates the static array "_abstract_methods" of class AmpelABC.
 	"""
 	AmpelABC._abstract_methods.add(func.__name__)
 	return func
@@ -18,27 +20,28 @@ def abstractmethod(func):
 
 class AmpelABC(type):
 	"""
-		Metaclass that implements similar functionalities 
-		to the python standart ABC module (Abstract Base Class)
-		with the additional feature of checking method signatures.
-		As a consequence, a child object - extending a parent object
-		whose metaclass is AmpelABC - will not be able to implemenent
-		parent abstract methods with different arguments.
-		In other words, the same method arguments are enforced for abstract methods.
+	Metaclass that implements similar functionalities to python standart 
+	ABC module (Abstract Base Class) while additionaly checking method 
+	signatures and enforcing the definition of the class variable 'version'.
+	As a consequence, a child class that extends a parent class whose 
+	metaclass is AmpelABC, will not be able to implement the abstract methods 
+	of the parent class with different method arguments.
 	"""
+
 	_abstract_methods = set()
+
 
 	@staticmethod
 	def generate_new(abclass):
 		"""
-			Forbids instanciation of abstract classes.
-			The function generated in this function is included
-			in the abstract base class.
-			Parameter is the abstract base *class*
+		Forbids instanciation of abstract classes.
+		The function generated in this function is included
+		in the abstract base class.
+		Parameter is the abstract base *class*
 		"""
 		def __new__(mcs, *args, **kwargs):
 			if (mcs is abclass):
-				raise TypeError("Class "+ abclass.__name__ + " cannot be instantiated")
+				raise TypeError("Abstract class "+ abclass.__name__ + " cannot be instantiated")
 			return object.__new__(mcs)
 		return __new__
 
@@ -46,20 +49,21 @@ class AmpelABC(type):
 	@staticmethod
 	def generate__init_subclass__(abclass):
 		"""
-			__init_subclass__() was added to Python 3.6
-			It allows customisation of class creation.
-			It is a method of a parent class called 
-			by the child class during class creation.
-			The function generate__init_subclass__ generates 
-			a __init_subclass__ function that checks if the 
-			signatures of the abstract methods of the parent object
-			are equal to the signatures of the child object.
+		__init_subclass__() was added to Python 3.6 allowing customisation of class creation.
+		It is a method of a parent class called by the child class during class creation.
+		The function generate__init_subclass__ generates a __init_subclass__ function 
+		that checks if the signatures of the abstract methods of the parent object
+		are equal to the signatures of the child object.
 
-			A NotImplementedError exception is throwed if the child object:
-				* Does not implement an abstract method
-				* Does implement an abstract method with a divergent signature
+		A NotImplementedError exception is throwed if the child object:
+			* Does not implement an abstract method
+			* Does not define a class variable named 'version' 
 
-			Parameter is the abstract base *class*
+		A ValueError exception is throwed if the child object:
+			* Does implement an abstract method with a divergent signature
+			* The class variable 'version' is not a float
+
+		Parameter is the abstract base *class*
 		"""
 
 		def __init_subclass__(cls):
@@ -81,17 +85,32 @@ class AmpelABC(type):
 				# Check that number of parameters are equal rather than checking 
 				# if parameter names are identical (if abstract_sig != child_sig)
 				if len(abstract_sig.parameters) != len(child_sig.parameters):
-					raise NotImplementedError(
+					raise ValueError(
 						"Method " + method_name +
 						"() has a wrong signature, please check defined arguments"
 					)
+	
+				# Retrieve class variable version
+				child_version = getattr(cls, "version", None)
+
+				if child_version is None:
+					raise NotImplementedError(
+						"Please define a class variable named 'version' in %s" % cls
+					)
+				
+				if type(child_version) is not float:
+					raise NotImplementedError(
+						"Class variable 'version' must be float (now: %s)" % 
+						type(child_version)
+					)
+
 
 		return __init_subclass__
 
 
 	def __new__(metacls, name, bases, d):
 		"""
-			Creates the class
+		Creates the class
 		"""
 
 		# If the static array _abstract_methods is populated, 

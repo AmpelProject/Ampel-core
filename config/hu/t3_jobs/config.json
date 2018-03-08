@@ -4,30 +4,33 @@
 		"mode": "fixed_rate",
 		"interval": 1
 	},
-	"on_error": {
-		"sendmail": "ztf-software@desy.de",
-		"stop_ampel": false,
+	"onError": {
+		"sendMail": "ztf-software@desy.de",
+		"stopAmpel": false,
 		"retry": false
 	},
 	"transients": {
 		"select": {
 			"backtime": 1,
-			"channels": "HU_SN1|HU_SN2",
-			"with_flags": "INST_ZTF",
-			"without_flags": "HAS_ERROR"
+			"channels": [
+				"HU_SN1",
+				"HU_SN2"
+			],
+			"withFlags": "INST_ZTF",
+			"withoutFlags": "HAS_ERROR"
 		},
 		"load": {
 			"state": "latest",
 			"t2Ids": "SNCOSMO",
 			"alDocTypes": ""
-		}
+		},
+		"chunk": 200
 	},
-	"chunk_size": 50,
-	"runnables": [
+	"tasks": [
 		{
-			"id": "SLACKPUBLISHER",
-			"run_parameter": "hu_sp_1",
-			"sub_selection": {
+			"t3Unit": "SLACKPUBLISHER",
+			"runConfig": "hu_sp_1",
+			"subSel": {
 				"channels": "HU_SN1",
 				"state": "latest",
 				"t2Ids": "SNCOSMO"
@@ -35,8 +38,8 @@
 		},
 		{
 			"id": "SLACKPUBLISHER",
-			"run_parameter": "hu_sp_2",
-			"sub_selection": {
+			"runConfig": "hu_sp_2",
+			"subSel": {
 				"channels": "HU_SN2",
 				"state": "latest",
 				"t2Ids": "SNCOSMO"
@@ -50,25 +53,27 @@
 		"mode": "fixed_time",
 		"time": "12:01"
 	},
-	"on_error": {
-		"sendmail": "ztf-software@desy.de",
-		"stop_ampel": false,
+	"onError": {
+		"sendMail": "ztf-software@desy.de",
+		"stopAmpel": false,
 		"retry": false
 	},
-	"selection": {
-		"channels": "HU_SN2",
-		"transient_state": "latest",
-		"backtime": 1,
-		"with_errors": true,
-		"channels": "HU_SN1"
+	"transients": {
+		"select": {
+			"backtime": 1,
+			"channels": [
+				"HU_SN2"
+			]
+		},
+		"load": {
+			"state": "latest"
+		},
+		"chunk_size": 200
 	},
-	"chunk_size": 50,
-	"runnables": [
-		{
-			"id": "SLACKPUBLISHER",
-			"run_parameters": "HU_SN1_PARAM2"
-		}
-	]
+	"task": {
+		"t3Unit": "SLACKPUBLISHER",
+		"runConfig": "HU_SN1_PARAM2"
+	}
 },
 {
 	"_id": "T2_zombies_cleanup",
@@ -76,14 +81,14 @@
 		"mode": "fixed_time",
 		"time": "12:01"
 	},
-	"on_error": {
-		"sendmail": "ztf-software@desy.de",
-		"stop_ampel": false,
+	"onError": {
+		"sendMail": "ztf-software@desy.de",
+		"stopAmpel": false,
 		"retry": false
 	},
-	"runnable": {
-		"id": "T2ZombieCleanUp",
-		"run_parameter": "hu_zc_1"
+	"task": {
+		"t3Unit": "T2ZombieCleanUp",
+		"runConfig": "hu_zc_1"
 	}
 }]
 

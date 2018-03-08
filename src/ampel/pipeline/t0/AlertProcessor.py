@@ -325,13 +325,12 @@ class AlertProcessor:
 		"""
 		Loads all T0 channel configs defined in the T0 config 
 		"""
-		channel_col = self.config_db['channels']
-		channel_docs = list(channel_col.find({}))
+		channel_docs = list(self.config_db['channels'].find({}))
 		self.channels = [None] * len(channel_docs)
 
 		for i, channel_doc in enumerate(channel_docs):
 			self.channels[i] = Channel(
-				channel_col, db_doc=channel_doc, 
+				self.config_db, db_doc=channel_doc, 
 				t0_ready=True, logger=self.logger
 			)
 
@@ -354,7 +353,7 @@ class AlertProcessor:
 
 		self.channels.append(
 			Channel(
-				self.config_db['channels'], channel_name=channel_name, 
+				self.config_db, channel_name=channel_name, 
 				t0_ready=True, logger=self.logger
 			)
 		)

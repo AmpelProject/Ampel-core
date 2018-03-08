@@ -1,10 +1,12 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/pipeline/t0/stampers/ZIPhotoPointStamper.py
+# File              : ampel/pipeline/t0/ingesters/ZIPhotoPointShaper.py
+# License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 14.12.2017
-# Last Modified Date: 07.01.2018
+# Last Modified Date: 07.03.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
+
 from ampel.flags.PhotoPointFlags import PhotoPointFlags
 from ampel.flags.AlDocTypes import AlDocTypes
 from ampel.flags.FlagUtils import FlagUtils

@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 14.12.2017
-# Last Modified Date: 06.03.2018
+# Last Modified Date: 07.03.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import logging, hashlib
@@ -76,7 +76,7 @@ class T2MergeUtil():
 				# Extract default run_config (= run parameter ID = wished configuration) associated with 
 				# with current T2 runnable and for the current T0 channel only.
 				# t2_id is of type 'enum', we access the flag label with the attribute 'name'
-				run_config = channel.get_t2_settings(t2_id.name)
+				run_config = channel.get_t2_run_config(t2_id.name)
 
 				# if run_config was not found, it means the current t2_id 
 				# was not registered for the present channel
