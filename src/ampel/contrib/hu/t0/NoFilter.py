@@ -1,22 +1,20 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 # File              : ampel/contrib/hu/t0/NoFilter.py
+# License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 14.12.2017
-# Last Modified Date: 28.02.2018
+# Last Modified Date: 08.03.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-from ampel.abstract.AbstractTransientFilter import AbstractTransientFilter
+from ampel.abstract.AbsAlertFilter import AbsAlertFilter
 
-class NoFilter(AbstractTransientFilter):
+class NoFilter(AbsAlertFilter):
 	
 	version = 1.0
-	
-	def get_version(self):
-		return NoFilter.version
 
-	def set_filter_parameters(self, d):
-		pass
+	def __init__(self, on_match_t2_units, base_config=None, run_config=None, logger=None):
+		self.on_match_default_t2_units = on_match_t2_units
 
 	def apply(self, ampel_alert):
-		return self.on_match_default_flags
+		return self.on_match_default_t2_units

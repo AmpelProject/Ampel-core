@@ -4,14 +4,14 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 14.12.2017
-# Last Modified Date: 04.03.2018
+# Last Modified Date: 07.03.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import logging, pymongo
 from datetime import datetime
 from pymongo.errors import BulkWriteError
 
-from ampel.abstract.AbstractAlertIngester import AbstractAlertIngester
+from ampel.abstract.AbsAlertIngester import AbsAlertIngester
 from ampel.pipeline.t0.ingesters.ZIPhotoPointShaper import ZIPhotoPointShaper
 from ampel.pipeline.utils.CompoundGenerator import CompoundGenerator
 from ampel.pipeline.utils.T2MergeUtil import T2MergeUtil
@@ -28,7 +28,7 @@ SUPERSEEDED = FlagUtils.get_flag_pos_in_enumflag(PhotoPointFlags.SUPERSEEDED)
 TO_RUN = FlagUtils.get_flag_pos_in_enumflag(T2RunStates.TO_RUN)
 
 
-class ZIAlertIngester(AbstractAlertIngester):
+class ZIAlertIngester(AbsAlertIngester):
 	"""
 	Ingester class used by t0.AlertProcessor in 'online' mode.
 	This class 'ingests' alerts (if they have passed the alert filter):
@@ -36,6 +36,7 @@ class ZIAlertIngester(AbstractAlertIngester):
 	in the DB that are used in later processing stages (T2, T3)
 	"""
 
+	version = 1.0
 	new_tran_dbflag = FlagUtils.enumflag_to_dbflag(
 		TransientFlags.INST_ZTF|TransientFlags.ALERT_IPAC
 	)

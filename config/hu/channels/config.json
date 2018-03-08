@@ -13,8 +13,8 @@
 		}
 	],
 	"t0Filter": {
-		"classFullPath": "ampel.contrib.hu.t0.SNFilter",
-		"parameters": {
+		"id": "SNFilter",
+		"runConfig": {
 			"slopeMin": 0,
 			"slopeMax": 0
 		}
@@ -22,11 +22,11 @@
 	"t2Compute": [
 		{
 			"t2Unit": "SNCOSMO",
-			"runSettings": "default"
+			"runConfig": "default"
 		},
 		{
 			"t2Unit": "AGN",
-			"runSettings": "default"
+			"runConfig": "default"
 		}
 	]
 },
@@ -45,8 +45,8 @@
 		}
 	],
 	"t0Filter": {
-		"classFullPath": "ampel.contrib.hu.t0.NoFilter",
-		"parameters": {
+		"id": "NoFilter",
+		"runConfig": {
 			"criteria": [
 				{
 					"rb": 0.8,
@@ -68,19 +68,25 @@
 	"t2Compute": [
 		{
 			"t2Unit": "SNCOSMO",
-			"runSettings": "default"
+			"runConfig": "default"
 		},
 		{
 			"t2Unit": "AGN",
-			"runSettings": "default"
+			"runConfig": "default"
 		},
 		{
 			"t2Unit": "PHOTO_Z",
-			"runSettings": "default"
+			"runConfig": "default"
 		},
 		{
 			"t2Unit": "PHOTO_TYPE",
-			"runSettings": "default"
+			"runConfig": "default"
+		}
+	],
+	"t3Supervise": [
+		{
+			"t3Unit": "PURGE",
+			"runConfig": "100days"
 		}
 	]
 },
@@ -99,8 +105,8 @@
 		}
 	],
 	"t0Filter": {
-		"classFullPath": "ampel.pipeline.t0.filters.BasicMultiFilter",
-		"parameters": {
+		"id": "BasicMultiFilter",
+		"runConfig": {
 			"filters": [
 				{
 					"criteria": [
@@ -137,15 +143,15 @@
 	"t2Compute": [
 		{
 			"t2Unit": "SNCOSMO",
-			"runSettings": "advanced"
+			"runConfig": "advanced"
 		},
 		{
 			"t2Unit": "POLYFIT",
-			"runSettings": "default"
+			"runConfig": "default"
 		},
 		{
 			"t2Unit": "PHOTO_TYPE",
-			"runSettings": "default"
+			"runConfig": "default"
 		}
 	]
 },
@@ -164,23 +170,23 @@
 		}
 	],
 	"t0Filter": {
-		"classFullPath": "ampel.contrib.hu.t0.RandFilter",
-		"parameters": {
+		"id": "RandFilter",
+		"runConfig": {
 			"threshold": 1
 		}
 	},
 	"t2Compute": [
 		{
 			"t2Unit": "SNCOSMO",
-			"runSettings": "other"
+			"runConfig": "other"
 		},
 		{
 			"t2Unit": "AGN",
-			"runSettings": "default"
+			"runConfig": "default"
 		},
 		{
 			"t2Unit": "PHOTO_TYPE",
-			"runSettings": "default"
+			"runConfig": "default"
 		}
 	]
 }]

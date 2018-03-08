@@ -1,47 +1,45 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 # File              : ampel/pipeline/t0/filters/BasicFilter.py
+# License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 14.01.2018
-# Last Modified Date: 11.02.2018
+# Last Modified Date: 08.03.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
-from ampel.abstract.AbstractTransientFilter import AbstractTransientFilter
+
+from ampel.abstract.AbsAlertFilter import AbsAlertFilter
 import operator
 
-class BasicFilter(AbstractTransientFilter):
+class BasicFilter(AbsAlertFilter):
 
-	version = 0.1
+	version = 1.0
 
 	ops = {
 		'>': operator.gt,
 		'<': operator.lt,
 		'>=': operator.ge,
 		'<=': operator.le,
-		'=': operator.eq
+		'=': operator.eq,
+		'!=': operator.ne
 	}
 
 
-	def get_version(self):
-		return BasicFilter.version
+	def __init__(self, on_match_t2_units, base_config=None, run_config=None, logger=None):
 
+		self.on_match_default_t2_units = on_match_t2_units
 
-	def set_filter_parameters(self, filter_parameters):
-		"""
-		Doc will follow
-		"""
-
-		if type(filter_parameters) is not dict:
-			raise ValueError("Method parameter must be a dict instance")
+		if run_config is None or type(run_config) is not dict:
+			raise ValueError("Method argument must be a dict instance")
 
 		self.param = {
 			'operator': BasicFilter.ops[
-				filter_parameters['operator']
+				run_config['operator']
 			],
-			'criteria': filter_parameters['criteria'],
-			'len': filter_parameters['len']
+			'criteria': run_config['criteria'],
+			'len': run_config['len']
 		}
 
-		self.logger.info("Following filter parameter was set: %s" % self.param)
+		logger.info("Following BasicFilter criteria were configured: %s" % self.param)
 
 
 	def apply(self, ampel_alert):
@@ -58,6 +56,6 @@ class BasicFilter(AbstractTransientFilter):
 			),
 			self.param['len']
 		):
-			return self.on_match_default_flags
+			return self.on_match_default_t2_units
 
 		return None

@@ -1,57 +1,55 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 # File              : ampel/contrib/hu/examples/t0/ExampleFilter.py
+# License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 14.12.2017
-# Last Modified Date: 27.01.2018
+# Last Modified Date: 08.03.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-from ampel.abstract.AbstractTransientFilter import AbstractTransientFilter
+from ampel.abstract.AbsAlertFilter import AbsAlertFilter
 
-class ExampleFilter(AbstractTransientFilter):
+class ExampleFilter(AbsAlertFilter):
 	"""
-		Your filter must inherit the abstract parent class 'AbstractTransientFilter'
-		The following three methods *must* be implemented:
-			-> get_version(self)
-			-> set_filter_parameters(self, d)
-			-> apply(self, ampel_alert)
-		The instance variable self.logger (inherited from the parent class) is ready-to-use.
+	REQUIREMENTS:
+	-------------
+
+	A T0 filter class must (otherwise exception will be throwed):
+	* inherit the abstract parent class 'AbsAlertFilter'
+	* define a class variable named 'version' with a float value
+	* implement the following two functions:
+		-> __init__(self, on_match_t2_units, base_config=None, run_config=None, logger=None)
+		-> apply(self, ampel_alert)
 	"""
 
 	# Static version info
 	version = 0.2
 
 
-	def __init__(self):
-		"""
-		Your constructor (optional)
-		"""
-		self.logger.info("Please use this logger object for logging purposes")
-		self.logger.debug("The log entries emitted by this logger will be stored into the Ampel DB")
-		self.logger.debug("This logger is to be used 'as is', please don't change anything :)")
-
-	
-	def get_version(self):
+	def __init__(self, on_match_t2_units, base_config=None, run_config=None, logger=None):
 		"""
 		Mandatory implementation.
-		"""
-		return ExampleFilter.version
-
-
-	def set_filter_parameters(self, d):
-		"""
-		Mandatory implementation.
-		This method is called automatically before alert processing.
 		Parameter 'd' is a dict instance loaded from the ampel config. 
 		It means d can contain any parameter you define 
 		for your channel in 'alertFilter.parameters'
 		"""
-		self.threshold = d['threshold']
-		self.my_parameter = d['my_parameter']
 
-		# You could instance here a dictionary later used in the method apply 
-		# (see the jupyter notebook "Understanding T0 Filters")
-		self.my_filter = {'mag': self.threshold, 'op': '<'}
+		# Instance variable holding reference to provider logger 
+		self.logger = logger
+
+		# Logging example
+		self.logger.info("Please use this logger object for logging purposes")
+		self.logger.debug("The log entries emitted by this logger will be stored into the Ampel DB")
+		self.logger.debug("This logger is to be used 'as is', please don't change anything :)")
+
+		# TODO: explain
+		self.on_match_t2_units = on_match_t2_units
+
+		# Example: 'magpsf' (see the jupyter notebook "Understanding T0 Filters")
+		self.filter_field = base_config['field']
+
+		# Example: 18 (see the jupyter notebook "Understanding T0 Filters")
+		self.threshold = run_config['threshold']
 
 
 	def apply(self, ampel_alert):
@@ -59,8 +57,8 @@ class ExampleFilter(AbstractTransientFilter):
 		Mandatory implementation.
 		To exclude the alert, return *None*
 		To accept it, either 
-			* return self.on_match_default_flags
-			* return a custom combination of T2RunnableIds
+			* return self.on_match_t2_units
+			* return a custom combination of ampel.flags.T2UnitIds
 
 		In this example filter, any measurement of a transient 
 		brighter than a fixed magnitude threshold will result 
@@ -71,7 +69,11 @@ class ExampleFilter(AbstractTransientFilter):
 		# (for other means of achiving the same results, please 
 		# see the jupyter notebook "Understanding T0 Filters")
 		for pp in ampel_alert.get_photopoints():
-			if pp['magpsf'] < self.threshold:
-				return self.on_match_default_flags
+
+			# Example: 
+			# self.filter_field: "magpsf"
+			# self.threshold: 18
+			if pp[self.filter_field] < self.threshold :
+				return self.on_match_t2_units
 
 		return None
