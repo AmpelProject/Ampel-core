@@ -89,6 +89,7 @@ class SNCosmoTool:
         """
         from astropy.table import Table
         filter_names = [filter_id__to__bandpass_name(fid) for fid in light_curve.get_values("fid")]
+        print(filter_names)
         bandpasses   = get_bandpasses(np.unique(filter_names))
         wavelengths  = [bandpasses[bp_].wave_eff for bp_ in filter_names]
         # - fluxes
@@ -157,8 +158,9 @@ class T2SNCosmo(AbsT2Unit):
     def __init__(self, logger, base_config):
         """ """
         self.logger = logger
-        if base_config is None:
-            self.base_config = {}
+        
+        self.base_config = {} if base_config is None else base_config
+            
             
     # ==================== #
     # AMPEL T2 MANDATORY   #
