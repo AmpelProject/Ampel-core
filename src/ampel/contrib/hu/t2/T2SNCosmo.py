@@ -133,11 +133,11 @@ class SNCosmoTool:
         # - no used yet
         # dz, dt0, dx0, dx1, dc = [result["errors"][k] for k in ['z', 't0', 'x0', 'x1', 'c']]
         
-        return {"has_premax_data":  np.any(self.sncosmo_data["time"]<t0),
-                "has_postmax_data": np.any(self.sncosmo_data["time"]>t0),
-                "x1_in_range": x1>x1_range[0] and x1<x1_range[1],
-                "_x1_range":x1_range,
-                "c_ok":  c>c_range[0] and c<c_range[1],
+        return {"has_premax_data":  bool(np.any(self.sncosmo_data["time"]<t0)),
+                "has_postmax_data": bool(np.any(self.sncosmo_data["time"]>t0)),
+                "x1_in_range": bool( (x1>x1_range[0]) and (x1<x1_range[1])),
+                "_x1_range": x1_range,
+                "c_ok":   bool( (c>c_range[0]) and (c<c_range[1]) ),
                 "_c_range": c_range,
                 }
 
@@ -230,6 +230,6 @@ class T2SNCosmo( AbsT2Unit ):
                 "fit_lc_parameters": fit_parameters,
                 "model_analysis": sncosmo_tool.get_results_analysis(result, model=model),
                 "model":model,
-                "fit_acceptable": ~ np.any([ result['ndof']<-1 , result['chisq']/result['ndof']>3 or result['chisq']/result['ndof']<0.2, not result["success"]  ]),
+                "fit_acceptable": bool(np.any([ result['ndof']<-1 , result['chisq']/result['ndof']>3 or result['chisq']/result['ndof']<0.2, not result["success"]  ])),
                 "fit_results":result_param
                 }
