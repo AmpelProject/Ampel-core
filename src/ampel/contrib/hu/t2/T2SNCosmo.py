@@ -1,11 +1,12 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-
-# File              : ampel/contrib/hu/examples/t2/T2SNCosmo.py
+# File              : ampel/contrib/hu/t2/T2SNCosmo.py
+# License           : BSD-3-Clause
 # Author            : mr <m.rigault@ipnl.in2p3.fr>
-# Date              : 06.03.2018
+# Date              : 08.03.2018
 # Last Modified Date: 08.03.2018
-# Last Modified By  : mr <m.rigault@ipnl.in2p3.fr>
+# Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
+
 from ampel.abstract.AmpelABC import AmpelABC, abstractmethod
 from ampel.abstract.AbsT2Unit import AbsT2Unit
 from ampel.flags.T2RunStates import T2RunStates
@@ -109,7 +110,7 @@ class SNCosmoTool:
         if not hasattr(self, "sncosmo_data"):
             if light_curve is None:
                 raise ValueError("Provide a lightcurve or first run load_data() method")
-            self.load_data()
+            self.load_data(light_curve)
             
         model = sncosmo.Model(source='salt2')
         if "bounds" not in kwargs or "z" not in kwargs["bounds"]:
@@ -148,7 +149,7 @@ class SNCosmoTool:
 #     T2 Object                #
 #                              #
 ################################
-class T2SNCosmo( AbsT2Unit ):
+class T2SNCosmo(AbsT2Unit):
     """
     """
     version = VERSION
@@ -162,7 +163,7 @@ class T2SNCosmo( AbsT2Unit ):
     # ==================== #
     # AMPEL T2 MANDATORY   #
     # ==================== #    
-    def run(self, light_curve, run_parameters):
+    def run(self, light_curve, run_config):
         """ 
 
         Parameters
@@ -182,8 +183,9 @@ class T2SNCosmo( AbsT2Unit ):
         dict
         """
         try:
-            return self._run_(light_curve, run_parameters)
+            return self._run_(light_curve, run_config)
         except:
+            self.logger.error("Exception occured", exc_info=1)
             return T2RunStates.EXCEPTION
 
 
