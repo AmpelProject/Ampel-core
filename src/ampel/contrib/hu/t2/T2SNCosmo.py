@@ -87,7 +87,7 @@ class SNCosmoTool:
         astropy Table
         """
         from astropy.table import Table
-        filter_names = [filter_id__to__bandpass_name(fid) for fid in light_curve.get_values("filter_id")]
+        filter_names = [filter_id__to__bandpass_name(fid) for fid in light_curve.get_values("fid")]
         bandpasses   = get_bandpasses(np.unique(filter_names))
         wavelengths  = [bandpasses[bp_].wave_eff for bp_ in filter_names]
         # - fluxes
@@ -186,8 +186,6 @@ class T2SNCosmo( AbsT2Unit ):
         except:
             return T2RunStates.EXCEPTION
 
-
-        
     def _run_(self, light_curve, run_parameters):
         """ 
         T2SNCosmo run_parameters:
