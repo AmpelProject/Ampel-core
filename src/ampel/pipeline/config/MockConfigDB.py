@@ -1,3 +1,12 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+# File              : ampel/pipeline/config/MockConfigDB.py
+# License           : BSD-3-Clause
+# Author            : vb <vbrinnel@physik.hu-berlin.de>
+# Date              : 01.03.2018
+# Last Modified Date: 08.03.2018
+# Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
+
 import json, mongomock
 from ampel.pipeline.logging.LoggingUtils import LoggingUtils
 
@@ -6,11 +15,11 @@ class MockConfigDB:
 	config_db_collection = [
 		'channels', 
 		'global', 
-		't1', 
-		't2_run_settings', 
+		't0_filters', 
+		't2_run_config', 
 		't2_units', 
 		't3_jobs', 
-		't3_run_settings', 
+		't3_run_config', 
 		't3_units'
 	]
 
