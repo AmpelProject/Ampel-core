@@ -62,8 +62,6 @@ class AlertProcessor:
 			-> Database instance (pymongo or mongomock): provided database will be used
 		'output_db': the output database (will typically contain the collections 'transients' and 'logs')
 		    Either:
-			-> string: pymongo MongoClient instance using 'db_host' 
-			   and database with name identical to 'output_db' value
 			-> MongoClient instance (pymongo or mongomock): the provided instance will be used 
 			-> dict: (example: {'transients': 'test_transients', 'logs': 'test_logs'})
 				-> must have the keys 'transients' and 'logs'
@@ -196,8 +194,6 @@ class AlertProcessor:
 		"""		
 		setup output database (will typically contain the collections 'transients' and 'logs')
 		Parameter 'output_db' must have of these types:
-			-> string: pymongo MongoClient instance using 'db_host' 
-			   and database with name identical to 'output_db' value
 			-> MongoClient instance (pymongo or mongomock): the provided instance will be used 
 			-> dict: (example: {'transients': 'test_transients', 'logs': 'test_logs'})
 				-> must have the keys 'transients' and 'logs'
@@ -227,6 +223,10 @@ class AlertProcessor:
 
 			self.setattr_output_db(output_db["transients"], "tran_db", self.mongo_client)
 			self.setattr_output_db(output_db["logs"], "log_db", self.mongo_client)
+
+			db_specs = self.global_config['dbSpecs']
+			# pylint: disable=no-member
+			self.log_col = self.log_db[db_specs['logs']['collectionName']]
 				
 		# Illegal argument type
 		else:
@@ -541,7 +541,7 @@ class AlertProcessor:
 				for i, channel in enumerate(self.channels):
 
 					# Associate upcoming log entries with the current channel
-					dblh_set_temp_flags(channel.log_flag)
+					# dblh_set_temp_flags(channel.log_flag)
 
 					# Apply filter (returns None in case of rejection or t2 runnable ids in case of match)
 					scheduled_t2_runnables[i] = channel.filter_func(alert)
@@ -554,7 +554,7 @@ class AlertProcessor:
 						loginfo(channel.log_rejected)
 
 					# Unset channel id <-> log entries association
-					dblh_unset_temp_flags(channel.log_flag)
+					# dblh_unset_temp_flags(channel.log_flag)
 
 				if not any(scheduled_t2_runnables):
 					# TODO: implement AlertDisposer class ?

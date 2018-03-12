@@ -222,7 +222,7 @@ class Channel:
 		self.filter_func = filter_instance.apply
 
 		# LogRecordFlag and TransienFlag associated with the current channel
-		self.log_flag = LogRecordFlags[self.name]
+		# self.log_flag = LogRecordFlags[self.name]
 
 		# Build these two log entries once and for all (outside the main loop in run())
 		self.log_accepted = " -> Channel '%s': alert passes filter criteria" % self.name
