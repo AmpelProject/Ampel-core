@@ -1,6 +1,7 @@
 [{
 	"_id": "HU_EARLY_SN",
 	"version": 1.0,
+	"active": true,
 	"input": [
 		{
 			"instrument": "ZTF",
@@ -33,6 +34,7 @@
 {
 	"_id": "HU_SN1",
 	"version": 1.0,
+	"active": false,
 	"input": [
 		{
 			"instrument": "ZTF",
@@ -45,7 +47,7 @@
 		}
 	],
 	"t0Filter": {
-		"id": "NoFilter",
+		"id": "BasicFilter",
 		"runConfig": {
 			"criteria": [
 				{
@@ -93,6 +95,7 @@
 {
 	"_id": "HU_SN2",
 	"version": 1.0,
+	"active": true,
 	"input": [
 		{
 			"instrument": "ZTF",
@@ -127,7 +130,7 @@
 					"operator": "\u003e"
 				},
 				{
-					"logicalConnection": "AND",
+					"logicalConnection": "OR",
 					"criteria": [
 						{
 							"magdiff": 0.01,
@@ -158,6 +161,7 @@
 {
 	"_id": "HU_RANDOM",
 	"version": 1.0,
+	"active": true,
 	"input": [
 		{
 			"instrument": "ZTF",

@@ -1,0 +1,28 @@
+[{
+	"_id": "NoFilter",
+	"classFullPath": "ampel.contrib.hu.t0.NoFilter"
+},
+{
+	"_id": "BasicFilter",
+	"classFullPath": "ampel.pipeline.t0.filters.BasicFilter"
+},
+{
+	"_id": "BasicMultiFilter",
+	"classFullPath": "ampel.pipeline.t0.filters.BasicMultiFilter"
+},
+{
+	"_id": "RandFilter",
+	"classFullPath": "ampel.contrib.hu.t0.RandFilter",
+	"baseConfig": {
+		"threshold": 1
+	}
+},
+{
+	"_id": "SNFilter",
+	"classFullPath": "ampel.contrib.hu.t0.SNFilter",
+	"baseConfig": {
+		"slopeMin": 2,
+		"slopeMax": 5
+	}
+}]
+

@@ -11,7 +11,9 @@
 	},
 	"transients": {
 		"select": {
-			"backtime": 1,
+			"timedelta": {
+				"days": -1
+			},
 			"channels": [
 				"HU_SN1",
 				"HU_SN2"
@@ -21,8 +23,10 @@
 		},
 		"load": {
 			"state": "latest",
-			"t2Ids": "SNCOSMO",
-			"alDocTypes": ""
+			"t2Ids": [
+				"SNCOSMO",
+				"AGN"
+			]
 		},
 		"chunk": 200
 	},
@@ -31,18 +35,21 @@
 			"t3Unit": "SLACKPUBLISHER",
 			"runConfig": "hu_sp_1",
 			"subSel": {
-				"channels": "HU_SN1",
+				"channels": [
+					"HU_SN1",
+					"HU_SN2"
+				],
 				"state": "latest",
-				"t2Ids": "SNCOSMO"
+				"t2Id": "SNCOSMO"
 			}
 		},
 		{
-			"id": "SLACKPUBLISHER",
+			"t3Unit": "SLACKPUBLISHER",
 			"runConfig": "hu_sp_2",
 			"subSel": {
-				"channels": "HU_SN2",
+				"channel": "HU_SN2",
 				"state": "latest",
-				"t2Ids": "SNCOSMO"
+				"t2Id": "AGN"
 			}
 		}
 	]
@@ -61,9 +68,7 @@
 	"transients": {
 		"select": {
 			"backtime": 1,
-			"channels": [
-				"HU_SN2"
-			]
+			"channel": "HU_SN2"
 		},
 		"load": {
 			"state": "latest"
@@ -90,5 +95,46 @@
 		"t3Unit": "T2ZombieCleanUp",
 		"runConfig": "hu_zc_1"
 	}
+},
+{
+	"_id": "Slack_publish_test",
+	"schedule": {
+		"mode": "fixed_rate",
+		"interval": 1
+	},
+	"onError": {
+		"sendMail": "ztf-software@desy.de",
+		"stopAmpel": false,
+		"retry": false
+	},
+	"transients": {
+		"select": {
+			"timedelta": {
+				"days": -60
+			},
+			"channel": "HU_SN1",
+			"withFlags": "INST_ZTF",
+			"withoutFlags": "HAS_ERROR"
+		},
+		"load": {
+			"state": "latest",
+			"t2Ids": [
+				"SNCOSMO",
+				"AGN"
+			]
+		},
+		"chunk": 200
+	},
+	"tasks": [
+		{
+			"t3Unit": "SLACKPUBLISHER",
+			"runConfig": "hu_sp_1",
+			"subSel": {
+				"channel": "HU_SN1",
+				"state": "latest",
+				"t2Id": "SNCOSMO"
+			}
+		}
+	]
 }]
 
