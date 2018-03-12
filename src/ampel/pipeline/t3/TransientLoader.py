@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 # File              : ampel/pipeline/t3/TransientLoader.py
+# License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 13.01.2018
-# Last Modified Date: 25.02.2018
+# Last Modified Date: 11.03.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from ampel.base.PhotoPoint import PhotoPoint
@@ -15,13 +16,12 @@ from ampel.flags.TransientFlags import TransientFlags
 from ampel.flags.AlDocTypes import AlDocTypes
 from ampel.flags.FlagUtils import FlagUtils
 from ampel.pipeline.logging.LoggingUtils import LoggingUtils
-from ampel.pipeline.common.LightCurveLoader import LightCurveLoader
-from ampel.pipeline.common.DBQueryResultOrganizer import DBQueryResultOrganizer
-from ampel.pipeline.t3.DBQueryBuilder import DBQueryBuilder
+from ampel.pipeline.db.LightCurveLoader import LightCurveLoader
+from ampel.pipeline.db.DBResultOrganizer import DBResultOrganizer
+from ampel.pipeline.db.query.LatestCompoundQuery import LatestCompoundQuery
+from ampel.pipeline.db.query.LoadTransientQuery import LoadTransientQuery
 
-from werkzeug.datastructures import ImmutableList
 import operator, logging, json
-from enum import Flag
 from operator import itemgetter
 
 
@@ -96,7 +96,7 @@ class TransientLoader:
 			# of the latest compound dict (alDocType: COMPOUND) 
 			latest_compound_dict = next(
 				self.col.aggregate(
-					DBQueryBuilder.latest_compound_general_query(tran_id)
+					LatestCompoundQuery.general_query(tran_id)
 				)
 			)
 
@@ -106,7 +106,7 @@ class TransientLoader:
 			)
 
 			# Build query parameters (will return adequate number of docs)
-			search_params = DBQueryBuilder.load_transient_state_query(
+			search_params = LoadTransientQuery.load_transient_state_query(
 				tran_id, 
 				content_types, 
 				compound_id=latest_compound_dict["_id"], 
@@ -124,7 +124,7 @@ class TransientLoader:
 			)
 
 			# Build query parameters (will return adequate number of docs)
-			search_params = DBQueryBuilder.load_transient_query(
+			search_params = LoadTransientQuery.load_transient_query(
 				tran_id, content_types, t2_ids=t2_ids
 			)
 
@@ -143,7 +143,7 @@ class TransientLoader:
 				raise ValueError("Provided state must be 32 alphanumerical characters or a list")
 
 			# Build query parameters (will return adequate number of docs)
-			search_params = DBQueryBuilder.load_transient_state_query(
+			search_params = LoadTransientQuery.load_transient_state_query(
 				tran_id, content_types, state, t2_ids=t2_ids
 			)
 		
@@ -167,7 +167,7 @@ class TransientLoader:
 
 		# Returns a dict with keys='photopoints', 'compounds', 'transient', 't2records'
 		# and values = array of corresponding db dict instances
-		grouped_res = DBQueryResultOrganizer.organize(
+		grouped_res = DBResultOrganizer.organize(
 			res_doc_list,
 			photopoints = (AlDocTypes.PHOTOPOINT or AlDocTypes.COMPOUND) in content_types, 
 			compounds = AlDocTypes.COMPOUND in content_types, 

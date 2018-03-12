@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 14.12.2017
-# Last Modified Date: 07.03.2018
+# Last Modified Date: 11.03.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import logging, pymongo
@@ -13,8 +13,8 @@ from pymongo.errors import BulkWriteError
 
 from ampel.abstract.AbsAlertIngester import AbsAlertIngester
 from ampel.pipeline.t0.ingesters.ZIPhotoPointShaper import ZIPhotoPointShaper
-from ampel.pipeline.utils.CompoundGenerator import CompoundGenerator
-from ampel.pipeline.utils.T2MergeUtil import T2MergeUtil
+from ampel.pipeline.t0.ingesters.CompoundGenerator import CompoundGenerator
+from ampel.pipeline.t0.ingesters.T2MergeUtil import T2MergeUtil
 from ampel.pipeline.logging.LoggingUtils import LoggingUtils
 
 from ampel.flags.PhotoPointFlags import PhotoPointFlags

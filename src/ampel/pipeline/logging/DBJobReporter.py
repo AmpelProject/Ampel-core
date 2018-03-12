@@ -32,7 +32,7 @@ class DBJobReporter:
 
 	def add_flags(self, job_flags):
 		""" 
-		Add flags (common.flags.JobFlags) to this job
+		Add flags (ampel.flags.JobFlags) to this job
 		"""
 		self.job_flags |= job_flags
 

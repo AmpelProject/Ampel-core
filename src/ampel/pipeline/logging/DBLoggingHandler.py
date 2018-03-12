@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 # File              : ampel/pipeline/logging/DBLoggingHandler.py
+# License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 14.12.2017
-# Last Modified Date: 22.02.2018
+# Last Modified Date: 11.03.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import logging
@@ -15,8 +16,8 @@ class DBLoggingHandler(logging.Handler):
 	"""
 		Custom subclass of logging.Handler responsible for 
 		logging log events into the NoSQL database.
-		An instance of common.logging.DBJobUpdater is required as parameter.
-		Each database log entry contains a global flag (common.flags.LogRecordFlags)
+		An instance of ampel.pipeline.logging.DBJobReporter is required as parameter.
+		Each database log entry contains a global flag (ampel.flags.LogRecordFlags)
 		which includes the log severity level.
 	"""
 	severity_map = {
