@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 06.03.2018
-# Last Modified Date: 08.03.2018
+# Last Modified Date: 11.03.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from ampel.pipeline.logging.LoggingUtils import LoggingUtils
@@ -21,8 +21,8 @@ class T3UnitConfig:
 	loaded_unit_conf = {}
 
 
-	@staticmethod # Static method creating or returning previously instanciated t3UnitConfigs
-	def load(cls, mongo_col, unit_id, logger=None):
+	@classmethod # Class method creating or returning previously instanciated t3UnitConfigs
+	def load(cls, unit_id, mongo_col, logger=None):
 		"""
 		"""
 		if unit_id in cls.loaded_unit_conf:
@@ -39,8 +39,10 @@ class T3UnitConfig:
 		'logger': instance of logging.Logger (std python module logging)
 		"""
 		
-		self.logger = LoggingUtils.get_logger() if logger is None else logger
-		self.logger.info("Loading T3 unit: " + unit_id)
+		if logger is None:
+			logger = LoggingUtils.get_logger()
+
+		logger.info("Loading T3 unit: " + unit_id)
 		self.unit_id = unit_id
 
 		# Lookup t3 unit document in DB
@@ -54,7 +56,7 @@ class T3UnitConfig:
 				"T3 unit %s not found" % unit_id
 			)
 
-		# Retrieve t3 unit document in DB
+		# Retrieve t3 unit document
 		self.doc = next(cursor)
 
 		# Robustness check
@@ -67,13 +69,13 @@ class T3UnitConfig:
 		# Load optional dict 'baseConfig' from document
 		if 'baseConfig' in self.doc :
 			self.base_config = self.doc['baseConfig']
-			self.logger.info("   Base config: %s" % self.base_config)
+			logger.info("   Base config: %s" % self.base_config)
 		else:
-			self.logger.info("   No base config available")
+			logger.info("   No base config available")
 
 		# Create T3 class
 		class_full_path = self.doc['classFullPath']
-		self.logger.info("   Class full path: %s " % class_full_path)
+		logger.info("   Class full path: %s " % class_full_path)
 		module = importlib.import_module(class_full_path)
 		self.t3_class = getattr(module, class_full_path.split(".")[-1])
 
@@ -88,4 +90,4 @@ class T3UnitConfig:
 
 	def get_base_config(self):
 		""" """
-		return self.base_config
+		return self.base_config if hasattr(self, 'base_config') else None
