@@ -1,15 +1,15 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/base/PhotoPoint.py
+# File              : ampel/base/ScienceRecord.py
+# License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 13.01.2018
-# Last Modified Date: 15.02.2018
+# Last Modified Date: 11.03.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from ampel.flags.AlDocTypes import AlDocTypes
-from ampel.flags.ChannelFlags import ChannelFlags
 from ampel.flags.T2RunStates import T2RunStates
-from ampel.flags.FlagUtils import FlagUtils
+#from ampel.flags.FlagUtils import FlagUtils
 from bson import ObjectId
 
 class ScienceRecord:
@@ -24,14 +24,12 @@ class ScienceRecord:
 			raise ValueError("The provided document is not a science record")
 
 		if save_channels:
-			self.channels = FlagUtils.dbflag_to_enumflag(
-				db_doc['channels'], ChannelFlags
-			)
+			self.channels = db_doc['channels']
 
 		self.tran_id = db_doc['tranId']
 		self.compound_id = db_doc['compoundId']
-		self.parameter_id = db_doc['paramId']
-		self.runnable_id = db_doc['t2Runnable']
+		self.run_config = db_doc['runConfig']
+		self.t2_unit_id = db_doc['t2Unit']
 		self.run_state = db_doc['runState']
 		self.results = db_doc['results'] if 'results' in db_doc else None
 		self.generation_time = ObjectId(db_doc['_id']).generation_time
@@ -46,9 +44,9 @@ class ScienceRecord:
 		return self.results if hasattr(self, 'results') else None
 
 
-	def get_t2_runnable_id(self):
+	def get_t2_unit_id(self):
 		""" """
-		return self.runnable_id
+		return self.t2_unit_id
 
 
 	def get_compound_id(self):

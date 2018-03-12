@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 # File              : ampel/base/Transient.py
+# License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 13.01.2018
-# Last Modified Date: 21.02.2018
+# Last Modified Date: 11.03.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from ampel.pipeline.logging.LoggingUtils import LoggingUtils
@@ -138,17 +139,17 @@ class Transient:
 	def add_science_record(self, record):
 		"""
 		"""
-		t2_runnable_id = record.get_t2_runnable_id()
+		t2_unit_id = record.get_t2_unit_id()
 
-		if not t2_runnable_id in self.science_records:
-			self.science_records[t2_runnable_id] = []
+		if not t2_unit_id in self.science_records:
+			self.science_records[t2_unit_id] = []
 
-		self.science_records[t2_runnable_id].append(record)
+		self.science_records[t2_unit_id].append(record)
 
 
-	def get_science_records(self, t2_runnable_id=None, flatten=False):
+	def get_science_records(self, t2_unit_id=None, flatten=False):
 		""" """
-		if t2_runnable_id is None:
+		if t2_unit_id is None:
 			if flatten is False:
 				return self.science_records
 			else:
@@ -157,10 +158,10 @@ class Transient:
 					recs += self.science_records[key]
 				return recs
 		else: 
-			if not t2_runnable_id in self.science_records:
+			if not t2_unit_id in self.science_records:
 				return None
 
-			return self.science_records[t2_runnable_id]
+			return self.science_records[t2_unit_id]
 
 
 	def set_read_only(self):

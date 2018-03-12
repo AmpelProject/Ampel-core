@@ -21,6 +21,6 @@ class AbsT3Unit(metaclass=AmpelABC):
 	def run(self, run_config, transients=None):
 		pass
 
-	@abstractmethod
+	# pylint: disable=no-member
 	def get_version(self):
-		pass
+		return self.version
