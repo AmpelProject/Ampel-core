@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 01.03.2018
-# Last Modified Date: 03.03.2018
+# Last Modified Date: 08.03.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from enum import IntFlag
@@ -25,7 +25,7 @@ class FlagGenerator:
 
 		if prev_class is None or force_create:
 			cls.ChannelFlags = FlagGenerator.create_class(
-				mongo_collection, "_id", 'T2ChannelFlags', listable=True
+				mongo_collection, "_id", 'ChannelFlags', listable=True
 			)
 
 		return cls.ChannelFlags
