@@ -12,8 +12,6 @@ from ampel.abstract.AbsAlertFilter import AbsAlertFilter
 from extcats import CatalogQuery
 
 from pymongo import MongoClient
-from operator import not_
-import operator
 from numpy import mean
 
 
