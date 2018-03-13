@@ -8,7 +8,7 @@ setup(name='ampel',
               'ampel-alertprocessor = ampel.pipeline.t0.AlertProcessor:run_alertprocessor',
               'ampel-init-db = ampel.pipeline.t0.AlertProcessor:init_db',
               'ampel-init-archive = ampel.archive:init_db',
-              'ampel-check-broker = ampel.pipeline.t0.loaders.ZIAlertLoader:list_kafka',
+              'ampel-check-broker = ampel.pipeline.t0.ZIAlertFetcher:list_kafka',
           ]
       }
 )
