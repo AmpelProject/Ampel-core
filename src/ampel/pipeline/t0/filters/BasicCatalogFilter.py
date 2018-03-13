@@ -13,13 +13,14 @@ from extcats import CatalogQuery
 
 from pymongo import MongoClient
 from operator import not_
-from numpy import array, mean
+import operator
+from numpy import mean
 
 
 class BasicCatalogFilter(AbsAlertFilter):
 
     version = 0.1
-
+    
     def __init__(self, on_match_t2_units, base_config=None, run_config=None, logger=None):
         """
             base_config taken from: Ampel/config/hu/t0_filters/config.json
@@ -31,8 +32,10 @@ class BasicCatalogFilter(AbsAlertFilter):
         if run_config is None or type(run_config) is not dict:
             raise ValueError("Method argument must be a dict instance")
 
-        # init mongo client
-        dbclient = MongoClient(host = base_config['mongodbHost'], port = base_config['mongodbPort'])
+        # init mongo client to be passed to extcats
+        dbclient = MongoClient(
+            host = base_config['mongodbHost'],
+            port = base_config['mongodbPort'])
         
         # int catalogquery object
         self.cat_query = CatalogQuery.CatalogQuery(
@@ -60,21 +63,44 @@ class BasicCatalogFilter(AbsAlertFilter):
 
     def apply(self, ampel_alert):
         """
-        Doc will follow
+            Apply this filter to one ampel_alter object. 
+            The steps are the following:
+                
+                1) the transient position is estimated either as the all-epoch 
+                average or as the latest one.
+                
+                2) the external catalog is queryied for matches within a given 
+                search radius from the position estimated in step 1
+                
+                3) depending on the setting of the filter and on the outcome of the
+                catalog query, the alert is accepted or rejected.
         """
         
+        # compute alert position
         if self.alert_pos_type == "av":
-            ras = array(ampel_alert.get_values('ra'))
-            decs = array(ampel_alert.get_values('dec'))
-            ra, dec = mean(ras), mean(decs)
+            av_values = mean( ampel_alert.get_tuples('ra', 'dec'), axis = 0 )
+            ra, dec = av_values[0], av_values[1]
         elif self.alert_pos_type == "latest":
-            ras, dec = ampel_alert.get_values('ra')[-1], ampel_alert.get_values('dec')[-1]
+            latest = ampel_alert.get_photopoints()[0]
+            ra, dec = latest['ra'], latest['dec']
         else:
             raise ValueError("value %s for BasicCatalogFilter param alertPosType not recognized.")
-
-        if self.cat_query.binaryserach(ra, dec, rs_arcsec = self.rs_arcsec, method = self.search_method):
-            if self.reject_on_match:
+        
+        # catalog matching
+        found_cp = self.cat_query.binaryserach(
+            ra, dec, rs_arcsec = self.rs_arcsec, method = self.search_method)
+        
+        # filter logic
+        if self.reject_on_match:    # the case of matching with catalogs of non interesting objects
+            if found_cp:
                 return None
             else:
                 return self.on_match_default_t2_units
-                
+        else:                       # the case of matching with catalogs of interesting objects
+            if found_cp:
+                return self.on_match_default_t2_units
+            else:
+                return None
+
+
+
