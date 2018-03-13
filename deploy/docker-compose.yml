@@ -45,7 +45,7 @@ services:
       - ./ztfdata:/ztf
       
     secrets:
-      - mysql-user-password
+      - archive-user-password
     environment:
       TINI_SUBREAPER: 1
       MONGO: mongo:27018
