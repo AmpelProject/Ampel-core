@@ -638,10 +638,8 @@ def init_db():
 				collection.replace_one({'_id':blob['_id']}, blob, upsert=True)
 
 def _ingest_slice(host, archive_host, infile, start, stop):
-	from ampel.archive import ArchiveDB
-	with open('/run/secrets/mysql-user-password') as f:
-		password = f.read().strip()
-	archive = ArchiveDB('postgresql://ampel:{}@{}/ztfarchive'.format(password, archive_host))
+	from ampel.archive import ArchiveDB, docker_env
+	archive = ArchiveDB('postgresql://ampel:{}@{}/ztfarchive'.format(docker_env('POSTGRES_PASSWORD'), archive_host))
 	
 	def loader():
 		for alert in ZIAlertLoader.walk_tarball(infile, start, stop):

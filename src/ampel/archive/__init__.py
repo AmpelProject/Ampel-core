@@ -184,6 +184,16 @@ def get_alert(connection, meta, alert_id):
     
     return alert
 
+def docker_env(var):
+	"""
+	Read var from file pointed to by ${var}_FILE, or directly from var.
+	"""
+	if '{}_FILE'.format(var) in os.environ:
+		with open(os.environ['{}_FILE'.format(var)]) as f:
+			return f.read().strip()
+	else:
+		return os.environ[var]
+
 def init_db():
 	"""
 	Initialize archive db for use with Ampel
@@ -201,15 +211,8 @@ def init_db():
 	
 	opts = parser.parse_args()
 	
-	def env(var):
-		if '{}_FILE'.format(var) in os.environ:
-			with open(os.environ['{}_FILE'.format(var)]) as f:
-				return f.read().strip()
-		else:
-			return os.environ[var]
-	
 	user = 'ampel'
-	password = env('POSTGRES_PASSWORD')
+	password = docker_env('POSTGRES_PASSWORD')
 	for attempt in range(10):
 		try:
 			engine = create_engine('postgresql://{}:{}@{}/{}'.format(user, password, opts.host, opts.database))
