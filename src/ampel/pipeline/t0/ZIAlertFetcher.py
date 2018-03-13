@@ -55,4 +55,10 @@ def list_kafka():
 	opts = parser.parse_args()
 	
 	client = pykafka.KafkaClient(opts.broker)
-	print(client.topics.keys())
+	for name in client.topics:
+		topic = client.topics[name]
+		num = 0
+		for p in topic.partitions.values():
+			num += p.latest_available_offset() - p.earliest_available_offset()
+		print('{}: {} messages'.format(name, num))
+	# print(client.topics.keys())
