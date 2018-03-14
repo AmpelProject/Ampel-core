@@ -398,6 +398,8 @@ class ZIAlertIngester(AbsAlertIngester):
 		# Insert/Update transient document into 'transients' collection
 		self.logger.info("Updating transient document")
 
+		now = datetime.today().timestamp()
+
 		# TODO add alFlags
 		db_ops.append(
 			pymongo.UpdateOne(
@@ -417,10 +419,18 @@ class ZIAlertIngester(AbsAlertIngester):
 						'channels': {
 							"$each": db_chan_flags
 						},
-						'jobIds': self.job_id
+						'jobIds': self.job_id,
+						'modified': now
 					},
 					"$max": {
 						"lastPPDate": pps_alert[0]["jd"]
+					},
+					"$push": {
+						"lastModified": {
+							'dt': now,
+							'tier': 0,
+							'src': "ZI"
+						}
 					}
 				},
 				upsert=True
