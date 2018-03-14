@@ -7,6 +7,15 @@
 	"classFullPath": "ampel.pipeline.t0.filters.BasicFilter"
 },
 {
+	"_id": "BasicCatalogFilter",
+	"classFullPath": "ampel.pipeline.t0.filters.BasicCatalogFilter",
+	"baseConfig": {
+		"mongodbHost": "localhost",
+		"mongodbPort": 27017,
+		"catSrcCollName": "srcs"
+		}
+},
+{
 	"_id": "BasicMultiFilter",
 	"classFullPath": "ampel.pipeline.t0.filters.BasicMultiFilter"
 },
