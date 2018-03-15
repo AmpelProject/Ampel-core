@@ -125,7 +125,9 @@ class QueryLatestCompound:
 	@staticmethod
 	def general_query(tran_id, project=None, channels=None):
 		"""
-		Can be used on any ampel transients 
+		Can be used on any ampel transients.
+		There is a very detailed explanation of each step of the aggragetion 
+		documented in the python notebook "T3 get_lastest_compound"
 
 		Returns:
 		--------
@@ -134,7 +136,59 @@ class QueryLatestCompound:
 		Parameters	
 		----------
 		tran_id: transient id (string). Query can *not* be done on multiple ids at once.
+		project: optional projection stage at the end of the aggregation (dict instance)
 		channels: see 'fast_query' docstring
+
+		Examples:
+		---------
+		IMPORTANT NOTE: the following two examples show the output of the aggregation framework 
+		from mongodb (i.e the output after having performed a DB query *using the output 
+		of this fuunction as parameter*), they do not show the output of this function.
+
+		*MONGODB* Output example 1:
+		---------------------------
+		In []: list(
+			col.aggregate(
+				QueryLatestCompound.general_query('ZTF18aaayyuq')
+			)
+		)
+		Out[]: 
+		[
+		  {
+			'_id': '5de2480f28bfca0bd3baae890cb2d2ae',
+			  'added': 1520796310.496276,
+			  'alDocType': 2,
+			  'channels': ['HU_SN1'],
+			  'lastppdt': 2458158.7708565,
+			  'len': 12,
+			  'pps': [{'pp': 375300016315010040},
+			   {'pp': 375320176315010034},
+			   {'pp': 375337116315010046},
+			   {'pp': 375356366315010056},
+			   {'pp': 377293446315010009},
+			   {'pp': 377313156315010027},
+			   {'pp': 377334096315010020},
+			   {'pp': 377376126315010004},
+			   {'pp': 377416496315010000},
+			   {'pp': 378293006315010001},
+			   {'pp': 378334946315010000},
+			   {'pp': 404270856315015007}],
+			  'tier': 0,
+			  'tranId': 'ZTF18aaayyuq'
+			}
+		]
+
+		*MONGODB* Output example 2:
+		---------------------------
+		In []: list(
+			col.aggregate(
+				QueryLatestCompound.general_query(
+					'ZTF18aaayyuq', project={'$project': {'tranId':1}}
+				)
+			)
+		)
+		Out[]: 
+			[{'_id': '5de2480f28bfca0bd3baae890cb2d2ae', 'tranId': 'ZTF18aaayyuq'}]
 		"""
 		if type(tran_id) is list:
 			raise ValueError("Type of tran_id must be string (multi tranId queries not supported)")
