@@ -46,7 +46,7 @@ class QueryLatestCompound:
 
 		Parameters	
 		----------
-		tran_id: transient id(s) (string or list of string). 
+		tran_id: transient id(s) (string, list of string, set of strings). 
 		Query can be performed on multiple ids at once.
 
 		channels: can be a flag, a list of flags, a string, a list of strings, a 2d list of strings:
@@ -65,17 +65,16 @@ class QueryLatestCompound:
 		Should perform faster than general_query.
 		"""
 
-		if not type(tran_ids) is list:
-			if not type(tran_ids) is str:
-				raise ValueError("Type of tran_ids must be either a string or a list of strings")
+		if not type(tran_ids) in (list, str, set):
+			raise ValueError("Type of tran_ids must be either a string or a list of strings")
 
 		match_dict = {
 			'alDocType': AlDocTypes.COMPOUND
 		}
 
 		match_dict['tranId'] = ( 
-			tran_ids if type(tran_ids) is str or len(tran_ids) == 1
-			else {'$in': tran_ids}
+			tran_ids if type(tran_ids) is str
+			else {'$in': tran_ids if type(tran_ids) is list else list(tran_ids)}
 		)
 
 		if channels is not None:
@@ -124,7 +123,7 @@ class QueryLatestCompound:
 
 
 	@staticmethod
-	def general_query(tran_id, channels=None):
+	def general_query(tran_id, project=None, channels=None):
 		"""
 		Can be used on any ampel transients 
 
@@ -152,9 +151,7 @@ class QueryLatestCompound:
 				else FlagUtils.enum_flags_to_lists(channels)), 
 			)
 
-		print(match_dict)
-
-		return [
+		ret = [
 			{
 				'$match': match_dict
 			},
@@ -209,3 +206,8 @@ class QueryLatestCompound:
 				}
 			}
 		]
+
+		if project is not None:
+			ret.append(project)
+
+		return ret
