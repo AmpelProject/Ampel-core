@@ -1,17 +1,17 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/pipeline/dbquery/LoadTransientQuery.py
+# File              : ampel/pipeline/db/query/QueryLoadTransient.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 14.02.2018
-# Last Modified Date: 11.03.2018
+# Last Modified Date: 14.03.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from ampel.flags.AlDocTypes import AlDocTypes
 from ampel.flags.FlagUtils import FlagUtils
 
 
-class LoadTransientQuery:
+class QueryLoadTransient:
 	"""
 	"""
 

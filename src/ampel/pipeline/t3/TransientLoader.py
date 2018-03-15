@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 13.01.2018
-# Last Modified Date: 11.03.2018
+# Last Modified Date: 14.03.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from ampel.base.PhotoPoint import PhotoPoint
@@ -18,8 +18,8 @@ from ampel.flags.FlagUtils import FlagUtils
 from ampel.pipeline.logging.LoggingUtils import LoggingUtils
 from ampel.pipeline.db.LightCurveLoader import LightCurveLoader
 from ampel.pipeline.db.DBResultOrganizer import DBResultOrganizer
-from ampel.pipeline.db.query.LatestCompoundQuery import LatestCompoundQuery
-from ampel.pipeline.db.query.LoadTransientQuery import LoadTransientQuery
+from ampel.pipeline.db.query.QueryLatestCompound import QueryLatestCompound
+from ampel.pipeline.db.query.QueryLoadTransient import QueryLoadTransient
 
 import operator, logging, json
 from operator import itemgetter
@@ -96,7 +96,7 @@ class TransientLoader:
 			# of the latest compound dict (alDocType: COMPOUND) 
 			latest_compound_dict = next(
 				self.col.aggregate(
-					LatestCompoundQuery.general_query(tran_id)
+					QueryLatestCompound.general_query(tran_id)
 				)
 			)
 
@@ -106,7 +106,7 @@ class TransientLoader:
 			)
 
 			# Build query parameters (will return adequate number of docs)
-			search_params = LoadTransientQuery.load_transient_state_query(
+			search_params = QueryLoadTransient.load_transient_state_query(
 				tran_id, 
 				content_types, 
 				compound_id=latest_compound_dict["_id"], 
@@ -124,7 +124,7 @@ class TransientLoader:
 			)
 
 			# Build query parameters (will return adequate number of docs)
-			search_params = LoadTransientQuery.load_transient_query(
+			search_params = QueryLoadTransient.load_transient_query(
 				tran_id, content_types, t2_ids=t2_ids
 			)
 
@@ -143,7 +143,7 @@ class TransientLoader:
 				raise ValueError("Provided state must be 32 alphanumerical characters or a list")
 
 			# Build query parameters (will return adequate number of docs)
-			search_params = LoadTransientQuery.load_transient_state_query(
+			search_params = QueryLoadTransient.load_transient_state_query(
 				tran_id, content_types, state, t2_ids=t2_ids
 			)
 		

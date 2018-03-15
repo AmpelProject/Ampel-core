@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/pipeline/dbquery/MatchTransientsQuery.py
+# File              : ampel/pipeline/dbquery/QueryMatchTransients.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 13.01.2018
@@ -12,11 +12,11 @@ from ampel.flags.FlagUtils import FlagUtils
 from bson.objectid import ObjectId
 from datetime import datetime, timedelta
 
-from ampel.pipeline.db.query.MatchFlagsQuery import MatchFlagsQuery
-from ampel.pipeline.db.query.MatchCriteriaQuery import MatchCriteriaQuery
+from ampel.pipeline.db.query.QueryMatchFlags import QueryMatchFlags
+from ampel.pipeline.db.query.QueryMatchCriteria import QueryMatchCriteria
 
 
-class MatchTransientsQuery:
+class QueryMatchTransients:
 	"""
 	"""
 
@@ -30,20 +30,20 @@ class MatchTransientsQuery:
 		'with_flags': 
 		-> instance of ampel.flags.TransientFlags or list of instances of TransientFlags
 		Transient matching the with_flags criteria will be included.
-		See MatchFlagsQuery.add_match_criteria docstring for more info
+		See QueryMatchFlags.add_match_criteria docstring for more info
 
 		'without_flags': 
 		-> instance of ampel.flags.TransientFlags or list of instances of TransientFlags
 		Transient matching with the with_flags criteria will be excluded.
-		See MatchFlagsQuery.add_nomatch_criteria docstring for more info
+		See QueryMatchFlags.add_nomatch_criteria docstring for more info
 
 		'channels': 
 		Either:
 			-> instance of ampel.flags.ChannelFlags or list of instances of ChannelFlags
-			See MatchFlagsQuery.add_match_criteria docstring for more info
+			See QueryMatchFlags.add_match_criteria docstring for more info
 		Or:
 			-> list of strings (can be nested up to one level)
-			See MatchCriteriaQuery.add_match_from_list docstring for more info
+			See QueryMatchCriteria.add_from_list docstring for more info
 
 		'time_created': 
 			-> provide either 'delta' or ('from' and/or 'until')
@@ -61,21 +61,21 @@ class MatchTransientsQuery:
 		}
 
 		if with_flags is not None:
-			MatchFlagsQuery.add_match_criteria(with_flags, query, 'alFlags')
+			QueryMatchFlags.add_match_criteria(with_flags, query, 'alFlags')
 
 		# Order matters, add_nomatch_criteria(...) must be called *after* add_match_criteria(...)
 		if without_flags is not None:
-			MatchFlagsQuery.add_nomatch_criteria(without_flags, query, 'alFlags')
+			QueryMatchFlags.add_nomatch_criteria(without_flags, query, 'alFlags')
 
 		if channels is not None:
-			MatchCriteriaQuery.add_match_from_list(
+			QueryMatchCriteria.add_from_list(
+				query, 'channels',
 				(channels if not FlagUtils.contains_enum_flag(channels) 
-				else FlagUtils.enum_flags_to_lists(channels)), 
-				query, 'channels'
+				else FlagUtils.enum_flags_to_lists(channels))
 			)
 
-		MatchTransientsQuery._build_time_contraint(query, '_id', time_created, is_oid=True)
-		MatchTransientsQuery._build_time_contraint(query, 'modified', time_modified)
+		QueryMatchTransients._build_time_contraint(query, '_id', time_created, is_oid=True)
+		QueryMatchTransients._build_time_contraint(query, 'modified', time_modified)
 
 		return query
 
@@ -95,6 +95,7 @@ class MatchTransientsQuery:
 			('until' in time_constraint and time_constraint['until'] is not None)
 		):
 
+			# TODO: check this, I don't get it anymore
 			if db_field_name in query:
 				raise ValueError(
 					"Wrong time_constraint criteria: " +

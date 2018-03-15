@@ -1,17 +1,17 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/pipeline/db/query/MatchFlagsQuery.py
+# File              : ampel/pipeline/db/query/QueryMatchFlags.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 11.03.2018
-# Last Modified Date: 11.03.2018
+# Last Modified Date: 14.03.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from ampel.flags.FlagUtils import FlagUtils
 import enum
 
 
-class MatchFlagsQuery:
+class QueryMatchFlags:
 	"""
 	"""
 
