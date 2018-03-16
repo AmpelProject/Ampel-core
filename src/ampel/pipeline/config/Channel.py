@@ -4,12 +4,13 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 01.03.2018
-# Last Modified Date: 08.03.2018
+# Last Modified Date: 16.03.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from ampel.flags.FlagGenerator import FlagGenerator
 from ampel.flags.LogRecordFlags import LogRecordFlags
 from ampel.pipeline.logging.LoggingUtils import LoggingUtils
+from ampel.pipeline.config.ZIInputParameter import ZIInputParameter
 import importlib
 
 
@@ -58,10 +59,10 @@ class Channel:
 			raise ValueError("Please set either 'channel_name' or 'db_doc'")
 
 		if channel_name is None:
-			self.load_from_doc(db_doc)
+			self.load_from_doc(db_doc, logger)
 			self.name = db_doc['_id']
 		else:
-			self.load_from_db(config_db, channel_name)
+			self.load_from_db(config_db, channel_name, logger)
 			self.name = channel_name
 
 		if gen_flags is True:
@@ -99,17 +100,16 @@ class Channel:
 				)
 
 
-	def load_from_doc(self, db_doc):		
+	def load_from_doc(self, db_doc, logger):		
 		"""
 		db_doc: dict instance containing channel configrations
 		"""
-		self.input = db_doc['input']
 		self.chan_filter_doc = db_doc['t0Filter']
 		self.t2_config = db_doc['t2Compute']
+		self.inputs = Channel.load_channel_inputs(db_doc['input'], logger)
 
 
-
-	def load_from_db(self, config_db, channel_name):
+	def load_from_db(self, config_db, channel_name, logger):
 		"""
 		config_db: instance of a mongodb Database
 		channel_name: value of field '_id' in channel db document.
@@ -125,17 +125,17 @@ class Channel:
 			raise NameError("Channel '%s' not found" % channel_name)
 
 		self.load_from_doc(
-			cursor.next()
+			cursor.next(), logger
 		)
 
 
-	def get_input_parameters(self, instrument="ZTF", alerts="IPAC"):
+	def get_input(self, instrument="ZTF", alerts="IPAC"):
 		"""	
 		Dict path lookup shortcut function
 		"""	
-		for el in self.input:
-			if el['instrument'] == instrument and el['alerts'] == alerts:
-				return el['parameters']
+
+		if instrument+alerts in self.inputs:
+			return self.inputs[instrument+alerts]
 
 		return None
 		
@@ -227,4 +227,20 @@ class Channel:
 		# Build these two log entries once and for all (outside the main loop in run())
 		self.log_accepted = " -> Channel '%s': alert passes filter criteria" % self.name
 		self.log_rejected = " -> Channel '%s': alert was rejected" % self.name
+
+
+	@staticmethod
+	def load_channel_inputs(db_doc, logger):
+
+		inputs = {}
+		for input_doc in db_doc:
+			if input_doc['instrument'] == "ZTF" and input_doc['alerts'] == "IPAC":
+				inputs["ZTFIPAC"] = ZIInputParameter(input_doc)
+			else:
+				logger.warn(
+					"No implementation: ignoring input with intrument=%s and alerts=%s" % 
+					(input_doc['instrument'], input_doc['alerts'])
+				)
+
+		return inputs
 
