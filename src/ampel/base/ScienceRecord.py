@@ -17,7 +17,7 @@ class ScienceRecord:
 	Wrapper class around a dict instance ususally originating from pymongo DB.
 	"""
 
-	def __init__(self, db_doc, save_channels=False, read_only=True):
+	def __init__(self, db_doc, read_only=True, save_channels=False):
 		"""
 		"""
 		if db_doc["alDocType"] != AlDocTypes.T2RECORD:

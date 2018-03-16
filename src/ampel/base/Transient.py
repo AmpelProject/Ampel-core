@@ -4,10 +4,11 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 13.01.2018
-# Last Modified Date: 11.03.2018
+# Last Modified Date: 16.03.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from ampel.pipeline.logging.LoggingUtils import LoggingUtils
+from ampel.flags.PhotoPointFlags import PhotoPointFlags
 from ampel.flags.AlDocTypes import AlDocTypes
 from werkzeug.datastructures import ImmutableDict
 import logging
@@ -24,7 +25,7 @@ class Transient:
 
 	"""
 
-	def __init__(self, tran_id, logger=None):
+	def __init__(self, tran_id, channels=None, logger=None):
 		"""
 		Parameters:
 		* tran_id: transient id (string)
@@ -37,17 +38,9 @@ class Transient:
 		self.science_records = {}
 		self.latest_lightcurve = None
 		self.flags = None
-		self.channels = None
 
-
-	def set_channels(self, channels):
-		""" """
-		self.channels = channels
-
-
-	def get_channels(self):
-		""" """
-		return self.channels
+		if channels is not None:
+			self.channels = None
 
 
 	def set_flags(self, flags):
@@ -148,15 +141,16 @@ class Transient:
 
 
 	def get_science_records(self, t2_unit_id=None, flatten=False):
-		""" """
+		""" 
+		"""
 		if t2_unit_id is None:
 			if flatten is False:
 				return self.science_records
 			else:
-				recs = []
+				records = []
 				for key in self.science_records.keys():
-					recs += self.science_records[key]
-				return recs
+					records += self.science_records[key]
+				return records
 		else: 
 			if not t2_unit_id in self.science_records:
 				return None
