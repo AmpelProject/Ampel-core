@@ -28,7 +28,7 @@ class LightCurve:
 	}
 
 
-	def __init__(self, compound_dict, al_pps_list, read_only=True, logger=None):
+	def __init__(self, compound_dict, al_pps_list, read_only=True, save_channels=False, logger=None):
 		"""
 		compound: dict instance loaded using compound DB dict
 		al_pps_list: list of ampel.base.PhotoPoint instances
@@ -40,6 +40,9 @@ class LightCurve:
 		self.tier = compound_dict['tier']
 		self.added = compound_dict['added']
 		self.lastppdt = compound_dict['lastppdt']
+
+		if save_channels:
+			self.channels = compound_dict['channels']
 
 		if read_only:
 			self.al_pps_list = ImmutableList(al_pps_list)
