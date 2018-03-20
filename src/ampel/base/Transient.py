@@ -25,7 +25,7 @@ class Transient:
 
 	"""
 
-	def __init__(self, tran_id, channels=None, logger=None):
+	def __init__(self, tran_id, logger=None):
 		"""
 		Parameters:
 		* tran_id: transient id (string)
@@ -38,14 +38,19 @@ class Transient:
 		self.science_records = {}
 		self.latest_lightcurve = None
 		self.flags = None
+		self.created = None
+		self.last_modified = None
 
-		if channels is not None:
-			self.channels = None
 
-
-	def set_flags(self, flags):
+	def set_parameter(self, name, value):
 		""" """
-		self.flags = flags
+		setattr(self, name, value)
+
+
+	def set_parameters(self, plist):
+		""" """
+		for el in plist:
+			setattr(self, el[0], el[1])
 
 
 	def get_flags(self):
@@ -165,6 +170,15 @@ class Transient:
 		self.photopoints = ImmutableDict(self.photopoints)
 		self.science_records = ImmutableDict(self.science_records)
 		self.__isfrozen = True
+
+
+	def new_channel_register(self):
+		"""
+		ChannelRegister is used when transient instances need to be forked and trim down
+		"""
+		from ampel.pipeline.t3.ChannelRegister import ChannelRegister
+		self.channel_register = ChannelRegister(self.tran_id)
+		return self.channel_register
 
 
 	def __setattr__(self, key, value):

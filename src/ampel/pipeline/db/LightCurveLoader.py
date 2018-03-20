@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 13.01.2018
-# Last Modified Date: 11.03.2018
+# Last Modified Date: 18.03.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from ampel.flags.PhotoPointFlags import PhotoPointFlags
@@ -24,18 +24,18 @@ class LightCurveLoader:
 	"""
 
 
-	def __init__(self, db, read_only=True, logger=None, collection="main"):
+	def __init__(self, col, read_only=True, logger=None):
 		"""
 		Parameters:
 		-----------
-		db: instance of pymongo.database.Database 
+		col: instance of pymongo.collection.Collection 
 		read_only: if True, the LightCurve instance returned by the methods of this class will be:
 			* a frozen class
 			* containing a ImmutableList of PhotoPoint
 			* whereby each PhotoPoint is a frozen class as well
 			* and each PhotoPoint dict content is an ImmutableDict
 		"""
-		self.col = db[collection]
+		self.col = col 
 		self.logger = LoggingUtils.get_logger() if logger is None else logger
 		self.read_only = read_only
 
@@ -200,7 +200,6 @@ class LightCurveLoader:
 						frozen_pps_dict[pp_dict['_id']] = al_pp
 				else:
 					al_pp = PhotoPoint(pp_dict, self.read_only)
-
 
 			# Update internal list of PhotoPoint instances
 			al_pps_list.append(al_pp)

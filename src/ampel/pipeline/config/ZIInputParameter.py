@@ -7,6 +7,7 @@
 # Last Modified Date: 16.03.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
+from ampel.flags.PhotoPointFlags import PhotoPointFlags
 
 class ZIInputParameter:
 	"""
@@ -40,6 +41,11 @@ class ZIInputParameter:
 		if not "weizmannSub" in self.parameters:
 			self.parameters["weizmannSub"] = False
 
+		self.pps_must_flags = PhotoPointFlags.INST_ZTF
+
+		if self.parameters["ZTFPartner"] is False:
+			self.pps_must_flags |= PhotoPointFlags.ZTF_PUBLIC
+
 
 	def get_parameter(self, name):
 		"""	
@@ -57,6 +63,10 @@ class ZIInputParameter:
 
 	def ztf_partner(self):
 		return self.parameters["ZTFPartner"]
+
+
+	def get_pps_must_flags(self):
+		return self.pps_must_flags
 
 
 	def auto_complete(self):

@@ -51,21 +51,30 @@ class QueryMatchCriteria:
 
 		Examples: 
 		---------
-		The parameter 'inlist' could be:
-		-> either an list of strings that are 'AND' connected
+		The parameter 'inlist' could be (check FlagUtils.list_flags_to_enum_flags docstring):
+		-> either an list of strings that are 'OR' connected: ["SNCOSMO", "AGN"]
+		-> either an 2d-list of strings that are 'AND' connected: [["SNCOSMO", "AGN"]]
 		  Search criteria would require that documents must contain the channels defined in the list
-		-> or list of lists whereby the outer lists are connected with the 'OR' logical operator.
+		-> or list of lists whereby the outer lists are connected with the 'OR' logical operator:
+		  [["SNCOSMO", "AGN"], "PHOTO_Z"] 
 
 		Applied example: 
-		Case 1a:
+		Case 1:
 		-> channels = ["HU_EARLY_SN"]
 		   finds transient associated with the channel HU_EARLY_SN
 
 		Case 1b:
-		-> channels = ["HU_EARLY_SN", "HU_RANDOM"]
-		   finds transient that associated with *both* the channels HU_EARLY_SN and HU_RANDOM
+		-> channels = [["HU_EARLY_SN"]]
 
 		Case 2:
+		-> channels = [["HU_EARLY_SN", "HU_RANDOM"]]
+		   finds transient that associated with *both* the channels HU_EARLY_SN and HU_RANDOM
+
+		Case 3:
+		-> channels = ["HU_EARLY_SN", "HU_RANDOM"]
+		   finds transient that associated with *either* the channels HU_EARLY_SN or HU_RANDOM
+
+		Case 4:
 		-> channels = ["LENS", ["HU_EARLY_SN", "HU_RANDOM"]] 
 		   finds transient that associated with 
 		   * either with the LENS channel
@@ -81,15 +90,23 @@ class QueryMatchCriteria:
 		if not type(inlist) is list:
 			raise ValueError('Illegal "inlist" parameter')
 
-		# Case 1a and 1b
+		# Case 1 and 3
 		if not FlagUtils.is_nested_list(inlist):
 
 			query[field_name] = (
-				inlist[0] if len(inlist) == 1 # case 1a
-				else {'$all': inlist} # case 1b
+				inlist[0] if len(inlist) == 1 # case 1
+				else {'$in': inlist} # case 2
 			)
 
 		else:
+
+			# Case 2 (and un-necessary case 1b)
+			if len(inlist) == 1:
+				query[field_name] = (
+					inlist[0][0] if len(inlist[0]) == 1 # case 1b
+					else {'$all': inlist[0]} # Case 2
+				)
+				return query
 
 			or_list = []
 
@@ -141,7 +158,7 @@ class QueryMatchCriteria:
 		if not type(inlist) is list:
 			raise ValueError('Illegal "inlist" parameter')
 
-		# Case 1a and 1b
+		# Case 1 and 2
 		if not FlagUtils.is_nested_list(inlist):
 
 			# Robustness

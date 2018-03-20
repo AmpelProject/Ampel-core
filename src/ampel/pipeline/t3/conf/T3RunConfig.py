@@ -59,6 +59,10 @@ class T3RunConfig:
 		)
 
 
+	def get_parameters(self):
+		return self.doc
+
+
 	def get_parameter(self, name):
 		""" 
 		"""

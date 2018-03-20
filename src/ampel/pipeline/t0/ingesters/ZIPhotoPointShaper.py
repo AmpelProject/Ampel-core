@@ -39,8 +39,16 @@ class ZIPhotoPointShaper:
 			ppflags = self.base_flags
 	
 			# Public / private data
-			if pp_dict['programpi'] == 'Kulkarni':
-				ppflags |= PhotoPointFlags.ZTF_PARTNERSHIP
+			# 0: 'All'
+			# 1: 'Public'
+			# 2: 'ZtfCollaboration'
+			# 3: 'Caltech'
+			if pp_dict['programid'] == 0:
+				ppflags |= PhotoPointFlags.ZTF_PUBLIC | PhotoPointFlags.ZTF_COLLAB
+			elif pp_dict['programid'] == 1:
+				ppflags |= PhotoPointFlags.ZTF_PUBLIC 
+			elif pp_dict['programid'] == 2:
+				ppflags |= PhotoPointFlags.ZTF_COLLAB
 	
 			# Filter color
 			if (pp_dict['fid'] == 1):

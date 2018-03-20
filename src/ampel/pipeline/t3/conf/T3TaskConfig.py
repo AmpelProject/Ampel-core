@@ -10,14 +10,18 @@
 from ampel.pipeline.logging.LoggingUtils import LoggingUtils
 from ampel.pipeline.t3.conf.T3UnitConfig import T3UnitConfig
 from ampel.pipeline.t3.conf.T3RunConfig import T3RunConfig
+from ampel.pipeline.config.Channel import Channel
+from ampel.flags.PhotoPointFlags import PhotoPointFlags
+
 
 class T3TaskConfig:
 	"""
 	"""
 
 	# static DB collection names
-	_run_config_colname = "t3_run_config"
-	_t3_units_colname = "t3_units"
+	_colname_run_config = "t3_run_config"
+	_colname_t3_units = "t3_units"
+	_colname_channels = "channels"
 
 
 	def __init__(self, config_db, t3_task_doc, tran_sel=None, tran_load=None, logger=None):
@@ -42,16 +46,16 @@ class T3TaskConfig:
 			self.raise_ValueError(logger, 'key "runConfig" missing')
 
 		# Create T3UnitConfig instance
-		self.t3_unit = T3UnitConfig.load(
+		self.t3_unit_config = T3UnitConfig.load(
 			t3_task_doc['t3Unit'], 
-			config_db[T3TaskConfig._t3_units_colname], 
+			config_db[T3TaskConfig._colname_t3_units], 
 			logger
 		)
 
 		# Create T3RunConfig instance
 		self.run_config = T3RunConfig.load(
 			t3_task_doc['t3Unit'] + "_" + t3_task_doc['runConfig'], 
-			config_db[T3TaskConfig._run_config_colname], 
+			config_db[T3TaskConfig._colname_run_config], 
 			logger
 		)
 
@@ -67,6 +71,39 @@ class T3TaskConfig:
 
 			# Check validity of channels sub-selection
 			self.check_is_subset(t3_task_doc, tran_sel, 'channel', logger)
+
+			channel = t3_task_doc['subSel']['channel']
+
+			# If a fork requires the filtering of photopoints 
+			if (
+				'docTypes' not in t3_task_doc['subSel'] or 
+				"PHOTOPOINT" in t3_task_doc['subSel']['PHOTOPOINT']
+			):
+
+				# Get channel config doc 
+				chan_input = next(
+					config_db[T3TaskConfig._colname_channels].find(
+						{'_id': channel}
+					), 
+					None
+				)
+
+				# Robustness
+				if chan_input is None:
+					self.raise_ValueError(logger, "channel %s not found" % channel)
+				
+				# Load channel input parameters (ZIInputParameter)
+				# channel_input key can be for example "ZTFIPAC" 
+				# value would be the an instance of ZIInputParameter
+				channel_input = Channel.load_channel_inputs(
+					chan_input['input'], logger
+				)
+
+				# Build flags used to filter photopoints
+				self.pps_must_flags = PhotoPointFlags(0)
+				for key in channel_input:
+					self.pps_must_flags |= channel_input[key].get_pps_must_flags()
+
 
 			# Check validity of t2Id sub-selection
 			# No top level t2Ids selection means *all* t2Ids
@@ -158,26 +195,54 @@ class T3TaskConfig:
 
 	
 	def raise_ValueError(self, logger, msg):
+		"""
+		"""
 		logger.error("Failing task doc: %s" % self.task_doc)
 		raise ValueError("Invalid T3 task config: "+msg)
 
 
 	def has_selection(self, criteria):
+		"""
+		"""
 		return True if hasattr(self, "sub_sel") else False
 
 
-	def get_selection(self):
+	def get_parameter(self, param):
+		"""
+		"""
+		if not param in self.task_doc:
+			return None
+
+		return self.task_doc[param]
+
+
+	def get_selection(self, param=None):
 		"""
 		Returns transient sub-selection criteria, if available
+		param: string
 		"""
-		return self.sub_sel if hasattr(self, "sub_sel") else None
+
+		if not hasattr(self, "sub_sel"):
+			return None
+
+		if param is None:
+			return self.sub_sel
+
+		if param not in self.sub_sel:
+			return None
+
+		return self.sub_sel[param]
 
 
-	def get_t3_unit(self):
+	def get_pps_must_flags(self):
+		return getattr(self, "pps_must_flags", None)
+
+
+	def get_t3_unit_config(self):
 		"""
 		returns an instance of T3UnitConfig (created in constructor)
 		"""
-		return self.t3_unit
+		return self.t3_unit_config
 
 
 	def get_run_config(self):
@@ -185,3 +250,22 @@ class T3TaskConfig:
 		returns an instance of T3RunConfig (created in constructor)
 		"""
 		return self.run_config
+
+
+	def get_t3_instance(self, logger):
+		"""
+		returns an instance of a child class of AbsT3Unit 
+		"""
+		# pylint: disable=access-member-before-definition
+		if hasattr(self, "t3_instance"):
+			return self.t3_instance
+
+		# Get T3 class 
+		T3_class = self.t3_unit_config.get_t3_class()
+
+		# Instanciate T3 class 
+		self.t3_instance = T3_class(
+			logger, self.t3_unit_config.get_base_config()
+		)
+
+		return self.t3_instance

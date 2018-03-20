@@ -19,36 +19,52 @@ class TransientForker:
 	"""
 
 	@staticmethod
-	def fork(parent_tran, alDocType=None, state=None, channel=None, t2_unit_ids=None):
+	def fork(parent_tran, doc_type=None, state=None, channel=None, t2_unit_ids=None, pps_must_flags=None):
 		"""
 		Creates a new Transient instance based on the content (photopoints, lightcurves, science records)
 		of a previously instanciated transient object using the provided selection criteria
 
 		Parameters:
-		alDocType: enum flag instance of ampel.flags.AlDocTypes
+		doc_type: enum flag instance of ampel.flags.AlDocTypes
 		state: md5 string of transient state (compound id)
-		channel: instance of ampel.pipeline.config.Channel
+		channel: string. Id of channel
 		t2_unit_ids: list of t2 unit ids (list of strings)
+		chan_input_params: list of input parameters. Default for now [<instance of ZIInputParameter>] 
 		"""
+
+		if channel is not None:
+			if not hasattr(parent_tran, "channel_register"):
+				raise ValueError(
+					"Fork requireds parent transient object to have a ChannelRegister instance"
+				)
+			else:
+				channel_register = parent_tran.channel_register
 
 		# Instanciante new transient
 		transient = Transient(parent_tran.tran_id, parent_tran.logger)
+		transient.set_parameters(
+			[
+				("created", parent_tran.created),
+				("modified", parent_tran.modified),
+				("flags", parent_tran.flags)
+			]
+		)
 
 		# Document type based trimming: lightcurves
 		excl_lightcurves = (
-			True if alDocType is not None and AlDocTypes.COMPOUND not in alDocType 
+			True if doc_type is not None and AlDocTypes.COMPOUND not in doc_type 
 			else None
 		)
 
 		# Document type based trimming: photopoints
 		excl_photopoints = (
-			True if alDocType is not None and AlDocTypes.PHOTOPOINT not in alDocType 
+			True if doc_type is not None and AlDocTypes.PHOTOPOINT not in doc_type 
 			else None
 		)
 
 		# Document type based trimming: science records
 		excl_science_records = (
-			True if alDocType is not None and AlDocTypes.T2RECORD not in alDocType 
+			True if doc_type is not None and AlDocTypes.T2RECORD not in doc_type 
 			else None
 		)
 
@@ -63,19 +79,18 @@ class TransientForker:
 				if state is not None:
 
 					# The transient state (compound id) is saved in each 
-					# ligthcurve instance in the instance variable 'id' 
-					# channels is saved only if 'saved_channels' was set 
-					# to True during intanciation
+					# ligthcurve instance within the instance variable 'id' 
 					transient.lightcurves = {
-						key: val for key, val in parent_tran.lightcurves.items() 
-						if channel in val.channels and val.id == state
+						# channel_register.get_lightcurves() returns a list of
+						# ampel.base.Lightcurves instances
+						lc.id: lc for lc in channel_register.get_lightcurves(channel) 
+						if lc.id == state
 					}
 
 				else:
 
 					transient.lightcurves = {
-						key: val for key, val in parent_tran.lightcurves.items() 
-						if channel in val.channels
+						lc.id: lc for lc in channel_register.get_lightcurves(channel) 
 					}
 			else:
 
@@ -98,11 +113,11 @@ class TransientForker:
 
 				# Make sure the fork for channel WHATEVER_PUBLIC cannot
 				# contain PhotoPoint instances accessible only for ZTF partners.
-				if not channel.get_input().ztf_partner():
+				if pps_must_flags is not None:
 
 					transient.photopoints = {
 						key: val for key, val in parent_tran.photopoints.items()
-						if not PhotoPointFlags.ZTF_PARTNERSHIP in val.flags
+						if not pps_must_flags in val.flags
 					}
 
 				else:
@@ -127,8 +142,8 @@ class TransientForker:
 					# Filter t2 records based on channel and provided t2 unit ids
 					# (the 'state' filter may apply additionaly below)
 					transient.science_records = {
-						key: val for key, val in parent_tran.science_records.items()
-						if channel in val.channels and key in t2_unit_ids
+						sr.t2_unit_id: sr for sr in channel_register.get_science_records(channel) 
+						if sr.t2_unit_id in t2_unit_ids
 					}
 
 				else:
@@ -136,8 +151,7 @@ class TransientForker:
 					# Filter t2 records based on channel only
 					# (the 'state' filter may apply additionaly below)
 					transient.science_records = {
-						key: val for key, val in parent_tran.science_records.items()
-						if channel in val.channels
+						sr.t2_unit_id: sr for sr in channel_register.science_records(channel) 
 					}
 			else:	
 

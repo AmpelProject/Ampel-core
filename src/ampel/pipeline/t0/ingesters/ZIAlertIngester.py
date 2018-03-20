@@ -316,7 +316,7 @@ class ZIAlertIngester(AbsAlertIngester):
 							"tranId": tran_id,
 							"alDocType": AlDocTypes.COMPOUND,
 							"tier": 0,
-							"added": datetime.today().timestamp(),
+							"added": datetime.utcnow().timestamp(),
 							"lastppdt": pps_alert[0]['jd'],
 							"len": len(pps_dict),
 							"pps": pps_dict
@@ -398,7 +398,7 @@ class ZIAlertIngester(AbsAlertIngester):
 		# Insert/Update transient document into 'transients' collection
 		self.logger.info("Updating transient document")
 
-		now = datetime.today().timestamp()
+		now = datetime.utcnow().timestamp()
 
 		# TODO add alFlags
 		db_ops.append(
@@ -420,10 +420,10 @@ class ZIAlertIngester(AbsAlertIngester):
 							"$each": db_chan_flags
 						},
 						'jobIds': self.job_id,
-						'modified': now
 					},
 					"$max": {
-						"lastPPDate": pps_alert[0]["jd"]
+						"lastPPDate": pps_alert[0]["jd"],
+						"modified": now
 					},
 					"$push": {
 						"lastModified": {

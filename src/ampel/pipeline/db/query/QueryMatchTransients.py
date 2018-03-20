@@ -73,9 +73,12 @@ class QueryMatchTransients:
 				(channels if not FlagUtils.contains_enum_flag(channels) 
 				else FlagUtils.enum_flags_to_lists(channels))
 			)
+	
+		if time_created is not None:
+			QueryMatchTransients._build_time_contraint(query, '_id', time_created, is_oid=True)
 
-		QueryMatchTransients._build_time_contraint(query, '_id', time_created, is_oid=True)
-		QueryMatchTransients._build_time_contraint(query, 'modified', time_modified)
+		if time_modified is not None:
+			QueryMatchTransients._build_time_contraint(query, 'modified', time_modified)
 
 		return query
 
@@ -84,10 +87,10 @@ class QueryMatchTransients:
 	def _build_time_contraint(query, db_field_name, time_constraint, is_oid=False):
 		"""
 		"""
-		if time_constraint['delta'] is not None:
+		if "delta" in time_constraint and time_constraint['delta'] is not None:
 			gen_time = datetime.today() + time_constraint['delta'] 
 			query[db_field_name] = {
-				"$gte": ObjectId.from_datetime(gen_time) if is_oid else gen_time
+				"$gte": ObjectId.from_datetime(gen_time) if is_oid else gen_time.timestamp()
 			}
 
 		if (

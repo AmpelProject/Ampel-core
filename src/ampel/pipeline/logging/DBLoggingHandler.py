@@ -107,7 +107,7 @@ class DBLoggingHandler(logging.Handler):
 		elif record.levelno == 50:
 			self.db_job_reporter.add_flags(JobFlags.HAS_CRITICAL)
 
-		if len(self.records) > self.flush_len and self.db_job_reporter.getJobId() is not None:
+		if len(self.records) > self.flush_len and self.db_job_reporter.get_job_id() is not None:
 			self.flush()
 
 

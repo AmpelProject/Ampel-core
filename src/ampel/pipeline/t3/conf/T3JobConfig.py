@@ -11,6 +11,7 @@ from ampel.pipeline.logging.LoggingUtils import LoggingUtils
 from ampel.pipeline.t3.conf.T3TaskConfig import T3TaskConfig
 from ampel.flags.TransientFlags import TransientFlags
 from ampel.flags.FlagUtils import FlagUtils
+from datetime import timedelta
 
 
 class T3JobConfig:
@@ -80,6 +81,44 @@ class T3JobConfig:
 
 			self.tran_sel = db_doc['transients']['select']
 			self.tran_load = db_doc['transients']['load']
+
+			# Select transient based on their creation date
+			if "created" in self.tran_sel:
+
+				self.tran_sel_time_created = {
+					"delta": None, "from": None, "until": None
+				}
+
+				if "timedelta" in self.tran_sel["created"]:
+					self.tran_sel_time_created["delta"] = timedelta(**self.tran_sel['created']['timedelta'])
+
+				# TODO: implement from and until
+				#if "from" in self.tran_sel["created"]:
+				#	self.tran_sel_time_created["from"] = datetime.strptime('Jun 1 2005  1:33PM', '%b %d %Y %I:%M%p')
+
+
+			# Select transient based on their modification date
+			if "created" in self.tran_sel:
+
+				self.tran_sel_time_created = {
+					"delta": None, "from": None, "until": None
+				}
+
+				if "timedelta" in self.tran_sel["created"]:
+					self.tran_sel_time_created["delta"] = timedelta(**self.tran_sel['created']['timedelta'])
+
+				# TODO: implement from and until
+				#if "from" in self.tran_sel["created"]:
+			
+			if "modified" in self.tran_sel:
+
+				self.tran_sel_time_modified = {
+					"delta": None, "from": None, "until": None
+				}
+
+				if "timedelta" in self.tran_sel["modified"]:
+					self.tran_sel_time_modified["delta"] = timedelta(**self.tran_sel['modified']['timedelta'])
+
 
 			# Transient state must be provided
 			if not 'state' in self.tran_load:
@@ -209,6 +248,30 @@ class T3JobConfig:
 			return self.tran_load[option] if option in self.tran_load else None
 
 		return self.tran_load
+
+
+	def load_options_t2Ids(self):
+
+		if not hasattr(self, "tran_load"):
+			return None
+
+		if "t2Id" in self.tran_load:
+			return [self.tran_load['t2Id']]
+
+		if "t2Ids" in self.tran_load:
+			return self.tran_load['t2Ids']
+
+
+	def sel_options_channel(self):
+
+		if not hasattr(self, "tran_sel"):
+			return None
+
+		if "channel" in self.tran_sel:
+			return [self.tran_sel['channel']]
+
+		if "channels" in self.tran_sel:
+			return self.tran_sel['channels']
 
 
 	@staticmethod

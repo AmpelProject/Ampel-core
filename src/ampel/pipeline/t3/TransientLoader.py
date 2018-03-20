@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 13.01.2018
-# Last Modified Date: 14.03.2018
+# Last Modified Date: 19.03.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from ampel.base.PhotoPoint import PhotoPoint
@@ -23,21 +23,26 @@ from ampel.pipeline.db.query.QueryLoadTransient import QueryLoadTransient
 
 import operator, logging, json
 from operator import itemgetter
+from datetime import datetime
 
 
 class TransientLoader:
 	"""
-	non-working class. Implementation not finished
 	"""
 	all_doc_types = AlDocTypes.PHOTOPOINT|AlDocTypes.COMPOUND|AlDocTypes.TRANSIENT|AlDocTypes.T2RECORD
 
-	def __init__(self, db, logger=None, collection="main"):
+
+	# TODO: implement include logs
+	def __init__(self, db, logger=None, collection="main", save_channels=False, include_logs=False):
+		"""
+		"""
 
 		self.col = db[collection]
 		self.logger = LoggingUtils.get_logger() if logger is None else logger
-		self.lcl = LightCurveLoader(db, logger=self.logger, collection=collection)
+		self.lcl = LightCurveLoader(db[collection], logger=self.logger)
 		self.al_pps = {}
 		self.lc = {}
+		self.save_channels = save_channels
 
 
 	def load_new(
@@ -109,9 +114,9 @@ class TransientLoader:
 			search_params = QueryLoadTransient.load_transient_state_query(
 				tran_id, 
 				content_types, 
-				compound_id=latest_compound_dict["_id"], 
-				t2_ids=t2_ids,
-				comp_already_loaded=True
+				compound_id = latest_compound_dict["_id"], 
+				t2_ids = t2_ids,
+				comp_already_loaded = True
 			)
 
 		# Option 2: Load every available transient state
@@ -144,7 +149,7 @@ class TransientLoader:
 
 			# Build query parameters (will return adequate number of docs)
 			search_params = QueryLoadTransient.load_transient_state_query(
-				tran_id, content_types, state, t2_ids=t2_ids
+				tran_id, content_types, state, t2_ids = t2_ids
 			)
 		
 		self.logger.debug(
@@ -177,18 +182,18 @@ class TransientLoader:
 
 		return self.load_from_results(
 			tran_id, 
-			photopoints=grouped_res['photopoints'], 
-			compounds=grouped_res['compounds'] if state != 'latest' else [latest_compound_dict],
-			transient=grouped_res['transient'],
-			t2records=grouped_res['t2records'],
-			content_types=content_types, 
-			state=state
+			pp_docs = grouped_res['photopoints'], 
+			compound_docs = grouped_res['compounds'] if state != 'latest' else [latest_compound_dict],
+			tran_doc = grouped_res['transient'],
+			t2_docs = grouped_res['t2records'],
+			content_types = content_types, 
+			state = state
 		)
 
 
 	def load_from_results(
-		self, tran_id, photopoints=None, compounds=None, t2records=None, transient=None,
-		content_types=all_doc_types, state="latest", tailored_res=False
+		self, tran_id, pp_docs=None, compound_docs=None, t2_docs=None, tran_doc=None,
+		state="latest", content_types=all_doc_types, tailored_res=False
 	):
 		"""
 			tailored_res: 
@@ -199,12 +204,15 @@ class TransientLoader:
 		# Instanciate ampel.base.Transient object
 		al_tran = Transient(tran_id)
 
+		if self.save_channels:
+			channel_register = al_tran.new_channel_register()
+
 		# Instanciate and attach PhotoPoint objects if requested in the content_types
 		if AlDocTypes.PHOTOPOINT in content_types:
 
 			# Photopoints instance attached to the transient instance are not bound to a compound 
 			# and come thus without policy 
-			for pp_dict in photopoints:
+			for pp_dict in pp_docs:
 				al_tran.add_photopoint(
 					PhotoPoint(pp_dict, read_only=True)
 				)
@@ -216,7 +224,8 @@ class TransientLoader:
 				(len(trans_dict), trans_dict.keys())
 			)
 
-		# Loading lightcurves was requested (happens based on DB compound documents)
+		# Loading lightcurves was requested 
+		# (loading is made based on DB 'compound' documents)
 		if AlDocTypes.COMPOUND in content_types:
 
 			# Load all available/multiple compounds for this transient
@@ -238,80 +247,124 @@ class TransientLoader:
 				)
 			
 				# Loop through all compounds
-				for comp_dict in compounds:
-					al_tran.add_lightcurve(
-						self.lcl.load_using_results(
-							photopoints, comp_dict, frozen_pps_dict = frozen_pps_dict
-						)
+				for comp_dict in compound_docs:
+
+					# Intanciate ampel.base.LightCurve object
+					lc = self.lcl.load_using_results(
+						pp_docs, comp_dict, frozen_pps_dict = frozen_pps_dict
 					)
 
+					# Associate it to the ampel.base.Transient instance
+					al_tran.add_lightcurve(lc)
+
+					# Save channel associations if so wished
+					if self.save_channels:
+						channel_register.add_lightcurve(comp_dict['channels'], lc)
+
 				# Find out latest compound/lightcurve
-				latest_compound_dict = TransientLoader.get_latest_compound_using_query_results(compounds)
+				latest_compound_dict = TransientLoader.get_latest_compound_using_query_results(compound_docs)
 	
 				# Feedback
 				self.logger.info(" -> latest lightcurve id: %s" % latest_compound_dict['_id'])
-				self.logger.info(" -> %i lightcurves loaded" % len(compounds))
+				self.logger.info(" -> %i lightcurves loaded" % len(compound_docs))
 
 				# Creates ref to latest lightcurve in the transient instance
 				al_tran.set_latest_lightcurve(
 					lightcurve_id=latest_compound_dict['_id']
 				)
 
+			# Load a single compound (state is not 'all' and not a list)
+			# state can be 'latest' or a specified state
 			else:
 
-				# Load single LightCurve
-				al_tran.add_lightcurve(
-					self.lcl.load_using_results(
-						photopoints, 
-						compounds[0], # should be only one
-						frozen_pps_dict = (
-							al_tran.get_photopoints(copy=False) 
-							if AlDocTypes.PHOTOPOINT in content_types 
-							else None
-						)
+				# Intanciate ampel.base.LightCurve object
+				lc = self.lcl.load_using_results(
+					pp_docs, 
+					compound_docs[0], # should be only one
+					frozen_pps_dict = (
+						al_tran.get_photopoints(copy=False) 
+						if AlDocTypes.PHOTOPOINT in content_types 
+						else None
 					)
 				)
 
-				latest_compound_id = compounds[0]['_id']
+				# Associate it to the ampel.base.Transient instance
+				al_tran.add_lightcurve(lc)
 
+				# Save channel associations if so wished
+				if self.save_channels:
+					channel_register.add_lightcurve(compound_docs[0]['channels'], lc)
+
+				# single compound (state is not 'all' and not a list)
+				latest_compound_id = compound_docs[0]['_id']
+
+				# If state was defined as being the latest, 
+				# then save this info into the transient instance
 				if state == "latest":
 					al_tran.set_latest_lightcurve(
 						lightcurve_id=latest_compound_id
 					)
 
+				# Feedback
 				self.logger.info(
 					" -> 1 lightcurve loaded (%s)" % latest_compound_id
 				)
 
 		if AlDocTypes.TRANSIENT in content_types:
 
-			al_tran.set_flags(
+			# Load, translate alFlags from DB into a TransientFlags enum flag instance 
+			# and associate it with the ampel.base.Transient object instance
+			al_tran.set_parameter(
+				"flags",
 				TransientFlags(
 					FlagUtils.dbflag_to_enumflag(
-						transient['alFlags'], TransientFlags
+						tran_doc['alFlags'], TransientFlags
 					)
 				)
 			)
 
+			# Load transient doc creation date from ObjectId
+			al_tran.set_parameter(
+				"created",
+				tran_doc['_id'].generation_time
+			)
+
+			# Load transient modified time as datetime 
+			al_tran.set_parameter(
+				"modified",
+				datetime.utcfromtimestamp(
+					tran_doc['modified']
+				)
+			)
+			
 			# Feedback
 			self.logger.info(" -> loaded transient info")
-
-			# TODO: do more with tdoc (flags, channels)
 
 		if AlDocTypes.T2RECORD in content_types:
 
 			if state == "all" or type(state) is list or tailored_res is True:
-				for t2_doc in t2records:
-					al_tran.add_science_record(
-						ScienceRecord(t2_doc, read_only=True)
-					)
+
+				for t2_doc in t2_docs:
+
+					sr = ScienceRecord(t2_doc, read_only=True)
+					al_tran.add_science_record(sr)
+
+					if self.save_channels:
+						channel_register.add_science_record(t2_doc['channels'], sr)
+
 			else:
-				comp_id = compounds[0]['_id']
-				for t2_doc in t2records:
+
+				comp_id = compound_docs[0]['_id']
+
+				for t2_doc in t2_docs:
+
 					if t2_doc['compoundId'] == comp_id:
-						al_tran.add_science_record(
-							ScienceRecord(t2_doc, read_only=True)
-						)
+
+						sr = ScienceRecord(t2_doc, read_only=True)
+						al_tran.add_science_record(sr)
+
+						if self.save_channels:
+							channel_register.add_science_record(t2_doc['channels'], sr)
 
 			self.logger.info(
 				" -> %i science records loaded" % 
@@ -319,8 +372,6 @@ class TransientLoader:
 			)
 
 		return al_tran
-
-
 
 
 	def load_many(

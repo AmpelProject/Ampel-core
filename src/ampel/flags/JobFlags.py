@@ -1,11 +1,14 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 # File              : ampel/flags/JobFlags.py
+# License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 14.12.2017
-# Last Modified Date: 09.01.2018
+# Last Modified Date: 17.03.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
+
 from enum import Flag
+
 
 class JobFlags(Flag):
 	"""
@@ -29,35 +32,8 @@ class JobFlags(Flag):
 	INST_OTHER2			= 256
 	INST_OTHER3			= 512
 
-	PP_IPAC				= 1024
-	PP_WZM				= 2048
-	PP_HU				= 4096
-
-	ALERT_IPAC			= 8192
-	ALERT_OTHER			= 16384
-	ALERT_OTHER2		= 32768
-
-	NO_CHANNEL          = 65536 
-	CHANNEL_SN          = 131072 
-	CHANNEL_NEUTRINO    = 262144
-	CHANNEL_RANDOM      = 524288
-	CHANNEL_OTHER1      = 1048576
-	CHANNEL_OTHER2      = 2097152
-	CHANNEL_OTHER3      = 4194304
-
-	T2_SNCOSMO			= 8388608
-	T2_SNII_LC			= 16777216
-	T2_AGN				= 33554432
-	T2_PHOTO_Z			= 67108864
-	T2_PHOTO_TYPE		= 134217728
-	T2_OTHER1			= 268435456
-	T2_OTHER2			= 536870912
-	T2_OTHER3			= 1073741824
-	T2_OTHER4			= 2147483648
-	T2_OTHER5			= 4294967296
-
-	T3_PURGE			= 8589934592
-	T3_MARSHALL_PUSH	= 17179869184
-	T3_JUPYTER			= 34359738368
-	T3_RANKING			= 68719476736
-	T3_ERROR_REPORTER	= 137438953472
+	T3_PURGE			= 1024
+	T3_MARSHALL_PUSH	= 2048
+	T3_JUPYTER			= 4096
+	T3_RANKING			= 8192
+	T3_ERROR_REPORTER	= 16384

@@ -4,11 +4,12 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 14.02.2018
-# Last Modified Date: 14.03.2018
+# Last Modified Date: 15.03.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from ampel.flags.AlDocTypes import AlDocTypes
 from ampel.flags.FlagUtils import FlagUtils
+from ampel.pipeline.db.query.QueryMatchCriteria import QueryMatchCriteria
 
 
 class QueryLoadTransient:
@@ -55,8 +56,15 @@ class QueryLoadTransient:
 
 		else:
 
-			# Convert provided T2UnitIds into an array on flag values
-			t2_ids_db = FlagUtils.enumflag_to_dbflag(t2_ids)
+			record_match_dict = {
+				'alDocType': AlDocTypes.T2RECORD,
+			}
+
+			QueryMatchCriteria.add_from_list(
+				record_match_dict, 't2Unit',
+				(t2_ids if not FlagUtils.contains_enum_flag(t2_ids) 
+				else FlagUtils.enum_flags_to_lists(t2_ids))
+			)
 
 			# Combine first part of query (photopoints+transient+compounds) with 
 			# runnableId targeted T2RECORD query
@@ -68,14 +76,9 @@ class QueryLoadTransient:
 						else {'$in': al_types}
 					)
 				},
-				{
-					'alDocType': AlDocTypes.T2RECORD,
-					't2Unit': (
-						t2_ids_db[0] if len(t2_ids_db) == 1 
-						else {'$in': t2_ids_db}
-					)
-				}
+				record_match_dict
 			]
+
 
 		return query
 
@@ -154,19 +157,19 @@ class QueryLoadTransient:
 			else:
 				match_val = compound_id
 			
-			rec_dict = {
+			record_match_dict = {
 				'alDocType': AlDocTypes.T2RECORD, 
 				'compoundId': match_val
 			}
 
 			if t2_ids is not None:
-				t2_ids_db = FlagUtils.enumflag_to_dbflag(t2_ids)
-				rec_dict['t2Runnable'] = (
-					t2_ids_db[0] if len(t2_ids_db) == 1 
-					else {'$in': t2_ids_db}
+				QueryMatchCriteria.add_from_list(
+					record_match_dict, 't2Unit',
+					(t2_ids if not FlagUtils.contains_enum_flag(t2_ids) 
+					else FlagUtils.enum_flags_to_lists(t2_ids))
 				)
 
-			or_list.append(rec_dict)
+			or_list.append(record_match_dict)
 
 		# If only 1 $or criteria was generated, then 
 		# just add this criteria to the root dict ('and' connected with tranId: ...)

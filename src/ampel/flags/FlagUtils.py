@@ -89,16 +89,26 @@ class FlagUtils():
 
 		# enum flag instance
 		if isinstance(flags.__class__, enum.Flag.__class__):
-			return [el.name for el in type(flags) if el.value != 0 and el in flags]
+			return [[el.name for el in type(flags) if el.value != 0 and el in flags]]
 
-		# list of flag instances
+		# list of flag instances 
+		# example: [T2UnitIds.SNCOSMO, T2UnitIds.AGN]
 		elif type(flags) is list:
+
+			# outer list of 2d list to be returned
 			ret = []
+
+			# Loop through enum flag list elements
 			for flag in flags:
+
+				# Build list with element
+				# example: T2UnitIds.SNCOSMO -> "SNCOSMO"
+				# or: T2UnitIds.SNCOSMO|T2UnitIds.PHOTO_Z -> ["SNCOSMO", "PHOTO_Z"]
 				l = [el.name for el in type(flag) if el.value != 0 and el in flag]
-				ret.append(
-					l if len(l) != 1 else l[0]
-				)
+
+				# Append inner list 'l' to outer list 'ret'
+				ret.append(l)
+
 			return ret
 
 		return None
@@ -106,12 +116,43 @@ class FlagUtils():
 
 	@staticmethod
 	def list_flags_to_enum_flags(flags, flag_class):
+		"""
+		simple list -> OR connected flags
+		2d list with only 1 member in outer list -> AND connected flags
+		2d list with only many members 
+			-> outer list is OR connected 
+			-> inner lists are AND connected 
 
+		Examples:
+
+		a) "SNCOSMO" -> T2UnitIds.SNCOSMO
+		b) ["SNCOSMO"] -> T2UnitIds.SNCOSMO
+		c) ["SNCOSMO", "AGN"] -> [T2UnitIds.SNCOSMO, T2UnitIds.AGN] (OR connected)
+		d) [["SNCOSMO", "AGN"]] -> T2UnitIds.SNCOSMO|T2UnitIds.AGN (one enum flag instance)
+		e) [["SNCOSMO", "AGN"], "PHOTO_Z"] -> [T2UnitIds.SNCOSMO|T2UnitIds.AGN, PHOTO_Z]
+		"""
+
+		# Examples d) and e)
 		if FlagUtils.is_nested_list(flags):
 
+			# Example d)
+			if len(flags) == 1:
+
+				f = flag_class(0)
+				for el in flags[0]:
+					try:
+						f |= flag_class[el]
+					except KeyError:
+						raise ValueError("Unknown flag '%s'" % el)
+
+				return f
+
+			# Example e)
 			ret = []
 			for flag in flags:
+
 				f = flag_class(0)
+
 				if type(flag) is list:
 					for el in flag:
 						try:
@@ -121,15 +162,20 @@ class FlagUtils():
 					ret.append(f)
 				else:
 					ret.append(flag_class[flag])
+
+		# Examples a) b) and c)
 		else:
 
 			ret = flag_class(0)
 
+			# Example a)
 			if type(flags) is str:
 				try:
 					return flag_class[flags]
 				except KeyError:
 					raise ValueError("Unknown flag '%s'" % flags)
+
+			# Example b) and c)
 			for el in flags:
 				try:
 					ret |= flag_class[el]

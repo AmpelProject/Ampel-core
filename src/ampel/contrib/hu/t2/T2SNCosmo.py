@@ -94,8 +94,8 @@ class SNCosmoTool:
         wavelengths  = [bandpasses[bp_].wave_eff for bp_ in filter_names]
         # - fluxes
         flux, fluxerr = np.asarray([mag_to_flux(mag_, lbda_, magerr_) for lbda_, mag_,magerr_ in 
-                                    zip(wavelengths, light_curve.get_values("mag"),
-                                        light_curve.get_values("magerr")) ]).T
+                                    zip(wavelengths, light_curve.get_values("magpsf"),
+                                        light_curve.get_values("sigmapsf")) ]).T
         
         self.sncosmo_data = Table( {"time": light_curve.get_values("obs_date"),
                        "flux": flux,

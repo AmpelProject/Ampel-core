@@ -1,10 +1,12 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 # File              : ampel/pipeline/logging/LoggingUtils.py
+# License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 14.12.2017
-# Last Modified Date: 23.01.2018
+# Last Modified Date: 19.03.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
+
 import logging, sys
 from datetime import datetime
 
@@ -15,7 +17,7 @@ class LoggingUtils:
 	"""
 
 	@staticmethod
-	def get_logger(unique=False):
+	def get_logger(unique=False, pathname=False):
 		"""
 			Returns a logger (registered as 'Ampel' in the module logging is unique=False)
 			with the following parameters:
@@ -25,10 +27,14 @@ class LoggingUtils:
 		"""
 
 		logging.basicConfig(
-			format='%(asctime)s %(filename)s:%(lineno)s %(funcName)s() %(levelname)s %(message)s', 
-			datefmt="%Y-%m-%d %H:%M:%S", 
-			level=logging.DEBUG,
-			stream=sys.stdout
+			format = (
+				'%(asctime)s %(pathname)s %(filename)s:%(lineno)s %(funcName)s() %(levelname)s %(message)s'
+				if pathname is True else
+				'%(asctime)s %(filename)s:%(lineno)s %(funcName)s() %(levelname)s %(message)s'
+			), 
+			datefmt = "%Y-%m-%d %H:%M:%S", 
+			level = logging.DEBUG,
+			stream = sys.stdout
 		)
 
 		logger = logging.getLogger(

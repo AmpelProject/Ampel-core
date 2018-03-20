@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 14.12.2017
-# Last Modified Date: 08.03.2018
+# Last Modified Date: 17.03.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import time
@@ -19,6 +19,7 @@ from ampel.flags.AlertFlags import AlertFlags
 from ampel.flags.LogRecordFlags import LogRecordFlags
 from ampel.flags.JobFlags import JobFlags
 
+from ampel.pipeline.db.DBWired import DBWired
 from ampel.pipeline.config.Channel import Channel
 from ampel.pipeline.logging.LoggingUtils import LoggingUtils
 from ampel.pipeline.logging.DBJobReporter import DBJobReporter
@@ -27,7 +28,7 @@ from ampel.pipeline.logging.InitLogBuffer import InitLogBuffer
 
 import pymongo
 
-class AlertProcessor:
+class AlertProcessor(DBWired):
 	""" 
 	Class handling T0 pipeline operations.
 
@@ -76,37 +77,24 @@ class AlertProcessor:
 		self.logger.info("Setting up new AlertProcessor instance")
 
 		# Setup instance variable referencing the input database
-		self.plug_input_db(input_db, db_host)
+		self.plug_databases(db_host, input_db, output_db)
 
-		# Check if previous command did set up the config_db correctly
-		if not hasattr(self, 'config_db'):
+		# Set static emum flag class
+		Channel.set_ChannelFlags(
+			# Generate ChannelFlags enum flag *class* based on DB info
+			FlagGenerator.get_ChannelFlags_class(
+				self.config_db['channels'],
+				force_create=False
+			)
+		)
 
-			# Re-try using mongomock rather than pymongo
-			import mongomock
-			if self.plug_input_db(
-				input_db, db_host, 
-				MongoClient=mongomock.mongo_client.MongoClient,
-				Database=mongomock.database.Database
-			):
-				raise ValueError("Illegal type provided for argument 'input_db'")
-
-		# Load general config using the input config db
-		self.load_general_conf()
-
-		# Setup instance variables referencing the output databases
-		self.plug_output_dbs(output_db, db_host)
-
-		# Check if previous command did set up the output databases correctly
-		if not hasattr(self, 'tran_db'):
-
-			# Re-try using mongomock rather than pymongo
-			import mongomock
-			if self.plug_output_dbs(
-				output_db, db_host, 
-				MongoClient=mongomock.mongo_client.MongoClient,
-				Database=mongomock.database.Database
-			):
-				raise ValueError("Illegal type provided for argument 'output_db'")
+		# Generate T2UnitIds enum flag *class* based on DB info
+		Channel.set_T2UnitIds(
+			FlagGenerator.get_T2UnitIds_class(
+				self.config_db['t2_units'],
+				force_create=False
+			)
+		)
 
 		# Setup channels
 		if load_channels:
@@ -116,164 +104,6 @@ class AlertProcessor:
 		self.set_input(instrument, alert_format)
 
 		self.logger.info("AlertProcessor initial setup completed")
-
-
-	def plug_input_db(
-		self, input_db=None, db_host='localhost', 
-		MongoClient=pymongo.mongo_client.MongoClient,
-		Database=pymongo.database.Database
-	):
-		"""
-		Sets up the database containing the Ampel config collections.
-		Parameter 'input_db' must be one of these types: 
-			-> None: default settings will be used 
-			   (pymongo MongoClient instance using 'db_host' and db name 'Ampel_config')
-			-> string: pymongo MongoClient instance using 'db_host' 
-			   and database with name identical to 'input_db' value
-			-> MongoClient instance: database with name 'Ampel_config' will be loaded from 
-			   the provided MongoClient instance (can originate from pymongo or mongomock)
-			-> Database instance (pymongo or mongomock): provided database will be used
-		"""
-
-		# Default setting
-		if input_db is None:
-			self.mongo_client = MongoClient(db_host)
-			self.config_db = self.mongo_client["Ampel_config"]
-
-		# The config database name was provided
-		elif type(input_db) is str:
-			self.mongo_client = MongoClient(db_host)
-			self.config_db = self.mongo_client[input_db]
-
-		# A reference to a MongoClient instance was provided
-		# -> Provided input_db type can be (pymongo or mongomock).mongo_client.MongoClient
-		elif type(input_db) is MongoClient:
-			self.config_db = input_db["Ampel_config"]
-
-		# A reference to a database instance (pymongo or mongomock) was provided
-		# -> Provided input_db type can be (pymongo or mongomock).database.Database
-		elif type(input_db) is Database:
-			self.config_db = input_db
-
-		# Illegal argument
-		else:
-			self.logger.info("input_db type is wether str, %s or %s" % (MongoClient, Database))
-
-
-	def load_general_conf(self, force_reload=False):
-		"""
-		"""
-		# Load global config
-		self.global_config = {}
-		for doc in self.config_db['global'].find({}):
-			self.global_config[doc['_id']] = doc
-
-		# Set static emum flag class
-		Channel.set_ChannelFlags(
-			# Generate ChannelFlags enum flag *class* based on DB info
-			FlagGenerator.get_ChannelFlags_class(
-				self.config_db['channels'],
-				force_create=force_reload
-			)
-		)
-
-		# Generate T2UnitIds enum flag *class* based on DB info
-		Channel.set_T2UnitIds(
-			FlagGenerator.get_T2UnitIds_class(
-				self.config_db['t2_units'],
-				force_create=force_reload
-			)
-		)
-
-
-	def plug_output_dbs(
-		self, output_db, db_host='localhost',
-		MongoClient=pymongo.mongo_client.MongoClient,
-		Database=pymongo.database.Database
-	):
-		"""		
-		setup output database (will typically contain the collections 'transients' and 'logs')
-		Parameter 'output_db' must have of these types:
-			-> MongoClient instance (pymongo or mongomock): the provided instance will be used 
-			-> dict: (example: {'transients': 'test_transients', 'logs': 'test_logs'})
-				-> must have the keys 'transients' and 'logs'
-				-> values must be either string or Database instance (pymongo or mongomock)
-		"""
-
-		# Load transient DB based on entries from config DB
-		if output_db is None:
-			self.setattr_output_dbs(
-				self.mongo_client if hasattr(self, 'mongo_client') else MongoClient(db_host)
-			)
-
-		# A reference to a MongoClient instance (pymongo or mongomock) was provided
-		elif type(output_db) is MongoClient:
-			self.setattr_output_dbs(output_db)
-
-		elif type(output_db) is dict:
-
-			# Robustness check
-			if len(output_db) != 2 or "transients" not in output_db or "logs" not in output_db:
-				raise ValueError(
-					'output_db dict must have 2 keys: "transients" and "logs"'
-				)
-
-			if not hasattr(self, 'mongo_client'):
-				self.mongo_client = MongoClient(db_host)
-
-			self.setattr_output_db(output_db["transients"], "tran_db", self.mongo_client)
-			self.setattr_output_db(output_db["logs"], "log_db", self.mongo_client)
-
-			db_specs = self.global_config['dbSpecs']
-			# pylint: disable=no-member
-			self.log_col = self.log_db[db_specs['logs']['collectionName']]
-				
-		# Illegal argument type
-		else:
-			self.logger.info(
-				"type(output_db) is wether str, %s or %s" % (MongoClient, Database)
-			)
-
-
-	def setattr_output_db(
-		self, output_db, local_varname, mongo_client,
-		Database=pymongo.database.Database
-	):
-		"""
-		"""
-
-		# Collection name was provided
-		if type(output_db) is str:
-			setattr(self, local_varname, mongo_client[output_db])
-
-		# Collection instance was provided
-		elif type(output_db) is Database:
-			setattr(self, local_varname, output_db)
-
-		else:
-			# Illegal type for list member
-			self.logger.info(
-				"output_db dict values are wether str, %s or %s" % Database
-			)
-				
-
-	def setattr_output_dbs(self, mongo_client):
-		"""
-		"""
-
-		db_specs = self.global_config['dbSpecs']
-
-		self.tran_db = mongo_client[
-			db_specs['transients']['dbName']
-		]
-
-		log_db = mongo_client[
-			db_specs['logs']['dbName']
-		]
-
-		self.log_col = log_db[
-			db_specs['logs']['collectionName']
-		]
 
 
 	def set_input(self, instrument, alert_format):
@@ -306,7 +136,7 @@ class AlertProcessor:
 	
 				# Instanciate ingester
 				self.ingester = ZIAlertIngester(
-					self.tran_db['main'], self.logger
+					self.tran_col, self.logger
 				)
 
 				# Tell method run() that ingester method configure() must be called 
@@ -493,7 +323,7 @@ class AlertProcessor:
 		# Forward jobId to ingester instance 
 		# (will be inserted in the transient documents)
 		self.ingester.set_job_id(
-			db_job_reporter.getJobId()
+			db_job_reporter.get_job_id()
 		)
 
 		# Array of JobFlags. Each element is set by each T0 channel 

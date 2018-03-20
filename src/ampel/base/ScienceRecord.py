@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 13.01.2018
-# Last Modified Date: 11.03.2018
+# Last Modified Date: 16.03.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from ampel.flags.AlDocTypes import AlDocTypes
@@ -17,14 +17,11 @@ class ScienceRecord:
 	Wrapper class around a dict instance ususally originating from pymongo DB.
 	"""
 
-	def __init__(self, db_doc, read_only=True, save_channels=False):
+	def __init__(self, db_doc, read_only=True):
 		"""
 		"""
 		if db_doc["alDocType"] != AlDocTypes.T2RECORD:
 			raise ValueError("The provided document is not a science record")
-
-		if save_channels:
-			self.channels = db_doc['channels']
 
 		self.tran_id = db_doc['tranId']
 		self.compound_id = db_doc['compoundId']

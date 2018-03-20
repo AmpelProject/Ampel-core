@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 01.01.2018
-# Last Modified Date: 11.03.2018
+# Last Modified Date: 16.03.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import logging, hashlib, json
@@ -17,7 +17,7 @@ from ampel.flags.FlagUtils import FlagUtils
 HAS_HUMBOLDT_ZP = FlagUtils.get_flag_pos_in_enumflag(PhotoPointFlags.HAS_HUMBOLDT_ZP)
 HAS_WEIZMANN_SUB = FlagUtils.get_flag_pos_in_enumflag(PhotoPointFlags.HAS_WEIZMANN_SUB)
 SUPERSEEDED = FlagUtils.get_flag_pos_in_enumflag(PhotoPointFlags.SUPERSEEDED)
-ZTF_PARTNERSHIP = FlagUtils.get_flag_pos_in_enumflag(PhotoPointFlags.ZTF_PARTNERSHIP)
+ZTF_COLLAB = FlagUtils.get_flag_pos_in_enumflag(PhotoPointFlags.ZTF_COLLAB)
 SRC_T1 = FlagUtils.get_flag_pos_in_enumflag(PhotoPointFlags.SRC_T1)
 
 
@@ -63,21 +63,13 @@ class CompoundGenerator():
 		if chan_int in cls.channel_options:
 			del cls.channel_options[chan_int]
 
-		# get input parameters. example:
+		# Input parameters example:
 		# { "ZTFPartner" : true, "autoComplete" : true, "updatedHUZP" : false }
-		cls.channel_options[chan_int] = channel.get_input_parameters()
+		cls.channel_options[chan_int] = channel.get_input().get_parameters()
 
 		# shortcut
 		chan_opts = cls.channel_options[chan_int]
 
-		# Add default values for optional parameters that might not 
-		# be defined in the current channel
-		if "updatedHUZP" not in chan_opts:
-			chan_opts['updatedHUZP'] = False
-
-		if "weizmannSub" not in chan_opts:
-			chan_opts['weizmannSub'] = False
-			
 		# Generate options signature (example: "10011")
 		options_sig = ""
 		for key in sorted(chan_opts.keys()):
@@ -88,7 +80,7 @@ class CompoundGenerator():
 
 		# flags_to_check is used for optimization of the init routine
 		if chan_opts['ZTFPartner'] is False:
-			cls.flags_to_check.add(ZTF_PARTNERSHIP)
+			cls.flags_to_check.add(ZTF_COLLAB)
 
 		if chan_opts['autoComplete'] is False:
 			cls.flags_to_check.add(SRC_T1)
@@ -114,7 +106,7 @@ class CompoundGenerator():
 		# Dict key is a channel flag and the value is the associated set of photopoint ids
 		self.d_ids_excluded = dict()
 
-		# Dict with flag index pos (integer) as key (such as SRC_T1, ZTF_PARTNERSHIP, ...)
+		# Dict with flag index pos (integer) as key (such as SRC_T1, ZTF_COLLAB, ...)
 		# and the corresponding set of ids as value
 		self.d_ids_sets = dict()
 
@@ -304,8 +296,8 @@ class CompoundGenerator():
 				#  Check for exclusions
 				if pp_id in self.d_ids_sets[SUPERSEEDED]:
 					d['excl'] = SUPERSEEDED
-				elif chan_options['ZTFPartner'] is False and pp_id in self.d_ids_sets[ZTF_PARTNERSHIP]:
-					d['excl'] = ZTF_PARTNERSHIP
+				elif chan_options['ZTFPartner'] is False and pp_id in self.d_ids_sets[ZTF_COLLAB]:
+					d['excl'] = ZTF_COLLAB
 				elif chan_options['autoComplete'] is False and pp_id in self.d_ids_sets[SRC_T1]:
 					d['excl'] = SRC_T1
 				elif chan_flag in self.d_ids_excluded and pp_id in self.d_ids_excluded[chan_flag.value]:
