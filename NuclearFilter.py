@@ -7,11 +7,11 @@
 # Last Modified By  : svv
 
 import numpy as np
-from ampel.abstract.AbstractTransientFilter import AbstractTransientFilter
+from ampel.abstract.AbsAlertFilter import AbsAlertFilter
 #from ampel.flags.T2RunnableIds import T2RunnableIds 
 
 
-class TFilter(AbstractTransientFilter):
+class TFilter(AbsAlertFilter):
 	"""
 		Your filter must inherit the abstract parent class 'AbstractTransientFilter'
 		The following three methods *must* be implemented:
