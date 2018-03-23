@@ -24,23 +24,18 @@ class TFilter(AbsAlertFilter):
 	# Static version info
 	version = 0.1
 
-	def __init__(self):
+	def __init__(self, on_match_t2_units, base_config=None, run_config=None, logger=None):
 		"""
 		Constructor (optional)
 		
-		sjoertvv: removed the logger for now to make the __init__.py more easy
+		"""
+		
+		self.set_filter_parameters(base_config)
+		self.logger= logger 
 
-		"""
-		self.logger.info("Logger for NuclearFilter")
-		self.logger.debug("The log entries emitted by this logger will be stored into the Ampel DB")
-		self.logger.debug("This logger is to be used 'as is', please don't change anything :)")
-
-	
-	def get_version(self):
-		"""
-		Mandatory implementation.
-		"""
-		return TFilter.version
+		if logger is not None:
+			self.logger.info("Logger for NuclearFilter")
+		   	self.logger.debug("We are in debug mode")
 
 
 	def get_default_filters(self):
