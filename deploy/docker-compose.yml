@@ -1,7 +1,7 @@
 version: '3.4'
 services:
   mongo:
-    image: mongo
+    image: mongo:3.6
     command: ["mongod", "--port", "27018"]
     volumes:
       - ./tmp/mongo:/data/db
@@ -13,7 +13,7 @@ services:
         delay: 1s
         max_attempts: 3
   archivedb:
-    image: postgres
+    image: postgres:10.3
     command: ["postgres"]
     volumes:
       - /var/tmp:/run/postgresql
@@ -32,7 +32,7 @@ services:
         delay: 1s
         max_attempts: 3
   ampel:
-    image: continuumio/miniconda
+    image: continuumio/miniconda:4.3.27
     command: ["./ampel-start.sh"]
     volumes:
       - type: tmpfs
