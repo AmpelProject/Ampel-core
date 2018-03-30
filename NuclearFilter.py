@@ -103,8 +103,12 @@ class TFilter(AbstractTransientFilter):
 
 		# first check we have an extended source (note this can remove flares from faint galaxies that missclassified in PS1)
 		# these will have to be dealt with in the orphan/faint filter		
-		sgscore = alert.get_values("sgscore")[0]		
-		
+		sgscore = alert.get_values("sgscore")
+		if len(sgscore)==0:
+			sgscore = alert.get_values("sgscore1")[0]
+		else:
+			sgscore = sgscore[0]
+			
 		if sgscore is None:		
 			self.why="sgscore=None"
 			self.logger.info(self.why)
@@ -115,8 +119,16 @@ class TFilter(AbstractTransientFilter):
 				self.logger.info(self.why)
 				return None
 
-		srmag = alert.get_values("srmag")[0]
-		
+		srmag = alert.get_values("srmag")
+		if len(srmag)==0:
+			srmag = alert.get_values("srmag1")
+			if len(srmag)==0:
+				srmag=None
+			else:
+				srmag = srmag[0]	
+		else:
+			srmag = srmag[0]
+
 		if srmag is None:
 			self.why = "sr mag is None"
 			self.logger.info(self.why)
