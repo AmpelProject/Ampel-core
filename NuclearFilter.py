@@ -6,9 +6,10 @@
 # Last Modified Date: 
 # Last Modified By  : svv
 
+
 import numpy as np
 from ampel.abstract.AbsAlertFilter import AbsAlertFilter
-#from ampel.flags.T2RunnableIds import T2RunnableIds 
+import logging # only used in testing
 
 
 class TFilter(AbsAlertFilter):
@@ -31,11 +32,14 @@ class TFilter(AbsAlertFilter):
 		"""
 		
 		self.set_filter_parameters(base_config)
-		self.logger= logger 
-
+		
 		if logger is not None:
+			self.logger= logger 
 			self.logger.info("Logger for NuclearFilter")
-		   	self.logger.debug("We are in debug mode")
+			self.logger.debug("We are in debug mode")
+		else:
+			self.logger= logging.getLogger("Ampel-lite") 
+
 
 
 	def get_default_filters(self):
