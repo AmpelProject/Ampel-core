@@ -1,12 +1,12 @@
 #!/usr/local/bin/python
-import urllib2,base64,pickle
+import urllib, urllib2,base64,pickle
 from bs4 import BeautifulSoup
 import re, os, datetime
 
 marshal_root = 'http://skipper.caltech.edu:8080/cgi-bin/growth/'
 scanning_url = marshal_root + 'growth_treasures_transient.cgi'
 saving_url = marshal_root + 'save_cand_growth.cgi?candid=%s&program=%s'
-
+annotate_url = marshal_root + 'edit_comment.cgi'
 class PTFConfig(object) :
     def __init__(self) :
         import ConfigParser
@@ -59,3 +59,15 @@ class marshal_scanning(object):
                 key = tag.text.replace(u'\xa0', u'')
                 sources[-1][key.strip(':')] = tag.next_sibling.strip()
         return sources
+
+
+def annotate(comment,sourcename, comment_type="info"):
+    soup = soup_obj(marshal_root + 'view_source.cgi?name=%s' %sourcename)
+    cmd = {}
+    for x in soup.find('form', {'action':"edit_comment.cgi"}).findAll('input'):
+        if x["type"] == "hidden":
+            cmd[x['name']] =x['value']
+    cmd["comment"] = comment
+    cmd["type"] = comment_type
+    params = urllib.urlencode(cmd)
+    return soup_obj(marshal_root + 'edit_comment.cgi?%s' %s)
