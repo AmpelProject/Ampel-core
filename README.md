@@ -17,3 +17,7 @@ progid = inst.program
 # To save a source to a science program
 rs.save_source(candid, progid)
 ```
+Comment on view source page.
+```
+rs.annotate("Scheduled for DCT on 4/3", 'ZTF18aagteoy', comment_type="info")
+```
