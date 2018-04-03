@@ -1,5 +1,12 @@
 ## Functions for pushing/pulling the Marshall (scanning page)
 Tested on python 2.7
+First, creat a config file called ~/.ptfconfig.cfg with the following content.
+```
+[Marshal]
+user = your_username_on_marshal
+passw = your_password
+maxage = 1
+```
 ```
 import read_scanning as rs
 
