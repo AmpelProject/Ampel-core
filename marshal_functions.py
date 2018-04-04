@@ -3,9 +3,10 @@ from __future__ import print_function
 
 import urllib, urllib2,base64,pickle
 from bs4 import BeautifulSoup
-import re, os, datetime
+import re, os, datetime, json
 
 marshal_root = 'http://skipper.caltech.edu:8080/cgi-bin/growth/'
+listprog_url = marshal_root + 'list_programs.cgi'
 scanning_url = marshal_root + 'growth_treasures_transient.cgi'
 saving_url = marshal_root + 'save_cand_growth.cgi?candid=%s&program=%s'
 rawsaved_url = marshal_root + 'list_sources_bare.cgi'
@@ -37,32 +38,29 @@ today = datetime.datetime.now().strftime('%Y-%m-%d')
 
 class Sergeant(object):
 	
-	def __init__(self, program_name = 'Nuclear Transients',start_date = today, end_date = today) :
+	def __init__(self, program_name='Nuclear Transients',start_date=today, end_date=today) :
 		
 		self.start_date = start_date
 		self.end_date = end_date
 		self.program_name = program_name
-
-		soup = soup_obj(scanning_url)
-		program_options = soup.findAll('select', {"name":"cutprogramidx"})[0]
 		self.cutprogramidx = None
-		self.program_options = []
-		for x in program_options.findAll('option'):
-			#print(x, x["value"])
-			if x.text.strip() == program_name:
-				self.program_options.append(x.text.strip())
-				self.cutprogramidx = x["value"]
+
+		soup = soup_obj(listprog_url)
+
+		for x in json.loads(soup.find('p').text.encode("ascii")):
+			if x['name'] == self.program_name:
+				self.cutprogramidx = x['programidx']
 		
 		if self.cutprogramidx is None:
 			print ('ERROR, program_name={0} not found'.format(self.program_name))
 			print ('Options for this user are:', self.program_options)
 			return None
 	
-	def list_scan_sources(self):
+	def list_scan_sources(self, hardlimit=200):
 		if self.cutprogramidx is None:
 			print('ERROR, first fix program_name upon init')
 			return []
-	   	self.scan_soup = soup_obj(scanning_url + "?cutprogramidx=%s&startdate=%s&enddate=%s" %(self.cutprogramidx, self.start_date, self.end_date))
+	   	self.scan_soup = soup_obj(scanning_url + "?cutprogramidx=%s&startdate=%s&enddate=%s&HARDLIMIT=%s" %(self.cutprogramidx, self.start_date, self.end_date, hardlimit))
 
 		
 	   	table = self.scan_soup.findAll('table')
@@ -84,7 +82,7 @@ class Sergeant(object):
 				elif x.text.strip() == 'Coordinate:':
 					sources[-1]["ra"], sources[-1]["dec"] = x.next_sibling.split()
 		
-			for tag in self.table_rows[0].findAll('td')[-1].findAll('b'):
+			for tag in table_rows[0].findAll('td')[-1].findAll('b'):
 				key = tag.text.replace(u'\xa0', u'')
 				sources[-1][key.strip(':')] = tag.next_sibling.strip()
 		return sources
@@ -125,7 +123,7 @@ def annotate(comment,sourcename, comment_type="info"):
 	return soup_obj(marshal_root + 'edit_comment.cgi?%s' %s)
 
 # testing
-def testing()
+def testing():
 	progn = 'ZTF Science Validation'
 	progn = 'Nuclear Transients'
 	inst = Sergeant(progn, start_date = '2018-04-03', end_date = '2018-04-03')
@@ -134,4 +132,5 @@ def testing()
 	scan_sources = inst.list_scan_sources()
 	saved_sources = inst.list_saved_sources()
 	print (saved_sources)
-	print (len(saved_sources)) # this is always hundred so it doesn't quite work yet
+	print (len(saved_sources)) # this is always hundred so it doesn't quite work yet 
+
