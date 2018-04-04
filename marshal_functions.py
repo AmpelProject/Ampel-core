@@ -128,9 +128,50 @@ class Sergeant(object):
 			    except IndexError:
 			        print('{0} has no annotation'.format(sources[-1]["objname"]))
 		return sources
-		
 
-def annotate(comment,sourcename, comment_type="info"):
+def get_comments(source):
+
+	if not('objname' in source):
+		print('ERROR, need source dict with objname')
+		return 
+
+	sourcename = source["objname"]	
+
+	source['comments'] = [] # we re-read the current comments
+
+	soup = soup_obj(marshal_root + 'view_source.cgi?name=%s' %sourcename)
+	table = soup.findAll('table')[0]
+	cells = table.findAll('span')
+	all_comments = '' # single str with all comments
+	for cell in cells:
+		cell_str = cell.decode(0)
+		#print (cell_str,'\n')
+		if cell_str.find('edit_comment')>0:
+			lines = cell_str.split('\n')
+			if lines[5].find(':')>0:
+				date_author, type = (lines[5].strip(']:').split('['))
+				text = lines[9].strip()
+				print (date_author, type, text)
+
+				# add comments to source dict
+				source['comments'].append((date_author.strip(), type, text))
+				all_comments+= text
+				print ('---')
+	return all_comments
+
+def comment(comment, source, comment_type="info"):
+	
+	if not('objname' in source):
+		print('ERROR, need source dict with objname')
+		return 
+
+	# TODO: get the current comments for this source
+	current_comm = get_comments(source)
+	if comment in current_comm:	
+		print ('this comment was already made:', current_comm)
+		return
+
+	sourcename = source["objname"]
 	soup = soup_obj(marshal_root + 'view_source.cgi?name=%s' %sourcename)
 	cmd = {}
 	for x in soup.find('form', {'action':"edit_comment.cgi"}).findAll('input'):
@@ -145,11 +186,15 @@ def annotate(comment,sourcename, comment_type="info"):
 def testing():
 	#progn = 'ZTF Science Validation'
 	progn = 'Nuclear Transients'
-	inst = Sergeant(progn)
-	
-	scan_sources = inst.list_scan_sources()
-	print ('# of scan sources', len(scan_sources) )
+	inst = Sergeant(progn)	
+		
+	#scan_sources = inst.list_scan_sources()
+	#print ('# of scan sources', len(scan_sources) )
 	saved_sources = inst.list_saved_sources()
+
+	this_source = (item for item in saved_sources if item["objname"] == "ZTF18aagteoy").next()
+	get_comments(this_source)
+
 	#print (saved_sources)
 	print ('# saved sources:',len(saved_sources)) 
 
