@@ -35,11 +35,19 @@ def save_source(candid, progid):
 	return BeautifulSoup(get_marshal_html(saving_url %(candid, progid)), 'lxml') 
 
 today = datetime.datetime.now().strftime('%Y-%m-%d')
+fivedaysago = (datetime.datetime.now() - datetime.timedelta(days=5)).strftime('%Y-%m-%d')
 
 class Sergeant(object):
 	
-	def __init__(self, program_name='Nuclear Transients',start_date=today, end_date=today) :
+	def __init__(self, program_name='Nuclear Transients',start_date=None, end_date=None) :
 		
+		if start_date is None:
+			start_date = fivedaysago
+			print ('start_date : {0}'.format(start_date))
+		if end_date is None:
+			end_date = today
+			print ('end_date   : {0}'.format(end_date))
+
 		self.start_date = start_date
 		self.end_date = end_date
 		self.program_name = program_name
@@ -68,9 +76,13 @@ class Sergeant(object):
 	   	
 	   	# this fails if no sources are present on the scanning page...
 
-	   	# for x in self.table_rows[0].findAll('td')[5].findAll('select')[0].findAll('option'):
-		  	# if self.program_name in x.text:
-			 	# self.program = x["value"]
+	   	if len(table_rows)>0:
+	   		for x in table_rows[0].findAll('td')[5].findAll('select')[0].findAll('option'):
+		  		if self.program_name in x.text:
+			 		self.program = x["value"]
+		else:
+			print ('No sources on scan page')
+			self.program = None
 
 		sources = []
 		for source in table_rows:
@@ -116,18 +128,7 @@ class Sergeant(object):
 			    except IndexError:
 			        print('{0} has no annotation'.format(sources[-1]["objname"]))
 		return sources
-'''
-		for tr in table_rows:
-			if len(tr.findAll('td'))>6:
-				name_lc = tr.findAll('td')[6].findAll('a')[0] # contain name and light curve
-				name = name_lc.decode().split('name=')[1][0:12] # perhaps there's a better way
-				comments = table_rows[1].findAll('td') # this contains some comments, but only the automated ones
-				#print (name)
-				sources.append(name) # today, make dict, with light curve data and current annotations
-
-		#for sl in str(self.saved_soup.contents[1]).split('plot_lc.cgi?name='):'''
 		
-
 
 def annotate(comment,sourcename, comment_type="info"):
 	soup = soup_obj(marshal_root + 'view_source.cgi?name=%s' %sourcename)
@@ -142,14 +143,16 @@ def annotate(comment,sourcename, comment_type="info"):
 
 # testing
 def testing():
-	progn = 'ZTF Science Validation'
+	#progn = 'ZTF Science Validation'
 	progn = 'Nuclear Transients'
-	inst = Sergeant(progn, start_date = '2018-04-03', end_date = '2018-04-03')
-	print (inst.cutprogramidx)
-
+	inst = Sergeant(progn)
+	
 	scan_sources = inst.list_scan_sources()
+	print ('# of scan sources', len(scan_sources) )
 	saved_sources = inst.list_saved_sources()
 	#print (saved_sources)
-	print (len(saved_sources)) 
-	print (len(scan_sources)) # this is always hundred so it doesn't quite work yet 
+	print ('# saved sources:',len(saved_sources)) 
 
+
+if __name__ == "__main__":
+	testing()
