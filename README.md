@@ -8,11 +8,11 @@ passw = your_password
 maxage = 1
 ```
 ```
-import read_scanning as rs
+from marshal_functions import Sergeant
 
 prog_name = 'ZTF Science Validation'
-inst = rs.marshal_scanning(prog_name, start_date = '2018-04-03', end_date = '2018-04-03')
-sources = inst.list_sources()
+inst = Sergeant.marshal_scanning(prog_name, start_date = '2018-04-03', end_date = '2018-04-03')
+sources = inst.list_scan_sources()
 progid = inst.program
 # To save a source to a science program
 rs.save_source(candid, progid)
