@@ -91,14 +91,32 @@ class Sergeant(object):
 		if self.cutprogramidx is None:
 			print('ERROR, first fix program_name upon init')
 			return []
-		self.saved_soup = soup_obj(rawsaved_url + "?cutprogramidx=%s" %(self.cutprogramidx))
+		self.saved_soup = soup_obj(rawsaved_url + "?programidx=%s" %(self.cutprogramidx))
 		
 		#print ('saved soup:',self.saved_soup)
 
 		table = self.saved_soup.findAll('table')
-		table_rows = table[1].findAll('tr')[1:]
+		table_rows = table[1].findAll('tr')[1:-1]
 		sources = []
-
+		for row in table_rows:
+		    sources.append({})
+		    cells = row.findAll('td')
+		    if len(cells) > 1:
+			    try:
+			        sources[-1]["objname"] = cells[1].find('a').text
+			        sources[-1]["objtype"] = cells[2].find('font').text.strip()
+			        sources[-1]["z"] = cells[3].find('font').text.strip()
+			        sources[-1]["ra"], sources[-1]["dec"] = re.findall(r'<.*><.*>(.*?)<br/>(.*?)</font></td>', str(cells[4]))[0]
+			        sources[-1]["phot"], sources[-1]["dt"] = re.findall(r'<.*><.*>.*? = (.*?)<br/> \((.*?) d\)</font></td>', str(cells[5]))[0]
+			        sources[-1]["annotation"] = {}
+			        keys = cells[11].findAll('font', {'color': '#0072bc'})
+			        values = cells[-1].findAll('font', {'color': 'black'})
+			        for key_name, val in zip(keys, values):
+			            sources[-1]["annotation"][key_name.text.strip()] = val.text.strip()
+			    except IndexError:
+			        print('{0} has no annotation'.format(sources[-1]["objname"]))
+		return sources
+'''
 		for tr in table_rows:
 			if len(tr.findAll('td'))>6:
 				name_lc = tr.findAll('td')[6].findAll('a')[0] # contain name and light curve
@@ -107,8 +125,8 @@ class Sergeant(object):
 				#print (name)
 				sources.append(name) # today, make dict, with light curve data and current annotations
 
-		#for sl in str(self.saved_soup.contents[1]).split('plot_lc.cgi?name='):
-		return sources
+		#for sl in str(self.saved_soup.contents[1]).split('plot_lc.cgi?name='):'''
+		
 
 
 def annotate(comment,sourcename, comment_type="info"):
@@ -131,6 +149,7 @@ def testing():
 
 	scan_sources = inst.list_scan_sources()
 	saved_sources = inst.list_saved_sources()
-	print (saved_sources)
-	print (len(saved_sources)) # this is always hundred so it doesn't quite work yet 
+	#print (saved_sources)
+	print (len(saved_sources)) 
+	print (len(scan_sources)) # this is always hundred so it doesn't quite work yet 
 
