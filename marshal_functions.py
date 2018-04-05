@@ -169,7 +169,7 @@ def get_comments(sourcename='',source={}):
 				# add comments to source dict
 				if source:
 					source['comments'].append((date_author.strip(), type, text))
-				all_comment.append( one_line )
+				all_comments.append( one_line )
 				print ('---')
 	return all_comments
 
@@ -202,7 +202,7 @@ def add_comment(comment, sourcename='',source={}, comment_type="info"):
 	cmd["type"] = comment_type
 	params = urllib.urlencode(cmd)
 	#print ('pushing comment to marshal...')
-	return soup_obj(marshal_root + 'edit_comment.cgi?%s' %sourcename)
+	return soup_obj(marshal_root + 'edit_comment.cgi?%s' %sourcename), parms
 
 # testing
 def testing():
