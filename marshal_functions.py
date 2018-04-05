@@ -153,7 +153,7 @@ def get_comments(sourcename='',source={}):
 	soup = soup_obj(marshal_root + 'view_source.cgi?name=%s' %sourcename)
 	table = soup.findAll('table')[0]
 	cells = table.findAll('span')
-	all_comments = '' # single str with all comments
+	all_comments = [] 
 	
 	for cell in cells:
 	
@@ -163,12 +163,13 @@ def get_comments(sourcename='',source={}):
 			if lines[5].find(':')>0:
 				date_author, type = (lines[5].strip(']:').split('['))
 				text = lines[9].strip()
-				print ('{0} [{1}]: {2}'.format(date_author, type, text))
+				one_line = '{0} [{1}]: {2}'.format(date_author, type, text)
+				print (one_line)
 
 				# add comments to source dict
 				if source:
 					source['comments'].append((date_author.strip(), type, text))
-				all_comments+= text+'\n'
+				all_comment.append( one_line )
 				print ('---')
 	return all_comments
 
@@ -178,12 +179,20 @@ def add_comment(comment, sourcename='',source={}, comment_type="info"):
 		print('''ERROR, we need sourcename='ZTFxxxxxx' or source=dict with objname key''')
 		return 
 
-	current_comm = get_comments(sourcename=sourcename, source=source)
+	if not(sourcename):
+		sourcename = source["objname"]	
+
+	# check if already have a dict with current comments 
+	if 'comments' in source:
+		current_comm = [tup[2] for tup in source['comments']]
+	else:
+		current_comm = get_comments(sourcename=sourcename, source=source)
+
 	if comment in current_comm:	
-		print ('this comment was already made:', current_comm)
+		print ('this comment was already made in current comments:\n', current_comm)
 		return
 
-	sourcename = source["objname"]
+	print ('setting up comment script...')
 	soup = soup_obj(marshal_root + 'view_source.cgi?name=%s' %sourcename)
 	cmd = {}
 	for x in soup.find('form', {'action':"edit_comment.cgi"}).findAll('input'):
@@ -192,7 +201,8 @@ def add_comment(comment, sourcename='',source={}, comment_type="info"):
 	cmd["comment"] = comment
 	cmd["type"] = comment_type
 	params = urllib.urlencode(cmd)
-	return soup_obj(marshal_root + 'edit_comment.cgi?%s' %s)
+	#print ('pushing comment to marshal...')
+	return soup_obj(marshal_root + 'edit_comment.cgi?%s' %sourcename)
 
 # testing
 def testing():
