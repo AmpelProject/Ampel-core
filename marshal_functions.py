@@ -60,11 +60,13 @@ class Sergeant(object):
 		self.end_date = end_date
 		self.program_name = program_name
 		self.cutprogramidx = None
+		self.program_options =[]
 
 		soup = soup_obj(listprog_url)
 
 		for x in json.loads(soup.find('p').text.encode("ascii")):
 			if x['name'] == self.program_name:
+				self.program_options.append(x['name'])
 				self.cutprogramidx = x['programidx']
 		
 		if self.cutprogramidx is None:
@@ -187,6 +189,8 @@ def add_comment(comment, sourcename='',source={}, comment_type="info"):
 
 	attempt is made to avoid duplicates
 	when source dict is given as input we use this to check for current comments
+
+	default comment type is "info", other options are "redshift", "classification", "comment"
 	'''
 
 	if not('objname' in source) and not(sourcename):
@@ -219,7 +223,88 @@ def add_comment(comment, sourcename='',source={}, comment_type="info"):
 
 	print ('pushing comment to marshal...')
 	params = urllib.urlencode(cmd)
-	return soup_obj(marshal_root + 'edit_comment.cgi?%s' %params), 
+	try:
+		return soup_obj(marshal_root + 'edit_comment.cgi?%s' %params)
+	except error:
+		#print (error)
+		print ('timed out... trying one more time...')
+		return soup_obj(marshal_root + 'edit_comment.cgi?%s' %params)
+
+
+info_date = 'April 2018'
+def get_some_info():
+	program_names=\
+	'''
+	22 Cataclysmic Variables (PI = Paula Szkody)
+	19 Census of the Local Universe (PI = David Cook)
+	32 Cosmology (PI = Ulrich Feindt)
+	17 Electromagnetic Counterparts to Gravitational Waves (PI = Mansi Kasliwal)
+	25 Electromagnetic Counterparts to Neutrinos (PI = Anna Franckowiak)
+	 5 Failed Supernovae (PI = Scott Adams)
+	 9 Fast Transients (PI = Anna Ho)
+	1 Fremling Subtractions (PI = Christoffer Fremling)
+	12 Graham Nuclear Transients (PI = Matthew Graham)
+	14 Infant Supernovae (PI = Avishay Gal-Yam)
+	10 Nuclear Transients (PI = Suvi Gezari)
+	31 Orphan Afterglows (PI = Anna Ho)
+	24 Redshift Completeness Factor (PI = Shri Kulkarni)
+	15 Red Transients (PI = Mansi Kasliwal)
+	29 Stripped Envelope Supernovae (PI = jesper sollerman)
+	 7 Superluminous Supernovae (PI = Lin Yan)
+	27 Transients in Elliptical Galaxies (PI = Danny Goldstein)
+	13 Variable AGN (PI = Matthew Graham)
+	21 Young Stars (PI = lynne hillenbrand)
+	3 TF Science Validation (PI = Christoffer Fremling)
+	'''
+
+	classifictions= \
+	'''
+	unknown
+	SN
+	SN Ia
+	SN Ia 91bg-like
+	SN Ia 91T-like
+	SN Ia 02cx-like
+	SN Ia 02ic-like
+	SN Ia pec
+	SN Ib/c
+	SN Ib
+	SN Ibn
+	SN Ic
+	SN Ic-BL
+	SN II">SN II
+	SN IIP">SN IIP
+	SN IIL">SN IIL
+	SN IIb">SN IIb
+	SN IIn">SN IIn
+	SN?
+	SLSN-I
+	SLSN-II
+	SLSN-R
+	SN I-faint
+	Afterglow
+	AGN
+	AGN?
+	CV
+	CV?
+	LBV
+	galaxy
+	varstar
+	nova
+	ILRN
+	TDE
+	Gap
+	Gap I
+	Gap II
+	Gap I - Fast
+	Gap I - Ca-rich
+	Gap II - ILRT
+	Gap II - LRN
+	Gap II - LBV
+	'''
+
+	return program_names, classifictions
+
 
 # testing
 def testing():
@@ -241,3 +326,5 @@ def testing():
 
 if __name__ == "__main__":
 	testing()
+
+
