@@ -124,7 +124,7 @@ class TFilter(AbsAlertFilter):
 			if len(srmag)==0:
 				srmag=None
 			else:
-				srmag = srmag[0]	
+				srmag = srmag[0]
 		else:
 			srmag = srmag[0]
 
