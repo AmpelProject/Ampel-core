@@ -184,7 +184,8 @@ def comment(comment, source, comment_type="info"):
 
 # testing
 def testing():
-	#progn = 'ZTF Science Validation'
+
+	progn = 'ZTF Science Validation'
 	progn = 'Nuclear Transients'
 	inst = Sergeant(progn)	
 		
