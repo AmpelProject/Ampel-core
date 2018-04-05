@@ -201,9 +201,9 @@ def add_comment(comment, sourcename='',source={}, comment_type="info"):
 			cmd[x['name']] =x['value']
 	cmd["comment"] = comment
 	cmd["type"] = comment_type
+	print ('pushing comment to marshal...')
 	params = urllib.urlencode(cmd)
-	#print ('pushing comment to marshal...')
-	return soup_obj(marshal_root + 'edit_comment.cgi?%s' %sourcename), parms
+	return soup_obj(marshal_root + 'edit_comment.cgi?%s' %sourcename), params
 
 # testing
 def testing():
