@@ -24,7 +24,14 @@ marshal_functions.save_source(candid, progid)
 # Get list of sources saved sources (ie, the Report page)
 saved_scources = inst.list_saved_sources()
 ```
+
+View current comments (note, these do include the auto annotations)
+```
+comment_list = marshal_functions.get_comment('ZTF18aabtxvd')
+```
+
+
 Comment on view source page.
 ```
-marshal_functions.add_comment("Scheduled for DCT on 4/3", 'ZTF18aagteoy', comment_type="info")
+marshal_functions.add_comment("dummy", 'ZTF17aacscou', comment_type="info")
 ```
