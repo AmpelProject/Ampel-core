@@ -189,7 +189,8 @@ def add_comment(comment, sourcename='',source={}, comment_type="info"):
 		print ('getting current comments...')
 		current_comm = get_comments(sourcename=sourcename, source=source)
 
-	if comment in current_comm:	
+	#print (current_comm)
+	if comment in ''.join(current_comm):	
 		print ('this comment was already made in current comments:\n', current_comm)
 		return
 
@@ -201,9 +202,10 @@ def add_comment(comment, sourcename='',source={}, comment_type="info"):
 			cmd[x['name']] =x['value']
 	cmd["comment"] = comment
 	cmd["type"] = comment_type
+
 	print ('pushing comment to marshal...')
 	params = urllib.urlencode(cmd)
-	return soup_obj(marshal_root + 'edit_comment.cgi?%s' %sourcename), params
+	return soup_obj(marshal_root + 'edit_comment.cgi?%s' %params), 
 
 # testing
 def testing():
