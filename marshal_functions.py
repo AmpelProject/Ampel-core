@@ -38,6 +38,14 @@ today = datetime.datetime.now().strftime('%Y-%m-%d')
 fivedaysago = (datetime.datetime.now() - datetime.timedelta(days=5)).strftime('%Y-%m-%d')
 
 class Sergeant(object):
+	'''
+	>>> ser = Sergeant(program_name='ZTF Science Validation')
+
+	optional input for constructor
+	 start_date='2018-04-01'
+	 end_date='2018-04-01'
+	if none are given we assume today and five days ago
+	'''
 	
 	def __init__(self, program_name='Nuclear Transients',start_date=None, end_date=None) :
 		
@@ -68,18 +76,17 @@ class Sergeant(object):
 		if self.cutprogramidx is None:
 			print('ERROR, first fix program_name upon init')
 			return []
-	   	self.scan_soup = soup_obj(scanning_url + "?cutprogramidx=%s&startdate=%s&enddate=%s&HARDLIMIT=%s" %(self.cutprogramidx, self.start_date, self.end_date, hardlimit))
+		self.scan_soup = soup_obj(scanning_url + "?cutprogramidx=%s&startdate=%s&enddate=%s&HARDLIMIT=%s" %(self.cutprogramidx, self.start_date, self.end_date, hardlimit))
 
 		
-	   	table = self.scan_soup.findAll('table')
-	   	table_rows = table[1].findAll('tr')[1:]
-	   	
-	   	# this fails if no sources are present on the scanning page...
-
-	   	if len(table_rows)>0:
-	   		for x in table_rows[0].findAll('td')[5].findAll('select')[0].findAll('option'):
-		  		if self.program_name in x.text:
-			 		self.program = x["value"]
+		table = self.scan_soup.findAll('table')
+		table_rows = table[1].findAll('tr')[1:]
+		
+		# this fails if no sources are present on the scanning page...
+		if len(table_rows)>0:
+			for x in table_rows[0].findAll('td')[5].findAll('select')[0].findAll('option'):
+				if self.program_name in x.text:
+					self.program = x["value"]
 		else:
 			print ('No sources on scan page')
 			self.program = None
@@ -111,22 +118,22 @@ class Sergeant(object):
 		table_rows = table[1].findAll('tr')[1:-1]
 		sources = []
 		for row in table_rows:
-		    sources.append({})
-		    cells = row.findAll('td')
-		    if len(cells) > 1:
-			    try:
-			        sources[-1]["objname"] = cells[1].find('a').text
-			        sources[-1]["objtype"] = cells[2].find('font').text.strip()
-			        sources[-1]["z"] = cells[3].find('font').text.strip()
-			        sources[-1]["ra"], sources[-1]["dec"] = re.findall(r'<.*><.*>(.*?)<br/>(.*?)</font></td>', str(cells[4]))[0]
-			        sources[-1]["phot"], sources[-1]["dt"] = re.findall(r'<.*><.*>.*? = (.*?)<br/> \((.*?) d\)</font></td>', str(cells[5]))[0]
-			        sources[-1]["annotation"] = {}
-			        keys = cells[11].findAll('font', {'color': '#0072bc'})
-			        values = cells[-1].findAll('font', {'color': 'black'})
-			        for key_name, val in zip(keys, values):
-			            sources[-1]["annotation"][key_name.text.strip()] = val.text.strip()
-			    except IndexError:
-			        print('{0} has no annotation'.format(sources[-1]["objname"]))
+			sources.append({})
+			cells = row.findAll('td')
+			if len(cells) > 1:
+				try:
+					sources[-1]["objname"] = cells[1].find('a').text
+					sources[-1]["objtype"] = cells[2].find('font').text.strip()
+					sources[-1]["z"] = cells[3].find('font').text.strip()
+					sources[-1]["ra"], sources[-1]["dec"] = re.findall(r'<.*><.*>(.*?)<br/>(.*?)</font></td>', str(cells[4]))[0]
+					sources[-1]["phot"], sources[-1]["dt"] = re.findall(r'<.*><.*>.*? = (.*?)<br/> \((.*?) d\)</font></td>', str(cells[5]))[0]
+					sources[-1]["annotation"] = {}
+					keys = cells[11].findAll('font', {'color': '#0072bc'})
+					values = cells[-1].findAll('font', {'color': 'black'})
+					for key_name, val in zip(keys, values):
+						sources[-1]["annotation"][key_name.text.strip()] = val.text.strip()
+				except IndexError:
+					print('{0} has no annotation'.format(sources[-1]["objname"]))
 		return sources
 
 def get_comments(sourcename='',source={}):
@@ -175,6 +182,13 @@ def get_comments(sourcename='',source={}):
 
 def add_comment(comment, sourcename='',source={}, comment_type="info"):
 	
+	'''
+	>>> soup_out = add_comment("dummy", sourcename='ZTF17aacscou')
+
+	attempt is made to avoid duplicates
+	when source dict is given as input we use this to check for current comments
+	'''
+
 	if not('objname' in source) and not(sourcename):
 		print('''ERROR, we need sourcename='ZTFxxxxxx' or source=dict with objname key''')
 		return 
