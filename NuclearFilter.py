@@ -71,6 +71,7 @@ class TFilter(AbsAlertFilter):
 		self.MinDeltaJD			= d['MinDeltaJD'] 		# remove movers with min time distance in days between detections with nbad<=MaxNbad		
 		self.MinRealBogusScore 	= d['MinRealBogusScore']# min RealBogus score of *any* observation
 		self.BrightPS1RMag 		= d['BrightPS1RMag']	# bright star removal: min PS1 r-band mag 
+		self.MaxDistPS1source 	= d['MaxDistPS1source']	# max distance for checking nearby bright stars in PS1
 		self.BrightRefMag 		= d['BrightRefMag'] 	# bright star removal: used for both ZTF filters
 		self.LastOnly 			= d['LastOnly'] 		# use only most recent detection (attempt to simulate real time)
 
@@ -101,12 +102,29 @@ class TFilter(AbsAlertFilter):
 		"""		
 
 		# first check we have an extended source (note this can remove flares from faint galaxies that missclassified in PS1)
-		# these will have to be dealt with in the orphan/faint filter		
-		sgscore = alert.get_values("sgscore")
-		if len(sgscore)==0:
+		# these will have to be dealt with in the orphan/faint filter	
+
+		
+		sgscore = alert.get_values("sgscore1")
+		if len(sgscore)==1:
+
+			distpsnr = alert.get_values("distpsnr1")[0]
 			sgscore = alert.get_values("sgscore1")[0]
+			srmag = alert.get_values("srmag1")[0]
+			sgmag = alert.get_values("sgmag1")[0]
+
+			#sgscore2,sgscore3 = alert.get_values("sgscore2")[0], alert.get_values("sgscore3")[0]
+			distpsnr2,distpsnr3 = alert.get_values("distpsnr2")[0], alert.get_values("distpsnr3")[0]
+			srmag2,srmag3 = alert.get_values("srmag2")[0],alert.get_values("srmag3")[0]
+			sgmag2,sgmag3 = alert.get_values("sgmag2")[0],alert.get_values("sgmag3")[0]
+
+		# exception for older (pre v1.8) schema	
 		else:
-			sgscore = sgscore[0]
+			sgscore = sgscore = alert.get_values("sgscore")[0]
+			distpsnr = alert.get_values("distpsnr")[0]
+			srmag2 = None
+			srmag = srmag = alert.get_values("srmag")[0]
+			sgmag = alert.get_values("sgmag")[0]
 			
 		if sgscore is None:		
 			self.why="sgscore=None"
@@ -118,25 +136,42 @@ class TFilter(AbsAlertFilter):
 				self.logger.info(self.why)
 				return None
 
-		srmag = alert.get_values("srmag")
-		if len(srmag)==0:
-			srmag = alert.get_values("srmag1")
-			if len(srmag)==0:
-				srmag=None
-			else:
-				srmag = srmag[0]
-		else:
-			srmag = srmag[0]
-
 		if srmag is None:
 			self.why = "sr mag is None"
 			self.logger.info(self.why)
 			return None
-		
-		if self.BrightPS1RMag > srmag > 0:
-			self.why = "PS1 r-band mag={0:0.2f}, which is < {1:0.2f}".format(srmag, self.BrightPS1RMag)
+
+		if (srmag<0) or (sgmag<0):
+			self.why = "1st PS1 match saturated(?) sgmag={0:0.2f} srmag={1:0.2f} (dist={2:0.2f})".format(sgmag, srmag, distpsnr)
 			self.logger.info(self.why)
 			return None
+
+		if srmag < self.BrightPS1RMag:
+			self.why = "1st PS1 match srmag={0:0.2f}, which is < {1:0.2f} (dist={2:0.2f} arcsec)".format(srmag, self.BrightPS1RMag, distpsnr)
+			self.logger.info(self.why)
+			return None
+
+		# if we have the new schema, also check for nearby bright stars
+		if srmag2 is not None:
+			if (srmag2 < self.BrightPS1RMag) and (abs(distpsnr2)< self.MaxDistPS1source):
+				self.why = "2nd PS1 match srmag={0:0.2f}, which is < {1:0.2f} (dist={2:0.2f})".format(srmag2, self.BrightPS1RMag, distpsnr2)
+				self.logger.info(self.why)
+				return None
+
+			if (srmag3 < self.BrightPS1RMag) and (abs(distpsnr3)< self.MaxDistPS1source):
+				self.why = "3rd  PS1 match r={0:0.2f}, which is < {1:0.2f} (dist={2:0.2f})".format(srmag3, self.BrightPS1RMag, distpsnr3)
+				self.logger.info(self.why)
+				return None
+
+			if ((srmag2<0) or (sgmag2<0)) and (abs(distpsnr2)< self.MaxDistPS1source):
+				self.why = "2nd PS1 match saturated(?) sgmag={0:0.2f} srmag={1:0.2f} (dist={2:0.2f})".format(sgmag2, srmag2, distpsnr2)
+				self.logger.info(self.why)
+				return None
+
+			if ((srmag3<0) or (sgmag3<0)) and (abs(distpsnr3)< self.MaxDistPS1source):
+				self.why = "3rd PS1 match saturated(?) sgmag={0:0.2f} srmag={1:0.2f} (dist={2:0.2f})".format(sgmag3, srmag3, distpsnr3)
+				self.logger.info(self.why)
+				return None
 
 		these_filters =self.get_default_filters()
 
