@@ -129,44 +129,56 @@ class Sergeant(object):
 			        print('{0} has no annotation'.format(sources[-1]["objname"]))
 		return sources
 
-def get_comments(source):
+def get_comments(sourcename='',source={}):
+	'''
+	>>> some_str = get_comments('ZTF18aabtxvd')
+	get the current comment for a source
+	
+	>>> some_str = get_comments(source=source)
+	get the current comments, and add them the source dict 
+	this dict is output from get_saved_sources
 
-	if not('objname' in source):
-		print('ERROR, need source dict with objname')
+	'''
+
+	if not('objname' in source) and not(sourcename):
+		print('''ERROR, we need sourcename='ZTFxxxxxx' or source=dict with objname key''')
 		return 
 
-	sourcename = source["objname"]	
+	if not sourcename:
+		sourcename = source["objname"]	
 
-	source['comments'] = [] # we re-read the current comments
+	if source:
+		source['comments'] = [] # we re-read the current comments
 
 	soup = soup_obj(marshal_root + 'view_source.cgi?name=%s' %sourcename)
 	table = soup.findAll('table')[0]
 	cells = table.findAll('span')
 	all_comments = '' # single str with all comments
+	
 	for cell in cells:
-		cell_str = cell.decode(0)
-		#print (cell_str,'\n')
+	
+		cell_str = cell.decode(0)	
 		if cell_str.find('edit_comment')>0:
-			lines = cell_str.split('\n')
+			lines = cell_str.split('\n')			
 			if lines[5].find(':')>0:
 				date_author, type = (lines[5].strip(']:').split('['))
 				text = lines[9].strip()
-				print (date_author, type, text)
+				print ('{0} [{1}]: {2}'.format(date_author, type, text))
 
 				# add comments to source dict
-				source['comments'].append((date_author.strip(), type, text))
-				all_comments+= text
+				if source:
+					source['comments'].append((date_author.strip(), type, text))
+				all_comments+= text+'\n'
 				print ('---')
 	return all_comments
 
-def comment(comment, source, comment_type="info"):
+def add_comment(comment, sourcename='',source={}, comment_type="info"):
 	
-	if not('objname' in source):
-		print('ERROR, need source dict with objname')
+	if not('objname' in source) and not(sourcename):
+		print('''ERROR, we need sourcename='ZTFxxxxxx' or source=dict with objname key''')
 		return 
 
-	# TODO: get the current comments for this source
-	current_comm = get_comments(source)
+	current_comm = get_comments(sourcename=sourcename, source=source)
 	if comment in current_comm:	
 		print ('this comment was already made:', current_comm)
 		return

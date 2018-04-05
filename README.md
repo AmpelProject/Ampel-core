@@ -14,7 +14,7 @@ prog_name = 'ZTF Science Validation'
 inst = marshal_functions.Sergeant(prog_name, start_date = '2018-04-03', end_date = '2018-04-03')
 
 # Get list of source on the scan page
-scan_sources = inst.list_scan_sources()
+scan_sources = inst.list_scan_sources(hardlimit=200)
 progid = inst.program
 
 # Save a source to a science program
@@ -26,5 +26,5 @@ saved_scources = inst.list_saved_sources()
 ```
 Comment on view source page.
 ```
-marshal_functions.annotate("Scheduled for DCT on 4/3", 'ZTF18aagteoy', comment_type="info")
+marshal_functions.add_comment("Scheduled for DCT on 4/3", 'ZTF18aagteoy', comment_type="info")
 ```
