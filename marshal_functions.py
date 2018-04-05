@@ -186,6 +186,7 @@ def add_comment(comment, sourcename='',source={}, comment_type="info"):
 	if 'comments' in source:
 		current_comm = [tup[2] for tup in source['comments']]
 	else:
+		print ('getting current comments...')
 		current_comm = get_comments(sourcename=sourcename, source=source)
 
 	if comment in current_comm:	
