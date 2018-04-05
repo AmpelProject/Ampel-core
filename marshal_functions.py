@@ -65,8 +65,8 @@ class Sergeant(object):
 		soup = soup_obj(listprog_url)
 
 		for x in json.loads(soup.find('p').text.encode("ascii")):
-			if x['name'] == self.program_name:
-				self.program_options.append(x['name'])
+			self.program_options.append(x['name'])
+			if x['name'] == self.program_name:				
 				self.cutprogramidx = x['programidx']
 		
 		if self.cutprogramidx is None:
@@ -182,7 +182,7 @@ def get_comments(sourcename='',source={}):
 				print ('---')
 	return all_comments
 
-def add_comment(comment, sourcename='',source={}, comment_type="info"):
+def add_comment(comment, sourcename='',source={}, comment_type="info", force_classification=False):
 	
 	'''
 	>>> soup_out = add_comment("dummy", sourcename='ZTF17aacscou')
@@ -191,6 +191,9 @@ def add_comment(comment, sourcename='',source={}, comment_type="info"):
 	when source dict is given as input we use this to check for current comments
 
 	default comment type is "info", other options are "redshift", "classification", "comment"
+
+	when pushing comment_type="classification", you have the option to 
+	use force_classification=True to force overwrite of the  excisiting classification
 	'''
 
 	if not('objname' in source) and not(sourcename):
@@ -208,9 +211,21 @@ def add_comment(comment, sourcename='',source={}, comment_type="info"):
 		current_comm = get_comments(sourcename=sourcename, source=source)
 
 	#print (current_comm)
-	if comment in ''.join(current_comm):	
-		print ('this comment was already made in current comments:\n', current_comm)
-		return
+	if comment_type != 'classification':
+		if comment in ''.join(current_comm):	
+			print ('this comment was already made in current comments')
+			return
+
+	# extra strict checks to change the classification of a source
+	else:
+		if not force_classification:
+			if not ('objtype' in source):
+				print ('require source dict as input when adding classification \n(use force_classification=True to ignore this check)')
+				return
+			if source['objtype']!='None':
+				print ('this source already has a classification:',source['objtype'])
+				print ('(use force_classification=True to overwrite it)')
+				return
 
 	print ('setting up comment script...')
 	soup = soup_obj(marshal_root + 'view_source.cgi?name=%s' %sourcename)
