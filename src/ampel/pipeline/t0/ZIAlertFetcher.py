@@ -92,7 +92,7 @@ class ZIAlertFetcher:
 	"""
 	ZI: shortcut for ZTF IPAC.
 	"""
-	def __init__(self, archive_db=None, bootstrap='epyc.astro.washington.edu:9092', group_name="Ampel", timeout=1, confluent=False):
+	def __init__(self, archive_db=None, bootstrap='epyc.astro.washington.edu:9092', group_name=uuid.uuid1(), timeout=1, confluent=False):
 		"""
 		:param archive_db: an instance of :py:class:`ampel.archive.ArchiveDB`
 		:param zookeeper: ZooKeeper hosts to use for broker and topic discovery
@@ -102,9 +102,7 @@ class ZIAlertFetcher:
 		:param timeout: number of seconds to wait for a message
 		"""
 		# TODO: handle timeout
-		# self._consumer = AllConsumingConsumer(bootstrap, **{'group.id':group_name})
-		self._consumer = AllConsumingConsumer(bootstrap)
-		
+		self._consumer = AllConsumingConsumer(bootstrap, **{'group.id':group_name})
 		
 		self._archive = archive_db
 

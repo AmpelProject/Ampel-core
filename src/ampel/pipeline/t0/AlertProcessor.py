@@ -649,29 +649,52 @@ def _ingest_slice(host, archive_host, infile, start, stop):
 	processor.logger.setLevel('WARN')
 	return processor.run(loader())
 
+def _worker(idx, mongo_host, archive_host, bootstrap_host, group_id, chunk_size=5000):
+	from ampel.archive import ArchiveDB, docker_env
+	from ampel.pipeline.t0.ZIAlertFetcher import ZIAlertFetcher
+	archive = ArchiveDB('postgresql://ampel:{}@{}/ztfarchive'.format(docker_env('POSTGRES_PASSWORD'), archive_host))
+
+	fetcher = ZIAlertFetcher(archive, bootstrap_host, group_name=group_id)
+
+	import time
+	t0 = time.time()
+
+	count = 0
+	for i in range(10):
+		processor = AlertProcessor(db_host=mongo_host)
+		processor.logger.setLevel('ERROR')
+		count += processor.run(fetcher.alerts(chunk_size))
+		t1 = time.time()
+		dt = t1-t0
+		t0 = t1
+		print('({}) {} alerts in {:.1f}s; {:.1f}/s'.format(idx, chunk_size, dt, chunk_size/dt))
+	return count
+
 def run_alertprocessor():
 
-	import os, time
+	import os, time, uuid
 	from concurrent import futures
 	from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
 	parser = ArgumentParser(description=__doc__, formatter_class=ArgumentDefaultsHelpFormatter)
-	parser.add_argument('--host', default='localhost:27017')
-	parser.add_argument('--archive-host', default='localhost:5432')
+	parser.add_argument('--host', default='mongo:27017')
+	parser.add_argument('--archive-host', default='archive:5432')
+	parser.add_argument('--broker', default='epyc.astro.washington.edu:9092')
 	parser.add_argument('--procs', type=int, default=1, help='Number of processes to start')
-	parser.add_argument('--chunksize', type=int, default=50, help='Number of alerts in each process')
+	parser.add_argument('--chunksize', type=int, default=5000, help='Number of alerts in each process')
 	
-	parser.add_argument('infile')
 	opts = parser.parse_args()
 	
 	executor = futures.ProcessPoolExecutor(opts.procs)
+
+	group = uuid.uuid1()
 	
 	start_time = time.time()
 	step = opts.chunksize
 	count = 0
-	jobs = [executor.submit(_ingest_slice, opts.host, opts.archive_host, opts.infile, start, start+step) for start in range(0, opts.procs*step, step)]
+	jobs = [executor.submit(_worker, idx, opts.host, opts.archive_host, opts.broker, group, opts.chunksize) for idx in range(opts.procs)]
 	for future in futures.as_completed(jobs):
 		print(future.result())
 		count += future.result()
 	duration = int(time.time()) - start_time
-	print('Processed {} alerts in {} s ({}/s)'.format(count, duration, float(count)/duration))
+	print('Processed {} alerts in {:.1f} s ({:.1f}/s)'.format(count, duration, float(count)/duration))
 	
