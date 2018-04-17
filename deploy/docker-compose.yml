@@ -32,16 +32,10 @@ services:
         delay: 1s
         max_attempts: 3
   ampel:
-    image: continuumio/miniconda:4.3.27
-    command: ["./ampel-start.sh"]
+    image: ampel
+    command: ["/Ampel/deploy/ampel-start.sh"]
     volumes:
-      - type: tmpfs
-        target: /opt/conda/pkgs
-      - type: volume
-        target: /opt/conda/envs
-        source: envs
       - ..:/Ampel
-      - ./ampel-start.sh:/ampel-start.sh
       - ./ztfdata:/ztf
       
     secrets:
