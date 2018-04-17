@@ -98,6 +98,8 @@ class ZIAlertLoader:
 		delete the matching candidates from the previous_candidates list
 		This function might not be needed for production	
 		"""	
+		if prv_cd is None:
+			return
 		for i in range(len(prv_cd) - 1, -1, -1):
 			el = prv_cd[i]
 			if el['candid'] is None or el['pdiffimfilename'].startswith('/stage'):
