@@ -10,38 +10,119 @@
 from ampel.pipeline.t0.loaders.ZIAlertLoader import ZIAlertLoader
 import fastavro, io, pykafka
 
+import itertools
+import logging
+import uuid
+from collections import defaultdict
+
+log = logging.getLogger('ampel.pipeline.t0.ZIAlertFetcher')
+
+try:
+	from confluent_kafka import Consumer, TopicPartition, KafkaError, Message
+	
+	class AllConsumingConsumer(object):
+		"""Consume messages on all topics beginning with 'ztf_'."""
+		def __init__(self, broker, **consumer_config):
+			config = {
+				"bootstrap.servers": broker,
+				"default.topic.config": {"auto.offset.reset": "smallest"},
+				"enable.auto.commit": False,
+				"group.id" : uuid.uuid1(),
+				"enable.partition.eof" : False, # don't emit messages on EOF
+				"topic.metadata.refresh.interval.ms" : 1000, # fetch new metadata every second to pick up topics quickly
+				# "debug": "all",
+			}
+			config.update(**consumer_config)
+			self._consumer = Consumer(**config)
+			
+			self._consumer.subscribe(['^ztf_.*'])
+			
+			self._offsets = defaultdict(dict)
+		
+		def __del__(self):
+			# NB: have to explicitly call close() here to prevent
+			# rd_kafka_consumer_close() from segfaulting. See:
+			# https://github.com/confluentinc/confluent-kafka-python/issues/358
+			self._consumer.close()
+			
+		def __next__(self):
+			return self.consume()
+		
+		def __iter__(self):
+			return self
+		
+		def consume(self, timeout=None):
+			"""
+			Block until one message has arrived
+			"""
+			message = None
+			if timeout is None:
+				# wake up every second to catch SIGINT
+				while message is None:
+					message = self._consumer.poll(1)
+			else:
+				message = self._consumer.poll(timeout)
+			if message.error():
+				raise RuntimeError(message.error())
+			else:
+				self._offsets[message.topic()][message.partition()] = message.offset()
+				return message
+		
+		def commit_offsets(self):
+			"""
+			Commit the offsets of all messages emitted by consume()
+			
+			NB: partition offsets are held across rebalances, so this may
+			commit a smaller offset to a partition that was later assigned to
+			another consumer. If that consumer fails before committing, this
+			can result in messages being delivered more than once. Given the
+			choice between at-least-once and at-most-once delivery, we choose
+			the former. (exactly-once is hard)
+			"""
+			if len(self._offsets) == 0:
+				return
+			offsets = []
+			for topic in self._offsets:
+				for partition, offset in self._offsets[topic].items():
+					offsets.append(TopicPartition(topic, partition, offset+1))
+			log.debug('committing offsets: {}'.format(self._offsets))
+			self._consumer.commit(offsets=offsets)
+			self._offsets.clear()
+	
+except ImportError:
+	pass
 
 class ZIAlertFetcher:
 	"""
 	ZI: shortcut for ZTF IPAC.
 	"""
-	def __init__(self, archive_db, brokers, topic, group_name=b"Ampel", timeout=1):
+	def __init__(self, archive_db=None, bootstrap='epyc.astro.washington.edu:9092', group_name="Ampel", timeout=1, confluent=False):
 		"""
 		:param archive_db: an instance of :py:class:`ampel.archive.ArchiveDB`
-		:param brokers: Comma-separated list of kafka hosts to which to connect
+		:param zookeeper: ZooKeeper hosts to use for broker and topic discovery
 		:type brokers: str
-		:param topic: Topic of target Kafka stream
-		:type topic: bytes
 		:param group_name: Consumer group name to use for load-balancing
 		:type group_name: bytes
 		:param timeout: number of seconds to wait for a message
 		"""
-		client = pykafka.KafkaClient(brokers)
-		topic = client.topics[topic]
-		self._consumer = topic.get_balanced_consumer(consumer_group=group_name, consumer_timeout_ms=timeout*1e3)
+		# TODO: handle timeout
+		# self._consumer = AllConsumingConsumer(bootstrap, **{'group.id':group_name})
+		self._consumer = AllConsumingConsumer(bootstrap)
+		
+		
 		self._archive = archive_db
-	
 
-	def alerts(self):
+	def alerts(self, limit=None):
 		"""
 		Generate alerts until timeout is reached
 		"""
-		for message in self._consumer:
-			for alert in fastavro.reader(io.BytesIO(message.value)):
+		for message in itertools.islice(self._consumer, limit):
+			for alert in fastavro.reader(io.BytesIO(message.value())):
 				ZIAlertLoader.filter_previous_candidates(alert['prv_candidates'])
-				self._archive.insert_alert(alert, 0, 0)
+				if self._archive_db is not None:
+					self._archive.insert_alert(alert, 0, 0)
 				yield alert
-			self._consumer.commit_offsets()
+		self._consumer.commit_offsets()
 	
 	def __iter__(self):
 		return self.alerts()
@@ -63,7 +144,7 @@ def archive_topic():
 	import pwd, grp
 	import uuid, socket
 	
-	client = pykafka.KafkaClient(opts.broker)
+	client = KafkaClient(opts.broker)
 	topic = client.topics[opts.topic.encode('utf-8')]
 	
 	num = 0
@@ -130,7 +211,7 @@ def list_kafka():
 	parser.add_argument("--broker", type=str, default="epyc.astro.washington.edu:9092")
 	opts = parser.parse_args()
 	
-	client = pykafka.KafkaClient(opts.broker)
+	client = KafkaClient(opts.broker)
 	for name in reversed(sorted(client.topics)):
 		print(name.decode())
 		continue
