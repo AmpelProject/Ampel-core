@@ -145,7 +145,7 @@ def insert_alert(connection, meta, alert, processor_id, ingestion_time):
     
     ignore = {'{}_ignore_duplicates'.format(connection.dialect.name): True}
     
-    if len(alert['prv_candidates']) > 0:
+    if alert['prv_candidates'] and len(alert['prv_candidates']) > 0:
         # entries in prv_candidates will often be duplicated, but may also
         # be updated without warning.
         connection.execute(meta.tables['prv_candidate'].insert(**ignore), alert['prv_candidates'])
