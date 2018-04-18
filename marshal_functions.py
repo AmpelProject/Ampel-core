@@ -172,6 +172,7 @@ def get_comments(sourcename='',source={}):
 			if lines[5].find(':')>0:
 				date_author, type = (lines[5].strip(']:').split('['))
 				text = lines[9].strip()
+				text = text.replace(', [',')') # this deals with missing urls to [reference] in auto_annoations
 				one_line = '{0} [{1}]: {2}'.format(date_author, type, text)
 				print (one_line)
 
