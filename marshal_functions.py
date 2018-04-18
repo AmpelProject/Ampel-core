@@ -35,6 +35,15 @@ def soup_obj(url):
 def save_source(candid, progid):
 	return BeautifulSoup(get_marshal_html(saving_url %(candid, progid)), 'lxml') 
 
+# some date functions, needed for reading the Marshal photoemtry
+def timedeltatodays(dt):
+        return dt.days + (dt.seconds + dt.microseconds/1e6)/86400.
+def datetomjd(d):
+        d0 = datetime.datetime(1858, 11, 17, 0, 0, 0)
+        dt = d - d0
+        # dt is a timedelta object.
+        return timedeltatodays(dt)
+
 today = datetime.datetime.now().strftime('%Y-%m-%d')
 fivedaysago = (datetime.datetime.now() - datetime.timedelta(days=5)).strftime('%Y-%m-%d')
 
@@ -143,7 +152,7 @@ class Sergeant(object):
 						if flot['label'] != 'test' and flot['points']['show'] == True:
 							if flot['label'] not in LC['detection']:
 								LC['detection'][flot['label']] = []
-								Lc['upperlim'][flot['label']] = []
+								LC['upperlim'][flot['label']] = []
 
 							if flot['points']['type'] == 'o':
 								d = LC['detection']
@@ -153,7 +162,7 @@ class Sergeant(object):
 								if datapoints != []:
 									# Plotted time is relative to the time of a db query when loading the script. 
 									# There might be a systemic offset from the actual MJD.
-									d[flot['label']].append([t_now.mjd + datapoints[0], -datapoints[1]])
+									d[flot['label']].append([ datetomjd(t_now) + datapoints[0], -datapoints[1]])
 					sources[-1]["LC"] = LC
 
 				except IndexError:
