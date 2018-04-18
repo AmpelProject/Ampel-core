@@ -5,6 +5,7 @@ import urllib, urllib2,base64,pickle
 from bs4 import BeautifulSoup
 import re, os, datetime, json
 import yaml
+import astropy.time
 
 marshal_root = 'http://skipper.caltech.edu:8080/cgi-bin/growth/'
 listprog_url = marshal_root + 'list_programs.cgi'
@@ -35,14 +36,7 @@ def soup_obj(url):
 def save_source(candid, progid):
 	return BeautifulSoup(get_marshal_html(saving_url %(candid, progid)), 'lxml') 
 
-# some date functions, needed for reading the Marshal photoemtry
-def timedeltatodays(dt):
-        return dt.days + (dt.seconds + dt.microseconds/1e6)/86400.
-def datetomjd(d):
-        d0 = datetime.datetime(1858, 11, 17, 0, 0, 0)
-        dt = d - d0
-        # dt is a timedelta object.
-        return timedeltatodays(dt)
+
 
 today = datetime.datetime.now().strftime('%Y-%m-%d')
 fivedaysago = (datetime.datetime.now() - datetime.timedelta(days=5)).strftime('%Y-%m-%d')
@@ -71,7 +65,7 @@ class Sergeant(object):
 		self.program_name = program_name
 		self.cutprogramidx = None
 		self.program_options =[]
-
+ 
 		soup = soup_obj(listprog_url)
 
 		for x in json.loads(soup.find('p').text.encode("ascii")):
@@ -119,7 +113,7 @@ class Sergeant(object):
 		return sources
 
 	def list_saved_sources(self):
-		t_now = datetime.datetime.now()
+		t_now = astropy.time.Time.now()
 		if self.cutprogramidx is None:
 			print('ERROR, first fix program_name upon init')
 			return []
@@ -161,8 +155,8 @@ class Sergeant(object):
 							for datapoints in flot['data']:
 								if datapoints != []:
 									# Plotted time is relative to the time of a db query when loading the script. 
-									# There might be a systemic offset from the actual MJD.
-									d[flot['label']].append([ datetomjd(t_now) + datapoints[0], -datapoints[1]])
+									# There might be a systemic offset (~few seconds) from the actual MJD.
+									d[flot['label']].append([ t_now.mjd + datapoints[0], -datapoints[1]])
 					sources[-1]["LC"] = LC
 
 				except IndexError:
