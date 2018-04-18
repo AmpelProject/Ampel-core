@@ -27,7 +27,7 @@ saved_scources = inst.list_saved_sources()
 
 View current comments (note, these do include the auto annotations)
 ```
-comment_list = marshal_functions.get_comment('ZTF18aabtxvd')
+comment_list = marshal_functions.get_comments('ZTF18aabtxvd')
 ```
 
 
