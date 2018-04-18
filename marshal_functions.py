@@ -151,6 +151,8 @@ class Sergeant(object):
 								d = LC['upperlim']
 							for datapoints in flot['data']:
 								if datapoints != []:
+									# Plotted time is reletive to the time of a db query when loading the script. 
+									# There might be a systemic offset from the actual MJD.
 									d[flot['label']].append([t_now.mjd + datapoints[0], -datapoints[1]])
 					sources[-1]["LC"] = LC
 
