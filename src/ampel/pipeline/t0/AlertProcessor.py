@@ -617,7 +617,8 @@ def init_db():
 	from pymongo import MongoClient, ASCENDING
 	from bson import ObjectId
 	import json
-	client = MongoClient(opts.host)
+	from ampel.archive import docker_env
+	client = MongoClient(opts.host, username=os.environ.get('MONGO_INITDB_ROOT_USERNAME', 'root'), password=docker_env('MONGO_INITDB_ROOT_PASSWORD'))
 	
 	def get_id(blob):
 		if isinstance(blob['_id'], dict) and '$oid' in blob['_id']:
@@ -652,7 +653,10 @@ def _ingest_slice(host, archive_host, infile, start, stop):
 def _worker(idx, mongo_host, archive_host, bootstrap_host, group_id, chunk_size=5000):
 	from ampel.archive import ArchiveDB, docker_env
 	from ampel.pipeline.t0.ZIAlertFetcher import ZIAlertFetcher
+	from pymongo import MongoClient
+
 	archive = ArchiveDB('postgresql://ampel:{}@{}/ztfarchive'.format(docker_env('POSTGRES_PASSWORD'), archive_host))
+	mongo = MongoClient(mongo_host, username=docker_env('MONGO_INITDB_ROOT_USERNAME'), password=docker_env('MONGO_INITDB_ROOT_PASSWORD'))
 
 	fetcher = ZIAlertFetcher(archive, bootstrap_host, group_name=group_id)
 
@@ -661,7 +665,7 @@ def _worker(idx, mongo_host, archive_host, bootstrap_host, group_id, chunk_size=
 
 	count = 0
 	for i in range(10):
-		processor = AlertProcessor(db_host=mongo_host)
+		processor = AlertProcessor(input_db=mongo, output_db=mongo)
 		processor.logger.setLevel('ERROR')
 		count += processor.run(fetcher.alerts(chunk_size))
 		t1 = time.time()
