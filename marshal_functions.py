@@ -4,6 +4,7 @@ from __future__ import print_function
 import urllib, urllib2,base64,pickle
 from bs4 import BeautifulSoup
 import re, os, datetime, json
+import yaml
 
 marshal_root = 'http://skipper.caltech.edu:8080/cgi-bin/growth/'
 listprog_url = marshal_root + 'list_programs.cgi'
@@ -109,6 +110,7 @@ class Sergeant(object):
 		return sources
 
 	def list_saved_sources(self):
+		t_now = Time.now()
 		if self.cutprogramidx is None:
 			print('ERROR, first fix program_name upon init')
 			return []
@@ -134,7 +136,25 @@ class Sergeant(object):
 					values = cells[-1].findAll('font', {'color': 'black'})
 					for key_name, val in zip(keys, values):
 						sources[-1]["annotation"][key_name.text.strip()] = val.text.strip()
-				except IndexError:
+					v = re.search(r'var data\d+\s*=(\s*(.*)\} \}\,\])', cells[6].find('script').text.replace('\n','')).group(1)
+					plot_data = yaml.load(v)
+					LC = {'detection': {}, 'upperlim': {}}
+					for flot in plot_data:
+						if flot['label'] != 'test' and flot['points']['show'] == True:
+							if flot['label'] not in LC['detection']:
+								LC['detection'][flot['label']] = []
+								Lc['upperlim'][flot['label']] = []
+
+							if flot['points']['type'] == 'o':
+								d = LC['detection']
+							elif flot['points']['type'] == 'dV':
+								d = LC['upperlim']
+							for datapoints in flot['data']:
+								if datapoints != []:
+									d[flot['label']].append([t_now.mjd + datapoints[0], -datapoints[1]])
+					sources[-1]["LC"] = LC
+
+			except IndexError:
 					print('{0} has no annotation'.format(sources[-1]["objname"]))
 		return sources
 
