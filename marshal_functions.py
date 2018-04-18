@@ -187,7 +187,7 @@ def get_comments(sourcename='',source={}):
 	for cell in cells:
 	
 		cell_str = cell.decode(0)	
-		if cell_str.find('edit_comment')>0:
+		if (cell_str.find('edit_comment')>0) or (cell_str.find('add_autoannotation')>0):
 			lines = cell_str.split('\n')			
 			if lines[5].find(':')>0:
 				date_author, type = (lines[5].strip(']:').split('['))
@@ -307,19 +307,30 @@ def get_some_info():
 	SN Ibn
 	SN Ic
 	SN Ic-BL
-	SN II">SN II
-	SN IIP">SN IIP
-	SN IIL">SN IIL
-	SN IIb">SN IIb
-	SN IIn">SN IIn
+	SN II
+	SN IIP
+	SN IIL
+	SN IIb
+	SN IIn
 	SN?
 	SLSN-I
 	SLSN-II
 	SLSN-R
 	SN I-faint
-	Afterglow
-	AGN
+	Afterglow 
+	QSO
+	QSO?
+	photo QSO
+	AGN 
 	AGN?
+	photo AGN
+	Seyfert 2
+	Seyfert 1.9
+	Seyfert 1.8
+	Blazar
+	LINER
+	CLAGN
+	CLQ
 	CV
 	CV?
 	LBV
