@@ -165,8 +165,8 @@ class Sergeant(object):
 
 def get_comments(sourcename='',source={}):
 	'''
-	>>> some_str = get_comments('ZTF18aabtxvd')
-	get the current comment for a source
+	>>> comments = get_comments('ZTF18aabtxvd')
+	get the current comments for a source, a list of tuples: (id, date, author, type, text)
 	
 	>>> some_str = get_comments(source=source)
 	get the current comments, and add them the source dict 
@@ -187,7 +187,7 @@ def get_comments(sourcename='',source={}):
 	soup = soup_obj(marshal_root + 'view_source.cgi?name=%s' %sourcename)
 	table = soup.findAll('table')[0]
 	cells = table.findAll('span')
-	all_comments = [] 
+	all_comments = []
 	
 	for cell in cells:
 	
@@ -195,16 +195,21 @@ def get_comments(sourcename='',source={}):
 		if (cell_str.find('edit_comment')>0) or (cell_str.find('add_autoannotation')>0):
 			lines = cell_str.split('\n')			
 			if lines[5].find(':')>0:
+				comment_id = int(lines[2].split('id=')[1].split('''"''')[0])
+				print ('comment id=',comment_id)
 				date_author, type = (lines[5].strip(']:').split('['))
+				date, author = '-'.join(date_author.split(' ')[0:3]), date_author.split(' ')[3].strip()
 				text = lines[9].strip()
 				text = text.replace(', [',')') # this deals with missing urls to [reference] in auto_annoations
 				one_line = '{0} [{1}]: {2}'.format(date_author, type, text)
 				print (one_line)
 
 				# add comments to source dict
+				comment_tuple = (comment_id, date, author, type, text)
 				if source:
-					source['comments'].append((date_author.strip(), type, text))
-				all_comments.append( one_line )
+					source['comments'].append( comment_tuple )
+				# add to the output dict
+				all_comments.append( comment_tuple )
 				print ('---')
 	return all_comments
 
@@ -229,20 +234,22 @@ def add_comment(comment, sourcename='',source={}, comment_type="info", force_cla
 	if not(sourcename):
 		sourcename = source["objname"]	
 
-	# check if already have a dict with current comments 
+	# check if already have a dict with current comments (we check only the comment text, not the Marshal username)
 	if 'comments' in source:
-		current_comm = [tup[2] for tup in source['comments']]
+		comment_list = source['comments']
 	else:
 		print ('getting current comments...')
-		current_comm = get_comments(sourcename=sourcename, source=source)
+		comment_list = get_comments(sourcename=sourcename, source=source).values()
+	
+	current_comm = '  '.join([tup[4] for tup in comment_list]) # join all comments into one string
 
-	#print (current_comm)
+	# if adding info/comments/redshift check this was written already
 	if comment_type != 'classification':
-		if comment in ''.join(current_comm):	
+		if comment in current_comm:	
 			print ('this comment was already made in current comments')
 			return
 
-	# extra strict checks to change the classification of a source
+	#  checks to change the classification of a source
 	else:
 		if not force_classification:
 			if not ('objtype' in source):
@@ -361,19 +368,23 @@ def get_some_info():
 # testing
 def testing():
 
+	print (get_comments('ZTF18aahkrpr'))
+
 	progn = 'ZTF Science Validation'
 	progn = 'Nuclear Transients'
 	inst = Sergeant(progn)	
 		
 	#scan_sources = inst.list_scan_sources()
 	#print ('# of scan sources', len(scan_sources) )
+	
 	saved_sources = inst.list_saved_sources()
-
-	this_source = (item for item in saved_sources if item["objname"] == "ZTF18aagteoy").next()
-	get_comments(this_source)
-
-	#print (saved_sources)
 	print ('# saved sources:',len(saved_sources)) 
+
+	#this_source = (item for item in saved_sources if item["objname"] == "ZTF18aagteoy").next()
+	this_source  = save_sources[1] # pick one 
+
+	print ( get_comments(source=this_source) )
+
 
 
 if __name__ == "__main__":
