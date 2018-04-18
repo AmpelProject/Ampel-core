@@ -132,7 +132,7 @@ class TFilter(AbsAlertFilter):
 			return None
 
 		if sgscore>self.MinSgscore:				
-				self.why="sgscore={0:0.1f}, which is > {1:0.1f}".format(sgscore, self.MinSgscore)
+				self.why="sgscore={0:0.2f}, which is > {1:0.2f}".format(sgscore, self.MinSgscore)
 				self.logger.info(self.why)
 				return None
 
@@ -142,7 +142,7 @@ class TFilter(AbsAlertFilter):
 			return None
 
 		if (srmag<0) or (sgmag<0):
-			self.why = "1st PS1 match saturated(?) sgmag={0:0.2f} srmag={1:0.2f} (dist={2:0.2f})".format(sgmag, srmag, distpsnr)
+			self.why = "1st PS1 match is faulty: sgmag={0:0.2f} srmag={1:0.2f} (dist={2:0.2f})".format(sgmag, srmag, distpsnr)
 			self.logger.info(self.why)
 			return None
 
@@ -153,25 +153,28 @@ class TFilter(AbsAlertFilter):
 
 		# if we have the new schema, also check for nearby bright stars
 		if srmag2 is not None:
-			if (srmag2 < self.BrightPS1RMag) and (abs(distpsnr2)< self.MaxDistPS1source):
+			if (abs(srmag2) < self.BrightPS1RMag) and (abs(distpsnr2)< self.MaxDistPS1source):
 				self.why = "2nd PS1 match srmag={0:0.2f}, which is < {1:0.2f} (dist={2:0.2f})".format(srmag2, self.BrightPS1RMag, distpsnr2)
 				self.logger.info(self.why)
 				return None
 
-			if (srmag3 < self.BrightPS1RMag) and (abs(distpsnr3)< self.MaxDistPS1source):
+			if (abs(srmag3) < self.BrightPS1RMag) and (abs(distpsnr3)< self.MaxDistPS1source):
 				self.why = "3rd  PS1 match r={0:0.2f}, which is < {1:0.2f} (dist={2:0.2f})".format(srmag3, self.BrightPS1RMag, distpsnr3)
 				self.logger.info(self.why)
 				return None
 
-			if ((srmag2<0) or (sgmag2<0)) and (abs(distpsnr2)< self.MaxDistPS1source):
-				self.why = "2nd PS1 match saturated(?) sgmag={0:0.2f} srmag={1:0.2f} (dist={2:0.2f})".format(sgmag2, srmag2, distpsnr2)
-				self.logger.info(self.why)
-				return None
+			# don't use the code below because it will remove sources next to objects 
+			# that were detected in just one pan-starrs band and thus have srmag=-999
+			# 
+			# if ((srmag2<0) or (sgmag2<0)) and (abs(distpsnr2)< self.MaxDistPS1source):
+			# 	self.why = "2nd PS1 match saturated(?) sgmag={0:0.2f} srmag={1:0.2f} (dist={2:0.2f})".format(sgmag2, srmag2, distpsnr2)
+			# 	self.logger.info(self.why)
+			# 	return None
 
-			if ((srmag3<0) or (sgmag3<0)) and (abs(distpsnr3)< self.MaxDistPS1source):
-				self.why = "3rd PS1 match saturated(?) sgmag={0:0.2f} srmag={1:0.2f} (dist={2:0.2f})".format(sgmag3, srmag3, distpsnr3)
-				self.logger.info(self.why)
-				return None
+			# if ((srmag3<0) or (sgmag3<0)) and (abs(distpsnr3)< self.MaxDistPS1source):
+			# 	self.why = "3rd PS1 match saturated(?) sgmag={0:0.2f} srmag={1:0.2f} (dist={2:0.2f})".format(sgmag3, srmag3, distpsnr3)
+			# 	self.logger.info(self.why)
+			# 	return None
 
 		these_filters =self.get_default_filters()
 
