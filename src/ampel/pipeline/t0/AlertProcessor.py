@@ -627,6 +627,7 @@ def init_db():
 			return blob['_id']
 	
 	db = client.get_database(opts.database)
+	db.add_user("ampel-readonly", read_only=True, password="password")
 	db['main'].create_index([('tranId', ASCENDING), ('alDocType', ASCENDING)])
 	
 	db = client.get_database(opts.database+'_config')
