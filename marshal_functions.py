@@ -110,7 +110,7 @@ class Sergeant(object):
 		return sources
 
 	def list_saved_sources(self):
-		t_now = Time.now()
+		t_now = datetime.datetime.now()
 		if self.cutprogramidx is None:
 			print('ERROR, first fix program_name upon init')
 			return []
@@ -151,12 +151,12 @@ class Sergeant(object):
 								d = LC['upperlim']
 							for datapoints in flot['data']:
 								if datapoints != []:
-									# Plotted time is reletive to the time of a db query when loading the script. 
+									# Plotted time is relative to the time of a db query when loading the script. 
 									# There might be a systemic offset from the actual MJD.
 									d[flot['label']].append([t_now.mjd + datapoints[0], -datapoints[1]])
 					sources[-1]["LC"] = LC
 
-			except IndexError:
+				except IndexError:
 					print('{0} has no annotation'.format(sources[-1]["objname"]))
 		return sources
 
