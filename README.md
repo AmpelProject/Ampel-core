@@ -5,7 +5,6 @@ First, creat a config file called ~/.ptfconfig.cfg with the following content.
 [Marshal]
 user = your_username_on_marshal
 passw = your_password
-maxage = 1
 ```
 ```
 import marshal_functions
