@@ -232,8 +232,8 @@ def get_comments(sourcename='',source={}):
 			lines = cell_str.split('\n')			
 			if lines[5].find(':')>0:
 				comment_id = int(lines[2].split('id=')[1].split('''"''')[0])
-				print ('comment id=',comment_id)
-				date_author, type = (lines[5].strip(']:').split('['))
+				print ('comment id =',comment_id)
+				date_author, type = (lines[5].strip(']:').strip().split('['))
 				date, author = '-'.join(date_author.split(' ')[0:3]), date_author.split(' ')[3].strip()
 				text = lines[9].strip()
 				text = text.replace(', [',')') # this deals with missing urls to [reference] in auto_annoations
@@ -277,12 +277,14 @@ def comment(comment, sourcename='',source={}, comment_type="info", comment_id=No
 		print ('getting current comments...')
 		comment_list = get_comments(sourcename=sourcename, source=source)
 	
-	current_comm = ''.join([tup[4] for tup in source['comments'] if tup[2]==comment_type])
+	current_comm = ''.join([tup[4] for tup in comment_list if tup[3]==comment_type])
 
 	
 	if comment in ''.join(current_comm):	
 		print ('this comment was already made in current comments')
-		return
+		current_id = [tup[0] for tup in comment_list if ((tup[3]==comment_type) and (comment in tup[4]))][0]) # perhaps too pythonic...?
+		print ('to replace it, call this function with comment_id={}'.format(current_id)
+		return current_id
 
 
 	print ('setting up comment script...')
