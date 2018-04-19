@@ -25,8 +25,8 @@ import re, os, datetime, json
 from collections import defaultdict
 
 # less standard imports
-from bs4 import BeautifulSoup
-import yaml  # pip3 install pyyaml
+from bs4 import BeautifulSoup 	# pip3 install bs4 + pip3 install lxml
+import yaml  					# pip3 install pyyaml
 from astropy.time import Time
 
 marshal_root = 'http://skipper.caltech.edu:8080/cgi-bin/growth/'
@@ -50,14 +50,11 @@ def get_marshal_html(weblink):
 	conf = PTFConfig()
 	
 	#base64string = base64.encodestring('%s:%s' % (conf.get('Marshal', 'user'), conf.get('Marshal', 'passw'))).replace('\n', '') # doesn't work in python3
-	# pswd_str = '%s:%s' % (conf.get('Marshal', 'user'), conf.get('Marshal', 'passw'))
-	# base64string = base64.b64encode(pswd_str.encode('ascii'))[0:-1]
-	# print (base64string)
-
 	# request.add_header("Authorization", "Basic %s" % base64string)
 	#return urlopen(request).read()
 
 	reponse = requests.get(weblink, auth=requests.auth.HTTPBasicAuth(conf.get('Marshal', 'user'), conf.get('Marshal', 'passw')))
+
 	return reponse.text
 
 	
