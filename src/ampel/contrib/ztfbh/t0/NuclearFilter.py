@@ -2,8 +2,8 @@
 # -*- coding: utf-8 -*-
 # File              : src/ampel/contrib/ztfbh/t0/NuclearFilter.py
 # Author            : sjoertvv <sjoert@umd.edu>
-# Date              : 02.26.2018
-# Last Modified Date: 
+# Date              : 26.feb.2018
+# Last Modified Date: 19.apr.2018
 # Last Modified By  : svv
 
 
@@ -176,7 +176,7 @@ class TFilter(AbsAlertFilter):
 			# 	self.logger.info(self.why)
 			# 	return None
 
-		these_filters =self.get_default_filters()
+		these_filters =self._default_filters
 
 		# get RealBogus scores for observations, check number of bad pixels
 		tuptup = alert.get_ntuples(["rb","jd", "magnr", "isdiffpos"], filters=these_filters)		
