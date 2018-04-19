@@ -213,18 +213,22 @@ def get_comments(sourcename='',source={}):
 				print ('---')
 	return all_comments
 
-def add_comment(comment, sourcename='',source={}, comment_type="info", force_classification=False):
+
+
+# todo: us comment ID to overwrite/edit comments 
+def comment(comment, sourcename='',source={}, comment_type="info", comment_id=None, remove=False):
 	
 	'''
-	>>> soup_out = add_comment("dummy", sourcename='ZTF17aacscou')
+	>>> soup_out = comment("dummy", sourcename='ZTF17aacscou')
 
 	attempt is made to avoid duplicates
 	when source dict is given as input we use this to check for current comments
 
 	default comment type is "info", other options are "redshift", "classification", "comment"
 
-	when pushing comment_type="classification", you have the option to 
-	use force_classification=True to force overwrite of the  excisiting classification
+	comments are not added if identical text has already been added (by anyone)
+	to replace an excisiting comment, give comment_id as input 
+	removing comment is not yet implemented
 	'''
 
 	if not('objname' in source) and not(sourcename):
@@ -235,33 +239,28 @@ def add_comment(comment, sourcename='',source={}, comment_type="info", force_cla
 		sourcename = source["objname"]	
 
 	# check if already have a dict with current comments (we check only the comment text, not the Marshal username)
-	if 'comments' in source:
-		comment_list = source['comments']
-	else:
-		print ('getting current comments...')
-		comment_list = get_comments(sourcename=sourcename, source=source).values()
+	if comment_id is None:
+		if 'comments' in source:
+			comment_list = source['comments']
+		else:
+			print ('getting current comments...')
+			comment_list = get_comments(sourcename=sourcename, source=source).values()
 	
-	current_comm = '  '.join([tup[4] for tup in comment_list]) # join all comments into one string
+		current_comm = '  '.join([tup[4] for tup in comment_list]) # join all comments into one string
 
-	# if adding info/comments/redshift check this was written already
-	if comment_type != 'classification':
+		# check if something similar was written already
+		# to do: check only for comments of the same type
 		if comment in current_comm:	
 			print ('this comment was already made in current comments')
 			return
 
-	#  checks to change the classification of a source
-	else:
-		if not force_classification:
-			if not ('objtype' in source):
-				print ('require source dict as input when adding classification \n(use force_classification=True to ignore this check)')
-				return
-			if source['objtype']!='None':
-				print ('this source already has a classification:',source['objtype'])
-				print ('(use force_classification=True to overwrite it)')
-				return
-
 	print ('setting up comment script...')
-	soup = soup_obj(marshal_root + 'view_source.cgi?name=%s' %sourcename)
+	url = marshal_root + 'view_source.cgi?name=%s' %sourcename
+	
+	if (comment_id is not None):
+		url +='id='+str(comment_id)
+	
+	soup = soup_obj(url)
 	cmd = {}
 	for x in soup.find('form', {'action':"edit_comment.cgi"}).findAll('input'):
 		if x["type"] == "hidden":
