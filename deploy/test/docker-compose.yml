@@ -2,11 +2,11 @@ version: '3.4'
 services:
   mongo:
     image: mongo:3.6
-    command: ["mongod", "--port", "27018"]
+    command: ["mongod", "--port", "2000"]
     volumes:
-      - ./tmp/mongo:/data/db
+      - /data/ampel/mongo/test:/data/db
     ports:
-      - "27018:27018"
+      - "2000:2000"
     secrets:
       - mongo-root-password
     environment:
@@ -19,12 +19,12 @@ services:
         max_attempts: 3
   archive:
     image: postgres:10.3
-    command: ["postgres"]
+    command: ["postgres", "-p", "2001"]
     volumes:
       - /var/tmp:/run/postgresql
-      - ./tmp/postgres:/var/lib/postgresql/data
+      - /data/ampel/archive/test:/var/lib/postgresql/data
     ports:
-      - "5432:5432"
+      - "2001:2001"
     secrets:
       - archive-user-password
     environment:
@@ -38,30 +38,26 @@ services:
         max_attempts: 3
   ampel:
     image: ampel
-    command: ["/Ampel/deploy/ampel-start.sh"]
+    command: ["/Ampel/deploy/test/run_tests.sh"]
     volumes:
-      - ..:/Ampel
-      - ./ztfdata:/ztf
+      - /scratch/jvs/Ampel:/Ampel
+#      - ./ztfdata:/ztf
       
     secrets:
       - archive-user-password
       - mongo-root-password
     environment:
       TINI_SUBREAPER: 1
-      MONGO: mongo:27018
+      MONGO: mongo:2000
       MONGO_INITDB_ROOT_USERNAME: root
       MONGO_INITDB_ROOT_PASSWORD_FILE: /run/secrets/mongo-root-password
-      ARCHIVE: archive:5432
+      ARCHIVE: archive:2001
       POSTGRES_PASSWORD_FILE: /run/secrets/archive-user-password
       POSTGRES_USER: ampel
-    extra_hosts:
-      - "kafka:128.95.79.19"
-      - "kafka2:128.95.79.19"
-      - "kafka3:128.95.79.19"
     deploy:
       restart_policy:
         delay: 1s
-        max_attempts: 3
+        max_attempts: 0
     depends_on:
       - mongo
       - archive
@@ -71,5 +67,3 @@ secrets:
     file: secrets/archive-user-password.txt
   mongo-root-password:
     file: secrets/mongo-root-password.txt
-volumes:
-  envs:

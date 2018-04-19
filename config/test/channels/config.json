@@ -1,0 +1,187 @@
+[{
+	"_id": "HU_EARLY_SN",
+	"version": 1.0,
+	"input": [
+		{
+			"instrument": "ZTF",
+			"alerts": "IPAC",
+			"parameters": {
+				"ZTFPartner": true,
+				"autoComplete": true,
+				"updatedHUZP": false
+			}
+		}
+	],
+	"t0Filter": {
+		"classFullPath": "ampel.contrib.hu.t0.SNFilter",
+		"parameters": {
+			"slopeMin": 0,
+			"slopeMax": 0
+		}
+	},
+	"t2Compute": [
+		{
+			"t2Unit": "SNCOSMO",
+			"runSettings": "default"
+		},
+		{
+			"t2Unit": "AGN",
+			"runSettings": "default"
+		}
+	]
+},
+{
+	"_id": "HU_SN1",
+	"version": 1.0,
+	"input": [
+		{
+			"instrument": "ZTF",
+			"alerts": "IPAC",
+			"parameters": {
+				"ZTFPartner": true,
+				"autoComplete": true,
+				"updatedHUZP": false
+			}
+		}
+	],
+	"t0Filter": {
+		"classFullPath": "ampel.contrib.hu.t0.NoFilter",
+		"parameters": {
+			"criteria": [
+				{
+					"rb": 0.8,
+					"operator": "\u003e"
+				},
+				{
+					"fid": 1,
+					"operator": "="
+				},
+				{
+					"mag": 18,
+					"operator": "\u003c"
+				}
+			],
+			"len": 3,
+			"operator": "\u003e"
+		}
+	},
+	"t2Compute": [
+		{
+			"t2Unit": "SNCOSMO",
+			"runSettings": "default"
+		},
+		{
+			"t2Unit": "AGN",
+			"runSettings": "default"
+		},
+		{
+			"t2Unit": "PHOTO_Z",
+			"runSettings": "default"
+		},
+		{
+			"t2Unit": "PHOTO_TYPE",
+			"runSettings": "default"
+		}
+	]
+},
+{
+	"_id": "HU_SN2",
+	"version": 1.0,
+	"input": [
+		{
+			"instrument": "ZTF",
+			"alerts": "IPAC",
+			"parameters": {
+				"ZTFPartner": true,
+				"autoComplete": true,
+				"updatedHUZP": false
+			}
+		}
+	],
+	"t0Filter": {
+		"classFullPath": "ampel.pipeline.t0.filters.BasicMultiFilter",
+		"parameters": {
+			"filters": [
+				{
+					"criteria": [
+						{
+							"rb": 0.8,
+							"operator": "\u003e"
+						},
+						{
+							"fid": 1,
+							"operator": "="
+						},
+						{
+							"mag": 18,
+							"operator": "\u003c"
+						}
+					],
+					"len": 3,
+					"operator": "\u003e"
+				},
+				{
+					"logicalConnection": "AND",
+					"criteria": [
+						{
+							"magdiff": 0.01,
+							"operator": "\u003e"
+						}
+					],
+					"len": 3,
+					"operator": "\u003e"
+				}
+			]
+		}
+	},
+	"t2Compute": [
+		{
+			"t2Unit": "SNCOSMO",
+			"runSettings": "advanced"
+		},
+		{
+			"t2Unit": "POLYFIT",
+			"runSettings": "default"
+		},
+		{
+			"t2Unit": "PHOTO_TYPE",
+			"runSettings": "default"
+		}
+	]
+},
+{
+	"_id": "HU_RANDOM",
+	"version": 1.0,
+	"input": [
+		{
+			"instrument": "ZTF",
+			"alerts": "IPAC",
+			"parameters": {
+				"ZTFPartner": true,
+				"autoComplete": true,
+				"updatedHUZP": false
+			}
+		}
+	],
+	"t0Filter": {
+		"classFullPath": "ampel.contrib.hu.t0.RandFilter",
+		"parameters": {
+			"threshold": 1
+		}
+	},
+	"t2Compute": [
+		{
+			"t2Unit": "SNCOSMO",
+			"runSettings": "other"
+		},
+		{
+			"t2Unit": "AGN",
+			"runSettings": "default"
+		},
+		{
+			"t2Unit": "PHOTO_TYPE",
+			"runSettings": "default"
+		}
+	]
+}]
+

@@ -607,18 +607,25 @@ def init_db():
 	parser = ArgumentParser(description=__doc__, formatter_class=ArgumentDefaultsHelpFormatter)
 	parser.add_argument('--host', default='localhost:27017',
 	    help='MongoDB server address and port')
-	parser.add_argument('-d', '--database', default='Ampel',
-	    help='Database name')
+	parser.add_argument('-d', '--database', default='Ampel_config',
+	    help='Configuration database name')
 	parser.add_argument('--config', nargs='+', default=glob.glob(pattern),
 	    help='JSON files to be inserted into the "config" collection')
 	
 	opts = parser.parse_args()
+
+	dbs = create_databases(opts.host, opts.database, opts.config)
+	dbs[0].add_user("ampel-readonly", read_only=True, password="password")
+
+def create_databases(host, database_name, configs):
 	
+	import os
+	from os.path import basename, dirname
 	from pymongo import MongoClient, ASCENDING
 	from bson import ObjectId
 	import json
 	from ampel.archive import docker_env
-	client = MongoClient(opts.host, username=os.environ.get('MONGO_INITDB_ROOT_USERNAME', 'root'), password=docker_env('MONGO_INITDB_ROOT_PASSWORD'))
+	client = MongoClient(host, username=os.environ.get('MONGO_INITDB_ROOT_USERNAME', 'root'), password=docker_env('MONGO_INITDB_ROOT_PASSWORD'))
 	
 	def get_id(blob):
 		if isinstance(blob['_id'], dict) and '$oid' in blob['_id']:
@@ -626,18 +633,24 @@ def init_db():
 		else:
 			return blob['_id']
 	
-	db = client.get_database(opts.database)
-	db.add_user("ampel-readonly", read_only=True, password="password")
-	db['main'].create_index([('tranId', ASCENDING), ('alDocType', ASCENDING)])
-	
-	db = client.get_database(opts.database+'_config')
-	for config in opts.config:
+	db = client.get_database(database_name)
+	for config in configs:
 		collection_name = basename(dirname(config))
 		collection = db[collection_name]
 		with open(config) as f:
 			for blob in json.load(f):
 				blob['_id'] = get_id(blob)
 				collection.replace_one({'_id':blob['_id']}, blob, upsert=True)
+	config = db['global'].find_one({'_id':'dbSpecs'})
+
+	spec = config['transients']
+	main_db = client.get_database(spec['dbName'])
+	main_db[spec['collectionName']].create_index([('tranId', ASCENDING), ('alDocType', ASCENDING)])
+
+	spec = config['logs']
+	log_db = client.get_database(spec['dbName'])
+
+	return client.get_database('admin'), db, main_db, log_db
 
 def _ingest_slice(host, archive_host, infile, start, stop):
 	from ampel.archive import ArchiveDB, docker_env

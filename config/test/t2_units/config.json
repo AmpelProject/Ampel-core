@@ -1,0 +1,42 @@
+[{
+	"_id": "POLYFIT",
+	"classFullPath": "ampel.contrib.hu.examples.t2.T2ExamplePolyFit",
+	"author": "ztf-software@desy.de",
+	"version": 1.0,
+	"baseParameters": {
+		"fitFunction": "polyfit"
+	}
+},
+{
+	"_id": "SNCOSMO",
+	"classFullPath": "ampel.contrib.hu.examples.t2.SNComso",
+	"version": 1.0,
+	"baseParameters": {
+		"template": "something"
+	}
+},
+{
+	"_id": "AGN",
+	"classFullPath": "ampel.contrib.hu.examples.t2.",
+	"version": 1.0,
+	"baseParameters": {
+		"template": "something"
+	}
+},
+{
+	"_id": "PHOTO_Z",
+	"classFullPath": "ampel.contrib.hu.examples.t2.",
+	"version": 1.0,
+	"baseParameters": {
+		"template": "something"
+	}
+},
+{
+	"_id": "PHOTO_TYPE",
+	"classFullPath": "ampel.contrib.hu.examples.t2.",
+	"version": 1.0,
+	"baseParameters": {
+		"template": "something"
+	}
+}]
+

@@ -1,0 +1,23 @@
+[{
+	"_id": {
+		"$oid": "5a971ac4917475b835346582"
+	},
+	"t3_unit": "SLACKPUBLISHER",
+	"paramId": "hu_sp_1",
+	"parameters": {
+		"auth_token": "xoxb-298132201170-O0GcJpOSNYcF84wukZNtcZN8",
+		"prefix": "Hello Slack!"
+	}
+},
+{
+	"_id": {
+		"$oid": "5a971acd917475b835346596"
+	},
+	"t3_unit": "SLACKPUBLISHER",
+	"paramId": "hu_sp_2",
+	"parameters": {
+		"auth_token": "xxxxxxxxxxxxxxxxxxxxxxxxxxx",
+		"prefix": "Hello again Slack!"
+	}
+}]
+
