@@ -5,7 +5,12 @@ import urllib, urllib2,base64,pickle
 from bs4 import BeautifulSoup
 import re, os, datetime, json
 import yaml
+<<<<<<< HEAD
 import astropy.time
+=======
+from collections import defaultdict
+from astropy.time import Time
+>>>>>>> lc
 
 marshal_root = 'http://skipper.caltech.edu:8080/cgi-bin/growth/'
 listprog_url = marshal_root + 'list_programs.cgi'
@@ -112,18 +117,19 @@ class Sergeant(object):
 				sources[-1][key.strip(':')] = tag.next_sibling.strip()
 		return sources
 
+<<<<<<< HEAD
 	def list_saved_sources(self):
 		t_now = astropy.time.Time.now()
+=======
+	def list_saved_sources(self, lims = False):
+		t_now = Time.now()
+>>>>>>> lc
 		if self.cutprogramidx is None:
 			print('ERROR, first fix program_name upon init')
 			return []
-		self.saved_soup = soup_obj(rawsaved_url + "?programidx=%s" %(self.cutprogramidx))
-		
-		#print ('saved soup:',self.saved_soup)
-
-		table = self.saved_soup.findAll('table')
-		table_rows = table[1].findAll('tr')[1:-1]
+		targ0 = 0
 		sources = []
+<<<<<<< HEAD
 		for row in table_rows:
 			sources.append({})
 			cells = row.findAll('td')
@@ -161,6 +167,59 @@ class Sergeant(object):
 
 				except IndexError:
 					print('{0} has no annotation'.format(sources[-1]["objname"]))
+=======
+		while True:
+			self.saved_soup = soup_obj(rawsaved_url + "?programidx=%s&offset=%s" %(self.cutprogramidx, targ0))
+			
+			#print ('saved soup:',self.saved_soup)
+
+			table = self.saved_soup.findAll('table')
+			table_rows = table[1].findAll('tr')[1:-1]
+			if len(table_rows) < 2:
+				break
+			for row in table_rows:
+				cells = row.findAll('td')
+				if len(cells) > 1:
+					sources.append({})
+					try:
+						sources[-1]["objname"] = cells[1].find('a').text
+						sources[-1]["objtype"] = cells[2].find('font').text.strip()
+						sources[-1]["z"] = cells[3].find('font').text.strip()
+						sources[-1]["ra"], sources[-1]["dec"] = re.findall(r'<.*><.*>(.*?)<br/>(.*?)</font></td>', str(cells[4]))[0]
+						try:
+							sources[-1]["phot"], sources[-1]["dt"] = re.findall(r'<.*><.*>.*? = (.*?)<br/> \((.*?) d\)</font></td>', str(cells[5]))[0]
+						except IndexError:
+							sources[-1]["phot"], sources[-1]["dt"] = re.findall(r'<.*><.*>.*? \&gt; (.*?)<br/> \((.*?) d\)</font></td>', str(cells[5]))[0]
+							sources[-1]["phot"] = '>' + sources[-1]["phot"]
+						sources[-1]["annotation"] = {}
+						keys = cells[11].findAll('font', {'color': '#0072bc'})
+						values = cells[-1].findAll('font', {'color': 'black'})
+						for key_name, val in zip(keys, values):
+							sources[-1]["annotation"][key_name.text.strip()] = val.text.strip()
+						v = re.search(r'var data\d+\s*=(\s*(.*)\} \}\,\])', cells[6].find('script').text.replace('\n','')).group(1)
+						plot_data = yaml.load(v)
+						LC = {'detection': {}, 'upperlim': {}}
+						for flot in plot_data:
+							if flot['label'] != 'test' and flot['points']['show'] == True:
+								if flot['label'] not in LC['detection']:
+									LC['detection'][flot['label']] = []
+									LC['upperlim'][flot['label']] = []
+
+								if flot['points']['type'] == 'o':
+									d = LC['detection']
+								elif flot['points']['type'] == 'dV' and lims == True:
+									d = LC['upperlim']
+								else:
+									d = defaultdict(list)
+								for datapoints in flot['data']:
+									if datapoints != []:
+										d[flot['label']].append([t_now.mjd + datapoints[0], -datapoints[1]])
+						sources[-1]["LC"] = LC
+
+					except IndexError:
+						print('{0} has no annotation'.format(sources[-1]["objname"]))
+			targ0 += 100
+>>>>>>> lc
 		return sources
 
 def get_comments(sourcename='',source={}):
