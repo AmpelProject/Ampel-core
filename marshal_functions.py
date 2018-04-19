@@ -5,12 +5,8 @@ import urllib, urllib2,base64,pickle
 from bs4 import BeautifulSoup
 import re, os, datetime, json
 import yaml
-<<<<<<< HEAD
-import astropy.time
-=======
 from collections import defaultdict
 from astropy.time import Time
->>>>>>> lc
 
 marshal_root = 'http://skipper.caltech.edu:8080/cgi-bin/growth/'
 listprog_url = marshal_root + 'list_programs.cgi'
@@ -41,8 +37,6 @@ def soup_obj(url):
 def save_source(candid, progid):
 	return BeautifulSoup(get_marshal_html(saving_url %(candid, progid)), 'lxml') 
 
-
-
 today = datetime.datetime.now().strftime('%Y-%m-%d')
 fivedaysago = (datetime.datetime.now() - datetime.timedelta(days=5)).strftime('%Y-%m-%d')
 
@@ -70,7 +64,7 @@ class Sergeant(object):
 		self.program_name = program_name
 		self.cutprogramidx = None
 		self.program_options =[]
- 
+
 		soup = soup_obj(listprog_url)
 
 		for x in json.loads(soup.find('p').text.encode("ascii")):
@@ -117,57 +111,13 @@ class Sergeant(object):
 				sources[-1][key.strip(':')] = tag.next_sibling.strip()
 		return sources
 
-<<<<<<< HEAD
-	def list_saved_sources(self):
-		t_now = astropy.time.Time.now()
-=======
 	def list_saved_sources(self, lims = False):
 		t_now = Time.now()
->>>>>>> lc
 		if self.cutprogramidx is None:
 			print('ERROR, first fix program_name upon init')
 			return []
 		targ0 = 0
 		sources = []
-<<<<<<< HEAD
-		for row in table_rows:
-			sources.append({})
-			cells = row.findAll('td')
-			if len(cells) > 1:
-				try:
-					sources[-1]["objname"] = cells[1].find('a').text
-					sources[-1]["objtype"] = cells[2].find('font').text.strip()
-					sources[-1]["z"] = cells[3].find('font').text.strip()
-					sources[-1]["ra"], sources[-1]["dec"] = re.findall(r'<.*><.*>(.*?)<br/>(.*?)</font></td>', str(cells[4]))[0]
-					sources[-1]["phot"], sources[-1]["dt"] = re.findall(r'<.*><.*>.*? = (.*?)<br/> \((.*?) d\)</font></td>', str(cells[5]))[0]
-					sources[-1]["annotation"] = {}
-					keys = cells[11].findAll('font', {'color': '#0072bc'})
-					values = cells[-1].findAll('font', {'color': 'black'})
-					for key_name, val in zip(keys, values):
-						sources[-1]["annotation"][key_name.text.strip()] = val.text.strip()
-					v = re.search(r'var data\d+\s*=(\s*(.*)\} \}\,\])', cells[6].find('script').text.replace('\n','')).group(1)
-					plot_data = yaml.load(v)
-					LC = {'detection': {}, 'upperlim': {}}
-					for flot in plot_data:
-						if flot['label'] != 'test' and flot['points']['show'] == True:
-							if flot['label'] not in LC['detection']:
-								LC['detection'][flot['label']] = []
-								LC['upperlim'][flot['label']] = []
-
-							if flot['points']['type'] == 'o':
-								d = LC['detection']
-							elif flot['points']['type'] == 'dV':
-								d = LC['upperlim']
-							for datapoints in flot['data']:
-								if datapoints != []:
-									# Plotted time is relative to the time of a db query when loading the script. 
-									# There might be a systemic offset (~few seconds) from the actual MJD.
-									d[flot['label']].append([ t_now.mjd + datapoints[0], -datapoints[1]])
-					sources[-1]["LC"] = LC
-
-				except IndexError:
-					print('{0} has no annotation'.format(sources[-1]["objname"]))
-=======
 		while True:
 			self.saved_soup = soup_obj(rawsaved_url + "?programidx=%s&offset=%s" %(self.cutprogramidx, targ0))
 			
@@ -219,13 +169,12 @@ class Sergeant(object):
 					except IndexError:
 						print('{0} has no annotation'.format(sources[-1]["objname"]))
 			targ0 += 100
->>>>>>> lc
 		return sources
 
 def get_comments(sourcename='',source={}):
 	'''
-	>>> comments = get_comments('ZTF18aabtxvd')
-	get the current comments for a source, a list of tuples: (id, date, author, type, text)
+	>>> some_str = get_comments('ZTF18aabtxvd')
+	get the current comment for a source
 	
 	>>> some_str = get_comments(source=source)
 	get the current comments, and add them the source dict 
@@ -246,48 +195,38 @@ def get_comments(sourcename='',source={}):
 	soup = soup_obj(marshal_root + 'view_source.cgi?name=%s' %sourcename)
 	table = soup.findAll('table')[0]
 	cells = table.findAll('span')
-	all_comments = []
+	all_comments = [] 
 	
 	for cell in cells:
 	
 		cell_str = cell.decode(0)	
-		if (cell_str.find('edit_comment')>0) or (cell_str.find('add_autoannotation')>0):
+		if cell_str.find('edit_comment')>0:
 			lines = cell_str.split('\n')			
 			if lines[5].find(':')>0:
-				comment_id = int(lines[2].split('id=')[1].split('''"''')[0])
-				print ('comment id=',comment_id)
 				date_author, type = (lines[5].strip(']:').split('['))
-				date, author = '-'.join(date_author.split(' ')[0:3]), date_author.split(' ')[3].strip()
 				text = lines[9].strip()
-				text = text.replace(', [',')') # this deals with missing urls to [reference] in auto_annoations
 				one_line = '{0} [{1}]: {2}'.format(date_author, type, text)
 				print (one_line)
 
 				# add comments to source dict
-				comment_tuple = (comment_id, date, author, type, text)
 				if source:
-					source['comments'].append( comment_tuple )
-				# add to the output dict
-				all_comments.append( comment_tuple )
+					source['comments'].append((date_author.strip(), type, text))
+				all_comments.append( one_line )
 				print ('---')
 	return all_comments
 
-
-
-# todo: us comment ID to overwrite/edit comments 
-def comment(comment, sourcename='',source={}, comment_type="info", comment_id=None, remove=False):
+def add_comment(comment, sourcename='',source={}, comment_type="info", force_classification=False):
 	
 	'''
-	>>> soup_out = comment("dummy", sourcename='ZTF17aacscou')
+	>>> soup_out = add_comment("dummy", sourcename='ZTF17aacscou')
 
 	attempt is made to avoid duplicates
 	when source dict is given as input we use this to check for current comments
 
 	default comment type is "info", other options are "redshift", "classification", "comment"
 
-	comments are not added if identical text has already been added (by anyone)
-	to replace an excisiting comment, give comment_id as input 
-	removing comment is not yet implemented
+	when pushing comment_type="classification", you have the option to 
+	use force_classification=True to force overwrite of the  excisiting classification
 	'''
 
 	if not('objname' in source) and not(sourcename):
@@ -297,38 +236,42 @@ def comment(comment, sourcename='',source={}, comment_type="info", comment_id=No
 	if not(sourcename):
 		sourcename = source["objname"]	
 
-	# check if already have a dict with current comments (we check only the comment text, not the Marshal username)
-	if comment_id is None:
-		if 'comments' in source:
-			comment_list = source['comments']
-		else:
-			print ('getting current comments...')
-			comment_list = get_comments(sourcename=sourcename, source=source).values()
-	
-		current_comm = '  '.join([tup[4] for tup in comment_list]) # join all comments into one string
+	# check if already have a dict with current comments 
+	if 'comments' in source:
+		current_comm = [tup[2] for tup in source['comments']]
+	else:
+		print ('getting current comments...')
+		current_comm = get_comments(sourcename=sourcename, source=source)
 
-		# check if something similar was written already
-		# to do: check only for comments of the same type
-		if comment in current_comm:	
+	#print (current_comm)
+	if comment_type != 'classification':
+		if comment in ''.join(current_comm):	
 			print ('this comment was already made in current comments')
 			return
 
+	# extra strict checks to change the classification of a source
+	else:
+		if not force_classification:
+			if not ('objtype' in source):
+				print ('require source dict as input when adding classification \n(use force_classification=True to ignore this check)')
+				return
+			if source['objtype']!='None':
+				print ('this source already has a classification:',source['objtype'])
+				print ('(use force_classification=True to overwrite it)')
+				return
+
 	print ('setting up comment script...')
-	url = marshal_root + 'view_source.cgi?name=%s' %sourcename
-	
-	soup = soup_obj(url)
+	soup = soup_obj(marshal_root + 'view_source.cgi?name=%s' %sourcename)
 	cmd = {}
 	for x in soup.find('form', {'action':"edit_comment.cgi"}).findAll('input'):
 		if x["type"] == "hidden":
 			cmd[x['name']] =x['value']
 	cmd["comment"] = comment
 	cmd["type"] = comment_type
-	if comment_id is not None:
-		cmd["id"] = str(comment_id)
 
 	print ('pushing comment to marshal...')
 	params = urllib.urlencode(cmd)
-	try:	
+	try:
 		return soup_obj(marshal_root + 'edit_comment.cgi?%s' %params)
 	except error:
 		#print (error)
@@ -377,30 +320,19 @@ def get_some_info():
 	SN Ibn
 	SN Ic
 	SN Ic-BL
-	SN II
-	SN IIP
-	SN IIL
-	SN IIb
-	SN IIn
+	SN II">SN II
+	SN IIP">SN IIP
+	SN IIL">SN IIL
+	SN IIb">SN IIb
+	SN IIn">SN IIn
 	SN?
 	SLSN-I
 	SLSN-II
 	SLSN-R
 	SN I-faint
-	Afterglow 
-	QSO
-	QSO?
-	photo QSO
-	AGN 
+	Afterglow
+	AGN
 	AGN?
-	photo AGN
-	Seyfert 2
-	Seyfert 1.9
-	Seyfert 1.8
-	Blazar
-	LINER
-	CLAGN
-	CLQ
 	CV
 	CV?
 	LBV
@@ -425,23 +357,19 @@ def get_some_info():
 # testing
 def testing():
 
-	print (get_comments('ZTF18aahkrpr'))
-
 	progn = 'ZTF Science Validation'
 	progn = 'Nuclear Transients'
 	inst = Sergeant(progn)	
 		
 	#scan_sources = inst.list_scan_sources()
 	#print ('# of scan sources', len(scan_sources) )
-	
 	saved_sources = inst.list_saved_sources()
+
+	this_source = (item for item in saved_sources if item["objname"] == "ZTF18aagteoy").next()
+	get_comments(this_source)
+
+	#print (saved_sources)
 	print ('# saved sources:',len(saved_sources)) 
-
-	#this_source = (item for item in saved_sources if item["objname"] == "ZTF18aagteoy").next()
-	this_source  = save_sources[1] # pick one 
-
-	print ( get_comments(source=this_source) )
-
 
 
 if __name__ == "__main__":
