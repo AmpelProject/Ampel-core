@@ -17,7 +17,7 @@ from collections import defaultdict
 import  configparser 			# pip3 install configparser
 from bs4 import BeautifulSoup 	# pip3 install bs4 + pip3 install lxml
 import yaml  					# pip3 install pyyaml
-from astropy.time import time 	# pip3 install astropy
+from astropy.time import Time 	# pip3 install astropy
 
 marshal_root = 'http://skipper.caltech.edu:8080/cgi-bin/growth/'
 listprog_url = marshal_root + 'list_programs.cgi'
