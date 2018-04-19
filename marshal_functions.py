@@ -8,12 +8,16 @@
 # Last Modified By  : Sjoert 
 from __future__ import print_function
 
-import urllib, urllib2,base64,pickle
-from bs4 import BeautifulSoup
+import requests
+import urllib, base64
 import re, os, datetime, json
-import yaml
 from collections import defaultdict
-from astropy.time import Time
+
+# less standard imports
+import  configparser 			# pip3 install configparser
+from bs4 import BeautifulSoup 	# pip3 install bs4 + pip3 install lxml
+import yaml  					# pip3 install pyyaml
+from astropy.time import time 	# pip3 install astropy
 
 marshal_root = 'http://skipper.caltech.edu:8080/cgi-bin/growth/'
 listprog_url = marshal_root + 'list_programs.cgi'
@@ -22,21 +26,23 @@ saving_url = marshal_root + 'save_cand_growth.cgi?candid=%s&program=%s'
 rawsaved_url = marshal_root + 'list_sources_bare.cgi'
 annotate_url = marshal_root + 'edit_comment.cgi'
 
+
 class PTFConfig(object) :
-	def __init__(self) :
-		import ConfigParser
+	def __init__(self) :		
 		self.fname = os.path.expanduser('~/.ptfconfig.cfg')
-		self.config = ConfigParser.SafeConfigParser()
+		self.config = configparser.ConfigParser()
 		self.config.read(self.fname)
 	def get(self,*args,**kwargs) :
 		return self.config.get(*args,**kwargs)
 
 def get_marshal_html(weblink):
-	request = urllib2.Request(weblink)
+	
 	conf = PTFConfig()
-	base64string = base64.encodestring('%s:%s' % (conf.get('Marshal', 'user'), conf.get('Marshal', 'passw'))).replace('\n', '')
-	request.add_header("Authorization", "Basic %s" % base64string)
-	return urllib2.urlopen(request).read()
+
+	reponse = requests.get(weblink, auth=requests.auth.HTTPBasicAuth(conf.get('Marshal', 'user'), conf.get('Marshal', 'passw')))
+
+	return reponse.text
+
 
 def soup_obj(url):
 	return BeautifulSoup(get_marshal_html(url), 'lxml')
