@@ -148,12 +148,15 @@ class Sergeant(object):
 							sources[-1]["annotation"][key_name.text.strip()] = val.text.strip()
 						v = re.search(r'var data\d+\s*=(\s*(.*)\} \}\,\])', cells[6].find('script').text.replace('\n','')).group(1)
 						plot_data = yaml.load(v)
-						LC = {'detection': {}, 'upperlim': {}}
+						LC = {'detection': {}}
 						for flot in plot_data:
 							if flot['label'] != 'test' and flot['points']['show'] == True:
 								if flot['label'] not in LC['detection']:
 									LC['detection'][flot['label']] = []
-									LC['upperlim'][flot['label']] = []
+									if lims == True:
+										if 'upperlim' not in LC:
+											LC['upperlim'] = {}
+										LC['upperlim'][flot['label']] = []
 
 								if flot['points']['type'] == 'o':
 									d = LC['detection']
