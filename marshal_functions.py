@@ -1,4 +1,11 @@
-#!/usr/local/bin/python
+#!/usr/bin/env python
+# File              : ??/marshal_functions.py
+# License           : ?
+# First author      : Tiara Hung <tiarahung@astro.umd.edu>  
+# Second author 	: Sjoert van Velzen <sjoert@umd.edu>
+# Date              : 12.04.2018
+# Last Modified Date: 18.04.2018
+# Last Modified By  : Sjoert 
 from __future__ import print_function
 
 import urllib, urllib2,base64,pickle
@@ -294,7 +301,7 @@ def comment(comment, sourcename='',source={}, comment_type="info", comment_id=No
 
 
 info_date = 'April 2018'
-def get_some_info():
+def get_Marshal_info():
 	program_names=\
 	'''
 	22 Cataclysmic Variables (PI = Paula Szkody)
@@ -384,7 +391,7 @@ def testing():
 	print ('# saved sources:',len(saved_sources)) 
 
 	#this_source = (item for item in saved_sources if item["objname"] == "ZTF18aagteoy").next()
-	this_source  = save_sources[1] # pick one 
+	this_source  = saved_sources[1] # pick one 
 
 	print ( get_comments(source=this_source) )
 
