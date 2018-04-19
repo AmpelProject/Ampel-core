@@ -30,7 +30,16 @@ comment_list = marshal_functions.get_comments('ZTF18aabtxvd')
 ```
 
 
-Comment on view source page.
+A new comment on view source page.
 ```
-marshal_functions.add_comment("dummy", 'ZTF17aacscou', comment_type="info")
+marshal_functions.comment("dummy", 'ZTF17aacscou', comment_type="info")
 ```
+
+Replace comment
+```
+marshal_functions.comment("dummy", 'ZTF17aacscou', comment_type="info")
+comment_list = marshal_functions.get_comments('ZTF17aacscou')
+comment_id = comment_list[-1][0]
+marshal_functions.comment("extra dummy", 'ZTF17aacscou', comment_type="info", comment_id=comment_id)
+```
+
