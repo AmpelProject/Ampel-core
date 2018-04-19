@@ -277,7 +277,7 @@ def comment(comment, sourcename='',source={}, comment_type="info", comment_id=No
 		print ('getting current comments...')
 		comment_list = get_comments(sourcename=sourcename, source=source)
 	
-	current_comm = ''.join([tup[4] for tup in source['comments']])
+	current_comm = ''.join([tup[4] for tup in source['comments'] if tup[2]==comment_type])
 
 	
 	if comment in ''.join(current_comm):	
