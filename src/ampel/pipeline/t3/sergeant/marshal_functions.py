@@ -8,11 +8,25 @@
 # Last Modified By  : Sjoert 
 from __future__ import print_function
 
-import urllib, urllib2,base64,pickle
-from bs4 import BeautifulSoup
+# Python3
+try:
+	from urllib.request import Request
+	from urllib.request import urlopen
+	import  configparser # pip3 install configparser
+# Python 2
+except ImportError:	
+	from urllib2 import Request
+	from urllib2 import urlopen
+	import ConfigParser as configparser
+
+import requests
+import urllib, base64
 import re, os, datetime, json
-import yaml
 from collections import defaultdict
+
+# less standard imports
+from bs4 import BeautifulSoup
+import yaml  # pip3 install pyyaml
 from astropy.time import Time
 
 marshal_root = 'http://skipper.caltech.edu:8080/cgi-bin/growth/'
@@ -22,21 +36,31 @@ saving_url = marshal_root + 'save_cand_growth.cgi?candid=%s&program=%s'
 rawsaved_url = marshal_root + 'list_sources_bare.cgi'
 annotate_url = marshal_root + 'edit_comment.cgi'
 
+
 class PTFConfig(object) :
-	def __init__(self) :
-		import ConfigParser
+	def __init__(self) :		
 		self.fname = os.path.expanduser('~/.ptfconfig.cfg')
-		self.config = ConfigParser.SafeConfigParser()
+		self.config = configparser.ConfigParser()
 		self.config.read(self.fname)
 	def get(self,*args,**kwargs) :
 		return self.config.get(*args,**kwargs)
 
 def get_marshal_html(weblink):
-	request = urllib2.Request(weblink)
+	request = Request(weblink)
 	conf = PTFConfig()
-	base64string = base64.encodestring('%s:%s' % (conf.get('Marshal', 'user'), conf.get('Marshal', 'passw'))).replace('\n', '')
-	request.add_header("Authorization", "Basic %s" % base64string)
-	return urllib2.urlopen(request).read()
+	
+	#base64string = base64.encodestring('%s:%s' % (conf.get('Marshal', 'user'), conf.get('Marshal', 'passw'))).replace('\n', '') # doesn't work in python3
+	# pswd_str = '%s:%s' % (conf.get('Marshal', 'user'), conf.get('Marshal', 'passw'))
+	# base64string = base64.b64encode(pswd_str.encode('ascii'))[0:-1]
+	# print (base64string)
+
+	# request.add_header("Authorization", "Basic %s" % base64string)
+	#return urlopen(request).read()
+
+	reponse = requests.get(weblink, auth=requests.auth.HTTPBasicAuth(conf.get('Marshal', 'user'), conf.get('Marshal', 'passw')))
+	return reponse.text
+
+	
 
 def soup_obj(url):
 	return BeautifulSoup(get_marshal_html(url), 'lxml')
