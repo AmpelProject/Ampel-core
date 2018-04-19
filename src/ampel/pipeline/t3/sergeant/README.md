@@ -1,5 +1,17 @@
 ## Functions for pushing/pulling the Marshall (scanning page)
-Tested on python 2.7
+
+
+Tested on python 2.7, python3.6
+
+Some requirements: 
+
+pip3 install bs4
+pip3 install lxml
+pip3 install pyyaml
+pip3 install astropy
+
+
+
 First, create a config file called ~/.ptfconfig.cfg with the following content.
 ```
 [Marshal]
