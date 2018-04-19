@@ -35,7 +35,7 @@ marshal_functions.save_source(candid, progid)
 saved_scources = inst.list_saved_sources()
 ```
 
-View current comments (note, these do include the auto annotations)
+View current comments (including the auto annotations)
 ```
 comment_list = marshal_functions.get_comments('ZTF18aabtxvd')
 ```
@@ -45,4 +45,13 @@ A new comment on view source page.
 ```
 marshal_functions.comment("dummy", 'ZTF17aacscou', comment_type="info")
 ```
+
+Replace comment
+```
+marshal_functions.comment("dummy", 'ZTF17aacscou', comment_type="info")
+comment_list = marshal_functions.get_comments('ZTF17aacscou')
+comment_id = comment_list[-1][0]
+marshal_functions.comment("extra dummy", 'ZTF17aacscou', comment_type="info", comment_id=comment_id)
+```
+
 
