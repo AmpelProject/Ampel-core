@@ -11,7 +11,6 @@ pip3 install pyyaml
 pip3 install astropy
 
 
-
 First, create a config file called ~/.ptfconfig.cfg with the following content.
 ```
 [Marshal]
