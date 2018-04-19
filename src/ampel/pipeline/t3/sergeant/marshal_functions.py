@@ -2,7 +2,7 @@
 # File              : ??/marshal_functions.py
 # License           : ?
 # First author      : Tiara Hung <tiarahung@astro.umd.edu>  
-# Second author 	: Sjoert van Velzen <sjoert@umd.edu>
+# Second author 	: Sjoert van Velzen <sjoert@umd.edu> 
 # Date              : 12.04.2018
 # Last Modified Date: 18.04.2018
 # Last Modified By  : Sjoert 
@@ -48,10 +48,6 @@ class PTFConfig(object) :
 def get_marshal_html(weblink):
 	request = Request(weblink)
 	conf = PTFConfig()
-	
-	#base64string = base64.encodestring('%s:%s' % (conf.get('Marshal', 'user'), conf.get('Marshal', 'passw'))).replace('\n', '') # doesn't work in python3
-	# request.add_header("Authorization", "Basic %s" % base64string)
-	#return urlopen(request).read()
 
 	reponse = requests.get(weblink, auth=requests.auth.HTTPBasicAuth(conf.get('Marshal', 'user'), conf.get('Marshal', 'passw')))
 
@@ -289,10 +285,10 @@ def comment(comment, sourcename='',source={}, comment_type="info", comment_id=No
 	if 'comments' in source:
 		comment_list = source['comments']
 	else:
-		print ('getting current comments...')
+		print ('pulling current comments...')
 		comment_list = get_comments(sourcename=sourcename, source=source)
 	
-	current_comm = ''.join([tup[4] for tup in source['comments']])
+	current_comm = ''.join([tup[4] for tup in comment_list])
 
 	
 	if comment in ''.join(current_comm):	
