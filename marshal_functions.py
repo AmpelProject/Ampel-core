@@ -257,9 +257,7 @@ def comment(comment, sourcename='',source={}, comment_type="info", comment_id=No
 	print ('setting up comment script...')
 	url = marshal_root + 'view_source.cgi?name=%s' %sourcename
 	
-	if (comment_id is not None):
-		url +='id='+str(comment_id)
-	
+	# need to do something with comment ID here :) 	
 	soup = soup_obj(url)
 	cmd = {}
 	for x in soup.find('form', {'action':"edit_comment.cgi"}).findAll('input'):
