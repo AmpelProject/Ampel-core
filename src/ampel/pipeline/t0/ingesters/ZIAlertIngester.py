@@ -443,11 +443,11 @@ class ZIAlertIngester(AbsAlertIngester):
 			# DB update
 			start = time.time()
 			result = self.col.bulk_write(db_ops)
-			time_delta_micro = int(round((time.time() - start) * 1000000))
+			time_delta = time.time() - start
 
 			# Feedback and return measured db op time
 			self.logger.info(result.bulk_api_result)
-			return time_delta_micro, time_delta_micro / len(db_ops)
+			return time_delta, time_delta / len(db_ops)
 
 		except BulkWriteError as bwe: 
 			self.logger.info(bwe.details) 

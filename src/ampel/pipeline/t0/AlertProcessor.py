@@ -7,7 +7,7 @@
 # Last Modified Date: 19.04.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-import time
+import pymongo, time, numpy as np
 
 from ampel.pipeline.t0.AmpelAlert import AmpelAlert
 from ampel.pipeline.t0.AlertFileList import AlertFileList
@@ -27,7 +27,6 @@ from ampel.pipeline.logging.DBJobReporter import DBJobReporter
 from ampel.pipeline.logging.DBLoggingHandler import DBLoggingHandler
 from ampel.pipeline.logging.InitLogBuffer import InitLogBuffer
 
-import pymongo
 
 class AlertProcessor(DBWired):
 	""" 
@@ -303,7 +302,7 @@ class AlertProcessor(DBWired):
 
 		# Save current time to later evaluate how low was the pipeline processing time
 		time_now = time.time
-		start_time = int(time_now())
+		start_time = time_now()
 
 		# Build set of transient ids
 		auto_complete = len(self.channels) * [None]
@@ -354,9 +353,9 @@ class AlertProcessor(DBWired):
 		max_iter = 5000
 		iter_count = 0
 
-		stats_db_inserts = []
-		stats_ingestions = []
-		stats_ingestions = []
+		st_ingest = []
+		st_db_bulk = []
+		st_db_op = []
 
 		# Iterate over alerts
 		for element in iterable:
@@ -410,8 +409,9 @@ class AlertProcessor(DBWired):
 
 					start = time_now()
 					#processed_alert[trans_id]
-					db_time_bulk, db_time_op = ingest(trans_id, pps_list, scheduled_t2_runnables)
-					ingest_time = int(round((time_now() - start) * 1000000)) 
+					st_db_bulk, st_db_op = ingest(trans_id, pps_list, scheduled_t2_runnables)
+					#ingest_time = int(round((time_now() - start) * 1000000)) 
+					st_ingest.append(time_now() - start)
 
 				# Unset log entries association with transient id
 				dblh_unset_tranId()
@@ -424,13 +424,38 @@ class AlertProcessor(DBWired):
 				self.logger.info("Reached max number of iterations")
 				break
 
+		# Convert python lists into numpy array
+		st_ingest = np.array(st_ingest)
+		st_db_bulk = np.array(st_db_bulk)
+		st_db_op = np.array(st_db_op)
 
-		duration = int(time_now()) - start_time
-		db_job_reporter.set_duration(duration)
+		# Total duration in seconds
+		duration = int(time_now() - start_time)
+
+		# Add job stats
+		db_job_reporter.set_job_stats(
+			{
+				"duration": duration,
+				"ingested": len(st_ingest),
+
+				# Alert ingestion: mean time & std dev in microseconds
+				"ingestMean": int(round(np.mean(st_ingest)* 1000000)),
+				"ingestStd": int(round(np.std(st_ingest)* 1000000)),
+
+				# Bulk db ops: mean time & std dev in microseconds
+				"dbBulkMean": int(round(np.mean(st_db_bulk)* 1000000)),
+				"dbBulkStd": int(round(np.std(st_db_bulk)* 1000000)),
+
+				# Mean single db op: mean time & std dev in microseconds
+				"dbOpMean": int(round(np.mean(st_db_op)* 1000000)),
+				"dbOpStd": int(round(np.std(st_db_op)* 1000000)),
+			}
+		)
+
 		self.logger.addHandler(self.ilb)
 		if not console_logging:
 			self.logger.propagate = True
-		loginfo("Alert processing completed (time required: " + str(duration) + "s)")
+		loginfo("Alert processing completed (time required: %ss)" % duration)
 
 		# Remove DB logging handler
 		db_logging_handler.flush()
