@@ -12,11 +12,6 @@ services:
     environment:
       MONGO_INITDB_ROOT_USERNAME: root
       MONGO_INITDB_ROOT_PASSWORD_FILE: /run/secrets/mongo-root-password
-    deploy:
-      restart_policy:
-        condition: on-failure
-        delay: 1s
-        max_attempts: 3
   archive:
     image: postgres:10.3
     command: ["postgres", "-p", "2001"]
@@ -31,13 +26,8 @@ services:
       POSTGRES_PASSWORD_FILE: /run/secrets/archive-user-password
       POSTGRES_USER: ampel
       POSTGRES_DB: ztfarchive
-    deploy:
-      restart_policy:
-        condition: on-failure
-        delay: 1s
-        max_attempts: 3
   ampel:
-    image: ampel
+    image: ampel:v0.1a1
     command: ["/Ampel/deploy/test/run_tests.sh"]
     volumes:
       - /scratch/jvs/Ampel:/Ampel
@@ -48,19 +38,17 @@ services:
       - mongo-root-password
     environment:
       TINI_SUBREAPER: 1
+      KAFKA: kafka:9092
       MONGO: mongo:2000
       MONGO_INITDB_ROOT_USERNAME: root
       MONGO_INITDB_ROOT_PASSWORD_FILE: /run/secrets/mongo-root-password
       ARCHIVE: archive:2001
       POSTGRES_PASSWORD_FILE: /run/secrets/archive-user-password
       POSTGRES_USER: ampel
-    deploy:
-      restart_policy:
-        delay: 1s
-        max_attempts: 0
     depends_on:
       - mongo
       - archive
+      - kafka
 
 secrets:
   archive-user-password:

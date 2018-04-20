@@ -46,14 +46,3 @@ def test_instantiate_alertprocessor(alert_generator, test_database, caplog):
     
     assert transients.find({}).count() == 810
 
-def test_alertprocessor_stream(alert_stream, caplog):
-    
-    config = os.path.dirname(os.path.realpath(__file__)) + '/../mockdb/config.json'
-    ap = AlertProcessor(mock_db=True, config_file=config)
-    
-    archive = ArchiveDB("sqlite:///:memory:")
-    loader = ZIAlertLoader(archive, "localhost:9092", b'alerts')
-    
-    ap.run(loader)
-    
-    assert ap.mongo_client['Ampel']['main'].find({}).count() == 318
