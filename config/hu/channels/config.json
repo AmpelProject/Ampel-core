@@ -51,15 +51,18 @@
 		"runConfig": {
 			"criteria": [
 				{
-					"rb": 0.8,
+					"attribute": "candid",
+					"value": null,
+					"operator": "is not"
+				},
+				{
+					"attribute": "rb",
+					"value": 0.6,
 					"operator": "\u003e"
 				},
 				{
-					"fid": 1,
-					"operator": "="
-				},
-				{
-					"mag": 18,
+					"attribute": "mag",
+					"value": 18,
 					"operator": "\u003c"
 				}
 			],
@@ -114,15 +117,18 @@
 				{
 					"criteria": [
 						{
-							"rb": 0.8,
+							"attribute": "rb",
+							"value": 0.8,
 							"operator": "\u003e"
 						},
 						{
-							"fid": 1,
+							"attribute": "fid",
+							"value": 1,
 							"operator": "="
 						},
 						{
-							"mag": 18,
+							"attribute": "mag",
+							"value": 18,
 							"operator": "\u003c"
 						}
 					],
@@ -133,7 +139,8 @@
 					"logicalConnection": "OR",
 					"criteria": [
 						{
-							"magdiff": 0.01,
+							"attribute": "magdiff",
+							"value": 0.01,
 							"operator": "\u003e"
 						}
 					],
@@ -195,7 +202,7 @@
 	]
 },
 {
-	"_id": "HU_NOAGN",
+	"_id": "HU_NO_FILTER",
 	"version": 1.0,
 	"active": true,
 	"input": [
@@ -210,25 +217,114 @@
 		}
 	],
 	"t0Filter": {
-		"id": "BasicCatalogFilter",
+		"id": "NoFilter",
+		"runConfig": {}
+	},
+	"t2Compute": [
+		{
+			"t2Unit": "SNCOSMO",
+			"runConfig": "default"
+		},
+		{
+			"t2Unit": "AGN",
+			"runConfig": "default"
+		}
+	]
+},
+{
+	"_id": "HU_SN3",
+	"version": 1.0,
+	"active": true,
+	"input": [
+		{
+			"instrument": "ZTF",
+			"alerts": "IPAC",
+			"parameters": {
+				"ZTFPartner": true,
+				"autoComplete": true,
+				"updatedHUZP": false
+			}
+		}
+	],
+	"t0Filter": {
+		"id": "BasicMultiFilter",
 		"runConfig": {
-		    "catName": "milliquas",
-			"catRAKey": "ra",
-			"catDecKey": "dec",
-			"searchMethod": "healpix",
-			"rsArcsec": 3,
-			"rejectOnMatch": true,
-			"alertPosType": "av"
+			"filters": [
+				{
+					"criteria": [
+						{
+							"attribute": "rb",
+							"value": 0.6,
+							"operator": "\u003e"
+						},
+						{
+							"attribute": "mag",
+							"value": 18,
+							"operator": "\u003c"
+						}
+					],
+					"len": 3,
+					"operator": "\u003e"
+				},
+				{
+					"logicalConnection": "AND",
+					"criteria": [
+						{
+							"attribute": "jd",
+							"value": 2.4582125e+06,
+							"operator": "\u003c"
+						}
+					],
+					"len": 0,
+					"operator": "="
+				}
+			]
 		}
 	},
 	"t2Compute": [
 		{
 			"t2Unit": "SNCOSMO",
-			"runConfig": "other"
+			"runConfig": "default"
+		},
+		{
+			"t2Unit": "POLYFIT",
+			"runConfig": "default"
 		},
 		{
 			"t2Unit": "PHOTO_TYPE",
 			"runConfig": "default"
+		}
+	]
+},
+{
+	"_id": "OKC_SESN",
+	"version": 1.0,
+	"active": false,
+	"input": [
+		{
+			"instrument": "ZTF",
+			"alerts": "IPAC",
+			"parameters": {
+				"ZTFPartner": true,
+				"autoComplete": true,
+				"updatedHUZP": false
+			}
+		}
+	],
+	"t0Filter": {
+		"id": "StripEnvelopeSN",
+		"runConfig": {}
+	},
+	"t2Compute": [
+		{
+			"t2Unit": "SNCOSMO",
+			"runConfig": "default"
+		}
+	],
+	"t3Supervise": [
+		{
+			"t3Unit": "PURGE",
+			"runConfig": "30days"
 		}
 	]
 }]

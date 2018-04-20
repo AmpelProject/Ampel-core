@@ -11,8 +11,15 @@
 	},
 	"transients": {
 		"select": {
-			"timedelta": {
-				"days": -1
+			"created": {
+				"timedelta": {
+					"days": -40
+				}
+			},
+			"modified": {
+				"timedelta": {
+					"days": -1
+				}
 			},
 			"channels": [
 				"HU_SN1",
@@ -35,10 +42,7 @@
 			"t3Unit": "SLACKPUBLISHER",
 			"runConfig": "hu_sp_1",
 			"subSel": {
-				"channels": [
-					"HU_SN1",
-					"HU_SN2"
-				],
+				"channel": "HU_SN1",
 				"state": "latest",
 				"t2Id": "SNCOSMO"
 			}
@@ -104,6 +108,88 @@
 	},
 	"onError": {
 		"sendMail": "ztf-software@desy.de",
+		"stopAmpel": false,
+		"retry": false
+	},
+	"transients": {
+		"select": {
+			"timedelta": {
+				"days": -60
+			},
+			"channel": "HU_SN1",
+			"withFlags": "INST_ZTF",
+			"withoutFlags": "HAS_ERROR"
+		},
+		"load": {
+			"state": "latest",
+			"t2Ids": [
+				"SNCOSMO",
+				"AGN"
+			]
+		},
+		"chunk": 200
+	},
+	"tasks": [
+		{
+			"t3Unit": "SLACKPUBLISHER",
+			"runConfig": "hu_sp_1",
+			"subSel": {
+				"channel": "HU_SN1",
+				"state": "latest",
+				"t2Id": "SNCOSMO"
+			}
+		}
+	]
+},
+{
+	"_id": "Slack_publish_sim_test",
+	"schedule": {
+		"mode": "fixed_rate",
+		"interval": 1
+	},
+	"onError": {
+		"sendMail": "ampel-info@desy.de",
+		"stopAmpel": false,
+		"retry": false
+	},
+	"transients": {
+		"select": {
+			"timedelta": {
+				"days": -60
+			},
+			"channel": "HU_SN1",
+			"withFlags": "INST_ZTF",
+			"withoutFlags": "HAS_ERROR"
+		},
+		"load": {
+			"state": "latest",
+			"t2Ids": [
+				"SNCOSMO",
+				"AGN"
+			]
+		},
+		"chunk": 200
+	},
+	"tasks": [
+		{
+			"t3Unit": "SLACKPUBLISHER",
+			"runConfig": "hu_sp_1",
+			"subSel": {
+				"channel": "HU_SN1",
+				"state": "latest",
+				"t2Id": "SNCOSMO"
+			}
+		}
+	]
+},
+{
+	"_id": "Slack_publish_demo",
+	"schedule": {
+		"mode": "fixed_rate",
+		"interval": 1
+	},
+	"onError": {
+		"sendMail": "ampel-info@desy.de",
 		"stopAmpel": false,
 		"retry": false
 	},
