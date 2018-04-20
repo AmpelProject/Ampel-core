@@ -12,6 +12,18 @@ services:
     environment:
       MONGO_INITDB_ROOT_USERNAME: root
       MONGO_INITDB_ROOT_PASSWORD_FILE: /run/secrets/mongo-root-password
+  catalog:
+    image: mongo:3.6
+    command: ["mongod", "--port", "2002"]
+    volumes:
+      - /data/ampel/mongo/test-catalog:/data/db
+    ports:
+      - "2002:2002"
+    secrets:
+      - mongo-root-password
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD_FILE: /run/secrets/mongo-root-password
   archive:
     image: postgres:10.3
     command: ["postgres", "-p", "2001"]
@@ -40,6 +52,7 @@ services:
       TINI_SUBREAPER: 1
       KAFKA: kafka:9092
       MONGO: mongo:2000
+      CATALOG: catalog:2002
       MONGO_INITDB_ROOT_USERNAME: root
       MONGO_INITDB_ROOT_PASSWORD_FILE: /run/secrets/mongo-root-password
       ARCHIVE: archive:2001

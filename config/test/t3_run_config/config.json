@@ -1,0 +1,17 @@
+[{
+	"_id": "SLACKPUBLISHER_hu_sp_2",
+	"auth_token": "xxxxxxxxxxxxxxxxxxxxxxxxxxx",
+	"prefix": "Hello again Slack!",
+	"version": 1.0
+},
+{
+	"_id": "SLACKPUBLISHER_hu_sp_1",
+	"auth_token": "xoxb-298132201170-O0GcJpOSNYcF84wukZNtcZN8",
+	"prefix": "Hello Slack!",
+	"version": 1.0
+},
+{
+	"_id": "PURGE_standard",
+	"inactivity": "30"
+}]
+
