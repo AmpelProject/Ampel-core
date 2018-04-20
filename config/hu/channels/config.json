@@ -327,5 +327,43 @@
 			"runConfig": "30days"
 		}
 	]
+},
+{
+	"_id": "HU_NOAGN",
+	"version": 1.0,
+	"active": true,
+	"input": [
+		{
+			"instrument": "ZTF",
+			"alerts": "IPAC",
+			"parameters": {
+				"ZTFPartner": true,
+				"autoComplete": true,
+				"updatedHUZP": false
+			}
+		}
+	],
+	"t0Filter": {
+		"id": "BasicCatalogFilter",
+		"runConfig": {
+			"catName": "milliquas",
+			"catRAKey": "ra",
+			"catDecKey": "dec",
+			"searchMethod": "healpix",
+			"rsArcsec": 5,
+			"rejectOnMatch": false,
+			"alertPosType": "av"
+		}
+	},
+	"t2Compute": [
+		{
+			"t2Unit": "SNCOSMO",
+			"runConfig": "other"
+		},
+		{
+			"t2Unit": "PHOTO_TYPE",
+			"runConfig": "default"
+		}
+	]
 }]
 
