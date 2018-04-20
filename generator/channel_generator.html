@@ -620,12 +620,12 @@
 			.val();
 
 		crit_dict["attribute"] = fields_dd.val();
-		crit_dict["value"] = $.isNumeric(val) ? Number(val) : val;
 		crit_dict["operator"] =
 			fields_dd
 				.closest("tr")
 				.find(".s_pps_operators")
 				.val();
+		crit_dict["value"] = $.isNumeric(val) ? Number(val) : val;
 
 		return crit_dict;
 	}
