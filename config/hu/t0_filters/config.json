@@ -12,10 +12,7 @@
 },
 {
 	"_id": "RandFilter",
-	"classFullPath": "ampel.contrib.hu.t0.RandFilter",
-	"baseConfig": {
-		"threshold": 1
-	}
+	"classFullPath": "ampel.contrib.hu.t0.RandFilter"
 },
 {
 	"_id": "SNFilter",

@@ -183,7 +183,7 @@
 	"t0Filter": {
 		"id": "RandFilter",
 		"runConfig": {
-			"threshold": 1
+			"threshold": 95
 		}
 	},
 	"t2Compute": [
