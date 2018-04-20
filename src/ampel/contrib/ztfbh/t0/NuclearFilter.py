@@ -50,11 +50,8 @@ class TFilter(AbsAlertFilter):
 		# try to make a copy of this list that will remain untouched as the dictionaries are moved around
 		if self._default_filters is dict:
 			return self._default_filters.copy()
-		else:
-			filter_list_out = []
-		for flt in self._default_filters:
-			filter_list_out.append(flt.copy())
-		return filter_list_out
+		else:				
+			return [flt.copy() for flt in self._default_filters]
 
 
 	def set_filter_parameters(self, d):
@@ -78,11 +75,11 @@ class TFilter(AbsAlertFilter):
 		self.on_match_default_flags = True # todo need to update this with T2/T3 actions
 
 		# Instance here a dictionary later used in the method apply 	
-		isdetect_flt = 	{'attribute':'candid',   'value': None, 		'operator':'is not'}	# remove upper limits
-		nbad_flt = 		{'attribute':'nbad', 	 'value':self.MaxNbad, 	'operator': '<='}		# not too many bad pixels
-		isdiff_flt1 = 	{'attribute':'isdiffpos','value':'0', 			'operator':'!='}	 	# is not ref-science
-		isdiff_flt2 = 	{'attribute':'isdiffpos','value':'f', 			'operator':'!='}		# is not ref-science (again!)
-		distnr_flt = 	{'attribute':'distnr' ,	 'value':0, 			'operator': '>'}		# has host galaxy detected (removes orphans)
+		isdetect_flt = 	{'attribute':'candid',   'value': None, 	    'operator': 'is not'}	# remove upper limits
+		nbad_flt = 		{'attribute':'nbad', 	 'value':self.MaxNbad , 'operator': '<='}	# not too many bad pixels
+		isdiff_flt1 = 	{'attribute':'isdiffpos','value':'0', 	    	'operator': '!='}	# is not ref-science
+		isdiff_flt2 = 	{'attribute':'isdiffpos','value':'f', 	    	'operator': '!='}	# is not ref-science (again!)
+		distnr_flt = 	{'attribute':'distnr' ,	 'value':0, 	    	'operator': '>'}		# has host galaxy detected (removes orphans)
 
 		self._default_filters = [isdetect_flt, nbad_flt, distnr_flt, isdiff_flt1, isdiff_flt2]
 
@@ -120,7 +117,7 @@ class TFilter(AbsAlertFilter):
 		# exception for older (pre v1.8) schema	
 		else:
 			sgscore = sgscore = alert.get_values("sgscore")[0]
-			distpsnr = alert.get_values("distpsnr")[0]
+			distpsnr = -999 #alert.get_values("distpsnr")[0]
 			srmag2 = None
 			srmag = srmag = alert.get_values("srmag")[0]
 			sgmag = alert.get_values("sgmag")[0]
@@ -195,10 +192,10 @@ class TFilter(AbsAlertFilter):
 			self.logger.info(self.why)
 			return None
 
-		# if we want, only check last detection 
+		# if we want, only check last observation 
 		if self.LastOnly:
 			
-			these_filters.append( {'attribute': 'jd', 'operator': '==', 'value': max(alert.get_values("jd"))} )
+			these_filters = these_filters + [{'attribute': 'jd', 'operator': '==', 'value': max(alert.get_values('jd'))}]
 			lastcheck = alert.get_values("jd", filters=these_filters)
 
 			if len(lastcheck)==0:
@@ -206,6 +203,7 @@ class TFilter(AbsAlertFilter):
 				self.logger.info(self.why)
 				return None		 	
 			rb_arr = [rb_arr[np.argmax(jd_arr)]] # make sure rb check below is only for last detection
+
 
 
 		# if no detections pass real bogus, remove
@@ -229,7 +227,6 @@ class TFilter(AbsAlertFilter):
 		
 		# compute a few different measures of the distance
 		# we also compute these for each band seperately
-
 		rb_arr = np.clip(rb_arr, 0.01, 1) 				# remove zero scores 
 		my_weight = 1/rb_arr*fwhm_arr*sigmapsf_arr 		# combine differen measures for how good the distnr measurement is
 		my_weight = 1/np.clip(my_weight, 0.001,1000) 	# protection against goblins
@@ -238,7 +235,7 @@ class TFilter(AbsAlertFilter):
 		idx_g = fid_arr == 1
 		idx_r = fid_arr == 2
 		
-		for idx, bnd in zip([idx_all, idx_g, idx_r],['r+g', 'g','r']):
+		for idx, bnd in zip([idx_g, idx_r, idx_all],['g','r','r+g']):
 			
 			if sum(idx):
 				
