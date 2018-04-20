@@ -1,10 +1,12 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/pipeline/t0/stampers/ZIPhotoPointStamper.py
+# File              : ampel/pipeline/t0/ingesters/ZIPhotoPointShaper.py
+# License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 14.12.2017
-# Last Modified Date: 07.01.2018
+# Last Modified Date: 07.03.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
+
 from ampel.flags.PhotoPointFlags import PhotoPointFlags
 from ampel.flags.AlDocTypes import AlDocTypes
 from ampel.flags.FlagUtils import FlagUtils
@@ -37,8 +39,16 @@ class ZIPhotoPointShaper:
 			ppflags = self.base_flags
 	
 			# Public / private data
-			if pp_dict['programpi'] == 'Kulkarni':
-				ppflags |= PhotoPointFlags.ZTF_PARTNERSHIP
+			# 0: 'All'
+			# 1: 'Public'
+			# 2: 'ZtfCollaboration'
+			# 3: 'Caltech'
+			if pp_dict['programid'] == 0:
+				ppflags |= PhotoPointFlags.ZTF_PUBLIC | PhotoPointFlags.ZTF_COLLAB
+			elif pp_dict['programid'] == 1:
+				ppflags |= PhotoPointFlags.ZTF_PUBLIC 
+			elif pp_dict['programid'] == 2:
+				ppflags |= PhotoPointFlags.ZTF_COLLAB
 	
 			# Filter color
 			if (pp_dict['fid'] == 1):

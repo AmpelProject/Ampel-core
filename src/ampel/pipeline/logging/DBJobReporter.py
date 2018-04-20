@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 14.12.2017
-# Last Modified Date: 03.03.2018
+# Last Modified Date: 17.03.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import logging
@@ -32,7 +32,7 @@ class DBJobReporter:
 
 	def add_flags(self, job_flags):
 		""" 
-		Add flags (common.flags.JobFlags) to this job
+		Add flags (ampel.flags.JobFlags) to this job
 		"""
 		self.job_flags |= job_flags
 
@@ -49,20 +49,20 @@ class DBJobReporter:
 		self.arguments = args
 
 
-	def getJobId(self):
-		return getattr(self, "jobId", None)
+	def get_job_id(self):
+		return getattr(self, "job_id", None)
 
 
 	def insert_new(self, al_params):
 		""" 
 		"""
-		self.jobId = ObjectId()
+		self.job_id = ObjectId()
 
 		jdict = {
-			"_id": self.jobId,
+			"_id": self.job_id,
 			"jobName": self.job_name,
 			"jobFlags": self.job_flags.value,
-			"ALParams": al_params
+			"params": al_params
 		}
 
 		if hasattr(self, "arguments"):
@@ -71,7 +71,7 @@ class DBJobReporter:
 		if hasattr(self, "grid_name"):
 			jdict['gridName'] = self.grid_name
 
-		self.col.insert_one(jdict)
+		return self.col.insert_one(jdict)
 
 
 	def set_duration(self, duration):
@@ -79,7 +79,7 @@ class DBJobReporter:
 		"""
 		self.col.update_one(
 			{ 
-				"_id": self.jobId 
+				"_id": self.job_id 
 			},
  			{ 
 				"$set": {
@@ -94,7 +94,7 @@ class DBJobReporter:
 		"""
 		self.col.update_one(
 			{ 
-				"_id": self.jobId 
+				"_id": self.job_id 
 			},
 			{
 				"$set": {

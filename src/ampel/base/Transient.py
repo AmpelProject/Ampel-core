@@ -1,12 +1,14 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 # File              : ampel/base/Transient.py
+# License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 13.01.2018
-# Last Modified Date: 21.02.2018
+# Last Modified Date: 16.03.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from ampel.pipeline.logging.LoggingUtils import LoggingUtils
+from ampel.flags.PhotoPointFlags import PhotoPointFlags
 from ampel.flags.AlDocTypes import AlDocTypes
 from werkzeug.datastructures import ImmutableDict
 import logging
@@ -36,22 +38,19 @@ class Transient:
 		self.science_records = {}
 		self.latest_lightcurve = None
 		self.flags = None
-		self.channels = None
+		self.created = None
+		self.last_modified = None
 
 
-	def set_channels(self, channels):
+	def set_parameter(self, name, value):
 		""" """
-		self.channels = channels
+		setattr(self, name, value)
 
 
-	def get_channels(self):
+	def set_parameters(self, plist):
 		""" """
-		return self.channels
-
-
-	def set_flags(self, flags):
-		""" """
-		self.flags = flags
+		for el in plist:
+			setattr(self, el[0], el[1])
 
 
 	def get_flags(self):
@@ -138,29 +137,30 @@ class Transient:
 	def add_science_record(self, record):
 		"""
 		"""
-		t2_runnable_id = record.get_t2_runnable_id()
+		t2_unit_id = record.get_t2_unit_id()
 
-		if not t2_runnable_id in self.science_records:
-			self.science_records[t2_runnable_id] = []
+		if not t2_unit_id in self.science_records:
+			self.science_records[t2_unit_id] = []
 
-		self.science_records[t2_runnable_id].append(record)
+		self.science_records[t2_unit_id].append(record)
 
 
-	def get_science_records(self, t2_runnable_id=None, flatten=False):
-		""" """
-		if t2_runnable_id is None:
+	def get_science_records(self, t2_unit_id=None, flatten=False):
+		""" 
+		"""
+		if t2_unit_id is None:
 			if flatten is False:
 				return self.science_records
 			else:
-				recs = []
+				records = []
 				for key in self.science_records.keys():
-					recs += self.science_records[key]
-				return recs
+					records += self.science_records[key]
+				return records
 		else: 
-			if not t2_runnable_id in self.science_records:
+			if not t2_unit_id in self.science_records:
 				return None
 
-			return self.science_records[t2_runnable_id]
+			return self.science_records[t2_unit_id]
 
 
 	def set_read_only(self):
@@ -170,6 +170,15 @@ class Transient:
 		self.photopoints = ImmutableDict(self.photopoints)
 		self.science_records = ImmutableDict(self.science_records)
 		self.__isfrozen = True
+
+
+	def new_channel_register(self):
+		"""
+		ChannelRegister is used when transient instances need to be forked and trim down
+		"""
+		from ampel.pipeline.t3.ChannelRegister import ChannelRegister
+		self.channel_register = ChannelRegister(self.tran_id)
+		return self.channel_register
 
 
 	def __setattr__(self, key, value):

@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 # File              : ampel/base/LightCurve.py
+# License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 13.01.2018
-# Last Modified Date: 20.02.2018
+# Last Modified Date: 18.03.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from ampel.flags.PhotoPointFlags import PhotoPointFlags
@@ -77,8 +78,8 @@ class LightCurve:
 
 		for filter_el in filters:
 
-			operator = LightCurve.ops[filter_el['op']] 
-			del filter_el['op']
+			operator = LightCurve.ops[filter_el['operator']] 
+			del filter_el['operator']
 
 			for fkey in filter_el.keys():
 				filtered_pps = list(
@@ -127,7 +128,7 @@ class LightCurve:
 		return self.filter_pps(filters) if filters is not None else self.al_pps_list
 
 
-	def get_pos(self, ret="mean", filters=None):
+	def get_pos(self, ret="brightest", filters=None):
 		"""
 		ret (for all methods, only matching PhotoPoint wrt the provided filter(s) are used!):
 			"raw": returns ((ra, dec), (ra, dec), ...)

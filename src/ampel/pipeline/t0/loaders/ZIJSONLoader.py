@@ -1,10 +1,13 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 # File              : ampel/pipeline/t0/loaders/ZIJSONLoader.py
+# License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 14.12.2017
-# Last Modified Date: 10.01.2018
+# Last Modified Date: 20.03.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
+
+
 import json
 
 class ZIJSONLoader:
@@ -26,5 +29,12 @@ class ZIJSONLoader:
 		with open(file_path, "r") as data_file:
 			json_dict = json.load(data_file)
 
-		json_dict['prv_candidates'].insert(0, json_dict['candidate'])
+
+		prv_cd = json_dict['prv_candidates']
+		for i in range(len(prv_cd) - 1, -1, -1):
+			el = prv_cd[i]
+			if el['candid'] is None or el['magpsf'] is None:
+				del prv_cd[i]
+
+		prv_cd.insert(0, json_dict['candidate'])
 		return json_dict['objectId'], json_dict['prv_candidates']

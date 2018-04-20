@@ -28,6 +28,6 @@ class TransientFlags(Flag):
 	HAS_HU_PPT					= 512
 	HAS_SUPERSEEDED_PPT			= 1024
 
-	ZTF_PARTNERSHIP				= 2048
+	HAS_ERROR					= 2048
 
 	T1_AUTO_COMPLETE			= 2097152

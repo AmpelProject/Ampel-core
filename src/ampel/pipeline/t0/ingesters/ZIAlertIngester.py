@@ -4,17 +4,17 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 14.12.2017
-# Last Modified Date: 04.03.2018
+# Last Modified Date: 11.03.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import logging, pymongo
 from datetime import datetime
 from pymongo.errors import BulkWriteError
 
-from ampel.abstract.AbstractAlertIngester import AbstractAlertIngester
+from ampel.abstract.AbsAlertIngester import AbsAlertIngester
 from ampel.pipeline.t0.ingesters.ZIPhotoPointShaper import ZIPhotoPointShaper
-from ampel.pipeline.utils.CompoundGenerator import CompoundGenerator
-from ampel.pipeline.utils.T2MergeUtil import T2MergeUtil
+from ampel.pipeline.t0.ingesters.CompoundGenerator import CompoundGenerator
+from ampel.pipeline.t0.ingesters.T2MergeUtil import T2MergeUtil
 from ampel.pipeline.logging.LoggingUtils import LoggingUtils
 
 from ampel.flags.PhotoPointFlags import PhotoPointFlags
@@ -28,7 +28,7 @@ SUPERSEEDED = FlagUtils.get_flag_pos_in_enumflag(PhotoPointFlags.SUPERSEEDED)
 TO_RUN = FlagUtils.get_flag_pos_in_enumflag(T2RunStates.TO_RUN)
 
 
-class ZIAlertIngester(AbstractAlertIngester):
+class ZIAlertIngester(AbsAlertIngester):
 	"""
 	Ingester class used by t0.AlertProcessor in 'online' mode.
 	This class 'ingests' alerts (if they have passed the alert filter):
@@ -36,6 +36,7 @@ class ZIAlertIngester(AbstractAlertIngester):
 	in the DB that are used in later processing stages (T2, T3)
 	"""
 
+	version = 1.0
 	new_tran_dbflag = FlagUtils.enumflag_to_dbflag(
 		TransientFlags.INST_ZTF|TransientFlags.ALERT_IPAC
 	)
@@ -315,7 +316,7 @@ class ZIAlertIngester(AbstractAlertIngester):
 							"tranId": tran_id,
 							"alDocType": AlDocTypes.COMPOUND,
 							"tier": 0,
-							"added": datetime.today().timestamp(),
+							"added": datetime.utcnow().timestamp(),
 							"lastppdt": pps_alert[0]['jd'],
 							"len": len(pps_dict),
 							"pps": pps_dict
@@ -397,6 +398,8 @@ class ZIAlertIngester(AbstractAlertIngester):
 		# Insert/Update transient document into 'transients' collection
 		self.logger.info("Updating transient document")
 
+		now = datetime.utcnow().timestamp()
+
 		# TODO add alFlags
 		db_ops.append(
 			pymongo.UpdateOne(
@@ -416,10 +419,18 @@ class ZIAlertIngester(AbstractAlertIngester):
 						'channels': {
 							"$each": db_chan_flags
 						},
-						'jobIds': self.job_id
+						'jobIds': self.job_id,
 					},
 					"$max": {
-						"lastPPDate": pps_alert[0]["jd"]
+						"lastPPDate": pps_alert[0]["jd"],
+						"modified": now
+					},
+					"$push": {
+						"lastModified": {
+							'dt': now,
+							'tier': 0,
+							'src': "ZI"
+						}
 					}
 				},
 				upsert=True
