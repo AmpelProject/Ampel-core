@@ -37,11 +37,14 @@ class AmpelAlert:
 
 
 	@staticmethod
-	def load_ztf_alert(arg):
+	def load_ztf_alert(arg, default_filters=[{'attribute': 'candid', 'operator': 'is not', 'value': None}]):
 		"""	
-			Convenience method. 
+		Convenience method.
+		'default_filters' excludes upper limits
 		"""
-		return AmpelAlert(*ZIAlertLoader.get_flat_pps_list_from_file(arg))
+		return AmpelAlert(
+			*ZIAlertLoader.get_flat_pps_list_from_file(arg), default_filters
+		)
 
 
 	@classmethod
@@ -78,7 +81,7 @@ class AmpelAlert:
 		return arg_flags in cls.flags
 
 
-	def __init__(self, tran_id, list_of_pps):
+	def __init__(self, tran_id, list_of_pps, default_filters=None):
 		""" 
 		AmpelAlert constructor
 		Parameters:
@@ -91,6 +94,8 @@ class AmpelAlert:
 		self.pps = ImmutableList(
 			[ImmutableDict(el) for el in list_of_pps if 'candid' in el]
 		)
+
+		self.default_filters = default_filters
 
 		# Freeze this instance
 		self.__isfrozen = True
@@ -114,18 +119,21 @@ class AmpelAlert:
 		if param_name in AmpelAlert.alert_keywords:
 			param_name = AmpelAlert.alert_keywords[param_name]
 
-		filtered_pps = self.pps if filters is None else self.filter_pps(filters)
+		if filters is None:
+			browse_pps = self.pps if self.default_filters is None else self.filter_pps(self.default_filters)
+		else:
+			browse_pps = self.filter_pps(filters)
 	
 		return tuple(
 			el[param_name] 
-			for el in filtered_pps if param_name in el
+			for el in browse_pps if param_name in el
 		)
 
 
 	def filter_pps(self, filters):
 		"""
 		"""
-		filtered_pps = self.pps
+		match_pps = self.pps
 
 		if type(filters) is dict:
 			filters = [filters]
@@ -144,14 +152,14 @@ class AmpelAlert:
 				else AmpelAlert.alert_keywords[provided_field]
 			)
 
-			filtered_pps = tuple(
+			match_pps = tuple(
 				filter(
 					lambda el: attr_name in el and operator(el[attr_name], filter_el['value']), 
-					filtered_pps
+					match_pps
 				)
 			)
 
-		return filtered_pps
+		return match_pps
 
 
 	def get_tuples(self, param1, param2, filters=None):
@@ -164,11 +172,14 @@ class AmpelAlert:
 		if param2 in AmpelAlert.alert_keywords:
 			param2 = AmpelAlert.alert_keywords[param2]
 
-		filtered_pps = self.pps if filters is None else self.filter_pps(filters)
+		if filters is None:
+			browse_pps = self.pps if self.default_filters is None else self.filter_pps(self.default_filters)
+		else:
+			browse_pps = self.filter_pps(filters)
 
 		return tuple(
 			(el[param1], el[param2]) 
-			for el in filtered_pps if param1 in el and param2 in el
+			for el in browse_pps if param1 in el and param2 in el
 		)
 
 
@@ -185,10 +196,13 @@ class AmpelAlert:
 					params[i] = AmpelAlert.alert_keywords[param]
 	
 		# Filter photopoints if filter was provided
-		filtered_pps = self.pps if filters is None else self.filter_pps(filters)
+		if filters is None:
+			browse_pps = self.pps if self.default_filters is None else self.filter_pps(self.default_filters)
+		else:
+			browse_pps = self.filter_pps(filters)
 
 		return tuple(
-			tuple(el[param] for param in params) for el in filtered_pps if all(param in el for param in params)
+			tuple(el[param] for param in params) for el in browse_pps if all(param in el for param in params)
 		)
 
 
