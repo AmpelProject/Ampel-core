@@ -5,6 +5,7 @@ import subprocess
 import time
 import os
 import tempfile
+import itertools
 
 from io import BytesIO
 from glob import glob
@@ -19,5 +20,10 @@ def alert_blobs():
 @pytest.fixture
 def alert_generator():
     from ampel.pipeline.t0.loaders.ZIAlertLoader import ZIAlertLoader
-    return lambda : ZIAlertLoader.walk_tarball('/ztf/ztf_20180419_programid2.tar.gz')
+    def alerts():
+        for alert in itertools.islice(ZIAlertLoader.walk_tarball('/ztf/ztf_20180419_programid2.tar.gz'), 100):
+            for k in {'cutoutDifference', 'cutoutScience', 'cutoutTemplate'}:
+                 del alert[k]
+            yield alert
+    yield alerts
 
