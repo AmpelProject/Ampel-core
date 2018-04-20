@@ -44,7 +44,7 @@ services:
     command: ["/Ampel/deploy/test/run_tests.sh"]
     volumes:
       - /scratch/jvs/Ampel:/Ampel
-#      - ./ztfdata:/ztf
+      - /scratch/jvs/ztfdata:/ztf
       
     secrets:
       - archive-user-password

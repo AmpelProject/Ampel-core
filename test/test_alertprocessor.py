@@ -37,12 +37,13 @@ def test_instantiate_alertprocessor(alert_generator, test_database, caplog):
     # ensure that the RandomFilter always does the same thing
     random.seed('reproducibility considered good')
     
-    ap.run(islice(alert_generator(), 100))
+    assert ap.run(islice(alert_generator(), 100)) == 100
     
     # ensure that all logs ended up in the db
     assert logs.find({}).count() == 1
     record = next(logs.find({}))
     assert len(record["records"]) == len(caplog.records)
+    print(len(caplog.records))
     
-    assert transients.find({}).count() == 810
+    assert transients.find({}).count() == 988
 

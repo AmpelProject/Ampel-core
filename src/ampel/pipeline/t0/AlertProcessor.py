@@ -350,7 +350,9 @@ class AlertProcessor(DBWired):
 		# Iterate over alerts
 		for element in iterable:
 
-			iter_count += 1 
+			if iter_count == max_iter:
+				self.logger.info("Reached max number of iterations")
+				break
 
 			try:
 
@@ -408,9 +410,7 @@ class AlertProcessor(DBWired):
 				self.logger.exception("")
 				self.logger.critical("Exception occured")
 
-			if iter_count > max_iter:
-				self.logger.info("Reached max number of iterations")
-				break
+			iter_count += 1
 
 
 		duration = int(time.time()) - start_time
@@ -422,7 +422,7 @@ class AlertProcessor(DBWired):
 		db_logging_handler.flush()
 		self.logger.removeHandler(db_logging_handler)
 		
-		return iter_count-1
+		return iter_count
 
 def init_db():
 	"""
