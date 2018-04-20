@@ -91,7 +91,7 @@ class DBJobReporter:
 		return self.col.insert_one(jdict)
 
 
-	def set_duration(self, duration):
+	def set_job_stats(self, arg_dict):
 		""" 
 		"""
 		self.col.update_one(
@@ -100,7 +100,7 @@ class DBJobReporter:
 			},
  			{ 
 				"$set": {
-					"duration": duration
+					"jobStats": arg_dict
 				}
 			}
  		)

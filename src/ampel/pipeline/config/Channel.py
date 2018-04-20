@@ -228,6 +228,9 @@ class Channel:
 		self.log_accepted = " -> Channel '%s': alert passes filter criteria" % self.name
 		self.log_rejected = " -> Channel '%s': alert was rejected" % self.name
 
+		if self.get_input().auto_complete():
+			self.log_auto_complete = " -> Channel '%s': accepting alert (auto-complete)" % self.name
+
 
 	@staticmethod
 	def load_channel_inputs(db_doc, logger):
