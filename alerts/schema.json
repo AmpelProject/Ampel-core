@@ -1,6 +1,6 @@
 {
  "type": "record",
- "version": "1.3",
+ "version": "1.8",
  "name": "alert",
  "namespace": "ztf",
  "fields": [
@@ -16,7 +16,7 @@
   {
    "type": {
     "type": "record",
-    "version": "1.3",
+    "version": "1.8",
     "name": "candidate",
     "namespace": "ztf.alert",
     "fields": [
@@ -33,7 +33,7 @@
      {
       "type": "long",
       "name": "pid",
-      "doc": "Processing ID for image"
+      "doc": "Processing ID for science image to facilitate archive retrieval"
      },
      {
       "type": [
@@ -365,7 +365,7 @@
       ],
       "name": "ssdistnr",
       "default": null,
-      "doc": "distance to nearest known solar system object [arcsec]"
+      "doc": "distance to nearest known solar system object if exists within 30 arcsec [arcsec]"
      },
      {
       "type": [
@@ -374,7 +374,7 @@
       ],
       "name": "ssmagnr",
       "default": null,
-      "doc": "magnitude of nearest known solar system object (usually V-band from MPC archive) [mag]"
+      "doc": "magnitude of nearest known solar system object if exists within 30 arcsec (usually V-band from MPC archive) [mag]"
      },
      {
       "type": [
@@ -383,7 +383,7 @@
       ],
       "name": "ssnamenr",
       "default": null,
-      "doc": "name of nearest known solar system object (from MPC archive)"
+      "doc": "name of nearest known solar system object if exists within 30 arcsec (from MPC archive)"
      },
      {
       "type": [
@@ -427,45 +427,54 @@
        "float",
        "null"
       ],
-      "name": "sgmag",
+      "name": "sgmag1",
       "default": null,
-      "doc": "g-band magnitude of closest source from PS1 catalog; if exists within 1 arcsec [mag]"
+      "doc": "g-band PSF-fit magnitude of closest source from PS1 catalog; if exists within 30 arcsec [mag]"
      },
      {
       "type": [
        "float",
        "null"
       ],
-      "name": "srmag",
+      "name": "srmag1",
       "default": null,
-      "doc": "r-band magnitude of closest source from PS1 catalog; if exists within 1 arcsec [mag]"
+      "doc": "r-band PSF-fit magnitude of closest source from PS1 catalog; if exists within 30 arcsec [mag]"
      },
      {
       "type": [
        "float",
        "null"
       ],
-      "name": "simag",
+      "name": "simag1",
       "default": null,
-      "doc": "i-band magnitude of closest source from PS1 catalog; if exists within 1 arcsec [mag]"
+      "doc": "i-band PSF-fit magnitude of closest source from PS1 catalog; if exists within 30 arcsec [mag]"
      },
      {
       "type": [
        "float",
        "null"
       ],
-      "name": "szmag",
+      "name": "szmag1",
       "default": null,
-      "doc": "z-band magnitude of closest source from PS1 catalog; if exists within 1 arcsec [mag]"
+      "doc": "z-band PSF-fit magnitude of closest source from PS1 catalog; if exists within 30 arcsec [mag]"
      },
      {
       "type": [
        "float",
        "null"
       ],
-      "name": "sgscore",
+      "name": "sgscore1",
       "default": null,
-      "doc": "Star/Galaxy score of closest source from PS1 catalog 0 <= sgscore <= 1 where closer to 1 implies higher likelihood of being a star"
+      "doc": "Star/Galaxy score of closest source from PS1 catalog; if exists within 30 arcsec: 0 <= sgscore <= 1 where closer to 1 implies higher likelihood of being a star"
+     },
+     {
+      "type": [
+       "float",
+       "null"
+      ],
+      "name": "distpsnr1",
+      "default": null,
+      "doc": "Distance of closest source from PS1 catalog; if exists within 30 arcsec [arcsec]"
      },
      {
       "type": "int",
@@ -494,6 +503,184 @@
       "name": "jdendhist",
       "default": null,
       "doc": "Latest Julian date of epoch corresponding to ndethist [days]"
+     },
+     {
+      "type": [
+       "double",
+       "null"
+      ],
+      "name": "scorr",
+      "default": null,
+      "doc": "Peak-pixel signal-to-noise ratio in point source matched-filtered detection image"
+     },
+     {
+      "type": [
+       "int",
+       "null"
+      ],
+      "name": "tooflag",
+      "default": 0,
+      "doc": "1 => candidate is from a Target-of-Opportunity (ToO) exposure; 0 => candidate is from a non-ToO exposure"
+     },
+     {
+      "type": [
+       "long",
+       "null"
+      ],
+      "name": "objectidps1",
+      "default": null,
+      "doc": "Object ID of closest source from PS1 catalog; if exists within 30 arcsec"
+     },
+     {
+      "type": [
+       "long",
+       "null"
+      ],
+      "name": "objectidps2",
+      "default": null,
+      "doc": "Object ID of second closest source from PS1 catalog; if exists within 30 arcsec"
+     },
+     {
+      "type": [
+       "float",
+       "null"
+      ],
+      "name": "sgmag2",
+      "default": null,
+      "doc": "g-band PSF-fit magnitude of second closest source from PS1 catalog; if exists within 30 arcsec [mag]"
+     },
+     {
+      "type": [
+       "float",
+       "null"
+      ],
+      "name": "srmag2",
+      "default": null,
+      "doc": "r-band PSF-fit magnitude of second closest source from PS1 catalog; if exists within 30 arcsec [mag]"
+     },
+     {
+      "type": [
+       "float",
+       "null"
+      ],
+      "name": "simag2",
+      "default": null,
+      "doc": "i-band PSF-fit magnitude of second closest source from PS1 catalog; if exists within 30 arcsec [mag]"
+     },
+     {
+      "type": [
+       "float",
+       "null"
+      ],
+      "name": "szmag2",
+      "default": null,
+      "doc": "z-band PSF-fit magnitude of second closest source from PS1 catalog; if exists within 30 arcsec [mag]"
+     },
+     {
+      "type": [
+       "float",
+       "null"
+      ],
+      "name": "sgscore2",
+      "default": null,
+      "doc": "Star/Galaxy score of second closest source from PS1 catalog; if exists within 30 arcsec: 0 <= sgscore <= 1 where closer to 1 implies higher likelihood of being a star"
+     },
+     {
+      "type": [
+       "float",
+       "null"
+      ],
+      "name": "distpsnr2",
+      "default": null,
+      "doc": "Distance to second closest source from PS1 catalog; if exists within 30 arcsec [arcsec]"
+     },
+     {
+      "type": [
+       "long",
+       "null"
+      ],
+      "name": "objectidps3",
+      "default": null,
+      "doc": "Object ID of third closest source from PS1 catalog; if exists within 30 arcsec"
+     },
+     {
+      "type": [
+       "float",
+       "null"
+      ],
+      "name": "sgmag3",
+      "default": null,
+      "doc": "g-band PSF-fit magnitude of third closest source from PS1 catalog; if exists within 30 arcsec [mag]"
+     },
+     {
+      "type": [
+       "float",
+       "null"
+      ],
+      "name": "srmag3",
+      "default": null,
+      "doc": "r-band PSF-fit magnitude of third closest source from PS1 catalog; if exists within 30 arcsec [mag]"
+     },
+     {
+      "type": [
+       "float",
+       "null"
+      ],
+      "name": "simag3",
+      "default": null,
+      "doc": "i-band PSF-fit magnitude of third closest source from PS1 catalog; if exists within 30 arcsec [mag]"
+     },
+     {
+      "type": [
+       "float",
+       "null"
+      ],
+      "name": "szmag3",
+      "default": null,
+      "doc": "z-band PSF-fit magnitude of third closest source from PS1 catalog; if exists within 30 arcsec [mag]"
+     },
+     {
+      "type": [
+       "float",
+       "null"
+      ],
+      "name": "sgscore3",
+      "default": null,
+      "doc": "Star/Galaxy score of third closest source from PS1 catalog; if exists within 30 arcsec: 0 <= sgscore <= 1 where closer to 1 implies higher likelihood of being a star"
+     },
+     {
+      "type": [
+       "float",
+       "null"
+      ],
+      "name": "distpsnr3",
+      "default": null,
+      "doc": "Distance to third closest source from PS1 catalog; if exists within 30 arcsec [arcsec]"
+     },
+     {
+      "type": "int",
+      "name": "nmtchps",
+      "doc": "Number of source matches from PS1 catalog falling within 30 arcsec"
+     },
+     {
+      "type": "long",
+      "name": "rfid",
+      "doc": "Processing ID for reference image to facilitate archive retrieval"
+     },
+     {
+      "type": "double",
+      "name": "jdstartref",
+      "doc": "Observation Julian date of earliest exposure used to generate reference image [days]"
+     },
+     {
+      "type": "double",
+      "name": "jdendref",
+      "doc": "Observation Julian date of latest exposure used to generate reference image [days]"
+     },
+     {
+      "type": "int",
+      "name": "nframesref",
+      "doc": "Number of frames (epochal images) used to generate reference image"
      }
     ],
     "doc": "avro alert schema"
@@ -506,7 +693,7 @@
      "type": "array",
      "items": {
       "type": "record",
-      "version": "1.3",
+      "version": "1.8",
       "name": "prv_candidate",
       "namespace": "ztf.alert",
       "fields": [
@@ -873,7 +1060,7 @@
         ],
         "name": "ssdistnr",
         "default": null,
-        "doc": "distance to nearest known solar system object [arcsec]"
+        "doc": "distance to nearest known solar system object if exists within 30 arcsec [arcsec]"
        },
        {
         "type": [
@@ -882,7 +1069,7 @@
         ],
         "name": "ssmagnr",
         "default": null,
-        "doc": "magnitude of nearest known solar system object (usually V-band from MPC archive) [mag]"
+        "doc": "magnitude of nearest known solar system object if exists within 30 arcsec (usually V-band from MPC archive) [mag]"
        },
        {
         "type": [
@@ -891,7 +1078,7 @@
         ],
         "name": "ssnamenr",
         "default": null,
-        "doc": "name of nearest known solar system object (from MPC archive)"
+        "doc": "name of nearest known solar system object if exists within 30 arcsec (from MPC archive)"
        },
        {
         "type": [
@@ -935,6 +1122,15 @@
         ],
         "name": "decnr",
         "doc": "Declination of nearest source in reference image PSF-catalog; J2000 [deg]"
+       },
+       {
+        "type": [
+         "double",
+         "null"
+        ],
+        "name": "scorr",
+        "default": null,
+        "doc": "Peak-pixel signal-to-noise ratio in point source matched-filtered detection image"
        }
       ],
       "doc": "avro alert schema"
@@ -949,7 +1145,7 @@
    "type": [
     {
      "type": "record",
-     "version": "1.3",
+     "version": "1.8",
      "name": "cutout",
      "namespace": "ztf.alert",
      "fields": [
@@ -960,7 +1156,7 @@
       {
        "type": "bytes",
        "name": "stampData",
-       "doc": "jpeg"
+       "doc": "fits.gz"
       }
      ],
      "doc": "avro alert schema"
