@@ -625,7 +625,13 @@
 				.closest("tr")
 				.find(".s_pps_operators")
 				.val();
-		crit_dict["value"] = $.isNumeric(val) ? Number(val) : val;
+
+		if (val == "null") {
+			crit_dict["value"] = null;
+		}
+		else {
+			crit_dict["value"] = $.isNumeric(val) ? Number(val) : val;
+		}
 
 		return crit_dict;
 	}
