@@ -282,8 +282,8 @@ def comment(comment, sourcename='',source={}, comment_type="info", comment_id=No
 	
 	if comment in ''.join(current_comm):	
 		print ('this comment was already made in current comments')
-		current_id = [tup[0] for tup in comment_list if ((tup[3]==comment_type) and (comment in tup[4]))][0]) # perhaps too pythonic...?
-		print ('to replace it, call this function with comment_id={}'.format(current_id)
+		current_id = [ tup[0] for tup in comment_list if ((tup[3]==comment_type) and (comment in tup[4]))][0] # perhaps too pythonic...?
+		print ('to replace it, call this function with comment_id={}'.format(current_id))
 		return current_id
 
 
