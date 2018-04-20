@@ -16,7 +16,8 @@ services:
     image: mongo:3.6
     command: ["mongod", "--port", "2002"]
     volumes:
-      - /data/ampel/mongo/test-catalog:/data/db
+      - /data/ampel/mongo/offline/test-catalog:/data/db
+      - /data/ampel/mongo/offline/catalog-dump:/docker-entrypoint-initdb.d/
     ports:
       - "2002:2002"
     secrets:
