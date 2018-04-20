@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 14.12.2017
-# Last Modified Date: 05.03.2018
+# Last Modified Date: 18.04.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from ampel.flags.AlertFlags import AlertFlags
@@ -29,8 +29,10 @@ class AmpelAlert:
 		'<': operator.lt,
 		'>=': operator.ge,
 		'<=': operator.le,
-		'=': operator.eq,
-		'!=': operator.ne
+		'==': operator.eq,
+		'!=': operator.ne,
+		'is': operator.is_,
+		'is not': operator.is_not
 	}
 
 
@@ -86,9 +88,8 @@ class AmpelAlert:
 		"""
 		self.tran_id = tran_id
 
-		# TODO: remove "is not None" check for production 
 		self.pps = ImmutableList(
-			[ImmutableDict(el) for el in list_of_pps if 'candid' in el and el['candid'] is not None]
+			[ImmutableDict(el) for el in list_of_pps if 'candid' in el]
 		)
 
 		# Freeze this instance
@@ -133,21 +134,22 @@ class AmpelAlert:
 
 			operator = AmpelAlert.ops[
 				filter_el['operator']
-			] 
+			]
 
-			for fkey in filter_el.keys():
+			provided_field = filter_el['attribute']
+			filter_el['value']
 
-				if fkey == "operator":
-					continue
+			attr_name = (
+				provided_field if not provided_field in AmpelAlert.alert_keywords 
+				else AmpelAlert.alert_keywords[provided_field]
+			)
 
-				akey = fkey if not fkey in AmpelAlert.alert_keywords else AmpelAlert.alert_keywords[fkey]
-
-				filtered_pps = tuple(
-					filter(
-						lambda el: akey in el and operator(el[akey], filter_el[fkey]), 
-						filtered_pps
-					)
+			filtered_pps = tuple(
+				filter(
+					lambda el: attr_name in el and operator(el[attr_name], filter_el['value']), 
+					filtered_pps
 				)
+			)
 
 		return filtered_pps
 

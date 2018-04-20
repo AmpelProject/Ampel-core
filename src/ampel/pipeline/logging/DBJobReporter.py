@@ -53,8 +53,11 @@ class DBJobReporter:
 		return getattr(self, "job_id", None)
 
 
-	def insert_new(self, al_params):
+	def insert_new(self, al_params, transient_col=None):
 		""" 
+		Optional:
+		transient_col: mongo collection containing the transient documents 
+		(used for keeping track of db stats)
 		"""
 		self.job_id = ObjectId()
 
@@ -62,8 +65,22 @@ class DBJobReporter:
 			"_id": self.job_id,
 			"jobName": self.job_name,
 			"jobFlags": self.job_flags.value,
-			"params": al_params
+			"params": al_params,
 		}
+
+		if transient_col is not None:
+
+			colstats = transient_col.database.command(
+				"collstats", transient_col.name
+			)
+
+			jdict["dbStats"] = {
+				'count': colstats['count'],
+				'size': colstats['size'],
+				'storageSize': colstats['storageSize'],
+				'totalIndexSize': colstats['totalIndexSize']
+			}
+
 
 		if hasattr(self, "arguments"):
 			jdict['arguments'] = self.arguments

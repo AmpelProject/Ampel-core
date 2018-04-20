@@ -36,6 +36,7 @@ class DBLoggingHandler(logging.Handler):
 		self.flush_len = flush_len
 		self.compoundId = None
 		self.tranId = None
+		self.channels = None
 		self.records = []
 		self.filters = []  # required when extending logging.Handler
 		self.lock = None   # required when extending logging.Handler
@@ -75,6 +76,14 @@ class DBLoggingHandler(logging.Handler):
 		""" """
 		self.compoundId = None
 
+	def set_channels(self, arg):
+		""" """
+		self.channels = arg
+
+	def unset_channels(self):
+		""" """
+		self.channels = None
+
 	def set_tranId(self, arg):
 		""" """
 		self.tranId = arg
@@ -86,19 +95,22 @@ class DBLoggingHandler(logging.Handler):
 	def emit(self, record):
 		""" """
 		rec = {
-			'date': int(record.created),
-			'flags': (self.global_flags | self.temp_flags | DBLoggingHandler.severity_map[record.levelno]).value,
+			'dt': int(record.created),
+			'fl': (self.global_flags | self.temp_flags | DBLoggingHandler.severity_map[record.levelno]).value,
 			#'filename': record.filename,
 			#'lineno': record.lineno,
 			#'funcName': record.funcName,
-			'msg': self.format(record)
+			'ms': self.format(record)
 		}
 
 		if self.tranId is not None:
-			rec['tranId'] = self.tranId
+			rec['tr'] = self.tranId
+
+		if self.channels is not None:
+			rec['ch'] = self.channels
 
 		if self.compoundId is not None:
-			rec['compoundId'] = self.compoundId
+			rec['cp'] = self.compoundId
 
 		self.records.append(rec)
 

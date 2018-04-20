@@ -9,8 +9,8 @@
 
 from ampel.abstract.AbsT3Unit import AbsT3Unit
 from slackclient import SlackClient
-from jdcal import jd2gcal, MJD_0
 from datetime import datetime, timedelta
+from astropy import time
 
 class SlackPublisher(AbsT3Unit):
 	"""
@@ -44,41 +44,76 @@ class SlackPublisher(AbsT3Unit):
 		# Loop through provided transients 
 		for tran in transients:
 
-			tr_ids.append(tran.tran_id)
+			try:
+				tr_ids.append(tran.tran_id)
 
-			# Should convert julian date into datetime. 
-			# Not sure at all it works as intended
-			conv_tmp = jd2gcal(MJD_0, tran.latest_lightcurve.al_pps_list[0].content['jd'] - 2400000.5)
-			first_obs_dt = datetime(*conv_tmp[0:3])+timedelta(days=conv_tmp[3])
+				l = sorted(tran.latest_lightcurve.al_pps_list, key=lambda k: k.content['jd'])
 
-			# Should convert julian date into datetime. 
-			# Not sure at all it works as intended
-			conv_tmp = jd2gcal(MJD_0, tran.latest_lightcurve.al_pps_list[-1].content['jd'] - 2400000.5)
-			last_obs_dt = datetime(*conv_tmp[0:3])+timedelta(days=conv_tmp[3])
+				first_obs_dt = time.Time(l[0].content['jd'], format="jd").datetime
+				last_obs_dt  = time.Time(l[-1].content['jd'], format="jd").datetime
 
-			# Post slack message
-			sc.api_call(
-    			"chat.postMessage",
-    			channel = channel,
-    			text = (
-					# Optional header defined in run_config
-					msg + 
-					(
-						# Main message
-						"```Id: %s\nPos (%s): %s\nInserted: %s\nLast modified: %s\nFirst obs: %s\nLast obs: %s```" %
+				srs = tran.get_science_records(t2_unit_id="SNCOSMO")
+
+				# TODO: improve
+				# RUSH CODE TO HAVE SOMETHING READY FOR ZTF CONF
+				if type(srs) is list:
+					latest_sr = srs[-1]
+				else:
+					latest_sr = srs
+
+				root_res = latest_sr.get_results() 
+
+				if root_res is None:
+					# TODO: better feedback
+					self.logger.info("Science record results is None")	
+					continue
+
+				# Get latest result from the list. TODO: feedback
+				root_res = root_res[-1]
+
+				if not 'results' in root_res or 'fit_acceptable' not in root_res['results']:
+					self.logger.info("Science record results missing")	
+					
+				if root_res['results']['fit_acceptable'] is False:
+					self.logger.info("fit_acceptable is False")	
+
+				# Should convert julian date into datetime (Not sure at all it works as intended)
+				peak_dt = time.Time(root_res['results']['fit_results']['t0'], format="jd").datetime
+				td = timedelta(days=root_res['results']['fit_results']['t0.err'])
+				peak_err = td.total_seconds() / (3600 * 24)
+
+				# Post slack message
+				sc.api_call(
+		   			"chat.postMessage",
+		   			channel = channel,
+		   			text = (
+						# Optional header defined in run_config
+						msg + 
 						(
-							tran.tran_id, 
-							pos, 
-							tran.latest_lightcurve.get_pos(ret=pos),
-							tran.created.strftime(dtf),
-							tran.modified.strftime(dtf),
-							first_obs_dt.strftime(dtf),
-							last_obs_dt.strftime(dtf)
+							# Main message
+							("```Id: %s\nPos (%s): %s\n" +
+							 "Inserted: %s\nLast modified: %s\n" + 
+							 "First obs: %s\nLast obs: %s\n" +
+							 "Fitted peak date: %s +- %s days\nChi2: %s```") %
+							(
+								tran.tran_id, 
+								pos, 
+								tran.latest_lightcurve.get_pos(ret=pos),
+								tran.created.strftime(dtf),
+								tran.modified.strftime(dtf),
+								first_obs_dt.strftime(dtf),
+								last_obs_dt.strftime(dtf),
+								peak_dt.strftime(dtf),
+								peak_err,
+								root_res['results']['sncosmo_info']['chisq'],
+							)
 						)
-					)
-				),
-				user = "T3Bot"
-    		)
+					),
+					user = "T3Bot"
+		   		)
+			# BAD. Last minute caltech demo quick n dirty
+			except:
+				pass
 
 		self.logger.info(
 			"Published following transients to slack channel %s: %s" %

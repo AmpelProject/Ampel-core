@@ -36,5 +36,7 @@ class ZIJSONLoader:
 			if el['candid'] is None or el['magpsf'] is None:
 				del prv_cd[i]
 
-		prv_cd.insert(0, json_dict['candidate'])
+		if not json_dict['candidate']['magpsf'] is None:
+			prv_cd.insert(0, json_dict['candidate'])
+
 		return json_dict['objectId'], json_dict['prv_candidates']

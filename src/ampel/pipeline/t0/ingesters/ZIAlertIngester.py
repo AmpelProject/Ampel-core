@@ -4,12 +4,13 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 14.12.2017
-# Last Modified Date: 11.03.2018
+# Last Modified Date: 20.03.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import logging, pymongo
-from datetime import datetime
+from datetime import datetime, timezone
 from pymongo.errors import BulkWriteError
+import time
 
 from ampel.abstract.AbsAlertIngester import AbsAlertIngester
 from ampel.pipeline.t0.ingesters.ZIPhotoPointShaper import ZIPhotoPointShaper
@@ -116,7 +117,7 @@ class ZIAlertIngester(AbsAlertIngester):
 	def ingest(self, tran_id, pps_alert, list_of_t2_runnables):
 		"""
 		This method is called by t0.AmpelProcessor for 
-		transients that pass at leat one T0 channel filter. 
+		transients that pass at least one T0 channel filter. 
 		Then photopoints, transients and  t2 documents are pushed to the DB.
 		A duplicate check is performed before DB insertions
 
@@ -135,7 +136,7 @@ class ZIAlertIngester(AbsAlertIngester):
 		# Create set with pp ids from alert
 		ids_pps_alert = {pp['candid'] for pp in pps_alert}
 
-		# Evtly load existing photopoints from DB
+		# Load existing photopoints from DB if any
 		self.logger.info("Checking DB for existing pps")
 		pps_db = list(
 			self.col.find(
@@ -144,10 +145,10 @@ class ZIAlertIngester(AbsAlertIngester):
 					"alDocType": AlDocTypes.PHOTOPOINT
 				}, 
 				{	
-					"_id": 1, 
-					"alFlags": 1, 
-					"jd": 1, 
-					"fid": 1, 
+					"_id": 1,
+					"alFlags": 1,
+					"jd": 1,
+					"fid": 1,
 					"pid": 1,
 					"alExcluded": 1
 				}
@@ -398,7 +399,7 @@ class ZIAlertIngester(AbsAlertIngester):
 		# Insert/Update transient document into 'transients' collection
 		self.logger.info("Updating transient document")
 
-		now = datetime.utcnow().timestamp()
+		now = datetime.now(timezone.utc).timestamp()
 
 		# TODO add alFlags
 		db_ops.append(
@@ -438,8 +439,16 @@ class ZIAlertIngester(AbsAlertIngester):
 		)
 
 		try: 
+
+			# DB update
+			start = time.time()
 			result = self.col.bulk_write(db_ops)
+			time_delta_micro = int(round((time.time() - start) * 1000000))
+
+			# Feedback and return measured db op time
 			self.logger.info(result.bulk_api_result)
+			return time_delta_micro, time_delta_micro / len(db_ops)
+
 		except BulkWriteError as bwe: 
 			self.logger.info(bwe.details) 
 			# TODO add error flag to Job and Transient

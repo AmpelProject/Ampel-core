@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 14.12.2017
-# Last Modified Date: 17.03.2018
+# Last Modified Date: 19.04.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import time
@@ -42,7 +42,7 @@ class AlertProcessor(DBWired):
 
 	def __init__(
 		self, instrument="ZTF", alert_format="IPAC", load_channels=True,
-		db_host='localhost', input_db=None, output_db=None
+		db_host='localhost', config_db=None, base_dbs=None
 	):
 		"""
 		Parameters:
@@ -52,21 +52,8 @@ class AlertProcessor(DBWired):
 		'load_channels': wether to load all the available channels in the config database 
 		 during class instanciation or not. Dedicated can be loaded afterwards using the 
 		 method load_channel(<channel name>)
-		'input_db': the database containing the Ampel config collections.
-		    Either:
-			-> None: default settings will be used 
-			   (pymongo MongoClient instance using 'db_host' and db name 'Ampel_config')
-			-> string: pymongo MongoClient instance using 'db_host' 
-			   and database with name identical to 'input_db' value
-			-> MongoClient instance: database with name 'Ampel_config' will be loaded from 
-			   the provided MongoClient instance (can originate from pymongo or mongomock)
-			-> Database instance (pymongo or mongomock): provided database will be used
-		'output_db': the output database (will typically contain the collections 'transients' and 'logs')
-		    Either:
-			-> MongoClient instance (pymongo or mongomock): the provided instance will be used 
-			-> dict: (example: {'transients': 'test_transients', 'logs': 'test_logs'})
-				-> must have the keys 'transients' and 'logs'
-				-> values must be either string or Database instance (pymongo or mongomock)
+		'config_db': see ampel.pipeline.db.DBWired.plug_config_db() docstring
+		'base_dbs': see ampel.pipeline.db.DBWired.plug_base_dbs() docstring
 		"""
 
 		# Setup logger
@@ -77,7 +64,7 @@ class AlertProcessor(DBWired):
 		self.logger.info("Setting up new AlertProcessor instance")
 
 		# Setup instance variable referencing the input database
-		self.plug_databases(db_host, input_db, output_db)
+		self.plug_databases(self.logger, db_host, config_db, base_dbs)
 
 		# Set static emum flag class
 		Channel.set_ChannelFlags(
@@ -136,7 +123,7 @@ class AlertProcessor(DBWired):
 	
 				# Instanciate ingester
 				self.ingester = ZIAlertIngester(
-					self.tran_col, self.logger
+					self.get_tran_col(), self.logger
 				)
 
 				# Tell method run() that ingester method configure() must be called 
@@ -228,7 +215,7 @@ class AlertProcessor(DBWired):
 
 	def run_iterable_paths(
 		self, base_dir="/Users/hu/Documents/ZTF/Ampel/alerts/", 
-		extension="*.avro", max_entries=None
+		extension="*.avro", max_entries=None, console_logging=True
 	):
 		"""
 		Process alerts in a given directory (using ampel.pipeline.t0.AlertFileList)
@@ -257,10 +244,10 @@ class AlertProcessor(DBWired):
 		)
 
 		while iterable.__length_hint__() > 0:
-			self.run(iterable)
+			self.run(iterable, console_logging)
 
 
-	def run(self, iterable):
+	def run(self, iterable, console_logging=True):
 		"""
 		For each alert:
 			* Load the alert
@@ -275,20 +262,24 @@ class AlertProcessor(DBWired):
 
 		self.logger.info("Executing run method")
 
+		if not console_logging:
+			self.logger.propagate = False
+
 		# Remove logger saving "log headers" before job(s) 
 		self.logger.removeHandler(self.ilb)
 
 		# Create JobReporter instance
 		db_job_reporter = DBJobReporter(
-			self.log_col, JobFlags.T0
+			self.get_job_col(), JobFlags.T0
 		)
 
 		# Create new "job" document in the DB
 		db_job_reporter.insert_new(
 			{
-				"APVersion": str(self.version),
+				"alertProc": str(self.version),
 				"ingesterClass": str(self.ingester.__class__)
-			}
+			},
+			self.get_tran_col()
 		)
 	
 		# Create DB logging handler instance (logging.Handler child class)
@@ -309,8 +300,8 @@ class AlertProcessor(DBWired):
 		self.logger.info("#######     Processing alerts     #######")
 
 		# Save current time to later evaluate how low was the pipeline processing time
-		start_time = int(time.time())
-
+		time_now = time.time
+		start_time = int(time_now())
 
 		# Check if a ingester instance was created/provided
 		if not hasattr(self, 'ingester'):
@@ -326,16 +317,19 @@ class AlertProcessor(DBWired):
 			db_job_reporter.get_job_id()
 		)
 
-		# Array of JobFlags. Each element is set by each T0 channel 
+		# Array of JobFlags. 
+		# Each element is set by each T0 channel 
 		scheduled_t2_runnables = [None] * len(self.channels) 
 
 		# python micro-optimization
 		loginfo = self.logger.info
 		logdebug = self.logger.debug
 		dblh_set_tranId = db_logging_handler.set_tranId
-		dblh_set_temp_flags = db_logging_handler.set_temp_flags
-		dblh_unset_temp_flags = db_logging_handler.unset_temp_flags
+		dblh_set_channel = db_logging_handler.set_channels
+		#dblh_set_temp_flags = db_logging_handler.set_temp_flags
+		#dblh_unset_temp_flags = db_logging_handler.unset_temp_flags
 		dblh_unset_tranId = db_logging_handler.unset_tranId
+		dblh_unset_channel = db_logging_handler.unset_channels
 		alert_loading_func = self.alert_loading_func
 		ingest = self.ingester.ingest
 
@@ -346,6 +340,10 @@ class AlertProcessor(DBWired):
 
 		max_iter = 5000
 		iter_count = 0
+
+		stats_db_inserts = []
+		stats_ingestions = []
+		stats_ingestions = []
 
 		# Iterate over alerts
 		for element in iterable:
@@ -371,7 +369,7 @@ class AlertProcessor(DBWired):
 				for i, channel in enumerate(self.channels):
 
 					# Associate upcoming log entries with the current channel
-					# dblh_set_temp_flags(channel.log_flag)
+					dblh_set_channel(channel.name)
 
 					# Apply filter (returns None in case of rejection or t2 runnable ids in case of match)
 					scheduled_t2_runnables[i] = channel.filter_func(alert)
@@ -384,9 +382,10 @@ class AlertProcessor(DBWired):
 						loginfo(channel.log_rejected)
 
 					# Unset channel id <-> log entries association
-					# dblh_unset_temp_flags(channel.log_flag)
+					dblh_unset_channel()
 
 				if not any(scheduled_t2_runnables):
+
 					# TODO: implement AlertDisposer class ?
 					self.logger.info("Disposing rejected candidates not implemented yet")
 
@@ -397,9 +396,14 @@ class AlertProcessor(DBWired):
 						#		scheduled_t2_runnables[i] = default_t2RunnableIds_for_this_channel
 						pass
 				else:
+
 					# Ingest alert
 					logdebug(" -> Ingesting alert")
-					ingest(trans_id, pps_list, scheduled_t2_runnables)
+
+					start  = time_now()
+					#processed_alert[trans_id]
+					db_time_bulk, db_time_op = ingest(trans_id, pps_list, scheduled_t2_runnables)
+					ingest_time = int(round((time_now() - start) * 1000000)) 
 
 				# Unset log entries association with transient id
 				dblh_unset_tranId()
@@ -413,9 +417,11 @@ class AlertProcessor(DBWired):
 				break
 
 
-		duration = int(time.time()) - start_time
+		duration = int(time_now()) - start_time
 		db_job_reporter.set_duration(duration)
 		self.logger.addHandler(self.ilb)
+		if not console_logging:
+			self.logger.propagate = True
 		loginfo("Alert processing completed (time required: " + str(duration) + "s)")
 
 		# Remove DB logging handler
