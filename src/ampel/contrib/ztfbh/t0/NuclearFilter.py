@@ -50,11 +50,8 @@ class TFilter(AbsAlertFilter):
 		# try to make a copy of this list that will remain untouched as the dictionaries are moved around
 		if self._default_filters is dict:
 			return self._default_filters.copy()
-		else:
-			filter_list_out = []
-		for flt in self._default_filters:
-			filter_list_out.append(flt.copy())
-		return filter_list_out
+		else:				
+			return [flt.copy() for flt in self._default_filters]
 
 
 	def set_filter_parameters(self, d):
@@ -75,17 +72,16 @@ class TFilter(AbsAlertFilter):
 		self.BrightRefMag 		= d['BrightRefMag'] 	# bright star removal: used for both ZTF filters
 		self.LastOnly 			= d['LastOnly'] 		# use only most recent detection (attempt to simulate real time)
 
-		#self.on_match_default_flags = T2RunnableIds.PHOTO_Z # need to update this with own T2? 
-		self.on_match_default_flags = True # need to update this with own T2? 
+		self.on_match_default_flags = True # todo need to update this with T2/T3 actions
 
-		# Instance here a dictionary later used in the method apply 		
-		nbad_flt = {'nbad':self.MaxNbad, "operator": '<='}	# not too many bad pixels
-		isdiff_flt1 = {'isdiffpos':0, "operator":'!='}	 	# is not ref-science
-		isdiff_flt1 = {'isdiffpos':'0', "operator":'!='}	 	# is not ref-science
-		isdiff_flt2 = {'isdiffpos':'f', "operator":'!='}		# is not ref-science (again!)
-		distnr_flt = {'distnr':0, "operator": '>'}			# has host galaxy detected (removes orphans)
+		# Instance here a dictionary later used in the method apply 	
+		isdetect_flt = 	{'attribute':'candid',   'value': None, 	    'operator': 'is not'}	# remove upper limits
+		nbad_flt = 		{'attribute':'nbad', 	 'value':self.MaxNbad , 'operator': '<='}	# not too many bad pixels
+		isdiff_flt1 = 	{'attribute':'isdiffpos','value':'0', 	    	'operator': '!='}	# is not ref-science
+		isdiff_flt2 = 	{'attribute':'isdiffpos','value':'f', 	    	'operator': '!='}	# is not ref-science (again!)
+		distnr_flt = 	{'attribute':'distnr' ,	 'value':0, 	    	'operator': '>'}		# has host galaxy detected (removes orphans)
 
-		self._default_filters = [nbad_flt, distnr_flt, isdiff_flt1, isdiff_flt2]
+		self._default_filters = [isdetect_flt, nbad_flt, distnr_flt, isdiff_flt1, isdiff_flt2]
 
 	def apply(self, alert):
 		"""
@@ -121,7 +117,7 @@ class TFilter(AbsAlertFilter):
 		# exception for older (pre v1.8) schema	
 		else:
 			sgscore = sgscore = alert.get_values("sgscore")[0]
-			distpsnr = alert.get_values("distpsnr")[0]
+			distpsnr = -999 #alert.get_values("distpsnr")[0]
 			srmag2 = None
 			srmag = srmag = alert.get_values("srmag")[0]
 			sgmag = alert.get_values("sgmag")[0]
@@ -190,11 +186,16 @@ class TFilter(AbsAlertFilter):
 		# now get the tuples
 		rb_arr, jd_arr, magnr_arr, isdiffpos_arr = map(np.array, zip(*tuptup))
 
+		# check that source is not too bright in ZTF ref img
+		if self.BrightRefMag > np.min(magnr_arr) > 0:
+			self.why = "min(magnr)={0:0.2f}, which is < {1:0.1f}".format(np.min(magnr_arr), self.BrightRefMag)
+			self.logger.info(self.why)
+			return None
 
-		# if we want, only check last detection 
+		# if we want, only check last observation 
 		if self.LastOnly:
 			
-			these_filters.append( {'jd':max(alert.get_values("jd")),'operator':'='} )			
+			these_filters = these_filters + [{'attribute': 'jd', 'operator': '==', 'value': max(alert.get_values('jd'))}]
 			lastcheck = alert.get_values("jd", filters=these_filters)
 
 			if len(lastcheck)==0:
@@ -204,24 +205,20 @@ class TFilter(AbsAlertFilter):
 			rb_arr = [rb_arr[np.argmax(jd_arr)]] # make sure rb check below is only for last detection
 
 
+
 		# if no detections pass real bogus, remove
 		if max(rb_arr)<self.MinRealBogusScore:
 			self.why = "max(rb)={0:0.2f}, which is  < {1:0.2f}".format(max(rb_arr), self.MinRealBogusScore)
 			self.logger.info(self.why)
 			return None
 
-		# do cut on moving sources
+		# do cut on moving sources (with all detections)
 		dt = np.max(jd_arr) - jd_arr
 		if np.max(dt)<self.MinDeltaJD:
 			self.why = "potential mover, number of detections={0}; max(time diff)={1:1.3f} h, which is <{2:0.3f} h".format(len(dt), max(dt)*24, self.MinDeltaJD*24)
 			self.logger.info(self.why)
 			return None 
 
-		# check that source is not too bright in ZTF ref img
-		if self.BrightRefMag > np.min(magnr_arr) > 0:
-			self.why = "min(magnr)={0:0.2f}, which is < {1:0.1f}".format(np.min(magnr_arr), self.BrightRefMag)
-			self.logger.info(self.why)
-			return None
 
 		# if we make it this far, compute the host-flare distance, using only (decent-enough) detections
 		distnr_arr, sigmapsf_arr, rb_arr, fwhm_arr, fid_arr = \
@@ -230,16 +227,15 @@ class TFilter(AbsAlertFilter):
 		
 		# compute a few different measures of the distance
 		# we also compute these for each band seperately
-
 		rb_arr = np.clip(rb_arr, 0.01, 1) 				# remove zero scores 
 		my_weight = 1/rb_arr*fwhm_arr*sigmapsf_arr 		# combine differen measures for how good the distnr measurement is
-		my_weight = 1/np.clip(my_weight, 0.001,1000) 		# protection against goblins
+		my_weight = 1/np.clip(my_weight, 0.001,1000) 	# protection against goblins
 
 		idx_all = np.repeat(True, len(distnr_arr))
 		idx_g = fid_arr == 1
 		idx_r = fid_arr == 2
 		
-		for idx, bnd in zip([idx_all, idx_g, idx_r],['r+g', 'g','r']):
+		for idx, bnd in zip([idx_g, idx_r, idx_all],['g','r','r+g']):
 			
 			if sum(idx):
 				
@@ -268,7 +264,6 @@ class TFilter(AbsAlertFilter):
 		self.why = "distnr > {0:0.2f}".format(self.MaxDeltaRad)
 		self.logger.info(self.why)
 		return None 
-
 
 		# we could also do some some more simple checks for mean color and delta magnitude here, 
 		# but perhaps that's better as a T2 module
