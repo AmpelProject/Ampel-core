@@ -199,7 +199,7 @@ class Sergeant(object):
 			targ0 += 100
 		return sources
 
-def get_comments(source):
+def get_comments(source, verbose=True):
 	'''
 	two inputs are possible:
 
@@ -236,22 +236,25 @@ def get_comments(source):
 		if (cell_str.find('edit_comment')>0) or (cell_str.find('add_autoannotation')>0):
 			lines = cell_str.split('\n')			
 			if lines[5].find(':')>0:
-				comment_id = int(lines[2].split('id=')[1].split('''"''')[0])
-				print ('comment id =',comment_id)
+				
+				comment_id = int(lines[2].split('id=')[1].split('''"''')[0])					
 				date_author, comment_type = (lines[5].strip(']:').strip().split('['))
 				date, author = '-'.join(date_author.split(' ')[0:3]), date_author.split(' ')[3].strip()
 				text = lines[9].strip()
 				text = text.replace(', [',')') # this deals with missing urls to [reference] in auto_annoations
 				one_line = '{0} [{1}]: {2}'.format(date_author, comment_type, text)
-				print (one_line)
-
+					
 				# add new comments to source dict
 				comment_tuple = (comment_id, date, author, comment_type, text)
 				if 'comments' in source:
 					source['comments'].append( comment_tuple )
 				# add to the output dict
 				all_comments.append( comment_tuple )
-				print ('---')
+				
+				if verbose:
+					print ('comment id =',comment_id)
+					print (one_line)
+					print ('---')
 	return all_comments
 
 def comment(comment, source, comment_type="info", comment_id=None, remove=False):
