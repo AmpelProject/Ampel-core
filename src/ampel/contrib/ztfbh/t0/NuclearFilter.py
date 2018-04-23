@@ -68,6 +68,7 @@ class TFilter(AbsAlertFilter):
 		self.MinDeltaJD			= d['MinDeltaJD'] 		# remove movers with min time distance in days between detections with nbad<=MaxNbad		
 		self.MinRealBogusScore 	= d['MinRealBogusScore']# min RealBogus score of *any* observation
 		self.BrightPS1RMag 		= d['BrightPS1RMag']	# bright star removal: min PS1 r-band mag 
+		self.MinDistPS1source 	= d['MinDistPS1source']	# min distance to nearest PS1 source (useful for removing bright stars and ghostly things)
 		self.MaxDistPS1source 	= d['MaxDistPS1source']	# max distance for checking nearby bright stars in PS1
 		self.BrightRefMag 		= d['BrightRefMag'] 	# bright star removal: used for both ZTF filters
 		self.LastOnly 			= d['LastOnly'] 		# use only most recent detection (attempt to simulate real time)
@@ -104,10 +105,10 @@ class TFilter(AbsAlertFilter):
 		sgscore = alert.get_values("sgscore1")
 		if len(sgscore)==1:
 
-			distpsnr = alert.get_values("distpsnr1")[0]
+			distpsnr1 = alert.get_values("distpsnr1")[0]
 			sgscore = alert.get_values("sgscore1")[0]
-			srmag = alert.get_values("srmag1")[0]
-			sgmag = alert.get_values("sgmag1")[0]
+			srmag1 = alert.get_values("srmag1")[0]
+			sgmag1 = alert.get_values("sgmag1")[0]
 
 			#sgscore2,sgscore3 = alert.get_values("sgscore2")[0], alert.get_values("sgscore3")[0]
 			distpsnr2,distpsnr3 = alert.get_values("distpsnr2")[0], alert.get_values("distpsnr3")[0]
@@ -117,10 +118,10 @@ class TFilter(AbsAlertFilter):
 		# exception for older (pre v1.8) schema	
 		else:
 			sgscore = sgscore = alert.get_values("sgscore")[0]
-			distpsnr = -999 #alert.get_values("distpsnr")[0]
+			distpsnr1 = -999 #alert.get_values("distpsnr")[0]
+			srmag1 = alert.get_values("srmag")[0]
+			sgmag1 = alert.get_values("sgmag")[0]
 			srmag2 = None
-			srmag = srmag = alert.get_values("srmag")[0]
-			sgmag = alert.get_values("sgmag")[0]
 			
 		if sgscore is None:		
 			self.why="sgscore=None"
@@ -132,22 +133,22 @@ class TFilter(AbsAlertFilter):
 				self.logger.info(self.why)
 				return None
 
-		if srmag is None:
+		if srmag1 is None:
 			self.why = "sr mag is None"
 			self.logger.info(self.why)
 			return None
 
-		if (srmag<0) or (sgmag<0):
-			self.why = "1st PS1 match is faulty: sgmag={0:0.2f} srmag={1:0.2f} (dist={2:0.2f})".format(sgmag, srmag, distpsnr)
+		if (srmag1<0) or (sgmag1<0):
+			self.why = "1st PS1 match is faulty: sgmag={0:0.2f} srmag={1:0.2f} (dist={2:0.2f})".format(sgmag1, srmag1, distpsnr1)
 			self.logger.info(self.why)
 			return None
 
-		if srmag < self.BrightPS1RMag:
-			self.why = "1st PS1 match srmag={0:0.2f}, which is < {1:0.2f} (dist={2:0.2f} arcsec)".format(srmag, self.BrightPS1RMag, distpsnr)
+		if srmag1 < self.BrightPS1RMag:
+			self.why = "1st PS1 match srmag={0:0.2f}, which is < {1:0.2f} (dist={2:0.2f} arcsec)".format(srmag1, self.BrightPS1RMag, distpsnr1)
 			self.logger.info(self.why)
 			return None
 
-		# if we have the new schema, also check for nearby bright stars
+		# if we have the new schema, also check for nearby bright stars 
 		if srmag2 is not None:
 			if (abs(srmag2) < self.BrightPS1RMag) and (abs(distpsnr2)< self.MaxDistPS1source):
 				self.why = "2nd PS1 match srmag={0:0.2f}, which is < {1:0.2f} (dist={2:0.2f})".format(srmag2, self.BrightPS1RMag, distpsnr2)
@@ -158,6 +159,13 @@ class TFilter(AbsAlertFilter):
 				self.why = "3rd  PS1 match r={0:0.2f}, which is < {1:0.2f} (dist={2:0.2f})".format(srmag3, self.BrightPS1RMag, distpsnr3)
 				self.logger.info(self.why)
 				return None
+
+			# impotynat: also check that the nearest PS1 source is not too far 	
+			if abs(distpsnr1)<self.MinDistPS1source:
+					self.why = "distance to 1st PS1 match is {0:0.2f}, which is < {1:0.2f}".format(distpsnr1, self.MinDistPS1source)
+					self.logger.info(self.why)
+					return None
+
 
 			# don't use the code below because it will remove sources next to objects 
 			# that were detected in just one pan-starrs band and thus have srmag=-999
