@@ -45,5 +45,5 @@ def test_instantiate_alertprocessor(alert_generator, test_database, caplog):
     assert len(record["records"]) == len(caplog.records)
     print(len(caplog.records))
     
-    assert transients.find({}).count() == 988
+    assert transients.find({}).count() == 881
 

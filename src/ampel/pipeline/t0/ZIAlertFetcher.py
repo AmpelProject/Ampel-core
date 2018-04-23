@@ -13,6 +13,7 @@ import fastavro, io, pykafka
 import itertools
 import logging
 import uuid
+import time
 from collections import defaultdict
 
 log = logging.getLogger('ampel.pipeline.t0.ZIAlertFetcher')
@@ -114,7 +115,7 @@ class ZIAlertFetcher:
 			for alert in fastavro.reader(io.BytesIO(message.value())):
 				ZIAlertLoader.filter_previous_candidates(alert['prv_candidates'])
 				if self._archive is not None:
-					self._archive.insert_alert(alert, 0, 0)
+					self._archive.insert_alert(alert, message.partition(), int(time.time()*1e6))
 				yield alert
 		self._consumer.commit_offsets()
 	

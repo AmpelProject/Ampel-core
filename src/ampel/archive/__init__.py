@@ -1,8 +1,8 @@
 
-from sqlalchemy import Table, MetaData, Column, ForeignKey, ForeignKeyConstraint
+from sqlalchemy import Table, MetaData, Column, ForeignKey, ForeignKeyConstraint, Index
 from sqlalchemy import String, Integer, BigInteger, Float
 from sqlalchemy.dialects.postgresql import DOUBLE_PRECISION
-from sqlalchemy import select, and_
+from sqlalchemy import select, and_, bindparam
 from sqlalchemy import create_engine
 from sqlalchemy.exc import IntegrityError, OperationalError
 import os, json
@@ -47,6 +47,9 @@ class ArchiveDB(object):
     def get_alert(self, alert_id):
         return get_alert(self._connection, self._meta, alert_id)
 
+    def get_alerts(self, jd_min, jd_max):
+        return get_alerts(self._connection, self._meta, jd_min, jd_max)
+
 def create_metadata(alert_schema):
     """
     Create archive database schema from AVRO alert schema
@@ -76,17 +79,19 @@ def create_metadata(alert_schema):
 
     meta = MetaData()
 
-    Table('alert', meta,
+    Alert = Table('alert', meta,
         Column('candid', BigInteger(), primary_key=True, nullable=False),
         Column('objectId', String(12), nullable=False),
         Column('partition_id', Integer(), nullable=False),
-        Column('ingestion_time', BigInteger(), nullable=False)
+        Column('ingestion_time', BigInteger(), nullable=False),
+        Column('jd', double, nullable=False),
+        Index('alert_playback', 'partition_id', 'jd')
     )
 
     indices = {'candid', 'pid'}
     columns = filter(lambda c: c.name not in indices, map(make_column, fields['candidate']['type']['fields']))
     Table('candidate', meta,
-        Column('candid', BigInteger(), primary_key=True, nullable=False),
+        Column('candid', BigInteger(), ForeignKey("alert.candid"), primary_key=True, nullable=False),
         Column('pid', BigInteger(), primary_key=True, nullable=False),
         
         *columns
@@ -140,7 +145,8 @@ def insert_alert(connection, meta, alert, partition_id, ingestion_time):
     try:
         connection.execute(meta.tables['alert'].insert(),
             candid=alert_id, objectId=alert['objectId'],
-            partition_id=partition_id, ingestion_time=ingestion_time)
+            partition_id=partition_id, ingestion_time=ingestion_time,
+            jd=alert['candidate']['jd'])
         connection.execute(meta.tables['candidate'].insert(), **alert['candidate'])
     except IntegrityError:
         # abort on duplicate alerts
@@ -186,6 +192,52 @@ def get_alert(connection, meta, alert_id):
         alert['prv_candidates'].append(dict(result))
     
     return alert
+
+def get_alerts(connection, meta, jd_start, jd_end, partitions=None):
+    """
+    Retrieve a range of alerts from the archive database
+
+    :param connection: database connection
+    :param meta: schema metadata
+    :param jd_start: minimum JD of exposure start
+    :param jd_end: maximum JD of exposure start
+    :param partitions: range of partitions to consume. Clients with disjoint
+        partitions will not receive duplicate alerts even if they request
+        overlapping time ranges.
+    :type partitions: int or slice
+    """
+    PrvCandidate = meta.tables['prv_candidate']
+    Candidate = meta.tables['candidate']
+    Alert = meta.tables['alert']
+    Pivot = meta.tables['alert_prv_candidate_pivot']
+
+    in_range = and_(Alert.c.jd >= jd_start, Alert.c.jd < jd_end)
+    if isinstance(partitions, int):
+        in_range = and_(in_range, Alert.c.partition_id == partitions)
+    elif isinstance(partitions, slice):
+        assert partitions.step == 1 or partitions.step is None
+        in_range = and_(in_range, and_(Alert.c.partition_id >= partitions.start, Alert.c.partition_id < partitions.stop))
+    elif partitions is not None:
+        raise TypeError("partitions must be int or slice")
+    alert_query = \
+        select([Alert.c.objectId, Candidate])\
+        .select_from(Alert.join(Candidate))\
+        .where(in_range)
+    history_query = \
+        select([PrvCandidate]) \
+        .select_from(PrvCandidate.join(Pivot)) \
+        .where(Pivot.c.alert_id == bindparam('candid')) \
+        .order_by(Pivot.c.index)
+
+    for result in connection.execute(alert_query):
+        candidate = dict(result)
+        alert = dict(objectId=candidate.pop('objectId'), candid=candidate['candid'])
+        alert['candidate'] = candidate
+        alert['prv_candidates'] = []
+        for result in connection.execute(history_query, candid=alert['candid']):
+            alert['prv_candidates'].append(dict(result))
+
+        yield alert
 
 def docker_env(var):
 	"""

@@ -4,6 +4,7 @@ import fastavro
 import os
 import time
 from math import isnan
+from collections import defaultdict
 
 from ampel import archive
 
@@ -116,30 +117,61 @@ def test_insert_duplicate_photopoints(mock_database, alert_generator):
     assert connection.execute(count(meta.tables['prv_candidate'].columns.candid)).first()[0] == len(alert['prv_candidates'])
     assert connection.execute(count(meta.tables['alert_prv_candidate_pivot'].columns.candid)).first()[0] == 2*(len(alert['prv_candidates']))
 
+def assert_alerts_equivalent(alert, reco_alert):
+    
+    # some necessary normalization on the alert
+    alert = dict(alert)
+    alert['candidate'] = dict(alert['candidate'])
+    for k,v in alert['candidate'].items():
+        if isinstance(v, float) and isnan(v):
+            alert['candidate'][k] = None
+    assert alert.keys() == reco_alert.keys()
+    for k in alert:
+        if 'candidate' in k:
+            continue
+        assert alert[k] == pytest.approx(reco_alert[k])
+    assert len(alert['prv_candidates']) == len(reco_alert['prv_candidates'])
+    for prv, reco_prv in zip(alert['prv_candidates'], reco_alert['prv_candidates']):
+        assert prv == pytest.approx(reco_prv)
+    assert alert['candidate'] == pytest.approx(reco_alert['candidate'])
+
 def test_get_alert(mock_database, alert_generator):
     processor_id = 0
     meta, connection = mock_database
     
     timestamps = []
-    for alert in alert_generator():
+    jds = defaultdict(dict)
+    for idx, alert in enumerate(alert_generator()):
+        processor_id = idx % 16
         timestamps.append(int(time.time()*1e6))
+        assert alert['candid'] not in jds[alert['candidate']['jd']]
+        jds[alert['candidate']['jd']][alert['candid']] = (processor_id,alert)
         archive.insert_alert(connection, meta, alert, processor_id, timestamps[-1])
-    
+
+    exposures = sorted(jds.keys())
+    assert len(exposures) == 4
+    jd_min = exposures[1]
+    jd_max = exposures[3]
+    reco_jds = {exposures[i]: {k: pair[1] for k,pair in jds[exposures[i]].items()} for i in (1,2)}
+
+    # retrieve alerts in the middle two exposures
+    for reco_alert in archive.get_alerts(connection, meta, jd_min, jd_max):
+        alert = reco_jds[reco_alert['candidate']['jd']].pop(reco_alert['candid'])
+        assert_alerts_equivalent(alert, reco_alert)
+    for k in reco_jds.keys():
+        assert len(reco_jds[k]) == 0, "retrieved all alerts in time range"
+
+    # retrieve again, but only in a subset of partitions
+    reco_jds = {exposures[i]: {k: pair[1] for k,pair in jds[exposures[i]].items() if (pair[0] >= 5 and pair[0] < 12)} for i in (1,2)}
+    for reco_alert in archive.get_alerts(connection, meta, jd_min, jd_max, slice(5,12)):
+        alert = reco_jds[reco_alert['candidate']['jd']].pop(reco_alert['candid'])
+        assert_alerts_equivalent(alert, reco_alert)
+    for k in reco_jds.keys():
+        assert len(reco_jds[k]) == 0, "retrieved all alerts in time range"
+
     for alert in alert_generator():
         reco_alert = archive.get_alert(connection, meta, alert['candid'])
-        # some necessary normalization on the alert
-        for k,v in alert['candidate'].items():
-            if isinstance(v, float) and isnan(v):
-                alert['candidate'][k] = None
-        assert alert.keys() == reco_alert.keys()
-        for k in alert:
-            if 'candidate' in k:
-                continue
-            assert alert[k] == pytest.approx(reco_alert[k])
-        assert len(alert['prv_candidates']) == len(reco_alert['prv_candidates'])
-        for prv, reco_prv in zip(alert['prv_candidates'], reco_alert['prv_candidates']):
-            assert prv == pytest.approx(reco_prv)
-        assert alert['candidate'] == pytest.approx(reco_alert['candidate'])
+        assert_alerts_equivalent(alert, reco_alert)
 
 def test_archive_object(alert_generator, alert_schema):
     import tempfile
