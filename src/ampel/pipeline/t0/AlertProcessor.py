@@ -431,7 +431,7 @@ class AlertProcessor(DBWired):
 				pass
 
 		# Add T0 job stats
-		t0_stat = {
+		t0_stats = {
 			"processed": iter_count,
 			"ingested": len(st_ingest),
 
@@ -454,7 +454,7 @@ class AlertProcessor(DBWired):
 		db_job_reporter.update_job_info(
 			{
 				"duration": duration,
-				"t0Stats": t0_stat,
+				"t0Stats": t0_stats,
 				"dbStats": [db_report_before, db_report_after]
 			}
 		)
