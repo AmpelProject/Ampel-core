@@ -37,8 +37,12 @@ class ArchiveDB(object):
         engine = create_engine(*args, **kwargs)
         self._connection = engine.connect()
     
-    def insert_alert(self, alert, processor_id, ingestion_time):
-        insert_alert(self._connection, self._meta, alert, processor_id, ingestion_time)
+    def insert_alert(self, alert, partition_id, ingestion_time):
+        """
+        :param alert: alert dictionary
+        :param partition_id: index of the Kafka partition this alert came from
+        """
+        insert_alert(self._connection, self._meta, alert, partition_id, ingestion_time)
     
     def get_alert(self, alert_id):
         return get_alert(self._connection, self._meta, alert_id)
@@ -72,16 +76,16 @@ def create_metadata(alert_schema):
 
     meta = MetaData()
 
-    Alert = Table('alert', meta,
+    Table('alert', meta,
         Column('candid', BigInteger(), primary_key=True, nullable=False),
         Column('objectId', String(12), nullable=False),
-        Column('processor_id', Integer(), nullable=False),
+        Column('partition_id', Integer(), nullable=False),
         Column('ingestion_time', BigInteger(), nullable=False)
     )
 
     indices = {'candid', 'pid'}
     columns = filter(lambda c: c.name not in indices, map(make_column, fields['candidate']['type']['fields']))
-    PhotoPoint = Table('candidate', meta,
+    Table('candidate', meta,
         Column('candid', BigInteger(), primary_key=True, nullable=False),
         Column('pid', BigInteger(), primary_key=True, nullable=False),
         
@@ -90,14 +94,14 @@ def create_metadata(alert_schema):
     
     indices = {'candid', 'pid'}
     columns = filter(lambda c: c.name not in indices, map(make_column, fields['prv_candidates']['type'][0]['items']['fields']))
-    PhotoPoint = Table('prv_candidate', meta,
+    Table('prv_candidate', meta,
         Column('candid', BigInteger(), primary_key=True, nullable=False),
         Column('pid', BigInteger(), primary_key=True, nullable=False),
         
         *columns
     )
 
-    Pivot = Table('alert_prv_candidate_pivot', meta,
+    Table('alert_prv_candidate_pivot', meta,
         Column('alert_id', BigInteger(), ForeignKey("alert.candid"), primary_key=True, nullable=False),
         Column('candid', BigInteger(), primary_key=True, nullable=False),
         Column('pid', BigInteger(), primary_key=True, nullable=False),
@@ -121,15 +125,14 @@ def create_database(metadata, *args, **kwargs):
     
     return engine
 
-def insert_alert(connection, meta, alert, processor_id, ingestion_time):
+def insert_alert(connection, meta, alert, partition_id, ingestion_time):
     """
     Insert an alert into the archive database
     
     :param connection: database connection
     :param meta: schema metadata
     :param alert: alert dict
-    :param processor_id: the index of the :py:class:`ampel.t0.AlertProcessor`
-                         that received the alert
+    :param partition_id: the index of the Kafka partition this alert came from
     :param ingestion_time: time the alert was received, in UNIX epoch microseconds
     
     """
@@ -137,7 +140,7 @@ def insert_alert(connection, meta, alert, processor_id, ingestion_time):
     try:
         connection.execute(meta.tables['alert'].insert(),
             candid=alert_id, objectId=alert['objectId'],
-            processor_id=processor_id, ingestion_time=ingestion_time)
+            partition_id=partition_id, ingestion_time=ingestion_time)
         connection.execute(meta.tables['candidate'].insert(), **alert['candidate'])
     except IntegrityError:
         # abort on duplicate alerts
