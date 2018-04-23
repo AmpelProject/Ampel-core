@@ -126,7 +126,7 @@ class Sergeant(object):
 				sources[-1][key.strip(':')] = tag.next_sibling.strip()
 		return sources
 
-	def list_saved_sources(self, lims = False):
+	def list_saved_sources(self, lims = False, verbose=True):
 		'''
 		read all sources from the Saved Sources page(s)
 		return a list of dictionaries with info (eg, coordinates, light curve)
@@ -195,7 +195,8 @@ class Sergeant(object):
 						sources[-1]["LC"] = LC
 
 					except IndexError:
-						print('{0} has no annotation'.format(sources[-1]["objname"]))
+						if verbose:
+							print('{0} has no auto_annotation'.format(sources[-1]["objname"]))
 			targ0 += 100
 		return sources
 
