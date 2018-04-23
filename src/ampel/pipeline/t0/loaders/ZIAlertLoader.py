@@ -87,7 +87,6 @@ class ZIAlertLoader:
 			elif stop is not None and count > stop:
 				break
 			for alert in fastavro.reader(fileobj):
-				cls.filter_previous_candidates(alert['prv_candidates'])
 				yield alert
 		
 

@@ -79,34 +79,45 @@ def test_insert_unique_alerts(mock_database, alert_generator):
     db_timestamps = sorted([tup[0] for tup in rows])
     assert timestamps == db_timestamps
 
+def count_previous_candidates(alert):
+    upper_limits = sum((1 for c in alert['prv_candidates'] if c['candid'] is None))
+    return len(alert['prv_candidates'])-upper_limits, upper_limits
+
 def test_insert_duplicate_alerts(mock_database, alert_generator):
+    import itertools
     processor_id = 0
     meta, connection = mock_database
     
     alert = next(alert_generator())
+    detections, upper_limits = count_previous_candidates(alert)
     
     archive.insert_alert(connection, meta, alert, processor_id, int(time.time()*1e6))
     assert connection.execute(count(meta.tables['alert'].columns.candid)).first()[0] == 1
     assert connection.execute(count(meta.tables['candidate'].columns.candid)).first()[0] == 1
-    assert connection.execute(count(meta.tables['prv_candidate'].columns.candid)).first()[0] == len(alert['prv_candidates'])
+    assert connection.execute(count(meta.tables['prv_candidate'].columns.candid)).first()[0] == detections
+    assert connection.execute(count(meta.tables['upper_limit'].columns.id)).first()[0] == upper_limits
     
     # inserting the same alert a second time does nothing
     archive.insert_alert(connection, meta, alert, processor_id, int(time.time()*1e6))
     assert connection.execute(count(meta.tables['alert'].columns.candid)).first()[0] == 1
     assert connection.execute(count(meta.tables['candidate'].columns.candid)).first()[0] == 1
-    assert connection.execute(count(meta.tables['prv_candidate'].columns.candid)).first()[0] == len(alert['prv_candidates'])
+    assert connection.execute(count(meta.tables['prv_candidate'].columns.candid)).first()[0] == detections
+    assert connection.execute(count(meta.tables['upper_limit'].columns.id)).first()[0] == upper_limits
 
 def test_insert_duplicate_photopoints(mock_database, alert_generator):
     processor_id = 0
     meta, connection = mock_database
     
     alert = next(alert_generator())
+    detections, upper_limits = count_previous_candidates(alert)
     
     archive.insert_alert(connection, meta, alert, processor_id, int(time.time()*1e6))
     assert connection.execute(count(meta.tables['alert'].columns.candid)).first()[0] == 1
     assert connection.execute(count(meta.tables['candidate'].columns.candid)).first()[0] == 1
-    assert connection.execute(count(meta.tables['prv_candidate'].columns.candid)).first()[0] == len(alert['prv_candidates'])
-    assert connection.execute(count(meta.tables['alert_prv_candidate_pivot'].columns.candid)).first()[0] == len(alert['prv_candidates'])
+    assert connection.execute(count(meta.tables['prv_candidate'].columns.candid)).first()[0] == detections
+    assert connection.execute(count(meta.tables['upper_limit'].columns.id)).first()[0] == upper_limits
+    assert connection.execute(count(meta.tables['alert_prv_candidate_pivot'].columns.alert_id)).first()[0] == detections
+    assert connection.execute(count(meta.tables['alert_upper_limit_pivot'].columns.alert_id)).first()[0] == upper_limits
     
     # insert a new alert, containing the same photopoints. only the alert and pivot tables should gain entries
     alert['candid'] += 1
@@ -114,8 +125,10 @@ def test_insert_duplicate_photopoints(mock_database, alert_generator):
     archive.insert_alert(connection, meta, alert, processor_id, int(time.time()*1e6))
     assert connection.execute(count(meta.tables['alert'].columns.candid)).first()[0] == 2
     assert connection.execute(count(meta.tables['candidate'].columns.candid)).first()[0] == 2
-    assert connection.execute(count(meta.tables['prv_candidate'].columns.candid)).first()[0] == len(alert['prv_candidates'])
-    assert connection.execute(count(meta.tables['alert_prv_candidate_pivot'].columns.candid)).first()[0] == 2*(len(alert['prv_candidates']))
+    assert connection.execute(count(meta.tables['prv_candidate'].columns.candid)).first()[0] == detections
+    assert connection.execute(count(meta.tables['upper_limit'].columns.id)).first()[0] == upper_limits
+    assert connection.execute(count(meta.tables['alert_prv_candidate_pivot'].columns.alert_id)).first()[0] == 2*detections
+    assert connection.execute(count(meta.tables['alert_upper_limit_pivot'].columns.alert_id)).first()[0] == 2*upper_limits
 
 def assert_alerts_equivalent(alert, reco_alert):
     
@@ -132,7 +145,9 @@ def assert_alerts_equivalent(alert, reco_alert):
         assert alert[k] == pytest.approx(reco_alert[k])
     assert len(alert['prv_candidates']) == len(reco_alert['prv_candidates'])
     for prv, reco_prv in zip(alert['prv_candidates'], reco_alert['prv_candidates']):
+        assert sorted(prv.keys()) == sorted(reco_prv.keys())
         assert prv == pytest.approx(reco_prv)
+        #assert prv == reco_prv
     assert alert['candidate'] == pytest.approx(reco_alert['candidate'])
 
 def test_get_alert(mock_database, alert_generator):
@@ -155,7 +170,7 @@ def test_get_alert(mock_database, alert_generator):
     reco_jds = {exposures[i]: {k: pair[1] for k,pair in jds[exposures[i]].items()} for i in (1,2)}
 
     # retrieve alerts in the middle two exposures
-    for reco_alert in archive.get_alerts(connection, meta, jd_min, jd_max):
+    for reco_alert in archive.get_alerts_in_time_range(connection, meta, jd_min, jd_max):
         alert = reco_jds[reco_alert['candidate']['jd']].pop(reco_alert['candid'])
         assert_alerts_equivalent(alert, reco_alert)
     for k in reco_jds.keys():
@@ -163,14 +178,21 @@ def test_get_alert(mock_database, alert_generator):
 
     # retrieve again, but only in a subset of partitions
     reco_jds = {exposures[i]: {k: pair[1] for k,pair in jds[exposures[i]].items() if (pair[0] >= 5 and pair[0] < 12)} for i in (1,2)}
-    for reco_alert in archive.get_alerts(connection, meta, jd_min, jd_max, slice(5,12)):
+    for reco_alert in archive.get_alerts_in_time_range(connection, meta, jd_min, jd_max, slice(5,12)):
         alert = reco_jds[reco_alert['candidate']['jd']].pop(reco_alert['candid'])
         assert_alerts_equivalent(alert, reco_alert)
     for k in reco_jds.keys():
         assert len(reco_jds[k]) == 0, "retrieved all alerts in time range"
 
-    for alert in alert_generator():
+    hit_list = []
+    for i,alert in enumerate(alert_generator()):
         reco_alert = archive.get_alert(connection, meta, alert['candid'])
+        assert_alerts_equivalent(alert, reco_alert)
+        if i % 17 == 0:
+            hit_list.append(alert)
+
+    for i,reco_alert in enumerate(archive.get_alerts(connection, meta, [c['candid'] for c in hit_list])):
+        alert = hit_list[i]
         assert_alerts_equivalent(alert, reco_alert)
 
 def test_archive_object(alert_generator, alert_schema):
