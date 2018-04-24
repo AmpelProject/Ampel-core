@@ -614,7 +614,6 @@ def _ingest_slice(host, archive_host, infile, start, stop):
 			archive.insert_alert(alert, 0, 0)
 			yield alert
 	processor = AlertProcessor(db_host=host)
-	processor.logger.setLevel('WARN')
 	return processor.run(loader())
 
 def _worker(idx, mongo_host, archive_host, bootstrap_host, group_id, chunk_size=5000):
@@ -623,7 +622,7 @@ def _worker(idx, mongo_host, archive_host, bootstrap_host, group_id, chunk_size=
 	from pymongo import MongoClient
 
 	archive = ArchiveDB('postgresql://ampel:{}@{}/ztfarchive'.format(docker_env('POSTGRES_PASSWORD'), archive_host))
-	mongo = MongoClient(mongo_host, username=docker_env('MONGO_INITDB_ROOT_USERNAME'), password=docker_env('MONGO_INITDB_ROOT_PASSWORD'))
+	mongo = 'mongodb://{}:{}@{}/'.format(docker_env('MONGO_INITDB_ROOT_USERNAME'), docker_env('MONGO_INITDB_ROOT_PASSWORD'), mongo_host)
 
 	fetcher = ZIAlertFetcher(archive, bootstrap_host, group_name=group_id)
 
@@ -632,8 +631,7 @@ def _worker(idx, mongo_host, archive_host, bootstrap_host, group_id, chunk_size=
 
 	count = 0
 	for i in range(10):
-		processor = AlertProcessor(input_db=mongo, output_db=mongo)
-		processor.logger.setLevel('ERROR')
+		processor = AlertProcessor(db_hostmongo_db, console_logging=False)
 		count += processor.run(fetcher.alerts(chunk_size))
 		t1 = time.time()
 		dt = t1-t0
