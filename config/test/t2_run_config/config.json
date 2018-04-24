@@ -5,6 +5,7 @@
 	"author": "ztf-software@desy.de",
 	"version": 1.0,
 	"lastChange": "28.02.2018",
+	"private": false,
 	"parameters": {
 		"degree": 5
 	}
@@ -16,6 +17,7 @@
 	"author": "ztf-software@desy.de",
 	"version": 1.0,
 	"lastChange": "28.02.2018",
+	"private": false,
 	"parameters": {
 		"degree": 3
 	}
@@ -27,6 +29,7 @@
 	"author": "ztf-software@desy.de",
 	"version": 1.0,
 	"lastChange": "28.02.2018",
+	"private": false,
 	"parameters": {
 		"name": "value"
 	}
@@ -49,8 +52,21 @@
 	"author": "ztf-software@desy.de",
 	"version": 1.0,
 	"lastChange": "28.02.2018",
+	"private": false,
 	"parameters": {
 		"name": "value"
+	}
+},
+{
+	"_id": "SNCOSMO_default",
+	"t2Unit": "SNCOSMO",
+	"runConfig": "default",
+	"author": "ampel-info@desy.de",
+	"version": 1.0,
+	"lastChange": "18.03.2018",
+	"private": false,
+	"parameters": {
+		"model": "salt2"
 	}
 }]
 

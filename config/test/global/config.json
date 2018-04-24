@@ -30,13 +30,37 @@
 },
 {
 	"_id": "dbSpecs",
-	"logs": {
-		"dbName": "ampel-test-jobs",
-		"collectionName": "jobs"
-	},
-	"transients": {
-		"dbName": "ampel-test",
-		"collectionName": "main"
+	"databases": {
+		"transients": {
+			"dbName": "Ampel_transients",
+			"collectionName": "docs",
+			"indexes": [
+				{
+					"field": "tranId"
+				},
+				{
+					"field": "alDocType"
+				},
+				{
+					"field": "runState",
+					"options": {
+						"sparse": true
+					}
+				}
+			]
+		},
+		"jobs": {
+			"dbName": "Ampel_jobs",
+			"collectionName": "jobs"
+		},
+		"stats": {
+			"dbName": "Ampel_stats",
+			"collectionName": "stats"
+		},
+		"troubles": {
+			"dbName": "Ampel_troubles",
+			"collectionName": "troubles"
+		}
 	}
 }]
 
