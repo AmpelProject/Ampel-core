@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# File              : ??/marshal_functions.py
+# File              : pipeline/t3/marshal_functions.py
 # License           : ?
 # First author      : Tiara Hung <tiarahung@astro.umd.edu>  
 # Second author 	: Sjoert van Velzen <sjoert@umd.edu>
@@ -142,11 +142,14 @@ class Sergeant(object):
 			print('ERROR, first fix program_name upon init')
 			return []
 		targ0 = 0
+		page_number = 1
 		sources = []
 		while True:
+
+			if verbose:
+				print ('list_saved_sources: reading page {0}'.format(page_number))
+
 			self.saved_soup = soup_obj(rawsaved_url + "?programidx=%s&offset=%s" %(self.cutprogramidx, targ0))
-			
-			#print ('saved soup:',self.saved_soup)
 
 			table = self.saved_soup.findAll('table')
 			table_rows = table[1].findAll('tr')[1:-1]
@@ -198,6 +201,7 @@ class Sergeant(object):
 						if verbose:
 							print('{0} has no auto_annotation'.format(sources[-1]["objname"]))
 			targ0 += 100
+			page_number+=1
 		return sources
 
 def get_comments(source, verbose=True):
