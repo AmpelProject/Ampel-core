@@ -40,11 +40,11 @@ class AlertProcessor(DBWired):
 		* Set policies
 		* Ingest alert based on the configured ingester
 	"""
-	version = 0.2
+	version = 0.3
 
 	def __init__(
 		self, instrument="ZTF", alert_format="IPAC", load_channels=True,
-		db_host='localhost', config_db=None, base_dbs=None, stats=False
+		db_host='localhost', config_db=None, base_dbs=None, stats=True
 	):
 		"""
 		Parameters:
