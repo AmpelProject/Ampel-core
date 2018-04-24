@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 14.12.2017
-# Last Modified Date: 19.04.2018
+# Last Modified Date: 24.04.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import pymongo, time, numpy as np
@@ -400,10 +400,6 @@ class AlertProcessor(DBWired):
 				self.logger.info("Reached max number of iterations")
 				return True
 
-		# Convert python lists into numpy arrays
-		st_ingest = np.array(st_ingest)
-		st_db_bulk = np.array(st_db_bulk)
-		st_db_op = np.array(st_db_op)
 
 		# Save ampel 'state' and get list of tran ids required for autocomplete
 		db_report_after, tran_ids_after = self.get_db_report()
@@ -414,34 +410,39 @@ class AlertProcessor(DBWired):
 			if auto_complete_diff:
 				pass
 
-		# Add T0 job stats
-		t0_stats = {
-			"processed": iter_count,
-			"ingested": len(st_ingest),
-
-			# Alert ingestion: mean time & std dev in microseconds
-			"ingestMean": int(round(np.mean(st_ingest)* 1000000)),
-			"ingestStd": int(round(np.std(st_ingest)* 1000000)),
-
-			# Bulk db ops: mean time & std dev in microseconds
-			"dbBulkMean": int(round(np.mean(st_db_bulk)* 1000000)),
-			"dbBulkStd": int(round(np.std(st_db_bulk)* 1000000)),
-
-			# Mean single db op: mean time & std dev in microseconds
-			"dbOpMean": int(round(np.mean(st_db_op)* 1000000)),
-			"dbOpStd": int(round(np.std(st_db_op)* 1000000))
-		}
-
 		# Total duration in seconds
 		duration = int(time_now() - start_time)
+		job_info = {"duration": duration}
 
-		db_job_reporter.update_job_info(
-			{
-				"duration": duration,
-				"t0Stats": t0_stats,
-				"dbStats": [db_report_before, db_report_after]
+		if self.publish_stats:
+
+			# Convert python lists into numpy arrays
+			st_ingest = np.array(st_ingest)
+			st_db_bulk = np.array(st_db_bulk)
+			st_db_op = np.array(st_db_op)
+
+			job_info["t0Stats"] = {
+
+				"processed": iter_count,
+				"ingested": len(st_ingest),
+
+				# Alert ingestion: mean time & std dev in microseconds
+				"ingestMean": int(round(np.mean(st_ingest)* 1000000)),
+				"ingestStd": int(round(np.std(st_ingest)* 1000000)),
+
+				# Bulk db ops: mean time & std dev in microseconds
+				"dbBulkMean": int(round(np.mean(st_db_bulk)* 1000000)),
+				"dbBulkStd": int(round(np.std(st_db_bulk)* 1000000)),
+
+				# Mean single db op: mean time & std dev in microseconds
+				"dbOpMean": int(round(np.mean(st_db_op)* 1000000)),
+				"dbOpStd": int(round(np.std(st_db_op)* 1000000))
 			}
-		)
+
+			job_info["dbStats"] = [db_report_before, db_report_after]
+
+		# Insert job info into job document
+		db_job_reporter.update_job_info(job_info)
 
 		# 
 		self.logger.addHandler(self.ilb)
@@ -484,18 +485,23 @@ class AlertProcessor(DBWired):
 		col = self.get_tran_col()
 		tran_ids = len(self.channels) * [None]
 
-		# Compute several values for stats
-		report = {
-			'dt': int(time.time()),
-			# Counts total number of unique transients found in DB
-			'tranNbr': col.find(
-				{'alDocType': AlDocTypes.TRANSIENT}
-			).count(),
-			'chs': []
-		}
+		if self.publish_stats:
 
-		# Add general collection stats
-		MongoStats.col_stats(col, use_dict=report)
+			# Compute ampel stats
+			report = {
+				'dt': int(time.time()),
+				# Counts total number of unique transients found in DB
+				'tranNbr': col.find(
+					{'alDocType': AlDocTypes.TRANSIENT}
+				).count(),
+				'chs': []
+			}
+
+			# Add general collection stats
+			MongoStats.col_stats(col, use_dict=report)
+
+		else:
+			report = {}
 
 		# Build set of transient ids
 		for i, channel in enumerate(self.channels):
@@ -515,28 +521,30 @@ class AlertProcessor(DBWired):
 					)
 				}
 
-				# Update channel stats
-				report['chs'].append(
-					{
-						'ch': channel.name, 
-						'nb': len(tran_ids[i])
-					}
-				)
+				if self.publish_stats:
+					# Update channel stats
+					report['chs'].append(
+						{
+							'ch': channel.name, 
+							'nb': len(tran_ids[i])
+						}
+					)
 
 			# Update channel stats only
 			else:
 
-				report['chs'].append(
-					{
-						'ch': channel.name, 
-						'nb': self.get_tran_col().find(
-							{
-								'alDocType': AlDocTypes.TRANSIENT, 
-								'channels': channel.name
-							}
-						).count()
-					}
-				)
+				if self.publish_stats:
+					report['chs'].append(
+						{
+							'ch': channel.name, 
+							'nb': self.get_tran_col().find(
+								{
+									'alDocType': AlDocTypes.TRANSIENT, 
+									'channels': channel.name
+								}
+							).count()
+						}
+					)
 
 		return report, tran_ids
 
