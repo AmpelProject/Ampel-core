@@ -33,12 +33,12 @@ class LoggingUtils:
 				else '%(asctime)s %(filename)s:%(lineno)s %(funcName)s() %(levelname)s %(message)s'
 			),
 			datefmt = "%Y-%m-%d %H:%M:%S",
-			level = logging.DEBUG,
 			stream = sys.stdout
 		)
 
 		logger = logging.getLogger(
 			"Ampel-"+str(datetime.now().time()) if unique is True else "Ampel"
 		)
+		logger.setLevel('DEBUG')
 
 		return logger
