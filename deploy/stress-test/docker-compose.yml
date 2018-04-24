@@ -1,0 +1,71 @@
+version: '3.4'
+services:
+  mongo:
+    image: mongo:3.6
+    command: ["mongod", "--port", "2000"]
+    volumes:
+      - /data/ampel/mongo/test:/data/db
+    ports:
+      - "2000:2000"
+    secrets:
+      - mongo-root-password
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD_FILE: /run/secrets/mongo-root-password
+  catalog:
+    image: mongo:3.6
+    command: ["mongod", "--port", "2002"]
+    volumes:
+      - /data/ampel/mongo/offline/test-catalog:/data/db
+      - /data/ampel/mongo/offline/catalog-dump:/docker-entrypoint-initdb.d/
+    ports:
+      - "2002:2002"
+    secrets:
+      - mongo-root-password
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD_FILE: /run/secrets/mongo-root-password
+  archive:
+    image: postgres:10.3
+    command: ["postgres", "-p", "2001"]
+    volumes:
+      - /var/tmp:/run/postgresql
+      - /data/ampel/archive/test:/var/lib/postgresql/data
+    ports:
+      - "2001:2001"
+    secrets:
+      - archive-user-password
+    environment:
+      POSTGRES_PASSWORD_FILE: /run/secrets/archive-user-password
+      POSTGRES_USER: ampel
+      POSTGRES_DB: ztfarchive
+  ampel:
+    image: ampel:v0.1a1
+    command: ["/Ampel/deploy/test/run_tests.sh"]
+    volumes:
+      - /scratch/jvs/Ampel:/Ampel
+      - /scratch/jvs/ztfdata:/ztf
+      
+    secrets:
+      - archive-user-password
+      - mongo-root-password
+    environment:
+      TINI_SUBREAPER: 1
+      KAFKA: kafka:9092
+      MONGO: mongo:2000
+      CATALOG: catalog:2002
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD_FILE: /run/secrets/mongo-root-password
+      ARCHIVE: archive:2001
+      POSTGRES_PASSWORD_FILE: /run/secrets/archive-user-password
+      POSTGRES_USER: ampel
+    depends_on:
+      - mongo
+      - archive
+      - kafka
+
+secrets:
+  archive-user-password:
+    file: secrets/archive-user-password.txt
+  mongo-root-password:
+    file: secrets/mongo-root-password.txt
