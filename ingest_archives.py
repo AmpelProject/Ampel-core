@@ -1,0 +1,81 @@
+#!/usr/bin/env python
+
+from ampel.pipeline.t0.AlertProcessor import AlertProcessor
+from ampel.pipeline.t0.loaders.ZIAlertLoader import ZIAlertLoader
+
+def _ingest_slice(host, archive_host, infile, start, stop):
+	from ampel.archive import ArchiveDB, docker_env
+	archive = ArchiveDB('postgresql://ampel:{}@{}/ztfarchive'.format(docker_env('POSTGRES_PASSWORD'), archive_host))
+	
+	def loader():
+		for alert in ZIAlertLoader.walk_tarball(infile, start, stop):
+			archive.insert_alert(alert, 0, 0)
+			yield alert
+	processor = AlertProcessor(db_host=host)
+	return processor.run(loader())
+
+def _worker(idx, mongo_host, archive_host, infile):
+	from ampel.archive import ArchiveDB, docker_env
+	from ampel.pipeline.t0.ZIAlertFetcher import ZIAlertFetcher
+	import itertools
+
+	archive = ArchiveDB('postgresql://ampel:{}@{}/ztfarchive'.format(docker_env('POSTGRES_PASSWORD'), archive_host))
+	mongo = 'mongodb://{}:{}@{}/'.format(docker_env('MONGO_INITDB_ROOT_USERNAME'), docker_env('MONGO_INITDB_ROOT_PASSWORD'), mongo_host)
+
+	def loader():
+		for idx,alert in enumerate(ZIAlertLoader.walk_tarball(infile)):
+			#archive.insert_alert(alert, idx%16, int(time.time()*1e6))
+			yield alert
+	def peek(iterable):
+		try:
+			first = next(iterable)
+		except StopIteration:
+			return None
+		return first, itertools.chain([first], iterable)
+	import time
+	t0 = time.time()
+
+	alerts = loader()
+	count = 0
+	while True:
+		res = peek(alerts)
+		if res is None:
+			break
+		else:
+			alerts = res[1]
+		processor = AlertProcessor(db_host=mongo)
+		chunk_size = processor.run(itertools.islice(alerts,100), console_logging=False)
+		t1 = time.time()
+		dt = t1-t0
+		t0 = t1
+		print('({}) {} alerts in {:.1f}s; {:.1f}/s'.format(idx, chunk_size, dt, chunk_size/dt))
+		count += chunk_size
+
+	return count
+
+def run_alertprocessor():
+	import os, time, uuid
+	from concurrent import futures
+	from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
+	parser = ArgumentParser(description=__doc__, formatter_class=ArgumentDefaultsHelpFormatter)
+	parser.add_argument('--host', default='mongo:27017')
+	parser.add_argument('--archive-host', default='archive:5432')
+	parser.add_argument('--procs', type=int, default=1, help='Number of processes to start')
+	parser.add_argument('infiles', nargs='+')
+	
+	opts = parser.parse_args()
+	
+	executor = futures.ProcessPoolExecutor(opts.procs)
+
+	start_time = time.time()
+	count = 0
+	jobs = [executor.submit(_worker, idx, opts.host, opts.archive_host, fname) for idx,fname in enumerate(opts.infiles)]
+	for future in futures.as_completed(jobs):
+		print(future.result())
+		count += future.result()
+	duration = int(time.time()) - start_time
+	print('Processed {} alerts in {:.1f} s ({:.1f}/s)'.format(count, duration, float(count)/duration))
+
+if __name__ == "__main__":
+	run_alertprocessor()
+	
