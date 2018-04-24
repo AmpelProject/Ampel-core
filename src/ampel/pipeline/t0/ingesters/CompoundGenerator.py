@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 01.01.2018
-# Last Modified Date: 16.03.2018
+# Last Modified Date: 18.04.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import logging, hashlib, json
@@ -142,9 +142,9 @@ class CompoundGenerator():
 			
 		# Sort photopoints by id (type: long)
 		if ids_alert is None:
-			self.raw_compound_ids = sorted(self.ids_db)
+			self.pp_ids = sorted(self.ids_db)
 		else:
-			self.raw_compound_ids = sorted(self.ids_db.union(ids_alert))
+			self.pp_ids = sorted(self.ids_db.union(ids_alert))
 
 
 		# 1
@@ -289,7 +289,7 @@ class CompoundGenerator():
 			chan_options = CompoundGenerator.channel_options[chan_flag.value]
 	
 			# Create compound and compoundId
-			for pp_id in self.raw_compound_ids:
+			for pp_id in self.pp_ids:
 	
 				d = {'pp': pp_id}
 	

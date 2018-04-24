@@ -18,12 +18,16 @@ class RandFilter(AbsAlertFilter):
 
 
 	def __init__(self, on_match_t2_units, base_config=None, run_config=None, logger=None):
+		"""
+		"""
 		self.on_match_default_t2_units = on_match_t2_units
-		self.threshold = base_config['threshold']
+		self.threshold = run_config['threshold']
 		logger.info("RandFilter instanciated")
 
 
 	def apply(self, ampel_alert):
+		"""
+		"""
 		if randint(0, 99) > self.threshold:
 			return self.on_match_default_t2_units
 		else:

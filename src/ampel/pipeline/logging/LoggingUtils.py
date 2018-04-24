@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 14.12.2017
-# Last Modified Date: 19.03.2018
+# Last Modified Date: 19.04.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import logging, sys
@@ -17,7 +17,7 @@ class LoggingUtils:
 	"""
 
 	@staticmethod
-	def get_logger(unique=False, pathname=False):
+	def get_logger(unique=False, log_pathname=False):
 		"""
 			Returns a logger (registered as 'Ampel' in the module logging is unique=False)
 			with the following parameters:
@@ -29,10 +29,10 @@ class LoggingUtils:
 		logging.basicConfig(
 			format = (
 				'%(asctime)s %(pathname)s %(filename)s:%(lineno)s %(funcName)s() %(levelname)s %(message)s'
-				if pathname is True else
-				'%(asctime)s %(filename)s:%(lineno)s %(funcName)s() %(levelname)s %(message)s'
-			), 
-			datefmt = "%Y-%m-%d %H:%M:%S", 
+				if log_pathname is True
+				else '%(asctime)s %(filename)s:%(lineno)s %(funcName)s() %(levelname)s %(message)s'
+			),
+			datefmt = "%Y-%m-%d %H:%M:%S",
 			level = logging.DEBUG,
 			stream = sys.stdout
 		)

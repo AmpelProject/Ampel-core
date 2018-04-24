@@ -7,24 +7,12 @@
 	"classFullPath": "ampel.pipeline.t0.filters.BasicFilter"
 },
 {
-	"_id": "BasicCatalogFilter",
-	"classFullPath": "ampel.pipeline.t0.filters.BasicCatalogFilter",
-	"baseConfig": {
-		"mongodbHost": "localhost",
-		"mongodbPort": 27017,
-		"catSrcCollName": "srcs"
-		}
-},
-{
 	"_id": "BasicMultiFilter",
 	"classFullPath": "ampel.pipeline.t0.filters.BasicMultiFilter"
 },
 {
 	"_id": "RandFilter",
-	"classFullPath": "ampel.contrib.hu.t0.RandFilter",
-	"baseConfig": {
-		"threshold": 1
-	}
+	"classFullPath": "ampel.contrib.hu.t0.RandFilter"
 },
 {
 	"_id": "SNFilter",
@@ -32,6 +20,15 @@
 	"baseConfig": {
 		"slopeMin": 2,
 		"slopeMax": 5
+	}
+},
+{
+	"_id": "StripEnvelopeSN",
+	"classFullPath": "ampel.contrib.okc.t0.StripEnvelopeSN",
+	"baseConfig": {
+		"minDet": 2,
+		"minTimeDiff": 30,
+		"gMinusR": 0.2
 	}
 }]
 

@@ -8,12 +8,16 @@
 # Last Modified By  : Sjoert 
 from __future__ import print_function
 
-import urllib, urllib2,base64,pickle
-from bs4 import BeautifulSoup
+import requests
+import urllib, base64
 import re, os, datetime, json
-import yaml
 from collections import defaultdict
-from astropy.time import Time
+
+# less standard imports
+import  configparser 			# pip3 install configparser
+from bs4 import BeautifulSoup 	# pip3 install bs4 + pip3 install lxml
+import yaml  					# pip3 install pyyaml
+from astropy.time import Time 	# pip3 install astropy
 
 marshal_root = 'http://skipper.caltech.edu:8080/cgi-bin/growth/'
 listprog_url = marshal_root + 'list_programs.cgi'
@@ -22,21 +26,23 @@ saving_url = marshal_root + 'save_cand_growth.cgi?candid=%s&program=%s'
 rawsaved_url = marshal_root + 'list_sources_bare.cgi'
 annotate_url = marshal_root + 'edit_comment.cgi'
 
+
 class PTFConfig(object) :
-	def __init__(self) :
-		import ConfigParser
+	def __init__(self) :		
 		self.fname = os.path.expanduser('~/.ptfconfig.cfg')
-		self.config = ConfigParser.SafeConfigParser()
+		self.config = configparser.ConfigParser()
 		self.config.read(self.fname)
 	def get(self,*args,**kwargs) :
 		return self.config.get(*args,**kwargs)
 
 def get_marshal_html(weblink):
-	request = urllib2.Request(weblink)
+	
 	conf = PTFConfig()
-	base64string = base64.encodestring('%s:%s' % (conf.get('Marshal', 'user'), conf.get('Marshal', 'passw'))).replace('\n', '')
-	request.add_header("Authorization", "Basic %s" % base64string)
-	return urllib2.urlopen(request).read()
+
+	reponse = requests.get(weblink, auth=requests.auth.HTTPBasicAuth(conf.get('Marshal', 'user'), conf.get('Marshal', 'passw')))
+
+	return reponse.text
+
 
 def soup_obj(url):
 	return BeautifulSoup(get_marshal_html(url), 'lxml')
@@ -44,14 +50,12 @@ def soup_obj(url):
 def save_source(candid, progid):
 	return BeautifulSoup(get_marshal_html(saving_url %(candid, progid)), 'lxml') 
 
-today = datetime.datetime.now().strftime('%Y-%m-%d')
-fivedaysago = (datetime.datetime.now() - datetime.timedelta(days=5)).strftime('%Y-%m-%d')
 
 class Sergeant(object):
 	'''
 	>>> ser = Sergeant(program_name='ZTF Science Validation')
 
-	optional input for constructor
+	optional input for constructor (only used for the list_scan_sources function)
 	 start_date='2018-04-01'
 	 end_date='2018-04-01'
 	if none are given we assume today and five days ago
@@ -59,13 +63,14 @@ class Sergeant(object):
 	
 	def __init__(self, program_name='Nuclear Transients',start_date=None, end_date=None) :
 		
+		today = datetime.datetime.now().strftime('%Y-%m-%d')
+		fivedaysago = (datetime.datetime.now() - datetime.timedelta(days=5)).strftime('%Y-%m-%d')
+
 		if start_date is None:
-			start_date = fivedaysago
-			print ('start_date : {0}'.format(start_date))
+			start_date = fivedaysago			
 		if end_date is None:
 			end_date = today
-			print ('end_date   : {0}'.format(end_date))
-
+			
 		self.start_date = start_date
 		self.end_date = end_date
 		self.program_name = program_name
@@ -85,6 +90,9 @@ class Sergeant(object):
 			return None
 	
 	def list_scan_sources(self, hardlimit=200):
+		print ('start_date : {0}'.format(start_date))
+		print ('end_date   : {0}'.format(end_date))
+
 		if self.cutprogramidx is None:
 			print('ERROR, first fix program_name upon init')
 			return []
@@ -118,7 +126,7 @@ class Sergeant(object):
 				sources[-1][key.strip(':')] = tag.next_sibling.strip()
 		return sources
 
-	def list_saved_sources(self, lims = False):
+	def list_saved_sources(self, lims = False, verbose=True):
 		'''
 		read all sources from the Saved Sources page(s)
 		return a list of dictionaries with info (eg, coordinates, light curve)
@@ -187,31 +195,35 @@ class Sergeant(object):
 						sources[-1]["LC"] = LC
 
 					except IndexError:
-						print('{0} has no annotation'.format(sources[-1]["objname"]))
+						if verbose:
+							print('{0} has no auto_annotation'.format(sources[-1]["objname"]))
 			targ0 += 100
 		return sources
 
-def get_comments(sourcename='',source={}):
+def get_comments(source, verbose=True):
 	'''
-	two input are possible:
+	two inputs are possible:
 
 	>>> comment_list = get_comments('ZTF18aabtxvd')
 	get the current comment for a source
 	
-	>>> comment_list = get_comments(source=source)
+	>>> comment_list = get_comments(source_dict)
 	get the current comments, and add them the source dict 
-	)this dict is output from list_saved_sources function of the Sergeant class)
+	this dict is output from list_saved_sources function of the Sergeant class)
 	'''
 
-	if not('objname' in source) and not(sourcename):
-		print('''ERROR, we need sourcename='ZTFxxxxxx' or source=dict with objname key''')
-		return 
+	# lil help with input
+	if type(source) is list:
+		if len(source)==1:
+			source = source[0]
 
-	if not sourcename:
-		sourcename = source["objname"]	
+	if 'objname' in source:
+		sourcename = source['objname']
+	else:
+		sourcename = source
 
-	if source:
-		source['comments'] = [] # we re-read the current comments
+	if type(source) is dict:
+		source['comments'] = [] # replace, because we re-read the current comments
 
 	soup = soup_obj(marshal_root + 'view_source.cgi?name=%s' %sourcename)
 	table = soup.findAll('table')[0]
@@ -225,43 +237,55 @@ def get_comments(sourcename='',source={}):
 		if (cell_str.find('edit_comment')>0) or (cell_str.find('add_autoannotation')>0):
 			lines = cell_str.split('\n')			
 			if lines[5].find(':')>0:
-				comment_id = int(lines[2].split('id=')[1].split('''"''')[0])
-				print ('comment id=',comment_id)
-				date_author, type = (lines[5].strip(']:').split('['))
+				
+				comment_id = int(lines[2].split('id=')[1].split('''"''')[0])					
+				date_author, comment_type = (lines[5].strip(']:').strip().split('['))
 				date, author = '-'.join(date_author.split(' ')[0:3]), date_author.split(' ')[3].strip()
 				text = lines[9].strip()
 				text = text.replace(', [',')') # this deals with missing urls to [reference] in auto_annoations
-				one_line = '{0} [{1}]: {2}'.format(date_author, type, text)
-				print (one_line)
-
-				# add comments to source dict
-				comment_tuple = (comment_id, date, author, type, text)
-				if source:
+				one_line = '{0} [{1}]: {2}'.format(date_author, comment_type, text)
+					
+				# add new comments to source dict
+				comment_tuple = (comment_id, date, author, comment_type, text)
+				if 'comments' in source:
 					source['comments'].append( comment_tuple )
 				# add to the output dict
 				all_comments.append( comment_tuple )
-				print ('---')
+				
+				if verbose:
+					print ('comment id =',comment_id)
+					print (one_line)
+					print ('---')
 	return all_comments
 
-# todo: us comment ID to overwrite/edit comments 
-def comment(comment, sourcename='',source={}, comment_type="info", comment_id=None, remove=False):
+def comment(comment, source, comment_type="info", comment_id=None, remove=False):
 	
 	'''
-	>>> soup_out = comment("dummy", sourcename='ZTF17aacscou')
-	attempt is made to avoid duplicates
-	when source dict is given as input we use this to check for current comments
-	default comment type is "info", other options are "redshift", "classification", "comment"
-	comments are not added if identical text has already been added (by anyone)
-	to replace an excisiting comment, give comment_id as input 
+	two types of input are accepted:
+	
+	>>> soup_out = comment("dummy", 'ZTF17aacscou')
+	>>> soup_out = comment("dummy", source_dict)
+
+	here source_dict is a dictionary with keys 'objname' and (optional) 'comments'
+
+	optional input:
+
+	comment _type="info", other options are "redshift", "classification", "comment"	
+	comment_id=123 to replace an excisiting comment, give its id as input 
+
+	in this function an attempt is made to avoid duplicates
+	when source_dict is given as input, we use this to check for current comments
+	otherwise we fill read the Marshal to get the current comments.
+	comments are not added if identical text is found for this comment_type (by any user)
+
 	removing comment is not yet implemented
 	'''
 
-	if not('objname' in source) and not(sourcename):
-		print('''ERROR, we need sourcename='ZTFxxxxxx' or source=dict with objname key''')
-		return 
-
-	if not(sourcename):
-		sourcename = source["objname"]	
+	if ('objname' in source): 
+		sourcename = source['objname']	
+	else:
+		sourcename = source
+		
 
 	# check if already have a dict with current comments
 	# (we check only the comment text, not the Marshal username)
@@ -269,17 +293,19 @@ def comment(comment, sourcename='',source={}, comment_type="info", comment_id=No
 		comment_list = source['comments']
 	else:
 		print ('getting current comments...')
-		comment_list = get_comments(sourcename=sourcename, source=source)
+		comment_list = get_comments(source)
 	
-	current_comm = ''.join([tup[4] for tup in source['comments']])
+	current_comm = ''.join([tup[4] for tup in comment_list if tup[3]==comment_type])
 
 	
 	if comment in ''.join(current_comm):	
 		print ('this comment was already made in current comments')
-		return
+		current_id = [ tup[0] for tup in comment_list if ((tup[3]==comment_type) and (comment in tup[4]))][0] # perhaps too pythonic...?
+		print ('to replace it, call this function with comment_id={}'.format(current_id))
+		return current_id
 
 
-	print ('setting up comment script...')
+	print ('setting up comment script for {0}...'.format(sourcename))
 	soup = soup_obj(marshal_root + 'view_source.cgi?name=%s' %sourcename)
 	cmd = {}
 	for x in soup.find('form', {'action':"edit_comment.cgi"}).findAll('input'):
@@ -291,7 +317,10 @@ def comment(comment, sourcename='',source={}, comment_type="info", comment_id=No
 		cmd["id"] = str(comment_id)
 
 	print ('pushing comment to marshal...')
-	params = urllib.urlencode(cmd)
+	try:
+		params = urllib.parse.urlencode(cmd) # python3
+	except AttributeError:
+		params = urllib.urlencode(cmd) # python2	
 	try:
 		return soup_obj(marshal_root + 'edit_comment.cgi?%s' %params)
 	except error:
@@ -383,17 +412,21 @@ def testing():
 	progn = 'ZTF Science Validation'
 	progn = 'Nuclear Transients'
 	inst = Sergeant(progn)	
-		
-	#scan_sources = inst.list_scan_sources()
-	#print ('# of scan sources', len(scan_sources) )
-	
+
+	print ('reading saved sources...')
 	saved_sources = inst.list_saved_sources()
 	print ('# saved sources:',len(saved_sources)) 
 
 	#this_source = (item for item in saved_sources if item["objname"] == "ZTF18aagteoy").next()
-	this_source  = saved_sources[1] # pick one 
+	if len(saved_sources)>1:
+		this_source  = saved_sources[1] # pick one 
+		print ( get_comments(this_source) )
 
-	print ( get_comments(source=this_source) )
+	print ('reading scan sources...')	
+	scan_sources = inst.list_scan_sources()
+	print ('# of scan sources', len(scan_sources) )
+
+
 
 
 if __name__ == "__main__":

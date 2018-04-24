@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 # File              : ampel/flags/TransientFlags.py
+# License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 14.12.2017
-# Last Modified Date: 20.02.2018
+# Last Modified Date: 20.03.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from enum import Flag

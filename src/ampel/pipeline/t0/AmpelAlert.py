@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 14.12.2017
-# Last Modified Date: 05.03.2018
+# Last Modified Date: 18.04.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from ampel.flags.AlertFlags import AlertFlags
@@ -29,17 +29,22 @@ class AmpelAlert:
 		'<': operator.lt,
 		'>=': operator.ge,
 		'<=': operator.le,
-		'=': operator.eq,
-		'!=': operator.ne
+		'==': operator.eq,
+		'!=': operator.ne,
+		'is': operator.is_,
+		'is not': operator.is_not
 	}
 
 
 	@staticmethod
-	def load_ztf_alert(arg):
+	def load_ztf_alert(arg, default_filters=[{'attribute': 'candid', 'operator': 'is not', 'value': None}]):
 		"""	
-			Convenience method. 
+		Convenience method.
+		'default_filters' excludes upper limits
 		"""
-		return AmpelAlert(*ZIAlertLoader.get_flat_pps_list_from_file(arg))
+		return AmpelAlert(
+			*ZIAlertLoader.get_flat_pps_list_from_file(arg), default_filters
+		)
 
 
 	@classmethod
@@ -76,7 +81,7 @@ class AmpelAlert:
 		return arg_flags in cls.flags
 
 
-	def __init__(self, tran_id, list_of_pps):
+	def __init__(self, tran_id, list_of_pps, default_filters=None):
 		""" 
 		AmpelAlert constructor
 		Parameters:
@@ -86,10 +91,11 @@ class AmpelAlert:
 		"""
 		self.tran_id = tran_id
 
-		# TODO: remove "is not None" check for production 
 		self.pps = ImmutableList(
-			[ImmutableDict(el) for el in list_of_pps if 'candid' in el and el['candid'] is not None]
+			[ImmutableDict(el) for el in list_of_pps if 'candid' in el]
 		)
+
+		self.default_filters = default_filters
 
 		# Freeze this instance
 		self.__isfrozen = True
@@ -113,18 +119,21 @@ class AmpelAlert:
 		if param_name in AmpelAlert.alert_keywords:
 			param_name = AmpelAlert.alert_keywords[param_name]
 
-		filtered_pps = self.pps if filters is None else self.filter_pps(filters)
+		if filters is None:
+			browse_pps = self.pps if self.default_filters is None else self.filter_pps(self.default_filters)
+		else:
+			browse_pps = self.filter_pps(filters)
 	
 		return tuple(
 			el[param_name] 
-			for el in filtered_pps if param_name in el
+			for el in browse_pps if param_name in el
 		)
 
 
 	def filter_pps(self, filters):
 		"""
 		"""
-		filtered_pps = self.pps
+		match_pps = self.pps
 
 		if type(filters) is dict:
 			filters = [filters]
@@ -133,23 +142,24 @@ class AmpelAlert:
 
 			operator = AmpelAlert.ops[
 				filter_el['operator']
-			] 
+			]
 
-			for fkey in filter_el.keys():
+			provided_field = filter_el['attribute']
+			filter_el['value']
 
-				if fkey == "operator":
-					continue
+			attr_name = (
+				provided_field if not provided_field in AmpelAlert.alert_keywords 
+				else AmpelAlert.alert_keywords[provided_field]
+			)
 
-				akey = fkey if not fkey in AmpelAlert.alert_keywords else AmpelAlert.alert_keywords[fkey]
-
-				filtered_pps = tuple(
-					filter(
-						lambda el: akey in el and operator(el[akey], filter_el[fkey]), 
-						filtered_pps
-					)
+			match_pps = tuple(
+				filter(
+					lambda el: attr_name in el and operator(el[attr_name], filter_el['value']), 
+					match_pps
 				)
+			)
 
-		return filtered_pps
+		return match_pps
 
 
 	def get_tuples(self, param1, param2, filters=None):
@@ -162,11 +172,14 @@ class AmpelAlert:
 		if param2 in AmpelAlert.alert_keywords:
 			param2 = AmpelAlert.alert_keywords[param2]
 
-		filtered_pps = self.pps if filters is None else self.filter_pps(filters)
+		if filters is None:
+			browse_pps = self.pps if self.default_filters is None else self.filter_pps(self.default_filters)
+		else:
+			browse_pps = self.filter_pps(filters)
 
 		return tuple(
 			(el[param1], el[param2]) 
-			for el in filtered_pps if param1 in el and param2 in el
+			for el in browse_pps if param1 in el and param2 in el
 		)
 
 
@@ -183,10 +196,13 @@ class AmpelAlert:
 					params[i] = AmpelAlert.alert_keywords[param]
 	
 		# Filter photopoints if filter was provided
-		filtered_pps = self.pps if filters is None else self.filter_pps(filters)
+		if filters is None:
+			browse_pps = self.pps if self.default_filters is None else self.filter_pps(self.default_filters)
+		else:
+			browse_pps = self.filter_pps(filters)
 
 		return tuple(
-			tuple(el[param] for param in params) for el in filtered_pps if all(param in el for param in params)
+			tuple(el[param] for param in params) for el in browse_pps if all(param in el for param in params)
 		)
 
 

@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 25.01.2018
-# Last Modified Date: 18.03.2018
+# Last Modified Date: 19.04.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from ampel.flags.AlDocTypes import AlDocTypes
@@ -33,7 +33,7 @@ class T2Controller(DBWired):
 	_t2_run_configs_colname = "t2_run_config"
 	
 	def __init__(
-		self, db_host='localhost', input_db=None, output_db=None,
+		self, db_host='localhost', config_db=None, base_dbs=None,
 		run_state=T2RunStates.TO_RUN, t2_units=None, 
 		check_interval=10, batch_size=200, conf_db_name="Ampel_config"
 	): 
@@ -46,8 +46,11 @@ class T2Controller(DBWired):
 		"""
 		# TODO: add argument: max_back_time={'minutes': 0} ?
 
+		# Get logger 
+		self.logger = LoggingUtils.get_logger(unique=True)
+
 		# Setup instance variable referencing input and output databases
-		self.plug_databases(db_host, input_db, output_db)
+		self.plug_databases(self.logger, db_host, config_db, base_dbs)
 	
 		# check interval is in seconds
 		self.check_interval = check_interval
@@ -100,8 +103,6 @@ class T2Controller(DBWired):
 					'$in': t2_units
 				}
 
-		# Get logger 
-		self.logger = LoggingUtils.get_logger(unique=True)
 
 		# How many docs per 'job document'
 		# batch_size is defined because the job log entry cannot grow above 16MB (of logs).
@@ -115,11 +116,14 @@ class T2Controller(DBWired):
 		There is no return code.
 		"""
 
+		# Get handle to db collection containing transients
+		tran_col = self.get_tran_col()
+
 		while True:
 
 
 			# get t2 documents (runState is usually TO_RUN or TO_RUN_PRIO)
-			cursor = self.tran_col.find(self.query)
+			cursor = tran_col.find(self.query)
 
 			# No result
 			if cursor.count() == 0:
@@ -145,7 +149,7 @@ class T2Controller(DBWired):
 
 		# Create JobReporter instance
 		db_job_reporter = DBJobReporter(
-			self.log_col, JobFlags.T2
+			self.get_job_col(), JobFlags.T2
 		)
 
 		# Create new "job" document in the DB
@@ -174,9 +178,10 @@ class T2Controller(DBWired):
 		t2_instances = {}
 
 		# Instanciate LightCurveLoader (that returns ampel.base.LightCurve instances)
-		lcl = LightCurveLoader(self.tran_col, self.logger)
+		tran_col = self.get_tran_col()
+		lcl = LightCurveLoader(tran_col, self.logger)
 
-		# Process t2_docs until next() returns now (break condition below)
+		# Process t2_docs until next() returns None (break condition below)
 		while True: 
 
 			print("############################")
@@ -332,7 +337,7 @@ class T2Controller(DBWired):
 			)
 
 			try: 
-				result = self.tran_col.bulk_write(db_ops)
+				result = tran_col.bulk_write(db_ops)
 				self.logger.info(result.bulk_api_result)
 			except BulkWriteError as bwe: 
 				# TODO add error flag to Job and Transient

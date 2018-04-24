@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 26.02.2018
-# Last Modified Date: 15.03.2018
+# Last Modified Date: 19.04.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from ampel.pipeline.logging.LoggingUtils import LoggingUtils
@@ -14,17 +14,26 @@ from ampel.pipeline.t3.TransientLoader import TransientLoader
 from ampel.pipeline.t3.TransientForker import TransientForker
 from ampel.pipeline.db.query.QueryLatestCompound import QueryLatestCompound
 from ampel.flags.AlDocTypes import AlDocTypes
+from ampel.pipeline.db.DBWired import DBWired
 import itertools
 
 
-class T3Executor:
+class T3Executor(DBWired):
 	"""
 	"""
 
-	def __init__(self, db, t3_job, collection="main", logger=None):
+	def __init__(self, t3_job, db_host='localhost', config_db=None, base_dbs=None, logger=None):
+		"""
+		"""
 
-		col = db[collection]
+		# Get logger
 		logger = LoggingUtils.get_logger() if logger is None else logger
+
+		# Setup instance variable referencing input and output databases
+		self.plug_databases(logger, db_host, config_db, base_dbs)
+
+		tran_col = self.get_tran_col()
+
 		select_options = t3_job.tran_sel_options()
 
 
@@ -80,7 +89,7 @@ class T3Executor:
 		logger.info("Executing search query: %s" % trans_match_query)
 
 		# Execute 'find transients' query
-		tran_ids_cursor = col.find(
+		tran_ids_cursor = tran_col.find(
 			trans_match_query, {'_id':0, 'tranId':1}
 		).batch_size(100000)
 		
@@ -102,7 +111,7 @@ class T3Executor:
 		multi_task = t3_job.get_tasks() is not None
 
 		# Required to load single transients
-		tl = TransientLoader(db, save_channels=multi_task)
+		tl = TransientLoader(tran_col.database, save_channels=multi_task)
 
 
 
@@ -135,7 +144,7 @@ class T3Executor:
 
 				# See for which ids the fast query cannot be used (save results in a set)
 				slow_ids = set(
-					el['tranId'] for el in col.find(
+					el['tranId'] for el in tran_col.find(
 						{
 							'tranId': {
 								'$in': chunked_tran_ids
@@ -161,7 +170,7 @@ class T3Executor:
 					# ...
 					# ]
 					tmp_latest_states = [
-						el for el in col.aggregate(
+						el for el in tran_col.aggregate(
 							QueryLatestCompound.fast_query(
 								slow_ids.symmetric_difference(chunked_tran_ids), 
 								channel
@@ -180,7 +189,7 @@ class T3Executor:
 
 						# get latest state for single transients using general query
 						g_latest_state = next(
-							col.aggregate(
+							tran_col.aggregate(
 								QueryLatestCompound.general_query(
 									tran_id, 
 									project={

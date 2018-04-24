@@ -4,11 +4,10 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 14.12.2017
-# Last Modified Date: 17.03.2018
+# Last Modified Date: 23.04.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import logging
-from bson import ObjectId
 from ampel.flags.JobFlags import JobFlags
 
 
@@ -18,6 +17,7 @@ class DBJobReporter:
 	A job entry contains various info about the current job 
 	and an array of log entries produced by this job
 	"""
+
 
 	def __init__(self, mongo_collection, job_flags=None):
 		""" 
@@ -38,43 +38,53 @@ class DBJobReporter:
 
 
 	def set_job_name(self, job_name):
+		""" 
+		"""
 		self.job_name = job_name
 
 
 	def set_grid_name(self, grid_name):
+		""" 
+		"""
 		self.grid_name = grid_name
 
 
 	def set_arguments(self, args):
+		""" 
+		"""
 		self.arguments = args
 
 
 	def get_job_id(self):
+		""" 
+		"""
 		return getattr(self, "job_id", None)
 
 
-	def insert_new(self, al_params):
+	def insert_new(self, params, tier):
 		""" 
 		"""
-		self.job_id = ObjectId()
 
-		jdict = {
-			"_id": self.job_id,
+		job_dict = {
 			"jobName": self.job_name,
 			"jobFlags": self.job_flags.value,
-			"params": al_params
+			"tier": tier,
+			"params": params,
 		}
 
 		if hasattr(self, "arguments"):
-			jdict['arguments'] = self.arguments
+			job_dict['arguments'] = self.arguments
 
 		if hasattr(self, "grid_name"):
-			jdict['gridName'] = self.grid_name
+			job_dict['gridName'] = self.grid_name
 
-		return self.col.insert_one(jdict)
+		self.job_id = self.col.insert_one(job_dict).inserted_id
+
+		# Returned objectId can later be used to update the inserted document
+		return self.job_id
 
 
-	def set_duration(self, duration):
+	def update_job_info(self, arg_dict):
 		""" 
 		"""
 		self.col.update_one(
@@ -82,9 +92,7 @@ class DBJobReporter:
 				"_id": self.job_id 
 			},
  			{ 
-				"$set": {
-					"duration": duration
-				}
+				"$set": arg_dict
 			}
  		)
 

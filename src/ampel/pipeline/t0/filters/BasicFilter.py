@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 14.01.2018
-# Last Modified Date: 08.03.2018
+# Last Modified Date: 18.04.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from ampel.abstract.AbsAlertFilter import AbsAlertFilter
@@ -19,7 +19,7 @@ class BasicFilter(AbsAlertFilter):
 		'<': operator.lt,
 		'>=': operator.ge,
 		'<=': operator.le,
-		'=': operator.eq,
+		'==': operator.eq,
 		'!=': operator.ne
 	}
 
