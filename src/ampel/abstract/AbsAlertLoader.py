@@ -11,6 +11,7 @@ from abc import ABC, abstractmethod
 
 class AbsAlertLoader(ABC):
 
+
 	@abstractmethod
-	def get_alert_bytes(self):
+	def load_alerts(self):
 		pass
