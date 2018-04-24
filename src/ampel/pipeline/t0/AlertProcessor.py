@@ -404,7 +404,9 @@ class AlertProcessor(DBWired):
 
 					start = time_now()
 					#processed_alert[tran_id]
-					st_db_bulk, st_db_op = ingest(tran_id, pps_list, scheduled_t2_runnables)
+					stats = ingest(tran_id, pps_list, scheduled_t2_runnables)
+					st_db_bulk.append(stats[0])
+					st_db_op.append(stats[1])
 					st_ingest.append(time_now() - start)
 
 				# Unset log entries association with transient id
@@ -431,21 +433,26 @@ class AlertProcessor(DBWired):
 				pass
 
 		# Add T0 job stats
+		def int_reduce(op, sequence):
+			if len(sequence) == 0:
+				return -1
+			else:
+				return int(round(op(sequence)*1000000))
 		t0_stats = {
 			"processed": iter_count,
 			"ingested": len(st_ingest),
 
 			# Alert ingestion: mean time & std dev in microseconds
-			"ingestMean": int(round(np.mean(st_ingest)* 1000000)),
-			"ingestStd": int(round(np.std(st_ingest)* 1000000)),
+			"ingestMean": int_reduce(np.mean, st_ingest),
+			"ingestStd": int_reduce(np.std, st_ingest),
 
 			# Bulk db ops: mean time & std dev in microseconds
-			"dbBulkMean": int(round(np.mean(st_db_bulk)* 1000000)),
-			"dbBulkStd": int(round(np.std(st_db_bulk)* 1000000)),
+			"dbBulkMean": int_reduce(np.mean, st_db_bulk),
+			"dbBulkStd": int_reduce(np.std, st_db_bulk),
 
 			# Mean single db op: mean time & std dev in microseconds
-			"dbOpMean": int(round(np.mean(st_db_op)* 1000000)),
-			"dbOpStd": int(round(np.std(st_db_op)* 1000000))
+			"dbOpMean": int_reduce(np.mean, st_db_op),
+			"dbOpStd": int_reduce(np.std, st_db_op)
 		}
 
 		# Total duration in seconds
