@@ -464,7 +464,7 @@ class AlertProcessor(DBWired):
 		self.logger.removeHandler(db_logging_handler)
 		
 		# Return number of processed alerts
-		return False
+		return iter_count
 
 
 	def get_db_report(self):
