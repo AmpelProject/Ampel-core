@@ -611,6 +611,7 @@ def create_databases(host, database_name, configs):
 
 def _ingest_slice(host, archive_host, infile, start, stop):
 	from ampel.archive import ArchiveDB, docker_env
+	from ampel.pipeline.t0.alerts.TarballWalker import TarballWalker
 	archive = ArchiveDB('postgresql://ampel:{}@{}/ztfarchive'.format(docker_env('POSTGRES_PASSWORD'), archive_host))
 	
 	def loader():
@@ -636,8 +637,8 @@ def _worker(idx, mongo_host, archive_host, bootstrap_host, group_id, chunk_size=
 
 	count = 0
 	for i in range(10):
-		processor = AlertProcessor(db_hostmongo_db, console_logging=False)
-		count += processor.run(fetcher.alerts(chunk_size))
+		processor = AlertProcessor(db_host=mongo)
+		count += processor.run(fetcher.alerts(chunk_size), console_logging=False)
 		t1 = time.time()
 		dt = t1-t0
 		t0 = t1
