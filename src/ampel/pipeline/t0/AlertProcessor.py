@@ -388,16 +388,15 @@ class AlertProcessor(DBWired):
 
 					start = time_now()
 					#processed_alert[tran_id]
-<<<<<<< HEAD
+
 					st_db_bulk, st_db_op = ingest(
 						#tran_id, parsed_alert['pps'], parsed_alert['uls'], scheduled_t2_runnables
 						tran_id, parsed_alert['pps'], scheduled_t2_runnables
 					)
-=======
+
 					stats = ingest(tran_id, parsed_alert['pps'], scheduled_t2_runnables)
 					st_db_bulk.append(stats[0])
 					st_db_op.append(stats[1])
->>>>>>> 8ea124d0884d28bf3a487788ee475606154c1559
 					st_ingest.append(time_now() - start)
 
 				# Unset log entries association with transient id
