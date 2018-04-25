@@ -1,0 +1,337 @@
+[{
+	"_id": "HU_EARLY_SN",
+	"version": 1.0,
+	"active": true,
+	"input": [
+		{
+			"instrument": "ZTF",
+			"alerts": "IPAC",
+			"parameters": {
+				"ZTFPartner": true,
+				"autoComplete": true,
+				"updatedHUZP": false
+			}
+		}
+	],
+	"t0Filter": {
+		"id": "SNFilter",
+		"runConfig": {
+			"slopeMin": 0,
+			"slopeMax": 0
+		}
+	},
+	"t2Compute": [
+		{
+			"t2Unit": "SNCOSMO",
+			"runConfig": "default"
+		},
+		{
+			"t2Unit": "AGN",
+			"runConfig": "default"
+		}
+	]
+},
+{
+	"_id": "HU_SN1",
+	"version": 1.0,
+	"active": false,
+	"input": [
+		{
+			"instrument": "ZTF",
+			"alerts": "IPAC",
+			"parameters": {
+				"ZTFPartner": true,
+				"autoComplete": true,
+				"updatedHUZP": false
+			}
+		}
+	],
+	"t0Filter": {
+		"id": "BasicFilter",
+		"runConfig": {
+			"criteria": [
+				{
+					"attribute": "candid",
+					"value": null,
+					"operator": "is not"
+				},
+				{
+					"attribute": "rb",
+					"value": 0.6,
+					"operator": "\u003e"
+				},
+				{
+					"attribute": "mag",
+					"value": 18,
+					"operator": "\u003c"
+				}
+			],
+			"len": 3,
+			"operator": "\u003e"
+		}
+	},
+	"t2Compute": [
+		{
+			"t2Unit": "SNCOSMO",
+			"runConfig": "default"
+		},
+		{
+			"t2Unit": "AGN",
+			"runConfig": "default"
+		},
+		{
+			"t2Unit": "PHOTO_Z",
+			"runConfig": "default"
+		},
+		{
+			"t2Unit": "PHOTO_TYPE",
+			"runConfig": "default"
+		}
+	],
+	"t3Supervise": [
+		{
+			"t3Unit": "PURGE",
+			"runConfig": "100days"
+		}
+	]
+},
+{
+	"_id": "HU_SN2",
+	"version": 1.0,
+	"active": true,
+	"input": [
+		{
+			"instrument": "ZTF",
+			"alerts": "IPAC",
+			"parameters": {
+				"ZTFPartner": true,
+				"autoComplete": true,
+				"updatedHUZP": false
+			}
+		}
+	],
+	"t0Filter": {
+		"id": "BasicMultiFilter",
+		"runConfig": {
+			"filters": [
+				{
+					"criteria": [
+						{
+							"attribute": "rb",
+							"value": 0.8,
+							"operator": "\u003e"
+						},
+						{
+							"attribute": "fid",
+							"value": 1,
+							"operator": "=="
+						},
+						{
+							"attribute": "mag",
+							"value": 18,
+							"operator": "\u003c"
+						}
+					],
+					"len": 3,
+					"operator": "\u003e"
+				},
+				{
+					"logicalConnection": "OR",
+					"criteria": [
+						{
+							"attribute": "magdiff",
+							"value": 0.01,
+							"operator": "\u003e"
+						}
+					],
+					"len": 3,
+					"operator": "\u003e"
+				}
+			]
+		}
+	},
+	"t2Compute": [
+		{
+			"t2Unit": "SNCOSMO",
+			"runConfig": "advanced"
+		},
+		{
+			"t2Unit": "POLYFIT",
+			"runConfig": "default"
+		},
+		{
+			"t2Unit": "PHOTO_TYPE",
+			"runConfig": "default"
+		}
+	]
+},
+{
+	"_id": "HU_RANDOM",
+	"version": 1.0,
+	"active": true,
+	"input": [
+		{
+			"instrument": "ZTF",
+			"alerts": "IPAC",
+			"parameters": {
+				"ZTFPartner": true,
+				"autoComplete": true,
+				"updatedHUZP": false
+			}
+		}
+	],
+	"t0Filter": {
+		"id": "RandFilter",
+		"runConfig": {
+			"threshold": 95
+		}
+	},
+	"t2Compute": [
+		{
+			"t2Unit": "SNCOSMO",
+			"runConfig": "other"
+		},
+		{
+			"t2Unit": "AGN",
+			"runConfig": "default"
+		},
+		{
+			"t2Unit": "PHOTO_TYPE",
+			"runConfig": "default"
+		}
+	]
+},
+{
+	"_id": "HU_NO_FILTER",
+	"version": 1.0,
+	"active": true,
+	"input": [
+		{
+			"instrument": "ZTF",
+			"alerts": "IPAC",
+			"parameters": {
+				"ZTFPartner": true,
+				"autoComplete": true,
+				"updatedHUZP": false
+			}
+		}
+	],
+	"t0Filter": {
+		"id": "NoFilter",
+		"runConfig": {}
+	},
+	"t2Compute": [
+		{
+			"t2Unit": "SNCOSMO",
+			"runConfig": "default"
+		},
+		{
+			"t2Unit": "AGN",
+			"runConfig": "default"
+		}
+	]
+},
+{
+	"_id": "HU_SN3",
+	"version": 1.0,
+	"active": true,
+	"input": [
+		{
+			"instrument": "ZTF",
+			"alerts": "IPAC",
+			"parameters": {
+				"ZTFPartner": true,
+				"autoComplete": true,
+				"updatedHUZP": false
+			}
+		}
+	],
+	"t0Filter": {
+		"id": "BasicMultiFilter",
+		"runConfig": {
+			"filters": [
+				{
+					"criteria": [
+						{
+							"attribute": "rb",
+							"value": 0.6,
+							"operator": "\u003e"
+						},
+						{
+							"attribute": "mag",
+							"value": 18,
+							"operator": "\u003c"
+						}
+					],
+					"len": 3,
+					"operator": "\u003e"
+				},
+				{
+					"logicalConnection": "AND",
+					"criteria": [
+						{
+							"attribute": "jd",
+							"value": 2.4582125e+06,
+							"operator": "\u003c"
+						}
+					],
+					"len": 0,
+					"operator": "=="
+				}
+			]
+		}
+	},
+	"t2Compute": [
+		{
+			"t2Unit": "SNCOSMO",
+			"runConfig": "default"
+		},
+		{
+			"t2Unit": "POLYFIT",
+			"runConfig": "default"
+		},
+		{
+			"t2Unit": "PHOTO_TYPE",
+			"runConfig": "default"
+		}
+	]
+},
+{
+	"_id": "HU_NOAGN",
+	"version": 1.0,
+	"active": true,
+	"input": [
+		{
+			"instrument": "ZTF",
+			"alerts": "IPAC",
+			"parameters": {
+				"ZTFPartner": true,
+				"autoComplete": true,
+				"updatedHUZP": false
+			}
+		}
+	],
+	"t0Filter": {
+		"id": "BasicCatalogFilter",
+		"runConfig": {
+			"catName": "milliquas",
+			"catRAKey": "ra",
+			"catDecKey": "dec",
+			"searchMethod": "healpix",
+			"rsArcsec": 5,
+			"rejectOnMatch": false,
+			"alertPosType": "av"
+		}
+	},
+	"t2Compute": [
+		{
+			"t2Unit": "SNCOSMO",
+			"runConfig": "other"
+		},
+		{
+			"t2Unit": "PHOTO_TYPE",
+			"runConfig": "default"
+		}
+	]
+}]
+

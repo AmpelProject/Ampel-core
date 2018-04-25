@@ -8,7 +8,6 @@
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from ampel.flags.AlertFlags import AlertFlags
-from ampel.pipeline.t0.loaders.ZIAlertLoader import ZIAlertLoader
 import operator
 
 class AmpelAlert:
@@ -118,7 +117,7 @@ class AmpelAlert:
 		if filters is None:
 			browse_pps = self.uls if upper_limits else self.pps
 		else:
-			browse_pps = self.apply_filter(self.uls) if upper_limits else self.apply_filter(self.pps)
+			browse_pps = self.apply_filter(self.uls, filters) if upper_limits else self.apply_filter(self.pps, filters)
 
 		return tuple(
 			el[param_name] 
@@ -126,10 +125,9 @@ class AmpelAlert:
 		)
 
 
-	def apply_filter(self, filters):
+	def apply_filter(self, match_pps, filters):
 		"""
 		"""
-		match_pps = self.pps
 
 		if type(filters) is dict:
 			filters = [filters]
@@ -171,7 +169,7 @@ class AmpelAlert:
 		if filters is None:
 			browse_pps = self.uls if upper_limits else self.pps
 		else:
-			browse_pps = self.apply_filter(self.uls) if upper_limits else self.apply_filter(self.pps)
+			browse_pps = self.apply_filter(self.uls, filters) if upper_limits else self.apply_filter(self.pps, filters)
 
 		return tuple(
 			(el[param1], el[param2]) 
@@ -195,7 +193,7 @@ class AmpelAlert:
 		if filters is None:
 			browse_pps = self.uls if upper_limits else self.pps
 		else:
-			browse_pps = self.apply_filter(self.uls) if upper_limits else self.apply_filter(self.pps)
+			browse_pps = self.apply_filter(self.uls, filters) if upper_limits else self.apply_filter(self.pps, filters)
 
 		return tuple(
 			tuple(el[param] for param in params) 

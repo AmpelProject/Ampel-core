@@ -339,7 +339,9 @@ class AlertProcessor(DBWired):
 		# Iterate over alerts
 		for parsed_alert in alert_supplier.get_alerts():
 
-			iter_count += 1 
+			if iter_count == max_iter:
+				self.logger.info("Reached max number of iterations")
+				break
 
 			try:
 
@@ -386,10 +388,16 @@ class AlertProcessor(DBWired):
 
 					start = time_now()
 					#processed_alert[tran_id]
+<<<<<<< HEAD
 					st_db_bulk, st_db_op = ingest(
 						#tran_id, parsed_alert['pps'], parsed_alert['uls'], scheduled_t2_runnables
 						tran_id, parsed_alert['pps'], scheduled_t2_runnables
 					)
+=======
+					stats = ingest(tran_id, parsed_alert['pps'], scheduled_t2_runnables)
+					st_db_bulk.append(stats[0])
+					st_db_op.append(stats[1])
+>>>>>>> 8ea124d0884d28bf3a487788ee475606154c1559
 					st_ingest.append(time_now() - start)
 
 				# Unset log entries association with transient id
@@ -399,10 +407,7 @@ class AlertProcessor(DBWired):
 				self.logger.exception("Exception occured while processing alert")
 				self.logger.critical("Exception occured")
 
-			if iter_count > max_iter:
-				self.logger.info("Reached max number of iterations")
-				return True
-
+			iter_count += 1
 
 		# Save ampel 'state' and get list of tran ids required for autocomplete
 		db_report_after, tran_ids_after = self.get_db_report()
@@ -423,6 +428,11 @@ class AlertProcessor(DBWired):
 			st_ingest = np.array(st_ingest)
 			st_db_bulk = np.array(st_db_bulk)
 			st_db_op = np.array(st_db_op)
+			def int_reduce(op, sequence):
+				if len(sequence) == 0:
+					return -1
+				else:
+					return int(round(op(sequence)*1000000))
 
 			job_info["t0Stats"] = {
 
@@ -430,16 +440,16 @@ class AlertProcessor(DBWired):
 				"ingested": len(st_ingest),
 
 				# Alert ingestion: mean time & std dev in microseconds
-				"ingestMean": int(round(np.mean(st_ingest)* 1000000)),
-				"ingestStd": int(round(np.std(st_ingest)* 1000000)),
+				"ingestMean": int_reduce(np.mean, st_ingest),
+				"ingestStd": int_reduce(np.std, st_ingest),
 
 				# Bulk db ops: mean time & std dev in microseconds
-				"dbBulkMean": int(round(np.mean(st_db_bulk)* 1000000)),
-				"dbBulkStd": int(round(np.std(st_db_bulk)* 1000000)),
+				"dbBulkMean": int_reduce(np.mean, st_db_bulk),
+				"dbBulkStd": int_reduce(np.std, st_db_bulk),
 
 				# Mean single db op: mean time & std dev in microseconds
-				"dbOpMean": int(round(np.mean(st_db_op)* 1000000)),
-				"dbOpStd": int(round(np.std(st_db_op)* 1000000))
+				"dbOpMean": int_reduce(np.mean, st_db_op),
+				"dbOpStd": int_reduce(np.std, st_db_op)
 			}
 
 			job_info["dbStats"] = [db_report_before, db_report_after]
@@ -461,7 +471,7 @@ class AlertProcessor(DBWired):
 		self.logger.removeHandler(db_logging_handler)
 		
 		# Return number of processed alerts
-		return False
+		return iter_count
 
 
 	def get_db_report(self):
@@ -551,7 +561,6 @@ class AlertProcessor(DBWired):
 
 		return report, tran_ids
 
-
 def init_db():
 	"""
 	Initialize a MongoDB for use with Ampel
@@ -564,17 +573,25 @@ def init_db():
 	parser = ArgumentParser(description=__doc__, formatter_class=ArgumentDefaultsHelpFormatter)
 	parser.add_argument('--host', default='localhost:27017',
 	    help='MongoDB server address and port')
-	parser.add_argument('-d', '--database', default='Ampel',
-	    help='Database name')
+	parser.add_argument('-d', '--database', default='Ampel_config',
+	    help='Configuration database name')
 	parser.add_argument('--config', nargs='+', default=glob.glob(pattern),
 	    help='JSON files to be inserted into the "config" collection')
 	
 	opts = parser.parse_args()
+
+	dbs = create_databases(opts.host, opts.database, opts.config)
+	dbs[0].add_user("ampel-readonly", read_only=True, password="password")
+
+def create_databases(host, database_name, configs):
 	
+	import os
+	from os.path import basename, dirname
 	from pymongo import MongoClient, ASCENDING
 	from bson import ObjectId
 	import json
-	client = MongoClient(opts.host)
+	from ampel.archive import docker_env
+	client = MongoClient(host, username=os.environ.get('MONGO_INITDB_ROOT_USERNAME', 'root'), password=docker_env('MONGO_INITDB_ROOT_PASSWORD'))
 	
 	def get_id(blob):
 		if isinstance(blob['_id'], dict) and '$oid' in blob['_id']:
@@ -582,24 +599,20 @@ def init_db():
 		else:
 			return blob['_id']
 	
-	db = client.get_database(opts.database)
-	db['main'].create_index([('tranId', ASCENDING), ('alDocType', ASCENDING)])
-	
-	db = client.get_database(opts.database+'_config')
-	for config in opts.config:
+	config_db = client.get_database(database_name)
+	for config in configs:
 		collection_name = basename(dirname(config))
-		collection = db[collection_name]
+		collection = config_db[collection_name]
 		with open(config) as f:
 			for blob in json.load(f):
 				blob['_id'] = get_id(blob)
 				collection.replace_one({'_id':blob['_id']}, blob, upsert=True)
+	
+	return client.get_database('admin'), config_db
 
-def _ingest_slice(host, infile, start, stop):
-	from ampel.archive import ArchiveDB
-	from ampel.pipeline.t0.alerts.TarballWalker import TarballWalker
-	with open('/run/secrets/mysql-user-password') as f:
-		password = f.read().strip()
-	archive = ArchiveDB('postgresql://ampel:{}@localhost/ztfarchive'.format(password))
+def _ingest_slice(host, archive_host, infile, start, stop):
+	from ampel.archive import ArchiveDB, docker_env
+	archive = ArchiveDB('postgresql://ampel:{}@{}/ztfarchive'.format(docker_env('POSTGRES_PASSWORD'), archive_host))
 	
 	def loader():
 		tbw = TarballWalker(infile, start, stop)
@@ -607,31 +620,56 @@ def _ingest_slice(host, infile, start, stop):
 			archive.insert_alert(alert, 0, 0)
 			yield alert
 	processor = AlertProcessor(db_host=host)
-	processor.logger.setLevel('WARN')
 	return processor.run(loader())
+
+def _worker(idx, mongo_host, archive_host, bootstrap_host, group_id, chunk_size=5000):
+	from ampel.archive import ArchiveDB, docker_env
+	from ampel.pipeline.t0.ZIAlertFetcher import ZIAlertFetcher
+	from pymongo import MongoClient
+
+	archive = ArchiveDB('postgresql://ampel:{}@{}/ztfarchive'.format(docker_env('POSTGRES_PASSWORD'), archive_host))
+	mongo = 'mongodb://{}:{}@{}/'.format(docker_env('MONGO_INITDB_ROOT_USERNAME'), docker_env('MONGO_INITDB_ROOT_PASSWORD'), mongo_host)
+
+	fetcher = ZIAlertFetcher(archive, bootstrap_host, group_name=group_id)
+
+	import time
+	t0 = time.time()
+
+	count = 0
+	for i in range(10):
+		processor = AlertProcessor(db_hostmongo_db, console_logging=False)
+		count += processor.run(fetcher.alerts(chunk_size))
+		t1 = time.time()
+		dt = t1-t0
+		t0 = t1
+		print('({}) {} alerts in {:.1f}s; {:.1f}/s'.format(idx, chunk_size, dt, chunk_size/dt))
+	return count
 
 def run_alertprocessor():
 
-	import os, time
+	import os, time, uuid
 	from concurrent import futures
 	from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
 	parser = ArgumentParser(description=__doc__, formatter_class=ArgumentDefaultsHelpFormatter)
-	parser.add_argument('--host', default='localhost:27017')
+	parser.add_argument('--host', default='mongo:27017')
+	parser.add_argument('--archive-host', default='archive:5432')
+	parser.add_argument('--broker', default='epyc.astro.washington.edu:9092')
 	parser.add_argument('--procs', type=int, default=1, help='Number of processes to start')
-	parser.add_argument('--chunksize', type=int, default=50, help='Number of alerts in each process')
+	parser.add_argument('--chunksize', type=int, default=5000, help='Number of alerts in each process')
 	
-	parser.add_argument('infile')
 	opts = parser.parse_args()
 	
 	executor = futures.ProcessPoolExecutor(opts.procs)
+
+	group = uuid.uuid1()
 	
 	start_time = time.time()
 	step = opts.chunksize
 	count = 0
-	jobs = [executor.submit(_ingest_slice, opts.host, opts.infile, start, start+step) for start in range(0, opts.procs*step, step)]
+	jobs = [executor.submit(_worker, idx, opts.host, opts.archive_host, opts.broker, group, opts.chunksize) for idx in range(opts.procs)]
 	for future in futures.as_completed(jobs):
 		print(future.result())
 		count += future.result()
 	duration = int(time.time()) - start_time
-	print('Processed {} alerts in {} s ({}/s)'.format(count, duration, float(count)/duration))
+	print('Processed {} alerts in {:.1f} s ({:.1f}/s)'.format(count, duration, float(count)/duration))
 	

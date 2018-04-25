@@ -1,0 +1,18 @@
+[{
+	"_id": "SLACKPUBLISHER",
+	"classFullPath": "ampel.contrib.hu.t3.SlackPublisher",
+	"baseConfig": {
+		"url": "http://something",
+		"images": false
+	}
+},
+{
+	"_id": "PURGE",
+	"classFullPath": "ampel.contrib.hu.t3.Purge",
+	"baseConfig": {
+		"s2DB": "url.to.other.mongo.db",
+		"login": "bla",
+		"pwd": "yo"
+	}
+}]
+

@@ -1,0 +1,19 @@
+
+# Build
+docker build -t ampel .
+# Link ampel source
+./add-ampel.sh
+
+# Push to a local Docker registry
+docker run -d -p 5000:5000 --restart=always --name registry registry:2
+docker tag ampel localhost:5000/ampel
+docker push localhost:5000/ampel
+
+# Forward port to target system with Singularity
+ssh -R5000:localhost:5000 burst.ifh.de
+
+# Import image
+export SINGULARITY_CACHEDIR=/scratch/jvs/singularity
+cd $SINGULARITY_CACHEDIR
+SINGULARITY_NOHTTPS=1 singularity pull docker://localhost:5000/ampel
+
