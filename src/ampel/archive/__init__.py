@@ -161,49 +161,61 @@ def insert_alert(connection, meta, alert, partition_id, ingestion_time):
     
     """
     alert_id = alert['candid']
-    try:
-        connection.execute(meta.tables['alert'].insert(),
-            candid=alert_id, objectId=alert['objectId'],
-            partition_id=partition_id, ingestion_time=ingestion_time,
-            jd=alert['candidate']['jd'])
-        connection.execute(meta.tables['candidate'].insert(), **alert['candidate'])
-    except IntegrityError:
-        # abort on duplicate alerts
-        return
-
-    if alert['prv_candidates'] is None or len(alert['prv_candidates']) == 0:
-        return
-
-    # entries in prv_candidates will often be duplicated, but may also
-    # be updated without warning. sort these into detections (which come with
-    # unique ids) and upper limits (which don't)
-    detections = dict(rows=[], pivots=[])
-    upper_limits = dict(rows=[], pivots=[])
-    for index, c in enumerate(alert['prv_candidates']):
-        # entries with no candid are nondetections
-        if c['candid'] is None:
-            upper_limits['rows'].append(c)
-            upper_limits['pivots'].append(dict(alert_id=alert_id, index=index))
-        else:
-            detections['rows'].append(c)
-            detections['pivots'].append(dict(alert_id=alert_id, index=index, candid=c['candid'], pid=c['pid']))
-
-    if len(detections['rows']) > 0:
-        ignore = {'{}_ignore_duplicates'.format(connection.dialect.name): True}
-        connection.execute(meta.tables['prv_candidate'].insert(**ignore), detections['rows'])
-        connection.execute(meta.tables['alert_prv_candidate_pivot'].insert(), detections['pivots'])
-
-    if len(upper_limits['rows']) > 0:
-        UpperLimit = meta.tables['upper_limit']
-        UpperLimitPivot = meta.tables['alert_upper_limit_pivot']
-        index_cols = list(UpperLimit.indexes)[0].columns
-        stmt = select([UpperLimit.c.id]).where(and_(*(c == bindparam(c.name) for c in index_cols)))
-        for row, pivot in zip(upper_limits['rows'], upper_limits['pivots']):
-            key = connection.execute(stmt, **row).fetchone()
-            if key is None:
-                key = connection.execute(UpperLimit.insert().values(**{k:row[k] for k in row if k in UpperLimit.columns})).inserted_primary_key
-            pivot['upper_limit_id'] = key[0]
-        connection.execute(UpperLimitPivot.insert(), upper_limits['pivots'])
+    with connection.begin() as transaction:
+        try:
+            connection.execute(meta.tables['alert'].insert(),
+                candid=alert_id, objectId=alert['objectId'],
+                partition_id=partition_id, ingestion_time=ingestion_time,
+                jd=alert['candidate']['jd'])
+            connection.execute(meta.tables['candidate'].insert(), **alert['candidate'])
+        except IntegrityError:
+            # abort on duplicate alerts
+            transaction.rollback()
+            return
+    
+        if alert['prv_candidates'] is None or len(alert['prv_candidates']) == 0:
+            return
+    
+        # entries in prv_candidates will often be duplicated, but may also
+        # be updated without warning. sort these into detections (which come with
+        # unique ids) and upper limits (which don't)
+        detections = dict(rows=[], pivots=[])
+        upper_limits = dict(rows=[], pivots=[])
+        for index, c in enumerate(alert['prv_candidates']):
+            # entries with no candid are nondetections
+            if c['candid'] is None:
+                upper_limits['rows'].append(c)
+                upper_limits['pivots'].append(dict(alert_id=alert_id, index=index, **c))
+            else:
+                detections['rows'].append(c)
+                detections['pivots'].append(dict(alert_id=alert_id, index=index, candid=c['candid'], pid=c['pid']))
+    
+        if len(detections['rows']) > 0:
+            ignore = {'{}_ignore_duplicates'.format(connection.dialect.name): True}
+            connection.execute(meta.tables['prv_candidate'].insert(**ignore), detections['rows'])
+            connection.execute(meta.tables['alert_prv_candidate_pivot'].insert(), detections['pivots'])
+    
+        from sqlalchemy.sql import exists, not_
+        if len(upper_limits['rows']) > 0:
+            UpperLimit = meta.tables['upper_limit']
+            UpperLimitPivot = meta.tables['alert_upper_limit_pivot']
+            index_cols = list(UpperLimit.indexes)[0].columns
+    
+            target = and_(*(c == bindparam(c.name) for c in index_cols))
+            insert_ulimits = UpperLimit.insert().from_select(
+                [c for c in UpperLimit.columns if c.name != 'id'],
+                select([bindparam(k) for k in UpperLimit.columns if k.name != 'id']) \
+                    .where(~exists(select([UpperLimit.c.id]).where(target)))
+            )
+            update_pivot = UpperLimitPivot.insert().from_select(
+                ['alert_id', 'index', 'upper_limit_id'],
+                select([bindparam('alert_id'), bindparam('index'), UpperLimit.c.id]) \
+                    .where(target)
+            )
+            connection.execute(insert_ulimits, upper_limits['rows'])
+            connection.execute(update_pivot, upper_limits['pivots'])
+        transaction.commit()
+    return
 
 def get_alert(connection, meta, alert_id):
     """
