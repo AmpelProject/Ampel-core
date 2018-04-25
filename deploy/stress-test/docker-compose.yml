@@ -2,11 +2,11 @@ version: '3.4'
 services:
   mongo:
     image: mongo:3.6
-    command: ["mongod", "--port", "2000"]
+    command: ["mongod", "--port", "2004"]
     volumes:
-      - /data/ampel/mongo/test:/data/db
+      - /data/ampel/mongo/offline/stress-test:/data/db
     ports:
-      - "2000:2000"
+      - "2004:2004"
     secrets:
       - mongo-root-password
     environment:
@@ -14,12 +14,12 @@ services:
       MONGO_INITDB_ROOT_PASSWORD_FILE: /run/secrets/mongo-root-password
   catalog:
     image: mongo:3.6
-    command: ["mongod", "--port", "2002"]
+    command: ["mongod", "--port", "2005"]
     volumes:
       - /data/ampel/mongo/offline/test-catalog:/data/db
       - /data/ampel/mongo/offline/catalog-dump:/docker-entrypoint-initdb.d/
     ports:
-      - "2002:2002"
+      - "2005:2005"
     secrets:
       - mongo-root-password
     environment:
@@ -27,12 +27,12 @@ services:
       MONGO_INITDB_ROOT_PASSWORD_FILE: /run/secrets/mongo-root-password
   archive:
     image: postgres:10.3
-    command: ["postgres", "-p", "2001"]
+    command: ["postgres", "-p", "2006"]
     volumes:
       - /var/tmp:/run/postgresql
-      - /data/ampel/archive/test:/var/lib/postgresql/data
+      - /data/ampel/archive/stress-test:/var/lib/postgresql/data
     ports:
-      - "2001:2001"
+      - "2006:2006"
     secrets:
       - archive-user-password
     environment:
@@ -44,24 +44,24 @@ services:
     command: ["/Ampel/deploy/stress-test/run_tests.sh"]
     volumes:
       - /scratch/jvs/Ampel:/Ampel
-      - /scratch/jvs/ztfdata:/ztf
+      - /data/ampel/archive/tarballs:/ztf
       
     secrets:
       - archive-user-password
       - mongo-root-password
     environment:
       TINI_SUBREAPER: 1
-      KAFKA: kafka:9092
-      MONGO: mongo:2000
-      CATALOG: catalog:2002
+      MONGO: mongo:2004
+      CATALOG: catalog:2005
+      ARCHIVE: archive:2006
       MONGO_INITDB_ROOT_USERNAME: root
       MONGO_INITDB_ROOT_PASSWORD_FILE: /run/secrets/mongo-root-password
-      ARCHIVE: archive:2001
       POSTGRES_PASSWORD_FILE: /run/secrets/archive-user-password
       POSTGRES_USER: ampel
     depends_on:
       - mongo
       - archive
+      - catalog
 
 secrets:
   archive-user-password:
