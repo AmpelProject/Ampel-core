@@ -4,7 +4,7 @@ services:
     image: mongo:3.6
     command: ["mongod", "--port", "2000"]
     volumes:
-      - /data/ampel/mongo/test:/data/db
+      - /data/ampel/mongo/offline/test:/data/db
     ports:
       - "2000:2000"
     secrets:
