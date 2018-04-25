@@ -40,9 +40,11 @@ class ZIAlertParser(AbsAlertParser):
 		"""
 
 		try:
-
-			reader = fastavro.reader(byte_stream)
-			avro_dict = next(reader, None)
+			if isinstance(byte_stream, dict):
+				avro_dict = byte_stream
+			else:
+				reader = fastavro.reader(byte_stream)
+				avro_dict = next(reader, None)
 	
 			if avro_dict['prv_candidates'] is None:
 				return {

@@ -1,7 +1,7 @@
 
 from ampel.pipeline.t0.AlertProcessor import AlertProcessor, create_databases
-from ampel.pipeline.t0.loaders.ZIAlertLoader import ZIAlertLoader
 from ampel.archive import ArchiveDB
+from ampel.pipeline.t0.alerts.ZIAlertParser import ZIAlertParser
 
 import os
 from glob import glob
@@ -43,13 +43,12 @@ def test_instantiate_alertprocessor(alert_generator, test_database, caplog):
     # ensure that the RandomFilter always does the same thing
     random.seed('reproducibility considered good')
     
-    #assert ap.run(islice(alert_generator(), 100)) == 100
-    # FIXME: remove once upper limit support is in
-    def clean_alerts():
-        for alert in alert_generator():
-            alert['prv_candidates'] = [v for v in alert['prv_candidates'] if v['candid'] is not None]
-            yield alert
-    assert ap.run(islice(clean_alerts(), 100)) == 100
+    class LetsInventNewerBetterWheels:
+        def get_alerts(self):
+            parser = ZIAlertParser()
+            for avrodict in islice(alert_generator(), 100):
+                yield parser.parse(avrodict)
+    assert ap.run(LetsInventNewerBetterWheels(), console_logging=True) == 100
     
     # ensure that all logs ended up in the db
     assert logs.find({}).count() == 1
@@ -57,5 +56,5 @@ def test_instantiate_alertprocessor(alert_generator, test_database, caplog):
     assert len(record["records"]) == len(caplog.records)
     print(len(caplog.records))
     
-    assert transients.find({}).count() == 784
+    assert transients.find({}).count() == 785
 

@@ -8,7 +8,6 @@
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from ampel.flags.AlertFlags import AlertFlags
-from ampel.pipeline.t0.loaders.ZIAlertLoader import ZIAlertLoader
 import operator
 
 class AmpelAlert:
