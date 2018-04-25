@@ -1,18 +1,22 @@
 #!/usr/bin/env python
 
 from ampel.pipeline.t0.AlertProcessor import AlertProcessor
-from ampel.pipeline.t0.loaders.ZIAlertLoader import ZIAlertLoader
+from ampel.pipeline.t0.alerts.TarballWalker import TarballWalker
+from ampel.pipeline.t0.alerts.ZIAlertParser import ZIAlertParser
+import fastavro
 
 def _worker(idx, mongo_host, archive_host, infile):
 	from ampel.archive import ArchiveDB, docker_env
-	from ampel.pipeline.t0.ZIAlertFetcher import ZIAlertFetcher
 	import itertools
 
 	archive = ArchiveDB('postgresql://ampel:{}@{}/ztfarchive'.format(docker_env('POSTGRES_PASSWORD'), archive_host), use_batch_mode=True)
 	mongo = 'mongodb://{}:{}@{}/'.format(docker_env('MONGO_INITDB_ROOT_USERNAME'), docker_env('MONGO_INITDB_ROOT_PASSWORD'), mongo_host)
 
 	def loader():
-		for idx,alert in enumerate(ZIAlertLoader.walk_tarball(infile)):
+		atat = TarballWalker(infile)
+		for idx,fileobj in enumerate(atat.load_alerts()):
+			reader = fastavro.reader(fileobj)
+			alert = next(reader)
 			archive.insert_alert(alert, idx%16, int(time.time()*1e6))
 			yield alert
 	def peek(iterable):
@@ -33,7 +37,12 @@ def _worker(idx, mongo_host, archive_host, infile):
 		else:
 			alerts = res[1]
 		processor = AlertProcessor(db_host=mongo)
-		chunk_size = processor.run(alerts, console_logging=False)
+		class Shim:
+			def get_alerts(self):
+				parser = ZIAlertParser()
+				for avrodict in alerts:
+					yield parser.parse(avrodict)
+		chunk_size = processor.run(Shim(), console_logging=False)
 		t1 = time.time()
 		dt = t1-t0
 		t0 = t1
