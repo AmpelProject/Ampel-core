@@ -3,28 +3,17 @@
 from ampel.pipeline.t0.AlertProcessor import AlertProcessor
 from ampel.pipeline.t0.loaders.ZIAlertLoader import ZIAlertLoader
 
-def _ingest_slice(host, archive_host, infile, start, stop):
-	from ampel.archive import ArchiveDB, docker_env
-	archive = ArchiveDB('postgresql://ampel:{}@{}/ztfarchive'.format(docker_env('POSTGRES_PASSWORD'), archive_host))
-	
-	def loader():
-		for alert in ZIAlertLoader.walk_tarball(infile, start, stop):
-			archive.insert_alert(alert, 0, 0)
-			yield alert
-	processor = AlertProcessor(db_host=host)
-	return processor.run(loader())
-
 def _worker(idx, mongo_host, archive_host, infile):
 	from ampel.archive import ArchiveDB, docker_env
 	from ampel.pipeline.t0.ZIAlertFetcher import ZIAlertFetcher
 	import itertools
 
-	archive = ArchiveDB('postgresql://ampel:{}@{}/ztfarchive'.format(docker_env('POSTGRES_PASSWORD'), archive_host))
+	archive = ArchiveDB('postgresql://ampel:{}@{}/ztfarchive'.format(docker_env('POSTGRES_PASSWORD'), archive_host), use_batch_mode=True)
 	mongo = 'mongodb://{}:{}@{}/'.format(docker_env('MONGO_INITDB_ROOT_USERNAME'), docker_env('MONGO_INITDB_ROOT_PASSWORD'), mongo_host)
 
 	def loader():
 		for idx,alert in enumerate(ZIAlertLoader.walk_tarball(infile)):
-			#archive.insert_alert(alert, idx%16, int(time.time()*1e6))
+			archive.insert_alert(alert, idx%16, int(time.time()*1e6))
 			yield alert
 	def peek(iterable):
 		try:
@@ -44,11 +33,11 @@ def _worker(idx, mongo_host, archive_host, infile):
 		else:
 			alerts = res[1]
 		processor = AlertProcessor(db_host=mongo)
-		chunk_size = processor.run(itertools.islice(alerts,100), console_logging=False)
+		chunk_size = processor.run(alerts, console_logging=False)
 		t1 = time.time()
 		dt = t1-t0
 		t0 = t1
-		print('({}) {} alerts in {:.1f}s; {:.1f}/s'.format(idx, chunk_size, dt, chunk_size/dt))
+		print('({} {}) {} alerts in {:.1f}s; {:.1f}/s'.format(idx, infile, chunk_size, dt, chunk_size/dt))
 		count += chunk_size
 
 	return count
