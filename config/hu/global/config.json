@@ -62,5 +62,10 @@
 			"collectionName": "troubles"
 		}
 	}
+},
+{
+	"_id": "graphite",
+	"server": "localhost",
+	"systemName": "Ampel-burst"
 }]
 
