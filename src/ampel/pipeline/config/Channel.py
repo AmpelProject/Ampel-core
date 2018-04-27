@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 01.03.2018
-# Last Modified Date: 16.03.2018
+# Last Modified Date: 24.04.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from ampel.flags.FlagGenerator import FlagGenerator
@@ -179,6 +179,10 @@ class Channel:
 				return el['runConfig']
 
 		return None 
+
+	
+	def get_name(self):
+		return self.name
 
 
 	def ready_t0(self, config_db, logger):

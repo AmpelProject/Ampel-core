@@ -22,7 +22,7 @@ from ampel.flags.LogRecordFlags import LogRecordFlags
 from ampel.flags.JobFlags import JobFlags
 
 from ampel.pipeline.db.DBWired import DBWired
-from ampel.pipeline.db.MongoStats import MongoStats
+from ampel.pipeline.db.GraphiteFeeder import GraphiteFeeder
 from ampel.pipeline.config.Channel import Channel
 from ampel.pipeline.logging.LoggingUtils import LoggingUtils
 from ampel.pipeline.logging.DBJobReporter import DBJobReporter
@@ -41,10 +41,11 @@ class AlertProcessor(DBWired):
 		* Ingest alert based on the configured ingester
 	"""
 	version = 0.3
+	iter_max = 5000
 
 	def __init__(
 		self, instrument="ZTF", alert_format="IPAC", load_channels=True,
-		db_host='localhost', config_db=None, base_dbs=None, stats=True
+		db_host='localhost', config_db=None, base_dbs=None, stats={'graphite', 'jobs'}
 	):
 		"""
 		Parameters:
@@ -56,7 +57,10 @@ class AlertProcessor(DBWired):
 		 method load_channel(<channel name>)
 		'config_db': see ampel.pipeline.db.DBWired.plug_config_db() docstring
 		'base_dbs': see ampel.pipeline.db.DBWired.plug_base_dbs() docstring
-		'stats': publish stats in the database (included in the job document)
+		'stats': record performance stats in the database:
+				* jobs: include t0 metrics in job document
+				* graphite: send db metrics and t0 metrics to graphite 
+				  (graphite server must be defined in Ampel_config)
 		"""
 
 		# Setup logger
@@ -295,9 +299,10 @@ class AlertProcessor(DBWired):
 
 		# Create array
 		scheduled_t2_runnables = len(self.channels) * [None]
+		filter_tran_counter = len(self.channels) * [0]
 
 		# Save ampel 'state' and get list of tran ids required for autocomplete
-		db_report_before, tran_ids_before = self.get_db_report()
+		tran_ids_before = self.get_tran_ids()
 
 		# Check if a ingester instance was created/provided
 		if not hasattr(self, 'ingester'):
@@ -313,6 +318,21 @@ class AlertProcessor(DBWired):
 			db_job_reporter.get_job_id()
 		)
 
+		# Loop variables
+		iter_max = AlertProcessor.iter_max
+		iter_count = 0
+
+		# Stat variables
+		loop_stats = {}
+
+		# stat with variable length
+		for key in ('ingestTime', 'dbBulkTime', 'dbOpTime'):
+			loop_stats[key] = []
+
+		# stat with fixed length
+		for i, channel in enumerate(self.channels): 
+			loop_stats[channel.name] = np.empty(iter_max) * np.nan
+
 		# python micro-optimization
 		loginfo = self.logger.info
 		logdebug = self.logger.debug
@@ -321,56 +341,64 @@ class AlertProcessor(DBWired):
 		dblh_unset_tranId = db_logging_handler.unset_tranId
 		dblh_unset_channel = db_logging_handler.unset_channels
 		ingest = self.ingester.ingest
+		add_ingest_stat = loop_stats['ingestTime'].append
+		tran_col = self.get_tran_col()
+
+		if "graphite" in self.publish_stats:
+			gfeeder = GraphiteFeeder(self.global_config['graphite'])
+			gfeeder.add_mongod_stats(tran_col.database)
+			gfeeder.add_total_trans_count(tran_col)
+			for i, channel in enumerate(self.channels):
+				gfeeder.add_channel_trans_count(
+					channel.name, tran_col, 
+					len(tran_ids_before[i]) if tran_ids_before[i] is not None 
+					else None
+				)
+			gfeeder.send()
 
 
 
 		# Part 3: Process alerts
 		########################
 
-		max_iter = 5000
-		iter_count = 0
-
-		st_ingest = []
-		st_db_bulk = []
-		st_db_op = []
-
 		self.logger.info("#######     Processing alerts     #######")
 
 		# Iterate over alerts
 		for parsed_alert in alert_supplier.get_alerts():
 
-			if iter_count == max_iter:
+			if iter_count == iter_max:
 				self.logger.info("Reached max number of iterations")
 				break
 
-			try:
+			loginfo("Processing alert: %s" % parsed_alert['alert_id'])
+			tran_id = parsed_alert['tran_id']
 
-				loginfo("Processing alert: %s" % parsed_alert['alert_id'])
-				tran_id = parsed_alert['tran_id']
+			# Create AmpelAlert instance
+			ampel_alert = AmpelAlert(
+				tran_id, parsed_alert['ro_pps'], parsed_alert['ro_uls']
+			)
 
-				# Create AmpelAlert instance
-				ampel_alert = AmpelAlert(
-					tran_id, parsed_alert['ro_pps'], parsed_alert['ro_uls']
-				)
+			# Associate upcoming log entries with the current transient id
+			dblh_set_tranId(tran_id)
 
-				# Associate upcoming log entries with the current transient id
-				dblh_set_tranId(tran_id)
+			# Loop through initialized channels
+			for i, channel in enumerate(self.channels):
 
-				# Loop through initialized channels
-				for i, channel in enumerate(self.channels):
+				# Associate upcoming log entries with the current channel
+				dblh_set_channel(channel.name)
 
-					# Associate upcoming log entries with the current channel
-					dblh_set_channel(channel.name)
+				try:
 
+					start = time_now()
 					# Apply filter (returns None in case of rejection or t2 runnable ids in case of match)
 					scheduled_t2_runnables[i] = channel.filter_func(ampel_alert)
+					loop_stats[channel.name][iter_count] = time_now() - start
 
-					# Log feedback
+					# Log feedback and count
 					if scheduled_t2_runnables[i] is not None:
+						filter_tran_counter[i] += 1
 						loginfo(channel.log_accepted)
-						# TODO push transient journal entry
 					else:
-						
 						# Autocomplete required for this channel
 						if tran_ids_before[i] is not None and tran_id in tran_ids_before[i]:
 							loginfo(channel.log_auto_complete)
@@ -378,8 +406,20 @@ class AlertProcessor(DBWired):
 						else:
 							loginfo(channel.log_rejected)
 
-					# Unset channel id <-> log entries association
-					dblh_unset_channel()
+				except:
+
+					self.report_exception(
+						{
+							'section': 'filter',
+							'channel': channel.name,
+							'tranId': tran_id,
+							'alertId': parsed_alert['alert_id'],
+							'jobId':  db_job_reporter.get_job_id(),
+						}
+					)
+
+				# Unset channel id <-> log entries association
+				dblh_unset_channel()
 
 				if any(scheduled_t2_runnables):
 
@@ -387,74 +427,95 @@ class AlertProcessor(DBWired):
 					logdebug(" -> Ingesting alert")
 
 					start = time_now()
+
+					# TODO: build tran_id <-> alert_id map (replayibility)
 					#processed_alert[tran_id]
 
-					st_db_bulk, st_db_op = ingest(
-						#tran_id, parsed_alert['pps'], parsed_alert['uls'], scheduled_t2_runnables
-						tran_id, parsed_alert['pps'], scheduled_t2_runnables
-					)
+					# Ingest alert content
 
-					stats = ingest(tran_id, parsed_alert['pps'], scheduled_t2_runnables)
-					st_db_bulk.append(stats[0])
-					st_db_op.append(stats[1])
-					st_ingest.append(time_now() - start)
+					try: 
+						ingest(
+							#tran_id, parsed_alert['pps'], parsed_alert['uls'], scheduled_t2_runnables
+							tran_id, parsed_alert['pps'], scheduled_t2_runnables
+						)
+
+					except:
+						self.report_exception(
+							{
+								'section': 'ingest',
+								'tranId': tran_id,
+								'alertId': parsed_alert['alert_id'],
+								'jobId':  db_job_reporter.get_job_id(),
+							}
+						)
+
+					# Save stats
+					add_ingest_stat(time_now() - start)
 
 				# Unset log entries association with transient id
 				dblh_unset_tranId()
 
-			except:
-				self.logger.exception("Exception occured while processing alert")
-				self.logger.critical("Exception occured")
-
 			iter_count += 1
 
 		# Save ampel 'state' and get list of tran ids required for autocomplete
-		db_report_after, tran_ids_after = self.get_db_report()
+		tran_ids_after = self.get_tran_ids()
 
 		# Check post auto-complete
 		for i, channel in enumerate(self.channels):
-			auto_complete_diff = tran_ids_after[i] - tran_ids_before[i]
-			if auto_complete_diff:
-				pass
+			if type(tran_ids_after[i]) is set:
+				auto_complete_diff = tran_ids_after[i] - tran_ids_before[i]
+				if auto_complete_diff:
+					# TODO: implement post-processing-autocomplete
+					pass 
 
 		# Total duration in seconds
 		duration = int(time_now() - start_time)
 		job_info = {"duration": duration}
 
-		if self.publish_stats:
-
-			# Convert python lists into numpy arrays
-			st_ingest = np.array(st_ingest)
-			st_db_bulk = np.array(st_db_bulk)
-			st_db_op = np.array(st_db_op)
-			def int_reduce(op, sequence):
-				if len(sequence) == 0:
-					return -1
-				else:
-					return int(round(op(sequence)*1000000))
+		if not self.publish_stats is None and iter_count > 0:
 
 			job_info["t0Stats"] = {
-
 				"processed": iter_count,
-				"ingested": len(st_ingest),
-
-				# Alert ingestion: mean time & std dev in microseconds
-				"ingestMean": int_reduce(np.mean, st_ingest),
-				"ingestStd": int_reduce(np.std, st_ingest),
-
-				# Bulk db ops: mean time & std dev in microseconds
-				"dbBulkMean": int_reduce(np.mean, st_db_bulk),
-				"dbBulkStd": int_reduce(np.std, st_db_bulk),
-
-				# Mean single db op: mean time & std dev in microseconds
-				"dbOpMean": int_reduce(np.mean, st_db_op),
-				"dbOpStd": int_reduce(np.std, st_db_op)
+				"totIngested": len(loop_stats['ingestTime'])
 			}
 
-			job_info["dbStats"] = [db_report_before, db_report_after]
+			# Ingest stats: mean time & std dev in microseconds
+			for key in ("ingestTime", "dbBulkTime", "dbOpTime"):
+				if len(loop_stats[key]) > 0: 
+					job_info["t0Stats"][key] = self.compute_stat(loop_stats[key])
+
+			# Filter stats
+			len_non_nan = lambda x: iter_max - np.count_nonzero(np.isnan(x))
+			for i, channel in enumerate(self.channels):
+				mylen = len_non_nan(loop_stats[channel.name])
+				job_info["t0Stats"][channel.name] = {
+					'ingested': filter_tran_counter[i],
+					'filterTime': (
+						(0, 0) if len_non_nan(loop_stats[channel.name]) == 0
+						else self.compute_stat(
+							loop_stats[channel.name], 
+							mean=np.nanmean, 
+							std=np.nanstd
+						)
+					)
+				}
+
+			if "graphite" in self.publish_stats:
+				gfeeder = GraphiteFeeder(self.global_config['graphite'])
+				gfeeder.add_mongod_stats(self.get_tran_col().database)
+				gfeeder.add_stat("ampel.t0.jobs.duration", job_info["duration"])
+				gfeeder.add_stats_with_mean_std(job_info["t0Stats"], suffix="ampel.t0.stats.")
+				gfeeder.add_total_trans_count(tran_col)
+				for i, channel in enumerate(self.channels):
+					gfeeder.add_channel_trans_count(
+						channel.name, tran_col, 
+						len(tran_ids_before[i]) if tran_ids_after[i] is not None 
+						else None
+					)
+				gfeeder.send()
 
 		# Insert job info into job document
-		db_job_reporter.update_job_info(job_info)
+		db_job_reporter.set_job_stats("t0Stats", job_info)
 
 		# 
 		self.logger.addHandler(self.ilb)
@@ -466,6 +527,7 @@ class AlertProcessor(DBWired):
 		loginfo("Alert processing completed (time required: %ss)" % duration)
 
 		# Remove DB logging handler
+		db_job_reporter.set_flush_job_info()
 		db_logging_handler.flush()
 		self.logger.removeHandler(db_logging_handler)
 		
@@ -473,49 +535,52 @@ class AlertProcessor(DBWired):
 		return iter_count
 
 
-	def get_db_report(self):
+	def report_exception(self, further_info=None):
 		"""
-		Return values:
+		further_info: non-nested dict instance
+		"""
 
-		First value: 'report'
-		a dict instance holding various information regarding the 'state' of ampel such as:
-		-> the number of documents in the DB
-		-> the size of the DB
-		-> the total size of all indexes
-		-> the total number of transients
-		-> the number of transients per channel
+		import traceback
+		self.logger.critical("Exception occured", exc_info=1)
 
-		Second value: 'tran_ids'
+		insert_dict = {
+			'tier': 0,
+			'exception': traceback.format_exc()
+		}
+
+		if further_info is not None:
+			for key in further_info:
+				insert_dict[key] = further_info[key]
+
+		self.get_trouble_col().insert_one(insert_dict)
+
+
+	def compute_stat(self, seq, mean=np.mean, std=np.std):
+		"""
+		"""
+		# mean time & std dev in microseconds
+		np_seq = np.array(seq)
+		return (
+			int(round(mean(seq))) * 1000,
+			int(round(std(seq))) * 1000
+		)
+
+
+	def get_tran_ids(self):
+		"""
+		Return value:
 		Array - whose length equals len(self.channels) - possibly containing sets of transient ids.
 		If channel[i] is the channel with index i wrt the list of channels 'self.channels', 
 		and if channel[i] was configured to make use of the ampel auto_complete feature, 
-		then tran_ids[i] will hold a set of transient ids listing all known 
+		then tran_ids[i] will hold a {set} of transient ids listing all known 
 		transients currently available in the DB for this particular channel.
-		Otherwise, tran_ids_before[i] will be None.
+		Otherwise, tran_ids_before[i] will be None
 		"""
 
 		col = self.get_tran_col()
 		tran_ids = len(self.channels) * [None]
 
-		if self.publish_stats:
-
-			# Compute ampel stats
-			report = {
-				'dt': int(time.time()),
-				# Counts total number of unique transients found in DB
-				'tranNbr': col.find(
-					{'alDocType': AlDocTypes.TRANSIENT}
-				).count(),
-				'chs': []
-			}
-
-			# Add general collection stats
-			MongoStats.col_stats(col, use_dict=report)
-
-		else:
-			report = {}
-
-		# Build set of transient ids
+		# Loop through activated channels
 		for i, channel in enumerate(self.channels):
 
 			if channel.get_input().auto_complete():
@@ -533,32 +598,8 @@ class AlertProcessor(DBWired):
 					)
 				}
 
-				if self.publish_stats:
-					# Update channel stats
-					report['chs'].append(
-						{
-							'ch': channel.name, 
-							'nb': len(tran_ids[i])
-						}
-					)
+		return tran_ids
 
-			# Update channel stats only
-			else:
-
-				if self.publish_stats:
-					report['chs'].append(
-						{
-							'ch': channel.name, 
-							'nb': self.get_tran_col().find(
-								{
-									'alDocType': AlDocTypes.TRANSIENT, 
-									'channels': channel.name
-								}
-							).count()
-						}
-					)
-
-		return report, tran_ids
 
 def init_db():
 	"""
