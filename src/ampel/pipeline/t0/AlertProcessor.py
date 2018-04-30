@@ -13,6 +13,7 @@ from ampel.pipeline.t0.AmpelAlert import AmpelAlert
 from ampel.pipeline.t0.AlertFileList import AlertFileList
 from ampel.pipeline.t0.alerts.AlertSupplier import AlertSupplier
 from ampel.pipeline.t0.alerts.ZIAlertParser import ZIAlertParser
+from ampel.pipeline.t0.alerts.AvroDeserializer import AvroDeserializer
 from ampel.pipeline.t0.ingesters.ZIAlertIngester import ZIAlertIngester
 
 from ampel.flags.AlDocTypes import AlDocTypes
@@ -108,6 +109,7 @@ class AlertProcessor(DBWired):
 
 				# Reference to function loading IPAC generated avro alerts
 				self.alert_parser = ZIAlertParser(self.logger)
+				self.deserializer = AvroDeserializer(self.logger)
 
 				# Set static AmpelAlert alert flags
 				AmpelAlert.add_class_flags(
@@ -225,10 +227,10 @@ class AlertProcessor(DBWired):
 		
 		self.logger.info("Returning iterable for file paths in folder: %s" % base_dir)
 
-		als = AlertSupplier(alert_loader, self.alert_parser)
-		ret = True
+		als = AlertSupplier(alert_loader, self.alert_parser, self.deserializer)
+		ret = AlertProcessor.iter_max
 
-		while ret:
+		while ret == AlertProcessor.iter_max:
 			ret = self.run(als, console_logging)
 
 

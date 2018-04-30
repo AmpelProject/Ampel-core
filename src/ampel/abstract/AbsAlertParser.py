@@ -13,7 +13,7 @@ class AbsAlertParser(ABC):
 
 
 	@abstractmethod
-	def parse(self, byte_stream):
+	def shape(self, dict_instance):
 		"""
 		Should return a dict containing the following keywords:
 		'pps': list of dicts

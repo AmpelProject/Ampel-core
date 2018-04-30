@@ -3,8 +3,8 @@
 # File              : ampel/pipeline/t0/alerts/ZIAlertParser.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
-# Date              : 14.12.2017
-# Last Modified Date: 24.04.2018
+# Date              : 20.04.2018
+# Last Modified Date: 30.04.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 
@@ -32,39 +32,33 @@ class ZIAlertParser(AbsAlertParser):
 		self.logger = LoggingUtils.get_logger() if logger is None else logger
 
 
-	def parse(self, byte_stream):
+	def shape(self, in_dict):
 		"""	
-		Loads an avro alert with fastavro using the provided byte stream.
 		Returns a dict. See AbsAlertParser docstring for more info
 		The dictionary with index 0 in the pps list is the most recent photopoint.
 		"""
 
 		try:
-			if isinstance(byte_stream, dict):
-				avro_dict = byte_stream
-			else:
-				reader = fastavro.reader(byte_stream)
-				avro_dict = next(reader, None)
 	
-			if avro_dict['prv_candidates'] is None:
+			if in_dict['prv_candidates'] is None:
 				return {
-					'pps': [avro_dict['candidate']],
+					'pps': [in_dict['candidate']],
 					'ro_pps': ImmutableList(
-						[ImmutableDict(avro_dict['candidate'])]
+						[ImmutableDict(in_dict['candidate'])]
 					),
 					'uls': None,
 					'ro_uls': None,
-					'tran_id': avro_dict['objectId'],
-					'alert_id': avro_dict['candid']
+					'tran_id': in_dict['objectId'],
+					'alert_id': in_dict['candid']
 				}
 			else:
 	
 				uls_list = []
 				ro_uls_list = []
-				pps_list = [avro_dict['candidate']]
-				ro_pps_list = [ImmutableDict(avro_dict['candidate'])]
+				pps_list = [in_dict['candidate']]
+				ro_pps_list = [ImmutableDict(in_dict['candidate'])]
 	
-				for el in avro_dict['prv_candidates']:
+				for el in in_dict['prv_candidates']:
 	
 					if el['candid'] is None:
 						uls_list.append(el)
@@ -89,8 +83,8 @@ class ZIAlertParser(AbsAlertParser):
 					'ro_pps': ImmutableList(ro_pps_list),
 					'uls': None if len(uls_list) == 0 else uls_list,
 					'ro_uls': None if len(uls_list) == 0 else ImmutableList(uls_list),
-					'tran_id': avro_dict['objectId'],
-					'alert_id': avro_dict['candid']
+					'tran_id': in_dict['objectId'],
+					'alert_id': in_dict['candid']
 				}
 
 		except:

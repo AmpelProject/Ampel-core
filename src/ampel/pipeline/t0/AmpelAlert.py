@@ -38,10 +38,20 @@ class AmpelAlert:
 	def load_ztf_alert(arg):
 		"""	
 		Convenience method.
-		'default_filters' excludes upper limits
+		Do not use for production!
 		"""
+
+		from ampel.pipeline.t0.alerts.AvroDeserializer import AvroDeserializer
+		from ampel.pipeline.t0.alerts.ZIAlertParser import ZIAlertParser
+
+		parsed_alert=ZIAlertParser().shape(
+    		AvroDeserializer.load_raw_dict_from_file(arg)
+		)
+
 		return AmpelAlert(
-			*ZIAlertLoader.get_flat_pps_list_from_file(arg)
+			parsed_alert['tran_id'], 
+			parsed_alert['ro_pps'], 
+			parsed_alert['ro_uls']
 		)
 
 
