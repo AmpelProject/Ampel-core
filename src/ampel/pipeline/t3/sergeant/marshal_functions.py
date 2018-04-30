@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# File              : ??/marshal_functions.py
+# File              : pipeline/t3/marshal_functions.py
 # License           : ?
 # First author      : Tiara Hung <tiarahung@astro.umd.edu>  
 # Second author 	: Sjoert van Velzen <sjoert@umd.edu>
@@ -35,11 +35,24 @@ class PTFConfig(object) :
 	def get(self,*args,**kwargs) :
 		return self.config.get(*args,**kwargs)
 
-def get_marshal_html(weblink):
+def get_marshal_html(weblink, attempts=0, max_attempts=5):
 	
 	conf = PTFConfig()
+	auth = requests.auth.HTTPBasicAuth(conf.get('Marshal', 'user'), conf.get('Marshal', 'passw'))
+	
+	try:
+		reponse = requests.get(weblink, auth=auth)
+	
+	except requests.exceptions.ConnectionError:		
 
-	reponse = requests.get(weblink, auth=requests.auth.HTTPBasicAuth(conf.get('Marshal', 'user'), conf.get('Marshal', 'passw')))
+		print ('Sergeant.get_marshal_html(): ', weblink)
+		print ('Sergeant.get_marshal_html(): request.ConnectionError this is our {0} attempt, {1} left', attempts, max_attempts-max_attempts)
+
+		if attempts<max_attempts:
+			reponse.text = get_marshal_html(weblink, attempts=attempts+1)	
+		else:
+			print ('Sergeant.get_marshal_html(): giving up')
+			raise(requests.exceptions.ConnectionError)
 
 	return reponse.text
 
@@ -142,11 +155,14 @@ class Sergeant(object):
 			print('ERROR, first fix program_name upon init')
 			return []
 		targ0 = 0
+		page_number = 1
 		sources = []
 		while True:
+
+			if verbose:
+				print ('list_saved_sources: reading page {0}'.format(page_number))
+
 			self.saved_soup = soup_obj(rawsaved_url + "?programidx=%s&offset=%s" %(self.cutprogramidx, targ0))
-			
-			#print ('saved soup:',self.saved_soup)
 
 			table = self.saved_soup.findAll('table')
 			table_rows = table[1].findAll('tr')[1:-1]
@@ -198,9 +214,10 @@ class Sergeant(object):
 						if verbose:
 							print('{0} has no auto_annotation'.format(sources[-1]["objname"]))
 			targ0 += 100
+			page_number+=1
 		return sources
 
-def get_comments(source, verbose=True):
+def get_comments(source, verbose=False):
 	'''
 	two inputs are possible:
 
@@ -318,7 +335,8 @@ def comment(comment, source, comment_type="info", comment_id=None, remove=False)
 
 	print ('pushing comment to marshal...')
 	try:
-		params = urllib.parse.urlencode(cmd) # python3
+		# to make this more elegant, the cmd could also be passed to request directly: request.get(marshal_root + 'edit_comment.cgi',cmd)
+		params = urllib.parse.urlencode(cmd) # python3 
 	except AttributeError:
 		params = urllib.urlencode(cmd) # python2	
 	try:
