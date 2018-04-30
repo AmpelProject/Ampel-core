@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 14.12.2017
-# Last Modified Date: 24.04.2018
+# Last Modified Date: 30.04.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import pymongo, time, numpy as np
@@ -73,21 +73,9 @@ class AlertProcessor(DBWired):
 		# Setup instance variable referencing the input database
 		self.plug_databases(self.logger, db_host, config_db, base_dbs)
 
-		# Set static emum flag class
-		Channel.set_ChannelFlags(
-			# Generate ChannelFlags enum flag *class* based on DB info
-			FlagGenerator.get_ChannelFlags_class(
-				self.config_db['channels'],
-				force_create=False
-			)
-		)
-
-		# Generate T2UnitIds enum flag *class* based on DB info
-		Channel.set_T2UnitIds(
-			FlagGenerator.get_T2UnitIds_class(
-				self.config_db['t2_units'],
-				force_create=False
-			)
+		# Let the Channel class know what real T2 exist
+		Channel.set_known_t2_units(
+			{el["_id"] for el in self.config_db['t2_units'].find({})}
 		)
 
 		# Setup channels
@@ -333,6 +321,8 @@ class AlertProcessor(DBWired):
 		for i, channel in enumerate(self.channels): 
 			loop_stats[channel.name] = np.empty(iter_max) * np.nan
 
+		self.ingester.set_stats_dict(loop_stats)
+
 		# python micro-optimization
 		loginfo = self.logger.info
 		logdebug = self.logger.debug
@@ -344,6 +334,7 @@ class AlertProcessor(DBWired):
 		add_ingest_stat = loop_stats['ingestTime'].append
 		tran_col = self.get_tran_col()
 
+		# Publish general stats to graphite
 		if "graphite" in self.publish_stats:
 			gfeeder = GraphiteFeeder(self.global_config['graphite'])
 			gfeeder.add_mongod_stats(tran_col.database)
@@ -561,8 +552,8 @@ class AlertProcessor(DBWired):
 		# mean time & std dev in microseconds
 		np_seq = np.array(seq)
 		return (
-			int(round(mean(seq))) * 1000,
-			int(round(std(seq))) * 1000
+			int(round(mean(seq) * 1000000)),
+			int(round(std(seq) * 1000000)) 
 		)
 
 

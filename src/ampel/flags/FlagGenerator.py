@@ -4,13 +4,16 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 01.03.2018
-# Last Modified Date: 08.03.2018
+# Last Modified Date: 30.04.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from enum import IntFlag
 from types import MethodType
 
 class FlagGenerator:
+	"""
+	DEPRECATED
+	"""
 
 	ChannelFlags = None
 	T2UnitIds = None
@@ -19,6 +22,7 @@ class FlagGenerator:
 	@classmethod	
 	def get_ChannelFlags_class(cls, mongo_collection, force_create=False):
 		"""
+		DEPRECATED
 		"""
 		# Check for previously generated enum flag
 		prev_class = getattr(FlagGenerator, 'ChannelFlags', None)
@@ -34,6 +38,7 @@ class FlagGenerator:
 	@classmethod	
 	def get_T2UnitIds_class(cls, mongo_collection, force_create=False):
 		"""
+		DEPRECATED
 		"""
 		# Check for previously generated enum flag
 		prev_class = getattr(FlagGenerator, 'T2UnitIds', None)
@@ -50,6 +55,9 @@ class FlagGenerator:
 	def create_class(
 		mongo_collection, field_name, class_name, listable=False
 	):
+		"""
+		DEPRECATED
+		"""
 
 		class_member = [el[field_name] for el in mongo_collection.find({})]
 
