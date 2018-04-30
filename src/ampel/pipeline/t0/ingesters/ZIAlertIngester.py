@@ -7,15 +7,14 @@
 # Last Modified Date: 20.03.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-import logging, pymongo
+import logging, pymongo, time
 from datetime import datetime, timezone
 from pymongo.errors import BulkWriteError
-import time
 
 from ampel.abstract.AbsAlertIngester import AbsAlertIngester
 from ampel.pipeline.t0.ingesters.ZIPhotoPointShaper import ZIPhotoPointShaper
 from ampel.pipeline.t0.ingesters.CompoundGenerator import CompoundGenerator
-from ampel.pipeline.t0.ingesters.T2MergeUtil import T2MergeUtil
+from ampel.pipeline.t0.ingesters.T2BluePrintMaker import T2BluePrintMaker
 from ampel.pipeline.logging.LoggingUtils import LoggingUtils
 
 from ampel.flags.PhotoPointFlags import PhotoPointFlags
@@ -23,6 +22,9 @@ from ampel.flags.TransientFlags import TransientFlags
 from ampel.flags.T2RunStates import T2RunStates
 from ampel.flags.AlDocTypes import AlDocTypes
 from ampel.flags.FlagUtils import FlagUtils
+
+from functools import reduce
+from operator import or_
 
 # https://github.com/AmpelProject/Ampel/wiki/Ampel-Flags
 SUPERSEEDED = FlagUtils.get_flag_pos_in_enumflag(PhotoPointFlags.SUPERSEEDED)
@@ -50,6 +52,15 @@ class ZIAlertIngester(AbsAlertIngester):
 		self.logger = LoggingUtils.get_logger() if logger is None else logger
 		self.col = output_collection
 		self.pps_shaper = ZIPhotoPointShaper()
+		self.add_dbbulk_stat = self.add_dbop_stat = None
+		self.lookup_projection = {
+			"_id": 1,
+			"alFlags": 1,
+			"jd": 1,
+			"fid": 1,
+			"pid": 1,
+			"alExcluded": 1
+		}
 
 
 	def configure(self, channels):
@@ -64,18 +75,17 @@ class ZIAlertIngester(AbsAlertIngester):
 		if len(channels) == 0:
 			raise ValueError("Parameter channels cannot be empty")
 
-		self.logger.info(
-			"Configuring ZIAlertIngester with channels %s" % 
-			[channel.name for channel in channels]
-		)
+		self.chan_names = [channel.get_name() for channel in channels]
 
-		self.l_chanflags = [channel.get_flag() for channel in channels]
+		self.logger.info(
+			"Configuring ZIAlertIngester with channels %s" % self.chan_names
+		)
 
 		# Static init function so that instances of CompoundGenerator work properly
 		CompoundGenerator.cm_init_channels(channels)
 
-		# instanciate T2MergeUtil (helper class used in method ingest())
-		self.t2_merge_util = T2MergeUtil(channels)
+		# instanciate T2BluePrintMaker (helper class used in method ingest())
+		self.t2_blueprint_maker = T2BluePrintMaker(channels)
 
 
 	def set_job_id(self, job_id):
@@ -87,6 +97,20 @@ class ZIAlertIngester(AbsAlertIngester):
 		The provided parameter should be a mongoDB ObjectId.
 		"""
 		self.job_id = job_id
+
+
+	def set_stats_dict(self, stats_dict):
+		"""
+		"""
+
+		if not 'dbBulkTime' in stats_dict:
+			stats_dict['dbBulkTime'] = []
+
+		if not 'dbOpTime' in stats_dict:
+			stats_dict['dbOpTime'] = []
+
+		self.add_dbbulk_stat = stats_dict['dbBulkTime'].append
+		self.add_dbop_stat = stats_dict['dbOpTime'].append
 
 
 	def set_photopoints_shaper(self, arg_pps_shaper):
@@ -114,6 +138,7 @@ class ZIAlertIngester(AbsAlertIngester):
 		return self.pps_shaper
 
 
+	#def ingest(self, tran_id, pps_alert, uls_alert, list_of_t2_runnables):
 	def ingest(self, tran_id, pps_alert, list_of_t2_runnables):
 		"""
 		This method is called by t0.AmpelProcessor for 
@@ -124,14 +149,22 @@ class ZIAlertIngester(AbsAlertIngester):
 		The function configure() must be called before this one can be used
 		"""
 
+		# TODO: check for any T2 with upper limits:
+		# list_of_t2_runnables
+
+		# all_t2s = reduce(or_, list_of_t2_runnables)
+		# ul_t2 = {'SNCOSMO'}
+		# has_ul_t2 = any([el in ul_t2 for el in all_t2s])
+
+		# TODO: temp
+		has_ul_t2 = True
+
+
 		###############################################
 		##   Part 1: Gather info from DB and alert   ##
 		###############################################
 
 		db_ops = []
-
-		# TODO remove this for production
-		pps_alert = [el for el in pps_alert if 'candid' in el and el['candid'] is not None]
 
 		# Create set with pp ids from alert
 		ids_pps_alert = {pp['candid'] for pp in pps_alert}
@@ -141,22 +174,15 @@ class ZIAlertIngester(AbsAlertIngester):
 		pps_db = list(
 			self.col.find(
 				{
-					"tranId": tran_id, 
+					"tranId": tran_id,
 					"alDocType": AlDocTypes.PHOTOPOINT
-				}, 
-				{	
-					"_id": 1,
-					"alFlags": 1,
-					"jd": 1,
-					"fid": 1,
-					"pid": 1,
-					"alExcluded": 1
-				}
+				},
+				self.lookup_projection
 			)
 		)
 
 		# Instanciate CompoundGenerator (used later for creating compounds and t2 docs)
-		comp_gen = CompoundGenerator(pps_db, self.logger, ids_pps_alert)
+		comp_gen = CompoundGenerator(pps_db, ids_pps_alert, self.logger)
 
 		# python set of ids from DB photopoints 
 		ids_pps_db = comp_gen.get_db_ids()
@@ -239,10 +265,15 @@ class ZIAlertIngester(AbsAlertIngester):
 		if not ids_pps_to_insert:
 			self.logger.info("No new photo point to insert in DB")
 		else:
-			self.logger.info("%i new pp(s) will be inserted into DB: %s" % (len(ids_pps_to_insert), ids_pps_to_insert))
+			self.logger.info(
+				"%i new pp(s) will be inserted into DB: %s" % 
+				(len(ids_pps_to_insert), ids_pps_to_insert)
+			)
 
 			# Create of list photopoint dicts with photopoints matching the provided list of ids_pps_to_insert
-			new_pps_dicts = [el for el in pps_alert if el['candid'] in ids_pps_to_insert]
+			new_pps_dicts = [
+				el for el in pps_alert if el['candid'] in ids_pps_to_insert
+			]
 
 			# ForEach 'new' photopoint (non existing in DB): 
 			# Rename candid into _id, add tranId, alDocType and alFlags
@@ -273,30 +304,23 @@ class ZIAlertIngester(AbsAlertIngester):
 		##   Part 4: Generate compound ids and compounds   ##
 		#####################################################
 
-		chan_flags = None
-		db_chan_flags = []
-
-		for i, el in enumerate(list_of_t2_runnables):
-			if not el is None:
-				if chan_flags is None:
-					chan_flags = self.l_chanflags[i]
-				else:
-					chan_flags |= self.l_chanflags[i]
-				db_chan_flags.append(self.l_chanflags[i].name)
+		chan_set = {
+			self.chan_names[i] for i, el in enumerate(list_of_t2_runnables) 
+			if not el is None
+		}
 
 		# Generate compound info for channels having passed T0 filters (i.e being not None)
-		comp_gen.generate(chan_flags)
+		comp_gen.generate(chan_set)
 
 		# See how many different compound_id were generated (possibly a single one)
 		# and generate corresponding ampel document to be inserted later
-		for compound_id in comp_gen.get_compound_ids(chan_flags):
+		for compound_id in comp_gen.get_compound_ids(chan_set):
 		
 			d_addtoset = {
 				"channels": {
-					"$each": [
-						flag.name
-						for flag in comp_gen.get_channels_for_compoundid(compound_id).as_list()
-					]
+					"$each": list(
+						comp_gen.get_channels_for_compoundid(compound_id)
+					)
 				}
 			}
 
@@ -335,7 +359,7 @@ class ZIAlertIngester(AbsAlertIngester):
 		#####################################
 
 		self.logger.debug("Generating T2 docs")
-		ddd_t2_struct = self.t2_merge_util.get_struct(
+		t2docs_blueprint = self.t2_blueprint_maker.make_blueprint(
 			comp_gen, list_of_t2_runnables
 		)
 		
@@ -343,19 +367,19 @@ class ZIAlertIngester(AbsAlertIngester):
 		db_ops_len = len(db_ops)
 
 		# Loop over t2 runnables
-		for t2_id in ddd_t2_struct.keys():
+		for t2_id in t2docs_blueprint.keys():
 
 			# Loop over run settings
-			for run_config in ddd_t2_struct[t2_id].keys():
+			for run_config in t2docs_blueprint[t2_id].keys():
 			
 				# Loop over compound Ids
-				for compound_id in ddd_t2_struct[t2_id][run_config]:
+				for compound_id in t2docs_blueprint[t2_id][run_config]:
 
 					d_addtoset = {
 						"channels": {
-							"$each": [
-								el.name for el in ddd_t2_struct[t2_id][run_config][compound_id].as_list()
-							]
+							"$each": list(
+								t2docs_blueprint[t2_id][run_config][compound_id]
+							)
 						}
 					}
 
@@ -368,7 +392,7 @@ class ZIAlertIngester(AbsAlertIngester):
 						pymongo.UpdateOne(
 							{
 								"tranId": tran_id, 
-								"t2Unit": t2_id.name, 
+								"t2Unit": t2_id, 
 								"runConfig": run_config, 
 								"compoundId": compound_id,
 							},
@@ -376,7 +400,7 @@ class ZIAlertIngester(AbsAlertIngester):
 								"$setOnInsert": {
 									"tranId": tran_id,
 									"alDocType": AlDocTypes.T2RECORD,
-									"t2Unit": t2_id.name, 
+									"t2Unit": t2_id, 
 									"runConfig": run_config, 
 									"compoundId": compound_id, 
 									"runState": TO_RUN,
@@ -418,7 +442,7 @@ class ZIAlertIngester(AbsAlertIngester):
 							"$each": ZIAlertIngester.new_tran_dbflag
 						},
 						'channels': {
-							"$each": db_chan_flags
+							"$each": list(chan_set)
 						},
 						'jobIds': self.job_id,
 					},
@@ -427,7 +451,7 @@ class ZIAlertIngester(AbsAlertIngester):
 						"modified": now
 					},
 					"$push": {
-						"lastModified": {
+						"lastModified": {  # TODO: add channels
 							'dt': now,
 							'tier': 0,
 							'src': "ZI"
@@ -440,14 +464,17 @@ class ZIAlertIngester(AbsAlertIngester):
 
 		try: 
 
-			# DB update
-			start = time.time()
-			result = self.col.bulk_write(db_ops)
-			time_delta = time.time() - start
+			if self.add_dbbulk_stat is not None:
+				start = time.time()
+				db_op_results = self.col.bulk_write(db_ops) # DB update
+				time_delta = time.time() - start
+				self.add_dbbulk_stat(time_delta)
+				self.add_dbop_stat(time_delta / len(db_ops))
+			else:
+				db_op_results = self.col.bulk_write(db_ops) # DB update
 
-			# Feedback and return measured db op time
-			self.logger.info(result.bulk_api_result)
-			return time_delta, time_delta / len(db_ops)
+			# Feedback
+			self.logger.info(db_op_results.bulk_api_result)
 
 		except BulkWriteError as bwe: 
 			self.logger.info(bwe.details) 

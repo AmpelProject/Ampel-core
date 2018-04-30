@@ -2,74 +2,69 @@ version: '3.4'
 services:
   mongo:
     image: mongo:3.6
-    command: ["mongod", "--port", "27018"]
+    command: ["mongod", "--port", "2004"]
     volumes:
-      - ./tmp/mongo:/data/db
+      - /data/ampel/mongo/offline/stress-test:/data/db
     ports:
-      - "27018:27018"
+      - "2004:2004"
     secrets:
       - mongo-root-password
     environment:
       MONGO_INITDB_ROOT_USERNAME: root
       MONGO_INITDB_ROOT_PASSWORD_FILE: /run/secrets/mongo-root-password
-    deploy:
-      restart_policy:
-        condition: on-failure
-        delay: 1s
-        max_attempts: 3
+  catalog:
+    image: mongo:3.6
+    command: ["mongod", "--port", "2005"]
+    volumes:
+      - /data/ampel/mongo/offline/test-catalog:/data/db
+      - /data/ampel/mongo/offline/catalog-dump:/docker-entrypoint-initdb.d/
+    ports:
+      - "2005:2005"
+    secrets:
+      - mongo-root-password
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD_FILE: /run/secrets/mongo-root-password
   archive:
     image: postgres:10.3
-    command: ["postgres"]
+    command: ["postgres", "-p", "2006"]
     volumes:
       - /var/tmp:/run/postgresql
-      - ./tmp/postgres:/var/lib/postgresql/data
+      - /data/ampel/archive/stress-test:/var/lib/postgresql/data
     ports:
-      - "5432:5432"
+      - "2006:2006"
     secrets:
       - archive-user-password
     environment:
       POSTGRES_PASSWORD_FILE: /run/secrets/archive-user-password
       POSTGRES_USER: ampel
       POSTGRES_DB: ztfarchive
-    deploy:
-      restart_policy:
-        condition: on-failure
-        delay: 1s
-        max_attempts: 3
   ampel:
-    image: ampel
-    command: ["/Ampel/deploy/ampel-start.sh"]
+    image: ampel:v0.1a1
+    command: ["/Ampel/deploy/stress-test/run_tests.sh"]
     volumes:
-      - ..:/Ampel
-      - ./ztfdata:/ztf
+      - /scratch/jvs/Ampel:/Ampel
+      - /data/ampel/archive/tarballs:/ztf
       
     secrets:
       - archive-user-password
       - mongo-root-password
     environment:
       TINI_SUBREAPER: 1
-      MONGO: mongo:27018
+      MONGO: mongo:2004
+      CATALOG: catalog:2005
+      ARCHIVE: archive:2006
       MONGO_INITDB_ROOT_USERNAME: root
       MONGO_INITDB_ROOT_PASSWORD_FILE: /run/secrets/mongo-root-password
-      ARCHIVE: archive:5432
       POSTGRES_PASSWORD_FILE: /run/secrets/archive-user-password
       POSTGRES_USER: ampel
-    extra_hosts:
-      - "kafka:128.95.79.19"
-      - "kafka2:128.95.79.19"
-      - "kafka3:128.95.79.19"
-    deploy:
-      restart_policy:
-        delay: 1s
-        max_attempts: 3
     depends_on:
       - mongo
       - archive
+      - catalog
 
 secrets:
   archive-user-password:
     file: secrets/archive-user-password.txt
   mongo-root-password:
     file: secrets/mongo-root-password.txt
-volumes:
-  envs:

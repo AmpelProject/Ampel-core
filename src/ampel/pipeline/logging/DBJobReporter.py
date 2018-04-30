@@ -4,11 +4,10 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 14.12.2017
-# Last Modified Date: 17.03.2018
+# Last Modified Date: 26.04.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-import logging
-from bson import ObjectId
+import logging, time
 from ampel.flags.JobFlags import JobFlags
 
 
@@ -19,6 +18,7 @@ class DBJobReporter:
 	and an array of log entries produced by this job
 	"""
 
+
 	def __init__(self, mongo_collection, job_flags=None):
 		""" 
 		Parameters:
@@ -28,6 +28,7 @@ class DBJobReporter:
 		self.col = mongo_collection
 		self.job_flags = JobFlags(0) if job_flags is None else job_flags
 		self.job_name = "Not set"
+		self.flush_job_info = False
 
 
 	def add_flags(self, job_flags):
@@ -38,90 +39,90 @@ class DBJobReporter:
 
 
 	def set_job_name(self, job_name):
+		""" 
+		"""
 		self.job_name = job_name
 
 
 	def set_grid_name(self, grid_name):
+		""" 
+		"""
 		self.grid_name = grid_name
 
 
 	def set_arguments(self, args):
+		""" 
+		"""
 		self.arguments = args
 
 
+	def set_flush_job_info(self):
+		"""
+		"""
+		self.flush_job_info = True
+
+
 	def get_job_id(self):
+		""" 
+		"""
 		return getattr(self, "job_id", None)
 
 
-	def insert_new(self, al_params, transient_col=None):
+	def insert_new(self, params, tier):
 		""" 
-		Optional:
-		transient_col: mongo collection containing the transient documents 
-		(used for keeping track of db stats)
 		"""
-		self.job_id = ObjectId()
 
-		jdict = {
-			"_id": self.job_id,
+		job_dict = {
 			"jobName": self.job_name,
 			"jobFlags": self.job_flags.value,
-			"params": al_params,
+			"tier": tier,
+			"params": params,
 		}
 
-		if transient_col is not None:
-
-			colstats = transient_col.database.command(
-				"collstats", transient_col.name
-			)
-
-			jdict["dbStats"] = {
-				'count': colstats['count'],
-				'size': colstats['size'],
-				'storageSize': colstats['storageSize'],
-				'totalIndexSize': colstats['totalIndexSize']
-			}
-
-
 		if hasattr(self, "arguments"):
-			jdict['arguments'] = self.arguments
+			job_dict['arguments'] = self.arguments
 
 		if hasattr(self, "grid_name"):
-			jdict['gridName'] = self.grid_name
+			job_dict['gridName'] = self.grid_name
 
-		return self.col.insert_one(jdict)
+		self.job_id = self.col.insert_one(job_dict).inserted_id
+
+		# Returned objectId can later be used to update the inserted document
+		return self.job_id
 
 
-	def set_job_stats(self, arg_dict):
+	def set_job_stats(self, key_name, dict_instance):
 		""" 
 		"""
-		self.col.update_one(
-			{ 
-				"_id": self.job_id 
-			},
- 			{ 
-				"$set": {
-					"jobStats": arg_dict
-				}
-			}
- 		)
+		self.job_stats = (key_name, dict_instance)
 
 
 	def push_logs(self, records):
 		""" 
 		"""
-		self.col.update_one(
-			{ 
-				"_id": self.job_id 
-			},
-			{
-				"$set": {
-					"jobFlags": self.job_flags.value
-				},
-				"$push": {
-					"records": { 
-						"$each": records
-					}
+		update_dict = {
+			"$push": {
+				"records": { 
+					"$each": records
 				}
-			},
+			}
+		}
+
+		if self.flush_job_info:
+
+			update_dict["$set"] = {
+				"jobFlags": self.job_flags.value,
+				"duration": int(
+					time.time() - self.job_id.generation_time.timestamp()
+				)
+			}
+
+			if getattr(self, "job_stats") is not None:
+				update_dict["$set"][self.job_stats[0]] = self.job_stats[1]
+
+
+		self.col.update_one(
+			{"_id": self.job_id},
+			update_dict,
 			upsert=True
 		)

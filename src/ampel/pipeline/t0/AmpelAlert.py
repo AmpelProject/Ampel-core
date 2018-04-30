@@ -4,12 +4,10 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 14.12.2017
-# Last Modified Date: 18.04.2018
+# Last Modified Date: 24.04.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from ampel.flags.AlertFlags import AlertFlags
-from werkzeug.datastructures import ImmutableDict, ImmutableList
-from ampel.pipeline.t0.loaders.ZIAlertLoader import ZIAlertLoader
 import operator
 
 class AmpelAlert:
@@ -37,13 +35,13 @@ class AmpelAlert:
 
 
 	@staticmethod
-	def load_ztf_alert(arg, default_filters=[{'attribute': 'candid', 'operator': 'is not', 'value': None}]):
+	def load_ztf_alert(arg):
 		"""	
 		Convenience method.
 		'default_filters' excludes upper limits
 		"""
 		return AmpelAlert(
-			*ZIAlertLoader.get_flat_pps_list_from_file(arg), default_filters
+			*ZIAlertLoader.get_flat_pps_list_from_file(arg)
 		)
 
 
@@ -81,21 +79,18 @@ class AmpelAlert:
 		return arg_flags in cls.flags
 
 
-	def __init__(self, tran_id, list_of_pps, default_filters=None):
+	def __init__(self, tran_id, list_of_pps, list_of_uls=None):
 		""" 
 		AmpelAlert constructor
 		Parameters:
-		tran_id: the astronomical transient object ID, for ZTF IPAC alerts 'objId'
+		alertid: unique identifier of the alert (for ZTF: candid of most recent photopoint)
+		tran_id: the astronomical transient object ID, for ZTF IPAC alerts 'objectId'
 		list_of_pps: a flat list of photopoint dictionaries. 
 		Ampel makes sure that each dictionary contains an alFlags key 
 		"""
 		self.tran_id = tran_id
-
-		self.pps = ImmutableList(
-			[ImmutableDict(el) for el in list_of_pps if 'candid' in el]
-		)
-
-		self.default_filters = default_filters
+		self.pps = list_of_pps
+		self.uls = list_of_uls
 
 		# Freeze this instance
 		self.__isfrozen = True
@@ -111,7 +106,7 @@ class AmpelAlert:
 		object.__setattr__(self, key, value)
 
 
-	def get_values(self, param_name, filters=None):
+	def get_values(self, param_name, filters=None, upper_limits=False):
 		"""
 		ex: instance.get_values("mag")
 		"""
@@ -120,20 +115,19 @@ class AmpelAlert:
 			param_name = AmpelAlert.alert_keywords[param_name]
 
 		if filters is None:
-			browse_pps = self.pps if self.default_filters is None else self.filter_pps(self.default_filters)
+			browse_pps = self.uls if upper_limits else self.pps
 		else:
-			browse_pps = self.filter_pps(filters)
-	
+			browse_pps = self.apply_filter(self.uls, filters) if upper_limits else self.apply_filter(self.pps, filters)
+
 		return tuple(
 			el[param_name] 
 			for el in browse_pps if param_name in el
 		)
 
 
-	def filter_pps(self, filters):
+	def apply_filter(self, match_pps, filters):
 		"""
 		"""
-		match_pps = self.pps
 
 		if type(filters) is dict:
 			filters = [filters]
@@ -162,7 +156,7 @@ class AmpelAlert:
 		return match_pps
 
 
-	def get_tuples(self, param1, param2, filters=None):
+	def get_tuples(self, param1, param2, filters=None, upper_limits=False):
 		"""
 		ex: instance.get_tuples("obs_date", "mag")
 		"""
@@ -173,9 +167,9 @@ class AmpelAlert:
 			param2 = AmpelAlert.alert_keywords[param2]
 
 		if filters is None:
-			browse_pps = self.pps if self.default_filters is None else self.filter_pps(self.default_filters)
+			browse_pps = self.uls if upper_limits else self.pps
 		else:
-			browse_pps = self.filter_pps(filters)
+			browse_pps = self.apply_filter(self.uls, filters) if upper_limits else self.apply_filter(self.pps, filters)
 
 		return tuple(
 			(el[param1], el[param2]) 
@@ -183,7 +177,7 @@ class AmpelAlert:
 		)
 
 
-	def get_ntuples(self, params, filters=None):
+	def get_ntuples(self, params, filters=None, upper_limits=False):
 		"""
 		params: list of strings
 		ex: instance.get_ntuples(["fid", "obs_date", "mag"])
@@ -197,12 +191,13 @@ class AmpelAlert:
 	
 		# Filter photopoints if filter was provided
 		if filters is None:
-			browse_pps = self.pps if self.default_filters is None else self.filter_pps(self.default_filters)
+			browse_pps = self.uls if upper_limits else self.pps
 		else:
-			browse_pps = self.filter_pps(filters)
+			browse_pps = self.apply_filter(self.uls, filters) if upper_limits else self.apply_filter(self.pps, filters)
 
 		return tuple(
-			tuple(el[param] for param in params) for el in browse_pps if all(param in el for param in params)
+			tuple(el[param] for param in params) 
+			for el in browse_pps if all(param in el for param in params)
 		)
 
 

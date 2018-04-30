@@ -243,24 +243,15 @@ class DBWired:
 		Plug central databases and collections using conf values provided by db_config
 		"""
 
-		existing_db_names = mongo_client.database_names()
 		db_name = db_config['dbName']
 		db = mongo_client[db_name]
-		existing_col_names = db.collection_names()
 		col_name = db_config['collectionName']
 
-
 		# New DB / collection
-		if (
-			(
-				not db_name in existing_db_names or
-				not col_name in existing_col_names
-			) and
-			'indexes' in db_config
-		):
+		if 'indexes' in db_config and col_name not in db.collection_names():
 
 			logger.info("New collection detected, creating indexes")
-			col = db.create_collection(col_name)
+			col = db[col_name]
 
 			for d in db_config['indexes']:
 				if 'options' in d:

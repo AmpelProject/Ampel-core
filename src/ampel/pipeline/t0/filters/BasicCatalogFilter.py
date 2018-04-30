@@ -13,6 +13,7 @@ from extcats import CatalogQuery
 
 from pymongo import MongoClient
 from numpy import mean
+from os.path import expandvars
 
 
 class BasicCatalogFilter(AbsAlertFilter):
@@ -31,9 +32,7 @@ class BasicCatalogFilter(AbsAlertFilter):
             raise ValueError("Method argument must be a dict instance")
 
         # init mongo client to be passed to extcats
-        dbclient = MongoClient(
-            host = base_config['mongodbHost'],
-            port = base_config['mongodbPort'])
+        dbclient = MongoClient(expandvars(base_config['mongodbHost']))
         
         # int catalogquery object
         self.cat_query = CatalogQuery.CatalogQuery(

@@ -19,7 +19,7 @@ class BasicMultiFilter(AbsAlertFilter):
 		'<': operator.lt,
 		'>=': operator.ge,
 		'<=': operator.le,
-		'=': operator.eq,
+		'==': operator.eq,
 		'!=': operator.ne,
 		'AND': operator.and_,
 		'OR': operator.or_
