@@ -14,6 +14,7 @@ RUN apk add --no-cache ca-certificates wget libgcc libstdc++ && \
 COPY --from=conda /lib/x86_64-linux-gnu/libgcc_s.so.1 /usr/glibc-compat/lib/
 COPY --from=conda /opt/conda/envs /opt/conda/envs
 
+RUN /opt/conda/envs/ampel/bin/pip install graphitesend
 RUN addgroup -g 1001 ampel && \
     adduser -D -u 1001 -G ampel ampel && \
     mkdir /Ampel /ztf /run/secrets

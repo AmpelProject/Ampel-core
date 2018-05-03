@@ -1,19 +1,33 @@
 
-# Build
+# Building a Singularity dev image with Docker
+
+This is a multi-step process. You have to:
+1. Create the base image
+2. Link the Ampel source code into the image (there may be a better way to do this in the future)
+3. Tag the image and push it to a local registry (essentially a local instance of DockerHub)
+4. Forward a port from the target machine back to the local registry
+5. Import the Docker image and convert it to Singularity format from the target system
+
+# Build the image
 docker build -t ampel .
 # Link ampel source
 ./add-ampel.sh
 
 # Push to a local Docker registry
 docker run -d -p 5000:5000 --restart=always --name registry registry:2
-docker tag ampel localhost:5000/ampel
-docker push localhost:5000/ampel
+docker tag ampel localhost:5000/ampel:v0.1a2
+docker push localhost:5000/ampel:v0.1a2
 
 # Forward port to target system with Singularity
-ssh -R5000:localhost:5000 burst.ifh.de
+ssh -R5000:localhost:5000 transit.ifh.de
 
 # Import image
-export SINGULARITY_CACHEDIR=/scratch/jvs/singularity
+sudo su ampel
 cd $SINGULARITY_CACHEDIR
-SINGULARITY_NOHTTPS=1 singularity pull docker://localhost:5000/ampel
+SINGULARITY_NOHTTPS=1 singularity pull docker://localhost:5000/ampel:v0.1a2
+# now, adjust image version tag in docker-compose.yml to whatever you just pulled (in this example, v0.1a2)
 
+# Unrelated side topic: populating catalog database from mongodump bson files
+# from mongodump directory:
+singularity shell instance://atest.catalog
+mongorestore --port 2002 --username root -p mongo .
