@@ -20,9 +20,10 @@ import yaml  					# pip3 install pyyaml
 from astropy.time import Time 	# pip3 install astropy
 
 marshal_root = 'http://skipper.caltech.edu:8080/cgi-bin/growth/'
+photo_url 	= marshal_root  + 'plot_lc.cgi?name=%s'
 listprog_url = marshal_root + 'list_programs.cgi'
 scanning_url = marshal_root + 'growth_treasures_transient.cgi'
-saving_url = marshal_root + 'save_cand_growth.cgi?candid=%s&program=%s'
+saving_url = marshal_root   + 'save_cand_growth.cgi?candid=%s&program=%s'
 rawsaved_url = marshal_root + 'list_sources_bare.cgi'
 annotate_url = marshal_root + 'edit_comment.cgi'
 
@@ -217,6 +218,30 @@ class Sergeant(object):
 			page_number+=1
 		return sources
 
+def _parse_source_input(source):
+	'''
+	lil help with input (dict or ztfname)
+	'''
+	if type(source) is list:
+		if len(source)==1:
+			source = source[0]
+
+	if 'objname' in source:
+		sourcename = source['objname']
+	else:
+		sourcename = source
+
+	return sourcename
+
+def get_photo(source, verbose=False):
+	'''
+	TODO...
+	'''
+
+	sourcename = _parse_source_input(source)
+
+	soup = soup_obj(photo_url %sourcename)
+
 def get_comments(source, verbose=False):
 	'''
 	two inputs are possible:
@@ -227,20 +252,15 @@ def get_comments(source, verbose=False):
 	>>> comment_list = get_comments(source_dict)
 	get the current comments, and add them the source dict 
 	this dict is output from list_saved_sources function of the Sergeant class)
+
+	TODO: also get the info abotu scheduled observations
 	'''
 
-	# lil help with input
-	if type(source) is list:
-		if len(source)==1:
-			source = source[0]
-
-	if 'objname' in source:
-		sourcename = source['objname']
-	else:
-		sourcename = source
+	sourcename = _parse_source_input(source)
 
 	if type(source) is dict:
 		source['comments'] = [] # replace, because we re-read the current comments
+
 
 	soup = soup_obj(marshal_root + 'view_source.cgi?name=%s' %sourcename)
 	table = soup.findAll('table')[0]
