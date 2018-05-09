@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 20.04.2018
-# Last Modified Date: 30.04.2018
+# Last Modified Date: 04.05.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 
@@ -41,6 +41,7 @@ class ZIAlertParser(AbsAlertParser):
 		try:
 	
 			if in_dict['prv_candidates'] is None:
+
 				return {
 					'pps': [in_dict['candidate']],
 					'ro_pps': ImmutableList(
@@ -51,6 +52,7 @@ class ZIAlertParser(AbsAlertParser):
 					'tran_id': in_dict['objectId'],
 					'alert_id': in_dict['candid']
 				}
+
 			else:
 	
 				uls_list = []
@@ -70,7 +72,8 @@ class ZIAlertParser(AbsAlertParser):
 									'fid': el['fid'], 
 									'pid': el['pid'], 
 	 								'diffmaglim': el['diffmaglim'], 
-									'pdiffimfilename': el['pdiffimfilename'] 
+	 								'programid': el['programid'], 
+									'pdiffimfilename': el['pdiffimfilename']
 								}
 							)
 						)
@@ -82,7 +85,7 @@ class ZIAlertParser(AbsAlertParser):
 					'pps': pps_list,
 					'ro_pps': ImmutableList(ro_pps_list),
 					'uls': None if len(uls_list) == 0 else uls_list,
-					'ro_uls': None if len(uls_list) == 0 else ImmutableList(uls_list),
+					'ro_uls': None if len(uls_list) == 0 else ImmutableList(ro_uls_list),
 					'tran_id': in_dict['objectId'],
 					'alert_id': in_dict['candid']
 				}
@@ -90,20 +93,3 @@ class ZIAlertParser(AbsAlertParser):
 		except:
 			self.logger.exception("Exception occured while loading alert")
 			return None
-
-
-
-
-	@staticmethod
-	def load_raw_dict_from_file(file_path):
-	# TODO: move convenience method somewhere else
-		"""	
-		Load avro alert using fastavro. 
-		A dictionary instance (or None) is returned 
-		"""	
-		with open(file_path, "rb") as fo:
-			reader = fastavro.reader(fo)
-			zavro_dict = next(reader, None)
-
-		return zavro_dict
-

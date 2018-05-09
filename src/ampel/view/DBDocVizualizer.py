@@ -1,15 +1,16 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 # File              : ampel/view/DBDocVizualizer.py
+# License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 07.01.2018
-# Last Modified Date: 18.02.2018
+# Last Modified Date: 04.05.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from ampel.flags.AlertFlags import AlertFlags
 from ampel.flags.TransientFlags import TransientFlags
 from ampel.flags.LogRecordFlags import LogRecordFlags
-from ampel.flags.PhotoPointFlags import PhotoPointFlags
+from ampel.flags.PhotoFlags import PhotoFlags
 from ampel.flags.T2RunStates import T2RunStates
 from ampel.flags.JobFlags import JobFlags
 from ampel.flags.AlDocTypes import AlDocTypes
@@ -48,7 +49,7 @@ class DBDocVizualizer:
 			self.set_dict_first_keys(db_dict, d, "PHOTOPOINT")
 			if "alFlags" in db_dict:
 				d['alFlags'] = self.pretty_print_flag(
-					FlagUtils.dbflag_to_enumflag(db_dict['alFlags'], PhotoPointFlags)
+					FlagUtils.dbflag_to_enumflag(db_dict['alFlags'], PhotoFlags)
 				)
 
 			# Convert JD into gregorian date

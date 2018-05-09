@@ -4,15 +4,12 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 13.01.2018
-# Last Modified Date: 18.03.2018
+# Last Modified Date: 04.05.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-from ampel.flags.PhotoPointFlags import PhotoPointFlags
 from ampel.flags.AlDocTypes import AlDocTypes
-from ampel.flags.FlagUtils import FlagUtils
 from ampel.base.PhotoPoint import PhotoPoint
 from ampel.base.LightCurve import LightCurve
-from werkzeug.datastructures import ImmutableList
 from ampel.pipeline.logging.LoggingUtils import LoggingUtils
 from ampel.pipeline.db.DBResultOrganizer import DBResultOrganizer
 
@@ -149,8 +146,8 @@ class LightCurveLoader:
 		# List of *PhotoPoint* instances
 		al_pps_list = []
 
-		# Loop through compound photopoints ids and options
-		for el in compound_dict['pps']:
+		# Loop through compound elements
+		for el in compound_dict['comp']:
 
 			# Get corresponding photopoint content (dict) from res_pps dict
 			try:

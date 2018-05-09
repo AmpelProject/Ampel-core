@@ -1,15 +1,16 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 # File              : ampel/base/PhotoPoint.py
+# License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 13.01.2018
-# Last Modified Date: 15.02.2018
+# Last Modified Date: 04.05.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-from ampel.flags.PhotoPointFlags import PhotoPointFlags
 from ampel.flags.AlDocTypes import AlDocTypes
 from ampel.flags.FlagUtils import FlagUtils
-from ampel.flags.PhotoPointPolicy import PhotoPointPolicy
+from ampel.flags.PhotoFlags import PhotoFlags
+from ampel.flags.PhotoPolicy import PhotoPolicy
 from werkzeug.datastructures import ImmutableDict
 
 
@@ -85,12 +86,12 @@ class PhotoPoint:
 
 		# Convert db flag to python enum flag
 		self.flags = FlagUtils.dbflag_to_enumflag(
-			db_doc['alFlags'], PhotoPointFlags
+			db_doc['alFlags'], PhotoFlags
 		)
 
 		# Check photopoint type and set field keywords accordingly
-		if PhotoPointFlags.INST_ZTF in self.flags:
-			if PhotoPointFlags.SRC_IPAC in self.flags:
+		if PhotoFlags.INST_ZTF in self.flags:
+			if PhotoFlags.SRC_IPAC in self.flags:
 				self.pp_keywords = PhotoPoint.static_keywords['ZTF']['IPAC']
 			else:
 				raise NotImplementedError("Not implemented yet")
@@ -121,11 +122,11 @@ class PhotoPoint:
 
 		# Check if corrected / alternative magnitudes should be returned
 		if compound_pp_entry is not None:
-			self.policy_flags = PhotoPointPolicy(0)
+			self.policy_flags = PhotoPolicy(0)
 			if 'wzm' in compound_pp_entry:
-				self.policy_flags |= PhotoPointPolicy.USE_WEIZMANN_SUB
+				self.policy_flags |= PhotoPolicy.USE_WEIZMANN_SUB
 			if 'huzp' in compound_pp_entry:
-				self.policy_flags |= PhotoPointPolicy.USE_HUMBOLDT_ZP
+				self.policy_flags |= PhotoPolicy.USE_HUMBOLDT_ZP
 
 		if read_only:
 			self.content = ImmutableDict(self.content)

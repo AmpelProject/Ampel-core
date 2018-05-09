@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 14.12.2017
-# Last Modified Date: 08.03.2018
+# Last Modified Date: 09.05.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from ampel.abstract.AmpelABC import AmpelABC, abstractmethod
@@ -17,11 +17,11 @@ class AbsAlertIngester(metaclass=AmpelABC):
 		return
 
 	@abstractmethod
-	def configure(self, channels):
+	def ingest(self, tran_id, pps_alert, uls_alert, list_of_t2_units):
 		return
 
 	@abstractmethod
-	def ingest(self, tran_id, pps_alert, list_of_t2_runnables):
+	def flush_report(self):
 		return
 
 	# pylint: disable=no-member

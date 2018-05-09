@@ -4,10 +4,9 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 13.01.2018
-# Last Modified Date: 18.03.2018
+# Last Modified Date: 04.05.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-from ampel.flags.PhotoPointFlags import PhotoPointFlags
 from ampel.flags.AlDocTypes import AlDocTypes
 from ampel.flags.FlagUtils import FlagUtils
 from werkzeug.datastructures import ImmutableList
@@ -137,7 +136,7 @@ class LightCurve:
 			"latest": returns (ra, dec)
 
 		examples: 
-		instance.get_pos("brightest", {'alFlags': PhotoPointFlags.ZTF_G, 'in'})
+		instance.get_pos("brightest", {'alFlags': PhotoFlags.ZTF_G, 'in'})
 			returns the position of the brightest PhotoPoint in the ZTF G band
 
 		instance.get_pos("lastest", {'magpsf': 18, '<'})

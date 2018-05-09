@@ -4,206 +4,79 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 01.03.2018
-# Last Modified Date: 30.04.2018
+# Last Modified Date: 03.05.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-from ampel.flags.LogRecordFlags import LogRecordFlags
-from ampel.pipeline.logging.LoggingUtils import LoggingUtils
-from ampel.pipeline.config.ZIInputParameter import ZIInputParameter
-import importlib
-
+from functools import reduce
 
 class Channel:
 	"""
 	"""
 
-	channels_col_name = 'channels'
-	filters_col_name = 't0_filters'
-	known_t2_units = {}
-
-
-	@classmethod
-	def set_known_t2_units(cls, known_t2_units):
+	def __init__(self, doc_channel, source=None):
 		"""
-		known_t2_units: set of t2_unit names (string)
-		"""
-		cls.known_t2_units = known_t2_units
-
-
-	def __init__(
-		self, config_db, channel_name=None, db_doc=None, t0_ready=False, logger=None
-	):
-		"""
+		doc_channel: dict instance containing channel configrations
 		"""
 
-		if channel_name is None and db_doc is None:
-			raise ValueError("Please set either 'channel_name' or 'db_doc'")
+		self.version = doc_channel['version']
+		self.doc_channel = doc_channel
+		self.name = doc_channel['_id']
 
-		if channel_name is None:
-			self.load_from_doc(db_doc, logger)
-			self.name = db_doc['_id']
-		else:
-			self.load_from_db(config_db, channel_name, logger)
-			self.name = channel_name
-
-		if t0_ready is True:
-			self.ready_t0(
-				config_db, 
-				LoggingUtils.get_logger() if logger is None else logger
-			)
+		if source is not None:
+			self.set_source(source)
 
 
-	def load_from_doc(self, db_doc, logger):		
-		"""
-		db_doc: dict instance containing channel configrations
-		"""
-		self.chan_filter_doc = db_doc['t0Filter']
-		self.inputs = Channel.load_channel_inputs(db_doc['input'], logger)
-		self.t2_config = db_doc['t2Compute']
-		self.t2_units = set()
-
-		for el in self.t2_config:
-
-			if not el['t2Unit'] in Channel.known_t2_units:
-				raise ValueError(
-					("The AMPEL T2 unit '%s' referenced by the channel '%s' does not exist.\n" +
-					"Please either correct the problematic entry in section 't2Compute' of channel '%s'\n" +
-					"or make sure the T2 unit '%s' exists in the mongodb collection 't2_units'.") % 
-					(el['t2Unit'], self.name, self.name, el['t2Unit'])
-				)
-
-			self.t2_units.add(el['t2Unit'])
-
-
-	def load_from_db(self, config_db, channel_name, logger):
-		"""
-		config_db: instance of a mongodb Database
-		channel_name: value of field '_id' in channel db document.
-		FYI:
-		  default db: 'Ampel_config'
-		  default collection: 'channels'
-		"""
-		cursor = config_db[Channel.channels_col_name].find(
-			{'_id': channel_name}
-		)
-
-		if cursor.count() == 0:
-			raise NameError("Channel '%s' not found" % channel_name)
-
-		self.load_from_doc(
-			cursor.next(), logger
-		)
-
-
-	def get_input(self, instrument="ZTF", alerts="IPAC"):
-		"""	
-		Dict path lookup shortcut function
-		"""	
-
-		if instrument+alerts in self.inputs:
-			return self.inputs[instrument+alerts]
-
-		return None
-		
-
-	def get_t2_units(self):
-		"""	
-		Returns a set of strings made of t2 unit names.
-		"""	
-		return self.t2_units
-
-
-	def get_filter_config(self):
-		"""	
-		"""	
-		return self.chan_filter_doc
-
-
-	def set_filter_parameter(self, param_name, param_value):
-		"""	
-		Manualy set/add/edit filter parameters
-		"""	
-		self.chan_filter_doc['parameters'][param_name] = param_value
-
-
-	def get_t2_run_config(self, t2_unit_name):
-		"""	
-		Dict path shortcut function
-		"""	
-		for el in self.t2_config:
-			if el['t2Unit'] == t2_unit_name:
-				return el['runConfig']
-
-		return None 
-
-	
 	def get_name(self):
+		""" """
 		return self.name
 
 
-	def ready_t0(self, config_db, logger):
+	def get_version(self):
+		""" """
+		return self.version
+
+	
+	def get_channel_doc(self):
+		""" """
+		return self.doc_channel
+
+	
+	def set_source(self, source):
+		""" """
+		if source not in self.doc_channel['sources']:
+			raise NameError("Unknown source: %s" % source)
+		self.doc_source = self.doc_channel['sources'][source]
+
+
+	def get_source_doc(self, source=None):
+		""" """
+		if source is None:
+			doc_source = getattr(self, "doc_source", None)
+			if doc_source is None:
+				raise ValueError("Please use method set_source before calling get_config")
+		else:
+			if source not in self.doc_channel['sources']:
+				raise NameError("Unknown source: %s" % source)
+			doc_source = self.doc_channel['sources'][source]
+
+		return doc_source
+
+
+	def get_config(self, param_name, source=None):
+		""" """
+		doc_source = self.get_source_doc(source)
+		return reduce(dict.get, param_name.split("."), doc_source)
+		
+
+	def get_custom_attr(self, name):
+		""" 
+		Bad practice, will try to come up with something nicer later
 		"""
-		'config_db': instance of pymongo Database
+		return getattr(self, name, None)
+
+
+	def set_custom_attr(self, name, value):
+		""" 
+		Bad practice, will try to come up with something nicer later
 		"""
-
-		filter_id = self.chan_filter_doc['id'] 
-		logger.info("Loading filter: " + filter_id)
-
-		# Lookup filter config from DB
-		cursor = config_db[Channel.filters_col_name].find(
-			{'_id': filter_id}
-		)
-
-		# Robustness check
-		if cursor.count() == 0:
-			raise NameError("Filter '%s' not found" % filter_id)
-
-		# Retrieve filter config from DB
-		filter_doc = cursor.next()
-
-		class_full_path = filter_doc['classFullPath']
-		logger.info("   Full class path: " + class_full_path)
-
-		# Instanciate filter class associated with this channel
-		module = importlib.import_module(class_full_path)
-		filter_class = getattr(module, class_full_path.split(".")[-1])
-		filter_instance = filter_class(
-			self.t2_units, 
-			base_config = filter_doc['baseConfig'] if 'baseConfig' in filter_doc else None, 
-			run_config = self.chan_filter_doc['runConfig'], 
-			logger = logger
-		)
-
-		# Feedback
-		logger.info("   Version: %s" % filter_instance.version)
-		logger.info("   On match t2 units: %s" % self.t2_units)
-
-		# Reference to the "apply()" function of the T0 filter (used in run())
-		self.filter_func = filter_instance.apply
-
-		# LogRecordFlag and TransienFlag associated with the current channel
-		# self.log_flag = LogRecordFlags[self.name]
-
-		# Build these two log entries once and for all (outside the main loop in run())
-		self.log_accepted = " -> Channel '%s': alert passes filter criteria" % self.name
-		self.log_rejected = " -> Channel '%s': alert was rejected" % self.name
-
-		if self.get_input().auto_complete():
-			self.log_auto_complete = " -> Channel '%s': accepting alert (auto-complete)" % self.name
-
-
-	@staticmethod
-	def load_channel_inputs(db_doc, logger):
-
-		inputs = {}
-		for input_doc in db_doc:
-			if input_doc['instrument'] == "ZTF" and input_doc['alerts'] == "IPAC":
-				inputs["ZTFIPAC"] = ZIInputParameter(input_doc)
-			else:
-				logger.warn(
-					"No implementation: ignoring input with intrument=%s and alerts=%s" % 
-					(input_doc['instrument'], input_doc['alerts'])
-				)
-
-		return inputs
-
+		setattr(self, name, value)

@@ -44,7 +44,7 @@ class AmpelAlert:
 		from ampel.pipeline.t0.alerts.AvroDeserializer import AvroDeserializer
 		from ampel.pipeline.t0.alerts.ZIAlertParser import ZIAlertParser
 
-		parsed_alert=ZIAlertParser().shape(
+		parsed_alert = ZIAlertParser().shape(
     		AvroDeserializer.load_raw_dict_from_file(arg)
 		)
 

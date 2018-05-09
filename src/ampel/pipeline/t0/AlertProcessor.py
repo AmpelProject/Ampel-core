@@ -3,32 +3,29 @@
 # File              : ampel/pipeline/t0/AlertProcessor.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
-# Date              : 14.12.2017
-# Last Modified Date: 30.04.2018
+# Date              : 10.10.2017
+# Last Modified Date: 04.05.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import pymongo, time, numpy as np
 
 from ampel.pipeline.t0.AmpelAlert import AmpelAlert
-from ampel.pipeline.t0.AlertFileList import AlertFileList
 from ampel.pipeline.t0.alerts.AlertSupplier import AlertSupplier
 from ampel.pipeline.t0.alerts.ZIAlertParser import ZIAlertParser
 from ampel.pipeline.t0.alerts.AvroDeserializer import AvroDeserializer
 from ampel.pipeline.t0.ingesters.ZIAlertIngester import ZIAlertIngester
-
-from ampel.flags.AlDocTypes import AlDocTypes
-from ampel.flags.FlagGenerator import FlagGenerator
-from ampel.flags.AlertFlags import AlertFlags
-from ampel.flags.LogRecordFlags import LogRecordFlags
-from ampel.flags.JobFlags import JobFlags
-
-from ampel.pipeline.db.DBWired import DBWired
-from ampel.pipeline.db.GraphiteFeeder import GraphiteFeeder
-from ampel.pipeline.config.Channel import Channel
 from ampel.pipeline.logging.LoggingUtils import LoggingUtils
 from ampel.pipeline.logging.DBJobReporter import DBJobReporter
 from ampel.pipeline.logging.DBLoggingHandler import DBLoggingHandler
 from ampel.pipeline.logging.InitLogBuffer import InitLogBuffer
+from ampel.pipeline.db.DBWired import DBWired
+from ampel.pipeline.db.GraphiteFeeder import GraphiteFeeder
+from ampel.pipeline.config.ChannelLoader import ChannelLoader
+
+from ampel.flags.AlDocTypes import AlDocTypes
+from ampel.flags.AlertFlags import AlertFlags
+from ampel.flags.LogRecordFlags import LogRecordFlags
+from ampel.flags.JobFlags import JobFlags
 
 
 class AlertProcessor(DBWired):
@@ -41,21 +38,21 @@ class AlertProcessor(DBWired):
 		* Set policies
 		* Ingest alert based on the configured ingester
 	"""
-	version = 0.3
+	version = 0.5
 	iter_max = 5000
 
 	def __init__(
-		self, instrument="ZTF", alert_format="IPAC", load_channels=True,
-		db_host='localhost', config_db=None, base_dbs=None, stats={'graphite', 'jobs'}
+		self, channels=None, source="ZTFIPAC", db_host='localhost', config_db=None, 
+		base_dbs=None, stats={'graphite', 'jobs'}, load_ingester=True
 	):
 		"""
 		Parameters:
-		'instrument': name of instrument (string - see set_input() docstring)
-		'alert_format': format of input alerts (string - see set_input() docstring)
+		'source': name of input stream (string - see set_stream() docstring)
 		'db_host': dns name or ip address (plus optinal port) of the server hosting mongod
-		'load_channels': wether to load all the available channels in the config database 
-		 during class instanciation or not. Dedicated can be loaded afterwards using the 
-		 method load_channel(<channel name>)
+		'channels': 
+			- None: all the available channels in the config database will be loaded
+			- String: channel with the provided id will be loaded
+			- List of strings: channels with the provided ids will be loaded 
 		'config_db': see ampel.pipeline.db.DBWired.plug_config_db() docstring
 		'base_dbs': see ampel.pipeline.db.DBWired.plug_base_dbs() docstring
 		'stats': record performance stats in the database:
@@ -68,31 +65,30 @@ class AlertProcessor(DBWired):
 		self.logger = LoggingUtils.get_logger(unique=True)
 		self.ilb = InitLogBuffer(LogRecordFlags.T0)
 		self.logger.addHandler(self.ilb)
-
 		self.logger.info("Setting up new AlertProcessor instance")
 
-		# Setup instance variable referencing the input database
+		# Setup instance variable referencing ampel databases
 		self.plug_databases(self.logger, db_host, config_db, base_dbs)
 
-		# Let the Channel class know what real T2 exist
-		Channel.set_known_t2_units(
-			{el["_id"] for el in self.config_db['t2_units'].find({})}
-		)
+		# Load channels
+		cl = ChannelLoader(self.config_db, source=source, tier=0)
+		self.channels = cl.load_channels(channels, self.logger);
+		self.chan_enum = list(enumerate(self.channels))
 
-		# Setup channels
-		if load_channels:
-			self.load_channels()
+		# Setup source dependant parameters
+		self.set_source(source, load_ingester=load_ingester)
 
-		# Setup input type dependant parameters
-		self.set_input(instrument, alert_format)
-
-		# publish stats in the database (included in the job document)
+		# Which stats to publish (see doctring)
 		self.publish_stats = stats
 
 		self.logger.info("AlertProcessor initial setup completed")
 
 
-	def set_input(self, instrument, alert_format):
+	def get_channels(self):
+		return self.channels
+
+
+	def set_source(self, source, load_ingester=True):
 		"""
 		Depending on which instrument and institution the alerts originate,
 		(as of March 2018 only ZTF & IPAC), this method performs the following:
@@ -101,91 +97,38 @@ class AlertProcessor(DBWired):
 		-> instanciates the adequate ingester class
 		"""
 
-		if instrument == "ZTF":
+		if source == "ZTFIPAC":
 
-			if alert_format == "IPAC":
+			# TODO: log something ? 
 
-				# TODO: log something ? 
+			# Reference to function loading IPAC generated avro alerts
+			self.alert_parser = ZIAlertParser(self.logger)
+			self.deserializer = AvroDeserializer(self.logger)
 
-				# Reference to function loading IPAC generated avro alerts
-				self.alert_parser = ZIAlertParser(self.logger)
-				self.deserializer = AvroDeserializer(self.logger)
+			# Set static AmpelAlert alert flags
+			AmpelAlert.add_class_flags(
+				AlertFlags.INST_ZTF | AlertFlags.SRC_IPAC
+			)
 
-				# Set static AmpelAlert alert flags
-				AmpelAlert.add_class_flags(
-					AlertFlags.INST_ZTF | AlertFlags.SRC_IPAC
-				)
+			# Set static AmpelAlert dict keywords
+			AmpelAlert.set_alert_keywords(
+				self.global_config['photoPoints']['ZTFIPAC']['dictKeywords']
+			)
+	
+			# Instanciate ingester
+			ingest_conf = self.global_config['alertIngestion']['source']['ZTFIPAC']
 
-				# Set static AmpelAlert dict keywords
-				AmpelAlert.set_alert_keywords(
-					self.global_config['photoPoints']['ZTFIPAC']['dictKeywords']
+			if load_ingester:
+				self.ingester = ZIAlertIngester(
+					self.channels, self.config_db['t2_units'], self.get_tran_col(),
+					check_reprocessing = ingest_conf['checkReprocessing'],
+					alert_history_length = ingest_conf['alertHistoryLength'],
+					logger = self.logger
 				)
 	
-				# Instanciate ingester
-				self.ingester = ZIAlertIngester(
-					self.get_tran_col(), self.logger
-				)
-
-				# Tell method run() that ingester method configure() must be called 
-				self.setup_ingester = True
-
-			# more alert_formats may be defined later
-			else:
-				raise ValueError("No implementation exists for the alert issuing entity: " + alert_format)
-
-		# more instruments may be defined later
 		else:
-			raise ValueError("No implementation exists for the instrument: "+instrument)
-
-
-	def load_channels(self):
-		"""
-		Loads all T0 channel configs defined in the T0 config 
-		"""
-		channel_docs = list(self.config_db['channels'].find({}))
-		self.channels = [None] * len(channel_docs)
-
-		for i, channel_doc in enumerate(channel_docs):
-
-			self.channels[i] = Channel(
-				self.config_db, db_doc=channel_doc, 
-				t0_ready=True, logger=self.logger
-			)
-
-		if hasattr(self, 'ingester'):
-			self.setup_ingester = True
-
-
-	def load_channel(self, channel_name):
-		"""
-		Loads a channel config, that will be used in the method run().
-		This method can be called multiple times with different channel names.
-		"""
-		if not hasattr(self, 'channels'):
-			self.channels = []
-		else:
-			for channel in self.channels:
-				if channel.name == channel_name:
-					self.logger.info("Channel '%s' already loaded" % channel_name)
-					return
-
-		self.channels.append(
-			Channel(
-				self.config_db, channel_name=channel_name, 
-				t0_ready=True, logger=self.logger
-			)
-		)
-
-		if hasattr(self, 'ingester'):
-			self.setup_ingester = True
-
-
-	def reset_channels(self):
-		"""
-		"""
-		self.channels = []
-		if hasattr(self, 'ingester'):
-			self.setup_ingester = True
+			# more streams may be defined later
+			raise ValueError("Source '%s' not supported yet" % source)
 
 
 	def set_ingester_instance(self, ingester_instance):
@@ -253,6 +196,9 @@ class AlertProcessor(DBWired):
 
 		self.logger.info("Executing run method")
 
+		if getattr(self, "ingester", None) is None:
+			raise ValueError("No ingester instance was loaded")
+
 		if not console_logging:
 			self.logger.propagate = False
 
@@ -288,20 +234,12 @@ class AlertProcessor(DBWired):
 		################
 
 		# Create array
-		scheduled_t2_runnables = len(self.channels) * [None]
+		scheduled_t2_units = len(self.channels) * [None]
 		filter_tran_counter = len(self.channels) * [0]
 
 		# Save ampel 'state' and get list of tran ids required for autocomplete
 		tran_ids_before = self.get_tran_ids()
 
-		# Check if a ingester instance was created/provided
-		if not hasattr(self, 'ingester'):
-			raise ValueError('Ingester instance missing.')
-
-		if hasattr(self, 'setup_ingester'):
-			self.ingester.configure(self.channels)
-			del self.setup_ingester
-				
 		# Forward jobId to ingester instance 
 		# (will be inserted in the transient documents)
 		self.ingester.set_job_id(
@@ -312,7 +250,7 @@ class AlertProcessor(DBWired):
 		iter_max = AlertProcessor.iter_max
 		iter_count = 0
 
-		# Stat variables
+		# metrics dict
 		loop_stats = {}
 
 		# stat with variable length
@@ -320,10 +258,17 @@ class AlertProcessor(DBWired):
 			loop_stats[key] = []
 
 		# stat with fixed length
-		for i, channel in enumerate(self.channels): 
+		for i, channel in self.chan_enum: 
+			# loop_stats[channel.name] records filter performances
+			# nan will remain only if exception occur for particular alerts
 			loop_stats[channel.name] = np.empty(iter_max) * np.nan
 
+		# The (standard) ingester will update DB insert operations
 		self.ingester.set_stats_dict(loop_stats)
+
+		# Publish general stats to graphite
+		if "graphite" in self.publish_stats:
+			self.ready_graphite_feeder(tran_ids_before).send()
 
 		# python micro-optimization
 		loginfo = self.logger.info
@@ -333,21 +278,9 @@ class AlertProcessor(DBWired):
 		dblh_unset_tranId = db_logging_handler.unset_tranId
 		dblh_unset_channel = db_logging_handler.unset_channels
 		ingest = self.ingester.ingest
+		chan_enum = self.chan_enum
 		add_ingest_stat = loop_stats['ingestTime'].append
 		tran_col = self.get_tran_col()
-
-		# Publish general stats to graphite
-		if "graphite" in self.publish_stats:
-			gfeeder = GraphiteFeeder(self.global_config['graphite'])
-			gfeeder.add_mongod_stats(tran_col.database)
-			gfeeder.add_total_trans_count(tran_col)
-			for i, channel in enumerate(self.channels):
-				gfeeder.add_channel_trans_count(
-					channel.name, tran_col, 
-					len(tran_ids_before[i]) if tran_ids_before[i] is not None 
-					else None
-				)
-			gfeeder.send()
 
 
 
@@ -375,7 +308,7 @@ class AlertProcessor(DBWired):
 			dblh_set_tranId(tran_id)
 
 			# Loop through initialized channels
-			for i, channel in enumerate(self.channels):
+			for i, channel in chan_enum:
 
 				# Associate upcoming log entries with the current channel
 				dblh_set_channel(channel.name)
@@ -384,18 +317,18 @@ class AlertProcessor(DBWired):
 
 					start = time_now()
 					# Apply filter (returns None in case of rejection or t2 runnable ids in case of match)
-					scheduled_t2_runnables[i] = channel.filter_func(ampel_alert)
+					scheduled_t2_units[i] = channel.filter_func(ampel_alert)
 					loop_stats[channel.name][iter_count] = time_now() - start
 
 					# Log feedback and count
-					if scheduled_t2_runnables[i] is not None:
+					if scheduled_t2_units[i] is not None:
 						filter_tran_counter[i] += 1
 						loginfo(channel.log_accepted)
 					else:
 						# Autocomplete required for this channel
 						if tran_ids_before[i] is not None and tran_id in tran_ids_before[i]:
 							loginfo(channel.log_auto_complete)
-							scheduled_t2_runnables[i] = channel.t2_flags
+							scheduled_t2_units[i] = channel.t2_units
 						else:
 							loginfo(channel.log_rejected)
 
@@ -414,36 +347,35 @@ class AlertProcessor(DBWired):
 				# Unset channel id <-> log entries association
 				dblh_unset_channel()
 
-				if any(scheduled_t2_runnables):
+			if any(scheduled_t2_units):
 
-					# Ingest alert
-					logdebug(" -> Ingesting alert")
+				# Ingest alert
+				logdebug(" -> Ingesting alert")
 
-					start = time_now()
+				start = time_now()
 
-					# TODO: build tran_id <-> alert_id map (replayibility)
-					#processed_alert[tran_id]
+				# TODO: build tran_id <-> alert_id map (replayibility)
+				#processed_alert[tran_id]
 
-					# Ingest alert content
+				# Ingest alert content
 
-					try: 
-						ingest(
-							#tran_id, parsed_alert['pps'], parsed_alert['uls'], scheduled_t2_runnables
-							tran_id, parsed_alert['pps'], scheduled_t2_runnables
-						)
+				try: 
+					ingest(
+						tran_id, parsed_alert['pps'], parsed_alert['uls'], scheduled_t2_units
+					)
 
-					except:
-						self.report_exception(
-							{
-								'section': 'ingest',
-								'tranId': tran_id,
-								'alertId': parsed_alert['alert_id'],
-								'jobId':  db_job_reporter.get_job_id(),
-							}
-						)
+				except:
+					self.report_exception(
+						{
+							'section': 'ingest',
+							'tranId': tran_id,
+							'alertId': parsed_alert['alert_id'],
+							'jobId':  db_job_reporter.get_job_id(),
+						}
+					)
 
-					# Save stats
-					add_ingest_stat(time_now() - start)
+				# Save stats
+				add_ingest_stat(time_now() - start)
 
 				# Unset log entries association with transient id
 				dblh_unset_tranId()
@@ -454,7 +386,7 @@ class AlertProcessor(DBWired):
 		tran_ids_after = self.get_tran_ids()
 
 		# Check post auto-complete
-		for i, channel in enumerate(self.channels):
+		for i, channel in chan_enum:
 			if type(tran_ids_after[i]) is set:
 				auto_complete_diff = tran_ids_after[i] - tran_ids_before[i]
 				if auto_complete_diff:
@@ -472,14 +404,14 @@ class AlertProcessor(DBWired):
 				"totIngested": len(loop_stats['ingestTime'])
 			}
 
-			# Ingest stats: mean time & std dev in microseconds
+			# Ingest metrics: mean time & std dev in microseconds
 			for key in ("ingestTime", "dbBulkTime", "dbOpTime"):
 				if len(loop_stats[key]) > 0: 
 					job_info["t0Stats"][key] = self.compute_stat(loop_stats[key])
 
-			# Filter stats
+			# Filter metrics
 			len_non_nan = lambda x: iter_max - np.count_nonzero(np.isnan(x))
-			for i, channel in enumerate(self.channels):
+			for i, channel in chan_enum:
 				mylen = len_non_nan(loop_stats[channel.name])
 				job_info["t0Stats"][channel.name] = {
 					'ingested': filter_tran_counter[i],
@@ -493,24 +425,17 @@ class AlertProcessor(DBWired):
 					)
 				}
 
+			# Publish metrics to graphite
 			if "graphite" in self.publish_stats:
-				gfeeder = GraphiteFeeder(self.global_config['graphite'])
-				gfeeder.add_mongod_stats(self.get_tran_col().database)
+				gfeeder = self.ready_graphite_feeder(tran_ids_after)
 				gfeeder.add_stat("ampel.t0.jobs.duration", job_info["duration"])
 				gfeeder.add_stats_with_mean_std(job_info["t0Stats"], suffix="ampel.t0.stats.")
-				gfeeder.add_total_trans_count(tran_col)
-				for i, channel in enumerate(self.channels):
-					gfeeder.add_channel_trans_count(
-						channel.name, tran_col, 
-						len(tran_ids_before[i]) if tran_ids_after[i] is not None 
-						else None
-					)
 				gfeeder.send()
 
 		# Insert job info into job document
 		db_job_reporter.set_job_stats("t0Stats", job_info)
 
-		# 
+		# re-add initial log buffer
 		self.logger.addHandler(self.ilb)
 
 		# Restore console logging if it was removed
@@ -526,6 +451,29 @@ class AlertProcessor(DBWired):
 		
 		# Return number of processed alerts
 		return iter_count
+
+
+	def ready_graphite_feeder(self, tran_ids):
+		"""
+		"""
+		gfeeder = getattr(self, "graphite_feeder", None) 
+		if gfeeder is None:
+			self.graphite_feeder = gfeeder = GraphiteFeeder(self.global_config['graphite'])
+
+		# Global metrics
+		tran_col = self.get_tran_col()
+		gfeeder.add_mongod_stats(tran_col.database)
+		gfeeder.add_total_trans_count(tran_col)
+
+		# Channel specific metrics
+		for i, channel in self.chan_enum:
+			gfeeder.add_channel_trans_count(
+				channel.name, tran_col, 
+				len(tran_ids[i]) if tran_ids[i] is not None 
+				else None
+			)
+
+		return gfeeder
 
 
 	def report_exception(self, further_info=None):
@@ -574,9 +522,9 @@ class AlertProcessor(DBWired):
 		tran_ids = len(self.channels) * [None]
 
 		# Loop through activated channels
-		for i, channel in enumerate(self.channels):
+		for i, channel in self.chan_enum:
 
-			if channel.get_input().auto_complete():
+			if channel.get_config("parameters.autoComplete"):
 
 				# Build set of transient ids for this channel
 				tran_ids[i] = {

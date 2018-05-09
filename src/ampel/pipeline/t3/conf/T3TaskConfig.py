@@ -4,14 +4,14 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 06.03.2018
-# Last Modified Date: 09.03.2018
+# Last Modified Date: 04.05.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from ampel.pipeline.logging.LoggingUtils import LoggingUtils
 from ampel.pipeline.t3.conf.T3UnitConfig import T3UnitConfig
 from ampel.pipeline.t3.conf.T3RunConfig import T3RunConfig
 from ampel.pipeline.config.Channel import Channel
-from ampel.flags.PhotoPointFlags import PhotoPointFlags
+from ampel.flags.PhotoFlags import PhotoFlags
 
 
 class T3TaskConfig:
@@ -95,12 +95,14 @@ class T3TaskConfig:
 				# Load channel input parameters (ZIInputParameter)
 				# channel_input key can be for example "ZTFIPAC" 
 				# value would be the an instance of ZIInputParameter
+
+				# TODO: fix pylint error
 				channel_input = Channel.load_channel_inputs(
 					chan_input['input'], logger
 				)
 
 				# Build flags used to filter photopoints
-				self.pps_must_flags = PhotoPointFlags(0)
+				self.pps_must_flags = PhotoFlags(0)
 				for key in channel_input:
 					self.pps_must_flags |= channel_input[key].get_pps_must_flags()
 

@@ -1,29 +1,31 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/pipeline/t0/ingesters/T2BluePrintMaker.py
+# File              : ampel/pipeline/t0/ingesters/T2DocsBluePrint.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 14.12.2017
-# Last Modified Date: 30.04.2018
+# Last Modified Date: 08.05.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import logging, hashlib
 
 
-class T2BluePrintMaker():
+class T2DocsBluePrint():
 	"""
 	Creates a nested dict struct that is used as basis to create T2 documents.
-	The generated structure (make_blueprint) is optimized: 
+	The generated structure (create_blueprint) is optimized: 
 		-> A T2 documents for a given compound shared among different channels is referenced only once.
 	"""
 
-	def __init__(self, channels):
+	def __init__(self, channels, t2_units_using_uls):
 		"""
 		Parameters:
 		'channels': list of instances of ampel.pipeline.config.Channel
 		NOTE: order of 'channels' matters: the parameter 'array_of_scheduled_t2_units'
-		used in method 'make_blueprint' must have the same channel order 
+		used in method 'create_blueprint' must have the same channel order 
+		't2_units_using_uls': list/set of t2 unit names making use of upper limits
 
+		Purpose:
 		Creates the variable 'dd_full_t2Ids_runConfigs_chanlist'
 
         To insert t2 docs in a way that is not prone to race conditions (and optimizes T2 computations)
@@ -32,8 +34,8 @@ class T2BluePrintMaker():
           - SNCOSMO 
             - default
                 {"CHANNEL_SN", "CHANNEL_LENS"}
-            - mySetting
-                CHANNEL_GRB
+            - myCustomRunConfig
+                {"CHANNEL_GRB"}
           - PHOTO_Z 
           - default
               {"CHANNEL_SN", "CHANNEL_LENS", "CHANNEL_GRB"}
@@ -55,6 +57,9 @@ class T2BluePrintMaker():
 
 		self.dd_full_t2Ids_runConfigs_chanlist = {}
 		self.channels = channels
+
+		# T2 unit making use of upper limits
+		self.t2_units_using_uls = t2_units_using_uls
 
 		# All schedulable t2s for the given channels
 		all_t2s = set()
@@ -90,7 +95,7 @@ class T2BluePrintMaker():
 					self.dd_full_t2Ids_runConfigs_chanlist[t2_id][run_config].add(channel.name)
 
 		
-	def make_blueprint(self, compound_gen, array_of_scheduled_t2_units):
+	def create_blueprint(self, compound_blueprint, array_of_scheduled_t2_units):
 		"""
 		----------------------------------------------------------------------------------
 		The following task is bit complex, hence the lengthy explanation.
@@ -177,9 +182,9 @@ class T2BluePrintMaker():
 		 - PHOTO_Z                                        - PHOTO_Z
 		 	- default                                        - default
 			  - compoundid: a1b2c3d4                           - compoundid: a1b2c3d4
-					{CHANNEL_SN}             VS                    {"CHANNEL_SN", "CHANNEL_GRB"}
+					{"CHANNEL_SN"}           VS                    {"CHANNEL_SN", "CHANNEL_GRB"}
 			  - compoundid: d4c3b2a1                       
-					{CHANNEL_GRB}
+					{"CHANNEL_GRB"}
 		"""
 
 		t2s_eff = {}
@@ -230,7 +235,7 @@ class T2BluePrintMaker():
 			for run_config in t2s_eff[t2_id].keys():
 
 				# Copy ChannelFlags	that was set in INNER LOOP 1
-				chan_set = t2s_eff[t2_id][run_config]
+				chan_names = t2s_eff[t2_id][run_config]
 
 				# Add a 3rd level to t2s_eff dict
 				t2s_eff[t2_id][run_config] = dict()
@@ -238,19 +243,26 @@ class T2BluePrintMaker():
 				# Set channel values for each compound id. 
 				# TODO: add t2_id as argument ! 
 				# (t2 with 'use_upper_limits' == True will have different t2s)
-				# compound_gen.get_compound_ids(chan_set, t2_unit)
-				compound_ids = compound_gen.get_compound_ids(chan_set)
+				# compound_blueprint.get_compound_ids(chan_names, t2_unit)
+				compound_ids = (
+					compound_blueprint.get_effids_of_chans(chan_names) if t2_id in self.t2_units_using_uls
+					else compound_blueprint.get_ppids_of_chans(chan_names)
+				)
 
-				# Simple case: there is only one compound if for the current association of channels
+				# Simple case: there is only one compound id for the current association of channels
 				if len(compound_ids) == 1:
-					t2s_eff[t2_id][run_config][next(iter(compound_ids))] = chan_set
+					t2s_eff[t2_id][run_config][next(iter(compound_ids))] = chan_names
 				else:
 					# channels have different compound id.
-					# we must compute the intersection (&) between chan_set from loop 1 and 
+					# we must compute the intersection (&) between chan_names from loop 1 and 
 					# the set of channels returned by CompoundGenerator for a given compound_id
 					for compound_id in compound_ids:
 						t2s_eff[t2_id][run_config][compound_id] = (
-							compound_gen.get_channels_for_compoundid(compound_id) & chan_set
+							(
+								compound_blueprint.get_chans_with_effid(compound_id) if t2_id in self.t2_units_using_uls
+								else compound_blueprint.get_ppids_of_chans(compound_id)
+							)
+							& chan_names
 						)
 				
 		return t2s_eff

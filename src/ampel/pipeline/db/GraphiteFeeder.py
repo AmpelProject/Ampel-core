@@ -108,7 +108,6 @@ class GraphiteFeeder:
 	def send(self):
 		"""
 		"""
-		print(self.stats)
 		self.gclient.send_dict(self.stats)
 		self.stats = {}
 
