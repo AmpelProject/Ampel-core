@@ -204,7 +204,7 @@ class NuclearFilter(AbsAlertFilter):
 
 		# check that we have anything
 		if len(tuptup) == 0:
-			self.why = "nothing passed default filter".format(self.maxNbad)
+			self.why = "nothing passed default filter"
 			self.logger.info(self.why)
 			return None
 
@@ -238,7 +238,7 @@ class NuclearFilter(AbsAlertFilter):
 			)
 
 			if len(lastcheck) == 0:
-				self.why = "last detection did not pass default filter".format(self.maxNbad)
+				self.why = "last detection did not pass default filter"
 				self.logger.info(self.why)
 				return None
 
