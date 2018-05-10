@@ -64,7 +64,7 @@ class ZIAlertIngester(AbsAlertIngester):
 
 		self.channel_names = tuple(channel.name for channel in channels)
 		self.logger = LoggingUtils.get_logger() if logger is None else logger
-		self.logger.info("Configuring ZIAlertIngester for channels %s" % self.channel_names)
+		self.logger.info("Configuring ZIAlertIngester for channels %s" % repr(self.channel_names))
 		
 		# T2 unit making use of upper limits
 		self.t2_units_using_uls = tuple(
@@ -79,7 +79,7 @@ class ZIAlertIngester(AbsAlertIngester):
 		)
 
 		self.logger.info(
-			"CompoundBluePrint instantiated using ZICompElement version %i" % 
+			"CompoundBluePrint instantiated using ZICompElement version %0.1f" % 
 			ZICompElement.version
 		)
 
