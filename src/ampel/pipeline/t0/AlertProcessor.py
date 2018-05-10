@@ -94,7 +94,7 @@ class AlertProcessor(DBWired):
 		(as of March 2018 only ZTF & IPAC), this method performs the following:
 		-> defines the alert loading function.
 		-> sets required static settings in AmpelAlert
-		-> instanciates the adequate ingester class
+		-> instantiates the adequate ingester class
 		"""
 
 		if source == "ZTFIPAC":
@@ -115,7 +115,7 @@ class AlertProcessor(DBWired):
 				self.global_config['photoPoints']['ZTFIPAC']['dictKeywords']
 			)
 	
-			# Instanciate ingester
+			# Instantiate ingester
 			ingest_conf = self.global_config['alertIngestion']['source']['ZTFIPAC']
 
 			if load_ingester:

@@ -21,7 +21,7 @@ class QueryLoadTransient:
 		"""
 		Please note that if AlDocTypes.COMPOUND is included in content_types, 
 		document with AlDocTypes.PHOTOPOINT will be queried as well since photopoints instances
-		are required to instanciate LightCurve objects.
+		are required to instantiate LightCurve objects.
 
 		Stateless query: all compounds and (possible t2_ids limited) t2docs to be retrieved	
 		"""
@@ -90,7 +90,7 @@ class QueryLoadTransient:
 		"""
 		Please note that if AlDocTypes.COMPOUND is included in content_types, 
 		document with AlDocTypes.PHOTOPOINT will be queried as well since photopoints instances
-		are required to instanciate LightCurve objects.
+		are required to instantiate LightCurve objects.
 		"""
 
 		# Logic check

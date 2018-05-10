@@ -26,7 +26,7 @@ class T3JobConfig:
 		"""
 		Provide either db_doc or job_id:
 		This class is mainly made of config validity tests.
-		Though a bit of DB query here and class instanciation there occurs occasionally.
+		Though a bit of DB query here and class instantiation there occurs occasionally.
 		NOTE: channel existence is not checked on purpose (as in the 'channels' mongodb collection) 
 		"""
 

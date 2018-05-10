@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 01.05.2018
-# Last Modified Date: 07.05.2018
+# Last Modified Date: 09.05.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import logging, hashlib, json
@@ -74,9 +74,9 @@ class ZICompElement(AbsCompElement):
 		#	comp_entry['wzm'] = 1
 
 
-		#############
-		# EXLUSIONS #
-		#############
+		##############
+		# EXCLUSIONS #
+		##############
 
 		# Check access permission (public / partners)
 		if chan_opts['ZTFPartner'] is False and flag_pos["ZTF_COLLAB"] in input_d['alFlags']:

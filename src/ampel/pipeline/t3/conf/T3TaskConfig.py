@@ -265,7 +265,7 @@ class T3TaskConfig:
 		# Get T3 class 
 		T3_class = self.t3_unit_config.get_t3_class()
 
-		# Instanciate T3 class 
+		# Instantiate T3 class 
 		self.t3_instance = T3_class(
 			logger, self.t3_unit_config.get_base_config()
 		)

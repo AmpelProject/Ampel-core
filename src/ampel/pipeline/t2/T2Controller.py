@@ -172,12 +172,12 @@ class T2Controller(DBWired):
 		# Add db logging handler to stack of handlers associated with this logger
 		self.logger.addHandler(db_logging_handler)
 			
-		# we instanciate t2 unit only once per check interval.
+		# we instantiate t2 unit only once per check interval.
 		# The dict t2_instances stores those instances so that these can 
 		# be re-used int the while loop below
 		t2_instances = {}
 
-		# Instanciate LightCurveLoader (that returns ampel.base.LightCurve instances)
+		# Instantiate LightCurveLoader (that returns ampel.base.LightCurve instances)
 		tran_col = self.get_tran_col()
 		lcl = LightCurveLoader(tran_col, self.logger)
 
@@ -198,7 +198,7 @@ class T2Controller(DBWired):
 			# Check if T2 instance exists in this run
 			if not t2_unit_name in t2_instances:
 			
-				# Okay, we need to instanciate it, but do we have loaded the class already ? 
+				# Okay, we need to instantiate it, but do we have loaded the class already ? 
 				if not t2_unit_name in self.t2_class:
 
 					# Load class	
@@ -210,7 +210,7 @@ class T2Controller(DBWired):
 							t2_unit_name, 'base_config', self.t2_base_config[t2_unit_name]
 						)
 
-				# Instanciate T2 class
+				# Instantiate T2 class
 				t2_instances[t2_unit_name] = self.t2_class[t2_unit_name](
 					self.logger, 
 					(
@@ -420,7 +420,7 @@ class T2Controller(DBWired):
 
 		# Feedback
 		self.logger.info(
-			"Instanciating class '%s' using base_config version %i" %
+			"Instantiating class '%s' using base_config version %i" %
 			(cfp, t2_config_doc['version'])
 		)
 

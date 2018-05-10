@@ -46,7 +46,7 @@ class T3Executor(DBWired):
 			# Get task (transient less jobs can have only one task)
 			t3_task = t3_job.get_task()
 
-			# Instanciate T3 unit
+			# Instantiate T3 unit
 			t3_instance = t3_task.get_t3_instance(logger)
 
 			# Run T3 instance
@@ -265,7 +265,7 @@ class T3Executor(DBWired):
 				# A single task is associated with this job
 				if not multi_task:
 
-					# get T3 unit instance (instanciate if first access)
+					# get T3 unit instance (instantiate if first access)
 					t3_instance = t3_task.get_t3_instance(logger)
 
 					logger.info("Running instance of %s" % t3_instance.__class__)
@@ -335,7 +335,7 @@ class T3Executor(DBWired):
 							tran_latest_state = None
 
 	
-						# get T3 unit instance (instanciate if first access)
+						# get T3 unit instance (instantiate if first access)
 						t3_instance = t3_task.get_t3_instance(logger)
 	
 						logger.info("Running instance of %s" % t3_instance.__class__)

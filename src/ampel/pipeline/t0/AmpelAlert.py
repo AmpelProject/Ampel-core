@@ -14,7 +14,7 @@ class AmpelAlert:
 	"""
 	T0 base class containing a read-only list of read-only photopoint dictionaries.
 	(read-only convertion occurs in constructor).
-	During pipeline processing, an alert is loaded and its content used to instanciate this class. 
+	During pipeline processing, an alert is loaded and its content used to instantiate this class. 
 	Then, the AmpelAlert instance is fed to every active T0 filter.
 	"""
 

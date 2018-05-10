@@ -200,13 +200,13 @@ class TransientLoader:
 				* science_records were only retrieved for the required state
 		"""
 
-		# Instanciate ampel.base.Transient object
+		# Instantiate ampel.base.Transient object
 		al_tran = Transient(tran_id)
 
 		if self.save_channels:
 			channel_register = al_tran.new_channel_register()
 
-		# Instanciate and attach PhotoPoint objects if requested in the content_types
+		# Instantiate and attach PhotoPoint objects if requested in the content_types
 		if AlDocTypes.PHOTOPOINT in content_types:
 
 			# Photopoints instance attached to the transient instance are not bound to a compound 
@@ -230,7 +230,7 @@ class TransientLoader:
 			# Load all available/multiple compounds for this transient
 			if state == "all" or type(state) is list:
 
-				# This dict aims at avoiding unnecesssary re-instanciations 
+				# This dict aims at avoiding unnecesssary re-instantiations 
 				# of PhotoPoints objects referenced in several different LightCurves. 
 				# TODO: rephrase / implement better, shorter description
 				# Note that in the following rare case that:

@@ -72,7 +72,7 @@ class ChannelLoader:
 		for channel_doc in channel_docs:
 
 			if self.source is None or self.tier != 0:
-				# Instanciate ampel.pipeline.config.Channel object
+				# Instantiate ampel.pipeline.config.Channel object
 				chan = Channel(channel_doc, source=self.source) 
 			else:
 				chan = self._create_t0_channel(channel_doc, logger)
@@ -131,7 +131,7 @@ class ChannelLoader:
 		class_full_path = doc_t0_filter['classFullPath']
 		logger.info(" -> Full class path: " + class_full_path)
 
-		# Instanciate filter class associated with this channel
+		# Instantiate filter class associated with this channel
 		module = importlib.import_module(class_full_path)
 		filter_class = getattr(module, class_full_path.split(".")[-1])
 		filter_instance = filter_class(

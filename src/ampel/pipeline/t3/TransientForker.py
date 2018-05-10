@@ -15,14 +15,14 @@ from ampel.flags.AlDocTypes import AlDocTypes
 class TransientForker:
 	"""
 	Create a new Transient instance based on the content (photopoints, lightcurves, science records)
-	of a previously instanciated transient object using the provided selection criteria
+	of a previously instantiated transient object using the provided selection criteria
 	"""
 
 	@staticmethod
 	def fork(parent_tran, doc_type=None, state=None, channel=None, t2_unit_ids=None, pps_must_flags=None):
 		"""
 		Creates a new Transient instance based on the content (photopoints, lightcurves, science records)
-		of a previously instanciated transient object using the provided selection criteria
+		of a previously instantiated transient object using the provided selection criteria
 
 		Parameters:
 		doc_type: enum flag instance of ampel.flags.AlDocTypes
@@ -40,7 +40,7 @@ class TransientForker:
 			else:
 				channel_register = parent_tran.channel_register
 
-		# Instanciante new transient
+		# Instantiate new transient
 		transient = Transient(parent_tran.tran_id, parent_tran.logger)
 		transient.set_parameters(
 			[

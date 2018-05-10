@@ -78,7 +78,7 @@ class PhotoPoint:
 			-> If True, db_doc will be casted into an ImmutableDict 
 			   and this class will be frozen
 			-> read_only can be set later using the method set_policy
-			   (should further modifications be required after class instanciation) 
+			   (should further modifications be required after class instantiation) 
 		"""
 
 		if db_doc["alDocType"] != AlDocTypes.PHOTOPOINT:

@@ -34,7 +34,7 @@ class AmpelABC(type):
 	@staticmethod
 	def generate_new(abclass):
 		"""
-		Forbids instanciation of abstract classes.
+		Forbids instantiation of abstract classes.
 		The function generated in this function is included
 		in the abstract base class.
 		Parameter is the abstract base *class*
@@ -135,7 +135,7 @@ class AmpelABC(type):
 				type.__new__(metacls, name, bases, d)
 			)
 
-			# It gets trickier here. To forbid instanciation of the abstract base class
+			# It gets trickier here. To forbid instantiation of the abstract base class
 			# we customize the method __new__ of the ab class.
 			# We thereby check if the provided class parameter *is* the abstract class.
 			# For *is* to return true, we need to create the abstract class now and 

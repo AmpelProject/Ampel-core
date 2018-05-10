@@ -22,7 +22,7 @@ class RandFilter(AbsAlertFilter):
 		"""
 		self.on_match_default_t2_units = on_match_t2_units
 		self.threshold = run_config['threshold']
-		logger.info("RandFilter instanciated")
+		logger.info("RandFilter instantiated")
 
 
 	def apply(self, ampel_alert):

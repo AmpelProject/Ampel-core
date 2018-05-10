@@ -71,7 +71,7 @@ class ZIAlertIngester(AbsAlertIngester):
 			el["_id"] for el in t2_units_col.find({}) if el['upperLimits'] is True
 		)
 
-		# instanciate util classes used in method ingest()
+		# instantiate util classes used in method ingest()
 		self.photo_shaper = ZIPhotoDictShaper()
 		self.t2_blueprint_creator = T2DocsBluePrint(channels, self.t2_units_using_uls)
 		self.comp_gen = CompoundBluePrint(
@@ -79,7 +79,7 @@ class ZIAlertIngester(AbsAlertIngester):
 		)
 
 		self.logger.info(
-			"CompoundBluePrint instanciated using ZICompElement version %i" % 
+			"CompoundBluePrint instantiated using ZICompElement version %i" % 
 			ZICompElement.version
 		)
 

@@ -63,7 +63,7 @@ class DBWired:
 		    Either:
 			-> None: default settings will be used 
 			   (pymongo MongoClient instance using 'db_host' and config db name 'Ampel_config')
-			-> string: a pymongo MongoClient will be instanciated (using 'db_host') 
+			-> string: a pymongo MongoClient will be instantiated (using 'db_host') 
 			   and a pymongo.database.Database instance created using the name given by config_db
 			-> MongoClient instance: a database instance with name 'Ampel_config' will be loaded using 
 			   the provided MongoClient instance (can originate from pymongo or mongomock)
@@ -124,11 +124,11 @@ class DBWired:
 					* a string: a database with the provided name will be loaded or created.
 					  This setting basically overules the db name defined in 
 					  Ampel_config -> global -> dbSpecs -> databases -> <dict key> -> dbName
-					  A collection will be instanciated using the collection name defined in the conf entry
+					  A collection will be instantiated using the collection name defined in the conf entry
 					  Ampel_config -> global -> dbSpecs -> databases -> <dict key> -> collectionName
 				   	  Ampel will ensure that the collection has the right indexes
 					* or Database instance (pymongo or mongomock).
-					  The provided db instance will be used and a collection will be instanciated
+					  The provided db instance will be used and a collection will be instantiated
                       using the collection name defined in the conf entry 
 					  Ampel_config -> global -> dbSpecs -> databases -> <dict key> -> collectionName
 					  Please note that using this option, Ampel will not ensure that 
@@ -158,7 +158,7 @@ class DBWired:
 			# Feedback
 			logger.info("Customized base DB(s) was provided")
 
-			# Get mongoclient if not instanciated previously	
+			# Get mongoclient if not instantiated previously	
 			mongo_client = (
 				MongoClient(db_host) if not hasattr(self, 'mongo_client') 
 				else self.mongo_client

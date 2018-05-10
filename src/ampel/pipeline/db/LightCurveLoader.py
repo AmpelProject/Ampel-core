@@ -104,7 +104,7 @@ class LightCurveLoader:
 			-> a filtering of the documents in doc_list is performed based on tran_id. 
 			   Docs with type AlDocTypes.PHOTOPOINT and a single doc with 
 			   type == AlDocTypes.COMPOUND and with compound ID == 'compound_id' are used
-			   as basis for instancianting the LightCurve object
+			   as basis for instantiating the LightCurve object
 
 		'frozen_pps_dict': 
 			Dict that can be provided for optimization purposes, which should contain frozen PhotoPoint instances.
@@ -113,7 +113,7 @@ class LightCurveLoader:
 			-> can be empty (will then be populated)
 			-> will be populated in case new photopoint instance(s) is(are) created (i.e pp id not in dict)
 			-> PhotoPoint instances are 're-used' when already existing. 
-			  (rather than instanciating a new PhotoPoint obj for every LightCurve object)
+			  (rather than instantiating a new PhotoPoint obj for every LightCurve object)
 			-> contains only PhotoPoint instances without custom policy
 			-> will be used only if read_only is True (see class constructor)
 		"""
@@ -187,7 +187,7 @@ class LightCurveLoader:
 				# A dict containing frozen PhotoPoint instances might have been provided
 				if self.read_only and frozen_pps_dict is not None: 
 
-					# In this case, rather than instanciating a new PhotoPoint obj, we use pre-existing one
+					# In this case, rather than instantiating a new PhotoPoint obj, we use pre-existing one
 					if pp_dict['_id'] in frozen_pps_dict:
 						al_pp = frozen_pps_dict[pp_dict['_id']]
 

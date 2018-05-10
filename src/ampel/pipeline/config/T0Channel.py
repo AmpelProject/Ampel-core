@@ -19,7 +19,7 @@ class T0Channel(Channel):
 		"""
 		doc_channel: dict instance containing channel configrations
 		"""
-		# Instanciate ampel.pipeline.config.Channel
+		# Instantiate ampel.pipeline.config.Channel
 		super().__init__(doc_channel, source)
 
 		# Build these two log entries once and for all

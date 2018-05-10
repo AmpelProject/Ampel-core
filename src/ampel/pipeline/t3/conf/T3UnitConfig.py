@@ -16,12 +16,12 @@ class T3UnitConfig:
 	"""
 	"""
 
-	# Static dict holding references to previously instanciated t3UnitConfigs
+	# Static dict holding references to previously instantiated t3UnitConfigs
 	# key = unit_id, value = t3UnitConfig instance
 	loaded_unit_conf = {}
 
 
-	@classmethod # Class method creating or returning previously instanciated t3UnitConfigs
+	@classmethod # Class method creating or returning previously instantiated t3UnitConfigs
 	def load(cls, unit_id, mongo_col, logger=None):
 		"""
 		"""

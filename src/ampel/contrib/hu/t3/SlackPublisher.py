@@ -29,7 +29,7 @@ class SlackPublisher(AbsT3Unit):
 
 		self.logger.info("Running with run config %s" % run_config)
 
-		# Instanciate slack client with auth config originating from the ampel config db
+		# Instantiate slack client with auth config originating from the ampel config db
 		sc = SlackClient(run_config['auth_token'])
 
 		# Run config
