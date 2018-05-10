@@ -30,5 +30,32 @@
 		"minTimeDiff": 30,
 		"gMinusR": 0.2
 	}
+},
+{
+	"_id": "NuclearFilter",
+	"classFullPath": "ampel.contrib.ztfbh.t0.NuclearFilter",
+	"baseConfig": {
+		"MinSgscore": 0.3,
+		"MaxDeltaRad": 0.8,
+		"MaxDeltaRadLate": 0.5,
+		"MaxNbad": 0,
+		"MinDeltaJD": 0.01,
+		"MaxDeltaJD": 0.5,
+		"MinRealBogusScore": 0.0,
+		"BrightGaiaMag": 14,
+		"BrightPS1RMag": 9,
+		"MinDistPS1source": 2,
+		"BrightRefMag": 11,
+		"MaxDistPS1source": 15,
+		"LastOnly": false
+	}
+},
+{
+	"_id": "LensedTransientFilter",
+	"classFullPath": "ampel.contrib.hu.t0.LensedTransientFilter",
+	"baseConfig": {
+		"mongodbHost": "localhost",
+		"mongodbPort": 27017
+	}
 }]
 

@@ -67,5 +67,14 @@
 	"_id": "graphite",
 	"server": "localhost",
 	"systemName": "Ampel-burst"
+},
+{
+	"_id": "alertIngestion",
+	"source": {
+		"ZTFIPAC": {
+			"checkReprocessing": true,
+			"alertHistoryLength": 30
+		}
+	}
 }]
 
