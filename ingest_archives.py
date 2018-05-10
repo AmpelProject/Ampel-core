@@ -17,7 +17,8 @@ def _worker(idx, mongo_host, archive_host, infile):
 		for idx,fileobj in enumerate(atat.load_alerts()):
 			reader = fastavro.reader(fileobj)
 			alert = next(reader)
-			archive.insert_alert(alert, idx%16, int(time.time()*1e6))
+			# 10.05.18: temporarily deactivating archiving
+			# archive.insert_alert(alert, idx%16, int(time.time()*1e6))
 			yield alert
 	def peek(iterable):
 		try:
