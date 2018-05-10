@@ -12,7 +12,7 @@ from ampel.abstract.AbsAlertFilter import AbsAlertFilter
 from ampel.pipeline.logging.LoggingUtils import LoggingUtils
 
 
-class TFilter(AbsAlertFilter):
+class NuclearFilter(AbsAlertFilter):
 	"""
 	"""
 
