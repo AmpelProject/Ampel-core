@@ -55,7 +55,8 @@
 	"classFullPath": "ampel.contrib.hu.t0.LensedTransientFilter",
 	"baseConfig": {
 		"mongodbHost": "localhost",
-		"mongodbPort": 27017
+		"mongodbPort": 27017,
+		"mongodbURI": "mongodb://{user}:{pass}@{host}/  (temp solution)"
 	}
 }]
 

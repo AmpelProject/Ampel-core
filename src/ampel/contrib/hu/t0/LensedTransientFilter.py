@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/contrib/hu/t0/LensedTransientFilter.py
+# File              : contrib/hu/t0/LensedTransientFilter.py
 # License           : BSD-3-Clause
 # Author            : m. giomi <matteo.giomi@desy.de>
 # Date              : 04.27.2018
-# Last Modified Date: 10.05.2018
+# Last Modified Date: 11.05.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 
@@ -38,10 +38,11 @@ class LensedTransientFilter(AbsAlertFilter):
 		# init the catalog query objects
 		catq_kwargs = {
 			'logger': logger, 
-			'dbclient': MongoClient(
-		    	host = base_config['mongodbHost'], 
-				port = base_config['mongodbPort']
-			)
+			'dbclient': MongoClient(base_config['mongodbURI'])
+			#'dbclient': MongoClient(
+			#	host = base_config['mongodbHost'], 
+			#	port = base_config['mongodbPort']
+			#)
 		}
 
 		# TODO: add comment
