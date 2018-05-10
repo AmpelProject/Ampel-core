@@ -253,7 +253,7 @@ def get_comments(source, verbose=False):
 	get the current comments, and add them the source dict 
 	this dict is output from list_saved_sources function of the Sergeant class)
 
-	TODO: also get the info abotu scheduled observations
+	TODO: also get the info about scheduled observations
 	'''
 
 	sourcename = _parse_source_input(source)
