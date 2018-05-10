@@ -313,7 +313,7 @@ class TFilter(AbsAlertFilter):
 					return self.on_match_t2_units
 
 		# if none of the measures of the host-flare pass the cut, reject this alert
-		self.why = "mean/median/weighted distnr = ({0:0.2f}/{1:0.2f}/{2:0.2f}), which is > {0:0.2f}".format(mean_distnr, median_distnr, weighted_distnr, self.maxDeltaRad)
+		self.why = "mean/median/weighted distnr = ({0:0.2f}/{1:0.2f}/{2:0.2f}), which is > {3:0.2f}".format(mean_distnr, median_distnr, weighted_distnr, self.maxDeltaRad)
 		self.logger.info(self.why)
 		return None 
 
