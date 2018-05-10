@@ -24,20 +24,10 @@ class LensedTransientFilter(AbsAlertFilter):
 
 	def __init__(self, on_match_t2_units, base_config=None, run_config=None, logger=None):
 		"""
-		Constructor (optional)
-		
 		"""
 		
 		self.logger = LoggingUtils.get_logger() if logger is None else logger
 		self.on_match_t2_units = on_match_t2_units
-		
-		# catalog matching 'technical' stuff (db host, port, ecc) in base_config
-		# the more astrophysical stuff in run_config
-		catq_client = MongoClient(
-		    host = base_config['mongodbHost'], 
-			port = base_config['mongodbPort']
-		)
-
 		self.min_ndet = run_config['MinNdet']
 		self.search_radiuses = {
 			'cluslist': run_config['ClusListSearchRadius'],
@@ -48,7 +38,10 @@ class LensedTransientFilter(AbsAlertFilter):
 		# init the catalog query objects
 		catq_kwargs = {
 			'logger': logger, 
-			'dbclient': catq_client
+			'dbclient': MongoClient(
+		    	host = base_config['mongodbHost'], 
+				port = base_config['mongodbPort']
+			)
 		}
 
 		# TODO: add comment
