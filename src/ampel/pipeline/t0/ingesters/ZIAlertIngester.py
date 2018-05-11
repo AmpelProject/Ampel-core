@@ -354,10 +354,8 @@ class ZIAlertIngester(AbsAlertIngester):
 					# Match these with new alert data (already 'shaped' by the ampelize method)
 					for new_meas in filter(lambda x: 
 						# jd alone is actually enough for matching pps reproc 
-						# pid is required for upperlimits since it contains the quadrant number
-						# that is otherwise not provided for uls (pid is avail for both pps and uls)
 						x['jd'] == photod_db_superseeded["jd"] and 
-						x['pid'] == photod_db_superseeded["pid"], 
+						x['rcid'] == photod_db_superseeded["rcid"], 
 						pps_to_insert + uls_to_insert
 					):
 
