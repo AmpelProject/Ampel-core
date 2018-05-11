@@ -58,7 +58,7 @@ class ChannelLoader:
 		)
 
 		# Robustness check
-		if len(channel_docs) != len(channel_names):
+		if channel_names is not None and len(channel_docs) != len(channel_names):
 			db_ids = {doc['_id'] for doc in channel_docs}
 			for channel_name in channel_names:
 				if channel_name not in db_ids:
