@@ -71,6 +71,10 @@ class ChannelLoader:
 		# Loop through chsnnel config documents returned from DB
 		for channel_doc in channel_docs:
 
+			if channel_doc['active'] is False:
+				logger.info("Ignoring non-active channel %s" % channel_doc['_id'])
+				continue
+
 			if self.source is None or self.tier != 0:
 				# Instantiate ampel.pipeline.config.Channel object
 				chan = Channel(channel_doc, source=self.source) 

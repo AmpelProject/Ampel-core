@@ -56,7 +56,7 @@
 	"baseConfig": {
 		"mongodbHost": "localhost",
 		"mongodbPort": 27017,
-		"mongodbURI": "mongodb://{user}:{pass}@{host}/  (temp solution)"
+		"mongodbURI": "mongodb://localhost:27017"
 	}
 }]
 
