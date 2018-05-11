@@ -6,11 +6,23 @@ from ampel.pipeline.t0.alerts.ZIAlertParser import ZIAlertParser
 import fastavro
 
 def _worker(idx, mongo_host, archive_host, infile):
+
 	from ampel.archive import ArchiveDB, docker_env
 	import itertools
 
-	archive = ArchiveDB('postgresql://ampel:{}@{}/ztfarchive'.format(docker_env('POSTGRES_PASSWORD'), archive_host), use_batch_mode=True)
-	mongo = 'mongodb://{}:{}@{}/'.format(docker_env('MONGO_INITDB_ROOT_USERNAME'), docker_env('MONGO_INITDB_ROOT_PASSWORD'), mongo_host)
+	archive = ArchiveDB(
+		'postgresql://ampel:{}@{}/ztfarchive'.format(
+			docker_env('POSTGRES_PASSWORD'), 
+			archive_host
+		), 
+		use_batch_mode=True
+	)
+
+	mongo = 'mongodb://{}:{}@{}/'.format(
+		docker_env('MONGO_INITDB_ROOT_USERNAME'), 
+		docker_env('MONGO_INITDB_ROOT_PASSWORD'), 
+		mongo_host
+	)
 
 	def loader():
 		atat = TarballWalker(infile)
@@ -20,12 +32,14 @@ def _worker(idx, mongo_host, archive_host, infile):
 			# 10.05.18: temporarily deactivating archiving
 			# archive.insert_alert(alert, idx%16, int(time.time()*1e6))
 			yield alert
+
 	def peek(iterable):
 		try:
 			first = next(iterable)
 		except StopIteration:
 			return None
 		return first, itertools.chain([first], iterable)
+
 	import time
 	t0 = time.time()
 
@@ -42,7 +56,7 @@ def _worker(idx, mongo_host, archive_host, infile):
 			def get_alerts(self):
 				parser = ZIAlertParser()
 				for avrodict in alerts:
-					yield parser.parse(avrodict)
+					yield parser.shape(avrodict)
 		chunk_size = processor.run(Shim(), console_logging=False)
 		t1 = time.time()
 		dt = t1-t0
