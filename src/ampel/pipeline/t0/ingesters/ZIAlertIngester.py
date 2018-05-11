@@ -217,26 +217,30 @@ class ZIAlertIngester(AbsAlertIngester):
 		# -> %timeit: 1,3 microsecond on MBP 15" 2017
 		ids_uls_alert = set()
 		
-		JD2017 = 2457754.5
-		for ul in uls_alert:
+		# Process upper limits if provided
+		if uls_alert is not None:
 
-			# extract quadrant number from pid (not avail as dedicate key/val)
-			ul['rcid'] = str(ul['pid'])[8:10]
+			JD2017 = 2457754.5
 
-			# Update avro dict
-			ul['_id'] = int(
-				"%i%s%i" % (
-					# Convert jd float into int by multiplying it by 10**6
-					# we thereby drop the last digit (milisecond) which is pointless
-					# for the present purpose
-					(JD2017 - ul['jd']) * 1000000, 
-					ul['rcid'], 
-					ul['diffmaglim'] * 1000  # cut of mag float after 3 digits after coma
+			for ul in uls_alert:
+
+				# extract quadrant number from pid (not avail as dedicate key/val)
+				ul['rcid'] = str(ul['pid'])[8:10]
+
+				# Update avro dict
+				ul['_id'] = int(
+					"%i%s%i" % (
+						# Convert jd float into int by multiplying it by 10**6
+						# we thereby drop the last digit (milisecond) which is pointless
+						# for the present purpose
+						(JD2017 - ul['jd']) * 1000000, 
+						ul['rcid'], 
+						ul['diffmaglim'] * 1000  # cut of mag float after 3 digits after coma
+					)
 				)
-			)
 
-			# Build list ? then cast to set. Use list later in ampelize to create dict
-			ids_uls_alert.add(ul['_id'])
+				# Build list ? then cast to set. Use list later in ampelize to create dict
+				ids_uls_alert.add(ul['_id'])
 
 		# python set of ids of upper limits from DB
 		ids_uls_db = {el['_id'] for el in uls_db}
