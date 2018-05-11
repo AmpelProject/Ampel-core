@@ -3,6 +3,7 @@
 	"classFullPath": "ampel.contrib.hu.t2.T2SNCosmo",
 	"version": 1.0,
 	"private": false,
+	"upperLimits": true,
 	"description": {
 		"title": "SALT2 template fitting",
 		"details": [
@@ -16,6 +17,7 @@
 	"classFullPath": "ampel.contrib.hu.examples.t2.",
 	"version": 1.0,
 	"private": false,
+	"upperLimits": false,
 	"baseConfig": {
 		"template": "something"
 	},
@@ -31,6 +33,7 @@
 	"classFullPath": "ampel.contrib.hu.examples.t2.",
 	"version": 1.0,
 	"private": false,
+	"upperLimits": false,
 	"baseConfig": {
 		"template": "something"
 	},
@@ -46,6 +49,7 @@
 	"classFullPath": "ampel.contrib.hu.examples.t2.PhotoType",
 	"version": 1.0,
 	"private": false,
+	"upperLimits": false,
 	"description": {
 		"title": "Photo type",
 		"details": [
@@ -59,6 +63,7 @@
 	"author": "ztf-software@desy.de",
 	"version": 1.0,
 	"private": false,
+	"upperLimits": false,
 	"baseConfig": {
 		"fitFunction": "polyfit"
 	},
