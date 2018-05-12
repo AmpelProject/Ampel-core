@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/pipeline/t0/AlertProcessor.py
+# File              : pipeline/t0/AlertProcessor.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 10.10.2017
-# Last Modified Date: 04.05.2018
+# Last Modified Date: 12.05.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import pymongo, time, numpy as np
@@ -456,9 +456,12 @@ class AlertProcessor(DBWired):
 	def ready_graphite_feeder(self, tran_ids):
 		"""
 		"""
-		gfeeder = getattr(self, "graphite_feeder", None) 
-		if gfeeder is None:
-			self.graphite_feeder = gfeeder = GraphiteFeeder(self.global_config['graphite'])
+
+		# Re-using GraphiteClient results in: 
+		# GraphiteSendException: Socket closed before able to send data to ('localhost', 52003), 
+		# with error: [Errno 32] Broken pipe
+		# So we re-create a GraphiteClient every time we send something to graphite...
+		gfeeder = GraphiteFeeder(self.global_config['graphite']) 
 
 		# Global metrics
 		tran_col = self.get_tran_col()

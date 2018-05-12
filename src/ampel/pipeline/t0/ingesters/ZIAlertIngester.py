@@ -354,8 +354,8 @@ class ZIAlertIngester(AbsAlertIngester):
 					# Match these with new alert data (already 'shaped' by the ampelize method)
 					for new_meas in filter(lambda x: 
 						# jd alone is actually enough for matching pps reproc 
-						x['jd'] == photod_db_superseeded["jd"] and 
-						x['rcid'] == photod_db_superseeded["rcid"], 
+						x['jd'] == photod_db_superseeded['jd'] and 
+						x['rcid'] == photod_db_superseeded['rcid'], 
 						pps_to_insert + uls_to_insert
 					):
 
