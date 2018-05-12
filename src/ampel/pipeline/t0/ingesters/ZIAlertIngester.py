@@ -461,7 +461,7 @@ class ZIAlertIngester(AbsAlertIngester):
 		##   Part 5: Generate t2 documents ##
 		#####################################
 
-		self.logger.debug("Generating T2 docs")
+		self.logger.info("Generating T2 docs")
 		t2docs_blueprint = self.t2_blueprint_creator.create_blueprint(
 			comp_gen, list_of_t2_units
 		)

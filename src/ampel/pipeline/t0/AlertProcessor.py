@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : pipeline/t0/AlertProcessor.py
+# File              : ampel/pipeline/t0/AlertProcessor.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 10.10.2017
@@ -63,7 +63,7 @@ class AlertProcessor(DBWired):
 
 		# Setup logger
 		self.logger = LoggingUtils.get_logger(unique=True)
-		self.ilb = InitLogBuffer(LogRecordFlags.T0)
+		self.ilb = InitLogBuffer()
 		self.logger.addHandler(self.ilb)
 		self.logger.info("Setting up new AlertProcessor instance")
 
@@ -230,6 +230,8 @@ class AlertProcessor(DBWired):
 		self.logger.addHandler(db_logging_handler)
 
 
+
+
 		# Part 2: divers
 		################
 
@@ -296,16 +298,17 @@ class AlertProcessor(DBWired):
 				self.logger.info("Reached max number of iterations")
 				break
 
-			loginfo("Processing alert: %s" % parsed_alert['alert_id'])
+			# Associate upcoming log entries with the current transient id
 			tran_id = parsed_alert['tran_id']
+			dblh_set_tranId(tran_id)
+
+			# Feedback
+			loginfo("Processing alert: %s" % parsed_alert['alert_id'])
 
 			# Create AmpelAlert instance
 			ampel_alert = AmpelAlert(
 				tran_id, parsed_alert['ro_pps'], parsed_alert['ro_uls']
 			)
-
-			# Associate upcoming log entries with the current transient id
-			dblh_set_tranId(tran_id)
 
 			# Loop through initialized channels
 			for i, channel in chan_enum:
@@ -350,7 +353,7 @@ class AlertProcessor(DBWired):
 			if any(scheduled_t2_units):
 
 				# Ingest alert
-				logdebug(" -> Ingesting alert")
+				loginfo(" -> Ingesting alert")
 
 				start = time_now()
 

@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 14.12.2017
-# Last Modified Date: 03.05.2018
+# Last Modified Date: 12.05.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from enum import Flag, auto
@@ -21,15 +21,6 @@ class LogRecordFlags(Flag):
 	CRITICAL   			 = auto()
 
 	# Convenience flag
+	ILB	                 = auto()
 	HAS_CANDID           = auto()
-
-	# Ampel 'tier'
-	T0		             = auto()
-	T1		             = auto()
-	T2		             = auto()
-	T3		             = auto()
-
-	# T0 Stream
-	ZTFIPAC    			 = auto()
-	ASASSN 			 	 = auto()
-	ATLAS   			 = auto()
+	HAS_CHAN             = auto()
