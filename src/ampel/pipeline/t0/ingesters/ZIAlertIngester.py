@@ -93,7 +93,7 @@ class ZIAlertIngester(AbsAlertIngester):
 			"alFlags": 1,
 			"jd": 1,
 			"fid": 1,
-			"pid": 1,
+			"rcid": 1,
 			"alExcluded": 1
 		}
 
@@ -225,7 +225,8 @@ class ZIAlertIngester(AbsAlertIngester):
 			for ul in uls_alert:
 
 				# extract quadrant number from pid (not avail as dedicate key/val)
-				ul['rcid'] = str(ul['pid'])[8:10]
+				rcid = str(ul['pid'])[8:10]
+				ul['rcid'] = int(rcid)
 
 				# Update avro dict
 				ul['_id'] = int(
@@ -234,7 +235,7 @@ class ZIAlertIngester(AbsAlertIngester):
 						# we thereby drop the last digit (milisecond) which is pointless
 						# for the present purpose
 						(JD2017 - ul['jd']) * 1000000, 
-						ul['rcid'], 
+						rcid,
 						ul['diffmaglim'] * 1000  # cut of mag float after 3 digits after coma
 					)
 				)
