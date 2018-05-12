@@ -490,27 +490,31 @@ class AlertProcessor(DBWired):
 		import traceback
 		self.logger.critical("Exception occured", exc_info=1)
 
+		exception_str = traceback.format_exc()
+
 		insert_dict = {
 			'tier': 0,
-			'exception': traceback.format_exc()
+			'exception': exception_str.split("\n")
 		}
 
 		if 'alert_id' in parsed_alert:
 			insert_dict['alertId'] = parsed_alert['alert_id'] 
 
-		if (
-			'pps' in parsed_alert and 
-			len(parsed_alert['pps']) > 0 and 
-			'jd' in parsed_alert['pps'][0]
-		):
-			insert_dict['alertDt'] = parsed_alert['pps'][0]['jd']
+		if "KeyboardInterrupt" not in exception_str:
 
-		if further_info is not None:
-			for key in further_info:
-				insert_dict[key] = further_info[key]
-
-		insert_dict['alertPPS'] = parsed_alert['pps']
-		insert_dict['alertULS'] = parsed_alert['uls']
+			if (
+				'pps' in parsed_alert and 
+				len(parsed_alert['pps']) > 0 and 
+				'jd' in parsed_alert['pps'][0]
+			):
+				insert_dict['alertDt'] = parsed_alert['pps'][0]['jd']
+	
+			if further_info is not None:
+				for key in further_info:
+					insert_dict[key] = further_info[key]
+	
+			insert_dict['alertPPS'] = parsed_alert['pps']
+			insert_dict['alertULS'] = parsed_alert['uls']
 
 		self.get_trouble_col().insert_one(insert_dict)
 
