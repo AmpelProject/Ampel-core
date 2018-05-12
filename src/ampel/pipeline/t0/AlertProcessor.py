@@ -509,6 +509,9 @@ class AlertProcessor(DBWired):
 			for key in further_info:
 				insert_dict[key] = further_info[key]
 
+		insert_dict['alertPPS'] = parsed_alert['pps']
+		insert_dict['alertULS'] = parsed_alert['uls']
+
 		self.get_trouble_col().insert_one(insert_dict)
 
 
