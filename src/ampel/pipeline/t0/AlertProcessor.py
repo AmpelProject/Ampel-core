@@ -490,7 +490,7 @@ class AlertProcessor(DBWired):
 		import traceback
 		self.logger.critical("Exception occured", exc_info=1)
 
-		exception_str = traceback.format_exc()
+		exception_str = traceback.format_exc().replace("\"", "'")
 
 		insert_dict = {
 			'tier': 0,
