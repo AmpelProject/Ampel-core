@@ -338,11 +338,11 @@ class AlertProcessor(DBWired):
 				except:
 
 					self.report_exception(
+						parsed_alert,
 						{
 							'section': 'filter',
 							'channel': channel.name,
 							'tranId': tran_id,
-							'alertId': parsed_alert['alert_id'],
 							'jobId':  db_job_reporter.get_job_id(),
 						}
 					)
@@ -369,10 +369,10 @@ class AlertProcessor(DBWired):
 
 				except:
 					self.report_exception(
+						parsed_alert,
 						{
 							'section': 'ingest',
 							'tranId': tran_id,
-							'alertId': parsed_alert['alert_id'],
 							'jobId':  db_job_reporter.get_job_id(),
 						}
 					)
@@ -482,7 +482,7 @@ class AlertProcessor(DBWired):
 		return gfeeder
 
 
-	def report_exception(self, further_info=None):
+	def report_exception(self, parsed_alert, further_info=None):
 		"""
 		further_info: non-nested dict instance
 		"""
@@ -494,6 +494,16 @@ class AlertProcessor(DBWired):
 			'tier': 0,
 			'exception': traceback.format_exc()
 		}
+
+		if 'alert_id' in parsed_alert:
+			insert_dict['alertId'] = parsed_alert['alert_id'] 
+
+		if (
+			'pps' in parsed_alert and 
+			len(parsed_alert['pps']) > 0 and 
+			'jd' in parsed_alert['pps'][0]
+		):
+			insert_dict['alertDt'] = parsed_alert['pps'][0]['jd']
 
 		if further_info is not None:
 			for key in further_info:
