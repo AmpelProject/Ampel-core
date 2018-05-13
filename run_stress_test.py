@@ -24,7 +24,7 @@ def _worker(idx, mongo_host, archive_host, infile):
 	alert_supplier = AlertSupplier(tb_walker, ZIAlertParser(), AvroDeserializer())
 	processor = AlertProcessor(db_host=mongo)
 
-	while alert_processed != AlertProcessor.iter_max:
+	while alert_processed == AlertProcessor.iter_max:
 		t0 = time.time()
 		alert_processed = processor.run(alert_supplier, console_logging=False)
 		t1 = time.time()
