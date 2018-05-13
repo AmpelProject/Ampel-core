@@ -385,7 +385,7 @@ class AlertProcessor(DBWired):
 
 			iter_count += 1
 
-		# After run section
+		# Post run section
 		try: 
 
 			# Save ampel 'state' and get list of tran ids required for autocomplete
@@ -442,7 +442,7 @@ class AlertProcessor(DBWired):
 					gfeeder.send()
 	
 			# Insert job info into job document
-			db_job_reporter.set_job_stats("t0Stats", job_info)
+			db_job_reporter.set_job_stats("t0Stats", job_info["t0Stats"])
 
 		except:
 
