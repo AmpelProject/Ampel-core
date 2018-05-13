@@ -19,6 +19,7 @@ from ampel.pipeline.logging.DBJobReporter import DBJobReporter
 from ampel.pipeline.logging.DBLoggingHandler import DBLoggingHandler
 from ampel.pipeline.logging.InitLogBuffer import InitLogBuffer
 from ampel.pipeline.db.DBWired import DBWired
+from ampel.pipeline.db.MongoStats import MongoStats
 from ampel.pipeline.db.GraphiteFeeder import GraphiteFeeder
 from ampel.pipeline.config.ChannelLoader import ChannelLoader
 
@@ -270,8 +271,7 @@ class AlertProcessor(DBWired):
 
 		# Publish general stats to graphite
 		if "graphite" in self.publish_stats:
-			self.logger.info("Sending stats to Graphite")
-			self.ready_graphite_feeder(tran_ids_before).send()
+			self.gather_and_send_stats(tran_ids_before)
 
 		# python micro-optimization
 		loginfo = self.logger.info
@@ -401,27 +401,25 @@ class AlertProcessor(DBWired):
 	
 			# Total duration in seconds
 			duration = int(time_now() - start_time)
-			job_info = {"duration": duration}
+			job_info = {'duration': duration}
 	
 			if self.publish_stats is not None and iter_count > 0:
 	
 				self.logger.info("Computing job stats")
 	
-				job_info["t0Stats"] = {
-					"processed": iter_count,
-					"totIngested": len(loop_stats['ingestTime'])
-				}
+				job_info['processed'] = iter_count
+				job_info['ingested'] = len(loop_stats['ingestTime'])
 	
 				# Ingest metrics: mean time & std dev in microseconds
-				for key in ("ingestTime", "dbBulkTime", "dbOpTime"):
+				for key in ('ingestTime', 'dbBulkTime', 'dbOpTime'):
 					if len(loop_stats[key]) > 0: 
-						job_info["t0Stats"][key] = self.compute_stat(loop_stats[key])
+						job_info[key] = self.compute_stat(loop_stats[key])
 	
 				# Filter metrics
 				len_non_nan = lambda x: iter_max - np.count_nonzero(np.isnan(x))
 				for i, channel in chan_enum:
 					mylen = len_non_nan(loop_stats[channel.name])
-					job_info["t0Stats"][channel.name] = {
+					job_info[channel.name] = {
 						'ingested': filter_tran_counter[i],
 						'filterTime': (
 							(0, 0) if len_non_nan(loop_stats[channel.name]) == 0
@@ -432,17 +430,11 @@ class AlertProcessor(DBWired):
 							)
 						)
 					}
-	
-				# Publish metrics to graphite
-				if "graphite" in self.publish_stats:
-					self.logger.info("Sending stats to Graphite")
-					gfeeder = self.ready_graphite_feeder(tran_ids_after)
-					gfeeder.add_stat("ampel.t0.jobs.duration", job_info["duration"])
-					gfeeder.add_stats_with_mean_std(job_info["t0Stats"], suffix="ampel.t0.stats.")
-					gfeeder.send()
-	
+
+				job_info = self.gather_and_send_stats(tran_ids_after, job_info)
+
 			# Insert job info into job document
-			db_job_reporter.set_job_stats("t0Stats", job_info["t0Stats"])
+			db_job_reporter.set_job_stats("t0Stats", job_info)
 
 		except:
 
@@ -472,30 +464,61 @@ class AlertProcessor(DBWired):
 		return iter_count
 
 
-	def ready_graphite_feeder(self, tran_ids):
+	def gather_and_send_stats(self, tran_ids, t0_stats=None):
 		"""
 		"""
 
-		# Re-using GraphiteClient results in: 
-		# GraphiteSendException: Socket closed before able to send data to ('localhost', 52003), 
-		# with error: [Errno 32] Broken pipe
-		# So we re-create a GraphiteClient every time we send something to graphite...
-		gfeeder = GraphiteFeeder(self.global_config['graphite']) 
+		stat_dict = {
+			'db': {},
+			'tranCount': {}
+		}
 
 		# Global metrics
 		tran_col = self.get_tran_col()
-		gfeeder.add_mongod_stats(tran_col.database)
-		gfeeder.add_total_trans_count(tran_col)
+		stat_dict['db']['tranCol'] = MongoStats.get_col_stats(tran_col)
+		stat_dict['db']['jobCol'] = MongoStats.get_col_stats(self.get_job_col())
+		stat_dict['db']['daemon'] = MongoStats.get_server_stats(tran_col.database)
+		stat_dict['tranCount']['all'] = MongoStats.get_tran_count(tran_col)
 
 		# Channel specific metrics
 		for i, channel in self.chan_enum:
-			gfeeder.add_channel_trans_count(
-				channel.name, tran_col, 
+			stat_dict['tranCount'][channel.name] = (
 				len(tran_ids[i]) if tran_ids[i] is not None 
-				else None
+				else MongoStats.get_tran_count(tran_col, channel.name)
 			)
 
-		return gfeeder
+		if t0_stats is not None:
+			stat_dict['t0'] = t0_stats
+
+		# Publish metrics to graphite
+		if "graphite" in self.publish_stats:
+
+			self.logger.info("Sending stats to Graphite")
+
+			# Re-using GraphiteClient results in: 
+			# GraphiteSendException: Socket closed before able to send data to ('localhost', 52003), 
+			# with error: [Errno 32] Broken pipe
+			# So we re-create a GraphiteClient every time we send something to graphite...
+			gfeeder = GraphiteFeeder(self.global_config['graphite']) 
+
+			gfeeder.add_stats(stat_dict['db']['daemon'], suffix='db.deamon.')
+			gfeeder.add_stats(stat_dict['db']['tranCol'], suffix='db.col.tran.')
+			gfeeder.add_stats(stat_dict['db']['jobCol'], suffix='db.col.jobs.')
+			gfeeder.add_stat('ampel.tran_count.all', stat_dict['tranCount']['all'])
+			gfeeder.add_stat('db.col.troubles.count', self.get_trouble_col().find({}).count())
+
+			for channel in self.channels:
+				gfeeder.add_stat(
+					'ampel.tran_count.%s' % channel.name, 
+					stat_dict['tranCount'][channel.name]
+				)
+			
+			if t0_stats is not None:
+				gfeeder.add_stats_with_mean_std(t0_stats, suffix='ampel.t0.')
+	
+			gfeeder.send()
+
+		return stat_dict
 
 
 	def report_exception(self, further_info=None, parsed_alert=None):

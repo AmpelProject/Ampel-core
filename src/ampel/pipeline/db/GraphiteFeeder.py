@@ -8,22 +8,10 @@
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from graphitesend import GraphiteClient
-from functools import reduce
-from ampel.flags.AlDocTypes import AlDocTypes
 
 class GraphiteFeeder:
 	"""
 	"""
-
-	# mongod serverStatus values with these keys will be sent to graphite
-	db_metrics = (
-		"mem.resident",
-		"metrics.document.deleted",
-		"metrics.document.inserted",
-		"metrics.document.returned",
-		"metrics.document.updated"
-	)
-
 
 	def __init__(self, graphite_config):
 		"""
@@ -36,14 +24,6 @@ class GraphiteFeeder:
 		)
 
 		self.stats = {}
-
-
-	def add_mongod_stats(self, db, suffix="ampel.db.status."):
-		"""
-		"""
-		server_status = db.command("serverStatus")
-		for key in GraphiteFeeder.db_metrics:
-			self.stats[suffix + key] = reduce(dict.get, key.split("."), server_status)
 
 
 	def add_stat(self, key, value, suffix=""):
@@ -75,36 +55,6 @@ class GraphiteFeeder:
 			else:
 				self.stats[suffix + key] = val
 			
-
-	def add_total_trans_count(self, col, key="ampel.transients.count"):
-		"""
-		"""
-		self.add_stat(
-			key, 
-			# Total number of transients
-			col.find(
-				{'alDocType': AlDocTypes.TRANSIENT}
-			).count()
-		)
-
-
-	def add_channel_trans_count(self, channel_name, col=None, count=None, suffix="ampel.channels."):
-		"""
-		"""
-		if channel_name is None and count is None:
-			raise ValueError("channel_name and count cannot be both None")
-
-		self.add_stat(
-			suffix+channel_name+".count", 
-			count if count is not None else
-			col.find(
-				{
-					'alDocType': AlDocTypes.TRANSIENT, 
-					'channels': channel_name
-				}
-			).count()
-		)
-
 
 	def send(self):
 		"""
