@@ -91,13 +91,18 @@ class AlertDirLoader(AbsAlertLoader):
 		self.logger.debug("File list contains " + str(len(self.files)) + " elements")
 
 
-	def load_alerts(self):
-		""" """
+	def get_next(self):
+		""" 
+		"""
 		if not self.files:
 			self.build_file_list()
+			self.iter_files = iter(self.files)
 
-		for fpath in self.files:
-			alert_file = open(fpath, "rb")
-			byte_content = alert_file.read()
-			alert_file.close()
-			yield io.BytesIO(byte_content)
+		fpath = next(self.iter_files, None)
+		if fpath is None:
+			return None
+
+		alert_file = open(fpath, "rb")
+		byte_content = alert_file.read()
+		alert_file.close()
+		return io.BytesIO(byte_content)

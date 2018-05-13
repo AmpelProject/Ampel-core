@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 from ampel.pipeline.t0.AlertProcessor import AlertProcessor
-from ampel.pipeline.t0.alerts.TarballWalker import TarballWalker
+from ampel.pipeline.t0.alerts.AlertTarLoader import AlertTarLoader
 from ampel.pipeline.t0.alerts.AlertSupplier import AlertSupplier
 from ampel.pipeline.t0.alerts.AvroDeserializer import AvroDeserializer
 from ampel.pipeline.t0.alerts.ZIAlertParser import ZIAlertParser
@@ -20,8 +20,8 @@ def _worker(idx, mongo_host, archive_host, infile):
 	import time
 	count = 0
 	alert_processed = AlertProcessor.iter_max
-	tb_walker = TarballWalker(infile)
-	alert_supplier = AlertSupplier(tb_walker, ZIAlertParser(), AvroDeserializer())
+	tar_loader = AlertTarLoader(tar_path=infile)
+	alert_supplier = AlertSupplier(tar_loader, ZIAlertParser(), AvroDeserializer())
 	processor = AlertProcessor(db_host=mongo)
 
 	while alert_processed == AlertProcessor.iter_max:

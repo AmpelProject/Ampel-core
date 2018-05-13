@@ -173,9 +173,13 @@ class AlertProcessor(DBWired):
 
 		als = AlertSupplier(alert_loader, self.alert_parser, self.deserializer)
 		ret = AlertProcessor.iter_max
+		count = 0
 
 		while ret == AlertProcessor.iter_max:
 			ret = self.run(als, console_logging)
+			count += ret
+
+		return count
 
 
 	def run(self, alert_supplier, console_logging=True):
@@ -664,7 +668,7 @@ def _ingest_slice(host, archive_host, infile, start, stop):
 	
 	def loader():
 		tbw = TarballWalker(infile, start, stop)
-		for alert in tbw.load_alerts():
+		for alert in tbw.get_next():
 			archive.insert_alert(alert, 0, 0)
 			yield alert
 	processor = AlertProcessor(db_host=host)

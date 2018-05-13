@@ -51,13 +51,21 @@ class AlertSupplier:
 		shape = self.alert_parser.shape
 
 		if self.deserializer is None:
-			for alert in self.alert_loader.load_alerts():
-				yield shape(alert)
+			while True:
+				alert = self.alert_loader.get_next()
+				if alert is not None:
+					yield shape(alert)
+				else:
+					return
 		else:
 			deserialize = self.deserializer.get_dict
-			for alert_bytes in self.alert_loader.load_alerts():
-				yield shape(
-					deserialize(
-						alert_bytes
+			while True:
+				alert = self.alert_loader.get_next()
+				if alert is not None:
+					yield shape(
+						deserialize(
+							alert
+						)
 					)
-				)
+				else:
+					return
