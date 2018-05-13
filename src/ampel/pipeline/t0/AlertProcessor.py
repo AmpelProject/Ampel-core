@@ -270,6 +270,7 @@ class AlertProcessor(DBWired):
 
 		# Publish general stats to graphite
 		if "graphite" in self.publish_stats:
+			self.logger.info("Sending stats to Graphite")
 			self.ready_graphite_feeder(tran_ids_before).send()
 
 		# python micro-optimization
@@ -338,13 +339,13 @@ class AlertProcessor(DBWired):
 				except:
 
 					self.report_exception(
-						parsed_alert,
 						{
 							'section': 'filter',
 							'channel': channel.name,
 							'tranId': tran_id,
 							'jobId':  db_job_reporter.get_job_id(),
-						}
+						},
+						parsed_alert = parsed_alert
 					)
 
 				# Unset channel id <-> log entries association
@@ -366,15 +367,14 @@ class AlertProcessor(DBWired):
 					ingest(
 						tran_id, parsed_alert['pps'], parsed_alert['uls'], scheduled_t2_units
 					)
-
 				except:
 					self.report_exception(
-						parsed_alert,
 						{
 							'section': 'ingest',
 							'tranId': tran_id,
 							'jobId':  db_job_reporter.get_job_id(),
-						}
+						},
+						parsed_alert = parsed_alert
 					)
 
 				# Save stats
@@ -385,67 +385,83 @@ class AlertProcessor(DBWired):
 
 			iter_count += 1
 
-		# Save ampel 'state' and get list of tran ids required for autocomplete
-		tran_ids_after = self.get_tran_ids()
+		# After run section
+		try: 
 
-		# Check post auto-complete
-		for i, channel in chan_enum:
-			if type(tran_ids_after[i]) is set:
-				auto_complete_diff = tran_ids_after[i] - tran_ids_before[i]
-				if auto_complete_diff:
-					# TODO: implement post-processing-autocomplete
-					pass 
-
-		# Total duration in seconds
-		duration = int(time_now() - start_time)
-		job_info = {"duration": duration}
-
-		if not self.publish_stats is None and iter_count > 0:
-
-			job_info["t0Stats"] = {
-				"processed": iter_count,
-				"totIngested": len(loop_stats['ingestTime'])
-			}
-
-			# Ingest metrics: mean time & std dev in microseconds
-			for key in ("ingestTime", "dbBulkTime", "dbOpTime"):
-				if len(loop_stats[key]) > 0: 
-					job_info["t0Stats"][key] = self.compute_stat(loop_stats[key])
-
-			# Filter metrics
-			len_non_nan = lambda x: iter_max - np.count_nonzero(np.isnan(x))
+			# Save ampel 'state' and get list of tran ids required for autocomplete
+			tran_ids_after = self.get_tran_ids()
+	
+			# Check post auto-complete
 			for i, channel in chan_enum:
-				mylen = len_non_nan(loop_stats[channel.name])
-				job_info["t0Stats"][channel.name] = {
-					'ingested': filter_tran_counter[i],
-					'filterTime': (
-						(0, 0) if len_non_nan(loop_stats[channel.name]) == 0
-						else self.compute_stat(
-							loop_stats[channel.name], 
-							mean=np.nanmean, 
-							std=np.nanstd
-						)
-					)
+				if type(tran_ids_after[i]) is set:
+					auto_complete_diff = tran_ids_after[i] - tran_ids_before[i]
+					if auto_complete_diff:
+						# TODO: implement post-processing-autocomplete
+						pass 
+	
+			# Total duration in seconds
+			duration = int(time_now() - start_time)
+			job_info = {"duration": duration}
+	
+			if self.publish_stats is not None and iter_count > 0:
+	
+				self.logger.info("Computing job stats")
+	
+				job_info["t0Stats"] = {
+					"processed": iter_count,
+					"totIngested": len(loop_stats['ingestTime'])
 				}
+	
+				# Ingest metrics: mean time & std dev in microseconds
+				for key in ("ingestTime", "dbBulkTime", "dbOpTime"):
+					if len(loop_stats[key]) > 0: 
+						job_info["t0Stats"][key] = self.compute_stat(loop_stats[key])
+	
+				# Filter metrics
+				len_non_nan = lambda x: iter_max - np.count_nonzero(np.isnan(x))
+				for i, channel in chan_enum:
+					mylen = len_non_nan(loop_stats[channel.name])
+					job_info["t0Stats"][channel.name] = {
+						'ingested': filter_tran_counter[i],
+						'filterTime': (
+							(0, 0) if len_non_nan(loop_stats[channel.name]) == 0
+							else self.compute_stat(
+								loop_stats[channel.name], 
+								mean=np.nanmean, 
+								std=np.nanstd
+							)
+						)
+					}
+	
+				# Publish metrics to graphite
+				if "graphite" in self.publish_stats:
+					self.logger.info("Sending stats to Graphite")
+					gfeeder = self.ready_graphite_feeder(tran_ids_after)
+					gfeeder.add_stat("ampel.t0.jobs.duration", job_info["duration"])
+					gfeeder.add_stats_with_mean_std(job_info["t0Stats"], suffix="ampel.t0.stats.")
+					gfeeder.send()
+	
+			# Insert job info into job document
+			db_job_reporter.set_job_stats("t0Stats", job_info)
 
-			# Publish metrics to graphite
-			if "graphite" in self.publish_stats:
-				gfeeder = self.ready_graphite_feeder(tran_ids_after)
-				gfeeder.add_stat("ampel.t0.jobs.duration", job_info["duration"])
-				gfeeder.add_stats_with_mean_std(job_info["t0Stats"], suffix="ampel.t0.stats.")
-				gfeeder.send()
+		except:
 
-		# Insert job info into job document
-		db_job_reporter.set_job_stats("t0Stats", job_info)
+			self.report_exception(
+				{
+					'section': 'run_end',
+					'jobId':  db_job_reporter.get_job_id(),
+				}
+			)
+			
 
 		# re-add initial log buffer
 		self.logger.addHandler(self.ilb)
 
+		loginfo("Alert processing completed (time required: %ss)" % duration)
+
 		# Restore console logging if it was removed
 		if not console_logging:
 			self.logger.propagate = True
-
-		loginfo("Alert processing completed (time required: %ss)" % duration)
 
 		# Remove DB logging handler
 		db_job_reporter.set_flush_job_info()
@@ -482,12 +498,13 @@ class AlertProcessor(DBWired):
 		return gfeeder
 
 
-	def report_exception(self, parsed_alert, further_info=None):
+	def report_exception(self, further_info=None, parsed_alert=None):
 		"""
 		further_info: non-nested dict instance
 		"""
-
 		import traceback
+
+		self.logger.propagate = True
 		self.logger.critical("Exception occured", exc_info=1)
 
 		exception_str = traceback.format_exc().replace("\"", "'")
@@ -497,26 +514,29 @@ class AlertProcessor(DBWired):
 			'exception': exception_str.split("\n")
 		}
 
-		if 'alert_id' in parsed_alert:
-			insert_dict['alertId'] = parsed_alert['alert_id'] 
+		if parsed_alert is not None:
 
-		if "KeyboardInterrupt" not in exception_str:
-
-			if (
-				'pps' in parsed_alert and 
-				len(parsed_alert['pps']) > 0 and 
-				'jd' in parsed_alert['pps'][0]
-			):
-				insert_dict['alertDt'] = parsed_alert['pps'][0]['jd']
+			if 'alert_id' in parsed_alert:
+				insert_dict['alertId'] = parsed_alert['alert_id'] 
 	
-			if further_info is not None:
-				for key in further_info:
-					insert_dict[key] = further_info[key]
+			if "KeyboardInterrupt" not in exception_str:
 	
-			insert_dict['alertPPS'] = parsed_alert['pps']
-			insert_dict['alertULS'] = parsed_alert['uls']
+				if (
+					'pps' in parsed_alert and 
+					len(parsed_alert['pps']) > 0 and 
+					'jd' in parsed_alert['pps'][0]
+				):
+					insert_dict['alertDt'] = parsed_alert['pps'][0]['jd']
+		
+				if further_info is not None:
+					for key in further_info:
+						insert_dict[key] = further_info[key]
+		
+				insert_dict['alertPPS'] = parsed_alert['pps']
+				insert_dict['alertULS'] = parsed_alert['uls']
 
 		self.get_trouble_col().insert_one(insert_dict)
+		self.logger.propagate = False
 
 
 	def compute_stat(self, seq, mean=np.mean, std=np.std):
