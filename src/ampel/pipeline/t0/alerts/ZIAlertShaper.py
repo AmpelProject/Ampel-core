@@ -43,7 +43,7 @@ class ZIAlertShaper(AbsAlertShaper):
 
 				return {
 					'pps': [in_dict['candidate']],
-					'ro_pps': tuple(MappingProxyType(in_dict['candidate'])),
+					'ro_pps': (MappingProxyType(in_dict['candidate']),) ,
 					'uls': None,
 					'ro_uls': None,
 					'tran_id': in_dict['objectId'],
