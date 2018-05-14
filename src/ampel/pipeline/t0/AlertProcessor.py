@@ -11,7 +11,7 @@ import pymongo, time, numpy as np
 
 from ampel.pipeline.t0.AmpelAlert import AmpelAlert
 from ampel.pipeline.t0.alerts.AlertSupplier import AlertSupplier
-from ampel.pipeline.t0.alerts.ZIAlertParser import ZIAlertParser
+from ampel.pipeline.t0.alerts.ZIAlertShaper import ZIAlertShaper
 from ampel.pipeline.t0.ingesters.ZIAlertIngester import ZIAlertIngester
 from ampel.pipeline.logging.LoggingUtils import LoggingUtils
 from ampel.pipeline.logging.DBJobReporter import DBJobReporter
@@ -101,8 +101,8 @@ class AlertProcessor(DBWired):
 
 			# TODO: log something ? 
 
-			# Reference to function loading IPAC generated avro alerts
-			self.alert_parser = ZIAlertParser(self.logger)
+			# Reference to function shaping alert dicts
+			self.alert_shaper = ZIAlertShaper(self.logger)
 
 			# Set static AmpelAlert alert flags
 			AmpelAlert.add_class_flags(
@@ -169,7 +169,7 @@ class AlertProcessor(DBWired):
 		
 		self.logger.info("Returning iterable for file paths in folder: %s" % base_dir)
 
-		als = AlertSupplier(alert_loader, self.alert_parser, serialization="avro")
+		als = AlertSupplier(alert_loader, self.alert_shaper, serialization="avro")
 		ret = AlertProcessor.iter_max
 		count = 0
 

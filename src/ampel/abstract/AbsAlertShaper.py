@@ -1,15 +1,15 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/abstract/AbsAlertParser.py
+# File              : ampel/abstract/AbsAlertShaper.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 24.04.2018
-# Last Modified Date: 24.04.2018
+# Last Modified Date: 15.05.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from abc import ABC, abstractmethod
 
-class AbsAlertParser(ABC):
+class AbsAlertShaper(ABC):
 
 
 	@abstractmethod

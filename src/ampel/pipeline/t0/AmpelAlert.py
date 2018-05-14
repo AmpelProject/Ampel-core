@@ -40,13 +40,12 @@ class AmpelAlert:
 		Convenience method.
 		Do not use for production!
 		"""
-
-		from ampel.pipeline.t0.alerts.AvroDeserializer import AvroDeserializer
-		from ampel.pipeline.t0.alerts.ZIAlertParser import ZIAlertParser
-
-		parsed_alert = ZIAlertParser().shape(
-    		AvroDeserializer.load_raw_dict_from_file(arg)
-		)
+		from ampel.pipeline.t0.alerts.ZIAlertShaper import ZIAlertShaper
+		import fastavro
+		with open(arg, "rb") as fo:
+			parsed_alert = ZIAlertShaper().shape(
+    			next(fastavro.reader(fo), None)
+			)
 
 		return AmpelAlert(
 			parsed_alert['tran_id'], 

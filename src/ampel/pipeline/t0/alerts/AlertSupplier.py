@@ -9,16 +9,16 @@
 
 
 from ampel.abstract.AbsAlertLoader import AbsAlertLoader
-from ampel.abstract.AbsAlertParser import AbsAlertParser
+from ampel.abstract.AbsAlertShaper import AbsAlertShaper
 
 
 class AlertSupplier:
 
  
-	def __init__(self, alert_loader, alert_parser, serialization=None):
+	def __init__(self, alert_loader, alert_shaper, serialization=None):
 		"""
 		alert_loader: laads and returns alerts (can be bytes or a dict instance)
-		alert_parser: reshapes dict into a form compatible with ampel
+		alert_shaper: reshapes dict into a form compatible with ampel
 		serialization (optional): either 'avro' or 'json'. Set the corresponding 
 		deserialization function used to convert file_like objects into dict
 		"""
@@ -26,8 +26,8 @@ class AlertSupplier:
 		if not issubclass(alert_loader.__class__, AbsAlertLoader):
 			raise ValueError("First argument must be a child class of AbsAlertLoader")
 
-		if not issubclass(alert_parser.__class__, AbsAlertParser):
-			raise ValueError("Second argument must be a child class of AbsAlertParser")
+		if not issubclass(alert_shaper.__class__, AbsAlertShaper):
+			raise ValueError("Second argument must be a child class of AbsAlertShaper")
 
 		if serialization is not None:
 
@@ -45,7 +45,7 @@ class AlertSupplier:
 				)
 
 		self.alert_loader = alert_loader
-		self.alert_parser = alert_parser
+		self.alert_shaper = alert_shaper
  
 
 	def set_deserializer_func(self, deserializer_func):
@@ -60,12 +60,12 @@ class AlertSupplier:
 		"""
 		if self.deserialize is None:
 			for file_like in self.alert_loader.get_files():
-				yield self.alert_parser.shape(
+				yield self.alert_shaper.shape(
 					file_like
 				)
 		else:
 			for file_like in self.alert_loader.get_files():
-				yield self.alert_parser.shape(
+				yield self.alert_shaper.shape(
 					self.deserialize(
 						file_like
 					)

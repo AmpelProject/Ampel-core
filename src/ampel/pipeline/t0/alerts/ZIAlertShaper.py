@@ -1,25 +1,24 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/pipeline/t0/alerts/ZIAlertParser.py
+# File              : ampel/pipeline/t0/alerts/ZIAlertShaper.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 20.04.2018
-# Last Modified Date: 04.05.2018
+# Last Modified Date: 15.05.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 
-from ampel.abstract.AbsAlertParser import AbsAlertParser
+from ampel.abstract.AbsAlertShaper import AbsAlertShaper
 from ampel.pipeline.logging.LoggingUtils import LoggingUtils
-from werkzeug.datastructures import ImmutableDict, ImmutableList
-import fastavro
+from  types import MappingProxyType
 
 
-class ZIAlertParser(AbsAlertParser):
+class ZIAlertShaper(AbsAlertShaper):
 	"""
 	ZI: shortcut for ZTF IPAC.
 
 	This class is responsible for:
-		* Parsing IPAC generated ZTF Alerts (using fastavro)
+		* Parsing IPAC generated ZTF Alerts
 		* Splitting the list of photopoints contained in 'prv_candidates' in two lists:
 			* one pps list
 			* one upper limit list
@@ -44,9 +43,7 @@ class ZIAlertParser(AbsAlertParser):
 
 				return {
 					'pps': [in_dict['candidate']],
-					'ro_pps': ImmutableList(
-						[ImmutableDict(in_dict['candidate'])]
-					),
+					'ro_pps': tuple(MappingProxyType(in_dict['candidate'])),
 					'uls': None,
 					'ro_uls': None,
 					'tran_id': in_dict['objectId'],
@@ -58,15 +55,14 @@ class ZIAlertParser(AbsAlertParser):
 				uls_list = []
 				ro_uls_list = []
 				pps_list = [in_dict['candidate']]
-				ro_pps_list = [ImmutableDict(in_dict['candidate'])]
+				ro_pps_list = [MappingProxyType(in_dict['candidate'])]
 	
 				for el in in_dict['prv_candidates']:
 	
 					if el['candid'] is None:
 						uls_list.append(el)
 						ro_uls_list.append(
-							# Twice better %timeit performance than ImmutableDict(el)
-							ImmutableDict(
+							MappingProxyType(
 								{ 
 									'jd': el['jd'], 
 									'fid': el['fid'], 
@@ -79,13 +75,13 @@ class ZIAlertParser(AbsAlertParser):
 						)
 					else:
 						pps_list.append(el)
-						ro_pps_list.append(ImmutableDict(el))
+						ro_pps_list.append(MappingProxyType(el))
 	
 				return {
 					'pps': pps_list,
-					'ro_pps': ImmutableList(ro_pps_list),
+					'ro_pps': tuple(el for el in ro_pps_list),
 					'uls': None if len(uls_list) == 0 else uls_list,
-					'ro_uls': None if len(uls_list) == 0 else ImmutableList(ro_uls_list),
+					'ro_uls': None if len(uls_list) == 0 else tuple(el for el in ro_uls_list),
 					'tran_id': in_dict['objectId'],
 					'alert_id': in_dict['candid']
 				}
