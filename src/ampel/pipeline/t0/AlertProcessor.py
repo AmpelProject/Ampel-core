@@ -67,6 +67,11 @@ class AlertProcessor(DBWired):
 		self.logger.addHandler(self.ilb)
 		self.logger.info("Setting up new AlertProcessor instance")
 
+		# Tmp workaround for MongoClient perf issue
+		self.arg_config_db = config_db
+		self.arg_base_dbs = base_dbs
+		self.arg_db_host = db_host
+
 		# Setup instance variable referencing ampel databases
 		self.plug_databases(self.logger, db_host, config_db, base_dbs)
 
@@ -188,6 +193,9 @@ class AlertProcessor(DBWired):
 			* Ingest alert based on PipelineIngester (default) 
 			or the ingester instance set by the method set_ingester(obj)
 		"""
+
+		# Tmp workaround for MongoClient perf issue
+		self.plug_databases(self.logger, self.arg_db_host, self.arg_config_db, self.arg_base_dbs)
 
 		# Save current time to later evaluate how low was the pipeline processing time
 		time_now = time.time
