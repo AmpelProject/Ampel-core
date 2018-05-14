@@ -13,5 +13,5 @@ class AbsAlertLoader(ABC):
 
 
 	@abstractmethod
-	def get_next(self):
+	def get_files(self):
 		pass

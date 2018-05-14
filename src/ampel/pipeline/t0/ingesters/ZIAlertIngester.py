@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 14.12.2017
-# Last Modified Date: 05.05.2018
+# Last Modified Date: 14.05.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import logging, pymongo, time
@@ -640,9 +640,6 @@ class ZIAlertIngester(AbsAlertIngester):
 			if self.add_dbbulk_stat is not None:
 
 				start = time.time()
-				# print("#######")
-				# print(db_ops)
-				# print("#######")
 				db_op_results = self.col.bulk_write(db_ops) # DB update
 				time_delta = time.time() - start
 				self.add_dbbulk_stat(time_delta)
@@ -664,7 +661,7 @@ class ZIAlertIngester(AbsAlertIngester):
 				)
 
 		except BulkWriteError as bwe: 
-			self.logger.info(bwe.details) 
+			self.logger.error(bwe.details) 
 			# TODO add error flag to Job and Transient
 			# TODO add return code 
 

@@ -23,7 +23,7 @@ class TarballWalker(AbsAlertLoader):
 		self.stop = stop
 
 
-	def get_next(self):
+	def get_files(self):
 
 		tar_file = open(self.tarpath, 'rb')
 		count = -1

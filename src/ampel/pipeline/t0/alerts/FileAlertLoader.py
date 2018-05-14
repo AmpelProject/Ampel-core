@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/pipeline/t0/alerts/AlertFileLoader.py
+# File              : ampel/pipeline/t0/alerts/FileAlertLoader.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 30.04.2018
-# Last Modified Date: 13.05.2018
+# Last Modified Date: 14.05.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 
@@ -13,7 +13,7 @@ from ampel.pipeline.logging.LoggingUtils import LoggingUtils
 import logging, io
 
 
-class AlertFileLoader(AbsAlertLoader):
+class FileAlertLoader(AbsAlertLoader):
 
 
 	def __init__(self, files=None, logger=None):
@@ -40,14 +40,10 @@ class AlertFileLoader(AbsAlertLoader):
 		self.iter_files = iter(self.files)
 
 
-	def get_next(self):
+	def get_files(self):
 		"""
 		"""
-		fpath = next(self.iter_files, None)
-		if fpath is None:
-			return None
-
-		alert_file = open(fpath, "rb")
-		byte_content = alert_file.read()
-		alert_file.close()
-		return io.BytesIO(byte_content)
+		for fpath in self.iter_files:
+			alert_file = open(fpath, "rb")
+			yield alert_file
+			alert_file.close()

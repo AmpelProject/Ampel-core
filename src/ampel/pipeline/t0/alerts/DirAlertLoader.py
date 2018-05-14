@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/pipeline/t0/alerts/AlertDirLoader.py
+# File              : ampel/pipeline/t0/alerts/DirAlertLoader.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 14.12.2017
@@ -13,7 +13,7 @@ from ampel.pipeline.logging.LoggingUtils import LoggingUtils
 import logging, io
 
 
-class AlertDirLoader(AbsAlertLoader):
+class DirAlertLoader(AbsAlertLoader):
 
 
 	def __init__(self, logger=None):
@@ -91,18 +91,15 @@ class AlertDirLoader(AbsAlertLoader):
 		self.logger.debug("File list contains " + str(len(self.files)) + " elements")
 
 
-	def get_next(self):
+	def get_files(self):
 		""" 
 		"""
 		if not self.files:
 			self.build_file_list()
 			self.iter_files = iter(self.files)
 
-		fpath = next(self.iter_files, None)
-		if fpath is None:
-			return None
+		for fpath in self.iter_files:
+			alert_file = open(fpath, "rb")
+			yield alert_file
+			alert_file.close()
 
-		alert_file = open(fpath, "rb")
-		byte_content = alert_file.read()
-		alert_file.close()
-		return io.BytesIO(byte_content)

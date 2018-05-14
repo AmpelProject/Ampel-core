@@ -91,5 +91,6 @@ class ZIAlertParser(AbsAlertParser):
 				}
 
 		except:
-			self.logger.exception("Exception occured while loading alert")
+			if in_dict is not None:
+				self.logger.critical("Exception occured while loading alert", exc_info=1)
 			return None

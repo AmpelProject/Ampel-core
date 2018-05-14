@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/pipeline/t0/alerts/AlertTarLoader.py
+# File              : ampel/pipeline/t0/alerts/TarAlertLoader.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 13.05.2018
-# Last Modified Date: 13.05.2018
+# Last Modified Date: 14.05.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import tarfile
@@ -12,7 +12,7 @@ from ampel.abstract.AbsAlertLoader import AbsAlertLoader
 from ampel.pipeline.logging.LoggingUtils import LoggingUtils
 
 
-class AlertTarLoader(AbsAlertLoader):
+class TarAlertLoader(AbsAlertLoader):
 	"""
 	"""
 
@@ -38,33 +38,23 @@ class AlertTarLoader(AbsAlertLoader):
 					continue
 			
 
-	def get_next(self):
+	def get_files(self):
 
-		tar_info = self.tar_file.next()
+		for tar_info in self.tar_file:
 
-		if tar_info is None:
-			if hasattr(self, "tar_path"):
-				self.logger.info("Reached end of tar file %s" % self.tar_path)
-			else:
-				self.logger.info("Reached end of tar")
-			return None
+			if tar_info.isfile():
 
-		if self.chained_tbw is not None:
-			file_obj = self.chained_tbw.get_alert()
-			if file_obj is None:
-				self.chained_tbw.tar_file.close()
-				self.chained_tbw = None
-			else: 
-				return file_obj
-			
-		if tar_info.isfile():
+				file_obj = self.tar_file.extractfile(tar_info)
 
-			file_obj = self.tar_file.extractfile(tar_info)
+				if tar_info.name.endswith('.tar.gz'):
+					chained_tal = TarAlertLoader(file_obj=file_obj)
+					for sub_file_obj in chained_tal.get_files():
+						yield sub_file_obj
+				else:
+					yield file_obj
 
-			if tar_info.name.endswith('.avro'):
-				return file_obj
-
-			elif tar_info.name.endswith('.tar.gz'):
-				self.tbws = AlertTarLoader(file_obj=file_obj)
-				alert = self.tbws.get_next()
-				return alert if alert is not None else self.get_next()
+		if hasattr(self, "tar_path"):
+			self.logger.info("Reached end of tar file %s" % self.tar_path)
+			self.tar_file.close()
+		else:
+			self.logger.info("Reached end of tar")

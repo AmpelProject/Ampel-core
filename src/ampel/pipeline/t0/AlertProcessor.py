@@ -12,7 +12,6 @@ import pymongo, time, numpy as np
 from ampel.pipeline.t0.AmpelAlert import AmpelAlert
 from ampel.pipeline.t0.alerts.AlertSupplier import AlertSupplier
 from ampel.pipeline.t0.alerts.ZIAlertParser import ZIAlertParser
-from ampel.pipeline.t0.alerts.AvroDeserializer import AvroDeserializer
 from ampel.pipeline.t0.ingesters.ZIAlertIngester import ZIAlertIngester
 from ampel.pipeline.logging.LoggingUtils import LoggingUtils
 from ampel.pipeline.logging.DBJobReporter import DBJobReporter
@@ -104,7 +103,6 @@ class AlertProcessor(DBWired):
 
 			# Reference to function loading IPAC generated avro alerts
 			self.alert_parser = ZIAlertParser(self.logger)
-			self.deserializer = AvroDeserializer(self.logger)
 
 			# Set static AmpelAlert alert flags
 			AmpelAlert.add_class_flags(
@@ -159,10 +157,10 @@ class AlertProcessor(DBWired):
 		alert files are sorted by date: sorted(..., key=os.path.getmtime)
 		"""
 
-		from ampel.pipeline.t0.alerts.AlertDirLoader import AlertDirLoader
+		from ampel.pipeline.t0.alerts.DirAlertLoader import DirAlertLoader
 
 		# Container class allowing to conveniently iterate over local avro files 
-		alert_loader = AlertDirLoader(self.logger)
+		alert_loader = DirAlertLoader(self.logger)
 		alert_loader.set_folder(base_dir)
 		alert_loader.set_extension(extension)
 
@@ -171,7 +169,7 @@ class AlertProcessor(DBWired):
 		
 		self.logger.info("Returning iterable for file paths in folder: %s" % base_dir)
 
-		als = AlertSupplier(alert_loader, self.alert_parser, self.deserializer)
+		als = AlertSupplier(alert_loader, self.alert_parser, serialization="avro")
 		ret = AlertProcessor.iter_max
 		count = 0
 
@@ -668,7 +666,7 @@ def _ingest_slice(host, archive_host, infile, start, stop):
 	
 	def loader():
 		tbw = TarballWalker(infile, start, stop)
-		for alert in tbw.get_next():
+		for alert in tbw.get_files():
 			archive.insert_alert(alert, 0, 0)
 			yield alert
 	processor = AlertProcessor(db_host=host)
