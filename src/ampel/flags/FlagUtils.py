@@ -41,7 +41,7 @@ class FlagUtils():
 		"""
 		db_flag = []
 		for i, el  in enumerate(type(enum_flag), 1):
-			if el.value != 0 and el in enum_flag:
+			if el in enum_flag:
 				db_flag.append(i)
 
 		return db_flag

@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 14.12.2017
-# Last Modified Date: 17.03.2018
+# Last Modified Date: 15.05.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from enum import Flag
@@ -12,12 +12,11 @@ from enum import Flag
 
 class JobFlags(Flag):
 	"""
-		Flags used by DBJobReporter when creating a document to be pushed to the collection "events".
-		Since the documents, once created, are never updated (and thus the $bit operator 
-		is not required), this class can embbed more than 64 different flags.
-		HAS_ERROR and HAS_CRITICAL flags will be converted into a sparse indexed field named "err".
+	Flags used by DBJobReporter when creating a document to be pushed to the collection "events".
+	Since the documents, once created, are never updated (and thus the $bit operator 
+	is not required), this class can embbed more than 64 different flags.
+	HAS_ERROR and HAS_CRITICAL flags will be converted into a sparse indexed field named "err".
 	"""
-	NO_FLAG				= 0
 
 	HAS_ERROR    		= 1 
 	HAS_CRITICAL   		= 2

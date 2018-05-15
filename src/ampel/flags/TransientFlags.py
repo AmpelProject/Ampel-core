@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 14.12.2017
-# Last Modified Date: 20.03.2018
+# Last Modified Date: 15.05.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from enum import Flag
@@ -12,8 +12,6 @@ from enum import Flag
 class TransientFlags(Flag):
 	"""
 	"""
-
-	NO_FLAG						= 0
 
 	INST_ZTF					= 1
 	INST_OTHER1					= 2

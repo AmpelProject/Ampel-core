@@ -1,20 +1,20 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 # File              : ampel/flags/AlertFlags.py
+# License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 14.12.2017
-# Last Modified Date: 09.01.2018
+# Last Modified Date: 15.05.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
+
 from enum import Flag, auto
 
 class AlertFlags(Flag):
 	"""
-		Flags used by the static AmpelAlert class variable 'flags',
-		whose value is not transfered or synced with DB.
-		Theses flags allow T0 filters to gain knowledge of the origin of alerts
+	Flags used by the static AmpelAlert class variable 'flags',
+	whose value is not transfered or synced with DB.
+	Theses flags allow T0 filters to gain knowledge of the origin of alerts
 	"""
-
-	NO_FLAG				= 0
 
 	INST_ZTF			= auto()
 	INST_OTHER1			= auto()
