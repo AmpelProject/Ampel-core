@@ -8,12 +8,11 @@
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 
-from ampel.abstract.AbsAlertLoader import AbsAlertLoader
 from ampel.pipeline.logging.LoggingUtils import LoggingUtils
 import logging, io
 
 
-class FileAlertLoader(AbsAlertLoader):
+class FileAlertLoader():
 
 
 	def __init__(self, files=None, logger=None):
@@ -40,10 +39,12 @@ class FileAlertLoader(AbsAlertLoader):
 		self.iter_files = iter(self.files)
 
 
-	def get_files(self):
+	def __iter__(self):
+		return self
+
+
+	def __next__(self):
+		""" 
 		"""
-		"""
-		for fpath in self.iter_files:
-			alert_file = open(fpath, "rb")
-			yield alert_file
-			alert_file.close()
+		with open(next(self.iter_files), "rb") as alert_file:
+			return io.BytesIO(alert_file.read())

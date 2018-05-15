@@ -8,12 +8,11 @@
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 
-from ampel.abstract.AbsAlertLoader import AbsAlertLoader
 from ampel.pipeline.logging.LoggingUtils import LoggingUtils
 import logging, io
 
 
-class DirAlertLoader(AbsAlertLoader):
+class DirAlertLoader():
 
 
 	def __init__(self, logger=None):
@@ -91,15 +90,20 @@ class DirAlertLoader(AbsAlertLoader):
 		self.logger.debug("File list contains " + str(len(self.files)) + " elements")
 
 
-	def get_files(self):
+	def __iter__(self):
+		return self
+
+
+	def __next__(self):
 		""" 
 		"""
 		if not self.files:
 			self.build_file_list()
 			self.iter_files = iter(self.files)
 
-		for fpath in self.iter_files:
-			alert_file = open(fpath, "rb")
-			yield alert_file
-			alert_file.close()
+		fpath = next(self.iter_files, None)
+		if fpath is None:
+			raise StopIteration
 
+		with open(fpath, "rb") as alert_file:
+			return io.BytesIO(alert_file.read())

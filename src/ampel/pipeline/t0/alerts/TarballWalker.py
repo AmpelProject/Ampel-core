@@ -8,10 +8,9 @@
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import tarfile
-from ampel.abstract.AbsAlertLoader import AbsAlertLoader
 
 
-class TarballWalker(AbsAlertLoader):
+class TarballWalker():
 	"""
 	"""
 

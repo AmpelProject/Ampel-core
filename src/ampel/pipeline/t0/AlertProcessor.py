@@ -303,22 +303,18 @@ class AlertProcessor(DBWired):
 		self.logger.info("#######     Processing alerts     #######")
 
 		# Iterate over alerts
-		for parsed_alert in alert_supplier.get_alerts():
-
-			if iter_count == iter_max:
-				self.logger.info("Reached max number of iterations")
-				break
+		for shaped_alert in alert_supplier:
 
 			# Associate upcoming log entries with the current transient id
-			tran_id = parsed_alert['tran_id']
+			tran_id = shaped_alert['tran_id']
 			dblh_set_tranId(tran_id)
 
 			# Feedback
-			loginfo("Processing alert: %s" % parsed_alert['alert_id'])
+			loginfo("Processing alert: %s" % shaped_alert['alert_id'])
 
 			# Create AmpelAlert instance
 			ampel_alert = AmpelAlert(
-				tran_id, parsed_alert['ro_pps'], parsed_alert['ro_uls']
+				tran_id, shaped_alert['ro_pps'], shaped_alert['ro_uls']
 			)
 
 			# Loop through initialized channels
@@ -355,7 +351,7 @@ class AlertProcessor(DBWired):
 							'tranId': tran_id,
 							'jobId':  db_job_reporter.get_job_id(),
 						},
-						parsed_alert = parsed_alert
+						shaped_alert = shaped_alert
 					)
 
 				# Unset channel id <-> log entries association
@@ -375,7 +371,7 @@ class AlertProcessor(DBWired):
 
 				try: 
 					ingest(
-						tran_id, parsed_alert['pps'], parsed_alert['uls'], scheduled_t2_units
+						tran_id, shaped_alert['pps'], shaped_alert['uls'], scheduled_t2_units
 					)
 				except:
 					self.report_exception(
@@ -384,7 +380,7 @@ class AlertProcessor(DBWired):
 							'tranId': tran_id,
 							'jobId':  db_job_reporter.get_job_id(),
 						},
-						parsed_alert = parsed_alert
+						shaped_alert = shaped_alert
 					)
 
 				# Save stats
@@ -394,6 +390,10 @@ class AlertProcessor(DBWired):
 				dblh_unset_tranId()
 
 			iter_count += 1
+
+			if iter_count == iter_max:
+				self.logger.info("Reached max number of iterations")
+				break
 
 		# Post run section
 		try: 
@@ -531,7 +531,7 @@ class AlertProcessor(DBWired):
 		return stat_dict
 
 
-	def report_exception(self, further_info=None, parsed_alert=None):
+	def report_exception(self, further_info=None, shaped_alert=None):
 		"""
 		further_info: non-nested dict instance
 		"""
@@ -547,26 +547,26 @@ class AlertProcessor(DBWired):
 			'exception': exception_str.split("\n")
 		}
 
-		if parsed_alert is not None:
+		if shaped_alert is not None:
 
-			if 'alert_id' in parsed_alert:
-				insert_dict['alertId'] = parsed_alert['alert_id'] 
+			if 'alert_id' in shaped_alert:
+				insert_dict['alertId'] = shaped_alert['alert_id'] 
 	
 			if "KeyboardInterrupt" not in exception_str:
 	
 				if (
-					'pps' in parsed_alert and 
-					len(parsed_alert['pps']) > 0 and 
-					'jd' in parsed_alert['pps'][0]
+					'pps' in shaped_alert and 
+					len(shaped_alert['pps']) > 0 and 
+					'jd' in shaped_alert['pps'][0]
 				):
-					insert_dict['alertDt'] = parsed_alert['pps'][0]['jd']
+					insert_dict['alertDt'] = shaped_alert['pps'][0]['jd']
 		
 				if further_info is not None:
 					for key in further_info:
 						insert_dict[key] = further_info[key]
 		
-				insert_dict['alertPPS'] = parsed_alert['pps']
-				insert_dict['alertULS'] = parsed_alert['uls']
+				insert_dict['alertPPS'] = shaped_alert['pps']
+				insert_dict['alertULS'] = shaped_alert['uls']
 
 		self.get_trouble_col().insert_one(insert_dict)
 		self.logger.propagate = False
