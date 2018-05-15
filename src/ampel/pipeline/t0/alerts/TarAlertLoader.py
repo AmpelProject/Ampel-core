@@ -25,7 +25,7 @@ class TarAlertLoader():
 			self.tar_file = tarfile.open(fileobj=file_obj, mode='r|gz')
 		elif tar_path is not None:
 			self.tar_path = tar_path
-			self.tar_file = tarfile.open(tar_path)
+			self.tar_file = tarfile.open(tar_path, mode='r|gz')
 		else:
 			raise ValueError("Please provide value either for 'tar_path' or 'file_obj'")
 
