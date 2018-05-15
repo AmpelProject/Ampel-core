@@ -44,7 +44,7 @@ services:
     command: ["/Ampel/deploy/stress-test/run_tests.sh"]
     volumes:
       - /home/ampel/valery/Ampel:/Ampel
-      - /data/ampel/archive/tarballs:/ztf
+      - /data/ampel/archive/smaller_tarballs:/ztf
       
     secrets:
       - archive-user-password
