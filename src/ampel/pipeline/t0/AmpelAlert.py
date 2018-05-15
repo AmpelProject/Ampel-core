@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 14.12.2017
-# Last Modified Date: 24.04.2018
+# Last Modified Date: 15.05.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from ampel.flags.AlertFlags import AlertFlags
@@ -18,7 +18,7 @@ class AmpelAlert:
 	Then, the AmpelAlert instance is fed to every active T0 filter.
 	"""
 
-	flags = AlertFlags.NO_FLAG
+	flags = AlertFlags(0)
 	alert_keywords = {}
 	alert_kws_set = set()
 
