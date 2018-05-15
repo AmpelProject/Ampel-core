@@ -3,6 +3,8 @@ import sys, os
 def split_tar(tar_path, chunk_size=51000000):
 	"""
 	size: in bytes
+	To run it with 20 workers in parallel, use: 
+	ls ../tarballs/* | xargs -P 20 -n1 python3 split_tar.py
 	"""
 
 	fname = tar_path.split("/")[-1]
