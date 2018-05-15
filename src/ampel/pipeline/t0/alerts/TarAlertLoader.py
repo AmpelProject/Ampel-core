@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 13.05.2018
-# Last Modified Date: 14.05.2018
+# Last Modified Date: 15.05.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import tarfile
@@ -22,7 +22,7 @@ class TarAlertLoader():
 		self.chained_tal = None
 
 		if file_obj is not None:
-			self.tar_file = tarfile.open(fileobj=file_obj, mode='r:gz')
+			self.tar_file = tarfile.open(fileobj=file_obj, mode='r|gz')
 		elif tar_path is not None:
 			self.tar_path = tar_path
 			self.tar_file = tarfile.open(tar_path)
@@ -44,14 +44,18 @@ class TarAlertLoader():
 	def __next__(self):
 		"""
 		"""
+		# Free memory 
+		self.tar_file.members.clear() 
 
 		if self.chained_tal is not None:
 			file_obj = self.get_chained_next()
 			if file_obj is not None:
 				return file_obj
 
+		# Get next element in tar archive
 		tar_info = self.tar_file.next()
 
+		# Reach end of archive
 		if tar_info is None:
 			if hasattr(self, "tar_path"):
 				self.logger.info("Reached end of tar file %s" % self.tar_path)
@@ -60,10 +64,13 @@ class TarAlertLoader():
 				self.logger.info("Reached end of tar")
 			raise StopIteration
 
+		# Ignore non-file entries
 		if tar_info.isfile():
 
+			# extractfile returns a file like obj
 			file_obj = self.tar_file.extractfile(tar_info)
 
+			# Handle tars with nested tars
 			if tar_info.name.endswith('.tar.gz'):
 				self.chained_tal = TarAlertLoader(file_obj=file_obj)
 				file_obj = self.get_chained_next()
