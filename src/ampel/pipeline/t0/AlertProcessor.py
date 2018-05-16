@@ -267,14 +267,15 @@ class AlertProcessor(DBWired):
 		loop_stats = {}
 
 		# stat with variable length
-		for key in ('ingestTime', 'dbBulkTime', 'dbOpTime'):
+		for key in ('ingestTime', 'dbBulkTime', 'dbOpTime', 'alertPpsLen', 'alertUlsLen'):
 			loop_stats[key] = []
 
 		# stat with fixed length
 		for i, channel in self.chan_enum: 
 			# loop_stats[channel.name] records filter performances
 			# nan will remain only if exception occur for particular alerts
-			loop_stats[channel.name] = np.empty(iter_max) * np.nan
+			loop_stats[channel.name] = np.empty(iter_max)
+			loop_stats[channel.name].fill(np.nan)
 
 		# The (standard) ingester will update DB insert operations
 		self.ingester.set_stats_dict(loop_stats)
@@ -290,9 +291,7 @@ class AlertProcessor(DBWired):
 		dblh_set_channel = db_logging_handler.set_channels
 		dblh_unset_tranId = db_logging_handler.unset_tranId
 		dblh_unset_channel = db_logging_handler.unset_channels
-		ingest = self.ingester.ingest
 		chan_enum = self.chan_enum
-		add_ingest_stat = loop_stats['ingestTime'].append
 		tran_col = self.get_tran_col()
 
 
@@ -363,14 +362,10 @@ class AlertProcessor(DBWired):
 				loginfo(" -> Ingesting alert")
 
 				start = time_now()
-
 				# TODO: build tran_id <-> alert_id map (replayibility)
 				#processed_alert[tran_id]
-
-				# Ingest alert content
-
 				try: 
-					ingest(
+					self.ingester.ingest(
 						tran_id, shaped_alert['pps'], shaped_alert['uls'], scheduled_t2_units
 					)
 				except:
@@ -384,10 +379,14 @@ class AlertProcessor(DBWired):
 					)
 
 				# Save stats
-				add_ingest_stat(time_now() - start)
+				loop_stats['ingestTime'].append(time_now() - start)
+				loop_stats['alertPpsLen'].append(len(shaped_alert['pps']))
+				loop_stats['alertUlsLen'].append(
+					len(shaped_alert['uls']) if shaped_alert['uls'] is not None else 0
+				)
 
-				# Unset log entries association with transient id
-				dblh_unset_tranId()
+			# Unset log entries association with transient id
+			dblh_unset_tranId()
 
 			iter_count += 1
 
@@ -421,7 +420,7 @@ class AlertProcessor(DBWired):
 				job_info['ingested'] = len(loop_stats['ingestTime'])
 	
 				# Ingest metrics: mean time & std dev in microseconds
-				for key in ('ingestTime', 'dbBulkTime', 'dbOpTime'):
+				for key in ('ingestTime', 'dbBulkTime', 'dbOpTime', 'alertPpsLen', 'alertUlsLen'):
 					if len(loop_stats[key]) > 0: 
 						job_info[key] = self.compute_stat(loop_stats[key])
 	
@@ -479,20 +478,28 @@ class AlertProcessor(DBWired):
 		"""
 
 		stat_dict = {
-			'db': {},
-			'tranCount': {}
+			'db': {
+				'chans': {},
+			}
 		}
 
 		# Global metrics
 		tran_col = self.get_tran_col()
-		stat_dict['db']['tranCol'] = MongoStats.get_col_stats(tran_col)
-		stat_dict['db']['jobCol'] = MongoStats.get_col_stats(self.get_job_col())
 		stat_dict['db']['daemon'] = MongoStats.get_server_stats(tran_col.database)
-		stat_dict['tranCount']['all'] = MongoStats.get_tran_count(tran_col)
+		stat_dict['db']['jobs'] = MongoStats.get_col_stats(self.get_job_col())
+		stat_dict['db']['jobs']['troubles'] = self.get_trouble_col().find({}).count()
+		stat_dict['db']['trans'] = MongoStats.get_col_stats(tran_col)
+		stat_dict['db']['trans']['docs'] = {}
+		stat_dict['db']['trans']['docs']['pps'] = tran_col.find({'alDocType': AlDocTypes.PHOTOPOINT}).count()
+		stat_dict['db']['trans']['docs']['uls'] = tran_col.find({'alDocType': AlDocTypes.UPPERLIMIT}).count()
+		stat_dict['db']['trans']['docs']['compounds'] = tran_col.find({'alDocType': AlDocTypes.COMPOUND}).count()
+		stat_dict['db']['trans']['docs']['t2s'] = tran_col.find({'alDocType': AlDocTypes.T2RECORD}).count()
+		stat_dict['db']['trans']['docs']['trans'] = tran_col.find({'alDocType': AlDocTypes.TRANSIENT}).count()
+
 
 		# Channel specific metrics
 		for i, channel in self.chan_enum:
-			stat_dict['tranCount'][channel.name] = (
+			stat_dict['db']['chans'][channel.name] = (
 				len(tran_ids[i]) if tran_ids[i] is not None 
 				else MongoStats.get_tran_count(tran_col, channel.name)
 			)
@@ -510,21 +517,10 @@ class AlertProcessor(DBWired):
 			# with error: [Errno 32] Broken pipe
 			# So we re-create a GraphiteClient every time we send something to graphite...
 			gfeeder = GraphiteFeeder(self.global_config['graphite']) 
+			gfeeder.add_stats_with_mean_std(stat_dict)
 
-			gfeeder.add_stats(stat_dict['db']['daemon'], suffix='db.deamon.')
-			gfeeder.add_stats(stat_dict['db']['tranCol'], suffix='db.col.tran.')
-			gfeeder.add_stats(stat_dict['db']['jobCol'], suffix='db.col.jobs.')
-			gfeeder.add_stat('ampel.tran_count.all', stat_dict['tranCount']['all'])
-			gfeeder.add_stat('db.col.troubles.count', self.get_trouble_col().find({}).count())
-
-			for channel in self.channels:
-				gfeeder.add_stat(
-					'ampel.tran_count.%s' % channel.name, 
-					stat_dict['tranCount'][channel.name]
-				)
-			
 			if t0_stats is not None:
-				gfeeder.add_stats_with_mean_std(t0_stats, suffix='ampel.t0.')
+				gfeeder.add_stats_with_mean_std(t0_stats, suffix='t0.')
 	
 			gfeeder.send()
 

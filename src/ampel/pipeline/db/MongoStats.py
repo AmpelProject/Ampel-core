@@ -54,7 +54,7 @@ class MongoStats:
 
 		return ret_dict
 
-
+	
 	@staticmethod
 	def get_tran_count(col, channel_name=None):
 		"""

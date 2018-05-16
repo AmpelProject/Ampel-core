@@ -37,16 +37,18 @@ class GraphiteFeeder:
 		"""
 		"""
 		if len(suffix) > 0 and suffix[-1] != ".": suffix += "."
-		for key in in_dict:
-			self.stats[suffix + key] = in_dict[key]
+
+		fdict = self.flatten_dict(in_dict)
+		for key in fdict:
+			self.stats[suffix + key] = fdict[key]
 
 
 	def add_stats_with_mean_std(self, in_dict, suffix=""):
 		"""
 		"""
 		if len(suffix) > 0 and suffix[-1] != ".": suffix += "."
-		fdict = self.flatten_dict(in_dict)
 
+		fdict = self.flatten_dict(in_dict)
 		for key in fdict:
 			val = fdict[key]
 			if type(val) in [tuple, list] and len(val) == 2: 
@@ -59,6 +61,8 @@ class GraphiteFeeder:
 	def send(self):
 		"""
 		"""
+
+		print(self.stats)
 		self.gclient.send_dict(self.stats)
 		self.stats = {}
 

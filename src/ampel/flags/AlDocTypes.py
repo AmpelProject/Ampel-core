@@ -28,4 +28,3 @@ class AlDocTypes(IntFlag):
 	COMPOUND		= 4
 	TRANSIENT		= 8
 	T2RECORD		= 16
-
