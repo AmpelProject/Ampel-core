@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 19.03.2018
-# Last Modified Date: 19.04.2018
+# Last Modified Date: 16.05.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import time, pymongo
@@ -73,12 +73,12 @@ class DBWired:
 
 		# Default setting
 		if config_db is None:
-			self.mongo_client = MongoClient(db_host)
+			self.mongo_client = MongoClient(db_host, maxIdleTimeMS=1000)
 			self.config_db = self.mongo_client["Ampel_config"]
 
 		# The config database name was provided
 		elif type(config_db) is str:
-			self.mongo_client = MongoClient(db_host)
+			self.mongo_client = MongoClient(db_host, maxIdleTimeMS=1000)
 			self.config_db = self.mongo_client[config_db]
 
 		# A reference to a MongoClient instance was provided
@@ -145,7 +145,7 @@ class DBWired:
 		if base_dbs is None:
 			self.plug_default_base_dbs(
 				self.mongo_client if hasattr(self, 'mongo_client') 
-				else MongoClient(db_host), 
+				else MongoClient(db_host, maxIdleTimeMS=1000),
 				logger
 			)
 
@@ -160,7 +160,7 @@ class DBWired:
 
 			# Get mongoclient if not instantiated previously	
 			mongo_client = (
-				MongoClient(db_host) if not hasattr(self, 'mongo_client') 
+				MongoClient(db_host, maxIdleTimeMS=1000) if not hasattr(self, 'mongo_client') 
 				else self.mongo_client
 			)
 
