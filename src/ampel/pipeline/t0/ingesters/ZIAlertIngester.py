@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 14.12.2017
-# Last Modified Date: 14.05.2018
+# Last Modified Date: 16.05.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import logging, pymongo, time
@@ -640,13 +640,13 @@ class ZIAlertIngester(AbsAlertIngester):
 			if self.add_dbbulk_stat is not None:
 
 				start = time.time()
-				db_op_results = self.col.bulk_write(db_ops) # DB update
+				db_op_results = self.col.bulk_write(db_ops, ordered=False) # DB update
 				time_delta = time.time() - start
 				self.add_dbbulk_stat(time_delta)
 				self.add_dbop_stat(time_delta / len(db_ops))
 
 			else:
-				db_op_results = self.col.bulk_write(db_ops) # DB update
+				db_op_results = self.col.bulk_write(db_ops, ordered=False) # DB update
 
 			# Feedback
 			if (
