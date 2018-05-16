@@ -1,0 +1,24 @@
+version: '3.4'
+services:
+  graphite:
+    image: go-graphite
+    volumes:
+      - type: tmpfs
+        target: /var/log/supervisor/
+      - type: tmpfs
+        target: /run/
+      - type: volume
+        source: graphite-metrics
+        target: /var/lib/graphite
+      - type: volume
+        source: grafana
+        target: /usr/share/grafana/data
+      - type: volume
+        source: graphite-config/go-carbon
+        target: /etc/go-carbon
+      - type: volume
+        source: graphite-config/carbonapi
+        target: /etc/carbonapi
+      - type: volume
+        source: graphite-config/grafana
+        target: /etc/grafana
