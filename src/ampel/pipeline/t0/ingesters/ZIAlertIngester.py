@@ -194,7 +194,8 @@ class ZIAlertIngester(AbsAlertIngester):
 				a2(el) # Upper limit
 
 		# Default refs to empty list (list concatenation occurs later)
-		pps_to_insert = uls_to_insert = []
+		pps_to_insert = []
+		uls_to_insert = []
 
 		# Create set with pp ids from alert
 		ids_pps_alert = {pp['candid'] for pp in pps_alert}

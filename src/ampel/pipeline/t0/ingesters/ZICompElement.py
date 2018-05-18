@@ -57,7 +57,7 @@ class ZICompElement(AbsCompElement):
 	
 		# Photopoint ids are referenced by the key name 'pp' 
 		# whereas upper limis ids are referenced by the key name 'ul'
-		id_key = 'pp' if 'magpsf' in input_d else 'ul'
+		id_key = 'pp' if 'magpsf' in input_d.keys() else 'ul'
 		comp_entry = {id_key: input_d['_id']}
 
 
