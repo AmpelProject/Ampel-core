@@ -23,8 +23,8 @@ class AlDocTypes(IntFlag):
 	flag *combinations* of AlDocTypes are never used since DB document are single typed.
 	"""
 	NOTYPE			= 0
-	PHOTOPOINT		= 1
-	UPPERLIMIT		= 2
-	COMPOUND		= 4
-	TRANSIENT		= 8
+	TRANSIENT		= 1
+	PHOTOPOINT		= 2
+	UPPERLIMIT		= 4
+	COMPOUND		= 8
 	T2RECORD		= 16
