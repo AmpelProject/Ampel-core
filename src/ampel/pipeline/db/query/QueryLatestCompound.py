@@ -91,8 +91,7 @@ class QueryLatestCompound:
 			{
 				'$project': {
 					'tranId': 1,
-					'len': 1,
-					'compoundId': 1
+					'len': 1
 				}
 			},
 			{
@@ -215,7 +214,7 @@ class QueryLatestCompound:
 					'latestAdded': {
 						'$max': '$added'
 					}, 
-					'compound': {
+					'comp': {
 						'$push': '$$ROOT'
 					}
 				}
@@ -229,19 +228,19 @@ class QueryLatestCompound:
 				'$limit': 1
 			},
 			{
-				'$unwind': '$compound'
+				'$unwind': '$comp'
 			},
 			{
 				'$project': {
 					'_id': 0,
-					'compound': 1, 
+					'comp': 1, 
 					'sortValueUsed': {
 						'$cond': {
 							'if': {
-								'$eq': ['$compound.tier', 0]
+								'$eq': ['$comp.tier', 0]
 							},
-							'then': '$compound.len',
-							'else': '$compound.added'
+							'then': '$comp.len',
+							'else': '$comp.added'
 						}
 					}
 				}
@@ -256,7 +255,7 @@ class QueryLatestCompound:
 			},
 			{
 				'$replaceRoot': {
-					'newRoot': '$compound' 
+					'newRoot': '$comp' 
 				}
 			}
 		]
