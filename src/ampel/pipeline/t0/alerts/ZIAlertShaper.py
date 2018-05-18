@@ -10,7 +10,7 @@
 
 from ampel.abstract.AbsAlertShaper import AbsAlertShaper
 from ampel.pipeline.logging.LoggingUtils import LoggingUtils
-from  types import MappingProxyType
+from types import MappingProxyType
 
 
 class ZIAlertShaper(AbsAlertShaper):
@@ -20,9 +20,9 @@ class ZIAlertShaper(AbsAlertShaper):
 	This class is responsible for:
 		* Parsing IPAC generated ZTF Alerts
 		* Splitting the list of photopoints contained in 'prv_candidates' in two lists:
-			* one pps list
-			* one upper limit list
-		* Casting the photopoint & upper limits dicts into ImmutableDicts
+			* a pps list
+			* a upper limit list
+		* Casting the photopoint & upper limits dicts into MappingProxyType
 		* Extracting the unique transient and alert id
 		* Returning a dict containing these values
 	"""
