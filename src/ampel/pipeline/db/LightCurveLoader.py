@@ -189,7 +189,10 @@ class LightCurveLoader:
 						)
 						frozen_pps_dict[photo_dict['_id']] = obj
 				else:
-					obj = PhotoPoint(photo_dict) if 'pp' in el else UpperLimit(photo_dict)
+					obj = (
+						PhotoPoint(photo_dict, self.read_only) if 'pp' in el 
+						else UpperLimit(photo_dict, self.read_only)
+					)
 
 			# Update internal list of PhotoPoint/UpperLimit instances
 			if 'pp' in el:

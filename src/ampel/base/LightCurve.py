@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 13.01.2018
-# Last Modified Date: 04.05.2018
+# Last Modified Date: 20.05.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import operator
@@ -17,7 +17,7 @@ class LightCurve:
 	This object has many similarities with AmpelAlert and yet some notable differences.
 	I wish I had the time to think of a possible object oriented parent/child 
 	structure for these two classes (AmpelAlert efficiency is by the way 
-	an important criteria since *every* ZTF alert instanciates an AmpelAlert obj).
+	an important criteria since *every* ZTF alert yields an AmpelAlert obj).
 	"""
 	
 	ops = {
