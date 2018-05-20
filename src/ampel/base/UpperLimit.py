@@ -1,12 +1,3 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-# File              : ampel/base/PhotoPoint.py
-# License           : BSD-3-Clause
-# Author            : vb <vbrinnel@physik.hu-berlin.de>
-# Date              : 13.01.2018
-# Last Modified Date: 19.05.2018
-# Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
-
 from ampel.flags.AlDocTypes import AlDocTypes
 from ampel.flags.FlagUtils import FlagUtils
 from ampel.flags.PhotoFlags import PhotoFlags
@@ -14,15 +5,15 @@ from ampel.flags.PhotoPolicy import PhotoPolicy
 from types import MappingProxyType
 
 
-class PhotoPoint:
+class UpperLimit:
 	"""
 	Wrapper class around a dict instance ususally originating from pymongo DB.
 
 	This class contains flags, convenience methods and should be able to 
-	accomodate different 'photopoint formats' as long as the photopoint 
+	accomodate different 'upper limit formats' as long as the upper limit 
 	content is encoded in a one-dimensional dict. 
-	The mapping between - let's call them ampel keywords such as 'photopoint_id' or 'mag'
-	and the keywords of the underlying photopoint dict such as - for ZTF-IPAC - 'candid' or 'magpsf'
+	The mapping between the ampel keywords such as 'obs_date' or 'maglim'
+	and the keywords of the underlying upper limit dict such as diffmaglim for ZTF-IPAC
 	is achieved using the static variable 'static_keywords'
 
 	An instance of this class can be frozen (by setting read_only to True) 
@@ -38,13 +29,9 @@ class PhotoPoint:
 	static_keywords = {
 		'ZTFIPAC': {
 			"transient_id" : "tranId",
-			"photopoint_id" : "_id",
 			"obs_date" : "jd",
 			"filter_id" : "fid",
-			"mag" : "magpsf",
-			"magerr": "sigmapsf",
-			"dec" : "dec",
-			"ra" : "ra"
+			"maglim" : "diffmaglim"
 		}
 	}
 
@@ -52,7 +39,7 @@ class PhotoPoint:
 	def set_pp_keywords(cls, pp_keywords):
 		"""
 		Set using ampel config values.
-		For ZTF IPAC alerts:
+		For ZTFIPAC alerts:
 		keywords = {
 			"transient_id" : "_id",
 			"photopoint_id" : "candid",
@@ -61,7 +48,7 @@ class PhotoPoint:
 			"mag" : "magpsf"
 		}
 		"""
-		PhotoPoint.static_keywords = pp_keywords
+		UpperLimit.static_keywords = pp_keywords
 
 
 	def __init__(self, db_doc, read_only=True):
@@ -77,8 +64,8 @@ class PhotoPoint:
 		   (should further modifications be required after class instantiation) 
 		"""
 
-		if db_doc["alDocType"] != AlDocTypes.PHOTOPOINT:
-			raise ValueError("The provided document is not a photopoint")
+		if db_doc["alDocType"] != AlDocTypes.UPPERLIMIT:
+			raise ValueError("The provided document is not an upper limit")
 
 		# Convert db flag to python enum flag
 		self.flags = FlagUtils.dbflag_to_enumflag(
@@ -87,7 +74,7 @@ class PhotoPoint:
 
 		# Check photopoint type and set field keywords accordingly
 		if PhotoFlags.INST_ZTF|PhotoFlags.SRC_IPAC in self.flags:
-			self.pp_keywords = PhotoPoint.static_keywords['ZTFIPAC']
+			self.pp_keywords = UpperLimit.static_keywords['ZTFIPAC']
 
 		# Check wether to freeze this instance.
 		if read_only:
@@ -125,7 +112,7 @@ class PhotoPoint:
 		Overrride python's default __setattr__ method to enable frozen instances
 		"""
 		# '_PhotoPoint__isfrozen' and not simply '__isfrozen' because: 'Private name mangling'
-		if getattr(self, "_PhotoPoint__isfrozen", None) is not None:
+		if getattr(self, "_UpperLimit__isfrozen", None) is not None:
 			raise TypeError( "%r is a frozen instance " % self )
 		object.__setattr__(self, key, value)
 
@@ -158,7 +145,7 @@ class PhotoPoint:
 		)
 
 
-	def get_mag(self):
+	def get_mag_lim(self):
 		"""
 		"""
 		if hasattr(self, 'policy_flags'):
@@ -167,6 +154,12 @@ class PhotoPoint:
 		return self.content[
 			self.pp_keywords["mag"]
 		]
+
+
+	def get_id(self):
+		"""
+		"""
+		return self.content["_id"]
 
 
 	def get_obs_date(self):
@@ -182,26 +175,4 @@ class PhotoPoint:
 		"""
 		return self.content[
 			self.pp_keywords["filter_id"]
-		]
-
-
-	def get_id(self):
-		"""
-		"""
-		return self.content["_id"]
-
-
-	def get_ra(self):
-		"""
-		"""
-		return self.content[
-			self.pp_keywords["ra"]
-		]
-
-
-	def get_dec(self):
-		"""
-		"""
-		return self.content[
-			self.pp_keywords["dec"]
 		]

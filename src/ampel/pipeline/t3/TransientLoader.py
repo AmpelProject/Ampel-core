@@ -8,6 +8,7 @@
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from ampel.base.PhotoPoint import PhotoPoint
+from ampel.base.UpperLimit import UpperLimit
 from ampel.base.LightCurve import LightCurve
 from ampel.base.Transient import Transient
 from ampel.base.ScienceRecord import ScienceRecord
@@ -28,11 +29,17 @@ from datetime import datetime
 class TransientLoader:
 	"""
 	"""
-	all_doc_types = AlDocTypes.PHOTOPOINT|AlDocTypes.COMPOUND|AlDocTypes.TRANSIENT|AlDocTypes.T2RECORD
+	all_doc_types = (
+		AlDocTypes.PHOTOPOINT |
+		AlDocTypes.UPPERLIMIT |
+		AlDocTypes.COMPOUND |
+		AlDocTypes.TRANSIENT |
+		AlDocTypes.T2RECORD
+	)
 
 
 	# TODO: implement include logs
-	def __init__(self, db, logger=None, collection="main", save_channels=False, include_logs=False):
+	def __init__(self, db, logger=None, collection="docs", save_channels=False, include_logs=False):
 		"""
 		"""
 
@@ -62,6 +69,11 @@ class TransientLoader:
 				-> load *all* photopoints avail for this transient (regardless of provided state)
 				-> The transient will contain a list of ampel.base.PhotoPoint instances 
 				-> No policy is set for all PhotoPoint instances
+
+			* 'AlDocTypes.UPPERLIMIT': 
+				-> load *all* upper limits avail for this transient (regardless of provided state)
+				-> The transient will contain a list of ampel.base.UpperLimit instances 
+				-> No policy is set for all UpperLimit instances
 
 			* 'AlDocTypes.COMPOUND': 
 				-> ampel.base.LightCurve instances are created based on DB documents 
@@ -169,11 +181,18 @@ class TransientLoader:
 		self.logger.info(" -> Fetching %i search results" % res_count)
 		res_doc_list = list(cursor)
 
-		# Returns a dict with keys='photopoints', 'compounds', 'transient', 't2records'
-		# and values = array of corresponding db dict instances
+		# Returns a dict with keys = 'photopoints', 'upperlimits', 'compounds', 
+		# 'transient', 't2records' and values = array of corresponding db dict instances
 		grouped_res = DBResultOrganizer.organize(
 			res_doc_list,
-			photopoints = (AlDocTypes.PHOTOPOINT or AlDocTypes.COMPOUND) in content_types, 
+			photopoints = (
+				AlDocTypes.PHOTOPOINT in content_types or 
+				AlDocTypes.COMPOUND in content_types
+			), 
+			upperlimits = (
+				AlDocTypes.UPPERLIMIT in content_types or 
+				AlDocTypes.COMPOUND in content_types
+			), 
 			compounds = AlDocTypes.COMPOUND in content_types, 
 			t2records = AlDocTypes.T2RECORD in content_types,
 			transient = AlDocTypes.TRANSIENT in content_types
@@ -182,6 +201,7 @@ class TransientLoader:
 		return self.load_from_results(
 			tran_id, 
 			pp_docs = grouped_res['photopoints'], 
+			ul_docs = grouped_res['upperlimits'], 
 			compound_docs = grouped_res['compounds'] if state != 'latest' else [latest_compound_dict],
 			tran_doc = grouped_res['transient'],
 			t2_docs = grouped_res['t2records'],
@@ -191,7 +211,7 @@ class TransientLoader:
 
 
 	def load_from_results(
-		self, tran_id, pp_docs=None, compound_docs=None, t2_docs=None, tran_doc=None,
+		self, tran_id, pp_docs=None, ul_docs=None, compound_docs=None, t2_docs=None, tran_doc=None,
 		state="latest", content_types=all_doc_types, tailored_res=False
 	):
 		"""
@@ -207,7 +227,7 @@ class TransientLoader:
 			channel_register = al_tran.new_channel_register()
 
 		# Instantiate and attach PhotoPoint objects if requested in the content_types
-		if AlDocTypes.PHOTOPOINT in content_types:
+		if AlDocTypes.PHOTOPOINT in content_types and pp_docs is not None:
 
 			# Photopoints instance attached to the transient instance are not bound to a compound 
 			# and come thus without policy 
@@ -217,15 +237,34 @@ class TransientLoader:
 				)
 					
 			# Feedback
-			trans_dict = al_tran.get_photopoints()
+			pps = al_tran.get_photopoints()
 			self.logger.info(
-				" -> %i associated photopoints: %s" % 
-				(len(trans_dict), trans_dict.keys())
+				" -> {} associated photopoint(s): {}".format(
+					len(pps), (*pps,) if len(pps) > 1 else next(iter(pps))
+				)
+			)
+
+		# Instantiate and attach UpperLimit objects if requested in the content_types
+		if AlDocTypes.UPPERLIMIT in content_types and ul_docs is not None:
+
+			# UpperLimits instance attached to the transient instance 
+			# are not bound to a compound and come thus without policy 
+			for ul_dict in ul_docs:
+				al_tran.add_upperlimit(
+					UpperLimit(ul_dict, read_only=True)
+				)
+					
+			# Feedback
+			uls = al_tran.get_upperlimits()
+			self.logger.info(
+				" -> {} associated upper limit(s): {}".format(
+					len(uls), (*uls,) if len(uls) > 1 else next(iter(uls))
+				)
 			)
 
 		# Loading lightcurves was requested 
 		# (loading is made based on DB 'compound' documents)
-		if AlDocTypes.COMPOUND in content_types:
+		if AlDocTypes.COMPOUND in content_types and compound_docs is not None:
 
 			# Load all available/multiple compounds for this transient
 			if state == "all" or type(state) is list:
@@ -250,7 +289,7 @@ class TransientLoader:
 
 					# Intanciate ampel.base.LightCurve object
 					lc = self.lcl.load_using_results(
-						pp_docs, comp_dict, frozen_pps_dict = frozen_pps_dict
+						pp_docs, ul_docs, comp_dict, frozen_pps_dict = frozen_pps_dict
 					)
 
 					# Associate it to the ampel.base.Transient instance
@@ -278,8 +317,7 @@ class TransientLoader:
 
 				# Intanciate ampel.base.LightCurve object
 				lc = self.lcl.load_using_results(
-					pp_docs, 
-					compound_docs[0], # should be only one
+					pp_docs, ul_docs, compound_docs[0], # should be only one
 					frozen_pps_dict = (
 						al_tran.get_photopoints(copy=False) 
 						if AlDocTypes.PHOTOPOINT in content_types 
@@ -309,7 +347,7 @@ class TransientLoader:
 					" -> 1 lightcurve loaded (%s)" % latest_compound_id
 				)
 
-		if AlDocTypes.TRANSIENT in content_types:
+		if AlDocTypes.TRANSIENT in content_types and tran_doc is not None:
 
 			# Load, translate alFlags from DB into a TransientFlags enum flag instance 
 			# and associate it with the ampel.base.Transient object instance
@@ -339,7 +377,7 @@ class TransientLoader:
 			# Feedback
 			self.logger.info(" -> loaded transient info")
 
-		if AlDocTypes.T2RECORD in content_types:
+		if AlDocTypes.T2RECORD in content_types and t2_docs is not None:
 
 			if state == "all" or type(state) is list or tailored_res is True:
 
@@ -378,30 +416,6 @@ class TransientLoader:
 	):
 
 		pass	
-
-
-	@staticmethod
-	def get_latest_t0_compound_id_from_db(col, tran_id):
-		""" 
-		Static method. 
-		"""
-		res = next(
-		    col.find(
-	       		{
-	           		'tranId': tran_id,
-	           		'alDocType': AlDocTypes.COMPOUND
-	       		},
-	       		{
-					'tranId': 1,
-					'len':1
-				}
-	    	)
-	    	.sort([('len', -1)])
-	    	.limit(1),
-			None
-		)
-
-		return res['_id'] if res is not None else None
 
 
 	@staticmethod

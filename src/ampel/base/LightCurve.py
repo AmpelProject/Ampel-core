@@ -7,15 +7,17 @@
 # Last Modified Date: 04.05.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-from ampel.flags.AlDocTypes import AlDocTypes
-from ampel.flags.FlagUtils import FlagUtils
-from werkzeug.datastructures import ImmutableList
-import operator, logging
+import operator
 
 class LightCurve:
 	"""
-		Class containing a collection of PhotoPoint instances.
-		And a few convenience methods to return values embedded in the collection.
+	Class containing a collection of PhotoPoint/UpperLimit instances.
+	And a few convenience methods to return values embedded in the collection.
+
+	This object has many similarities with AmpelAlert and yet some notable differences.
+	I wish I had the time to think of a possible object oriented parent/child 
+	structure for these two classes (AmpelAlert efficiency is by the way 
+	an important criteria since *every* ZTF alert instanciates an AmpelAlert obj).
 	"""
 	
 	ops = {
@@ -23,16 +25,19 @@ class LightCurve:
 		'<': operator.lt,
 		'>=': operator.ge,
 		'<=': operator.le,
-		'=': operator.eq,
-		'in': operator.contains
+		'==': operator.eq,
+		'!=': operator.ne,
+		'is': operator.is_,
+		'is not': operator.is_not
 	}
 
-
-	def __init__(self, compound_dict, al_pps_list, read_only=True, logger=None):
+	
+	def __init__(self, compound_dict, ppo_list, ulo_list=None, read_only=True, logger=None):
 		"""
 		compound: dict instance loaded using compound DB dict
-		al_pps_list: list of ampel.base.PhotoPoint instances
-		read_only: wether the provided list should be casted as ImmutableList 
+		ppo_list: list of ampel.base.PhotoPoint instances
+		ulo_list: list of ampel.base.UpperLimit instances
+		read_only: wether the provided list should be casted as immutable tuple
 		and the class instance frozen
 		"""
 
@@ -42,20 +47,20 @@ class LightCurve:
 		self.lastppdt = compound_dict['lastppdt']
 
 		if read_only:
-			self.al_pps_list = ImmutableList(al_pps_list)
+			self.ppo_list = tuple(el for el in ppo_list)
+			self.ulo_list = tuple(el for el in ulo_list) if ulo_list is not None else []
 			self.is_frozen = True
 		else:
-			self.al_pps_list = al_pps_list
+			self.ppo_list = ppo_list
+			self.ulo_list = ulo_list if ulo_list is not None else []
 
 		if logger is not None:
-			logger.info("LightCurve loaded with %i photopoints" % len(self.al_pps_list))
+			logger.info(
+				"LightCurve loaded with %i photopoints and %i upper limits" % 
+				(len(self.ppo_list), len(self.ulo_list))
+			)
 
 	
-	def get_property(self, name):
-		""" """
-		return getattr(self, name, None)
-
-
 	def __setattr__(self, key, value):
 		"""
 		Overrride python's default __setattr__ method to enable frozen instances
@@ -67,64 +72,98 @@ class LightCurve:
 		object.__setattr__(self, key, value)
 
 
-	def filter_pps(self, filters):
-		""" """
-
-		filtered_pps = []
-
+	def apply_filter(self, match_objs, filters):
+		"""
+		"""
 		if type(filters) is dict:
 			filters = [filters]
+		else:
+			if filters is None or type(filters) is not list:
+				raise ValueError("filters must be of type dict or list")
 
 		for filter_el in filters:
 
-			operator = LightCurve.ops[filter_el['operator']] 
-			del filter_el['operator']
+			operator = LightCurve.ops[
+				filter_el['operator']
+			]
 
-			for fkey in filter_el.keys():
-				filtered_pps = list(
-					filter(
-						lambda pp: pp.has_parameter(fkey) and operator(pp.get_value(fkey), filter_el[fkey]), 
-						self.al_pps_list
-					)
+			attr_name = filter_el['attribute']
+			match_objs = tuple(
+				filter(
+					lambda x: x.has_parameter(attr_name) and operator(x.get_value(attr_name), filter_el['value']), 
+					match_objs
 				)
+			)
 
-		return filtered_pps
+		return match_objs
 
 
-	def get_values(self, field_name, filters=None):
+	def get_values(self, field_name, filters=None, upper_limits=False):
 		"""
 		ex: instance.get_values('obs_date')
+		'filters' example: {'attribute': 'magpsf', 'operator': '<', 'value': 18}
+		'upper_limits': if set to True, upper limits are returned instead of photopoints
 		"""
-
-		if filters is not None and type(filters) is not dict and type(filters) is not list:
-			raise ValueError("filters must be of type dict or list")
-			
-		pps = self.al_pps_list if filters is None else self.filter_pps(filters)
-
 		return [
-			pp.get_value(field_name) 
-			for pp in pps if pp.has_parameter(field_name)
+			obj.get_value(field_name) 
+			for obj in self._get_photo_objs(filters, upper_limits) 
+			if obj.has_parameter(field_name)
 		]
 
 
-	def get_tuples(self, field1_name, field2_name, filters=None):
+	def get_tuples(self, field1_name, field2_name, filters=None, upper_limits=False):
 		"""
 		ex: instance.get_values('obs_date', 'mag')
+		'filters' example: {'attribute': 'magpsf', 'operator': '<', 'value': 18}
+		'upper_limits': if set to True, upper limits are returned instead of photopoints
 		"""
-
-		if filters is not None and type(filters) is not dict and type(filters) is not list:
-			raise ValueError("filters must be of type dict or list")
-
-		pps = self.filter_pps(filters) if filters is not None else self.al_pps_list
 		return [
-			(pp.get_value(field1_name), pp.get_value(field2_name))
-			for pp in pps if pp.has_parameter(field1_name) and pp.has_parameter(field2_name)
+			(obj.get_value(field1_name), obj.get_value(field2_name))
+			for obj in self._get_photo_objs(filters, upper_limits) 
+			if obj.has_parameter(field1_name) and obj.has_parameter(field2_name)
 		]
+
+
+	def get_ntuples(self, params, filters=None, upper_limits=False):
+		"""
+		params: list of strings
+		ex: instance.get_ntuples(["fid", "obs_date", "mag"])
+		'filters' example: {'attribute': 'magpsf', 'operator': '<', 'value': 18}
+		'upper_limits': if set to True, upper limits are returned instead of photopoints
+		"""
+		return tuple(
+			tuple(obj[param] for param in params) 
+			for obj in self._get_photo_objs(filters, upper_limits) 
+			if all(obj.has_parameter(param) for param in params)
+		)
 
 	
 	def get_photopoints(self, filters=None):
-		""" """
-		return self.filter_pps(filters) if filters is not None else self.al_pps_list
+		""" returns a list of dicts """
+		return (
+			self.apply_filter(self.ppo_list, filters) if filters is not None 
+			else self.ppo_list
+		)
+
+
+	def get_upperlimits(self, filters=None):
+		""" returns a list of dicts """
+		return (
+			self.apply_filter(self.ulo_list, filters) if filters is not None 
+			else self.ulo_list
+		)
+
+
+	def _get_photo_objs(self, filters, upper_limits):
+		"""	
+		"""	
+		if filters is None:
+			return self.ulo_list if upper_limits else self.ppo_list
+		else:
+			return (
+				self.apply_filter(self.ulo_list, filters) if upper_limits 
+				else self.apply_filter(self.ppo_list, filters)
+			)
 
 
 	def get_pos(self, ret="brightest", filters=None):
@@ -139,7 +178,7 @@ class LightCurve:
 		instance.get_pos("brightest", {'alFlags': PhotoFlags.ZTF_G, 'in'})
 			returns the position of the brightest PhotoPoint in the ZTF G band
 
-		instance.get_pos("lastest", {'magpsf': 18, '<'})
+		instance.get_pos("lastest", {'attribute': 'magpsf', 'operator': '<', 'value': 18})
 			returns the position of the latest PhotoPoint in time with a magnitude brighter than 18
 			(or an empty array if no PhotoPoint matches this criteria)
 		"""
@@ -147,7 +186,7 @@ class LightCurve:
 		if ret == "raw": 
 			return self.get_tuples("ra", "dec", filters=filters)
 
-		pps = self.filter_pps(filters) if filters is not None else self.al_pps_list
+		pps = self.apply_filter(self.ppo_list, filters) if filters is not None else self.ppo_list
 
 		if ret == "mean": 
 			ras = [pp.get_value("ra") for pp in pps]

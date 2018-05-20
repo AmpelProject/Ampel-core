@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 14.02.2018
-# Last Modified Date: 15.03.2018
+# Last Modified Date: 20.05.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from ampel.flags.AlDocTypes import AlDocTypes
@@ -16,13 +16,16 @@ class QueryLoadTransient:
 	"""
 	"""
 
+	t0_altypes = (
+		AlDocTypes.PHOTOPOINT, 
+		AlDocTypes.UPPERLIMIT, 
+		AlDocTypes.COMPOUND, 
+		AlDocTypes.TRANSIENT
+	)
+
 	@staticmethod
 	def load_transient_query(tran_id, content_types, t2_ids=None):
 		"""
-		Please note that if AlDocTypes.COMPOUND is included in content_types, 
-		document with AlDocTypes.PHOTOPOINT will be queried as well since photopoints instances
-		are required to instantiate LightCurve objects.
-
 		Stateless query: all compounds and (possible t2_ids limited) t2docs to be retrieved	
 		"""
 
@@ -34,13 +37,15 @@ class QueryLoadTransient:
 
 		# Build array of AlDocTypes (AlDocTypes.T2RECORD will be set later since it depends in t2_ids)
 		al_types = []
-		for al_type in [AlDocTypes.PHOTOPOINT, AlDocTypes.COMPOUND, AlDocTypes.TRANSIENT]:
+		for al_type in QueryLoadTransient.t0_altypes:
 			if al_type in content_types:
 				al_types.append(al_type)
 
-		# Loading LightCurve instances requires photopoints information
-		if AlDocTypes.COMPOUND in content_types and AlDocTypes.PHOTOPOINT not in content_types:
-			al_types.append(AlDocTypes.PHOTOPOINT)
+		# Loading LightCurve instances requires photopoints/upper limits information
+		#if AlDocTypes.COMPOUND in content_types:
+		#	for al_type in (AlDocTypes.PHOTOPOINT, AlDocTypes.UPPERLIMIT):
+		#		if al_type not in content_types:
+		#			al_types.append(al_type)
 
 		if t2_ids is None:
 
@@ -69,7 +74,7 @@ class QueryLoadTransient:
 			# Combine first part of query (photopoints+transient+compounds) with 
 			# runnableId targeted T2RECORD query
 			query['$or'] = [
-				# photopoints+transient+compounds 
+				# photopoints+upperlimits+transient+compounds 
 				{
 					'alDocType': (
 						al_types[0] if len(al_types) == 1 
@@ -79,7 +84,6 @@ class QueryLoadTransient:
 				record_match_dict
 			]
 
-
 		return query
 
 
@@ -88,9 +92,6 @@ class QueryLoadTransient:
 		tran_id, content_types, compound_id, t2_ids=None, comp_already_loaded=False
 	):
 		"""
-		Please note that if AlDocTypes.COMPOUND is included in content_types, 
-		document with AlDocTypes.PHOTOPOINT will be queried as well since photopoints instances
-		are required to instantiate LightCurve objects.
 		"""
 
 		# Logic check
@@ -105,36 +106,27 @@ class QueryLoadTransient:
 		# build query with 'or' connected search criteria
 		or_list = []
 
-		if (
-			AlDocTypes.TRANSIENT|AlDocTypes.PHOTOPOINT in content_types or
-			AlDocTypes.TRANSIENT|AlDocTypes.COMPOUND in content_types
-		):
+		# Build array of AlDocTypes (AlDocTypes.T2RECORD will be set later since it depends in t2_ids)
+		al_types = []
+		for al_type in (AlDocTypes.PHOTOPOINT, AlDocTypes.UPPERLIMIT, AlDocTypes.TRANSIENT):
+			if al_type in content_types:
+				al_types.append(al_type)
+
+		if len(al_types) > 1:
 
 			or_list.append(
 				{
 					'alDocType': {
-						'$in': [
-							AlDocTypes.TRANSIENT, 
-							AlDocTypes.PHOTOPOINT
-						]
+						'$in': al_types
 					}
 				}
 			)
 
 		else:
 
-			if AlDocTypes.TRANSIENT in content_types:
-				or_list.append(
-					{'alDocType': AlDocTypes.TRANSIENT}
-				)
-
-			if (
-				AlDocTypes.PHOTOPOINT in content_types or 
-				AlDocTypes.COMPOUND in content_types
-			):
-				or_list.append(
-					{'alDocType': AlDocTypes.PHOTOPOINT}
-				)
+			or_list.append(
+				{'alDocType': al_types[0]}
+			)
 
 		if AlDocTypes.COMPOUND in content_types and comp_already_loaded is False:
 

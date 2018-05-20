@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 14.12.2017
-# Last Modified Date: 15.05.2018
+# Last Modified Date: 20.05.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from ampel.flags.AlertFlags import AlertFlags
@@ -119,50 +119,13 @@ class AmpelAlert:
 		"""
 		ex: instance.get_values("mag")
 		"""
-
 		if param_name in AmpelAlert.alert_keywords:
 			param_name = AmpelAlert.alert_keywords[param_name]
 
-		if filters is None:
-			browse_pps = self.uls if upper_limits else self.pps
-		else:
-			browse_pps = self.apply_filter(self.uls, filters) if upper_limits else self.apply_filter(self.pps, filters)
-
 		return tuple(
 			el[param_name] 
-			for el in browse_pps if param_name in el
+			for el in self._get_photo_objs(filters, upper_limits) if param_name in el
 		)
-
-
-	def apply_filter(self, match_pps, filters):
-		"""
-		"""
-
-		if type(filters) is dict:
-			filters = [filters]
-
-		for filter_el in filters:
-
-			operator = AmpelAlert.ops[
-				filter_el['operator']
-			]
-
-			provided_field = filter_el['attribute']
-			filter_el['value']
-
-			attr_name = (
-				provided_field if not provided_field in AmpelAlert.alert_keywords 
-				else AmpelAlert.alert_keywords[provided_field]
-			)
-
-			match_pps = tuple(
-				filter(
-					lambda el: attr_name in el and operator(el[attr_name], filter_el['value']), 
-					match_pps
-				)
-			)
-
-		return match_pps
 
 
 	def get_tuples(self, param1, param2, filters=None, upper_limits=False):
@@ -175,14 +138,9 @@ class AmpelAlert:
 		if param2 in AmpelAlert.alert_keywords:
 			param2 = AmpelAlert.alert_keywords[param2]
 
-		if filters is None:
-			browse_pps = self.uls if upper_limits else self.pps
-		else:
-			browse_pps = self.apply_filter(self.uls, filters) if upper_limits else self.apply_filter(self.pps, filters)
-
 		return tuple(
 			(el[param1], el[param2]) 
-			for el in browse_pps if param1 in el and param2 in el
+			for el in self._get_photo_objs(filters, upper_limits) if param1 in el and param2 in el
 		)
 
 
@@ -191,30 +149,36 @@ class AmpelAlert:
 		params: list of strings
 		ex: instance.get_ntuples(["fid", "obs_date", "mag"])
 		"""
-
 		# If any of the provided parameter matches defined keyword mappings
 		if AmpelAlert.alert_kws_set & set(params):
 			for i, param in enumerate(params):
 				if param in AmpelAlert.alert_keywords:
 					params[i] = AmpelAlert.alert_keywords[param]
 	
-		# Filter photopoints if filter was provided
-		if filters is None:
-			browse_pps = self.uls if upper_limits else self.pps
-		else:
-			browse_pps = self.apply_filter(self.uls, filters) if upper_limits else self.apply_filter(self.pps, filters)
-
 		return tuple(
 			tuple(el[param] for param in params) 
-			for el in browse_pps if all(param in el for param in params)
+			for el in self._get_photo_objs(filters, upper_limits) if all(param in el for param in params)
 		)
 
 
+	def _get_photo_objs(self, filters, upper_limits):
+		
+		# Filter photopoints if filter was provided
+		if filters is None:
+			return self.uls if upper_limits else self.pps
+		else:
+			return self.apply_filter(self.uls, filters) if upper_limits else self.apply_filter(self.pps, filters)
+
+
 	def get_photopoints(self):
-		"""
-		returns a list of dicts
-		"""
+		""" returns a list of dicts """
 		return self.pps
+
+
+
+	def get_upperlimits(self):
+		""" returns a list of dicts """
+		return self.uls
 
 
 	def get_id(self):
@@ -222,3 +186,35 @@ class AmpelAlert:
 		returns the transient Id (ZTF: objectId)
 		"""
 		return self.tran_id
+
+
+	def apply_filter(self, match_objs, filters):
+		"""
+		"""
+
+		if type(filters) is dict:
+			filters = [filters]
+		else:
+			if filters is None or type(filters) is not list:
+				raise ValueError("filters must be of type dict or list")
+
+		for filter_el in filters:
+
+			operator = AmpelAlert.ops[
+				filter_el['operator']
+			]
+
+			filter_attr_name = filter_el['attribute']
+			attr_name = (
+				filter_attr_name if not filter_attr_name in AmpelAlert.alert_keywords 
+				else AmpelAlert.alert_keywords[filter_attr_name]
+			)
+
+			match_objs = tuple(
+				filter(
+					lambda el: attr_name in el and operator(el[attr_name], filter_el['value']), 
+					match_objs
+				)
+			)
+
+		return match_objs

@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 14.12.2017
-# Last Modified Date: 09.05.2018
+# Last Modified Date: 20.05.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from ampel.flags.PhotoFlags import PhotoFlags
@@ -30,7 +30,7 @@ class ZIPhotoDictShaper:
 		0: PhotoFlags.ZTF_PUBLIC | PhotoFlags.ZTF_COLLAB,	
 		1: PhotoFlags.ZTF_PUBLIC,	
 		2: PhotoFlags.ZTF_COLLAB,
-		3: PhotoFlags.ZTF_COLLAB # won't likely happen
+		3: PhotoFlags.ZTF_COLLAB # acutally CALTEC
 	}
 
 	# Filter color
