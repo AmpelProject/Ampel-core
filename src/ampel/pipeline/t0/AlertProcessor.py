@@ -199,7 +199,7 @@ class AlertProcessor(DBWired):
 
 		# Save current time to later evaluate how low was the pipeline processing time
 		time_now = time.time
-		start_time = time_now()
+		run_start = time_now()
 
 
 		# Part 1: Setup logging 
@@ -265,10 +265,15 @@ class AlertProcessor(DBWired):
 
 		# metrics dict
 		loop_stats = {}
+		job_info = {}
 
 		# stat with variable length
-		for key in ('ingestTime', 'dbBulkTime', 'dbOpTime', 'alertPpsLen', 'alertUlsLen'):
+		for key in ('ingestTime', 'dbBulkTime', 'dbOpTime'):
 			loop_stats[key] = []
+
+		# Cumul stats
+		for key in ('ppsLoaded', 'ulsLoaded'):
+			job_info[key] = 0
 
 		# stat with fixed length
 		for i, channel in self.chan_enum: 
@@ -294,6 +299,8 @@ class AlertProcessor(DBWired):
 		chan_enum = self.chan_enum
 		tran_col = self.get_tran_col()
 
+		# Save pre run time
+		pre_run = time_now()
 
 
 		# Part 3: Process alerts
@@ -356,6 +363,11 @@ class AlertProcessor(DBWired):
 				# Unset channel id <-> log entries association
 				dblh_unset_channel()
 
+			# Update cumul stats
+			job_info['ppsLoaded'] += len(shaped_alert['pps'])
+			if shaped_alert['uls'] is not None:
+				job_info['ulsLoaded'] += len(shaped_alert['uls'])
+
 			if any(scheduled_t2_units):
 
 				# Ingest alert
@@ -380,11 +392,7 @@ class AlertProcessor(DBWired):
 
 				# Save stats
 				loop_stats['ingestTime'].append(time_now() - start)
-				loop_stats['alertPpsLen'].append(len(shaped_alert['pps']))
-				loop_stats['alertUlsLen'].append(
-					len(shaped_alert['uls']) if shaped_alert['uls'] is not None else 0
-				)
-
+				
 			# Unset log entries association with transient id
 			dblh_unset_tranId()
 
@@ -393,6 +401,9 @@ class AlertProcessor(DBWired):
 			if iter_count == iter_max:
 				self.logger.info("Reached max number of iterations")
 				break
+
+		# Save post run time
+		post_run = time_now()
 
 		# Post run section
 		try: 
@@ -408,9 +419,11 @@ class AlertProcessor(DBWired):
 						# TODO: implement post-processing-autocomplete
 						pass 
 	
-			# Total duration in seconds
-			duration = int(time_now() - start_time)
-			job_info = {'duration': duration}
+			# Durations in seconds
+			job_info['duration']: {
+				'preRun': int(pre_run - run_start),
+				'main': int(pre_run - post_run)
+			}
 	
 			if self.publish_stats is not None and iter_count > 0:
 	
@@ -420,7 +433,7 @@ class AlertProcessor(DBWired):
 				job_info['ingested'] = len(loop_stats['ingestTime'])
 	
 				# Ingest metrics: mean time & std dev in microseconds
-				for key in ('ingestTime', 'dbBulkTime', 'dbOpTime', 'alertPpsLen', 'alertUlsLen'):
+				for key in ('ingestTime', 'dbBulkTime', 'dbOpTime', 'ppsLen', 'ulsLen'):
 					if len(loop_stats[key]) > 0: 
 						job_info[key] = self.compute_stat(loop_stats[key])
 	
@@ -440,7 +453,9 @@ class AlertProcessor(DBWired):
 						)
 					}
 
-				job_info = self.gather_and_send_stats(tran_ids_after, job_info)
+				job_info = self.gather_and_send_stats(
+					tran_ids_after, post_run=post_run, t0_stats=job_info
+				)
 
 			# Insert job info into job document
 			db_job_reporter.set_job_stats("t0Stats", job_info)
@@ -458,7 +473,10 @@ class AlertProcessor(DBWired):
 		# re-add initial log buffer
 		self.logger.addHandler(self.ilb)
 
-		loginfo("Alert processing completed (time required: %ss)" % duration)
+		loginfo(
+			"Alert processing completed (time required: %is)" % 
+			int(time_now() - run_start)
+		)
 
 		# Restore console logging if it was removed
 		if not console_logging:
@@ -473,7 +491,7 @@ class AlertProcessor(DBWired):
 		return iter_count
 
 
-	def gather_and_send_stats(self, tran_ids, t0_stats=None):
+	def gather_and_send_stats(self, tran_ids, post_run=None, t0_stats=None):
 		"""
 		"""
 
@@ -505,6 +523,8 @@ class AlertProcessor(DBWired):
 			)
 
 		if t0_stats is not None:
+			if post_run is not None:
+				t0_stats['duration']['postRun'] = int(time.time() - post_run)
 			stat_dict['t0'] = t0_stats
 
 		# Publish metrics to graphite
