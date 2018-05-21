@@ -140,7 +140,7 @@ class Sergeant(object):
 				sources[-1][key.strip(':')] = tag.next_sibling.strip()
 		return sources
 
-	def list_saved_sources(self, lims = False, verbose=True):
+	def list_saved_sources(self, lims=False, maxpage=1e99, verbose=True):
 		'''
 		read all sources from the Saved Sources page(s)
 		return a list of dictionaries with info (eg, coordinates, light curve)
@@ -160,8 +160,11 @@ class Sergeant(object):
 		sources = []
 		while True:
 
+			if page_number>maxpage:
+				break
+
 			if verbose:
-				print ('list_saved_sources: reading page {0}'.format(page_number))
+				print ('list_saved_sources: reading page {0}'.format(page_number))				
 
 			self.saved_soup = soup_obj(rawsaved_url + "?programidx=%s&offset=%s" %(self.cutprogramidx, targ0))
 
