@@ -248,7 +248,6 @@ class AlertProcessor(DBWired):
 
 		# Create array
 		scheduled_t2_units = len(self.channels) * [None]
-		filter_tran_counter = len(self.channels) * [0]
 
 		# Save ampel 'state' and get list of tran ids required for autocomplete
 		tran_ids_before = self.get_tran_ids()
@@ -262,34 +261,55 @@ class AlertProcessor(DBWired):
 		# Loop variables
 		iter_max = AlertProcessor.iter_max
 		iter_count = 0
+		ingested_count = 0
+		pps_loaded = 0
+		uls_loaded = 0
 
 		# metrics dict
 		loop_stats = {}
-		job_info = {}
+		job_info = {
+			'duration': {
+				't0Job': {},
+				'ingestion': {
+					'preIngestTime': [],
+					'dbBulkTime': [],
+					'dbPerOpMeanTime': []
+				},
+				'filtering': {
+					'all': np.empty(iter_max)
+				}
+			},
+			'count': {
+				# Cumul stats
+				't0Job': {},	
+				'db': {},	
+				'ingestion': {
+					'alerts': {},
+					'dbOps': {}
+				}
+			}
+		}
 
-		# stat with variable length
-		for key in ('ingestTime', 'dbBulkTime', 'dbOpTime'):
-			loop_stats[key] = []
-
-		# Cumul stats
-		for key in ('ppsLoaded', 'ulsLoaded'):
-			job_info[key] = 0
-
-		# stat with fixed length
+		job_info['duration']['filtering']['all'].fill(np.nan)
 		for i, channel in self.chan_enum: 
-			# loop_stats[channel.name] records filter performances
+			# job_info[channel.name] records filter performances
 			# nan will remain only if exception occur for particular alerts
-			loop_stats[channel.name] = np.empty(iter_max)
-			loop_stats[channel.name].fill(np.nan)
+			job_info['duration']['filtering'][channel.name] = np.empty(iter_max)
+			job_info['duration']['filtering'][channel.name].fill(np.nan)
+			job_info['count']['ingestion']['alerts'][channel.name] = 0
 
 		# The (standard) ingester will update DB insert operations
-		self.ingester.set_stats_dict(loop_stats)
+		if hasattr(self.ingester, "set_stats_dict"):
+			self.ingester.set_stats_dict(
+				job_info['duration']['ingestion'],
+				job_info['count']['ingestion']['dbOps'],
+			)
 
 		# Publish general stats to graphite
 		if "graphite" in self.publish_stats:
 			self.gather_and_send_stats(tran_ids_before)
 
-		# python micro-optimization
+		# python shortcuts and micro-optimization
 		loginfo = self.logger.info
 		logdebug = self.logger.debug
 		dblh_set_tranId = db_logging_handler.set_tranId
@@ -298,6 +318,9 @@ class AlertProcessor(DBWired):
 		dblh_unset_channel = db_logging_handler.unset_channels
 		chan_enum = self.chan_enum
 		tran_col = self.get_tran_col()
+		filtering_stats = job_info['duration']['filtering']
+		job_count_stats = job_info['count']['t0Job']
+		alert_counts = job_info['count']['ingestion']['alerts']
 
 		# Save pre run time
 		pre_run = time_now()
@@ -323,6 +346,14 @@ class AlertProcessor(DBWired):
 				tran_id, shaped_alert['ro_pps'], shaped_alert['ro_uls']
 			)
 
+			# Update cumul stats
+			pps_loaded += len(shaped_alert['pps'])
+			if shaped_alert['uls'] is not None:
+				uls_loaded += len(shaped_alert['uls'])
+
+			# stats
+			all_filters_start = time_now()
+
 			# Loop through initialized channels
 			for i, channel in chan_enum:
 
@@ -331,19 +362,24 @@ class AlertProcessor(DBWired):
 
 				try:
 
-					start = time_now()
+					# stats
+					per_filter_start = time_now()
+
 					# Apply filter (returns None in case of rejection or t2 runnable ids in case of match)
 					scheduled_t2_units[i] = channel.filter_func(ampel_alert)
-					loop_stats[channel.name][iter_count] = time_now() - start
+
+					# stats
+					filtering_stats[channel.name][iter_count] = time_now() - per_filter_start
 
 					# Log feedback and count
 					if scheduled_t2_units[i] is not None:
-						filter_tran_counter[i] += 1
+						alert_counts[channel.name] += 1
 						loginfo(channel.log_accepted)
 					else:
 						# Autocomplete required for this channel
 						if tran_ids_before[i] is not None and tran_id in tran_ids_before[i]:
 							loginfo(channel.log_auto_complete)
+							alert_counts[channel.name] += 1
 							scheduled_t2_units[i] = channel.t2_units
 						else:
 							loginfo(channel.log_rejected)
@@ -363,17 +399,17 @@ class AlertProcessor(DBWired):
 				# Unset channel id <-> log entries association
 				dblh_unset_channel()
 
-			# Update cumul stats
-			job_info['ppsLoaded'] += len(shaped_alert['pps'])
-			if shaped_alert['uls'] is not None:
-				job_info['ulsLoaded'] += len(shaped_alert['uls'])
+			# time required for all filters
+			filtering_stats['all'][iter_count] = time_now() - all_filters_start
 
 			if any(scheduled_t2_units):
 
 				# Ingest alert
 				loginfo(" -> Ingesting alert")
 
-				start = time_now()
+				# stats
+				ingested_count += 1
+
 				# TODO: build tran_id <-> alert_id map (replayibility)
 				#processed_alert[tran_id]
 				try: 
@@ -390,9 +426,6 @@ class AlertProcessor(DBWired):
 						shaped_alert = shaped_alert
 					)
 
-				# Save stats
-				loop_stats['ingestTime'].append(time_now() - start)
-				
 			# Unset log entries association with transient id
 			dblh_unset_tranId()
 
@@ -420,45 +453,50 @@ class AlertProcessor(DBWired):
 						pass 
 	
 			# Durations in seconds
-			job_info['duration']: {
-				'preRun': int(pre_run - run_start),
-				'main': int(pre_run - post_run)
+			job_info['duration']['t0Job'] = {
+				'preLoop': int(pre_run - run_start),
+				'main': int(post_run - pre_run)
+				# post loop will be computed in gather_and_send_stats()
 			}
 	
 			if self.publish_stats is not None and iter_count > 0:
 	
 				self.logger.info("Computing job stats")
 	
-				job_info['processed'] = iter_count
-				job_info['ingested'] = len(loop_stats['ingestTime'])
-	
-				# Ingest metrics: mean time & std dev in microseconds
-				for key in ('ingestTime', 'dbBulkTime', 'dbOpTime', 'ppsLen', 'ulsLen'):
-					if len(loop_stats[key]) > 0: 
-						job_info[key] = self.compute_stat(loop_stats[key])
-	
-				# Filter metrics
+				# Gather counts
+				job_info['count']['t0Job'] = {
+					'alLoaded': iter_count,
+					'alIngested': ingested_count,
+					'ppsLoaded': pps_loaded,
+					'ulsLoaded': uls_loaded
+				}
+
+				# Compute mean time & std dev in microseconds
+				#############################################
+
+				# For ingest metrics
+				ingestion_stats = job_info['duration']['ingestion']
+				for key in ('preIngestTime', 'dbBulkTime', 'dbPerOpMeanTime'):
+					if len(ingestion_stats[key]) > 0: 
+						ingestion_stats[key] = self.compute_stat(ingestion_stats[key])
+
+				# For filter metrics
 				len_non_nan = lambda x: iter_max - np.count_nonzero(np.isnan(x))
-				for i, channel in chan_enum:
-					mylen = len_non_nan(loop_stats[channel.name])
-					job_info[channel.name] = {
-						'ingested': filter_tran_counter[i],
-						'filterTime': (
-							(0, 0) if len_non_nan(loop_stats[channel.name]) == 0
-							else self.compute_stat(
-								loop_stats[channel.name], 
-								mean=np.nanmean, 
-								std=np.nanstd
-							)
+				for key in [channel.name for channel in self.channels] + ['all']:
+					mylen = len_non_nan(filtering_stats[key])
+					filtering_stats[key] = (
+						(0, 0) if len_non_nan(filtering_stats[key]) == 0
+						else self.compute_stat(
+							filtering_stats[key], mean=np.nanmean, std=np.nanstd
 						)
-					}
+					)
 
 				job_info = self.gather_and_send_stats(
 					tran_ids_after, post_run=post_run, t0_stats=job_info
 				)
 
 			# Insert job info into job document
-			db_job_reporter.set_job_stats("t0Stats", job_info)
+			db_job_reporter.set_job_stats("stats", job_info)
 
 		except:
 
@@ -495,37 +533,47 @@ class AlertProcessor(DBWired):
 		"""
 		"""
 
-		stat_dict = {
-			'db': {
-				'chans': {},
+		tran_col = self.get_tran_col()
+		stat_dict = {}
+		count_dict = {}
+		dbinfo_dict = {
+			'daemon': MongoStats.get_server_stats(tran_col.database),
+			'colStats': {
+				'jobs': MongoStats.get_col_stats(self.get_job_col()),
+				'transients': MongoStats.get_col_stats(tran_col)
+			},
+			'docsCount': {
+				'troubles': self.get_trouble_col().find({}).count(),
+				'transients': {
+					'pps': tran_col.find({'alDocType': AlDocTypes.PHOTOPOINT}).count(),
+					'uls': tran_col.find({'alDocType': AlDocTypes.UPPERLIMIT}).count(),
+					'compounds': tran_col.find({'alDocType': AlDocTypes.COMPOUND}).count(),
+					't2s': tran_col.find({'alDocType': AlDocTypes.T2RECORD}).count(),
+					'trans':tran_col.find({'alDocType': AlDocTypes.TRANSIENT}).count()
+				}
 			}
 		}
 
-		# Global metrics
-		tran_col = self.get_tran_col()
-		stat_dict['db']['daemon'] = MongoStats.get_server_stats(tran_col.database)
-		stat_dict['db']['jobs'] = MongoStats.get_col_stats(self.get_job_col())
-		stat_dict['db']['jobs']['troubles'] = self.get_trouble_col().find({}).count()
-		stat_dict['db']['trans'] = MongoStats.get_col_stats(tran_col)
-		stat_dict['db']['trans']['docs'] = {}
-		stat_dict['db']['trans']['docs']['pps'] = tran_col.find({'alDocType': AlDocTypes.PHOTOPOINT}).count()
-		stat_dict['db']['trans']['docs']['uls'] = tran_col.find({'alDocType': AlDocTypes.UPPERLIMIT}).count()
-		stat_dict['db']['trans']['docs']['compounds'] = tran_col.find({'alDocType': AlDocTypes.COMPOUND}).count()
-		stat_dict['db']['trans']['docs']['t2s'] = tran_col.find({'alDocType': AlDocTypes.T2RECORD}).count()
-		stat_dict['db']['trans']['docs']['trans'] = tran_col.find({'alDocType': AlDocTypes.TRANSIENT}).count()
-
-
 		# Channel specific metrics
 		for i, channel in self.chan_enum:
-			stat_dict['db']['chans'][channel.name] = (
+			count_dict[channel.name] = (
 				len(tran_ids[i]) if tran_ids[i] is not None 
 				else MongoStats.get_tran_count(tran_col, channel.name)
 			)
 
-		if t0_stats is not None:
+		if t0_stats is None:
+			stat_dict = {
+				'dbinfo': dbinfo_dict,
+				'count': {
+					'db': count_dict
+				}
+			}
+		else:
+			t0_stats['dbinfo'] = dbinfo_dict
+			t0_stats['count']['db'] = count_dict
 			if post_run is not None:
-				t0_stats['duration']['postRun'] = int(time.time() - post_run)
-			stat_dict['t0'] = t0_stats
+				t0_stats['duration']['t0Job']['postLoop'] = int(time.time() - post_run)
+			stat_dict = t0_stats
 
 		# Publish metrics to graphite
 		if "graphite" in self.publish_stats:
@@ -537,11 +585,12 @@ class AlertProcessor(DBWired):
 			# with error: [Errno 32] Broken pipe
 			# So we re-create a GraphiteClient every time we send something to graphite...
 			gfeeder = GraphiteFeeder(self.global_config['graphite']) 
-			gfeeder.add_stats_with_mean_std(stat_dict)
 
 			if t0_stats is not None:
-				gfeeder.add_stats_with_mean_std(t0_stats, suffix='t0.')
-	
+				gfeeder.add_stats_with_mean_std(stat_dict)
+			else:
+				gfeeder.add_stats(stat_dict)
+
 			gfeeder.send()
 
 		return stat_dict

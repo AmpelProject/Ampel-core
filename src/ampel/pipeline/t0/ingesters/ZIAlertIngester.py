@@ -84,7 +84,8 @@ class ZIAlertIngester(AbsAlertIngester):
 		)
 
 		self.col = output_col
-		self.add_dbbulk_stat = self.add_dbop_stat = None
+		self.append_bulk_time = None
+		self.append_per_op_time = None
 		self.check_reproc = check_reprocessing
 		self.al_hist_len = alert_history_length
 
@@ -113,18 +114,23 @@ class ZIAlertIngester(AbsAlertIngester):
 		self.job_id = job_id
 
 
-	def set_stats_dict(self, stats_dict):
+	def set_stats_dict(self, duration_dict, count_dict):
 		"""
 		"""
+		if not 'dbBulkTime' in duration_dict:
+			duration_dict['dbBulkTime'] = []
 
-		if not 'dbBulkTime' in stats_dict:
-			stats_dict['dbBulkTime'] = []
+		if not 'dbPerOpMeanTime' in duration_dict:
+			duration_dict['dbPerOpMeanTime'] = []
 
-		if not 'dbOpTime' in stats_dict:
-			stats_dict['dbOpTime'] = []
+		self.append_bulk_time = duration_dict['dbBulkTime'].append
+		self.append_per_op_time = duration_dict['dbPerOpMeanTime'].append
+		self.append_pre_ingest_time = duration_dict['preIngestTime'].append
+		self.count_dict = count_dict
 
-		self.add_dbbulk_stat = stats_dict['dbBulkTime'].append
-		self.add_dbop_stat = stats_dict['dbOpTime'].append
+		for key in ('ppsUpd', 'ulsUpd', 't2Upd', 'compUpd', 'ppsReproc'):
+			self.count_dict[key] = 0
+			
 
 
 	def set_photodict_shaper(self, arg_photo_shaper):
@@ -163,7 +169,14 @@ class ZIAlertIngester(AbsAlertIngester):
 		##   Part 1: Gather info from DB and alert   ##
 		###############################################
 
+		# pymongo bulk op array
 		db_ops = []
+
+		# metrics
+		pps_reprocs = 0
+		t2_upserts = 0
+		compound_upserts = 0
+		start = time.time()
 
 		# Load existing photopoint and upper limits from DB if any
 		self.logger.info("Checking DB for existing pps/uls")
@@ -183,15 +196,13 @@ class ZIAlertIngester(AbsAlertIngester):
 
 		pps_db = []
 		uls_db = []
-		a1 = pps_db.append
-		a2 = uls_db.append
 
 		# Create pps / uls lists from (mixed) db results
 		for el in meas_db:
 			if 'magpsf' in el:  
-				a1(el) # Photopoint
+				pps_db.append(el) # Photopoint
 			else:
-				a2(el) # Upper limit
+				uls_db.append(el) # Upper limit
 
 		# Default refs to empty list (list concatenation occurs later)
 		pps_to_insert = []
@@ -373,6 +384,7 @@ class ZIAlertIngester(AbsAlertIngester):
 							photod_db_superseeded['alFlags'].append(SUPERSEEDED)
 
 						# Create and append pymongo update operation
+						pps_reprocs += 1
 						db_ops.append(
 							pymongo.UpdateOne(
 								{'_id': photod_db_superseeded["_id"]}, 
@@ -446,6 +458,8 @@ class ZIAlertIngester(AbsAlertIngester):
 			if pp_comp_id != eff_comp_id:
 				d_set_on_insert['ppCompId'] = pp_comp_id
 
+			compound_upserts += 1
+
 			db_ops.append(
 				pymongo.UpdateOne(
 					{"_id": eff_comp_id},
@@ -456,6 +470,7 @@ class ZIAlertIngester(AbsAlertIngester):
 					upsert=True
 				)
 			)
+
 			
 
 
@@ -573,6 +588,7 @@ class ZIAlertIngester(AbsAlertIngester):
 							"op": "upsertEff"
 						}
 
+					t2_upserts += 1
 
 					# Append update operation to bulk list
 					db_ops.append(
@@ -586,8 +602,9 @@ class ZIAlertIngester(AbsAlertIngester):
 						)
 					)
 
+
 		# Insert generated t2 docs into collection
-		self.logger.info("%i T2 docs will be inserted into DB", len(db_ops) - db_ops_len_before)
+		self.logger.info("%i T2 docs will be inserted into DB", t2_upserts)
 
 
 
@@ -638,13 +655,26 @@ class ZIAlertIngester(AbsAlertIngester):
 
 		try: 
 
-			if self.add_dbbulk_stat is not None:
+			if self.append_bulk_time is not None:
+
+				# Save time required by python for this method so far
+				self.append_pre_ingest_time(time.time() - start)
 
 				start = time.time()
-				db_op_results = self.col.bulk_write(db_ops, ordered=False) # DB update
+				# Perform all DB operations
+				db_op_results = self.col.bulk_write(db_ops, ordered=False)
 				time_delta = time.time() - start
-				self.add_dbbulk_stat(time_delta)
-				self.add_dbop_stat(time_delta / len(db_ops))
+
+				# Time recoders
+				self.append_bulk_time(time_delta)
+				self.append_per_op_time(time_delta / len(db_ops))
+
+				# Counters
+				self.count_dict['ppsUpd'] += len(pps_to_insert)
+				self.count_dict['ulsUpd'] += len(uls_to_insert)
+				self.count_dict['t2Upd'] += t2_upserts
+				self.count_dict['compUpd'] += compound_upserts
+				self.count_dict['ppsReproc'] += pps_reprocs
 
 			else:
 				db_op_results = self.col.bulk_write(db_ops, ordered=False) # DB update

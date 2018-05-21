@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 23.04.2018
-# Last Modified Date: 13.05.2018
+# Last Modified Date: 21.05.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from functools import reduce
@@ -17,10 +17,11 @@ class MongoStats:
 	# mongod serverStatus key values
 	db_metrics = {
 		"mem.resident": "memRes",
-		"metrics.document.deleted": "docDel",
-		"metrics.document.inserted": "docIns",
-		"metrics.document.returned": "docRet",
-		"metrics.document.updated": "docUpd"
+		"connections.current": "connections"
+		#"metrics.document.deleted": "docDel",
+		#"metrics.document.inserted": "docIns",
+		#"metrics.document.returned": "docRet",
+		#"metrics.document.updated": "docUpd"
 	}
 
 
