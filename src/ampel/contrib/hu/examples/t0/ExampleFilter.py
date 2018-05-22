@@ -1,19 +1,20 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/contrib/hu/examples/t0/ExampleFilter.py
+# File              : src/ampel/contrib/hu/examples/t0/ExampleFilter.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 14.12.2017
-# Last Modified Date: 08.03.2018
+# Last Modified Date: 18.05.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from ampel.abstract.AbsAlertFilter import AbsAlertFilter
+from ampel.pipeline.logging.LoggingUtils import LoggingUtils
+
 
 class ExampleFilter(AbsAlertFilter):
 	"""
 	REQUIREMENTS:
 	-------------
-
 	A T0 filter class must (otherwise exception will be throwed):
 	* inherit the abstract parent class 'AbsAlertFilter'
 	* define a class variable named 'version' with a float value
@@ -23,19 +24,23 @@ class ExampleFilter(AbsAlertFilter):
 	"""
 
 	# Static version info
-	version = 0.2
+	version = 0.3
 
 
 	def __init__(self, on_match_t2_units, base_config=None, run_config=None, logger=None):
 		"""
 		Mandatory implementation.
-		Parameter 'd' is a dict instance loaded from the ampel config. 
-		It means d can contain any parameter you define 
-		for your channel in 'alertFilter.parameters'
+		See the jupyter notebook "Understanding T0 Filters"
+
+		Parameters:
+		'on_match_t2_units': list of t2 unit ids (strings) 
+		'base_config': dict instance loaded from the ampel config
+		'run_config': dict instance loaded from the ampel config
+		'logger': logger instance (python module logging)
 		"""
 
 		# Instance variable holding reference to provider logger 
-		self.logger = logger
+		self.logger = LoggingUtils.get_logger() if logger is None else logger
 
 		# Logging example
 		self.logger.info("Please use this logger object for logging purposes")
@@ -46,7 +51,7 @@ class ExampleFilter(AbsAlertFilter):
 		self.on_match_t2_units = on_match_t2_units
 
 		# Example: 'magpsf' (see the jupyter notebook "Understanding T0 Filters")
-		self.filter_field = base_config['field']
+		self.filter_field = base_config['attrName']
 
 		# Example: 18 (see the jupyter notebook "Understanding T0 Filters")
 		self.threshold = run_config['threshold']
@@ -58,7 +63,9 @@ class ExampleFilter(AbsAlertFilter):
 		To exclude the alert, return *None*
 		To accept it, either 
 			* return self.on_match_t2_units
-			* return a custom combination of ampel.flags.T2UnitIds
+			* return a custom list of t2 unit ids (strings) 
+			 -> the custom list must be a subset of self.on_match_t2_units, 
+			    it cannot contain other/new t2 unit ids.
 
 		In this example filter, any measurement of a transient 
 		brighter than a fixed magnitude threshold will result 
