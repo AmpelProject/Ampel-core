@@ -36,20 +36,22 @@ class PTFConfig(object) :
 	def get(self,*args,**kwargs) :
 		return self.config.get(*args,**kwargs)
 
-def get_marshal_html(weblink, attempts=0, max_attempts=5):
+def get_marshal_html(weblink, attempts=1, max_attempts=5):
 	
 	conf = PTFConfig()
 	auth = requests.auth.HTTPBasicAuth(conf.get('Marshal', 'user'), conf.get('Marshal', 'passw'))
 	
 	try:
-		reponse = requests.get(weblink, auth=auth)
+		reponse = requests.get(weblink, auth=auth, timeout=120+60*attempts)
 	
-	except requests.exceptions.ConnectionError:		
+	except (requests.ConnectionError, requests.ReadTimeout) as req_e:		
 
 		print ('Sergeant.get_marshal_html(): ', weblink)
-		print ('Sergeant.get_marshal_html(): request.ConnectionError this is our {0} attempt, {1} left', attempts, max_attempts-max_attempts)
+		print (req_e)
+		print ('Sergeant.get_marshal_html(): ConnectionError or ReadTimeout this is our {0} attempt, {1} left', attempts, max_attempts-max_attempts)
 
 		if attempts<max_attempts:
+			time.sleep(3)
 			reponse.text = get_marshal_html(weblink, attempts=attempts+1)	
 		else:
 			print ('Sergeant.get_marshal_html(): giving up')
@@ -362,13 +364,9 @@ def comment(comment, source, comment_type="info", comment_id=None, remove=False)
 		params = urllib.parse.urlencode(cmd) # python3 
 	except AttributeError:
 		params = urllib.urlencode(cmd) # python2	
-	try:
-		return soup_obj(marshal_root + 'edit_comment.cgi?%s' %params)
-	except error:
-		#print (error)
-		print ('timed out... trying one more time...')
-		return soup_obj(marshal_root + 'edit_comment.cgi?%s' %params)
-
+	
+	return soup_obj(marshal_root + 'edit_comment.cgi?%s' %params)
+	
 
 info_date = 'April 2018'
 def get_Marshal_info():
