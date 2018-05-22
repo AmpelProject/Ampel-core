@@ -9,6 +9,7 @@ from collections import defaultdict
 from ampel import archive
 
 from sqlalchemy import select, create_engine
+import sqlalchemy
 from sqlalchemy.sql.functions import count
 from collections import Iterable
 import json
@@ -22,6 +23,19 @@ def alert_schema():
 @pytest.fixture(scope="function", params=['sqlite', 'postgres'])
 def mock_database(alert_schema, request):
     meta = archive.create_metadata(alert_schema)
+    def pg_drop_database(engine, database):
+       # terminate connections and drop database
+       with engine.connect() as conn:
+           try:
+               conn.execute("commit")
+               conn.execute(
+                   """ALTER DATABASE {db} WITH CONNECTION LIMIT 0;
+                      SELECT pg_terminate_backend(sa.pid) FROM pg_stat_activity sa WHERE 
+                      sa.pid <> pg_backend_pid() AND sa.datname = '{db}';""".format(db=database))
+               conn.execute("commit")
+               conn.execute("DROP DATABASE {db};".format(db=database))
+           except sqlalchemy.exc.ProgrammingError:
+               pass
     if request.param == 'sqlite':
         engine = archive.create_database(meta, 'sqlite:///:memory:')
     elif request.param == 'postgres':
@@ -30,6 +44,7 @@ def mock_database(alert_schema, request):
         database = 'test_archive'
         password = archive.docker_env('POSTGRES_PASSWORD')
         master = create_engine('postgresql://{}:{}@{}/{}'.format(user,password,host,'postgres'))
+        pg_drop_database(master, database)
         with master.connect() as conn:
             conn.execute("commit")
             conn.execute("create database {}".format(database))
@@ -40,15 +55,7 @@ def mock_database(alert_schema, request):
     yield meta, connection
 
     if request.param == 'postgres':
-        # terminate connections and drop database
-        with master.connect() as conn:
-            conn.execute("commit")
-            conn.execute(
-                """ALTER DATABASE {db} WITH CONNECTION LIMIT 0;
-                   SELECT pg_terminate_backend(sa.pid) FROM pg_stat_activity sa WHERE 
-                   sa.pid <> pg_backend_pid() AND sa.datname = '{db}';""".format(db=database))
-            conn.execute("commit")
-            conn.execute("DROP DATABASE {db};".format(db=database))
+       pg_drop_database(master, database)
 
 def test_create_database(alert_schema):
     meta = archive.create_metadata(alert_schema)
@@ -133,19 +140,45 @@ def test_insert_duplicate_photopoints(mock_database, alert_generator):
 def assert_alerts_equivalent(alert, reco_alert):
     
     # some necessary normalization on the alert
+    fluff = ['pdiffimfilename', 'programpi', 'ssnamenr']
     alert = dict(alert)
-    alert['candidate'] = dict(alert['candidate'])
-    for k,v in alert['candidate'].items():
-        if isinstance(v, float) and isnan(v):
-            alert['candidate'][k] = None
+    def strip(in_dict):
+        out_dict = dict(in_dict)
+        for k,v in in_dict.items():
+            if isinstance(v, float) and isnan(v):
+                out_dict[k] = None
+            if k in fluff:
+                del out_dict[k]
+            if k == 'isdiffpos' and v is not None:
+                assert v in {'0', '1', 'f', 't'}
+                out_dict[k] = v in {'1', 't'}
+        return out_dict
+    alert['candidate'] = strip(alert['candidate'])
     assert alert.keys() == reco_alert.keys()
     for k in alert:
         if 'candidate' in k:
             continue
         assert alert[k] == pytest.approx(reco_alert[k])
     assert len(alert['prv_candidates']) == len(reco_alert['prv_candidates'])
-    for prv, reco_prv in zip(alert['prv_candidates'], reco_alert['prv_candidates']):
+    prvs = sorted(alert['prv_candidates'], key=lambda f: (f['jd'], f['candid'] is None))
+    reco_prvs = sorted(reco_alert['prv_candidates'], key=lambda f: (f['jd'], f['candid'] is None))
+    try:
+        assert [c['candid'] for c in prvs] == [c['candid'] for c in reco_prvs]
+    except:
+        jd_off = lambda cands: [c['jd'] - cands[0]['jd'] for c in cands]
+        print(jd_off(prvs))
+        print(jd_off(reco_alert['prv_candidates']))
+        raise
+    for prv, reco_prv in zip(prvs, reco_prvs):
+        prv = strip(prv)
         assert sorted(prv.keys()) == sorted(reco_prv.keys())
+        for k in prv.keys():
+            # print(k, prv[k], reco_prv[k])
+            try:
+                assert prv[k] == pytest.approx(reco_prv[k])
+            except:
+                print(k, prv[k], reco_prv[k])
+                raise
         assert prv == pytest.approx(reco_prv)
         #assert prv == reco_prv
     assert alert['candidate'] == pytest.approx(reco_alert['candidate'])
