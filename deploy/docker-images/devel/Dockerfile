@@ -6,11 +6,12 @@ RUN conda create --yes -n ampel --file /requirements.txt python=3 --channel=ampe
 
 # Transplant environment (without conda itself) into bare-bones alpine
 FROM alpine:3.7
-RUN apk add --no-cache ca-certificates wget libgcc libstdc++ && \
+RUN apk add --no-cache ca-certificates wget libgcc libstdc++ findutils && \
     wget -q -O /etc/apk/keys/sgerrand.rsa.pub https://raw.githubusercontent.com/sgerrand/alpine-pkg-glibc/master/sgerrand.rsa.pub && \
     wget https://github.com/sgerrand/alpine-pkg-glibc/releases/download/2.27-r0/glibc-2.27-r0.apk && \
     apk add glibc-2.27-r0.apk && \
     rm glibc-2.27-r0.apk
+
 COPY --from=conda /lib/x86_64-linux-gnu/libgcc_s.so.1 /usr/glibc-compat/lib/
 COPY --from=conda /opt/conda/envs /opt/conda/envs
 
