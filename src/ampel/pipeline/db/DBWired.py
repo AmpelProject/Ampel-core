@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 19.03.2018
-# Last Modified Date: 16.05.2018
+# Last Modified Date: 23.05.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import time, pymongo
@@ -15,13 +15,12 @@ class DBWired:
 	""" 
 	"""
 
-	def plug_databases(self, logger, db_host='localhost', config_db=None, base_dbs=None):
+	def plug_databases(self, logger, db_host='localhost', config_db=None, central_db=None):
 		"""
 		Parameters:
-		'db_host': dns name or ip address (with optionally a port number ) 
-		           of the server hosting mongod
+		'db_host': dns name or ip address (with optionally a port number) of server hosting mongod
 		'config_db': see plug_config_db() docstring
-		'base_dbs': see plug_base_dbs() docstring
+		'central_db': see plug_central_db() docstring
 		"""
 
 		# Setup instance variable referencing the input database
@@ -42,16 +41,16 @@ class DBWired:
 			self.global_config[doc['_id']] = doc
 
 		# Setup instance variables referencing the output databases
-		if self.plug_base_dbs(base_dbs, logger, db_host):
+		if self.plug_central_db(central_db, logger, db_host):
 
 			# Re-try using mongomock rather than pymongo
 			import mongomock
-			if self.plug_base_dbs(
-				base_dbs, logger, db_host, 
+			if self.plug_central_db(
+				central_db, logger, db_host, 
 				MongoClient=mongomock.mongo_client.MongoClient,
 				Database=mongomock.database.Database
 			):
-				raise ValueError("Illegal type provided for argument 'base_dbs'")
+				raise ValueError("Illegal type provided for argument 'central_db'")
 
 
 	def plug_config_db(
@@ -104,61 +103,45 @@ class DBWired:
 		return False
 
 
-	def plug_base_dbs(
-		self, base_dbs, logger, db_host='localhost',
+	def plug_central_db(
+		self, arg, logger, db_host='localhost',
 		MongoClient=pymongo.mongo_client.MongoClient,
 		Database=pymongo.database.Database
 	):
 		"""		
 		setup output database (will typically contain the collections 'transients' and 'jobs')
-		Parameter 'base_dbs' must be either:
+		Parameter 'arg' must be either:
 
-			-> MongoClient instance (pymongo or mongomock): 
-			   the provided instance will be used, whereby databases and collections will be
-			   loaded using the values defined in Ampel_config -> global -> dbSpecs -> databases
+			-> MongoClient instance (pymongo or mongomock): the provided instance will be used
+			   If the required collections do not exist, Ampel will create them and 
+			   ensure that they have the right indexes
 
-			-> a dict instance:
-				-> keys: as of April 2018, following keys can be used:
-				   'transients', 'jobs', 'stats', 'troubles' 
-				   (see Ampel_config -> global -> dbSpecs -> databases)
-				   If the database or the associated collection
-				-> values: can be either:
-					* a string: a database with the provided name will be loaded or created.
-					  This setting basically overules the db name defined in 
-					  Ampel_config -> global -> dbSpecs -> databases -> <dict key> -> dbName
-					  A collection will be instantiated using the collection name defined in the conf entry
-					  Ampel_config -> global -> dbSpecs -> databases -> <dict key> -> collectionName
-				   	  Ampel will ensure that the collection has the right indexes
-					* or Database instance (pymongo or mongomock).
-					  The provided db instance will be used and a collection will be instantiated
-                      using the collection name defined in the conf entry 
-					  Ampel_config -> global -> dbSpecs -> databases -> <dict key> -> collectionName
-					  Please note that using this option, Ampel will not ensure that 
-					  the loaded collection uses the right indexes.
-					* or dict with the same structure than Ampel_config -> global -> dbSpecs -> databases -> <dict key>.
-				-> example:
-					{
-						'transients': 'test_transients', 
-						'jobs': 'test_jobs'
-					}
+			-> A string: a database with the provided name will be loaded or created.
+			   If the required collections do not exist, Ampel will create them and 
+			   ensure that they have the right indexes
+			 
+			-> A Database instance (pymongo or mongomock).
+			   If the required collections do not exist, Ampel will create them and 
+			   ensure that they have the right indexes
 		"""
 
 		# Load transient DB based on entries from config DB
-		if base_dbs is None:
-			self.plug_default_base_dbs(
-				self.mongo_client if hasattr(self, 'mongo_client') 
-				else MongoClient(db_host, maxIdleTimeMS=1000),
-				logger
+		if arg is None:
+			self.set_vars(
+				logger, mc = (
+					self.mongo_client if hasattr(self, 'mongo_client') 
+					else MongoClient(db_host, maxIdleTimeMS=1000)
+				)
 			)
 
 		# A reference to a MongoClient instance (pymongo or mongomock) was provided
-		elif type(base_dbs) is MongoClient:
-			self.plug_default_base_dbs(base_dbs, logger)
+		elif type(arg) is MongoClient:
+			logger.info("Customized MongoClient was provided")
+			self.set_vars(logger, mc=arg)
 
-		elif type(base_dbs) is dict:
+		elif type(arg) is str:
 
-			# Feedback
-			logger.info("Customized base DB(s) was provided")
+			logger.info("Customized central DB name was provided: %s" % arg)
 
 			# Get mongoclient if not instantiated previously	
 			mongo_client = (
@@ -166,109 +149,68 @@ class DBWired:
 				else self.mongo_client
 			)
 
-			dbs_config = self.global_config['dbSpecs']['databases']
+			self.set_vars(logger, db=mongo_client[arg])
 
-			# Robustness: check that custom dict contains only known db labels
-			dbs_names = dbs_config.keys()
-			for key in base_dbs.keys():
-				if not key in dbs_names:
-					raise ValueError("Unknown database name '%s'" % key)
-					
-			# Loop through base db specs (loaded from config db)
-			for key in dbs_config.keys():
-			
-				dict_value = dbs_config[key] if not key in base_dbs else base_dbs[key]
-
-				# DB name was provided
-				if type(dict_value) is str:
-					if key in base_dbs:
-						config = dbs_config[key].copy()
-						config['dbName'] = dict_value
-					else:
-						config = dbs_config[key]
-					setattr(
-						self, key + "_col",
-						self.get_or_create_db(mongo_client, key, config, logger)
-					)
-
-				# Collection instance was provided
-				elif type(dict_value) is Database:
-					setattr(
-						self, key + "_col", 
-						dict_value[dbs_config[key]['collectionName']]
-					)
-	
-				# Dict was provided 
-				# Requires same format as Ampel_config -> global -> dbSpecs -> databases -> <dict key>
-				elif type(dict_value) is dict:
-					setattr(
-						self, 
-						key + "_col", 
-						self.get_or_create_db(mongo_client, key, dict_value, logger)
-					)
-
-				else:
-
-					# Illegal type for list member
-					logger.warn(
-						"base_dbs[%s] dict value is neither string nor %s. Type: %s" % 
-						(key, Database, type(dict_value))
-					)
-
-					return True
+		elif type(arg) is Database:
+		
+			logger.info("Customized central Database instance")
+			self.set_vars(logger, db=arg)
 
 		# Illegal argument type
 		else:
-			raise ValueError(
-				"type(base_dbs) is neither %s nor dict" % MongoClient
+			raise ValueError("Invalid argument")
+
+
+	def set_vars(self, logger, mc=None, db=None):
+		"""
+		Plug central database and collections using default values 
+		"""
+
+		if mc is None and db is None:
+			raise ValueError("Invalid arguments")
+
+		if mc is not None:
+			db = mc["Ampel"]
+
+		existing_col_names = db.collection_names()
+
+		if "photo" in existing_col_names:
+			self.photo_col = db["photo"]
+		else:
+			logger.info("Creating new photo collection")
+			self.photo_col = db.create_collection("photo")
+			DBIndexCreator.create_photo_indexes(self.photo_col)
+
+		if "main" in existing_col_names:
+			self.main_col = db["main"]
+		else:
+			logger.info("Creating new main collection")
+			self.main_col = db.create_collection("main")
+			DBIndexCreator.create_main_indexes(self.main_col)
+
+
+		if "jobs" in existing_col_names:
+			self.jobs_col = db["jobs"]
+		else:
+			self.jobs_col = db.create_collection(
+				'jobs', storageEngine={
+					'wiredTiger':{
+						'configString':'block_compressor=zlib'
+					}
+				}
 			)
 
-
-	def plug_default_base_dbs(self, mongo_client, logger):
-		"""
-		Plug central databases and collections using default values 
-		from Ampel_config -> global -> dbSpecs -> databases
-		"""
-
-		dbs_config = self.global_config['dbSpecs']['databases']
-
-		for key in dbs_config.keys():
-			setattr(
-				self, 
-				key + "_col", 
-				self.get_or_create_db(mongo_client, key, dbs_config[key], logger)
-			)
+		self.troubles_col = db.client["Ampel_troubles"]['docs']
 
 
-	def get_or_create_db(self, mongo_client, db_key_name, db_config, logger):
-		"""
-		Plug central databases and collections using conf values provided by db_config
-		"""
-
-		db_name = db_config['dbName']
-		col_name = db_config['collectionName']
-
-		# New transients DB / collection
-		if  db_key_name == "transients" and (
-			db_name not in mongo_client.database_names() or 
-			col_name not in mongo_client[db_name].collection_names()
-		):
-			logger.info("New transients collection, creating indexes")
-			col = mongo_client[db_name].create_collection(col_name)
-			DBIndexCreator.create_tran_db_indexes(col)
-			return col
-
-		return mongo_client[db_name][col_name]
-
-
-	def get_tran_col(self):
+	def get_main_col(self):
 		# pylint: disable=no-member
-		return self.transients_col
+		return self.main_col
 
 
-	def get_stat_col(self):
+	def get_photo_col(self):
 		# pylint: disable=no-member
-		return self.stats_col
+		return self.photo_col
 
 
 	def get_job_col(self):

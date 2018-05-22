@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 23.04.2018
-# Last Modified Date: 21.05.2018
+# Last Modified Date: 23.05.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from functools import reduce
@@ -70,6 +70,7 @@ class MongoStats:
 
 			return col.find(
 				{
+					'tranId': {'$gt': 1},
 					'alDocType': AlDocTypes.TRANSIENT
 				}
 			).count()
@@ -78,6 +79,7 @@ class MongoStats:
 
 			return col.find(
 				{
+					'tranId': {'$gt': 1},
 					'alDocType': AlDocTypes.TRANSIENT, 
 					'channels': channel_name
 				}

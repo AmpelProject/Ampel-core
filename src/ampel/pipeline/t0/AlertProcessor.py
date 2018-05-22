@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 10.10.2017
-# Last Modified Date: 12.05.2018
+# Last Modified Date: 23.05.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import pymongo, time, numpy as np
@@ -43,7 +43,7 @@ class AlertProcessor(DBWired):
 
 	def __init__(
 		self, channels=None, source="ZTFIPAC", db_host='localhost', config_db=None, 
-		base_dbs=None, stats={'graphite', 'jobs'}, load_ingester=True
+		central_db=None, stats={'graphite', 'jobs'}, load_ingester=True
 	):
 		"""
 		Parameters:
@@ -54,7 +54,7 @@ class AlertProcessor(DBWired):
 			- String: channel with the provided id will be loaded
 			- List of strings: channels with the provided ids will be loaded 
 		'config_db': see ampel.pipeline.db.DBWired.plug_config_db() docstring
-		'base_dbs': see ampel.pipeline.db.DBWired.plug_base_dbs() docstring
+		'central_db': see ampel.pipeline.db.DBWired.plug_central_db() docstring
 		'stats': record performance stats in the database:
 				* jobs: include t0 metrics in job document
 				* graphite: send db metrics and t0 metrics to graphite 
@@ -69,11 +69,11 @@ class AlertProcessor(DBWired):
 
 		# Tmp workaround for MongoClient perf issue
 		self.arg_config_db = config_db
-		self.arg_base_dbs = base_dbs
+		self.arg_central_db = central_db
 		self.arg_db_host = db_host
 
 		# Setup instance variable referencing ampel databases
-		self.plug_databases(self.logger, db_host, config_db, base_dbs)
+		self.plug_databases(self.logger, db_host, config_db, central_db)
 
 		# Load channels
 		cl = ChannelLoader(self.config_db, source=source, tier=0)
@@ -124,7 +124,8 @@ class AlertProcessor(DBWired):
 
 			if load_ingester:
 				self.ingester = ZIAlertIngester(
-					self.channels, self.config_db['t2_units'], self.get_tran_col(),
+					self.channels, self.config_db['t2_units'], 
+					self.get_photo_col(), self.get_main_col(),
 					check_reprocessing = ingest_conf['checkReprocessing'],
 					alert_history_length = ingest_conf['alertHistoryLength'],
 					logger = self.logger
@@ -195,7 +196,7 @@ class AlertProcessor(DBWired):
 		"""
 
 		# Tmp workaround for MongoClient perf issue
-		self.plug_databases(self.logger, self.arg_db_host, self.arg_config_db, self.arg_base_dbs)
+		self.plug_databases(self.logger, self.arg_db_host, self.arg_config_db, self.arg_central_db)
 
 		# Save current time to later evaluate how low was the pipeline processing time
 		time_now = time.time
@@ -317,7 +318,6 @@ class AlertProcessor(DBWired):
 		dblh_unset_tranId = db_logging_handler.unset_tranId
 		dblh_unset_channel = db_logging_handler.unset_channels
 		chan_enum = self.chan_enum
-		tran_col = self.get_tran_col()
 		filtering_stats = job_info['duration']['filtering']
 		job_count_stats = job_info['count']['t0Job']
 		alert_counts = job_info['count']['ingestion']['alerts']
@@ -533,23 +533,25 @@ class AlertProcessor(DBWired):
 		"""
 		"""
 
-		tran_col = self.get_tran_col()
+		main_col = self.get_main_col()
+		photo_col = self.get_photo_col()
 		stat_dict = {}
 		count_dict = {}
 		dbinfo_dict = {
-			'daemon': MongoStats.get_server_stats(tran_col.database),
+			'daemon': MongoStats.get_server_stats(main_col.database),
 			'colStats': {
 				'jobs': MongoStats.get_col_stats(self.get_job_col()),
-				'transients': MongoStats.get_col_stats(tran_col)
+				'photo': MongoStats.get_col_stats(photo_col),
+				'main': MongoStats.get_col_stats(main_col)
 			},
 			'docsCount': {
 				'troubles': self.get_trouble_col().find({}).count(),
 				'transients': {
-					'pps': tran_col.find({'tranId': {"$gt" : 1}, 'alDocType': AlDocTypes.PHOTOPOINT}).count(),
-					'uls': tran_col.find({'tranId': {"$gt" : 1}, 'alDocType': AlDocTypes.UPPERLIMIT}).count(),
-					'compounds': tran_col.find({'tranId': {"$gt" : 1}, 'alDocType': AlDocTypes.COMPOUND}).count(),
-					't2s': tran_col.find({'tranId': {"$gt" : 1}, 'alDocType': AlDocTypes.T2RECORD}).count(),
-					'trans':tran_col.find({'tranId': {"$gt" : 1}, 'alDocType': AlDocTypes.TRANSIENT}).count()
+					'pps': photo_col.find({'_id': {"$gt" : 0}}).count(),
+					'uls': photo_col.find({'_id': {"$lt" : 0}}).count(),
+					'compounds': main_col.find({'tranId': {"$gt" : 1}, 'alDocType': AlDocTypes.COMPOUND}).count(),
+					't2s': main_col.find({'tranId': {"$gt" : 1}, 'alDocType': AlDocTypes.T2RECORD}).count(),
+					'trans':main_col.find({'tranId': {"$gt" : 1}, 'alDocType': AlDocTypes.TRANSIENT}).count()
 				}
 			}
 		}
@@ -558,7 +560,7 @@ class AlertProcessor(DBWired):
 		for i, channel in self.chan_enum:
 			count_dict[channel.name] = (
 				len(tran_ids[i]) if tran_ids[i] is not None 
-				else MongoStats.get_tran_count(tran_col, channel.name)
+				else MongoStats.get_tran_count(main_col, channel.name)
 			)
 
 		if t0_stats is None:
@@ -659,7 +661,7 @@ class AlertProcessor(DBWired):
 		Otherwise, tran_ids_before[i] will be None
 		"""
 
-		col = self.get_tran_col()
+		col = self.get_main_col()
 		tran_ids = len(self.channels) * [None]
 
 		# Loop through activated channels
@@ -669,7 +671,7 @@ class AlertProcessor(DBWired):
 
 				# Build set of transient ids for this channel
 				tran_ids[i] = {
-					el['tranId'] for el in self.get_tran_col().find(
+					el['tranId'] for el in col.find(
 						{
 							'tranId': {'$gt': 1}, 
 							'alDocType': AlDocTypes.TRANSIENT, 

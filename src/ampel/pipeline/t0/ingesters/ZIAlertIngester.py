@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 14.12.2017
-# Last Modified Date: 16.05.2018
+# Last Modified Date: 23.05.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import logging, pymongo, time
@@ -47,13 +47,14 @@ class ZIAlertIngester(AbsAlertIngester):
 
 
 	def __init__(
-		self, channels, t2_units_col, output_col, logger=None,
+		self, channels, t2_units_col, photo_col, main_col, logger=None,
 		check_reprocessing=True, alert_history_length=30
 	):
 		"""
 		channels: list of ampel.pipeline.config.Channel
 		t2_units_col: the db collection from the config DB hosting t2 unit parameters
-		output_col: instance of pymongo.collection.Collection (required for database operations)
+		photo_col: instance of pymongo.collection.Collection (required for database operations)
+		main_col: instance of pymongo.collection.Collection (required for database operations)
 		"""
 
 		if not type(channels) is list:
@@ -83,7 +84,8 @@ class ZIAlertIngester(AbsAlertIngester):
 			ZICompElement.version
 		)
 
-		self.col = output_col
+		self.main_col = main_col
+		self.photo_col = photo_col
 		self.append_bulk_time = None
 		self.append_per_op_time = None
 		self.check_reproc = check_reprocessing
@@ -170,7 +172,8 @@ class ZIAlertIngester(AbsAlertIngester):
 		###############################################
 
 		# pymongo bulk op array
-		db_ops = []
+		db_photo_ops = []
+		db_main_ops = []
 
 		# metrics
 		pps_reprocs = 0
@@ -180,16 +183,10 @@ class ZIAlertIngester(AbsAlertIngester):
 
 		# Load existing photopoint and upper limits from DB if any
 		self.logger.info("Checking DB for existing pps/uls")
-		meas_db = self.col.find(
+		meas_db = self.photo_col.find(
 			{
 				# tranId should be specific to one instrument
-				"tranId": tran_id,
-				"alDocType": {
-					'$in': [
-						AlDocTypes.PHOTOPOINT, 
-						AlDocTypes.UPPERLIMIT
-					]
-				}
+				"tranId": tran_id
 			},
 			self.lookup_projection
 		)
@@ -292,7 +289,7 @@ class ZIAlertIngester(AbsAlertIngester):
 			)
 
 			for pp in pps_to_insert:
-				db_ops.append(
+				db_photo_ops.append(
 					pymongo.UpdateOne(
 						{"_id": pp["_id"]},
 						{"$setOnInsert": pp},
@@ -319,7 +316,7 @@ class ZIAlertIngester(AbsAlertIngester):
 
 			# Insert new upper limit into DB
 			for ul in uls_to_insert:
-				db_ops.append(
+				db_photo_ops.append(
 					pymongo.UpdateOne(
 						{"_id": ul["_id"]},
 						{
@@ -385,7 +382,7 @@ class ZIAlertIngester(AbsAlertIngester):
 
 						# Create and append pymongo update operation
 						pps_reprocs += 1
-						db_ops.append(
+						db_photo_ops.append(
 							pymongo.UpdateOne(
 								{'_id': photod_db_superseeded["_id"]}, 
 								{
@@ -460,7 +457,7 @@ class ZIAlertIngester(AbsAlertIngester):
 
 			compound_upserts += 1
 
-			db_ops.append(
+			db_main_ops.append(
 				pymongo.UpdateOne(
 					{"_id": eff_comp_id},
 					{
@@ -484,7 +481,6 @@ class ZIAlertIngester(AbsAlertIngester):
 		)
 		
 		# counter for user feedback (after next loop)
-		db_ops_len_before = len(db_ops)
 		now = datetime.now(timezone.utc).timestamp()
 
 		# Loop over t2 runnables
@@ -591,7 +587,7 @@ class ZIAlertIngester(AbsAlertIngester):
 					t2_upserts += 1
 
 					# Append update operation to bulk list
-					db_ops.append(
+					db_main_ops.append(
 						pymongo.UpdateOne(
 							match_dict,
 							{
@@ -616,7 +612,7 @@ class ZIAlertIngester(AbsAlertIngester):
 		self.logger.info("Updating transient document")
 
 		# TODO add alFlags
-		db_ops.append(
+		db_main_ops.append(
 			pymongo.UpdateOne(
 				{
 					"tranId": tran_id,
@@ -661,13 +657,14 @@ class ZIAlertIngester(AbsAlertIngester):
 				self.append_pre_ingest_time(time.time() - start)
 
 				start = time.time()
-				# Perform all DB operations
-				db_op_results = self.col.bulk_write(db_ops, ordered=False)
+				# Perform DB operations: photo
+				db_photo_results = self.photo_col.bulk_write(db_photo_ops, ordered=False)
+				db_main_results = self.main_col.bulk_write(db_main_ops, ordered=False)
 				time_delta = time.time() - start
 
 				# Time recoders
 				self.append_bulk_time(time_delta)
-				self.append_per_op_time(time_delta / len(db_ops))
+				self.append_per_op_time(time_delta / (len(db_main_ops) + len(db_photo_ops)))
 
 				# Counters
 				self.count_dict['ppsUpd'] += len(pps_to_insert)
@@ -677,18 +674,31 @@ class ZIAlertIngester(AbsAlertIngester):
 				self.count_dict['ppsReproc'] += pps_reprocs
 
 			else:
-				db_op_results = self.col.bulk_write(db_ops, ordered=False) # DB update
+				db_photo_results = self.photo_col.bulk_write(db_photo_ops, ordered=False)
+				db_main_results = self.main_col.bulk_write(db_main_ops, ordered=False)
+
 
 			# Feedback
 			if (
-				len(db_op_results.bulk_api_result['writeErrors']) > 0 or
-				len(db_op_results.bulk_api_result['writeConcernErrors']) > 0
+				len(db_photo_results.bulk_api_result['writeErrors']) > 0 or
+				len(db_photo_results.bulk_api_result['writeConcernErrors']) > 0
 			):
-				self.logger.error(db_op_results.bulk_api_result)
+				self.logger.error(db_photo_results.bulk_api_result)
 			else:
 				self.logger.info(
-					"DB feeback: %i upserted" % 
-					db_op_results.bulk_api_result['nUpserted']
+					"DB photo feeback: %i upserted" % 
+					db_photo_results.bulk_api_result['nUpserted']
+				)
+
+			if (
+				len(db_main_results.bulk_api_result['writeErrors']) > 0 or
+				len(db_main_results.bulk_api_result['writeConcernErrors']) > 0
+			):
+				self.logger.error(db_main_results.bulk_api_result)
+			else:
+				self.logger.info(
+					"DB main feeback: %i upserted" % 
+					db_main_results.bulk_api_result['nUpserted']
 				)
 
 		except BulkWriteError as bwe: 

@@ -90,7 +90,7 @@ class ZIPhotoDictShaper:
 			if id_field_name != "_id":
 
 				# Set alDocType, ampel flags, ...
-				photo_dict['alDocType'] = AlDocTypes.PHOTOPOINT
+				# photo_dict['alDocType'] = AlDocTypes.PHOTOPOINT
 				photo_dict['alFlags'] = dbflags
 				photo_dict['tranId'] = tran_id
 				
@@ -106,14 +106,11 @@ class ZIPhotoDictShaper:
 
 			else:
 
-				# Set alDocType
-				photo_dict['alDocType'] = AlDocTypes.UPPERLIMIT
-
 				# update list of dicts
 				ret_list.append(
 					{
 						'_id': photo_dict['_id'],
-						'alDocType': AlDocTypes.UPPERLIMIT,
+						# 'alDocType': AlDocTypes.UPPERLIMIT,
 						'alFlags': dbflags,
 						'jd': photo_dict['jd'],
 	 					'diffmaglim': photo_dict['diffmaglim'],

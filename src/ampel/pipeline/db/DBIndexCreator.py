@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 21.05.2018
-# Last Modified Date: 21.05.2018
+# Last Modified Date: 22.05.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 
@@ -16,14 +16,30 @@ class DBIndexCreator:
 	"""
 
 	@staticmethod
-	def create_tran_db_indexes(col):
-	    col.create_index(
+	def create_main_indexes(col):
+		"""
+		"""
+		col.create_index(
 	        [
 	            ("tranId", pymongo.ASCENDING), 
 	            ("alDocType", pymongo.ASCENDING), 
 	            ("channels", pymongo.ASCENDING)
 	        ]
 	    )
+
+		col.create_index(
+			[("runState", 1)],
+		)
+
+
+	@staticmethod
+	def create_photo_indexes(col):
+		"""
+		"""
+		col.create_index(
+			[("tranId", 1)],
+		)
+
 
 	@staticmethod
 	def test_create_tran_db_indexes(col):
