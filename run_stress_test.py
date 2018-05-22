@@ -21,7 +21,7 @@ def _worker(idx, mongo_host, archive_host, infile):
 	alert_processed = AlertProcessor.iter_max
 	tar_loader = TarAlertLoader(tar_path=infile)
 	alert_supplier = AlertSupplier(tar_loader, ZIAlertShaper(), serialization="avro")
-	processor = AlertProcessor(db_host=mongo)
+	processor = AlertProcessor(db_host=mongo, printme=infile)
 
 	while alert_processed == AlertProcessor.iter_max:
 		t0 = time.time()
@@ -49,7 +49,7 @@ def run_alertprocessor():
 
 	start_time = time.time()
 	count = 0
-	jobs = [executor.submit(_worker, idx, opts.host, opts.archive_host, fname) for idx,fname in enumerate(opts.infiles)]
+	jobs = [executor.submit(_worker, idx, opts.host, opts.archive_host, fname) for idx,fname in enumerate(opts.infiles[:])]
 	for future in futures.as_completed(jobs):
 		print(future.result())
 		count += future.result()
