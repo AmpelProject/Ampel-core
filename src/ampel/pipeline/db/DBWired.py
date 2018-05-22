@@ -8,6 +8,8 @@
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import time, pymongo
+from ampel.flags.AlDocTypes import AlDocTypes
+from ampel.pipeline.db.DBIndexCreator import DBIndexCreator
 
 class DBWired:
 	""" 
@@ -186,7 +188,7 @@ class DBWired:
 						config = dbs_config[key]
 					setattr(
 						self, key + "_col",
-						self.get_or_create_db(mongo_client, config, logger)
+						self.get_or_create_db(mongo_client, key, config, logger)
 					)
 
 				# Collection instance was provided
@@ -202,7 +204,7 @@ class DBWired:
 					setattr(
 						self, 
 						key + "_col", 
-						self.get_or_create_db(mongo_client, dict_value, logger)
+						self.get_or_create_db(mongo_client, key, dict_value, logger)
 					)
 
 				else:
@@ -234,34 +236,29 @@ class DBWired:
 			setattr(
 				self, 
 				key + "_col", 
-				self.get_or_create_db(mongo_client, dbs_config[key], logger)
+				self.get_or_create_db(mongo_client, key, dbs_config[key], logger)
 			)
 
 
-	def get_or_create_db(self, mongo_client, db_config, logger):
+	def get_or_create_db(self, mongo_client, db_key_name, db_config, logger):
 		"""
 		Plug central databases and collections using conf values provided by db_config
 		"""
 
 		db_name = db_config['dbName']
-		db = mongo_client[db_name]
 		col_name = db_config['collectionName']
 
-		# New DB / collection
-		if 'indexes' in db_config and col_name not in db.collection_names():
+		# New transients DB / collection
+		if  db_key_name == "transients" and (
+			db_name not in mongo_client.database_names() or 
+			col_name not in mongo_client[db_name].collection_names()
+		):
+			logger.info("New transients collection, creating indexes")
+			col = mongo_client[db_name].create_collection(col_name)
+			DBIndexCreator.create_tran_db_indexes(col)
+			return col
 
-			logger.info("New collection detected, creating indexes")
-			col = db[col_name]
-
-			for d in db_config['indexes']:
-				if 'options' in d:
-					col.create_index(d['field'], **d['options'])
-				else:
-					col.create_index(d['field'])
-		else:
-			col = db[col_name]
-
-		return col
+		return mongo_client[db_name][col_name]
 
 
 	def get_tran_col(self):

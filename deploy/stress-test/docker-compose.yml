@@ -40,7 +40,7 @@ services:
       POSTGRES_USER: ampel
       POSTGRES_DB: ztfarchive
   ampel:
-    image: ampel:v0.1a3
+    image: ampel:v0.1a4
     command: ["/Ampel/deploy/stress-test/run_tests.sh"]
     volumes:
       - /home/ampel/valery/Ampel:/Ampel

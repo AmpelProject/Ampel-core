@@ -545,11 +545,11 @@ class AlertProcessor(DBWired):
 			'docsCount': {
 				'troubles': self.get_trouble_col().find({}).count(),
 				'transients': {
-					'pps': tran_col.find({'alDocType': AlDocTypes.PHOTOPOINT}).count(),
-					'uls': tran_col.find({'alDocType': AlDocTypes.UPPERLIMIT}).count(),
-					'compounds': tran_col.find({'alDocType': AlDocTypes.COMPOUND}).count(),
-					't2s': tran_col.find({'alDocType': AlDocTypes.T2RECORD}).count(),
-					'trans':tran_col.find({'alDocType': AlDocTypes.TRANSIENT}).count()
+					'pps': tran_col.find({'tranId': {"$gt" : 1}, 'alDocType': AlDocTypes.PHOTOPOINT}).count(),
+					'uls': tran_col.find({'tranId': {"$gt" : 1}, 'alDocType': AlDocTypes.UPPERLIMIT}).count(),
+					'compounds': tran_col.find({'tranId': {"$gt" : 1}, 'alDocType': AlDocTypes.COMPOUND}).count(),
+					't2s': tran_col.find({'tranId': {"$gt" : 1}, 'alDocType': AlDocTypes.T2RECORD}).count(),
+					'trans':tran_col.find({'tranId': {"$gt" : 1}, 'alDocType': AlDocTypes.TRANSIENT}).count()
 				}
 			}
 		}
@@ -671,6 +671,7 @@ class AlertProcessor(DBWired):
 				tran_ids[i] = {
 					el['tranId'] for el in self.get_tran_col().find(
 						{
+							'tranId': {'$gt': 1}, 
 							'alDocType': AlDocTypes.TRANSIENT, 
 							'channels': channel.name
 						},

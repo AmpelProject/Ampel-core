@@ -7,7 +7,7 @@ from ampel.pipeline.t0.alerts.ZIAlertShaper import ZIAlertShaper
 from ampel.archive import docker_env
 
 
-def _worker(mongo_host, archive_host, infile):
+def _worker(mongo_host, infile):
 
 	mongo = 'mongodb://{}:{}@{}/'.format(
 		docker_env('MONGO_INITDB_ROOT_USERNAME'), 
@@ -20,7 +20,7 @@ def _worker(mongo_host, archive_host, infile):
 	alert_processed = AlertProcessor.iter_max
 	tar_loader = TarAlertLoader(tar_path=infile)
 	alert_supplier = AlertSupplier(tar_loader, ZIAlertShaper(), serialization="avro")
-	processor = AlertProcessor(db_host=mongo, printme=infile)
+	processor = AlertProcessor(db_host=mongo)
 
 	while alert_processed == AlertProcessor.iter_max:
 		t0 = time.time()
@@ -44,7 +44,7 @@ def run_alertprocessor():
 	opts = parser.parse_args()
 	
 	start_time = time.time()
-	count = _worker(opts.host, opts.archive_host, opts.infile) 
+	count = _worker(opts.host, opts.infile) 
 	duration = int(time.time()) - start_time
 	print('Processed {} alerts in {:.1f} s ({:.1f}/s)'.format(count, duration, float(count)/duration))
 

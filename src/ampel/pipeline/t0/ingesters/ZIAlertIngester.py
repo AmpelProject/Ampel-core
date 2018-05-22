@@ -95,7 +95,8 @@ class ZIAlertIngester(AbsAlertIngester):
 			"jd": 1,
 			"fid": 1,
 			"rcid": 1,
-			"alExcluded": 1
+			"alExcluded": 1,
+			"magpsf": 1
 		}
 
 
@@ -131,7 +132,6 @@ class ZIAlertIngester(AbsAlertIngester):
 		for key in ('ppsUpd', 'ulsUpd', 't2Upd', 'compUpd', 'ppsReproc'):
 			self.count_dict[key] = 0
 			
-
 
 	def set_photodict_shaper(self, arg_photo_shaper):
 		"""
@@ -414,7 +414,7 @@ class ZIAlertIngester(AbsAlertIngester):
 
 		# Compute compound ids (used later for creating compounds and t2 docs)
 		comp_gen = self.comp_gen
-		self.comp_gen.generate(
+		comp_gen.generate(
 			sorted(
 				pps_db + pps_to_insert + uls_db + uls_to_insert, 
 				key=lambda k: k['jd']
