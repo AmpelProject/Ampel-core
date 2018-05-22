@@ -63,7 +63,6 @@ class CompoundBluePrint():
 		#6 save eid <-> ppid association
 		self.d_eid_ppid = {}
 
-
 		# Main loop through provided channels
 		for chan_name in channel_names:
 

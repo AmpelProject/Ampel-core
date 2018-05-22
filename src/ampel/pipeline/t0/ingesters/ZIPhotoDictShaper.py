@@ -85,9 +85,6 @@ class ZIPhotoDictShaper:
 			# Compute ampel flags
 			dbflags = to_dbflag(ppflags)
 
-			# Cut path if present
-			fname = photo_dict['pdiffimfilename'].split('/')[-1].replace('.fz', '')
-
 			# photopoints come with 'candid'. 
 			# '_id' is already set for upper limits
 			if id_field_name != "_id":
@@ -96,7 +93,9 @@ class ZIPhotoDictShaper:
 				photo_dict['alDocType'] = AlDocTypes.PHOTOPOINT
 				photo_dict['alFlags'] = dbflags
 				photo_dict['tranId'] = tran_id
-				photo_dict['pdiffimfilename'] = fname
+				
+				# Cut path if present
+				photo_dict['pdiffimfilename'] = photo_dict['pdiffimfilename'].split('/')[-1].replace('.fz', '')
 
 				# Rename 'candid' into '_id'
 				photo_dict['_id'] = photo_dict[id_field_name]
