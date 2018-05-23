@@ -2,7 +2,7 @@
 from sqlalchemy import Table, MetaData, Column, ForeignKey, ForeignKeyConstraint, Index
 from sqlalchemy import String, Integer, BigInteger, Float, Boolean
 from sqlalchemy.dialects.postgresql import DOUBLE_PRECISION
-from sqlalchemy import select, and_, bindparam
+from sqlalchemy import select, and_, bindparam, exists
 from sqlalchemy import create_engine
 from sqlalchemy.exc import IntegrityError, OperationalError
 import sqlalchemy
@@ -94,58 +94,54 @@ def create_metadata(alert_schema):
     meta = MetaData()
 
     Alert = Table('alert', meta,
-        Column('candid', BigInteger(), primary_key=True, nullable=False),
-        Column('programid', Integer(), primary_key=True, nullable=False),
+        Column('alert_id', Integer(), primary_key=True, nullable=False, autoincrement=True),
+        Column('candid', BigInteger(), nullable=False),
+        Column('programid', Integer(), nullable=False),
         Column('objectId', String(12), nullable=False),
         Column('partition_id', Integer(), nullable=False),
         Column('ingestion_time', BigInteger(), nullable=False),
         Column('jd', double, nullable=False),
-        Index('alert_playback', 'partition_id', 'jd')
+        Index('alert_playback', 'partition_id', 'jd'),
+        Index('alert_insertion', 'candid', 'programid'),
     )
 
-    skip = ['candid', 'programid', 'pid'] + ['pdiffimfilename', 'programpi', 'ssnamenr']
+    skip = ['pdiffimfilename', 'programpi', 'ssnamenr']
+    identifiers = ['candid', 'programid', 'pid']
     columns = map(make_column, filter(lambda f: f['name'] not in skip, fields['candidate']['type']['fields']))
     Table('candidate', meta,
-        Column('candid', BigInteger(), primary_key=True, nullable=False),
-        Column('programid', Integer(), primary_key=True, nullable=False),
-        Column('pid', BigInteger(), primary_key=True, nullable=False),
-        ForeignKeyConstraint(['candid', 'programid'], ['alert.candid', 'alert.programid']),
+        Column('candidate_id', Integer(), primary_key=True, nullable=False, autoincrement=True),
+        Column('alert_id', Integer(), ForeignKey('alert.alert_id'), nullable=False),
         
         *columns
     )
     
-    skip = ['candid', 'pid'] + ['pdiffimfilename', 'programpi', 'ssnamenr']
-    columns = map(make_column, filter(lambda f: f['name'] not in skip, fields['prv_candidates']['type'][0]['items']['fields']))
+    skip = ['pdiffimfilename', 'programpi', 'ssnamenr']
+    identifiers = ['candid', 'programid', 'pid']
+    columns = list(map(make_column, filter(lambda f: f['name'] not in skip, fields['prv_candidates']['type'][0]['items']['fields'])))
+    columns.append(Index('unique_prv_candidate', *identifiers))
     Table('prv_candidate', meta,
-        Column('candid', BigInteger(), primary_key=True, nullable=False),
-        Column('pid', BigInteger(), primary_key=True, nullable=False),
+        Column('prv_candidate_id', Integer(), primary_key=True, nullable=False, autoincrement=True),
         
         *columns
     )
 
     Table('alert_prv_candidate_pivot', meta,
-        Column('alert_id', BigInteger(), primary_key=True, nullable=False),
-        Column('alert_program', Integer(), primary_key=True, nullable=False),
-        Column('candid', BigInteger(), primary_key=True, nullable=False),
-        Column('pid', BigInteger(), primary_key=True, nullable=False),
-        ForeignKeyConstraint(['candid', 'pid'], ['prv_candidate.candid', 'prv_candidate.pid']),
-        ForeignKeyConstraint(['alert_id', 'alert_program'], ['alert.candid', 'alert.programid']),
+        Column('alert_id', Integer(), ForeignKey('alert.alert_id'), primary_key=True, nullable=False),
+        Column('prv_candidate_id', Integer(), ForeignKey('prv_candidate.prv_candidate_id'), primary_key=True, nullable=False),
     )
 
     identifiers = ['jd', 'fid', 'pid', 'diffmaglim']
     fluff = ['programid']
     columns = list(map(make_column, filter(lambda f: f['name'] in identifiers+fluff, fields['prv_candidates']['type'][0]['items']['fields'])))
-    columns.append(Index('unique', *identifiers))
+    columns.append(Index('unique_upper_limit', *identifiers))
     Table('upper_limit', meta,
-        Column('id', Integer(), primary_key=True, autoincrement=True),
+        Column('upper_limit_id', Integer(), primary_key=True, autoincrement=True),
         *columns
     )
 
     Table('alert_upper_limit_pivot', meta,
-        Column('alert_id', BigInteger(), primary_key=True, nullable=False),
-        Column('alert_program', Integer(), primary_key=True, nullable=False),
-        Column('upper_limit_id', BigInteger(), ForeignKey("upper_limit.id"), primary_key=True, nullable=False),
-        ForeignKeyConstraint(['alert_id', 'alert_program'], ['alert.candid', 'alert.programid']),
+        Column('alert_id', Integer(), ForeignKey('alert.alert_id'), primary_key=True, nullable=False),
+        Column('upper_limit_id', Integer(), ForeignKey('upper_limit.upper_limit_id'), primary_key=True, nullable=False),
     )
 
     return meta
@@ -172,6 +168,28 @@ def _convert_isdiffpos(in_dict):
         out_dict[k] = v in {'0', 't'}
     return out_dict
 
+def _insert_unless_exists(index, returning=True):
+    Table = index.table
+    index_cols = index.columns
+    target = and_(*(c == bindparam(c.name) for c in index_cols))
+    idcol = Table.columns['{}_id'.format(Table.name)]
+    query = Table.insert().from_select(
+        [c for c in Table.columns if c != idcol],
+        select([bindparam(k) for k in Table.columns if k.name != idcol.name]) \
+            .where(~exists(select([idcol]).where(target)))
+    )
+    if returning:
+        return query.returning(idcol)
+    else:
+        return query
+
+def _update_bridge(index, bridge):
+    target = and_(*(c == bindparam(c.name) for c in index.columns))
+    source_key = list(bridge.columns)[0].name
+    idcol = index.table.columns['{}_id'.format(index.table.name)]
+    query = bridge.insert().from_select(bridge.columns, select([bindparam(source_key), idcol]).where(target))
+    return query
+
 def insert_alert(connection, meta, alert, partition_id, ingestion_time):
     """
     Insert an alert into the archive database
@@ -183,15 +201,21 @@ def insert_alert(connection, meta, alert, partition_id, ingestion_time):
     :param ingestion_time: time the alert was received, in UNIX epoch microseconds
     
     """
-    alert_id = alert['candid']
-    alert_program = alert['candidate']['programid']
     with connection.begin() as transaction:
+        Alert = meta.tables['alert']
+        Candidate = meta.tables['candidate']
         try:
-            connection.execute(meta.tables['alert'].insert(),
-                candid=alert_id, programid=alert['candidate']['programid'], objectId=alert['objectId'],
+            index = next(((idx for idx in Alert.indexes if idx.name == "alert_insertion")))
+            result = connection.execute(_insert_unless_exists(index),
+                candid=alert['candid'],  programid=alert['candidate']['programid'], objectId=alert['objectId'],
                 partition_id=partition_id, ingestion_time=ingestion_time,
                 jd=alert['candidate']['jd'])
-            connection.execute(meta.tables['candidate'].insert(), **_convert_isdiffpos(alert['candidate']))
+            tup = result.fetchone()
+            if tup is None:
+                transaction.rollback()
+                return False
+            alert_id = tup[0]
+            connection.execute(Candidate.insert(), alert_id=alert_id, **_convert_isdiffpos(alert['candidate']))
         except IntegrityError:
             # abort on duplicate alerts
             transaction.rollback()
@@ -209,35 +233,24 @@ def insert_alert(connection, meta, alert, partition_id, ingestion_time):
             # entries with no candid are nondetections
             if c['candid'] is None:
                 upper_limits['rows'].append(c)
-                upper_limits['pivots'].append(dict(alert_id=alert_id, alert_program=alert_program, **c))
+                upper_limits['pivots'].append(dict(alert_id=alert_id, **c))
             else:
                 detections['rows'].append(_convert_isdiffpos(c))
-                detections['pivots'].append(dict(alert_id=alert_id, alert_program=alert_program, candid=c['candid'], pid=c['pid']))
+                detections['pivots'].append(dict(alert_id=alert_id, **c))
     
         if len(detections['rows']) > 0:
             ignore = {'{}_ignore_duplicates'.format(connection.dialect.name): True}
-            connection.execute(meta.tables['prv_candidate'].insert(**ignore), detections['rows'])
-            connection.execute(meta.tables['alert_prv_candidate_pivot'].insert(), detections['pivots'])
+            index = list(meta.tables['prv_candidate'].indexes)[0]
+            bridge = meta.tables['alert_prv_candidate_pivot']
+            connection.execute(_insert_unless_exists(index, False), detections['rows'])
+            connection.execute(_update_bridge(index, bridge), detections['pivots'])
     
-        from sqlalchemy.sql import exists, not_
         if len(upper_limits['rows']) > 0:
-            UpperLimit = meta.tables['upper_limit']
-            UpperLimitPivot = meta.tables['alert_upper_limit_pivot']
-            index_cols = list(UpperLimit.indexes)[0].columns
+            index = list(meta.tables['upper_limit'].indexes)[0]
+            bridge = meta.tables['alert_upper_limit_pivot']
+            connection.execute(_insert_unless_exists(index, False), upper_limits['rows'])
+            connection.execute(_update_bridge(index, bridge), upper_limits['pivots'])
     
-            target = and_(*(c == bindparam(c.name) for c in index_cols))
-            insert_ulimits = UpperLimit.insert().from_select(
-                [c for c in UpperLimit.columns if c.name != 'id'],
-                select([bindparam(k) for k in UpperLimit.columns if k.name != 'id']) \
-                    .where(~exists(select([UpperLimit.c.id]).where(target)))
-            )
-            update_pivot = UpperLimitPivot.insert().from_select(
-                ['alert_id', 'alert_program', 'upper_limit_id'],
-                select([bindparam('alert_id'), bindparam('alert_program'), UpperLimit.c.id]) \
-                    .where(target)
-            )
-            connection.execute(insert_ulimits, upper_limits['rows'])
-            connection.execute(update_pivot, upper_limits['pivots'])
         transaction.commit()
     return True
 
@@ -312,8 +325,7 @@ def get_alerts_in_time_range(connection, meta, jd_start, jd_end, partitions=None
 
     yield from fetch_alerts_with_condition(connection, meta, in_range, Alert.c.jd.asc())
 
-def fetch_alerts_with_condition(connection, meta, condition, order=None):
-
+def _build_queries(meta):
     PrvCandidate = meta.tables['prv_candidate']
     UpperLimit = meta.tables['upper_limit']
     Candidate = meta.tables['candidate']
@@ -322,23 +334,28 @@ def fetch_alerts_with_condition(connection, meta, condition, order=None):
     UpperLimitPivot = meta.tables['alert_upper_limit_pivot']
     from sqlalchemy.sql import null
 
+    def without_keys(table):
+        keys = set(table.primary_key.columns)
+        for fk in table.foreign_keys:
+            keys.update(fk.constraint.columns)
+        return [c for c in table.columns if c not in keys]
+
     alert_query = \
-        select([Alert.c.objectId, Candidate])\
-        .select_from(Alert.join(Candidate))\
-        .where(condition).order_by(order)
+        select([Alert.c.alert_id, Alert.c.objectId] + without_keys(Candidate))\
+        .select_from(Alert.join(Candidate))
 
     # build a query for detections
-    cols = [PrvCandidate]
+    cols = without_keys(PrvCandidate)
     prv_query = \
         select(cols) \
         .select_from(PrvCandidate.join(Pivot)) \
-        .where(and_(Pivot.c.alert_id == bindparam('candid'), Pivot.c.alert_program == bindparam('programid')))
+        .where(Pivot.c.alert_id == bindparam('alert_id'))
 
     # and a corresponding one for upper limits, padding out missing columns
     # with null. Note that the order of the columns must be the same, for
     # the union query below to map the result correctly to output keys.
     cols = []
-    for c in PrvCandidate.columns:
+    for c in without_keys(PrvCandidate):
         if c.name in UpperLimit.columns:
             cols.append(UpperLimit.columns[c.name])
         else:
@@ -346,17 +363,26 @@ def fetch_alerts_with_condition(connection, meta, condition, order=None):
     ul_query = \
         select(cols) \
         .select_from(UpperLimit.join(UpperLimitPivot)) \
-        .where(and_(UpperLimitPivot.c.alert_id == bindparam('candid'), UpperLimitPivot.c.alert_program == bindparam('programid')))
+        .where(UpperLimitPivot.c.alert_id == bindparam('alert_id'))
 
     # unify!
     history_query = prv_query.union(ul_query)
 
+    return alert_query, history_query
+
+def fetch_alerts_with_condition(connection, meta, condition, order=None):
+
+    alert_query, history_query = _build_queries(meta)
+
+    alert_query = alert_query.where(condition).order_by(order)
+
     for result in connection.execute(alert_query):
         candidate = dict(result)
+        alert_id = candidate.pop('alert_id')
         alert = dict(objectId=candidate.pop('objectId'), candid=candidate['candid'])
         alert['candidate'] = candidate
         alert['prv_candidates'] = []
-        for result in connection.execute(history_query, candid=alert['candid'], programid=candidate['programid']):
+        for result in connection.execute(history_query, alert_id=alert_id):
             alert['prv_candidates'].append(dict(result))
 
         alert['prv_candidates'] = sorted(alert['prv_candidates'], key=lambda c: c['jd'])
