@@ -72,7 +72,8 @@ class MongoStats:
 				{
 					'tranId': {'$gt': 1},
 					'alDocType': AlDocTypes.TRANSIENT
-				}
+				},
+				{'tranId': 1, '_id':0}
 			).count()
 
 		else:
@@ -82,5 +83,6 @@ class MongoStats:
 					'tranId': {'$gt': 1},
 					'alDocType': AlDocTypes.TRANSIENT, 
 					'channels': channel_name
-				}
+				},
+				{'tranId': 1, '_id':0}
 			).count()

@@ -540,6 +540,8 @@ class AlertProcessor(DBWired):
 
 		main_col = self.get_main_col()
 		photo_col = self.get_photo_col()
+		id_proj = {'_id':1}
+		tran_proj = {'tranId':1, '_id':0}
 		stat_dict = {}
 		count_dict = {}
 		dbinfo_dict = {
@@ -552,11 +554,20 @@ class AlertProcessor(DBWired):
 			'docsCount': {
 				'troubles': self.get_trouble_col().find({}).count(),
 				'transients': {
-					'pps': photo_col.find({'_id': {"$gt" : 0}}).count(),
-					'uls': photo_col.find({'_id': {"$lt" : 0}}).count(),
-					'compounds': main_col.find({'tranId': {"$gt" : 1}, 'alDocType': AlDocTypes.COMPOUND}).count(),
-					't2s': main_col.find({'tranId': {"$gt" : 1}, 'alDocType': AlDocTypes.T2RECORD}).count(),
-					'trans':main_col.find({'tranId': {"$gt" : 1}, 'alDocType': AlDocTypes.TRANSIENT}).count()
+					'pps': photo_col.find({'_id': {"$gt" : 0}}, id_proj).count(),
+					'uls': photo_col.find({'_id': {"$lt" : 0}}, id_proj).count(),
+					'compounds': main_col.find(
+						{'tranId': {"$gt" : 1}, 'alDocType': AlDocTypes.COMPOUND}, 
+						tran_proj
+					).count(),
+					't2s': main_col.find(
+						{'tranId': {"$gt" : 1}, 'alDocType': AlDocTypes.T2RECORD},
+						tran_proj
+					).count(),
+					'trans': main_col.find(
+						{'tranId': {"$gt" : 1}, 'alDocType': AlDocTypes.TRANSIENT},
+						tran_proj
+					).count()
 				}
 			}
 		}
