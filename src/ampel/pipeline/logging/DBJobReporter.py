@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 14.12.2017
-# Last Modified Date: 26.04.2018
+# Last Modified Date: 23.05.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import logging, time
@@ -117,7 +117,7 @@ class DBJobReporter:
 				)
 			}
 
-			if getattr(self, "job_stats") is not None:
+			if hasattr(self, "job_stats"):
 				update_dict["$set"][self.job_stats[0]] = self.job_stats[1]
 
 

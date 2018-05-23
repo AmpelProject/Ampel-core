@@ -273,8 +273,10 @@ class AlertProcessor(DBWired):
 				't0Job': {},
 				'ingestion': {
 					'preIngestTime': [],
-					'dbBulkTime': [],
-					'dbPerOpMeanTime': []
+					'dbBulkTimePhoto': [],
+					'dbBulkTimeMain': [],
+					'dbPerOpMeanTimePhoto': [],
+					'dbPerOpMeanTimeMain': []
 				},
 				'filtering': {
 					'all': np.empty(iter_max)
@@ -476,7 +478,10 @@ class AlertProcessor(DBWired):
 
 				# For ingest metrics
 				ingestion_stats = job_info['duration']['ingestion']
-				for key in ('preIngestTime', 'dbBulkTime', 'dbPerOpMeanTime'):
+				for key in (
+					'preIngestTime', 'dbBulkTimePhoto', 'dbBulkTimeMain', 
+					'dbPerOpMeanTimePhoto', 'dbPerOpMeanTimeMain'
+				):
 					if len(ingestion_stats[key]) > 0: 
 						ingestion_stats[key] = self.compute_stat(ingestion_stats[key])
 

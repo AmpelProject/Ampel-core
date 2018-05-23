@@ -48,18 +48,27 @@ class GraphiteFeeder:
 		if len(suffix) > 0 and suffix[-1] != ".": suffix += "."
 
 		fdict = self.flatten_dict(in_dict)
+		key_to_delete = []
+
 		for key in fdict:
 			val = fdict[key]
-			if type(val) in [tuple, list] and len(val) == 2: 
-				self.stats[suffix + key + ".mean"] = val[0]
-				self.stats[suffix + key + ".std"] = val[1]
+			if type(val) in [tuple, list]:
+				if len(val) == 2: 
+					self.stats[suffix + key + ".mean"] = val[0]
+					self.stats[suffix + key + ".std"] = val[1]
+				elif len(val) == 0: # empty list
+					key_to_delete.append(key)
 			else:
 				self.stats[suffix + key] = val
+
+		for key in key_to_delete:
+			del fdict[key] # remove empty lists
 			
 
 	def send(self):
 		"""
 		"""
+		print(self.stats)
 		self.gclient.send_dict(self.stats)
 		self.stats = {}
 

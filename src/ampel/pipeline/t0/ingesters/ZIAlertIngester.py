@@ -86,8 +86,7 @@ class ZIAlertIngester(AbsAlertIngester):
 
 		self.main_col = main_col
 		self.photo_col = photo_col
-		self.append_bulk_time = None
-		self.append_per_op_time = None
+		self.count_dict = None
 		self.check_reproc = check_reprocessing
 		self.al_hist_len = alert_history_length
 
@@ -117,19 +116,16 @@ class ZIAlertIngester(AbsAlertIngester):
 		self.job_id = job_id
 
 
-	def set_stats_dict(self, duration_dict, count_dict):
+	def set_stats_dict(self, time_dict, count_dict):
 		"""
 		"""
-		if not 'dbBulkTime' in duration_dict:
-			duration_dict['dbBulkTime'] = []
 
-		if not 'dbPerOpMeanTime' in duration_dict:
-			duration_dict['dbPerOpMeanTime'] = []
-
-		self.append_bulk_time = duration_dict['dbBulkTime'].append
-		self.append_per_op_time = duration_dict['dbPerOpMeanTime'].append
-		self.append_pre_ingest_time = duration_dict['preIngestTime'].append
 		self.count_dict = count_dict
+		self.time_dict = time_dict
+
+		for el in ('dbBulkTimePhoto', 'dbBulkTimeMain', 'dbPerOpMeanTimePhoto', 'dbPerOpMeanTimeMain'):
+			if not el in time_dict:
+				time_dict[el] = []
 
 		for key in ('ppsUpd', 'ulsUpd', 't2Upd', 'compUpd', 'ppsReproc'):
 			self.count_dict[key] = 0
@@ -651,20 +647,26 @@ class ZIAlertIngester(AbsAlertIngester):
 
 		try: 
 
-			if self.append_bulk_time is not None:
+			if self.count_dict is not None:
 
 				# Save time required by python for this method so far
-				self.append_pre_ingest_time(time.time() - start)
+				self.time_dict['preIngestTime'].append(time.time() - start)
 
-				start = time.time()
 				# Perform DB operations: photo
-				db_photo_results = self.photo_col.bulk_write(db_photo_ops, ordered=False)
-				db_main_results = self.main_col.bulk_write(db_main_ops, ordered=False)
-				time_delta = time.time() - start
+				if len(db_photo_ops) > 0:
+					start = time.time()
+					db_photo_results = self.photo_col.bulk_write(db_photo_ops, ordered=False)
+					time_delta = time.time() - start
+					self.time_dict['dbBulkTimePhoto'].append(time_delta)
+					self.time_dict['dbPerOpMeanTimePhoto'].append(time_delta / len(db_photo_ops))
 
-				# Time recoders
-				self.append_bulk_time(time_delta)
-				self.append_per_op_time(time_delta / (len(db_main_ops) + len(db_photo_ops)))
+				# Perform DB operations: main
+				if len(db_main_ops) > 0:
+					start = time.time()
+					db_main_results = self.main_col.bulk_write(db_main_ops, ordered=False)
+					time_delta = time.time() - start
+					self.time_dict['dbBulkTimeMain'].append(time_delta)
+					self.time_dict['dbPerOpMeanTimeMain'].append(time_delta / len(db_main_ops))
 
 				# Counters
 				self.count_dict['ppsUpd'] += len(pps_to_insert)
@@ -674,32 +676,38 @@ class ZIAlertIngester(AbsAlertIngester):
 				self.count_dict['ppsReproc'] += pps_reprocs
 
 			else:
-				db_photo_results = self.photo_col.bulk_write(db_photo_ops, ordered=False)
-				db_main_results = self.main_col.bulk_write(db_main_ops, ordered=False)
+
+				if len(db_photo_ops) > 0:
+					db_photo_results = self.photo_col.bulk_write(db_photo_ops, ordered=False)
+
+				if len(db_main_ops) > 0:
+					db_main_results = self.main_col.bulk_write(db_main_ops, ordered=False)
 
 
 			# Feedback
-			if (
-				len(db_photo_results.bulk_api_result['writeErrors']) > 0 or
-				len(db_photo_results.bulk_api_result['writeConcernErrors']) > 0
-			):
-				self.logger.error(db_photo_results.bulk_api_result)
-			else:
-				self.logger.info(
-					"DB photo feeback: %i upserted" % 
-					db_photo_results.bulk_api_result['nUpserted']
-				)
+			if len(db_photo_ops) > 0: 
+				if (
+					len(db_photo_results.bulk_api_result['writeErrors']) > 0 or
+					len(db_photo_results.bulk_api_result['writeConcernErrors']) > 0
+				):
+					self.logger.error(db_photo_results.bulk_api_result)
+				else:
+					self.logger.info(
+						"DB photo feeback: %i upserted" % 
+						db_photo_results.bulk_api_result['nUpserted']
+					)
 
-			if (
-				len(db_main_results.bulk_api_result['writeErrors']) > 0 or
-				len(db_main_results.bulk_api_result['writeConcernErrors']) > 0
-			):
-				self.logger.error(db_main_results.bulk_api_result)
-			else:
-				self.logger.info(
-					"DB main feeback: %i upserted" % 
-					db_main_results.bulk_api_result['nUpserted']
-				)
+			if len(db_main_ops) > 0:
+				if (
+					len(db_main_results.bulk_api_result['writeErrors']) > 0 or
+					len(db_main_results.bulk_api_result['writeConcernErrors']) > 0
+				):
+					self.logger.error(db_main_results.bulk_api_result)
+				else:
+					self.logger.info(
+						"DB main feeback: %i upserted" % 
+						db_main_results.bulk_api_result['nUpserted']
+					)
 
 		except BulkWriteError as bwe: 
 			self.logger.error(bwe.details) 
