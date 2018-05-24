@@ -231,20 +231,56 @@ class ZIAlertIngester(AbsAlertIngester):
 				# update set 
 				ids_uls_alert.add(ul['_id'])
 
+			# Non-trivial DB query using $or operator (and using indexed values)
+			meas_db = self.photo_col.find(
+				{
+					'$or': [
+						# tranId should be specific to one instrument
+						{'tranId': tran_id}, 
+						{'_id': {'$in': list(ids_uls_alert)}}
+					]
+				}
+				# self.lookup_projection -> projection actually seems to slightly decrease perf
+			)
 
-		# DB query using indexed value
-		meas_db = self.photo_col.find(
-			# tranId should be specific to one instrument
-			{"tranId": tran_id}
-			# self.lookup_projection 
-		)
+			# Create pps / uls lists from db results
+			for el in meas_db:
 
-		# Create pps / uls lists from db results
-		for el in meas_db:
-			if 'magpsf' in el:  
-				pps_db.append(el) # Photopoint
-			else:
-				uls_db.append(el) # Upper limit
+				# Photopoint
+				if 'magpsf' in el:  
+					pps_db.append(el) 
+
+				# Upper limit
+				else:
+
+					# ULS can have multiple tranIds
+					if type(el['tranId']) is list:
+						if tran_id in el['tranId']:
+							uls_db.append(el) 
+						else:
+							unlinked_uls_ids.add(el['_id']) 
+					else:
+						if tran_id == el['tranId']:
+							uls_db.append(el) 
+						else:
+							unlinked_uls_ids.add(el['_id']) 
+		else:
+
+			# Simple DB query using indexed value
+			meas_db = self.photo_col.find(
+				# tranId should be specific to one instrument
+				{"tranId": tran_id} 
+				# self.lookup_projection 
+				# -> projection actually seems to slightly decrease perf
+			)
+
+			# Create pps / uls lists from db results
+			for el in meas_db:
+				if 'magpsf' in el:  
+					pps_db.append(el) # Photopoint
+				else:
+					uls_db.append(el) # Upper limit
+
 
 		# Create set with pp ids from alert
 		ids_pps_alert = {pp['candid'] for pp in pps_alert}
@@ -297,83 +333,60 @@ class ZIAlertIngester(AbsAlertIngester):
 			self.logger.info("No new photo point to insert into DB")
 
 
-		# UPPER LIMITS
-		##############
+		# NEW UPPER LIMITS
+		##################
 
 		# Difference between uls from the alert and uls present in DB 
-		ids_uls_to_insert = ids_uls_alert - ids_uls_db
+		ids_uls_to_insert = ids_uls_alert - ids_uls_db - unlinked_uls_ids
 
 		if ids_uls_to_insert:
 
-			# UNLINKED UPPER LIMITS
-			####################### 
+			self.logger.info(
+				"%i new upper limit(s) will be inserted into DB: %s" % 
+				(len(ids_uls_to_insert), ids_uls_to_insert)
+			)
 
-			unlinked_uls_ids = [
-				el['_id'] for el in self.photo_col.find(
-					{
-						'_id': {'$in': list(ids_uls_to_insert)}, 
-						'tranId': {'$ne': tran_id}
-					}, 
-					{'id':1}
-				)
-			]
+			# For each upper limit not existing in DB: 
+			# Add tranId, alDocType (UPPER_LIMIT) and alFlags
+			# Attention: ampelize *modifies* dict instances loaded by fastavro
+			uls_to_insert = self.photo_shaper.ampelize(
+				tran_id, uls_alert, ids_uls_to_insert, id_field_name='_id'
+			)
 
-			if unlinked_uls_ids:
-
-				self.logger.info(
-					"%i existing upper limit(s) will be associated with this transient: %s" % 
-					(len(unlinked_uls_ids), unlinked_uls_ids)
-				)
-
+			# Insert new upper limit into DB
+			for ul in uls_to_insert:
 				db_photo_ops.append(
-					pymongo.UpdateMany(
-						{"_id": {"$in": unlinked_uls_ids}},
+					pymongo.UpdateOne(
+						{"_id": ul["_id"]},
 						{
-							"$addToSet": {
-								'tranId': tran_id
-							}
-						}
+							"$setOnInsert": ul,
+							"$addToSet": {'tranId': tran_id}
+						},
+						upsert=True
 					)
 				)
-
-				ids_uls_to_insert = ids_uls_to_insert - set(unlinked_uls_ids)
-
-
-			# NEW UPPER LIMITS
-			##################
-
-			if ids_uls_to_insert:
-
-				self.logger.info(
-					"%i new upper limit(s) will be inserted into DB: %s" % 
-					(len(ids_uls_to_insert), ids_uls_to_insert)
-				)
-
-				# For each upper limit not existing in DB: 
-				# Add tranId, alDocType (UPPER_LIMIT) and alFlags
-				# Attention: ampelize *modifies* dict instances loaded by fastavro
-				uls_to_insert = self.photo_shaper.ampelize(
-					tran_id, uls_alert, ids_uls_to_insert, id_field_name='_id'
-				)
-
-				# Insert new upper limit into DB
-				for ul in uls_to_insert:
-					db_photo_ops.append(
-						pymongo.UpdateOne(
-							{"_id": ul["_id"]},
-							{
-								"$setOnInsert": ul,
-								"$addToSet": {
-									'tranId': tran_id
-								}
-							},
-							upsert=True
-						)
-					)
 		else:
 			self.logger.info("No new upper limit to insert into DB")
 
 
+		# UNLINKED UPPER LIMITS
+		#######################
+
+		if unlinked_uls_ids:
+
+			self.logger.info(
+				"%i existing upper limit(s) will be associated with this transient: %s" % 
+				(len(unlinked_uls_ids), unlinked_uls_ids)
+			)
+
+			# Link existing UL with current transient
+			for ul in unlinked_uls_ids:
+				db_photo_ops.append(
+					pymongo.UpdateOne(
+						{"_id": ul},
+						{"$addToSet": {'tranId': tran_id} }
+					)
+				)
 
 
 		###################################################
@@ -717,7 +730,7 @@ class ZIAlertIngester(AbsAlertIngester):
 				# Counters
 				self.count_dict['ppsUpd'] += len(pps_to_insert)
 				self.count_dict['ulsIns'] += len(uls_to_insert)
-				self.count_dict['ulsUpdMany'] += len(unlinked_uls_ids)
+				self.count_dict['ulsUpd'] += len(unlinked_uls_ids)
 				self.count_dict['t2Upd'] += t2_upserts
 				self.count_dict['compUpd'] += compound_upserts
 				self.count_dict['ppsReproc'] += pps_reprocs
