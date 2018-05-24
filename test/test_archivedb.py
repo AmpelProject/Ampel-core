@@ -20,7 +20,6 @@ def alert_schema():
     with open(parent+'alerts/schema.json', 'rb') as f:
         return json.load(f)
 
-#@pytest.fixture(scope="function", params=['sqlite', 'postgres'])
 @pytest.fixture(scope="function", params=['postgres'])
 def mock_database(alert_schema, request):
     meta = archive.create_metadata(alert_schema)
@@ -58,6 +57,7 @@ def mock_database(alert_schema, request):
     if request.param == 'postgres':
        pg_drop_database(master, database)
 
+@pytest.mark.skip(reason='Arrays require postgres')
 def test_create_database(alert_schema):
     meta = archive.create_metadata(alert_schema)
     engine = archive.create_database(meta, 'sqlite:///:memory:', echo=True)
@@ -115,6 +115,8 @@ def test_insert_duplicate_alerts(mock_database, alert_generator):
 def test_insert_duplicate_photopoints(mock_database, alert_generator):
     processor_id = 0
     meta, connection = mock_database
+    from sqlalchemy.sql.expression import tuple_, func
+    from sqlalchemy.sql.functions import sum
     
     alert = next(alert_generator())
     detections, upper_limits = count_previous_candidates(alert)
@@ -125,7 +127,8 @@ def test_insert_duplicate_photopoints(mock_database, alert_generator):
     assert connection.execute(count(meta.tables['prv_candidate'].columns.candid)).first()[0] == detections
     assert connection.execute(count(meta.tables['upper_limit'].columns.upper_limit_id)).first()[0] == upper_limits
     assert connection.execute(count(meta.tables['alert_prv_candidate_pivot'].columns.alert_id)).first()[0] == detections
-    assert connection.execute(count(meta.tables['alert_upper_limit_pivot'].columns.alert_id)).first()[0] == upper_limits
+    assert connection.execute(count(meta.tables['alert_upper_limit_pivot'].columns.upper_limit_id)).first()[0] == 1
+    assert connection.execute(sum(func.array_length(meta.tables['alert_upper_limit_pivot'].columns.upper_limit_id, 1))).first()[0] == upper_limits
     
     # insert a new alert, containing the same photopoints. only the alert and pivot tables should gain entries
     alert['candid'] += 1
@@ -136,7 +139,8 @@ def test_insert_duplicate_photopoints(mock_database, alert_generator):
     assert connection.execute(count(meta.tables['prv_candidate'].columns.candid)).first()[0] == detections
     assert connection.execute(count(meta.tables['upper_limit'].columns.upper_limit_id)).first()[0] == upper_limits
     assert connection.execute(count(meta.tables['alert_prv_candidate_pivot'].columns.alert_id)).first()[0] == 2*detections
-    assert connection.execute(count(meta.tables['alert_upper_limit_pivot'].columns.alert_id)).first()[0] == 2*upper_limits
+    assert connection.execute(count(meta.tables['alert_upper_limit_pivot'].columns.upper_limit_id)).first()[0] == 2
+    assert connection.execute(sum(func.array_length(meta.tables['alert_upper_limit_pivot'].columns.upper_limit_id, 1))).first()[0] == 2*upper_limits
 
 def assert_alerts_equivalent(alert, reco_alert):
     
@@ -229,7 +233,7 @@ def test_get_alert(mock_database, alert_generator):
         alert = hit_list[i]
         assert_alerts_equivalent(alert, reco_alert)
 
-@pytest.mark.skip
+@pytest.mark.skip(reason='Arrays require postgres')
 def test_archive_object(alert_generator, alert_schema):
     import tempfile
     dbfile = tempfile.mktemp()

@@ -93,6 +93,8 @@ def create_metadata(alert_schema):
 
     meta = MetaData()
 
+    from sqlalchemy.dialects import postgresql
+
     Alert = Table('alert', meta,
         Column('alert_id', Integer(), primary_key=True, nullable=False, autoincrement=True),
         Column('candid', BigInteger(), nullable=False),
@@ -139,9 +141,17 @@ def create_metadata(alert_schema):
         *columns
     )
 
+    # There is a many-to-many relationship between alerts and upper limits.
+    # While the usual normalization rules would lead to a table with one row
+    # for every alert-upper_limit pair, alerts can have thousands of previous
+    # upper limits each, leading to billions of rows. At this scale, the
+    # overhead per row in postgres (>= 24 bytes, and typically 30 in this
+    # application) become crippling. We amortize this overhead more efficiently
+    # by nesting the rows into an array, with some extra array_agg() and
+    # unnest() on inserts and selects to recover normal join behavior.
     Table('alert_upper_limit_pivot', meta,
         Column('alert_id', Integer(), ForeignKey('alert.alert_id'), primary_key=True, nullable=False),
-        Column('upper_limit_id', Integer(), ForeignKey('upper_limit.upper_limit_id'), primary_key=True, nullable=False),
+        Column('upper_limit_id', postgresql.ARRAY(Integer, dimensions=1), nullable=False),
     )
 
     return meta
@@ -248,8 +258,19 @@ def insert_alert(connection, meta, alert, partition_id, ingestion_time):
         if len(upper_limits['rows']) > 0:
             index = list(meta.tables['upper_limit'].indexes)[0]
             bridge = meta.tables['alert_upper_limit_pivot']
+            from sqlalchemy.sql.expression import tuple_, func
+
+            target = and_(*(c == bindparam(c.name) for c in index.columns))
+            keys = ((r[c.name] for c in index.columns) for r in upper_limits['rows'])
+            target = tuple_(*index.columns).in_(keys)
+
             connection.execute(_insert_unless_exists(index, False), upper_limits['rows'])
-            connection.execute(_update_bridge(index, bridge), upper_limits['pivots'])
+            result = connection.execute(select([index.table.columns.upper_limit_id]).where(target), upper_limits['rows'])
+            UpperLimit = meta.tables['upper_limit']
+            result = connection.execute(select([UpperLimit.c.upper_limit_id]), upper_limits['rows'])
+            sel = select([bindparam('alert_id'), func.array_agg(UpperLimit.c.upper_limit_id)]).where(target)
+            ins = bridge.insert().from_select(bridge.columns, sel)
+            connection.execute(ins, alert_id=alert_id)
     
         transaction.commit()
     return True
@@ -333,6 +354,9 @@ def _build_queries(meta):
     Pivot = meta.tables['alert_prv_candidate_pivot']
     UpperLimitPivot = meta.tables['alert_upper_limit_pivot']
     from sqlalchemy.sql import null
+    from sqlalchemy.sql.functions import array_agg
+    from sqlalchemy.sql.expression import func
+    unnest = func.unnest
 
     def without_keys(table):
         keys = set(table.primary_key.columns)
@@ -360,10 +384,13 @@ def _build_queries(meta):
             cols.append(UpperLimit.columns[c.name])
         else:
             cols.append(null().label(c.name))
+    # unpack the array of keys from the bridge table in order to perform a normal join
+    bridge = select([UpperLimitPivot.c.alert_id,
+                     unnest(UpperLimitPivot.c.upper_limit_id).label('upper_limit_id')]).alias('bridge')
     ul_query = \
         select(cols) \
-        .select_from(UpperLimit.join(UpperLimitPivot)) \
-        .where(UpperLimitPivot.c.alert_id == bindparam('alert_id'))
+        .select_from(UpperLimit.join(bridge, UpperLimit.c.upper_limit_id == bridge.c.upper_limit_id)) \
+        .where(bridge.c.alert_id == bindparam('alert_id'))
 
     # unify!
     history_query = prv_query.union(ul_query)
@@ -385,7 +412,7 @@ def fetch_alerts_with_condition(connection, meta, condition, order=None):
         for result in connection.execute(history_query, alert_id=alert_id):
             alert['prv_candidates'].append(dict(result))
 
-        alert['prv_candidates'] = sorted(alert['prv_candidates'], key=lambda c: c['jd'])
+        alert['prv_candidates'] = sorted(alert['prv_candidates'], key=lambda c: (c['jd'],  c['candid'] is None, c['candid']))
 
         yield alert
 
