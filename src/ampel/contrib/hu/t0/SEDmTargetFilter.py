@@ -57,6 +57,8 @@ class SEDmTargetFilter():
 			self.search_radius
 		)
 
+		self.keys_to_check = ('rb', 'sgscore')
+
 
 	def apply(self, alert):
 		"""
@@ -71,6 +73,10 @@ class SEDmTargetFilter():
 
 		# get the lates photo-point
 		latest = alert.pps[0]
+
+		for el in self.keys_to_check:
+			if el not in latest:
+				self.logger.debug("rejected: '%s' missing" % el)
 
 		# cut on RB (1 is real, 0 is bogus)
 		if latest['rb'] < self.rb_th:
