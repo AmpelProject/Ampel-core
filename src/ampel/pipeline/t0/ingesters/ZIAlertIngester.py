@@ -128,7 +128,7 @@ class ZIAlertIngester(AbsAlertIngester):
 			if not el in time_dict:
 				time_dict[el] = []
 
-		for key in ('ppsUpd', 'ulsIns', 'ulsUpdMany', 't2Upd', 'compUpd', 'ppsReproc'):
+		for key in ('ppsUpd', 'ulsIns', 'ulsUpd', 't2Upd', 'compUpd', 'ppsReproc'):
 			self.count_dict[key] = 0
 			
 
