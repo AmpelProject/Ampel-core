@@ -126,7 +126,8 @@ def test_insert_duplicate_photopoints(mock_database, alert_generator):
     assert connection.execute(count(meta.tables['candidate'].columns.candid)).first()[0] == 1
     assert connection.execute(count(meta.tables['prv_candidate'].columns.candid)).first()[0] == detections
     assert connection.execute(count(meta.tables['upper_limit'].columns.upper_limit_id)).first()[0] == upper_limits
-    assert connection.execute(count(meta.tables['alert_prv_candidate_pivot'].columns.alert_id)).first()[0] == detections
+    assert connection.execute(count(meta.tables['alert_prv_candidate_pivot'].columns.alert_id)).first()[0] == 1
+    assert connection.execute(sum(func.array_length(meta.tables['alert_prv_candidate_pivot'].columns.prv_candidate_id, 1))).first()[0] == detections
     assert connection.execute(count(meta.tables['alert_upper_limit_pivot'].columns.upper_limit_id)).first()[0] == 1
     assert connection.execute(sum(func.array_length(meta.tables['alert_upper_limit_pivot'].columns.upper_limit_id, 1))).first()[0] == upper_limits
     
@@ -138,7 +139,8 @@ def test_insert_duplicate_photopoints(mock_database, alert_generator):
     assert connection.execute(count(meta.tables['candidate'].columns.candid)).first()[0] == 2
     assert connection.execute(count(meta.tables['prv_candidate'].columns.candid)).first()[0] == detections
     assert connection.execute(count(meta.tables['upper_limit'].columns.upper_limit_id)).first()[0] == upper_limits
-    assert connection.execute(count(meta.tables['alert_prv_candidate_pivot'].columns.alert_id)).first()[0] == 2*detections
+    assert connection.execute(count(meta.tables['alert_prv_candidate_pivot'].columns.alert_id)).first()[0] == 2
+    assert connection.execute(sum(func.array_length(meta.tables['alert_prv_candidate_pivot'].columns.prv_candidate_id, 1))).first()[0] == 2*detections
     assert connection.execute(count(meta.tables['alert_upper_limit_pivot'].columns.upper_limit_id)).first()[0] == 2
     assert connection.execute(sum(func.array_length(meta.tables['alert_upper_limit_pivot'].columns.upper_limit_id, 1))).first()[0] == 2*upper_limits
 

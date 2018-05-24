@@ -1,10 +1,12 @@
 
-from sqlalchemy import Table, MetaData, Column, ForeignKey, ForeignKeyConstraint, Index
+from sqlalchemy import Table, MetaData, Column, ForeignKey, ForeignKeyConstraint, UniqueConstraint, Index
 from sqlalchemy import String, Integer, BigInteger, Float, Boolean
 from sqlalchemy.dialects.postgresql import DOUBLE_PRECISION
 from sqlalchemy import select, and_, bindparam, exists
 from sqlalchemy import create_engine
+from sqlalchemy.engine import reflection
 from sqlalchemy.exc import IntegrityError, OperationalError
+from functools import partial
 import sqlalchemy
 import os, json
 import fastavro
@@ -72,7 +74,6 @@ def create_metadata(alert_schema):
     fields = {f['name'] : f for f in alert_schema['fields']}
 
     double = Float(53).with_variant(DOUBLE_PRECISION(), "postgresql")
-    #types = {'float': Float(), 'double': double, 'int': Integer(), 'long': BigInteger(), 'string': String(255)}
     types = {'float': Float(), 'double': double, 'int': Integer(), 'long': BigInteger()}
     def make_column(field):
         kwargs = {}
@@ -104,12 +105,13 @@ def create_metadata(alert_schema):
         Column('ingestion_time', BigInteger(), nullable=False),
         Column('jd', double, nullable=False),
         Index('alert_playback', 'partition_id', 'jd'),
-        Index('alert_insertion', 'candid', 'programid'),
+        UniqueConstraint('candid', 'programid'),
     )
 
     skip = ['pdiffimfilename', 'programpi', 'ssnamenr']
     identifiers = ['candid', 'programid', 'pid']
-    columns = map(make_column, filter(lambda f: f['name'] not in skip, fields['candidate']['type']['fields']))
+    columns = list(map(make_column, filter(lambda f: f['name'] not in skip, fields['candidate']['type']['fields'])))
+    columns.append(UniqueConstraint(*identifiers))
     Table('candidate', meta,
         Column('candidate_id', Integer(), primary_key=True, nullable=False, autoincrement=True),
         Column('alert_id', Integer(), ForeignKey('alert.alert_id'), nullable=False),
@@ -120,22 +122,23 @@ def create_metadata(alert_schema):
     skip = ['pdiffimfilename', 'programpi', 'ssnamenr']
     identifiers = ['candid', 'programid', 'pid']
     columns = list(map(make_column, filter(lambda f: f['name'] not in skip, fields['prv_candidates']['type'][0]['items']['fields'])))
-    columns.append(Index('unique_prv_candidate', *identifiers))
+    columns.append(UniqueConstraint(*identifiers))
     Table('prv_candidate', meta,
         Column('prv_candidate_id', Integer(), primary_key=True, nullable=False, autoincrement=True),
         
         *columns
     )
 
+    # See note on alert_upper_limit_pivot
     Table('alert_prv_candidate_pivot', meta,
         Column('alert_id', Integer(), ForeignKey('alert.alert_id'), primary_key=True, nullable=False),
-        Column('prv_candidate_id', Integer(), ForeignKey('prv_candidate.prv_candidate_id'), primary_key=True, nullable=False),
+        Column('prv_candidate_id', postgresql.ARRAY(Integer, dimensions=1), nullable=False),
     )
 
     identifiers = ['jd', 'fid', 'pid', 'diffmaglim']
     fluff = ['programid']
     columns = list(map(make_column, filter(lambda f: f['name'] in identifiers+fluff, fields['prv_candidates']['type'][0]['items']['fields'])))
-    columns.append(Index('unique_upper_limit', *identifiers))
+    columns.append(UniqueConstraint(*identifiers))
     Table('upper_limit', meta,
         Column('upper_limit_id', Integer(), primary_key=True, autoincrement=True),
         *columns
@@ -178,27 +181,25 @@ def _convert_isdiffpos(in_dict):
         out_dict[k] = v in {'0', 't'}
     return out_dict
 
-def _insert_unless_exists(index, returning=True):
-    Table = index.table
-    index_cols = index.columns
-    target = and_(*(c == bindparam(c.name) for c in index_cols))
-    idcol = Table.columns['{}_id'.format(Table.name)]
-    query = Table.insert().from_select(
-        [c for c in Table.columns if c != idcol],
-        select([bindparam(k) for k in Table.columns if k.name != idcol.name]) \
-            .where(~exists(select([idcol]).where(target)))
-    )
-    if returning:
-        return query.returning(idcol)
-    else:
-        return query
+from sqlalchemy.dialects import postgresql
+from sqlalchemy.sql.expression import tuple_, func
+def _update_history(connection, meta, label, rows, alert_id):
+    # insert the rows if needed
+    history = meta.tables[label]
+    connection.execute(postgresql.insert(history).on_conflict_do_nothing(), rows)
 
-def _update_bridge(index, bridge):
-    target = and_(*(c == bindparam(c.name) for c in index.columns))
-    source_key = list(bridge.columns)[0].name
-    idcol = index.table.columns['{}_id'.format(index.table.name)]
-    query = bridge.insert().from_select(bridge.columns, select([bindparam(source_key), idcol]).where(target))
-    return query
+    # build a condition that selects the rows (just inserted or already existing)
+    identifiers = _get_unique_constraint(history).columns
+    keys = [[r[c.name] for c in identifiers] for r in rows]
+    target = tuple_(*identifiers).in_(keys)
+
+    # collect the ids of the rows in an array and insert into the bridge table
+    bridge = meta.tables['alert_{}_pivot'.format(label)]
+    source = select([bindparam('alert_id'), func.array_agg(history.columns['{}_id'.format(label)])]).where(target)
+    connection.execute(bridge.insert().from_select(bridge.columns, source), alert_id=alert_id)
+
+def _get_unique_constraint(table):
+    return next(filter(lambda c: isinstance(c, UniqueConstraint), table.constraints))
 
 def insert_alert(connection, meta, alert, partition_id, ingestion_time):
     """
@@ -215,16 +216,11 @@ def insert_alert(connection, meta, alert, partition_id, ingestion_time):
         Alert = meta.tables['alert']
         Candidate = meta.tables['candidate']
         try:
-            index = next(((idx for idx in Alert.indexes if idx.name == "alert_insertion")))
-            result = connection.execute(_insert_unless_exists(index),
+            result = connection.execute(Alert.insert(),
                 candid=alert['candid'],  programid=alert['candidate']['programid'], objectId=alert['objectId'],
                 partition_id=partition_id, ingestion_time=ingestion_time,
                 jd=alert['candidate']['jd'])
-            tup = result.fetchone()
-            if tup is None:
-                transaction.rollback()
-                return False
-            alert_id = tup[0]
+            alert_id = result.inserted_primary_key[0]
             connection.execute(Candidate.insert(), alert_id=alert_id, **_convert_isdiffpos(alert['candidate']))
         except IntegrityError:
             # abort on duplicate alerts
@@ -237,41 +233,18 @@ def insert_alert(connection, meta, alert, partition_id, ingestion_time):
         # entries in prv_candidates will often be duplicated, but may also
         # be updated without warning. sort these into detections (which come with
         # unique ids) and upper limits (which don't)
-        detections = dict(rows=[], pivots=[])
-        upper_limits = dict(rows=[], pivots=[])
+        detections = []
+        upper_limits = []
         for index, c in enumerate(alert['prv_candidates']):
             # entries with no candid are nondetections
             if c['candid'] is None:
-                upper_limits['rows'].append(c)
-                upper_limits['pivots'].append(dict(alert_id=alert_id, **c))
+                upper_limits.append(c)
             else:
-                detections['rows'].append(_convert_isdiffpos(c))
-                detections['pivots'].append(dict(alert_id=alert_id, **c))
-    
-        if len(detections['rows']) > 0:
-            ignore = {'{}_ignore_duplicates'.format(connection.dialect.name): True}
-            index = list(meta.tables['prv_candidate'].indexes)[0]
-            bridge = meta.tables['alert_prv_candidate_pivot']
-            connection.execute(_insert_unless_exists(index, False), detections['rows'])
-            connection.execute(_update_bridge(index, bridge), detections['pivots'])
-    
-        if len(upper_limits['rows']) > 0:
-            index = list(meta.tables['upper_limit'].indexes)[0]
-            bridge = meta.tables['alert_upper_limit_pivot']
-            from sqlalchemy.sql.expression import tuple_, func
+                detections.append(_convert_isdiffpos(c))
+        for rows, label in ((detections, 'prv_candidate'), (upper_limits, 'upper_limit')):
+            if len(rows) > 0:
+                _update_history(connection, meta, label, rows, alert_id)
 
-            target = and_(*(c == bindparam(c.name) for c in index.columns))
-            keys = ((r[c.name] for c in index.columns) for r in upper_limits['rows'])
-            target = tuple_(*index.columns).in_(keys)
-
-            connection.execute(_insert_unless_exists(index, False), upper_limits['rows'])
-            result = connection.execute(select([index.table.columns.upper_limit_id]).where(target), upper_limits['rows'])
-            UpperLimit = meta.tables['upper_limit']
-            result = connection.execute(select([UpperLimit.c.upper_limit_id]), upper_limits['rows'])
-            sel = select([bindparam('alert_id'), func.array_agg(UpperLimit.c.upper_limit_id)]).where(target)
-            ins = bridge.insert().from_select(bridge.columns, sel)
-            connection.execute(ins, alert_id=alert_id)
-    
         transaction.commit()
     return True
 
@@ -370,10 +343,13 @@ def _build_queries(meta):
 
     # build a query for detections
     cols = without_keys(PrvCandidate)
+    # unpack the array of keys from the bridge table in order to perform a normal join
+    bridge = select([Pivot.c.alert_id,
+                     unnest(Pivot.c.prv_candidate_id).label('prv_candidate_id')]).alias('prv_bridge')
     prv_query = \
         select(cols) \
-        .select_from(PrvCandidate.join(Pivot)) \
-        .where(Pivot.c.alert_id == bindparam('alert_id'))
+        .select_from(PrvCandidate.join(bridge, PrvCandidate.c.prv_candidate_id == bridge.c.prv_candidate_id)) \
+        .where(bridge.c.alert_id == bindparam('alert_id'))
 
     # and a corresponding one for upper limits, padding out missing columns
     # with null. Note that the order of the columns must be the same, for
@@ -386,7 +362,7 @@ def _build_queries(meta):
             cols.append(null().label(c.name))
     # unpack the array of keys from the bridge table in order to perform a normal join
     bridge = select([UpperLimitPivot.c.alert_id,
-                     unnest(UpperLimitPivot.c.upper_limit_id).label('upper_limit_id')]).alias('bridge')
+                     unnest(UpperLimitPivot.c.upper_limit_id).label('upper_limit_id')]).alias('ul_bridge')
     ul_query = \
         select(cols) \
         .select_from(UpperLimit.join(bridge, UpperLimit.c.upper_limit_id == bridge.c.upper_limit_id)) \
