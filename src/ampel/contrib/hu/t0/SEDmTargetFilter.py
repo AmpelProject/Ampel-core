@@ -57,6 +57,7 @@ class SEDmTargetFilter():
 			self.search_radius
 		)
 
+		# Robustness
 		self.keys_to_check = ('rb', 'sgscore')
 
 
@@ -74,6 +75,7 @@ class SEDmTargetFilter():
 		# get the lates photo-point
 		latest = alert.pps[0]
 
+		# Robustness
 		for el in self.keys_to_check:
 			if el not in latest:
 				self.logger.debug("rejected: '%s' missing" % el)
