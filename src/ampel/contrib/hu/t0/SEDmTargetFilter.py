@@ -77,6 +77,8 @@ class SEDmTargetFilter():
 		for el in self.keys_to_check:
 			if el not in latest:
 				self.logger.debug("rejected: '%s' missing" % el)
+			if latest[el] is None:
+				self.logger.debug("rejected: '%s' is None" % el)
 
 		# cut on RB (1 is real, 0 is bogus)
 		if latest['rb'] < self.rb_th:
