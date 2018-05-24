@@ -195,9 +195,6 @@ class AlertProcessor(DBWired):
 			or the ingester instance set by the method set_ingester(obj)
 		"""
 
-		# Tmp workaround for MongoClient perf issue
-		self.plug_databases(self.logger, self.arg_db_host, self.arg_config_db, self.arg_central_db)
-
 		# Save current time to later evaluate how low was the pipeline processing time
 		time_now = time.time
 		run_start = time_now()
