@@ -38,7 +38,7 @@ class SEDmTargetFilter():
 
 		# catalog matching 'technical' stuff (db host, port, ecc) in base_config
 		# the more astrophysical stuff in run_config
-		catq_client = MongoClient(base_config['mongodbUri'])
+		catq_client = MongoClient(base_config['mongodbURI'])
 
 		self.mag_th			= run_config['MagTh']
 		self.sg_th			= run_config['SGscoreTh']
