@@ -40,12 +40,17 @@ class SEDmTargetFilter():
 		# the more astrophysical stuff in run_config
 		catq_client = MongoClient(base_config['mongodbURI'])
 
-		# Robustness
+		# Robustness and feedback
 		for el in ('MagTh', 'SGscoreTh', 'RealBogusTh', 'm13GaiaSearchRadius'):
+
+			# Robustness
 			if el not in run_config:
 				raise ValueError("Parameter %s missing, please check your channel config" % el)
 			if run_config[el] is None:
 				raise ValueError("Parameter %s is None, please check your channel config" % el)
+
+			# Feedback
+			self.logger.info("Using %s=%s" % (el, run_config[el]))
 
 		self.mag_th			= run_config['MagTh']
 		self.sg_th			= run_config['SGscoreTh']
