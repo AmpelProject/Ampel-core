@@ -253,23 +253,17 @@ class ZIAlertIngester(AbsAlertIngester):
 				# Upper limit
 				else:
 
-					try:
-						# ULS can have multiple tranIds
-						if type(el['tranId']) is list:
-							if tran_id in el['tranId']:
-								uls_db.append(el) 
-							else:
-								unlinked_uls_ids.add(el['_id']) 
+					# ULS can have multiple tranIds
+					if type(el['tranId']) is list:
+						if tran_id in el['tranId']:
+							uls_db.append(el) 
 						else:
-							if tran_id == el['tranId']:
-								uls_db.append(el) 
-							else:
-								unlinked_uls_ids.add(el['_id']) 
-					except:
-						print(el)
-						print("######################")
-						print("######################")
-						print("######################")
+							unlinked_uls_ids.add(el['_id']) 
+					else:
+						if tran_id == el['tranId']:
+							uls_db.append(el) 
+						else:
+							unlinked_uls_ids.add(el['_id']) 
 		else:
 
 			# Simple DB query using indexed value
