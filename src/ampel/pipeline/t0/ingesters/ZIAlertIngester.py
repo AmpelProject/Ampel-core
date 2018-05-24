@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 14.12.2017
-# Last Modified Date: 23.05.2018
+# Last Modified Date: 24.05.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import logging, pymongo, time
@@ -92,6 +92,7 @@ class ZIAlertIngester(AbsAlertIngester):
 
 		self.lookup_projection = {
 			"_id": 1,
+			"tranId": 1,
 			"alFlags": 1,
 			"jd": 1,
 			"fid": 1,
@@ -127,7 +128,7 @@ class ZIAlertIngester(AbsAlertIngester):
 			if not el in time_dict:
 				time_dict[el] = []
 
-		for key in ('ppsUpd', 'ulsUpd', 't2Upd', 'compUpd', 'ppsReproc'):
+		for key in ('ppsUpd', 'ulsIns', 'ulsUpdMany', 't2Upd', 'compUpd', 'ppsReproc'):
 			self.count_dict[key] = 0
 			
 
@@ -177,35 +178,22 @@ class ZIAlertIngester(AbsAlertIngester):
 		compound_upserts = 0
 		start = time.time()
 
-		# Load existing photopoint and upper limits from DB if any
-		self.logger.info("Checking DB for existing pps/uls")
-		meas_db = self.photo_col.find(
-			{
-				# tranId should be specific to one instrument
-				"tranId": tran_id
-			},
-			self.lookup_projection
-		)
-
+		# PPS / ULS list of dicts loaded from DB
 		pps_db = []
 		uls_db = []
 
-		# Create pps / uls lists from (mixed) db results
-		for el in meas_db:
-			if 'magpsf' in el:  
-				pps_db.append(el) # Photopoint
-			else:
-				uls_db.append(el) # Upper limit
-
-		# Default refs to empty list (list concatenation occurs later)
+		# PPS / ULS list of dicts in alert but not in DB
 		pps_to_insert = []
 		uls_to_insert = []
+	
+		# Set of ULS ids from alert
+		ids_uls_alert = set()
 
-		# Create set with pp ids from alert
-		ids_pps_alert = {pp['candid'] for pp in pps_alert}
+		# set of uls ids present in the alert and in DB but linked with other tranIds
+		unlinked_uls_ids = set()
 
-		# python set of ids of photopoints from DB
-		ids_pps_db = {el['_id'] for el in pps_db}
+		# Load existing photopoint and upper limits from DB if any
+		self.logger.info("Checking DB for existing pps/uls")
 
 		# Create unique ids for the upper limits from alert
 		# Example using the following upper limit: 
@@ -220,33 +208,90 @@ class ZIAlertIngester(AbsAlertIngester):
 		# }
 		# -> generated ID: 2458089740532428190247993
 		# -> %timeit: 1,3 microsecond on MBP 15" 2017
-		ids_uls_alert = set()
-		
-		# Process upper limits if provided
 		if uls_alert is not None:
 
 			JD2017 = 2457754.5
 
 			for ul in uls_alert:
 
-				# extract quadrant number from pid (not avail as dedicate key/val)
+				# extract quadrant number from pid (sadly not avail as dedicated key/val)
 				rcid = str(ul['pid'])[8:10]
 				ul['rcid'] = int(rcid)
 
 				# Update avro dict
 				ul['_id'] = int(
 					"%i%s%i" % (
-						# Convert jd float into int by multiplying it by 10**6
-						# we thereby drop the last digit (milisecond) which is pointless
-						# for the present purpose
+						# Convert jd float into int by multiplying it by 10**6, we thereby drop 
+						# the last digit (milisecond) which is pointless for our purpose
 						(JD2017 - ul['jd']) * 1000000, 
-						rcid,
-						ul['diffmaglim'] * 1000  # cut of mag float after 3 digits after coma
+						rcid, ul['diffmaglim'] * 1000  # cut of mag float 3 digits after coma
 					)
 				)
 
-				# Build list ? then cast to set. Use list later in ampelize to create dict
+				# update set 
 				ids_uls_alert.add(ul['_id'])
+
+			# Non-trivial DB query using $or operator (and using indexed values)
+			meas_db = self.photo_col.find(
+				{
+					'$or': [
+						# tranId should be specific to one instrument
+						{'tranId': tran_id}, 
+						{'_id': {'$in': list(ids_uls_alert)}}
+					]
+				},
+				self.lookup_projection
+			)
+
+			# Create pps / uls lists from db results
+			for el in meas_db:
+
+				# Photopoint
+				if 'magpsf' in el:  
+					pps_db.append(el) 
+
+				# Upper limit
+				else:
+
+					try:
+						# ULS can have multiple tranIds
+						if type(el['tranId']) is list:
+							if tran_id in el['tranId']:
+								uls_db.append(el) 
+							else:
+								unlinked_uls_ids.add(el['_id']) 
+						else:
+							if tran_id == el['tranId']:
+								uls_db.append(el) 
+							else:
+								unlinked_uls_ids.add(el['_id']) 
+					except:
+						print(el)
+						print("######################")
+						print("######################")
+						print("######################")
+		else:
+
+			# Simple DB query using indexed value
+			meas_db = self.photo_col.find(
+				# tranId should be specific to one instrument
+				{"tranId": tran_id}, 
+				self.lookup_projection
+			)
+
+			# Create pps / uls lists from db results
+			for el in meas_db:
+				if 'magpsf' in el:  
+					pps_db.append(el) # Photopoint
+				else:
+					uls_db.append(el) # Upper limit
+
+
+		# Create set with pp ids from alert
+		ids_pps_alert = {pp['candid'] for pp in pps_alert}
+
+		# python set of ids of photopoints from DB
+		ids_pps_db = {el['_id'] for el in pps_db}
 
 		# python set of ids of upper limits from DB
 		ids_uls_db = {el['_id'] for el in uls_db}
@@ -261,15 +306,12 @@ class ZIAlertIngester(AbsAlertIngester):
 		##   Part 2: Insert new photopoints and upper limits into DB   ##
 		#################################################################
 
+		# PHOTO POINTS
+		##############
+
 		# Difference between candids from the alert and candids present in DB 
 		ids_pps_to_insert = ids_pps_alert - ids_pps_db
-		ids_uls_to_insert = ids_uls_alert - ids_uls_db
 
-		# If the photopoints already exist in DB 
-		#self._insert_feedback(self, ids_pps_to_insert, "photo point")
-		#self._insert_feedback(self, ids_uls_to_insert, "point")
-
-		# PHOTO POINTS
 		if ids_pps_to_insert:
 
 			self.logger.info(
@@ -295,7 +337,13 @@ class ZIAlertIngester(AbsAlertIngester):
 		else:
 			self.logger.info("No new photo point to insert into DB")
 
-		# UPPER LIMITS
+
+		# NEW UPPER LIMITS
+		##################
+
+		# Difference between uls from the alert and uls present in DB 
+		ids_uls_to_insert = ids_uls_alert - ids_uls_db - unlinked_uls_ids
+
 		if ids_uls_to_insert:
 
 			self.logger.info(
@@ -328,6 +376,26 @@ class ZIAlertIngester(AbsAlertIngester):
 			self.logger.info("No new upper limit to insert into DB")
 
 
+		# UNLINKED UPPER LIMITS
+		#######################
+
+		if unlinked_uls_ids:
+
+			self.logger.info(
+				"%i upper limit(s) will be associated with this transient: %s" % 
+				(len(unlinked_uls_ids), unlinked_uls_ids)
+			)
+
+			db_photo_ops.append(
+				pymongo.UpdateMany(
+					{"_id": {"$in": list(unlinked_uls_ids)}},
+					{
+						"$addToSet": {
+							'tranId': tran_id
+						}
+					}
+				)
+			)
 
 
 		###################################################
@@ -670,7 +738,8 @@ class ZIAlertIngester(AbsAlertIngester):
 
 				# Counters
 				self.count_dict['ppsUpd'] += len(pps_to_insert)
-				self.count_dict['ulsUpd'] += len(uls_to_insert)
+				self.count_dict['ulsIns'] += len(uls_to_insert)
+				self.count_dict['ulsUpdMany'] += len(unlinked_uls_ids)
 				self.count_dict['t2Upd'] += t2_upserts
 				self.count_dict['compUpd'] += compound_upserts
 				self.count_dict['ppsReproc'] += pps_reprocs
@@ -693,8 +762,10 @@ class ZIAlertIngester(AbsAlertIngester):
 					self.logger.error(db_photo_results.bulk_api_result)
 				else:
 					self.logger.info(
-						"DB photo feeback: %i upserted" % 
-						db_photo_results.bulk_api_result['nUpserted']
+						"DB photo feeback: %i upserted, %i modified" % (
+							db_photo_results.bulk_api_result['nUpserted'],
+							db_photo_results.bulk_api_result['nModified']
+						)
 					)
 
 			if len(db_main_ops) > 0:
@@ -713,18 +784,3 @@ class ZIAlertIngester(AbsAlertIngester):
 			self.logger.error(bwe.details) 
 			# TODO add error flag to Job and Transient
 			# TODO add return code 
-
-
-
-	def _insert_feedback(self, ids_to_insert, measurement):
-
-		# If the photopoints already exist in DB 
-		if not ids_to_insert:
-			self.logger.info(
-				"No new %s to insert in DB" % measurement
-			)
-		else:
-			self.logger.info(
-				"%i new %s(s) will be inserted into DB: %s" % 
-				(len(ids_to_insert), measurement, ids_to_insert)
-			)

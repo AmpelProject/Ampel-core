@@ -540,8 +540,8 @@ class AlertProcessor(DBWired):
 
 		main_col = self.get_main_col()
 		photo_col = self.get_photo_col()
-		id_proj = {'_id':1}
-		tran_proj = {'tranId':1, '_id':0}
+		id_proj = {'_id': 1}
+		tran_proj = {'tranId': 1, '_id': 0}
 		stat_dict = {}
 		count_dict = {}
 		dbinfo_dict = {
@@ -694,7 +694,7 @@ class AlertProcessor(DBWired):
 							'channels': channel.name
 						},
 						{
-							'_id':0, 'tranId':1
+							'_id': 0, 'tranId': 1
 						}
 					)
 				}
