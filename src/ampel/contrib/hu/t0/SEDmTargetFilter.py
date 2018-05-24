@@ -39,7 +39,8 @@ class SEDmTargetFilter():
 		# catalog matching 'technical' stuff (db host, port, ecc) in base_config
 		# the more astrophysical stuff in run_config
 		catq_client = MongoClient(
-		    host = base_config['mongodbHost'], port = base_config['mongodbPort']
+		    host = base_config['mongodbHost'], 
+			port = base_config['mongodbPort']
 		)
 
 		self.mag_th			= run_config['MagTh']
@@ -50,13 +51,14 @@ class SEDmTargetFilter():
 		# init the catalog query object for the star catalog
 		catq_kwargs = {'logger': logger, 'dbclient': catq_client}
 		self.gaia_query = CatalogQuery.CatalogQuery(
-			"gaia_dr1_m13",
-			ra_key = 'ra', dec_key = 'dec',
-			logger = logger, dbclient = catq_client
+			"gaia_dr1_m13", ra_key='ra', dec_key='dec',
+			logger=logger, dbclient=catq_client
 		)
 
 		self.logger.info(
-			"Serach radius for vetoing sources in gaia_dr1_m13: %.2f arcsec" % self.search_radius)
+			"Serach radius for vetoing sources in gaia_dr1_m13: %.2f arcsec" % 
+			self.search_radius
+		)
 
 
 	def apply(self, alert):
@@ -74,21 +76,27 @@ class SEDmTargetFilter():
 		latest = alert.pps[0]
 
 		# cut on RB (1 is real, 0 is bogus)
-		rb = latest['rb']
-		if rb < self.rb_th:
-			self.logger.debug("rejected: RB score %.2f below threshod (%.2f)"%(rb, self.rb_th))
+		if latest['rb'] < self.rb_th:
+			self.logger.debug(
+				"rejected: RB score %.2f below threshod (%.2f)" %
+				(latest['rb'], self.rb_th)
+			)
 			return None
 
 		# then on star-galaxy separation (1 for star, 0 for galaxy)
-		sgscore = latest['sgscore']
-		if sgscore > self.sg_th:
-			self.logger.debug("rejected: SG score %.2f above threshod (%.2f)"%(sgscore, self.sg_th))
+		if latest['sgscore'] > self.sg_th:
+			self.logger.debug(
+				"rejected: SG score %.2f above threshod (%.2f)" %
+				(latest['sgscore'], self.sg_th)
+			)
 			return None
 
 		# then on the magnitude
-		mag = latest['magpsf']
-		if mag > self.mag_th:
-			self.logger.debug("rejected: magnitude %.2f above threshod (%.2f)"%(mag, self.mag_th))
+		if latest['magpsf'] > self.mag_th:
+			self.logger.debug(
+				"rejected: magnitude %.2f above threshod (%.2f)" % 
+				(latest['magpsf'], self.mag_th)
+			)
 			return None
 
 
@@ -96,11 +104,11 @@ class SEDmTargetFilter():
 
 #		mean_ra, mean_dec = np.mean(alert.get_ntuples(["ra", "dec"]), axis = 0)
 #		found = self.gaia_query.binarysearch(mean_ra, mean_dec, self.search_radius)
-		ra, dec = latest['ra'], latest['dec']
-		if self.gaia_query.binaryserach(ra, dec, self.search_radius):
-			self.logger.debug("rejected: within %.2f arcsec from a brigt gaia source"%(self.search_radius))
+		if self.gaia_query.binaryserach(latest['ra'], latest['dec'], self.search_radius):
+			self.logger.debug(
+				"rejected: within %.2f arcsec from a brigt gaia source" % 
+				(self.search_radius)
+			)
 			return None
-
-		self.logger.debug("go SEDm!")
 
 		return self.on_match_t2_units
