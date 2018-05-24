@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : src/ampel/contrib/hu/t0/SEDmTargetFilter.py
+# File              : ampel/contrib/hu/t0/SEDmTargetFilter.py
+# License           : BSD-3-Clause
 # Author            : m. giomi <matteo.giomi@desy.de>
 # Date              : 04.27.2018
-# Last Modified Date: 04.27.2018
-# Last Modified By  : mgiomi
-
+# Last Modified Date: 24.05.2018
+# Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import numpy as np
 import logging
@@ -38,10 +38,7 @@ class SEDmTargetFilter():
 
 		# catalog matching 'technical' stuff (db host, port, ecc) in base_config
 		# the more astrophysical stuff in run_config
-		catq_client = MongoClient(
-		    host = base_config['mongodbHost'], 
-			port = base_config['mongodbPort']
-		)
+		catq_client = MongoClient(base_config['mongodbUri'])
 
 		self.mag_th			= run_config['MagTh']
 		self.sg_th			= run_config['SGscoreTh']
