@@ -147,6 +147,30 @@ def test_insert_duplicate_photopoints(mock_database, alert_generator):
     assert connection.execute(count(meta.tables['alert_upper_limit_pivot'].columns.upper_limit_id)).first()[0] == 2
     assert connection.execute(sum(func.array_length(meta.tables['alert_upper_limit_pivot'].columns.upper_limit_id, 1))).first()[0] == 2*upper_limits
 
+def test_delete_alert(mock_database, alert_generator):
+    processor_id = 0
+    meta, connection = mock_database
+    from sqlalchemy.sql.expression import tuple_, func
+    from sqlalchemy.sql.functions import sum
+    
+    alert = next(alert_generator())
+    detections, upper_limits = count_previous_candidates(alert)
+    
+    archive.insert_alert(connection, meta, alert, processor_id, int(time.time()*1e6))
+
+    Alert = meta.tables['alert']
+    connection.execute(Alert.delete().where(Alert.c.candid==alert['candid']))
+    assert connection.execute(count(meta.tables['alert'].columns.candid)).first()[0] == 0
+    assert connection.execute(count(meta.tables['candidate'].columns.candid)).first()[0] == 0
+    assert connection.execute(count(meta.tables['alert_prv_candidate_pivot'].columns.alert_id)).first()[0] == 0
+    assert connection.execute(sum(func.array_length(meta.tables['alert_prv_candidate_pivot'].columns.prv_candidate_id, 1))).first()[0] == None
+    assert connection.execute(count(meta.tables['alert_upper_limit_pivot'].columns.upper_limit_id)).first()[0] == 0
+    assert connection.execute(sum(func.array_length(meta.tables['alert_upper_limit_pivot'].columns.upper_limit_id, 1))).first()[0] == None
+    # array-joined tables don't participate in delete cascade, because ELEMENT REFERENCES is still not a thing
+    # http://blog.2ndquadrant.com/postgresql-9-3-development-array-element-foreign-keys/
+    assert connection.execute(count(meta.tables['prv_candidate'].columns.candid)).first()[0] == detections
+    assert connection.execute(count(meta.tables['upper_limit'].columns.upper_limit_id)).first()[0] == upper_limits
+
 def assert_alerts_equivalent(alert, reco_alert):
     
     # some necessary normalization on the alert
@@ -192,6 +216,27 @@ def assert_alerts_equivalent(alert, reco_alert):
         assert prv == pytest.approx(reco_prv)
         #assert prv == reco_prv
     assert alert['candidate'] == pytest.approx(reco_alert['candidate'])
+
+def test_get_cutout(mock_database, cutout_alert_generator, alert_generator):
+    processor_id = 0
+    meta, connection = mock_database
+    
+    for idx, alert in enumerate(alert_generator()):
+        processor_id = idx % 16
+        archive.insert_alert(connection, meta, alert, processor_id, 0)
+
+    for idx, alert in enumerate(cutout_alert_generator()):
+        processor_id = idx % 16
+        archive.insert_alert(connection, meta, alert, processor_id, 0)
+
+    for idx, alert in enumerate(cutout_alert_generator()):
+        processor_id = idx % 16
+        cutouts = archive.get_cutout(connection, meta, alert['candid'])
+        alert_cutouts = {k[len('cutout'):].lower() : v['stampData'] for k,v in alert.items() if k.startswith('cutout')}
+        assert cutouts == alert_cutouts
+
+
+    
 
 def test_get_alert(mock_database, alert_generator):
     processor_id = 0

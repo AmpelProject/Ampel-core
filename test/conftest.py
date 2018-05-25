@@ -33,3 +33,18 @@ def alert_generator():
                 yield alert
     yield alerts
 
+
+@pytest.fixture
+def cutout_alert_generator():
+    from ampel.pipeline.t0.alerts.TarballWalker import TarballWalker
+    def alerts(with_schema=False):
+        atat = TarballWalker('/ztf/cutouts/ztf_20180523_programid1.tar.gz')
+        for fileobj in itertools.islice(atat.get_files(), 0, 1000, 100):
+            reader = fastavro.reader(fileobj)
+            alert = next(reader)
+            if with_schema:
+                yield alert, reader.schema
+            else:
+                yield alert
+    yield alerts
+

@@ -1,6 +1,6 @@
 
 from sqlalchemy import Table, MetaData, Column, ForeignKey, ForeignKeyConstraint, UniqueConstraint, Index
-from sqlalchemy import String, Integer, BigInteger, Float, Boolean
+from sqlalchemy import String, Integer, BigInteger, Float, Boolean, LargeBinary, Enum
 from sqlalchemy.dialects.postgresql import DOUBLE_PRECISION
 from sqlalchemy import select, and_, bindparam, exists
 from sqlalchemy import create_engine
@@ -56,14 +56,17 @@ class ArchiveDB(object):
         sql = "select relname, n_live_tup from pg_catalog.pg_stat_user_tables"
         return dict(self._connection.execute(sql).fetchall())
     
-    def get_alert(self, alert_id):
-        return get_alert(self._connection, self._meta, alert_id)
+    def get_alert(self, candid):
+        return get_alert(self._connection, self._meta, candid)
+
+    def get_cutout(self, candid):
+        return get_cutout(self._connection, self._meta, candid)
 
     def get_alerts_for_object(self, objectId):
         return get_alerts_for_object(self._connection, self._meta, objectId)
 
-    def get_alerts(self, alert_ids):
-        return get_alerts(self._connection, self._meta, alert_ids)
+    def get_alerts(self, candids):
+        return get_alerts(self._connection, self._meta, candids)
 
     def get_alerts_in_time_range(self, jd_min, jd_max, partitions=None):
         return get_alerts_in_time_range(self._connection, self._meta, jd_min, jd_max, partitions)
@@ -100,6 +103,9 @@ def create_metadata(alert_schema):
     meta = MetaData()
 
     from sqlalchemy.dialects import postgresql
+    import sqlalchemy
+
+    ForeignKey = lambda name: sqlalchemy.ForeignKey(name, onupdate='CASCADE', ondelete='CASCADE')
 
     Table('versions', meta,
         Column('version_id', Integer(), primary_key=True, nullable=False, autoincrement=True),
@@ -128,6 +134,16 @@ def create_metadata(alert_schema):
         
         *columns
     )
+
+    prefix = 'cutout'
+    cutout_fields = [k[len(prefix):].lower() for k in fields if k.startswith(prefix)]
+    Table('cutout', meta,
+        Column('cutout_id', Integer(), primary_key=True, nullable=False, autoincrement=True),
+        Column('alert_id', Integer(), ForeignKey('alert.alert_id'), nullable=False),
+        Column('kind', Enum(*cutout_fields, name='cutout_kind'), nullable=False),
+        Column('stampData', LargeBinary(), nullable=False)
+    )
+    
     
     skip = ['pdiffimfilename', 'programpi', 'ssnamenr']
     identifiers = ['candid', 'programid', 'pid']
@@ -244,6 +260,12 @@ def insert_alert(connection, meta, alert, partition_id, ingestion_time):
             # abort on duplicate alerts
             transaction.rollback()
             return False
+
+        # insert cutouts if they exist
+        prefix = 'cutout'
+        cutouts = [dict(kind=k[len(prefix):].lower(), stampData=v['stampData'], alert_id=alert_id) for k,v in alert.items() if k.startswith(prefix) if v is not None]
+        if len(cutouts) > 0:
+            connection.execute(meta.tables['cutout'].insert(), cutouts)
     
         if alert['prv_candidates'] is None or len(alert['prv_candidates']) == 0:
             return True
@@ -409,6 +431,12 @@ def fetch_alerts_with_condition(connection, meta, condition, order=None):
         alert['prv_candidates'] = sorted(alert['prv_candidates'], key=lambda c: (c['jd'],  c['candid'] is None, c['candid']))
 
         yield alert
+
+def get_cutout(connection, meta, candid):
+    Alert = meta.tables['alert']
+    Cutout = meta.tables['cutout']
+    q = select([Cutout.c.kind, Cutout.c.stampData]).select_from(Cutout.join(Alert)).where(Alert.c.candid == candid)
+    return dict(connection.execute(q).fetchall())
 
 def docker_env(var):
 	"""
