@@ -19,7 +19,8 @@ class GraphiteFeeder:
 		self.gclient = GraphiteClient(
 			graphite_server=graphite_config['server'], 
 			graphite_port=graphite_config['port'], 
-			system_name=graphite_config['systemName']
+			system_name=graphite_config['systemName'],
+			autoreconnect=True
 		)
 
 		self.stats = {}
@@ -68,7 +69,6 @@ class GraphiteFeeder:
 	def send(self):
 		"""
 		"""
-		# print(self.stats)
 		self.gclient.send_dict(self.stats)
 		self.stats = {}
 
