@@ -20,13 +20,16 @@ def alert_blobs():
 @pytest.fixture
 def alert_generator():
     from ampel.pipeline.t0.alerts.TarballWalker import TarballWalker
-    def alerts():
+    def alerts(with_schema=False):
         atat = TarballWalker('/ztf/ztf_20180419_programid2.tar.gz.part.1')
         for fileobj in itertools.islice(atat.get_files(), 0, 1000, 10):
             reader = fastavro.reader(fileobj)
             alert = next(reader)
             for k in {'cutoutDifference', 'cutoutScience', 'cutoutTemplate'}:
                  del alert[k]
-            yield alert
+            if with_schema:
+                yield alert, reader.schema
+            else:
+                yield alert
     yield alerts
 

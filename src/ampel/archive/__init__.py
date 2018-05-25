@@ -34,17 +34,22 @@ class ArchiveDB(object):
         Initialize and connect to archive database. Arguments will be passed on
         to :py:func:`sqlalchemy.create_engine`.
         """
-        with open(os.path.dirname(os.path.realpath(__file__)) + '/../../../alerts/schema.json') as f:
-            schema = json.load(f)
-        self._meta = create_metadata(schema)
         engine = create_engine(*args, **kwargs)
+        self._meta = MetaData()
+        self._meta.reflect(bind=engine)
         self._connection = engine.connect()
+
+        Versions = self._meta.tables['versions']
+        self._alert_version = self._connection.execute(select([Versions.c.alert_version]).order_by(Versions.c.version_id.desc()).limit(1)).first()[0]
     
-    def insert_alert(self, alert, partition_id, ingestion_time):
+    def insert_alert(self, alert, schema, partition_id, ingestion_time):
         """
         :param alert: alert dictionary
+        :param schema: avro schema dictionary
         :param partition_id: index of the Kafka partition this alert came from
         """
+        if schema['version'] > self._alert_version:
+            raise ValueError("alert schema ({}) is newer than database schema ({})".format(schema['version'], self._alert_version))
         return insert_alert(self._connection, self._meta, alert, partition_id, ingestion_time)
 
     def get_statistics(self):
@@ -95,6 +100,11 @@ def create_metadata(alert_schema):
     meta = MetaData()
 
     from sqlalchemy.dialects import postgresql
+
+    Table('versions', meta,
+        Column('version_id', Integer(), primary_key=True, nullable=False, autoincrement=True),
+        Column('alert_version', postgresql.TEXT(), nullable=False, unique=True),
+    )
 
     Alert = Table('alert', meta,
         Column('alert_id', Integer(), primary_key=True, nullable=False, autoincrement=True),
@@ -159,7 +169,7 @@ def create_metadata(alert_schema):
 
     return meta
 
-def create_database(metadata, *args, **kwargs):
+def create_database(schema, engine, drop=False):
     """
     Initialize the archive database. Extra args and kwargs will be passed to
     :py:func:`sqlalchemy.create_database`.
@@ -167,11 +177,19 @@ def create_database(metadata, *args, **kwargs):
     :param metadata: 
     """
     from sqlalchemy import create_engine
+    from sqlalchemy import func, select
     
-    engine = create_engine(*args, **kwargs)
-    metadata.create_all(engine)
+    metadata = create_metadata(schema)
+    metadata.bind = engine
+    if drop:
+        metadata.drop_all()
+    metadata.create_all()
+
+    with engine.connect() as connection:
+        assert connection.execute('select count(*) from versions').fetchone()[0] == 0, "database should be empty"
+        connection.execute(metadata.tables['versions'].insert(), alert_version=schema['version'])
     
-    return engine
+    return metadata
 
 def _convert_isdiffpos(in_dict):
     out_dict = dict(in_dict)
@@ -420,6 +438,9 @@ def init_db():
 	
 	opts = parser.parse_args()
 	
+	with open(opts.schema) as f:
+		schema = json.load(f)
+	
 	user = 'ampel'
 	password = docker_env('POSTGRES_PASSWORD')
 	for attempt in range(10):
@@ -433,11 +454,4 @@ def init_db():
 				time.sleep(1)
 				continue
 	
-	with open(opts.schema) as f:
-		schema = json.load(f)
-	
-	meta = create_metadata(schema)
-	if opts.drop:
-		meta.drop_all(engine)
-	meta.create_all(engine)
-	
+	create_database(schema, engine, opts.drop)

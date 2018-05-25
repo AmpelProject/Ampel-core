@@ -20,9 +20,9 @@ def alert_schema():
     with open(parent+'alerts/schema.json', 'rb') as f:
         return json.load(f)
 
+
 @pytest.fixture(scope="function", params=['postgres'])
-def mock_database(alert_schema, request):
-    meta = archive.create_metadata(alert_schema)
+def mock_database_args(request):
     def pg_drop_database(engine, database):
        # terminate connections and drop database
        with engine.connect() as conn:
@@ -37,7 +37,7 @@ def mock_database(alert_schema, request):
            except sqlalchemy.exc.ProgrammingError:
                pass
     if request.param == 'sqlite':
-        engine = archive.create_database(meta, 'sqlite:///:memory:')
+        uri = 'sqlite:///:memory:'
     elif request.param == 'postgres':
         user = 'ampel'
         host = os.environ['ARCHIVE']
@@ -50,16 +50,22 @@ def mock_database(alert_schema, request):
             conn.execute("create database {}".format(database))
         
         uri = 'postgresql://{}:{}@{}/{}'.format(user, password, host, database)
-        engine = archive.create_database(meta, uri)
-    connection = engine.connect()
-    yield meta, connection
+    yield uri
 
     if request.param == 'postgres':
        pg_drop_database(master, database)
 
-def test_create_database(mock_database):
+@pytest.fixture(scope="function", params=['postgres'])
+def mock_database(alert_schema, mock_database_args):
+    engine = create_engine(mock_database_args)
+    meta = archive.create_database(alert_schema, engine)
+    with engine.connect() as connection:
+        yield meta, connection
+
+def test_create_database(alert_schema, mock_database):
     meta, connection = mock_database
     assert connection.execute('SELECT COUNT(*) from alert').first()[0] == 0
+    assert connection.execute('SELECT alert_version from versions ORDER BY version_id DESC LIMIT 1').first()[0] == alert_schema['version']
 
 def test_insert_unique_alerts(mock_database, alert_generator):
     processor_id = 0
@@ -232,25 +238,30 @@ def test_get_alert(mock_database, alert_generator):
         alert = hit_list[i]
         assert_alerts_equivalent(alert, reco_alert)
 
-@pytest.mark.skip(reason='Arrays require postgres')
-def test_archive_object(alert_generator, alert_schema):
-    import tempfile
-    dbfile = tempfile.mktemp()
-    try:
-        meta = archive.create_metadata(alert_schema)
-        engine = archive.create_database(meta, 'sqlite:///{}'.format(dbfile))
-        db = archive.ArchiveDB('sqlite:///{}'.format(dbfile))
+def test_archive_object(alert_generator, alert_schema, mock_database_args):
+    engine = create_engine(mock_database_args)
+    archive.create_database(alert_schema, engine)
+    db = archive.ArchiveDB(mock_database_args)
     
-        from itertools import islice
-        for alert in islice(alert_generator(), 10):
-            db.insert_alert(alert, 0, 0)
+    from itertools import islice
+    for alert, schema in islice(alert_generator(with_schema=True), 10):
+        db.insert_alert(alert, schema, 0, 0)
     
-        for alert in islice(alert_generator(), 10):
-            reco_alert = db.get_alert(alert['candid'])
-            # some necessary normalization on the alert
-            for k,v in alert['candidate'].items():
-                if isinstance(v, float) and isnan(v):
-                    alert['candidate'][k] = None
-            assert alert == reco_alert
-    finally:
-        os.unlink(dbfile)
+    for alert in islice(alert_generator(), 10):
+        reco_alert = db.get_alert(alert['candid'])
+        # some necessary normalization on the alert
+        for k,v in alert['candidate'].items():
+            if isinstance(v, float) and isnan(v):
+                alert['candidate'][k] = None
+        assert_alerts_equivalent(alert, reco_alert)
+
+def test_insert_future_schema(alert_generator, alert_schema, mock_database_args):
+    engine = create_engine(mock_database_args)
+    archive.create_database(alert_schema, engine)
+    db = archive.ArchiveDB(mock_database_args)
+
+    alert, schema = next(alert_generator(True))
+    schema['version'] = str(float(schema['version'])+.1)
+    with pytest.raises(ValueError) as e_info:
+        db.insert_alert(alert, schema, 0, 0)
+
