@@ -57,11 +57,8 @@ def mock_database(alert_schema, request):
     if request.param == 'postgres':
        pg_drop_database(master, database)
 
-@pytest.mark.skip(reason='Arrays require postgres')
-def test_create_database(alert_schema):
-    meta = archive.create_metadata(alert_schema)
-    engine = archive.create_database(meta, 'sqlite:///:memory:', echo=True)
-    connection = engine.connect()
+def test_create_database(mock_database):
+    meta, connection = mock_database
     assert connection.execute('SELECT COUNT(*) from alert').first()[0] == 0
 
 def test_insert_unique_alerts(mock_database, alert_generator):
