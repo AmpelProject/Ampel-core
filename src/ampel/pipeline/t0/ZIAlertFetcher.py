@@ -127,6 +127,7 @@ def archive_topic():
 	from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
 	parser = ArgumentParser(description=__doc__, formatter_class=ArgumentDefaultsHelpFormatter)
 	parser.add_argument("--broker", type=str, default="epyc.astro.washington.edu:9092")
+	parser.add_argument("--strip-cutouts", action="store_true", default=False)
 	parser.add_argument("topic", type=str)
 	parser.add_argument("outfile", type=str)
 	
@@ -156,6 +157,7 @@ def archive_topic():
 	    # num_consumer_fetchers=1,
 	    use_rdkafka=True)
 	
+	if opts.strip_cutouts:
 	def trim_alert(payload):
 		reader = fastavro.reader(io.BytesIO(payload))
 		schema = reader.schema
@@ -163,12 +165,13 @@ def archive_topic():
 		
 		candid = alert['candid']
 		# remove cutouts to save space
-		for k in list(alert.keys()):
-			if k.startswith('cutout'):
-				del alert[k]
-		with io.BytesIO() as out:
-			fastavro.writer(out, schema, [alert])
-			payload = out.getvalue()
+		if opts.strip_cutouts:
+			for k in list(alert.keys()):
+				if k.startswith('cutout'):
+					del alert[k]
+			with io.BytesIO() as out:
+				fastavro.writer(out, schema, [alert])
+				payload = out.getvalue()
 		
 		return candid, payload
 	
