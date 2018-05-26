@@ -35,7 +35,7 @@ class AmpelStatsPublisher(DBWired):
 
 
 	def __init__(
-		self, config_db=None, central_db=None, publish_stats={'graphite', 'mongo', 'print'},
+		self, config_db=None, central_db=None, publish_stats=['graphite', 'mongo', 'print'],
 		mongo_uri=None, channel_names=None, 
 		update_intervals = {'col_stats': 5, 'docs_count': 10, 'daemon': 2, 'channels': 5}
 	):
@@ -72,6 +72,10 @@ class AmpelStatsPublisher(DBWired):
 		# Which stats to publish (see doctring)
 		self.publish_stats = publish_stats
 
+		# Instantiate GraphiteFeeder class if so required
+		if "graphite" in publish_stats:
+			self.gfeeder = GraphiteFeeder(self.global_config['graphite'])
+
 		# Projections
 		self.id_proj = {'_id': 1}
 		self.tran_proj = {'tranId': 1, '_id': 0}
@@ -100,7 +104,7 @@ class AmpelStatsPublisher(DBWired):
 		self.keep_going = True
 
 		for interval in self.inv_map.keys():
-			schedule.every(interval).seconds.do(self.send_metrics, **self.inv_map[interval])
+			schedule.every(interval).minutes.do(self.send_metrics, **self.inv_map[interval])
 
 		self.worker_thread = threading.Thread(target=self.run)
 		self.worker_thread.start()
@@ -133,11 +137,14 @@ class AmpelStatsPublisher(DBWired):
 			raise ValueError("Bad arguments")
 
 		if daemon:
+
 			dbinfo_dict['daemon'] = self.get_server_stats(
 				main_col.database
 			)
 
+
 		if col_stats:
+
 			dbinfo_dict['colStats'] = {
 				'jobs': self.get_col_stats(self.get_job_col()),
 				'photo': self.get_col_stats(photo_col),
@@ -146,6 +153,7 @@ class AmpelStatsPublisher(DBWired):
 
 
 		if docs_count:
+
 			dbinfo_dict['docsCount'] = {
 
 				'troubles': self.get_trouble_col().find({}).count(),
@@ -203,21 +211,14 @@ class AmpelStatsPublisher(DBWired):
 
 		# Publish metrics to graphite
 		if "graphite" in self.publish_stats:
-
 			self.logger.info("Sending stats to graphite")
-
-			# Re-using GraphiteClient results in: 
-			# GraphiteSendException: Socket closed before able to send data to ('localhost', 52003), 
-			# with error: [Errno 32] Broken pipe
-			# So we re-create a GraphiteClient every time we send something to graphite...
-			gfeeder = GraphiteFeeder(self.global_config['graphite']) 
-			gfeeder.add_stats(stat_dict)
-			gfeeder.send()
+			self.gfeeder.add_stats(stat_dict)
+			self.gfeeder.send()
 
 
 		# Publish metrics to mongo
 		if "mongo" in self.publish_stats:
-			# TO BE IMPLEMENTED
+			# WILL BE IMPLEMENTED SOON
 			pass
 
 		if "print" in self.publish_stats:
