@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 13.01.2018
-# Last Modified Date: 20.05.2018
+# Last Modified Date: 29.05.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from ampel.flags.AlDocTypes import AlDocTypes
@@ -21,18 +21,20 @@ class LightCurveLoader:
 	Either through DB query (load_through_db_query) or through parsing of DB query results 
 	"""
 
-	def __init__(self, col, read_only=True, logger=None):
+	def __init__(self, photo_col, main_col, read_only=True, logger=None):
 		"""
 		Parameters:
 		-----------
-		col: instance of pymongo.collection.Collection 
+		photo_col: instance of pymongo.collection.Collection 
+		main_col: instance of pymongo.collection.Collection 
 		read_only: if True, the LightCurve instance returned by the methods of this class will be:
 			* a frozen class
 			* containing a immutable list (tuple) of PhotoPoint
 			* whereby each PhotoPoint is a frozen class as well
 			* and each PhotoPoint dict content is an immutable dict
 		"""
-		self.col = col 
+		self.main_col = main_col 
+		self.photo_col = photo_col 
 		self.logger = LoggingUtils.get_logger() if logger is None else logger
 		self.read_only = read_only
 
@@ -50,37 +52,32 @@ class LightCurveLoader:
 
 		# TODO : provide list or cursor as func parameter ?
 		# T3 will have larger queries (including t3 results)
-		cursor = self.col.find(
-			{	
-				"tranId": tran_id, 
-				"$or": [
-					{
-						"alDocType": {
-							"$in": [AlDocTypes.PHOTOPOINT, AlDocTypes.UPPERLIMIT]
-						}
-					},
-					{	
-						"alDocType": AlDocTypes.COMPOUND, 
-						"_id": compound_id
-					}
-				]
-			}
-		)
+		photo_cursor = self.photo_col.find({"tranId": tran_id})
+		main_cursor = self.main_col.find({"_id": compound_id})
 
-		if cursor.count() == 0:
-			self.logger.warn("No LightCurve found for tranId: %s " % tran_id)
+		if main_cursor.count() == 0:
+			self.logger.warn("No LightCurve found with id: %s " % compound_id)
+			return None
+
+		if photo_cursor.count() == 0:
+			self.logger.warn("No photopoint found for tranId: %s " % tran_id)
 			return None
 
 		self.logger.info(
 			"DB query for tranId: %s and compoundId: %s returned %i documents" %
-			(tran_id, compound_id, cursor.count())
+			(tran_id, compound_id, photo_cursor.count())
 		)
 
-		pps, uls, comp = DBResultOrganizer.get_lightcurve_constituents(
-			cursor, compound_id=compound_id
-		)
+		pps_list = []
+		uls_list = []
 
-		return self.load_using_results(pps, uls, comp)
+		for el in photo_cursor:
+			if el['_id'] > 0:
+				pps_list.append(el)
+			else:
+				uls_list.append(el)
+
+		return self.load_using_results(pps_list, uls_list, next(main_cursor))
 
 
 	def load_using_results(self, ppd_list, uld_list, compound_dict, frozen_pps_dict=None):
@@ -138,12 +135,7 @@ class LightCurveLoader:
 					self.logger.info("Trying to recover from this error")
 
 					# TODO: populate 'troubles collection'
-					cursor = self.col.find(
-						{
-							"_id": el['pp'], 
-							"alDocType": AlDocTypes.PHOTOPOINT
-						}
-					)
+					cursor = self.photo_col.find({"_id": el['pp']})
 	
 					if (cursor.count()) == 0:
 						self.logger.error("PhotoPoint with id %i not found" % el['pp'])
