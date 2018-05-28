@@ -1,21 +1,22 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/pipeline/t0/AmpelStatsPublisher.py
+# File              : ampel/pipeline/common/AmpelStatsPublisher.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 26.05.2018
-# Last Modified Date: 26.05.2018
+# Last Modified Date: 28.05.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from functools import reduce
-import schedule, time, threading
+import schedule, time, threading, signal
 from ampel.pipeline.db.DBWired import DBWired
-from ampel.pipeline.db.GraphiteFeeder import GraphiteFeeder
 from ampel.pipeline.logging.LoggingUtils import LoggingUtils
+from ampel.pipeline.common.GraphiteFeeder import GraphiteFeeder
+from ampel.pipeline.common.Schedulable import Schedulable
 from ampel.flags.AlDocTypes import AlDocTypes
 
 
-class AmpelStatsPublisher(DBWired):
+class AmpelStatsPublisher(DBWired, Schedulable):
 	""" 
 	"""
 
@@ -35,8 +36,8 @@ class AmpelStatsPublisher(DBWired):
 
 
 	def __init__(
-		self, config_db=None, central_db=None, publish_stats=['graphite', 'mongo', 'print'],
-		mongo_uri=None, channel_names=None, 
+		self, config_db=None, central_db=None, mongo_uri=None, 
+		channel_names=None, publish_stats=['graphite', 'mongo', 'print'],
 		update_intervals = {'col_stats': 5, 'docs_count': 10, 'daemon': 2, 'channels': 5}
 	):
 		"""
@@ -55,9 +56,16 @@ class AmpelStatsPublisher(DBWired):
 		'docsCount_interval': 
 		"""
 
+		# Pass custom args to Parent class constructor
+		Schedulable.__init__(self, 
+			start_callback=self.send_all_metrics, 
+			stop_callback=self.send_all_metrics
+		)
+
 		# Setup logger
 		self.logger = LoggingUtils.get_logger(unique=True)
-		self.logger.info("Setting up AmpelMonitor instance")
+		self.logger.info("Setting up AmpelStatsPublisher")
+
 
 		# Setup instance variable referencing ampel databases
 		self.plug_databases(self.logger, mongo_uri, config_db, central_db)
@@ -88,41 +96,28 @@ class AmpelStatsPublisher(DBWired):
  		# 	  5: {'channels': True, 'col_stats': True},
  		# 	  10: {'docs_count': True}
 		# }
-		self.inv_map = {}
+		inv_map = {}
 		for k, v in update_intervals.items():
-			if v in self.inv_map:
-				self.inv_map[v][k] = True
+			if v in inv_map:
+				inv_map[v][k] = True
 			else:
-				self.inv_map[v] = {k: True}
+				inv_map[v] = {k: True}
 
-		self.logger.info("AmpelMonitor setup completed")
+		# Schedule jobs
+		scheduler = self.get_scheduler()
+		for interval in inv_map.keys():
+			scheduler.every(interval).minutes.do(
+				self.send_metrics, 
+				**inv_map[interval]
+			)
+
+		self.logger.info("AmpelStatsPublisher setup completed")
 
 
-	def start(self):
+	def send_all_metrics(self):
 		"""
 		"""
-		self.keep_going = True
-
-		for interval in self.inv_map.keys():
-			schedule.every(interval).minutes.do(self.send_metrics, **self.inv_map[interval])
-
-		self.worker_thread = threading.Thread(target=self.run)
-		self.worker_thread.start()
-
-
-	def run(self):
-		"""
-		"""
-		while self.keep_going:
-			schedule.run_pending()
-			time.sleep(1)
-
-
-	def stop(self):
-		"""
-		"""
-		self.keep_going = False
-		schedule.clear()
+		self.send_metrics(True, True, True, True)
 
 
 	def send_metrics(self, daemon=False, col_stats=False, docs_count=False, channels=False):
