@@ -29,7 +29,7 @@ class QueryLoadTransientInfo:
 
 		Arguments:
 		----------
-		* tran_id: transient id(s) (string, list of string, set of strings). 
+		* tran_id: transient id(s) (int, list of ints, set of ints). 
 		  Query can be built so that it is performed on multiple ids at once.
 
 		* channels: can be a flag, a list of flags, a string, a list of strings, a 2d list of strings:
@@ -55,7 +55,7 @@ class QueryLoadTransientInfo:
 		match_dict = {}
 
 		match_dict['tranId'] = ( 
-			tran_ids if type(tran_ids) is str
+			tran_ids if type(tran_ids) is int
 			else {'$in': tran_ids if type(tran_ids) is list else list(tran_ids)}
 		)
 
@@ -132,7 +132,7 @@ class QueryLoadTransientInfo:
 		match_dict = {}
 
 		match_dict['tranId'] = ( 
-			tran_ids if type(tran_ids) is str
+			tran_ids if type(tran_ids) is int
 			else {'$in': tran_ids if type(tran_ids) is list else list(tran_ids)}
 		)
 
