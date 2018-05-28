@@ -39,11 +39,12 @@ class TransientLoader:
 
 
 	# TODO: implement include logs
-	def __init__(self, db, logger=None, collection="main", save_channels=False, include_logs=False):
+	def __init__(self, db, logger=None, save_channels=False, include_logs=False):
 		"""
 		"""
 
-		self.col = db[collection]
+		self.main_col = db["main"]
+		self.photo_col = db["photo"]
 		self.logger = LoggingUtils.get_logger() if logger is None else logger
 		self.lcl = LightCurveLoader(db, logger=self.logger)
 		self.al_pps = {}
@@ -114,7 +115,7 @@ class TransientLoader:
 			# Execute DB query returning a dict represenation 
 			# of the latest compound dict (alDocType: COMPOUND) 
 			latest_compound_dict = next(
-				self.col.aggregate(
+				self.main_col.aggregate(
 					QueryLatestCompound.general_query(tran_id)
 				)
 			)
@@ -172,7 +173,7 @@ class TransientLoader:
 		)
 
 		# Execute DB query
-		cursor = self.col.find(search_params)
+		cursor = self.main_col.find(search_params)
 
 		# Robustness: check empty
 		res_count = cursor.count()
@@ -183,6 +184,20 @@ class TransientLoader:
 		# Effectively perform DB query (triggered by casting cursor to list)
 		self.logger.info(" -> Fetching %i search results" % res_count)
 		res_doc_list = list(cursor)
+
+		# Photo DB query 
+		if AlDocTypes.PHOTOPOINT|AlDocTypes.UPPERLIMIT in content_types:
+			photo_cursor = self.main_col.find({'tranId': tran_id})
+			self.logger.info(" -> Fetching %i photo measurements" % photo_cursor.count())
+			res_doc_list += list(photo_cursor)
+		elif AlDocTypes.PHOTOPOINT in content_types:
+			photo_cursor = self.main_col.find({'tranId': tran_id, '_id': {'$gt': 0}})
+			self.logger.info(" -> Fetching %i photo points" % photo_cursor.count())
+			res_doc_list += list(photo_cursor)
+		elif AlDocTypes.UPPERLIMIT in content_types:
+			photo_cursor = self.main_col.find({'tranId': tran_id, '_id': {'$lt': 0}})
+			self.logger.info(" -> Fetching %i upper limits" % photo_cursor.count())
+			res_doc_list += list(photo_cursor)
 
 		# Returns a dict with keys = 'photopoints', 'upperlimits', 'compounds', 
 		# 'transient', 't2records' and values = array of corresponding db dict instances
@@ -243,7 +258,7 @@ class TransientLoader:
 			pps = al_tran.get_photopoints()
 			self.logger.info(
 				" -> {} associated photopoint(s): {}".format(
-					len(pps), (*pps,) if len(pps) > 1 else next(iter(pps.values()))
+					len(pps), (*pps,) if len(pps) > 1 else next(iter(pps.keys()))
 				)
 			)
 
@@ -261,7 +276,7 @@ class TransientLoader:
 			uls = al_tran.get_upperlimits()
 			self.logger.info(
 				" -> {} associated upper limit(s): {}".format(
-					len(uls), (*uls,) if len(uls) > 1 else next(iter(uls.values()))
+					len(uls), (*uls,) if len(uls) > 1 else next(iter(uls.keys()))
 				)
 			)
 
