@@ -243,7 +243,7 @@ class TransientLoader:
 			pps = al_tran.get_photopoints()
 			self.logger.info(
 				" -> {} associated photopoint(s): {}".format(
-					len(pps), (*pps,) if len(pps) > 1 else next(iter(pps))
+					len(pps), (*pps,) if len(pps) > 1 else pps[0]
 				)
 			)
 
@@ -261,7 +261,7 @@ class TransientLoader:
 			uls = al_tran.get_upperlimits()
 			self.logger.info(
 				" -> {} associated upper limit(s): {}".format(
-					len(uls), (*uls,) if len(uls) > 1 else next(iter(uls))
+					len(uls), (*uls,) if len(uls) > 1 else uls[0]
 				)
 			)
 
