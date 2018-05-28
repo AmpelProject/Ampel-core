@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 26.02.2018
-# Last Modified Date: 19.04.2018
+# Last Modified Date: 28.05.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from ampel.pipeline.logging.LoggingUtils import LoggingUtils
@@ -14,25 +14,17 @@ from ampel.pipeline.t3.TransientLoader import TransientLoader
 from ampel.pipeline.t3.TransientForker import TransientForker
 from ampel.pipeline.db.query.QueryLatestCompound import QueryLatestCompound
 from ampel.flags.AlDocTypes import AlDocTypes
-from ampel.pipeline.db.DBWired import DBWired
 import itertools
 
 
-class T3Executor(DBWired):
+class T3Executor():
 	"""
 	"""
 
-	def __init__(self, t3_job, db_host='localhost', config_db=None, base_dbs=None, logger=None):
+	@staticmethod
+	def run_job(config_db, photo_col, tran_col, t3_job, logger):
 		"""
 		"""
-
-		# Get logger
-		logger = LoggingUtils.get_logger() if logger is None else logger
-
-		# Setup instance variable referencing input and output databases
-		self.plug_databases(logger, db_host, config_db, base_dbs)
-
-		tran_col = self.get_tran_col()
 
 		select_options = t3_job.tran_sel_options()
 
