@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 13.01.2018
-# Last Modified Date: 04.05.2018
+# Last Modified Date: 29.05.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from ampel.base.PhotoPoint import PhotoPoint
@@ -19,7 +19,7 @@ from ampel.pipeline.logging.LoggingUtils import LoggingUtils
 from ampel.pipeline.db.LightCurveLoader import LightCurveLoader
 from ampel.pipeline.db.DBResultOrganizer import DBResultOrganizer
 from ampel.pipeline.db.query.QueryLatestCompound import QueryLatestCompound
-from ampel.pipeline.db.query.QueryLoadTransient import QueryLoadTransient
+from ampel.pipeline.db.query.QueryLoadTransientInfo import QueryLoadTransientInfo
 
 import operator, logging, json
 from operator import itemgetter
@@ -56,42 +56,45 @@ class TransientLoader:
 		state="latest", channel_flags=None, t2_ids=None
 	):
 		"""
-		tran_id: transient id (string)
+		Arguments:
+		----------
 
-		content_types: AlDocTypes flag combination. Possible values are:
+		-> tran_id: transient id (string)
 
-			* 'AlDocTypes.TRANSIENT': 
-				-> Add info from DB doc to the returned ampel.base.Transient instance
-				-> For example: channels, flags (has processing errors), 
-				   latest photopoint observation date, ...
+		-> content_types: AlDocTypes flag combination. 
+		Possible values are:
+		* 'AlDocTypes.TRANSIENT': 
+			-> Add info from DB doc to the returned ampel.base.Transient instance
+			-> For example: channels, flags (has processing errors), 
+			   latest photopoint observation date, ...
 
-			* 'AlDocTypes.PHOTOPOINT': 
-				-> load *all* photopoints avail for this transient (regardless of provided state)
-				-> The transient will contain a list of ampel.base.PhotoPoint instances 
-				-> No policy is set for all PhotoPoint instances
+		* 'AlDocTypes.PHOTOPOINT': 
+			-> load *all* photopoints avail for this transient (regardless of provided state)
+			-> The transient will contain a list of ampel.base.PhotoPoint instances 
+			-> No policy is set for all PhotoPoint instances
 
-			* 'AlDocTypes.UPPERLIMIT': 
-				-> load *all* upper limits avail for this transient (regardless of provided state)
-				-> The transient will contain a list of ampel.base.UpperLimit instances 
-				-> No policy is set for all UpperLimit instances
+		* 'AlDocTypes.UPPERLIMIT': 
+			-> load *all* upper limits avail for this transient (regardless of provided state)
+			-> The transient will contain a list of ampel.base.UpperLimit instances 
+			-> No policy is set for all UpperLimit instances
 
-			* 'AlDocTypes.COMPOUND': 
-				-> ampel.base.LightCurve instances are created based on DB documents 
-				   (with alDocType AlDocTypes.COMPOUND)
-				-> if 'state' is 'latest' or a state id (md5 string) is provided, 
-				   only one LightCurve instance is created. 
-				   if 'state' is 'all', all available lightcurves are created.
-				-> the lightcurve instance(s) will be associated with the 
-				   returned ampel.base.Transient instance
+		* 'AlDocTypes.COMPOUND': 
+			-> ampel.base.LightCurve instances are created based on DB documents 
+			   (with alDocType AlDocTypes.COMPOUND)
+			-> if 'state' is 'latest' or a state id (md5 string) is provided, 
+			   only one LightCurve instance is created. 
+			   if 'state' is 'all', all available lightcurves are created.
+			-> the lightcurve instance(s) will be associated with the 
+			   returned ampel.base.Transient instance
 
-			* 'AlDocTypes.T2RECORD': 
-				-> ...
+		* 'AlDocTypes.T2RECORD': 
+			...
 
-		state:
-			* "latest": latest state will be retrieved
-			* "all": all states present in DB (at execution time) will be retrieved
-			* <compound_id>: provided state will be loaded. 
-			  The compound id must be a 32 alphanumerical string
+		-> state:
+		* "latest": latest state will be retrieved
+		* "all": all states present in DB (at execution time) will be retrieved
+		* <compound_id>: provided state will be loaded. 
+		  The compound id must be a 32 alphanumerical string
 	
 		"""
 
@@ -122,10 +125,10 @@ class TransientLoader:
 			)
 
 			# Build query parameters (will return adequate number of docs)
-			search_params = QueryLoadTransient.load_transient_state_query(
+			search_params = QueryLoadTransientInfo.build_statebound_query(
 				tran_id, 
 				content_types, 
-				compound_id = latest_compound_dict["_id"], 
+				compound_ids = latest_compound_dict["_id"], 
 				t2_ids = t2_ids,
 				comp_already_loaded = True
 			)
@@ -140,7 +143,7 @@ class TransientLoader:
 			)
 
 			# Build query parameters (will return adequate number of docs)
-			search_params = QueryLoadTransient.load_transient_query(
+			search_params = QueryLoadTransientInfo.build_stateless_query(
 				tran_id, content_types, t2_ids=t2_ids
 			)
 
@@ -159,7 +162,7 @@ class TransientLoader:
 				raise ValueError("Provided state must be 32 alphanumerical characters or a list")
 
 			# Build query parameters (will return adequate number of docs)
-			search_params = QueryLoadTransient.load_transient_state_query(
+			search_params = QueryLoadTransientInfo.build_statebound_query(
 				tran_id, content_types, state, t2_ids = t2_ids
 			)
 		
@@ -215,9 +218,9 @@ class TransientLoader:
 		state="latest", content_types=all_doc_types, tailored_res=False
 	):
 		"""
-			tailored_res: 
-				* input (results) docs contain only docs for the given tran_id
-				* science_records were only retrieved for the required state
+		tailored_res: 
+			* input (results) docs contain only docs for the given tran_id
+			* science_records were only retrieved for the required state
 		"""
 
 		# Instantiate ampel.base.Transient object
