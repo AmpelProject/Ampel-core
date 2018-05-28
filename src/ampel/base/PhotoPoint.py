@@ -77,7 +77,7 @@ class PhotoPoint:
 		   (should further modifications be required after class instantiation) 
 		"""
 
-		if db_doc["alDocType"] != AlDocTypes.PHOTOPOINT:
+		if db_doc["_id"] <= 0:
 			raise ValueError("The provided document is not a photopoint")
 
 		# Convert db flag to python enum flag
