@@ -128,6 +128,7 @@ def create_metadata(alert_schema):
     identifiers = ['candid', 'programid', 'pid']
     columns = list(map(make_column, filter(lambda f: f['name'] not in skip, fields['candidate']['type']['fields'])))
     columns.append(UniqueConstraint(*identifiers))
+    columns.append(Index('alert_id', 'alert_id', unique=True))
     Table('candidate', meta,
         Column('candidate_id', Integer(), primary_key=True, nullable=False, autoincrement=True),
         Column('alert_id', Integer(), ForeignKey('alert.alert_id'), nullable=False),
