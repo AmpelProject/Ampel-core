@@ -39,13 +39,13 @@ class TransientLoader:
 
 
 	# TODO: implement include logs
-	def __init__(self, db, logger=None, collection="docs", save_channels=False, include_logs=False):
+	def __init__(self, db, logger=None, collection="main", save_channels=False, include_logs=False):
 		"""
 		"""
 
 		self.col = db[collection]
 		self.logger = LoggingUtils.get_logger() if logger is None else logger
-		self.lcl = LightCurveLoader(db[collection], logger=self.logger)
+		self.lcl = LightCurveLoader(db, logger=self.logger)
 		self.al_pps = {}
 		self.lc = {}
 		self.save_channels = save_channels

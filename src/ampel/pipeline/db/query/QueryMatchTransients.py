@@ -61,11 +61,15 @@ class QueryMatchTransients:
 		}
 
 		if with_flags is not None:
-			QueryMatchFlags.add_match_criteria(with_flags, query, 'alFlags')
+			QueryMatchFlags.add_match_criteria(
+				with_flags, query, 'alFlags'
+			)
 
 		# Order matters, add_nomatch_criteria(...) must be called *after* add_match_criteria(...)
 		if without_flags is not None:
-			QueryMatchFlags.add_nomatch_criteria(without_flags, query, 'alFlags')
+			QueryMatchFlags.add_nomatch_criteria(
+				without_flags, query, 'alFlags'
+			)
 
 		if channels is not None:
 			QueryMatchCriteria.add_from_list(
@@ -75,10 +79,14 @@ class QueryMatchTransients:
 			)
 	
 		if time_created is not None:
-			QueryMatchTransients._build_time_contraint(query, '_id', time_created, is_oid=True)
+			QueryMatchTransients._build_time_contraint(
+				query, '_id', time_created, is_oid=True
+			)
 
 		if time_modified is not None:
-			QueryMatchTransients._build_time_contraint(query, 'modified', time_modified)
+			QueryMatchTransients._build_time_contraint(
+				query, 'modified', time_modified
+			)
 
 		return query
 
@@ -90,7 +98,10 @@ class QueryMatchTransients:
 		if "delta" in time_constraint and time_constraint['delta'] is not None:
 			gen_time = datetime.today() + time_constraint['delta'] 
 			query[db_field_name] = {
-				"$gte": ObjectId.from_datetime(gen_time) if is_oid else gen_time.timestamp()
+				"$gte": (
+					ObjectId.from_datetime(gen_time) if is_oid 
+					else gen_time.timestamp()
+				)
 			}
 
 		if (

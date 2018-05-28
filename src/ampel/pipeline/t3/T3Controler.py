@@ -68,9 +68,10 @@ class T3Controler(DBWired, Schedulable):
 		"""
 		"""
 		job_thread = threading.Thread(
-			target=T3Executor.run_job, args=(
-				self.config_db, self.photo_col, self.main_col, job_config_obj, self.logger
+			target=T3Executor.run_job, 
+			args=(
+				self.config_db, self.photo_col, self.main_col, 
+				job_config_obj, self.logger
 			)
 		)
 		job_thread.start()
-		pass

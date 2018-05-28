@@ -35,7 +35,7 @@ class T3Executor():
 		# T3 job not requiring any prior transient loading 
 		if select_options is None:
 
-			# Get task (transient less jobs can have only one task)
+			# Get task (transientless jobs can have only one task)
 			t3_task = t3_job.get_task()
 
 			# Instantiate T3 unit

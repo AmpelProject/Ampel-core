@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 25.01.2018
-# Last Modified Date: 28.05.2018
+# Last Modified Date: 29.05.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from ampel.flags.AlDocTypes import AlDocTypes
@@ -177,7 +177,7 @@ class T2Controler(DBWired):
 
 		# Instantiate LightCurveLoader (that returns ampel.base.LightCurve instances)
 		tran_col = self.get_main_col()
-		lcl = LightCurveLoader(tran_col, self.logger)
+		lcl = LightCurveLoader(tran_col.database, self.logger)
 
 		# Process t2_docs until next() returns None (break condition below)
 		while True: 

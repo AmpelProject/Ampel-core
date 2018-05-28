@@ -21,20 +21,19 @@ class LightCurveLoader:
 	Either through DB query (load_through_db_query) or through parsing of DB query results 
 	"""
 
-	def __init__(self, photo_col, main_col, read_only=True, logger=None):
+	def __init__(self, ampel_db, read_only=True, logger=None):
 		"""
 		Parameters:
 		-----------
-		photo_col: instance of pymongo.collection.Collection 
-		main_col: instance of pymongo.collection.Collection 
+		ampel_db: instance of pymongo.database.DataBase 
 		read_only: if True, the LightCurve instance returned by the methods of this class will be:
 			* a frozen class
 			* containing a immutable list (tuple) of PhotoPoint
 			* whereby each PhotoPoint is a frozen class as well
 			* and each PhotoPoint dict content is an immutable dict
 		"""
-		self.main_col = main_col 
-		self.photo_col = photo_col 
+		self.main_col = ampel_db['main'] 
+		self.photo_col = ampel_db['photo'] 
 		self.logger = LoggingUtils.get_logger() if logger is None else logger
 		self.read_only = read_only
 
