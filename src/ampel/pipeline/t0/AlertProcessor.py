@@ -4,11 +4,10 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 10.10.2017
-# Last Modified Date: 23.05.2018
+# Last Modified Date: 26.05.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import pymongo, time, numpy as np
-
 from ampel.pipeline.t0.AmpelAlert import AmpelAlert
 from ampel.pipeline.t0.alerts.AlertSupplier import AlertSupplier
 from ampel.pipeline.t0.alerts.ZIAlertShaper import ZIAlertShaper
@@ -19,12 +18,10 @@ from ampel.pipeline.logging.DBLoggingHandler import DBLoggingHandler
 from ampel.pipeline.logging.InitLogBuffer import InitLogBuffer
 from ampel.pipeline.db.DBWired import DBWired
 from ampel.pipeline.db.MongoStats import MongoStats
-from ampel.pipeline.db.GraphiteFeeder import GraphiteFeeder
+from ampel.pipeline.common.GraphiteFeeder import GraphiteFeeder
 from ampel.pipeline.config.ChannelLoader import ChannelLoader
-
 from ampel.flags.AlDocTypes import AlDocTypes
 from ampel.flags.AlertFlags import AlertFlags
-from ampel.flags.LogRecordFlags import LogRecordFlags
 from ampel.flags.JobFlags import JobFlags
 
 
@@ -42,23 +39,26 @@ class AlertProcessor(DBWired):
 	iter_max = 5000
 
 	def __init__(
-		self, channels=None, source="ZTFIPAC", db_host='localhost', config_db=None, 
-		central_db=None, stats={'graphite', 'jobs'}, load_ingester=True
+		self, channels=None, source="ZTFIPAC", mongodb_uri='localhost', 
+		config_db=None, central_db=None, publish_stats={'graphite', 'jobs'}, 
+		load_ingester=True
 	):
 		"""
 		Parameters:
-		'source': name of input stream (string - see set_stream() docstring)
-		'db_host': dns name or ip address (plus optinal port) of the server hosting mongod
+		-----------
 		'channels': 
-			- None: all the available channels in the config database will be loaded
-			- String: channel with the provided id will be loaded
-			- List of strings: channels with the provided ids will be loaded 
+		   - None: all the available channels in the config database will be loaded
+		   - String: channel with the provided id will be loaded
+		   - List of strings: channels with the provided ids will be loaded 
+		'source': name of input stream (string - see set_stream() docstring)
+		'mongodb_uri': URI of the server hosting mongod.
+		   Example: 'mongodb://user:password@localhost:27017'
 		'config_db': see ampel.pipeline.db.DBWired.plug_config_db() docstring
 		'central_db': see ampel.pipeline.db.DBWired.plug_central_db() docstring
-		'stats': record performance stats in the database:
-				* jobs: include t0 metrics in job document
-				* graphite: send db metrics and t0 metrics to graphite 
-				  (graphite server must be defined in Ampel_config)
+		'publish_stats': publish performance stats:
+		   * graphite: send t0 metrics to graphite (graphite server must be defined 
+		     in Ampel_config)
+		   * jobs: include t0 metrics in job document
 		"""
 
 		# Setup logger
@@ -67,13 +67,8 @@ class AlertProcessor(DBWired):
 		self.logger.addHandler(self.ilb)
 		self.logger.info("Setting up new AlertProcessor instance")
 
-		# Tmp workaround for MongoClient perf issue
-		self.arg_config_db = config_db
-		self.arg_central_db = central_db
-		self.arg_db_host = db_host
-
 		# Setup instance variable referencing ampel databases
-		self.plug_databases(self.logger, db_host, config_db, central_db)
+		self.plug_databases(self.logger, mongodb_uri, config_db, central_db)
 
 		# Load channels
 		cl = ChannelLoader(self.config_db, source=source, tier=0)
@@ -84,7 +79,7 @@ class AlertProcessor(DBWired):
 		self.set_source(source, load_ingester=load_ingester)
 
 		# Which stats to publish (see doctring)
-		self.publish_stats = stats
+		self.publish_stats = publish_stats
 
 		self.logger.info("AlertProcessor initial setup completed")
 
@@ -126,9 +121,9 @@ class AlertProcessor(DBWired):
 				self.ingester = ZIAlertIngester(
 					self.channels, self.config_db['t2_units'], 
 					self.get_photo_col(), self.get_main_col(),
-					check_reprocessing = ingest_conf['checkReprocessing'],
-					alert_history_length = ingest_conf['alertHistoryLength'],
-					logger = self.logger
+					check_reprocessing=ingest_conf['checkReprocessing'],
+					alert_history_length=ingest_conf['alertHistoryLength'],
+					logger=self.logger
 				)
 	
 		else:
@@ -758,7 +753,7 @@ def _ingest_slice(host, archive_host, infile, start, stop):
 		for alert in tbw.get_files():
 			archive.insert_alert(alert, 0, 0)
 			yield alert
-	processor = AlertProcessor(db_host=host)
+	processor = AlertProcessor(mongodb_uri=host)
 	return processor.run(loader())
 
 def _worker(idx, mongo_host, archive_host, bootstrap_host, group_id, chunk_size=5000):
@@ -776,7 +771,7 @@ def _worker(idx, mongo_host, archive_host, bootstrap_host, group_id, chunk_size=
 
 	count = 0
 	for i in range(10):
-		processor = AlertProcessor(db_host=mongo)
+		processor = AlertProcessor(mongodb_uri=mongo)
 		count += processor.run(fetcher.alerts(chunk_size), console_logging=False)
 		t1 = time.time()
 		dt = t1-t0

@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 19.03.2018
-# Last Modified Date: 23.05.2018
+# Last Modified Date: 25.05.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import time, pymongo
@@ -15,21 +15,22 @@ class DBWired:
 	""" 
 	"""
 
-	def plug_databases(self, logger, db_host='localhost', config_db=None, central_db=None):
+	def plug_databases(self, logger, mongodb_uri='localhost', config_db=None, central_db=None):
 		"""
 		Parameters:
-		'db_host': dns name or ip address (with optionally a port number) of server hosting mongod
+		'mongodb_uri': URI of server hosting mongod. 
+		   Example: 'mongodb://user:password@localhost:27017'
 		'config_db': see plug_config_db() docstring
 		'central_db': see plug_central_db() docstring
 		"""
 
 		# Setup instance variable referencing the input database
-		if self.plug_config_db(logger, db_host, config_db):
+		if self.plug_config_db(logger, mongodb_uri, config_db):
 
 			# Re-try using mongomock rather than pymongo
 			import mongomock
 			if self.plug_config_db(
-				logger, db_host, config_db, 
+				logger, mongodb_uri, config_db, 
 				MongoClient=mongomock.mongo_client.MongoClient,
 				Database=mongomock.database.Database
 			):
@@ -41,12 +42,12 @@ class DBWired:
 			self.global_config[doc['_id']] = doc
 
 		# Setup instance variables referencing the output databases
-		if self.plug_central_db(central_db, logger, db_host):
+		if self.plug_central_db(central_db, logger, mongodb_uri):
 
 			# Re-try using mongomock rather than pymongo
 			import mongomock
 			if self.plug_central_db(
-				central_db, logger, db_host, 
+				central_db, logger, mongodb_uri, 
 				MongoClient=mongomock.mongo_client.MongoClient,
 				Database=mongomock.database.Database
 			):
@@ -54,7 +55,7 @@ class DBWired:
 
 
 	def plug_config_db(
-		self, logger, db_host='localhost', config_db=None,
+		self, logger, mongodb_uri='localhost', config_db=None,
 		MongoClient=pymongo.mongo_client.MongoClient,
 		Database=pymongo.database.Database
 	):
@@ -63,8 +64,8 @@ class DBWired:
 		'config_db': 
 		    Either:
 			-> None: default settings will be used 
-			   (pymongo MongoClient instance using 'db_host' and config db name 'Ampel_config')
-			-> string: a pymongo MongoClient will be instantiated (using 'db_host') 
+			   (pymongo MongoClient instance using 'mongodb_uri' and config db name 'Ampel_config')
+			-> string: a pymongo MongoClient will be instantiated (using 'mongodb_uri') 
 			   and a pymongo.database.Database instance created using the name given by config_db
 			-> MongoClient instance: a database instance with name 'Ampel_config' will be loaded using 
 			   the provided MongoClient instance (can originate from pymongo or mongomock)
@@ -74,12 +75,12 @@ class DBWired:
 
 		# Default setting
 		if config_db is None:
-			self.mongo_client = MongoClient(db_host, maxIdleTimeMS=1000)
+			self.mongo_client = MongoClient(mongodb_uri, maxIdleTimeMS=1000)
 			self.config_db = self.mongo_client["Ampel_config"]
 
 		# The config database name was provided
 		elif type(config_db) is str:
-			self.mongo_client = MongoClient(db_host, maxIdleTimeMS=1000)
+			self.mongo_client = MongoClient(mongodb_uri, maxIdleTimeMS=1000)
 			self.config_db = self.mongo_client[config_db]
 
 		# A reference to a MongoClient instance was provided
@@ -104,7 +105,7 @@ class DBWired:
 
 
 	def plug_central_db(
-		self, arg, logger, db_host='localhost',
+		self, arg, logger, mongodb_uri='localhost',
 		MongoClient=pymongo.mongo_client.MongoClient,
 		Database=pymongo.database.Database
 	):
@@ -130,7 +131,7 @@ class DBWired:
 			self.set_vars(
 				logger, mc = (
 					self.mongo_client if hasattr(self, 'mongo_client') 
-					else MongoClient(db_host, maxIdleTimeMS=1000)
+					else MongoClient(mongodb_uri, maxIdleTimeMS=1000)
 				)
 			)
 
@@ -145,7 +146,7 @@ class DBWired:
 
 			# Get mongoclient if not instantiated previously	
 			mongo_client = (
-				MongoClient(db_host, maxIdleTimeMS=1000) if not hasattr(self, 'mongo_client') 
+				MongoClient(mongodb_uri, maxIdleTimeMS=1000) if not hasattr(self, 'mongo_client') 
 				else self.mongo_client
 			)
 
