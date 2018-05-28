@@ -224,6 +224,8 @@ def test_get_cutout(mock_database, cutout_alert_generator, alert_generator):
     for idx, alert in enumerate(alert_generator()):
         processor_id = idx % 16
         archive.insert_alert(connection, meta, alert, processor_id, 0)
+        cutout = archive.get_cutout(connection, meta, alert['candid'])
+        assert cutout == {}
 
     for idx, alert in enumerate(cutout_alert_generator()):
         processor_id = idx % 16
