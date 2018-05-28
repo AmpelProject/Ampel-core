@@ -171,19 +171,21 @@ class QueryLoadTransientInfo:
 
 		if AlDocTypes.T2RECORD in content_types:
 
-			or_list.append(
-				{
-					'alDocType': AlDocTypes.T2RECORD, 
-					'compoundId': match_comp_ids,
-					't2Unit': (
-						t2_ids if type(t2_ids) is str 
-						else (
-							t2_ids[0] if len(t2_ids) == 1 
-							else {'$in': t2_ids}
-						)
+			t2_match = {
+				'alDocType': AlDocTypes.T2RECORD, 
+				'compoundId': match_comp_ids
+			}
+
+			if t2_ids is not None:
+				t2_match['t2Unit'] = (
+					t2_ids if type(t2_ids) is str 
+					else (
+						t2_ids[0] if len(t2_ids) == 1 
+						else {'$in': t2_ids}
 					)
-				}
-			)
+				)
+
+			or_list.append(t2_match)
 
 		# If only 1 $or criteria was generated, then 
 		# just add this criteria to the root dict ('and' connected with tranId: ...)
