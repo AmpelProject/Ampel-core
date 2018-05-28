@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/pipeline/t2/T2Controller.py
+# File              : ampel/pipeline/t2/T2Controler.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 25.01.2018
-# Last Modified Date: 19.04.2018
+# Last Modified Date: 28.05.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from ampel.flags.AlDocTypes import AlDocTypes
@@ -23,7 +23,7 @@ from pymongo import UpdateOne
 import time, importlib, math
 
 
-class T2Controller(DBWired):
+class T2Controler(DBWired):
 	"""
 	Alpha state
 	"""
@@ -60,7 +60,7 @@ class T2Controller(DBWired):
 		# in a collection called "t2_units" in the ampel config db
 		self.unit_names = [
 			el['_id'] for el in self.config_db[
-				T2Controller._t2_units_colname
+				T2Controler._t2_units_colname
 			].find({})
 		]
 		
@@ -117,7 +117,7 @@ class T2Controller(DBWired):
 		"""
 
 		# Get handle to db collection containing transients
-		tran_col = self.get_tran_col()
+		tran_col = self.get_main_col()
 
 		while True:
 
@@ -144,9 +144,6 @@ class T2Controller(DBWired):
 		Return: nothing
 		"""
 
-		# Save current time (to approximate job duration)
-		start_time = int(time.time())
-
 		# Create JobReporter instance
 		db_job_reporter = DBJobReporter(
 			self.get_job_col(), JobFlags.T2
@@ -157,10 +154,11 @@ class T2Controller(DBWired):
 			{
 				#"class": type(self).__name__,
 				"class": "T2Controler",
-				"version": str(T2Controller.version),
+				"version": str(T2Controler.version),
 				"runState": str(self.run_state.value),
 				"t2Units": str(self.required_unit_names)
-			}
+			},
+			tier = 2
 		)
 
 		# Create DB logging handler instance (logging.Handler child class)
@@ -178,7 +176,7 @@ class T2Controller(DBWired):
 		t2_instances = {}
 
 		# Instantiate LightCurveLoader (that returns ampel.base.LightCurve instances)
-		tran_col = self.get_tran_col()
+		tran_col = self.get_main_col()
 		lcl = LightCurveLoader(tran_col, self.logger)
 
 		# Process t2_docs until next() returns None (break condition below)
@@ -345,9 +343,6 @@ class T2Controller(DBWired):
 				self.logger.error(bwe.details) 
 
 
-		duration = int(time.time()) - start_time
-		db_job_reporter.set_duration(duration)
-
 		# Remove DB logging handler
 		db_logging_handler.flush()
 		self.logger.removeHandler(db_logging_handler)
@@ -366,7 +361,7 @@ class T2Controller(DBWired):
 		# Get T2 run config doc from ampel config DB
 		t2_run_config_doc = next(
 			self.config_db[
-				T2Controller._t2_run_configs_colname
+				T2Controler._t2_run_configs_colname
 			].find(
 				{'_id': run_config_id}
 			),
@@ -401,7 +396,7 @@ class T2Controller(DBWired):
 
 		# Get T2 unit config from ampel config DB
 		t2_config_doc = next(
-			self.config_db[T2Controller._t2_units_colname].find(
+			self.config_db[T2Controler._t2_units_colname].find(
 				{'_id': unit_name}
 			),
 			None
