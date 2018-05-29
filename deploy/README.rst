@@ -68,3 +68,22 @@ conda activate singularity-stack
 sometimes we see:
   pkg_resources.DistributionNotFound: The 'ampel' distribution was not found and is required by the application
 This means that Ampel/src/ampel.egg-info is missing in the source. pip install -e Ampel to create it.
+
+Rsyncing archive tarballs from Lustre to transit
+************************************************
+
+# from ice-wgs1, forward a port back from transit to allow outbound ssh connections
+ssh -o "ProxyCommand ssh -qax ztf-wgs 'nc %h %p'" -R5000:localhost:22 transit
+
+# rsync as local user ampel, but remote user jvsanten
+sudo su ampel
+(singularity-stack) [transit] /data/ampel/archive/tarballs > rsync -avz --progress -e 'ssh -p 5000' --include 'ztf_*programid*.tar.gz' --exclude '*' jvsanten@localhost:/lustre/fs19/group/icecube/jvs/ztf/ .
+
+Resetting graphite aggregation and retention
+********************************************
+
+# go-graphite implements the collector and query API, but does not include whisperfile
+# manipulation utilities. luckily, the official graphite-statsd does.
+singularity shell -B /home/ampel/graphite-metrics:/mnt -C /data/ampel/singularity/graphite-statsd-1.0.2-2.sim
+find /mnt/whisper -wholename '*Ampel-transit*/*.wsp' | xargs -n1 -I{} /usr/local/bin/whisper-set-xfilesfactor.py {} 0.01
+find /mnt/whisper -wholename '*Ampel-transit*/*.wsp' | xargs -n1 -I{} /usr/local/bin/whisper-set-aggregation-method.py {} average
