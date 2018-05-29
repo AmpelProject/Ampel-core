@@ -111,15 +111,13 @@ class T3Executor():
 		###################################
 
 		# For 'latest' state, the latest compoundid of each transient must be determined
-		if not load_state is None and load_state == "latest":
+		if load_state is not None and load_state == "latest":
 
 			# Loop of chunk_size
 			while True:
 
-		
 				# Get latest state for each channel
 				###################################
-
 
 				# Load ids (chunk_size number of ids)
 				chunked_tran_ids = tuple(
@@ -130,8 +128,7 @@ class T3Executor():
 					logger.info("Breaking loop")
 					break
 
-				logger.info("Found %i transient matching given criteria" % len(chunked_tran_ids))
-
+				logger.info("Found %i transient(s) matching criteria" % len(chunked_tran_ids))
 				logger.info("Retrieving latest state")
 
 				# See for which ids the fast query cannot be used (save results in a set)
@@ -210,18 +207,19 @@ class T3Executor():
 					latest_states += tmp_latest_states
 
 
-				# Load transient with given state(s)
-				####################################
+				# Load transient(s) with given state(s)
+				#######################################
 
-				logger.info("Loading transients")
+				logger.info("Loading transient(s)")
 
 				# This array will contain the ampel.base.Transient instances
 				al_trans = []
 
 				# Build dict d_states using dict latest_states:
+				# (latest state can be different from one channel to another)
 				# {
 				#	'ZTF18aaayyuq': '5de2480f28bfca0bd3baae890cb2d2ae',
-				#	'ZTF18azzzzzz': [
+				#	'ZTF18azzzzzz': [   
 				# 		'51111111112222222223333334444444',
 				# 		'88773246873246782364732642384444',
 				#		...
@@ -316,9 +314,7 @@ class T3Executor():
 							)
 
 							# inform transient that the only loaded state is the latest
-							ftran.set_latest_lightcurve(
-								lightcurve_id = tran_latest_state
-							)
+							ftran.set_latest_compound_id(tran_latest_state)
 
 							# Populate list of transient 
 							al_task_trans.append(ftran)

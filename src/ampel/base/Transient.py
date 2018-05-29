@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 13.01.2018
-# Last Modified Date: 20.05.2018
+# Last Modified Date: 29.05.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from ampel.pipeline.logging.LoggingUtils import LoggingUtils
@@ -19,6 +19,7 @@ class Transient:
 	-> possibly various instances of objects:
 		* ampel.base.PhotoPoint
 		* ampel.base.UpperLimit
+		* ampel.base.Compound
 		* ampel.base.LightCurve
 		* ampel.base.T2Record
 
@@ -40,6 +41,7 @@ class Transient:
 		self.lightcurves = {}
 		self.science_records = {}
 		self.latest_lightcurve = None
+		self.latest_compound_id = None
 		self.flags = None
 		self.created = None
 		self.last_modified = None
@@ -61,20 +63,6 @@ class Transient:
 		return self.flags
 
 
-	def set_latest_lightcurve(self, lightcurve=None, lightcurve_id=None):
-		""" """
-		if lightcurve is not None:
-			self.latest_lightcurve = lightcurve
-		else:
-			if lightcurve_id is None:
-				raise ValueError("No argument provided")
-			if not lightcurve_id in self.lightcurves:
-				raise ValueError(
-					"Provided lightcurve_id %s currently not loaded" % lightcurve_id
-				)
-			self.latest_lightcurve = self.lightcurves[lightcurve_id]
-				
-
 	def add_lightcurve(self, lightcurve):
 		"""
 		argument 'lightcurve' must be an instance of ampel.base.LightCurve
@@ -82,14 +70,39 @@ class Transient:
 		self.lightcurves[getattr(lightcurve, 'id')] = lightcurve
 
 
-	# def get_latest_lightcurve(self, id_only=False):
-	def get_latest_lightcurve_id(self):
-		""" """
-		if self.latest_lightcurve is None:
-			self.logger.warn('Request for latest lightcurve id cannot complete (not set)')
+	def get_latest_lightcurve(self):
+		""" 
+		"""
+		if self.latest_compound_id is None:
+			self.logger.warn('Request for latest lightcurve cannot complete (latest compound id not set)')
 			return None
 
-		return getattr(self.latest_lightcurve, 'id')
+		if len(self.lightcurves) == 0:
+			self.logger.warn('Request for latest lightcurve cannot complete (No lightcurve was loaded)')
+			return None
+
+		if self.latest_compound_id not in self.lightcurves:
+			self.logger.warn(
+				'Request for latest lightcurve cannot complete (Lightcurve %s not found)' % 
+				self.latest_compound_id		
+			)
+			return None
+
+		return self.lightcurves[self.latest_compound_id]
+
+
+	def get_latest_compound_id(self):
+		""" """
+		if self.latest_compound_id is None:
+			self.logger.warn('Request for latest compound id cannot complete (not set)')
+			return None
+
+		return self.latest_compound_id
+
+
+	def set_latest_compound_id(self, comp_id):
+		""" """
+		self.latest_compound_id = comp_id
 
 
 	def get_lightcurves(self):
@@ -107,17 +120,10 @@ class Transient:
 		self.photopoints[photopoint.get_id()] = photopoint
 
 
-	def add_photopoints(self, list_of_photopoints):
-		"""
-		argument 'list_of_photopoints' must be a python list 
-		containing exclusively ampel.base.PhotoPoint instances
-		"""
-		for pp in list_of_photopoints:
-			self.photopoints[pp.get_id()] = pp
-
-
 	def get_photopoint(self, photopoint_id):
-		""" argument 'photopoint_id' must be a python integer """
+		""" 
+		argument 'photopoint_id' must be a python integer 
+		"""
 		if photopoint_id not in self.photopoints:
 			return None
 
@@ -140,15 +146,6 @@ class Transient:
 		self.upperlimits[upperlimit.get_id()] = upperlimit
 
 
-	def add_upperlimits(self, list_of_upperlimits):
-		"""
-		argument 'list_of_upperlimits' must be a python list 
-		containing exclusively ampel.base.UpperLimit instances
-		"""
-		for ul in list_of_upperlimits:
-			self.upperlimits[ul.get_id()] = ul
-
-
 	def get_upperlimit(self, upperlimit_id):
 		""" argument 'upperlimit_id' must be a python integer """
 		if upperlimit_id not in self.upperlimits:
@@ -166,6 +163,32 @@ class Transient:
 		   (see load_options of class TransientLoader)
 		"""
 		return self.upperlimits if copy is False else self.upperlimits.copy()
+
+
+	def add_compound(self, compound):
+		""" argument 'compound' must be an instance of ampel.base.Compound"""
+		self.compounds[compound.get_id()] = compound
+
+
+	def get_compound(self, compound_id):
+		""" 
+		argument 'compound_id' must be a python integer 
+		"""
+		if compound_id not in self.compounds:
+			return None
+
+		return self.compounds[compound_id]
+
+
+	def get_compounds(self, copy=False):
+		"""
+		Returns a dict instance
+		-> key: compound id
+		-> value: instance of ampel.base.Compound
+		-> dict can be empty if Compounds were not loaded 
+		   (see load_options of class TransientLoader)
+		"""
+		return self.compounds if copy is False else self.compounds.copy()
 
 
 	def add_science_record(self, record):
