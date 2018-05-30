@@ -240,9 +240,10 @@ class AlertProcessor(DBWired):
 
 		# Create array
 		scheduled_t2_units = len(self.channels) * [None]
+		chan_auto_complete = len(self.channels) * [False]
 
 		# Save ampel 'state' and get list of tran ids required for autocomplete
-		tran_ids_before = self.get_tran_ids()
+		# tran_ids_before = self.get_tran_ids()
 
 		# Forward jobId to ingester instance 
 		# (will be inserted in the transient documents)
@@ -290,6 +291,7 @@ class AlertProcessor(DBWired):
 			job_info['duration']['filtering'][channel.name] = np.empty(iter_max)
 			job_info['duration']['filtering'][channel.name].fill(np.nan)
 			job_info['count']['ingestion']['alerts'][channel.name] = 0
+			chan_auto_complete[i] = channel.get_config("parameters.autoComplete")
 
 		# The (standard) ingester will update DB insert operations
 		if hasattr(self.ingester, "set_stats_dict"):
@@ -309,6 +311,7 @@ class AlertProcessor(DBWired):
 		filtering_stats = job_info['duration']['filtering']
 		job_count_stats = job_info['count']['t0Job']
 		alert_counts = job_info['count']['ingestion']['alerts']
+		col = self.get_main_col()
 
 		# Save pre run time
 		pre_run = time_now()
@@ -365,7 +368,14 @@ class AlertProcessor(DBWired):
 						loginfo(channel.log_accepted)
 					else:
 						# Autocomplete required for this channel
-						if tran_ids_before[i] is not None and tran_id in tran_ids_before[i]:
+						#if tran_ids_before[i] is not None and tran_id in tran_ids_before[i]:
+						if chan_auto_complete[i] and col.find(
+							{
+								'_id': tran_id, 
+								'alDocType': AlDocTypes.TRANSIENT, 
+								'channels': channel.name
+							}
+						).count() > 0:
 							loginfo(channel.log_auto_complete)
 							alert_counts[channel.name] += 1
 							scheduled_t2_units[i] = channel.t2_units
@@ -430,15 +440,15 @@ class AlertProcessor(DBWired):
 		try: 
 
 			# Save ampel 'state' and get list of tran ids required for autocomplete
-			tran_ids_after = self.get_tran_ids()
+			# tran_ids_after = self.get_tran_ids()
 	
 			# Check post auto-complete
-			for i, channel in chan_enum:
-				if type(tran_ids_after[i]) is set:
-					auto_complete_diff = tran_ids_after[i] - tran_ids_before[i]
-					if auto_complete_diff:
-						# TODO: implement post-processing-autocomplete
-						pass 
+			# for i, channel in chan_enum:
+			#	if type(tran_ids_after[i]) is set:
+			#		auto_complete_diff = tran_ids_after[i] - tran_ids_before[i]
+			#		if auto_complete_diff:
+			#			# TODO: implement post-processing-autocomplete
+			#			pass 
 	
 			# Durations in seconds
 			job_info['duration']['t0Job'] = {
