@@ -1,0 +1,14 @@
+Services are split across burst and transit. Since the singularity-stack
+processes on each are unaware of each other, configuration is shared
+through the environment variables defined in the .env file. To deploy,
+run on each machine:
+
+env $(cat /scratch/jvs/Ampel/deploy/production/.env | xargs echo) singularity-stack deploy -c /scratch/jvs/Ampel/deploy/production/burst.yml ampel
+
+Then you can view the logs with e.g.:
+
+singularity-stack logs ampel -s mongo
+
+and stop the stack again with:
+
+singularity-stack rm ampel
