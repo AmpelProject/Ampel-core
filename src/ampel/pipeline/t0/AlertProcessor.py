@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 10.10.2017
-# Last Modified Date: 26.05.2018
+# Last Modified Date: 30.05.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import pymongo, time, numpy as np
@@ -277,7 +277,6 @@ class AlertProcessor(DBWired):
 			'count': {
 				# Cumul stats
 				't0Job': {},	
-				'db': {},	
 				'ingestion': {
 					'alerts': {},
 					'dbOps': {}
@@ -299,10 +298,6 @@ class AlertProcessor(DBWired):
 				job_info['duration']['ingestion'],
 				job_info['count']['ingestion']['dbOps'],
 			)
-
-		# Publish general stats to graphite
-		if "graphite" in self.publish_stats:
-			self.gather_and_send_stats(tran_ids_before)
 
 		# python shortcuts and micro-optimization
 		loginfo = self.logger.info
@@ -488,9 +483,7 @@ class AlertProcessor(DBWired):
 						)
 					)
 
-				job_info = self.gather_and_send_stats(
-					tran_ids_after, post_run=post_run, t0_stats=job_info
-				)
+				job_info = self.gather_and_send_stats(post_run, job_info)
 
 			# Insert job info into job document
 			db_job_reporter.set_job_stats("stats", job_info)
@@ -526,64 +519,11 @@ class AlertProcessor(DBWired):
 		return iter_count
 
 
-	def gather_and_send_stats(self, tran_ids, post_run=None, t0_stats=None):
+	def gather_and_send_stats(self, post_run, t0_stats):
 		"""
 		"""
 
-		main_col = self.get_main_col()
-		photo_col = self.get_photo_col()
-		id_proj = {'_id': 1}
-		tran_proj = {'tranId': 1, '_id': 0}
-		stat_dict = {}
-		count_dict = {}
-		dbinfo_dict = {
-			'daemon': MongoStats.get_server_stats(main_col.database),
-			'colStats': {
-				'jobs': MongoStats.get_col_stats(self.get_job_col()),
-				'photo': MongoStats.get_col_stats(photo_col),
-				'main': MongoStats.get_col_stats(main_col)
-			},
-			'docsCount': {
-				'troubles': self.get_trouble_col().find({}).count(),
-				'transients': {
-					'pps': photo_col.find({'_id': {"$gt" : 0}}, id_proj).count(),
-					'uls': photo_col.find({'_id': {"$lt" : 0}}, id_proj).count(),
-					'compounds': main_col.find(
-						{'tranId': {"$gt" : 1}, 'alDocType': AlDocTypes.COMPOUND}, 
-						tran_proj
-					).count(),
-					't2s': main_col.find(
-						{'tranId': {"$gt" : 1}, 'alDocType': AlDocTypes.T2RECORD},
-						tran_proj
-					).count(),
-					'trans': main_col.find(
-						{'tranId': {"$gt" : 1}, 'alDocType': AlDocTypes.TRANSIENT},
-						tran_proj
-					).count()
-				}
-			}
-		}
-
-		# Channel specific metrics
-		for i, channel in self.chan_enum:
-			count_dict[channel.name] = (
-				len(tran_ids[i]) if tran_ids[i] is not None 
-				else MongoStats.get_tran_count(main_col, channel.name)
-			)
-
-		if t0_stats is None:
-			stat_dict = {
-				'dbinfo': dbinfo_dict,
-				'count': {
-					'db': count_dict
-				}
-			}
-		else:
-			t0_stats['dbinfo'] = dbinfo_dict
-			t0_stats['count']['db'] = count_dict
-			if post_run is not None:
-				t0_stats['duration']['t0Job']['postLoop'] = int(time.time() - post_run)
-			stat_dict = t0_stats
+		t0_stats['duration']['t0Job']['postLoop'] = int(time.time() - post_run)
 
 		# Publish metrics to graphite
 		if "graphite" in self.publish_stats:
@@ -597,13 +537,11 @@ class AlertProcessor(DBWired):
 			gfeeder = GraphiteFeeder(self.global_config['graphite']) 
 
 			if t0_stats is not None:
-				gfeeder.add_stats_with_mean_std(stat_dict)
+				gfeeder.add_stats_with_mean_std(t0_stats)
 			else:
-				gfeeder.add_stats(stat_dict)
+				gfeeder.add_stats(t0_stats)
 
 			gfeeder.send()
-
-		return stat_dict
 
 
 	def report_exception(self, further_info=None, shaped_alert=None):
