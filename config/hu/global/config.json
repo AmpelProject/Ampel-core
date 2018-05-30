@@ -33,20 +33,9 @@
 	"databases": {
 		"transients": {
 			"dbName": "Ampel_transients",
-			"collectionName": "docs",
-			"indexes": [
-				{
-					"field": "tranId"
-				},
-				{
-					"field": "alDocType"
-				},
-				{
-					"field": "runState",
-					"options": {
-						"sparse": true
-					}
-				}
+			"collectionNames": [
+				"photo",
+				"docs"
 			]
 		},
 		"jobs": {
