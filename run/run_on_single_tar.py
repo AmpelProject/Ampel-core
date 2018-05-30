@@ -20,7 +20,7 @@ def _worker(mongo_host, infile):
 	alert_processed = AlertProcessor.iter_max
 	tar_loader = TarAlertLoader(tar_path=infile)
 	alert_supplier = AlertSupplier(tar_loader, ZIAlertShaper(), serialization="avro")
-	processor = AlertProcessor(db_host=mongo)
+	processor = AlertProcessor(mongodb_uri=mongo)
 
 	while alert_processed == AlertProcessor.iter_max:
 		t0 = time.time()

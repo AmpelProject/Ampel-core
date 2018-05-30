@@ -4,7 +4,7 @@ services:
     image: mongo:3.6
     command: ["mongod", "--port", "2004"]
     volumes:
-      - /data/ampel/mongo/offline/stress-test:/data/db
+      - /data/ampel/mongo/live/stress-test:/data/db
     ports:
       - "2004:2004"
     secrets:
@@ -17,8 +17,7 @@ services:
     command: ["/Ampel/run/run_stress_test.sh"]
     volumes:
       - /home/ampel/valery/Ampel:/Ampel
-      - /data/ampel/archive/smaller_tarballs:/ztf
-      
+      - /scratch/archive/smaller_tarballs:/ztf
     secrets:
       - archive-user-password
       - mongo-root-password
