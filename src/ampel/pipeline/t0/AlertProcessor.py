@@ -17,7 +17,6 @@ from ampel.pipeline.logging.DBJobReporter import DBJobReporter
 from ampel.pipeline.logging.DBLoggingHandler import DBLoggingHandler
 from ampel.pipeline.logging.InitLogBuffer import InitLogBuffer
 from ampel.pipeline.db.DBWired import DBWired
-from ampel.pipeline.db.MongoStats import MongoStats
 from ampel.pipeline.common.GraphiteFeeder import GraphiteFeeder
 from ampel.pipeline.config.ChannelLoader import ChannelLoader
 from ampel.flags.AlDocTypes import AlDocTypes
