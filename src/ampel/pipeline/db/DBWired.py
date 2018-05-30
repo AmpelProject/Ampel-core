@@ -4,10 +4,11 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 19.03.2018
-# Last Modified Date: 25.05.2018
+# Last Modified Date: 31.05.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import time, pymongo
+from pymongo.errors import CollectionInvalid
 from ampel.flags.AlDocTypes import AlDocTypes
 from ampel.pipeline.db.DBIndexCreator import DBIndexCreator
 
@@ -65,8 +66,11 @@ class DBWired:
 		    Either:
 			-> None: default settings will be used 
 			   (pymongo MongoClient instance using 'mongodb_uri' and config db name 'Ampel_config')
-			-> string: a pymongo MongoClient will be instantiated (using 'mongodb_uri') 
-			   and a pymongo.database.Database instance created using the name given by config_db
+			-> string:
+			    * if string ends with '.json': json file will be loaded into a mongomock db 
+				  which will be used as config db
+			    * else: a pymongo MongoClient will be instantiated (using 'mongodb_uri') 
+			      and a pymongo.database.Database instance loaded using the provided db name
 			-> MongoClient instance: a database instance with name 'Ampel_config' will be loaded using 
 			   the provided MongoClient instance (can originate from pymongo or mongomock)
 			-> Database instance (pymongo or mongomock): provided database will be used
@@ -80,8 +84,13 @@ class DBWired:
 
 		# The config database name was provided
 		elif type(config_db) is str:
-			self.mongo_client = MongoClient(mongodb_uri, maxIdleTimeMS=1000)
-			self.config_db = self.mongo_client[config_db]
+			if config_db.endswith(".json"):
+				from ampel.pipeline.db.MockDBUtils import MockDBUtils
+				self.config_db = MockDBUtils.load_db_from_file(config_db)
+				logger.info("Mock config DB created using %s" % config_db)
+			else:
+				self.mongo_client = MongoClient(mongodb_uri, maxIdleTimeMS=1000)
+				self.config_db = self.mongo_client[config_db]
 
 		# A reference to a MongoClient instance was provided
 		# -> Provided config_db type can be (pymongo or mongomock).mongo_client.MongoClient
@@ -178,16 +187,26 @@ class DBWired:
 		if "photo" in existing_col_names:
 			self.photo_col = db["photo"]
 		else:
-			logger.info("Creating new photo collection")
-			self.photo_col = db.create_collection("photo")
-			DBIndexCreator.create_photo_indexes(self.photo_col)
+			try:
+				self.photo_col = db.create_collection("photo")
+				logger.info("Creating new photo collection")
+				DBIndexCreator.create_photo_indexes(self.photo_col)
+			except CollectionInvalid:
+				# Catch 'CollectionInvalid: collection * already exists' 
+				# that can occur when multiple jobs are created simultaneoulsy
+				pass
 
 		if "main" in existing_col_names:
 			self.main_col = db["main"]
 		else:
-			logger.info("Creating new main collection")
-			self.main_col = db.create_collection("main")
-			DBIndexCreator.create_main_indexes(self.main_col)
+			try:
+				self.main_col = db.create_collection("main")
+				logger.info("Creating new main collection")
+				DBIndexCreator.create_main_indexes(self.main_col)
+			except CollectionInvalid:
+				# Catch 'CollectionInvalid: collection * already exists' 
+				# that can occur when multiple jobs are created simultaneoulsy
+				pass
 
 
 		if "jobs" in existing_col_names:
