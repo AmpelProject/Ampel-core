@@ -48,7 +48,7 @@ class AmpelStatsPublisher(DBWired, Schedulable):
 		  * mongo: send metrics to dedicated mongo collection (mongodb_uri must be set)
 		  * graphite: send db metrics to graphite (graphite server must be defined in Ampel_config)
 		  * print: print db metrics to stdout
-		'mongodb_uri': dns name or ip address (plus optinal port) of the server hosting mongod
+		'mongodb_uri': dns name or ip address (plus optional port) of the server hosting mongod
 		  example: mongodb://user:password@localhost:27017
 		'channel_names': list of channel names (string). 
 		  If None, stats for all avail channels will be reported. 
