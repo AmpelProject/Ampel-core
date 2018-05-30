@@ -75,3 +75,6 @@ class T3Controler(DBWired, Schedulable):
 			)
 		)
 		job_thread.start()
+
+def run():
+	raise NotImplementedError

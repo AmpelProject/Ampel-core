@@ -7,6 +7,8 @@ setup(name='ampel',
           'console_scripts' : [
               'ampel-alertprocessor = ampel.pipeline.t0.AlertProcessor:run_alertprocessor',
               'ampel-statspublisher = ampel.pipeline.common.AmpelStatsPublisher:run',
+              'ampel-t2 = ampel.pipeline.t2.T2Contoler:run',
+              'ampel-t3 = ampel.pipeline.t3.T3Contoler:run',
               'ampel-init-db = ampel.pipeline.t0.AlertProcessor:init_db',
               'ampel-init-archive = ampel.archive:init_db',
               'ampel-check-broker = ampel.pipeline.t0.ZIAlertFetcher:list_kafka',
