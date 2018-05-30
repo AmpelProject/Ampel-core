@@ -24,6 +24,7 @@ def _worker(mongo_host, infile):
 
 	while alert_processed == AlertProcessor.iter_max:
 		t0 = time.time()
+		print('Running on {}'.format(infile))
 		alert_processed = processor.run(alert_supplier, console_logging=False)
 		t1 = time.time()
 		dt = t1-t0
