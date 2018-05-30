@@ -36,7 +36,7 @@ class AmpelStatsPublisher(DBWired, Schedulable):
 
 
 	def __init__(
-		self, config_db=None, central_db=None, mongo_uri=None, 
+		self, config_db=None, central_db=None, mongodb_uri=None, 
 		channel_names=None, publish_stats=['graphite', 'mongo', 'print'],
 		update_intervals = {'col_stats': 5, 'docs_count': 10, 'daemon': 2, 'channels': 5}
 	):
@@ -45,10 +45,10 @@ class AmpelStatsPublisher(DBWired, Schedulable):
 		'config_db': see ampel.pipeline.db.DBWired.plug_config_db() docstring
 		'central_db': see ampel.pipeline.db.DBWired.plug_central_db() docstring
 		'publish_stats': send performance stats to:
-		  * mongo: send metrics to dedicated mongo collection (mongo_uri must be set)
+		  * mongo: send metrics to dedicated mongo collection (mongodb_uri must be set)
 		  * graphite: send db metrics to graphite (graphite server must be defined in Ampel_config)
 		  * print: print db metrics to stdout
-		'mongo_uri': dns name or ip address (plus optinal port) of the server hosting mongod
+		'mongodb_uri': dns name or ip address (plus optinal port) of the server hosting mongod
 		  example: mongodb://user:password@localhost:27017
 		'channel_names': list of channel names (string). 
 		  If None, stats for all avail channels will be reported. 
@@ -68,7 +68,7 @@ class AmpelStatsPublisher(DBWired, Schedulable):
 
 
 		# Setup instance variable referencing ampel databases
-		self.plug_databases(self.logger, mongo_uri, config_db, central_db)
+		self.plug_databases(self.logger, mongodb_uri, config_db, central_db)
 
 		if channel_names is None:
 			self.channel_names = tuple(
@@ -204,6 +204,11 @@ class AmpelStatsPublisher(DBWired, Schedulable):
 
 			stat_dict['count'] = {'db': count_dict}
 
+
+		if "print" in self.publish_stats:
+			print(stat_dict)
+
+
 		# Publish metrics to graphite
 		if "graphite" in self.publish_stats:
 			self.logger.info("Sending stats to graphite")
@@ -215,9 +220,6 @@ class AmpelStatsPublisher(DBWired, Schedulable):
 		if "mongo" in self.publish_stats:
 			# WILL BE IMPLEMENTED SOON
 			pass
-
-		if "print" in self.publish_stats:
-			print(stat_dict)
 
 
 	def get_server_stats(self, db, ret_dict=None, suffix=""):
