@@ -72,7 +72,8 @@ class Schedulable():
 		"""
 
 		self.keep_going = False
-		self.run_thread.join()
+		if hasattr(self, 'run_thread'):
+			self.run_thread.join()
 
 		if self.stop_callback is not None:
 			self.stop_callback()
