@@ -1,0 +1,1020 @@
+{
+    "channels": [
+        {
+            "_id": "HU_SN1",
+            "version": 1.0,
+            "active": false,
+            "sources": {
+                "ZTFIPAC": {
+                    "parameters": {
+                        "ZTFPartner": true,
+                        "autoComplete": true,
+                        "updatedHUZP": false
+                    },
+                    "t0Filter": {
+                        "dbEntryId": "BasicFilter",
+                        "runConfig": {
+                            "criteria": [
+                                {
+                                    "attribute": "candid",
+                                    "value": null,
+                                    "operator": "is not"
+                                },
+                                {
+                                    "attribute": "rb",
+                                    "value": 0.6,
+                                    "operator": ">"
+                                },
+                                {
+                                    "attribute": "mag",
+                                    "value": 21,
+                                    "operator": "<"
+                                }
+                            ],
+                            "len": 3,
+                            "operator": ">"
+                        }
+                    },
+                    "t2Compute": [
+                        {
+                            "t2Unit": "SNCOSMO",
+                            "runConfig": "default"
+                        },
+                        {
+                            "t2Unit": "AGN",
+                            "runConfig": "default"
+                        },
+                        {
+                            "t2Unit": "PHOTO_Z",
+                            "runConfig": "default"
+                        },
+                        {
+                            "t2Unit": "PHOTO_TYPE",
+                            "runConfig": "default"
+                        }
+                    ],
+                    "t3Supervize": {}
+                }
+            },
+            "general": {
+                "t3Supervize": {
+                    "Purge": {}
+                }
+            }
+        },
+        {
+            "_id": "HU_SN2",
+            "version": 1.0,
+            "active": false,
+            "sources": {
+                "ZTFIPAC": {
+                    "parameters": {
+                        "ZTFPartner": true,
+                        "autoComplete": true,
+                        "updatedHUZP": false
+                    },
+                    "t0Filter": {
+                        "dbEntryId": "BasicMultiFilter",
+                        "runConfig": {
+                            "filters": [
+                                {
+                                    "criteria": [
+                                        {
+                                            "attribute": "rb",
+                                            "value": 0.8,
+                                            "operator": ">"
+                                        },
+                                        {
+                                            "attribute": "fid",
+                                            "value": 1,
+                                            "operator": "="
+                                        },
+                                        {
+                                            "attribute": "mag",
+                                            "value": 18,
+                                            "operator": "<"
+                                        }
+                                    ],
+                                    "len": 3,
+                                    "operator": ">"
+                                },
+                                {
+                                    "logicalConnection": "OR",
+                                    "criteria": [
+                                        {
+                                            "attribute": "magdiff",
+                                            "value": 0.01,
+                                            "operator": ">"
+                                        }
+                                    ],
+                                    "len": 3,
+                                    "operator": ">"
+                                }
+                            ]
+                        }
+                    },
+                    "t2Compute": [
+                        {
+                            "t2Unit": "SNCOSMO",
+                            "runConfig": "default"
+                        },
+                        {
+                            "t2Unit": "AGN",
+                            "runConfig": "default"
+                        },
+                        {
+                            "t2Unit": "PHOTO_Z",
+                            "runConfig": "default"
+                        },
+                        {
+                            "t2Unit": "PHOTO_TYPE",
+                            "runConfig": "default"
+                        }
+                    ],
+                    "t3Supervize": {}
+                }
+            },
+            "general": {
+                "t3Supervize": {
+                    "Purge": {}
+                }
+            }
+        },
+        {
+            "_id": "HU_RANDOM",
+            "version": 1.0,
+            "active": true,
+            "sources": {
+                "ZTFIPAC": {
+                    "parameters": {
+                        "ZTFPartner": true,
+                        "autoComplete": true,
+                        "updatedHUZP": false
+                    },
+                    "t0Filter": {
+                        "dbEntryId": "RandFilter",
+                        "runConfig": {
+                            "threshold": 50
+                        }
+                    },
+                    "t2Compute": [
+                        {
+                            "t2Unit": "SNCOSMO",
+                            "runConfig": "other"
+                        },
+                        {
+                            "t2Unit": "AGN",
+                            "runConfig": "default"
+                        },
+                        {
+                            "t2Unit": "PHOTO_TYPE",
+                            "runConfig": "default"
+                        }
+                    ],
+                    "t3Supervize": {}
+                }
+            },
+            "general": {
+                "t3Supervize": {
+                    "Purge": {}
+                }
+            }
+        },
+        {
+            "_id": "HU_NOAGN",
+            "version": 1.0,
+            "active": false,
+            "input": [
+                {
+                    "instrument": "ZTF",
+                    "alerts": "IPAC",
+                    "parameters": {
+                        "ZTFPartner": true,
+                        "autoComplete": true,
+                        "updatedHUZP": false
+                    }
+                }
+            ],
+            "t0Filter": {
+                "id": "BasicCatalogFilter",
+                "runConfig": {
+                    "catName": "milliquas",
+                    "catRAKey": "ra",
+                    "catDecKey": "dec",
+                    "searchMethod": "healpix",
+                    "rsArcsec": 5,
+                    "rejectOnMatch": false,
+                    "alertPosType": "av"
+                }
+            },
+            "t2Compute": [
+                {
+                    "t2Unit": "SNCOSMO",
+                    "runConfig": "other"
+                },
+                {
+                    "t2Unit": "PHOTO_TYPE",
+                    "runConfig": "default"
+                }
+            ]
+        },
+        {
+            "_id": "UMD_NUCLEAR",
+            "version": 1.0,
+            "active": true,
+            "sources": {
+                "ZTFIPAC": {
+                    "parameters": {
+                        "ZTFPartner": true,
+                        "autoComplete": true,
+                        "updatedHUZP": false
+                    },
+                    "t0Filter": {
+                        "dbEntryId": "NuclearFilter",
+                        "runConfig": {}
+                    },
+                    "t2Compute": [
+                        {
+                            "t2Unit": "SNCOSMO",
+                            "runConfig": "other"
+                        }
+                    ],
+                    "t3Supervize": {}
+                }
+            },
+            "general": {
+                "t3Supervize": {
+                    "Purge": {}
+                }
+            }
+        },
+        {
+            "_id": "HU_EXCAT",
+            "version": 1.0,
+            "active": false,
+            "sources": {
+                "ZTFIPAC": {
+                    "parameters": {
+                        "ZTFPartner": true,
+                        "autoComplete": true,
+                        "updatedHUZP": false
+                    },
+                    "t0Filter": {
+                        "dbEntryId": "BasicCatalogFilter",
+                        "runConfig": {
+                            "catName": "milliquas",
+                            "catRAKey": "ra",
+                            "catDecKey": "dec",
+                            "searchMethod": "healpix",
+                            "rsArcsec": 5,
+                            "rejectOnMatch": false,
+                            "alertPosType": "av"
+                        }
+                    },
+                    "t2Compute": [
+                        {
+                            "t2Unit": "SNCOSMO",
+                            "runConfig": "other"
+                        },
+                        {
+                            "t2Unit": "AGN",
+                            "runConfig": "default"
+                        },
+                        {
+                            "t2Unit": "PHOTO_TYPE",
+                            "runConfig": "default"
+                        }
+                    ],
+                    "t3Supervize": {}
+                }
+            },
+            "general": {
+                "t3Supervize": {
+                    "Purge": {}
+                }
+            }
+        },
+        {
+            "_id": "OKC_LENSED",
+            "version": 1.0,
+            "active": false,
+            "sources": {
+                "ZTFIPAC": {
+                    "parameters": {
+                        "ZTFPartner": true,
+                        "autoComplete": true,
+                        "updatedHUZP": false
+                    },
+                    "t0Filter": {
+                        "dbEntryId": "LensedTransientFilter",
+                        "runConfig": {
+                            "MinNdet": 2,
+                            "ClusListSearchRadius": 60.0,
+                            "MasterlensSearchRadius": 10.0,
+                            "CaslteQSOSearchRadius": 10.0
+                        }
+                    },
+                    "t2Compute": [
+                        {
+                            "t2Unit": "SNCOSMO",
+                            "runConfig": "other"
+                        }
+                    ],
+                    "t3Supervize": {}
+                }
+            },
+            "general": {
+                "t3Supervize": {
+                    "Purge": {}
+                }
+            }
+        },
+        {
+            "_id": "NO_FILTER",
+            "version": 1.0,
+            "active": true,
+            "sources": {
+                "ZTFIPAC": {
+                    "parameters": {
+                        "ZTFPartner": true,
+                        "autoComplete": true,
+                        "updatedHUZP": false
+                    },
+                    "t0Filter": {
+                        "dbEntryId": "NoFilter",
+                        "runConfig": {}
+                    },
+                    "t2Compute": [
+                        {
+                            "t2Unit": "SNCOSMO",
+                            "runConfig": "default"
+                        },
+                        {
+                            "t2Unit": "AGN",
+                            "runConfig": "default"
+                        }
+                    ],
+                    "t3Supervize": {}
+                }
+            },
+            "general": {
+                "t3Supervize": {
+                    "Purge": {}
+                }
+            }
+        },
+        {
+            "_id": "ZTFMSIP_bright",
+            "version": 1.0,
+            "active": true,
+            "sources": {
+                "ZTFIPAC": {
+                    "parameters": {
+                        "ZTFPartner": false,
+                        "autoComplete": false,
+                        "updatedHUZP": false
+                    },
+                    "t0Filter": {
+                        "dbEntryId": "SEDmTargetFilter",
+                        "runConfig": {
+                            "MagTh": 19,
+                            "SGscoreTh": 0.6,
+                            "RealBogusTh": 0.2,
+                            "m13GaiaSearchRadius": 3
+                        }
+                    },
+                    "t2Compute": []
+                }
+            }
+        },
+        {
+            "_id": "ZTFMSIP_faint",
+            "version": 1.0,
+            "active": true,
+            "sources": {
+                "ZTFIPAC": {
+                    "parameters": {
+                        "ZTFPartner": false,
+                        "autoComplete": false,
+                        "updatedHUZP": false
+                    },
+                    "t0Filter": {
+                        "dbEntryId": "SEDmTargetFilter",
+                        "runConfig": {
+                            "MagTh": 20,
+                            "SGscoreTh": 0.49,
+                            "RealBogusTh": 0.4,
+                            "m13GaiaSearchRadius": 3
+                        }
+                    },
+                    "t2Compute": []
+                }
+            }
+        }
+    ],
+    "global": [
+        {
+            "_id": "photoPoints",
+            "ZTFIPAC": {
+                "alFlags": "INST_ZTF|PP_IPAC",
+                "dictKeywords": {
+                    "tranId": "alertid",
+                    "pptId": "candid",
+                    "obsDate": "jd",
+                    "filterId": "fid",
+                    "mag": "magpsf"
+                },
+                "stamperClass": "ZIPhotoPointStamper",
+                "formats": {
+                    "date": "julian"
+                }
+            },
+            "ZTFHUMBOLDT": {
+                "alFlags": "INST_ZTF|PP_HUMBOLDT",
+                "dictKeywords": {
+                    "tranId": "alertid",
+                    "pptId": "candid",
+                    "obsDate": "jd",
+                    "filterId": "fid"
+                },
+                "stamperClass": "ZIPhotoPointStamper",
+                "formats": {
+                    "date": "julian"
+                }
+            }
+        },
+        {
+            "_id": "dbSpecs",
+            "databases": {
+                "transients": {
+                    "dbName": "Ampel_transients",
+                    "collectionNames": [
+                        "photo",
+                        "docs"
+                    ]
+                },
+                "jobs": {
+                    "dbName": "Ampel_jobs",
+                    "collectionName": "jobs"
+                },
+                "stats": {
+                    "dbName": "Ampel_stats",
+                    "collectionName": "stats"
+                },
+                "troubles": {
+                    "dbName": "Ampel_troubles",
+                    "collectionName": "troubles"
+                }
+            }
+        },
+        {
+            "_id": "graphite",
+            "server": "localhost",
+            "port": 2003,
+            "systemName": "Ampel-burst"
+        },
+        {
+            "_id": "alertIngestion",
+            "source": {
+                "ZTFIPAC": {
+                    "checkReprocessing": true,
+                    "alertHistoryLength": 30
+                }
+            }
+        }
+    ],
+    "t0_filters": [
+        {
+            "_id": "NoFilter",
+            "classFullPath": "ampel.contrib.hu.t0.NoFilter"
+        },
+        {
+            "_id": "BasicFilter",
+            "classFullPath": "ampel.pipeline.t0.filters.BasicFilter"
+        },
+        {
+            "_id": "BasicMultiFilter",
+            "classFullPath": "ampel.pipeline.t0.filters.BasicMultiFilter"
+        },
+        {
+            "_id": "RandFilter",
+            "classFullPath": "ampel.contrib.hu.t0.RandFilter"
+        },
+        {
+            "_id": "SNFilter",
+            "classFullPath": "ampel.contrib.hu.t0.SNFilter",
+            "baseConfig": {
+                "slopeMin": 2,
+                "slopeMax": 5
+            }
+        },
+        {
+            "_id": "StripEnvelopeSN",
+            "classFullPath": "ampel.contrib.okc.t0.StripEnvelopeSN",
+            "baseConfig": {
+                "minDet": 2,
+                "minTimeDiff": 30,
+                "gMinusR": 0.2
+            }
+        },
+        {
+            "_id": "NuclearFilter",
+            "classFullPath": "ampel.contrib.ztfbh.t0.NuclearFilter",
+            "baseConfig": {
+                "MinSgscore": 0.3,
+                "MaxDeltaRad": 0.8,
+                "MaxDeltaRadLate": 0.5,
+                "MaxNbad": 0,
+                "MinDeltaJD": 0.01,
+                "MaxDeltaJD": 0.5,
+                "MinRealBogusScore": 0.0,
+                "BrightGaiaMag": 14,
+                "BrightPS1RMag": 9,
+                "MinDistPS1source": 2,
+                "BrightRefMag": 11,
+                "MaxDistPS1source": 15,
+                "LastOnly": false
+            }
+        },
+        {
+            "_id": "LensedTransientFilter",
+            "classFullPath": "ampel.contrib.hu.t0.LensedTransientFilter",
+            "baseConfig": {
+                "mongodbHost": "localhost",
+                "mongodbPort": 27017,
+                "mongodbURI": "mongodb://localhost"
+            }
+        },
+        {
+            "_id": "SEDmTargetFilter",
+            "classFullPath": "ampel.contrib.hu.t0.SEDmTargetFilter",
+            "baseConfig": {
+                "mongodbHost": "localhost",
+                "mongodbPort": 27017,
+                "mongodbURI": "mongodb://localhost"
+            }
+        }
+    ],
+    "t0_sources": [
+        {
+            "_id": "ZTFIPAC",
+            "alerts": {
+                "processing": {
+                    "parser": "ampel.pipeline.t0.alerts.ZIAlertParser",
+                    "deserializer": "ampel.pipeline.t0.alerts.AvroDeserializer"
+                },
+                "alertFlags": [
+                    "INST_ZTF",
+                    "SRC_IPAC"
+                ],
+                "mappings": {
+                    "tranId": "objectId",
+                    "pptId": "candid",
+                    "obsDate": "jd",
+                    "filterId": "fid",
+                    "mag": "magpsf"
+                }
+            },
+            "ingestion": {
+                "class": "ampel.pipeline.t0.ingesters.ZIAlertIngester",
+                "photoPointShaper": "ampel.pipeline.t0.ingesters.ZIPhotoPointShaper",
+                "flags": {
+                    "photoPoint": "INST_ZTF",
+                    "transient": "INST_ZTF"
+                },
+                "tranIdPrefix": null
+            }
+        }
+    ],
+    "t2_run_config": [
+        {
+            "_id": "POLYFIT_advanced",
+            "t2Unit": "POLYFIT",
+            "runConfig": "advanced",
+            "author": "ztf-software@desy.de",
+            "version": 1.0,
+            "lastChange": "28.02.2018",
+            "private": false,
+            "parameters": {
+                "degree": 5
+            }
+        },
+        {
+            "_id": "POLYFIT_default",
+            "t2Unit": "POLYFIT",
+            "runConfig": "default",
+            "author": "ztf-software@desy.de",
+            "version": 1.0,
+            "lastChange": "28.02.2018",
+            "private": false,
+            "parameters": {
+                "degree": 3
+            }
+        },
+        {
+            "_id": "AGN_default",
+            "t2Unit": "AGN",
+            "runConfig": "default",
+            "author": "ztf-software@desy.de",
+            "version": 1.0,
+            "lastChange": "28.02.2018",
+            "private": false,
+            "parameters": {
+                "name": "value"
+            }
+        },
+        {
+            "_id": "PHOTO_Z_default",
+            "t2Unit": "PHOTO_Z",
+            "runConfig": "default",
+            "author": "ztf-software@desy.de",
+            "version": 1.0,
+            "lastChange": "28.02.2018",
+            "parameters": {
+                "name": "value"
+            }
+        },
+        {
+            "_id": "PHOTO_TYPE_default",
+            "t2Unit": "PHOTO_TYPE",
+            "runConfig": "default",
+            "author": "ztf-software@desy.de",
+            "version": 1.0,
+            "lastChange": "28.02.2018",
+            "private": false,
+            "parameters": {
+                "name": "value"
+            }
+        },
+        {
+            "_id": "SNCOSMO_default",
+            "t2Unit": "SNCOSMO",
+            "runConfig": "default",
+            "author": "ampel-info@desy.de",
+            "version": 1.0,
+            "lastChange": "18.03.2018",
+            "private": false,
+            "parameters": {
+                "model": "salt2"
+            }
+        }
+    ],
+    "t2_units": [
+        {
+            "_id": "SNCOSMO",
+            "classFullPath": "ampel.contrib.hu.t2.T2SNCosmo",
+            "version": 1.0,
+            "private": false,
+            "upperLimits": true,
+            "description": {
+                "title": "SALT2 template fitting",
+                "details": [
+                    "This module fits lightcurves using SNCOSMO",
+                    "More details later"
+                ]
+            }
+        },
+        {
+            "_id": "AGN",
+            "classFullPath": "ampel.contrib.hu.examples.t2.",
+            "version": 1.0,
+            "private": false,
+            "upperLimits": false,
+            "baseConfig": {
+                "template": "something"
+            },
+            "description": {
+                "title": "AGN matching",
+                "details": [
+                    "More details later"
+                ]
+            }
+        },
+        {
+            "_id": "PHOTO_Z",
+            "classFullPath": "ampel.contrib.hu.examples.t2.",
+            "version": 1.0,
+            "private": false,
+            "upperLimits": false,
+            "baseConfig": {
+                "template": "something"
+            },
+            "description": {
+                "title": "Photo Z",
+                "details": [
+                    "More details later"
+                ]
+            }
+        },
+        {
+            "_id": "PHOTO_TYPE",
+            "classFullPath": "ampel.contrib.hu.examples.t2.PhotoType",
+            "version": 1.0,
+            "private": false,
+            "upperLimits": false,
+            "description": {
+                "title": "Photo type",
+                "details": [
+                    "More details later"
+                ]
+            }
+        },
+        {
+            "_id": "POLYFIT",
+            "classFullPath": "ampel.contrib.hu.examples.t2.T2ExamplePolyFit",
+            "author": "ztf-software@desy.de",
+            "version": 1.0,
+            "private": false,
+            "upperLimits": false,
+            "baseConfig": {
+                "fitFunction": "polyfit"
+            },
+            "description": {
+                "title": "Polynomial fitting",
+                "details": [
+                    "Fits data using numpy 'polyfit'"
+                ]
+            }
+        }
+    ],
+    "t3_jobs": [
+        {
+            "_id": "Slack_publish_1",
+            "active": false,
+            "schedule": {
+                "mode": "fixed_rate",
+                "interval": 1
+            },
+            "onError": {
+                "sendMail": "ztf-software@desy.de",
+                "stopAmpel": false,
+                "retry": false
+            },
+            "transients": {
+                "select": {
+                    "created": {
+                        "timedelta": {
+                            "days": -40
+                        }
+                    },
+                    "modified": {
+                        "timedelta": {
+                            "days": -1
+                        }
+                    },
+                    "channels": [
+                        "HU_SN1",
+                        "HU_SN2"
+                    ],
+                    "withFlags": "INST_ZTF",
+                    "withoutFlags": "HAS_ERROR"
+                },
+                "load": {
+                    "state": "latest",
+                    "docs": [
+                        "TRANSIENT",
+                        "COMPOUND",
+                        "T2RECORD"
+                    ],
+                    "t2s": [
+                        "SNCOSMO",
+                        "AGN"
+                    ]
+                },
+                "chunk": 200
+            },
+            "tasks": [
+                {
+                    "t3Unit": "SLACKPUBLISHER",
+                    "runConfig": "hu_sp_1",
+                    "subSel": {
+                        "channel": "HU_SN1",
+                        "state": "latest",
+                        "t2Result": "SNCOSMO"
+                    }
+                },
+                {
+                    "t3Unit": "SLACKPUBLISHER",
+                    "runConfig": "hu_sp_2",
+                    "subSel": {
+                        "channel": "HU_SN2",
+                        "state": "latest",
+                        "t2": "AGN"
+                    }
+                }
+            ]
+        },
+        {
+            "_id": "Slack_publish_2",
+            "active": false,
+            "schedule": {
+                "mode": "fixed_time",
+                "time": "12:01"
+            },
+            "onError": {
+                "sendMail": "ztf-software@desy.de",
+                "stopAmpel": false,
+                "retry": false
+            },
+            "transients": {
+                "select": {
+                    "backtime": 1,
+                    "channel": "HU_SN2"
+                },
+                "load": {
+                    "state": "latest"
+                },
+                "chunk_size": 200
+            },
+            "task": {
+                "t3Unit": "SLACKPUBLISHER",
+                "runConfig": "HU_SN1_PARAM2"
+            }
+        },
+        {
+            "_id": "T2_zombies_cleanup",
+            "active": false,
+            "schedule": {
+                "mode": "fixed_time",
+                "time": "12:01"
+            },
+            "onError": {
+                "sendMail": "ztf-software@desy.de",
+                "stopAmpel": false,
+                "retry": false
+            },
+            "task": {
+                "t3Unit": "T2ZombieCleanUp",
+                "runConfig": "hu_zc_1"
+            }
+        },
+        {
+            "_id": "Slack_publish_test",
+            "active": false,
+            "schedule": {
+                "mode": "fixed_rate",
+                "interval": 1
+            },
+            "onError": {
+                "sendMail": "ztf-software@desy.de",
+                "stopAmpel": false,
+                "retry": false
+            },
+            "transients": {
+                "select": {
+                    "timedelta": {
+                        "days": -60
+                    },
+                    "channel": "HU_SN1",
+                    "withFlags": "INST_ZTF",
+                    "withoutFlags": "HAS_ERROR"
+                },
+                "load": {
+                    "state": "latest",
+                    "t2Results": [
+                        "SNCOSMO",
+                        "AGN"
+                    ]
+                },
+                "chunk": 200
+            },
+            "tasks": [
+                {
+                    "t3Unit": "SLACKPUBLISHER",
+                    "runConfig": "hu_sp_1",
+                    "subSel": {
+                        "channel": "HU_SN1",
+                        "state": "latest",
+                        "t2Results": "SNCOSMO"
+                    }
+                }
+            ]
+        },
+        {
+            "_id": "Slack_publish_sim_test",
+            "active": false,
+            "schedule": {
+                "mode": "fixed_rate",
+                "interval": 1
+            },
+            "onError": {
+                "sendMail": "ampel-info@desy.de",
+                "stopAmpel": false,
+                "retry": false
+            },
+            "transients": {
+                "select": {
+                    "timedelta": {
+                        "days": -60
+                    },
+                    "channel": "HU_SN1",
+                    "withFlags": "INST_ZTF",
+                    "withoutFlags": "HAS_ERROR"
+                },
+                "load": {
+                    "state": "latest",
+                    "t2Results": [
+                        "SNCOSMO",
+                        "AGN"
+                    ]
+                },
+                "chunk": 200
+            },
+            "tasks": [
+                {
+                    "t3Unit": "SLACKPUBLISHER",
+                    "runConfig": "hu_sp_1",
+                    "subSel": {
+                        "channel": "HU_SN1",
+                        "state": "latest",
+                        "t2Results": "SNCOSMO"
+                    }
+                }
+            ]
+        },
+        {
+            "_id": "Slack_publish_demo",
+            "active": false,
+            "schedule": {
+                "mode": "fixed_rate",
+                "interval": 1
+            },
+            "onError": {
+                "sendMail": "ampel-info@desy.de",
+                "stopAmpel": false,
+                "retry": false
+            },
+            "transients": {
+                "select": {
+                    "timedelta": {
+                        "days": -60
+                    },
+                    "channel": "HU_SN1",
+                    "withFlags": "INST_ZTF",
+                    "withoutFlags": "HAS_ERROR"
+                },
+                "load": {
+                    "state": "latest",
+                    "t2Results": [
+                        "SNCOSMO",
+                        "AGN"
+                    ]
+                },
+                "chunk": 200
+            },
+            "tasks": [
+                {
+                    "t3Unit": "SLACKPUBLISHER",
+                    "runConfig": "hu_sp_1",
+                    "subSel": {
+                        "channel": "HU_SN1",
+                        "state": "latest",
+                        "t2Results": "SNCOSMO"
+                    }
+                }
+            ]
+        }
+    ],
+    "t3_run_config": [
+        {
+            "_id": "SLACKPUBLISHER_hu_sp_2",
+            "auth_token": "xoxb-298132201170-O0GcJpOSNYcF84wukZNtcZN8",
+            "channel": "ampel_hu_sn2",
+            "pos": "brightest",
+            "datetime": "%d/%m/%Y %H:%M:%S",
+            "version": 1.0
+        },
+        {
+            "_id": "SLACKPUBLISHER_hu_sp_1",
+            "auth_token": "xoxb-298132201170-O0GcJpOSNYcF84wukZNtcZN8",
+            "msg": "Found following new transient",
+            "channel": "ampel_hu_sn1",
+            "pos": "brightest",
+            "datetime": "%d/%m/%Y %H:%M:%S",
+            "version": 1.0
+        },
+        {
+            "_id": "PURGE_standard",
+            "inactivity": "30"
+        }
+    ],
+    "t3_units": [
+        {
+            "_id": "SLACKPUBLISHER",
+            "classFullPath": "ampel.contrib.hu.t3.SlackPublisher",
+            "baseConfig": {
+                "url": "http://something",
+                "images": false
+            }
+        },
+        {
+            "_id": "PURGE",
+            "classFullPath": "ampel.contrib.hu.t3.Purge",
+            "baseConfig": {
+                "s2DB": "url.to.other.mongo.db",
+                "login": "bla",
+                "pwd": "yo"
+            }
+        }
+    ]
+}
