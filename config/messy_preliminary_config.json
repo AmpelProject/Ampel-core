@@ -444,30 +444,6 @@
             }
         },
         {
-            "_id": "dbSpecs",
-            "databases": {
-                "transients": {
-                    "dbName": "Ampel_transients",
-                    "collectionNames": [
-                        "photo",
-                        "docs"
-                    ]
-                },
-                "jobs": {
-                    "dbName": "Ampel_jobs",
-                    "collectionName": "jobs"
-                },
-                "stats": {
-                    "dbName": "Ampel_stats",
-                    "collectionName": "stats"
-                },
-                "troubles": {
-                    "dbName": "Ampel_troubles",
-                    "collectionName": "troubles"
-                }
-            }
-        },
-        {
             "_id": "graphite",
             "server": "localhost",
             "port": 2003,
