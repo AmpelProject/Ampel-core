@@ -48,12 +48,12 @@ class ZIAlertIngester(AbsAlertIngester):
 
 
 	def __init__(
-		self, channels, t2_units_col, photo_col, main_col, logger=None,
+		self, channels, t2_units, photo_col, main_col, logger=None,
 		check_reprocessing=True, alert_history_length=30
 	):
 		"""
 		channels: list of ampel.pipeline.config.Channel
-		t2_units_col: the db collection from the config DB hosting t2 unit parameters
+		t2_units: dict from the ampel config DB containing t2 unit parameters
 		photo_col: instance of pymongo.collection.Collection (required for database operations)
 		main_col: instance of pymongo.collection.Collection (required for database operations)
 		"""
@@ -70,7 +70,7 @@ class ZIAlertIngester(AbsAlertIngester):
 		
 		# T2 unit making use of upper limits
 		self.t2_units_using_uls = tuple(
-			el["_id"] for el in t2_units_col.find({}) if el['upperLimits'] is True
+			key for key, value in t2_units.items() if value['upperLimits'] is True
 		)
 
 		# instantiate util classes used in method ingest()

@@ -70,7 +70,7 @@ class AlertProcessor(DBWired):
 		self.plug_databases(self.logger, mongodb_uri, config, central_db)
 
 		# Load channels
-		cl = ChannelLoader(self.config_db, source=source, tier=0)
+		cl = ChannelLoader(self.config, source=source, tier=0)
 		self.channels = cl.load_channels(channels, self.logger);
 		self.chan_enum = list(enumerate(self.channels))
 
@@ -123,7 +123,7 @@ class AlertProcessor(DBWired):
 
 			if load_ingester:
 				self.ingester = ZIAlertIngester(
-					self.channels, self.config_db['t2_units'], 
+					self.channels, self.config['t2_units'], 
 					self.get_photo_col(), self.get_main_col(),
 					check_reprocessing=ingest_conf['checkReprocessing'],
 					alert_history_length=ingest_conf['alertHistoryLength'],
