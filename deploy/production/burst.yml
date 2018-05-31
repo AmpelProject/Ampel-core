@@ -4,7 +4,8 @@ services:
     image: mongo:3.6
     command: ["mongod", "--port", "$MONGO_PORT"]
     volumes:
-      - /data/ampel/mongo/offline/temp:/data/db
+      - $MONGO_PATH:/data/db
+      - $MONGO_INITDB_PATH:/docker-entrypoint-initdb.d
     secrets:
       - mongo-root-password
     environment:
@@ -23,7 +24,7 @@ services:
   #    MONGO_INITDB_ROOT_PASSWORD_FILE: /run/secrets/mongo-root-password
   stats:
     image: ampel:$AMPEL_TAG
-    command: ["-c", "ampel-statspublisher", "--mongo", "$MONGO_HOST:$MONGO_PORT", "--graphite", "$GRAPHITE_HOST:$GRAPHITE_PORT"]
+    command: ["-c", "ampel-statspublisher --mongo $MONGO_HOST:$MONGO_PORT --graphite $GRAPHITE_HOST:$GRAPHITE_PORT"]
     volumes:
       - type: volume
         source: /scratch/Ampel
@@ -42,8 +43,7 @@ services:
       - mongo
   alertprocessor:
     image: ampel:$AMPEL_TAG
-    #command: ["/Ampel/deploy/stress-test/run_tests.sh"]
-    command: ["sleep", "2000"]
+    command: ["-c", "ampel-alertprocessor --mongo-host $MONGO_HOST:$MONGO_PORT --archive-host $ARCHIVE_HOST:$ARCHIVE_PORT --broker epyc.astro.washington.edu:9092"]
     volumes:
       - type: volume
         source: /scratch/Ampel

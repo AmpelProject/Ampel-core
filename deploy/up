@@ -9,10 +9,18 @@ if [[ ! -e $envfile ]]; then
 	exit 1
 fi
 
-if [[ $1 -eq dryrun ]]; then
-	for machine in burst; do
+if [[ "$1" == "dryrun" ]]; then
+	stacks="transit burst"
+	for machine in $stacks; do
+		singularity-stack rm $machine
+	done
+	sleep 1
+	env $(cat $envfile | xargs echo) sh -c 'rm -r $MONGO_PATH/*'
+	env $(cat $envfile | xargs echo) sh -c 'rm -r $ARCHIVE_PATH/*'
+	for machine in $stacks; do
 		env $(cat $envfile | xargs echo) singularity-stack deploy -c $DIR/production/$machine.yml $machine
 		echo started $machine
 	done
 	singularity-stack list
 fi
+

@@ -5,7 +5,8 @@ services:
     command: ["postgres", "-p", "$ARCHIVE_PORT"]
     volumes:
       - /var/tmp:/run/postgresql
-      - /data/ampel/archive/:/var/lib/postgresql/data
+      - $ARCHIVE_PATH:/var/lib/postgresql/data
+      - $ARCHIVE_INITDB_PATH:/docker-entrypoint-initdb.d
     ports:
       - "$ARCHIVE_PORT:$ARCHIVE_PORT"
     secrets:
@@ -14,28 +15,28 @@ services:
       POSTGRES_PASSWORD_FILE: /run/secrets/archive-user-password
       POSTGRES_USER: ampel
       POSTGRES_DB: ztfarchive
-  graphite:
-    image: go-graphite
-    volumes:
-      - type: tmpfs
-        target: /var/log/supervisor/
-      - type: tmpfs
-        target: /run/
-      - type: volume
-        source: /data/ampel/metrics/graphite
-        target: /var/lib/graphite
-      - type: volume
-        source: /data/ampel/metrics/grafana
-        target: /usr/share/grafana/data
-      - type: volume
-        source: /data/ampel/metrics/config/go-carbon
-        target: /etc/go-carbon
-      - type: volume
-        source: /data/ampel/metrics/config/carbonapi
-        target: /etc/carbonapi
-      - type: volume
-        source: /data/ampel/metrics/config/grafana
-        target: /etc/grafana
+  #graphite:
+  #  image: go-graphite
+  #  volumes:
+  #    - type: tmpfs
+  #      target: /var/log/supervisor/
+  #    - type: tmpfs
+  #      target: /run/
+  #    - type: volume
+  #      source: /data/ampel/metrics/graphite
+  #      target: /var/lib/graphite
+  #    - type: volume
+  #      source: /data/ampel/metrics/grafana
+  #      target: /usr/share/grafana/data
+  #    - type: volume
+  #      source: /data/ampel/metrics/config/go-carbon
+  #      target: /etc/go-carbon
+  #    - type: volume
+  #      source: /data/ampel/metrics/config/carbonapi
+  #      target: /etc/carbonapi
+  #    - type: volume
+  #      source: /data/ampel/metrics/config/grafana
+  #      target: /etc/grafana
 
 secrets:
   archive-user-password:
