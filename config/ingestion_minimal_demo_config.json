@@ -64,12 +64,6 @@
             }
         },
         {
-            "_id": "graphite",
-            "server": "localhost",
-            "port": 2003,
-            "systemName": "Ampel-burst"
-        },
-        {
             "_id": "alertIngestion",
             "source": {
                 "ZTFIPAC": {
