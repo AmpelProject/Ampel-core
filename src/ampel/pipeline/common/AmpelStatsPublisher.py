@@ -37,6 +37,7 @@ class AmpelStatsPublisher(DBWired, Schedulable):
 
 	def __init__(
 		self, config_db=None, central_db=None, mongodb_uri=None, 
+		graphite_config=None,
 		channel_names=None, publish_stats=['graphite', 'mongo', 'print'],
 		update_intervals = {'col_stats': 5, 'docs_count': 10, 'daemon': 2, 'channels': 5}
 	):
@@ -82,7 +83,8 @@ class AmpelStatsPublisher(DBWired, Schedulable):
 
 		# Instantiate GraphiteFeeder class if so required
 		if "graphite" in publish_stats:
-			self.gfeeder = GraphiteFeeder(self.global_config['graphite'])
+			config = graphite_config if graphite_config is not None else self.global_config['graphite']
+			self.gfeeder = GraphiteFeeder(config)
 
 		# Projections
 		self.id_proj = {'_id': 1}
@@ -286,15 +288,36 @@ class AmpelStatsPublisher(DBWired, Schedulable):
 def run():
 	from ampel.archive import docker_env
 	from os import environ
-	
+	from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
+	parser = ArgumentParser(description=__doc__, formatter_class=ArgumentDefaultsHelpFormatter)
+	parser.add_argument('--mongo', default=environ.get('MONGO', 'localhost:27017'),
+	    help='MongoDB server address and port')
+	parser.add_argument('--graphite', default=environ.get('GRAPHITE', None),
+	    help='Graphite server address and port')
+
+	opts = parser.parse_args()
+
 	mongo_uri = 'mongodb://{}:{}@{}/'.format(
 		docker_env('MONGO_INITDB_ROOT_USERNAME'),
 		docker_env('MONGO_INITDB_ROOT_PASSWORD'),
-		environ['MONGO']
+		opts.mongo,
 	)
+
+	graphite_config = None
+	if opts.graphite is not None:
+		import socket
+		name = 'ampel.{}'.format(socket.gethostname().split('.')[0])
+		graphite_config = dict(port=2003, systemName=name)
+		if ':' in opts.graphite:
+			host, port = opts.graphite.split(':')
+			graphite_config['server'] = host
+			graphite_config['port'] = int(port)
+		else:
+			graphite_config['server'] = opts.graphite
 	
 	asp = AmpelStatsPublisher(
 		mongodb_uri=mongo_uri, 
+		graphite_config=graphite_config,
 		publish_stats=['print', 'graphite']
 	)
-	asp.start()
+	asp.run()
