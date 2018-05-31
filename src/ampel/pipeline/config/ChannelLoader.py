@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 03.05.2018
-# Last Modified Date: 03.05.2018
+# Last Modified Date: 31.05.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from ampel.flags.LogRecordFlags import LogRecordFlags
@@ -72,8 +72,11 @@ class ChannelLoader:
 		for channel_doc in channel_docs:
 
 			if channel_doc['active'] is False:
-				logger.info("Ignoring non-active channel %s" % channel_doc['_id'])
-				continue
+				if channel_names is None:
+					logger.info("Ignoring non-active channel %s" % channel_doc['_id'])
+					continue
+				else:
+					logger.info("Loading requested non-active channel %s" % channel_doc['_id'])
 
 			if self.source is None or self.tier != 0:
 				# Instantiate ampel.pipeline.config.Channel object

@@ -74,6 +74,11 @@ class AlertProcessor(DBWired):
 		self.channels = cl.load_channels(channels, self.logger);
 		self.chan_enum = list(enumerate(self.channels))
 
+		# Robustness
+		if len(self.channels) == 0:
+			raise ValueError("No channel loaded, please check your config")
+			return
+
 		# Setup source dependant parameters
 		self.set_source(source, load_ingester=load_ingester)
 

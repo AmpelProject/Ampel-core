@@ -88,7 +88,7 @@ class DBWired:
 		elif type(config) is str:
 			if config.endswith(".json"):
 				from ampel.pipeline.db.MockDBUtils import MockDBUtils
-				self.config_db = MockDBUtils.load_db_from_file(config)
+				self.config_db = MockDBUtils.load_db_from_file(config, logger)
 				logger.info("Mock config db created using %s" % config)
 			else:
 				self.mongo_client = MongoClient(mongodb_uri, maxIdleTimeMS=1000)
