@@ -8,6 +8,7 @@
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import logging, pymongo, time
+from bson.binary import Binary
 from datetime import datetime, timezone
 from pymongo.errors import BulkWriteError
 
@@ -424,9 +425,10 @@ class ZIAlertIngester(AbsAlertIngester):
 			
 			comp_dict = comp_gen.get_eff_compound(eff_comp_id)
 			pp_comp_id = comp_gen.get_ppid_of_effid(eff_comp_id)
+			bson_eff_comp_id = Binary(eff_comp_id, 5)
 
 			d_set_on_insert =  {
-				"_id": eff_comp_id,
+				"_id": bson_eff_comp_id,
 				"tranId": tran_id,
 				"alDocType": AlDocTypes.COMPOUND,
 				"tier": 0,
@@ -437,13 +439,13 @@ class ZIAlertIngester(AbsAlertIngester):
 			}
 
 			if pp_comp_id != eff_comp_id:
-				d_set_on_insert['ppCompId'] = pp_comp_id
+				d_set_on_insert['ppId'] = Binary(pp_comp_id, 5)
 
 			compound_upserts += 1
 
 			db_main_ops.append(
 				pymongo.UpdateOne(
-					{"_id": eff_comp_id},
+					{"_id": bson_eff_comp_id},
 					{
 						"$setOnInsert": d_set_on_insert,
 						"$addToSet": d_addtoset
@@ -481,6 +483,8 @@ class ZIAlertIngester(AbsAlertIngester):
 						t2docs_blueprint[t2_id][run_config][bifold_comp_id]
 					)
 
+					bson_bifold_comp_id = Binary(bifold_comp_id, 5)
+
 					journal = []
 
 					# Matching search criteria
@@ -489,7 +493,6 @@ class ZIAlertIngester(AbsAlertIngester):
 						"alDocType": AlDocTypes.T2RECORD,
 						"t2Unit": t2_id, 
 						"runConfig": run_config
-						#"compoundId": bifold_comp_id,
 					}
 
 					# Attributes set if no previous doc exists
@@ -512,22 +515,24 @@ class ZIAlertIngester(AbsAlertIngester):
 					# bifold_comp_id is then a pp_compound_id
 					if t2_id not in self.t2_units_using_uls:
 
-						# match_dict["compoundId"] = bifold_comp_id or 
-						# match_dict["compoundId"] = {"$in": [bifold_comp_id]}
+						# match_dict["compId"] = bifold_comp_id or 
+						# match_dict["compId"] = {"$in": [bifold_comp_id]}
 						# triggers the error: "Cannot apply $addToSet to non-array field. \
-						# Field named 'compoundId' has non-array type string"
+						# Field named 'compId' has non-array type string"
 						# -> See https://jira.mongodb.org/browse/SERVER-3946
-						match_dict["compoundId"] = {
+						match_dict["compId"] = {
 							"$elemMatch": {
-								"$eq": bifold_comp_id
+								"$eq": bson_bifold_comp_id
 							}
 						}
 
-						d_addtoset["compoundId"] = {
-							"$each": list(
-								{bifold_comp_id} | 
-								comp_gen.get_effids_of_chans(eff_chan_names)
-							)
+						d_addtoset["compId"] = {
+							"$each": [
+								Binary(el, 5) for el in (
+									{bifold_comp_id} | 
+									comp_gen.get_effids_of_chans(eff_chan_names)
+								)
+							]
 						}
 
 						# Update journal: register eff id for each channel
@@ -546,7 +551,7 @@ class ZIAlertIngester(AbsAlertIngester):
 							{
 								"dt": now,
 								"channels": eff_chan_names,
-								"ppId": bifold_comp_id,
+								"ppId": bson_bifold_comp_id,
 								"op": "upsertPp"
 							}
 						)
@@ -558,8 +563,8 @@ class ZIAlertIngester(AbsAlertIngester):
 					# bifold_comp_id is then an eff_compound_id
 					else:
 
-						match_dict["compoundId"] = bifold_comp_id
-						d_set_on_insert["compoundId"] = bifold_comp_id
+						match_dict["compId"] = bson_bifold_comp_id
+						d_set_on_insert["compId"] = bson_bifold_comp_id
 
 						# Update journal
 						d_addtoset["journal"] = {

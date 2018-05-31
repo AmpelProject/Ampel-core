@@ -130,13 +130,19 @@ class CompoundBluePrint():
 
 	
 			# eff_id = effective compound id = md5 hash of effective payload
-			eff_id = hashlib.md5(bytes(eff_hash_payload, "utf-8")).hexdigest()
+			eff_id_ho = hashlib.md5(bytes(eff_hash_payload, "utf-8"))
+			eff_id = eff_id_ho.digest()
+			eff_id_str = eff_id_ho.hexdigest()
 
 			# strict_id = strict compound id = md5 hash of strict payload
-			strict_id = hashlib.md5(bytes(strict_hash_payload, "utf-8")).hexdigest()
+			strict_id_ho = hashlib.md5(bytes(strict_hash_payload, "utf-8"))
+			strict_id = strict_id_ho.digest()
+			strict_id_str = strict_id_ho.hexdigest()
 	
 			# pp_id = photopoints compound id = md5 hash of photopoins payload (without upper limits)
-			pp_id = hashlib.md5(bytes(pp_hash_payload, "utf-8")).hexdigest()
+			pp_id_ho = hashlib.md5(bytes(pp_hash_payload, "utf-8"))
+			pp_id = pp_id_ho.digest()
+			pp_id_str = pp_id_ho.hexdigest()
 			
 
 			################
@@ -166,8 +172,8 @@ class CompoundBluePrint():
 			if eff_id != strict_id:
 	
 				self.logger.info(
-					"Compound generated for channel %s. CompoundId: (eff: %s, strict: %s)", 
-					chan_name, eff_id, strict_id
+					"%s compound id: (eff: %s, strict: %s)", 
+					chan_name, eff_id_str, strict_id
 				)
 	
 				# Add tupple (chan_name, strict id) to internal dict using eff_id as key
@@ -186,8 +192,8 @@ class CompoundBluePrint():
 			else:
 	
 				self.logger.info(
-					"Compound generated for channel %s. CompoundId: %s", 
-					chan_name, eff_id
+					"%s compound id: %s", 
+					chan_name, eff_id_str
 				)
 
 
