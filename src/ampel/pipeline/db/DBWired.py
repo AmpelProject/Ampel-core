@@ -16,26 +16,26 @@ class DBWired:
 	""" 
 	"""
 
-	def plug_databases(self, logger, mongodb_uri='localhost', config_db=None, central_db=None):
+	def plug_databases(self, logger, mongodb_uri='localhost', config=None, central_db=None):
 		"""
 		Parameters:
 		'mongodb_uri': URI of server hosting mongod. 
 		   Example: 'mongodb://user:password@localhost:27017'
-		'config_db': see plug_config_db() docstring
+		'config': see plug_config_db() docstring
 		'central_db': see plug_central_db() docstring
 		"""
 
 		# Setup instance variable referencing the input database
-		if self.plug_config_db(logger, mongodb_uri, config_db):
+		if self.plug_config_db(logger, mongodb_uri, config):
 
 			# Re-try using mongomock rather than pymongo
 			import mongomock
 			if self.plug_config_db(
-				logger, mongodb_uri, config_db, 
+				logger, mongodb_uri, config, 
 				MongoClient=mongomock.mongo_client.MongoClient,
 				Database=mongomock.database.Database
 			):
-				raise ValueError("Illegal type provided for argument 'config_db'")
+				raise ValueError("Illegal type provided for argument 'config'")
 
 		# Load general config using the input config db
 		self.global_config = {}
@@ -56,21 +56,23 @@ class DBWired:
 
 
 	def plug_config_db(
-		self, logger, mongodb_uri='localhost', config_db=None,
+		self, logger, mongodb_uri='localhost', config=None,
 		MongoClient=pymongo.mongo_client.MongoClient,
 		Database=pymongo.database.Database
 	):
 		"""
 		Sets up the database containing the Ampel config collections.
-		'config_db': 
+		'config': 
 		    Either:
 			-> None: default settings will be used 
 			   (pymongo MongoClient instance using 'mongodb_uri' and config db name 'Ampel_config')
 			-> string:
 			    * if string ends with '.json': json file will be loaded into a mongomock db 
-				  which will be used as config db
-			    * else: a pymongo MongoClient will be instantiated (using 'mongodb_uri') 
-			      and a pymongo.database.Database instance loaded using the provided db name
+				  which will be used as config db.
+				  An instance of mongomock.database.Database will be returned. 
+			    * otherwise: the string value will be used to retrieve the config db by name. 
+				  An instance of pymongo.database.Database will be returned. 
+				  (Please note that 'mongodb_uri' will be use for the mongoclient instantiation)
 			-> MongoClient instance: a database instance with name 'Ampel_config' will be loaded using 
 			   the provided MongoClient instance (can originate from pymongo or mongomock)
 			-> Database instance (pymongo or mongomock): provided database will be used
@@ -78,34 +80,34 @@ class DBWired:
 		"""
 
 		# Default setting
-		if config_db is None:
+		if config is None:
 			self.mongo_client = MongoClient(mongodb_uri, maxIdleTimeMS=1000)
 			self.config_db = self.mongo_client["Ampel_config"]
 
 		# The config database name was provided
-		elif type(config_db) is str:
-			if config_db.endswith(".json"):
+		elif type(config) is str:
+			if config.endswith(".json"):
 				from ampel.pipeline.db.MockDBUtils import MockDBUtils
-				self.config_db = MockDBUtils.load_db_from_file(config_db)
-				logger.info("Mock config DB created using %s" % config_db)
+				self.config_db = MockDBUtils.load_db_from_file(config)
+				logger.info("Mock config DB created using %s" % config)
 			else:
 				self.mongo_client = MongoClient(mongodb_uri, maxIdleTimeMS=1000)
-				self.config_db = self.mongo_client[config_db]
+				self.config_db = self.mongo_client[config]
 
 		# A reference to a MongoClient instance was provided
-		# -> Provided config_db type can be (pymongo or mongomock).mongo_client.MongoClient
-		elif type(config_db) is MongoClient:
-			self.config_db = config_db["Ampel_config"]
+		# -> Provided config type can be (pymongo or mongomock).mongo_client.MongoClient
+		elif type(config) is MongoClient:
+			self.config_db = config["Ampel_config"]
 
 		# A reference to a database instance (pymongo or mongomock) was provided
 		# -> Provided config_db type can be (pymongo or mongomock).database.Database
-		elif type(config_db) is Database:
-			self.config_db = config_db
+		elif type(config) is Database:
+			self.config_db = config
 
 		# Illegal argument
 		else:
 			logger.warn(
-				"Provided argument value for 'config_db' is neither " + 
+				"Provided argument value for 'config' is neither " + 
 				"string nor %s nor %s" % (MongoClient, Database)
 			)
 			return True

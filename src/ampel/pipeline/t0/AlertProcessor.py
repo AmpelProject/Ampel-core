@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 10.10.2017
-# Last Modified Date: 30.05.2018
+# Last Modified Date: 31.05.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import pymongo, time, numpy as np
@@ -39,7 +39,7 @@ class AlertProcessor(DBWired):
 
 	def __init__(
 		self, channels=None, source="ZTFIPAC", mongodb_uri='localhost', 
-		config_db=None, central_db=None, publish_stats={'graphite', 'jobs'}, 
+		config=None, central_db=None, publish_stats={'graphite', 'jobs'}, 
 		load_ingester=True
 	):
 		"""
@@ -52,7 +52,7 @@ class AlertProcessor(DBWired):
 		'source': name of input stream (string - see set_stream() docstring)
 		'mongodb_uri': URI of the server hosting mongod.
 		   Example: 'mongodb://user:password@localhost:27017'
-		'config_db': see ampel.pipeline.db.DBWired.plug_config_db() docstring
+		'config': see ampel.pipeline.db.DBWired.plug_config_db() docstring
 		'central_db': see ampel.pipeline.db.DBWired.plug_central_db() docstring
 		'publish_stats': publish performance stats:
 		   * graphite: send t0 metrics to graphite (graphite server must be defined 
@@ -67,7 +67,7 @@ class AlertProcessor(DBWired):
 		self.logger.info("Setting up new AlertProcessor instance")
 
 		# Setup instance variable referencing ampel databases
-		self.plug_databases(self.logger, mongodb_uri, config_db, central_db)
+		self.plug_databases(self.logger, mongodb_uri, config, central_db)
 
 		# Load channels
 		cl = ChannelLoader(self.config_db, source=source, tier=0)
