@@ -69,9 +69,9 @@ class DBWired:
 			-> string:
 			    * if string ends with '.json': json file will be loaded into a mongomock db 
 				  which will be used as config db.
-				  An instance of mongomock.database.Database will be returned. 
+				  self.config_db will reference an instance of mongomock.database.Database. 
 			    * otherwise: the string value will be used to retrieve the config db by name. 
-				  An instance of pymongo.database.Database will be returned. 
+				  self.config_db will reference an instance of pymongo.database.Database. 
 				  (Please note that 'mongodb_uri' will be use for the mongoclient instantiation)
 			-> MongoClient instance: a database instance with name 'Ampel_config' will be loaded using 
 			   the provided MongoClient instance (can originate from pymongo or mongomock)
@@ -89,7 +89,7 @@ class DBWired:
 			if config.endswith(".json"):
 				from ampel.pipeline.db.MockDBUtils import MockDBUtils
 				self.config_db = MockDBUtils.load_db_from_file(config)
-				logger.info("Mock config DB created using %s" % config)
+				logger.info("Mock config db created using %s" % config)
 			else:
 				self.mongo_client = MongoClient(mongodb_uri, maxIdleTimeMS=1000)
 				self.config_db = self.mongo_client[config]
