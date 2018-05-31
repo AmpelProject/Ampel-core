@@ -69,10 +69,11 @@ class DBWired:
 
 
 	def load_config_db(self, db, tier='all'):
-
+		"""
+		"""
 		self.config = {}
 
-		for colname in DBWired.config_col_names['tier']:
+		for colname in DBWired.config_col_names[tier]:
 
 			self.config[colname] = {}
 

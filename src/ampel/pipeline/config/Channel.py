@@ -15,7 +15,7 @@ class Channel:
 
 	def __init__(self, chan_name, chan_doc, source=None):
 		"""
-		chan_doc: dict instance containing channel configrations
+		chan_doc: dict instance containing channel configurations
 		"""
 
 		self.version = chan_doc['version']
