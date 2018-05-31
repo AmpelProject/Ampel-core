@@ -4,33 +4,51 @@ services:
     image: mongo:3.6
     command: ["mongod", "--port", "$MONGO_PORT"]
     volumes:
-      - /data/ampel/mongo/live:/data/db
+      - /data/ampel/mongo/offline/temp:/data/db
     secrets:
       - mongo-root-password
     environment:
       MONGO_INITDB_ROOT_USERNAME: root
       MONGO_INITDB_ROOT_PASSWORD_FILE: /run/secrets/mongo-root-password
-  catalog:
-    image: mongo:3.6
-    command: ["mongod", "--port", "$CATALOG_PORT"]
+  #catalog:
+  #  image: mongo:3.6
+  #  command: ["mongod", "--port", "$CATALOG_PORT"]
+  #  volumes:
+  #    - /data/ampel/mongo/offline/test-catalog:/data/db
+  #    - /data/ampel/mongo/offline/catalog-dump:/docker-entrypoint-initdb.d/
+  #  secrets:
+  #    - mongo-root-password
+  #  environment:
+  #    MONGO_INITDB_ROOT_USERNAME: root
+  #    MONGO_INITDB_ROOT_PASSWORD_FILE: /run/secrets/mongo-root-password
+  stats:
+    image: ampel:$AMPEL_TAG
+    command: ["-c", "ampel-statspublisher", "--mongo", "$MONGO_HOST:$MONGO_PORT", "--graphite", "$GRAPHITE_HOST:$GRAPHITE_PORT"]
     volumes:
-      - /data/ampel/mongo/offline/test-catalog:/data/db
-      - /data/ampel/mongo/offline/catalog-dump:/docker-entrypoint-initdb.d/
+      - type: volume
+        source: /scratch/Ampel
+        target: /Ampel
+      - /data/ampel/archive/tarballs:/ztf
     secrets:
+      - archive-user-password
       - mongo-root-password
     environment:
+      TINI_SUBREAPER: 1
+      MONGO: $MONGO_HOST:$MONGO_PORT
+      GRAPHITE: $GRAPHITE_HOST:$GRAPHITE_PORT
       MONGO_INITDB_ROOT_USERNAME: root
       MONGO_INITDB_ROOT_PASSWORD_FILE: /run/secrets/mongo-root-password
-  ampel:
-    image: ampel:v0.1a6
+    depends_on:
+      - mongo
+  alertprocessor:
+    image: ampel:$AMPEL_TAG
     #command: ["/Ampel/deploy/stress-test/run_tests.sh"]
     command: ["sleep", "2000"]
     volumes:
       - type: volume
         source: /scratch/Ampel
         target: /Ampel
-      - /data/ampel/archive/smaller_tarballs:/ztf
-      
+      - /data/ampel/archive/tarballs:/ztf
     secrets:
       - archive-user-password
       - mongo-root-password
