@@ -253,9 +253,8 @@ def insert_alert(connection, meta, alert, partition_id, ingestion_time):
         Candidate = meta.tables['candidate']
         try:
             result = connection.execute(Alert.insert(),
-                candid=alert['candid'],  programid=alert['candidate']['programid'], objectId=alert['objectId'],
-                partition_id=partition_id, ingestion_time=ingestion_time,
-                jd=alert['candidate']['jd'])
+                programid=alert['candidate']['programid'], jd=alert['candidate']['jd'],
+                partition_id=partition_id, ingestion_time=ingestion_time, **alert)
             alert_id = result.inserted_primary_key[0]
             connection.execute(Candidate.insert(), alert_id=alert_id, **_convert_isdiffpos(alert['candidate']))
         except IntegrityError:
