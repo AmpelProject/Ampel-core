@@ -731,31 +731,73 @@ def _worker(idx, mongo_host, archive_host, bootstrap_host, group_id, chunk_size=
 		print('({}) {} alerts in {:.1f}s; {:.1f}/s'.format(idx, chunk_size, dt, chunk_size/dt))
 	return count
 
+from ampel.pipeline.t0.alerts.TarAlertLoader import TarAlertLoader
+from ampel.pipeline.t0.alerts.AlertSupplier import AlertSupplier
+from ampel.pipeline.t0.alerts.ZIAlertShaper import ZIAlertShaper
+from ampel.archive import docker_env
+
+
+def _worker(mongo_host, infile):
+
+	mongo = 'mongodb://{}:{}@{}/'.format(
+		docker_env('MONGO_INITDB_ROOT_USERNAME'), 
+		docker_env('MONGO_INITDB_ROOT_PASSWORD'), 
+		mongo_host
+	)
+
+	import time
+	count = 0
+	alert_processed = AlertProcessor.iter_max
+	tar_loader = TarAlertLoader(tar_path=infile)
+	alert_supplier = AlertSupplier(tar_loader, ZIAlertShaper(), serialization="avro")
+	processor = AlertProcessor(mongodb_uri=mongo)
+
+	while alert_processed == AlertProcessor.iter_max:
+		t0 = time.time()
+		print('Running on {}'.format(infile))
+		alert_processed = processor.run(alert_supplier, console_logging=False)
+		t1 = time.time()
+		dt = t1-t0
+		print('({}) {} alerts in {:.1f}s; {:.1f}/s'.format(infile, alert_processed, dt, alert_processed/dt))
+		count += alert_processed
+
+	return count
+
 def run_alertprocessor():
 
 	import os, time, uuid
 	from concurrent import futures
 	from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
+	from os.path import basename, dirname, abspath, realpath
 	parser = ArgumentParser(description=__doc__, formatter_class=ArgumentDefaultsHelpFormatter)
-	parser.add_argument('--host', default='mongo:27017')
+	parser.add_argument('--mongo-host', default='mongo:27017')
 	parser.add_argument('--archive-host', default='archive:5432')
 	parser.add_argument('--broker', default='epyc.astro.washington.edu:9092')
-	parser.add_argument('--procs', type=int, default=1, help='Number of processes to start')
-	parser.add_argument('--chunksize', type=int, default=5000, help='Number of alerts in each process')
+	parser.add_argument('infile')
 	
+	import sys
 	opts = parser.parse_args()
 	
-	executor = futures.ProcessPoolExecutor(opts.procs)
+	mongo = 'mongodb://{}:{}@{}/'.format(
+		docker_env('MONGO_INITDB_ROOT_USERNAME'), 
+		docker_env('MONGO_INITDB_ROOT_PASSWORD'), 
+		opts.mongo_host
+	)
 
-	group = uuid.uuid1()
-	
-	start_time = time.time()
-	step = opts.chunksize
+	import time
 	count = 0
-	jobs = [executor.submit(_worker, idx, opts.host, opts.archive_host, opts.broker, group, opts.chunksize) for idx in range(opts.procs)]
-	for future in futures.as_completed(jobs):
-		print(future.result())
-		count += future.result()
-	duration = int(time.time()) - start_time
-	print('Processed {} alerts in {:.1f} s ({:.1f}/s)'.format(count, duration, float(count)/duration))
+	alert_processed = AlertProcessor.iter_max
+	tar_loader = TarAlertLoader(tar_path=opts.infile)
+	alert_supplier = AlertSupplier(tar_loader, ZIAlertShaper(), serialization="avro")
+	processor = AlertProcessor(mongodb_uri=mongo, publish_stats={"jobs"}, channels=["HU_SN1"])
+
+	while alert_processed == AlertProcessor.iter_max:
+		t0 = time.time()
+		print('Running on {}'.format(opts.infile))
+		alert_processed = processor.run(alert_supplier, console_logging=False)
+		t1 = time.time()
+		dt = t1-t0
+		print('({}) {} alerts in {:.1f}s; {:.1f}/s'.format(opts.infile, alert_processed, dt, alert_processed/dt))
+		count += alert_processed
+
 	
