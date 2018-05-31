@@ -7,7 +7,6 @@
 # Last Modified Date: 05.03.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-from ampel.pipeline.t0.loaders.ZIAlertLoader import ZIAlertLoader
 import fastavro, io, pykafka
 
 import itertools
@@ -93,7 +92,7 @@ class ZIAlertFetcher:
 	"""
 	ZI: shortcut for ZTF IPAC.
 	"""
-	def __init__(self, archive_db=None, bootstrap='epyc.astro.washington.edu:9092', group_name=uuid.uuid1(), timeout=1, confluent=False):
+	def __init__(self, bootstrap='epyc.astro.washington.edu:9092', group_name=uuid.uuid1(), timeout=1):
 		"""
 		:param archive_db: an instance of :py:class:`ampel.archive.ArchiveDB`
 		:param zookeeper: ZooKeeper hosts to use for broker and topic discovery
@@ -104,19 +103,16 @@ class ZIAlertFetcher:
 		"""
 		# TODO: handle timeout
 		self._consumer = AllConsumingConsumer(bootstrap, **{'group.id':group_name})
-		
-		self._archive = archive_db
 
 	def alerts(self, limit=None):
 		"""
 		Generate alerts until timeout is reached
 		"""
 		for message in itertools.islice(self._consumer, limit):
-			for alert in fastavro.reader(io.BytesIO(message.value())):
-				ZIAlertLoader.filter_previous_candidates(alert['prv_candidates'])
-				if self._archive is not None:
-					self._archive.insert_alert(alert, message.partition(), int(time.time()*1e6))
-				yield alert
+			yield io.BytesIO(message.value()), message.partition()
+		self.commit()
+
+	def commit(self):
 		self._consumer.commit_offsets()
 	
 	def __iter__(self):
@@ -157,7 +153,6 @@ def archive_topic():
 	    # num_consumer_fetchers=1,
 	    use_rdkafka=True)
 	
-	if opts.strip_cutouts:
 	def trim_alert(payload):
 		reader = fastavro.reader(io.BytesIO(payload))
 		schema = reader.schema
