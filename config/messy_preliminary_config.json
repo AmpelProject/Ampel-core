@@ -1,7 +1,6 @@
 {
-    "channels": [
-        {
-            "_id": "HU_SN1",
+    "channels": {
+        "HU_SN1": {
             "version": 1.0,
             "active": false,
             "sources": {
@@ -62,8 +61,7 @@
                 }
             }
         },
-        {
-            "_id": "HU_SN2",
+        "HU_SN2": {
             "version": 1.0,
             "active": false,
             "sources": {
@@ -140,8 +138,7 @@
                 }
             }
         },
-        {
-            "_id": "HU_RANDOM",
+        "HU_RANDOM": {
             "version": 1.0,
             "active": true,
             "sources": {
@@ -180,8 +177,7 @@
                 }
             }
         },
-        {
-            "_id": "HU_NOAGN",
+        "HU_NOAGN": {
             "version": 1.0,
             "active": false,
             "input": [
@@ -218,8 +214,7 @@
                 }
             ]
         },
-        {
-            "_id": "UMD_NUCLEAR",
+        "UMD_NUCLEAR": {
             "version": 1.0,
             "active": true,
             "sources": {
@@ -248,8 +243,7 @@
                 }
             }
         },
-        {
-            "_id": "HU_EXCAT",
+        "HU_EXCAT": {
             "version": 1.0,
             "active": false,
             "sources": {
@@ -294,8 +288,7 @@
                 }
             }
         },
-        {
-            "_id": "OKC_LENSED",
+        "OKC_LENSED": {
             "version": 1.0,
             "active": false,
             "sources": {
@@ -329,8 +322,7 @@
                 }
             }
         },
-        {
-            "_id": "NO_FILTER",
+        "NO_FILTER": {
             "version": 1.0,
             "active": true,
             "sources": {
@@ -363,8 +355,7 @@
                 }
             }
         },
-        {
-            "_id": "ZTFMSIP_bright",
+        "ZTFMSIP_bright": {
             "version": 1.0,
             "active": true,
             "sources": {
@@ -387,8 +378,7 @@
                 }
             }
         },
-        {
-            "_id": "ZTFMSIP_faint",
+        "ZTFMSIP_faint": {
             "version": 1.0,
             "active": true,
             "sources": {
@@ -411,10 +401,9 @@
                 }
             }
         }
-    ],
-    "global": [
-        {
-            "_id": "photoPoints",
+    },
+    "global": {
+        "photoPoints": {
             "ZTFIPAC": {
                 "alFlags": "INST_ZTF|PP_IPAC",
                 "dictKeywords": {
@@ -443,14 +432,12 @@
                 }
             }
         },
-        {
-            "_id": "graphite",
+        "graphite": {
             "server": "localhost",
             "port": 2003,
             "systemName": "Ampel-burst"
         },
-        {
-            "_id": "alertIngestion",
+        "alertIngestion": {
             "source": {
                 "ZTFIPAC": {
                     "checkReprocessing": true,
@@ -458,34 +445,28 @@
                 }
             }
         }
-    ],
-    "t0_filters": [
-        {
-            "_id": "NoFilter",
+    },
+    "t0_filters": {
+        "NoFilter": {
             "classFullPath": "ampel.contrib.hu.t0.NoFilter"
         },
-        {
-            "_id": "BasicFilter",
+        "BasicFilter": {
             "classFullPath": "ampel.pipeline.t0.filters.BasicFilter"
         },
-        {
-            "_id": "BasicMultiFilter",
+        "BasicMultiFilter": {
             "classFullPath": "ampel.pipeline.t0.filters.BasicMultiFilter"
         },
-        {
-            "_id": "RandFilter",
+        "RandFilter": {
             "classFullPath": "ampel.contrib.hu.t0.RandFilter"
         },
-        {
-            "_id": "SNFilter",
+        "SNFilter": {
             "classFullPath": "ampel.contrib.hu.t0.SNFilter",
             "baseConfig": {
                 "slopeMin": 2,
                 "slopeMax": 5
             }
         },
-        {
-            "_id": "StripEnvelopeSN",
+        "StripEnvelopeSN": {
             "classFullPath": "ampel.contrib.okc.t0.StripEnvelopeSN",
             "baseConfig": {
                 "minDet": 2,
@@ -493,8 +474,7 @@
                 "gMinusR": 0.2
             }
         },
-        {
-            "_id": "NuclearFilter",
+        "NuclearFilter": {
             "classFullPath": "ampel.contrib.ztfbh.t0.NuclearFilter",
             "baseConfig": {
                 "MinSgscore": 0.3,
@@ -512,8 +492,7 @@
                 "LastOnly": false
             }
         },
-        {
-            "_id": "LensedTransientFilter",
+        "LensedTransientFilter": {
             "classFullPath": "ampel.contrib.hu.t0.LensedTransientFilter",
             "baseConfig": {
                 "mongodbHost": "localhost",
@@ -521,8 +500,7 @@
                 "mongodbURI": "mongodb://localhost"
             }
         },
-        {
-            "_id": "SEDmTargetFilter",
+        "SEDmTargetFilter": {
             "classFullPath": "ampel.contrib.hu.t0.SEDmTargetFilter",
             "baseConfig": {
                 "mongodbHost": "localhost",
@@ -530,10 +508,9 @@
                 "mongodbURI": "mongodb://localhost"
             }
         }
-    ],
-    "t0_sources": [
-        {
-            "_id": "ZTFIPAC",
+    },
+    "t0_sources": {
+        "ZTFIPAC": {
             "alerts": {
                 "processing": {
                     "parser": "ampel.pipeline.t0.alerts.ZIAlertParser",
@@ -561,10 +538,9 @@
                 "tranIdPrefix": null
             }
         }
-    ],
-    "t2_run_config": [
-        {
-            "_id": "POLYFIT_advanced",
+    },
+    "t2_run_config": {
+        "POLYFIT_advanced": {
             "t2Unit": "POLYFIT",
             "runConfig": "advanced",
             "author": "ztf-software@desy.de",
@@ -575,8 +551,7 @@
                 "degree": 5
             }
         },
-        {
-            "_id": "POLYFIT_default",
+        "POLYFIT_default": {
             "t2Unit": "POLYFIT",
             "runConfig": "default",
             "author": "ztf-software@desy.de",
@@ -587,8 +562,7 @@
                 "degree": 3
             }
         },
-        {
-            "_id": "AGN_default",
+        "AGN_default": {
             "t2Unit": "AGN",
             "runConfig": "default",
             "author": "ztf-software@desy.de",
@@ -599,8 +573,7 @@
                 "name": "value"
             }
         },
-        {
-            "_id": "PHOTO_Z_default",
+        "PHOTO_Z_default": {
             "t2Unit": "PHOTO_Z",
             "runConfig": "default",
             "author": "ztf-software@desy.de",
@@ -610,8 +583,7 @@
                 "name": "value"
             }
         },
-        {
-            "_id": "PHOTO_TYPE_default",
+        "PHOTO_TYPE_default": {
             "t2Unit": "PHOTO_TYPE",
             "runConfig": "default",
             "author": "ztf-software@desy.de",
@@ -622,8 +594,7 @@
                 "name": "value"
             }
         },
-        {
-            "_id": "SNCOSMO_default",
+        "SNCOSMO_default": {
             "t2Unit": "SNCOSMO",
             "runConfig": "default",
             "author": "ampel-info@desy.de",
@@ -634,10 +605,9 @@
                 "model": "salt2"
             }
         }
-    ],
-    "t2_units": [
-        {
-            "_id": "SNCOSMO",
+    },
+    "t2_units": {
+        "SNCOSMO": {
             "classFullPath": "ampel.contrib.hu.t2.T2SNCosmo",
             "version": 1.0,
             "private": false,
@@ -650,8 +620,7 @@
                 ]
             }
         },
-        {
-            "_id": "AGN",
+        "AGN": {
             "classFullPath": "ampel.contrib.hu.examples.t2.",
             "version": 1.0,
             "private": false,
@@ -666,8 +635,7 @@
                 ]
             }
         },
-        {
-            "_id": "PHOTO_Z",
+        "PHOTO_Z": {
             "classFullPath": "ampel.contrib.hu.examples.t2.",
             "version": 1.0,
             "private": false,
@@ -682,8 +650,7 @@
                 ]
             }
         },
-        {
-            "_id": "PHOTO_TYPE",
+        "PHOTO_TYPE": {
             "classFullPath": "ampel.contrib.hu.examples.t2.PhotoType",
             "version": 1.0,
             "private": false,
@@ -695,8 +662,7 @@
                 ]
             }
         },
-        {
-            "_id": "POLYFIT",
+        "POLYFIT": {
             "classFullPath": "ampel.contrib.hu.examples.t2.T2ExamplePolyFit",
             "author": "ztf-software@desy.de",
             "version": 1.0,
@@ -712,10 +678,9 @@
                 ]
             }
         }
-    ],
-    "t3_jobs": [
-        {
-            "_id": "Slack_publish_1",
+    },
+    "t3_jobs": {
+        "Slack_publish_1": {
             "active": false,
             "schedule": {
                 "mode": "fixed_rate",
@@ -780,8 +745,7 @@
                 }
             ]
         },
-        {
-            "_id": "Slack_publish_2",
+        "Slack_publish_2": {
             "active": false,
             "schedule": {
                 "mode": "fixed_time",
@@ -807,8 +771,7 @@
                 "runConfig": "HU_SN1_PARAM2"
             }
         },
-        {
-            "_id": "T2_zombies_cleanup",
+        "T2_zombies_cleanup": {
             "active": false,
             "schedule": {
                 "mode": "fixed_time",
@@ -824,8 +787,7 @@
                 "runConfig": "hu_zc_1"
             }
         },
-        {
-            "_id": "Slack_publish_test",
+        "Slack_publish_test": {
             "active": false,
             "schedule": {
                 "mode": "fixed_rate",
@@ -866,8 +828,7 @@
                 }
             ]
         },
-        {
-            "_id": "Slack_publish_sim_test",
+        "Slack_publish_sim_test": {
             "active": false,
             "schedule": {
                 "mode": "fixed_rate",
@@ -908,8 +869,7 @@
                 }
             ]
         },
-        {
-            "_id": "Slack_publish_demo",
+        "Slack_publish_demo": {
             "active": false,
             "schedule": {
                 "mode": "fixed_rate",
@@ -950,18 +910,16 @@
                 }
             ]
         }
-    ],
-    "t3_run_config": [
-        {
-            "_id": "SLACKPUBLISHER_hu_sp_2",
+    },
+    "t3_run_config": {
+        "SLACKPUBLISHER_hu_sp_2": {
             "auth_token": "xoxb-298132201170-O0GcJpOSNYcF84wukZNtcZN8",
             "channel": "ampel_hu_sn2",
             "pos": "brightest",
             "datetime": "%d/%m/%Y %H:%M:%S",
             "version": 1.0
         },
-        {
-            "_id": "SLACKPUBLISHER_hu_sp_1",
+        "SLACKPUBLISHER_hu_sp_1": {
             "auth_token": "xoxb-298132201170-O0GcJpOSNYcF84wukZNtcZN8",
             "msg": "Found following new transient",
             "channel": "ampel_hu_sn1",
@@ -969,22 +927,19 @@
             "datetime": "%d/%m/%Y %H:%M:%S",
             "version": 1.0
         },
-        {
-            "_id": "PURGE_standard",
+        "PURGE_standard": {
             "inactivity": "30"
         }
-    ],
-    "t3_units": [
-        {
-            "_id": "SLACKPUBLISHER",
+    },
+    "t3_units": {
+        "SLACKPUBLISHER": {
             "classFullPath": "ampel.contrib.hu.t3.SlackPublisher",
             "baseConfig": {
                 "url": "http://something",
                 "images": false
             }
         },
-        {
-            "_id": "PURGE",
+        "PURGE": {
             "classFullPath": "ampel.contrib.hu.t3.Purge",
             "baseConfig": {
                 "s2DB": "url.to.other.mongo.db",
@@ -992,5 +947,5 @@
                 "pwd": "yo"
             }
         }
-    ]
+    }
 }

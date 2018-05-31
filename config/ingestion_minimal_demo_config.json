@@ -1,7 +1,6 @@
 {
-    "channels": [
-        {
-            "_id": "HU_SN1",
+    "channels": {
+        "HU_SN1": {
             "version": 1.0,
             "active": false,
             "sources": {
@@ -44,10 +43,9 @@
                 }
             }
         }
-    ],
-    "global": [
-        {
-            "_id": "photoPoints",
+    },
+    "global": {
+        "photoPoints": {
             "ZTFIPAC": {
                 "alFlags": "INST_ZTF|PP_IPAC",
                 "dictKeywords": {
@@ -63,8 +61,7 @@
                 }
             }
         },
-        {
-            "_id": "alertIngestion",
+        "alertIngestion": {
             "source": {
                 "ZTFIPAC": {
                     "checkReprocessing": true,
@@ -72,16 +69,14 @@
                 }
             }
         }
-    ],
-    "t0_filters": [
-        {
-            "_id": "BasicFilter",
+    },
+    "t0_filters": {
+        "BasicFilter": {
             "classFullPath": "ampel.pipeline.t0.filters.BasicFilter"
         }
-    ],
-    "t0_sources": [
-        {
-            "_id": "ZTFIPAC",
+    },
+    "t0_sources": {
+        "ZTFIPAC": {
             "alerts": {
                 "processing": {
                     "parser": "ampel.pipeline.t0.alerts.ZIAlertParser",
@@ -109,10 +104,9 @@
                 "tranIdPrefix": null
             }
         }
-    ],
-    "t2_run_config": [
-        {
-            "_id": "SNCOSMO_default",
+    },
+    "t2_run_config": {
+        "SNCOSMO_default": {
             "t2Unit": "SNCOSMO",
             "runConfig": "default",
             "author": "ampel-info@desy.de",
@@ -123,10 +117,9 @@
                 "model": "salt2"
             }
         }
-    ],
-    "t2_units": [
-        {
-            "_id": "SNCOSMO",
+    },
+    "t2_units": {
+        "SNCOSMO": {
             "classFullPath": "ampel.contrib.hu.t2.T2SNCosmo",
             "version": 1.0,
             "private": false,
@@ -139,5 +132,5 @@
                 ]
             }
         }
-    ]
+    }
 }
