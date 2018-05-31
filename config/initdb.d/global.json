@@ -1,0 +1,1 @@
+[{"_id": "photoPoints", "ZTFIPAC": {"alFlags": "INST_ZTF|PP_IPAC", "dictKeywords": {"tranId": "alertid", "pptId": "candid", "obsDate": "jd", "filterId": "fid", "mag": "magpsf"}, "stamperClass": "ZIPhotoPointStamper", "formats": {"date": "julian"}}}, {"_id": "alertIngestion", "source": {"ZTFIPAC": {"checkReprocessing": true, "alertHistoryLength": 30}}}]
