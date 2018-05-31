@@ -695,74 +695,6 @@ def create_databases(host, database_name, configs):
 	
 	return client.get_database('admin'), config_db
 
-def _ingest_slice(host, archive_host, infile, start, stop):
-	from ampel.archive import ArchiveDB, docker_env
-	from ampel.pipeline.t0.alerts.TarballWalker import TarballWalker
-	archive = ArchiveDB('postgresql://ampel:{}@{}/ztfarchive'.format(docker_env('POSTGRES_PASSWORD'), archive_host))
-	
-	def loader():
-		tbw = TarballWalker(infile, start, stop)
-		for alert in tbw.get_files():
-			archive.insert_alert(alert, 0, 0)
-			yield alert
-	processor = AlertProcessor(mongodb_uri=host)
-	return processor.run(loader())
-
-def _worker(idx, mongo_host, archive_host, bootstrap_host, group_id, chunk_size=5000):
-	from ampel.archive import ArchiveDB, docker_env
-	from ampel.pipeline.t0.ZIAlertFetcher import ZIAlertFetcher
-	from pymongo import MongoClient
-
-	archive = ArchiveDB('postgresql://ampel:{}@{}/ztfarchive'.format(docker_env('POSTGRES_PASSWORD'), archive_host))
-	mongo = 'mongodb://{}:{}@{}/'.format(docker_env('MONGO_INITDB_ROOT_USERNAME'), docker_env('MONGO_INITDB_ROOT_PASSWORD'), mongo_host)
-
-	fetcher = ZIAlertFetcher(archive, bootstrap_host, group_name=group_id)
-
-	import time
-	t0 = time.time()
-
-	count = 0
-	for i in range(10):
-		processor = AlertProcessor(mongodb_uri=mongo)
-		count += processor.run(fetcher.alerts(chunk_size), console_logging=False)
-		t1 = time.time()
-		dt = t1-t0
-		t0 = t1
-		print('({}) {} alerts in {:.1f}s; {:.1f}/s'.format(idx, chunk_size, dt, chunk_size/dt))
-	return count
-
-from ampel.pipeline.t0.alerts.TarAlertLoader import TarAlertLoader
-from ampel.pipeline.t0.alerts.AlertSupplier import AlertSupplier
-from ampel.pipeline.t0.alerts.ZIAlertShaper import ZIAlertShaper
-from ampel.archive import docker_env
-
-
-def _worker(mongo_host, infile):
-
-	mongo = 'mongodb://{}:{}@{}/'.format(
-		docker_env('MONGO_INITDB_ROOT_USERNAME'), 
-		docker_env('MONGO_INITDB_ROOT_PASSWORD'), 
-		mongo_host
-	)
-
-	import time
-	count = 0
-	alert_processed = AlertProcessor.iter_max
-	tar_loader = TarAlertLoader(tar_path=infile)
-	alert_supplier = AlertSupplier(tar_loader, ZIAlertShaper(), serialization="avro")
-	processor = AlertProcessor(mongodb_uri=mongo)
-
-	while alert_processed == AlertProcessor.iter_max:
-		t0 = time.time()
-		print('Running on {}'.format(infile))
-		alert_processed = processor.run(alert_supplier, console_logging=False)
-		t1 = time.time()
-		dt = t1-t0
-		print('({}) {} alerts in {:.1f}s; {:.1f}/s'.format(infile, alert_processed, dt, alert_processed/dt))
-		count += alert_processed
-
-	return count
-
 def run_alertprocessor():
 
 	import os, time, uuid
@@ -772,32 +704,55 @@ def run_alertprocessor():
 	parser = ArgumentParser(description=__doc__, formatter_class=ArgumentDefaultsHelpFormatter)
 	parser.add_argument('--mongo-host', default='mongo:27017')
 	parser.add_argument('--archive-host', default='archive:5432')
-	parser.add_argument('--broker', default='epyc.astro.washington.edu:9092')
-	parser.add_argument('infile')
+	parser.add_argument('--graphite', default='localhost:2003')
+	action = parser.add_mutually_exclusive_group(required=True)
+	action.add_argument('--broker', default='epyc.astro.washington.edu:9092')
+	action.add_argument('--tarfile', default=None)
 	
-	import sys
 	opts = parser.parse_args()
 	
+	from ampel.pipeline.t0.alerts.TarAlertLoader import TarAlertLoader
+	from ampel.pipeline.t0.alerts.AlertSupplier import AlertSupplier
+	from ampel.pipeline.t0.alerts.ZIAlertShaper import ZIAlertShaper
+	from ampel.pipeline.t0.ZIAlertFetcher import ZIAlertFetcher
+	from ampel.pipeline.common.GraphiteFeeder import GraphiteFeeder
+	from ampel.archive import docker_env, ArchiveDB
+
 	mongo = 'mongodb://{}:{}@{}/'.format(
 		docker_env('MONGO_INITDB_ROOT_USERNAME'), 
 		docker_env('MONGO_INITDB_ROOT_PASSWORD'), 
 		opts.mongo_host
 	)
+	archive = ArchiveDB('postgresql://ampel:{}@{}/ztfarchive'.format(docker_env('POSTGRES_PASSWORD'), opts.archive_host))
+	graphite = GraphiteFeeder(dict(server='transit', port=2003, systemName='ampel.transit'))
 
 	import time
 	count = 0
+	AlertProcessor.iter_max = 100
 	alert_processed = AlertProcessor.iter_max
-	tar_loader = TarAlertLoader(tar_path=opts.infile)
-	alert_supplier = AlertSupplier(tar_loader, ZIAlertShaper(), serialization="avro")
+	if opts.tarfile is not None:
+		infile = opts.tarfile
+		loader = TarAlertLoader(tar_path=opts.tarfile)
+		commit = lambda : False
+	else:
+		infile = opts.broker
+		fetcher = ZIAlertFetcher(opts.broker)
+		loader = iter(fetcher)
+		commit = fetcher.commit
+
+	alert_supplier = AlertSupplier(loader, ZIAlertShaper(), serialization="avro", archive=archive)
 	processor = AlertProcessor(mongodb_uri=mongo, publish_stats={"jobs"}, channels=["HU_SN1"])
 
 	while alert_processed == AlertProcessor.iter_max:
 		t0 = time.time()
-		print('Running on {}'.format(opts.infile))
+		print('Running on {}'.format(infile))
 		alert_processed = processor.run(alert_supplier, console_logging=False)
 		t1 = time.time()
 		dt = t1-t0
-		print('({}) {} alerts in {:.1f}s; {:.1f}/s'.format(opts.infile, alert_processed, dt, alert_processed/dt))
+		print('({}) {} alerts in {:.1f}s; {:.1f}/s'.format(infile, alert_processed, dt, alert_processed/dt))
 		count += alert_processed
+		commit()
+		graphite.add_stats( archive.get_statistics(), 'archive.rows')
+		graphite.send()
 
 	
