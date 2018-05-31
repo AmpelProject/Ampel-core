@@ -194,6 +194,7 @@ def create_database(schema, engine, drop=False):
     :param metadata: 
     """
     from sqlalchemy import create_engine
+    from sqlalchemy.engine.strategies import MockEngineStrategy
     from sqlalchemy import func, select
     
     metadata = create_metadata(schema)
@@ -202,9 +203,9 @@ def create_database(schema, engine, drop=False):
         metadata.drop_all()
     metadata.create_all()
 
-    with engine.connect() as connection:
-        assert connection.execute('select count(*) from versions').fetchone()[0] == 0, "database should be empty"
-        connection.execute(metadata.tables['versions'].insert(), alert_version=schema['version'])
+    if not isinstance(engine, MockEngineStrategy.MockConnection):
+        assert engine.execute('select count(*) from versions').fetchone()[0] == 0, "database should be empty"
+    engine.execute(metadata.tables['versions'].insert(), alert_version=schema['version'])
     
     return metadata
 
@@ -462,6 +463,7 @@ def init_db():
 	parser.add_argument('-d', '--database', default='ztfarchive',
 	    help='Database name')
 	parser.add_argument('--drop', action="store_true", default=False)
+	parser.add_argument('--sql', default=None, help="write schema to this file instead of executing")
 	parser.add_argument('--schema', default=os.path.dirname(os.path.realpath(__file__)) + '/../../../alerts/schema.json',
 	    help='Alert schema in json format')
 	
@@ -469,18 +471,33 @@ def init_db():
 	
 	with open(opts.schema) as f:
 		schema = json.load(f)
-	
-	user = 'ampel'
-	password = docker_env('POSTGRES_PASSWORD')
-	for attempt in range(10):
-		try:
-			engine = create_engine('postgresql://{}:{}@{}/{}'.format(user, password, opts.host, opts.database))
-			break
-		except OperationalError:
-			if attempt == 9:
-				raise
+
+	if opts.sql is not None:
+		from sqlalchemy.sql.dml import ValuesBase
+		outfile = open(opts.sql, "w")
+		def dump(sql, *multiparams, **params):
+			if isinstance(sql, ValuesBase):
+				q = sql.compile(dialect=engine.dialect, column_keys=params.keys())
+				outfile.write(str(q)+';')
 			else:
-				time.sleep(1)
-				continue
+				outfile.write(str(sql.compile(dialect=engine.dialect,))+';')
+				
+			#print(sql.compile(dialect=engine.dialect, compile_kwargs={"literal_binds": True}))
+		engine = create_engine('postgresql://', strategy='mock', executor=dump)
+		#echo = lambda line: outfile.write(str(line))
+		#engine = sqlalchemy.create_engine('postgresql://foo/foo', echo, strategy="mock")
+	else:
+		user = 'ampel'
+		password = docker_env('POSTGRES_PASSWORD')
+		for attempt in range(10):
+			try:
+				engine = create_engine('postgresql://{}:{}@{}/{}'.format(user, password, opts.host, opts.database))
+				break
+			except OperationalError:
+				if attempt == 9:
+					raise
+				else:
+					time.sleep(1)
+					continue
 	
 	create_database(schema, engine, opts.drop)
