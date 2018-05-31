@@ -50,7 +50,7 @@ class MockDBUtils:
 
 
 	@staticmethod
-	def load_db_from_file(jsonfile):
+	def load_db_from_file(jsonfile, logger):
 		"""
 		"""
 		mc = mongomock.MongoClient()
@@ -59,7 +59,10 @@ class MockDBUtils:
 		with open(jsonfile, "r") as f:
 			in_dict = json.load(f)
 			for key in MockDBUtils.config_col_names:
-				db[key].insert_many(in_dict[key])
+				try:
+					db[key].insert_many(in_dict[key])
+				except KeyError:
+					logger.warn("Collection %s not available in config file" % key)	
 		
 		return db
 
