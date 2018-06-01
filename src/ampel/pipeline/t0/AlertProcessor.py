@@ -335,7 +335,10 @@ class AlertProcessor(DBWired):
 			dblh_set_tranId(tran_id)
 
 			# Feedback
-			loginfo("Processing alert: %s" % shaped_alert['alert_id'])
+			loginfo(
+				"Processing alert: %s (%s)" % 
+				(shaped_alert['alert_id'], shaped_alert['ztf_id'])
+			)
 
 			# Create AmpelAlert instance
 			ampel_alert = AmpelAlert(
