@@ -21,7 +21,7 @@ from confluent_kafka import Consumer, TopicPartition, KafkaError, Message
 
 class AllConsumingConsumer(object):
 	"""Consume messages on all topics beginning with 'ztf_'."""
-	def __init__(self, broker, **consumer_config):
+	def __init__(self, broker, timeout=None, **consumer_config):
 		config = {
 			"bootstrap.servers": broker,
 			"default.topic.config": {"auto.offset.reset": "smallest"},
@@ -35,6 +35,13 @@ class AllConsumingConsumer(object):
 		self._consumer = Consumer(**config)
 		
 		self._consumer.subscribe(['^ztf_.*'])
+		if timeout is None:
+			self._poll_interval = 1
+			self._poll_attempts = sys.maxint
+		else:
+			self._poll_interval = max((0.1, min((1, timeout))))
+			self._poll_attempts = max((1, int(timeout / self._poll_interval)))
+		self._timeout = timeout
 		
 		self._offsets = defaultdict(dict)
 	
@@ -45,22 +52,28 @@ class AllConsumingConsumer(object):
 		self._consumer.close()
 		
 	def __next__(self):
-		return self.consume()
+		message = self.consume()
+		if message is None:
+			raise StopIteration
+		else:
+			return message
 	
 	def __iter__(self):
 		return self
 	
-	def consume(self, timeout=None):
+	def consume(self):
 		"""
 		Block until one message has arrived
 		"""
 		message = None
-		if timeout is None:
-			# wake up every second to catch SIGINT
-			while message is None:
-				message = self._consumer.poll(1)
+		for _ in range(self._poll_attempts):
+			# wake up occasionally to catch SIGINT
+			message = self._consumer.poll(self._poll_interval)
+			if message is not None:
+				break
 		else:
-			message = self._consumer.poll(timeout)
+			return message
+
 		if message.error():
 			raise RuntimeError(message.error())
 		else:
@@ -102,7 +115,7 @@ class ZIAlertFetcher:
 		:param timeout: number of seconds to wait for a message
 		"""
 		# TODO: handle timeout
-		self._consumer = AllConsumingConsumer(bootstrap, **{'group.id':group_name})
+		self._consumer = AllConsumingConsumer(bootstrap, timeout=timeout, **{'group.id':group_name})
 
 	def alerts(self, limit=None):
 		"""
@@ -110,6 +123,7 @@ class ZIAlertFetcher:
 		"""
 		for message in itertools.islice(self._consumer, limit):
 			yield io.BytesIO(message.value()), message.partition()
+		log.info('timed out')
 		self.commit()
 
 	def commit(self):
