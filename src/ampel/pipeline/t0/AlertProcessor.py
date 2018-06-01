@@ -711,6 +711,7 @@ def run_alertprocessor():
 	action = parser.add_mutually_exclusive_group(required=True)
 	action.add_argument('--broker', default='epyc.astro.washington.edu:9092')
 	action.add_argument('--tarfile', default=None)
+	parser.add_argument('--group', default=uuid.uuid1(), help="Kafka consumer group name")
 	
 	opts = parser.parse_args()
 	
@@ -731,15 +732,14 @@ def run_alertprocessor():
 
 	import time
 	count = 0
-	AlertProcessor.iter_max = 100
 	alert_processed = AlertProcessor.iter_max
 	if opts.tarfile is not None:
 		infile = opts.tarfile
 		loader = TarAlertLoader(tar_path=opts.tarfile)
 		commit = lambda : False
 	else:
-		infile = opts.broker
-		fetcher = ZIAlertFetcher(opts.broker)
+		infile = '{} group {}'.format(opts.broker, opts.group)
+		fetcher = ZIAlertFetcher(opts.broker, group_name=opts.group, timeout=600)
 		loader = iter(fetcher)
 		commit = fetcher.commit
 
