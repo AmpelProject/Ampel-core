@@ -14,6 +14,8 @@ RUN git clone git@github.com:AmpelProject/Ampel.git /Ampel
 COPY environment.yml /
 RUN conda env create --file /environment.yml
 
+RUN cd /Ampel && git pull && pip install -e .
+
 # Transplant environment (without conda itself) into bare-bones alpine
 FROM alpine:3.7
 RUN apk add --no-cache ca-certificates wget libgcc libstdc++ findutils && \
@@ -26,6 +28,7 @@ COPY --from=conda /lib/x86_64-linux-gnu/libgcc_s.so.1 /usr/glibc-compat/lib/
 COPY --from=conda /opt/conda/envs /opt/conda/envs
 COPY --from=conda /Ampel /Ampel
 
+
 RUN addgroup -g 1001 ampel && \
     adduser -D -u 1001 -G ampel ampel && \
     mkdir /ztf /run/secrets
@@ -34,4 +37,6 @@ USER ampel
 ENV CONDA_PREFIX=/opt/conda/envs/ampel PATH=/opt/conda/envs/ampel/bin:/opt/conda/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 
 VOLUME ["/Ampel"]
-CMD ["sh"]
+
+ADD docker-entrypoint.sh /
+ENTRYPOINT ["/docker-entrypoint.sh"]
