@@ -528,8 +528,9 @@ class AlertProcessor(DBWired):
 			self.logger.propagate = True
 
 		# Remove DB logging handler
-		db_job_reporter.set_flush_job_info()
-		db_logging_handler.flush()
+		if iter_count > 0:
+			db_job_reporter.set_flush_job_info()
+			db_logging_handler.flush()
 		self.logger.removeHandler(db_logging_handler)
 		
 		# Return number of processed alerts
