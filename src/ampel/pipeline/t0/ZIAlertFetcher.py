@@ -7,8 +7,7 @@
 # Last Modified Date: 05.03.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-import fastavro, io, pykafka
-
+import io
 import itertools
 import logging
 import uuid
@@ -134,6 +133,8 @@ def archive_topic():
 	import os
 	import pwd, grp
 	import uuid, socket
+	import fastavro
+	from pykafka import KafkaClient
 	
 	client = KafkaClient(opts.broker)
 	topic = client.topics[opts.topic.encode('utf-8')]
@@ -202,6 +203,8 @@ def list_kafka():
 	parser = ArgumentParser(description=__doc__, formatter_class=ArgumentDefaultsHelpFormatter)
 	parser.add_argument("--broker", type=str, default="epyc.astro.washington.edu:9092")
 	opts = parser.parse_args()
+
+	from pykafka import KafkaClient
 	
 	client = KafkaClient(opts.broker)
 	for name in reversed(sorted(client.topics)):
