@@ -747,7 +747,7 @@ def run_alertprocessor():
 	processor = AlertProcessor(mongodb_uri=mongo, publish_stats={"jobs"}, channels=["HU_SN1"])
 
 	while alert_processed == AlertProcessor.iter_max:
-		graphite.add_stats( archive.get_statistics(), 'archive.rows')
+		graphite.add_stats( archive.get_statistics(), 'archive.tables')
 		graphite.send()
 		t0 = time.time()
 		print('Running on {}'.format(infile))
@@ -757,7 +757,7 @@ def run_alertprocessor():
 			t1 = time.time()
 			dt = t1-t0
 			print('({}) {} alerts in {:.1f}s; {:.1f}/s'.format(infile, alert_processed, dt, alert_processed/dt))
-			graphite.add_stats( archive.get_statistics(), 'archive.rows')
+			graphite.add_stats( archive.get_statistics(), 'archive.tables')
 			graphite.send()
 
 	

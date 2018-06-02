@@ -54,7 +54,27 @@ class ArchiveDB(object):
 
     def get_statistics(self):
         sql = "select relname, n_live_tup from pg_catalog.pg_stat_user_tables"
-        return dict(self._connection.execute(sql).fetchall())
+        rows = dict(self._connection.execute(sql).fetchall())
+        sql = """SELECT TABLE_NAME, index_bytes, toast_bytes, table_bytes
+                 FROM (
+                 SELECT *, total_bytes-index_bytes-COALESCE(toast_bytes,0) AS table_bytes FROM (
+                     SELECT c.oid,nspname AS table_schema, relname AS TABLE_NAME
+                             , c.reltuples AS row_estimate
+                             , pg_total_relation_size(c.oid) AS total_bytes
+                             , pg_indexes_size(c.oid) AS index_bytes
+                             , pg_total_relation_size(reltoastrelid) AS toast_bytes
+                         FROM pg_class c
+                         LEFT JOIN pg_namespace n ON n.oid = c.relnamespace
+                         WHERE relkind = 'r' AND nspname = 'public'
+                 ) a
+               ) a;"""
+        stats = {}
+        for row in self._connection.execute(sql):
+            table = {k:v for k,v in dict(row).items() if v is not None}
+            k = table.pop('table_name')
+            table['rows'] = rows[k]
+            stats[k] = table
+        return stats
     
     def get_alert(self, candid):
         return get_alert(self._connection, self._meta, candid)
