@@ -25,7 +25,9 @@ class AllConsumingConsumer(object):
 		config = {
 			"bootstrap.servers": broker,
 			"default.topic.config": {"auto.offset.reset": "smallest"},
-			"enable.auto.commit": False,
+			"enable.auto.commit": True,
+			"auto.commit.interval.ms": 10000,
+			"enable.auto.offset.store": False,
 			"group.id" : uuid.uuid1(),
 			"enable.partition.eof" : False, # don't emit messages on EOF
 			"topic.metadata.refresh.interval.ms" : 1000, # fetch new metadata every second to pick up topics quickly
@@ -39,11 +41,11 @@ class AllConsumingConsumer(object):
 			self._poll_interval = 1
 			self._poll_attempts = sys.maxint
 		else:
-			self._poll_interval = max((0.1, min((1, timeout))))
+			self._poll_interval = max((1, min((30, timeout))))
 			self._poll_attempts = max((1, int(timeout / self._poll_interval)))
 		self._timeout = timeout
 		
-		self._offsets = defaultdict(dict)
+		self._last_message = None
 	
 	def __del__(self):
 		# NB: have to explicitly call close() here to prevent
@@ -63,8 +65,16 @@ class AllConsumingConsumer(object):
 	
 	def consume(self):
 		"""
-		Block until one message has arrived
+		Block until one message has arrived, and return it.
+		
+		Messages returned to the caller marked for committal
+		upon the _next_ call to consume().
 		"""
+		# mark the last emitted message for committal
+		if self._last_message is not None:
+			self._consumer.store_offsets(self._last_message)
+		self._last_message = None
+
 		message = None
 		for _ in range(self._poll_attempts):
 			# wake up occasionally to catch SIGINT
@@ -77,29 +87,8 @@ class AllConsumingConsumer(object):
 		if message.error():
 			raise RuntimeError(message.error())
 		else:
-			self._offsets[message.topic()][message.partition()] = message.offset()
+			self._last_message = message
 			return message
-	
-	def commit_offsets(self):
-		"""
-		Commit the offsets of all messages emitted by consume()
-		
-		NB: partition offsets are held across rebalances, so this may
-		commit a smaller offset to a partition that was later assigned to
-		another consumer. If that consumer fails before committing, this
-		can result in messages being delivered more than once. Given the
-		choice between at-least-once and at-most-once delivery, we choose
-		the former. (exactly-once is hard)
-		"""
-		if len(self._offsets) == 0:
-			return
-		offsets = []
-		for topic in self._offsets:
-			for partition, offset in self._offsets[topic].items():
-				offsets.append(TopicPartition(topic, partition, offset+1))
-		log.debug('committing offsets: {}'.format(self._offsets))
-		self._consumer.commit(offsets=offsets)
-		self._offsets.clear()
 
 class ZIAlertFetcher:
 	"""
@@ -124,11 +113,7 @@ class ZIAlertFetcher:
 		for message in itertools.islice(self._consumer, limit):
 			yield io.BytesIO(message.value()), message.partition()
 		log.info('timed out')
-		self.commit()
 
-	def commit(self):
-		self._consumer.commit_offsets()
-	
 	def __iter__(self):
 		return self.alerts()
 

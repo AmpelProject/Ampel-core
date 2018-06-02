@@ -732,30 +732,31 @@ def run_alertprocessor():
 
 	import time
 	count = 0
+	#AlertProcessor.iter_max = 100
 	alert_processed = AlertProcessor.iter_max
 	if opts.tarfile is not None:
 		infile = opts.tarfile
 		loader = TarAlertLoader(tar_path=opts.tarfile)
-		commit = lambda : False
 	else:
 		infile = '{} group {}'.format(opts.broker, opts.group)
-		fetcher = ZIAlertFetcher(opts.broker, group_name=opts.group, timeout=600)
+		fetcher = ZIAlertFetcher(opts.broker, group_name=opts.group, timeout=3600)
 		loader = iter(fetcher)
-		commit = fetcher.commit
 
 	alert_supplier = AlertSupplier(loader, ZIAlertShaper(), serialization="avro", archive=archive)
 	processor = AlertProcessor(mongodb_uri=mongo, publish_stats={"jobs"}, channels=["HU_SN1"])
 
 	while alert_processed == AlertProcessor.iter_max:
-		t0 = time.time()
-		print('Running on {}'.format(infile))
-		alert_processed = processor.run(alert_supplier, console_logging=False)
-		t1 = time.time()
-		dt = t1-t0
-		print('({}) {} alerts in {:.1f}s; {:.1f}/s'.format(infile, alert_processed, dt, alert_processed/dt))
-		count += alert_processed
-		commit()
 		graphite.add_stats( archive.get_statistics(), 'archive.rows')
 		graphite.send()
+		t0 = time.time()
+		print('Running on {}'.format(infile))
+		try:
+			alert_processed = processor.run(alert_supplier, console_logging=False)
+		finally:
+			t1 = time.time()
+			dt = t1-t0
+			print('({}) {} alerts in {:.1f}s; {:.1f}/s'.format(infile, alert_processed, dt, alert_processed/dt))
+			graphite.add_stats( archive.get_statistics(), 'archive.rows')
+			graphite.send()
 
 	
