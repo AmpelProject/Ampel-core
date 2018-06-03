@@ -191,8 +191,7 @@ class AmpelStatsPublisher(DBWired, Schedulable):
 				}
 			}
 
-		if len(dbinfo_dict) > 0:
-			stat_dict = {'dbinfo': dbinfo_dict} 
+		stat_dict = {'dbinfo': dbinfo_dict} if len(dbinfo_dict) > 0 else {}
 
 		# Channel specific metrics
 		if channels:
