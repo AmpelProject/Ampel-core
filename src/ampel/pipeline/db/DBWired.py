@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 19.03.2018
-# Last Modified Date: 31.05.2018
+# Last Modified Date: 03.06.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import time, pymongo
@@ -18,18 +18,35 @@ class DBWired:
 
 	config_col_names = {
 		'all':	(
-			'global', 'channels', 't0_filters', 't0_sources', 
+			'global', 'channels', 't0_filters',
 			't2_units', 't2_run_config', 
 			't3_jobs', 't3_run_config', 't3_units'
 		),
 		0: (
 			'global', 'channels', 't0_filters', 
-			't0_sources', 't2_units', 't2_run_config'
+			't2_units', 't2_run_config'
 		),
 		2: (
 			'global', 't2_units', 't2_run_config'
 		)
 	}
+
+
+	@staticmethod
+	def load_config_db(db, tier='all'):
+		"""
+		"""
+		config = {}
+
+		for colname in DBWired.config_col_names[tier]:
+
+			config[colname] = {}
+
+			for el in db[colname].find({}):
+				config[colname][el.pop('_id')] = el
+
+		return config
+
 
 	def plug_databases(self, logger, mongodb_uri='localhost', arg_config=None, central_db=None):
 		"""
@@ -68,19 +85,6 @@ class DBWired:
 				raise ValueError("Illegal type provided for argument 'central_db'")
 
 
-	def load_config_db(self, db, tier='all'):
-		"""
-		"""
-		self.config = {}
-
-		for colname in DBWired.config_col_names[tier]:
-
-			self.config[colname] = {}
-
-			for el in db[colname].find({}):
-				self.config[colname][el.pop('_id')] = el
-
-
 	def load_config(
 		self, logger, mongodb_uri='localhost', arg_config=None,
 		MongoClient=pymongo.mongo_client.MongoClient,
@@ -105,7 +109,7 @@ class DBWired:
 		# Default setting
 		if arg_config is None:
 			self.mongo_client = MongoClient(mongodb_uri, maxIdleTimeMS=1000)
-			self.load_config_db(self.mongo_client["Ampel_config"])
+			self.config = DBWired.load_config_db(self.mongo_client["Ampel_config"])
 
 		# The config database name was provided
 		elif type(arg_config) is str:
@@ -116,16 +120,16 @@ class DBWired:
 				logger.info("Config db loaded using %s" % arg_config)
 			else:
 				self.mongo_client = MongoClient(mongodb_uri, maxIdleTimeMS=1000)
-				self.load_config_db(self.mongo_client[arg_config])
+				self.config = DBWired.load_config_db(self.mongo_client[arg_config])
 
 		# A reference to a MongoClient instance was provided
 		elif type(arg_config) is MongoClient:
-			self.load_config_db(arg_config["Ampel_config"])
+			self.config = DBWired.load_config_db(arg_config["Ampel_config"])
 
 		# A reference to a database instance (pymongo or mongomock) was provided
 		# -> Provided config_db type can be (pymongo or mongomock).database.Database
 		elif type(arg_config) is Database:
-			self.load_config_db(arg_config)
+			self.config = DBWired.load_config_db(arg_config)
 
 		# Illegal argument
 		else:
@@ -246,23 +250,29 @@ class DBWired:
 			)
 
 		self.troubles_col = db.client["Ampel_troubles"]['docs']
+		self.central_db = db
 
 
 	def get_main_col(self):
-		# pylint: disable=no-member
+		""" """
 		return self.main_col
 
 
 	def get_photo_col(self):
-		# pylint: disable=no-member
+		""" """
 		return self.photo_col
 
 
 	def get_job_col(self):
-		# pylint: disable=no-member
+		""" """
 		return self.jobs_col
 
 
 	def get_trouble_col(self):
-		# pylint: disable=no-member
+		""" """
 		return self.troubles_col
+
+
+	def get_central_db(self):
+		""" """
+		return self.central_db
