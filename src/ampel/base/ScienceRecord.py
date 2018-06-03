@@ -4,12 +4,11 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 13.01.2018
-# Last Modified Date: 16.03.2018
+# Last Modified Date: 01.06.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from ampel.flags.AlDocTypes import AlDocTypes
 from ampel.flags.T2RunStates import T2RunStates
-#from ampel.flags.FlagUtils import FlagUtils
 from bson import ObjectId
 
 class ScienceRecord:
@@ -24,7 +23,7 @@ class ScienceRecord:
 			raise ValueError("The provided document is not a science record")
 
 		self.tran_id = db_doc['tranId']
-		self.compound_id = db_doc['compoundId']
+		self.compound_id = db_doc['compId']
 		self.run_config = db_doc['runConfig']
 		self.t2_unit_id = db_doc['t2Unit']
 		self.run_state = db_doc['runState']
