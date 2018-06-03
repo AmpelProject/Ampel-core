@@ -4,12 +4,12 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 13.01.2018
-# Last Modified Date: 29.05.2018
+# Last Modified Date: 03.06.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from ampel.pipeline.logging.LoggingUtils import LoggingUtils
-from ampel.flags.AlDocTypes import AlDocTypes
-from types import MappingProxyType
+from ampel.pipeline.db.DBUtils import DBUtils
+from ampel.flags.TransientFlags import TransientFlags
 import logging
 
 
@@ -22,40 +22,44 @@ class Transient:
 		* ampel.base.Compound
 		* ampel.base.LightCurve
 		* ampel.base.T2Record
-
 	Instances of this class are typically generated 
-	by TransientLoader and provided to T3 modules.
+	from a TransientView by by TransientLoader 
+	and provided to T3 modules.
 	"""
 
-	def __init__(self, tran_id, logger=None):
+	def __init__(self, 
+		tran_id, flags, created, modified, latest_state=None,
+		photopoints=None, upperlimits=None, compounds=None, 
+		lightcurves=None, t2records=None, channel=None, logger=None
+	):
 		"""
 		Parameters:
 		* tran_id: transient id (string)
 		* logger: logger instance from python module 'logging'
+
+		Convert internal lists Photopoint / Upperlimits / Lightcurves and Science Records 
+		to tuple and freeze this class. PLease note that the dicts referenced by the provided
+		lists are not changed. It means that these objects (Photopoints...) must be instantiated 
+		with read_only=True before they are added to this class (methods add_photopoints, ....)
 		"""
 		self.logger = LoggingUtils.get_logger() if logger is None else logger
 		self.tran_id = tran_id
-		self.photopoints = {}
-		self.upperlimits = {}
-		self.compounds = {}
-		self.lightcurves = {}
-		self.science_records = {}
-		self.latest_lightcurve = None
-		self.latest_compound_id = None
-		self.flags = None
-		self.created = None
-		self.last_modified = None
+		self.flags = flags
+		self.created = created
+		self.modified = modified
+		self.latest_state = latest_state
+		self.photopoints = photopoints
+		self.upperlimits = upperlimits
+		self.compounds = compounds
+		self.lightcurves = lightcurves
+		self.t2records = t2records
+		self.channel = channel
+		self.__isfrozen = True
 
 
-	def set_parameter(self, name, value):
+	def print_info(self):
 		""" """
-		setattr(self, name, value)
-
-
-	def set_parameters(self, plist):
-		""" """
-		for el in plist:
-			setattr(self, el[0], el[1])
+		Transient._print_info(self, self.logger)
 
 
 	def get_flags(self):
@@ -63,46 +67,35 @@ class Transient:
 		return self.flags
 
 
-	def add_lightcurve(self, lightcurve):
-		"""
-		argument 'lightcurve' must be an instance of ampel.base.LightCurve
-		"""
-		self.lightcurves[getattr(lightcurve, 'id')] = lightcurve
-
-
 	def get_latest_lightcurve(self):
 		""" 
 		"""
-		if self.latest_compound_id is None:
-			self.logger.warn('Request for latest lightcurve cannot complete (latest compound id not set)')
+		if self.latest_state is None:
+			self.logger.warn('Request for latest lightcurve cannot complete (latest state not set)')
 			return None
 
 		if len(self.lightcurves) == 0:
 			self.logger.warn('Request for latest lightcurve cannot complete (No lightcurve was loaded)')
 			return None
 
-		if self.latest_compound_id not in self.lightcurves:
+		res = next(filter(lambda x: x.id == self.latest_state, self.lightcurves), None)
+		if res is None:
 			self.logger.warn(
 				'Request for latest lightcurve cannot complete (Lightcurve %s not found)' % 
-				self.latest_compound_id		
+				self.latest_state		
 			)
 			return None
 
-		return self.lightcurves[self.latest_compound_id]
+		return res
 
 
-	def get_latest_compound_id(self):
+	def get_latest_state(self, to_hex=False):
 		""" """
-		if self.latest_compound_id is None:
-			self.logger.warn('Request for latest compound id cannot complete (not set)')
+		if self.latest_state is None:
+			self.logger.warn('Request for latest state cannot complete (not set)')
 			return None
 
-		return self.latest_compound_id
-
-
-	def set_latest_compound_id(self, comp_id):
-		""" """
-		self.latest_compound_id = comp_id
+		return self.latest_state.hex() if to_hex else self.latest_state
 
 
 	def get_lightcurves(self):
@@ -113,21 +106,6 @@ class Transient:
 	def get_lightcurve(self, lightcurve_id):
 		""" """
 		return self.lightcurves[lightcurve_id]
-
-
-	def add_photopoint(self, photopoint):
-		""" argument 'photopoint' must be an instance of ampel.base.PhotoPoint """
-		self.photopoints[photopoint.get_id()] = photopoint
-
-
-	def get_photopoint(self, photopoint_id):
-		""" 
-		argument 'photopoint_id' must be a python integer 
-		"""
-		if photopoint_id not in self.photopoints:
-			return None
-
-		return self.photopoints[photopoint_id]
 
 
 	def get_photopoints(self, copy=False):
@@ -141,19 +119,6 @@ class Transient:
 		return self.photopoints if copy is False else self.photopoints.copy()
 	
 
-	def add_upperlimit(self, upperlimit):
-		""" argument 'upperlimit' must be an instance of ampel.base.UpperLimit """
-		self.upperlimits[upperlimit.get_id()] = upperlimit
-
-
-	def get_upperlimit(self, upperlimit_id):
-		""" argument 'upperlimit_id' must be a python integer """
-		if upperlimit_id not in self.upperlimits:
-			return None
-
-		return self.upperlimits[upperlimit_id]
-
-
 	def get_upperlimits(self, copy=False):
 		"""
 		Returns a dict instance
@@ -163,11 +128,6 @@ class Transient:
 		   (see load_options of class TransientLoader)
 		"""
 		return self.upperlimits if copy is False else self.upperlimits.copy()
-
-
-	def add_compound(self, compound):
-		""" argument 'compound' must be an instance of ampel.base.Compound"""
-		self.compounds[compound.get_id()] = compound
 
 
 	def get_compound(self, compound_id):
@@ -191,60 +151,40 @@ class Transient:
 		return self.compounds if copy is False else self.compounds.copy()
 
 
-	def add_science_record(self, record):
-		"""
-		"""
-		t2_unit_id = record.get_t2_unit_id()
-
-		if not t2_unit_id in self.science_records:
-			self.science_records[t2_unit_id] = []
-
-		self.science_records[t2_unit_id].append(record)
-
-
-	def get_science_records(self, t2_unit_id=None, flatten=False):
+	def get_science_records(self, t2_unit_id=None, latest=False):
 		""" 
 		"""
-		if t2_unit_id is None:
-			if flatten is False:
-				return self.science_records
-			else:
-				records = []
-				for key in self.science_records.keys():
-					records += self.science_records[key]
-				return records
-		else: 
-			if not t2_unit_id in self.science_records:
+
+		if latest:
+
+			if self.latest_state is None:
 				return None
+		
+			if t2_unit_id is None:
+				return next(
+					filter(
+						lambda x: x.compound_id == self.latest_state, 
+						self.t2records
+					), None
+				)
+			else:
+				return next(
+					filter(
+						lambda x: x.compound_id == self.latest_state and x.t2_unit_id == t2_unit_id, 
+						self.t2records
+					), None
+				)
+		else:
 
-			return self.science_records[t2_unit_id]
-
-
-	def set_read_only(self):
-		"""
-		Convert internal Photopoint / Upperlimits / Lightcurves and Science Records 
-		to immutable dicts and freeze this class (class members will not be chang anymore).
-		Please note that only internal dicts *referencing* these object are cast to immutable dicts.
-		The dicts containes by those objects ('content' of Photopoint for example) are not changed.
-		It means that these objects (Photopoints...) must be instantiated with read_only=True 
-		before they are added to this class (methods add_photopoints, add_upperlimits....)
-		"""
-		self.photopoints = MappingProxyType(self.photopoints)
-		self.upperlimits = MappingProxyType(self.upperlimits)
-		self.compounds = MappingProxyType(self.compounds)
-		self.lightcurves = MappingProxyType(self.lightcurves)
-		self.science_records = MappingProxyType(self.science_records)
-		self.__isfrozen = True
-
-
-	def new_channel_register(self):
-		"""
-		ChannelRegister is used when transient instances need to be forked and trim down
-		"""
-		from ampel.pipeline.t3.ChannelRegister import ChannelRegister
-		self.channel_register = ChannelRegister(self.tran_id)
-		return self.channel_register
-
+			if t2_unit_id is None:
+				return self.t2records
+			else:
+				return tuple(
+					filter(
+						lambda x: x.compound_id == self.latest_state, 
+						self.t2records
+					)
+				)
 
 	def __setattr__(self, key, value):
 		"""
@@ -255,3 +195,49 @@ class Transient:
 			raise TypeError("%r is a frozen instance " % self)
 
 		object.__setattr__(self, key, value)
+
+
+	@staticmethod
+	def _print_info(tran, logger):
+		""" 
+		"""
+
+		logger.info("#"*30)
+
+		logger.info(" -> Ampel ID: %i" % 
+			(tran.tran_id)
+		)
+
+		if TransientFlags.INST_ZTF in tran.flags:
+			logger.info(" -> ZTF ID: %s" % 
+				(DBUtils.get_ztf_name(tran.tran_id))
+			)
+
+		if tran.channel is not None:
+			logger.info(" -> Channel: %s" % tran.channel)
+
+		logger.info(" -> Created: %s" % 
+			(tran.created.strftime('%d/%m/%Y %H:%M:%S') if tran.created is not None else "not set")
+		)
+
+		logger.info(" -> Modified: %s" % 
+			(tran.modified.strftime('%d/%m/%Y %H:%M:%S') if tran.modified is not None else "not set")
+		)
+
+		logger.info(" -> Flags: %s" % 
+			(tran.flags if tran.flags is not None else "not set")
+		)
+
+		logger.info(
+			" -> Latest state: %s" % 
+			(tran.latest_state.hex() if tran.latest_state is not None else "not set")
+		)
+
+		logger.info(
+			" -> Transient elements: PP: %i, UL: %i, CP: %i, LC: %i, SR: %i" % 
+			(
+				len(tran.photopoints), len(tran.upperlimits), len(tran.compounds), 
+				len(tran.lightcurves), len(tran.t2records)
+			)
+		)
+		logger.info("#"*30)
