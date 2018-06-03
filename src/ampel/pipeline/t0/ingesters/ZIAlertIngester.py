@@ -47,15 +47,11 @@ class ZIAlertIngester(AbsAlertIngester):
 	)
 
 
-	def __init__(
-		self, channels, t2_units, photo_col, main_col, logger=None,
-		check_reprocessing=True, alert_history_length=30
-	):
+	def __init__(self, config, central_db, channels, logger=None):
 		"""
+		config: dict instance containing the ampel config
+		central_db: instance of pymongo.database.DataBase
 		channels: list of ampel.pipeline.config.Channel
-		t2_units: dict from the ampel config DB containing t2 unit parameters
-		photo_col: instance of pymongo.collection.Collection (required for database operations)
-		main_col: instance of pymongo.collection.Collection (required for database operations)
 		"""
 
 		if not type(channels) is list:
@@ -64,38 +60,34 @@ class ZIAlertIngester(AbsAlertIngester):
 		if len(channels) == 0:
 			raise ValueError("Parameter channels cannot be empty")
 
+		conf = config['global']['sources']['ZTFIPAC']
 		self.channel_names = tuple(channel.name for channel in channels)
 		self.logger = LoggingUtils.get_logger() if logger is None else logger
 		self.logger.info("Configuring ZIAlertIngester for channels %s" % repr(self.channel_names))
 		
 		# T2 unit making use of upper limits
 		self.t2_units_using_uls = tuple(
-			key for key, value in t2_units.items() if value['upperLimits'] is True
+			key for key, value in config['t2_units'].items() 
+			if value['upperLimits'] is True
 		)
 
 		# instantiate util classes used in method ingest()
 		self.photo_shaper = ZIPhotoDictShaper()
 		self.t2_blueprint_creator = T2DocsBluePrint(channels, self.t2_units_using_uls)
-		self.comp_gen = CompoundBluePrint(
-			ZICompElement(channels), self.logger
-		)
+		self.comp_gen = CompoundBluePrint(ZICompElement(channels), self.logger)
 
-		self.logger.info(
-			"CompoundBluePrint instantiated using ZICompElement version %0.1f" % 
-			ZICompElement.version
-		)
-
-		self.main_col = main_col
-		self.photo_col = photo_col
-		self.count_dict = None
-		self.check_reproc = check_reprocessing
-		self.al_hist_len = alert_history_length
+		self.main_col = central_db['main']
+		self.photo_col = central_db['photo']
+		self.check_reproc = conf['ingestion']['checkReprocessing']
+		self.al_hist_len = conf['alerts']['alertHistoryLength']
 		self.JD2017 = 2457754.5
+		self.count_dict = None
+		self.lookup_projection = {
+			"_id": 1, "alFlags": 1, "jd": 1, "fid": 1,
+			"rcid": 1, "alExcluded": 1, "magpsf": 1
+		}
 
-		#self.lookup_projection = {
-		#	"_id": 1, "alFlags": 1, "jd": 1, "fid": 1,
-		#	"rcid": 1, "alExcluded": 1, "magpsf": 1
-		#}
+		self.logger.info("ZIAlertIngester setup using completed")
 
 
 	def flush_report(self):
@@ -180,8 +172,8 @@ class ZIAlertIngester(AbsAlertIngester):
 			{
 				# tranId should be specific to one instrument
 				"tranId": tran_id
-			}
-			# self.lookup_projection
+			},
+			self.lookup_projection
 		)
 
 		pps_db = []
@@ -610,15 +602,16 @@ class ZIAlertIngester(AbsAlertIngester):
 				{
 					"$setOnInsert": {
 						"tranId": tran_id,
-						"alDocType": AlDocTypes.TRANSIENT
+						"alDocType": AlDocTypes.TRANSIENT,
 					},
 					'$addToSet': {
 						"alFlags": {
 							"$each": ZIAlertIngester.new_tran_dbflag
 						},
-						'channels': {
-							"$each": chan_names
-						},
+						'channels': (
+							chan_names[0] if len(chan_names) == 1 
+							else {"$each": chan_names}
+						),
 						'jobIds': self.job_id,
 					},
 					"$max": {
@@ -626,11 +619,10 @@ class ZIAlertIngester(AbsAlertIngester):
 						"modified": now
 					},
 					"$push": {
-						"lastModified": {
+						"journal": {
 							'dt': now,
 							'tier': 0,
-							'src': "ZIAI", # ZIAlertIngesert
-							'channels': chan_names
+							'chans': chan_names
 						}
 					}
 				},
