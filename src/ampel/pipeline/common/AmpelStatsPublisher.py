@@ -36,14 +36,14 @@ class AmpelStatsPublisher(DBWired, Schedulable):
 
 
 	def __init__(
-		self, config_db=None, central_db=None, mongodb_uri=None, 
+		self, config=None, central_db=None, mongodb_uri=None, 
 		graphite_config=None,
 		channel_names=None, publish_stats=['graphite', 'mongo', 'print'],
 		update_intervals = {'col_stats': 5, 'docs_count': 10, 'daemon': 2, 'channels': 5}
 	):
 		"""
 		Parameters:
-		'config_db': see ampel.pipeline.db.DBWired.plug_config_db() docstring
+		'config': see ampel.pipeline.db.DBWired.load_config() docstring
 		'central_db': see ampel.pipeline.db.DBWired.plug_central_db() docstring
 		'publish_stats': send performance stats to:
 		  * mongo: send metrics to dedicated mongo collection (mongodb_uri must be set)
@@ -69,12 +69,10 @@ class AmpelStatsPublisher(DBWired, Schedulable):
 
 
 		# Setup instance variable referencing ampel databases
-		self.plug_databases(self.logger, mongodb_uri, config_db, central_db)
+		self.plug_databases(self.logger, mongodb_uri, config, central_db)
 
 		if channel_names is None:
-			self.channel_names = tuple(
-				doc['_id'] for doc in self.config_db['channels'].find({})
-			)
+			self.channel_names = tuple(self.config['channels'].keys())
 		else:
 			self.channel_names = channel_names
 
