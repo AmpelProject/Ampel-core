@@ -1,6 +1,7 @@
 {
-    "channels": {
-        "HU_SN1": {
+    "channels": [
+        {
+            "_id": "HU_SN1",
             "version": 1.0,
             "active": false,
             "sources": {
@@ -61,7 +62,8 @@
                 }
             }
         },
-        "HU_SN2": {
+        {
+            "_id": "HU_SN2",
             "version": 1.0,
             "active": false,
             "sources": {
@@ -138,7 +140,8 @@
                 }
             }
         },
-        "HU_RANDOM": {
+        {
+            "_id": "HU_RANDOM",
             "version": 1.0,
             "active": true,
             "sources": {
@@ -151,13 +154,13 @@
                     "t0Filter": {
                         "dbEntryId": "RandFilter",
                         "runConfig": {
-                            "threshold": 50
+                            "threshold": 95
                         }
                     },
                     "t2Compute": [
                         {
                             "t2Unit": "SNCOSMO",
-                            "runConfig": "other"
+                            "runConfig": "default"
                         },
                         {
                             "t2Unit": "AGN",
@@ -177,7 +180,8 @@
                 }
             }
         },
-        "HU_NOAGN": {
+        {
+            "_id": "HU_NOAGN",
             "version": 1.0,
             "active": false,
             "input": [
@@ -214,7 +218,8 @@
                 }
             ]
         },
-        "UMD_NUCLEAR": {
+        {
+            "_id": "UMD_NUCLEAR",
             "version": 1.0,
             "active": true,
             "sources": {
@@ -243,7 +248,8 @@
                 }
             }
         },
-        "HU_EXCAT": {
+        {
+            "_id": "HU_EXCAT",
             "version": 1.0,
             "active": false,
             "sources": {
@@ -288,7 +294,8 @@
                 }
             }
         },
-        "OKC_LENSED": {
+        {
+            "_id": "OKC_LENSED",
             "version": 1.0,
             "active": false,
             "sources": {
@@ -322,9 +329,10 @@
                 }
             }
         },
-        "NO_FILTER": {
+        {
+            "_id": "NO_FILTER",
             "version": 1.0,
-            "active": true,
+            "active": false,
             "sources": {
                 "ZTFIPAC": {
                     "parameters": {
@@ -355,7 +363,8 @@
                 }
             }
         },
-        "ZTFMSIP_bright": {
+        {
+            "_id": "ZTFMSIP_bright",
             "version": 1.0,
             "active": true,
             "sources": {
@@ -378,7 +387,8 @@
                 }
             }
         },
-        "ZTFMSIP_faint": {
+        {
+            "_id": "ZTFMSIP_faint",
             "version": 1.0,
             "active": true,
             "sources": {
@@ -401,72 +411,76 @@
                 }
             }
         }
-    },
-    "global": {
-        "photoPoints": {
-            "ZTFIPAC": {
-                "alFlags": "INST_ZTF|PP_IPAC",
-                "dictKeywords": {
-                    "tranId": "alertid",
-                    "pptId": "candid",
-                    "obsDate": "jd",
-                    "filterId": "fid",
-                    "mag": "magpsf"
-                },
-                "stamperClass": "ZIPhotoPointStamper",
-                "formats": {
-                    "date": "julian"
-                }
-            },
-            "ZTFHUMBOLDT": {
-                "alFlags": "INST_ZTF|PP_HUMBOLDT",
-                "dictKeywords": {
-                    "tranId": "alertid",
-                    "pptId": "candid",
-                    "obsDate": "jd",
-                    "filterId": "fid"
-                },
-                "stamperClass": "ZIPhotoPointStamper",
-                "formats": {
-                    "date": "julian"
-                }
-            }
-        },
-        "graphite": {
+    ],
+    "global": [
+        {
+            "_id": "graphite",
             "server": "localhost",
             "port": 2003,
             "systemName": "Ampel-burst"
         },
-        "alertIngestion": {
-            "source": {
-                "ZTFIPAC": {
+        {
+            "_id": "sources",
+            "ZTFIPAC": {
+                "alerts": {
+                    "alertHistoryLength": 30,
+                    "processing": {
+                        "parse": "ampel.pipeline.t0.alerts.ZIAlertParser",
+                        "shape": "ampel.pipeline.t0.alerts.ZIAlertShaper",
+                        "serialization": "avro"
+                    },
+                    "flags": [
+                        "INST_ZTF",
+                        "SRC_IPAC"
+                    ],
+                    "mappings": {
+                        "tranId": "objectId",
+                        "pptId": "candid",
+                        "obsDate": "jd",
+                        "filterId": "fid",
+                        "mag": "magpsf"
+                    }
+                },
+                "ingestion": {
+                    "class": "ampel.pipeline.t0.ingesters.ZIAlertIngester",
+                    "photoShaper": "ampel.pipeline.t0.ingesters.ZIPhotoPointShaper",
                     "checkReprocessing": true,
-                    "alertHistoryLength": 30
+                    "tranIdPrefix": null
+                },
+                "flags": {
+                    "photo": "INST_ZTF",
+                    "main": "INST_ZTF"
                 }
             }
         }
-    },
-    "t0_filters": {
-        "NoFilter": {
+    ],
+    "t0_filters": [
+        {
+            "_id": "NoFilter",
             "classFullPath": "ampel.contrib.hu.t0.NoFilter"
         },
-        "BasicFilter": {
+        {
+            "_id": "BasicFilter",
             "classFullPath": "ampel.pipeline.t0.filters.BasicFilter"
         },
-        "BasicMultiFilter": {
+        {
+            "_id": "BasicMultiFilter",
             "classFullPath": "ampel.pipeline.t0.filters.BasicMultiFilter"
         },
-        "RandFilter": {
+        {
+            "_id": "RandFilter",
             "classFullPath": "ampel.contrib.hu.t0.RandFilter"
         },
-        "SNFilter": {
+        {
+            "_id": "SNFilter",
             "classFullPath": "ampel.contrib.hu.t0.SNFilter",
             "baseConfig": {
                 "slopeMin": 2,
                 "slopeMax": 5
             }
         },
-        "StripEnvelopeSN": {
+        {
+            "_id": "StripEnvelopeSN",
             "classFullPath": "ampel.contrib.okc.t0.StripEnvelopeSN",
             "baseConfig": {
                 "minDet": 2,
@@ -474,7 +488,8 @@
                 "gMinusR": 0.2
             }
         },
-        "NuclearFilter": {
+        {
+            "_id": "NuclearFilter",
             "classFullPath": "ampel.contrib.ztfbh.t0.NuclearFilter",
             "baseConfig": {
                 "MinSgscore": 0.3,
@@ -492,7 +507,8 @@
                 "LastOnly": false
             }
         },
-        "LensedTransientFilter": {
+        {
+            "_id": "LensedTransientFilter",
             "classFullPath": "ampel.contrib.hu.t0.LensedTransientFilter",
             "baseConfig": {
                 "mongodbHost": "localhost",
@@ -500,7 +516,8 @@
                 "mongodbURI": "mongodb://localhost"
             }
         },
-        "SEDmTargetFilter": {
+        {
+            "_id": "SEDmTargetFilter",
             "classFullPath": "ampel.contrib.hu.t0.SEDmTargetFilter",
             "baseConfig": {
                 "mongodbHost": "localhost",
@@ -508,39 +525,10 @@
                 "mongodbURI": "mongodb://localhost"
             }
         }
-    },
-    "t0_sources": {
-        "ZTFIPAC": {
-            "alerts": {
-                "processing": {
-                    "parser": "ampel.pipeline.t0.alerts.ZIAlertParser",
-                    "deserializer": "ampel.pipeline.t0.alerts.AvroDeserializer"
-                },
-                "alertFlags": [
-                    "INST_ZTF",
-                    "SRC_IPAC"
-                ],
-                "mappings": {
-                    "tranId": "objectId",
-                    "pptId": "candid",
-                    "obsDate": "jd",
-                    "filterId": "fid",
-                    "mag": "magpsf"
-                }
-            },
-            "ingestion": {
-                "class": "ampel.pipeline.t0.ingesters.ZIAlertIngester",
-                "photoPointShaper": "ampel.pipeline.t0.ingesters.ZIPhotoPointShaper",
-                "flags": {
-                    "photoPoint": "INST_ZTF",
-                    "transient": "INST_ZTF"
-                },
-                "tranIdPrefix": null
-            }
-        }
-    },
-    "t2_run_config": {
-        "POLYFIT_advanced": {
+    ],
+    "t2_run_config": [
+        {
+            "_id": "POLYFIT_advanced",
             "t2Unit": "POLYFIT",
             "runConfig": "advanced",
             "author": "ztf-software@desy.de",
@@ -551,7 +539,8 @@
                 "degree": 5
             }
         },
-        "POLYFIT_default": {
+        {
+            "_id": "POLYFIT_default",
             "t2Unit": "POLYFIT",
             "runConfig": "default",
             "author": "ztf-software@desy.de",
@@ -562,7 +551,8 @@
                 "degree": 3
             }
         },
-        "AGN_default": {
+        {
+            "_id": "AGN_default",
             "t2Unit": "AGN",
             "runConfig": "default",
             "author": "ztf-software@desy.de",
@@ -573,7 +563,8 @@
                 "name": "value"
             }
         },
-        "PHOTO_Z_default": {
+        {
+            "_id": "PHOTO_Z_default",
             "t2Unit": "PHOTO_Z",
             "runConfig": "default",
             "author": "ztf-software@desy.de",
@@ -583,7 +574,8 @@
                 "name": "value"
             }
         },
-        "PHOTO_TYPE_default": {
+        {
+            "_id": "PHOTO_TYPE_default",
             "t2Unit": "PHOTO_TYPE",
             "runConfig": "default",
             "author": "ztf-software@desy.de",
@@ -594,7 +586,8 @@
                 "name": "value"
             }
         },
-        "SNCOSMO_default": {
+        {
+            "_id": "SNCOSMO_default",
             "t2Unit": "SNCOSMO",
             "runConfig": "default",
             "author": "ampel-info@desy.de",
@@ -605,9 +598,10 @@
                 "model": "salt2"
             }
         }
-    },
-    "t2_units": {
-        "SNCOSMO": {
+    ],
+    "t2_units": [
+        {
+            "_id": "SNCOSMO",
             "classFullPath": "ampel.contrib.hu.t2.T2SNCosmo",
             "version": 1.0,
             "private": false,
@@ -620,7 +614,8 @@
                 ]
             }
         },
-        "AGN": {
+        {
+            "_id": "AGN",
             "classFullPath": "ampel.contrib.hu.examples.t2.",
             "version": 1.0,
             "private": false,
@@ -635,7 +630,8 @@
                 ]
             }
         },
-        "PHOTO_Z": {
+        {
+            "_id": "PHOTO_Z",
             "classFullPath": "ampel.contrib.hu.examples.t2.",
             "version": 1.0,
             "private": false,
@@ -650,7 +646,8 @@
                 ]
             }
         },
-        "PHOTO_TYPE": {
+        {
+            "_id": "PHOTO_TYPE",
             "classFullPath": "ampel.contrib.hu.examples.t2.PhotoType",
             "version": 1.0,
             "private": false,
@@ -662,7 +659,8 @@
                 ]
             }
         },
-        "POLYFIT": {
+        {
+            "_id": "POLYFIT",
             "classFullPath": "ampel.contrib.hu.examples.t2.T2ExamplePolyFit",
             "author": "ztf-software@desy.de",
             "version": 1.0,
@@ -678,9 +676,10 @@
                 ]
             }
         }
-    },
-    "t3_jobs": {
-        "Slack_publish_1": {
+    ],
+    "t3_jobs": [
+        {
+            "_id": "Slack_publish_1",
             "active": false,
             "schedule": {
                 "mode": "fixed_rate",
@@ -691,7 +690,7 @@
                 "stopAmpel": false,
                 "retry": false
             },
-            "transients": {
+            "input": {
                 "select": {
                     "created": {
                         "timedelta": {
@@ -720,7 +719,8 @@
                     "t2s": [
                         "SNCOSMO",
                         "AGN"
-                    ]
+                    ],
+                    "verbose": true
                 },
                 "chunk": 200
             },
@@ -745,7 +745,8 @@
                 }
             ]
         },
-        "Slack_publish_2": {
+        {
+            "_id": "Slack_publish_2",
             "active": false,
             "schedule": {
                 "mode": "fixed_time",
@@ -771,7 +772,8 @@
                 "runConfig": "HU_SN1_PARAM2"
             }
         },
-        "T2_zombies_cleanup": {
+        {
+            "_id": "T2_zombies_cleanup",
             "active": false,
             "schedule": {
                 "mode": "fixed_time",
@@ -787,7 +789,8 @@
                 "runConfig": "hu_zc_1"
             }
         },
-        "Slack_publish_test": {
+        {
+            "_id": "Slack_publish_test",
             "active": false,
             "schedule": {
                 "mode": "fixed_rate",
@@ -828,7 +831,8 @@
                 }
             ]
         },
-        "Slack_publish_sim_test": {
+        {
+            "_id": "Slack_publish_sim_test",
             "active": false,
             "schedule": {
                 "mode": "fixed_rate",
@@ -869,7 +873,8 @@
                 }
             ]
         },
-        "Slack_publish_demo": {
+        {
+            "_id": "Slack_publish_demo",
             "active": false,
             "schedule": {
                 "mode": "fixed_rate",
@@ -910,16 +915,18 @@
                 }
             ]
         }
-    },
-    "t3_run_config": {
-        "SLACKPUBLISHER_hu_sp_2": {
+    ],
+    "t3_run_config": [
+        {
+            "_id": "SLACKPUBLISHER_hu_sp_2",
             "auth_token": "xoxb-298132201170-O0GcJpOSNYcF84wukZNtcZN8",
             "channel": "ampel_hu_sn2",
             "pos": "brightest",
             "datetime": "%d/%m/%Y %H:%M:%S",
             "version": 1.0
         },
-        "SLACKPUBLISHER_hu_sp_1": {
+        {
+            "_id": "SLACKPUBLISHER_hu_sp_1",
             "auth_token": "xoxb-298132201170-O0GcJpOSNYcF84wukZNtcZN8",
             "msg": "Found following new transient",
             "channel": "ampel_hu_sn1",
@@ -927,19 +934,22 @@
             "datetime": "%d/%m/%Y %H:%M:%S",
             "version": 1.0
         },
-        "PURGE_standard": {
+        {
+            "_id": "PURGE_standard",
             "inactivity": "30"
         }
-    },
-    "t3_units": {
-        "SLACKPUBLISHER": {
+    ],
+    "t3_units": [
+        {
+            "_id": "SLACKPUBLISHER",
             "classFullPath": "ampel.contrib.hu.t3.SlackPublisher",
             "baseConfig": {
                 "url": "http://something",
                 "images": false
             }
         },
-        "PURGE": {
+        {
+            "_id": "PURGE",
             "classFullPath": "ampel.contrib.hu.t3.Purge",
             "baseConfig": {
                 "s2DB": "url.to.other.mongo.db",
@@ -947,5 +957,5 @@
                 "pwd": "yo"
             }
         }
-    }
+    ]
 }
