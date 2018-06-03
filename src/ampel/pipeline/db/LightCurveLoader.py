@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 13.01.2018
-# Last Modified Date: 29.05.2018
+# Last Modified Date: 01.06.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from ampel.flags.AlDocTypes import AlDocTypes
@@ -82,7 +82,7 @@ class LightCurveLoader:
 		return self.load_using_results(pps_list, uls_list, next(main_cursor))
 
 
-	def load_using_results(self, ppd_list, uld_list, compound_dict):
+	def load_using_results(self, ppd_list, uld_list, compound):
 		"""
 		Creates and returns an instance of ampel.base.LightCurve using db results.
 		This function is used at both T2 and T3 levels 
@@ -91,12 +91,12 @@ class LightCurveLoader:
 		--------------------
 		ppd_list: list of photopoint dict instances loaded from DB
 		uld_list: list of upper limit dict instances loaded from DB
-		compound_dict: compound dict instance loaded from DB
+		compound: compound dict instance loaded from DB or instance of ampel.base.Compound
 		"""
 
 		# Robustness check 
-		if compound_dict is None:
-			raise ValueError("Required parameter 'compound_dict' cannot be None")
+		if compound is None:
+			raise ValueError("Required parameter 'compound' cannot be None")
 
 		if ppd_list is None or type(ppd_list) is not list:
 			raise ValueError("Parameter 'ppd_list' must be a list")
@@ -111,7 +111,7 @@ class LightCurveLoader:
 		ulo_list = []
 
 		# Loop through compound elements
-		for el in compound_dict['comp']:
+		for el in compound['comp'] if type(compound) is dict else compound.content:
 
 			# Get corresponding photopoint / upper limit
 			if 'pp' in el:
@@ -165,17 +165,17 @@ class LightCurveLoader:
 			else:
 				ulo_list.append(obj)
 
-		return LightCurve(compound_dict, ppo_list, ulo_list, self.read_only)
+		return LightCurve(compound, ppo_list, ulo_list, self.read_only)
 
 
-	def load_using_objects(self, compound_dict, existing_photo):
+	def load_using_objects(self, compound, existing_photo):
 		"""
 		Creates and returns an instance of ampel.base.LightCurve using db results.
 		This function is used at both T2 and T3 levels 
 
 		Required parameters:
 		--------------------
-		compound_dict: compound dict instance loaded from DB
+		compound: compound dict instance loaded from DB or instance of ampel.base.Compound
 		'existing_photo': dict instance containing references to already existing 
 		frozen PhotoPoint and UpperLimit instances. PhotoPoint/UpperLimit instances 
 		are then 're-used' rather than re-instantiated  for every LightCurve object 
@@ -189,7 +189,7 @@ class LightCurveLoader:
 		"""
 
 		# Robustness check 
-		if compound_dict is None or existing_photo is None:
+		if compound is None or existing_photo is None:
 			raise ValueError("Invalid parameters")
 
 		# List of PhotoPoint/UpperLimit object instances
@@ -197,7 +197,7 @@ class LightCurveLoader:
 		ulo_list = []
 
 		# Loop through compound elements
-		for el in compound_dict['comp']:
+		for el in compound['comp'] if type(compound) is dict else compound.content:
 
 			# Get corresponding photopoint / upper limit
 			if 'pp' in el:
@@ -221,15 +221,15 @@ class LightCurveLoader:
 						next(cursor), read_only=True
 					)
 
-					# If custom options avail (if dict contains more than the dict key 'pp')
-					if (len(el.keys()) > 1):
-						ppo_list.append(
-							# Create photopoint wrapper instance
-							PhotoPoint(existing_photo[pp_id] .content, read_only=False) 
-						)
-						ppo_list[-1].set_policy(el, self.read_only)
-					else:
-						ppo_list.append(existing_photo[pp_id])
+				# If custom options avail (if dict contains more than the dict key 'pp')
+				if (len(el.keys()) > 1):
+					ppo_list.append(
+						# Create photopoint wrapper instance
+						PhotoPoint(existing_photo[pp_id] .content, read_only=False) 
+					)
+					ppo_list[-1].set_policy(el, self.read_only)
+				else:
+					ppo_list.append(existing_photo[pp_id])
 
 			else:
 
@@ -246,6 +246,6 @@ class LightCurveLoader:
 					)
 					ulo_list[-1].set_policy(el, self.read_only)
 				else:
-					ppo_list.append(existing_photo[ul_id])
+					ulo_list.append(existing_photo[ul_id])
 
-		return LightCurve(compound_dict, ppo_list, ulo_list, self.read_only)
+		return LightCurve(compound, ppo_list, ulo_list, self.read_only)
