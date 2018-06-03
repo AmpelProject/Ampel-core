@@ -1,3 +1,11 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+# File              : ampel/base/Compound.py
+# License           : BSD-3-Clause
+# Author            : vb <vbrinnel@physik.hu-berlin.de>
+# Date              : 29.05.2018
+# Last Modified Date: 29.05.2018
+# Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from ampel.flags.FlagUtils import FlagUtils
 from ampel.flags.CompoundFlags import CompoundFlags
@@ -28,8 +36,12 @@ class Compound:
 
 		self.id = db_doc['_id']
 		self.tier = db_doc['tier']
-		self.ppCompId = db_doc['ppCompId']
+		self.added = db_doc['added']
 		self.lastppdt = db_doc['lastppdt']
+		self.len = db_doc['len']
+
+		if 'ppCompId' in db_doc:
+			self.ppCompId = db_doc['ppCompId']
 
 		# Check wether to freeze this instance.
 		if read_only:
