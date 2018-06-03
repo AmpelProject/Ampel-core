@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 10.10.2017
-# Last Modified Date: 31.05.2018
+# Last Modified Date: 02.06.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import pymongo, time, numpy as np
@@ -52,7 +52,7 @@ class AlertProcessor(DBWired):
 		'source': name of input stream (string - see set_stream() docstring)
 		'mongodb_uri': URI of the server hosting mongod.
 		   Example: 'mongodb://user:password@localhost:27017'
-		'config': see ampel.pipeline.db.DBWired.plug_config_db() docstring
+		'config': see ampel.pipeline.db.DBWired.load_config() docstring
 		'central_db': see ampel.pipeline.db.DBWired.plug_central_db() docstring
 		'publish_stats': publish performance stats:
 		   * graphite: send t0 metrics to graphite (graphite server must be defined 
@@ -104,30 +104,23 @@ class AlertProcessor(DBWired):
 		if source == "ZTFIPAC":
 
 			# TODO: log something ? 
-
-			# Reference to function shaping alert dicts
-			self.alert_shaper = ZIAlertShaper(self.logger)
+			conf = self.global_config['sources'][source]
 
 			# Set static AmpelAlert alert flags
-			AmpelAlert.add_class_flags(
-				AlertFlags.INST_ZTF | AlertFlags.SRC_IPAC
-			)
+			alert_flags = None
+			for flag_str in conf['alerts']['flags']:
+				if alert_flags is None:
+					alert_flags = AlertFlags[flag_str]
+				else:
+					alert_flags |= AlertFlags[flag_str]
+			AmpelAlert.add_class_flags(alert_flags)
 
 			# Set static AmpelAlert dict keywords
-			AmpelAlert.set_alert_keywords(
-				self.global_config['photoPoints']['ZTFIPAC']['dictKeywords']
-			)
+			AmpelAlert.set_alert_keywords(conf['alerts']['mappings'])
 	
-			# Instantiate ingester
-			ingest_conf = self.global_config['alertIngestion']['source']['ZTFIPAC']
-
 			if load_ingester:
 				self.ingester = ZIAlertIngester(
-					self.channels, self.config['t2_units'], 
-					self.get_photo_col(), self.get_main_col(),
-					check_reprocessing=ingest_conf['checkReprocessing'],
-					alert_history_length=ingest_conf['alertHistoryLength'],
-					logger=self.logger
+					self.config, self.central_db, self.channels, logger=self.logger
 				)
 	
 		else:
@@ -148,7 +141,8 @@ class AlertProcessor(DBWired):
 
 	def process_alert_folder(
 		self, base_dir="/Users/hu/Documents/ZTF/Ampel/alerts/", 
-		extension="*.avro", max_entries=None, console_logging=True
+		extension="*.avro", serialization="avro", source="ZTFIPAC", 
+		max_entries=None, console_logging=True
 	):
 		"""
 		Process alerts in a given directory (using ampel.pipeline.t0.AlertFileList)
@@ -163,6 +157,7 @@ class AlertProcessor(DBWired):
 		"""
 
 		from ampel.pipeline.t0.alerts.DirAlertLoader import DirAlertLoader
+		import importlib
 
 		# Container class allowing to conveniently iterate over local avro files 
 		alert_loader = DirAlertLoader(self.logger)
@@ -174,7 +169,17 @@ class AlertProcessor(DBWired):
 		
 		self.logger.info("Returning iterable for file paths in folder: %s" % base_dir)
 
-		als = AlertSupplier(alert_loader, self.alert_shaper, serialization="avro")
+		if source not in self.config['global']['sources']:
+			raise ValueError("Unknown source %s, please check your config" % source)
+
+		# Instantiate class shaping alert dicts
+		if not hasattr(self, "alert_shaper"):
+			shaper_class_full_path = self.config['global']['sources'][source]['alerts']['processing']['shape']
+			shaper_module = importlib.import_module(shaper_class_full_path)
+			shaper_class = getattr(shaper_module, shaper_class_full_path.split(".")[-1])
+			self.alert_shaper = shaper_class(self.logger)
+
+		als = AlertSupplier(alert_loader, self.alert_shaper, serialization=serialization)
 		ret = AlertProcessor.iter_max
 		count = 0
 
