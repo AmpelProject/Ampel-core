@@ -16,5 +16,6 @@ dependencies:
   - extcats
   - graphitesend
   - pip:
+    - schedule
     - -e
     - /Ampel

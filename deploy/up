@@ -20,6 +20,7 @@ if [[ "$1" == "dryrun" ]]; then
 	for machine in $stacks; do
 		env $(cat $envfile | xargs echo) singularity-stack deploy -c $DIR/production/$machine.yml $machine
 		echo started $machine
+		sleep 10
 	done
 	singularity-stack list
 fi

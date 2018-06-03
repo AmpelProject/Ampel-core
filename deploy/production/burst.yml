@@ -24,10 +24,10 @@ services:
   #    MONGO_INITDB_ROOT_PASSWORD_FILE: /run/secrets/mongo-root-password
   stats:
     image: ampel:$AMPEL_TAG
-    command: ["-c", "ampel-statspublisher --mongo $MONGO_HOST:$MONGO_PORT --graphite $GRAPHITE_HOST:$GRAPHITE_PORT"]
+    command: ["ampel-statspublisher", "--mongo", "$MONGO_HOST:$MONGO_PORT", "--graphite", "$GRAPHITE_HOST:$GRAPHITE_PORT"]
     volumes:
       - type: volume
-        source: /scratch/Ampel
+        source: $AMPEL_SRC
         target: /Ampel
       - /data/ampel/archive/tarballs:/ztf
     secrets:
@@ -43,10 +43,10 @@ services:
       - mongo
   alertprocessor:
     image: ampel:$AMPEL_TAG
-    command: ["-c", "ampel-alertprocessor --mongo-host $MONGO_HOST:$MONGO_PORT --archive-host $ARCHIVE_HOST:$ARCHIVE_PORT --broker epyc.astro.washington.edu:9092"]
+    command: ["ampel-alertprocessor", "--mongo-host", "$MONGO_HOST:$MONGO_PORT", "--archive-host", "$ARCHIVE_HOST:$ARCHIVE_PORT", "--broker", "epyc.astro.washington.edu:9092", "--group", "$GROUP_NAME"]
     volumes:
       - type: volume
-        source: /scratch/Ampel
+        source: $AMPEL_SRC
         target: /Ampel
       - /data/ampel/archive/tarballs:/ztf
     secrets:
@@ -62,6 +62,55 @@ services:
       MONGO_INITDB_ROOT_PASSWORD_FILE: /run/secrets/mongo-root-password
       POSTGRES_PASSWORD_FILE: /run/secrets/archive-user-password
       POSTGRES_USER: ampel
+    deploy:
+      replicas: $NUM_STREAMS
+      restart_policy:
+          condition: any
+          delay: 10s
+    depends_on:
+      - mongo
+  t2-controller:
+    image: ampel:$AMPEL_TAG
+    command: ["ampel-t2", "--mongo-host", "$MONGO_HOST:$MONGO_PORT"]
+    volumes:
+      - type: volume
+        source: $AMPEL_SRC
+        target: /Ampel
+    secrets:
+      - archive-user-password
+      - mongo-root-password
+    environment:
+      TINI_SUBREAPER: 1
+      MONGO: $MONGO_HOST:$MONGO_PORT
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD_FILE: /run/secrets/mongo-root-password
+    deploy:
+      restart_policy:
+          max-attempts: 3
+          condition: any
+          delay: 10s
+    depends_on:
+      - mongo
+  t3-controller:
+    image: ampel:$AMPEL_TAG
+    command: ["ampel-t3", "--mongo-host", "$MONGO_HOST:$MONGO_PORT"]
+    volumes:
+      - type: volume
+        source: $AMPEL_SRC
+        target: /Ampel
+    secrets:
+      - archive-user-password
+      - mongo-root-password
+    environment:
+      TINI_SUBREAPER: 1
+      MONGO: $MONGO_HOST:$MONGO_PORT
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD_FILE: /run/secrets/mongo-root-password
+    deploy:
+      restart_policy:
+          max-attempts: 3
+          condition: any
+          delay: 10s
     depends_on:
       - mongo
 

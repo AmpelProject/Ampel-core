@@ -533,8 +533,9 @@ class AlertProcessor(DBWired):
 			self.logger.propagate = True
 
 		# Remove DB logging handler
-		db_job_reporter.set_flush_job_info()
-		db_logging_handler.flush()
+		if iter_count > 0:
+			db_job_reporter.set_flush_job_info()
+			db_logging_handler.flush()
 		self.logger.removeHandler(db_logging_handler)
 		
 		# Return number of processed alerts
@@ -716,6 +717,7 @@ def run_alertprocessor():
 	action = parser.add_mutually_exclusive_group(required=True)
 	action.add_argument('--broker', default='epyc.astro.washington.edu:9092')
 	action.add_argument('--tarfile', default=None)
+	parser.add_argument('--group', default=uuid.uuid1(), help="Kafka consumer group name")
 	
 	opts = parser.parse_args()
 	
@@ -736,31 +738,31 @@ def run_alertprocessor():
 
 	import time
 	count = 0
-	AlertProcessor.iter_max = 100
+	#AlertProcessor.iter_max = 100
 	alert_processed = AlertProcessor.iter_max
 	if opts.tarfile is not None:
 		infile = opts.tarfile
 		loader = TarAlertLoader(tar_path=opts.tarfile)
-		commit = lambda : False
 	else:
-		infile = opts.broker
-		fetcher = ZIAlertFetcher(opts.broker)
+		infile = '{} group {}'.format(opts.broker, opts.group)
+		fetcher = ZIAlertFetcher(opts.broker, group_name=opts.group, timeout=3600)
 		loader = iter(fetcher)
-		commit = fetcher.commit
 
 	alert_supplier = AlertSupplier(loader, ZIAlertShaper(), serialization="avro", archive=archive)
 	processor = AlertProcessor(mongodb_uri=mongo, publish_stats={"jobs"}, channels=["HU_SN1"])
 
 	while alert_processed == AlertProcessor.iter_max:
+		graphite.add_stats( archive.get_statistics(), 'archive.tables')
+		graphite.send()
 		t0 = time.time()
 		print('Running on {}'.format(infile))
-		alert_processed = processor.run(alert_supplier, console_logging=False)
-		t1 = time.time()
-		dt = t1-t0
-		print('({}) {} alerts in {:.1f}s; {:.1f}/s'.format(infile, alert_processed, dt, alert_processed/dt))
-		count += alert_processed
-		commit()
-		graphite.add_stats( archive.get_statistics(), 'archive.rows')
-		graphite.send()
+		try:
+			alert_processed = processor.run(alert_supplier, console_logging=False)
+		finally:
+			t1 = time.time()
+			dt = t1-t0
+			print('({}) {} alerts in {:.1f}s; {:.1f}/s'.format(infile, alert_processed, dt, alert_processed/dt))
+			graphite.add_stats( archive.get_statistics(), 'archive.tables')
+			graphite.send()
 
 	

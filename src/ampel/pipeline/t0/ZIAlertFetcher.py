@@ -7,8 +7,7 @@
 # Last Modified Date: 05.03.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-import fastavro, io, pykafka
-
+import io
 import itertools
 import logging
 import uuid
@@ -21,11 +20,13 @@ from confluent_kafka import Consumer, TopicPartition, KafkaError, Message
 
 class AllConsumingConsumer(object):
 	"""Consume messages on all topics beginning with 'ztf_'."""
-	def __init__(self, broker, **consumer_config):
+	def __init__(self, broker, timeout=None, **consumer_config):
 		config = {
 			"bootstrap.servers": broker,
 			"default.topic.config": {"auto.offset.reset": "smallest"},
-			"enable.auto.commit": False,
+			"enable.auto.commit": True,
+			"auto.commit.interval.ms": 10000,
+			"enable.auto.offset.store": False,
 			"group.id" : uuid.uuid1(),
 			"enable.partition.eof" : False, # don't emit messages on EOF
 			"topic.metadata.refresh.interval.ms" : 1000, # fetch new metadata every second to pick up topics quickly
@@ -35,8 +36,15 @@ class AllConsumingConsumer(object):
 		self._consumer = Consumer(**config)
 		
 		self._consumer.subscribe(['^ztf_.*'])
+		if timeout is None:
+			self._poll_interval = 1
+			self._poll_attempts = sys.maxint
+		else:
+			self._poll_interval = max((1, min((30, timeout))))
+			self._poll_attempts = max((1, int(timeout / self._poll_interval)))
+		self._timeout = timeout
 		
-		self._offsets = defaultdict(dict)
+		self._last_message = None
 	
 	def __del__(self):
 		# NB: have to explicitly call close() here to prevent
@@ -45,48 +53,41 @@ class AllConsumingConsumer(object):
 		self._consumer.close()
 		
 	def __next__(self):
-		return self.consume()
+		message = self.consume()
+		if message is None:
+			raise StopIteration
+		else:
+			return message
 	
 	def __iter__(self):
 		return self
 	
-	def consume(self, timeout=None):
+	def consume(self):
 		"""
-		Block until one message has arrived
+		Block until one message has arrived, and return it.
+		
+		Messages returned to the caller marked for committal
+		upon the _next_ call to consume().
 		"""
+		# mark the last emitted message for committal
+		if self._last_message is not None:
+			self._consumer.store_offsets(self._last_message)
+		self._last_message = None
+
 		message = None
-		if timeout is None:
-			# wake up every second to catch SIGINT
-			while message is None:
-				message = self._consumer.poll(1)
+		for _ in range(self._poll_attempts):
+			# wake up occasionally to catch SIGINT
+			message = self._consumer.poll(self._poll_interval)
+			if message is not None:
+				break
 		else:
-			message = self._consumer.poll(timeout)
+			return message
+
 		if message.error():
 			raise RuntimeError(message.error())
 		else:
-			self._offsets[message.topic()][message.partition()] = message.offset()
+			self._last_message = message
 			return message
-	
-	def commit_offsets(self):
-		"""
-		Commit the offsets of all messages emitted by consume()
-		
-		NB: partition offsets are held across rebalances, so this may
-		commit a smaller offset to a partition that was later assigned to
-		another consumer. If that consumer fails before committing, this
-		can result in messages being delivered more than once. Given the
-		choice between at-least-once and at-most-once delivery, we choose
-		the former. (exactly-once is hard)
-		"""
-		if len(self._offsets) == 0:
-			return
-		offsets = []
-		for topic in self._offsets:
-			for partition, offset in self._offsets[topic].items():
-				offsets.append(TopicPartition(topic, partition, offset+1))
-		log.debug('committing offsets: {}'.format(self._offsets))
-		self._consumer.commit(offsets=offsets)
-		self._offsets.clear()
 
 class ZIAlertFetcher:
 	"""
@@ -102,7 +103,7 @@ class ZIAlertFetcher:
 		:param timeout: number of seconds to wait for a message
 		"""
 		# TODO: handle timeout
-		self._consumer = AllConsumingConsumer(bootstrap, **{'group.id':group_name})
+		self._consumer = AllConsumingConsumer(bootstrap, timeout=timeout, **{'group.id':group_name})
 
 	def alerts(self, limit=None):
 		"""
@@ -110,11 +111,8 @@ class ZIAlertFetcher:
 		"""
 		for message in itertools.islice(self._consumer, limit):
 			yield io.BytesIO(message.value()), message.partition()
-		self.commit()
+		log.info('timed out')
 
-	def commit(self):
-		self._consumer.commit_offsets()
-	
 	def __iter__(self):
 		return self.alerts()
 
@@ -135,6 +133,8 @@ def archive_topic():
 	import os
 	import pwd, grp
 	import uuid, socket
+	import fastavro
+	from pykafka import KafkaClient
 	
 	client = KafkaClient(opts.broker)
 	topic = client.topics[opts.topic.encode('utf-8')]
@@ -203,6 +203,8 @@ def list_kafka():
 	parser = ArgumentParser(description=__doc__, formatter_class=ArgumentDefaultsHelpFormatter)
 	parser.add_argument("--broker", type=str, default="epyc.astro.washington.edu:9092")
 	opts = parser.parse_args()
+
+	from pykafka import KafkaClient
 	
 	client = KafkaClient(opts.broker)
 	for name in reversed(sorted(client.topics)):

@@ -67,7 +67,9 @@ conda activate singularity-stack
 
 sometimes we see:
   pkg_resources.DistributionNotFound: The 'ampel' distribution was not found and is required by the application
-This means that Ampel/src/ampel.egg-info is missing in the source. pip install -e Ampel to create it.
+This means that Ampel/src/ampel.egg-info (created by pip install -e) is missing in the source.
+Copy it from the image to the source, e.g:
+singularity mount /data/ampel/singularity/ampel-v0.1a7.simg cp -r /var/singularity/mnt/final/Ampel/src/ampel.egg-info src/
 
 Rsyncing archive tarballs from Lustre to transit
 ************************************************
