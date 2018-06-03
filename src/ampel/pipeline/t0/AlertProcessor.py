@@ -39,7 +39,7 @@ class AlertProcessor(DBWired):
 
 	def __init__(
 		self, channels=None, source="ZTFIPAC", mongodb_uri='localhost', 
-		config=None, central_db=None, publish_stats={'graphite', 'jobs'}, 
+		config=None, central_db=None, publish_stats=['graphite', 'jobs'], 
 		load_ingester=True
 	):
 		"""
@@ -469,7 +469,7 @@ class AlertProcessor(DBWired):
 				'main': int(post_run - pre_run)
 				# post loop will be computed in gather_and_send_stats()
 			}
-	
+
 			if self.publish_stats is not None and iter_count > 0:
 	
 				self.logger.info("Computing job stats")
@@ -505,7 +505,7 @@ class AlertProcessor(DBWired):
 						)
 					)
 
-				job_info = self.gather_and_send_stats(post_run, job_info)
+				self.gather_and_send_stats(post_run, job_info)
 
 			# Insert job info into job document
 			db_job_reporter.set_job_stats("stats", job_info)
@@ -749,7 +749,7 @@ def run_alertprocessor():
 		loader = iter(fetcher)
 
 	alert_supplier = AlertSupplier(loader, ZIAlertShaper(), serialization="avro", archive=archive)
-	processor = AlertProcessor(mongodb_uri=mongo, publish_stats={"jobs"}, channels=["HU_SN1"])
+	processor = AlertProcessor(mongodb_uri=mongo, publish_stats=["jobs"], channels=["HU_SN1"])
 
 	while alert_processed == AlertProcessor.iter_max:
 		graphite.add_stats( archive.get_statistics(), 'archive.tables')
