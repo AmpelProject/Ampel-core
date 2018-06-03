@@ -250,7 +250,7 @@ class AlertProcessor(DBWired):
 
 		# Create array
 		scheduled_t2_units = len(self.channels) * [None]
-		chan_auto_complete = len(self.channels) * [False]
+		# chan_auto_complete = len(self.channels) * [False]
 
 		# Save ampel 'state' and get list of tran ids required for autocomplete
 		# tran_ids_before = self.get_tran_ids()
@@ -301,7 +301,7 @@ class AlertProcessor(DBWired):
 			job_info['duration']['filtering'][channel.name] = np.empty(iter_max)
 			job_info['duration']['filtering'][channel.name].fill(np.nan)
 			job_info['count']['ingestion']['alerts'][channel.name] = 0
-			chan_auto_complete[i] = channel.get_config("parameters.autoComplete")
+			# chan_auto_complete[i] = channel.get_config("parameters.autoComplete")
 
 		# The (standard) ingester will update DB insert operations
 		if hasattr(self.ingester, "set_stats_dict"):
@@ -382,18 +382,18 @@ class AlertProcessor(DBWired):
 					else:
 						# Autocomplete required for this channel
 						#if tran_ids_before[i] is not None and tran_id in tran_ids_before[i]:
-						if chan_auto_complete[i] and col.find(
-							{
-								'_id': tran_id, 
-								'alDocType': AlDocTypes.TRANSIENT, 
-								'channels': channel.name
-							}
-						).count() > 0:
-							loginfo(channel.log_auto_complete)
-							alert_counts[channel.name] += 1
-							scheduled_t2_units[i] = channel.t2_units
-						else:
-							loginfo(channel.log_rejected)
+						#if chan_auto_complete[i] and col.find(
+						#	{
+						#		'_id': tran_id, 
+						#		'alDocType': AlDocTypes.TRANSIENT, 
+						#		'channels': channel.name
+						#	}
+						#).count() > 0:
+						#	loginfo(channel.log_auto_complete)
+						#	alert_counts[channel.name] += 1
+						#	scheduled_t2_units[i] = channel.t2_units
+						#else:
+						loginfo(channel.log_rejected)
 
 				except:
 
@@ -619,40 +619,40 @@ class AlertProcessor(DBWired):
 		)
 
 
-	def get_tran_ids(self):
-		"""
-		Return value:
-		Array - whose length equals len(self.channels) - possibly containing sets of transient ids.
-		If channel[i] is the channel with index i wrt the list of channels 'self.channels', 
-		and if channel[i] was configured to make use of the ampel auto_complete feature, 
-		then tran_ids[i] will hold a {set} of transient ids listing all known 
-		transients currently available in the DB for this particular channel.
-		Otherwise, tran_ids_before[i] will be None
-		"""
-
-		col = self.get_main_col()
-		tran_ids = len(self.channels) * [None]
-
-		# Loop through activated channels
-		for i, channel in self.chan_enum:
-
-			if channel.get_config("parameters.autoComplete"):
-
-				# Build set of transient ids for this channel
-				tran_ids[i] = {
-					el['tranId'] for el in col.find(
-						{
-							'tranId': {'$gt': 1}, 
-							'alDocType': AlDocTypes.TRANSIENT, 
-							'channels': channel.name
-						},
-						{
-							'_id': 0, 'tranId': 1
-						}
-					)
-				}
-
-		return tran_ids
+#	def get_tran_ids(self):
+#		"""
+#		Return value:
+#		Array - whose length equals len(self.channels) - possibly containing sets of transient ids.
+#		If channel[i] is the channel with index i wrt the list of channels 'self.channels', 
+#		and if channel[i] was configured to make use of the ampel auto_complete feature, 
+#		then tran_ids[i] will hold a {set} of transient ids listing all known 
+#		transients currently available in the DB for this particular channel.
+#		Otherwise, tran_ids_before[i] will be None
+#		"""
+#
+#		col = self.get_main_col()
+#		tran_ids = len(self.channels) * [None]
+#
+#		# Loop through activated channels
+#		for i, channel in self.chan_enum:
+#
+#			if channel.get_config("parameters.autoComplete"):
+#
+#				# Build set of transient ids for this channel
+#				tran_ids[i] = {
+#					el['tranId'] for el in col.find(
+#						{
+#							'tranId': {'$gt': 1}, 
+#							'alDocType': AlDocTypes.TRANSIENT, 
+#							'channels': channel.name
+#						},
+#						{
+#							'_id': 0, 'tranId': 1
+#						}
+#					)
+#				}
+#
+#		return tran_ids
 
 
 def init_db():
