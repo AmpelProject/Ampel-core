@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 01.03.2018
-# Last Modified Date: 31.05.2018
+# Last Modified Date: 02.06.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from functools import reduce
@@ -19,7 +19,7 @@ class Channel:
 		"""
 
 		self.version = chan_doc['version']
-		self.chan_doc = chan_doc
+		self.doc = chan_doc
 		self.name = chan_name
 
 		if source is not None:
@@ -38,14 +38,19 @@ class Channel:
 	
 	def get_channel_doc(self):
 		""" """
-		return self.chan_doc
+		return self.doc
+
+
+	def get_sources(self):
+		""" """
+		return self.doc['sources']
 
 	
 	def set_source(self, source):
 		""" """
-		if source not in self.chan_doc['sources']:
+		if source not in self.doc['sources']:
 			raise NameError("Unknown source: %s" % source)
-		self.doc_source = self.chan_doc['sources'][source]
+		self.doc_source = self.doc['sources'][source]
 
 
 	def get_source_doc(self, source=None):
@@ -55,9 +60,9 @@ class Channel:
 			if doc_source is None:
 				raise ValueError("Please use method set_source before calling get_config")
 		else:
-			if source not in self.chan_doc['sources']:
+			if source not in self.doc['sources']:
 				raise NameError("Unknown source: %s" % source)
-			doc_source = self.chan_doc['sources'][source]
+			doc_source = self.doc['sources'][source]
 
 		return doc_source
 
