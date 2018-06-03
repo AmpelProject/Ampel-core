@@ -46,7 +46,7 @@ class AlertProcessor(DBWired):
 		Parameters:
 		-----------
 		'channels': 
-		   - None: all the available channels in the config database will be loaded
+		   - None: all the available channels from the ampel config will be loaded
 		   - String: channel with the provided id will be loaded
 		   - List of strings: channels with the provided ids will be loaded 
 		'source': name of input stream (string - see set_stream() docstring)
