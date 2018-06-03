@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 14.12.2017
-# Last Modified Date: 31.05.2018
+# Last Modified Date: 02.06.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from glob import glob
@@ -14,7 +14,7 @@ class MockDBUtils:
 
 	config_col_names = (
 		'channels', 'global', 't0_filters', 
-		't0_sources', 't2_run_config', 't2_units', 
+		't2_run_config', 't2_units', 
 		't3_jobs', 't3_run_config', 't3_units'
 	)
 
