@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 13.01.2018
-# Last Modified Date: 29.05.2018
+# Last Modified Date: 30.05.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from ampel.base.PhotoPoint import PhotoPoint
@@ -21,9 +21,9 @@ from ampel.pipeline.db.LightCurveLoader import LightCurveLoader
 from ampel.pipeline.db.DBResultOrganizer import DBResultOrganizer
 from ampel.pipeline.db.query.QueryLatestCompound import QueryLatestCompound
 from ampel.pipeline.db.query.QueryLoadTransientInfo import QueryLoadTransientInfo
+from ampel.pipeline.t3.TransientItems import TransientItems
 
 import operator, logging, json
-from operator import itemgetter
 from datetime import datetime
 
 
@@ -39,23 +39,22 @@ class TransientLoader:
 	)
 
 
-	# TODO: implement include logs
-	def __init__(self, db, logger=None, save_channels=False, include_logs=False):
+	def __init__(self, central_db, config_db=None, verbose=False, logger=None):
 		"""
 		"""
-
-		self.main_col = db["main"]
-		self.photo_col = db["photo"]
 		self.logger = LoggingUtils.get_logger() if logger is None else logger
-		self.lcl = LightCurveLoader(db, logger=self.logger)
+		self.lcl = LightCurveLoader(central_db, logger=self.logger)
+		self.config_db = config_db
+		self.main_col = central_db["main"]
+		self.photo_col = central_db["photo"]
 		self.al_pps = {}
 		self.lc = {}
-		self.save_channels = save_channels
+		self.verbose = verbose
 
 
 	def load_new(
 		self, tran_id, content_types=all_doc_types, 
-		state="latest", channel_flags=None, t2_ids=None
+		state="latest", channels=None, t2_ids=None
 	):
 		"""
 		Arguments:
@@ -118,8 +117,13 @@ class TransientLoader:
 			latest_compound_dict = next(
 				self.main_col.aggregate(
 					QueryLatestCompound.general_query(tran_id)
-				)
+				),
+				None
 			)
+
+			if latest_compound_dict is None:
+				self.logger.info("Transient %s not found" % tran_id)
+				return None
 
 			self.logger.info(
 				" -> Latest lightcurve id: %s " % 
@@ -183,343 +187,299 @@ class TransientLoader:
 			return None
 
 		# Effectively perform DB query (triggered by casting cursor to list)
-		self.logger.info(" -> Fetching %i search results" % res_count)
-		res_doc_list = list(main_cursor)
+		self.logger.info(" -> Fetching %i results from main col" % res_count)
+		res_main_list = list(main_cursor)
 
 		# Photo DB query 
 		if AlDocTypes.PHOTOPOINT|AlDocTypes.UPPERLIMIT in content_types:
 			photo_cursor = self.photo_col.find({'tranId': tran_id})
 			self.logger.info(" -> Fetching %i photo measurements" % photo_cursor.count())
-			res_doc_list += list(photo_cursor)
+			res_photo_list = list(photo_cursor)
 		else:
 			if AlDocTypes.PHOTOPOINT in content_types:
 				photo_cursor = self.photo_col.find({'tranId': tran_id, '_id': {'$gt': 0}})
 				self.logger.info(" -> Fetching %i photo points" % photo_cursor.count())
-				res_doc_list += list(photo_cursor)
+				res_photo_list = list(photo_cursor)
 			if AlDocTypes.UPPERLIMIT in content_types:
 				photo_cursor = self.photo_col.find({'tranId': tran_id, '_id': {'$lt': 0}})
 				self.logger.info(" -> Fetching %i upper limits" % photo_cursor.count())
-				res_doc_list += list(photo_cursor)
+				res_photo_list = list(photo_cursor)
 
-		# Returns a dict with keys = 'photopoints', 'upperlimits', 'compounds', 
-		# 'transient', 't2records' and values = array of corresponding db dict instances
-		grouped_res = DBResultOrganizer.organize(
-			res_doc_list,
-			photopoints = AlDocTypes.PHOTOPOINT in content_types,
-			upperlimits = AlDocTypes.UPPERLIMIT in content_types,
-			compounds = AlDocTypes.COMPOUND in content_types, 
-			t2records = AlDocTypes.T2RECORD in content_types,
-			transient = AlDocTypes.TRANSIENT in content_types
-		)
 
-		return self.load_from_results(
-			tran_id, 
-			pp_docs = grouped_res['photopoints'], 
-			ul_docs = grouped_res['upperlimits'], 
-			compound_docs = grouped_res['compounds'] if state != 'latest' else [latest_compound_dict],
-			tran_doc = grouped_res['transient'],
-			t2_docs = grouped_res['t2records'],
-			content_types = content_types, 
-			state = state
+		return self.load_tran_items(
+			res_main_list, res_photo_list, channels, state=state
 		)
 
 
-	def load_from_results(
-		self, tran_id, pp_docs=None, ul_docs=None, compound_docs=None, t2_docs=None, tran_doc=None,
-		state="latest", content_types=all_doc_types, tailored_res=False, load_lightcurves=True
+	def load_tran_items(
+		self, main_list, photo_list=None, channels=None, state="latest", 
+		load_lightcurves=True, feedback=True, verbose_feedback=False
 	):
 		"""
-		tailored_res should be set to True if: 
-			* input (results) docs contain only docs for the given tran_id
-			* science_records were only retrieved for the required state
 		"""
+		# Convert non array into array for convenience
+		if channels is None:
+			channels = [None]
 
-		# Instantiate ampel.base.Transient object
-		al_tran = Transient(tran_id)
+		# Build set: we need intersections later
+		channels = set(channels)
 
-		if self.save_channels:
-			channel_register = al_tran.new_channel_register()
+		# Stores loaded transient items. 
+		# Key: tran_id, value: TransientItems instance
+		register = {}
 
-		# Instantiate and attach PhotoPoint objects if requested in the content_types
-		if AlDocTypes.PHOTOPOINT in content_types and pp_docs is not None:
+		# Loop through ampel docs
+		tran_id = ""
+		for doc in main_list:
+			
+			# main_list results are sorted by tranId
+			if tran_id != doc['tranId']:
 
-			# Photopoints instance attached to the transient instance 
-			# are not bound to a compound and come thus without policy 
-			for pp_dict in pp_docs:
-				al_tran.add_photopoint(
-					PhotoPoint(pp_dict, read_only=True)
-				)
-					
-			# Feedback
-			pps = al_tran.get_photopoints()
-			self.logger.info(
-				" -> {} associated photopoint(s): {}".format(
-					len(pps), (*pps,) if len(pps) > 1 else next(iter(pps))
-				)
-			)
+				# Instantiate ampel.base.Transient object
+				tran_id = doc['tranId']
+				tran_items = TransientItems(tran_id, state, self.logger)
+				register[tran_id] = tran_items
 
-		# Instantiate and attach UpperLimit objects if requested in the content_types
-		if AlDocTypes.UPPERLIMIT in content_types and ul_docs is not None:
+			# Pick up transient document
+			if doc["alDocType"] == AlDocTypes.TRANSIENT:
 
-			# UpperLimits instance attached to the transient instance 
-			# are not bound to a compound and come thus without policy 
-			for ul_dict in ul_docs:
-				al_tran.add_upperlimit(
-					UpperLimit(ul_dict, read_only=True)
-				)
-					
-			# Feedback
-			uls = al_tran.get_upperlimits()
-			self.logger.info(
-				" -> {} associated upper limit(s): {}".format(
-					len(uls), (*uls,) if len(uls) > 1 else next(iter(uls))
-				)
-			)
+				# Load, translate alFlags from DB into a TransientFlags enum flag instance 
+				# and associate it with the ampel.base.Transient object instance
 
-		# Loading lightcurves was requested 
-		# (loading is made based on DB 'compound' documents)
-		if AlDocTypes.COMPOUND in content_types and compound_docs is not None:
-
-			# This dict aims at avoiding unnecesssary re-instantiations 
-			# of PhotoPoints objects referenced in several different LightCurves. 
-			# TODO: rephrase / implement better, shorter description
-			# Note that in the following rare case that:
-			# 	-> the provided content_types include photopoints
-			# 	-> and some photopoint ids referenced in compounds are not associated with this transient
-			#     (happens if IPAC matching radius is too large for example)
-			# then, new photopoints will be added to the internal photopoint dict of the transient instance
-			# since frozen_pps_dict is just a reference to this internal dict
-			frozen_pps_dict = {
-				**al_tran.get_photopoints(copy=False), 
-				**al_tran.get_upperlimits(copy=False)
-			}
-
-			# Load all available/multiple compounds for this transient
-			if state == "all" or type(state) is list:
-
-				# We do not instantiate ampel.base.LightCurve objects if:
-				#  - load_lightcurves is set to False
-				#  - or Photopoints were not loaded
-				if load_lightcurves is False or AlDocTypes.PHOTOPOINT not in content_types:
-
-					for comp_dict in compound_docs:
-						al_tran.add_compound(
-							Compound(comp_dict, read_only=True)
+				tran_items.set_flags(
+					TransientFlags(
+						FlagUtils.dbflag_to_enumflag(
+							doc['alFlags'], TransientFlags
 						)
-
-				else:
-
-					# Loop through all compounds
-					for comp_dict in compound_docs:
-						
-						al_tran.add_compound(
-							Compound(comp_dict, read_only=True)
-						)
-
-						# if compound contains upper limits but these were not loaded, 
-						# corresponding ampel.base.LightCurve will not be instanciated
-						if (
-							AlDocTypes.UPPERLIMIT not in content_types and 
-							len([el for el in comp_dict['comp'] if 'ul' in el]) > 0
-						):
-							
-							self.logger.info(
-								" -> LightCurve loading aborded for %s (upper limits required)" % 
-								comp_dict['_id']
-							)
-							continue
-
-						# Intanciate ampel.base.LightCurve object
-						lc = self.lcl.load_using_objects(
-							comp_dict, frozen_pps_dict
-						)
-
-						# Associate it to the ampel.base.Transient instance
-						al_tran.add_lightcurve(lc)
-
-						# Save channel associations if so wished
-						if self.save_channels:
-							channel_register.add_lightcurve(comp_dict['channels'], lc)
-
-				# Find out latest compound/lightcurve
-				latest_compound_dict = TransientLoader.get_latest_compound_using_query_results(compound_docs)
-	
-				# Feedback
-				self.logger.info(" -> %i compounds added" % len(compound_docs))
-				self.logger.info(" -> latest lightcurve id: %s" % latest_compound_dict['_id'])
-
-				# Save id of latest compound
-				al_tran.set_latest_compound_id(latest_compound_dict['_id'])
-
-			# Load a single compound (state is not 'all' and not a list)
-			# state can be 'latest' or a specified state
-			else:
-
-				# Intanciate ampel.base.LightCurve object
-				lc = self.lcl.load_using_objects(
-					compound_docs[0], # should be only one
-					frozen_pps_dict
-				)
-
-				# Associate it to the ampel.base.Transient instance
-				al_tran.add_lightcurve(lc)
-
-				# Add compound object
-				al_tran.add_compound(
-					Compound(compound_docs[0], read_only=True)
-				)
-
-				# Save channel associations if so wished
-				if self.save_channels:
-					channel_register.add_lightcurve(compound_docs[0]['channels'], lc)
-
-				# single compound (state is not 'all' and not a list)
-				latest_compound_id = compound_docs[0]['_id']
-
-				# If state was defined as being the latest, 
-				# then save this info into the transient instance
-				if state == "latest":
-					al_tran.set_latest_compound_id(latest_compound_id)
-
-				# Feedback
-				self.logger.info(
-					" -> 1 lightcurve loaded (%s)" % latest_compound_id
-				)
-
-		if AlDocTypes.TRANSIENT in content_types and tran_doc is not None:
-
-			# Load, translate alFlags from DB into a TransientFlags enum flag instance 
-			# and associate it with the ampel.base.Transient object instance
-			al_tran.set_parameter(
-				"flags",
-				TransientFlags(
-					FlagUtils.dbflag_to_enumflag(
-						tran_doc['alFlags'], TransientFlags
 					)
 				)
-			)
 
-			# Load transient doc creation date from ObjectId
-			al_tran.set_parameter(
-				"created",
-				tran_doc['_id'].generation_time
-			)
+				for channel in (channels & set(doc['channels'])):
 
-			# Load transient modified time as datetime 
-			al_tran.set_parameter(
-				"modified",
-				datetime.utcfromtimestamp(
-					tran_doc['modified']
+					found_first = False
+					last_entry = None
+
+					# Journal entries are time ordered
+					for entry in doc['journal']:
+
+						if entry['tier'] != 0 or channel not in entry['chans']:
+							continue
+
+						# First entry is creation date 
+						if not found_first:
+							tran_items.set_created(
+								datetime.utcfromtimestamp(entry['dt']), 
+								channel
+							)
+						else:
+							last_entry = entry
+
+						if last_entry is not None:
+							tran_items.set_modified(
+								datetime.utcfromtimestamp(last_entry['dt']), 
+								channel
+							)
+
+			# Pick compound dicts 
+			if doc["alDocType"] == AlDocTypes.COMPOUND:
+
+				tran_items.add_compound(
+					Compound(doc, read_only=True), 
+					channels if len(channels) == 1 
+					else channels & set(doc['channels']) # intersection
 				)
-			)
-			
-			# Feedback
-			self.logger.info(" -> loaded transient info")
 
-		if AlDocTypes.T2RECORD in content_types and t2_docs is not None:
+				if state == "latest":
+					tran_items.set_latest_state(
+						doc['_id'], 
+						channels if len(channels) == 1 
+						else channels & set(doc['channels']) # intersection
+					)
 
-			if state == "all" or type(state) is list or tailored_res is True:
+			# Pick t2 records
+			if doc["alDocType"] == AlDocTypes.T2RECORD:
 
-				for t2_doc in t2_docs:
-
-					sr = ScienceRecord(t2_doc, read_only=True)
-					al_tran.add_science_record(sr)
-
-					if self.save_channels:
-						channel_register.add_science_record(t2_doc['channels'], sr)
-
-			else:
-
-				comp_id = compound_docs[0]['_id']
-
-				for t2_doc in t2_docs:
-
-					if t2_doc['compoundId'] == comp_id:
-
-						sr = ScienceRecord(t2_doc, read_only=True)
-						al_tran.add_science_record(sr)
-
-						if self.save_channels:
-							channel_register.add_science_record(t2_doc['channels'], sr)
-
-			self.logger.info(
-				" -> %i science records loaded" % 
-				len(al_tran.get_science_records(flatten=True))
-			)
-
-		return al_tran
+				sr = ScienceRecord(doc, read_only=True)
+				tran_items.add_science_record(
+					sr,
+					channels if len(channels) == 1 
+					else channels & set(doc['channels']) # intersection
+				)
 
 
-	def load_many(
-		self, tran_ids, content_types=all_doc_types, t2_ids=None
-	):
+		if photo_list is not None:
 
-		pass	
+			loaded_tran_ids = register.keys()
+
+			# Share common upper limits among different Transients
+			loaded_uls = {}
+
+			# Loop through photo results
+			for doc in photo_list:
+	
+				# Pick photo point dicts
+				if doc["_id"] > 0:
+	
+					# Photopoints instance attached to the transient instance 
+					# are not bound to a compound and come thus without policy 
+					register[doc['tranId']].add_photopoint(
+						PhotoPoint(doc, read_only=True)
+					)
+	
+				# Pick upper limit dicts
+				else:
+	
+					if type(doc['tranId']) is int:
+						register[doc['tranId']].add_upperlimit(
+							UpperLimit(doc, read_only=True)
+						)
+					
+					else: # list
+						
+						doc_id = doc["_id"]
+						for tran_id in (loaded_tran_ids & doc['tranId']):
+							if doc_id not in loaded_uls:
+								loaded_uls[doc_id]	= UpperLimit(doc, read_only=True)
+							register[tran_id].add_upperlimit(loaded_uls[doc_id])
+					 
+
+		if load_lightcurves and photo_list is not None:
+		
+			for tran_items in register.values():
+
+				if len(tran_items.compounds) == 0:
+					continue
+
+				# This dict aims at avoiding unnecesssary re-instantiations 
+				# of PhotoPoints objects referenced in several different LightCurves. 
+				frozen_photo_dict = {**tran_items.photopoints, **tran_items.upperlimits}
+				len_uls = len(tran_items.upperlimits)
+
+				# Transform 
+				# {
+				#   'HU_LENS': [comp1, comp2, comp3],
+				#   'HU_SN': [comp1, comp3]
+				# }
+				# into:
+				# {
+				#   'comp1': {'HU_LENS', 'HU_SN'},
+				#   'comp2': {'HU_LENS'},
+				#   'comp3': {'HU_LENS', 'HU_SN'},
+				# }
+				inv_map = {}
+				for chan_name, comp_list in tran_items.compounds.items():
+					for comp_obj in comp_list:
+						if comp_obj in inv_map:
+							inv_map[comp_obj].append(chan_name)
+						else:
+							inv_map[comp_obj] = [chan_name]
+
+				for comp, chan_names in inv_map.items():
+
+					if (len_uls == 0 and len([el for el in comp.content if 'ul' in el]) > 0):
+						self.logger.info(
+							" -> LightCurve loading aborded for %s (upper limits required)" % 
+							comp.get_id()
+						)
+						continue
+
+					lc = self.lcl.load_using_objects(comp, frozen_photo_dict)
+
+					# Associate it to the ampel.base.Transient instance
+					tran_items.add_lightcurve(lc, chan_names)
+
+		# Feedback
+		if feedback:
+			self.log_feedback(register.values(), photo_list, channels, verbose_feedback)
+
+		return register
 
 
-	@staticmethod
-	def get_latest_compound_using_query_results(compounds):
-		""" 
-		Static method. 
-
-		From a list of compound dict instances, return the compound dict 
-		that corresponds to the latest state of the transient.
-		Finding this out is not as obvious as it may appear at first.
-
-		The same selection algorithm is also implemented in the method:
-			DBQueryBuilder.latest_compound_query(tran_id) 
-		which is evaluated by the mongoDB database aggregation framework
-		(instead of locally by Python based on DB query results 
-		as is the case for the present method).
+	def log_feedback(self, dict_values, photo_list, channels, verbose_feedback):
+		"""
 		"""
 
-		# Check exit
-		if len(compounds) == 1:
-			return compounds[0]
 
+		if channels is None:
+			channels = [None]
 
-		# 1) sort compounds by added date
-		#################################
+		for tran_items in dict_values:
 
-		date_added_sorted_comps = sorted(
-			compounds, key=itemgetter('added'), reverse=True
-		)
+			len_comps = len({ell.id for el in tran_items.compounds.values() for ell in el})
+			len_lcs = len({ell.id for el in tran_items.lightcurves.values() for ell in el})
+			len_srs = len({hash(ell) for el in tran_items.science_records.values() for ell in el})
 
+			if photo_list is not None:
 
-		# 2) group first elements with same source (src) 
-		# and consider only the first group
-		################################################
+				pps = tran_items.photopoints
+				uls = tran_items.upperlimits
 
-		ref_tier = date_added_sorted_comps[0]["tier"]
-		first_group_comps = []
-		for comp in date_added_sorted_comps:
-			if comp["tier"] == ref_tier:
-				first_group_comps.append(comp)
+				self.logger.info(
+					" -> %i loaded: PP: %i, UL: %i, CP: %i, LC: %i, SR: %i" % 
+					(tran_items.tran_id, len(pps), len(uls), len_comps, len_lcs, len_srs)
+				)
+
+				if verbose_feedback: 
+
+					if len(pps) > 0:
+						self.logger.info(
+							" -> Photopoint(s): {}".format(
+								(*pps,) if len(pps) > 1 else next(iter(pps))
+							)
+						)
+
+					if len(uls) > 0:
+						self.logger.info(
+							" -> Upper limit(s): {}".format(
+								(*uls,) if len(uls) > 1 else next(iter(uls))
+							)
+						)
 			else:
-				break
-		
-		# Check exit
-		if len(first_group_comps) == 1:
-			return first_group_comps[0]
+
+				self.logger.info(
+					" -> %i loaded: PP: 0, UL: 0, CP: %i, LC: %i, SR: %i" % 
+					(tran_items.tran_id, len_comps, len_lcs, len_srs)
+				)
+
+			if verbose_feedback:
+				
+				if len_comps > 0:
+					for channel in tran_items.compounds.keys():
+						self.logger.info(
+							" -> %s Compound(s): %s " %
+							(
+								"" if channel is None else "[%s]" % channel,
+								[el.id.hex() for el in tran_items.compounds[channel]]
+							)
+						)
 
 
-		# 3) Implement tier based sort strategy
-		#######################################
-		
-		# T0: return compound with latest pp date
-		if ref_tier == 0:
+				if len_lcs > 0:
+					for channel in tran_items.lightcurves.keys():
+						self.logger.info(
+							" -> %s LightCurves(s): %s " %
+							(
+								"" if channel is None else "[%s]" % channel,
+								[el.id.hex() for el in tran_items.lightcurves[channel]]
+							)
+						)
 
-			lastppdt_sorted_lcs = sorted(
-				first_group_comps, key=itemgetter('len'), reverse=True
-			)
 
-			return lastppdt_sorted_lcs[0]
+				if len_srs > 0:
 
-		# T1 or T3: return first element (newest added date)
-		elif ref_tier == 1 or ref_tier == 3:
-			return first_group_comps[0]
+					t2_ids = {ell.t2_unit_id for el in tran_items.science_records.values() for ell in el}
 	
-		else:
-			raise NotImplementedError(
-				"Sort algorithm not implemented for tier %i" % ref_tier
-			)
+					for channel in tran_items.science_records.keys():
+						for t2_id in t2_ids:
+							srs = len(list(filter(
+								lambda x: x.t2_unit_id == t2_id,
+								tran_items.science_records[channel]
+							)))
+							if srs > 0:
+								self.logger.info(
+									" -> %s T2 %s: %s " %
+									(
+										"" if channel is None else "[%s]" % channel,
+										t2_id, srs	
+									)
+								)

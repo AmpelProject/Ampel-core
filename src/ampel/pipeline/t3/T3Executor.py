@@ -22,11 +22,12 @@ class T3Executor():
 	"""
 
 	@staticmethod
-	def run_job(config_db, photo_col, tran_col, t3_job, logger):
+	def run_job(config_db, central_db, t3_job, logger):
 		"""
 		"""
 
 		select_options = t3_job.tran_sel_options()
+		tran_col = central_db['main']
 
 
 		# JOB WITHOUT INPUT
@@ -39,10 +40,10 @@ class T3Executor():
 			t3_task = t3_job.get_task()
 
 			# Instantiate T3 unit
-			t3_instance = t3_task.get_t3_instance(logger)
+			t3_unit = t3_task.get_t3_unit(logger)
 
 			# Run T3 instance
-			t3_instance.run(
+			t3_unit.run(
 				t3_task.get_run_config().get_parameters()
 			)
 
@@ -100,10 +101,10 @@ class T3Executor():
 		load_state = t3_job.tran_load_options("state") 
 
 		# See if the current job is associated with more than one task or not
-		multi_task = t3_job.get_tasks() is not None
+		multi_task_job = t3_job.get_tasks() is not None
 
 		# Required to load single transients
-		tl = TransientLoader(tran_col.database, save_channels=multi_task)
+		tl = TransientLoader(config_db, central_db, save_channels=multi_task_job)
 
 
 
@@ -116,8 +117,8 @@ class T3Executor():
 			# Loop of chunk_size
 			while True:
 
-				# Get latest state for each channel
-				###################################
+				# Get latest state ** for each channel **
+				#########################################
 
 				# Load ids (chunk_size number of ids)
 				chunked_tran_ids = tuple(
@@ -145,11 +146,11 @@ class T3Executor():
 					).batch_size(chunk_size)
 				)
 
-				# List of dicts saving tranId, latest compoundID and channel id (if multi_task)
+				# List of dicts saving tranId, latest compoundID and channel id (if multi_task_job)
 				latest_states = []
 
 				# Channel/Channels must be provided if state is 'latest'
-				for channel in t3_job.sel_options_channel():
+				for channel in t3_job.get_channel_selection():
 
 					# get latest state (fast mode) 
 					# Output example:
@@ -167,7 +168,7 @@ class T3Executor():
 						).batch_size(chunk_size)
 					]
 
-					if multi_task:
+					if multi_task_job:
 						# Insert channel into returned dict
 						# -> {'_id': '5de2480f2...', 'tranId': 'ZTF18aaayyuq', 'chan': HU_SN1},
 						for el in tmp_latest_states:
@@ -197,7 +198,7 @@ class T3Executor():
 								tran_id
 							)
 
-						if multi_task:
+						if multi_task_job:
 							# Insert channel into returned dict
 							# -> {'_id': '5de2480f2...', 'tranId': 'ZTF18aaayyuq', 'chan': HU_SN1},
 							for el in tmp_latest_states:
@@ -238,7 +239,7 @@ class T3Executor():
 						d_states[el['tranId']] = el['_id']
 				
 				# Avoid function call in loop below
-				t2_ids = t3_job.load_options_t2Ids()
+				t2_ids = t3_job.get_t2_selection()
 
 				# Load ampel transient objects
 				for tran_id in d_states:
@@ -253,15 +254,15 @@ class T3Executor():
 					)
 
 				# A single task is associated with this job
-				if not multi_task:
+				if not multi_task_job:
 
 					# get T3 unit instance (instantiate if first access)
-					t3_instance = t3_task.get_t3_instance(logger)
+					t3_unit = t3_task.get_t3_unit(logger)
 
-					logger.info("Running instance of %s" % t3_instance.__class__)
+					logger.info("Running instance of %s" % t3_unit.__class__)
 
 					# Run T3 instance
-					t3_instance.run(
+					t3_unit.run(
 						t3_task.get_run_config().get_parameters(),  al_trans
 					)
 
@@ -324,12 +325,12 @@ class T3Executor():
 
 	
 						# get T3 unit instance (instantiate if first access)
-						t3_instance = t3_task.get_t3_instance(logger)
+						t3_unit = t3_task.get_t3_unit(logger)
 	
-						logger.info("Running instance of %s" % t3_instance.__class__)
+						logger.info("Running instance of %s" % t3_unit.__class__)
 
 						# Run T3 instance
-						t3_instance.run(
+						t3_unit.run(
 							t3_task.get_run_config().get_parameters(), transients=al_task_trans
 						)
 

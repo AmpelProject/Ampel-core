@@ -250,7 +250,7 @@ class T3JobConfig:
 		return self.tran_load
 
 
-	def load_options_t2Ids(self):
+	def get_t2_selection(self):
 
 		if not hasattr(self, "tran_load"):
 			return None
@@ -262,7 +262,7 @@ class T3JobConfig:
 			return self.tran_load['t2Ids']
 
 
-	def sel_options_channel(self):
+	def get_channel_selection(self):
 
 		if not hasattr(self, "tran_sel"):
 			return None
