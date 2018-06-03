@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 10.05.2018
-# Last Modified Date: 29.05.2018
+# Last Modified Date: 02.06.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from ampel.flags.AlDocTypes import AlDocTypes
@@ -142,6 +142,13 @@ class UpperLimit:
 
 	
 	def has_flags(self, arg_flags):
+		"""
+		arg_flags: can be:
+			* an enumflag: has_flags() will return True or False
+			* a list of enumflags: has_flags() will return a list containing booleans
+		"""
+		if type(arg_flags) is list:
+			return [f for f in arg_flags in self.flags if f in self.flags]
 		return arg_flags in self.flags
 
 
