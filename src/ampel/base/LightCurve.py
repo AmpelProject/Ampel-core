@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 13.01.2018
-# Last Modified Date: 20.05.2018
+# Last Modified Date: 01.06.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import operator
@@ -20,7 +20,7 @@ class LightCurve:
 	an important criteria since *every* ZTF alert yields an AmpelAlert obj).
 	"""
 	
-	ops = {
+	_ops = {
 		'>': operator.gt,
 		'<': operator.lt,
 		'>=': operator.ge,
@@ -32,19 +32,26 @@ class LightCurve:
 	}
 
 	
-	def __init__(self, compound_dict, ppo_list, ulo_list=None, read_only=True, logger=None):
+	def __init__(self, compound, ppo_list, ulo_list=None, read_only=True, logger=None):
 		"""
-		compound: dict instance loaded using compound DB dict
+		compound: dict instance loaded using compound DB dict or instance of ampel.base.Compound
 		ppo_list: list of ampel.base.PhotoPoint instances
 		ulo_list: list of ampel.base.UpperLimit instances
 		read_only: wether the provided list should be casted as immutable tuple
 		and the class instance frozen
 		"""
 
-		self.id = compound_dict['_id']
-		self.tier = compound_dict['tier']
-		self.added = compound_dict['added']
-		self.lastppdt = compound_dict['lastppdt']
+		if type(compound) is dict:
+			self.id = compound['_id']
+			self.tier = compound['tier']
+			self.added = compound['added']
+			self.lastppdt = compound['lastppdt']
+		else:
+			self.id = compound.id
+			self.tier = compound.tier
+			self.added = compound.added
+			self.lastppdt = compound.lastppdt
+
 
 		if read_only:
 			self.ppo_list = tuple(el for el in ppo_list)
@@ -72,7 +79,7 @@ class LightCurve:
 		object.__setattr__(self, key, value)
 
 
-	def apply_filter(self, match_objs, filters):
+	def _apply_filter(self, match_objs, filters):
 		"""
 		"""
 		if type(filters) is dict:
@@ -83,7 +90,7 @@ class LightCurve:
 
 		for filter_el in filters:
 
-			operator = LightCurve.ops[
+			operator = LightCurve._ops[
 				filter_el['operator']
 			]
 
@@ -141,7 +148,7 @@ class LightCurve:
 	def get_photopoints(self, filters=None):
 		""" returns a list of dicts """
 		return (
-			self.apply_filter(self.ppo_list, filters) if filters is not None 
+			self._apply_filter(self.ppo_list, filters) if filters is not None 
 			else self.ppo_list
 		)
 
@@ -149,7 +156,7 @@ class LightCurve:
 	def get_upperlimits(self, filters=None):
 		""" returns a list of dicts """
 		return (
-			self.apply_filter(self.ulo_list, filters) if filters is not None 
+			self._apply_filter(self.ulo_list, filters) if filters is not None 
 			else self.ulo_list
 		)
 
@@ -161,8 +168,8 @@ class LightCurve:
 			return self.ulo_list if upper_limits else self.ppo_list
 		else:
 			return (
-				self.apply_filter(self.ulo_list, filters) if upper_limits 
-				else self.apply_filter(self.ppo_list, filters)
+				self._apply_filter(self.ulo_list, filters) if upper_limits 
+				else self._apply_filter(self.ppo_list, filters)
 			)
 
 
@@ -186,7 +193,7 @@ class LightCurve:
 		if ret == "raw": 
 			return self.get_tuples("ra", "dec", filters=filters)
 
-		pps = self.apply_filter(self.ppo_list, filters) if filters is not None else self.ppo_list
+		pps = self._apply_filter(self.ppo_list, filters) if filters is not None else self.ppo_list
 
 		if ret == "mean": 
 			ras = [pp.get_value("ra") for pp in pps]
