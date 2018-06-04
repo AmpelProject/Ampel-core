@@ -8,8 +8,8 @@ dependencies:
   - pymongo
   - fastavro
   - pytest
-  - pykafka
-  - python-confluent-kafka
+#  - pykafka
+  - python-confluent-kafka>=0.11.4
   - sqlalchemy
   - psycopg2
   - ipython
