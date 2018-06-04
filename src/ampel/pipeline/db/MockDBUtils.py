@@ -37,16 +37,21 @@ class MockDBUtils:
 
 	
 	@staticmethod
-	def dump_db_to_file(db, jsonfile):
+	def dump_db_to_file(db, path_to_json_file):
 		"""
 		"""
-		out_dict = {}
+		config = {}
 
-		for key in MockDBUtils.config_col_names:
-			out_dict[key] = list(db[key].find({}))
+		for colname in MockDBUtils.config_col_names:
+
+			config[colname] = {}
+
+			for el in db[colname].find({}):
+				config[colname][el.pop('_id')] = el
 		
-		with open(jsonfile, "w") as f:
-			json.dump(out_dict, f, indent=4)
+		with open(path_to_json_file, "w") as f:
+			json.dump(config, f, indent=4)
+
 
 
 	@staticmethod

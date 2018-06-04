@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 01.03.2018
-# Last Modified Date: 02.06.2018
+# Last Modified Date: 04.06.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from functools import reduce
@@ -44,6 +44,11 @@ class Channel:
 	def get_sources(self):
 		""" """
 		return self.doc['sources']
+
+
+	def has_source(self, source):
+		""" """
+		return source in self.doc['sources']
 
 	
 	def set_source(self, source):

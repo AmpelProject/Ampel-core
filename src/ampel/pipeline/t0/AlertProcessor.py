@@ -79,7 +79,7 @@ class AlertProcessor(DBWired):
 
 		for i, channel in self.chan_enum:
 			if channel.has_source(source):
-				ac = channel.get_config("parameters.autoComplete", source="ZTFIPAC")
+				ac = channel.get_config("parameters.autoComplete", source)
 				if ac is not None and ac == "live":
 					self.live_ac = True
 					self.chan_auto_complete[i] = True
@@ -134,7 +134,7 @@ class AlertProcessor(DBWired):
 				)
 	
 		else:
-			# more streams may be defined later
+			# more sources may be defined later
 			raise ValueError("Source '%s' not supported yet" % source)
 
 
