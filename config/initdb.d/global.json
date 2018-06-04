@@ -1,1 +1,40 @@
-[{"_id": "photoPoints", "ZTFIPAC": {"alFlags": "INST_ZTF|PP_IPAC", "dictKeywords": {"tranId": "alertid", "pptId": "candid", "obsDate": "jd", "filterId": "fid", "mag": "magpsf"}, "stamperClass": "ZIPhotoPointStamper", "formats": {"date": "julian"}}}, {"_id": "alertIngestion", "source": {"ZTFIPAC": {"checkReprocessing": true, "alertHistoryLength": 30}}}]
+{
+ "sources": {
+  "ZTFIPAC": {
+   "alerts": {
+    "flags": [
+     "INST_ZTF", 
+     "SRC_IPAC"
+    ], 
+    "processing": {
+     "parse": "ampel.pipeline.t0.alerts.ZIAlertParser", 
+     "serialization": "avro", 
+     "shape": "ampel.pipeline.t0.alerts.ZIAlertShaper"
+    }, 
+    "alertHistoryLength": 30, 
+    "mappings": {
+     "mag": "magpsf", 
+     "filterId": "fid", 
+     "pptId": "candid", 
+     "tranId": "objectId", 
+     "obsDate": "jd"
+    }
+   }, 
+   "flags": {
+    "photo": "INST_ZTF", 
+    "main": "INST_ZTF"
+   }, 
+   "ingestion": {
+    "photoShaper": "ampel.pipeline.t0.ingesters.ZIPhotoPointShaper", 
+    "tranIdPrefix": null, 
+    "class": "ampel.pipeline.t0.ingesters.ZIAlertIngester", 
+    "checkReprocessing": true
+   }
+  }
+ }, 
+ "graphite": {
+  "systemName": "Ampel-burst", 
+  "port": 2003, 
+  "server": "localhost"
+ }
+}

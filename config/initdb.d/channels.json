@@ -1,1 +1,403 @@
-[{"_id": "HU_SN1", "version": 1.0, "active": false, "sources": {"ZTFIPAC": {"parameters": {"ZTFPartner": true, "autoComplete": true, "updatedHUZP": false}, "t0Filter": {"dbEntryId": "BasicFilter", "runConfig": {"criteria": [{"attribute": "candid", "value": null, "operator": "is not"}, {"attribute": "rb", "value": 0.6, "operator": ">"}, {"attribute": "mag", "value": 21, "operator": "<"}], "len": 3, "operator": ">"}}, "t2Compute": [{"t2Unit": "SNCOSMO", "runConfig": "default"}]}}}]
+{
+ "ZTFMSIP_faint": {
+  "active": true, 
+  "sources": {
+   "ZTFIPAC": {
+    "t0Filter": {
+     "runConfig": {
+      "m13GaiaSearchRadius": 3, 
+      "RealBogusTh": 0.4, 
+      "MagTh": 20, 
+      "SGscoreTh": 0.49
+     }, 
+     "dbEntryId": "SEDmTargetFilter"
+    }, 
+    "t2Compute": [], 
+    "parameters": {
+     "autoComplete": false, 
+     "ZTFPartner": false, 
+     "updatedHUZP": false
+    }
+   }
+  }, 
+  "version": 1.0
+ }, 
+ "HU_SN2": {
+  "active": false, 
+  "sources": {
+   "ZTFIPAC": {
+    "t0Filter": {
+     "runConfig": {
+      "filters": [
+       {
+        "operator": ">", 
+        "len": 3, 
+        "criteria": [
+         {
+          "operator": ">", 
+          "attribute": "rb", 
+          "value": 0.8
+         }, 
+         {
+          "operator": "=", 
+          "attribute": "fid", 
+          "value": 1
+         }, 
+         {
+          "operator": "<", 
+          "attribute": "mag", 
+          "value": 18
+         }
+        ]
+       }, 
+       {
+        "logicalConnection": "OR", 
+        "operator": ">", 
+        "len": 3, 
+        "criteria": [
+         {
+          "operator": ">", 
+          "attribute": "magdiff", 
+          "value": 0.01
+         }
+        ]
+       }
+      ]
+     }, 
+     "dbEntryId": "BasicMultiFilter"
+    }, 
+    "t3Supervize": {}, 
+    "t2Compute": [
+     {
+      "t2Unit": "SNCOSMO", 
+      "runConfig": "default"
+     }, 
+     {
+      "t2Unit": "AGN", 
+      "runConfig": "default"
+     }, 
+     {
+      "t2Unit": "PHOTO_Z", 
+      "runConfig": "default"
+     }, 
+     {
+      "t2Unit": "PHOTO_TYPE", 
+      "runConfig": "default"
+     }
+    ], 
+    "parameters": {
+     "autoComplete": true, 
+     "ZTFPartner": true, 
+     "updatedHUZP": false
+    }
+   }
+  }, 
+  "version": 1.0, 
+  "general": {
+   "t3Supervize": {
+    "Purge": {}
+   }
+  }
+ }, 
+ "HU_SN1": {
+  "active": false, 
+  "sources": {
+   "ZTFIPAC": {
+    "t0Filter": {
+     "runConfig": {
+      "operator": ">", 
+      "len": 3, 
+      "criteria": [
+       {
+        "operator": "is not", 
+        "attribute": "candid", 
+        "value": null
+       }, 
+       {
+        "operator": ">", 
+        "attribute": "rb", 
+        "value": 0.6
+       }, 
+       {
+        "operator": "<", 
+        "attribute": "mag", 
+        "value": 21
+       }
+      ]
+     }, 
+     "dbEntryId": "BasicFilter"
+    }, 
+    "t3Supervize": {}, 
+    "t2Compute": [
+     {
+      "t2Unit": "SNCOSMO", 
+      "runConfig": "default"
+     }, 
+     {
+      "t2Unit": "AGN", 
+      "runConfig": "default"
+     }, 
+     {
+      "t2Unit": "PHOTO_Z", 
+      "runConfig": "default"
+     }, 
+     {
+      "t2Unit": "PHOTO_TYPE", 
+      "runConfig": "default"
+     }
+    ], 
+    "parameters": {
+     "autoComplete": true, 
+     "ZTFPartner": true, 
+     "updatedHUZP": false
+    }
+   }
+  }, 
+  "version": 1.0, 
+  "general": {
+   "t3Supervize": {
+    "Purge": {}
+   }
+  }
+ }, 
+ "HU_EXCAT": {
+  "active": false, 
+  "sources": {
+   "ZTFIPAC": {
+    "t0Filter": {
+     "runConfig": {
+      "catDecKey": "dec", 
+      "searchMethod": "healpix", 
+      "rsArcsec": 5, 
+      "rejectOnMatch": false, 
+      "alertPosType": "av", 
+      "catName": "milliquas", 
+      "catRAKey": "ra"
+     }, 
+     "dbEntryId": "BasicCatalogFilter"
+    }, 
+    "t3Supervize": {}, 
+    "t2Compute": [
+     {
+      "t2Unit": "SNCOSMO", 
+      "runConfig": "other"
+     }, 
+     {
+      "t2Unit": "AGN", 
+      "runConfig": "default"
+     }, 
+     {
+      "t2Unit": "PHOTO_TYPE", 
+      "runConfig": "default"
+     }
+    ], 
+    "parameters": {
+     "autoComplete": true, 
+     "ZTFPartner": true, 
+     "updatedHUZP": false
+    }
+   }
+  }, 
+  "version": 1.0, 
+  "general": {
+   "t3Supervize": {
+    "Purge": {}
+   }
+  }
+ }, 
+ "UMD_NUCLEAR": {
+  "active": true, 
+  "sources": {
+   "ZTFIPAC": {
+    "t0Filter": {
+     "runConfig": {}, 
+     "dbEntryId": "NuclearFilter"
+    }, 
+    "t3Supervize": {}, 
+    "t2Compute": [
+     {
+      "t2Unit": "SNCOSMO", 
+      "runConfig": "other"
+     }
+    ], 
+    "parameters": {
+     "autoComplete": true, 
+     "ZTFPartner": true, 
+     "updatedHUZP": false
+    }
+   }
+  }, 
+  "version": 1.0, 
+  "general": {
+   "t3Supervize": {
+    "Purge": {}
+   }
+  }
+ }, 
+ "NO_FILTER": {
+  "active": false, 
+  "sources": {
+   "ZTFIPAC": {
+    "t0Filter": {
+     "runConfig": {}, 
+     "dbEntryId": "NoFilter"
+    }, 
+    "t3Supervize": {}, 
+    "t2Compute": [
+     {
+      "t2Unit": "SNCOSMO", 
+      "runConfig": "default"
+     }, 
+     {
+      "t2Unit": "AGN", 
+      "runConfig": "default"
+     }
+    ], 
+    "parameters": {
+     "autoComplete": true, 
+     "ZTFPartner": true, 
+     "updatedHUZP": false
+    }
+   }
+  }, 
+  "version": 1.0, 
+  "general": {
+   "t3Supervize": {
+    "Purge": {}
+   }
+  }
+ }, 
+ "ZTFMSIP_bright": {
+  "active": true, 
+  "sources": {
+   "ZTFIPAC": {
+    "t0Filter": {
+     "runConfig": {
+      "m13GaiaSearchRadius": 3, 
+      "RealBogusTh": 0.2, 
+      "MagTh": 19, 
+      "SGscoreTh": 0.6
+     }, 
+     "dbEntryId": "SEDmTargetFilter"
+    }, 
+    "t2Compute": [], 
+    "parameters": {
+     "autoComplete": false, 
+     "ZTFPartner": false, 
+     "updatedHUZP": false
+    }
+   }
+  }, 
+  "version": 1.0
+ }, 
+ "HU_NOAGN": {
+  "active": false, 
+  "input": [
+   {
+    "instrument": "ZTF", 
+    "alerts": "IPAC", 
+    "parameters": {
+     "autoComplete": true, 
+     "ZTFPartner": true, 
+     "updatedHUZP": false
+    }
+   }
+  ], 
+  "t0Filter": {
+   "runConfig": {
+    "catDecKey": "dec", 
+    "searchMethod": "healpix", 
+    "rsArcsec": 5, 
+    "rejectOnMatch": false, 
+    "alertPosType": "av", 
+    "catName": "milliquas", 
+    "catRAKey": "ra"
+   }, 
+   "id": "BasicCatalogFilter"
+  }, 
+  "version": 1.0, 
+  "t2Compute": [
+   {
+    "t2Unit": "SNCOSMO", 
+    "runConfig": "other"
+   }, 
+   {
+    "t2Unit": "PHOTO_TYPE", 
+    "runConfig": "default"
+   }
+  ]
+ }, 
+ "OKC_LENSED": {
+  "active": false, 
+  "sources": {
+   "ZTFIPAC": {
+    "t0Filter": {
+     "runConfig": {
+      "MinNdet": 2, 
+      "ClusListSearchRadius": 60.0, 
+      "CaslteQSOSearchRadius": 10.0, 
+      "MasterlensSearchRadius": 10.0
+     }, 
+     "dbEntryId": "LensedTransientFilter"
+    }, 
+    "t3Supervize": {}, 
+    "t2Compute": [
+     {
+      "t2Unit": "SNCOSMO", 
+      "runConfig": "other"
+     }
+    ], 
+    "parameters": {
+     "autoComplete": true, 
+     "ZTFPartner": true, 
+     "updatedHUZP": false
+    }
+   }
+  }, 
+  "version": 1.0, 
+  "general": {
+   "t3Supervize": {
+    "Purge": {}
+   }
+  }
+ }, 
+ "HU_RANDOM": {
+  "active": true, 
+  "sources": {
+   "ZTFIPAC": {
+    "t0Filter": {
+     "runConfig": {
+      "threshold": 95
+     }, 
+     "dbEntryId": "RandFilter"
+    }, 
+    "t3Supervize": {}, 
+    "t2Compute": [
+     {
+      "t2Unit": "SNCOSMO", 
+      "runConfig": "default"
+     }, 
+     {
+      "t2Unit": "AGN", 
+      "runConfig": "default"
+     }, 
+     {
+      "t2Unit": "PHOTO_TYPE", 
+      "runConfig": "default"
+     }
+    ], 
+    "parameters": {
+     "autoComplete": true, 
+     "ZTFPartner": true, 
+     "updatedHUZP": false
+    }
+   }
+  }, 
+  "version": 1.0, 
+  "general": {
+   "t3Supervize": {
+    "Purge": {}
+   }
+  }
+ }
+}
