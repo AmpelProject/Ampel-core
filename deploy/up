@@ -1,0 +1,27 @@
+#!/bin/bash
+
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
+envfile=$DIR/production/$1.env
+
+if [[ ! -e $envfile ]]; then
+	echo "Configuration \"$1\" does not exist. Choose one of: ($(find $DIR/production -name '*.env' | sed 's!.*/!!' | sed 's!\.env$!!' | xargs echo))"
+	exit 1
+fi
+
+if [[ "$1" == "dryrun" ]]; then
+	stacks="transit burst"
+	for machine in $stacks; do
+		singularity-stack rm $machine
+	done
+	sleep 1
+	env $(cat $envfile | xargs echo) sh -c 'rm -r $MONGO_PATH/*'
+	env $(cat $envfile | xargs echo) sh -c 'rm -r $ARCHIVE_PATH/*'
+	for machine in $stacks; do
+		env $(cat $envfile | xargs echo) singularity-stack deploy -c $DIR/production/$machine.yml $machine
+		echo started $machine
+		sleep 10
+	done
+	singularity-stack list
+fi
+

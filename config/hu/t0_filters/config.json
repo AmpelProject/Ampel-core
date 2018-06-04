@@ -56,7 +56,16 @@
 	"baseConfig": {
 		"mongodbHost": "localhost",
 		"mongodbPort": 27017,
-		"mongodbURI": "mongodb://localhost:27017"
+		"mongodbURI": "mongodb://localhost"
+	}
+},
+{
+	"_id": "SEDmTargetFilter",
+	"classFullPath": "ampel.contrib.hu.t0.SEDmTargetFilter",
+	"baseConfig": {
+		"mongodbHost": "localhost",
+		"mongodbPort": 27017,
+		"mongodbURI": "mongodb://localhost"
 	}
 }]
 

@@ -1,7 +1,7 @@
 
 from ampel.pipeline.t0.AlertProcessor import AlertProcessor, create_databases
 from ampel.archive import ArchiveDB
-from ampel.pipeline.t0.alerts.ZIAlertParser import ZIAlertParser
+#from ampel.pipeline.t0.alerts.ZIAlertParser import ZIAlertParser
 
 import os
 from glob import glob

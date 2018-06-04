@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 03.05.2018
-# Last Modified Date: 03.05.2018
+# Last Modified Date: 31.05.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from ampel.flags.LogRecordFlags import LogRecordFlags
@@ -19,118 +19,110 @@ class ChannelLoader:
 	"""
 	"""
 
-	_filters_col_name = 't0_filters'
 
-
-	def __init__(self, config_db, source=None, tier=None):
+	def __init__(self, config, source=None, tier=None):
 		"""
 		"""
-		self.config_db = config_db
+		self.config = config
 		self.source = source
 		self.tier = tier
 
 		if source is not None and tier == 0:
-			self.known_t2_units = tuple(
-				el["_id"] for el in config_db['t2_units'].find({})
-			)
+			self.known_t2_units = tuple(config['t2_units'].keys())
 
 
-	def load_channels(self, channel_names, logger):
+	def load_channels(self, arg_chan_names, logger):
 		"""
 		"""
 		logger = LoggingUtils.get_logger() if logger is None else logger
 
 		# Robustness check
-		if channel_names is not None:
+		if arg_chan_names is not None:
 			
-			if type(channel_names) is str:
-				channel_names = [channel_names]
+			if type(arg_chan_names) is str:
+				arg_chan_names = [arg_chan_names]
 
-			if len(channel_names) != len(set(channel_names)):
+			if len(arg_chan_names) != len(set(arg_chan_names)):
 				raise ValueError("Duplicates in provided list of channel names")
 
-
-		# Get channel docs from config DB
-		channel_docs = list(
-			self.config_db['channels'].find(
-				{} if channel_names is None else {'_id': {'$in': channel_names}}
-			)
-		)
+			# Get channel docs from config DB
+			channels_to_load = {
+				key: value for key, value in self.config['channels'].items() if key in arg_chan_names 
+			}
+		else:
+			channels_to_load = self.config['channels']
 
 		# Robustness check
-		if channel_names is not None and len(channel_docs) != len(channel_names):
-			db_ids = {doc['_id'] for doc in channel_docs}
-			for channel_name in channel_names:
-				if channel_name not in db_ids:
+		if arg_chan_names is not None and len(channels_to_load) != len(arg_chan_names):
+			for channel_name in arg_chan_names:
+				if channel_name not in channels_to_load:
 					raise NameError("Channel '%s' not found" % channel_name)
 
 	
 		# var referencing list of channel config objects
 		channels = []
 
-		# Loop through chsnnel config documents returned from DB
-		for channel_doc in channel_docs:
+		# Loop through channel config documents
+		for chan_name, chan_doc in channels_to_load.items():
 
-			if channel_doc['active'] is False:
-				logger.info("Ignoring non-active channel %s" % channel_doc['_id'])
-				continue
+			if chan_doc['active'] is False:
+				if arg_chan_names is None:
+					logger.info("Ignoring non-active channel %s" % chan_name)
+					continue
+				else:
+					logger.info("Loading requested non-active channel %s" % chan_name)
 
 			if self.source is None or self.tier != 0:
 				# Instantiate ampel.pipeline.config.Channel object
-				chan = Channel(channel_doc, source=self.source) 
+				chan = Channel(chan_name, chan_doc, source=self.source) 
 			else:
-				chan = self._create_t0_channel(channel_doc, logger)
+				chan = self._create_t0_channel(chan_name, chan_doc, logger)
 
 			channels.append(chan)
 
 		return channels
 
 
-	def _get_config(self, channel_doc, param_name):
+	def _get_config(self, chan_doc, param_name):
 		"""
 		"""
 		return reduce(
 			dict.get, 
 			param_name.split("."), 
-			channel_doc['sources'][self.source]
+			chan_doc['sources'][self.source]
 		)
 
 
 	
-	def _create_t0_channel(self, channel_doc, logger):
+	def _create_t0_channel(self, chan_name, chan_doc, logger):
 		"""
 		"""
 		t2_units = set()
 
 		# Check defined t2UNits for this stream
-		for el in self._get_config(channel_doc, 't2Compute'):
+		for el in self._get_config(chan_doc, 't2Compute'):
 
 			if not el['t2Unit'] in self.known_t2_units:
 				raise ValueError(
 					("The AMPEL T2 unit '%s' referenced by the channel '%s' does not exist.\n" +
 					"Please either correct the problematic entry in section 't2Compute' of channel '%s'\n" +
 					"or make sure the T2 unit '%s' exists in the mongodb collection 't2_units'.") % 
-					(el['t2Unit'], channel_doc['_id'], channel_doc['_id'], el['t2Unit'])
+					(el['t2Unit'], chan_name, chan_name, el['t2Unit'])
 				)
 
 			# Populate set of t2 units
 			t2_units.add(el['t2Unit'])
 
 		# Get t0 filter name
-		filter_id = self._get_config(channel_doc, 't0Filter.dbEntryId')
+		filter_id = self._get_config(chan_doc, 't0Filter.dbEntryId')
 		logger.info("Loading filter: " + filter_id)
 
-		# Lookup filter config from DB
-		cursor = self.config_db[ChannelLoader._filters_col_name].find(
-			{'_id': filter_id}
-		)
-
 		# Robustness check
-		if cursor.count() == 0:
+		if filter_id not in self.config['t0_filters']:
 			raise NameError("Filter '%s' not found" % filter_id)
 
 		# Retrieve filter config from DB
-		doc_t0_filter = cursor.next()
+		doc_t0_filter = self.config['t0_filters'][filter_id]
 
 		class_full_path = doc_t0_filter['classFullPath']
 		logger.info(" -> Full class path: " + class_full_path)
@@ -141,7 +133,7 @@ class ChannelLoader:
 		filter_instance = filter_class(
 			t2_units, 
 			base_config = doc_t0_filter['baseConfig'] if 'baseConfig' in doc_t0_filter else None,
-			run_config = self._get_config(channel_doc, 't0Filter.runConfig'), 
+			run_config = self._get_config(chan_doc, 't0Filter.runConfig'), 
 			logger=logger
 		)
 
@@ -149,4 +141,4 @@ class ChannelLoader:
 		logger.info(" -> Version: %s" % filter_instance.version)
 		logger.info(" -> On match t2 units: %s" % t2_units)
 
-		return T0Channel(channel_doc, self.source, filter_instance.apply, t2_units)
+		return T0Channel(chan_name, chan_doc, self.source, filter_instance.apply, t2_units)

@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 26.02.2018
-# Last Modified Date: 19.04.2018
+# Last Modified Date: 28.05.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from ampel.pipeline.logging.LoggingUtils import LoggingUtils
@@ -14,27 +14,20 @@ from ampel.pipeline.t3.TransientLoader import TransientLoader
 from ampel.pipeline.t3.TransientForker import TransientForker
 from ampel.pipeline.db.query.QueryLatestCompound import QueryLatestCompound
 from ampel.flags.AlDocTypes import AlDocTypes
-from ampel.pipeline.db.DBWired import DBWired
 import itertools
 
 
-class T3Executor(DBWired):
+class T3Executor():
 	"""
 	"""
 
-	def __init__(self, t3_job, db_host='localhost', config_db=None, base_dbs=None, logger=None):
+	@staticmethod
+	def run_job(config_db, central_db, t3_job, logger):
 		"""
 		"""
-
-		# Get logger
-		logger = LoggingUtils.get_logger() if logger is None else logger
-
-		# Setup instance variable referencing input and output databases
-		self.plug_databases(logger, db_host, config_db, base_dbs)
-
-		tran_col = self.get_tran_col()
 
 		select_options = t3_job.tran_sel_options()
+		tran_col = central_db['main']
 
 
 		# JOB WITHOUT INPUT
@@ -43,14 +36,14 @@ class T3Executor(DBWired):
 		# T3 job not requiring any prior transient loading 
 		if select_options is None:
 
-			# Get task (transient less jobs can have only one task)
+			# Get task (transientless jobs can have only one task)
 			t3_task = t3_job.get_task()
 
 			# Instantiate T3 unit
-			t3_instance = t3_task.get_t3_instance(logger)
+			t3_unit = t3_task.get_t3_unit(logger)
 
 			# Run T3 instance
-			t3_instance.run(
+			t3_unit.run(
 				t3_task.get_run_config().get_parameters()
 			)
 
@@ -108,10 +101,10 @@ class T3Executor(DBWired):
 		load_state = t3_job.tran_load_options("state") 
 
 		# See if the current job is associated with more than one task or not
-		multi_task = t3_job.get_tasks() is not None
+		multi_task_job = t3_job.get_tasks() is not None
 
 		# Required to load single transients
-		tl = TransientLoader(tran_col.database, save_channels=multi_task)
+		tl = TransientLoader(config_db, central_db, save_channels=multi_task_job)
 
 
 
@@ -119,15 +112,13 @@ class T3Executor(DBWired):
 		###################################
 
 		# For 'latest' state, the latest compoundid of each transient must be determined
-		if not load_state is None and load_state == "latest":
+		if load_state is not None and load_state == "latest":
 
 			# Loop of chunk_size
 			while True:
 
-		
-				# Get latest state for each channel
-				###################################
-
+				# Get latest state ** for each channel **
+				#########################################
 
 				# Load ids (chunk_size number of ids)
 				chunked_tran_ids = tuple(
@@ -138,8 +129,7 @@ class T3Executor(DBWired):
 					logger.info("Breaking loop")
 					break
 
-				logger.info("Found %i transient matching given criteria" % len(chunked_tran_ids))
-
+				logger.info("Found %i transient(s) matching criteria" % len(chunked_tran_ids))
 				logger.info("Retrieving latest state")
 
 				# See for which ids the fast query cannot be used (save results in a set)
@@ -156,11 +146,11 @@ class T3Executor(DBWired):
 					).batch_size(chunk_size)
 				)
 
-				# List of dicts saving tranId, latest compoundID and channel id (if multi_task)
+				# List of dicts saving tranId, latest compoundID and channel id (if multi_task_job)
 				latest_states = []
 
 				# Channel/Channels must be provided if state is 'latest'
-				for channel in t3_job.sel_options_channel():
+				for channel in t3_job.get_channel_selection():
 
 					# get latest state (fast mode) 
 					# Output example:
@@ -178,7 +168,7 @@ class T3Executor(DBWired):
 						).batch_size(chunk_size)
 					]
 
-					if multi_task:
+					if multi_task_job:
 						# Insert channel into returned dict
 						# -> {'_id': '5de2480f2...', 'tranId': 'ZTF18aaayyuq', 'chan': HU_SN1},
 						for el in tmp_latest_states:
@@ -208,7 +198,7 @@ class T3Executor(DBWired):
 								tran_id
 							)
 
-						if multi_task:
+						if multi_task_job:
 							# Insert channel into returned dict
 							# -> {'_id': '5de2480f2...', 'tranId': 'ZTF18aaayyuq', 'chan': HU_SN1},
 							for el in tmp_latest_states:
@@ -218,18 +208,19 @@ class T3Executor(DBWired):
 					latest_states += tmp_latest_states
 
 
-				# Load transient with given state(s)
-				####################################
+				# Load transient(s) with given state(s)
+				#######################################
 
-				logger.info("Loading transients")
+				logger.info("Loading transient(s)")
 
 				# This array will contain the ampel.base.Transient instances
 				al_trans = []
 
 				# Build dict d_states using dict latest_states:
+				# (latest state can be different from one channel to another)
 				# {
 				#	'ZTF18aaayyuq': '5de2480f28bfca0bd3baae890cb2d2ae',
-				#	'ZTF18azzzzzz': [
+				#	'ZTF18azzzzzz': [   
 				# 		'51111111112222222223333334444444',
 				# 		'88773246873246782364732642384444',
 				#		...
@@ -248,7 +239,7 @@ class T3Executor(DBWired):
 						d_states[el['tranId']] = el['_id']
 				
 				# Avoid function call in loop below
-				t2_ids = t3_job.load_options_t2Ids()
+				t2_ids = t3_job.get_t2_selection()
 
 				# Load ampel transient objects
 				for tran_id in d_states:
@@ -263,15 +254,15 @@ class T3Executor(DBWired):
 					)
 
 				# A single task is associated with this job
-				if not multi_task:
+				if not multi_task_job:
 
 					# get T3 unit instance (instantiate if first access)
-					t3_instance = t3_task.get_t3_instance(logger)
+					t3_unit = t3_task.get_t3_unit(logger)
 
-					logger.info("Running instance of %s" % t3_instance.__class__)
+					logger.info("Running instance of %s" % t3_unit.__class__)
 
 					# Run T3 instance
-					t3_instance.run(
+					t3_unit.run(
 						t3_task.get_run_config().get_parameters(),  al_trans
 					)
 
@@ -324,9 +315,7 @@ class T3Executor(DBWired):
 							)
 
 							# inform transient that the only loaded state is the latest
-							ftran.set_latest_lightcurve(
-								lightcurve_id = tran_latest_state
-							)
+							ftran.set_latest_compound_id(tran_latest_state)
 
 							# Populate list of transient 
 							al_task_trans.append(ftran)
@@ -336,12 +325,12 @@ class T3Executor(DBWired):
 
 	
 						# get T3 unit instance (instantiate if first access)
-						t3_instance = t3_task.get_t3_instance(logger)
+						t3_unit = t3_task.get_t3_unit(logger)
 	
-						logger.info("Running instance of %s" % t3_instance.__class__)
+						logger.info("Running instance of %s" % t3_unit.__class__)
 
 						# Run T3 instance
-						t3_instance.run(
+						t3_unit.run(
 							t3_task.get_run_config().get_parameters(), transients=al_task_trans
 						)
 

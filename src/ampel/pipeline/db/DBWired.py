@@ -4,10 +4,11 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 19.03.2018
-# Last Modified Date: 23.05.2018
+# Last Modified Date: 03.06.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import time, pymongo
+from pymongo.errors import CollectionInvalid
 from ampel.flags.AlDocTypes import AlDocTypes
 from ampel.pipeline.db.DBIndexCreator import DBIndexCreator
 
@@ -15,87 +16,125 @@ class DBWired:
 	""" 
 	"""
 
-	def plug_databases(self, logger, db_host='localhost', config_db=None, central_db=None):
+	config_col_names = {
+		'all':	(
+			'global', 'channels', 't0_filters',
+			't2_units', 't2_run_config', 
+			't3_jobs', 't3_run_config', 't3_units'
+		),
+		0: (
+			'global', 'channels', 't0_filters', 
+			't2_units', 't2_run_config'
+		),
+		2: (
+			'global', 't2_units', 't2_run_config'
+		)
+	}
+
+
+	@staticmethod
+	def load_config_db(db, tier='all'):
+		"""
+		"""
+		config = {}
+
+		for colname in DBWired.config_col_names[tier]:
+
+			config[colname] = {}
+
+			for el in db[colname].find({}):
+				config[colname][el.pop('_id')] = el
+
+		return config
+
+
+	def plug_databases(self, logger, mongodb_uri='localhost', arg_config=None, central_db=None):
 		"""
 		Parameters:
-		'db_host': dns name or ip address (with optionally a port number) of server hosting mongod
-		'config_db': see plug_config_db() docstring
+		'mongodb_uri': URI of server hosting mongod. 
+		   Example: 'mongodb://user:password@localhost:27017'
+		'arg_config': see load_config() docstring
 		'central_db': see plug_central_db() docstring
 		"""
 
 		# Setup instance variable referencing the input database
-		if self.plug_config_db(logger, db_host, config_db):
+		if self.load_config(logger, mongodb_uri, arg_config):
 
 			# Re-try using mongomock rather than pymongo
 			import mongomock
-			if self.plug_config_db(
-				logger, db_host, config_db, 
+			if self.load_config(
+				logger, mongodb_uri, arg_config, 
 				MongoClient=mongomock.mongo_client.MongoClient,
 				Database=mongomock.database.Database
 			):
-				raise ValueError("Illegal type provided for argument 'config_db'")
+				raise ValueError("Illegal type provided for argument 'arg_config'")
 
 		# Load general config using the input config db
-		self.global_config = {}
-		for doc in self.config_db['global'].find({}):
-			self.global_config[doc['_id']] = doc
+		self.global_config = self.config['global']
 
 		# Setup instance variables referencing the output databases
-		if self.plug_central_db(central_db, logger, db_host):
+		if self.plug_central_db(central_db, logger, mongodb_uri):
 
 			# Re-try using mongomock rather than pymongo
 			import mongomock
 			if self.plug_central_db(
-				central_db, logger, db_host, 
+				central_db, logger, mongodb_uri, 
 				MongoClient=mongomock.mongo_client.MongoClient,
 				Database=mongomock.database.Database
 			):
 				raise ValueError("Illegal type provided for argument 'central_db'")
 
 
-	def plug_config_db(
-		self, logger, db_host='localhost', config_db=None,
+	def load_config(
+		self, logger, mongodb_uri='localhost', arg_config=None,
 		MongoClient=pymongo.mongo_client.MongoClient,
 		Database=pymongo.database.Database
 	):
 		"""
 		Sets up the database containing the Ampel config collections.
-		'config_db': 
+		'arg_config': 
 		    Either:
-			-> None: default settings will be used 
-			   (pymongo MongoClient instance using 'db_host' and config db name 'Ampel_config')
-			-> string: a pymongo MongoClient will be instantiated (using 'db_host') 
-			   and a pymongo.database.Database instance created using the name given by config_db
-			-> MongoClient instance: a database instance with name 'Ampel_config' will be loaded using 
-			   the provided MongoClient instance (can originate from pymongo or mongomock)
-			-> Database instance (pymongo or mongomock): provided database will be used
-
+			-> None: default settings will be used: config will be loaded from db using 
+			   a pymongo MongoClient instance setup with 'mongodb_uri' and config entries 
+			   loaded from db with name 'Ampel_config'
+			-> string:
+			    * if string ends with '.json': json file will be loaded and used as config.
+			    * otherwise: config values will be loaded from a db whose name matches with 
+				  the provided string ('mongodb_uri' will be use for the mongoclient instantiation)
+			-> MongoClient instance: config will be loaded from db with name 'Ampel_config' 
+			   using the provided mongo client
+			-> Database instance: config will be loaded using the provided database
 		"""
 
 		# Default setting
-		if config_db is None:
-			self.mongo_client = MongoClient(db_host, maxIdleTimeMS=1000)
-			self.config_db = self.mongo_client["Ampel_config"]
+		if arg_config is None:
+			self.mongo_client = MongoClient(mongodb_uri, maxIdleTimeMS=1000)
+			self.config = DBWired.load_config_db(self.mongo_client["Ampel_config"])
 
 		# The config database name was provided
-		elif type(config_db) is str:
-			self.mongo_client = MongoClient(db_host, maxIdleTimeMS=1000)
-			self.config_db = self.mongo_client[config_db]
+		elif type(arg_config) is str:
+			if arg_config.endswith(".json"):
+				import json
+				with open(arg_config, "r") as f:
+					self.config = json.load(f)
+				logger.info("Config db loaded using %s" % arg_config)
+			else:
+				self.mongo_client = MongoClient(mongodb_uri, maxIdleTimeMS=1000)
+				self.config = DBWired.load_config_db(self.mongo_client[arg_config])
 
 		# A reference to a MongoClient instance was provided
-		# -> Provided config_db type can be (pymongo or mongomock).mongo_client.MongoClient
-		elif type(config_db) is MongoClient:
-			self.config_db = config_db["Ampel_config"]
+		elif type(arg_config) is MongoClient:
+			self.config = DBWired.load_config_db(arg_config["Ampel_config"])
 
 		# A reference to a database instance (pymongo or mongomock) was provided
 		# -> Provided config_db type can be (pymongo or mongomock).database.Database
-		elif type(config_db) is Database:
-			self.config_db = config_db
+		elif type(arg_config) is Database:
+			self.config = DBWired.load_config_db(arg_config)
 
 		# Illegal argument
 		else:
 			logger.warn(
-				"Provided argument value for 'config_db' is neither " + 
+				"Provided argument value for 'arg_config' is neither " + 
 				"string nor %s nor %s" % (MongoClient, Database)
 			)
 			return True
@@ -104,7 +143,7 @@ class DBWired:
 
 
 	def plug_central_db(
-		self, arg, logger, db_host='localhost',
+		self, arg, logger, mongodb_uri='localhost',
 		MongoClient=pymongo.mongo_client.MongoClient,
 		Database=pymongo.database.Database
 	):
@@ -130,7 +169,7 @@ class DBWired:
 			self.set_vars(
 				logger, mc = (
 					self.mongo_client if hasattr(self, 'mongo_client') 
-					else MongoClient(db_host, maxIdleTimeMS=1000)
+					else MongoClient(mongodb_uri, maxIdleTimeMS=1000)
 				)
 			)
 
@@ -145,7 +184,7 @@ class DBWired:
 
 			# Get mongoclient if not instantiated previously	
 			mongo_client = (
-				MongoClient(db_host, maxIdleTimeMS=1000) if not hasattr(self, 'mongo_client') 
+				MongoClient(mongodb_uri, maxIdleTimeMS=1000) if not hasattr(self, 'mongo_client') 
 				else self.mongo_client
 			)
 
@@ -177,16 +216,26 @@ class DBWired:
 		if "photo" in existing_col_names:
 			self.photo_col = db["photo"]
 		else:
-			logger.info("Creating new photo collection")
-			self.photo_col = db.create_collection("photo")
-			DBIndexCreator.create_photo_indexes(self.photo_col)
+			try:
+				self.photo_col = db.create_collection("photo")
+				logger.info("Creating new photo collection")
+				DBIndexCreator.create_photo_indexes(self.photo_col)
+			except CollectionInvalid:
+				# Catch 'CollectionInvalid: collection * already exists' 
+				# that can occur when multiple jobs are created simultaneoulsy
+				pass
 
 		if "main" in existing_col_names:
 			self.main_col = db["main"]
 		else:
-			logger.info("Creating new main collection")
-			self.main_col = db.create_collection("main")
-			DBIndexCreator.create_main_indexes(self.main_col)
+			try:
+				self.main_col = db.create_collection("main")
+				logger.info("Creating new main collection")
+				DBIndexCreator.create_main_indexes(self.main_col)
+			except CollectionInvalid:
+				# Catch 'CollectionInvalid: collection * already exists' 
+				# that can occur when multiple jobs are created simultaneoulsy
+				pass
 
 
 		if "jobs" in existing_col_names:
@@ -201,23 +250,29 @@ class DBWired:
 			)
 
 		self.troubles_col = db.client["Ampel_troubles"]['docs']
+		self.central_db = db
 
 
 	def get_main_col(self):
-		# pylint: disable=no-member
+		""" """
 		return self.main_col
 
 
 	def get_photo_col(self):
-		# pylint: disable=no-member
+		""" """
 		return self.photo_col
 
 
 	def get_job_col(self):
-		# pylint: disable=no-member
+		""" """
 		return self.jobs_col
 
 
 	def get_trouble_col(self):
-		# pylint: disable=no-member
+		""" """
 		return self.troubles_col
+
+
+	def get_central_db(self):
+		""" """
+		return self.central_db

@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 11.03.2018
-# Last Modified Date: 14.03.2018
+# Last Modified Date: 28.05.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from ampel.flags.FlagUtils import FlagUtils
@@ -19,12 +19,11 @@ class QueryMatchCriteria:
 	def add_from_list(query, field_name, inlist, should_type=str):
 		"""
 		This function translates a list of str/int (or more generaly 'should_type') 
-		representing databse matching criteria into a dict instance understandable by mongodb. 
+		representing database matching criteria into a dict instance understandable by mongodb. 
 		'inlist' can be nested up to one level.
 
-		It is often used for queries whose selection criteria are 
-		loaded directly from the DB config documents. 
-		For those a conversion to enumflag is not needed.
+		It is typically used for queries whose selection criteria are loaded directly 
+		from the DB config documents. 
 
 		Parameters:
 		-----------
@@ -52,11 +51,11 @@ class QueryMatchCriteria:
 		Examples: 
 		---------
 		The parameter 'inlist' could be (check FlagUtils.list_flags_to_enum_flags docstring):
-		-> either an list of strings that are 'OR' connected: ["SNCOSMO", "AGN"]
-		-> either an 2d-list of strings that are 'AND' connected: [["SNCOSMO", "AGN"]]
+		-> either an list of strings that are 'OR' connected: ["HU_SN", "LENSED_SNE"]
+		-> either an 2d-list of strings that are 'AND' connected: [["HU_SN", "LENSED_SNE"]]
 		  Search criteria would require that documents must contain the channels defined in the list
 		-> or list of lists whereby the outer lists are connected with the 'OR' logical operator:
-		  [["SNCOSMO", "AGN"], "PHOTO_Z"] 
+		  [["HU_SN", "LENSED_SNE"], "HU_EARLY_SN"] 
 
 		Applied example: 
 		Case 1:
@@ -64,20 +63,21 @@ class QueryMatchCriteria:
 		   finds transient associated with the channel HU_EARLY_SN
 
 		Case 1b:
-		-> channels = [["HU_EARLY_SN"]]
+		-> channels = [["HU_EARLY_SN"]]   -> same as case 1
+		   finds transient associated with the channel HU_EARLY_SN
 
 		Case 2:
 		-> channels = [["HU_EARLY_SN", "HU_RANDOM"]]
-		   finds transient that associated with *both* the channels HU_EARLY_SN and HU_RANDOM
+		   finds transient that associated with *both* channels HU_EARLY_SN and HU_RANDOM
 
 		Case 3:
 		-> channels = ["HU_EARLY_SN", "HU_RANDOM"]
 		   finds transient that associated with *either* the channels HU_EARLY_SN or HU_RANDOM
 
 		Case 4:
-		-> channels = ["LENS", ["HU_EARLY_SN", "HU_RANDOM"]] 
+		-> channels = ["LENSED_SNE", ["HU_EARLY_SN", "HU_RANDOM"]] 
 		   finds transient that associated with 
-		   * either with the LENS channel
+		   * either with the LENSED_SNE channel
 		   * or with both the channels HU_EARLY_SN and HU_RANDOM
 		"""
 		if inlist is None:

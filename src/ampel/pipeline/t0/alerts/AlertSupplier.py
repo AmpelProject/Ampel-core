@@ -9,12 +9,12 @@
 
 
 from ampel.abstract.AbsAlertShaper import AbsAlertShaper
-
+import time
 
 class AlertSupplier:
 
  
-	def __init__(self, alert_loader, alert_shaper, serialization=None):
+	def __init__(self, alert_loader, alert_shaper, serialization=None, archive=None):
 		"""
 		alert_loader: loads and returns alerts file like objects. Class must be iterable.
 		alert_shaper: reshapes dict into a form compatible with ampel
@@ -29,11 +29,14 @@ class AlertSupplier:
 
 			if serialization == "json":
 				import json
-				self.deserialize = json.load
+				self.deserialize = lambda f: json.load(f), {}
 
 			elif serialization == "avro":
 				import fastavro
-				self.deserialize = lambda x: next(fastavro.reader(x), None)
+				def deserialize(f):
+					reader = fastavro.reader(f)
+					return next(reader, None), reader.schema
+				self.deserialize = deserialize
 
 			else:
 				raise NotImplementedError(
@@ -41,6 +44,7 @@ class AlertSupplier:
 				)
 
 		self.alert_loader = alert_loader
+		self.alert_archive = archive
 		self.alert_shaper = alert_shaper
  
 
@@ -59,12 +63,17 @@ class AlertSupplier:
 		"""
 		"""
 		if self.deserialize is None:
+			assert self.alert_archive is None
 			return self.alert_shaper.shape(
 				next(self.alert_loader)
 			)
 		else:
-			return self.alert_shaper.shape(
-				self.deserialize(
-					next(self.alert_loader)
-				)
-			)
+			fileobj = next(self.alert_loader)
+			if isinstance(fileobj, tuple):
+				fileobj, partition_id = fileobj
+			else:
+				partition_id = 0
+			alert, schema = self.deserialize(fileobj)
+			if self.alert_archive is not None:
+				self.alert_archive.insert_alert(alert, schema, partition_id, int(1e6*time.time()))
+			return self.alert_shaper.shape(alert)

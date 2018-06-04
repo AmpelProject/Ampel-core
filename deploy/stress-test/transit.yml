@@ -12,40 +12,12 @@ services:
     environment:
       MONGO_INITDB_ROOT_USERNAME: root
       MONGO_INITDB_ROOT_PASSWORD_FILE: /run/secrets/mongo-root-password
-  catalog:
-    image: mongo:3.6
-    command: ["mongod", "--port", "2005"]
-    volumes:
-      - /data/ampel/mongo/offline/test-catalog:/data/db
-      - /data/ampel/mongo/offline/catalog-dump:/docker-entrypoint-initdb.d/
-    ports:
-      - "2005:2005"
-    secrets:
-      - mongo-root-password
-    environment:
-      MONGO_INITDB_ROOT_USERNAME: root
-      MONGO_INITDB_ROOT_PASSWORD_FILE: /run/secrets/mongo-root-password
-  archive:
-    image: postgres:10.3
-    command: ["postgres", "-p", "2006"]
-    volumes:
-      - /var/tmp:/run/postgresql
-      - /data/ampel/archive/stress-test:/var/lib/postgresql/data
-    ports:
-      - "2006:2006"
-    secrets:
-      - archive-user-password
-    environment:
-      POSTGRES_PASSWORD_FILE: /run/secrets/archive-user-password
-      POSTGRES_USER: ampel
-      POSTGRES_DB: ztfarchive
   ampel:
-    image: ampel:v0.1a4
-    command: ["/Ampel/deploy/stress-test/run_tests.sh"]
+    image: ampel:v0.1a6
+    command: ["/Ampel/run/run_stress_test.sh"]
     volumes:
       - /home/ampel/valery/Ampel:/Ampel
-      - /data/ampel/archive/smaller_tarballs:/ztf
-      
+      - /scratch/archive/smaller_tarballs:/ztf
     secrets:
       - archive-user-password
       - mongo-root-password

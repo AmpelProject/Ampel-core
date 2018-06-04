@@ -1,0 +1,45 @@
+version: '3.4'
+services:
+  archive:
+    image: postgres:10.3
+    command: ["postgres", "-p", "$ARCHIVE_PORT"]
+    volumes:
+      - /var/tmp:/run/postgresql
+      - $ARCHIVE_PATH:/var/lib/postgresql/data
+      - $ARCHIVE_INITDB_PATH:/docker-entrypoint-initdb.d
+    ports:
+      - "$ARCHIVE_PORT:$ARCHIVE_PORT"
+    secrets:
+      - archive-user-password
+    environment:
+      POSTGRES_PASSWORD_FILE: /run/secrets/archive-user-password
+      POSTGRES_USER: ampel
+      POSTGRES_DB: ztfarchive
+  graphite:
+    image: go-graphite
+    volumes:
+      - type: tmpfs
+        target: /var/log/supervisor/
+      - type: tmpfs
+        target: /run/
+      - type: volume
+        source: $METRICS_DIR/graphite
+        target: /var/lib/graphite
+      - type: volume
+        source: $METRICS_DIR/grafana
+        target: /usr/share/grafana/data
+      - type: volume
+        source: $METRICS_DIR/config/go-carbon
+        target: /etc/go-carbon
+      - type: volume
+        source: $METRICS_DIR/config/carbonapi
+        target: /etc/carbonapi
+      - type: volume
+        source: $METRICS_DIR/config/grafana
+        target: /etc/grafana
+
+secrets:
+  archive-user-password:
+    file: secrets/archive-user-password.txt
+  mongo-root-password:
+    file: secrets/mongo-root-password.txt

@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/pipeline/db/GraphiteFeeder.py
+# File              : ampel/pipeline/common/GraphiteFeeder.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 26.04.2018
-# Last Modified Date: 21.05.2018
+# Last Modified Date: 28.05.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from graphitesend import GraphiteClient
@@ -19,7 +19,8 @@ class GraphiteFeeder:
 		self.gclient = GraphiteClient(
 			graphite_server=graphite_config['server'], 
 			graphite_port=graphite_config['port'], 
-			system_name=graphite_config['systemName']
+			system_name=graphite_config['systemName'],
+			autoreconnect=True
 		)
 
 		self.stats = {}
@@ -68,7 +69,6 @@ class GraphiteFeeder:
 	def send(self):
 		"""
 		"""
-		# print(self.stats)
 		self.gclient.send_dict(self.stats)
 		self.stats = {}
 

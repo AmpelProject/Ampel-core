@@ -1,3 +1,12 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+# File              : ampel/base/UpperLimit.py
+# License           : BSD-3-Clause
+# Author            : vb <vbrinnel@physik.hu-berlin.de>
+# Date              : 10.05.2018
+# Last Modified Date: 02.06.2018
+# Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
+
 from ampel.flags.AlDocTypes import AlDocTypes
 from ampel.flags.FlagUtils import FlagUtils
 from ampel.flags.PhotoFlags import PhotoFlags
@@ -64,7 +73,7 @@ class UpperLimit:
 		   (should further modifications be required after class instantiation) 
 		"""
 
-		if db_doc["alDocType"] != AlDocTypes.UPPERLIMIT:
+		if db_doc["_id"] >= 0:
 			raise ValueError("The provided document is not an upper limit")
 
 		# Convert db flag to python enum flag
@@ -133,6 +142,13 @@ class UpperLimit:
 
 	
 	def has_flags(self, arg_flags):
+		"""
+		arg_flags: can be:
+			* an enumflag: has_flags() will return True or False
+			* a list of enumflags: has_flags() will return a list containing booleans
+		"""
+		if type(arg_flags) is list:
+			return [f for f in arg_flags in self.flags if f in self.flags]
 		return arg_flags in self.flags
 
 

@@ -1,0 +1,21 @@
+name: ampel
+channels:
+  - ampelproject
+  - conda-forge
+dependencies:
+  - python>=3.6
+  - werkzeug
+  - pymongo
+  - fastavro
+  - pytest
+  - pykafka
+  - python-confluent-kafka
+  - sqlalchemy
+  - psycopg2
+  - ipython
+  - extcats
+  - graphitesend
+  - pip:
+    - schedule
+    - -e
+    - /Ampel

@@ -8,6 +8,7 @@
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import logging, pymongo, time
+from bson.binary import Binary
 from datetime import datetime, timezone
 from pymongo.errors import BulkWriteError
 
@@ -46,15 +47,11 @@ class ZIAlertIngester(AbsAlertIngester):
 	)
 
 
-	def __init__(
-		self, channels, t2_units_col, photo_col, main_col, logger=None,
-		check_reprocessing=True, alert_history_length=30
-	):
+	def __init__(self, config, central_db, channels, logger=None):
 		"""
+		config: dict instance containing the ampel config
+		central_db: instance of pymongo.database.DataBase
 		channels: list of ampel.pipeline.config.Channel
-		t2_units_col: the db collection from the config DB hosting t2 unit parameters
-		photo_col: instance of pymongo.collection.Collection (required for database operations)
-		main_col: instance of pymongo.collection.Collection (required for database operations)
 		"""
 
 		if not type(channels) is list:
@@ -63,38 +60,34 @@ class ZIAlertIngester(AbsAlertIngester):
 		if len(channels) == 0:
 			raise ValueError("Parameter channels cannot be empty")
 
+		conf = config['global']['sources']['ZTFIPAC']
 		self.channel_names = tuple(channel.name for channel in channels)
 		self.logger = LoggingUtils.get_logger() if logger is None else logger
 		self.logger.info("Configuring ZIAlertIngester for channels %s" % repr(self.channel_names))
 		
 		# T2 unit making use of upper limits
 		self.t2_units_using_uls = tuple(
-			el["_id"] for el in t2_units_col.find({}) if el['upperLimits'] is True
+			key for key, value in config['t2_units'].items() 
+			if value['upperLimits'] is True
 		)
 
 		# instantiate util classes used in method ingest()
 		self.photo_shaper = ZIPhotoDictShaper()
 		self.t2_blueprint_creator = T2DocsBluePrint(channels, self.t2_units_using_uls)
-		self.comp_gen = CompoundBluePrint(
-			ZICompElement(channels), self.logger
-		)
+		self.comp_gen = CompoundBluePrint(ZICompElement(channels), self.logger)
 
-		self.logger.info(
-			"CompoundBluePrint instantiated using ZICompElement version %0.1f" % 
-			ZICompElement.version
-		)
-
-		self.main_col = main_col
-		self.photo_col = photo_col
-		self.count_dict = None
-		self.check_reproc = check_reprocessing
-		self.al_hist_len = alert_history_length
+		self.main_col = central_db['main']
+		self.photo_col = central_db['photo']
+		self.check_reproc = conf['ingestion']['checkReprocessing']
+		self.al_hist_len = conf['alerts']['alertHistoryLength']
 		self.JD2017 = 2457754.5
+		self.count_dict = None
+		self.lookup_projection = {
+			"_id": 1, "alFlags": 1, "jd": 1, "fid": 1,
+			"rcid": 1, "alExcluded": 1, "magpsf": 1
+		}
 
-		#self.lookup_projection = {
-		#	"_id": 1, "alFlags": 1, "jd": 1, "fid": 1,
-		#	"rcid": 1, "alExcluded": 1, "magpsf": 1
-		#}
+		self.logger.info("ZIAlertIngester setup using completed")
 
 
 	def flush_report(self):
@@ -179,8 +172,8 @@ class ZIAlertIngester(AbsAlertIngester):
 			{
 				# tranId should be specific to one instrument
 				"tranId": tran_id
-			}
-			# self.lookup_projection
+			},
+			self.lookup_projection
 		)
 
 		pps_db = []
@@ -424,9 +417,10 @@ class ZIAlertIngester(AbsAlertIngester):
 			
 			comp_dict = comp_gen.get_eff_compound(eff_comp_id)
 			pp_comp_id = comp_gen.get_ppid_of_effid(eff_comp_id)
+			bson_eff_comp_id = Binary(eff_comp_id, 5)
 
 			d_set_on_insert =  {
-				"_id": eff_comp_id,
+				"_id": bson_eff_comp_id,
 				"tranId": tran_id,
 				"alDocType": AlDocTypes.COMPOUND,
 				"tier": 0,
@@ -437,13 +431,13 @@ class ZIAlertIngester(AbsAlertIngester):
 			}
 
 			if pp_comp_id != eff_comp_id:
-				d_set_on_insert['ppCompId'] = pp_comp_id
+				d_set_on_insert['ppId'] = Binary(pp_comp_id, 5)
 
 			compound_upserts += 1
 
 			db_main_ops.append(
 				pymongo.UpdateOne(
-					{"_id": eff_comp_id},
+					{"_id": bson_eff_comp_id},
 					{
 						"$setOnInsert": d_set_on_insert,
 						"$addToSet": d_addtoset
@@ -481,6 +475,8 @@ class ZIAlertIngester(AbsAlertIngester):
 						t2docs_blueprint[t2_id][run_config][bifold_comp_id]
 					)
 
+					bson_bifold_comp_id = Binary(bifold_comp_id, 5)
+
 					journal = []
 
 					# Matching search criteria
@@ -489,7 +485,6 @@ class ZIAlertIngester(AbsAlertIngester):
 						"alDocType": AlDocTypes.T2RECORD,
 						"t2Unit": t2_id, 
 						"runConfig": run_config
-						#"compoundId": bifold_comp_id,
 					}
 
 					# Attributes set if no previous doc exists
@@ -512,22 +507,24 @@ class ZIAlertIngester(AbsAlertIngester):
 					# bifold_comp_id is then a pp_compound_id
 					if t2_id not in self.t2_units_using_uls:
 
-						# match_dict["compoundId"] = bifold_comp_id or 
-						# match_dict["compoundId"] = {"$in": [bifold_comp_id]}
+						# match_dict["compId"] = bifold_comp_id or 
+						# match_dict["compId"] = {"$in": [bifold_comp_id]}
 						# triggers the error: "Cannot apply $addToSet to non-array field. \
-						# Field named 'compoundId' has non-array type string"
+						# Field named 'compId' has non-array type string"
 						# -> See https://jira.mongodb.org/browse/SERVER-3946
-						match_dict["compoundId"] = {
+						match_dict["compId"] = {
 							"$elemMatch": {
-								"$eq": bifold_comp_id
+								"$eq": bson_bifold_comp_id
 							}
 						}
 
-						d_addtoset["compoundId"] = {
-							"$each": list(
-								{bifold_comp_id} | 
-								comp_gen.get_effids_of_chans(eff_chan_names)
-							)
+						d_addtoset["compId"] = {
+							"$each": [
+								Binary(el, 5) for el in (
+									{bifold_comp_id} | 
+									comp_gen.get_effids_of_chans(eff_chan_names)
+								)
+							]
 						}
 
 						# Update journal: register eff id for each channel
@@ -546,7 +543,7 @@ class ZIAlertIngester(AbsAlertIngester):
 							{
 								"dt": now,
 								"channels": eff_chan_names,
-								"ppId": bifold_comp_id,
+								"ppId": bson_bifold_comp_id,
 								"op": "upsertPp"
 							}
 						)
@@ -558,8 +555,8 @@ class ZIAlertIngester(AbsAlertIngester):
 					# bifold_comp_id is then an eff_compound_id
 					else:
 
-						match_dict["compoundId"] = bifold_comp_id
-						d_set_on_insert["compoundId"] = bifold_comp_id
+						match_dict["compId"] = bson_bifold_comp_id
+						d_set_on_insert["compId"] = bson_bifold_comp_id
 
 						# Update journal
 						d_addtoset["journal"] = {
@@ -605,15 +602,16 @@ class ZIAlertIngester(AbsAlertIngester):
 				{
 					"$setOnInsert": {
 						"tranId": tran_id,
-						"alDocType": AlDocTypes.TRANSIENT
+						"alDocType": AlDocTypes.TRANSIENT,
 					},
 					'$addToSet': {
 						"alFlags": {
 							"$each": ZIAlertIngester.new_tran_dbflag
 						},
-						'channels': {
-							"$each": chan_names
-						},
+						'channels': (
+							chan_names[0] if len(chan_names) == 1 
+							else {"$each": chan_names}
+						),
 						'jobIds': self.job_id,
 					},
 					"$max": {
@@ -621,11 +619,10 @@ class ZIAlertIngester(AbsAlertIngester):
 						"modified": now
 					},
 					"$push": {
-						"lastModified": {
+						"journal": {
 							'dt': now,
 							'tier': 0,
-							'src': "ZIAI", # ZIAlertIngesert
-							'channels': chan_names
+							'chans': chan_names
 						}
 					}
 				},

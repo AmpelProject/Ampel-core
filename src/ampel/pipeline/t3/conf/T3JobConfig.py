@@ -139,9 +139,9 @@ class T3JobConfig:
 				self.tran_chunk = db_doc['transients']['chunk']
 
 			# Check that proper values were provided, if provided
-			T3JobConfig._check_type_list(self.tran_sel, 'channels', str)
-			T3JobConfig._check_type_list(self.tran_load, 't2Ids', str)
-			T3JobConfig._check_type_list(self.tran_load, 'alDocTypes', int)
+			T3JobConfig._check_list_content_type(self.tran_sel, 'channels', str)
+			T3JobConfig._check_list_content_type(self.tran_load, 't2Ids', str)
+			T3JobConfig._check_list_content_type(self.tran_load, 'alDocTypes', int)
 			T3JobConfig._check_type_string(self.tran_sel, 'channel')
 			T3JobConfig._check_type_string(self.tran_load, 't2Id')
 
@@ -181,7 +181,7 @@ class T3JobConfig:
 		elif 'tasks' in db_doc:
 
 			# Make sure 'tasks' is a list of dict instances
-			T3JobConfig._check_type_list(db_doc, 'tasks', dict)
+			T3JobConfig._check_list_content_type(db_doc, 'tasks', dict)
 
 			for t3_task_doc in db_doc['tasks']:
 				self.t3_tasks.append(
@@ -250,7 +250,7 @@ class T3JobConfig:
 		return self.tran_load
 
 
-	def load_options_t2Ids(self):
+	def get_t2_selection(self):
 
 		if not hasattr(self, "tran_load"):
 			return None
@@ -262,7 +262,7 @@ class T3JobConfig:
 			return self.tran_load['t2Ids']
 
 
-	def sel_options_channel(self):
+	def get_channel_selection(self):
 
 		if not hasattr(self, "tran_sel"):
 			return None
@@ -289,7 +289,7 @@ class T3JobConfig:
 
 
 	@staticmethod
-	def _check_type_list(db_doc, key, should_type):
+	def _check_list_content_type(db_doc, key, should_type):
 		""" 
 		Internal robustness check function for job config entries
 		"""

@@ -20,10 +20,11 @@ def _worker(mongo_host, infile):
 	alert_processed = AlertProcessor.iter_max
 	tar_loader = TarAlertLoader(tar_path=infile)
 	alert_supplier = AlertSupplier(tar_loader, ZIAlertShaper(), serialization="avro")
-	processor = AlertProcessor(db_host=mongo)
+	processor = AlertProcessor(mongodb_uri=mongo)
 
 	while alert_processed == AlertProcessor.iter_max:
 		t0 = time.time()
+		print('Running on {}'.format(infile))
 		alert_processed = processor.run(alert_supplier, console_logging=False)
 		t1 = time.time()
 		dt = t1-t0
