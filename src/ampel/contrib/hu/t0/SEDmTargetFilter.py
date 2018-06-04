@@ -4,8 +4,8 @@
 # License           : BSD-3-Clause
 # Author            : m. giomi <matteo.giomi@desy.de>
 # Date              : 04.27.2018
-# Last Modified Date: 24.05.2018
-# Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
+# Last Modified Date: 04.06.2018
+# Last Modified By  : m. giomi <matteo.giomi@desy.de>
 
 import numpy as np
 import logging
@@ -111,7 +111,8 @@ class SEDmTargetFilter():
 				(latest['sgscore1'], self.sg_th)
 			)
 			return None
-#		# sgscore can be -999
+#		# sgscore can be -999, probably in the case of no mathc with PS1 sources.
+		# such transients are propbably real, so we keep them. Uncomment to remove them.
 #		if latest['sgscore1'] < 0:
 #			self.logger.debug("rejected: indef SG score (-999)")
 #			return None
