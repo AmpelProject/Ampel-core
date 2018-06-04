@@ -4,8 +4,9 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 10.10.2017
-# Last Modified Date: 02.06.2018
+# Last Modified Date: 04.06.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
+
 
 import pymongo, time, numpy as np
 from ampel.pipeline.t0.AmpelAlert import AmpelAlert
@@ -73,6 +74,15 @@ class AlertProcessor(DBWired):
 		cl = ChannelLoader(self.config, source=source, tier=0)
 		self.channels = cl.load_channels(channels, self.logger);
 		self.chan_enum = list(enumerate(self.channels))
+		self.chan_auto_complete = len(self.channels) * [False]
+		self.live_ac = False
+
+		for i, channel in self.chan_enum:
+			if channel.has_source(source):
+				ac = channel.get_config("parameters.autoComplete", source="ZTFIPAC")
+				if ac is not None and ac == "live":
+					self.live_ac = True
+					self.chan_auto_complete[i] = True
 
 		# Robustness
 		if len(self.channels) == 0:
@@ -250,10 +260,10 @@ class AlertProcessor(DBWired):
 
 		# Create array
 		scheduled_t2_units = len(self.channels) * [None]
-		# chan_auto_complete = len(self.channels) * [False]
 
 		# Save ampel 'state' and get list of tran ids required for autocomplete
-		# tran_ids_before = self.get_tran_ids()
+		if self.live_ac:
+			tran_ids_before = self.get_tran_ids()
 
 		# Forward jobId to ingester instance 
 		# (will be inserted in the transient documents)
@@ -301,7 +311,6 @@ class AlertProcessor(DBWired):
 			job_info['duration']['filtering'][channel.name] = np.empty(iter_max)
 			job_info['duration']['filtering'][channel.name].fill(np.nan)
 			job_info['count']['ingestion']['alerts'][channel.name] = 0
-			# chan_auto_complete[i] = channel.get_config("parameters.autoComplete")
 
 		# The (standard) ingester will update DB insert operations
 		if hasattr(self.ingester, "set_stats_dict"):
@@ -381,19 +390,12 @@ class AlertProcessor(DBWired):
 						loginfo(channel.log_accepted)
 					else:
 						# Autocomplete required for this channel
-						#if tran_ids_before[i] is not None and tran_id in tran_ids_before[i]:
-						#if chan_auto_complete[i] and col.find(
-						#	{
-						#		'_id': tran_id, 
-						#		'alDocType': AlDocTypes.TRANSIENT, 
-						#		'channels': channel.name
-						#	}
-						#).count() > 0:
-						#	loginfo(channel.log_auto_complete)
-						#	alert_counts[channel.name] += 1
-						#	scheduled_t2_units[i] = channel.t2_units
-						#else:
-						loginfo(channel.log_rejected)
+						if self.live_ac and self.chan_auto_complete[i] and tran_id in tran_ids_before[i]:
+							loginfo(channel.log_auto_complete)
+							alert_counts[channel.name] += 1
+							scheduled_t2_units[i] = channel.t2_units
+						else:
+							loginfo(channel.log_rejected)
 
 				except:
 
@@ -452,16 +454,17 @@ class AlertProcessor(DBWired):
 		# Post run section
 		try: 
 
-			# Save ampel 'state' and get list of tran ids required for autocomplete
-			# tran_ids_after = self.get_tran_ids()
+			# Optional autocomplete
+			if self.live_ac:
+				tran_ids_after = self.get_tran_ids()
 	
-			# Check post auto-complete
-			# for i, channel in chan_enum:
-			#	if type(tran_ids_after[i]) is set:
-			#		auto_complete_diff = tran_ids_after[i] - tran_ids_before[i]
-			#		if auto_complete_diff:
-			#			# TODO: implement post-processing-autocomplete
-			#			pass 
+				# Check post auto-complete
+				for i, channel in chan_enum:
+					if type(tran_ids_after[i]) is set:
+						auto_complete_diff = tran_ids_after[i] - tran_ids_before[i]
+						if auto_complete_diff:
+							# TODO: implement fetch from archive
+							pass 
 	
 			# Durations in seconds
 			job_info['duration']['t0Job'] = {
@@ -476,7 +479,7 @@ class AlertProcessor(DBWired):
 	
 				# Gather counts
 				job_info['count']['t0Job'] = {
-					'alLoaded': iter_count,
+					'alProcessed': iter_count,
 					'alIngested': ingested_count,
 					'ppsLoaded': pps_loaded,
 					'ulsLoaded': uls_loaded
@@ -588,7 +591,7 @@ class AlertProcessor(DBWired):
 			if 'alert_id' in shaped_alert:
 				insert_dict['alertId'] = shaped_alert['alert_id'] 
 	
-			if "KeyboardInterrupt" not in exception_str:
+			if not "KeyboardInterrupt" in exception_str:
 	
 				if (
 					'pps' in shaped_alert and 
@@ -619,40 +622,40 @@ class AlertProcessor(DBWired):
 		)
 
 
-#	def get_tran_ids(self):
-#		"""
-#		Return value:
-#		Array - whose length equals len(self.channels) - possibly containing sets of transient ids.
-#		If channel[i] is the channel with index i wrt the list of channels 'self.channels', 
-#		and if channel[i] was configured to make use of the ampel auto_complete feature, 
-#		then tran_ids[i] will hold a {set} of transient ids listing all known 
-#		transients currently available in the DB for this particular channel.
-#		Otherwise, tran_ids_before[i] will be None
-#		"""
-#
-#		col = self.get_main_col()
-#		tran_ids = len(self.channels) * [None]
-#
-#		# Loop through activated channels
-#		for i, channel in self.chan_enum:
-#
-#			if channel.get_config("parameters.autoComplete"):
-#
-#				# Build set of transient ids for this channel
-#				tran_ids[i] = {
-#					el['tranId'] for el in col.find(
-#						{
-#							'tranId': {'$gt': 1}, 
-#							'alDocType': AlDocTypes.TRANSIENT, 
-#							'channels': channel.name
-#						},
-#						{
-#							'_id': 0, 'tranId': 1
-#						}
-#					)
-#				}
-#
-#		return tran_ids
+	def get_tran_ids(self):
+		"""
+		Return value:
+		Array whose length equals len(self.channels), possibly containing sets of transient ids.
+		If channel[i] is the channel with index i wrt the list of channels 'self.channels', 
+		and if channel[i] was configured to make use of the 'live' auto_complete feature, 
+		then tran_ids[i] will hold a {set} of transient ids listing all known 
+		transients currently available in the DB for this particular channel.
+		Otherwise, tran_ids_before[i] will be None
+		"""
+
+		col = self.get_main_col()
+		tran_ids = len(self.channels) * [None]
+
+		# Loop through activated channels
+		for i, channel in self.chan_enum:
+
+			if self.chan_auto_complete[i]:
+
+				# Build set of transient ids for this channel
+				tran_ids[i] = {
+					el['tranId'] for el in col.find(
+						{
+							'tranId': {'$gt': 1}, 
+							'alDocType': AlDocTypes.TRANSIENT, 
+							'channels': channel.name
+						},
+						{
+							'_id': 0, 'tranId': 1
+						}
+					)
+				}
+
+		return tran_ids
 
 
 def init_db():
@@ -685,7 +688,10 @@ def create_databases(host, database_name, configs):
 	from bson import ObjectId
 	import json
 	from ampel.archive import docker_env
-	client = MongoClient(host, username=os.environ.get('MONGO_INITDB_ROOT_USERNAME', 'root'), password=docker_env('MONGO_INITDB_ROOT_PASSWORD'))
+	client = MongoClient(
+		host, username=os.environ.get('MONGO_INITDB_ROOT_USERNAME', 'root'), 
+		password=docker_env('MONGO_INITDB_ROOT_PASSWORD')
+	)
 	
 	def get_id(blob):
 		if isinstance(blob['_id'], dict) and '$oid' in blob['_id']:
@@ -733,8 +739,17 @@ def run_alertprocessor():
 		docker_env('MONGO_INITDB_ROOT_PASSWORD'), 
 		opts.mongo_host
 	)
-	archive = ArchiveDB('postgresql://ampel:{}@{}/ztfarchive'.format(docker_env('POSTGRES_PASSWORD'), opts.archive_host))
-	graphite = GraphiteFeeder(dict(server='transit', port=2003, systemName='ampel.transit'))
+
+	archive = ArchiveDB(
+		'postgresql://ampel:{}@{}/ztfarchive'.format(
+			docker_env('POSTGRES_PASSWORD'), 
+			opts.archive_host
+		)
+	)
+
+	graphite = GraphiteFeeder(
+		{'server': 'transit', 'port': 2003, 'systemName': 'ampel.transit'}
+	)
 
 	import time
 	count = 0
@@ -764,5 +779,3 @@ def run_alertprocessor():
 			print('({}) {} alerts in {:.1f}s; {:.1f}/s'.format(infile, alert_processed, dt, alert_processed/dt))
 			graphite.add_stats( archive.get_statistics(), 'archive.tables')
 			graphite.send()
-
-	
