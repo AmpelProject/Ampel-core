@@ -89,3 +89,8 @@ Resetting graphite aggregation and retention
 singularity shell -B /home/ampel/graphite-metrics:/mnt -C /data/ampel/singularity/graphite-statsd-1.0.2-2.sim
 find /mnt/whisper -wholename '*Ampel-transit*/*.wsp' | xargs -n1 -I{} /usr/local/bin/whisper-set-xfilesfactor.py {} 0.01
 find /mnt/whisper -wholename '*Ampel-transit*/*.wsp' | xargs -n1 -I{} /usr/local/bin/whisper-set-aggregation-method.py {} average
+
+Recovering a Grafana dashboard without running Grafana
+******************************************************
+
+sqlite3 grafana/grafana.db 'select data from dashboard where title="Ampel burst Dashboard" > dashboard.json
