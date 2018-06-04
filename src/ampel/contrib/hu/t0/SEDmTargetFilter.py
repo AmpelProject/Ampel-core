@@ -70,7 +70,7 @@ class SEDmTargetFilter():
 		)
 
 		# Robustness
-		self.keys_to_check = ('rb', 'sgscore')
+		self.keys_to_check = ('rb', 'sgscore1')
 
 
 	def apply(self, alert):
@@ -105,12 +105,16 @@ class SEDmTargetFilter():
 			return None
 
 		# then on star-galaxy separation (1 for star, 0 for galaxy)
-		if latest['sgscore'] > self.sg_th:
+		if latest['sgscore1'] > self.sg_th:
 			self.logger.debug(
 				"rejected: SG score %.2f above threshod (%.2f)" %
-				(latest['sgscore'], self.sg_th)
+				(latest['sgscore1'], self.sg_th)
 			)
 			return None
+#		# sgscore can be -999
+#		if latest['sgscore1'] < 0:
+#			self.logger.debug("rejected: indef SG score (-999)")
+#			return None
 
 		# then on the magnitude
 		if latest['magpsf'] > self.mag_th:
