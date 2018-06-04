@@ -10,10 +10,16 @@ services:
     ports:
       - "$ARCHIVE_PORT:$ARCHIVE_PORT"
     secrets:
-      - archive-user-password
+      - archive-root-password
+      - archive-write-password
+      - archive-read-password
     environment:
-      POSTGRES_PASSWORD_FILE: /run/secrets/archive-user-password
       POSTGRES_USER: ampel
+      ARCHIVE_READ_USER: ampel-readonly
+      ARCHIVE_WRITE_USER: ampel-client
+      POSTGRES_PASSWORD_FILE: /run/secrets/archive-root-password
+      ARCHIVE_READ_USER_PASSWORD_FILE: /run/secrets/archive-read-password
+      ARCHIVE_WRITE_USER_PASSWORD_FILE: /run/secrets/archive-write-password
       POSTGRES_DB: ztfarchive
   graphite:
     image: go-graphite
@@ -39,7 +45,9 @@ services:
         target: /etc/grafana
 
 secrets:
-  archive-user-password:
-    file: secrets/archive-user-password.txt
-  mongo-root-password:
-    file: secrets/mongo-root-password.txt
+  archive-root-password:
+    file: secrets/archive-root-password.txt
+  archive-read-password:
+    file: secrets/archive-read-password.txt
+  archive-write-password:
+    file: secrets/archive-write-password.txt

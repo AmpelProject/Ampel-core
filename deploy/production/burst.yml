@@ -8,9 +8,12 @@ services:
       - $MONGO_INITDB_PATH:/docker-entrypoint-initdb.d
     secrets:
       - mongo-root-password
+      - mongo-alertprocessor-password
     environment:
       MONGO_INITDB_ROOT_USERNAME: root
       MONGO_INITDB_ROOT_PASSWORD_FILE: /run/secrets/mongo-root-password
+      MONGO_USER: alertprocessor
+      MONGO_PASSWORD_FILE: /run/secrets/mongo-alertprocessor-password
   #catalog:
   #  image: mongo:3.6
   #  command: ["mongod", "--port", "$CATALOG_PORT"]
@@ -31,14 +34,13 @@ services:
         target: /Ampel
       - /data/ampel/archive/tarballs:/ztf
     secrets:
-      - archive-user-password
-      - mongo-root-password
+      - mongo-alertprocessor-password
     environment:
       TINI_SUBREAPER: 1
       MONGO: $MONGO_HOST:$MONGO_PORT
       GRAPHITE: $GRAPHITE_HOST:$GRAPHITE_PORT
-      MONGO_INITDB_ROOT_USERNAME: root
-      MONGO_INITDB_ROOT_PASSWORD_FILE: /run/secrets/mongo-root-password
+      MONGO_USER: alertprocessor
+      MONGO_PASSWORD_FILE: /run/secrets/mongo-alertprocessor-password
     depends_on:
       - mongo
   alertprocessor:
@@ -50,18 +52,18 @@ services:
         target: /Ampel
       - /data/ampel/archive/tarballs:/ztf
     secrets:
-      - archive-user-password
-      - mongo-root-password
+      - archive-write-password
+      - mongo-alertprocessor-password
     environment:
       TINI_SUBREAPER: 1
       MONGO: $MONGO_HOST:$MONGO_PORT
       GRAPHITE: $GRAPHITE_HOST:$GRAPHITE_PORT
       CATALOG: $CATALOG_HOST:$CATALOG_PORT
       ARCHIVE: $ARCHIVE_HOST:$ARCHIVE_PORT
-      MONGO_INITDB_ROOT_USERNAME: root
-      MONGO_INITDB_ROOT_PASSWORD_FILE: /run/secrets/mongo-root-password
-      POSTGRES_PASSWORD_FILE: /run/secrets/archive-user-password
-      POSTGRES_USER: ampel
+      MONGO_USER: alertprocessor
+      MONGO_PASSWORD_FILE: /run/secrets/mongo-alertprocessor-password
+      ARCHIVE_WRITE_USER: ampel-client
+      ARCHIVE_WRITE_USER_PASSWORD_FILE: /run/secrets/archive-write-password
     deploy:
       replicas: $NUM_STREAMS
       restart_policy:
@@ -77,13 +79,12 @@ services:
         source: $AMPEL_SRC
         target: /Ampel
     secrets:
-      - archive-user-password
-      - mongo-root-password
+      - mongo-alertprocessor-password
     environment:
       TINI_SUBREAPER: 1
       MONGO: $MONGO_HOST:$MONGO_PORT
-      MONGO_INITDB_ROOT_USERNAME: root
-      MONGO_INITDB_ROOT_PASSWORD_FILE: /run/secrets/mongo-root-password
+      MONGO_USER: alertprocessor
+      MONGO_PASSWORD_FILE: /run/secrets/mongo-alertprocessor-password
     deploy:
       restart_policy:
           max-attempts: 3
@@ -99,13 +100,12 @@ services:
         source: $AMPEL_SRC
         target: /Ampel
     secrets:
-      - archive-user-password
-      - mongo-root-password
+      - mongo-alertprocessor-password
     environment:
       TINI_SUBREAPER: 1
       MONGO: $MONGO_HOST:$MONGO_PORT
-      MONGO_INITDB_ROOT_USERNAME: root
-      MONGO_INITDB_ROOT_PASSWORD_FILE: /run/secrets/mongo-root-password
+      MONGO_USER: alertprocessor
+      MONGO_PASSWORD_FILE: /run/secrets/mongo-alertprocessor-password
     deploy:
       restart_policy:
           max-attempts: 3
@@ -115,7 +115,9 @@ services:
       - mongo
 
 secrets:
-  archive-user-password:
-    file: secrets/archive-user-password.txt
+  archive-write-password:
+    file: secrets/archive-write-password.txt
   mongo-root-password:
     file: secrets/mongo-root-password.txt
+  mongo-alertprocessor-password:
+    file: secrets/mongo-alertprocessor-password.txt

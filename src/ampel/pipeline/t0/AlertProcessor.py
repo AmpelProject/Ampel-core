@@ -719,6 +719,7 @@ def run_alertprocessor():
 	parser = ArgumentParser(description=__doc__, formatter_class=ArgumentDefaultsHelpFormatter)
 	parser.add_argument('--mongo-host', default='mongo:27017')
 	parser.add_argument('--archive-host', default='archive:5432')
+	parser.add_argument('--config', default=abspath(dirname(realpath(__file__)) + '/../../../../config/messy_preliminary_config.json'))
 	parser.add_argument('--graphite', default='localhost:2003')
 	action = parser.add_mutually_exclusive_group(required=True)
 	action.add_argument('--broker', default='epyc.astro.washington.edu:9092')
@@ -735,14 +736,15 @@ def run_alertprocessor():
 	from ampel.archive import docker_env, ArchiveDB
 
 	mongo = 'mongodb://{}:{}@{}/'.format(
-		docker_env('MONGO_INITDB_ROOT_USERNAME'), 
-		docker_env('MONGO_INITDB_ROOT_PASSWORD'), 
+		docker_env('MONGO_USER'), 
+		docker_env('MONGO_PASSWORD'), 
 		opts.mongo_host
 	)
 
 	archive = ArchiveDB(
-		'postgresql://ampel:{}@{}/ztfarchive'.format(
-			docker_env('POSTGRES_PASSWORD'), 
+		'postgresql://{}:{}@{}/ztfarchive'.format(
+			docker_env('ARCHIVE_WRITE_USER'), 
+			docker_env('ARCHIVE_WRITE_USER_PASSWORD'), 
 			opts.archive_host
 		)
 	)
@@ -764,7 +766,7 @@ def run_alertprocessor():
 		loader = iter(fetcher)
 
 	alert_supplier = AlertSupplier(loader, ZIAlertShaper(), serialization="avro", archive=archive)
-	processor = AlertProcessor(mongodb_uri=mongo, publish_stats=["jobs"], channels=["HU_SN1"])
+	processor = AlertProcessor(mongodb_uri=mongo, publish_stats=["jobs"], config=opts.config)
 
 	while alert_processed == AlertProcessor.iter_max:
 		graphite.add_stats( archive.get_statistics(), 'archive.tables')

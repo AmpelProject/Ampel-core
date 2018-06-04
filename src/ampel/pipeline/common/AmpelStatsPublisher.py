@@ -295,8 +295,8 @@ def run():
 	opts = parser.parse_args()
 
 	mongo_uri = 'mongodb://{}:{}@{}/'.format(
-		docker_env('MONGO_INITDB_ROOT_USERNAME'),
-		docker_env('MONGO_INITDB_ROOT_PASSWORD'),
+		docker_env('MONGO_USER'),
+		docker_env('MONGO_PASSWORD'),
 		opts.mongo,
 	)
 
