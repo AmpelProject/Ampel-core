@@ -4,8 +4,8 @@
 # License           : BSD-3-Clause
 # Author            : m. giomi <matteo.giomi@desy.de>
 # Date              : 04.27.2018
-# Last Modified Date: 24.05.2018
-# Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
+# Last Modified Date: 04.06.2018
+# Last Modified By  : m. giomi <matteo.giomi@desy.de>
 
 import numpy as np
 import logging
@@ -70,7 +70,7 @@ class SEDmTargetFilter():
 		)
 
 		# Robustness
-		self.keys_to_check = ('rb', 'sgscore')
+		self.keys_to_check = ('rb', 'sgscore1')
 
 
 	def apply(self, alert):
@@ -105,12 +105,17 @@ class SEDmTargetFilter():
 			return None
 
 		# then on star-galaxy separation (1 for star, 0 for galaxy)
-		if latest['sgscore'] > self.sg_th:
+		if latest['sgscore1'] > self.sg_th:
 			self.logger.debug(
 				"rejected: SG score %.2f above threshod (%.2f)" %
-				(latest['sgscore'], self.sg_th)
+				(latest['sgscore1'], self.sg_th)
 			)
 			return None
+#		# sgscore can be -999, probably in the case of no mathc with PS1 sources.
+		# such transients are propbably real, so we keep them. Uncomment to remove them.
+#		if latest['sgscore1'] < 0:
+#			self.logger.debug("rejected: indef SG score (-999)")
+#			return None
 
 		# then on the magnitude
 		if latest['magpsf'] > self.mag_th:
