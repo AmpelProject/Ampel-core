@@ -717,8 +717,6 @@ def run_alertprocessor():
 	from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
 	from os.path import basename, dirname, abspath, realpath
 	parser = ArgumentParser(description=__doc__, formatter_class=ArgumentDefaultsHelpFormatter)
-	parser.add_argument('--mongo-host', default='mongo:27017')
-	parser.add_argument('--archive-host', default='archive:5432')
 	parser.add_argument('--config', default=abspath(dirname(realpath(__file__)) + '/../../../../config/messy_preliminary_config.json'))
 	parser.add_argument('--graphite', default='localhost:2003')
 	action = parser.add_mutually_exclusive_group(required=True)
@@ -733,21 +731,11 @@ def run_alertprocessor():
 	from ampel.pipeline.t0.alerts.ZIAlertShaper import ZIAlertShaper
 	from ampel.pipeline.t0.ZIAlertFetcher import ZIAlertFetcher
 	from ampel.pipeline.common.GraphiteFeeder import GraphiteFeeder
-	from ampel.archive import docker_env, ArchiveDB
+	from ampel.pipeline.common.expandvars import expandvars
+	from ampel.archive import ArchiveDB
 
-	mongo = 'mongodb://{}:{}@{}/'.format(
-		docker_env('MONGO_USER'), 
-		docker_env('MONGO_PASSWORD'), 
-		opts.mongo_host
-	)
-
-	archive = ArchiveDB(
-		'postgresql://{}:{}@{}/ztfarchive'.format(
-			docker_env('ARCHIVE_WRITE_USER'), 
-			docker_env('ARCHIVE_WRITE_USER_PASSWORD'), 
-			opts.archive_host
-		)
-	)
+	mongo = expandvars('mongodb://${MONGO_USER}:${MONGO_PASSWORD}@${MONGO}')
+	archive = ArchiveDB(expandvars('postgresql://${ARCHIVE_WRITE_USER}:${ARCHIVE_WRITE_USER_PASSWORD}@${ARCHIVE}/ztfarchive'))
 
 	graphite = GraphiteFeeder(
 		{'server': 'transit', 'port': 2003, 'systemName': 'ampel.transit'}
