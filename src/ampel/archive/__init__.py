@@ -10,23 +10,10 @@ from functools import partial
 import sqlalchemy
 import os, json
 import fastavro
+import collections
 
 from sqlalchemy.ext.compiler import compiles
 from sqlalchemy.sql.expression import Insert
-
-@compiles(Insert, 'postgresql')
-def ignore_duplicates(insert, compiler, **kw):
-    s = compiler.visit_insert(insert, **kw)
-    ignore = insert.kwargs.get('postgresql_ignore_duplicates', False)
-    return s if not ignore else s + ' ON CONFLICT DO NOTHING'
-Insert.argument_for('postgresql', 'ignore_duplicates', None)
-
-@compiles(Insert, 'sqlite')
-def ignore_duplicates(insert, compiler, **kw):
-    ignore = insert.kwargs.get('sqlite_ignore_duplicates', False)
-    my_insert = insert if not ignore else insert.prefix_with('OR IGNORE')
-    return compiler.visit_insert(my_insert, **kw)
-Insert.argument_for('sqlite', 'ignore_duplicates', None)
 
 class ArchiveDB(object):
     def __init__(self, *args, **kwargs):
@@ -82,8 +69,8 @@ class ArchiveDB(object):
     def get_cutout(self, candid):
         return get_cutout(self._connection, self._meta, candid)
 
-    def get_alerts_for_object(self, objectId):
-        return get_alerts_for_object(self._connection, self._meta, objectId)
+    def get_alerts_for_object(self, objectId, jd_start=-float('inf'), jd_end=float('inf')):
+        return get_alerts_for_object(self._connection, self._meta, objectId, jd_start, jd_end)
 
     def get_alerts(self, candids):
         return get_alerts(self._connection, self._meta, candids)
@@ -341,19 +328,28 @@ def get_alerts(connection, meta, alert_ids):
 
     yield from fetch_alerts_with_condition(connection, meta, Alert.c.candid.in_(alert_ids), order)
 
-def get_alerts_for_object(connection, meta, objectId):
+def get_alerts_for_object(connection, meta, objectId, jd_start=-float('inf'), jd_end=float('inf')):
     """
     Retrieve alerts from the archive database by ID
     
     :param connection: database connection
     :param meta: schema metadata
-    :param alert_id: a collection of `candid` of alerts to retrieve
+    :param objectId: id of the transient, e.g. ZTF18aaaaaa, or a collection thereof
+    :param jd_start: minimum JD of exposure start
+    :param jd_end: maximum JD of exposure start
     :returns: the target alert as a :py:class:`dict`, or `None` if the alert is
               not in the archive
     """
     Alert = meta.tables['alert']
+    if isinstance(objectId, str):
+        match = Alert.c.objectId == objectId
+    elif isinstance(objectId, collections.Collection):
+        match = in_(Alert.c.objectId, objectId)
+    else:
+        raise TypeError("objectId must be str or collection, got {}".format(type(objectId)))
+    in_range = and_(Alert.c.jd >= jd_start, Alert.c.jd < jd_end, match)
 
-    yield from fetch_alerts_with_condition(connection, meta, Alert.c.objectId == objectId, Alert.c.jd.asc())
+    yield from fetch_alerts_with_condition(connection, meta, in_range, Alert.c.jd.asc())
 
 def get_alerts_in_time_range(connection, meta, jd_start, jd_end, partitions=None):
     """
