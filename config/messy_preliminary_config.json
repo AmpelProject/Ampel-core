@@ -491,17 +491,13 @@
         "LensedTransientFilter": {
             "classFullPath": "ampel.contrib.hu.t0.LensedTransientFilter",
             "baseConfig": {
-                "mongodbHost": "localhost",
-                "mongodbPort": 27017,
-                "mongodbURI": "mongodb://localhost"
+                "mongodbURI": "mongodb://${CATALOG_READ_USER}:${CATALOG_READ_USER_PASSWORD}@${CATALOG}"
             }
         },
         "SEDmTargetFilter": {
             "classFullPath": "ampel.contrib.hu.t0.SEDmTargetFilter",
             "baseConfig": {
-                "mongodbHost": "localhost",
-                "mongodbPort": 27017,
-                "mongodbURI": "mongodb://localhost"
+                "mongodbURI": "mongodb://${CATALOG_READ_USER}:${CATALOG_READ_USER_PASSWORD}@${CATALOG}"
             }
         }
     },
