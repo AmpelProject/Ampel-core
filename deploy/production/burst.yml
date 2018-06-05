@@ -14,17 +14,23 @@ services:
       MONGO_INITDB_ROOT_PASSWORD_FILE: /run/secrets/mongo-root-password
       MONGO_USER: alertprocessor
       MONGO_PASSWORD_FILE: /run/secrets/mongo-alertprocessor-password
-  #catalog:
-  #  image: mongo:3.6
-  #  command: ["mongod", "--port", "$CATALOG_PORT"]
-  #  volumes:
-  #    - /data/ampel/mongo/offline/test-catalog:/data/db
-  #    - /data/ampel/mongo/offline/catalog-dump:/docker-entrypoint-initdb.d/
-  #  secrets:
-  #    - mongo-root-password
-  #  environment:
-  #    MONGO_INITDB_ROOT_USERNAME: root
-  #    MONGO_INITDB_ROOT_PASSWORD_FILE: /run/secrets/mongo-root-password
+  catalog:
+   image: mongo:3.6
+   command: ["mongod", "--port", "$CATALOG_PORT"]
+   volumes:
+     - $CATALOG_INITDB_PATH:/docker-entrypoint-initdb.d/
+     - $CATALOG_MONGODUMP_PATH:/mnt
+   ports:
+     - "27018:27018"
+   secrets:
+     - mongo-root-password
+     - catalog-read-password
+   environment:
+     MONGO_INITDB_ROOT_USERNAME: root
+     MONGO_INITDB_ROOT_PASSWORD_FILE: /run/secrets/mongo-root-password
+     MONGODUMP_DIR: /mnt
+     MONGO_USER: filterclient
+     MONGO_PASSWORD_FILE: /run/secrets/catalog-read-password
   stats:
     image: ampel:$AMPEL_TAG
     command: ["ampel-statspublisher", "--mongo", "$MONGO_HOST:$MONGO_PORT", "--graphite", "$GRAPHITE_HOST:$GRAPHITE_PORT"]
@@ -35,12 +41,15 @@ services:
       - /data/ampel/archive/tarballs:/ztf
     secrets:
       - mongo-alertprocessor-password
+      - catalog-read-password
     environment:
       TINI_SUBREAPER: 1
       MONGO: $MONGO_HOST:$MONGO_PORT
       GRAPHITE: $GRAPHITE_HOST:$GRAPHITE_PORT
       MONGO_USER: alertprocessor
       MONGO_PASSWORD_FILE: /run/secrets/mongo-alertprocessor-password
+      CATALOG_READ_USER: filterclient
+      CATALOG_READ_USER_PASSWORD_FILE: /run/secrets/catalog-read-password
     depends_on:
       - mongo
   alertprocessor:
@@ -121,3 +130,5 @@ secrets:
     file: secrets/mongo-root-password.txt
   mongo-alertprocessor-password:
     file: secrets/mongo-alertprocessor-password.txt
+  catalog-read-password:
+    file: secrets/catalog-read-password.txt
