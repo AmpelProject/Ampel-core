@@ -4,17 +4,28 @@ FROM continuumio/miniconda:4.3.27 AS conda
 
 # Set up deploy key and clone Ampel git repo
 RUN mkdir /root/.ssh/
-ADD id_rsa /root/.ssh/
-RUN chmod 700 /root/.ssh/id_rsa
+ADD deploy-keys/id_rsa* /root/.ssh/
+RUN ls /root/.ssh
+RUN chmod 700 /root/.ssh/id_rsa*
 RUN chown -R root:root /root/.ssh
 RUN touch /root/.ssh/known_hosts
 RUN ssh-keyscan github.com >> /root/.ssh/known_hosts
-RUN git clone git@github.com:AmpelProject/Ampel.git /Ampel
+# Set deploy keys for each repo individually
+# https://eclipsesource.com/blogs/2012/07/30/accessing-multiple-private-github-repositories-without-a-dedicated-build-user/ 
+RUN find /root/.ssh/ -type f \( -iname 'id_rsa*' -and -not -iname '*.pub' \) | cut -d. -f 3 | while read repo; do \
+echo $repo; \
+echo "Host github-$repo" >> /root/.ssh/config; \
+echo "    HostName github.com" >> /root/.ssh/config; \
+echo "    User git" >> /root/.ssh/config; \
+echo "    IdentityFile /root/.ssh/id_rsa.$repo" >> /root/.ssh/config; \
+done
+RUN git clone git@github-ampel:AmpelProject/Ampel.git /Ampel
 
 COPY environment.yml /
 RUN conda env create --file /environment.yml
 
 RUN cd /Ampel && git pull && pip install -e .
+# RUN bash -c "source activate ampel && pip install git+ssh://git@github-ampel-ztfbh/robertdstein/Ampel-ZTFbh.git@0275a2bf40710680902f99d2f6cf01dd6f9e90c9"
 
 # Transplant environment (without conda itself) into bare-bones alpine
 FROM alpine:3.7

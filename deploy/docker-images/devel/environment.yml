@@ -20,3 +20,5 @@ dependencies:
     - schedule
     - -e
     - /Ampel
+    - git+ssh://git@github-ampel-ztfbh/robertdstein/Ampel-ZTFbh.git@0275a2bf40710680902f99d2f6cf01dd6f9e90c9
+
