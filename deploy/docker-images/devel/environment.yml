@@ -15,7 +15,7 @@ dependencies:
   - ipython
   - extcats
   - graphitesend
-  - voluptuous
+  - schema
   - pip:
     - schedule
     - -e
