@@ -121,6 +121,9 @@ class DBWired:
 			else:
 				self.mongo_client = MongoClient(mongodb_uri, maxIdleTimeMS=1000)
 				self.config = DBWired.load_config_db(self.mongo_client[arg_config])
+		
+		elif isinstance(arg_config, dict):
+			self.config = arg_config
 
 		# A reference to a MongoClient instance was provided
 		elif type(arg_config) is MongoClient:
