@@ -730,9 +730,13 @@ def run_alertprocessor():
 	from ampel.pipeline.t0.alerts.AlertSupplier import AlertSupplier
 	from ampel.pipeline.t0.alerts.ZIAlertShaper import ZIAlertShaper
 	from ampel.pipeline.t0.ZIAlertFetcher import ZIAlertFetcher
+	from ampel.pipeline.config.ConfigLoader import load_config
 	from ampel.pipeline.common.GraphiteFeeder import GraphiteFeeder
 	from ampel.pipeline.common.expandvars import expandvars
 	from ampel.archive import ArchiveDB
+
+	config = load_config(opts.config)
+	assert 'NuclearFilter' in config['t0_filters']
 
 	mongo = expandvars('mongodb://${MONGO_USER}:${MONGO_PASSWORD}@${MONGO}')
 	archive = ArchiveDB(expandvars('postgresql://${ARCHIVE_WRITE_USER}:${ARCHIVE_WRITE_USER_PASSWORD}@${ARCHIVE}/ztfarchive'))
@@ -754,7 +758,7 @@ def run_alertprocessor():
 		loader = iter(fetcher)
 
 	alert_supplier = AlertSupplier(loader, ZIAlertShaper(), serialization="avro", archive=archive)
-	processor = AlertProcessor(mongodb_uri=mongo, publish_stats=["jobs"], config=opts.config)
+	processor = AlertProcessor(mongodb_uri=mongo, publish_stats=["jobs"], config=config)
 
 	while alert_processed == AlertProcessor.iter_max:
 		graphite.add_stats( archive.get_statistics(), 'archive.tables')

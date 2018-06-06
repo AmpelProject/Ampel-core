@@ -11,6 +11,6 @@ def load_config(path):
 		name = channel_config.pop('_id')
 		config['channels'][name] = channel_config
 	for resource in pkg_resources.iter_entry_points('ampel.pipeline.t0'):
-		klass = resource.resolve()()
-		config['t0_filters'][klass.name] = dict(classFullPath=klass.__module__)
+		klass = resource.resolve()
+		config['t0_filters'][klass.__name__] = dict(classFullPath=klass.__module__)
 	return config
