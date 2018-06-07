@@ -11,11 +11,10 @@ def load_config(path):
 	with open(path) as f:
 		config = json.load(f)
 	for resource in pkg_resources.iter_entry_points('ampel.channels'):
-		channel_config = resource.resolve()()
-		name = channel_config.pop('_id')
-		if name in config['channels']:
-			raise KeyError("Channel config {} (defined as entry point {} in {}) already exists in the provided config file".format(name, resource.name, resource.dist))
-		config['channels'][name] = channel_config
+		for name, channel_config in resource.resolve()().items():
+			if name in config['channels']:
+				raise KeyError("Channel config {} (defined as entry point {} in {}) already exists in the provided config file".format(name, resource.name, resource.dist))
+			config['channels'][name] = channel_config
 	for resource in pkg_resources.iter_entry_points('ampel.pipeline.t0'):
 		klass = resource.resolve()
 		name = klass.__name__
