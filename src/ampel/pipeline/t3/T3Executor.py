@@ -11,7 +11,6 @@ from ampel.pipeline.logging.LoggingUtils import LoggingUtils
 from ampel.flags.TransientFlags import TransientFlags
 from ampel.pipeline.db.query.QueryMatchTransients import QueryMatchTransients
 from ampel.pipeline.t3.TransientLoader import TransientLoader
-from ampel.pipeline.t3.TransientForker import TransientForker
 from ampel.pipeline.db.query.QueryLatestCompound import QueryLatestCompound
 from ampel.flags.AlDocTypes import AlDocTypes
 import itertools
@@ -22,11 +21,11 @@ class T3Executor():
 	"""
 
 	@staticmethod
-	def run_job(config_db, central_db, t3_job, logger):
+	def run_job(al_config, central_db, t3_job, logger):
 		"""
+		al_config: ampel config (dict)
 		"""
 
-		select_options = t3_job.tran_sel_options()
 		tran_col = central_db['main']
 
 
@@ -34,7 +33,7 @@ class T3Executor():
 		# -----------------
 
 		# T3 job not requiring any prior transient loading 
-		if select_options is None:
+		if t3_job.get_config('input.select') is None:
 
 			# Get task (transientless jobs can have only one task)
 			t3_task = t3_job.get_task()
@@ -62,21 +61,9 @@ class T3Executor():
 		trans_match_query = QueryMatchTransients.match_transients(
 			time_created = getattr(t3_job, "tran_sel_time_created", None),
 			time_modified = getattr(t3_job, "tran_sel_time_created", None),
-			channels = (
-				select_options['channels'] 
-				if 'channels' in select_options 
-				else None
-			),
-			with_flags = ( 
-				select_options['withFlags'] 
-				if 'withFlags' in select_options 
-				else None
-			),
-			without_flags = ( 
-				select_options['withoutFlags'] 
-				if 'withoutFlags' in select_options 
-				else None
-			)
+			channels = t3_job.get_config('input.select.channel(s)'),
+			with_flags = t3_job.get_config('input.select.withFlag(s)'),
+			without_flags = t3_job.get_config('input.select.withoutFlag(s)'),
 		)
 
 		logger.info("Executing search query: %s" % trans_match_query)
@@ -104,7 +91,7 @@ class T3Executor():
 		multi_task_job = t3_job.get_tasks() is not None
 
 		# Required to load single transients
-		tl = TransientLoader(config_db, central_db, save_channels=multi_task_job)
+		tl = TransientLoader(central_db, al_config, verbose, logger)
 
 
 
@@ -150,7 +137,7 @@ class T3Executor():
 				latest_states = []
 
 				# Channel/Channels must be provided if state is 'latest'
-				for channel in t3_job.get_channel_selection():
+				for channel in t3_job.get_config('input.select.channel(s)'):
 
 					# get latest state (fast mode) 
 					# Output example:
@@ -238,9 +225,6 @@ class T3Executor():
 					else:
 						d_states[el['tranId']] = el['_id']
 				
-				# Avoid function call in loop below
-				t2_ids = t3_job.get_t2_selection()
-
 				# Load ampel transient objects
 				for tran_id in d_states:
 					
@@ -249,7 +233,9 @@ class T3Executor():
 
 						# ... with new instance of ampel.base.Transient
 						tl.load_new(
-							tran_id, state=d_states[tran_id], t2_ids=t2_ids
+							tran_id, 
+							state=d_states[tran_id], 
+							t2_ids=t3_job.get_config('input.load.t2(s)')
 						)
 					)
 
