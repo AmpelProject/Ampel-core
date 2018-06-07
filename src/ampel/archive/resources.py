@@ -1,3 +1,7 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+# License           : BSD-3-Clause
+# Author            : Jakob van Santen <jakob.van.santen@desy.de>
 
 from ampel.pipeline.config.resources import FromEnvironment
 from ampel.pipeline.common.expandvars import expandvars
