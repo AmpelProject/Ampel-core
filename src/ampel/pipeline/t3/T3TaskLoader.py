@@ -47,8 +47,8 @@ class T3TaskLoader:
 		extra=ALLOW_EXTRA
 	)
 
-	# Static dict instance referecing already loaded t3 *classes* (not instances)
-	# in order to avoid multiple reloading for t3 classes shared among several
+	# Static dict instance referencing already loaded t3 *classes* (not instances)
+	# in order to avoid multiple reloading of t3 classes shared among several
 	# different tasks (also accross multiple jobs)
 	t3_classes = {}
 
@@ -74,8 +74,8 @@ class T3TaskLoader:
 
 			all_tasks_sels = {}
 
-			# Get t3_task_doc with the provided name
-			# and build set of channel(s)/t2(s)/doc(s) for all tasks combined
+			# Get t3_task_doc with provided name and build 
+			# set of channel(s)/t2(s)/doc(s) for all tasks combined
 			for doc in t3_job_doc['task(s)']:
 
 				if doc['name'] == task_name:
