@@ -19,7 +19,10 @@ echo "    HostName github.com" >> /root/.ssh/config; \
 echo "    User git" >> /root/.ssh/config; \
 echo "    IdentityFile /root/.ssh/id_rsa.$repo" >> /root/.ssh/config; \
 done
-RUN git clone git@github-ampel:AmpelProject/Ampel.git /Ampel
+RUN mkdir /Ampel
+RUN git clone git@github-ampel:AmpelProject/Ampel.git /Ampel/ampel-core
+RUN git clone git@github-ampel-ztfbh:robertdstein/Ampel-ZTFbh.git /Ampel/ampel-contrib-ztfbh
+# RUN git clone git@github-ampel-hu:AmpelProject/ampel-contrib-hu.git /Ampel/ampel-contrib-hu
 
 COPY environment.yml /
 RUN conda env create --file /environment.yml

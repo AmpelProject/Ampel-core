@@ -19,6 +19,9 @@ dependencies:
   - pip:
     - schedule
     - -e
-    - /Ampel
-    - git+ssh://git@github-ampel-ztfbh/robertdstein/Ampel-ZTFbh.git@ccdf4b35a27a8464b54a5013f9e9964fde382e3b
+    - /Ampel/ampel-core
+    - -e
+    - /Ampel/ampel-contrib-ztfbh
+    # - -e
+    # - /Ampel/ampel-contrib-hu
 
