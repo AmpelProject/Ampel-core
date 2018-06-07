@@ -1,203 +1,103 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/pipeline/t3/conf/T3JobConfig.py
+# File              : ampel/pipeline/t3/T3Job.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 06.03.2018
-# Last Modified Date: 11.03.2018
+# Last Modified Date: 07.06.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from ampel.pipeline.logging.LoggingUtils import LoggingUtils
-from ampel.pipeline.t3.conf.T3TaskConfig import T3TaskConfig
+from ampel.pipeline.common.AmpelUtils import AmpelUtils
+from ampel.pipeline.t3.T3TaskLoader import T3TaskLoader
+from ampel.pipeline.t3.T3Task import T3Task
 from ampel.flags.TransientFlags import TransientFlags
 from ampel.flags.FlagUtils import FlagUtils
-from datetime import timedelta
+from datetime import timedelta, datetime
+from functools import reduce
+from voluptuous import Schema, Required, Any, Optional, ALLOW_EXTRA
 
-
-class T3JobConfig:
+class T3Job:
 	"""
 	"""
 
-	# static DB collection name
-	_t3_jobs_colname = "t3_jobs"
+	_docs_schema = Schema(Any("TRANSIENT", "PHOTOPOINT", "UPPERLIMIT", "COMPOUND", "T2RECORD"))
+
+	job_schema = Schema(
+		{
+			Required('active'): bool,
+			Required('schedule'): Any(
+				{
+					Required('mode'): 'fixed_time',
+					Required('time'): str
+				},
+				{
+					Required('mode'): 'fixed_rate',
+					Required('interval'): int
+				}
+			),
+			Required('task(s)'): Any(
+				T3TaskLoader.t3_task_schema, 
+				[T3TaskLoader.t3_task_schema]
+			),
+			'input': {
+				Required('select'): {
+					'created': {
+						'timedelta': dict, 
+						'from': Any(
+							{'unixTime': float},
+							{'strTime': str, 'strFormat': str}
+						), 
+						'until': Any(
+							{'unixTime': float},
+							{'strTime': str, 'strFormat': str}
+						)
+					},
+					'modified': {
+						'timedelta': dict, 
+						'from': Any(
+							{'unixTime': float},
+							{'strTime': str, 'strFormat': str}
+						), 
+						'until': Any(
+							{'unixTime': float},
+							{'strTime': str, 'strFormat': str}
+						)
+					},
+					'channel(s)': Any(str, [str]),
+					'withFlag(s)': Any(str, [str]),
+					'withoutFlag(s)': Any(str, [str])
+				},
+				Required('load'): {
+					Required('state'): Any("all", "latest"),
+					'doc(s)': Any(_docs_schema, [_docs_schema]),
+					't2(s)': Any(str, [str]),
+					'verbose': bool
+				},
+				'chunk': int
+			},
+			'onError': {
+				'sendMail': {
+					Required('to'): str,
+					Required('excStack'): bool
+				},
+				Optional('stopAmpel', default=False): bool,
+				Optional('retry', default=False): bool
+			}
+		}, 
+		extra=ALLOW_EXTRA
+	)
 
 
-	def __init__(self, config_db, db_doc=None, job_id=None, logger=None):
+	def __init__(self, job_name, job_doc, t3_tasks):
 		"""
-		Provide either db_doc or job_id:
 		This class is mainly made of config validity tests.
-		Though a bit of DB query here and class instantiation there occurs occasionally.
-		NOTE: channel existence is not checked on purpose (as in the 'channels' mongodb collection) 
+		NOTE: channel name existence is not checked on purpose.
 		"""
 
-		# Robustness check
-		if db_doc is None and job_id is None:
-			raise ValueError("Please provide either db_doc or job_id")
-
-		if logger is None:
-			logger = LoggingUtils.get_logger()
-
-		# Load DB document if not provided (parameter db_doc)
-		if db_doc is None:
-
-			# Lookup job entry in db
-			cursor = config_db[T3JobConfig._t3_jobs_colname].find(
-				{'_id': job_id}
-			)
-
-			# Robustness check
-			if cursor.count() == 0:
-				raise ValueError("Job %s not found" % job_id)
-
-			# Retrieve job entry
-			db_doc = next(cursor)
-			self.id = db_doc['_id']
-
-		else:
-			self.id = job_id
-
-		logger.info("Loading job %s" % self.id)
-		self.job_doc = db_doc
-
-		# Dict key 'schedule' must be defined
-		if not "schedule" in db_doc:
-			self._raise_ValueError(logger, "dict key 'schedule' missing")
-
-		# Either 'task' or 'tasks' dict keys must be defined
-		if not "task" in db_doc and not "tasks" in db_doc:
-			self._raise_ValueError(logger, "dict key 'task(s)' missing")
-
-		# If dict key transients is provided (meaning we have a job requiring 
-		# loaded ampel.base.Transient instances to work with)
-		if 'transients' in db_doc:
-
-			# ... then subkeys 'load' and 'select' must be provided as well
-			if not "select" in db_doc['transients'] and not "load" in db_doc['transients']:
-				self._raise_ValueError(
-					logger, 
-					"values must be set for dict keys 'select' and 'load' " +
-					"when dict key 'transients' is defined"
-				)
-
-			self.tran_sel = db_doc['transients']['select']
-			self.tran_load = db_doc['transients']['load']
-
-			# Select transient based on their creation date
-			if "created" in self.tran_sel:
-
-				self.tran_sel_time_created = {
-					"delta": None, "from": None, "until": None
-				}
-
-				if "timedelta" in self.tran_sel["created"]:
-					self.tran_sel_time_created["delta"] = timedelta(**self.tran_sel['created']['timedelta'])
-
-				# TODO: implement from and until
-				#if "from" in self.tran_sel["created"]:
-				#	self.tran_sel_time_created["from"] = datetime.strptime('Jun 1 2005  1:33PM', '%b %d %Y %I:%M%p')
-
-
-			# Select transient based on their modification date
-			if "created" in self.tran_sel:
-
-				self.tran_sel_time_created = {
-					"delta": None, "from": None, "until": None
-				}
-
-				if "timedelta" in self.tran_sel["created"]:
-					self.tran_sel_time_created["delta"] = timedelta(**self.tran_sel['created']['timedelta'])
-
-				# TODO: implement from and until
-				#if "from" in self.tran_sel["created"]:
-			
-			if "modified" in self.tran_sel:
-
-				self.tran_sel_time_modified = {
-					"delta": None, "from": None, "until": None
-				}
-
-				if "timedelta" in self.tran_sel["modified"]:
-					self.tran_sel_time_modified["delta"] = timedelta(**self.tran_sel['modified']['timedelta'])
-
-
-			# Transient state must be provided
-			if not 'state' in self.tran_load:
-				self._raise_ValueError(logger, "transient state must be specified")
-
-			# And its value must be either 'all' or 'latest'
-			if not self.tran_load['state'] in ['all', 'latest']:
-				self._raise_ValueError(
-					logger, 
-					"transient state must be either 'all' or 'latest'"
-				)
-
-			# Optional 'chunk' parameter specifies how many transients at max 
-			# a t3 unit will process at once
-			if "chunk" in db_doc['transients']:
-				if not type(db_doc['transients']['chunk']) is int:
-					self._raise_ValueError(logger, "'chunk' parameter value type must be int")
-				self.tran_chunk = db_doc['transients']['chunk']
-
-			# Check that proper values were provided, if provided
-			T3JobConfig._check_list_content_type(self.tran_sel, 'channels', str)
-			T3JobConfig._check_list_content_type(self.tran_load, 't2Ids', str)
-			T3JobConfig._check_list_content_type(self.tran_load, 'alDocTypes', int)
-			T3JobConfig._check_type_string(self.tran_sel, 'channel')
-			T3JobConfig._check_type_string(self.tran_load, 't2Id')
-
-			# Convert to enum flags
-			if 'withFlags' in self.tran_sel: 
-				FlagUtils.list_flags_to_enum_flags(
-					self.tran_sel['withFlags'],
-					TransientFlags
-				)
-
-			# Convert to enum flags
-			if 'withoutFlags' in self.tran_sel: 
-				FlagUtils.list_flags_to_enum_flags(
-					self.tran_sel['withoutFlags'],
-					TransientFlags
-				)
-
-			
-		# How should AMPEL react on error
-		if 'onError' in db_doc:
-			self.on_error = db_doc['onError']
-
-		self.t3_tasks = []
-
-		# Load and check task
-		if 'task' in db_doc:
-			self.t3_tasks.append(
-				T3TaskConfig(
-					config_db, db_doc['task'], 
-					getattr(self, "tran_sel", None),
-					getattr(self, "tran_load", None),
-					logger
-				)
-			)
-
-		# Load and check tasks
-		elif 'tasks' in db_doc:
-
-			# Make sure 'tasks' is a list of dict instances
-			T3JobConfig._check_list_content_type(db_doc, 'tasks', dict)
-
-			for t3_task_doc in db_doc['tasks']:
-				self.t3_tasks.append(
-					T3TaskConfig(
-						config_db, t3_task_doc, 
-						getattr(self, "tran_sel", None),
-						getattr(self, "tran_load", None),
-						logger
-					)
-				)
-
-
-	def _raise_ValueError(self, logger, msg):
-		""" """
-		logger.error("Failing job doc: %s" % self.job_doc)
-		raise ValueError("Invalid T3 job config: "+msg)
+		self.job_name = job_name
+		self.job_doc = job_doc
+		self.t3_tasks = t3_tasks
 
 
 	def get_tasks(self):
@@ -207,103 +107,39 @@ class T3JobConfig:
 		return self.t3_tasks
 
 
-	def get_task(self):
-		""" 
-		Returns the unique task associated with this job or raise error
-		if multiple tasks were loaded
-		"""
-		if len(self.t3_tasks) != 1:
-			raise ValueError("Multiple tasks available")
-		return self.t3_tasks[0]
-
-
 	def get_chunk(self):
 		""" """
-		return getattr(self, "tran_chunk", None)
+		return self.get_config('input.chunk')
 
 
-	def tran_sel_options(self, option=None):
-		""" 
-		Returns the transient selection criteria associated with this job
+	def get_config(self, param_name):
 		"""
-	
-		if not hasattr(self, "tran_sel"):
-			return None
-
-		if option in self.tran_sel:
-			return self.tran_sel[option] if option in self.tran_sel else None
-
-		return self.tran_sel
-
-
-	def tran_load_options(self, option=None):
-		""" 
-		Returns the transient loading options associated with this job
 		"""
-	
-		if not hasattr(self, "tran_load"):
-			return None
-
-		if not option is None:
-			return self.tran_load[option] if option in self.tran_load else None
-
-		return self.tran_load
+		return reduce(dict.get, param_name.split("."), self.job_doc)
 
 
-	def get_t2_selection(self):
-
-		if not hasattr(self, "tran_load"):
-			return None
-
-		if "t2Id" in self.tran_load:
-			return [self.tran_load['t2Id']]
-
-		if "t2Ids" in self.tran_load:
-			return self.tran_load['t2Ids']
+	def launch_t3_job(self, bla):
+		#run_job(self.al_config, central_db, t3_job, logger)
+		pass
 
 
-	def get_channel_selection(self):
+	def schedule(self, scheduler):
 
-		if not hasattr(self, "tran_sel"):
-			return None
+		t3_job = None
+		if self.get_config('schedule.mode') == "fixed_rate":
 
-		if "channel" in self.tran_sel:
-			return [self.tran_sel['channel']]
-
-		if "channels" in self.tran_sel:
-			return self.tran_sel['channels']
-
-
-	@staticmethod
-	def _check_type_string(db_doc, key):
-		""" 
-		Internal robustness check function for job config entries
-		"""
-		if not key in db_doc:
-			return
-
-		if not type(db_doc[key]) is str:
-			raise ValueError(
-				"Invalid T3 job config: '%s' parameter value type must be str" % key
+			scheduler.every(
+				self.get_config('schedule.interval')
+			).minutes.do(
+				self.launch_t3_job, 
+				t3_job
 			)
 
+		elif self.get_config('schedule.mode') == "fixed_time":
 
-	@staticmethod
-	def _check_list_content_type(db_doc, key, should_type):
-		""" 
-		Internal robustness check function for job config entries
-		"""
-		if not key in db_doc:
-			return
-
-		if not type(db_doc[key]) is list:
-			raise ValueError(
-				"Invalid T3 job config: '%s' parameter value type must be list" % key
+			scheduler.every().day.at(
+				self.get_config('schedule.time')
+			).do(
+				self.launch_t3_job, 
+				t3_job
 			)
-
-		for value in db_doc[key]:
-			if not type(value) is should_type:
-				raise ValueError(
-					"Invalid T3 job config: '%s' parameter value type must be %s" % 
-					(key, should_type)
-				)
