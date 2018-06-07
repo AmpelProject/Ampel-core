@@ -4,12 +4,11 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 10.10.2017
-# Last Modified Date: 04.06.2018
+# Last Modified Date: 07.06.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 
 import pymongo, time, numpy as np
-from ampel.pipeline.t0.AmpelAlert import AmpelAlert
 from ampel.pipeline.t0.alerts.AlertSupplier import AlertSupplier
 from ampel.pipeline.t0.alerts.ZIAlertShaper import ZIAlertShaper
 from ampel.pipeline.t0.ingesters.ZIAlertIngester import ZIAlertIngester
@@ -20,6 +19,7 @@ from ampel.pipeline.logging.InitLogBuffer import InitLogBuffer
 from ampel.pipeline.db.DBWired import DBWired
 from ampel.pipeline.common.GraphiteFeeder import GraphiteFeeder
 from ampel.pipeline.config.ChannelLoader import ChannelLoader
+from ampel.base.AmpelAlert import AmpelAlert
 from ampel.flags.AlDocTypes import AlDocTypes
 from ampel.flags.AlertFlags import AlertFlags
 from ampel.flags.JobFlags import JobFlags

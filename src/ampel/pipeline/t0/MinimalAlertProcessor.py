@@ -9,7 +9,7 @@
 
 
 import logging, time, sys, fastavro, tarfile
-from ampel.pipeline.t0.AmpelAlert import AmpelAlert
+from ampel.base.AmpelAlert import AmpelAlert
 
 
 class MinimalAlertProcessor():
