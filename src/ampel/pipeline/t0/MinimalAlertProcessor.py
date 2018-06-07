@@ -24,7 +24,7 @@ class MinimalAlertProcessor():
 		"""
 		# Setup logger
 		logging.basicConfig(
-			format = '%(asctime)s %(filename)s:%(lineno)s %(funcName)s() %(levelname)s %(message)s',
+			format = '%(asctime)s %(levelname)s %(message)s',
 			datefmt = "%Y-%m-%d %H:%M:%S",
 			level = logging.DEBUG,
 			stream = sys.stdout
