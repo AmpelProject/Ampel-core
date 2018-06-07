@@ -137,13 +137,13 @@ class MinimalAlertProcessor():
 		""" """
 		if self._alert_filter.apply(ampel_alert) is not None:
 			self._logger.info(
-				" + Ingesting alert %i (objectId: %s)" % 
+				" + Ingesting %i (objectId: %s)" % 
 				(ampel_alert.pps[0]['candid'], ampel_alert.tran_id)
 			)
 			self._accepted_alerts.append(ampel_alert)
 		else:
 			self._logger.info(
-				" - Rejecting alert %i (objectId: %s)" % 
+				" - Rejecting %i (objectId: %s)" % 
 				(ampel_alert.pps[0]['candid'], ampel_alert.tran_id)
 			)
 			self._rejected_alerts.append(ampel_alert)
