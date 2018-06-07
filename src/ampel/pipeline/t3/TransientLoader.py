@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 13.01.2018
-# Last Modified Date: 30.05.2018
+# Last Modified Date: 04.06.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from ampel.base.PhotoPoint import PhotoPoint
@@ -39,12 +39,12 @@ class TransientLoader:
 	)
 
 
-	def __init__(self, central_db, config_db=None, verbose=False, logger=None):
+	def __init__(self, central_db, al_config=None, verbose=False, logger=None):
 		"""
 		"""
 		self.logger = LoggingUtils.get_logger() if logger is None else logger
+		TransientItems.set_ampel_config(al_config)
 		self.lcl = LightCurveLoader(central_db, logger=self.logger)
-		self.config_db = config_db
 		self.main_col = central_db["main"]
 		self.photo_col = central_db["photo"]
 		self.al_pps = {}
@@ -52,34 +52,39 @@ class TransientLoader:
 		self.verbose = verbose
 
 
-	def load_new(
-		self, tran_id, content_types=all_doc_types, 
-		state="latest", channels=None, t2_ids=None
-	):
+	def load_new(self, tran_id, channels=None, state="latest", content_types=all_doc_types, t2_ids=None):
 		"""
 		Arguments:
 		----------
 
 		-> tran_id: transient id (string)
 
+		-> channels: string or list of strings
+
+		-> state:
+		  * "latest": latest state will be retrieved
+		  * "all": all states present in DB (at execution time) will be retrieved
+		  * <compound_id> or list of <compound_id>: provided state(s) will be loaded. 
+		    The compound id must be either a 32 alphanumerical string or bytes
+
 		-> content_types: AlDocTypes flag combination. 
 		Possible values are:
-		* 'AlDocTypes.TRANSIENT': 
+		  * 'AlDocTypes.TRANSIENT': 
 			-> Add info from DB doc to the returned ampel.base.Transient instance
 			-> For example: channels, flags (has processing errors), 
 			   latest photopoint observation date, ...
 
-		* 'AlDocTypes.PHOTOPOINT': 
+		  * 'AlDocTypes.PHOTOPOINT': 
 			-> load *all* photopoints avail for this transient (regardless of provided state)
 			-> The transient will contain a list of ampel.base.PhotoPoint instances 
 			-> No policy is set for all PhotoPoint instances
 
-		* 'AlDocTypes.UPPERLIMIT': 
+		  * 'AlDocTypes.UPPERLIMIT': 
 			-> load *all* upper limits avail for this transient (regardless of provided state)
 			-> The transient will contain a list of ampel.base.UpperLimit instances 
 			-> No policy is set for all UpperLimit instances
 
-		* 'AlDocTypes.COMPOUND': 
+		  * 'AlDocTypes.COMPOUND': 
 			-> ampel.base.LightCurve instances are created based on DB documents 
 			   (with alDocType AlDocTypes.COMPOUND)
 			-> if 'state' is 'latest' or a state id (md5 string) is provided, 
@@ -88,15 +93,10 @@ class TransientLoader:
 			-> the lightcurve instance(s) will be associated with the 
 			   returned ampel.base.Transient instance
 
-		* 'AlDocTypes.T2RECORD': 
+		  * 'AlDocTypes.T2RECORD': 
 			...
 
-		-> state:
-		* "latest": latest state will be retrieved
-		* "all": all states present in DB (at execution time) will be retrieved
-		* <compound_id>: provided state will be loaded. 
-		  The compound id must be a 32 alphanumerical string
-	
+		-> t2_ids: list of strings
 		"""
 
 		# Robustness check 1
@@ -132,11 +132,8 @@ class TransientLoader:
 
 			# Build query parameters (will return adequate number of docs)
 			search_params = QueryLoadTransientInfo.build_statebound_query(
-				tran_id, 
-				content_types, 
-				compound_ids = latest_compound_dict["_id"], 
-				t2_ids = t2_ids,
-				comp_already_loaded = True
+				tran_id, content_types, compound_ids=latest_compound_dict["_id"], 
+				t2_ids=t2_ids, comp_already_loaded=True
 			)
 
 		# Option 2: Load every available transient state
