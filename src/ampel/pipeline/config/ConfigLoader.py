@@ -9,8 +9,14 @@ def load_config(path):
 	for resource in pkg_resources.iter_entry_points('ampel.channels'):
 		channel_config = resource.resolve()()
 		name = channel_config.pop('_id')
+		if name in config['channels']:
+			raise KeyError("Channel config {} (defined as entry point {} in {}) already exists in the provided config file".format(name, resource.name, resource.dist))
 		config['channels'][name] = channel_config
 	for resource in pkg_resources.iter_entry_points('ampel.pipeline.t0'):
 		klass = resource.resolve()
-		config['t0_filters'][klass.__name__] = dict(classFullPath=klass.__module__)
+		name = klass.__name__
+		if name in config['t0_filters']:
+			raise KeyError("{} (defined as entry point {} in {}) already exists in the provided config file".format(name, resource.name, resource.dist))
+		config['t0_filters'][name] = dict(classFullPath=klass.__module__)
+
 	return config
