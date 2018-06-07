@@ -4,8 +4,9 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 24.05.2018
-# Last Modified Date: 24.05.2018
+# Last Modified Date: 04.06.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
+
 
 class DBUtils():
 
@@ -17,13 +18,41 @@ class DBUtils():
 		'34': 'y', '35': 'z'
 	}
 
+	letter_map = {
+		 'a': '10', 'b': '11', 'c': '12', 'd': '13', 'e': '14', 'f': '15',
+		 'g': '16', 'h': '17', 'i': '18', 'j': '19', 'k': '20', 'l': '21',
+		 'm': '22', 'n': '23', 'o': '24', 'p': '25', 'q': '26', 'r': '27',
+		 's': '28', 't': '29', 'u': '30', 'v': '31', 'w': '32', 'x': '33',
+		 'y': '34', 'z': '35'
+	}
+
+	@staticmethod
+	def get_ampel_name(ztf_name):
+		"""	
+		Returns an int. 
+		"""
+		letter_map = DBUtils.letter_map
+		return int(
+			"".join(
+				(	
+					ztf_name[3:5], 
+					letter_map[ztf_name[5]], 
+					letter_map[ztf_name[6]], 
+					letter_map[ztf_name[7]], 
+					letter_map[ztf_name[8]], 
+					letter_map[ztf_name[9]], 
+					letter_map[ztf_name[10]], 
+					letter_map[ztf_name[11]]
+				)
+			)
+		)
+
 
 	@staticmethod
 	def get_ztf_name(db_long):
 		"""	
-		Returns a strind. 
+		Returns a string. 
 		"""
-
 		str_long = str(db_long)
 		number_map = DBUtils.number_map
 

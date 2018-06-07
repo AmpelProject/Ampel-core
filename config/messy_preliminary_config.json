@@ -642,72 +642,79 @@
         }
     },
     "t3_jobs": {
-        "Slack_publish_1": {
-            "active": false,
-            "schedule": {
-                "mode": "fixed_rate",
-                "interval": 1
-            },
-            "onError": {
-                "sendMail": "ztf-software@desy.de",
-                "stopAmpel": false,
-                "retry": false
-            },
-            "input": {
-                "select": {
-                    "created": {
-                        "timedelta": {
-                            "days": -40
-                        }
-                    },
-                    "modified": {
-                        "timedelta": {
-                            "days": -1
-                        }
-                    },
-                    "channels": [
-                        "HU_SN1",
-                        "HU_SN2"
-                    ],
-                    "withFlags": "INST_ZTF",
-                    "withoutFlags": "HAS_ERROR"
-                },
-                "load": {
-                    "state": "latest",
-                    "docs": [
-                        "TRANSIENT",
-                        "COMPOUND",
-                        "T2RECORD"
-                    ],
-                    "t2s": [
-                        "SNCOSMO",
-                        "AGN"
-                    ],
-                    "verbose": true
-                },
-                "chunk": 200
-            },
-            "tasks": [
-                {
-                    "t3Unit": "SLACKPUBLISHER",
-                    "runConfig": "hu_sp_1",
-                    "subSel": {
-                        "channel": "HU_SN1",
-                        "state": "latest",
-                        "t2Result": "SNCOSMO"
-                    }
-                },
-                {
-                    "t3Unit": "SLACKPUBLISHER",
-                    "runConfig": "hu_sp_2",
-                    "subSel": {
-                        "channel": "HU_SN2",
-                        "state": "latest",
-                        "t2": "AGN"
-                    }
-                }
-            ]
+"Slack_publish_1": {
+    "active" : false,
+    "schedule" :  
+        {
+            "mode" : "fixed_time",
+            "time" : "12:01",
+            "timeFormat" : "HH:MM"
         },
+    "onError" : {
+        "sendMail" : {
+            "to" : "ztf-software@desy.de",
+            "excStack" : true
+        },
+        "stopAmpel" : false,
+        "retry" : false
+    },
+    "input" : {
+        "select" : {
+            "created" : {
+                "timeDelta" : {
+                    "days" : -40
+                }
+            },
+            "modified" : {
+                "timeDelta" : {
+                    "days" : -1
+                }
+            },
+            "channel(s)" : [ 
+                "HU_SN1", 
+                "HU_SN2"
+            ],
+            "withFlag(s)" : "INST_ZTF",
+            "withoutFlag(s)" : "HAS_ERROR"
+        },
+        "load" : {
+            "state" : "latest",
+            "doc(s)" : [ 
+                "TRANSIENT", 
+                "COMPOUND", 
+                "T2RECORD"
+            ],
+            "t2(s)" : [ 
+                "SNCOSMO", 
+                "AGN"
+            ],
+            "verbose" : true
+        },
+        "chunk" : 200
+    },
+    "task(s)" : [ 
+        {
+            "name" : "Maurice",
+            "t3Unit" : "SLACKPUBLISHER",
+            "runConfig" : "hu_sp_1",
+            "select" : {
+                "channel(s)" : "HU_SN1",
+                "state" : "latest",
+                "t2(s)" : "SNCOSMO"
+            }
+        }, 
+        {
+            "name" : "Fridtjof",
+            "t3Unit" : "SLACKPUBLISHER",
+            "runConfig" : "hu_sp_2",
+            "select" : {
+                "channel(s)" : "HU_SN2",
+                "state" : "latest",
+                "t2(s)" : "AGN"
+            }
+        }
+    ]
+},
         "Slack_publish_2": {
             "active": false,
             "schedule": {
