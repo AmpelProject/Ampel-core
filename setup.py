@@ -13,6 +13,14 @@ setup(name='ampel',
               'ampel-init-archive = ampel.archive:init_db',
               'ampel-check-broker = ampel.pipeline.t0.ZIAlertFetcher:list_kafka',
               'ampel-archive-topic = ampel.pipeline.t0.ZIAlertFetcher:archive_topic',
+          ],
+          'ampel.pipeline.resources' : [
+              'mongo = ampel.pipeline.common.resources:LiveMongoURI',
+              'graphite = ampel.pipeline.common.resources:Graphite',
+              'archive_reader = ampel.archive.resources:ArchiveDBReader',
+              'archive_writer = ampel.archive.resources:ArchiveDBWriter',
+              'extcats = ampel.contrib.hu.resources:extcatsURI',
+              'catsHTM = ampel.contrib.hu.resources:catsHTMPath',
           ]
       }
 )

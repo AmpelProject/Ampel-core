@@ -23,7 +23,7 @@ from ampel.base.AmpelAlert import AmpelAlert
 from ampel.flags.AlDocTypes import AlDocTypes
 from ampel.flags.AlertFlags import AlertFlags
 from ampel.flags.JobFlags import JobFlags
-
+from ampel.pipeline.config.resources import get_resource
 
 class AlertProcessor(DBWired):
 	""" 
@@ -560,7 +560,7 @@ class AlertProcessor(DBWired):
 			# GraphiteSendException: Socket closed before able to send data to ('localhost', 52003), 
 			# with error: [Errno 32] Broken pipe
 			# So we re-create a GraphiteClient every time we send something to graphite...
-			gfeeder = GraphiteFeeder(self.global_config['graphite']) 
+			gfeeder = get_resource('graphite')
 
 			if t0_stats is not None:
 				gfeeder.add_stats_with_mean_std(t0_stats)
@@ -732,18 +732,14 @@ def run_alertprocessor():
 	from ampel.pipeline.t0.ZIAlertFetcher import ZIAlertFetcher
 	from ampel.pipeline.config.ConfigLoader import load_config
 	from ampel.pipeline.common.GraphiteFeeder import GraphiteFeeder
-	from ampel.pipeline.common.expandvars import expandvars
 	from ampel.archive import ArchiveDB
 
 	config = load_config(opts.config)
 	assert 'NuclearFilter' in config['t0_filters']
 
-	mongo = expandvars('mongodb://${MONGO_USER}:${MONGO_PASSWORD}@${MONGO}')
-	archive = ArchiveDB(expandvars('postgresql://${ARCHIVE_WRITE_USER}:${ARCHIVE_WRITE_USER_PASSWORD}@${ARCHIVE}/ztfarchive'))
-
-	graphite = GraphiteFeeder(
-		{'server': 'transit', 'port': 2003, 'systemName': 'ampel.transit'}
-	)
+	mongo = get_resource('mongo')
+	archive = get_resource('archive_writer')
+	graphite = get_resource('graphite')
 
 	import time
 	count = 0
@@ -758,7 +754,7 @@ def run_alertprocessor():
 		loader = iter(fetcher)
 
 	alert_supplier = AlertSupplier(loader, ZIAlertShaper(), serialization="avro", archive=archive)
-	processor = AlertProcessor(mongodb_uri=mongo, publish_stats=["jobs"], config=config)
+	processor = AlertProcessor(mongodb_uri=mongo['uri'], publish_stats=["jobs"], config=config)
 
 	while alert_processed == AlertProcessor.iter_max:
 		graphite.add_stats( archive.get_statistics(), 'archive.tables')

@@ -11,7 +11,7 @@ import numpy as np
 import logging
 from extcats import CatalogQuery
 from pymongo import MongoClient
-from ampel.pipeline.common.expandvars import expandvars
+from ampel.pipeline.config.resources import get_resource
 
 class SEDmTargetFilter():
 	"""
@@ -38,7 +38,7 @@ class SEDmTargetFilter():
 
 		# catalog matching 'technical' stuff (db host, port, ecc) in base_config
 		# the more astrophysical stuff in run_config
-		catq_client = MongoClient(expandvars(base_config['mongodbURI']))
+		catq_client = MongoClient(get_resource('extcats')['uri'])
 
 		# Robustness and feedback
 		for el in ('MagTh', 'SGscoreTh', 'RealBogusTh', 'm13GaiaSearchRadius'):

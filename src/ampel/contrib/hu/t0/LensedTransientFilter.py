@@ -13,7 +13,7 @@ from extcats import CatalogQuery
 from pymongo import MongoClient
 from ampel.pipeline.logging.LoggingUtils import LoggingUtils
 from ampel.abstract.AbsAlertFilter import AbsAlertFilter
-from ampel.pipeline.common.expandvars import expandvars
+from ampel.pipeline.config.resources import get_resource
 
 class LensedTransientFilter(AbsAlertFilter):
 	"""
@@ -38,7 +38,7 @@ class LensedTransientFilter(AbsAlertFilter):
 		# init the catalog query objects
 		catq_kwargs = {
 			'logger': logger, 
-			'dbclient': MongoClient(expandvars(base_config['mongodbURI']))
+			'dbclient': MongoClient(get_resource('extcats')['uri'])
 		}
 
 		# TODO: add comment
