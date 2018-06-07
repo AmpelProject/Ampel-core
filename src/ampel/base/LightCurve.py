@@ -4,12 +4,13 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 13.01.2018
-# Last Modified Date: 01.06.2018
+# Last Modified Date: 07.06.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import operator
+from ampel.base.Frozen import Frozen
 
-class LightCurve:
+class LightCurve(Frozen):
 	"""
 	Class containing a collection of PhotoPoint/UpperLimit instances.
 	And a few convenience methods to return values embedded in the collection.
@@ -66,17 +67,6 @@ class LightCurve:
 				"LightCurve loaded with %i photopoints and %i upper limits" % 
 				(len(self.ppo_list), len(self.ulo_list))
 			)
-
-	
-	def __setattr__(self, key, value):
-		"""
-		Overrride python's default __setattr__ method to enable frozen instances
-		"""
-		# '_LightCurve__isfrozen' and not simply '__isfrozen' due to 'Private name mangling'
-		if getattr(self, "_LightCurve__isfrozen", None) is not None:
-			raise TypeError("%r is a frozen instance " % self)
-
-		object.__setattr__(self, key, value)
 
 
 	def _apply_filter(self, match_objs, filters):

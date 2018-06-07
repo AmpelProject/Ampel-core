@@ -4,17 +4,18 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 13.01.2018
-# Last Modified Date: 02.06.2018
+# Last Modified Date: 07.06.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from ampel.flags.AlDocTypes import AlDocTypes
 from ampel.flags.FlagUtils import FlagUtils
 from ampel.flags.PhotoFlags import PhotoFlags
 from ampel.flags.PhotoPolicy import PhotoPolicy
+from ampel.base.Frozen import Frozen
 from types import MappingProxyType
 
 
-class PhotoPoint:
+class PhotoPoint(Frozen):
 	"""
 	Wrapper class around a dict instance ususally originating from pymongo DB.
 
@@ -118,16 +119,6 @@ class PhotoPoint:
 		if read_only:
 			self.content = MappingProxyType(self.content)
 			self.__isfrozen = True
-
-
-	def __setattr__(self, key, value):
-		"""
-		Overrride python's default __setattr__ method to enable frozen instances
-		"""
-		# '_PhotoPoint__isfrozen' and not simply '__isfrozen' because: 'Private name mangling'
-		if getattr(self, "_PhotoPoint__isfrozen", None) is not None:
-			raise TypeError( "%r is a frozen instance " % self )
-		object.__setattr__(self, key, value)
 
 
 	def get_value(self, field_name):

@@ -9,10 +9,11 @@
 
 from ampel.flags.FlagUtils import FlagUtils
 from ampel.flags.CompoundFlags import CompoundFlags
+from ampel.base.Frozen import Frozen
 from types import MappingProxyType
 
 
-class Compound:
+class Compound(Frozen):
 	"""
 	Wrapper class around a dict instance ususally originating from pymongo DB.
 	An instance of this class can be frozen (by setting read_only to True) 
@@ -49,16 +50,6 @@ class Compound:
 			self.__isfrozen = True
 		else:
 			self.content = db_doc['comp']
-
-
-	def __setattr__(self, key, value):
-		"""
-		Overrride python's default __setattr__ method to enable frozen instances
-		"""
-		# '_PhotoPoint__isfrozen' and not simply '__isfrozen' because: 'Private name mangling'
-		if getattr(self, "_Compound__isfrozen", None) is not None:
-			raise TypeError( "%r is a frozen instance " % self )
-		object.__setattr__(self, key, value)
 
 
 	#def has_flags(self, arg_flags):

@@ -7,10 +7,11 @@
 # Last Modified Date: 07.06.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
+from ampel.base.Frozen import Frozen
 from ampel.flags.AlertFlags import AlertFlags
 import operator
 
-class AmpelAlert:
+class AmpelAlert(Frozen):
 	"""
 	T0 base class containing a read-only list of read-only photopoint dictionaries.
 	(read-only convertion occurs in constructor).
@@ -103,16 +104,6 @@ class AmpelAlert:
 
 		# Freeze this instance
 		self.__isfrozen = True
-
-
-	def __setattr__(self, key, value):
-		"""
-		Overrride python's default __setattr__ method to enable frozen instances
-		"""
-		# '_AmpelAlert__isfrozen' and not simply '__isfrozen' due to 'Private name mangling'
-		if getattr(self, "_AmpelAlert__isfrozen", None) is not None:
-			raise TypeError( "%r is a frozen instance " % self )
-		object.__setattr__(self, key, value)
 
 
 	def get_values(self, param_name, filters=None, upper_limits=False):

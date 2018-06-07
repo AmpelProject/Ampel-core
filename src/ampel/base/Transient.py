@@ -10,10 +10,11 @@
 from ampel.pipeline.logging.LoggingUtils import LoggingUtils
 from ampel.pipeline.db.DBUtils import DBUtils
 from ampel.flags.TransientFlags import TransientFlags
+from ampel.base.Frozen import Frozen
 import logging
 
 
-class Transient:
+class Transient(Frozen):
 	"""
 	Container class referencing:
 	-> possibly various instances of objects:
@@ -185,16 +186,6 @@ class Transient:
 						self.t2records
 					)
 				)
-
-	def __setattr__(self, key, value):
-		"""
-		Overrrides python's default __setattr__ method to enable frozen instances
-		"""
-		# '_Transient__isfrozen' and not simply '__isfrozen' due to 'Private name mangling'
-		if getattr(self, "_Transient__isfrozen", None) is not None:
-			raise TypeError("%r is a frozen instance " % self)
-
-		object.__setattr__(self, key, value)
 
 
 	@staticmethod

@@ -9,13 +9,15 @@
 
 from ampel.flags.AlDocTypes import AlDocTypes
 from ampel.flags.T2RunStates import T2RunStates
+from ampel.base.Frozen import Frozen
 from bson import ObjectId
 
-class ScienceRecord:
+class ScienceRecord(Frozen):
 	"""
 	Wrapper class around a dict instance ususally originating from pymongo DB.
 	"""
 
+	#def __init__(self, db_doc, read_only=True):
 	def __init__(self, db_doc, read_only=True):
 		"""
 		"""
@@ -52,14 +54,3 @@ class ScienceRecord:
 
 	def has_error(self):
 		return True if self.run_state == T2RunStates.ERROR else False
-
-
-	def __setattr__(self, key, value):
-		"""
-		Overrride python's default __setattr__ method to enable frozen instances
-		"""
-		# '_ScienceRecord__isfrozen' and not simply '__isfrozen' because: 'Private name mangling'
-		if getattr(self, "_ScienceRecord__isfrozen", None) is not None:
-			raise TypeError( "%r is a frozen instance " % self )
-
-		object.__setattr__(self, key, value)
