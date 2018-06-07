@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 14.12.2017
-# Last Modified Date: 08.03.2018
+# Last Modified Date: 07.06.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 
@@ -21,8 +21,14 @@ class RandFilter(AbsAlertFilter):
 		"""
 		"""
 		self.on_match_default_t2_units = on_match_t2_units
+
+		if run_config is None:
+			raise ValueError("run config required (threshold defined there)")
+
 		self.threshold = run_config['threshold']
-		logger.info("RandFilter instantiated")
+
+		if logger is not None:
+			logger.info("RandFilter instantiated")
 
 
 	def apply(self, ampel_alert):
