@@ -158,7 +158,7 @@ class DevAlertProcessor():
 		""" """
 		if self.strip_thumbnails and 'cutout' in alert_content:
 			del alert_content['cutout']
-		if 'prv_candidates' in alert_content:
+		if alert_content.get('prv_candidates') is not None:
 			pps = [el for el in alert_content['prv_candidates'] if el.get('candid') is not None]
 			pps.insert(0,  alert_content['candidate'])
 			return pps, [el for el in alert_content['prv_candidates'] if el.get('candid') is None]
