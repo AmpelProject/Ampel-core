@@ -27,8 +27,7 @@ class DevAlertProcessor():
 			* 'candid': only candid integers will be kept
 			* 'objectId_candid': tuple ('candid', 'objectId') will be kept
 		"""
-		# Setup logger
-		logging.basicConfig(
+		logging.basicConfig( # Setup logger
 			format = '%(asctime)s %(levelname)s %(message)s',
 			datefmt = "%Y-%m-%d %H:%M:%S",
 			level = logging.DEBUG,
@@ -58,8 +57,7 @@ class DevAlertProcessor():
 		For each alert: load, filter, ingest.
 		"""
 		self.tar_file = tarfile.open(tar_file_path, mode=tar_mode)
-		iter_count = self._run(self.tar_file, self._unpack)
-		return iter_count
+		return self._run(self.tar_file, self._unpack)
 
 
 	def process_loaded_alerts(self, list_of_alerts, iter_max=5000):
@@ -74,10 +72,6 @@ class DevAlertProcessor():
 		"""
 		For each alert: load, filter, ingest.
 		"""
-
-		# Part 1: Setup logging 
-		#######################
-
 		self._accepted_alerts = []
 		self._rejected_alerts = []
 
