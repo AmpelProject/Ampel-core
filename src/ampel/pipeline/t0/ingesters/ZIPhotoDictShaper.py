@@ -114,11 +114,11 @@ class ZIPhotoDictShaper:
 						'jd': photo_dict['jd'],
 	 					'diffmaglim': photo_dict['diffmaglim'],
 	 					'rcid': photo_dict['rcid'],
+						'fid': photo_dict['fid']
 						#'pdiffimfilename': fname
 						# IMPORTANT: 'tranId' is not set here on purpose since it 
 						# then conflict with the addToSet operation
 						#'pid': photo_dict['pid'],
-						#'fid': photo_dict['fid'],
 						#'programid': photo_dict['programid'],
 					}
 				)
