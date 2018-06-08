@@ -14,9 +14,15 @@ dependencies:
   - psycopg2
   - ipython
   - extcats
+  - catshtm
   - graphitesend
-  - voluptuous
+  - schema
   - pip:
     - schedule
     - -e
-    - /Ampel
+    - /Ampel/ampel-core
+    - -e
+    - /Ampel/ampel-contrib-ztfbh
+    # - -e
+    # - /Ampel/ampel-contrib-hu
+

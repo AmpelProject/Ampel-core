@@ -81,6 +81,10 @@ ssh -o "ProxyCommand ssh -qax ztf-wgs 'nc %h %p'" -R5000:localhost:22 transit
 sudo su ampel
 (singularity-stack) [transit] /data/ampel/archive/tarballs > rsync -avz --progress -e 'ssh -p 5000' --include 'ztf_*programid*.tar.gz' --exclude '*' jvsanten@localhost:/lustre/fs19/group/icecube/jvs/ztf/ .
 
+(singularity-stack) [burst] /data/ampel/catalogs > rsync -avz --progress -e 'ssh
+ -p 5000' --include '**/' --include '**/GAIA/DR2/**' --exclude '*' jvsanten@loca
+lhost:/lustre/fs19/group/cta/users/mgiomi/catsHTM2 .
+
 Resetting graphite aggregation and retention
 ********************************************
 

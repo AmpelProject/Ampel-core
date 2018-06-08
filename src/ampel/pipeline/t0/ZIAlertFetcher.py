@@ -1,11 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/pipeline/t0/ZIAlertFetcher.py
 # License           : BSD-3-Clause
-# Author            : jvs
-# Date              : 05.03.2018
-# Last Modified Date: 05.03.2018
-# Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
+# Author            : Jakob van Santen <jakob.van.santen@desy.de>
 
 import io
 import itertools
