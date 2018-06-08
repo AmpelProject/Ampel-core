@@ -718,7 +718,6 @@ def run_alertprocessor():
 	from os.path import basename, dirname, abspath, realpath
 	parser = ArgumentParser(description=__doc__, formatter_class=ArgumentDefaultsHelpFormatter)
 	parser.add_argument('--config', default=abspath(dirname(realpath(__file__)) + '/../../../../config/messy_preliminary_config.json'))
-	parser.add_argument('--graphite', default='localhost:2003')
 	action = parser.add_mutually_exclusive_group(required=True)
 	action.add_argument('--broker', default='epyc.astro.washington.edu:9092')
 	action.add_argument('--tarfile', default=None)
@@ -731,15 +730,11 @@ def run_alertprocessor():
 	from ampel.pipeline.t0.alerts.ZIAlertShaper import ZIAlertShaper
 	from ampel.pipeline.t0.ZIAlertFetcher import ZIAlertFetcher
 	from ampel.pipeline.config.ConfigLoader import load_config
-	from ampel.pipeline.common.GraphiteFeeder import GraphiteFeeder
-	from ampel.archive import ArchiveDB
 
 	config = load_config(opts.config)
-	assert 'NuclearFilter' in config['t0_filters']
 
 	mongo = get_resource('mongo')
 	archive = get_resource('archive_writer')
-	graphite = get_resource('graphite')
 
 	import time
 	count = 0
@@ -757,8 +752,6 @@ def run_alertprocessor():
 	processor = AlertProcessor(mongodb_uri=mongo['uri'], publish_stats=["jobs"], config=config)
 
 	while alert_processed == AlertProcessor.iter_max:
-		graphite.add_stats( archive.get_statistics(), 'archive.tables')
-		graphite.send()
 		t0 = time.time()
 		print('Running on {}'.format(infile))
 		try:
@@ -767,5 +760,3 @@ def run_alertprocessor():
 			t1 = time.time()
 			dt = t1-t0
 			print('({}) {} alerts in {:.1f}s; {:.1f}/s'.format(infile, alert_processed, dt, alert_processed/dt))
-			graphite.add_stats( archive.get_statistics(), 'archive.tables')
-			graphite.send()

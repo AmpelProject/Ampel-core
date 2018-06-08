@@ -37,7 +37,7 @@ class AmpelStatsPublisher(DBWired, Schedulable):
 
 	def __init__(
 		self, config=None, central_db=None, mongodb_uri=None, 
-		graphite_config=None,
+		graphite_feeder=None, archive_client=None,
 		channel_names=None, publish_stats=['graphite', 'mongo', 'print'],
 		update_intervals = {'col_stats': 5, 'docs_count': 10, 'daemon': 2, 'channels': 5}
 	):
@@ -73,16 +73,15 @@ class AmpelStatsPublisher(DBWired, Schedulable):
 
 		if channel_names is None:
 			self.channel_names = tuple(self.config['channels'].keys())
+			print(self.config['channels'])
 		else:
 			self.channel_names = channel_names
 
 		# Which stats to publish (see doctring)
 		self.publish_stats = publish_stats
 
-		# Instantiate GraphiteFeeder class if so required
-		if "graphite" in publish_stats:
-			config = graphite_config if graphite_config is not None else self.global_config['graphite']
-			self.gfeeder = GraphiteFeeder(config)
+		self.graphite_feeder = graphite_feeder
+		self.archive_client = archive_client
 
 		# Projections
 		self.id_proj = {'_id': 1}
@@ -209,10 +208,12 @@ class AmpelStatsPublisher(DBWired, Schedulable):
 
 
 		# Publish metrics to graphite
-		if "graphite" in self.publish_stats:
+		if self.graphite_feeder is not None:
+			if self.archive_client is not None:
+				self.graphite_feeder.add_stats( self.archive_client.get_statistics(), 'archive.tables')
 			self.logger.info("Sending stats to graphite")
-			self.gfeeder.add_stats(stat_dict)
-			self.gfeeder.send()
+			self.graphite_feeder.add_stats(stat_dict)
+			self.graphite_feeder.send()
 
 
 		# Publish metrics to mongo
@@ -283,38 +284,22 @@ class AmpelStatsPublisher(DBWired, Schedulable):
 			).count()
 
 def run():
-	from ampel.archive import docker_env
+	from ampel.pipeline.config.resources import get_resource
 	from os import environ
 	from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
 	parser = ArgumentParser(description=__doc__, formatter_class=ArgumentDefaultsHelpFormatter)
-	parser.add_argument('--mongo', default=environ.get('MONGO', 'localhost:27017'),
-	    help='MongoDB server address and port')
-	parser.add_argument('--graphite', default=environ.get('GRAPHITE', None),
-	    help='Graphite server address and port')
 
 	opts = parser.parse_args()
 
-	mongo_uri = 'mongodb://{}:{}@{}/'.format(
-		docker_env('MONGO_USER'),
-		docker_env('MONGO_PASSWORD'),
-		opts.mongo,
-	)
-
-	graphite_config = None
-	if opts.graphite is not None:
-		import socket
-		name = 'ampel.{}'.format(socket.gethostname().split('.')[0])
-		graphite_config = dict(port=2003, systemName=name)
-		if ':' in opts.graphite:
-			host, port = opts.graphite.split(':')
-			graphite_config['server'] = host
-			graphite_config['port'] = int(port)
-		else:
-			graphite_config['server'] = opts.graphite
+	mongo_uri = get_resource('mongo')['uri']
+	graphite = get_resource('graphite')
+	archive = get_resource('archive_reader')
 	
 	asp = AmpelStatsPublisher(
 		mongodb_uri=mongo_uri, 
-		graphite_config=graphite_config,
+		graphite_feeder=graphite,
+		archive_client=archive,
 		publish_stats=['print', 'graphite']
 	)
+	asp.send_all_metrics() 
 	asp.run()
