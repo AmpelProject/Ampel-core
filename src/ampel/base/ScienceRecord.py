@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 13.01.2018
-# Last Modified Date: 01.06.2018
+# Last Modified Date: 08.06.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from ampel.flags.AlDocTypes import AlDocTypes
@@ -17,20 +17,21 @@ class ScienceRecord(Frozen):
 	Wrapper class around a dict instance ususally originating from pymongo DB.
 	"""
 
-	#def __init__(self, db_doc, read_only=True):
-	def __init__(self, db_doc, read_only=True):
+	def __init__(self, tran_id, t2_unit_id, compound_id, results, info=None, read_only=True):
 		"""
+		tran_id: transient id (string or int)
+		t2_unit_id: T2 unit id (string)
+		compound_id: bytes
+		results: list of dict instances,
+		info: dict instance
+		read_only: true->freeze this instance
 		"""
-		if db_doc["alDocType"] != AlDocTypes.T2RECORD:
-			raise ValueError("The provided document is not a science record")
 
-		self.tran_id = db_doc['tranId']
-		self.compound_id = db_doc['compId']
-		self.run_config = db_doc['runConfig']
-		self.t2_unit_id = db_doc['t2Unit']
-		self.run_state = db_doc['runState']
-		self.results = db_doc['results'] if 'results' in db_doc else None
-		self.generation_time = ObjectId(db_doc['_id']).generation_time
+		self.tran_id = tran_id
+		self.t2_unit_id = t2_unit_id
+		self.compound_id = compound_id
+		self.results = results
+		self.info = info
 
 		# Check wether to freeze this instance.
 		if read_only:
@@ -39,7 +40,7 @@ class ScienceRecord(Frozen):
 
 	def get_results(self):
 		""" """
-		return self.results if hasattr(self, 'results') else None
+		return self.results
 
 
 	def get_t2_unit_id(self):
@@ -53,4 +54,4 @@ class ScienceRecord(Frozen):
 
 
 	def has_error(self):
-		return True if self.run_state == T2RunStates.ERROR else False
+		return self.info.get('hasError')

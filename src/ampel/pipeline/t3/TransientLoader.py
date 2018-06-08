@@ -7,6 +7,10 @@
 # Last Modified Date: 04.06.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
+from bson import ObjectId
+import operator, logging, json
+from datetime import datetime
+
 from ampel.base.PlainPhotoPoint import PlainPhotoPoint
 from ampel.base.UpperLimit import UpperLimit
 from ampel.base.PlainUpperLimit import PlainUpperLimit
@@ -18,16 +22,13 @@ from ampel.flags.TransientFlags import TransientFlags
 from ampel.flags.AlDocTypes import AlDocTypes
 from ampel.flags.FlagUtils import FlagUtils
 from ampel.flags.PhotoFlags import PhotoFlags
+from ampel.flags.T2RunStates import T2RunStates
 from ampel.pipeline.logging.LoggingUtils import LoggingUtils
 from ampel.pipeline.db.LightCurveLoader import LightCurveLoader
 from ampel.pipeline.db.DBResultOrganizer import DBResultOrganizer
 from ampel.pipeline.db.query.QueryLatestCompound import QueryLatestCompound
 from ampel.pipeline.db.query.QueryLoadTransientInfo import QueryLoadTransientInfo
 from ampel.pipeline.t3.TransientItems import TransientItems
-
-import operator, logging, json
-from datetime import datetime
-
 
 class TransientLoader:
 	"""
@@ -298,7 +299,17 @@ class TransientLoader:
 			# Pick t2 records
 			if doc["alDocType"] == AlDocTypes.T2RECORD:
 
-				sr = ScienceRecord(doc, read_only=True)
+				sr = ScienceRecord(
+					doc['tranId'], doc['t2Unit'], doc['compId'], doc.get('results'),
+					info={
+						'runConfig': doc['runConfig'], 
+						'runState': doc['runState'],
+						'genTime': ObjectId(doc['_id']).generation_time,
+						'hasError': doc['runState'] == T2RunStates.ERROR
+					}, 
+					read_only=True
+				)
+
 				tran_items.add_science_record(
 					sr,
 					channels if len(channels) == 1 
