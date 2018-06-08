@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 23.04.2018
-# Last Modified Date: 14.05.2018
+# Last Modified Date: 08.06.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 
@@ -29,7 +29,7 @@ class AlertSupplier:
 
 			if serialization == "json":
 				import json
-				self.deserialize = lambda f: json.load(f), {}
+				self.deserialize = lambda f: (json.load(f), {})
 
 			elif serialization == "avro":
 				import fastavro
