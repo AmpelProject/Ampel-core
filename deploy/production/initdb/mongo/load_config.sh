@@ -15,10 +15,13 @@ file_env 'MONGO_PASSWORD'
 
 mongo=( mongo --host 127.0.0.1 --port 27017 --username $MONGO_INITDB_ROOT_USERNAME --password $MONGO_INITDB_ROOT_PASSWORD --authenticationDatabase admin )
 
+# munge into database names ino js objects
+roles=$(echo '"Ampel Ampel_config Ampel_troubles"' | jq 'split(" ") | [{db : .[], role : "readWrite"}]')
 "${mongo[@]}" "$rootAuthDatabase" <<-EOJS
 	db.createUser({
 		user: $(_js_escape "$MONGO_USER"),
 		pwd: $(_js_escape "$MONGO_PASSWORD"),
-		roles: [ { role: 'readWrite', db: $(_js_escape "Ampel") } ]
+		roles: $roles
 	})
+	db.grantRolesToUser($(_js_escape "$MONGO_USER"), [{"role": "clusterMonitor", "db": "admin"}])
 EOJS
