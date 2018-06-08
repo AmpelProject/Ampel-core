@@ -14,7 +14,7 @@ dependencies:
   - psycopg2
   - ipython
   - extcats
-  - catshtm
+  - catshtm==0.1.15 
   - graphitesend
   - schema
   - pip:
@@ -23,6 +23,6 @@ dependencies:
     - /Ampel/ampel-core
     - -e
     - /Ampel/ampel-contrib-ztfbh
-    # - -e
-    # - /Ampel/ampel-contrib-hu
+    - -e
+    - /Ampel/ampel-contrib-hu
 

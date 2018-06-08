@@ -22,13 +22,10 @@ done
 RUN mkdir /Ampel
 RUN git clone git@github-ampel:AmpelProject/Ampel.git /Ampel/ampel-core
 RUN git clone git@github-ampel-ztfbh:robertdstein/Ampel-ZTFbh.git /Ampel/ampel-contrib-ztfbh
-# RUN git clone git@github-ampel-hu:AmpelProject/ampel-contrib-hu.git /Ampel/ampel-contrib-hu
+RUN git clone git@github-ampel-contrib-hu:AmpelProject/ampel-contrib-hu.git /Ampel/ampel-contrib-hu
 
 COPY environment.yml /
 RUN conda env create --file /environment.yml
-
-RUN cd /Ampel && git pull && pip install -e .
-# RUN bash -c "source activate ampel && pip install git+ssh://git@github-ampel-ztfbh/robertdstein/Ampel-ZTFbh.git@0275a2bf40710680902f99d2f6cf01dd6f9e90c9"
 
 # Transplant environment (without conda itself) into bare-bones alpine
 FROM alpine:3.7
@@ -45,7 +42,8 @@ COPY --from=conda /Ampel /Ampel
 
 RUN addgroup -g 1001 ampel && \
     adduser -D -u 1001 -G ampel ampel && \
-    mkdir /ztf /run/secrets
+    mkdir /ztf /run/secrets && \
+    mkdir -p /catalogs/catsHTM
 USER ampel
 
 ENV CONDA_PREFIX=/opt/conda/envs/ampel PATH=/opt/conda/envs/ampel/bin:/opt/conda/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
