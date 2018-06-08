@@ -26,4 +26,4 @@ This installation assumes your python is under the Anaconda environment, using p
 
 3. ``source activate ampel`` (you will enter the AMPEL environment)
 
-4. ``pip install -e Ampel`` (Ampel actually been path/to/Ampel, if you are not in the directory where Ampel is)
+4. ``pip install -e Ampel`` (Ampel actually being path/to/Ampel, if you are not in the directory where Ampel is)
