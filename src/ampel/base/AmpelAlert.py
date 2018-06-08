@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 14.12.2017
-# Last Modified Date: 07.06.2018
+# Last Modified Date: 08.06.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from ampel.base.Frozen import Frozen
@@ -41,18 +41,19 @@ class AmpelAlert(Frozen):
 		Convenience method.
 		Do not use for production!
 		"""
-		from ampel.pipeline.t0.alerts.ZIAlertShaper import ZIAlertShaper
 		import fastavro
 		with open(arg, "rb") as fo:
-			parsed_alert = ZIAlertShaper().shape(
-    			next(fastavro.reader(fo), None)
-			)
+			al = next(fastavro.reader(fo), None)
 
-		return AmpelAlert(
-			parsed_alert['tran_id'], 
-			parsed_alert['ro_pps'], 
-			parsed_alert['ro_uls']
-		)
+		if al.get('prv_candidates') is None:
+			return AmpelAlert(al['objectId'], [al['candidate']], None)
+		else:
+			pps = [d for d in al['prv_candidates'] if d.get('candid') is not None]
+			pps.insert(0,  al['candidate'])
+			return AmpelAlert(
+				al['objectId'], pps, 
+				[d for d in al['prv_candidates'] if d.get('candid') is None]
+			)
 
 
 	@classmethod
@@ -164,7 +165,6 @@ class AmpelAlert(Frozen):
 	def get_photopoints(self):
 		""" returns a list of dicts """
 		return self.pps
-
 
 
 	def get_upperlimits(self):

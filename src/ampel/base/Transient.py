@@ -18,13 +18,13 @@ class Transient(Frozen):
 	"""
 	Container class referencing:
 	-> possibly various instances of objects:
-		* ampel.base.PhotoPoint
-		* ampel.base.UpperLimit
+		* ampel.base.PlainPhotoPoint
+		* ampel.base.PlainUpperLimit
 		* ampel.base.Compound
 		* ampel.base.LightCurve
 		* ampel.base.T2Record
 	Instances of this class are typically generated 
-	from a TransientView by by TransientLoader 
+	from a TransientView by TransientLoader 
 	and provided to T3 modules.
 	"""
 
@@ -113,7 +113,7 @@ class Transient(Frozen):
 		"""
 		Returns a dict instance
 		-> key: photopoint id
-		-> value: instance of ampel.base.PhotoPoint
+		-> value: instance of ampel.base.PlainPhotoPoint
 		-> dict can be empty if PhotoPoints were not loaded 
 		   (see load_options of class TransientLoader)
 		"""
@@ -124,7 +124,7 @@ class Transient(Frozen):
 		"""
 		Returns a dict instance
 		-> key: upperlimit id
-		-> value: instance of ampel.base.UpperLimit
+		-> value: instance of ampel.base.PlainUpperLimit
 		-> dict can be empty if UpperLimits were not loaded 
 		   (see load_options of class TransientLoader)
 		"""

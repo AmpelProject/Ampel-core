@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 13.01.2018
-# Last Modified Date: 07.06.2018
+# Last Modified Date: 08.06.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import operator
@@ -14,11 +14,10 @@ class LightCurve(Frozen):
 	"""
 	Class containing a collection of PhotoPoint/UpperLimit instances.
 	And a few convenience methods to return values embedded in the collection.
-
-	This object has many similarities with AmpelAlert and yet some notable differences.
-	I wish I had the time to think of a possible object oriented parent/child 
-	structure for these two classes (AmpelAlert efficiency is by the way 
-	an important criteria since *every* ZTF alert yields an AmpelAlert obj).
+	(This object has several similarities with AmpelAlert and yet some notable differences.
+	If time allows, a possible object oriented parent/child structure could be tested, 
+	whereby it is important to keep in mind that AmpelAlert efficiency is an important 
+	criteria since *every* ZTF alert yields an AmpelAlert obj).
 	"""
 	
 	_ops = {
@@ -33,26 +32,24 @@ class LightCurve(Frozen):
 	}
 
 	
-	def __init__(self, compound, ppo_list, ulo_list=None, read_only=True, logger=None):
+	def __init__(self, compound_id, ppo_list, ulo_list=None, info=None, read_only=True, logger=None):
 		"""
+		Mandatory arguments:
 		compound: dict instance loaded using compound DB dict or instance of ampel.base.Compound
 		ppo_list: list of ampel.base.PhotoPoint instances
+
+		Optional arguments:
 		ulo_list: list of ampel.base.UpperLimit instances
+		info: dict instance with additional info ('added', 'tier', ...)
 		read_only: wether the provided list should be casted as immutable tuple
-		and the class instance frozen
+		and the class instance frozen.
+		NOTE: it is up to the loader class to make sure the PhotoPoint and UpperLimit objects
+		provided to this constructor are frozen classes, if so whished.
+		logger: instance of Logger from python module 'logging'
 		"""
 
-		if type(compound) is dict:
-			self.id = compound['_id']
-			self.tier = compound['tier']
-			self.added = compound['added']
-			self.lastppdt = compound['lastppdt']
-		else:
-			self.id = compound.id
-			self.tier = compound.tier
-			self.added = compound.added
-			self.lastppdt = compound.lastppdt
-
+		self.id = compound_id
+		self.info = info
 
 		if read_only:
 			self.ppo_list = tuple(el for el in ppo_list)
@@ -62,37 +59,12 @@ class LightCurve(Frozen):
 			self.ppo_list = ppo_list
 			self.ulo_list = ulo_list if ulo_list is not None else []
 
+		# Feedback if logger was provided
 		if logger is not None:
 			logger.info(
 				"LightCurve loaded with %i photopoints and %i upper limits" % 
 				(len(self.ppo_list), len(self.ulo_list))
 			)
-
-
-	def _apply_filter(self, match_objs, filters):
-		"""
-		"""
-		if type(filters) is dict:
-			filters = [filters]
-		else:
-			if filters is None or type(filters) is not list:
-				raise ValueError("filters must be of type dict or list")
-
-		for filter_el in filters:
-
-			operator = LightCurve._ops[
-				filter_el['operator']
-			]
-
-			attr_name = filter_el['attribute']
-			match_objs = tuple(
-				filter(
-					lambda x: x.has_parameter(attr_name) and operator(x.get_value(attr_name), filter_el['value']), 
-					match_objs
-				)
-			)
-
-		return match_objs
 
 
 	def get_values(self, field_name, filters=None, upper_limits=False):
@@ -129,7 +101,7 @@ class LightCurve(Frozen):
 		'upper_limits': if set to True, upper limits are returned instead of photopoints
 		"""
 		return tuple(
-			tuple(obj[param] for param in params) 
+			tuple(obj.get_value(param) for param in params) 
 			for obj in self._get_photo_objs(filters, upper_limits) 
 			if all(obj.has_parameter(param) for param in params)
 		)
@@ -151,33 +123,24 @@ class LightCurve(Frozen):
 		)
 
 
-	def _get_photo_objs(self, filters, upper_limits):
-		"""	
-		"""	
-		if filters is None:
-			return self.ulo_list if upper_limits else self.ppo_list
-		else:
-			return (
-				self._apply_filter(self.ulo_list, filters) if upper_limits 
-				else self._apply_filter(self.ppo_list, filters)
-			)
-
-
+	# TODO: improve
 	def get_pos(self, ret="brightest", filters=None):
 		"""
 		ret (for all methods, only matching PhotoPoint wrt the provided filter(s) are used!):
-			"raw": returns ((ra, dec), (ra, dec), ...)
-			"mean": returns (<ra>, <dec>)
-			"brightest": returns (ra, dec)
-			"latest": returns (ra, dec)
+		"raw": returns ((ra, dec), (ra, dec), ...)
+		"mean": returns (<ra>, <dec>)
+		"brightest": returns (ra, dec)
+		"latest": returns (ra, dec)
 
 		examples: 
-		instance.get_pos("brightest", {'alFlags': PhotoFlags.ZTF_G, 'in'})
-			returns the position of the brightest PhotoPoint in the ZTF G band
+		instance.get_pos(
+			"brightest", {'attribute': 'alFlags', 'operator': 'in', 'value': PhotoFlags.ZTF_G}
+		)
+		-> returns the position of the brightest PhotoPoint in the ZTF G band
 
 		instance.get_pos("lastest", {'attribute': 'magpsf', 'operator': '<', 'value': 18})
-			returns the position of the latest PhotoPoint in time with a magnitude brighter than 18
-			(or an empty array if no PhotoPoint matches this criteria)
+		-> returns the position of the latest PhotoPoint in time with a magnitude brighter than 18
+		(or an empty array if no PhotoPoint matches this criteria)
 		"""
 
 		if ret == "raw": 
@@ -202,3 +165,41 @@ class LightCurve(Frozen):
 
 		else:
 			raise NotImplementedError("ret method: %s is not implemented" % ret)
+
+
+	def _get_photo_objs(self, filters, upper_limits):
+		"""	
+		"""	
+		if filters is None:
+			return self.ulo_list if upper_limits else self.ppo_list
+		else:
+			return (
+				self._apply_filter(self.ulo_list, filters) if upper_limits 
+				else self._apply_filter(self.ppo_list, filters)
+			)
+
+
+	def _apply_filter(self, match_objs, filters):
+		"""
+		"""
+		if type(filters) is dict:
+			filters = [filters]
+		else:
+			if filters is None or type(filters) is not list:
+				raise ValueError("filters must be of type dict or list")
+
+		for filter_el in filters:
+
+			operator = LightCurve._ops[
+				filter_el['operator']
+			]
+
+			attr_name = filter_el['attribute']
+			match_objs = tuple(
+				filter(
+					lambda x: x.has_parameter(attr_name) and operator(x.get_value(attr_name), filter_el['value']), 
+					match_objs
+				)
+			)
+
+		return match_objs

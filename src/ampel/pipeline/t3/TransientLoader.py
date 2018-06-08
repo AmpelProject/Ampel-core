@@ -7,8 +7,9 @@
 # Last Modified Date: 04.06.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-from ampel.base.PhotoPoint import PhotoPoint
+from ampel.base.PlainPhotoPoint import PlainPhotoPoint
 from ampel.base.UpperLimit import UpperLimit
+from ampel.base.PlainUpperLimit import PlainUpperLimit
 from ampel.base.Compound import Compound
 from ampel.base.LightCurve import LightCurve
 from ampel.base.Transient import Transient
@@ -16,6 +17,7 @@ from ampel.base.ScienceRecord import ScienceRecord
 from ampel.flags.TransientFlags import TransientFlags
 from ampel.flags.AlDocTypes import AlDocTypes
 from ampel.flags.FlagUtils import FlagUtils
+from ampel.flags.PhotoFlags import PhotoFlags
 from ampel.pipeline.logging.LoggingUtils import LoggingUtils
 from ampel.pipeline.db.LightCurveLoader import LightCurveLoader
 from ampel.pipeline.db.DBResultOrganizer import DBResultOrganizer
@@ -76,13 +78,13 @@ class TransientLoader:
 
 		  * 'AlDocTypes.PHOTOPOINT': 
 			-> load *all* photopoints avail for this transient (regardless of provided state)
-			-> The transient will contain a list of ampel.base.PhotoPoint instances 
-			-> No policy is set for all PhotoPoint instances
+			-> The transient will contain a list of ampel.base.PlainPhotoPoint instances 
+			-> No policy is set for all PlainPhotoPoint instances
 
 		  * 'AlDocTypes.UPPERLIMIT': 
 			-> load *all* upper limits avail for this transient (regardless of provided state)
-			-> The transient will contain a list of ampel.base.UpperLimit instances 
-			-> No policy is set for all UpperLimit instances
+			-> The transient will contain a list of ampel.base.PlainUpperLimit instances 
+			-> No policy is set for all PlainUpperLimit instances
 
 		  * 'AlDocTypes.COMPOUND': 
 			-> ampel.base.LightCurve instances are created based on DB documents 
@@ -316,11 +318,17 @@ class TransientLoader:
 	
 				# Pick photo point dicts
 				if doc["_id"] > 0:
-	
+
+					
 					# Photopoints instance attached to the transient instance 
 					# are not bound to a compound and come thus without policy 
 					register[doc['tranId']].add_photopoint(
-						PhotoPoint(doc, read_only=True)
+						PlainPhotoPoint(
+							doc, flags = FlagUtils.dbflag_to_enumflag(
+								doc['alFlags'], PhotoFlags
+							),
+							read_only=True
+						)
 					)
 	
 				# Pick upper limit dicts
@@ -336,7 +344,12 @@ class TransientLoader:
 						doc_id = doc["_id"]
 						for tran_id in (loaded_tran_ids & doc['tranId']):
 							if doc_id not in loaded_uls:
-								loaded_uls[doc_id]	= UpperLimit(doc, read_only=True)
+								loaded_uls[doc_id]= PlainUpperLimit(
+									doc, FlagUtils.dbflag_to_enumflag(
+										doc['alFlags'], PhotoFlags
+									),
+									read_only=True
+								)
 							register[tran_id].add_upperlimit(loaded_uls[doc_id])
 					 
 
