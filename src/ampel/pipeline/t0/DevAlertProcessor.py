@@ -57,14 +57,14 @@ class DevAlertProcessor():
 		For each alert: load, filter, ingest.
 		"""
 		self.tar_file = tarfile.open(tar_file_path, mode=tar_mode)
-		return self._run(self.tar_file, self._unpack)
+		return self._run(self.tar_file, self._unpack, iter_max=iter_max)
 
 
 	def process_loaded_alerts(self, list_of_alerts, iter_max=5000):
 		"""
 		For each alert: load, filter, ingest.
 		"""
-		return self._run(list_of_alerts, lambda x: x)
+		return self._run(list_of_alerts, lambda x: x, iter_max=iter_max)
 
 
 
