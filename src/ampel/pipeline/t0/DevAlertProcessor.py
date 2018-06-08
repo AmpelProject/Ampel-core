@@ -17,7 +17,7 @@ class DevAlertProcessor():
 	For each alert: load, filter, ingest.
 	"""
 
-	def __init__(self, alert_filter, save="alert"):
+	def __init__(self, alert_filter, save="alert", strip_thumbnails=False):
 		"""
 		Instance of a t0 alert filter: 
 		must implement method apply(<instance of ampel.base.AmpelAlert>)
@@ -40,6 +40,7 @@ class DevAlertProcessor():
 		self._accepted_alerts = []
 		self._rejected_alerts = []
 		self.save = save
+		self.strip_thumbnails = strip_thumbnails
 
 
 	def get_accepted_alerts(self):
@@ -52,11 +53,11 @@ class DevAlertProcessor():
 		return self._rejected_alerts
 
 
-	def process_tar(self, tar_file_path, iter_max=5000):
+	def process_tar(self, tar_file_path, tar_mode="r:gz", iter_max=5000):
 		"""
 		For each alert: load, filter, ingest.
 		"""
-		self.tar_file = tarfile.open(tar_file_path, mode='r:gz')
+		self.tar_file = tarfile.open(tar_file_path, mode=tar_mode)
 		iter_count = self._run(self.tar_file, self._unpack)
 		return iter_count
 
@@ -161,6 +162,8 @@ class DevAlertProcessor():
 
 	def _shape(self, alert_content):
 		""" """
+		if self.strip_thumbnails and 'cutout' in alert_content:
+			del alert_content['cutout']
 		if 'prv_candidates' in alert_content:
 			pps = [el for el in alert_content['prv_candidates'] if el.get('candid') is not None]
 			pps.insert(0,  alert_content['candidate'])
