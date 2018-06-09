@@ -73,7 +73,6 @@ class AmpelStatsPublisher(DBWired, Schedulable):
 
 		if channel_names is None:
 			self.channel_names = tuple(self.config['channels'].keys())
-			print(self.config['channels'])
 		else:
 			self.channel_names = channel_names
 
@@ -206,7 +205,6 @@ class AmpelStatsPublisher(DBWired, Schedulable):
 		if "print" in self.publish_stats:
 			print(stat_dict)
 
-
 		# Publish metrics to graphite
 		if self.graphite_feeder is not None:
 			if self.archive_client is not None:
@@ -285,21 +283,28 @@ class AmpelStatsPublisher(DBWired, Schedulable):
 
 def run():
 	from ampel.pipeline.config.resources import get_resource
+	from ampel.pipeline.config.ConfigLoader import load_config
+
 	from os import environ
 	from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
+	from os.path import basename, dirname, abspath, realpath
 	parser = ArgumentParser(description=__doc__, formatter_class=ArgumentDefaultsHelpFormatter)
+	parser.add_argument('--config', default=abspath(dirname(realpath(__file__)) + '/../../../../config/messy_preliminary_config.json'))
 
 	opts = parser.parse_args()
+
+	config = load_config(opts.config)
 
 	mongo_uri = get_resource('mongo')['uri']
 	graphite = get_resource('graphite')
 	archive = get_resource('archive_reader')
 	
 	asp = AmpelStatsPublisher(
+		config=config,
 		mongodb_uri=mongo_uri, 
 		graphite_feeder=graphite,
 		archive_client=archive,
 		publish_stats=['print', 'graphite']
 	)
-	asp.send_all_metrics() 
+	asp.send_all_metrics()
 	asp.run()
