@@ -18,6 +18,7 @@ services:
    image: mongo:3.6
    command: ["mongod", "--port", "$CATALOG_PORT"]
    volumes:
+     - $CATALOG_PATH:/data/db
      - $CATALOG_INITDB_PATH:/docker-entrypoint-initdb.d/
      - $CATALOG_MONGODUMP_PATH:/mnt
    ports:
@@ -33,7 +34,7 @@ services:
      MONGO_PASSWORD_FILE: /run/secrets/catalog-read-password
   stats:
     image: ampel:$AMPEL_TAG
-    command: ["ampel-statspublisher", "--mongo", "$MONGO_HOST:$MONGO_PORT", "--graphite", "$GRAPHITE_HOST:$GRAPHITE_PORT"]
+    command: ["ampel-statspublisher"]
     volumes:
       - type: volume
         source: $AMPEL_SRC
@@ -41,17 +42,20 @@ services:
       - /data/ampel/archive/tarballs:/ztf
     secrets:
       - mongo-alertprocessor-password
-      - catalog-read-password
+      - archive-read-password
     environment:
       TINI_SUBREAPER: 1
       MONGO: $MONGO_HOST:$MONGO_PORT
+      ARCHIVE: $ARCHIVE_HOST:$ARCHIVE_PORT
       GRAPHITE: $GRAPHITE_HOST:$GRAPHITE_PORT
       MONGO_USER: alertprocessor
       MONGO_PASSWORD_FILE: /run/secrets/mongo-alertprocessor-password
-      CATALOG_READ_USER: filterclient
-      CATALOG_READ_USER_PASSWORD_FILE: /run/secrets/catalog-read-password
+      ARCHIVE_READ_USER: ampel-readonly
+      ARCHIVE_READ_USER_PASSWORD_FILE: /run/secrets/archive-read-password
     depends_on:
       - mongo
+      - archive
+      - graphite
   alertprocessor:
     image: ampel:$AMPEL_TAG
     command: ["ampel-alertprocessor", "--broker", "epyc.astro.washington.edu:9092", "--group", "$GROUP_NAME"]
@@ -60,19 +64,27 @@ services:
         source: $AMPEL_SRC
         target: /Ampel
       - /data/ampel/archive/tarballs:/ztf
+      - $CATSHTM_PATH:/catalogs/catsHTM
     secrets:
       - archive-write-password
       - mongo-alertprocessor-password
+      - catalog-read-password
     environment:
       TINI_SUBREAPER: 1
       MONGO: $MONGO_HOST:$MONGO_PORT
-      GRAPHITE: $GRAPHITE_HOST:$GRAPHITE_PORT
-      CATALOG: $CATALOG_HOST:$CATALOG_PORT
-      ARCHIVE: $ARCHIVE_HOST:$ARCHIVE_PORT
       MONGO_USER: alertprocessor
       MONGO_PASSWORD_FILE: /run/secrets/mongo-alertprocessor-password
+      
+      ARCHIVE: $ARCHIVE_HOST:$ARCHIVE_PORT
       ARCHIVE_WRITE_USER: ampel-client
       ARCHIVE_WRITE_USER_PASSWORD_FILE: /run/secrets/archive-write-password
+      
+      CATSHTM_PATH: /catalogs/catsHTM
+      CATALOG_HOST: $CATALOG_HOST
+      CATALOG_PORT: $CATALOG_PORT
+      CATALOG_READ_USER: filterclient
+      CATALOG_READ_USER_PASSWORD_FILE: /run/secrets/catalog-read-password
+
     deploy:
       replicas: $NUM_STREAMS
       restart_policy:
@@ -80,6 +92,7 @@ services:
           delay: 10s
     depends_on:
       - mongo
+      - archive
   t2-controller:
     image: ampel:$AMPEL_TAG
     command: ["ampel-t2", "--mongo-host", "$MONGO_HOST:$MONGO_PORT"]
@@ -124,6 +137,8 @@ services:
       - mongo
 
 secrets:
+  archive-read-password:
+    file: secrets/archive-read-password.txt
   archive-write-password:
     file: secrets/archive-write-password.txt
   mongo-root-password:
