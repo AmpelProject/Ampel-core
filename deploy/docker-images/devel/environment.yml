@@ -16,7 +16,7 @@ dependencies:
   - extcats
   - catshtm==0.1.15 
   - graphitesend
-  - schema
+  - voluptuous
   - pip:
     - schedule
     - -e
