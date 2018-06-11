@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/pipeline/t3/TransientItems.py
+# File              : ampel/pipeline/t3/TransientData.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 31.05.2018
-# Last Modified Date: 31.05.2018
+# Last Modified Date: 11.06.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from ampel.pipeline.logging.LoggingUtils import LoggingUtils
@@ -17,7 +17,7 @@ from operator import itemgetter
 import logging, pymongo
 
 
-class TransientItems:
+class TransientData:
 	"""
 	"""
 
@@ -31,12 +31,12 @@ class TransientItems:
 		Since different channels can have different data access policies (some channel
 		for example can access ZTF_COLLAB data other are restricted to ZTF_PUBLIC),
 		access to the ampel config is required if multiple single channel transient
-		objects are to be created using the same TransientItems instance.
+		objects are to be created using the same TransientData instance.
 		"""
 		if type(config) is pymongo.database.Database:
-			TransientItems.al_config = DBWired.load_config_db(config)
+			TransientData.al_config = DBWired.load_config_db(config)
 		elif type(config) is dict:
-			TransientItems.al_config = config
+			TransientData.al_config = config
 		else:
 			raise ValueError("Illegal argument")
 
@@ -186,7 +186,7 @@ class TransientItems:
 
 			if self.state in ["latest", "all"]:
 				latest_state = (
-					TransientItems.get_latest_compound(all_comps).get_id() 
+					TransientData.get_latest_compound(all_comps).get_id() 
 					if len(all_comps) > 0 else None
 				)
 			else:
@@ -203,8 +203,8 @@ class TransientItems:
 
 		#############################################################################
 		# Option 1: Unspecified channel. Channel info might not have been specified #
-		# when lightcurves/compounds/... were added to this TransientItems instance. #
-		# In this case we have a single view TransientItems (where channel==None)    #
+		# when lightcurves/compounds/... were added to this TransientData instance. #
+		# In this case we have a single view TransientData (where channel==None)    #
 		#############################################################################
 		
 		# channel not specified in create_transient(...) parameters
@@ -249,13 +249,13 @@ class TransientItems:
 		#########################################################################
 		# Option 2: the most commonly used probably. Channel was specificied.   #
 		# A single channel transient instance will be created whereby attention #
-		# must be paid to data access rights if this TransientItems contains     #
+		# must be paid to data access rights if this TransientData contains     #
 		# multi-channel transient data                                          #
 		#########################################################################
 
 		if self.state == "all":
 			if channel in self.compounds:
-				latest_state = TransientItems.get_latest_compound(self.compounds[channel]).get_id()
+				latest_state = TransientData.get_latest_compound(self.compounds[channel]).get_id()
 			else:
 				latest_state = None	
 		else:
@@ -292,9 +292,9 @@ class TransientItems:
 		# Past this point, regardless of how many channel info we have (one is enough) 
 		# we have to check permissions (db results contain all pps/uls, 
 		# wether or not they are public/private)
-		if TransientItems.al_config is None:
+		if TransientData.al_config is None:
 			raise ValueError(
-				"Ampel config required, please set it using TransientItems.set_ampel_config()"
+				"Ampel config required, please set it using TransientData.set_ampel_config()"
 			)
 	
 		# Convenience
@@ -303,14 +303,14 @@ class TransientItems:
 
 		# Get pps / uls for given channel
 		if channel is not None:
-			dam = DataAccessManager(TransientItems.al_config, channel)
+			dam = DataAccessManager(TransientData.al_config, channel)
 			return dam.get_photopoints(self.photopoints), dam.get_upperlimits(self.upperlimits)
 
 		# Loop through channel(s)
 		pps = set()
 		uls = set()
 		for channel in channels:
-			dam = DataAccessManager(TransientItems.al_config, channel)
+			dam = DataAccessManager(TransientData.al_config, channel)
 			pps.update(dam.get_photopoints(self.photopoints))
 			uls.update(dam.get_upperlimits(self.upperlimits))
 
