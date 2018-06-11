@@ -9,15 +9,21 @@ if [[ ! -e $envfile ]]; then
 	exit 1
 fi
 
+with_env() {
+	env $(cat $envfile | sed -e 's!#.*!!' | xargs echo) "$@"
+}
+
 if [[ "$1" == "dryrun" ]]; then
 	machine=$(hostname | cut -d. -f1)
 	singularity-stack rm $machine
 	sleep 1
 	if [[ "$machine" == "burst" ]]; then
-		env $(cat $envfile | xargs echo) echo "clearing $MONGO_PATH"
-		env $(cat $envfile | xargs echo) sh -c 'rm -r $MONGO_PATH/*'
+		with_env sh -c 'echo "clearing $MONGO_PATH"'
+		with_env sh -c 'rm -r $MONGO_PATH/*'
+		#with_env sh -c 'echo "clearing $CATALOG_PATH"'
+		#with_env sh -c 'rm -r $CATALOG_PATH/*'
 	fi
-	env $(cat $envfile | xargs echo) singularity-stack deploy -c $DIR/production/$machine.yml $machine
+	with_env singularity-stack deploy -c $DIR/production/$machine.yml $machine
 	singularity-stack list
 fi
 
