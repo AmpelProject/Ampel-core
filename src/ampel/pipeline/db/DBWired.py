@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 19.03.2018
-# Last Modified Date: 03.06.2018
+# Last Modified Date: 11.06.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import time, pymongo
@@ -33,7 +33,7 @@ class DBWired:
 
 
 	@staticmethod
-	def load_config_db(db, tier='all'):
+	def get_config_from_db(db, tier='all'):
 		"""
 		"""
 		config = {}
@@ -109,7 +109,7 @@ class DBWired:
 		# Default setting
 		if arg_config is None:
 			self.mongo_client = MongoClient(mongodb_uri, maxIdleTimeMS=1000)
-			self.config = DBWired.load_config_db(self.mongo_client["Ampel_config"])
+			self.config = DBWired.get_config_from_db(self.mongo_client["Ampel_config"])
 
 		# The config database name was provided
 		elif type(arg_config) is str:
@@ -120,19 +120,19 @@ class DBWired:
 				logger.info("Config db loaded using %s" % arg_config)
 			else:
 				self.mongo_client = MongoClient(mongodb_uri, maxIdleTimeMS=1000)
-				self.config = DBWired.load_config_db(self.mongo_client[arg_config])
+				self.config = DBWired.get_config_from_db(self.mongo_client[arg_config])
 		
 		elif isinstance(arg_config, dict):
 			self.config = arg_config
 
 		# A reference to a MongoClient instance was provided
 		elif type(arg_config) is MongoClient:
-			self.config = DBWired.load_config_db(arg_config["Ampel_config"])
+			self.config = DBWired.get_config_from_db(arg_config["Ampel_config"])
 
 		# A reference to a database instance (pymongo or mongomock) was provided
 		# -> Provided config_db type can be (pymongo or mongomock).database.Database
 		elif type(arg_config) is Database:
-			self.config = DBWired.load_config_db(arg_config)
+			self.config = DBWired.get_config_from_db(arg_config)
 
 		# Illegal argument
 		else:
