@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/pipeline/t3/TransientLoader.py
+# File              : ampel/pipeline/db/DBContentLoader.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 13.01.2018
-# Last Modified Date: 04.06.2018
+# Last Modified Date: 11.06.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from bson import ObjectId
@@ -16,7 +16,7 @@ from ampel.base.UpperLimit import UpperLimit
 from ampel.base.PlainUpperLimit import PlainUpperLimit
 from ampel.base.Compound import Compound
 from ampel.base.LightCurve import LightCurve
-from ampel.base.Transient import Transient
+from ampel.base.TransientView import TransientView
 from ampel.base.ScienceRecord import ScienceRecord
 from ampel.flags.TransientFlags import TransientFlags
 from ampel.flags.AlDocTypes import AlDocTypes
@@ -28,9 +28,9 @@ from ampel.pipeline.db.LightCurveLoader import LightCurveLoader
 from ampel.pipeline.db.DBResultOrganizer import DBResultOrganizer
 from ampel.pipeline.db.query.QueryLatestCompound import QueryLatestCompound
 from ampel.pipeline.db.query.QueryLoadTransientInfo import QueryLoadTransientInfo
-from ampel.pipeline.t3.TransientItems import TransientItems
+from ampel.pipeline.t3.TransientData import TransientData
 
-class TransientLoader:
+class DBContentLoader:
 	"""
 	"""
 	all_doc_types = (
@@ -46,7 +46,7 @@ class TransientLoader:
 		"""
 		"""
 		self.logger = LoggingUtils.get_logger() if logger is None else logger
-		TransientItems.set_ampel_config(al_config)
+		TransientData.set_ampel_config(al_config)
 		self.lcl = LightCurveLoader(central_db, logger=self.logger)
 		self.main_col = central_db["main"]
 		self.photo_col = central_db["photo"]
@@ -73,7 +73,7 @@ class TransientLoader:
 		-> content_types: AlDocTypes flag combination. 
 		Possible values are:
 		  * 'AlDocTypes.TRANSIENT': 
-			-> Add info from DB doc to the returned ampel.base.Transient instance
+			-> Add info from DB doc to the returned TransientData instance
 			-> For example: channels, flags (has processing errors), 
 			   latest photopoint observation date, ...
 
@@ -93,8 +93,7 @@ class TransientLoader:
 			-> if 'state' is 'latest' or a state id (md5 string) is provided, 
 			   only one LightCurve instance is created. 
 			   if 'state' is 'all', all available lightcurves are created.
-			-> the lightcurve instance(s) will be associated with the 
-			   returned ampel.base.Transient instance
+			-> the lightcurve instance(s) will be associated with the returned TransientData instance
 
 		  * 'AlDocTypes.T2RECORD': 
 			...
@@ -206,12 +205,12 @@ class TransientLoader:
 				res_photo_list = list(photo_cursor)
 
 
-		return self.load_tran_items(
+		return self.load_tran_data(
 			res_main_list, res_photo_list, channels, state=state
 		)
 
 
-	def load_tran_items(
+	def load_tran_data(
 		self, main_list, photo_list=None, channels=None, state="latest", 
 		load_lightcurves=True, feedback=True, verbose_feedback=False
 	):
@@ -225,7 +224,7 @@ class TransientLoader:
 		channels = set(channels)
 
 		# Stores loaded transient items. 
-		# Key: tran_id, value: TransientItems instance
+		# Key: tran_id, value: TransientData instance
 		register = {}
 
 		# Loop through ampel docs
@@ -235,18 +234,18 @@ class TransientLoader:
 			# main_list results are sorted by tranId
 			if tran_id != doc['tranId']:
 
-				# Instantiate ampel.base.Transient object
+				# Instantiate TransientData object
 				tran_id = doc['tranId']
-				tran_items = TransientItems(tran_id, state, self.logger)
-				register[tran_id] = tran_items
+				tran_data = TransientData(tran_id, state, self.logger)
+				register[tran_id] = tran_data
 
 			# Pick up transient document
 			if doc["alDocType"] == AlDocTypes.TRANSIENT:
 
 				# Load, translate alFlags from DB into a TransientFlags enum flag instance 
-				# and associate it with the ampel.base.Transient object instance
+				# and associate it with the TransientData object instance
 
-				tran_items.set_flags(
+				tran_data.set_flags(
 					TransientFlags(
 						FlagUtils.dbflag_to_enumflag(
 							doc['alFlags'], TransientFlags
@@ -267,7 +266,7 @@ class TransientLoader:
 
 						# First entry is creation date 
 						if not found_first:
-							tran_items.set_created(
+							tran_data.set_created(
 								datetime.utcfromtimestamp(entry['dt']), 
 								channel
 							)
@@ -275,7 +274,7 @@ class TransientLoader:
 							last_entry = entry
 
 						if last_entry is not None:
-							tran_items.set_modified(
+							tran_data.set_modified(
 								datetime.utcfromtimestamp(last_entry['dt']), 
 								channel
 							)
@@ -283,14 +282,14 @@ class TransientLoader:
 			# Pick compound dicts 
 			if doc["alDocType"] == AlDocTypes.COMPOUND:
 
-				tran_items.add_compound(
+				tran_data.add_compound(
 					Compound(doc, read_only=True), 
 					channels if len(channels) == 1 
 					else channels & set(doc['channels']) # intersection
 				)
 
 				if state == "latest":
-					tran_items.set_latest_state(
+					tran_data.set_latest_state(
 						doc['_id'], 
 						channels if len(channels) == 1 
 						else channels & set(doc['channels']) # intersection
@@ -310,7 +309,7 @@ class TransientLoader:
 					read_only=True
 				)
 
-				tran_items.add_science_record(
+				tran_data.add_science_record(
 					sr,
 					channels if len(channels) == 1 
 					else channels & set(doc['channels']) # intersection
@@ -366,15 +365,15 @@ class TransientLoader:
 
 		if load_lightcurves and photo_list is not None:
 		
-			for tran_items in register.values():
+			for tran_data in register.values():
 
-				if len(tran_items.compounds) == 0:
+				if len(tran_data.compounds) == 0:
 					continue
 
 				# This dict aims at avoiding unnecesssary re-instantiations 
 				# of PhotoPoints objects referenced in several different LightCurves. 
-				frozen_photo_dict = {**tran_items.photopoints, **tran_items.upperlimits}
-				len_uls = len(tran_items.upperlimits)
+				frozen_photo_dict = {**tran_data.photopoints, **tran_data.upperlimits}
+				len_uls = len(tran_data.upperlimits)
 
 				# Transform 
 				# {
@@ -388,7 +387,7 @@ class TransientLoader:
 				#   'comp3': {'HU_LENS', 'HU_SN'},
 				# }
 				inv_map = {}
-				for chan_name, comp_list in tran_items.compounds.items():
+				for chan_name, comp_list in tran_data.compounds.items():
 					for comp_obj in comp_list:
 						if comp_obj in inv_map:
 							inv_map[comp_obj].append(chan_name)
@@ -406,8 +405,8 @@ class TransientLoader:
 
 					lc = self.lcl.load_using_objects(comp, frozen_photo_dict)
 
-					# Associate it to the ampel.base.Transient instance
-					tran_items.add_lightcurve(lc, chan_names)
+					# Associate it to the TransientData instance
+					tran_data.add_lightcurve(lc, chan_names)
 
 		# Feedback
 		if feedback:
@@ -424,20 +423,20 @@ class TransientLoader:
 		if channels is None:
 			channels = [None]
 
-		for tran_items in dict_values:
+		for tran_data in dict_values:
 
-			len_comps = len({ell.id for el in tran_items.compounds.values() for ell in el})
-			len_lcs = len({ell.id for el in tran_items.lightcurves.values() for ell in el})
-			len_srs = len({hash(ell) for el in tran_items.science_records.values() for ell in el})
+			len_comps = len({ell.id for el in tran_data.compounds.values() for ell in el})
+			len_lcs = len({ell.id for el in tran_data.lightcurves.values() for ell in el})
+			len_srs = len({hash(ell) for el in tran_data.science_records.values() for ell in el})
 
 			if photo_list is not None:
 
-				pps = tran_items.photopoints
-				uls = tran_items.upperlimits
+				pps = tran_data.photopoints
+				uls = tran_data.upperlimits
 
 				self.logger.info(
 					" -> %i loaded: PP: %i, UL: %i, CP: %i, LC: %i, SR: %i" % 
-					(tran_items.tran_id, len(pps), len(uls), len_comps, len_lcs, len_srs)
+					(tran_data.tran_id, len(pps), len(uls), len_comps, len_lcs, len_srs)
 				)
 
 				if verbose_feedback: 
@@ -459,42 +458,42 @@ class TransientLoader:
 
 				self.logger.info(
 					" -> %i loaded: PP: 0, UL: 0, CP: %i, LC: %i, SR: %i" % 
-					(tran_items.tran_id, len_comps, len_lcs, len_srs)
+					(tran_data.tran_id, len_comps, len_lcs, len_srs)
 				)
 
 			if verbose_feedback:
 				
 				if len_comps > 0:
-					for channel in tran_items.compounds.keys():
+					for channel in tran_data.compounds.keys():
 						self.logger.info(
 							" -> %s Compound(s): %s " %
 							(
 								"" if channel is None else "[%s]" % channel,
-								[el.id.hex() for el in tran_items.compounds[channel]]
+								[el.id.hex() for el in tran_data.compounds[channel]]
 							)
 						)
 
 
 				if len_lcs > 0:
-					for channel in tran_items.lightcurves.keys():
+					for channel in tran_data.lightcurves.keys():
 						self.logger.info(
 							" -> %s LightCurves(s): %s " %
 							(
 								"" if channel is None else "[%s]" % channel,
-								[el.id.hex() for el in tran_items.lightcurves[channel]]
+								[el.id.hex() for el in tran_data.lightcurves[channel]]
 							)
 						)
 
 
 				if len_srs > 0:
 
-					t2_ids = {ell.t2_unit_id for el in tran_items.science_records.values() for ell in el}
+					t2_ids = {ell.t2_unit_id for el in tran_data.science_records.values() for ell in el}
 	
-					for channel in tran_items.science_records.keys():
+					for channel in tran_data.science_records.keys():
 						for t2_id in t2_ids:
 							srs = len(list(filter(
 								lambda x: x.t2_unit_id == t2_id,
-								tran_items.science_records[channel]
+								tran_data.science_records[channel]
 							)))
 							if srs > 0:
 								self.logger.info(

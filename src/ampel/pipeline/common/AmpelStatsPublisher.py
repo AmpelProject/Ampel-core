@@ -4,17 +4,14 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 26.05.2018
-# Last Modified Date: 28.05.2018
+# Last Modified Date: 11.06.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from functools import reduce
-import schedule, time, threading, signal
-from ampel.pipeline.db.DBWired import DBWired
-from ampel.pipeline.logging.LoggingUtils import LoggingUtils
-from ampel.pipeline.common.GraphiteFeeder import GraphiteFeeder
-from ampel.pipeline.common.Schedulable import Schedulable
 from ampel.flags.AlDocTypes import AlDocTypes
-
+from ampel.pipeline.db.DBWired import DBWired
+from ampel.pipeline.common.Schedulable import Schedulable
+from ampel.pipeline.logging.LoggingUtils import LoggingUtils
 
 class AmpelStatsPublisher(DBWired, Schedulable):
 	""" 

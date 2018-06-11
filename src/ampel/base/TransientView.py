@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/base/Transient.py
+# File              : ampel/base/TransientView.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 13.01.2018
-# Last Modified Date: 03.06.2018
+# Last Modified Date: 11.06.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from ampel.pipeline.logging.LoggingUtils import LoggingUtils
@@ -14,7 +14,7 @@ from ampel.base.Frozen import Frozen
 import logging
 
 
-class Transient(Frozen):
+class TransientView(Frozen):
 	"""
 	Container class referencing:
 	-> possibly various instances of objects:
@@ -23,9 +23,8 @@ class Transient(Frozen):
 		* ampel.base.Compound
 		* ampel.base.LightCurve
 		* ampel.base.T2Record
-	Instances of this class are typically generated 
-	from a TransientView by TransientLoader 
-	and provided to T3 modules.
+	Instances of this class are typically generated using a TransientData instance 
+	created by DBContentLoader and provided to T3 modules.
 	"""
 
 	def __init__(self, 
@@ -60,7 +59,7 @@ class Transient(Frozen):
 
 	def print_info(self):
 		""" """
-		Transient._print_info(self, self.logger)
+		TransientView._print_info(self, self.logger)
 
 
 	def get_flags(self):

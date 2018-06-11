@@ -7,15 +7,9 @@
 # Last Modified Date: 07.06.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-from ampel.pipeline.logging.LoggingUtils import LoggingUtils
-from ampel.pipeline.common.AmpelUtils import AmpelUtils
-from ampel.pipeline.t3.T3TaskLoader import T3TaskLoader
-from ampel.pipeline.t3.T3Task import T3Task
-from ampel.flags.TransientFlags import TransientFlags
-from ampel.flags.FlagUtils import FlagUtils
-from datetime import timedelta, datetime
 from functools import reduce
 from voluptuous import Schema, Required, Any, Optional, ALLOW_EXTRA
+from ampel.pipeline.t3.T3TaskLoader import T3TaskLoader
 
 class T3Job:
 	"""
