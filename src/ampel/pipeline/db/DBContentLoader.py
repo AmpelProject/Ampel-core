@@ -16,7 +16,7 @@ from ampel.base.UpperLimit import UpperLimit
 from ampel.base.PlainUpperLimit import PlainUpperLimit
 from ampel.base.Compound import Compound
 from ampel.base.LightCurve import LightCurve
-from ampel.base.Transient import Transient
+from ampel.base.TransientView import TransientView
 from ampel.base.ScienceRecord import ScienceRecord
 from ampel.flags.TransientFlags import TransientFlags
 from ampel.flags.AlDocTypes import AlDocTypes
@@ -73,7 +73,7 @@ class DBContentLoader:
 		-> content_types: AlDocTypes flag combination. 
 		Possible values are:
 		  * 'AlDocTypes.TRANSIENT': 
-			-> Add info from DB doc to the returned ampel.base.Transient instance
+			-> Add info from DB doc to the returned TransientData instance
 			-> For example: channels, flags (has processing errors), 
 			   latest photopoint observation date, ...
 
@@ -93,8 +93,7 @@ class DBContentLoader:
 			-> if 'state' is 'latest' or a state id (md5 string) is provided, 
 			   only one LightCurve instance is created. 
 			   if 'state' is 'all', all available lightcurves are created.
-			-> the lightcurve instance(s) will be associated with the 
-			   returned ampel.base.Transient instance
+			-> the lightcurve instance(s) will be associated with the returned TransientData instance
 
 		  * 'AlDocTypes.T2RECORD': 
 			...
@@ -235,7 +234,7 @@ class DBContentLoader:
 			# main_list results are sorted by tranId
 			if tran_id != doc['tranId']:
 
-				# Instantiate ampel.base.Transient object
+				# Instantiate TransientData object
 				tran_id = doc['tranId']
 				tran_data = TransientData(tran_id, state, self.logger)
 				register[tran_id] = tran_data
@@ -244,7 +243,7 @@ class DBContentLoader:
 			if doc["alDocType"] == AlDocTypes.TRANSIENT:
 
 				# Load, translate alFlags from DB into a TransientFlags enum flag instance 
-				# and associate it with the ampel.base.Transient object instance
+				# and associate it with the TransientData object instance
 
 				tran_data.set_flags(
 					TransientFlags(
@@ -406,7 +405,7 @@ class DBContentLoader:
 
 					lc = self.lcl.load_using_objects(comp, frozen_photo_dict)
 
-					# Associate it to the ampel.base.Transient instance
+					# Associate it to the TransientData instance
 					tran_data.add_lightcurve(lc, chan_names)
 
 		# Feedback

@@ -12,7 +12,7 @@ from ampel.pipeline.t3.DataAccessManager import DataAccessManager
 from ampel.pipeline.db.DBWired import DBWired
 from ampel.flags.AlDocTypes import AlDocTypes
 from ampel.flags.FlagUtils import FlagUtils
-from ampel.base.Transient import Transient
+from ampel.base.TransientView import TransientView
 from operator import itemgetter
 import logging, pymongo
 
@@ -27,7 +27,7 @@ class TransientData:
 	def set_ampel_config(cls, config):
 		"""
 		A single transient view instance can be used to create multiple different 
-		ampel.base.Transient instances, each representing a different channel.
+		ampel.base.TransientView instances, each representing a different channel.
 		Since different channels can have different data access policies (some channel
 		for example can access ZTF_COLLAB data other are restricted to ZTF_PUBLIC),
 		access to the ampel config is required if multiple single channel transient
@@ -192,7 +192,7 @@ class TransientData:
 			else:
 				latest_state = None
 
-			return Transient(
+			return TransientView(
 				self.tran_id, self.flags, None, None, # created, modified
 				latest_state, photopoints, upperlimits, all_comps,
 				tuple({el for channel in self.lightcurves for el in self.lightcurves[channel]}),
@@ -261,7 +261,7 @@ class TransientData:
 		else:
 			latest_state = self.latest_state[channel] if channel in self.latest_state else None
 
-		return Transient(
+		return TransientView(
 			self.tran_id, self.flags, 
 			self.created[channel] if channel in self.created else None, 
 			self.modified[channel] if channel in self.modified else None, 
