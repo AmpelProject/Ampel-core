@@ -54,9 +54,11 @@ class DBContentLoader:
 		self.lc = {}
 		self.verbose = verbose
 
-
+	# TODO: 
 	def load_new(self, tran_id, channels=None, state="latest", content_types=all_doc_types, t2_ids=None):
 		"""
+		Returns a instance of TransientData
+
 		Arguments:
 		----------
 
@@ -134,8 +136,8 @@ class DBContentLoader:
 
 			# Build query parameters (will return adequate number of docs)
 			search_params = QueryLoadTransientInfo.build_statebound_query(
-				tran_id, content_types, compound_ids=latest_compound_dict["_id"], 
-				t2_ids=t2_ids, comp_already_loaded=True
+				tran_id, content_types, latest_compound_dict["_id"], 
+				channels, t2_ids, comp_already_loaded=True
 			)
 
 		# Option 2: Load every available transient state
@@ -149,7 +151,7 @@ class DBContentLoader:
 
 			# Build query parameters (will return adequate number of docs)
 			search_params = QueryLoadTransientInfo.build_stateless_query(
-				tran_id, content_types, t2_ids=t2_ids
+				tran_id, content_types, channels, t2_ids
 			)
 
 
@@ -158,17 +160,17 @@ class DBContentLoader:
 
 			# Feedback
 			self.logger.info(
-				"Retrieving %s for state %s of transient %s" % 
+				"Retrieving %s for state(s) %s of transient %s" % 
 				(content_types, state, tran_id)
 			)
 
 			# (Lousy/incomplete) check if md5 string was provided
-			if len(state) != 32 and type(state) is not list:
-				raise ValueError("Provided state must be 32 alphanumerical characters or a list")
+			if type(state) not in (bytes, list):
+				raise ValueError("Type of provided state must be bytes or list")
 
 			# Build query parameters (will return adequate number of docs)
 			search_params = QueryLoadTransientInfo.build_statebound_query(
-				tran_id, content_types, state, t2_ids = t2_ids
+				tran_id, content_types, state, channels, t2_ids
 			)
 		
 		self.logger.debug(
@@ -203,7 +205,6 @@ class DBContentLoader:
 				photo_cursor = self.photo_col.find({'tranId': tran_id, '_id': {'$lt': 0}})
 				self.logger.info(" -> Fetching %i upper limits" % photo_cursor.count())
 				res_photo_list = list(photo_cursor)
-
 
 		return self.load_tran_data(
 			res_main_list, res_photo_list, channels, state=state
