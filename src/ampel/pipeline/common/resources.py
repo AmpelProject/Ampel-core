@@ -17,7 +17,7 @@ class Graphite(FromEnvironment):
         hostname = socket.gethostname().split('.')[0]
         config = {'systemName': 'ampel.{}'.format(hostname),
                   'server': environ.get('GRAPHITE_HOST', 'graphite'),
-                  'port': environ.get('GRAPHITE_PORT', 2003)}
+                  'port': int(environ.get('GRAPHITE_PORT', 2003))}
         return GraphiteFeeder(config)
 
 class LiveMongoURI(FromEnvironment):
