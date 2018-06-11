@@ -7,11 +7,8 @@
 # Last Modified Date: 11.06.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-from ampel.pipeline.logging.LoggingUtils import LoggingUtils
 from ampel.pipeline.t3.DataAccessManager import DataAccessManager
 from ampel.pipeline.db.DBWired import DBWired
-from ampel.flags.AlDocTypes import AlDocTypes
-from ampel.flags.FlagUtils import FlagUtils
 from ampel.base.TransientView import TransientView
 from operator import itemgetter
 import logging, pymongo
