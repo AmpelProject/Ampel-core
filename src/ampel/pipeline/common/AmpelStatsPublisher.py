@@ -207,7 +207,7 @@ class AmpelStatsPublisher(DBWired, Schedulable):
 
 		# Publish metrics to graphite
 		if self.graphite_feeder is not None:
-			if self.archive_client is not None:
+			if col_stats and self.archive_client is not None:
 				self.graphite_feeder.add_stats( self.archive_client.get_statistics(), 'archive.tables')
 			self.logger.info("Sending stats to graphite")
 			self.graphite_feeder.add_stats(stat_dict)
