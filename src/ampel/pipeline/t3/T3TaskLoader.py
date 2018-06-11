@@ -160,11 +160,11 @@ class T3TaskLoader:
 			6)  None	 ===> 	None			Transients provided to T3 units (defined in tasks)
 												will be so-called 'multi-channel' transients
 
-			7)  None	 ===> 	"forEach"		If "forEach" is provided as channel name, the corresponding
+			7)  None	 ===> 	"$forEach"		If "$forEach" is provided as channel name, the corresponding
 												task(s) will be executed separately for each channel 
 												returned by the criteria defined in the job selection.
 												
-			8)  {a, b}	 ===> 	"forEach"		same as 7)
+			8)  {a, b}	 ===> 	"$forEach"		same as 7)
 			""" 
 
 			# Case 1, 6, 7
@@ -174,7 +174,7 @@ class T3TaskLoader:
 				if 'select' in task_doc and 'channels' in task_doc['select']:
 
 					# Case 7
-					if task_doc['select']['channels'] == "forEach":
+					if task_doc['select']['channels'] == "$forEach":
 						raise NotImplementedError("Soon...")
 						
 					# Case 1
@@ -198,11 +198,16 @@ class T3TaskLoader:
 				if 'select' in task_doc and 'channel(s)' in task_doc['select']:
 
 					# Case 8
-					if task_doc['select']['channel(s)'] == "forEach":
+					if task_doc['select']['channel(s)'] == "$forEach":
 						raise NotImplementedError("Soon...")
 						
-					set_task_chans = AmpelUtils.to_set(task_doc['select']['channel(s)'])
-					set_job_chans = AmpelUtils.to_set(cls.get_config(t3_job_doc, "input.select.channel(s)"))
+					set_task_chans = AmpelUtils.to_set(
+						task_doc['select']['channel(s)']
+					)
+
+					set_job_chans = AmpelUtils.to_set(
+						cls.get_config(t3_job_doc, "input.select.channel(s)")
+					)
 
 					# case 2
 					if len(set_task_chans - set_job_chans) > 0:
