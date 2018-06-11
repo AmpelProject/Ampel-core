@@ -39,7 +39,7 @@ class AmpelUtils():
 		"""
 
 		# monotype
-		if type(types) not in (list, tuple):
+		if not isinstance(types, collections.Sequence):
 			return all(type(el) is types for el in seq)
 		# different types accepted (or connected)
 		else:
