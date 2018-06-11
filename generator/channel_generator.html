@@ -17,15 +17,18 @@
 <script type='text/javascript'>
 
 	ztf_alert_fields = [
-		'aimage', 'aimagerat', 'bimage', 'bimagerat', 'candid', 'chinr', 
-		'chipsf', 'classtar', 'dec', 'decnr', 'diffmaglim', 'distnr', 'distpsnr1', 
-		'elong', 'fid', 'field', 'fwhm', 'isdiffpos', 'jd', 'jdendhist', 'jdstarthist', 
-		'magap', 'magapbig', 'magdiff', 'magfromlim', 'magnr', 'magpsf', 'mindtoedge', 
-		'nbad', 'ncovhist', 'ndethist', 'nid', 'nneg', 'pdiffimfilename', 'pid', 
-		'programid', 'programpi', 'ra', 'ranr', 'rb', 'rcid', 'scorr', 'seeratio', 
-		'sgmag', 'sgscore', 'sharpnr', 'sigmagap', 'sigmagapbig', 'sigmagnr', 'sigmapsf', 
-		'simag', 'sky', 'srmag', 'ssdistnr', 'ssmagnr', 'ssnamenr', 'sumrat', 'szmag', 
-		'tblid', 'xpos', 'ypos'
+		'jd', 'fid', 'pid', 'diffmaglim', 'pdiffimfilename', 'programpi', 'programid',
+		'candid', 'isdiffpos', 'tblid', 'nid', 'rcid', 'field', 'xpos',
+		'ypos', 'ra', 'dec', 'magpsf', 'sigmapsf', 'chipsf', 'magap',
+		'sigmagap', 'distnr', 'magnr', 'sigmagnr', 'chinr', 'sharpnr', 'sky',
+		'magdiff', 'fwhm', 'classtar', 'mindtoedge', 'magfromlim', 'seeratio', 'aimage',
+		'bimage', 'aimagerat', 'bimagerat', 'elong', 'nneg', 'nbad', 'rb',
+		'ssdistnr', 'ssmagnr', 'ssnamenr', 'sumrat', 'magapbig', 'sigmagapbig', 'ranr',
+		'decnr', 'sgmag1', 'srmag1', 'simag1', 'szmag1', 'sgscore1', 'distpsnr1',
+		'ndethist', 'ncovhist', 'jdstarthist', 'jdendhist', 'scorr', 'tooflag', 'objectidps1',
+		'objectidps2', 'sgmag2', 'srmag2', 'simag2', 'szmag2', 'sgscore2', 'distpsnr2',
+		'objectidps3', 'sgmag3', 'srmag3', 'simag3', 'szmag3', 'sgscore3', 'distpsnr3',
+		'nmtchps', 'rfid', 'jdstartref', 'jdendref', 'nframesref'
 	];
 
 	alert_operators = [
@@ -116,44 +119,30 @@
 			tbl_model = $(".t0outerdiv").eq(0).clone();
 
 			// Retrieve AMPEL JSON config files
-			$.getJSON("t2_units.json").done(
+			$.getJSON("ampel_t2_config.json").done(
 
 				function(json) {
 
 					// Save result
-					t2_units = json;
+					t2_units = json['t2_units'];
+					t2_run_configs = json['t2_run_configs'];
 
-					// Retrieve run config json file
-					$.getJSON("t2_run_config.json").done(
-
-						function(json2) {
-
-							// Save result
-							t2_run_config = json2;
-
-							// Create T2 checkboxes and associated content
-							for (y=0; y < t2_units.length; y++) {
-								create_t2(t2_units[y], t2_run_config);
-							}
-
-							// Cosmetic
-							$("#T2").append($("<br><br>"))
-
-							// Init tooltips (we do it now because the generated
-							// t2 html elements use tooltips as well)
-							init_tooltipster();
-						}
-
-					).fail(
-						function() {
-							alert("Unable to retrieve t2_run_config.json");
+					Object.keys(t2_units).forEach(
+						function(t2_unit_name) {
+							create_t2(t2_unit_name, t2_units[t2_unit_name], t2_run_configs);
 						}
 					);
-				}
 
+					// Cosmetic
+					$("#T2").append($("<br><br>"))
+
+					// Init tooltips (we do it now because the generated
+					// t2 html elements use tooltips as well)
+					init_tooltipster();
+				}
 			).fail(
 				function() {
-					alert("Unable to retrieve t2_units.json");
+					alert("Unable to retrieve ampel_t2_config.json");
 				}
 			);
 		}
@@ -162,37 +151,39 @@
 
 	function gen_confs() {
 
-		channel_config = {
+		chan_name = $("#channel_name").val().toUpperCase();
 
-			"_id" : $("#channel_name").val().toUpperCase(),
-			"version": 1.0,
-			"active" : false,
-
-    		"input" : [ 
-        		{
-            		"instrument" : "ZTF",
-            		"alerts" : "IPAC",
-            		"parameters" : {
-            		    "ZTFPartner" : true,
-						"autoComplete" : $("#autocomplete").prop('checked'),
-						"updatedHUZP" : false
-					}
-				}
-			],
-
-    		"t0Filter" : {
-			},
-
-    		"t2Compute" : [],
-
-			"t3Supervise" : []
+		custom_config = {
+			"channels": {}, 
+			"t2_run_configs": {}, 
+			"t3_run_configs":{}
 		};
 
-		t0_config = {};
-		t2_run_configs = [];
-		t3_runconfig = {};
+		custom_config['channels'][chan_name] = {
+			"version": 1.0,
+			"active" : false,
+			"pubStats": false,
+	   		"sources" : {
+				"ZTFIPAC" : {
+					"parameters" : {
+     	    		    "ZTFPartner" : true,
+						"autoComplete" : $("#autocomplete").prop('checked'),
+						"updatedHUZP" : false
+					},
+	   				"t0Filter" : {
+					},
+
+   					"t2Compute" : [],
+
+					"t3Supervise" : []
+				}
+			}
+		};
+
+		chan_config = custom_config['channels'][chan_name]['sources']['ZTFIPAC'];
 
 		var ret = true;
+
 
 		/********************
 		    CHANNEL DETAILS 
@@ -250,8 +241,8 @@
 				}
 			);
 
-			channel_config["t0Filter"] = {
-        		"id" : "BasicFilter",
+			chan_config['t0Filter'] = {
+        		"filterId" : "BasicFilter",
 				"runConfig" : {
 					"criteria" : crits,
 					"len" : Number(
@@ -302,7 +293,7 @@
 				}
 			);
 
-			channel_config["t0Filter"] = {
+			chan_config['t0Filter'] = {
         		"id" : "BasicMultiFilter",
 				"runConfig" : {
 					"filters" : filters
@@ -442,16 +433,15 @@
 						}
 					};
 
-					t2_run_config = {
-						'_id': tmp_dict['t2Unit'] + '_' + tmp_dict['runConfig']
-					};
-					t2_run_configs.push(t2_run_config);
+					custom_config["t2_run_configs"][
+						tmp_dict['t2Unit'] + '_' + tmp_dict['runConfig']
+					] = tmp_dict
 
-					// for cosmetic reasons (key order)
+					/* for cosmetic reasons (key order)
 					for (var z=0; z<t2_run_config_fields.length; z++) {
 						t2_run_config[t2_run_config_fields[z]] = tmp_dict[t2_run_config_fields[z]];
 					}
-
+					*/
 				}
 				else {
 					run_config_name = t2div
@@ -464,7 +454,7 @@
 					PART 2b: update channel t2 config
 				**************************************/
 
-				channel_config["t2Compute"].push(
+				chan_config["t2Compute"].push(
 					{
 						"t2Unit": $(this)
 							.closest(".t2div")
@@ -493,14 +483,6 @@
 				create_gjson_div("Channel config:", "chan_config")
 			);
 
-			gjson_div.append(
-				create_gjson_div("T2 run config:", "t2_run_config")
-			);
-
-			gjson_div.append(
-				create_gjson_div("T3 run config:", "t3_run_config")
-			);
-
 			$("#accordion")
 				.append($("<h3>Generated JSON</h3>"))
 				.append(gjson_div)
@@ -512,28 +494,8 @@
 		}
 
 		$("#gjson_pre_chan_config").html(
-			JSON.stringify(channel_config, null, '\t')
+			JSON.stringify(custom_config, null, '\t')
 		);
-
-		if (Object.keys(t2_run_configs).length == 0) {
-			$("#gjson_div_t2_run_config").hide();
-		}
-		else {
-			$("#gjson_div_t2_run_config").show();
-			$("#gjson_pre_t2_run_config").html(
-				JSON.stringify(t2_run_configs, null, '\t')
-			);
-		}
-
-		if (Object.keys(t3_runconfig).length == 0) {
-			$("#gjson_div_t3_run_config").hide();
-		}
-		else {
-			$("#gjson_pre_t3_run_config").show();
-			$("#gjson_pre_t3_run_config").html(
-				JSON.stringify(t3_runconfig, null, '\t')
-			);
-		}
 
 		// JSON syntax highlighting
 		Prism.highlightAll();
@@ -789,10 +751,8 @@
 	}
   }
 
-	function create_t2(unit_dict, run_config_dict) {
+	function create_t2(t2_unit_name, unit_dict, run_config_dict) {
 
-		var t2_unit_name = unit_dict['_id'];
-	
 		var outerdiv = $('<div/>');
 		outerdiv.attr(
 			{
@@ -884,77 +844,82 @@
 	
 		table.append($('<tr><td><b>Run config:</b></td></tr>'));
 	
-		for (i=0; i < run_config_dict.length; i++) {
-	
-			if (run_config_dict[i]["t2Unit"] != t2_unit_name)
-				continue;
+		Object.keys(run_config_dict).forEach(
 
-			var d = $.extend({}, run_config_dict[i]);
-			delete d['_id'];
-			var rcid = t2_unit_name + '_' + d['runConfig'];
-	
-			var tr = $('<tr/>');
-			table.append(tr);
-			var td = $('<td/>');
-			tr.append(td);
-	
-			var ttrunconfigdiv = $('<div/>');
-			td.append(ttrunconfigdiv);
-			ttrunconfigdiv.attr(
-				{
-					'class': 'tooltip_templates',
-					'style': 'display:none'
-				}
-			);
-	
-			var ttrunconfigspan = $('<span/>');
-			ttrunconfigdiv.append(ttrunconfigspan);
-			ttrunconfigspan.attr({'id': 'tt_' + rcid});
-			var pre = $('<pre/>');
-			ttrunconfigspan.append(pre);
+			function(rc_name) {
 
-			pre.text(JSON.stringify(d, undefined, '\t'));
-			pre.attr({'style': 'line-height:25px'});
+				if (run_config_dict[rc_name]["t2Unit"] != t2_unit_name)
+					return;
 
-			var input = $('<input/>');
-			input.attr(
-				{
-					'type': 'radio',
-					'name': 'radio_' + t2_unit_name,
-					'id': 'radio_' + rcid,
-					'data-runconf-label': d['runConfig']
-				}
-			);
+				var rcid = t2_unit_name + '_' + run_config_dict[rc_name]['runConfig'];
 		
-			input.bind(
-				'click', 
-				function() {
-					$("#runconfig_div_" + t2_unit_name).fadeOut("slow");
-				}
-			);
+				var tr = $('<tr/>');
+				table.append(tr);
+				var td = $('<td/>');
+				tr.append(td);
 		
-			td.append(input);
+				var ttrunconfigdiv = $('<div/>');
+				td.append(ttrunconfigdiv);
+				ttrunconfigdiv.attr(
+					{
+						'class': 'tooltip_templates',
+						'style': 'display:none'
+					}
+				);
+		
+				var ttrunconfigspan = $('<span/>');
+				ttrunconfigdiv.append(ttrunconfigspan);
+				ttrunconfigspan.attr({'id': 'tt_' + rcid});
+				var pre = $('<pre/>');
+				ttrunconfigspan.append(pre);
 	
-			span = $('<span/>');
-			td.append(span);
-			span.attr(
-				{
-					'class': 'tooltip', 
-					'data-tooltip-content': '#tt_' + rcid 
-				}
-			);
+				pre.text(
+					JSON.stringify(
+						run_config_dict[rc_name], undefined, '\t'
+					)
+				);
+				pre.attr({'style': 'line-height:25px'});
+	
+				var input = $('<input/>');
+				input.attr(
+					{
+						'type': 'radio',
+						'name': 'radio_' + t2_unit_name,
+						'id': 'radio_' + rcid,
+						'data-runconf-label': run_config_dict[rc_name]['runConfig']
+					}
+				);
+			
+				input.bind(
+					'click', 
+					function() {
+						$("#runconfig_div_" + t2_unit_name).fadeOut("slow");
+					}
+				);
+			
+				td.append(input);
 		
-			var lbl = $('<label/>');
-			lbl.attr(
-				{
-					'for': 'radio_' + rcid,
-					'style': 'cursor: pointer;padding-left: 5px'
-				}
-			);
-			lbl.text(d['runConfig']);
-		
-			span.append(lbl);
-		}
+				span = $('<span/>');
+				td.append(span);
+				span.attr(
+					{
+						'class': 'tooltip', 
+						'data-tooltip-content': '#tt_' + rcid 
+					}
+				);
+			
+				var lbl = $('<label/>');
+				lbl.attr(
+					{
+						'for': 'radio_' + rcid,
+						'style': 'cursor: pointer;padding-left: 5px'
+					}
+				);
+				lbl.text(run_config_dict[rc_name]['runConfig']);
+			
+				span.append(lbl);
+			}
+		);
 	
 	
 		var tr = $('<tr/>');
