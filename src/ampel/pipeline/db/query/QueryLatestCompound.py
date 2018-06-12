@@ -33,16 +33,18 @@ class QueryLatestCompound:
 		--------
 		In []: cursor = col.aggregate(
 			QueryLatestCompound.fast_query(
-				['ZTF18aaayyuq', 'ZTF17aaagvng', 'ZTF18aaabikt']
+				AmpelUtils.get_ampel_name(
+					['ZTF18aaayyuq', 'ZTF17aaagvng', 'ZTF18aaabikt']
+				)
 			)
 		)
 
 		In []: list(cursor)
 		Out[]: 
 		[
-			{'_id': '5de2480f28bfca0bd3baae890cb2d2ae', 'tranId': 'ZTF18aaayyuq'},
- 			{'_id': '5fcdeda5e116989a69f6cbbde7234654', 'tranId': 'ZTF18aaabikt'},
- 			{'_id': '854b467971b7683a7317ab1a032d4978', 'tranId': 'ZTF17aaagvng'}
+			{'_id': Binary(b'T6TG\x96\x80\x1d\x86\x9f\x11\xf2G\xe7\xf4\xe0\xc3', 5), 'tranId': 'ZTF18aaayyuq'},
+ 			{'_id': Binary(b'\xaaL|\x94?\xa4\xa1D\xbe\x0c[D\x9b\xc6\xe6o', 5), 'tranId': 'ZTF18aaabikt'},
+ 			{'_id': Binary(b'\xaaL|\x14?\xb4\xc3D\xd2\x2a?L\x9a\xa6\xa1o', 5), 'tranId': 'ZTF17aaagvng'}
 		]
 
 		Parameters	
@@ -148,7 +150,7 @@ class QueryLatestCompound:
 		Out[]: 
 		[
 		  {
-			'_id': '5de2480f28bfca0bd3baae890cb2d2ae',
+			'_id': Binary(b'T6TG\x96\x80\x1d\x86\x9f\x11\xf2G\xe7\xf4\xe0\xc3', 5),
 			  'added': 1520796310.496276,
 			  'alDocType': 2,
 			  'channels': ['HU_SN1'],
