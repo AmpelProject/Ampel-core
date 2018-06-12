@@ -1,22 +1,21 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/pipeline/t3/T3Executor.py
+# File              : ampel/pipeline/t3/T3JobExecutor.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 26.02.2018
-# Last Modified Date: 28.05.2018
+# Last Modified Date: 11.06.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
+from ampel.pipeline.db.query.QueryMatchTransients import QueryMatchTransients
+from ampel.pipeline.db.query.QueryLatestCompound import QueryLatestCompound
+from ampel.pipeline.db.DBContentLoader import DBContentLoader
 from ampel.pipeline.logging.LoggingUtils import LoggingUtils
 from ampel.flags.TransientFlags import TransientFlags
-from ampel.pipeline.db.query.QueryMatchTransients import QueryMatchTransients
-from ampel.pipeline.t3.TransientLoader import TransientLoader
-from ampel.pipeline.db.query.QueryLatestCompound import QueryLatestCompound
 from ampel.flags.AlDocTypes import AlDocTypes
 import itertools
 
-
-class T3Executor():
+class T3JobExecutor():
 	"""
 	"""
 
@@ -85,13 +84,13 @@ class T3Executor():
 			chunk_size = c_count
 
 		# 'State' to load is mandatory job option (when transients loading is requested)
-		load_state = t3_job.tran_load_options("state") 
+		load_state = t3_job.get_config("input.load.state") 
 
 		# See if the current job is associated with more than one task or not
 		multi_task_job = t3_job.get_tasks() is not None
 
 		# Required to load single transients
-		tl = TransientLoader(central_db, al_config, verbose, logger)
+		dbcl = DBContentLoader(central_db, al_config, verbose=True, logger=logger)
 
 
 
@@ -200,8 +199,8 @@ class T3Executor():
 
 				logger.info("Loading transient(s)")
 
-				# This array will contain the ampel.base.Transient instances
-				al_trans = []
+				# This array will contain TransientData instances
+				al_tran_data = []
 
 				# Build dict d_states using dict latest_states:
 				# (latest state can be different from one channel to another)
@@ -228,11 +227,11 @@ class T3Executor():
 				# Load ampel transient objects
 				for tran_id in d_states:
 					
-					# Populate internal array al_trans ...
-					al_trans.append(
+					# Populate internal array al_tran_data ...
+					al_tran_data.append(
 
 						# ... with new instance of ampel.base.Transient
-						tl.load_new(
+						dbcl.load_new(
 							tran_id, 
 							state=d_states[tran_id], 
 							t2_ids=t3_job.get_config('input.load.t2(s)')
@@ -249,20 +248,22 @@ class T3Executor():
 
 					# Run T3 instance
 					t3_unit.run(
-						t3_task.get_run_config().get_parameters(),  al_trans
+						t3_task.get_run_config().get_parameters(),  al_tran_data
 					)
 
 				else:
 
-					# Fork transients for each task and run it
-					##########################################
+					# For each task, create transientView and run task
+					##################################################
 
 					# Run tasks
 					for t3_task in t3_job.get_tasks():
 
 						logger.info(
-							"Running task with t3Unit %s and runConfig %s" %
-							(t3_task.get_parameter("t3Unit"), t3_task.get_parameter("runConfig"))
+							"Running task with t3Unit %s and runConfig %s" % (
+								t3_task.get_config("t3Unit"), 
+								t3_task.get_config("runConfig")
+							)
 						)
 	
 						# Get channel associated with this task
@@ -276,7 +277,7 @@ class T3Executor():
 
 						# Build specific array of ampel transient instances where each transient 
 						# is cut down according to the specified sub-selections parameters
-						for transient in al_trans:
+						for transient in al_tran_data:
 
 							# Get 'latest state' asssociated with this transient and channel
 							for el in latest_states:
@@ -291,6 +292,7 @@ class T3Executor():
 								continue
 
 							# fork transient
+							#create_view(...)
 							ftran = TransientForker.fork(
 								transient, 
 								doc_type = t3_task.get_selection('docType'), 

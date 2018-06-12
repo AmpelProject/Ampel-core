@@ -104,11 +104,11 @@ class T3TaskLoader:
 		# Internal variables
 		name = task_doc['name']
 		t3_unit_name = task_doc['t3Unit']
-		run_config_doc = None
+		t3_run_config_doc = None
 
 		# Link to run_config dict
 		if task_doc.get('runConfig') is not None:
-			run_config_doc = al_config['t3_run_config'][
+			t3_run_config_doc = al_config['t3_run_config'][
 				"%s_%s" % (task_doc['t3Unit'], task_doc['runConfig'])
 			] 
 
@@ -234,16 +234,16 @@ class T3TaskLoader:
 					
 
 			# t2s sub selection robustness
-			cls._check_if_subset(task_doc, t3_job_doc, "t2(s)", logger)
+			cls._subset_check(task_doc, t3_job_doc, "t2(s)", logger)
 
 			# docs sub selection robustness
-			cls._check_if_subset(task_doc, t3_job_doc, "doc(s)", logger)
+			cls._subset_check(task_doc, t3_job_doc, "doc(s)", logger)
 
 			# withFlags sub selection robustness
-			cls._check_if_subset(task_doc, t3_job_doc, "withFlag(s)", logger)
+			cls._subset_check(task_doc, t3_job_doc, "withFlag(s)", logger)
 
 			# withoutFlags sub selection robustness
-			cls._check_if_subset(task_doc, t3_job_doc, "withoutFlag(s)", logger)
+			cls._subset_check(task_doc, t3_job_doc, "withoutFlag(s)", logger)
 
 			# Further robustness check
 			if cls.get_config(task_doc, "select.t2(s)") is not None:
@@ -319,7 +319,9 @@ class T3TaskLoader:
 
 			cls.t3_classes[t3_unit_doc['classFullPath']] = T3_class
 
-		return T3Task(task_doc, T3_class, t3_unit_doc['baseConfig'], run_config_doc)
+		return T3Task(
+			task_doc, T3_class, t3_unit_doc['baseConfig'], t3_run_config_doc
+		)
 
 
 	@staticmethod
@@ -330,7 +332,7 @@ class T3TaskLoader:
 
 
 	@classmethod
-	def _check_if_subset(cls, task_doc, t3_job_doc, key, logger):
+	def _subset_check(cls, task_doc, t3_job_doc, key, logger):
 		"""
 		"""
 

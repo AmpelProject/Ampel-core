@@ -8,6 +8,7 @@
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from functools import reduce
+from ampel.pipeline.t3.T3JobExecutor import T3JobExecutor
 
 class T3Job:
 	"""
@@ -38,14 +39,18 @@ class T3Job:
 
 
 	def get_config(self, param_name):
-		"""
-		"""
+		""" """
 		return reduce(dict.get, param_name.split("."), self.job_doc)
 
 
 	def launch_t3_job(self, bla):
 		#run_job(self.al_config, central_db, t3_job, logger)
 		pass
+
+	
+	def run(self, al_config, central_db, logger):
+		""" """
+		T3JobExecutor.run_job(al_config, central_db, self, logger)
 
 
 	def schedule(self, scheduler):
