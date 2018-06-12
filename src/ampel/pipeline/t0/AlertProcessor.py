@@ -722,6 +722,12 @@ def run_alertprocessor():
 	action.add_argument('--tarfile', default=None)
 	parser.add_argument('--group', default=uuid.uuid1(), help="Kafka consumer group name")
 	
+	# partially parse command line to get config
+	opts, argv = parser.parse_known_args()
+	# flesh out parser with resources required by t0 units
+	loader = ChannelLoader(opts.config, source="ZTFIPAC", tier=0)
+	parser.require_resources(*loader.get_required_resources())
+	# parse again
 	opts = parser.parse_args()
 	mongo = opts.config['resources']['mongo']()
 	archive = opts.config['resources']['archive_writer']()

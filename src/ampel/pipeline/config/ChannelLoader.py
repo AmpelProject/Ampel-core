@@ -92,7 +92,20 @@ class ChannelLoader:
 			chan_doc['sources'][self.source]
 		)
 
-
+	def get_required_resources(self):
+		resources = set()
+		for chan_doc in self.config['channels'].values():
+			assert self.tier == 0
+			if not chan_doc['active']:
+				continue
+			filter_id = self._get_config(chan_doc, 't0Filter.dbEntryId')
+			doc_t0_filter = self.config['t0_filters'][filter_id]
+			class_full_path = doc_t0_filter['classFullPath']
+			module = importlib.import_module(class_full_path)
+			filter_class = getattr(module, class_full_path.split(".")[-1])
+			if hasattr(filter_class, 'resources'):
+				resources.update(filter_class.resources)
+		return resources
 	
 	def _create_t0_channel(self, chan_name, chan_doc, logger):
 		"""
@@ -130,9 +143,14 @@ class ChannelLoader:
 		# Instantiate filter class associated with this channel
 		module = importlib.import_module(class_full_path)
 		filter_class = getattr(module, class_full_path.split(".")[-1])
+		base_config = {}
+		if hasattr(filter_class, 'resources'):
+			for k in self.config['resources']:
+				if k in filter_class.resources:
+					base_config[k] = self.config['resources'][k]
 		filter_instance = filter_class(
 			t2_units, 
-			base_config = doc_t0_filter['baseConfig'] if 'baseConfig' in doc_t0_filter else None,
+			base_config = base_config,
 			run_config = self._get_config(chan_doc, 't0Filter.runConfig'), 
 			logger=logger
 		)
