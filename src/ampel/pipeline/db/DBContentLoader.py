@@ -30,6 +30,7 @@ from ampel.pipeline.db.query.QueryLatestCompound import QueryLatestCompound
 from ampel.pipeline.db.query.QueryLoadTransientInfo import QueryLoadTransientInfo
 from ampel.pipeline.t3.TransientData import TransientData
 
+
 class DBContentLoader:
 	"""
 	"""
@@ -54,15 +55,19 @@ class DBContentLoader:
 		self.lc = {}
 		self.verbose = verbose
 
-	# TODO: 
-	def load_new(self, tran_id, channels=None, state="latest", content_types=all_doc_types, t2_ids=None):
+
+	def load_new(
+		self, tran_id, channels=None, state="latest", content_types=all_doc_types, t2_ids=None,
+		feedback=True, verbose_feedback=False
+	):
 		"""
 		Returns a instance of TransientData
 
 		Arguments:
 		----------
 
-		-> tran_id: transient id (string)
+		-> tran_id: transient id (string). 
+		Can be a multiple IDs (list) if state is 'all' or states are provided (states cannot be 'latest')
 
 		-> channels: string or list of strings
 
@@ -70,7 +75,10 @@ class DBContentLoader:
 		  * "latest": latest state will be retrieved
 		  * "all": all states present in DB (at execution time) will be retrieved
 		  * <compound_id> or list of <compound_id>: provided state(s) will be loaded. 
-		    The compound id must be either a 32 alphanumerical string or bytes
+		    Each compound id must be either:
+				- a 32 alphanumerical string
+				- 16 bytes (128 bits)
+				- a bson.binary.Binary instance with subtype 5
 
 		-> content_types: AlDocTypes flag combination. 
 		Possible values are:
@@ -82,17 +90,17 @@ class DBContentLoader:
 		  * 'AlDocTypes.PHOTOPOINT': 
 			-> load *all* photopoints avail for this transient (regardless of provided state)
 			-> The transient will contain a list of ampel.base.PlainPhotoPoint instances 
-			-> No policy is set for all PlainPhotoPoint instances
+			-> (PlainPhotoPoint (unlike PhotoPoint) instances come without policy)
 
 		  * 'AlDocTypes.UPPERLIMIT': 
 			-> load *all* upper limits avail for this transient (regardless of provided state)
 			-> The transient will contain a list of ampel.base.PlainUpperLimit instances 
-			-> No policy is set for all PlainUpperLimit instances
+			-> (PlainUpperLimit (unlike UpperLimit) instances come without policy)
 
 		  * 'AlDocTypes.COMPOUND': 
 			-> ampel.base.LightCurve instances are created based on DB documents 
 			   (with alDocType AlDocTypes.COMPOUND)
-			-> if 'state' is 'latest' or a state id (md5 string) is provided, 
+			-> if 'state' is 'latest' or a state id (md5 bytes) is provided, 
 			   only one LightCurve instance is created. 
 			   if 'state' is 'all', all available lightcurves are created.
 			-> the lightcurve instance(s) will be associated with the returned TransientData instance
@@ -110,14 +118,16 @@ class DBContentLoader:
 		# Option 1: Find latest state, then update search query parameters
 		if state == "latest":
 
+			if type(tran_id) in (list, tuple):
+				raise ValueError("Queries with multiple transient ids not supported with state == 'latest'")
+
 			# Feedback
 			self.logger.info(
 				"Retrieving %s for latest state of transient %s" % 
 				(content_types, tran_id)
 			)
 
-			# Execute DB query returning a dict represenation 
-			# of the latest compound dict (alDocType: COMPOUND) 
+			# Execute DB query returning the latest compound dict
 			latest_compound_dict = next(
 				self.main_col.aggregate(
 					QueryLatestCompound.general_query(tran_id)
@@ -154,19 +164,14 @@ class DBContentLoader:
 				tran_id, content_types, channels, t2_ids
 			)
 
-
 		# Option 3: Load a user provided state(s)
 		else:
 
 			# Feedback
 			self.logger.info(
-				"Retrieving %s for state(s) %s of transient %s" % 
-				(content_types, state, tran_id)
+				"Retrieving %s for provided state(s) of transient %s" % 
+				(content_types, tran_id)
 			)
-
-			# (Lousy/incomplete) check if md5 string was provided
-			if type(state) not in (bytes, list):
-				raise ValueError("Type of provided state must be bytes or list")
 
 			# Build query parameters (will return adequate number of docs)
 			search_params = QueryLoadTransientInfo.build_statebound_query(
@@ -193,21 +198,39 @@ class DBContentLoader:
 
 		# Photo DB query 
 		if AlDocTypes.PHOTOPOINT|AlDocTypes.UPPERLIMIT in content_types:
-			photo_cursor = self.photo_col.find({'tranId': tran_id})
+
+			photo_cursor = self.photo_col.find(
+				{'tranId': {'$in': tran_id} if type(tran_id) in (list, tuple) else tran_id}
+			)
 			self.logger.info(" -> Fetching %i photo measurements" % photo_cursor.count())
 			res_photo_list = list(photo_cursor)
+
 		else:
+
 			if AlDocTypes.PHOTOPOINT in content_types:
-				photo_cursor = self.photo_col.find({'tranId': tran_id, '_id': {'$gt': 0}})
+				photo_cursor = self.photo_col.find(
+					{
+						'tranId': {'$in': tran_id} if type(tran_id) in (list, tuple) else tran_id, 
+						'_id': {'$gt': 0}
+					}
+				)
+
 				self.logger.info(" -> Fetching %i photo points" % photo_cursor.count())
 				res_photo_list = list(photo_cursor)
+
 			if AlDocTypes.UPPERLIMIT in content_types:
-				photo_cursor = self.photo_col.find({'tranId': tran_id, '_id': {'$lt': 0}})
+				photo_cursor = self.photo_col.find(
+					{
+						'tranId': {'$in': tran_id} if type(tran_id) in (list, tuple) else tran_id, 
+						'_id': {'$lt': 0}
+					}
+				)
 				self.logger.info(" -> Fetching %i upper limits" % photo_cursor.count())
 				res_photo_list = list(photo_cursor)
 
 		return self.load_tran_data(
-			res_main_list, res_photo_list, channels, state=state
+			res_main_list, res_photo_list, channels, state, 
+			feedback=True, verbose_feedback=verbose_feedback
 		)
 
 
