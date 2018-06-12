@@ -62,7 +62,7 @@ class BuildURI(argparse.Action):
         getattr(namespace, target)[prop] = values
 
 def uri_string(props):
-    netloc = props.get('host', 'localhost')
+    netloc = props.get('hostname', 'localhost')
     if 'port' in props:
         netloc += ':{}'.format(props['port'])
     if 'username' in props:
@@ -93,8 +93,8 @@ class ResourceURI(Resource):
         """
         pass
     
-    @property
     @classmethod
+    @property
     def fields(cls):
         """
         Return a tuple containing the properties of urllib.parse.ParseResult
@@ -107,7 +107,7 @@ class ResourceURI(Resource):
         group = parser.add_argument_group(cls.name, cls.__doc__)
         parser.set_defaults(**{cls.name+'_uri': cls.get_default()})
         for prop in cls.fields:
-            typus = int if prop == 'hostname' else str
+            typus = int if prop == 'port' else str
             group.add_argument('--{}-{}'.format(cls.name, prop), env_var='{}_{}'.format(cls.name.upper(), prop.upper()),
                 action=BuildURI, type=typus, default=argparse.SUPPRESS)
 
