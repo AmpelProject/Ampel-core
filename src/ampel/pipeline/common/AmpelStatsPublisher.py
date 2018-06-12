@@ -279,26 +279,19 @@ class AmpelStatsPublisher(DBWired, Schedulable):
 			).count()
 
 def run():
-	from ampel.pipeline.config.resources import get_resource
-	from ampel.pipeline.config.ConfigLoader import load_config
+	from ampel.pipeline.config.ConfigLoader import AmpelArgumentParser
 
-	from os import environ
-	from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
-	from os.path import basename, dirname, abspath, realpath
-	parser = ArgumentParser(description=__doc__, formatter_class=ArgumentDefaultsHelpFormatter)
-	parser.add_argument('--config', default=abspath(dirname(realpath(__file__)) + '/../../../../config/messy_preliminary_config.json'))
-
+	parser = AmpelArgumentParser()
+	parser.require_resources('mongo', 'graphite', 'archive_reader')
 	opts = parser.parse_args()
 
-	config = load_config(opts.config)
-
-	mongo_uri = get_resource('mongo')['uri']
-	graphite = get_resource('graphite')
-	archive = get_resource('archive_reader')
+	mongo = opts.config['resources']['mongo']()
+	archive = opts.config['resources']['archive_reader']()
+	graphite = opts.config['resources']['graphite']()
 	
 	asp = AmpelStatsPublisher(
-		config=config,
-		mongodb_uri=mongo_uri, 
+		config=opts.config,
+		mongodb_uri=mongo, 
 		graphite_feeder=graphite,
 		archive_client=archive,
 		publish_stats=['print', 'graphite']

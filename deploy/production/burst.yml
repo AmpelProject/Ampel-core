@@ -45,13 +45,18 @@ services:
       - archive-read-password
     environment:
       TINI_SUBREAPER: 1
-      MONGO: $MONGO_HOST:$MONGO_PORT
-      ARCHIVE: $ARCHIVE_HOST:$ARCHIVE_PORT
-      GRAPHITE: $GRAPHITE_HOST:$GRAPHITE_PORT
-      MONGO_USER: alertprocessor
+      MONGO_HOSTNAME: $MONGO_HOST
+      MONGO_PORT: $MONGO_PORT
+      MONGO_USERNAME: alertprocessor
       MONGO_PASSWORD_FILE: /run/secrets/mongo-alertprocessor-password
-      ARCHIVE_READ_USER: ampel-readonly
-      ARCHIVE_READ_USER_PASSWORD_FILE: /run/secrets/archive-read-password
+      
+      ARCHIVE_READER_HOSTNAME: $ARCHIVE_HOST
+      ARCHIVE_READER_PORT: $ARCHIVE_PORT
+      ARCHIVE_READER_USERNAME: ampel-readonly
+      ARCHIVE_READER_PASSWORD_FILE: /run/secrets/archive-read-password
+      
+      GRAPHITE_HOSTNAME: $GRAPHITE_HOST
+      GRAPHITE_PORT: $GRAPHITE_PORT
     depends_on:
       - mongo
       - archive
@@ -71,19 +76,21 @@ services:
       - catalog-read-password
     environment:
       TINI_SUBREAPER: 1
-      MONGO: $MONGO_HOST:$MONGO_PORT
-      MONGO_USER: alertprocessor
+      MONGO_HOSTNAME: $MONGO_HOST
+      MONGO_PORT: $MONGO_PORT
+      MONGO_USERNAME: alertprocessor
       MONGO_PASSWORD_FILE: /run/secrets/mongo-alertprocessor-password
       
-      ARCHIVE: $ARCHIVE_HOST:$ARCHIVE_PORT
-      ARCHIVE_WRITE_USER: ampel-client
-      ARCHIVE_WRITE_USER_PASSWORD_FILE: /run/secrets/archive-write-password
+      ARCHIVE_WRITER_HOSTNAME: $ARCHIVE_HOST
+      ARCHIVE_WRITER_PORT: $ARCHIVE_PORT
+      ARCHIVE_WRITER_USERNAME: ampel-client
+      ARCHIVE_WRITER_PASSWORD_FILE: /run/secrets/archive-write-password
       
       CATSHTM_PATH: /catalogs/catsHTM
-      CATALOG_HOST: $CATALOG_HOST
-      CATALOG_PORT: $CATALOG_PORT
-      CATALOG_READ_USER: filterclient
-      CATALOG_READ_USER_PASSWORD_FILE: /run/secrets/catalog-read-password
+      EXTCATS_HOSTNAME: $CATALOG_HOST
+      EXTCATS_PORT: $CATALOG_PORT
+      EXTCATS_USERNAME: filterclient
+      EXTCATS_PASSWORD_FILE: /run/secrets/catalog-read-password
 
     deploy:
       replicas: $NUM_STREAMS
@@ -104,8 +111,9 @@ services:
       - mongo-alertprocessor-password
     environment:
       TINI_SUBREAPER: 1
-      MONGO: $MONGO_HOST:$MONGO_PORT
-      MONGO_USER: alertprocessor
+      MONGO_HOSTNAME: $MONGO_HOST
+      MONGO_PORT: $MONGO_PORT
+      MONGO_USERNAME: alertprocessor
       MONGO_PASSWORD_FILE: /run/secrets/mongo-alertprocessor-password
     deploy:
       restart_policy:
@@ -125,8 +133,9 @@ services:
       - mongo-alertprocessor-password
     environment:
       TINI_SUBREAPER: 1
-      MONGO: $MONGO_HOST:$MONGO_PORT
-      MONGO_USER: alertprocessor
+      MONGO_HOSTNAME: $MONGO_HOST
+      MONGO_PORT: $MONGO_PORT
+      MONGO_USERNAME: alertprocessor
       MONGO_PASSWORD_FILE: /run/secrets/mongo-alertprocessor-password
     deploy:
       restart_policy:
