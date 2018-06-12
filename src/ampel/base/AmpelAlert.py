@@ -46,14 +46,14 @@ class AmpelAlert(Frozen):
 			al = next(fastavro.reader(fo), None)
 
 		if al.get('prv_candidates') is None:
-			return AmpelAlert(al['objectId'], [al['candidate']], None, al.get('cutout') if cutout else None)
+			return AmpelAlert(al['objectId'], [al['candidate']], None, al.get('cutoutScience') if cutout else None)
 		else:
 			pps = [d for d in al['prv_candidates'] if d.get('candid') is not None]
 			pps.insert(0,  al['candidate'])
 			return AmpelAlert(
 				al['objectId'], pps, 
 				[d for d in al['prv_candidates'] if d.get('candid') is None],
-				al.get('cutout') if cutout else None
+				al.get('cutoutScience') if cutout else None
 			)
 
 
