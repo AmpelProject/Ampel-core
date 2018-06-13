@@ -4,11 +4,10 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 14.12.2017
-# Last Modified Date: 23.05.2018
+# Last Modified Date: 13.06.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import logging, time
-from ampel.flags.JobFlags import JobFlags
 
 
 class DBJobReporter:
@@ -19,23 +18,19 @@ class DBJobReporter:
 	"""
 
 
-	def __init__(self, mongo_collection, job_flags=None):
+	def __init__(self, mongo_collection):
 		""" 
 		Parameters:
 		mongo_collection: instance of pymongo.collection.Collection
-		job_flags: instance of ampel.flags.JobFlags
 		"""
 		self.col = mongo_collection
-		self.job_flags = JobFlags(0) if job_flags is None else job_flags
 		self.job_name = "Not set"
 		self.flush_job_info = False
 
 
-	def add_flags(self, job_flags):
-		""" 
-		Add flags (ampel.flags.JobFlags) to this job
-		"""
-		self.job_flags |= job_flags
+	def set_has_error(self):
+		""" """
+		self.has_error = 1
 
 
 	def set_job_name(self, job_name):
@@ -73,11 +68,12 @@ class DBJobReporter:
 		"""
 
 		job_dict = {
-			"jobName": self.job_name,
-			"jobFlags": self.job_flags.value,
 			"tier": tier,
 			"params": params,
 		}
+
+		if hasattr(self, "job_name"):
+			job_dict['jobName'] = self.job_name
 
 		if hasattr(self, "arguments"):
 			job_dict['arguments'] = self.arguments
@@ -111,11 +107,13 @@ class DBJobReporter:
 		if self.flush_job_info:
 
 			update_dict["$set"] = {
-				"jobFlags": self.job_flags.value,
 				"duration": int(
 					time.time() - self.job_id.generation_time.timestamp()
 				)
 			}
+
+			if hasattr(self, "has_error"):
+				update_dict["$set"]['hasError'] = True
 
 			if hasattr(self, "job_stats"):
 				update_dict["$set"][self.job_stats[0]] = self.job_stats[1]

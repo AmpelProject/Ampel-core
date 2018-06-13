@@ -22,7 +22,6 @@ from ampel.pipeline.config.ChannelLoader import ChannelLoader
 from ampel.base.AmpelAlert import AmpelAlert
 from ampel.flags.AlDocTypes import AlDocTypes
 from ampel.flags.AlertFlags import AlertFlags
-from ampel.flags.JobFlags import JobFlags
 
 class AlertProcessor(DBWired):
 	""" 
@@ -228,9 +227,7 @@ class AlertProcessor(DBWired):
 		self.logger.removeHandler(self.ilb)
 
 		# Create JobReporter instance
-		db_job_reporter = DBJobReporter(
-			self.get_job_col(), JobFlags.T0
-		)
+		db_job_reporter = DBJobReporter(self.get_job_col())
 
 		# Create new "job" document in the DB
 		db_job_reporter.insert_new(
