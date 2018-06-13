@@ -459,7 +459,7 @@ class ZIAlertIngester(AbsAlertIngester):
 		)
 		
 		# counter for user feedback (after next loop)
-		now = datetime.now(timezone.utc).timestamp()
+		now = int(datetime.now(timezone.utc).timestamp())
 
 		# Loop over t2 runnables
 		for t2_id in t2docs_blueprint.keys():
@@ -532,7 +532,7 @@ class ZIAlertIngester(AbsAlertIngester):
 						journal_entries = [
 							{
 								"dt": now,
-								"chan": chan_name,
+								"channels": [chan_name],
 								"effId": comp_bp.get_effid_of_chan(chan_name),
 								"op": "addToSet"
 							}
@@ -616,7 +616,7 @@ class ZIAlertIngester(AbsAlertIngester):
 						'jobIds': self.job_id,
 					},
 					"$max": {
-						"lastPPDate": pps_alert[0]["jd"],
+						"lastPPJD": pps_alert[0]["jd"],
 						"modified": now
 					},
 					"$push": {
