@@ -5,6 +5,7 @@
 
 import sys
 from functools import partial
+import inspect
 import json
 import pkg_resources
 
@@ -21,10 +22,33 @@ def load_config(path, gather_plugins=True):
 			config['channels'][name] = channel_config
 	for resource in pkg_resources.iter_entry_points('ampel.pipeline.t0'):
 		klass = resource.resolve()
-		name = klass.__name__
+		name = resource.name
 		if name in config['t0_filters']:
 			raise KeyError("{} (defined as entry point {} in {}) already exists in the provided config file".format(name, resource.name, resource.dist))
 		config['t0_filters'][name] = dict(classFullPath=klass.__module__)
+	for resource in pkg_resources.iter_entry_points('ampel.pipeline.t2'):
+		klass = resource.resolve()
+		name = resource.name
+		if name in config['t2_units']:
+			raise KeyError("{} (defined as entry point {} in {}) already exists in the provided config file".format(name, resource.name, resource.dist))
+		unit = {
+			'classFullPath': klass.__module__,
+			'version': klass.version,
+			'private': klass.private,
+			'upperLimits': klass.upperLimits,
+		}
+		if hasattr(klass, 'author'):
+			unit['author'] = klass.author
+		desc = inspect.getdoc(klass)
+		parts = desc.split('\n')
+		unit['title'] = parts[0]
+		unit['description'] = parts[1:]
+		config['t2_units'][name] = unit
+	for resource in pkg_resources.iter_entry_points('ampel.t2_run_configs'):
+		for name, channel_config in resource.resolve()().items():
+			if name in config['t2_run_config']:
+				raise KeyError("T2 run config {} (defined as entry point {} in {}) already exists in the provided config file".format(name, resource.name, resource.dist))
+			config['t2_run_config'][name] = channel_config
 
 	return config
 
