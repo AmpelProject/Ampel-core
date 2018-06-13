@@ -36,7 +36,7 @@ class AmpelAlert(Frozen):
 
 
 	@staticmethod
-	def load_ztf_alert(arg):
+	def load_ztf_alert(arg, cutout=True):
 		"""	
 		Convenience method.
 		Do not use for production!
@@ -46,13 +46,14 @@ class AmpelAlert(Frozen):
 			al = next(fastavro.reader(fo), None)
 
 		if al.get('prv_candidates') is None:
-			return AmpelAlert(al['objectId'], [al['candidate']], None)
+			return AmpelAlert(al['objectId'], [al['candidate']], None, al.get('cutoutScience') if cutout else None)
 		else:
 			pps = [d for d in al['prv_candidates'] if d.get('candid') is not None]
 			pps.insert(0,  al['candidate'])
 			return AmpelAlert(
 				al['objectId'], pps, 
-				[d for d in al['prv_candidates'] if d.get('candid') is None]
+				[d for d in al['prv_candidates'] if d.get('candid') is None],
+				al.get('cutoutScience') if cutout else None
 			)
 
 
@@ -90,7 +91,7 @@ class AmpelAlert(Frozen):
 		return arg_flags in cls.flags
 
 
-	def __init__(self, tran_id, list_of_pps, list_of_uls=None):
+	def __init__(self, tran_id, list_of_pps, list_of_uls=None, cutout=None):
 		""" 
 		AmpelAlert constructor
 		Parameters:
@@ -102,6 +103,7 @@ class AmpelAlert(Frozen):
 		self.tran_id = tran_id
 		self.pps = list_of_pps
 		self.uls = list_of_uls
+		self.cutout = cutout
 
 		# Freeze this instance
 		self.__isfrozen = True

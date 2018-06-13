@@ -4,13 +4,14 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 14.02.2018
-# Last Modified Date: 28.05.2018
+# Last Modified Date: 12.06.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
+from bson.binary import Binary
 from ampel.flags.AlDocTypes import AlDocTypes
 from ampel.flags.FlagUtils import FlagUtils
+from ampel.pipeline.common.AmpelUtils import AmpelUtils
 from ampel.pipeline.db.query.QueryMatchCriteria import QueryMatchCriteria
-
 
 class QueryLoadTransientInfo:
 	"""
@@ -116,7 +117,7 @@ class QueryLoadTransientInfo:
 
 	@staticmethod
 	def build_statebound_query(
-		tran_ids, content_types, compound_ids, 
+		tran_ids, content_types, states, 
 		channels=None, t2_ids=None, comp_already_loaded=False
 	):
 		"""
@@ -143,13 +144,57 @@ class QueryLoadTransientInfo:
 				else FlagUtils.enum_flags_to_lists(channels)), 
 			)
 
-		match_comp_ids = (
-			compound_ids if type(compound_ids) is str
-			else ( # should be list
-				compound_ids[0] if len(compound_ids) == 1 
-				else {'$in': compound_ids}
-			)
-		)
+		# Check if correct state(s) was provided
+		type_state = type(states)
+
+		# Single state was provided as string
+		if type_state is str:
+			if len(states) != 32:
+				raise ValueError("Provided state string must have 32 characters")
+			match_comp_ids = Binary(bytes.fromhex(states), 5) # convert to bson Binary
+
+		# Single state was provided as bytes
+		elif type_state is bytes:
+			if len(states) != 16:
+				raise ValueError("Provided state bytes must have a length of 16")
+			match_comp_ids = Binary(states, 5) # convert to bson Binary
+
+		# Single state was provided as bson Binary
+		elif type_state is Binary:
+			if states.subtype != 5:
+				raise ValueError("Provided bson Binary state must have subtype 5")
+			match_comp_ids = states
+
+		# Multiple states were provided
+		elif type_state in (list, tuple):
+
+			# check_seq_inner_type makes sure the sequence is monotype
+			if not AmpelUtils.check_seq_inner_type(states, (str, bytes, Binary)):
+				raise ValueError("Sequence of state must contain element with type: bytes or str")
+
+			# multiple states were provided as string
+			if type(states[0]) is str:
+				if not all(len(st) == 32 for st in states):
+					raise ValueError("Provided state strings must have 32 characters")
+				match_comp_ids = {
+					'$in': [Binary(bytes.fromhex(st), 5) for st in states] # convert to bson Binary
+				}
+
+			# multiple states were provided as bytes
+			elif type(states[0]) is bytes:
+				if not all(len(st) == 16 for st in states):
+					raise ValueError("Provided state bytes must have a length of 16")
+				match_comp_ids = {
+					'$in': [Binary(st, 5) for st in states] # convert to bson Binary
+				}
+
+			# multiple states were provided as bson Binary objects
+			elif type(states[0]) is Binary:
+				if not all(st.subtype == 5 for st in states):
+					raise ValueError("Bson Binary states must have subtype 5")
+				match_comp_ids = {'$in': states}
+		else:
+			raise ValueError("Type of provided state must be bytes, str, or sequences of these")
 
 		# build query with 'or' connected search criteria
 		or_list = []

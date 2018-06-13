@@ -7,12 +7,11 @@
 # Last Modified Date: 11.06.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-from ampel.pipeline.logging.LoggingUtils import LoggingUtils
+import logging
+from ampel.base.Frozen import Frozen
 from ampel.pipeline.db.DBUtils import DBUtils
 from ampel.flags.TransientFlags import TransientFlags
-from ampel.base.Frozen import Frozen
-import logging
-
+from ampel.pipeline.logging.LoggingUtils import LoggingUtils
 
 class TransientView(Frozen):
 	"""
@@ -33,14 +32,6 @@ class TransientView(Frozen):
 		lightcurves=None, t2records=None, channel=None, logger=None
 	):
 		"""
-		Parameters:
-		* tran_id: transient id (string)
-		* logger: logger instance from python module 'logging'
-
-		Convert internal lists Photopoint / Upperlimits / Lightcurves and Science Records 
-		to tuple and freeze this class. PLease note that the dicts referenced by the provided
-		lists are not changed. It means that these objects (Photopoints...) must be instantiated 
-		with read_only=True before they are added to this class (methods add_photopoints, ....)
 		"""
 		self.logger = LoggingUtils.get_logger() if logger is None else logger
 		self.tran_id = tran_id
@@ -154,7 +145,6 @@ class TransientView(Frozen):
 	def get_science_records(self, t2_unit_id=None, latest=False):
 		""" 
 		"""
-
 		if latest:
 
 			if self.latest_state is None:
@@ -191,7 +181,6 @@ class TransientView(Frozen):
 	def _print_info(tran, logger):
 		""" 
 		"""
-
 		logger.info("#"*30)
 
 		logger.info(" -> Ampel ID: %i" % 

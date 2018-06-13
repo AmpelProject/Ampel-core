@@ -7,12 +7,10 @@
 # Last Modified Date: 11.06.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-from ampel.pipeline.t3.DataAccessManager import DataAccessManager
+import logging, pymongo
 from ampel.pipeline.db.DBWired import DBWired
 from ampel.base.TransientView import TransientView
-from operator import itemgetter
-import logging, pymongo
-
+from ampel.pipeline.t3.DataAccessManager import DataAccessManager
 
 class TransientData:
 	"""
@@ -23,12 +21,12 @@ class TransientData:
 	@classmethod
 	def set_ampel_config(cls, config):
 		"""
-		A single transient view instance can be used to create multiple different 
+		A single TransientData instance can be used to create multiple different 
 		ampel.base.TransientView instances, each representing a different channel.
 		Since different channels can have different data access policies (some channel
 		for example can access ZTF_COLLAB data other are restricted to ZTF_PUBLIC),
-		access to the ampel config is required if multiple single channel transient
-		objects are to be created using the same TransientData instance.
+		access to the ampel config is required if multiple channel transient views
+		are to be created using the same TransientData instance.
 		"""
 		if type(config) is pymongo.database.Database:
 			TransientData.al_config = DBWired.load_config_db(config)
@@ -42,7 +40,7 @@ class TransientData:
 		"""
 		Parameters:
 		* tran_id: transient id (string)
-		* state: string ('all' or 'latest') or list of md5 bytes.
+		* state: string ('all' or 'latest') or bytes or list of md5 bytes.
 		* logger: logger instance from python module 'logging'
 
 		NOTE: in this class, dictionnaries using channel name as dict key 
@@ -161,8 +159,9 @@ class TransientData:
 			self.known_channels.add(channel)
 
 
-	def create_transient(self, channel=None, channels=None, t2_ids=None):
+	def create_view(self, channel=None, channels=None, t2_ids=None):
 		"""
+		Returns instance of ampel.base.TransientView
 		"""
 
 		photopoints, upperlimits = self.get_photo(channel, channels)
@@ -176,7 +175,7 @@ class TransientData:
 
 			# Someone did set strange parameter values
 			if len(channels) == 1:
-				return self.create_transient(channel=channels[0], t2_ids=t2_ids)
+				return self.create_view(channel=channels[0], t2_ids=t2_ids)
 
 			self.logger.info("Creating multi-channel transient instance")
 			all_comps = tuple({el for channel in self.compounds for el in self.compounds[channel]})
@@ -219,11 +218,11 @@ class TransientData:
 				# NOTE: *None* is used as dict key, so in can be in self.known_channels
 				if None not in self.known_channels:
 					self.logger.warning(
-						"Correcting inadequate argument: returning transient for channel %s" % 
+						"Correcting incomplete argument: returning transient for channel %s" % 
 						next(iter(self.known_channels))
 					)
 	
-					return self.create_transient(
+					return self.create_view(
 						channel=next(iter(self.known_channels)), t2_ids=t2_ids
 					)
 
