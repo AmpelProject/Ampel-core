@@ -17,10 +17,7 @@ setup(name='ampel',
           'ampel.pipeline.resources' : [
               'mongo = ampel.pipeline.common.resources:LiveMongoURI',
               'graphite = ampel.pipeline.common.resources:Graphite',
-              'archive_reader = ampel.archive.resources:ArchiveDBReader',
-              'archive_writer = ampel.archive.resources:ArchiveDBWriter',
-              'extcats = ampel.contrib.hu.resources:extcatsURI',
-              'catsHTM = ampel.contrib.hu.resources:catsHTMPath',
+              'archive = ampel.archive.resources:ArchiveDBURI'
           ]
       }
 )
