@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 14.12.2017
-# Last Modified Date: 11.03.2018
+# Last Modified Date: 12.06.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from bson import Binary
@@ -24,7 +24,7 @@ class FlagUtils():
 	@staticmethod
 	def get_flag_pos_in_enumflag(enum_flag):
 		"""
-			https://github.com/AmpelProject/Ampel/wiki/Ampel-Flags
+		https://github.com/AmpelProject/Ampel/wiki/Ampel-Flags
 		"""
 		for i, el in enumerate(type(enum_flag), 1):
 			if el in enum_flag:
@@ -83,6 +83,9 @@ class FlagUtils():
 		converts enumflag/list of enumflags into (possible 1time nested) 
 		list of string representations of enumflag members
 		"""
+		if flags is None:
+			return None
+
 		# 1 element list
 		if type(flags) is list and len(flags) == 1:
 			flags = flags[0]
@@ -131,6 +134,9 @@ class FlagUtils():
 		d) [["SNCOSMO", "AGN"]] -> T2UnitIds.SNCOSMO|T2UnitIds.AGN (one enum flag instance)
 		e) [["SNCOSMO", "AGN"], "PHOTO_Z"] -> [T2UnitIds.SNCOSMO|T2UnitIds.AGN, PHOTO_Z]
 		"""
+
+		if flags is None:
+			return None
 
 		# Examples d) and e)
 		if FlagUtils.is_nested_list(flags):
@@ -184,10 +190,21 @@ class FlagUtils():
 
 		return ret
 
+
+	@staticmethod
+	def list_flags_to_db_flags(flags, flag_class):
+		""" """
+		if flags is None:
+			return None
+
+		return FlagUtils.enumflag_to_dbflag(
+			FlagUtils.list_flags_to_enum_flags(flags, flag_class)
+		)
+
 		
 	@staticmethod
 	def is_nested_list(inlist):
-
+		""" """
 		# list characterisation (nested or not)
 		for el in inlist:
 			if type(el) is list:

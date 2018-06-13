@@ -3,22 +3,16 @@
 # License           : BSD-3-Clause
 # Author            : Jakob van Santen <jakob.van.santen@desy.de>
 
-from ampel.pipeline.config.resources import FromEnvironment
-from ampel.pipeline.common.expandvars import expandvars
-from ampel.archive import ArchiveDB
+from ampel.pipeline.config.resources import ResourceURI
 
-class ArchiveDBWriter(FromEnvironment):
-    """ArchiveDB instance with read/write access"""
+class ArchiveDBURI(ResourceURI):
+    """
+    Connection to local ZTF alert database
+    """
+    name = 'archive'
+    fields = ('hostname', 'port')
+    roles = ('writer', 'reader')
     
-    name = "archive_writer"
-    
-    def __call__(self):
-        return ArchiveDB(expandvars("postgresql://${ARCHIVE_WRITE_USER}:${ARCHIVE_WRITE_USER_PASSWORD}@${ARCHIVE}/ztfarchive"))
-
-class ArchiveDBReader(FromEnvironment):
-    """ArchiveDB instance with read-only access"""
-    
-    name = "archive_reader"
-    
-    def __call__(self):
-        return ArchiveDB(expandvars("postgresql://${ARCHIVE_READ_USER}:${ARCHIVE_READ_USER_PASSWORD}@${ARCHIVE}/ztfarchive"))
+    @classmethod
+    def get_default(cls):
+        return dict(scheme='postgresql', hostname='localhost', port=5432, path='ztfarchive')
