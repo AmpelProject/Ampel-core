@@ -47,7 +47,7 @@ class DevAlertProcessor():
 		return self._accepted_alerts
 
 
-	def get_rejeted_alerts(self):
+	def get_rejected_alerts(self):
 		""" """
 		return self._rejected_alerts
 
