@@ -57,6 +57,9 @@ class AmpelArgumentParser(ArgumentParser):
 		self.add_argument('-c', '--config', type=load_config,
 		    default=abspath(dirname(realpath(__file__)) + '/../../../../config/messy_preliminary_config.json'),
 		    help='Path to Ampel config file in JSON format')
+		# parse a first pass to get the resource defaults
+		opts, argv = super(AmpelArgumentParser, self).parse_known_args(**kwargs)
+		self._resource_defaults = opts.config.get('resources', None)
 
 	def require_resource(self, name):
 		if name in self._resources:
@@ -65,7 +68,7 @@ class AmpelArgumentParser(ArgumentParser):
 		if entry is None:
 			raise NameError("Resource {} is not defined".format(name))
 		resource = entry.resolve()
-		resource.add_arguments(self)
+		resource.add_arguments(self, self._resource_defaults)
 		self._resources[name] = resource
 	
 	def require_resources(self, *names):
@@ -78,7 +81,6 @@ class AmpelArgumentParser(ArgumentParser):
 	def parse_known_args(self, **kwargs):
 		kwargs['env_vars'] = file_environ()
 		args, argv = super(AmpelArgumentParser, self).parse_known_args(**kwargs)
-		assert not 'resources' in args.config
 		args.config['resources'] = {}
 		for name, klass in self._resources.items():
 			args.config['resources'][name] = klass(args)

@@ -23,11 +23,12 @@ class Resource(ABC):
     """
     @classmethod
     @abstractmethod
-    def add_arguments(cls, parser):
+    def add_arguments(cls, parser, defaults=None):
         """
         Populate argument parser with options for this resource factory
         
         :param parser: an instance of AmpelArgumentParser
+        :param defaults: if not None, the default configuration from the config file
         """
         pass
     
@@ -103,9 +104,16 @@ class ResourceURI(Resource):
         return 'hostname', 'port', 'username', 'password', 'path'
     
     @classmethod
-    def add_arguments(cls, parser):
+    def add_arguments(cls, parser, defaults):
         group = parser.add_argument_group(cls.name, cls.__doc__)
-        parser.set_defaults(**{cls.name+'_uri': cls.get_default()})
+        default_key = cls.name+'_uri'
+        class_default = cls.get_default()
+        if defaults is not None and default_key in defaults:
+            superfluous = set(defaults[default_key].keys()).difference(cls.fields)
+            if len(superfluous) > 0:
+                raise ValueError("default configuration for {} in config file contains unrecognized keys {}".format(default_key, superfluous))
+            class_default.update(defaults[default_key])
+        parser.set_defaults(**{default_key: class_default})
         for prop in cls.fields:
             typus = int if prop == 'port' else str
             group.add_argument('--{}-{}'.format(cls.name, prop), env_var='{}_{}'.format(cls.name.upper(), prop.upper()),
