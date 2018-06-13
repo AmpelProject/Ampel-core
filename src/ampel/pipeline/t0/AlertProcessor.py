@@ -23,7 +23,6 @@ from ampel.base.AmpelAlert import AmpelAlert
 from ampel.flags.AlDocTypes import AlDocTypes
 from ampel.flags.AlertFlags import AlertFlags
 from ampel.flags.JobFlags import JobFlags
-from ampel.pipeline.config.resources import get_resource
 
 class AlertProcessor(DBWired):
 	""" 
@@ -560,7 +559,7 @@ class AlertProcessor(DBWired):
 			# GraphiteSendException: Socket closed before able to send data to ('localhost', 52003), 
 			# with error: [Errno 32] Broken pipe
 			# So we re-create a GraphiteClient every time we send something to graphite...
-			gfeeder = get_resource('graphite')
+			gfeeder = self.config['resources']['graphite']()
 
 			if t0_stats is not None:
 				gfeeder.add_stats_with_mean_std(t0_stats)
@@ -723,6 +722,7 @@ def run_alertprocessor():
 	
 	parser.require_resource('mongo', roles=['writer'])
 	parser.require_resource('archive', roles=['writer'])
+	parser.require_resource('graphite')
 	# partially parse command line to get config
 	opts, argv = parser.parse_known_args()
 	# flesh out parser with resources required by t0 units
@@ -753,7 +753,7 @@ def run_alertprocessor():
 		loader = iter(fetcher)
 
 	alert_supplier = AlertSupplier(loader, ZIAlertShaper(), serialization="avro", archive=ArchiveDB(archive))
-	processor = AlertProcessor(mongodb_uri=mongo, publish_stats=["jobs"], config=opts.config)
+	processor = AlertProcessor(mongodb_uri=mongo, publish_stats=["jobs", "graphite"], config=opts.config)
 
 	while alert_processed == AlertProcessor.iter_max:
 		t0 = time.time()
