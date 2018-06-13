@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 14.12.2017
-# Last Modified Date: 23.05.2018
+# Last Modified Date: 13.06.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import logging, pymongo, time
@@ -28,7 +28,6 @@ from ampel.flags.FlagUtils import FlagUtils
 from functools import reduce
 from operator import or_
 
-# https://github.com/AmpelProject/Ampel/wiki/Ampel-Flags
 SUPERSEEDED = FlagUtils.get_flag_pos_in_enumflag(PhotoFlags.SUPERSEEDED)
 TO_RUN = FlagUtils.get_flag_pos_in_enumflag(T2RunStates.TO_RUN)
 
@@ -99,7 +98,7 @@ class ZIAlertIngester(AbsAlertIngester):
 		Among other things, it updates the main transient document, 
 		which contains a list of jobIds associated with the processing of the given transient.
 		We thus need to know what is the current jobId to perform this update.
-		The provided parameter should be a mongoDB ObjectId.
+		The provided parameter should be a bson ObjectId.
 		"""
 		self.job_id = job_id
 
