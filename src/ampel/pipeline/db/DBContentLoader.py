@@ -4,13 +4,11 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 13.01.2018
-# Last Modified Date: 11.06.2018
+# Last Modified Date: 13.06.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from bson import ObjectId
-import operator, logging, json
 from datetime import datetime
-
 from ampel.base.PlainPhotoPoint import PlainPhotoPoint
 from ampel.base.UpperLimit import UpperLimit
 from ampel.base.PlainUpperLimit import PlainUpperLimit
@@ -25,11 +23,9 @@ from ampel.flags.PhotoFlags import PhotoFlags
 from ampel.flags.T2RunStates import T2RunStates
 from ampel.pipeline.logging.LoggingUtils import LoggingUtils
 from ampel.pipeline.db.LightCurveLoader import LightCurveLoader
-from ampel.pipeline.db.DBResultOrganizer import DBResultOrganizer
 from ampel.pipeline.db.query.QueryLatestCompound import QueryLatestCompound
 from ampel.pipeline.db.query.QueryLoadTransientInfo import QueryLoadTransientInfo
 from ampel.pipeline.t3.TransientData import TransientData
-
 
 class DBContentLoader:
 	"""
@@ -155,7 +151,7 @@ class DBContentLoader:
 
 			# Feedback
 			self.logger.info(
-				"Retrieving %s for all states of transient %s" % 
+				"Retrieving %s for all states of transient(s) %s" % 
 				(content_types, tran_id)
 			)
 
@@ -169,7 +165,7 @@ class DBContentLoader:
 
 			# Feedback
 			self.logger.info(
-				"Retrieving %s for provided state(s) of transient %s" % 
+				"Retrieving %s for provided state(s) of transient(s) %s" % 
 				(content_types, tran_id)
 			)
 
@@ -179,7 +175,7 @@ class DBContentLoader:
 			)
 		
 		self.logger.debug(
-			"Retrieving transient info using query: %s" % 
+			"Retrieving transient(s) info using query: %s" % 
 			search_params
 		)
 
@@ -195,6 +191,7 @@ class DBContentLoader:
 		# Effectively perform DB query (triggered by casting cursor to list)
 		self.logger.info(" -> Fetching %i results from main col" % res_count)
 		res_main_list = list(main_cursor)
+		res_photo_list = None
 
 		# Photo DB query 
 		if AlDocTypes.PHOTOPOINT|AlDocTypes.UPPERLIMIT in content_types:
@@ -255,11 +252,11 @@ class DBContentLoader:
 		tran_id = ""
 		for doc in main_list:
 			
-			# main_list results are sorted by tranId
-			if tran_id != doc['tranId']:
+			tran_id = doc['tranId']
 
-				# Instantiate TransientData object
-				tran_id = doc['tranId']
+			if tran_id in register:
+				tran_data = register[tran_id]
+			else:
 				tran_data = TransientData(tran_id, state, self.logger)
 				register[tran_id] = tran_data
 
@@ -268,7 +265,6 @@ class DBContentLoader:
 
 				# Load, translate alFlags from DB into a TransientFlags enum flag instance 
 				# and associate it with the TransientData object instance
-
 				tran_data.set_flags(
 					TransientFlags(
 						FlagUtils.dbflag_to_enumflag(
@@ -278,30 +274,15 @@ class DBContentLoader:
 				)
 
 				for channel in (channels & set(doc['channels'])):
+					tran_data.set_journal_entries(
+						[
+							{k:v for k, v in entry.items() if k != 'channels'}
+							for entry in doc['journal'] if channel in entry['channels']
+						],
+						channel
+					)
 
-					found_first = False
-					last_entry = None
 
-					# Journal entries are time ordered
-					for entry in doc['journal']:
-
-						if entry['tier'] != 0 or channel not in entry['chans']:
-							continue
-
-						# First entry is creation date 
-						if not found_first:
-							tran_data.set_created(
-								datetime.utcfromtimestamp(entry['dt']), 
-								channel
-							)
-						else:
-							last_entry = entry
-
-						if last_entry is not None:
-							tran_data.set_modified(
-								datetime.utcfromtimestamp(last_entry['dt']), 
-								channel
-							)
 
 			# Pick compound dicts 
 			if doc["alDocType"] == AlDocTypes.COMPOUND:
@@ -459,7 +440,7 @@ class DBContentLoader:
 				uls = tran_data.upperlimits
 
 				self.logger.info(
-					" -> %i loaded: PP: %i, UL: %i, CP: %i, LC: %i, SR: %i" % 
+					"%i loaded: PP: %i, UL: %i, CP: %i, LC: %i, SR: %i" % 
 					(tran_data.tran_id, len(pps), len(uls), len_comps, len_lcs, len_srs)
 				)
 
@@ -467,21 +448,21 @@ class DBContentLoader:
 
 					if len(pps) > 0:
 						self.logger.info(
-							" -> Photopoint(s): {}".format(
+							"Photopoint(s): {}".format(
 								(*pps,) if len(pps) > 1 else next(iter(pps))
 							)
 						)
 
 					if len(uls) > 0:
 						self.logger.info(
-							" -> Upper limit(s): {}".format(
+							"Upper limit(s): {}".format(
 								(*uls,) if len(uls) > 1 else next(iter(uls))
 							)
 						)
 			else:
 
 				self.logger.info(
-					" -> %i loaded: PP: 0, UL: 0, CP: %i, LC: %i, SR: %i" % 
+					"Transient %i loaded: PP: 0, UL: 0, CP: %i, LC: %i, SR: %i" % 
 					(tran_data.tran_id, len_comps, len_lcs, len_srs)
 				)
 
@@ -490,7 +471,7 @@ class DBContentLoader:
 				if len_comps > 0:
 					for channel in tran_data.compounds.keys():
 						self.logger.info(
-							" -> %s Compound(s): %s " %
+							"%s Compound(s): %s " %
 							(
 								"" if channel is None else "[%s]" % channel,
 								[el.id.hex() for el in tran_data.compounds[channel]]
@@ -501,7 +482,7 @@ class DBContentLoader:
 				if len_lcs > 0:
 					for channel in tran_data.lightcurves.keys():
 						self.logger.info(
-							" -> %s LightCurves(s): %s " %
+							"%s LightCurves(s): %s " %
 							(
 								"" if channel is None else "[%s]" % channel,
 								[el.id.hex() for el in tran_data.lightcurves[channel]]
@@ -521,7 +502,7 @@ class DBContentLoader:
 							)))
 							if srs > 0:
 								self.logger.info(
-									" -> %s T2 %s: %s " %
+									"%s T2 %s: %s " %
 									(
 										"" if channel is None else "[%s]" % channel,
 										t2_id, srs	
