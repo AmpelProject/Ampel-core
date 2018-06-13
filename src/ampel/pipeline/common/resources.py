@@ -26,7 +26,7 @@ class Graphite(ResourceURI):
 	"""Graphite metrics collector"""
 
 	name = "graphite"
-	fields = ('hostname', 'port')
+	fields = ('hostname', 'port', 'path')
 
 	@classmethod
 	def get_default(cls):
