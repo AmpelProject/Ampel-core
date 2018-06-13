@@ -19,8 +19,8 @@ from ampel.pipeline.t0.ingesters.T2DocsBluePrint import T2DocsBluePrint
 from ampel.pipeline.t0.ingesters.ZICompoundShaper import ZICompoundShaper
 from ampel.pipeline.logging.LoggingUtils import LoggingUtils
 
+from ampel.flags.AmpelFlags import AmpelFlags
 from ampel.flags.PhotoFlags import PhotoFlags
-from ampel.flags.TransientFlags import TransientFlags
 from ampel.flags.T2RunStates import T2RunStates
 from ampel.flags.AlDocTypes import AlDocTypes
 from ampel.flags.FlagUtils import FlagUtils
@@ -42,10 +42,9 @@ class ZIAlertIngester(AbsAlertIngester):
 	"""
 
 	version = 1.0
-	new_tran_dbflag = FlagUtils.enumflag_to_dbflag(
-		TransientFlags.INST_ZTF|TransientFlags.ALERT_IPAC
+	std_dbflag = FlagUtils.enumflag_to_dbflag(
+		AmpelFlags.INST_ZTF|AmpelFlags.SRC_IPAC
 	)
-
 
 	def __init__(self, config, central_db, channels, logger=None):
 		"""
@@ -493,6 +492,7 @@ class ZIAlertIngester(AbsAlertIngester):
 					d_set_on_insert = {
 						"tranId": tran_id,
 						"alDocType": AlDocTypes.T2RECORD,
+						"alFlags": ZIAlertIngester.std_dbflag,
 						"t2Unit": t2_id, 
 						"runConfig": run_config, 
 						"runState": TO_RUN
@@ -608,7 +608,7 @@ class ZIAlertIngester(AbsAlertIngester):
 					},
 					'$addToSet': {
 						"alFlags": {
-							"$each": ZIAlertIngester.new_tran_dbflag
+							"$each": ZIAlertIngester.std_dbflag
 						},
 						'channels': (
 							chan_names[0] if len(chan_names) == 1 
