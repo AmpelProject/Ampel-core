@@ -13,14 +13,12 @@ class LiveMongoURI(ResourceURI):
 	"""Connection to live transient database"""
 
 	name = "mongo"
-	fields = ('hostname', 'port', 'username', 'password')
+	fields = ('hostname', 'port')
+	roles = ('writer', 'logger')
 
 	@classmethod
 	def get_default(cls):
 		return dict(scheme='mongodb', hostname='localhost', port=27017)
-
-	def __call__(self):
-		return self.uri
 
 class Graphite(ResourceURI):
 	"""Graphite metrics collector"""

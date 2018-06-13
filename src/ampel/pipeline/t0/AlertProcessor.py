@@ -716,12 +716,13 @@ def run_alertprocessor():
 	from ampel.pipeline.config.ConfigLoader import AmpelArgumentParser
 	
 	parser = AmpelArgumentParser()
-	parser.require_resources('mongo', 'archive_writer')
 	action = parser.add_mutually_exclusive_group(required=True)
 	action.add_argument('--broker', default='epyc.astro.washington.edu:9092')
 	action.add_argument('--tarfile', default=None)
 	parser.add_argument('--group', default=uuid.uuid1(), help="Kafka consumer group name")
 	
+	parser.require_resource('mongo', roles=['writer'])
+	parser.require_resource('archive', roles=['writer'])
 	# partially parse command line to get config
 	opts, argv = parser.parse_known_args()
 	# flesh out parser with resources required by t0 units
@@ -729,13 +730,15 @@ def run_alertprocessor():
 	parser.require_resources(*loader.get_required_resources())
 	# parse again
 	opts = parser.parse_args()
-	mongo = opts.config['resources']['mongo']()
-	archive = opts.config['resources']['archive_writer']()
+
+	mongo = opts.config['resources']['mongo']()['writer']
+	archive = opts.config['resources']['archive']()['writer']
 	
 	from ampel.pipeline.t0.alerts.TarAlertLoader import TarAlertLoader
 	from ampel.pipeline.t0.alerts.AlertSupplier import AlertSupplier
 	from ampel.pipeline.t0.alerts.ZIAlertShaper import ZIAlertShaper
 	from ampel.pipeline.t0.ZIAlertFetcher import ZIAlertFetcher
+	from ampel.archive import ArchiveDB
 
 	import time
 	count = 0
@@ -749,7 +752,7 @@ def run_alertprocessor():
 		fetcher = ZIAlertFetcher(opts.broker, group_name=opts.group, timeout=3600)
 		loader = iter(fetcher)
 
-	alert_supplier = AlertSupplier(loader, ZIAlertShaper(), serialization="avro", archive=archive)
+	alert_supplier = AlertSupplier(loader, ZIAlertShaper(), serialization="avro", archive=ArchiveDB(archive))
 	processor = AlertProcessor(mongodb_uri=mongo, publish_stats=["jobs"], config=opts.config)
 
 	while alert_processed == AlertProcessor.iter_max:

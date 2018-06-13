@@ -3,13 +3,17 @@
 # License           : BSD-3-Clause
 # Author            : Jakob van Santen <jakob.van.santen@desy.de>
 
+import sys
+from functools import partial
 import json
 import pkg_resources
 
-def load_config(path):
+def load_config(path, gather_plugins=True):
 	"""Load the JSON configuration file at path, and add plugins registered via pkg_resources"""
 	with open(path) as f:
 		config = json.load(f)
+	if not gather_plugins:
+		return config
 	for resource in pkg_resources.iter_entry_points('ampel.channels'):
 		for name, channel_config in resource.resolve()().items():
 			if name in config['channels']:
@@ -54,21 +58,23 @@ class AmpelArgumentParser(ArgumentParser):
 		super(AmpelArgumentParser, self).__init__(*args, **kwargs)
 		self._resources = {}
 
-		self.add_argument('-c', '--config', type=load_config,
+		action = self.add_argument('-c', '--config', type=partial(load_config, gather_plugins=False),
 		    default=abspath(dirname(realpath(__file__)) + '/../../../../config/messy_preliminary_config.json'),
 		    help='Path to Ampel config file in JSON format')
 		# parse a first pass to get the resource defaults
-		opts, argv = super(AmpelArgumentParser, self).parse_known_args(**kwargs)
+		argv = [v for v in sys.argv[1:] if not v in ('-h', '--help')]
+		opts, argv = super(AmpelArgumentParser, self).parse_known_args(argv)
 		self._resource_defaults = opts.config.get('resources', None)
+		action.type = load_config
 
-	def require_resource(self, name):
+	def require_resource(self, name, roles=None):
 		if name in self._resources:
 			return
 		entry = next(pkg_resources.iter_entry_points('ampel.pipeline.resources', name), None)
 		if entry is None:
 			raise NameError("Resource {} is not defined".format(name))
 		resource = entry.resolve()
-		resource.add_arguments(self, self._resource_defaults)
+		resource.add_arguments(self, self._resource_defaults, roles)
 		self._resources[name] = resource
 	
 	def require_resources(self, *names):

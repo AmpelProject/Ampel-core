@@ -280,13 +280,16 @@ class AmpelStatsPublisher(DBWired, Schedulable):
 
 def run():
 	from ampel.pipeline.config.ConfigLoader import AmpelArgumentParser
+	from ampel.archive import ArchiveDB
 
 	parser = AmpelArgumentParser()
-	parser.require_resources('mongo', 'graphite', 'archive_reader')
+	parser.require_resource('mongo', ['writer'])
+	parser.require_resource('archive', ['reader'])
+	parser.require_resource('graphite')
 	opts = parser.parse_args()
 
-	mongo = opts.config['resources']['mongo']()
-	archive = opts.config['resources']['archive_reader']()
+	mongo = opts.config['resources']['mongo']()['writer']
+	archive = ArchiveDB(opts.config['resources']['archive']()['reader'])
 	graphite = opts.config['resources']['graphite']()
 	
 	asp = AmpelStatsPublisher(
