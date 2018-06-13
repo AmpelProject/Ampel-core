@@ -25,10 +25,11 @@ mongo=( mongo --host 127.0.0.1 --port 27017 --username $MONGO_INITDB_ROOT_USERNA
 		pwd: $(_js_escape "$MONGO_PASSWORD"),
 		roles: $(echo '"Ampel Ampel_config Ampel_troubles"' | jq 'split(" ") | [{db : .[], role : "readWrite"}]')
 	})
-	db.grantRolesToUser($(_js_escape "$MONGO_USER"), [{"role": "clusterMonitor", "db": "admin"}])
 	db.createUser({
 		user: $(_js_escape "$LOGGER_USER"),
 		pwd: $(_js_escape "$LOGGER_PASSWORD"),
 		roles: $(echo '"Ampel_logs"' | jq 'split(" ") | [{db : .[], role : "readWrite"}]')
 	})
+	db.grantRolesToUser($(_js_escape "$LOGGER_USER"), [{"role": "clusterMonitor", "db": "admin"}])
+	db.grantRolesToUser($(_js_escape "$LOGGER_USER"), $(echo '"Ampel Ampel_config Ampel_troubles"' | jq 'split(" ") | [{db : .[], role : "read"}]'))
 EOJS

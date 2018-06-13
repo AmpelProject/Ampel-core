@@ -283,12 +283,12 @@ def run():
 	from ampel.archive import ArchiveDB
 
 	parser = AmpelArgumentParser()
-	parser.require_resource('mongo', ['writer'])
+	parser.require_resource('mongo', ['logger'])
 	parser.require_resource('archive', ['reader'])
 	parser.require_resource('graphite')
 	opts = parser.parse_args()
 
-	mongo = opts.config['resources']['mongo']()['writer']
+	mongo = opts.config['resources']['mongo']()['logger']
 	archive = ArchiveDB(opts.config['resources']['archive']()['reader'])
 	graphite = opts.config['resources']['graphite']()
 	
