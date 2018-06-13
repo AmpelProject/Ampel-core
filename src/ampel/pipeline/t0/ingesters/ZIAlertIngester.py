@@ -14,9 +14,9 @@ from pymongo.errors import BulkWriteError
 
 from ampel.abstract.AbsAlertIngester import AbsAlertIngester
 from ampel.pipeline.t0.ingesters.ZIPhotoDictShaper import ZIPhotoDictShaper
-from ampel.pipeline.t0.ingesters.CompoundBluePrint import CompoundBluePrint
+from ampel.pipeline.t0.ingesters.CompoundBluePrintGenerator import CompoundBluePrintGenerator
 from ampel.pipeline.t0.ingesters.T2DocsBluePrint import T2DocsBluePrint
-from ampel.pipeline.t0.ingesters.ZICompElement import ZICompElement
+from ampel.pipeline.t0.ingesters.ZICompoundShaper import ZICompoundShaper
 from ampel.pipeline.logging.LoggingUtils import LoggingUtils
 
 from ampel.flags.PhotoFlags import PhotoFlags
@@ -74,7 +74,7 @@ class ZIAlertIngester(AbsAlertIngester):
 		# instantiate util classes used in method ingest()
 		self.photo_shaper = ZIPhotoDictShaper()
 		self.t2_blueprint_creator = T2DocsBluePrint(channels, self.t2_units_using_uls)
-		self.comp_gen = CompoundBluePrint(ZICompElement(channels), self.logger)
+		self.comp_bp_generator = CompoundBluePrintGenerator(channels, ZICompoundShaper, self.logger)
 
 		self.main_col = central_db['main']
 		self.photo_col = central_db['photo']
@@ -387,8 +387,7 @@ class ZIAlertIngester(AbsAlertIngester):
 		)
 
 		# Compute compound ids (used later for creating compounds and t2 docs)
-		comp_gen = self.comp_gen
-		comp_gen.generate(
+		comp_bp = self.comp_bp_generator.generate(
 			sorted(
 				pps_db + pps_to_insert + uls_db + uls_to_insert, 
 				key=lambda k: k['jd']
@@ -399,33 +398,36 @@ class ZIAlertIngester(AbsAlertIngester):
 
 		# See how many different eff_comp_id were generated (possibly a single one)
 		# and generate corresponding ampel document to be inserted later
-		for eff_comp_id in comp_gen.get_effids_of_chans(chan_names):
+		for eff_comp_id in comp_bp.get_effids_of_chans(chan_names):
 		
 			d_addtoset = {
 				"channels": {
 					"$each": list(
-						comp_gen.get_chans_with_effid(eff_comp_id)
+						comp_bp.get_chans_with_effid(eff_comp_id)
 					)
 				}
 			}
 
-			if comp_gen.has_flavors(eff_comp_id):
+			if comp_bp.has_flavors(eff_comp_id):
 				d_addtoset["flavors"] = {
 					# returns tuple
-					"$each": comp_gen.get_compound_flavors(eff_comp_id)
+					"$each": comp_bp.get_compound_flavors(eff_comp_id)
 				}
 			
-			comp_dict = comp_gen.get_eff_compound(eff_comp_id)
-			pp_comp_id = comp_gen.get_ppid_of_effid(eff_comp_id)
+			comp_dict = comp_bp.get_eff_compound(eff_comp_id)
+			pp_comp_id = comp_bp.get_ppid_of_effid(eff_comp_id)
 			bson_eff_comp_id = Binary(eff_comp_id, 5)
 
 			d_set_on_insert =  {
 				"_id": bson_eff_comp_id,
 				"tranId": tran_id,
 				"alDocType": AlDocTypes.COMPOUND,
+				"alFlags": FlagUtils.enumflag_to_dbflag(
+					comp_bp.get_comp_flags(eff_comp_id)
+				),
 				"tier": 0,
 				"added": datetime.utcnow().timestamp(),
-				"lastppdt": pps_alert[0]['jd'],
+				"lastJD": pps_alert[0]['jd'],
 				"len": len(comp_dict),
 				"comp": comp_dict
 			}
@@ -455,7 +457,7 @@ class ZIAlertIngester(AbsAlertIngester):
 
 		self.logger.info("Generating T2 docs")
 		t2docs_blueprint = self.t2_blueprint_creator.create_blueprint(
-			comp_gen, list_of_t2_units
+			comp_bp, list_of_t2_units
 		)
 		
 		# counter for user feedback (after next loop)
@@ -522,7 +524,7 @@ class ZIAlertIngester(AbsAlertIngester):
 							"$each": [
 								Binary(el, 5) for el in (
 									{bifold_comp_id} | 
-									comp_gen.get_effids_of_chans(eff_chan_names)
+									comp_bp.get_effids_of_chans(eff_chan_names)
 								)
 							]
 						}
@@ -532,7 +534,7 @@ class ZIAlertIngester(AbsAlertIngester):
 							{
 								"dt": now,
 								"chan": chan_name,
-								"effId": comp_gen.get_effid_of_chan(chan_name),
+								"effId": comp_bp.get_effid_of_chan(chan_name),
 								"op": "addToSet"
 							}
 							for chan_name in eff_chan_names
@@ -622,7 +624,7 @@ class ZIAlertIngester(AbsAlertIngester):
 						"journal": {
 							'dt': now,
 							'tier': 0,
-							'chans': chan_names
+							'channels': chan_names
 						}
 					}
 				},
