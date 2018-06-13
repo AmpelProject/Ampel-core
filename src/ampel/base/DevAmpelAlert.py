@@ -72,9 +72,6 @@ class DevAmpelAlert(AmpelAlert):
 			cutout_dict = {}
 		else:
 			self.cutout_dict = cutout_dict
-#		self.cutout_sci = cutout_dict.get('cutoutScience')
-#		self.cutout_diff = cutout_dict.get('cutoutTemplate')
-#		self.cutout_ref = cutout_dict.get('cutoutDiffernce')
 
 
 	def get_cutout(self, which):
