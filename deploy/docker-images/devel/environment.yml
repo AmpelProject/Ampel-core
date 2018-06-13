@@ -17,6 +17,7 @@ dependencies:
   - catshtm==0.1.15 
   - graphitesend
   - voluptuous
+  - configargparse
   - pip:
     - schedule
     - -e

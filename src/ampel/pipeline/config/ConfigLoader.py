@@ -23,3 +23,66 @@ def load_config(path):
 		config['t0_filters'][name] = dict(classFullPath=klass.__module__)
 
 	return config
+
+from configargparse import ArgumentParser, Namespace, Action
+from os.path import basename, dirname, abspath, realpath
+import os
+
+class file_environ(dict):
+	"""
+	Facade for os.environ that reads the value of environment variable FOO from
+	the the file pointed to by the variable FOO_FILE.
+	"""
+	def __init__(self):
+		super(file_environ, self).__init__(os.environ)
+	def __contains__(self, key):
+		if dict.__contains__(self, key):
+			return True
+		elif isinstance(key, str):
+			fkey = '{}_FILE'.format(key)
+			return dict.__contains__(self, fkey)
+	def __getitem__(self, key):
+		fkey = '{}_FILE'.format(key)
+		if dict.__contains__(self, fkey):
+			with open(dict.__getitem__(self, fkey)) as f:
+				return f.read().strip()
+		else:
+			return dict.__getitem__(self, key)
+
+class AmpelArgumentParser(ArgumentParser):
+	def __init__(self, *args, **kwargs):
+		super(AmpelArgumentParser, self).__init__(*args, **kwargs)
+		self._resources = {}
+
+		self.add_argument('-c', '--config', type=load_config,
+		    default=abspath(dirname(realpath(__file__)) + '/../../../../config/messy_preliminary_config.json'),
+		    help='Path to Ampel config file in JSON format')
+		# parse a first pass to get the resource defaults
+		opts, argv = super(AmpelArgumentParser, self).parse_known_args(**kwargs)
+		self._resource_defaults = opts.config.get('resources', None)
+
+	def require_resource(self, name):
+		if name in self._resources:
+			return
+		entry = next(pkg_resources.iter_entry_points('ampel.pipeline.resources', name), None)
+		if entry is None:
+			raise NameError("Resource {} is not defined".format(name))
+		resource = entry.resolve()
+		resource.add_arguments(self, self._resource_defaults)
+		self._resources[name] = resource
+	
+	def require_resources(self, *names):
+		for name in names:
+			self.require_resource(name)
+
+	def parse_args(self, **kwargs):
+		return super(AmpelArgumentParser, self).parse_args(**kwargs)
+
+	def parse_known_args(self, **kwargs):
+		kwargs['env_vars'] = file_environ()
+		args, argv = super(AmpelArgumentParser, self).parse_known_args(**kwargs)
+		args.config['resources'] = {}
+		for name, klass in self._resources.items():
+			args.config['resources'][name] = klass(args)
+		
+		return args, argv

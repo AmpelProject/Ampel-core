@@ -18,17 +18,27 @@ def get_resource(name):
 class Resource(ABC):
     """
     A resource is a property of the deploy environment, e.g. the URI of a
-    database server or the path to local catalog files. It has a short name and
-    returns a value when called.
+    database server or the path to local catalog files. It returns a value when
+    called.
     """
-    @property
-    @abstractmethod
-    def name(self):
-        pass
-        
     @classmethod
     @abstractmethod
-    def available(cls):
+    def add_arguments(cls, parser, defaults=None):
+        """
+        Populate argument parser with options for this resource factory
+        
+        :param parser: an instance of AmpelArgumentParser
+        :param defaults: if not None, the default configuration from the config file
+        """
+        pass
+    
+    @abstractmethod
+    def __init__(self, args):
+        """
+        Construct this resource factory from an argparse namespace
+        
+        :param args: an instance of argparse.Namespace
+        """
         pass
     
     @abstractmethod
@@ -39,14 +49,77 @@ class Resource(ABC):
         """
         pass
 
-class FromEnvironment(Resource):
+from urllib import parse
+import configargparse as argparse
+
+class BuildURI(argparse.Action):
+    def __init__(self, *args, **kwargs):
+        super(BuildURI, self).__init__(*args, **kwargs)
+    def __call__(self, parser, namespace, values, option_string):
+        target, prop = option_string.strip('-').split('-')
+        target += '_uri'
+        # if not hasattr(namespace, target):
+        #   setattr(namespace, target, {})
+        getattr(namespace, target)[prop] = values
+
+def uri_string(props):
+    netloc = props.get('hostname', 'localhost')
+    if 'port' in props:
+        netloc += ':{}'.format(props['port'])
+    if 'username' in props:
+        auth = parse.quote(props['username'])
+        if 'password' in props:
+            auth = ':'.join((auth, parse.quote(props['password'])))
+        netloc = '@'.join((auth, netloc))
+    return "{}://{}/{}".format(props['scheme'], netloc, props.get('path', ''))
+
+class ResourceURI(Resource):
     """
-    Resource information from environment variables. The resource is only
-    marked as available if the required environment variables are defined.
+    A resource that can be represented as a URI
     """
-    def available(self):
-        try:
-            self()
-            return True
-        except KeyError:
-            return False
+    
+    @classmethod
+    @abstractmethod
+    def name(cls):
+        """
+        Return a short name for this 
+        """
+        pass
+    
+    @classmethod
+    @abstractmethod
+    def get_default(cls):
+        """
+        Return a dictionary of default properties for urllib.parse.ParseResult
+        """
+        pass
+    
+    @classmethod
+    @property
+    def fields(cls):
+        """
+        Return a tuple containing the properties of urllib.parse.ParseResult
+        that are required.
+        """
+        return 'hostname', 'port', 'username', 'password', 'path'
+    
+    @classmethod
+    def add_arguments(cls, parser, defaults):
+        group = parser.add_argument_group(cls.name, cls.__doc__)
+        default_key = cls.name+'_uri'
+        class_default = cls.get_default()
+        if defaults is not None and default_key in defaults:
+            superfluous = set(defaults[default_key].keys()).difference(cls.fields)
+            if len(superfluous) > 0:
+                raise ValueError("default configuration for {} in config file contains unrecognized keys {}".format(default_key, superfluous))
+            class_default.update(defaults[default_key])
+        parser.set_defaults(**{default_key: class_default})
+        for prop in cls.fields:
+            typus = int if prop == 'port' else str
+            group.add_argument('--{}-{}'.format(cls.name, prop), env_var='{}_{}'.format(cls.name.upper(), prop.upper()),
+                action=BuildURI, type=typus, default=argparse.SUPPRESS)
+
+    def __init__(self, args):
+        key = self.name+'_uri'
+        self.uri = uri_string(getattr(args, key))
+        delattr(args, key)
