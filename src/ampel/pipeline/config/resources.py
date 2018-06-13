@@ -7,14 +7,6 @@ from abc import ABC, abstractmethod
 from ampel.pipeline.common.expandvars import expandvars
 import pkg_resources
 
-def get_resource(name):
-    entry = next(pkg_resources.iter_entry_points('ampel.pipeline.resources', name), None)
-    if entry is not None:
-        resource = entry.resolve()()
-        return resource()
-    else:
-        raise KeyError("Resource '{}' was not defined in any package".format(name))
-
 class Resource(ABC):
     """
     A resource is a property of the deploy environment, e.g. the URI of a
