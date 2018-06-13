@@ -13,7 +13,8 @@ from ampel.flags.CompoundFlags import CompoundFlags
 from ampel.abstract.AbsCompoundShaper import AbsCompoundShaper
 
 flag_pos = {}
-for flag_name in ("ZTF_COLLAB", "SRC_AMPEL", "SUPERSEEDED", "HAS_HUMBOLDT_ZP", "HAS_WEIZMANN_SUB"):
+# pylint: disable=no-member,unsubscriptable-object
+for flag_name in ("ZTF_COLLAB", "SRC_AMPEL", "SUPERSEEDED", "HAS_HUMBOLDT_ZP"):
 	flag_pos[flag_name] = FlagUtils.get_flag_pos_in_enumflag(
 		PhotoFlags[flag_name]
 	)
@@ -36,11 +37,16 @@ class ZICompoundShaper(AbsCompoundShaper):
 		"""	
 		"""	
 
+		opts = self.chan_opts[channel_name]
+
 		# Photopoint ids are referenced by the key name 'pp' 
 		# whereas upper limis ids are referenced by the key name 'ul'
-		id_key = 'pp' if 'magpsf' in input_d.keys() else 'ul'
-		comp_entry = {id_key: input_d['_id']}
-		opts = self.chan_opts[channel_name]
+		if 'magpsf' in input_d.keys():
+			comp_entry = {'pp': input_d['_id']}
+		else:
+			comp_entry = {'ul': input_d['_id']}
+			self.flags |= CompoundFlags.HAS_UPPER_LIMITS
+
 
 		############
 		# POLICIES #
@@ -49,7 +55,7 @@ class ZICompoundShaper(AbsCompoundShaper):
 		#  Photopoint option: check if updated zero point should be used
 		if opts['updatedHUZP'] is True and flag_pos["HAS_HUMBOLDT_ZP"] in input_d['alFlags']:
 			comp_entry['huZP'] = 1
-			self.flags |= CompoundFlags.WITH_CUSTOM_POLICES
+			self.flags |= CompoundFlags.WITH_CUSTOM_POLICIES
 
 		#  Photopoint option: check if alternative subtraction method should be used
 		# if opts['weizmannSub'] is True and flag_pos["HAS_WEIZMANN_SUB"] in input_d['alFlags']:
