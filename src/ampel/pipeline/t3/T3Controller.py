@@ -28,6 +28,7 @@ class T3Controller(DBWired, Schedulable):
 		   Example: 'mongodb://user:password@localhost:27017'
 		't3_job_names': optional list of strings. If specified, only job with these names will be run.
 		"""
+		super(T3Controller, self).__init__()
 		# Setup logger
 		self.logger = LoggingUtils.get_logger(unique=True)
 		self.logger.info("Setting up T3Controler")
@@ -35,16 +36,26 @@ class T3Controller(DBWired, Schedulable):
 		# Setup instance variable referencing ampel databases
 		self.plug_databases(self.logger, mongodb_uri, config, central_db)
 
-		scheduler = self.get_scheduler()
-
 		for job_name in self.config["t3_jobs"].keys():
 
 			if t3_job_names is not None and job_name not in t3_job_names:
 				continue
 
 			t3_job = T3JobLoader.load(self.config, job_name)
-			t3_job.schedule(scheduler)
+			t3_job.schedule(self.scheduler)
 
 
 def run():
-	raise NotImplementedError
+	from ampel.pipeline.config.ConfigLoader import AmpelArgumentParser
+
+	parser = AmpelArgumentParser()
+	parser.require_resource('mongo', ['writer'])
+	opts = parser.parse_args()
+
+	mongo = opts.config['resources']['mongo']()['writer']
+
+	controller = T3Controller(
+		config=opts.config,
+		mongodb_uri=mongo
+	)
+	controller.run()
