@@ -1,4 +1,4 @@
-name: ampel
+name: potemkin
 channels:
   - ampelproject
   - conda-forge
@@ -19,12 +19,4 @@ dependencies:
   - graphitesend
   - voluptuous
   - configargparse
-  - pip:
-    - schedule
-    - -e
-    - /Ampel/ampel-core
-    - -e
-    - /Ampel/ampel-contrib-ztfbh
-    - -e
-    - /Ampel/ampel-contrib-hu
 
