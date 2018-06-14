@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/pipeline/t3/T3Controler.py
+# File              : ampel/pipeline/t3/T3Controller.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 26.02.2018
-# Last Modified Date: 06.06.2018
+# Last Modified Date: 14.06.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import schedule, time, threading
@@ -14,7 +14,7 @@ from ampel.pipeline.t3.T3JobLoader import T3JobLoader
 from ampel.pipeline.common.Schedulable import Schedulable
 from ampel.pipeline.logging.LoggingUtils import LoggingUtils
 
-class T3Controler(DBWired, Schedulable):
+class T3Controller(DBWired, Schedulable):
 	"""
 	"""
 
