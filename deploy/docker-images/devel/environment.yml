@@ -14,7 +14,8 @@ dependencies:
   - psycopg2
   - ipython
   - extcats
-  - catshtm==0.1.15 
+  - catshtm==0.1.15
+  - sncosmo
   - graphitesend
   - voluptuous
   - configargparse
