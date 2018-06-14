@@ -90,6 +90,9 @@ class ArchiveDB(object):
     def get_alerts_in_time_range(self, jd_min, jd_max, partitions=None):
         return get_alerts_in_time_range(self._connection, self._meta, jd_min, jd_max, partitions)
 
+    def get_alerts_in_cone(self, ra, dec, radius, jd_min=None, jd_max=None):
+        return get_alerts_in_time_range(self._connection, self._meta, ra, dec, radius, jd_min, jd_max)
+
 def create_metadata(alert_schema):
     """
     Create archive database schema from AVRO alert schema
@@ -385,6 +388,38 @@ def get_alerts_in_time_range(connection, meta, jd_start, jd_end, partitions=None
         in_range = and_(in_range, and_(Alert.c.partition_id >= partitions.start, Alert.c.partition_id < partitions.stop))
     elif partitions is not None:
         raise TypeError("partitions must be int or slice")
+
+    yield from fetch_alerts_with_condition(connection, meta, in_range, Alert.c.jd.asc())
+
+def get_alerts_in_cone(connection, meta, ra, dec, radius, jd_min=None, jd_max=None):
+    """
+    Retrieve a range of alerts from the archive database
+
+    :param connection: database connection
+    :param meta: schema metadata
+    :param ra: right ascension of search field center in degrees (J2000)
+    :param dec: declination of search field center in degrees (J2000)
+    :param radius: radius of search field in degrees
+    :param jd_start: minimum JD of exposure start
+    :param jd_end: maximum JD of exposure start
+    """
+    from sqlalchemy import func
+    from sqlalchemy.sql.expression import BinaryExpression
+    Alert = meta.tables['alert']
+    Candidate = meta.tables['candidate']
+    
+    center = func.ll_to_earth(dec, ra)
+    box = func.earth_box(center, radius)
+    loc = func.ll_to_earth(Candidate.c.dec, Candidate.c.ra)
+    
+    in_range = and_(BinaryExpression(box, loc, '@>'), func.earth_distance(center, loc) < radius)
+    # NB: filtering on jd from Candidate here is ~2x faster than _also_
+    #      filtering on Alert (rows that pass are joined on the indexed primary
+    #      key)
+    if jd_min is not None:
+        in_range = and_(in_range, Candidate.c.jd >= jd_min)
+    if jd_max is not None:
+        in_range = and_(in_range, Candidate.c.jd < jd_max)
 
     yield from fetch_alerts_with_condition(connection, meta, in_range, Alert.c.jd.asc())
 
