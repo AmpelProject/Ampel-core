@@ -4,9 +4,8 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 10.10.2017
-# Last Modified Date: 07.06.2018
+# Last Modified Date: 14.06.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
-
 
 import pymongo, time, numpy as np
 from ampel.pipeline.t0.alerts.AlertSupplier import AlertSupplier
@@ -411,7 +410,7 @@ class AlertProcessor(DBWired):
 			# time required for all filters
 			filtering_stats['all'][iter_count] = time_now() - all_filters_start
 
-			if any(scheduled_t2_units):
+			if any(t2 is not None for t2 in scheduled_t2_units):
 
 				# Ingest alert
 				loginfo(" -> Ingesting alert")
