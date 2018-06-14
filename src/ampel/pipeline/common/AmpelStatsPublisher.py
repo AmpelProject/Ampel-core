@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 26.05.2018
-# Last Modified Date: 11.06.2018
+# Last Modified Date: 14.06.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from functools import reduce
@@ -136,7 +136,7 @@ class AmpelStatsPublisher(DBWired, Schedulable):
 		if col_stats:
 
 			dbinfo_dict['colStats'] = {
-				'jobs': self.get_col_stats(self.get_job_col()),
+				'logs': self.get_col_stats(self.get_logs_col()),
 				'photo': self.get_col_stats(photo_col),
 				'main': self.get_col_stats(main_col)
 			}

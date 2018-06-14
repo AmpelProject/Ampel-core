@@ -226,9 +226,9 @@ class AlertProcessor(DBWired):
 		self.logger.removeHandler(self.ilb)
 
 		# Create JobReporter instance
-		db_job_reporter = DBJobReporter(self.get_job_col())
+		db_job_reporter = DBJobReporter(self.get_logs_col())
 
-		# Create new "job" document in the DB
+		# Create new job document in the logs collection
 		db_job_reporter.insert_new(
 			params = {
 				"alertProc": str(self.version),

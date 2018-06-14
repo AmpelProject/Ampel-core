@@ -151,7 +151,7 @@ class DBWired:
 		Database=pymongo.database.Database
 	):
 		"""		
-		setup output database (will typically contain the collections 'transients' and 'jobs')
+		setup output database (will typically contain the collections 'transients' and 'logs')
 		Parameter 'arg' must be either:
 
 			-> MongoClient instance (pymongo or mongomock): the provided instance will be used
@@ -241,11 +241,11 @@ class DBWired:
 				pass
 
 
-		if "jobs" in existing_col_names:
-			self.jobs_col = db["jobs"]
+		if "logs" in existing_col_names:
+			self.logs_col = db["logs"]
 		else:
-			self.jobs_col = db.create_collection(
-				'jobs', storageEngine={
+			self.logs_col = db.create_collection(
+				'logs', storageEngine={
 					'wiredTiger':{
 						'configString':'block_compressor=zlib'
 					}
@@ -266,9 +266,9 @@ class DBWired:
 		return self.photo_col
 
 
-	def get_job_col(self):
+	def get_logs_col(self):
 		""" """
-		return self.jobs_col
+		return self.logs_col
 
 
 	def get_trouble_col(self):

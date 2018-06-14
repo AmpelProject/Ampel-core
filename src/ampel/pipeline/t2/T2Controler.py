@@ -8,7 +8,6 @@
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from ampel.flags.AlDocTypes import AlDocTypes
-from ampel.flags.JobFlags import JobFlags
 from ampel.flags.T2RunStates import T2RunStates
 from ampel.abstract.AbsT2Unit import AbsT2Unit
 from ampel.pipeline.logging.LoggingUtils import LoggingUtils
@@ -145,9 +144,7 @@ class T2Controler(DBWired):
 		"""
 
 		# Create JobReporter instance
-		db_job_reporter = DBJobReporter(
-			self.get_job_col(), JobFlags.T2
-		)
+		db_job_reporter = DBJobReporter(self.get_logs_col())
 
 		# Create new "job" document in the DB
 		db_job_reporter.insert_new(
