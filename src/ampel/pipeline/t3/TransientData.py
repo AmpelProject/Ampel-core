@@ -74,9 +74,21 @@ class TransientData:
 		self._set(self.latest_state, state, channels)
 
 
-	def set_journal_entries(self, entries, channels=None):
+	def add_journal_entries(self, entries, channels=None):
 		""" """
-		self._set(self.journal, entries, channels)
+		for channel in AmpelUtils.iter(channels):
+			self.known_channels.add(channel)
+
+			for entry in entries:
+
+				if channel in entry['channels'] or channel is None:
+					shaped_entry = {k:v for k, v in entry.items() if k != 'channels'}
+
+					if channel not in self.journal:
+						self.journal[channel] = []
+
+					if shaped_entry not in self.journal[channel]:
+						self.journal[channel].append(shaped_entry)
 
 
 	def set_flags(self, flags):

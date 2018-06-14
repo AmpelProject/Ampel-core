@@ -58,7 +58,7 @@ class DBContentLoader:
 
 
 	def load_new(
-		self, tran_id, channels=None, state="latest", content_types=all_doc_types, t2_ids=None,
+		self, tran_id, channels=None, state="$latest", content_types=all_doc_types, t2_ids=None,
 		feedback=True, verbose_feedback=False
 	):
 		"""
@@ -68,13 +68,13 @@ class DBContentLoader:
 		----------
 
 		-> tran_id: transient id (string). 
-		Can be a multiple IDs (list) if state is 'all' or states are provided (states cannot be 'latest')
+		Can be a multiple IDs (list) if state is '$all' or states are provided (states cannot be '$latest')
 
 		-> channels: string or list of strings
 
 		-> state:
-		  * "latest": latest state will be retrieved
-		  * "all": all states present in DB (at execution time) will be retrieved
+		  * "$latest": latest state will be retrieved
+		  * "$all": all states present in DB (at execution time) will be retrieved
 		  * <compound_id> or list of <compound_id>: provided state(s) will be loaded. 
 		    Each compound id must be either:
 				- a 32 alphanumerical string
@@ -101,9 +101,9 @@ class DBContentLoader:
 		  * 'AlDocTypes.COMPOUND': 
 			-> ampel.base.LightCurve instances are created based on DB documents 
 			   (with alDocType AlDocTypes.COMPOUND)
-			-> if 'state' is 'latest' or a state id (md5 bytes) is provided, 
+			-> if 'state' is '$latest' or a state id (md5 bytes) is provided, 
 			   only one LightCurve instance is created. 
-			   if 'state' is 'all', all available lightcurves are created.
+			   if 'state' is '$all', all available lightcurves are created.
 			-> the lightcurve instance(s) will be associated with the returned TransientData instance
 
 		  * 'AlDocTypes.T2RECORD': 
@@ -117,10 +117,10 @@ class DBContentLoader:
 			raise ValueError("Parameter content_types not conform")
 
 		# Option 1: Find latest state, then update search query parameters
-		if state == "latest":
+		if state == "$latest":
 
 			if type(tran_id) in (list, tuple):
-				raise ValueError("Queries with multiple transient ids not supported with state == 'latest'")
+				raise ValueError("Queries with multiple transient ids not supported with state == '$latest'")
 
 			# Feedback
 			self.logger.info(
@@ -152,7 +152,7 @@ class DBContentLoader:
 			)
 
 		# Option 2: Load every available transient state
-		elif state == "all":
+		elif state == "$all":
 
 			# Feedback
 			self.logger.info(
@@ -237,7 +237,7 @@ class DBContentLoader:
 
 
 	def load_tran_data(
-		self, main_list, photo_list=None, channels=None, state="latest", 
+		self, main_list, photo_list=None, channels=None, state="$latest", 
 		load_lightcurves=True, feedback=True, verbose_feedback=False
 	):
 		"""
@@ -274,15 +274,10 @@ class DBContentLoader:
 					)
 				)
 
-				for channel in (channels & set(doc['channels'])):
-					tran_data.set_journal_entries(
-						[
-							{k:v for k, v in entry.items() if k != 'channels'}
-							for entry in doc['journal'] if channel in entry['channels']
-						],
-						channel
-					)
-
+				tran_data.add_journal_entries(
+					doc['journal'], channels if len(channels) == 1
+					else channels & set(doc['channels']) # intersection
+				)
 
 
 			# Pick compound dicts 
@@ -294,10 +289,9 @@ class DBContentLoader:
 					else channels & set(doc['channels']) # intersection
 				)
 
-				if state == "latest":
+				if state == "$latest":
 					tran_data.set_latest_state(
-						doc['_id'], 
-						channels if len(channels) == 1 
+						doc['_id'], channels if len(channels) == 1 
 						else channels & set(doc['channels']) # intersection
 					)
 
@@ -316,8 +310,7 @@ class DBContentLoader:
 				)
 
 				tran_data.add_science_record(
-					sr,
-					channels if len(channels) == 1 
+					sr, channels if len(channels) == 1 
 					else channels & set(doc['channels']) # intersection
 				)
 

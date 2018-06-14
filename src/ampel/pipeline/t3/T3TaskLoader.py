@@ -31,7 +31,7 @@ class T3TaskLoader:
 			Required('updateJournal'): bool,
 			'select': {
 				'channel(s)': Any(str, [str]),
-				'state(s)': str,
+				'state': Any('$all', '$latest'),
 				't2(s)': Any(str, [str])
 			},
 			Optional('verbose', default=False): bool
@@ -271,15 +271,15 @@ class T3TaskLoader:
 			# Check validity of state sub-selection
 			if 'state' in task_doc['select']:
 
-				# Allowed:   main:'all' -> sub:'all' 
-				# Allowed:   main:'latest' -> sub:'latest' 
-				# Allowed:   main:'all' -> sub:'latest' 
-				# Denied:    main:'latest' -> sub:'all' 
+				# Allowed:   main:'$all' -> sub:'$all' 
+				# Allowed:   main:'$latest' -> sub:'$latest' 
+				# Allowed:   main:'$all' -> sub:'$latest' 
+				# Denied:    main:'$latest' -> sub:'$all' 
 				requested_state_by_job = cls.get_config(t3_job_doc, 'input.load.state')
 				if requested_state_by_job != cls.get_config(task_doc, 'select.state'):
-					if requested_state_by_job == 'latest':
+					if requested_state_by_job == '$latest':
 						cls._raise_ValueError(logger, task_doc,
-							"invalid state sub-selection criteria: main:'latest' -> sub:'all"
+							"invalid state sub-selection criteria: main:'$latest' -> sub:'$all"
 						)
 
 

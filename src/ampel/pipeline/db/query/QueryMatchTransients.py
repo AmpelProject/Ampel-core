@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 13.01.2018
-# Last Modified Date: 06.06.2018
+# Last Modified Date: 14.06.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 
@@ -91,21 +91,9 @@ class QueryMatchTransients:
 		'tc_obj': instance of ampel/pipeline/t3/TimeConstraint.py
 		'oid_match': is the targeted field value an ObjectId or not
 		"""
-
-		val = tc_obj.get('timeDelta')
-		if val is not None:
-			query[target_field] = {
-				"$gte": ObjectId.from_datetime(val) if oid_match else val.timestamp()
-			}
-
-		if tc_obj.get('from') is not None or tc_obj.get('until') is not None:
-
-			if target_field in query:
-				# Either timeDelta was also provided, or query has already a constraint
-				raise ValueError('target_field %s already set in query' % target_field)
-
+		if tc_obj.has_constraint():
 			query[target_field] = {}
 			for key, op in {'from': '$gte', 'until': '$lte'}.items():
 				val = tc_obj.get(key)
 				if val is not None:
-					query[target_field][op] = ObjectId.from_datetime(val) if oid_match else val
+					query[target_field][op] = ObjectId.from_datetime(val) if oid_match else val.timestamp()

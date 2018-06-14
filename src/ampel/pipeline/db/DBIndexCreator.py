@@ -4,41 +4,64 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 21.05.2018
-# Last Modified Date: 01.06.2018
+# Last Modified Date: 14.06.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-
-from ampel.flags.AlDocTypes import AlDocTypes
 import pymongo
+from ampel.flags.AlDocTypes import AlDocTypes
 
 class DBIndexCreator:
 	""" 
 	"""
 
 	@staticmethod
-	def create_main_indexes(col):
+	def create_indexes(col):
 		"""
+		The method will set indexes for collections with names: 
+		'main', 'photo', 'logs'
 		"""
-		col.create_index(
-	        [
-	            ("tranId", pymongo.ASCENDING), 
-	            ("alDocType", pymongo.ASCENDING), 
-	            ("channels", pymongo.ASCENDING)
-	        ]
-	    )
 
-		col.create_index(
-			[("runState", 1)],
-		)
+		if col.name == "main":
 
+			col.create_index(
+	        	[
+	    	        ("tranId", pymongo.ASCENDING), 
+	        	    ("alDocType", pymongo.ASCENDING), 
+	        	    ("channels", pymongo.ASCENDING)
+				]
+			)
 
-	@staticmethod
-	def create_photo_indexes(col):
-		"""
-		"""
-		col.create_index(
-			[("tranId", 1)],
-		)
+			# Create sparse runstate index
+			col.create_index(
+				[
+					("runState", 1)
+				],
+				**{ 
+					"partialFilterExpression": {
+						"alDocType": AlDocTypes.T2RECORD
+					}
+				}
+			)
+
+		elif col.name == "photo":
+
+			col.create_index(
+				[("tranId", 1)],
+			)
+
+		elif col.name == "logs":
+
+			# Create sparse runstate index
+			col.create_index(
+				[
+					("hasError", 1)
+				],
+				**{ 
+					"partialFilterExpression": {
+						"hasError": { "$exists": True } 
+					}
+				}
+			)
 
 
 #	@staticmethod

@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 07.06.2018
-# Last Modified Date: 12.06.2018
+# Last Modified Date: 14.06.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from functools import reduce
@@ -43,14 +43,14 @@ class T3JobLoader:
 			),
 			'input': {
 				Required('select'): {
-					'created': TimeConstraint.schema_types,
-					'modified': TimeConstraint.schema_types,
+					'created': TimeConstraint.json_root_schema,
+					'modified': TimeConstraint.json_root_schema,
 					'channel(s)': Any(str, [str]),
 					'withFlag(s)': Any(str, [str]),
 					'withoutFlag(s)': Any(str, [str])
 				},
 				Required('load'): {
-					Required('state(s)'): Any("all", "latest"),
+					Required('state'): Any("$all", "$latest"),
 					'doc(s)': Any(_docs_schema, [_docs_schema]),
 					't2(s)': Any(str, [str]),
 					'verbose': bool

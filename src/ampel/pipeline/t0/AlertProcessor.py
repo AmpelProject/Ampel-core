@@ -226,7 +226,7 @@ class AlertProcessor(DBWired):
 		self.logger.removeHandler(self.ilb)
 
 		# Create JobReporter instance
-		db_job_reporter = DBJobReporter(self.get_logs_col())
+		db_job_reporter = DBJobReporter(self.central_db['logs'])
 
 		# Create new job document in the logs collection
 		db_job_reporter.insert_new(
@@ -325,7 +325,7 @@ class AlertProcessor(DBWired):
 		filtering_stats = job_info['duration']['filtering']
 		job_count_stats = job_info['count']['t0Job']
 		alert_counts = job_info['count']['ingestion']['alerts']
-		col = self.get_main_col()
+		col = self.central_db['main']
 
 		# Save pre run time
 		pre_run = time_now()
@@ -628,7 +628,7 @@ class AlertProcessor(DBWired):
 		Otherwise, tran_ids_before[i] will be None
 		"""
 
-		col = self.get_main_col()
+		col = self.central_db['main']
 		tran_ids = len(self.channels) * [None]
 
 		# Loop through activated channels

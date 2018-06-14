@@ -35,7 +35,7 @@ class T3JobExecution:
 
 			self.exec_params = {
 				'channels': t3_job.get_config('input.select.channel(s)'),
-				'states': t3_job.get_config("input.load.state(s)"),
+				'state': t3_job.get_config("input.load.state"),
 				't2s': t3_job.get_config("input.load.t2(s)"),
 				'docs': FlagUtils.list_flags_to_enum_flags(
 					t3_job.get_config('input.load.doc(s)'), AlDocTypes
@@ -110,6 +110,7 @@ class T3JobExecution:
 			self.logger.info("Running task %s" % t3_task.get_config("name"))
 			ret = t3_task.run(self.logger)
 
+			# Update Transient journal with dict containing date, channels and name of the task
 			if t3_task.get_config('updateJournal') is True:
 				mongo_res = central_db.main.update_many(
 					{
@@ -132,6 +133,18 @@ class T3JobExecution:
 
 				if mongo_res.raw_result["nModified"] != len(ret):
 					pass # populate ampel_troubles !
+
+		# Record last time this job was run into DB
+		col=central_db['runs']
+		col.update_one(
+			{'_id': self.t3_job.job_name},
+			{
+				'$set': {
+					'lastRun': datetime.now(timezone.utc).timestamp()
+				}
+			},
+			upsert=True
+		)
 
 
 	def get_selected_transients(self, tran_col):
@@ -178,10 +191,10 @@ class T3JobExecution:
 			return
 
 		self.logger.info("Loading %i transient(s) " % len(chunked_tran_ids))
-		states = self.exec_params['states']
+		state = self.exec_params['state']
 
-		# For 'latest' state, the latest compoundid of each transient must be determined
-		if states == "latest":
+		# For '$latest' state, the latest compoundid of each transient must be determined
+		if state == "$latest":
 
 			self.logger.info("Retrieving latest state")
 
@@ -257,50 +270,50 @@ class T3JobExecution:
 					states.add(g_latest_state['_id'])
 
 
-			# Load ampel TransientData instances with given state(s)
-			self.logger.info("Loading transient(s)")
-			al_tran_data = db_content_loader.load_new(
-				chunked_tran_ids, channels, states, self.exec_params['docs'], 
-				self.exec_params['t2s'], self.exec_params['feedback'], 
-				self.exec_params['verbose_feedback']
+		# Load ampel TransientData instances with given state(s)
+		self.logger.info("Loading transient(s)")
+		al_tran_data = db_content_loader.load_new(
+			chunked_tran_ids, self.exec_params['channels'], states, 
+			self.exec_params['docs'], self.exec_params['t2s'], 
+			self.exec_params['feedback'], self.exec_params['verbose_feedback']
+		)
+
+		# For each task, create transientView and run task
+		for t3_task in self.t3_job.get_tasks():
+
+			self.logger.info(
+				"Running task with t3Unit %s and runConfig %s" % (
+					t3_task.get_config("t3Unit"), 
+					t3_task.get_config("runConfig")
+				)
 			)
 
-			# For each task, create transientView and run task
-			for t3_task in self.t3_job.get_tasks():
+			# Get channel associated with this task
+			task_chans = t3_task.get_config('select.channel(s)')
 
-				self.logger.info(
-					"Running task with t3Unit %s and runConfig %s" % (
-						t3_task.get_config("t3Unit"), 
-						t3_task.get_config("runConfig")
-					)
+			# Build specific array of ampel TransientView instances where each transient 
+			# is cut down according to the specified sub-selections parameters
+			tran_views = []
+			for tran_id, tran_data in al_tran_data.items():
+
+				tran_view = tran_data.create_view(
+					channel=task_chans if type(task_chans) is not list else None, 
+					channels=task_chans if type(task_chans) is list else None, 
+					t2_ids=t3_task.get_config('select.t2(s)')
 				)
-
-				# Get channel associated with this task
-				task_chans = t3_task.get_config('select.channel(s)')
-
-				# Build specific array of ampel TransientView instances where each transient 
-				# is cut down according to the specified sub-selections parameters
-				tran_views = []
-				for tran_id, tran_data in al_tran_data.items():
-
-					tran_view = tran_data.create_view(
-						channel=task_chans if type(task_chans) is not list else None, 
-						channels=task_chans if type(task_chans) is list else None, 
-						t2_ids=t3_task.get_config('select.t2(s)')
+				
+				if tran_view is not None:
+					self.logger.debug(
+						"TransientView created for %s and channel(s) %s" % 
+						(tran_id, task_chans)
 					)
-					
-					if tran_view is not None:
-						self.logger.debug(
-							"TransientView created for %s and channel(s) %s" % 
-							(tran_id, task_chans)
-						)
-						tran_views.append(tran_view)
+					tran_views.append(tran_view)
 
-				# get T3 unit instance (instantiate if first access)
-				t3_unit = t3_task.get_t3_unit_instance(self.logger)
+			# get T3 unit instance (instantiate if first access)
+			t3_unit = t3_task.get_t3_unit_instance(self.logger)
 
-				# Run T3 instance
-				self.logger.info("Adding TransientView instances to T3 unit %s" % t3_unit.__class__)
-				t3_unit.add(tran_views)
+			# Run T3 instance
+			self.logger.info("Adding TransientView instances to T3 unit %s" % t3_unit.__class__)
+			t3_unit.add(tran_views)
 
 		return len(chunked_tran_ids)

@@ -215,60 +215,19 @@ class DBWired:
 			db = mc["Ampel"]
 
 		existing_col_names = db.collection_names()
-
-		if "photo" in existing_col_names:
-			self.photo_col = db["photo"]
-		else:
-			try:
-				self.photo_col = db.create_collection("photo")
-				logger.info("Creating new photo collection")
-				DBIndexCreator.create_photo_indexes(self.photo_col)
-			except CollectionInvalid:
-				# Catch 'CollectionInvalid: collection * already exists' 
-				# that can occur when multiple jobs are created simultaneoulsy
-				pass
-
-		if "main" in existing_col_names:
-			self.main_col = db["main"]
-		else:
-			try:
-				self.main_col = db.create_collection("main")
-				logger.info("Creating new main collection")
-				DBIndexCreator.create_main_indexes(self.main_col)
-			except CollectionInvalid:
-				# Catch 'CollectionInvalid: collection * already exists' 
-				# that can occur when multiple jobs are created simultaneoulsy
-				pass
-
-
-		if "logs" in existing_col_names:
-			self.logs_col = db["logs"]
-		else:
-			self.logs_col = db.create_collection(
-				'logs', storageEngine={
-					'wiredTiger':{
-						'configString':'block_compressor=zlib'
-					}
-				}
-			)
-
-		self.troubles_col = db.client["Ampel_troubles"]['docs']
 		self.central_db = db
 
+		self.troubles_col = db.client["Ampel_troubles"]['docs']
 
-	def get_main_col(self):
+		for col_name in ('photo', 'main', 'logs', 'stats', 'runs'):
+			if col_name not in existing_col_names:
+				logger.info("Creating new %s collection" % col_name)
+				DBIndexCreator.create_indexes(db[col_name])
+			
+
+	def get_central_col(self, name):
 		""" """
-		return self.main_col
-
-
-	def get_photo_col(self):
-		""" """
-		return self.photo_col
-
-
-	def get_logs_col(self):
-		""" """
-		return self.logs_col
+		return self.central_db[name]
 
 
 	def get_trouble_col(self):
