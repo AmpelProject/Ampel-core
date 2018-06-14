@@ -8,7 +8,7 @@
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from functools import reduce
-from ampel.pipeline.t3.T3JobExecutor import T3JobExecutor
+from ampel.pipeline.t3.T3JobExecution import T3JobExecution
 
 class T3Job:
 	"""
@@ -48,9 +48,9 @@ class T3Job:
 		pass
 
 	
-	def run(self, al_config, central_db, logger):
+	def run(self, central_db, al_config, logger):
 		""" """
-		T3JobExecutor.run_job(al_config, central_db, self, logger)
+		T3JobExecution(self, logger).run_job(central_db, al_config)
 
 
 	def schedule(self, scheduler):

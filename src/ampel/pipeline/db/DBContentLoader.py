@@ -9,23 +9,28 @@
 
 from bson import ObjectId
 from datetime import datetime
-from ampel.base.PlainPhotoPoint import PlainPhotoPoint
-from ampel.base.UpperLimit import UpperLimit
-from ampel.base.PlainUpperLimit import PlainUpperLimit
+
 from ampel.base.Compound import Compound
 from ampel.base.LightCurve import LightCurve
+from ampel.base.UpperLimit import UpperLimit
 from ampel.base.TransientView import TransientView
 from ampel.base.ScienceRecord import ScienceRecord
-from ampel.flags.TransientFlags import TransientFlags
-from ampel.flags.AlDocTypes import AlDocTypes
+from ampel.base.PlainPhotoPoint import PlainPhotoPoint
+from ampel.base.PlainUpperLimit import PlainUpperLimit
+
 from ampel.flags.FlagUtils import FlagUtils
+from ampel.flags.AlDocTypes import AlDocTypes
 from ampel.flags.PhotoFlags import PhotoFlags
 from ampel.flags.T2RunStates import T2RunStates
+from ampel.flags.TransientFlags import TransientFlags
+
+from ampel.pipeline.common.AmpelUtils import AmpelUtils
+from ampel.pipeline.t3.TransientData import TransientData
 from ampel.pipeline.logging.LoggingUtils import LoggingUtils
 from ampel.pipeline.db.LightCurveLoader import LightCurveLoader
 from ampel.pipeline.db.query.QueryLatestCompound import QueryLatestCompound
 from ampel.pipeline.db.query.QueryLoadTransientInfo import QueryLoadTransientInfo
-from ampel.pipeline.t3.TransientData import TransientData
+
 
 class DBContentLoader:
 	"""
@@ -237,12 +242,8 @@ class DBContentLoader:
 	):
 		"""
 		"""
-		# Convert non array into array for convenience
-		if channels is None:
-			channels = [None]
-
 		# Build set: we need intersections later
-		channels = set(channels)
+		channels = set(AmpelUtils.iter(channels))
 
 		# Stores loaded transient items. 
 		# Key: tran_id, value: TransientData instance
@@ -404,7 +405,7 @@ class DBContentLoader:
 					if (len_uls == 0 and len([el for el in comp.content if 'ul' in el]) > 0):
 						self.logger.info(
 							" -> LightCurve loading aborded for %s (upper limits required)" % 
-							comp.get_id()
+							comp.get_id().hex()
 						)
 						continue
 
@@ -415,18 +416,14 @@ class DBContentLoader:
 
 		# Feedback
 		if feedback:
-			self.log_feedback(register.values(), photo_list, channels, verbose_feedback)
+			self.log_feedback(register.values(), photo_list, verbose_feedback)
 
 		return register
 
 
-	def log_feedback(self, dict_values, photo_list, channels, verbose_feedback):
+	def log_feedback(self, dict_values, photo_list, verbose_feedback):
 		"""
 		"""
-
-
-		if channels is None:
-			channels = [None]
 
 		for tran_data in dict_values:
 
@@ -440,7 +437,7 @@ class DBContentLoader:
 				uls = tran_data.upperlimits
 
 				self.logger.info(
-					"%i loaded: PP: %i, UL: %i, CP: %i, LC: %i, SR: %i" % 
+					"Transient %i loaded: PP: %i, UL: %i, CP: %i, LC: %i, SR: %i" % 
 					(tran_data.tran_id, len(pps), len(uls), len_comps, len_lcs, len_srs)
 				)
 

@@ -36,13 +36,6 @@ class T3Task:
 		return reduce(dict.get, doc_key.split("."), self.task_doc)
 
 
-	def get_t3_unit_run_config(self):
-		"""
-		returns run_config dict instance
-		"""
-		return self._t3_unit_run_config
-
-
 	def get_t3_unit_instance(self, logger):
 		"""
 		returns an instance of a child class of AbsT3Unit 
@@ -50,15 +43,15 @@ class T3Task:
 		if self._t3_instance is None:
 			# Instantiate T3 class
 			self._t3_instance = self._T3_unit_class(
-				logger, base_config=self._t3_unit_base_config
+				logger, base_config=self._t3_unit_base_config, 
+				run_config=self._t3_unit_run_config
 			)
 
 		return self._t3_instance
 
 
-	def run(self, tran_data, logger):
+	def run(self, logger):
 		"""
 		"""
-		self.get_t3_unit_instance(logger).run(
-			self._t3_unit_run_config,  tran_data
-		)
+		t3_unit = self.get_t3_unit_instance(logger)
+		return t3_unit.run()

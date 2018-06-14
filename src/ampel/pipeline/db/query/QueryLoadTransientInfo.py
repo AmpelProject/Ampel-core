@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 14.02.2018
-# Last Modified Date: 12.06.2018
+# Last Modified Date: 13.06.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from bson.binary import Binary
@@ -124,11 +124,11 @@ class QueryLoadTransientInfo:
 		"""
 
 		# Logic check
-		if AlDocTypes.COMPOUND not in content_types and AlDocTypes.T2RECORD not in content_types :
-			raise ValueError(
-				"State scoped queries make no sense without either AlDocTypes.COMPOUND " +
-				"or AlDocTypes.T2RECORD set in content_types"
-			)
+		#if AlDocTypes.COMPOUND not in content_types and AlDocTypes.T2RECORD not in content_types :
+		#	raise ValueError(
+		#		"State scoped queries make no sense without either AlDocTypes.COMPOUND " +
+		#		"or AlDocTypes.T2RECORD set in content_types"
+		#	)
 
 		match_dict = {}
 
@@ -166,14 +166,16 @@ class QueryLoadTransientInfo:
 			match_comp_ids = states
 
 		# Multiple states were provided
-		elif type_state in (list, tuple):
+		elif type_state in (list, tuple, set):
 
 			# check_seq_inner_type makes sure the sequence is monotype
 			if not AmpelUtils.check_seq_inner_type(states, (str, bytes, Binary)):
 				raise ValueError("Sequence of state must contain element with type: bytes or str")
 
+			first_state = next(iter(states))
+
 			# multiple states were provided as string
-			if type(states[0]) is str:
+			if type(first_state) is str:
 				if not all(len(st) == 32 for st in states):
 					raise ValueError("Provided state strings must have 32 characters")
 				match_comp_ids = {
@@ -181,7 +183,7 @@ class QueryLoadTransientInfo:
 				}
 
 			# multiple states were provided as bytes
-			elif type(states[0]) is bytes:
+			elif type(first_state) is bytes:
 				if not all(len(st) == 16 for st in states):
 					raise ValueError("Provided state bytes must have a length of 16")
 				match_comp_ids = {
@@ -189,12 +191,14 @@ class QueryLoadTransientInfo:
 				}
 
 			# multiple states were provided as bson Binary objects
-			elif type(states[0]) is Binary:
+			elif type(first_state) is Binary:
 				if not all(st.subtype == 5 for st in states):
 					raise ValueError("Bson Binary states must have subtype 5")
-				match_comp_ids = {'$in': states}
+				match_comp_ids = {'$in': states if type(states) is list else list(states)}
 		else:
-			raise ValueError("Type of provided state must be bytes, str, or sequences of these")
+			raise ValueError(
+				"Type of provided state (%s) must be bytes, str, or sequences of these " % type(states)
+			)
 
 		# build query with 'or' connected search criteria
 		or_list = []
@@ -218,7 +222,7 @@ class QueryLoadTransientInfo:
 
 			t2_match = {
 				'alDocType': AlDocTypes.T2RECORD, 
-				'compoundId': match_comp_ids
+				'compId': match_comp_ids
 			}
 
 			if t2_ids is not None:

@@ -4,11 +4,10 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 07.06.2018
-# Last Modified Date: 11.06.2018
+# Last Modified Date: 12.06.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from functools import reduce
-from datetime import timedelta, datetime
 from voluptuous import Schema, Required, Any, Optional, ALLOW_EXTRA
 
 from ampel.pipeline.t3.T3Job import T3Job
@@ -44,34 +43,14 @@ class T3JobLoader:
 			),
 			'input': {
 				Required('select'): {
-					'created': {
-						'timedelta': dict, 
-						'from': Any(
-							{'unixTime': float},
-							{'strTime': str, 'strFormat': str}
-						), 
-						'until': Any(
-							{'unixTime': float},
-							{'strTime': str, 'strFormat': str}
-						)
-					},
-					'modified': {
-						'timedelta': dict, 
-						'from': Any(
-							{'unixTime': float},
-							{'strTime': str, 'strFormat': str}
-						), 
-						'until': Any(
-							{'unixTime': float},
-							{'strTime': str, 'strFormat': str}
-						)
-					},
+					'created': TimeConstraint.schema_types,
+					'modified': TimeConstraint.schema_types,
 					'channel(s)': Any(str, [str]),
 					'withFlag(s)': Any(str, [str]),
 					'withoutFlag(s)': Any(str, [str])
 				},
 				Required('load'): {
-					Required('state'): Any("all", "latest"),
+					Required('state(s)'): Any("all", "latest"),
 					'doc(s)': Any(_docs_schema, [_docs_schema]),
 					't2(s)': Any(str, [str]),
 					'verbose': bool
@@ -109,33 +88,17 @@ class T3JobLoader:
 		t3_tasks = []
 		all_tasks_sels = {} 
 
-		# Dict key input is provided means we have a job requiring loaded 
-		# ampel.base.Transient instances to work with.
+		# Robustness
 		if input_select is not None:
 
-			# Select transient based on their creation date
-			print(input_select['created'])
-			if 'created' in input_select:
-				job_doc['input']['select']['created'] = TimeConstraint.from_parameters(
-					input_select['created']
+			if ((type(input_select.get('doc(s)')) is list and "T2RECORD" not in input_select['doc(s)']) or
+				(type(input_select.get('doc(s)')) is str and "T2RECORD" != input_select['doc(s)'])
+			):
+				raise ValueError(
+					"T3 job %s config error: T2RECORD must be in input->select->doc(s) "+
+					"when input->select->t2(s) filtering is configured" %
+					job_name
 				)
-
-			# Select transient based on their modification date
-			if 'modified' in input_select:
-				job_doc['input']['select']['modified'] = TimeConstraint.from_parameters(
-					input_select['modified']
-				)
-
-			if 't2(s)' in input_select and 'doc(s)' in input_select:
-				if (
-					(type(input_select['doc(s)']) is list and "T2RECORD" not in input_select['doc(s)']) or
-					(type(input_select['doc(s)']) is str and "T2RECORD" != input_select['doc(s)'])
-				):
-					raise ValueError(
-						"T3 job %s config error: T2RECORD must be in input->select->doc(s) "+
-						"when input->select->t2(s) filtering is configured" %
-						job_name
-					)
 
 		# Build set of channel(s)/t2(s)/doc(s) for all tasks combined
 		for task_doc in job_doc['task(s)']:

@@ -4,13 +4,13 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 13.01.2018
-# Last Modified Date: 11.06.2018
+# Last Modified Date: 12.06.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-import logging
+from datetime import datetime
 from ampel.base.Frozen import Frozen
-from ampel.pipeline.db.DBUtils import DBUtils
 from ampel.flags.TransientFlags import TransientFlags
+from ampel.pipeline.common.AmpelUtils import AmpelUtils
 from ampel.pipeline.logging.LoggingUtils import LoggingUtils
 
 class TransientView(Frozen):
@@ -27,7 +27,7 @@ class TransientView(Frozen):
 	"""
 
 	def __init__(self, 
-		tran_id, flags, created, modified, latest_state=None,
+		tran_id, flags, created, modified, journal, latest_state=None,
 		photopoints=None, upperlimits=None, compounds=None, 
 		lightcurves=None, t2records=None, channel=None, logger=None
 	):
@@ -38,6 +38,7 @@ class TransientView(Frozen):
 		self.flags = flags
 		self.created = created
 		self.modified = modified
+		self.journal = journal
 		self.latest_state = latest_state
 		self.photopoints = photopoints
 		self.upperlimits = upperlimits
@@ -101,29 +102,23 @@ class TransientView(Frozen):
 
 	def get_photopoints(self, copy=False):
 		"""
-		Returns a dict instance
-		-> key: photopoint id
-		-> value: instance of ampel.base.PlainPhotoPoint
-		-> dict can be empty if PhotoPoints were not loaded 
-		   (see load_options of class TransientLoader)
+		Returns a dict instance with key: photopoint id, value: instance of ampel.base.PlainPhotoPoint
+		Dict will be empty if PhotoPoints were not loaded
 		"""
 		return self.photopoints if copy is False else self.photopoints.copy()
 	
 
 	def get_upperlimits(self, copy=False):
 		"""
-		Returns a dict instance
-		-> key: upperlimit id
-		-> value: instance of ampel.base.PlainUpperLimit
-		-> dict can be empty if UpperLimits were not loaded 
-		   (see load_options of class TransientLoader)
+		Returns a dict instance with key: upperlimit id, value: instance of ampel.base.PlainUpperLimit
+		Dict will be empty if PhotoPoints were not loaded
 		"""
 		return self.upperlimits if copy is False else self.upperlimits.copy()
 
 
 	def get_compound(self, compound_id):
 		""" 
-		argument 'compound_id' must be a python integer 
+		argument 'compound_id' must be a bson.binary.Binary instance
 		"""
 		if compound_id not in self.compounds:
 			return None
@@ -177,6 +172,51 @@ class TransientView(Frozen):
 				)
 
 
+	def get_journal_entries(self, tier=None, t3JobName=None, latest=False):
+
+		if tier is None and t3JobName is None:
+			entries = self.journal
+		else:
+			if None in (tier, t3JobName):
+				entries = (
+					tuple(filter(lambda x: x.get('t3JobName') == t3JobName, self.journal)) if tier is None
+					else tuple(filter(lambda x: x.get('tier') == tier, self.journal))
+				)
+			else:
+				entries = tuple(filter(
+					lambda x: x.get('tier') == tier and x.get('t3JobName') == t3JobName, self.journal
+				))
+
+		if len(entries) == 0:
+			return None
+
+		return entries[-1] if latest else entries
+
+
+	def get_time_created(self, format_time=None):
+		""" """
+		if self.journal is None or len(self.journal) == 0:
+			return None
+		return self._get_time(self.journal[0], format_time)
+
+
+	def get_time_modified(self, format_time=None):
+		""" """
+		if self.journal is None or len(self.journal) == 0:
+			return None
+		return self._get_time(self.journal[-1], format_time)
+
+		
+	def _get_time(self, entry, format_time=None):
+		""" """
+		if format_time is None:
+			return entry['dt']
+		else:
+			return datetime.utcfromtimestamp(entry['dt']).strftime(
+				'%d/%m/%Y %H:%M:%S' if format_time is True else format_time
+			)
+
+
 	@staticmethod
 	def _print_info(tran, logger):
 		""" 
@@ -187,36 +227,30 @@ class TransientView(Frozen):
 			(tran.tran_id)
 		)
 
+		# pylint: disable=no-member
 		if TransientFlags.INST_ZTF in tran.flags:
 			logger.info(" -> ZTF ID: %s" % 
-				(DBUtils.get_ztf_name(tran.tran_id))
+				(AmpelUtils.get_ztf_name(tran.tran_id))
 			)
 
 		if tran.channel is not None:
 			logger.info(" -> Channel: %s" % tran.channel)
 
-		logger.info(" -> Created: %s" % 
-			(tran.created.strftime('%d/%m/%Y %H:%M:%S') if tran.created is not None else "not set")
-		)
-
-		logger.info(" -> Modified: %s" % 
-			(tran.modified.strftime('%d/%m/%Y %H:%M:%S') if tran.modified is not None else "not set")
-		)
-
-		logger.info(" -> Flags: %s" % 
-			(tran.flags if tran.flags is not None else "not set")
-		)
-
-		logger.info(
-			" -> Latest state: %s" % 
+		created = tran.get_time_created(True)
+		modified = tran.get_time_modified(True)
+		logger.info(" -> Created: %s" % created if created is not None else 'Not available')
+		logger.info(" -> Modified: %s" % modified if modified is not None else 'Not available')
+		logger.info(" -> Flags: %s" % (tran.flags if tran.flags is not None else "not set"))
+		logger.info(" -> Latest state: %s" % 
 			(tran.latest_state.hex() if tran.latest_state is not None else "not set")
 		)
-
-		logger.info(
-			" -> Transient elements: PP: %i, UL: %i, CP: %i, LC: %i, SR: %i" % 
+		logger.info(" -> Transient elements: PP: %i, UL: %i, CP: %i, LC: %i, SR: %i" % 
 			(
-				len(tran.photopoints), len(tran.upperlimits), len(tran.compounds), 
-				len(tran.lightcurves), len(tran.t2records)
+				len(tran.photopoints) if tran.photopoints is not None else 0, 
+				len(tran.upperlimits) if tran.upperlimits is not None else 0, 
+				len(tran.compounds) if tran.compounds is not None else 0, 
+				len(tran.lightcurves) if tran.lightcurves is not None else 0, 
+				len(tran.t2records) if tran.t2records is not None else 0
 			)
 		)
 		logger.info("#"*30)

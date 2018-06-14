@@ -4,12 +4,13 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 31.05.2018
-# Last Modified Date: 11.06.2018
+# Last Modified Date: 13.06.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import logging, pymongo
 from ampel.pipeline.db.DBWired import DBWired
 from ampel.base.TransientView import TransientView
+from ampel.pipeline.common.AmpelUtils import AmpelUtils
 from ampel.pipeline.t3.DataAccessManager import DataAccessManager
 
 class TransientData:
@@ -29,7 +30,7 @@ class TransientData:
 		are to be created using the same TransientData instance.
 		"""
 		if type(config) is pymongo.database.Database:
-			TransientData.al_config = DBWired.load_config_db(config)
+			TransientData.al_config = DBWired.get_config_from_db(config)
 		elif type(config) is dict:
 			TransientData.al_config = config
 		else:
@@ -50,8 +51,9 @@ class TransientData:
 		self.state = state
 		self.logger = logger
 		self.known_channels = set()
+		self.flags = None
 
-		# key: pp id (photo collection is channel less)
+		# key: pp id (photo collection does not include channel info)
 		self.photopoints = {}
 		self.upperlimits = {}
 
@@ -62,37 +64,24 @@ class TransientData:
 		self.created = {}
 		self.modified = {}
 		self.latest_state = {}
-
-		self.flags = None
-
-		#self.tran_params = None
+		self.journal = {}
 
 
-	def set_modified(self, modified, channels=[None]):
+	def set_latest_state(self, state, channels):
+		"""
+		Saves latest state of transient for the provided channel
+		"""
+		self._set(self.latest_state, state, channels)
+
+
+	def set_journal_entries(self, entries, channels=None):
 		""" """
-		for channel in channels if type(channels) in [list, set] else [channels]:
-			self.modified[channel] = modified
-			self.known_channels.add(channel)
-
-
-	def set_created(self, created, channels=[None]):
-		""" """
-		for channel in channels if type(channels) in [list, set] else [channels]:
-			self.created[channel] = created
-			self.known_channels.add(channel)
+		self._set(self.journal, entries, channels)
 
 
 	def set_flags(self, flags):
 		""" """
 		self.flags = flags
-
-
-#	def set_parameter(self, name, value, channels=[None]):
-#		""" """
-#		for channel in channels if type(channels) is list else [channels]:
-#			if name not in self.tran_params[channel]:
-#				self.tran_params[channel] = {}
-#			self.tran_params[channel][name] = value
 
 
 	def add_photopoint(self, photopoint):
@@ -105,58 +94,30 @@ class TransientData:
 		self.upperlimits[upperlimit.get_id()] = upperlimit
 
 
-	def add_science_record(self, science_record, channels=[None]):
+	def add_science_record(self, science_record, channels=None):
 		"""
 		Saves science record and tag it with provided channels
 		channels: list of strings whereby each element is a string channel id 
-				  (example: ['HU_EARLY_SN', 'HU_RANDOM'])
 		science_record: instance of ampel.base.ScienceRecord
 		"""
-		for channel in channels if type(channels) in [list, set] else [channels]:
-			self.known_channels.add(channel)
-			if channel not in self.science_records:
-				self.science_records[channel] = [science_record]
-			else:
-				self.science_records[channel].append(science_record)
+		self._add(self.science_records, science_record, channels)
 
 
-	def add_lightcurve(self, lightcurve, channels=[None]):
+	def add_lightcurve(self, lightcurve, channels=None):
 		"""
 		Saves lightcurve and tag it with provided channels
 		channels: list of strings whereby each element is a string channel id 
-				  (example: ['HU_EARLY_SN', 'HU_RANDOM'])
 		lightcurve: instance of ampel.base.LightCurve
 		"""
-		for channel in channels if type(channels) in [list, set] else [channels]:
-			self.known_channels.add(channel)
-			if channel not in self.lightcurves:
-				self.lightcurves[channel] = [lightcurve]
-			else:
-				self.lightcurves[channel].append(lightcurve)
+		self._add(self.lightcurves, lightcurve, channels)
 
 
-	def add_compound(self, compound, channels=[None]):
+	def add_compound(self, compound, channels=None):
 		"""
 		Saves compound and tag it with provided channels
 		channels: list of strings whereby each element is a string channel id 
-				  (example: ['HU_EARLY_SN', 'HU_RANDOM'])
-		compound_id: string
 		"""
-		for channel in channels if type(channels) in [list, set] else [channels]:
-			self.known_channels.add(channel)
-			if channel not in self.compounds:
-				self.compounds[channel] = [compound]
-			else:
-				self.compounds[channel].append(compound)
-
-
-	def set_latest_state(self, state, channels):
-		"""
-		Saves latest state of transient for the provided channel
-		"""
-		for channel in channels if type(channels) in [list, set] else [channels]:
-			self.latest_state[channel] = state
-			self.known_channels.add(channel)
+		self._add(self.compounds, compound, channels)
 
 
 	def create_view(self, channel=None, channels=None, t2_ids=None):
@@ -164,7 +125,7 @@ class TransientData:
 		Returns instance of ampel.base.TransientView
 		"""
 
-		photopoints, upperlimits = self.get_photo(channel, channels)
+		photopoints, upperlimits = self._get_photo(channel, channels)
 
 		#############################################
 		# Special case 1: Create transient based on #
@@ -173,12 +134,16 @@ class TransientData:
 
 		if channels is not None:
 
+			# Robustness
+			if type(channels) is str:
+				raise ValueError("Illegal argument")
+
 			# Someone did set strange parameter values
 			if len(channels) == 1:
-				return self.create_view(channel=channels[0], t2_ids=t2_ids)
+				return self.create_view(channel=next(iter(channels)), t2_ids=t2_ids)
 
 			self.logger.info("Creating multi-channel transient instance")
-			all_comps = tuple({el for channel in self.compounds for el in self.compounds[channel]})
+			all_comps = self._get_combined_elements(self.compounds, channels)
 
 			if self.state in ["latest", "all"]:
 				latest_state = (
@@ -190,9 +155,10 @@ class TransientData:
 
 			return TransientView(
 				self.tran_id, self.flags, None, None, # created, modified
+				self._get_combined_elements(self.journal, channels),
 				latest_state, photopoints, upperlimits, all_comps,
-				tuple({el for channel in self.lightcurves for el in self.lightcurves[channel]}),
-				tuple({el for channel in self.science_records for el in self.science_records[channel]}),
+				self._get_combined_elements(self.lightcurves, channels),
+				self._get_combined_elements(self.science_records, channels),
 				channels, self.logger
 			)
 
@@ -240,7 +206,8 @@ class TransientData:
 		else:
 
 			if channel not in self.known_channels:
-				raise ValueError("No transient info loaded for channel %s" % channel)
+				self.logger.debug("No transient data avail for channel %s" % channel)
+				return None
 
 		#########################################################################
 		# Option 2: the most commonly used probably. Channel was specificied.   #
@@ -259,9 +226,9 @@ class TransientData:
 
 		return TransientView(
 			self.tran_id, self.flags, 
-			self.created[channel] if channel in self.created else None, 
-			self.modified[channel] if channel in self.modified else None, 
-			latest_state, photopoints, upperlimits, 
+			self.created.get(channel), 
+			self.modified.get(channel), 
+			self.journal.get(channel), latest_state, photopoints, upperlimits, 
 			tuple(self.compounds[channel]) if channel in self.compounds else None, 
 			tuple(self.lightcurves[channel]) if channel in self.lightcurves else None, 
 			tuple(self.science_records[channel]) if channel in self.science_records else None, 
@@ -269,7 +236,36 @@ class TransientData:
 		)	
 
 
-	def get_photo(self, channel=None, channels=None):
+	def _add(self, var, obj, channels):
+		""" """
+		for channel in AmpelUtils.iter(channels):
+			self.known_channels.add(channel)
+			if channel not in var:
+				var[channel] = [obj]
+			else:
+				var[channel].append(obj)
+
+
+	def _set(self, var, obj, channels):
+		""" """
+		for channel in AmpelUtils.iter(channels):
+			self.known_channels.add(channel)
+			var[channel] = obj
+
+
+	def _get_combined_elements(self, var, channels):
+		""" """
+		return tuple(
+			{el for channel in channels for el in var[channel] if channel in var}
+		)
+
+
+	def _get_photo(self, channel=None, channels=None):
+		""" """
+
+		# Robustness
+		if type(channels) is str:
+			raise ValueError("Illegal argument")
 
 		# no photometric info were requested / loaded
 		if len(self.photopoints) == 0 and len(self.upperlimits) == 0:
@@ -317,7 +313,7 @@ class TransientData:
 		# 1 ZTF priv chan + 1 ZTF priv chan -> priv+pub ZTF pps/uls returned
 		return pps, uls
 
-	
+
 	@staticmethod
 	def get_latest_compound(compounds):
 		""" 

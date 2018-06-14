@@ -28,9 +28,10 @@ class T3TaskLoader:
 			Required('name'): str,
 			Required('t3Unit'): str,
 			Required('runConfig', default=None): Any(None,str),
+			Required('updateJournal'): bool,
 			'select': {
 				'channel(s)': str,
-				'state': str,
+				'state(s)': str,
 				't2(s)': str
 			},
 			Optional('verbose', default=False): bool
