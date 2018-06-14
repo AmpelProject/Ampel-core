@@ -30,7 +30,8 @@ class T3JobLoader:
 			Required('schedule'): Any(
 				{
 					Required('mode'): 'fixed_time',
-					Required('time'): str
+					Required('timeStr'): str,
+					Required('timeFormat'): str
 				},
 				{
 					Required('mode'): 'fixed_rate',
