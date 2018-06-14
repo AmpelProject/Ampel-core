@@ -35,7 +35,7 @@ class T3JobExecution:
 
 			self.exec_params = {
 				'channels': t3_job.get_config('input.select.channel(s)'),
-				'state': t3_job.get_config("input.load.state"),
+				'state_op': t3_job.get_config("input.load.state"),
 				't2s': t3_job.get_config("input.load.t2(s)"),
 				'docs': FlagUtils.list_flags_to_enum_flags(
 					t3_job.get_config('input.load.doc(s)'), AlDocTypes
@@ -191,10 +191,11 @@ class T3JobExecution:
 			return
 
 		self.logger.info("Loading %i transient(s) " % len(chunked_tran_ids))
-		state = self.exec_params['state']
+		state_op = self.exec_params['state_op']
+		states = None
 
 		# For '$latest' state, the latest compoundid of each transient must be determined
-		if state == "$latest":
+		if state_op == "$latest":
 
 			self.logger.info("Retrieving latest state")
 
@@ -273,7 +274,7 @@ class T3JobExecution:
 		# Load ampel TransientData instances with given state(s)
 		self.logger.info("Loading transient(s)")
 		al_tran_data = db_content_loader.load_new(
-			chunked_tran_ids, self.exec_params['channels'], states, 
+			chunked_tran_ids, self.exec_params['channels'], state_op, states, 
 			self.exec_params['docs'], self.exec_params['t2s'], 
 			self.exec_params['feedback'], self.exec_params['verbose_feedback']
 		)

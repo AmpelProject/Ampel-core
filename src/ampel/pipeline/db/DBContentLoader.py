@@ -58,8 +58,8 @@ class DBContentLoader:
 
 
 	def load_new(
-		self, tran_id, channels=None, state="$latest", content_types=all_doc_types, t2_ids=None,
-		feedback=True, verbose_feedback=False
+		self, tran_id, channels=None, state_op="$latest", states=None, 
+		content_types=all_doc_types, t2_ids=None, feedback=True, verbose_feedback=False
 	):
 		"""
 		Returns a instance of TransientData
@@ -68,13 +68,15 @@ class DBContentLoader:
 		----------
 
 		-> tran_id: transient id (string). 
-		Can be a multiple IDs (list) if state is '$all' or states are provided (states cannot be '$latest')
+		Can be a multiple IDs (list) if state_op is '$all' or states are provided (states cannot be '$latest')
 
 		-> channels: string or list of strings
 
-		-> state:
+		-> state_op:
 		  * "$latest": latest state will be retrieved
 		  * "$all": all states present in DB (at execution time) will be retrieved
+
+		-> states:
 		  * <compound_id> or list of <compound_id>: provided state(s) will be loaded. 
 		    Each compound id must be either:
 				- a 32 alphanumerical string
@@ -116,57 +118,9 @@ class DBContentLoader:
 		if content_types is None or content_types == 0:
 			raise ValueError("Parameter content_types not conform")
 
-		# Option 1: Find latest state, then update search query parameters
-		if state == "$latest":
 
-			if type(tran_id) in (list, tuple):
-				raise ValueError("Queries with multiple transient ids not supported with state == '$latest'")
-
-			# Feedback
-			self.logger.info(
-				"Retrieving %s for latest state of transient %s" % 
-				(content_types, tran_id)
-			)
-
-			# Execute DB query returning the latest compound dict
-			latest_compound_dict = next(
-				self.main_col.aggregate(
-					QueryLatestCompound.general_query(tran_id)
-				),
-				None
-			)
-
-			if latest_compound_dict is None:
-				self.logger.info("Transient %s not found" % tran_id)
-				return None
-
-			self.logger.info(
-				" -> Latest lightcurve id: %s " % 
-				latest_compound_dict['_id']
-			)
-
-			# Build query parameters (will return adequate number of docs)
-			search_params = QueryLoadTransientInfo.build_statebound_query(
-				tran_id, content_types, latest_compound_dict["_id"], 
-				channels, t2_ids, comp_already_loaded=True
-			)
-
-		# Option 2: Load every available transient state
-		elif state == "$all":
-
-			# Feedback
-			self.logger.info(
-				"Retrieving %s for all states of transient(s) %s" % 
-				(content_types, tran_id)
-			)
-
-			# Build query parameters (will return adequate number of docs)
-			search_params = QueryLoadTransientInfo.build_stateless_query(
-				tran_id, content_types, channels, t2_ids
-			)
-
-		# Option 3: Load a user provided state(s)
-		else:
+		# Option 2: Load a user provided state(s)
+		if states is not None:
 
 			# Feedback
 			self.logger.info(
@@ -176,9 +130,60 @@ class DBContentLoader:
 
 			# Build query parameters (will return adequate number of docs)
 			search_params = QueryLoadTransientInfo.build_statebound_query(
-				tran_id, content_types, state, channels, t2_ids
+				tran_id, content_types, states, channels, t2_ids
 			)
+
+		else:
 		
+			# Option 2: Find latest state, then update search query parameters
+			if state_op == "$latest":
+	
+				if type(tran_id) in (list, tuple):
+					raise ValueError("Querying multiple transient ids not supported with state_op == '$latest'")
+	
+				# Feedback
+				self.logger.info(
+					"Retrieving %s for latest state of transient %s" % 
+					(content_types, tran_id)
+				)
+	
+				# Execute DB query returning the latest compound dict
+				latest_compound_dict = next(
+					self.main_col.aggregate(
+						QueryLatestCompound.general_query(tran_id)
+					), None
+				)
+	
+				if latest_compound_dict is None:
+					self.logger.info("Transient %s not found" % tran_id)
+					return None
+	
+				self.logger.info(
+					" -> Latest lightcurve id: %s " % 
+					latest_compound_dict['_id']
+				)
+	
+				# Build query parameters (will return adequate number of docs)
+				search_params = QueryLoadTransientInfo.build_statebound_query(
+					tran_id, content_types, latest_compound_dict["_id"], 
+					channels, t2_ids, comp_already_loaded=True
+				)
+	
+			# Option 3: Load every available transient state
+			elif state_op == "$all":
+	
+				# Feedback
+				self.logger.info(
+					"Retrieving %s for all states of transient(s) %s" % 
+					(content_types, tran_id)
+				)
+	
+				# Build query parameters (will return adequate number of docs)
+				search_params = QueryLoadTransientInfo.build_stateless_query(
+					tran_id, content_types, channels, t2_ids
+				)
+
+
 		self.logger.debug(
 			"Retrieving transient(s) info using query: %s" % 
 			search_params
@@ -230,14 +235,15 @@ class DBContentLoader:
 				self.logger.info(" -> Fetching %i upper limits" % photo_cursor.count())
 				res_photo_list = list(photo_cursor)
 
+
 		return self.load_tran_data(
-			res_main_list, res_photo_list, channels, state, 
+			res_main_list, res_photo_list, channels, state_op,
 			feedback=True, verbose_feedback=verbose_feedback
 		)
 
 
 	def load_tran_data(
-		self, main_list, photo_list=None, channels=None, state="$latest", 
+		self, main_list, photo_list=None, channels=None, state_op=None,
 		load_lightcurves=True, feedback=True, verbose_feedback=False
 	):
 		"""
@@ -258,7 +264,7 @@ class DBContentLoader:
 			if tran_id in register:
 				tran_data = register[tran_id]
 			else:
-				tran_data = TransientData(tran_id, state, self.logger)
+				tran_data = TransientData(tran_id, state_op, self.logger)
 				register[tran_id] = tran_data
 
 			# Pick up transient document
@@ -289,7 +295,7 @@ class DBContentLoader:
 					else channels & set(doc['channels']) # intersection
 				)
 
-				if state == "$latest":
+				if state_op == "$latest":
 					tran_data.set_latest_state(
 						doc['_id'], channels if len(channels) == 1 
 						else channels & set(doc['channels']) # intersection
