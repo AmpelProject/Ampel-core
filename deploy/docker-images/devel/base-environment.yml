@@ -1,0 +1,22 @@
+name: potemkin
+channels:
+  - ampelproject
+  - conda-forge
+dependencies:
+  - python>=3.6
+  - werkzeug
+  - pymongo
+  - fastavro
+  - pytest
+#  - pykafka
+  - python-confluent-kafka>=0.11.4
+  - sqlalchemy
+  - psycopg2
+  - ipython
+  - extcats
+  - catshtm==0.1.15
+  - sncosmo
+  - graphitesend
+  - voluptuous
+  - configargparse
+

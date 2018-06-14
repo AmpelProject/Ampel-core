@@ -1,6 +1,12 @@
 # Create environment from official image
 
-FROM continuumio/miniconda:4.3.27 AS conda
+FROM continuumio/miniconda:4.3.27 AS conda-base
+
+COPY base-environment.yml /
+RUN conda env create --file /base-environment.yml
+RUN conda env remove -n potemkin
+
+FROM conda-base AS conda
 
 # Set up deploy key and clone Ampel git repo
 RUN mkdir /root/.ssh/
