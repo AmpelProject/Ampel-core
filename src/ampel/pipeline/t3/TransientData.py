@@ -41,7 +41,7 @@ class TransientData:
 		"""
 		Parameters:
 		* tran_id: transient id (string)
-		* state: string ('all' or 'latest') or bytes or list of md5 bytes.
+		* state: string ('$all' or '$latest') or bytes or list of md5 bytes.
 		* logger: logger instance from python module 'logging'
 
 		NOTE: in this class, dictionnaries using channel name as dict key 
@@ -157,7 +157,7 @@ class TransientData:
 			self.logger.info("Creating multi-channel transient instance")
 			all_comps = self._get_combined_elements(self.compounds, channels)
 
-			if self.state in ["latest", "all"]:
+			if self.state in ["$latest", "$all"]:
 				latest_state = (
 					TransientData.get_latest_compound(all_comps).get_id() 
 					if len(all_comps) > 0 else None
