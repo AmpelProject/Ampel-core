@@ -168,9 +168,10 @@ class TransientData:
 			# Get journal combined entries
 			entries = []
 			for channel in channels:
-				for entry in self.journal[channel]:
-					if entry not in entries:
-						entries.append(entry)
+				if channel in self.journal:
+					for entry in self.journal[channel]:
+						if entry not in entries:
+							entries.append(entry)
 
 			return TransientView(
 				self.tran_id, self.flags, None, None, # created, modified
@@ -274,7 +275,7 @@ class TransientData:
 	def _get_combined_elements(self, var, channels):
 		""" """
 		return tuple(
-			{el for channel in channels for el in var[channel] if channel in var}
+			{el for channel in channels if channel in var for el in var[channel]}
 		)
 
 
