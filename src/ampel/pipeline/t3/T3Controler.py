@@ -9,8 +9,8 @@
 
 import schedule, time, threading
 from ampel.pipeline.db.DBWired import DBWired
-from ampel.pipeline.t3.T3Executor import T3Executor
-from ampel.pipeline.t3.conf.T3Job import T3Job
+from ampel.pipeline.t3.T3Job import T3Job
+from ampel.pipeline.t3.T3JobLoader import T3JobLoader
 from ampel.pipeline.common.Schedulable import Schedulable
 from ampel.pipeline.logging.LoggingUtils import LoggingUtils
 
@@ -37,48 +37,14 @@ class T3Controler(DBWired, Schedulable):
 
 		scheduler = self.get_scheduler()
 
-		for job_name, job_doc in self.config["t3_jobs"].items():
+		for job_name in self.config["t3_jobs"].keys():
 
 			if t3_job_names is not None and job_name not in t3_job_names:
 				continue
 
-			t3_job = T3Job(
-				self.config, db_doc=job_doc, logger=self.logger
-			)
-			
-			if job_doc['schedule']['mode'] == "fixed_rate":
+			t3_job = T3JobLoader.load(self.config, job_name)
+			t3_job.schedule(scheduler)
 
-				scheduler.every(
-					job_doc['schedule']['interval']
-				).minutes.do(
-					self.launch_t3_job, 
-					t3_job
-				)
-
-			elif job_doc['schedule']['mode'] == "fixed_time":
-
-				scheduler.every().day.at(
-					job_doc['schedule']['time']
-				).do(
-					self.launch_t3_job, 
-					t3_job
-				)
-
-			else:
-				raise ValueError("Unknown scheduling mode")
-
-
-	def launch_t3_job(self, job_config_obj):
-		"""
-		"""
-		job_thread = threading.Thread(
-			target=T3Executor.run_job, 
-			args=(
-				self.config, self.photo_col, self.main_col, 
-				job_config_obj, self.logger
-			)
-		)
-		job_thread.start()
 
 def run():
 	raise NotImplementedError
