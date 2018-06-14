@@ -165,10 +165,16 @@ class TransientData:
 			else:
 				latest_state = None
 
+			# Get journal combined entries
+			entries = []
+			for channel in channels:
+				for entry in self.journal[channel]:
+					if entry not in entries:
+						entries.append(entry)
+
 			return TransientView(
 				self.tran_id, self.flags, None, None, # created, modified
-				self._get_combined_elements(self.journal, channels),
-				latest_state, photopoints, upperlimits, all_comps,
+				entries, latest_state, photopoints, upperlimits, all_comps,
 				self._get_combined_elements(self.lightcurves, channels),
 				self._get_combined_elements(self.science_records, channels),
 				channels, self.logger
