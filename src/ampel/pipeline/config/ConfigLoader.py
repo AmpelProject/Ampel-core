@@ -8,6 +8,7 @@ from functools import partial
 import inspect
 import json
 import pkg_resources
+from ampel.pipeline.config import set_config
 
 def load_config(path, gather_plugins=True):
 	"""Load the JSON configuration file at path, and add plugins registered via pkg_resources"""
@@ -128,5 +129,5 @@ class AmpelArgumentParser(ArgumentParser):
 		args.config['resources'] = {}
 		for name, klass in self._resources.items():
 			args.config['resources'][name] = klass(args)
-		
+		set_config(args.config)
 		return args, argv
