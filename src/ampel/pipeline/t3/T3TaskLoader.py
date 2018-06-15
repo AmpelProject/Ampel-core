@@ -306,7 +306,7 @@ class T3TaskLoader:
 
 		# Load optional dict 'baseConfig' from document
 		# config_schema ensures task_doc['baseConfig'] is set to None if not provided
-		if t3_unit_doc['baseConfig'] is not None:
+		if t3_unit_doc.get('baseConfig', None) is not None:
 			logger.info(" -> Base config: %s" % t3_unit_doc['baseConfig'])
 		else:
 			logger.info(" -> No base config available")
@@ -327,7 +327,7 @@ class T3TaskLoader:
 			cls.t3_classes[t3_unit_doc['classFullPath']] = T3_class
 
 		return T3Task(
-			task_doc, T3_class, t3_unit_doc['baseConfig'], t3_run_config_doc
+			task_doc, T3_class, t3_unit_doc.get('baseConfig',None), t3_run_config_doc
 		)
 
 
