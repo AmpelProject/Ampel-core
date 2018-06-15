@@ -15,7 +15,7 @@ class DevAmpelAlert(AmpelAlert):
 	useful for plotting and inspecting the alert content.
 	"""
 
-	cutout_names = ('cutoutScience', 'cutoutTemplate', 'cutoutDiffernce')
+	cutout_names = ('cutoutScience', 'cutoutTemplate', 'cutoutDifference')
 	
 	
 	@staticmethod
