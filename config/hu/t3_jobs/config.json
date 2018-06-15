@@ -1,5 +1,6 @@
 [{
 	"_id": "Slack_publish_1",
+	"active": false,
 	"schedule": {
 		"mode": "fixed_rate",
 		"interval": 1
@@ -30,7 +31,12 @@
 		},
 		"load": {
 			"state": "latest",
-			"t2Ids": [
+			"docs": [
+				"TRANSIENT",
+				"COMPOUND",
+				"T2RECORD"
+			],
+			"t2s": [
 				"SNCOSMO",
 				"AGN"
 			]
@@ -44,7 +50,7 @@
 			"subSel": {
 				"channel": "HU_SN1",
 				"state": "latest",
-				"t2Id": "SNCOSMO"
+				"t2Result": "SNCOSMO"
 			}
 		},
 		{
@@ -53,13 +59,14 @@
 			"subSel": {
 				"channel": "HU_SN2",
 				"state": "latest",
-				"t2Id": "AGN"
+				"t2": "AGN"
 			}
 		}
 	]
 },
 {
 	"_id": "Slack_publish_2",
+	"active": false,
 	"schedule": {
 		"mode": "fixed_time",
 		"time": "12:01"
@@ -86,6 +93,7 @@
 },
 {
 	"_id": "T2_zombies_cleanup",
+	"active": false,
 	"schedule": {
 		"mode": "fixed_time",
 		"time": "12:01"
@@ -102,6 +110,7 @@
 },
 {
 	"_id": "Slack_publish_test",
+	"active": false,
 	"schedule": {
 		"mode": "fixed_rate",
 		"interval": 1
@@ -122,7 +131,7 @@
 		},
 		"load": {
 			"state": "latest",
-			"t2Ids": [
+			"t2Results": [
 				"SNCOSMO",
 				"AGN"
 			]
@@ -136,13 +145,14 @@
 			"subSel": {
 				"channel": "HU_SN1",
 				"state": "latest",
-				"t2Id": "SNCOSMO"
+				"t2Results": "SNCOSMO"
 			}
 		}
 	]
 },
 {
 	"_id": "Slack_publish_sim_test",
+	"active": false,
 	"schedule": {
 		"mode": "fixed_rate",
 		"interval": 1
@@ -163,7 +173,7 @@
 		},
 		"load": {
 			"state": "latest",
-			"t2Ids": [
+			"t2Results": [
 				"SNCOSMO",
 				"AGN"
 			]
@@ -177,13 +187,14 @@
 			"subSel": {
 				"channel": "HU_SN1",
 				"state": "latest",
-				"t2Id": "SNCOSMO"
+				"t2Results": "SNCOSMO"
 			}
 		}
 	]
 },
 {
 	"_id": "Slack_publish_demo",
+	"active": false,
 	"schedule": {
 		"mode": "fixed_rate",
 		"interval": 1
@@ -204,7 +215,7 @@
 		},
 		"load": {
 			"state": "latest",
-			"t2Ids": [
+			"t2Results": [
 				"SNCOSMO",
 				"AGN"
 			]
@@ -218,7 +229,7 @@
 			"subSel": {
 				"channel": "HU_SN1",
 				"state": "latest",
-				"t2Id": "SNCOSMO"
+				"t2Results": "SNCOSMO"
 			}
 		}
 	]

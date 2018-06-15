@@ -1,0 +1,73 @@
+{
+ "POLYFIT": {
+  "author": "ztf-software@desy.de", 
+  "upperLimits": false, 
+  "baseConfig": {
+   "fitFunction": "polyfit"
+  }, 
+  "private": false, 
+  "version": 1.0, 
+  "classFullPath": "ampel.contrib.hu.examples.t2.T2ExamplePolyFit", 
+  "description": {
+   "details": [
+    "Fits data using numpy 'polyfit'"
+   ], 
+   "title": "Polynomial fitting"
+  }
+ }, 
+ "AGN": {
+  "description": {
+   "details": [
+    "More details later"
+   ], 
+   "title": "AGN matching"
+  }, 
+  "upperLimits": false, 
+  "baseConfig": {
+   "template": "something"
+  }, 
+  "private": false, 
+  "version": 1.0, 
+  "classFullPath": "ampel.contrib.hu.examples.t2."
+ }, 
+ "SNCOSMO": {
+  "upperLimits": true, 
+  "version": 1.0, 
+  "description": {
+   "details": [
+    "This module fits lightcurves using SNCOSMO", 
+    "More details later"
+   ], 
+   "title": "SALT2 template fitting"
+  }, 
+  "private": false, 
+  "classFullPath": "ampel.contrib.hu.t2.T2SNCosmo"
+ }, 
+ "PHOTO_Z": {
+  "description": {
+   "details": [
+    "More details later"
+   ], 
+   "title": "Photo Z"
+  }, 
+  "upperLimits": false, 
+  "baseConfig": {
+   "template": "something"
+  }, 
+  "private": false, 
+  "version": 1.0, 
+  "classFullPath": "ampel.contrib.hu.examples.t2."
+ }, 
+ "PHOTO_TYPE": {
+  "upperLimits": false, 
+  "version": 1.0, 
+  "description": {
+   "details": [
+    "More details later"
+   ], 
+   "title": "Photo type"
+  }, 
+  "private": false, 
+  "classFullPath": "ampel.contrib.hu.examples.t2.PhotoType"
+ }
+}

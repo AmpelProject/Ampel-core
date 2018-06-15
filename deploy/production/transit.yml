@@ -1,0 +1,53 @@
+version: '3.4'
+services:
+  archive:
+    image: postgres:10.3
+    command: ["postgres", "-p", "$ARCHIVE_PORT"]
+    volumes:
+      - /var/tmp:/run/postgresql
+      - $ARCHIVE_PATH:/var/lib/postgresql/data
+      - $ARCHIVE_INITDB_PATH:/docker-entrypoint-initdb.d
+    ports:
+      - "$ARCHIVE_PORT:$ARCHIVE_PORT"
+    secrets:
+      - archive-root-password
+      - archive-write-password
+      - archive-read-password
+    environment:
+      POSTGRES_USER: ampel
+      ARCHIVE_READ_USER: ampel-readonly
+      ARCHIVE_WRITE_USER: ampel-client
+      POSTGRES_PASSWORD_FILE: /run/secrets/archive-root-password
+      ARCHIVE_READ_USER_PASSWORD_FILE: /run/secrets/archive-read-password
+      ARCHIVE_WRITE_USER_PASSWORD_FILE: /run/secrets/archive-write-password
+      POSTGRES_DB: ztfarchive
+  graphite:
+    image: go-graphite
+    volumes:
+      - type: tmpfs
+        target: /var/log/supervisor/
+      - type: tmpfs
+        target: /run/
+      - type: volume
+        source: $METRICS_DIR/graphite
+        target: /var/lib/graphite
+      - type: volume
+        source: $METRICS_DIR/grafana
+        target: /usr/share/grafana/data
+      - type: volume
+        source: $METRICS_DIR/config/go-carbon
+        target: /etc/go-carbon
+      - type: volume
+        source: $METRICS_DIR/config/carbonapi
+        target: /etc/carbonapi
+      - type: volume
+        source: $METRICS_DIR/config/grafana
+        target: /etc/grafana
+
+secrets:
+  archive-root-password:
+    file: secrets/archive-root-password.txt
+  archive-read-password:
+    file: secrets/archive-read-password.txt
+  archive-write-password:
+    file: secrets/archive-write-password.txt

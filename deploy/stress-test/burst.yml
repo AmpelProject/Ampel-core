@@ -1,0 +1,42 @@
+version: '3.4'
+services:
+  mongo:
+    image: mongo:3.6
+    command: ["mongod", "--port", "2004"]
+    volumes:
+      - /data/ampel/mongo/live/stress-test:/data/db
+    ports:
+      - "2004:2004"
+    secrets:
+      - mongo-root-password
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD_FILE: /run/secrets/mongo-root-password
+  ampel:
+    image: ampel:v0.1a6
+    command: ["/Ampel/run/run_stress_test.sh"]
+    volumes:
+      - /home/ampel/valery/Ampel:/Ampel
+      - /scratch/archive/smaller_tarballs:/ztf
+    secrets:
+      - archive-user-password
+      - mongo-root-password
+    environment:
+      TINI_SUBREAPER: 1
+      MONGO: mongo:2004
+      CATALOG: catalog:2005
+      ARCHIVE: archive:2006
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD_FILE: /run/secrets/mongo-root-password
+      POSTGRES_PASSWORD_FILE: /run/secrets/archive-user-password
+      POSTGRES_USER: ampel
+    depends_on:
+      - mongo
+      - archive
+      - catalog
+
+secrets:
+  archive-user-password:
+    file: secrets/archive-user-password.txt
+  mongo-root-password:
+    file: secrets/mongo-root-password.txt

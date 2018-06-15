@@ -1,30 +1,23 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+# License           : BSD-3-Clause
+# Author            : Jakob van Santen <jakob.van.santen@desy.de>
 
-from sqlalchemy import Table, MetaData, Column, ForeignKey, ForeignKeyConstraint, Index
-from sqlalchemy import String, Integer, BigInteger, Float
+from sqlalchemy import Table, MetaData, Column, ForeignKey, ForeignKeyConstraint, UniqueConstraint, Index
+from sqlalchemy import String, Integer, BigInteger, Float, Boolean, LargeBinary, Enum
 from sqlalchemy.dialects.postgresql import DOUBLE_PRECISION
-from sqlalchemy import select, and_, bindparam
+from sqlalchemy import select, and_, bindparam, exists
 from sqlalchemy import create_engine
+from sqlalchemy.engine import reflection
 from sqlalchemy.exc import IntegrityError, OperationalError
+from functools import partial
 import sqlalchemy
 import os, json
 import fastavro
+import collections
 
 from sqlalchemy.ext.compiler import compiles
 from sqlalchemy.sql.expression import Insert
-
-@compiles(Insert, 'postgresql')
-def ignore_duplicates(insert, compiler, **kw):
-    s = compiler.visit_insert(insert, **kw)
-    ignore = insert.kwargs.get('postgresql_ignore_duplicates', False)
-    return s if not ignore else s + ' ON CONFLICT DO NOTHING'
-Insert.argument_for('postgresql', 'ignore_duplicates', None)
-
-@compiles(Insert, 'sqlite')
-def ignore_duplicates(insert, compiler, **kw):
-    ignore = insert.kwargs.get('sqlite_ignore_duplicates', False)
-    my_insert = insert if not ignore else insert.prefix_with('OR IGNORE')
-    return compiler.visit_insert(my_insert, **kw)
-Insert.argument_for('sqlite', 'ignore_duplicates', None)
 
 class ArchiveDB(object):
     def __init__(self, *args, **kwargs):
@@ -32,27 +25,73 @@ class ArchiveDB(object):
         Initialize and connect to archive database. Arguments will be passed on
         to :py:func:`sqlalchemy.create_engine`.
         """
-        with open(os.path.dirname(os.path.realpath(__file__)) + '/../../../alerts/schema.json') as f:
-            schema = json.load(f)
-        self._meta = create_metadata(schema)
         engine = create_engine(*args, **kwargs)
+        self._meta = MetaData()
+        self._meta.reflect(bind=engine)
         self._connection = engine.connect()
-    
-    def insert_alert(self, alert, partition_id, ingestion_time):
+
+        Versions = self._meta.tables['versions']
+        with self._connection.begin() as transaction:
+            try:
+                self._alert_version = self._connection.execute(select([Versions.c.alert_version]).order_by(Versions.c.version_id.desc()).limit(1)).first()[0]
+            finally:
+                transaction.commit()
+
+    def insert_alert(self, alert, schema, partition_id, ingestion_time):
         """
         :param alert: alert dictionary
+        :param schema: avro schema dictionary
         :param partition_id: index of the Kafka partition this alert came from
         """
-        insert_alert(self._connection, self._meta, alert, partition_id, ingestion_time)
-    
-    def get_alert(self, alert_id):
-        return get_alert(self._connection, self._meta, alert_id)
+        if schema['version'] > self._alert_version:
+            raise ValueError("alert schema ({}) is newer than database schema ({})".format(schema['version'], self._alert_version))
+        return insert_alert(self._connection, self._meta, alert, partition_id, ingestion_time)
 
-    def get_alerts(self, alert_ids):
-        return get_alerts(self._connection, self._meta, alert_ids)
+    def get_statistics(self):
+        stats = {}
+        with self._connection.begin() as transaction:
+            try:
+                sql = "select relname, n_live_tup from pg_catalog.pg_stat_user_tables"
+                rows = dict(self._connection.execute(sql).fetchall())
+                sql = """SELECT TABLE_NAME, index_bytes, toast_bytes, table_bytes
+                         FROM (
+                         SELECT *, total_bytes-index_bytes-COALESCE(toast_bytes,0) AS table_bytes FROM (
+                             SELECT c.oid,nspname AS table_schema, relname AS TABLE_NAME
+                                     , c.reltuples AS row_estimate
+                                     , pg_total_relation_size(c.oid) AS total_bytes
+                                     , pg_indexes_size(c.oid) AS index_bytes
+                                     , pg_total_relation_size(reltoastrelid) AS toast_bytes
+                                 FROM pg_class c
+                                 LEFT JOIN pg_namespace n ON n.oid = c.relnamespace
+                                 WHERE relkind = 'r' AND nspname = 'public'
+                         ) a
+                       ) a;"""
+                for row in self._connection.execute(sql):
+                    table = {k:v for k,v in dict(row).items() if v is not None}
+                    k = table.pop('table_name')
+                    table['rows'] = rows[k]
+                    stats[k] = table
+            finally:
+                transaction.commit()
+        return stats
+
+    def get_alert(self, candid):
+        return get_alert(self._connection, self._meta, candid)
+
+    def get_cutout(self, candid):
+        return get_cutout(self._connection, self._meta, candid)
+
+    def get_alerts_for_object(self, objectId, jd_start=-float('inf'), jd_end=float('inf')):
+        return get_alerts_for_object(self._connection, self._meta, objectId, jd_start, jd_end)
+
+    def get_alerts(self, candids):
+        return get_alerts(self._connection, self._meta, candids)
 
     def get_alerts_in_time_range(self, jd_min, jd_max, partitions=None):
         return get_alerts_in_time_range(self._connection, self._meta, jd_min, jd_max, partitions)
+
+    def get_alerts_in_cone(self, ra, dec, radius, jd_min=None, jd_max=None):
+        return get_alerts_in_time_range(self._connection, self._meta, ra, dec, radius, jd_min, jd_max)
 
 def create_metadata(alert_schema):
     """
@@ -65,7 +104,7 @@ def create_metadata(alert_schema):
     fields = {f['name'] : f for f in alert_schema['fields']}
 
     double = Float(53).with_variant(DOUBLE_PRECISION(), "postgresql")
-    types = {'float': Float(), 'double': double, 'int': Integer(), 'long': BigInteger(), 'string': String(255)}
+    types = {'float': Float(), 'double': double, 'int': Integer(), 'long': BigInteger()}
     def make_column(field):
         kwargs = {}
         if type(field['type']) is list:
@@ -74,7 +113,9 @@ def create_metadata(alert_schema):
                 kwargs['nullable'] = True
         else:
             typename = field['type']
-        if typename in types:
+        if field['name'] == 'isdiffpos':
+            type_ = Boolean()
+        elif typename in types:
             type_ = types[typename]
         else:
             raise ValueError("Unknown field type '{}'".format(typename))
@@ -83,59 +124,91 @@ def create_metadata(alert_schema):
 
     meta = MetaData()
 
+    from sqlalchemy.dialects import postgresql
+    import sqlalchemy
+
+    ForeignKey = lambda name: sqlalchemy.ForeignKey(name, onupdate='CASCADE', ondelete='CASCADE')
+
+    Table('versions', meta,
+        Column('version_id', Integer(), primary_key=True, nullable=False, autoincrement=True),
+        Column('alert_version', postgresql.TEXT(), nullable=False, unique=True),
+    )
+
     Alert = Table('alert', meta,
-        Column('candid', BigInteger(), primary_key=True, nullable=False),
+        Column('alert_id', Integer(), primary_key=True, nullable=False, autoincrement=True),
+        Column('candid', BigInteger(), nullable=False),
+        Column('programid', Integer(), nullable=False),
         Column('objectId', String(12), nullable=False),
         Column('partition_id', Integer(), nullable=False),
         Column('ingestion_time', BigInteger(), nullable=False),
         Column('jd', double, nullable=False),
-        Index('alert_playback', 'partition_id', 'jd')
+        Index('alert_playback', 'partition_id', 'jd'),
+        UniqueConstraint('candid', 'programid'),
     )
 
-    indices = {'candid', 'pid'}
-    columns = filter(lambda c: c.name not in indices, map(make_column, fields['candidate']['type']['fields']))
+    skip = ['pdiffimfilename', 'programpi', 'ssnamenr']
+    identifiers = ['candid', 'programid', 'pid']
+    columns = list(map(make_column, filter(lambda f: f['name'] not in skip, fields['candidate']['type']['fields'])))
+    columns.append(UniqueConstraint(*identifiers))
+    columns.append(Index('alert_id', 'alert_id', unique=True))
     Table('candidate', meta,
-        Column('candid', BigInteger(), ForeignKey("alert.candid"), primary_key=True, nullable=False),
-        Column('pid', BigInteger(), primary_key=True, nullable=False),
+        Column('candidate_id', Integer(), primary_key=True, nullable=False, autoincrement=True),
+        Column('alert_id', Integer(), ForeignKey('alert.alert_id'), nullable=False),
         
         *columns
+    )
+
+    prefix = 'cutout'
+    cutout_fields = [k[len(prefix):].lower() for k in fields if k.startswith(prefix)]
+    Table('cutout', meta,
+        Column('cutout_id', Integer(), primary_key=True, nullable=False, autoincrement=True),
+        Column('alert_id', Integer(), ForeignKey('alert.alert_id'), nullable=False),
+        Column('kind', Enum(*cutout_fields, name='cutout_kind'), nullable=False),
+        Column('stampData', LargeBinary(), nullable=False)
     )
     
-    indices = {'candid', 'pid'}
-    columns = filter(lambda c: c.name not in indices, map(make_column, fields['prv_candidates']['type'][0]['items']['fields']))
+    
+    skip = ['pdiffimfilename', 'programpi', 'ssnamenr']
+    identifiers = ['candid', 'programid', 'pid']
+    columns = list(map(make_column, filter(lambda f: f['name'] not in skip, fields['prv_candidates']['type'][0]['items']['fields'])))
+    columns.append(UniqueConstraint(*identifiers))
     Table('prv_candidate', meta,
-        Column('candid', BigInteger(), primary_key=True, nullable=False),
-        Column('pid', BigInteger(), primary_key=True, nullable=False),
+        Column('prv_candidate_id', Integer(), primary_key=True, nullable=False, autoincrement=True),
         
         *columns
     )
 
+    # See note on alert_upper_limit_pivot
     Table('alert_prv_candidate_pivot', meta,
-        Column('alert_id', BigInteger(), ForeignKey("alert.candid"), primary_key=True, nullable=False),
-        Column('candid', BigInteger(), primary_key=True, nullable=False),
-        Column('pid', BigInteger(), primary_key=True, nullable=False),
-        Column('index', Integer(), nullable=False),
-        ForeignKeyConstraint(['candid', 'pid'], ['prv_candidate.candid', 'prv_candidate.pid']),
+        Column('alert_id', Integer(), ForeignKey('alert.alert_id'), primary_key=True, nullable=False),
+        Column('prv_candidate_id', postgresql.ARRAY(Integer, dimensions=1), nullable=False),
     )
 
-    identifiers = ['jd', 'fid', 'pid', 'diffmaglim', 'pdiffimfilename']
-    fluff = ['programpi', 'programid']
-    columns = list(filter(lambda c: c.name in identifiers+fluff, map(make_column, fields['prv_candidates']['type'][0]['items']['fields'])))
-    columns.append(Index('unique', *identifiers))
+    identifiers = ['jd', 'fid', 'pid', 'diffmaglim']
+    fluff = ['programid']
+    columns = list(map(make_column, filter(lambda f: f['name'] in identifiers+fluff, fields['prv_candidates']['type'][0]['items']['fields'])))
+    columns.append(UniqueConstraint(*identifiers))
     Table('upper_limit', meta,
-        Column('id', Integer(), primary_key=True, autoincrement=True),
+        Column('upper_limit_id', Integer(), primary_key=True, autoincrement=True),
         *columns
     )
 
+    # There is a many-to-many relationship between alerts and upper limits.
+    # While the usual normalization rules would lead to a table with one row
+    # for every alert-upper_limit pair, alerts can have thousands of previous
+    # upper limits each, leading to billions of rows. At this scale, the
+    # overhead per row in postgres (>= 24 bytes, and typically 30 in this
+    # application) become crippling. We amortize this overhead more efficiently
+    # by nesting the rows into an array, with some extra array_agg() and
+    # unnest() on inserts and selects to recover normal join behavior.
     Table('alert_upper_limit_pivot', meta,
-        Column('alert_id', BigInteger(), ForeignKey("alert.candid"), primary_key=True, nullable=False),
-        Column('upper_limit_id', BigInteger(), ForeignKey("upper_limit.id"), primary_key=True, nullable=False),
-        Column('index', Integer(), primary_key=True, nullable=False),
+        Column('alert_id', Integer(), ForeignKey('alert.alert_id'), primary_key=True, nullable=False),
+        Column('upper_limit_id', postgresql.ARRAY(Integer, dimensions=1), nullable=False),
     )
 
     return meta
 
-def create_database(metadata, *args, **kwargs):
+def create_database(schema, engine, drop=False):
     """
     Initialize the archive database. Extra args and kwargs will be passed to
     :py:func:`sqlalchemy.create_database`.
@@ -143,11 +216,49 @@ def create_database(metadata, *args, **kwargs):
     :param metadata: 
     """
     from sqlalchemy import create_engine
+    from sqlalchemy.engine.strategies import MockEngineStrategy
+    from sqlalchemy import func, select
     
-    engine = create_engine(*args, **kwargs)
-    metadata.create_all(engine)
+    metadata = create_metadata(schema)
+    metadata.bind = engine
+    if drop:
+        metadata.drop_all()
+    metadata.create_all()
+
+    if not isinstance(engine, MockEngineStrategy.MockConnection):
+        assert engine.execute('select count(*) from versions').fetchone()[0] == 0, "database should be empty"
+    engine.execute(metadata.tables['versions'].insert(), alert_version=schema['version'])
     
-    return engine
+    return metadata
+
+def _convert_isdiffpos(in_dict):
+    out_dict = dict(in_dict)
+    k = 'isdiffpos'
+    v = out_dict[k]
+    if k is not None:
+        assert v in {'0', '1', 'f', 't'}
+        out_dict[k] = v in {'1', 't'}
+    return out_dict
+
+from sqlalchemy.dialects import postgresql
+from sqlalchemy.sql.expression import tuple_, func
+def _update_history(connection, meta, label, rows, alert_id):
+    # insert the rows if needed
+    history = meta.tables[label]
+    connection.execute(postgresql.insert(history).on_conflict_do_nothing(), rows)
+
+    # build a condition that selects the rows (just inserted or already existing)
+    identifiers = _get_unique_constraint(history).columns
+    keys = [[r[c.name] for c in identifiers] for r in rows]
+    target = tuple_(*identifiers).in_(keys)
+
+    # collect the ids of the rows in an array and insert into the bridge table
+    bridge = meta.tables['alert_{}_pivot'.format(label)]
+    source = select([bindparam('alert_id'), func.array_agg(history.columns['{}_id'.format(label)])]).where(target)
+    connection.execute(bridge.insert().from_select(bridge.columns, source), alert_id=alert_id)
+
+def _get_unique_constraint(table):
+    return next(filter(lambda c: isinstance(c, UniqueConstraint), table.constraints))
 
 def insert_alert(connection, meta, alert, partition_id, ingestion_time):
     """
@@ -160,62 +271,46 @@ def insert_alert(connection, meta, alert, partition_id, ingestion_time):
     :param ingestion_time: time the alert was received, in UNIX epoch microseconds
     
     """
-    alert_id = alert['candid']
     with connection.begin() as transaction:
+        Alert = meta.tables['alert']
+        Candidate = meta.tables['candidate']
         try:
-            connection.execute(meta.tables['alert'].insert(),
-                candid=alert_id, objectId=alert['objectId'],
-                partition_id=partition_id, ingestion_time=ingestion_time,
-                jd=alert['candidate']['jd'])
-            connection.execute(meta.tables['candidate'].insert(), **alert['candidate'])
+            result = connection.execute(Alert.insert(),
+                programid=alert['candidate']['programid'], jd=alert['candidate']['jd'],
+                partition_id=partition_id, ingestion_time=ingestion_time, **alert)
+            alert_id = result.inserted_primary_key[0]
+            connection.execute(Candidate.insert(), alert_id=alert_id, **_convert_isdiffpos(alert['candidate']))
         except IntegrityError:
             # abort on duplicate alerts
             transaction.rollback()
-            return
+            return False
+
+        # insert cutouts if they exist
+        prefix = 'cutout'
+        cutouts = [dict(kind=k[len(prefix):].lower(), stampData=v['stampData'], alert_id=alert_id) for k,v in alert.items() if k.startswith(prefix) if v is not None]
+        if len(cutouts) > 0:
+            connection.execute(meta.tables['cutout'].insert(), cutouts)
     
         if alert['prv_candidates'] is None or len(alert['prv_candidates']) == 0:
-            return
+            return True
     
         # entries in prv_candidates will often be duplicated, but may also
         # be updated without warning. sort these into detections (which come with
         # unique ids) and upper limits (which don't)
-        detections = dict(rows=[], pivots=[])
-        upper_limits = dict(rows=[], pivots=[])
+        detections = []
+        upper_limits = []
         for index, c in enumerate(alert['prv_candidates']):
             # entries with no candid are nondetections
             if c['candid'] is None:
-                upper_limits['rows'].append(c)
-                upper_limits['pivots'].append(dict(alert_id=alert_id, index=index, **c))
+                upper_limits.append(c)
             else:
-                detections['rows'].append(c)
-                detections['pivots'].append(dict(alert_id=alert_id, index=index, candid=c['candid'], pid=c['pid']))
-    
-        if len(detections['rows']) > 0:
-            ignore = {'{}_ignore_duplicates'.format(connection.dialect.name): True}
-            connection.execute(meta.tables['prv_candidate'].insert(**ignore), detections['rows'])
-            connection.execute(meta.tables['alert_prv_candidate_pivot'].insert(), detections['pivots'])
-    
-        from sqlalchemy.sql import exists, not_
-        if len(upper_limits['rows']) > 0:
-            UpperLimit = meta.tables['upper_limit']
-            UpperLimitPivot = meta.tables['alert_upper_limit_pivot']
-            index_cols = list(UpperLimit.indexes)[0].columns
-    
-            target = and_(*(c == bindparam(c.name) for c in index_cols))
-            insert_ulimits = UpperLimit.insert().from_select(
-                [c for c in UpperLimit.columns if c.name != 'id'],
-                select([bindparam(k) for k in UpperLimit.columns if k.name != 'id']) \
-                    .where(~exists(select([UpperLimit.c.id]).where(target)))
-            )
-            update_pivot = UpperLimitPivot.insert().from_select(
-                ['alert_id', 'index', 'upper_limit_id'],
-                select([bindparam('alert_id'), bindparam('index'), UpperLimit.c.id]) \
-                    .where(target)
-            )
-            connection.execute(insert_ulimits, upper_limits['rows'])
-            connection.execute(update_pivot, upper_limits['pivots'])
+                detections.append(_convert_isdiffpos(c))
+        for rows, label in ((detections, 'prv_candidate'), (upper_limits, 'upper_limit')):
+            if len(rows) > 0:
+                _update_history(connection, meta, label, rows, alert_id)
+
         transaction.commit()
-    return
+    return True
 
 def get_alert(connection, meta, alert_id):
     """
@@ -249,6 +344,29 @@ def get_alerts(connection, meta, alert_ids):
 
     yield from fetch_alerts_with_condition(connection, meta, Alert.c.candid.in_(alert_ids), order)
 
+def get_alerts_for_object(connection, meta, objectId, jd_start=-float('inf'), jd_end=float('inf')):
+    """
+    Retrieve alerts from the archive database by ID
+    
+    :param connection: database connection
+    :param meta: schema metadata
+    :param objectId: id of the transient, e.g. ZTF18aaaaaa, or a collection thereof
+    :param jd_start: minimum JD of exposure start
+    :param jd_end: maximum JD of exposure start
+    :returns: the target alert as a :py:class:`dict`, or `None` if the alert is
+              not in the archive
+    """
+    Alert = meta.tables['alert']
+    if isinstance(objectId, str):
+        match = Alert.c.objectId == objectId
+    elif isinstance(objectId, collections.Collection):
+        match = in_(Alert.c.objectId, objectId)
+    else:
+        raise TypeError("objectId must be str or collection, got {}".format(type(objectId)))
+    in_range = and_(Alert.c.jd >= jd_start, Alert.c.jd < jd_end, match)
+
+    yield from fetch_alerts_with_condition(connection, meta, in_range, Alert.c.jd.asc())
+
 def get_alerts_in_time_range(connection, meta, jd_start, jd_end, partitions=None):
     """
     Retrieve a range of alerts from the archive database
@@ -274,8 +392,39 @@ def get_alerts_in_time_range(connection, meta, jd_start, jd_end, partitions=None
 
     yield from fetch_alerts_with_condition(connection, meta, in_range, Alert.c.jd.asc())
 
-def fetch_alerts_with_condition(connection, meta, condition, order=None):
+def get_alerts_in_cone(connection, meta, ra, dec, radius, jd_min=None, jd_max=None):
+    """
+    Retrieve a range of alerts from the archive database
 
+    :param connection: database connection
+    :param meta: schema metadata
+    :param ra: right ascension of search field center in degrees (J2000)
+    :param dec: declination of search field center in degrees (J2000)
+    :param radius: radius of search field in degrees
+    :param jd_start: minimum JD of exposure start
+    :param jd_end: maximum JD of exposure start
+    """
+    from sqlalchemy import func
+    from sqlalchemy.sql.expression import BinaryExpression
+    Alert = meta.tables['alert']
+    Candidate = meta.tables['candidate']
+    
+    center = func.ll_to_earth(dec, ra)
+    box = func.earth_box(center, radius)
+    loc = func.ll_to_earth(Candidate.c.dec, Candidate.c.ra)
+    
+    in_range = and_(BinaryExpression(box, loc, '@>'), func.earth_distance(center, loc) < radius)
+    # NB: filtering on jd from Candidate here is ~2x faster than _also_
+    #      filtering on Alert (rows that pass are joined on the indexed primary
+    #      key)
+    if jd_min is not None:
+        in_range = and_(in_range, Candidate.c.jd >= jd_min)
+    if jd_max is not None:
+        in_range = and_(in_range, Candidate.c.jd < jd_max)
+
+    yield from fetch_alerts_with_condition(connection, meta, in_range, Alert.c.jd.asc())
+
+def _build_queries(meta):
     PrvCandidate = meta.tables['prv_candidate']
     UpperLimit = meta.tables['upper_limit']
     Candidate = meta.tables['candidate']
@@ -283,49 +432,80 @@ def fetch_alerts_with_condition(connection, meta, condition, order=None):
     Pivot = meta.tables['alert_prv_candidate_pivot']
     UpperLimitPivot = meta.tables['alert_upper_limit_pivot']
     from sqlalchemy.sql import null
+    from sqlalchemy.sql.functions import array_agg
+    from sqlalchemy.sql.expression import func
+    unnest = func.unnest
+
+    def without_keys(table):
+        keys = set(table.primary_key.columns)
+        for fk in table.foreign_keys:
+            keys.update(fk.constraint.columns)
+        return [c for c in table.columns if c not in keys]
 
     alert_query = \
-        select([Alert.c.objectId, Candidate])\
-        .select_from(Alert.join(Candidate))\
-        .where(condition).order_by(order)
+        select([Alert.c.alert_id, Alert.c.objectId] + without_keys(Candidate))\
+        .select_from(Alert.join(Candidate))
 
     # build a query for detections
-    cols = [Pivot.c.index,PrvCandidate]
+    cols = without_keys(PrvCandidate)
+    # unpack the array of keys from the bridge table in order to perform a normal join
+    bridge = select([Pivot.c.alert_id,
+                     unnest(Pivot.c.prv_candidate_id).label('prv_candidate_id')]).alias('prv_bridge')
     prv_query = \
         select(cols) \
-        .select_from(PrvCandidate.join(Pivot)) \
-        .where(Pivot.c.alert_id == bindparam('candid'))
+        .select_from(PrvCandidate.join(bridge, PrvCandidate.c.prv_candidate_id == bridge.c.prv_candidate_id)) \
+        .where(bridge.c.alert_id == bindparam('alert_id'))
 
     # and a corresponding one for upper limits, padding out missing columns
     # with null. Note that the order of the columns must be the same, for
     # the union query below to map the result correctly to output keys.
-    cols = [UpperLimitPivot.c.index]
-    for c in PrvCandidate.columns:
+    cols = []
+    for c in without_keys(PrvCandidate):
         if c.name in UpperLimit.columns:
             cols.append(UpperLimit.columns[c.name])
         else:
             cols.append(null().label(c.name))
+    # unpack the array of keys from the bridge table in order to perform a normal join
+    bridge = select([UpperLimitPivot.c.alert_id,
+                     unnest(UpperLimitPivot.c.upper_limit_id).label('upper_limit_id')]).alias('ul_bridge')
     ul_query = \
         select(cols) \
-        .select_from(UpperLimit.join(UpperLimitPivot)) \
-        .where(UpperLimitPivot.c.alert_id == bindparam('candid'))
+        .select_from(UpperLimit.join(bridge, UpperLimit.c.upper_limit_id == bridge.c.upper_limit_id)) \
+        .where(bridge.c.alert_id == bindparam('alert_id'))
 
     # unify!
     history_query = prv_query.union(ul_query)
 
-    for result in connection.execute(alert_query):
-        candidate = dict(result)
-        alert = dict(objectId=candidate.pop('objectId'), candid=candidate['candid'])
-        alert['candidate'] = candidate
-        alert['prv_candidates'] = []
-        for result in connection.execute(history_query, candid=alert['candid']):
-            alert['prv_candidates'].append(dict(result))
+    return alert_query, history_query
 
-        alert['prv_candidates'] = sorted(alert['prv_candidates'], key=lambda c: c['index'])
-        for c in alert['prv_candidates']:
-            del c['index']
+def fetch_alerts_with_condition(connection, meta, condition, order=None):
 
-        yield alert
+    alert_query, history_query = _build_queries(meta)
+
+    alert_query = alert_query.where(condition).order_by(order)
+
+    with connection.begin() as transaction:
+        try:
+            for result in connection.execute(alert_query):
+                candidate = dict(result)
+                alert_id = candidate.pop('alert_id')
+                alert = dict(objectId=candidate.pop('objectId'), candid=candidate['candid'])
+                alert['candidate'] = candidate
+                alert['prv_candidates'] = []
+                for result in connection.execute(history_query, alert_id=alert_id):
+                    alert['prv_candidates'].append(dict(result))
+
+                alert['prv_candidates'] = sorted(alert['prv_candidates'], key=lambda c: (c['jd'],  c['candid'] is None, c['candid']))
+
+                yield alert
+        finally:
+            transaction.commit()
+
+def get_cutout(connection, meta, candid):
+    Alert = meta.tables['alert']
+    Cutout = meta.tables['cutout']
+    q = select([Cutout.c.kind, Cutout.c.stampData]).select_from(Cutout.join(Alert)).where(Alert.c.candid == candid)
+    return dict(connection.execute(q).fetchall())
 
 def docker_env(var):
 	"""
@@ -349,27 +529,42 @@ def init_db():
 	    help='Postgres server address and port')
 	parser.add_argument('-d', '--database', default='ztfarchive',
 	    help='Database name')
+	parser.add_argument('--drop', action="store_true", default=False)
+	parser.add_argument('--sql', default=None, help="write schema to this file instead of executing")
 	parser.add_argument('--schema', default=os.path.dirname(os.path.realpath(__file__)) + '/../../../alerts/schema.json',
 	    help='Alert schema in json format')
 	
 	opts = parser.parse_args()
 	
-	user = 'ampel'
-	password = docker_env('POSTGRES_PASSWORD')
-	for attempt in range(10):
-		try:
-			engine = create_engine('postgresql://{}:{}@{}/{}'.format(user, password, opts.host, opts.database))
-			break
-		except OperationalError:
-			if attempt == 9:
-				raise
-			else:
-				time.sleep(1)
-				continue
-	
 	with open(opts.schema) as f:
 		schema = json.load(f)
+
+	if opts.sql is not None:
+		from sqlalchemy.sql.dml import ValuesBase
+		outfile = open(opts.sql, "w")
+		def dump(sql, *multiparams, **params):
+			if isinstance(sql, ValuesBase):
+				q = sql.compile(dialect=engine.dialect, column_keys=params.keys())
+				outfile.write(str(q)+';')
+			else:
+				outfile.write(str(sql.compile(dialect=engine.dialect,))+';')
+				
+			#print(sql.compile(dialect=engine.dialect, compile_kwargs={"literal_binds": True}))
+		engine = create_engine('postgresql://', strategy='mock', executor=dump)
+		#echo = lambda line: outfile.write(str(line))
+		#engine = sqlalchemy.create_engine('postgresql://foo/foo', echo, strategy="mock")
+	else:
+		user = 'ampel'
+		password = docker_env('POSTGRES_PASSWORD')
+		for attempt in range(10):
+			try:
+				engine = create_engine('postgresql://{}:{}@{}/{}'.format(user, password, opts.host, opts.database))
+				break
+			except OperationalError:
+				if attempt == 9:
+					raise
+				else:
+					time.sleep(1)
+					continue
 	
-	meta = create_metadata(schema)
-	meta.create_all(engine)
-	
+	create_database(schema, engine, opts.drop)

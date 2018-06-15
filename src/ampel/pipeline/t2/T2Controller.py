@@ -4,17 +4,17 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 25.01.2018
-# Last Modified Date: 19.04.2018
+# Last Modified Date: 14.06.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from ampel.flags.AlDocTypes import AlDocTypes
-from ampel.flags.JobFlags import JobFlags
 from ampel.flags.T2RunStates import T2RunStates
 from ampel.abstract.AbsT2Unit import AbsT2Unit
 from ampel.pipeline.logging.LoggingUtils import LoggingUtils
 from ampel.pipeline.logging.DBJobReporter import DBJobReporter
 from ampel.pipeline.logging.DBLoggingHandler import DBLoggingHandler
 from ampel.pipeline.db.LightCurveLoader import LightCurveLoader
+from ampel.pipeline.common.Schedulable import Schedulable
 from ampel.pipeline.db.DBWired import DBWired
 
 from datetime import datetime, timedelta
@@ -22,20 +22,16 @@ from pymongo.errors import BulkWriteError
 from pymongo import UpdateOne
 import time, importlib, math
 
-
-class T2Controller(DBWired):
+class T2Controller(DBWired, Schedulable):
 	"""
 	Alpha state
 	"""
 
 	version = 1.0
-	_t2_units_colname = "t2_units"
-	_t2_run_configs_colname = "t2_run_config"
 	
 	def __init__(
-		self, db_host='localhost', config_db=None, base_dbs=None,
-		run_state=T2RunStates.TO_RUN, t2_units=None, 
-		check_interval=10, batch_size=200, conf_db_name="Ampel_config"
+		self, mongodb_uri='localhost', config=None, central_db=None, 
+		run_state=T2RunStates.TO_RUN, t2_units=None, check_interval=10, batch_size=200
 	): 
 		"""
 		mongo_client: pymongo.mongo_client.MongoClient instance pointing to the ampel database
@@ -44,26 +40,16 @@ class T2Controller(DBWired):
 		check_interval: int value in seconds
 		batch_size: integer. It is defined because the job log entry cannot grow above 16MB (of logs).
 		"""
-		# TODO: add argument: max_back_time={'minutes': 0} ?
 
 		# Get logger 
 		self.logger = LoggingUtils.get_logger(unique=True)
 
 		# Setup instance variable referencing input and output databases
-		self.plug_databases(self.logger, db_host, config_db, base_dbs)
-	
+		self.plug_databases(self.logger, mongodb_uri, config, central_db)
+
 		# check interval is in seconds
 		self.check_interval = check_interval
 
-		# Store all known T2 units ids (name) 
-		# For each T2 unit, there must exist a document with '_id' equals T2 name
-		# in a collection called "t2_units" in the ampel config db
-		self.unit_names = [
-			el['_id'] for el in self.config_db[
-				T2Controller._t2_units_colname
-			].find({})
-		]
-		
 		# Dict saving t2 classes. 
 		# Key: unit name. Value: unit class
 		self.t2_class = {}
@@ -107,35 +93,31 @@ class T2Controller(DBWired):
 		# How many docs per 'job document'
 		# batch_size is defined because the job log entry cannot grow above 16MB (of logs).
 		self.batch_size = batch_size
+		self.tran_col = self.get_central_col('main')
+
+		Schedulable.__init__(self)
+
+		self.get_scheduler().every(check_interval).seconds.do(
+			self.check_changes
+		)
 
 
-	def start(self):
+	def check_changes(self):
 		"""
-		Start monitoring the live transient database for T2 documents with the given run_state
-		For now, there is no stop() method, not sure how to implement it.
-		There is no return code.
+		check transient database for T2 documents with the given run_state
 		"""
 
-		# Get handle to db collection containing transients
-		tran_col = self.get_tran_col()
+		# get t2 documents (runState is usually TO_RUN or TO_RUN_PRIO)
+		cursor = self.tran_col.find(self.query)
 
-		while True:
+		# No result
+		if cursor.count() == 0:
+			self.logger.info("No T2 docs found")
+		else:
 
-
-			# get t2 documents (runState is usually TO_RUN or TO_RUN_PRIO)
-			cursor = tran_col.find(self.query)
-
-			# No result
-			if cursor.count() == 0:
-				self.logger.info("No T2 docs found")
-			else:
-
-				# Process t2_docs
-				for i in range(math.ceil(cursor.count()/self.batch_size)):
-					self.process_t2_docs(cursor)
-
-			# Sleep
-			time.sleep(self.check_interval)
+			# Process t2_docs
+			for i in range(math.ceil(cursor.count()/self.batch_size)):
+				self.process_t2_docs(cursor)
 
 
 	def process_t2_docs(self, cursor):
@@ -144,23 +126,19 @@ class T2Controller(DBWired):
 		Return: nothing
 		"""
 
-		# Save current time (to approximate job duration)
-		start_time = int(time.time())
-
 		# Create JobReporter instance
-		db_job_reporter = DBJobReporter(
-			self.get_job_col(), JobFlags.T2
-		)
+		db_job_reporter = DBJobReporter(self.get_central_col('logs'))
 
 		# Create new "job" document in the DB
 		db_job_reporter.insert_new(
 			{
 				#"class": type(self).__name__,
-				"class": "T2Controler",
+				"class": "T2Controller",
 				"version": str(T2Controller.version),
 				"runState": str(self.run_state.value),
 				"t2Units": str(self.required_unit_names)
-			}
+			},
+			tier = 2
 		)
 
 		# Create DB logging handler instance (logging.Handler child class)
@@ -178,13 +156,12 @@ class T2Controller(DBWired):
 		t2_instances = {}
 
 		# Instantiate LightCurveLoader (that returns ampel.base.LightCurve instances)
-		tran_col = self.get_tran_col()
-		lcl = LightCurveLoader(tran_col, self.logger)
+		tran_col = self.get_central_col('main')
+		lcl = LightCurveLoader(tran_col.database, logger=self.logger)
 
 		# Process t2_docs until next() returns None (break condition below)
 		while True: 
 
-			print("############################")
 			# Retrieve newly created T2 docs
 			t2_doc = next(cursor, None)
 
@@ -233,7 +210,7 @@ class T2Controller(DBWired):
 			# if run_config was not loaded not previously done
 			if not run_config_id in self.t2_run_config:
 
-				# Load it not
+				# Load it
 				self.load_run_config(run_config_id)
 
 				# add run_config version info for jobreporter
@@ -243,7 +220,7 @@ class T2Controller(DBWired):
 
 			# Load ampel.base.LightCurve instance
 			lc = lcl.load_from_db(
-				t2_doc['tranId'], t2_doc['compoundId']
+				t2_doc['tranId'], t2_doc['compId']
 			)
 
 			# Run t2
@@ -289,7 +266,7 @@ class T2Controller(DBWired):
 				]
 
 			else:
-				self.logger.error("Saving dict returned by T2 unit")
+				self.logger.info("Saving dict returned by T2 unit")
 
 				db_ops = [
 					UpdateOne(
@@ -325,11 +302,12 @@ class T2Controller(DBWired):
 							"modified": now
 						},
 						"$push": {
-							"lastModified": {
+							"journal": {
 								'dt': now,
 								'tier': 2,
-								'src': t2_unit_name,
-								'success': str(not isinstance(ret, T2RunStates))
+								'unit': t2_unit_name,
+								'success': str(not isinstance(ret, T2RunStates)),
+								'channels': t2_doc['channels']
 							}
 						}
 					}
@@ -341,12 +319,10 @@ class T2Controller(DBWired):
 				self.logger.info(result.bulk_api_result)
 			except BulkWriteError as bwe: 
 				# TODO add error flag to Job and Transient
+				# TODO populate Ampel_troubles collection
 				# TODO add return code 
 				self.logger.error(bwe.details) 
 
-
-		duration = int(time.time()) - start_time
-		db_job_reporter.set_duration(duration)
 
 		# Remove DB logging handler
 		db_logging_handler.flush()
@@ -364,14 +340,7 @@ class T2Controller(DBWired):
 		"""
 
 		# Get T2 run config doc from ampel config DB
-		t2_run_config_doc = next(
-			self.config_db[
-				T2Controller._t2_run_configs_colname
-			].find(
-				{'_id': run_config_id}
-			),
-			None
-		)
+		t2_run_config_doc = self.config["t2_run_config"].get(run_config_id)
 
 		# Robustness
 		if t2_run_config_doc is None:
@@ -381,7 +350,6 @@ class T2Controller(DBWired):
 			)
 			self.t2_run_config[run_config_id] = None
 			return 
-
 
 		self.t2_run_config[run_config_id] = t2_run_config_doc
 		
@@ -395,17 +363,12 @@ class T2Controller(DBWired):
 		"""	
 
 		# Robustness
-		if not unit_name in self.unit_names:
+		if not unit_name in self.config["t2_units"].keys():
 			self.logger.error("Unknown T2 unit name: %s" % unit_name)
 			return
 
 		# Get T2 unit config from ampel config DB
-		t2_config_doc = next(
-			self.config_db[T2Controller._t2_units_colname].find(
-				{'_id': unit_name}
-			),
-			None
-		)
+		t2_config_doc = self.config['t2_units'].get(unit_name)
 
 		# Robustness
 		if t2_config_doc is None:
@@ -437,7 +400,8 @@ class T2Controller(DBWired):
 
 
 	def add_version(self, unit_name, key, arg):
-
+		"""
+		"""
 		if not unit_name in self.versions:
 			self.versions[unit_name] = {}
 		
@@ -447,3 +411,6 @@ class T2Controller(DBWired):
 
 		elif isinstance(arg, AbsT2Unit):
 			self.versions[unit_name][key] = arg.version
+
+def run():
+	raise NotImplementedError

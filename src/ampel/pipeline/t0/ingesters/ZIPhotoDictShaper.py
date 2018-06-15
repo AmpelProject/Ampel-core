@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 14.12.2017
-# Last Modified Date: 20.05.2018
+# Last Modified Date: 01.06.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from ampel.flags.PhotoFlags import PhotoFlags
@@ -16,7 +16,7 @@ import bson
 class ZIPhotoDictShaper:
 	"""
 	Shapes photometric points and upper limits into dicts that ampel understands.
-	-> add tranId, alDocType and alFlags
+	-> add tranId and alFlags
 	-> for photometric points: rename candid into _id
 	-> for upper limits: _id was computed previously
 	"""
@@ -89,8 +89,7 @@ class ZIPhotoDictShaper:
 			# '_id' is already set for upper limits
 			if id_field_name != "_id":
 
-				# Set alDocType, ampel flags, ...
-				photo_dict['alDocType'] = AlDocTypes.PHOTOPOINT
+				# Set ampel flags and tranId
 				photo_dict['alFlags'] = dbflags
 				photo_dict['tranId'] = tran_id
 				
@@ -106,23 +105,20 @@ class ZIPhotoDictShaper:
 
 			else:
 
-				# Set alDocType
-				photo_dict['alDocType'] = AlDocTypes.UPPERLIMIT
-
 				# update list of dicts
 				ret_list.append(
 					{
 						'_id': photo_dict['_id'],
-						'alDocType': AlDocTypes.UPPERLIMIT,
+						# 'alDocType': AlDocTypes.UPPERLIMIT,
 						'alFlags': dbflags,
 						'jd': photo_dict['jd'],
 	 					'diffmaglim': photo_dict['diffmaglim'],
 	 					'rcid': photo_dict['rcid'],
+						'fid': photo_dict['fid']
 						#'pdiffimfilename': fname
 						# IMPORTANT: 'tranId' is not set here on purpose since it 
 						# then conflict with the addToSet operation
 						#'pid': photo_dict['pid'],
-						#'fid': photo_dict['fid'],
 						#'programid': photo_dict['programid'],
 					}
 				)

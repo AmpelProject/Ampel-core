@@ -4,12 +4,10 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 10.10.2017
-# Last Modified Date: 12.05.2018
+# Last Modified Date: 15.06.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import pymongo, time, numpy as np
-
-from ampel.pipeline.t0.AmpelAlert import AmpelAlert
 from ampel.pipeline.t0.alerts.AlertSupplier import AlertSupplier
 from ampel.pipeline.t0.alerts.ZIAlertShaper import ZIAlertShaper
 from ampel.pipeline.t0.ingesters.ZIAlertIngester import ZIAlertIngester
@@ -18,15 +16,11 @@ from ampel.pipeline.logging.DBJobReporter import DBJobReporter
 from ampel.pipeline.logging.DBLoggingHandler import DBLoggingHandler
 from ampel.pipeline.logging.InitLogBuffer import InitLogBuffer
 from ampel.pipeline.db.DBWired import DBWired
-from ampel.pipeline.db.MongoStats import MongoStats
-from ampel.pipeline.db.GraphiteFeeder import GraphiteFeeder
+from ampel.pipeline.common.GraphiteFeeder import GraphiteFeeder
 from ampel.pipeline.config.ChannelLoader import ChannelLoader
-
+from ampel.base.AmpelAlert import AmpelAlert
 from ampel.flags.AlDocTypes import AlDocTypes
 from ampel.flags.AlertFlags import AlertFlags
-from ampel.flags.LogRecordFlags import LogRecordFlags
-from ampel.flags.JobFlags import JobFlags
-
 
 class AlertProcessor(DBWired):
 	""" 
@@ -42,23 +36,26 @@ class AlertProcessor(DBWired):
 	iter_max = 5000
 
 	def __init__(
-		self, channels=None, source="ZTFIPAC", db_host='localhost', config_db=None, 
-		base_dbs=None, stats={'graphite', 'jobs'}, load_ingester=True
+		self, channels=None, source="ZTFIPAC", mongodb_uri='localhost', 
+		config=None, central_db=None, publish_stats=['graphite', 'jobs'], 
+		load_ingester=True
 	):
 		"""
 		Parameters:
-		'source': name of input stream (string - see set_stream() docstring)
-		'db_host': dns name or ip address (plus optinal port) of the server hosting mongod
+		-----------
 		'channels': 
-			- None: all the available channels in the config database will be loaded
-			- String: channel with the provided id will be loaded
-			- List of strings: channels with the provided ids will be loaded 
-		'config_db': see ampel.pipeline.db.DBWired.plug_config_db() docstring
-		'base_dbs': see ampel.pipeline.db.DBWired.plug_base_dbs() docstring
-		'stats': record performance stats in the database:
-				* jobs: include t0 metrics in job document
-				* graphite: send db metrics and t0 metrics to graphite 
-				  (graphite server must be defined in Ampel_config)
+		   - None: all the available channels from the ampel config will be loaded
+		   - String: channel with the provided id will be loaded
+		   - List of strings: channels with the provided ids will be loaded 
+		'source': name of input stream (string - see set_stream() docstring)
+		'mongodb_uri': URI of the server hosting mongod.
+		   Example: 'mongodb://user:password@localhost:27017'
+		'config': see ampel.pipeline.db.DBWired.load_config() docstring
+		'central_db': see ampel.pipeline.db.DBWired.plug_central_db() docstring
+		'publish_stats': publish performance stats:
+		   * graphite: send t0 metrics to graphite (graphite server must be defined 
+		     in Ampel_config)
+		   * jobs: include t0 metrics in job document
 		"""
 
 		# Setup logger
@@ -67,24 +64,33 @@ class AlertProcessor(DBWired):
 		self.logger.addHandler(self.ilb)
 		self.logger.info("Setting up new AlertProcessor instance")
 
-		# Tmp workaround for MongoClient perf issue
-		self.arg_config_db = config_db
-		self.arg_base_dbs = base_dbs
-		self.arg_db_host = db_host
-
 		# Setup instance variable referencing ampel databases
-		self.plug_databases(self.logger, db_host, config_db, base_dbs)
+		self.plug_databases(self.logger, mongodb_uri, config, central_db)
 
 		# Load channels
-		cl = ChannelLoader(self.config_db, source=source, tier=0)
+		cl = ChannelLoader(self.config, source=source, tier=0)
 		self.channels = cl.load_channels(channels, self.logger);
 		self.chan_enum = list(enumerate(self.channels))
+		self.chan_auto_complete = len(self.channels) * [False]
+		self.live_ac = False
+
+		for i, channel in self.chan_enum:
+			if channel.has_source(source):
+				ac = channel.get_config("parameters.autoComplete", source)
+				if ac is not None and ac == "live":
+					self.live_ac = True
+					self.chan_auto_complete[i] = True
+
+		# Robustness
+		if len(self.channels) == 0:
+			raise ValueError("No channel loaded, please check your config")
+			return
 
 		# Setup source dependant parameters
 		self.set_source(source, load_ingester=load_ingester)
 
 		# Which stats to publish (see doctring)
-		self.publish_stats = stats
+		self.publish_stats = publish_stats
 
 		self.logger.info("AlertProcessor initial setup completed")
 
@@ -105,33 +111,27 @@ class AlertProcessor(DBWired):
 		if source == "ZTFIPAC":
 
 			# TODO: log something ? 
-
-			# Reference to function shaping alert dicts
-			self.alert_shaper = ZIAlertShaper(self.logger)
+			conf = self.global_config['sources'][source]
 
 			# Set static AmpelAlert alert flags
-			AmpelAlert.add_class_flags(
-				AlertFlags.INST_ZTF | AlertFlags.SRC_IPAC
-			)
+			alert_flags = None
+			for flag_str in conf['alerts']['flags']:
+				if alert_flags is None:
+					alert_flags = AlertFlags[flag_str]
+				else:
+					alert_flags |= AlertFlags[flag_str]
+			AmpelAlert.add_class_flags(alert_flags)
 
 			# Set static AmpelAlert dict keywords
-			AmpelAlert.set_alert_keywords(
-				self.global_config['photoPoints']['ZTFIPAC']['dictKeywords']
-			)
+			AmpelAlert.set_alert_keywords(conf['alerts']['mappings'])
 	
-			# Instantiate ingester
-			ingest_conf = self.global_config['alertIngestion']['source']['ZTFIPAC']
-
 			if load_ingester:
 				self.ingester = ZIAlertIngester(
-					self.channels, self.config_db['t2_units'], self.get_tran_col(),
-					check_reprocessing = ingest_conf['checkReprocessing'],
-					alert_history_length = ingest_conf['alertHistoryLength'],
-					logger = self.logger
+					self.config, self.central_db, self.channels, logger=self.logger
 				)
 	
 		else:
-			# more streams may be defined later
+			# more sources may be defined later
 			raise ValueError("Source '%s' not supported yet" % source)
 
 
@@ -148,7 +148,8 @@ class AlertProcessor(DBWired):
 
 	def process_alert_folder(
 		self, base_dir="/Users/hu/Documents/ZTF/Ampel/alerts/", 
-		extension="*.avro", max_entries=None, console_logging=True
+		extension="*.avro", serialization="avro", source="ZTFIPAC", 
+		max_entries=None, console_logging=True
 	):
 		"""
 		Process alerts in a given directory (using ampel.pipeline.t0.AlertFileList)
@@ -163,6 +164,7 @@ class AlertProcessor(DBWired):
 		"""
 
 		from ampel.pipeline.t0.alerts.DirAlertLoader import DirAlertLoader
+		import importlib
 
 		# Container class allowing to conveniently iterate over local avro files 
 		alert_loader = DirAlertLoader(self.logger)
@@ -174,7 +176,17 @@ class AlertProcessor(DBWired):
 		
 		self.logger.info("Returning iterable for file paths in folder: %s" % base_dir)
 
-		als = AlertSupplier(alert_loader, self.alert_shaper, serialization="avro")
+		if source not in self.config['global']['sources']:
+			raise ValueError("Unknown source %s, please check your config" % source)
+
+		# Instantiate class shaping alert dicts
+		if not hasattr(self, "alert_shaper"):
+			shaper_class_full_path = self.config['global']['sources'][source]['alerts']['processing']['shape']
+			shaper_module = importlib.import_module(shaper_class_full_path)
+			shaper_class = getattr(shaper_module, shaper_class_full_path.split(".")[-1])
+			self.alert_shaper = shaper_class(self.logger)
+
+		als = AlertSupplier(alert_loader, self.alert_shaper, serialization=serialization)
 		ret = AlertProcessor.iter_max
 		count = 0
 
@@ -193,9 +205,6 @@ class AlertProcessor(DBWired):
 			* Ingest alert based on PipelineIngester (default) 
 			or the ingester instance set by the method set_ingester(obj)
 		"""
-
-		# Tmp workaround for MongoClient perf issue
-		self.plug_databases(self.logger, self.arg_db_host, self.arg_config_db, self.arg_base_dbs)
 
 		# Save current time to later evaluate how low was the pipeline processing time
 		time_now = time.time
@@ -217,11 +226,9 @@ class AlertProcessor(DBWired):
 		self.logger.removeHandler(self.ilb)
 
 		# Create JobReporter instance
-		db_job_reporter = DBJobReporter(
-			self.get_job_col(), JobFlags.T0
-		)
+		db_job_reporter = DBJobReporter(self.central_db['logs'])
 
-		# Create new "job" document in the DB
+		# Create new job document in the logs collection
 		db_job_reporter.insert_new(
 			params = {
 				"alertProc": str(self.version),
@@ -233,8 +240,7 @@ class AlertProcessor(DBWired):
 		# Create DB logging handler instance (logging.Handler child class)
 		# This class formats, saves and pushes log records into the DB
 		db_logging_handler = DBLoggingHandler(
-			db_job_reporter, 
-			previous_logs=self.ilb.get_logs()
+			db_job_reporter, previous_logs=self.ilb.get_logs()
 		)
 
 		# Add db logging handler to the logger stack of handlers 
@@ -250,7 +256,8 @@ class AlertProcessor(DBWired):
 		scheduled_t2_units = len(self.channels) * [None]
 
 		# Save ampel 'state' and get list of tran ids required for autocomplete
-		tran_ids_before = self.get_tran_ids()
+		if self.live_ac:
+			tran_ids_before = self.get_tran_ids()
 
 		# Forward jobId to ingester instance 
 		# (will be inserted in the transient documents)
@@ -272,8 +279,10 @@ class AlertProcessor(DBWired):
 				't0Job': {},
 				'ingestion': {
 					'preIngestTime': [],
-					'dbBulkTime': [],
-					'dbPerOpMeanTime': []
+					'dbBulkTimePhoto': [],
+					'dbBulkTimeMain': [],
+					'dbPerOpMeanTimePhoto': [],
+					'dbPerOpMeanTimeMain': []
 				},
 				'filtering': {
 					'all': np.empty(iter_max)
@@ -282,7 +291,6 @@ class AlertProcessor(DBWired):
 			'count': {
 				# Cumul stats
 				't0Job': {},	
-				'db': {},	
 				'ingestion': {
 					'alerts': {},
 					'dbOps': {}
@@ -305,10 +313,6 @@ class AlertProcessor(DBWired):
 				job_info['count']['ingestion']['dbOps'],
 			)
 
-		# Publish general stats to graphite
-		if "graphite" in self.publish_stats:
-			self.gather_and_send_stats(tran_ids_before)
-
 		# python shortcuts and micro-optimization
 		loginfo = self.logger.info
 		logdebug = self.logger.debug
@@ -317,10 +321,10 @@ class AlertProcessor(DBWired):
 		dblh_unset_tranId = db_logging_handler.unset_tranId
 		dblh_unset_channel = db_logging_handler.unset_channels
 		chan_enum = self.chan_enum
-		tran_col = self.get_tran_col()
 		filtering_stats = job_info['duration']['filtering']
 		job_count_stats = job_info['count']['t0Job']
 		alert_counts = job_info['count']['ingestion']['alerts']
+		col = self.central_db['main']
 
 		# Save pre run time
 		pre_run = time_now()
@@ -339,7 +343,10 @@ class AlertProcessor(DBWired):
 			dblh_set_tranId(tran_id)
 
 			# Feedback
-			loginfo("Processing alert: %s" % shaped_alert['alert_id'])
+			loginfo(
+				"Processing alert: %s (%s)" % 
+				(shaped_alert['alert_id'], shaped_alert['ztf_id'])
+			)
 
 			# Create AmpelAlert instance
 			ampel_alert = AmpelAlert(
@@ -377,7 +384,7 @@ class AlertProcessor(DBWired):
 						loginfo(channel.log_accepted)
 					else:
 						# Autocomplete required for this channel
-						if tran_ids_before[i] is not None and tran_id in tran_ids_before[i]:
+						if self.live_ac and self.chan_auto_complete[i] and tran_id in tran_ids_before[i]:
 							loginfo(channel.log_auto_complete)
 							alert_counts[channel.name] += 1
 							scheduled_t2_units[i] = channel.t2_units
@@ -402,7 +409,7 @@ class AlertProcessor(DBWired):
 			# time required for all filters
 			filtering_stats['all'][iter_count] = time_now() - all_filters_start
 
-			if any(scheduled_t2_units):
+			if any(t2 is not None for t2 in scheduled_t2_units):
 
 				# Ingest alert
 				loginfo(" -> Ingesting alert")
@@ -441,16 +448,17 @@ class AlertProcessor(DBWired):
 		# Post run section
 		try: 
 
-			# Save ampel 'state' and get list of tran ids required for autocomplete
-			tran_ids_after = self.get_tran_ids()
+			# Optional autocomplete
+			if self.live_ac:
+				tran_ids_after = self.get_tran_ids()
 	
-			# Check post auto-complete
-			for i, channel in chan_enum:
-				if type(tran_ids_after[i]) is set:
-					auto_complete_diff = tran_ids_after[i] - tran_ids_before[i]
-					if auto_complete_diff:
-						# TODO: implement post-processing-autocomplete
-						pass 
+				# Check post auto-complete
+				for i, channel in chan_enum:
+					if type(tran_ids_after[i]) is set:
+						auto_complete_diff = tran_ids_after[i] - tran_ids_before[i]
+						if auto_complete_diff:
+							# TODO: implement fetch from archive
+							pass 
 	
 			# Durations in seconds
 			job_info['duration']['t0Job'] = {
@@ -458,14 +466,14 @@ class AlertProcessor(DBWired):
 				'main': int(post_run - pre_run)
 				# post loop will be computed in gather_and_send_stats()
 			}
-	
+
 			if self.publish_stats is not None and iter_count > 0:
 	
 				self.logger.info("Computing job stats")
 	
 				# Gather counts
 				job_info['count']['t0Job'] = {
-					'alLoaded': iter_count,
+					'alProcessed': iter_count,
 					'alIngested': ingested_count,
 					'ppsLoaded': pps_loaded,
 					'ulsLoaded': uls_loaded
@@ -476,7 +484,10 @@ class AlertProcessor(DBWired):
 
 				# For ingest metrics
 				ingestion_stats = job_info['duration']['ingestion']
-				for key in ('preIngestTime', 'dbBulkTime', 'dbPerOpMeanTime'):
+				for key in (
+					'preIngestTime', 'dbBulkTimePhoto', 'dbBulkTimeMain', 
+					'dbPerOpMeanTimePhoto', 'dbPerOpMeanTimeMain'
+				):
 					if len(ingestion_stats[key]) > 0: 
 						ingestion_stats[key] = self.compute_stat(ingestion_stats[key])
 
@@ -491,12 +502,12 @@ class AlertProcessor(DBWired):
 						)
 					)
 
-				job_info = self.gather_and_send_stats(
-					tran_ids_after, post_run=post_run, t0_stats=job_info
-				)
+				self.gather_and_send_stats(post_run, job_info)
 
-			# Insert job info into job document
-			db_job_reporter.set_job_stats("stats", job_info)
+			# Insert job stats
+			job_info['_id'] = db_job_reporter.get_job_id()
+			job_info['tier'] = 0
+			self.central_db['stats'].insert_one(job_info)
 
 		except:
 
@@ -521,59 +532,20 @@ class AlertProcessor(DBWired):
 			self.logger.propagate = True
 
 		# Remove DB logging handler
-		db_job_reporter.set_flush_job_info()
-		db_logging_handler.flush()
+		if iter_count > 0:
+			db_job_reporter.set_flush_job_info()
+			db_logging_handler.flush()
 		self.logger.removeHandler(db_logging_handler)
 		
 		# Return number of processed alerts
 		return iter_count
 
 
-	def gather_and_send_stats(self, tran_ids, post_run=None, t0_stats=None):
+	def gather_and_send_stats(self, post_run, t0_stats):
 		"""
 		"""
 
-		tran_col = self.get_tran_col()
-		stat_dict = {}
-		count_dict = {}
-		dbinfo_dict = {
-			'daemon': MongoStats.get_server_stats(tran_col.database),
-			'colStats': {
-				'jobs': MongoStats.get_col_stats(self.get_job_col()),
-				'transients': MongoStats.get_col_stats(tran_col)
-			},
-			'docsCount': {
-				'troubles': self.get_trouble_col().find({}).count(),
-				'transients': {
-					'pps': tran_col.find({'tranId': {"$gt" : 1}, 'alDocType': AlDocTypes.PHOTOPOINT}).count(),
-					'uls': tran_col.find({'tranId': {"$gt" : 1}, 'alDocType': AlDocTypes.UPPERLIMIT}).count(),
-					'compounds': tran_col.find({'tranId': {"$gt" : 1}, 'alDocType': AlDocTypes.COMPOUND}).count(),
-					't2s': tran_col.find({'tranId': {"$gt" : 1}, 'alDocType': AlDocTypes.T2RECORD}).count(),
-					'trans':tran_col.find({'tranId': {"$gt" : 1}, 'alDocType': AlDocTypes.TRANSIENT}).count()
-				}
-			}
-		}
-
-		# Channel specific metrics
-		for i, channel in self.chan_enum:
-			count_dict[channel.name] = (
-				len(tran_ids[i]) if tran_ids[i] is not None 
-				else MongoStats.get_tran_count(tran_col, channel.name)
-			)
-
-		if t0_stats is None:
-			stat_dict = {
-				'dbinfo': dbinfo_dict,
-				'count': {
-					'db': count_dict
-				}
-			}
-		else:
-			t0_stats['dbinfo'] = dbinfo_dict
-			t0_stats['count']['db'] = count_dict
-			if post_run is not None:
-				t0_stats['duration']['t0Job']['postLoop'] = int(time.time() - post_run)
-			stat_dict = t0_stats
+		t0_stats['duration']['t0Job']['postLoop'] = int(time.time() - post_run)
 
 		# Publish metrics to graphite
 		if "graphite" in self.publish_stats:
@@ -584,16 +556,14 @@ class AlertProcessor(DBWired):
 			# GraphiteSendException: Socket closed before able to send data to ('localhost', 52003), 
 			# with error: [Errno 32] Broken pipe
 			# So we re-create a GraphiteClient every time we send something to graphite...
-			gfeeder = GraphiteFeeder(self.global_config['graphite']) 
+			gfeeder = self.config['resources']['graphite']()
 
 			if t0_stats is not None:
-				gfeeder.add_stats_with_mean_std(stat_dict)
+				gfeeder.add_stats_with_mean_std(t0_stats)
 			else:
-				gfeeder.add_stats(stat_dict)
+				gfeeder.add_stats(t0_stats)
 
 			gfeeder.send()
-
-		return stat_dict
 
 
 	def report_exception(self, further_info=None, shaped_alert=None):
@@ -617,7 +587,7 @@ class AlertProcessor(DBWired):
 			if 'alert_id' in shaped_alert:
 				insert_dict['alertId'] = shaped_alert['alert_id'] 
 	
-			if "KeyboardInterrupt" not in exception_str:
+			if not "KeyboardInterrupt" in exception_str:
 	
 				if (
 					'pps' in shaped_alert and 
@@ -651,32 +621,32 @@ class AlertProcessor(DBWired):
 	def get_tran_ids(self):
 		"""
 		Return value:
-		Array - whose length equals len(self.channels) - possibly containing sets of transient ids.
+		Array whose length equals len(self.channels), possibly containing sets of transient ids.
 		If channel[i] is the channel with index i wrt the list of channels 'self.channels', 
-		and if channel[i] was configured to make use of the ampel auto_complete feature, 
+		and if channel[i] was configured to make use of the 'live' auto_complete feature, 
 		then tran_ids[i] will hold a {set} of transient ids listing all known 
 		transients currently available in the DB for this particular channel.
 		Otherwise, tran_ids_before[i] will be None
 		"""
 
-		col = self.get_tran_col()
+		col = self.central_db['main']
 		tran_ids = len(self.channels) * [None]
 
 		# Loop through activated channels
 		for i, channel in self.chan_enum:
 
-			if channel.get_config("parameters.autoComplete"):
+			if self.chan_auto_complete[i]:
 
 				# Build set of transient ids for this channel
 				tran_ids[i] = {
-					el['tranId'] for el in self.get_tran_col().find(
+					el['tranId'] for el in col.find(
 						{
 							'tranId': {'$gt': 1}, 
 							'alDocType': AlDocTypes.TRANSIENT, 
 							'channels': channel.name
 						},
 						{
-							'_id':0, 'tranId':1
+							'_id': 0, 'tranId': 1
 						}
 					)
 				}
@@ -714,7 +684,10 @@ def create_databases(host, database_name, configs):
 	from bson import ObjectId
 	import json
 	from ampel.archive import docker_env
-	client = MongoClient(host, username=os.environ.get('MONGO_INITDB_ROOT_USERNAME', 'root'), password=docker_env('MONGO_INITDB_ROOT_PASSWORD'))
+	client = MongoClient(
+		host, username=os.environ.get('MONGO_INITDB_ROOT_USERNAME', 'root'), 
+		password=docker_env('MONGO_INITDB_ROOT_PASSWORD')
+	)
 	
 	def get_id(blob):
 		if isinstance(blob['_id'], dict) and '$oid' in blob['_id']:
@@ -733,67 +706,58 @@ def create_databases(host, database_name, configs):
 	
 	return client.get_database('admin'), config_db
 
-def _ingest_slice(host, archive_host, infile, start, stop):
-	from ampel.archive import ArchiveDB, docker_env
-	from ampel.pipeline.t0.alerts.TarballWalker import TarballWalker
-	archive = ArchiveDB('postgresql://ampel:{}@{}/ztfarchive'.format(docker_env('POSTGRES_PASSWORD'), archive_host))
-	
-	def loader():
-		tbw = TarballWalker(infile, start, stop)
-		for alert in tbw.get_files():
-			archive.insert_alert(alert, 0, 0)
-			yield alert
-	processor = AlertProcessor(db_host=host)
-	return processor.run(loader())
-
-def _worker(idx, mongo_host, archive_host, bootstrap_host, group_id, chunk_size=5000):
-	from ampel.archive import ArchiveDB, docker_env
-	from ampel.pipeline.t0.ZIAlertFetcher import ZIAlertFetcher
-	from pymongo import MongoClient
-
-	archive = ArchiveDB('postgresql://ampel:{}@{}/ztfarchive'.format(docker_env('POSTGRES_PASSWORD'), archive_host))
-	mongo = 'mongodb://{}:{}@{}/'.format(docker_env('MONGO_INITDB_ROOT_USERNAME'), docker_env('MONGO_INITDB_ROOT_PASSWORD'), mongo_host)
-
-	fetcher = ZIAlertFetcher(archive, bootstrap_host, group_name=group_id)
-
-	import time
-	t0 = time.time()
-
-	count = 0
-	for i in range(10):
-		processor = AlertProcessor(db_host=mongo)
-		count += processor.run(fetcher.alerts(chunk_size), console_logging=False)
-		t1 = time.time()
-		dt = t1-t0
-		t0 = t1
-		print('({}) {} alerts in {:.1f}s; {:.1f}/s'.format(idx, chunk_size, dt, chunk_size/dt))
-	return count
-
 def run_alertprocessor():
 
 	import os, time, uuid
-	from concurrent import futures
-	from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
-	parser = ArgumentParser(description=__doc__, formatter_class=ArgumentDefaultsHelpFormatter)
-	parser.add_argument('--host', default='mongo:27017')
-	parser.add_argument('--archive-host', default='archive:5432')
-	parser.add_argument('--broker', default='epyc.astro.washington.edu:9092')
-	parser.add_argument('--procs', type=int, default=1, help='Number of processes to start')
-	parser.add_argument('--chunksize', type=int, default=5000, help='Number of alerts in each process')
+	from ampel.pipeline.config.ConfigLoader import AmpelArgumentParser
 	
+	parser = AmpelArgumentParser()
+	action = parser.add_mutually_exclusive_group(required=True)
+	action.add_argument('--broker', default='epyc.astro.washington.edu:9092')
+	action.add_argument('--tarfile', default=None)
+	parser.add_argument('--group', default=uuid.uuid1(), help="Kafka consumer group name")
+	
+	parser.require_resource('mongo', roles=['writer'])
+	parser.require_resource('archive', roles=['writer'])
+	parser.require_resource('graphite')
+	# partially parse command line to get config
+	opts, argv = parser.parse_known_args()
+	# flesh out parser with resources required by t0 units
+	loader = ChannelLoader(opts.config, source="ZTFIPAC", tier=0)
+	parser.require_resources(*loader.get_required_resources())
+	# parse again
 	opts = parser.parse_args()
-	
-	executor = futures.ProcessPoolExecutor(opts.procs)
 
-	group = uuid.uuid1()
+	mongo = opts.config['resources']['mongo']()['writer']
+	archive = opts.config['resources']['archive']()['writer']
 	
-	start_time = time.time()
-	step = opts.chunksize
+	from ampel.pipeline.t0.alerts.TarAlertLoader import TarAlertLoader
+	from ampel.pipeline.t0.alerts.AlertSupplier import AlertSupplier
+	from ampel.pipeline.t0.alerts.ZIAlertShaper import ZIAlertShaper
+	from ampel.pipeline.t0.ZIAlertFetcher import ZIAlertFetcher
+	from ampel.archive import ArchiveDB
+
+	import time
 	count = 0
-	jobs = [executor.submit(_worker, idx, opts.host, opts.archive_host, opts.broker, group, opts.chunksize) for idx in range(opts.procs)]
-	for future in futures.as_completed(jobs):
-		print(future.result())
-		count += future.result()
-	duration = int(time.time()) - start_time
-	print('Processed {} alerts in {:.1f} s ({:.1f}/s)'.format(count, duration, float(count)/duration))
-	
+	#AlertProcessor.iter_max = 100
+	alert_processed = AlertProcessor.iter_max
+	if opts.tarfile is not None:
+		infile = opts.tarfile
+		loader = TarAlertLoader(tar_path=opts.tarfile)
+	else:
+		infile = '{} group {}'.format(opts.broker, opts.group)
+		fetcher = ZIAlertFetcher(opts.broker, group_name=opts.group, timeout=3600)
+		loader = iter(fetcher)
+
+	alert_supplier = AlertSupplier(loader, ZIAlertShaper(), serialization="avro", archive=ArchiveDB(archive))
+	processor = AlertProcessor(mongodb_uri=mongo, publish_stats=["jobs", "graphite"], config=opts.config)
+
+	while alert_processed == AlertProcessor.iter_max:
+		t0 = time.time()
+		print('Running on {}'.format(infile))
+		try:
+			alert_processed = processor.run(alert_supplier, console_logging=False)
+		finally:
+			t1 = time.time()
+			dt = t1-t0
+			print('({}) {} alerts in {:.1f}s; {:.1f}/s'.format(infile, alert_processed, dt, alert_processed/dt))

@@ -4,13 +4,11 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 14.12.2017
-# Last Modified Date: 12.05.2018
+# Last Modified Date: 13.06.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import logging
 from ampel.flags.LogRecordFlags import LogRecordFlags
-from ampel.flags.JobFlags import JobFlags
-
 
 class DBLoggingHandler(logging.Handler):
 	"""
@@ -163,10 +161,8 @@ class DBLoggingHandler(logging.Handler):
 			self.records.append(rec)
 
 
-		if record.levelno == 40:
-			self.db_job_reporter.add_flags(JobFlags.HAS_ERROR)
-		elif record.levelno == 50:
-			self.db_job_reporter.add_flags(JobFlags.HAS_CRITICAL)
+		if record.levelno == 40 or record.levelno == 50:
+			self.db_job_reporter.set_has_error()
 
 		if len(self.records) > self.flush_force:
 			self.flush()

@@ -1,0 +1,65 @@
+{
+    "resources": {
+        "mongo_uri": {"hostname": "localhost", "port": 27017},
+        "extcats_uri": {"hostname": "localhost", "port": 27017},
+        "catsHTM_uri": {"path": "/path/to/catsHTM/should/be/set"},
+        "graphite_uri": {"hostname": "localhost", "port": 2003, "path": "ampel.burst"}
+    },
+    "channels": {},
+    "global": {
+        "sources": {
+            "ZTFIPAC": {
+                "alerts": {
+                    "alertHistoryLength": 30,
+                    "processing": {
+                        "parse": "ampel.pipeline.t0.alerts.ZIAlertParser",
+                        "shape": "ampel.pipeline.t0.alerts.ZIAlertShaper",
+                        "serialization": "avro"
+                    },
+                    "flags": [
+                        "INST_ZTF",
+                        "SRC_IPAC"
+                    ],
+                    "mappings": {
+                        "tranId": "objectId",
+                        "pptId": "candid",
+                        "obsDate": "jd",
+                        "filterId": "fid",
+                        "mag": "magpsf"
+                    }
+                },
+                "ingestion": {
+                    "class": "ampel.pipeline.t0.ingesters.ZIAlertIngester",
+                    "photoShaper": "ampel.pipeline.t0.ingesters.ZIPhotoPointShaper",
+                    "checkReprocessing": true,
+                    "tranIdPrefix": null
+                },
+                "flags": {
+                    "photo": "INST_ZTF",
+                    "main": "INST_ZTF"
+                }
+            }
+        }
+    },
+    "t0_filters": {
+        "BasicFilter": {
+            "classFullPath": "ampel.pipeline.t0.filters.BasicFilter"
+        },
+        "BasicMultiFilter": {
+            "classFullPath": "ampel.pipeline.t0.filters.BasicMultiFilter"
+        },
+        "StripEnvelopeSN": {
+            "classFullPath": "ampel.contrib.okc.t0.StripEnvelopeSN",
+            "baseConfig": {
+                "minDet": 2,
+                "minTimeDiff": 30,
+                "gMinusR": 0.2
+            }
+        }
+    },
+    "t2_run_config": {},
+    "t2_units": {},
+    "t3_jobs": {},
+    "t3_run_config": {},
+    "t3_units": {}
+}

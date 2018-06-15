@@ -24,8 +24,25 @@ photo_url 	= marshal_root  + 'plot_lc.cgi?name=%s'
 listprog_url = marshal_root + 'list_programs.cgi'
 scanning_url = marshal_root + 'growth_treasures_transient.cgi'
 saving_url = marshal_root   + 'save_cand_growth.cgi?candid=%s&program=%s'
+savedsources_url = marshal_root + 'list_program_sources.cgi'
 rawsaved_url = marshal_root + 'list_sources_bare.cgi'
 annotate_url = marshal_root + 'edit_comment.cgi'
+ingest_url = marshal_root + 'ingest_avro_id.cgi'
+
+
+
+
+httpErrors = {
+    304: 'Error 304: Not Modified: There was no new data to return.',
+    400: 'Error 400: Bad Request: The request was invalid. An accompanying error message will explain why.',
+    403: 'Error 403: Forbidden: The request is understood, but it has been refused. An accompanying error message will explain why',
+    404: 'Error 404: Not Found: The URI requested is invalid or the resource requested, such as a category, does not exists.',
+    500: 'Error 500: Internal Server Error: Something is broken.',
+    503: 'Error 503: Service Unavailable.'
+}
+
+
+
 
 
 class PTFConfig(object) :
@@ -36,6 +53,7 @@ class PTFConfig(object) :
 	def get(self,*args,**kwargs) :
 		return self.config.get(*args,**kwargs)
 
+        
 def get_marshal_html(weblink, attempts=1, max_attempts=5):
 	
 	conf = PTFConfig()
@@ -59,6 +77,69 @@ def get_marshal_html(weblink, attempts=1, max_attempts=5):
 
 	return reponse.text
 
+
+
+def post_marshal_cgi(weblink,data=None,attempts=1,max_attempts=5):
+    """
+    Run one of the growth cgi scripts, check results and return
+    """
+    
+   
+    conf = PTFConfig()
+    auth = requests.auth.HTTPBasicAuth(conf.get('Marshal', 'user'), conf.get('Marshal', 'passw'))
+    print(auth)
+    
+    try:
+	    response = requests.post(weblink, auth=auth, data=data,timeout=120+60*attempts)
+    except (requests.ConnectionError, requests.ReadTimeout) as req_e:		
+
+	    print ('Sergeant.post_marshal_cgi(): ', weblink)
+	    print (req_e)
+	    print ('Sergeant.post_marshal_cgi(): ConnectionError or ReadTimeout this is our {0} attempt, {1} left', attempts, max_attempts-max_attempts)
+
+	    if attempts<max_attempts:
+		    time.sleep(3)
+		    response = post_marshal_cgi(weblink, attempts=attempts+1)	
+	    else:
+		    print ('Sergeant.post_marshal_cgi(): giving up')
+		    raise(requests.exceptions.ConnectionError)
+
+    return response
+            
+ 
+
+
+def json_obj(weblink,data=None,verbose=False):
+        '''
+        Try to post to the marshal, then parse then return (assuming json)
+        '''
+        
+
+        if verbose : print("Trying to post to marshal: "+weblink)
+        
+        r = post_marshal_cgi(weblink,data=data)
+        print(r)
+        status = r.status_code
+        print(status)
+        if status != 200:
+                try:
+                        message = httpErrors[status]
+                except KeyError:
+                        message = 'Error %d: Undocumented error' % status
+                        if verbose : print(message)
+                return None
+        if verbose : print("Successful growth connection")
+    
+        try:
+                rinfo =  json.loads(r.text)
+        except ValueError as e:
+                # No json information returned, usually the status most relevant
+                if verbose:
+                        print('No json returned: status %d' % status )
+                rinfo =  status
+        return rinfo
+
+        
 
 def soup_obj(url):
 	return BeautifulSoup(get_marshal_html(url), 'lxml')
@@ -104,10 +185,33 @@ class Sergeant(object):
 			print ('ERROR, program_name={0} not found'.format(self.program_name))
 			print ('Options for this user are:', self.program_options)
 			return None
-	
+
+
+        def list_my_programids(self):
+                print('My current programs:', self.program_options)
+
+
+        def set_programid(self,programname):
+                soup = soup_obj(listprog_url)
+
+                self.cutprogramidx = None
+                
+		for x in json.loads(soup.find('p').text.encode("ascii")):
+			if x['name'] == programname:				
+				self.cutprogramidx = x['programidx']
+                                self.program_name = programname
+                                
+		if self.cutprogramidx is None:
+			print ('ERROR, program_name={0} not found'.format(self.program_name))
+			print ('Options for this user are:', self.program_options)
+			return None
+                
+                return selt.cutprogramidx
+                        
+                
 	def list_scan_sources(self, hardlimit=200):
-		print ('start_date : {0}'.format(start_date))
-		print ('end_date   : {0}'.format(end_date))
+		print ('start_date : {0}'.format(self.start_date))
+		print ('end_date   : {0}'.format(self.end_date))
 
 		if self.cutprogramidx is None:
 			print('ERROR, first fix program_name upon init')
@@ -142,7 +246,30 @@ class Sergeant(object):
 				sources[-1][key.strip(':')] = tag.next_sibling.strip()
 		return sources
 
-	def list_saved_sources(self, lims=False, maxpage=1e99, verbose=True):
+
+        def get_sourcelist(self):
+                '''
+                Return a list of sources saved to the program.
+                Much faster than list_saved_sources, but no annotation or photometry information
+                '''
+
+                return  json_obj(savedsources_url,data={'programidx':str(self.cutprogramidx)})
+
+
+        def ingest_avro_id(self,avroid):
+                '''
+                Ingest an alert from avro id.
+                Todo: Update to bulk ingestion, check whether already saved or ingested?
+                '''
+
+                
+                return  json_obj(ingest_url,data={'programidx':str(self.cutprogramidx),'avroid':str(avroid)})
+
+
+        
+        
+        
+	def list_saved_sources(self, lims=False, maxpage=1e99, verbose=False):
 		'''
 		read all sources from the Saved Sources page(s)
 		return a list of dictionaries with info (eg, coordinates, light curve)
@@ -167,7 +294,7 @@ class Sergeant(object):
 
 			if verbose:
 				print ('list_saved_sources: reading page {0}'.format(page_number))				
-
+                                
 			self.saved_soup = soup_obj(rawsaved_url + "?programidx=%s&offset=%s" %(self.cutprogramidx, targ0))
 
 			table = self.saved_soup.findAll('table')
@@ -392,6 +519,7 @@ def get_Marshal_info():
 	13 Variable AGN (PI = Matthew Graham)
 	21 Young Stars (PI = lynne hillenbrand)
 	3 TF Science Validation (PI = Christoffer Fremling)
+	4 AMPEL Test (PI = Jakob Nordin)
 	'''
 
 	classifictions= \

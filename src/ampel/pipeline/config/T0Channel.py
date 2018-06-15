@@ -4,10 +4,10 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 03.05.2018
-# Last Modified Date: 03.05.2018
+# Last Modified Date: 31.05.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-from functools import reduce
+from ampel.pipeline.common.AmpelUtils import AmpelUtils
 from ampel.pipeline.config.Channel import Channel
 
 
@@ -15,12 +15,12 @@ class T0Channel(Channel):
 	"""
 	"""
 
-	def __init__(self, doc_channel, source, filter_func, t2_units):
+	def __init__(self, chan_name, chan_doc, source, filter_func, t2_units):
 		"""
-		doc_channel: dict instance containing channel configrations
+		chan_doc: dict instance containing channel configrations
 		"""
 		# Instantiate ampel.pipeline.config.Channel
-		super().__init__(doc_channel, source)
+		super().__init__(chan_name, chan_doc, source)
 
 		# Build these two log entries once and for all
 		self.log_accepted = " -> Channel '%s': alert passes filter criteria" % self.name

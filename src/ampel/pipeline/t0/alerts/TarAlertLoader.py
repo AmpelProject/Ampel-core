@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 13.05.2018
-# Last Modified Date: 17.05.2018
+# Last Modified Date: 08.06.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import tarfile
@@ -15,17 +15,17 @@ class TarAlertLoader():
 	"""
 	"""
 
-	def __init__(self, tar_path=None, file_obj=None, start=0, logger=None):
+	def __init__(self, tar_path=None, file_obj=None, start=0, tar_mode='r:gz', logger=None):
 		"""
 		"""
 		self.logger = LoggingUtils.get_logger() if logger is None else logger
 		self.chained_tal = None
 
 		if file_obj is not None:
-			self.tar_file = tarfile.open(fileobj=file_obj, mode='r:gz')
+			self.tar_file = tarfile.open(fileobj=file_obj, mode=tar_mode)
 		elif tar_path is not None:
 			self.tar_path = tar_path
-			self.tar_file = tarfile.open(tar_path, mode='r:gz')
+			self.tar_file = tarfile.open(tar_path, mode=tar_mode)
 		else:
 			raise ValueError("Please provide value either for 'tar_path' or 'file_obj'")
 

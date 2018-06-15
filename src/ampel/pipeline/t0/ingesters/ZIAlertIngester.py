@@ -4,30 +4,30 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 14.12.2017
-# Last Modified Date: 16.05.2018
+# Last Modified Date: 13.06.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import logging, pymongo, time
+from bson.binary import Binary
 from datetime import datetime, timezone
 from pymongo.errors import BulkWriteError
 
 from ampel.abstract.AbsAlertIngester import AbsAlertIngester
 from ampel.pipeline.t0.ingesters.ZIPhotoDictShaper import ZIPhotoDictShaper
-from ampel.pipeline.t0.ingesters.CompoundBluePrint import CompoundBluePrint
+from ampel.pipeline.t0.ingesters.CompoundBluePrintGenerator import CompoundBluePrintGenerator
 from ampel.pipeline.t0.ingesters.T2DocsBluePrint import T2DocsBluePrint
-from ampel.pipeline.t0.ingesters.ZICompElement import ZICompElement
+from ampel.pipeline.t0.ingesters.ZICompoundShaper import ZICompoundShaper
 from ampel.pipeline.logging.LoggingUtils import LoggingUtils
 
+from ampel.flags.AmpelFlags import AmpelFlags
 from ampel.flags.PhotoFlags import PhotoFlags
-from ampel.flags.TransientFlags import TransientFlags
 from ampel.flags.T2RunStates import T2RunStates
 from ampel.flags.AlDocTypes import AlDocTypes
 from ampel.flags.FlagUtils import FlagUtils
 
-from functools import reduce
+from ampel.pipeline.common.AmpelUtils import AmpelUtils
 from operator import or_
 
-# https://github.com/AmpelProject/Ampel/wiki/Ampel-Flags
 SUPERSEEDED = FlagUtils.get_flag_pos_in_enumflag(PhotoFlags.SUPERSEEDED)
 TO_RUN = FlagUtils.get_flag_pos_in_enumflag(T2RunStates.TO_RUN)
 
@@ -41,19 +41,15 @@ class ZIAlertIngester(AbsAlertIngester):
 	"""
 
 	version = 1.0
-	new_tran_dbflag = FlagUtils.enumflag_to_dbflag(
-		TransientFlags.INST_ZTF|TransientFlags.ALERT_IPAC
+	std_dbflag = FlagUtils.enumflag_to_dbflag(
+		AmpelFlags.INST_ZTF|AmpelFlags.SRC_IPAC
 	)
 
-
-	def __init__(
-		self, channels, t2_units_col, output_col, logger=None,
-		check_reprocessing=True, alert_history_length=30
-	):
+	def __init__(self, config, central_db, channels, logger=None):
 		"""
+		config: dict instance containing the ampel config
+		central_db: instance of pymongo.database.DataBase
 		channels: list of ampel.pipeline.config.Channel
-		t2_units_col: the db collection from the config DB hosting t2 unit parameters
-		output_col: instance of pymongo.collection.Collection (required for database operations)
 		"""
 
 		if not type(channels) is list:
@@ -62,42 +58,34 @@ class ZIAlertIngester(AbsAlertIngester):
 		if len(channels) == 0:
 			raise ValueError("Parameter channels cannot be empty")
 
+		conf = config['global']['sources']['ZTFIPAC']
 		self.channel_names = tuple(channel.name for channel in channels)
 		self.logger = LoggingUtils.get_logger() if logger is None else logger
 		self.logger.info("Configuring ZIAlertIngester for channels %s" % repr(self.channel_names))
 		
 		# T2 unit making use of upper limits
 		self.t2_units_using_uls = tuple(
-			el["_id"] for el in t2_units_col.find({}) if el['upperLimits'] is True
+			key for key, value in config['t2_units'].items() 
+			if value['upperLimits'] is True
 		)
 
 		# instantiate util classes used in method ingest()
 		self.photo_shaper = ZIPhotoDictShaper()
 		self.t2_blueprint_creator = T2DocsBluePrint(channels, self.t2_units_using_uls)
-		self.comp_gen = CompoundBluePrint(
-			ZICompElement(channels), self.logger
-		)
+		self.comp_bp_generator = CompoundBluePrintGenerator(channels, ZICompoundShaper, self.logger)
 
-		self.logger.info(
-			"CompoundBluePrint instantiated using ZICompElement version %0.1f" % 
-			ZICompElement.version
-		)
-
-		self.col = output_col
-		self.append_bulk_time = None
-		self.append_per_op_time = None
-		self.check_reproc = check_reprocessing
-		self.al_hist_len = alert_history_length
-
+		self.main_col = central_db['main']
+		self.photo_col = central_db['photo']
+		self.check_reproc = conf['ingestion']['checkReprocessing']
+		self.al_hist_len = conf['alerts']['alertHistoryLength']
+		self.JD2017 = 2457754.5
+		self.count_dict = None
 		self.lookup_projection = {
-			"_id": 1,
-			"alFlags": 1,
-			"jd": 1,
-			"fid": 1,
-			"rcid": 1,
-			"alExcluded": 1,
-			"magpsf": 1
+			"_id": 1, "alFlags": 1, "jd": 1, "fid": 1,
+			"rcid": 1, "alExcluded": 1, "magpsf": 1
 		}
+
+		self.logger.info("ZIAlertIngester setup using completed")
 
 
 	def flush_report(self):
@@ -110,24 +98,21 @@ class ZIAlertIngester(AbsAlertIngester):
 		Among other things, it updates the main transient document, 
 		which contains a list of jobIds associated with the processing of the given transient.
 		We thus need to know what is the current jobId to perform this update.
-		The provided parameter should be a mongoDB ObjectId.
+		The provided parameter should be a bson ObjectId.
 		"""
 		self.job_id = job_id
 
 
-	def set_stats_dict(self, duration_dict, count_dict):
+	def set_stats_dict(self, time_dict, count_dict):
 		"""
 		"""
-		if not 'dbBulkTime' in duration_dict:
-			duration_dict['dbBulkTime'] = []
 
-		if not 'dbPerOpMeanTime' in duration_dict:
-			duration_dict['dbPerOpMeanTime'] = []
-
-		self.append_bulk_time = duration_dict['dbBulkTime'].append
-		self.append_per_op_time = duration_dict['dbPerOpMeanTime'].append
-		self.append_pre_ingest_time = duration_dict['preIngestTime'].append
 		self.count_dict = count_dict
+		self.time_dict = time_dict
+
+		for el in ('dbBulkTimePhoto', 'dbBulkTimeMain', 'dbPerOpMeanTimePhoto', 'dbPerOpMeanTimeMain'):
+			if not el in time_dict:
+				time_dict[el] = []
 
 		for key in ('ppsUpd', 'ulsUpd', 't2Upd', 'compUpd', 'ppsReproc'):
 			self.count_dict[key] = 0
@@ -170,7 +155,8 @@ class ZIAlertIngester(AbsAlertIngester):
 		###############################################
 
 		# pymongo bulk op array
-		db_ops = []
+		db_photo_ops = []
+		db_main_ops = []
 
 		# metrics
 		pps_reprocs = 0
@@ -180,16 +166,10 @@ class ZIAlertIngester(AbsAlertIngester):
 
 		# Load existing photopoint and upper limits from DB if any
 		self.logger.info("Checking DB for existing pps/uls")
-		meas_db = self.col.find(
+		meas_db = self.photo_col.find(
 			{
 				# tranId should be specific to one instrument
-				"tranId": tran_id,
-				"alDocType": {
-					'$in': [
-						AlDocTypes.PHOTOPOINT, 
-						AlDocTypes.UPPERLIMIT
-					]
-				}
+				"tranId": tran_id
 			},
 			self.lookup_projection
 		)
@@ -214,8 +194,11 @@ class ZIAlertIngester(AbsAlertIngester):
 		# python set of ids of photopoints from DB
 		ids_pps_db = {el['_id'] for el in pps_db}
 
+		# Set of uls ids from alert
+		ids_uls_alert = set()
+
 		# Create unique ids for the upper limits from alert
-		# Example using the following upper limit: 
+		# Concrete example:
 		# {
 		#   'diffmaglim': 19.024799346923828,
  		#   'fid': 2,
@@ -227,12 +210,7 @@ class ZIAlertIngester(AbsAlertIngester):
 		# }
 		# -> generated ID: 2458089740532428190247993
 		# -> %timeit: 1,3 microsecond on MBP 15" 2017
-		ids_uls_alert = set()
-		
-		# Process upper limits if provided
 		if uls_alert is not None:
-
-			JD2017 = 2457754.5
 
 			for ul in uls_alert:
 
@@ -243,16 +221,14 @@ class ZIAlertIngester(AbsAlertIngester):
 				# Update avro dict
 				ul['_id'] = int(
 					"%i%s%i" % (
-						# Convert jd float into int by multiplying it by 10**6
-						# we thereby drop the last digit (milisecond) which is pointless
-						# for the present purpose
-						(JD2017 - ul['jd']) * 1000000, 
-						rcid,
-						ul['diffmaglim'] * 1000  # cut of mag float after 3 digits after coma
+						# Convert jd float into int by multiplying it by 10**6, we thereby 
+						# drop the last digit (milisecond) which is pointless for our purpose
+						(self.JD2017 - ul['jd']) * 1000000, 
+						# cut of mag float after 3 digits after coma
+						rcid, ul['diffmaglim'] * 1000
 					)
 				)
 
-				# Build list ? then cast to set. Use list later in ampelize to create dict
 				ids_uls_alert.add(ul['_id'])
 
 		# python set of ids of upper limits from DB
@@ -273,14 +249,12 @@ class ZIAlertIngester(AbsAlertIngester):
 		ids_uls_to_insert = ids_uls_alert - ids_uls_db
 
 		# If the photopoints already exist in DB 
-		#self._insert_feedback(self, ids_pps_to_insert, "photo point")
-		#self._insert_feedback(self, ids_uls_to_insert, "point")
 
 		# PHOTO POINTS
 		if ids_pps_to_insert:
 
 			self.logger.info(
-				"%i new photo point(s) will be inserted into DB: %s" % 
+				"%i new photo point(s) will be upserted: %s" % 
 				(len(ids_pps_to_insert), ids_pps_to_insert)
 			)
 
@@ -292,7 +266,7 @@ class ZIAlertIngester(AbsAlertIngester):
 			)
 
 			for pp in pps_to_insert:
-				db_ops.append(
+				db_photo_ops.append(
 					pymongo.UpdateOne(
 						{"_id": pp["_id"]},
 						{"$setOnInsert": pp},
@@ -300,13 +274,13 @@ class ZIAlertIngester(AbsAlertIngester):
 					)
 				)
 		else:
-			self.logger.info("No new photo point to insert into DB")
+			self.logger.info("No photopoint db update required")
 
 		# UPPER LIMITS
 		if ids_uls_to_insert:
 
 			self.logger.info(
-				"%i new upper limit(s) will be inserted into DB: %s" % 
+				"%i upper limit(s) will be inserted/updated: %s" % 
 				(len(ids_uls_to_insert), ids_uls_to_insert)
 			)
 
@@ -319,20 +293,18 @@ class ZIAlertIngester(AbsAlertIngester):
 
 			# Insert new upper limit into DB
 			for ul in uls_to_insert:
-				db_ops.append(
+				db_photo_ops.append(
 					pymongo.UpdateOne(
 						{"_id": ul["_id"]},
 						{
 							"$setOnInsert": ul,
-							"$addToSet": {
-								'tranId': tran_id
-							}
+							"$addToSet": {'tranId': tran_id}
 						},
 						upsert=True
 					)
 				)
 		else:
-			self.logger.info("No new upper limit to insert into DB")
+			self.logger.info("No upper limit db update required")
 
 
 
@@ -385,7 +357,7 @@ class ZIAlertIngester(AbsAlertIngester):
 
 						# Create and append pymongo update operation
 						pps_reprocs += 1
-						db_ops.append(
+						db_photo_ops.append(
 							pymongo.UpdateOne(
 								{'_id': photod_db_superseeded["_id"]}, 
 								{
@@ -413,8 +385,7 @@ class ZIAlertIngester(AbsAlertIngester):
 		)
 
 		# Compute compound ids (used later for creating compounds and t2 docs)
-		comp_gen = self.comp_gen
-		comp_gen.generate(
+		comp_bp = self.comp_bp_generator.generate(
 			sorted(
 				pps_db + pps_to_insert + uls_db + uls_to_insert, 
 				key=lambda k: k['jd']
@@ -425,44 +396,48 @@ class ZIAlertIngester(AbsAlertIngester):
 
 		# See how many different eff_comp_id were generated (possibly a single one)
 		# and generate corresponding ampel document to be inserted later
-		for eff_comp_id in comp_gen.get_effids_of_chans(chan_names):
+		for eff_comp_id in comp_bp.get_effids_of_chans(chan_names):
 		
 			d_addtoset = {
 				"channels": {
 					"$each": list(
-						comp_gen.get_chans_with_effid(eff_comp_id)
+						comp_bp.get_chans_with_effid(eff_comp_id)
 					)
 				}
 			}
 
-			if comp_gen.has_flavors(eff_comp_id):
+			if comp_bp.has_flavors(eff_comp_id):
 				d_addtoset["flavors"] = {
 					# returns tuple
-					"$each": comp_gen.get_compound_flavors(eff_comp_id)
+					"$each": comp_bp.get_compound_flavors(eff_comp_id)
 				}
 			
-			comp_dict = comp_gen.get_eff_compound(eff_comp_id)
-			pp_comp_id = comp_gen.get_ppid_of_effid(eff_comp_id)
+			comp_dict = comp_bp.get_eff_compound(eff_comp_id)
+			pp_comp_id = comp_bp.get_ppid_of_effid(eff_comp_id)
+			bson_eff_comp_id = Binary(eff_comp_id, 5)
 
 			d_set_on_insert =  {
-				"_id": eff_comp_id,
+				"_id": bson_eff_comp_id,
 				"tranId": tran_id,
 				"alDocType": AlDocTypes.COMPOUND,
+				"alFlags": FlagUtils.enumflag_to_dbflag(
+					comp_bp.get_comp_flags(eff_comp_id)
+				),
 				"tier": 0,
 				"added": datetime.utcnow().timestamp(),
-				"lastppdt": pps_alert[0]['jd'],
+				"lastJD": pps_alert[0]['jd'],
 				"len": len(comp_dict),
 				"comp": comp_dict
 			}
 
 			if pp_comp_id != eff_comp_id:
-				d_set_on_insert['ppCompId'] = pp_comp_id
+				d_set_on_insert['ppId'] = Binary(pp_comp_id, 5)
 
 			compound_upserts += 1
 
-			db_ops.append(
+			db_main_ops.append(
 				pymongo.UpdateOne(
-					{"_id": eff_comp_id},
+					{"_id": bson_eff_comp_id},
 					{
 						"$setOnInsert": d_set_on_insert,
 						"$addToSet": d_addtoset
@@ -480,12 +455,11 @@ class ZIAlertIngester(AbsAlertIngester):
 
 		self.logger.info("Generating T2 docs")
 		t2docs_blueprint = self.t2_blueprint_creator.create_blueprint(
-			comp_gen, list_of_t2_units
+			comp_bp, list_of_t2_units
 		)
 		
 		# counter for user feedback (after next loop)
-		db_ops_len_before = len(db_ops)
-		now = datetime.now(timezone.utc).timestamp()
+		now = int(datetime.now(timezone.utc).timestamp())
 
 		# Loop over t2 runnables
 		for t2_id in t2docs_blueprint.keys():
@@ -501,6 +475,8 @@ class ZIAlertIngester(AbsAlertIngester):
 						t2docs_blueprint[t2_id][run_config][bifold_comp_id]
 					)
 
+					bson_bifold_comp_id = Binary(bifold_comp_id, 5)
+
 					journal = []
 
 					# Matching search criteria
@@ -509,13 +485,13 @@ class ZIAlertIngester(AbsAlertIngester):
 						"alDocType": AlDocTypes.T2RECORD,
 						"t2Unit": t2_id, 
 						"runConfig": run_config
-						#"compoundId": bifold_comp_id,
 					}
 
 					# Attributes set if no previous doc exists
 					d_set_on_insert = {
 						"tranId": tran_id,
 						"alDocType": AlDocTypes.T2RECORD,
+						"alFlags": ZIAlertIngester.std_dbflag,
 						"t2Unit": t2_id, 
 						"runConfig": run_config, 
 						"runState": TO_RUN
@@ -532,30 +508,32 @@ class ZIAlertIngester(AbsAlertIngester):
 					# bifold_comp_id is then a pp_compound_id
 					if t2_id not in self.t2_units_using_uls:
 
-						# match_dict["compoundId"] = bifold_comp_id or 
-						# match_dict["compoundId"] = {"$in": [bifold_comp_id]}
+						# match_dict["compId"] = bifold_comp_id or 
+						# match_dict["compId"] = {"$in": [bifold_comp_id]}
 						# triggers the error: "Cannot apply $addToSet to non-array field. \
-						# Field named 'compoundId' has non-array type string"
+						# Field named 'compId' has non-array type string"
 						# -> See https://jira.mongodb.org/browse/SERVER-3946
-						match_dict["compoundId"] = {
+						match_dict["compId"] = {
 							"$elemMatch": {
-								"$eq": bifold_comp_id
+								"$eq": bson_bifold_comp_id
 							}
 						}
 
-						d_addtoset["compoundId"] = {
-							"$each": list(
-								{bifold_comp_id} | 
-								comp_gen.get_effids_of_chans(eff_chan_names)
-							)
+						d_addtoset["compId"] = {
+							"$each": [
+								Binary(el, 5) for el in (
+									{bifold_comp_id} | 
+									comp_bp.get_effids_of_chans(eff_chan_names)
+								)
+							]
 						}
 
 						# Update journal: register eff id for each channel
 						journal_entries = [
 							{
 								"dt": now,
-								"chan": chan_name,
-								"effId": comp_gen.get_effid_of_chan(chan_name),
+								"channels": [chan_name],
+								"effId": comp_bp.get_effid_of_chan(chan_name),
 								"op": "addToSet"
 							}
 							for chan_name in eff_chan_names
@@ -566,7 +544,7 @@ class ZIAlertIngester(AbsAlertIngester):
 							{
 								"dt": now,
 								"channels": eff_chan_names,
-								"ppId": bifold_comp_id,
+								"ppId": bson_bifold_comp_id,
 								"op": "upsertPp"
 							}
 						)
@@ -578,8 +556,8 @@ class ZIAlertIngester(AbsAlertIngester):
 					# bifold_comp_id is then an eff_compound_id
 					else:
 
-						match_dict["compoundId"] = bifold_comp_id
-						d_set_on_insert["compoundId"] = bifold_comp_id
+						match_dict["compId"] = bson_bifold_comp_id
+						d_set_on_insert["compId"] = bson_bifold_comp_id
 
 						# Update journal
 						d_addtoset["journal"] = {
@@ -591,7 +569,7 @@ class ZIAlertIngester(AbsAlertIngester):
 					t2_upserts += 1
 
 					# Append update operation to bulk list
-					db_ops.append(
+					db_main_ops.append(
 						pymongo.UpdateOne(
 							match_dict,
 							{
@@ -616,7 +594,7 @@ class ZIAlertIngester(AbsAlertIngester):
 		self.logger.info("Updating transient document")
 
 		# TODO add alFlags
-		db_ops.append(
+		db_main_ops.append(
 			pymongo.UpdateOne(
 				{
 					"tranId": tran_id,
@@ -625,26 +603,26 @@ class ZIAlertIngester(AbsAlertIngester):
 				{
 					"$setOnInsert": {
 						"tranId": tran_id,
-						"alDocType": AlDocTypes.TRANSIENT
+						"alDocType": AlDocTypes.TRANSIENT,
 					},
 					'$addToSet': {
 						"alFlags": {
-							"$each": ZIAlertIngester.new_tran_dbflag
+							"$each": ZIAlertIngester.std_dbflag
 						},
-						'channels': {
-							"$each": chan_names
-						},
+						'channels': (
+							chan_names[0] if len(chan_names) == 1 
+							else {"$each": chan_names}
+						),
 						'jobIds': self.job_id,
 					},
 					"$max": {
-						"lastPPDate": pps_alert[0]["jd"],
+						"lastPPJD": pps_alert[0]["jd"],
 						"modified": now
 					},
 					"$push": {
-						"lastModified": {
+						"journal": {
 							'dt': now,
 							'tier': 0,
-							'src': "ZIAI", # ZIAlertIngesert
 							'channels': chan_names
 						}
 					}
@@ -655,19 +633,26 @@ class ZIAlertIngester(AbsAlertIngester):
 
 		try: 
 
-			if self.append_bulk_time is not None:
+			if self.count_dict is not None:
 
 				# Save time required by python for this method so far
-				self.append_pre_ingest_time(time.time() - start)
+				self.time_dict['preIngestTime'].append(time.time() - start)
 
-				start = time.time()
-				# Perform all DB operations
-				db_op_results = self.col.bulk_write(db_ops, ordered=False)
-				time_delta = time.time() - start
+				# Perform DB operations: photo
+				if len(db_photo_ops) > 0:
+					start = time.time()
+					db_photo_results = self.photo_col.bulk_write(db_photo_ops, ordered=False)
+					time_delta = time.time() - start
+					self.time_dict['dbBulkTimePhoto'].append(time_delta)
+					self.time_dict['dbPerOpMeanTimePhoto'].append(time_delta / len(db_photo_ops))
 
-				# Time recoders
-				self.append_bulk_time(time_delta)
-				self.append_per_op_time(time_delta / len(db_ops))
+				# Perform DB operations: main
+				if len(db_main_ops) > 0:
+					start = time.time()
+					db_main_results = self.main_col.bulk_write(db_main_ops, ordered=False)
+					time_delta = time.time() - start
+					self.time_dict['dbBulkTimeMain'].append(time_delta)
+					self.time_dict['dbPerOpMeanTimeMain'].append(time_delta / len(db_main_ops))
 
 				# Counters
 				self.count_dict['ppsUpd'] += len(pps_to_insert)
@@ -677,36 +662,40 @@ class ZIAlertIngester(AbsAlertIngester):
 				self.count_dict['ppsReproc'] += pps_reprocs
 
 			else:
-				db_op_results = self.col.bulk_write(db_ops, ordered=False) # DB update
+
+				if len(db_photo_ops) > 0:
+					db_photo_results = self.photo_col.bulk_write(db_photo_ops, ordered=False)
+
+				if len(db_main_ops) > 0:
+					db_main_results = self.main_col.bulk_write(db_main_ops, ordered=False)
+
 
 			# Feedback
-			if (
-				len(db_op_results.bulk_api_result['writeErrors']) > 0 or
-				len(db_op_results.bulk_api_result['writeConcernErrors']) > 0
-			):
-				self.logger.error(db_op_results.bulk_api_result)
-			else:
-				self.logger.info(
-					"DB feeback: %i upserted" % 
-					db_op_results.bulk_api_result['nUpserted']
-				)
+			if len(db_photo_ops) > 0: 
+				if (
+					len(db_photo_results.bulk_api_result['writeErrors']) > 0 or
+					len(db_photo_results.bulk_api_result['writeConcernErrors']) > 0
+				):
+					self.logger.error(db_photo_results.bulk_api_result)
+				else:
+					self.logger.info(
+						"DB photo feeback: %i upserted" % 
+						db_photo_results.bulk_api_result['nUpserted']
+					)
+
+			if len(db_main_ops) > 0:
+				if (
+					len(db_main_results.bulk_api_result['writeErrors']) > 0 or
+					len(db_main_results.bulk_api_result['writeConcernErrors']) > 0
+				):
+					self.logger.error(db_main_results.bulk_api_result)
+				else:
+					self.logger.info(
+						"DB main feeback: %i upserted" % 
+						db_main_results.bulk_api_result['nUpserted']
+					)
 
 		except BulkWriteError as bwe: 
 			self.logger.error(bwe.details) 
 			# TODO add error flag to Job and Transient
 			# TODO add return code 
-
-
-
-	def _insert_feedback(self, ids_to_insert, measurement):
-
-		# If the photopoints already exist in DB 
-		if not ids_to_insert:
-			self.logger.info(
-				"No new %s to insert in DB" % measurement
-			)
-		else:
-			self.logger.info(
-				"%i new %s(s) will be inserted into DB: %s" % 
-				(len(ids_to_insert), measurement, ids_to_insert)
-			)
