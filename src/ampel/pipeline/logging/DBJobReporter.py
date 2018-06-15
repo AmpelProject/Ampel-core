@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 14.12.2017
-# Last Modified Date: 13.06.2018
+# Last Modified Date: 15.06.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import logging, time
@@ -24,7 +24,7 @@ class DBJobReporter:
 		mongo_collection: instance of pymongo.collection.Collection
 		"""
 		self.col = mongo_collection
-		self.job_name = "Not set"
+		self.job_name = None
 		self.flush_job_info = False
 
 
@@ -72,7 +72,7 @@ class DBJobReporter:
 			"params": params,
 		}
 
-		if hasattr(self, "job_name"):
+		if self.job_name is not None:
 			job_dict['jobName'] = self.job_name
 
 		if hasattr(self, "arguments"):
@@ -85,12 +85,6 @@ class DBJobReporter:
 
 		# Returned objectId can later be used to update the inserted document
 		return self.job_id
-
-
-	def set_job_stats(self, key_name, dict_instance):
-		""" 
-		"""
-		self.job_stats = (key_name, dict_instance)
 
 
 	def push_logs(self, records):
@@ -114,10 +108,6 @@ class DBJobReporter:
 
 			if hasattr(self, "has_error"):
 				update_dict["$set"]['hasError'] = True
-
-			if hasattr(self, "job_stats"):
-				update_dict["$set"][self.job_stats[0]] = self.job_stats[1]
-
 
 		self.col.update_one(
 			{"_id": self.job_id},

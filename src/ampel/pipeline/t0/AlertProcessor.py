@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 10.10.2017
-# Last Modified Date: 14.06.2018
+# Last Modified Date: 15.06.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import pymongo, time, numpy as np
@@ -240,8 +240,7 @@ class AlertProcessor(DBWired):
 		# Create DB logging handler instance (logging.Handler child class)
 		# This class formats, saves and pushes log records into the DB
 		db_logging_handler = DBLoggingHandler(
-			db_job_reporter, 
-			previous_logs=self.ilb.get_logs()
+			db_job_reporter, previous_logs=self.ilb.get_logs()
 		)
 
 		# Add db logging handler to the logger stack of handlers 
@@ -505,8 +504,10 @@ class AlertProcessor(DBWired):
 
 				self.gather_and_send_stats(post_run, job_info)
 
-			# Insert job info into job document
-			db_job_reporter.set_job_stats("stats", job_info)
+			# Insert job stats
+			job_info['_id'] = db_job_reporter.get_job_id()
+			job_info['tier'] = 0
+			self.central_db['stats'].insert_one(job_info)
 
 		except:
 
