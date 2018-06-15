@@ -236,7 +236,8 @@ def _convert_isdiffpos(in_dict):
     k = 'isdiffpos'
     v = out_dict[k]
     if k is not None:
-        out_dict[k] = v in {'0', 't'}
+        assert v in {'0', '1', 'f', 't'}
+        out_dict[k] = v in {'1', 't'}
     return out_dict
 
 from sqlalchemy.dialects import postgresql
