@@ -55,7 +55,7 @@ class AmpelAlert(Frozen):
 				[d for d in al['prv_candidates'] if d.get('candid') is None],
 				al.get('cutoutScience') if cutout else None
 			)
-
+        
 
 	@classmethod
 	def add_class_flags(cls, arg_flags):
