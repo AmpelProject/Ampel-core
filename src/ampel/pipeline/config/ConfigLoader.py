@@ -10,6 +10,8 @@ import json
 import pkg_resources
 from ampel.pipeline.config import set_config
 
+from ampel.pipeline.t3.T3JobLoader import T3JobLoader
+
 def load_config(path, gather_plugins=True):
 	"""Load the JSON configuration file at path, and add plugins registered via pkg_resources"""
 	with open(path) as f:
@@ -68,6 +70,7 @@ def load_config(path, gather_plugins=True):
 		for name, channel_config in resource.resolve()().items():
 			if name in config['t3_jobs']:
 				raise KeyError("T3 job {} (defined as entry point {} in {}) already exists in the provided config file".format(name, resource.name, resource.dist))
+			T3JobLoader.job_schema(channel_config)
 			config['t3_jobs'][name] = channel_config
 
 

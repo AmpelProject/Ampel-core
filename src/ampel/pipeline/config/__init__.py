@@ -4,22 +4,8 @@
 # Author            : Jakob van Santen <jakob.van.santen@desy.de>
 
 import warnings
+from types import MappingProxyType
 _global_config = None
-
-class frozendict(dict):
-	def __repr__(self):
-		return '{}({})'.format(type(self).__name__, super(type(self), self).__repr__())
-	def _disable(self, *args, **kwargs):
-		raise AttributeError('frozendict is immutable')
-	update = _disable
-	pop = _disable
-	popitem = _disable
-	setdefault = _disable
-	clear = _disable
-	__setitem__ = _disable
-	__delitem__ = _disable
-	__setattr__ = _disable
-	__delattr__ = _disable
 
 def freeze(collection):
 	"""
@@ -27,7 +13,7 @@ def freeze(collection):
 	:param collection: a collection that was json serializable (i.e. consists of dicts and lists)
 	"""
 	if isinstance(collection, dict):
-		return frozendict({freeze(k): freeze(v) for k,v in collection.items()})
+		return MappingProxyType({freeze(k): freeze(v) for k,v in collection.items()})
 	elif isinstance(collection, list):
 		return tuple(map(freeze, collection))
 	else:
