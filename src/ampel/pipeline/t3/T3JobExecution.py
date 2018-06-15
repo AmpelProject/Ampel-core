@@ -18,6 +18,8 @@ from ampel.flags.AlDocTypes import AlDocTypes
 from ampel.flags.FlagUtils import FlagUtils
 from datetime import datetime, timezone
 from itertools import islice
+from ampel.pipeline.config import get_config
+from pymongo import MongoClient
 
 class T3JobExecution:
 	"""
@@ -27,6 +29,8 @@ class T3JobExecution:
 		""" 
 		"""
 
+		if logger is None:
+			logger = LoggingUtils.get_logger(unique=True)
 		self.logger = logger
 		self.t3_job = t3_job
 
@@ -80,6 +84,12 @@ class T3JobExecution:
 		central_db: pymongo database 
 		al_config: ampel config (dict)
 		"""
+		
+		if al_config is None:
+			al_config = get_config()
+		if central_db is None:
+			central_db = MongoClient(al_config['resources']['mongo']()['writer'])["Ampel"]
+		
 		# T3 job requiring prior transient loading 
 		if self.t3_job.get_config('input.select') is not None:
 
