@@ -305,8 +305,8 @@ class T3JobExecution:
 			for tran_id, tran_data in al_tran_data.items():
 
 				tran_view = tran_data.create_view(
-					channel=task_chans if type(task_chans) is not list else None, 
-					channels=task_chans if type(task_chans) is list else None, 
+					channel=task_chans if not AmpelUtils.is_sequence(task_chans) else None,
+					channels=task_chans if AmpelUtils.is_sequence(task_chans) else None,
 					t2_ids=t3_task.get_config('select.t2(s)')
 				)
 				

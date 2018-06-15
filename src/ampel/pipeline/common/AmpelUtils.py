@@ -80,6 +80,12 @@ class AmpelUtils():
 			number_map[str_long[14:16]]
 		)
 
+	@staticmethod
+	def is_sequence(obj):
+		"""
+		A sequence, but not a string
+		"""
+		return isinstance(obj, collections.abc.Sequence) and not isinstance(obj, (str, bytes, bytearray))
 
 	@staticmethod
 	def to_set(arg):

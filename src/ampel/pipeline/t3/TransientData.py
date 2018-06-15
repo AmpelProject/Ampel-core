@@ -264,8 +264,10 @@ class TransientData:
 		""" """
 
 		# Robustness
-		if type(channels) is str:
-			raise ValueError("Illegal argument")
+		if isinstance(channels, str):
+			raise TypeError("channels should be a collection, not str")
+		if not (channel is None or isinstance(channel, str)):
+			raise TypeError("channel should be str or None")
 
 		# no photometric info were requested / loaded
 		if len(self.photopoints) == 0 and len(self.upperlimits) == 0:

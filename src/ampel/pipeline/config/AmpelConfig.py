@@ -10,6 +10,7 @@
 import warnings
 from functools import reduce
 from types import MappingProxyType
+from ampel.pipeline.common.AmpelUtils import AmpelUtils
 
 class AmpelConfig:
 	
@@ -34,7 +35,7 @@ class AmpelConfig:
 		if key is None:
 			return cls._global_config
 
-		sub_conf = reduce(type(cls._global_config).get, key.split("."), cls._global_config)
+		sub_conf = AmpelUtils.get_by_path(cls._global_config, key)
 		if sub_conf is None:
 			return sub_conf
 			
