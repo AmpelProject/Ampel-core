@@ -99,11 +99,12 @@ class DevAlertProcessor():
 			# filter alert
 			self._filter(ampel_alert)
 
+			iter_count += 1
 			if iter_count == iter_max:
 				self._logger.info("Reached max number of iterations")
 				break
 
-			iter_count += 1
+
 
 		self._logger.info(
 			"%i alert(s) processed (time required: %is)" % 
