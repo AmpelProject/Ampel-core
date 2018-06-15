@@ -14,5 +14,5 @@ class PhotoPolicy(Flag):
 	Not synced with DB
 	"""
 
-	USE_WEIZMANN_SUB		=	1
-	USE_HUMBOLDT_ZP			=	2
+	USE_WEIZMANN_SUB          = 1
+	USE_HUMBOLDT_ZP           = 2

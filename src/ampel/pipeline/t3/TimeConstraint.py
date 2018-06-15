@@ -13,125 +13,117 @@ from voluptuous import Schema, Any, Required
 
 class TimeConstraint:
 	"""
-	-> provide either 'timeDelta' or ('from' and/or 'until')
-	* 'timeDelta': instance of datetime.timedelta or dict instance 
-	   that will be passed to datetime.timedelta (ex: {'days': -10})
-	* 'from' and 'until': either datetime.datetime or dict fulfilling 
-	   TimeConstraint.schema_types criteria
+	* 'from' and 'until': either:
+		-> None
+		-> datetime.datetime
+		-> datetime.timedelta
+		-> dict fulfilling TimeConstraint._json_sub_schema criteria
+
+	TimeConstraint._json_sub_schema dict key/value criteria are either:
+		* key: 'unixTime', value: float
+		* keys 'dateTimeStr' and 'dateTimeFormat' with str values
+		* key 'timeDelta', value: dict that will be passed to datetime.timedelta (ex: {'days': -10})
 	"""
 
-	_schema_time = Schema(
+	_json_sub_schema = Schema(
 		Any(
+			{Required('timeDelta'): dict},
 			{Required('unixTime'): float},
-			{Required('dateTimeStr'): str, Required('dateTimeFormat'): str}
+			{
+				Required('dateTimeStr'): str, 
+				Required('dateTimeFormat'): str
+			}
 		)
 	)
 
-	schema_types = Schema(
+	json_root_schema = Schema(
 		Any(
 			None,
 			{
-				"timeDelta": Any(None, timedelta, dict), 
-				"from": Any(None, datetime, _schema_time), 
-				"until": Any(None, datetime, _schema_time)
+				"from": Any(None, datetime, timedelta, _json_sub_schema), 
+				"until": Any(None, datetime, timedelta, _json_sub_schema)
 			}
 		)
 	)
 
 
-	def __init__(self, parameters=None):
-		"""
-		paramters: dict instance with keys: 'timeDelta' or ('from' and/or 'until')
-		* 'timeDelta' dict value: either datetime.timedelta or dict that will be 
-		   passed to datetime.timedelta (ex: {'days': -10}
-		* 'from' and 'until' dict values: either datetime.datetime 
-		   or dict fulfilling TimeConstraint.schema_types criteria
-		"""
-		self.contraints = {}
-
-		if parameters is not None:
-			self.from_parameters(parameters, self)
-
-
-	def set_time_delta(self, time_delta):
-		"""	
-		"""
-
-		if 'from' in self.contraints or 'until' in self.contraints:
-			raise ValueError("Time delta and time from/until cannot be used together")
-
-		if type(time_delta) is dict: 
-			self.contraints['timeDelta'] = timedelta(**time_delta)
-		elif type(time_delta) is timedelta:
-			self.contraints['timeDelta'] = time_delta
-		else:
-			raise ValueError("Illegal Argument")
-
-
-	def set_time_contraint(self, key, value, schema_check=True):
-		"""	
-		key: either 'from' or 'until'
-		"""
-
-		if 'timeDelta' in self.contraints:
-			raise ValueError("Time delta and time from/until cannot be used together")
-
-		if key not in ['from', 'until']:
-			raise ValueError("Key must be either 'from' or 'until'")
-
-		if type(value) is dict: 
-			if schema_check:
-				TimeConstraint._schema_time(value)
-			self.contraints[key] = TimeConstraint._get_time(value)
-		elif type(value) is datetime:
-			self.contraints[key] = value
-		else:
-			raise ValueError("Illegal Argument")
-
-
-	def get(self, attr):
-		"""
-		attr: either 'timeDelta', 'from' or 'until'
-		"""
-		if attr == 'timeDelta' and self.contraints.get('timeDelta') is not None:
-			return datetime.today() + self.contraints['timeDelta']
-
-		return self.contraints.get(attr)
-
-
 	@staticmethod
-	def from_parameters(time_constraint_dict, time_constraint=None):
+	def from_parameters(time_constraint_dict, time_constraint_obj=None, runs_col=None):
 		"""	
 		"""	
 		if time_constraint_dict is None:
 			return None
 
-		# Robustness
-		TimeConstraint.schema_types(time_constraint_dict)
-
-		tc = TimeConstraint() if time_constraint is None else time_constraint
-
-		if time_constraint_dict.get('timeDelta') is not None:
-			tc.set_time_delta(time_constraint_dict['timeDelta'])
-
-		for key in ('from', 'until'):
-			if time_constraint_dict.get(key) is not None:
-				tc.set_time_contraint(key, time_constraint_dict[key], schema_check=False)
-
+		TimeConstraint.json_root_schema(time_constraint_dict) # Robustness
+		tc = TimeConstraint() if time_constraint_obj is None else time_constraint_obj
+		tc.set_from(time_constraint_dict.get('from'), False)
+		tc.set_until(time_constraint_dict.get('until'), False)
 		return tc
 
 
-	@staticmethod
-	def _get_time(val):
+	def __init__(self, parameters=None):
 		"""
-		Schema validation ensures val can be only either None, dict or datetime
+		parameters: dict instance with keys: 'from' and/or 'until'
+		* 'from' and 'until' dict values, either: 
+			-> datetime.datetime 
+			-> datetime.timedelta 
+		   	-> dict fulfilling TimeConstraint._json_sub_schema criteria (see class docstring)
 		"""
-		# Past this point, schema validation ensures it is dict 
-		if 'unixTime' in val:
-			return datetime.utcfromtimestamp(val['unixTime'])
+		self.params = {}
 
-		if 'dateTimeStr' in val:
-			# Schema validation ensures 'dateTimeFormat' is set when 'dateTimeStr' is
-			return datetime.strptime(val['dateTimeStr'], ['dateTimeFormat'])
+		if parameters is not None:
+			self.from_parameters(parameters, self)
 
-		raise ValueError("Illegal arguments")
+
+	def set_from(self, value, schema_check=True):
+		""" """
+		if schema_check:
+			TimeConstraint._json_sub_schema(value)
+		self.params['from'] = value
+
+
+	def set_until(self, value, schema_check=True):
+		""" """
+		if schema_check:
+			TimeConstraint._json_sub_schema(value)
+		self.params['until'] = value
+
+
+	def has_constraint(self):
+		""" """ 
+		return len(self.params) > 0
+
+	
+	def get(self, param):
+		""" 
+		param: either 'from' or 'until'
+		Schema validation ensures val can be only either None, dict, datetime or timedelta
+		"""
+
+		val = self.params.get(param)
+
+		if val is None:
+			return None
+
+		if type(val) is datetime:
+			return val
+
+		elif type(val) is timedelta:
+			return datetime.today() + val
+
+		elif type(val) is dict:
+
+			if 'timeDelta' in val:
+				return datetime.today() + timedelta(**val['timeDelta'])
+
+			if '$lastRun' in val:
+				raise NotImplementedError("soon...")
+
+			if 'unixTime' in val:
+				return datetime.utcfromtimestamp(val['unixTime'])
+
+			if 'dateTimeStr' in val:
+				# Schema validation ensures 'dateTimeFormat' is set when 'dateTimeStr' is
+				return datetime.strptime(val['dateTimeStr'], ['dateTimeFormat'])
+
+		raise ValueError("Illegal argument")

@@ -8,7 +8,7 @@ setup(name='ampel',
               'ampel-alertprocessor = ampel.pipeline.t0.AlertProcessor:run_alertprocessor',
               'ampel-statspublisher = ampel.pipeline.common.AmpelStatsPublisher:run',
               'ampel-t2 = ampel.pipeline.t2.T2Controler:run',
-              'ampel-t3 = ampel.pipeline.t3.T3Controler:run',
+              'ampel-t3 = ampel.pipeline.t3.T3Controller:run',
               'ampel-init-db = ampel.pipeline.t0.AlertProcessor:init_db',
               'ampel-init-archive = ampel.archive:init_db',
               'ampel-check-broker = ampel.pipeline.t0.ZIAlertFetcher:list_kafka',
@@ -17,10 +17,7 @@ setup(name='ampel',
           'ampel.pipeline.resources' : [
               'mongo = ampel.pipeline.common.resources:LiveMongoURI',
               'graphite = ampel.pipeline.common.resources:Graphite',
-              'archive_reader = ampel.archive.resources:ArchiveDBReader',
-              'archive_writer = ampel.archive.resources:ArchiveDBWriter',
-              'extcats = ampel.contrib.hu.resources:extcatsURI',
-              'catsHTM = ampel.contrib.hu.resources:catsHTMPath',
+              'archive = ampel.archive.resources:ArchiveDBURI'
           ]
       }
 )

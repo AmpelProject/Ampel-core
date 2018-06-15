@@ -1,20 +1,7 @@
 version: '3.4'
 services:
-  mongo:
-    image: mongo:3.6
-    command: ["mongod", "--port", "$MONGO_PORT"]
-    volumes:
-      - $MONGO_PATH:/data/db
-      - $MONGO_INITDB_PATH:/docker-entrypoint-initdb.d
-    secrets:
-      - mongo-root-password
-      - mongo-alertprocessor-password
-    environment:
-      MONGO_INITDB_ROOT_USERNAME: root
-      MONGO_INITDB_ROOT_PASSWORD_FILE: /run/secrets/mongo-root-password
-      MONGO_USER: alertprocessor
-      MONGO_PASSWORD_FILE: /run/secrets/mongo-alertprocessor-password
   catalog:
+   # NB: we start the catalog _first_ because it may need to use port 27017 to initialize
    image: mongo:3.6
    command: ["mongod", "--port", "$CATALOG_PORT"]
    volumes:
@@ -22,7 +9,7 @@ services:
      - $CATALOG_INITDB_PATH:/docker-entrypoint-initdb.d/
      - $CATALOG_MONGODUMP_PATH:/mnt
    ports:
-     - "27018:27018"
+     - "$CATALOG_PORT:$CATALOG_PORT"
    secrets:
      - mongo-root-password
      - catalog-read-password
@@ -32,6 +19,25 @@ services:
      MONGODUMP_DIR: /mnt
      MONGO_USER: filterclient
      MONGO_PASSWORD_FILE: /run/secrets/catalog-read-password
+  mongo:
+    image: mongo:3.6
+    command: ["mongod", "--port", "$MONGO_PORT"]
+    volumes:
+      - $MONGO_PATH:/data/db
+      - $MONGO_INITDB_PATH:/docker-entrypoint-initdb.d
+    ports:
+      - "$MONGO_PORT:$MONGO_PORT"
+    secrets:
+      - mongo-root-password
+      - mongo-alertprocessor-password
+      - mongo-logger-password
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD_FILE: /run/secrets/mongo-root-password
+      MONGO_USER: alertprocessor
+      MONGO_PASSWORD_FILE: /run/secrets/mongo-alertprocessor-password
+      LOGGER_USER: logger
+      LOGGER_PASSWORD_FILE: /run/secrets/mongo-logger-password
   stats:
     image: ampel:$AMPEL_TAG
     command: ["ampel-statspublisher"]
@@ -39,19 +45,28 @@ services:
       - type: volume
         source: $AMPEL_SRC
         target: /Ampel
-      - /data/ampel/archive/tarballs:/ztf
     secrets:
       - mongo-alertprocessor-password
       - archive-read-password
     environment:
       TINI_SUBREAPER: 1
-      MONGO: $MONGO_HOST:$MONGO_PORT
-      ARCHIVE: $ARCHIVE_HOST:$ARCHIVE_PORT
-      GRAPHITE: $GRAPHITE_HOST:$GRAPHITE_PORT
-      MONGO_USER: alertprocessor
-      MONGO_PASSWORD_FILE: /run/secrets/mongo-alertprocessor-password
-      ARCHIVE_READ_USER: ampel-readonly
-      ARCHIVE_READ_USER_PASSWORD_FILE: /run/secrets/archive-read-password
+
+      MONGO_HOSTNAME: $MONGO_HOST
+      MONGO_PORT: $MONGO_PORT
+      MONGO_LOGGER_USERNAME: logger
+      MONGO_LOGGER_PASSWORD_FILE: /run/secrets/mongo-logger-password
+
+      ARCHIVE_HOSTNAME: $ARCHIVE_HOST
+      ARCHIVE_PORT: $ARCHIVE_PORT
+      ARCHIVE_READER_USERNAME: ampel-readonly
+      ARCHIVE_READER_PASSWORD_FILE: /run/secrets/archive-read-password
+      
+      GRAPHITE_HOSTNAME: $GRAPHITE_HOST
+      GRAPHITE_PORT: $GRAPHITE_PORT
+    deploy:
+        restart_policy:
+            condition: any
+            delay: 10s
     depends_on:
       - mongo
       - archive
@@ -63,7 +78,6 @@ services:
       - type: volume
         source: $AMPEL_SRC
         target: /Ampel
-      - /data/ampel/archive/tarballs:/ztf
       - $CATSHTM_PATH:/catalogs/catsHTM
     secrets:
       - archive-write-password
@@ -71,19 +85,24 @@ services:
       - catalog-read-password
     environment:
       TINI_SUBREAPER: 1
-      MONGO: $MONGO_HOST:$MONGO_PORT
-      MONGO_USER: alertprocessor
-      MONGO_PASSWORD_FILE: /run/secrets/mongo-alertprocessor-password
+      MONGO_HOSTNAME: $MONGO_HOST
+      MONGO_PORT: $MONGO_PORT
+      MONGO_WRITER_USERNAME: alertprocessor
+      MONGO_WRITER_PASSWORD_FILE: /run/secrets/mongo-alertprocessor-password
       
-      ARCHIVE: $ARCHIVE_HOST:$ARCHIVE_PORT
-      ARCHIVE_WRITE_USER: ampel-client
-      ARCHIVE_WRITE_USER_PASSWORD_FILE: /run/secrets/archive-write-password
-      
+      GRAPHITE_HOSTNAME: $GRAPHITE_HOST
+      GRAPHITE_PORT: $GRAPHITE_PORT
+
+      ARCHIVE_HOSTNAME: $ARCHIVE_HOST
+      ARCHIVE_PORT: $ARCHIVE_PORT
+      ARCHIVE_WRITER_USERNAME: ampel-client
+      ARCHIVE_WRITER_PASSWORD_FILE: /run/secrets/archive-write-password
+
       CATSHTM_PATH: /catalogs/catsHTM
-      CATALOG_HOST: $CATALOG_HOST
-      CATALOG_PORT: $CATALOG_PORT
-      CATALOG_READ_USER: filterclient
-      CATALOG_READ_USER_PASSWORD_FILE: /run/secrets/catalog-read-password
+      EXTCATS_HOSTNAME: $CATALOG_HOST
+      EXTCATS_PORT: $CATALOG_PORT
+      EXTCATS_USERNAME: filterclient
+      EXTCATS_PASSWORD_FILE: /run/secrets/catalog-read-password
 
     deploy:
       replicas: $NUM_STREAMS
@@ -95,7 +114,7 @@ services:
       - archive
   t2-controller:
     image: ampel:$AMPEL_TAG
-    command: ["ampel-t2", "--mongo-host", "$MONGO_HOST:$MONGO_PORT"]
+    command: ["ampel-t2"]
     volumes:
       - type: volume
         source: $AMPEL_SRC
@@ -104,8 +123,9 @@ services:
       - mongo-alertprocessor-password
     environment:
       TINI_SUBREAPER: 1
-      MONGO: $MONGO_HOST:$MONGO_PORT
-      MONGO_USER: alertprocessor
+      MONGO_HOSTNAME: $MONGO_HOST
+      MONGO_PORT: $MONGO_PORT
+      MONGO_USERNAME: alertprocessor
       MONGO_PASSWORD_FILE: /run/secrets/mongo-alertprocessor-password
     deploy:
       restart_policy:
@@ -116,7 +136,7 @@ services:
       - mongo
   t3-controller:
     image: ampel:$AMPEL_TAG
-    command: ["ampel-t3", "--mongo-host", "$MONGO_HOST:$MONGO_PORT"]
+    command: ["ampel-t3"]
     volumes:
       - type: volume
         source: $AMPEL_SRC
@@ -125,8 +145,9 @@ services:
       - mongo-alertprocessor-password
     environment:
       TINI_SUBREAPER: 1
-      MONGO: $MONGO_HOST:$MONGO_PORT
-      MONGO_USER: alertprocessor
+      MONGO_HOSTNAME: $MONGO_HOST
+      MONGO_PORT: $MONGO_PORT
+      MONGO_USERNAME: alertprocessor
       MONGO_PASSWORD_FILE: /run/secrets/mongo-alertprocessor-password
     deploy:
       restart_policy:
@@ -145,5 +166,7 @@ secrets:
     file: secrets/mongo-root-password.txt
   mongo-alertprocessor-password:
     file: secrets/mongo-alertprocessor-password.txt
+  mongo-logger-password:
+    file: secrets/mongo-logger-password.txt
   catalog-read-password:
     file: secrets/catalog-read-password.txt

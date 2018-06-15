@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 26.05.2018
-# Last Modified Date: 11.06.2018
+# Last Modified Date: 14.06.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from functools import reduce
@@ -136,7 +136,7 @@ class AmpelStatsPublisher(DBWired, Schedulable):
 		if col_stats:
 
 			dbinfo_dict['colStats'] = {
-				'jobs': self.get_col_stats(self.get_job_col()),
+				'logs': self.get_col_stats(self.get_logs_col()),
 				'photo': self.get_col_stats(photo_col),
 				'main': self.get_col_stats(main_col)
 			}
@@ -204,7 +204,7 @@ class AmpelStatsPublisher(DBWired, Schedulable):
 
 		# Publish metrics to graphite
 		if self.graphite_feeder is not None:
-			if self.archive_client is not None:
+			if col_stats and self.archive_client is not None:
 				self.graphite_feeder.add_stats( self.archive_client.get_statistics(), 'archive.tables')
 			self.logger.info("Sending stats to graphite")
 			self.graphite_feeder.add_stats(stat_dict)
@@ -279,26 +279,22 @@ class AmpelStatsPublisher(DBWired, Schedulable):
 			).count()
 
 def run():
-	from ampel.pipeline.config.resources import get_resource
-	from ampel.pipeline.config.ConfigLoader import load_config
+	from ampel.pipeline.config.ConfigLoader import AmpelArgumentParser
+	from ampel.archive import ArchiveDB
 
-	from os import environ
-	from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
-	from os.path import basename, dirname, abspath, realpath
-	parser = ArgumentParser(description=__doc__, formatter_class=ArgumentDefaultsHelpFormatter)
-	parser.add_argument('--config', default=abspath(dirname(realpath(__file__)) + '/../../../../config/messy_preliminary_config.json'))
-
+	parser = AmpelArgumentParser()
+	parser.require_resource('mongo', ['logger'])
+	parser.require_resource('archive', ['reader'])
+	parser.require_resource('graphite')
 	opts = parser.parse_args()
 
-	config = load_config(opts.config)
-
-	mongo_uri = get_resource('mongo')['uri']
-	graphite = get_resource('graphite')
-	archive = get_resource('archive_reader')
+	mongo = opts.config['resources']['mongo']()['logger']
+	archive = ArchiveDB(opts.config['resources']['archive']()['reader'])
+	graphite = opts.config['resources']['graphite']()
 	
 	asp = AmpelStatsPublisher(
-		config=config,
-		mongodb_uri=mongo_uri, 
+		config=opts.config,
+		mongodb_uri=mongo, 
 		graphite_feeder=graphite,
 		archive_client=archive,
 		publish_stats=['print', 'graphite']

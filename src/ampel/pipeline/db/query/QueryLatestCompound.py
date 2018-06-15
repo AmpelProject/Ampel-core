@@ -4,12 +4,13 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 13.01.2018
-# Last Modified Date: 01.06.2018
+# Last Modified Date: 12.06.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
+import collections, bson
 from ampel.flags.AlDocTypes import AlDocTypes
 from ampel.flags.FlagUtils import FlagUtils
-
+from ampel.pipeline.common.AmpelUtils import AmpelUtils
 from ampel.pipeline.db.query.QueryMatchFlags import QueryMatchFlags
 from ampel.pipeline.db.query.QueryMatchCriteria import QueryMatchCriteria
 
@@ -61,15 +62,20 @@ class QueryLatestCompound:
 		Should perform faster than general_query.
 		"""
 
-		if not type(tran_ids) in (list, str, set):
-			raise ValueError("Type of tran_ids must be either a string or a list of strings")
+		# Robustness
+		type_tran_ids = type(tran_ids)
+		if type_tran_ids in (list, tuple, set):
+			if not AmpelUtils.check_seq_inner_type(tran_ids, (int, str, bson.int64.Int64)):
+				raise ValueError("Elements of tran_ids sequence must be have type str or int")
+		elif not type_tran_ids in (int, str, bson.int64.Int64):
+			raise ValueError("tran_ids must have type str or int (or sequence of these types)")
 
 		match_dict = {
 			'alDocType': AlDocTypes.COMPOUND
 		}
 
 		match_dict['tranId'] = ( 
-			tran_ids if type(tran_ids) is str
+			tran_ids if type(tran_ids) in (str, int)
 			else {'$in': tran_ids if type(tran_ids) is list else list(tran_ids)}
 		)
 
@@ -185,8 +191,10 @@ class QueryLatestCompound:
 		Out[]: 
 			[{'_id': '5de2480f28bfca0bd3baae890cb2d2ae', 'tranId': 'ZTF18aaayyuq'}]
 		"""
-		if type(tran_id) is list:
-			raise ValueError("Type of tran_id must be string (multi tranId queries not supported)")
+
+		# Robustness
+		if isinstance(tran_id, collections.Sequence) or not type(tran_id) in (str, int):
+			raise ValueError("Type of tran_id must be a string or an int (multi tran_id queries not supported)")
 
 		match_dict = {
 			'tranId': tran_id, 

@@ -89,6 +89,15 @@ class AmpelUtils():
 
 
 	@staticmethod
+	def iter(arg):
+		"""
+		-> suppressing python3 treatment of str as iterable (a really dumb choice...)
+		-> Making None iterable
+		"""
+		return arg if type(arg) not in (type(None), str) else [arg]
+
+
+	@staticmethod
 	def check_seq_inner_type(seq, types, multi_type=False):
 		"""
 		check type of all elements contained in a sequence.

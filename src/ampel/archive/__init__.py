@@ -31,8 +31,12 @@ class ArchiveDB(object):
         self._connection = engine.connect()
 
         Versions = self._meta.tables['versions']
-        self._alert_version = self._connection.execute(select([Versions.c.alert_version]).order_by(Versions.c.version_id.desc()).limit(1)).first()[0]
-    
+        with self._connection.begin() as transaction:
+            try:
+                self._alert_version = self._connection.execute(select([Versions.c.alert_version]).order_by(Versions.c.version_id.desc()).limit(1)).first()[0]
+            finally:
+                transaction.commit()
+
     def insert_alert(self, alert, schema, partition_id, ingestion_time):
         """
         :param alert: alert dictionary
@@ -44,29 +48,33 @@ class ArchiveDB(object):
         return insert_alert(self._connection, self._meta, alert, partition_id, ingestion_time)
 
     def get_statistics(self):
-        sql = "select relname, n_live_tup from pg_catalog.pg_stat_user_tables"
-        rows = dict(self._connection.execute(sql).fetchall())
-        sql = """SELECT TABLE_NAME, index_bytes, toast_bytes, table_bytes
-                 FROM (
-                 SELECT *, total_bytes-index_bytes-COALESCE(toast_bytes,0) AS table_bytes FROM (
-                     SELECT c.oid,nspname AS table_schema, relname AS TABLE_NAME
-                             , c.reltuples AS row_estimate
-                             , pg_total_relation_size(c.oid) AS total_bytes
-                             , pg_indexes_size(c.oid) AS index_bytes
-                             , pg_total_relation_size(reltoastrelid) AS toast_bytes
-                         FROM pg_class c
-                         LEFT JOIN pg_namespace n ON n.oid = c.relnamespace
-                         WHERE relkind = 'r' AND nspname = 'public'
-                 ) a
-               ) a;"""
         stats = {}
-        for row in self._connection.execute(sql):
-            table = {k:v for k,v in dict(row).items() if v is not None}
-            k = table.pop('table_name')
-            table['rows'] = rows[k]
-            stats[k] = table
+        with self._connection.begin() as transaction:
+            try:
+                sql = "select relname, n_live_tup from pg_catalog.pg_stat_user_tables"
+                rows = dict(self._connection.execute(sql).fetchall())
+                sql = """SELECT TABLE_NAME, index_bytes, toast_bytes, table_bytes
+                         FROM (
+                         SELECT *, total_bytes-index_bytes-COALESCE(toast_bytes,0) AS table_bytes FROM (
+                             SELECT c.oid,nspname AS table_schema, relname AS TABLE_NAME
+                                     , c.reltuples AS row_estimate
+                                     , pg_total_relation_size(c.oid) AS total_bytes
+                                     , pg_indexes_size(c.oid) AS index_bytes
+                                     , pg_total_relation_size(reltoastrelid) AS toast_bytes
+                                 FROM pg_class c
+                                 LEFT JOIN pg_namespace n ON n.oid = c.relnamespace
+                                 WHERE relkind = 'r' AND nspname = 'public'
+                         ) a
+                       ) a;"""
+                for row in self._connection.execute(sql):
+                    table = {k:v for k,v in dict(row).items() if v is not None}
+                    k = table.pop('table_name')
+                    table['rows'] = rows[k]
+                    stats[k] = table
+            finally:
+                transaction.commit()
         return stats
-    
+
     def get_alert(self, candid):
         return get_alert(self._connection, self._meta, candid)
 
@@ -81,6 +89,9 @@ class ArchiveDB(object):
 
     def get_alerts_in_time_range(self, jd_min, jd_max, partitions=None):
         return get_alerts_in_time_range(self._connection, self._meta, jd_min, jd_max, partitions)
+
+    def get_alerts_in_cone(self, ra, dec, radius, jd_min=None, jd_max=None):
+        return get_alerts_in_time_range(self._connection, self._meta, ra, dec, radius, jd_min, jd_max)
 
 def create_metadata(alert_schema):
     """
@@ -380,6 +391,38 @@ def get_alerts_in_time_range(connection, meta, jd_start, jd_end, partitions=None
 
     yield from fetch_alerts_with_condition(connection, meta, in_range, Alert.c.jd.asc())
 
+def get_alerts_in_cone(connection, meta, ra, dec, radius, jd_min=None, jd_max=None):
+    """
+    Retrieve a range of alerts from the archive database
+
+    :param connection: database connection
+    :param meta: schema metadata
+    :param ra: right ascension of search field center in degrees (J2000)
+    :param dec: declination of search field center in degrees (J2000)
+    :param radius: radius of search field in degrees
+    :param jd_start: minimum JD of exposure start
+    :param jd_end: maximum JD of exposure start
+    """
+    from sqlalchemy import func
+    from sqlalchemy.sql.expression import BinaryExpression
+    Alert = meta.tables['alert']
+    Candidate = meta.tables['candidate']
+    
+    center = func.ll_to_earth(dec, ra)
+    box = func.earth_box(center, radius)
+    loc = func.ll_to_earth(Candidate.c.dec, Candidate.c.ra)
+    
+    in_range = and_(BinaryExpression(box, loc, '@>'), func.earth_distance(center, loc) < radius)
+    # NB: filtering on jd from Candidate here is ~2x faster than _also_
+    #      filtering on Alert (rows that pass are joined on the indexed primary
+    #      key)
+    if jd_min is not None:
+        in_range = and_(in_range, Candidate.c.jd >= jd_min)
+    if jd_max is not None:
+        in_range = and_(in_range, Candidate.c.jd < jd_max)
+
+    yield from fetch_alerts_with_condition(connection, meta, in_range, Alert.c.jd.asc())
+
 def _build_queries(meta):
     PrvCandidate = meta.tables['prv_candidate']
     UpperLimit = meta.tables['upper_limit']
@@ -440,18 +483,22 @@ def fetch_alerts_with_condition(connection, meta, condition, order=None):
 
     alert_query = alert_query.where(condition).order_by(order)
 
-    for result in connection.execute(alert_query):
-        candidate = dict(result)
-        alert_id = candidate.pop('alert_id')
-        alert = dict(objectId=candidate.pop('objectId'), candid=candidate['candid'])
-        alert['candidate'] = candidate
-        alert['prv_candidates'] = []
-        for result in connection.execute(history_query, alert_id=alert_id):
-            alert['prv_candidates'].append(dict(result))
+    with connection.begin() as transaction:
+        try:
+            for result in connection.execute(alert_query):
+                candidate = dict(result)
+                alert_id = candidate.pop('alert_id')
+                alert = dict(objectId=candidate.pop('objectId'), candid=candidate['candid'])
+                alert['candidate'] = candidate
+                alert['prv_candidates'] = []
+                for result in connection.execute(history_query, alert_id=alert_id):
+                    alert['prv_candidates'].append(dict(result))
 
-        alert['prv_candidates'] = sorted(alert['prv_candidates'], key=lambda c: (c['jd'],  c['candid'] is None, c['candid']))
+                alert['prv_candidates'] = sorted(alert['prv_candidates'], key=lambda c: (c['jd'],  c['candid'] is None, c['candid']))
 
-        yield alert
+                yield alert
+        finally:
+            transaction.commit()
 
 def get_cutout(connection, meta, candid):
     Alert = meta.tables['alert']

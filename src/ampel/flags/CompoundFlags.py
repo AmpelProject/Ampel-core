@@ -4,15 +4,22 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 20.03.2018
-# Last Modified Date: 15.05.2018
+# Last Modified Date: 13.06.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-from enum import Flag
+from ampel.flags.AmpelMetaFlags import AmpelMetaFlags
 
-class CompoundFlags(Flag):
+class CompoundFlags(metaclass=AmpelMetaFlags):
 	"""
+	First 20 powers of two are reserved for general ampel flags
 	"""
-	PARTNERSHIP_DATA    = 1 
-	HAS_REPROCESSED_PPS = 2 
-	HAS_UPPER_LIMITS 	= 4
-	EXCLUDED_PPS   		= 8
+
+	HAS_UPPER_LIMITS            = 1048576
+	HAS_AUTOCOMPLETED_PHOTO     = 2097152
+	HAS_SUPERSEEDED_PPS         = 4194304
+	HAS_EXCLUDED_PPS            = 8388608
+	HAS_MANUAL_EXCLUSION        = 16777216
+	HAS_DATARIGHTS_EXCLUSION    = 33554432
+
+	WITH_CUSTOM_POLICIES        = 67108864
+	ZTF_COLLAB_DATA             = 134217728

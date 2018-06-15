@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 14.12.2017
-# Last Modified Date: 08.06.2018
+# Last Modified Date: 12.06.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from ampel.base.Frozen import Frozen
@@ -46,7 +46,10 @@ class AmpelAlert(Frozen):
 			al = next(fastavro.reader(fo), None)
 
 		if al.get('prv_candidates') is None:
-			return AmpelAlert(al['objectId'], [al['candidate']], None, al.get('cutoutScience') if cutout else None)
+			return AmpelAlert(
+				al['objectId'], [al['candidate']], None, 
+				al.get('cutoutScience') if cutout else None
+			)
 		else:
 			pps = [d for d in al['prv_candidates'] if d.get('candid') is not None]
 			pps.insert(0,  al['candidate'])

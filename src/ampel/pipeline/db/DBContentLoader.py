@@ -4,31 +4,32 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 13.01.2018
-# Last Modified Date: 11.06.2018
+# Last Modified Date: 13.06.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from bson import ObjectId
-import operator, logging, json
 from datetime import datetime
 
-from ampel.base.PlainPhotoPoint import PlainPhotoPoint
-from ampel.base.UpperLimit import UpperLimit
-from ampel.base.PlainUpperLimit import PlainUpperLimit
 from ampel.base.Compound import Compound
 from ampel.base.LightCurve import LightCurve
+from ampel.base.UpperLimit import UpperLimit
 from ampel.base.TransientView import TransientView
 from ampel.base.ScienceRecord import ScienceRecord
-from ampel.flags.TransientFlags import TransientFlags
-from ampel.flags.AlDocTypes import AlDocTypes
+from ampel.base.PlainPhotoPoint import PlainPhotoPoint
+from ampel.base.PlainUpperLimit import PlainUpperLimit
+
 from ampel.flags.FlagUtils import FlagUtils
+from ampel.flags.AlDocTypes import AlDocTypes
 from ampel.flags.PhotoFlags import PhotoFlags
 from ampel.flags.T2RunStates import T2RunStates
+from ampel.flags.TransientFlags import TransientFlags
+
+from ampel.pipeline.common.AmpelUtils import AmpelUtils
+from ampel.pipeline.t3.TransientData import TransientData
 from ampel.pipeline.logging.LoggingUtils import LoggingUtils
 from ampel.pipeline.db.LightCurveLoader import LightCurveLoader
-from ampel.pipeline.db.DBResultOrganizer import DBResultOrganizer
 from ampel.pipeline.db.query.QueryLatestCompound import QueryLatestCompound
 from ampel.pipeline.db.query.QueryLoadTransientInfo import QueryLoadTransientInfo
-from ampel.pipeline.t3.TransientData import TransientData
 
 
 class DBContentLoader:
@@ -57,8 +58,8 @@ class DBContentLoader:
 
 
 	def load_new(
-		self, tran_id, channels=None, state="latest", content_types=all_doc_types, t2_ids=None,
-		feedback=True, verbose_feedback=False
+		self, tran_id, channels=None, state_op="$latest", states=None, 
+		content_types=all_doc_types, t2_ids=None, feedback=True, verbose_feedback=False
 	):
 		"""
 		Returns a instance of TransientData
@@ -67,13 +68,15 @@ class DBContentLoader:
 		----------
 
 		-> tran_id: transient id (string). 
-		Can be a multiple IDs (list) if state is 'all' or states are provided (states cannot be 'latest')
+		Can be a multiple IDs (list) if state_op is '$all' or states are provided (states cannot be '$latest')
 
 		-> channels: string or list of strings
 
-		-> state:
-		  * "latest": latest state will be retrieved
-		  * "all": all states present in DB (at execution time) will be retrieved
+		-> state_op:
+		  * "$latest": latest state will be retrieved
+		  * "$all": all states present in DB (at execution time) will be retrieved
+
+		-> states:
 		  * <compound_id> or list of <compound_id>: provided state(s) will be loaded. 
 		    Each compound id must be either:
 				- a 32 alphanumerical string
@@ -100,9 +103,9 @@ class DBContentLoader:
 		  * 'AlDocTypes.COMPOUND': 
 			-> ampel.base.LightCurve instances are created based on DB documents 
 			   (with alDocType AlDocTypes.COMPOUND)
-			-> if 'state' is 'latest' or a state id (md5 bytes) is provided, 
+			-> if 'state' is '$latest' or a state id (md5 bytes) is provided, 
 			   only one LightCurve instance is created. 
-			   if 'state' is 'all', all available lightcurves are created.
+			   if 'state' is '$all', all available lightcurves are created.
 			-> the lightcurve instance(s) will be associated with the returned TransientData instance
 
 		  * 'AlDocTypes.T2RECORD': 
@@ -115,71 +118,74 @@ class DBContentLoader:
 		if content_types is None or content_types == 0:
 			raise ValueError("Parameter content_types not conform")
 
-		# Option 1: Find latest state, then update search query parameters
-		if state == "latest":
 
-			if type(tran_id) in (list, tuple):
-				raise ValueError("Queries with multiple transient ids not supported with state == 'latest'")
+		# Option 2: Load a user provided state(s)
+		if states is not None:
 
 			# Feedback
 			self.logger.info(
-				"Retrieving %s for latest state of transient %s" % 
+				"Retrieving %s for provided state(s) of transient(s) %s" % 
 				(content_types, tran_id)
-			)
-
-			# Execute DB query returning the latest compound dict
-			latest_compound_dict = next(
-				self.main_col.aggregate(
-					QueryLatestCompound.general_query(tran_id)
-				),
-				None
-			)
-
-			if latest_compound_dict is None:
-				self.logger.info("Transient %s not found" % tran_id)
-				return None
-
-			self.logger.info(
-				" -> Latest lightcurve id: %s " % 
-				latest_compound_dict['_id']
 			)
 
 			# Build query parameters (will return adequate number of docs)
 			search_params = QueryLoadTransientInfo.build_statebound_query(
-				tran_id, content_types, latest_compound_dict["_id"], 
-				channels, t2_ids, comp_already_loaded=True
+				tran_id, content_types, states, channels, t2_ids
 			)
 
-		# Option 2: Load every available transient state
-		elif state == "all":
-
-			# Feedback
-			self.logger.info(
-				"Retrieving %s for all states of transient %s" % 
-				(content_types, tran_id)
-			)
-
-			# Build query parameters (will return adequate number of docs)
-			search_params = QueryLoadTransientInfo.build_stateless_query(
-				tran_id, content_types, channels, t2_ids
-			)
-
-		# Option 3: Load a user provided state(s)
 		else:
-
-			# Feedback
-			self.logger.info(
-				"Retrieving %s for provided state(s) of transient %s" % 
-				(content_types, tran_id)
-			)
-
-			# Build query parameters (will return adequate number of docs)
-			search_params = QueryLoadTransientInfo.build_statebound_query(
-				tran_id, content_types, state, channels, t2_ids
-			)
 		
+			# Option 2: Find latest state, then update search query parameters
+			if state_op == "$latest":
+	
+				if type(tran_id) in (list, tuple):
+					raise ValueError("Querying multiple transient ids not supported with state_op == '$latest'")
+	
+				# Feedback
+				self.logger.info(
+					"Retrieving %s for latest state of transient %s" % 
+					(content_types, tran_id)
+				)
+	
+				# Execute DB query returning the latest compound dict
+				latest_compound_dict = next(
+					self.main_col.aggregate(
+						QueryLatestCompound.general_query(tran_id)
+					), None
+				)
+	
+				if latest_compound_dict is None:
+					self.logger.info("Transient %s not found" % tran_id)
+					return None
+	
+				self.logger.info(
+					" -> Latest lightcurve id: %s " % 
+					latest_compound_dict['_id']
+				)
+	
+				# Build query parameters (will return adequate number of docs)
+				search_params = QueryLoadTransientInfo.build_statebound_query(
+					tran_id, content_types, latest_compound_dict["_id"], 
+					channels, t2_ids, comp_already_loaded=True
+				)
+	
+			# Option 3: Load every available transient state
+			elif state_op == "$all":
+	
+				# Feedback
+				self.logger.info(
+					"Retrieving %s for all states of transient(s) %s" % 
+					(content_types, tran_id)
+				)
+	
+				# Build query parameters (will return adequate number of docs)
+				search_params = QueryLoadTransientInfo.build_stateless_query(
+					tran_id, content_types, channels, t2_ids
+				)
+
+
 		self.logger.debug(
-			"Retrieving transient info using query: %s" % 
+			"Retrieving transient(s) info using query: %s" % 
 			search_params
 		)
 
@@ -195,6 +201,7 @@ class DBContentLoader:
 		# Effectively perform DB query (triggered by casting cursor to list)
 		self.logger.info(" -> Fetching %i results from main col" % res_count)
 		res_main_list = list(main_cursor)
+		res_photo_list = None
 
 		# Photo DB query 
 		if AlDocTypes.PHOTOPOINT|AlDocTypes.UPPERLIMIT in content_types:
@@ -228,24 +235,21 @@ class DBContentLoader:
 				self.logger.info(" -> Fetching %i upper limits" % photo_cursor.count())
 				res_photo_list = list(photo_cursor)
 
+
 		return self.load_tran_data(
-			res_main_list, res_photo_list, channels, state, 
+			res_main_list, res_photo_list, channels, state_op,
 			feedback=True, verbose_feedback=verbose_feedback
 		)
 
 
 	def load_tran_data(
-		self, main_list, photo_list=None, channels=None, state="latest", 
+		self, main_list, photo_list=None, channels=None, state_op=None,
 		load_lightcurves=True, feedback=True, verbose_feedback=False
 	):
 		"""
 		"""
-		# Convert non array into array for convenience
-		if channels is None:
-			channels = [None]
-
 		# Build set: we need intersections later
-		channels = set(channels)
+		channels = set(AmpelUtils.iter(channels))
 
 		# Stores loaded transient items. 
 		# Key: tran_id, value: TransientData instance
@@ -255,12 +259,12 @@ class DBContentLoader:
 		tran_id = ""
 		for doc in main_list:
 			
-			# main_list results are sorted by tranId
-			if tran_id != doc['tranId']:
+			tran_id = doc['tranId']
 
-				# Instantiate TransientData object
-				tran_id = doc['tranId']
-				tran_data = TransientData(tran_id, state, self.logger)
+			if tran_id in register:
+				tran_data = register[tran_id]
+			else:
+				tran_data = TransientData(tran_id, state_op, self.logger)
 				register[tran_id] = tran_data
 
 			# Pick up transient document
@@ -268,7 +272,6 @@ class DBContentLoader:
 
 				# Load, translate alFlags from DB into a TransientFlags enum flag instance 
 				# and associate it with the TransientData object instance
-
 				tran_data.set_flags(
 					TransientFlags(
 						FlagUtils.dbflag_to_enumflag(
@@ -277,31 +280,11 @@ class DBContentLoader:
 					)
 				)
 
-				for channel in (channels & set(doc['channels'])):
+				tran_data.add_journal_entries(
+					doc['journal'], channels if len(channels) == 1
+					else channels & set(doc['channels']) # intersection
+				)
 
-					found_first = False
-					last_entry = None
-
-					# Journal entries are time ordered
-					for entry in doc['journal']:
-
-						if entry['tier'] != 0 or channel not in entry['chans']:
-							continue
-
-						# First entry is creation date 
-						if not found_first:
-							tran_data.set_created(
-								datetime.utcfromtimestamp(entry['dt']), 
-								channel
-							)
-						else:
-							last_entry = entry
-
-						if last_entry is not None:
-							tran_data.set_modified(
-								datetime.utcfromtimestamp(last_entry['dt']), 
-								channel
-							)
 
 			# Pick compound dicts 
 			if doc["alDocType"] == AlDocTypes.COMPOUND:
@@ -312,10 +295,9 @@ class DBContentLoader:
 					else channels & set(doc['channels']) # intersection
 				)
 
-				if state == "latest":
+				if state_op == "$latest":
 					tran_data.set_latest_state(
-						doc['_id'], 
-						channels if len(channels) == 1 
+						doc['_id'], channels if len(channels) == 1 
 						else channels & set(doc['channels']) # intersection
 					)
 
@@ -334,8 +316,7 @@ class DBContentLoader:
 				)
 
 				tran_data.add_science_record(
-					sr,
-					channels if len(channels) == 1 
+					sr, channels if len(channels) == 1 
 					else channels & set(doc['channels']) # intersection
 				)
 
@@ -423,7 +404,7 @@ class DBContentLoader:
 					if (len_uls == 0 and len([el for el in comp.content if 'ul' in el]) > 0):
 						self.logger.info(
 							" -> LightCurve loading aborded for %s (upper limits required)" % 
-							comp.get_id()
+							comp.get_id().hex()
 						)
 						continue
 
@@ -434,18 +415,14 @@ class DBContentLoader:
 
 		# Feedback
 		if feedback:
-			self.log_feedback(register.values(), photo_list, channels, verbose_feedback)
+			self.log_feedback(register.values(), photo_list, verbose_feedback)
 
 		return register
 
 
-	def log_feedback(self, dict_values, photo_list, channels, verbose_feedback):
+	def log_feedback(self, dict_values, photo_list, verbose_feedback):
 		"""
 		"""
-
-
-		if channels is None:
-			channels = [None]
 
 		for tran_data in dict_values:
 
@@ -459,7 +436,7 @@ class DBContentLoader:
 				uls = tran_data.upperlimits
 
 				self.logger.info(
-					" -> %i loaded: PP: %i, UL: %i, CP: %i, LC: %i, SR: %i" % 
+					"Transient %i loaded: PP: %i, UL: %i, CP: %i, LC: %i, SR: %i" % 
 					(tran_data.tran_id, len(pps), len(uls), len_comps, len_lcs, len_srs)
 				)
 
@@ -467,21 +444,21 @@ class DBContentLoader:
 
 					if len(pps) > 0:
 						self.logger.info(
-							" -> Photopoint(s): {}".format(
+							"Photopoint(s): {}".format(
 								(*pps,) if len(pps) > 1 else next(iter(pps))
 							)
 						)
 
 					if len(uls) > 0:
 						self.logger.info(
-							" -> Upper limit(s): {}".format(
+							"Upper limit(s): {}".format(
 								(*uls,) if len(uls) > 1 else next(iter(uls))
 							)
 						)
 			else:
 
 				self.logger.info(
-					" -> %i loaded: PP: 0, UL: 0, CP: %i, LC: %i, SR: %i" % 
+					"Transient %i loaded: PP: 0, UL: 0, CP: %i, LC: %i, SR: %i" % 
 					(tran_data.tran_id, len_comps, len_lcs, len_srs)
 				)
 
@@ -490,7 +467,7 @@ class DBContentLoader:
 				if len_comps > 0:
 					for channel in tran_data.compounds.keys():
 						self.logger.info(
-							" -> %s Compound(s): %s " %
+							"%s Compound(s): %s " %
 							(
 								"" if channel is None else "[%s]" % channel,
 								[el.id.hex() for el in tran_data.compounds[channel]]
@@ -501,7 +478,7 @@ class DBContentLoader:
 				if len_lcs > 0:
 					for channel in tran_data.lightcurves.keys():
 						self.logger.info(
-							" -> %s LightCurves(s): %s " %
+							"%s LightCurves(s): %s " %
 							(
 								"" if channel is None else "[%s]" % channel,
 								[el.id.hex() for el in tran_data.lightcurves[channel]]
@@ -521,7 +498,7 @@ class DBContentLoader:
 							)))
 							if srs > 0:
 								self.logger.info(
-									" -> %s T2 %s: %s " %
+									"%s T2 %s: %s " %
 									(
 										"" if channel is None else "[%s]" % channel,
 										t2_id, srs	

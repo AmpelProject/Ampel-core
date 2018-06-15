@@ -38,7 +38,7 @@ class Compound(Frozen):
 		self.id = db_doc['_id']
 		self.tier = db_doc['tier']
 		self.added = db_doc['added']
-		self.lastppdt = db_doc['lastppdt']
+		self.lastppdt = db_doc['lastJD']
 		self.len = db_doc['len']
 
 		if 'ppCompId' in db_doc:

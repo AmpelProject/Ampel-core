@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 14.12.2017
-# Last Modified Date: 23.05.2018
+# Last Modified Date: 13.06.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import logging, pymongo, time
@@ -14,13 +14,13 @@ from pymongo.errors import BulkWriteError
 
 from ampel.abstract.AbsAlertIngester import AbsAlertIngester
 from ampel.pipeline.t0.ingesters.ZIPhotoDictShaper import ZIPhotoDictShaper
-from ampel.pipeline.t0.ingesters.CompoundBluePrint import CompoundBluePrint
+from ampel.pipeline.t0.ingesters.CompoundBluePrintGenerator import CompoundBluePrintGenerator
 from ampel.pipeline.t0.ingesters.T2DocsBluePrint import T2DocsBluePrint
-from ampel.pipeline.t0.ingesters.ZICompElement import ZICompElement
+from ampel.pipeline.t0.ingesters.ZICompoundShaper import ZICompoundShaper
 from ampel.pipeline.logging.LoggingUtils import LoggingUtils
 
+from ampel.flags.AmpelFlags import AmpelFlags
 from ampel.flags.PhotoFlags import PhotoFlags
-from ampel.flags.TransientFlags import TransientFlags
 from ampel.flags.T2RunStates import T2RunStates
 from ampel.flags.AlDocTypes import AlDocTypes
 from ampel.flags.FlagUtils import FlagUtils
@@ -28,7 +28,6 @@ from ampel.flags.FlagUtils import FlagUtils
 from functools import reduce
 from operator import or_
 
-# https://github.com/AmpelProject/Ampel/wiki/Ampel-Flags
 SUPERSEEDED = FlagUtils.get_flag_pos_in_enumflag(PhotoFlags.SUPERSEEDED)
 TO_RUN = FlagUtils.get_flag_pos_in_enumflag(T2RunStates.TO_RUN)
 
@@ -42,10 +41,9 @@ class ZIAlertIngester(AbsAlertIngester):
 	"""
 
 	version = 1.0
-	new_tran_dbflag = FlagUtils.enumflag_to_dbflag(
-		TransientFlags.INST_ZTF|TransientFlags.ALERT_IPAC
+	std_dbflag = FlagUtils.enumflag_to_dbflag(
+		AmpelFlags.INST_ZTF|AmpelFlags.SRC_IPAC
 	)
-
 
 	def __init__(self, config, central_db, channels, logger=None):
 		"""
@@ -74,7 +72,7 @@ class ZIAlertIngester(AbsAlertIngester):
 		# instantiate util classes used in method ingest()
 		self.photo_shaper = ZIPhotoDictShaper()
 		self.t2_blueprint_creator = T2DocsBluePrint(channels, self.t2_units_using_uls)
-		self.comp_gen = CompoundBluePrint(ZICompElement(channels), self.logger)
+		self.comp_bp_generator = CompoundBluePrintGenerator(channels, ZICompoundShaper, self.logger)
 
 		self.main_col = central_db['main']
 		self.photo_col = central_db['photo']
@@ -100,7 +98,7 @@ class ZIAlertIngester(AbsAlertIngester):
 		Among other things, it updates the main transient document, 
 		which contains a list of jobIds associated with the processing of the given transient.
 		We thus need to know what is the current jobId to perform this update.
-		The provided parameter should be a mongoDB ObjectId.
+		The provided parameter should be a bson ObjectId.
 		"""
 		self.job_id = job_id
 
@@ -387,8 +385,7 @@ class ZIAlertIngester(AbsAlertIngester):
 		)
 
 		# Compute compound ids (used later for creating compounds and t2 docs)
-		comp_gen = self.comp_gen
-		comp_gen.generate(
+		comp_bp = self.comp_bp_generator.generate(
 			sorted(
 				pps_db + pps_to_insert + uls_db + uls_to_insert, 
 				key=lambda k: k['jd']
@@ -399,33 +396,36 @@ class ZIAlertIngester(AbsAlertIngester):
 
 		# See how many different eff_comp_id were generated (possibly a single one)
 		# and generate corresponding ampel document to be inserted later
-		for eff_comp_id in comp_gen.get_effids_of_chans(chan_names):
+		for eff_comp_id in comp_bp.get_effids_of_chans(chan_names):
 		
 			d_addtoset = {
 				"channels": {
 					"$each": list(
-						comp_gen.get_chans_with_effid(eff_comp_id)
+						comp_bp.get_chans_with_effid(eff_comp_id)
 					)
 				}
 			}
 
-			if comp_gen.has_flavors(eff_comp_id):
+			if comp_bp.has_flavors(eff_comp_id):
 				d_addtoset["flavors"] = {
 					# returns tuple
-					"$each": comp_gen.get_compound_flavors(eff_comp_id)
+					"$each": comp_bp.get_compound_flavors(eff_comp_id)
 				}
 			
-			comp_dict = comp_gen.get_eff_compound(eff_comp_id)
-			pp_comp_id = comp_gen.get_ppid_of_effid(eff_comp_id)
+			comp_dict = comp_bp.get_eff_compound(eff_comp_id)
+			pp_comp_id = comp_bp.get_ppid_of_effid(eff_comp_id)
 			bson_eff_comp_id = Binary(eff_comp_id, 5)
 
 			d_set_on_insert =  {
 				"_id": bson_eff_comp_id,
 				"tranId": tran_id,
 				"alDocType": AlDocTypes.COMPOUND,
+				"alFlags": FlagUtils.enumflag_to_dbflag(
+					comp_bp.get_comp_flags(eff_comp_id)
+				),
 				"tier": 0,
 				"added": datetime.utcnow().timestamp(),
-				"lastppdt": pps_alert[0]['jd'],
+				"lastJD": pps_alert[0]['jd'],
 				"len": len(comp_dict),
 				"comp": comp_dict
 			}
@@ -455,11 +455,11 @@ class ZIAlertIngester(AbsAlertIngester):
 
 		self.logger.info("Generating T2 docs")
 		t2docs_blueprint = self.t2_blueprint_creator.create_blueprint(
-			comp_gen, list_of_t2_units
+			comp_bp, list_of_t2_units
 		)
 		
 		# counter for user feedback (after next loop)
-		now = datetime.now(timezone.utc).timestamp()
+		now = int(datetime.now(timezone.utc).timestamp())
 
 		# Loop over t2 runnables
 		for t2_id in t2docs_blueprint.keys():
@@ -491,6 +491,7 @@ class ZIAlertIngester(AbsAlertIngester):
 					d_set_on_insert = {
 						"tranId": tran_id,
 						"alDocType": AlDocTypes.T2RECORD,
+						"alFlags": ZIAlertIngester.std_dbflag,
 						"t2Unit": t2_id, 
 						"runConfig": run_config, 
 						"runState": TO_RUN
@@ -522,7 +523,7 @@ class ZIAlertIngester(AbsAlertIngester):
 							"$each": [
 								Binary(el, 5) for el in (
 									{bifold_comp_id} | 
-									comp_gen.get_effids_of_chans(eff_chan_names)
+									comp_bp.get_effids_of_chans(eff_chan_names)
 								)
 							]
 						}
@@ -531,8 +532,8 @@ class ZIAlertIngester(AbsAlertIngester):
 						journal_entries = [
 							{
 								"dt": now,
-								"chan": chan_name,
-								"effId": comp_gen.get_effid_of_chan(chan_name),
+								"channels": [chan_name],
+								"effId": comp_bp.get_effid_of_chan(chan_name),
 								"op": "addToSet"
 							}
 							for chan_name in eff_chan_names
@@ -606,7 +607,7 @@ class ZIAlertIngester(AbsAlertIngester):
 					},
 					'$addToSet': {
 						"alFlags": {
-							"$each": ZIAlertIngester.new_tran_dbflag
+							"$each": ZIAlertIngester.std_dbflag
 						},
 						'channels': (
 							chan_names[0] if len(chan_names) == 1 
@@ -615,14 +616,14 @@ class ZIAlertIngester(AbsAlertIngester):
 						'jobIds': self.job_id,
 					},
 					"$max": {
-						"lastPPDate": pps_alert[0]["jd"],
+						"lastPPJD": pps_alert[0]["jd"],
 						"modified": now
 					},
 					"$push": {
 						"journal": {
 							'dt': now,
 							'tier': 0,
-							'chans': chan_names
+							'channels': chan_names
 						}
 					}
 				},

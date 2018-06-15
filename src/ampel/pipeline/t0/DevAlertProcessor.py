@@ -9,6 +9,7 @@
 
 
 import logging, time, sys, fastavro, tarfile
+from ampel.base.DevAmpelAlert import DevAmpelAlert
 from ampel.base.AmpelAlert import AmpelAlert
 
 
@@ -17,15 +18,25 @@ class DevAlertProcessor():
 	For each alert: load, filter, ingest.
 	"""
 
-	def __init__(self, alert_filter, save="alert", strip_thumbnails=False):
+	def __init__(self, alert_filter, save="alert", use_dev_alerts=True):
 		"""
-		Instance of a t0 alert filter: 
-		must implement method apply(<instance of ampel.base.AmpelAlert>)
-		save: either 
-			* 'alert': references to AmpelAlert instances will be kept
-			* 'objectId': only objectId strings will be kept
-			* 'candid': only candid integers will be kept
-			* 'objectId_candid': tuple ('candid', 'objectId') will be kept
+		Parameters
+		-----------
+		
+		alert_filter:
+			Instance of a t0 alert filter. It must implement method:
+			apply(<instance of ampel.base.AmpelAlert>)
+		
+		save:
+			either 
+				* 'alert': references to AmpelAlert instances will be kept
+				* 'objectId': only objectId strings will be kept
+				* 'candid': only candid integers will be kept
+				* 'objectId_candid': tuple ('candid', 'objectId') will be kept
+		
+		use_dev_alerts:
+			choose to use DevAmpelAlerts or AmpelAlert. If False, AmpelAlert will
+			be used and these won't contain cutouts images.
 		"""
 		logging.basicConfig( # Setup logger
 			format = '%(asctime)s %(levelname)s %(message)s',
@@ -39,7 +50,7 @@ class DevAlertProcessor():
 		self._accepted_alerts = []
 		self._rejected_alerts = []
 		self.save = save
-		self.strip_thumbnails = strip_thumbnails
+		self.use_dev_alerts = use_dev_alerts
 
 
 	def get_accepted_alerts(self):
@@ -47,7 +58,7 @@ class DevAlertProcessor():
 		return self._accepted_alerts
 
 
-	def get_rejeted_alerts(self):
+	def get_rejected_alerts(self):
 		""" """
 		return self._rejected_alerts
 
@@ -118,9 +129,12 @@ class DevAlertProcessor():
 		alert_content = self._deserialize(
 			self.tar_file.extractfile(tar_info)
 		)
-
-		# Create AmpelAlert instance
-		return AmpelAlert(alert_content['objectId'], *self._shape(alert_content))
+		
+		# Create (Dev)AmpelAlert instance
+		if self.use_dev_alerts:
+			return DevAmpelAlert.load_from_avro_content(alert_content)
+		else:
+			return AmpelAlert(alert_content['objectId'], *self._shape(alert_content))
 
 
 	def _filter(self, ampel_alert):
@@ -156,8 +170,7 @@ class DevAlertProcessor():
 
 	def _shape(self, alert_content):
 		""" """
-		if self.strip_thumbnails and 'cutout' in alert_content:
-			del alert_content['cutout']
+		
 		if alert_content.get('prv_candidates') is not None:
 			pps = [el for el in alert_content['prv_candidates'] if el.get('candid') is not None]
 			pps.insert(0,  alert_content['candidate'])

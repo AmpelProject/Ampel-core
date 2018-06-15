@@ -4,9 +4,8 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 10.10.2017
-# Last Modified Date: 07.06.2018
+# Last Modified Date: 14.06.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
-
 
 import pymongo, time, numpy as np
 from ampel.pipeline.t0.alerts.AlertSupplier import AlertSupplier
@@ -22,8 +21,6 @@ from ampel.pipeline.config.ChannelLoader import ChannelLoader
 from ampel.base.AmpelAlert import AmpelAlert
 from ampel.flags.AlDocTypes import AlDocTypes
 from ampel.flags.AlertFlags import AlertFlags
-from ampel.flags.JobFlags import JobFlags
-from ampel.pipeline.config.resources import get_resource
 
 class AlertProcessor(DBWired):
 	""" 
@@ -229,11 +226,9 @@ class AlertProcessor(DBWired):
 		self.logger.removeHandler(self.ilb)
 
 		# Create JobReporter instance
-		db_job_reporter = DBJobReporter(
-			self.get_job_col(), JobFlags.T0
-		)
+		db_job_reporter = DBJobReporter(self.central_db['logs'])
 
-		# Create new "job" document in the DB
+		# Create new job document in the logs collection
 		db_job_reporter.insert_new(
 			params = {
 				"alertProc": str(self.version),
@@ -330,7 +325,7 @@ class AlertProcessor(DBWired):
 		filtering_stats = job_info['duration']['filtering']
 		job_count_stats = job_info['count']['t0Job']
 		alert_counts = job_info['count']['ingestion']['alerts']
-		col = self.get_main_col()
+		col = self.central_db['main']
 
 		# Save pre run time
 		pre_run = time_now()
@@ -415,7 +410,7 @@ class AlertProcessor(DBWired):
 			# time required for all filters
 			filtering_stats['all'][iter_count] = time_now() - all_filters_start
 
-			if any(scheduled_t2_units):
+			if any(t2 is not None for t2 in scheduled_t2_units):
 
 				# Ingest alert
 				loginfo(" -> Ingesting alert")
@@ -560,7 +555,7 @@ class AlertProcessor(DBWired):
 			# GraphiteSendException: Socket closed before able to send data to ('localhost', 52003), 
 			# with error: [Errno 32] Broken pipe
 			# So we re-create a GraphiteClient every time we send something to graphite...
-			gfeeder = get_resource('graphite')
+			gfeeder = self.config['resources']['graphite']()
 
 			if t0_stats is not None:
 				gfeeder.add_stats_with_mean_std(t0_stats)
@@ -633,7 +628,7 @@ class AlertProcessor(DBWired):
 		Otherwise, tran_ids_before[i] will be None
 		"""
 
-		col = self.get_main_col()
+		col = self.central_db['main']
 		tran_ids = len(self.channels) * [None]
 
 		# Loop through activated channels
@@ -713,28 +708,33 @@ def create_databases(host, database_name, configs):
 def run_alertprocessor():
 
 	import os, time, uuid
-	from concurrent import futures
-	from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
-	from os.path import basename, dirname, abspath, realpath
-	parser = ArgumentParser(description=__doc__, formatter_class=ArgumentDefaultsHelpFormatter)
-	parser.add_argument('--config', default=abspath(dirname(realpath(__file__)) + '/../../../../config/messy_preliminary_config.json'))
+	from ampel.pipeline.config.ConfigLoader import AmpelArgumentParser
+	
+	parser = AmpelArgumentParser()
 	action = parser.add_mutually_exclusive_group(required=True)
 	action.add_argument('--broker', default='epyc.astro.washington.edu:9092')
 	action.add_argument('--tarfile', default=None)
 	parser.add_argument('--group', default=uuid.uuid1(), help="Kafka consumer group name")
 	
+	parser.require_resource('mongo', roles=['writer'])
+	parser.require_resource('archive', roles=['writer'])
+	parser.require_resource('graphite')
+	# partially parse command line to get config
+	opts, argv = parser.parse_known_args()
+	# flesh out parser with resources required by t0 units
+	loader = ChannelLoader(opts.config, source="ZTFIPAC", tier=0)
+	parser.require_resources(*loader.get_required_resources())
+	# parse again
 	opts = parser.parse_args()
+
+	mongo = opts.config['resources']['mongo']()['writer']
+	archive = opts.config['resources']['archive']()['writer']
 	
 	from ampel.pipeline.t0.alerts.TarAlertLoader import TarAlertLoader
 	from ampel.pipeline.t0.alerts.AlertSupplier import AlertSupplier
 	from ampel.pipeline.t0.alerts.ZIAlertShaper import ZIAlertShaper
 	from ampel.pipeline.t0.ZIAlertFetcher import ZIAlertFetcher
-	from ampel.pipeline.config.ConfigLoader import load_config
-
-	config = load_config(opts.config)
-
-	mongo = get_resource('mongo')
-	archive = get_resource('archive_writer')
+	from ampel.archive import ArchiveDB
 
 	import time
 	count = 0
@@ -748,8 +748,8 @@ def run_alertprocessor():
 		fetcher = ZIAlertFetcher(opts.broker, group_name=opts.group, timeout=3600)
 		loader = iter(fetcher)
 
-	alert_supplier = AlertSupplier(loader, ZIAlertShaper(), serialization="avro", archive=archive)
-	processor = AlertProcessor(mongodb_uri=mongo['uri'], publish_stats=["jobs"], config=config)
+	alert_supplier = AlertSupplier(loader, ZIAlertShaper(), serialization="avro", archive=ArchiveDB(archive))
+	processor = AlertProcessor(mongodb_uri=mongo, publish_stats=["jobs", "graphite"], config=opts.config)
 
 	while alert_processed == AlertProcessor.iter_max:
 		t0 = time.time()
