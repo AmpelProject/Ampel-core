@@ -94,7 +94,7 @@ class AmpelAlert(Frozen):
 		return arg_flags in cls.flags
 
 
-	def __init__(self, tran_id, list_of_pps, list_of_uls=None, cutout=None):
+	def __init__(self, tran_id, list_of_pps, list_of_uls=None):
 		""" 
 		AmpelAlert constructor
 		Parameters:
@@ -106,7 +106,6 @@ class AmpelAlert(Frozen):
 		self.tran_id = tran_id
 		self.pps = list_of_pps
 		self.uls = list_of_uls
-		self.cutout = cutout
 
 		# Freeze this instance
 		self.__isfrozen = True
