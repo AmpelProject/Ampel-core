@@ -41,7 +41,7 @@ class T3Controller(DBWired, Schedulable):
 			if t3_job_names is not None and job_name not in t3_job_names:
 				continue
 
-			t3_job = T3JobLoader.load(self.config, job_name)
+			t3_job = T3JobLoader.load(job_name, self.logger)
 			t3_job.schedule(self.scheduler)
 
 

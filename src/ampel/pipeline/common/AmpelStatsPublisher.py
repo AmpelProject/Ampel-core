@@ -119,8 +119,8 @@ class AmpelStatsPublisher(DBWired, Schedulable):
 		"""
 		"""
 
-		main_col = self.get_main_col()
-		photo_col = self.get_photo_col()
+		main_col = self.get_central_col("main")
+		photo_col = self.get_central_col("photo")
 		dbinfo_dict = {}
 
 		if not any([daemon, col_stats, docs_count, channels]):
@@ -136,7 +136,7 @@ class AmpelStatsPublisher(DBWired, Schedulable):
 		if col_stats:
 
 			dbinfo_dict['colStats'] = {
-				'logs': self.get_col_stats(self.get_logs_col()),
+				'logs': self.get_col_stats(self.get_central_col("logs")),
 				'photo': self.get_col_stats(photo_col),
 				'main': self.get_col_stats(main_col)
 			}
@@ -224,7 +224,7 @@ class AmpelStatsPublisher(DBWired, Schedulable):
 		if ret_dict == None:
 			ret_dict = {}
 
-		server_status = self.get_main_col().database.command("serverStatus")
+		server_status = self.get_central_db().command("serverStatus")
 		for k, v in AmpelStatsPublisher.db_metrics.items():
 			ret_dict[suffix + v] = AmpelUtils.get_by_path(server_status, k)
 
