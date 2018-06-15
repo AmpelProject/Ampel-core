@@ -7,7 +7,7 @@
 # Last Modified Date: 31.05.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-from functools import reduce
+from ampel.pipeline.common.AmpelUtils import AmpelUtils
 from ampel.pipeline.config.Channel import Channel
 
 

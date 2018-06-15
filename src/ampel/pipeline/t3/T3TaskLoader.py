@@ -9,7 +9,7 @@
 
 
 import importlib
-from functools import reduce
+from ampel.pipeline.common.AmpelUtils import AmpelUtils
 from voluptuous import Schema, Any, Required, Optional, ALLOW_EXTRA
 
 from ampel.pipeline.logging.LoggingUtils import LoggingUtils
@@ -329,8 +329,7 @@ class T3TaskLoader:
 	def get_config(doc, key):
 		"""
 		"""
-		return reduce(dict.get, key.split("."), doc)
-
+		return AmpelUtils.get_by_path(doc, key)
 
 	@classmethod
 	def _subset_check(cls, task_doc, t3_job_doc, key, logger):

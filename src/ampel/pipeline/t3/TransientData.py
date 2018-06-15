@@ -12,6 +12,7 @@ from ampel.pipeline.db.DBWired import DBWired
 from ampel.base.TransientView import TransientView
 from ampel.pipeline.common.AmpelUtils import AmpelUtils
 from ampel.pipeline.t3.DataAccessManager import DataAccessManager
+from types import MappingProxyType
 
 class TransientData:
 	"""
@@ -31,7 +32,7 @@ class TransientData:
 		"""
 		if isinstance(config, pymongo.database.Database):
 			TransientData.al_config = DBWired.get_config_from_db(config)
-		elif isinstance(config, dict):
+		elif isinstance(config, MappingProxyType) or isinstance(config, dict):
 			TransientData.al_config = config
 		else:
 			raise ValueError("Illegal argument")

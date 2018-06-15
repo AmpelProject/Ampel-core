@@ -7,7 +7,7 @@
 # Last Modified Date: 14.06.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-from functools import reduce
+from ampel.pipeline.common.AmpelUtils import AmpelUtils
 from voluptuous import Schema, Required, Any, Optional, ALLOW_EXTRA
 
 from ampel.pipeline.t3.T3Job import T3Job
@@ -126,4 +126,4 @@ class T3JobLoader:
 	def get_config(job_doc, param_name):
 		"""
 		"""
-		return reduce(dict.get, param_name.split("."), job_doc)
+		return AmpelUtils.get_by_path(job_doc, param_name)

@@ -7,7 +7,7 @@
 # Last Modified Date: 11.06.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-from functools import reduce
+from ampel.pipeline.common.AmpelUtils import AmpelUtils
 
 class T3Task:
 	"""
@@ -33,8 +33,7 @@ class T3Task:
 		"""
 		doc_key: dict key
 		"""
-		return reduce(dict.get, doc_key.split("."), self.task_doc)
-
+		return AmpelUtils.get_by_path(self.task_doc, doc_key)
 
 	def get_t3_unit_instance(self, logger):
 		"""

@@ -7,7 +7,7 @@
 # Last Modified Date: 11.06.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-from functools import reduce
+from ampel.pipeline.common.AmpelUtils import AmpelUtils
 from ampel.pipeline.t3.T3JobExecution import T3JobExecution
 from multiprocessing import Process
 
@@ -41,8 +41,7 @@ class T3Job:
 
 	def get_config(self, param_name):
 		""" """
-		return reduce(dict.get, param_name.split("."), self.job_doc)
-
+		return AmpelUtils.get_by_path(self.job_doc, param_name)
 
 	def launch_t3_job(self, bla):
 		proc = Process(target=self.run)

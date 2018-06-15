@@ -7,7 +7,7 @@
 # Last Modified Date: 04.06.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-from functools import reduce
+from ampel.pipeline.common.AmpelUtils import AmpelUtils
 
 class Channel:
 	"""
@@ -74,9 +74,7 @@ class Channel:
 
 	def get_config(self, param_name, source=None):
 		""" """
-		doc_source = self.get_source_doc(source)
-		return reduce(dict.get, param_name.split("."), doc_source)
-		
+		return AmpelUtils.get_by_path(self.get_source_doc(source), param_name)
 
 	def get_custom_attr(self, name):
 		""" 

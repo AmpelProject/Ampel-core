@@ -12,8 +12,7 @@ from ampel.pipeline.logging.LoggingUtils import LoggingUtils
 from ampel.pipeline.config.Channel import Channel
 from ampel.pipeline.config.T0Channel import T0Channel
 import importlib
-from functools import reduce
-
+from ampel.pipeline.common.AmpelUtils import AmpelUtils
 
 class ChannelLoader:
 	"""
@@ -86,11 +85,7 @@ class ChannelLoader:
 	def _get_config(self, chan_doc, param_name):
 		"""
 		"""
-		return reduce(
-			dict.get, 
-			param_name.split("."), 
-			chan_doc['sources'][self.source]
-		)
+		return AmpelUtils.get_by_path(chan_doc['sources'][self.source], param_name)
 
 	def get_required_resources(self):
 		resources = set()
