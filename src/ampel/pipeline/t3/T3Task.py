@@ -4,9 +4,10 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 06.03.2018
-# Last Modified Date: 11.06.2018
+# Last Modified Date: 15.06.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
+from types import MappingProxyType
 from functools import reduce
 
 class T3Task:
@@ -33,7 +34,7 @@ class T3Task:
 		"""
 		doc_key: dict key
 		"""
-		return reduce(dict.get, doc_key.split("."), self.task_doc)
+		return reduce(MappingProxyType.get, doc_key.split("."), self.task_doc)
 
 
 	def get_t3_unit_instance(self, logger):

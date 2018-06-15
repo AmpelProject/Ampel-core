@@ -17,26 +17,6 @@ class TransientData:
 	"""
 	"""
 
-	al_config = None
-
-	@classmethod
-	def set_ampel_config(cls, config):
-		"""
-		A single TransientData instance can be used to create multiple different 
-		ampel.base.TransientView instances, each representing a different channel.
-		Since different channels can have different data access policies (some channel
-		for example can access ZTF_COLLAB data other are restricted to ZTF_PUBLIC),
-		access to the ampel config is required if multiple channel transient views
-		are to be created using the same TransientData instance.
-		"""
-		if isinstance(config, pymongo.database.Database):
-			TransientData.al_config = DBWired.get_config_from_db(config)
-		elif isinstance(config, dict):
-			TransientData.al_config = config
-		else:
-			raise ValueError("Illegal argument")
-
-
 	def __init__(self, tran_id, state, logger):
 		"""
 		Parameters:
@@ -225,7 +205,7 @@ class TransientData:
 		else:
 
 			if channel not in self.known_channels:
-				self.logger.debug("No transient data avail for channel %s" % channel)
+				self.logger.debug("No transient data avail for channel %s" % str(channel))
 				return None
 
 		#########################################################################
@@ -303,10 +283,6 @@ class TransientData:
 		# Past this point, regardless of how many channel info we have (one is enough) 
 		# we have to check permissions (db results contain all pps/uls, 
 		# wether or not they are public/private)
-		if TransientData.al_config is None:
-			raise ValueError(
-				"Ampel config required, please set it using TransientData.set_ampel_config()"
-			)
 	
 		# Convenience
 		if channels is not None and len(channels) == 1:
@@ -314,14 +290,14 @@ class TransientData:
 
 		# Get pps / uls for given channel
 		if channel is not None:
-			dam = DataAccessManager(TransientData.al_config, channel)
+			dam = DataAccessManager(channel)
 			return dam.get_photopoints(self.photopoints), dam.get_upperlimits(self.upperlimits)
 
 		# Loop through channel(s)
 		pps = set()
 		uls = set()
 		for channel in channels:
-			dam = DataAccessManager(TransientData.al_config, channel)
+			dam = DataAccessManager(channel)
 			pps.update(dam.get_photopoints(self.photopoints))
 			uls.update(dam.get_upperlimits(self.upperlimits))
 

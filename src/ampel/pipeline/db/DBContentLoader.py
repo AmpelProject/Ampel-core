@@ -44,11 +44,10 @@ class DBContentLoader:
 	)
 
 
-	def __init__(self, central_db, al_config=None, verbose=False, logger=None):
+	def __init__(self, central_db, verbose=False, logger=None):
 		"""
 		"""
 		self.logger = LoggingUtils.get_logger() if logger is None else logger
-		TransientData.set_ampel_config(al_config)
 		self.lcl = LightCurveLoader(central_db, logger=self.logger)
 		self.main_col = central_db["main"]
 		self.photo_col = central_db["photo"]

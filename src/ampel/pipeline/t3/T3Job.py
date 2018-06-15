@@ -7,9 +7,10 @@
 # Last Modified Date: 11.06.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-from functools import reduce
 from ampel.pipeline.t3.T3JobExecution import T3JobExecution
 from multiprocessing import Process
+from types import MappingProxyType
+from functools import reduce
 
 class T3Job:
 	"""
@@ -41,16 +42,18 @@ class T3Job:
 
 	def get_config(self, param_name):
 		""" """
-		return reduce(dict.get, param_name.split("."), self.job_doc)
+		return reduce(MappingProxyType.get, param_name.split("."), self.job_doc)
 
 
-	def launch_t3_job(self, bla):
+	def launch_t3_job(self):
+		""" """
 		proc = Process(target=self.run)
 		proc.start()
 	
-	def run(self, central_db=None, al_config=None, logger=None):
+
+	def run(self, central_db=None, logger=None):
 		""" """
-		T3JobExecution(self, logger).run_job(central_db, al_config)
+		T3JobExecution(self, logger).run_job(central_db)
 
 
 	def schedule(self, scheduler):
@@ -61,8 +64,7 @@ class T3Job:
 			scheduler.every(
 				self.get_config('schedule.interval')
 			).minutes.do(
-				self.launch_t3_job, 
-				t3_job
+				self.launch_t3_job
 			)
 
 		elif self.get_config('schedule.mode') == "fixed_time":
@@ -70,6 +72,5 @@ class T3Job:
 			scheduler.every().day.at(
 				self.get_config('schedule.time')
 			).do(
-				self.launch_t3_job, 
-				t3_job
+				self.launch_t3_job
 			)

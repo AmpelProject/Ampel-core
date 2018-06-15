@@ -12,13 +12,14 @@ from ampel.pipeline.db.query.QueryLatestCompound import QueryLatestCompound
 from ampel.pipeline.db.DBContentLoader import DBContentLoader
 from ampel.pipeline.logging.LoggingUtils import LoggingUtils
 from ampel.pipeline.t3.TimeConstraint import TimeConstraint
+from ampel.pipeline.config.AmpelConfig import AmpelConfig
 from ampel.pipeline.common.AmpelUtils import AmpelUtils
 from ampel.flags.TransientFlags import TransientFlags
 from ampel.flags.AlDocTypes import AlDocTypes
 from ampel.flags.FlagUtils import FlagUtils
 from datetime import datetime, timezone
 from itertools import islice
-from ampel.pipeline.config import get_config
+
 from pymongo import MongoClient
 
 class T3JobExecution:
@@ -31,6 +32,7 @@ class T3JobExecution:
 
 		if logger is None:
 			logger = LoggingUtils.get_logger(unique=True)
+
 		self.logger = logger
 		self.t3_job = t3_job
 
@@ -79,27 +81,21 @@ class T3JobExecution:
 		return getattr(self, "exec_params", None)
 
 
-	def run_job(self, central_db=None, al_config=None):
+	def run_job(self, central_db=None):
 		"""
 		central_db: pymongo database 
-		al_config: ampel config (dict)
 		"""
 		
-		if al_config is None:
-			al_config = get_config()
 		if central_db is None:
-			central_db = MongoClient(al_config['resources']['mongo']()['writer'])["Ampel"]
+			central_db = MongoClient(
+				AmpelConfig.get_config('resources.mongo')()['writer']
+			)["Ampel"]
 		
 		# T3 job requiring prior transient loading 
 		if self.t3_job.get_config('input.select') is not None:
 
-			if None in (al_config, central_db):
-				raise ValueError(
-					"Ampel config and central_db parameters are required for jobs requiring transient loading"
-				)
-
 			# Required to load single transients
-			dcl = DBContentLoader(central_db, al_config, verbose=True, logger=self.logger)
+			dcl = DBContentLoader(central_db, verbose=True, logger=self.logger)
 
 			# Job with transient input
 			trans_cursor = self.get_selected_transients(central_db.main)

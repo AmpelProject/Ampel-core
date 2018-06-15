@@ -7,8 +7,8 @@
 # Last Modified Date: 28.05.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
+import collections
 from ampel.flags.FlagUtils import FlagUtils
-
 
 class QueryMatchCriteria:
 	"""
@@ -88,7 +88,10 @@ class QueryMatchCriteria:
 			return
 
 		if not type(inlist) is list:
-			raise ValueError('Illegal "inlist" parameter')
+			if isinstance(inlist, collections.Sequence):
+				inlist = list(inlist)
+			else:
+				raise ValueError('Illegal "inlist" parameter')
 
 		# Case 1 and 3
 		if not FlagUtils.is_nested_list(inlist):
