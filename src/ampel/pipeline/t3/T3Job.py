@@ -4,9 +4,10 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 06.03.2018
-# Last Modified Date: 11.06.2018
+# Last Modified Date: 15.06.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
+from ampel.pipeline.common.AmpelUtils import AmpelUtils
 from ampel.pipeline.t3.T3JobExecution import T3JobExecution
 from multiprocessing import Process
 from types import MappingProxyType
@@ -42,7 +43,7 @@ class T3Job:
 
 	def get_config(self, param_name):
 		""" """
-		return reduce(MappingProxyType.get, param_name.split("."), self.job_doc)
+		return AmpelUtils.get_by_path(self.job_doc, param_name)
 
 
 	def launch_t3_job(self):

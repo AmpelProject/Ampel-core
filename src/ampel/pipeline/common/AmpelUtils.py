@@ -8,6 +8,7 @@
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import collections
+from functools import reduce
 
 class AmpelUtils():
 	""" 
@@ -125,3 +126,11 @@ class AmpelUtils():
 				return any(
 					tuple(AmpelUtils.check_seq_inner_type(seq, _type) for _type in types)
 				)
+	
+	@staticmethod
+	def get_by_path(mapping, path, delimiter='.'):
+		"""
+		Get an item from a nested mapping by path, e.g.
+		'foo.bar.baz' -> mapping['foo']['bar']['baz']
+		"""
+		return reduce(lambda d, k: d.get(k), path.split(delimiter), mapping)

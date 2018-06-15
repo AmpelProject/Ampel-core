@@ -12,6 +12,7 @@ from ampel.pipeline.db.DBWired import DBWired
 from ampel.base.TransientView import TransientView
 from ampel.pipeline.common.AmpelUtils import AmpelUtils
 from ampel.pipeline.t3.DataAccessManager import DataAccessManager
+from types import MappingProxyType
 
 class TransientData:
 	"""

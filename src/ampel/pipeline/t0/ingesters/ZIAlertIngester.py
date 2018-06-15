@@ -25,7 +25,7 @@ from ampel.flags.T2RunStates import T2RunStates
 from ampel.flags.AlDocTypes import AlDocTypes
 from ampel.flags.FlagUtils import FlagUtils
 
-from functools import reduce
+from ampel.pipeline.common.AmpelUtils import AmpelUtils
 from operator import or_
 
 SUPERSEEDED = FlagUtils.get_flag_pos_in_enumflag(PhotoFlags.SUPERSEEDED)

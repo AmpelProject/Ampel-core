@@ -32,6 +32,7 @@ class T3JobExecution:
 
 		if logger is None:
 			logger = LoggingUtils.get_logger(unique=True)
+			logger.propagate = False
 
 		self.logger = logger
 		self.t3_job = t3_job

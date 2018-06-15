@@ -9,6 +9,7 @@
 
 from types import MappingProxyType
 from functools import reduce
+from ampel.pipeline.common.AmpelUtils import AmpelUtils
 
 class T3Task:
 	"""
@@ -34,7 +35,7 @@ class T3Task:
 		"""
 		doc_key: dict key
 		"""
-		return reduce(MappingProxyType.get, doc_key.split("."), self.task_doc)
+		return AmpelUtils.get_by_path(self.task_doc, doc_key)
 
 
 	def get_t3_unit_instance(self, logger):

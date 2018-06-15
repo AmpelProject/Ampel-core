@@ -10,6 +10,7 @@
 import importlib
 from functools import reduce
 from types import MappingProxyType
+from ampel.pipeline.common.AmpelUtils import AmpelUtils
 from voluptuous import Schema, Any, Required, Optional, ALLOW_EXTRA
 
 from ampel.pipeline.logging.LoggingUtils import LoggingUtils
@@ -334,7 +335,7 @@ class T3TaskLoader:
 	def get_config(doc, key):
 		"""
 		"""
-		return reduce(type(doc).get, key.split("."), doc)
+		return AmpelUtils.get_by_path(doc, key)
 
 
 	@classmethod

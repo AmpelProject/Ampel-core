@@ -7,7 +7,7 @@
 # Last Modified Date: 14.06.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-from functools import reduce
+from ampel.pipeline.common.AmpelUtils import AmpelUtils
 from ampel.flags.AlDocTypes import AlDocTypes
 from ampel.pipeline.db.DBWired import DBWired
 from ampel.pipeline.common.Schedulable import Schedulable
@@ -226,7 +226,7 @@ class AmpelStatsPublisher(DBWired, Schedulable):
 
 		server_status = self.get_main_col().database.command("serverStatus")
 		for k, v in AmpelStatsPublisher.db_metrics.items():
-			ret_dict[suffix + v] = reduce(dict.get, k.split("."), server_status)
+			ret_dict[suffix + v] = AmpelUtils.get_by_path(server_status, k)
 
 		return ret_dict
 

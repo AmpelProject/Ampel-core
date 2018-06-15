@@ -9,6 +9,7 @@
 
 from functools import reduce
 from types import MappingProxyType
+from ampel.pipeline.common.AmpelUtils import AmpelUtils
 from voluptuous import Schema, Required, Any, Optional, ALLOW_EXTRA
 
 from ampel.pipeline.t3.T3Job import T3Job
@@ -131,4 +132,4 @@ class T3JobLoader:
 	def get_config(job_doc, param_name):
 		"""
 		"""
-		return reduce(type(job_doc).get, param_name.split("."), job_doc)
+		return AmpelUtils.get_by_path(job_doc, param_name)
