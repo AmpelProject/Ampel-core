@@ -60,41 +60,6 @@
     "t2_run_config": {},
     "t2_units": {},
     "t3_jobs": {},
-    "t3_run_config": {
-        "SLACKPUBLISHER_hu_sp_2": {
-            "auth_token": "xoxb-298132201170-O0GcJpOSNYcF84wukZNtcZN8",
-            "channel": "ampel_hu_sn2",
-            "pos": "brightest",
-            "datetime": "%d/%m/%Y %H:%M:%S",
-            "version": 1.0
-        },
-        "SLACKPUBLISHER_hu_sp_1": {
-            "auth_token": "xoxb-298132201170-O0GcJpOSNYcF84wukZNtcZN8",
-            "msg": "Found following new transient",
-            "channel": "ampel_hu_sn1",
-            "pos": "brightest",
-            "datetime": "%d/%m/%Y %H:%M:%S",
-            "version": 1.0
-        },
-        "PURGE_standard": {
-            "inactivity": "30"
-        }
-    },
-    "t3_units": {
-        "SLACKPUBLISHER": {
-            "classFullPath": "ampel.contrib.hu.t3.SlackPublisher",
-            "baseConfig": {
-                "url": "http://something",
-                "images": false
-            }
-        },
-        "PURGE": {
-            "classFullPath": "ampel.contrib.hu.t3.Purge",
-            "baseConfig": {
-                "s2DB": "url.to.other.mongo.db",
-                "login": "bla",
-                "pwd": "yo"
-            }
-        }
-    }
+    "t3_run_config": {},
+    "t3_units": {}
 }
