@@ -8,7 +8,7 @@ from functools import partial
 import inspect
 import json
 import pkg_resources
-from ampel.pipeline.config import set_config
+from ampel.pipeline.config.AmpelConfig import AmpelConfig
 
 from ampel.pipeline.t3.T3JobLoader import T3JobLoader
 
@@ -139,5 +139,5 @@ class AmpelArgumentParser(ArgumentParser):
 		args.config['resources'] = {}
 		for name, klass in self._resources.items():
 			args.config['resources'][name] = klass(args)
-		set_config(args.config)
+		AmpelConfig.set_config(args.config)
 		return args, argv
