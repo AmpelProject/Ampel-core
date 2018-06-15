@@ -29,9 +29,9 @@ class TransientData:
 		access to the ampel config is required if multiple channel transient views
 		are to be created using the same TransientData instance.
 		"""
-		if type(config) is pymongo.database.Database:
+		if isinstance(config, pymongo.database.Database):
 			TransientData.al_config = DBWired.get_config_from_db(config)
-		elif type(config) is dict:
+		elif isinstance(config, dict):
 			TransientData.al_config = config
 		else:
 			raise ValueError("Illegal argument")

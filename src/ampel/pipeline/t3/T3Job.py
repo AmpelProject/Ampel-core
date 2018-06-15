@@ -9,6 +9,7 @@
 
 from functools import reduce
 from ampel.pipeline.t3.T3JobExecution import T3JobExecution
+from multiprocessing import Process
 
 class T3Job:
 	"""
@@ -44,11 +45,10 @@ class T3Job:
 
 
 	def launch_t3_job(self, bla):
-		#run_job(self.al_config, central_db, t3_job, logger)
-		pass
-
+		proc = Process(target=self.run)
+		proc.start()
 	
-	def run(self, central_db, al_config, logger):
+	def run(self, central_db=None, al_config=None, logger=None):
 		""" """
 		T3JobExecution(self, logger).run_job(central_db, al_config)
 
