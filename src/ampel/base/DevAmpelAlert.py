@@ -65,7 +65,7 @@ class DevAmpelAlert(AmpelAlert):
 			dict with the three cutouts ('cutoutScience', 'cutoutTemplate', 'cutoutDifference')
 		"""
 		
-		AmpelAlert.__init__(self, tran_id, list_of_pps, list_of_uls, cutout=None)
+		AmpelAlert.__init__(self, tran_id, list_of_pps, list_of_uls)
 		
 		# add the cutouts if available
 		if cutout_dict is None:
