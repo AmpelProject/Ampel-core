@@ -71,7 +71,7 @@ class T3Job:
 		elif self.get_config('schedule.mode') == "fixed_time":
 
 			scheduler.every().day.at(
-				self.get_config('schedule.time')
+				self.get_config('schedule.timeStr')
 			).do(
 				self.launch_t3_job
 			)
