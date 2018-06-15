@@ -10,14 +10,14 @@ from __future__ import print_function
 
 import requests
 import urllib, base64
-import re, os, datetime, json
+import re, os, datetime, json, time
 from collections import defaultdict
 
 # less standard imports
 import  configparser 			# pip3 install configparser
 from bs4 import BeautifulSoup 	# pip3 install bs4 + pip3 install lxml
 import yaml  					# pip3 install pyyaml
-from astropy.time import Time 	# pip3 install astropy
+import astropy.time 			# pip3 install astropy
 
 marshal_root = 'http://skipper.caltech.edu:8080/cgi-bin/growth/'
 photo_url 	= marshal_root  + 'plot_lc.cgi?name=%s'
@@ -44,15 +44,15 @@ def get_marshal_html(weblink, attempts=1, max_attempts=5):
 	try:
 		reponse = requests.get(weblink, auth=auth, timeout=120+60*attempts)
 	
-	except (requests.ConnectionError, requests.ReadTimeout) as req_e:		
+	except Exception as e:		
 
 		print ('Sergeant.get_marshal_html(): ', weblink)
-		print (req_e)
-		print ('Sergeant.get_marshal_html(): ConnectionError or ReadTimeout this is our {0} attempt, {1} left', attempts, max_attempts-max_attempts)
+		print (e)
+		print ('Sergeant.get_marshal_html(): this is our {0:0} attempt, {1:1} left'.format(attempts, max_attempts-max_attempts))
 
 		if attempts<max_attempts:
 			time.sleep(3)
-			reponse.text = get_marshal_html(weblink, attempts=attempts+1)	
+			return get_marshal_html(weblink, attempts=attempts+1, max_attempts=max_attempts)	
 		else:
 			print ('Sergeant.get_marshal_html(): giving up')
 			raise(requests.exceptions.ConnectionError)
@@ -153,7 +153,7 @@ class Sergeant(object):
 		the lims keyword can be used to turn on/off upper limits in the light curve
 
 		'''
-		t_now = Time.now()
+		t_now = astropy.time.Time.now()
 		if self.cutprogramidx is None:
 			print('ERROR, first fix program_name upon init')
 			return []
@@ -464,7 +464,6 @@ def testing():
 	print ('reading scan sources...')	
 	scan_sources = inst.list_scan_sources()
 	print ('# of scan sources', len(scan_sources) )
-
 
 
 
