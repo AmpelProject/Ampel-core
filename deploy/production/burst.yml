@@ -19,6 +19,10 @@ services:
      MONGODUMP_DIR: /mnt
      MONGO_USER: filterclient
      MONGO_PASSWORD_FILE: /run/secrets/catalog-read-password
+   deploy:
+     restart_policy:
+       condition: any
+       delay: 10s
   mongo:
     image: mongo:3.6
     command: ["mongod", "--port", "$MONGO_PORT"]
@@ -38,6 +42,10 @@ services:
       MONGO_PASSWORD_FILE: /run/secrets/mongo-alertprocessor-password
       LOGGER_USER: logger
       LOGGER_PASSWORD_FILE: /run/secrets/mongo-logger-password
+    deploy:
+      restart_policy:
+        condition: any
+        delay: 10s
   stats:
     image: ampel:$AMPEL_TAG
     command: ["ampel-statspublisher"]
