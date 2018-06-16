@@ -20,7 +20,8 @@ import yaml  					# pip3 install pyyaml
 import astropy.time 			# pip3 install astropy
 
 marshal_root = 'http://skipper.caltech.edu:8080/cgi-bin/growth/'
-photo_url 	= marshal_root  + 'plot_lc.cgi?name=%s'
+#photo_url 	= marshal_root  + 'plot_lc.cgi?name=%s'
+summary_url 	= marshal_root  + 'source_summary.cgi?sourceid=%s'
 listprog_url = marshal_root + 'list_programs.cgi'
 scanning_url = marshal_root + 'growth_treasures_transient.cgi'
 saving_url = marshal_root   + 'save_cand_growth.cgi?candid=%s&program=%s'
@@ -304,7 +305,7 @@ class Sergeant(object):
 				if len(cells) > 1:
 					sources.append({})
 					try:
-						sources[-1]["objname"] = cells[1].find('a').text
+						sources[-1]["name"] = cells[1].find('a').text
 						sources[-1]["objtype"] = cells[2].find('font').text.strip()
 						sources[-1]["z"] = cells[3].find('font').text.strip()
 						sources[-1]["ra"], sources[-1]["dec"] = re.findall(r'<.*><.*>(.*?)<br/>(.*?)</font></td>', str(cells[4]))[0]
@@ -343,7 +344,7 @@ class Sergeant(object):
 
 					except IndexError:
 						if verbose:
-							print('{0} has no auto_annotation'.format(sources[-1]["objname"]))
+							print('{0} has no auto_annotation'.format(sources[-1]["name"]))
 			targ0 += 100
 			page_number+=1
 		return sources
@@ -356,21 +357,34 @@ def _parse_source_input(source):
 		if len(source)==1:
 			source = source[0]
 
-	if 'objname' in source:
+	if "objname" in source: 		# not used anymore (keep for bc)
 		sourcename = source['objname']
-	else:
+	elif "name" in source:
+		sourcename = source['name'] # consistent with json key from list_program_sources.cgi
+	elif type(source) is str:
 		sourcename = source
+	else:
+		raise Exception('Source input not understood:',  source)
+		return 
+
 
 	return sourcename
 
-def get_photo(source, verbose=False):
+def get_summary(source, verbose=False):
 	'''
-	TODO...
+	>> data = get_summary(source)
+
+	call source_summary.cgi
+	input source dict needs to have key "id"
+	return json object with Marshal photometry and annotations 
 	'''
 
-	sourcename = _parse_source_input(source)
+	if not("id" in source):
+		raise Exception('''we need source dict with key "id "to use this source_summary.cgi''')
 
-	soup = soup_obj(photo_url %sourcename)
+	soup = soup_obj(summary_url%source['id'])
+	phot_dict = json.loads(soup.find('p').text)
+	return phot_dict
 
 def get_comments(source, verbose=False):
 	'''
@@ -433,7 +447,8 @@ def comment(comment, source, comment_type="info", comment_id=None, remove=False)
 	>>> soup_out = comment("dummy", 'ZTF17aacscou')
 	>>> soup_out = comment("dummy", source_dict)
 
-	here source_dict is a dictionary with keys 'objname' and (optional) 'comments'
+	here source_dict is a dictionary with keys "name" and (optional) "comments"
+
 
 	optional input:
 
@@ -448,11 +463,9 @@ def comment(comment, source, comment_type="info", comment_id=None, remove=False)
 	removing comment is not yet implemented
 	'''
 
-	if ('objname' in source): 
-		sourcename = source['objname']	
-	else:
-		sourcename = source
-		
+
+	sourcename = _parse_source_input(source)
+			
 
 	# check if already have a dict with current comments
 	# (we check only the comment text, not the Marshal username)
@@ -582,7 +595,7 @@ def testing():
 	saved_sources = inst.list_saved_sources()
 	print ('# saved sources:',len(saved_sources)) 
 
-	#this_source = (item for item in saved_sources if item["objname"] == "ZTF18aagteoy").next()
+	#this_source = (item for item in saved_sources if item["name"] == "ZTF18aagteoy").next()
 	if len(saved_sources)>1:
 		this_source  = saved_sources[1] # pick one 
 		print ( get_comments(this_source) )
