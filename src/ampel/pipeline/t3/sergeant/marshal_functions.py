@@ -10,17 +10,18 @@ from __future__ import print_function
 
 import requests
 import urllib, base64
-import re, os, datetime, json
+import re, os, datetime, json, time
 from collections import defaultdict
 
 # less standard imports
 import  configparser 			# pip3 install configparser
 from bs4 import BeautifulSoup 	# pip3 install bs4 + pip3 install lxml
 import yaml  					# pip3 install pyyaml
-from astropy.time import Time 	# pip3 install astropy
+import astropy.time 			# pip3 install astropy
 
 marshal_root = 'http://skipper.caltech.edu:8080/cgi-bin/growth/'
-photo_url 	= marshal_root  + 'plot_lc.cgi?name=%s'
+#photo_url 	= marshal_root  + 'plot_lc.cgi?name=%s'
+summary_url 	= marshal_root  + 'source_summary.cgi?sourceid=%s'
 listprog_url = marshal_root + 'list_programs.cgi'
 scanning_url = marshal_root + 'growth_treasures_transient.cgi'
 saving_url = marshal_root   + 'save_cand_growth.cgi?candid=%s&program=%s'
@@ -33,12 +34,12 @@ ingest_url = marshal_root + 'ingest_avro_id.cgi'
 
 
 httpErrors = {
-    304: 'Error 304: Not Modified: There was no new data to return.',
-    400: 'Error 400: Bad Request: The request was invalid. An accompanying error message will explain why.',
-    403: 'Error 403: Forbidden: The request is understood, but it has been refused. An accompanying error message will explain why',
-    404: 'Error 404: Not Found: The URI requested is invalid or the resource requested, such as a category, does not exists.',
-    500: 'Error 500: Internal Server Error: Something is broken.',
-    503: 'Error 503: Service Unavailable.'
+	304: 'Error 304: Not Modified: There was no new data to return.',
+	400: 'Error 400: Bad Request: The request was invalid. An accompanying error message will explain why.',
+	403: 'Error 403: Forbidden: The request is understood, but it has been refused. An accompanying error message will explain why',
+	404: 'Error 404: Not Found: The URI requested is invalid or the resource requested, such as a category, does not exists.',
+	500: 'Error 500: Internal Server Error: Something is broken.',
+	503: 'Error 503: Service Unavailable.'
 }
 
 
@@ -53,7 +54,7 @@ class PTFConfig(object) :
 	def get(self,*args,**kwargs) :
 		return self.config.get(*args,**kwargs)
 
-        
+		
 def get_marshal_html(weblink, attempts=1, max_attempts=5):
 	
 	conf = PTFConfig()
@@ -62,15 +63,15 @@ def get_marshal_html(weblink, attempts=1, max_attempts=5):
 	try:
 		reponse = requests.get(weblink, auth=auth, timeout=120+60*attempts)
 	
-	except (requests.ConnectionError, requests.ReadTimeout) as req_e:		
+	except Exception as e:		
 
 		print ('Sergeant.get_marshal_html(): ', weblink)
-		print (req_e)
-		print ('Sergeant.get_marshal_html(): ConnectionError or ReadTimeout this is our {0} attempt, {1} left', attempts, max_attempts-max_attempts)
+		print (e)
+		print ('Sergeant.get_marshal_html(): this is our {0:0} attempt, {1:1} left'.format(attempts, max_attempts-max_attempts))
 
 		if attempts<max_attempts:
 			time.sleep(3)
-			reponse.text = get_marshal_html(weblink, attempts=attempts+1)	
+			return get_marshal_html(weblink, attempts=attempts+1, max_attempts=max_attempts)	
 		else:
 			print ('Sergeant.get_marshal_html(): giving up')
 			raise(requests.exceptions.ConnectionError)
@@ -80,66 +81,66 @@ def get_marshal_html(weblink, attempts=1, max_attempts=5):
 
 
 def post_marshal_cgi(weblink,data=None,attempts=1,max_attempts=5):
-    """
-    Run one of the growth cgi scripts, check results and return
-    """
-    
+	"""
+	Run one of the growth cgi scripts, check results and return
+	"""
+	
    
-    conf = PTFConfig()
-    auth = requests.auth.HTTPBasicAuth(conf.get('Marshal', 'user'), conf.get('Marshal', 'passw'))
-    print(auth)
-    
-    try:
-	    response = requests.post(weblink, auth=auth, data=data,timeout=120+60*attempts)
-    except (requests.ConnectionError, requests.ReadTimeout) as req_e:		
+	conf = PTFConfig()
+	auth = requests.auth.HTTPBasicAuth(conf.get('Marshal', 'user'), conf.get('Marshal', 'passw'))
+	print(auth)
+	
+	try:
+		response = requests.post(weblink, auth=auth, data=data,timeout=120+60*attempts)
+	except (requests.ConnectionError, requests.ReadTimeout) as req_e:		
 
-	    print ('Sergeant.post_marshal_cgi(): ', weblink)
-	    print (req_e)
-	    print ('Sergeant.post_marshal_cgi(): ConnectionError or ReadTimeout this is our {0} attempt, {1} left', attempts, max_attempts-max_attempts)
+		print ('Sergeant.post_marshal_cgi(): ', weblink)
+		print (req_e)
+		print ('Sergeant.post_marshal_cgi(): ConnectionError or ReadTimeout this is our {0} attempt, {1} left', attempts, max_attempts-max_attempts)
 
-	    if attempts<max_attempts:
-		    time.sleep(3)
-		    response = post_marshal_cgi(weblink, attempts=attempts+1)	
-	    else:
-		    print ('Sergeant.post_marshal_cgi(): giving up')
-		    raise(requests.exceptions.ConnectionError)
+		if attempts<max_attempts:
+			time.sleep(3)
+			response = post_marshal_cgi(weblink, attempts=attempts+1)	
+		else:
+			print ('Sergeant.post_marshal_cgi(): giving up')
+			raise(requests.exceptions.ConnectionError)
 
-    return response
-            
+	return response
+			
  
 
 
 def json_obj(weblink,data=None,verbose=False):
-        '''
-        Try to post to the marshal, then parse then return (assuming json)
-        '''
-        
+		'''
+		Try to post to the marshal, then parse then return (assuming json)
+		'''
+		
 
-        if verbose : print("Trying to post to marshal: "+weblink)
-        
-        r = post_marshal_cgi(weblink,data=data)
-        print(r)
-        status = r.status_code
-        print(status)
-        if status != 200:
-                try:
-                        message = httpErrors[status]
-                except KeyError:
-                        message = 'Error %d: Undocumented error' % status
-                        if verbose : print(message)
-                return None
-        if verbose : print("Successful growth connection")
-    
-        try:
-                rinfo =  json.loads(r.text)
-        except ValueError as e:
-                # No json information returned, usually the status most relevant
-                if verbose:
-                        print('No json returned: status %d' % status )
-                rinfo =  status
-        return rinfo
+		if verbose : print("Trying to post to marshal: "+weblink)
+		
+		r = post_marshal_cgi(weblink,data=data)
+		print(r)
+		status = r.status_code
+		print(status)
+		if status != 200:
+				try:
+						message = httpErrors[status]
+				except KeyError:
+						message = 'Error %d: Undocumented error' % status
+						if verbose : print(message)
+				return None
+		if verbose : print("Successful growth connection")
+	
+		try:
+				rinfo =  json.loads(r.text)
+		except ValueError as e:
+				# No json information returned, usually the status most relevant
+				if verbose:
+						print('No json returned: status %d' % status )
+				rinfo =  status
+		return rinfo
 
-        
+		
 
 def soup_obj(url):
 	return BeautifulSoup(get_marshal_html(url), 'lxml')
@@ -187,28 +188,28 @@ class Sergeant(object):
 			return None
 
 
-        def list_my_programids(self):
-                print('My current programs:', self.program_options)
+	def list_my_programids(self):
+		print('My current programs:', self.program_options)
 
 
-        def set_programid(self,programname):
-                soup = soup_obj(listprog_url)
+	def set_programid(self,programname):
+		soup = soup_obj(listprog_url)
 
-                self.cutprogramidx = None
-                
+		self.cutprogramidx = None
+				
 		for x in json.loads(soup.find('p').text.encode("ascii")):
 			if x['name'] == programname:				
 				self.cutprogramidx = x['programidx']
-                                self.program_name = programname
-                                
+				self.program_name = programname
+								
 		if self.cutprogramidx is None:
 			print ('ERROR, program_name={0} not found'.format(self.program_name))
 			print ('Options for this user are:', self.program_options)
 			return None
-                
-                return selt.cutprogramidx
-                        
-                
+				
+		return selt.cutprogramidx
+						
+				
 	def list_scan_sources(self, hardlimit=200):
 		print ('start_date : {0}'.format(self.start_date))
 		print ('end_date   : {0}'.format(self.end_date))
@@ -247,28 +248,26 @@ class Sergeant(object):
 		return sources
 
 
-        def get_sourcelist(self):
-                '''
-                Return a list of sources saved to the program.
-                Much faster than list_saved_sources, but no annotation or photometry information
-                '''
+	def get_sourcelist(self):
+			'''
+			Return a list of sources saved to the program.
+			Much faster than list_saved_sources, but no annotation or photometry information
+			'''
 
-                return  json_obj(savedsources_url,data={'programidx':str(self.cutprogramidx)})
-
-
-        def ingest_avro_id(self,avroid):
-                '''
-                Ingest an alert from avro id.
-                Todo: Update to bulk ingestion, check whether already saved or ingested?
-                '''
-
-                
-                return  json_obj(ingest_url,data={'programidx':str(self.cutprogramidx),'avroid':str(avroid)})
+			return  json_obj(savedsources_url,data={'programidx':str(self.cutprogramidx)})
 
 
-        
-        
-        
+	def ingest_avro_id(self,avroid):
+		'''
+		Ingest an alert from avro id.
+		Todo: Update to bulk ingestion, check whether already saved or ingested?
+		'''
+
+		
+		return json_obj(ingest_url,data={'programidx':str(self.cutprogramidx),'avroid':str(avroid)})
+
+				
+		
 	def list_saved_sources(self, lims=False, maxpage=1e99, verbose=False):
 		'''
 		read all sources from the Saved Sources page(s)
@@ -280,7 +279,7 @@ class Sergeant(object):
 		the lims keyword can be used to turn on/off upper limits in the light curve
 
 		'''
-		t_now = Time.now()
+		t_now = astropy.time.Time.now()
 		if self.cutprogramidx is None:
 			print('ERROR, first fix program_name upon init')
 			return []
@@ -294,7 +293,7 @@ class Sergeant(object):
 
 			if verbose:
 				print ('list_saved_sources: reading page {0}'.format(page_number))				
-                                
+								
 			self.saved_soup = soup_obj(rawsaved_url + "?programidx=%s&offset=%s" %(self.cutprogramidx, targ0))
 
 			table = self.saved_soup.findAll('table')
@@ -306,7 +305,7 @@ class Sergeant(object):
 				if len(cells) > 1:
 					sources.append({})
 					try:
-						sources[-1]["objname"] = cells[1].find('a').text
+						sources[-1]["name"] = cells[1].find('a').text
 						sources[-1]["objtype"] = cells[2].find('font').text.strip()
 						sources[-1]["z"] = cells[3].find('font').text.strip()
 						sources[-1]["ra"], sources[-1]["dec"] = re.findall(r'<.*><.*>(.*?)<br/>(.*?)</font></td>', str(cells[4]))[0]
@@ -345,7 +344,7 @@ class Sergeant(object):
 
 					except IndexError:
 						if verbose:
-							print('{0} has no auto_annotation'.format(sources[-1]["objname"]))
+							print('{0} has no auto_annotation'.format(sources[-1]["name"]))
 			targ0 += 100
 			page_number+=1
 		return sources
@@ -358,21 +357,34 @@ def _parse_source_input(source):
 		if len(source)==1:
 			source = source[0]
 
-	if 'objname' in source:
+	if "objname" in source: 		# not used anymore (keep for bc)
 		sourcename = source['objname']
-	else:
+	elif "name" in source:
+		sourcename = source['name'] # consistent with json key from list_program_sources.cgi
+	elif type(source) is str:
 		sourcename = source
+	else:
+		raise Exception('Source input not understood:',  source)
+		return 
+
 
 	return sourcename
 
-def get_photo(source, verbose=False):
+def get_summary(source, verbose=False):
 	'''
-	TODO...
+	>> data = get_summary(source)
+
+	call source_summary.cgi
+	input source dict needs to have key "id"
+	return json object with Marshal photometry and annotations 
 	'''
 
-	sourcename = _parse_source_input(source)
+	if not("id" in source):
+		raise Exception('''we need source dict with key "id "to use this source_summary.cgi''')
 
-	soup = soup_obj(photo_url %sourcename)
+	soup = soup_obj(summary_url%source['id'])
+	phot_dict = json.loads(soup.find('p').text)
+	return phot_dict
 
 def get_comments(source, verbose=False):
 	'''
@@ -435,7 +447,8 @@ def comment(comment, source, comment_type="info", comment_id=None, remove=False)
 	>>> soup_out = comment("dummy", 'ZTF17aacscou')
 	>>> soup_out = comment("dummy", source_dict)
 
-	here source_dict is a dictionary with keys 'objname' and (optional) 'comments'
+	here source_dict is a dictionary with keys "name" and (optional) "comments"
+
 
 	optional input:
 
@@ -450,11 +463,9 @@ def comment(comment, source, comment_type="info", comment_id=None, remove=False)
 	removing comment is not yet implemented
 	'''
 
-	if ('objname' in source): 
-		sourcename = source['objname']	
-	else:
-		sourcename = source
-		
+
+	sourcename = _parse_source_input(source)
+			
 
 	# check if already have a dict with current comments
 	# (we check only the comment text, not the Marshal username)
@@ -584,7 +595,7 @@ def testing():
 	saved_sources = inst.list_saved_sources()
 	print ('# saved sources:',len(saved_sources)) 
 
-	#this_source = (item for item in saved_sources if item["objname"] == "ZTF18aagteoy").next()
+	#this_source = (item for item in saved_sources if item["name"] == "ZTF18aagteoy").next()
 	if len(saved_sources)>1:
 		this_source  = saved_sources[1] # pick one 
 		print ( get_comments(this_source) )
@@ -592,7 +603,6 @@ def testing():
 	print ('reading scan sources...')	
 	scan_sources = inst.list_scan_sources()
 	print ('# of scan sources', len(scan_sources) )
-
 
 
 
