@@ -391,7 +391,7 @@ def get_summary(source, verbose=False):
 	except json.JSONDecodeError:
 		print ('something wrong with this summary page:')
 		print (summary_url%source['id'])
-		return {}
+		return None
 
 	
 
