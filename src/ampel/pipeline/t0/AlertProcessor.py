@@ -39,7 +39,8 @@ class AlertProcessor():
 	iter_max = 5000
 
 	def __init__(
-		self, channels=None, source="ZTFIPAC", publish_stats=['graphite', 'jobs'], load_ingester=True
+		self, channels=None, source="ZTFIPAC", central_db=None,
+		publish_stats=['graphite', 'jobs'], load_ingester=True
 	):
 		"""
 		Parameters:
@@ -79,6 +80,10 @@ class AlertProcessor():
 		if len(self.channels) == 0:
 			raise ValueError("No channel loaded, please check your config")
 			return
+
+		# Optional override of AmpelConfig defaults
+		if central_db is not None:
+			AmpelDB.set_central_db_name(central_db)
 
 		# Setup source dependant parameters
 		self.set_source(source, load_ingester=load_ingester)
