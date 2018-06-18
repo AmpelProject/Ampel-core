@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 26.02.2018
-# Last Modified Date: 14.06.2018
+# Last Modified Date: 18.06.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from ampel.pipeline.db.query.QueryMatchTransients import QueryMatchTransients
@@ -51,14 +51,17 @@ class T3JobExecution:
 
 		if logger is None:
 
+			# Create logger
+			logger = LoggingUtils.get_logger()
+
 			# Create DB logging handler instance (logging.Handler child class)
 			# This class formats, saves and pushes log records into the DB
-			db_logging_handler = DBLoggingHandler(
-				tier=3, info={"job": t3_job.name}
+			self.db_logging_handler = DBLoggingHandler(
+				tier=3, info={"job": t3_job.job_name}
 			)
 
 			# Add db logging handler to the logger stack of handlers 
-			logger.addHandler(db_logging_handler)
+			logger.addHandler(self.db_logging_handler)
 
 		logger.propagate = propagate_logs
 			
@@ -113,6 +116,8 @@ class T3JobExecution:
 	def run_job(self):
 		"""
 		"""
+
+		# TODO: try/catch with Ampel 'troubles' insert
 
 		# T3 job requiring prior transient loading 
 		if self.t3_job.get_config('input.select') is not None:
@@ -173,6 +178,9 @@ class T3JobExecution:
 			},
 			upsert=True
 		)
+
+		# Write log entries to DB
+		self.db_logging_handler.flush()
 
 
 	def get_selected_transients(self):
