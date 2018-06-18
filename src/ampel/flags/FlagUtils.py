@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 14.12.2017
-# Last Modified Date: 12.06.2018
+# Last Modified Date: 18.06.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from ampel.pipeline.common.AmpelUtils import AmpelUtils
@@ -129,7 +129,6 @@ class FlagUtils():
 			if combine:
 				return flag_class(sum([flag_class[el].value for el in AmpelUtils.iter(flags)]))
 			else:
-				print([el for el in flags])
 				return [flag_class[el] for el in AmpelUtils.iter(flags)]
 		except KeyError:
 			raise ValueError("Unknown flag in '%s'" % flags)
@@ -160,7 +159,8 @@ class FlagUtils():
 
 		# Examples d) and e)
 		if FlagUtils.is_nested_list(flags):
-			return [FlagUtils._1d_list_flags_to_enum_flags(el, flag_class, True) for el in AmpelUtils.iter(flags)]
+			ret = [FlagUtils._1d_list_flags_to_enum_flags(el, flag_class, True) for el in AmpelUtils.iter(flags)]
+			return ret[0] if len(ret) == 1 else ret
 
 		# Examples a) b) and c)
 		else:
@@ -190,7 +190,7 @@ class FlagUtils():
 		""" """
 		# list characterisation (nested or not)
 		for el in inlist:
-			if type(el) is list:
+			if type(el) in (list, tuple):
 				return True
 
 		return False
