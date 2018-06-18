@@ -116,14 +116,14 @@ class AmpelArgumentParser(ArgumentParser):
 		self._resource_defaults = opts.config.get('resources', None)
 		action.type = load_config
 
-	def require_resource(self, name, roles=None):
+	def require_resource(self, name, roles=[]):
 		if name in self._resources:
 			return
 		entry = next(pkg_resources.iter_entry_points('ampel.pipeline.resources', name), None)
 		if entry is None:
 			raise NameError("Resource {} is not defined".format(name))
 		resource = entry.resolve()
-		resource.add_arguments(self, self._resource_defaults, roles)
+		resource.add_arguments(self, resource.parse_default(self._resource_defaults), roles)
 		self._resources[name] = resource
 	
 	def require_resources(self, *names):
@@ -138,6 +138,6 @@ class AmpelArgumentParser(ArgumentParser):
 		args, argv = super(AmpelArgumentParser, self).parse_known_args(**kwargs)
 		args.config['resources'] = {}
 		for name, klass in self._resources.items():
-			args.config['resources'][name] = klass(args)
+			args.config['resources'][name] = klass.parse_args(args)
 		AmpelConfig.set_config(args.config)
 		return args, argv

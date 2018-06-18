@@ -87,7 +87,6 @@ class AmpelConfig:
 		cls._global_config = config if cls._dev_mode else AmpelConfig.freeze(config)
 		return cls._global_config
 
-
 	@classmethod
 	def is_frozen(cls):
 		return type(cls._global_config) is MappingProxyType

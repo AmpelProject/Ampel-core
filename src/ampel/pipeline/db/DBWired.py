@@ -11,6 +11,7 @@ import time, pymongo
 from pymongo.errors import CollectionInvalid
 from ampel.flags.AlDocTypes import AlDocTypes
 from ampel.pipeline.db.DBIndexCreator import DBIndexCreator
+from types import MappingProxyType
 
 class DBWired:
 	""" 
@@ -122,7 +123,7 @@ class DBWired:
 				self.mongo_client = MongoClient(mongodb_uri, maxIdleTimeMS=1000)
 				self.config = DBWired.get_config_from_db(self.mongo_client[arg_config])
 		
-		elif isinstance(arg_config, dict):
+		elif isinstance(arg_config, dict) or isinstance(arg_config, MappingProxyType):
 			self.config = arg_config
 
 		# A reference to a MongoClient instance was provided
