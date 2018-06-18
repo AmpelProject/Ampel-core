@@ -4,10 +4,9 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 21.05.2018
-# Last Modified Date: 14.06.2018
+# Last Modified Date: 16.06.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-import pymongo
 from ampel.flags.AlDocTypes import AlDocTypes
 
 class DBIndexCreator:
@@ -25,9 +24,9 @@ class DBIndexCreator:
 
 			col.create_index(
 	        	[
-	    	        ("tranId", pymongo.ASCENDING), 
-	        	    ("alDocType", pymongo.ASCENDING), 
-	        	    ("channels", pymongo.ASCENDING)
+	    	        ("tranId", 1), 
+	        	    ("alDocType", 1), 
+	        	    ("channels", 1)
 				]
 			)
 
@@ -49,9 +48,9 @@ class DBIndexCreator:
 				[("tranId", 1)],
 			)
 
-		elif col.name == "logs":
+		elif col.name == "jobs":
 
-			# Create sparse runstate index
+			# Create sparse index for key hasError
 			col.create_index(
 				[
 					("hasError", 1)
@@ -62,6 +61,9 @@ class DBIndexCreator:
 					}
 				}
 			)
+
+		elif col.name == "troubles":
+			pass
 
 
 #	@staticmethod
