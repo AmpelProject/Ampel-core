@@ -39,12 +39,6 @@ class DBJobReporter:
 		self.job_name = job_name
 
 
-	def set_grid_name(self, grid_name):
-		""" 
-		"""
-		self.grid_name = grid_name
-
-
 	def set_arguments(self, args):
 		""" 
 		"""
@@ -77,9 +71,6 @@ class DBJobReporter:
 
 		if hasattr(self, "arguments"):
 			job_dict['arguments'] = self.arguments
-
-		if hasattr(self, "grid_name"):
-			job_dict['gridName'] = self.grid_name
 
 		self.job_id = self.col.insert_one(job_dict).inserted_id
 

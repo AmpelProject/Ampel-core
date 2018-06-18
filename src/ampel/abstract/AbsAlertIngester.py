@@ -13,7 +13,7 @@ class AbsAlertIngester(metaclass=AmpelABC):
 
 
 	@abstractmethod
-	def set_job_id(self, job_id):
+	def set_log_id(self, lob_id):
 		return
 
 	@abstractmethod

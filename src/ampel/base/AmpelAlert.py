@@ -4,12 +4,13 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 14.12.2017
-# Last Modified Date: 12.06.2018
+# Last Modified Date: 18.06.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
+import operator
+from types import MappingProxyType
 from ampel.base.Frozen import Frozen
 from ampel.flags.AlertFlags import AlertFlags
-import operator
 
 class AmpelAlert(Frozen):
 	"""
@@ -36,7 +37,7 @@ class AmpelAlert(Frozen):
 
 
 	@staticmethod
-	def load_ztf_alert(arg, cutout=True):
+	def load_ztf_alert(arg):
 		"""	
 		Convenience method.
 		Do not use for production!
@@ -46,17 +47,13 @@ class AmpelAlert(Frozen):
 			al = next(fastavro.reader(fo), None)
 
 		if al.get('prv_candidates') is None:
-			return AmpelAlert(
-				al['objectId'], [al['candidate']], None, 
-				al.get('cutoutScience') if cutout else None
-			)
+			return AmpelAlert(al['objectId'], [al['candidate']], None)
 		else:
 			pps = [d for d in al['prv_candidates'] if d.get('candid') is not None]
 			pps.insert(0,  al['candidate'])
 			return AmpelAlert(
 				al['objectId'], pps, 
-				[d for d in al['prv_candidates'] if d.get('candid') is None],
-				al.get('cutoutScience') if cutout else None
+				[d for d in al['prv_candidates'] if d.get('candid') is None]
 			)
         
 
@@ -187,11 +184,11 @@ class AmpelAlert(Frozen):
 		"""
 		"""
 
-		if type(filters) is dict:
+		if type(filters) in (dict, MappingProxyType):
 			filters = [filters]
 		else:
-			if filters is None or type(filters) is not list:
-				raise ValueError("filters must be of type dict or list")
+			if filters is None or type(filters) not in (list, tuple):
+				raise ValueError("filters must be of type dict or list/tuple")
 
 		for filter_el in filters:
 

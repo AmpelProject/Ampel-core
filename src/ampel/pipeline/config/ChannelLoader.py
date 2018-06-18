@@ -4,30 +4,30 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 03.05.2018
-# Last Modified Date: 31.05.2018
+# Last Modified Date: 18.06.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from ampel.flags.LogRecordFlags import LogRecordFlags
+from ampel.pipeline.common.AmpelUtils import AmpelUtils
 from ampel.pipeline.logging.LoggingUtils import LoggingUtils
 from ampel.pipeline.config.Channel import Channel
 from ampel.pipeline.config.T0Channel import T0Channel
+from ampel.pipeline.config.AmpelConfig import AmpelConfig
 import importlib
-from ampel.pipeline.common.AmpelUtils import AmpelUtils
 
 class ChannelLoader:
 	"""
 	"""
 
 
-	def __init__(self, config, source=None, tier=None):
+	def __init__(self, source=None, tier=None):
 		"""
 		"""
-		self.config = config
 		self.source = source
 		self.tier = tier
 
 		if source is not None and tier == 0:
-			self.known_t2_units = tuple(config['t2_units'].keys())
+			self.known_t2_units = tuple(AmpelConfig.get_config('t2_units').keys())
 
 
 	def load_channels(self, arg_chan_names, logger):
@@ -46,10 +46,10 @@ class ChannelLoader:
 
 			# Get channel docs from config DB
 			channels_to_load = {
-				key: value for key, value in self.config['channels'].items() if key in arg_chan_names 
+				key: value for key, value in AmpelConfig.get_config('channels').items() if key in arg_chan_names 
 			}
 		else:
-			channels_to_load = self.config['channels']
+			channels_to_load = AmpelConfig.get_config('channels')
 
 		# Robustness check
 		if arg_chan_names is not None and len(channels_to_load) != len(arg_chan_names):
@@ -89,12 +89,12 @@ class ChannelLoader:
 
 	def get_required_resources(self):
 		resources = set()
-		for chan_doc in self.config['channels'].values():
+		for chan_doc in AmpelConfig.get_config('channels').values():
 			assert self.tier == 0
 			if not chan_doc['active']:
 				continue
 			filter_id = self._get_config(chan_doc, 't0Filter.dbEntryId')
-			doc_t0_filter = self.config['t0_filters'][filter_id]
+			doc_t0_filter = AmpelConfig.get_config('t0_filters')[filter_id]
 			class_full_path = doc_t0_filter['classFullPath']
 			module = importlib.import_module(class_full_path)
 			filter_class = getattr(module, class_full_path.split(".")[-1])
@@ -126,11 +126,11 @@ class ChannelLoader:
 		logger.info("Loading filter: " + filter_id)
 
 		# Robustness check
-		if filter_id not in self.config['t0_filters']:
+		if filter_id not in AmpelConfig.get_config('t0_filters'):
 			raise NameError("Filter '%s' not found" % filter_id)
 
 		# Retrieve filter config from DB
-		doc_t0_filter = self.config['t0_filters'][filter_id]
+		doc_t0_filter = AmpelConfig.get_config('t0_filters')[filter_id]
 
 		class_full_path = doc_t0_filter['classFullPath']
 		logger.info(" -> Full class path: " + class_full_path)
@@ -140,9 +140,9 @@ class ChannelLoader:
 		filter_class = getattr(module, class_full_path.split(".")[-1])
 		base_config = {}
 		if hasattr(filter_class, 'resources'):
-			for k in self.config['resources']:
+			for k in AmpelConfig.get_config('resources'):
 				if k in filter_class.resources:
-					base_config[k] = self.config['resources'][k]
+					base_config[k] = AmpelConfig.get_config('resources')[k]
 		filter_instance = filter_class(
 			t2_units, 
 			base_config = base_config,
