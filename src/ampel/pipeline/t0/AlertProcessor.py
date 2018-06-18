@@ -15,10 +15,10 @@ from ampel.pipeline.logging.LoggingUtils import LoggingUtils
 from ampel.pipeline.logging.DBLoggingHandler import DBLoggingHandler
 from ampel.pipeline.logging.InitLogBuffer import InitLogBuffer
 from ampel.pipeline.db.AmpelDB import AmpelDB
-from ampel.pipeline.common.GraphiteFeeder import GraphiteFeeder
-from ampel.pipeline.common.AmpelUtils import AmpelUtils
-from ampel.pipeline.config.ChannelLoader import ChannelLoader
 from ampel.pipeline.config.AmpelConfig import AmpelConfig
+from ampel.pipeline.config.ChannelLoader import ChannelLoader
+from ampel.pipeline.common.AmpelUtils import AmpelUtils
+from ampel.pipeline.common.GraphiteFeeder import GraphiteFeeder
 from ampel.base.AmpelAlert import AmpelAlert
 from ampel.flags.AlDocTypes import AlDocTypes
 from ampel.flags.AlertFlags import AlertFlags
@@ -561,7 +561,9 @@ class AlertProcessor():
 			# GraphiteSendException: Socket closed before able to send data to ('localhost', 52003), 
 			# with error: [Errno 32] Broken pipe
 			# So we re-create a GraphiteClient every time we send something to graphite...
-			gfeeder = AmpelConfig.get_config('resources.graphite')()
+			gfeeder = GraphiteFeeder(
+				AmpelConfig.get_config('resources.graphite')
+			)
 
 			if t0_stats is not None:
 				gfeeder.add_stats_with_mean_std(t0_stats)
@@ -683,16 +685,18 @@ def run_alertprocessor():
 
 	import os, time, uuid
 	from ampel.pipeline.config.ConfigLoader import AmpelArgumentParser
-	
+	from ampel.pipeline.config.AmpelConfig import AmpelConfig
+	from ampel.archive import ArchiveDB
+
 	parser = AmpelArgumentParser()
+	parser.require_resource('mongo', ['writer'])
+	parser.require_resource('archive', ['writer'])
+	parser.require_resource('graphite')
 	action = parser.add_mutually_exclusive_group(required=True)
 	action.add_argument('--broker', default='epyc.astro.washington.edu:9092')
 	action.add_argument('--tarfile', default=None)
 	parser.add_argument('--group', default=uuid.uuid1(), help="Kafka consumer group name")
 	
-	parser.require_resource('mongo', roles=['writer'])
-	parser.require_resource('archive', roles=['writer'])
-	parser.require_resource('graphite')
 	# partially parse command line to get config
 	opts, argv = parser.parse_known_args()
 	# flesh out parser with resources required by t0 units
@@ -701,14 +705,13 @@ def run_alertprocessor():
 	# parse again
 	opts = parser.parse_args()
 
-	mongo = opts.config['resources']['mongo']()['writer']
-	archive = opts.config['resources']['archive']()['writer']
+	mongo = AmpelConfig.get_config('resources.mongo.writer')
+	archive = ArchiveDB(AmpelConfig.get_config('resources.archive.writer'))
 	
 	from ampel.pipeline.t0.alerts.TarAlertLoader import TarAlertLoader
 	from ampel.pipeline.t0.alerts.AlertSupplier import AlertSupplier
 	from ampel.pipeline.t0.alerts.ZIAlertShaper import ZIAlertShaper
 	from ampel.pipeline.t0.ZIAlertFetcher import ZIAlertFetcher
-	from ampel.archive import ArchiveDB
 
 	import time
 	count = 0
@@ -722,7 +725,7 @@ def run_alertprocessor():
 		fetcher = ZIAlertFetcher(opts.broker, group_name=opts.group, timeout=3600)
 		loader = iter(fetcher)
 
-	alert_supplier = AlertSupplier(loader, ZIAlertShaper(), serialization="avro", archive=ArchiveDB(archive))
+	alert_supplier = AlertSupplier(loader, ZIAlertShaper(), serialization="avro", archive=archive)
 	processor = AlertProcessor(publish_stats=["jobs", "graphite"])
 
 	while alert_processed == AlertProcessor.iter_max:

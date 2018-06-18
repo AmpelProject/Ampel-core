@@ -8,18 +8,26 @@
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from graphitesend import GraphiteClient
+from urllib.parse import urlparse
+import socket
 
 class GraphiteFeeder:
 	"""
 	"""
 
-	def __init__(self, graphite_config):
+	def __init__(self, uri, autoreconnect=True):
 		"""
 		"""
+		parts = urlparse(uri)
+		if parts.path == '/':
+			hostname = socket.gethostname().split('.')[0]
+			system_name = "ampel.{}".format(hostname)
+		else:
+			system_name = parts.path[1:]
 		self.gclient = GraphiteClient(
-			graphite_server=graphite_config['server'], 
-			graphite_port=graphite_config['port'], 
-			system_name=graphite_config['systemName'],
+			graphite_server=getattr(parts, 'hostname'), 
+			graphite_port=getattr(parts, 'port'), 
+			system_name=system_name,
 			autoreconnect=True
 		)
 
