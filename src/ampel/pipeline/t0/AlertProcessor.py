@@ -54,6 +54,7 @@ class AlertProcessor():
 		   * graphite: send t0 metrics to graphite (graphite server must be defined 
 		     in Ampel_config)
 		   * jobs: include t0 metrics in job document
+		'central_db': string. Use provided DB name rather than Ampel default database ('Ampel')
 		"""
 
 		# Setup logger
