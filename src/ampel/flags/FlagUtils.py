@@ -7,6 +7,7 @@
 # Last Modified Date: 12.06.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
+from ampel.pipeline.common.AmpelUtils import AmpelUtils
 from bson import Binary
 import enum
 
@@ -110,7 +111,7 @@ class FlagUtils():
 				l = [el.name for el in type(flag) if el.value != 0 and el in flag]
 
 				# Append inner list 'l' to outer list 'ret'
-				ret.append(l)
+				ret.append(l[0] if len(l) == 1 else l)
 
 			return ret
 
@@ -118,8 +119,27 @@ class FlagUtils():
 
 
 	@staticmethod
+	def _1d_list_flags_to_enum_flags(flags, flag_class, combine=False):
+		"""
+		"""
+		if FlagUtils.is_nested_list(flags):
+			raise ValueError("Provided list cannot be nested")
+
+		try:
+			if combine:
+				return flag_class(sum([flag_class[el].value for el in AmpelUtils.iter(flags)]))
+			else:
+				print([el for el in flags])
+				return [flag_class[el] for el in AmpelUtils.iter(flags)]
+		except KeyError:
+			raise ValueError("Unknown flag in '%s'" % flags)
+
+
+	@staticmethod
 	def list_flags_to_enum_flags(flags, flag_class):
 		"""
+		flags: 1d or 2d list of string flags
+
 		simple list -> OR connected flags
 		2d list with only 1 member in outer list -> AND connected flags
 		2d list with only many members 
@@ -140,55 +160,18 @@ class FlagUtils():
 
 		# Examples d) and e)
 		if FlagUtils.is_nested_list(flags):
-
-			# Example d)
-			if len(flags) == 1:
-
-				f = flag_class(0)
-				for el in flags[0]:
-					try:
-						f |= flag_class[el]
-					except KeyError:
-						raise ValueError("Unknown flag '%s'" % el)
-
-				return f
-
-			# Example e)
-			ret = []
-			for flag in flags:
-
-				f = flag_class(0)
-
-				if type(flag) is list:
-					for el in flag:
-						try:
-							f |= flag_class[el]
-						except KeyError:
-							raise ValueError("Unknown flag '%s'" % el)
-					ret.append(f)
-				else:
-					ret.append(flag_class[flag])
+			return [FlagUtils._1d_list_flags_to_enum_flags(el, flag_class, True) for el in AmpelUtils.iter(flags)]
 
 		# Examples a) b) and c)
 		else:
 
-			ret = flag_class(0)
-
 			# Example a)
 			if type(flags) is str:
-				try:
-					return flag_class[flags]
-				except KeyError:
-					raise ValueError("Unknown flag '%s'" % flags)
+				return FlagUtils._1d_list_flags_to_enum_flags([flags], flag_class)[0]
 
 			# Example b) and c)
 			for el in flags:
-				try:
-					ret |= flag_class[el]
-				except KeyError:
-					raise ValueError("Unknown flag '%s'" % el)
-
-		return ret
+				return FlagUtils._1d_list_flags_to_enum_flags(flags, flag_class)
 
 
 	@staticmethod

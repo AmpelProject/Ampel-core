@@ -280,7 +280,9 @@ class AmpelStatsPublisher(DBWired, Schedulable):
 
 def run():
 	from ampel.pipeline.config.ConfigLoader import AmpelArgumentParser
+	from ampel.pipeline.config.AmpelConfig import AmpelConfig
 	from ampel.archive import ArchiveDB
+	from ampel.pipeline.common.GraphiteFeeder import GraphiteFeeder
 
 	parser = AmpelArgumentParser()
 	parser.require_resource('mongo', ['logger'])
@@ -288,12 +290,12 @@ def run():
 	parser.require_resource('graphite')
 	opts = parser.parse_args()
 
-	mongo = opts.config['resources']['mongo']()['logger']
-	archive = ArchiveDB(opts.config['resources']['archive']()['reader'])
-	graphite = opts.config['resources']['graphite']()
+	mongo = AmpelConfig.get_config('resources.mongo.logger')
+	archive = ArchiveDB(AmpelConfig.get_config('resources.archive.reader'))
+	graphite = GraphiteFeeder(AmpelConfig.get_config('resources.graphite'))
 	
 	asp = AmpelStatsPublisher(
-		config=opts.config,
+		config=AmpelConfig.get_config(),
 		mongodb_uri=mongo, 
 		graphite_feeder=graphite,
 		archive_client=archive,
