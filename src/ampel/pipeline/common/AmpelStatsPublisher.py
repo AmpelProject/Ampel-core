@@ -27,16 +27,14 @@ class AmpelStatsPublisher(DBWired, Schedulable):
 		#"metrics.document.updated": "docUpd"
 	}
 
-	col_stats_keys = (
-		'count', 'size', 'storageSize', 'totalIndexSize'
-	)
+	col_stats_keys = ('count', 'size', 'storageSize', 'totalIndexSize')
 
 
 	def __init__(
 		self, config=None, central_db=None, mongodb_uri=None, 
 		graphite_feeder=None, archive_client=None,
 		channel_names=None, publish_stats=['graphite', 'mongo', 'print'],
-		update_intervals = {'col_stats': 5, 'docs_count': 10, 'daemon': 2, 'channels': 5}
+		update_intervals = {'col_stats': 5, 'docs_count': 10, 'daemon': 2, 'channels': 5, 't0': 10}
 	):
 		"""
 		Parameters:
@@ -115,7 +113,7 @@ class AmpelStatsPublisher(DBWired, Schedulable):
 		self.send_metrics(True, True, True, True)
 
 
-	def send_metrics(self, daemon=False, col_stats=False, docs_count=False, channels=False):
+	def send_metrics(self, daemon=False, col_stats=False, docs_count=False, channels=False, t0=False):
 		"""
 		"""
 
@@ -185,6 +183,27 @@ class AmpelStatsPublisher(DBWired, Schedulable):
 					).count()
 				}
 			}
+
+
+		if t0:
+			alerts_processed = self.get_central_col("stats").aggregate(
+				[
+					#{
+					#	"$match": { 
+					#		# TODO: add time constrain here 
+							# example: since last AMPEL start
+					#	}
+					#},
+					{
+   						"$group": {
+            				"_id": 1,
+            				"alProcessed": {
+								"$sum": "$count.t0Job.alProcessed"
+							}
+						}
+					}
+				]
+			)['alProcessed']
 
 		stat_dict = {'dbinfo': dbinfo_dict} if len(dbinfo_dict) > 0 else {}
 
