@@ -19,9 +19,8 @@ class DBWired:
 
 	config_col_names = {
 		'all':	(
-			'global', 'channels', 't0_filters',
-			't2_units', 't2_run_config', 
-			't3_jobs', 't3_run_config', 't3_units'
+			'global', 'channels', 't0_filters', 't2_units', 't2_run_config', 
+			't3_jobs', 't3_run_config', 't3_units', 'resources'
 		),
 		0: (
 			'global', 'channels', 't0_filters', 
