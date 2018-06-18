@@ -32,7 +32,7 @@ class BasicMultiFilter(AbsAlertFilter):
 		"""
 
 		if run_config is None or type(run_config) not in (dict, MappingProxyType):
-			raise ValueError("Method argument must be a dict instance")
+ 			raise ValueError("run_config type must be a dict or MappingProxyType")
 
 		if "logicalConnection" in run_config['filters'][0]:
 			raise ValueError("First filter element cannot contain parameter logicalConnection")

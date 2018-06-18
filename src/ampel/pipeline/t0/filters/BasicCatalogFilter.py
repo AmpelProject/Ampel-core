@@ -20,14 +20,12 @@ class BasicCatalogFilter(AbsAlertFilter):
     
     def __init__(self, on_match_t2_units, base_config=None, run_config=None, logger=None):
         """
-            base_config taken from: Ampel/config/hu/t0_filters/config.json
-            run_config from: Ampel/config/hu/channels/config.json
         """
 
         self.on_match_default_t2_units = on_match_t2_units
 
         if run_config is None or type(run_config) not in (dict, MappingProxyType):
-            raise ValueError("Method argument must be a dict instance")
+            raise ValueError("run_config type must be a dict or MappingProxyType")
 
         # init mongo client to be passed to extcats
         dbclient = MongoClient(
