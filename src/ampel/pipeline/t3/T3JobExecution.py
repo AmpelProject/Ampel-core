@@ -10,9 +10,10 @@
 from ampel.pipeline.db.query.QueryMatchTransients import QueryMatchTransients
 from ampel.pipeline.db.query.QueryLatestCompound import QueryLatestCompound
 from ampel.pipeline.db.DBContentLoader import DBContentLoader
+from ampel.pipeline.logging.DBLoggingHandler import DBLoggingHandler
 from ampel.pipeline.logging.LoggingUtils import LoggingUtils
 from ampel.pipeline.t3.TimeConstraint import TimeConstraint
-from ampel.pipeline.config.AmpelConfig import AmpelConfig
+from ampel.pipeline.db.AmpelDB import AmpelDB
 from ampel.pipeline.common.AmpelUtils import AmpelUtils
 from ampel.flags.TransientFlags import TransientFlags
 from ampel.flags.AlDocTypes import AlDocTypes
@@ -26,14 +27,41 @@ class T3JobExecution:
 	"""
 	"""
 
-	def __init__(self, t3_job, logger):
+	def __init__(self, t3_job, central_db=None, logger=None, propagate_logs=False):
 		""" 
+		'central_db': string. Use provided DB name rather than Ampel default database ('Ampel')
+
+		logger: 
+			-> If None, a new logger using a DBLoggingHandler will be created, which means a new 
+			log document will be inserted into the 'logs' collection of the central db.
+			-> If you provide a logger, please note that it will *NOT* be changed in any way, 
+			in particular: no DBLoggingHandler will be added, which means that no DB logging will occur.
+
+		propagate_logs: 
+			If this evaluates to true, events logged using 'logger' will be passed to the handlers 
+			of higher level (ancestor) loggers, in addition to any handlers attached to 'logger'. 
+			If this evaluates to false, logging messages are not passed to the handlers of ancestor loggers.
 		"""
+		
+		# Optional override of AmpelConfig defaults
+		if central_db is not None:
+			AmpelDB.set_central_db_name(central_db)
+
+		self.tran_col = AmpelDB.get_collection('main')
 
 		if logger is None:
-			logger = LoggingUtils.get_logger(unique=True)
-			logger.propagate = False
 
+			# Create DB logging handler instance (logging.Handler child class)
+			# This class formats, saves and pushes log records into the DB
+			db_logging_handler = DBLoggingHandler(
+				tier=3, info={"job": t3_job.name}
+			)
+
+			# Add db logging handler to the logger stack of handlers 
+			logger.addHandler(db_logging_handler)
+
+		logger.propagate = propagate_logs
+			
 		self.logger = logger
 		self.t3_job = t3_job
 
@@ -82,24 +110,18 @@ class T3JobExecution:
 		return getattr(self, "exec_params", None)
 
 
-	def run_job(self, central_db=None):
+	def run_job(self):
 		"""
-		central_db: pymongo database 
 		"""
-		
-		if central_db is None:
-			central_db = MongoClient(
-				AmpelConfig.get_config('resources.mongo')()['writer']
-			)["Ampel"]
-		
+
 		# T3 job requiring prior transient loading 
 		if self.t3_job.get_config('input.select') is not None:
 
 			# Required to load single transients
-			dcl = DBContentLoader(central_db, verbose=True, logger=self.logger)
+			dcl = DBContentLoader(self.tran_col.database, verbose=True, logger=self.logger)
 
 			# Job with transient input
-			trans_cursor = self.get_selected_transients(central_db.main)
+			trans_cursor = self.get_selected_transients()
 
 			if trans_cursor is not None:
 
@@ -119,7 +141,7 @@ class T3JobExecution:
 
 			# Update Transient journal with dict containing date, channels and name of the task
 			if t3_task.get_config('updateJournal') is True:
-				mongo_res = central_db.main.update_many(
+				mongo_res = self.tran_col.update_many(
 					{
 						'alDocType': AlDocTypes.TRANSIENT, 
 						'tranId': {'$in': ret}
@@ -142,8 +164,7 @@ class T3JobExecution:
 					pass # populate ampel_troubles !
 
 		# Record last time this job was run into DB
-		col=central_db['runs']
-		col.update_one(
+		AmpelDB.get_collection('runs').update_one(
 			{'_id': self.t3_job.job_name},
 			{
 				'$set': {
@@ -154,7 +175,7 @@ class T3JobExecution:
 		)
 
 
-	def get_selected_transients(self, tran_col):
+	def get_selected_transients(self):
 		"""
 		Returns a pymongo cursor
 		"""
@@ -171,7 +192,7 @@ class T3JobExecution:
 		self.logger.info("Executing search query: %s" % trans_match_query)
 
 		# Execute 'find transients' query
-		trans_cursor = tran_col.find(
+		trans_cursor = self.tran_col.find(
 			trans_match_query, {'_id':0, 'tranId':1}
 		).batch_size(100000)
 		
