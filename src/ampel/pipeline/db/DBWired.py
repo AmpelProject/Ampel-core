@@ -10,7 +10,6 @@
 import time, pymongo
 from pymongo.errors import CollectionInvalid
 from ampel.flags.AlDocTypes import AlDocTypes
-from ampel.pipeline.db.DBIndexCreator import DBIndexCreator
 from types import MappingProxyType
 
 class DBWired:
@@ -222,7 +221,8 @@ class DBWired:
 		for col_name in ('photo', 'main', 'logs', 'stats', 'runs'):
 			if col_name not in existing_col_names:
 				logger.info("Creating new %s collection" % col_name)
-				DBIndexCreator.create_indexes(db[col_name])
+				# TODO: fix me later
+				#DBIndexCreator.create_indexes(db[col_name])
 			
 
 	def get_central_col(self, name):

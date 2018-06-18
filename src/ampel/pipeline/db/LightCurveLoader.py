@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 13.01.2018
-# Last Modified Date: 01.06.2018
+# Last Modified Date: 18.06.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from ampel.flags.AlDocTypes import AlDocTypes
@@ -16,8 +16,6 @@ from ampel.base.PhotoPoint import PhotoPoint
 from ampel.base.UpperLimit import UpperLimit
 from ampel.base.LightCurve import LightCurve
 from ampel.pipeline.logging.LoggingUtils import LoggingUtils
-from ampel.pipeline.db.DBResultOrganizer import DBResultOrganizer
-
 
 class LightCurveLoader:
 	"""
