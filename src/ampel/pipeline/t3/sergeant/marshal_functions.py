@@ -55,23 +55,23 @@ class PTFConfig(object) :
 		return self.config.get(*args,**kwargs)
 
 		
-def get_marshal_html(weblink, attempts=1, max_attempts=5):
+def get_marshal_html(weblink, attempt=1, max_attempts=5):
 	
 	conf = PTFConfig()
 	auth = requests.auth.HTTPBasicAuth(conf.get('Marshal', 'user'), conf.get('Marshal', 'passw'))
 	
 	try:
-		reponse = requests.get(weblink, auth=auth, timeout=120+60*attempts)
+		reponse = requests.get(weblink, auth=auth, timeout=120+60*attempt)
 	
 	except Exception as e:		
 
 		print ('Sergeant.get_marshal_html(): ', weblink)
 		print (e)
-		print ('Sergeant.get_marshal_html(): this is our {0:0} attempt, {1:1} left'.format(attempts, max_attempts-max_attempts))
+		print ('Sergeant.get_marshal_html(): this is our {0:0} attempt, {1:1} left'.format(attempt, max_attempts))
 
-		if attempts<max_attempts:
-			time.sleep(3)
-			return get_marshal_html(weblink, attempts=attempts+1, max_attempts=max_attempts)	
+		if attempt<max_attempts:
+			time.sleep(1)
+			return get_marshal_html(weblink, attempt=attempt+1, max_attempts=max_attempts)	
 		else:
 			print ('Sergeant.get_marshal_html(): giving up')
 			raise(requests.exceptions.ConnectionError)
@@ -80,7 +80,7 @@ def get_marshal_html(weblink, attempts=1, max_attempts=5):
 
 
 
-def post_marshal_cgi(weblink,data=None,attempts=1,max_attempts=5):
+def post_marshal_cgi(weblink,data=None,attempt=1,max_attempts=5):
 	"""
 	Run one of the growth cgi scripts, check results and return
 	"""
@@ -91,16 +91,16 @@ def post_marshal_cgi(weblink,data=None,attempts=1,max_attempts=5):
 	print(auth)
 	
 	try:
-		response = requests.post(weblink, auth=auth, data=data,timeout=120+60*attempts)
+		response = requests.post(weblink, auth=auth, data=data,timeout=120+60*attempt)
 	except (requests.ConnectionError, requests.ReadTimeout) as req_e:		
 
 		print ('Sergeant.post_marshal_cgi(): ', weblink)
 		print (req_e)
-		print ('Sergeant.post_marshal_cgi(): ConnectionError or ReadTimeout this is our {0} attempt, {1} left', attempts, max_attempts-max_attempts)
+		print ('Sergeant.post_marshal_cgi(): ConnectionError or ReadTimeout, attempt {0}, {1} attempts left', attempt, max_attempts-attempt)
 
-		if attempts<max_attempts:
-			time.sleep(3)
-			response = post_marshal_cgi(weblink, attempts=attempts+1)	
+		if attempt<max_attempts:
+			time.sleep(1)
+			response = post_marshal_cgi(weblink, attempt=attempt+1)	
 		else:
 			print ('Sergeant.post_marshal_cgi(): giving up')
 			raise(requests.exceptions.ConnectionError)
@@ -383,19 +383,28 @@ def get_summary(source, verbose=False):
 		raise Exception('''we need source dict with key "id "to use this source_summary.cgi''')
 
 	soup = soup_obj(summary_url%source['id'])
-	phot_dict = json.loads(soup.find('p').text)
-	return phot_dict
+	
+	try:
+		phot_dict = json.loads(soup.find('p').text)
+		return phot_dict
+	
+	except json.JSONDecodeError:
+		print ('something wrong with this summary page:')
+		print (summary_url%source['id'])
+		return {}
 
-def get_comments(source, verbose=False):
+	
+
+def get_annotations(source, verbose=False):
 	'''
 	two inputs are possible:
 
-	>>> comment_list = get_comments('ZTF18aabtxvd')
+	>>> comment_list = get_annotations('ZTF18aabtxvd')
 	get the current comment for a source
 	
-	>>> comment_list = get_comments(source_dict)
-	get the current comments, and add them the source dict 
-	this dict is output from list_saved_sources function of the Sergeant class)
+	>>> comment_list = get_annotations(source_dict)
+	get the current annotations, and add them the source dict 
+	(this dict is output from list_saved_sources() or get_sourcelist() function)
 
 	TODO: also get the info about scheduled observations
 	'''
@@ -403,14 +412,14 @@ def get_comments(source, verbose=False):
 	sourcename = _parse_source_input(source)
 
 	if type(source) is dict:
-		source['comments'] = [] # replace, because we re-read the current comments
+		source["annotations"] = [] # replace, because we re-read the current annotations
 
 
 	soup = soup_obj(marshal_root + 'view_source.cgi?name=%s' %sourcename)
 	table = soup.findAll('table')[0]
 	cells = table.findAll('span')
 	
-	all_comments = []
+	all_annotations = []
 	
 	for cell in cells:
 	
@@ -426,18 +435,18 @@ def get_comments(source, verbose=False):
 				text = text.replace(', [',')') # this deals with missing urls to [reference] in auto_annoations
 				one_line = '{0} [{1}]: {2}'.format(date_author, comment_type, text)
 					
-				# add new comments to source dict
+				# add new annotations to source dict
 				comment_tuple = (comment_id, date, author, comment_type, text)
-				if 'comments' in source:
-					source['comments'].append( comment_tuple )
+				if "annotations" in source:
+					source["annotations"].append( comment_tuple )
 				# add to the output dict
-				all_comments.append( comment_tuple )
+				all_annotations.append( comment_tuple )
 				
 				if verbose:
 					print ('comment id =',comment_id)
 					print (one_line)
 					print ('---')
-	return all_comments
+	return all_annotations
 
 def comment(comment, source, comment_type="info", comment_id=None, remove=False):
 	
@@ -447,7 +456,7 @@ def comment(comment, source, comment_type="info", comment_id=None, remove=False)
 	>>> soup_out = comment("dummy", 'ZTF17aacscou')
 	>>> soup_out = comment("dummy", source_dict)
 
-	here source_dict is a dictionary with keys "name" and (optional) "comments"
+	here source_dict is a dictionary with keys "name" and (optional) "annotations"
 
 
 	optional input:
@@ -456,9 +465,9 @@ def comment(comment, source, comment_type="info", comment_id=None, remove=False)
 	comment_id=123 to replace an excisiting comment, give its id as input 
 
 	in this function an attempt is made to avoid duplicates
-	when source_dict is given as input, we use this to check for current comments
-	otherwise we fill read the Marshal to get the current comments.
-	comments are not added if identical text is found for this comment_type (by any user)
+	when source_dict is given as input, we use this to check for current annotations
+	otherwise we fill read the Marshal to get the current annotations.
+	annotations are not added if identical text is found for this comment_type (by any user)
 
 	removing comment is not yet implemented
 	'''
@@ -467,19 +476,19 @@ def comment(comment, source, comment_type="info", comment_id=None, remove=False)
 	sourcename = _parse_source_input(source)
 			
 
-	# check if already have a dict with current comments
+	# check if already have a dict with current annotations
 	# (we check only the comment text, not the Marshal username)
-	if 'comments' in source:
-		comment_list = source['comments']
+	if "annotations" in source:
+		comment_list = source["annotations"]
 	else:
-		print ('getting current comments...')
-		comment_list = get_comments(source)
+		print ('getting current annotations...')
+		comment_list = get_annotations(source)
 	
 	current_comm = ''.join([tup[4] for tup in comment_list if tup[3]==comment_type])
 
 	
 	if comment in ''.join(current_comm):	
-		print ('this comment was already made in current comments')
+		print ('this comment was already made in current annotations')
 		current_id = [ tup[0] for tup in comment_list if ((tup[3]==comment_type) and (comment in tup[4]))][0] # perhaps too pythonic...?
 		print ('to replace it, call this function with comment_id={}'.format(current_id))
 		return current_id
@@ -585,7 +594,7 @@ def get_Marshal_info():
 # testing
 def testing():
 
-	print (get_comments('ZTF18aahkrpr'))
+	print (get_annotations('ZTF18aahkrpr'))
 
 	progn = 'ZTF Science Validation'
 	progn = 'Nuclear Transients'
@@ -598,7 +607,7 @@ def testing():
 	#this_source = (item for item in saved_sources if item["name"] == "ZTF18aagteoy").next()
 	if len(saved_sources)>1:
 		this_source  = saved_sources[1] # pick one 
-		print ( get_comments(this_source) )
+		print ( get_annotations(this_source) )
 
 	print ('reading scan sources...')	
 	scan_sources = inst.list_scan_sources()
