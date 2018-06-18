@@ -404,7 +404,7 @@ def get_annotations(source, verbose=False):
 	
 	>>> comment_list = get_annotations(source_dict)
 	get the current annotations, and add them the source dict 
-	this dict is output from list_saved_sources function of the Sergeant class)
+	(this dict is output from list_saved_sources() or get_sourcelist() function)
 
 	TODO: also get the info about scheduled observations
 	'''
