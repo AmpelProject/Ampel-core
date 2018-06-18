@@ -4,10 +4,11 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 14.01.2017
-# Last Modified Date: 08.03.2018
+# Last Modified Date: 18.06.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from ampel.abstract.AbsAlertFilter import AbsAlertFilter
+from types import MappingProxyType
 import operator
 
 class BasicMultiFilter(AbsAlertFilter):
@@ -30,7 +31,7 @@ class BasicMultiFilter(AbsAlertFilter):
 		"""
 		"""
 
-		if run_config is None or type(run_config) is not dict:
+		if run_config is None or type(run_config) not in (dict, MappingProxyType):
 			raise ValueError("Method argument must be a dict instance")
 
 		if "logicalConnection" in run_config['filters'][0]:
