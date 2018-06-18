@@ -27,7 +27,7 @@ class T3Job:
 		self.job_name = job_name
 		self.job_doc = job_doc
 		self.t3_task_instances = t3_task_instances
-
+		self._processes = {}
 
 	def get_tasks(self):
 		""" 
@@ -48,9 +48,15 @@ class T3Job:
 
 	def launch_t3_job(self):
 		""" """
+		# TODO: log or warn about a large number of lingering processes here
+		for pid, proc in list(self._processes.items()):
+			if proc.exitcode is not None:
+				del self._processes[pid]
+		
 		proc = Process(target=self.run)
 		proc.start()
-	
+		self._processes[proc.pid] = proc
+		return proc
 
 	def run(self, central_db=None, logger=None):
 		""" """
