@@ -19,10 +19,10 @@
                         "shape": "ampel.pipeline.t0.alerts.ZIAlertShaper",
                         "serialization": "avro"
                     },
-                    "flags": [
+                    "flags": [[
                         "INST_ZTF",
                         "SRC_IPAC"
-                    ],
+                    ]],
                     "mappings": {
                         "tranId": "objectId",
                         "pptId": "candid",
