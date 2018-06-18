@@ -30,7 +30,7 @@ class AmpelConfig:
 		"""
 		if cls._global_config is None:
 			# TODO: try to load local 'ampel.conf' file ?
-			raise ValueError("Ampel global config not set")
+			raise RuntimeError("Ampel global config not set")
 
 		if key is None:
 			return cls._global_config
@@ -41,6 +41,9 @@ class AmpelConfig:
 			
 		return sub_conf if validate is None or cls.is_frozen() else validate(sub_conf)
 
+	@classmethod
+	def reset(cls):
+		cls._global_config = None
 	
 	@classmethod
 	def set_config(cls, config):
