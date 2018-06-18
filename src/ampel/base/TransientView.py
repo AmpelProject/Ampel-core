@@ -234,7 +234,7 @@ class TransientView(Frozen):
 			)
 
 		if tran.channel is not None:
-			logger.info(" -> Channel: %s" % tran.channel)
+			logger.info(" -> Channel: %s" % str(tran.channel))
 
 		created = tran.get_time_created(True)
 		modified = tran.get_time_modified(True)
