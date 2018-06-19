@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 10.10.2017
-# Last Modified Date: 18.06.2018
+# Last Modified Date: 19.06.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import pymongo, time, numpy as np
@@ -492,7 +492,7 @@ class AlertProcessor():
 				self.gather_and_send_stats(post_run, job_info)
 
 				# Insert job stats
-				job_info['_id'] = db_job_reporter.get_job_id()
+				job_info['_id'] = db_logging_handler.get_log_id()
 				job_info['tier'] = 0
 				AmpelDB.get_collection('stats').insert_one(job_info)
 
