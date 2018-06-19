@@ -4,37 +4,37 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 25.01.2018
-# Last Modified Date: 14.06.2018
+# Last Modified Date: 19.06.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from ampel.flags.AlDocTypes import AlDocTypes
 from ampel.flags.T2RunStates import T2RunStates
 from ampel.abstract.AbsT2Unit import AbsT2Unit
 from ampel.pipeline.logging.LoggingUtils import LoggingUtils
-from ampel.pipeline.logging.DBJobReporter import DBJobReporter
 from ampel.pipeline.logging.DBLoggingHandler import DBLoggingHandler
+from ampel.pipeline.db.AmpelDB import AmpelDB
 from ampel.pipeline.db.LightCurveLoader import LightCurveLoader
 from ampel.pipeline.common.Schedulable import Schedulable
-from ampel.pipeline.db.DBWired import DBWired
+from ampel.pipeline.config.AmpelConfig import AmpelConfig
 
 from datetime import datetime, timedelta
 from pymongo.errors import BulkWriteError
 from pymongo import UpdateOne
 import time, importlib, math
 
-class T2Controller(DBWired, Schedulable):
+class T2Controller(Schedulable):
 	"""
-	Alpha state
+	Beta state
 	"""
 
 	version = 1.0
 	
 	def __init__(
-		self, mongodb_uri='localhost', config=None, central_db=None, 
-		run_state=T2RunStates.TO_RUN, t2_units=None, check_interval=10, batch_size=200
+		self, central_db=None, run_state=T2RunStates.TO_RUN, t2_units=None, 
+		check_interval=10, batch_size=200
 	): 
 		"""
-		mongo_client: pymongo.mongo_client.MongoClient instance pointing to the ampel database
+		'central_db': string. Use provided DB name rather than Ampel default database ('Ampel')
 		run_state: one on ampel.flags.T2RunStates int value (for example: T0_RUN)
 		t2_units: list of string id of the t2 units to run. If not specified, any t2 unit will be run
 		check_interval: int value in seconds
@@ -43,9 +43,6 @@ class T2Controller(DBWired, Schedulable):
 
 		# Get logger 
 		self.logger = LoggingUtils.get_logger(unique=True)
-
-		# Setup instance variable referencing input and output databases
-		self.plug_databases(self.logger, mongodb_uri, config, central_db)
 
 		# check interval is in seconds
 		self.check_interval = check_interval
@@ -89,11 +86,14 @@ class T2Controller(DBWired, Schedulable):
 					'$in': t2_units
 				}
 
+		# Optional override of AmpelConfig defaults
+		if central_db is not None:
+			AmpelDB.set_central_db_name(central_db)
 
 		# How many docs per 'job document'
 		# batch_size is defined because the job log entry cannot grow above 16MB (of logs).
 		self.batch_size = batch_size
-		self.tran_col = self.get_central_col('main')
+		self.tran_col = AmpelDB.get_collection('main')
 
 		Schedulable.__init__(self)
 
@@ -126,38 +126,26 @@ class T2Controller(DBWired, Schedulable):
 		Return: nothing
 		"""
 
-		# Create JobReporter instance
-		db_job_reporter = DBJobReporter(self.get_central_col('logs'))
-
-		# Create new "job" document in the DB
-		db_job_reporter.insert_new(
-			{
-				#"class": type(self).__name__,
-				"class": "T2Controller",
-				"version": str(T2Controller.version),
-				"runState": str(self.run_state.value),
-				"t2Units": str(self.required_unit_names)
-			},
-			tier = 2
-		)
-
 		# Create DB logging handler instance (logging.Handler child class)
 		# This class formats, saves and pushes log records into the DB
 		db_logging_handler = DBLoggingHandler(
-			db_job_reporter 
+			tier=2, info={
+				"version": str(T2Controller.version), 
+				"runState": str(self.run_state.value),
+				"t2Units": str(self.required_unit_names)
+			}
 		)
 
-		# Add db logging handler to stack of handlers associated with this logger
+		# Add db logging handler to the logger stack of handlers 
 		self.logger.addHandler(db_logging_handler)
-			
+
 		# we instantiate t2 unit only once per check interval.
 		# The dict t2_instances stores those instances so that these can 
 		# be re-used int the while loop below
 		t2_instances = {}
 
 		# Instantiate LightCurveLoader (that returns ampel.base.LightCurve instances)
-		tran_col = self.get_central_col('main')
-		lcl = LightCurveLoader(tran_col.database, logger=self.logger)
+		lcl = LightCurveLoader(self.tran_col.database, logger=self.logger)
 
 		# Process t2_docs until next() returns None (break condition below)
 		while True: 
@@ -315,7 +303,7 @@ class T2Controller(DBWired, Schedulable):
 			)
 
 			try: 
-				result = tran_col.bulk_write(db_ops)
+				result = AmpelDB.get_collection('main').bulk_write(db_ops)
 				self.logger.info(result.bulk_api_result)
 			except BulkWriteError as bwe: 
 				# TODO add error flag to Job and Transient
@@ -340,7 +328,7 @@ class T2Controller(DBWired, Schedulable):
 		"""
 
 		# Get T2 run config doc from ampel config DB
-		t2_run_config_doc = self.config["t2_run_config"].get(run_config_id)
+		t2_run_config_doc = AmpelConfig.get_config("t2_run_config").get(run_config_id)
 
 		# Robustness
 		if t2_run_config_doc is None:
@@ -362,20 +350,12 @@ class T2Controller(DBWired, Schedulable):
 		There is no return code
 		"""	
 
-		# Robustness
-		if not unit_name in self.config["t2_units"].keys():
-			self.logger.error("Unknown T2 unit name: %s" % unit_name)
-			return
-
 		# Get T2 unit config from ampel config DB
-		t2_config_doc = self.config['t2_units'].get(unit_name)
+		t2_config_doc = AmpelConfig.get_config('t2_units').get(unit_name)
 
 		# Robustness
 		if t2_config_doc is None:
-			self.logger.error(
-				"Cound not find t2 config doc for %s in mongo config database" %
-				unit_name
-			)
+			self.logger.error("Cannot find T2 unit '%s' in central ampel config" % unit_name)
 			return 
 
 		# Shortcut
