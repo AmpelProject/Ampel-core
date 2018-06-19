@@ -91,7 +91,7 @@ class ArchiveDB(object):
         return get_alerts_in_time_range(self._connection, self._meta, jd_min, jd_max, partitions)
 
     def get_alerts_in_cone(self, ra, dec, radius, jd_min=None, jd_max=None):
-        return get_alerts_in_time_range(self._connection, self._meta, ra, dec, radius, jd_min, jd_max)
+        return get_alerts_in_cone(self._connection, self._meta, ra, dec, radius, jd_min, jd_max)
 
 def create_metadata(alert_schema):
     """
