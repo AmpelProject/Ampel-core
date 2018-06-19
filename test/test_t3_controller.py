@@ -26,26 +26,6 @@ class PotemkinT3(AbsT3Unit):
 	def run(self):
 		raise PotemkinError
 
-docker_missing = False
-try:
-	subprocess.check_output(['dicker', '--help'])
-except FileNotFoundError:
-	docker_missing = True
-
-@pytest.fixture(scope="session")
-def mongod():
-	container = None
-	try:
-		container = subprocess.check_output(['docker', 'run', '--rm', '-d', '-P', 'mongo:3.6']).strip()
-		ports = json.loads(subprocess.check_output(['docker', 'container', 'inspect', '-f', '{{json .NetworkSettings.Ports}}', container]))
-		print(ports)
-		yield 'mongodb://localhost:{}'.format(ports['27017/tcp'][0]['HostPort'])
-	except FileNotFoundError:
-		return pytest.skip("Mongo fixture requires Docker")
-	finally:
-		if container is not None:
-			subprocess.check_call(['docker', 'container', 'stop', container])
-
 @pytest.fixture
 def testing_class():
 	prev = T3TaskLoader.t3_classes
@@ -123,14 +103,18 @@ def t3_jobs():
           }
         }
       ]
-    }}
+    }
+    }
 
 @pytest.fixture
-def testing_config(testing_class, t3_jobs, mongod):
+def testing_config(testing_class, t3_jobs, mongod, graphite):
 	AmpelConfig.reset()
 	config = {
 	    'global': {},
-	    'resources': {'mongo': {'writer': mongod}},
+	    'resources': {
+	        'mongo': {'writer': mongod},
+	        'graphite': graphite,
+	        },
 	    't3_units': {
 	    	'potemkin': {
 	    		'classFullPath': 'potemkin'
@@ -151,9 +135,13 @@ def test_launch_job(testing_config):
 		proc.join()
 
 def test_monitor_processes(testing_config):
-	controller = T3Controller()
+	controller = T3Controller(AmpelConfig.get_config(),
+	    mongodb_uri=AmpelConfig.get_config('resources.mongo.writer'))
 	try:
 		controller.start()
+		controller.jobs['jobbyjob'].launch_t3_job()
+		stats = controller.monitor_processes()
+		assert stats['jobbyjob']['processes'] == 1
 	finally:
 		controller.stop()
 	

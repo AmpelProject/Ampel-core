@@ -48,6 +48,8 @@ class T3Controller(DBWired, Schedulable):
 			t3_job = T3JobLoader.load(job_name, self.logger)
 			t3_job.schedule(self.scheduler)
 			self.jobs[job_name] = t3_job
+		
+		self.scheduler.every(5).minutes.do(self.monitor_processes)
 
 	def monitor_processes(self):
 		feeder = GraphiteFeeder(AmpelConfig.get_config('resources.graphite'))
@@ -56,6 +58,7 @@ class T3Controller(DBWired, Schedulable):
 			stats[job_name] = {'processes': t3_job.process_count}
 		feeder.add_stats(stats, 't3.jobs')
 		feeder.send()
+		return stats
 
 
 def run():
