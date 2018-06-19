@@ -1,12 +1,16 @@
 ## Functions for pushing/pulling the Marshall (scanning page)
 Tested on python 2.7
-First, creat a config file called ~/.ptfconfig.cfg in your home dir with the following content.
+
+Either creat a config file called ~/.ptfconfig.cfg in your home dir with the following content.
 ```
 [Marshal]
 user = your_username_on_marshal
 passw = your_password
 ```
 ```
+or supply user/password directly
+
+
 import marshal_functions
 
 prog_name = 'ZTF Science Validation'

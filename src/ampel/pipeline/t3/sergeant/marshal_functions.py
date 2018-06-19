@@ -54,11 +54,15 @@ class PTFConfig(object) :
 		return self.config.get(*args,**kwargs)
 
         
-def get_marshal_html(weblink, attempts=1, max_attempts=5):
-	
-	conf = PTFConfig()
-	auth = requests.auth.HTTPBasicAuth(conf.get('Marshal', 'user'), conf.get('Marshal', 'passw'))
-	
+def get_marshal_html(weblink, attempts=1, max_attempts=5, marshalusr=None,marshalpwd=None):
+
+        if marshalusr is None:
+	        conf = PTFConfig()
+	        auth = requests.auth.HTTPBasicAuth(conf.get('Marshal', 'user'), conf.get('Marshal', 'passw'))
+        else:
+	        auth = requests.auth.HTTPBasicAuth(marshalusr, marshalpwd)
+
+                
 	try:
 		reponse = requests.get(weblink, auth=auth, timeout=120+60*attempts)
 	
@@ -70,7 +74,7 @@ def get_marshal_html(weblink, attempts=1, max_attempts=5):
 
 		if attempts<max_attempts:
 			time.sleep(3)
-			reponse.text = get_marshal_html(weblink, attempts=attempts+1)	
+			reponse.text = get_marshal_html(weblink, attempts=attempts+1, marshalusr=None,marshalpwd=None)	
 		else:
 			print ('Sergeant.get_marshal_html(): giving up')
 			raise(requests.exceptions.ConnectionError)
@@ -79,15 +83,16 @@ def get_marshal_html(weblink, attempts=1, max_attempts=5):
 
 
 
-def post_marshal_cgi(weblink,data=None,attempts=1,max_attempts=5):
+def post_marshal_cgi(weblink,data=None,attempts=1,max_attempts=5,marshalusr=None,marshalpwd=None):
     """
     Run one of the growth cgi scripts, check results and return
     """
     
-   
-    conf = PTFConfig()
-    auth = requests.auth.HTTPBasicAuth(conf.get('Marshal', 'user'), conf.get('Marshal', 'passw'))
-    print(auth)
+    if marshalusr is None:
+	    conf = PTFConfig()
+	    auth = requests.auth.HTTPBasicAuth(conf.get('Marshal', 'user'), conf.get('Marshal', 'passw'))
+    else:
+	    auth = requests.auth.HTTPBasicAuth(marshalusr, marshalpwd)
     
     try:
 	    response = requests.post(weblink, auth=auth, data=data,timeout=120+60*attempts)
@@ -99,7 +104,7 @@ def post_marshal_cgi(weblink,data=None,attempts=1,max_attempts=5):
 
 	    if attempts<max_attempts:
 		    time.sleep(3)
-		    response = post_marshal_cgi(weblink, attempts=attempts+1)	
+		    response = post_marshal_cgi(weblink, attempts=attempts+1, marshalusr=None,marshalpwd=None)	
 	    else:
 		    print ('Sergeant.post_marshal_cgi(): giving up')
 		    raise(requests.exceptions.ConnectionError)
@@ -109,7 +114,7 @@ def post_marshal_cgi(weblink,data=None,attempts=1,max_attempts=5):
  
 
 
-def json_obj(weblink,data=None,verbose=False):
+def json_obj(weblink,data=None,verbose=False, marshalusr=None,marshalpwd=None):
         '''
         Try to post to the marshal, then parse then return (assuming json)
         '''
@@ -117,7 +122,7 @@ def json_obj(weblink,data=None,verbose=False):
 
         if verbose : print("Trying to post to marshal: "+weblink)
         
-        r = post_marshal_cgi(weblink,data=data)
+        r = post_marshal_cgi(weblink,data=data, marshalusr=None,marshalpwd=None)
         print(r)
         status = r.status_code
         print(status)
@@ -141,11 +146,11 @@ def json_obj(weblink,data=None,verbose=False):
 
         
 
-def soup_obj(url):
-	return BeautifulSoup(get_marshal_html(url), 'lxml')
+def soup_obj(url, marshalusr=None,marshalpwd=None):
+	return BeautifulSoup(get_marshal_html(url, marshalusr=None,marshalpwd=None), 'lxml')
 
-def save_source(candid, progid):
-	return BeautifulSoup(get_marshal_html(saving_url %(candid, progid)), 'lxml') 
+def save_source(candid, progid, marshalusr=None,marshalpwd=None):
+	return BeautifulSoup(get_marshal_html(saving_url %(candid, progid), marshalusr=None,marshalpwd=None), 'lxml') 
 
 
 class Sergeant(object):
@@ -158,7 +163,7 @@ class Sergeant(object):
 	if none are given we assume today and five days ago
 	'''
 	
-	def __init__(self, program_name='Nuclear Transients',start_date=None, end_date=None) :
+	def __init__(self, program_name='Nuclear Transients',start_date=None, end_date=None,marshalusr=None,marshalpwd=None) :
 		
 		today = datetime.datetime.now().strftime('%Y-%m-%d')
 		fivedaysago = (datetime.datetime.now() - datetime.timedelta(days=5)).strftime('%Y-%m-%d')
@@ -173,8 +178,10 @@ class Sergeant(object):
 		self.program_name = program_name
 		self.cutprogramidx = None
 		self.program_options =[]
-
-		soup = soup_obj(listprog_url)
+                self.marshalusr=marshalusr
+                self.marshalpwd=marshalpwd
+                
+		soup = soup_obj(listprog_url,marshalusr=self.marshalusr,marshalpwd=self.marshalpwd)
 
 		for x in json.loads(soup.find('p').text.encode("ascii")):
 			self.program_options.append(x['name'])
@@ -192,7 +199,7 @@ class Sergeant(object):
 
 
         def set_programid(self,programname):
-                soup = soup_obj(listprog_url)
+                soup = soup_obj(listprog_url,marshalusr=self.marshalusr,marshalpwd=self.marshalpwd)
 
                 self.cutprogramidx = None
                 
@@ -216,7 +223,7 @@ class Sergeant(object):
 		if self.cutprogramidx is None:
 			print('ERROR, first fix program_name upon init')
 			return []
-		self.scan_soup = soup_obj(scanning_url + "?cutprogramidx=%s&startdate=%s&enddate=%s&HARDLIMIT=%s" %(self.cutprogramidx, self.start_date, self.end_date, hardlimit))
+		self.scan_soup = soup_obj(scanning_url + "?cutprogramidx=%s&startdate=%s&enddate=%s&HARDLIMIT=%s" %(self.cutprogramidx, self.start_date, self.end_date, hardlimit),marshalusr=self.marshalusr,marshalpwd=self.marshalpwd)
 
 		
 		table = self.scan_soup.findAll('table')
@@ -253,7 +260,7 @@ class Sergeant(object):
                 Much faster than list_saved_sources, but no annotation or photometry information
                 '''
 
-                return  json_obj(savedsources_url,data={'programidx':str(self.cutprogramidx)})
+                return  json_obj(savedsources_url,data={'programidx':str(self.cutprogramidx)}, marshalusr=self.marshalusr,marshalpwd=self.marshalpwd)
 
 
         def ingest_avro_id(self,avroid):
@@ -263,7 +270,7 @@ class Sergeant(object):
                 '''
 
                 
-                return  json_obj(ingest_url,data={'programidx':str(self.cutprogramidx),'avroid':str(avroid)})
+                return  json_obj(ingest_url,data={'programidx':str(self.cutprogramidx),'avroid':str(avroid)}, marshalusr=self.marshalusr,marshalpwd=self.marshalpwd)
 
 
         
@@ -295,7 +302,7 @@ class Sergeant(object):
 			if verbose:
 				print ('list_saved_sources: reading page {0}'.format(page_number))				
                                 
-			self.saved_soup = soup_obj(rawsaved_url + "?programidx=%s&offset=%s" %(self.cutprogramidx, targ0))
+			self.saved_soup = soup_obj(rawsaved_url + "?programidx=%s&offset=%s" %(self.cutprogramidx, targ0),marshalusr=self.marshalusr,marshalpwd=self.marshalpwd)
 
 			table = self.saved_soup.findAll('table')
 			table_rows = table[1].findAll('tr')[1:-1]
@@ -365,16 +372,16 @@ def _parse_source_input(source):
 
 	return sourcename
 
-def get_photo(source, verbose=False):
+def get_photo(source, verbose=False,marshalusr=None,marshalpwd=None):
 	'''
 	TODO...
 	'''
 
 	sourcename = _parse_source_input(source)
 
-	soup = soup_obj(photo_url %sourcename)
+	soup = soup_obj(photo_url %sourcename,marshalusr=marshalusr,marshalpwd=marshalpwd)
 
-def get_comments(source, verbose=False):
+def get_comments(source, verbose=False, marshalusr=None, marshalpwd=None):
 	'''
 	two inputs are possible:
 
@@ -394,7 +401,7 @@ def get_comments(source, verbose=False):
 		source['comments'] = [] # replace, because we re-read the current comments
 
 
-	soup = soup_obj(marshal_root + 'view_source.cgi?name=%s' %sourcename)
+	soup = soup_obj(marshal_root + 'view_source.cgi?name=%s' %sourcename,marshalusr=marshalusr,marshalpwd=marshalpwd)
 	table = soup.findAll('table')[0]
 	cells = table.findAll('span')
 	
@@ -427,7 +434,7 @@ def get_comments(source, verbose=False):
 					print ('---')
 	return all_comments
 
-def comment(comment, source, comment_type="info", comment_id=None, remove=False):
+def comment(comment, source, comment_type="info", comment_id=None, remove=False,marshalusr=None,marshalpwd=None):
 	
 	'''
 	two types of input are accepted:
@@ -462,7 +469,7 @@ def comment(comment, source, comment_type="info", comment_id=None, remove=False)
 		comment_list = source['comments']
 	else:
 		print ('getting current comments...')
-		comment_list = get_comments(source)
+		comment_list = get_comments(source,marshalusr=marshalusr,marshalpwd=marshalpwd)
 	
 	current_comm = ''.join([tup[4] for tup in comment_list if tup[3]==comment_type])
 
@@ -475,7 +482,7 @@ def comment(comment, source, comment_type="info", comment_id=None, remove=False)
 
 
 	print ('setting up comment script for {0}...'.format(sourcename))
-	soup = soup_obj(marshal_root + 'view_source.cgi?name=%s' %sourcename)
+	soup = soup_obj(marshal_root + 'view_source.cgi?name=%s' %sourcename,marshalusr=marshalusr,marshalpwd=marshalpwd)
 	cmd = {}
 	for x in soup.find('form', {'action':"edit_comment.cgi"}).findAll('input'):
 		if x["type"] == "hidden":
@@ -492,7 +499,7 @@ def comment(comment, source, comment_type="info", comment_id=None, remove=False)
 	except AttributeError:
 		params = urllib.urlencode(cmd) # python2	
 	
-	return soup_obj(marshal_root + 'edit_comment.cgi?%s' %params)
+	return soup_obj(marshal_root + 'edit_comment.cgi?%s' %params,marshalusr=marshalusr,marshalpwd=marshalpwd)
 	
 
 info_date = 'April 2018'
