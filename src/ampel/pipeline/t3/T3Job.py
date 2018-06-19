@@ -45,6 +45,13 @@ class T3Job:
 		""" """
 		return AmpelUtils.get_by_path(self.job_doc, param_name)
 
+	@property
+	def process_count(self):
+		for pid, proc in list(self._processes.items()):
+			if proc.exitcode is not None:
+				proc.join()
+				del self._processes[pid]
+		return len(self._processes)
 
 	def launch_t3_job(self):
 		""" """

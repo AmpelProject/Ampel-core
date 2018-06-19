@@ -58,9 +58,8 @@ def t3_jobs():
     return {"jobbyjob": {
       "active": True,
       "schedule": {
-        "mode" : "fixed_time",
-        "timeStr" : "15:00",
-        "timeFormat" : "HH:MM"
+        "mode" : "fixed_interval",
+        "interval" : 1
       },
       "onError": {
         "sendMail": {
@@ -150,3 +149,11 @@ def test_launch_job(testing_config):
 	with pytest.raises(PotemkinError):
 		proc = job.launch_t3_job()
 		proc.join()
+
+def test_monitor_processes(testing_config):
+	controller = T3Controller()
+	try:
+		controller.start()
+	finally:
+		controller.stop()
+	

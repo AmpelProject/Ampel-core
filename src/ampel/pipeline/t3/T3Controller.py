@@ -13,6 +13,8 @@ from ampel.pipeline.t3.T3Job import T3Job
 from ampel.pipeline.t3.T3JobLoader import T3JobLoader
 from ampel.pipeline.common.Schedulable import Schedulable
 from ampel.pipeline.logging.LoggingUtils import LoggingUtils
+from ampel.pipeline.common.GraphiteFeeder import GraphiteFeeder
+from ampel.pipeline.config.AmpelConfig import AmpelConfig
 
 class T3Controller(DBWired, Schedulable):
 	"""
@@ -36,6 +38,8 @@ class T3Controller(DBWired, Schedulable):
 		# Setup instance variable referencing ampel databases
 		self.plug_databases(self.logger, mongodb_uri, config, central_db)
 
+		self.jobs = {}
+
 		for job_name in self.config["t3_jobs"].keys():
 
 			if t3_job_names is not None and job_name not in t3_job_names:
@@ -43,6 +47,15 @@ class T3Controller(DBWired, Schedulable):
 
 			t3_job = T3JobLoader.load(job_name, self.logger)
 			t3_job.schedule(self.scheduler)
+			self.jobs[job_name] = t3_job
+
+	def monitor_processes(self):
+		feeder = GraphiteFeeder(AmpelConfig.get_config('resources.graphite'))
+		stats = {}
+		for job_name, t3_job in self.jobs.items():
+			stats[job_name] = {'processes': t3_job.process_count}
+		feeder.add_stats(stats, 't3.jobs')
+		feeder.send()
 
 
 def run():
