@@ -95,7 +95,7 @@ class ZIAlertShaper(AbsAlertShaper):
 									'pid': el['pid'], 
 	 								'diffmaglim': el['diffmaglim'], 
 	 								'programid': el['programid'], 
-									'pdiffimfilename': el['pdiffimfilename']
+									'pdiffimfilename': el.get('pdiffimfilename', None)
 								}
 							)
 						)

@@ -94,7 +94,8 @@ class ZIPhotoDictShaper:
 				photo_dict['tranId'] = tran_id
 				
 				# Cut path if present
-				photo_dict['pdiffimfilename'] = photo_dict['pdiffimfilename'].split('/')[-1].replace('.fz', '')
+				if photo_dict.get('pdiffimfilename') is not None:
+					photo_dict['pdiffimfilename'] = photo_dict['pdiffimfilename'].split('/')[-1].replace('.fz', '')
 
 				# Rename 'candid' into '_id'
 				photo_dict['_id'] = photo_dict[id_field_name]

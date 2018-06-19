@@ -62,7 +62,7 @@ class AlertSupplier:
 	def __next__(self):
 		"""
 		"""
-		if self.deserialize is None:
+		if not hasattr(self, 'deserialize'):
 			assert self.alert_archive is None
 			return self.alert_shaper.shape(
 				next(self.alert_loader)
