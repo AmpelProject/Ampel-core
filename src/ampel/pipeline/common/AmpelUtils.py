@@ -4,10 +4,11 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 07.06.2018
-# Last Modified Date: 12.06.2018
+# Last Modified Date: 17.06.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import collections
+from functools import reduce
 
 class AmpelUtils():
 	""" 
@@ -79,6 +80,13 @@ class AmpelUtils():
 			number_map[str_long[14:16]]
 		)
 
+	@staticmethod
+	def is_sequence(obj):
+		"""
+		A sequence, but not a string
+		"""
+		return isinstance(obj, collections.abc.Sequence) and not isinstance(obj, (str, bytes, bytearray))
+
 
 	@staticmethod
 	def to_set(arg):
@@ -117,7 +125,7 @@ class AmpelUtils():
 		# monotype
 		if not isinstance(types, collections.Sequence):
 			return all(type(el) is types for el in seq)
-		# different types accepted (or connected)
+		# different types accepted ('or' connected)
 		else:
 			if multi_type:
 				return all(type(el) in types for el in seq)
@@ -125,3 +133,56 @@ class AmpelUtils():
 				return any(
 					tuple(AmpelUtils.check_seq_inner_type(seq, _type) for _type in types)
 				)
+	
+
+	@staticmethod
+	def get_by_path(mapping, path, delimiter='.'):
+		"""
+		Get an item from a nested mapping by path, e.g.
+		'foo.bar.baz' -> mapping['foo']['bar']['baz']
+		"""
+		return reduce(lambda d, k: d.get(k), path.split(delimiter), mapping)
+
+
+	@staticmethod
+	def report_exception(logger, further_info=None):
+		"""
+		further_info: dict instance to be included in the document inserted into Ampel_troubles
+		"""
+		import traceback
+
+		# This kind of events need to be propagated
+		logger.propagate = True
+
+		# Get traceback as string
+		exception_str = traceback.format_exc().replace("\"", "'")
+
+		# Don't create report for executions canceled manually
+		if "KeyboardInterrupt" in exception_str:
+			return 
+
+		# Feedback
+		logger.critical("Exception occured", exc_info=1)
+
+		# Basis document (can be appended later on)
+		insert_dict = {
+			'tier': 0,
+			'exception': exception_str.split("\n")
+		}
+
+		# Additional info might have been provided (such as alert information)
+		if further_info is not None:
+			insert_dict['more'] = further_info
+
+		try:
+			# Populate Ampel_trouble collection
+			from ampel.pipeline.db.AmpelDB import AmpelDB
+			AmpelDB.get_collection('troubles').insert_one(insert_dict)
+		except:
+			# Bad luck, exception again (possible cause: DB offline)
+			logger.critical(
+				"Exception occured while trying to insert document into 'troubles' collection", 
+				exc_info=1
+			)
+
+		logger.propagate = False

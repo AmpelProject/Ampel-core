@@ -8,7 +8,9 @@ from functools import partial
 import inspect
 import json
 import pkg_resources
-from ampel.pipeline.config import set_config
+from ampel.pipeline.config.AmpelConfig import AmpelConfig
+
+from ampel.pipeline.t3.T3JobLoader import T3JobLoader
 
 def load_config(path, gather_plugins=True):
 	"""Load the JSON configuration file at path, and add plugins registered via pkg_resources"""
@@ -50,11 +52,6 @@ def load_config(path, gather_plugins=True):
 			if name in config['t2_run_config']:
 				raise KeyError("T2 run config {} (defined as entry point {} in {}) already exists in the provided config file".format(name, resource.name, resource.dist))
 			config['t2_run_config'][name] = channel_config
-	for resource in pkg_resources.iter_entry_points('ampel.pipeline.t3.jobs'):
-		for name, channel_config in resource.resolve()().items():
-			if name in config['t3_jobs']:
-				raise KeyError("T3 job {} (defined as entry point {} in {}) already exists in the provided config file".format(name, resource.name, resource.dist))
-			config['t3_jobs'][name] = channel_config
 	for resource in pkg_resources.iter_entry_points('ampel.pipeline.t3.units'):
 		klass = resource.resolve()
 		name = resource.name
@@ -64,6 +61,19 @@ def load_config(path, gather_plugins=True):
 			'classFullPath': klass.__module__,
 		}
 		config['t3_units'][name] = unit
+	for resource in pkg_resources.iter_entry_points('ampel.pipeline.t3.configs'):
+		for name, channel_config in resource.resolve()().items():
+			if name in config['t3_run_config']:
+				raise KeyError("T3 run config {} (defined as entry point {} in {}) already exists in the provided config file".format(name, resource.name, resource.dist))
+			config['t3_run_config'][name] = channel_config
+	for resource in pkg_resources.iter_entry_points('ampel.pipeline.t3.jobs'):
+		for name, channel_config in resource.resolve()().items():
+			if name in config['t3_jobs']:
+				raise KeyError("T3 job {} (defined as entry point {} in {}) already exists in the provided config file".format(name, resource.name, resource.dist))
+			T3JobLoader.job_schema(channel_config)
+			config['t3_jobs'][name] = channel_config
+
+
 
 	return config
 
@@ -106,14 +116,14 @@ class AmpelArgumentParser(ArgumentParser):
 		self._resource_defaults = opts.config.get('resources', None)
 		action.type = load_config
 
-	def require_resource(self, name, roles=None):
+	def require_resource(self, name, roles=[]):
 		if name in self._resources:
 			return
 		entry = next(pkg_resources.iter_entry_points('ampel.pipeline.resources', name), None)
 		if entry is None:
 			raise NameError("Resource {} is not defined".format(name))
 		resource = entry.resolve()
-		resource.add_arguments(self, self._resource_defaults, roles)
+		resource.add_arguments(self, resource.parse_default(self._resource_defaults), roles)
 		self._resources[name] = resource
 	
 	def require_resources(self, *names):
@@ -128,6 +138,6 @@ class AmpelArgumentParser(ArgumentParser):
 		args, argv = super(AmpelArgumentParser, self).parse_known_args(**kwargs)
 		args.config['resources'] = {}
 		for name, klass in self._resources.items():
-			args.config['resources'][name] = klass(args)
-		set_config(args.config)
+			args.config['resources'][name] = klass.parse_args(args)
+		AmpelConfig.set_config(args.config)
 		return args, argv

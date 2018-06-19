@@ -4,22 +4,24 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 02.06.2018
-# Last Modified Date: 02.06.2018
+# Last Modified Date: 15.06.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-from ampel.pipeline.logging.LoggingUtils import LoggingUtils
+from ampel.pipeline.config.AmpelConfig import AmpelConfig
 from ampel.flags.PhotoFlags import PhotoFlags
 from ampel.pipeline.config.Channel import Channel
+from ampel.pipeline.logging.LoggingUtils import LoggingUtils
 
-
-#class DataAccessRegulator:
 class DataAccessManager:
 	"""
 	"""
 
-	def __init__(self, al_config, chan_name):
+	def __init__(self, chan_name):
 		"""
 		"""
+
+		al_config = AmpelConfig.get_config()
+
 		if chan_name not in al_config['channels']:
 			raise ValueError("Unknown channel name '%s', please check your config" % chan_name)
 
@@ -34,6 +36,7 @@ class DataAccessManager:
 			current_photo_flag = None
 
 			if 'flags' in src_params and 'photo' in src_params['flags']:
+				# pylint: disable=unsubscriptable-object
 				current_photo_flag = PhotoFlags[src_params['flags']['photo']]
 
 			if (

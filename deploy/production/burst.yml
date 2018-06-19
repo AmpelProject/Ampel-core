@@ -19,6 +19,10 @@ services:
      MONGODUMP_DIR: /mnt
      MONGO_USER: filterclient
      MONGO_PASSWORD_FILE: /run/secrets/catalog-read-password
+   deploy:
+     restart_policy:
+       condition: any
+       delay: 10s
   mongo:
     image: mongo:3.6
     command: ["mongod", "--port", "$MONGO_PORT"]
@@ -38,6 +42,10 @@ services:
       MONGO_PASSWORD_FILE: /run/secrets/mongo-alertprocessor-password
       LOGGER_USER: logger
       LOGGER_PASSWORD_FILE: /run/secrets/mongo-logger-password
+    deploy:
+      restart_policy:
+        condition: any
+        delay: 10s
   stats:
     image: ampel:$AMPEL_TAG
     command: ["ampel-statspublisher"]
@@ -112,28 +120,28 @@ services:
     depends_on:
       - mongo
       - archive
-  t2-controller:
-    image: ampel:$AMPEL_TAG
-    command: ["ampel-t2"]
-    volumes:
-      - type: volume
-        source: $AMPEL_SRC
-        target: /Ampel
-    secrets:
-      - mongo-alertprocessor-password
-    environment:
-      TINI_SUBREAPER: 1
-      MONGO_HOSTNAME: $MONGO_HOST
-      MONGO_PORT: $MONGO_PORT
-      MONGO_USERNAME: alertprocessor
-      MONGO_PASSWORD_FILE: /run/secrets/mongo-alertprocessor-password
-    deploy:
-      restart_policy:
-          max_attempts: 3
-          condition: any
-          delay: 10s
-    depends_on:
-      - mongo
+#  t2-controller:
+#    image: ampel:$AMPEL_TAG
+#    command: ["ampel-t2"]
+#    volumes:
+#      - type: volume
+#        source: $AMPEL_SRC
+#        target: /Ampel
+#    secrets:
+#      - mongo-alertprocessor-password
+#    environment:
+#      TINI_SUBREAPER: 1
+#      MONGO_HOSTNAME: $MONGO_HOST
+#      MONGO_PORT: $MONGO_PORT
+#      MONGO_USERNAME: alertprocessor
+#      MONGO_PASSWORD_FILE: /run/secrets/mongo-alertprocessor-password
+#    deploy:
+#      restart_policy:
+#          max_attempts: 3
+#          condition: any
+#          delay: 10s
+#    depends_on:
+#      - mongo
   t3-controller:
     image: ampel:$AMPEL_TAG
     command: ["ampel-t3"]
@@ -147,11 +155,11 @@ services:
       TINI_SUBREAPER: 1
       MONGO_HOSTNAME: $MONGO_HOST
       MONGO_PORT: $MONGO_PORT
-      MONGO_USERNAME: alertprocessor
-      MONGO_PASSWORD_FILE: /run/secrets/mongo-alertprocessor-password
+      MONGO_WRITER_USERNAME: alertprocessor
+      MONGO_WRITER_PASSWORD_FILE: /run/secrets/mongo-alertprocessor-password
     deploy:
       restart_policy:
-          max_attempts: 3
+          max_attempts: 30
           condition: any
           delay: 10s
     depends_on:

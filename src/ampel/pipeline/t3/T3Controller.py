@@ -41,21 +41,22 @@ class T3Controller(DBWired, Schedulable):
 			if t3_job_names is not None and job_name not in t3_job_names:
 				continue
 
-			t3_job = T3JobLoader.load(self.config, job_name)
+			t3_job = T3JobLoader.load(job_name, self.logger)
 			t3_job.schedule(self.scheduler)
 
 
 def run():
 	from ampel.pipeline.config.ConfigLoader import AmpelArgumentParser
+	from ampel.pipeline.config.AmpelConfig import AmpelConfig
 
 	parser = AmpelArgumentParser()
 	parser.require_resource('mongo', ['writer'])
 	opts = parser.parse_args()
 
-	mongo = opts.config['resources']['mongo']()['writer']
+	mongo = AmpelConfig.get_config('resources.mongo.writer')
 
 	controller = T3Controller(
-		config=opts.config,
+		config=AmpelConfig.get_config(),
 		mongodb_uri=mongo
 	)
 	controller.run()

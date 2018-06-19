@@ -1,19 +1,18 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/pipeline/t0/filters/BasicFilter.py
+# File              : ampel/pipeline/t0/filters/BasicCatalogFilter.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 14.01.2018
-# Last Modified Date: 08.03.2018
+# Last Modified Date: 18.06.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-
-from ampel.abstract.AbsAlertFilter import AbsAlertFilter
+from types import MappingProxyType
 from extcats import CatalogQuery
-
 from pymongo import MongoClient
 from numpy import mean
-from ampel.pipline.common.expandvars import expandvars
+from ampel.pipeline.config.AmpelConfig import AmpelConfig
+from ampel.abstract.AbsAlertFilter import AbsAlertFilter
 
 class BasicCatalogFilter(AbsAlertFilter):
 
@@ -21,17 +20,17 @@ class BasicCatalogFilter(AbsAlertFilter):
     
     def __init__(self, on_match_t2_units, base_config=None, run_config=None, logger=None):
         """
-            base_config taken from: Ampel/config/hu/t0_filters/config.json
-            run_config from: Ampel/config/hu/channels/config.json
         """
 
         self.on_match_default_t2_units = on_match_t2_units
 
-        if run_config is None or type(run_config) is not dict:
-            raise ValueError("Method argument must be a dict instance")
+        if run_config is None or type(run_config) not in (dict, MappingProxyType):
+            raise ValueError("run_config type must be a dict or MappingProxyType")
 
         # init mongo client to be passed to extcats
-        dbclient = MongoClient(expandvars(base_config['mongodbURI']))
+        dbclient = MongoClient(
+			AmpelConfig.get_config('resources.extcats')
+		)
         
         # int catalogquery object
         self.cat_query = CatalogQuery.CatalogQuery(

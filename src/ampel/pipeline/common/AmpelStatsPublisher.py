@@ -4,16 +4,17 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 26.05.2018
-# Last Modified Date: 14.06.2018
+# Last Modified Date: 19.06.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-from functools import reduce
-from ampel.flags.AlDocTypes import AlDocTypes
-from ampel.pipeline.db.DBWired import DBWired
+from ampel.pipeline.common.AmpelUtils import AmpelUtils
 from ampel.pipeline.common.Schedulable import Schedulable
+from ampel.pipeline.config.AmpelConfig import AmpelConfig
 from ampel.pipeline.logging.LoggingUtils import LoggingUtils
+from ampel.pipeline.db.AmpelDB import AmpelDB
+from ampel.flags.AlDocTypes import AlDocTypes
 
-class AmpelStatsPublisher(DBWired, Schedulable):
+class AmpelStatsPublisher(Schedulable):
 	""" 
 	"""
 
@@ -27,31 +28,27 @@ class AmpelStatsPublisher(DBWired, Schedulable):
 		#"metrics.document.updated": "docUpd"
 	}
 
-	col_stats_keys = (
-		'count', 'size', 'storageSize', 'totalIndexSize'
-	)
+	col_stats_keys = ('count', 'size', 'storageSize', 'totalIndexSize')
 
 
 	def __init__(
-		self, config=None, central_db=None, mongodb_uri=None, 
-		graphite_feeder=None, archive_client=None,
+		self, central_db=None, graphite_feeder=None, archive_client=None,
 		channel_names=None, publish_stats=['graphite', 'mongo', 'print'],
-		update_intervals = {'col_stats': 5, 'docs_count': 10, 'daemon': 2, 'channels': 5}
+		update_intervals={'col_stats': 5, 'docs_count': 10, 'daemon': 2, 
+		'channels': 5, 'alerts_count': 10}
 	):
 		"""
 		Parameters:
-		'config': see ampel.pipeline.db.DBWired.load_config() docstring
-		'central_db': see ampel.pipeline.db.DBWired.plug_central_db() docstring
+		'central_db': string. Use provided DB name rather than Ampel default database ('Ampel')
 		'publish_stats': send performance stats to:
 		  * mongo: send metrics to dedicated mongo collection (mongodb_uri must be set)
 		  * graphite: send db metrics to graphite (graphite server must be defined in Ampel_config)
 		  * print: print db metrics to stdout
-		'mongodb_uri': dns name or ip address (plus optional port) of the server hosting mongod
-		  example: mongodb://user:password@localhost:27017
 		'channel_names': list of channel names (string). 
 		  If None, stats for all avail channels will be reported. 
-		'colStats_interval': 
-		'docsCount_interval': 
+		'update_intervals': dict instance. 
+		  * keys: either col_stats, docs_count, daemon, channels, alerts_count
+		  * values: integer. Number of minutes between checks
 		"""
 
 		# Pass custom args to Parent class constructor
@@ -64,14 +61,15 @@ class AmpelStatsPublisher(DBWired, Schedulable):
 		self.logger = LoggingUtils.get_logger(unique=True)
 		self.logger.info("Setting up AmpelStatsPublisher")
 
+		# Load provided channels or all channels defined in AmpelConfig
+		self.channel_names = (
+			tuple(AmpelConfig.get_config('channels').keys()) if channel_names is None 
+			else channel_names
+		)
 
-		# Setup instance variable referencing ampel databases
-		self.plug_databases(self.logger, mongodb_uri, config, central_db)
-
-		if channel_names is None:
-			self.channel_names = tuple(self.config['channels'].keys())
-		else:
-			self.channel_names = channel_names
+		# Optional override of AmpelConfig defaults
+		if central_db is not None:
+			AmpelDB.set_central_db_name(central_db)
 
 		# Which stats to publish (see doctring)
 		self.publish_stats = publish_stats
@@ -112,15 +110,17 @@ class AmpelStatsPublisher(DBWired, Schedulable):
 	def send_all_metrics(self):
 		"""
 		"""
-		self.send_metrics(True, True, True, True)
+		self.send_metrics(True, True, True, True, True)
 
 
-	def send_metrics(self, daemon=False, col_stats=False, docs_count=False, channels=False):
+	def send_metrics(
+		self, daemon=False, col_stats=False, docs_count=False, channels=False, t0=False
+	):
 		"""
 		"""
 
-		main_col = self.get_main_col()
-		photo_col = self.get_photo_col()
+		main_col = AmpelDB.get_collection("main")
+		photo_col = AmpelDB.get_collection("photo")
 		dbinfo_dict = {}
 
 		if not any([daemon, col_stats, docs_count, channels]):
@@ -136,7 +136,7 @@ class AmpelStatsPublisher(DBWired, Schedulable):
 		if col_stats:
 
 			dbinfo_dict['colStats'] = {
-				'logs': self.get_col_stats(self.get_logs_col()),
+				'jobs': self.get_col_stats(AmpelDB.get_collection("jobs")),
 				'photo': self.get_col_stats(photo_col),
 				'main': self.get_col_stats(main_col)
 			}
@@ -146,7 +146,7 @@ class AmpelStatsPublisher(DBWired, Schedulable):
 
 			dbinfo_dict['docsCount'] = {
 
-				'troubles': self.get_trouble_col().find({}).count(),
+				'troubles': AmpelDB.get_collection('troubles').find({}).count(),
 
 				'transients': {
 
@@ -186,6 +186,36 @@ class AmpelStatsPublisher(DBWired, Schedulable):
 				}
 			}
 
+
+		if t0:
+
+			res = next(
+				AmpelDB.get_collection("stats").aggregate(
+					[
+						#{
+						#	"$match": { 
+						#		# TODO: add time constrain here 
+								# example: since last AMPEL start
+						#	}
+						#},
+						{
+   							"$group": {
+            					"_id": 1,
+            					"alProcessed": {
+									"$sum": "$count.t0Job.alProcessed"
+								}
+							}
+						}
+					]
+				), None
+			)
+
+			if res is None: 
+				# TODO: something
+				pass
+
+			dbinfo_dict['alertsCount'] = res['alProcessed']
+
 		stat_dict = {'dbinfo': dbinfo_dict} if len(dbinfo_dict) > 0 else {}
 
 		# Channel specific metrics
@@ -224,9 +254,9 @@ class AmpelStatsPublisher(DBWired, Schedulable):
 		if ret_dict == None:
 			ret_dict = {}
 
-		server_status = self.get_main_col().database.command("serverStatus")
+		server_status = db.command("serverStatus")
 		for k, v in AmpelStatsPublisher.db_metrics.items():
-			ret_dict[suffix + v] = reduce(dict.get, k.split("."), server_status)
+			ret_dict[suffix + v] = AmpelUtils.get_by_path(server_status, k)
 
 		return ret_dict
 
@@ -279,8 +309,11 @@ class AmpelStatsPublisher(DBWired, Schedulable):
 			).count()
 
 def run():
+
 	from ampel.pipeline.config.ConfigLoader import AmpelArgumentParser
+	from ampel.pipeline.config.AmpelConfig import AmpelConfig
 	from ampel.archive import ArchiveDB
+	from ampel.pipeline.common.GraphiteFeeder import GraphiteFeeder
 
 	parser = AmpelArgumentParser()
 	parser.require_resource('mongo', ['logger'])
@@ -288,15 +321,13 @@ def run():
 	parser.require_resource('graphite')
 	opts = parser.parse_args()
 
-	mongo = opts.config['resources']['mongo']()['logger']
-	archive = ArchiveDB(opts.config['resources']['archive']()['reader'])
-	graphite = opts.config['resources']['graphite']()
-	
 	asp = AmpelStatsPublisher(
-		config=opts.config,
-		mongodb_uri=mongo, 
-		graphite_feeder=graphite,
-		archive_client=archive,
+		graphite_feeder=GraphiteFeeder(
+			AmpelConfig.get_config('resources.graphite')
+		),
+		archive_client=ArchiveDB(
+			AmpelConfig.get_config('resources.archive.reader')
+		),
 		publish_stats=['print', 'graphite']
 	)
 	asp.send_all_metrics()

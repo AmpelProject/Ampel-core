@@ -4,33 +4,67 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 26.02.2018
-# Last Modified Date: 14.06.2018
+# Last Modified Date: 18.06.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from ampel.pipeline.db.query.QueryMatchTransients import QueryMatchTransients
 from ampel.pipeline.db.query.QueryLatestCompound import QueryLatestCompound
 from ampel.pipeline.db.DBContentLoader import DBContentLoader
+from ampel.pipeline.logging.DBLoggingHandler import DBLoggingHandler
 from ampel.pipeline.logging.LoggingUtils import LoggingUtils
 from ampel.pipeline.t3.TimeConstraint import TimeConstraint
+from ampel.pipeline.db.AmpelDB import AmpelDB
 from ampel.pipeline.common.AmpelUtils import AmpelUtils
 from ampel.flags.TransientFlags import TransientFlags
 from ampel.flags.AlDocTypes import AlDocTypes
 from ampel.flags.FlagUtils import FlagUtils
 from datetime import datetime, timezone
 from itertools import islice
-from ampel.pipeline.config import get_config
+
 from pymongo import MongoClient
 
 class T3JobExecution:
 	"""
 	"""
 
-	def __init__(self, t3_job, logger):
+	def __init__(self, t3_job, central_db=None, logger=None, propagate_logs=False):
 		""" 
+		'central_db': string. Use provided DB name rather than Ampel default database ('Ampel')
+
+		logger: 
+			-> If None, a new logger using a DBLoggingHandler will be created, which means a new 
+			log document will be inserted into the 'logs' collection of the central db.
+			-> If you provide a logger, please note that it will *NOT* be changed in any way, 
+			in particular: no DBLoggingHandler will be added, which means that no DB logging will occur.
+
+		propagate_logs: 
+			If this evaluates to true, events logged using 'logger' will be passed to the handlers 
+			of higher level (ancestor) loggers, in addition to any handlers attached to 'logger'. 
+			If this evaluates to false, logging messages are not passed to the handlers of ancestor loggers.
 		"""
+		
+		# Optional override of AmpelConfig defaults
+		if central_db is not None:
+			AmpelDB.set_central_db_name(central_db)
+
+		self.tran_col = AmpelDB.get_collection('main')
 
 		if logger is None:
-			logger = LoggingUtils.get_logger(unique=True)
+
+			# Create logger
+			logger = LoggingUtils.get_logger()
+
+			# Create DB logging handler instance (logging.Handler child class)
+			# This class formats, saves and pushes log records into the DB
+			self.db_logging_handler = DBLoggingHandler(
+				tier=3, info={"job": t3_job.job_name}
+			)
+
+			# Add db logging handler to the logger stack of handlers 
+			logger.addHandler(self.db_logging_handler)
+
+		logger.propagate = propagate_logs
+			
 		self.logger = logger
 		self.t3_job = t3_job
 
@@ -79,30 +113,20 @@ class T3JobExecution:
 		return getattr(self, "exec_params", None)
 
 
-	def run_job(self, central_db=None, al_config=None):
+	def run_job(self):
 		"""
-		central_db: pymongo database 
-		al_config: ampel config (dict)
 		"""
-		
-		if al_config is None:
-			al_config = get_config()
-		if central_db is None:
-			central_db = MongoClient(al_config['resources']['mongo']()['writer'])["Ampel"]
-		
+
+		# TODO: try/catch with Ampel 'troubles' insert
+
 		# T3 job requiring prior transient loading 
 		if self.t3_job.get_config('input.select') is not None:
 
-			if None in (al_config, central_db):
-				raise ValueError(
-					"Ampel config and central_db parameters are required for jobs requiring transient loading"
-				)
-
 			# Required to load single transients
-			dcl = DBContentLoader(central_db, al_config, verbose=True, logger=self.logger)
+			dcl = DBContentLoader(self.tran_col.database, verbose=True, logger=self.logger)
 
 			# Job with transient input
-			trans_cursor = self.get_selected_transients(central_db.main)
+			trans_cursor = self.get_selected_transients()
 
 			if trans_cursor is not None:
 
@@ -122,7 +146,7 @@ class T3JobExecution:
 
 			# Update Transient journal with dict containing date, channels and name of the task
 			if t3_task.get_config('updateJournal') is True:
-				mongo_res = central_db.main.update_many(
+				mongo_res = self.tran_col.update_many(
 					{
 						'alDocType': AlDocTypes.TRANSIENT, 
 						'tranId': {'$in': ret}
@@ -145,8 +169,7 @@ class T3JobExecution:
 					pass # populate ampel_troubles !
 
 		# Record last time this job was run into DB
-		col=central_db['runs']
-		col.update_one(
+		AmpelDB.get_collection('runs').update_one(
 			{'_id': self.t3_job.job_name},
 			{
 				'$set': {
@@ -156,8 +179,11 @@ class T3JobExecution:
 			upsert=True
 		)
 
+		# Write log entries to DB
+		self.db_logging_handler.flush()
 
-	def get_selected_transients(self, tran_col):
+
+	def get_selected_transients(self):
 		"""
 		Returns a pymongo cursor
 		"""
@@ -174,7 +200,7 @@ class T3JobExecution:
 		self.logger.info("Executing search query: %s" % trans_match_query)
 
 		# Execute 'find transients' query
-		trans_cursor = tran_col.find(
+		trans_cursor = self.tran_col.find(
 			trans_match_query, {'_id':0, 'tranId':1}
 		).batch_size(100000)
 		
@@ -308,8 +334,8 @@ class T3JobExecution:
 			for tran_id, tran_data in al_tran_data.items():
 
 				tran_view = tran_data.create_view(
-					channel=task_chans if type(task_chans) is not list else None, 
-					channels=task_chans if type(task_chans) is list else None, 
+					channel=task_chans if not AmpelUtils.is_sequence(task_chans) else None,
+					channels=task_chans if AmpelUtils.is_sequence(task_chans) else None,
 					t2_ids=t3_task.get_config('select.t2(s)')
 				)
 				

@@ -105,21 +105,34 @@ class ResourceURI(Resource):
     roles = tuple()
     
     @classmethod
+    def parse_default(cls, resource_section):
+        default = cls.get_default()
+        if len(cls.roles) > 0:
+            default['roles'] = {k:{} for k in cls.roles}
+            for role, config in resource_section.get(cls.name, {}).items():
+                assert isinstance(config, str)
+                parts = parse.urlparse(config)
+                for f in cls.fields:
+                    default[f] = getattr(parts, f)
+                for f in ('username', 'password'):
+                    if getattr(parts, f) is not None:
+                        default['roles'][role][f] = getattr(parts, f)
+        else:
+            if cls.name in resource_section:
+                config = resource_section[cls.name]
+                assert isinstance(config, str)
+                parts = parse.urlparse(config)
+                for f in cls.fields:
+                    default[f] = getattr(parts, f)
+        return default
+    
+    @classmethod
     def add_arguments(cls, parser, defaults, roles):
         group = parser.add_argument_group(cls.name, cls.__doc__)
         default_key = cls.name+'_uri'
-        class_default = cls.get_default()
-        if roles is None:
-            roles = cls.roles
-        else:
-            roles = [r for r in cls.roles if r in roles]
-        class_default['roles'] = {k:{} for k in roles}
-        if defaults is not None and default_key in defaults:
-            superfluous = set(defaults[default_key].keys()).difference(cls.fields)
-            if len(superfluous) > 0:
-                raise ValueError("default configuration for {} in config file contains unrecognized keys {}".format(default_key, superfluous))
-            class_default.update(defaults[default_key])
-        parser.set_defaults(**{default_key: class_default})
+        if 'roles' in defaults:
+            defaults['roles'] = {k:v for k,v in defaults['roles'].items() if k in roles}
+        parser.set_defaults(**{default_key: defaults})
         if 'username' in cls.fields:
             assert len(roles) == 0
         for prop in cls.fields:
@@ -131,6 +144,13 @@ class ResourceURI(Resource):
                 group.add_argument('--{}-{}-{}'.format(cls.name, role, prop), env_var='{}_{}_{}'.format(cls.name.upper(), role.upper(), prop.upper()),
                     action=BuildURI, default=argparse.SUPPRESS)
 
+    @classmethod
+    def parse_args(cls, args):
+        key = cls.name+'_uri'
+        uris = render_uris(getattr(args, key))
+        delattr(args, key)
+        return uris
+        
     def __init__(self, args):
         key = self.name+'_uri'
         self.uri = render_uris(getattr(args, key))

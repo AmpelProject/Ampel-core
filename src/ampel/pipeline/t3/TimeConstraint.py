@@ -4,11 +4,13 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 06.06.2018
-# Last Modified Date: 06.06.2018
+# Last Modified Date: 15.06.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from datetime import datetime, timedelta
 from voluptuous import Schema, Any, Required
+from types import MappingProxyType
+from ampel.pipeline.config.AmpelConfig import AmpelConfig
 
 
 class TimeConstraint:
@@ -54,7 +56,8 @@ class TimeConstraint:
 		if time_constraint_dict is None:
 			return None
 
-		TimeConstraint.json_root_schema(time_constraint_dict) # Robustness
+		if not AmpelConfig.is_frozen():
+			TimeConstraint.json_root_schema(time_constraint_dict) # Robustness
 		tc = TimeConstraint() if time_constraint_obj is None else time_constraint_obj
 		tc.set_from(time_constraint_dict.get('from'), False)
 		tc.set_until(time_constraint_dict.get('until'), False)
@@ -111,7 +114,7 @@ class TimeConstraint:
 		elif type(val) is timedelta:
 			return datetime.today() + val
 
-		elif type(val) is dict:
+		elif type(val) in (dict, MappingProxyType):
 
 			if 'timeDelta' in val:
 				return datetime.today() + timedelta(**val['timeDelta'])
@@ -126,4 +129,4 @@ class TimeConstraint:
 				# Schema validation ensures 'dateTimeFormat' is set when 'dateTimeStr' is
 				return datetime.strptime(val['dateTimeStr'], ['dateTimeFormat'])
 
-		raise ValueError("Illegal argument")
+		raise ValueError("Illegal argument (type: %s)" % type(val))

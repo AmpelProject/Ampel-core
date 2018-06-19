@@ -4,17 +4,19 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 14.12.2017
-# Last Modified Date: 13.06.2018
+# Last Modified Date: 18.06.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-import logging
+import logging, time
+from pymongo import MongoClient
+from ampel.pipeline.db.AmpelDB import AmpelDB
 from ampel.flags.LogRecordFlags import LogRecordFlags
+from ampel.pipeline.config.AmpelConfig import AmpelConfig
 
 class DBLoggingHandler(logging.Handler):
 	"""
 		Custom subclass of logging.Handler responsible for 
 		logging log events into the NoSQL database.
-		An instance of ampel.pipeline.logging.DBJobReporter is required as parameter.
 		Each database log entry contains a global flag (ampel.flags.LogRecordFlags)
 		which includes the log severity level.
 	"""
@@ -26,35 +28,37 @@ class DBLoggingHandler(logging.Handler):
 		50: LogRecordFlags.CRITICAL
 	}
 
-	def __init__(self, db_job_reporter, previous_logs=None, flush_len=1000):
-		""" """
-
-		if db_job_reporter.get_job_id() is None:
-			raise ValueError("DBJobReporter has None JobId")
-
-		self.db_job_reporter = db_job_reporter
+	def __init__(self, tier, info=None, logs_collection=None, previous_logs=None, flush_len=1000):
+		""" 
+		'tier': integer (0,1,2,3) indicating at which ampel tier level loggin is done
+		'info': optional dict instance to be include in the root doc 
+		'logs_collection': None or instance of pymongo.collection.Collection 
+			-> If None default 'stats' collection from AmpelDB will be used
+			-> otherwise, the provided logs_collection will be used
+		"""
 		self.global_flags = LogRecordFlags(0)
 		self.temp_flags = LogRecordFlags(0)
 		self.flush_len = flush_len
 		self.flush_force = flush_len + 50
-		self.compoundId = None
 		self.tranId = None
 		self.channels = None
 		self.records = []
 		self.filters = []  # required when extending logging.Handler
 		self.lock = None   # required when extending logging.Handler
 		self._name = None
+		self.has_error = False
 		self.last_rec = {'fl': -1}
-
 		self.setLevel(logging.DEBUG)
 		self.setFormatter(logging.Formatter('%(message)s'))
 
+		# Get reference to pymongo 'jobs' collection
+		self.col = AmpelDB.get_collection('jobs') if logs_collection is None else logs_collection
+
+		# Will raise Exception if DB connectivity issue exist
+		self.log_id = self.col.insert_one({"tier": tier, "info": info}).inserted_id
+
 		if previous_logs is not None:
 			self.prepend_logs(previous_logs)
-
-	def set_db_job_reporter(self, arg):
-		""" """
-		self.db_job_reporter = arg
 
 	def set_global_flags(self, arg):
 		""" """
@@ -71,14 +75,6 @@ class DBLoggingHandler(logging.Handler):
 	def unset_temp_flags(self, arg):
 		""" """
 		self.temp_flags &= ~arg
-
-	def set_compoundId(self, arg):
-		""" """
-		self.compoundId = arg
-
-	def unset_compoundId(self):
-		""" """
-		self.compoundId = None
 
 	def set_channels(self, arg):
 		""" """
@@ -100,7 +96,6 @@ class DBLoggingHandler(logging.Handler):
 		""" """
 
 		# TODO (note to self): Comment code
-
 		rec_dt = int(record.created)
 		rec_flag = (self.global_flags | self.temp_flags | DBLoggingHandler.severity_map[record.levelno]).value
 
@@ -149,9 +144,6 @@ class DBLoggingHandler(logging.Handler):
 			if self.tranId is not None:
 				rec['tr'] = self.tranId
 
-			if self.compoundId is not None:
-				rec['cp'] = self.compoundId
-
 			rec['ms'] = self.format(record) if self.channels is None else {
                 "m" : self.format(record),
                 "ch" : self.channels
@@ -160,9 +152,8 @@ class DBLoggingHandler(logging.Handler):
 			self.last_rec = rec
 			self.records.append(rec)
 
-
 		if record.levelno == 40 or record.levelno == 50:
-			self.db_job_reporter.set_has_error()
+			self.has_error = True
 
 		if len(self.records) > self.flush_force:
 			self.flush()
@@ -177,7 +168,52 @@ class DBLoggingHandler(logging.Handler):
 		self.records[0:0] = logs
 
 
-	def flush(self):
+	def get_log_id(self):
+		""" 
+		get ObjectId of document caintaing the logs
+		"""
+		return self.log_id
+
+
+	def remove_log_entry(self):
 		""" """
-		self.db_job_reporter.push_logs(self.records)
+
+		del_result = self.col.delete_one(self.log_id)
+
+		# Update result check
+		if del_result.deleted_count != 1 or del_result.acknowledged is False:
+			raise ValueError("Deletion failed: %s" % del_result.raw_result)
+
+
+	def flush(self):
+		""" 
+		Will throw Exception if DB issue exists
+		"""
+
+		# No log entries
+		if not self.records:
+			return
+
+		# Perform DB operation
+		update_result = self.col.update_one(
+			{'_id': self.log_id},
+			{
+				'$push': {
+					'records': { 
+						'$each': self.records
+					}
+				},
+				'$set': {
+					'duration': int(time.time() - self.log_id.generation_time.timestamp()),
+					'hasError': self.has_error
+				}
+			},
+			upsert=True
+		)
+
+		# Update result check
+		if update_result.modified_count != 1 or update_result.acknowledged is False:
+			raise ValueError("Modification failed: %s" % update_result.raw_result)
+
+		# Empty referenced logs entries
 		self.records = []

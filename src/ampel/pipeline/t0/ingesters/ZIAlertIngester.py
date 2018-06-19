@@ -7,26 +7,26 @@
 # Last Modified Date: 13.06.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-import logging, pymongo, time
+import logging, time
 from bson.binary import Binary
+from bson import ObjectId
 from datetime import datetime, timezone
 from pymongo.errors import BulkWriteError
+from pymongo import MongoClient, UpdateOne
 
 from ampel.abstract.AbsAlertIngester import AbsAlertIngester
-from ampel.pipeline.t0.ingesters.ZIPhotoDictShaper import ZIPhotoDictShaper
 from ampel.pipeline.t0.ingesters.CompoundBluePrintGenerator import CompoundBluePrintGenerator
-from ampel.pipeline.t0.ingesters.T2DocsBluePrint import T2DocsBluePrint
+from ampel.pipeline.t0.ingesters.ZIPhotoDictShaper import ZIPhotoDictShaper
 from ampel.pipeline.t0.ingesters.ZICompoundShaper import ZICompoundShaper
+from ampel.pipeline.t0.ingesters.T2DocsBluePrint import T2DocsBluePrint
 from ampel.pipeline.logging.LoggingUtils import LoggingUtils
-
 from ampel.flags.AmpelFlags import AmpelFlags
 from ampel.flags.PhotoFlags import PhotoFlags
 from ampel.flags.T2RunStates import T2RunStates
 from ampel.flags.AlDocTypes import AlDocTypes
 from ampel.flags.FlagUtils import FlagUtils
-
-from functools import reduce
-from operator import or_
+from ampel.pipeline.config.AmpelConfig import AmpelConfig
+from ampel.pipeline.db.AmpelDB import AmpelDB
 
 SUPERSEEDED = FlagUtils.get_flag_pos_in_enumflag(PhotoFlags.SUPERSEEDED)
 TO_RUN = FlagUtils.get_flag_pos_in_enumflag(T2RunStates.TO_RUN)
@@ -44,29 +44,25 @@ class ZIAlertIngester(AbsAlertIngester):
 	std_dbflag = FlagUtils.enumflag_to_dbflag(
 		AmpelFlags.INST_ZTF|AmpelFlags.SRC_IPAC
 	)
+	config_path = 'global.sources.ZTFIPAC'
 
-	def __init__(self, config, central_db, channels, logger=None):
+	def __init__(self, channels, logger=None):
 		"""
-		config: dict instance containing the ampel config
-		central_db: instance of pymongo.database.DataBase
-		channels: list of ampel.pipeline.config.Channel
+		channels: list of ampel.pipeline.config.Channel instances
+		logger: None or instance of logging.Logger
 		"""
 
-		if not type(channels) is list:
-			raise ValueError("Parameter channels must be of type: list")
+		if type(channels) not in (list, tuple) or not channels:
+			raise ValueError("Parameter channels must be a non-empty sequence")
 
-		if len(channels) == 0:
-			raise ValueError("Parameter channels cannot be empty")
-
-		conf = config['global']['sources']['ZTFIPAC']
 		self.channel_names = tuple(channel.name for channel in channels)
 		self.logger = LoggingUtils.get_logger() if logger is None else logger
 		self.logger.info("Configuring ZIAlertIngester for channels %s" % repr(self.channel_names))
-		
+
 		# T2 unit making use of upper limits
 		self.t2_units_using_uls = tuple(
-			key for key, value in config['t2_units'].items() 
-			if value['upperLimits'] is True
+			key for key, value in AmpelConfig.get_config('t2_units').items() 
+			if value.get('upperLimits') is True
 		)
 
 		# instantiate util classes used in method ingest()
@@ -74,17 +70,35 @@ class ZIAlertIngester(AbsAlertIngester):
 		self.t2_blueprint_creator = T2DocsBluePrint(channels, self.t2_units_using_uls)
 		self.comp_bp_generator = CompoundBluePrintGenerator(channels, ZICompoundShaper, self.logger)
 
-		self.main_col = central_db['main']
-		self.photo_col = central_db['photo']
-		self.check_reproc = conf['ingestion']['checkReprocessing']
-		self.al_hist_len = conf['alerts']['alertHistoryLength']
+		# Refs to photopoints/upperlimits and ampel main DB collections
+		self.main_col = AmpelDB.get_collection('main')
+		self.photo_col = AmpelDB.get_collection('photo')
+
+		# JD2017 is used to defined upper limits primary IDs
 		self.JD2017 = 2457754.5
+
+		# Stats
 		self.count_dict = None
+
+		# Standard projection used when checking DB for existing PPS/ULS
 		self.lookup_projection = {
 			"_id": 1, "alFlags": 1, "jd": 1, "fid": 1,
 			"rcid": 1, "alExcluded": 1, "magpsf": 1
 		}
 
+		# Global config whether to check for IPAC PPS reprocessing
+		self.check_reproc = AmpelConfig.get_config(
+			'%s.ingestion.checkReprocessing' % 
+			ZIAlertIngester.config_path
+		)
+
+		# Global config defining the std IPAC alert history length. As of June 2018: 30 days
+		self.al_hist_len = AmpelConfig.get_config(
+			'%s.alerts.alertHistoryLength' % 
+			ZIAlertIngester.config_path
+		)
+
+		# Feedback
 		self.logger.info("ZIAlertIngester setup using completed")
 
 
@@ -92,15 +106,18 @@ class ZIAlertIngester(AbsAlertIngester):
 		pass
 
 
-	def set_job_id(self, job_id):
+	def set_log_id(self, log_id):
 		"""
 		An ingester class creates/updates several documents in the DB for each alert.
 		Among other things, it updates the main transient document, 
-		which contains a list of jobIds associated with the processing of the given transient.
-		We thus need to know what is the current jobId to perform this update.
+		which contains a list of logIds associated with the processing of the given transient.
+		We thus need to know what is the current log_id to perform this update.
 		The provided parameter should be a bson ObjectId.
 		"""
-		self.job_id = job_id
+		if type(log_id) is not ObjectId:
+			raise ValueError("Illegal argument")
+
+		self.log_id = log_id
 
 
 	def set_stats_dict(self, time_dict, count_dict):
@@ -267,7 +284,7 @@ class ZIAlertIngester(AbsAlertIngester):
 
 			for pp in pps_to_insert:
 				db_photo_ops.append(
-					pymongo.UpdateOne(
+					UpdateOne(
 						{"_id": pp["_id"]},
 						{"$setOnInsert": pp},
 						upsert=True
@@ -294,7 +311,7 @@ class ZIAlertIngester(AbsAlertIngester):
 			# Insert new upper limit into DB
 			for ul in uls_to_insert:
 				db_photo_ops.append(
-					pymongo.UpdateOne(
+					UpdateOne(
 						{"_id": ul["_id"]},
 						{
 							"$setOnInsert": ul,
@@ -358,7 +375,7 @@ class ZIAlertIngester(AbsAlertIngester):
 						# Create and append pymongo update operation
 						pps_reprocs += 1
 						db_photo_ops.append(
-							pymongo.UpdateOne(
+							UpdateOne(
 								{'_id': photod_db_superseeded["_id"]}, 
 								{
 									'$addToSet': {
@@ -436,7 +453,7 @@ class ZIAlertIngester(AbsAlertIngester):
 			compound_upserts += 1
 
 			db_main_ops.append(
-				pymongo.UpdateOne(
+				UpdateOne(
 					{"_id": bson_eff_comp_id},
 					{
 						"$setOnInsert": d_set_on_insert,
@@ -570,7 +587,7 @@ class ZIAlertIngester(AbsAlertIngester):
 
 					# Append update operation to bulk list
 					db_main_ops.append(
-						pymongo.UpdateOne(
+						UpdateOne(
 							match_dict,
 							{
 								"$setOnInsert": d_set_on_insert,
@@ -595,7 +612,7 @@ class ZIAlertIngester(AbsAlertIngester):
 
 		# TODO add alFlags
 		db_main_ops.append(
-			pymongo.UpdateOne(
+			UpdateOne(
 				{
 					"tranId": tran_id,
 					"alDocType": AlDocTypes.TRANSIENT
@@ -613,7 +630,7 @@ class ZIAlertIngester(AbsAlertIngester):
 							chan_names[0] if len(chan_names) == 1 
 							else {"$each": chan_names}
 						),
-						'jobIds': self.job_id,
+						'logEntries': self.log_id,
 					},
 					"$max": {
 						"lastPPJD": pps_alert[0]["jd"],

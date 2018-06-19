@@ -45,7 +45,6 @@ COPY --from=conda /lib/x86_64-linux-gnu/libgcc_s.so.1 /usr/glibc-compat/lib/
 COPY --from=conda /opt/conda/envs /opt/conda/envs
 COPY --from=conda /Ampel /Ampel
 
-
 RUN addgroup -g 1001 ampel && \
     adduser -D -u 1001 -G ampel ampel && \
     mkdir /ztf /run/secrets && \

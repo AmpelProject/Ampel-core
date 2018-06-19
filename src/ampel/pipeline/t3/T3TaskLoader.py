@@ -4,20 +4,20 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 06.03.2018
-# Last Modified Date: 06.06.2018
+# Last Modified Date: 15.06.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
-
 
 import importlib
 from functools import reduce
+from types import MappingProxyType
+from ampel.pipeline.common.AmpelUtils import AmpelUtils
 from voluptuous import Schema, Any, Required, Optional, ALLOW_EXTRA
 
 from ampel.pipeline.logging.LoggingUtils import LoggingUtils
+from ampel.pipeline.config.AmpelConfig import AmpelConfig
 from ampel.pipeline.common.AmpelUtils import AmpelUtils
 from ampel.abstract.AbsT3Unit import AbsT3Unit
 from ampel.pipeline.t3.T3Task import T3Task
-
-
 
 class T3TaskLoader:
 	"""
@@ -55,9 +55,8 @@ class T3TaskLoader:
 
 
 	@classmethod
-	def load(cls, al_config, job_name, task_name, all_tasks_sels=None, logger=None):
+	def load(cls, job_name, task_name, all_tasks_sels=None, logger=None):
 		"""
-		al_config: dict instance containing the ampel configuration
 		job_name: name of the job parent of this task
 		task_name: name of this task
 		all_tasks_sels: used for internal optimizations
@@ -65,7 +64,7 @@ class T3TaskLoader:
 		"""
 
 		task_doc = None
-		t3_job_doc = al_config['t3_jobs'].get(job_name)
+		t3_job_doc = AmpelConfig.get_config('t3_jobs').get(job_name)
 
 		if t3_job_doc is None:
 			raise ValueError("Job %s not found" % job_name)
@@ -80,8 +79,10 @@ class T3TaskLoader:
 			for doc in t3_job_doc['task(s)']:
 
 				if doc['name'] == task_name:
-					# Get, check and set defaults of t3 task doc
-					task_doc = cls.t3_task_schema(doc)
+
+					# Get, check and set defaults of t3 task doc. Don't do it if type is 
+					# MappingProxyType since it means config was already validated
+					task_doc = doc if AmpelConfig.is_frozen() else cls.t3_task_schema(doc)
 				
 				if 'select' not in doc:
 					continue
@@ -95,9 +96,9 @@ class T3TaskLoader:
 						)
 		else:
 
-			task_doc = cls.t3_task_schema(
-				next(filter(lambda x: x['name'] == task_name, t3_job_doc['task(s)']))
-			)
+			task_doc = next(filter(lambda x: x['name'] == task_name, t3_job_doc['task(s)']))
+			if not AmpelConfig.is_frozen(): # validate task doc if not done previously
+				task_doc = cls.t3_task_schema(task_doc)
 
 		if task_doc is None:
 			raise ValueError("Task %s not found" % task_name)
@@ -109,9 +110,16 @@ class T3TaskLoader:
 
 		# Link to run_config dict
 		if task_doc.get('runConfig') is not None:
-			t3_run_config_doc = al_config['t3_run_config'][
-				"%s_%s" % (task_doc['t3Unit'], task_doc['runConfig'])
-			] 
+
+			t3_run_config_doc = AmpelConfig.get_config(
+				't3_run_config.%s_%s' % (task_doc['t3Unit'], task_doc['runConfig'])
+			)
+
+			if t3_run_config_doc is None:
+				raise ValueError(
+					"Run config %s_%s not found, please check your config" %
+					(task_doc['t3Unit'], task_doc['runConfig'])
+				)
 
 		# Setup logger
 		logger = LoggingUtils.get_logger() if logger is None else logger
@@ -286,21 +294,19 @@ class T3TaskLoader:
 		# Load T3 Unit
 		##############
 
-		if al_config['t3_units'].get(t3_unit_name) is None:
+		logger.info("Loading T3 unit details: %s" % t3_unit_name)
+
+		# Get, check and set defaults of t3 unit doc
+		t3_unit_doc = AmpelConfig.get_config('t3_units.%s' % t3_unit_name, cls.t3_unit_schema)
+
+		if t3_unit_doc is None:
 			raise ValueError(
 				"Unknown T3 unit: %s. Please check the 't3_units' config" % t3_unit_name
 			)
 
-		logger.info("Loading T3 unit details: %s" % t3_unit_name)
-
-		# Get, check and set defaults of t3 unit doc
-		t3_unit_doc = cls.t3_unit_schema(
-			al_config['t3_units'].get(t3_unit_name)
-		)
-
 		# Load optional dict 'baseConfig' from document
 		# config_schema ensures task_doc['baseConfig'] is set to None if not provided
-		if t3_unit_doc['baseConfig'] is not None:
+		if t3_unit_doc.get('baseConfig', None) is not None:
 			logger.info(" -> Base config: %s" % t3_unit_doc['baseConfig'])
 		else:
 			logger.info(" -> No base config available")
@@ -321,7 +327,7 @@ class T3TaskLoader:
 			cls.t3_classes[t3_unit_doc['classFullPath']] = T3_class
 
 		return T3Task(
-			task_doc, T3_class, t3_unit_doc['baseConfig'], t3_run_config_doc
+			task_doc, T3_class, t3_unit_doc.get('baseConfig',None), t3_run_config_doc
 		)
 
 
@@ -329,7 +335,7 @@ class T3TaskLoader:
 	def get_config(doc, key):
 		"""
 		"""
-		return reduce(dict.get, key.split("."), doc)
+		return AmpelUtils.get_by_path(doc, key)
 
 
 	@classmethod

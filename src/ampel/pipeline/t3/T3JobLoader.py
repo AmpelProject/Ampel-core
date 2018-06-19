@@ -4,16 +4,19 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 07.06.2018
-# Last Modified Date: 14.06.2018
+# Last Modified Date: 15.06.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from functools import reduce
+from types import MappingProxyType
+from ampel.pipeline.common.AmpelUtils import AmpelUtils
 from voluptuous import Schema, Required, Any, Optional, ALLOW_EXTRA
 
 from ampel.pipeline.t3.T3Job import T3Job
 from ampel.pipeline.t3.T3TaskLoader import T3TaskLoader
 from ampel.pipeline.t3.TimeConstraint import TimeConstraint
 from ampel.pipeline.common.AmpelUtils import AmpelUtils
+from ampel.pipeline.config.AmpelConfig import AmpelConfig
 from ampel.pipeline.logging.LoggingUtils import LoggingUtils
 
 class T3JobLoader:
@@ -71,7 +74,7 @@ class T3JobLoader:
 	)
 
 	@classmethod
-	def load(cls, al_config, job_name, logger=None):
+	def load(cls, job_name, logger=None):
 		"""
 		This class is mainly made of config validity tests.
 		NOTE: channel name existence is not checked on purpose.
@@ -80,11 +83,14 @@ class T3JobLoader:
 		if logger is None:
 			logger = LoggingUtils.get_logger()
 
-		if al_config['t3_jobs'].get(job_name) is None:
+		# Get, check and set defaults of t3 task doc 
+		job_doc = AmpelConfig.get_config('t3_jobs.%s' % job_name, cls.job_schema)
+
+		if job_doc is None:
 			raise ValueError("Job %s not found" % job_name)
 
 		logger.info("Loading job %s" % job_name)
-		job_doc = cls.job_schema(al_config['t3_jobs'].get(job_name))
+
 		input_select = cls.get_config(job_doc, 'input.select')
 		t3_tasks = []
 		all_tasks_sels = {} 
@@ -116,7 +122,7 @@ class T3JobLoader:
 		# Load and check tasks
 		for task_doc in job_doc['task(s)']:
 			t3_tasks.append(
-				T3TaskLoader.load(al_config, job_name, task_doc['name'], all_tasks_sels, logger)
+				T3TaskLoader.load(job_name, task_doc['name'], all_tasks_sels, logger)
 			)
 
 		return T3Job(job_name, job_doc, t3_tasks)
@@ -126,4 +132,4 @@ class T3JobLoader:
 	def get_config(job_doc, param_name):
 		"""
 		"""
-		return reduce(dict.get, param_name.split("."), job_doc)
+		return AmpelUtils.get_by_path(job_doc, param_name)

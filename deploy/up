@@ -18,8 +18,9 @@ if [[ "$1" == "dryrun" ]]; then
 	singularity-stack rm $machine
 	sleep 1
 	if [[ "$machine" == "burst" ]]; then
-		with_env sh -c 'echo "clearing $MONGO_PATH"'
-		with_env sh -c 'rm -r $MONGO_PATH/*'
+		echo 'not clearing anything'
+		#with_env sh -c 'echo "clearing $MONGO_PATH"'
+		#with_env sh -c 'rm -r $MONGO_PATH/*'
 		#with_env sh -c 'echo "clearing $CATALOG_PATH"'
 		#with_env sh -c 'rm -r $CATALOG_PATH/*'
 	fi
