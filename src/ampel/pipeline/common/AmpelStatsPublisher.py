@@ -67,6 +67,10 @@ class AmpelStatsPublisher(Schedulable):
 			else channel_names
 		)
 
+		# Optional override of AmpelConfig defaults
+		if central_db is not None:
+			AmpelDB.set_central_db_name(central_db)
+
 		# Which stats to publish (see doctring)
 		self.publish_stats = publish_stats
 
