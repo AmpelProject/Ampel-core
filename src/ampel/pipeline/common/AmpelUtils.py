@@ -141,8 +141,10 @@ class AmpelUtils():
 		Get an item from a nested mapping by path, e.g.
 		'foo.bar.baz' -> mapping['foo']['bar']['baz']
 		"""
-		return reduce(lambda d, k: d.get(k), path.split(delimiter), mapping)
-
+		try:
+			return reduce(lambda d, k: d.get(k), path.split(delimiter), mapping)
+		except AttributeError:
+			return None
 
 	@staticmethod
 	def report_exception(logger, further_info=None):
