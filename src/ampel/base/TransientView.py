@@ -22,8 +22,8 @@ class TransientView(Frozen):
 		* ampel.base.Compound
 		* ampel.base.LightCurve
 		* ampel.base.T2Record
-	Instances of this class are typically generated using a TransientData instance 
-	created by DBContentLoader and provided to T3 modules.
+	Instances of this class are provided to T3 modules and are typically 
+	generated using a TransientData instance created by DBContentLoader.
 	"""
 
 	def __init__(self, 
@@ -212,7 +212,7 @@ class TransientView(Frozen):
 		if format_time is None:
 			return entry['dt']
 		else:
-			return datetime.utcfromtimestamp(entry['dt']).strftime(
+			return datetime.fromtimestamp(entry['dt']).strftime(
 				'%d/%m/%Y %H:%M:%S' if format_time is True else format_time
 			)
 
