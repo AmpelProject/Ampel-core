@@ -4,24 +4,25 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 26.02.2018
-# Last Modified Date: 18.06.2018
+# Last Modified Date: 21.06.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from ampel.pipeline.db.query.QueryMatchTransients import QueryMatchTransients
 from ampel.pipeline.db.query.QueryLatestCompound import QueryLatestCompound
 from ampel.pipeline.db.DBContentLoader import DBContentLoader
+from ampel.pipeline.db.AmpelDB import AmpelDB
 from ampel.pipeline.logging.DBLoggingHandler import DBLoggingHandler
 from ampel.pipeline.logging.LoggingUtils import LoggingUtils
-from ampel.pipeline.t3.TimeConstraint import TimeConstraint
-from ampel.pipeline.db.AmpelDB import AmpelDB
 from ampel.pipeline.common.AmpelUtils import AmpelUtils
+from ampel.pipeline.t3.TimeConstraint import TimeConstraint
 from ampel.flags.TransientFlags import TransientFlags
 from ampel.flags.AlDocTypes import AlDocTypes
 from ampel.flags.FlagUtils import FlagUtils
+
 from datetime import datetime, timezone
 from itertools import islice
-
 from pymongo import MongoClient
+from time import time
 
 def chunk(iter, chunk_size):
 	while True:
@@ -39,13 +40,13 @@ class T3JobExecution:
 		""" 
 		'central_db': string. Use provided DB name rather than Ampel default database ('Ampel')
 
-		logger: 
+		'logger': 
 			-> If None, a new logger using a DBLoggingHandler will be created, which means a new 
 			log document will be inserted into the 'logs' collection of the central db.
 			-> If you provide a logger, please note that it will *NOT* be changed in any way, 
 			in particular: no DBLoggingHandler will be added, which means that no DB logging will occur.
 
-		propagate_logs: 
+		'propagate_logs': 
 			If this evaluates to true, events logged using 'logger' will be passed to the handlers 
 			of higher level (ancestor) loggers, in addition to any handlers attached to 'logger'. 
 			If this evaluates to false, logging messages are not passed to the handlers of ancestor loggers.
@@ -127,6 +128,8 @@ class T3JobExecution:
 
 		# TODO: try/catch with Ampel 'troubles' insert
 
+		time_now = time()
+
 		# T3 job requiring prior transient loading 
 		if self.t3_job.get_config('input.select') is not None:
 
@@ -155,6 +158,7 @@ class T3JobExecution:
 
 			# Update Transient journal with dict containing date, channels and name of the task
 			if t3_task.get_config('updateJournal') is True:
+
 				mongo_res = self.tran_col.update_many(
 					{
 						'alDocType': AlDocTypes.TRANSIENT, 
@@ -177,19 +181,32 @@ class T3JobExecution:
 				if mongo_res.raw_result["nModified"] != len(ret):
 					pass # populate ampel_troubles !
 
-		# Record last time this job was run into DB
+
+		# Record job info into DB
 		AmpelDB.get_collection('runs').update_one(
-			{'_id': self.t3_job.job_name},
+			{'_id': int(datetime.today().strftime('%Y%m%d'))},
 			{
-				'$set': {
-					'lastRun': datetime.now(timezone.utc).timestamp()
+				'$push': {
+					'jobs': {
+						'tier': 3,
+						'job': self.t3_job.job_name,
+						'dt': datetime.now(timezone.utc).timestamp(),
+						'logs': (
+							self.db_logging_handler.get_log_id() if hasattr(self, 'db_logging_handler') 
+							else None
+						),
+						'metrics': {
+							'duration': int(time() - time_now)
+						}
+					}
 				}
 			},
 			upsert=True
 		)
 
 		# Write log entries to DB
-		self.db_logging_handler.flush()
+		if hasattr(self, 'db_logging_handler'):
+			self.db_logging_handler.flush()
 
 
 	def get_selected_transients(self):
@@ -222,18 +239,19 @@ class T3JobExecution:
 
 		return trans_cursor
 
+
 	def get_chunks(self, db_content_loader, trans_cursor, chunk_size):
 		"""
 		Yield selected TransientData in chunks of length `chunk_size`
 		"""
 		# Load ids (chunk_size number of ids)
 		for chunked_tran_ids in chunk(map(lambda el: el['tranId'], trans_cursor), chunk_size):
+
 			self.logger.info("Loading %i transient(s) " % len(chunked_tran_ids))
-			state_op = self.exec_params['state_op']
 			states = None
 
 			# For '$latest' state, the latest compoundid of each transient must be determined
-			if state_op == "$latest":
+			if self.exec_params['state_op'] == "$latest":
 
 				self.logger.info("Retrieving latest state")
 
@@ -262,8 +280,14 @@ class T3JobExecution:
 					# get latest state (fast mode) 
 					# Output example:
 					# [
-					# {'_id': '5de2480f28bfca0bd3baae890cb2d2ae', 'tranId': 'ZTF18aaayyuq'},
-						# {'_id': '5fcdeda5e116989a69f6cbbde7234654', 'tranId': 'ZTF18aaabikt'},
+					# {
+					#	'_id': Binary(b']\xe2H\x0f(\xbf\xca\x0b\xd3\xba\xae\x89\x0c\xb2\xd2\xae', 5), 
+					#	'tranId': 1810101034343026   # (ZTF18aaayyuq)
+					# },
+					# {
+					#	'_id': Binary(b'_\xcd\xed\xa5\xe1\x16\x98\x9ai\xf6\xcb\xbd\xe7#FT', 5), 
+					#	'tranId': 1810101011182029   # (ZTF18aaabikt)
+					# },
 					# ...
 					# ]
 					states.update(
@@ -312,13 +336,14 @@ class T3JobExecution:
 			# Load ampel TransientData instances with given state(s)
 			self.logger.info("Loading transient(s)")
 			al_tran_data = db_content_loader.load_new(
-				chunked_tran_ids, self.exec_params['channels'], state_op, states, 
-				self.exec_params['docs'], self.exec_params['t2s'], 
+				chunked_tran_ids, self.exec_params['channels'], self.exec_params['state_op'], 
+				states, self.exec_params['docs'], self.exec_params['t2s'], 
 				self.exec_params['feedback'], self.exec_params['verbose_feedback']
 			)
 			
 			yield al_tran_data
 	
+
 	def process_chunk(self, al_tran_data):
 		"""
 		:param al_tran_data: dict of transient info
