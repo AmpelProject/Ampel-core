@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 13.01.2018
-# Last Modified Date: 14.06.2018
+# Last Modified Date: 21.06.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 
@@ -92,8 +92,9 @@ class QueryMatchTransients:
 		'oid_match': is the targeted field value an ObjectId or not
 		"""
 		if tc_obj.has_constraint():
-			query[target_field] = {}
 			for key, op in {'from': '$gte', 'until': '$lte'}.items():
 				val = tc_obj.get(key)
 				if val is not None:
+					if target_field not in query:
+						query[target_field] = {}
 					query[target_field][op] = ObjectId.from_datetime(val) if oid_match else val.timestamp()
