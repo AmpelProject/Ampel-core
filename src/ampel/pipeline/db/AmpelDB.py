@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 16.06.2018
-# Last Modified Date: 17.06.2018
+# Last Modified Date: 21.06.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from ampel.pipeline.config.AmpelConfig import AmpelConfig
@@ -15,39 +15,44 @@ class AmpelDB:
 	"""
 
 	_db_names = {
-		'main': 'Ampel',
-		'logs': 'Ampel_logs'
+		'data': 'Ampel_data',
+		'logs': 'Ampel_logs',
+		'reports': 'Ampel_reports'
 	}
 
 	# None will be replaced by instance of pymongo.collection.Collection the first time
 	# that AmpelDB.get_collection(...) is called for a given collection
 	_existing_cols = {
-		'main': {
+		'data': {
 			'main': None,
-			'photo': None,
-			'stats': None,
-			'runs': None,
+			'photo': None
 		},
 		'logs': {
 			'jobs': None,
 			'troubles': None
+		},
+		'reports': {
+			'runs': None
 		}
 	}
 
 	# Existing mongo clients
 	_existing_mcs = {
-		'main': None,
-		'logs': None
+		'data': None,
+		'logs': None,
+		'reports': None
 	}
 
 	_db_config_roles = {
-		'main': 'writer',
-		'logs': 'logger'
+		'data': 'writer',
+		'logs': 'logger',
+		'reports': 'logger'
 	}
 
 	db_contact = {
-		'main': False,	
+		'data': False,	
 		'logs': False,	
+		'reports': False
 	}
 
 
@@ -55,7 +60,7 @@ class AmpelDB:
 	def set_central_db_name(cls, db_name):
 		"""
 		"""
-		cls._db_names['main'] = db_name
+		cls._db_names['data'] = db_name
 
 
 	@classmethod
@@ -118,7 +123,7 @@ class AmpelDB:
 		""" """ 
 		from pymongo import MongoClient
 
-		# If a mongoclient does not already exists for this db_label (ex: 'main')
+		# If a mongoclient does not already exists for this db_label (ex: 'data')
 		if cls._existing_mcs[db_label] is None:
 
 			# As of Juli 2018: 'Ampel' -> 'writer' and 'Ampel_logs' -> 'logger'
