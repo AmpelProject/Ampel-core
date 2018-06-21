@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 31.05.2018
-# Last Modified Date: 13.06.2018
+# Last Modified Date: 22.06.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import logging, pymongo
@@ -154,13 +154,12 @@ class TransientData:
 						if entry not in entries:
 							entries.append(entry)
 
-			selected_channels = [c for c in channels if c in self.compounds.keys()]
 			return TransientView(
 				self.tran_id, self.flags, None, None, # created, modified
 				entries, latest_state, photopoints, upperlimits, all_comps,
 				self._get_combined_elements(self.lightcurves, channels),
 				self._get_combined_elements(self.science_records, channels),
-				selected_channels, self.logger
+				tuple(self.known_channels & set(channels)), self.logger
 			)
 
 
