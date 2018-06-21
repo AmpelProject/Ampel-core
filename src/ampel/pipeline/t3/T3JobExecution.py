@@ -23,6 +23,14 @@ from itertools import islice
 
 from pymongo import MongoClient
 
+def chunk(iter, chunk_size):
+	while True:
+		group = list(islice(iter, chunk_size))
+		if len(group) > 0:
+			yield group
+		else:
+			break
+
 class T3JobExecution:
 	"""
 	"""
@@ -135,8 +143,9 @@ class T3JobExecution:
 				if chunk_size is None:
 					chunk_size = trans_cursor.count()
 
-				while self.process_chunk(dcl, trans_cursor, chunk_size) == chunk_size:
+				for chunk in self.get_chunks(dcl, trans_cursor, chunk_size):
 					self.logger.info("Processing next chunk")
+					self.process_chunk(chunk)
 
 		# For each task, create transientView and run task
 		for t3_task in self.t3_job.get_tasks():
@@ -213,107 +222,107 @@ class T3JobExecution:
 
 		return trans_cursor
 
-
-	def process_chunk(self, db_content_loader, trans_cursor, chunk_size):
+	def get_chunks(self, db_content_loader, trans_cursor, chunk_size):
 		"""
-		db_content_loader: instance of DBContentLoader
+		Yield selected TransientData in chunks of length `chunk_size`
 		"""
-
 		# Load ids (chunk_size number of ids)
-		chunked_tran_ids = [el['tranId'] for el in islice(trans_cursor, chunk_size)]
+		for chunked_tran_ids in chunk(map(lambda el: el['tranId'], trans_cursor), chunk_size):
+			self.logger.info("Loading %i transient(s) " % len(chunked_tran_ids))
+			state_op = self.exec_params['state_op']
+			states = None
 
-		if len(chunked_tran_ids) == 0:
-			self.logger.info("Job done")
-			return
+			# For '$latest' state, the latest compoundid of each transient must be determined
+			if state_op == "$latest":
 
-		self.logger.info("Loading %i transient(s) " % len(chunked_tran_ids))
-		state_op = self.exec_params['state_op']
-		states = None
+				self.logger.info("Retrieving latest state")
 
-		# For '$latest' state, the latest compoundid of each transient must be determined
-		if state_op == "$latest":
-
-			self.logger.info("Retrieving latest state")
-
-			# See for which ids the fast query cannot be used (save results in a set)
-			slow_ids = set(
-				el['tranId'] for el in trans_cursor.collection.find(
-					{
-						'tranId': {
-							'$in': chunked_tran_ids
+				# See for which ids the fast query cannot be used (save results in a set)
+				slow_ids = set(
+					el['tranId'] for el in trans_cursor.collection.find(
+						{
+							'tranId': {
+								'$in': chunked_tran_ids
+							},
+							'alDocType': AlDocTypes.COMPOUND, 
+							'tier': {'$ne': 0}
 						},
-						'alDocType': AlDocTypes.COMPOUND, 
-						'tier': {'$ne': 0}
-					},
-					{'_id':0, 'tranId':1}
-				).batch_size(chunk_size)
-			)
-
-			# set of states
-			states = set()
-
-			# Channel/Channels must be provided if state is 'latest'
-			# Get latest state ** for each channel **
-			channels = self.exec_params['channels']
-			for channel in channels if type(channels) is not str else [channels]:
-
-				# get latest state (fast mode) 
-				# Output example:
-				# [
-				# {'_id': '5de2480f28bfca0bd3baae890cb2d2ae', 'tranId': 'ZTF18aaayyuq'},
-					# {'_id': '5fcdeda5e116989a69f6cbbde7234654', 'tranId': 'ZTF18aaabikt'},
-				# ...
-				# ]
-				states.update(
-					[
-						el['_id'] for el in trans_cursor.collection.aggregate(
-							QueryLatestCompound.fast_query(
-								slow_ids.symmetric_difference(chunked_tran_ids), 
-								channel
-							)
-						).batch_size(chunk_size)
-					]
+						{'_id':0, 'tranId':1}
+					).batch_size(chunk_size)
 				)
 
-				# TODO: check result length ?
+				# set of states
+				states = set()
 
+				# Channel/Channels must be provided if state is 'latest'
+				# Get latest state ** for each channel **
+				channels = self.exec_params['channels']
+				for channel in channels if type(channels) is not str else [channels]:
 
-				# get latest state (general mode) for the remaining transients
-				for tran_id in slow_ids:
-
-					# get latest state for single transients using general query
-					g_latest_state = next(
-						trans_cursor.collection.aggregate(
-							QueryLatestCompound.general_query(
-								tran_id, project={
-									'$project': {'_id':1}
-								}
-							)
-						).batch_size(chunk_size),
-						None
+					# get latest state (fast mode) 
+					# Output example:
+					# [
+					# {'_id': '5de2480f28bfca0bd3baae890cb2d2ae', 'tranId': 'ZTF18aaayyuq'},
+						# {'_id': '5fcdeda5e116989a69f6cbbde7234654', 'tranId': 'ZTF18aaabikt'},
+					# ...
+					# ]
+					states.update(
+						[
+							el['_id'] for el in trans_cursor.collection.aggregate(
+								QueryLatestCompound.fast_query(
+									slow_ids.symmetric_difference(chunked_tran_ids), 
+									channel
+								)
+							).batch_size(chunk_size)
+						]
 					)
 
-					# Robustness
-					if g_latest_state is None:
-						# TODO: add error flag to transient doc ?
-						# TODO: add error flag to job doc
-						# TODO: add doc to Ampel_troubles
-						self.logger.error(
-							"Could not retrieve latest state for transient %s" % 
-							tran_id
+					# TODO: check result length ?
+
+
+					# get latest state (general mode) for the remaining transients
+					for tran_id in slow_ids:
+
+						# get latest state for single transients using general query
+						g_latest_state = next(
+							trans_cursor.collection.aggregate(
+								QueryLatestCompound.general_query(
+									tran_id, project={
+										'$project': {'_id':1}
+									}
+								)
+							).batch_size(chunk_size),
+							None
 						)
-						continue
 
-					states.add(g_latest_state['_id'])
+						# Robustness
+						if g_latest_state is None:
+							# TODO: add error flag to transient doc ?
+							# TODO: add error flag to job doc
+							# TODO: add doc to Ampel_troubles
+							self.logger.error(
+								"Could not retrieve latest state for transient %s" % 
+								tran_id
+							)
+							continue
+
+						states.add(g_latest_state['_id'])
 
 
-		# Load ampel TransientData instances with given state(s)
-		self.logger.info("Loading transient(s)")
-		al_tran_data = db_content_loader.load_new(
-			chunked_tran_ids, self.exec_params['channels'], state_op, states, 
-			self.exec_params['docs'], self.exec_params['t2s'], 
-			self.exec_params['feedback'], self.exec_params['verbose_feedback']
-		)
+			# Load ampel TransientData instances with given state(s)
+			self.logger.info("Loading transient(s)")
+			al_tran_data = db_content_loader.load_new(
+				chunked_tran_ids, self.exec_params['channels'], state_op, states, 
+				self.exec_params['docs'], self.exec_params['t2s'], 
+				self.exec_params['feedback'], self.exec_params['verbose_feedback']
+			)
+			
+			yield al_tran_data
+	
+	def process_chunk(self, al_tran_data):
+		"""
+		:param al_tran_data: dict of transient info
+		"""
 
 		# For each task, create transientView and run task
 		for t3_task in self.t3_job.get_tasks():
@@ -352,5 +361,3 @@ class T3JobExecution:
 			# Run T3 instance
 			self.logger.info("Adding TransientView instances to T3 unit %s" % t3_unit.__class__)
 			t3_unit.add(tran_views)
-
-		return len(chunked_tran_ids)
