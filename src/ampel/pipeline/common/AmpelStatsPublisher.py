@@ -34,8 +34,8 @@ class AmpelStatsPublisher(Schedulable):
 	def __init__(
 		self, central_db=None, graphite_feeder=None, archive_client=None,
 		channel_names=None, publish_stats=['graphite', 'mongo', 'print'],
-		update_intervals={'col_stats': 5, 'docs_count': 10, 'daemon': 2, 
-		'channels': 5, 'alerts_count': 10}
+		update_intervals={'col_stats': 5, 'docs_count': 10, 'daemon': 2, 'channels': 5}
+		#'channels': 5, 'alerts_count': 10}
 	):
 		"""
 		Parameters:
@@ -110,11 +110,11 @@ class AmpelStatsPublisher(Schedulable):
 	def send_all_metrics(self):
 		"""
 		"""
-		self.send_metrics(True, True, True, True, True)
+		self.send_metrics(True, True, True, True, False)
 
 
 	def send_metrics(
-		self, daemon=False, col_stats=False, docs_count=False, channels=False, t0=False
+		self, daemon=False, col_stats=False, docs_count=False, channels=False, alerts_count=False
 	):
 		"""
 		"""
@@ -187,34 +187,34 @@ class AmpelStatsPublisher(Schedulable):
 			}
 
 
-		if t0:
-
-			res = next(
-				AmpelDB.get_collection("stats").aggregate(
-					[
-						#{
-						#	"$match": { 
-						#		# TODO: add time constrain here 
-								# example: since last AMPEL start
-						#	}
-						#},
-						{
-   							"$group": {
-            					"_id": 1,
-            					"alProcessed": {
-									"$sum": "$count.t0Job.alProcessed"
-								}
-							}
-						}
-					]
-				), None
-			)
-
-			if res is None: 
-				# TODO: something
-				pass
-
-			dbinfo_dict['alertsCount'] = res['alProcessed']
+#		if alerts_count:
+#
+#			res = next(
+#				AmpelDB.get_collection("runs").aggregate(
+#					[
+#						#{
+#						#	"$match": { 
+#						#		# TODO: add time constrain here 
+#								# example: since last AMPEL start
+#						#	}
+#						#},
+#						{
+#   							"$group": {
+#            					"_id": 1,
+#            					"alProcessed": {
+#									"$sum": "$jobs.job.metrics.count.t0Job.alProcessed"
+#								}
+#							}
+#						}
+#					]
+#				), None
+#			)
+#
+#			if res is None: 
+#				# TODO: something
+#				pass
+#
+#			dbinfo_dict['alertsCount'] = res['alProcessed']
 
 		stat_dict = {'dbinfo': dbinfo_dict} if len(dbinfo_dict) > 0 else {}
 
