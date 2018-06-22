@@ -64,17 +64,17 @@ def get_marshal_html(weblink, attempts=1, max_attempts=5, marshalusr=None,marsha
 
                 
 	try:
-		reponse = requests.get(weblink, auth=auth, timeout=120+60*attempt)
+		reponse = requests.get(weblink, auth=auth, timeout=120+60*attempts)
 	
 	except Exception as e:		
 
 		print ('Sergeant.get_marshal_html(): ', weblink)
 		print (e)
-		print ('Sergeant.get_marshal_html(): this is our {0:0} attempt, {1:1} left'.format(attempt, max_attempts))
+		print ('Sergeant.get_marshal_html(): this is our {0:0} attempt, {1:1} left'.format(attempts, max_attempts))
 
 		if attempts<max_attempts:
 			time.sleep(3)
-			reponse.text = get_marshal_html(weblink, attempts=attempts+1, , max_attempts=max_attempts, marshalusr=None,marshalpwd=None)	
+			reponse.text = get_marshal_html(weblink, attempts=attempts+1, max_attempts=max_attempts, marshalusr=None,marshalpwd=None)	
 		else:
 			print ('Sergeant.get_marshal_html(): giving up')
 			raise(requests.exceptions.ConnectionError)
