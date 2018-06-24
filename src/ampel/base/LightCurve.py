@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 13.01.2018
-# Last Modified Date: 08.06.2018
+# Last Modified Date: 24.06.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import operator
@@ -154,12 +154,12 @@ class LightCurve(Frozen):
 			return (ras/len(ras), decs/len(decs))
 
 		elif ret == "brightest": 
-			mags = pps.copy()
+			mags = list(pps)
 			mags.sort(key=lambda x: x.get_value('magpsf'))
 			return (mags[-1].get_value('ra'), mags[-1].get_value('dec'))
 
 		elif ret == "latest": 
-			mags = pps.copy()
+			mags = list(pps)
 			mags.sort(key=lambda x: x.get_value('obs_date'))
 			return (mags[-1].get_value('ra'), mags[-1].get_value('dec'))
 
