@@ -166,16 +166,24 @@ class AmpelAlertPlotter:
 		# dectections and upper limits
 		mag, mag_err, jd, fid = [
 			np.array(x) for x in zip(*ampel_alert.get_ntuples(["magpsf", "sigmapsf", "jd","fid"]))]
-		ul_mag_lim, ul_jd, ul_fid = [
-			np.array(x) for x in zip(*ampel_alert.get_ntuples(["diffmaglim", "jd","fid"], upper_limits=True))]
+		
+		# if there are upper limits get them
+		try:
+			ul_mag_lim, ul_jd, ul_fid = [
+				np.array(x) for x in zip(*ampel_alert.get_ntuples(["diffmaglim", "jd","fid"], upper_limits=True))]
+			has_ulim = True
+		except ValueError:
+			has_ulim = False
 		
 		# convert the time
 		if time_format == 'datetime':
 			time = Time(jd, format='jd').datetime
-			ul_time = Time(ul_jd, format='jd').datetime
+			if has_ulim:
+				ul_time = Time(ul_jd, format='jd').datetime
 		elif time_format == 'jd':
 			time = Time(jd, format='jd')
-			ul_time = Time(ul_jd, format='jd')
+			if has_ulim:
+				ul_time = Time(ul_jd, format='jd')
 		else:
 			raise ValueError("got %s as value for 'time_format'. Available are 'jd' and 'datetime'")
 		
@@ -197,12 +205,13 @@ class AmpelAlertPlotter:
 					x=time[f_mask], y=mag[f_mask], xerr=None, yerr=mag_err[f_mask],
 					label=label, mfc=color, **self.__class__.lc_marker_props)
 			
-			# plot ulims
-			ul_f_mask = (ul_fid == ifilter)
-			if any(ul_f_mask):
-				ax.errorbar(
-					ul_time[ul_f_mask], ul_mag_lim[ul_f_mask], yerr=0.2, lolims=True,
-					color=color, ls="None", label="_no_legend_")
+			# plot ulims if available
+			if has_ulim:
+				ul_f_mask = (ul_fid == ifilter)
+				if any(ul_f_mask):
+					ax.errorbar(
+						ul_time[ul_f_mask], ul_mag_lim[ul_f_mask], yerr=0.2, lolims=True,
+						color=color, ls="None", label="_no_legend_")
 		
 		# single-out latest detection
 		ax.errorbar(
