@@ -4,7 +4,7 @@
 # First author      : Tiara Hung <tiarahung@astro.umd.edu>  
 # Second author 	: Sjoert van Velzen <sjoert@umd.edu>
 # Date              : 12.04.2018
-# Last Modified Date: 18.04.2018
+# Last Modified Date: 26.06.2018
 # Last Modified By  : Sjoert 
 from __future__ import print_function
 
@@ -48,25 +48,20 @@ httpErrors = {
 
 class PTFConfig(object) :
 	def __init__(self) :		
-		self.fname = os.path.expanduser('~/.ptfconfig.cfg')
+		self.config_fname = os.path.expanduser('~/.ptfconfig.cfg')
 		self.config = configparser.ConfigParser()
-		self.config.read(self.fname)
+		self.config.read(self.config_fname)
 	def get(self,*args,**kwargs) :
 		return self.config.get(*args,**kwargs)
 
 def get_marshal_html(weblink, attempts=1, max_attempts=5, marshalusr=None,marshalpwd=None):
-
-		if marshalusr is None:
-			conf = PTFConfig()
-			auth = requests.auth.HTTPBasicAuth(conf.get('Marshal', 'user'), conf.get('Marshal', 'passw'))
-		else:
-			auth = requests.auth.HTTPBasicAuth(marshalusr, marshalpwd)
-
+			
+	auth = requests.auth.HTTPBasicAuth(marshalusr, marshalpwd)
 				
 	try:
 		reponse = requests.get(weblink, auth=auth, timeout=120+60*attempts)
 	
-	except Exception as e:		
+	except Exception as e:
 
 		print ('Sergeant.get_marshal_html(): ', weblink)
 		print (e)
@@ -74,7 +69,7 @@ def get_marshal_html(weblink, attempts=1, max_attempts=5, marshalusr=None,marsha
 
 		if attempts<max_attempts:
 			time.sleep(3)
-			reponse.text = get_marshal_html(weblink, attempts=attempts+1, max_attempts=max_attempts, marshalusr=None,marshalpwd=None)	
+			reponse.text = get_marshal_html(weblink, attempts=attempts+1, max_attempts=max_attempts)	
 		else:
 			print ('Sergeant.get_marshal_html(): giving up')
 			raise(requests.exceptions.ConnectionError)
@@ -88,11 +83,11 @@ def post_marshal_cgi(weblink,data=None,attempts=1,max_attempts=5,marshalusr=None
 	Run one of the growth cgi scripts, check results and return
 	"""
 	
-	if marshalusr is None:
-		conf = PTFConfig()
-		auth = requests.auth.HTTPBasicAuth(conf.get('Marshal', 'user'), conf.get('Marshal', 'passw'))
-	else:
-		auth = requests.auth.HTTPBasicAuth(marshalusr, marshalpwd)
+	# option to overwrite default username from __init__
+	if (marshalusr is None) or (marshalpwd is None):
+		marshalusr, marshalpwd  = self.marshalusr, self.marshalpwd	
+	
+	auth = requests.auth.HTTPBasicAuth(marshalusr, marshalpwd)
 	
 	try:
 		response = requests.post(weblink, auth=auth, data=data,timeout=120+60*attempts)
@@ -104,7 +99,7 @@ def post_marshal_cgi(weblink,data=None,attempts=1,max_attempts=5,marshalusr=None
 
 		if attempts<max_attempts:
 			time.sleep(3)
-			response = post_marshal_cgi(weblink, attempts=attempts+1, marshalusr=None,marshalpwd=None)	
+			response = post_marshal_cgi(weblink, attempts=attempts+1, marshalusr=marshalusr,marshalpwd=marshalpwd)	
 		else:
 			print ('Sergeant.post_marshal_cgi(): giving up')
 			raise(requests.exceptions.ConnectionError)
@@ -122,7 +117,7 @@ def json_obj(weblink,data=None,verbose=False, marshalusr=None,marshalpwd=None):
 
 		if verbose : print("Trying to post to marshal: "+weblink)
 		
-		r = post_marshal_cgi(weblink,data=data, marshalusr=None,marshalpwd=None)
+		r = post_marshal_cgi(weblink,data=data, marshalusr=marshalusr,marshalpwd=marshalpwd)
 		print(r)
 		status = r.status_code
 		print(status)
@@ -147,10 +142,10 @@ def json_obj(weblink,data=None,verbose=False, marshalusr=None,marshalpwd=None):
 		
 
 def soup_obj(url, marshalusr=None,marshalpwd=None):
-	return BeautifulSoup(get_marshal_html(url, marshalusr=None,marshalpwd=None), 'lxml')
+	return BeautifulSoup(get_marshal_html(url, marshalusr=marshalusr,marshalpwd=marshalpwd), 'lxml')
 
 def save_source(candid, progid, marshalusr=None,marshalpwd=None):
-	return BeautifulSoup(get_marshal_html(saving_url %(candid, progid), marshalusr=None,marshalpwd=None), 'lxml') 
+	return BeautifulSoup(get_marshal_html(saving_url %(candid, progid), marshalusr=marshalusr,marshalpwd=marshalpwd), 'lxml') 
 
 
 class Sergeant(object):
@@ -163,7 +158,7 @@ class Sergeant(object):
 	if none are given we assume today and five days ago
 	'''
 	
-	def __init__(self, program_name='Nuclear Transients',start_date=None, end_date=None,marshalusr=None,marshalpwd=None) :
+	def __init__(self, program_name='Nuclear Transients',start_date=None, end_date=None,marshalusr=None,marshalpwd=None):
 		
 		today = datetime.datetime.now().strftime('%Y-%m-%d')
 		fivedaysago = (datetime.datetime.now() - datetime.timedelta(days=5)).strftime('%Y-%m-%d')
@@ -178,8 +173,14 @@ class Sergeant(object):
 		self.program_name = program_name
 		self.cutprogramidx = None
 		self.program_options =[]
-				self.marshalusr=marshalusr
-				self.marshalpwd=marshalpwd
+		
+		# if no username given as input, look for "PTFconfig" file
+		if (marshalusr is None) or (marshalpwd is None):
+			conf = PTFConfig()			
+			self.marshalusr, self.marshalpwd = conf.get('Marshal', 'user'), conf.get('Marshal', 'passw')
+		else:
+			self.marshalusr = marshalusr
+			self.marshalpwd = marshalpwd
 				
 		soup = soup_obj(listprog_url,marshalusr=self.marshalusr,marshalpwd=self.marshalpwd)
 
@@ -223,7 +224,8 @@ class Sergeant(object):
 		if self.cutprogramidx is None:
 			print('ERROR, first fix program_name upon init')
 			return []
-		self.scan_soup = soup_obj(scanning_url + "?cutprogramidx=%s&startdate=%s&enddate=%s&HARDLIMIT=%s" %(self.cutprogramidx, self.start_date, self.end_date, hardlimit),marshalusr=self.marshalusr,marshalpwd=self.marshalpwd)
+		self.scan_soup = soup_obj(scanning_url + "?cutprogramidx=%s&startdate=%s&enddate=%s&HARDLIMIT=%s" %\
+				(self.cutprogramidx, self.start_date, self.end_date, hardlimit),marshalusr=self.marshalusr,marshalpwd=self.marshalpwd)
 
 		
 		table = self.scan_soup.findAll('table')
@@ -254,23 +256,23 @@ class Sergeant(object):
 		return sources
 
 
-		def get_sourcelist(self):
-				'''
-				Return a list of sources saved to the program.
-				Much faster than list_saved_sources, but no annotation or photometry information
-				'''
+	def get_sourcelist(self):
+		'''
+		Return a list of sources saved to the program.
+		Much faster than list_saved_sources, but no annotation or photometry information
+		'''
 
-				return  json_obj(savedsources_url,data={'programidx':str(self.cutprogramidx)}, marshalusr=self.marshalusr,marshalpwd=self.marshalpwd)
+		return  json_obj(savedsources_url,data={'programidx':str(self.cutprogramidx)}, marshalusr=self.marshalusr,marshalpwd=self.marshalpwd)
 
 
-	def ingest_avro_id(self,avroid):
+	def ingest_avro_id(self, avroid):
 		'''
 		Ingest an alert from avro id.
 		Todo: Update to bulk ingestion, check whether already saved or ingested?
 		'''
 
 		
-				return json_obj(ingest_url,data={'programidx':str(self.cutprogramidx),'avroid':str(avroid)}, marshalusr=self.marshalusr,marshalpwd=self.marshalpwd)
+		return json_obj(ingest_url,data={'programidx':str(self.cutprogramidx),'avroid':str(avroid)}, marshalusr=self.marshalusr,marshalpwd=self.marshalpwd)
 
 				
 		
@@ -300,7 +302,8 @@ class Sergeant(object):
 			if verbose:
 				print ('list_saved_sources: reading page {0}'.format(page_number))				
 								
-			self.saved_soup = soup_obj(rawsaved_url + "?programidx=%s&offset=%s" %(self.cutprogramidx, targ0),marshalusr=self.marshalusr,marshalpwd=self.marshalpwd)
+			self.saved_soup = soup_obj(rawsaved_url + "?programidx=%s&offset=%s" %\
+				(self.cutprogramidx, targ0),marshalusr=self.marshalusr,marshalpwd=self.marshalpwd)
 
 			table = self.saved_soup.findAll('table')
 			table_rows = table[1].findAll('tr')[1:-1]
@@ -355,175 +358,179 @@ class Sergeant(object):
 			page_number+=1
 		return sources
 
-def _parse_source_input(source):
-	'''
-	lil help with input (dict or ztfname)
-	'''
-	if type(source) is list:
-		if len(source)==1:
-			source = source[0]
-
-	if "objname" in source: 		# not used anymore (keep for bc)
-		sourcename = source['objname']
-	elif "name" in source:
-		sourcename = source['name'] # consistent with json key from list_program_sources.cgi
-	elif type(source) is str:
-		sourcename = source
-	else:
-		raise Exception('Source input not understood:',  source)
-		return 
 
 
-	return sourcename
+	def _parse_source_input(self, source):
+		'''
+		lil help with input (dict or ztfname)
+		'''
+		if type(source) is list:
+			if len(source)==1:
+				source = source[0]
 
-def get_summary(source, verbose=False):
-	'''
-	>> data = get_summary(source)
-
-	call source_summary.cgi
-	input source dict needs to have key "id"
-	return json object with Marshal photometry and annotations 
-	'''
-
-	if not("id" in source):
-		raise Exception('''we need source dict with key "id "to use this source_summary.cgi''')
-
-	soup = soup_obj(photo_url %sourcename,marshalusr=marshalusr,marshalpwd=marshalpwd)
-
-def get_comments(source, verbose=False, marshalusr=None, marshalpwd=None):
-	soup = soup_obj(summary_url%source['id'])
-	
-	try:
-		phot_dict = json.loads(soup.find('p').text)
-		return phot_dict
-	
-	except json.JSONDecodeError:
-		print ('something wrong with this summary page:')
-		print (summary_url%source['id'])
-		return None
-
-	
-
-def get_annotations(source, verbose=False):
-	'''
-	two inputs are possible:
-
-	>>> comment_list = get_annotations('ZTF18aabtxvd')
-	get the current comment for a source
-	
-	>>> comment_list = get_annotations(source_dict)
-	get the current annotations, and add them the source dict 
-	(this dict is output from list_saved_sources() or get_sourcelist() function)
-
-	TODO: also get the info about scheduled observations
-	'''
-
-	sourcename = _parse_source_input(source)
-
-	if type(source) is dict:
-		source["annotations"] = [] # replace, because we re-read the current annotations
+		if "objname" in source: 		# not used anymore (keep for bc)
+			sourcename = source['objname']
+		elif "name" in source:
+			sourcename = source['name'] # consistent with json key from list_program_sources.cgi
+		elif type(source) is str:
+			sourcename = source
+		else:
+			raise Exception('Source input not understood:',  source)
+			return 
 
 
-	soup = soup_obj(marshal_root + 'view_source.cgi?name=%s' %sourcename,marshalusr=marshalusr,marshalpwd=marshalpwd)
-	table = soup.findAll('table')[0]
-	cells = table.findAll('span')
-	
-	all_annotations = []
-	
-	for cell in cells:
-	
-		cell_str = cell.decode(0)	
-		if (cell_str.find('edit_comment')>0) or (cell_str.find('add_autoannotation')>0):
-			lines = cell_str.split('\n')			
-			if lines[5].find(':')>0:
-				
-				comment_id = int(lines[2].split('id=')[1].split('''"''')[0])					
-				date_author, comment_type = (lines[5].strip(']:').strip().split('['))
-				date, author = '-'.join(date_author.split(' ')[0:3]), date_author.split(' ')[3].strip()
-				text = lines[9].strip()
-				text = text.replace(', [',')') # this deals with missing urls to [reference] in auto_annoations
-				one_line = '{0} [{1}]: {2}'.format(date_author, comment_type, text)
+		return sourcename
+
+	def get_summary(self, source, verbose=False):
+		'''
+		>> data = get_summary(source)
+
+		call source_summary.cgi
+		input source dict needs to have key "id"
+		return json object with Marshal photometry and annotations 
+		'''
+
+		if not("id" in source):
+			raise Exception('''we need source dict with key "id "to use this source_summary.cgi''')
+
+		soup = soup_obj(photo_url %sourcename,marshalusr=self.marshalusr,marshalpwd=self.marshalpwd)
+
+	def get_comments(self, source, verbose=False):
+		soup = soup_obj(summary_url%source['id'], marshalusr=self.marshalusr,marshalpwd=self.marshalpwd)
+		
+		try:
+			phot_dict = json.loads(soup.find('p').text)
+			return phot_dict
+		
+		except json.JSONDecodeError:
+			print ('something wrong with this summary page:')
+			print (summary_url%source['id'])
+			return None
+
+		
+
+	def get_annotations(self, source, verbose=False):
+		'''
+		two inputs are possible:
+
+		>>> comment_list = get_annotations('ZTF18aabtxvd')
+		get the current comment for a source
+		
+		>>> comment_list = get_annotations(source_dict)
+		get the current annotations, and add them the source dict 
+		(this dict is output from list_saved_sources() or get_sourcelist() function)
+
+		TODO: also get the info about scheduled observations
+		'''
+
+		sourcename = self._parse_source_input(source)
+
+		if type(source) is dict:
+			source["annotations"] = [] # replace, because we re-read the current annotations
+
+
+		soup = soup_obj(marshal_root + 'view_source.cgi?name=%s' %\
+			sourcename, marshalusr=self.marshalusr,marshalpwd=self.marshalpwd)
+		table = soup.findAll('table')[0]
+		cells = table.findAll('span')
+		
+		all_annotations = []
+		
+		for cell in cells:
+		
+			cell_str = cell.decode(0)	
+			if (cell_str.find('edit_comment')>0) or (cell_str.find('add_autoannotation')>0):
+				lines = cell_str.split('\n')			
+				if lines[5].find(':')>0:
 					
-				# add new annotations to source dict
-				comment_tuple = (comment_id, date, author, comment_type, text)
-				if "annotations" in source:
-					source["annotations"].append( comment_tuple )
-				# add to the output dict
-				all_annotations.append( comment_tuple )
+					comment_id = int(lines[2].split('id=')[1].split('''"''')[0])					
+					date_author, comment_type = (lines[5].strip(']:').strip().split('['))
+					date, author = '-'.join(date_author.split(' ')[0:3]), date_author.split(' ')[3].strip()
+					text = lines[9].strip()
+					text = text.replace(', [',')') # this deals with missing urls to [reference] in auto_annoations
+					one_line = '{0} [{1}]: {2}'.format(date_author, comment_type, text)
+						
+					# add new annotations to source dict
+					comment_tuple = (comment_id, date, author, comment_type, text)
+					if "annotations" in source:
+						source["annotations"].append( comment_tuple )
+					# add to the output dict
+					all_annotations.append( comment_tuple )
+					
+					if verbose:
+						print ('comment id =',comment_id)
+						print (one_line)
+						print ('---')
+		return all_annotations
+
+	def comment(self, comment, source, comment_type="info", comment_id=None, remove=False):
+		
+		'''
+		two types of input are accepted:
+		
+		>>> soup_out = comment("dummy", 'ZTF17aacscou')
+		>>> soup_out = comment("dummy", source_dict)
+
+		here source_dict is a dictionary with keys "name" and (optional) "annotations"
+
+
+		optional input:
+
+		comment _type="info", other options are "redshift", "classification", "comment"	
+		comment_id=123 to replace an excisiting comment, give its id as input 
+
+		in this function an attempt is made to avoid duplicates
+		when source_dict is given as input, we use this to check for current annotations
+		otherwise we fill read the Marshal to get the current annotations.
+		annotations are not added if identical text is found for this comment_type (by any user)
+
+		removing comment is not yet implemented
+		'''
+
+
+		sourcename = self._parse_source_input(source)
 				
-				if verbose:
-					print ('comment id =',comment_id)
-					print (one_line)
-					print ('---')
-	return all_annotations
 
-def comment(comment, source, comment_type="info", comment_id=None, remove=False,marshalusr=None,marshalpwd=None):
-	
-	'''
-	two types of input are accepted:
-	
-	>>> soup_out = comment("dummy", 'ZTF17aacscou')
-	>>> soup_out = comment("dummy", source_dict)
+		# check if already have a dict with current annotations
+		# (we check only the comment text, not the Marshal username)
+		if "annotations" in source:
+			comment_list = source["annotations"]
+		else:
+			print ('getting current comments...')
+			comment_list = get_comments(source,marshalusr=marshalusr,marshalpwd=marshalpwd)
+			print ('getting current annotations...')
+			comment_list = get_annotations(source)
+		
+		current_comm = ''.join([tup[4] for tup in comment_list if tup[3]==comment_type])
 
-	here source_dict is a dictionary with keys "name" and (optional) "annotations"
-
-
-	optional input:
-
-	comment _type="info", other options are "redshift", "classification", "comment"	
-	comment_id=123 to replace an excisiting comment, give its id as input 
-
-	in this function an attempt is made to avoid duplicates
-	when source_dict is given as input, we use this to check for current annotations
-	otherwise we fill read the Marshal to get the current annotations.
-	annotations are not added if identical text is found for this comment_type (by any user)
-
-	removing comment is not yet implemented
-	'''
+		
+		if comment in ''.join(current_comm):	
+			print ('this comment was already made in current annotations')
+			current_id = [ tup[0] for tup in comment_list if ((tup[3]==comment_type) and (comment in tup[4]))][0] # perhaps too pythonic...?
+			print ('to replace it, call this function with comment_id={}'.format(current_id))
+			return current_id
 
 
-	sourcename = _parse_source_input(source)
-			
+		print ('setting up comment script for {0}...'.format(sourcename))
+		soup = soup_obj(marshal_root + 'view_source.cgi?name=%s' %\
+				sourcename,marshalusr=self.marshalusr,marshalpwd=self.marshalpwd)
+		cmd = {}
+		for x in soup.find('form', {'action':"edit_comment.cgi"}).findAll('input'):
+			if x["type"] == "hidden":
+				cmd[x['name']] =x['value']
+		cmd["comment"] = comment
+		cmd["type"] = comment_type
+		if comment_id is not None:
+			cmd["id"] = str(comment_id)
 
-	# check if already have a dict with current annotations
-	# (we check only the comment text, not the Marshal username)
-	if "annotations" in source:
-		comment_list = source["annotations"]
-	else:
-		print ('getting current comments...')
-		comment_list = get_comments(source,marshalusr=marshalusr,marshalpwd=marshalpwd)
-		print ('getting current annotations...')
-		comment_list = get_annotations(source)
-	
-	current_comm = ''.join([tup[4] for tup in comment_list if tup[3]==comment_type])
-
-	
-	if comment in ''.join(current_comm):	
-		print ('this comment was already made in current annotations')
-		current_id = [ tup[0] for tup in comment_list if ((tup[3]==comment_type) and (comment in tup[4]))][0] # perhaps too pythonic...?
-		print ('to replace it, call this function with comment_id={}'.format(current_id))
-		return current_id
-
-
-	print ('setting up comment script for {0}...'.format(sourcename))
-	soup = soup_obj(marshal_root + 'view_source.cgi?name=%s' %sourcename,marshalusr=marshalusr,marshalpwd=marshalpwd)
-	cmd = {}
-	for x in soup.find('form', {'action':"edit_comment.cgi"}).findAll('input'):
-		if x["type"] == "hidden":
-			cmd[x['name']] =x['value']
-	cmd["comment"] = comment
-	cmd["type"] = comment_type
-	if comment_id is not None:
-		cmd["id"] = str(comment_id)
-
-	print ('pushing comment to marshal...')
-	try:
-		# to make this more elegant, the cmd could also be passed to request directly: request.get(marshal_root + 'edit_comment.cgi',cmd)
-		params = urllib.parse.urlencode(cmd) # python3 
-	except AttributeError:
-		params = urllib.urlencode(cmd) # python2	
-	
-	return soup_obj(marshal_root + 'edit_comment.cgi?%s' %params,marshalusr=marshalusr,marshalpwd=marshalpwd)
+		print ('pushing comment to marshal...')
+		try:
+			# to make this more elegant, the cmd could also be passed to request directly: request.get(marshal_root + 'edit_comment.cgi',cmd)
+			params = urllib.parse.urlencode(cmd) # python3 
+		except AttributeError:
+			params = urllib.urlencode(cmd) # python2	
+		
+		return soup_obj(marshal_root + 'edit_comment.cgi?%s' %params,marshalusr=self.marshalusr,marshalpwd=self.marshalpwd)
 	
 
 info_date = 'April 2018'
@@ -605,23 +612,25 @@ def get_Marshal_info():
 # testing
 def testing():
 
-	print (get_annotations('ZTF18aahkrpr'))
+	import numpy
 
 	progn = 'ZTF Science Validation'
-	progn = 'Nuclear Transients'
-	inst = Sergeant(progn)	
+	#progn = 'Nuclear Transients'
+	sergeant = Sergeant(progn)	
 
-	print ('reading saved sources...')
-	saved_sources = inst.list_saved_sources()
-	print ('# saved sources:',len(saved_sources)) 
+
+	print ('reading sourcelist...')
+	sourcelist = sergeant.get_sourcelist()
+	print ('# saved sources:',len(sourcelist)) 
 
 	#this_source = (item for item in saved_sources if item["name"] == "ZTF18aagteoy").next()
-	if len(saved_sources)>1:
-		this_source  = saved_sources[1] # pick one 
-		print ( get_annotations(this_source) )
+	if len(sourcelist)>1:
+		this_source  = sourcelist[int(numpy.random.rand()*len(sourcelist))] # pick one 
+		print ('trying to get annotations for ', this_source["name"], '...')
+		print ( sergeant.get_annotations(this_source) )
 
 	print ('reading scan sources...')	
-	scan_sources = inst.list_scan_sources()
+	scan_sources = sergeant.list_scan_sources()
 	print ('# of scan sources', len(scan_sources) )
 
 
