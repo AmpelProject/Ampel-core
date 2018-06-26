@@ -78,6 +78,8 @@ class AmpelAlertPlotter:
 		if logger is None:
 			logging.basicConfig(level = logging.INFO)
 			self.logger = logging.getLogger(__name__)
+		else:
+			self.logger = logger
 		
 		self.interactive = interactive
 		if self.interactive:
@@ -168,12 +170,11 @@ class AmpelAlertPlotter:
 			np.array(x) for x in zip(*ampel_alert.get_ntuples(["magpsf", "sigmapsf", "jd","fid"]))]
 		
 		# if there are upper limits get them
-		try:
+		has_ulim = False
+		if not ampel_alert.uls is None and len(ampel_alert.uls)>0:
 			ul_mag_lim, ul_jd, ul_fid = [
 				np.array(x) for x in zip(*ampel_alert.get_ntuples(["diffmaglim", "jd","fid"], upper_limits=True))]
 			has_ulim = True
-		except ValueError:
-			has_ulim = False
 		
 		# convert the time
 		if time_format == 'datetime':
@@ -238,9 +239,10 @@ class AmpelAlertPlotter:
 			ax_given = False
 		
 		img_data = AmpelAlertPlotter.get_cutout_numeric(ampel_alert, which, scaler)
+		mask = np.isfinite(img_data)
 		im = ax.imshow(
 			img_data, 
-#			norm=Normalize(*np.percentile(img_data, [0.5,99.5])),
+			norm=Normalize(*np.percentile(img_data[mask], [0.5,99.5])),
 			aspect="auto"
 			)
 		if cb:
@@ -289,7 +291,7 @@ class AmpelAlertPlotter:
 		# add text
 		candidate = ampel_alert.pps[0]
 		info = []
-		for k in ["rb","fwhm","nbad", "elong", "isdiffpos"]:
+		for k in ["rb","fwhm","nbad", "elong", "isdiffpos", "ssdistnr"]:
 			try:
 				info.append("%s : %.3f"%(k, candidate.get(k)) )
 			except:
