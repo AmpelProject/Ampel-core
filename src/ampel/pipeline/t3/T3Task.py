@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 06.03.2018
-# Last Modified Date: 18.06.2018
+# Last Modified Date: 15.06.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from ampel.pipeline.common.AmpelUtils import AmpelUtils
@@ -55,3 +55,9 @@ class T3Task:
 		"""
 		t3_unit = self.get_t3_unit_instance(logger)
 		return t3_unit.run()
+
+
+	def free_t3_unit_instance(self):
+		"""
+		"""
+		self._t3_instance = None

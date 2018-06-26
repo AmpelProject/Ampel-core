@@ -148,13 +148,26 @@ class T3JobExecution:
 
 				for chunk in self.get_chunks(dcl, trans_cursor, chunk_size):
 					self.logger.info("Processing next chunk")
+					# 'feed' each task
 					self.process_chunk(chunk)
 
-		# For each task, create transientView and run task
+		# 'run' each task
 		for t3_task in self.t3_job.get_tasks():
 
-			self.logger.info("Running task %s" % t3_task.get_config("name"))
+			# Feedback
+			self.logger.info(
+				"Task %s (t3Unit: %s, runConfig: %s): executing run()" % (
+					t3_task.get_config("name"),
+					t3_task.get_config("t3Unit"), 
+					t3_task.get_config("runConfig")
+				)
+			)
+
+			# execute t3unit instance method run()
 			ret = t3_task.run(self.logger)
+
+			# make sure next job run creates a new t3 unit instance
+			t3_task.free_t3_unit_instance()
 
 			# Update Transient journal with dict containing date, channels and name of the task
 			if t3_task.get_config('updateJournal') is True:
@@ -349,15 +362,8 @@ class T3JobExecution:
 		:param al_tran_data: dict of transient info
 		"""
 
-		# For each task, create transientView and run task
+		# Feed each task with transient views
 		for t3_task in self.t3_job.get_tasks():
-
-			self.logger.info(
-				"Running task with t3Unit %s and runConfig %s" % (
-					t3_task.get_config("t3Unit"), 
-					t3_task.get_config("runConfig")
-				)
-			)
 
 			# Get channel associated with this task
 			task_chans = t3_task.get_config('select.channel(s)')
@@ -380,9 +386,18 @@ class T3JobExecution:
 					)
 					tran_views.append(tran_view)
 
-			# get T3 unit instance (instantiate if first access)
+			# get T3 unit instance (instantiate if None)
 			t3_unit = t3_task.get_t3_unit_instance(self.logger)
 
-			# Run T3 instance
-			self.logger.info("Adding TransientView instances to T3 unit %s" % t3_unit.__class__)
+			# Feedback
+			self.logger.info(
+				"Task %s (t3Unit: %s, runConfig: %s): feeding %i TransientView instances" % (
+					t3_task.get_config("name"),
+					t3_task.get_config("t3Unit"), 
+					t3_task.get_config("runConfig"),
+					len(al_tran_data)
+				)
+			)
+
+			# Feed T3 instance
 			t3_unit.add(tran_views)
