@@ -56,13 +56,13 @@ class PTFConfig(object) :
 
 def get_marshal_html(weblink, attempts=1, max_attempts=5, marshalusr=None,marshalpwd=None):
 
-        if marshalusr is None:
-	        conf = PTFConfig()
-	        auth = requests.auth.HTTPBasicAuth(conf.get('Marshal', 'user'), conf.get('Marshal', 'passw'))
-        else:
-	        auth = requests.auth.HTTPBasicAuth(marshalusr, marshalpwd)
+		if marshalusr is None:
+			conf = PTFConfig()
+			auth = requests.auth.HTTPBasicAuth(conf.get('Marshal', 'user'), conf.get('Marshal', 'passw'))
+		else:
+			auth = requests.auth.HTTPBasicAuth(marshalusr, marshalpwd)
 
-                
+				
 	try:
 		reponse = requests.get(weblink, auth=auth, timeout=120+60*attempts)
 	
@@ -84,67 +84,67 @@ def get_marshal_html(weblink, attempts=1, max_attempts=5, marshalusr=None,marsha
 
 
 def post_marshal_cgi(weblink,data=None,attempts=1,max_attempts=5,marshalusr=None,marshalpwd=None):
-    """
-    Run one of the growth cgi scripts, check results and return
-    """
-    
-    if marshalusr is None:
-	    conf = PTFConfig()
-	    auth = requests.auth.HTTPBasicAuth(conf.get('Marshal', 'user'), conf.get('Marshal', 'passw'))
-    else:
-	    auth = requests.auth.HTTPBasicAuth(marshalusr, marshalpwd)
-    
-    try:
-	    response = requests.post(weblink, auth=auth, data=data,timeout=120+60*attempts)
-    except (requests.ConnectionError, requests.ReadTimeout) as req_e:		
+	"""
+	Run one of the growth cgi scripts, check results and return
+	"""
+	
+	if marshalusr is None:
+		conf = PTFConfig()
+		auth = requests.auth.HTTPBasicAuth(conf.get('Marshal', 'user'), conf.get('Marshal', 'passw'))
+	else:
+		auth = requests.auth.HTTPBasicAuth(marshalusr, marshalpwd)
+	
+	try:
+		response = requests.post(weblink, auth=auth, data=data,timeout=120+60*attempts)
+	except (requests.ConnectionError, requests.ReadTimeout) as req_e:		
 
-	    print ('Sergeant.post_marshal_cgi(): ', weblink)
-	    print (req_e)
-	    print ('Sergeant.post_marshal_cgi(): ConnectionError or ReadTimeout this is our {0} attempt, {1} left', attempts, max_attempts-max_attempts)
+		print ('Sergeant.post_marshal_cgi(): ', weblink)
+		print (req_e)
+		print ('Sergeant.post_marshal_cgi(): ConnectionError or ReadTimeout this is our {0} attempt, {1} left', attempts, max_attempts-max_attempts)
 
-	    if attempts<max_attempts:
-		    time.sleep(3)
-		    response = post_marshal_cgi(weblink, attempts=attempts+1, marshalusr=None,marshalpwd=None)	
-	    else:
-		    print ('Sergeant.post_marshal_cgi(): giving up')
-		    raise(requests.exceptions.ConnectionError)
+		if attempts<max_attempts:
+			time.sleep(3)
+			response = post_marshal_cgi(weblink, attempts=attempts+1, marshalusr=None,marshalpwd=None)	
+		else:
+			print ('Sergeant.post_marshal_cgi(): giving up')
+			raise(requests.exceptions.ConnectionError)
 
-    return response
-            
+	return response
+			
  
 
 
 def json_obj(weblink,data=None,verbose=False, marshalusr=None,marshalpwd=None):
-        '''
-        Try to post to the marshal, then parse then return (assuming json)
-        '''
-        
+		'''
+		Try to post to the marshal, then parse then return (assuming json)
+		'''
+		
 
-        if verbose : print("Trying to post to marshal: "+weblink)
-        
-        r = post_marshal_cgi(weblink,data=data, marshalusr=None,marshalpwd=None)
-        print(r)
-        status = r.status_code
-        print(status)
-        if status != 200:
-                try:
-                        message = httpErrors[status]
-                except KeyError:
-                        message = 'Error %d: Undocumented error' % status
-                        if verbose : print(message)
-                return None
-        if verbose : print("Successful growth connection")
-    
-        try:
-                rinfo =  json.loads(r.text)
-        except ValueError as e:
-                # No json information returned, usually the status most relevant
-                if verbose:
-                        print('No json returned: status %d' % status )
-                rinfo =  status
-        return rinfo
+		if verbose : print("Trying to post to marshal: "+weblink)
+		
+		r = post_marshal_cgi(weblink,data=data, marshalusr=None,marshalpwd=None)
+		print(r)
+		status = r.status_code
+		print(status)
+		if status != 200:
+				try:
+						message = httpErrors[status]
+				except KeyError:
+						message = 'Error %d: Undocumented error' % status
+						if verbose : print(message)
+				return None
+		if verbose : print("Successful growth connection")
+	
+		try:
+				rinfo =  json.loads(r.text)
+		except ValueError as e:
+				# No json information returned, usually the status most relevant
+				if verbose:
+						print('No json returned: status %d' % status )
+				rinfo =  status
+		return rinfo
 
-        
+		
 
 def soup_obj(url, marshalusr=None,marshalpwd=None):
 	return BeautifulSoup(get_marshal_html(url, marshalusr=None,marshalpwd=None), 'lxml')
@@ -178,9 +178,9 @@ class Sergeant(object):
 		self.program_name = program_name
 		self.cutprogramidx = None
 		self.program_options =[]
-                self.marshalusr=marshalusr
-                self.marshalpwd=marshalpwd
-                
+				self.marshalusr=marshalusr
+				self.marshalpwd=marshalpwd
+				
 		soup = soup_obj(listprog_url,marshalusr=self.marshalusr,marshalpwd=self.marshalpwd)
 
 		for x in json.loads(soup.find('p').text.encode("ascii")):
@@ -198,8 +198,8 @@ class Sergeant(object):
 		print('My current programs:', self.program_options)
 
 
-        def set_programid(self,programname):
-                soup = soup_obj(listprog_url,marshalusr=self.marshalusr,marshalpwd=self.marshalpwd)
+		def set_programid(self,programname):
+				soup = soup_obj(listprog_url,marshalusr=self.marshalusr,marshalpwd=self.marshalpwd)
 
 		self.cutprogramidx = None
 				
@@ -254,13 +254,13 @@ class Sergeant(object):
 		return sources
 
 
-        def get_sourcelist(self):
-                '''
-                Return a list of sources saved to the program.
-                Much faster than list_saved_sources, but no annotation or photometry information
-                '''
+		def get_sourcelist(self):
+				'''
+				Return a list of sources saved to the program.
+				Much faster than list_saved_sources, but no annotation or photometry information
+				'''
 
-                return  json_obj(savedsources_url,data={'programidx':str(self.cutprogramidx)}, marshalusr=self.marshalusr,marshalpwd=self.marshalpwd)
+				return  json_obj(savedsources_url,data={'programidx':str(self.cutprogramidx)}, marshalusr=self.marshalusr,marshalpwd=self.marshalpwd)
 
 
 	def ingest_avro_id(self,avroid):
@@ -270,7 +270,7 @@ class Sergeant(object):
 		'''
 
 		
-                return json_obj(ingest_url,data={'programidx':str(self.cutprogramidx),'avroid':str(avroid)}, marshalusr=self.marshalusr,marshalpwd=self.marshalpwd)
+				return json_obj(ingest_url,data={'programidx':str(self.cutprogramidx),'avroid':str(avroid)}, marshalusr=self.marshalusr,marshalpwd=self.marshalpwd)
 
 				
 		
@@ -299,7 +299,7 @@ class Sergeant(object):
 
 			if verbose:
 				print ('list_saved_sources: reading page {0}'.format(page_number))				
-                                
+								
 			self.saved_soup = soup_obj(rawsaved_url + "?programidx=%s&offset=%s" %(self.cutprogramidx, targ0),marshalusr=self.marshalusr,marshalpwd=self.marshalpwd)
 
 			table = self.saved_soup.findAll('table')
