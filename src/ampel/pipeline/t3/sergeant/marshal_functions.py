@@ -20,7 +20,6 @@ import yaml  					# pip3 install pyyaml
 import astropy.time 			# pip3 install astropy
 
 marshal_root = 'http://skipper.caltech.edu:8080/cgi-bin/growth/'
-#photo_url 	= marshal_root  + 'plot_lc.cgi?name=%s'
 summary_url 	= marshal_root  + 'source_summary.cgi?sourceid=%s'
 listprog_url = marshal_root + 'list_programs.cgi'
 scanning_url = marshal_root + 'growth_treasures_transient.cgi'
@@ -393,11 +392,8 @@ class Sergeant(object):
 		if not("id" in source):
 			raise Exception('''we need source dict with key "id "to use this source_summary.cgi''')
 
-		soup = soup_obj(photo_url %sourcename,marshalusr=self.marshalusr,marshalpwd=self.marshalpwd)
+		soup = soup_obj(summary_url %source['id'],marshalusr=self.marshalusr,marshalpwd=self.marshalpwd)
 
-	def get_comments(self, source, verbose=False):
-		soup = soup_obj(summary_url%source['id'], marshalusr=self.marshalusr,marshalpwd=self.marshalpwd)
-		
 		try:
 			phot_dict = json.loads(soup.find('p').text)
 			return phot_dict
@@ -406,6 +402,7 @@ class Sergeant(object):
 			print ('something wrong with this summary page:')
 			print (summary_url%source['id'])
 			return None
+
 
 		
 
@@ -626,12 +623,18 @@ def testing():
 	#this_source = (item for item in saved_sources if item["name"] == "ZTF18aagteoy").next()
 	if len(sourcelist)>1:
 		this_source  = sourcelist[int(numpy.random.rand()*len(sourcelist))] # pick one 
+		print ('trying to get summary for ', this_source["name"], '...')
+		summary = sergeant.get_summary(this_source)
+		print ('autoannotations: ', summary["autoannotations"])
+		print ('# of photometry points', len(summary["uploaded_photometry"]))
+		print ('')
 		print ('trying to get annotations for ', this_source["name"], '...')
 		print ( sergeant.get_annotations(this_source) )
 
 	print ('reading scan sources for {0}...'.format(progn))
 	scan_sources = sergeant.list_scan_sources()
 	print ('# of scan sources', len(scan_sources) )
+
 
 
 
