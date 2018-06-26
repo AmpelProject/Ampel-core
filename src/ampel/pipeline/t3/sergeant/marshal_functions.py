@@ -619,7 +619,7 @@ def testing():
 	sergeant = Sergeant(progn)	
 
 
-	print ('reading sourcelist...')
+	print ('reading sourcelist for {0}...'.format(progn))
 	sourcelist = sergeant.get_sourcelist()
 	print ('# saved sources:',len(sourcelist)) 
 
@@ -629,7 +629,7 @@ def testing():
 		print ('trying to get annotations for ', this_source["name"], '...')
 		print ( sergeant.get_annotations(this_source) )
 
-	print ('reading scan sources...')	
+	print ('reading scan sources for {0}...'.format(progn))
 	scan_sources = sergeant.list_scan_sources()
 	print ('# of scan sources', len(scan_sources) )
 
