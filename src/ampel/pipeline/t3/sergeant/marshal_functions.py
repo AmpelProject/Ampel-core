@@ -380,14 +380,14 @@ class Sergeant(object):
 
 		return sourcename
 
-	def get_summary(self, source, verbose=False):
+	def get_summary(self, source):
 		'''
 		>> data = get_summary(source)
 
 		call source_summary.cgi
 		input source dict needs to have key "id"
 		return json object with Marshal photometry and AUTO annotations, 
-		to get the manual annotations use get_annotations()
+		to get the manual annotations, use Sergeant.get_annotations(source)
 		'''
 
 		if not("id" in source):
