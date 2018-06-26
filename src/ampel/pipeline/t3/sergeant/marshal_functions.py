@@ -386,7 +386,8 @@ class Sergeant(object):
 
 		call source_summary.cgi
 		input source dict needs to have key "id"
-		return json object with Marshal photometry and annotations 
+		return json object with Marshal photometry and AUTO annotations, 
+		to get the manual annotations use get_annotations()
 		'''
 
 		if not("id" in source):
