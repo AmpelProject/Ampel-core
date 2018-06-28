@@ -153,17 +153,17 @@ class DBWired:
 		setup output database (will typically contain the collections 'transients' and 'logs')
 		Parameter 'arg' must be either:
 
-			-> MongoClient instance (pymongo or mongomock): the provided instance will be used
-			   If the required collections do not exist, Ampel will create them and 
-			   ensure that they have the right indexes
+		-> MongoClient instance (pymongo or mongomock): the provided instance will be used
+		   If the required collections do not exist, Ampel will create them and 
+		   ensure that they have the right indexes
 
-			-> A string: a database with the provided name will be loaded or created.
-			   If the required collections do not exist, Ampel will create them and 
-			   ensure that they have the right indexes
+		-> A string: a database with the provided name will be loaded or created.
+		   If the required collections do not exist, Ampel will create them and 
+		   ensure that they have the right indexes
 			 
-			-> A Database instance (pymongo or mongomock).
-			   If the required collections do not exist, Ampel will create them and 
-			   ensure that they have the right indexes
+		-> A Database instance (pymongo or mongomock).
+		   If the required collections do not exist, Ampel will create them and 
+		   ensure that they have the right indexes
 		"""
 
 		# Load transient DB based on entries from config DB
@@ -211,12 +211,12 @@ class DBWired:
 			raise ValueError("Invalid arguments")
 
 		if mc is not None:
-			db = mc["Ampel"]
+			db = mc["Ampel_data"]
 
 		existing_col_names = db.collection_names()
 		self.central_db = db
 
-		self.troubles_col = db.client["Ampel_troubles"]['docs']
+		self.troubles_col = db.client["Ampel_logs"]['troubles']
 
 		for col_name in ('photo', 'main', 'logs', 'stats', 'runs'):
 			if col_name not in existing_col_names:
