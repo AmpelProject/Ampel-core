@@ -4,10 +4,11 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 13.01.2018
-# Last Modified Date: 12.06.2018
+# Last Modified Date: 28.06.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from datetime import datetime
+from bson.binary import Binary
 from ampel.base.Frozen import Frozen
 from ampel.flags.TransientFlags import TransientFlags
 from ampel.pipeline.common.AmpelUtils import AmpelUtils
@@ -90,55 +91,66 @@ class TransientView(Frozen):
 		return self.latest_state.hex() if to_hex else self.latest_state
 
 
-	def get_lightcurves(self):
-		""" """
-		return self.lightcurves
-
-	
-	def get_lightcurve(self, lightcurve_id):
-		""" """
-		return self.lightcurves[lightcurve_id]
-
-
-	def get_photopoints(self, copy=False):
+	def get_photopoints(self):
 		"""
-		Returns a dict instance with key: photopoint id, value: instance of ampel.base.PlainPhotoPoint
-		Dict will be empty if PhotoPoints were not loaded
+		Returns a dict instance with 
+			-> key: photopoint id
+			-> value: instance of ampel.base.PlainPhotoPoint
+		Returns None if PhotoPoints were not loaded
 		"""
-		return self.photopoints if copy is False else self.photopoints.copy()
+		return self.photopoints
 	
 
-	def get_upperlimits(self, copy=False):
+	def get_upperlimits(self):
 		"""
-		Returns a dict instance with key: upperlimit id, value: instance of ampel.base.PlainUpperLimit
-		Dict will be empty if PhotoPoints were not loaded
+		Returns a dict instance with 
+			-> key: photopoint id
+			-> value: instance of ampel.base.PlainUpperLimit
+		Returns None if UpperLimits were not loaded
 		"""
-		return self.upperlimits if copy is False else self.upperlimits.copy()
-
-
-	def get_compound(self, compound_id):
-		""" 
-		argument 'compound_id' must be a bson.binary.Binary instance
-		"""
-		if compound_id not in self.compounds:
-			return None
-
-		return self.compounds[compound_id]
+		return self.upperlimits
 
 
 	def get_compounds(self, copy=False):
 		"""
-		Returns a dict instance
-		-> key: compound id
-		-> value: instance of ampel.base.Compound
-		-> dict can be empty if Compounds were not loaded 
-		   (see load_options of class TransientLoader)
+		Returns a tuple of MappingProxyType instances or None if Compounds were not loaded 
 		"""
-		return self.compounds if copy is False else self.compounds.copy()
+		return self.compounds
+
+
+	def get_compound(self, compound_id):
+		""" 
+		Returns an instance of MappingProxyType or None if no Compound exists with the provided id
+		lightcurve_id: either a bson Binary instance (with subtype 5) or a string with length 32
+		"""
+		if type(compound_id) is str:
+			compound_id = Binary(bytes.fromhex(compound_id), 5)
+		return next(filter(lambda x: x['_id'] == compound_id, self.compounds), None)
+
+
+	def get_lightcurves(self):
+		"""
+		Returns a tuple of ampel.base.LightCurve instances or None if Compounds were not loaded 
+		"""
+		return self.lightcurves
+
+	
+	def get_lightcurve(self, lightcurve_id):
+		""" 
+		Returns an instance of ampel.base.LightCurve 
+		or None if no LightCurve exists with the provided lightcurve_id
+		lightcurve_id: either a bson Binary instance (with subtype 5) or a string with length 32
+		"""
+		if type(lightcurve_id) is str:
+			lightcurve_id = Binary(bytes.fromhex(lightcurve_id), 5)
+		return next(filter(lambda x: x.id == lightcurve_id, self.lightcurves), None)
 
 
 	def get_science_records(self, t2_unit_id=None, latest=False):
 		""" 
+		Returns an instance or a tuple of instances of ampel.base.ScienceRecord 
+		t2_unit_id: string. Limit returned science record(s) to the one with the provided t2 unit id
+		latest: boolean. Whether to return the latest science record(s) or not
 		"""
 		if latest:
 
@@ -173,7 +185,8 @@ class TransientView(Frozen):
 
 
 	def get_journal_entries(self, tier=None, t3JobName=None, latest=False):
-
+		""" 
+		"""
 		if tier is None and t3JobName is None:
 			entries = self.journal
 		else:
