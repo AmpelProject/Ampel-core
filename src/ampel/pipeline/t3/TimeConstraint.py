@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 06.06.2018
-# Last Modified Date: 21.06.2018
+# Last Modified Date: 28.06.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from datetime import datetime, timedelta
@@ -31,6 +31,8 @@ class TimeConstraint:
 
 	_json_sub_schema = Schema(
 		Any(
+			None,
+			datetime, timedelta,
 			{Required('timeDelta'): dict},
 			{Required('lastRun'): str},
 			{Required('unixTime'): float},
@@ -45,8 +47,8 @@ class TimeConstraint:
 		Any(
 			None,
 			{
-				"from": Any(None, datetime, timedelta, _json_sub_schema), 
-				"until": Any(None, datetime, timedelta, _json_sub_schema)
+				"from":_json_sub_schema, 
+				"until": _json_sub_schema
 			}
 		)
 	)
@@ -76,38 +78,51 @@ class TimeConstraint:
 			-> datetime.timedelta 
 		   	-> dict fulfilling TimeConstraint._json_sub_schema criteria (see class docstring)
 		"""
-		self.params = {}
+		self.constraints = {}
 
 		if parameters is not None:
 			self.from_parameters(parameters, self)
 
 
-	def set_from(self, value, schema_check=True):
+	def set_from(self, value, check_schema=True):
 		""" """
-		if schema_check:
-			TimeConstraint._json_sub_schema(value)
-		self.params['from'] = value
+		self._set('from', value, check_schema)
 
 
-	def set_until(self, value, schema_check=True):
+	def set_until(self, value, check_schema=True):
 		""" """
-		if schema_check:
-			TimeConstraint._json_sub_schema(value)
-		self.params['until'] = value
+		self._set('until', value, check_schema)
 
 
 	def has_constraint(self):
 		""" """ 
-		return len(self.params) > 0
+		return len(self.constraints) > 0
 
 	
-	def get(self, param):
+	def get_from(self):
+		""" """ 
+		return self._get('from')
+	
+
+	def get_until(self):
+		""" """ 
+		return self._get('until')
+
+
+	def _set(self, name, value, check_schema=True):
+		""" """ 
+		if check_schema:
+			TimeConstraint._json_sub_schema(value)
+		self.constraints[name] = value
+
+
+	def _get(self, param):
 		""" 
 		param: either 'from' or 'until'
 		Schema validation ensures val can be only either None, dict, datetime or timedelta
 		"""
 
-		val = self.params.get(param)
+		val = self.constraints.get(param)
 
 		if val is None:
 			return None

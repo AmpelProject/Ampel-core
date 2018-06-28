@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 13.01.2018
-# Last Modified Date: 18.06.2018
+# Last Modified Date: 22.06.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from ampel.flags.AlDocTypes import AlDocTypes
@@ -16,6 +16,7 @@ from ampel.base.PhotoPoint import PhotoPoint
 from ampel.base.UpperLimit import UpperLimit
 from ampel.base.LightCurve import LightCurve
 from ampel.pipeline.logging.LoggingUtils import LoggingUtils
+from ampel.pipeline.db.AmpelDB import AmpelDB
 
 class LightCurveLoader:
 	"""
@@ -23,14 +24,12 @@ class LightCurveLoader:
 	Either through DB query (load_through_db_query) or through parsing of DB query results 
 	"""
 
-	_main_col_name = 'main'
-	_photo_col_name = 'photo'
 
-	def __init__(self, ampel_db, read_only=True, logger=None):
+	def __init__(self, central_db=None, read_only=True, logger=None):
 		"""
 		Parameters:
 		-----------
-		ampel_db: instance of pymongo.database.DataBase 
+		central_db:  
 		read_only: if True, the LightCurve instance returned by the methods of this class will be:
 			* a frozen class
 			* containing a immutable list (tuple) of PhotoPoint
@@ -38,9 +37,15 @@ class LightCurveLoader:
 			* and each PhotoPoint dict content is an immutable dict
 		"""
 		self.logger = LoggingUtils.get_logger() if logger is None else logger
-		self.main_col = ampel_db[LightCurveLoader._main_col_name] 
-		self.photo_col = ampel_db[LightCurveLoader._photo_col_name] 
 		self.read_only = read_only
+
+		# Optional override of AmpelConfig defaults
+		if central_db is None:
+			self.main_col = AmpelDB.get_collection("main")
+			self.photo_col = AmpelDB.get_collection("photo")
+		else:
+			self.main_col = central_db["main"]
+			self.photo_col = central_db["photo"]
 
 
 	def load_from_db(self, tran_id, compound_id):

@@ -4,13 +4,12 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 13.01.2018
-# Last Modified Date: 13.06.2018
+# Last Modified Date: 28.06.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from bson import ObjectId
 from datetime import datetime
 
-from ampel.base.Compound import Compound
 from ampel.base.LightCurve import LightCurve
 from ampel.base.UpperLimit import UpperLimit
 from ampel.base.TransientView import TransientView
@@ -22,11 +21,13 @@ from ampel.flags.FlagUtils import FlagUtils
 from ampel.flags.AlDocTypes import AlDocTypes
 from ampel.flags.PhotoFlags import PhotoFlags
 from ampel.flags.T2RunStates import T2RunStates
+from ampel.flags.CompoundFlags import CompoundFlags
 from ampel.flags.TransientFlags import TransientFlags
 
 from ampel.pipeline.common.AmpelUtils import AmpelUtils
 from ampel.pipeline.t3.TransientData import TransientData
 from ampel.pipeline.logging.LoggingUtils import LoggingUtils
+from ampel.pipeline.db.AmpelDB import AmpelDB
 from ampel.pipeline.db.LightCurveLoader import LightCurveLoader
 from ampel.pipeline.db.query.QueryLatestCompound import QueryLatestCompound
 from ampel.pipeline.db.query.QueryLoadTransientInfo import QueryLoadTransientInfo
@@ -44,13 +45,21 @@ class DBContentLoader:
 	)
 
 
-	def __init__(self, central_db, verbose=False, logger=None):
+	def __init__(self, central_db=None, verbose=False, logger=None):
 		"""
+		'central_db': string. Use provided DB name rather than Ampel default database ('Ampel')
 		"""
 		self.logger = LoggingUtils.get_logger() if logger is None else logger
 		self.lcl = LightCurveLoader(central_db, logger=self.logger)
-		self.main_col = central_db["main"]
-		self.photo_col = central_db["photo"]
+
+		# Optional override of AmpelConfig defaults
+		if central_db is None:
+			self.main_col = AmpelDB.get_collection("main")
+			self.photo_col = AmpelDB.get_collection("photo")
+		else:
+			self.main_col = central_db["main"]
+			self.photo_col = central_db["photo"]
+
 		self.al_pps = {}
 		self.lc = {}
 		self.verbose = verbose
@@ -272,10 +281,8 @@ class DBContentLoader:
 				# Load, translate alFlags from DB into a TransientFlags enum flag instance 
 				# and associate it with the TransientData object instance
 				tran_data.set_flags(
-					TransientFlags(
-						FlagUtils.dbflag_to_enumflag(
-							doc['alFlags'], TransientFlags
-						)
+					FlagUtils.dbflag_to_enumflag(
+						doc['alFlags'], TransientFlags
 					)
 				)
 
@@ -288,17 +295,20 @@ class DBContentLoader:
 			# Pick compound dicts 
 			if doc["alDocType"] == AlDocTypes.COMPOUND:
 
-				tran_data.add_compound(
-					Compound(doc, read_only=True), 
+				doc['alFlags'] = FlagUtils.dbflag_to_enumflag(
+					doc['alFlags'], CompoundFlags
+				)
+
+				tran_data_channels = (
 					channels if len(channels) == 1 
 					else channels & set(doc['channels']) # intersection
 				)
 
+				doc['channels'] = tran_data_channels
+				tran_data.add_compound(doc, tran_data_channels)
+
 				if state_op == "$latest":
-					tran_data.set_latest_state(
-						doc['_id'], channels if len(channels) == 1 
-						else channels & set(doc['channels']) # intersection
-					)
+					tran_data.set_latest_state(doc['_id'], tran_data_channels)
 
 			# Pick t2 records
 			if doc["alDocType"] == AlDocTypes.T2RECORD:
@@ -425,7 +435,7 @@ class DBContentLoader:
 
 		for tran_data in dict_values:
 
-			len_comps = len({ell.id for el in tran_data.compounds.values() for ell in el})
+			len_comps = len({ell['_id'] for el in tran_data.compounds.values() for ell in el})
 			len_lcs = len({ell.id for el in tran_data.lightcurves.values() for ell in el})
 			len_srs = len({hash(ell) for el in tran_data.science_records.values() for ell in el})
 
@@ -469,7 +479,7 @@ class DBContentLoader:
 							"%s Compound(s): %s " %
 							(
 								"" if channel is None else "[%s]" % channel,
-								[el.id.hex() for el in tran_data.compounds[channel]]
+								[el['_id'].hex() for el in tran_data.compounds[channel]]
 							)
 						)
 

@@ -136,11 +136,15 @@ class TransientData:
 				return self.create_view(channel=next(iter(channels)), t2_ids=t2_ids)
 
 			self.logger.info("Creating multi-channel transient instance")
-			all_comps = self._get_combined_elements(self.compounds, channels)
+			all_comps = {
+				el['_id']: el 
+				for channel in channels if channel in self.compounds 
+				for el in self.compounds[channel]
+			}
 
 			if self.state in ["$latest", "$all"]:
 				latest_state = (
-					TransientData.get_latest_compound(all_comps).get_id() 
+					TransientData.get_latest_compound(list(all_comps.values()))['_id']
 					if len(all_comps) > 0 else None
 				)
 			else:
@@ -156,7 +160,7 @@ class TransientData:
 
 			return TransientView(
 				self.tran_id, self.flags, None, None, # created, modified
-				entries, latest_state, photopoints, upperlimits, all_comps,
+				entries, latest_state, photopoints, upperlimits, tuple(all_comps.values()),
 				self._get_combined_elements(self.lightcurves, channels),
 				self._get_combined_elements(self.science_records, channels),
 				tuple(self.known_channels & set(channels)), self.logger
