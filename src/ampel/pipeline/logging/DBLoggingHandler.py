@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 14.12.2017
-# Last Modified Date: 18.06.2018
+# Last Modified Date: 28.06.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import logging, time
@@ -178,7 +178,7 @@ class DBLoggingHandler(logging.Handler):
 	def remove_log_entry(self):
 		""" """
 
-		del_result = self.col.delete_one(self.log_id)
+		del_result = self.col.delete_one({'_id': self.log_id})
 
 		# Update result check
 		if del_result.deleted_count != 1 or del_result.acknowledged is False:
