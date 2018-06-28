@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 13.01.2018
-# Last Modified Date: 21.06.2018
+# Last Modified Date: 28.06.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 
@@ -93,7 +93,7 @@ class QueryMatchTransients:
 		"""
 		if tc_obj.has_constraint():
 			for key, op in {'from': '$gte', 'until': '$lte'}.items():
-				val = tc_obj.get(key)
+				val = tc_obj._get(key)
 				if val is not None:
 					if target_field not in query:
 						query[target_field] = {}
