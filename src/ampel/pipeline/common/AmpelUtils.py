@@ -4,11 +4,12 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 07.06.2018
-# Last Modified Date: 17.06.2018
+# Last Modified Date: 28.06.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import collections
 from functools import reduce
+from types import MappingProxyType
 
 class AmpelUtils():
 	""" 
@@ -86,6 +87,32 @@ class AmpelUtils():
 		A sequence, but not a string
 		"""
 		return isinstance(obj, collections.abc.Sequence) and not isinstance(obj, (str, bytes, bytearray))
+
+
+	@staticmethod
+	def recursive_freeze(collection):
+		"""
+		Return an immutable shallow copy
+		:param collection: a collection that was json serializable (i.e. consists of dicts and lists)
+		"""
+		if isinstance(collection, dict):
+
+			return MappingProxyType(
+				{
+					AmpelUtils.recursive_freeze(k): AmpelUtils.recursive_freeze(v) 
+					for k,v in collection.items()
+				}
+			)
+
+		elif isinstance(collection, list):
+
+			return tuple(
+				map(AmpelUtils.recursive_freeze, collection)
+			)
+
+		else:
+
+			return collection
 
 
 	@staticmethod
