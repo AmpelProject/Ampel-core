@@ -494,10 +494,8 @@ class Sergeant(object):
 		if "annotations" in source:
 			comment_list = source["annotations"]
 		else:
-			print ('getting current comments...')
-			comment_list = get_comments(source,marshalusr=marshalusr,marshalpwd=marshalpwd)
 			print ('getting current annotations...')
-			comment_list = get_annotations(source)
+			comment_list = self.get_annotations(source)
 		
 		current_comm = ''.join([tup[4] for tup in comment_list if tup[3]==comment_type])
 
