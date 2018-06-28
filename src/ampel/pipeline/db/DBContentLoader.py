@@ -4,13 +4,12 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 13.01.2018
-# Last Modified Date: 22.06.2018
+# Last Modified Date: 28.06.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from bson import ObjectId
 from datetime import datetime
 
-from ampel.base.Compound import Compound
 from ampel.base.LightCurve import LightCurve
 from ampel.base.UpperLimit import UpperLimit
 from ampel.base.TransientView import TransientView
