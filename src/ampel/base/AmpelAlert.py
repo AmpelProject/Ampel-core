@@ -47,13 +47,13 @@ class AmpelAlert(Frozen):
 			al = next(fastavro.reader(fo), None)
 
 		if al.get('prv_candidates') is None:
-			return AmpelAlert(al['objectId'], [al['candidate']], None)
+			return AmpelAlert(al['objectId'], tuple(MappingProxyType(al['candidate'])), None)
 		else:
-			pps = [d for d in al['prv_candidates'] if d.get('candid') is not None]
-			pps.insert(0,  al['candidate'])
+			pps = [MappingProxyType(d) for d in al['prv_candidates'] if d.get('candid') is not None]
+			pps.insert(0,  MappingProxyType(al['candidate']))
 			return AmpelAlert(
-				al['objectId'], pps, 
-				[d for d in al['prv_candidates'] if d.get('candid') is None]
+				al['objectId'], tuple(pps), 
+				tuple(MappingProxyType(d) for d in al['prv_candidates'] if d.get('candid') is None)
 			)
         
 
