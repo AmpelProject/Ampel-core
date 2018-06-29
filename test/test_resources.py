@@ -32,7 +32,6 @@ def test_override_mongo():
 	AmpelConfig.set_config(config)
 	
 	import pkg_resources
-	from urllib import urlparse
 	from configargparse import ArgumentParser
 	
 	entry = next(pkg_resources.iter_entry_points('ampel.pipeline.resources', 'mongo'), None)
@@ -48,7 +47,7 @@ def test_override_mongo():
 	mongo = resource.parse_args(opts)
 	
 	assert len(mongo) == 1
-	urlparse.parse(mongo['writer']).hostname == 'blergh'
+	parse.urlparse(mongo['writer']).hostname == 'blergh'
 
 def test_override_graphite():
 	uri = "graphite://foo:bar@hostymchostington:27018"
@@ -57,7 +56,6 @@ def test_override_graphite():
 	AmpelConfig.set_config(config)
 	
 	import pkg_resources
-	from urllib import parse
 	from configargparse import ArgumentParser
 	
 	entry = next(pkg_resources.iter_entry_points('ampel.pipeline.resources', 'graphite'), None)

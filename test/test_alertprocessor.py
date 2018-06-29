@@ -27,6 +27,7 @@ def test_database():
     for db in [admin.client.get_database(role['db']) for role in roles]:
         db.command("dropDatabase")
 
+@pytest.mark.skip
 def test_instantiate_alertprocessor(alert_generator, test_database, caplog):
     """Can an AlertProcessor be instantiated cleanly?"""
     uri, config_db_name = test_database

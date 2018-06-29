@@ -8,18 +8,11 @@ from collections import defaultdict
 
 from ampel import archive
 
-from sqlalchemy import select, create_engine
+from sqlalchemy import select, create_engine, MetaData
 import sqlalchemy
 from sqlalchemy.sql.functions import count
 from collections import Iterable
 import json
-
-@pytest.fixture
-def alert_schema():
-    parent = os.path.dirname(os.path.realpath(__file__)) + '/../'
-    with open(parent+'alerts/schema.json', 'rb') as f:
-        return json.load(f)
-
 
 @pytest.fixture(scope="function", params=['postgres'])
 def mock_database_args(request):
@@ -55,17 +48,18 @@ def mock_database_args(request):
     if request.param == 'postgres':
        pg_drop_database(master, database)
 
-@pytest.fixture(scope="function", params=['postgres'])
-def mock_database(alert_schema, mock_database_args):
-    engine = create_engine(mock_database_args)
-    meta = archive.create_database(alert_schema, engine)
+@pytest.fixture
+def mock_database(postgres):
+    engine = create_engine(postgres)
+    meta = MetaData()
+    meta.reflect(bind=engine)
     with engine.connect() as connection:
         yield meta, connection
 
-def test_create_database(alert_schema, mock_database):
+def test_create_database(mock_database):
     meta, connection = mock_database
     assert connection.execute('SELECT COUNT(*) from alert').first()[0] == 0
-    assert connection.execute('SELECT alert_version from versions ORDER BY version_id DESC LIMIT 1').first()[0] == alert_schema['version']
+    assert connection.execute('SELECT alert_version from versions ORDER BY version_id DESC LIMIT 1').first()[0] == 2.0
 
 def test_insert_unique_alerts(mock_database, alert_generator):
     processor_id = 0
@@ -188,6 +182,7 @@ def assert_alerts_equivalent(alert, reco_alert):
                 out_dict[k] = v in {'1', 't'}
         return out_dict
     alert['candidate'] = strip(alert['candidate'])
+    # fluff += ['rbversion']
     assert alert.keys() == reco_alert.keys()
     for k in alert:
         if 'candidate' in k:
@@ -285,10 +280,8 @@ def test_get_alert(mock_database, alert_generator):
         alert = hit_list[i]
         assert_alerts_equivalent(alert, reco_alert)
 
-def test_archive_object(alert_generator, alert_schema, mock_database_args):
-    engine = create_engine(mock_database_args)
-    archive.create_database(alert_schema, engine)
-    db = archive.ArchiveDB(mock_database_args)
+def test_archive_object(alert_generator, postgres, mock_database):
+    db = archive.ArchiveDB(postgres)
     
     from itertools import islice
     for alert, schema in islice(alert_generator(with_schema=True), 10):
@@ -302,7 +295,7 @@ def test_archive_object(alert_generator, alert_schema, mock_database_args):
                 alert['candidate'][k] = None
         assert_alerts_equivalent(alert, reco_alert)
 
-def test_insert_future_schema(alert_generator, alert_schema, mock_database_args):
+def test_insert_future_schema(alert_generator, postgres, mock_database_args):
     engine = create_engine(mock_database_args)
     archive.create_database(alert_schema, engine)
     db = archive.ArchiveDB(mock_database_args)

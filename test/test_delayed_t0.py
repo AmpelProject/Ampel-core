@@ -175,6 +175,7 @@ def test_source_listener():
 	
 	asyncio.get_event_loop().run_until_complete(getem())
 
+@pytest.mark.skip
 def test_delayed_controller(testing_config, caplog):
 	caplog.set_level('INFO')
 	
