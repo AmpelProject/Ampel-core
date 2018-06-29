@@ -16,7 +16,6 @@ from collections import defaultdict
 # less standard imports
 import  configparser 			# pip3 install configparser
 import requests
-import yaml  					# pip3 install pyyaml
 import astropy.time 			# pip3 install astropy
 
 marshal_root = 'http://skipper.caltech.edu:8080/cgi-bin/growth/'
@@ -229,6 +228,7 @@ class Sergeant(object):
 		the lims keyword can be used to turn on/off upper limits in the light curve
 
 		'''
+		import yaml
 		t_now = astropy.time.Time.now()
 		if self.cutprogramidx is None:
 			print('ERROR, first fix program_name upon init')
