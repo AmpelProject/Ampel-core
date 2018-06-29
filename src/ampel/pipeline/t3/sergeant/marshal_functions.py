@@ -131,11 +131,19 @@ class Sergeant(object):
 			return None
 
 	def _get(self, url):
-		return requests.get(listprog_url, auth=(self.marshalusr, self.marshalpwd)).json()
+                request = requests.get(url, auth=(self.marshalusr, self.marshalpwd))
+                try:
+		        return request.json()
+                except ValueError:
+                        return request
 
 	def _post(self, url, data):
-		return requests.post(listprog_url, data=data, auth=(self.marshalusr, self.marshalpwd)).json()
-
+                request = requests.post(url, data=data, auth=(self.marshalusr, self.marshalpwd))
+                try:
+                        return request.json()
+                except ValueError:
+		        return request
+                
 	def list_my_programids(self):
 		print('My current programs:', self.program_options)
 
