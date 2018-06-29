@@ -15,7 +15,7 @@ from collections import defaultdict
 
 # less standard imports
 import  configparser 			# pip3 install configparser
-from bs4 import BeautifulSoup 	# pip3 install bs4 + pip3 install lxml
+import requests
 import yaml  					# pip3 install pyyaml
 import astropy.time 			# pip3 install astropy
 
@@ -75,77 +75,16 @@ def get_marshal_html(weblink, attempts=1, max_attempts=5, marshalusr=None,marsha
 
 	return reponse.text
 
+try:
+	from bs4 import BeautifulSoup
+	def soup_obj(url, marshalusr=None,marshalpwd=None):
+		return BeautifulSoup(get_marshal_html(url, marshalusr=marshalusr,marshalpwd=marshalpwd), 'lxml')
 
-
-def post_marshal_cgi(weblink,data=None,attempts=1,max_attempts=5,marshalusr=None,marshalpwd=None):
-	"""
-	Run one of the growth cgi scripts, check results and return
-	"""
-	
-	# option to overwrite default username from __init__
-	if (marshalusr is None) or (marshalpwd is None):
-		marshalusr, marshalpwd  = self.marshalusr, self.marshalpwd	
-	
-	auth = requests.auth.HTTPBasicAuth(marshalusr, marshalpwd)
-	
-	try:
-		response = requests.post(weblink, auth=auth, data=data,timeout=120+60*attempts)
-	except (requests.ConnectionError, requests.ReadTimeout) as req_e:		
-
-		print ('Sergeant.post_marshal_cgi(): ', weblink)
-		print (req_e)
-		print ('Sergeant.post_marshal_cgi(): ConnectionError or ReadTimeout this is our {0} attempt, {1} left', attempts, max_attempts-max_attempts)
-
-		if attempts<max_attempts:
-			time.sleep(3)
-			response = post_marshal_cgi(weblink, attempts=attempts+1, marshalusr=marshalusr,marshalpwd=marshalpwd)	
-		else:
-			print ('Sergeant.post_marshal_cgi(): giving up')
-			raise(requests.exceptions.ConnectionError)
-
-	return response
-			
- 
-
-
-def json_obj(weblink,data=None,verbose=False, marshalusr=None,marshalpwd=None):
-		'''
-		Try to post to the marshal, then parse then return (assuming json)
-		'''
-		
-
-		if verbose : print("Trying to post to marshal: "+weblink)
-		
-		r = post_marshal_cgi(weblink,data=data, marshalusr=marshalusr,marshalpwd=marshalpwd)
-		print(r)
-		status = r.status_code
-		print(status)
-		if status != 200:
-				try:
-						message = httpErrors[status]
-				except KeyError:
-						message = 'Error %d: Undocumented error' % status
-						if verbose : print(message)
-				return None
-		if verbose : print("Successful growth connection")
-	
-		try:
-				rinfo =  json.loads(r.text)
-		except ValueError as e:
-				# No json information returned, usually the status most relevant
-				if verbose:
-						print('No json returned: status %d' % status )
-				rinfo =  status
-		return rinfo
-
-		
-
-def soup_obj(url, marshalusr=None,marshalpwd=None):
-	return BeautifulSoup(get_marshal_html(url, marshalusr=marshalusr,marshalpwd=marshalpwd), 'lxml')
-
-def save_source(candid, progid, marshalusr=None,marshalpwd=None):
-	return BeautifulSoup(get_marshal_html(saving_url %(candid, progid), marshalusr=marshalusr,marshalpwd=marshalpwd), 'lxml') 
-
+	def save_source(candid, progid, marshalusr=None,marshalpwd=None):
+		return BeautifulSoup(get_marshal_html(saving_url %(candid, progid), marshalusr=marshalusr,marshalpwd=marshalpwd), 'lxml') 
+except ImportError:
+	import warnings
+	warnings.warn("BeautifulSoup is not installed. I won't be able to scrape webpages.")
 
 class Sergeant(object):
 	'''
@@ -180,10 +119,8 @@ class Sergeant(object):
 		else:
 			self.marshalusr = marshalusr
 			self.marshalpwd = marshalpwd
-				
-		soup = soup_obj(listprog_url,marshalusr=self.marshalusr,marshalpwd=self.marshalpwd)
 
-		for x in json.loads(soup.find('p').text.encode("ascii")):
+		for x in self._get(listprog_url):
 			self.program_options.append(x['name'])
 			if x['name'] == self.program_name:				
 				self.cutprogramidx = x['programidx']
@@ -193,17 +130,21 @@ class Sergeant(object):
 			print ('Options for this user are:', self.program_options)
 			return None
 
+	def _get(self, url):
+		return requests.get(listprog_url, auth=(self.marshalusr, self.marshalpwd)).json()
+
+	def _post(self, url, data):
+		return requests.post(listprog_url, data=data, auth=(self.marshalusr, self.marshalpwd)).json()
 
 	def list_my_programids(self):
 		print('My current programs:', self.program_options)
 
 
 	def set_programid(self,programname):
-		soup = soup_obj(listprog_url,marshalusr=self.marshalusr,marshalpwd=self.marshalpwd)
 
 		self.cutprogramidx = None
 				
-		for x in json.loads(soup.find('p').text.encode("ascii")):
+		for x in self._get(listprog_url):
 			if x['name'] == programname:				
 				self.cutprogramidx = x['programidx']
 				self.program_name = programname
@@ -260,21 +201,15 @@ class Sergeant(object):
 		Return a list of sources saved to the program.
 		Much faster than list_saved_sources, but no annotation or photometry information
 		'''
-
-		return  json_obj(savedsources_url,data={'programidx':str(self.cutprogramidx)}, marshalusr=self.marshalusr,marshalpwd=self.marshalpwd)
-
+		return self._post(savedsources_url, {'programidx':str(self.cutprogramidx)})
 
 	def ingest_avro_id(self, avroid):
 		'''
 		Ingest an alert from avro id.
 		Todo: Update to bulk ingestion, check whether already saved or ingested?
 		'''
+		return self._post(ingest_url, {'programidx':str(self.cutprogramidx),'avroid':str(avroid)})
 
-		
-		return json_obj(ingest_url,data={'programidx':str(self.cutprogramidx),'avroid':str(avroid)}, marshalusr=self.marshalusr,marshalpwd=self.marshalpwd)
-
-				
-		
 	def list_saved_sources(self, lims=False, maxpage=1e99, verbose=False):
 		'''
 		read all sources from the Saved Sources page(s)
