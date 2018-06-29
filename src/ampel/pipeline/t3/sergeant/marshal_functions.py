@@ -198,8 +198,8 @@ class Sergeant(object):
 		print('My current programs:', self.program_options)
 
 
-		def set_programid(self,programname):
-				soup = soup_obj(listprog_url,marshalusr=self.marshalusr,marshalpwd=self.marshalpwd)
+	def set_programid(self,programname):
+		soup = soup_obj(listprog_url,marshalusr=self.marshalusr,marshalpwd=self.marshalpwd)
 
 		self.cutprogramidx = None
 				
