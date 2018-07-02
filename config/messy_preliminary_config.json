@@ -1,8 +1,8 @@
 {
     "resources": {
       "mongo": {
-        "writer": "mongodb://alertprocessor@localhost:27017",
-        "logger": "mongodb://logger@localhost:27017"
+        "writer": "mongodb://localhost:27017",
+        "logger": "mongodb://localhost:27017"
       },
       "graphite": "graphite://localhost:2003/ampel.test",
       "extcats": "mongodb://filterclient@localhost:27018",
