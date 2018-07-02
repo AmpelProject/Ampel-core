@@ -8,6 +8,7 @@ dependencies:
   - pymongo
   - fastavro
   - pytest
+  - pytest-cov
 #  - pykafka
   - python-confluent-kafka>=0.11.4
   - sqlalchemy
@@ -19,9 +20,9 @@ dependencies:
   - graphitesend
   - voluptuous
   - configargparse
+  - schedule
+  - slackclient
   - pip:
-    - schedule
-    - slackclient
     - -e
     - /Ampel/ampel-core
     - -e

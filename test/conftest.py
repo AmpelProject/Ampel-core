@@ -1,6 +1,5 @@
 
 import pytest
-import pykafka
 import subprocess
 import time
 import os
