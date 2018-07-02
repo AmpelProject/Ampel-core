@@ -14,59 +14,42 @@ from sqlalchemy.sql.functions import count
 from collections import Iterable
 import json
 
-@pytest.fixture(scope="function", params=['postgres'])
-def mock_database_args(request):
-    def pg_drop_database(engine, database):
-       # terminate connections and drop database
-       with engine.connect() as conn:
-           try:
-               conn.execute("commit")
-               conn.execute(
-                   """ALTER DATABASE {db} WITH CONNECTION LIMIT 0;
-                      SELECT pg_terminate_backend(sa.pid) FROM pg_stat_activity sa WHERE 
-                      sa.pid <> pg_backend_pid() AND sa.datname = '{db}';""".format(db=database))
-               conn.execute("commit")
-               conn.execute("DROP DATABASE {db};".format(db=database))
-           except sqlalchemy.exc.ProgrammingError:
-               pass
-    if request.param == 'sqlite':
-        uri = 'sqlite:///:memory:'
-    elif request.param == 'postgres':
-        user = 'ampel'
-        host = os.environ['ARCHIVE']
-        database = 'test_archive'
-        password = archive.docker_env('POSTGRES_PASSWORD')
-        master = create_engine('postgresql://{}:{}@{}/{}'.format(user,password,host,'postgres'))
-        pg_drop_database(master, database)
-        with master.connect() as conn:
-            conn.execute("commit")
-            conn.execute("create database {}".format(database))
-        
-        uri = 'postgresql://{}:{}@{}/{}'.format(user, password, host, database)
-    yield uri
-
-    if request.param == 'postgres':
-       pg_drop_database(master, database)
+@pytest.fixture
+def temp_database(postgres):
+    """
+    Yield archive database, dropping all rows when finished
+    """
+    engine = create_engine(postgres)
+    meta = MetaData()
+    meta.reflect(bind=engine)
+    try:
+        with engine.connect() as connection:
+            for name, table in meta.tables.items():
+                if name != 'versions':
+                    connection.execute(table.delete())
+        yield postgres
+    finally:
+        with engine.connect() as connection:
+            for name, table in meta.tables.items():
+                if name != 'versions':
+                    connection.execute(table.delete())
 
 @pytest.fixture
-def mock_database(postgres):
-    engine = create_engine(postgres)
+def mock_database(temp_database):
+    engine = create_engine(temp_database)
     meta = MetaData()
     meta.reflect(bind=engine)
     with engine.connect() as connection:
         yield meta, connection
 
-def test_create_database(mock_database):
-    meta, connection = mock_database
-    assert connection.execute('SELECT COUNT(*) from alert').first()[0] == 0
-    assert connection.execute('SELECT alert_version from versions ORDER BY version_id DESC LIMIT 1').first()[0] == 2.0
-
-def test_insert_unique_alerts(mock_database, alert_generator):
+def test_insert_unique_alerts(temp_database, alert_generator):
     processor_id = 0
-    meta, connection = mock_database
+    db = archive.ArchiveDB(temp_database)
+    connection = db._connection
+    meta = db._meta
     timestamps = []
     candids = set()
-    for alert in alert_generator():
+    for alert, schema in alert_generator(with_schema=True):
         # alerts are unique
         assert alert['candid'] not in candids
         candids.add(alert['candid'])
@@ -79,7 +62,7 @@ def test_insert_unique_alerts(mock_database, alert_generator):
             prevs[key] = candidate
         
         timestamps.append(int(time.time()*1e6))
-        archive.insert_alert(connection, meta, alert, processor_id, timestamps[-1])
+        db.insert_alert(alert, schema, processor_id, timestamps[-1])
     rows = connection.execute(select([meta.tables['alert'].c.ingestion_time])).fetchall()
     db_timestamps = sorted([tup[0] for tup in rows])
     assert timestamps == db_timestamps
@@ -115,8 +98,12 @@ def test_insert_duplicate_photopoints(mock_database, alert_generator):
     from sqlalchemy.sql.expression import tuple_, func
     from sqlalchemy.sql.functions import sum
     
-    alert = next(alert_generator())
-    detections, upper_limits = count_previous_candidates(alert)
+    # find an alert with at least 1 previous detection
+    for alert in alert_generator():
+        detections, upper_limits = count_previous_candidates(alert)
+        if detections > 0:
+            break
+    assert detections > 0
     
     archive.insert_alert(connection, meta, alert, processor_id, int(time.time()*1e6))
     assert connection.execute(count(meta.tables['alert'].columns.candid)).first()[0] == 1
@@ -182,7 +169,6 @@ def assert_alerts_equivalent(alert, reco_alert):
                 out_dict[k] = v in {'1', 't'}
         return out_dict
     alert['candidate'] = strip(alert['candidate'])
-    # fluff += ['rbversion']
     assert alert.keys() == reco_alert.keys()
     for k in alert:
         if 'candidate' in k:
@@ -200,6 +186,9 @@ def assert_alerts_equivalent(alert, reco_alert):
         raise
     for prv, reco_prv in zip(prvs, reco_prvs):
         prv = strip(prv)
+        # remove keys not in original alert (because it came from an older schema)
+        for k in set(reco_prv.keys()).difference(prv.keys()):
+            del reco_prv[k]
         assert sorted(prv.keys()) == sorted(reco_prv.keys())
         for k in prv.keys():
             # print(k, prv[k], reco_prv[k])
@@ -209,32 +198,28 @@ def assert_alerts_equivalent(alert, reco_alert):
                 print(k, prv[k], reco_prv[k])
                 raise
         assert prv == pytest.approx(reco_prv)
-        #assert prv == reco_prv
-    assert alert['candidate'] == pytest.approx(reco_alert['candidate'])
+    keys = {k for k,v in alert['candidate'].items() if v is not None}
+    candidate = {k:v for k,v in alert['candidate'].items() if k in keys}
+    reco_candidate = {k:v for k,v in reco_alert['candidate'].items() if k in keys}
+    for k in set(alert['candidate'].keys()).difference(keys):
+        assert reco_alert['candidate'][k] is None
+    assert candidate == pytest.approx(reco_candidate)
 
-def test_get_cutout(mock_database, cutout_alert_generator, alert_generator):
+def test_get_cutout(mock_database, alert_generator):
     processor_id = 0
     meta, connection = mock_database
-    
+
     for idx, alert in enumerate(alert_generator()):
         processor_id = idx % 16
         archive.insert_alert(connection, meta, alert, processor_id, 0)
-        cutout = archive.get_cutout(connection, meta, alert['candid'])
-        assert cutout == {}
 
-    for idx, alert in enumerate(cutout_alert_generator()):
-        processor_id = idx % 16
-        archive.insert_alert(connection, meta, alert, processor_id, 0)
-
-    for idx, alert in enumerate(cutout_alert_generator()):
+    for idx, alert in enumerate(alert_generator()):
         processor_id = idx % 16
         cutouts = archive.get_cutout(connection, meta, alert['candid'])
         alert_cutouts = {k[len('cutout'):].lower() : v['stampData'] for k,v in alert.items() if k.startswith('cutout')}
         assert cutouts == alert_cutouts
 
-
-    
-
+@pytest.mark.skip(reason="Testing alert tarball only contains a single exposure")
 def test_get_alert(mock_database, alert_generator):
     processor_id = 0
     meta, connection = mock_database
@@ -280,7 +265,7 @@ def test_get_alert(mock_database, alert_generator):
         alert = hit_list[i]
         assert_alerts_equivalent(alert, reco_alert)
 
-def test_archive_object(alert_generator, postgres, mock_database):
+def test_archive_object(alert_generator, postgres):
     db = archive.ArchiveDB(postgres)
     
     from itertools import islice
@@ -295,13 +280,11 @@ def test_archive_object(alert_generator, postgres, mock_database):
                 alert['candidate'][k] = None
         assert_alerts_equivalent(alert, reco_alert)
 
-def test_insert_future_schema(alert_generator, postgres, mock_database_args):
-    engine = create_engine(mock_database_args)
-    archive.create_database(alert_schema, engine)
-    db = archive.ArchiveDB(mock_database_args)
+def test_insert_future_schema(alert_generator, postgres):
+    db = archive.ArchiveDB(postgres)
 
     alert, schema = next(alert_generator(True))
-    schema['version'] = str(float(schema['version'])+.1)
+    schema['version'] = str(float(schema['version'])+10)
     with pytest.raises(ValueError) as e_info:
         db.insert_alert(alert, schema, 0, 0)
 

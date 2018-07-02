@@ -5,7 +5,7 @@ import subprocess
 import socket
 from os.path import abspath, join, dirname
 
-def docker_service(image, protocol, port, auth=None, path=None, environ={}, mounts=[], healthcheck=None):
+def docker_service(image, port, environ={}, mounts=[], healthcheck=None):
 	container = None
 	try:
 		cmd = ['docker', 'run', '-d', '--restart', 'always', '-P']
@@ -15,7 +15,6 @@ def docker_service(image, protocol, port, auth=None, path=None, environ={}, moun
 			cmd += ['--health-start-period', '1s', '--health-interval', '1s','--health-cmd', healthcheck]
 		for source, dest in mounts:
 			cmd += ['-v', '{}:{}'.format(source, dest)]
-		print(cmd)
 		container = subprocess.check_output(cmd + [image]).strip()
 		
 		import time
@@ -33,9 +32,6 @@ def docker_service(image, protocol, port, auth=None, path=None, environ={}, moun
 		return pytest.skip("Docker fixture requires Docker")
 	finally:
 		if container is not None:
-			print('--- logs ---')
-			subprocess.check_call(['docker', 'container', 'logs', container])
-			print('--- end logs ---')
 			subprocess.check_call(['docker', 'container', 'stop', container],
 			    stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 			subprocess.check_call(['docker', 'container', 'rm', container],
@@ -43,18 +39,21 @@ def docker_service(image, protocol, port, auth=None, path=None, environ={}, moun
 
 @pytest.fixture(scope="session")
 def mongod():
-	yield from docker_service('mongo:3.6', 'mongodb', 27017)
+	gen = docker_service('mongo:3.6', 27017)
+	port = next(gen)
+	yield 'mongodb://localhost:{}/'.format(port)
 
 @pytest.fixture(scope="session")
 def graphite():
-	yield from docker_service('gographite/go-graphite:latest', 'graphite', 2003)
+	gen = docker_service('gographite/go-graphite:latest', 2003)
+	port = next(gen)
+	yield 'graphite://localhost:{}/'.format(port)
 
 @pytest.fixture(scope="session")
 def postgres():
-	gen = docker_service('postgres:10.3', 'postgresql', 5432,
-	    auth = 'ampel@',
+	gen = docker_service('postgres:10.3', 5432,
 	    environ={'POSTGRES_USER': 'ampel', 'POSTGRES_DB': 'ztfarchive', 'ARCHIVE_READ_USER': 'archive-readonly', 'ARCHIVE_WRITE_USER': 'ampel-client'},
-		mounts=[(join(abspath(dirname(__file__)), '..', '..', '..', 'deploy', 'production', 'initdb', 'archive'), '/docker-entrypoint-initdb.d/')],
+	    mounts=[(join(abspath(dirname(__file__)), '..', '..', '..', 'deploy', 'production', 'initdb', 'archive'), '/docker-entrypoint-initdb.d/')],
 	    healthcheck='psql --username ampel --port 5432 ztfarchive || exit 1')
 	port = next(gen)
 	yield 'postgresql://ampel@localhost:{}/ztfarchive'.format(port)
