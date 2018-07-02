@@ -137,14 +137,14 @@ class TransientData:
 
 			self.logger.info("Creating multi-channel transient instance")
 			all_comps = {
-				el['_id']: el 
+				el.id: el 
 				for channel in channels if channel in self.compounds 
 				for el in self.compounds[channel]
 			}
 
 			if self.state in ["$latest", "$all"]:
 				latest_state = (
-					TransientData.get_latest_compound(list(all_comps.values()))['_id']
+					TransientData.get_latest_compound(list(all_comps.values())).id
 					if len(all_comps) > 0 else None
 				)
 			else:

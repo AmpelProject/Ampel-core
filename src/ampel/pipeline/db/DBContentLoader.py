@@ -32,6 +32,14 @@ from ampel.pipeline.db.LightCurveLoader import LightCurveLoader
 from ampel.pipeline.db.query.QueryLatestCompound import QueryLatestCompound
 from ampel.pipeline.db.query.QueryLoadTransientInfo import QueryLoadTransientInfo
 
+from ampel.base.Frozen import Frozen
+# temporary guess at the type that TransientData.add_compound expects
+class HoboCompound(Frozen):
+	def __init__(self, content):
+		self.content = content['comp']
+		self.id = content['_id']
+	def __hash__(self):
+		return hash(self.id)
 
 class DBContentLoader:
 	"""
@@ -305,7 +313,7 @@ class DBContentLoader:
 				)
 
 				doc['channels'] = tran_data_channels
-				tran_data.add_compound(doc, tran_data_channels)
+				tran_data.add_compound(HoboCompound(doc), tran_data_channels)
 
 				if state_op == "$latest":
 					tran_data.set_latest_state(doc['_id'], tran_data_channels)
@@ -413,7 +421,7 @@ class DBContentLoader:
 					if (len_uls == 0 and len([el for el in comp.content if 'ul' in el]) > 0):
 						self.logger.info(
 							" -> LightCurve loading aborded for %s (upper limits required)" % 
-							comp.get_id().hex()
+							comp.id.hex()
 						)
 						continue
 
@@ -435,7 +443,7 @@ class DBContentLoader:
 
 		for tran_data in dict_values:
 
-			len_comps = len({ell['_id'] for el in tran_data.compounds.values() for ell in el})
+			len_comps = len({ell.id for el in tran_data.compounds.values() for ell in el})
 			len_lcs = len({ell.id for el in tran_data.lightcurves.values() for ell in el})
 			len_srs = len({hash(ell) for el in tran_data.science_records.values() for ell in el})
 
@@ -479,7 +487,7 @@ class DBContentLoader:
 							"%s Compound(s): %s " %
 							(
 								"" if channel is None else "[%s]" % channel,
-								[el['_id'].hex() for el in tran_data.compounds[channel]]
+								[el.id.hex() for el in tran_data.compounds[channel]]
 							)
 						)
 
