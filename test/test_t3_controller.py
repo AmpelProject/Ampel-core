@@ -114,7 +114,7 @@ def testing_config(testing_class, t3_jobs, mongod, graphite):
 	config = {
 	    'global': {},
 	    'resources': {
-	        'mongo': {'writer': mongod},
+	        'mongo': {'writer': mongod, 'logger': mongod},
 	        'graphite': graphite,
 	        },
 	    't3_units': {
@@ -250,7 +250,7 @@ def test_get_transient_view(ingested_transients, selected_transients, minimal_co
 					assert tran_view.channel in ingested_transients[tran_view.tran_id], "Requested channel passed in underlying transient data"
 				else:
 					assert any(c in task_chans for c in tran_view.channel), "Transient view contains at least one of requested channels"
-					assert tran_view.channel == ingested_transients[tran_view.tran_id], "Channel list in view matches actual transient"
+					assert tuple(sorted(tran_view.channel)) == tuple(sorted(ingested_transients[tran_view.tran_id])), "Channel list in view matches actual transient"
 					
 		assert count == len(list(chans for chans in ingested_transients.values() if any(c in task_chans for c in chans))), "Number of views matches ingested transients passing criteria"
 	
