@@ -647,59 +647,6 @@ class AlertProcessor():
 			'uls': shaped_alert.get('uls')
 		}
 
-
-def init_db():
-	"""
-	Initialize a MongoDB for use with Ampel
-	"""
-	import os, glob
-	from os.path import basename, dirname
-	pattern = os.path.abspath(os.path.dirname(os.path.realpath(__file__)) + '/../../../../config/hu/*/*.json')
-	
-	from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
-	parser = ArgumentParser(description=__doc__, formatter_class=ArgumentDefaultsHelpFormatter)
-	parser.add_argument('--host', default='localhost:27017',
-	    help='MongoDB server address and port')
-	parser.add_argument('-d', '--database', default='Ampel_config',
-	    help='Configuration database name')
-	parser.add_argument('--config', nargs='+', default=glob.glob(pattern),
-	    help='JSON files to be inserted into the "config" collection')
-	
-	opts = parser.parse_args()
-
-	dbs = create_databases(opts.host, opts.database, opts.config)
-	dbs[0].add_user("ampel-readonly", read_only=True, password="password")
-
-def create_databases(host, database_name, configs):
-	
-	import os
-	from os.path import basename, dirname
-	from pymongo import MongoClient, ASCENDING
-	from bson import ObjectId
-	import json
-	from ampel.archive import docker_env
-	client = MongoClient(
-		host, username=os.environ.get('MONGO_INITDB_ROOT_USERNAME', 'root'), 
-		password=docker_env('MONGO_INITDB_ROOT_PASSWORD')
-	)
-	
-	def get_id(blob):
-		if isinstance(blob['_id'], dict) and '$oid' in blob['_id']:
-			return ObjectId(blob['_id']['$oid'])
-		else:
-			return blob['_id']
-	
-	config_db = client.get_database(database_name)
-	for config in configs:
-		collection_name = basename(dirname(config))
-		collection = config_db[collection_name]
-		with open(config) as f:
-			for blob in json.load(f):
-				blob['_id'] = get_id(blob)
-				collection.replace_one({'_id':blob['_id']}, blob, upsert=True)
-	
-	return client.get_database('admin'), config_db
-
 def run_alertprocessor():
 
 	import os, time, uuid

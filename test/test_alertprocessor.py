@@ -1,15 +1,7 @@
 
-from ampel.pipeline.t0.AlertProcessor import AlertProcessor, create_databases
-from ampel.archive import ArchiveDB
-#from ampel.pipeline.t0.alerts.ZIAlertParser import ZIAlertParser
-
-import os
-from glob import glob
-import random
-from itertools import islice
-
 import pytest
 import subprocess
+import os
 from urllib.parse import urlparse
 
 def resource_args(uri, name, role=None):

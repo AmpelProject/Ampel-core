@@ -4,7 +4,6 @@
 # Author            : Jakob van Santen <jakob.van.santen@desy.de>
 
 from abc import ABC, abstractmethod
-from ampel.pipeline.common.expandvars import expandvars
 import pkg_resources
 
 class Resource(ABC):
