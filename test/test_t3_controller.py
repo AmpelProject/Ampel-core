@@ -148,7 +148,7 @@ def test_monitor_processes(testing_config):
 		controller.stop()
 
 @pytest.fixture
-def minimal_config(mongod):
+def minimal_config(mongod, testing_class):
 	AmpelConfig.reset()
 	sources = {
 		'ZTFIPAC': {
@@ -176,8 +176,21 @@ def minimal_config(mongod):
 						'doc(s)': ['TRANSIENT', 'COMPOUND', 'T2RECORD', 'PHOTOPOINT']
 					}
 				},
-				'task(s)': {}
+				'task(s)': [
+					{'name': 'noselect', 't3Unit': 'potemkin'},
+					{'name': 'config', 't3Unit': 'potemkin', 'runConfig': 'default'},
+					# {'name': 'badconfig', 't3Unit': 'potemkin', 'runConfig': 'default_doesnotexist'},
+					{'name': 'select0', 't3Unit': 'potemkin', 'select': {'channel(s)': ['0']}},
+					{'name': 'select1', 't3Unit': 'potemkin', 'select': {'channel(s)': ['1']}},
+					
+				]
 			}
+		},
+		't3_run_config' : {
+			'potemkin_default': {},
+		},
+		't3_units': {
+			'potemkin': {'classFullPath': 'potemkin'}
 		}
 	}
 	AmpelConfig.set_config(config)
@@ -217,6 +230,23 @@ def ingested_transients(alert_generator, minimal_config, mongod):
 	assert tran_col.count({'alDocType': AlDocTypes.TRANSIENT}) == len(choices), "Transient docs exist for all ingested alerts"
 	
 	return dict(choices)
+
+def test_missing_job(minimal_config):
+	with pytest.raises(ValueError):
+		T3JobLoader.load('jobbyjob_doesnotexist')
+
+def test_missing_task(minimal_config):
+	with pytest.raises(ValueError):
+		T3TaskLoader.load('theytookrjerbs', 'case1')
+	with pytest.raises(ValueError):
+		T3TaskLoader.load('jobbyjob', 'doesnotexist')
+
+def test_task_config(minimal_config):
+	T3TaskLoader.load('jobbyjob', 'noselect')
+	T3TaskLoader.load('jobbyjob', 'config')
+	with pytest.raises(ValueError):
+		T3TaskLoader.load('jobbyjob', 'badconfig')
+	T3TaskLoader.load('jobbyjob', 'select0')
 
 @pytest.fixture
 def selected_transients(ingested_transients, minimal_config):
