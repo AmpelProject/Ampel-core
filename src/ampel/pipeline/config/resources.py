@@ -69,7 +69,7 @@ def uri_string(props):
         netloc += ':{}'.format(props['port'])
     if 'username' in props:
         auth = parse.quote(props['username'])
-        if 'password' in props:
+        if props.get('password', None) is not None:
             auth = ':'.join((auth, parse.quote(props['password'])))
         netloc = '@'.join((auth, netloc))
     return "{}://{}/{}".format(props['scheme'], netloc, props.get('path', ''))
