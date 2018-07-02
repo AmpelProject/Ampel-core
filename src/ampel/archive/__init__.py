@@ -18,6 +18,7 @@ import collections
 
 from sqlalchemy.ext.compiler import compiles
 from sqlalchemy.sql.expression import Insert
+from distutils.version import LooseVersion
 
 class ArchiveDB(object):
     def __init__(self, *args, **kwargs):
@@ -33,7 +34,7 @@ class ArchiveDB(object):
         Versions = self._meta.tables['versions']
         with self._connection.begin() as transaction:
             try:
-                self._alert_version = self._connection.execute(select([Versions.c.alert_version]).order_by(Versions.c.version_id.desc()).limit(1)).first()[0]
+                self._alert_version = LooseVersion(self._connection.execute(select([Versions.c.alert_version]).order_by(Versions.c.version_id.desc()).limit(1)).first()[0])
             finally:
                 transaction.commit()
 
@@ -43,7 +44,7 @@ class ArchiveDB(object):
         :param schema: avro schema dictionary
         :param partition_id: index of the Kafka partition this alert came from
         """
-        if schema['version'] > self._alert_version:
+        if LooseVersion(schema['version']) > self._alert_version:
             raise ValueError("alert schema ({}) is newer than database schema ({})".format(schema['version'], self._alert_version))
         return insert_alert(self._connection, self._meta, alert, partition_id, ingestion_time)
 
