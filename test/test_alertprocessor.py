@@ -9,53 +9,42 @@ import random
 from itertools import islice
 
 import pytest
+import subprocess
+from urllib.parse import urlparse
 
-@pytest.fixture
-def test_database():
-    pattern = os.path.abspath(os.path.dirname(os.path.realpath(__file__)) + '/../config/test/*/*.json')
-    configs = glob(pattern)
-    db_name = 'ampel-test-config'
-    admin, config_db = create_databases(os.environ['MONGO'], db_name, configs)
-    user, password = 'testy', 'testington'
-    specs = config_db['global'].find_one({'_id':'dbSpecs'})['databases']
-    databases = [config_db.name] + [d['dbName'] for d in specs.values()]
-    roles = [{'db':name, "role": "readWrite"} for name in databases]
-    admin.add_user(user, password, roles=roles)
+def resource_args(uri, name, role=None):
+	uri = urlparse(uri)
+	prefix = '--{}'.format(name)
+	args = [prefix+'-host', uri.hostname, prefix+'-port', str(uri.port)]
+	if role is not None:
+		if uri.username is not None:
+			args += [prefix+'-'+role+'-username', uri.username]
+		if uri.password is not None:
+			args += [prefix+'-'+role+'-password', uri.password]
+	return args
 
-    uri = "mongodb://{}:{}@{}/".format(user,password,os.environ['MONGO'])
-    yield uri, db_name
-    for db in [admin.client.get_database(role['db']) for role in roles]:
-        db.command("dropDatabase")
+def resource_env(uri, name, role=None):
+	uri = urlparse(uri)
+	prefix = name.upper() + "_"
+	env = {prefix+"HOSTNAME": uri.hostname, prefix+"PORT": str(uri.port)}
+	if role is not None:
+		if uri.username is not None:
+			env[prefix+role.upper()+"_USERNAME"] = uri.username
+		if uri.password is not None:
+			env[prefix+role.upper()+"_PASSWORD"] = uri.password
+	return env
 
-@pytest.mark.skip
-def test_instantiate_alertprocessor(alert_generator, test_database, caplog):
-    """Can an AlertProcessor be instantiated cleanly?"""
-    uri, config_db_name = test_database
-    ap = AlertProcessor(db_host=uri, config_db=config_db_name)
-    spec = ap.global_config['dbSpecs']
-    print(spec)
-    def get_collection(alertprocessor, name):
-        spec = alertprocessor.global_config['dbSpecs']['databases'][name]
-        return alertprocessor.mongo_client[spec['dbName']][spec['collectionName']]
-    transients = get_collection(ap, 'transients')
-    logs = get_collection(ap, 'jobs')
-    assert transients.find({}).count() == 0
-    
-    # ensure that the RandomFilter always does the same thing
-    random.seed('reproducibility considered good')
-    
-    class LetsInventNewerBetterWheels:
-        def get_alerts(self):
-            parser = ZIAlertParser()
-            for avrodict in islice(alert_generator(), 100):
-                yield parser.parse(avrodict)
-    assert ap.run(LetsInventNewerBetterWheels(), console_logging=True) == 100
-    
-    # ensure that all logs ended up in the db
-    assert logs.find({}).count() == 1
-    record = next(logs.find({}))
-    assert len(record["records"]) == len(caplog.records)
-    print(len(caplog.records))
-    
-    assert transients.find({}).count() == 785
-
+@pytest.mark.parametrize("config_source", ("env", "cmdline"))
+def test_alertprocessor_entrypoint(alert_tarball, mongod, postgres, graphite, config_source):
+	cmd = ['ampel-alertprocessor', '--tarfile', alert_tarball, '--channels', 'HU_RANDOM']
+	if config_source == "env":
+		env = {**resource_env(mongod, 'mongo', 'writer'),
+		       **resource_env(postgres, 'archive', 'writer'),
+		       **resource_env(graphite, 'graphite')}
+		env.update(os.environ)
+	elif config_source == "cmdline":
+		env = os.environ
+		cmd += resource_args(mongod, 'mongo', 'writer') \
+		    + resource_args(postgres, 'archive', 'writer') \
+		    + resource_args(graphite, 'graphite')
+	subprocess.check_call(cmd, env=env)

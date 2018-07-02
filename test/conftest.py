@@ -20,10 +20,14 @@ def alert_blobs():
             yield f.read()
 
 @pytest.fixture
-def alert_generator():
+def alert_tarball():
+    return os.path.join(os.path.dirname(__file__), '..', 'alerts', 'recent_alerts.tar.gz')
+
+@pytest.fixture
+def alert_generator(alert_tarball):
     from ampel.pipeline.t0.alerts.TarballWalker import TarballWalker
     def alerts(with_schema=False):
-        atat = TarballWalker(os.path.join(os.path.dirname(__file__), '..', 'alerts', 'recent_alerts.tar.gz'))
+        atat = TarballWalker(alert_tarball)
         for fileobj in itertools.islice(atat.get_files(), 0, 1000, 1):
             reader = fastavro.reader(fileobj)
             alert = next(reader)

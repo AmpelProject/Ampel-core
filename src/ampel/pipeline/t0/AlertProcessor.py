@@ -708,13 +708,14 @@ def run_alertprocessor():
 	from ampel.archive import ArchiveDB
 
 	parser = AmpelArgumentParser()
-	parser.require_resource('mongo', ['writer'])
+	parser.require_resource('mongo', ['writer', 'logger'])
 	parser.require_resource('archive', ['writer'])
 	parser.require_resource('graphite')
 	action = parser.add_mutually_exclusive_group(required=True)
 	action.add_argument('--broker', default='epyc.astro.washington.edu:9092')
 	action.add_argument('--tarfile', default=None)
 	parser.add_argument('--group', default=uuid.uuid1(), help="Kafka consumer group name")
+	parser.add_argument('--channels', default=None, nargs="+")
 	
 	# partially parse command line to get config
 	opts, argv = parser.parse_known_args()
@@ -745,7 +746,7 @@ def run_alertprocessor():
 		loader = iter(fetcher)
 
 	alert_supplier = AlertSupplier(loader, ZIAlertShaper(), serialization="avro", archive=archive)
-	processor = AlertProcessor(publish_stats=["jobs", "graphite"])
+	processor = AlertProcessor(publish_stats=["jobs", "graphite"], channels=opts.channels)
 
 	while alert_processed == AlertProcessor.iter_max:
 		t0 = time.time()
