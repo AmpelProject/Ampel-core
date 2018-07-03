@@ -34,7 +34,7 @@ def docker_service(image, port, environ={}, mounts=[], healthcheck=None):
 		if container is not None:
 			subprocess.check_call(['docker', 'container', 'stop', container],
 				stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-			subprocess.check_call(['docker', 'container', 'rm', container],
+			subprocess.check_call(['docker', 'container', 'rm', '--volumes', container],
 				stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
 @pytest.fixture(scope="session")
