@@ -19,27 +19,6 @@ def alert_blobs():
             yield f.read()
 
 @pytest.fixture
-def alert_tarball():
-    return os.path.join(os.path.dirname(__file__), '..', 'alerts', 'recent_alerts.tar.gz')
-
-@pytest.fixture
-def alert_generator(alert_tarball):
-    from ampel.pipeline.t0.alerts.TarballWalker import TarballWalker
-    def alerts(with_schema=False):
-        atat = TarballWalker(alert_tarball)
-        for fileobj in itertools.islice(atat.get_files(), 0, 1000, 1):
-            reader = fastavro.reader(fileobj)
-            alert = next(reader)
-            for k in {'cutoutDifference', 'cutoutScience', 'cutoutTemplate'}:
-                 del alert[k]
-            if with_schema:
-                yield alert, reader.schema
-            else:
-                yield alert
-    yield alerts
-
-
-@pytest.fixture
 def cutout_alert_generator():
     from ampel.pipeline.t0.alerts.TarballWalker import TarballWalker
     def alerts(with_schema=False):
