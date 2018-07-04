@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 02.06.2018
-# Last Modified Date: 15.06.2018
+# Last Modified Date: 04.07.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from ampel.pipeline.config.AmpelConfig import AmpelConfig
@@ -70,7 +70,7 @@ class DataAccessManager:
 
 	def get_photopoints(self, photopoints):
 		""" 
-		argument 'photopoint' must be an instance of ampel.base.PhotoPoint 
+		argument 'photopoint' must be an instance of ampel.base.core.PhotoPoint 
 		"""
 
 		return tuple(
