@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 13.01.2018
-# Last Modified Date: 22.06.2018
+# Last Modified Date: 04.07.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from ampel.flags.AlDocTypes import AlDocTypes
@@ -12,9 +12,9 @@ from ampel.flags.FlagUtils import FlagUtils
 from ampel.flags.PhotoFlags import PhotoFlags
 from ampel.base.PlainPhotoPoint import PlainPhotoPoint
 from ampel.base.PlainUpperLimit import PlainUpperLimit
-from ampel.base.PhotoPoint import PhotoPoint
-from ampel.base.UpperLimit import UpperLimit
 from ampel.base.LightCurve import LightCurve
+from ampel.base.core.PhotoPoint import PhotoPoint
+from ampel.base.core.UpperLimit import UpperLimit
 from ampel.pipeline.logging.LoggingUtils import LoggingUtils
 from ampel.pipeline.db.AmpelDB import AmpelDB
 
@@ -98,7 +98,7 @@ class LightCurveLoader:
 		--------------------
 		ppd_list: list of photopoint dict instances loaded from DB
 		uld_list: list of upper limit dict instances loaded from DB
-		compound: compound dict instance loaded from DB or instance of ampel.base.Compound
+		compound: compound namedtuple loaded from DB
 		"""
 
 		# Robustness check 
@@ -118,7 +118,7 @@ class LightCurveLoader:
 		ulo_list = []
 
 		# Loop through compound elements
-		for el in compound['comp'] if type(compound) is dict else compound.content:
+		for el in compound.comp:
 
 			# Get corresponding photopoint / upper limit
 			if 'pp' in el:
@@ -176,8 +176,8 @@ class LightCurveLoader:
 				ulo_list.append(obj)
 
 		return LightCurve(
-			compound['_id'], ppo_list, ulo_list, 
-			info={'tier': compound['tier'], 'added': compound['added']}, 
+			compound.id, ppo_list, ulo_list, 
+			info={'tier': compound.tier, 'added': compound.added}, 
 			read_only=self.read_only
 		)
 
@@ -189,7 +189,7 @@ class LightCurveLoader:
 
 		Required parameters:
 		--------------------
-		compound: compound dict instance loaded from DB or instance of ampel.base.Compound
+		compound: namedtuple loaded from DB
 		'already_loaded_photo': dict instance containing references to already existing 
 		frozen PhotoPoint and UpperLimit instances. PhotoPoint/UpperLimit instances 
 		are then 're-used' rather than re-instantiated  for every LightCurve object 
@@ -211,7 +211,7 @@ class LightCurveLoader:
 		ulo_list = []
 
 		# Loop through compound elements
-		for el in compound['comp'] if type(compound) is dict else compound.content:
+		for el in compound.comp:
 
 			# Get corresponding photopoint / upper limit
 			if 'pp' in el:
@@ -273,9 +273,6 @@ class LightCurveLoader:
 					ulo_list.append(already_loaded_photo[ul_id])
 
 		return LightCurve(
-			compound['_id'] if type(compound) is dict else compound.id, 
-			ppo_list, ulo_list, info=(
-				{'tier': compound['tier'], 'added': compound['added']} if type(compound) is dict 
-				else {'tier': compound.tier, 'added': compound.added}
-			), read_only=self.read_only
+			compound.id, ppo_list, ulo_list, read_only=self.read_only,
+			info={'tier': compound.tier, 'added': compound.added} 
 		)
