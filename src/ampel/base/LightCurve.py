@@ -35,11 +35,11 @@ class LightCurve(Frozen):
 	def __init__(self, compound_id, ppo_list, ulo_list=None, info=None, read_only=True, logger=None):
 		"""
 		Mandatory arguments:
-		compound: dict instance loaded using compound DB dict or instance of ampel.base.Compound
-		ppo_list: list of ampel.base.PhotoPoint instances
+		compound_id: instance of bson.Binary (subtype: 5)
+		ppo_list: list of ampel.base.core.PhotoPoint instances
 
 		Optional arguments:
-		ulo_list: list of ampel.base.UpperLimit instances
+		ulo_list: list of ampel.base.core.UpperLimit instances
 		info: dict instance with additional info ('added', 'tier', ...)
 		read_only: wether the provided list should be casted as immutable tuple
 		and the class instance frozen.
