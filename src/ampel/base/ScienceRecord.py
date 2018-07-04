@@ -14,7 +14,6 @@ from bson import ObjectId
 
 class ScienceRecord(Frozen):
 	"""
-	Wrapper class around a dict instance ususally originating from pymongo DB.
 	"""
 
 	def __init__(self, tran_id, t2_unit_id, compound_id, results, info=None, read_only=True):
