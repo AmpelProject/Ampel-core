@@ -12,7 +12,6 @@ from datetime import datetime
 from collections import namedtuple
 
 from ampel.base.LightCurve import LightCurve
-from ampel.base.UpperLimit import UpperLimit
 from ampel.base.TransientView import TransientView
 from ampel.base.ScienceRecord import ScienceRecord
 from ampel.base.PlainPhotoPoint import PlainPhotoPoint
@@ -364,9 +363,11 @@ class DBContentLoader:
 				# Pick upper limit dicts
 				else:
 	
+					# UpperLimits instance attached to the transient instance 
+					# are not bound to a compound and come thus without policy 
 					if type(doc['tranId']) is int:
 						register[doc['tranId']].add_upperlimit(
-							UpperLimit(doc, read_only=True)
+							PlainUpperLimit(doc, read_only=True)
 						)
 					
 					else: # list
