@@ -144,20 +144,20 @@ class T3JobExecution:
 					# 'feed' each task
 					self.process_chunk(chunk)
 
-		# 'run' each task
+		# For each task, execute done()
 		for t3_task in self.t3_job.get_tasks():
 
 			# Feedback
 			self.logger.info(
-				"Task %s (t3Unit: %s, runConfig: %s): executing run()" % (
+				"Task %s (t3Unit: %s, runConfig: %s): executing done()" % (
 					t3_task.get_config("name"),
 					t3_task.get_config("t3Unit"), 
 					t3_task.get_config("runConfig")
 				)
 			)
 
-			# execute t3unit instance method run()
-			ret = t3_task.run(self.logger)
+			# execute t3unit instance method done()
+			ret = t3_task.done(self.logger)
 
 			# make sure next job run creates a new t3 unit instance
 			t3_task.free_t3_unit_instance()
