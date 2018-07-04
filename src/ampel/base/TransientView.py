@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 13.01.2018
-# Last Modified Date: 28.06.2018
+# Last Modified Date: 04.07.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from datetime import datetime
@@ -125,7 +125,7 @@ class TransientView(Frozen):
 		"""
 		if type(compound_id) is str:
 			compound_id = Binary(bytes.fromhex(compound_id), 5)
-		return next(filter(lambda x: x['_id'] == compound_id, self.compounds), None)
+		return next(filter(lambda x: x.id == compound_id, self.compounds), None)
 
 
 	def get_lightcurves(self):
