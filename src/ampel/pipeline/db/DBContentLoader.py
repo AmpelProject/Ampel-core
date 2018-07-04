@@ -4,11 +4,12 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 13.01.2018
-# Last Modified Date: 28.06.2018
+# Last Modified Date: 04.07.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from bson import ObjectId
 from datetime import datetime
+from collections import namedtuple
 
 from ampel.base.LightCurve import LightCurve
 from ampel.base.UpperLimit import UpperLimit
@@ -33,13 +34,6 @@ from ampel.pipeline.db.query.QueryLatestCompound import QueryLatestCompound
 from ampel.pipeline.db.query.QueryLoadTransientInfo import QueryLoadTransientInfo
 
 from ampel.base.Frozen import Frozen
-# temporary guess at the type that TransientData.add_compound expects
-class HoboCompound(Frozen):
-	def __init__(self, content):
-		self.content = content['comp']
-		self.id = content['_id']
-	def __hash__(self):
-		return hash(self.id)
 
 class DBContentLoader:
 	"""
@@ -303,6 +297,7 @@ class DBContentLoader:
 			# Pick compound dicts 
 			if doc["alDocType"] == AlDocTypes.COMPOUND:
 
+				doc['id'] = doc.pop('_id')
 				doc['alFlags'] = FlagUtils.dbflag_to_enumflag(
 					doc['alFlags'], CompoundFlags
 				)
@@ -313,10 +308,13 @@ class DBContentLoader:
 				)
 
 				doc['channels'] = tran_data_channels
-				tran_data.add_compound(HoboCompound(doc), tran_data_channels)
+				tran_data.add_compound(
+					namedtuple('Compound', doc.keys())(**doc), 
+					tran_data_channels
+				)
 
 				if state_op == "$latest":
-					tran_data.set_latest_state(doc['_id'], tran_data_channels)
+					tran_data.set_latest_state(doc['id'], tran_data_channels)
 
 			# Pick t2 records
 			if doc["alDocType"] == AlDocTypes.T2RECORD:
@@ -403,29 +401,36 @@ class DBContentLoader:
 				#   'HU_SN': [comp1, comp3]
 				# }
 				# into:
+				# { 'comp_id1': comp1,
+				#   'comp_id2': comp2,
+				#   'comp_id2': comp4,
+				# }
+				# and
 				# {
-				#   'comp1': {'HU_LENS', 'HU_SN'},
-				#   'comp2': {'HU_LENS'},
-				#   'comp3': {'HU_LENS', 'HU_SN'},
+				#   'comp_id1': {'HU_LENS', 'HU_SN'},
+				#   'comp_id2': {'HU_LENS'},
+				#   'comp_id2': {'HU_LENS', 'HU_SN'},
 				# }
 				inv_map = {}
+				comp_dict = {}
 				for chan_name, comp_list in tran_data.compounds.items():
 					for comp_obj in comp_list:
-						if comp_obj in inv_map:
-							inv_map[comp_obj].append(chan_name)
+						comp_dict[comp_obj.id] = comp_obj
+						if comp_obj.id in inv_map:
+							inv_map[comp_obj.id].append(chan_name)
 						else:
-							inv_map[comp_obj] = [chan_name]
+							inv_map[comp_obj.id] = [chan_name]
 
-				for comp, chan_names in inv_map.items():
+				for comp_id, chan_names in inv_map.items():
 
-					if (len_uls == 0 and len([el for el in comp.content if 'ul' in el]) > 0):
+					if (len_uls == 0 and len([el for el in comp_dict[comp_id].comp if 'ul' in el]) > 0):
 						self.logger.info(
 							" -> LightCurve loading aborded for %s (upper limits required)" % 
-							comp.id.hex()
+							comp_id.hex()
 						)
 						continue
 
-					lc = self.lcl.load_using_objects(comp, frozen_photo_dict)
+					lc = self.lcl.load_using_objects(comp_dict[comp_id], frozen_photo_dict)
 
 					# Associate it to the TransientData instance
 					tran_data.add_lightcurve(lc, chan_names)
@@ -443,9 +448,9 @@ class DBContentLoader:
 
 		for tran_data in dict_values:
 
-			len_comps = len({ell.id for el in tran_data.compounds.values() for ell in el})
-			len_lcs = len({ell.id for el in tran_data.lightcurves.values() for ell in el})
-			len_srs = len({hash(ell) for el in tran_data.science_records.values() for ell in el})
+			len_comps = len({ell.id.hex() for el in tran_data.compounds.values() for ell in el})
+			len_lcs = len({ell.id.hex() for el in tran_data.lightcurves.values() for ell in el})
+			len_srs = len({ell for el in tran_data.science_records.values() for ell in el})
 
 			if photo_list is not None:
 
