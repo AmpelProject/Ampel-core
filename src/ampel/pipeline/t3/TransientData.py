@@ -4,15 +4,12 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 31.05.2018
-# Last Modified Date: 22.06.2018
+# Last Modified Date: 04.07.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-import logging, pymongo
-from ampel.pipeline.db.DBWired import DBWired
 from ampel.base.TransientView import TransientView
 from ampel.pipeline.common.AmpelUtils import AmpelUtils
 from ampel.pipeline.t3.DataAccessManager import DataAccessManager
-from types import MappingProxyType
 
 class TransientData:
 	"""
