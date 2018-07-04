@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 07.06.2018
-# Last Modified Date: 28.06.2018
+# Last Modified Date: 04.07.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import collections
@@ -90,29 +90,33 @@ class AmpelUtils():
 
 
 	@staticmethod
-	def recursive_freeze(collection):
+	def recursive_freeze(arg):
 		"""
 		Return an immutable shallow copy
-		:param collection: a collection that was json serializable (i.e. consists of dicts and lists)
+		:param arg:
+			dict: MappingProxyType is returned
+			list: tuple is returned
+			set: frozenset is returned
+			otherwise: arg is returned 'as is'
 		"""
-		if isinstance(collection, dict):
-
+		if isinstance(arg, dict):
 			return MappingProxyType(
 				{
 					AmpelUtils.recursive_freeze(k): AmpelUtils.recursive_freeze(v) 
-					for k,v in collection.items()
+					for k,v in arg.items()
 				}
 			)
 
-		elif isinstance(collection, list):
-
+		elif isinstance(arg, list):
 			return tuple(
-				map(AmpelUtils.recursive_freeze, collection)
+				map(AmpelUtils.recursive_freeze, arg)
 			)
 
-		else:
+		elif isinstance(arg, set):
+			return frozenset(arg)
 
-			return collection
+		else:
+			return arg
 
 
 	@staticmethod
