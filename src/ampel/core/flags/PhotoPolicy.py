@@ -1,10 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/flags/PhotoPolicy.py
+# File              : src/ampel/core/flags/PhotoPolicy.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 13.12.2017
-# Last Modified Date: 04.05.2018
+# Last Modified Date: 04.07.2018
+# Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from enum import Flag
 

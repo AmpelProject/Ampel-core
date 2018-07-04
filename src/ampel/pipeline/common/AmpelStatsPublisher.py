@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 26.05.2018
-# Last Modified Date: 19.06.2018
+# Last Modified Date: 04.07.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from ampel.pipeline.common.AmpelUtils import AmpelUtils
@@ -12,7 +12,7 @@ from ampel.pipeline.common.Schedulable import Schedulable
 from ampel.pipeline.config.AmpelConfig import AmpelConfig
 from ampel.pipeline.logging.LoggingUtils import LoggingUtils
 from ampel.pipeline.db.AmpelDB import AmpelDB
-from ampel.flags.AlDocTypes import AlDocTypes
+from ampel.core.flags.AlDocTypes import AlDocTypes
 
 class AmpelStatsPublisher(Schedulable):
 	""" 

@@ -4,14 +4,13 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 14.12.2017
-# Last Modified Date: 01.06.2018
+# Last Modified Date: 04.07.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-from ampel.flags.PhotoFlags import PhotoFlags
-from ampel.flags.FlagUtils import FlagUtils
-from ampel.flags.AlDocTypes import AlDocTypes
+from ampel.base.flags.PhotoFlags import PhotoFlags
+from ampel.core.flags.FlagUtils import FlagUtils
+from ampel.core.flags.AlDocTypes import AlDocTypes
 import bson
-
 
 class ZIPhotoDictShaper:
 	"""
@@ -44,6 +43,7 @@ class ZIPhotoDictShaper:
 	def __init__(self):
 		"""
 		"""
+	        # pylint: disable=no-member
 		self.base_flags = PhotoFlags.INST_ZTF|PhotoFlags.SRC_IPAC
 
 

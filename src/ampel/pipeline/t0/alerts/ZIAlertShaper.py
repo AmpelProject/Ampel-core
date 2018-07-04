@@ -4,11 +4,11 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 20.04.2018
-# Last Modified Date: 21.05.2018
+# Last Modified Date: 04.07.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 
-from ampel.abstract.AbsAlertShaper import AbsAlertShaper
+from ampel.core.abstract.AbsAlertShaper import AbsAlertShaper
 from ampel.pipeline.logging.LoggingUtils import LoggingUtils
 from types import MappingProxyType
 

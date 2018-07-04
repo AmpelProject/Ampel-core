@@ -4,15 +4,16 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 14.01.2018
-# Last Modified Date: 18.06.2018
+# Last Modified Date: 04.07.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from types import MappingProxyType
 from extcats import CatalogQuery
 from pymongo import MongoClient
 from numpy import mean
+
 from ampel.pipeline.config.AmpelConfig import AmpelConfig
-from ampel.abstract.AbsAlertFilter import AbsAlertFilter
+from ampel.base.abstract.AbsAlertFilter import AbsAlertFilter
 
 class BasicCatalogFilter(AbsAlertFilter):
 

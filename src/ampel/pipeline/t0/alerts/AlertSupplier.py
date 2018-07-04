@@ -4,11 +4,11 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 23.04.2018
-# Last Modified Date: 08.06.2018
+# Last Modified Date: 04.07.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 
-from ampel.abstract.AbsAlertShaper import AbsAlertShaper
+from ampel.core.abstract.AbsAlertShaper import AbsAlertShaper
 import time
 
 class AlertSupplier:

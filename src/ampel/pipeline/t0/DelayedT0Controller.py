@@ -35,7 +35,7 @@ async def amerge(*generators):
 		await asyncio.sleep(iota)
 
 from typing import List
-from ampel.abstract.AbsTargetSource import AbsTargetSource
+from ampel.core.abstract.AbsTargetSource import AbsTargetSource
 
 class DelayedT0Controller:
 	def __init__(self, sources : List[AbsTargetSource]):

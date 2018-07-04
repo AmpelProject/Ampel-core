@@ -4,12 +4,13 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 14.01.2017
-# Last Modified Date: 18.06.2018
+# Last Modified Date: 04.07.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-from ampel.abstract.AbsAlertFilter import AbsAlertFilter
-from types import MappingProxyType
 import operator
+from types import MappingProxyType
+
+from ampel.base.abstract.AbsAlertFilter import AbsAlertFilter
 
 class BasicMultiFilter(AbsAlertFilter):
 

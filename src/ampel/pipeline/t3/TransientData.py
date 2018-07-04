@@ -75,12 +75,12 @@ class TransientData:
 
 
 	def add_photopoint(self, photopoint):
-		""" argument 'photopoint' must be an instance of ampel.base.core.PhotoPoint """
+		""" argument 'photopoint' must be an instance of ampel.base.PhotoPoint """
 		self.photopoints[photopoint.get_id()] = photopoint
 
 
 	def add_upperlimit(self, upperlimit):
-		""" argument 'upperlimit' must be an instance of ampel.base.core.UpperLimit """
+		""" argument 'upperlimit' must be an instance of ampel.base.UpperLimit """
 		self.upperlimits[upperlimit.get_id()] = upperlimit
 
 

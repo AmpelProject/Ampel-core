@@ -1,13 +1,13 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/flags/CompoundFlags.py
+# File              : ampel/core/flags/CompoundFlags.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 20.03.2018
-# Last Modified Date: 13.06.2018
+# Last Modified Date: 04.07.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-from ampel.flags.AmpelMetaFlags import AmpelMetaFlags
+from ampel.base.flags.AmpelMetaFlags import AmpelMetaFlags
 
 class CompoundFlags(metaclass=AmpelMetaFlags):
 	"""

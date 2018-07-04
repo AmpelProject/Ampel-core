@@ -4,10 +4,10 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 11.03.2018
-# Last Modified Date: 14.03.2018
+# Last Modified Date: 04.07.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-from ampel.flags.FlagUtils import FlagUtils
+from ampel.core.flags.FlagUtils import FlagUtils
 import enum
 
 
@@ -20,7 +20,7 @@ class QueryMatchFlags:
 		"""
 		Parameters:
 		-----------
-		'flags': must be one of ampel.flags.* enum flag instance 
+		'flags': must be one of ampel.base/core.flags.* enum flag instance 
 		or a list of instances (of the same class).
 
 		'query': dict (can be empty) that will be used as query criteria.
@@ -39,23 +39,23 @@ class QueryMatchFlags:
 
 		Examples: (see jupyter notebook 'FlagUtils enum flags to db query')
 		---------
-		General example. Let's consider ampel.flags.ChannelFlags.
+		General example. Let's consider the imaginary ampel.base.flags.DemoFlags.
 		The parameter 'flags' could be:
-		-> either an instance of ampel.flags.ChannelFlags 
+		-> either an instance of ampel.base.flags.DemoFlags 
 		  (can contain multiples flags that are 'AND' connected)
 		  Search criteria would be that result documents must have all the channels 
 		  defined in the channelFlag instance
-		-> or list of instances of ampel.flags.ChannelFlags whereby the embedded instances 
+		-> or list of instances of ampel.base.flags.DemoFlags whereby the embedded instances 
 		  (the list elements) are connected with the 'OR' logical operator.
 
 		Applied example: 
-		-> channel_flags = ChannelFlags.HU_EARLY_SN: 
+		-> demo_flags = DemoFlags.HU_EARLY_SN: 
 		   finds transient associated with the channel HU_EARLY_SN
 
-		-> channel_flags = ChannelFlags.HU_EARLY_SN|ChannelFlags.HU_RANDOM
+		-> demo_flags = DemoFlags.HU_EARLY_SN|DemoFlags.HU_RANDOM
 		   finds transient that associated with *both* the channels HU_EARLY_SN and HU_RANDOM
 
-		-> channel_flags = [ChannelFlags.LENS, ChannelFlags.HU_EARLY_SN|ChannelFlags.HU_RANDOM]
+		-> demo_flags = [DemoFlags.LENS, DemoFlags.HU_EARLY_SN|DemoFlags.HU_RANDOM]
 		   finds transient that associated with 
 		   * either with the LENS channel
 		   * or with both the channels HU_EARLY_SN and HU_RANDOM

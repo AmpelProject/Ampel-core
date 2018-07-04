@@ -4,11 +4,11 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 21.01.2018
-# Last Modified Date: 12.05.2018
+# Last Modified Date: 04.07.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import logging
-from ampel.flags.LogRecordFlags import LogRecordFlags
+from ampel.core.flags.LogRecordFlags import LogRecordFlags
 from ampel.pipeline.logging.DBLoggingHandler import DBLoggingHandler
 
 

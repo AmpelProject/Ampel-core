@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 14.12.2017
-# Last Modified Date: 13.06.2018
+# Last Modified Date: 04.07.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import logging, time
@@ -14,17 +14,17 @@ from datetime import datetime, timezone
 from pymongo.errors import BulkWriteError
 from pymongo import MongoClient, UpdateOne
 
-from ampel.abstract.AbsAlertIngester import AbsAlertIngester
+from ampel.core.abstract.AbsAlertIngester import AbsAlertIngester
 from ampel.pipeline.t0.ingesters.CompoundBluePrintGenerator import CompoundBluePrintGenerator
 from ampel.pipeline.t0.ingesters.ZIPhotoDictShaper import ZIPhotoDictShaper
 from ampel.pipeline.t0.ingesters.ZICompoundShaper import ZICompoundShaper
 from ampel.pipeline.t0.ingesters.T2DocsBluePrint import T2DocsBluePrint
 from ampel.pipeline.logging.LoggingUtils import LoggingUtils
-from ampel.flags.AmpelFlags import AmpelFlags
-from ampel.flags.PhotoFlags import PhotoFlags
-from ampel.flags.T2RunStates import T2RunStates
-from ampel.flags.AlDocTypes import AlDocTypes
-from ampel.flags.FlagUtils import FlagUtils
+from ampel.base.flags.AmpelFlags import AmpelFlags
+from ampel.base.flags.PhotoFlags import PhotoFlags
+from ampel.core.flags.T2RunStates import T2RunStates
+from ampel.core.flags.AlDocTypes import AlDocTypes
+from ampel.core.flags.FlagUtils import FlagUtils
 from ampel.pipeline.config.AmpelConfig import AmpelConfig
 from ampel.pipeline.db.AmpelDB import AmpelDB
 
@@ -143,8 +143,8 @@ class ZIAlertIngester(AbsAlertIngester):
 		The cutomizations are minimal, most of the original structure is kept.
 		For exmample, in the case of ZIPhotoDictShaper:
 			* The field candid is renamed in _id 
-			* A new field 'alFlags' (AmpelFlags) is created (integer value of ampel.flags.PhotoFlags)
-			* A new field 'alDocType' is created (integer value of ampel.flags.AlDocTypes.PHOTOPOINT or UPPERLIMIT)
+			* A new field 'alFlags' (AmpelFlags) is created (integer value of ampel.base.flags.PhotoFlags)
+			* A new field 'alDocType' is created (integer value of ampel.core.flags.AlDocTypes.PHOTOPOINT/UPPERLIMIT)
 		A photopoint shaper class (t0.pipeline.ingesters...) performs these operations.
 		This method enables the customization of the PhotoDictShaper instance to be used.
 		By default, ZIPhotoDictStamper is used.

@@ -26,7 +26,7 @@ class CompoundBluePrintGenerator():
 	def __init__(self, channels, CompoundShaper, logger):
 		"""
 		channels: list of instances of ampel.pipeline.config.Channel
-		CompoundShaper: child *class* (not instance) of ampel.abstract.AbsCompoundShaper
+		CompoundShaper: child *class* (not instance) of ampel.core.abstract.AbsCompoundShaper
 		logger: logger instance (python module 'logging')
 		"""
 

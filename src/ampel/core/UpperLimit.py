@@ -1,17 +1,17 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/base/PhotoPoint.py
+# File              : ampel/core/UpperLimit.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
-# Date              : 13.01.2018
-# Last Modified Date: 07.06.2018
+# Date              : 10.05.2018
+# Last Modified Date: 04.07.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-from ampel.flags.PhotoPolicy import PhotoPolicy
-from ampel.base.PhotoData import PhotoData
 from types import MappingProxyType
+from ampel.base.PhotoData import PhotoData
+from ampel.core.flags.PhotoPolicy import PhotoPolicy
 
-class PhotoPoint(PhotoData):
+class UpperLimit(PhotoData):
 	"""
 	Wrapper class around a dict instance ususally originating from pymongo DB.
 	Please see PhotoData docstring for more info.
@@ -19,8 +19,7 @@ class PhotoPoint(PhotoData):
 	parameters or later by using the method set_policy.
 	"""
 
-
-	def get_mag(self):
+	def get_mag_lim(self):
 		"""
 		"""
 		if hasattr(self, 'policy_flags'):

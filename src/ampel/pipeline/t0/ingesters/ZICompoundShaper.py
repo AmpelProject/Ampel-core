@@ -4,13 +4,13 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 01.05.2018
-# Last Modified Date: 13.06.2018
+# Last Modified Date: 04.07.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-from ampel.flags.FlagUtils import FlagUtils
-from ampel.flags.PhotoFlags import PhotoFlags
-from ampel.flags.CompoundFlags import CompoundFlags
-from ampel.abstract.AbsCompoundShaper import AbsCompoundShaper
+from ampel.base.flags.PhotoFlags import PhotoFlags
+from ampel.core.flags.FlagUtils import FlagUtils
+from ampel.core.flags.CompoundFlags import CompoundFlags
+from ampel.core.abstract.AbsCompoundShaper import AbsCompoundShaper
 
 flag_pos = {}
 # pylint: disable=no-member,unsubscriptable-object

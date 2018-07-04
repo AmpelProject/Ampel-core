@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 06.03.2018
-# Last Modified Date: 15.06.2018
+# Last Modified Date: 04.07.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import importlib
@@ -16,7 +16,7 @@ from voluptuous import Schema, Any, Required, Optional, ALLOW_EXTRA
 from ampel.pipeline.logging.LoggingUtils import LoggingUtils
 from ampel.pipeline.config.AmpelConfig import AmpelConfig
 from ampel.pipeline.common.AmpelUtils import AmpelUtils
-from ampel.abstract.AbsT3Unit import AbsT3Unit
+from ampel.base.abstract.AbsT3Unit import AbsT3Unit
 from ampel.pipeline.t3.T3Task import T3Task
 
 class T3TaskLoader:

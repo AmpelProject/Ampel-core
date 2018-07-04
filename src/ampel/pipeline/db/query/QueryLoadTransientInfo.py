@@ -4,12 +4,12 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 14.02.2018
-# Last Modified Date: 13.06.2018
+# Last Modified Date: 04.07.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from bson.binary import Binary
-from ampel.flags.AlDocTypes import AlDocTypes
-from ampel.flags.FlagUtils import FlagUtils
+from ampel.core.flags.AlDocTypes import AlDocTypes
+from ampel.core.flags.FlagUtils import FlagUtils
 from ampel.pipeline.common.AmpelUtils import AmpelUtils
 from ampel.pipeline.db.query.QueryMatchCriteria import QueryMatchCriteria
 

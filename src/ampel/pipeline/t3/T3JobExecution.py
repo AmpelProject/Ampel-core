@@ -1,11 +1,16 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/pipeline/t3/T3JobExecution.py
+# File              : src/ampel/pipeline/t3/T3JobExecution.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 26.02.2018
-# Last Modified Date: 21.06.2018
+# Last Modified Date: 04.07.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
+
+from datetime import datetime, timezone
+from pymongo import MongoClient
+from itertools import islice
+from time import time
 
 from ampel.pipeline.db.query.QueryMatchTransients import QueryMatchTransients
 from ampel.pipeline.db.query.QueryLatestCompound import QueryLatestCompound
@@ -15,22 +20,10 @@ from ampel.pipeline.logging.DBLoggingHandler import DBLoggingHandler
 from ampel.pipeline.logging.LoggingUtils import LoggingUtils
 from ampel.pipeline.common.AmpelUtils import AmpelUtils
 from ampel.pipeline.t3.TimeConstraint import TimeConstraint
-from ampel.flags.TransientFlags import TransientFlags
-from ampel.flags.AlDocTypes import AlDocTypes
-from ampel.flags.FlagUtils import FlagUtils
+from ampel.base.flags.TransientFlags import TransientFlags
+from ampel.core.flags.AlDocTypes import AlDocTypes
+from ampel.core.flags.FlagUtils import FlagUtils
 
-from datetime import datetime, timezone
-from itertools import islice
-from pymongo import MongoClient
-from time import time
-
-def chunk(iter, chunk_size):
-	while True:
-		group = list(islice(iter, chunk_size))
-		if len(group) > 0:
-			yield group
-		else:
-			break
 
 class T3JobExecution:
 	"""
@@ -258,7 +251,7 @@ class T3JobExecution:
 		Yield selected TransientData in chunks of length `chunk_size`
 		"""
 		# Load ids (chunk_size number of ids)
-		for chunked_tran_ids in chunk(map(lambda el: el['tranId'], trans_cursor), chunk_size):
+		for chunked_tran_ids in T3JobExecution.chunk(map(lambda el: el['tranId'], trans_cursor), chunk_size):
 
 			self.logger.info("Loading %i transient(s) " % len(chunked_tran_ids))
 			states = None
@@ -294,12 +287,12 @@ class T3JobExecution:
 					# Output example:
 					# [
 					# {
-					#	'_id': Binary(b']\xe2H\x0f(\xbf\xca\x0b\xd3\xba\xae\x89\x0c\xb2\xd2\xae', 5), 
-					#	'tranId': 1810101034343026   # (ZTF18aaayyuq)
+					#   '_id': Binary(b']\xe2H\x0f(\xbf\xca\x0b\xd3\xba\xae\x89\x0c\xb2\xd2\xae', 5), 
+					#   'tranId': 1810101034343026   # (ZTF18aaayyuq)
 					# },
 					# {
-					#	'_id': Binary(b'_\xcd\xed\xa5\xe1\x16\x98\x9ai\xf6\xcb\xbd\xe7#FT', 5), 
-					#	'tranId': 1810101011182029   # (ZTF18aaabikt)
+					#   '_id': Binary(b'_\xcd\xed\xa5\xe1\x16\x98\x9ai\xf6\xcb\xbd\xe7#FT', 5), 
+					#   'tranId': 1810101011182029   # (ZTF18aaabikt)
 					# },
 					# ...
 					# ]
@@ -401,3 +394,13 @@ class T3JobExecution:
 
 			# Feed T3 instance
 			t3_unit.add(tran_views)
+
+
+	@staticmethod
+	def chunk(iter, chunk_size):
+		while True:
+			group = list(islice(iter, chunk_size))
+			if len(group) > 0:
+				yield group
+			else:
+				break

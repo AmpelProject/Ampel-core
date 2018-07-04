@@ -4,13 +4,13 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 19.03.2018
-# Last Modified Date: 11.06.2018
+# Last Modified Date: 04.07.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import time, pymongo
-from pymongo.errors import CollectionInvalid
-from ampel.flags.AlDocTypes import AlDocTypes
 from types import MappingProxyType
+from pymongo.errors import CollectionInvalid
+from ampel.core.flags.AlDocTypes import AlDocTypes
 
 class DBWired:
 	""" 

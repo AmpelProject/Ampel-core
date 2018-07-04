@@ -4,11 +4,11 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 11.03.2018
-# Last Modified Date: 28.05.2018
+# Last Modified Date: 04.07.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import collections
-from ampel.flags.FlagUtils import FlagUtils
+from ampel.core.flags.FlagUtils import FlagUtils
 
 class QueryMatchCriteria:
 	"""

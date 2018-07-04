@@ -4,16 +4,16 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 03.05.2018
-# Last Modified Date: 18.06.2018
+# Last Modified Date: 04.07.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-from ampel.flags.LogRecordFlags import LogRecordFlags
+import importlib
+from ampel.core.flags.LogRecordFlags import LogRecordFlags
 from ampel.pipeline.common.AmpelUtils import AmpelUtils
 from ampel.pipeline.logging.LoggingUtils import LoggingUtils
 from ampel.pipeline.config.Channel import Channel
 from ampel.pipeline.config.T0Channel import T0Channel
 from ampel.pipeline.config.AmpelConfig import AmpelConfig
-import importlib
 
 class ChannelLoader:
 	"""

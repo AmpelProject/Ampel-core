@@ -8,7 +8,7 @@
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from ampel.pipeline.config.AmpelConfig import AmpelConfig
-from ampel.flags.PhotoFlags import PhotoFlags
+from ampel.base.flags.PhotoFlags import PhotoFlags
 from ampel.pipeline.config.Channel import Channel
 from ampel.pipeline.logging.LoggingUtils import LoggingUtils
 

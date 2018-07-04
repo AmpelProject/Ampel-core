@@ -1,5 +1,5 @@
 
-from ampel.abstract.AmpelABC import AmpelABC, abstractmethod
+from ampel.base.abstract.AmpelABC import AmpelABC, abstractmethod
 
 class AbsTargetSource(metaclass=AmpelABC):
 	"""

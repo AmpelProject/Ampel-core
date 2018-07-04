@@ -1,16 +1,15 @@
 
-import pytest
+import pytest, subprocess, json
 from ampel.pipeline.t3.T3TaskLoader import T3TaskLoader
 from ampel.pipeline.t3.T3Controller import T3Controller
 from ampel.pipeline.t3.T3JobLoader import T3JobLoader
 from ampel.pipeline.t3.T3JobExecution import T3JobExecution, DBContentLoader
 
-from ampel.abstract.AbsT3Unit import AbsT3Unit
+from ampel.base.abstract.AbsT3Unit import AbsT3Unit
 from ampel.pipeline.config.AmpelConfig import AmpelConfig
 from ampel.pipeline.common.AmpelUtils import AmpelUtils
 from ampel.pipeline.config.ConfigLoader import AmpelArgumentParser
 
-import subprocess, json
 
 class PotemkinError(RuntimeError):
 	pass
@@ -25,7 +24,7 @@ class PotemkinT3(AbsT3Unit):
 	def add(self, transients):
 		pass
 
-	def run(self):
+	def done(self):
 		raise PotemkinError
 
 @pytest.fixture
@@ -224,7 +223,7 @@ def ingested_transients(alert_generator, minimal_config, mongod):
 		choices.append((shaped_alert['tran_id'], [c.name for c,k in zip(channels, choice) if k]))
 	
 	from ampel.pipeline.db.AmpelDB import AmpelDB
-	from ampel.flags.AlDocTypes import AlDocTypes
+	from ampel.core.flags.AlDocTypes import AlDocTypes
 	
 	tran_col = AmpelDB.get_collection('main')
 	assert tran_col.count({'alDocType': AlDocTypes.TRANSIENT}) == len(choices), "Transient docs exist for all ingested alerts"

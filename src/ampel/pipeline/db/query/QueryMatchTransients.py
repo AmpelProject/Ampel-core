@@ -4,15 +4,15 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 13.01.2018
-# Last Modified Date: 28.06.2018
+# Last Modified Date: 04.07.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 
 from bson.objectid import ObjectId
 from datetime import datetime, timedelta
 
-from ampel.flags.AlDocTypes import AlDocTypes
-from ampel.flags.FlagUtils import FlagUtils
+from ampel.core.flags.AlDocTypes import AlDocTypes
+from ampel.core.flags.FlagUtils import FlagUtils
 from ampel.pipeline.t3.TimeConstraint import TimeConstraint
 from ampel.pipeline.db.query.QueryMatchFlags import QueryMatchFlags
 from ampel.pipeline.db.query.QueryMatchCriteria import QueryMatchCriteria
@@ -31,12 +31,12 @@ class QueryMatchTransients:
 		** See QueryMatchCriteria.add_from_list docstring for more info **
 
 		'with_flags': 
-		-> instance of ampel.flags.TransientFlags or list of instances of TransientFlags
+		-> instance of ampel.base.flags.TransientFlags or list of instances of TransientFlags
 		Transient matching the with_flags criteria will be included.
 		See QueryMatchFlags.add_match_criteria docstring for more info
 
 		'without_flags': 
-		-> instance of ampel.flags.TransientFlags or list of instances of TransientFlags
+		-> instance of ampel.base.flags.TransientFlags or list of instances of TransientFlags
 		Transient matching with the with_flags criteria will be excluded.
 		See QueryMatchFlags.add_nomatch_criteria docstring for more info
 

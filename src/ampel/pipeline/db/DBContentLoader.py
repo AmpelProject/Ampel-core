@@ -17,12 +17,12 @@ from ampel.base.ScienceRecord import ScienceRecord
 from ampel.base.PlainPhotoPoint import PlainPhotoPoint
 from ampel.base.PlainUpperLimit import PlainUpperLimit
 
-from ampel.flags.FlagUtils import FlagUtils
-from ampel.flags.AlDocTypes import AlDocTypes
-from ampel.flags.PhotoFlags import PhotoFlags
-from ampel.flags.T2RunStates import T2RunStates
-from ampel.flags.CompoundFlags import CompoundFlags
-from ampel.flags.TransientFlags import TransientFlags
+from ampel.core.flags.FlagUtils import FlagUtils
+from ampel.core.flags.AlDocTypes import AlDocTypes
+from ampel.core.flags.T2RunStates import T2RunStates
+from ampel.core.flags.CompoundFlags import CompoundFlags
+from ampel.base.flags.TransientFlags import TransientFlags
+from ampel.base.flags.PhotoFlags import PhotoFlags
 
 from ampel.pipeline.common.AmpelUtils import AmpelUtils
 from ampel.pipeline.t3.TransientData import TransientData

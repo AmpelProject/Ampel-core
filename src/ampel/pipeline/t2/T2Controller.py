@@ -4,23 +4,23 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 25.01.2018
-# Last Modified Date: 19.06.2018
+# Last Modified Date: 04.07.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-from ampel.flags.AlDocTypes import AlDocTypes
-from ampel.flags.T2RunStates import T2RunStates
-from ampel.abstract.AbsT2Unit import AbsT2Unit
+from datetime import datetime, timedelta
+from pymongo.errors import BulkWriteError
+from pymongo import UpdateOne
+import importlib, math
+
+from ampel.base.abstract.AbsT2Unit import AbsT2Unit
+from ampel.core.flags.AlDocTypes import AlDocTypes
+from ampel.core.flags.T2RunStates import T2RunStates
 from ampel.pipeline.logging.LoggingUtils import LoggingUtils
 from ampel.pipeline.logging.DBLoggingHandler import DBLoggingHandler
 from ampel.pipeline.db.AmpelDB import AmpelDB
 from ampel.pipeline.db.LightCurveLoader import LightCurveLoader
 from ampel.pipeline.common.Schedulable import Schedulable
 from ampel.pipeline.config.AmpelConfig import AmpelConfig
-
-from datetime import datetime, timedelta
-from pymongo.errors import BulkWriteError
-from pymongo import UpdateOne
-import time, importlib, math
 
 class T2Controller(Schedulable):
 	"""
@@ -35,7 +35,7 @@ class T2Controller(Schedulable):
 	): 
 		"""
 		'central_db': string. Use provided DB name rather than Ampel default database ('Ampel')
-		run_state: one on ampel.flags.T2RunStates int value (for example: T0_RUN)
+		run_state: one on ampel.core.flags.T2RunStates int value (for example: T0_RUN)
 		t2_units: list of string id of the t2 units to run. If not specified, any t2 unit will be run
 		check_interval: int value in seconds
 		batch_size: integer. It is defined because the job log entry cannot grow above 16MB (of logs).
@@ -64,7 +64,7 @@ class T2Controller(Schedulable):
 
 		# self.from_dt = datetime.utcnow() - datetime.timedelta(*backtime)
 
-		# run_state must be an int value (see ampel.flags.T2RunStates).
+		# run_state must be an int value (see ampel.core.flags.T2RunStates).
 		# Only the documents matching this run_state will be processed (for example: TO_RUN)
 		self.run_state = run_state
 

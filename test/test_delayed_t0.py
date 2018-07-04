@@ -1,5 +1,5 @@
 
-from ampel.abstract.AbsTargetSource import AbsTargetSource
+from ampel.core.abstract.AbsTargetSource import AbsTargetSource
 
 import pytest
 import logging

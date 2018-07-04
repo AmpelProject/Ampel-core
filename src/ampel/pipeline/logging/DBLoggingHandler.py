@@ -4,20 +4,21 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 14.12.2017
-# Last Modified Date: 28.06.2018
+# Last Modified Date: 04.07.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import logging, time
 from pymongo import MongoClient
+
 from ampel.pipeline.db.AmpelDB import AmpelDB
-from ampel.flags.LogRecordFlags import LogRecordFlags
+from ampel.core.flags.LogRecordFlags import LogRecordFlags
 from ampel.pipeline.config.AmpelConfig import AmpelConfig
 
 class DBLoggingHandler(logging.Handler):
 	"""
 		Custom subclass of logging.Handler responsible for 
 		logging log events into the NoSQL database.
-		Each database log entry contains a global flag (ampel.flags.LogRecordFlags)
+		Each database log entry contains a global flag (ampel.core.flags.LogRecordFlags)
 		which includes the log severity level.
 	"""
 	severity_map = {

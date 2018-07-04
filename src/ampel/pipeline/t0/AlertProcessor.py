@@ -22,9 +22,9 @@ from ampel.pipeline.config.ChannelLoader import ChannelLoader
 from ampel.pipeline.common.AmpelUtils import AmpelUtils
 from ampel.pipeline.common.GraphiteFeeder import GraphiteFeeder
 from ampel.base.AmpelAlert import AmpelAlert
-from ampel.flags.AlDocTypes import AlDocTypes
-from ampel.flags.AlertFlags import AlertFlags
-from ampel.flags.FlagUtils import FlagUtils
+from ampel.core.flags.AlDocTypes import AlDocTypes
+from ampel.core.flags.FlagUtils import FlagUtils
+from ampel.base.flags.AmpelFlags import AmpelFlags
 
 
 class AlertProcessor():
@@ -115,7 +115,7 @@ class AlertProcessor():
 			AmpelAlert.add_class_flags(
 				FlagUtils.list_flags_to_enum_flags(
 					AmpelConfig.get_config('global.sources.ZTFIPAC.alerts.flags'),
-					AlertFlags
+					AmpelFlags
 				)
 			)
 
@@ -141,59 +141,6 @@ class AlertProcessor():
 			* t0.ingesters.ZIAlertIngester
 		"""
 		self.ingester = ingester_instance
-
-
-	def process_alert_folder(
-		self, base_dir="/Users/hu/Documents/ZTF/Ampel/alerts/", 
-		extension="*.avro", serialization="avro", source="ZTFIPAC", 
-		max_entries=None, console_logging=True
-	):
-		"""
-		Process alerts in a given directory (using ampel.pipeline.t0.AlertFileList)
-
-		Parameters:
-		base_dir: input directory where alerts are stored
-		extension: extension of alert files (default: *.avro. Alternative: *.json)
-		max_entries: limit number of files loaded 
-		  max_entries=5 -> only the first 5 alerts will be processed
-		
-		alert files are sorted by date: sorted(..., key=os.path.getmtime)
-		"""
-
-		from ampel.pipeline.t0.alerts.DirAlertLoader import DirAlertLoader
-		import importlib
-
-		# Container class allowing to conveniently iterate over local avro files 
-		alert_loader = DirAlertLoader(self.logger)
-		alert_loader.set_folder(base_dir)
-		alert_loader.set_extension(extension)
-
-		if max_entries is not None:
-			alert_loader.set_max_entries(max_entries)
-		
-		self.logger.info("Returning iterable for file paths in folder: %s" % base_dir)
-
-		if AmpelConfig.get_config('global.sources.%s' % source) is None:
-			raise ValueError("Unknown source %s, please check your config" % source)
-
-		# Instantiate class shaping alert dicts
-		if not hasattr(self, "alert_shaper"):
-			shaper_class_full_path = AmpelConfig.get_config(
-				'global.sources.%s.alerts.processing.shape' % source
-			)
-			shaper_module = importlib.import_module(shaper_class_full_path)
-			shaper_class = getattr(shaper_module, shaper_class_full_path.split(".")[-1])
-			self.alert_shaper = shaper_class(self.logger)
-
-		als = AlertSupplier(alert_loader, self.alert_shaper, serialization=serialization)
-		ret = AlertProcessor.iter_max
-		count = 0
-
-		while ret == AlertProcessor.iter_max:
-			ret = self.run(als, console_logging)
-			count += ret
-
-		return count
 
 
 	def run(self, alert_supplier, console_logging=True):

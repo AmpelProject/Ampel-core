@@ -7,14 +7,14 @@
 # Last Modified Date: 04.07.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-from ampel.flags.AlDocTypes import AlDocTypes
-from ampel.flags.FlagUtils import FlagUtils
-from ampel.flags.PhotoFlags import PhotoFlags
+from ampel.core.flags.AlDocTypes import AlDocTypes
+from ampel.core.flags.FlagUtils import FlagUtils
+from ampel.core.PhotoPoint import PhotoPoint
+from ampel.core.UpperLimit import UpperLimit
+from ampel.base.flags.PhotoFlags import PhotoFlags
 from ampel.base.PlainPhotoPoint import PlainPhotoPoint
 from ampel.base.PlainUpperLimit import PlainUpperLimit
 from ampel.base.LightCurve import LightCurve
-from ampel.base.core.PhotoPoint import PhotoPoint
-from ampel.base.core.UpperLimit import UpperLimit
 from ampel.pipeline.logging.LoggingUtils import LoggingUtils
 from ampel.pipeline.db.AmpelDB import AmpelDB
 

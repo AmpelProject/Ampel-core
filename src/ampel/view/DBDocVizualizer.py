@@ -7,19 +7,14 @@
 # Last Modified Date: 04.05.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-from ampel.flags.AlertFlags import AlertFlags
-from ampel.flags.TransientFlags import TransientFlags
-from ampel.flags.LogRecordFlags import LogRecordFlags
-from ampel.flags.PhotoFlags import PhotoFlags
-from ampel.flags.T2RunStates import T2RunStates
-from ampel.flags.JobFlags import JobFlags
-from ampel.flags.AlDocTypes import AlDocTypes
-from ampel.flags.FlagUtils import FlagUtils
-
 import copy, json, collections, bson, re, datetime, jdcal
 from IPython.display import Markdown, display
 
-
+from ampel.base.flags.TransientFlags import TransientFlags
+from ampel.base.flags.PhotoFlags import PhotoFlags
+from ampel.core.flags.T2RunStates import T2RunStates
+from ampel.core.flags.AlDocTypes import AlDocTypes
+from ampel.core.flags.FlagUtils import FlagUtils
 
 class DBDocVizualizer:
 	""" 

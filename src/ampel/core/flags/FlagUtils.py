@@ -1,15 +1,15 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/flags/FlagUtils.py
+# File              : ampel/core/flags/FlagUtils.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 14.12.2017
-# Last Modified Date: 18.06.2018
+# Last Modified Date: 04.07.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-from ampel.pipeline.common.AmpelUtils import AmpelUtils
-from bson import Binary
 import enum
+from bson import Binary
+from ampel.pipeline.common.AmpelUtils import AmpelUtils
 
 class FlagUtils():
 
