@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 13.01.2018
-# Last Modified Date: 08.06.2018
+# Last Modified Date: 04.07.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from ampel.flags.AlDocTypes import AlDocTypes
@@ -21,7 +21,7 @@ class ScienceRecord(Frozen):
 		"""
 		tran_id: transient id (string or int)
 		t2_unit_id: T2 unit id (string)
-		compound_id: bytes
+		compound_id: instance of bson.Binary (subtype 5)
 		results: list of dict instances,
 		info: dict instance
 		read_only: true->freeze this instance

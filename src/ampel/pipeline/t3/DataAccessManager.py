@@ -81,7 +81,7 @@ class DataAccessManager:
 
 	def get_upperlimits(self, upperlimit):
 		""" 
-		argument 'upperlimit' must be an instance of ampel.base.UpperLimit 
+		argument 'upperlimit' must be an instance of ampel.base.core.UpperLimit 
 		"""
 
 		return tuple(
