@@ -18,6 +18,8 @@ Our design goals are to find a system where past experience (i.e. existing algor
 Intalling Ampel
 ===============
 
+*** TODO: update this guide: https://github.com/AmpelProject/Ampel-base is now required *** 
+
 This installation assumes your python is under the Anaconda environment, using python 3+
 
 1. ``git clone https://github.com/AmpelProject/Ampel.git"``
