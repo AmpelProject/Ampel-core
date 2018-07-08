@@ -31,6 +31,7 @@ class AmpelUtils():
 		 'y': '34', 'z': '35'
 	}
 
+
 	@staticmethod
 	def get_ampel_name(ztf_name):
 		"""	
@@ -81,6 +82,16 @@ class AmpelUtils():
 			number_map[str_long[14:16]]
 		)
 
+
+	@staticmethod
+	def iter(arg):
+		"""
+		-> suppressing python3 treatment of str as iterable (a really dumb choice...)
+		-> Making None iterable
+		"""
+		return [arg] if type(arg) in (type(None), str, bytes, bytearray) else arg
+
+
 	@staticmethod
 	def is_sequence(obj):
 		"""
@@ -90,50 +101,30 @@ class AmpelUtils():
 
 
 	@staticmethod
-	def recursive_freeze(arg):
-		"""
-		Return an immutable shallow copy
-		:param arg:
-			dict: MappingProxyType is returned
-			list: tuple is returned
-			set: frozenset is returned
-			otherwise: arg is returned 'as is'
-		"""
-		if isinstance(arg, dict):
-			return MappingProxyType(
-				{
-					AmpelUtils.recursive_freeze(k): AmpelUtils.recursive_freeze(v) 
-					for k,v in arg.items()
-				}
-			)
-
-		elif isinstance(arg, list):
-			return tuple(
-				map(AmpelUtils.recursive_freeze, arg)
-			)
-
-		elif isinstance(arg, set):
-			return frozenset(arg)
-
-		else:
-			return arg
-
-
-	@staticmethod
 	def to_set(arg):
 		"""
-		converts input to set 
-		"""
-		return {el for el in arg} if type(arg) in (list, tuple) else {arg}
+		1) Reminder of python deep logic:
+		In []: set('abc')
+		Out[]: {'a', 'b', 'c'}
+		In []: {'abc'}
+		Out[]: {'abc'}
 
+		2) Reminder of python unbreakable robustness:
+		In []: set([1,2])
+		Out[]: {1, 2}
+		In []: {[1,2]}
+		Out[]: -> TypeError: unhashable type: 'list'
 
-	@staticmethod
-	def iter(arg):
+		In []: AmpelUtils.to_set("abc")
+		Out[]: {'abc'}
+		In []: AmpelUtils.to_set(["abc"])
+		Out[]: {'abc'}
+		In []: AmpelUtils.to_set(['a','b','c'])
+		Out[]: {'a', 'b', 'c'}
+		In []: AmpelUtils.to_set([1,2])
+		Out[]: {1, 2}
 		"""
-		-> suppressing python3 treatment of str as iterable (a really dumb choice...)
-		-> Making None iterable
-		"""
-		return arg if type(arg) not in (type(None), str) else [arg]
+		return set(arg) if AmpelUtils.is_sequence(arg) else {arg}
 
 
 	@staticmethod
@@ -176,6 +167,37 @@ class AmpelUtils():
 			return reduce(lambda d, k: d.get(k), path.split(delimiter), mapping)
 		except AttributeError:
 			return None
+
+
+	@staticmethod
+	def recursive_freeze(arg):
+		"""
+		Return an immutable shallow copy
+		:param arg:
+			dict: MappingProxyType is returned
+			list: tuple is returned
+			set: frozenset is returned
+			otherwise: arg is returned 'as is'
+		"""
+		if isinstance(arg, dict):
+			return MappingProxyType(
+				{
+					AmpelUtils.recursive_freeze(k): AmpelUtils.recursive_freeze(v) 
+					for k,v in arg.items()
+				}
+			)
+
+		elif isinstance(arg, list):
+			return tuple(
+				map(AmpelUtils.recursive_freeze, arg)
+			)
+
+		elif isinstance(arg, set):
+			return frozenset(arg)
+
+		else:
+			return arg
+
 
 	@staticmethod
 	def report_exception(logger, further_info=None):
