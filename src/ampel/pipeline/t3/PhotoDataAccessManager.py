@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/pipeline/t3/DataAccessManager.py
+# File              : ampel/pipeline/t3/PhotoDataAccessManager.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 02.06.2018
-# Last Modified Date: 04.07.2018
+# Last Modified Date: 07.07.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from ampel.pipeline.config.AmpelConfig import AmpelConfig
@@ -12,7 +12,7 @@ from ampel.base.flags.PhotoFlags import PhotoFlags
 from ampel.pipeline.config.Channel import Channel
 from ampel.pipeline.logging.LoggingUtils import LoggingUtils
 
-class DataAccessManager:
+class PhotoDataAccessManager:
 	"""
 	"""
 
