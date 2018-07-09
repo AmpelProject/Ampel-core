@@ -290,7 +290,7 @@ def ingested_transients(alert_generator, minimal_ingestion_config, caplog):
 		choices.append((shaped_alert['tran_id'], [c.name for c,k in zip(channels, choice) if k]))
 	
 	from ampel.pipeline.db.AmpelDB import AmpelDB
-	from ampel.flags.AlDocTypes import AlDocTypes
+	from ampel.core.flags.AlDocTypes import AlDocTypes
 	
 	tran_col = AmpelDB.get_collection('main')
 	assert tran_col.count({'alDocType': AlDocTypes.TRANSIENT}) == len(choices), "Transient docs exist for all ingested alerts"
