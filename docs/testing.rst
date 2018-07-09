@@ -109,10 +109,3 @@ Writing (good) tests
 Any Python file named 'test/test_*.py' will be searched for functions starting
 with `test_`. Use `assert` to document your assumptions about function return
 values and shared state.
-
-Pitfalls
-********
-
-Each time the tests run, they create temporary Docker containers whose storage
-lingers after the container exits. You may wish to occasionally run
-`docker volume prune` to remove these leftovers.

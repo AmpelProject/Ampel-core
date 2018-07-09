@@ -27,6 +27,7 @@ echo "    IdentityFile /root/.ssh/id_rsa.$repo" >> /root/.ssh/config; \
 done
 RUN mkdir /Ampel
 RUN git clone git@github-ampel:AmpelProject/Ampel.git /Ampel/ampel-core
+RUN git clone git@github-ampel-base:AmpelProject/Ampel-base.git /Ampel/ampel-base
 RUN git clone git@github-ampel-ztfbh:robertdstein/Ampel-ZTFbh.git /Ampel/ampel-contrib-ztfbh
 RUN git clone git@github-ampel-contrib-hu:AmpelProject/ampel-contrib-hu.git /Ampel/ampel-contrib-hu
 

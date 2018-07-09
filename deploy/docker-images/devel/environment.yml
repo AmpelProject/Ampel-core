@@ -9,6 +9,7 @@ dependencies:
   - fastavro
   - pytest
   - pytest-cov
+  - pytest-mock
 #  - pykafka
   - python-confluent-kafka>=0.11.4
   - sqlalchemy
@@ -25,6 +26,8 @@ dependencies:
   - pip:
     - -e
     - /Ampel/ampel-core
+    - -e
+    - /Ampel/ampel-base
     - -e
     - /Ampel/ampel-contrib-ztfbh
     - -e

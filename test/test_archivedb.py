@@ -266,6 +266,7 @@ def test_get_alert(mock_database, alert_generator):
         assert_alerts_equivalent(alert, reco_alert)
 
 def test_archive_object(alert_generator, postgres):
+    import astropy.units as u
     db = archive.ArchiveDB(postgres)
     
     from itertools import islice
@@ -279,6 +280,28 @@ def test_archive_object(alert_generator, postgres):
             if isinstance(v, float) and isnan(v):
                 alert['candidate'][k] = None
         assert_alerts_equivalent(alert, reco_alert)
+    
+    alerts = list(islice(alert_generator(), 10))
+    candids = [a['candid'] for a in alerts]
+    reco_candids = [a['candid'] for a in db.get_alerts(candids)]
+    assert reco_candids == candids
+    
+    jds = sorted([a['candidate']['jd'] for a in alerts])
+    sec = 1/(24*3600.)
+    reco_jds = [a['candidate']['jd'] for a in db.get_alerts_in_time_range(min(jds)-sec, max(jds)+sec)]
+    assert reco_jds == jds
+    
+    reco_candids = [a['candid'] for a in db.get_alerts_in_cone(alerts[0]['candidate']['ra'], alerts[0]['candidate']['dec'], (2*u.deg).to(u.deg).value)]
+    assert alerts[0]['candid'] in reco_candids
+    
+    # end the transaction to commit changes to the stats tables
+    db._connection.execute('end')
+    db._connection.execute('vacuum full')
+    for table, stats in db.get_statistics().items():
+        assert stats['rows'] >= db._connection.execute(db._meta.tables[table].count()).fetchone()[0]
+
+
+    
 
 def test_insert_future_schema(alert_generator, postgres):
     db = archive.ArchiveDB(postgres)
