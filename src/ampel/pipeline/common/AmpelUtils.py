@@ -97,6 +97,9 @@ class AmpelUtils():
 		"""
 		A sequence, but not a string
 		"""
+		if obj is None:
+			return None
+
 		return isinstance(obj, collections.abc.Sequence) and not isinstance(obj, (str, bytes, bytearray))
 
 
