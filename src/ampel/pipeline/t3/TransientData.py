@@ -4,12 +4,12 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 31.05.2018
-# Last Modified Date: 04.07.2018
+# Last Modified Date: 07.07.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from ampel.base.TransientView import TransientView
 from ampel.pipeline.common.AmpelUtils import AmpelUtils
-from ampel.pipeline.t3.DataAccessManager import DataAccessManager
+from ampel.pipeline.t3.PhotoDataAccessManager import PhotoDataAccessManager
 
 class TransientData:
 	"""
@@ -28,8 +28,7 @@ class TransientData:
 		self.tran_id = tran_id
 		self.state = state
 		self.logger = logger
-		self.known_channels = set()
-		self.flags = None
+
 
 		# key: pp id (photo collection does not include channel info)
 		self.photopoints = {}
@@ -45,33 +44,23 @@ class TransientData:
 		self.journal = {}
 
 
-	def set_latest_state(self, state, channels):
+	def set_channels(self, channels):
+		""" 
+		channels: list or set (of strings)
 		"""
-		Saves latest state of transient for the provided channel
-		"""
-		self._set(self.latest_state, state, channels)
-
-
-	def add_journal_entries(self, entries, channels=None):
-		""" """
-		for channel in AmpelUtils.iter(channels):
-			self.known_channels.add(channel)
-
-			for entry in entries:
-
-				if channel in entry['channels'] or channel is None:
-					shaped_entry = {k:v for k, v in entry.items() if k != 'channels'}
-
-					if channel not in self.journal:
-						self.journal[channel] = []
-
-					if shaped_entry not in self.journal[channel]:
-						self.journal[channel].append(shaped_entry)
+		self.channels = channels
 
 
 	def set_flags(self, flags):
 		""" """
 		self.flags = flags
+
+
+	def set_latest_state(self, channels, state):
+		"""
+		Saves latest state of transient for the provided channel
+		"""
+		self._set(self.latest_state, state, channels)
 
 
 	def add_photopoint(self, photopoint):
@@ -84,7 +73,7 @@ class TransientData:
 		self.upperlimits[upperlimit.get_id()] = upperlimit
 
 
-	def add_science_record(self, science_record, channels=None):
+	def add_science_record(self, channels, science_record):
 		"""
 		Saves science record and tag it with provided channels
 		channels: list of strings whereby each element is a string channel id 
@@ -93,7 +82,7 @@ class TransientData:
 		self._add(self.science_records, science_record, channels)
 
 
-	def add_lightcurve(self, lightcurve, channels=None):
+	def add_lightcurve(self, channels, lightcurve):
 		"""
 		Saves lightcurve and tag it with provided channels
 		channels: list of strings whereby each element is a string channel id 
@@ -102,120 +91,66 @@ class TransientData:
 		self._add(self.lightcurves, lightcurve, channels)
 
 
-	def add_compound(self, compound, channels=None):
+	def add_compound(self, channels, compound):
 		"""
 		Saves compound and tag it with provided channels
 		channels: list of strings whereby each element is a string channel id 
+		compound: namedtuple
 		"""
 		self._add(self.compounds, compound, channels)
 
 
-	def create_view(self, channel=None, channels=None, t2_ids=None):
+	def add_journal_entry(self, channels, entry):
+		""" 
+		channels: list/set of strings whereby each element is a string channel id 
+		entry: dict instance
+		"""
+		self._add(self.journal, entry, channels)
+
+
+	def create_view(self, channels, t2_ids=None):
 		"""
 		Returns instance of ampel.base.TransientView
 		"""
 
-		photopoints, upperlimits = self._get_photo(channel, channels)
+		# Create transient based on info combined from different channels.
+		if AmpelUtils.is_sequence(channels):
+			return self._create_multi_view(channels, t2_ids)
 
-		#############################################
-		# Special case 1: Create transient based on #
-		# info combined from different channels.    #
-		#############################################
+		# Unspecified channel. We create a view based on what's available
+		if channels is None:
 
-		if channels is not None:
+			# No lightcurve/science record/compound associated with this transient 
+			if len(self.channels) == 0:
+				raise ValueError("TransientData not associated with any channel")
 
-			# Robustness
-			if type(channels) is str:
-				raise ValueError("Illegal argument")
-
-			# Someone did set strange parameter values
-			if len(channels) == 1:
-				return self.create_view(channel=next(iter(channels)), t2_ids=t2_ids)
-
-			self.logger.info("Creating multi-channel transient instance")
-			all_comps = {
-				el.id: el 
-				for channel in channels if channel in self.compounds 
-				for el in self.compounds[channel]
-			}
-
-			if self.state in ["$latest", "$all"]:
-				latest_state = (
-					TransientData.get_latest_compound(list(all_comps.values())).id
-					if len(all_comps) > 0 else None
+			# At least one channel association exisits
+			elif len(self.channels) == 1:
+				return self._create_one_view(
+					channel=next(iter(self.channels)), t2_ids=t2_ids
 				)
+
 			else:
-				latest_state = None
+				self.logger.warning("Creating multi-view transient with all available channels")
+				return self._create_multi_view(self.channels, t2_ids)
 
-			# Get journal combined entries
-			entries = []
-			for channel in channels:
-				if channel in self.journal:
-					for entry in self.journal[channel]:
-						if entry not in entries:
-							entries.append(entry)
+		# Channel was specificied (channels is actually a channel)
+		return self._create_one_view(channels, t2_ids)
 
-			return TransientView(
-				self.tran_id, self.flags, None, None, # created, modified
-				entries, latest_state, photopoints, upperlimits, tuple(all_comps.values()),
-				self._get_combined_elements(self.lightcurves, channels),
-				self._get_combined_elements(self.science_records, channels),
-				tuple(self.known_channels & set(channels)), self.logger
+
+	def _create_one_view(self, channel, t2_ids=None):
+		"""
+		Returns instance of ampel.base.TransientView
+		"""
+
+		if not type(channel) is str:
+			raise ValueError("type(channel) must be str and not %s" % type(channel))
+
+		if channel not in self.channels:
+			self.logger.debug("No transient data avail for %s and channel(s) %s" % 
+				(self.tran_id, str(channel))
 			)
-
-
-		#############################################################################
-		# Option 1: Unspecified channel. Channel info might not have been specified #
-		# when lightcurves/compounds/... were added to this TransientData instance. #
-		# In this case we have a single view TransientData (where channel==None)    #
-		#############################################################################
-		
-		# channel not specified in create_transient(...) parameters
-		if channel is None:
-
-			if len(self.known_channels) == 0:
-				if len(self.photopoints) == 0 and len(self.upperlimits) ==0:
-					self.logger.warning("Returned transient will be empty!")
-
-			# At least some lightcurves/compounds/science docs were added
-			elif len(self.known_channels) == 1:
-
-				# Someone did set inadequate parameters 
-				# channel(s) were specified when compounds/... were added
-				# NOTE: *None* is used as dict key, so in can be in self.known_channels
-				if None not in self.known_channels:
-					self.logger.warning(
-						"Correcting incomplete argument: returning transient for channel %s" % 
-						next(iter(self.known_channels))
-					)
-	
-					return self.create_view(
-						channel=next(iter(self.known_channels)), t2_ids=t2_ids
-					)
-
-			elif len(self.known_channels) > 1:
-
-				# provided channel parameter is None and self.known_channels contains more than 1 channel
-				raise ValueError(
-					"Error: current transient view contains multi-channel information. "+
-					"If your goal is to create a multi-channel transient instance, "+
-					"please specifically use the argument 'channels' to do so. " +
-					"Otherwise, please specify which channel info should be used to " +
-					"create the transient instance by setting a value for parameter 'channel'." 
-				)
-
-		else:
-
-			if channel not in self.known_channels:
-				self.logger.debug("No transient data avail for channel %s" % str(channel))
-				return None
-
-		#########################################################################
-		# Option 2: the most commonly used probably. Channel was specificied.   #
-		# A single channel transient instance will be created whereby attention #
-		# must be paid to data access rights if this TransientData contains     #
-		# multi-channel transient data                                          #
-		#########################################################################
+			return None
 
 		if self.state == "$all":
 			if channel in self.compounds:
@@ -224,6 +159,9 @@ class TransientData:
 				latest_state = None	
 		else:
 			latest_state = self.latest_state[channel] if channel in self.latest_state else None
+
+		# Handles data permission
+		photopoints, upperlimits = self._get_photo(channel)
 
 		return TransientView(
 			self.tran_id, self.flags, 
@@ -237,10 +175,57 @@ class TransientData:
 		)	
 
 
+	def _create_multi_view(self, channels, t2_ids=None):
+		"""
+		Returns instance of ampel.base.TransientView
+		"""
+
+		# Sequence with single value
+		if len(channels) == 1:
+			return self._create_one_view(next(iter(channels)), t2_ids=t2_ids)
+
+		self.logger.info("Creating multi-channel transient instance")
+
+		# Gather compounds from different channels 
+		# (will be empty of coumpound loading was not requested)
+		all_comps = {
+			el.id: el for channel in AmpelUtils.iter(channels) if channel in self.compounds 
+			for el in self.compounds[channel]
+		}
+
+		# State operator was provided
+		if self.state in ["$latest", "$all"]:
+			latest_state = (
+				TransientData.get_latest_compound(list(all_comps.values())).id
+				if len(all_comps) > 0 else None
+			)
+		# Custom/dedicated state(s) was/were provided
+		else:
+			latest_state = None
+
+		# combined journal entries for provided channels
+		entries = []
+		for channel in AmpelUtils.iter(channels):
+			if channel in self.journal:
+				for entry in self.journal[channel]:
+					if entry not in entries:
+						entries.append(entry)
+
+		# Handles data permission
+		photopoints, upperlimits = self._get_photo(channels)
+
+		return TransientView(
+			self.tran_id, self.flags, None, None, # created, modified
+			entries, latest_state, photopoints, upperlimits, tuple(all_comps.values()),
+			self._get_combined_elements(self.lightcurves, channels),
+			self._get_combined_elements(self.science_records, channels),
+			tuple(self.channels & set(channels)), self.logger
+		)
+
+
 	def _add(self, var, obj, channels):
 		""" """
 		for channel in AmpelUtils.iter(channels):
-			self.known_channels.add(channel)
 			if channel not in var:
 				var[channel] = [obj]
 			else:
@@ -250,60 +235,40 @@ class TransientData:
 	def _set(self, var, obj, channels):
 		""" """
 		for channel in AmpelUtils.iter(channels):
-			self.known_channels.add(channel)
 			var[channel] = obj
 
 
 	def _get_combined_elements(self, var, channels):
 		""" """
 		return tuple(
-			{el for channel in channels if channel in var for el in var[channel]}
+			{el for channel in AmpelUtils.iter(channels) if channel in var for el in var[channel]}
 		)
 
 
-	def _get_photo(self, channel=None, channels=None):
+	def _get_photo(self, channels):
 		""" """
-
-		# Robustness
-		if isinstance(channels, str):
-			raise TypeError("channels should be a collection, not str")
-		if not (channel is None or isinstance(channel, str)):
-			raise TypeError("channel should be str or None")
 
 		# no photometric info were requested / loaded
 		if len(self.photopoints) == 0 and len(self.upperlimits) == 0:
 			return None, None
 
 		# no channel info provided: we return everything.
-		# The caller should have had specified a channel if he wanted 
-		# to enforce data access policies
-		if channel is None and channels is None:
+		# The caller should have specified a channel 
+		# if data access policies were to be applied
+		if channels is None:
 			return tuple(self.photopoints), tuple(self.upperlimits)
-
-		# Robustness
-		if channel is not None and channels is not None:
-			raise ValueError("Please choose between parameter channel and channels")
 
 		# Past this point, regardless of how many channel info we have (one is enough) 
 		# we have to check permissions (db results contain all pps/uls, 
 		# wether or not they are public/private)
 	
-		# Convenience
-		if channels is not None and len(channels) == 1:
-			channel = next(iter(channels))
-
-		# Get pps / uls for given channel
-		if channel is not None:
-			dam = DataAccessManager(channel)
-			return dam.get_photopoints(self.photopoints), dam.get_upperlimits(self.upperlimits)
-
 		# Loop through channel(s)
 		pps = set()
 		uls = set()
-		for channel in channels:
-			dam = DataAccessManager(channel)
-			pps.update(dam.get_photopoints(self.photopoints))
-			uls.update(dam.get_upperlimits(self.upperlimits))
+		for channel in AmpelUtils.iter(channels):
+			pdam = PhotoDataAccessManager(channel)
+			pps.update(pdam.get_photopoints(self.photopoints))
+			uls.update(pdam.get_upperlimits(self.upperlimits))
 
 		# Return pps / uls for given combination of channels.
 		# Example for single source ZTF:

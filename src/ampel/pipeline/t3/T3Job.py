@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : src/ampel/pipeline/t3/T3JobExecution.py
+# File              : ampel/pipeline/t3/T3Job.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 26.02.2018
-# Last Modified Date: 04.07.2018
+# Last Modified Date: 09.07.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from datetime import datetime, timezone
@@ -25,24 +25,28 @@ from ampel.core.flags.AlDocTypes import AlDocTypes
 from ampel.core.flags.FlagUtils import FlagUtils
 
 
-class T3JobExecution:
+class T3Job:
 	"""
 	"""
 
-	def __init__(self, t3_job, central_db=None, logger=None, propagate_logs=False):
+	def __init__(self, job_config, central_db=None, logger=None, propagate_logs=False):
 		""" 
-		'central_db': string. Use provided DB name rather than Ampel default database ('Ampel')
+		'job_config':
+		instance of ampel.pipeline.t3.T3JobConfig
+
+		'central_db': string. 
+		Use provided DB name rather than Ampel default database ('Ampel')
 
 		'logger': 
-			-> If None, a new logger using a DBLoggingHandler will be created, which means a new 
-			log document will be inserted into the 'logs' collection of the central db.
-			-> If you provide a logger, please note that it will *NOT* be changed in any way, 
-			in particular: no DBLoggingHandler will be added, which means that no DB logging will occur.
+		-> If None, a new logger using a DBLoggingHandler will be created, which means a new 
+		log document will be inserted into the 'logs' collection of the central db.
+		-> If you provide a logger, please note that it will *NOT* be changed in any way, 
+		in particular: no DBLoggingHandler will be added, which means that no DB logging will occur.
 
 		'propagate_logs': 
-			If this evaluates to true, events logged using 'logger' will be passed to the handlers 
-			of higher level (ancestor) loggers, in addition to any handlers attached to 'logger'. 
-			If this evaluates to false, logging messages are not passed to the handlers of ancestor loggers.
+		If this evaluates to true, events logged using 'logger' will be passed to the handlers 
+		of higher level (ancestor) loggers, in addition to any handlers attached to 'logger'. 
+		If this evaluates to false, logging messages are not passed to the handlers of ancestor loggers.
 		"""
 		
 		# Optional override of AmpelConfig defaults
@@ -59,7 +63,7 @@ class T3JobExecution:
 			# Create DB logging handler instance (logging.Handler child class)
 			# This class formats, saves and pushes log records into the DB
 			self.db_logging_handler = DBLoggingHandler(
-				tier=3, info={"job": t3_job.job_name}
+				tier=3, info={"job": job_config.job_name}
 			)
 
 			# Add db logging handler to the logger stack of handlers 
@@ -68,30 +72,30 @@ class T3JobExecution:
 		logger.propagate = propagate_logs
 			
 		self.logger = logger
-		self.t3_job = t3_job
+		self.job_config = job_config
 
 		# T3 job not requiring any prior transient loading 
-		if t3_job.get_config('input.select') is not None:
+		if job_config.get('input.select') is not None:
 
 			self.exec_params = {
-				'channels': t3_job.get_config('input.select.channel(s)'),
-				'state_op': t3_job.get_config("input.load.state"),
-				't2s': t3_job.get_config("input.load.t2(s)"),
+				'channels': job_config.get('input.select.channel(s)'),
+				'state_op': job_config.get("input.load.state"),
+				't2s': job_config.get("input.load.t2(s)"),
 				'docs': FlagUtils.list_flags_to_enum_flags(
-					t3_job.get_config('input.load.doc(s)'), AlDocTypes
+					job_config.get('input.load.doc(s)'), AlDocTypes
 				),
 				'created': TimeConstraint.from_parameters(
-					t3_job.get_config('input.select.created')
+					job_config.get('input.select.created')
 				),
 				'modified': TimeConstraint.from_parameters(
-					t3_job.get_config('input.select.modified')
+					job_config.get('input.select.modified')
 				),
 				'with_flags': FlagUtils.list_flags_to_enum_flags(
-					t3_job.get_config('input.select.withFlag(s)'), 
+					job_config.get('input.select.withFlag(s)'), 
 					TransientFlags
 				),
 				'without_flags': FlagUtils.list_flags_to_enum_flags(
-					t3_job.get_config('input.select.withoutFlag(s)'), 
+					job_config.get('input.select.withoutFlag(s)'), 
 					TransientFlags
 				),
 				'feedback': True,
@@ -99,32 +103,57 @@ class T3JobExecution:
 			}
 
 
-	def overwrite_job_parameter(self, name, value):
+	def overwrite_parameter(self, name, value):
 		"""
+		Overwrites job parameters
 		"""
 		if not hasattr(self, "exec_params"):
 			raise ValueError("No job parameter available")
+
 		if name not in self.exec_params:
 			raise ValueError("Unknown attribute: %s" % name)
+
 		self.exec_params[name] = value
 
 
-	def get_job_parameters(self):
+	def get_parameters(self):
 		"""
+		Returns job parameters (dict instance)
 		"""
 		return getattr(self, "exec_params", None)
 
 
-	def run_job(self):
+	def run(self):
 		"""
 		"""
 
 		# TODO: try/catch with Ampel 'troubles' insert
 
 		time_now = time()
+		t3_tasks = []
+
+		if self.exec_params['channels'] == "$forEach":
+
+			# list of all channels found in matched transients.
+			chans = self._get_channels()
+
+			# There is no channel less transient -> no channel == no transient
+			if chans is None:
+				self.logger.info("No matching transient")
+				return
+
+			# Create T3 tasks
+			for task_config in self.job_config.get_task_configs():
+				for channel in chans:
+					t3_tasks.append(task_config.create_task(self.logger, channel=channel))
+		else:
+
+			# Create T3 tasks
+			for task_config in self.job_config.get_task_configs():
+				t3_tasks.append(task_config.create_task(self.logger))
 
 		# T3 job requiring prior transient loading 
-		if self.t3_job.get_config('input.select') is not None:
+		if self.job_config.get('input.select') is not None:
 
 			# Required to load single transients
 			dcl = DBContentLoader(self.tran_col.database, verbose=True, logger=self.logger)
@@ -135,35 +164,31 @@ class T3JobExecution:
 			if trans_cursor is not None:
 
 				# Set chunk_size to 'number of transients found' if not defined
-				chunk_size = self.t3_job.get_chunk()
+				chunk_size = self.job_config.get('input.chunk')
+
+				# No chunk size == all transients loaded at once
 				if chunk_size is None:
 					chunk_size = trans_cursor.count()
 
-				for chunk in self.get_chunks(dcl, trans_cursor, chunk_size):
-					self.logger.info("Processing next chunk")
-					# 'feed' each task
-					self.process_chunk(chunk)
+				for tran_register in self.get_tran_data(dcl, trans_cursor, chunk_size):
+
+					self.logger.info("Processing chunk")
+
+					# Feed each task with transient views
+					for t3_task in t3_tasks:
+						t3_task.update(tran_register)
+			
 
 		# For each task, execute done()
-		for t3_task in self.t3_job.get_tasks():
+		for t3_task in t3_tasks:
 
-			# Feedback
-			self.logger.info(
-				"Task %s (t3Unit: %s, runConfig: %s): executing done()" % (
-					t3_task.get_config("name"),
-					t3_task.get_config("t3Unit"), 
-					t3_task.get_config("runConfig")
-				)
-			)
+			# execute embedded t3unit instance method done()
+			ret = t3_task.done()
 
-			# execute t3unit instance method done()
-			ret = t3_task.done(self.logger)
-
-			# make sure next job run creates a new t3 unit instance
-			t3_task.free_t3_unit_instance()
-
-			# Update Transient journal with dict containing date, channels and name of the task
-			if t3_task.get_config('updateJournal') is True:
+			# method done() might return a list of transient ids (integers or strings). 
+			# In this case, we update the Transient journal with dict containing date, 
+			# channels and name of the task
+			if ret:
 
 				mongo_res = self.tran_col.update_many(
 					{
@@ -175,9 +200,7 @@ class T3JobExecution:
 							"journal": {
 								'dt': int(datetime.now(timezone.utc).timestamp()),
 								'tier': 3,
-								'channels': AmpelUtils.iter( # make sure channels is a list
-									t3_task.get_config('select.channel(s)')
-								),
+								'channels': list(t3_task.channels), # make sure channels is a list
 								'taskName': t3_task.get_config('name')
 							}
 						}
@@ -195,7 +218,7 @@ class T3JobExecution:
 				'$push': {
 					'jobs': {
 						'tier': 3,
-						'job': self.t3_job.job_name,
+						'job': self.job_config.job_name,
 						'dt': datetime.now(timezone.utc).timestamp(),
 						'logs': (
 							self.db_logging_handler.get_log_id() if hasattr(self, 'db_logging_handler') 
@@ -215,13 +238,43 @@ class T3JobExecution:
 			self.db_logging_handler.flush()
 
 
-	def get_selected_transients(self):
+	def _get_channels(self):
 		"""
-		Returns a pymongo cursor
+		Returns a list of all channels found in the matched transients.
+		The list does not contain duplicates.
+		None is returned if no matching transient exists
+		"""
+
+		query_res = next(
+			self.tran_col.aggregate(
+				[
+					{'$match': self._get_match_criteria()},
+					{"$unwind": "$channels"},
+					{
+						"$group": {
+		  					"_id": None,
+		        			"channels": { "$addToSet": "$channels" }
+						}
+					}  
+				]
+			), 
+			None
+		)
+
+		if query_res is None:
+			return None
+
+		return query_res['channels']
+
+
+	def _get_match_criteria(self):
+		"""
+		Returns a dict of pymongo matching criteria 
+		used for find() or aggregate() operations
 		"""
 
 		# Build query for matching transients using criteria defined in job_config
-		trans_match_query = QueryMatchTransients.match_transients(
+		return QueryMatchTransients.match_transients(
 			channels = self.exec_params['channels'],
 			time_created = self.exec_params['created'],
 			time_modified = self.exec_params['modified'],
@@ -229,6 +282,14 @@ class T3JobExecution:
 			without_flags = self.exec_params['without_flags']
 		)
 
+
+	def get_selected_transients(self):
+		"""
+		Returns a pymongo cursor
+		"""
+
+		# Build query for matching transients using criteria defined in job_config
+		trans_match_query = self._get_match_criteria()
 		self.logger.info("Executing search query: %s" % trans_match_query)
 
 		# Execute 'find transients' query
@@ -246,12 +307,12 @@ class T3JobExecution:
 		return trans_cursor
 
 
-	def get_chunks(self, db_content_loader, trans_cursor, chunk_size):
+	def get_tran_data(self, db_content_loader, trans_cursor, chunk_size):
 		"""
 		Yield selected TransientData in chunks of length `chunk_size`
 		"""
 		# Load ids (chunk_size number of ids)
-		for chunked_tran_ids in T3JobExecution.chunk(map(lambda el: el['tranId'], trans_cursor), chunk_size):
+		for chunked_tran_ids in T3Job.chunk(map(lambda el: el['tranId'], trans_cursor), chunk_size):
 
 			self.logger.info("Loading %i transient(s) " % len(chunked_tran_ids))
 			states = None
@@ -349,52 +410,6 @@ class T3JobExecution:
 			
 			yield al_tran_data
 	
-
-	def process_chunk(self, al_tran_data):
-		"""
-		:param al_tran_data: dict of transient info
-		"""
-
-		# Feed each task with transient views
-		for t3_task in self.t3_job.get_tasks():
-
-			# Get channel associated with this task
-			task_chans = t3_task.get_config('select.channel(s)')
-
-			# Build specific array of ampel TransientView instances where each transient 
-			# is cut down according to the specified sub-selections parameters
-			tran_views = []
-			for tran_id, tran_data in al_tran_data.items():
-
-				tran_view = tran_data.create_view(
-					channel=task_chans if not AmpelUtils.is_sequence(task_chans) else None,
-					channels=task_chans if AmpelUtils.is_sequence(task_chans) else None,
-					t2_ids=t3_task.get_config('select.t2(s)')
-				)
-				
-				if tran_view is not None:
-					self.logger.debug(
-						"TransientView created for %s and channel(s) %s" % 
-						(tran_id, task_chans)
-					)
-					tran_views.append(tran_view)
-
-			# get T3 unit instance (instantiate if None)
-			t3_unit = t3_task.get_t3_unit_instance(self.logger)
-
-			# Feedback
-			self.logger.info(
-				"Task %s (t3Unit: %s, runConfig: %s): feeding %i TransientView instances" % (
-					t3_task.get_config("name"),
-					t3_task.get_config("t3Unit"), 
-					t3_task.get_config("runConfig"),
-					len(al_tran_data)
-				)
-			)
-
-			# Feed T3 instance
-			t3_unit.add(tran_views)
-
 
 	@staticmethod
 	def chunk(iter, chunk_size):

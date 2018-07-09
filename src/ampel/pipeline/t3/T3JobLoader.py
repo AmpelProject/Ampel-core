@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 07.06.2018
-# Last Modified Date: 15.06.2018
+# Last Modified Date: 07.07.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from functools import reduce
@@ -13,7 +13,7 @@ from ampel.pipeline.common.AmpelUtils import AmpelUtils
 from voluptuous import Schema, Required, Any, Optional, ALLOW_EXTRA
 
 from ampel.pipeline.t3.T3Job import T3Job
-from ampel.pipeline.t3.T3TaskLoader import T3TaskLoader
+from ampel.pipeline.t3.T3TaskConfig import T3TaskConfig
 from ampel.pipeline.t3.TimeConstraint import TimeConstraint
 from ampel.pipeline.common.AmpelUtils import AmpelUtils
 from ampel.pipeline.config.AmpelConfig import AmpelConfig
@@ -42,8 +42,8 @@ class T3JobLoader:
 				}
 			),
 			Required('task(s)'): Any(
-				T3TaskLoader.t3_task_schema, 
-				[T3TaskLoader.t3_task_schema]
+				T3TaskConfig.t3_task_schema, 
+				[T3TaskConfig.t3_task_schema]
 			),
 			'input': {
 				Required('select'): {
@@ -73,6 +73,7 @@ class T3JobLoader:
 		extra=ALLOW_EXTRA
 	)
 
+
 	@classmethod
 	def load(cls, job_name, logger=None):
 		"""
@@ -92,7 +93,7 @@ class T3JobLoader:
 		logger.info("Loading job %s" % job_name)
 
 		input_select = cls.get_config(job_doc, 'input.select')
-		t3_tasks = []
+		t3_task_configs = []
 		all_tasks_sels = {} 
 
 		# Robustness
@@ -121,11 +122,11 @@ class T3JobLoader:
 
 		# Load and check tasks
 		for task_doc in job_doc['task(s)']:
-			t3_tasks.append(
-				T3TaskLoader.load(job_name, task_doc['name'], all_tasks_sels, logger)
+			t3_task_configs.append(
+				T3TaskConfig.load(job_name, task_doc['name'], all_tasks_sels, logger)
 			)
 
-		return T3Job(job_name, job_doc, t3_tasks)
+		return T3Job(job_name, job_doc, t3_task_configs)
 
 	
 	@staticmethod

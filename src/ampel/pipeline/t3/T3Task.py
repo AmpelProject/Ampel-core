@@ -4,60 +4,92 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 06.03.2018
-# Last Modified Date: 05.07.2018
+# Last Modified Date: 06.07.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from ampel.pipeline.common.AmpelUtils import AmpelUtils
 
 class T3Task:
 	"""
-	Instances of this class are typically created using 
-	static method T3TaskLoader.load(...)
+	Instances of this class are typically created by the method create_tasks
+	of an instance of ampel.pipeline.t3.T3TaskBody
 	"""
 
-	def __init__(self, task_doc, T3_unit_class, t3_unit_base_config, t3_unit_run_config):
+	def __init__(self, t3_task_config, channels, logger):
 		"""
-		t3_unit_doc: dict instance containing t3 unit configuration 
-		T3_unit_class: class (not instance) of t3 unit associated with this task
-		t3_run_config: dict instance
+		t3_unit_instance: instance of child class of ampel.base.abstract.AbsT3Unit
+		channels: channel(s) sub-selection: string or list of strings
+		t2_ids: t2 id(s) sub-selection: string or list of strings
+		log_header: string
+		logger: logger from python module 'logging'
 		"""
 
-		self.task_doc = task_doc
-		self._T3_unit_class = T3_unit_class
-		self._t3_instance = None
-		self._t3_unit_base_config = t3_unit_base_config
-		self._t3_unit_run_config = t3_unit_run_config
+		self.task_config = t3_task_config
+		self.channels = channels
+		self.logger = logger
+
+		# Instanciate t3 unit
+		self.t3_instance = t3_task_config.T3_unit_class(
+			logger, 
+			t3_task_config.t3_unit_base_config, 
+			t3_task_config.t3_unit_run_config
+		)
 
 
-	def get_config(self, doc_key):
+	def get_config(self, param):
 		"""
-		doc_key: dict key
+		param: string
 		"""
-		return AmpelUtils.get_by_path(self.task_doc, doc_key)
+		return self.task_config.get(param)
 
 
-	def get_t3_unit_instance(self, logger):
+	def update(self, tran_register):
 		"""
-		returns an instance of a child class of AbsT3Unit 
+		tran_register: dict instance.
+			key: transient id
+			value: instance of ampel.pipeline.t3.TransientData
 		"""
-		if self._t3_instance is None:
-			# Instantiate T3 class
-			self._t3_instance = self._T3_unit_class(
-				logger, base_config=self._t3_unit_base_config, 
-				run_config=self._t3_unit_run_config
+
+		# Feedback
+		self.logger.info(
+			"%s: adding transientViews to t3 unit" % 
+			self.task_config.log_header
+		)
+
+		# Build specific array of ampel TransientView instances where each transient 
+		# is cut down according to the specified sub-selections parameters
+		tran_views = []
+
+		for tran_id, tran_data in tran_register.items():
+
+			# Create transientView for specified channels using transient data
+			tran_view = tran_data.create_view(self.channels, self.task_config.t2_ids)
+
+			# No view exists for the given channel(s)
+			if tran_view is None:
+				continue
+
+			# Feedback
+			self.logger.debug(
+				"TransientView created for %s and channel(s) %s" % 
+				(tran_id, self.channels)
 			)
 
-		return self._t3_instance
+			# Populate list of transient views
+			tran_views.append(tran_view)
+
+		# Feedback
+		self.logger.info(
+			"%s: adding %i transientViews to t3 unit" % 
+			(self.task_config.log_header, len(tran_register))
+		)
+
+		# Feed T3 instance with transientViews
+		self.t3_instance.add(tran_views)
 
 
-	def done(self, logger):
+	def done(self):
 		"""
 		"""
-		t3_unit = self.get_t3_unit_instance(logger)
-		return t3_unit.done()
-
-
-	def free_t3_unit_instance(self):
-		"""
-		"""
-		self._t3_instance = None
+		self.logger.info("%s: calling done()" % self.task_config.log_header)
+		return self.t3_instance.done()

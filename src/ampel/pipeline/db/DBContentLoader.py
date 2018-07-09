@@ -258,11 +258,11 @@ class DBContentLoader:
 		"""
 		"""
 		# Build set: we need intersections later
-		channels = set(AmpelUtils.iter(channels))
+		channels_set = AmpelUtils.to_set(channels)
 
 		# Stores loaded transient items. 
 		# Key: tran_id, value: TransientData instance
-		register = {}
+		tran_register = {}
 
 		# Loop through ampel docs
 		tran_id = ""
@@ -270,11 +270,11 @@ class DBContentLoader:
 			
 			tran_id = doc['tranId']
 
-			if tran_id in register:
-				tran_data = register[tran_id]
+			if tran_id in tran_register:
+				tran_data = tran_register[tran_id]
 			else:
 				tran_data = TransientData(tran_id, state_op, self.logger)
-				register[tran_id] = tran_data
+				tran_register[tran_id] = tran_data
 
 			# Pick up transient document
 			if doc["alDocType"] == AlDocTypes.TRANSIENT:
@@ -287,57 +287,71 @@ class DBContentLoader:
 					)
 				)
 
-				tran_data.add_journal_entries(
-					doc['journal'], channels if len(channels) == 1
-					else channels & set(doc['channels']) # intersection
+				# Use all avail channels if no channel query constraint was used, 
+				# otherwise: intersection
+				tran_data.set_channels(
+					doc['channels'] if channels is None 
+					else (channels_set & set(doc['channels'])) # intersection
 				)
+
+				# Save journal entries related to provided channels
+				for entry in doc['journal']:
+
+					chans_intersec = (
+						entry['channels'] if channels is None 
+						else (channels_set & set(entry['channels']))
+					)
+
+					tran_data.add_journal_entry(
+						chans_intersec,
+						# journal entry without the channels key/value
+						{k:v for k, v in entry.items() if k != 'channels'}	
+					)
 
 
 			# Pick compound dicts 
 			if doc["alDocType"] == AlDocTypes.COMPOUND:
 
 				doc['id'] = doc.pop('_id')
+				doc_chans = doc.pop('channels')
 				doc['alFlags'] = FlagUtils.dbflag_to_enumflag(
 					doc['alFlags'], CompoundFlags
 				)
 
-				tran_data_channels = (
-					channels if len(channels) == 1 
-					else channels & set(doc['channels']) # intersection
-				)
+				comp_chans = doc_chans if channels is None else (channels_set & set(doc_chans))
 
-				doc['channels'] = tran_data_channels
 				tran_data.add_compound(
-					namedtuple('Compound', doc.keys())(**doc), 
-					tran_data_channels
+					comp_chans, # intersection
+					namedtuple('Compound', doc.keys())(**AmpelUtils.recursive_freeze(doc))
 				)
 
-				if state_op == "$latest":
-					tran_data.set_latest_state(doc['id'], tran_data_channels)
+				if len(comp_chans) == 1 and state_op == "$latest":
+					tran_data.set_latest_state(comp_chans, doc['id'])
 
 			# Pick t2 records
 			if doc["alDocType"] == AlDocTypes.T2RECORD:
 
-				sr = ScienceRecord(
+				science_record = ScienceRecord(
 					doc['tranId'], doc['t2Unit'], doc['compId'], doc.get('results'),
 					info={
 						'runConfig': doc['runConfig'], 
 						'runState': doc['runState'],
-						'genTime': ObjectId(doc['_id']).generation_time,
+						'created': ObjectId(doc['_id']).generation_time,
 						'hasError': doc['runState'] == T2RunStates.ERROR
 					}, 
 					read_only=True
 				)
 
 				tran_data.add_science_record(
-					sr, channels if len(channels) == 1 
-					else channels & set(doc['channels']) # intersection
+					doc['channels'] if channels is None 
+					else (channels_set & set(doc['channels'])), # intersection
+					science_record
 				)
 
 
 		if photo_list is not None:
 
-			loaded_tran_ids = register.keys()
+			loaded_tran_ids = tran_register.keys()
 
 			# Share common upper limits among different Transients
 			loaded_uls = {}
@@ -351,7 +365,7 @@ class DBContentLoader:
 					
 					# Photopoints instance attached to the transient instance 
 					# are not bound to a compound and come thus without policy 
-					register[doc['tranId']].add_photopoint(
+					tran_register[doc['tranId']].add_photopoint(
 						PlainPhotoPoint(
 							doc, flags = FlagUtils.dbflag_to_enumflag(
 								doc['alFlags'], PhotoFlags
@@ -366,7 +380,7 @@ class DBContentLoader:
 					# UpperLimits instance attached to the transient instance 
 					# are not bound to a compound and come thus without policy 
 					if type(doc['tranId']) is int:
-						register[doc['tranId']].add_upperlimit(
+						tran_register[doc['tranId']].add_upperlimit(
 							PlainUpperLimit(doc, read_only=True)
 						)
 					
@@ -381,12 +395,12 @@ class DBContentLoader:
 									),
 									read_only=True
 								)
-							register[tran_id].add_upperlimit(loaded_uls[doc_id])
+							tran_register[tran_id].add_upperlimit(loaded_uls[doc_id])
 					 
 
 		if load_lightcurves and photo_list is not None:
 		
-			for tran_data in register.values():
+			for tran_data in tran_register.values():
 
 				if len(tran_data.compounds) == 0:
 					continue
@@ -434,13 +448,13 @@ class DBContentLoader:
 					lc = self.lcl.load_using_objects(comp_dict[comp_id], frozen_photo_dict)
 
 					# Associate it to the TransientData instance
-					tran_data.add_lightcurve(lc, chan_names)
+					tran_data.add_lightcurve(chan_names, lc)
 
 		# Feedback
 		if feedback:
-			self.log_feedback(register.values(), photo_list, verbose_feedback)
+			self.log_feedback(tran_register.values(), photo_list, verbose_feedback)
 
-		return register
+		return tran_register
 
 
 	def log_feedback(self, dict_values, photo_list, verbose_feedback):

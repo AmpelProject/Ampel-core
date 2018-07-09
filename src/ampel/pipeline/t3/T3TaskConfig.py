@@ -56,6 +56,8 @@ class T3TaskConfig:
 	@staticmethod
 	def get_t3_unit_doc(t3_unit_name, logger):
 		"""
+		t3_unit_name: string
+		logger: logger from python module 'logging'
 		Retrieve and return T3 unit dict instance from config after validating it (voluptous)
 		"""
 
@@ -78,6 +80,8 @@ class T3TaskConfig:
 	@staticmethod
 	def get_run_config_doc(task_doc, logger):
 		"""
+		task_doc: dict instance
+		logger: logger from python module 'logging'
 		Retrieve and return T3 unit run config (dict instance)
 		"""
 
@@ -99,15 +103,18 @@ class T3TaskConfig:
 
 
 	@classmethod
-	def get_t3_unit_class(cls, class_full_path):
+	def get_t3_unit_class(cls, class_full_path, logger):
 		"""
+		class_full_path: string
 		Class method responsible for loading and providing T3 unit *classes* (not instances)
 		"""
 
 		if class_full_path in cls.t3_classes:
+			logger.info("Using T3 unit class %s" % class_full_path)
 			return cls.t3_classes[class_full_path]
 
 		# Create T3 class
+		logger.info("Loading T3 unit class %s" % class_full_path)
 		t3_unit_module = importlib.import_module(class_full_path)
 		T3_class = getattr(t3_unit_module, class_full_path.split(".")[-1])
 	
@@ -420,10 +427,12 @@ class T3TaskConfig:
 
 		logger.info("Loading Task: %s" % task_doc.get("name"))
 
-		self.T3_unit_class = T3TaskConfig.get_t3_unit_class(t3_unit_doc.get('classFullPath'))
+		self.task_doc = task_doc
+		self.T3_unit_class = T3TaskConfig.get_t3_unit_class(t3_unit_doc.get('classFullPath'), logger)
 		self.t3_unit_base_config = t3_unit_doc.get('baseConfig') # optional dict 'baseConfig'
 		self.t3_unit_run_config = t3_unit_run_config_doc
-		self.channels = AmpelUtils.get_by_path(task_doc, 'select.channels')
+
+		self.channels = AmpelUtils.get_by_path(task_doc, 'select.channel(s)')
 		self.t2_ids = AmpelUtils.get_by_path(task_doc, 'select.t2(s)')
 		self.log_header = "Task %s (t3Unit: %s, runConfig: %s)" % (
 			task_doc.get("name"), task_doc.get("t3Unit"), task_doc.get("runConfig"),
@@ -432,6 +441,14 @@ class T3TaskConfig:
 		logger.info("T3 Unit: %s" % t3_unit_doc.get('classFullPath'))
 		logger.info("Base config: %s" % self.t3_unit_base_config)
 		logger.info("Run config: %s" % self.t3_unit_run_config)
+		logger.info("Channels: %s" % str(self.channels))
+
+
+	def get(self, parameter):
+		"""
+		parameter: string
+		"""
+		return AmpelUtils.get_by_path(self.task_doc, parameter)
 
 
 	def create_task(self, logger, channel=None):
@@ -439,11 +456,8 @@ class T3TaskConfig:
 		logger: logger instance from python module 'logging' 
 		channel: optional channel name
 		"""
-
 		return T3Task(
-			self.T3_unit_class(
-				logger, self.t3_unit_base_config, self.t3_unit_run_config
-			), 
+			self, 
 			self.channels if channel is None else channel,
-			self.t2_ids, self.log_header, logger
+			logger
 		)
