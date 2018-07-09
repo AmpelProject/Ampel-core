@@ -187,7 +187,7 @@ class T3JobConfig:
 		T3Job(self, central_db, logger).run()
 
 
-	def schedule(self, scheduler):
+	def schedule_job(self, scheduler):
 
 		if self.get('schedule.mode') == "fixed_rate":
 

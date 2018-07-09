@@ -1,9 +1,9 @@
 
 import pytest, subprocess, json
-from ampel.pipeline.t3.T3TaskLoader import T3TaskLoader
+
 from ampel.pipeline.t3.T3Controller import T3Controller
-from ampel.pipeline.t3.T3JobLoader import T3JobLoader
-from ampel.pipeline.t3.T3JobExecution import T3JobExecution, DBContentLoader
+from ampel.pipeline.t3.T3JobConfig import T3JobConfig
+from ampel.pipeline.t3.T3TaskConfig import T3TaskConfig
 
 from ampel.base.abstract.AbsT3Unit import AbsT3Unit
 from ampel.pipeline.config.AmpelConfig import AmpelConfig
@@ -29,10 +29,10 @@ class PotemkinT3(AbsT3Unit):
 
 @pytest.fixture
 def testing_class():
-	prev = T3TaskLoader.t3_classes
-	T3TaskLoader.t3_classes = {'potemkin': PotemkinT3}
+	prev = T3TaskConfig.t3_classes
+	T3TaskConfig.t3_classes = {'potemkin': PotemkinT3}
 	yield
-	T3TaskLoader.t3_classes = prev
+	T3TaskConfig.t3_classes = prev
 
 @pytest.fixture
 def t3_jobs():
@@ -128,7 +128,7 @@ def testing_config(testing_class, t3_jobs, mongod, graphite):
 
 @pytest.mark.xfail(reason="Exceptions aren't raised to caller yet")
 def test_launch_job(testing_config):
-	job = T3JobLoader.load('jobbyjob')
+	job = T3JobConfig.load('jobbyjob')
 	with pytest.raises(PotemkinError):
 		job.run()
 	with pytest.raises(PotemkinError):
@@ -136,8 +136,7 @@ def test_launch_job(testing_config):
 		proc.join()
 
 def test_monitor_processes(testing_config):
-	controller = T3Controller(AmpelConfig.get_config(),
-	    mongodb_uri=AmpelConfig.get_config('resources.mongo.writer'))
+	controller = T3Controller()
 	try:
 		controller.start()
 		controller.jobs['jobbyjob'].launch_t3_job()
@@ -198,33 +197,28 @@ def minimal_config(mongod, testing_class):
 
 def test_missing_job(minimal_config):
 	with pytest.raises(ValueError):
-		T3JobLoader.load('jobbyjob_doesnotexist')
+		T3JobConfig.load('jobbyjob_doesnotexist')
 
 def test_missing_task(minimal_config):
 	with pytest.raises(ValueError):
-		T3TaskLoader.load('theytookrjerbs', 'case1')
+		T3TaskConfig.load('theytookrjerbs', 'case1')
 	with pytest.raises(ValueError):
-		T3TaskLoader.load('jobbyjob', 'doesnotexist')
+		T3TaskConfig.load('jobbyjob', 'doesnotexist')
 
 def test_task_config(minimal_config):
-	T3TaskLoader.load('jobbyjob', 'noselect')
-	T3TaskLoader.load('jobbyjob', 'config')
+	T3TaskConfig.load('jobbyjob', 'noselect')
+	T3TaskConfig.load('jobbyjob', 'config')
 	with pytest.raises(ValueError):
-		T3TaskLoader.load('jobbyjob', 'badconfig')
-	T3TaskLoader.load('jobbyjob', 'select0')
+		T3TaskConfig.load('jobbyjob', 'badconfig')
+	T3TaskConfig.load('jobbyjob', 'select0')
 
 def test_get_transient_view(ingested_transients, t3_selected_transients, minimal_ingestion_config):
 	
 	# test that OR selection works as expected
 	for task_chans in (['0'], ['1'], ['0', '1']):
-		channel = task_chans[0] if len(task_chans) == 1 else task_chans
 		count = 0
 		for tran_id, tran_data in t3_selected_transients.items():
-			tran_view = tran_data.create_view(
-				channel=task_chans if not AmpelUtils.is_sequence(task_chans) else None,
-				channels=task_chans if AmpelUtils.is_sequence(task_chans) else None,
-				t2_ids=set()
-			)
+			tran_view = tran_data.create_view(channels=task_chans, t2_ids=set())
 			if tran_view is not None:
 				count += 1
 				if len(task_chans) == 1:

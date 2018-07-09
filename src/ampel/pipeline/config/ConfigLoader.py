@@ -3,16 +3,11 @@
 # License           : BSD-3-Clause
 # Author            : Jakob van Santen <jakob.van.santen@desy.de>
 
-import sys
 from functools import partial
-import inspect
-import json
-import pkg_resources
-import logging
-from ampel.pipeline.config.AmpelConfig import AmpelConfig
-import traceback
+import sys, inspect, json, pkg_resources, logging, traceback
 
-from ampel.pipeline.t3.T3JobLoader import T3JobLoader
+from ampel.pipeline.config.AmpelConfig import AmpelConfig
+from ampel.pipeline.t3.T3JobConfig import T3JobConfig
 
 log = logging.getLogger(__name__)
 
@@ -75,7 +70,7 @@ def load_config(path, gather_plugins=True):
 			for name, channel_config in resource.resolve()().items():
 				if name in config['t3_jobs']:
 					raise KeyError("T3 job {} (defined as entry point {} in {}) already exists in the provided config file".format(name, resource.name, resource.dist))
-				T3JobLoader.job_schema(channel_config)
+				T3JobConfig.job_schema(channel_config)
 				config['t3_jobs'][name] = channel_config
 	except Exception as e:
 		print("Exception in load_config:")

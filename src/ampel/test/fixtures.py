@@ -300,16 +300,17 @@ def ingested_transients(alert_generator, minimal_ingestion_config, caplog):
 
 @pytest.fixture
 def t3_selected_transients(ingested_transients, minimal_ingestion_config, caplog):
-	from ampel.pipeline.t3.T3JobExecution import T3JobExecution, DBContentLoader
-	from ampel.pipeline.t3.T3JobLoader import T3JobLoader
+	from ampel.pipeline.t3.T3Job import T3Job
+	from ampel.pipeline.t3.T3JobConfig import T3JobConfig
+	from ampel.pipeline.db.DBContentLoader import DBContentLoader
 	
-	job = T3JobExecution(T3JobLoader.load('jobbyjob'))
-	transients = job.get_selected_transients()
-	assert transients.count() == len(ingested_transients), "Job loaded all ingested transients"
+	job = T3Job(T3JobConfig.load('jobbyjob'))
+	trans_cursor = job.get_selected_transients()
+	assert trans_cursor.count() == len(ingested_transients), "Job loaded all ingested transients"
 	
 	with caplog.at_level('WARN'):
 		loader = DBContentLoader(job.tran_col.database, logger=job.logger)
-	chunk = next(job.get_chunks(loader, transients, transients.count()))
+	chunk = next(job.get_tran_data(loader, trans_cursor, trans_cursor.count()))
 	assert len(chunk) == len(ingested_transients), "Chunk contains all ingested transients"
 	
 	assert isinstance(chunk, dict), "get_chunks returns a dict"
