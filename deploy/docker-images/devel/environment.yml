@@ -26,6 +26,8 @@ dependencies:
     - -e
     - /Ampel/ampel-core
     - -e
+    - /Ampel/ampel-base
+    - -e
     - /Ampel/ampel-contrib-ztfbh
     - -e
     - /Ampel/ampel-contrib-hu
