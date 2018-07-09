@@ -23,6 +23,14 @@ services:
       POSTGRES_DB: ztfarchive
   graphite:
     image: go-graphite
+    secrets:
+      - desycloud-password
+    environment:
+      GF_EXTERNAL_IMAGE_STORAGE_PROVIDER: webdav
+      GF_EXTERNAL_IMAGE_STORAGE_WEBDAV_URL: https://desycloud.desy.de/remote.php/webdav/AMPEL-metrics/grafana/alerts
+      GF_EXTERNAL_IMAGE_STORAGE_WEBDAV_USERNAME: brinnel
+      GF_EXTERNAL_IMAGE_STORAGE_WEBDAV_PASSWORD_FILE: /run/secrets/desycloud-password
+      GF_EXTERNAL_IMAGE_STORAGE_WEBDAV_PUBLIC_URL: https://desycloud.desy.de/index.php/s/S6cAxxWRTTZibfA/download?files={{}}
     volumes:
       - type: tmpfs
         target: /var/log/supervisor/
@@ -51,3 +59,6 @@ secrets:
     file: secrets/archive-read-password.txt
   archive-write-password:
     file: secrets/archive-write-password.txt
+  desycloud-password:
+    file: secrets/desycloud-password.txt
+
