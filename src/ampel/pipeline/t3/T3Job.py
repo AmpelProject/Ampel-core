@@ -159,7 +159,6 @@ class T3Job:
 		# T3 job requiring prior transient loading 
 		if self.job_config.get('input.select') is not None:
 
-			# Required to load single transients
 			dcl = DBContentLoader(self.tran_col.database, verbose=True, logger=self.logger)
 
 			# Job with transient input
