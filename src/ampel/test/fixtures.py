@@ -324,8 +324,7 @@ def t3_transient_views(t3_selected_transients):
 	task_chans = ['0', '1']
 	def create_view(tran_data):
 		return tran_data.create_view(
-				channel=task_chans if not AmpelUtils.is_sequence(task_chans) else None,
-				channels=task_chans if AmpelUtils.is_sequence(task_chans) else None,
+				channels=task_chans,
 				t2_ids=set()
 			)
 	views = list(filter(lambda k: k is not None, map(create_view, t3_selected_transients.values())))
