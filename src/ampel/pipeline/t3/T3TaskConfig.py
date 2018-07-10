@@ -264,31 +264,34 @@ class T3TaskConfig:
 
 					# Case 8
 					if task_doc['select']['channel(s)'] == "$forEach":
-						raise NotImplementedError("Soon...")
-						
-					set_task_chans = AmpelUtils.to_set(
-						task_doc['select']['channel(s)']
-					)
+						pass
 
-					set_job_chans = AmpelUtils.to_set(
-						AmpelUtils.get_by_path(t3_job_doc, "input.select.channel(s)")
-					)
+					# Case 2, 3, 4
+					else:
 
-					# case 2
-					if len(set_task_chans - set_job_chans) > 0:
-						cls._raise_ValueError(logger, task_doc,
-							"channel(s) defined in task 'select' must be a sub-set "+
-							"of channel(s) defined in job config"
+						set_task_chans = AmpelUtils.to_set(
+							task_doc['select']['channel(s)']
 						)
 
-					# case 3:
-					if len(set(set_job_chans) - all_tasks_sels['channel(s)']) > 0:
-						cls._raise_ValueError(logger, task_doc,
-							"Set of job channel(s) must equal set of combined tasks channel(s)"
+						set_job_chans = AmpelUtils.to_set(
+							AmpelUtils.get_by_path(t3_job_doc, "input.select.channel(s)")
 						)
 
-					# case 4
-					logger.info("Tasks sub-channel selection is valid")
+						# case 2
+						if len(set_task_chans - set_job_chans) > 0:
+							cls._raise_ValueError(logger, task_doc,
+								"channel(s) defined in task 'select' must be a sub-set "+
+								"of channel(s) defined in job config"
+							)
+
+						# case 3:
+						if len(set(set_job_chans) - all_tasks_sels['channel(s)']) > 0:
+							cls._raise_ValueError(logger, task_doc,
+								"Set of job channel(s) must equal set of combined tasks channel(s)"
+							)
+
+						# case 4
+						logger.info("Tasks sub-channel selection is valid")
 
 				# Case 5
 				else:

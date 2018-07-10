@@ -132,7 +132,8 @@ class T3Job:
 		time_now = time()
 		t3_tasks = []
 
-		if self.exec_params['channels'] == "$forEach":
+		# Check for '$forEach' channel operator
+		if next(iter(self.job_config.get_task_configs())).get("select.channel(s)") == "$forEach":
 
 			# list of all channels found in matched transients.
 			chans = self._get_channels()
@@ -141,6 +142,9 @@ class T3Job:
 			if chans is None:
 				self.logger.info("No matching transient")
 				return
+
+			# Set *job* channels parameter to the channel values retrieved dynamically 
+			self.overwrite_parameter("channels", chans)
 
 			# Create T3 tasks
 			for task_config in self.job_config.get_task_configs():
@@ -253,11 +257,13 @@ class T3Job:
 					{
 						"$group": {
 		  					"_id": None,
-		        			"channels": { "$addToSet": "$channels" }
+		        			"channels": {
+								"$addToSet": "$channels"
+							}
 						}
-					}  
+					}
 				]
-			), 
+			),
 			None
 		)
 

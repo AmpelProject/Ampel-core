@@ -115,8 +115,10 @@ class T3JobConfig:
 
 		# Build set of channel(s)/t2(s)/doc(s) for all tasks combined
 		for task_doc in job_doc['task(s)']:
+
 			if 'select' not in task_doc:
 				continue
+
 			for key in ('channel(s)', 't2(s)', 'doc(s)'):
 				if task_doc['select'].get(key) is not None:
 					if key not in all_tasks_sels:
@@ -125,12 +127,19 @@ class T3JobConfig:
 						AmpelUtils.to_set(task_doc['select'][key])
 					)
 
-		# Load and check tasks
+		# Check TaskConfigS rightness
+		if '$forEach' in all_tasks_sels['channel(s)']:
+			# Either none or all tasks must make use of the $forEach operator
+			if len(all_tasks_sels['channel(s)']) != 1:
+				raise ValueError("Illegal task sub-channel selection")
+
+		# Load and check each individual Task
 		for task_doc in job_doc['task(s)']:
 			t3_task_configs.append(
 				T3TaskConfig.load(job_name, task_doc['name'], all_tasks_sels, logger)
 			)
 
+		# Create JobConfig
 		return T3JobConfig(job_name, job_doc, t3_task_configs)
 
 	
