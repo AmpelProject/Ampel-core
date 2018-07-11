@@ -20,8 +20,6 @@ class QueryLastJobRun:
 		days_back: positive integer
 		"""
 
-		yesterday = int(datetime.strftime(datetime.now() + timedelta(**{'days': -1}), '%Y%m%d'))
-
 		# Array returned by this method
 		ret = []
 
