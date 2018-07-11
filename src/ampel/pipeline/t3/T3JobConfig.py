@@ -128,7 +128,7 @@ class T3JobConfig:
 					)
 
 		# Check TaskConfigS rightness
-		if '$forEach' in all_tasks_sels['channel(s)']:
+		if 'channel(s)' in all_tasks_sels and '$forEach' in all_tasks_sels['channel(s)']:
 			# Either none or all tasks must make use of the $forEach operator
 			if len(all_tasks_sels['channel(s)']) != 1:
 				raise ValueError("Illegal task sub-channel selection")
