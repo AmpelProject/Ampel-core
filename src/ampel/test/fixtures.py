@@ -58,11 +58,11 @@ def postgres():
 	port = next(gen)
 	yield 'postgresql://ampel@localhost:{}/ztfarchive'.format(port)
 
-@pytest.fixture
+@pytest.fixture(scope='session')
 def alert_tarball():
 	return join(dirname(__file__), '..', '..', '..', 'alerts', 'recent_alerts.tar.gz')
 
-@pytest.fixture
+@pytest.fixture(scope='session')
 def alert_generator(alert_tarball):
 	import itertools
 	import fastavro
@@ -78,7 +78,18 @@ def alert_generator(alert_tarball):
 				yield alert, reader.schema
 			else:
 				yield alert
-	yield alerts
+	return alerts
+
+@pytest.fixture(scope='session')
+def lightcurve_generator(alert_generator):
+	from ampel.utils.ZIAlertUtils import ZIAlertUtils
+	def lightcurves():
+		for alert in alert_generator():
+			lightcurve = ZIAlertUtils.to_lightcurve(content=alert)
+			assert isinstance(lightcurve.get_photopoints(), tuple)
+			yield lightcurve
+
+	return lightcurves
 
 @pytest.fixture
 def ampel_alerts(alert_generator):
@@ -324,8 +335,7 @@ def t3_transient_views(t3_selected_transients):
 	task_chans = ['0', '1']
 	def create_view(tran_data):
 		return tran_data.create_view(
-				channel=task_chans if not AmpelUtils.is_sequence(task_chans) else None,
-				channels=task_chans if AmpelUtils.is_sequence(task_chans) else None,
+				channels=task_chans,
 				t2_ids=set()
 			)
 	views = list(filter(lambda k: k is not None, map(create_view, t3_selected_transients.values())))
