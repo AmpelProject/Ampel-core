@@ -407,6 +407,7 @@ class T3TaskConfig:
 
 		self.task_doc = task_doc
 		self.t3_unit_class = t3_unit
+		self.t3_resources = {k: AmpelConfig.get_config('resources.{}'.format(k)) for k in getattr(t3_unit, 'resources', [])}
 		self.t3_unit_run_config = t3_unit_run_config_doc
 
 		self.channels = AmpelUtils.get_by_path(task_doc, 'select.channel(s)')

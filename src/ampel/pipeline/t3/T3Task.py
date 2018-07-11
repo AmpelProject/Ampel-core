@@ -31,7 +31,7 @@ class T3Task:
 		# Instanciate t3 unit
 		self.t3_instance = t3_task_config.t3_unit_class(
 			logger, 
-			t3_task_config.t3_unit_base_config, 
+			t3_task_config.t3_resources,
 			t3_task_config.t3_unit_run_config
 		)
 
