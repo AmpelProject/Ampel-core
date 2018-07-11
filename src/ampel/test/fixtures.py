@@ -58,11 +58,11 @@ def postgres():
 	port = next(gen)
 	yield 'postgresql://ampel@localhost:{}/ztfarchive'.format(port)
 
-@pytest.fixture
+@pytest.fixture(scope='session')
 def alert_tarball():
 	return join(dirname(__file__), '..', '..', '..', 'alerts', 'recent_alerts.tar.gz')
 
-@pytest.fixture
+@pytest.fixture(scope='session')
 def alert_generator(alert_tarball):
 	import itertools
 	import fastavro
@@ -78,7 +78,7 @@ def alert_generator(alert_tarball):
 				yield alert, reader.schema
 			else:
 				yield alert
-	yield alerts
+	return alerts
 
 @pytest.fixture
 def ampel_alerts(alert_generator):
