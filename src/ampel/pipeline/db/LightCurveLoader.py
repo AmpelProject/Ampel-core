@@ -55,7 +55,7 @@ class LightCurveLoader:
 		This function returns an instance of ampel.base.LightCurve
 
 		Parameters:
-		tran_id: transient id (string)
+		tran_id: transient id (int or string)
 		compound_id: instance of bson.binary.Binary (subtype 5)
 		"""
 
