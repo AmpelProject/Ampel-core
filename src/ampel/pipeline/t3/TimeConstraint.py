@@ -56,20 +56,20 @@ class TimeConstraint:
 		Any(
 			None, datetime, timedelta,
 			{
-				Required('$use'): '$timeDelta',
+				Required('use'): '$timeDelta',
 				Required('arguments'): dict
 			},
 			{
-				Required('$use'): '$lastRunTime',
+				Required('use'): '$lastRunTime',
 				Required('taskName'): str
 			},
 			{
-				Required('$use'): 'formattedString',
+				Required('use'): 'formattedString',
 				Required('dateTimeStr'): str,
 				Required('dateTimeFormat'): str
 			},
 			{
-				Required('$use'): 'unixTime',
+				Required('use'): 'unixTime',
 				Required('value'): int
 			}
 		)
@@ -116,6 +116,11 @@ class TimeConstraint:
 			self.from_parameters(parameters, self)
 
 
+	def has_constraint(self):
+		""" """ 
+		return len(self.constraints) > 0
+
+
 	def set_after(self, value, check_schema=True):
 		""" """
 		self._set('after', value, check_schema)
@@ -126,11 +131,6 @@ class TimeConstraint:
 		self._set('before', value, check_schema)
 
 
-	def has_constraint(self):
-		""" """ 
-		return len(self.constraints) > 0
-
-	
 	def get_after(self):
 		""" """ 
 		return self._get('after')
