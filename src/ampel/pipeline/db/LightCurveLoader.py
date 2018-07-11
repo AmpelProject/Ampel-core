@@ -62,7 +62,15 @@ class LightCurveLoader:
 		# TODO : provide list or cursor as func parameter ?
 		# T3 will have larger queries (including t3 results)
 		photo_cursor = self.photo_col.find({"tranId": tran_id})
-		main_cursor = self.main_col.find({"_id": compound_id})
+
+		# pymongo 'sequence' are always list
+		if type(compound_id) is list: 
+			match_crit = {"_id": {'$in': compound_id}}
+		else:
+			match_crit = {"_id": compound_id}
+
+		# Retrieve compound document
+		main_cursor = self.main_col.find(match_crit)
 
 		if main_cursor.count() == 0:
 			self.logger.warn("No LightCurve found with id: %s " % compound_id)
