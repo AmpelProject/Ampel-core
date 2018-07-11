@@ -56,7 +56,7 @@ class LightCurveLoader:
 
 		Parameters:
 		tran_id: transient id (string)
-		compound_id: compound id (string)
+		compound_id: instance of bson.binary.Binary (subtype 5)
 		"""
 
 		# TODO : provide list or cursor as func parameter ?
