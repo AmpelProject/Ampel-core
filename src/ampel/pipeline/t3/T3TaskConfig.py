@@ -7,7 +7,7 @@
 # Last Modified Date: 08.07.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-import importlib
+import pkg_resources
 from voluptuous import Schema, Any, Required, Optional, ALLOW_EXTRA
 
 from ampel.pipeline.logging.LoggingUtils import LoggingUtils
@@ -53,29 +53,28 @@ class T3TaskConfig:
 	t3_classes = {}
 
 
-	@staticmethod
-	def get_t3_unit_doc(t3_unit_name, logger):
+	@classmethod
+	def get_t3_unit(cls, t3_unit_name, logger):
 		"""
 		t3_unit_name: string
 		logger: logger from python module 'logging'
-		Retrieve and return T3 unit dict instance from config after validating it (voluptous)
+		Retrieve and return T3 unit class registered at entry point ampel.pipeline.t3.units
 		"""
-
+		if t3_unit_name in cls.t3_classes:
+			return cls.t3_classes[t3_unit_name]
+		
 		logger.info("Loading T3 unit config: %s" % t3_unit_name)
-
-		# Get, validate and set defaults of t3 unit doc
-		t3_unit_doc = AmpelConfig.get_config(
-			't3_units.%s' % t3_unit_name, 
-			T3TaskConfig.t3_unit_schema # validation
-		)
-
-		if t3_unit_doc is None:
+		try:
+			resource = next(pkg_resources.iter_entry_points('ampel.pipeline.t3.units', t3_unit_name))
+		except StopIteration:
 			raise ValueError(
-				"Unknown T3 unit: %s. Please check the 't3_units' config" % t3_unit_name
+				"Unknown T3 unit: %s" % t3_unit_name
 			)
-
-		return t3_unit_doc
-
+		klass = resource.resolve()
+		if not issubclass(klass, AbsT3Unit):
+			raise TypeError("T3 unit {} from {} is not a subclass of AbsT3Unit".format(klass.__name__, resource.dist))
+		cls.t3_classes[t3_unit_name] = klass
+		return klass
 
 	@staticmethod
 	def get_run_config_doc(task_doc, logger):
@@ -100,30 +99,6 @@ class T3TaskConfig:
 			)
 
 		return t3_run_config_doc
-
-
-	@classmethod
-	def get_t3_unit_class(cls, class_full_path, logger):
-		"""
-		class_full_path: string
-		Class method responsible for loading and providing T3 unit *classes* (not instances)
-		"""
-
-		if class_full_path in cls.t3_classes:
-			logger.info("Using T3 unit class %s" % class_full_path)
-			return cls.t3_classes[class_full_path]
-
-		# Create T3 class
-		logger.info("Loading T3 unit class %s" % class_full_path)
-		t3_unit_module = importlib.import_module(class_full_path)
-		T3_class = getattr(t3_unit_module, class_full_path.split(".")[-1])
-	
-		if not issubclass(T3_class, AbsT3Unit):
-			raise ValueError("T3 unit classes must inherit the abstract class 'AbsT3Unit'")
-
-		cls.t3_classes[class_full_path] = T3_class
-		return T3_class
-
 
 	@classmethod
 	def load(cls, job_name, task_name, all_tasks_sels=None, logger=None):
@@ -355,7 +330,7 @@ class T3TaskConfig:
 
 		return T3TaskConfig(
 			task_doc, 
-			cls.get_t3_unit_doc(t3_unit_name, logger), 
+			cls.get_t3_unit(t3_unit_name, logger),
 			cls.get_run_config_doc(task_doc, logger), 
 			logger
 		)
@@ -420,10 +395,10 @@ class T3TaskConfig:
 		raise ValueError(msg)
 
 
-	def __init__(self, task_doc, t3_unit_doc, t3_unit_run_config_doc, logger):
+	def __init__(self, task_doc, t3_unit, t3_unit_run_config_doc, logger):
 		"""
 		task_doc: dict instance
-		t3_unit_doc: dict instance containing t3 unit info
+		t3_unit: type, subclass of AbsT3Unit
 		t3_unit_run_config_doc: dict instance containing t3 run config info
 		logger: logger instance from python module 'logging' 
 		"""
@@ -431,8 +406,7 @@ class T3TaskConfig:
 		logger.info("Loading Task: %s" % task_doc.get("name"))
 
 		self.task_doc = task_doc
-		self.T3_unit_class = T3TaskConfig.get_t3_unit_class(t3_unit_doc.get('classFullPath'), logger)
-		self.t3_unit_base_config = t3_unit_doc.get('baseConfig') # optional dict 'baseConfig'
+		self.t3_unit_class = t3_unit
 		self.t3_unit_run_config = t3_unit_run_config_doc
 
 		self.channels = AmpelUtils.get_by_path(task_doc, 'select.channel(s)')
@@ -441,8 +415,7 @@ class T3TaskConfig:
 			task_doc.get("name"), task_doc.get("t3Unit"), task_doc.get("runConfig"),
 		)
 
-		logger.info("T3 Unit: %s" % t3_unit_doc.get('classFullPath'))
-		logger.info("Base config: %s" % self.t3_unit_base_config)
+		logger.info("T3 Unit: %s" % t3_unit)
 		logger.info("Run config: %s" % self.t3_unit_run_config)
 		logger.info("Channels: %s" % str(self.channels))
 
