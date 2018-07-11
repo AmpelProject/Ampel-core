@@ -49,8 +49,8 @@ class T3JobConfig:
 			),
 			'input': {
 				Required('select'): {
-					'created': TimeConstraint.json_root_schema,
-					'modified': TimeConstraint.json_root_schema,
+					'created': TimeConstraint.schema,
+					'modified': TimeConstraint.schema,
 					'channel(s)': Any(str, [str]),
 					'withFlag(s)': Any(str, [str]),
 					'withoutFlag(s)': Any(str, [str])

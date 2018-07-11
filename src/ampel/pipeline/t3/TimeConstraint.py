@@ -20,9 +20,9 @@ class TimeConstraint:
 		-> None
 		-> datetime.datetime
 		-> datetime.timedelta
-		-> dict (fulfilling TimeConstraint._json_sub_schema criteria)
+		-> dict (fulfilling TimeConstraint._sub_schema criteria)
 
-	dict examples fulfilling TimeConstraint._json_sub_schema criteria:
+	dict examples fulfilling TimeConstraint._sub_schema criteria:
 
 		Example 1:
 			{
@@ -52,7 +52,7 @@ class TimeConstraint:
 			}
 	"""
 
-	_json_sub_schema = Schema(
+	_sub_schema = Schema(
 		Any(
 			None, datetime, timedelta,
 			{
@@ -75,26 +75,37 @@ class TimeConstraint:
 		)
 	)
 
-	json_root_schema = Schema(
+	schema = Schema(
 		Any(
 			None,
 			{
-				"after": _json_sub_schema, 
-				"before": _json_sub_schema
+				"after": _sub_schema, 
+				"before": _sub_schema
 			}
 		)
 	)
 
 
 	@staticmethod
-	def from_parameters(time_constraint_dict, time_constraint_obj=None, runs_col=None):
+	def from_parameters(
+		time_constraint_dict, 
+		time_constraint_obj=None, runs_col=None, force_schema_check=False
+	):
 		"""	
 		"""	
 		if time_constraint_dict is None:
 			return None
 
-		if not AmpelConfig.is_frozen():
-			TimeConstraint.json_root_schema(time_constraint_dict) # Robustness
+		if AmpelConfig.is_frozen():
+			if force_schema_check:
+				from ampel.pipeline.common.DevUtils import DevUtils
+				TimeConstraint.schema(
+					DevUtils.recursive_unfreeze(
+						time_constraint_dict
+					)
+				)
+		else:
+			TimeConstraint.schema(time_constraint_dict) # Robustness
 
 		tc = TimeConstraint() if time_constraint_obj is None else time_constraint_obj
 		tc.set_after(time_constraint_dict.get('after'), False)
@@ -108,7 +119,7 @@ class TimeConstraint:
 		* 'after' and 'before' dict values, either: 
 			-> datetime.datetime 
 			-> datetime.timedelta 
-		   	-> dict fulfilling TimeConstraint._json_sub_schema criteria (see class docstring)
+		   	-> dict fulfilling TimeConstraint._sub_schema criteria (see class docstring)
 		"""
 		self.constraints = {}
 
@@ -144,7 +155,7 @@ class TimeConstraint:
 	def _set(self, name, value, check_schema=True):
 		""" """ 
 		if check_schema:
-			TimeConstraint._json_sub_schema(value)
+			TimeConstraint._sub_schema(value)
 		self.constraints[name] = value
 
 
