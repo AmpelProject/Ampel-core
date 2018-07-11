@@ -80,6 +80,17 @@ def alert_generator(alert_tarball):
 				yield alert
 	return alerts
 
+@pytest.fixture(scope='session')
+def lightcurve_generator(alert_generator):
+	from ampel.utils.ZIAlertUtils import ZIAlertUtils
+	def lightcurves():
+		for alert in alert_generator():
+			lightcurve = ZIAlertUtils.to_lightcurve(content=alert)
+			assert isinstance(lightcurve.get_photopoints(), tuple)
+			yield lightcurve
+
+	return lightcurves
+
 @pytest.fixture
 def ampel_alerts(alert_generator):
 	from ampel.pipeline.t0.alerts.AlertSupplier import AlertSupplier
