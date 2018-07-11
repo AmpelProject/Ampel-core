@@ -126,7 +126,7 @@ class LightCurveLoader:
 		ulo_list = []
 
 		# Loop through compound elements
-		for el in compound.comp:
+		for el in compound['comp']:
 
 			# Get corresponding photopoint / upper limit
 			if 'pp' in el:
@@ -184,8 +184,8 @@ class LightCurveLoader:
 				ulo_list.append(obj)
 
 		return LightCurve(
-			compound.id, ppo_list, ulo_list, 
-			info={'tier': compound.tier, 'added': compound.added}, 
+			compound['_id'], ppo_list, ulo_list, 
+			info={'tier': compound['tier'], 'added': compound['added']}, 
 			read_only=self.read_only
 		)
 
