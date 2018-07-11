@@ -183,24 +183,14 @@ class TimeConstraint:
 
 			if constraint['use'] == '$lastRunTime':
 
-				today = int(datetime.today().strftime('%Y%m%d'))
-				yesterday = int(datetime.strftime(datetime.now() + timedelta(**{'days': -1}), '%Y%m%d'))
-
-				res = next(
-					AmpelDB.get_collection('runs').aggregate(
-						[
-							{'$match': {'_id': {'$in': [today, yesterday]}}}, 
-							{'$unwind': '$jobs'}, 
-							{'$match': {'jobs.tier': 3, 'jobs.name': constraint['jobName']}}, 
-							{'$sort': {'jobs.dt': -1}},
-							{'$limit': 1}
-						]
-					), 
-					None
-				)
+				from ampel.pipeline.db.query.QueryLastJobRun import QueryLastJobRun
+				col = AmpelDB.get_collection('runs')
+				res = next(col.aggregate(constraint['jobName']), None)
 
 				if res is None:
-					return None
+					res = next(col.aggregate(constraint['jobName'], back_days=None), None)
+					if res is None:
+						return None
 
 				return datetime.fromtimestamp(res['jobs']['dt'])
 
