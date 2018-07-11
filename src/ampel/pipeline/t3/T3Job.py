@@ -221,7 +221,7 @@ class T3Job:
 				'$push': {
 					'jobs': {
 						'tier': 3,
-						'job': self.job_config.job_name,
+						'name': self.job_config.job_name,
 						'dt': datetime.now(timezone.utc).timestamp(),
 						'logs': (
 							self.db_logging_handler.get_log_id() if hasattr(self, 'db_logging_handler') 
