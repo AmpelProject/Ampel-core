@@ -73,7 +73,7 @@ class LightCurveLoader:
 		main_cursor = self.main_col.find(match_crit)
 
 		if main_cursor.count() == 0:
-			self.logger.warn("No LightCurve found with id: %s " % compound_id)
+			self.logger.warn("No compound found with id: %s " % compound_id)
 			return None
 
 		if photo_cursor.count() == 0:
