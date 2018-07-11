@@ -92,7 +92,7 @@ class QueryMatchTransients:
 		'oid_match': is the targeted field value an ObjectId or not
 		"""
 		if tc_obj.has_constraint():
-			for key, op in {'from': '$gte', 'until': '$lte'}.items():
+			for key, op in {'after': '$gte', 'before': '$lte'}.items():
 				val = tc_obj._get(key)
 				if val is not None:
 					if target_field not in query:

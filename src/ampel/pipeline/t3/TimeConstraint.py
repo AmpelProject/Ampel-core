@@ -16,29 +16,61 @@ from ampel.pipeline.db.AmpelDB import AmpelDB
 
 class TimeConstraint:
 	"""
-	* 'from' and 'until': either:
+	* 'after' and 'before': either:
 		-> None
 		-> datetime.datetime
 		-> datetime.timedelta
 		-> dict (fulfilling TimeConstraint._json_sub_schema criteria)
 
-	TimeConstraint._json_sub_schema dict key/value criteria are either:
-		* key: 'unixTime', value: float
-		* key: 'lastRun', value: string (job name)
-		* keys 'dateTimeStr' and 'dateTimeFormat' with str values
-		* key 'timeDelta', value: dict that will be passed to datetime.timedelta (ex: {'days': -10})
+	dict examples fulfilling TimeConstraint._json_sub_schema criteria:
+
+		Example 1:
+			{
+				"after": {
+					"use": "$lastRunTime",
+					"taskName": "val_test"
+				},
+				"before": {
+					"use": "unixTime",
+					"value": 1531306299
+				}
+			}
+
+		Example 2:
+			{
+				"after": {
+					"use": "$timeDelta",
+					"arguments" :  {
+                       	"days" : -40
+                   	}
+				},
+				"before": {
+					"use": "formattedString",
+					"dateTimeStr": "21/11/06 16:30",
+					"dateTimeFormat": "%d/%m/%y %H:%M"
+				}
+			}
 	"""
 
 	_json_sub_schema = Schema(
 		Any(
-			None,
-			datetime, timedelta,
-			{Required('timeDelta'): dict},
-			{Required('lastRun'): str},
-			{Required('unixTime'): float},
+			None, datetime, timedelta,
 			{
-				Required('dateTimeStr'): str, 
+				Required('$use'): '$timeDelta',
+				Required('arguments'): dict
+			},
+			{
+				Required('$use'): '$lastRunTime',
+				Required('taskName'): str
+			},
+			{
+				Required('$use'): 'formattedString',
+				Required('dateTimeStr'): str,
 				Required('dateTimeFormat'): str
+			},
+			{
+				Required('$use'): 'unixTime',
+				Required('value'): int
 			}
 		)
 	)
@@ -47,8 +79,8 @@ class TimeConstraint:
 		Any(
 			None,
 			{
-				"from":_json_sub_schema, 
-				"until": _json_sub_schema
+				"after": _json_sub_schema, 
+				"before": _json_sub_schema
 			}
 		)
 	)
@@ -65,15 +97,15 @@ class TimeConstraint:
 			TimeConstraint.json_root_schema(time_constraint_dict) # Robustness
 
 		tc = TimeConstraint() if time_constraint_obj is None else time_constraint_obj
-		tc.set_from(time_constraint_dict.get('from'), False)
-		tc.set_until(time_constraint_dict.get('until'), False)
+		tc.set_after(time_constraint_dict.get('after'), False)
+		tc.set_before(time_constraint_dict.get('before'), False)
 		return tc
 
 
 	def __init__(self, parameters=None):
 		"""
-		parameters: dict instance with keys: 'from' and/or 'until'
-		* 'from' and 'until' dict values, either: 
+		parameters: dict instance with keys: 'after' and/or 'before'
+		* 'after' and 'before' dict values, either: 
 			-> datetime.datetime 
 			-> datetime.timedelta 
 		   	-> dict fulfilling TimeConstraint._json_sub_schema criteria (see class docstring)
@@ -84,14 +116,14 @@ class TimeConstraint:
 			self.from_parameters(parameters, self)
 
 
-	def set_from(self, value, check_schema=True):
+	def set_after(self, value, check_schema=True):
 		""" """
-		self._set('from', value, check_schema)
+		self._set('after', value, check_schema)
 
 
-	def set_until(self, value, check_schema=True):
+	def set_before(self, value, check_schema=True):
 		""" """
-		self._set('until', value, check_schema)
+		self._set('before', value, check_schema)
 
 
 	def has_constraint(self):
@@ -99,14 +131,14 @@ class TimeConstraint:
 		return len(self.constraints) > 0
 
 	
-	def get_from(self):
+	def get_after(self):
 		""" """ 
-		return self._get('from')
+		return self._get('after')
 	
 
-	def get_until(self):
+	def get_before(self):
 		""" """ 
-		return self._get('until')
+		return self._get('before')
 
 
 	def _set(self, name, value, check_schema=True):
@@ -118,34 +150,27 @@ class TimeConstraint:
 
 	def _get(self, param):
 		""" 
-		param: either 'from' or 'until'
+		param: either 'after' or 'before'
 		Schema validation ensures val can be only either None, dict, datetime or timedelta
 		"""
 
-		val = self.constraints.get(param)
+		constraint = self.constraints.get(param)
 
-		if val is None:
+		if constraint is None:
 			return None
 
-		if type(val) is datetime:
-			return val
+		if type(constraint) is datetime:
+			return constraint
 
-		elif type(val) is timedelta:
-			return datetime.today() + val
+		elif type(constraint) is timedelta:
+			return datetime.today() + constraint
 
-		elif type(val) in (dict, MappingProxyType):
+		elif type(constraint) in (dict, MappingProxyType):
 
-			if 'timeDelta' in val:
-				return datetime.today() + timedelta(**val['timeDelta'])
+			if constraint['use'] == '$timeDelta':
+				return datetime.today() + timedelta(**constraint['arguments'])
 
-			if 'unixTime' in val:
-				return datetime.fromtimestamp(val['unixTime'])
-
-			if 'dateTimeStr' in val:
-				# Schema validation ensures 'dateTimeFormat' is set when 'dateTimeStr' is
-				return datetime.strptime(val['dateTimeStr'], ['dateTimeFormat'])
-
-			if 'lastRun' in val:
+			if constraint['use'] == '$lastRunTime':
 
 				today = int(datetime.today().strftime('%Y%m%d'))
 				yesterday = int(datetime.strftime(datetime.now() + timedelta(**{'days': -1}), '%Y%m%d'))
@@ -155,7 +180,7 @@ class TimeConstraint:
 						[
 							{'$match': {'_id': {'$in': [today, yesterday]}}}, 
 							{'$unwind': '$jobs'}, 
-							{'$match': {'jobs.tier': 3, 'jobs.job': val['lastRun']}}, 
+							{'$match': {'jobs.tier': 3, 'jobs.name': constraint['jobName']}}, 
 							{'$sort': {'jobs.dt': -1}},
 							{'$limit': 1}
 						]
@@ -168,5 +193,14 @@ class TimeConstraint:
 
 				return datetime.fromtimestamp(res['jobs']['dt'])
 
+			if constraint['use'] == 'unixTime':
+				return datetime.fromtimestamp(constraint['value'])
 
-		raise ValueError("Illegal argument (type: %s)" % type(val))
+			if constraint['use'] == 'formattedString':
+				# Schema validation ensures 'dateTimeFormat' is set when 'dateTimeStr' is
+				return datetime.strptime(
+					constraint['dateTimeStr'], 
+					constraint['dateTimeFormat']
+				)
+
+		raise ValueError("Illegal argument (type: %s)" % type(constraint))
