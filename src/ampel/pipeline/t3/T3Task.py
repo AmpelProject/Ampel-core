@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 06.03.2018
-# Last Modified Date: 06.07.2018
+# Last Modified Date: 13.07.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from ampel.pipeline.common.AmpelUtils import AmpelUtils
@@ -15,13 +15,16 @@ class T3Task:
 	of an instance of ampel.pipeline.t3.T3TaskBody
 	"""
 
-	def __init__(self, t3_task_config, channels, logger):
+	def __init__(self, t3_task_config, channels, logger, global_info=None):
 		"""
 		t3_unit_instance: instance of child class of ampel.base.abstract.AbsT3Unit
 		channels: channel(s) sub-selection: string or list of strings
 		t2_ids: t2 id(s) sub-selection: string or list of strings
 		log_header: string
 		logger: logger from python module 'logging'
+		global_info: optional dict instance containing info such as:
+			* last time the associated job was run
+			* number of alerts processed since
 		"""
 
 		self.task_config = t3_task_config
@@ -32,7 +35,8 @@ class T3Task:
 		self.t3_instance = t3_task_config.t3_unit_class(
 			logger, 
 			t3_task_config.t3_resources,
-			t3_task_config.t3_unit_run_config
+			t3_task_config.t3_unit_run_config,
+			global_info
 		)
 
 

@@ -63,6 +63,7 @@ class T3JobConfig:
 				},
 				'chunk': int
 			},
+			Optional('globalInfo', default=False): bool,
 			'onError': {
 				'sendMail': {
 					Required('to'): str,

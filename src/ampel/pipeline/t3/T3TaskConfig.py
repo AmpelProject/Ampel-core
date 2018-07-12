@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 05.07.2018
-# Last Modified Date: 08.07.2018
+# Last Modified Date: 13.07.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import pkg_resources
@@ -26,7 +26,6 @@ class T3TaskConfig:
 			Required('name'): str,
 			Required('t3Unit'): str,
 			Required('runConfig', default=None): Any(None,str),
-			Required('updateJournal'): bool,
 			'select': {
 				'channel(s)': Any(str, [str]),
 				'state': Any('$all', '$latest'),
@@ -72,9 +71,12 @@ class T3TaskConfig:
 			)
 		klass = resource.resolve()
 		if not issubclass(klass, AbsT3Unit):
-			raise TypeError("T3 unit {} from {} is not a subclass of AbsT3Unit".format(klass.__name__, resource.dist))
+			raise TypeError(
+				"T3 unit {} from {} is not a subclass of AbsT3Unit".format(klass.__name__, resource.dist)
+			)
 		cls.t3_classes[t3_unit_name] = klass
 		return klass
+
 
 	@staticmethod
 	def get_run_config_doc(task_doc, logger):
@@ -99,6 +101,7 @@ class T3TaskConfig:
 			)
 
 		return t3_run_config_doc
+
 
 	@classmethod
 	def load(cls, job_name, task_name, all_tasks_sels=None, logger=None):
@@ -407,7 +410,10 @@ class T3TaskConfig:
 
 		self.task_doc = task_doc
 		self.t3_unit_class = t3_unit
-		self.t3_resources = {k: AmpelConfig.get_config('resources.{}'.format(k)) for k in getattr(t3_unit, 'resources', [])}
+		self.t3_resources = {
+			k: AmpelConfig.get_config('resources.{}'.format(k)) 
+			for k in getattr(t3_unit, 'resources', [])
+		}
 		self.t3_unit_run_config = t3_unit_run_config_doc
 
 		self.channels = AmpelUtils.get_by_path(task_doc, 'select.channel(s)')
@@ -428,13 +434,20 @@ class T3TaskConfig:
 		return AmpelUtils.get_by_path(self.task_doc, parameter)
 
 
-	def create_task(self, logger, channel=None):
+	def create_task(self, logger, channel=None, global_info=None):
 		"""
 		logger: logger instance from python module 'logging' 
 		channel: optional channel name
 		"""
+
+		if global_info is not None:
+			global_info = dict(global_info)
+			global_info['taskName'] = self.task_doc.get("name")
+			global_info['channel'] = self.channels if channel is None else channel
+
 		return T3Task(
 			self, 
 			self.channels if channel is None else channel,
-			logger
+			logger,
+			global_info
 		)

@@ -14,6 +14,7 @@ from time import time
 
 from ampel.pipeline.db.query.QueryMatchTransients import QueryMatchTransients
 from ampel.pipeline.db.query.QueryLatestCompound import QueryLatestCompound
+from ampel.pipeline.db.query.QueryRunsCol import QueryRunsCol
 from ampel.pipeline.db.DBContentLoader import DBContentLoader
 from ampel.pipeline.db.AmpelDB import AmpelDB
 from ampel.pipeline.logging.DBLoggingHandler import DBLoggingHandler
@@ -73,6 +74,7 @@ class T3Job:
 			
 		self.logger = logger
 		self.job_config = job_config
+		self.global_info = None
 
 		# T3 job not requiring any prior transient loading 
 		if job_config.get('input.select') is not None:
@@ -101,6 +103,40 @@ class T3Job:
 				'feedback': True,
 				'verbose_feedback': True
 			}
+
+		# Retrieve number of alerts processed since last run if so whished
+		if job_config.get('globalInfo') is True:
+
+			# Get datetime of last run
+			last_run = AmpelUtils.get_by_path(
+				next(
+					AmpelDB.get_collection('runs').aggregate(
+						QueryRunsCol.get_job_last_run(self.job_config.job_name)
+					), 
+					None
+				), 
+				'jobs.dt'
+			)
+
+			if last_run is not None:
+
+				# Get number of alerts processed since last run
+				res = next(
+					AmpelDB.get_collection('runs').aggregate(
+						QueryRunsCol.get_t0_stats(last_run)
+					), 
+					None
+				)
+
+				# Build global info
+				self.global_info = {
+					'jobName': self.job_config.job_name,
+					'lastRun': datetime.fromtimestamp(last_run),
+					'processedAlerts': 0 if res is None else res.get('alerts')
+				}
+
+			else:
+				self.logger.error("Global info unavailable")
 
 
 	def overwrite_parameter(self, name, value):
@@ -149,12 +185,20 @@ class T3Job:
 			# Create T3 tasks
 			for task_config in self.job_config.get_task_configs():
 				for channel in chans:
-					t3_tasks.append(task_config.create_task(self.logger, channel=channel))
+					t3_tasks.append(
+						task_config.create_task(
+							self.logger, channel=channel, global_info=self.global_info
+						)
+					)
 		else:
 
 			# Create T3 tasks
 			for task_config in self.job_config.get_task_configs():
-				t3_tasks.append(task_config.create_task(self.logger))
+				t3_tasks.append(
+					task_config.create_task(
+						self.logger, global_info=self.global_info
+					)
+				)
 
 		# T3 job requiring prior transient loading 
 		if self.job_config.get('input.select') is not None:
