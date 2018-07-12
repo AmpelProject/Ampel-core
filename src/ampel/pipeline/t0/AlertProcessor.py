@@ -175,7 +175,7 @@ class AlertProcessor():
 		# This class formats, saves and pushes log records into the DB
 		db_logging_handler = DBLoggingHandler(
 			tier=0, 
-			info={"alertProc": str(self.version), "ingesterClass": str(self.ingester.__class__)}, 
+			info={"alertProc": self.version, "ingesterClass": str(self.ingester.__class__)}, 
 			previous_logs=self.ilb.get_logs()
 		)
 
