@@ -358,7 +358,7 @@ class AmpelStatsPublisher(Schedulable):
 				self.logger.info("Skipping graphite update")
 			else:
 				self.logger.info("Sending stats to graphite")
-				self.graphite_feeder.add_stats({'stats': out_dict})
+				self.graphite_feeder.add_stats({'sp': out_dict})
 				self.graphite_feeder.send()
 
 
