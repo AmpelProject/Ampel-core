@@ -91,6 +91,33 @@ def lightcurve_generator(alert_generator):
 
 	return lightcurves
 
+@pytest.fixture(scope='session')
+def transientview_generator(alert_generator):
+	from ampel.utils.ZIAlertUtils import ZIAlertUtils
+	from ampel.base.ScienceRecord import ScienceRecord
+	from datetime import datetime
+	from numpy import random
+	def views():
+		for alert in alert_generator():
+			results = [
+				{
+					'versions': {'py': 1.0, 'run_config': 1.0},
+					'dt': datetime.utcnow().timestamp(),
+					'duration': 0.001,
+					'results': {'foo': random.uniform(0,1), 'bar': random.uniform(0,1)}
+				}
+				for _ in range(random.poisson(1))
+			]
+			for r in results:
+				if random.binomial(1, 0.5):
+					del r['results']
+					r['error'] = 512
+			records = [ScienceRecord(alert['objectId'], 'FancyPants', None, results)]
+			tw = ZIAlertUtils.to_transientview(content=alert, science_records=records)
+			yield tw
+
+	return views
+
 @pytest.fixture
 def ampel_alerts(alert_generator):
 	from ampel.pipeline.t0.alerts.AlertSupplier import AlertSupplier

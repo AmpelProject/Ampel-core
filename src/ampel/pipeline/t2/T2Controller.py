@@ -10,7 +10,7 @@
 from datetime import datetime, timedelta
 from pymongo.errors import BulkWriteError
 from pymongo import UpdateOne
-import importlib, math
+import pkg_resources, math
 
 from ampel.base.abstract.AbsT2Unit import AbsT2Unit
 from ampel.core.flags.AlDocTypes import AlDocTypes
@@ -28,6 +28,10 @@ class T2Controller(Schedulable):
 	"""
 
 	version = 1.0
+	# Dict saving t2 classes. 
+	# Key: unit name. Value: unit class
+	t2_classes = {}
+	versions = {}
 	
 	def __init__(
 		self, central_db=None, run_state=T2RunStates.TO_RUN, t2_units=None, 
@@ -47,20 +51,10 @@ class T2Controller(Schedulable):
 		# check interval is in seconds
 		self.check_interval = check_interval
 
-		# Dict saving t2 classes. 
-		# Key: unit name. Value: unit class
-		self.t2_class = {}
-
-		# Dict saving base config dict instances loaded from the ampel 't2_units' DB collection
-		# Key: unit name, Value: dict instance
-		self.t2_base_config = {}
-
 		# Dict saving run config dict instances loaded from the ampel 't2_run_config' DB collection
 		# Key: run config id(unit name + "_" + run_config name), Value: dict instance
 		# Key example: POLYFIT_default
 		self.t2_run_config = {}
-
-		self.versions = {}
 
 		# self.from_dt = datetime.utcnow() - datetime.timedelta(*backtime)
 
@@ -162,31 +156,14 @@ class T2Controller(Schedulable):
 
 			# Check if T2 instance exists in this run
 			if not t2_unit_name in t2_instances:
-			
-				# Okay, we need to instantiate it, but do we have loaded the class already ? 
-				if not t2_unit_name in self.t2_class:
-
-					# Load class	
-					self.load_unit(t2_unit_name)
-				
-					# add base_config version info for jobreporter
-					if t2_unit_name in self.t2_base_config:
-						self.add_version(
-							t2_unit_name, 'base_config', self.t2_base_config[t2_unit_name]
-						)
 
 				# Instantiate T2 class
-				t2_instances[t2_unit_name] = self.t2_class[t2_unit_name](
+				unit = self.load_unit(t2_unit_name,self.logger)
+				resources = {k: AmpelConfig.get_config('resources.{}'.format(k)) for k in getattr(unit, 'resources')}
+				t2_instances[t2_unit_name] = unit(
 					self.logger, 
-					(
-						self.t2_base_config[t2_unit_name].copy()
-						if t2_unit_name in self.t2_base_config 
-						else None
-					)
+					resources
 				)
-
-				# version info of python class for jobreporter
-				self.add_version(t2_unit_name, "py", t2_instances[t2_unit_name])
 
 			# TODO: load light_curve
 			# load run_config
@@ -210,6 +187,7 @@ class T2Controller(Schedulable):
 			lc = lcl.load_from_db(
 				t2_doc['tranId'], t2_doc['compId']
 			)
+			assert lc is not None
 
 			# Run t2
 			before_run = datetime.utcnow().timestamp()
@@ -328,7 +306,7 @@ class T2Controller(Schedulable):
 		"""
 
 		# Get T2 run config doc from ampel config DB
-		t2_run_config_doc = AmpelConfig.get_config("t2_run_config").get(run_config_id)
+		t2_run_config_doc = AmpelConfig.get_config("t2_run_config.{}".format(run_config_id))
 
 		# Robustness
 		if t2_run_config_doc is None:
@@ -340,9 +318,9 @@ class T2Controller(Schedulable):
 			return 
 
 		self.t2_run_config[run_config_id] = t2_run_config_doc
-		
 
-	def load_unit(self, unit_name):
+	@classmethod
+	def load_unit(cls, unit_name, logger):
 		"""	
 		Loads a T2 unit class and base_config (if avail) using definitions 
 		stored as document in the ampel config database.
@@ -350,47 +328,35 @@ class T2Controller(Schedulable):
 		There is no return code
 		"""	
 
-		# Get T2 unit config from ampel config DB
-		t2_config_doc = AmpelConfig.get_config('t2_units').get(unit_name)
+		if unit_name in cls.t2_classes:
+			return cls.t2_classes[unit_name]
+		logger.info("Loading T2 unit: %s" % unit_name)
+		try:
+			resource = next(pkg_resources.iter_entry_points('ampel.pipeline.t2.units', unit_name))
+		except StopIteration:
+			raise ValueError(
+				"Unknown T2 unit: %s" % unit_name
+			)
+		klass = resource.resolve()
+		if not issubclass(klass, AbsT2Unit):
+			raise TypeError("T2 unit {} from {} is not a subclass of AbsT2Unit".format(klass.__name__, resource.dist))
+		cls.t2_classes[unit_name] = klass
+		cls.add_version(unit_name, "py", klass)
+		return klass
 
-		# Robustness
-		if t2_config_doc is None:
-			self.logger.error("Cannot find T2 unit '%s' in central ampel config" % unit_name)
-			return 
-
-		# Shortcut
-		cfp = t2_config_doc['classFullPath'] 
-
-		# Feedback
-		self.logger.info(
-			"Instantiating class '%s' using base_config version %i" %
-			(cfp, t2_config_doc['version'])
-		)
-
-		# Get T2 unit class 
-		module = importlib.import_module(cfp)
-		t2_class = getattr(module, cfp.split(".")[-1])
-
-		# Save *class*
-		self.t2_class[unit_name] = getattr(module, cfp.split(".")[-1])
-
-		# And save base config dict instance if avail
-		if 'baseConfig' in t2_config_doc:
-			self.t2_base_config[unit_name] = t2_config_doc['baseConfig'] 
-
-
-	def add_version(self, unit_name, key, arg):
+	@classmethod
+	def add_version(cls, unit_name, key, arg):
 		"""
 		"""
-		if not unit_name in self.versions:
-			self.versions[unit_name] = {}
-		
-		if type(arg) is dict:
-			if arg is not None and 'version' in arg:
-				self.versions[unit_name][key] = arg['version']
-
-		elif isinstance(arg, AbsT2Unit):
-			self.versions[unit_name][key] = arg.version
+		if not unit_name in cls.versions:
+			cls.versions[unit_name] = {}
+		if arg is None:
+			return
+		elif isinstance(arg, dict):
+			if 'version' in arg:
+				cls.versions[unit_name][key] = arg['version']
+		elif issubclass(arg, AbsT2Unit):
+			cls.versions[unit_name][key] = arg.version
 
 def run():
 	raise NotImplementedError

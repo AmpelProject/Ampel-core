@@ -27,6 +27,7 @@ from ampel.core.flags.AlDocTypes import AlDocTypes
 from ampel.core.flags.FlagUtils import FlagUtils
 from ampel.pipeline.config.AmpelConfig import AmpelConfig
 from ampel.pipeline.db.AmpelDB import AmpelDB
+from ampel.pipeline.t2.T2Controller import T2Controller
 
 SUPERSEEDED = FlagUtils.get_flag_pos_in_enumflag(PhotoFlags.SUPERSEEDED)
 TO_RUN = FlagUtils.get_flag_pos_in_enumflag(T2RunStates.TO_RUN)
@@ -59,11 +60,14 @@ class ZIAlertIngester(AbsAlertIngester):
 		self.logger = LoggingUtils.get_logger() if logger is None else logger
 		self.logger.info("Configuring ZIAlertIngester for channels %s" % repr(self.channel_names))
 
+		t2_units = set()
+		for channel in channels:
+			t2_units.update(channel.t2_units)
 		# T2 unit making use of upper limits
-		self.t2_units_using_uls = tuple(
-			key for key, value in AmpelConfig.get_config('t2_units').items() 
-			if value.get('upperLimits') is True
-		)
+		def uses_upper_limits(t2_unit):
+			unit = T2Controller.load_unit(t2_unit, self.logger)
+			return hasattr(unit, 'upperLimits') and getattr(unit, 'upperLimits')
+		self.t2_units_using_uls = tuple(filter(uses_upper_limits, t2_units))
 
 		# instantiate util classes used in method ingest()
 		self.photo_shaper = ZIPhotoDictShaper()
