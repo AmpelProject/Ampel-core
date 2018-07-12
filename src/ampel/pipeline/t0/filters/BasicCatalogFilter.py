@@ -19,6 +19,7 @@ class BasicCatalogFilter(AbsAlertFilter):
 
     version = 0.1
     
+    resources = ('extcats.reader',)
     def __init__(self, on_match_t2_units, base_config=None, run_config=None, logger=None):
         """
         """
@@ -29,10 +30,8 @@ class BasicCatalogFilter(AbsAlertFilter):
             raise ValueError("run_config type must be a dict or MappingProxyType")
 
         # init mongo client to be passed to extcats
-        dbclient = MongoClient(
-			AmpelConfig.get_config('resources.extcats')
-		)
-        
+        dbclient = MongoClient(base_config['extcats.reader'])
+
         # int catalogquery object
         self.cat_query = CatalogQuery.CatalogQuery(
             cat_name = run_config['catName'],
