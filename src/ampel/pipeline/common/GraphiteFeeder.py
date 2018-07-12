@@ -4,12 +4,13 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 26.04.2018
-# Last Modified Date: 28.05.2018
+# Last Modified Date: 12.07.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-from graphitesend import GraphiteClient
-from urllib.parse import urlparse
 import socket
+from urllib.parse import urlparse
+from graphitesend import GraphiteClient
+from ampel.pipeline.common.AmpelUtils import AmpelUtils
 
 class GraphiteFeeder:
 	"""
@@ -46,7 +47,7 @@ class GraphiteFeeder:
 		"""
 		if len(suffix) > 0 and suffix[-1] != ".": suffix += "."
 
-		fdict = self.flatten_dict(in_dict)
+		fdict = AmpelUtils.flatten_dict(in_dict)
 		for key in fdict:
 			self.stats[suffix + key] = fdict[key]
 
@@ -56,7 +57,7 @@ class GraphiteFeeder:
 		"""
 		if len(suffix) > 0 and suffix[-1] != ".": suffix += "."
 
-		fdict = self.flatten_dict(in_dict)
+		fdict = AmpelUtils.flatten_dict(in_dict)
 		key_to_delete = []
 
 		for key in fdict:
@@ -79,16 +80,3 @@ class GraphiteFeeder:
 		"""
 		self.gclient.send_dict(self.stats)
 		self.stats = {}
-
-
-	def flatten_dict(self, d):
-		"""
-		"""
-		expand = lambda key, val: (
-			[(key + '.' + k, v) for k, v in self.flatten_dict(val).items()] 
-			if isinstance(val, dict) else [(key, val)]
-		)
-
-		items = [item for k, v in d.items() for item in expand(k, v)]
-
-		return dict(items)
