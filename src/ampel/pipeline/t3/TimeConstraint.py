@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 06.06.2018
-# Last Modified Date: 28.06.2018
+# Last Modified Date: 13.07.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from datetime import datetime, timedelta
@@ -183,12 +183,24 @@ class TimeConstraint:
 
 			if constraint['use'] == '$lastRunTime':
 
-				from ampel.pipeline.db.query.QueryLastJobRun import QueryLastJobRun
+				from ampel.pipeline.db.query.QueryRunsCol import QueryRunsCol
 				col = AmpelDB.get_collection('runs')
-				res = next(col.aggregate(constraint['jobName']), None)
+				res = next(
+					col.aggregate(
+						QueryRunsCol.get_job_last_run(constraint['jobName'])
+					), 
+					None
+				)
 
 				if res is None:
-					res = next(col.aggregate(constraint['jobName'], back_days=None), None)
+					res = next(
+						col.aggregate(
+							QueryRunsCol.get_job_last_run(
+								constraint['jobName'], days_back=None
+							)
+						), 
+						None
+					)
 					if res is None:
 						return None
 
