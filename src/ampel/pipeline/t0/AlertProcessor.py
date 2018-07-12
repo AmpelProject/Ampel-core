@@ -53,9 +53,9 @@ class AlertProcessor():
 		   - List of strings: channels with the provided ids will be loaded 
 		'source': name of input stream (string - see set_stream() docstring)
 		'publish_stats': publish performance stats:
-		   * graphite: send t0 metrics to graphite (graphite server must be defined 
+		   - graphite: send t0 metrics to graphite (graphite server must be defined 
 		     in Ampel_config)
-		   * jobs: include t0 metrics in job document
+		   - jobs: include t0 metrics in job document
 		'central_db': string. Use provided DB name rather than Ampel default database ('Ampel')
 		"""
 
@@ -436,7 +436,7 @@ class AlertProcessor():
 					self.logger.info("Sending stats to Graphite")
 					self.gfeeder.add_stats_with_mean_std(
 						{
-							"counts": count_stats,
+							"count": count_stats,
 							"duration": dur_stats
 						},
 						prefix="t0"
@@ -454,7 +454,7 @@ class AlertProcessor():
 									'dt': datetime.now(timezone.utc).timestamp(),
 									'logs': db_logging_handler.get_log_id(),
 									'metrics': {
-										"counts": count_stats,
+										"count": count_stats,
 										"duration": dur_stats
 									}
 								}
@@ -494,7 +494,7 @@ class AlertProcessor():
 				# error msg will be passed to the logging handlers of higher level
 				# as self.logger.propagate was set back to True previously
 				self.logger.removeHandler(db_logging_handler)
-				self.logger.error("DB Log flushing has failed")
+				self.logger.error("DB log flushing has failed")
 				self.logger.error(e)
 
 				try: 
@@ -635,3 +635,5 @@ def run_alertprocessor():
 			t1 = time.time()
 			dt = t1-t0
 			print('({}) {} alerts in {:.1f}s; {:.1f}/s'.format(infile, alert_processed, dt, alert_processed/dt))
+
+
