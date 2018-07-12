@@ -220,7 +220,7 @@ class AmpelUtils():
 	def unflatten_dict(d, separator='.'):
 		"""
 		"""
-		res= dict()
+		res = {}
 
 		for key, value in d.items():
 
