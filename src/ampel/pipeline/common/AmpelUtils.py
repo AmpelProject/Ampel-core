@@ -230,7 +230,7 @@ class AmpelUtils():
 
 		for key, value in d.items():
 
-			parts = key.split(".")
+			parts = key.split(separator)
 			d = res
 
 			for part in parts[:-1]:
