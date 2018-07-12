@@ -350,12 +350,12 @@ class T2Controller(Schedulable):
 		"""
 		if not unit_name in cls.versions:
 			cls.versions[unit_name] = {}
-		
-		if type(arg) is dict:
-			if arg is not None and 'version' in arg:
+		if arg is None:
+			return
+		elif isinstance(arg, dict):
+			if 'version' in arg:
 				cls.versions[unit_name][key] = arg['version']
-
-		elif isinstance(arg, AbsT2Unit):
+		elif issubclass(arg, AbsT2Unit):
 			cls.versions[unit_name][key] = arg.version
 
 def run():
