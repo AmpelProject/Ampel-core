@@ -105,6 +105,7 @@ class AlertProcessor():
 
 
 	def get_channels(self):
+		""" """
 		return self.channels
 
 
@@ -325,7 +326,7 @@ class AlertProcessor():
 
 					AmpelUtils.report_exception(self.logger,
 						{
-							'section': 'filter',
+							'section': 'ap_filter',
 							'channel': channel.name,
 							'tranId': tran_id,
 							'jobId':  db_logging_handler.get_log_id(),
@@ -356,7 +357,7 @@ class AlertProcessor():
 				except:
 					AmpelUtils.report_exception(self.logger,
 						{
-							'section': 'ingest',
+							'section': 'ap_ingest',
 							'tranId': tran_id,
 							'jobId':  db_logging_handler.get_log_id(),
 							'alert': AlertProcessor._alert_essential(shaped_alert)
@@ -461,12 +462,11 @@ class AlertProcessor():
 						},
 						upsert=True
 					)
-
 		except:
 
 			AmpelUtils.report_exception(self.logger,
 				{
-					'section': 'run_end',
+					'section': 'ap_run_end',
 					'jobId':  db_logging_handler.get_log_id(),
 				}
 			)
@@ -490,6 +490,7 @@ class AlertProcessor():
 			try:
 				db_logging_handler.flush()
 			except Exception as e:
+
 				# error msg will be passed to the logging handlers of higher level
 				# as self.logger.propagate was set back to True previously
 				self.logger.removeHandler(db_logging_handler)
@@ -500,7 +501,7 @@ class AlertProcessor():
 					# This will fail as well if we have DB connectivity issues
 					AmpelUtils.report_exception(self.logger,
 						{
-							'section': 'flush_logs',
+							'section': 'ap_flush_logs',
 							'jobId':  db_logging_handler.get_log_id(),
 						}
 					)

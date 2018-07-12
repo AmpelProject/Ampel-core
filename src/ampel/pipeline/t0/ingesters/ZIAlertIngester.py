@@ -110,7 +110,7 @@ class ZIAlertIngester(AbsAlertIngester):
 		pass
 
 
-	def set_job_id(self, job_id):
+	def set_log_id(self, log_id):
 		"""
 		An ingester class creates/updates several documents in the DB for each alert.
 		Among other things, it updates the main transient document, 
@@ -118,10 +118,10 @@ class ZIAlertIngester(AbsAlertIngester):
 		We thus need to know what is the current job_id to perform this update.
 		The provided parameter should be a bson ObjectId.
 		"""
-		if type(job_id) is not ObjectId:
+		if type(log_id) is not ObjectId:
 			raise ValueError("Illegal argument")
 
-		self.job_id = job_id
+		self.job_id = log_id
 
 
 	def set_stats_dict(self, time_dict, count_dict):
