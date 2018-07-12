@@ -19,17 +19,23 @@ class GraphiteFeeder:
 	def __init__(self, uri, autoreconnect=True):
 		"""
 		"""
+
+		# URI example: graphite://localhost:2003/
 		parts = urlparse(uri)
+
+		# Generate sytem name if not provided in URI
 		if parts.path == '/':
 			hostname = socket.gethostname().split('.')[0]
 			system_name = "ampel.{}".format(hostname)
 		else:
 			system_name = parts.path[1:]
+
+		# Instanciate GraphiteClient
 		self.gclient = GraphiteClient(
 			graphite_server=getattr(parts, 'hostname'), 
 			graphite_port=getattr(parts, 'port'), 
 			system_name=system_name,
-			autoreconnect=True
+			autoreconnect=autoreconnect
 		)
 
 		self.stats = {}
