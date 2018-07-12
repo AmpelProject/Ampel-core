@@ -359,4 +359,20 @@ class T2Controller(Schedulable):
 			cls.versions[unit_name][key] = arg.version
 
 def run():
-	raise NotImplementedError
+	
+	from ampel.pipeline.config.ConfigLoader import AmpelArgumentParser
+	from ampel.pipeline.config.AmpelConfig import AmpelConfig
+	from ampel.pipeline.config.ChannelLoader import ChannelLoader
+	
+	parser = AmpelArgumentParser()
+	parser.add_argument('--source', default='ZTFIPAC', help='Alert source')
+	parser.require_resource('mongo', ['writer', 'logger'])
+	# partially parse command line to get config
+	opts, argv = parser.parse_known_args(args=[])
+	# flesh out parser with resources required by t2 units
+	loader = ChannelLoader(source=opts.source, tier=2)
+	parser.require_resources(*loader.get_required_resources())
+	# parse again, filling the resource config
+	opts = parser.parse_args()
+	
+	T2Controller().run()
