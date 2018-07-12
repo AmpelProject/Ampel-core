@@ -135,7 +135,7 @@ class ZIAlertIngester(AbsAlertIngester):
 			if not el in time_dict:
 				time_dict[el] = []
 
-		for key in ('ppsUpd', 'ulsUpd', 't2Upd', 'compUpd', 'ppsReproc'):
+		for key in ('pps', 'uls', 't2s', 'comps', 'ppReprocs'):
 			self.count_dict[key] = 0
 			
 
@@ -676,11 +676,11 @@ class ZIAlertIngester(AbsAlertIngester):
 					self.time_dict['dbPerOpMeanTimeMain'].append(time_delta / len(db_main_ops))
 
 				# Counters
-				self.count_dict['ppsUpd'] += len(pps_to_insert)
-				self.count_dict['ulsUpd'] += len(uls_to_insert)
-				self.count_dict['t2Upd'] += t2_upserts
-				self.count_dict['compUpd'] += compound_upserts
-				self.count_dict['ppsReproc'] += pps_reprocs
+				self.count_dict['pps'] += len(pps_to_insert)
+				self.count_dict['uls'] += len(uls_to_insert)
+				self.count_dict['t2s'] += t2_upserts
+				self.count_dict['comps'] += compound_upserts
+				self.count_dict['ppReprocs'] += pps_reprocs
 
 			else:
 
