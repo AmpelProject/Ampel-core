@@ -14,6 +14,7 @@ from ampel.pipeline.logging.LoggingUtils import LoggingUtils
 from ampel.pipeline.config.Channel import Channel
 from ampel.pipeline.config.T0Channel import T0Channel
 from ampel.pipeline.config.AmpelConfig import AmpelConfig
+from ampel.pipeline.t2.T2Controller import T2Controller
 
 class ChannelLoader:
 	"""
@@ -25,10 +26,6 @@ class ChannelLoader:
 		"""
 		self.source = source
 		self.tier = tier
-
-		if source is not None and tier == 0:
-			self.known_t2_units = tuple(AmpelConfig.get_config('t2_units').keys())
-
 
 	def load_channels(self, arg_chan_names, logger):
 		"""
@@ -110,7 +107,9 @@ class ChannelLoader:
 		# Check defined t2UNits for this stream
 		for el in self._get_config(chan_doc, 't2Compute'):
 
-			if not el['t2Unit'] in self.known_t2_units:
+			try:
+				T2Controller.load_unit(el['t2Unit'], logger)
+			except ValueError:
 				raise ValueError(
 					("The AMPEL T2 unit '%s' referenced by the channel '%s' does not exist.\n" +
 					"Please either correct the problematic entry in section 't2Compute' of channel '%s'\n" +
