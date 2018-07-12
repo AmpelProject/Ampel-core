@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 14.12.2017
-# Last Modified Date: 04.07.2018
+# Last Modified Date: 12.07.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import logging, time
@@ -110,18 +110,18 @@ class ZIAlertIngester(AbsAlertIngester):
 		pass
 
 
-	def set_log_id(self, log_id):
+	def set_job_id(self, job_id):
 		"""
 		An ingester class creates/updates several documents in the DB for each alert.
 		Among other things, it updates the main transient document, 
 		which contains a list of logIds associated with the processing of the given transient.
-		We thus need to know what is the current log_id to perform this update.
+		We thus need to know what is the current job_id to perform this update.
 		The provided parameter should be a bson ObjectId.
 		"""
-		if type(log_id) is not ObjectId:
+		if type(job_id) is not ObjectId:
 			raise ValueError("Illegal argument")
 
-		self.log_id = log_id
+		self.job_id = job_id
 
 
 	def set_stats_dict(self, time_dict, count_dict):
@@ -634,7 +634,7 @@ class ZIAlertIngester(AbsAlertIngester):
 							chan_names[0] if len(chan_names) == 1 
 							else {"$each": chan_names}
 						),
-						'logEntries': self.log_id,
+						'logEntries': self.job_id,
 					},
 					"$max": {
 						"lastPPJD": pps_alert[0]["jd"],
@@ -654,6 +654,7 @@ class ZIAlertIngester(AbsAlertIngester):
 
 		try: 
 
+			# If we measure the DB insertion times
 			if self.count_dict is not None:
 
 				# Save time required by python for this method so far
@@ -668,7 +669,7 @@ class ZIAlertIngester(AbsAlertIngester):
 					self.time_dict['dbPerOpMeanTimePhoto'].append(time_delta / len(db_photo_ops))
 
 				# Perform DB operations: main
-				if len(db_main_ops) > 0:
+				if db_main_ops:
 					start = time.time()
 					db_main_results = self.main_col.bulk_write(db_main_ops, ordered=False)
 					time_delta = time.time() - start
@@ -682,41 +683,94 @@ class ZIAlertIngester(AbsAlertIngester):
 				self.count_dict['comps'] += compound_upserts
 				self.count_dict['ppReprocs'] += pps_reprocs
 
+			# no metric
 			else:
 
-				if len(db_photo_ops) > 0:
+				if db_photo_ops:
 					db_photo_results = self.photo_col.bulk_write(db_photo_ops, ordered=False)
 
-				if len(db_main_ops) > 0:
+				if db_main_ops:
 					db_main_results = self.main_col.bulk_write(db_main_ops, ordered=False)
 
 
 			# Feedback
-			if len(db_photo_ops) > 0: 
+			if db_photo_ops:
+
 				if (
-					len(db_photo_results.bulk_api_result['writeErrors']) > 0 or
-					len(db_photo_results.bulk_api_result['writeConcernErrors']) > 0
+					db_photo_results.bulk_api_result['writeErrors'] or
+					db_photo_results.bulk_api_result['writeConcernErrors']
 				):
+
+					# Log error
 					self.logger.error(db_photo_results.bulk_api_result)
+
+					# Populate troubles collection
+					from inspect import currentframe, getframeinfo
+					frameinfo = getframeinfo(currentframe())
+					AmpelDB.get_collection('troubles').insert_one(
+						{
+							'tier': 0,
+							'location': '%s:%s' % (frameinfo.filename, frameinfo.lineno),
+							'jobId':  self.job_id,
+							'bulkApiResult': db_photo_results.bulk_api_result
+						}
+					)
+
 				else:
+
 					self.logger.info(
 						"DB photo feeback: %i upserted" % 
 						db_photo_results.bulk_api_result['nUpserted']
 					)
 
-			if len(db_main_ops) > 0:
+			if db_main_ops:
+
 				if (
-					len(db_main_results.bulk_api_result['writeErrors']) > 0 or
-					len(db_main_results.bulk_api_result['writeConcernErrors']) > 0
+					db_main_results.bulk_api_result['writeErrors'] or
+					db_main_results.bulk_api_result['writeConcernErrors']
 				):
+
+					# Log error
 					self.logger.error(db_main_results.bulk_api_result)
+
+					# Populate troubles collection
+					from inspect import currentframe, getframeinfo
+					frameinfo = getframeinfo(currentframe())
+					AmpelDB.get_collection('troubles').insert_one(
+						{
+							'tier': 0,
+							'location': '%s:%s' % (frameinfo.filename, frameinfo.lineno),
+							'jobId':  self.job_id,
+							'bulkApiResult': db_main_results.bulk_api_result
+						}
+					)
+
 				else:
+
 					self.logger.info(
 						"DB main feeback: %i upserted" % 
 						db_main_results.bulk_api_result['nUpserted']
 					)
 
+		# Catch BulkWriteError only, 
+		# other Exception will be caught in AlertProcessor
 		except BulkWriteError as bwe: 
-			self.logger.error(bwe.details) 
+
 			# TODO add error flag to Job and Transient
 			# TODO add return code 
+
+			# Log error
+			self.logger.error(bwe.details) 
+
+			# Populate troubles collection
+			from inspect import currentframe, getframeinfo
+			frameinfo = getframeinfo(currentframe())
+			AmpelDB.get_collection('troubles').insert_one(
+				{
+					'tier': 0,
+					'location': '%s:%s' % (frameinfo.filename, frameinfo.lineno),
+					'jobId':  self.job_id,
+					'bulkApiResult': bwe.details
+				}
+			)
+
