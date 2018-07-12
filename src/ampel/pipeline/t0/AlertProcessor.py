@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 10.10.2017
-# Last Modified Date: 21.06.2018
+# Last Modified Date: 12.07.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import pymongo, time, numpy as np
@@ -94,6 +94,13 @@ class AlertProcessor():
 		# Which stats to publish (see doctring)
 		self.publish_stats = publish_stats
 
+		# Graphite
+		if "graphite" in publish_stats:
+			self.gfeeder = GraphiteFeeder(
+				AmpelConfig.get_config('resources.graphite.default'),
+				autoreconnect = True
+			)
+
 		self.logger.info("AlertProcessor initial setup completed")
 
 
@@ -174,9 +181,10 @@ class AlertProcessor():
 		# Create DB logging handler instance (logging.Handler child class)
 		# This class formats, saves and pushes log records into the DB
 		db_logging_handler = DBLoggingHandler(
-			tier=0, 
-			info={"alertProc": self.version, "ingesterClass": str(self.ingester.__class__)}, 
-			previous_logs=self.ilb.get_logs()
+			tier=0, info={
+				"alertProc": self.version, 
+				"ingesterClass": str(self.ingester.__class__)
+			}, previous_logs=self.ilb.get_logs()
 		)
 
 		# Add db logging handler to the logger stack of handlers 
@@ -208,59 +216,45 @@ class AlertProcessor():
 		pps_loaded = 0
 		uls_loaded = 0
 
-		# metrics dict
-		loop_stats = {}
-		job_info = {
-			'duration': {
-				't0Job': {},
-				'ingestion': {
-					'preIngestTime': [],
-					'dbBulkTimePhoto': [],
-					'dbBulkTimeMain': [],
-					'dbPerOpMeanTimePhoto': [],
-					'dbPerOpMeanTimeMain': []
-				},
-				'filtering': {
-					'all': np.empty(iter_max)
-				}
-			},
-			'count': {
-				# Cumul stats
-				't0Job': {},	
-				'ingestion': {
-					'alerts': {},
-					'dbOps': {}
-				}
-			}
+		# Duration statistics 
+		dur_stats = {
+			'preIngestTime': [],
+			'dbBulkTimePhoto': [],
+			'dbBulkTimeMain': [],
+			'dbPerOpMeanTimePhoto': [],
+			'dbPerOpMeanTimeMain': [],
+			'allFilters': np.empty(iter_max),
+			'filters': {}
 		}
 
-		job_info['duration']['filtering']['all'].fill(np.nan)
+		# Count statistics (incrementing integer values)
+		count_stats = {    
+			'alerts': 0,
+			'ingested': 0,
+			'pps': 0,
+			'uls': 0,
+			'reprocs': 0,
+			'matches': {},
+			'dbUpd': {}
+		}
+
+		dur_stats['allFilters'].fill(np.nan)
 		for i, channel in self.chan_enum: 
-			# job_info[channel.name] records filter performances
+			# dur_stats['filters'][channel.name] records filter performances
 			# nan will remain only if exception occur for particular alerts
-			job_info['duration']['filtering'][channel.name] = np.empty(iter_max)
-			job_info['duration']['filtering'][channel.name].fill(np.nan)
-			job_info['count']['ingestion']['alerts'][channel.name] = 0
+			dur_stats['filters'][channel.name] = np.empty(iter_max)
+			dur_stats['filters'][channel.name].fill(np.nan)
+			count_stats['matches'][channel.name] = 0
 
 		# The (standard) ingester will update DB insert operations
 		if hasattr(self.ingester, "set_stats_dict"):
 			self.ingester.set_stats_dict(
-				job_info['duration']['ingestion'],
-				job_info['count']['ingestion']['dbOps'],
+				dur_stats, count_stats['dbUpd']
 			)
 
-		# python shortcuts and micro-optimization
-		loginfo = self.logger.info
-		logdebug = self.logger.debug
-		dblh_set_tranId = db_logging_handler.set_tranId
-		dblh_set_channel = db_logging_handler.set_channels
-		dblh_unset_tranId = db_logging_handler.unset_tranId
-		dblh_unset_channel = db_logging_handler.unset_channels
-		chan_enum = self.chan_enum
-		filtering_stats = job_info['duration']['filtering']
-		job_count_stats = job_info['count']['t0Job']
-		alert_counts = job_info['count']['ingestion']['alerts']
-		col = AmpelDB.get_collection('main')
+		# shortcuts
+		log_info = self.logger.info
+		log_debug = self.logger.debug
 
 		# Save pre run time
 		pre_run = time_now()
@@ -276,10 +270,10 @@ class AlertProcessor():
 
 			# Associate upcoming log entries with the current transient id
 			tran_id = shaped_alert['tran_id']
-			dblh_set_tranId(tran_id)
+			db_logging_handler.set_tranId(tran_id)
 
 			# Feedback
-			loginfo(
+			log_info(
 				"Processing alert: %s (%s)" % 
 				(shaped_alert['alert_id'], shaped_alert['ztf_id'])
 			)
@@ -298,10 +292,10 @@ class AlertProcessor():
 			all_filters_start = time_now()
 
 			# Loop through initialized channels
-			for i, channel in chan_enum:
+			for i, channel in self.chan_enum:
 
 				# Associate upcoming log entries with the current channel
-				dblh_set_channel(channel.name)
+				db_logging_handler.set_channels(channel.name)
 
 				try:
 
@@ -312,20 +306,20 @@ class AlertProcessor():
 					scheduled_t2_units[i] = channel.filter_func(ampel_alert)
 
 					# stats
-					filtering_stats[channel.name][iter_count] = time_now() - per_filter_start
+					dur_stats['filters'][channel.name][iter_count] = time_now() - per_filter_start
 
 					# Log feedback and count
 					if scheduled_t2_units[i] is not None:
-						alert_counts[channel.name] += 1
-						loginfo(channel.log_accepted)
+						count_stats['matches'][channel.name] += 1
+						log_info(channel.log_accepted)
 					else:
 						# Autocomplete required for this channel
 						if self.live_ac and self.chan_auto_complete[i] and tran_id in tran_ids_before[i]:
-							loginfo(channel.log_auto_complete)
-							alert_counts[channel.name] += 1
+							log_info(channel.log_auto_complete)
+							count_stats['matches'][channel.name] += 1
 							scheduled_t2_units[i] = channel.t2_units
 						else:
-							loginfo(channel.log_rejected)
+							log_info(channel.log_rejected)
 
 				except:
 
@@ -340,15 +334,15 @@ class AlertProcessor():
 					)
 
 				# Unset channel id <-> log entries association
-				dblh_unset_channel()
+				db_logging_handler.unset_channels()
 
 			# time required for all filters
-			filtering_stats['all'][iter_count] = time_now() - all_filters_start
+			dur_stats['allFilters'][iter_count] = time_now() - all_filters_start
 
 			if any(t2 is not None for t2 in scheduled_t2_units):
 
 				# Ingest alert
-				loginfo(" -> Ingesting alert")
+				log_info(" -> Ingesting alert")
 
 				# stats
 				ingested_count += 1
@@ -370,7 +364,7 @@ class AlertProcessor():
 					)
 
 			# Unset log entries association with transient id
-			dblh_unset_tranId()
+			db_logging_handler.unset_tranId()
 
 			iter_count += 1
 
@@ -389,72 +383,84 @@ class AlertProcessor():
 				tran_ids_after = self.get_tran_ids()
 	
 				# Check post auto-complete
-				for i, channel in chan_enum:
+				for i, channel in self.chan_enum:
 					if type(tran_ids_after[i]) is set:
 						auto_complete_diff = tran_ids_after[i] - tran_ids_before[i]
 						if auto_complete_diff:
 							# TODO: implement fetch from archive
 							pass 
 	
-			# Durations in seconds
-			job_info['duration']['t0Job'] = {
-				'preLoop': int(pre_run - run_start),
-				'main': int(post_run - pre_run)
-				# post loop will be computed in gather_and_send_stats()
-			}
-
 			if self.publish_stats is not None and iter_count > 0:
 	
-				self.logger.info("Computing job stats")
-	
-				# Gather counts
-				job_info['count']['t0Job'] = {
-					'alProcessed': iter_count,
-					'alIngested': ingested_count,
-					'ppsLoaded': pps_loaded,
-					'ulsLoaded': uls_loaded
-				}
+				# include loop counts
+				count_stats['alerts'] = iter_count
+				count_stats['ingested'] = ingested_count
+				count_stats['pps'] = pps_loaded
+				count_stats['uls'] = uls_loaded
+
+				# Cleaner structure
+				count_stats['ppReprocs'] = count_stats['dbUpd'].pop('ppReprocs')
 
 				# Compute mean time & std dev in microseconds
 				#############################################
 
+				self.logger.info("Computing job stats")
+
 				# For ingest metrics
-				ingestion_stats = job_info['duration']['ingestion']
-				for key in (
-					'preIngestTime', 'dbBulkTimePhoto', 'dbBulkTimeMain', 
+				for key in ('preIngestTime', 'dbBulkTimePhoto', 'dbBulkTimeMain', 
 					'dbPerOpMeanTimePhoto', 'dbPerOpMeanTimeMain'
 				):
-					if len(ingestion_stats[key]) > 0: 
-						ingestion_stats[key] = self.compute_stat(ingestion_stats[key])
+					if dur_stats[key]: 
+						dur_stats[key] = self.compute_stat(dur_stats[key])
 
-				# For filter metrics
+				# per chan filter metrics
 				len_non_nan = lambda x: iter_max - np.count_nonzero(np.isnan(x))
-				for key in [channel.name for channel in self.channels] + ['all']:
-					mylen = len_non_nan(filtering_stats[key])
-					filtering_stats[key] = (
-						(0, 0) if len_non_nan(filtering_stats[key]) == 0
-						else self.compute_stat(
-							filtering_stats[key], mean=np.nanmean, std=np.nanstd
-						)
+				for key in [channel.name for channel in self.channels]:
+					dur_stats['filters'][key] = self.compute_stat(
+						dur_stats['filters'][key], mean=np.nanmean, std=np.nanstd
 					)
 
-				self.gather_and_send_stats(post_run, job_info)
-
-				# Record job info into DB
-				AmpelDB.get_collection('runs').update_one(
-					{'_id': int(datetime.today().strftime('%Y%m%d'))},
-					{
-						'$push': {
-							'jobs': {
-								'tier': 0,
-								'dt': datetime.now(timezone.utc).timestamp(),
-								'logs': db_logging_handler.get_log_id(),
-								'metrics': job_info
-							}
-						}
-					},
-					upsert=True
+				# all filters metric
+				dur_stats['allFilters'] = self.compute_stat(
+					dur_stats['allFilters'], mean=np.nanmean, std=np.nanstd
 				)
+
+				# Durations in seconds
+				dur_stats['apPreLoop'] = int(pre_run - run_start)
+				dur_stats['apMain'] = int(post_run - pre_run)
+				dur_stats['apPostLoop'] = int(time.time() - post_run)
+
+				# Publish metrics to graphite
+				if "graphite" in self.publish_stats:
+					self.logger.info("Sending stats to Graphite")
+					self.gfeeder.add_stats_with_mean_std(
+						{
+							"counts": count_stats,
+							"duration": dur_stats
+						},
+						prefix="t0"
+					)
+					self.gfeeder.send()
+
+				# Publish metrics into document in collection 'runs'
+				if "jobs" in self.publish_stats:
+					AmpelDB.get_collection('runs').update_one(
+						{'_id': int(datetime.today().strftime('%Y%m%d'))},
+						{
+							'$push': {
+								'jobs': {
+									'tier': 0,
+									'dt': datetime.now(timezone.utc).timestamp(),
+									'logs': db_logging_handler.get_log_id(),
+									'metrics': {
+										"counts": count_stats,
+										"duration": dur_stats
+									}
+								}
+							}
+						},
+						upsert=True
+					)
 
 		except:
 
@@ -469,7 +475,7 @@ class AlertProcessor():
 		# re-add initial log buffer
 		self.logger.addHandler(self.ilb)
 
-		loginfo(
+		log_info(
 			"Alert processing completed (time required: %is)" % 
 			int(time_now() - run_start)
 		)
@@ -512,36 +518,13 @@ class AlertProcessor():
 		return iter_count
 
 
-	def gather_and_send_stats(self, post_run, t0_stats):
-		"""
-		"""
-
-		t0_stats['duration']['t0Job']['postLoop'] = int(time.time() - post_run)
-
-		# Publish metrics to graphite
-		if "graphite" in self.publish_stats:
-
-			self.logger.info("Sending stats to Graphite")
-
-			# Re-using GraphiteClient results in: 
-			# GraphiteSendException: Socket closed before able to send data to ('localhost', 52003), 
-			# with error: [Errno 32] Broken pipe
-			# So we re-create a GraphiteClient every time we send something to graphite...
-			gfeeder = GraphiteFeeder(
-				AmpelConfig.get_config('resources.graphite')
-			)
-
-			if t0_stats is not None:
-				gfeeder.add_stats_with_mean_std(t0_stats)
-			else:
-				gfeeder.add_stats(t0_stats)
-
-			gfeeder.send()
-
-
 	def compute_stat(self, seq, mean=np.mean, std=np.std):
 		"""
 		"""
+
+		if AlertProcessor.iter_max - np.count_nonzero(np.isnan(seq)) == 0:
+			return (0, 0)
+
 		# mean time & std dev in microseconds
 		np_seq = np.array(seq)
 		return (
@@ -619,9 +602,6 @@ def run_alertprocessor():
 	# parse again
 	opts = parser.parse_args()
 
-	mongo = AmpelConfig.get_config('resources.mongo.writer')
-	archive = ArchiveDB(AmpelConfig.get_config('resources.archive.writer'))
-	
 	from ampel.pipeline.t0.alerts.TarAlertLoader import TarAlertLoader
 	from ampel.pipeline.t0.alerts.AlertSupplier import AlertSupplier
 	from ampel.pipeline.t0.alerts.ZIAlertShaper import ZIAlertShaper
@@ -639,7 +619,10 @@ def run_alertprocessor():
 		fetcher = ZIAlertFetcher(opts.broker, group_name=opts.group, timeout=3600)
 		loader = iter(fetcher)
 
-	alert_supplier = AlertSupplier(loader, ZIAlertShaper(), serialization="avro", archive=archive)
+	alert_supplier = AlertSupplier(
+		loader, ZIAlertShaper(), serialization="avro", 
+		archive=ArchiveDB(AmpelConfig.get_config('resources.archive.writer'))
+	)
 	processor = AlertProcessor(publish_stats=["jobs", "graphite"], channels=opts.channels)
 
 	while alert_processed == AlertProcessor.iter_max:
