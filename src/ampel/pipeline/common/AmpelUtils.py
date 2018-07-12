@@ -205,6 +205,9 @@ class AmpelUtils():
 	@staticmethod
 	def flatten_dict(d, separator='.'):
 		"""
+		Example: 
+		input: {'count': {'chans': {'HU_SN': 10}}}
+		output: {'count.chans.HU_SN': 10}
 		"""
 		expand = lambda key, val: (
 			[(key + separator + k, v) for k, v in AmpelUtils.flatten_dict(val).items()] 
@@ -219,6 +222,9 @@ class AmpelUtils():
 	@staticmethod
 	def unflatten_dict(d, separator='.'):
 		"""
+		Example: 
+		input: {'count.chans.HU_SN': 10}
+		output: {'count': {'chans': {'HU_SN': 10}}}
 		"""
 		res = {}
 
