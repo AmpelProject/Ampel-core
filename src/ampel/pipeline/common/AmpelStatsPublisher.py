@@ -4,9 +4,11 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 26.05.2018
-# Last Modified Date: 04.07.2018
+# Last Modified Date: 12.07.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
+import json
+from datetime import datetime, timezone
 from ampel.pipeline.common.AmpelUtils import AmpelUtils
 from ampel.pipeline.common.Schedulable import Schedulable
 from ampel.pipeline.config.AmpelConfig import AmpelConfig
@@ -14,41 +16,41 @@ from ampel.pipeline.logging.LoggingUtils import LoggingUtils
 from ampel.pipeline.db.AmpelDB import AmpelDB
 from ampel.core.flags.AlDocTypes import AlDocTypes
 
+
 class AmpelStatsPublisher(Schedulable):
 	""" 
 	"""
 
-	# mongod serverStatus key values
+	# mongod serverStatus key values to publish
 	db_metrics = {
 		"mem.resident": "memRes",
 		"connections.current": "connections"
-		#"metrics.document.deleted": "docDel",
-		#"metrics.document.inserted": "docIns",
-		#"metrics.document.returned": "docRet",
-		#"metrics.document.updated": "docUpd"
 	}
 
-	col_stats_keys = ('count', 'size', 'storageSize', 'totalIndexSize')
+	# mongod colStats key values to publish
+	col_stats_keys = ('size', 'storageSize', 'totalIndexSize')
 
 
 	def __init__(
-		self, central_db=None, graphite_feeder=None, archive_client=None,
-		channel_names=None, publish_stats=['graphite', 'mongo', 'print'],
-		update_intervals={'col_stats': 5, 'docs_count': 10, 'daemon': 2, 'channels': 5}
-		#'channels': 5, 'alerts_count': 10}
+		self, channel_names=None, 
+		publish_to=['graphite', 'mongo', 'print'],
+		publish_what=['col_stats', 'docs_count', 'daemon', 'channels', 'archive'],
 	):
 		"""
 		Parameters:
-		'central_db': string. Use provided DB name rather than Ampel default database ('Ampel')
-		'publish_stats': send performance stats to:
+		'publish_to': send stats to:
 		  * mongo: send metrics to dedicated mongo collection (mongodb_uri must be set)
 		  * graphite: send db metrics to graphite (graphite server must be defined in Ampel_config)
 		  * print: print db metrics to stdout
+		  * log: log db metrics using logger instance
+		'publish_what':
+		  * col_stats -> collection stats (size, compressedSize, indexSize)
+		  * docs_count -> number of documents in collections
+		  * daemon -> mongod stats (ram usage, number of sockets open)
+		  * channels -> number of transients in each channel
+		  * archive -> 
 		'channel_names': list of channel names (string). 
 		  If None, stats for all avail channels will be reported. 
-		'update_intervals': dict instance. 
-		  * keys: either col_stats, docs_count, daemon, channels, alerts_count
-		  * values: integer. Number of minutes between checks
 		"""
 
 		# Pass custom args to Parent class constructor
@@ -67,30 +69,106 @@ class AmpelStatsPublisher(Schedulable):
 			else channel_names
 		)
 
-		# Optional override of AmpelConfig defaults
-		if central_db is not None:
-			AmpelDB.set_central_db_name(central_db)
+		# update interval dict. Values in minutes
+		self.update_intervals = {
+			'col_stats': 30, 
+			'docs_count': 30, 
+			'daemon': 10, 
+			'channels': 10,
+			'archive': 10
+		}
+
+		# update interval dict. Values in minutes
+		for key in self.update_intervals.keys(): 
+			if key not in publish_what:
+				self.update_intervals[key] = None
 
 		# Which stats to publish (see doctring)
-		self.publish_stats = publish_stats
+		self.publish_to = publish_to
 
-		self.graphite_feeder = graphite_feeder
-		self.archive_client = archive_client
+		# DB collection handles
+		self.col_photo = AmpelDB.get_collection("photo")
+		self.col_main = AmpelDB.get_collection("main")
+		self.col_runs = AmpelDB.get_collection("runs")
+		self.col_logs = AmpelDB.get_collection("jobs")
+		self.col_troubles = AmpelDB.get_collection('troubles')
 
 		# Projections
 		self.id_proj = {'_id': 1}
 		self.tran_proj = {'tranId': 1, '_id': 0}
 
-		# Converts:
-		# {'channels': 5, 'col_stats': 5, 'deamon': 2, 'docs_count': 10}
-		# into:
-		# {
-		#	  2: {'deamon': True},
- 		# 	  5: {'channels': True, 'col_stats': True},
- 		# 	  10: {'docs_count': True}
-		# }
+		# Optional import
+		if 'print' in publish_to:
+			import json
+
+		# Instanciate GraphiteFeeder if required
+		if 'graphite' in publish_to:
+			from ampel.pipeline.common.GraphiteFeeder import GraphiteFeeder
+			self.graphite_feeder = GraphiteFeeder(
+				AmpelConfig.get_config('resources.graphite.default')
+			)
+
+		# Instanciate ArchiveDB if required
+		if 'archive' in publish_what:
+			from ampel.archive import ArchiveDB
+			self.archive_client = archive_client=ArchiveDB(
+				AmpelConfig.get_config('resources.archive.reader')
+			)
+
+		# Schedule jobs
+		self.schedule_send_metrics()
+
+		# Dict used to save metrics previously retrieved
+		self.past_items = {}
+
+		# Feeback
+		self.logger.info("AmpelStatsPublisher setup completed")
+
+
+	def set_all_update_intervals(self, value):
+		"""
+		Convenience method.
+		Sets all update intervals ('col_stats', 'docs_count', 
+		'daemon', 'channels', 'archive') to provided value.
+		value: integer. Number of minutes between checks.
+		"""
+		for k in self.update_intervals.keys():
+			if self.update_intervals[k] is not None:
+				self.update_intervals[k] = value
+
+		self.schedule_send_metrics()
+
+
+	def set_custom_update_intervals(self, d):
+		"""
+		d: dict instance containing one or more 
+		Known keys: 'col_stats', 'docs_count', 'daemon', 'channels', 'archive'
+		value: integer. Number of minutes between checks.
+		"""
+		for key in d.keys():
+			if key not in self.update_intervals:
+				raise ValueError("Unknown key %s" % key)
+			self.update_intervals[key] = d[key]
+
+		self.schedule_send_metrics()
+
+
+	def schedule_send_metrics(self):
+		"""
+		Converts 'update_intervals': {
+			'channels': 5, 'col_stats': 5, 'deamon': 2, 'docs_count': 10
+		}
+		into: {
+			  2: {'deamon': True},
+ 		 	  5: {'channels': True, 'col_stats': True},
+ 		 	  10: {'docs_count': True}
+		}
+		and schedule method send_metrics accordingly
+		"""
 		inv_map = {}
-		for k, v in update_intervals.items():
+		for k, v in self.update_intervals.items():
+			if v is None:
+				continue
 			if v in inv_map:
 				inv_map[v][k] = True
 			else:
@@ -98,57 +176,60 @@ class AmpelStatsPublisher(Schedulable):
 
 		# Schedule jobs
 		scheduler = self.get_scheduler()
+		scheduler.clear()
+
 		for interval in inv_map.keys():
 			scheduler.every(interval).minutes.do(
 				self.send_metrics, 
 				**inv_map[interval]
 			)
 
-		self.logger.info("AmpelStatsPublisher setup completed")
-
 
 	def send_all_metrics(self):
 		"""
+		Convenience method
 		"""
 		self.send_metrics(True, True, True, True, False)
 
 
 	def send_metrics(
-		self, daemon=False, col_stats=False, docs_count=False, channels=False, alerts_count=False
+		self, daemon=False, col_stats=False, docs_count=False, channels=False, archive=False
 	):
 		"""
 		"""
 
 		main_col = AmpelDB.get_collection("main")
 		photo_col = AmpelDB.get_collection("photo")
-		dbinfo_dict = {}
+		stats_dict = {'dbInfo': {}, 'count': {}}
 
 		if not any([daemon, col_stats, docs_count, channels]):
 			raise ValueError("Bad arguments")
 
-		if daemon:
 
-			dbinfo_dict['daemon'] = self.get_server_stats(
+		# GATHER SECTION
+		################
+
+		# Stats from mongod running daemon (such as RAM usage)
+		if daemon:
+			stats_dict['dbInfo']['daemon'] = self.get_server_stats(
 				main_col.database
 			)
 
-
+		# Stats related to mongo collections (colstats)
 		if col_stats:
-
-			dbinfo_dict['colStats'] = {
-				'jobs': self.get_col_stats(AmpelDB.get_collection("jobs")),
-				'photo': self.get_col_stats(photo_col),
-				'main': self.get_col_stats(main_col)
-			}
+			stats_dict['dbInfo']['photo'] = self.get_col_stats(self.col_photo)
+			stats_dict['dbInfo']['main'] = self.get_col_stats(self.col_main)
+			stats_dict['dbInfo']['logs'] = self.get_col_stats(self.col_logs)
 
 
+		# Counts the number of <documents> in various collections
 		if docs_count:
 
-			dbinfo_dict['docsCount'] = {
+			stats_dict['count']['docs'] = {
 
-				'troubles': AmpelDB.get_collection('troubles').find({}).count(),
+				'troubles': self.col_troubles.find({}).count(),
 
-				'transients': {
+				'photo': {
 
 					'pps': photo_col.find(
 						{'_id': {"$gt" : 0}}, 
@@ -158,9 +239,12 @@ class AmpelStatsPublisher(Schedulable):
 					'uls': photo_col.find(
 						{'_id': {"$lt" : 0}}, 
 						self.id_proj
-					).count(),
+					).count()
+				},
 
-					'compounds': main_col.find(
+				'main': {
+
+					'comps': self.col_main.find(
 						{
 							'tranId': {"$gt" : 1}, 
 							'alDocType': AlDocTypes.COMPOUND
@@ -168,7 +252,7 @@ class AmpelStatsPublisher(Schedulable):
 						self.tran_proj
 					).count(),
 
-					't2s': main_col.find(
+					't2s': self.col_main.find(
 						{
 							'tranId': {"$gt" : 1}, 
 							'alDocType': AlDocTypes.T2RECORD
@@ -176,7 +260,7 @@ class AmpelStatsPublisher(Schedulable):
 						self.tran_proj
 					).count(),
 
-					'trans': main_col.find(
+					'trans': self.col_main.find(
 						{	
 							'tranId': {"$gt" : 1}, 
 							'alDocType': AlDocTypes.TRANSIENT
@@ -190,7 +274,7 @@ class AmpelStatsPublisher(Schedulable):
 #		if alerts_count:
 #
 #			res = next(
-#				AmpelDB.get_collection("runs").aggregate(
+#				self.col_runs.aggregate(
 #					[
 #						#{
 #						#	"$match": { 
@@ -214,37 +298,91 @@ class AmpelStatsPublisher(Schedulable):
 #				# TODO: something
 #				pass
 #
-#			dbinfo_dict['alertsCount'] = res['alProcessed']
+#			stats_dict['alertsCount'] = res['alProcessed']
 
-		stat_dict = {'dbinfo': dbinfo_dict} if len(dbinfo_dict) > 0 else {}
 
 		# Channel specific metrics
 		if channels:
 
-			count_dict = {} 
-
+			# get number of transient docs for each channel
+			stats_dict["count"]['chans'] = {}
 			for chan_name in self.channel_names:
-				count_dict[chan_name] = self.get_tran_count(main_col, chan_name)
-
-			stat_dict['count'] = {'db': count_dict}
+				stats_dict["count"]['chans'][chan_name] = self.get_tran_count(chan_name)
 
 
-		if "print" in self.publish_stats:
-			print(stat_dict)
+		# Channel specific metrics
+		if archive:
+			stats_dict["archive"] = {}
+			stats_dict["archive"]["tables"] = self.archive_client.get_statistics()
+
+
+		# Build dict with changed items only
+		out_dict = {
+			k:v for k,v in AmpelUtils.flatten_dict(stats_dict).items() 
+			if self.past_items.get(k) != v
+		}
+
+		# Update internal dict of past items
+		for k, v in out_dict.items():
+			self.past_items[k] = v
+
+
+
+		# PUBLISH SECTION
+		#################
+
+		# Print metrics to stdout
+		if "print" in self.publish_to:
+
+			# pylint: disable=undefined-variable
+			print(
+				"Computed metrics: %s" % json.dumps(
+					AmpelUtils.flatten_dict(stats_dict), indent=4
+				)
+			)
+
+			# pylint: disable=undefined-variable
+			print("Updated metrics: %s" % json.dumps(out_dict, indent=4))
+
+
+		# Log metrics using logger (logging module)
+		if "log" in self.publish_to:
+			self.logger.info("Computed metrics: %s" % str(stats_dict))
+			self.logger.info("Updated metrics: %s" % str(out_dict))
+
 
 		# Publish metrics to graphite
-		if self.graphite_feeder is not None:
-			if col_stats and self.archive_client is not None:
-				self.graphite_feeder.add_stats( self.archive_client.get_statistics(), 'archive.tables')
-			self.logger.info("Sending stats to graphite")
-			self.graphite_feeder.add_stats(stat_dict)
-			self.graphite_feeder.send()
+		if "graphite" in self.publish_to:
+
+			if len(out_dict) == 0:
+				self.logger.info("Skipping graphite update")
+			else:
+				self.logger.info("Sending stats to graphite")
+				self.graphite_feeder.add_stats({'stats': out_dict})
+				self.graphite_feeder.send()
 
 
-		# Publish metrics to mongo
-		if "mongo" in self.publish_stats:
-			# WILL BE IMPLEMENTED SOON
-			pass
+		# Publish metrics to mongo 'runs' collection
+		if "mongo" in self.publish_to:
+
+			if len(out_dict) == 0:
+				self.logger.info("Skipping mongo update")
+
+			else:
+				# Record job info into DB
+				self.col_runs.update_one(
+					{'_id': int(datetime.today().strftime('%Y%m%d'))},
+					{
+						'$push': {
+							'jobs': {
+								'name': 'asp',
+								'dt': datetime.now(timezone.utc).timestamp(),
+								'metrics': AmpelUtils.unflatten_dict(out_dict)
+							}
+						}
+					},
+					upsert=True
+				)
 
 
 	def get_server_stats(self, db, ret_dict=None, suffix=""):
@@ -261,15 +399,11 @@ class AmpelStatsPublisher(Schedulable):
 		return ret_dict
 
 
-	def get_col_stats(self, col, ret_dict=None, suffix=""):
+	def get_col_stats(self, col, suffix=""):
 		"""
 		"""
-		colstats = col.database.command(
-			"collstats", col.name
-		)
-
-		if ret_dict == None:
-			ret_dict = {}
+		colstats = col.database.command("collstats", col.name)
+		ret_dict = {}
 
 		for key in AmpelStatsPublisher.col_stats_keys:
 			ret_dict[suffix + key] = colstats[key]
@@ -277,7 +411,7 @@ class AmpelStatsPublisher(Schedulable):
 		return ret_dict
 
 	
-	def get_tran_count(self, col, channel_name=None):
+	def get_tran_count(self, channel_name=None):
 		"""
 		get number of unique transient in collection.
 		Query should be covered.
@@ -289,7 +423,7 @@ class AmpelStatsPublisher(Schedulable):
 
 		if channel_name is None:
 
-			return col.find(
+			return self.col_main.find(
 				{
 					'tranId': {'$gt': 1},
 					'alDocType': AlDocTypes.TRANSIENT
@@ -299,7 +433,7 @@ class AmpelStatsPublisher(Schedulable):
 
 		else:
 
-			return col.find(
+			return self.col_main.find(
 				{
 					'tranId': {'$gt': 1},
 					'alDocType': AlDocTypes.TRANSIENT, 
@@ -311,24 +445,12 @@ class AmpelStatsPublisher(Schedulable):
 def run():
 
 	from ampel.pipeline.config.ConfigLoader import AmpelArgumentParser
-	from ampel.pipeline.config.AmpelConfig import AmpelConfig
-	from ampel.archive import ArchiveDB
-	from ampel.pipeline.common.GraphiteFeeder import GraphiteFeeder
-
 	parser = AmpelArgumentParser()
 	parser.require_resource('mongo', ['logger'])
 	parser.require_resource('archive', ['reader'])
 	parser.require_resource('graphite')
-	opts = parser.parse_args()
+	parser.parse_args()
 
-	asp = AmpelStatsPublisher(
-		graphite_feeder=GraphiteFeeder(
-			AmpelConfig.get_config('resources.graphite')
-		),
-		archive_client=ArchiveDB(
-			AmpelConfig.get_config('resources.archive.reader')
-		),
-		publish_stats=['print', 'graphite']
-	)
+	asp = AmpelStatsPublisher(publish_to=['print', 'graphite'])
 	asp.send_all_metrics()
 	asp.run()
