@@ -286,7 +286,7 @@ class AmpelStatsPublisher(Schedulable):
 #   							"$group": {
 #            					"_id": 1,
 #            					"alProcessed": {
-#									"$sum": "$jobs.job.metrics.count.t0Job.alProcessed"
+#									"$sum": "$jobs.job.metrics.count.alerts"
 #								}
 #							}
 #						}
