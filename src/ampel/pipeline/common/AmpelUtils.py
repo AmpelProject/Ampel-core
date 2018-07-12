@@ -203,6 +203,41 @@ class AmpelUtils():
 
 
 	@staticmethod
+	def flatten_dict(d, separator='.'):
+		"""
+		"""
+		expand = lambda key, val: (
+			[(key + separator + k, v) for k, v in AmpelUtils.flatten_dict(val).items()] 
+			if isinstance(val, dict) else [(key, val)]
+		)
+
+		items = [item for k, v in d.items() for item in expand(k, v)]
+
+		return dict(items)
+
+
+	@staticmethod
+	def unflatten_dict(d, separator='.'):
+		"""
+		"""
+		res= dict()
+
+		for key, value in d.items():
+
+			parts = key.split(".")
+			d = res
+
+			for part in parts[:-1]:
+				if part not in d:
+				    d[part] = {}
+				d = d[part]
+
+			d[parts[-1]] = value
+
+		return res
+
+
+	@staticmethod
 	def report_exception(logger, further_info=None):
 		"""
 		further_info: dict instance to be included in the document inserted into Ampel_troubles
