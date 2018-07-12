@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 13.01.2018
-# Last Modified Date: 04.07.2018
+# Last Modified Date: 11.07.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from ampel.core.flags.AlDocTypes import AlDocTypes
@@ -106,7 +106,7 @@ class LightCurveLoader:
 		--------------------
 		ppd_list: list of photopoint dict instances loaded from DB
 		uld_list: list of upper limit dict instances loaded from DB
-		compound: compound namedtuple loaded from DB
+		compound: compound doc (dict instance) loaded from DB
 		"""
 
 		# Robustness check 
