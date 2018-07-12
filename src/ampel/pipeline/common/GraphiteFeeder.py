@@ -41,27 +41,27 @@ class GraphiteFeeder:
 		self.stats = {}
 
 
-	def add_stat(self, key, value, suffix=""):
+	def add_stat(self, key, value, prefix=""):
 		"""
 		"""
-		if len(suffix) > 0 and suffix[-1] != ".": suffix += "."
-		self.stats[suffix + key] = value
+		if len(prefix) > 0 and prefix[-1] != ".": prefix += "."
+		self.stats[prefix + key] = value
 
 
-	def add_stats(self, in_dict, suffix=""):
+	def add_stats(self, in_dict, prefix=""):
 		"""
 		"""
-		if len(suffix) > 0 and suffix[-1] != ".": suffix += "."
+		if len(prefix) > 0 and prefix[-1] != ".": prefix += "."
 
 		fdict = AmpelUtils.flatten_dict(in_dict)
 		for key in fdict:
-			self.stats[suffix + key] = fdict[key]
+			self.stats[prefix + key] = fdict[key]
 
 
-	def add_stats_with_mean_std(self, in_dict, suffix=""):
+	def add_stats_with_mean_std(self, in_dict, prefix=""):
 		"""
 		"""
-		if len(suffix) > 0 and suffix[-1] != ".": suffix += "."
+		if len(prefix) > 0 and prefix[-1] != ".": prefix += "."
 
 		fdict = AmpelUtils.flatten_dict(in_dict)
 		key_to_delete = []
@@ -70,12 +70,12 @@ class GraphiteFeeder:
 			val = fdict[key]
 			if type(val) in [tuple, list]:
 				if len(val) == 2: 
-					self.stats[suffix + key + ".mean"] = val[0]
-					self.stats[suffix + key + ".std"] = val[1]
+					self.stats[prefix + key + ".mean"] = val[0]
+					self.stats[prefix + key + ".std"] = val[1]
 				elif len(val) == 0: # empty list
 					key_to_delete.append(key)
 			else:
-				self.stats[suffix + key] = val
+				self.stats[prefix + key] = val
 
 		for key in key_to_delete:
 			del fdict[key] # remove empty lists
