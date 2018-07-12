@@ -26,17 +26,28 @@ def resource_env(uri, name, role=None):
 			env[prefix+role.upper()+"_PASSWORD"] = uri.password
 	return env
 
+@pytest.fixture
+def empty_mongod(mongod):
+	from pymongo import MongoClient
+	mc = MongoClient(mongod)
+	mc.drop_database('Ampel_logs')
+	yield mongod
+	mc.drop_database('Ampel_logs')
+
 @pytest.mark.parametrize("config_source", ("env", "cmdline"))
-def test_alertprocessor_entrypoint(alert_tarball, mongod, postgres, graphite, config_source):
+def test_alertprocessor_entrypoint(alert_tarball, empty_mongod, postgres, graphite, config_source):
 	cmd = ['ampel-alertprocessor', '--tarfile', alert_tarball, '--channels', 'HU_RANDOM']
 	if config_source == "env":
-		env = {**resource_env(mongod, 'mongo', 'writer'),
+		env = {**resource_env(empty_mongod, 'mongo', 'writer'),
 		       **resource_env(postgres, 'archive', 'writer'),
 		       **resource_env(graphite, 'graphite')}
 		env.update(os.environ)
 	elif config_source == "cmdline":
 		env = os.environ
-		cmd += resource_args(mongod, 'mongo', 'writer') \
+		cmd += resource_args(empty_mongod, 'mongo', 'writer') \
 		    + resource_args(postgres, 'archive', 'writer') \
 		    + resource_args(graphite, 'graphite')
 	subprocess.check_call(cmd, env=env)
+	from pymongo import MongoClient
+	mc = MongoClient(empty_mongod)
+	assert mc['Ampel_logs']['troubles'].count({}) == 0
