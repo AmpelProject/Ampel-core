@@ -107,8 +107,23 @@ class AmpelArgumentParser(ArgumentParser):
 		self._resources[name] = resource
 	
 	def require_resources(self, *names):
+		"""
+		Request configuration of URIs for resources of the form RESOURCE.ROLE.
+		"""
+		# Build unique set of roles needed for each requested resource
+		from collections import defaultdict
+		roles = defaultdict(set)
 		for name in names:
-			self.require_resource(name)
+			if '.' in name:
+				name, role = name.split('.')
+				roles[name].add(role)
+			else:
+				roles[name].add('default')
+		for name, roleset in roles.items():
+			if roleset == {'default'}:
+				self.require_resource(name)
+			else:
+				self.require_resource(name, roleset)
 
 	def parse_args(self, **kwargs):
 		return super(AmpelArgumentParser, self).parse_args(**kwargs)

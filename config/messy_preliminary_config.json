@@ -5,7 +5,10 @@
         "logger": "mongodb://localhost:27017"
       },
       "graphite": "graphite://localhost:2003/ampel.test",
-      "extcats": "mongodb://filterclient@localhost:27018",
+      "extcats": {
+        "reader": "mongodb://filterclient@localhost:27018",
+        "writer": "mongodb://ToO@localhost:27018"
+      },
       "catsHTM": "file:///path/to/catsHTM/should/be/set"
     },
     "channels": {},
