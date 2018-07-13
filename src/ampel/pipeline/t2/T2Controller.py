@@ -10,6 +10,7 @@
 from datetime import datetime, timedelta
 from pymongo.errors import BulkWriteError
 from pymongo import UpdateOne
+from types import MappingProxyType
 import pkg_resources, math
 
 from ampel.base.abstract.AbsT2Unit import AbsT2Unit
@@ -352,7 +353,7 @@ class T2Controller(Schedulable):
 			cls.versions[unit_name] = {}
 		if arg is None:
 			return
-		elif isinstance(arg, dict):
+		elif isinstance(arg, dict) or isinstance(arg, MappingProxyType):
 			if 'version' in arg:
 				cls.versions[unit_name][key] = arg['version']
 		elif issubclass(arg, AbsT2Unit):
