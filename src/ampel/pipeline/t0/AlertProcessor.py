@@ -66,8 +66,8 @@ class AlertProcessor():
 		self.logger.info("Setting up new AlertProcessor instance")
 
 		# Load channels
-		cl = ChannelLoader(source=source, tier=0)
-		self.channels = cl.load_channels(channels, self.logger);
+		cl = ChannelLoader(source=source, tier=0, logger=self.logger)
+		self.channels = cl.load_channels(channels);
 		self.chan_enum = list(enumerate(self.channels))
 		self.chan_auto_complete = len(self.channels) * [False]
 		self.live_ac = False

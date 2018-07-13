@@ -75,7 +75,7 @@ def uri_string(props):
 
 def render_uris(props):
     if len(props.get('roles', {})) == 0:
-        return uri_string(props)
+        return {'default': uri_string(props)}
     else:
         return {k: uri_string({**props, **v}) for k,v in props['roles'].items()}
 

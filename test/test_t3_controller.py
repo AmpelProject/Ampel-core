@@ -114,7 +114,7 @@ def testing_config(testing_class, t3_jobs, mongod, graphite):
 	    'global': {},
 	    'resources': {
 	        'mongo': {'writer': mongod, 'logger': mongod},
-	        'graphite': graphite,
+	        'graphite': {'default': graphite},
 	        },
 	    't3_units': {
 	    	'potemkin': {
