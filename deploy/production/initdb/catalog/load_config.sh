@@ -35,6 +35,7 @@ mongo=( mongo --host 127.0.0.1 --port 27017 --username $MONGO_INITDB_ROOT_USERNA
 		roles: $roles
 	})
 	db.grantRolesToUser($(_js_escape "$MONGO_USER"), [{"role": "listDatabases", "db": "admin"}])
+	db.grantRolesToUser($(_js_escape "$MONGO_USER"), [{"role": "read", "db": "ToO"}])
 	db.createUser({
 		user: $(_js_escape "$TOO_USER"),
 		pwd: $(_js_escape "$TOO_PASSWORD"),
