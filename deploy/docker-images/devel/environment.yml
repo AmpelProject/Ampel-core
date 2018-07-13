@@ -18,6 +18,7 @@ dependencies:
   - extcats
   - catshtm==0.1.15
   - sncosmo
+  - iminuit
   - graphitesend
   - voluptuous
   - configargparse
