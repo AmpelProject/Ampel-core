@@ -10,7 +10,6 @@
 from datetime import datetime
 from pymongo import MongoClient
 from itertools import islice
-from time import time
 
 from ampel.pipeline.db.query.QueryMatchTransients import QueryMatchTransients
 from ampel.pipeline.db.query.QueryLatestCompound import QueryLatestCompound
@@ -178,11 +177,15 @@ class T3Job:
 		"""
 		"""
 
+		time_start = datetime.utcnow().timestamp()
+		log_id = (
+			self.db_logging_handler.get_log_id() if hasattr(self, 'db_logging_handler') 
+			else None
+		)
+		t3_tasks = []
+
 		try:
 
-			time_now = time()
-			t3_tasks = []
-	
 			# Check for '$forEach' channel operator
 			if next(iter(self.job_config.get_task_configs())).get("select.channel(s)") == "$forEach":
 	
@@ -248,56 +251,96 @@ class T3Job:
 			for t3_task in t3_tasks:
 	
 				# execute embedded t3unit instance method done()
-				ret = t3_task.done()
+				specific_journal_entries = t3_task.done()
 	
-				# method done() might return a list of transient ids (integers or strings). 
-				# In this case, we update the Transient journal with dict containing date, 
-				# channels and name of the task
-				if ret:
-	
-					mongo_res = self.col_tran.update_many(
-						{
-							'alDocType': AlDocTypes.TRANSIENT, 
-							'tranId': {'$in': ret}
-						},
-						{
-							'$push': {
-								"journal": {
-									'dt': int(datetime.utcnow().timestamp()),
-									'tier': 3,
-									'channels': list(t3_task.channels), # make sure channels is a list
-									'taskName': t3_task.get_config('name')
-								}
+				# Update journal with task related info
+				mongo_res = self.col_tran.update_many(
+					{
+						'alDocType': AlDocTypes.TRANSIENT, 
+						'tranId': {'$in': t3_task.fed_tran_ids}
+					},
+					{
+						'$push': {
+							"journal": {
+								'tier': 3,
+								'dt': int(time_start),
+								'channels': t3_task.channels,
+								'taskName': t3_task.get_config('name'),
+								'logs': log_id
 							}
 						}
+					}
+				)
+
+				# At least one update was not applied
+				if mongo_res.modified_count != len(t3_task.fed_tran_ids):
+
+					# Populate troubles collection
+					from inspect import currentframe, getframeinfo
+					frameinfo = getframeinfo(currentframe())
+					AmpelDB.get_collection('troubles').insert_one(
+						{
+							'tier': 3,
+							'location': '%s:%s' % (frameinfo.filename, frameinfo.lineno),
+							'ampelMsg': 'transient journal update failed',
+							'jobName':  self.job_config.job_name,
+							'taskName': t3_task.get_config('name'),
+							'logs': log_id,
+							'mongoResults': mongo_res.raw_result
+						}
 					)
-	
-					if mongo_res.raw_result["nModified"] != len(ret):
-						pass # populate ampel_troubles !
+
+
+				# method done() might return a dict with key: transient id, 
+				# value journal entries. In this case, we update the Transient journal 
+				# with those entries
+				if len(specific_journal_entries) > 0:
+					# Update journal with t3 unit specific info
+					pass
 	
 	
 			# Record job info into DB
-			self.col_runs.update_one(
-				{'_id': int(datetime.today().strftime('%Y%m%d'))},
+			mongo_res = self.col_runs.update_one(
+				{
+					'_id': int(
+						datetime.today().strftime('%Y%m%d')
+					)
+				},
 				{
 					'$push': {
 						'jobs': {
 							'tier': 3,
 							'name': self.job_config.job_name,
-							'dt': datetime.utcnow().timestamp(),
-							'logs': (
-								self.db_logging_handler.get_log_id() if hasattr(self, 'db_logging_handler') 
-								else None
-							),
+							'dt': int(time_start),
+							'logs': log_id,
 							'metrics': {
-								'duration': int(time() - time_now)
+								'duration': int(
+									datetime.utcnow().timestamp() - time_start
+								)
 							}
 						}
 					}
 				},
 				upsert=True
 			)
-	
+
+			if mongo_res.modified_count == 0 and mongo_res.upserted_id is None:
+
+				# Populate troubles collection
+				from inspect import currentframe, getframeinfo
+				frameinfo = getframeinfo(currentframe())
+				AmpelDB.get_collection('troubles').insert_one(
+					{
+						'tier': 3,
+						'location': '%s:%s' % (frameinfo.filename, frameinfo.lineno),
+						'ampelMsg': 'runs collection update failed',
+						'jobName':  self.job_config.job_name,
+						'taskName': t3_task.get_config('name'),
+						'logs': log_id,
+						'mongoResults': mongo_res.raw_result
+					}
+				)
+
 			# Write log entries to DB
 			if hasattr(self, 'db_logging_handler'):
 				self.db_logging_handler.flush()
@@ -307,7 +350,7 @@ class T3Job:
 			AmpelUtils.report_exception(
 				self.logger, tier=3, info={
 					'jobName': self.job_config.job_name,
-					'jobId':  self.db_logging_handler.get_log_id(),
+					'logs':  log_id,
 				}
 			)
 
