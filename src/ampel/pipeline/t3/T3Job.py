@@ -106,37 +106,53 @@ class T3Job:
 
 		# Retrieve number of alerts processed since last run if so whished
 		if job_config.get('globalInfo') is True:
+			self.global_info = self.get_global_info()
 
-			# Get datetime of last run
-			last_run = AmpelUtils.get_by_path(
-				next(
-					AmpelDB.get_collection('runs').aggregate(
-						QueryRunsCol.get_job_last_run(self.job_config.job_name)
-					), 
-					None
+
+	def get_global_info(self):
+		"""
+		Retrieves info such as the number of alerts 
+		processed since last run of this job
+		"""
+
+		# get pymongo handle to collection 'runs'
+		runs_col = AmpelDB.get_collection('runs')
+
+		# Get datetime of last run
+		last_run = AmpelUtils.get_by_path(
+			next(
+				runs_col.aggregate(
+					QueryRunsCol.get_job_last_run(self.job_config.job_name)
 				), 
-				'jobs.dt'
+				None
+			), 
+			'jobs.dt'
+		)
+
+		if last_run is not None:
+
+			# Get number of alerts processed since last run
+			res = next(
+				runs_col.aggregate(
+					QueryRunsCol.get_t0_stats(last_run)
+				), 
+				None
 			)
 
-			if last_run is not None:
+			# Build and return global info
+			return {
+				'jobName': self.job_config.job_name,
+				'lastRun': datetime.fromtimestamp(last_run),
+				'processedAlerts': 0 if res is None else res.get('alerts')
+			}
 
-				# Get number of alerts processed since last run
-				res = next(
-					AmpelDB.get_collection('runs').aggregate(
-						QueryRunsCol.get_t0_stats(last_run)
-					), 
-					None
-				)
+		else:
 
-				# Build global info
-				self.global_info = {
-					'jobName': self.job_config.job_name,
-					'lastRun': datetime.fromtimestamp(last_run),
-					'processedAlerts': 0 if res is None else res.get('alerts')
-				}
-
-			else:
-				self.logger.error("Global info unavailable")
+			# Feedback
+			self.logger.error(
+				"Job %s: global info unavailable" % 
+				self.job_config.job_name
+			)
 
 
 	def overwrite_parameter(self, name, value):
