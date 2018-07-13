@@ -17,6 +17,8 @@ from ampel.pipeline.t0.AlertProcessor import AlertProcessor
 from ampel.pipeline.t0.alerts.AlertSupplier import AlertSupplier
 from ampel.pipeline.t0.alerts.ZIAlertShaper import ZIAlertShaper
 
+log = logging.getLogger(__name__)
+
 async def amerge(*generators):
 	"""
 	Consume results from multiple async generators as they become ready
@@ -58,10 +60,7 @@ class DelayedT0Controller:
 		    dt[0].jd, dt[1].jd)
 		supplier = AlertSupplier(alerts, alert_shaper=ZIAlertShaper())
 		
-		ap = AlertProcessor(channels=channels,
-		    mongodb_uri=AmpelConfig.get_config('resources.mongo.writer'),
-		    config=AmpelConfig.get_config(),
-		    publish_stats=None)
+		ap = AlertProcessor(channels=channels)
 		alert_processed = ap.iter_max
 		while alert_processed == ap.iter_max:
 			alert_processed = ap.run(supplier, console_logging=False)
@@ -82,8 +81,11 @@ class DelayedT0Controller:
 		"""
 		sources = (s.get_targets() for s in self.sources)
 		async for target in amerge(*sources):
-			pos, radius, dt, channels = target
-			self.launch_alertprocessor(pos, radius, dt, channels)
+			try:
+				pos, radius, dt, channels = target
+				self.launch_alertprocessor(pos, radius, dt, channels)
+			except:
+				log.critical("Exception while processing target", exc_info=1)
 		
 		# in the rare event that the target streams finish, wait for
 		# remaining AlertProcessors to complete
@@ -98,3 +100,36 @@ class DelayedT0Controller:
 		"""
 		loop = asyncio.get_event_loop()
 		loop.run_until_complete(self.listen())
+
+def run():
+	
+	from ampel.pipeline.config.ConfigLoader import AmpelArgumentParser
+	from ampel.pipeline.config.AmpelConfig import AmpelConfig
+	from ampel.pipeline.config.ChannelLoader import ChannelLoader
+	import pkg_resources
+
+	parser = AmpelArgumentParser()
+	parser.require_resource('mongo', ['writer', 'logger'])
+	parser.require_resource('archive', ['reader'])
+	parser.require_resource('graphite')
+
+	# partially parse command line to get config
+	opts, argv = parser.parse_known_args()
+	# flesh out parser with resources required by t0 units
+	loader = ChannelLoader(source="ZTFIPAC", tier=0)
+	resources = set(loader.get_required_resources())
+	source_classes = []
+	for resource in pkg_resources.iter_entry_points('ampel.target_sources'):
+		klass = resource.resolve()
+		resources.update(klass.resources)
+		source_classes.append(klass)
+	parser.require_resources(*resources)
+	# parse again
+	opts = parser.parse_args()
+
+	def create_source(klass):
+		base_config = {k: AmpelConfig.get_config('resources.{}'.format(k)) for k in klass.resources}
+		run_config = {}
+		return klass(base_config=base_config, run_config=run_config)
+
+	DelayedT0Controller(list(map(create_source, source_classes))).run()

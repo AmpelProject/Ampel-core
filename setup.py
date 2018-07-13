@@ -6,6 +6,7 @@ setup(name='ampel',
       entry_points = {
           'console_scripts' : [
               'ampel-alertprocessor = ampel.pipeline.t0.AlertProcessor:run_alertprocessor',
+              'ampel-followup = ampel.pipeline.t0.DelayedT0Controller:run',
               'ampel-statspublisher = ampel.pipeline.common.AmpelStatsPublisher:run',
               'ampel-t2 = ampel.pipeline.t2.T2Controller:run',
               'ampel-t3 = ampel.pipeline.t3.T3Controller:run',
