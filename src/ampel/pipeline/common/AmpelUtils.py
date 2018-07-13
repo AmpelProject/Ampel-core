@@ -244,9 +244,9 @@ class AmpelUtils():
 
 
 	@staticmethod
-	def report_exception(logger, tier, further_info=None):
+	def report_exception(logger, tier=None, info=None):
 		"""
-		further_info: dict instance to be included in the document inserted into Ampel_troubles
+		info: dict instance to be included in the document inserted into Ampel_troubles
 		"""
 		import traceback
 
@@ -265,13 +265,16 @@ class AmpelUtils():
 
 		# Basis document (can be appended later on)
 		insert_dict = {
-			'tier': tier,
 			'exception': exception_str.split("\n")
 		}
 
+		# Add ampel tier (layer) info if so provided
+		if tier is not None:
+			insert_dict['tier'] = tier
+
 		# Additional info might have been provided (such as alert information)
-		if further_info is not None:
-			insert_dict['more'] = further_info
+		if info is not None:
+			insert_dict['more'] = info
 
 		try:
 			# Populate Ampel_trouble collection
