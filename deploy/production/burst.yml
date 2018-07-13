@@ -126,28 +126,32 @@ services:
     depends_on:
       - mongo
       - archive
-#  t2-controller:
-#    image: ampel:$AMPEL_TAG
-#    command: ["ampel-t2"]
-#    volumes:
-#      - type: volume
-#        source: $AMPEL_SRC
-#        target: /Ampel
-#    secrets:
-#      - mongo-alertprocessor-password
-#    environment:
-#      TINI_SUBREAPER: 1
-#      MONGO_HOSTNAME: $MONGO_HOST
-#      MONGO_PORT: $MONGO_PORT
-#      MONGO_USERNAME: alertprocessor
-#      MONGO_PASSWORD_FILE: /run/secrets/mongo-alertprocessor-password
-#    deploy:
-#      restart_policy:
-#          max_attempts: 3
-#          condition: any
-#          delay: 10s
-#    depends_on:
-#      - mongo
+  t2-controller:
+    image: ampel:$AMPEL_TAG
+    command: ["ampel-t2"]
+    volumes:
+      - $AMPEL_SRC:/Ampel
+    secrets:
+      - mongo-alertprocessor-password
+      - mongo-logger-password
+      - catalog-read-password
+    environment:
+      TINI_SUBREAPER: 1
+      MONGO_HOSTNAME: $MONGO_HOST
+      MONGO_PORT: $MONGO_PORT
+      MONGO_WRITER_USERNAME: alertprocessor
+      MONGO_WRITER_PASSWORD_FILE: /run/secrets/mongo-alertprocessor-password
+      MONGO_LOGGER_USERNAME: logger
+      MONGO_LOGGER_PASSWORD_FILE: /run/secrets/mongo-logger-password
+      EXTCATS_READER_USERNAME: filterclient
+      EXTCATS_READER_PASSWORD_FILE: /run/secrets/catalog-read-password
+    deploy:
+      restart_policy:
+          # max_attempts: 3
+          condition: any
+          delay: 10s
+    depends_on:
+     - mongo
   t3-controller:
     image: ampel:$AMPEL_TAG
     command: ["ampel-t3"]
