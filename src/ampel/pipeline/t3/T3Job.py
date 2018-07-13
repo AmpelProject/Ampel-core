@@ -54,7 +54,8 @@ class T3Job:
 		if central_db is not None:
 			AmpelDB.set_central_db_name(central_db)
 
-		self.tran_col = AmpelDB.get_collection('main')
+		self.col_tran = AmpelDB.get_collection('main')
+		self.col_runs = AmpelDB.get_collection('runs')
 
 		if logger is None:
 
@@ -75,6 +76,7 @@ class T3Job:
 		self.logger = logger
 		self.job_config = job_config
 		self.global_info = None
+
 
 		# T3 job not requiring any prior transient loading 
 		if job_config.get('input.select') is not None:
@@ -115,13 +117,10 @@ class T3Job:
 		processed since last run of this job
 		"""
 
-		# get pymongo handle to collection 'runs'
-		runs_col = AmpelDB.get_collection('runs')
-
 		# Get datetime of last run
 		last_run = AmpelUtils.get_by_path(
 			next(
-				runs_col.aggregate(
+				self.col_runs.aggregate(
 					QueryRunsCol.get_job_last_run(self.job_config.job_name)
 				), 
 				None
@@ -133,7 +132,7 @@ class T3Job:
 
 			# Get number of alerts processed since last run
 			res = next(
-				runs_col.aggregate(
+				self.col_runs.aggregate(
 					QueryRunsCol.get_t0_stats(last_run)
 				), 
 				None
@@ -219,7 +218,10 @@ class T3Job:
 			# T3 job requiring prior transient loading 
 			if self.job_config.get('input.select') is not None:
 	
-				dcl = DBContentLoader(self.tran_col.database, verbose=True, logger=self.logger)
+				# Required to get transient info
+				dcl = DBContentLoader(
+					self.col_tran.database, verbose=True, logger=self.logger
+				)
 	
 				# Job with transient input
 				trans_cursor = self.get_selected_transients()
@@ -253,7 +255,7 @@ class T3Job:
 				# channels and name of the task
 				if ret:
 	
-					mongo_res = self.tran_col.update_many(
+					mongo_res = self.col_tran.update_many(
 						{
 							'alDocType': AlDocTypes.TRANSIENT, 
 							'tranId': {'$in': ret}
@@ -275,7 +277,7 @@ class T3Job:
 	
 	
 			# Record job info into DB
-			AmpelDB.get_collection('runs').update_one(
+			self.col_runs.update_one(
 				{'_id': int(datetime.today().strftime('%Y%m%d'))},
 				{
 					'$push': {
@@ -318,7 +320,7 @@ class T3Job:
 		"""
 
 		query_res = next(
-			self.tran_col.aggregate(
+			self.col_tran.aggregate(
 				[
 					{'$match': self._get_match_criteria()},
 					{"$unwind": "$channels"},
@@ -367,7 +369,7 @@ class T3Job:
 		self.logger.info("Executing search query: %s" % trans_match_query)
 
 		# Execute 'find transients' query
-		trans_cursor = self.tran_col.find(
+		trans_cursor = self.col_tran.find(
 			trans_match_query, {'_id':0, 'tranId':1}
 		).batch_size(100000)
 		
