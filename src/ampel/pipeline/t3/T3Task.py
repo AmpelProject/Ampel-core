@@ -30,6 +30,7 @@ class T3Task:
 		self.task_config = t3_task_config
 		self.channels = channels
 		self.logger = logger
+		self.fed_tran_ids = []
 
 		# Instanciate t3 unit
 		self.t3_instance = t3_task_config.t3_unit_class(
@@ -78,6 +79,9 @@ class T3Task:
 				"TransientView created for %s and channel(s) %s" % 
 				(tran_id, self.channels)
 			)
+		
+			# Save ids of created views (used later for updating transient journal)
+			self.fed_tran_ids.append(tran_id)
 
 			# Populate list of transient views
 			tran_views.append(tran_view)
