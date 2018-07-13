@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/pipeline/db/query/QueryLastJobRun.py
+# File              : ampel/pipeline/db/query/QueryRunsCol.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 11.07.2018
-# Last Modified Date: 11.07.2018
+# Last Modified Date: 13.07.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from datetime import datetime, timedelta
@@ -36,7 +36,7 @@ class QueryRunsCol:
 
 		ret = QueryRunsCol.get(
 			tier=0, dt=dt,
-			days_back=(datetime.now()-datetime.fromtimestamp(dt)).days + 1
+			days_back=(datetime.utcnow()-datetime.fromtimestamp(dt)).days + 1
 		)
 
 		ret.append(
@@ -73,7 +73,7 @@ class QueryRunsCol:
 
 			# add today. Example: 20180711
 			match.append(
-				int(datetime.today().strftime('%Y%m%d'))
+				int(datetime.utcnow().strftime('%Y%m%d'))
 			)
 
 			# add docs from previous days. Example: 20180710, 20180709
@@ -81,7 +81,7 @@ class QueryRunsCol:
 				match.append(
 					int(
 						datetime.strftime(
-							datetime.now() + timedelta(**{'days': -i}), 
+							datetime.utcnow() + timedelta(**{'days': -i}), 
 							'%Y%m%d'
 						)
 					)

@@ -38,7 +38,7 @@ class LoggingUtils:
 		)
 
 		logger = logging.getLogger(
-			"Ampel-"+str(datetime.now().time()) if unique is True else "Ampel"
+			"Ampel-"+str(datetime.utcnow().time()) if unique is True else "Ampel"
 		)
 		logger.setLevel(logging.DEBUG)
 

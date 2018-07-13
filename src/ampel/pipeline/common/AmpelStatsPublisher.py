@@ -4,11 +4,11 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 26.05.2018
-# Last Modified Date: 12.07.2018
+# Last Modified Date: 13.07.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import json
-from datetime import datetime, timezone
+from datetime import datetime
 from ampel.pipeline.common.AmpelUtils import AmpelUtils
 from ampel.pipeline.common.Schedulable import Schedulable
 from ampel.pipeline.config.AmpelConfig import AmpelConfig
@@ -376,7 +376,7 @@ class AmpelStatsPublisher(Schedulable):
 						'$push': {
 							'jobs': {
 								'name': 'asp',
-								'dt': datetime.now(timezone.utc).timestamp(),
+								'dt': datetime.utcnow().timestamp(),
 								'metrics': AmpelUtils.unflatten_dict(out_dict)
 							}
 						}

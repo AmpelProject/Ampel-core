@@ -7,7 +7,7 @@
 # Last Modified Date: 13.07.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-from datetime import datetime, timezone
+from datetime import datetime
 from pymongo import MongoClient
 from itertools import islice
 from time import time
@@ -263,7 +263,7 @@ class T3Job:
 						{
 							'$push': {
 								"journal": {
-									'dt': int(datetime.now(timezone.utc).timestamp()),
+									'dt': int(datetime.utcnow().timestamp()),
 									'tier': 3,
 									'channels': list(t3_task.channels), # make sure channels is a list
 									'taskName': t3_task.get_config('name')
@@ -284,7 +284,7 @@ class T3Job:
 						'jobs': {
 							'tier': 3,
 							'name': self.job_config.job_name,
-							'dt': datetime.now(timezone.utc).timestamp(),
+							'dt': datetime.utcnow().timestamp(),
 							'logs': (
 								self.db_logging_handler.get_log_id() if hasattr(self, 'db_logging_handler') 
 								else None
