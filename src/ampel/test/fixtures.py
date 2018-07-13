@@ -330,8 +330,8 @@ def ingested_transients(alert_generator, minimal_ingestion_config, caplog):
 	from ampel.pipeline.db.AmpelDB import AmpelDB
 	from ampel.core.flags.AlDocTypes import AlDocTypes
 	
-	tran_col = AmpelDB.get_collection('main')
-	assert tran_col.count({'alDocType': AlDocTypes.TRANSIENT}) == len(choices), "Transient docs exist for all ingested alerts"
+	col_tran = AmpelDB.get_collection('main')
+	assert col_tran.count({'alDocType': AlDocTypes.TRANSIENT}) == len(choices), "Transient docs exist for all ingested alerts"
 	assert max(num_pps) > 0, "At least 1 photopoint was ingested"
 	
 	return dict(choices)
@@ -347,7 +347,7 @@ def t3_selected_transients(ingested_transients, minimal_ingestion_config, caplog
 	assert trans_cursor.count() == len(ingested_transients), "Job loaded all ingested transients"
 	
 	with caplog.at_level('WARN'):
-		loader = DBContentLoader(job.tran_col.database, logger=job.logger)
+		loader = DBContentLoader(job.col_tran.database, logger=job.logger)
 	chunk = next(job.get_tran_data(loader, trans_cursor, trans_cursor.count()))
 	assert len(chunk) == len(ingested_transients), "Chunk contains all ingested transients"
 	
