@@ -21,7 +21,8 @@ class T3Controller(Schedulable):
 
 	def __init__(self, t3_job_names=None):
 		"""
-		't3_job_names': optional list of strings. If specified, only job with these names will be run.
+		't3_job_names': optional list of strings. 
+		If specified, only job with these names will be run.
 		"""
 		super(T3Controller, self).__init__()
 		# Setup logger
@@ -40,7 +41,10 @@ class T3Controller(Schedulable):
 		
 		self.scheduler.every(5).minutes.do(self.monitor_processes)
 
+
 	def monitor_processes(self):
+		"""
+		"""
 		feeder = GraphiteFeeder(AmpelConfig.get_config('resources.graphite'))
 		stats = {}
 		for job_name, job_config in self.jobs.items():
