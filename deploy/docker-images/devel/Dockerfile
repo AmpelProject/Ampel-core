@@ -4,7 +4,7 @@ FROM continuumio/miniconda:4.3.27 AS conda-base
 
 COPY base-environment.yml /
 RUN conda env create --file /base-environment.yml
-RUN conda env remove -n potemkin
+RUN conda env remove -y -n potemkin
 
 FROM conda-base AS conda
 
@@ -26,10 +26,11 @@ echo "    User git" >> /root/.ssh/config; \
 echo "    IdentityFile /root/.ssh/id_rsa.$repo" >> /root/.ssh/config; \
 done
 RUN mkdir /Ampel
-RUN git clone git@github-ampel:AmpelProject/Ampel.git /Ampel/ampel-core
+RUN git clone git@github-ampel:AmpelProject/Ampel-core.git /Ampel/ampel-core
 RUN git clone git@github-ampel-base:AmpelProject/Ampel-base.git /Ampel/ampel-base
 RUN git clone git@github-ampel-ztfbh:robertdstein/Ampel-ZTFbh.git /Ampel/ampel-contrib-ztfbh
 RUN git clone git@github-ampel-contrib-hu:AmpelProject/ampel-contrib-hu.git /Ampel/ampel-contrib-hu
+RUN git clone git@github-ampel-contrib-neutrino:AmpelProject/Ampel-Neutrino.git /Ampel/ampel-contrib-neutrino
 
 COPY environment.yml /
 RUN conda env create --file /environment.yml

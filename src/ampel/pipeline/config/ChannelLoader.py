@@ -21,16 +21,16 @@ class ChannelLoader:
 	"""
 
 
-	def __init__(self, source=None, tier=None):
+	def __init__(self, source=None, tier=None, logger=None):
 		"""
 		"""
 		self.source = source
 		self.tier = tier
+		self.logger = LoggingUtils.get_logger() if logger is None else logger
 
-	def load_channels(self, arg_chan_names, logger):
+	def load_channels(self, arg_chan_names):
 		"""
 		"""
-		logger = LoggingUtils.get_logger() if logger is None else logger
 
 		# Robustness check
 		if arg_chan_names is not None:
@@ -63,16 +63,16 @@ class ChannelLoader:
 
 			if chan_doc['active'] is False:
 				if arg_chan_names is None:
-					logger.info("Ignoring non-active channel %s" % chan_name)
+					self.logger.info("Ignoring non-active channel %s" % chan_name)
 					continue
 				else:
-					logger.info("Loading requested non-active channel %s" % chan_name)
+					self.logger.info("Loading requested non-active channel %s" % chan_name)
 
 			if self.source is None or self.tier != 0:
 				# Instantiate ampel.pipeline.config.Channel object
 				chan = Channel(chan_name, chan_doc, source=self.source) 
 			else:
-				chan = self._create_t0_channel(chan_name, chan_doc, logger)
+				chan = self._create_t0_channel(chan_name, chan_doc, self.logger)
 
 			channels.append(chan)
 
@@ -87,16 +87,21 @@ class ChannelLoader:
 	def get_required_resources(self):
 		resources = set()
 		for chan_doc in AmpelConfig.get_config('channels').values():
-			assert self.tier == 0
 			if not chan_doc['active']:
 				continue
-			filter_id = self._get_config(chan_doc, 't0Filter.dbEntryId')
-			doc_t0_filter = AmpelConfig.get_config('t0_filters')[filter_id]
-			class_full_path = doc_t0_filter['classFullPath']
-			module = importlib.import_module(class_full_path)
-			filter_class = getattr(module, class_full_path.split(".")[-1])
-			if hasattr(filter_class, 'resources'):
+			if self.tier == 0:
+				filter_id = self._get_config(chan_doc, 't0Filter.dbEntryId')
+				doc_t0_filter = AmpelConfig.get_config('t0_filters')[filter_id]
+				class_full_path = doc_t0_filter['classFullPath']
+				module = importlib.import_module(class_full_path)
+				filter_class = getattr(module, class_full_path.split(".")[-1])
 				resources.update(filter_class.resources)
+			elif self.tier == 2:
+				for t2_doc in self._get_config(chan_doc, 't2Compute'):
+					t2_unit = T2Controller.load_unit(t2_doc['t2Unit'], self.logger)
+					resources.update(t2_unit.resources)
+			else:
+				raise ValueError("I don't know how to discover resources for tier {}".format(self.tier))
 		return resources
 	
 	def _create_t0_channel(self, chan_name, chan_doc, logger):
@@ -139,9 +144,8 @@ class ChannelLoader:
 		filter_class = getattr(module, class_full_path.split(".")[-1])
 		base_config = {}
 		if hasattr(filter_class, 'resources'):
-			for k in AmpelConfig.get_config('resources'):
-				if k in filter_class.resources:
-					base_config[k] = AmpelConfig.get_config('resources')[k]
+			for k in filter_class.resources:
+				base_config[k] = AmpelConfig.get_config('resources.{}'.format(k))
 		filter_instance = filter_class(
 			t2_units, 
 			base_config = base_config,

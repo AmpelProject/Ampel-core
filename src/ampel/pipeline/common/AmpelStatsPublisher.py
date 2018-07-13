@@ -4,11 +4,11 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 26.05.2018
-# Last Modified Date: 12.07.2018
+# Last Modified Date: 13.07.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import json
-from datetime import datetime, timezone
+from datetime import datetime
 from ampel.pipeline.common.AmpelUtils import AmpelUtils
 from ampel.pipeline.common.Schedulable import Schedulable
 from ampel.pipeline.config.AmpelConfig import AmpelConfig
@@ -87,11 +87,11 @@ class AmpelStatsPublisher(Schedulable):
 		self.publish_to = publish_to
 
 		# DB collection handles
-		self.col_photo = AmpelDB.get_collection("photo")
-		self.col_main = AmpelDB.get_collection("main")
-		self.col_runs = AmpelDB.get_collection("runs")
-		self.col_logs = AmpelDB.get_collection("jobs")
-		self.col_troubles = AmpelDB.get_collection('troubles')
+		self.col_photo = AmpelDB.get_collection("photo", "r")
+		self.col_main = AmpelDB.get_collection("main", "r")
+		self.col_runs = AmpelDB.get_collection("runs", "r")
+		self.col_logs = AmpelDB.get_collection("jobs", "r")
+		self.col_troubles = AmpelDB.get_collection('troubles', "r")
 
 		# Projections
 		self.id_proj = {'_id': 1}
@@ -198,8 +198,8 @@ class AmpelStatsPublisher(Schedulable):
 		"""
 		"""
 
-		main_col = AmpelDB.get_collection("main")
-		photo_col = AmpelDB.get_collection("photo")
+		main_col = AmpelDB.get_collection("main", "r")
+		photo_col = AmpelDB.get_collection("photo", "r")
 		stats_dict = {'dbInfo': {}, 'count': {}}
 
 		if not any([daemon, col_stats, docs_count, channels]):
@@ -376,7 +376,7 @@ class AmpelStatsPublisher(Schedulable):
 						'$push': {
 							'jobs': {
 								'name': 'asp',
-								'dt': datetime.now(timezone.utc).timestamp(),
+								'dt': datetime.utcnow().timestamp(),
 								'metrics': AmpelUtils.unflatten_dict(out_dict)
 							}
 						}

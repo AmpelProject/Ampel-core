@@ -4,11 +4,11 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 10.10.2017
-# Last Modified Date: 12.07.2018
+# Last Modified Date: 13.07.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import pymongo, time, numpy as np
-from datetime import datetime, timezone
+from datetime import datetime
 
 from ampel.pipeline.t0.alerts.AlertSupplier import AlertSupplier
 from ampel.pipeline.t0.alerts.ZIAlertShaper import ZIAlertShaper
@@ -66,8 +66,8 @@ class AlertProcessor():
 		self.logger.info("Setting up new AlertProcessor instance")
 
 		# Load channels
-		cl = ChannelLoader(source=source, tier=0)
-		self.channels = cl.load_channels(channels, self.logger);
+		cl = ChannelLoader(source=source, tier=0, logger=self.logger)
+		self.channels = cl.load_channels(channels);
 		self.chan_enum = list(enumerate(self.channels))
 		self.chan_auto_complete = len(self.channels) * [False]
 		self.live_ac = False
@@ -329,7 +329,7 @@ class AlertProcessor():
 							'section': 'ap_filter',
 							'channel': channel.name,
 							'tranId': tran_id,
-							'jobId':  db_logging_handler.get_log_id(),
+							'logs':  db_logging_handler.get_log_id(),
 							'alert': AlertProcessor._alert_essential(shaped_alert)
 						}
 					)
@@ -359,7 +359,7 @@ class AlertProcessor():
 						self.logger, tier=0, info={
 							'section': 'ap_ingest',
 							'tranId': tran_id,
-							'jobId':  db_logging_handler.get_log_id(),
+							'logs':  db_logging_handler.get_log_id(),
 							'alert': AlertProcessor._alert_essential(shaped_alert)
 						}
 					)
@@ -451,7 +451,7 @@ class AlertProcessor():
 							'$push': {
 								'jobs': {
 									'tier': 0,
-									'dt': datetime.now(timezone.utc).timestamp(),
+									'dt': datetime.utcnow().timestamp(),
 									'logs': db_logging_handler.get_log_id(),
 									'metrics': {
 										"count": count_stats,
@@ -467,7 +467,7 @@ class AlertProcessor():
 			AmpelUtils.report_exception(
 				self.logger, tier=0, info={
 					'section': 'ap_run_end',
-					'jobId':  db_logging_handler.get_log_id(),
+					'logs':  db_logging_handler.get_log_id(),
 				}
 			)
 			
@@ -502,7 +502,7 @@ class AlertProcessor():
 					AmpelUtils.report_exception(
 						self.logger, tier=0, info={
 							'section': 'ap_flush_logs',
-							'jobId':  db_logging_handler.get_log_id(),
+							'logs':  db_logging_handler.get_log_id(),
 						}
 					)
 				except Exception as e:

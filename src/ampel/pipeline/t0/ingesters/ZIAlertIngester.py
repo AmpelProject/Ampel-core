@@ -4,13 +4,13 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 14.12.2017
-# Last Modified Date: 12.07.2018
+# Last Modified Date: 13.07.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import logging, time
 from bson.binary import Binary
 from bson import ObjectId
-from datetime import datetime, timezone
+from datetime import datetime
 from pymongo.errors import BulkWriteError
 from pymongo import MongoClient, UpdateOne
 
@@ -480,7 +480,7 @@ class ZIAlertIngester(AbsAlertIngester):
 		)
 		
 		# counter for user feedback (after next loop)
-		now = int(datetime.now(timezone.utc).timestamp())
+		now = int(datetime.utcnow().timestamp())
 
 		# Loop over t2 runnables
 		for t2_id in t2docs_blueprint.keys():
@@ -633,8 +633,7 @@ class ZIAlertIngester(AbsAlertIngester):
 						'channels': (
 							chan_names[0] if len(chan_names) == 1 
 							else {"$each": chan_names}
-						),
-						'logEntries': self.job_id,
+						)
 					},
 					"$max": {
 						"lastPPJD": pps_alert[0]["jd"],
@@ -644,7 +643,8 @@ class ZIAlertIngester(AbsAlertIngester):
 						"journal": {
 							'dt': now,
 							'tier': 0,
-							'channels': chan_names
+							'channels': chan_names,
+							'logs': self.job_id
 						}
 					}
 				},
@@ -712,7 +712,7 @@ class ZIAlertIngester(AbsAlertIngester):
 							'tier': 0,
 							'location': '%s:%s' % (frameinfo.filename, frameinfo.lineno),
 							'tranId':  tran_id,
-							'jobId':  self.job_id,
+							'logs':  self.job_id,
 							'bulkApiResult': db_photo_results.bulk_api_result
 						}
 					)
@@ -742,7 +742,7 @@ class ZIAlertIngester(AbsAlertIngester):
 							'tier': 0,
 							'location': '%s:%s' % (frameinfo.filename, frameinfo.lineno),
 							'tranId':  tran_id,
-							'jobId':  self.job_id,
+							'logs':  self.job_id,
 							'bulkApiResult': db_main_results.bulk_api_result
 						}
 					)
@@ -771,8 +771,9 @@ class ZIAlertIngester(AbsAlertIngester):
 				{
 					'tier': 0,
 					'location': '%s:%s' % (frameinfo.filename, frameinfo.lineno),
+					'ampelMsg': 'BulkWriteError during alert ingestion',
 					'tranId':  tran_id,
-					'jobId':  self.job_id,
+					'logs':  self.job_id,
 					'bulkApiResult': bwe.details
 				}
 			)

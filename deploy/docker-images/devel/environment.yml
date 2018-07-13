@@ -18,6 +18,7 @@ dependencies:
   - extcats
   - catshtm==0.1.15
   - sncosmo
+  - iminuit
   - graphitesend
   - voluptuous
   - configargparse
@@ -32,4 +33,6 @@ dependencies:
     - /Ampel/ampel-contrib-ztfbh
     - -e
     - /Ampel/ampel-contrib-hu
+    - -e
+    - /Ampel/ampel-contrib-neutrino
 
