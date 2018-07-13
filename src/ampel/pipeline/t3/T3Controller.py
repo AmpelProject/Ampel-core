@@ -51,7 +51,7 @@ class T3Controller(Schedulable):
 	def monitor_processes(self):
 		"""
 		"""
-		feeder = GraphiteFeeder(AmpelConfig.get_config('resources.graphite'))
+		feeder = GraphiteFeeder(AmpelConfig.get_config('resources.graphite.default'))
 		stats = {}
 		for job_name, job_config in self.jobs.items():
 			stats[job_name] = {'processes': job_config.process_count}

@@ -70,8 +70,8 @@ def test_override_graphite():
 	
 	graphite = resource.parse_args(opts)
 	
-	assert isinstance(graphite, str)
-	parse.urlparse(graphite).hostname == 'blergh'
+	assert isinstance(graphite['default'], str)
+	parse.urlparse(graphite['default']).hostname == 'blergh'
 	
 
 def test_argumentparser():
