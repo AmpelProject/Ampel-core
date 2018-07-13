@@ -60,5 +60,6 @@ def run():
 
 	parser = AmpelArgumentParser()
 	parser.require_resource('mongo', ['writer'])
+	parser.require_resource('graphite')
 	opts = parser.parse_args()
 	T3Controller().run()

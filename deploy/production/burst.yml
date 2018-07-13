@@ -168,6 +168,8 @@ services:
       EXTCATS_PORT: $CATALOG_PORT
       EXTCATS_WRITER_USERNAME: ToO
       EXTCATS_WRITER_PASSWORD_FILE: /run/secrets/catalog-write-password
+      GRAPHITE_HOSTNAME: $GRAPHITE_HOST
+      GRAPHITE_PORT: $GRAPHITE_PORT
     deploy:
       restart_policy:
           max_attempts: 30
