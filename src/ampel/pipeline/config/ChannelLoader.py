@@ -144,9 +144,8 @@ class ChannelLoader:
 		filter_class = getattr(module, class_full_path.split(".")[-1])
 		base_config = {}
 		if hasattr(filter_class, 'resources'):
-			for k in AmpelConfig.get_config('resources'):
-				if k in filter_class.resources:
-					base_config[k] = AmpelConfig.get_config('resources')[k]
+			for k in filter_class.resources:
+				base_config[k] = AmpelConfig.get_config('resources.{}'.format(k))
 		filter_instance = filter_class(
 			t2_units, 
 			base_config = base_config,
