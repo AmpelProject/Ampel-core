@@ -37,14 +37,18 @@ class AmpelDB:
 	}
 
 	# Existing mongo clients
-	_existing_mcs = {
-		'data': None,
-		'logs': None,
-		'reports': None
-	}
+	_existing_mcs = {}
 
+	# least priviledged role required to write
 	_db_config_roles = {
 		'data': 'writer',
+		'logs': 'logger',
+		'reports': 'logger'
+	}
+	
+	# least priviledged role required to read
+	_db_config_reader_roles = {
+		'data': 'logger',
 		'logs': 'logger',
 		'reports': 'logger'
 	}
@@ -64,9 +68,10 @@ class AmpelDB:
 
 
 	@classmethod
-	def get_collection(cls, col_name):
+	def get_collection(cls, col_name, mode='w'):
 		""" 
 		col_name: string or list of strings.
+		mode: required permission level, either 'r' for read-only or 'rw' for read-write
 		Will return an instance or list of instances of pymongo.collection.Collection.
 		If a collection does not exist, it will be created and the 
 		proper mongoDB indexes will be set.
@@ -88,7 +93,7 @@ class AmpelDB:
 		# db_label.collection_names() wasn't called yet (we just need to call it once)
 		if not cls.db_contact[db_label]:
 
-			mc = cls._get_mongo_client(db_label)
+			mc = cls._get_mongo_client(db_label, mode)
 			cls.db_contact[db_label] = True
 
 			for el in mc[db_name].collection_names():
@@ -102,9 +107,10 @@ class AmpelDB:
 					cls._existing_cols[db_label][el] = mc[db_name][el]
 		
 		# Ensure indexes for new collection 
-		mc = cls._get_mongo_client(db_label)
+		mc = cls._get_mongo_client(db_label, mode)
 		col = mc[db_name].get_collection(col_name)
-		cls.create_indexes(col)
+		if 'w' in mode:
+			cls.create_indexes(col)
 
 		return col
 
@@ -119,21 +125,24 @@ class AmpelDB:
 
 
 	@classmethod
-	def _get_mongo_client(cls, db_label):
+	def _get_mongo_client(cls, db_label, mode='w'):
 		""" """ 
 		from pymongo import MongoClient
 
 		# If a mongoclient does not already exists for this db_label (ex: 'data')
-		if cls._existing_mcs[db_label] is None:
+		if not (db_label, mode) in cls._existing_mcs:
 
 			# As of Juli 2018: 'Ampel' -> 'writer' and 'Ampel_logs' -> 'logger'
-			role = cls._db_config_roles[db_label]
+			if 'w' in mode:
+				role = cls._db_config_roles[db_label]
+			else:
+				role = cls._db_config_reader_roles[db_label]
 
-			cls._existing_mcs[db_label] = MongoClient(
+			cls._existing_mcs[(db_label, mode)] = MongoClient(
 				AmpelConfig.get_config('resources.mongo.%s' % role)
 			)
 
-		return cls._existing_mcs[db_label] 
+		return cls._existing_mcs[(db_label, mode)] 
 
 
 	@staticmethod
