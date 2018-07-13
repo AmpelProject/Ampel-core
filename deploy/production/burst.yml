@@ -161,6 +161,7 @@ services:
         target: /Ampel
     secrets:
       - mongo-alertprocessor-password
+      - mongo-logger-password
       - catalog-write-password
     environment:
       TINI_SUBREAPER: 1
@@ -168,6 +169,8 @@ services:
       MONGO_PORT: $MONGO_PORT
       MONGO_WRITER_USERNAME: alertprocessor
       MONGO_WRITER_PASSWORD_FILE: /run/secrets/mongo-alertprocessor-password
+      MONGO_LOGGER_USERNAME: logger
+      MONGO_LOGGER_PASSWORD_FILE: /run/secrets/mongo-logger-password
       EXTCATS_HOSTNAME: $CATALOG_HOST
       EXTCATS_PORT: $CATALOG_PORT
       EXTCATS_WRITER_USERNAME: ToO
