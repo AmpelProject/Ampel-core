@@ -35,4 +35,5 @@ mongo=( mongo --host 127.0.0.1 --port 27017 --username $MONGO_INITDB_ROOT_USERNA
 		roles: $(echo '"Ampel_logs Ampel_reports"' | jq 'split(" ") | [{db : .[], role : "readWrite"}]')
 	})
 	db.grantRolesToUser($(_js_escape "$LOGGER_USER"), [{"role": "clusterMonitor", "db": "admin"}])
+	db.grantRolesToUser($(_js_escape "$LOGGER_USER"), [{"role": "read", "db": "Ampel_data"}])
 EOJS
