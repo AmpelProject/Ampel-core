@@ -32,4 +32,6 @@ dependencies:
     - /Ampel/ampel-contrib-ztfbh
     - -e
     - /Ampel/ampel-contrib-hu
+    - -e
+    - /Ampel/ampel-contrib-neutrino
 
