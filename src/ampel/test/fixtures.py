@@ -358,9 +358,27 @@ def t3_selected_transients(ingested_transients, minimal_ingestion_config, caplog
 @pytest.fixture
 def t3_transient_views(t3_selected_transients):
 	from ampel.pipeline.common.AmpelUtils import AmpelUtils
-	
+	from numpy import random
+	from ampel.base.ScienceRecord import ScienceRecord
+	from datetime import datetime	
 	task_chans = ['0', '1']
 	def create_view(tran_data):
+		results = [
+			{
+				'versions': {'py': 1.0, 'run_config': 1.0},
+				'dt': datetime.utcnow().timestamp(),
+				'duration': 0.001,
+				'results': {'foo': random.uniform(0,1), 'bar': random.uniform(0,1)}
+			}
+		for _ in range(random.poisson(1))
+		]
+		for r in results:
+			if random.binomial(1, 0.5):
+				del r['results']
+				r['error'] = 512
+		records = [ScienceRecord(tran_data.tran_id, 'FancyPants', None, results)]
+		tran_data.add_science_record(task_chans, records[0])
+		
 		return tran_data.create_view(
 				channels=task_chans,
 				t2_ids=set()
