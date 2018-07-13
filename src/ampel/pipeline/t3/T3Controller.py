@@ -28,18 +28,24 @@ class T3Controller(Schedulable):
 		# Setup logger
 		self.logger = LoggingUtils.get_logger(unique=True)
 		self.logger.info("Setting up T3Controler")
-		self.jobs = {}
+		self.jobs = self.gather_jobs(t3_job_names, self.logger)
 
+		for job_config in self.jobs.values():
+			job_config.schedule_job(self.scheduler)
+
+		self.scheduler.every(5).minutes.do(self.monitor_processes)
+
+	@classmethod
+	def gather_jobs(cls, t3_job_names, logger):
+		jobs = {}
 		for job_name in AmpelConfig.get_config("t3_jobs").keys():
 
 			if t3_job_names is not None and job_name not in t3_job_names:
 				continue
 
-			job_config = T3JobConfig.load(job_name, self.logger)
-			job_config.schedule_job(self.scheduler)
-			self.jobs[job_name] = job_config
-		
-		self.scheduler.every(5).minutes.do(self.monitor_processes)
+			job_config = T3JobConfig.load(job_name, logger)
+			jobs[job_name] = job_config
+		return jobs
 
 
 	def monitor_processes(self):
@@ -53,13 +59,27 @@ class T3Controller(Schedulable):
 		feeder.send()
 		return stats
 
+	@classmethod
+	def get_required_resources(cls, t3_job_names=None):
+		logger = LoggingUtils.get_logger(unique=True)
+		resources = set()
+		for job_config in cls.gather_jobs(t3_job_names, logger).values():
+			for task_config in job_config.get_task_configs():
+				resources.update(task_config.t3_unit_class.resources)
+		return resources
 
 def run():
 
 	from ampel.pipeline.config.ConfigLoader import AmpelArgumentParser
 
 	parser = AmpelArgumentParser()
-	parser.require_resource('mongo', ['writer'])
+	parser.require_resource('mongo', ['writer', 'logger'])
 	parser.require_resource('graphite')
+	# partially parse command line to get config
+	opts, argv = parser.parse_known_args()
+	# flesh out parser with resources required by t3 units
+	parser.require_resources(*T3Controller.get_required_resources())
+	# parse again, filling the resource config
 	opts = parser.parse_args()
+
 	T3Controller().run()
