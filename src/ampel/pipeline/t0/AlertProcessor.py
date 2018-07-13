@@ -324,8 +324,8 @@ class AlertProcessor():
 
 				except:
 
-					AmpelUtils.report_exception(self.logger,
-						{
+					AmpelUtils.report_exception(
+						self.logger, tier=0, info={
 							'section': 'ap_filter',
 							'channel': channel.name,
 							'tranId': tran_id,
@@ -355,8 +355,8 @@ class AlertProcessor():
 						tran_id, shaped_alert['pps'], shaped_alert['uls'], scheduled_t2_units
 					)
 				except:
-					AmpelUtils.report_exception(self.logger,
-						{
+					AmpelUtils.report_exception(
+						self.logger, tier=0, info={
 							'section': 'ap_ingest',
 							'tranId': tran_id,
 							'jobId':  db_logging_handler.get_log_id(),
@@ -464,8 +464,8 @@ class AlertProcessor():
 					)
 		except:
 
-			AmpelUtils.report_exception(self.logger,
-				{
+			AmpelUtils.report_exception(
+				self.logger, tier=0, info={
 					'section': 'ap_run_end',
 					'jobId':  db_logging_handler.get_log_id(),
 				}
@@ -499,8 +499,8 @@ class AlertProcessor():
 
 				try: 
 					# This will fail as well if we have DB connectivity issues
-					AmpelUtils.report_exception(self.logger,
-						{
+					AmpelUtils.report_exception(
+						self.logger, tier=0, info={
 							'section': 'ap_flush_logs',
 							'jobId':  db_logging_handler.get_log_id(),
 						}
