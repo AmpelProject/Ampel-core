@@ -711,6 +711,7 @@ class ZIAlertIngester(AbsAlertIngester):
 						{
 							'tier': 0,
 							'location': '%s:%s' % (frameinfo.filename, frameinfo.lineno),
+							'tranId':  tran_id,
 							'jobId':  self.job_id,
 							'bulkApiResult': db_photo_results.bulk_api_result
 						}
@@ -740,6 +741,7 @@ class ZIAlertIngester(AbsAlertIngester):
 						{
 							'tier': 0,
 							'location': '%s:%s' % (frameinfo.filename, frameinfo.lineno),
+							'tranId':  tran_id,
 							'jobId':  self.job_id,
 							'bulkApiResult': db_main_results.bulk_api_result
 						}
@@ -769,6 +771,7 @@ class ZIAlertIngester(AbsAlertIngester):
 				{
 					'tier': 0,
 					'location': '%s:%s' % (frameinfo.filename, frameinfo.lineno),
+					'tranId':  tran_id,
 					'jobId':  self.job_id,
 					'bulkApiResult': bwe.details
 				}
