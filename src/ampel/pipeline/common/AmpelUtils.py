@@ -244,7 +244,7 @@ class AmpelUtils():
 
 
 	@staticmethod
-	def report_exception(logger, further_info=None):
+	def report_exception(logger, tier, further_info=None):
 		"""
 		further_info: dict instance to be included in the document inserted into Ampel_troubles
 		"""
@@ -265,7 +265,7 @@ class AmpelUtils():
 
 		# Basis document (can be appended later on)
 		insert_dict = {
-			'tier': 0,
+			'tier': tier,
 			'exception': exception_str.split("\n")
 		}
 
