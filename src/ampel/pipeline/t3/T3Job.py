@@ -163,126 +163,135 @@ class T3Job:
 		"""
 		"""
 
-		# TODO: try/catch with Ampel 'troubles' insert
+		try:
 
-		time_now = time()
-		t3_tasks = []
-
-		# Check for '$forEach' channel operator
-		if next(iter(self.job_config.get_task_configs())).get("select.channel(s)") == "$forEach":
-
-			# list of all channels found in matched transients.
-			chans = self._get_channels()
-
-			# There is no channel less transient -> no channel == no transient
-			if chans is None:
-				self.logger.info("No matching transient")
-				return
-
-			# Set *job* channels parameter to the channel values retrieved dynamically 
-			self.overwrite_parameter("channels", chans)
-
-			# Create T3 tasks
-			for task_config in self.job_config.get_task_configs():
-				for channel in chans:
+			time_now = time()
+			t3_tasks = []
+	
+			# Check for '$forEach' channel operator
+			if next(iter(self.job_config.get_task_configs())).get("select.channel(s)") == "$forEach":
+	
+				# list of all channels found in matched transients.
+				chans = self._get_channels()
+	
+				# There is no channel less transient -> no channel == no transient
+				if chans is None:
+					self.logger.info("No matching transient")
+					return
+	
+				# Set *job* channels parameter to the channel values retrieved dynamically 
+				self.overwrite_parameter("channels", chans)
+	
+				# Create T3 tasks
+				for task_config in self.job_config.get_task_configs():
+					for channel in chans:
+						t3_tasks.append(
+							task_config.create_task(
+								self.logger, channel=channel, global_info=self.global_info
+							)
+						)
+			else:
+	
+				# Create T3 tasks
+				for task_config in self.job_config.get_task_configs():
 					t3_tasks.append(
 						task_config.create_task(
-							self.logger, channel=channel, global_info=self.global_info
+							self.logger, global_info=self.global_info
 						)
 					)
-		else:
-
-			# Create T3 tasks
-			for task_config in self.job_config.get_task_configs():
-				t3_tasks.append(
-					task_config.create_task(
-						self.logger, global_info=self.global_info
+	
+			# T3 job requiring prior transient loading 
+			if self.job_config.get('input.select') is not None:
+	
+				dcl = DBContentLoader(self.tran_col.database, verbose=True, logger=self.logger)
+	
+				# Job with transient input
+				trans_cursor = self.get_selected_transients()
+	
+				if trans_cursor is not None:
+	
+					# Set chunk_size to 'number of transients found' if not defined
+					chunk_size = self.job_config.get('input.chunk')
+	
+					# No chunk size == all transients loaded at once
+					if chunk_size is None:
+						chunk_size = trans_cursor.count()
+	
+					for tran_register in self.get_tran_data(dcl, trans_cursor, chunk_size):
+	
+						self.logger.info("Processing chunk")
+	
+						# Feed each task with transient views
+						for t3_task in t3_tasks:
+							t3_task.update(tran_register)
+				
+	
+			# For each task, execute done()
+			for t3_task in t3_tasks:
+	
+				# execute embedded t3unit instance method done()
+				ret = t3_task.done()
+	
+				# method done() might return a list of transient ids (integers or strings). 
+				# In this case, we update the Transient journal with dict containing date, 
+				# channels and name of the task
+				if ret:
+	
+					mongo_res = self.tran_col.update_many(
+						{
+							'alDocType': AlDocTypes.TRANSIENT, 
+							'tranId': {'$in': ret}
+						},
+						{
+							'$push': {
+								"journal": {
+									'dt': int(datetime.now(timezone.utc).timestamp()),
+									'tier': 3,
+									'channels': list(t3_task.channels), # make sure channels is a list
+									'taskName': t3_task.get_config('name')
+								}
+							}
+						}
 					)
-				)
-
-		# T3 job requiring prior transient loading 
-		if self.job_config.get('input.select') is not None:
-
-			dcl = DBContentLoader(self.tran_col.database, verbose=True, logger=self.logger)
-
-			# Job with transient input
-			trans_cursor = self.get_selected_transients()
-
-			if trans_cursor is not None:
-
-				# Set chunk_size to 'number of transients found' if not defined
-				chunk_size = self.job_config.get('input.chunk')
-
-				# No chunk size == all transients loaded at once
-				if chunk_size is None:
-					chunk_size = trans_cursor.count()
-
-				for tran_register in self.get_tran_data(dcl, trans_cursor, chunk_size):
-
-					self.logger.info("Processing chunk")
-
-					# Feed each task with transient views
-					for t3_task in t3_tasks:
-						t3_task.update(tran_register)
-			
-
-		# For each task, execute done()
-		for t3_task in t3_tasks:
-
-			# execute embedded t3unit instance method done()
-			ret = t3_task.done()
-
-			# method done() might return a list of transient ids (integers or strings). 
-			# In this case, we update the Transient journal with dict containing date, 
-			# channels and name of the task
-			if ret:
-
-				mongo_res = self.tran_col.update_many(
-					{
-						'alDocType': AlDocTypes.TRANSIENT, 
-						'tranId': {'$in': ret}
-					},
-					{
-						'$push': {
-							"journal": {
-								'dt': int(datetime.now(timezone.utc).timestamp()),
-								'tier': 3,
-								'channels': list(t3_task.channels), # make sure channels is a list
-								'taskName': t3_task.get_config('name')
+	
+					if mongo_res.raw_result["nModified"] != len(ret):
+						pass # populate ampel_troubles !
+	
+	
+			# Record job info into DB
+			AmpelDB.get_collection('runs').update_one(
+				{'_id': int(datetime.today().strftime('%Y%m%d'))},
+				{
+					'$push': {
+						'jobs': {
+							'tier': 3,
+							'name': self.job_config.job_name,
+							'dt': datetime.now(timezone.utc).timestamp(),
+							'logs': (
+								self.db_logging_handler.get_log_id() if hasattr(self, 'db_logging_handler') 
+								else None
+							),
+							'metrics': {
+								'duration': int(time() - time_now)
 							}
 						}
 					}
-				)
+				},
+				upsert=True
+			)
+	
+			# Write log entries to DB
+			if hasattr(self, 'db_logging_handler'):
+				self.db_logging_handler.flush()
 
-				if mongo_res.raw_result["nModified"] != len(ret):
-					pass # populate ampel_troubles !
+		except:
 
-
-		# Record job info into DB
-		AmpelDB.get_collection('runs').update_one(
-			{'_id': int(datetime.today().strftime('%Y%m%d'))},
-			{
-				'$push': {
-					'jobs': {
-						'tier': 3,
-						'name': self.job_config.job_name,
-						'dt': datetime.now(timezone.utc).timestamp(),
-						'logs': (
-							self.db_logging_handler.get_log_id() if hasattr(self, 'db_logging_handler') 
-							else None
-						),
-						'metrics': {
-							'duration': int(time() - time_now)
-						}
-					}
+			AmpelUtils.report_exception(
+				self.logger, tier=3, info={
+					'jobName': self.job_config.job_name,
+					'jobId':  self.db_logging_handler.get_log_id(),
 				}
-			},
-			upsert=True
-		)
-
-		# Write log entries to DB
-		if hasattr(self, 'db_logging_handler'):
-			self.db_logging_handler.flush()
+			)
 
 
 	def _get_channels(self):
