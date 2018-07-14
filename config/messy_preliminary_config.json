@@ -4,7 +4,6 @@
         "writer": "mongodb://localhost:27017",
         "logger": "mongodb://localhost:27017"
       },
-      "graphite": "graphite://localhost:2003/ampel.test",
       "extcats": {
         "reader": "mongodb://filterclient@localhost:27018",
         "writer": "mongodb://ToO@localhost:27018"
