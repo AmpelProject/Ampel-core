@@ -19,6 +19,41 @@ from ampel.core.flags.AlDocTypes import AlDocTypes
 
 class AmpelStatsPublisher(Schedulable):
 	""" 
+
+	EXAMPLE of graphite stats:
+	##########################
+
+	mongod deamon stats:
+		"dbInfo.daemon.memRes": RAM usage
+		"dbInfo.daemon.connections": number of opened TCP connection
+
+	mongodb collection 'photo'
+		"dbInfo.photo.size": size 
+		"dbInfo.photo.storageSize": size on disk
+		"dbInfo.photo.totalIndexSize": index size
+
+	mongodb collection 'main'
+		"dbInfo.main.size"
+		"dbInfo.main.storageSize"
+		"dbInfo.main.totalIndexSize"
+
+	mongodb collection 'logs'
+		"dbInfo.logs.size"
+		"dbInfo.logs.storageSize"
+		"dbInfo.logs.totalIndexSize"
+
+	number of documents in collections:
+		"count.docs.troubles": 1
+		"count.docs.photo.pps": 84
+		"count.docs.photo.uls": 1583
+		"count.docs.main.comps": 22
+		"count.docs.main.t2s": 66
+		"count.docs.main.trans": 22
+
+	Channel specific stats
+		"count.chans.HU_SN1": 0
+		"count.chans.HU_SN2": 0
+	...
 	"""
 
 	# mongod serverStatus key values to publish
