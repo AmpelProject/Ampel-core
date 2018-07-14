@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 14.12.2017
-# Last Modified Date: 05.07.2018
+# Last Modified Date: 14.07.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from ampel.base.flags.PhotoFlags import PhotoFlags
@@ -106,26 +106,23 @@ class ZIPhotoDictShaper:
 
 			else:
 
-				# rarely, meaningless upper limits with negativ diffmaglim are provided by IPAC
-				if photo_dict['diffmaglim'] > 0:
-
-					# update list of dicts
-					ret_list.append(
-						{
-							'_id': photo_dict['_id'],
-							# 'alDocType': AlDocTypes.UPPERLIMIT,
-							'alFlags': dbflags,
-							'jd': photo_dict['jd'],
-							'diffmaglim': photo_dict['diffmaglim'],
-							'rcid': photo_dict['rcid'],
-							'fid': photo_dict['fid']
-							#'pdiffimfilename': fname
-							# IMPORTANT: 'tranId' is not set here on purpose since it 
-							# then conflicts with the addToSet operation
-							#'pid': photo_dict['pid'],
-							#'programid': photo_dict['programid'],
-						}
-					)
+				# update list of dicts
+				ret_list.append(
+					{
+						'_id': photo_dict['_id'],
+						# 'alDocType': AlDocTypes.UPPERLIMIT,
+						'alFlags': dbflags,
+						'jd': photo_dict['jd'],
+						'diffmaglim': photo_dict['diffmaglim'],
+						'rcid': photo_dict['rcid'],
+						'fid': photo_dict['fid']
+						#'pdiffimfilename': fname
+						# IMPORTANT: 'tranId' is not set here on purpose since it 
+						# then conflicts with the addToSet operation
+						#'pid': photo_dict['pid'],
+						#'programid': photo_dict['programid'],
+					}
+				)
 
 		# Return created list
 		return ret_list

@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 20.04.2018
-# Last Modified Date: 04.07.2018
+# Last Modified Date: 14.07.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 
@@ -86,6 +86,12 @@ class ZIAlertShaper(AbsAlertShaper):
 				for el in in_dict['prv_candidates']:
 	
 					if el['candid'] is None:
+				
+						# rarely, meaningless upper limits with negativ 
+						# diffmaglim are provided by IPAC
+						if el['diffmaglim'] < 0:
+							continue
+
 						uls_list.append(el)
 						ro_uls_list.append(
 							MappingProxyType(
