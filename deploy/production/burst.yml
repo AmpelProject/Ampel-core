@@ -177,6 +177,8 @@ services:
     command: ["ampel-t2"]
     volumes:
       - $AMPEL_SRC:/Ampel
+      - type: tmpfs
+        target: /tmp
     secrets:
       - mongo-alertprocessor-password
       - mongo-logger-password
@@ -191,6 +193,7 @@ services:
       MONGO_LOGGER_PASSWORD_FILE: /run/secrets/mongo-logger-password
       EXTCATS_READER_USERNAME: filterclient
       EXTCATS_READER_PASSWORD_FILE: /run/secrets/catalog-read-password
+      SNCOSMO_DATA_DIR: /tmp
     deploy:
       restart_policy:
           # max_attempts: 3
