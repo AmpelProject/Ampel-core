@@ -358,7 +358,7 @@ class AmpelStatsPublisher(Schedulable):
 				self.logger.info("Skipping graphite update")
 			else:
 				self.logger.info("Sending stats to graphite")
-				self.graphite_feeder.add_stats({'sp': out_dict})
+				self.graphite_feeder.add_stats({'statspublisher': out_dict})
 				self.graphite_feeder.send()
 
 
@@ -451,6 +451,6 @@ def run():
 	parser.require_resource('graphite')
 	parser.parse_args()
 
-	asp = AmpelStatsPublisher(publish_to=['print', 'graphite'])
+	asp = AmpelStatsPublisher(publish_to=['log', 'graphite'])
 	asp.send_all_metrics()
 	asp.run()
