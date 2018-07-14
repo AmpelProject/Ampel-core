@@ -43,7 +43,7 @@ class ZIPhotoDictShaper:
 	def __init__(self):
 		"""
 		"""
-	        # pylint: disable=no-member
+		# pylint: disable=no-member
 		self.base_flags = PhotoFlags.INST_ZTF|PhotoFlags.SRC_IPAC
 
 

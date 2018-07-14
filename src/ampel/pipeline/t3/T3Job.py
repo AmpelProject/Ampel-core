@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 26.02.2018
-# Last Modified Date: 13.07.2018
+# Last Modified Date: 14.07.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from datetime import datetime
@@ -294,7 +294,7 @@ class T3Job:
 				# method done() might return a dict with key: transient id, 
 				# value journal entries. In this case, we update the Transient journal 
 				# with those entries
-				if len(specific_journal_entries) > 0:
+				if specific_journal_entries:
 					# Update journal with t3 unit specific info
 					pass
 	
