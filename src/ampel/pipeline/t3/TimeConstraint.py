@@ -28,7 +28,7 @@ class TimeConstraint:
 			{
 				"after": {
 					"use": "$lastRunTime",
-					"taskName": "val_test"
+					"jobName": "val_test"
 				},
 				"before": {
 					"use": "unixTime",
@@ -61,7 +61,7 @@ class TimeConstraint:
 			},
 			{
 				Required('use'): '$lastRunTime',
-				Required('taskName'): str
+				Required('jobName'): str
 			},
 			{
 				Required('use'): 'formattedString',
@@ -188,7 +188,7 @@ class TimeConstraint:
 				res = next(
 					col.aggregate(
 						QueryRunsCol.get_job_last_run(constraint['jobName'])
-					), 
+					),
 					None
 				)
 
