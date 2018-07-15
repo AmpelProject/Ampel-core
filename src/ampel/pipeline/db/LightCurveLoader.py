@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 13.01.2018
-# Last Modified Date: 11.07.2018
+# Last Modified Date: 15.07.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from ampel.core.flags.AlDocTypes import AlDocTypes
@@ -128,6 +128,14 @@ class LightCurveLoader:
 		# Loop through compound elements
 		for el in compound['comp']:
 
+			# Check exclusion
+			if 'excl' in el:
+				self.logger.debug(
+					"Ignoring excluded photodata %s (%s)" % 
+					(el['pp'] if 'pp' in el else el['ul'], el['excl'])
+				)
+				continue
+
 			# Get corresponding photopoint / upper limit
 			if 'pp' in el:
 
@@ -158,7 +166,6 @@ class LightCurveLoader:
 
 			# If custom options avail (if dict contains more than the dict key 'pp')
 			if (len(el.keys()) > 1):
-				
 				
 				obj = (
 					# Create photopoint wrapper instance
@@ -221,9 +228,18 @@ class LightCurveLoader:
 		# Loop through compound elements
 		for el in compound.comp:
 
+			# Check exclusion
+			if 'excl' in el:
+				self.logger.debug(
+					"Ignoring excluded photodata %s (%s)" % 
+					(el['pp'] if 'pp' in el else el['ul'], el['excl'])
+				)
+				continue
+
 			# Get corresponding photopoint / upper limit
 			if 'pp' in el:
 
+				# Shortcut
 				pp_id = el["pp"]
 
 				if pp_id not in already_loaded_photo:
@@ -260,6 +276,7 @@ class LightCurveLoader:
 
 			else:
 
+				# Shortcut
 				ul_id = el["ul"]
 
 				if ul_id not in already_loaded_photo:
