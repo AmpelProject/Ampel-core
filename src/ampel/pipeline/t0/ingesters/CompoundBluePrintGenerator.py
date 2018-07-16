@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 01.01.2018
-# Last Modified Date: 13.06.2018
+# Last Modified Date: 16.07.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import hashlib, json
@@ -38,19 +38,21 @@ class CompoundBluePrintGenerator():
 		self.CompoundShaper = CompoundShaper
 
 
-	def generate(self, dict_list, channel_names):
+	def generate(self, tran_id, dict_list, channel_names):
 		"""	
-		set of channel names (string)
-		dict_list: list of dict instances representing photopoint or upperlimis measurements
+		'tran_id': transient id (int or str)
+		'dict_list': list of dict instances representing photopoint or upperlimis measurements
 		######################################
 		IMPORTANT: list must be timely sorted.
 		######################################
 		The sorting is not done within this method because CompoundBluePrint 
 		aims at being instrument independant.  For ZTF, the field 'jd' is used:
 		-> sorted(dict_list, key=lambda k: k['jd'])
+		'channel_names': iterable sequence of of channel names (string)
 		"""	
 
 		cbp = CompoundBluePrint()
+		tran_id_str = str(tran_id)
 
 		# Main loop through provided channels
 		for chan_name in channel_names:
@@ -61,9 +63,7 @@ class CompoundBluePrintGenerator():
 	
 			eff_comp = []
 			strict_comp = []
-			eff_hash_payload = ""
-			strict_hash_payload = ""
-			pp_hash_payload = ""
+			eff_hash_payload = strict_hash_payload = pp_hash_payload = tran_id_str
 			comp_shaper = self.CompoundShaper(self.chan_opts)
 	
 			# Create compound and compoundId

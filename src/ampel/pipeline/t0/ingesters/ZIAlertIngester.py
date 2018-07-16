@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 14.12.2017
-# Last Modified Date: 13.07.2018
+# Last Modified Date: 16.07.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import logging, time
@@ -407,6 +407,7 @@ class ZIAlertIngester(AbsAlertIngester):
 
 		# Compute compound ids (used later for creating compounds and t2 docs)
 		comp_bp = self.comp_bp_generator.generate(
+			tran_id,
 			sorted(
 				pps_db + pps_to_insert + uls_db + uls_to_insert, 
 				key=lambda k: k['jd']
