@@ -18,6 +18,7 @@
    requirements
    people
    hardware
+   operations
 
 
 Indices and tables
