@@ -275,8 +275,7 @@ class AlertProcessor():
 
 			# Feedback
 			log_info(
-				"Processing alert: %s (%s)" % 
-				(shaped_alert['alert_id'], shaped_alert['ztf_id'])
+				"Processing alert: %s" % shaped_alert['alert_id']
 			)
 
 			# Create AmpelAlert instance
