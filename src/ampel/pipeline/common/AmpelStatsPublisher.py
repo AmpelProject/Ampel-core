@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 26.05.2018
-# Last Modified Date: 13.07.2018
+# Last Modified Date: 16.07.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import json
@@ -382,6 +382,7 @@ class AmpelStatsPublisher(Schedulable):
 
 		# Log metrics using logger (logging module)
 		if "log" in self.publish_to:
+
 			self.logger.info("Computed metrics: %s" % str(stats_dict))
 			self.logger.info("Updated metrics: %s" % str(out_dict))
 
@@ -393,7 +394,7 @@ class AmpelStatsPublisher(Schedulable):
 				self.logger.info("Skipping graphite update")
 			else:
 				self.logger.info("Sending stats to graphite")
-				self.graphite_feeder.add_stats({'statspublisher': out_dict})
+				self.graphite_feeder.add_stats({'statspublisher': stats_dict})
 				self.graphite_feeder.send()
 
 
