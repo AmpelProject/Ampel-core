@@ -580,7 +580,9 @@ class ZIAlertIngester(AbsAlertIngester):
 					else:
 
 						match_dict["compId"] = bson_bifold_comp_id
-						d_set_on_insert["compId"] = bson_bifold_comp_id
+
+						# list is required for later $addToSet operations to succeed
+						d_set_on_insert["compId"] = list(bson_bifold_comp_id)
 
 						# Update journal
 						d_addtoset["journal"] = {
