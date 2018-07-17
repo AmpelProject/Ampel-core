@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 06.03.2018
-# Last Modified Date: 13.07.2018
+# Last Modified Date: 17.07.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from ampel.pipeline.common.AmpelUtils import AmpelUtils
@@ -31,6 +31,7 @@ class T3Task:
 		self.channels = channels
 		self.logger = logger
 		self.fed_tran_ids = []
+		self.multi_view_chans = {}
 
 		# Instanciate t3 unit
 		self.t3_instance = t3_task_config.t3_unit_class(
@@ -64,6 +65,7 @@ class T3Task:
 		# Build specific array of ampel TransientView instances where each transient 
 		# is cut down according to the specified sub-selections parameters
 		tran_views = []
+		multi_view = len(self.channels) > 1
 
 		for tran_id, tran_data in tran_register.items():
 
@@ -82,6 +84,13 @@ class T3Task:
 		
 			# Save ids of created views (used later for updating transient journal)
 			self.fed_tran_ids.append(tran_id)
+
+			# If task deals with multi-channel views and if the set of effective channels 
+			# of the multi-view does not match with the task-defined channels, 
+			# save the set of reduced channels (later included in the journal entries)
+			if multi_view:
+				if len(tran_view.channel) != len(self.channels):
+					self.multi_view_chans[tran_id] = tran_view.channel
 
 			# Populate list of transient views
 			tran_views.append(tran_view)

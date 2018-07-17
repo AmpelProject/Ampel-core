@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 05.07.2018
-# Last Modified Date: 13.07.2018
+# Last Modified Date: 17.07.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import pkg_resources
@@ -217,7 +217,7 @@ class T3TaskConfig:
 				if 'select' in task_doc and 'channels' in task_doc['select']:
 
 					# Case 7
-					if task_doc['select']['channels'] == "$forEach":
+					if task_doc['select']['channel(s)'] == "$forEach":
 						pass
 						
 					# Case 1
@@ -434,20 +434,20 @@ class T3TaskConfig:
 		return AmpelUtils.get_by_path(self.task_doc, parameter)
 
 
-	def create_task(self, logger, channel=None, global_info=None):
+	def create_task(self, logger, channels=None, global_info=None):
 		"""
 		logger: logger instance from python module 'logging' 
-		channel: optional channel name
+		channels: optional channels name
 		"""
 
 		if global_info is not None:
 			global_info = dict(global_info)
 			global_info['taskName'] = self.task_doc.get("name")
-			global_info['channel'] = self.channels if channel is None else channel
+			global_info['channel(s)'] = self.channels if channels is None else channels
 
 		return T3Task(
 			self, 
-			self.channels if channel is None else channel,
+			self.channels if channels is None else channels,
 			logger,
 			global_info
 		)

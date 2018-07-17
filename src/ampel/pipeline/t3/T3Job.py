@@ -4,11 +4,11 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 26.02.2018
-# Last Modified Date: 14.07.2018
+# Last Modified Date: 17.07.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from datetime import datetime
-from pymongo import MongoClient
+from pymongo import MongoClient, UpdateOne
 from itertools import islice
 
 from ampel.pipeline.db.query.QueryMatchTransients import QueryMatchTransients
@@ -178,7 +178,7 @@ class T3Job:
 		"""
 
 		time_start = datetime.utcnow().timestamp()
-		log_id = (
+		self.log_id = (
 			self.db_logging_handler.get_log_id() if hasattr(self, 'db_logging_handler') 
 			else None
 		)
@@ -205,7 +205,7 @@ class T3Job:
 					for channel in chans:
 						t3_tasks.append(
 							task_config.create_task(
-								self.logger, channel=channel, global_info=self.global_info
+								self.logger, channels=channel, global_info=self.global_info
 							)
 						)
 			else:
@@ -214,7 +214,12 @@ class T3Job:
 				for task_config in self.job_config.get_task_configs():
 					t3_tasks.append(
 						task_config.create_task(
-							self.logger, global_info=self.global_info
+							self.logger, 
+							channels=(
+								task_config.channels if task_config.channels is not None 
+								else self.exec_params['channels']
+							),
+							global_info=self.global_info
 						)
 					)
 	
@@ -254,53 +259,18 @@ class T3Job:
 				specific_journal_entries = t3_task.done()
 	
 				# Update journal with task related info
-				mongo_res = self.col_tran.update_many(
-					{
-						'alDocType': AlDocTypes.TRANSIENT, 
-						'tranId': {'$in': t3_task.fed_tran_ids}
-					},
-					{
-						'$push': {
-							"journal": {
-								'tier': 3,
-								'dt': int(time_start),
-								'channels': t3_task.channels,
-								'taskName': t3_task.get_config('name'),
-								'logs': log_id
-							}
-						}
-					}
-				)
-
-				# At least one update was not applied
-				if mongo_res.modified_count != len(t3_task.fed_tran_ids):
-
-					# Populate troubles collection
-					from inspect import currentframe, getframeinfo
-					frameinfo = getframeinfo(currentframe())
-					AmpelDB.get_collection('troubles').insert_one(
-						{
-							'tier': 3,
-							'location': '%s:%s' % (frameinfo.filename, frameinfo.lineno),
-							'ampelMsg': 'transient journal update failed',
-							'jobName':  self.job_config.job_name,
-							'taskName': t3_task.get_config('name'),
-							'logs': log_id,
-							'mongoResults': mongo_res.raw_result
-						}
-					)
-
+				self.general_journal_update(t3_task, int(time_start))
 
 				# method done() might return a dict with key: transient id, 
 				# value journal entries. In this case, we update the Transient journal 
 				# with those entries
 				if specific_journal_entries:
-					# Update journal with t3 unit specific info
+					# TODO: update journal with t3 unit specific info
 					pass
 	
 	
 			# Record job info into DB
-			mongo_res = self.col_runs.update_one(
+			upd_res = self.col_runs.update_one(
 				{
 					'_id': int(
 						datetime.today().strftime('%Y%m%d')
@@ -312,7 +282,7 @@ class T3Job:
 							'tier': 3,
 							'name': self.job_config.job_name,
 							'dt': int(time_start),
-							'logs': log_id,
+							'logs': self.log_id,
 							'metrics': {
 								'duration': int(
 									datetime.utcnow().timestamp() - time_start
@@ -324,21 +294,13 @@ class T3Job:
 				upsert=True
 			)
 
-			if mongo_res.modified_count == 0 and mongo_res.upserted_id is None:
+			if upd_res.modified_count == 0 and upd_res.upserted_id is None:
 
 				# Populate troubles collection
 				from inspect import currentframe, getframeinfo
-				frameinfo = getframeinfo(currentframe())
-				AmpelDB.get_collection('troubles').insert_one(
-					{
-						'tier': 3,
-						'location': '%s:%s' % (frameinfo.filename, frameinfo.lineno),
-						'ampelMsg': 'runs collection update failed',
-						'jobName':  self.job_config.job_name,
-						'taskName': t3_task.get_config('name'),
-						'logs': log_id,
-						'mongoResults': mongo_res.raw_result
-					}
+				self._report_error(
+					'runs collection update failed', getframeinfo(currentframe()),
+					t3_task.get_config('name'), upd_res=upd_res
 				)
 
 			# Write log entries to DB
@@ -350,10 +312,48 @@ class T3Job:
 			AmpelUtils.report_exception(
 				self.logger, tier=3, info={
 					'jobName': self.job_config.job_name,
-					'logs':  log_id,
+					'logs':  self.log_id,
 				}
 			)
 
+		self.log_id = None
+
+
+	def _report_error(
+		self, message, frameinfo, task_name, upd_res=None, bulk_write_result=None
+	):
+		"""
+		"""
+
+		d = {
+			'tier': 3,
+			'ampelMsg': message,
+			'location': '%s:%s' % (frameinfo.filename, frameinfo.lineno),
+			'jobName':  self.job_config.job_name,
+			'taskName': task_name,
+			'logs': self.log_id,
+			'mongoUpdateResult': upd_res.raw_result
+		}
+
+		if upd_res is not None:
+			d['mongoUpdateResult'] = upd_res.raw_result
+
+		if bulk_write_result is not None:
+			d['mongoBulkWriteResult'] = bulk_write_result.bulk_api_result
+
+		# Populate troubles collection
+		try:
+			AmpelDB.get_collection('troubles').insert_one(d)
+		except:
+			# Bad luck (possible cause: DB offline)
+			msg = "Exception occured while populating 'troubles' collection"
+			if self.logger.propagate == False:
+				self.logger.propagate == True
+				self.logger.critical(msg, exc_info=1)
+				self.logger.propagate = False
+			else:
+				self.logger.critical(msg, exc_info=1)
+		
 
 	def _get_channels(self):
 		"""
@@ -528,7 +528,108 @@ class T3Job:
 			)
 			
 			yield al_tran_data
-	
+
+
+	def general_journal_update(self, t3_task, int_time_start):
+		"""
+		updates transient journal with task related info
+		"""
+
+		try:
+
+			task_name = t3_task.get_config('name')
+			update_many_ids = list(
+				set(t3_task.fed_tran_ids) - set(t3_task.multi_view_chans.keys())
+			)
+
+			# Update many 
+			upd_res = self.col_tran.update_many(
+				{
+					'alDocType': AlDocTypes.TRANSIENT, 
+					'tranId': {'$in': update_many_ids}
+				},
+				{
+					'$push': {
+						"journal": {
+							'tier': 3,
+							'dt': int_time_start,
+							'jobName':  self.job_config.job_name,
+							'taskName': task_name,
+							'channels': t3_task.channels,
+							'logs': self.log_id
+						}
+					}
+				}
+			)
+
+			# At least one update was not applied
+			if upd_res.modified_count != len(update_many_ids):
+
+				# Populate troubles collection
+				from inspect import currentframe, getframeinfo
+				self._report_error(
+					'transient journal update_many error', getframeinfo(currentframe()),
+					t3_task.get_config('name'), upd_res=upd_res
+				)
+
+			# If multi-channel transient views with reduced 'channels' set exist
+			if t3_task.multi_view_chans:
+
+				bulk_updates = []
+
+				# Create db update requests
+				for tran_id in t3_task.multi_view_chans.keys():
+					bulk_updates.append(
+						UpdateOne(
+							{
+								'alDocType': AlDocTypes.TRANSIENT, 
+								'tranId': tran_id
+							},
+							{
+								'$push': {
+									"journal": {
+										'tier': 3,
+										'dt': int_time_start,
+										'jobName':  self.job_config.job_name,
+										'taskName': task_name,
+										'channels': t3_task.channels,
+										'multiViewChannels': t3_task.multi_view_chans[tran_id],
+										'logs': self.log_id
+									}
+								}
+							}
+						)
+					)
+
+				# Execute bulk updates
+				mongo_res = self.col_tran.bulk_write(
+					bulk_updates, ordered=False
+				)
+
+				if (
+					mongo_res.bulk_api_result['writeErrors'] or
+					mongo_res.bulk_api_result['writeConcernErrors']
+				):
+
+					# Populate troubles collection
+					from inspect import currentframe, getframeinfo
+					self._report_error(
+						'transient journal bulk update error', getframeinfo(currentframe()),
+						task_name, bulk_write_result=mongo_res
+					)
+
+		except:
+
+			# Populate troubles collection
+			AmpelUtils.report_exception(
+				self.logger, tier=3, info={
+					'ampelMsg': 'Exception occured in general_journal_update',
+					'jobName': self.job_config.job_name,
+					'taskName': task_name,
+					'logs':  self.log_id,
+				}
+			)
+
 
 	@staticmethod
 	def chunk(iter, chunk_size):
