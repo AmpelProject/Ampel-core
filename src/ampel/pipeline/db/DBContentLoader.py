@@ -290,18 +290,30 @@ class DBContentLoader:
 				# Use all avail channels if no channel query constraint was used, 
 				# otherwise: intersection
 				tran_data.set_channels(
-					doc['channels'] if channels is None 
+					# Transient doc['channels'] cannot be None
+					doc['channels'] if channels is None
 					else (channels_set & set(doc['channels'])) # intersection
 				)
 
 				# Save journal entries related to provided channels
 				for entry in doc['journal']:
 
+					# Not sure if those entries will exist. Time will tell.
+					if entry['channels'] is None:
+						self.logger.warn(
+							'Ignoring following channel-less journal entry: %s' % 
+							str(entry)
+						)
+						continue
+
+					# Set intersection between registered and requested channels (if any)
 					chans_intersec = (
 						entry['channels'] if channels is None 
 						else (channels_set & set(entry['channels']))
 					)
 
+					# Removing embedded 'channels' key/value and add journal entry 
+					# to transient data while maintaining the channel(s) association
 					tran_data.add_journal_entry(
 						chans_intersec,
 						# journal entry without the channels key/value
@@ -343,6 +355,7 @@ class DBContentLoader:
 				)
 
 				tran_data.add_science_record(
+					# ScienceRecord doc['channels'] cannot be None
 					doc['channels'] if channels is None 
 					else (channels_set & set(doc['channels'])), # intersection
 					science_record
