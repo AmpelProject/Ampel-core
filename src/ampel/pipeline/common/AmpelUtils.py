@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 07.06.2018
-# Last Modified Date: 04.07.2018
+# Last Modified Date: 17.07.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import collections
@@ -90,6 +90,22 @@ class AmpelUtils():
 		-> Making None iterable
 		"""
 		return [arg] if type(arg) in (type(None), str, bytes, bytearray) else arg
+
+
+	@staticmethod
+	def try_reduce(arg):
+		"""
+		Returns element contained by sequence if sequence contains only one element.
+		Example:
+		try_reduce(['ab']) -> returns 'ab'
+		try_reduce({'ab'}) -> returns 'ab'
+		try_reduce(['a', 'b']) -> returns ['a', 'b']
+		try_reduce({'a', 'b'}) -> returns {'a', 'b'}
+		"""
+		if len(arg) == 1:
+			return next(iter(arg))
+
+		return arg
 
 
 	@staticmethod
