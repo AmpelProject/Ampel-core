@@ -76,6 +76,7 @@ class Channel:
 		""" """
 		return AmpelUtils.get_by_path(self.get_source_doc(source), param_name)
 
+
 	def get_custom_attr(self, name):
 		""" 
 		Bad practice, will try to come up with something nicer later
