@@ -81,7 +81,7 @@ class T3Job:
 		if job_config.get('input.select') is not None:
 
 			self.exec_params = {
-				'channels': job_config.get('input.select.channel(s)'),
+				'channel(s)': job_config.get('input.select.channel(s)'),
 				'state_op': job_config.get("input.load.state"),
 				't2s': job_config.get("input.load.t2(s)"),
 				'docs': FlagUtils.list_flags_to_enum_flags(
@@ -198,7 +198,7 @@ class T3Job:
 					return
 	
 				# Set *job* channels parameter to the channel values retrieved dynamically 
-				self.overwrite_parameter("channels", chans)
+				self.overwrite_parameter("channel(s)", chans)
 	
 				# Create T3 tasks
 				for task_config in self.job_config.get_task_configs():
@@ -217,7 +217,7 @@ class T3Job:
 							self.logger, 
 							channels=(
 								task_config.channels if task_config.channels is not None 
-								else self.exec_params['channels']
+								else self.exec_params['channel(s)']
 							),
 							global_info=self.global_info
 						)
@@ -394,7 +394,7 @@ class T3Job:
 
 		# Build query for matching transients using criteria defined in job_config
 		return QueryMatchTransients.match_transients(
-			channels = self.exec_params['channels'],
+			channels = self.exec_params['channel(s)'],
 			time_created = self.exec_params['created'],
 			time_modified = self.exec_params['modified'],
 			with_flags = self.exec_params['with_flags'],
@@ -460,8 +460,7 @@ class T3Job:
 
 				# Channel/Channels must be provided if state is 'latest'
 				# Get latest state ** for each channel **
-				channels = self.exec_params['channels']
-				for channel in channels if type(channels) is not str else [channels]:
+				for channel in AmpelUtils.iter(self.exec_params['channel(s)']):
 
 					# get latest state (fast mode) 
 					# Output example:
@@ -522,7 +521,7 @@ class T3Job:
 			# Load ampel TransientData instances with given state(s)
 			self.logger.info("Loading transient(s)")
 			al_tran_data = db_content_loader.load_new(
-				chunked_tran_ids, self.exec_params['channels'], self.exec_params['state_op'], 
+				chunked_tran_ids, self.exec_params['channel(s)'], self.exec_params['state_op'], 
 				states, self.exec_params['docs'], self.exec_params['t2s'], 
 				self.exec_params['feedback'], self.exec_params['verbose_feedback']
 			)
@@ -555,7 +554,7 @@ class T3Job:
 							'dt': int_time_start,
 							'jobName':  self.job_config.job_name,
 							'taskName': task_name,
-							'channels': t3_task.channels,
+							'channel(s)': t3_task.channels,
 							'logs': self.log_id
 						}
 					}
@@ -572,7 +571,7 @@ class T3Job:
 					t3_task.get_config('name'), upd_res=upd_res
 				)
 
-			# If multi-channel transient views with reduced 'channels' set exist
+			# If multi-channel transient views with reduced set of channels exist
 			if t3_task.multi_view_chans:
 
 				bulk_updates = []
@@ -592,7 +591,7 @@ class T3Job:
 										'dt': int_time_start,
 										'jobName':  self.job_config.job_name,
 										'taskName': task_name,
-										'channels': t3_task.channels,
+										'channel(s)': t3_task.channels,
 										'multiViewChannels': t3_task.multi_view_chans[tran_id],
 										'logs': self.log_id
 									}

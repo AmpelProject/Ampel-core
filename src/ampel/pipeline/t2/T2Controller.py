@@ -210,7 +210,6 @@ class T2Controller(Schedulable):
 				self.logger.error("T2 unit returned %s" % ret)
 				# TODO: add copy t2 entry to ampel_trouble
 
-
 				db_ops = [
 					UpdateOne(
 						{
@@ -222,6 +221,7 @@ class T2Controller(Schedulable):
 									'versions': self.versions[t2_unit_name],
 									'dt': now,
 									'duration': before_run - now,
+									'logs': db_logging_handler.get_log_id(),
 									'error': ret.value
 								}
 							},
@@ -246,6 +246,7 @@ class T2Controller(Schedulable):
 									'versions': self.versions[t2_unit_name],
 									'dt': now,
 									'duration': round(now - before_run, 3),
+									'logs': db_logging_handler.get_log_id(),
 									'results': ret
 								}
 							},
@@ -270,11 +271,12 @@ class T2Controller(Schedulable):
 						},
 						"$push": {
 							"journal": {
-								'dt': now,
 								'tier': 2,
+								'dt': now,
 								'unit': t2_unit_name,
 								'success': str(not isinstance(ret, T2RunStates)),
-								'channels': t2_doc['channels']
+								'channel(s)': t2_doc['channels'],
+								'logs': db_logging_handler.get_log_id()
 							}
 						}
 					}
