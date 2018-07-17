@@ -25,6 +25,7 @@ from ampel.base.flags.PhotoFlags import PhotoFlags
 from ampel.core.flags.T2RunStates import T2RunStates
 from ampel.core.flags.AlDocTypes import AlDocTypes
 from ampel.core.flags.FlagUtils import FlagUtils
+from ampel.pipeline.common.AmpelUtils import AmpelUtils
 from ampel.pipeline.config.AmpelConfig import AmpelConfig
 from ampel.pipeline.db.AmpelDB import AmpelDB
 from ampel.pipeline.t2.T2Controller import T2Controller
@@ -493,7 +494,7 @@ class ZIAlertIngester(AbsAlertIngester):
 				for bifold_comp_id in t2docs_blueprint[t2_id][run_config]:
 
 					# Set of channel names
-					eff_chan_names = list(
+					eff_chan_names = list( # pymongo requires list
 						t2docs_blueprint[t2_id][run_config][bifold_comp_id]
 					)
 
@@ -553,10 +554,10 @@ class ZIAlertIngester(AbsAlertIngester):
 						# Update journal: register eff id for each channel
 						journal_entries = [
 							{
+								"tier": 0,
 								"dt": now,
-								"channels": [chan_name],
-								"effId": comp_bp.get_effid_of_chan(chan_name),
-								"op": "addToSet"
+								"channel(s)": chan_name,
+								"effId": comp_bp.get_effid_of_chan(chan_name)
 							}
 							for chan_name in eff_chan_names
 						]
@@ -564,10 +565,10 @@ class ZIAlertIngester(AbsAlertIngester):
 						# Update journal: register pp id common to all channels
 						journal_entries.insert(0, 
 							{
+								"tier": 0,
 								"dt": now,
-								"channels": eff_chan_names,
-								"ppId": bson_bifold_comp_id,
-								"op": "upsertPp"
+								"channel(s)": AmpelUtils.try_reduce(eff_chan_names),
+								"ppId": bson_bifold_comp_id
 							}
 						)
 
@@ -583,9 +584,9 @@ class ZIAlertIngester(AbsAlertIngester):
 
 						# Update journal
 						d_addtoset["journal"] = {
+							"tier": 0,
 							"dt": now,
-							"channels": eff_chan_names,
-							"op": "upsertEff"
+							"channel(s)": AmpelUtils.try_reduce(eff_chan_names)
 						}
 
 					t2_upserts += 1
@@ -642,9 +643,9 @@ class ZIAlertIngester(AbsAlertIngester):
 					},
 					"$push": {
 						"journal": {
-							'dt': now,
 							'tier': 0,
-							'channels': chan_names,
+							'dt': now,
+							'channel(s)': AmpelUtils.try_reduce(chan_names),
 							'logs': self.job_id
 						}
 					}
