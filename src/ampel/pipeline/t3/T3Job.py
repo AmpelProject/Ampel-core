@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 26.02.2018
-# Last Modified Date: 17.07.2018
+# Last Modified Date: 19.07.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from datetime import datetime
@@ -75,6 +75,7 @@ class T3Job:
 		self.logger = logger
 		self.job_config = job_config
 		self.global_info = None
+		self.exec_params = {}
 
 
 		# T3 job not requiring any prior transient loading 
@@ -217,7 +218,7 @@ class T3Job:
 							self.logger, 
 							channels=(
 								task_config.channels if task_config.channels is not None 
-								else self.exec_params['channel(s)']
+								else self.exec_params.get('channel(s)')
 							),
 							global_info=self.global_info
 						)
