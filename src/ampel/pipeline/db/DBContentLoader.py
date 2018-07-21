@@ -299,7 +299,7 @@ class DBContentLoader:
 				for entry in doc['journal']:
 
 					# Not sure if those entries will exist. Time will tell.
-					if entry['channel(s)'] is None:
+					if entry.get('channel(s)') is None:
 						self.logger.warn(
 							'Ignoring following channel-less journal entry: %s' % 
 							str(entry)
