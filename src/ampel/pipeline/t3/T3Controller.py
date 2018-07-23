@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 26.02.2018
-# Last Modified Date: 09.07.2018
+# Last Modified Date: 23.07.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import schedule, time, threading
@@ -19,54 +19,78 @@ class T3Controller(Schedulable):
 	"""
 	"""
 
+	@staticmethod
+	def load_job_configs(t3_job_names, logger):
+		"""
+		"""
+		job_configs = {}
+
+		for job_name in AmpelConfig.get_config("t3_jobs").keys():
+
+			if t3_job_names is None:
+				logger.info("Ignoring job without name")
+				continue
+
+			if job_name in t3_job_names:
+				logger.info("Ignoring job '%s' as requested" % job_name)
+				continue
+
+			job_configs[job_name] = T3JobConfig.load(job_name, logger)
+
+		return job_configs
+
+
+	@staticmethod
+	def get_required_resources(t3_job_names=None):
+		"""
+		"""
+		logger = LoggingUtils.get_logger(unique=True)
+		resources = set()
+
+		for job_config in T3Controller.load_job_configs(t3_job_names, logger).values():
+			for task_config in job_config.get_task_configs():
+				resources.update(task_config.t3_unit_class.resources)
+
+		return resources
+
+
 	def __init__(self, t3_job_names=None):
 		"""
-		't3_job_names': optional list of strings. 
-		If specified, only job with these names will be run.
+		t3_job_names: optional list of strings. 
+		If specified, only job with matching the provided names will be run.
 		"""
+
 		super(T3Controller, self).__init__()
+
 		# Setup logger
 		self.logger = LoggingUtils.get_logger(unique=True)
 		self.logger.info("Setting up T3Controler")
-		self.jobs = self.gather_jobs(t3_job_names, self.logger)
 
-		for job_config in self.jobs.values():
+		# Load job configurations
+		self.job_configs = T3Controller.load_job_configs(t3_job_names, self.logger)
+
+		for job_config in self.job_configs.values():
 			job_config.schedule_job(self.scheduler)
 
 		self.scheduler.every(5).minutes.do(self.monitor_processes)
-
-	@classmethod
-	def gather_jobs(cls, t3_job_names, logger):
-		jobs = {}
-		for job_name in AmpelConfig.get_config("t3_jobs").keys():
-
-			if t3_job_names is not None and job_name not in t3_job_names:
-				continue
-
-			job_config = T3JobConfig.load(job_name, logger)
-			jobs[job_name] = job_config
-		return jobs
 
 
 	def monitor_processes(self):
 		"""
 		"""
-		feeder = GraphiteFeeder(AmpelConfig.get_config('resources.graphite.default'))
+		feeder = GraphiteFeeder(
+			AmpelConfig.get_config('resources.graphite.default')
+		)
 		stats = {}
-		for job_name, job_config in self.jobs.items():
+
+		for job_name, job_config in self.job_configs.items():
 			stats[job_name] = {'processes': job_config.process_count}
+
 		feeder.add_stats(stats, 't3.jobs')
 		feeder.send()
+
 		return stats
 
-	@classmethod
-	def get_required_resources(cls, t3_job_names=None):
-		logger = LoggingUtils.get_logger(unique=True)
-		resources = set()
-		for job_config in cls.gather_jobs(t3_job_names, logger).values():
-			for task_config in job_config.get_task_configs():
-				resources.update(task_config.t3_unit_class.resources)
-		return resources
 
 def run():
 
