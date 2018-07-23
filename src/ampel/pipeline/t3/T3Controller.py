@@ -27,11 +27,7 @@ class T3Controller(Schedulable):
 
 		for job_name in AmpelConfig.get_config("t3_jobs").keys():
 
-			if t3_job_names is None:
-				logger.info("Ignoring job without name")
-				continue
-
-			if job_name in t3_job_names:
+			if t3_job_names is not None and job_name in t3_job_names:
 				logger.info("Ignoring job '%s' as requested" % job_name)
 				continue
 
