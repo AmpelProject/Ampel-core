@@ -4,9 +4,10 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 06.03.2018
-# Last Modified Date: 17.07.2018
+# Last Modified Date: 23.07.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
+import logging
 from ampel.pipeline.common.AmpelUtils import AmpelUtils
 
 class T3Task:
@@ -39,6 +40,13 @@ class T3Task:
 			t3_task_config.t3_resources,
 			t3_task_config.t3_unit_run_config,
 			global_info
+		)
+
+		# Feedback
+		AmpelUtils.propagate_log(
+			logger, logging.INFO,
+			"%s: task instantiated" % 
+			t3_task_config.log_header
 		)
 
 
@@ -96,7 +104,8 @@ class T3Task:
 			tran_views.append(tran_view)
 
 		# Feedback
-		self.logger.info(
+		AmpelUtils.propagate_log(
+			self.logger, logging.INFO,
 			"%s: adding %i transientViews to t3 unit" % 
 			(self.task_config.log_header, len(tran_register))
 		)
@@ -108,5 +117,12 @@ class T3Task:
 	def done(self):
 		"""
 		"""
-		self.logger.info("%s: calling done()" % self.task_config.log_header)
+
+		# Feedback
+		AmpelUtils.propagate_log(
+			self.logger, logging.INFO,
+			"%s: calling done()" % self.task_config.log_header
+		)
+
+		# Execute method done() of associated t3 instance
 		return self.t3_instance.done()

@@ -4,9 +4,10 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 26.02.2018
-# Last Modified Date: 19.07.2018
+# Last Modified Date: 23.07.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
+import logging
 from datetime import datetime
 from pymongo import MongoClient, UpdateOne
 from itertools import islice
@@ -179,12 +180,21 @@ class T3Job:
 		"""
 
 		time_start = datetime.utcnow().timestamp()
+		t3_tasks = []
 		self.log_id = (
 			self.db_logging_handler.get_log_id() if hasattr(self, 'db_logging_handler') 
 			else None
 		)
-		t3_tasks = []
 
+		# Feedback
+		AmpelUtils.propagate_log(
+			self.logger, logging.INFO, "Running job %s (log id: %s)" % 
+			(
+				self.job_config.job_name, 
+				None if self.log_id is None else self.log_id.binary.hex()
+			)
+		)
+		
 		try:
 
 			# Check for '$forEach' channel operator
