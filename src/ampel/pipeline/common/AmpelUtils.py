@@ -4,10 +4,10 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 07.06.2018
-# Last Modified Date: 17.07.2018
+# Last Modified Date: 23.07.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-import collections
+import collections, logging
 from functools import reduce
 from types import MappingProxyType
 
@@ -277,7 +277,9 @@ class AmpelUtils():
 			return 
 
 		# Feedback
-		logger.critical("Exception occured", exc_info=1)
+		AmpelUtils.propagate_log(
+			logger, logging.CRITICAL, "Exception occured", exc_info=True
+		)
 
 		# Basis document (can be appended later on)
 		insert_dict = {
@@ -298,9 +300,21 @@ class AmpelUtils():
 			AmpelDB.get_collection('troubles').insert_one(insert_dict)
 		except:
 			# Bad luck, exception again (possible cause: DB offline)
-			logger.critical(
+			AmpelUtils.propagate_log(
+				logger,
+				logging.CRITICAL, 
 				"Exception occured while trying to insert document into 'troubles' collection", 
-				exc_info=1
+				exc_info=True
 			)
 
-		logger.propagate = False
+
+	@staticmethod
+	def propagate_log(logger, level, msg, exc_info=False):
+		"""
+		"""
+		if logger.propagate is False:
+			logger.propagate = True
+			logger.log(level, msg, exc_info=exc_info)
+			logger.propagate = False
+		else:
+			logger.log(level, msg, exc_info=exc_info)
