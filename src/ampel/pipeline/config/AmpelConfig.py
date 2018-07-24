@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : Jakob van Santen <jakob.van.santen@desy.de>
 # Date              : 14.06.2018
-# Last Modified Date: 28.06.2018
+# Last Modified Date: 24.07.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import warnings
@@ -13,11 +13,16 @@ from ampel.pipeline.common.AmpelUtils import AmpelUtils
 
 class AmpelConfig:
 
+
+	# Static dict/MappingProxyType holding all ampel configurations
 	_global_config = None
+
 
 	@classmethod
 	def initialized(cls):
+		""" """ 
 		return cls._global_config is not None
+
 
 	@classmethod
 	def get_config(cls, key=None, validate=None):
@@ -44,6 +49,7 @@ class AmpelConfig:
 
 	@classmethod
 	def reset(cls):
+		""" """ 
 		cls._global_config = None
 	
 
@@ -55,6 +61,8 @@ class AmpelConfig:
 		cls._global_config = AmpelUtils.recursive_freeze(config)
 		return cls._global_config
 
+
 	@classmethod
 	def is_frozen(cls):
+		""" """ 
 		return type(cls._global_config) is MappingProxyType
