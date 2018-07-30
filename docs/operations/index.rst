@@ -8,3 +8,4 @@ Operations guide
 
    deploy
    archive_schema
+   misc
