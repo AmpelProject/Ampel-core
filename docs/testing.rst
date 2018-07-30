@@ -1,4 +1,6 @@
 
+.. _testing:
+
 Running the automated tests
 ===========================
 
