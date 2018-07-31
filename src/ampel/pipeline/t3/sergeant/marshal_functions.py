@@ -58,21 +58,21 @@ def get_marshal_html(weblink, attempts=1, max_attempts=5, marshalusr=None,marsha
 				
 	try:
 		reponse = requests.get(weblink, auth=auth, timeout=120+60*attempts)
-	
+		return reponse.text
 	except Exception as e:
 
 		print ('Sergeant.get_marshal_html(): ', weblink)
 		print (e)
-		print ('Sergeant.get_marshal_html(): this is our {0:0} attempt, {1:1} left'.format(attempts, max_attempts))
+		print ('Sergeant.get_marshal_html(): this is our {0:0} attempt, {1:1} left'.format(attempts, max_attempts-attempts))
 
 		if attempts<max_attempts:
 			time.sleep(3)
-			reponse.text = get_marshal_html(weblink, attempts=attempts+1, max_attempts=max_attempts)	
+			return get_marshal_html(weblink, attempts=attempts+1, max_attempts=max_attempts)	
 		else:
 			print ('Sergeant.get_marshal_html(): giving up')
 			raise(requests.exceptions.ConnectionError)
 
-	return reponse.text
+
 
 try:
 	from bs4 import BeautifulSoup
