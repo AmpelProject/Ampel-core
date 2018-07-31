@@ -66,7 +66,6 @@ def get_marshal_html(weblink, max_attempts=5, marshalusr=None,marshalpwd=None):
 			print (e)
 			print ('Sergeant.get_marshal_html(): this attempt number {0:0}, {1:1} left'.format(attempts, max_attempts-attempts))
 			time.sleep(3)
-			pass 
 		attempts+=1
 
 	print ('Sergeant.get_marshal_html(): giving up')
