@@ -1,3 +1,44 @@
+x-ampel-env: &ampel-env
+  TINI_SUBREAPER: 1
+  MONGO_HOSTNAME: $MONGO_HOST
+  MONGO_PORT: $MONGO_PORT
+  MONGO_WRITER_USERNAME: alertprocessor
+  MONGO_WRITER_PASSWORD_FILE: /run/secrets/mongo-alertprocessor-password
+  MONGO_LOGGER_USERNAME: logger
+  MONGO_LOGGER_PASSWORD_FILE: /run/secrets/mongo-logger-password
+  
+  GRAPHITE_HOSTNAME: $GRAPHITE_HOST
+  GRAPHITE_PORT: $GRAPHITE_PORT
+
+  ARCHIVE_HOSTNAME: $ARCHIVE_HOST
+  ARCHIVE_PORT: $ARCHIVE_PORT
+  ARCHIVE_WRITER_USERNAME: ampel-client
+  ARCHIVE_WRITER_PASSWORD_FILE: /run/secrets/archive-write-password
+
+  CATSHTM_PATH: /catalogs/catsHTM
+  EXTCATS_HOSTNAME: $CATALOG_HOST
+  EXTCATS_PORT: $CATALOG_PORT
+  EXTCATS_READER_USERNAME: filterclient
+  EXTCATS_READER_PASSWORD_FILE: /run/secrets/catalog-read-password
+
+x-ampel: &ampel
+  image: ampel:$AMPEL_TAG
+  volumes:
+    - type: volume
+      source: $AMPEL_SRC
+      target: /Ampel
+    - $CATSHTM_PATH:/catalogs/catsHTM
+  secrets:
+    - archive-write-password
+    - mongo-alertprocessor-password
+    - mongo-logger-password
+    - catalog-read-password
+  environment: *ampel-env
+
+  depends_on:
+    - mongo
+    - archive
+
 version: '3.4'
 services:
   catalog:
@@ -50,30 +91,15 @@ services:
         condition: any
         delay: 10s
   stats:
-    image: ampel:$AMPEL_TAG
+    <<: *ampel
     command: ["ampel-statspublisher"]
-    volumes:
-      - type: volume
-        source: $AMPEL_SRC
-        target: /Ampel
     secrets:
       - mongo-logger-password
       - archive-read-password
     environment:
-      TINI_SUBREAPER: 1
-
-      MONGO_HOSTNAME: $MONGO_HOST
-      MONGO_PORT: $MONGO_PORT
-      MONGO_LOGGER_USERNAME: logger
-      MONGO_LOGGER_PASSWORD_FILE: /run/secrets/mongo-logger-password
-
-      ARCHIVE_HOSTNAME: $ARCHIVE_HOST
-      ARCHIVE_PORT: $ARCHIVE_PORT
+      <<: *ampel-env
       ARCHIVE_READER_USERNAME: ampel-readonly
       ARCHIVE_READER_PASSWORD_FILE: /run/secrets/archive-read-password
-      
-      GRAPHITE_HOSTNAME: $GRAPHITE_HOST
-      GRAPHITE_PORT: $GRAPHITE_PORT
     deploy:
         restart_policy:
             condition: any
@@ -83,84 +109,24 @@ services:
       - archive
       - graphite
   alertprocessor:
-    image: ampel:$AMPEL_TAG
+    <<: *ampel
     command: ["ampel-alertprocessor", "--broker", "epyc.astro.washington.edu:9092", "--group", "$GROUP_NAME"]
-    volumes:
-      - type: volume
-        source: $AMPEL_SRC
-        target: /Ampel
-      - $CATSHTM_PATH:/catalogs/catsHTM
+    deploy:
+      replicas: $NUM_STREAMS
+      restart_policy:
+          condition: any
+          delay: 10s
+  followup:
+    <<: *ampel
+    image: ampel:$AMPEL_TAG
+    command: ["ampel-followup"]
     secrets:
       - archive-write-password
       - mongo-alertprocessor-password
       - mongo-logger-password
       - catalog-read-password
     environment:
-      TINI_SUBREAPER: 1
-      MONGO_HOSTNAME: $MONGO_HOST
-      MONGO_PORT: $MONGO_PORT
-      MONGO_WRITER_USERNAME: alertprocessor
-      MONGO_WRITER_PASSWORD_FILE: /run/secrets/mongo-alertprocessor-password
-      MONGO_LOGGER_USERNAME: logger
-      MONGO_LOGGER_PASSWORD_FILE: /run/secrets/mongo-logger-password
-      
-      GRAPHITE_HOSTNAME: $GRAPHITE_HOST
-      GRAPHITE_PORT: $GRAPHITE_PORT
-
-      ARCHIVE_HOSTNAME: $ARCHIVE_HOST
-      ARCHIVE_PORT: $ARCHIVE_PORT
-      ARCHIVE_WRITER_USERNAME: ampel-client
-      ARCHIVE_WRITER_PASSWORD_FILE: /run/secrets/archive-write-password
-
-      CATSHTM_PATH: /catalogs/catsHTM
-      EXTCATS_HOSTNAME: $CATALOG_HOST
-      EXTCATS_PORT: $CATALOG_PORT
-      EXTCATS_READER_USERNAME: filterclient
-      EXTCATS_READER_PASSWORD_FILE: /run/secrets/catalog-read-password
-
-    deploy:
-      replicas: $NUM_STREAMS
-      restart_policy:
-          condition: any
-          delay: 10s
-    depends_on:
-      - mongo
-      - archive
-  followup:
-    image: ampel:$AMPEL_TAG
-    command: ["ampel-followup"]
-    volumes:
-      - $AMPEL_SRC:/Ampel
-      - $CATSHTM_PATH:/catalogs/catsHTM
-    secrets:
-      - archive-read-password
-      - mongo-alertprocessor-password
-      - mongo-logger-password
-      - catalog-read-password
-      - catalog-write-password
-    environment:
-      TINI_SUBREAPER: 1
-
-      MONGO_HOSTNAME: $MONGO_HOST
-      MONGO_PORT: $MONGO_PORT
-      MONGO_WRITER_USERNAME: alertprocessor
-      MONGO_WRITER_PASSWORD_FILE: /run/secrets/mongo-alertprocessor-password
-      MONGO_LOGGER_USERNAME: logger
-      MONGO_LOGGER_PASSWORD_FILE: /run/secrets/mongo-logger-password
-      
-      GRAPHITE_HOSTNAME: $GRAPHITE_HOST
-      GRAPHITE_PORT: $GRAPHITE_PORT
-      
-      ARCHIVE_HOSTNAME: $ARCHIVE_HOST
-      ARCHIVE_PORT: $ARCHIVE_PORT
-      ARCHIVE_READER_USERNAME: ampel-readonly
-      ARCHIVE_READER_PASSWORD_FILE: /run/secrets/archive-read-password
-      
-      CATSHTM_PATH: /catalogs/catsHTM
-      EXTCATS_HOSTNAME: $CATALOG_HOST
-      EXTCATS_PORT: $CATALOG_PORT
-      EXTCATS_READER_USERNAME: filterclient
-      EXTCATS_READER_PASSWORD_FILE: /run/secrets/catalog-read-password
+      <<: *ampel-env
       EXTCATS_WRITER_USERNAME: ToO
       EXTCATS_WRITER_PASSWORD_FILE: /run/secrets/catalog-write-password
 
@@ -173,26 +139,19 @@ services:
       - archive
       - catalog
   t2-controller:
-    image: ampel:$AMPEL_TAG
+    <<: *ampel
     command: ["ampel-t2"]
     volumes:
-      - $AMPEL_SRC:/Ampel
-      - type: tmpfs
-        target: /tmp
+      - type: volume
+        source: $AMPEL_SRC
+        target: /Ampel
+      - $CATSHTM_PATH:/catalogs/catsHTM
     secrets:
       - mongo-alertprocessor-password
       - mongo-logger-password
       - catalog-read-password
     environment:
-      TINI_SUBREAPER: 1
-      MONGO_HOSTNAME: $MONGO_HOST
-      MONGO_PORT: $MONGO_PORT
-      MONGO_WRITER_USERNAME: alertprocessor
-      MONGO_WRITER_PASSWORD_FILE: /run/secrets/mongo-alertprocessor-password
-      MONGO_LOGGER_USERNAME: logger
-      MONGO_LOGGER_PASSWORD_FILE: /run/secrets/mongo-logger-password
-      EXTCATS_READER_USERNAME: filterclient
-      EXTCATS_READER_PASSWORD_FILE: /run/secrets/catalog-read-password
+      <<: *ampel-env
       SNCOSMO_DATA_DIR: /tmp
     deploy:
       restart_policy:
@@ -202,30 +161,18 @@ services:
     depends_on:
      - mongo
   t3-controller:
+    <<: *ampel
     image: ampel:$AMPEL_TAG
     command: ["ampel-t3"]
-    volumes:
-      - type: volume
-        source: $AMPEL_SRC
-        target: /Ampel
     secrets:
+      - archive-write-password
       - mongo-alertprocessor-password
       - mongo-logger-password
       - catalog-write-password
     environment:
-      TINI_SUBREAPER: 1
-      MONGO_HOSTNAME: $MONGO_HOST
-      MONGO_PORT: $MONGO_PORT
-      MONGO_WRITER_USERNAME: alertprocessor
-      MONGO_WRITER_PASSWORD_FILE: /run/secrets/mongo-alertprocessor-password
-      MONGO_LOGGER_USERNAME: logger
-      MONGO_LOGGER_PASSWORD_FILE: /run/secrets/mongo-logger-password
-      EXTCATS_HOSTNAME: $CATALOG_HOST
-      EXTCATS_PORT: $CATALOG_PORT
+      <<: *ampel-env
       EXTCATS_WRITER_USERNAME: ToO
       EXTCATS_WRITER_PASSWORD_FILE: /run/secrets/catalog-write-password
-      GRAPHITE_HOSTNAME: $GRAPHITE_HOST
-      GRAPHITE_PORT: $GRAPHITE_PORT
     deploy:
       restart_policy:
           max_attempts: 30
