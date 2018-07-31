@@ -108,9 +108,17 @@ services:
       - mongo
       - archive
       - graphite
-  alertprocessor:
+  alertprocessor-public:
     <<: *ampel
-    command: ["ampel-alertprocessor", "--broker", "epyc.astro.washington.edu:9092", "--group", "$GROUP_NAME"]
+    command: ["ampel-alertprocessor", "--broker", "epyc.astro.washington.edu:9092", "--group", "$GROUP_NAME", "--public"]
+    deploy:
+      replicas: $NUM_STREAMS
+      restart_policy:
+          condition: any
+          delay: 10s
+  alertprocessor-private:
+    <<: *ampel
+    command: ["ampel-alertprocessor", "--broker", "epyc.astro.washington.edu:9092", "--group", "$GROUP_NAME", "--private"]
     deploy:
       replicas: $NUM_STREAMS
       restart_policy:
