@@ -52,25 +52,25 @@ class PTFConfig(object) :
 	def get(self,*args,**kwargs) :
 		return self.config.get(*args,**kwargs)
 
-def get_marshal_html(weblink, attempts=1, max_attempts=5, marshalusr=None,marshalpwd=None):
+def get_marshal_html(weblink, max_attempts=5, marshalusr=None,marshalpwd=None):
 			
 	auth = requests.auth.HTTPBasicAuth(marshalusr, marshalpwd)
-				
-	try:
-		reponse = requests.get(weblink, auth=auth, timeout=120+60*attempts)
-		return reponse.text
-	except Exception as e:
+	attempts = 1
 
-		print ('Sergeant.get_marshal_html(): ', weblink)
-		print (e)
-		print ('Sergeant.get_marshal_html(): this is our {0:0} attempt, {1:1} left'.format(attempts, max_attempts-attempts))
-
-		if attempts<max_attempts:
+	while attempts<max_attempts:	
+		try:
+			reponse = requests.get(weblink, auth=auth, timeout=30+(60*attempts-1))
+			return reponse.text
+		except Exception as e:
+			print ('Sergeant.get_marshal_html(): ', weblink)
+			print (e)
+			print ('Sergeant.get_marshal_html(): this attempt number {0:0}, {1:1} left'.format(attempts, max_attempts-attempts))
 			time.sleep(3)
-			return get_marshal_html(weblink, attempts=attempts+1, max_attempts=max_attempts)	
-		else:
-			print ('Sergeant.get_marshal_html(): giving up')
-			raise(requests.exceptions.ConnectionError)
+			pass 
+		attempts+=1
+
+	print ('Sergeant.get_marshal_html(): giving up')
+	raise(requests.exceptions.ConnectionError)
 
 
 
