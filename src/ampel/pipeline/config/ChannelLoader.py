@@ -84,10 +84,19 @@ class ChannelLoader:
 		"""
 		return AmpelUtils.get_by_path(chan_doc['sources'][self.source], param_name)
 
-	def get_required_resources(self):
+	def get_source_parameters(self):
+		params = {}
+		for name, chan_doc in AmpelConfig.get_config('channels').items():
+			if (chan_doc['active'] and self.source in chan_doc['sources']):
+				params[name] = chan_doc['sources'][self.source].get("parameters", {})
+		return params
+
+	def get_required_resources(self, chan_names=None):
 		resources = set()
-		for chan_doc in AmpelConfig.get_config('channels').values():
-			if not chan_doc['active']:
+		for name, chan_doc in AmpelConfig.get_config('channels').items():
+			if chan_names is not None and not name in chan_names:
+				continue
+			if (not chan_doc['active']) or (self.source not in chan_doc['sources']):
 				continue
 			if self.tier == 0:
 				filter_id = self._get_config(chan_doc, 't0Filter.dbEntryId')

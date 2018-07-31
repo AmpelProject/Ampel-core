@@ -51,3 +51,21 @@ def test_alertprocessor_entrypoint(alert_tarball, empty_mongod, postgres, graphi
 	from pymongo import MongoClient
 	mc = MongoClient(empty_mongod)
 	assert mc['Ampel_logs']['troubles'].count({}) == 0
+
+@pytest.fixture
+def live_config():
+	from ampel.pipeline.config.ConfigLoader import AmpelArgumentParser
+	from ampel.pipeline.config.AmpelConfig import AmpelConfig
+	AmpelConfig.reset()
+	AmpelArgumentParser().parse_args(args=[])
+	yield
+	AmpelConfig.reset()
+
+def test_private_channel_split(live_config):
+	from ampel.pipeline.config.ChannelLoader import ChannelLoader
+	
+	loader = ChannelLoader(source="ZTFIPAC", tier=0)
+	params = loader.get_source_parameters()
+	private = {k for k,v in params.items() if v.get('ZTFPartner', False)}
+	public = set(params.keys()).difference(private)
+	assert len(public) == 1

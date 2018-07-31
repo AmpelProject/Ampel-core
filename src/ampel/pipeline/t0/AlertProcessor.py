@@ -592,7 +592,10 @@ def run_alertprocessor():
 	action.add_argument('--broker', default='epyc.astro.washington.edu:9092')
 	action.add_argument('--tarfile', default=None)
 	parser.add_argument('--group', default=uuid.uuid1(), help="Kafka consumer group name")
-	parser.add_argument('--channels', default=None, nargs="+")
+	action = parser.add_mutually_exclusive_group(required=False)
+	action.add_argument('--channels', default=None, nargs="+", help="Run only these filters on all ZTF alerts")
+	action.add_argument('--private', default=None, action="store_true", help="Run partnership filters on all ZTF alerts")
+	action.add_argument('--public', dest="private", default=None, action="store_false", help="Run public filters on public ZTF alerts only")
 	
 	# partially parse command line to get config
 	opts, argv = parser.parse_known_args()
@@ -607,6 +610,20 @@ def run_alertprocessor():
 	from ampel.pipeline.t0.alerts.ZIAlertShaper import ZIAlertShaper
 	from ampel.pipeline.t0.ZIAlertFetcher import ZIAlertFetcher
 
+	partnership = True
+	if opts.private is not None:
+		params = loader.get_source_parameters()
+		private = {k for k,v in params.items() if v.get('ZTFPartner', False)}
+		if opts.private:
+			channels = private
+			opts.group += "-partnership"
+		else:
+			channels = set(params.keys()).difference(private)
+			opts.group += "-public"
+			partnership = False
+	else:
+		channels = opts.channels
+
 	import time
 	count = 0
 	#AlertProcessor.iter_max = 100
@@ -616,14 +633,14 @@ def run_alertprocessor():
 		loader = TarAlertLoader(tar_path=opts.tarfile)
 	else:
 		infile = '{} group {}'.format(opts.broker, opts.group)
-		fetcher = ZIAlertFetcher(opts.broker, group_name=opts.group, timeout=3600)
+		fetcher = ZIAlertFetcher(opts.broker, group_name=opts.group, partnership=partnership, timeout=3600)
 		loader = iter(fetcher)
 
 	alert_supplier = AlertSupplier(
 		loader, ZIAlertShaper(), serialization="avro", 
 		archive=ArchiveDB(AmpelConfig.get_config('resources.archive.writer'))
 	)
-	processor = AlertProcessor(publish_stats=["jobs", "graphite"], channels=opts.channels)
+	processor = AlertProcessor(publish_stats=["jobs", "graphite"], channels=channels)
 
 	while alert_processed == AlertProcessor.iter_max:
 		t0 = time.time()
