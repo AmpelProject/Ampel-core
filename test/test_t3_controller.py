@@ -139,7 +139,7 @@ def test_monitor_processes(testing_config):
 	controller = T3Controller()
 	try:
 		controller.start()
-		controller.jobs['jobbyjob'].launch_t3_job()
+		controller.job_configs['jobbyjob'].launch_t3_job()
 		stats = controller.monitor_processes()
 		assert stats['jobbyjob']['processes'] == 1
 	finally:
