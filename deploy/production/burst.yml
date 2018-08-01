@@ -153,7 +153,8 @@ services:
       - type: volume
         source: $AMPEL_SRC
         target: /Ampel
-      - $CATSHTM_PATH:/catalogs/catsHTM
+      - type: tmpfs
+        target: /tmp
     secrets:
       - mongo-alertprocessor-password
       - mongo-logger-password
@@ -176,6 +177,7 @@ services:
       - archive-write-password
       - mongo-alertprocessor-password
       - mongo-logger-password
+      - catalog-read-password
       - catalog-write-password
     environment:
       <<: *ampel-env
