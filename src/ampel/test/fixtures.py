@@ -279,6 +279,7 @@ def alert_factory(latest_schema):
 @pytest.fixture
 def minimal_ingestion_config(mongod):
 	from ampel.pipeline.config.AmpelConfig import AmpelConfig
+	from ampel.pipeline.db.AmpelDB import AmpelDB
 	
 	AmpelConfig.reset()
 	sources = {
@@ -361,6 +362,8 @@ def minimal_ingestion_config(mongod):
 		}
 	}
 	AmpelConfig.set_config(config)
+	for collection in 'main', 'photo', 'jobs', 'troubles', 'runs':
+		AmpelDB.get_collection(collection).drop()
 	yield config
 	AmpelConfig.reset()
 
@@ -378,6 +381,9 @@ def ingested_transients(alert_generator, minimal_ingestion_config, caplog):
 	
 	import numpy
 	numpy.random.seed(0)
+	
+	from ampel.pipeline.db.AmpelDB import AmpelDB
+	col_tran = AmpelDB.get_collection('main')
 	
 	channels = [T0Channel(str(i), {'version': 1, 'sources': AmpelConfig.get_config('global.sources')}, 'ZTFIPAC', lambda *args: True, set()) for i in range(2)]
 	ingester = ZIAlertIngester(channels)
