@@ -580,6 +580,7 @@ class AlertProcessor():
 def run_alertprocessor():
 
 	import os, time, uuid
+	from astropy.time import Time
 	from ampel.pipeline.config.ConfigLoader import AmpelArgumentParser
 	from ampel.pipeline.config.AmpelConfig import AmpelConfig
 	from ampel.archive import ArchiveDB
@@ -591,6 +592,8 @@ def run_alertprocessor():
 	action = parser.add_mutually_exclusive_group(required=True)
 	action.add_argument('--broker', default='epyc.astro.washington.edu:9092')
 	action.add_argument('--tarfile', default=None)
+	action.add_argument('--archive', nargs=2, type=Time, default=None, metavar='TIME')
+	parser.add_argument('--slot', env_var='SLOT', type=int, default=None, help="Index of archive reader worker")
 	parser.add_argument('--group', default=uuid.uuid1(), help="Kafka consumer group name")
 	action = parser.add_mutually_exclusive_group(required=False)
 	action.add_argument('--channels', default=None, nargs="+", help="Run only these filters on all ZTF alerts")
@@ -628,18 +631,36 @@ def run_alertprocessor():
 	count = 0
 	#AlertProcessor.iter_max = 100
 	alert_processed = AlertProcessor.iter_max
+	archive = None
 	if opts.tarfile is not None:
 		infile = opts.tarfile
 		loader = TarAlertLoader(tar_path=opts.tarfile)
+	elif opts.archive is not None:
+		if opts.slot is None:
+			import os
+			print(os.environ)
+			parser.error("You must specify --slot in archive mode")
+		elif opts.slot < 1 or opts.slot > 16:
+			parser.error("Slot number must be between 1 and 16 (got {})".format(opts.slot))
+		infile = 'archive'
+		archive = ArchiveDB(AmpelConfig.get_config('resources.archive.writer'))
+		loader = archive.get_alerts_in_time_range(opts.archive[0].jd, opts.archive[1].jd,
+		    partitions=(opts.slot-1), programid=(None if partnership else 1))
 	else:
 		infile = '{} group {}'.format(opts.broker, opts.group)
 		fetcher = ZIAlertFetcher(opts.broker, group_name=opts.group, partnership=partnership, timeout=3600)
 		loader = iter(fetcher)
 
+	# insert loaded alerts into the archive only if they didn't come from the archive in the first place
+	serialization = "avro"
+	if archive is None:
+		archive = ArchiveDB(AmpelConfig.get_config('resources.archive.writer'))
+	else:
+		archive = None
+		serialization = None
 	alert_supplier = AlertSupplier(
-		loader, ZIAlertShaper(), serialization="avro", 
-		archive=ArchiveDB(AmpelConfig.get_config('resources.archive.writer'))
-	)
+		loader, ZIAlertShaper(), serialization=serialization, 
+		archive=archive)
 	processor = AlertProcessor(publish_stats=["jobs", "graphite"], channels=channels)
 
 	while alert_processed == AlertProcessor.iter_max:

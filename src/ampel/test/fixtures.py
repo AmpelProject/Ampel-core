@@ -58,6 +58,28 @@ def postgres():
 	port = next(gen)
 	yield 'postgresql://ampel@localhost:{}/ztfarchive'.format(port)
 
+@pytest.fixture
+def empty_archive(postgres):
+	"""
+	Yield archive database, dropping all rows when finished
+	"""
+	from sqlalchemy import select, create_engine, MetaData
+
+	engine = create_engine(postgres)
+	meta = MetaData()
+	meta.reflect(bind=engine)
+	try:
+		with engine.connect() as connection:
+			for name, table in meta.tables.items():
+				if name != 'versions':
+					connection.execute(table.delete())
+		yield postgres
+	finally:
+		with engine.connect() as connection:
+			for name, table in meta.tables.items():
+				if name != 'versions':
+					connection.execute(table.delete())
+
 @pytest.fixture(scope='session')
 def alert_tarball():
 	return join(dirname(__file__), '..', '..', '..', 'alerts', 'recent_alerts.tar.gz')
@@ -269,15 +291,60 @@ def minimal_ingestion_config(mongod):
 			"flags": {
 				"photo": "INST_ZTF",
 				"main": "INST_ZTF"
-			}
+			},
+			"t0Filter" : {
+				"dbEntryId": "BasicFilter",
+				"runConfig": {
+					"operator": ">",
+					"len": 1,
+					"criteria" : [{
+						"attribute": "obsDate",
+						"operator": ">",
+						"value": 0
+					}]
+				},
+			},
+			"t2Compute" : [],
+			"t3Supervise" : [],
+			
+			"alerts": {
+				"alertHistoryLength": 30,
+				"processing": {
+					"parse": "ampel.pipeline.t0.alerts.ZIAlertParser",
+					"shape": "ampel.pipeline.t0.alerts.ZIAlertShaper",
+					"serialization": "avro"
+				},
+				"flags": [[
+					"INST_ZTF",
+					"SRC_IPAC"
+				]],
+				"mappings": {
+					"tranId": "objectId",
+					"pptId": "candid",
+					"obsDate": "jd",
+					"filterId": "fid",
+					"mag": "magpsf"
+				}
+			},
+			"ingestion": {
+				"class": "ampel.pipeline.t0.ingesters.ZIAlertIngester",
+				"photoShaper": "ampel.pipeline.t0.ingesters.ZIPhotoPointShaper",
+				"checkReprocessing": True,
+				"tranIdPrefix": None
+			},
 		}
 	}
-	make_channel = lambda name: (str(name), {'version': 1, 'sources': sources})
+	make_channel = lambda name: (str(name), {'version': 1, 'active': True, 'sources': sources})
 	config = {
 		'global': {'sources': sources},
 		'resources': {'mongo': {'writer': mongod, 'logger': mongod}},
 		't2_units': {},
 		'channels': dict(map(make_channel, range(2))),
+		't0_filters' : {
+			'BasicFilter': {
+				'classFullPath': 'ampel.pipeline.t0.filters.BasicFilter'
+			}
+		},
 		't3_jobs' : {
 			'jobbyjob': {
 				'input': {
