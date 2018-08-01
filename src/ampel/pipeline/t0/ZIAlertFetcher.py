@@ -8,6 +8,7 @@ import itertools
 import logging
 import uuid
 import time
+import sys
 from collections import defaultdict
 
 log = logging.getLogger('ampel.pipeline.t0.ZIAlertFetcher')
@@ -34,7 +35,7 @@ class AllConsumingConsumer(object):
 		self._consumer.subscribe(topics)
 		if timeout is None:
 			self._poll_interval = 1
-			self._poll_attempts = sys.maxint
+			self._poll_attempts = sys.maxsize
 		else:
 			self._poll_interval = max((1, min((30, timeout))))
 			self._poll_attempts = max((1, int(timeout / self._poll_interval)))
