@@ -14,7 +14,7 @@ with_env() {
 }
 
 if [[ "$1" == "dryrun" ]]; then
-	machine=${2:=$(hostname | cut -d. -f1)}
+	machine=${2:-$(hostname | cut -d. -f1)}
 	singularity-stack rm $machine
 	sleep 1
 	if [[ "$machine" == "burst" ]]; then
