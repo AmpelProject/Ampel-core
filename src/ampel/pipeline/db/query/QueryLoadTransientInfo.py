@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 14.02.2018
-# Last Modified Date: 04.07.2018
+# Last Modified Date: 02.08.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from bson.binary import Binary
@@ -49,8 +49,8 @@ class QueryLoadTransientInfo:
 		* content_types: instance of AlDocTypes. 
 		  AlDocTypes.PHOTOPOINT and AlDocTypes.UPPERLIMIT will be ignored
 
-		* t2_ids: list of t2 unit ids (string). 
-		  If None, all associated t2 docs will be loaded
+		* t2_ids: t2 unit id (string) or list of t2 unit ids. 
+		  If None or empty list, all associated t2 docs will be loaded
 		"""
 
 		match_dict = {}
@@ -68,7 +68,7 @@ class QueryLoadTransientInfo:
 			)
 
 		# Everything should be retrieved (AlDocTypes: 1+2+4+8=15)
-		if t2_ids is None and content_types.value == 15:
+		if not t2_ids and content_types.value == 15:
 			return match_dict
 
 		# Build array of AlDocTypes (AlDocTypes.T2RECORD will be set later since it depends in t2_ids)
@@ -77,7 +77,7 @@ class QueryLoadTransientInfo:
 			if al_type in content_types
 		]
 
-		if t2_ids is None:
+		if not t2_ids:
 
 			# Complete alDocType with type T2RECORD if so wished
 			if AlDocTypes.T2RECORD in content_types:
@@ -225,7 +225,7 @@ class QueryLoadTransientInfo:
 				'compId': match_comp_ids
 			}
 
-			if t2_ids is not None:
+			if t2_ids:
 				t2_match['t2Unit'] = (
 					t2_ids if type(t2_ids) is str 
 					else (
