@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 14.12.2017
-# Last Modified Date: 16.07.2018
+# Last Modified Date: 03.08.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import logging, time
@@ -656,6 +656,20 @@ class ZIAlertIngester(AbsAlertIngester):
 			)
 		)
 
+		# Perform DB insertions
+		self.update_db(start, tran_id, db_photo_ops, db_main_ops)
+
+		# Update counter metrics
+		if self.count_dict is not None:
+			self.count_dict['pps'] += len(pps_to_insert)
+			self.count_dict['uls'] += len(uls_to_insert)
+			self.count_dict['t2s'] += t2_upserts
+			self.count_dict['comps'] += compound_upserts
+			self.count_dict['ppReprocs'] += pps_reprocs
+
+
+	def update_db(self, start, tran_id, db_photo_ops, db_main_ops, retry=True):
+
 		try: 
 
 			# If we measure the DB insertion times
@@ -665,7 +679,7 @@ class ZIAlertIngester(AbsAlertIngester):
 				self.time_dict['preIngestTime'].append(time.time() - start)
 
 				# Perform DB operations: photo
-				if len(db_photo_ops) > 0:
+				if db_photo_ops:
 					start = time.time()
 					db_photo_results = self.photo_col.bulk_write(db_photo_ops, ordered=False)
 					time_delta = time.time() - start
@@ -679,13 +693,6 @@ class ZIAlertIngester(AbsAlertIngester):
 					time_delta = time.time() - start
 					self.time_dict['dbBulkTimeMain'].append(time_delta)
 					self.time_dict['dbPerOpMeanTimeMain'].append(time_delta / len(db_main_ops))
-
-				# Counters
-				self.count_dict['pps'] += len(pps_to_insert)
-				self.count_dict['uls'] += len(uls_to_insert)
-				self.count_dict['t2s'] += t2_upserts
-				self.count_dict['comps'] += compound_upserts
-				self.count_dict['ppReprocs'] += pps_reprocs
 
 			# no metric
 			else:
@@ -762,23 +769,42 @@ class ZIAlertIngester(AbsAlertIngester):
 		# other Exception will be caught in AlertProcessor
 		except BulkWriteError as bwe: 
 
-			# TODO add error flag to Job and Transient
-			# TODO add return code 
+			from inspect import currentframe, getframeinfo
+			frameinfo = getframeinfo(currentframe())
 
 			# Log error
 			self.logger.error(bwe.details) 
 
-			# Populate troubles collection
-			from inspect import currentframe, getframeinfo
-			frameinfo = getframeinfo(currentframe())
-			AmpelDB.get_collection('troubles').insert_one(
-				{
-					'tier': 0,
-					'location': '%s:%s' % (frameinfo.filename, frameinfo.lineno),
-					'ampelMsg': 'BulkWriteError during alert ingestion',
-					'tranId':  tran_id,
-					'logs':  self.job_id,
-					'bulkApiResult': str(bwe.details)
-				}
-			)
+			# TODO add error flag to Job and Transient
+			# -> Update transient journal !!
+
+			if not retry:
+				self._new_trouble_doc(tran_id, frameinfo, bwe)
+				return
+
+			for err_dict in bwe.details.get('writeErrors', []):
+				if err_dict.get("code") == 11000 and "photo" in err_dict.get("errmsg"):
+					self.logger.info("Race condition detected during photo insertion")
+				else:
+					self._new_trouble_doc(tran_id, frameinfo, bwe)
+					return
+
+			self.logger.info("BulkWriteError solely due to race condition(s), trying one more time...")
+			self.update_db(start, tran_id, db_photo_ops, db_main_ops, retry=False)
+
+
+	def _new_trouble_doc(self, tran_id, frameinfo, bwe):
+		"""
+		"""
+		# Populate troubles collection
+		AmpelDB.get_collection('troubles').insert_one(
+			{
+				'tier': 0,
+				'location': '%s:%s' % (frameinfo.filename, frameinfo.lineno),
+				'ampelMsg': 'BulkWriteError during alert ingestion',
+				'tranId':  tran_id,
+				'logs':  self.job_id,
+				'bulkApiResult': str(bwe.details)
+			}
+		)
 
