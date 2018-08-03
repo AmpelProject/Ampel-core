@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 26.02.2018
-# Last Modified Date: 23.07.2018
+# Last Modified Date: 03.08.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import logging
@@ -260,14 +260,32 @@ class T3Job:
 	
 						# Feed each task with transient views
 						for t3_task in t3_tasks:
-							t3_task.update(tran_register)
-				
+							try:
+								t3_task.update(tran_register)
+							except:
+								AmpelUtils.report_exception(
+									self.logger, tier=3, info={
+										'jobName': self.job_config.job_name,
+										'taskName': t3_task.task_config.task_doc.get("name"),
+										'logs':  self.log_id,
+									}
+								)
 	
 			# For each task, execute done()
 			for t3_task in t3_tasks:
 	
-				# execute embedded t3unit instance method done()
-				specific_journal_entries = t3_task.done()
+				try:
+					# execute embedded t3unit instance method done()
+					specific_journal_entries = t3_task.done()
+				except:
+					AmpelUtils.report_exception(
+						self.logger, tier=3, info={
+							'jobName': self.job_config.job_name,
+							'taskName': t3_task.task_config.task_doc.get("name"),
+							'logs':  self.log_id,
+						}
+					)
+					continue
 	
 				# Update journal with task related info
 				self.general_journal_update(t3_task, int(time_start))
