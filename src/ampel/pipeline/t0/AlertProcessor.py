@@ -579,7 +579,7 @@ class AlertProcessor():
 
 def run_alertprocessor():
 
-	import os, time, uuid
+	import os, time, uuid, logging
 	from astropy.time import Time
 	from ampel.pipeline.config.ConfigLoader import AmpelArgumentParser
 	from ampel.pipeline.config.AmpelConfig import AmpelConfig
@@ -594,7 +594,7 @@ def run_alertprocessor():
 	action.add_argument('--tarfile', default=None)
 	action.add_argument('--archive', nargs=2, type=Time, default=None, metavar='TIME')
 	parser.add_argument('--slot', env_var='SLOT', type=int, default=None, help="Index of archive reader worker")
-	parser.add_argument('--group', default=uuid.uuid1(), help="Kafka consumer group name")
+	parser.add_argument('--group', default=uuid.uuid1().hex, help="Kafka consumer group name")
 	action = parser.add_mutually_exclusive_group(required=False)
 	action.add_argument('--channels', default=None, nargs="+", help="Run only these filters on all ZTF alerts")
 	action.add_argument('--private', default=None, action="store_true", help="Run partnership filters on all ZTF alerts")
@@ -663,14 +663,15 @@ def run_alertprocessor():
 		archive=archive)
 	processor = AlertProcessor(publish_stats=["jobs", "graphite"], channels=channels)
 
+	log = logging.getLogger('ampel-alertprocessor')
 	while alert_processed == AlertProcessor.iter_max:
 		t0 = time.time()
-		print('Running on {}'.format(infile))
+		log.info('Running on {}'.format(infile))
 		try:
 			alert_processed = processor.run(alert_supplier, console_logging=False)
 		finally:
 			t1 = time.time()
 			dt = t1-t0
-			print('({}) {} alerts in {:.1f}s; {:.1f}/s'.format(infile, alert_processed, dt, alert_processed/dt))
+			log.info('({}) {} alerts in {:.1f}s; {:.1f}/s'.format(infile, alert_processed, dt, alert_processed/dt))
 
 
