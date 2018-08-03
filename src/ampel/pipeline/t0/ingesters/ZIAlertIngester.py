@@ -778,7 +778,7 @@ class ZIAlertIngester(AbsAlertIngester):
 					'ampelMsg': 'BulkWriteError during alert ingestion',
 					'tranId':  tran_id,
 					'logs':  self.job_id,
-					'bulkApiResult': bwe.details
+					'bulkApiResult': str(bwe.details)
 				}
 			)
 
