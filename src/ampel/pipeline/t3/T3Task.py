@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 06.03.2018
-# Last Modified Date: 23.07.2018
+# Last Modified Date: 03.08.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import logging
@@ -18,10 +18,8 @@ class T3Task:
 
 	def __init__(self, t3_task_config, channels, logger, global_info=None):
 		"""
-		t3_unit_instance: instance of child class of ampel.base.abstract.AbsT3Unit
+		t3_task_config: instance of child class of ampel.pipeline.t3.T3TaskConfig
 		channels: channel(s) sub-selection: string or list of strings
-		t2_ids: t2 id(s) sub-selection: string or list of strings
-		log_header: string
 		logger: logger from python module 'logging'
 		global_info: optional dict instance containing info such as:
 			* last time the associated job was run
