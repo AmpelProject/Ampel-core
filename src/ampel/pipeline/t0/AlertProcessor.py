@@ -579,7 +579,7 @@ class AlertProcessor():
 
 def run_alertprocessor():
 
-	import os, time, uuid
+	import os, time, uuid, logging
 	from astropy.time import Time
 	from ampel.pipeline.config.ConfigLoader import AmpelArgumentParser
 	from ampel.pipeline.config.AmpelConfig import AmpelConfig
@@ -663,14 +663,15 @@ def run_alertprocessor():
 		archive=archive)
 	processor = AlertProcessor(publish_stats=["jobs", "graphite"], channels=channels)
 
+	log = logging.getLogger('ampel-alertprocessor')
 	while alert_processed == AlertProcessor.iter_max:
 		t0 = time.time()
-		print('Running on {}'.format(infile))
+		log.info('Running on {}'.format(infile))
 		try:
 			alert_processed = processor.run(alert_supplier, console_logging=False)
 		finally:
 			t1 = time.time()
 			dt = t1-t0
-			print('({}) {} alerts in {:.1f}s; {:.1f}/s'.format(infile, alert_processed, dt, alert_processed/dt))
+			log.info('({}) {} alerts in {:.1f}s; {:.1f}/s'.format(infile, alert_processed, dt, alert_processed/dt))
 
 
