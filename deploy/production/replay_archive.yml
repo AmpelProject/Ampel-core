@@ -21,7 +21,7 @@ x-ampel-env: &ampel-env
   EXTCATS_READER_USERNAME: filterclient
   EXTCATS_READER_PASSWORD_FILE: /run/secrets/catalog-read-password
 
-  SLOT: {{.Task.Slot}}
+  SLOT: "{{.Task.Slot}}"
 
 x-ampel: &ampel
   image: ampel:$AMPEL_TAG
