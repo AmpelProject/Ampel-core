@@ -669,6 +669,8 @@ class ZIAlertIngester(AbsAlertIngester):
 
 
 	def update_db(self, start, tran_id, db_photo_ops, db_main_ops, retry=True):
+		"""
+		"""
 
 		try: 
 
