@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 13.01.2018
-# Last Modified Date: 04.07.2018
+# Last Modified Date: 04.08.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from bson import ObjectId
@@ -291,7 +291,7 @@ class DBContentLoader:
 				# otherwise: intersection
 				tran_data.set_channels(
 					# Transient doc['channels'] cannot be None
-					doc['channels'] if channels is None
+					AmpelUtils.to_set(doc['channels']) if channels is None
 					else (channels_set & set(doc['channels'])) # intersection
 				)
 
