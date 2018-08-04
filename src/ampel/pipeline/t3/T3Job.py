@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 26.02.2018
-# Last Modified Date: 03.08.2018
+# Last Modified Date: 04.08.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import logging
@@ -565,85 +565,36 @@ class T3Job:
 
 		try:
 
-			task_name = t3_task.get_config('name')
-			update_many_ids = list(
-				set(t3_task.fed_tran_ids) - set(t3_task.multi_view_chans.keys())
-			)
+			for channels in t3_task.journal_notes.keys():
 
-			# Update many 
-			upd_res = self.col_tran.update_many(
-				{
-					'alDocType': AlDocTypes.TRANSIENT, 
-					'tranId': {'$in': update_many_ids}
-				},
-				{
-					'$push': {
-						"journal": {
-							'tier': 3,
-							'dt': int_time_start,
-							'jobName':  self.job_config.job_name,
-							'taskName': task_name,
-							'channel(s)': t3_task.channels,
-							'logs': self.log_id
+				# Update many 
+				upd_res = self.col_tran.update_many(
+					{
+						'alDocType': AlDocTypes.TRANSIENT, 
+						'tranId': {'$in': t3_task.journal_notes[channels]}
+					},
+					{
+						'$push': {
+							"journal": {
+								'tier': 3,
+								'dt': int_time_start,
+								'jobName':  self.job_config.job_name,
+								'taskName': t3_task.get_config('name'),
+								'channel(s)': list(channels), # type(channels) is frozenset
+								'logs': self.log_id
+							}
 						}
 					}
-				}
-			)
-
-			# At least one update was not applied
-			if upd_res.modified_count != len(update_many_ids):
-
-				# Populate troubles collection
-				from inspect import currentframe, getframeinfo
-				self._report_error(
-					'transient journal update_many error', getframeinfo(currentframe()),
-					t3_task.get_config('name'), upd_res=upd_res
 				)
-
-			# If multi-channel transient views with reduced set of channels exist
-			if t3_task.multi_view_chans:
-
-				bulk_updates = []
-
-				# Create db update requests
-				for tran_id in t3_task.multi_view_chans.keys():
-					bulk_updates.append(
-						UpdateOne(
-							{
-								'alDocType': AlDocTypes.TRANSIENT, 
-								'tranId': tran_id
-							},
-							{
-								'$push': {
-									"journal": {
-										'tier': 3,
-										'dt': int_time_start,
-										'jobName':  self.job_config.job_name,
-										'taskName': task_name,
-										'channel(s)': t3_task.channels,
-										'multiViewChannels': t3_task.multi_view_chans[tran_id],
-										'logs': self.log_id
-									}
-								}
-							}
-						)
-					)
-
-				# Execute bulk updates
-				mongo_res = self.col_tran.bulk_write(
-					bulk_updates, ordered=False
-				)
-
-				if (
-					mongo_res.bulk_api_result['writeErrors'] or
-					mongo_res.bulk_api_result['writeConcernErrors']
-				):
-
+	
+				# At least one update was not applied
+				if upd_res.modified_count != len(t3_task.journal_notes[channels]):
+	
 					# Populate troubles collection
 					from inspect import currentframe, getframeinfo
 					self._report_error(
-						'transient journal bulk update error', getframeinfo(currentframe()),
-						task_name, bulk_write_result=mongo_res
+						'transient journal update_many error', getframeinfo(currentframe()),
+						t3_task.get_config('name'), upd_res=upd_res
 					)
 
 		except:
@@ -653,7 +604,7 @@ class T3Job:
 				self.logger, tier=3, info={
 					'ampelMsg': 'Exception occured in general_journal_update',
 					'jobName': self.job_config.job_name,
-					'taskName': task_name,
+					'taskName': t3_task.get_config('name'),
 					'logs':  self.log_id,
 				}
 			)
