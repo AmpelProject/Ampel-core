@@ -785,6 +785,7 @@ class ZIAlertIngester(AbsAlertIngester):
 			# -> Update transient journal !!
 
 			if not retry:
+				self.logger.info("update_db no retry: creating trouble doc and giving up")
 				self._new_trouble_doc(tran_id, frameinfo, bwe)
 				return
 
