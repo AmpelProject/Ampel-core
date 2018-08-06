@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 06.03.2018
-# Last Modified Date: 09.07.2018
+# Last Modified Date: 04.08.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from functools import reduce
@@ -41,7 +41,8 @@ class T3JobConfig:
 				{
 					Required('mode'): 'fixed_rate',
 					Required('interval'): int
-				}
+				},
+				'manual'
 			),
 			Required('task(s)'): Any(
 				T3TaskConfig.t3_task_schema, 

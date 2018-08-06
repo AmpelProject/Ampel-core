@@ -88,8 +88,8 @@ class ArchiveDB(object):
     def get_alerts(self, candids):
         return get_alerts(self._connection, self._meta, candids)
 
-    def get_alerts_in_time_range(self, jd_min, jd_max, partitions=None):
-        return get_alerts_in_time_range(self._connection, self._meta, jd_min, jd_max, partitions)
+    def get_alerts_in_time_range(self, jd_min, jd_max, partitions=None, programid=None):
+        return get_alerts_in_time_range(self._connection, self._meta, jd_min, jd_max, partitions, programid)
 
     def get_alerts_in_cone(self, ra, dec, radius, jd_min=None, jd_max=None):
         return get_alerts_in_cone(self._connection, self._meta, ra, dec, radius, jd_min, jd_max)
@@ -230,7 +230,7 @@ def get_alerts_for_object(connection, meta, objectId, jd_start=-float('inf'), jd
 
     yield from fetch_alerts_with_condition(connection, meta, in_range, Alert.c.jd.asc())
 
-def get_alerts_in_time_range(connection, meta, jd_start, jd_end, partitions=None):
+def get_alerts_in_time_range(connection, meta, jd_start, jd_end, partitions=None, programid=None):
     """
     Retrieve a range of alerts from the archive database
 
@@ -252,6 +252,8 @@ def get_alerts_in_time_range(connection, meta, jd_start, jd_end, partitions=None
         in_range = and_(in_range, and_(Alert.c.partition_id >= partitions.start, Alert.c.partition_id < partitions.stop))
     elif partitions is not None:
         raise TypeError("partitions must be int or slice")
+    if isinstance(programid, int):
+        in_range = and_(in_range, Alert.c.programid == programid)
 
     yield from fetch_alerts_with_condition(connection, meta, in_range, Alert.c.jd.asc())
 

@@ -8,6 +8,7 @@ import itertools
 import logging
 import uuid
 import time
+import sys
 from collections import defaultdict
 
 log = logging.getLogger('ampel.pipeline.t0.ZIAlertFetcher')
@@ -16,7 +17,7 @@ from confluent_kafka import Consumer, TopicPartition, KafkaError, Message
 
 class AllConsumingConsumer(object):
 	"""Consume messages on all topics beginning with 'ztf_'."""
-	def __init__(self, broker, timeout=None, **consumer_config):
+	def __init__(self, broker, timeout=None, topics=['^ztf_.*'], **consumer_config):
 		config = {
 			"bootstrap.servers": broker,
 			"default.topic.config": {"auto.offset.reset": "smallest"},
@@ -31,10 +32,10 @@ class AllConsumingConsumer(object):
 		config.update(**consumer_config)
 		self._consumer = Consumer(**config)
 		
-		self._consumer.subscribe(['^ztf_.*'])
+		self._consumer.subscribe(topics)
 		if timeout is None:
 			self._poll_interval = 1
-			self._poll_attempts = sys.maxint
+			self._poll_attempts = sys.maxsize
 		else:
 			self._poll_interval = max((1, min((30, timeout))))
 			self._poll_attempts = max((1, int(timeout / self._poll_interval)))
@@ -88,8 +89,15 @@ class AllConsumingConsumer(object):
 class ZIAlertFetcher:
 	"""
 	ZI: shortcut for ZTF IPAC.
+	
+	:param bootstrap: host:port of Kafka server
+	:param group_name: consumer group name. Fetchers with the same group name
+	    will be load balanced and receive disjoint sets of messages
+	:param partnership: if True, subscribe to ZTF partnership alerts. Otherwise,
+	    subscribe only to the public alert stream
+	:param timeout: time to wait for messages before giving up, in seconds
 	"""
-	def __init__(self, bootstrap='epyc.astro.washington.edu:9092', group_name=uuid.uuid1(), timeout=1):
+	def __init__(self, bootstrap='epyc.astro.washington.edu:9092', group_name=uuid.uuid1(), partnership=True, timeout=1):
 		"""
 		:param archive_db: an instance of :py:class:`ampel.archive.ArchiveDB`
 		:param zookeeper: ZooKeeper hosts to use for broker and topic discovery
@@ -98,8 +106,10 @@ class ZIAlertFetcher:
 		:type group_name: bytes
 		:param timeout: number of seconds to wait for a message
 		"""
-		# TODO: handle timeout
-		self._consumer = AllConsumingConsumer(bootstrap, timeout=timeout, **{'group.id':group_name})
+		topics = ['^ztf_.*_programid1']
+		if partnership:
+			topics.append('^ztf_.*_programid2')
+		self._consumer = AllConsumingConsumer(bootstrap, timeout=timeout, topics=topics, **{'group.id':group_name})
 
 	def alerts(self, limit=None):
 		"""

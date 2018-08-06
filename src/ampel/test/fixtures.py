@@ -58,6 +58,28 @@ def postgres():
 	port = next(gen)
 	yield 'postgresql://ampel@localhost:{}/ztfarchive'.format(port)
 
+@pytest.fixture
+def empty_archive(postgres):
+	"""
+	Yield archive database, dropping all rows when finished
+	"""
+	from sqlalchemy import select, create_engine, MetaData
+
+	engine = create_engine(postgres)
+	meta = MetaData()
+	meta.reflect(bind=engine)
+	try:
+		with engine.connect() as connection:
+			for name, table in meta.tables.items():
+				if name != 'versions':
+					connection.execute(table.delete())
+		yield postgres
+	finally:
+		with engine.connect() as connection:
+			for name, table in meta.tables.items():
+				if name != 'versions':
+					connection.execute(table.delete())
+
 @pytest.fixture(scope='session')
 def alert_tarball():
 	return join(dirname(__file__), '..', '..', '..', 'alerts', 'recent_alerts.tar.gz')
@@ -257,6 +279,7 @@ def alert_factory(latest_schema):
 @pytest.fixture
 def minimal_ingestion_config(mongod):
 	from ampel.pipeline.config.AmpelConfig import AmpelConfig
+	from ampel.pipeline.db.AmpelDB import AmpelDB
 	
 	AmpelConfig.reset()
 	sources = {
@@ -269,15 +292,60 @@ def minimal_ingestion_config(mongod):
 			"flags": {
 				"photo": "INST_ZTF",
 				"main": "INST_ZTF"
-			}
+			},
+			"t0Filter" : {
+				"dbEntryId": "BasicFilter",
+				"runConfig": {
+					"operator": ">",
+					"len": 1,
+					"criteria" : [{
+						"attribute": "obsDate",
+						"operator": ">",
+						"value": 0
+					}]
+				},
+			},
+			"t2Compute" : [],
+			"t3Supervise" : [],
+			
+			"alerts": {
+				"alertHistoryLength": 30,
+				"processing": {
+					"parse": "ampel.pipeline.t0.alerts.ZIAlertParser",
+					"shape": "ampel.pipeline.t0.alerts.ZIAlertShaper",
+					"serialization": "avro"
+				},
+				"flags": [[
+					"INST_ZTF",
+					"SRC_IPAC"
+				]],
+				"mappings": {
+					"tranId": "objectId",
+					"pptId": "candid",
+					"obsDate": "jd",
+					"filterId": "fid",
+					"mag": "magpsf"
+				}
+			},
+			"ingestion": {
+				"class": "ampel.pipeline.t0.ingesters.ZIAlertIngester",
+				"photoShaper": "ampel.pipeline.t0.ingesters.ZIPhotoPointShaper",
+				"checkReprocessing": True,
+				"tranIdPrefix": None
+			},
 		}
 	}
-	make_channel = lambda name: (str(name), {'version': 1, 'sources': sources})
+	make_channel = lambda name: (str(name), {'version': 1, 'active': True, 'sources': sources})
 	config = {
 		'global': {'sources': sources},
 		'resources': {'mongo': {'writer': mongod, 'logger': mongod}},
 		't2_units': {},
 		'channels': dict(map(make_channel, range(2))),
+		't0_filters' : {
+			'BasicFilter': {
+				'classFullPath': 'ampel.pipeline.t0.filters.BasicFilter'
+			}
+		},
 		't3_jobs' : {
 			'jobbyjob': {
 				'input': {
@@ -294,6 +362,8 @@ def minimal_ingestion_config(mongod):
 		}
 	}
 	AmpelConfig.set_config(config)
+	for collection in 'main', 'photo', 'jobs', 'troubles', 'runs':
+		AmpelDB.get_collection(collection).drop()
 	yield config
 	AmpelConfig.reset()
 
@@ -311,6 +381,9 @@ def ingested_transients(alert_generator, minimal_ingestion_config, caplog):
 	
 	import numpy
 	numpy.random.seed(0)
+	
+	from ampel.pipeline.db.AmpelDB import AmpelDB
+	col_tran = AmpelDB.get_collection('main')
 	
 	channels = [T0Channel(str(i), {'version': 1, 'sources': AmpelConfig.get_config('global.sources')}, 'ZTFIPAC', lambda *args: True, set()) for i in range(2)]
 	ingester = ZIAlertIngester(channels)

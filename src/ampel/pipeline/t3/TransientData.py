@@ -121,7 +121,7 @@ class TransientData:
 		if channels is None:
 
 			# No lightcurve/science record/compound associated with this transient 
-			if len(self.channels) == 0:
+			if not self.channels:
 				raise ValueError("TransientData not associated with any channel")
 
 			# At least one channel association exisits

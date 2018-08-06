@@ -12,6 +12,7 @@ import requests
 import urllib, base64
 import re, os, datetime, json, time
 from collections import defaultdict
+import logging
 
 # less standard imports
 import  configparser 			# pip3 install configparser
@@ -40,9 +41,7 @@ httpErrors = {
 	503: 'Error 503: Service Unavailable.'
 }
 
-
-
-
+log = logging.getLogger(__name__)
 
 class PTFConfig(object) :
 	def __init__(self) :		
@@ -62,16 +61,12 @@ def get_marshal_html(weblink, max_attempts=5, marshalusr=None,marshalpwd=None):
 			reponse = requests.get(weblink, auth=auth, timeout=30+(60*attempts-1))
 			return reponse.text
 		except Exception as e:
-			print ('Sergeant.get_marshal_html(): ', weblink)
-			print (e)
-			print ('Sergeant.get_marshal_html(): this attempt number {0:0}, {1:1} left'.format(attempts, max_attempts-attempts))
+			log.error('Sergeant.get_marshal_html({}): {} this attempt number {0:0}, {1:1} left'.format(weblink, e, attempts, max_attempts-attempts))
 			time.sleep(3)
 		attempts+=1
 
-	print ('Sergeant.get_marshal_html(): giving up')
+	log.error('giving up')
 	raise(requests.exceptions.ConnectionError)
-
-
 
 try:
 	from bs4 import BeautifulSoup
@@ -124,8 +119,8 @@ class Sergeant(object):
 				self.cutprogramidx = x['programidx']
 		
 		if self.cutprogramidx is None:
-			print ('ERROR, program_name={0} not found'.format(self.program_name))
-			print ('Options for this user are:', self.program_options)
+			log.error('program_name={0} not found'.format(self.program_name))
+			log.error('Options for this user are: {}'.format(self.program_options))
 			return None
 
 	def _get(self, url):
@@ -143,7 +138,7 @@ class Sergeant(object):
 					return request
 				
 	def list_my_programids(self):
-		print('My current programs:', self.program_options)
+		log.info('My current programs: {}'.format(self.program_options))
 
 
 	def set_programid(self,programname):
@@ -156,19 +151,19 @@ class Sergeant(object):
 				self.program_name = programname
 								
 		if self.cutprogramidx is None:
-			print ('ERROR, program_name={0} not found'.format(self.program_name))
-			print ('Options for this user are:', self.program_options)
+			log.error('program_name={0} not found'.format(self.program_name))
+			log.error('Options for this user are: {}'.format(self.program_options))
 			return None
 				
 		return self.cutprogramidx
 						
 				
 	def list_scan_sources(self, hardlimit=200):
-		print ('start_date : {0}'.format(self.start_date))
-		print ('end_date   : {0}'.format(self.end_date))
+		log.debug('start_date : {0}'.format(self.start_date))
+		log.debug('end_date   : {0}'.format(self.end_date))
 
 		if self.cutprogramidx is None:
-			print('ERROR, first fix program_name upon init')
+			log.error('first fix program_name upon init')
 			return []
 		self.scan_soup = soup_obj(scanning_url + "?cutprogramidx=%s&startdate=%s&enddate=%s&HARDLIMIT=%s" %\
 				(self.cutprogramidx, self.start_date, self.end_date, hardlimit),marshalusr=self.marshalusr,marshalpwd=self.marshalpwd)
@@ -183,7 +178,7 @@ class Sergeant(object):
 				if self.program_name in x.text:
 					self.program = x["value"]
 		else:
-			print ('No sources on scan page')
+			log.info('No sources on scan page')
 			self.program = None
 
 		sources = []
@@ -230,7 +225,7 @@ class Sergeant(object):
 		import yaml
 		t_now = astropy.time.Time.now()
 		if self.cutprogramidx is None:
-			print('ERROR, first fix program_name upon init')
+			log.error('first fix program_name upon init')
 			return []
 		targ0 = 0
 		page_number = 1
@@ -241,7 +236,7 @@ class Sergeant(object):
 				break
 
 			if verbose:
-				print ('list_saved_sources: reading page {0}'.format(page_number))				
+				log.info('list_saved_sources: reading page {0}'.format(page_number))				
 								
 			self.saved_soup = soup_obj(rawsaved_url + "?programidx=%s&offset=%s" %\
 				(self.cutprogramidx, targ0),marshalusr=self.marshalusr,marshalpwd=self.marshalpwd)
@@ -294,7 +289,7 @@ class Sergeant(object):
 
 					except IndexError:
 						if verbose:
-							print('{0} has no auto_annotation'.format(sources[-1]["name"]))
+							log.warn('{0} has no auto_annotation'.format(sources[-1]["name"]))
 			targ0 += 100
 			page_number+=1
 		return sources
@@ -342,8 +337,7 @@ class Sergeant(object):
 			return phot_dict
 		
 		except json.JSONDecodeError:
-			print ('something wrong with this summary page:')
-			print (summary_url%source['id'])
+			log.error('something wrong with this summary page: {}'.format(summary_url%source['id']))
 			return None
 
 
@@ -398,9 +392,9 @@ class Sergeant(object):
 					all_annotations.append( comment_tuple )
 					
 					if verbose:
-						print ('comment id =',comment_id)
-						print (one_line)
-						print ('---')
+						log.info('comment id = {}'.format(comment_id))
+						log.info(one_line)
+						log.info('---')
 		return all_annotations
 
 	def comment(self, comment, source, comment_type="info", comment_id=None, remove=False):
@@ -436,20 +430,20 @@ class Sergeant(object):
 		if "annotations" in source:
 			comment_list = source["annotations"]
 		else:
-			print ('getting current annotations...')
+			log.debug('getting current annotations...')
 			comment_list = self.get_annotations(source)
 		
 		current_comm = ''.join([tup[4] for tup in comment_list if tup[3]==comment_type])
 
 		
 		if comment in ''.join(current_comm):	
-			print ('this comment was already made in current annotations')
+			log.info('this comment was already made in current annotations')
 			current_id = [ tup[0] for tup in comment_list if ((tup[3]==comment_type) and (comment in tup[4]))][0] # perhaps too pythonic...?
-			print ('to replace it, call this function with comment_id={}'.format(current_id))
+			log.info('to replace it, call this function with comment_id={}'.format(current_id))
 			return current_id
 
 
-		print ('setting up comment script for {0}...'.format(sourcename))
+		log.debug('setting up comment script for {0}...'.format(sourcename))
 		soup = soup_obj(marshal_root + 'view_source.cgi?name=%s' %\
 				sourcename,marshalusr=self.marshalusr,marshalpwd=self.marshalpwd)
 		cmd = {}
@@ -461,11 +455,12 @@ class Sergeant(object):
 		if comment_id is not None:
 			cmd["id"] = str(comment_id)
 
-		print ('pushing comment to marshal...')
+		log.debug('pushing comment to marshal...')
 		try:
 			# to make this more elegant, the cmd could also be passed to request directly: request.get(marshal_root + 'edit_comment.cgi',cmd)
 			params = urllib.parse.urlencode(cmd) # python3 
 		except AttributeError:
+			# pylint: disable=no-member
 			params = urllib.urlencode(cmd) # python2	
 		
 		return soup_obj(marshal_root + 'edit_comment.cgi?%s' %params,marshalusr=self.marshalusr,marshalpwd=self.marshalpwd)
@@ -557,29 +552,30 @@ def testing():
 	sergeant = Sergeant(progn)	
 
 
-	print ('reading sourcelist for {0}...'.format(progn))
+	log.debug('reading sourcelist for {0}...'.format(progn))
 	sourcelist = sergeant.get_sourcelist()
-	print ('# saved sources:',len(sourcelist)) 
+	log.debug('# saved sources: {}'.format(len(sourcelist)))
 
 	#this_source = (item for item in saved_sources if item["name"] == "ZTF18aagteoy").next()
 	if len(sourcelist)>1:
 		this_source  = sourcelist[int(numpy.random.rand()*len(sourcelist))] # pick one 
-		print ('trying to get summary for ', this_source["name"], '...')
+		log.debug('trying to get summary for {} ...'.format(this_source["name"]))
 		summary = sergeant.get_summary(this_source)
-		print ('autoannotations: ', summary["autoannotations"])
-		print ('# of photometry points', len(summary["uploaded_photometry"]))
-		print ('')
-		print ('trying to get annotations for ', this_source["name"], '...')
-		print ( sergeant.get_annotations(this_source) )
+		log.debug('autoannotations: {}'.format(summary["autoannotations"]))
+		log.debug('# of photometry points {}'.format(len(summary["uploaded_photometry"])))
+		log.debug('')
+		log.debug('trying to get annotations for {}...'.format(this_source["name"]))
+		log.debug( sergeant.get_annotations(this_source) )
 
-	print ('reading scan sources for {0}...'.format(progn))
+	log.debug('reading scan sources for {0}...'.format(progn))
 	scan_sources = sergeant.list_scan_sources()
-	print ('# of scan sources', len(scan_sources) )
+	log.debug('# of scan sources {}'.format(len(scan_sources)))
 
 
 
 
 if __name__ == "__main__":
+	logging.basicConfig(level='DEBUG')
 	testing()
 
 
