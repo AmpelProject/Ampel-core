@@ -733,8 +733,10 @@ class ZIAlertIngester(AbsAlertIngester):
 				else:
 
 					self.logger.info(
-						"DB photo feeback: %i upserted" % 
-						db_photo_results.bulk_api_result['nUpserted']
+						"DB photo feeback: %i upserted, %i modified" % (
+							db_photo_results.bulk_api_result['nUpserted'],
+							db_photo_results.bulk_api_result['nModified']
+						)
 					)
 
 			if db_main_ops:
@@ -763,8 +765,10 @@ class ZIAlertIngester(AbsAlertIngester):
 				else:
 
 					self.logger.info(
-						"DB main feeback: %i upserted" % 
-						db_main_results.bulk_api_result['nUpserted']
+						"DB main feeback: %i upserted, %i modified" % (
+							db_main_results.bulk_api_result['nUpserted'],
+							db_main_results.bulk_api_result['nModified'],
+						)
 					)
 
 		# Catch BulkWriteError only, 
