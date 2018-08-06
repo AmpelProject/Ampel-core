@@ -164,7 +164,7 @@ class CompoundBluePrintGenerator():
 	
 				self.logger.info(
 					"%s compound id: (eff: %s, strict: %s)", 
-					chan_name, eff_id_str, strict_id
+					chan_name, eff_id_str, strict_id_str
 				)
 	
 				# Add tupple (chan_name, strict id) to internal dict using eff_id as key
