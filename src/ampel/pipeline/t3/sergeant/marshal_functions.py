@@ -160,7 +160,7 @@ class Sergeant(object):
 			print ('Options for this user are:', self.program_options)
 			return None
 				
-		return selt.cutprogramidx
+		return self.cutprogramidx
 						
 				
 	def list_scan_sources(self, hardlimit=200):
