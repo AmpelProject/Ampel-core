@@ -61,7 +61,7 @@ def get_marshal_html(weblink, max_attempts=5, marshalusr=None,marshalpwd=None):
 			reponse = requests.get(weblink, auth=auth, timeout=30+(60*attempts-1))
 			return reponse.text
 		except Exception as e:
-			log.error('Sergeant.get_marshal_html({}): {} this attempt number {0:0}, {1:1} left'.format(weblink, e, attempts, max_attempts-attempts))
+			log.error('Sergeant.get_marshal_html(): problem with url: {0} \n{1} \nthis attempt number {2}, {3} left'.format(weblink, e, attempts, max_attempts-attempts))
 			time.sleep(3)
 		attempts+=1
 
