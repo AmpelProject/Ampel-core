@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 25.01.2018
-# Last Modified Date: 04.07.2018
+# Last Modified Date: 14.08.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from datetime import datetime, timedelta
@@ -322,30 +322,37 @@ class T2Controller(Schedulable):
 
 		self.t2_run_config[run_config_id] = t2_run_config_doc
 
+
 	@classmethod
 	def load_unit(cls, unit_name, logger):
 		"""	
-		Loads a T2 unit class and base_config (if avail) using definitions 
-		stored as document in the ampel config database.
-		This method populates the instance variables self.t2_class and self.t2_base_config.
-		There is no return code
+		Loads a T2 unit class using information loaded from the ampel config.
+		This method populates the class variable self.t2_classes 
+		Return code is a t2 class object
 		"""	
 
+		# Return already loaded t2 unit if avail
 		if unit_name in cls.t2_classes:
 			return cls.t2_classes[unit_name]
+
 		logger.info("Loading T2 unit: %s" % unit_name)
-		try:
-			resource = next(pkg_resources.iter_entry_points('ampel.pipeline.t2.units', unit_name))
-		except StopIteration:
-			raise ValueError(
-				"Unknown T2 unit: %s" % unit_name
+		resource = next(pkg_resources.iter_entry_points('ampel.pipeline.t2.units', unit_name), None)
+		if resource is None:
+			raise ValueError("Unknown T2 unit: %s" % unit_name)
+
+		class_obj = resource.resolve()
+		if not issubclass(class_obj, AbsT2Unit):
+			raise TypeError(
+				"T2 unit {} from {} is not a subclass of AbsT2Unit".format(
+					class_obj.__name__, resource.dist
+				)
 			)
-		klass = resource.resolve()
-		if not issubclass(klass, AbsT2Unit):
-			raise TypeError("T2 unit {} from {} is not a subclass of AbsT2Unit".format(klass.__name__, resource.dist))
-		cls.t2_classes[unit_name] = klass
-		cls.add_version(unit_name, "py", klass)
-		return klass
+
+		cls.t2_classes[unit_name] = class_obj
+		cls.add_version(unit_name, "py", class_obj)
+
+		return class_obj
+
 
 	@classmethod
 	def add_version(cls, unit_name, key, arg):
