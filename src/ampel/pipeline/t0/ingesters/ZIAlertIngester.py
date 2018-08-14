@@ -64,11 +64,12 @@ class ZIAlertIngester(AbsAlertIngester):
 		t2_units = set()
 		for channel in channels:
 			t2_units.update(channel.t2_units)
+
 		# T2 unit making use of upper limits
-		def uses_upper_limits(t2_unit):
-			unit = T2Controller.load_unit(t2_unit, self.logger)
-			return hasattr(unit, 'upperLimits') and getattr(unit, 'upperLimits')
-		self.t2_units_using_uls = tuple(filter(uses_upper_limits, t2_units))
+		self.t2_units_using_uls = tuple(
+			getattr(T2Controller.load_unit(t2_unit, self.logger), 'upperLimits', False) 
+			for t2_unit in t2_units
+		)
 
 		# instantiate util classes used in method ingest()
 		self.photo_shaper = ZIPhotoDictShaper()
