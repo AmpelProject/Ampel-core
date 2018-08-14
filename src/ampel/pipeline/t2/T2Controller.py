@@ -158,17 +158,19 @@ class T2Controller(Schedulable):
 			# Check if T2 instance exists in this run
 			if not t2_unit_name in t2_instances:
 
-				# Instantiate T2 class
-				unit = self.load_unit(t2_unit_name,self.logger)
-				resources = {k: AmpelConfig.get_config('resources.{}'.format(k)) for k in getattr(unit, 'resources')}
-				t2_instances[t2_unit_name] = unit(
-					self.logger, 
-					resources
-				)
+				# Get T2 class
+				unit = self.load_unit(t2_unit_name, self.logger)
 
-			# TODO: load light_curve
-			# load run_config
-			# run(light_curve, run_config=None)
+				# Load resources
+				resources = {
+					k: AmpelConfig.get_config('resources.{}'.format(k)) 
+					for k in getattr(unit, 'resources')
+				}
+
+				# Instantiate T2 class
+				t2_instances[t2_unit_name] = unit(
+					self.logger, resources
+				)
 
 			# Build run config id (example: )
 			run_config_id = t2_unit_name + "_" + t2_doc['runConfig']
@@ -247,7 +249,7 @@ class T2Controller(Schedulable):
 									'dt': now,
 									'duration': round(now - before_run, 3),
 									'logs': db_logging_handler.get_log_id(),
-									'results': ret
+									'output': ret
 								}
 							},
 							'$set': {
@@ -274,7 +276,7 @@ class T2Controller(Schedulable):
 								'tier': 2,
 								'dt': now,
 								'unit': t2_unit_name,
-								'success': str(not isinstance(ret, T2RunStates)),
+								'success': int(not isinstance(ret, T2RunStates)),
 								'channel(s)': t2_doc['channels'],
 								'logs': db_logging_handler.get_log_id()
 							}
