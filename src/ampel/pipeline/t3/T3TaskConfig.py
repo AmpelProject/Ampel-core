@@ -120,6 +120,10 @@ class T3TaskConfig:
 		if t3_job_doc is None:
 			raise ValueError("Job %s not found" % job_name)
 		
+		return cls.from_doc(t3_job_doc, task_name, all_task_sels, logger)
+
+	@classmethod
+	def from_doc(cls, t3_job_doc, task_name, all_tasks_sels=None, logger=None):
 		if all_tasks_sels is None:
 
 			all_tasks_sels = {}

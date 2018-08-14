@@ -7,9 +7,10 @@
 # Last Modified Date: 23.07.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-import schedule, time, threading
+import schedule, time, threading, json
+from types import MappingProxyType
 from ampel.pipeline.t3.T3Job import T3Job
-from ampel.pipeline.t3.T3JobConfig import T3JobConfig
+from ampel.pipeline.t3.T3JobConfig import T3JobConfig, T3TaskConfig
 from ampel.pipeline.common.Schedulable import Schedulable
 from ampel.pipeline.logging.LoggingUtils import LoggingUtils
 from ampel.pipeline.common.GraphiteFeeder import GraphiteFeeder
@@ -87,19 +88,134 @@ class T3Controller(Schedulable):
 
 		return stats
 
+def run(args):
+	"""Run tasks at configured intervals"""
+	T3Controller().run()
 
-def run():
+def list(args):
+	"""List configured tasks"""
+	jobs = T3Controller.load_job_configs(None, None)
+	labels = {name: [t.get('name') for t in job.get_task_configs()] for name, job in jobs.items()}
+	columns = max([len(k) for k in labels.keys()]), max([max([len(k) for k in tasks]) for tasks in labels.values()])
+	template = "{{:{}s}} {{:{}s}}".format(*columns)
+	print(template.format('Job', 'Tasks'))
+	print(template.format('='*columns[0], '='*columns[1]))
+	for job, tasks in labels.items():
+		for task in tasks:
+			print(template.format(job,task))
+			job = ''
+		print(template.format('-'*columns[0], '-'*columns[1]))
+
+class FrozenEncoder(json.JSONEncoder):
+	def default(self, obj):
+		if isinstance(obj, MappingProxyType):
+			return dict(obj)
+		elif isinstance(obj, T3TaskConfig):
+			return dict(obj.task_doc)
+		return super(FrozenEncoder, self).default(obj)
+
+def show(args):
+	"""Display job and task configuration"""
+	job = T3JobConfig.load(args.job)
+	if args.task is None:
+		print(FrozenEncoder(indent=1).encode(job.job_doc))
+	else:
+		task = next(t for t in job.get_task_configs() if t.get('name') == args.task)
+		print(FrozenEncoder(indent=1).encode(task))
+
+def rununit(args):
+	"""
+	Run a single T3 unit
+	"""
+	job_doc = {
+		"active": True,
+		"schedule": "manual",
+		"input": {
+			"select": {
+				"created": {
+					"after": {
+						"use": "$timeDelta",
+						"arguments": {
+							"days": args.created
+						}
+					}
+				},
+				"modified": {
+					"after": {
+						"use": "$timeDelta",
+						"arguments": {
+							"days": args.modified
+						}
+					}
+				},
+				"channel(s)": args.channels,
+				"withFlag(s)": "INST_ZTF",
+				"withoutFlag(s)": "HAS_ERROR"
+			},
+			"load": {
+				"state": "$latest",
+				"doc(s)": [
+					"TRANSIENT",
+					"COMPOUND",
+					"T2RECORD",
+					"PHOTOPOINT"
+				],
+				"verbose": False
+			},
+			"chunk": 200
+		},
+		"task(s)": [
+			{
+				"name": "FroopyFlarj",
+				"t3Unit": args.unit,
+				"runConfig": args.runconfig,
+				"updateJournal": False
+			}
+		]
+	}
+	job_config = T3JobConfig.from_doc("froopydyhoop", job_doc)
+	job = T3Job(job_config, propagate_logs=True)
+	job.run()
+
+def main():
 
 	from ampel.pipeline.config.ConfigLoader import AmpelArgumentParser
+	import sys
 
 	parser = AmpelArgumentParser()
 	parser.require_resource('mongo', ['writer', 'logger'])
 	parser.require_resource('graphite')
 	# partially parse command line to get config
-	opts, argv = parser.parse_known_args()
+	opts, argv = parser.parse_known_args(args=[arg for arg in sys.argv if arg not in ('-h', '--help')])
 	# flesh out parser with resources required by t3 units
 	parser.require_resources(*T3Controller.get_required_resources())
-	# parse again, filling the resource config
-	opts = parser.parse_args()
 
-	T3Controller().run()
+	subparsers = parser.add_subparsers(help='command help')
+	
+	def add_command(f, name=None):
+		if name is None:
+			name = f.__name__
+		p = subparsers.add_parser(name, help=f.__doc__)
+		p.set_defaults(func=f)
+		return p
+	
+	p = add_command(run)
+
+	p = add_command(rununit)
+	p.add_argument('unit')
+	p.add_argument('--runconfig', default=None)
+	p.add_argument('--channels', action="append", default=[])
+	p.add_argument('--created', type=int, default=-40)
+	p.add_argument('--modified', type=int, default=-1)
+
+	p = add_command(list)
+
+	p = add_command(show)
+	p.add_argument('job')
+	p.add_argument('task', nargs='?', default=None)
+	
+	opts, argv = parser.parse_known_args()
+	if opts.func == rununit:
+		pass
+	opts = parser.parse_args()
+	opts.func(opts)

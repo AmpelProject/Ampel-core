@@ -77,7 +77,6 @@ class T3JobConfig:
 		extra=ALLOW_EXTRA
 	)
 
-
 	@classmethod
 	def load(cls, job_name, logger=None):
 		"""
@@ -99,6 +98,17 @@ class T3JobConfig:
 			raise ValueError("Job %s not found" % job_name)
 
 		logger.info("Loading job %s" % job_name)
+		return cls.from_doc(job_name, job_doc, logger, validate=False)
+
+	@classmethod
+	def from_doc(cls, job_name, job_doc, logger=None, validate=True):
+		if logger is None:
+			logger = LoggingUtils.get_logger()
+
+		# validate
+		if validate:
+			job_doc = cls.job_schema(job_doc)
+
 		t3_task_configs = []
 		all_tasks_sels = {} 
 
@@ -138,13 +148,12 @@ class T3JobConfig:
 		# Load and check each individual Task
 		for task_doc in job_doc['task(s)']:
 			t3_task_configs.append(
-				T3TaskConfig.load(job_name, task_doc['name'], all_tasks_sels, logger)
+				T3TaskConfig.from_doc(job_doc, task_doc['name'], all_tasks_sels, logger)
 			)
 
 		# Create JobConfig
 		return T3JobConfig(job_name, job_doc, t3_task_configs)
 
-	
 	def __init__(self, job_name, job_doc, t3_task_configs):
 		"""
 		job_name: string

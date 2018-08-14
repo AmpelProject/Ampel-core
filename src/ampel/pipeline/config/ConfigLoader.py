@@ -125,12 +125,9 @@ class AmpelArgumentParser(ArgumentParser):
 			else:
 				self.require_resource(name, roleset)
 
-	def parse_args(self, **kwargs):
-		return super(AmpelArgumentParser, self).parse_args(**kwargs)
-
-	def parse_known_args(self, **kwargs):
+	def parse_known_args(self, *args, **kwargs):
 		kwargs['env_vars'] = file_environ()
-		args, argv = super(AmpelArgumentParser, self).parse_known_args(**kwargs)
+		args, argv = super(AmpelArgumentParser, self).parse_known_args(*args, **kwargs)
 		args.config['resources'] = {}
 		for name, klass in self._resources.items():
 			args.config['resources'][name] = klass.parse_args(args)
