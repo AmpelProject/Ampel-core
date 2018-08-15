@@ -175,8 +175,10 @@ class T3Job:
 		return getattr(self, "exec_params", None)
 
 
-	def run(self):
+	def run(self, update_run_col=True, update_tran_journal=True):
 		"""
+		:param update_run_col: Record the invocation of this job in the runs collection
+		:param update_tran_journal: Record the invocation of this job in the journal of each selected transient
 		"""
 
 		time_start = datetime.utcnow().timestamp()
@@ -288,49 +290,50 @@ class T3Job:
 					continue
 	
 				# Update journal with task related info
-				self.general_journal_update(t3_task, int(time_start))
+				if update_tran_journal:
+					self.general_journal_update(t3_task, int(time_start))
 
 				# method done() might return a dict with key: transient id, 
 				# value journal entries. In this case, we update the Transient journal 
 				# with those entries
-				if specific_journal_entries:
+				if update_tran_journal and specific_journal_entries:
 					# TODO: update journal with t3 unit specific info
 					pass
 	
-	
-			# Record job info into DB
-			upd_res = self.col_runs.update_one(
-				{
-					'_id': int(
-						datetime.today().strftime('%Y%m%d')
-					)
-				},
-				{
-					'$push': {
-						'jobs': {
-							'tier': 3,
-							'name': self.job_config.job_name,
-							'dt': int(time_start),
-							'logs': self.log_id,
-							'metrics': {
-								'duration': int(
-									datetime.utcnow().timestamp() - time_start
-								)
+			if update_run_col:
+				# Record job info into DB
+				upd_res = self.col_runs.update_one(
+					{
+						'_id': int(
+							datetime.today().strftime('%Y%m%d')
+						)
+					},
+					{
+						'$push': {
+							'jobs': {
+								'tier': 3,
+								'name': self.job_config.job_name,
+								'dt': int(time_start),
+								'logs': self.log_id,
+								'metrics': {
+									'duration': int(
+										datetime.utcnow().timestamp() - time_start
+									)
+								}
 							}
 						}
-					}
-				},
-				upsert=True
-			)
-
-			if upd_res.modified_count == 0 and upd_res.upserted_id is None:
-
-				# Populate troubles collection
-				from inspect import currentframe, getframeinfo
-				self._report_error(
-					'runs collection update failed', getframeinfo(currentframe()),
-					t3_task.get_config('name'), upd_res=upd_res
+					},
+					upsert=True
 				)
+
+				if upd_res.modified_count == 0 and upd_res.upserted_id is None:
+
+					# Populate troubles collection
+					from inspect import currentframe, getframeinfo
+					self._report_error(
+						'runs collection update failed', getframeinfo(currentframe()),
+						t3_task.get_config('name'), upd_res=upd_res
+					)
 
 			# Write log entries to DB
 			if hasattr(self, 'db_logging_handler'):

@@ -7,7 +7,7 @@
 # Last Modified Date: 23.07.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-import schedule, time, threading, json
+import schedule, time, threading, logging, json
 from types import MappingProxyType
 from ampel.pipeline.t3.T3Job import T3Job
 from ampel.pipeline.t3.T3JobConfig import T3JobConfig, T3TaskConfig
@@ -123,6 +123,14 @@ def show(args):
 		task = next(t for t in job.get_task_configs() if t.get('name') == args.task)
 		print(FrozenEncoder(indent=1).encode(task))
 
+def runtask(args):
+	job_config = T3JobConfig.load(args.job)
+	job_config.t3_task_configs = [t for t in job_config.get_task_configs() if t.get('name') == args.task]
+	job = T3Job(job_config, propagate_logs=False)
+	for param in 'created', 'modified':
+		if getattr(args, param) is not None:
+			job.overwrite_parameter(param, getattr(args, param))
+
 def rununit(args):
 	"""
 	Run a single T3 unit
@@ -174,8 +182,10 @@ def rununit(args):
 		]
 	}
 	job_config = T3JobConfig.from_doc("froopydyhoop", job_doc)
-	job = T3Job(job_config, propagate_logs=True)
-	job.run()
+	# Record logs in the db only if the run itself will be recorded
+	logger = logging.getLogger(__name__) if not args.update_run_col else None
+	job = T3Job(job_config, propagate_logs=True, logger=logger)
+	job.run(args.update_run_col, args.update_tran_journal)
 
 def main():
 
@@ -201,9 +211,17 @@ def main():
 	
 	p = add_command(run)
 
+	p = add_command(runtask)
+	p.add_argument('job')
+	p.add_argument('task')
+	p.add_argument('--created')
+	p.add_argument('--modified')
+
 	p = add_command(rununit)
 	p.add_argument('unit')
 	p.add_argument('--runconfig', default=None)
+	p.add_argument('--update-run-col', default=False, action="store_true", help="Record this run in the jobs collection")
+	p.add_argument('--update-tran-journal', default=False, action="store_true", help="Record this run in the transient journal")
 	p.add_argument('--channels', action="append", default=[])
 	p.add_argument('--created', type=int, default=-40)
 	p.add_argument('--modified', type=int, default=-1)
