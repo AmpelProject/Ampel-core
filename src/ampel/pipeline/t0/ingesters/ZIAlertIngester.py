@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 14.12.2017
-# Last Modified Date: 03.08.2018
+# Last Modified Date: 15.08.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import logging, time
@@ -657,8 +657,16 @@ class ZIAlertIngester(AbsAlertIngester):
 			)
 		)
 
-		# Perform DB insertions
-		self.update_db(start, tran_id, db_photo_ops, db_main_ops)
+		# Save time required by python for this method so far
+		self.time_dict['preIngestTime'].append(time.time() - start)
+
+		# Perform 'photo' DB operations
+		if db_photo_ops:
+			self.update_db(self.photo_col, db_photo_ops)
+
+		# Perform 'main' DB operations
+		if db_main_ops:
+			self.update_db(self.main_col, db_main_ops)
 
 		# Update counter metrics
 		if self.count_dict is not None:
@@ -669,150 +677,104 @@ class ZIAlertIngester(AbsAlertIngester):
 			self.count_dict['ppReprocs'] += pps_reprocs
 
 
-	def update_db(self, start, tran_id, db_photo_ops, db_main_ops, retry=True):
+	def update_db(self, col, ops):
 		"""
+		Regarding the handling of BulkWriteError:
+		Concurent upserts triggers a DuplicateKeyError exception.
+
+		https://stackoverflow.com/questions/37295648/mongoose-duplicate-key-error-with-upsert
+		<quote>
+			An upsert that results in a document insert is not a fully atomic operation. 
+			Think of the upsert as performing the following discrete steps:
+    			Query for the identified document to upsert.
+    			If the document exists, atomically update the existing document.
+    			Else (the document doesn't exist), atomically insert a new document 
+				that incorporates the query fields and the update.
+		</quote>
+
+		There are *many* tickets opened on the mongoDB bug tracker regarding this issue.
+		One of which: https://jira.mongodb.org/browse/SERVER-14322
+		where is stated:
+			"It is expected that the client will take appropriate action 
+			upon detection of such constraint violation"
+
+		All in all: the server behaves inappropriately, the driver won't catch those 
+		cases for us, so we have to do the work by ourself. Great.
+
+		Last: the use of SON (serialized Ocument Normalisation) is deprecated according 
+		to the mongoDB doc. It will be removed with pymongo 4, so we should not use it anymore.
+		BUT: the offending updates (UpdateOne instances) returned by the server are 
+		provided as SON by BulkWriteError (array 'writeErrors' contains SON objects).
+		So we have no other choice than handling with them for now.
 		"""
 
 		try: 
 
-			# If we measure the DB insertion times
+			# DB insertion time is measured
 			if self.count_dict is not None:
 
-				# Save time required by python for this method so far
-				self.time_dict['preIngestTime'].append(time.time() - start)
+				# Update DB
+				start = time.time()
+				db_res = col.bulk_write(ops, ordered=False)
+				time_delta = time.time() - start
 
-				# Perform DB operations: photo
-				if db_photo_ops:
-					start = time.time()
-					db_photo_results = self.photo_col.bulk_write(db_photo_ops, ordered=False)
-					time_delta = time.time() - start
-					self.time_dict['dbBulkTimePhoto'].append(time_delta)
-					self.time_dict['dbPerOpMeanTimePhoto'].append(time_delta / len(db_photo_ops))
-
-				# Perform DB operations: main
-				if db_main_ops:
-					start = time.time()
-					db_main_results = self.main_col.bulk_write(db_main_ops, ordered=False)
-					time_delta = time.time() - start
-					self.time_dict['dbBulkTimeMain'].append(time_delta)
-					self.time_dict['dbPerOpMeanTimeMain'].append(time_delta / len(db_main_ops))
+				# Save metrics
+				self.time_dict['dbBulkTime%s' % col.name.title()].append(time_delta)
+				self.time_dict['dbPerOpMeanTime%s' % col.name.title()].append(time_delta / len(ops))
 
 			# no metric
 			else:
+				db_res = col.bulk_write(ops, ordered=False)
 
-				if db_photo_ops:
-					db_photo_results = self.photo_col.bulk_write(db_photo_ops, ordered=False)
+			self.logger.info(
+				"DB %s feeback: %i upserted, %i modified" % (
+					col.name,
+					db_res.bulk_api_result['nUpserted'],
+					db_res.bulk_api_result['nModified']
+				)
+			)
 
-				if db_main_ops:
-					db_main_results = self.main_col.bulk_write(db_main_ops, ordered=False)
-
-
-			# Feedback
-			if db_photo_ops:
-
-				if (
-					db_photo_results.bulk_api_result['writeErrors'] or
-					db_photo_results.bulk_api_result['writeConcernErrors']
-				):
-
-					# Log error
-					self.logger.error(db_photo_results.bulk_api_result)
-
-					# Populate troubles collection
-					from inspect import currentframe, getframeinfo
-					frameinfo = getframeinfo(currentframe())
-					AmpelDB.get_collection('troubles').insert_one(
-						{
-							'tier': 0,
-							'location': '%s:%s' % (frameinfo.filename, frameinfo.lineno),
-							'tranId':  tran_id,
-							'logs':  self.job_id,
-							'bulkApiResult': db_photo_results.bulk_api_result
-						}
-					)
-
-				else:
-
-					self.logger.info(
-						"DB photo feeback: %i upserted, %i modified" % (
-							db_photo_results.bulk_api_result['nUpserted'],
-							db_photo_results.bulk_api_result['nModified']
-						)
-					)
-
-			if db_main_ops:
-
-				if (
-					db_main_results.bulk_api_result['writeErrors'] or
-					db_main_results.bulk_api_result['writeConcernErrors']
-				):
-
-					# Log error
-					self.logger.error(db_main_results.bulk_api_result)
-
-					# Populate troubles collection
-					from inspect import currentframe, getframeinfo
-					frameinfo = getframeinfo(currentframe())
-					AmpelDB.get_collection('troubles').insert_one(
-						{
-							'tier': 0,
-							'location': '%s:%s' % (frameinfo.filename, frameinfo.lineno),
-							'tranId':  tran_id,
-							'logs':  self.job_id,
-							'bulkApiResult': db_main_results.bulk_api_result
-						}
-					)
-
-				else:
-
-					self.logger.info(
-						"DB main feeback: %i upserted, %i modified" % (
-							db_main_results.bulk_api_result['nUpserted'],
-							db_main_results.bulk_api_result['nModified'],
-						)
-					)
-
-		# Catch BulkWriteError only, 
-		# other Exception will be caught in AlertProcessor
+		# Catch BulkWriteError only, other exceptions are caught in AlertProcessor
 		except BulkWriteError as bwe: 
 
-			from inspect import currentframe, getframeinfo
-			frameinfo = getframeinfo(currentframe())
-
-			# Log error
-			self.logger.error(bwe.details) 
-
-			# TODO add error flag to Job and Transient
-			# -> Update transient journal !!
-
-			if not retry:
-				self.logger.info("update_db no retry: creating trouble doc and giving up")
-				self._new_trouble_doc(tran_id, frameinfo, bwe)
-				return
-
 			for err_dict in bwe.details.get('writeErrors', []):
-				if err_dict.get("code") == 11000 and "photo" in err_dict.get("errmsg"):
-					self.logger.info("Race condition detected during photo insertion")
+
+				# 'code': 11000, 'errmsg': 'E11000 duplicate key error collection: ...
+				if err_dict.get("code") == 11000:
+
+					self.logger.info(
+						"Race condition during insertion in '%s': %s" % (
+							col.name, err_dict
+						)
+					)
+
+					# Should not throw pymongo.errors.DuplicateKeyError
+					col.update_one(
+						UpdateOne(
+							err_dict['op']['q'], 
+							err_dict['op']['u'], 
+							upsert=err_dict['op']['upsert']
+						)
+					)
+
+					self.logger.info("Error recovered")
+
+					# DB insertion time is measured
+					if self.count_dict is not None:
+						self.time_dict['dbBulkTime%s' % col.name.title()].append(time_delta)
+						self.time_dict['dbPerOpMeanTime%s' % col.name.title()].append(
+							time_delta / len(ops)
+						)
+
 				else:
-					self._new_trouble_doc(tran_id, frameinfo, bwe)
-					return
+					self.logger.error(bwe.details) 
+					raise bwe
 
-			self.logger.info("BulkWriteError solely due to race condition(s), trying one more time...")
-			self.update_db(start, tran_id, db_photo_ops, db_main_ops, retry=False)
-
-
-	def _new_trouble_doc(self, tran_id, frameinfo, bwe):
-		"""
-		"""
-		# Populate troubles collection
-		AmpelDB.get_collection('troubles').insert_one(
-			{
-				'tier': 0,
-				'location': '%s:%s' % (frameinfo.filename, frameinfo.lineno),
-				'ampelMsg': 'BulkWriteError during alert ingestion',
-				'tranId':  tran_id,
-				'logs':  self.job_id,
-				'bulkApiResult': str(bwe.details)
-			}
-		)
-
+			self.logger.info(
+				"DB %s feeback: %i upserted, %i modified, %i race condition(s) recovered" % (
+					col.name,
+					bwe.details['nUpserted'],
+					bwe.details['nModified'],
+					len(bwe.details.get('writeErrors'))
+				)
+			)
