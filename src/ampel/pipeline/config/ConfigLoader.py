@@ -5,11 +5,14 @@
 
 from functools import partial
 import sys, inspect, json, pkg_resources, logging, traceback
+from os.path import basename, dirname, abspath, realpath
 
 from ampel.pipeline.config.AmpelConfig import AmpelConfig
 from ampel.pipeline.t3.T3JobConfig import T3JobConfig
 
 log = logging.getLogger(__name__)
+
+DEFAULT_CONFIG = abspath(dirname(realpath(__file__)) + '/../../../../config/messy_preliminary_config.json')
 
 def load_config(path, gather_plugins=True):
 	"""Load the JSON configuration file at path, and add plugins registered via pkg_resources"""
@@ -58,7 +61,6 @@ def load_config(path, gather_plugins=True):
 	return config
 
 from configargparse import ArgumentParser, Namespace, Action
-from os.path import basename, dirname, abspath, realpath
 import os
 
 class file_environ(dict):
@@ -88,7 +90,7 @@ class AmpelArgumentParser(ArgumentParser):
 		self._resources = {}
 
 		action = self.add_argument('-c', '--config', type=partial(load_config, gather_plugins=False),
-		    default=abspath(dirname(realpath(__file__)) + '/../../../../config/messy_preliminary_config.json'),
+		    default=DEFAULT_CONFIG,
 		    help='Path to Ampel config file in JSON format')
 		# parse a first pass to get the resource defaults
 		argv = [v for v in sys.argv[1:] if not v in ('-h', '--help')]
