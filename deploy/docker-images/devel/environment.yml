@@ -24,6 +24,7 @@ dependencies:
   - configargparse
   - schedule
   - slackclient
+  - dataclasses
   - pip:
     - -e
     - /Ampel/ampel-core

@@ -22,4 +22,5 @@ dependencies:
   - configargparse
   - schedule
   - slackclient
+  - dataclasses
 
