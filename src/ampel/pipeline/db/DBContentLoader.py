@@ -16,6 +16,7 @@ from ampel.base.TransientView import TransientView
 from ampel.base.ScienceRecord import ScienceRecord
 from ampel.base.PlainPhotoPoint import PlainPhotoPoint
 from ampel.base.PlainUpperLimit import PlainUpperLimit
+from ampel.base.Compound import Compound
 
 from ampel.core.flags.FlagUtils import FlagUtils
 from ampel.core.flags.AlDocTypes import AlDocTypes
@@ -334,7 +335,7 @@ class DBContentLoader:
 
 				tran_data.add_compound(
 					comp_chans, # intersection
-					namedtuple('Compound', doc.keys())(**AmpelUtils.recursive_freeze(doc))
+					Compound(**AmpelUtils.recursive_freeze(doc)),
 				)
 
 				if len(comp_chans) == 1 and state_op == "$latest":
@@ -350,8 +351,7 @@ class DBContentLoader:
 						'runState': doc['runState'],
 						'created': ObjectId(doc['_id']).generation_time,
 						'hasError': doc['runState'] == T2RunStates.ERROR
-					}, 
-					read_only=True
+					}
 				)
 
 				tran_data.add_science_record(
@@ -478,7 +478,7 @@ class DBContentLoader:
 
 			len_comps = len({ell.id.hex() for el in tran_data.compounds.values() for ell in el})
 			len_lcs = len({ell.id.hex() for el in tran_data.lightcurves.values() for ell in el})
-			len_srs = len({ell for el in tran_data.science_records.values() for ell in el})
+			len_srs = len({id(ell) for el in tran_data.science_records.values() for ell in el})
 
 			if photo_list is not None:
 

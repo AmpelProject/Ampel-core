@@ -240,9 +240,12 @@ class TransientData:
 
 	def _get_combined_elements(self, var, channels):
 		""" """
-		return tuple(
-			{el for channel in AmpelUtils.iter(channels) if channel in var for el in var[channel]}
-		)
+		elements = [el for channel in AmpelUtils.iter(channels) if channel in var for el in var[channel]]
+		try:
+			return tuple(set(elements))
+		except TypeError:
+			# if contained elements are not hashable, revert to identity
+			return tuple({id(k): k for k in elements}.values())
 
 
 	def _get_photo(self, channels):
