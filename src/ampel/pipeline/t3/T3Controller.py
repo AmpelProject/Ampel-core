@@ -235,7 +235,7 @@ def main():
 	p.add_argument('task', nargs='?', default=None)
 	
 	opts, argv = parser.parse_known_args()
-	if hasattr(opts, 'func') and opts.func == runit:
+	if hasattr(opts, 'func') and opts.func == rununit:
 		unit = T3TaskConfig.get_t3_unit(opts.unit, logging.getLogger(__name__))
 		parser.require_resources(*unit.resources)
 
