@@ -114,16 +114,16 @@ class T3TaskConfig:
 		returns an instance of ampel.pipeline.t3.T3TaskConfig
 		"""
 
-		task_doc = None
 		t3_job_doc = AmpelConfig.get_config('t3_jobs').get(job_name)
 
 		if t3_job_doc is None:
 			raise ValueError("Job %s not found" % job_name)
 		
-		return cls.from_doc(t3_job_doc, task_name, all_task_sels, logger)
+		return cls.from_doc(t3_job_doc, task_name, all_tasks_sels, logger)
 
 	@classmethod
 	def from_doc(cls, t3_job_doc, task_name, all_tasks_sels=None, logger=None):
+		task_doc = None
 		if all_tasks_sels is None:
 
 			all_tasks_sels = {}
