@@ -371,30 +371,29 @@ class DBContentLoader:
 
 			# Loop through photo results
 			for doc in photo_list:
-	
+
+				# Generate PhotoFlags
+				photo_flag = FlagUtils.dbflag_to_enumflag(
+					doc['alFlags'], PhotoFlags
+				)
+
 				# Pick photo point dicts
 				if doc["_id"] > 0:
-
 					
 					# Photopoints instance attached to the transient instance 
 					# are not bound to a compound and come thus without policy 
 					tran_register[doc['tranId']].add_photopoint(
-						PlainPhotoPoint(
-							doc, flags = FlagUtils.dbflag_to_enumflag(
-								doc['alFlags'], PhotoFlags
-							),
-							read_only=True
-						)
+						PlainPhotoPoint(doc, photo_flag, read_only=True)
 					)
 	
 				# Pick upper limit dicts
 				else:
-	
+
 					# UpperLimits instance attached to the transient instance 
 					# are not bound to a compound and come thus without policy 
 					if type(doc['tranId']) is int:
 						tran_register[doc['tranId']].add_upperlimit(
-							PlainUpperLimit(doc, read_only=True)
+							PlainUpperLimit(doc, photo_flag, read_only=True)
 						)
 					
 					else: # list
@@ -403,10 +402,7 @@ class DBContentLoader:
 						for tran_id in (loaded_tran_ids & doc['tranId']):
 							if doc_id not in loaded_uls:
 								loaded_uls[doc_id]= PlainUpperLimit(
-									doc, FlagUtils.dbflag_to_enumflag(
-										doc['alFlags'], PhotoFlags
-									),
-									read_only=True
+									doc, photo_flag, read_only=True
 								)
 							tran_register[tran_id].add_upperlimit(loaded_uls[doc_id])
 					 
