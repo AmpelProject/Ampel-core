@@ -190,23 +190,25 @@ def rununit(args):
 def main():
 
 	from ampel.pipeline.config.ConfigLoader import AmpelArgumentParser
+	from argparse import SUPPRESS
 	import sys
 
-	parser = AmpelArgumentParser()
+	parser = AmpelArgumentParser(add_help=False)
 	parser.require_resource('mongo', ['writer', 'logger'])
 	parser.require_resource('graphite')
 	# partially parse command line to get config
-	opts, argv = parser.parse_known_args(args=[arg for arg in sys.argv if arg not in ('-h', '--help')])
+	opts, argv = parser.parse_known_args()
 	# flesh out parser with resources required by t3 units
 	parser.require_resources(*T3Controller.get_required_resources())
 
 	subparsers = parser.add_subparsers(help='command help')
-	
+	subparser_list = []
 	def add_command(f, name=None):
 		if name is None:
 			name = f.__name__
-		p = subparsers.add_parser(name, help=f.__doc__)
+		p = subparsers.add_parser(name, help=f.__doc__, add_help=False)
 		p.set_defaults(func=f)
+		subparser_list.append(p)
 		return p
 	
 	p = add_command(run)
@@ -233,7 +235,12 @@ def main():
 	p.add_argument('task', nargs='?', default=None)
 	
 	opts, argv = parser.parse_known_args()
-	if opts.func == rununit:
-		pass
+	if hasattr(opts, 'func') and opts.func == runit:
+		unit = T3TaskConfig.get_t3_unit(opts.unit, logging.getLogger(__name__))
+		parser.require_resources(*unit.resources)
+
+	# Now that side-effect-laden parsing is done, add help
+	for p in [parser] + subparser_list:
+		p.add_argument('-h', '--help', action="help", default=SUPPRESS, help="show this message and exit")
 	opts = parser.parse_args()
 	opts.func(opts)
