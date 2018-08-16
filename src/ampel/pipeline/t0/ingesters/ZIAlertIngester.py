@@ -231,8 +231,7 @@ class ZIAlertIngester(AbsAlertIngester):
  		#   'pid': 335240532815,
  		#   'programid': 0
 		# }
-		# -> generated ID: 2458089740532428190247993
-		# -> %timeit: 1,3 microsecond on MBP 15" 2017
+		# -> generated ID: -3352405322819025
 		if uls_alert is not None:
 
 			for ul in uls_alert:
@@ -248,7 +247,7 @@ class ZIAlertIngester(AbsAlertIngester):
 						# drop the last digit (milisecond) which is pointless for our purpose
 						(self.JD2017 - ul['jd']) * 1000000, 
 						# cut of mag float after 3 digits after coma
-						rcid, ul['diffmaglim'] * 1000
+						rcid, round(ul['diffmaglim'] * 1000)
 					)
 				)
 
