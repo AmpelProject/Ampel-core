@@ -32,18 +32,13 @@ class T3JobConfig:
 	job_schema = Schema(
 		{
 			Required('active'): bool,
-			Required('schedule'): Any(
-				{
-					Required('mode'): 'fixed_time',
-					Required('timeStr'): str,
-					Required('timeFormat'): str
-				},
-				{
-					Required('mode'): 'fixed_rate',
-					Required('interval'): int
-				},
-				'manual'
-			),
+			Required('schedule'): str,
+				# Possible 'schedule' values (https://schedule.readthedocs.io/en/stable/):
+				# "every(10).minutes"
+				# "every().hour"
+				# "every().day.at("10:30")"
+				# "every().monday"
+				# "every().wednesday.at("13:15")"
 			Required('task(s)'): Any(
 				T3TaskConfig.t3_task_schema, 
 				[T3TaskConfig.t3_task_schema]
@@ -100,8 +95,12 @@ class T3JobConfig:
 		logger.info("Loading job %s" % job_name)
 		return cls.from_doc(job_name, job_doc, logger, validate=False)
 
+
 	@classmethod
 	def from_doc(cls, job_name, job_doc, logger=None, validate=True):
+		"""
+		"""
+
 		if logger is None:
 			logger = LoggingUtils.get_logger()
 
@@ -154,6 +153,17 @@ class T3JobConfig:
 		# Create JobConfig
 		return T3JobConfig(job_name, job_doc, t3_task_configs)
 
+
+	@property
+	def process_count(self):
+		""" """
+		for pid, proc in list(self._processes.items()):
+			if proc.exitcode is not None:
+				proc.join()
+				del self._processes[pid]
+		return len(self._processes)
+
+
 	def __init__(self, job_name, job_doc, t3_task_configs):
 		"""
 		job_name: string
@@ -179,16 +189,6 @@ class T3JobConfig:
 		return AmpelUtils.get_by_path(self.job_doc, param_name)
 
 
-	@property
-	def process_count(self):
-		""" """
-		for pid, proc in list(self._processes.items()):
-			if proc.exitcode is not None:
-				proc.join()
-				del self._processes[pid]
-		return len(self._processes)
-
-
 	def launch_t3_job(self):
 		""" """
 		# TODO: log or warn about a large number of lingering processes here
@@ -208,19 +208,5 @@ class T3JobConfig:
 
 
 	def schedule_job(self, scheduler):
-
-		if self.get('schedule.mode') == "fixed_rate":
-
-			scheduler.every(
-				self.get('schedule.interval')
-			).minutes.do(
-				self.launch_t3_job
-			)
-
-		elif self.get('schedule.mode') == "fixed_time":
-
-			scheduler.every().day.at(
-				self.get('schedule.timeStr')
-			).do(
-				self.launch_t3_job
-			)
+		""" """
+		exec("schedule.%s.do(self.launch_t3_job)" % self.get('schedule'))
