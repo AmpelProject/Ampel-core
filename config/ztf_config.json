@@ -46,22 +46,7 @@
             }
         }
     },
-    "t0_filters": {
-        "BasicFilter": {
-            "classFullPath": "ampel.pipeline.t0.filters.BasicFilter"
-        },
-        "BasicMultiFilter": {
-            "classFullPath": "ampel.pipeline.t0.filters.BasicMultiFilter"
-        },
-        "StripEnvelopeSN": {
-            "classFullPath": "ampel.contrib.okc.t0.StripEnvelopeSN",
-            "baseConfig": {
-                "minDet": 2,
-                "minTimeDiff": 30,
-                "gMinusR": 0.2
-            }
-        }
-    },
+    "t0_filters": {},
     "t2_run_config": {},
     "t2_units": {},
     "t3_jobs": {},
