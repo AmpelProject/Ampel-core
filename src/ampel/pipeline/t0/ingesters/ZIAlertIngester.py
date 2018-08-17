@@ -42,11 +42,13 @@ class ZIAlertIngester(AbsAlertIngester):
 	in the DB that are used in later processing stages (T2, T3)
 	"""
 
+	# Static vars
 	version = 1.0
+	config_path = 'global.sources.ZTFIPAC'
 	std_dbflag = FlagUtils.enumflag_to_dbflag(
 		AmpelFlags.INST_ZTF|AmpelFlags.SRC_IPAC
 	)
-	config_path = 'global.sources.ZTFIPAC'
+
 
 	def __init__(self, channels, logger=None):
 		"""
@@ -176,6 +178,9 @@ class ZIAlertIngester(AbsAlertIngester):
 		###############################################
 		##   Part 1: Gather info from DB and alert   ##
 		###############################################
+
+		# Save alert id
+		alert_id = pps_alert[0]['candid']
 
 		# pymongo bulk op array
 		db_photo_ops = []
@@ -648,6 +653,7 @@ class ZIAlertIngester(AbsAlertIngester):
 							'tier': 0,
 							'dt': now,
 							'channel(s)': AmpelUtils.try_reduce(chan_names),
+							'alertId': alert_id,
 							'logs': self.job_id
 						}
 					}
