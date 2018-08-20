@@ -76,8 +76,8 @@ class ArchiveDB(object):
                 transaction.commit()
         return stats
 
-    def get_alert(self, candid):
-        return get_alert(self._connection, self._meta, candid)
+    def get_alert(self, candid, **kwargs):
+        return get_alert(self._connection, self._meta, candid, **kwargs)
 
     def get_cutout(self, candid):
         return get_cutout(self._connection, self._meta, candid)
@@ -166,7 +166,7 @@ def insert_alert(connection, meta, alert, partition_id, ingestion_time):
         transaction.commit()
     return True
 
-def get_alert(connection, meta, alert_id):
+def get_alert(connection, meta, alert_id, **kwargs):
     """
     Retrieve an alert from the archive database
     
@@ -178,7 +178,7 @@ def get_alert(connection, meta, alert_id):
     """
     Alert = meta.tables['alert']
 
-    for alert in fetch_alerts_with_condition(connection, meta, Alert.c.candid == alert_id):
+    for alert in fetch_alerts_with_condition(connection, meta, Alert.c.candid == alert_id, **kwargs):
         return alert
     return None
 
@@ -287,6 +287,7 @@ def _build_queries(meta):
     Alert = meta.tables['alert']
     Pivot = meta.tables['alert_prv_candidate_pivot']
     UpperLimitPivot = meta.tables['alert_upper_limit_pivot']
+    Cutout = meta.tables['cutout']
     from sqlalchemy.sql import null
     from sqlalchemy.sql.functions import array_agg
     from sqlalchemy.sql.expression import func
@@ -299,7 +300,7 @@ def _build_queries(meta):
         return [c for c in table.columns if c not in keys]
 
     alert_query = \
-        select([Alert.c.alert_id, Alert.c.objectId] + without_keys(Candidate))\
+        select([Alert.c.alert_id, Alert.c.objectId, Alert.c.schemavsn] + without_keys(Candidate))\
         .select_from(Alert.join(Candidate))
 
     # build a query for detections
@@ -332,11 +333,14 @@ def _build_queries(meta):
     # unify!
     history_query = prv_query.union(ul_query)
 
-    return alert_query, history_query
+    cutout_query = select([Cutout.c.kind, Cutout.c.stampData]).where(Cutout.c.alert_id == bindparam('alert_id'))
 
-def fetch_alerts_with_condition(connection, meta, condition, order=None):
+    return alert_query, history_query, cutout_query
 
-    alert_query, history_query = _build_queries(meta)
+def fetch_alerts_with_condition(connection, meta, condition, order=None,
+    with_history=True, with_cutouts=False):
+
+    alert_query, history_query, cutout_query = _build_queries(meta)
 
     alert_query = alert_query.where(condition).order_by(order)
 
@@ -345,13 +349,20 @@ def fetch_alerts_with_condition(connection, meta, condition, order=None):
             for result in connection.execute(alert_query):
                 candidate = dict(result)
                 alert_id = candidate.pop('alert_id')
-                alert = dict(objectId=candidate.pop('objectId'), candid=candidate['candid'])
-                alert['candidate'] = candidate
+                alert = {'candid': candidate['candid'], 'publisher': 'ampel'}
+                for k in 'objectId', 'schemavsn':
+                    alert[k] = candidate.pop(k)
+                alert['candidate'] = {'programpi': None, 'pdiffimfilename': None, **candidate}
                 alert['prv_candidates'] = []
-                for result in connection.execute(history_query, alert_id=alert_id):
-                    alert['prv_candidates'].append(dict(result))
+                if with_history:
+                    for result in connection.execute(history_query, alert_id=alert_id):
+                        alert['prv_candidates'].append({'programpi': None, 'pdiffimfilename': None, **result})
 
-                alert['prv_candidates'] = sorted(alert['prv_candidates'], key=lambda c: (c['jd'],  c['candid'] is None, c['candid']))
+                    alert['prv_candidates'] = sorted(alert['prv_candidates'], key=lambda c: (c['jd'],  c['candid'] is None, c['candid']))
+                if with_cutouts:
+                    for result in connection.execute(cutout_query, alert_id=alert_id):
+                        alert['cutout{}'.format(result['kind'].title())] = \
+                            {'stampData': result['stampData'], 'fileName': 'unknown'}
 
                 yield alert
         finally:

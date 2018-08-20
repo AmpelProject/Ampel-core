@@ -82,7 +82,7 @@ def empty_archive(postgres):
 
 @pytest.fixture(scope='session')
 def alert_tarball():
-	return join(dirname(__file__), '..', '..', '..', 'alerts', 'recent_alerts.tar.gz')
+	return join(dirname(__file__), '..', '..', '..', 'alerts', 'ztf_public_20180819_mod1000.tar.gz')
 
 @pytest.fixture(scope='session')
 def alert_generator(alert_tarball):
@@ -94,8 +94,6 @@ def alert_generator(alert_tarball):
 		for fileobj in itertools.islice(atat.get_files(), 0, 1000, 1):
 			reader = fastavro.reader(fileobj)
 			alert = next(reader)
-			for k in {'cutoutDifference', 'cutoutScience', 'cutoutTemplate'}:
-				 del alert[k]
 			if with_schema:
 				yield alert, reader.schema
 			else:

@@ -101,7 +101,7 @@ def test_insert_duplicate_photopoints(mock_database, alert_generator):
     # find an alert with at least 1 previous detection
     for alert in alert_generator():
         detections, upper_limits = count_previous_candidates(alert)
-        if detections > 0:
+        if detections > 0 and upper_limits > 0:
             break
     assert detections > 0
     
@@ -168,12 +168,15 @@ def assert_alerts_equivalent(alert, reco_alert):
     alert['candidate'] = strip(alert['candidate'])
     assert alert.keys() == reco_alert.keys()
     for k in alert:
-        if 'candidate' in k:
-            continue
-        assert alert[k] == pytest.approx(reco_alert[k])
+        if 'candidate' in k or k == 'publisher':
+            pass
+        elif k.startswith('cutout'):
+            assert alert[k]['stampData'] == reco_alert[k]['stampData']
+        else:
+            assert alert[k] == pytest.approx(reco_alert[k])
     assert len(alert['prv_candidates']) == len(reco_alert['prv_candidates'])
-    prvs = sorted(alert['prv_candidates'], key=lambda f: (f['jd'], f['candid'] is None))
-    reco_prvs = sorted(reco_alert['prv_candidates'], key=lambda f: (f['jd'], f['candid'] is None))
+    prvs = sorted(alert['prv_candidates'], key=lambda f: (f['jd'], f['candid'] is None, f['candid']))
+    reco_prvs = reco_alert['prv_candidates']
     try:
         assert [c['candid'] for c in prvs] == [c['candid'] for c in reco_prvs]
     except:
@@ -215,6 +218,38 @@ def test_get_cutout(mock_database, alert_generator):
         cutouts = archive.get_cutout(connection, meta, alert['candid'])
         alert_cutouts = {k[len('cutout'):].lower() : v['stampData'] for k,v in alert.items() if k.startswith('cutout')}
         assert cutouts == alert_cutouts
+
+def test_serializability(mock_database, alert_generator):
+    """
+    Ensure that we can recover avro alerts from the db
+    """
+    # the python implementation of writer throws more useful errors on schema
+    # violations
+    from fastavro._write_py import writer
+    from fastavro import reader
+    from io import BytesIO
+    processor_id = 0
+    meta, connection = mock_database
+
+    for idx, alert in enumerate(alert_generator()):
+        processor_id = idx % 16
+        archive.insert_alert(connection, meta, alert, processor_id, 0)
+
+    for idx, (alert, schema) in enumerate(alert_generator(with_schema=True)):
+        processor_id = idx % 16
+        reco = archive.get_alert(connection, meta, alert['candid'], with_history=True, with_cutouts=True)
+        # round-trip to avro and back
+        f = BytesIO()
+        writer(f, schema, [reco])
+        deserialized = next(reader(BytesIO(f.getvalue())))
+        assert deserialized.keys() == reco.keys()
+        for k in reco:
+            if not 'candidate' in k or 'cutout' in k:
+                assert deserialized[k] == reco[k]
+        assert deserialized['candidate'] == pytest.approx(reco['candidate'])
+        assert len(deserialized['prv_candidates']) == len(reco['prv_candidates'])
+        for old, new in zip(reco['prv_candidates'], deserialized['prv_candidates']):
+            assert old == pytest.approx(new)
 
 @pytest.mark.skip(reason="Testing alert tarball only contains a single exposure")
 def test_get_alert(mock_database, alert_generator):
@@ -268,10 +303,11 @@ def test_archive_object(alert_generator, postgres):
     
     from itertools import islice
     for alert, schema in islice(alert_generator(with_schema=True), 10):
+        assert schema['version'] == "3.0", "Need alerts with current schema"
         db.insert_alert(alert, schema, 0, 0)
     
     for alert in islice(alert_generator(), 10):
-        reco_alert = db.get_alert(alert['candid'])
+        reco_alert = db.get_alert(alert['candid'], with_history=True, with_cutouts=True)
         # some necessary normalization on the alert
         for k,v in alert['candidate'].items():
             if isinstance(v, float) and isnan(v):
