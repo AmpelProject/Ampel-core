@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 03.05.2018
-# Last Modified Date: 04.07.2018
+# Last Modified Date: 20.08.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import importlib
@@ -43,7 +43,8 @@ class ChannelLoader:
 
 			# Get channel docs from config DB
 			channels_to_load = {
-				key: value for key, value in AmpelConfig.get_config('channels').items() if key in arg_chan_names 
+				key: value for key, value in AmpelConfig.get_config('channels').items() 
+				if key in arg_chan_names 
 			}
 		else:
 			channels_to_load = AmpelConfig.get_config('channels')
@@ -80,18 +81,21 @@ class ChannelLoader:
 
 
 	def _get_config(self, chan_doc, param_name):
-		"""
-		"""
+		""" """
 		return AmpelUtils.get_by_path(chan_doc['sources'][self.source], param_name)
 
+
 	def get_source_parameters(self):
+		""" """
 		params = {}
 		for name, chan_doc in AmpelConfig.get_config('channels').items():
 			if (chan_doc['active'] and self.source in chan_doc['sources']):
 				params[name] = chan_doc['sources'][self.source].get("parameters", {})
 		return params
 
+
 	def get_required_resources(self, chan_names=None):
+		""" """
 		resources = set()
 		for name, chan_doc in AmpelConfig.get_config('channels').items():
 			if chan_names is not None and not name in chan_names:
@@ -99,7 +103,7 @@ class ChannelLoader:
 			if (not chan_doc['active']) or (self.source not in chan_doc['sources']):
 				continue
 			if self.tier == 0:
-				filter_id = self._get_config(chan_doc, 't0Filter.dbEntryId')
+				filter_id = self._get_config(chan_doc, 't0Filter.id')
 				doc_t0_filter = AmpelConfig.get_config('t0_filters')[filter_id]
 				class_full_path = doc_t0_filter['classFullPath']
 				module = importlib.import_module(class_full_path)
@@ -113,9 +117,9 @@ class ChannelLoader:
 				raise ValueError("I don't know how to discover resources for tier {}".format(self.tier))
 		return resources
 	
+
 	def _create_t0_channel(self, chan_name, chan_doc, logger):
-		"""
-		"""
+		""" """
 		t2_units = set()
 
 		# Check defined t2UNits for this stream
@@ -135,7 +139,7 @@ class ChannelLoader:
 			t2_units.add(el['t2Unit'])
 
 		# Get t0 filter name
-		filter_id = self._get_config(chan_doc, 't0Filter.dbEntryId')
+		filter_id = self._get_config(chan_doc, 't0Filter.id')
 		logger.info("Loading filter: " + filter_id)
 
 		# Robustness check

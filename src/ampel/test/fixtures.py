@@ -1,8 +1,4 @@
-
-import pytest
-import json
-import subprocess
-import socket
+import pytest, json, subprocess, socket
 from os.path import abspath, join, dirname
 
 def docker_service(image, port, environ={}, mounts=[], healthcheck=None):
@@ -294,7 +290,7 @@ def minimal_ingestion_config(mongod):
 				"main": "INST_ZTF"
 			},
 			"t0Filter" : {
-				"dbEntryId": "BasicFilter",
+				"id": "BasicFilter",
 				"runConfig": {
 					"operator": ">",
 					"len": 1,
