@@ -53,19 +53,7 @@ class QueryLoadTransientInfo:
 		  If None or empty list, all associated t2 docs will be loaded
 		"""
 
-		match_dict = {}
-
-		match_dict['tranId'] = ( 
-			tran_ids if type(tran_ids) is int
-			else {'$in': tran_ids if type(tran_ids) is list else list(tran_ids)}
-		)
-
-		if channels is not None:
-			QueryMatchCriteria.add_from_list(
-				match_dict, 'channels',
-				(channels if not FlagUtils.contains_enum_flag(channels) 
-				else FlagUtils.enum_flags_to_lists(channels)), 
-			)
+		match_dict = QueryLoadTransientInfo.create_broad_match_dict(tran_ids, channels)
 
 		# Everything should be retrieved (AlDocTypes: 1+2+4+8=15)
 		if not t2_ids and content_types.value == 15:
@@ -117,8 +105,7 @@ class QueryLoadTransientInfo:
 
 	@staticmethod
 	def build_statebound_query(
-		tran_ids, content_types, states, 
-		channels=None, t2_ids=None, comp_already_loaded=False
+		tran_ids, content_types, states, channels=None, t2_ids=None, comp_already_loaded=False
 	):
 		"""
 		"""
@@ -130,19 +117,7 @@ class QueryLoadTransientInfo:
 		#		"or AlDocTypes.T2RECORD set in content_types"
 		#	)
 
-		match_dict = {}
-
-		match_dict['tranId'] = ( 
-			tran_ids if type(tran_ids) is int
-			else {'$in': tran_ids if type(tran_ids) is list else list(tran_ids)}
-		)
-
-		if channels is not None:
-			QueryMatchCriteria.add_from_list(
-				match_dict, 'channels',
-				(channels if not FlagUtils.contains_enum_flag(channels) 
-				else FlagUtils.enum_flags_to_lists(channels)), 
-			)
+		match_dict = QueryLoadTransientInfo.create_broad_match_dict(tran_ids, channels)
 
 		# Check if correct state(s) was provided
 		type_state = type(states)
@@ -244,5 +219,27 @@ class QueryLoadTransientInfo:
 				match_dict[key] = el[key]
 		else:
 			match_dict['$or'] = or_list
+
+		return match_dict
+
+
+	@staticmethod
+	def create_broad_match_dict(tran_ids, channels):
+		"""
+		"""
+
+		match_dict = {}
+
+		match_dict['tranId'] = ( 
+			tran_ids if type(tran_ids) is int
+			else {'$in': tran_ids if type(tran_ids) is list else list(tran_ids)}
+		)
+
+		if channels is not None:
+			QueryMatchCriteria.add_from_list(
+				match_dict, 'channels',
+				(channels if not FlagUtils.contains_enum_flag(channels) 
+				else FlagUtils.enum_flags_to_lists(channels)), 
+			)
 
 		return match_dict
