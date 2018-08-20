@@ -246,13 +246,13 @@ class DBContentLoader:
 				res_photo_list = list(photo_cursor)
 
 
-		return self.load_tran_data(
+		return self.create_tran_data(
 			res_main_list, res_photo_list, channels, state_op,
 			feedback=True, verbose_feedback=verbose_feedback
 		)
 
 
-	def load_tran_data(
+	def create_tran_data(
 		self, main_list, photo_list=None, channels=None, state_op=None,
 		load_lightcurves=True, feedback=True, verbose_feedback=False
 	):
