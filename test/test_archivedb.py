@@ -155,7 +155,7 @@ def test_delete_alert(mock_database, alert_generator):
 def assert_alerts_equivalent(alert, reco_alert):
     
     # some necessary normalization on the alert
-    fluff = ['pdiffimfilename', 'programpi', 'ssnamenr']
+    fluff = ['pdiffimfilename', 'programpi']
     alert = dict(alert)
     def strip(in_dict):
         out_dict = dict(in_dict)
@@ -164,9 +164,6 @@ def assert_alerts_equivalent(alert, reco_alert):
                 out_dict[k] = None
             if k in fluff:
                 del out_dict[k]
-            if k == 'isdiffpos' and v is not None:
-                assert v in {'0', '1', 'f', 't'}
-                out_dict[k] = v in {'1', 't'}
         return out_dict
     alert['candidate'] = strip(alert['candidate'])
     assert alert.keys() == reco_alert.keys()
@@ -299,9 +296,6 @@ def test_archive_object(alert_generator, postgres):
     db._connection.execute('vacuum full')
     for table, stats in db.get_statistics().items():
         assert stats['rows'] >= db._connection.execute(db._meta.tables[table].count()).fetchone()[0]
-
-
-    
 
 def test_insert_future_schema(alert_generator, postgres):
     db = archive.ArchiveDB(postgres)
