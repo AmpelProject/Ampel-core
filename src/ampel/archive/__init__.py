@@ -94,15 +94,6 @@ class ArchiveDB(object):
     def get_alerts_in_cone(self, ra, dec, radius, jd_min=None, jd_max=None):
         return get_alerts_in_cone(self._connection, self._meta, ra, dec, radius, jd_min, jd_max)
 
-def _convert_isdiffpos(in_dict):
-    out_dict = dict(in_dict)
-    k = 'isdiffpos'
-    v = out_dict[k]
-    if k is not None:
-        assert v in {'0', '1', 'f', 't'}
-        out_dict[k] = v in {'1', 't'}
-    return out_dict
-
 from sqlalchemy.dialects import postgresql
 from sqlalchemy.sql.expression import tuple_, func
 def _update_history(connection, meta, label, rows, alert_id):
@@ -142,7 +133,7 @@ def insert_alert(connection, meta, alert, partition_id, ingestion_time):
                 programid=alert['candidate']['programid'], jd=alert['candidate']['jd'],
                 partition_id=partition_id, ingestion_time=ingestion_time, **alert)
             alert_id = result.inserted_primary_key[0]
-            connection.execute(Candidate.insert(), alert_id=alert_id, **_convert_isdiffpos(alert['candidate']))
+            connection.execute(Candidate.insert(), alert_id=alert_id, **alert['candidate'])
         except IntegrityError:
             # abort on duplicate alerts
             transaction.rollback()
@@ -167,7 +158,7 @@ def insert_alert(connection, meta, alert, partition_id, ingestion_time):
             if c['candid'] is None:
                 upper_limits.append(c)
             else:
-                detections.append(_convert_isdiffpos(c))
+                detections.append(c)
         for rows, label in ((detections, 'prv_candidate'), (upper_limits, 'upper_limit')):
             if len(rows) > 0:
                 _update_history(connection, meta, label, rows, alert_id)
