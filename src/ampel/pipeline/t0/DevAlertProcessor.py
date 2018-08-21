@@ -9,7 +9,7 @@
 
 
 import logging, time, sys, fastavro, tarfile
-from ampel.base.DevAmpelAlert import DevAmpelAlert
+from ampel.base.dev.DevAmpelAlert import DevAmpelAlert
 from ampel.base.AmpelAlert import AmpelAlert
 
 
