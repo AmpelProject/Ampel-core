@@ -1,6 +1,6 @@
 from distutils.core import setup
 setup(name='ampel',
-      version='0.3.6',
+      version='0.4.0',
       package_dir={'':'src'},
       packages=['ampel'],
       entry_points = {
