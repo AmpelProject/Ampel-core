@@ -1,5 +1,6 @@
 
 import pytest, subprocess, json
+import schedule
 
 from ampel.pipeline.t3.T3Controller import T3Controller
 from ampel.pipeline.t3.T3JobConfig import T3JobConfig
@@ -165,6 +166,7 @@ def minimal_config(mongod, testing_class):
 		'channels': dict(map(make_channel, range(2))),
 		't3_jobs' : {
 			'jobbyjob': {
+				'schedule': 'every(1).hour',
 				'input': {
 					'select':  {
 						'channel(s)': ['0', '1'],
@@ -229,6 +231,9 @@ def test_get_transient_view(ingested_transients, t3_selected_transients, minimal
 					assert tuple(sorted(tran_view.channel)) == tuple(sorted(ingested_transients[tran_view.tran_id])), "Channel list in view matches actual transient"
 					
 		assert count == len(list(chans for chans in ingested_transients.values() if any(c in task_chans for c in chans))), "Number of views matches ingested transients passing criteria"
-	
-	
+
+def test_schedule_job(minimal_config):
+	job = T3JobConfig.load('jobbyjob')
+	scheduler = schedule.Scheduler()
+	job.schedule_job(scheduler)
 
