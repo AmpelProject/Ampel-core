@@ -174,17 +174,20 @@ services:
   t3-controller:
     <<: *ampel
     image: ampel:$AMPEL_TAG
-    command: ["ampel-t3"]
+    command: ["ampel-t3", "run"]
     secrets:
       - archive-write-password
       - mongo-alertprocessor-password
       - mongo-logger-password
       - catalog-read-password
       - catalog-write-password
+      - desycloud-password
     environment:
       <<: *ampel-env
       EXTCATS_WRITER_USERNAME: ToO
       EXTCATS_WRITER_PASSWORD_FILE: /run/secrets/catalog-write-password
+      DESYCLOUD_USERNAME: brinnel
+      DESYCLOUD_PASSWORD_FILE: /run/secrets/desycloud-password
     deploy:
       restart_policy:
           max_attempts: 30
@@ -208,3 +211,5 @@ secrets:
     file: secrets/catalog-read-password.txt
   catalog-write-password:
     file: secrets/catalog-write-password.txt
+  desycloud-password:
+    file: secrets/desycloud-password.txt
