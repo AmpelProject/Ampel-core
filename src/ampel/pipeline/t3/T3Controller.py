@@ -224,7 +224,7 @@ def main():
 	p.add_argument('--runconfig', default=None)
 	p.add_argument('--update-run-col', default=False, action="store_true", help="Record this run in the jobs collection")
 	p.add_argument('--update-tran-journal', default=False, action="store_true", help="Record this run in the transient journal")
-	p.add_argument('--channels', action="append", default=[])
+	p.add_argument('--channels', nargs='+', default=[])
 	p.add_argument('--created', type=int, default=-40)
 	p.add_argument('--modified', type=int, default=-1)
 
