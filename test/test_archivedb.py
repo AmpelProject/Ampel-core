@@ -71,41 +71,45 @@ def count_previous_candidates(alert):
     upper_limits = sum((1 for c in alert['prv_candidates'] if c['candid'] is None))
     return len(alert['prv_candidates'])-upper_limits, upper_limits
 
-def test_insert_duplicate_alerts(mock_database, alert_generator):
+def test_insert_duplicate_alerts(temp_database, alert_generator):
     import itertools
     processor_id = 0
-    meta, connection = mock_database
+    db = archive.ArchiveDB(temp_database)
+    connection = db._connection
+    meta = db._meta
     
-    alert = next(alert_generator())
+    alert, schema = next(alert_generator(with_schema=True))
     detections, upper_limits = count_previous_candidates(alert)
     
-    archive.insert_alert(connection, meta, alert, processor_id, int(time.time()*1e6))
+    db.insert_alert(alert, schema, processor_id, int(time.time()*1e6))
     assert connection.execute(count(meta.tables['alert'].columns.candid)).first()[0] == 1
     assert connection.execute(count(meta.tables['candidate'].columns.candid)).first()[0] == 1
     assert connection.execute(count(meta.tables['prv_candidate'].columns.candid)).first()[0] == detections
     assert connection.execute(count(meta.tables['upper_limit'].columns.upper_limit_id)).first()[0] == upper_limits
     
     # inserting the same alert a second time does nothing
-    archive.insert_alert(connection, meta, alert, processor_id, int(time.time()*1e6))
+    db.insert_alert(alert, schema, processor_id, int(time.time()*1e6))
     assert connection.execute(count(meta.tables['alert'].columns.candid)).first()[0] == 1
     assert connection.execute(count(meta.tables['candidate'].columns.candid)).first()[0] == 1
     assert connection.execute(count(meta.tables['prv_candidate'].columns.candid)).first()[0] == detections
     assert connection.execute(count(meta.tables['upper_limit'].columns.upper_limit_id)).first()[0] == upper_limits
 
-def test_insert_duplicate_photopoints(mock_database, alert_generator):
+def test_insert_duplicate_photopoints(temp_database, alert_generator):
     processor_id = 0
-    meta, connection = mock_database
+    db = archive.ArchiveDB(temp_database)
+    connection = db._connection
+    meta = db._meta
     from sqlalchemy.sql.expression import tuple_, func
     from sqlalchemy.sql.functions import sum
     
     # find an alert with at least 1 previous detection
-    for alert in alert_generator():
+    for alert, schema in alert_generator(with_schema=True):
         detections, upper_limits = count_previous_candidates(alert)
-        if detections > 0:
+        if detections > 0 and upper_limits > 0:
             break
     assert detections > 0
     
-    archive.insert_alert(connection, meta, alert, processor_id, int(time.time()*1e6))
+    db.insert_alert(alert, schema, processor_id, int(time.time()*1e6))
     assert connection.execute(count(meta.tables['alert'].columns.candid)).first()[0] == 1
     assert connection.execute(count(meta.tables['candidate'].columns.candid)).first()[0] == 1
     assert connection.execute(count(meta.tables['prv_candidate'].columns.candid)).first()[0] == detections
@@ -118,7 +122,7 @@ def test_insert_duplicate_photopoints(mock_database, alert_generator):
     # insert a new alert, containing the same photopoints. only the alert and pivot tables should gain entries
     alert['candid'] += 1
     alert['candidate']['candid'] = alert['candid']
-    archive.insert_alert(connection, meta, alert, processor_id, int(time.time()*1e6))
+    db.insert_alert(alert, schema, processor_id, int(time.time()*1e6))
     assert connection.execute(count(meta.tables['alert'].columns.candid)).first()[0] == 2
     assert connection.execute(count(meta.tables['candidate'].columns.candid)).first()[0] == 2
     assert connection.execute(count(meta.tables['prv_candidate'].columns.candid)).first()[0] == detections
@@ -128,16 +132,18 @@ def test_insert_duplicate_photopoints(mock_database, alert_generator):
     assert connection.execute(count(meta.tables['alert_upper_limit_pivot'].columns.upper_limit_id)).first()[0] == 2
     assert connection.execute(sum(func.array_length(meta.tables['alert_upper_limit_pivot'].columns.upper_limit_id, 1))).first()[0] == 2*upper_limits
 
-def test_delete_alert(mock_database, alert_generator):
+def test_delete_alert(temp_database, alert_generator):
     processor_id = 0
-    meta, connection = mock_database
+    db = archive.ArchiveDB(temp_database)
+    connection = db._connection
+    meta = db._meta
     from sqlalchemy.sql.expression import tuple_, func
     from sqlalchemy.sql.functions import sum
     
-    alert = next(alert_generator())
+    alert, schema = next(alert_generator(with_schema=True))
     detections, upper_limits = count_previous_candidates(alert)
     
-    archive.insert_alert(connection, meta, alert, processor_id, int(time.time()*1e6))
+    db.insert_alert(alert, schema, processor_id, int(time.time()*1e6))
 
     Alert = meta.tables['alert']
     connection.execute(Alert.delete().where(Alert.c.candid==alert['candid']))
@@ -155,7 +161,7 @@ def test_delete_alert(mock_database, alert_generator):
 def assert_alerts_equivalent(alert, reco_alert):
     
     # some necessary normalization on the alert
-    fluff = ['pdiffimfilename', 'programpi', 'ssnamenr']
+    fluff = ['pdiffimfilename', 'programpi']
     alert = dict(alert)
     def strip(in_dict):
         out_dict = dict(in_dict)
@@ -164,19 +170,19 @@ def assert_alerts_equivalent(alert, reco_alert):
                 out_dict[k] = None
             if k in fluff:
                 del out_dict[k]
-            if k == 'isdiffpos' and v is not None:
-                assert v in {'0', '1', 'f', 't'}
-                out_dict[k] = v in {'1', 't'}
         return out_dict
     alert['candidate'] = strip(alert['candidate'])
     assert alert.keys() == reco_alert.keys()
     for k in alert:
-        if 'candidate' in k:
-            continue
-        assert alert[k] == pytest.approx(reco_alert[k])
+        if 'candidate' in k or k == 'publisher':
+            pass
+        elif k.startswith('cutout'):
+            assert alert[k]['stampData'] == reco_alert[k]['stampData']
+        else:
+            assert alert[k] == pytest.approx(reco_alert[k])
     assert len(alert['prv_candidates']) == len(reco_alert['prv_candidates'])
-    prvs = sorted(alert['prv_candidates'], key=lambda f: (f['jd'], f['candid'] is None))
-    reco_prvs = sorted(reco_alert['prv_candidates'], key=lambda f: (f['jd'], f['candid'] is None))
+    prvs = sorted(alert['prv_candidates'], key=lambda f: (f['jd'], f['candid'] is None, f['candid']))
+    reco_prvs = reco_alert['prv_candidates']
     try:
         assert [c['candid'] for c in prvs] == [c['candid'] for c in reco_prvs]
     except:
@@ -205,19 +211,50 @@ def assert_alerts_equivalent(alert, reco_alert):
         assert reco_alert['candidate'][k] is None
     assert candidate == pytest.approx(reco_candidate)
 
-def test_get_cutout(mock_database, alert_generator):
+def test_get_cutout(temp_database, alert_generator):
     processor_id = 0
-    meta, connection = mock_database
+    db = archive.ArchiveDB(temp_database)
+
+    for idx, (alert, schema) in enumerate(alert_generator(with_schema=True)):
+        processor_id = idx % 16
+        db.insert_alert(alert, schema, processor_id, 0)
 
     for idx, alert in enumerate(alert_generator()):
         processor_id = idx % 16
-        archive.insert_alert(connection, meta, alert, processor_id, 0)
-
-    for idx, alert in enumerate(alert_generator()):
-        processor_id = idx % 16
-        cutouts = archive.get_cutout(connection, meta, alert['candid'])
+        cutouts = db.get_cutout(alert['candid'])
         alert_cutouts = {k[len('cutout'):].lower() : v['stampData'] for k,v in alert.items() if k.startswith('cutout')}
         assert cutouts == alert_cutouts
+
+def test_serializability(temp_database, alert_generator):
+    """
+    Ensure that we can recover avro alerts from the db
+    """
+    # the python implementation of writer throws more useful errors on schema
+    # violations
+    from fastavro._write_py import writer
+    from fastavro import reader
+    from io import BytesIO
+    processor_id = 0
+    db = archive.ArchiveDB(temp_database)
+
+    for idx, (alert, schema) in enumerate(alert_generator(with_schema=True)):
+        processor_id = idx % 16
+        db.insert_alert(alert, schema, processor_id, 0)
+
+    for idx, alert in enumerate(alert_generator()):
+        reco = db.get_alert(alert['candid'], with_history=True, with_cutouts=True)
+        # round-trip to avro and back
+        f = BytesIO()
+        writer(f, schema, [reco])
+        deserialized = next(reader(BytesIO(f.getvalue())))
+        assert deserialized.keys() == reco.keys()
+        for k in reco:
+            if not 'candidate' in k or 'cutout' in k:
+                assert deserialized[k] == reco[k]
+        assert deserialized['candidate'] == pytest.approx(reco['candidate'])
+        assert len(deserialized['prv_candidates']) == len(reco['prv_candidates'])
+        for old, new in zip(reco['prv_candidates'], deserialized['prv_candidates']):
+            assert old == pytest.approx(new)
 
 @pytest.mark.skip(reason="Testing alert tarball only contains a single exposure")
 def test_get_alert(mock_database, alert_generator):
@@ -271,10 +308,11 @@ def test_archive_object(alert_generator, postgres):
     
     from itertools import islice
     for alert, schema in islice(alert_generator(with_schema=True), 10):
+        assert schema['version'] == "3.0", "Need alerts with current schema"
         db.insert_alert(alert, schema, 0, 0)
     
     for alert in islice(alert_generator(), 10):
-        reco_alert = db.get_alert(alert['candid'])
+        reco_alert = db.get_alert(alert['candid'], with_history=True, with_cutouts=True)
         # some necessary normalization on the alert
         for k,v in alert['candidate'].items():
             if isinstance(v, float) and isnan(v):
@@ -299,9 +337,6 @@ def test_archive_object(alert_generator, postgres):
     db._connection.execute('vacuum full')
     for table, stats in db.get_statistics().items():
         assert stats['rows'] >= db._connection.execute(db._meta.tables[table].count()).fetchone()[0]
-
-
-    
 
 def test_insert_future_schema(alert_generator, postgres):
     db = archive.ArchiveDB(postgres)
