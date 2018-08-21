@@ -56,7 +56,7 @@ Now, pull the image from the remote side::
   ssh -R5000:localhost:5000 transit.ifh.de
   sudo su ampel
   cd /data/ampel/singularity
-  singularity pull docker://localhost:5000/ampel:v0.3.5
+  SINGULARITY_NOHTTPS=1 singularity pull docker://localhost:5000/ampel:v0.3.5
 
 Initialize writable Ampel source directories
 ********************************************
