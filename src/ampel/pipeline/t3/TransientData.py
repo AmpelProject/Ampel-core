@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 31.05.2018
-# Last Modified Date: 07.07.2018
+# Last Modified Date: 21.08.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from ampel.base.TransientView import TransientView
@@ -38,16 +38,12 @@ class TransientData:
 		self.compounds = {}
 		self.lightcurves = {}
 		self.science_records = {}
-		self.created = {}
-		self.modified = {}
 		self.latest_state = {}
 		self.journal = {}
 
 
 	def set_channels(self, channels):
-		""" 
-		channels: list or set (of strings)
-		"""
+		""" channels: list or set (of strings) """
 		self.channels = channels
 
 
@@ -57,9 +53,7 @@ class TransientData:
 
 
 	def set_latest_state(self, channels, state):
-		"""
-		Saves latest state of transient for the provided channel
-		"""
+		""" Saves latest state of transient for the provided channel """
 		self._set(self.latest_state, state, channels)
 
 
@@ -164,10 +158,8 @@ class TransientData:
 		photopoints, upperlimits = self._get_photo(channel)
 
 		return TransientView(
-			self.tran_id, self.flags, 
-			self.created.get(channel), 
-			self.modified.get(channel), 
-			self.journal.get(channel), latest_state, photopoints, upperlimits, 
+			self.tran_id, self.flags, self.journal.get(channel), 
+			latest_state, photopoints, upperlimits, 
 			tuple(self.compounds[channel]) if channel in self.compounds else None, 
 			tuple(self.lightcurves[channel]) if channel in self.lightcurves else None, 
 			tuple(self.science_records[channel]) if channel in self.science_records else None, 
@@ -215,8 +207,8 @@ class TransientData:
 		photopoints, upperlimits = self._get_photo(channels)
 
 		return TransientView(
-			self.tran_id, self.flags, None, None, # created, modified
-			entries, latest_state, photopoints, upperlimits, tuple(all_comps.values()),
+			self.tran_id, self.flags, entries, latest_state, photopoints, upperlimits, 
+			tuple(all_comps.values()),
 			self._get_combined_elements(self.lightcurves, channels),
 			self._get_combined_elements(self.science_records, channels),
 			tuple(self.channels & set(channels)), self.logger
