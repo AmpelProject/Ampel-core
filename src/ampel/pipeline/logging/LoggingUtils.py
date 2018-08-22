@@ -34,7 +34,7 @@ class LoggingUtils:
 		# New logger
 		if not logger.handlers:
 			logger.setLevel(logging.DEBUG)
-			ch = logging.StreamHandler()
+			ch = logging.StreamHandler(sys.stdout)
 			ch.setLevel(logging.DEBUG)
 			ch.setFormatter(
 				LoggingUtils.get_formatter(log_pathname)
