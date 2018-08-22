@@ -93,11 +93,11 @@ class T2Controller(Schedulable):
 		Schedulable.__init__(self)
 
 		self.get_scheduler().every(check_interval).seconds.do(
-			self.check_changes
+			self.process_new_docs
 		)
 
 
-	def check_changes(self):
+	def process_new_docs(self):
 		"""
 		check transient database for T2 documents with the given run_state
 		"""
@@ -112,10 +112,10 @@ class T2Controller(Schedulable):
 
 			# Process t2_docs
 			for i in range(math.ceil(cursor.count()/self.batch_size)):
-				self.process_t2_docs(cursor)
+				self.process_docs(cursor)
 
 
-	def process_t2_docs(self, cursor):
+	def process_docs(self, cursor):
 		"""
 		cursor: mongodb cursor
 		Return: nothing
