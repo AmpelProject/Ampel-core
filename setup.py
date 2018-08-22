@@ -4,7 +4,6 @@ setup(name='Ampel-core',
       package_dir={'':'src'},
       package_data = {'': ['*.json']},
       packages=[
-          'ampel.archive',
           'ampel.core',
           'ampel.core.abstract',
           'ampel.core.flags',
