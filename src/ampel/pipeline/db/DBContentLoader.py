@@ -93,8 +93,8 @@ class DBContentLoader:
 				- 16 bytes (128 bits)
 				- a bson.binary.Binary instance with subtype 5
 
-		-> content_types: AlDocTypes flag combination. 
-		Possible values are:
+		-> content_types: AlDocTypes flags. Possible values are:
+
 		  * 'AlDocTypes.TRANSIENT': 
 			-> Add info from DB doc to the returned TransientData instance
 			-> For example: channels, flags (has processing errors), 
@@ -214,7 +214,7 @@ class DBContentLoader:
 		res_photo_list = None
 
 		# Photo DB query 
-		if AlDocTypes.PHOTOPOINT|AlDocTypes.UPPERLIMIT in content_types:
+		if (AlDocTypes.PHOTOPOINT|AlDocTypes.UPPERLIMIT) in content_types:
 
 			photo_cursor = self.photo_col.find(
 				{'tranId': {'$in': tran_id} if type(tran_id) in (list, tuple) else tran_id}
@@ -416,7 +416,7 @@ class DBContentLoader:
 
 				# This dict aims at avoiding unnecesssary re-instantiations 
 				# of PhotoPoints objects referenced in several different LightCurves. 
-				frozen_photo_dict = {**tran_data.photopoints, **tran_data.upperlimits}
+				frozen_photo_dicts = {**tran_data.photopoints, **tran_data.upperlimits}
 				len_uls = len(tran_data.upperlimits)
 
 				# Transform 
@@ -454,7 +454,7 @@ class DBContentLoader:
 						)
 						continue
 
-					lc = self.lcl.load_using_objects(comp_dict[comp_id], frozen_photo_dict)
+					lc = self.lcl.load_using_objects(comp_dict[comp_id], frozen_photo_dicts)
 
 					# Associate it to the TransientData instance
 					tran_data.add_lightcurve(chan_names, lc)
