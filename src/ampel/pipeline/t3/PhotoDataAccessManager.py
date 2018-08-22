@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 02.06.2018
-# Last Modified Date: 07.07.2018
+# Last Modified Date: 22.08.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from ampel.pipeline.config.AmpelConfig import AmpelConfig
@@ -31,13 +31,10 @@ class PhotoDataAccessManager:
 		# Loop through channel sources (ZTFIPAC, ASASN, etc..)
 		for src_name in channel.get_sources().keys():
 
-			src_params = al_config['global']['sources'][src_name]
-
-			current_photo_flag = None
-
-			if 'flags' in src_params and 'photo' in src_params['flags']:
-				# pylint: disable=unsubscriptable-object
-				current_photo_flag = PhotoFlags[src_params['flags']['photo']]
+			# pylint: disable=unsubscriptable-object
+			current_photo_flag = PhotoFlags[
+				AmpelConfig.get_config('global.sources.%s.flags.photo' % src_name)			
+			]
 
 			if (
 				src_name == "ZTFIPAC" and 
@@ -70,7 +67,7 @@ class PhotoDataAccessManager:
 
 	def get_photopoints(self, photopoints):
 		""" 
-		argument 'photopoint' must be an instance of ampel.base.core.PhotoPoint 
+		argument 'photopoint' must be an instance of ampel.base.(Plain)PhotoPoint 
 		"""
 
 		return tuple(
@@ -81,7 +78,7 @@ class PhotoDataAccessManager:
 
 	def get_upperlimits(self, upperlimit):
 		""" 
-		argument 'upperlimit' must be an instance of ampel.base.core.UpperLimit 
+		argument 'upperlimit' must be an instance of ampel.base.(Plain)UpperLimit 
 		"""
 
 		return tuple(
