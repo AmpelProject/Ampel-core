@@ -209,4 +209,4 @@ class T3JobConfig:
 
 	def schedule_job(self, scheduler):
 		""" """
-		exec("scheduler.%s.do(self.launch_t3_job)" % self.get('schedule'))
+		exec("schedule.%s.do(self.launch_t3_job)" % self.get('schedule'))
