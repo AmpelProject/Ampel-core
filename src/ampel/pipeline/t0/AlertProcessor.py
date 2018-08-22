@@ -154,10 +154,14 @@ class AlertProcessor():
 	def run(self, alert_supplier, full_console_logging=True):
 		"""
 		For each alert:
-			* Load the alert
-			* Filter alert and set policies for every configured channels (defined by load_config())
-			* Ingest alert based on PipelineIngester (default) 
-			or the ingester instance set by the method set_ingester(obj)
+		* Load the alert
+		* Filter alert and set policies for every configured channels (defined by load_config())
+		* Ingest alert based on PipelineIngester (default) 
+		or the ingester instance set by the method set_ingester(obj)
+
+		full_console_logging: bool. If false, the logging level of the stdout streamhandler 
+		associated with the logger will be set to WARN during the execution of this method
+		(it will be reverted to DEBUG before return)
 		"""
 
 		# Save current time to later evaluate how low was the pipeline processing time
