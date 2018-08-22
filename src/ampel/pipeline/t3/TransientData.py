@@ -15,6 +15,9 @@ class TransientData:
 	"""
 	"""
 
+	# Static dict with key=channel, value=instance of PhotoDataAccessManager
+	pdams = {}
+
 	def __init__(self, tran_id, state, logger):
 		"""
 		Parameters:
@@ -261,9 +264,10 @@ class TransientData:
 		pps = set()
 		uls = set()
 		for channel in AmpelUtils.iter(channels):
-			pdam = PhotoDataAccessManager(channel)
-			pps.update(pdam.get_photopoints(self.photopoints))
-			uls.update(pdam.get_upperlimits(self.upperlimits))
+			if channel not in TransientData.pdams:
+				TransientData.pdams[channel] =  PhotoDataAccessManager(channel)
+			pps.update(TransientData.pdams[channel].get_photopoints(self.photopoints))
+			uls.update(TransientData.pdams[channel].get_upperlimits(self.upperlimits))
 
 		# Return pps / uls for given combination of channels.
 		# Example for single source ZTF:
