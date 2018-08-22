@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 13.01.2018
-# Last Modified Date: 15.07.2018
+# Last Modified Date: 22.08.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from ampel.core.flags.AlDocTypes import AlDocTypes
@@ -66,8 +66,10 @@ class LightCurveLoader:
 		# pymongo 'sequence' are always list
 		if type(compound_id) is list: 
 			match_crit = {"_id": {'$in': compound_id}}
+			comp_hex = [el.hex() for el in compound_id]
 		else:
 			match_crit = {"_id": compound_id}
+			comp_hex = compound_id.hex()
 
 		# Retrieve compound document
 		main_cursor = self.main_col.find(match_crit)
@@ -81,8 +83,8 @@ class LightCurveLoader:
 			return None
 
 		self.logger.info(
-			"DB query for tranId: %s and compoundId: %s returned %i documents" %
-			(tran_id, compound_id, photo_cursor.count())
+			"DB query for tranId: %s and compoundId(s): %s returned %i documents" %
+			(tran_id, comp_hex, photo_cursor.count())
 		)
 
 		pps_list = []
@@ -244,13 +246,13 @@ class LightCurveLoader:
 
 				if pp_id not in already_loaded_photo:
 
-					self.logger.warn("Photo point %i not found" % pp_id)
+					self.logger.warn("Photo point %i not provided" % pp_id)
 					self.logger.info("Trying to recover from this error")
 
-					# TODO: populate 'troubles collection'
 					cursor = self.photo_col.find({"_id": pp_id})
 	
 					if (cursor.count()) == 0:
+						# TODO: populate 'troubles collection'
 						self.logger.error("PhotoPoint with id %i not found" % pp_id)
 						raise ValueError("PhotoPoint with id %i not found" % pp_id)
 
@@ -259,6 +261,7 @@ class LightCurveLoader:
 
 					# Update dict already_loaded_photo
 					already_loaded_photo[pp_id] = PlainPhotoPoint(pp_doc, pp_flags, read_only=True)
+
 
 				# If custom options avail (if dict contains more than the dict key 'pp')
 				if (len(el.keys()) > 1):
