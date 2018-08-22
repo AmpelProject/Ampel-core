@@ -151,7 +151,7 @@ class AlertProcessor():
 		self.ingester = ingester_instance
 
 
-	def run(self, alert_supplier, console_logging=True):
+	def run(self, alert_supplier, full_console_logging=True):
 		"""
 		For each alert:
 			* Load the alert
@@ -173,8 +173,8 @@ class AlertProcessor():
 		if getattr(self, "ingester", None) is None:
 			raise ValueError("No ingester instance was loaded")
 
-		if not console_logging:
-			self.logger.propagate = False
+		if not full_console_logging:
+			LoggingUtils.quiten_console_logger(self.logger)
 
 		# Remove logger saving "log headers" before job(s) 
 		self.logger.removeHandler(self.ilb)
@@ -479,9 +479,9 @@ class AlertProcessor():
 			int(time_now() - run_start)
 		)
 
-		# Restore console logging if it was removed
-		if not console_logging:
-			self.logger.propagate = True
+		# Restore console logging settings
+		if not full_console_logging:
+			LoggingUtils.louden_console_logger(self.logger)
 
 		# Remove DB logging handler
 		if iter_count > 0:
@@ -668,7 +668,7 @@ def run_alertprocessor():
 		t0 = time.time()
 		log.info('Running on {}'.format(infile))
 		try:
-			alert_processed = processor.run(alert_supplier, console_logging=False)
+			alert_processed = processor.run(alert_supplier, full_console_logging=False)
 		finally:
 			t1 = time.time()
 			dt = t1-t0
