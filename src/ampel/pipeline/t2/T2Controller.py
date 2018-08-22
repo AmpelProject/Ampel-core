@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 25.01.2018
-# Last Modified Date: 14.08.2018
+# Last Modified Date: 22.08.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from datetime import datetime, timedelta
@@ -142,6 +142,8 @@ class T2Controller(Schedulable):
 		# Instantiate LightCurveLoader (that returns ampel.base.LightCurve instances)
 		lcl = LightCurveLoader(self.tran_col.database, logger=self.logger)
 
+		counter = 0
+
 		# Process t2_docs until next() returns None (break condition below)
 		while True: 
 
@@ -151,6 +153,8 @@ class T2Controller(Schedulable):
 			# No new T2 doc with the given run state
 			if t2_doc is None:
 				return
+
+			counter += 1
 
 			# Shortcut
 			t2_unit_name = t2_doc['t2Unit']
@@ -222,7 +226,7 @@ class T2Controller(Schedulable):
 								"results": {
 									'versions': self.versions[t2_unit_name],
 									'dt': now,
-									'duration': before_run - now,
+									'duration': now - before_run,
 									'logs': db_logging_handler.get_log_id(),
 									'error': ret.value
 								}
@@ -293,6 +297,10 @@ class T2Controller(Schedulable):
 				# TODO populate Ampel_troubles collection
 				# TODO add return code 
 				self.logger.error(bwe.details) 
+
+			# Take batch_size reqs into consideration
+			if counter > self.batch_size:
+				break
 
 
 		# Remove DB logging handler
