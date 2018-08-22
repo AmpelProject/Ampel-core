@@ -149,10 +149,10 @@ def latest_schema():
 		return json.load(f)
 
 import copy
-from ampel.pipeline.t0.alerts.ZIAlertShaper import ZIAlertShaper
 from ampel.base.AmpelAlert import AmpelAlert
 class AlertFactoryFixture(object):
 	def __init__(self, schema):
+		from ampel.pipeline.t0.alerts.ZIAlertShaper import ZIAlertShaper
 		native_types = {'int': int, 'long': int, 'float': float, 'double': float, 'string': str}
 		def get_defaults(schema):
 			required = dict()

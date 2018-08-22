@@ -3,8 +3,11 @@ from ampel.core.abstract.AbsTargetSource import AbsTargetSource
 
 import pytest
 import logging
-from astropy import units as u
-from astropy.time import Time
+try:
+	from astropy import units as u
+	from astropy.time import Time
+except ImportError:
+	pytest.skip("Delayed T0 requires astropy", allow_module_level=True)
 from numpy import random, arccos
 random.seed(0)
 import asyncio
