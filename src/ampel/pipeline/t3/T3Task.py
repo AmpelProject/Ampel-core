@@ -9,6 +9,7 @@
 
 import logging
 from ampel.pipeline.common.AmpelUtils import AmpelUtils
+from ampel.pipeline.logging.LoggingUtils import LoggingUtils
 
 class T3Task:
 	"""
@@ -41,7 +42,7 @@ class T3Task:
 		)
 
 		# Feedback
-		AmpelUtils.propagate_log(
+		LoggingUtils.propagate_log(
 			logger, logging.INFO,
 			"%s: task instantiated" % 
 			t3_task_config.log_header
@@ -102,7 +103,7 @@ class T3Task:
 			tran_views.append(tran_view)
 
 		# Feedback
-		AmpelUtils.propagate_log(
+		LoggingUtils.propagate_log(
 			self.logger, logging.INFO,
 			"%s: adding %i transientViews to t3 unit" % 
 			(self.task_config.log_header, len(tran_register))
@@ -117,7 +118,7 @@ class T3Task:
 		"""
 
 		# Feedback
-		AmpelUtils.propagate_log(
+		LoggingUtils.propagate_log(
 			self.logger, logging.INFO,
 			"%s: calling done()" % self.task_config.log_header
 		)
