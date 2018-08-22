@@ -29,11 +29,11 @@ class LoggingUtils:
 		logger = logging.getLogger(
 			"Ampel-"+str(datetime.utcnow().time()) if unique is True else "Ampel"
 		)
+		logger.propagate = False
 
 		# New logger
 		if not logger.handlers:
 			logger.setLevel(logging.DEBUG)
-			logger.propagate = False
 			ch = logging.StreamHandler()
 			ch.setLevel(logging.DEBUG)
 			ch.setFormatter(
@@ -78,3 +78,23 @@ class LoggingUtils:
 	def louden_console_logger(logger):
 		""" """
 		LoggingUtils.set_console_loglevel(logger, logging.DEBUG)
+
+
+	@staticmethod
+	def propagate_log(logger, level, msg, exc_info=False):
+		"""
+		"""
+		for handler in logger.handlers:
+			if isinstance(handler, logging.StreamHandler):
+				if handler.level == logging.WARN:
+					handler.level = logging.DEBUG
+					logger.log(level, msg, exc_info=exc_info)
+					handler.level = logging.DEBUG
+				else:
+					logger.log(level, msg, exc_info=exc_info)
+				return
+				
+		if level < logging.warn:
+			level = logging.WARN
+
+		logger.log(level, "Forced log propagation: "+msg, exc_info=exc_info)
