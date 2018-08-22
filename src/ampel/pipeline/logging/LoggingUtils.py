@@ -69,7 +69,7 @@ class LoggingUtils:
 
 
 	@staticmethod
-	def quiten_console_logger(logger):
+	def quieten_console_logger(logger):
 		""" """
 		LoggingUtils.set_console_loglevel(logger, logging.WARN)
 

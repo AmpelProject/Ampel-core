@@ -178,7 +178,7 @@ class AlertProcessor():
 			raise ValueError("No ingester instance was loaded")
 
 		if not full_console_logging:
-			LoggingUtils.quiten_console_logger(self.logger)
+			LoggingUtils.quieten_console_logger(self.logger)
 
 		# Remove logger saving "log headers" before job(s) 
 		self.logger.removeHandler(self.ilb)
