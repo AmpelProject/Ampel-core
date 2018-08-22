@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 26.02.2018
-# Last Modified Date: 04.08.2018
+# Last Modified Date: 22.08.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import logging
@@ -30,7 +30,7 @@ class T3Job:
 	"""
 	"""
 
-	def __init__(self, job_config, central_db=None, logger=None, propagate_logs=False):
+	def __init__(self, job_config, central_db=None, logger=None, full_console_logging=True):
 		""" 
 		'job_config':
 		instance of ampel.pipeline.t3.T3JobConfig
@@ -44,10 +44,8 @@ class T3Job:
 		-> If you provide a logger, please note that it will *NOT* be changed in any way, 
 		in particular: no DBLoggingHandler will be added, which means that no DB logging will occur.
 
-		'propagate_logs': 
-		If this evaluates to true, events logged using 'logger' will be passed to the handlers 
-		of higher level (ancestor) loggers, in addition to any handlers attached to 'logger'. 
-		If this evaluates to false, logging messages are not passed to the handlers of ancestor loggers.
+		'full_console_logging': bool. If false, the logging level of the stdout streamhandler 
+		associated with the logger will be set to WARN.
 		"""
 		
 		# Optional override of AmpelConfig defaults
@@ -71,13 +69,13 @@ class T3Job:
 			# Add db logging handler to the logger stack of handlers 
 			logger.addHandler(self.db_logging_handler)
 
-		logger.propagate = propagate_logs
-			
 		self.logger = logger
 		self.job_config = job_config
 		self.global_info = None
 		self.exec_params = {}
 
+		if not full_console_logging:
+			LoggingUtils.quieten_console_logger(self.logger)
 
 		# T3 job not requiring any prior transient loading 
 		if job_config.get('input.select') is not None:
@@ -87,7 +85,7 @@ class T3Job:
 				'state_op': job_config.get("input.load.state"),
 				't2s': job_config.get("input.load.t2(s)"),
 				'docs': FlagUtils.list_flags_to_enum_flags(
-					job_config.get('input.load.doc(s)'), AlDocTypes
+					[job_config.get('input.load.doc(s)')], AlDocTypes
 				),
 				'created': TimeConstraint.from_parameters(
 					job_config.get('input.select.created')
@@ -189,7 +187,7 @@ class T3Job:
 		)
 
 		# Feedback
-		AmpelUtils.propagate_log(
+		LoggingUtils.propagate_log(
 			self.logger, logging.INFO, "Running job %s (log id: %s)" % 
 			(
 				self.job_config.job_name, 
