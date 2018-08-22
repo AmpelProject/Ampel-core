@@ -13,7 +13,7 @@ from datetime import datetime
 
 class LoggingUtils:
 	"""
-		Logging related static util method(s)
+	Logging related static util method(s)
 	"""
 
 	@staticmethod
@@ -29,16 +29,17 @@ class LoggingUtils:
 		logger = logging.getLogger(
 			"Ampel-"+str(datetime.utcnow().time()) if unique is True else "Ampel"
 		)
-		logger.setLevel(logging.DEBUG)
 
-		ch = logging.StreamHandler()
-		ch.setLevel(logging.DEBUG)
-		ch.setFormatter(
-			LoggingUtils.get_formatter(log_pathname)
-		)
-
-		logger.addHandler(ch)
-		logger.propagate = False
+		# New logger
+		if not logger.handlers:
+			logger.setLevel(logging.DEBUG)
+			logger.propagate = False
+			ch = logging.StreamHandler()
+			ch.setLevel(logging.DEBUG)
+			ch.setFormatter(
+				LoggingUtils.get_formatter(log_pathname)
+			)
+			logger.addHandler(ch)
 
 		return logger
 
