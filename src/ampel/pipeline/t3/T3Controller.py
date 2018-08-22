@@ -126,7 +126,7 @@ def show(args):
 def runtask(args):
 	job_config = T3JobConfig.load(args.job)
 	job_config.t3_task_configs = [t for t in job_config.get_task_configs() if t.get('name') == args.task]
-	job = T3Job(job_config, propagate_logs=False)
+	job = T3Job(job_config, full_console_logging=False)
 	for param in 'created', 'modified':
 		if getattr(args, param) is not None:
 			job.overwrite_parameter(param, getattr(args, param))
@@ -184,7 +184,7 @@ def rununit(args):
 	job_config = T3JobConfig.from_doc("froopydyhoop", job_doc)
 	# Record logs in the db only if the run itself will be recorded
 	logger = logging.getLogger(__name__) if not args.update_run_col else None
-	job = T3Job(job_config, propagate_logs=True, logger=logger)
+	job = T3Job(job_config, full_console_logging=True, logger=logger)
 	job.run(args.update_run_col, args.update_tran_journal)
 
 def main():
