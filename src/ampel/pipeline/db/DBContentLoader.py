@@ -69,7 +69,7 @@ class DBContentLoader:
 
 	def load_new(
 		self, tran_id, channels=None, state_op="$latest", states=None, 
-		content_types=all_doc_types, t2_ids=None, feedback=True, verbose_feedback=False
+		content_types=all_doc_types, t2_ids=None, verbose=True, debug=False
 	):
 		"""
 		Returns a instance of TransientData
@@ -248,13 +248,13 @@ class DBContentLoader:
 
 		return self.create_tran_data(
 			res_main_list, res_photo_list, channels, state_op,
-			feedback=True, verbose_feedback=verbose_feedback
+			verbose=verbose, debug=debug
 		)
 
 
 	def create_tran_data(
 		self, main_list, photo_list=None, channels=None, state_op=None,
-		load_lightcurves=True, feedback=True, verbose_feedback=False
+		load_lightcurves=True, verbose=True, debug=False
 	):
 		"""
 		"""
@@ -460,13 +460,13 @@ class DBContentLoader:
 					tran_data.add_lightcurve(chan_names, lc)
 
 		# Feedback
-		if feedback:
-			self.log_feedback(tran_register.values(), photo_list, verbose_feedback)
+		if verbose:
+			self.feedback(tran_register.values(), photo_list, debug)
 
 		return tran_register
 
 
-	def log_feedback(self, dict_values, photo_list, verbose_feedback):
+	def feedback(self, dict_values, photo_list, debug):
 		"""
 		"""
 
@@ -486,7 +486,7 @@ class DBContentLoader:
 					(tran_data.tran_id, len(pps), len(uls), len_comps, len_lcs, len_srs)
 				)
 
-				if verbose_feedback: 
+				if debug: 
 
 					if len(pps) > 0:
 						self.logger.info(
@@ -508,7 +508,7 @@ class DBContentLoader:
 					(tran_data.tran_id, len_comps, len_lcs, len_srs)
 				)
 
-			if verbose_feedback:
+			if debug:
 				
 				if len_comps > 0:
 					for channel in tran_data.compounds.keys():
