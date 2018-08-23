@@ -7,3 +7,4 @@ Ampel projects
    :caption: Contents:
 
    ampel-base
+   ampel-core

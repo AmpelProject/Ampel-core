@@ -18,6 +18,11 @@ Ampel processing units
   
   .. automethod:: __init__
 
+.. autoclass:: ampel.base.abstract.AbsT3Unit.AbsT3Unit
+  :members:
+  
+  .. automethod:: __init__
+
 Ampel data classes
 ------------------
 
