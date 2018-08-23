@@ -33,13 +33,13 @@ Expected installation layout
 
 Choose a root directory, e.g. on my machine, /Users/jakob/Documents/ZTF/Ampel.
 For simplicity, we will call this `$AMPEL_ROOT` from here on out. Clone Ampel
-and the plugins you choose to use into subdirectories, e.g.:
-
-cd $AMPEL_ROOT
-git clone git@github.com:AmpelProject/Ampel.git ampel-core
-git clone git@github.com:AmpelProject/ampel-contrib-hu.git ampel-contrib-hu
-git clone git@github.com:robertdstein/Ampel-ZTFbh ampel-contrib-ztfbh
-git clone git@github.com:AmpelProject/Ampel-Neutrino.git ampel-neutrino
+and the plugins you choose to use into subdirectories, e.g.::
+  
+  cd $AMPEL_ROOT
+  git clone git@github.com:AmpelProject/Ampel.git ampel-core
+  git clone git@github.com:AmpelProject/ampel-contrib-hu.git ampel-contrib-hu
+  git clone git@github.com:robertdstein/Ampel-ZTFbh ampel-contrib-ztfbh
+  git clone git@github.com:AmpelProject/Ampel-Neutrino.git ampel-neutrino
 
 Now, create a `conda` environment for development, and activate it::
   
@@ -61,7 +61,7 @@ Inside your environment, use `pip install -e` to register each component::
     pip install -e $dir
   done
 
-Next, `install and start Docker<https://docs.docker.com/get-started/>`_. The
+Next, `install and start Docker <https://docs.docker.com/get-started/>`_. The
 tests use Docker to provide single-use instances of the databases that Ampel
 interacts with.
 

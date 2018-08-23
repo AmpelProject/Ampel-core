@@ -66,7 +66,7 @@ Each of the entry points expects entries of a different type. They are:
 - `ampel.pipeline.t2.configs`: Each entry should be a Python callable that returns a dictionary that will be passed as the `run_config` argument of :py:class:`ampel.base.abstract.AbsT2Unit.AbsT2Unit`
 - `ampel.pipeline.t3.units`: Each entry should be a Python class that inherits from :py:class:`ampel.base.abstract.AbsT3Unit.AbsT3Unit`
 - `ampel.pipeline.t3.configs`: Each entry should be a Python callable that returns a dictionary that will be passed as the `run_config` argument of :py:class:`ampel.base.abstract.AbsT3Unit.AbsT3Unit`
-- `ampel.pipeline.t3.jobs`: Each entry should be a Python callable that returns a dictionary whose values conform to the schema given in  :py:attribute:`ampel.pipeline.t3.T3JobConfig.T3JobConfig.job_schema`
+- `ampel.pipeline.t3.jobs`: Each entry should be a Python callable that returns a dictionary whose values conform to the schema given in  :py:attr:`ampel.pipeline.t3.T3JobConfig.T3JobConfig.job_schema`
 - `ampel.pipeline.resources`: Each entry should be a Python class that inherits from :py:class:`ampel.pipeline.config.resources.ResourceURI`
 
 Dependencies
@@ -93,17 +93,3 @@ There are two ways to do this:
 
 1. Make one of the Ampel operators (@vbrinnel or @jvansanten) a co-owner of your project. We will then take care of integrating your plugin into the build.
 2. Create a special, passwordless ssh key, and communicate it to an operator. Add the public key as a (read-only) deploy key for your repository. 
-
-Accounts
-========
-
-git access request
-******************
-
-
-Zeuthen request
-***************
-
-.. include:: testing.rst
-.. include:: docs.rst
-.. include:: tier2.rst

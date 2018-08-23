@@ -30,7 +30,7 @@ change to `deploy/docker-images/devel/deploy-keys` and generate a key pair::
   
   ssh-keygen -t rsa -b 4096 -f ./id_rsa-$NAME
 
-where `$NAME` is a short name associated with the repository, e.g. `ampel-contrib-hu`. For reasons that are `complicated and irritating<https://eclipsesource.com/blogs/2012/07/30/accessing-multiple-private-github-repositories-without-a-dedicated-build-user/>`_, the `$NAME` must match the fake domain name used in the `git clone` lines in the `Dockerfile`. Make an unencrypted key, i.e. one with no password. Point your web browser to the deploy keys page of the repository, e.g. https://github.com/AmpelProject/Ampel-core/settings/keys/new, and paste the contents of `.id_rsa-$NAME.pub` into the form.
+where `$NAME` is a short name associated with the repository, e.g. `ampel-contrib-hu`. For reasons that are `complicated and irritating <https://eclipsesource.com/blogs/2012/07/30/accessing-multiple-private-github-repositories-without-a-dedicated-build-user/>`_, the `$NAME` must match the fake domain name used in the `git clone` lines in the `Dockerfile`. Make an unencrypted key, i.e. one with no password. Point your web browser to the deploy keys page of the repository, e.g. https://github.com/AmpelProject/Ampel-core/settings/keys/new, and paste the contents of `.id_rsa-$NAME.pub` into the form.
 
 Now, for each new repository you wish to add to the image, add a `git clone` line to the Dockerfile, replacing `github.com` with `$NAME`. Also add a pair of lines to the `pip` section of `environment.yml` to `pip install -e` the new repository at build time.
 
@@ -61,9 +61,10 @@ Now, pull the image from the remote side::
 Initialize writable Ampel source directories
 ********************************************
 
-The read-only Singularity image created in the first step contains clones of the Ampel project repositories. At this stage of development, though, we often need to iterate more quickly than would be practical if we had to build a new image for every single-line change. To that end, the current production configuration mounts a copy of the Ampel repos from the host filesystem over those in the image. To work correctly, however, these have to have the correct names and metadata. The easiest way to ensure this is to copy them directly out of the image _as you normal user_ with e.g.::
+The read-only Singularity image created in the first step contains clones of the Ampel project repositories. At this stage of development, though, we often need to iterate more quickly than would be practical if we had to build a new image for every single-line change. To that end, the current production configuration mounts a copy of the Ampel repos from the host filesystem over those in the image. To work correctly, however, these have to have the correct names and metadata. The easiest way to ensure this is to copy them directly out of the image *as you normal user* with e.g.::
   
   singularity-stack volume init /data/ampel/singularity/ampel_v0.3.5.simg /Ampel $AMPEL_SRC
+
 where `$AMPEL_SRC`  is the path where you'd like to store the source, e.g. in my case `/scratch/jvs/Ampel_v3`.
 
 You should take care that any changes you make to these sources are tagged and
@@ -97,48 +98,51 @@ Deploy Ampel
 
 1. On `burst`, change to the directory containing the `secrets` subdirectory, currently `/home/ampel/dryrun`.
 2. Become user `ampel` with `sudo su ampel`
-3. Redeploy Ampel with `$AMPEL_SRC/ampel-core/deploy/up dryrun`. You should see output like the following::
+3. Redeploy Ampel with `$AMPEL_SRC/ampel-core/deploy/up dryrun`. You should see output like the following:
   
-  (singularity-stack) [burst] /home/ampel/dryrun > /scratch/jvs/Ampel-v0.3/ampel-core/deploy/up dryrun
-  Stopping 39cf18b4 instance of /data/ampel/singularity/ampel-v0.3.0.simg (PID=247505)
-  Stopping 992d0449 instance of /data/ampel/singularity/ampel-v0.3.0.simg (PID=247322)
-  Stopping e49305fc instance of /data/ampel/singularity/ampel-v0.3.0.simg (PID=245195)
-  Stopping ba08f91e instance of /data/ampel/singularity/mongo-3.6.simg (PID=245010)
-  Stopping f8b8ce10 instance of /data/ampel/singularity/ampel-v0.3.0.simg (PID=247150)
-  Stopping af186630 instance of /data/ampel/singularity/mongo-3.6.simg (PID=244898)
-  Stopping a9404f1e instance of /data/ampel/singularity/ampel-v0.3.0.simg (PID=245276)
-  Stopping a03a6a85 instance of /data/ampel/singularity/ampel-v0.3.0.simg (PID=245365)
-  Stopping 3dfcfabb instance of /data/ampel/singularity/ampel-v0.3.0.simg (PID=245454)
-  Stopping 1a40fc58 instance of /data/ampel/singularity/ampel-v0.3.0.simg (PID=245546)
-  Stopping 15116b11 instance of /data/ampel/singularity/ampel-v0.3.0.simg (PID=245645)
-  Stopping 18ee48b0 instance of /data/ampel/singularity/ampel-v0.3.0.simg (PID=245755)
-  Stopping 90cd2739 instance of /data/ampel/singularity/ampel-v0.3.0.simg (PID=245859)
-  Stopping 97b8d0c0 instance of /data/ampel/singularity/ampel-v0.3.0.simg (PID=245972)
-  Stopping db9e6bc3 instance of /data/ampel/singularity/ampel-v0.3.0.simg (PID=246086)
-  Stopping 7e5e6d7c instance of /data/ampel/singularity/ampel-v0.3.0.simg (PID=246203)
-  Stopping c22ef49f instance of /data/ampel/singularity/ampel-v0.3.0.simg (PID=246324)
-  Stopping a87f8253 instance of /data/ampel/singularity/ampel-v0.3.0.simg (PID=246449)
-  Stopping 3e8914d5 instance of /data/ampel/singularity/ampel-v0.3.0.simg (PID=246575)
-  Stopping f1652941 instance of /data/ampel/singularity/ampel-v0.3.0.simg (PID=246712)
-  Stopping eac9a825 instance of /data/ampel/singularity/ampel-v0.3.0.simg (PID=246851)
-  Stopping 36535acb instance of /data/ampel/singularity/ampel-v0.3.0.simg (PID=246992)
-  not clearing anything
-  connection refused on burst.zeuthen.desy.de:27018, retry after 1 s
-  connection refused on burst.zeuthen.desy.de:27018, retry after 2 s
-  connected to burst.zeuthen.desy.de:27018
-  connection refused on burst.zeuthen.desy.de:27017, retry after 1 s
-  connection refused on burst.zeuthen.desy.de:27017, retry after 2 s
-  connected to burst.zeuthen.desy.de:27017
-  Stack                          Services                       Replicas Instance
-  ============================== ============================== ======= ========
-  burst                          alertprocessor                 16      a9404f1e
-                                 catalog                                af186630
-                                 followup                               f8b8ce10
-                                 mongo                                  ba08f91e
-                                 stats                                  e49305fc
-                                 t2-controller                          992d0449
-                                 t3-controller                          39cf18b4
-  ------------------------------ ------------------------------ ------- --------
+  .. code-block:: none
+     
+     (singularity-stack) [burst] /home/ampel/dryrun > /scratch/jvs/Ampel-v0.3/ampel-core/deploy/up dryrun
+     
+     Stopping 39cf18b4 instance of /data/ampel/singularity/ampel-v0.3.0.simg (PID=247505)
+     Stopping 992d0449 instance of /data/ampel/singularity/ampel-v0.3.0.simg (PID=247322)
+     Stopping e49305fc instance of /data/ampel/singularity/ampel-v0.3.0.simg (PID=245195)
+     Stopping ba08f91e instance of /data/ampel/singularity/mongo-3.6.simg (PID=245010)
+     Stopping f8b8ce10 instance of /data/ampel/singularity/ampel-v0.3.0.simg (PID=247150)
+     Stopping af186630 instance of /data/ampel/singularity/mongo-3.6.simg (PID=244898)
+     Stopping a9404f1e instance of /data/ampel/singularity/ampel-v0.3.0.simg (PID=245276)
+     Stopping a03a6a85 instance of /data/ampel/singularity/ampel-v0.3.0.simg (PID=245365)
+     Stopping 3dfcfabb instance of /data/ampel/singularity/ampel-v0.3.0.simg (PID=245454)
+     Stopping 1a40fc58 instance of /data/ampel/singularity/ampel-v0.3.0.simg (PID=245546)
+     Stopping 15116b11 instance of /data/ampel/singularity/ampel-v0.3.0.simg (PID=245645)
+     Stopping 18ee48b0 instance of /data/ampel/singularity/ampel-v0.3.0.simg (PID=245755)
+     Stopping 90cd2739 instance of /data/ampel/singularity/ampel-v0.3.0.simg (PID=245859)
+     Stopping 97b8d0c0 instance of /data/ampel/singularity/ampel-v0.3.0.simg (PID=245972)
+     Stopping db9e6bc3 instance of /data/ampel/singularity/ampel-v0.3.0.simg (PID=246086)
+     Stopping 7e5e6d7c instance of /data/ampel/singularity/ampel-v0.3.0.simg (PID=246203)
+     Stopping c22ef49f instance of /data/ampel/singularity/ampel-v0.3.0.simg (PID=246324)
+     Stopping a87f8253 instance of /data/ampel/singularity/ampel-v0.3.0.simg (PID=246449)
+     Stopping 3e8914d5 instance of /data/ampel/singularity/ampel-v0.3.0.simg (PID=246575)
+     Stopping f1652941 instance of /data/ampel/singularity/ampel-v0.3.0.simg (PID=246712)
+     Stopping eac9a825 instance of /data/ampel/singularity/ampel-v0.3.0.simg (PID=246851)
+     Stopping 36535acb instance of /data/ampel/singularity/ampel-v0.3.0.simg (PID=246992)
+     not clearing anything
+     connection refused on burst.zeuthen.desy.de:27018, retry after 1 s
+     connection refused on burst.zeuthen.desy.de:27018, retry after 2 s
+     connected to burst.zeuthen.desy.de:27018
+     connection refused on burst.zeuthen.desy.de:27017, retry after 1 s
+     connection refused on burst.zeuthen.desy.de:27017, retry after 2 s
+     connected to burst.zeuthen.desy.de:27017
+     Stack                          Services                       Replicas Instance
+     ============================== ============================== ======= ========
+     burst                          alertprocessor                 16      a9404f1e
+                                    catalog                                af186630
+                                    followup                               f8b8ce10
+                                    mongo                                  ba08f91e
+                                    stats                                  e49305fc
+                                    t2-controller                          992d0449
+                                    t3-controller                          39cf18b4
+     ------------------------------ ------------------------------ ------- --------
 
 Check logs for health
 =====================
