@@ -11,6 +11,7 @@ import logging
 from ampel.pipeline.common.AmpelUtils import AmpelUtils
 from ampel.pipeline.logging.LoggingUtils import LoggingUtils
 from ampel.base.TransientView import TransientView
+from ampel.pipeline.logging.DBLoggingHandler import DBLoggingHandler
 
 class T3Task:
 	"""
@@ -20,10 +21,10 @@ class T3Task:
 
 	def __init__(self, t3_task_config, channels, logger, global_info=None):
 		"""
-		t3_task_config: instance of child class of ampel.pipeline.t3.T3TaskConfig
-		channels: channel(s) sub-selection: string or list of strings
-		logger: logger from python module 'logging'
-		global_info: optional dict instance containing info such as:
+		:param t3_task_config: instance of child class of ampel.pipeline.t3.T3TaskConfig
+		:param channels: channel(s) sub-selection: string or list of strings
+		:param logger: logger from python module 'logging'
+		:param global_info: optional dict instance containing info such as:
 			* last time the associated job was run
 			* number of alerts processed since
 		"""
@@ -31,8 +32,13 @@ class T3Task:
 		self.task_config = t3_task_config
 		self.channels = channels
 		self.logger = logger
+		self.db_logging_handler = None
 		self.fed_tran_ids = []
 		self.journal_notes = {}
+
+		for handler in logger.handlers:
+			if isinstance(handler, DBLoggingHandler):
+				self.db_logging_handler = handler
 
 		# Instanciate t3 unit
 		self.t3_instance = t3_task_config.t3_unit_class(
@@ -64,15 +70,13 @@ class T3Task:
 			value: instance of ampel.pipeline.t3.TransientData
 		"""
 
-		# Feedback
-		self.logger.info(
-			"%s: adding transientViews to t3 unit" % 
-			self.task_config.log_header
-		)
-
 		# Build specific array of ampel TransientView instances where each transient 
 		# is cut down according to the specified sub-selections parameters
 		tran_views = []
+
+		# Append channel info to upcoming DB logging entries
+		if self.db_logging_handler:
+			self.db_logging_handler.set_channels(self.channels)
 
 		for tran_id, tran_data in tran_register.items():
 
@@ -83,12 +87,16 @@ class T3Task:
 			if tran_view is None:
 				continue
 
+			# Append tran_id to the next DB logging entry
+			if self.db_logging_handler:
+				self.db_logging_handler.set_tranId(tran_id)
+
 			# Feedback
 			self.logger.debug(
 				"TransientView created: ID: %s, CN: %s, %s" % 
 				(tran_id, self.channels, TransientView.content_summary(tran_view))
 			)
-		
+
 			# Save ids of created views (used later for updating transient journal)
 			self.fed_tran_ids.append(tran_id)
 
@@ -103,15 +111,23 @@ class T3Task:
 			# Populate list of transient views
 			tran_views.append(tran_view)
 
+		# Unset DB logging customization
+		if self.db_logging_handler:
+			self.db_logging_handler.unset_tranId()
+
 		# Feedback
 		LoggingUtils.propagate_log(
 			self.logger, logging.INFO,
-			"%s: adding %i transientViews to t3 unit" % 
-			(self.task_config.log_header, len(tran_register))
+			"Providing %s with %i TransientViews" % 
+			(self.t3_instance.__class__.__name__, len(tran_register))
 		)
 
 		# Feed T3 instance with transientViews
 		self.t3_instance.add(tran_views)
+
+		# Unset DB logging customization
+		if self.db_logging_handler:
+			self.db_logging_handler.unset_channels()
 
 
 	def done(self):
