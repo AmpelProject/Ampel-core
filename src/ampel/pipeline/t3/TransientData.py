@@ -166,7 +166,7 @@ class TransientData:
 			tuple(self.compounds[channel]) if channel in self.compounds else None, 
 			tuple(self.lightcurves[channel]) if channel in self.lightcurves else None, 
 			tuple(self.science_records[channel]) if channel in self.science_records else None, 
-			channel, self.logger
+			channel
 		)	
 
 
@@ -212,7 +212,7 @@ class TransientData:
 			tuple(all_comps.values()),
 			self._get_combined_elements(self.lightcurves, channels),
 			self._get_combined_elements(self.science_records, channels),
-			tuple(self.channels & set(channels)), self.logger
+			tuple(self.channels & set(channels))
 		)
 
 
