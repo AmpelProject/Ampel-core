@@ -1,0 +1,290 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>ampel.pipeline.t3.T3JobConfig &#8212; Ampel 0.4.0 documentation</title>
+    <link rel="stylesheet" href="../../../../_static/sphinxdoc.css" type="text/css" />
+    <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../../../../" src="../../../../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="nav-item nav-item-0"><a href="../../../../index.html">Ampel 0.4.0 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../../index.html" accesskey="U">Module code</a> &#187;</li> 
+      </ul>
+    </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../../../index.html">
+              <img class="logo" src="../../../../_static/ampel.png" alt="Logo"/>
+            </a></p>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for ampel.pipeline.t3.T3JobConfig</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/env python</span>
+<span class="c1"># -*- coding: utf-8 -*-</span>
+<span class="c1"># File              : ampel/pipeline/t3/T3JobConfig.py</span>
+<span class="c1"># License           : BSD-3-Clause</span>
+<span class="c1"># Author            : vb &lt;vbrinnel@physik.hu-berlin.de&gt;</span>
+<span class="c1"># Date              : 06.03.2018</span>
+<span class="c1"># Last Modified Date: 04.08.2018</span>
+<span class="c1"># Last Modified By  : vb &lt;vbrinnel@physik.hu-berlin.de&gt;</span>
+
+<span class="kn">from</span> <span class="nn">functools</span> <span class="k">import</span> <span class="n">reduce</span>
+<span class="kn">from</span> <span class="nn">types</span> <span class="k">import</span> <span class="n">MappingProxyType</span>
+<span class="kn">from</span> <span class="nn">multiprocessing</span> <span class="k">import</span> <span class="n">Process</span>
+<span class="kn">from</span> <span class="nn">voluptuous</span> <span class="k">import</span> <span class="n">Schema</span><span class="p">,</span> <span class="n">Required</span><span class="p">,</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">ALLOW_EXTRA</span>
+
+<span class="kn">from</span> <span class="nn">ampel.pipeline.common.AmpelUtils</span> <span class="k">import</span> <span class="n">AmpelUtils</span>
+<span class="kn">from</span> <span class="nn">ampel.pipeline.config.AmpelConfig</span> <span class="k">import</span> <span class="n">AmpelConfig</span>
+<span class="kn">from</span> <span class="nn">ampel.pipeline.logging.LoggingUtils</span> <span class="k">import</span> <span class="n">LoggingUtils</span>
+<span class="kn">from</span> <span class="nn">ampel.pipeline.t3.T3TaskConfig</span> <span class="k">import</span> <span class="n">T3TaskConfig</span>
+<span class="kn">from</span> <span class="nn">ampel.pipeline.t3.TimeConstraint</span> <span class="k">import</span> <span class="n">TimeConstraint</span>
+<span class="kn">from</span> <span class="nn">ampel.pipeline.t3.T3Job</span> <span class="k">import</span> <span class="n">T3Job</span>
+
+
+<div class="viewcode-block" id="T3JobConfig"><a class="viewcode-back" href="../../../../projects/ampel-core.html#ampel.pipeline.t3.T3JobConfig.T3JobConfig">[docs]</a><span class="k">class</span> <span class="nc">T3JobConfig</span><span class="p">:</span>
+	<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">	&quot;&quot;&quot;</span>
+
+	<span class="n">_ampel_docs</span> <span class="o">=</span> <span class="n">Schema</span><span class="p">(</span>
+		<span class="n">Any</span><span class="p">(</span><span class="s2">&quot;TRANSIENT&quot;</span><span class="p">,</span> <span class="s2">&quot;PHOTOPOINT&quot;</span><span class="p">,</span> <span class="s2">&quot;UPPERLIMIT&quot;</span><span class="p">,</span> <span class="s2">&quot;COMPOUND&quot;</span><span class="p">,</span> <span class="s2">&quot;T2RECORD&quot;</span><span class="p">)</span>
+	<span class="p">)</span>
+
+	<span class="c1"># static schema used for dict/json validation</span>
+	<span class="n">job_schema</span> <span class="o">=</span> <span class="n">Schema</span><span class="p">(</span>
+		<span class="p">{</span>
+			<span class="n">Required</span><span class="p">(</span><span class="s1">&#39;active&#39;</span><span class="p">):</span> <span class="nb">bool</span><span class="p">,</span>
+			<span class="n">Required</span><span class="p">(</span><span class="s1">&#39;schedule&#39;</span><span class="p">):</span> <span class="nb">str</span><span class="p">,</span>
+				<span class="c1"># Possible &#39;schedule&#39; values (https://schedule.readthedocs.io/en/stable/):</span>
+				<span class="c1"># &quot;every(10).minutes&quot;</span>
+				<span class="c1"># &quot;every().hour&quot;</span>
+				<span class="c1"># &quot;every().day.at(&quot;10:30&quot;)&quot;</span>
+				<span class="c1"># &quot;every().monday&quot;</span>
+				<span class="c1"># &quot;every().wednesday.at(&quot;13:15&quot;)&quot;</span>
+			<span class="n">Required</span><span class="p">(</span><span class="s1">&#39;task(s)&#39;</span><span class="p">):</span> <span class="n">Any</span><span class="p">(</span>
+				<span class="n">T3TaskConfig</span><span class="o">.</span><span class="n">t3_task_schema</span><span class="p">,</span> 
+				<span class="p">[</span><span class="n">T3TaskConfig</span><span class="o">.</span><span class="n">t3_task_schema</span><span class="p">]</span>
+			<span class="p">),</span>
+			<span class="s1">&#39;input&#39;</span><span class="p">:</span> <span class="p">{</span>
+				<span class="n">Required</span><span class="p">(</span><span class="s1">&#39;select&#39;</span><span class="p">):</span> <span class="p">{</span>
+					<span class="s1">&#39;created&#39;</span><span class="p">:</span> <span class="n">TimeConstraint</span><span class="o">.</span><span class="n">schema</span><span class="p">,</span>
+					<span class="s1">&#39;modified&#39;</span><span class="p">:</span> <span class="n">TimeConstraint</span><span class="o">.</span><span class="n">schema</span><span class="p">,</span>
+					<span class="s1">&#39;channel(s)&#39;</span><span class="p">:</span> <span class="n">Any</span><span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="p">[</span><span class="nb">str</span><span class="p">]),</span>
+					<span class="s1">&#39;withFlag(s)&#39;</span><span class="p">:</span> <span class="n">Any</span><span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="p">[</span><span class="nb">str</span><span class="p">]),</span>
+					<span class="s1">&#39;withoutFlag(s)&#39;</span><span class="p">:</span> <span class="n">Any</span><span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="p">[</span><span class="nb">str</span><span class="p">])</span>
+				<span class="p">},</span>
+				<span class="n">Required</span><span class="p">(</span><span class="s1">&#39;load&#39;</span><span class="p">):</span> <span class="p">{</span>
+					<span class="n">Required</span><span class="p">(</span><span class="s1">&#39;state&#39;</span><span class="p">):</span> <span class="n">Any</span><span class="p">(</span><span class="s2">&quot;$all&quot;</span><span class="p">,</span> <span class="s2">&quot;$latest&quot;</span><span class="p">),</span>
+					<span class="s1">&#39;doc(s)&#39;</span><span class="p">:</span> <span class="n">Any</span><span class="p">(</span><span class="n">_ampel_docs</span><span class="p">,</span> <span class="p">[</span><span class="n">_ampel_docs</span><span class="p">]),</span>
+					<span class="s1">&#39;t2(s)&#39;</span><span class="p">:</span> <span class="n">Any</span><span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="p">[</span><span class="nb">str</span><span class="p">]),</span>
+					<span class="s1">&#39;verbose&#39;</span><span class="p">:</span> <span class="nb">bool</span>
+				<span class="p">},</span>
+				<span class="s1">&#39;chunk&#39;</span><span class="p">:</span> <span class="nb">int</span>
+			<span class="p">},</span>
+			<span class="n">Optional</span><span class="p">(</span><span class="s1">&#39;globalInfo&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span> <span class="nb">bool</span><span class="p">,</span>
+			<span class="s1">&#39;onError&#39;</span><span class="p">:</span> <span class="p">{</span>
+				<span class="s1">&#39;sendMail&#39;</span><span class="p">:</span> <span class="p">{</span>
+					<span class="n">Required</span><span class="p">(</span><span class="s1">&#39;to&#39;</span><span class="p">):</span> <span class="nb">str</span><span class="p">,</span>
+					<span class="n">Required</span><span class="p">(</span><span class="s1">&#39;excStack&#39;</span><span class="p">):</span> <span class="nb">bool</span>
+				<span class="p">},</span>
+				<span class="n">Optional</span><span class="p">(</span><span class="s1">&#39;stopAmpel&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span> <span class="nb">bool</span><span class="p">,</span>
+				<span class="n">Optional</span><span class="p">(</span><span class="s1">&#39;retry&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span> <span class="nb">bool</span>
+			<span class="p">}</span>
+		<span class="p">},</span> 
+		<span class="n">extra</span><span class="o">=</span><span class="n">ALLOW_EXTRA</span>
+	<span class="p">)</span>
+
+	<span class="nd">@classmethod</span>
+	<span class="k">def</span> <span class="nf">load</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">job_name</span><span class="p">,</span> <span class="n">logger</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+		<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">		This class is mainly made of config validity tests.</span>
+<span class="sd">		NOTE: channel name existence is not checked on purpose.</span>
+<span class="sd">		&quot;&quot;&quot;</span>
+
+		<span class="k">if</span> <span class="n">logger</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+			<span class="n">logger</span> <span class="o">=</span> <span class="n">LoggingUtils</span><span class="o">.</span><span class="n">get_logger</span><span class="p">()</span>
+
+		<span class="c1"># Get, check and set defaults of t3 task doc </span>
+		<span class="n">job_doc</span> <span class="o">=</span> <span class="n">AmpelConfig</span><span class="o">.</span><span class="n">get_config</span><span class="p">(</span>
+			<span class="s1">&#39;t3_jobs.</span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">job_name</span><span class="p">,</span> 
+			<span class="bp">cls</span><span class="o">.</span><span class="n">job_schema</span>
+		<span class="p">)</span>
+
+		<span class="c1"># Robustness</span>
+		<span class="k">if</span> <span class="n">job_doc</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+			<span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Job </span><span class="si">%s</span><span class="s2"> not found&quot;</span> <span class="o">%</span> <span class="n">job_name</span><span class="p">)</span>
+
+		<span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Loading job </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">job_name</span><span class="p">)</span>
+		<span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">from_doc</span><span class="p">(</span><span class="n">job_name</span><span class="p">,</span> <span class="n">job_doc</span><span class="p">,</span> <span class="n">logger</span><span class="p">,</span> <span class="n">validate</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+
+	<span class="nd">@classmethod</span>
+	<span class="k">def</span> <span class="nf">from_doc</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">job_name</span><span class="p">,</span> <span class="n">job_doc</span><span class="p">,</span> <span class="n">logger</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">validate</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+		<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">		&quot;&quot;&quot;</span>
+
+		<span class="k">if</span> <span class="n">logger</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+			<span class="n">logger</span> <span class="o">=</span> <span class="n">LoggingUtils</span><span class="o">.</span><span class="n">get_logger</span><span class="p">()</span>
+
+		<span class="c1"># validate</span>
+		<span class="k">if</span> <span class="n">validate</span><span class="p">:</span>
+			<span class="n">job_doc</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">job_schema</span><span class="p">(</span><span class="n">job_doc</span><span class="p">)</span>
+
+		<span class="n">t3_task_configs</span> <span class="o">=</span> <span class="p">[]</span>
+		<span class="n">all_tasks_sels</span> <span class="o">=</span> <span class="p">{}</span> 
+
+		<span class="c1"># Robustness</span>
+		<span class="n">docs_sel</span> <span class="o">=</span> <span class="n">AmpelUtils</span><span class="o">.</span><span class="n">get_by_path</span><span class="p">(</span><span class="n">job_doc</span><span class="p">,</span> <span class="s1">&#39;input.select.doc(s)&#39;</span><span class="p">)</span>
+		<span class="k">if</span> <span class="n">docs_sel</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+			<span class="k">if</span> <span class="p">(</span>
+				<span class="p">(</span><span class="n">AmpelUtils</span><span class="o">.</span><span class="n">is_sequence</span><span class="p">(</span><span class="n">docs_sel</span><span class="p">)</span> <span class="ow">and</span> <span class="s2">&quot;T2RECORD&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">docs_sel</span><span class="p">)</span> <span class="ow">or</span>
+				<span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="n">docs_sel</span><span class="p">)</span> <span class="ow">is</span> <span class="nb">str</span> <span class="ow">and</span> <span class="s2">&quot;T2RECORD&quot;</span> <span class="o">!=</span> <span class="n">docs_sel</span><span class="p">)</span>
+			<span class="p">):</span>
+				<span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+					<span class="s2">&quot;T3 job </span><span class="si">%s</span><span class="s2"> config error: T2RECORD must be in input-&gt;select-&gt;doc(s) &quot;</span><span class="o">+</span>
+					<span class="s2">&quot;when input-&gt;select-&gt;t2(s) filtering is configured&quot;</span> <span class="o">%</span>
+					<span class="n">job_name</span>
+				<span class="p">)</span>
+
+		<span class="c1"># Build set of channel(s)/t2(s)/doc(s) for all tasks combined</span>
+		<span class="k">for</span> <span class="n">task_doc</span> <span class="ow">in</span> <span class="n">job_doc</span><span class="p">[</span><span class="s1">&#39;task(s)&#39;</span><span class="p">]:</span>
+
+			<span class="k">if</span> <span class="s1">&#39;select&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">task_doc</span><span class="p">:</span>
+				<span class="k">continue</span>
+
+			<span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="p">(</span><span class="s1">&#39;channel(s)&#39;</span><span class="p">,</span> <span class="s1">&#39;t2(s)&#39;</span><span class="p">,</span> <span class="s1">&#39;doc(s)&#39;</span><span class="p">):</span>
+				<span class="k">if</span> <span class="n">task_doc</span><span class="p">[</span><span class="s1">&#39;select&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">key</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+					<span class="k">if</span> <span class="n">key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">all_tasks_sels</span><span class="p">:</span>
+						<span class="n">all_tasks_sels</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+					<span class="n">all_tasks_sels</span><span class="p">[</span><span class="n">key</span><span class="p">]</span><span class="o">.</span><span class="n">update</span><span class="p">(</span>
+						<span class="n">AmpelUtils</span><span class="o">.</span><span class="n">to_set</span><span class="p">(</span><span class="n">task_doc</span><span class="p">[</span><span class="s1">&#39;select&#39;</span><span class="p">][</span><span class="n">key</span><span class="p">])</span>
+					<span class="p">)</span>
+
+		<span class="c1"># Check TaskConfigS rightness</span>
+		<span class="k">if</span> <span class="s1">&#39;channel(s)&#39;</span> <span class="ow">in</span> <span class="n">all_tasks_sels</span> <span class="ow">and</span> <span class="s1">&#39;$forEach&#39;</span> <span class="ow">in</span> <span class="n">all_tasks_sels</span><span class="p">[</span><span class="s1">&#39;channel(s)&#39;</span><span class="p">]:</span>
+			<span class="c1"># Either none or all tasks must make use of the $forEach operator</span>
+			<span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">all_tasks_sels</span><span class="p">[</span><span class="s1">&#39;channel(s)&#39;</span><span class="p">])</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
+				<span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Illegal task sub-channel selection&quot;</span><span class="p">)</span>
+
+		<span class="c1"># Load and check each individual Task</span>
+		<span class="k">for</span> <span class="n">task_doc</span> <span class="ow">in</span> <span class="n">job_doc</span><span class="p">[</span><span class="s1">&#39;task(s)&#39;</span><span class="p">]:</span>
+			<span class="n">t3_task_configs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+				<span class="n">T3TaskConfig</span><span class="o">.</span><span class="n">from_doc</span><span class="p">(</span><span class="n">job_doc</span><span class="p">,</span> <span class="n">task_doc</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">],</span> <span class="n">all_tasks_sels</span><span class="p">,</span> <span class="n">logger</span><span class="p">)</span>
+			<span class="p">)</span>
+
+		<span class="c1"># Create JobConfig</span>
+		<span class="k">return</span> <span class="n">T3JobConfig</span><span class="p">(</span><span class="n">job_name</span><span class="p">,</span> <span class="n">job_doc</span><span class="p">,</span> <span class="n">t3_task_configs</span><span class="p">)</span>
+
+
+	<span class="nd">@property</span>
+	<span class="k">def</span> <span class="nf">process_count</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+		<span class="sd">&quot;&quot;&quot; &quot;&quot;&quot;</span>
+		<span class="k">for</span> <span class="n">pid</span><span class="p">,</span> <span class="n">proc</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_processes</span><span class="o">.</span><span class="n">items</span><span class="p">()):</span>
+			<span class="k">if</span> <span class="n">proc</span><span class="o">.</span><span class="n">exitcode</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+				<span class="n">proc</span><span class="o">.</span><span class="n">join</span><span class="p">()</span>
+				<span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">_processes</span><span class="p">[</span><span class="n">pid</span><span class="p">]</span>
+		<span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_processes</span><span class="p">)</span>
+
+
+	<span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">job_name</span><span class="p">,</span> <span class="n">job_doc</span><span class="p">,</span> <span class="n">t3_task_configs</span><span class="p">):</span>
+		<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">		job_name: string</span>
+<span class="sd">		job_doc: dict instance</span>
+<span class="sd">		t3_task_bodies: list of instances of ampel.pipeline.t3.T3Task</span>
+<span class="sd">		&quot;&quot;&quot;</span>
+
+		<span class="bp">self</span><span class="o">.</span><span class="n">job_name</span> <span class="o">=</span> <span class="n">job_name</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">job_doc</span> <span class="o">=</span> <span class="n">job_doc</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">t3_task_configs</span> <span class="o">=</span> <span class="n">t3_task_configs</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">_processes</span> <span class="o">=</span> <span class="p">{}</span>
+
+
+	<span class="k">def</span> <span class="nf">get_task_configs</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+		<span class="sd">&quot;&quot;&quot; </span>
+<span class="sd">		Returns the loaded task configurations associated with this job</span>
+<span class="sd">		&quot;&quot;&quot;</span>
+		<span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">t3_task_configs</span>
+
+
+	<span class="k">def</span> <span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">param_name</span><span class="p">):</span>
+		<span class="sd">&quot;&quot;&quot; &quot;&quot;&quot;</span>
+		<span class="k">return</span> <span class="n">AmpelUtils</span><span class="o">.</span><span class="n">get_by_path</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">job_doc</span><span class="p">,</span> <span class="n">param_name</span><span class="p">)</span>
+
+
+	<span class="k">def</span> <span class="nf">launch_t3_job</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+		<span class="sd">&quot;&quot;&quot; &quot;&quot;&quot;</span>
+		<span class="c1"># TODO: log or warn about a large number of lingering processes here</span>
+		<span class="k">for</span> <span class="n">pid</span><span class="p">,</span> <span class="n">proc</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_processes</span><span class="o">.</span><span class="n">items</span><span class="p">()):</span>
+			<span class="k">if</span> <span class="n">proc</span><span class="o">.</span><span class="n">exitcode</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+				<span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">_processes</span><span class="p">[</span><span class="n">pid</span><span class="p">]</span>
+		
+		<span class="n">proc</span> <span class="o">=</span> <span class="n">Process</span><span class="p">(</span><span class="n">target</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">run</span><span class="p">)</span>
+		<span class="n">proc</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">_processes</span><span class="p">[</span><span class="n">proc</span><span class="o">.</span><span class="n">pid</span><span class="p">]</span> <span class="o">=</span> <span class="n">proc</span>
+		<span class="k">return</span> <span class="n">proc</span>
+
+
+	<span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">central_db</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">logger</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+		<span class="sd">&quot;&quot;&quot; &quot;&quot;&quot;</span>
+		<span class="n">T3Job</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">central_db</span><span class="p">,</span> <span class="n">logger</span><span class="p">)</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
+
+
+	<span class="k">def</span> <span class="nf">schedule_job</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">scheduler</span><span class="p">):</span>
+		<span class="sd">&quot;&quot;&quot; &quot;&quot;&quot;</span>
+		<span class="n">exec</span><span class="p">(</span><span class="s2">&quot;schedule.</span><span class="si">%s</span><span class="s2">.do(self.launch_t3_job)&quot;</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;schedule&#39;</span><span class="p">))</span></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="nav-item nav-item-0"><a href="../../../../index.html">Ampel 0.4.0 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../../index.html" >Module code</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2018, Ampel Project.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.7.5.
+    </div>
+  </body>
+</html>

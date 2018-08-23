@@ -1,0 +1,148 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>Ampel-core &#8212; Ampel 0.4.0 documentation</title>
+    <link rel="stylesheet" href="../_static/sphinxdoc.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Development" href="../dev.html" />
+    <link rel="prev" title="Ampel-base" href="ampel-base.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../dev.html" title="Development"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="ampel-base.html" title="Ampel-base"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">Ampel 0.4.0 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="index.html" accesskey="U">Ampel projects</a> &#187;</li> 
+      </ul>
+    </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../index.html">
+              <img class="logo" src="../_static/ampel.png" alt="Logo"/>
+            </a></p>
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="ampel-base.html"
+                        title="previous chapter">Ampel-base</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="../dev.html"
+                        title="next chapter">Development</a></p>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="ampel-core">
+<h1>Ampel-core<a class="headerlink" href="#ampel-core" title="Permalink to this headline">¶</a></h1>
+<p>The actual implementation of the Ampel framework</p>
+<dl class="class">
+<dt id="ampel.pipeline.t3.T3JobConfig.T3JobConfig">
+<em class="property">class </em><code class="descclassname">ampel.pipeline.t3.T3JobConfig.</code><code class="descname">T3JobConfig</code><span class="sig-paren">(</span><em>job_name</em>, <em>job_doc</em>, <em>t3_task_configs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ampel/pipeline/t3/T3JobConfig.html#T3JobConfig"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ampel.pipeline.t3.T3JobConfig.T3JobConfig" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="attribute">
+<dt id="ampel.pipeline.t3.T3JobConfig.T3JobConfig.job_schema">
+<code class="descname">job_schema</code><em class="property"> = &lt;Schema({'active': &lt;class 'bool'&gt;, 'schedule': &lt;class 'str'&gt;, 'task(s)': Any(&lt;Schema({'name': &lt;class 'str'&gt;, 't3Unit': &lt;class 'str'&gt;, 'runConfig': Any(None, &lt;class 'str'&gt;, msg=None), 'select': {'channel(s)': Any(&lt;class 'str'&gt;, [&lt;class 'str'&gt;], msg=None), 'state': Any('$all', '$latest', msg=None), 't2(s)': Any(&lt;class 'str'&gt;, [&lt;class 'str'&gt;], msg=None)}, 'verbose': &lt;class 'bool'&gt;}, extra=ALLOW_EXTRA, required=False) object&gt;, [&lt;Schema({'name': &lt;class 'str'&gt;, 't3Unit': &lt;class 'str'&gt;, 'runConfig': Any(None, &lt;class 'str'&gt;, msg=None), 'select': {'channel(s)': Any(&lt;class 'str'&gt;, [&lt;class 'str'&gt;], msg=None), 'state': Any('$all', '$latest', msg=None), 't2(s)': Any(&lt;class 'str'&gt;, [&lt;class 'str'&gt;], msg=None)}, 'verbose': &lt;class 'bool'&gt;}, extra=ALLOW_EXTRA, required=False) object&gt;], msg=None), 'input': {'select': {'created': &lt;Schema(Any(None, {'after': &lt;Schema(Any(None, &lt;class 'datetime.datetime'&gt;, &lt;class 'datetime.timedelta'&gt;, {'use': '$timeDelta', 'arguments': &lt;class 'dict'&gt;}, {'use': '$lastRunTime', 'jobName': &lt;class 'str'&gt;}, {'use': 'formattedString', 'dateTimeStr': &lt;class 'str'&gt;, 'dateTimeFormat': &lt;class 'str'&gt;}, {'use': 'unixTime', 'value': &lt;class 'int'&gt;}, msg=None), extra=PREVENT_EXTRA, required=False) object&gt;, 'before': &lt;Schema(Any(None, &lt;class 'datetime.datetime'&gt;, &lt;class 'datetime.timedelta'&gt;, {'use': '$timeDelta', 'arguments': &lt;class 'dict'&gt;}, {'use': '$lastRunTime', 'jobName': &lt;class 'str'&gt;}, {'use': 'formattedString', 'dateTimeStr': &lt;class 'str'&gt;, 'dateTimeFormat': &lt;class 'str'&gt;}, {'use': 'unixTime', 'value': &lt;class 'int'&gt;}, msg=None), extra=PREVENT_EXTRA, required=False) object&gt;}, msg=None), extra=PREVENT_EXTRA, required=False) object&gt;, 'modified': &lt;Schema(Any(None, {'after': &lt;Schema(Any(None, &lt;class 'datetime.datetime'&gt;, &lt;class 'datetime.timedelta'&gt;, {'use': '$timeDelta', 'arguments': &lt;class 'dict'&gt;}, {'use': '$lastRunTime', 'jobName': &lt;class 'str'&gt;}, {'use': 'formattedString', 'dateTimeStr': &lt;class 'str'&gt;, 'dateTimeFormat': &lt;class 'str'&gt;}, {'use': 'unixTime', 'value': &lt;class 'int'&gt;}, msg=None), extra=PREVENT_EXTRA, required=False) object&gt;, 'before': &lt;Schema(Any(None, &lt;class 'datetime.datetime'&gt;, &lt;class 'datetime.timedelta'&gt;, {'use': '$timeDelta', 'arguments': &lt;class 'dict'&gt;}, {'use': '$lastRunTime', 'jobName': &lt;class 'str'&gt;}, {'use': 'formattedString', 'dateTimeStr': &lt;class 'str'&gt;, 'dateTimeFormat': &lt;class 'str'&gt;}, {'use': 'unixTime', 'value': &lt;class 'int'&gt;}, msg=None), extra=PREVENT_EXTRA, required=False) object&gt;}, msg=None), extra=PREVENT_EXTRA, required=False) object&gt;, 'channel(s)': Any(&lt;class 'str'&gt;, [&lt;class 'str'&gt;], msg=None), 'withFlag(s)': Any(&lt;class 'str'&gt;, [&lt;class 'str'&gt;], msg=None), 'withoutFlag(s)': Any(&lt;class 'str'&gt;, [&lt;class 'str'&gt;], msg=None)}, 'load': {'state': Any('$all', '$latest', msg=None), 'doc(s)': Any(&lt;Schema(Any('TRANSIENT', 'PHOTOPOINT', 'UPPERLIMIT', 'COMPOUND', 'T2RECORD', msg=None), extra=PREVENT_EXTRA, required=False) object&gt;, [&lt;Schema(Any('TRANSIENT', 'PHOTOPOINT', 'UPPERLIMIT', 'COMPOUND', 'T2RECORD', msg=None), extra=PREVENT_EXTRA, required=False) object&gt;], msg=None), 't2(s)': Any(&lt;class 'str'&gt;, [&lt;class 'str'&gt;], msg=None), 'verbose': &lt;class 'bool'&gt;}, 'chunk': &lt;class 'int'&gt;}, 'globalInfo': &lt;class 'bool'&gt;, 'onError': {'sendMail': {'to': &lt;class 'str'&gt;, 'excStack': &lt;class 'bool'&gt;}, 'stopAmpel': &lt;class 'bool'&gt;, 'retry': &lt;class 'bool'&gt;}}, extra=ALLOW_EXTRA, required=False) object&gt;</em><a class="headerlink" href="#ampel.pipeline.t3.T3JobConfig.T3JobConfig.job_schema" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="ampel.pipeline.config.resources.ResourceURI">
+<em class="property">class </em><code class="descclassname">ampel.pipeline.config.resources.</code><code class="descname">ResourceURI</code><span class="sig-paren">(</span><em>args</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ampel/pipeline/config/resources.html#ResourceURI"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ampel.pipeline.config.resources.ResourceURI" title="Permalink to this definition">¶</a></dt>
+<dd><p>A resource that can be represented as a URI</p>
+<dl class="classmethod">
+<dt id="ampel.pipeline.config.resources.ResourceURI.add_arguments">
+<em class="property">classmethod </em><code class="descname">add_arguments</code><span class="sig-paren">(</span><em>parser</em>, <em>defaults</em>, <em>roles</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ampel/pipeline/config/resources.html#ResourceURI.add_arguments"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ampel.pipeline.config.resources.ResourceURI.add_arguments" title="Permalink to this definition">¶</a></dt>
+<dd><p>Populate argument parser with options for this resource factory</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>parser</strong> – an instance of AmpelArgumentParser</li>
+<li><strong>defaults</strong> – if not None, the default configuration from the config file</li>
+<li><strong>roles</strong> – if not None, a sequence of role names to configure</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="classmethod">
+<dt id="ampel.pipeline.config.resources.ResourceURI.get_default">
+<em class="property">classmethod </em><code class="descname">get_default</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ampel/pipeline/config/resources.html#ResourceURI.get_default"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ampel.pipeline.config.resources.ResourceURI.get_default" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a dictionary of default properties for urllib.parse.ParseResult</p>
+</dd></dl>
+
+<dl class="classmethod">
+<dt id="ampel.pipeline.config.resources.ResourceURI.name">
+<em class="property">classmethod </em><code class="descname">name</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ampel/pipeline/config/resources.html#ResourceURI.name"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ampel.pipeline.config.resources.ResourceURI.name" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a short name for this</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../dev.html" title="Development"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="ampel-base.html" title="Ampel-base"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">Ampel 0.4.0 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="index.html" >Ampel projects</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2018, Ampel Project.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.7.5.
+    </div>
+  </body>
+</html>
