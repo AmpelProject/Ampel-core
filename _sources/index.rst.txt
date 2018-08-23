@@ -15,9 +15,11 @@
    contribute
    structure
    dev
+   testing
    requirements
    people
    hardware
+   operations/index
 
 
 Indices and tables

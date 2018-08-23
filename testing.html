@@ -1,0 +1,205 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>Running the automated tests &#8212; Ampel 0.4.0 documentation</title>
+    <link rel="stylesheet" href="_static/sphinxdoc.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Requirements" href="requirements.html" />
+    <link rel="prev" title="Development" href="dev.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="requirements.html" title="Requirements"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="dev.html" title="Development"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">Ampel 0.4.0 documentation</a> &#187;</li> 
+      </ul>
+    </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="index.html">
+              <img class="logo" src="_static/ampel.png" alt="Logo"/>
+            </a></p>
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="dev.html"
+                        title="previous chapter">Development</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="requirements.html"
+                        title="next chapter">Requirements</a></p>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="running-the-automated-tests">
+<span id="testing"></span><h1>Running the automated tests<a class="headerlink" href="#running-the-automated-tests" title="Permalink to this headline">¶</a></h1>
+<p>Ampel ships with a suite of automated tests. You should run these before
+pushing new code to GitHub.</p>
+<div class="section" id="why-test">
+<h2>Why test?<a class="headerlink" href="#why-test" title="Permalink to this headline">¶</a></h2>
+<blockquote>
+<div><dl class="docutils">
+<dt>Vertrauen ist gut. Kontrolle ist besser.</dt>
+<dd>– German proverb</dd>
+</dl>
+</div></blockquote>
+<p>It is important to test software, and there are many ways to do it. The most
+basic kind of testing that nearly everyone does without thinking about it is
+the “manual” variety: run a piece of code (either at the console or in an
+iPython notebook) using inputs that you choose, check the output, and compare
+it with your mental model of what the code should have done. This is fine for
+small, throw-away, or single-developer/single-user projects. As soon as the
+project is expected to have multiple contributors and users, needs to be
+maintained for a long time, or is too large to understand in an afternoon, it
+needs complete documentation. Automated tests document the way each component
+is supposed to work (unit tests) and how they are supposed to work together
+(integration tests). Because their setup, testing, and teardown phases are
+automated and self-contained, they can be run often, without detailed knowledge
+of the entire project. This makes it harder for changes to accidentally break
+apparently unrelated parts of the codebase.</p>
+</div>
+<div class="section" id="expected-installation-layout">
+<h2>Expected installation layout<a class="headerlink" href="#expected-installation-layout" title="Permalink to this headline">¶</a></h2>
+<p>Choose a root directory, e.g. on my machine, /Users/jakob/Documents/ZTF/Ampel.
+For simplicity, we will call this <cite>$AMPEL_ROOT</cite> from here on out. Clone Ampel
+and the plugins you choose to use into subdirectories, e.g.:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>cd $AMPEL_ROOT
+git clone git@github.com:AmpelProject/Ampel.git ampel-core
+git clone git@github.com:AmpelProject/ampel-contrib-hu.git ampel-contrib-hu
+git clone git@github.com:robertdstein/Ampel-ZTFbh ampel-contrib-ztfbh
+git clone git@github.com:AmpelProject/Ampel-Neutrino.git ampel-neutrino
+</pre></div>
+</div>
+<p>Now, create a <cite>conda</cite> environment for development, and activate it:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">conda</span> <span class="n">env</span> <span class="n">create</span> <span class="o">--</span><span class="n">file</span> <span class="n">ampel</span><span class="o">-</span><span class="n">core</span><span class="o">/</span><span class="n">deploy</span><span class="o">/</span><span class="n">docker</span><span class="o">-</span><span class="n">images</span><span class="o">/</span><span class="n">devel</span><span class="o">/</span><span class="n">base</span><span class="o">-</span><span class="n">environment</span><span class="o">.</span><span class="n">yml</span> <span class="o">-</span><span class="n">n</span> <span class="n">ampeltest</span>
+<span class="o">.</span> <span class="n">activate</span> <span class="n">ampeltest</span>
+</pre></div>
+</div>
+<p>When this is done, you should see a prompt like the following:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>(ampeltest) [jakob@znb34-w:ZTF/Ampel]$
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">While you can use whatever Python environment you have lying around,
+creating the enviroment from the provided yml file ensures that it
+matches the one used in production. If you need to add
+more packages, be sure to add them to the environment.yml file as well.</p>
+</div>
+<p>Inside your environment, use <cite>pip install -e</cite> to register each component:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>for dir in ampel-co*; do
+  pip install -e $dir
+done
+</pre></div>
+</div>
+<p>Next, <a class="reference external" href="https://docs.docker.com/get-started/">install and start Docker</a>. The
+tests use Docker to provide single-use instances of the databases that Ampel
+interacts with.</p>
+</div>
+<div class="section" id="running-the-tests">
+<h2>Running the tests<a class="headerlink" href="#running-the-tests" title="Permalink to this headline">¶</a></h2>
+<p>From <cite>$AMPEL_ROOT</cite>, <cite>pytest</cite> will discover and run all tests in the
+subdirectories named ‘<em>test</em>’. You’ll get a report of the tests as they run, e.g.:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>(ampeltest) [jakob@znb34-w:ZTF/Ampel]$ pytest ampel-*/test                                                         (07-02 16:01)
+====================================================== test session starts ======================================================
+platform darwin -- Python 3.6.5, pytest-3.6.2, py-1.5.4, pluggy-0.6.0
+rootdir: /Users/jakob/Documents/ZTF/Ampel, inifile:
+plugins: remotedata-0.3.0, openfiles-0.2.0, doctestplus-0.1.2, arraydiff-0.2
+collected 30 items
+
+ampel-contrib-hu/test/test_catalog_ingester.py ..                                                                         [  6%]
+ampel-contrib-hu/test/test_marshal_publisher.py ..                                                                        [ 13%]
+ampel-contrib-neutrino/test/test_t3.py ..                                                                                 [ 20%]
+ampel-core/test/test_alertprocessor.py ..                                                                                 [ 26%]
+ampel-core/test/test_archivedb.py .....s..                                                                                [ 53%]
+ampel-core/test/test_delayed_t0.py .ss                                                                                    [ 63%]
+ampel-core/test/test_resources.py .....                                                                                   [ 80%]
+ampel-core/test/test_t3_controller.py x.....                                                                              [100%]
+</pre></div>
+</div>
+<p>Failures will produce a detailed traceback of exactly which assertion failed.</p>
+</div>
+<div class="section" id="test-coverage">
+<h2>Test coverage<a class="headerlink" href="#test-coverage" title="Permalink to this headline">¶</a></h2>
+<p>Tests can only help pinpoint errors if they actually run the code in question.
+Unless you were thorough enough to write your tests before the actual code they
+test, you are likely to not have tests that exercise every part of your code.
+Pytest has a coverage plugin to help you find these places. To generate a
+coverage report, pass some extra options to <cite>pytest</cite>, e.g.:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pytest</span> <span class="o">--</span><span class="n">cov</span><span class="o">-</span><span class="n">report</span> <span class="n">html</span> <span class="o">--</span><span class="n">cov</span> <span class="n">ampel</span> <span class="n">ampel</span><span class="o">-*/</span><span class="n">test</span>
+<span class="nb">open</span> <span class="n">htmlcov</span><span class="o">/</span><span class="n">index</span><span class="o">.</span><span class="n">html</span>
+</pre></div>
+</div>
+<p>This will open a web page with a listing of all the modules <cite>ampel</cite> that were
+imported along with the fraction of lines that were executing during the test.
+Examining this listing will help you find places to put new tests.</p>
+</div>
+<div class="section" id="writing-good-tests">
+<h2>Writing (good) tests<a class="headerlink" href="#writing-good-tests" title="Permalink to this headline">¶</a></h2>
+<p>Any Python file named ‘test/test_*.py’ will be searched for functions starting
+with <cite>test_</cite>. Use <cite>assert</cite> to document your assumptions about function return
+values and shared state.</p>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="requirements.html" title="Requirements"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="dev.html" title="Development"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">Ampel 0.4.0 documentation</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2018, Ampel Project.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.7.5.
+    </div>
+  </body>
+</html>
