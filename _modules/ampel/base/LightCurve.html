@@ -1,0 +1,291 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>ampel.base.LightCurve &#8212; Ampel 0.4.0 documentation</title>
+    <link rel="stylesheet" href="../../../_static/sphinxdoc.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">Ampel 0.4.0 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../index.html" accesskey="U">Module code</a> &#187;</li> 
+      </ul>
+    </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../../index.html">
+              <img class="logo" src="../../../_static/ampel.png" alt="Logo"/>
+            </a></p>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for ampel.base.LightCurve</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/env python</span>
+<span class="c1"># -*- coding: utf-8 -*-</span>
+<span class="c1"># File              : ampel/base/LightCurve.py</span>
+<span class="c1"># License           : BSD-3-Clause</span>
+<span class="c1"># Author            : vb &lt;vbrinnel@physik.hu-berlin.de&gt;</span>
+<span class="c1"># Date              : 13.01.2018</span>
+<span class="c1"># Last Modified Date: 24.06.2018</span>
+<span class="c1"># Last Modified By  : vb &lt;vbrinnel@physik.hu-berlin.de&gt;</span>
+
+<span class="kn">import</span> <span class="nn">operator</span>
+<span class="kn">from</span> <span class="nn">ampel.base.Frozen</span> <span class="k">import</span> <span class="n">Frozen</span>
+
+<div class="viewcode-block" id="LightCurve"><a class="viewcode-back" href="../../../projects/ampel-base.html#ampel.base.LightCurve.LightCurve">[docs]</a><span class="k">class</span> <span class="nc">LightCurve</span><span class="p">(</span><span class="n">Frozen</span><span class="p">):</span>
+	<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">	Class containing a collection of PhotoPoint/UpperLimit instances.</span>
+<span class="sd">	And a few convenience methods to return values embedded in the collection.</span>
+<span class="sd">	(This object has several similarities with AmpelAlert and yet some notable differences.</span>
+<span class="sd">	If time allows, a possible object oriented parent/child structure could be tested, </span>
+<span class="sd">	whereby it is important to keep in mind that AmpelAlert efficiency is an important </span>
+<span class="sd">	criteria since *every* ZTF alert yields an AmpelAlert obj).</span>
+<span class="sd">	&quot;&quot;&quot;</span>
+	
+	<span class="n">_ops</span> <span class="o">=</span> <span class="p">{</span>
+		<span class="s1">&#39;&gt;&#39;</span><span class="p">:</span> <span class="n">operator</span><span class="o">.</span><span class="n">gt</span><span class="p">,</span>
+		<span class="s1">&#39;&lt;&#39;</span><span class="p">:</span> <span class="n">operator</span><span class="o">.</span><span class="n">lt</span><span class="p">,</span>
+		<span class="s1">&#39;&gt;=&#39;</span><span class="p">:</span> <span class="n">operator</span><span class="o">.</span><span class="n">ge</span><span class="p">,</span>
+		<span class="s1">&#39;&lt;=&#39;</span><span class="p">:</span> <span class="n">operator</span><span class="o">.</span><span class="n">le</span><span class="p">,</span>
+		<span class="s1">&#39;==&#39;</span><span class="p">:</span> <span class="n">operator</span><span class="o">.</span><span class="n">eq</span><span class="p">,</span>
+		<span class="s1">&#39;!=&#39;</span><span class="p">:</span> <span class="n">operator</span><span class="o">.</span><span class="n">ne</span><span class="p">,</span>
+		<span class="s1">&#39;is&#39;</span><span class="p">:</span> <span class="n">operator</span><span class="o">.</span><span class="n">is_</span><span class="p">,</span>
+		<span class="s1">&#39;is not&#39;</span><span class="p">:</span> <span class="n">operator</span><span class="o">.</span><span class="n">is_not</span>
+	<span class="p">}</span>
+
+	
+	<span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">compound_id</span><span class="p">,</span> <span class="n">ppo_list</span><span class="p">,</span> <span class="n">ulo_list</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">info</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">read_only</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">logger</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+		<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">		Mandatory arguments:</span>
+<span class="sd">		compound_id: instance of bson.Binary (subtype: 5)</span>
+<span class="sd">		ppo_list: list of ampel.base.core.PhotoPoint instances</span>
+
+<span class="sd">		Optional arguments:</span>
+<span class="sd">		ulo_list: list of ampel.base.core.UpperLimit instances</span>
+<span class="sd">		info: dict instance with additional info (&#39;added&#39;, &#39;tier&#39;, ...)</span>
+<span class="sd">		read_only: wether the provided list should be casted as immutable tuple</span>
+<span class="sd">		and the class instance frozen.</span>
+<span class="sd">		NOTE: it is up to the loader class to make sure the PhotoPoint and UpperLimit objects</span>
+<span class="sd">		provided to this constructor are frozen classes, if so whished.</span>
+<span class="sd">		logger: instance of Logger from python module &#39;logging&#39;</span>
+<span class="sd">		&quot;&quot;&quot;</span>
+
+		<span class="bp">self</span><span class="o">.</span><span class="n">id</span> <span class="o">=</span> <span class="n">compound_id</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">info</span> <span class="o">=</span> <span class="n">info</span>
+
+		<span class="k">if</span> <span class="n">read_only</span><span class="p">:</span>
+			<span class="bp">self</span><span class="o">.</span><span class="n">ppo_list</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">el</span> <span class="k">for</span> <span class="n">el</span> <span class="ow">in</span> <span class="n">ppo_list</span><span class="p">)</span>
+			<span class="bp">self</span><span class="o">.</span><span class="n">ulo_list</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">el</span> <span class="k">for</span> <span class="n">el</span> <span class="ow">in</span> <span class="n">ulo_list</span><span class="p">)</span> <span class="k">if</span> <span class="n">ulo_list</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="p">[]</span>
+			<span class="bp">self</span><span class="o">.</span><span class="n">__isfrozen</span> <span class="o">=</span> <span class="kc">True</span>
+		<span class="k">else</span><span class="p">:</span>
+			<span class="bp">self</span><span class="o">.</span><span class="n">ppo_list</span> <span class="o">=</span> <span class="n">ppo_list</span>
+			<span class="bp">self</span><span class="o">.</span><span class="n">ulo_list</span> <span class="o">=</span> <span class="n">ulo_list</span> <span class="k">if</span> <span class="n">ulo_list</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="p">[]</span>
+
+		<span class="c1"># Feedback if logger was provided</span>
+		<span class="k">if</span> <span class="n">logger</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+			<span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+				<span class="s2">&quot;LightCurve loaded with </span><span class="si">%i</span><span class="s2"> photopoints and </span><span class="si">%i</span><span class="s2"> upper limits&quot;</span> <span class="o">%</span> 
+				<span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ppo_list</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ulo_list</span><span class="p">))</span>
+			<span class="p">)</span>
+
+	<span class="k">def</span> <span class="nf">serialize</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+		<span class="n">fields</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;id&quot;</span><span class="p">,</span> <span class="s2">&quot;ppo_list&quot;</span><span class="p">,</span> <span class="s2">&quot;ulo_list&quot;</span><span class="p">,</span> <span class="s2">&quot;info&quot;</span><span class="p">]</span>
+		<span class="k">return</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">k</span><span class="p">)</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">fields</span><span class="p">}</span>
+
+<div class="viewcode-block" id="LightCurve.get_values"><a class="viewcode-back" href="../../../projects/ampel-base.html#ampel.base.LightCurve.LightCurve.get_values">[docs]</a>	<span class="k">def</span> <span class="nf">get_values</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">field_name</span><span class="p">,</span> <span class="n">filters</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">upper_limits</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+		<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">		ex: instance.get_values(&#39;obs_date&#39;)</span>
+<span class="sd">		&#39;filters&#39; example: {&#39;attribute&#39;: &#39;magpsf&#39;, &#39;operator&#39;: &#39;&lt;&#39;, &#39;value&#39;: 18}</span>
+<span class="sd">		&#39;upper_limits&#39;: if set to True, upper limits are returned instead of photopoints</span>
+<span class="sd">		&quot;&quot;&quot;</span>
+		<span class="k">return</span> <span class="p">[</span>
+			<span class="n">obj</span><span class="o">.</span><span class="n">get_value</span><span class="p">(</span><span class="n">field_name</span><span class="p">)</span> 
+			<span class="k">for</span> <span class="n">obj</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_photo_objs</span><span class="p">(</span><span class="n">filters</span><span class="p">,</span> <span class="n">upper_limits</span><span class="p">)</span> 
+			<span class="k">if</span> <span class="n">obj</span><span class="o">.</span><span class="n">has_parameter</span><span class="p">(</span><span class="n">field_name</span><span class="p">)</span>
+		<span class="p">]</span></div>
+
+
+<div class="viewcode-block" id="LightCurve.get_tuples"><a class="viewcode-back" href="../../../projects/ampel-base.html#ampel.base.LightCurve.LightCurve.get_tuples">[docs]</a>	<span class="k">def</span> <span class="nf">get_tuples</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">field1_name</span><span class="p">,</span> <span class="n">field2_name</span><span class="p">,</span> <span class="n">filters</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">upper_limits</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+		<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">		ex: instance.get_values(&#39;obs_date&#39;, &#39;mag&#39;)</span>
+<span class="sd">		&#39;filters&#39; example: {&#39;attribute&#39;: &#39;magpsf&#39;, &#39;operator&#39;: &#39;&lt;&#39;, &#39;value&#39;: 18}</span>
+<span class="sd">		&#39;upper_limits&#39;: if set to True, upper limits are returned instead of photopoints</span>
+<span class="sd">		&quot;&quot;&quot;</span>
+		<span class="k">return</span> <span class="p">[</span>
+			<span class="p">(</span><span class="n">obj</span><span class="o">.</span><span class="n">get_value</span><span class="p">(</span><span class="n">field1_name</span><span class="p">),</span> <span class="n">obj</span><span class="o">.</span><span class="n">get_value</span><span class="p">(</span><span class="n">field2_name</span><span class="p">))</span>
+			<span class="k">for</span> <span class="n">obj</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_photo_objs</span><span class="p">(</span><span class="n">filters</span><span class="p">,</span> <span class="n">upper_limits</span><span class="p">)</span> 
+			<span class="k">if</span> <span class="n">obj</span><span class="o">.</span><span class="n">has_parameter</span><span class="p">(</span><span class="n">field1_name</span><span class="p">)</span> <span class="ow">and</span> <span class="n">obj</span><span class="o">.</span><span class="n">has_parameter</span><span class="p">(</span><span class="n">field2_name</span><span class="p">)</span>
+		<span class="p">]</span></div>
+
+
+<div class="viewcode-block" id="LightCurve.get_ntuples"><a class="viewcode-back" href="../../../projects/ampel-base.html#ampel.base.LightCurve.LightCurve.get_ntuples">[docs]</a>	<span class="k">def</span> <span class="nf">get_ntuples</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">params</span><span class="p">,</span> <span class="n">filters</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">upper_limits</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+		<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">		params: list of strings</span>
+<span class="sd">		ex: instance.get_ntuples([&quot;fid&quot;, &quot;obs_date&quot;, &quot;mag&quot;])</span>
+<span class="sd">		&#39;filters&#39; example: {&#39;attribute&#39;: &#39;magpsf&#39;, &#39;operator&#39;: &#39;&lt;&#39;, &#39;value&#39;: 18}</span>
+<span class="sd">		&#39;upper_limits&#39;: if set to True, upper limits are returned instead of photopoints</span>
+<span class="sd">		&quot;&quot;&quot;</span>
+		<span class="k">return</span> <span class="nb">tuple</span><span class="p">(</span>
+			<span class="nb">tuple</span><span class="p">(</span><span class="n">obj</span><span class="o">.</span><span class="n">get_value</span><span class="p">(</span><span class="n">param</span><span class="p">)</span> <span class="k">for</span> <span class="n">param</span> <span class="ow">in</span> <span class="n">params</span><span class="p">)</span> 
+			<span class="k">for</span> <span class="n">obj</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_photo_objs</span><span class="p">(</span><span class="n">filters</span><span class="p">,</span> <span class="n">upper_limits</span><span class="p">)</span> 
+			<span class="k">if</span> <span class="nb">all</span><span class="p">(</span><span class="n">obj</span><span class="o">.</span><span class="n">has_parameter</span><span class="p">(</span><span class="n">param</span><span class="p">)</span> <span class="k">for</span> <span class="n">param</span> <span class="ow">in</span> <span class="n">params</span><span class="p">)</span>
+		<span class="p">)</span></div>
+
+	
+<div class="viewcode-block" id="LightCurve.get_photopoints"><a class="viewcode-back" href="../../../projects/ampel-base.html#ampel.base.LightCurve.LightCurve.get_photopoints">[docs]</a>	<span class="k">def</span> <span class="nf">get_photopoints</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">filters</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+		<span class="sd">&quot;&quot;&quot; returns a list of dicts &quot;&quot;&quot;</span>
+		<span class="k">return</span> <span class="p">(</span>
+			<span class="bp">self</span><span class="o">.</span><span class="n">_apply_filter</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ppo_list</span><span class="p">,</span> <span class="n">filters</span><span class="p">)</span> <span class="k">if</span> <span class="n">filters</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> 
+			<span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">ppo_list</span>
+		<span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="LightCurve.get_upperlimits"><a class="viewcode-back" href="../../../projects/ampel-base.html#ampel.base.LightCurve.LightCurve.get_upperlimits">[docs]</a>	<span class="k">def</span> <span class="nf">get_upperlimits</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">filters</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+		<span class="sd">&quot;&quot;&quot; returns a list of dicts &quot;&quot;&quot;</span>
+		<span class="k">return</span> <span class="p">(</span>
+			<span class="bp">self</span><span class="o">.</span><span class="n">_apply_filter</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ulo_list</span><span class="p">,</span> <span class="n">filters</span><span class="p">)</span> <span class="k">if</span> <span class="n">filters</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> 
+			<span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">ulo_list</span>
+		<span class="p">)</span></div>
+
+
+	<span class="c1"># TODO: improve</span>
+<div class="viewcode-block" id="LightCurve.get_pos"><a class="viewcode-back" href="../../../projects/ampel-base.html#ampel.base.LightCurve.LightCurve.get_pos">[docs]</a>	<span class="k">def</span> <span class="nf">get_pos</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ret</span><span class="o">=</span><span class="s2">&quot;brightest&quot;</span><span class="p">,</span> <span class="n">filters</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+		<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">		ret (for all methods, only matching PhotoPoint wrt the provided filter(s) are used!):</span>
+<span class="sd">		&quot;raw&quot;: returns ((ra, dec), (ra, dec), ...)</span>
+<span class="sd">		&quot;mean&quot;: returns (&lt;ra&gt;, &lt;dec&gt;)</span>
+<span class="sd">		&quot;brightest&quot;: returns (ra, dec)</span>
+<span class="sd">		&quot;latest&quot;: returns (ra, dec)</span>
+
+<span class="sd">		examples::</span>
+<span class="sd">			</span>
+<span class="sd">			instance.get_pos(</span>
+<span class="sd">				&quot;brightest&quot;, {&#39;attribute&#39;: &#39;alFlags&#39;, &#39;operator&#39;: &#39;in&#39;, &#39;value&#39;: PhotoFlags.ZTF_G}</span>
+<span class="sd">			)</span>
+<span class="sd">		</span>
+<span class="sd">		returns the position of the brightest PhotoPoint in the ZTF G band</span>
+<span class="sd">		</span>
+<span class="sd">		::</span>
+<span class="sd">			</span>
+<span class="sd">			instance.get_pos(&quot;lastest&quot;, {&#39;attribute&#39;: &#39;magpsf&#39;, &#39;operator&#39;: &#39;&lt;&#39;, &#39;value&#39;: 18})</span>
+<span class="sd">		</span>
+<span class="sd">		returns the position of the latest PhotoPoint in time with a magnitude brighter than 18</span>
+<span class="sd">		(or an empty array if no PhotoPoint matches this criteria)</span>
+<span class="sd">		&quot;&quot;&quot;</span>
+
+		<span class="k">if</span> <span class="n">ret</span> <span class="o">==</span> <span class="s2">&quot;raw&quot;</span><span class="p">:</span> 
+			<span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_tuples</span><span class="p">(</span><span class="s2">&quot;ra&quot;</span><span class="p">,</span> <span class="s2">&quot;dec&quot;</span><span class="p">,</span> <span class="n">filters</span><span class="o">=</span><span class="n">filters</span><span class="p">)</span>
+
+		<span class="n">pps</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_apply_filter</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ppo_list</span><span class="p">,</span> <span class="n">filters</span><span class="p">)</span> <span class="k">if</span> <span class="n">filters</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">ppo_list</span>
+
+		<span class="k">if</span> <span class="n">ret</span> <span class="o">==</span> <span class="s2">&quot;mean&quot;</span><span class="p">:</span> 
+			<span class="n">ras</span> <span class="o">=</span> <span class="p">[</span><span class="n">pp</span><span class="o">.</span><span class="n">get_value</span><span class="p">(</span><span class="s2">&quot;ra&quot;</span><span class="p">)</span> <span class="k">for</span> <span class="n">pp</span> <span class="ow">in</span> <span class="n">pps</span><span class="p">]</span>
+			<span class="n">decs</span> <span class="o">=</span> <span class="p">[</span><span class="n">pp</span><span class="o">.</span><span class="n">get_value</span><span class="p">(</span><span class="s2">&quot;dec&quot;</span><span class="p">)</span> <span class="k">for</span> <span class="n">pp</span> <span class="ow">in</span> <span class="n">pps</span><span class="p">]</span>
+			<span class="k">return</span> <span class="p">(</span><span class="n">ras</span><span class="o">/</span><span class="nb">len</span><span class="p">(</span><span class="n">ras</span><span class="p">),</span> <span class="n">decs</span><span class="o">/</span><span class="nb">len</span><span class="p">(</span><span class="n">decs</span><span class="p">))</span>
+
+		<span class="k">elif</span> <span class="n">ret</span> <span class="o">==</span> <span class="s2">&quot;brightest&quot;</span><span class="p">:</span> 
+			<span class="n">mags</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">pps</span><span class="p">)</span>
+			<span class="n">mags</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="o">.</span><span class="n">get_value</span><span class="p">(</span><span class="s1">&#39;magpsf&#39;</span><span class="p">))</span>
+			<span class="k">return</span> <span class="p">(</span><span class="n">mags</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">get_value</span><span class="p">(</span><span class="s1">&#39;ra&#39;</span><span class="p">),</span> <span class="n">mags</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">get_value</span><span class="p">(</span><span class="s1">&#39;dec&#39;</span><span class="p">))</span>
+
+		<span class="k">elif</span> <span class="n">ret</span> <span class="o">==</span> <span class="s2">&quot;latest&quot;</span><span class="p">:</span> 
+			<span class="n">mags</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">pps</span><span class="p">)</span>
+			<span class="n">mags</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="o">.</span><span class="n">get_value</span><span class="p">(</span><span class="s1">&#39;obs_date&#39;</span><span class="p">))</span>
+			<span class="k">return</span> <span class="p">(</span><span class="n">mags</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">get_value</span><span class="p">(</span><span class="s1">&#39;ra&#39;</span><span class="p">),</span> <span class="n">mags</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">get_value</span><span class="p">(</span><span class="s1">&#39;dec&#39;</span><span class="p">))</span>
+
+		<span class="k">else</span><span class="p">:</span>
+			<span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s2">&quot;ret method: </span><span class="si">%s</span><span class="s2"> is not implemented&quot;</span> <span class="o">%</span> <span class="n">ret</span><span class="p">)</span></div>
+
+
+	<span class="k">def</span> <span class="nf">_get_photo_objs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">filters</span><span class="p">,</span> <span class="n">upper_limits</span><span class="p">):</span>
+		<span class="sd">&quot;&quot;&quot;	</span>
+<span class="sd">		&quot;&quot;&quot;</span>	
+		<span class="k">if</span> <span class="n">filters</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+			<span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">ulo_list</span> <span class="k">if</span> <span class="n">upper_limits</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">ppo_list</span>
+		<span class="k">else</span><span class="p">:</span>
+			<span class="k">return</span> <span class="p">(</span>
+				<span class="bp">self</span><span class="o">.</span><span class="n">_apply_filter</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ulo_list</span><span class="p">,</span> <span class="n">filters</span><span class="p">)</span> <span class="k">if</span> <span class="n">upper_limits</span> 
+				<span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">_apply_filter</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ppo_list</span><span class="p">,</span> <span class="n">filters</span><span class="p">)</span>
+			<span class="p">)</span>
+
+
+	<span class="k">def</span> <span class="nf">_apply_filter</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">match_objs</span><span class="p">,</span> <span class="n">filters</span><span class="p">):</span>
+		<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">		&quot;&quot;&quot;</span>
+		<span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">filters</span><span class="p">)</span> <span class="ow">is</span> <span class="nb">dict</span><span class="p">:</span>
+			<span class="n">filters</span> <span class="o">=</span> <span class="p">[</span><span class="n">filters</span><span class="p">]</span>
+		<span class="k">else</span><span class="p">:</span>
+			<span class="k">if</span> <span class="n">filters</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="nb">type</span><span class="p">(</span><span class="n">filters</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="nb">list</span><span class="p">:</span>
+				<span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;filters must be of type dict or list&quot;</span><span class="p">)</span>
+
+		<span class="k">for</span> <span class="n">filter_el</span> <span class="ow">in</span> <span class="n">filters</span><span class="p">:</span>
+
+			<span class="n">operator</span> <span class="o">=</span> <span class="n">LightCurve</span><span class="o">.</span><span class="n">_ops</span><span class="p">[</span>
+				<span class="n">filter_el</span><span class="p">[</span><span class="s1">&#39;operator&#39;</span><span class="p">]</span>
+			<span class="p">]</span>
+
+			<span class="n">attr_name</span> <span class="o">=</span> <span class="n">filter_el</span><span class="p">[</span><span class="s1">&#39;attribute&#39;</span><span class="p">]</span>
+			<span class="n">match_objs</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span>
+				<span class="nb">filter</span><span class="p">(</span>
+					<span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="o">.</span><span class="n">has_parameter</span><span class="p">(</span><span class="n">attr_name</span><span class="p">)</span> <span class="ow">and</span> <span class="n">operator</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">get_value</span><span class="p">(</span><span class="n">attr_name</span><span class="p">),</span> <span class="n">filter_el</span><span class="p">[</span><span class="s1">&#39;value&#39;</span><span class="p">]),</span> 
+					<span class="n">match_objs</span>
+				<span class="p">)</span>
+			<span class="p">)</span>
+
+		<span class="k">return</span> <span class="n">match_objs</span></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">Ampel 0.4.0 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../index.html" >Module code</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2018, Ampel Project.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.7.5.
+    </div>
+  </body>
+</html>

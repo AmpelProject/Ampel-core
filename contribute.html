@@ -124,7 +124,7 @@
 <p>Each of the entry points expects entries of a different type. They are:</p>
 <ul class="simple">
 <li><cite>ampel.channels</cite>: Each entry should be a Python callable that returns a dictionary whose keys are channel names (all UPPERCASE by convention) and whose values are channel configurations</li>
-<li><cite>ampel.pipeline.t0</cite>: Each entry should be a Python class that inherits from <code class="xref py py-class docutils literal notranslate"><span class="pre">ampel.base.abstract.AbsAlertFilter.AbsAlertFilter</span></code></li>
+<li><cite>ampel.pipeline.t0</cite>: Each entry should be a Python class that inherits from <a class="reference internal" href="projects/ampel-base.html#ampel.base.abstract.AbsAlertFilter.AbsAlertFilter" title="ampel.base.abstract.AbsAlertFilter.AbsAlertFilter"><code class="xref py py-class docutils literal notranslate"><span class="pre">ampel.base.abstract.AbsAlertFilter.AbsAlertFilter</span></code></a></li>
 <li><cite>ampel.pipeline.t2.units</cite>: Each entry should be a Python class that inherits from <code class="xref py py-class docutils literal notranslate"><span class="pre">ampel.base.abstract.AbsT2Unit.AbsT2Unit</span></code></li>
 <li><cite>ampel.pipeline.t2.configs</cite>: Each entry should be a Python callable that returns a dictionary that will be passed as the <cite>run_config</cite> argument of <code class="xref py py-class docutils literal notranslate"><span class="pre">ampel.base.abstract.AbsT2Unit.AbsT2Unit</span></code></li>
 <li><cite>ampel.pipeline.t3.units</cite>: Each entry should be a Python class that inherits from <code class="xref py py-class docutils literal notranslate"><span class="pre">ampel.base.abstract.AbsT3Unit.AbsT3Unit</span></code></li>
