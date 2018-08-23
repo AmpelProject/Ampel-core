@@ -10,6 +10,7 @@
 import logging
 from ampel.pipeline.common.AmpelUtils import AmpelUtils
 from ampel.pipeline.logging.LoggingUtils import LoggingUtils
+from ampel.base.TransientView import TransientView
 
 class T3Task:
 	"""
@@ -84,8 +85,8 @@ class T3Task:
 
 			# Feedback
 			self.logger.debug(
-				"TransientView created for %s and channel(s) %s" % 
-				(tran_id, self.channels)
+				"TransientView created: ID: %s, CN: %s, %s" % 
+				(tran_id, self.channels, TransientView.content_summary(tran_view))
 			)
 		
 			# Save ids of created views (used later for updating transient journal)
