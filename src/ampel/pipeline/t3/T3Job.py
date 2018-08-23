@@ -376,14 +376,12 @@ class T3Job:
 			AmpelDB.get_collection('troubles').insert_one(d)
 		except:
 			# Bad luck (possible cause: DB offline)
-			msg = "Exception occured while populating 'troubles' collection"
-			if self.logger.propagate == False:
-				self.logger.propagate == True
-				self.logger.critical(msg, exc_info=1)
-				self.logger.propagate = False
-			else:
-				self.logger.critical(msg, exc_info=1)
-		
+			LoggingUtils.propagate_log(
+				self.logger, logging.ERROR, 
+				"Exception occured while populating 'troubles' collection",
+				exc_info=True
+			)
+
 
 	def _get_channels(self):
 		"""
