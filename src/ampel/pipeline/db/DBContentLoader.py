@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 13.01.2018
-# Last Modified Date: 04.08.2018
+# Last Modified Date: 23.08.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from bson import ObjectId
@@ -49,7 +49,7 @@ class DBContentLoader:
 
 	def __init__(self, central_db=None, verbose=False, logger=None):
 		"""
-		'central_db': string. Use provided DB name rather than Ampel default database ('Ampel')
+		:param central_db: string. Use provided DB name rather than Ampel default database ('Ampel')
 		"""
 		self.logger = LoggingUtils.get_logger() if logger is None else logger
 		self.lcl = LightCurveLoader(central_db, logger=self.logger)
@@ -77,23 +77,23 @@ class DBContentLoader:
 		Arguments:
 		----------
 
-		-> tran_id: transient id (string). 
+		:param tran_id: transient id (string). 
 		Can be a multiple IDs (list) if state_op is '$all' or states are provided (states cannot be '$latest')
 
-		-> channels: string or list of strings
+		:param channels: string or list of strings
 
-		-> state_op:
+		:param state_op:
 		  * "$latest": latest state will be retrieved
 		  * "$all": all states present in DB (at execution time) will be retrieved
 
-		-> states:
+		:param states:
 		  * <compound_id> or list of <compound_id>: provided state(s) will be loaded. 
 		    Each compound id must be either:
 				- a 32 alphanumerical string
 				- 16 bytes (128 bits)
 				- a bson.binary.Binary instance with subtype 5
 
-		-> content_types: AlDocTypes flags. Possible values are:
+		:param content_types: AlDocTypes flags. Possible values are:
 
 		  * 'AlDocTypes.TRANSIENT': 
 			-> Add info from DB doc to the returned TransientData instance
@@ -121,7 +121,7 @@ class DBContentLoader:
 		  * 'AlDocTypes.T2RECORD': 
 			...
 
-		-> t2_ids: list of strings
+		:param t2_ids: list of strings
 		"""
 
 		# Robustness check 1
