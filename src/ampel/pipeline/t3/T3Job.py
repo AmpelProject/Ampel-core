@@ -30,21 +30,23 @@ class T3Job:
 	"""
 	"""
 
-	def __init__(self, job_config, central_db=None, logger=None, full_console_logging=True):
+	def __init__(
+		self, job_config, central_db=None, logger=None, 
+		db_logging=True, full_console_logging=True
+	):
 		""" 
-		'job_config':
-		instance of ampel.pipeline.t3.T3JobConfig
+		:param job_config: instance of ampel.pipeline.t3.T3JobConfig
 
-		'central_db': string. 
+		:param central_db: string. 
 		Use provided DB name rather than Ampel default database ('Ampel')
 
-		'logger': 
+		:param logger: 
 		-> If None, a new logger using a DBLoggingHandler will be created, which means a new 
 		log document will be inserted into the 'logs' collection of the central db.
 		-> If you provide a logger, please note that it will *NOT* be changed in any way, 
 		in particular: no DBLoggingHandler will be added, which means that no DB logging will occur.
 
-		'full_console_logging': bool. If false, the logging level of the stdout streamhandler 
+		:param full_console_logging: bool. If false, the logging level of the stdout streamhandler 
 		associated with the logger will be set to WARN.
 		"""
 		
@@ -60,14 +62,15 @@ class T3Job:
 			# Create logger
 			logger = LoggingUtils.get_logger()
 
-			# Create DB logging handler instance (logging.Handler child class)
-			# This class formats, saves and pushes log records into the DB
-			self.db_logging_handler = DBLoggingHandler(
-				tier=3, info={"job": job_config.job_name}
-			)
+			if db_logging:
+				# Create DB logging handler instance (logging.Handler child class)
+				# This class formats, saves and pushes log records into the DB
+				self.db_logging_handler = DBLoggingHandler(
+					tier=3, info={"job": job_config.job_name}
+				)
 
-			# Add db logging handler to the logger stack of handlers 
-			logger.addHandler(self.db_logging_handler)
+				# Add db logging handler to the logger stack of handlers 
+				logger.addHandler(self.db_logging_handler)
 
 		self.logger = logger
 		self.job_config = job_config
@@ -173,25 +176,26 @@ class T3Job:
 		return getattr(self, "exec_params", None)
 
 
-	def run(self, update_run_col=True, update_tran_journal=True):
+	def run(self, update_tran_journal=True, update_run_col=True):
 		"""
-		:param update_run_col: Record the invocation of this job in the runs collection
 		:param update_tran_journal: Record the invocation of this job in the journal of each selected transient
+		:param update_run_col: Record the invocation of this job in the runs collection
 		"""
 
 		time_start = datetime.utcnow().timestamp()
 		t3_tasks = []
 		self.log_id = (
-			self.db_logging_handler.get_log_id() if hasattr(self, 'db_logging_handler') 
-			else None
+			self.db_logging_handler.get_log_id() 
+			if hasattr(self, 'db_logging_handler') else 'n/a'
 		)
 
-		# Feedback
-		job_log_el = "job %s (log id: %s)" % (
+		job_descr = "job %s (log id: %s)" % (
 			self.job_config.job_name, 
 			None if self.log_id is None else self.log_id.binary.hex()
 		)
-		LoggingUtils.propagate_log(self.logger, logging.INFO, "Running %s" % job_log_el)
+
+		# Feedback
+		LoggingUtils.propagate_log(self.logger, logging.INFO, "Running %s" % job_descr)
 		
 		try:
 
@@ -334,7 +338,7 @@ class T3Job:
 
 			# Feedback
 			LoggingUtils.propagate_log(
-				self.logger, logging.INFO, "Done running %s" % job_log_el
+				self.logger, logging.INFO, "Done running %s" % job_descr
 			)
 
 			# Write log entries to DB
