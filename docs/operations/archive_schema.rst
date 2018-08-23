@@ -17,7 +17,7 @@ the version number, with `json.dump(schema, f, indent=1)`
 2. Find differences between the old and new schemas, e.g. with `diff -u schema_2.0.json schema_X.Y.json`.
 
 3. Using the diff as a guide, write a SQL migration script like the existing
-ones in deploy/production/initdb/archive/*.sql, prefixing it with a number to
+ones in `deploy/production/initdb/archive/*.sql`, prefixing it with a number to
 ensure that it is executed in order. For example, the 3.0 schema added fields
 to the `candidate` dict that were not present in the 2.0 schema. The migration
 script adds these fields to the `candidate` table, and updates the schema version::
@@ -68,9 +68,11 @@ instance name of the archive container, e.g.::
     transit                        archive                                280e9712
                                    graphite                               061fe0d6
     ------------------------------ ------------------------------ ------- --------
+
 Now, execute the migration with e.g.::
     
     singularity exec instance://280e9712 psql ztfarchive /docker-entrypoint-initdb.d/MIGRATION.sql
+
 where `MIGRATION.sql` is the name of the migration script you created in step 3.
 
 7. Verify that alerts are running again by sshing to `burst.ifh.de`, becoming
