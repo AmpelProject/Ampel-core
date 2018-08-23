@@ -50,9 +50,9 @@ class LoggingUtils:
 		"""
 		return logging.Formatter(
 			fmt=(
-				'%(asctime)s %(pathname)s %(filename)s:%(lineno)s %(funcName)s() %(levelname)s %(message)s'
+				'%(asctime)s %(pathname)s %(filename)s:%(lineno)s %(levelname)s %(message)s'
 				if log_pathname is True
-				else '%(asctime)s %(filename)s:%(lineno)s %(funcName)s() %(levelname)s %(message)s'
+				else '%(asctime)s %(filename)s:%(lineno)s %(levelname)s %(message)s'
 			), 
 			datefmt="%Y-%m-%d %H:%M:%S"
 		)
