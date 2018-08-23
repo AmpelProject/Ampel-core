@@ -187,13 +187,11 @@ class T3Job:
 		)
 
 		# Feedback
-		LoggingUtils.propagate_log(
-			self.logger, logging.INFO, "Running job %s (log id: %s)" % 
-			(
-				self.job_config.job_name, 
-				None if self.log_id is None else self.log_id.binary.hex()
-			)
+		job_log_el = "job %s (log id: %s)" % (
+			self.job_config.job_name, 
+			None if self.log_id is None else self.log_id.binary.hex()
 		)
+		LoggingUtils.propagate_log(self.logger, logging.INFO, "Running %s" % job_log_el)
 		
 		try:
 
@@ -332,6 +330,11 @@ class T3Job:
 						'runs collection update failed', getframeinfo(currentframe()),
 						t3_task.get_config('name'), upd_res=upd_res
 					)
+
+			# Feedback
+			LoggingUtils.propagate_log(
+				self.logger, logging.INFO, "Done running %s" % job_log_el
+			)
 
 			# Write log entries to DB
 			if hasattr(self, 'db_logging_handler'):
