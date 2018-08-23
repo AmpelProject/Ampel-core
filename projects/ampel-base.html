@@ -74,11 +74,11 @@ well as the data classes that are provided as input to those units by the core.<
 <h2>Ampel processing units<a class="headerlink" href="#ampel-processing-units" title="Permalink to this headline">¶</a></h2>
 <dl class="class">
 <dt id="ampel.base.abstract.AbsAlertFilter.AbsAlertFilter">
-<em class="property">class </em><code class="descclassname">ampel.base.abstract.AbsAlertFilter.</code><code class="descname">AbsAlertFilter</code><span class="sig-paren">(</span><em>on_match_t2_units</em>, <em>base_config=None</em>, <em>run_config=None</em>, <em>logger=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ampel/base/abstract/AbsAlertFilter.html#AbsAlertFilter"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ampel.base.abstract.AbsAlertFilter.AbsAlertFilter" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">ampel.base.abstract.AbsAlertFilter.</code><code class="descname">AbsAlertFilter</code><span class="sig-paren">(</span><em>on_match_t2_units</em>, <em>base_config=None</em>, <em>run_config=None</em>, <em>logger=None</em><span class="sig-paren">)</span><a class="headerlink" href="#ampel.base.abstract.AbsAlertFilter.AbsAlertFilter" title="Permalink to this definition">¶</a></dt>
 <dd><p>Base class for T0 units</p>
 <dl class="method">
 <dt id="ampel.base.abstract.AbsAlertFilter.AbsAlertFilter.__init__">
-<code class="descname">__init__</code><span class="sig-paren">(</span><em>on_match_t2_units</em>, <em>base_config=None</em>, <em>run_config=None</em>, <em>logger=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ampel/base/abstract/AbsAlertFilter.html#AbsAlertFilter.__init__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ampel.base.abstract.AbsAlertFilter.AbsAlertFilter.__init__" title="Permalink to this definition">¶</a></dt>
+<code class="descname">__init__</code><span class="sig-paren">(</span><em>on_match_t2_units</em>, <em>base_config=None</em>, <em>run_config=None</em>, <em>logger=None</em><span class="sig-paren">)</span><a class="headerlink" href="#ampel.base.abstract.AbsAlertFilter.AbsAlertFilter.__init__" title="Permalink to this definition">¶</a></dt>
 <dd><table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
@@ -99,7 +99,7 @@ the elements of <a class="reference internal" href="#ampel.base.abstract.AbsAler
 
 <dl class="method">
 <dt id="ampel.base.abstract.AbsAlertFilter.AbsAlertFilter.apply">
-<code class="descname">apply</code><span class="sig-paren">(</span><em>ampel_alert</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ampel/base/abstract/AbsAlertFilter.html#AbsAlertFilter.apply"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ampel.base.abstract.AbsAlertFilter.AbsAlertFilter.apply" title="Permalink to this definition">¶</a></dt>
+<code class="descname">apply</code><span class="sig-paren">(</span><em>ampel_alert</em><span class="sig-paren">)</span><a class="headerlink" href="#ampel.base.abstract.AbsAlertFilter.AbsAlertFilter.apply" title="Permalink to this definition">¶</a></dt>
 <dd><p>Filter the candidate. Return <cite>None</cite> to drop the candidate, or the set
 of T2 units to run to accept it.</p>
 <table class="docutils field-list" frame="void" rules="none">
@@ -126,11 +126,11 @@ catalog database servers</p>
 
 <dl class="class">
 <dt id="ampel.base.abstract.AbsT2Unit.AbsT2Unit">
-<em class="property">class </em><code class="descclassname">ampel.base.abstract.AbsT2Unit.</code><code class="descname">AbsT2Unit</code><span class="sig-paren">(</span><em>logger</em>, <em>base_config=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ampel/base/abstract/AbsT2Unit.html#AbsT2Unit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ampel.base.abstract.AbsT2Unit.AbsT2Unit" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">ampel.base.abstract.AbsT2Unit.</code><code class="descname">AbsT2Unit</code><span class="sig-paren">(</span><em>logger</em>, <em>base_config=None</em><span class="sig-paren">)</span><a class="headerlink" href="#ampel.base.abstract.AbsT2Unit.AbsT2Unit" title="Permalink to this definition">¶</a></dt>
 <dd><p>Base class for lightcurve processing</p>
 <dl class="method">
 <dt id="ampel.base.abstract.AbsT2Unit.AbsT2Unit.__init__">
-<code class="descname">__init__</code><span class="sig-paren">(</span><em>logger</em>, <em>base_config=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ampel/base/abstract/AbsT2Unit.html#AbsT2Unit.__init__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ampel.base.abstract.AbsT2Unit.AbsT2Unit.__init__" title="Permalink to this definition">¶</a></dt>
+<code class="descname">__init__</code><span class="sig-paren">(</span><em>logger</em>, <em>base_config=None</em><span class="sig-paren">)</span><a class="headerlink" href="#ampel.base.abstract.AbsT2Unit.AbsT2Unit.__init__" title="Permalink to this definition">¶</a></dt>
 <dd><table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
@@ -154,7 +154,7 @@ the elements of <a class="reference internal" href="#ampel.base.abstract.AbsT2Un
 
 <dl class="method">
 <dt id="ampel.base.abstract.AbsT2Unit.AbsT2Unit.run">
-<code class="descname">run</code><span class="sig-paren">(</span><em>light_curve</em>, <em>run_config=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ampel/base/abstract/AbsT2Unit.html#AbsT2Unit.run"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ampel.base.abstract.AbsT2Unit.AbsT2Unit.run" title="Permalink to this definition">¶</a></dt>
+<code class="descname">run</code><span class="sig-paren">(</span><em>light_curve</em>, <em>run_config=None</em><span class="sig-paren">)</span><a class="headerlink" href="#ampel.base.abstract.AbsT2Unit.AbsT2Unit.run" title="Permalink to this definition">¶</a></dt>
 <dd><p>Process a lightcurve for a single transient</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -172,10 +172,10 @@ the elements of <a class="reference internal" href="#ampel.base.abstract.AbsT2Un
 
 <dl class="class">
 <dt id="ampel.base.abstract.AbsT3Unit.AbsT3Unit">
-<em class="property">class </em><code class="descclassname">ampel.base.abstract.AbsT3Unit.</code><code class="descname">AbsT3Unit</code><span class="sig-paren">(</span><em>logger</em>, <em>base_config=None</em>, <em>run_config=None</em>, <em>global_info=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ampel/base/abstract/AbsT3Unit.html#AbsT3Unit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ampel.base.abstract.AbsT3Unit.AbsT3Unit" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">ampel.base.abstract.AbsT3Unit.</code><code class="descname">AbsT3Unit</code><span class="sig-paren">(</span><em>logger</em>, <em>base_config=None</em>, <em>run_config=None</em>, <em>global_info=None</em><span class="sig-paren">)</span><a class="headerlink" href="#ampel.base.abstract.AbsT3Unit.AbsT3Unit" title="Permalink to this definition">¶</a></dt>
 <dd><dl class="method">
 <dt id="ampel.base.abstract.AbsT3Unit.AbsT3Unit.__init__">
-<code class="descname">__init__</code><span class="sig-paren">(</span><em>logger</em>, <em>base_config=None</em>, <em>run_config=None</em>, <em>global_info=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ampel/base/abstract/AbsT3Unit.html#AbsT3Unit.__init__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ampel.base.abstract.AbsT3Unit.AbsT3Unit.__init__" title="Permalink to this definition">¶</a></dt>
+<code class="descname">__init__</code><span class="sig-paren">(</span><em>logger</em>, <em>base_config=None</em>, <em>run_config=None</em>, <em>global_info=None</em><span class="sig-paren">)</span><a class="headerlink" href="#ampel.base.abstract.AbsT3Unit.AbsT3Unit.__init__" title="Permalink to this definition">¶</a></dt>
 <dd><p>Initialize self.  See help(type(self)) for accurate signature.</p>
 </dd></dl>
 
@@ -186,14 +186,14 @@ the elements of <a class="reference internal" href="#ampel.base.abstract.AbsT2Un
 <h2>Ampel data classes<a class="headerlink" href="#ampel-data-classes" title="Permalink to this headline">¶</a></h2>
 <dl class="class">
 <dt id="ampel.base.AmpelAlert.AmpelAlert">
-<em class="property">class </em><code class="descclassname">ampel.base.AmpelAlert.</code><code class="descname">AmpelAlert</code><span class="sig-paren">(</span><em>tran_id</em>, <em>list_of_pps</em>, <em>list_of_uls=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ampel/base/AmpelAlert.html#AmpelAlert"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ampel.base.AmpelAlert.AmpelAlert" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">ampel.base.AmpelAlert.</code><code class="descname">AmpelAlert</code><span class="sig-paren">(</span><em>tran_id</em>, <em>list_of_pps</em>, <em>list_of_uls=None</em><span class="sig-paren">)</span><a class="headerlink" href="#ampel.base.AmpelAlert.AmpelAlert" title="Permalink to this definition">¶</a></dt>
 <dd><p>T0 base class containing a read-only list of read-only photopoint dictionaries.
 (read-only convertion occurs in constructor).
 During pipeline processing, an alert is loaded and its content used to instantiate this class. 
 Then, the AmpelAlert instance is fed to every active T0 filter.</p>
 <dl class="classmethod">
 <dt id="ampel.base.AmpelAlert.AmpelAlert.add_class_flags">
-<em class="property">classmethod </em><code class="descname">add_class_flags</code><span class="sig-paren">(</span><em>arg_flags</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ampel/base/AmpelAlert.html#AmpelAlert.add_class_flags"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ampel.base.AmpelAlert.AmpelAlert.add_class_flags" title="Permalink to this definition">¶</a></dt>
+<em class="property">classmethod </em><code class="descname">add_class_flags</code><span class="sig-paren">(</span><em>arg_flags</em><span class="sig-paren">)</span><a class="headerlink" href="#ampel.base.AmpelAlert.AmpelAlert.add_class_flags" title="Permalink to this definition">¶</a></dt>
 <dd><p>Set alert flags (ampel.base.flags.AmpelFlags) of this alert.
 Typically: observing instrument, alert issuer.
 For example: AmpelFlags.INST_ZTF | AmpelFlags.SRC_IPAC</p>
@@ -201,62 +201,62 @@ For example: AmpelFlags.INST_ZTF | AmpelFlags.SRC_IPAC</p>
 
 <dl class="method">
 <dt id="ampel.base.AmpelAlert.AmpelAlert.apply_filter">
-<code class="descname">apply_filter</code><span class="sig-paren">(</span><em>match_objs</em>, <em>filters</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ampel/base/AmpelAlert.html#AmpelAlert.apply_filter"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ampel.base.AmpelAlert.AmpelAlert.apply_filter" title="Permalink to this definition">¶</a></dt>
+<code class="descname">apply_filter</code><span class="sig-paren">(</span><em>match_objs</em>, <em>filters</em><span class="sig-paren">)</span><a class="headerlink" href="#ampel.base.AmpelAlert.AmpelAlert.apply_filter" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="method">
 <dt id="ampel.base.AmpelAlert.AmpelAlert.get_id">
-<code class="descname">get_id</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ampel/base/AmpelAlert.html#AmpelAlert.get_id"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ampel.base.AmpelAlert.AmpelAlert.get_id" title="Permalink to this definition">¶</a></dt>
+<code class="descname">get_id</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#ampel.base.AmpelAlert.AmpelAlert.get_id" title="Permalink to this definition">¶</a></dt>
 <dd><p>returns the transient Id (ZTF: objectId)</p>
 </dd></dl>
 
 <dl class="method">
 <dt id="ampel.base.AmpelAlert.AmpelAlert.get_ntuples">
-<code class="descname">get_ntuples</code><span class="sig-paren">(</span><em>params</em>, <em>filters=None</em>, <em>upper_limits=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ampel/base/AmpelAlert.html#AmpelAlert.get_ntuples"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ampel.base.AmpelAlert.AmpelAlert.get_ntuples" title="Permalink to this definition">¶</a></dt>
+<code class="descname">get_ntuples</code><span class="sig-paren">(</span><em>params</em>, <em>filters=None</em>, <em>upper_limits=False</em><span class="sig-paren">)</span><a class="headerlink" href="#ampel.base.AmpelAlert.AmpelAlert.get_ntuples" title="Permalink to this definition">¶</a></dt>
 <dd><p>params: list of strings
 ex: instance.get_ntuples([“fid”, “obs_date”, “mag”])</p>
 </dd></dl>
 
 <dl class="method">
 <dt id="ampel.base.AmpelAlert.AmpelAlert.get_photopoints">
-<code class="descname">get_photopoints</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ampel/base/AmpelAlert.html#AmpelAlert.get_photopoints"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ampel.base.AmpelAlert.AmpelAlert.get_photopoints" title="Permalink to this definition">¶</a></dt>
+<code class="descname">get_photopoints</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#ampel.base.AmpelAlert.AmpelAlert.get_photopoints" title="Permalink to this definition">¶</a></dt>
 <dd><p>returns a list of dicts</p>
 </dd></dl>
 
 <dl class="method">
 <dt id="ampel.base.AmpelAlert.AmpelAlert.get_tuples">
-<code class="descname">get_tuples</code><span class="sig-paren">(</span><em>param1</em>, <em>param2</em>, <em>filters=None</em>, <em>upper_limits=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ampel/base/AmpelAlert.html#AmpelAlert.get_tuples"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ampel.base.AmpelAlert.AmpelAlert.get_tuples" title="Permalink to this definition">¶</a></dt>
+<code class="descname">get_tuples</code><span class="sig-paren">(</span><em>param1</em>, <em>param2</em>, <em>filters=None</em>, <em>upper_limits=False</em><span class="sig-paren">)</span><a class="headerlink" href="#ampel.base.AmpelAlert.AmpelAlert.get_tuples" title="Permalink to this definition">¶</a></dt>
 <dd><p>ex: instance.get_tuples(“obs_date”, “mag”)</p>
 </dd></dl>
 
 <dl class="method">
 <dt id="ampel.base.AmpelAlert.AmpelAlert.get_upperlimits">
-<code class="descname">get_upperlimits</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ampel/base/AmpelAlert.html#AmpelAlert.get_upperlimits"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ampel.base.AmpelAlert.AmpelAlert.get_upperlimits" title="Permalink to this definition">¶</a></dt>
+<code class="descname">get_upperlimits</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#ampel.base.AmpelAlert.AmpelAlert.get_upperlimits" title="Permalink to this definition">¶</a></dt>
 <dd><p>returns a list of dicts</p>
 </dd></dl>
 
 <dl class="method">
 <dt id="ampel.base.AmpelAlert.AmpelAlert.get_values">
-<code class="descname">get_values</code><span class="sig-paren">(</span><em>param_name</em>, <em>filters=None</em>, <em>upper_limits=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ampel/base/AmpelAlert.html#AmpelAlert.get_values"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ampel.base.AmpelAlert.AmpelAlert.get_values" title="Permalink to this definition">¶</a></dt>
+<code class="descname">get_values</code><span class="sig-paren">(</span><em>param_name</em>, <em>filters=None</em>, <em>upper_limits=False</em><span class="sig-paren">)</span><a class="headerlink" href="#ampel.base.AmpelAlert.AmpelAlert.get_values" title="Permalink to this definition">¶</a></dt>
 <dd><p>ex: instance.get_values(“mag”)</p>
 </dd></dl>
 
 <dl class="classmethod">
 <dt id="ampel.base.AmpelAlert.AmpelAlert.has_flags">
-<em class="property">classmethod </em><code class="descname">has_flags</code><span class="sig-paren">(</span><em>arg_flags</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ampel/base/AmpelAlert.html#AmpelAlert.has_flags"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ampel.base.AmpelAlert.AmpelAlert.has_flags" title="Permalink to this definition">¶</a></dt>
+<em class="property">classmethod </em><code class="descname">has_flags</code><span class="sig-paren">(</span><em>arg_flags</em><span class="sig-paren">)</span><a class="headerlink" href="#ampel.base.AmpelAlert.AmpelAlert.has_flags" title="Permalink to this definition">¶</a></dt>
 <dd><p>ex: AmpelAlert.has_flags(AmpelFlags.INST_ZTF)</p>
 </dd></dl>
 
 <dl class="staticmethod">
 <dt id="ampel.base.AmpelAlert.AmpelAlert.load_ztf_alert">
-<em class="property">static </em><code class="descname">load_ztf_alert</code><span class="sig-paren">(</span><em>arg</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ampel/base/AmpelAlert.html#AmpelAlert.load_ztf_alert"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ampel.base.AmpelAlert.AmpelAlert.load_ztf_alert" title="Permalink to this definition">¶</a></dt>
+<em class="property">static </em><code class="descname">load_ztf_alert</code><span class="sig-paren">(</span><em>arg</em><span class="sig-paren">)</span><a class="headerlink" href="#ampel.base.AmpelAlert.AmpelAlert.load_ztf_alert" title="Permalink to this definition">¶</a></dt>
 <dd><p>Convenience method.
 Do not use for production!</p>
 </dd></dl>
 
 <dl class="classmethod">
 <dt id="ampel.base.AmpelAlert.AmpelAlert.set_alert_keywords">
-<em class="property">classmethod </em><code class="descname">set_alert_keywords</code><span class="sig-paren">(</span><em>alert_keywords</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ampel/base/AmpelAlert.html#AmpelAlert.set_alert_keywords"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ampel.base.AmpelAlert.AmpelAlert.set_alert_keywords" title="Permalink to this definition">¶</a></dt>
+<em class="property">classmethod </em><code class="descname">set_alert_keywords</code><span class="sig-paren">(</span><em>alert_keywords</em><span class="sig-paren">)</span><a class="headerlink" href="#ampel.base.AmpelAlert.AmpelAlert.set_alert_keywords" title="Permalink to this definition">¶</a></dt>
 <dd><dl class="docutils">
 <dt>Set using ampel config values. For ZTF IPAC alerts:</dt>
 <dd><div class="first last highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">alert_keywords</span> <span class="o">=</span> <span class="p">{</span>
@@ -276,7 +276,7 @@ Do not use for production!</p>
 
 <dl class="class">
 <dt id="ampel.base.LightCurve.LightCurve">
-<em class="property">class </em><code class="descclassname">ampel.base.LightCurve.</code><code class="descname">LightCurve</code><span class="sig-paren">(</span><em>compound_id</em>, <em>ppo_list</em>, <em>ulo_list=None</em>, <em>info=None</em>, <em>read_only=True</em>, <em>logger=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ampel/base/LightCurve.html#LightCurve"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ampel.base.LightCurve.LightCurve" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">ampel.base.LightCurve.</code><code class="descname">LightCurve</code><span class="sig-paren">(</span><em>compound_id</em>, <em>ppo_list</em>, <em>ulo_list=None</em>, <em>info=None</em>, <em>read_only=True</em>, <em>logger=None</em><span class="sig-paren">)</span><a class="headerlink" href="#ampel.base.LightCurve.LightCurve" title="Permalink to this definition">¶</a></dt>
 <dd><p>Class containing a collection of PhotoPoint/UpperLimit instances.
 And a few convenience methods to return values embedded in the collection.
 (This object has several similarities with AmpelAlert and yet some notable differences.
@@ -285,7 +285,7 @@ whereby it is important to keep in mind that AmpelAlert efficiency is an importa
 criteria since <em>every</em> ZTF alert yields an AmpelAlert obj).</p>
 <dl class="method">
 <dt id="ampel.base.LightCurve.LightCurve.get_ntuples">
-<code class="descname">get_ntuples</code><span class="sig-paren">(</span><em>params</em>, <em>filters=None</em>, <em>upper_limits=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ampel/base/LightCurve.html#LightCurve.get_ntuples"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ampel.base.LightCurve.LightCurve.get_ntuples" title="Permalink to this definition">¶</a></dt>
+<code class="descname">get_ntuples</code><span class="sig-paren">(</span><em>params</em>, <em>filters=None</em>, <em>upper_limits=False</em><span class="sig-paren">)</span><a class="headerlink" href="#ampel.base.LightCurve.LightCurve.get_ntuples" title="Permalink to this definition">¶</a></dt>
 <dd><p>params: list of strings
 ex: instance.get_ntuples([“fid”, “obs_date”, “mag”])
 ‘filters’ example: {‘attribute’: ‘magpsf’, ‘operator’: ‘&lt;’, ‘value’: 18}
@@ -294,13 +294,13 @@ ex: instance.get_ntuples([“fid”, “obs_date”, “mag”])
 
 <dl class="method">
 <dt id="ampel.base.LightCurve.LightCurve.get_photopoints">
-<code class="descname">get_photopoints</code><span class="sig-paren">(</span><em>filters=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ampel/base/LightCurve.html#LightCurve.get_photopoints"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ampel.base.LightCurve.LightCurve.get_photopoints" title="Permalink to this definition">¶</a></dt>
+<code class="descname">get_photopoints</code><span class="sig-paren">(</span><em>filters=None</em><span class="sig-paren">)</span><a class="headerlink" href="#ampel.base.LightCurve.LightCurve.get_photopoints" title="Permalink to this definition">¶</a></dt>
 <dd><p>returns a list of dicts</p>
 </dd></dl>
 
 <dl class="method">
 <dt id="ampel.base.LightCurve.LightCurve.get_pos">
-<code class="descname">get_pos</code><span class="sig-paren">(</span><em>ret='brightest'</em>, <em>filters=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ampel/base/LightCurve.html#LightCurve.get_pos"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ampel.base.LightCurve.LightCurve.get_pos" title="Permalink to this definition">¶</a></dt>
+<code class="descname">get_pos</code><span class="sig-paren">(</span><em>ret='brightest'</em>, <em>filters=None</em><span class="sig-paren">)</span><a class="headerlink" href="#ampel.base.LightCurve.LightCurve.get_pos" title="Permalink to this definition">¶</a></dt>
 <dd><p>ret (for all methods, only matching PhotoPoint wrt the provided filter(s) are used!):
 “raw”: returns ((ra, dec), (ra, dec), …)
 “mean”: returns (&lt;ra&gt;, &lt;dec&gt;)
@@ -322,7 +322,7 @@ ex: instance.get_ntuples([“fid”, “obs_date”, “mag”])
 
 <dl class="method">
 <dt id="ampel.base.LightCurve.LightCurve.get_tuples">
-<code class="descname">get_tuples</code><span class="sig-paren">(</span><em>field1_name</em>, <em>field2_name</em>, <em>filters=None</em>, <em>upper_limits=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ampel/base/LightCurve.html#LightCurve.get_tuples"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ampel.base.LightCurve.LightCurve.get_tuples" title="Permalink to this definition">¶</a></dt>
+<code class="descname">get_tuples</code><span class="sig-paren">(</span><em>field1_name</em>, <em>field2_name</em>, <em>filters=None</em>, <em>upper_limits=False</em><span class="sig-paren">)</span><a class="headerlink" href="#ampel.base.LightCurve.LightCurve.get_tuples" title="Permalink to this definition">¶</a></dt>
 <dd><p>ex: instance.get_values(‘obs_date’, ‘mag’)
 ‘filters’ example: {‘attribute’: ‘magpsf’, ‘operator’: ‘&lt;’, ‘value’: 18}
 ‘upper_limits’: if set to True, upper limits are returned instead of photopoints</p>
@@ -330,13 +330,13 @@ ex: instance.get_ntuples([“fid”, “obs_date”, “mag”])
 
 <dl class="method">
 <dt id="ampel.base.LightCurve.LightCurve.get_upperlimits">
-<code class="descname">get_upperlimits</code><span class="sig-paren">(</span><em>filters=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ampel/base/LightCurve.html#LightCurve.get_upperlimits"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ampel.base.LightCurve.LightCurve.get_upperlimits" title="Permalink to this definition">¶</a></dt>
+<code class="descname">get_upperlimits</code><span class="sig-paren">(</span><em>filters=None</em><span class="sig-paren">)</span><a class="headerlink" href="#ampel.base.LightCurve.LightCurve.get_upperlimits" title="Permalink to this definition">¶</a></dt>
 <dd><p>returns a list of dicts</p>
 </dd></dl>
 
 <dl class="method">
 <dt id="ampel.base.LightCurve.LightCurve.get_values">
-<code class="descname">get_values</code><span class="sig-paren">(</span><em>field_name</em>, <em>filters=None</em>, <em>upper_limits=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ampel/base/LightCurve.html#LightCurve.get_values"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ampel.base.LightCurve.LightCurve.get_values" title="Permalink to this definition">¶</a></dt>
+<code class="descname">get_values</code><span class="sig-paren">(</span><em>field_name</em>, <em>filters=None</em>, <em>upper_limits=False</em><span class="sig-paren">)</span><a class="headerlink" href="#ampel.base.LightCurve.LightCurve.get_values" title="Permalink to this definition">¶</a></dt>
 <dd><p>ex: instance.get_values(‘obs_date’)
 ‘filters’ example: {‘attribute’: ‘magpsf’, ‘operator’: ‘&lt;’, ‘value’: 18}
 ‘upper_limits’: if set to True, upper limits are returned instead of photopoints</p>
@@ -346,7 +346,7 @@ ex: instance.get_ntuples([“fid”, “obs_date”, “mag”])
 
 <dl class="class">
 <dt id="ampel.base.ScienceRecord.ScienceRecord">
-<em class="property">class </em><code class="descclassname">ampel.base.ScienceRecord.</code><code class="descname">ScienceRecord</code><span class="sig-paren">(</span><em>tran_id</em>, <em>t2_unit_id</em>, <em>compound_id</em>, <em>results</em>, <em>info=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ampel/base/ScienceRecord.html#ScienceRecord"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ampel.base.ScienceRecord.ScienceRecord" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">ampel.base.ScienceRecord.</code><code class="descname">ScienceRecord</code><span class="sig-paren">(</span><em>tran_id</em>, <em>t2_unit_id</em>, <em>compound_id</em>, <em>results</em>, <em>info=None</em><span class="sig-paren">)</span><a class="headerlink" href="#ampel.base.ScienceRecord.ScienceRecord" title="Permalink to this definition">¶</a></dt>
 <dd><p>tran_id: transient id
 t2_unit_id: T2 unit id
 compound_id: Compound id
@@ -354,29 +354,29 @@ results: T2 unit return values
 info: extra info</p>
 <dl class="method">
 <dt id="ampel.base.ScienceRecord.ScienceRecord.get_compound_id">
-<code class="descname">get_compound_id</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ampel/base/ScienceRecord.html#ScienceRecord.get_compound_id"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ampel.base.ScienceRecord.ScienceRecord.get_compound_id" title="Permalink to this definition">¶</a></dt>
+<code class="descname">get_compound_id</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#ampel.base.ScienceRecord.ScienceRecord.get_compound_id" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="method">
 <dt id="ampel.base.ScienceRecord.ScienceRecord.get_results">
-<code class="descname">get_results</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ampel/base/ScienceRecord.html#ScienceRecord.get_results"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ampel.base.ScienceRecord.ScienceRecord.get_results" title="Permalink to this definition">¶</a></dt>
+<code class="descname">get_results</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#ampel.base.ScienceRecord.ScienceRecord.get_results" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="method">
 <dt id="ampel.base.ScienceRecord.ScienceRecord.get_t2_unit_id">
-<code class="descname">get_t2_unit_id</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ampel/base/ScienceRecord.html#ScienceRecord.get_t2_unit_id"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ampel.base.ScienceRecord.ScienceRecord.get_t2_unit_id" title="Permalink to this definition">¶</a></dt>
+<code class="descname">get_t2_unit_id</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#ampel.base.ScienceRecord.ScienceRecord.get_t2_unit_id" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="method">
 <dt id="ampel.base.ScienceRecord.ScienceRecord.has_error">
-<code class="descname">has_error</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ampel/base/ScienceRecord.html#ScienceRecord.has_error"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ampel.base.ScienceRecord.ScienceRecord.has_error" title="Permalink to this definition">¶</a></dt>
+<code class="descname">has_error</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#ampel.base.ScienceRecord.ScienceRecord.has_error" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 </dd></dl>
 
 <dl class="class">
 <dt id="ampel.base.TransientView.TransientView">
-<em class="property">class </em><code class="descclassname">ampel.base.TransientView.</code><code class="descname">TransientView</code><span class="sig-paren">(</span><em>tran_id</em>, <em>flags</em>, <em>journal</em>, <em>latest_state=None</em>, <em>photopoints=None</em>, <em>upperlimits=None</em>, <em>compounds=None</em>, <em>lightcurves=None</em>, <em>t2records=None</em>, <em>channel=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ampel/base/TransientView.html#TransientView"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ampel.base.TransientView.TransientView" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">ampel.base.TransientView.</code><code class="descname">TransientView</code><span class="sig-paren">(</span><em>tran_id</em>, <em>flags</em>, <em>journal</em>, <em>latest_state=None</em>, <em>photopoints=None</em>, <em>upperlimits=None</em>, <em>compounds=None</em>, <em>lightcurves=None</em>, <em>t2records=None</em>, <em>channel=None</em><span class="sig-paren">)</span><a class="headerlink" href="#ampel.base.TransientView.TransientView" title="Permalink to this definition">¶</a></dt>
 <dd><p>Container class referencing various instances of objects:</p>
 <ul class="simple">
 <li><code class="xref py py-class docutils literal notranslate"><span class="pre">ampel.base.PlainPhotoPoint.PlainPhotoPoint</span></code></li>
@@ -389,40 +389,40 @@ info: extra info</p>
 generated using a TransientData instance created by DBContentLoader.</p>
 <dl class="method">
 <dt id="ampel.base.TransientView.TransientView.get_compound">
-<code class="descname">get_compound</code><span class="sig-paren">(</span><em>compound_id</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ampel/base/TransientView.html#TransientView.get_compound"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ampel.base.TransientView.TransientView.get_compound" title="Permalink to this definition">¶</a></dt>
+<code class="descname">get_compound</code><span class="sig-paren">(</span><em>compound_id</em><span class="sig-paren">)</span><a class="headerlink" href="#ampel.base.TransientView.TransientView.get_compound" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns an instance of MappingProxyType or None if no Compound exists with the provided id
 lightcurve_id: either a bson Binary instance (with subtype 5) or a string with length 32</p>
 </dd></dl>
 
 <dl class="method">
 <dt id="ampel.base.TransientView.TransientView.get_compounds">
-<code class="descname">get_compounds</code><span class="sig-paren">(</span><em>copy=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ampel/base/TransientView.html#TransientView.get_compounds"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ampel.base.TransientView.TransientView.get_compounds" title="Permalink to this definition">¶</a></dt>
+<code class="descname">get_compounds</code><span class="sig-paren">(</span><em>copy=False</em><span class="sig-paren">)</span><a class="headerlink" href="#ampel.base.TransientView.TransientView.get_compounds" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns a tuple of MappingProxyType instances or None if Compounds were not loaded</p>
 </dd></dl>
 
 <dl class="method">
 <dt id="ampel.base.TransientView.TransientView.get_flags">
-<code class="descname">get_flags</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ampel/base/TransientView.html#TransientView.get_flags"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ampel.base.TransientView.TransientView.get_flags" title="Permalink to this definition">¶</a></dt>
+<code class="descname">get_flags</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#ampel.base.TransientView.TransientView.get_flags" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="method">
 <dt id="ampel.base.TransientView.TransientView.get_journal_entries">
-<code class="descname">get_journal_entries</code><span class="sig-paren">(</span><em>tier=None</em>, <em>t3JobName=None</em>, <em>latest=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ampel/base/TransientView.html#TransientView.get_journal_entries"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ampel.base.TransientView.TransientView.get_journal_entries" title="Permalink to this definition">¶</a></dt>
+<code class="descname">get_journal_entries</code><span class="sig-paren">(</span><em>tier=None</em>, <em>t3JobName=None</em>, <em>latest=False</em><span class="sig-paren">)</span><a class="headerlink" href="#ampel.base.TransientView.TransientView.get_journal_entries" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="method">
 <dt id="ampel.base.TransientView.TransientView.get_latest_lightcurve">
-<code class="descname">get_latest_lightcurve</code><span class="sig-paren">(</span><em>logger=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ampel/base/TransientView.html#TransientView.get_latest_lightcurve"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ampel.base.TransientView.TransientView.get_latest_lightcurve" title="Permalink to this definition">¶</a></dt>
+<code class="descname">get_latest_lightcurve</code><span class="sig-paren">(</span><em>logger=None</em><span class="sig-paren">)</span><a class="headerlink" href="#ampel.base.TransientView.TransientView.get_latest_lightcurve" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="method">
 <dt id="ampel.base.TransientView.TransientView.get_latest_state">
-<code class="descname">get_latest_state</code><span class="sig-paren">(</span><em>to_hex=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ampel/base/TransientView.html#TransientView.get_latest_state"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ampel.base.TransientView.TransientView.get_latest_state" title="Permalink to this definition">¶</a></dt>
+<code class="descname">get_latest_state</code><span class="sig-paren">(</span><em>to_hex=False</em><span class="sig-paren">)</span><a class="headerlink" href="#ampel.base.TransientView.TransientView.get_latest_state" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="method">
 <dt id="ampel.base.TransientView.TransientView.get_lightcurve">
-<code class="descname">get_lightcurve</code><span class="sig-paren">(</span><em>lightcurve_id</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ampel/base/TransientView.html#TransientView.get_lightcurve"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ampel.base.TransientView.TransientView.get_lightcurve" title="Permalink to this definition">¶</a></dt>
+<code class="descname">get_lightcurve</code><span class="sig-paren">(</span><em>lightcurve_id</em><span class="sig-paren">)</span><a class="headerlink" href="#ampel.base.TransientView.TransientView.get_lightcurve" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns an instance of ampel.base.LightCurve 
 or None if no LightCurve exists with the provided lightcurve_id
 lightcurve_id: either a bson Binary instance (with subtype 5) or a string with length 32</p>
@@ -430,13 +430,13 @@ lightcurve_id: either a bson Binary instance (with subtype 5) or a string with l
 
 <dl class="method">
 <dt id="ampel.base.TransientView.TransientView.get_lightcurves">
-<code class="descname">get_lightcurves</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ampel/base/TransientView.html#TransientView.get_lightcurves"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ampel.base.TransientView.TransientView.get_lightcurves" title="Permalink to this definition">¶</a></dt>
+<code class="descname">get_lightcurves</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#ampel.base.TransientView.TransientView.get_lightcurves" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns a tuple of ampel.base.LightCurve instances or None if Compounds were not loaded</p>
 </dd></dl>
 
 <dl class="method">
 <dt id="ampel.base.TransientView.TransientView.get_photopoints">
-<code class="descname">get_photopoints</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ampel/base/TransientView.html#TransientView.get_photopoints"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ampel.base.TransientView.TransientView.get_photopoints" title="Permalink to this definition">¶</a></dt>
+<code class="descname">get_photopoints</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#ampel.base.TransientView.TransientView.get_photopoints" title="Permalink to this definition">¶</a></dt>
 <dd><table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
@@ -451,7 +451,7 @@ lightcurve_id: either a bson Binary instance (with subtype 5) or a string with l
 
 <dl class="method">
 <dt id="ampel.base.TransientView.TransientView.get_science_records">
-<code class="descname">get_science_records</code><span class="sig-paren">(</span><em>t2_unit_id=None</em>, <em>latest=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ampel/base/TransientView.html#TransientView.get_science_records"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ampel.base.TransientView.TransientView.get_science_records" title="Permalink to this definition">¶</a></dt>
+<code class="descname">get_science_records</code><span class="sig-paren">(</span><em>t2_unit_id=None</em>, <em>latest=False</em><span class="sig-paren">)</span><a class="headerlink" href="#ampel.base.TransientView.TransientView.get_science_records" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns an instance or a tuple of instances of ampel.base.ScienceRecord 
 t2_unit_id: string. Limit returned science record(s) to the one with the provided t2 unit id
 latest: boolean. Whether to return the latest science record(s) or not</p>
@@ -459,17 +459,17 @@ latest: boolean. Whether to return the latest science record(s) or not</p>
 
 <dl class="method">
 <dt id="ampel.base.TransientView.TransientView.get_time_created">
-<code class="descname">get_time_created</code><span class="sig-paren">(</span><em>format_time=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ampel/base/TransientView.html#TransientView.get_time_created"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ampel.base.TransientView.TransientView.get_time_created" title="Permalink to this definition">¶</a></dt>
+<code class="descname">get_time_created</code><span class="sig-paren">(</span><em>format_time=None</em><span class="sig-paren">)</span><a class="headerlink" href="#ampel.base.TransientView.TransientView.get_time_created" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="method">
 <dt id="ampel.base.TransientView.TransientView.get_time_modified">
-<code class="descname">get_time_modified</code><span class="sig-paren">(</span><em>format_time=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ampel/base/TransientView.html#TransientView.get_time_modified"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ampel.base.TransientView.TransientView.get_time_modified" title="Permalink to this definition">¶</a></dt>
+<code class="descname">get_time_modified</code><span class="sig-paren">(</span><em>format_time=None</em><span class="sig-paren">)</span><a class="headerlink" href="#ampel.base.TransientView.TransientView.get_time_modified" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="method">
 <dt id="ampel.base.TransientView.TransientView.get_upperlimits">
-<code class="descname">get_upperlimits</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ampel/base/TransientView.html#TransientView.get_upperlimits"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ampel.base.TransientView.TransientView.get_upperlimits" title="Permalink to this definition">¶</a></dt>
+<code class="descname">get_upperlimits</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#ampel.base.TransientView.TransientView.get_upperlimits" title="Permalink to this definition">¶</a></dt>
 <dd><table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
@@ -484,7 +484,7 @@ latest: boolean. Whether to return the latest science record(s) or not</p>
 
 <dl class="method">
 <dt id="ampel.base.TransientView.TransientView.serialize">
-<code class="descname">serialize</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ampel/base/TransientView.html#TransientView.serialize"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ampel.base.TransientView.TransientView.serialize" title="Permalink to this definition">¶</a></dt>
+<code class="descname">serialize</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#ampel.base.TransientView.TransientView.serialize" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 </dd></dl>
