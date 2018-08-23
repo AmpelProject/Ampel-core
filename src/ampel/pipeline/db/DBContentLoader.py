@@ -47,7 +47,7 @@ class DBContentLoader:
 	)
 
 
-	def __init__(self, central_db=None, verbose=False, logger=None):
+	def __init__(self, central_db=None, verbose=True, debug=False, logger=None):
 		"""
 		:param central_db: string. Use provided DB name rather than Ampel default database ('Ampel')
 		"""
@@ -64,15 +64,19 @@ class DBContentLoader:
 
 		self.al_pps = {}
 		self.lc = {}
+
 		self.verbose = verbose
+		self.debug = debug
+		if self.debug:
+			self.verbose = True
 
 
 	def load_new(
 		self, tran_id, channels=None, state_op="$latest", states=None, 
-		content_types=all_doc_types, t2_ids=None, verbose=True, debug=False
+		content_types=all_doc_types, t2_ids=None
 	):
 		"""
-		Returns a instance of TransientData
+		:returns: an instance of TransientData
 
 		Arguments:
 		----------
@@ -246,15 +250,11 @@ class DBContentLoader:
 				res_photo_list = list(photo_cursor)
 
 
-		return self.create_tran_data(
-			res_main_list, res_photo_list, channels, state_op,
-			verbose=verbose, debug=debug
-		)
+		return self.create_tran_data(res_main_list, res_photo_list, channels, state_op)
 
 
 	def create_tran_data(
-		self, main_list, photo_list=None, channels=None, state_op=None,
-		load_lightcurves=True, verbose=True, debug=False
+		self, main_list, photo_list=None, channels=None, state_op=None, load_lightcurves=True
 	):
 		"""
 		"""
@@ -460,13 +460,13 @@ class DBContentLoader:
 					tran_data.add_lightcurve(chan_names, lc)
 
 		# Feedback
-		if verbose:
-			self.feedback(tran_register.values(), photo_list, debug)
+		if self.verbose:
+			self.feedback(tran_register.values(), photo_list)
 
 		return tran_register
 
 
-	def feedback(self, dict_values, photo_list, debug):
+	def feedback(self, dict_values, photo_list):
 		"""
 		"""
 
@@ -481,12 +481,15 @@ class DBContentLoader:
 				pps = tran_data.photopoints
 				uls = tran_data.upperlimits
 
+				if self.debug: 
+					self.logger.info("-")
+
 				self.logger.info(
-					"Transient %i loaded: PP: %i, UL: %i, CP: %i, LC: %i, SR: %i" % 
+					"TransientData loaded: ID: %i, PP: %i, UL: %i, CP: %i, LC: %i, SR: %i" % 
 					(tran_data.tran_id, len(pps), len(uls), len_comps, len_lcs, len_srs)
 				)
 
-				if debug: 
+				if self.debug: 
 
 					if len(pps) > 0:
 						self.logger.info(
@@ -504,17 +507,17 @@ class DBContentLoader:
 			else:
 
 				self.logger.info(
-					"Transient %i loaded: PP: 0, UL: 0, CP: %i, LC: %i, SR: %i" % 
+					"TransientData loaded: ID: %i, PP: 0, UL: 0, CP: %i, LC: %i, SR: %i" % 
 					(tran_data.tran_id, len_comps, len_lcs, len_srs)
 				)
 
-			if debug:
+			if self.debug:
 				
 				if len_comps > 0:
+
 					for channel in tran_data.compounds.keys():
 						self.logger.info(
-							"%s Compound(s): %s " %
-							(
+							"%s Compound(s): %s " % (
 								"" if channel is None else "[%s]" % channel,
 								[el.id.hex() for el in tran_data.compounds[channel]]
 							)
@@ -522,10 +525,10 @@ class DBContentLoader:
 
 
 				if len_lcs > 0:
+
 					for channel in tran_data.lightcurves.keys():
 						self.logger.info(
-							"%s LightCurves(s): %s " %
-							(
+							"%s LightCurves(s): %s " % (
 								"" if channel is None else "[%s]" % channel,
 								[el.id.hex() for el in tran_data.lightcurves[channel]]
 							)
@@ -544,9 +547,9 @@ class DBContentLoader:
 							)))
 							if srs > 0:
 								self.logger.info(
-									"%s T2 %s: %s " %
-									(
+									"%s T2 %s: %s " % (
 										"" if channel is None else "[%s]" % channel,
 										t2_id, srs	
 									)
 								)
+		self.logger.info("-")

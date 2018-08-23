@@ -101,8 +101,8 @@ class T3Job:
 					job_config.get('input.select.withoutFlag(s)'), 
 					TransientFlags
 				),
-				'feedback': True,
-				'verbose_feedback': True
+				'verbose': job_config.get("input.load.verbose"),
+				'debug': job_config.get("input.load.debug")
 			}
 
 		# Retrieve number of alerts processed since last run if so whished
@@ -237,7 +237,8 @@ class T3Job:
 	
 				# Required to get transient info
 				dcl = DBContentLoader(
-					self.col_tran.database, verbose=True, logger=self.logger
+					self.col_tran.database, verbose=self.exec_params['verbose'], 
+					debug=self.exec_params['debug'], logger=self.logger
 				)
 	
 				# Job with transient input
@@ -553,8 +554,7 @@ class T3Job:
 			self.logger.info("Loading transient(s)")
 			al_tran_data = db_content_loader.load_new(
 				chunked_tran_ids, self.exec_params['channel(s)'], self.exec_params['state_op'], 
-				states, self.exec_params['docs'], self.exec_params['t2s'], 
-				self.exec_params['feedback'], self.exec_params['verbose_feedback']
+				states, self.exec_params['docs'], self.exec_params['t2s']
 			)
 			
 			yield al_tran_data

@@ -55,7 +55,8 @@ class T3JobConfig:
 					Required('state'): Any("$all", "$latest"),
 					'doc(s)': Any(_ampel_docs, [_ampel_docs]),
 					't2(s)': Any(str, [str]),
-					'verbose': bool
+					Optional('verbose', default=True): bool,
+					Optional('debug', default=False): bool
 				},
 				'chunk': int
 			},

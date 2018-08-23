@@ -86,6 +86,8 @@ def t3_jobs():
             "SNCOSMO",
             "AGN"
           ],
+		  'verbose': True,
+		  'debug': False
         },
         "chunk": 200
       },

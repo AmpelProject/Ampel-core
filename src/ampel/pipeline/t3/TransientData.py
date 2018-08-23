@@ -179,8 +179,6 @@ class TransientData:
 		if len(channels) == 1:
 			return self._create_one_view(next(iter(channels)), t2_ids=t2_ids)
 
-		self.logger.info("Creating multi-channel transient instance")
-
 		# Gather compounds from different channels 
 		# (will be empty of coumpound loading was not requested)
 		all_comps = {
