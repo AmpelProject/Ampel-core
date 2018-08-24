@@ -20,6 +20,7 @@ setup(name='Ampel-core',
           'ampel.pipeline.t3',
           'ampel.test',
           'ampel.utils',
+          'ampel.view',
       ],
       package_data = {
           '': [
