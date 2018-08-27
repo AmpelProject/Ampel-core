@@ -2,7 +2,7 @@ from setuptools import setup
 setup(name='Ampel-core',
       version='0.4.0',
       package_dir={'':'src'},
-      package_data = {'': ['*.json']},
+      package_data = {'': ['*.json', 'test-data/*.json']},
       packages=[
           'ampel.core',
           'ampel.core.abstract',
