@@ -5,14 +5,14 @@
 
 from functools import partial
 import sys, inspect, json, pkg_resources, logging, traceback
-from os.path import basename, dirname, abspath, realpath
+from os.path import join, basename, dirname, abspath, realpath
 
 from ampel.pipeline.config.AmpelConfig import AmpelConfig
 from ampel.pipeline.t3.T3JobConfig import T3JobConfig
 
 log = logging.getLogger(__name__)
 
-DEFAULT_CONFIG = abspath(dirname(realpath(__file__)) + '/../../../../config/ztf_config.json')
+DEFAULT_CONFIG = join(abspath(dirname(realpath(__file__))), 'ztf_config.json')
 
 def load_config(path=DEFAULT_CONFIG, gather_plugins=True):
 	"""Load the JSON configuration file at path, and add plugins registered via pkg_resources"""

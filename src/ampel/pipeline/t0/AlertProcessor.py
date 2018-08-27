@@ -11,8 +11,6 @@ import pymongo, time, numpy as np
 from datetime import datetime
 
 from ampel.pipeline.t0.alerts.AlertSupplier import AlertSupplier
-from ampel.pipeline.t0.alerts.ZIAlertShaper import ZIAlertShaper
-from ampel.pipeline.t0.ingesters.ZIAlertIngester import ZIAlertIngester
 from ampel.pipeline.logging.LoggingUtils import LoggingUtils
 from ampel.pipeline.logging.DBLoggingHandler import DBLoggingHandler
 from ampel.pipeline.logging.InitLogBuffer import InitLogBuffer
@@ -133,6 +131,7 @@ class AlertProcessor():
 			)
 	
 			if load_ingester:
+				from ampel.pipeline.t0.ingesters.ZIAlertIngester import ZIAlertIngester
 				self.ingester = ZIAlertIngester(self.channels, logger=self.logger)
 	
 		else:

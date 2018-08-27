@@ -14,6 +14,7 @@
    science
    contribute
    structure
+   projects/index
    dev
    testing
    requirements

@@ -94,7 +94,7 @@ class LoggingUtils:
 					logger.log(level, msg, exc_info=exc_info)
 				return
 				
-		if level < logging.warn:
+		if level < logging.WARN:
 			level = logging.WARN
 
 		logger.log(level, "Forced log propagation: "+msg, exc_info=exc_info)

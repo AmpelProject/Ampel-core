@@ -69,6 +69,52 @@ Each of the entry points expects entries of a different type. They are:
 - `ampel.pipeline.t3.jobs`: Each entry should be a Python callable that returns a dictionary whose values conform to the schema given in  :py:attr:`ampel.pipeline.t3.T3JobConfig.T3JobConfig.job_schema`
 - `ampel.pipeline.resources`: Each entry should be a Python class that inherits from :py:class:`ampel.pipeline.config.resources.ResourceURI`
 
+Add your own T2
+===============
+
+T2 modules performs science-level operations on the alerts accepted by the filter in the T0 stage. An example would be to make a template fit to the light curve of the transient or to look for more information on the transient in a set of atronomical catalogs.
+
+The first ingredient is the T2 module itself, defining a subclass of :py:class:`ampel.base.abstract.AbsT2Unit.AbsT2Unit`. This class has two mandatory methods: ``run`` and ``_run_``. The first is just a wrapper around the second, so ``_run_`` is where the magic happens. This method requires two arguments:
+
+.. code-block:: python
+
+    def _run_(self, light_curve, run_config):
+
+the first one is an instance of :py:class:`ampel.base.LightCurve` holding the transient information and photometric history. The ``run_config`` argument is a dictionary containing all the necessary parameters the job needs to run. For example, a catalog-matching T2 module will make use of the ``light_curve.get_pos`` method to compute the position of the transient and then search around this location among a set of astronomical catalogs specified in the ``run_config`` dictionary.
+
+Once you have implemented your favourite T2, you need to register its arguments. As a given T2 module can serve many purposes depending on the parameters, i.e.: different templates in case of lightcurve fitting, different catalogs in case of coordinate matching, ecc., each of these must have be registered with its own name in the `t2_run_configs.json` file. The syntax for entries in this file is:
+
+
+.. code-block:: json
+
+    "CATALOGMATCH_sdss_class": {
+        "t2Unit": "CATALOGMATCH",
+        "runConfig": "sdss_class",
+        "author": "ampel-info@desy.de",
+        "version": 1.0,
+        "lastChange": "27.08.2018",
+        "private": false,
+        "parameters": {
+            "catalogs":{
+                "SDSS_spec":{
+                    "bla": "bla",
+                    "bla": "bla",
+                    "keys_to_append": ["z", "bptclass", "subclass"]
+                }
+            }
+        }
+
+In this example, we use a general purpose ``CATALOGMATCH`` T2 module to look for transient classification in the SDSS spectroscopic catalog and call this configuration ``sdss_class``. This naming of the T2 configurations makes it possible to use the T2 module simply by adding the following ``t2unit``::
+
+
+    {
+    "t2Unit" : "CATALOGMATCH",
+    "runConfig": "sdss_class"
+    }
+   
+
+to the ``t2Compute`` list of our channel configuration (the ``channels.json`` configuration file).
+
 Dependencies
 ============
 
