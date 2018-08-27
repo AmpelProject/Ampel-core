@@ -4,9 +4,10 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 06.03.2018
-# Last Modified Date: 04.08.2018
+# Last Modified Date: 27.08.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
+import re
 from functools import reduce
 from types import MappingProxyType
 from multiprocessing import Process
@@ -150,6 +151,10 @@ class T3JobConfig:
 			t3_task_configs.append(
 				T3TaskConfig.from_doc(job_doc, task_doc['name'], all_tasks_sels, logger)
 			)
+
+		# Robustness
+		if re.match(".*;.*", AmpelUtils.get_by_path(job_doc, 'schedule')):
+			raise ValueError("Parameter 'schedule' cannot contain character ';'")
 
 		# Create JobConfig
 		return T3JobConfig(job_name, job_doc, t3_task_configs)
