@@ -33,7 +33,7 @@ class T3JobConfig:
 	job_schema = Schema(
 		{
 			Required('active'): bool,
-			Required('schedule'): str,
+			Required('schedule'): Any(str, [str]),
 				# Possible 'schedule' values (https://schedule.readthedocs.io/en/stable/):
 				# "every(10).minutes"
 				# "every().hour"
@@ -152,9 +152,10 @@ class T3JobConfig:
 				T3TaskConfig.from_doc(job_doc, task_doc['name'], all_tasks_sels, logger)
 			)
 
-		# Robustness
-		if re.match(".*;.*", AmpelUtils.get_by_path(job_doc, 'schedule')):
-			raise ValueError("Parameter 'schedule' cannot contain character ';'")
+		scheds = AmpelUtils.get_by_path(job_doc, 'schedule')
+		for sched_el in scheds if AmpelUtils.is_sequence(scheds) else [scheds]:
+			if re.match(".*;.*", sched_el): # Robustness
+				raise ValueError("Parameter 'schedule' cannot contain character ';'")
 
 		# Create JobConfig
 		return T3JobConfig(job_name, job_doc, t3_task_configs)
@@ -215,4 +216,6 @@ class T3JobConfig:
 
 	def schedule_job(self, scheduler):
 		""" """
-		exec("schedule.%s.do(self.launch_t3_job)" % self.get('schedule'))
+		scheds = AmpelUtils.get_by_path(self.job_doc, 'schedule')
+		for sched_el in scheds if AmpelUtils.is_sequence(scheds) else [scheds]:
+			exec("schedule.%s.do(self.launch_t3_job)" % sched_el)
