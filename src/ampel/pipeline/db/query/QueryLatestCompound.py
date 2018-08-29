@@ -34,7 +34,7 @@ class QueryLatestCompound:
 		--------
 		In []: cursor = col.aggregate(
 			QueryLatestCompound.fast_query(
-				AmpelUtils.get_ampel_name(
+				ZTFUtils.to_ampel_id(
 					['ZTF18aaayyuq', 'ZTF17aaagvng', 'ZTF18aaabikt']
 				)
 			)
