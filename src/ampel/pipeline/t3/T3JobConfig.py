@@ -7,6 +7,7 @@
 # Last Modified Date: 27.08.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
+import ast
 import re
 from functools import reduce
 from types import MappingProxyType
@@ -217,5 +218,41 @@ class T3JobConfig:
 	def schedule_job(self, scheduler):
 		""" """
 		scheds = AmpelUtils.get_by_path(self.job_doc, 'schedule')
+		evaluator = ScheduleEvaluator()
 		for sched_el in scheds if AmpelUtils.is_sequence(scheds) else [scheds]:
-			exec("schedule.%s.do(self.launch_t3_job)" % sched_el)
+			evaluator(scheduler, sched_el).do(self.launch_t3_job)
+
+import ast
+class ScheduleEvaluator(ast.NodeVisitor):
+	"""
+	Safely evaluate scheduling lines of the form
+	- `every(10).minutes`
+	- `every().hour``
+	- `every().day.at('10:30')`
+	- `every().monday`
+	- `every().wednesday.at('13:15')`
+	
+	Allows literal numbers, strings, calling member functions of schedule.Scheduler 
+	"""
+	def __call__(self, scheduler, line):
+		self._scheduler = scheduler
+		elem = ast.parse(line).body[0]
+		return self.visit(elem)
+	def generic_visit(self, node):
+		raise ValueError("Illegal operation {}".format(type(node)))
+	def visit_Num(self, node):
+		return node.n
+	def visit_Str(self, node):
+		return node.s
+	def visit_Name(self, node):
+		return node.id
+	def visit_Attribute(self, node):
+		return getattr(self.visit(node.value), node.attr)
+	def visit_Call(self, node):
+		args = [self.visit(arg) for arg in node.args]
+		func = self.visit(node.func)
+		if isinstance(func, str):
+			func = getattr(self._scheduler, func)
+		return func(*args)
+	def visit_Expr(self, node):
+		return self.visit(node.value)

@@ -3,7 +3,7 @@ import pytest, subprocess, json
 import schedule
 
 from ampel.pipeline.t3.T3Controller import T3Controller
-from ampel.pipeline.t3.T3JobConfig import T3JobConfig
+from ampel.pipeline.t3.T3JobConfig import T3JobConfig, ScheduleEvaluator
 from ampel.pipeline.t3.T3TaskConfig import T3TaskConfig
 
 from ampel.base.abstract.AbsT3Unit import AbsT3Unit
@@ -239,3 +239,28 @@ def test_schedule_job(minimal_config):
 	scheduler = schedule.Scheduler()
 	job.schedule_job(scheduler)
 
+
+
+def test_schedule_malicious_job():
+	import schedule
+	scheduler = schedule.Scheduler()
+	ev = ScheduleEvaluator()
+
+	good = [
+		"every(10).minutes",
+		"every().hour",
+		"every().day.at('10:30')",
+		"every().monday",
+		"every().wednesday.at('13:15')",
+	]
+	for line in good:
+		assert isinstance(ev(scheduler, line), schedule.Job)
+
+	bad = [
+		"raise ValueError",
+		"import sys; sys.exit(1)",
+		"with open('foo.txt', 'w') as f:\n\tf.write('seekrit')"
+	]
+	for line in bad:
+		with pytest.raises(ValueError):
+			ev(scheduler, line)
