@@ -49,7 +49,7 @@ def graphite():
 def postgres():
 	gen = docker_service('postgres:10.3', 5432,
 		environ={'POSTGRES_USER': 'ampel', 'POSTGRES_DB': 'ztfarchive', 'ARCHIVE_READ_USER': 'archive-readonly', 'ARCHIVE_WRITE_USER': 'ampel-client'},
-		mounts=[(join(abspath(dirname(__file__)), '..', '..', '..', 'deploy', 'production', 'initdb', 'archive'), '/docker-entrypoint-initdb.d/')],
+		mounts=[(join(abspath(dirname(__file__)), 'deploy', 'production', 'initdb', 'archive'), '/docker-entrypoint-initdb.d/')],
 		healthcheck='psql --username ampel --port 5432 ztfarchive || exit 1')
 	port = next(gen)
 	yield 'postgresql://ampel@localhost:{}/ztfarchive'.format(port)

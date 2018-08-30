@@ -1,0 +1,3 @@
+[submodule "src/ampel/test/deploy"]
+	path = src/ampel/test/deploy
+	url = git@github.com:AmpelProject/Ampel-deploy.git

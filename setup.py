@@ -2,7 +2,6 @@ from setuptools import setup
 setup(name='Ampel-core',
       version='0.4.0',
       package_dir={'':'src'},
-      package_data = {'': ['*.json', 'test-data/*.json']},
       packages=[
           'ampel.core',
           'ampel.core.abstract',
@@ -22,6 +21,16 @@ setup(name='Ampel-core',
           'ampel.test',
           'ampel.utils',
       ],
+      package_data = {
+          '': [
+              '*.json'
+          ],
+          'ampel.test': [
+              'test-data/*.json',
+              'deploy/production/initdb/*/*.sql',
+              'deploy/prodution/initdb/*/*.sh'
+          ]
+      },
       entry_points = {
           'console_scripts' : [
               'ampel-alertprocessor = ampel.pipeline.t0.AlertProcessor:run_alertprocessor',
