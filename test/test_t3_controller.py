@@ -216,6 +216,7 @@ def test_task_config(minimal_config):
 		T3TaskConfig.load('jobbyjob', 'badconfig')
 	T3TaskConfig.load('jobbyjob', 'select0')
 
+@pytest.mark.skip('Depends on ampel-ztf')
 def test_get_transient_view(ingested_transients, t3_selected_transients, minimal_ingestion_config):
 	
 	# test that OR selection works as expected
