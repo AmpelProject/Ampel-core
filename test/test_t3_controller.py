@@ -39,10 +39,7 @@ def testing_class():
 def t3_jobs():
     return {"jobbyjob": {
       "active": True,
-      "schedule": {
-        "mode" : "fixed_interval",
-        "interval" : 1
-      },
+      "schedule": "every().minute",
       "onError": {
         "sendMail": {
           "to": "ztf-software@desy.de",
