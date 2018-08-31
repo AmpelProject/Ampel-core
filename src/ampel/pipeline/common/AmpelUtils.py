@@ -200,9 +200,6 @@ class AmpelUtils():
 		"""
 		import traceback
 
-		# This kind of events need to be propagated
-		logger.propagate = True
-
 		# Get traceback as string
 		exception_str = traceback.format_exc().replace("\"", "'")
 
