@@ -8,6 +8,8 @@
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import collections, logging
+import sys
+import traceback
 from functools import reduce
 from types import MappingProxyType
 from ampel.pipeline.logging.LoggingUtils import LoggingUtils
@@ -198,13 +200,8 @@ class AmpelUtils():
 		"""
 		info: dict instance to be included in the document inserted into Ampel_troubles
 		"""
-		import traceback
-
-		# Get traceback as string
-		exception_str = traceback.format_exc().replace("\"", "'")
-
 		# Don't create report for executions canceled manually
-		if "KeyboardInterrupt" in exception_str:
+		if sys.exc_info()[0] == KeyboardInterrupt:
 			return 
 
 		# Feedback
@@ -214,7 +211,7 @@ class AmpelUtils():
 
 		# Basis document (can be appended later on)
 		insert_dict = {
-			'exception': exception_str.split("\n")
+			'exception': traceback.format_exc().replace("\"", "'").split("\n")
 		}
 
 		# Add ampel tier (layer) info if so provided
