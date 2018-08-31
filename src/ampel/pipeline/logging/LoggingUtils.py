@@ -86,13 +86,13 @@ class LoggingUtils:
 		"""
 		for handler in logger.handlers:
 			if isinstance(handler, logging.StreamHandler):
-				if handler.level == logging.WARN:
+				previous_level = handler.level
+				try:
 					handler.level = logging.DEBUG
 					logger.log(level, msg, exc_info=exc_info)
-					handler.level = logging.DEBUG
-				else:
-					logger.log(level, msg, exc_info=exc_info)
-				return
+				finally:
+					handler.level = previous_level
+				break
 				
 		if level < logging.WARN:
 			level = logging.WARN
