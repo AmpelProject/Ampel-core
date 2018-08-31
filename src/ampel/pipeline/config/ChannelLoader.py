@@ -140,7 +140,7 @@ class ChannelLoader:
 
 		# Get t0 filter name
 		filter_id = self._get_config(chan_doc, 't0Filter.id')
-		logger.info("Loading filter: " + filter_id)
+		logger.info("Loading filter: %s" % filter_id)
 
 		# Robustness check
 		if filter_id not in AmpelConfig.get_config('t0_filters'):
