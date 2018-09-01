@@ -2,11 +2,12 @@ Contribution guidelines
 =======================
 
 
-Naming conventions
-------------------
+Naming convention
+-----------------
 
-- Class names: CamelCase
-- Method names: snake_case
+- Classes: CamelCase
+- Methods: snake_case
+- Instance variables: snake_case
 - Dict keys: camelCase
 
 
@@ -16,11 +17,22 @@ File structure
 - One class per file (PEP 20: _Explicit is better than implicit_)
 
 
-Other
------
+File content
+------------
 
 - Prefer tab over space
-- Use docstrings for each class & method, preferably using reST style:
+- Every file should contain a header. Example:
+```
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+# File              : ampel/pipeline/t2/T2Controller.py
+# License           : BSD-3-Clause
+# Author            : vb <vbrinnel@physik.hu-berlin.de>
+# Date              : 25.01.2018
+# Last Modified Date: 22.08.2018
+# Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
+```
+- Classes and methods should feature docstrings, preferably using reST style:
 ```
 """
 :param param1: this is a first param
