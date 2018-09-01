@@ -87,7 +87,7 @@ class T3JobConfig:
 
 		# Get, check and set defaults of t3 task doc 
 		job_doc = AmpelConfig.get_config(
-			't3_jobs.%s' % job_name, 
+			't3Jobs.%s' % job_name, 
 			cls.job_schema
 		)
 

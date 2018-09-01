@@ -261,14 +261,14 @@ def minimal_ingestion_config(mongod):
 	config = {
 		'global': {'sources': sources},
 		'resources': {'mongo': {'writer': mongod, 'logger': mongod}},
-		't2_units': {},
+		't2Units': {},
 		'channels': dict(map(make_channel, range(2))),
-		't0_filters' : {
+		't0Filters' : {
 			'BasicFilter': {
 				'classFullPath': 'ampel.pipeline.t0.filters.BasicFilter'
 			}
 		},
-		't3_jobs' : {
+		't3Jobs' : {
 			'jobbyjob': {
 				'input': {
 					'select':  {

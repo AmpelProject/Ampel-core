@@ -104,7 +104,7 @@ class ChannelLoader:
 				continue
 			if self.tier == 0:
 				filter_id = self._get_config(chan_doc, 't0Filter.id')
-				doc_t0_filter = AmpelConfig.get_config('t0_filters')[filter_id]
+				doc_t0_filter = AmpelConfig.get_config('t0Filters')[filter_id]
 				class_full_path = doc_t0_filter['classFullPath']
 				module = importlib.import_module(class_full_path)
 				filter_class = getattr(module, class_full_path.split(".")[-1])
@@ -143,11 +143,11 @@ class ChannelLoader:
 		logger.info("Loading filter: %s" % filter_id)
 
 		# Robustness check
-		if filter_id not in AmpelConfig.get_config('t0_filters'):
+		if filter_id not in AmpelConfig.get_config('t0Filters'):
 			raise NameError("Filter '%s' not found" % filter_id)
 
 		# Retrieve filter config from DB
-		doc_t0_filter = AmpelConfig.get_config('t0_filters')[filter_id]
+		doc_t0_filter = AmpelConfig.get_config('t0Filters')[filter_id]
 
 		class_full_path = doc_t0_filter['classFullPath']
 		logger.info(" -> Full class path: " + class_full_path)

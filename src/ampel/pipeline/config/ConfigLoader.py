@@ -29,9 +29,9 @@ def load_config(path=DEFAULT_CONFIG, gather_plugins=True):
 		for resource in pkg_resources.iter_entry_points('ampel.pipeline.t0'):
 			klass = resource.resolve()
 			name = resource.name
-			if name in config['t0_filters']:
+			if name in config['t0Filters']:
 				raise KeyError("{} (defined as entry point {} in {}) already exists in the provided config file".format(name, resource.name, resource.dist))
-			config['t0_filters'][name] = dict(classFullPath=klass.__module__)
+			config['t0Filters'][name] = dict(classFullPath=klass.__module__)
 		for resource in pkg_resources.iter_entry_points('ampel.pipeline.t2.configs'):
 			for name, channel_config in resource.resolve()().items():
 				if name in config['t2_run_config']:
@@ -39,19 +39,19 @@ def load_config(path=DEFAULT_CONFIG, gather_plugins=True):
 				config['t2_run_config'][name] = channel_config
 		for resource in pkg_resources.iter_entry_points('ampel.pipeline.t3.configs'):
 			for name, channel_config in resource.resolve()().items():
-				if name in config['t3_run_config']:
+				if name in config['t3RunConfig']:
 					raise KeyError("T3 run config {} (defined as entry point {} in {}) already exists in the provided config file".format(name, resource.name, resource.dist))
-				config['t3_run_config'][name] = channel_config
+				config['t3RunConfig'][name] = channel_config
 		for resource in pkg_resources.iter_entry_points('ampel.pipeline.t3.jobs'):
 			for name, channel_config in resource.resolve()().items():
-				if name in config['t3_jobs']:
+				if name in config['t3Jobs']:
 					raise KeyError("T3 job {} (defined as entry point {} in {}) already exists in the provided config file".format(name, resource.name, resource.dist))
 				try:
 					T3JobConfig.job_schema(channel_config)
 				except Exception as e:
 					print("Error in {} from {}".format(name, resource.dist))
 					raise
-				config['t3_jobs'][name] = channel_config
+				config['t3Jobs'][name] = channel_config
 	except Exception as e:
 		print("Exception in load_config:")
 		print("-"*60)

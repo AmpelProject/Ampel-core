@@ -116,12 +116,12 @@ def testing_config(testing_class, t3_jobs, mongod, graphite):
 	        'mongo': {'writer': mongod, 'logger': mongod},
 	        'graphite': {'default': graphite},
 	        },
-	    't3_units': {
+	    't3Units': {
 	    	'potemkin': {
 	    		'classFullPath': 'potemkin'
 	    	}
 	    },
-	    't3_jobs': t3_jobs,
+	    't3Jobs': t3_jobs,
 	}
 	AmpelConfig.set_config(config)
 	return config
@@ -161,9 +161,9 @@ def minimal_config(mongod, testing_class):
 	config = {
 		'global': {'sources': sources},
 		'resources': {'mongo': {'writer': mongod, 'logger': mongod}},
-		't2_units': {},
+		't2Units': {},
 		'channels': dict(map(make_channel, range(2))),
-		't3_jobs' : {
+		't3Jobs' : {
 			'jobbyjob': {
 				'schedule': 'every(1).hour',
 				'input': {
@@ -185,10 +185,10 @@ def minimal_config(mongod, testing_class):
 				]
 			}
 		},
-		't3_run_config' : {
+		't3RunConfig' : {
 			'potemkin_default': {},
 		},
-		't3_units': {
+		't3Units': {
 			'potemkin': {'classFullPath': 'potemkin'}
 		}
 	}

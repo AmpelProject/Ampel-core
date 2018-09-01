@@ -46,10 +46,10 @@
             }
         }
     },
-    "t0_filters": {},
+    "t0Filters": {},
     "t2_run_config": {},
-    "t2_units": {},
-    "t3_jobs": {},
-    "t3_run_config": {},
-    "t3_units": {}
+    "t2Units": {},
+    "t3Jobs": {},
+    "t3RunConfig": {},
+    "t3Units": {}
 }

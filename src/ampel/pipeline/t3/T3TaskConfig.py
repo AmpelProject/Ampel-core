@@ -90,7 +90,7 @@ class T3TaskConfig:
 		if task_doc.get('runConfig') is None:
 			return None
 		
-		run_config = 't3_run_config.%s_%s' % (task_doc['t3Unit'], task_doc['runConfig'])
+		run_config = 't3RunConfig.%s_%s' % (task_doc['t3Unit'], task_doc['runConfig'])
 		logger.info("Loading T3 run config: %s" % run_config)
 
 		t3_run_config_doc = AmpelConfig.get_config(run_config)
@@ -114,7 +114,7 @@ class T3TaskConfig:
 		returns an instance of ampel.pipeline.t3.T3TaskConfig
 		"""
 
-		t3_job_doc = AmpelConfig.get_config('t3_jobs').get(job_name)
+		t3_job_doc = AmpelConfig.get_config('t3Jobs').get(job_name)
 
 		if t3_job_doc is None:
 			raise ValueError("Job %s not found" % job_name)

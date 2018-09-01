@@ -146,12 +146,12 @@ def testing_config(mongod, archivedb):
 	            }
 	        },
 	    },
-	    't0_filters' : {
+	    't0Filters' : {
 	        'NoFilter' : {
 	            'classFullPath': 'ampel.contrib.hu.t0.NoFilter',
 	        },
 	    },
-	    't2_units': {},
+	    't2Units': {},
 	}
 	AmpelConfig.set_config(config)
 	yield config
