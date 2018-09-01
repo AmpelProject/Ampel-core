@@ -34,9 +34,9 @@ def load_config(path=DEFAULT_CONFIG, gather_plugins=True):
 			config['t0Filters'][name] = dict(classFullPath=klass.__module__)
 		for resource in pkg_resources.iter_entry_points('ampel.pipeline.t2.configs'):
 			for name, channel_config in resource.resolve()().items():
-				if name in config['t2_run_config']:
+				if name in config['t2RunConfig']:
 					raise KeyError("T2 run config {} (defined as entry point {} in {}) already exists in the provided config file".format(name, resource.name, resource.dist))
-				config['t2_run_config'][name] = channel_config
+				config['t2RunConfig'][name] = channel_config
 		for resource in pkg_resources.iter_entry_points('ampel.pipeline.t3.configs'):
 			for name, channel_config in resource.resolve()().items():
 				if name in config['t3RunConfig']:

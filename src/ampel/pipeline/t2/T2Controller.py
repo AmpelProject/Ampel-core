@@ -319,7 +319,7 @@ class T2Controller(Schedulable):
 		"""
 
 		# Get T2 run config doc from ampel config DB
-		t2_run_config_doc = AmpelConfig.get_config("t2_run_config.{}".format(run_config_id))
+		t2_run_config_doc = AmpelConfig.get_config("t2RunConfig.{}".format(run_config_id))
 
 		# Robustness
 		if t2_run_config_doc is None:
