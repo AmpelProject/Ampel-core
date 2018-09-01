@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 16.06.2018
-# Last Modified Date: 04.07.2018
+# Last Modified Date: 31.08.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from ampel.pipeline.config.AmpelConfig import AmpelConfig
@@ -29,6 +29,7 @@ class AmpelDB:
 		},
 		'logs': {
 			'jobs': None,
+			'counter': None,
 			'troubles': None
 		},
 		'reports': {
