@@ -176,10 +176,11 @@ class T3Job:
 		return getattr(self, "exec_params", None)
 
 
-	def run(self, update_tran_journal=True, update_run_col=True):
+	def run(self, update_tran_journal=True, update_run_col=True, report_exceptions=True):
 		"""
 		:param update_tran_journal: Record the invocation of this job in the journal of each selected transient
 		:param update_run_col: Record the invocation of this job in the runs collection
+		:param report_exceptions: Catch and report exceptions instead of raising them
 		"""
 
 		time_start = datetime.utcnow().timestamp()
@@ -266,13 +267,16 @@ class T3Job:
 							try:
 								t3_task.update(tran_register)
 							except:
-								AmpelUtils.report_exception(
-									self.logger, tier=3, info={
-										'jobName': self.job_config.job_name,
-										'taskName': t3_task.task_config.task_doc.get("name"),
-										'logs':  self.log_id,
-									}
-								)
+								if report_exceptions:
+									AmpelUtils.report_exception(
+										self.logger, tier=3, info={
+											'jobName': self.job_config.job_name,
+											'taskName': t3_task.task_config.task_doc.get("name"),
+											'logs':  self.log_id,
+										}
+									)
+								else:
+									raise
 	
 			# For each task, execute done()
 			for t3_task in t3_tasks:
@@ -281,15 +285,18 @@ class T3Job:
 					# execute embedded t3unit instance method done()
 					specific_journal_entries = t3_task.done()
 				except:
-					AmpelUtils.report_exception(
-						self.logger, tier=3, info={
-							'jobName': self.job_config.job_name,
-							'taskName': t3_task.task_config.task_doc.get("name"),
-							'logs':  self.log_id,
-						}
-					)
-					continue
-	
+					if report_exceptions:
+						AmpelUtils.report_exception(
+							self.logger, tier=3, info={
+								'jobName': self.job_config.job_name,
+								'taskName': t3_task.task_config.task_doc.get("name"),
+								'logs':  self.log_id,
+							}
+						)
+						continue
+					else:
+						raise
+
 				# Update journal with task related info
 				if update_tran_journal:
 					self.general_journal_update(t3_task, int(time_start))
@@ -327,7 +334,7 @@ class T3Job:
 					upsert=True
 				)
 
-				if upd_res.modified_count == 0 and upd_res.upserted_id is None:
+				if upd_res.modified_count == 0 and upd_res.upserted_id is None and report_exceptions:
 
 					# Populate troubles collection
 					from inspect import currentframe, getframeinfo
@@ -347,12 +354,15 @@ class T3Job:
 
 		except:
 
-			AmpelUtils.report_exception(
-				self.logger, tier=3, info={
-					'jobName': self.job_config.job_name,
-					'logs':  self.log_id,
-				}
-			)
+			if report_exceptions:
+				AmpelUtils.report_exception(
+					self.logger, tier=3, info={
+						'jobName': self.job_config.job_name,
+						'logs':  self.log_id,
+					}
+				)
+			else:
+				raise
 
 		self.log_id = None
 

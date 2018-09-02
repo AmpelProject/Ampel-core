@@ -184,8 +184,10 @@ def rununit(args):
 	job_config = T3JobConfig.from_doc("froopydyhoop", job_doc)
 	# Record logs in the db only if the run itself will be recorded
 	logger = logging.getLogger(__name__) if not args.update_run_col else None
+	# Likewise, only catch exceptions if the run is being recorded
+	report_exceptions = logger is None
 	job = T3Job(job_config, full_console_logging=True, logger=logger)
-	job.run(args.update_run_col, args.update_tran_journal)
+	job.run(args.update_run_col, args.update_tran_journal, report_exceptions)
 
 def main():
 
