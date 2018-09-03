@@ -123,6 +123,11 @@ def show(args):
 		task = next(t for t in job.get_task_configs() if t.get('name') == args.task)
 		print(FrozenEncoder(indent=1).encode(task))
 
+def runjob(args):
+	job_config = T3JobConfig.load(args.job)
+	job = T3Job(job_config, full_console_logging=True)
+	job.run()
+
 def runtask(args):
 	job_config = T3JobConfig.load(args.job)
 	job_config.t3_task_configs = [t for t in job_config.get_task_configs() if t.get('name') == args.task]
@@ -214,6 +219,9 @@ def main():
 		return p
 	
 	p = add_command(run)
+
+	p = add_command(runjob)
+	p.add_argument('job')
 
 	p = add_command(runtask)
 	p.add_argument('job')
