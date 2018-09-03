@@ -22,6 +22,7 @@ from ampel.pipeline.db.AmpelDB import AmpelDB
 from ampel.pipeline.db.LightCurveLoader import LightCurveLoader
 from ampel.pipeline.common.Schedulable import Schedulable
 from ampel.pipeline.config.AmpelConfig import AmpelConfig
+from ampel.pipeline.common.AmpelUtils import AmpelUtils
 
 class T2Controller(Schedulable):
 	"""
@@ -198,13 +199,25 @@ class T2Controller(Schedulable):
 
 			# Run t2
 			before_run = datetime.utcnow().timestamp()
-			ret = t2_instances[t2_unit_name].run(
-				lc, (
-					self.t2_run_config[run_config_id]['parameters'].copy()
-					if self.t2_run_config[run_config_id] is not None
-					else None
+			try:
+				ret = t2_instances[t2_unit_name].run(
+					lc, (
+						self.t2_run_config[run_config_id]['parameters'].copy()
+						if self.t2_run_config[run_config_id] is not None
+						else None
+					)
 				)
-			)
+			except:
+				# Record any uncaught exceptions in troubles collection.
+				ret = T2RunStates.EXCEPTION
+				AmpelUtils.report_exception(
+					self.logger, tier=2, info={
+						'unit': t2_unit_name,
+						'run_config': run_config_id,
+						't2_doc': t2_doc['_id'],
+						'logs':  db_logging_handler.get_log_id(),
+					}
+				)
 
 			# Used as timestamp and to compute duration below (using before_run)
 			now = datetime.utcnow().timestamp()
@@ -214,7 +227,6 @@ class T2Controller(Schedulable):
 			if isinstance(ret, T2RunStates):
 
 				self.logger.error("T2 unit returned %s" % ret)
-				# TODO: add copy t2 entry to ampel_trouble
 
 				db_ops = [
 					UpdateOne(

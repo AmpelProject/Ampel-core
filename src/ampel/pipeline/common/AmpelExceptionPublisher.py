@@ -35,6 +35,10 @@ class AmpelExceptionPublisher:
 			if doc['tier'] == 0:
 				fields.append({'title': 'Section', 'value': more.get('section', None), 'short': True})
 				fields.append({'title': 'tranId', 'value': more.get('tranId', None), 'short': True})
+			elif doc['tier'] == 2:
+				fields.append({'title': 'run_config', 'value': more.get('run_config', None), 'short': True})
+				if isinstance(more.get('t2_doc', None), ObjectId):
+					fields.append({'title': 't2_doc', 'value': more['t2_doc'].binary.hex(), 'short': True})
 			elif doc['tier'] == 3:
 				fields.append({'title': 'Job', 'value': more.get('jobName', None), 'short': True})
 				fields.append({'title': 'Task', 'value': more.get('taskName', None), 'short': True})
@@ -48,7 +52,6 @@ class AmpelExceptionPublisher:
 			message['attachments'].append(attachment)
 			if len(message['attachments']) == 20:
 				break
-			# break
 
 		try:
 			self._last_timestamp = doc['_id']
