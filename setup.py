@@ -1,6 +1,6 @@
 from setuptools import setup
 setup(name='Ampel-core',
-      version='0.4.0',
+      version='0.4.1',
       package_dir={'':'src'},
       packages=[
           'ampel.core',
