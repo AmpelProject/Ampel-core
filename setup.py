@@ -37,6 +37,7 @@ setup(name='Ampel-core',
               'ampel-alertprocessor = ampel.pipeline.t0.AlertProcessor:run_alertprocessor',
               'ampel-followup = ampel.pipeline.t0.DelayedT0Controller:run',
               'ampel-statspublisher = ampel.pipeline.common.AmpelStatsPublisher:run',
+              'ampel-exceptionpublisher = ampel.pipeline.common.AmpelExceptionPublisher:run',
               'ampel-t2 = ampel.pipeline.t2.T2Controller:run',
               'ampel-t3 = ampel.pipeline.t3.T3Controller:main',
               'ampel-check-broker = ampel.pipeline.t0.ZIAlertFetcher:list_kafka',
@@ -45,6 +46,7 @@ setup(name='Ampel-core',
           'ampel.pipeline.resources' : [
               'mongo = ampel.pipeline.common.resources:LiveMongoURI',
               'graphite = ampel.pipeline.common.resources:Graphite',
+              'slack = ampel.pipeline.common.resources:SlackToken',
               'archive = ampel.archive.resources:ArchiveDBURI'
           ]
       }

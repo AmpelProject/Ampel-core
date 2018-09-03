@@ -85,3 +85,13 @@ def test_argumentparser():
 	parser.parse_args(args=['--mongo-host', parts.hostname, '--mongo-port', str(parts.port), '--mongo-writer-username', parts.username, '--mongo-writer-password', parts.password])
 	
 	assert AmpelConfig.get_config('resources.mongo.writer') == uri
+
+def test_slack():
+	AmpelConfig.reset()
+	parser = AmpelArgumentParser()
+	parser.require_resource('slack', ['operator'])
+	
+	parser.parse_args(args=['--slack-operator-token', 'foo'])
+	
+	assert AmpelConfig.get_config('resources.slack.operator') == 'foo'
+	

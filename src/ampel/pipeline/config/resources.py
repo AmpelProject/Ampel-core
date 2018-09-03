@@ -24,6 +24,11 @@ class Resource(ABC):
         """
         pass
     
+    @classmethod
+    @abstractmethod
+    def parse_default(cls, resource_section):
+        pass
+
     @abstractmethod
     def __init__(self, args):
         """
