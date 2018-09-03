@@ -187,7 +187,7 @@ class T3Job:
 		t3_tasks = []
 		self.log_id = (
 			self.db_logging_handler.get_log_id() 
-			if hasattr(self, 'db_logging_handler') else 'n/a'
+			if hasattr(self, 'db_logging_handler') else None
 		)
 
 		job_descr = "job %s (log id: %s)" % (
