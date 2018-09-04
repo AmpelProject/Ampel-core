@@ -17,6 +17,43 @@ class AmpelExceptionPublisher:
 
 		self._last_timestamp = ObjectId.from_datetime(datetime.datetime.now() - datetime.timedelta(days=1))
 
+	def t3_fields(self, doc):
+		fields = []
+		fields.append({'title': 'Job', 'value': doc.get('jobName', None), 'short': True})
+		fields.append({'title': 'Task', 'value': doc.get('taskName', None), 'short': True})
+		if isinstance(doc.get('logs', None), ObjectId):
+			fields.append({'title': 'logs', 'value': doc['logs'].binary.hex(), 'short': True})
+		return fields
+
+	def format_attachment(self, doc):
+		fields = [{'title': 'Tier', 'value': doc['tier'], 'short': True}]
+		more = doc.get('more', {})
+		if doc['tier'] == 0:
+			fields.append({'title': 'Section', 'value': more.get('section', None), 'short': True})
+			fields.append({'title': 'tranId', 'value': more.get('tranId', None), 'short': True})
+		elif doc['tier'] == 2:
+			fields.append({'title': 'run_config', 'value': more.get('run_config', None), 'short': True})
+			if isinstance(more.get('t2_doc', None), ObjectId):
+				fields.append({'title': 't2_doc', 'value': more['t2_doc'].binary.hex(), 'short': True})
+		elif doc['tier'] == 3:
+			fields += self.t3_fields(more if 'jobName' in more else doc)
+		if 'exception' in doc:
+			text =  '```{}```'.format('\n'.join(doc['exception']))
+		elif 'location' in doc:
+			text = '{}: {}'.format(doc['location'], doc.get('ampelMsg', ''))
+			if 'mongoUpdateResult' in doc:
+				text += '\nmongoUpdateResult: `{}`'.format(doc['mongoUpdateResult'])
+		else:
+			text = 'Unknown exception type. Doc keys are: ```{}```'.format(doc.keys())
+
+		attachment = {
+			'fields': fields,
+			'ts': int(doc['_id'].generation_time.timestamp()),
+			'text': text,
+			'mrkdwn_in': ['text'],
+		}
+		return attachment
+
 	def publish(self):
 
 		message = {
@@ -30,26 +67,7 @@ class AmpelExceptionPublisher:
 		t0 = self._last_timestamp.generation_time
 		cursor = self._troubles.find({'_id': {'$gt': self._last_timestamp}})
 		for doc in cursor:
-			fields = [{'title': 'Tier', 'value': doc['tier'], 'short': True}]
-			more = doc.get('more', {})
-			if doc['tier'] == 0:
-				fields.append({'title': 'Section', 'value': more.get('section', None), 'short': True})
-				fields.append({'title': 'tranId', 'value': more.get('tranId', None), 'short': True})
-			elif doc['tier'] == 2:
-				fields.append({'title': 'run_config', 'value': more.get('run_config', None), 'short': True})
-				if isinstance(more.get('t2_doc', None), ObjectId):
-					fields.append({'title': 't2_doc', 'value': more['t2_doc'].binary.hex(), 'short': True})
-			elif doc['tier'] == 3:
-				fields.append({'title': 'Job', 'value': more.get('jobName', None), 'short': True})
-				fields.append({'title': 'Task', 'value': more.get('taskName', None), 'short': True})
-
-			attachment = {
-				'fields': fields,
-				'ts': int(doc['_id'].generation_time.timestamp()),
-				'text': '```{}```'.format('\n'.join(doc['exception'])),
-				'mrkdwn_in': ['text'],
-			}
-			message['attachments'].append(attachment)
+			message['attachments'].append(self.format_attachment(doc))
 			if len(message['attachments']) == 20:
 				break
 
@@ -71,7 +89,7 @@ class AmpelExceptionPublisher:
 		if len(message['attachments']) < count:
 			message['text'] = 'Here are the first {} exceptions. There were {} more in the last {}.'.format(len(message['attachments']), count-len(message['attachments']), time_range)
 		else:
-			message['text'] = 'Hi, we\'re testing exception publishing. There were {} exceptions in the last {}.'.format(len(message['attachments']), time_range)
+			message['text'] = 'There were {} exceptions in the last {}.'.format(len(message['attachments']), time_range)
 
 		result = self._slack.api_call('chat.postMessage', **message)
 		if not result['ok']:
@@ -93,6 +111,7 @@ def run():
 	scheduler.every(args.interval).minutes.do(atp.publish)
 
 	logging.basicConfig()
+	atp.publish()
 	while True:
 		try:
 			scheduler.run_pending()
