@@ -206,7 +206,7 @@ class T3Job:
 				# list of all channels found in matched transients.
 				chans = self._get_channels()
 	
-				# There is no channel less transient -> no channel == no transient
+				# There is no channel-less transient (no channel == no transient)
 				if chans is None:
 					self.logger.info("No matching transient")
 					return
@@ -609,8 +609,11 @@ class T3Job:
 					# Populate troubles collection
 					from inspect import currentframe, getframeinfo
 					self._report_error(
-						'transient journal update_many error', getframeinfo(currentframe()),
-						t3_task.get_config('name'), upd_res=upd_res
+						'transient journal update_many error (len journal upd: %i)' %
+						len(t3_task.journal_notes[channels]),
+						getframeinfo(currentframe()),
+						t3_task.get_config('name'),
+						upd_res=upd_res
 					)
 
 		except:
