@@ -1,3 +1,11 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+# File              : ampel/pipeline/common/AmpelExceptionPublisher.py
+# License           : BSD-3-Clause
+# Author            : Jakob van Santen <jakob.van.santen@desy.de>
+# Date              : 03.09.2018
+# Last Modified Date: 04.09.2018
+# Last Modified By  : Jakob van Santen <jakob.van.santen@desy.de>
 
 import datetime, json, logging, time
 
