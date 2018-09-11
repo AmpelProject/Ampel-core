@@ -12,7 +12,7 @@ Option 1: Dedicated `conda` environment
 
 1. `Install miniconda <https://conda.io/miniconda.html>`_.
 
-2. Download the `environment definition file </_static/ampel-environment.yml>`_, displayed below. Replace XXX with the Ampel repository password, available upon request. You may also change the name of the environment (ampel-dev by default) if you so wish.
+2. Download the :download:`environment definition file </_static/ampel-environment.yml>`, displayed below. Replace XXX with the Ampel repository password, available upon request. You may also change the name of the environment (ampel-dev by default) if you so wish.
 
 .. literalinclude:: /_static/ampel-environment.yml
 
