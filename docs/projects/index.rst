@@ -1,6 +1,8 @@
 
+.. _projects:
+
 Ampel projects
-***************
+**************
 
 .. toctree::
    :maxdepth: 2

@@ -17,7 +17,7 @@
    projects/index
    dev
    testing
-   requirements
+   installing
    people
    hardware
    operations/index
