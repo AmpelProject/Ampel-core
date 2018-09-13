@@ -16,10 +16,10 @@ class AlertSupplier:
  
 	def __init__(self, alert_loader, alert_shaper, serialization=None, archive=None):
 		"""
-		alert_loader: loads and returns alerts file like objects. Class must be iterable.
-		alert_shaper: reshapes dict into a form compatible with ampel
-		serialization (optional): either 'avro' or 'json'. Set the corresponding 
-		deserialization function used to convert file_like objects into dict
+		:param alert_loader: loads and returns alerts file like objects. Class must be iterable.
+		:param alert_shaper: reshapes dict into a form compatible with ampel
+		:param serialization: (optional) either 'avro' or 'json'. Sets the corresponding 
+		deserialization function used to convert file-like objects into dict
 		"""
 
 		if not issubclass(alert_shaper.__class__, AbsAlertShaper):
