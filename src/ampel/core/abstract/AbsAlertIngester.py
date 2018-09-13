@@ -4,26 +4,26 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 14.12.2017
-# Last Modified Date: 04.07.2018
+# Last Modified Date: 06.09.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from ampel.base.abstract.AmpelABC import AmpelABC, abstractmethod
 
 class AbsAlertIngester(metaclass=AmpelABC):
-
-
-	@abstractmethod
-	def set_log_id(self, lob_id):
-		return
+	"""
+	"""
 
 	@abstractmethod
 	def ingest(self, tran_id, pps_alert, uls_alert, list_of_t2_units):
-		return
+		""" """
+		pass
 
 	@abstractmethod
-	def flush_report(self):
-		return
+	def set_log_id(self, log_id):
+		""" """
+		pass
 
 	# pylint: disable=no-member
 	def get_version(self):
+		""" """
 		return self.version
