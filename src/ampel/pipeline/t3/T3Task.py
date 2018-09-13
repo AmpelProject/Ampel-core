@@ -78,6 +78,9 @@ class T3Task:
 		if self.db_logging_handler:
 			self.db_logging_handler.set_channels(self.channels)
 
+		self.logger.info("~"*60)
+		self.logger.info("%s: creating TransientViews" % self.task_config.log_header)
+
 		for tran_id, tran_data in tran_register.items():
 
 			# Create transientView for specified channels using transient data
@@ -89,7 +92,7 @@ class T3Task:
 
 			# Append tran_id to the next DB logging entry
 			if self.db_logging_handler:
-				self.db_logging_handler.set_tranId(tran_id)
+				self.db_logging_handler.set_tran_id(tran_id)
 
 			# Feedback
 			self.logger.debug(
@@ -113,13 +116,13 @@ class T3Task:
 
 		# Unset DB logging customization
 		if self.db_logging_handler:
-			self.db_logging_handler.unset_tranId()
+			self.db_logging_handler.unset_tran_id()
 
 		# Feedback
 		LoggingUtils.propagate_log(
 			self.logger, logging.INFO,
 			"Providing %s with %i TransientViews" % 
-			(self.t3_instance.__class__.__name__, len(tran_register))
+			(self.t3_instance.__class__.__name__, len(tran_views))
 		)
 
 		# Feed T3 instance with transientViews
