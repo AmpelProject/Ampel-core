@@ -9,7 +9,7 @@
 
 import logging
 from datetime import datetime
-from pymongo import MongoClient, UpdateOne
+from pymongo import UpdateMany
 from itertools import islice
 
 from ampel.pipeline.db.query.QueryMatchTransients import QueryMatchTransients
@@ -65,9 +65,7 @@ class T3Job:
 			if db_logging:
 				# Create DB logging handler instance (logging.Handler child class)
 				# This class formats, saves and pushes log records into the DB
-				self.db_logging_handler = DBLoggingHandler(
-					tier=3, info={"job": job_config.job_name}
-				)
+				self.db_logging_handler = DBLoggingHandler(tier=3)
 
 				# Add db logging handler to the logger stack of handlers 
 				logger.addHandler(self.db_logging_handler)
@@ -104,6 +102,7 @@ class T3Job:
 					job_config.get('input.select.withoutFlag(s)'), 
 					TransientFlags
 				),
+				'chunk': job_config.get('input.chunk'),
 				'verbose': job_config.get("input.load.verbose"),
 				'debug': job_config.get("input.load.debug")
 			}
@@ -185,15 +184,12 @@ class T3Job:
 
 		time_start = datetime.utcnow().timestamp()
 		t3_tasks = []
-		self.log_id = (
-			self.db_logging_handler.get_log_id() 
+		self.run_id = (
+			self.db_logging_handler.get_run_id() 
 			if hasattr(self, 'db_logging_handler') else None
 		)
 
-		job_descr = "job %s (log id: %s)" % (
-			self.job_config.job_name, 
-			None if self.log_id is None else self.log_id.binary.hex()
-		)
+		job_descr = "job %s (run id: %s)" % (self.job_config.job_name, self.run_id)
 
 		# Feedback
 		LoggingUtils.propagate_log(self.logger, logging.INFO, "Running %s" % job_descr)
@@ -252,15 +248,13 @@ class T3Job:
 				if trans_cursor is not None:
 	
 					# Set chunk_size to 'number of transients found' if not defined
-					chunk_size = self.job_config.get('input.chunk')
+					chunk_size = self.exec_params['chunk']
 	
 					# No chunk size == all transients loaded at once
 					if chunk_size is None:
 						chunk_size = trans_cursor.count()
 	
 					for tran_register in self.get_tran_data(dcl, trans_cursor, chunk_size):
-	
-						self.logger.info("Processing chunk")
 	
 						# Feed each task with transient views
 						for t3_task in t3_tasks:
@@ -272,7 +266,7 @@ class T3Job:
 										self.logger, tier=3, info={
 											'jobName': self.job_config.job_name,
 											'taskName': t3_task.task_config.task_doc.get("name"),
-											'logs':  self.log_id,
+											'logs':  self.run_id,
 										}
 									)
 								else:
@@ -290,7 +284,7 @@ class T3Job:
 							self.logger, tier=3, info={
 								'jobName': self.job_config.job_name,
 								'taskName': t3_task.task_config.task_doc.get("name"),
-								'logs':  self.log_id,
+								'logs':  self.run_id,
 							}
 						)
 						continue
@@ -309,6 +303,7 @@ class T3Job:
 					pass
 	
 			if update_run_col:
+
 				# Record job info into DB
 				upd_res = self.col_runs.update_one(
 					{
@@ -322,7 +317,7 @@ class T3Job:
 								'tier': 3,
 								'name': self.job_config.job_name,
 								'dt': int(time_start),
-								'logs': self.log_id,
+								'logs': self.run_id,
 								'metrics': {
 									'duration': int(
 										datetime.utcnow().timestamp() - time_start
@@ -358,13 +353,13 @@ class T3Job:
 				AmpelUtils.report_exception(
 					self.logger, tier=3, info={
 						'jobName': self.job_config.job_name,
-						'logs':  self.log_id,
+						'logs':  self.run_id,
 					}
 				)
 			else:
 				raise
 
-		self.log_id = None
+		self.run_id = None
 
 
 	def _report_error(
@@ -379,7 +374,7 @@ class T3Job:
 			'location': '%s:%s' % (frameinfo.filename, frameinfo.lineno),
 			'jobName':  self.job_config.job_name,
 			'taskName': task_name,
-			'logs': self.log_id,
+			'logs': self.run_id,
 			'mongoUpdateResult': upd_res.raw_result
 		}
 
@@ -476,6 +471,10 @@ class T3Job:
 		"""
 		Yield selected TransientData in chunks of length `chunk_size`
 		"""
+
+		self.logger.info("#"*60)
+		self.logger.info("Processing chunk")
+
 		# Load ids (chunk_size number of ids)
 		for chunked_tran_ids in T3Job.chunk(map(lambda el: el['tranId'], trans_cursor), chunk_size):
 
@@ -584,7 +583,7 @@ class T3Job:
 			for channels in t3_task.journal_notes.keys():
 
 				# Update many 
-				upd_res = self.col_tran.update_many(
+				um = UpdateMany(
 					{
 						'alDocType': AlDocTypes.TRANSIENT, 
 						'tranId': {'$in': t3_task.journal_notes[channels]}
@@ -597,12 +596,15 @@ class T3Job:
 								'jobName':  self.job_config.job_name,
 								'taskName': t3_task.get_config('name'),
 								'channel(s)': list(channels), # type(channels) is frozenset
-								'logs': self.log_id
+								'logs': self.run_id
 							}
 						}
 					}
 				)
-	
+
+				self.logger.info("Transient journal update query: %s" % um)
+				upd_res = self.col_tran.bulk_write([um])
+
 				# At least one update was not applied
 				if upd_res.modified_count != len(t3_task.journal_notes[channels]):
 	
@@ -624,7 +626,7 @@ class T3Job:
 					'ampelMsg': 'Exception occured in general_journal_update',
 					'jobName': self.job_config.job_name,
 					'taskName': t3_task.get_config('name'),
-					'logs':  self.log_id,
+					'logs':  self.run_id,
 				}
 			)
 
