@@ -4,18 +4,27 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 07.06.2018
-# Last Modified Date: 28.08.2018
+# Last Modified Date: 02.09.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-import collections, logging
-import sys
-import traceback
+import collections, logging, sys, traceback
 from functools import reduce
 from types import MappingProxyType
 from ampel.pipeline.logging.LoggingUtils import LoggingUtils
 
 class AmpelUtils():
 	""" 
+	Static methods (as of Sept 2019):
+	iter(arg):
+	try_reduce(arg):
+	is_sequence(obj):
+	to_set(arg):
+	check_seq_inner_type(seq, types, multi_type=False):
+	get_by_path(mapping, path, delimiter='.'):
+	recursive_freeze(arg):
+	flatten_dict(d, separator='.'):
+	unflatten_dict(d, separator='.'):
+	report_exception(logger, tier=None, info=None):
 	"""
 
 	@staticmethod
