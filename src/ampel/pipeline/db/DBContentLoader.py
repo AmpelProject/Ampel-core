@@ -258,6 +258,10 @@ class DBContentLoader:
 	):
 		"""
 		"""
+
+		self.logger.info("~"*50)
+		self.logger.info("Creating TransientData")
+
 		# Build set: we need intersections later
 		channels_set = AmpelUtils.to_set(channels)
 
@@ -552,4 +556,4 @@ class DBContentLoader:
 										t2_id, srs	
 									)
 								)
-		self.logger.info("-")
+		#self.logger.info("-")
