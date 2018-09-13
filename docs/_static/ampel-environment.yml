@@ -1,0 +1,10 @@
+name: ampel-dev
+channels:
+  - https://ampel:XXX@www-zeuthen.desy.de/~jvsanten/ampel/conda
+  - ampelproject
+  - conda-forge
+dependencies:
+  - ampel-base
+  - ampel-core
+  - ampel-ztf
+  - ampel-contrib-hu

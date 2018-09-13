@@ -15,17 +15,7 @@ In short, Ampel assists in the the transition from studies of individual objects
 Our design goals are to find a system where past experience (i.e. existing algorithms and code) can consistently be applied to large samples, and with built-in tools for controlling sample selection.
 
 
-Intalling Ampel
-===============
+Installing Ampel
+================
 
-*** TODO: update this guide: https://github.com/AmpelProject/Ampel-base is now required *** 
-
-This installation assumes your python is under the Anaconda environment, using python 3+
-
-1. ``git clone https://github.com/AmpelProject/Ampel.git"``
-
-2. ``conda create -n ampel --file Ampel/requirements.txt python=3`` this will create an autonomous and independent python environment on your computer. (No conflict with you current installation)
-
-3. ``source activate ampel`` (you will enter the AMPEL environment)
-
-4. ``pip install -e Ampel`` (Ampel actually being path/to/Ampel, if you are not in the directory where Ampel is)
+See `online documentation <https://ampelproject.github.io/Ampel-core/installing.html>`_.
