@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel/src/ampel/pipeline/t3/PlaceboUnit.py
+# File              : ampel/pipeline/t3/T3PlaceboUnit.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 04.09.2018
@@ -9,7 +9,7 @@
 
 from ampel.base.abstract.AbsT3Unit import AbsT3Unit
 
-class PlaceboUnit(AbsT3Unit):
+class T3PlaceboUnit(AbsT3Unit):
 	"""
 	A T3 unit that does not perform any action.
 	Goal: testing the T3 job/task machinery
@@ -27,7 +27,7 @@ class PlaceboUnit(AbsT3Unit):
 
 	def add(self, transients):
 		""" """
-		self.logger.info("Method add() called with %i transients" % len(transients))
+		self.logger.info("Method add() called with %i transient(s)" % len(transients))
 
 
 	def done(self):
