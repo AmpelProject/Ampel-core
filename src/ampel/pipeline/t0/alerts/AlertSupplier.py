@@ -4,28 +4,27 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 23.04.2018
-# Last Modified Date: 04.07.2018
+# Last Modified Date: 14.09.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 
-from ampel.core.abstract.AbsAlertShaper import AbsAlertShaper
-import time
-
 class AlertSupplier:
-
+	"""
+	Iterable class that for each alert yield by the provided alert_loader, 
+	returns a dict featuring a format that the AMPEL AlertProcessor understands 
+	"""
  
-	def __init__(self, alert_loader, alert_shaper, serialization=None, archive=None):
+	def __init__(self, alert_loader, shape_func, serialization=None):
 		"""
 		:param alert_loader: loads and returns alerts file like objects. Class must be iterable.
-		:param alert_shaper: reshapes dict into a form compatible with ampel
+		:param shape_func: function that shapes a dict into a form compatible with ampel
 		:param serialization: (optional) either 'avro' or 'json'. Sets the corresponding 
 		deserialization function used to convert file-like objects into dict
 		"""
 
-		if not issubclass(alert_shaper.__class__, AbsAlertShaper):
-			raise ValueError("Second argument must be a child class of AbsAlertShaper")
-
-		if serialization is not None:
+		if serialization is None:
+			self.deserialize = None
+		else:
 
 			if serialization == "json":
 				import json
@@ -44,15 +43,25 @@ class AlertSupplier:
 				)
 
 		self.alert_loader = alert_loader
-		self.alert_archive = archive
-		self.alert_shaper = alert_shaper
- 
+		self.shape = shape_func
 
-	def set_deserializer_func(self, deserializer_func):
+
+	def set_deserialize_func(self, deserialize_func):
 		"""
-		deserializer_func: function deserializing file_like objects into dict 
+		Convenience method allowing to override values provided during class instantiation
+		:param deserializer_func: function deserializing file_like objects into dict 
+		:returns: None
 		"""
-		self.deserialize = deserializer_func
+		self.deserialize = deserialize_func
+
+
+	def set_shape_func(self, shape_func):
+		"""
+		Convenience method allowing to override values provided during class instantiation
+		:param shape_func: function that shapes a dict into a form compatible with ampel 
+		:returns: None
+		"""
+		self.shape = shape_func
 
 
 	def __iter__(self):
@@ -61,19 +70,18 @@ class AlertSupplier:
 	
 	def __next__(self):
 		"""
+		:returns: a dict with a format that the AMPEL AlertProcessor understands 
+		or None if the alert_loader has dried out.
 		"""
-		if not hasattr(self, 'deserialize'):
-			assert self.alert_archive is None
-			return self.alert_shaper.shape(
+		if self.deserialize is None:
+			return self.shape(
 				next(self.alert_loader)
 			)
 		else:
 			fileobj = next(self.alert_loader)
-			if isinstance(fileobj, tuple):
+			if isinstance(fileobj, tuple): # ZIAlertFetcher does return a tuple
 				fileobj, partition_id = fileobj
 			else:
 				partition_id = 0
 			alert, schema = self.deserialize(fileobj)
-			if self.alert_archive is not None:
-				self.alert_archive.insert_alert(alert, schema, partition_id, int(1e6*time.time()))
-			return self.alert_shaper.shape(alert)
+			return self.shape(alert)
