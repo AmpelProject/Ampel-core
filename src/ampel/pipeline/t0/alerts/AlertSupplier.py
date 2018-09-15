@@ -10,7 +10,7 @@
 
 class AlertSupplier:
 	"""
-	Iterable class that for each alert yield by the provided alert_loader, 
+	Iterable class that for each alert yielded by the provided alert_loader, 
 	returns a dict featuring a format that the AMPEL AlertProcessor understands 
 	"""
  
