@@ -1,6 +1,4 @@
-
-import pytest, subprocess, json
-import schedule
+import pytest, subprocess, json, schedule
 
 from ampel.pipeline.t3.T3Controller import T3Controller
 from ampel.pipeline.t3.T3JobConfig import T3JobConfig, ScheduleEvaluator
@@ -16,8 +14,6 @@ class PotemkinError(RuntimeError):
 	pass
 
 class PotemkinT3(AbsT3Unit):
-	
-	version = 1.0
 	
 	def __init__(self, logger, base_config=None, run_config=None, global_info=None):
 		pass
