@@ -1,15 +1,15 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/core/abstract/AbsInputStreamSetup.py
+# File              : ampel/core/abstract/AbsT0Setup.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 02.09.2018
-# Last Modified Date: 14.09.2018
+# Last Modified Date: 24.09.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from ampel.base.abstract.AmpelABC import AmpelABC, abstractmethod
 
-class AbsInputStreamSetup(metaclass=AmpelABC):
+class AbsT0Setup(metaclass=AmpelABC):
 	"""
 	Depending on which instrument and institution alerts originate,
 	(as of March 2018 only ZTF & IPAC), various setup tasks must be 
