@@ -80,7 +80,7 @@ import copy
 from ampel.base.AmpelAlert import AmpelAlert
 class AlertFactoryFixture(object):
 	def __init__(self, schema):
-		from ampel.pipeline.t0.alerts.ZIAlertShaper import ZIAlertShaper
+		from ampel.pipeline.t0.load.ZIAlertShaper import ZIAlertShaper
 		native_types = {'int': int, 'long': int, 'float': float, 'double': float, 'string': str}
 		def get_defaults(schema):
 			required = dict()
@@ -204,19 +204,15 @@ def minimal_ingestion_config(mongod):
 	from ampel.pipeline.db.AmpelDB import AmpelDB
 	
 	AmpelConfig.reset()
-	sources = {
-		'ZTFIPAC': {
+	source = {
+			"stream": 'ZTFIPAC',
 			"parameters": {
 				"ZTFPartner": True,
 				"autoComplete": False,
 				"updatedHUZP": False
 			},
-			"flags": {
-				"photo": "INST_ZTF",
-				"main": "INST_ZTF"
-			},
 			"t0Filter" : {
-				"id": "BasicFilter",
+				"unitId": "BasicFilter",
 				"runConfig": {
 					"operator": ">",
 					"len": 1,
@@ -227,45 +223,16 @@ def minimal_ingestion_config(mongod):
 					}]
 				},
 			},
-			"t2Compute" : [],
-			"t3Supervise" : [],
-			
-			"alerts": {
-				"alertHistoryLength": 30,
-				"processing": {
-					"parse": "ampel.pipeline.t0.alerts.ZIAlertParser",
-					"shape": "ampel.pipeline.t0.alerts.ZIAlertShaper",
-					"serialization": "avro"
-				},
-				"flags": [[
-					"INST_ZTF",
-					"SRC_IPAC"
-				]],
-				"mappings": {
-					"tranId": "objectId",
-					"pptId": "candid",
-					"obsDate": "jd",
-					"filterId": "fid",
-					"mag": "magpsf"
-				}
-			},
-			"ingestion": {
-				"class": "ampel.pipeline.t0.ingesters.ZIAlertIngester",
-				"photoShaper": "ampel.pipeline.t0.ingesters.ZIPhotoPointShaper",
-				"checkReprocessing": True,
-				"tranIdPrefix": None
-			},
-		}
+			"t2Compute" : []
 	}
-	make_channel = lambda name: (str(name), {'version': 1, 'active': True, 'sources': sources})
+	make_channel = lambda name: (str(name), {'active': True, 'sources': [source]})
 	config = {
-		'global': {'sources': sources},
 		'resources': {'mongo': {'writer': mongod, 'logger': mongod}},
 		't2Units': {},
 		'channels': dict(map(make_channel, range(2))),
 		't0Filters' : {
 			'BasicFilter': {
-				'classFullPath': 'ampel.pipeline.t0.filters.BasicFilter'
+				'classFullPath': 'ampel.pipeline.t0.filter.BasicFilter'
 			}
 		},
 		't3Jobs' : {
@@ -295,10 +262,10 @@ def ingested_transients(alert_generator, minimal_ingestion_config, caplog):
 	Ingest alertsw tih 
 	"""
 	from ampel.pipeline.config.AmpelConfig import AmpelConfig
-	from ampel.pipeline.t0.alerts.AlertSupplier import AlertSupplier
-	from ampel.pipeline.t0.alerts.ZIAlertShaper import ZIAlertShaper
-	from ampel.pipeline.t0.ingesters.ZIAlertIngester import ZIAlertIngester
-	from ampel.pipeline.config.T0Channel import T0Channel
+	from ampel.pipeline.t0.load.AlertSupplier import AlertSupplier
+	from ampel.pipeline.t0.load.ZIAlertShaper import ZIAlertShaper
+	from ampel.pipeline.t0.ingest.ZIAlertIngester import ZIAlertIngester
+	from ampel.pipeline.config.channel.T0Channel import T0Channel
 	from bson import ObjectId
 	
 	import numpy
@@ -307,7 +274,8 @@ def ingested_transients(alert_generator, minimal_ingestion_config, caplog):
 	from ampel.pipeline.db.AmpelDB import AmpelDB
 	col_tran = AmpelDB.get_collection('main')
 	
-	channels = [T0Channel(str(i), {'version': 1, 'sources': AmpelConfig.get_config('global.sources')}, 'ZTFIPAC', lambda *args: True, set()) for i in range(2)]
+	# TODO: fix this: T0Channel __init__(self, chan_config, source, logger): where :param chan_config: instance of ampel.pipeline.config.ChannelConfig
+	channels = [T0Channel(str(i), {'sources': AmpelConfig.get_config('global.sources')}, 'ZTFIPAC', lambda *args: True, set()) for i in range(2)]
 	ingester = ZIAlertIngester(channels)
 	ingester.set_log_id(ObjectId())
 	choices = []
