@@ -4,64 +4,81 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 23.04.2018
-# Last Modified Date: 14.09.2018
+# Last Modified Date: 24.09.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 
 class AlertSupplier:
 	"""
 	Iterable class that for each alert yielded by the provided alert_loader, 
-	returns a dict featuring a format that the AMPEL AlertProcessor understands 
+	returns a dict in a format that the AMPEL AlertProcessor understands.
+	It is essentially made of two parts:
+	- An alert loader that returns either bytes, file-like objects or dicts
+	- An alert shaper that shapes loaded dicts.
 	"""
  
 	def __init__(self, alert_loader, shape_func, serialization=None):
 		"""
-		:param alert_loader: loads and returns alerts file like objects. Class must be iterable.
+		:param Iterable alert_loader: iterable that returns alerts content either as:
+		- dict instances, in which case, no deserialization is necessary
+		- or as file-like objects / bytes, in which case deserialization is required
 		:param shape_func: function that shapes a dict into a form compatible with ampel
-		:param serialization: (optional) either 'avro' or 'json'. Sets the corresponding 
-		deserialization function used to convert file-like objects into dict
+		:param str serialization: (optional) If the alert_loader returns bytes/file_like objects, 
+		deserialization is required to turn them into dicts. 
+		Currently supported built-in deserialization: 'avro' or 'json'. 
+		If you need other deserialization: 
+			- Either implement the deserialization in your alert_loader (that will return dicts)
+			- Or use the method set_deserialize_func(<method>) with an adequate method.
 		"""
 
-		if serialization is None:
-			self.deserialize = None
-		else:
+		self.alert_loader = alert_loader
+		self.shape = shape_func
+
+		if serialization is not None:
 
 			if serialization == "json":
 				import json
-				self.deserialize = lambda f: (json.load(f), {})
-
+				def json_next(self):
+					return self.shape(
+						json.load(
+							next(self.alert_loader)
+						)
+					)
+				type(self).__next__ = json_next
+				
 			elif serialization == "avro":
 				import fastavro
-				def deserialize(f):
-					reader = fastavro.reader(f)
-					return next(reader, None), reader.schema
-				self.deserialize = deserialize
+				def avro_next(self):
+					return self.shape(
+						next(
+							fastavro.reader(
+								next(self.alert_loader)
+							)
+						)
+					)
+				type(self).__next__ = avro_next
 
 			else:
 				raise NotImplementedError(
 					"Deserialization of %s not implemented" % serialization
 				)
 
-		self.alert_loader = alert_loader
-		self.shape = shape_func
-
 
 	def set_deserialize_func(self, deserialize_func):
 		"""
-		Convenience method allowing to override values provided during class instantiation
+		Convenience method allowing to set own deserialization function
 		:param deserializer_func: function deserializing file_like objects into dict 
 		:returns: None
 		"""
-		self.deserialize = deserialize_func
 
+		def custom_next(self):
+			return self.shape(
+				deserialize_func(
+					next(self.alert_loader)
+				)
+			)
 
-	def set_shape_func(self, shape_func):
-		"""
-		Convenience method allowing to override values provided during class instantiation
-		:param shape_func: function that shapes a dict into a form compatible with ampel 
-		:returns: None
-		"""
-		self.shape = shape_func
+		type(self).__next__ = custom_next
 
 
 	def __iter__(self):
@@ -71,17 +88,8 @@ class AlertSupplier:
 	def __next__(self):
 		"""
 		:returns: a dict with a format that the AMPEL AlertProcessor understands 
-		or None if the alert_loader has dried out.
+		:raises StopIteration: when the alert_loader dries out.
 		"""
-		if self.deserialize is None:
-			return self.shape(
-				next(self.alert_loader)
-			)
-		else:
-			fileobj = next(self.alert_loader)
-			if isinstance(fileobj, tuple): # ZIAlertFetcher does return a tuple
-				fileobj, partition_id = fileobj
-			else:
-				partition_id = 0
-			alert, schema = self.deserialize(fileobj)
-			return self.shape(alert)
+		return self.shape(
+			next(self.alert_loader)
+		)
