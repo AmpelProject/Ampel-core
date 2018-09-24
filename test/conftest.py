@@ -20,7 +20,7 @@ def alert_blobs():
 
 @pytest.fixture
 def cutout_alert_generator():
-    from ampel.pipeline.t0.alerts.TarballWalker import TarballWalker
+    from ampel.pipeline.t0.load.TarballWalker import TarballWalker
     def alerts(with_schema=False):
         atat = TarballWalker('/ztf/cutouts/ztf_20180523_programid1.tar.gz')
         for fileobj in itertools.islice(atat.get_files(), 0, 1000, 100):
