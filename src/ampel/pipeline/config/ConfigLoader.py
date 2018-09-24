@@ -17,31 +17,52 @@ DEFAULT_CONFIG = join(abspath(dirname(realpath(__file__))), 'ztf_config.json')
 def load_config(path=DEFAULT_CONFIG, gather_plugins=True):
 	"""Load the JSON configuration file at path, and add plugins registered via pkg_resources"""
 	try:
+
 		with open(path) as f:
 			config = json.load(f)
 		if not gather_plugins:
 			return config
+
+		# CHANNELS
+		##########
+
 		for resource in pkg_resources.iter_entry_points('ampel.channels'):
-			for name, channel_config in resource.resolve()().items():
-				if name in config['channels']:
-					raise KeyError("Channel config {} (defined as entry point {} in {}) already exists in the provided config file".format(name, resource.name, resource.dist))
-				config['channels'][name] = channel_config
+			chan_resource = resource.resolve()()
+			print(type(chan_resource))
+			if type(chan_resource) is dict:
+				chan_resource = [chan_resource]
+			config['channels'].extend(chan_resource)
+
+		# Detect channel name duplicates
+		if len([x for x in config['channels'] if config['channels'].count(x) > 1]) > 0:
+			raise KeyError(
+				"Channels with duplicated names {}".format(
+					set([x for x in config['channels'] if config['channels'].count(x) > 1])
+				)
+			)
+
+		# T0 filters
+		############
+
 		for resource in pkg_resources.iter_entry_points('ampel.pipeline.t0'):
 			klass = resource.resolve()
 			name = resource.name
 			if name in config['t0Filters']:
 				raise KeyError("{} (defined as entry point {} in {}) already exists in the provided config file".format(name, resource.name, resource.dist))
 			config['t0Filters'][name] = dict(classFullPath=klass.__module__)
+
 		for resource in pkg_resources.iter_entry_points('ampel.pipeline.t2.configs'):
 			for name, channel_config in resource.resolve()().items():
 				if name in config['t2RunConfig']:
 					raise KeyError("T2 run config {} (defined as entry point {} in {}) already exists in the provided config file".format(name, resource.name, resource.dist))
 				config['t2RunConfig'][name] = channel_config
+
 		for resource in pkg_resources.iter_entry_points('ampel.pipeline.t3.configs'):
 			for name, channel_config in resource.resolve()().items():
 				if name in config['t3RunConfig']:
 					raise KeyError("T3 run config {} (defined as entry point {} in {}) already exists in the provided config file".format(name, resource.name, resource.dist))
 				config['t3RunConfig'][name] = channel_config
+
 		for resource in pkg_resources.iter_entry_points('ampel.pipeline.t3.jobs'):
 			for name, channel_config in resource.resolve()().items():
 				if name in config['t3Jobs']:
@@ -52,6 +73,7 @@ def load_config(path=DEFAULT_CONFIG, gather_plugins=True):
 					print("Error in {} from {}".format(name, resource.dist))
 					raise
 				config['t3Jobs'][name] = channel_config
+
 	except Exception as e:
 		print("Exception in load_config:")
 		print("-"*60)
