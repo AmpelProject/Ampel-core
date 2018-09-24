@@ -5,3 +5,4 @@ pykafka
 sqlalchemy
 psycopg2
 ipython
+pydantic
