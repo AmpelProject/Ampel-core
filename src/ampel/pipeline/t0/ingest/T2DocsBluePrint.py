@@ -17,13 +17,13 @@ class T2DocsBluePrint():
 		-> A T2 documents for a given compound shared among different channels is referenced only once.
 	"""
 
-	def __init__(self, channels, t2_units_using_uls):
+	def __init__(self, t0_channels, t2_units_using_uls):
 		"""
 		Parameters:
-		'channels': list of instances of ampel.pipeline.config.Channel
-		NOTE: order of 'channels' matters: the parameter 'array_of_scheduled_t2_units'
+		:param t0_channels: list of instances of ampel.pipeline.config.T0Channel
+		NOTE: order of 't0_channels' matters: the parameter 'array_of_scheduled_t2_units'
 		used in method 'create_blueprint' must have the same channel order 
-		't2_units_using_uls': list/set of t2 unit names making use of upper limits
+		:param t2_units_using_uls: list/set of t2 unit names making use of upper limits
 
 		Purpose:
 		Creates the variable 'dd_full_t2Ids_runConfigs_chanlist'
@@ -49,22 +49,22 @@ class T2DocsBluePrint():
 		Values are a set of channel names
 		"""
 
-		if not type(channels) is list:
-			raise ValueError("Parameter channels must be of type: list")
+		if not type(t0_channels) is list:
+			raise ValueError("Parameter t0_channels must be of type: list")
 
-		if len(channels) == 0:
-			raise ValueError("Provided list of channels cannot be empty")
+		if len(t0_channels) == 0:
+			raise ValueError("Provided list of t0_channels cannot be empty")
 
 		self.dd_full_t2Ids_runConfigs_chanlist = {}
-		self.channels = channels
+		self.t0_channels = t0_channels
 
 		# T2 unit making use of upper limits
 		self.t2_units_using_uls = t2_units_using_uls
 
-		# All schedulable t2s for the given channels
+		# All schedulable t2s for the given t0_channels
 		all_t2s = set()
-		for channel in channels:
-			all_t2s |= channel.get_t2_units()
+		for channel in t0_channels:
+			all_t2s |= channel.t2_units
 
 		# Loop through schedulable t2 units
 		for t2_id in all_t2s:
@@ -73,26 +73,33 @@ class T2DocsBluePrint():
 			self.dd_full_t2Ids_runConfigs_chanlist[t2_id] = {}
 
 			# Loop through the t0 channels 
-			for channel in channels:
+			for t0_channel in t0_channels:
 			
 				# Extract default run_config (= run parameter ID = wished configuration) associated with 
-				# with current T2 runnable and for the current T0 channel only.
-				# t2_id is of type 'enum', we access the flag label with the attribute 'name'
-				run_config = channel.get_t2_run_config(t2_id)
+				# with current T2 unit and for the current T0 channel only.
+				t2_execution_unit = next(
+					filter(
+						lambda x: x.unitId==t2_id, 
+						t0_channel.stream_config.t2Compute
+					), None
+				)
 
-				# if run_config was not found, it means the current t2_id 
+				# if t2_execution_unit was not found, it means the current t2_id 
 				# was not registered for the present channel
-				if run_config is None:
+				if t2_execution_unit is None:
 					continue
+
+				#  shortcut
+				run_config = t2_execution_unit.runConfig
 				
 				# if run_config key was not yet stored in dd_full_t2Ids_runConfigs_chanlist struct
 				# create an empty ChannelFlags enum flag
 				if not run_config in self.dd_full_t2Ids_runConfigs_chanlist[t2_id]:
-					self.dd_full_t2Ids_runConfigs_chanlist[t2_id][run_config] = {channel.name}
+					self.dd_full_t2Ids_runConfigs_chanlist[t2_id][run_config] = {t0_channel.name}
 				else:
 					# Add current t0 channel to dd_full_t2Ids_runConfigs_chanlist
 					# For example: dd_full_t2Ids_runConfigs_chanlist[SCM_LC_FIT]["default"].add("CHANNEL_SN")
-					self.dd_full_t2Ids_runConfigs_chanlist[t2_id][run_config].add(channel.name)
+					self.dd_full_t2Ids_runConfigs_chanlist[t2_id][run_config].add(t0_channel.name)
 
 		
 	def create_blueprint(self, compound_blueprint, array_of_scheduled_t2_units):
@@ -116,7 +123,6 @@ class T2DocsBluePrint():
 		  [{"PHOTO_Z", "AGN"}, {"PHOTO_Z", "SNCOSMO"}, etc...]
 		
 		where each position in the array corresponds to a specific channel name
-		(self.channels[i].get_name()):
 		  ["CHANNEL_GRB", "CHANNEL_SN", etc...]
 
 		let's bring the two info above in a more compact form for the sake of this documentation:
@@ -201,7 +207,7 @@ class T2DocsBluePrint():
 			if single_channel_scheduled_t2s is None:
 				continue
 
-			channel = self.channels[i]
+			channel = self.t0_channels[i]
 
 			# loop through scheduled runnable ids
 			for t2_id in single_channel_scheduled_t2s:
