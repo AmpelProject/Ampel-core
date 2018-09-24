@@ -64,7 +64,8 @@ class TargetSourceListener(AbsTargetSource):
 		server.close()
 		await server.wait_closed()
 
-from ampel.archive import ArchiveDB
+from ampel.archive.ArchiveDB import ArchiveDB
+from sqlite3 import OperationalError
 
 @pytest.fixture
 def archivedb():
@@ -73,7 +74,7 @@ def archivedb():
 		ArchiveDB(uri)
 		return uri
 	except OperationalError as e:
-		raise e
+		raise e # TODO: return won't be called after this
 		return pytest.skip("No archive db found")
 
 from ampel.pipeline.config.AmpelConfig import AmpelConfig
@@ -81,71 +82,31 @@ from ampel.pipeline.config.AmpelConfig import AmpelConfig
 def testing_config(mongod, archivedb):
 	AmpelConfig.reset()
 	config = {
-	    'global': {
-	        "sources": {
-	            "ZTFIPAC": {
-	                "alerts": {
-	                    "alertHistoryLength": 30,
-	                    "processing": {
-	                        "parse": "ampel.pipeline.t0.alerts.ZIAlertParser",
-	                        "shape": "ampel.pipeline.t0.alerts.ZIAlertShaper",
-	                        "serialization": "avro"
-	                    },
-	                    "flags": [
-	                        "INST_ZTF",
-	                        "SRC_IPAC"
-	                    ],
-	                    "mappings": {
-	                        "tranId": "objectId",
-	                        "pptId": "candid",
-	                        "obsDate": "jd",
-	                        "filterId": "fid",
-	                        "mag": "magpsf"
-	                    }
-	                },
-	                "ingestion": {
-	                    "class": "ampel.pipeline.t0.ingesters.ZIAlertIngester",
-	                    "photoShaper": "ampel.pipeline.t0.ingesters.ZIPhotoPointShaper",
-	                    "checkReprocessing": True,
-	                    "tranIdPrefix": None
-	                },
-	                "flags": {
-	                    "photo": "INST_ZTF",
-	                    "main": "INST_ZTF"
-	                }
-	            }
-	        }
-	    },
 	    'resources': {
 	        'mongo': {'writer': mongod},
 	        'archive': {'reader': archivedb},
 	        },
-	    'channels': {
-	        "NO_FILTER": {
-	            "version": 1.0,
+	    'channels': [
+			{
+				"channel": "NO_FILTER",
 	            "active": False,
-	            "sources": {
-	                "ZTFIPAC": {
+	            "sources": [
+					{
+						"stream": "ZTFIPAC",
 	                    "parameters": {
 	                        "ZTFPartner": True,
 	                        "autoComplete": True,
 	                        "updatedHUZP": True
 	                    },
 	                    "t0Filter": {
-	                        "dbEntryId": "NoFilter",
+	                        "unitId": "NoFilter",
 	                        "runConfig": {}
 	                    },
-	                    "t2Compute": [],
-	                    "t3Supervize": {}
+	                    "t2Compute": []
 	                }
-	            },
-	            "general": {
-	                "t3Supervize": {
-	                    "Purge": {}
-	                }
-	            }
+	            ]
 	        },
-	    },
+	    ],
 	    't0Filters' : {
 	        'NoFilter' : {
 	            'classFullPath': 'ampel.contrib.hu.t0.NoFilter',
