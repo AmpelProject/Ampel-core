@@ -10,42 +10,7 @@
       },
       "catsHTM": "file:///path/to/catsHTM/should/be/set"
     },
-    "channels": {},
-    "global": {
-        "sources": {
-            "ZTFIPAC": {
-                "alerts": {
-                    "alertHistoryLength": 30,
-                    "processing": {
-                        "parse": "ampel.pipeline.t0.alerts.ZIAlertParser",
-                        "shape": "ampel.pipeline.t0.alerts.ZIAlertShaper",
-                        "serialization": "avro"
-                    },
-                    "flags": [[
-                        "INST_ZTF",
-                        "SRC_IPAC"
-                    ]],
-                    "mappings": {
-                        "tranId": "objectId",
-                        "pptId": "candid",
-                        "obsDate": "jd",
-                        "filterId": "fid",
-                        "mag": "magpsf"
-                    }
-                },
-                "ingestion": {
-                    "class": "ampel.pipeline.t0.ingesters.ZIAlertIngester",
-                    "photoShaper": "ampel.pipeline.t0.ingesters.ZIPhotoPointShaper",
-                    "checkReprocessing": true,
-                    "tranIdPrefix": null
-                },
-                "flags": {
-                    "photo": "INST_ZTF",
-                    "main": "INST_ZTF"
-                }
-            }
-        }
-    },
+    "channels": [],
     "t0Filters": {},
     "t2RunConfig": {},
     "t2Units": {},
