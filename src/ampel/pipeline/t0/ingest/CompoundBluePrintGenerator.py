@@ -8,7 +8,7 @@
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import hashlib, json
-from ampel.pipeline.t0.ingesters.CompoundBluePrint import CompoundBluePrint
+from ampel.pipeline.t0.ingest.CompoundBluePrint import CompoundBluePrint
 
 class CompoundBluePrintGenerator():
 	"""
@@ -23,32 +23,34 @@ class CompoundBluePrintGenerator():
 	"opt": option
 	"""
 
-	def __init__(self, channels, CompoundShaper, logger):
+	def __init__(self, t0_channels, CompoundShaper, logger):
 		"""
-		channels: list of instances of ampel.pipeline.config.Channel
-		CompoundShaper: child *class* (not instance) of ampel.core.abstract.AbsCompoundShaper
-		logger: logger instance (python module 'logging')
+		:param t0_channels: list of instances of ampel.pipeline.config.T0Channel
+		:param CompoundShaper: child *class* (not instance) of ampel.core.abstract.AbsCompoundShaper
+		:param logger: logger instance (python module 'logging')
+		:returns: None
 		"""
 
 		self.logger = logger
 		self.chan_opts = {
-			chan.name: chan.get_config("parameters") 
-			for chan in channels
+			chan.name: chan.stream_config.parameters
+			for chan in t0_channels
 		}
 		self.CompoundShaper = CompoundShaper
 
 
 	def generate(self, tran_id, dict_list, channel_names):
 		"""	
-		'tran_id': transient id (int or str)
-		'dict_list': list of dict instances representing photopoint or upperlimis measurements
+		:param tran_id: transient id (int or str)
+		:param dict_list: list of dict instances representing photopoint or upperlimis measurements
 		######################################
 		IMPORTANT: list must be timely sorted.
 		######################################
 		The sorting is not done within this method because CompoundBluePrint 
 		aims at being instrument independant.  For ZTF, the field 'jd' is used:
 		-> sorted(dict_list, key=lambda k: k['jd'])
-		'channel_names': iterable sequence of of channel names (string)
+		:param channel_names: iterable sequence of of channel names (string)
+		:returns: instance of CompoundBluePrint
 		"""	
 
 		cbp = CompoundBluePrint()
