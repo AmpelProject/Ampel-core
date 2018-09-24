@@ -11,6 +11,7 @@ import collections, logging, sys, traceback
 from functools import reduce
 from types import MappingProxyType
 from ampel.pipeline.logging.LoggingUtils import LoggingUtils
+from ampel.pipeline.config.ReadOnlyDict import ReadOnlyDict
 
 class AmpelUtils():
 	""" 
@@ -144,7 +145,7 @@ class AmpelUtils():
 			otherwise: arg is returned 'as is'
 		"""
 		if isinstance(arg, dict):
-			return MappingProxyType(
+			return ReadOnlyDict(
 				{
 					AmpelUtils.recursive_freeze(k): AmpelUtils.recursive_freeze(v) 
 					for k,v in arg.items()
