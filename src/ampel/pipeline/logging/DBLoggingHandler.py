@@ -4,186 +4,160 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 14.12.2017
-# Last Modified Date: 04.07.2018
+# Last Modified Date: 25.09.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-import logging, time
+import logging
 from pymongo import MongoClient
+from pymongo.errors import BulkWriteError
+from bson import ObjectId
+from time import time
+from datetime import datetime
 
 from ampel.pipeline.db.AmpelDB import AmpelDB
-from ampel.core.flags.LogRecordFlags import LogRecordFlags
 from ampel.pipeline.config.AmpelConfig import AmpelConfig
 
 class DBLoggingHandler(logging.Handler):
 	"""
-		Custom subclass of logging.Handler responsible for 
-		logging log events into the NoSQL database.
-		Each database log entry contains a global flag (ampel.core.flags.LogRecordFlags)
-		which includes the log severity level.
+	Custom subclass of logging.Handler responsible for 
+	logging log events into the NoSQL database.
 	"""
-	severity_map = {
-		10: LogRecordFlags.DEBUG,
-		20: LogRecordFlags.INFO,
-		30: LogRecordFlags.WARNING,
-		40: LogRecordFlags.ERROR,
-		50: LogRecordFlags.CRITICAL
-	}
 
-	def __init__(self, tier, info=None, logs_collection=None, previous_logs=None, flush_len=1000):
+	def __init__(self, tier, col="jobs", aggregate_interval=1, flush_len=1000):
 		""" 
-		'tier': integer (0,1,2,3) indicating at which ampel tier level loggin is done
-		'info': optional dict instance to be include in the root doc 
-		'logs_collection': None or instance of pymongo.collection.Collection 
-			-> If None default 'stats' collection from AmpelDB will be used
-			-> otherwise, the provided logs_collection will be used
+		:param int tier: number indicating at which ampel tier level logging is done (0,1,2,3) 
+		:param str col: name of db collection to use
+		-> If None default 'stats' collection from AmpelDB will be used
+		-> otherwise, the provided db_col will be used
+		:param int aggregate_interval: logs with equals attributes 
+		(log level, possibly tranId & alertId) are put together in one document instead
+		of being splitted in one document per log entry (spares some index RAM).
+		aggregate_interval is the max interval in seconds during which the log aggregation
+		takes place. Beyond this value, a new log document is created no matter what.
+		Default value is 1.
+		:param int flush_lean: How many log documents should be kept in memory before
+		attempting a DB bulk_write operation.
 		"""
-		self.global_flags = LogRecordFlags(0)
-		self.temp_flags = LogRecordFlags(0)
 		self.flush_len = flush_len
 		self.flush_force = flush_len + 50
-		self.tranId = None
+		self.aggregate_interval = aggregate_interval
+		self.tran_id = None
 		self.channels = None
+		self.tier = tier
 		self.records = []
 		self.filters = []  # required when extending logging.Handler
 		self.lock = None   # required when extending logging.Handler
 		self._name = None
-		self.has_error = False
-		self.last_rec = {'fl': -1}
+		self.last_rec = None
+
+		# runId is a global (ever increasing) counter stored in the DB
+		# used to tie log entries from the same process with each other
+		self.run_id = AmpelDB.get_collection('counter').find_one_and_update(
+			{'_id': 'current_run_id'},
+			{'$inc': {'value': 1}},
+			new=True, upsert=True
+		).get('value')
+
+		# Get reference to pymongo collection
+		self.col = AmpelDB.get_collection(col)
+
+		# Set loggingHandler properties
 		self.setLevel(logging.DEBUG)
 		self.setFormatter(logging.Formatter('%(message)s'))
 
-		# Get reference to pymongo 'jobs' collection
-		self.col = AmpelDB.get_collection('jobs') if logs_collection is None else logs_collection
-
-		# Will raise Exception if DB connectivity issue exist
-		self.log_id = self.col.insert_one({"tier": tier, "info": info}).inserted_id
-
-		if previous_logs is not None:
-			self.prepend_logs(previous_logs)
-
-	def set_global_flags(self, arg):
-		""" """
-		self.global_flags |= arg
-
-	def remove_global_flags(self, arg):
-		""" """
-		self.global_flags &= ~arg
-
-	def set_temp_flags(self, arg):
-		""" """
-		self.temp_flags |= arg
-
-	def unset_temp_flags(self, arg):
-		""" """
-		self.temp_flags &= ~arg
 
 	def set_channels(self, arg):
 		""" """
 		self.channels = arg
 
+
 	def unset_channels(self):
 		""" """
 		self.channels = None
 
-	def set_tranId(self, arg):
-		""" """
-		self.tranId = arg
 
-	def unset_tranId(self):
+	def set_tran_id(self, arg):
 		""" """
-		self.tranId = None
+		self.tran_id = arg
+
+
+	def unset_tran_id(self):
+		""" """
+		self.tran_id = None
+
+
+#	@abstractmethod
+#	def can_aggregate(self, record):
+#
+#		return (
+#			self.last_rec and 
+#			record.levelno == self.last_rec['lvl'] and 
+#			time() - self.last_rec['_id'].generation_time.timestamp() < self.aggregate_interval and 
+#			self.tran_id == self.last_rec.get('tranId') and
+#			self.channels == self.last_rec.get('channels')
+#		)
+
 
 	def emit(self, record):
 		""" """
 
-		# TODO (note to self): Comment code
-		rec_dt = int(record.created)
-		rec_flag = (self.global_flags | self.temp_flags | DBLoggingHandler.severity_map[record.levelno]).value
-
-		# Same flag and date (+- 1 sec)
+		# Same flag, date (+- 1 sec), tran_id and chans
 		if (
-			rec_flag == self.last_rec['fl'] and 
-			(rec_dt == self.last_rec['dt'] or rec_dt - 1 == self.last_rec['dt']) and 
-			(
-				(self.tranId is None and 'tr' not in self.last_rec) or
-				(self.tranId is not None and 'tr' in self.last_rec and self.tranId == self.last_rec['tr'])
-			)
+			self.last_rec and 
+			record.levelno == self.last_rec['lvl'] and 
+			time() - self.last_rec['_id'].generation_time.timestamp() < self.aggregate_interval and 
+			self.tran_id == self.last_rec.get('tranId') and
+			self.channels == self.last_rec.get('channels')
 		):
 
 			rec = self.last_rec
-			if type(rec['ms']) is not list:
-				rec['ms'] = [rec['ms']]
+			if type(rec['msg']) is not list:
+				rec['msg'] = [rec['msg']]
 
-			if self.channels is not None:
-				last_log = rec['ms'][-1]
-				if type(last_log) is dict and 'ch' in last_log and last_log['ch'] == self.channels:
-					if type(last_log['m']) is not list:
-						last_log['m'] = [last_log['m']]
-					last_log['m'].append(self.format(record))
-				else:
-					rec['ms'].append(
-						{
- 							"m" : self.format(record),
-							"ch" : self.channels
-						}
-					)
-			else: 
-				rec['ms'].append(self.format(record))
+			rec['msg'].append(record.msg)
+
 		else:
 
 			if len(self.records) > self.flush_len:
 				self.flush()
 
 			rec = {
-				'dt': rec_dt,
-				'fl': rec_flag
-				#'filename': record.filename,
-				#'lineno': record.lineno,
-				#'funcName': record.funcName,
+				'_id': ObjectId(),
+				'tier': self.tier,
+				'runId': self.run_id,
+				'lvl': record.levelno,
+				'msg': self.format(record)
 			}
-		
-			if self.tranId is not None:
-				rec['tr'] = self.tranId
 
-			rec['ms'] = self.format(record) if self.channels is None else {
-                "m" : self.format(record),
-                "ch" : self.channels
-            }
+			if record.levelno > logging.INFO:
+				rec['filename'] = record.filename,
+				rec['lineno'] = record.lineno,
+				rec['funcName'] = record.funcName,
 		
-			self.last_rec = rec
+			if self.tran_id:
+				rec['tranId'] = self.tran_id
+
+			if self.channels:
+				rec['channels'] = self.channels
+
 			self.records.append(rec)
-
-		if record.levelno == 40 or record.levelno == 50:
-			self.has_error = True
+			self.last_rec = rec
 
 		if len(self.records) > self.flush_force:
 			self.flush()
 
 
-	def prepend_logs(self, logs):
-		"""
-		"""
-		if not type(logs) is list:
-			logs = [logs]
-			
-		self.records[0:0] = logs
+	def get_run_id(self):
+		""" """
+		return self.run_id
 
 
-	def get_log_id(self):
-		""" 
-		get ObjectId of document caintaing the logs
-		"""
-		return self.log_id
-
-
-	def remove_log_entry(self):
+	def remove_log_entries(self):
 		""" """
 
-		del_result = self.col.delete_one({'_id': self.log_id})
-
-		# Update result check
-		if del_result.deleted_count != 1 or del_result.acknowledged is False:
-			raise ValueError("Deletion failed: %s" % del_result.raw_result)
+		del_result = self.col.delete_many(
+			{'runId': self.run_id}
+		)
 
 
 	def flush(self):
@@ -196,25 +170,33 @@ class DBLoggingHandler(logging.Handler):
 			return
 
 		# Perform DB operation
-		update_result = self.col.update_one(
-			{'_id': self.log_id},
-			{
-				'$push': {
-					'records': { 
-						'$each': self.records
-					}
-				},
-				'$set': {
-					'duration': int(time.time() - self.log_id.generation_time.timestamp()),
-					'hasError': self.has_error
-				}
-			},
-			upsert=True
-		)
+		try:
+			res = self.col.insert_many(self.records)
+		except BulkWriteError as bwe:
+			logging.error(bwe.details)
+			return
 
 		# Update result check
-		if update_result.modified_count != 1 or update_result.acknowledged is False:
-			raise ValueError("Modification failed: %s" % update_result.raw_result)
+		if len(res.inserted_ids) != len(self.records):
+
+			# Print log stack using std logging 
+			logging.error("DB log flushing error with following log stack:")
+			logging.error("###############################################")
+			for el in self.records:
+				if el['_id'] in res.inserted_ids:
+					logging.info(el)
+				else:
+					logging.error(el)
+			logging.error("###############################################")
+
+			# If we can no longer keep track of what Ampel is doing, 
+			# better raise Exception to stop processing
+			raise ValueError(
+				"Log flushing error: %i records present but %i were inserted into db" % (
+					len(self.records), len(res.inserted_ids),
+				)
+			)
 
 		# Empty referenced logs entries
 		self.records = []
+		self.last_rec = None
