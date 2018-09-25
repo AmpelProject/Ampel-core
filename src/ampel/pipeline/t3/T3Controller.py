@@ -171,7 +171,8 @@ def rununit(args):
 					"TRANSIENT",
 					"COMPOUND",
 					"T2RECORD",
-					"PHOTOPOINT"
+					"PHOTOPOINT",
+					"UPPERLIMIT"
 				],
 				"verbose": False
 			},
