@@ -19,7 +19,7 @@ class ChannelLoader:
 		"""
 		:param chan_names: list of strings
 		:param logger: logger instance (python logging module)
-		:returns: list of ampel.pipeline.config.AmpelConfig instances
+		:returns: list of ampel.pipeline.config.channel.ChannelConfig instances
 		:raises ValueError: if
 		  - duplicate values are found in chan_names
 		  - channels with duplicate names are found (chan_names == None)
