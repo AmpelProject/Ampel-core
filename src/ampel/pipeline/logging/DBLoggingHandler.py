@@ -4,18 +4,15 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 14.12.2017
-# Last Modified Date: 25.09.2018
+# Last Modified Date: 26.09.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-import logging
-from pymongo import MongoClient
-from pymongo.errors import BulkWriteError
+import logging, struct, os
 from bson import ObjectId
-from time import time
-from datetime import datetime
-
+from pymongo.errors import BulkWriteError
+from pymongo.operations import UpdateOne
 from ampel.pipeline.db.AmpelDB import AmpelDB
-from ampel.pipeline.config.AmpelConfig import AmpelConfig
+from ampel.pipeline.logging.LoggingUtils import LoggingUtils
 
 class DBLoggingHandler(logging.Handler):
 	"""
@@ -23,7 +20,9 @@ class DBLoggingHandler(logging.Handler):
 	logging log events into the NoSQL database.
 	"""
 
-	def __init__(self, tier, col="jobs", aggregate_interval=1, flush_len=1000):
+	def __init__(
+		self, tier, col="logs", level=logging.DEBUG, aggregate_interval=1, flush_len=1000
+	):
 		""" 
 		:param int tier: number indicating at which ampel tier level logging is done (0,1,2,3) 
 		:param str col: name of db collection to use
@@ -35,35 +34,56 @@ class DBLoggingHandler(logging.Handler):
 		aggregate_interval is the max interval in seconds during which the log aggregation
 		takes place. Beyond this value, a new log document is created no matter what.
 		Default value is 1.
-		:param int flush_lean: How many log documents should be kept in memory before
+		:param int flush_len: How many log documents should be kept in memory before
 		attempting a DB bulk_write operation.
 		"""
+
+		self.filters = []  # required when extending logging.Handler
+		self.lock = None   # required when extending logging.Handler
+		self._name = None
+
 		self.flush_len = flush_len
-		self.flush_force = flush_len + 50
 		self.aggregate_interval = aggregate_interval
 		self.tran_id = None
 		self.channels = None
 		self.tier = tier
-		self.records = []
-		self.filters = []  # required when extending logging.Handler
-		self.lock = None   # required when extending logging.Handler
-		self._name = None
-		self.last_rec = None
-
+		self.log_dicts = []
+		self.last_log_dict = None
 		# runId is a global (ever increasing) counter stored in the DB
-		# used to tie log entries from the same process with each other
-		self.run_id = AmpelDB.get_collection('counter').find_one_and_update(
+		self.run_id = self.new_run_id()
+		self.headers = []
+
+		# Get reference to pymongo collection
+		self.col = AmpelDB.get_collection(col)
+			
+		# Set loggingHandler properties
+		self.setLevel(level)
+
+		# ObjectID middle: 3 bytes machine + # 2 bytes pid
+		self.oid_middle = ObjectId._machine_bytes + struct.pack(">H", os.getpid() % 0xFFFF)
+
+
+	def new_run_id(self):
+		""" 
+		runId is a global (ever increasing) counter stored in the DB
+		used to tie log entries from the same process with each other
+		"""
+		return AmpelDB.get_collection('counter').find_one_and_update(
 			{'_id': 'current_run_id'},
 			{'$inc': {'value': 1}},
 			new=True, upsert=True
 		).get('value')
 
-		# Get reference to pymongo collection
-		self.col = AmpelDB.get_collection(col)
 
-		# Set loggingHandler properties
-		self.setLevel(logging.DEBUG)
-		self.setFormatter(logging.Formatter('%(message)s'))
+	def add_headers(self, dicts):
+		"""
+		:param list dicts: list of dict instances
+		"""
+		if len(dicts) > self.flush_len:
+			# We could do something about that.. later if need be
+			raise ValueError("Too many logrecord headers")
+
+		self.headers = dicts
 
 
 	def set_channels(self, arg):
@@ -86,65 +106,64 @@ class DBLoggingHandler(logging.Handler):
 		self.tran_id = None
 
 
-#	@abstractmethod
-#	def can_aggregate(self, record):
-#
-#		return (
-#			self.last_rec and 
-#			record.levelno == self.last_rec['lvl'] and 
-#			time() - self.last_rec['_id'].generation_time.timestamp() < self.aggregate_interval and 
-#			self.tran_id == self.last_rec.get('tranId') and
-#			self.channels == self.last_rec.get('channels')
-#		)
-
-
 	def emit(self, record):
-		""" """
+		""" 
+		"""
 
-		# Same flag, date (+- 1 sec), tran_id and chans
-		if (
-			self.last_rec and 
-			record.levelno == self.last_rec['lvl'] and 
-			time() - self.last_rec['_id'].generation_time.timestamp() < self.aggregate_interval and 
-			self.tran_id == self.last_rec.get('tranId') and
-			self.channels == self.last_rec.get('channels')
-		):
+		try: 
+			# Same flag, date (+- 1 sec), tran_id and chans
+			if (
+				self.last_log_dict and 
+				record.levelno == self.last_log_dict['lvl'] and 
+				record.created - struct.unpack(">i", self.last_log_dict['_id'].binary[0:4])[0] < 
+				self.aggregate_interval and 
+				self.tran_id == self.last_log_dict.get('tranId') and
+				self.channels == self.last_log_dict.get('channels')
+			):
+	
+				rec = self.last_log_dict
+				if type(rec['msg']) is not list:
+					rec['msg'] = [rec['msg']]
+	
+				rec['msg'].append(record.msg)
+	
+			else:
+	
+				if len(self.log_dicts) > self.flush_len:
+					self.flush()
+	
+				# Generate object id with log record.created as current time
+				with ObjectId._inc_lock:
+					oid = struct.pack(">i", int(record.created)) + \
+						  self.oid_middle + \
+						  struct.pack(">i", ObjectId._inc)[1:4]
+					ObjectId._inc = (ObjectId._inc + 1) % 0xFFFFFF
+	
+				rec = {
+					'_id': ObjectId(oid=oid),
+					'tier': self.tier,
+					'runId': self.run_id,
+					'lvl': record.levelno,
+					'msg': record.msg
+				}
+	
+				if record.levelno > logging.INFO:
+					rec['filename'] = record.filename,
+					rec['lineno'] = record.lineno,
+					rec['funcName'] = record.funcName,
+			
+				if self.tran_id:
+					rec['tranId'] = self.tran_id
+	
+				if self.channels:
+					rec['channels'] = self.channels
+	
+				self.log_dicts.append(rec)
+				self.last_log_dict = rec
 
-			rec = self.last_rec
-			if type(rec['msg']) is not list:
-				rec['msg'] = [rec['msg']]
-
-			rec['msg'].append(record.msg)
-
-		else:
-
-			if len(self.records) > self.flush_len:
-				self.flush()
-
-			rec = {
-				'_id': ObjectId(),
-				'tier': self.tier,
-				'runId': self.run_id,
-				'lvl': record.levelno,
-				'msg': self.format(record)
-			}
-
-			if record.levelno > logging.INFO:
-				rec['filename'] = record.filename,
-				rec['lineno'] = record.lineno,
-				rec['funcName'] = record.funcName,
-		
-			if self.tran_id:
-				rec['tranId'] = self.tran_id
-
-			if self.channels:
-				rec['channels'] = self.channels
-
-			self.records.append(rec)
-			self.last_rec = rec
-
-		if len(self.records) > self.flush_force:
-			self.flush()
+		except Exception as e:
+			self.__report_exception__(e)
+			raise e from None
 
 
 	def get_run_id(self):
@@ -152,12 +171,11 @@ class DBLoggingHandler(logging.Handler):
 		return self.run_id
 
 
-	def remove_log_entries(self):
-		""" """
-
-		del_result = self.col.delete_many(
-			{'runId': self.run_id}
-		)
+	def purge(self):
+		""" 
+		"""
+		self.log_dicts=[]
+		self.last_log_dict = None
 
 
 	def flush(self):
@@ -166,37 +184,80 @@ class DBLoggingHandler(logging.Handler):
 		"""
 
 		# No log entries
-		if not self.records:
+		if not self.log_dicts:
 			return
 
-		# Perform DB operation
 		try:
-			res = self.col.insert_many(self.records)
+			if self.headers:
+				self.col.bulk_write(
+					[
+						UpdateOne(
+							{'_id': rec['_id']},
+							{
+								'$setOnInsert': rec,
+								'$addToSet': {
+									'runId': self.run_id
+								} 
+							},
+							upsert=True
+						)
+						for rec in self.headers
+					]
+				)
+				self.headers = None
+
+			self.col.insert_many(self.log_dicts)
+
 		except BulkWriteError as bwe:
-			logging.error(bwe.details)
-			return
+			self.__report_exception__(bwe, bwe.details)
+			raise bwe from None
 
-		# Update result check
-		if len(res.inserted_ids) != len(self.records):
-
-			# Print log stack using std logging 
-			logging.error("DB log flushing error with following log stack:")
-			logging.error("###############################################")
-			for el in self.records:
-				if el['_id'] in res.inserted_ids:
-					logging.info(el)
-				else:
-					logging.error(el)
-			logging.error("###############################################")
-
+		except Exception as e:
+			self.__report_exception__(e)
 			# If we can no longer keep track of what Ampel is doing, 
 			# better raise Exception to stop processing
-			raise ValueError(
-				"Log flushing error: %i records present but %i were inserted into db" % (
-					len(self.records), len(res.inserted_ids),
-				)
-			)
+			raise e from None
+
 
 		# Empty referenced logs entries
-		self.records = []
-		self.last_rec = None
+		self.log_dicts = []
+		self.last_log_dict = None
+
+
+	def __report_exception__(self, e, bwe_details=None):
+		"""
+		"""
+
+		from ampel.pipeline.logging.LoggingUtils import LoggingUtils
+		from ampel.pipeline.common.AmpelUtils import AmpelUtils
+
+		# Print log stack using std logging 
+		logger = LoggingUtils.get_logger(unique=True)
+
+		AmpelUtils.log_exception(logger, e, msg="Primary exception:")
+
+		if bwe_details:
+			logger.error("BulkWriteError details:")
+			logger.error(bwe_details)
+			logger.error("#"*52)
+
+		logger.error("DB log flushing error, un-flushed (json) logs below.")
+		logger.error("*"*52)
+
+		for d in self.log_dicts:
+			logger.error(str(d))
+		logger.error("#"*52)
+
+		try: 
+			# This will fail as well if we have DB connectivity issues
+			AmpelUtils.report_exception(
+				self.tier, dblh=self,
+				info = None if bwe_details is None else {'BulkWriteError': str(bwe_details)}
+			)
+		except Exception as ee:
+			AmpelUtils.log_exception(
+				logger, ee, last=True,
+				msg="Could not update troubles collection as well (DB offline?)"
+			)
+
+		# TODO: try slack ? (will fail if network issue)
