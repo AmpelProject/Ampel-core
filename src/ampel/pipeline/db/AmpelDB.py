@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 16.06.2018
-# Last Modified Date: 31.08.2018
+# Last Modified Date: 25.09.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from ampel.pipeline.config.AmpelConfig import AmpelConfig
@@ -16,8 +16,8 @@ class AmpelDB:
 
 	_db_names = {
 		'data': 'Ampel_data',
-		'logs': 'Ampel_logs',
-		'reports': 'Ampel_reports'
+		'var': 'Ampel_var',
+		'ext': 'Ampel_ext'
 	}
 
 	# None will be replaced by instance of pymongo.collection.Collection the first time
@@ -27,13 +27,15 @@ class AmpelDB:
 			'main': None,
 			'photo': None
 		},
-		'logs': {
+		'var': {
 			'jobs': None,
-			'counter': None,
+			'logs': None,
 			'troubles': None
 		},
-		'reports': {
-			'runs': None
+		'ext': {
+			'counter': None,
+			'runConfig': None,
+			'journal': None
 		}
 	}
 
@@ -43,21 +45,21 @@ class AmpelDB:
 	# least priviledged role required to write
 	_db_config_roles = {
 		'data': 'writer',
-		'logs': 'logger',
-		'reports': 'logger'
+		'var': 'logger',
+		'ext': 'logger'
 	}
 	
 	# least priviledged role required to read
 	_db_config_reader_roles = {
 		'data': 'logger',
-		'logs': 'logger',
-		'reports': 'logger'
+		'var': 'logger',
+		'ext': 'logger'
 	}
 
 	db_contact = {
 		'data': False,	
-		'logs': False,	
-		'reports': False
+		'var': False,	
+		'ext': False
 	}
 
 
@@ -150,7 +152,7 @@ class AmpelDB:
 	def create_indexes(col):
 		"""
 		The method will set indexes for collections with names: 
-		'main', 'photo', 'logs'
+		'main', 'photo', 'jobs'
 		"""
 
 		if col.name == "main":
@@ -165,9 +167,7 @@ class AmpelDB:
 
 			# Create sparse runstate index
 			col.create_index(
-				[
-					("runState", 1)
-				],
+				[("runState", 1)],
 				**{ 
 					"partialFilterExpression": {
 						"alDocType": AlDocTypes.T2RECORD
@@ -185,9 +185,7 @@ class AmpelDB:
 
 			# Create sparse index for key hasError
 			col.create_index(
-				[
-					("hasError", 1)
-				],
+				[("hasError", 1)],
 				**{ 
 					"partialFilterExpression": {
 						"hasError": { "$exists": True } 
@@ -195,12 +193,31 @@ class AmpelDB:
 				}
 			)
 
+		elif col.name == "logs":
+
+			col.create_index(
+				[("runId", 1)],
+			)
+
+			# Create sparse index for key runId
+			col.create_index(
+				[("tranId", 1)],
+				**{ 
+					"partialFilterExpression": {
+						"tranId": { "$exists": True } 
+					}
+				}
+			)
+
+			# Create sparse index for key runId
+			col.create_index(
+				[("channel", 1)],
+				**{ 
+					"partialFilterExpression": {
+						"channel": { "$exists": True } 
+					}
+				}
+			)
+
 		elif col.name == "troubles":
 			pass
-
-
-	@classmethod
-	def set_collection(cls, name, value):
-		""" 
-		"""
-		pass
