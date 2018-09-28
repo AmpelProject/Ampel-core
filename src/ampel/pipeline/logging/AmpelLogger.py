@@ -17,17 +17,18 @@ class AmpelLogger(logging.Logger):
 	@staticmethod
 	def get_unique_logger(**kwargs):
 		"""
-		Returns a new AmpelLogger instance at each execution.
-		It calls AmpelLogger.get_logger with a unique logger 'name' generated using 
-		the current time (example: *"Ampel-23:58:39.911725"*).
-		Please check method AmpelLogger._new_logger for more info regarding the returned instance
+		Returns a new instance of :obj:`AmpelLogger <ampel.pipeline.logging.AmpelLogger>` at each execution.
+		This method calls :func:`get_logger <al.AmpelLogger.get_logger>` with a logger *name* 
+		generated using the current time (example: *"Ampel-23:58:39.911725"*).
+		Please check method :func:`_new_logger <ampel.pipeline.logging.AmpelLogger._new_logger>` 
+		for more info regarding the returned logger.
 
 		:param dict ``**kwargs``: passed to :func:`_new_logger <al.AmpelLogger._new_logger>`
 		:returns: :func:`AmpelLogger <al.AmpelLogger>` instance
 
 		Typical use:\n
 		.. sourcecode:: python\n
-			logger = AmpelLogger.get_logger()
+			logger = AmpelLogger.get_unique_logger()
 		"""
 
 		from datetime import datetime
@@ -39,13 +40,18 @@ class AmpelLogger(logging.Logger):
 	@staticmethod
 	def get_logger(name="Ampel", **kwargs):
 		"""
-		Creates or returns an instance of :func:`AmpelLogger <ampel.pipeline.logging.AmpelLogger>` 
-		that is registered in a static dict :func:`loggers <ampel.pipeline.logging.AmpelLogger>` using the provided name.
+		Creates or returns an instance of :obj:`AmpelLogger <ampel.pipeline.logging.AmpelLogger>` 
+		that is registered in static dict :func:`loggers <ampel.pipeline.logging.AmpelLogger.loggers>` 
+		using the provided name.
 		If a logger with the given name already exists, the existing logger instance is returned.
+		This method calls :func:`_new_logger <ampel.pipeline.logging.AmpelLogger._new_logger>`  
+		with the provided logger *name* (default: *Ampel*). 
+		Please check :func:`_new_logger <ampel.pipeline.logging.AmpelLogger._new_logger>`
+		for more info regarding the returned logger.
 
 		:param str name: logger name
 		:param dict ``**kwargs``: passed to :func:`_new_logger <al.AmpelLogger._new_logger>`
-		:returns: :func:`AmpelLogger <ampel.pipeline.logging.AmpelLogger>` instance
+		:returns: :obj:`AmpelLogger <ampel.pipeline.logging.AmpelLogger>` instance
 
 		Typical use:\n
 		.. sourcecode:: python\n
@@ -63,14 +69,14 @@ class AmpelLogger(logging.Logger):
 	@staticmethod
 	def _new_logger(name, log_level=logging.DEBUG, datefmt="%Y-%m-%d %H:%M:%S"):
 		"""
-		Creates an instance of :func:`AmpelLogger <ampel.pipeline.logging.AmpelLogger>` 
+		Creates an instance of :obj:`AmpelLogger <ampel.pipeline.logging.AmpelLogger>` 
 		with the following properties:\n
 		- `propagate` is set to False
 		- it is associated with a `logging.StreamHandler` instance initialized with sys.stderr
 		- the later uses ampel.pipeline.logging.ExtraLogFormatter as formatter
 
 		:param str name: logger name
-		:returns: :func:`AmpelLogger <ampel.pipeline.logging.AmpelLogger>` instance
+		:returns: :obj:`AmpelLogger <ampel.pipeline.logging.AmpelLogger>` instance
 		"""
 
 		logger = AmpelLogger(name)
