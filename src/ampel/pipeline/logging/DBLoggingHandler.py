@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 14.12.2017
-# Last Modified Date: 26.09.2018
+# Last Modified Date: 28.09.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import logging, struct, os
@@ -12,7 +12,7 @@ from bson import ObjectId
 from pymongo.errors import BulkWriteError
 from pymongo.operations import UpdateOne
 from ampel.pipeline.db.AmpelDB import AmpelDB
-from ampel.pipeline.logging.LoggingUtils import LoggingUtils
+
 
 class DBLoggingHandler(logging.Handler):
 	"""
@@ -48,7 +48,7 @@ class DBLoggingHandler(logging.Handler):
 		self.channels = None
 		self.tier = tier
 		self.log_dicts = []
-		self.last_log_dict = None
+		self.prev_records = None
 		# runId is a global (ever increasing) counter stored in the DB
 		self.run_id = self.new_run_id()
 		self.headers = []
@@ -86,46 +86,27 @@ class DBLoggingHandler(logging.Handler):
 		self.headers = dicts
 
 
-	def set_channels(self, arg):
-		""" """
-		self.channels = arg
-
-
-	def unset_channels(self):
-		""" """
-		self.channels = None
-
-
-	def set_tran_id(self, arg):
-		""" """
-		self.tran_id = arg
-
-
-	def unset_tran_id(self):
-		""" """
-		self.tran_id = None
-
-
 	def emit(self, record):
 		""" 
 		"""
 
+		extra = getattr(record, 'extra', None)
+
 		try: 
+
 			# Same flag, date (+- 1 sec), tran_id and chans
 			if (
-				self.last_log_dict and 
-				record.levelno == self.last_log_dict['lvl'] and 
-				record.created - struct.unpack(">i", self.last_log_dict['_id'].binary[0:4])[0] < 
-				self.aggregate_interval and 
-				self.tran_id == self.last_log_dict.get('tranId') and
-				self.channels == self.last_log_dict.get('channels')
+				self.prev_records and 
+				record.levelno == self.prev_records.levelno and 
+				record.created - self.prev_records.created < self.aggregate_interval and 
+				extra == getattr(self.prev_records, 'extra', None)
 			):
 	
-				rec = self.last_log_dict
-				if type(rec['msg']) is not list:
-					rec['msg'] = [rec['msg']]
+				ldict = self.log_dicts[-1]
+				if type(ldict['msg']) is not list:
+					ldict['msg'] = [ldict['msg']]
 	
-				rec['msg'].append(record.msg)
+				ldict['msg'].append(record.msg)
 	
 			else:
 	
@@ -139,27 +120,33 @@ class DBLoggingHandler(logging.Handler):
 						  struct.pack(">i", ObjectId._inc)[1:4]
 					ObjectId._inc = (ObjectId._inc + 1) % 0xFFFFFF
 	
-				rec = {
-					'_id': ObjectId(oid=oid),
-					'tier': self.tier,
-					'runId': self.run_id,
-					'lvl': record.levelno,
-					'msg': record.msg
-				}
+				if extra:
+					# If duplication exists between keys in extra and in standard rec,
+					# the corresponding extra items will be overwritten (and thus ignored)
+					ldict = {
+						**extra, # position matters, should be first
+						'_id': ObjectId(oid=oid),
+						'tier': self.tier,
+						'runId': self.run_id,
+						'lvl': record.levelno,
+						'msg': record.msg
+					}
+				else:
+					ldict = {
+						'_id': ObjectId(oid=oid),
+						'tier': self.tier,
+						'runId': self.run_id,
+						'lvl': record.levelno,
+						'msg': record.msg
+					}
 	
 				if record.levelno > logging.INFO:
-					rec['filename'] = record.filename,
-					rec['lineno'] = record.lineno,
-					rec['funcName'] = record.funcName,
+					ldict['filename'] = record.filename,
+					ldict['lineno'] = record.lineno,
+					ldict['funcName'] = record.funcName,
 			
-				if self.tran_id:
-					rec['tranId'] = self.tran_id
-	
-				if self.channels:
-					rec['channels'] = self.channels
-	
-				self.log_dicts.append(rec)
-				self.last_log_dict = rec
+				self.log_dicts.append(ldict)
+				self.prev_records = record
 
 		except Exception as e:
 			self.__report_exception__(e)
@@ -175,7 +162,7 @@ class DBLoggingHandler(logging.Handler):
 		""" 
 		"""
 		self.log_dicts=[]
-		self.last_log_dict = None
+		self.prev_records = None
 
 
 	def flush(self):
@@ -221,18 +208,18 @@ class DBLoggingHandler(logging.Handler):
 
 		# Empty referenced logs entries
 		self.log_dicts = []
-		self.last_log_dict = None
+		self.prev_records = None
 
 
 	def __report_exception__(self, e, bwe_details=None):
 		"""
 		"""
 
-		from ampel.pipeline.logging.LoggingUtils import LoggingUtils
+		from ampel.pipeline.logging.AmpelLogger import AmpelLogger
 		from ampel.pipeline.common.AmpelUtils import AmpelUtils
 
 		# Print log stack using std logging 
-		logger = LoggingUtils.get_logger(unique=True)
+		logger = AmpelLogger.get_unique_logger()
 
 		AmpelUtils.log_exception(logger, e, msg="Primary exception:")
 

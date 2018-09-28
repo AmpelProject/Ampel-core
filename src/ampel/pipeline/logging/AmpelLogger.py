@@ -8,11 +8,13 @@
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import logging, sys
+from logging import _logRecordFactory
 from ampel.pipeline.logging.ExtraLogFormatter import ExtraLogFormatter
 
 class AmpelLogger(logging.Logger):
 
 	loggers = {}
+
 
 	@staticmethod
 	def get_unique_logger(**kwargs):
@@ -93,6 +95,12 @@ class AmpelLogger(logging.Logger):
 		return logger
 
 
+	def __init__(self, name, level=logging.DEBUG):
+		super().__init__(name, level)
+		self.tran_id = None
+		self.channels = None
+
+
 	def set_console_log_level(self, lvl):
 		"""
 		Sets log level of StreamHandler instance possibly associated with this logger.
@@ -157,28 +165,32 @@ class AmpelLogger(logging.Logger):
 		self.log(level, "Forced log propagation: "+msg, exc_info=exc_info)
 
 
-	def _log(self, level, msg, args, exc_info=None, extra=None, stack_info=False):
+	def makeRecord(self, name, level, fn, lno, msg, args, exc_info, func=None, extra=None, sinfo=None):
 		"""
-		Parent method override in order to fix the following issue: 
-		anything passed to 'extra' is added as a property of LogRecord and formatters/handlers 
+		Override of parent factory method.
+
+		Anything passed to 'extra' during logging is added as a property of LogRecord and formatters/handlers 
 		cannot distinguish it from other LogRecord properties. To access those, you would need to use: 
 		log_record.property_name but how to know the property names of those can vary ?
 		As parade, we nest the 'extra' dict into a another dict: {'extra': <provided_extra>}
 		Formatters and Handlers can thus access a single property using getattr(log_record, 'extra', None)
 		and loop over dict keys.
 		"""
+		rv = _logRecordFactory(name, level, fn, lno, msg, args, exc_info, func, sinfo)
 
-		fn, lno, func, sinfo = self.findCaller(stack_info)
-
-		if exc_info:
-			if isinstance(exc_info, BaseException):
-				exc_info = (type(exc_info), exc_info, exc_info.__traceback__)
-			elif not isinstance(exc_info, tuple):
-				exc_info = sys.exc_info()
-
-		record = self.makeRecord(
-			self.name, level, fn, lno, msg, args, exc_info, func, 
-			extra if extra is None else {'extra': extra}, sinfo
-		)
-
-		self.handle(record)
+		if extra is not None:
+			if self.tran_id is not None:
+				extra['tranId'] = self.tran_id
+			if self.channels is not None:
+				extra['channels'] = self.channels
+			rv.__dict__['extra'] = extra
+		else:
+			if self.tran_id is not None and self.channels is not None:
+				rv.__dict__['extra'] = {'tranId': self.tran_id, 'channels': self.channels}
+			else:
+				if self.tran_id is not None:
+					rv.__dict__['extra'] = {'tranId': self.tran_id}
+				if self.channels is not None:
+					rv.__dict__['extra'] = {'channels': self.channels}
+				
+		return rv
