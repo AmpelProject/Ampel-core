@@ -10,7 +10,10 @@
 import time, pkg_resources, numpy as np
 from datetime import datetime
 from ampel.pipeline.logging.LoggingUtils import LoggingUtils
+from ampel.pipeline.logging.RecordsBufferingHandler import RecordsBufferingHandler
+from ampel.pipeline.logging.LogsBufferingHandler import LogsBufferingHandler
 from ampel.pipeline.logging.DBLoggingHandler import DBLoggingHandler
+from ampel.pipeline.logging.DBJobDocument import DBJobDocument
 from ampel.pipeline.db.AmpelDB import AmpelDB
 from ampel.pipeline.config.AmpelConfig import AmpelConfig
 from ampel.pipeline.config.channel.ChannelLoader import ChannelLoader
@@ -32,8 +35,8 @@ class AlertProcessor():
 	"""
 	iter_max = 5000
 
-	def __init__(self, survey_id, channels=None, central_db=None,
-		publish_stats=['graphite', 'jobs'], db_logging=True
+	def __init__(self, 
+		survey_id, channels=None, central_db=None, publish_stats=['graphite', 'jobs']
 	):
 		"""
 		Parameters:
@@ -49,21 +52,14 @@ class AlertProcessor():
 		- graphite: send t0 metrics to graphite (graphite server must be defined 
 		  in Ampel_config)
 		- jobs: include t0 metrics in job document
-		:param central_db: string. Use provided DB name rather than Ampel default database ('Ampel')
-		:param db_logging: bool.
+		:param str central_db: use provided DB name rather than Ampel default database ('Ampel')
+		:param bool db_logging: whether to save log entries (and the corresponding job doc) into the DB
 		"""
 
 		# Setup logger
 		self.logger = LoggingUtils.get_logger(unique=True)
-
-		if db_logging:
-
-			# Create DB logging handler instance (logging.Handler child class)
-			# This class formats, saves and pushes log records into the DB
-			self.db_logging_handler = DBLoggingHandler(tier=0)
-
-			# Add db logging handler to the logger stack of handlers 
-			self.logger.addHandler(self.db_logging_handler)
+		lbh = LogsBufferingHandler(tier=0)
+		self.logger.addHandler(lbh)
 
 		self.logger.info("Setting up new AlertProcessor instance")
 
@@ -79,10 +75,13 @@ class AlertProcessor():
 			T0Channel(channel_config, survey_id, self.logger) 
 			for channel_config in ChannelLoader.load_channels(channels, self.logger)
 		]
+
+		# Shortcuts
 		self.chan_enum = list(enumerate(self.t0_channels))
 		self.chan_auto_complete = len(self.t0_channels) * [False]
 		self.live_ac = False
 
+		# Live auto-complete
 		for i, channel in self.chan_enum:
 			if channel.auto_complete == "live":
 				self.live_ac = True
@@ -106,7 +105,9 @@ class AlertProcessor():
 				autoreconnect = True
 			)
 
-		self.logger.info("AlertProcessor initial setup completed")
+		self.logger.info("AlertProcessor setup completed")
+		self.logger.removeHandler(lbh)
+		self.log_headers = lbh.log_dicts
 
 
 	def run(self, alert_loader, ingester=None, full_console_logging=True):
@@ -122,15 +123,28 @@ class AlertProcessor():
 		(it will be reverted to DEBUG before return)
 		"""
 
+		"""
+			# Bad luck, exception again (possible cause: DB offline)
+			LoggingUtils.propagate_log(
+				logger, CRITICAL, 
+				"Exception occured while trying to insert document into 'troubles' collection", 
+				exc_info=True
+			)
+		"""
+
 		# Save current time to later evaluate how low was the pipeline processing time
 		time_now = time.time
 		run_start = time_now()
 
+		# Create DB logging handler instance (logging.Handler child class)
+		# This class formats, saves and pushes log records into the DB
+		db_logging_handler = DBLoggingHandler(tier=0)
+		db_logging_handler.add_headers(self.log_headers)
 
-		# Part 1: Setup logging 
-		#######################
+		# Add db logging handler to the logger stack of handlers 
+		self.logger.addHandler(db_logging_handler)
 
-		self.logger.info("Executing run method")
+		self.logger.info("Starting")
 
 		if ingester is None:
 			ingester = self.input_setup.get_alert_ingester(self.t0_channels, self.logger)
@@ -138,9 +152,15 @@ class AlertProcessor():
 		if not full_console_logging:
 			LoggingUtils.quieten_console_logger(self.logger)
 
+		# New job document in the 'jobs' collection
+		db_job_doc = DBJobDocument(tier=0)
+		db_job_doc.add_run_id(
+			db_logging_handler.get_run_id()		
+		)
 
-		# Part 2: divers
-		################
+
+		# divers
+		########
 
 		# Create array
 		scheduled_t2_units = len(self.t0_channels) * [None]
@@ -152,7 +172,7 @@ class AlertProcessor():
 		# Forward jobId to ingester instance 
 		# (will be inserted in the transient documents)
 		ingester.set_log_id(
-			self.db_logging_handler.get_run_id()
+			db_logging_handler.get_run_id()
 		)
 
 		# Loop variables
@@ -206,8 +226,8 @@ class AlertProcessor():
 		pre_run = time_now()
 
 
-		# Part 3: Process alerts
-		########################
+		# Process alerts
+		################
 
 		self.logger.info("#######     Processing alerts     #######")
 
@@ -216,7 +236,7 @@ class AlertProcessor():
 
 			# Associate upcoming log entries with the current transient id
 			tran_id = alert_content['tran_id']
-			self.db_logging_handler.set_tran_id(tran_id)
+			db_logging_handler.set_tran_id(tran_id)
 
 			# Feedback
 			log_info(
@@ -240,7 +260,7 @@ class AlertProcessor():
 			for i, channel in self.chan_enum:
 
 				# Associate upcoming log entries with the current channel
-				self.db_logging_handler.set_channels(channel.name)
+				db_logging_handler.set_channels(channel.name)
 
 				try:
 
@@ -269,17 +289,17 @@ class AlertProcessor():
 				except:
 
 					AmpelUtils.report_exception(
-						self.logger, tier=0, info={
+						tier=0, logger=self.logger, 
+						dblh=db_logging_handler, info={
 							'section': 'ap_filter',
 							'channel': channel.name,
 							'tranId': tran_id,
-							'logs':  self.db_logging_handler.get_run_id(),
 							'alert': AlertProcessor._alert_essential(alert_content)
 						}
 					)
 
 				# Unset channel id <-> log entries association
-				self.db_logging_handler.unset_channels()
+				db_logging_handler.unset_channels()
 
 			# time required for all filters
 			dur_stats['allFilters'][iter_count] = time_now() - all_filters_start
@@ -300,16 +320,16 @@ class AlertProcessor():
 					)
 				except:
 					AmpelUtils.report_exception(
-						self.logger, tier=0, info={
+						tier=0, logger=self.logger, 
+						dblh=db_logging_handler, info={
 							'section': 'ap_ingest',
 							'tranId': tran_id,
-							'logs':  self.db_logging_handler.get_run_id(),
 							'alert': AlertProcessor._alert_essential(alert_content)
 						}
 					)
 
 			# Unset log entries association with transient id
-			self.db_logging_handler.unset_tran_id()
+			db_logging_handler.unset_tran_id()
 
 			iter_count += 1
 
@@ -389,30 +409,17 @@ class AlertProcessor():
 
 				# Publish metrics into document in collection 'runs'
 				if "jobs" in self.publish_stats:
-					AmpelDB.get_collection('runs').update_one(
-						{'_id': int(datetime.today().strftime('%Y%m%d'))},
+					db_job_doc.set_job_info(
 						{
-							'$push': {
-								'jobs': {
-									'tier': 0,
-									'dt': datetime.utcnow().timestamp(),
-									'logs': self.db_logging_handler.get_run_id(),
-									'metrics': {
-										"count": count_stats,
-										"duration": dur_stats
-									}
-								}
+							'metrics': {
+								"count": count_stats,
+								"duration": dur_stats
 							}
-						},
-						upsert=True
+						}
 					)
 		except:
-
 			AmpelUtils.report_exception(
-				self.logger, tier=0, info={
-					'section': 'ap_run_end',
-					'logs':  self.db_logging_handler.get_run_id(),
-				}
+				tier=0, logger=self.logger, dblh=db_logging_handler
 			)
 			
 		log_info(
@@ -426,31 +433,12 @@ class AlertProcessor():
 
 		# Remove DB logging handler
 		if iter_count > 0:
-
-			try:
-				self.db_logging_handler.flush()
-			except Exception as e:
-
-				# error msg will be passed to the logging handlers of higher level
-				# as self.logger.propagate was set back to True previously
-				import logging
-				logging.error("DB log flushing has failed")
-
-				try: 
-					# This will fail as well if we have DB connectivity issues
-					AmpelUtils.report_exception(
-						self.logger, tier=0, info={
-							'section': 'ap_flush_logs',
-							'logs':  self.db_logging_handler.get_run_id(),
-						}
-					)
-				except Exception as e:
-					self.logger.error("Could not add new doc to 'troubles' collection, DB offline?")
-					self.logger.error(e)
+			db_logging_handler.flush()
 		else:
+			db_logging_handler.purge()
 
-			self.db_logging_handler.remove_log_entries()
-
+		self.logger.removeHandler(db_logging_handler)
+		db_job_doc.publish()
 
 		# Return number of processed alerts
 		return iter_count
