@@ -8,7 +8,7 @@
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import tarfile
-from ampel.pipeline.logging.LoggingUtils import LoggingUtils
+from ampel.pipeline.logging.AmpelLogger import AmpelLogger
 
 
 class TarAlertLoader():
@@ -18,7 +18,7 @@ class TarAlertLoader():
 	def __init__(self, tar_path=None, file_obj=None, start=0, tar_mode='r:gz', logger=None):
 		"""
 		"""
-		self.logger = LoggingUtils.get_logger() if logger is None else logger
+		self.logger = AmpelLogger.get_logger() if logger is None else logger
 		self.chained_tal = None
 
 		if file_obj is not None:

@@ -12,7 +12,6 @@ from bson import ObjectId
 from pymongo.errors import BulkWriteError
 from pymongo.operations import UpdateOne
 from ampel.pipeline.db.AmpelDB import AmpelDB
-from ampel.pipeline.logging.LoggingUtils import LoggingUtils
 
 class LogsBufferingHandler(logging.Handler):
 	"""
@@ -87,11 +86,11 @@ class LogsBufferingHandler(logging.Handler):
 
 		except Exception as e:
 			
-			from ampel.pipeline.logging.LoggingUtils import LoggingUtils
+			from ampel.pipeline.logging.AmpelLogger import AmpelLogger
 			from ampel.pipeline.common.AmpelUtils import AmpelUtils
 
 			# Print log stack using std logging 
-			logger = LoggingUtils.get_logger(unique=True)
+			logger = AmpelLogger.get_unique_logger()
 			AmpelUtils.log_exception(logger, e, msg="Primary exception:")
 
 			raise e from None

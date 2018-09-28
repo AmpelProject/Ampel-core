@@ -16,7 +16,7 @@ from voluptuous import Schema, Required, Any, Optional, ALLOW_EXTRA
 
 from ampel.pipeline.common.AmpelUtils import AmpelUtils
 from ampel.pipeline.config.AmpelConfig import AmpelConfig
-from ampel.pipeline.logging.LoggingUtils import LoggingUtils
+from ampel.pipeline.logging.AmpelLogger import AmpelLogger
 from ampel.pipeline.t3.T3TaskConfig import T3TaskConfig
 from ampel.pipeline.t3.TimeConstraint import TimeConstraint
 from ampel.pipeline.t3.T3Job import T3Job
@@ -83,7 +83,7 @@ class T3JobConfig:
 		"""
 
 		if logger is None:
-			logger = LoggingUtils.get_logger()
+			logger = AmpelLogger.get_logger()
 
 		# Get, check and set defaults of t3 task doc 
 		job_doc = AmpelConfig.get_config(
@@ -105,7 +105,7 @@ class T3JobConfig:
 		"""
 
 		if logger is None:
-			logger = LoggingUtils.get_logger()
+			logger = AmpelLogger.get_logger()
 
 		# validate
 		if validate:

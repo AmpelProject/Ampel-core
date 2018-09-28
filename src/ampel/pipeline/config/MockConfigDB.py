@@ -8,7 +8,7 @@
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import json, mongomock
-from ampel.pipeline.logging.LoggingUtils import LoggingUtils
+from ampel.pipeline.logging.AmpelLogger import AmpelLogger
 
 class MockConfigDB:
 
@@ -25,7 +25,7 @@ class MockConfigDB:
 
 	def __init__(self, folder, db_name="Ampel_config", logger=None):
 
-		self.logger = LoggingUtils.get_logger() if logger is None else logger
+		self.logger = AmpelLogger.get_logger() if logger is None else logger
 		mc = mongomock.MongoClient()
 		self.db = mc[db_name]
 	

@@ -12,7 +12,7 @@ from types import MappingProxyType
 from ampel.pipeline.t3.T3Job import T3Job
 from ampel.pipeline.t3.T3JobConfig import T3JobConfig, T3TaskConfig
 from ampel.pipeline.common.Schedulable import Schedulable
-from ampel.pipeline.logging.LoggingUtils import LoggingUtils
+from ampel.pipeline.logging.AmpelLogger import AmpelLogger
 from ampel.pipeline.common.GraphiteFeeder import GraphiteFeeder
 from ampel.pipeline.config.AmpelConfig import AmpelConfig
 
@@ -41,7 +41,7 @@ class T3Controller(Schedulable):
 	def get_required_resources(t3_job_names=None):
 		"""
 		"""
-		logger = LoggingUtils.get_logger(unique=True)
+		logger = AmpelLogger.get_unique_logger()
 		resources = set()
 
 		for job_config in T3Controller.load_job_configs(t3_job_names, logger).values():
@@ -60,7 +60,7 @@ class T3Controller(Schedulable):
 		super(T3Controller, self).__init__()
 
 		# Setup logger
-		self.logger = LoggingUtils.get_logger(unique=True)
+		self.logger = AmpelLogger.get_unique_logger()
 		self.logger.info("Setting up T3Controler")
 
 		# Load job configurations

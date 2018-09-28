@@ -18,7 +18,7 @@ from ampel.pipeline.db.query.QueryRunsCol import QueryRunsCol
 from ampel.pipeline.db.DBContentLoader import DBContentLoader
 from ampel.pipeline.db.AmpelDB import AmpelDB
 from ampel.pipeline.logging.DBLoggingHandler import DBLoggingHandler
-from ampel.pipeline.logging.LoggingUtils import LoggingUtils
+from ampel.pipeline.logging.AmpelLogger import AmpelLogger
 from ampel.pipeline.common.AmpelUtils import AmpelUtils
 from ampel.pipeline.t3.TimeConstraint import TimeConstraint
 from ampel.base.flags.TransientFlags import TransientFlags
@@ -60,7 +60,7 @@ class T3Job:
 		if logger is None:
 
 			# Create logger
-			logger = LoggingUtils.get_logger()
+			logger = self.logger.get_logger()
 
 			if db_logging:
 				# Create DB logging handler instance (logging.Handler child class)
@@ -76,7 +76,7 @@ class T3Job:
 		self.exec_params = {}
 
 		if not full_console_logging:
-			LoggingUtils.quieten_console_logger(self.logger)
+			self.logger.quieten_console_logger(self.logger)
 
 		# T3 job not requiring any prior transient loading 
 		if job_config.get('input.select') is not None:
@@ -192,7 +192,7 @@ class T3Job:
 		job_descr = "job %s (run id: %s)" % (self.job_config.job_name, self.run_id)
 
 		# Feedback
-		LoggingUtils.propagate_log(self.logger, logging.INFO, "Running %s" % job_descr)
+		self.logger.propagate_log(self.logger, logging.INFO, "Running %s" % job_descr)
 		
 		try:
 
@@ -339,8 +339,8 @@ class T3Job:
 					)
 
 			# Feedback
-			LoggingUtils.propagate_log(
-				self.logger, logging.INFO, "Done running %s" % job_descr
+			self.logger.propagate_log(
+				logging.INFO, "Done running %s" % job_descr
 			)
 
 			# Write log entries to DB
@@ -389,8 +389,8 @@ class T3Job:
 			AmpelDB.get_collection('troubles').insert_one(d)
 		except:
 			# Bad luck (possible cause: DB offline)
-			LoggingUtils.propagate_log(
-				self.logger, logging.ERROR, 
+			self.logger.propagate_log(
+				logging.ERROR, 
 				"Exception occured while populating 'troubles' collection",
 				exc_info=True
 			)

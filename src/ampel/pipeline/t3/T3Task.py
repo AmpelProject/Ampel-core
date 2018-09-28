@@ -9,7 +9,7 @@
 
 import logging
 from ampel.pipeline.common.AmpelUtils import AmpelUtils
-from ampel.pipeline.logging.LoggingUtils import LoggingUtils
+from ampel.pipeline.logging.AmpelLogger import AmpelLogger
 from ampel.base.TransientView import TransientView
 from ampel.pipeline.logging.DBLoggingHandler import DBLoggingHandler
 
@@ -49,8 +49,8 @@ class T3Task:
 		)
 
 		# Feedback
-		LoggingUtils.propagate_log(
-			logger, logging.INFO,
+		logger.propagate_log(
+			logging.INFO,
 			"%s: task instantiated" % 
 			t3_task_config.log_header
 		)
@@ -119,8 +119,8 @@ class T3Task:
 			self.db_logging_handler.unset_tran_id()
 
 		# Feedback
-		LoggingUtils.propagate_log(
-			self.logger, logging.INFO,
+		self.logger.propagate_log(
+			logging.INFO,
 			"Providing %s with %i TransientViews" % 
 			(self.t3_instance.__class__.__name__, len(tran_views))
 		)
@@ -138,8 +138,8 @@ class T3Task:
 		"""
 
 		# Feedback
-		LoggingUtils.propagate_log(
-			self.logger, logging.INFO,
+		self.logger.propagate_log(
+			logging.INFO,
 			"%s: calling done()" % self.task_config.log_header
 		)
 

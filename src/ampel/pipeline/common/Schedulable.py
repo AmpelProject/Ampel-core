@@ -8,7 +8,7 @@
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import schedule, time, threading, signal
-from ampel.pipeline.logging.LoggingUtils import LoggingUtils
+from ampel.pipeline.logging.AmpelLogger import AmpelLogger
 
 
 class Schedulable():
@@ -53,7 +53,7 @@ class Schedulable():
 		"""
 
 		# Setup logger
-		self.logger = LoggingUtils.get_logger(unique=True) if logger is None else logger
+		self.logger = AmpelLogger.get_unique_logger() if logger is None else logger
 
 		self.keep_going = True
 
@@ -95,7 +95,7 @@ class Schedulable():
 		"""
 
 		# Setup logger
-		self.logger = LoggingUtils.get_logger(unique=True) if logger is None else logger
+		self.logger = AmpelLogger.get_unique_logger() if logger is None else logger
 		self.logger.info("Starting scheduler loop")
 
 		while self.keep_going:
