@@ -15,7 +15,7 @@ from ampel.base.flags.PhotoFlags import PhotoFlags
 from ampel.base.PlainPhotoPoint import PlainPhotoPoint
 from ampel.base.PlainUpperLimit import PlainUpperLimit
 from ampel.base.LightCurve import LightCurve
-from ampel.pipeline.logging.LoggingUtils import LoggingUtils
+from ampel.pipeline.logging.AmpelLogger import AmpelLogger
 from ampel.pipeline.db.AmpelDB import AmpelDB
 
 class LightCurveLoader:
@@ -36,7 +36,7 @@ class LightCurveLoader:
 			* whereby each PhotoPoint is a frozen class as well
 			* and each PhotoPoint dict content is an immutable dict
 		"""
-		self.logger = LoggingUtils.get_logger() if logger is None else logger
+		self.logger = AmpelLogger.get_logger() if logger is None else logger
 		self.read_only = read_only
 
 		# Optional override of AmpelConfig defaults

@@ -8,7 +8,7 @@
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 
-from ampel.pipeline.logging.LoggingUtils import LoggingUtils
+from ampel.pipeline.logging.AmpelLogger import AmpelLogger
 import logging, io
 
 
@@ -18,7 +18,7 @@ class FileAlertLoader():
 	def __init__(self, files=None, logger=None):
 		""" 
 		"""
-		self.logger = LoggingUtils.get_logger() if logger is None else logger
+		self.logger = AmpelLogger.get_logger() if logger is None else logger
 		self.iter_files = None
 		self.files = []
 

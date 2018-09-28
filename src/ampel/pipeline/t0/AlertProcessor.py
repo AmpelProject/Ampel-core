@@ -9,7 +9,7 @@
 
 import time, pkg_resources, numpy as np
 from datetime import datetime
-from ampel.pipeline.logging.LoggingUtils import LoggingUtils
+from ampel.pipeline.logging.AmpelLogger import AmpelLogger
 from ampel.pipeline.logging.RecordsBufferingHandler import RecordsBufferingHandler
 from ampel.pipeline.logging.LogsBufferingHandler import LogsBufferingHandler
 from ampel.pipeline.logging.DBLoggingHandler import DBLoggingHandler
@@ -57,7 +57,7 @@ class AlertProcessor():
 		"""
 
 		# Setup logger
-		self.logger = LoggingUtils.get_logger(unique=True)
+		self.logger = AmpelLogger.get_unique_logger()
 		lbh = LogsBufferingHandler(tier=0)
 		self.logger.addHandler(lbh)
 
@@ -123,15 +123,6 @@ class AlertProcessor():
 		(it will be reverted to DEBUG before return)
 		"""
 
-		"""
-			# Bad luck, exception again (possible cause: DB offline)
-			LoggingUtils.propagate_log(
-				logger, CRITICAL, 
-				"Exception occured while trying to insert document into 'troubles' collection", 
-				exc_info=True
-			)
-		"""
-
 		# Save current time to later evaluate how low was the pipeline processing time
 		time_now = time.time
 		run_start = time_now()
@@ -150,7 +141,7 @@ class AlertProcessor():
 			ingester = self.input_setup.get_alert_ingester(self.t0_channels, self.logger)
 
 		if not full_console_logging:
-			LoggingUtils.quieten_console_logger(self.logger)
+			self.logger.quieten_console_logger()
 
 		# New job document in the 'jobs' collection
 		db_job_doc = DBJobDocument(tier=0)
@@ -429,7 +420,7 @@ class AlertProcessor():
 
 		# Restore console logging settings
 		if not full_console_logging:
-			LoggingUtils.louden_console_logger(self.logger)
+			self.logger.louden_console_logger()
 
 		# Remove DB logging handler
 		if iter_count > 0:

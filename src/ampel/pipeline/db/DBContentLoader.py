@@ -27,7 +27,7 @@ from ampel.base.flags.PhotoFlags import PhotoFlags
 
 from ampel.pipeline.common.AmpelUtils import AmpelUtils
 from ampel.pipeline.t3.TransientData import TransientData
-from ampel.pipeline.logging.LoggingUtils import LoggingUtils
+from ampel.pipeline.logging.AmpelLogger import AmpelLogger
 from ampel.pipeline.db.AmpelDB import AmpelDB
 from ampel.pipeline.db.LightCurveLoader import LightCurveLoader
 from ampel.pipeline.db.query.QueryLatestCompound import QueryLatestCompound
@@ -51,7 +51,7 @@ class DBContentLoader:
 		"""
 		:param central_db: string. Use provided DB name rather than Ampel default database ('Ampel')
 		"""
-		self.logger = LoggingUtils.get_logger() if logger is None else logger
+		self.logger = AmpelLogger.get_logger() if logger is None else logger
 		self.lcl = LightCurveLoader(central_db, logger=self.logger)
 
 		# Optional override of AmpelConfig defaults

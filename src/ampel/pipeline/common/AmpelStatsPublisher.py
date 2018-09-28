@@ -4,15 +4,15 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 26.05.2018
-# Last Modified Date: 16.07.2018
+# Last Modified Date: 28.09.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import json
 from datetime import datetime
+from ampel.pipeline.logging.AmpelLogger import AmpelLogger
 from ampel.pipeline.common.AmpelUtils import AmpelUtils
 from ampel.pipeline.common.Schedulable import Schedulable
 from ampel.pipeline.config.AmpelConfig import AmpelConfig
-from ampel.pipeline.logging.LoggingUtils import LoggingUtils
 from ampel.pipeline.db.AmpelDB import AmpelDB
 from ampel.core.flags.AlDocTypes import AlDocTypes
 
@@ -20,10 +20,10 @@ from ampel.core.flags.AlDocTypes import AlDocTypes
 class AmpelStatsPublisher(Schedulable):
 	""" 
 
-	EXAMPLE of graphite stats:
-	##########################
+	EXAMPLE of graphite stats
+	#########################
 
-	mongod deamon stats:
+	mongod deamon stats
 		"dbInfo.daemon.memRes": RAM usage
 		"dbInfo.daemon.connections": number of opened TCP connection
 
@@ -42,7 +42,7 @@ class AmpelStatsPublisher(Schedulable):
 		"dbInfo.logs.storageSize"
 		"dbInfo.logs.totalIndexSize"
 
-	number of documents in collections:
+	number of documents in collections
 		"count.docs.troubles": 1
 		"count.docs.photo.pps": 84
 		"count.docs.photo.uls": 1583
@@ -53,7 +53,6 @@ class AmpelStatsPublisher(Schedulable):
 	Channel specific stats
 		"count.chans.HU_SN1": 0
 		"count.chans.HU_SN2": 0
-	...
 	"""
 
 	# mongod serverStatus key values to publish
@@ -72,20 +71,18 @@ class AmpelStatsPublisher(Schedulable):
 		publish_what=['col_stats', 'docs_count', 'daemon', 'channels', 'archive'],
 	):
 		"""
-		Parameters:
-		'publish_to': send stats to:
+		:param list(str) channel_names: list of channel names, if None, stats for all avail channels will be reported. 
+		:param list(str) publish_to: send stats to\n
 		  * mongo: send metrics to dedicated mongo collection (mongodb_uri must be set)
 		  * graphite: send db metrics to graphite (graphite server must be defined in Ampel_config)
 		  * print: print db metrics to stdout
 		  * log: log db metrics using logger instance
-		'publish_what':
+		:param list(str) publish_what:\n
 		  * col_stats -> collection stats (size, compressedSize, indexSize)
 		  * docs_count -> number of documents in collections
 		  * daemon -> mongod stats (ram usage, number of sockets open)
 		  * channels -> number of transients in each channel
 		  * archive -> 
-		'channel_names': list of channel names (string). 
-		  If None, stats for all avail channels will be reported. 
 		"""
 
 		# Pass custom args to Parent class constructor
@@ -95,7 +92,7 @@ class AmpelStatsPublisher(Schedulable):
 		)
 
 		# Setup logger
-		self.logger = LoggingUtils.get_logger(unique=True)
+		self.logger = AmpelLogger.get_unique_logger()
 		self.logger.info("Setting up AmpelStatsPublisher")
 
 		# Load provided channels or all channels defined in AmpelConfig
@@ -145,8 +142,8 @@ class AmpelStatsPublisher(Schedulable):
 
 		# Instanciate ArchiveDB if required
 		if 'archive' in publish_what:
-			from ampel.archive import ArchiveDB
-			self.archive_client = archive_client=ArchiveDB(
+			from ampel.archive.ArchiveDB import ArchiveDB
+			self.archive_client = ArchiveDB(
 				AmpelConfig.get_config('resources.archive.reader')
 			)
 
@@ -162,10 +159,12 @@ class AmpelStatsPublisher(Schedulable):
 
 	def set_all_update_intervals(self, value):
 		"""
-		Convenience method.
+		Convenience method.\n
 		Sets all update intervals ('col_stats', 'docs_count', 
 		'daemon', 'channels', 'archive') to provided value.
-		value: integer. Number of minutes between checks.
+
+		:param int value: number of minutes between checks.
+		:returns: None
 		"""
 		for k in self.update_intervals.keys():
 			if self.update_intervals[k] is not None:
@@ -176,9 +175,10 @@ class AmpelStatsPublisher(Schedulable):
 
 	def set_custom_update_intervals(self, d):
 		"""
-		d: dict instance containing one or more 
-		Known keys: 'col_stats', 'docs_count', 'daemon', 'channels', 'archive'
-		value: integer. Number of minutes between checks.
+		:param dict d: dict instance containing one or more items:\n
+			* posisible keys: 'col_stats', 'docs_count', 'daemon', 'channels', 'archive'
+			* possible values: number of minutes between checks (int).
+		:returns: None
 		"""
 		for key in d.keys():
 			if key not in self.update_intervals:
@@ -198,7 +198,8 @@ class AmpelStatsPublisher(Schedulable):
  		 	  5: {'channels': True, 'col_stats': True},
  		 	  10: {'docs_count': True}
 		}
-		and schedule method send_metrics accordingly
+		and schedule method send_metrics accordingly\n
+		:returns: None
 		"""
 		inv_map = {}
 		for k, v in self.update_intervals.items():
@@ -222,7 +223,8 @@ class AmpelStatsPublisher(Schedulable):
 
 	def send_all_metrics(self):
 		"""
-		Convenience method
+		Convenience method\n
+		:returns: None
 		"""
 		self.send_metrics(True, True, True, True, False)
 
@@ -231,6 +233,9 @@ class AmpelStatsPublisher(Schedulable):
 		self, daemon=False, col_stats=False, docs_count=False, channels=False, archive=False
 	):
 		"""
+		Send/publish metrics\n
+		:raises ValueError: when bad configuration was provided
+		:returns: None
 		"""
 
 		main_col = AmpelDB.get_collection("main", "r")

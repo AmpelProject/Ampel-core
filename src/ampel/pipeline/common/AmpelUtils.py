@@ -253,7 +253,7 @@ class AmpelUtils():
 		"""
 		:param int tier: Ampel tier level (0, 1, 2, 3)
 		:param logger: optional logger instance (logging module). If provided, 
-		LoggingUtils.propagate_log() will be used to print details about the exception
+		propagate_log() will be used to print details about the exception
 		:param DBLoggingHandler dblh: instance of ampel.pipeline.logging.DBLoggingHandler.
 		If provided, the logId associated with the current job 
 		will be saved into the reported dict instance.
@@ -261,7 +261,6 @@ class AmpelUtils():
 		in the document inserted into Ampel_troubles
 		"""
 
-		from ampel.pipeline.logging.LoggingUtils import LoggingUtils
 		from ampel.pipeline.db.AmpelDB import AmpelDB
 		from traceback import format_exc
 		from logging import CRITICAL
@@ -273,9 +272,7 @@ class AmpelUtils():
 
 		if logger:
 			# Feedback
-			LoggingUtils.propagate_log(
-				logger, CRITICAL, "Exception occured", exc_info=True
-			)
+			logger.propagate_log(CRITICAL, "Exception occured", exc_info=True)
 
 		# Basis dict 
 		trouble = {'tier': tier}

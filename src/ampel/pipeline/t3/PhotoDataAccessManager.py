@@ -10,7 +10,6 @@
 from ampel.pipeline.config.AmpelConfig import AmpelConfig
 from ampel.base.flags.PhotoFlags import PhotoFlags
 from ampel.pipeline.config.Channel import Channel
-from ampel.pipeline.logging.LoggingUtils import LoggingUtils
 
 class PhotoDataAccessManager:
 	"""
