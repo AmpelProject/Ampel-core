@@ -29,6 +29,7 @@ class AlertProcessor():
 	Class handling T0 pipeline operations.
 
 	For each alert, following tasks are performed:
+
 		* Load the alert
 		* Filter alert based on the configured T0 filter
 		* Ingest alert based on the configured ingester
@@ -39,19 +40,22 @@ class AlertProcessor():
 		survey_id, channels=None, central_db=None, publish_stats=['graphite', 'jobs']
 	):
 		"""
-		Parameters:
-		-----------
 		:param str survey_id: id of the survey (ex: 'ZTFIPAC').
 		Associated ressources will be loaded using the entry_point with id 'survey_id'
 		defined by ampel plugins such as Ampel-ZTF (ampel.pipeline.t0.sources)
-		:param channels: 
+
+		:param channels:
+
 		- None: all the available channels from the ampel config will be loaded
 		- String: channel with the provided id will be loaded
 		- List of strings: channels with the provided ids will be loaded 
+
 		:param publish_stats: publish performance stats:
+
 		- graphite: send t0 metrics to graphite (graphite server must be defined 
 		  in Ampel_config)
 		- jobs: include t0 metrics in job document
+
 		:param str central_db: use provided DB name rather than Ampel default database ('Ampel')
 		:param bool db_logging: whether to save log entries (and the corresponding job doc) into the DB
 		"""
@@ -113,11 +117,14 @@ class AlertProcessor():
 	def run(self, alert_loader, ingester=None, full_console_logging=True):
 		"""
 		Run the alert processing using the provided alert_loader
+
 		:param alert_loader: iterable instance that returns alert payloads
+
 		:param ingester: sets a custom ingester instance. 
 		If unspecified, the ingester loaded is the default ingester associated with 
 		the current AbsInputStreamSetup. For ZTFIPAC: a new instance of ZIAlertIngester() is used:
 		Other possible ingester (as of Sept 2018) ampel.pipeline.t0.ingest.MemoryIngester
+
 		:param full_console_logging: bool. If false, the logging level of the stdout streamhandler 
 		associated with the logger will be set to WARN during the execution of this method
 		(it will be reverted to DEBUG before return)
@@ -227,11 +234,12 @@ class AlertProcessor():
 
 			# Associate upcoming log entries with the current transient id
 			tran_id = alert_content['tran_id']
-			db_logging_handler.set_tran_id(tran_id)
+			self.logger.tran_id = tran_id
 
 			# Feedback
 			log_info(
-				"Processing alert: %s" % alert_content['alert_id']
+				"Processing", 
+				extra={'alertId': alert_content['alert_id']}
 			)
 
 			# Create AmpelAlert instance
@@ -251,7 +259,7 @@ class AlertProcessor():
 			for i, channel in self.chan_enum:
 
 				# Associate upcoming log entries with the current channel
-				db_logging_handler.set_channels(channel.name)
+				self.logger.channels = channel.name
 
 				try:
 
@@ -267,7 +275,7 @@ class AlertProcessor():
 					# Log feedback and count
 					if scheduled_t2_units[i] is not None:
 						count_stats['matches'][channel.name] += 1
-						log_info(channel.log_accepted)
+						log_info("OK")
 					else:
 						# Autocomplete required for this channel
 						if self.live_ac and self.chan_auto_complete[i] and tran_id in tran_ids_before[i]:
@@ -275,7 +283,7 @@ class AlertProcessor():
 							count_stats['matches'][channel.name] += 1
 							scheduled_t2_units[i] = channel.t2_units
 						else:
-							log_info(channel.log_rejected)
+							log_info("NO")
 
 				except:
 
@@ -290,7 +298,7 @@ class AlertProcessor():
 					)
 
 				# Unset channel id <-> log entries association
-				db_logging_handler.unset_channels()
+				self.logger.channels = None
 
 			# time required for all filters
 			dur_stats['allFilters'][iter_count] = time_now() - all_filters_start
@@ -298,7 +306,7 @@ class AlertProcessor():
 			if any(t2 is not None for t2 in scheduled_t2_units):
 
 				# Ingest alert
-				log_info(" -> Ingesting alert")
+				log_info("Ingesting")
 
 				# stats
 				ingested_count += 1
@@ -320,7 +328,7 @@ class AlertProcessor():
 					)
 
 			# Unset log entries association with transient id
-			db_logging_handler.unset_tran_id()
+			self.logger.tran_id = None
 
 			iter_count += 1
 
@@ -452,8 +460,7 @@ class AlertProcessor():
 
 	def get_tran_ids(self):
 		"""
-		Return value:
-		Array whose length equals len(self.t0_channels), possibly containing sets of transient ids.
+		:returns: array whose length equals len(self.t0_channels), possibly containing sets of transient ids.
 		If channel[i] is the channel with index i wrt the list of channels 'self.t0_channels', 
 		and if channel[i] was configured to make use of the 'live' auto_complete feature, 
 		then tran_ids[i] will hold a {set} of transient ids listing all known 
