@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 16.06.2018
-# Last Modified Date: 25.09.2018
+# Last Modified Date: 29.09.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from ampel.pipeline.config.AmpelConfig import AmpelConfig
@@ -17,7 +17,8 @@ class AmpelDB:
 	_db_names = {
 		'data': 'Ampel_data',
 		'var': 'Ampel_var',
-		'ext': 'Ampel_ext'
+		'ext': 'Ampel_ext',
+		'rej': 'Ampel_rej'
 	}
 
 	# None will be replaced by instance of pymongo.collection.Collection the first time
@@ -36,6 +37,10 @@ class AmpelDB:
 			'counter': None,
 			'runConfig': None,
 			'journal': None
+		},
+		'rej': {
+			chan['channel']: None 
+			for chan in AmpelConfig.get_config('channels')	
 		}
 	}
 
@@ -46,20 +51,23 @@ class AmpelDB:
 	_db_config_roles = {
 		'data': 'writer',
 		'var': 'logger',
-		'ext': 'logger'
+		'ext': 'logger',
+		'rej': 'logger'
 	}
 	
 	# least priviledged role required to read
 	_db_config_reader_roles = {
 		'data': 'logger',
 		'var': 'logger',
-		'ext': 'logger'
+		'ext': 'logger',
+		'rej': 'logger'
 	}
 
 	db_contact = {
 		'data': False,	
 		'var': False,	
-		'ext': False
+		'ext': False,
+		'rej': False
 	}
 
 
@@ -221,3 +229,9 @@ class AmpelDB:
 
 		elif col.name == "troubles":
 			pass
+
+		elif col.name in AmpelDB._existing_cols['rej'].keys():
+
+			# Create sparse index for key runId
+			col.create_index([("tranId", 1)])
+
