@@ -18,22 +18,35 @@ class RecordsBufferingHandler(BufferingHandler):
 
 	def __init__(self):
 		super().__init__(0) # 0 capacity but that does not matter
+		self.has_error = False
+
 
 	def flush(self):
 		"""
 		Flush just means: 'erase exisiting log records'
 		"""
 		self.buffer = []
+		self.has_error = False
 
-	def forward(self, logger):
+
+	def emit(self, record):
+		""" 
+		"""
+		if record.levelno > 20: # 20 := logging.INFO:
+			self.has_error = True
+		self.buffer.append(record)
+		
+
+	def forward(self, logger_or_handler):
 		"""
 		Forwards saved log records to provided logger instance.
 		The internal record buffer will be deleted.
-		:param logger: logger instance
+		:param logger_or_handler: logger or LoggingHandler instance
 		"""
 		for el in self.buffer:
-			logger.handle(el)
+			logger_or_handler.handle(el)
 		self.buffer = []
+
 
 	def copy(self, logger):
 		"""
@@ -42,6 +55,7 @@ class RecordsBufferingHandler(BufferingHandler):
 		"""
 		for el in self.buffer:
 			logger.handle(el)
+
 
 	def shouldFlush(self, record):
 		"""
