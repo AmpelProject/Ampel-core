@@ -4,12 +4,11 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 07.06.2018
-# Last Modified Date: 02.09.2018
+# Last Modified Date: 29.09.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import collections
 from functools import reduce
-from types import MappingProxyType
 from ampel.pipeline.config.ReadOnlyDict import ReadOnlyDict
 
 class AmpelUtils():
@@ -138,7 +137,7 @@ class AmpelUtils():
 		"""
 		Return an immutable shallow copy
 		:param arg:
-			dict: MappingProxyType is returned
+			dict: ReadOnlyDict is returned
 			list: tuple is returned
 			set: frozenset is returned
 			otherwise: arg is returned 'as is'

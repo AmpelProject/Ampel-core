@@ -8,13 +8,13 @@
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import warnings
-from types import MappingProxyType
+from ampel.pipeline.config.ReadOnlyDict import ReadOnlyDict
 from ampel.pipeline.common.AmpelUtils import AmpelUtils
 
 class AmpelConfig:
 
 
-	# Static dict/MappingProxyType holding all ampel configurations
+	# Static dict/ReadOnlyDict holding all ampel configurations
 	_global_config = None
 
 
@@ -25,14 +25,11 @@ class AmpelConfig:
 
 
 	@classmethod
-	def get_config(cls, key=None, validate=None):
+	def get_config(cls, key=None):
 		""" 
 		Optional arguments:
 		'key' -> only sub-config elements with provided key will be returned.
 		    Example: get_config("channels.HU_RANDOM")
-		'validate' -> optional instance of voluptous schema. Validation will only work:
-			* if config is not frozen since frozen configs are created using validation
-			* if key is provided since only parts of the global config follow given schemas
 		"""
 		if not cls.initialized():
 			raise RuntimeError("Ampel global config not set")
@@ -44,7 +41,7 @@ class AmpelConfig:
 		if sub_conf is None:
 			return sub_conf
 			
-		return sub_conf if (validate is None or cls.is_frozen()) else validate(sub_conf)
+		return sub_conf
 
 
 	@classmethod
@@ -65,4 +62,4 @@ class AmpelConfig:
 	@classmethod
 	def is_frozen(cls):
 		""" """ 
-		return type(cls._global_config) is MappingProxyType
+		return type(cls._global_config) is ReadOnlyDict
