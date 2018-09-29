@@ -95,10 +95,21 @@ class AmpelLogger(logging.Logger):
 		return logger
 
 
-	def __init__(self, name, level=logging.DEBUG):
+	def __init__(self, name, level=logging.DEBUG, channel=None):
+		""" """
+
 		super().__init__(name, level)
-		self.tran_id = None
-		self.channels = None
+		self.__extra = None
+		if channel:
+			self.__extra = {'channels': channel}
+
+
+	def __add_extra(self, key, value):
+		""" """
+		if self.__extra:
+			self.__extra[key] = value
+		else:
+			self.__extra = {key: value}
 
 
 	def set_console_log_level(self, lvl):
@@ -172,25 +183,18 @@ class AmpelLogger(logging.Logger):
 		Anything passed to 'extra' during logging is added as a property of LogRecord and formatters/handlers 
 		cannot distinguish it from other LogRecord properties. To access those, you would need to use: 
 		log_record.property_name but how to know the property names of those can vary ?
-		As parade, we nest the 'extra' dict into a another dict: {'extra': <provided_extra>}
+		We nest the 'extra' dict into a another dict: {'extra': <provided_extra>}
 		Formatters and Handlers can thus access a single property using getattr(log_record, 'extra', None)
 		and loop over dict keys.
 		"""
 		rv = _logRecordFactory(name, level, fn, lno, msg, args, exc_info, func, sinfo)
 
 		if extra is not None:
-			if self.tran_id is not None:
-				extra['tranId'] = self.tran_id
-			if self.channels is not None:
-				extra['channels'] = self.channels
-			rv.__dict__['extra'] = extra
-		else:
-			if self.tran_id is not None and self.channels is not None:
-				rv.__dict__['extra'] = {'tranId': self.tran_id, 'channels': self.channels}
+			if self.__extra:
+				rv.__dict__['extra'] = {**extra, **self.__extra}
 			else:
-				if self.tran_id is not None:
-					rv.__dict__['extra'] = {'tranId': self.tran_id}
-				if self.channels is not None:
-					rv.__dict__['extra'] = {'channels': self.channels}
+				rv.__dict__['extra'] = extra
+		else:
+			rv.__dict__['extra'] = self.__extra
 				
 		return rv
