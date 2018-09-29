@@ -8,10 +8,9 @@ class ExtraLogFormatter(logging.Formatter):
 
 		out = [
 			self.formatTime(record, datefmt=self.datefmt),
-			record.filename,
-			str(record.lineno),
+			record.filename[:-3], # cut the '.py'
 			record.levelname,
-			record.msg,
+			record.msg
 		]
 
 		if extra:
