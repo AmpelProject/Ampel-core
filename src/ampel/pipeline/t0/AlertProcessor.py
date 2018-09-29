@@ -9,6 +9,7 @@
 
 import time, pkg_resources, numpy as np
 from datetime import datetime
+from logging import LogRecord, INFO
 from ampel.pipeline.logging.AmpelLogger import AmpelLogger
 from ampel.pipeline.logging.RecordsBufferingHandler import RecordsBufferingHandler
 from ampel.pipeline.logging.LogsBufferingHandler import LogsBufferingHandler
@@ -27,7 +28,6 @@ from ampel.base.AmpelAlert import AmpelAlert
 class AlertProcessor():
 	""" 
 	Class handling T0 pipeline operations.
-
 	For each alert, following tasks are performed:
 
 		* Load the alert
@@ -76,6 +76,7 @@ class AlertProcessor():
 
 		# Load channels
 		self.t0_channels = [
+			# Create T0Channel instance (instantiates channel's filter class as well)
 			T0Channel(channel_config, survey_id, self.logger) 
 			for channel_config in ChannelLoader.load_channels(channels, self.logger)
 		]
@@ -138,6 +139,7 @@ class AlertProcessor():
 		# This class formats, saves and pushes log records into the DB
 		db_logging_handler = DBLoggingHandler(tier=0)
 		db_logging_handler.add_headers(self.log_headers)
+		run_id = db_logging_handler.get_run_id()
 
 		# Add db logging handler to the logger stack of handlers 
 		self.logger.addHandler(db_logging_handler)
@@ -152,9 +154,15 @@ class AlertProcessor():
 
 		# New job document in the 'jobs' collection
 		db_job_doc = DBJobDocument(tier=0)
-		db_job_doc.add_run_id(
-			db_logging_handler.get_run_id()		
-		)
+		db_job_doc.add_run_id(run_id)
+
+		# Forward jobId to ingester instance 
+		# (will be inserted in the transient documents)
+		ingester.set_log_id(run_id)
+
+		# Add current run_id to channel specific rejected log saver
+		for t0_chan in self.t0_channels:
+			t0_chan.rejected_logs_saver.set_run_id(run_id)
 
 
 		# divers
@@ -166,12 +174,6 @@ class AlertProcessor():
 		# Save ampel 'state' and get list of tran ids required for autocomplete
 		if self.live_ac:
 			tran_ids_before = self.get_tran_ids()
-
-		# Forward jobId to ingester instance 
-		# (will be inserted in the transient documents)
-		ingester.set_log_id(
-			db_logging_handler.get_run_id()
-		)
 
 		# Loop variables
 		iter_max = AlertProcessor.iter_max
@@ -234,13 +236,7 @@ class AlertProcessor():
 
 			# Associate upcoming log entries with the current transient id
 			tran_id = alert_content['tran_id']
-			self.logger.tran_id = tran_id
-
-			# Feedback
-			log_info(
-				"Processing", 
-				extra={'alertId': alert_content['alert_id']}
-			)
+			self.logger._AmpelLogger__tran_id = tran_id
 
 			# Create AmpelAlert instance
 			ampel_alert = AmpelAlert(
@@ -258,8 +254,8 @@ class AlertProcessor():
 			# Loop through initialized channels
 			for i, channel in self.chan_enum:
 
-				# Associate upcoming log entries with the current channel
-				self.logger.channels = channel.name
+				channel.log_extra['tranId'] = tran_id
+				channel.log_extra['alertId'] = alert_content['alert_id']
 
 				try:
 
@@ -272,21 +268,45 @@ class AlertProcessor():
 					# stats
 					dur_stats['filters'][channel.name][iter_count] = time_now() - per_filter_start
 
-					# Log feedback and count
-					if scheduled_t2_units[i] is not None:
-						count_stats['matches'][channel.name] += 1
-						log_info("OK")
-					else:
+					# Filter rejected alert
+					if scheduled_t2_units[i] is None:
+
 						# Autocomplete required for this channel
 						if self.live_ac and self.chan_auto_complete[i] and tran_id in tran_ids_before[i]:
-							log_info(channel.log_auto_complete)
+							channel.buff_logger.info("OK live ac")
 							count_stats['matches'][channel.name] += 1
 							scheduled_t2_units[i] = channel.t2_units
+
 						else:
-							log_info("NO")
+
+							# Save possibly existing error to 'main' logs
+							if channel.buff_handler.has_error:
+								channel.buff_handler.copy(db_logging_handler)
+
+							# If channel did not log anything, do it for it
+							if not channel.buff_handler.buffer:
+								channel.buff_logger.info("NO")
+
+							# Save rejected logs to separate (channel specific) db collection
+							channel.buff_handler.forward(
+								channel.rejected_logs_saver
+							)
+
+					# Filter accepted alert
+					else:
+
+						count_stats['matches'][channel.name] += 1
+
+						# If channel did not log anything, do it for it
+						if not channel.buff_handler.buffer:
+							channel.buff_logger.info("OK")
+
+						# Write log entries from buffer handler to main log db
+						channel.buff_handler.forward(db_logging_handler)
 
 				except:
 
+					channel.buff_handler.forward(db_logging_handler)
 					AmpelUtils.report_exception(
 						tier=0, logger=self.logger, 
 						dblh=db_logging_handler, info={
@@ -296,9 +316,6 @@ class AlertProcessor():
 							'alert': AlertProcessor._alert_essential(alert_content)
 						}
 					)
-
-				# Unset channel id <-> log entries association
-				self.logger.channels = None
 
 			# time required for all filters
 			dur_stats['allFilters'][iter_count] = time_now() - all_filters_start
@@ -315,7 +332,9 @@ class AlertProcessor():
 				#processed_alert[tran_id]
 				try: 
 					ingester.ingest(
-						tran_id, alert_content['pps'], alert_content['uls'], scheduled_t2_units
+						tran_id, alert_content['pps'], 
+						alert_content['uls'], 
+						scheduled_t2_units
 					)
 				except:
 					AmpelUtils.report_exception(
@@ -326,9 +345,24 @@ class AlertProcessor():
 							'alert': AlertProcessor._alert_essential(alert_content)
 						}
 					)
+			else:
+
+				# If all channels reject this alert, no log entries goes into
+				# the main logs collection sinces those are redirected to Ampel_rej.
+				# So we add a notification manually. For that, we don't use self.logger 
+				# cause rejection messages were alreary logged into the console 
+				# by the StreamHandler in channel specific RecordsBufferingHandler instances. 
+				# So we address directly db_logging_handler, and for that, we create
+				# a LogRecord manually.
+				lr = LogRecord(None, INFO, None, None, "Done", None, None)
+				lr.extra = {
+					'tranId': tran_id,
+					'alertId': alert_content['alert_id']
+				}
+				db_logging_handler.handle(lr)
 
 			# Unset log entries association with transient id
-			self.logger.tran_id = None
+			self.logger._AmpelLogger__tran_id = None
 
 			iter_count += 1
 
@@ -344,6 +378,7 @@ class AlertProcessor():
 
 			# Optional autocomplete
 			if self.live_ac:
+
 				tran_ids_after = self.get_tran_ids()
 	
 				# Check post auto-complete
@@ -430,13 +465,22 @@ class AlertProcessor():
 		if not full_console_logging:
 			self.logger.louden_console_logger()
 
-		# Remove DB logging handler
+		# Flush loggers
 		if iter_count > 0:
+
+			# Main logs logger
 			db_logging_handler.flush()
+
+			# Flush channel-specific rejected logs
+			for t0_chan in self.t0_channels:
+				t0_chan.rejected_logs_saver.flush()
+
 		else:
 			db_logging_handler.purge()
 
+		# Remove DB logging handler
 		self.logger.removeHandler(db_logging_handler)
+
 		db_job_doc.publish()
 
 		# Return number of processed alerts
