@@ -12,12 +12,13 @@ from bson import ObjectId
 from pymongo.errors import BulkWriteError
 from pymongo.operations import UpdateOne
 from ampel.pipeline.db.AmpelDB import AmpelDB
+from ampel.pipeline.logging.DBUpdateException import DBUpdateException
 
 
 class DBLoggingHandler(logging.Handler):
 	"""
 	Custom subclass of logging.Handler responsible for 
-	logging log events into the NoSQL database.
+	saving log events into the NoSQL database.
 	"""
 
 	def __init__(
@@ -25,23 +26,22 @@ class DBLoggingHandler(logging.Handler):
 	):
 		""" 
 		:param int tier: number indicating at which ampel tier level logging is done (0,1,2,3) 
-		:param str col: name of db collection to use
-		-> If None default 'stats' collection from AmpelDB will be used
-		-> otherwise, the provided db_col will be used
-		:param int aggregate_interval: logs with equals attributes 
-		(log level, possibly tranId & alertId) are put together in one document instead
-		of being splitted in one document per log entry (spares some index RAM).
-		aggregate_interval is the max interval in seconds during which the log aggregation
-		takes place. Beyond this value, a new log document is created no matter what.
-		Default value is 1.
+		:param str col: name of db collection to use (default: 'logs' in database Ampel_var)
+		:param int aggregate_interval: logs with similar attributes (log level, 
+		possibly tranId & channels) are aggregated in one document instead of being split
+		into several documents (spares some index RAM). *aggregate_interval* is the max interval 
+		of time in seconds during which log aggregation takes place. Beyond this value, 
+		a new log document is created no matter what. It thus impacts the logging time granularity.
 		:param int flush_len: How many log documents should be kept in memory before
-		attempting a DB bulk_write operation.
+		attempting a database bulk_write operation.
 		"""
 
-		self.filters = []  # required when extending logging.Handler
-		self.lock = None   # required when extending logging.Handler
+		# required by parent
+		self.filters = []
+		self.lock = None
 		self._name = None
 
+		# Own stuff
 		self.flush_len = flush_len
 		self.aggregate_interval = aggregate_interval
 		self.tran_id = None
@@ -49,7 +49,6 @@ class DBLoggingHandler(logging.Handler):
 		self.tier = tier
 		self.log_dicts = []
 		self.prev_records = None
-		# runId is a global (ever increasing) counter stored in the DB
 		self.run_id = self.new_run_id()
 		self.headers = []
 
@@ -149,7 +148,7 @@ class DBLoggingHandler(logging.Handler):
 				self.prev_records = record
 
 		except Exception as e:
-			self.__report_exception__(e)
+			DBUpdateException.report(self, e)
 			raise e from None
 
 
@@ -167,7 +166,7 @@ class DBLoggingHandler(logging.Handler):
 
 	def flush(self):
 		""" 
-		Will throw Exception if DB issue exists
+		Will throw Exception if DB issue occur
 		"""
 
 		# No log entries
@@ -196,55 +195,15 @@ class DBLoggingHandler(logging.Handler):
 			self.col.insert_many(self.log_dicts)
 
 		except BulkWriteError as bwe:
-			self.__report_exception__(bwe, bwe.details)
+			DBUpdateException.report(self, bwe, bwe.details)
 			raise bwe from None
 
 		except Exception as e:
-			self.__report_exception__(e)
+			DBUpdateException.report(self, e)
 			# If we can no longer keep track of what Ampel is doing, 
 			# better raise Exception to stop processing
 			raise e from None
 
-
 		# Empty referenced logs entries
 		self.log_dicts = []
 		self.prev_records = None
-
-
-	def __report_exception__(self, e, bwe_details=None):
-		"""
-		"""
-
-		from ampel.pipeline.logging.AmpelLogger import AmpelLogger
-		from ampel.pipeline.common.AmpelUtils import AmpelUtils
-
-		# Print log stack using std logging 
-		logger = AmpelLogger.get_unique_logger()
-
-		AmpelUtils.log_exception(logger, e, msg="Primary exception:")
-
-		if bwe_details:
-			logger.error("BulkWriteError details:")
-			logger.error(bwe_details)
-			logger.error("#"*52)
-
-		logger.error("DB log flushing error, un-flushed (json) logs below.")
-		logger.error("*"*52)
-
-		for d in self.log_dicts:
-			logger.error(str(d))
-		logger.error("#"*52)
-
-		try: 
-			# This will fail as well if we have DB connectivity issues
-			AmpelUtils.report_exception(
-				self.tier, dblh=self,
-				info = None if bwe_details is None else {'BulkWriteError': str(bwe_details)}
-			)
-		except Exception as ee:
-			AmpelUtils.log_exception(
-				logger, ee, last=True,
-				msg="Could not update troubles collection as well (DB offline?)"
-			)
-
-		# TODO: try slack ? (will fail if network issue)

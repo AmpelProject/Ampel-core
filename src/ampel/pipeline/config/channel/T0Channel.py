@@ -7,9 +7,12 @@
 # Last Modified Date: 17.09.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-import pkg_resources, importlib
+import pkg_resources, importlib, logging
+from ampel.pipeline.logging.AmpelLogger import AmpelLogger
 from ampel.pipeline.common.AmpelUtils import AmpelUtils
 from ampel.pipeline.config.AmpelConfig import AmpelConfig
+from ampel.pipeline.logging.RecordsBufferingHandler import RecordsBufferingHandler
+from ampel.pipeline.logging.DBRejectedLogsSaver import DBRejectedLogsSaver
 
 class T0Channel:
 	"""
@@ -18,13 +21,13 @@ class T0Channel:
 	(as defined in the channel parameter)
 	"""
 
-	def __init__(self, chan_config, survey_id, logger):
+	def __init__(self, chan_config, survey_id, parent_logger):
 		"""
 		:param chan_config: instance of ampel.pipeline.config.channel.ChannelConfig
 		:param str survey_id: name of the survey id (ex:ZTFIPAC)
-		:param logger: logger instance (python module logging)
+		:param Logger parent_logger: logger instance (python module logging)
 		:returns: None
-		:raises: NameError if:
+		:raises: NameError if:\n
 			- the provided survey id is not defined as source in the channel config 
 			- filter id (stream_config.t0Filter.unitId) is unknown 
 			  (not defined in the pkg_resources entry points)
@@ -39,14 +42,9 @@ class T0Channel:
 		# Channel name (ex: HU_SN)
 		self.name = chan_config.channel
 
-		# Build these two log entries once and for all
-		self.log_accepted = " -> %s: alert passes filter criteria" % chan_config.channel
-		self.log_rejected = " -> %s: alert was rejected" % chan_config.channel
-
 		self.auto_complete = False
 		if self.stream_config.parameters['autoComplete']:
 			self.auto_complete = True
-			self.log_auto_complete = " -> %s: accepting alert (auto-complete)" % chan_config.channel
 
 		# Get t0 filter id
 		filter_id = self.stream_config.t0Filter.unitId
@@ -58,7 +56,7 @@ class T0Channel:
 		if filter_entry_point is None:
 			raise NameError("Filter '%s' not found" % filter_id)
 
-		logger.info("Loading filter: %s" % filter_entry_point.module_name)
+		parent_logger.info("Loading filter: %s" % filter_entry_point.module_name)
 
 		# Instantiate filter class associated with this channel
 		module = importlib.import_module(filter_entry_point.module_name)
@@ -79,13 +77,28 @@ class T0Channel:
 				)
 			)
 
-		logger.info("On match t2 units: %s" % self.t2_units)
+		parent_logger.info("On match t2 units: %s" % self.t2_units)
+
+
+		# Create channel logger
+		self.buff_logger = AmpelLogger(self.name, channel=self.name)
+		self.log_extra = self.buff_logger._AmpelLogger__extra
+		sh = next(filter( # Will raise Exception if not found
+			lambda hdlr: isinstance(hdlr, logging.StreamHandler), 
+			parent_logger.handlers
+		))
+
+		self.buff_logger.addHandler(sh)
+		self.buff_handler = RecordsBufferingHandler()
+		self.buff_logger.addHandler(self.buff_handler)
 
 		self.filter_func = Filter_class(
 			self.t2_units,
 			base_config = base_config,
 			run_config = self.stream_config.t0Filter.runConfig, 
-			logger=logger
+			logger = self.buff_logger
 		).apply
 
 		self.resources = Filter_class.resources
+
+		self.rejected_logs_saver = DBRejectedLogsSaver(self.name)
