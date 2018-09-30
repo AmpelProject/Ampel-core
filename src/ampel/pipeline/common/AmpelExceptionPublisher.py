@@ -106,7 +106,7 @@ class AmpelExceptionPublisher:
 
 def run():
 	import schedule
-	from ampel.pipeline.config.ConfigLoader import AmpelArgumentParser
+	from ampel.pipeline.config.AmpelArgumentParser import AmpelArgumentParser
 	parser = AmpelArgumentParser()
 	parser.require_resource('mongo', ['logger'])
 	parser.require_resource('slack', ['operator'])

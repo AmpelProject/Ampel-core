@@ -197,7 +197,7 @@ def rununit(args):
 
 def main():
 
-	from ampel.pipeline.config.ConfigLoader import AmpelArgumentParser
+	from ampel.pipeline.config.AmpelArgumentParser import AmpelArgumentParser
 	from argparse import SUPPRESS
 	import sys
 
