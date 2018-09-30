@@ -4,13 +4,14 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 10.10.2017
-# Last Modified Date: 24.09.2018
+# Last Modified Date: 30.09.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import time, pkg_resources, numpy as np
 from datetime import datetime
 from logging import LogRecord, INFO
 from ampel.pipeline.logging.AmpelLogger import AmpelLogger
+from ampel.pipeline.logging.LoggingUtils import LoggingUtils
 from ampel.pipeline.logging.RecordsBufferingHandler import RecordsBufferingHandler
 from ampel.pipeline.logging.LogsBufferingHandler import LogsBufferingHandler
 from ampel.pipeline.logging.DBLoggingHandler import DBLoggingHandler
@@ -80,6 +81,10 @@ class AlertProcessor():
 			T0Channel(channel_config, survey_id, self.logger) 
 			for channel_config in ChannelLoader.load_channels(channels, self.logger)
 		]
+
+		AmpelDB.enable_rejected_collections(
+			[chan.name for chan in self.t0_channels]	
+		)
 
 		# Shortcuts
 		self.chan_enum = list(enumerate(self.t0_channels))
@@ -307,7 +312,7 @@ class AlertProcessor():
 				except:
 
 					channel.buff_handler.forward(db_logging_handler)
-					AmpelUtils.report_exception(
+					LoggingUtils.report_exception(
 						tier=0, logger=self.logger, 
 						dblh=db_logging_handler, info={
 							'section': 'ap_filter',
@@ -337,7 +342,7 @@ class AlertProcessor():
 						scheduled_t2_units
 					)
 				except:
-					AmpelUtils.report_exception(
+					LoggingUtils.report_exception(
 						tier=0, logger=self.logger, 
 						dblh=db_logging_handler, info={
 							'section': 'ap_ingest',
@@ -452,7 +457,7 @@ class AlertProcessor():
 						}
 					)
 		except:
-			AmpelUtils.report_exception(
+			LoggingUtils.report_exception(
 				tier=0, logger=self.logger, dblh=db_logging_handler
 			)
 			

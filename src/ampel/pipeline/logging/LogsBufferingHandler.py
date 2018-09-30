@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 27.09.2018
-# Last Modified Date: 27.09.2018
+# Last Modified Date: 30.09.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import logging, struct, os
@@ -87,10 +87,10 @@ class LogsBufferingHandler(logging.Handler):
 		except Exception as e:
 			
 			from ampel.pipeline.logging.AmpelLogger import AmpelLogger
-			from ampel.pipeline.common.AmpelUtils import AmpelUtils
+			from ampel.pipeline.logging.LoggingUtils import LoggingUtils
 
 			# Print log stack using std logging 
 			logger = AmpelLogger.get_unique_logger()
-			AmpelUtils.log_exception(logger, e, msg="Primary exception:")
+			LoggingUtils.log_exception(logger, e, msg="Primary exception:")
 
 			raise e from None
