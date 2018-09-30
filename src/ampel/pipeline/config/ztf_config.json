@@ -10,11 +10,10 @@
       },
       "catsHTM": "file:///path/to/catsHTM/should/be/set"
     },
-    "channels": [],
+    "channels": {},
     "t0Filters": {},
     "t2RunConfig": {},
     "t2Units": {},
     "t3Jobs": {},
-    "t3RunConfig": {},
     "t3Units": {}
 }
