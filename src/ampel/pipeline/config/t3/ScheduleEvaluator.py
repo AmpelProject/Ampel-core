@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/pipeline/config/ScheduleEvaluator.py
+# File              : ampel/pipeline/config/t3/ScheduleEvaluator.py
 # License           : BSD-3-Clause
 # Author            : jvs
 # Date              : Unspecified
@@ -11,7 +11,7 @@ import ast
 
 class ScheduleEvaluator(ast.NodeVisitor):
 	"""
-	Safely evaluate scheduling lines of the form
+	Safely evaluate scheduling lines of the form\n
 	- `every(10).minutes`
 	- `every().hour``
 	- `every().day.at('10:30')`
