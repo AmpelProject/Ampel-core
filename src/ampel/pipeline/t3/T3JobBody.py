@@ -14,14 +14,13 @@ from multiprocessing import Process
 
 from ampel.pipeline.common.AmpelUtils import AmpelUtils
 from ampel.pipeline.config.AmpelConfig import AmpelConfig
-from ampel.pipeline.config.t3.ScheduleEvaluator import ScheduleEvaluator
 from ampel.pipeline.logging.AmpelLogger import AmpelLogger
 from ampel.pipeline.t3.T3TaskConfig import T3TaskConfig
 from ampel.pipeline.t3.TimeConstraint import TimeConstraint
 from ampel.pipeline.t3.T3Job import T3Job
 
 
-class T3JobConfig:
+class T3JobBody:
 	"""
 	"""
 
@@ -100,8 +99,8 @@ class T3JobConfig:
 			if re.match(".*;.*", sched_el): # Robustness
 				raise ValueError("Parameter 'schedule' cannot contain character ';'")
 
-		# Create JobConfig
-		return T3JobConfig(job_name, job_doc, t3_task_configs)
+		# Create JobBody
+		return T3JobBody(job_name, job_doc, t3_task_configs)
 
 
 	@property
@@ -160,6 +159,5 @@ class T3JobConfig:
 	def schedule_job(self, scheduler):
 		""" """
 		scheds = AmpelUtils.get_by_path(self.job_doc, 'schedule')
-		evaluator = ScheduleEvaluator()
 		for sched_el in scheds if AmpelUtils.is_sequence(scheds) else [scheds]:
-			evaluator(scheduler, sched_el).do(self.launch_t3_job)
+			exec("schedule.%s.do(self.launch_t3_job)" % sched_el)
