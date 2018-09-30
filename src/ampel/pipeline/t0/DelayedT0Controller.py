@@ -103,7 +103,7 @@ class DelayedT0Controller:
 
 def run():
 	
-	from ampel.pipeline.config.ConfigLoader import AmpelArgumentParser
+	from ampel.pipeline.config.AmpelArgumentParser import AmpelArgumentParser
 	from ampel.pipeline.config.AmpelConfig import AmpelConfig
 	from ampel.pipeline.config.ChannelLoader import ChannelLoader
 	import pkg_resources

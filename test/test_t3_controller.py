@@ -7,7 +7,7 @@ from ampel.pipeline.t3.T3TaskConfig import T3TaskConfig
 from ampel.base.abstract.AbsT3Unit import AbsT3Unit
 from ampel.pipeline.config.AmpelConfig import AmpelConfig
 from ampel.pipeline.common.AmpelUtils import AmpelUtils
-from ampel.pipeline.config.ConfigLoader import AmpelArgumentParser
+from ampel.pipeline.config.AmpelArgumentParser import AmpelArgumentParser
 
 
 class PotemkinError(RuntimeError):
