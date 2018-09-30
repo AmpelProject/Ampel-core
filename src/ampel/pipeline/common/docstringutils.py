@@ -75,6 +75,8 @@ def gendocstring(klass):
 		sel = el.strip()
 		if not sel or "class " in sel or "\"\"\"" in sel or sel in exisiting_doc:
 			continue
+		if '@validator' in sel:
+			break
 		out_doc.append("  "+sel)
 
 	max_len = max([len(el) for el in out_doc+exisiting_doc]+[19])
