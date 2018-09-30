@@ -33,7 +33,7 @@ class ChannelLoader:
 		if chan_names is None:
 			
 			# if chan_names is None, load all available channels (unless non-active)
-			for chan_doc in AmpelConfig.get_config('channels'):
+			for chan_doc in AmpelConfig.get_config('channels').values():
 
 				if chan_doc['active'] is False:
 					# Do not load channels with active=False if not specifically required (by name) 
@@ -45,9 +45,6 @@ class ChannelLoader:
 					ChannelConfig.parse_obj(chan_doc)
 				)
 
-				if len(chan_doc) != len({el['channel'] for el in ret}):
-					raise ValueError("Channels with duplicate names")
-
 		else:
 
 			if type(chan_names) is str:
@@ -57,10 +54,9 @@ class ChannelLoader:
 				raise ValueError("Duplicates found in provided list of channel names")
 
 			# Loop through all channels
-			for chan_doc in AmpelConfig.get_config('channels'):
-
-				if chan_doc['channel'] not in chan_names:
-					continue
+			for chan_name in chan_names: 
+				
+				chan_doc = AmpelConfig.get_config('channels.%s' % chan_name)
 
 				if chan_doc['active'] is False and logger:
 					logger.info("Loading requested non-active channel %s" % chan_doc['channel'])
