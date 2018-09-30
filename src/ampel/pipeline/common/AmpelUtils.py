@@ -9,6 +9,7 @@
 
 import collections
 from functools import reduce
+from operator import attrgetter
 from ampel.pipeline.config.ReadOnlyDict import ReadOnlyDict
 
 class AmpelUtils():
@@ -125,9 +126,36 @@ class AmpelUtils():
 		"""
 		Get an item from a nested mapping by path, e.g.
 		'foo.bar.baz' -> mapping['foo']['bar']['baz']
+
+		:param dict mapping: 
+		:param str path: example: 'foo.bar.baz'
+		:param str delimiter: example: '.'
+		:rtype: object or None
 		"""
 		try:
 			return reduce(lambda d, k: d.get(k), path.split(delimiter), mapping)
+		except AttributeError:
+			return None
+
+
+	@staticmethod
+	def get_nested_attr(obj, path):
+		"""
+		Get a nested attribute from object:
+
+		:param Object obj: 
+		:param str path: example: 'foo.bar.baz'
+		:rtype: object or None
+
+		.. sourcecode:: python\n
+			In []: time_constraint_config.before.value
+			Out[]: 1531306299
+
+			In []: AmpelUtils.get_nested_attr(time_constraint_config, "before.value")
+			Out[]: 1531306299
+		"""
+		try:
+			return attrgetter(path)(obj)
 		except AttributeError:
 			return None
 
