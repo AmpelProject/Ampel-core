@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : Jakob van Santen <jakob.van.santen@desy.de>
 # Date              : 14.06.2018
-# Last Modified Date: 24.07.2018
+# Last Modified Date: 30.09.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import warnings
@@ -23,6 +23,13 @@ class AmpelConfig:
 		""" """ 
 		return cls._global_config is not None
 
+
+	@classmethod
+	def load_defaults(cls):
+		from ampel.pipeline.config.ConfigLoader import ConfigLoader
+		cls.set_config(
+			ConfigLoader.load_config(gather_plugins=True)
+		)
 
 	@classmethod
 	def get_config(cls, key=None):
