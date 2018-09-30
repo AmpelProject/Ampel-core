@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 26.02.2018
-# Last Modified Date: 22.08.2018
+# Last Modified Date: 30.09.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import logging
@@ -19,6 +19,7 @@ from ampel.pipeline.db.DBContentLoader import DBContentLoader
 from ampel.pipeline.db.AmpelDB import AmpelDB
 from ampel.pipeline.logging.DBLoggingHandler import DBLoggingHandler
 from ampel.pipeline.logging.AmpelLogger import AmpelLogger
+from ampel.pipeline.logging.LoggingUtils import LoggingUtils
 from ampel.pipeline.common.AmpelUtils import AmpelUtils
 from ampel.pipeline.t3.TimeConstraint import TimeConstraint
 from ampel.base.flags.TransientFlags import TransientFlags
@@ -262,7 +263,7 @@ class T3Job:
 								t3_task.update(tran_register)
 							except:
 								if report_exceptions:
-									AmpelUtils.report_exception(
+									LoggingUtils.report_exception(
 										self.logger, tier=3, info={
 											'jobName': self.job_config.job_name,
 											'taskName': t3_task.task_config.task_doc.get("name"),
@@ -280,7 +281,7 @@ class T3Job:
 					specific_journal_entries = t3_task.done()
 				except:
 					if report_exceptions:
-						AmpelUtils.report_exception(
+						LoggingUtils.report_exception(
 							self.logger, tier=3, info={
 								'jobName': self.job_config.job_name,
 								'taskName': t3_task.task_config.task_doc.get("name"),
@@ -350,7 +351,7 @@ class T3Job:
 		except:
 
 			if report_exceptions:
-				AmpelUtils.report_exception(
+				LoggingUtils.report_exception(
 					self.logger, tier=3, info={
 						'jobName': self.job_config.job_name,
 						'logs':  self.run_id,
@@ -621,7 +622,7 @@ class T3Job:
 		except:
 
 			# Populate troubles collection
-			AmpelUtils.report_exception(
+			LoggingUtils.report_exception(
 				self.logger, tier=3, info={
 					'ampelMsg': 'Exception occured in general_journal_update',
 					'jobName': self.job_config.job_name,
