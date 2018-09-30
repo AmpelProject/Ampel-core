@@ -10,7 +10,7 @@
 import pkg_resources
 from voluptuous import Schema, Any, Required, Optional, ALLOW_EXTRA
 
-from ampel.pipeline.logging.LoggingUtils import LoggingUtils
+from ampel.pipeline.logging.AmpelLogger import AmpelLogger
 from ampel.pipeline.common.AmpelUtils import AmpelUtils
 from ampel.pipeline.config.AmpelConfig import AmpelConfig
 from ampel.base.abstract.AbsT3Unit import AbsT3Unit
@@ -121,8 +121,12 @@ class T3TaskConfig:
 		
 		return cls.from_doc(t3_job_doc, task_name, all_tasks_sels, logger)
 
+
 	@classmethod
 	def from_doc(cls, t3_job_doc, task_name, all_tasks_sels=None, logger=None):
+		"""
+		"""
+
 		task_doc = None
 		if all_tasks_sels is None:
 
@@ -162,7 +166,7 @@ class T3TaskConfig:
 		t3_unit_name = task_doc['t3Unit']
 
 		# Setup logger
-		logger = LoggingUtils.get_logger() if logger is None else logger
+		logger = AmpelLogger.get_logger() if logger is None else logger
 		logger.info("Checking T3 task '%s'" % task_doc['name'])
 
 
