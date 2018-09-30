@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/pipeline/t3/T3JobConfig.py
+# File              : ampel/pipeline/t3/T3JobBody.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 06.03.2018
-# Last Modified Date: 27.08.2018
+# Last Modified Date: 30.09.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import ast, re
@@ -14,7 +14,7 @@ from multiprocessing import Process
 
 from ampel.pipeline.common.AmpelUtils import AmpelUtils
 from ampel.pipeline.config.AmpelConfig import AmpelConfig
-from ampel.pipeline.config.ScheduleEvaluator import ScheduleEvaluator
+from ampel.pipeline.config.t3.ScheduleEvaluator import ScheduleEvaluator
 from ampel.pipeline.logging.AmpelLogger import AmpelLogger
 from ampel.pipeline.t3.T3TaskConfig import T3TaskConfig
 from ampel.pipeline.t3.TimeConstraint import TimeConstraint
