@@ -2,6 +2,7 @@
 from ampel.pipeline.config.AmpelConfig import AmpelConfig
 from ampel.pipeline.config.ConfigLoader import load_config
 from ampel.pipeline.config.ChannelLoader import ChannelLoader
+from ampel.pipeline.t3.T3JobConfig import T3JobConfig, T3TaskConfig
 
 def test_validate_config(mocker):
 
@@ -18,4 +19,6 @@ def test_validate_config(mocker):
 
 	# plain Channel object
 	channels = ChannelLoader("ZTFIPAC", 2).load_channels(None)
-	
+
+	for job_name in AmpelConfig.get_config("t3Jobs").keys():
+		T3JobConfig.load(job_name, None)
