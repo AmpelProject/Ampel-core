@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/pipeline/common/AmpelClassLoader.py
+# File              : ampel/pipeline/common/AmpelUnitLoader.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 02.10.2018
@@ -12,7 +12,7 @@ from ampel.base.abstract.AbsAlertFilter import AbsAlertFilter
 from ampel.base.abstract.AbsT2Unit import AbsT2Unit
 from ampel.base.abstract.AbsT3Unit import AbsT3Unit
 
-class AmpelClassLoader:
+class AmpelUnitLoader:
 	"""
 	Class used to load/retrieve ampel unit classes (t0 filters, T2 or T3 units).
 	It holds a static dict instance referencing loaded *classes* (not instances) 
@@ -34,15 +34,15 @@ class AmpelClassLoader:
 
 
 	@classmethod
-	def get_unit(cls, tier, unit_name, logger=None):
+	def get_class(cls, tier, unit_name, logger=None):
 		"""
 		Retrieve and return unit class registered at entry point 
 		ampel.pipeline.t%is.units where %i can be 0, 2 or 3
 
 		:param int tier: 0, 2 or 3
 		:param str unit_name: unit name 
-		:param Logger logger: logger from python module 'logging'
-		:returns: ampel unit class
+		:param Logger logger: optional logger from python module 'logging'
+		:returns: ampel unit class or None
 		"""
 
 		if unit_name in cls.Classes[tier]:
@@ -60,17 +60,21 @@ class AmpelClassLoader:
 		)
 
 		if resource is None:
-			raise ValueError("Unknown T%s unit: %s" % (tier, unit_name))
+			if logger:
+				logger.error("Unknown T%s unit: %s" % (tier, unit_name))
+			return None
 
-		klass = resource.resolve()
-		if not issubclass(klass, cls._AbsClasses[tier]):
-			raise TypeError(
-				"T{} unit {} from {} is not a subclass of AbsT3Unit".format(
-					tier, klass.__name__, resource.dist
+		Class = resource.resolve()
+		if not issubclass(Class, cls._AbsClasses[tier]):
+			if logger:
+				logger.error(
+					"T{} unit {} from {} is not a subclass of AbsT3Unit".format(
+						tier, Class.__name__, resource.dist
+					)
 				)
-			)
+			return None
 
 		# Save loaded class to static dict
-		cls.Classes[tier][unit_name] = klass
+		cls.Classes[tier][unit_name] = Class
 
-		return klass
+		return Class
