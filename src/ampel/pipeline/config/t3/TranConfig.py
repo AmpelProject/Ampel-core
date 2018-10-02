@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/pipeline/config/t3/T3TranConfig.py
+# File              : ampel/pipeline/config/t3/TranConfig.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 30.09.2018
@@ -10,36 +10,27 @@
 from pydantic import BaseModel, validator
 from ampel.pipeline.common.docstringutils import gendocstring
 from ampel.pipeline.common.AmpelUtils import AmpelUtils
-from ampel.pipeline.config.t3.T3TranSelectConfig import T3TranSelectConfig
-from ampel.pipeline.config.t3.T3TranLoadConfig import T3TranLoadConfig
+from ampel.pipeline.config.GettableConfig import GettableConfig
+from ampel.pipeline.config.t3.TranSelectConfig import TranSelectConfig
+from ampel.pipeline.config.t3.TranContentConfig import TranContentConfig
 
-
-class MyValueError(ValueError):
-	pass
 
 @gendocstring
-class T3TranConfig(BaseModel):
+class TranConfig(BaseModel, GettableConfig):
 	""" """
-	select: T3TranSelectConfig = None
-	load: T3TranLoadConfig = None
+	state: str
+	select: TranSelectConfig = None
+	content: TranContentConfig = None
+	verbose: bool = True
+	debug: bool = False
 	chunk: int = 200
 
 
-	@validator('load')
-	def check_correct_use_of_t2s(cls, load):
+	@validator('state')
+	def validate_state(cls, state):
 		"""
-		Check transients->select->t2s
 		"""
+		if state != "$latest" and state != "$all":
+			raise ValueError('Parameter "state" must be either "$latest" of "$all"')
 
-		if load.docs and load.t2s:
-			if (
-				(AmpelUtils.is_sequence(load.docs) and "T2RECORD" not in load.docs) or
-				(type(load.docs) is str and "T2RECORD" != load.docs)
-			):
-				raise MyValueError(
-					"T3 config error: T2RECORD must be defined in transients->select->docs "+
-					"when transients->load->t2s (%s) filtering is requested." % load.t2s
-				)
-
-		return load
-
+		return state
