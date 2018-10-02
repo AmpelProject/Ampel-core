@@ -15,7 +15,8 @@ from ampel.pipeline.common.docstringutils import gendocstring
 @gendocstring
 class T3TranSelectConfig(BaseModel):
 	""" """
-	created: TimeConstraintConfig
-	modified: TimeConstraintConfig
-	channels: Union[str, List[str]]
-	withoutFlags: Union[str, List[str]]
+	created: Union[None, TimeConstraintConfig] = None
+	modified: Union[None, TimeConstraintConfig] = None
+	channels: Union[None, str, List[str]] = None
+	withFlags: Union[None, str, List[str]] = None
+	withoutFlags: Union[None, str, List[str]] = None
