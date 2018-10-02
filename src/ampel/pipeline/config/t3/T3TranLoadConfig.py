@@ -7,7 +7,7 @@
 # Last Modified Date: 29.09.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-from pydantic import BaseModel
+from pydantic import BaseModel, validator
 from typing import Dict, Union, List
 from ampel.pipeline.common.docstringutils import gendocstring
 from ampel.pipeline.config.t3.T3LoadableDocs import T3LoadableDocs
@@ -16,7 +16,17 @@ from ampel.pipeline.config.t3.T3LoadableDocs import T3LoadableDocs
 class T3TranLoadConfig(BaseModel):
 	""" """
 	state: str = "$latest"
-	docs: Union[T3LoadableDocs, List[T3LoadableDocs]]
-	t2s: Union[str, List[str]]
+	docs: Union[T3LoadableDocs, List[T3LoadableDocs]] = None
+	t2s: Union[None, str, List[str]] = None
 	verbose: bool = True
 	debug: bool = False
+
+
+	@validator('state')
+	def validate_state(cls, v):
+		"""
+		"""
+		if v != "$latest" and v != "$all":
+			raise ValueError('Parameter "state" must be either "$latest" of "$all"')
+
+		return v
