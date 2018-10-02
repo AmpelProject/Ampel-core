@@ -4,12 +4,11 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 07.06.2018
-# Last Modified Date: 29.09.2018
+# Last Modified Date: 02.10.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import collections
 from functools import reduce
-from operator import attrgetter
 from ampel.pipeline.config.ReadOnlyDict import ReadOnlyDict
 
 class AmpelUtils():
@@ -24,7 +23,7 @@ class AmpelUtils():
 	recursive_freeze(arg):
 	flatten_dict(d, separator='.'):
 	unflatten_dict(d, separator='.'):
-	report_exception(logger, tier=None, info=None):
+	print_and_raise(header, msg):
 	"""
 
 	@staticmethod
@@ -155,7 +154,9 @@ class AmpelUtils():
 			Out[]: 1531306299
 		"""
 		try:
-			return attrgetter(path)(obj)
+			for name in path.split("."):
+				obj = getattr(obj, name)
+			return obj
 		except AttributeError:
 			return None
 
@@ -229,3 +230,18 @@ class AmpelUtils():
 			d[parts[-1]] = value
 
 		return res
+
+
+	@staticmethod	
+	def print_and_raise(header, msg):
+		"""
+		Prints a msg and raises a ValueError with the same msg.
+		Main use: sometimes, pydantic ValueError do not propagate properly
+		and secondary Exceptions occur. 
+		Printing the msg helps troubleshooting bad configurations.
+		"""
+		print(header)
+		print("#"*len(msg))
+		print(msg)
+		print("#"*len(msg))
+		raise ValueError(msg)
