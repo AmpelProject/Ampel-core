@@ -8,10 +8,8 @@
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from pydantic import BaseModel
-from typing import List, Dict, Any, Union, Optional
+from typing import List, Dict, Any, Union
 from ampel.pipeline.common.docstringutils import gendocstring
-# no idea why pylint complains below...
-# pylint: disable=E0611,E0401
 from ampel.pipeline.config.channel.T0UnitConfig import T0UnitConfig
 from ampel.pipeline.config.channel.T2UnitConfig import T2UnitConfig
 
@@ -23,5 +21,5 @@ class StreamConfig(BaseModel):
 	"""
 	stream: str
 	parameters: Union[None, Dict[str, Any]] = None
-	t0Filter: Optional[T0UnitConfig]
-	t2Compute: Optional[List[T2UnitConfig]] = None
+	t0Filter: T0UnitConfig
+	t2Compute: Union[None, List[T2UnitConfig]] = None
