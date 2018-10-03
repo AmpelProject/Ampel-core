@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 13.01.2018
-# Last Modified Date: 23.08.2018
+# Last Modified Date: 03.10.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from bson import ObjectId
@@ -25,13 +25,14 @@ from ampel.core.flags.CompoundFlags import CompoundFlags
 from ampel.base.flags.TransientFlags import TransientFlags
 from ampel.base.flags.PhotoFlags import PhotoFlags
 
-from ampel.pipeline.common.AmpelUtils import AmpelUtils
-from ampel.pipeline.t3.TransientData import TransientData
 from ampel.pipeline.logging.AmpelLogger import AmpelLogger
+from ampel.pipeline.common.AmpelUtils import AmpelUtils
+from ampel.pipeline.config.AmpelConfig import AmpelConfig
 from ampel.pipeline.db.AmpelDB import AmpelDB
 from ampel.pipeline.db.LightCurveLoader import LightCurveLoader
 from ampel.pipeline.db.query.QueryLatestCompound import QueryLatestCompound
 from ampel.pipeline.db.query.QueryLoadTransientInfo import QueryLoadTransientInfo
+from ampel.pipeline.t3.TransientData import TransientData
 
 from ampel.base.Frozen import Frozen
 
@@ -339,7 +340,7 @@ class DBContentLoader:
 
 				tran_data.add_compound(
 					comp_chans, # intersection
-					Compound(**AmpelUtils.recursive_freeze(doc)),
+					Compound(**AmpelConfig.recursive_freeze(doc)),
 				)
 
 				if len(comp_chans) == 1 and state_op == "$latest":
