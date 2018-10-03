@@ -24,8 +24,8 @@ class ChannelConfig(BaseModel):
 	sources: Union[StreamConfig, List[StreamConfig]]
 	t3Supervise: Union[None, T3TaskConfig, List[T3TaskConfig]] = None
 
-	@validator('sources')
-	def make_single_source_a_list(cls, sources):
+	@validator('sources', pre=True, whole=True)
+	def make_it_a_list(cls, sources):
 		""" """
 		if type(sources) is not list:
 			return [sources]
