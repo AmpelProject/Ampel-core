@@ -162,36 +162,6 @@ class AmpelUtils():
 
 
 	@staticmethod
-	def recursive_freeze(arg):
-		"""
-		Return an immutable shallow copy
-		:param arg:
-			dict: ReadOnlyDict is returned
-			list: tuple is returned
-			set: frozenset is returned
-			otherwise: arg is returned 'as is'
-		"""
-		if isinstance(arg, dict):
-			return ReadOnlyDict(
-				{
-					AmpelUtils.recursive_freeze(k): AmpelUtils.recursive_freeze(v) 
-					for k,v in arg.items()
-				}
-			)
-
-		elif isinstance(arg, list):
-			return tuple(
-				map(AmpelUtils.recursive_freeze, arg)
-			)
-
-		elif isinstance(arg, set):
-			return frozenset(arg)
-
-		else:
-			return arg
-
-
-	@staticmethod
 	def flatten_dict(d, separator='.'):
 		"""
 		Example: 
