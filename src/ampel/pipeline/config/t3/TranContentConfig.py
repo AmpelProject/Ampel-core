@@ -16,13 +16,22 @@ from ampel.pipeline.config.t3.LoadableContent import LoadableContent
 
 @gendocstring
 class TranContentConfig(BaseModel, GettableConfig):
-	""" """
+	""" 
+	Example: 
+	{
+		"content": {
+			"docs": ["TRANSIENT", "COMPOUND", "PHOTOPOINT", "UPPERLIMIT", "T2RECORD"],
+			"t2SubSelection": ["SNCOSMO", "CATALOGMATCH"]
+		}
+	}
+	"""
+
 	docs: Union[LoadableContent, List[LoadableContent]]
 	t2SubSelection: Union[None, str, List[str]] = None
 
 
 	@validator('docs', 't2SubSelection', pre=True, whole=True)
-	def make_it_a_list(cls, v):
+	def cast_to_list(cls, v):
 		if type(v) is not list:
 			return [v]
 		return v

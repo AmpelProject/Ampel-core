@@ -13,6 +13,9 @@ from typing import Union, List
 from ampel.pipeline.logging.AmpelLogger import AmpelLogger
 from ampel.pipeline.common.AmpelUtils import AmpelUtils
 from ampel.pipeline.common.docstringutils import gendocstring
+from ampel.pipeline.config.AmpelBaseModel import AmpelBaseModel
+from ampel.pipeline.config.AmpelConfig import AmpelConfig
+from ampel.pipeline.config.ReadOnlyDict import ReadOnlyDict
 from ampel.pipeline.config.GettableConfig import GettableConfig
 from ampel.pipeline.config.t3.ScheduleEvaluator import ScheduleEvaluator
 from ampel.pipeline.config.t3.T3TaskConfig import T3TaskConfig
@@ -49,15 +52,18 @@ class T3JobConfig(BaseModel, GettableConfig):
 		T3JobConfig.logger = AmpelLogger.get_unique_logger()
 
 
-	@validator('schedule', whole=True)
-	def schedule_must_not_contain_bad_things(cls, schedule):
-		"""
-		Safety check for "schedule" parameters 
-		"""
-		evaluator = ScheduleEvaluator()
-		for el in schedule if type(schedule) is str else [schedule]:
-			evaluator(module_schedule.Scheduler(), schedule).do(nothing)
-		return schedule
+	@validator('transients', 'tasks', pre=True, whole=True)
+	def unfreeze_if_frozen(cls, arg):
+		if AmpelConfig.has_nested_type(arg, ReadOnlyDict):
+			return AmpelConfig.recursive_unfreeze(arg)
+		return arg
+
+
+	@validator('schedule', 'tasks', pre=True, whole=True)
+	def cast_to_list(cls, v):
+		if type(v) is not list:
+			return [v]
+		return v
 
 
 	@validator('tasks', pre=True, whole=True)
@@ -65,12 +71,8 @@ class T3JobConfig(BaseModel, GettableConfig):
 		""" 
 		tasks is a dict (pre is True) but values['transients'] is a TranConfig obj.
 		Here we add some info extracted from the job into the tasks
-		so that the task validators do not complain
+		so that the task validators do not complain about possible null values.
 		"""
-
-		# single task is easier  handled as list
-		if not AmpelUtils.is_sequence(tasks):
-			tasks = [tasks]
 
 		# Happens also when exceptions are raised in linked objects
 		if values.get('transients', None) is None:
@@ -85,6 +87,9 @@ class T3JobConfig(BaseModel, GettableConfig):
 			if task_config.get('transients') is None:
 				task_config['transients'] = values['transients']
 				continue
+
+			import copy
+			values['transients'] = copy.deepcopy(values['transients'])
 
 			# Copy state value if missing
 			if 'state' not in task_config['transients']:
@@ -158,7 +163,7 @@ class T3JobConfig(BaseModel, GettableConfig):
 			return tasks
 
 		# This information is required to validate tasks (see method doctring)
-		joined_tasks_selections = T3JobConfig.merge_tasks_selections(tasks)
+		joined_tasks_selections = T3JobConfig.get_merged_tasks_selections(tasks)
 		job_state = values["transients"].state
 
 		# Check sub-selection of each task
@@ -166,21 +171,52 @@ class T3JobConfig(BaseModel, GettableConfig):
 
 			# Channel
 			T3JobConfig.validate_channel_sub_selection(
-				values['transients'], task_config.transients, joined_tasks_selections
+				values['transients'], 
+				task_config.transients, 
+				joined_tasks_selections
 			)
 
 			# State
-			T3JobConfig.check_task_state(job_state, task_config.transients.state)
+			T3JobConfig.check_task_state(
+				job_state, task_config.transients.state
+			)
 
 
-		# Check channel sub-selection of all tasks combined
-		T3JobConfig.check_correct_use_of_foreach(joined_tasks_selections)
+		# Check $forEach channel sub-selection of all tasks combined
+		if '$forEach' in joined_tasks_selections.get('channels', []):
+
+			# Either none or all tasks must make use of the $forEach operator
+			if len(joined_tasks_selections['channels']) != 1:
+				AmpelUtils.print_and_raise(
+					"T3JobConfig logic error",
+					"Illegal task sub-channel selection: Either none task or all " +
+					"tasks must make use of the $forEach operator"
+				)
 
 		return tasks
 
 
+	@validator('schedule', whole=True)
+	def schedule_must_not_contain_bad_things(cls, schedule):
+		"""
+		Safety check for "schedule" parameters 
+		"""
+		evaluator = ScheduleEvaluator()
+		for el in schedule:
+			try:
+				evaluator(module_schedule.Scheduler(), el).do(nothing)
+			except Exception as e:
+				print("#"*len(str(e)))
+				print("ScheduleEvaluator exception:")
+				print(str(e))
+				print("#"*len(str(e)))
+				raise
+
+		return schedule
+
+
 	@staticmethod
-	def merge_tasks_selections(task_configs):
+	def get_merged_tasks_selections(task_configs):
 		"""
 		Merges together all "channels", "t2SubSelection" and "docs" values 
 		from all tasks defined in job.
@@ -353,19 +389,3 @@ class T3JobConfig(BaseModel, GettableConfig):
 					"T3JobConfig error",
 					"invalid state sub-selection criteria: main:'$latest' -> sub:'$all"
 				)
-
-
-	@staticmethod
-	def check_correct_use_of_foreach(joined_tasks_selections):
-		""" """
-		# Case channels == $forEach
-		if '$forEach' in joined_tasks_selections.get('channels', []):
-
-			# Either none or all tasks must make use of the $forEach operator
-			if len(joined_tasks_selections['channels']) != 1:
-				AmpelUtils.print_and_raise(
-					"T3JobConfig logic error",
-					"Illegal task sub-channel selection: Either none task or all " +
-					"tasks must make use of the $forEach operator"
-				)
-

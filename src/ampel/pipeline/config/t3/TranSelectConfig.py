@@ -14,16 +14,29 @@ from ampel.pipeline.config.GettableConfig import GettableConfig
 from ampel.pipeline.common.docstringutils import gendocstring
 
 @gendocstring
-class TranSelectConfig(BaseModel, GettableConfig):
-	""" """
+class TranSelectConfig(BaseModel):
+	"""
+	Example: 
+	{
+	    "select": {
+	    	"created": {"after": {"use": "$timeDelta", "arguments": {"days": -40}}},
+	    	"modified": {"after": {"use": "$timeDelta", "arguments": {"days": -1}}},
+	    	"channels": "HU_GP_CLEAN",
+			"withFlags": "INST_ZTF",
+	    	"withoutFlags": "HAS_ERROR"
+		}
+	}
+	"""
+
 	created: Union[None, TimeConstraintConfig] = None
 	modified: Union[None, TimeConstraintConfig] = None
 	channels: Union[None, str, List[str]] = None
 	withFlags: Union[None, str, List[str]] = None
 	withoutFlags: Union[None, str, List[str]] = None
 
+
 	@validator('channels', 'withFlags', 'withoutFlags', pre=True, whole=True)
-	def make_it_a_list(cls, v):
+	def cast_to_list(cls, v):
 		if type(v) is not list:
 			return [v]
 		return v

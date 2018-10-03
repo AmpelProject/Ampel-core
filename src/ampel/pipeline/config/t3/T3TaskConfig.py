@@ -11,13 +11,14 @@ from pydantic import BaseModel, validator
 from typing import Dict, Any, Union, List
 from ampel.pipeline.common.AmpelUnitLoader import AmpelUnitLoader
 from ampel.pipeline.common.docstringutils import gendocstring
-from ampel.pipeline.config.GettableConfig import GettableConfig
+from ampel.pipeline.config.AmpelBaseModel import AmpelBaseModel
 from ampel.pipeline.config.t3.TranConfig import TranConfig
 from ampel.pipeline.t3.T3TaskBody import T3TaskBody
 
 @gendocstring
-class T3TaskConfig(BaseModel, GettableConfig):
+class T3TaskConfig(AmpelBaseModel):
 	"""
+	Example:
 	"""
 	task: str
 	unitId: str
