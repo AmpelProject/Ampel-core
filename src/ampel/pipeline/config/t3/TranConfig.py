@@ -17,7 +17,25 @@ from ampel.pipeline.config.t3.TranContentConfig import TranContentConfig
 
 @gendocstring
 class TranConfig(BaseModel, GettableConfig):
-	""" """
+	""" 
+	Example: 
+	{
+		"transients": {
+	    	"select": {
+	    		"created": {"after": {"use": "$timeDelta", "arguments": {"days": -40}}},
+	    		"modified": {"after": {"use": "$timeDelta", "arguments": {"days": -1}}},
+	    		"channels": "HU_GP_CLEAN",
+				"withFlags": "INST_ZTF",
+	    		"withoutFlags": "HAS_ERROR"
+			},
+			"state": "$latest",
+			"content": {
+				"docs": ["TRANSIENT", "COMPOUND", "PHOTOPOINT", "UPPERLIMIT", "T2RECORD"],
+				"t2SubSelection": ["SNCOSMO", "CATALOGMATCH"]
+			}
+		}
+	}
+	"""
 	state: str
 	select: TranSelectConfig = None
 	content: TranContentConfig = None
