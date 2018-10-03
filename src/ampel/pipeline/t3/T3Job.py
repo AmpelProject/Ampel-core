@@ -36,18 +36,17 @@ class T3Job:
 		db_logging=True, full_console_logging=True
 	):
 		""" 
-		:param job_config: instance of ampel.pipeline.t3.T3JobConfig
+		:param job_config: instance of ampel.pipeline.config.t3.T3JobConfig
 
-		:param central_db: string. 
-		Use provided DB name rather than Ampel default database ('Ampel')
+		:param str central_db: Use provided DB name rather than Ampel default database ('Ampel')
 
-		:param logger: 
+		:param logger:\n
 		-> If None, a new logger using a DBLoggingHandler will be created, which means a new 
 		log document will be inserted into the 'logs' collection of the central db.
 		-> If you provide a logger, please note that it will *NOT* be changed in any way, 
 		in particular: no DBLoggingHandler will be added, which means that no DB logging will occur.
 
-		:param full_console_logging: bool. If false, the logging level of the stdout streamhandler 
+		:param bool full_console_logging: If false, the logging level of the stdout streamhandler 
 		associated with the logger will be set to WARN.
 		"""
 		
@@ -56,12 +55,12 @@ class T3Job:
 			AmpelDB.set_central_db_name(central_db)
 
 		self.col_tran = AmpelDB.get_collection('main')
-		self.col_runs = AmpelDB.get_collection('runs')
+		self.col_jobs = AmpelDB.get_collection('jobs')
 
 		if logger is None:
 
 			# Create logger
-			logger = self.logger.get_logger()
+			logger = AmpelLogger.get_logger()
 
 			if db_logging:
 				# Create DB logging handler instance (logging.Handler child class)
@@ -80,32 +79,32 @@ class T3Job:
 			self.logger.quieten_console_logger(self.logger)
 
 		# T3 job not requiring any prior transient loading 
-		if job_config.get('input.select') is not None:
+		if job_config.get('transients.select') is not None:
 
 			self.exec_params = {
-				'channel(s)': job_config.get('input.select.channel(s)'),
-				'state_op': job_config.get("input.load.state"),
-				't2s': job_config.get("input.load.t2(s)"),
+				'channels': job_config.get('transients.select.channels'),
+				'state_op': job_config.get("transients.load.state"),
+				't2s': job_config.get("transients.load.t2s"),
 				'docs': FlagUtils.list_flags_to_enum_flags(
-					[job_config.get('input.load.doc(s)')], AlDocTypes
+					[job_config.get('transients.load.docs')], AlDocTypes
 				),
-				'created': TimeConstraint.from_parameters(
-					job_config.get('input.select.created')
+				'created': TimeConstraint(
+					job_config.get('transients.select.created')
 				),
-				'modified': TimeConstraint.from_parameters(
-					job_config.get('input.select.modified')
+				'modified': TimeConstraint(
+					job_config.get('transients.select.modified')
 				),
 				'with_flags': FlagUtils.list_flags_to_enum_flags(
-					job_config.get('input.select.withFlag(s)'), 
+					job_config.get('transients.select.withFlags'), 
 					TransientFlags
 				),
 				'without_flags': FlagUtils.list_flags_to_enum_flags(
-					job_config.get('input.select.withoutFlag(s)'), 
+					job_config.get('transients.select.withoutFlags'), 
 					TransientFlags
 				),
-				'chunk': job_config.get('input.chunk'),
-				'verbose': job_config.get("input.load.verbose"),
-				'debug': job_config.get("input.load.debug")
+				'chunk': job_config.get('transients.chunk'),
+				'verbose': job_config.get("transients.load.verbose"),
+				'debug': job_config.get("transients.load.debug")
 			}
 
 		# Retrieve number of alerts processed since last run if so whished
@@ -122,7 +121,7 @@ class T3Job:
 		# Get datetime of last run
 		last_run = AmpelUtils.get_by_path(
 			next(
-				self.col_runs.aggregate(
+				self.col_jobs.aggregate(
 					QueryRunsCol.get_job_last_run(self.job_config.job_name)
 				), 
 				None
@@ -134,7 +133,7 @@ class T3Job:
 
 			# Get number of alerts processed since last run
 			res = next(
-				self.col_runs.aggregate(
+				self.col_jobs.aggregate(
 					QueryRunsCol.get_t0_stats(last_run)
 				), 
 				None
@@ -198,7 +197,7 @@ class T3Job:
 		try:
 
 			# Check for '$forEach' channel operator
-			if next(iter(self.job_config.get_task_configs())).get("select.channel(s)") == "$forEach":
+			if next(iter(self.job_config.get_task_configs())).get("select.channels") == "$forEach":
 	
 				# list of all channels found in matched transients.
 				chans = self._get_channels()
@@ -209,7 +208,7 @@ class T3Job:
 					return
 	
 				# Set *job* channels parameter to the channel values retrieved dynamically 
-				self.overwrite_parameter("channel(s)", chans)
+				self.overwrite_parameter("channels", chans)
 	
 				# Create T3 tasks
 				for task_config in self.job_config.get_task_configs():
@@ -228,14 +227,14 @@ class T3Job:
 							self.logger, 
 							channels=(
 								task_config.channels if task_config.channels is not None 
-								else self.exec_params.get('channel(s)')
+								else self.exec_params.get('channels')
 							),
 							global_info=self.global_info
 						)
 					)
 	
 			# T3 job requiring prior transient loading 
-			if self.job_config.get('input.select') is not None:
+			if self.job_config.get('transients.select') is not None:
 	
 				# Required to get transient info
 				dcl = DBContentLoader(
@@ -264,7 +263,7 @@ class T3Job:
 							except:
 								if report_exceptions:
 									LoggingUtils.report_exception(
-										self.logger, tier=3, info={
+										tier=3, logger=self.logger, info={
 											'jobName': self.job_config.job_name,
 											'taskName': t3_task.task_config.task_doc.get("name"),
 											'logs':  self.run_id,
@@ -282,7 +281,7 @@ class T3Job:
 				except:
 					if report_exceptions:
 						LoggingUtils.report_exception(
-							self.logger, tier=3, info={
+							tier=3, logger=self.logger, info={
 								'jobName': self.job_config.job_name,
 								'taskName': t3_task.task_config.task_doc.get("name"),
 								'logs':  self.run_id,
@@ -306,7 +305,7 @@ class T3Job:
 			if update_run_col:
 
 				# Record job info into DB
-				upd_res = self.col_runs.update_one(
+				upd_res = self.col_jobs.update_one(
 					{
 						'_id': int(
 							datetime.today().strftime('%Y%m%d')
@@ -352,7 +351,7 @@ class T3Job:
 
 			if report_exceptions:
 				LoggingUtils.report_exception(
-					self.logger, tier=3, info={
+					tier=3, logger=self.logger, info={
 						'jobName': self.job_config.job_name,
 						'logs':  self.run_id,
 					}
@@ -436,7 +435,7 @@ class T3Job:
 
 		# Build query for matching transients using criteria defined in job_config
 		return QueryMatchTransients.match_transients(
-			channels = self.exec_params['channel(s)'],
+			channels = self.exec_params['channels'],
 			time_created = self.exec_params['created'],
 			time_modified = self.exec_params['modified'],
 			with_flags = self.exec_params['with_flags'],
@@ -463,7 +462,7 @@ class T3Job:
 			self.logger.info("No transient matches the given criteria")
 			return None
 
-		self.logger.info("%i transient(s) match search criteria" % trans_cursor.count())
+		self.logger.info("%i transients match search criteria" % trans_cursor.count())
 
 		return trans_cursor
 
@@ -479,7 +478,7 @@ class T3Job:
 		# Load ids (chunk_size number of ids)
 		for chunked_tran_ids in T3Job.chunk(map(lambda el: el['tranId'], trans_cursor), chunk_size):
 
-			self.logger.info("Loading %i transient(s) " % len(chunked_tran_ids))
+			self.logger.info("Loading %i transients " % len(chunked_tran_ids))
 			states = None
 
 			# For '$latest' state, the latest compoundid of each transient must be determined
@@ -506,7 +505,7 @@ class T3Job:
 
 				# Channel/Channels must be provided if state is 'latest'
 				# Get latest state ** for each channel **
-				for channel in AmpelUtils.iter(self.exec_params['channel(s)']):
+				for channel in AmpelUtils.iter(self.exec_params['channels']):
 
 					# get latest state (fast mode) 
 					# Output example:
@@ -564,10 +563,10 @@ class T3Job:
 						states.add(g_latest_state['_id'])
 
 
-			# Load ampel TransientData instances with given state(s)
-			self.logger.info("Loading transient(s)")
+			# Load ampel TransientData instances with given states
+			self.logger.info("Loading transients")
 			al_tran_data = db_content_loader.load_new(
-				chunked_tran_ids, self.exec_params['channel(s)'], self.exec_params['state_op'], 
+				chunked_tran_ids, self.exec_params['channels'], self.exec_params['state_op'], 
 				states, self.exec_params['docs'], self.exec_params['t2s']
 			)
 			
@@ -596,7 +595,7 @@ class T3Job:
 								'dt': int_time_start,
 								'jobName':  self.job_config.job_name,
 								'taskName': t3_task.get_config('name'),
-								'channel(s)': list(channels), # type(channels) is frozenset
+								'channels': list(channels), # type(channels) is frozenset
 								'logs': self.run_id
 							}
 						}
@@ -623,7 +622,7 @@ class T3Job:
 
 			# Populate troubles collection
 			LoggingUtils.report_exception(
-				self.logger, tier=3, info={
+				tier=3, logger=self.logger, info={
 					'ampelMsg': 'Exception occured in general_journal_update',
 					'jobName': self.job_config.job_name,
 					'taskName': t3_task.get_config('name'),
