@@ -263,10 +263,10 @@ class T3Job:
 							except:
 								if report_exceptions:
 									LoggingUtils.report_exception(
-										tier=3, logger=self.logger, info={
+										tier=3, run_id=self.run_id, 
+										logger=self.logger, info={
 											'jobName': self.job_config.job_name,
-											'taskName': t3_task.task_config.task_doc.get("name"),
-											'logs':  self.run_id,
+											'taskName': t3_task.task_config.task_doc.get("name")
 										}
 									)
 								else:
@@ -281,10 +281,10 @@ class T3Job:
 				except:
 					if report_exceptions:
 						LoggingUtils.report_exception(
-							tier=3, logger=self.logger, info={
+							tier=3, run_id=self.run_id, 
+							logger=self.logger, info={
 								'jobName': self.job_config.job_name,
-								'taskName': t3_task.task_config.task_doc.get("name"),
-								'logs':  self.run_id,
+								'taskName': t3_task.task_config.task_doc.get("name")
 							}
 						)
 						continue
@@ -351,7 +351,8 @@ class T3Job:
 
 			if report_exceptions:
 				LoggingUtils.report_exception(
-					tier=3, logger=self.logger, info={
+					tier=3, run_id=self.run_id, 
+					logger=self.logger, info={
 						'jobName': self.job_config.job_name,
 						'logs':  self.run_id,
 					}
@@ -429,8 +430,8 @@ class T3Job:
 
 	def _get_match_criteria(self):
 		"""
-		Returns a dict of pymongo matching criteria 
-		used for find() or aggregate() operations
+		Returns a dict (matching criteria) used for pymongo 
+		operations find() or aggregate() operations
 		"""
 
 		# Build query for matching transients using criteria defined in job_config
@@ -622,11 +623,12 @@ class T3Job:
 
 			# Populate troubles collection
 			LoggingUtils.report_exception(
-				tier=3, logger=self.logger, info={
+				tier=3, run_id=self.run_id, 
+				logger=self.logger, info={
 					'ampelMsg': 'Exception occured in general_journal_update',
 					'jobName': self.job_config.job_name,
 					'taskName': t3_task.get_config('name'),
-					'logs':  self.run_id,
+					'runId':  self.run_id,
 				}
 			)
 
