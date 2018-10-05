@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 16.06.2018
-# Last Modified Date: 30.09.2018
+# Last Modified Date: 05.10.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from ampel.pipeline.config.AmpelConfig import AmpelConfig
@@ -28,8 +28,8 @@ class AmpelDB:
 			'photo': None
 		},
 		'var': {
-			'jobs': None,
 			'logs': None,
+			'events': None,
 			'troubles': None
 		},
 		'ext': {
@@ -180,7 +180,7 @@ class AmpelDB:
 	def create_indexes(col):
 		"""
 		The method will set indexes for collections with names: 
-		'main', 'photo', 'jobs', 'logs', 'troubles', ...
+		'main', 'photo', 'events', 'logs', 'troubles', ...
 
 		:returns: None
 		"""
@@ -211,18 +211,6 @@ class AmpelDB:
 				[("tranId", 1)],
 			)
 
-		elif col.name == "jobs":
-
-			# Create sparse index for key hasError
-			col.create_index(
-				[("hasError", 1)],
-				**{ 
-					"partialFilterExpression": {
-						"hasError": { "$exists": True } 
-					}
-				}
-			)
-
 		elif col.name == "logs":
 
 			col.create_index(
@@ -241,10 +229,22 @@ class AmpelDB:
 
 			# Create sparse index for key runId
 			col.create_index(
-				[("channel", 1)],
+				[("channels", 1)],
 				**{ 
 					"partialFilterExpression": {
-						"channel": { "$exists": True } 
+						"channels": { "$exists": True } 
+					}
+				}
+			)
+
+		elif col.name == "events":
+
+			# Create sparse index for key hasError
+			col.create_index(
+				[("hasError", 1)],
+				**{ 
+					"partialFilterExpression": {
+						"hasError": { "$exists": True } 
 					}
 				}
 			)
