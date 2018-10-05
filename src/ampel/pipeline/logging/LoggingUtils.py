@@ -7,12 +7,13 @@
 # Last Modified Date: 30.09.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
+from logging import ERROR, CRITICAL, Logger
 
 class LoggingUtils:
 
 
 	@staticmethod
-	def log_exception(logger, ex, last=False, msg=None):
+	def log_exception(logger: Logger, ex: Exception, last: bool=False, msg: str=None):
 		"""
 		:param Logger logger: logger instance (python logging module)
 		:param Exception ex: the exception
@@ -56,13 +57,12 @@ class LoggingUtils:
 
 
 	@staticmethod
-	def report_exception(tier, logger=None, dblh=None, info=None):
+	def report_exception(tier: int, logger: Logger, run_id: int=None, info: dict=None):
 		"""
 		:param int tier: Ampel tier level (0, 1, 2, 3)
 		:param logger: optional logger instance (logging module). If provided, 
 		propagate_log() will be used to print details about the exception
-		:param DBLoggingHandler dblh: instance of ampel.pipeline.logging.DBLoggingHandler.
-		If provided, the logId associated with the current job 
+		:param int run_id: If provided, the runId associated with the current job 
 		will be saved into the reported dict instance.
 		:param dict info: optional dict instance whose values wil be included 
 		in the document inserted into Ampel_troubles
@@ -70,23 +70,21 @@ class LoggingUtils:
 
 		from ampel.pipeline.db.AmpelDB import AmpelDB
 		from traceback import format_exc
-		from logging import CRITICAL
 		from sys import exc_info
 
 		# Don't create report for executions canceled manually
 		if exc_info()[0] == KeyboardInterrupt:
 			return 
 
-		if logger:
-			# Feedback
-			logger.propagate_log(CRITICAL, "Exception occured", exc_info=True)
+		# Feedback
+		logger.propagate_log(CRITICAL, "Exception occured", exc_info=True)
 
 		# Basis dict 
 		trouble = {'tier': tier}
 
 		# Should be provided systematically
-		if dblh is not None:
-			trouble['logs'] = dblh.get_run_id()
+		if run_id is not None:
+			trouble['runId'] = run_id
 
 		# Additional info might have been provided (such as alert information)
 		if info is not None:
@@ -94,5 +92,110 @@ class LoggingUtils:
 
 		trouble['exception'] = format_exc().replace("\"", "'").split("\n")
 
-		# Populate Ampel_trouble collection
-		AmpelDB.get_collection('troubles').insert_one(trouble)
+		# Populate 'troubles' collection
+		LoggingUtils._insert_trouble(trouble, logger)
+
+
+	@staticmethod
+	def report_error(tier: int, msg: str, info: dict, logger: Logger):
+		"""
+		:param int tier:
+		:param str tier:
+		:param dict info:
+		:param Logger logger:
+		:returns: None
+		:raises: Should not raise errors
+		"""
+
+		import inspect
+		from ampel.pipeline.db.AmpelDB import AmpelDB
+
+		## Get filename and line number using inspect
+		frame,filename,line_number,function_name,lines,index = inspect.stack()[1]
+
+		trouble = {
+			'tier': tier,
+			'msg': msg,
+			'location': '%s:%s' % (filename, line_number),
+		}
+
+		# Additional info might have been provided (such as alert information)
+		if info is not None:
+			trouble.update(info)
+
+		# Feedback
+		logger.propagate_log(ERROR, "Error occured", extra=trouble)
+
+		# Populate 'troubles' collection
+		LoggingUtils._insert_trouble(trouble, logger)
+
+
+	@staticmethod
+	def _insert_trouble(trouble, logger):
+		"""
+		"""
+
+		from ampel.pipeline.db.AmpelDB import AmpelDB
+
+		# Populate troubles collection
+		try:
+			AmpelDB.get_collection('troubles').insert_one(trouble)
+		except:
+			# Bad luck (possible cause: DB offline)
+			logger.propagate_log(
+				ERROR, 
+				"Exception occured while populating 'troubles' collection",
+				exc_info=True
+			)
+
+
+	@staticmethod
+	def safe_query_dict(match: dict, update: dict = None) -> dict:
+		u"""
+		Builds a dict that can be passed as "extra" parameter to instances of AmpelLogger.
+		Returned dict has the following structure:
+		```py
+		{
+			"query": {
+				"match": dict,
+				"update": optional_dict
+			}
+		}
+		```
+		Possibly embedded dollar signs in dict keys of dicts "match" and "update" are replaced
+		with the the unicode character 'Fullwidth Dollar Sign': ＄ (see docstring of 
+		:func:`convert_dollars <ampel.pipeline.logging.LoggingUtils.convert_dollars>`)
+
+		:returns: dict
+		"""
+		extra = {'query': {'match': match}}
+
+		if update:
+			extra['query']['update'] = update
+
+		return extra
+
+
+	@staticmethod
+	def convert_dollars(arg: dict) -> dict:
+		"""	
+		MongoDB does not allow documents containing dollars in 'top level key' (raises InvalidDocument).
+		In order to log DB queries commands, we substitute the dollar sign with 
+		the unicode character 'Fullwidth Dollar Sign': ＄.
+		Another option would be do cast the dict to string (what we did before v0.5)
+		but it is less readable and takes more storage space. 
+		Nested dict shallow copies are performed.
+
+		:returns: dict
+		"""	
+
+		# shallow copy
+		d = arg.copy()
+
+		for key in d.keys():
+			if type(d[key]) is dict:
+				d[key] = LoggingUtils.convert_dollars(d[key])
+			if key.startswith('$'):
+				d[key.replace('$', "\uFF04")] = d.pop(key)
+
+		return d
