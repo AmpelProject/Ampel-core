@@ -1,25 +1,27 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/pipeline/db/query/QueryRunsCol.py
+# File              : ampel/pipeline/db/query/QueryEventsCol.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 11.07.2018
-# Last Modified Date: 13.07.2018
+# Last Modified Date: 05.10.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from datetime import datetime, timedelta
 
-class QueryRunsCol:
+class QueryEventsCol:
 	"""
 	"""
 
 	@staticmethod
-	def get_job_last_run(job_name, days_back=10):
+	def get_last_run(event_name, days_back=10):
 		"""
+		:param str event_name:
+		:param int days_back:
 		"""
 
-		ret = QueryRunsCol.get(
-			tier=3, job_name=job_name, days_back=days_back
+		ret = QueryEventsCol.get(
+			tier=3, event_name=event_name, days_back=days_back
 		)
 
 		ret.append(
@@ -34,9 +36,11 @@ class QueryRunsCol:
 		"""
 		"""
 
-		ret = QueryRunsCol.get(
+		ret = QueryEventsCol.get(
 			tier=0, dt=dt,
-			days_back=(datetime.utcnow()-datetime.fromtimestamp(dt)).days + 1
+			days_back=(
+				datetime.utcnow() - datetime.fromtimestamp(dt)
+			).days + 1
 		)
 
 		ret.append(
@@ -44,7 +48,7 @@ class QueryRunsCol:
                 "$group": {
                     "_id": 1,
                     "alerts": {
-                        "$sum": "$jobs.metrics.count.alerts"
+                        "$sum": "$events.metrics.count.alerts"
                     }
                 }
             }
@@ -54,12 +58,12 @@ class QueryRunsCol:
 
 
 	@staticmethod
-	def get(tier=0, job_name=None, days_back=10, dt=None):
+	def get(tier=0, event_name=None, days_back=10, dt=None):
 		"""
-		tier: positive integer between 0 and 3
-		job_name: string
-		days_back: positive integer
-		dt: unix time
+		:param int tier: positive integer between 0 and 3
+		:param str event_name: Name of event (job id or task name)
+		:param int days_back: positive integer
+		:param dt: unix time (float or int)
 		"""
 
 		# Array returned by this method
@@ -88,22 +92,29 @@ class QueryRunsCol:
 				)
 
 			ret.append(
-				{'$match': {'_id': {'$in': match}}}
+				{
+					'$match': {
+						'_id': {
+							'$in': match
+						}
+					}
+				}
 			)
 
-		second_match_stage = {'jobs.tier': tier}
+		second_match_stage = {'events.tier': tier}
 
-		if job_name is not None:
-			second_match_stage['jobs.name'] = job_name
+		if event_name is not None:
+			second_match_stage['events.name'] = event_name
 
 		if dt is not None:
-			second_match_stage['jobs.dt'] = {'$gt': dt}
+			second_match_stage['events.dt'] = {'$gt': dt}
 
 		ret.extend(
 			[
-				{'$unwind': '$jobs'},
+				{'$unwind': '$events'},
 				{'$match': second_match_stage},
-				{'$sort': {'jobs.dt': -1}}, # sort jobs by descending datetime
+				# sort events by descending datetime
+				{'$sort': {'events.dt': -1}},
 			]
 		)
 
