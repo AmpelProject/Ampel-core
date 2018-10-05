@@ -145,7 +145,7 @@ class AmpelLogger(logging.Logger):
 		self.set_console_log_level(logging.DEBUG)
 
 
-	def propagate_log(self, level, msg, exc_info=False):
+	def propagate_log(self, level, msg, exc_info=False, extra=None):
 		"""
 		Calls set_console_log_level(logging.DEBUG), logs the log message and 
 		then sets the StreamHandler log level back to its initial value.
@@ -173,7 +173,7 @@ class AmpelLogger(logging.Logger):
 		if level < logging.WARN:
 			level = logging.WARN
 
-		self.log(level, "Forced log propagation: "+msg, exc_info=exc_info)
+		self.log(level, "Forced log propagation: "+msg, exc_info=exc_info, extra=extra)
 
 
 	def makeRecord(self, name, level, fn, lno, msg, args, exc_info, func=None, extra=None, sinfo=None):
