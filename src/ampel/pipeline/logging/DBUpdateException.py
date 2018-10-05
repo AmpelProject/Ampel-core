@@ -37,7 +37,7 @@ class DBUpdateException:
 		try: 
 			# This will fail as well if we have DB connectivity issues
 			LoggingUtils.report_exception(
-				0, dblh=handler,
+				0, run_id=handler.get_run_id(),
 				info = None if bwe_details is None else {'BulkWriteError': str(bwe_details)}
 			)
 		except Exception as ee:

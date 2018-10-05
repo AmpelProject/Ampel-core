@@ -313,8 +313,8 @@ class AlertProcessor():
 
 					channel.buff_handler.forward(db_logging_handler)
 					LoggingUtils.report_exception(
-						tier=0, logger=self.logger, 
-						dblh=db_logging_handler, info={
+						tier=0, run_id=db_logging_handler.get_run_id(),
+						logger=self.logger, info={
 							'section': 'ap_filter',
 							'channel': channel.name,
 							'tranId': tran_id,
@@ -343,8 +343,8 @@ class AlertProcessor():
 					)
 				except:
 					LoggingUtils.report_exception(
-						tier=0, logger=self.logger, 
-						dblh=db_logging_handler, info={
+						tier=0, run_id=db_logging_handler.get_run_id(),
+						logger=self.logger, info={
 							'section': 'ap_ingest',
 							'tranId': tran_id,
 							'alert': AlertProcessor._alert_essential(alert_content)
@@ -458,7 +458,8 @@ class AlertProcessor():
 					)
 		except:
 			LoggingUtils.report_exception(
-				tier=0, logger=self.logger, dblh=db_logging_handler
+				tier=0, run_id=db_logging_handler.get_run_id(), 
+				logger=self.logger
 			)
 			
 		log_info(
