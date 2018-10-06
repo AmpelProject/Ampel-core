@@ -23,7 +23,7 @@ from ampel.pipeline.logging.LoggingUtils import LoggingUtils
 from ampel.pipeline.common.AmpelUtils import AmpelUtils
 from ampel.pipeline.t3.TimeConstraint import TimeConstraint
 from ampel.base.flags.TransientFlags import TransientFlags
-from ampel.core.flags.AlDocTypes import AlDocTypes
+from ampel.core.flags.AlDocType import AlDocType
 from ampel.core.flags.FlagUtils import FlagUtils
 
 
@@ -86,7 +86,7 @@ class T3Job:
 				'state_op': job_config.get("transients.load.state"),
 				't2s': job_config.get("transients.load.t2s"),
 				'docs': FlagUtils.list_flags_to_enum_flags(
-					[job_config.get('transients.load.docs')], AlDocTypes
+					[job_config.get('transients.load.docs')], AlDocType
 				),
 				'created': TimeConstraint(
 					job_config.get('transients.select.created')
@@ -494,7 +494,7 @@ class T3Job:
 							'tranId': {
 								'$in': chunked_tran_ids
 							},
-							'alDocType': AlDocTypes.COMPOUND, 
+							'alDocType': AlDocType.COMPOUND, 
 							'tier': {'$ne': 0}
 						},
 						{'_id':0, 'tranId':1}
@@ -586,7 +586,7 @@ class T3Job:
 				# Update many 
 				um = UpdateMany(
 					{
-						'alDocType': AlDocTypes.TRANSIENT, 
+						'alDocType': AlDocType.TRANSIENT, 
 						'tranId': {'$in': t3_task.journal_notes[channels]}
 					},
 					{

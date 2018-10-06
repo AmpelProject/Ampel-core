@@ -11,7 +11,7 @@
 from bson.objectid import ObjectId
 from datetime import datetime, timedelta
 
-from ampel.core.flags.AlDocTypes import AlDocTypes
+from ampel.core.flags.AlDocType import AlDocType
 from ampel.core.flags.FlagUtils import FlagUtils
 from ampel.pipeline.t3.TimeConstraint import TimeConstraint
 from ampel.pipeline.db.query.QueryMatchFlags import QueryMatchFlags
@@ -45,7 +45,7 @@ class QueryMatchTransients:
 		"""
 
 		query = {
-			'alDocType': AlDocTypes.TRANSIENT
+			'alDocType': AlDocType.TRANSIENT
 		}
 
 		if with_flags is not None:

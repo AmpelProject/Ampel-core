@@ -23,7 +23,7 @@ from ampel.pipeline.config.channel.T0Channel import T0Channel
 from ampel.pipeline.common.AmpelUtils import AmpelUtils
 from ampel.pipeline.common.GraphiteFeeder import GraphiteFeeder
 from ampel.core.abstract.AbsT0Setup import AbsT0Setup
-from ampel.core.flags.AlDocTypes import AlDocTypes
+from ampel.core.flags.AlDocType import AlDocType
 from ampel.base.AmpelAlert import AmpelAlert
 
 class AlertProcessor():
@@ -531,7 +531,7 @@ class AlertProcessor():
 					el['tranId'] for el in col.find(
 						{
 							'tranId': {'$gt': 1}, 
-							'alDocType': AlDocTypes.TRANSIENT, 
+							'alDocType': AlDocType.TRANSIENT, 
 							'channels': channel.name
 						},
 						{
