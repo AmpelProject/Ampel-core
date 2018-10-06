@@ -7,7 +7,6 @@
 # Last Modified Date: 22.08.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-from ampel.core.flags.AlDocTypes import AlDocTypes
 from ampel.core.flags.FlagUtils import FlagUtils
 from ampel.core.PhotoPoint import PhotoPoint
 from ampel.core.UpperLimit import UpperLimit
