@@ -13,7 +13,7 @@ from IPython.display import Markdown, display
 from ampel.base.flags.TransientFlags import TransientFlags
 from ampel.base.flags.PhotoFlags import PhotoFlags
 from ampel.core.flags.T2RunStates import T2RunStates
-from ampel.core.flags.AlDocTypes import AlDocTypes
+from ampel.core.flags.AlDocType import AlDocType
 from ampel.core.flags.FlagUtils import FlagUtils
 
 class DBDocVizualizer:
@@ -39,8 +39,8 @@ class DBDocVizualizer:
 
 		d = collections.OrderedDict()
 			
-		#al_doc_type = FlagUtils.dbflag_to_enumflag(d['alDocType'], AlDocTypes)
-		if db_dict['alDocType'] == AlDocTypes.PHOTOPOINT:
+		#al_doc_type = FlagUtils.dbflag_to_enumflag(d['alDocType'], AlDocType)
+		if db_dict['alDocType'] == AlDocType.PHOTOPOINT:
 			self.set_dict_first_keys(db_dict, d, "PHOTOPOINT")
 			if "alFlags" in db_dict:
 				d['alFlags'] = self.pretty_print_flag(
@@ -54,11 +54,11 @@ class DBDocVizualizer:
 
 			self.copy_the_rest(db_dict, d)
 
-		elif db_dict['alDocType'] == AlDocTypes.COMPOUND:
+		elif db_dict['alDocType'] == AlDocType.COMPOUND:
 			self.set_dict_first_keys(db_dict, d, "COMPOUND")
 			self.copy_the_rest(db_dict, d)
 
-		elif db_dict['alDocType'] == AlDocTypes.TRANSIENT:
+		elif db_dict['alDocType'] == AlDocType.TRANSIENT:
 			self.set_dict_first_keys(db_dict, d, "TRANSIENT")
 			if "alFlags" in db_dict:
 				d['alFlags'] = self.pretty_print_flag(
@@ -70,7 +70,7 @@ class DBDocVizualizer:
 				job_ids.append("ObjectId(" + str(el) + ")")
 			d['jobIds'] = job_ids
 
-		elif db_dict['alDocType'] == AlDocTypes.T2RECORD:
+		elif db_dict['alDocType'] == AlDocType.T2RECORD:
 			self.set_dict_first_keys(db_dict, d, "T2RECORD")
 			d['channels'] = db_dict['channels']
 			d['t2Unit'] = db_dict['t2Unit']

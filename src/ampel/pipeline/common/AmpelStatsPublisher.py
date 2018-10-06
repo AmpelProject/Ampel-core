@@ -14,7 +14,7 @@ from ampel.pipeline.common.AmpelUtils import AmpelUtils
 from ampel.pipeline.common.Schedulable import Schedulable
 from ampel.pipeline.config.AmpelConfig import AmpelConfig
 from ampel.pipeline.db.AmpelDB import AmpelDB
-from ampel.core.flags.AlDocTypes import AlDocTypes
+from ampel.core.flags.AlDocType import AlDocType
 
 
 class AmpelStatsPublisher(Schedulable):
@@ -287,7 +287,7 @@ class AmpelStatsPublisher(Schedulable):
 					'comps': self.col_main.find(
 						{
 							'tranId': {"$gt" : 1}, 
-							'alDocType': AlDocTypes.COMPOUND
+							'alDocType': AlDocType.COMPOUND
 						},
 						self.tran_proj
 					).count(),
@@ -295,7 +295,7 @@ class AmpelStatsPublisher(Schedulable):
 					't2s': self.col_main.find(
 						{
 							'tranId': {"$gt" : 1}, 
-							'alDocType': AlDocTypes.T2RECORD
+							'alDocType': AlDocType.T2RECORD
 						},
 						self.tran_proj
 					).count(),
@@ -303,7 +303,7 @@ class AmpelStatsPublisher(Schedulable):
 					'trans': self.col_main.find(
 						{	
 							'tranId': {"$gt" : 1}, 
-							'alDocType': AlDocTypes.TRANSIENT
+							'alDocType': AlDocType.TRANSIENT
 						},
 						self.tran_proj
 					).count()
@@ -467,7 +467,7 @@ class AmpelStatsPublisher(Schedulable):
 			return self.col_main.find(
 				{
 					'tranId': {'$gt': 1},
-					'alDocType': AlDocTypes.TRANSIENT
+					'alDocType': AlDocType.TRANSIENT
 				},
 				{'tranId': 1, '_id': 0}
 			).count()
@@ -477,7 +477,7 @@ class AmpelStatsPublisher(Schedulable):
 			return self.col_main.find(
 				{
 					'tranId': {'$gt': 1},
-					'alDocType': AlDocTypes.TRANSIENT, 
+					'alDocType': AlDocType.TRANSIENT, 
 					'channels': channel_name
 				},
 				{'tranId': 1, '_id': 0}

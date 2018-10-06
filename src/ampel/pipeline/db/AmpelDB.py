@@ -8,7 +8,7 @@
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from ampel.pipeline.config.AmpelConfig import AmpelConfig
-from ampel.core.flags.AlDocTypes import AlDocTypes
+from ampel.core.flags.AlDocType import AlDocType
 
 class AmpelDB:
 	"""
@@ -200,7 +200,7 @@ class AmpelDB:
 				[("runState", 1)],
 				**{ 
 					"partialFilterExpression": {
-						"alDocType": AlDocTypes.T2RECORD
+						"alDocType": AlDocType.T2RECORD
 					}
 				}
 			)

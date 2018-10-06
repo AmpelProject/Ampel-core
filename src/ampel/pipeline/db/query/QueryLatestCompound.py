@@ -8,7 +8,7 @@
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import collections, bson
-from ampel.core.flags.AlDocTypes import AlDocTypes
+from ampel.core.flags.AlDocType import AlDocType
 from ampel.core.flags.FlagUtils import FlagUtils
 from ampel.pipeline.common.AmpelUtils import AmpelUtils
 from ampel.pipeline.db.query.QueryMatchFlags import QueryMatchFlags
@@ -71,7 +71,7 @@ class QueryLatestCompound:
 			raise ValueError("tran_ids must have type str or int (or sequence of these types)")
 
 		match_dict = {
-			'alDocType': AlDocTypes.COMPOUND
+			'alDocType': AlDocType.COMPOUND
 		}
 
 		match_dict['tranId'] = ( 
@@ -198,7 +198,7 @@ class QueryLatestCompound:
 
 		match_dict = {
 			'tranId': tran_id, 
-			'alDocType': AlDocTypes.COMPOUND
+			'alDocType': AlDocType.COMPOUND
 		}
 
 		if channels is not None:
