@@ -10,13 +10,13 @@
 from pydantic import BaseModel, validator
 from ampel.pipeline.common.docstringutils import gendocstring
 from ampel.pipeline.common.AmpelUtils import AmpelUtils
-from ampel.pipeline.config.GettableConfig import GettableConfig
+from ampel.pipeline.config.AmpelModelExtension import AmpelModelExtension
 from ampel.pipeline.config.t3.TranSelectConfig import TranSelectConfig
 from ampel.pipeline.config.t3.TranContentConfig import TranContentConfig
 
 
 @gendocstring
-class TranConfig(BaseModel, GettableConfig):
+class TranConfig(BaseModel, AmpelModelExtension):
 	""" 
 	Example: 
 	{
