@@ -10,11 +10,11 @@
 from pydantic import BaseModel, validator
 from typing import Union, List
 from ampel.pipeline.config.time.TimeConstraintConfig import TimeConstraintConfig
-from ampel.pipeline.config.GettableConfig import GettableConfig
+from ampel.pipeline.config.AmpelModelExtension import AmpelModelExtension
 from ampel.pipeline.common.docstringutils import gendocstring
 
 @gendocstring
-class TranSelectConfig(BaseModel):
+class TranSelectConfig(BaseModel, AmpelModelExtension):
 	"""
 	Example: 
 	{
