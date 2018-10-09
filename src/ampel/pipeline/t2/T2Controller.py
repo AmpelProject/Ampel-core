@@ -14,7 +14,7 @@ from types import MappingProxyType
 import pkg_resources, math
 
 from ampel.base.abstract.AbsT2Unit import AbsT2Unit
-from ampel.core.flags.AlDocTypes import AlDocTypes
+from ampel.core.flags.AlDocType import AlDocType
 from ampel.core.flags.T2RunStates import T2RunStates
 from ampel.pipeline.logging.LoggingUtils import LoggingUtils
 from ampel.pipeline.logging.DBLoggingHandler import DBLoggingHandler
@@ -66,7 +66,7 @@ class T2Controller(Schedulable):
 
 		# Prepare DB query dict
 		self.query = {
-			"alDocType": AlDocTypes.T2RECORD,
+			"alDocType": AlDocType.T2RECORD,
 			"runState": self.run_state.value
 		}
 
@@ -281,7 +281,7 @@ class T2Controller(Schedulable):
 				UpdateOne(
 					{
 						"tranId": t2_doc['tranId'],
-						"alDocType": AlDocTypes.TRANSIENT
+						"alDocType": AlDocType.TRANSIENT
 					},
 					{
 						"$max": {
