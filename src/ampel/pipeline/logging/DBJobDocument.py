@@ -50,7 +50,7 @@ class DBJobDocument():
 			},
 			{
 				'$push': {
-					'jobs': {
+					'events': {
 						'tier': self.tier,
 						'dt': datetime.utcnow().timestamp(),
 						'runId': self.run_ids[0] if len(self.run_ids) == 1 else self.run_ids,
