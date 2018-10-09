@@ -36,7 +36,6 @@ setup(name='Ampel-core',
       },
       entry_points = {
           'console_scripts' : [
-              'ampel-alertprocessor = ampel.pipeline.t0.AlertProcessor:run_alertprocessor',
               'ampel-followup = ampel.pipeline.t0.DelayedT0Controller:run',
               'ampel-statspublisher = ampel.pipeline.common.AmpelStatsPublisher:run',
               'ampel-exceptionpublisher = ampel.pipeline.common.AmpelExceptionPublisher:run',
