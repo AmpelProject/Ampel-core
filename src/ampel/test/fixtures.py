@@ -18,10 +18,10 @@ def docker_service(image, port, environ={}, mounts=[], healthcheck=None):
 			def up():
 				 status = json.loads(subprocess.check_output(['docker', 'container', 'inspect', '-f', '{{json .State.Health.Status}}', container]))
 				 return status == "healthy"
-			for i in range(120):
+			for i in range(120*2):
 				if up():
 					break
-				time.sleep(1)
+				time.sleep(0.5)
 		ports = json.loads(subprocess.check_output(['docker', 'container', 'inspect', '-f', '{{json .NetworkSettings.Ports}}', container]))
 		yield int(ports['{}/tcp'.format(port)][0]['HostPort'])
 	except FileNotFoundError:
@@ -50,7 +50,7 @@ def postgres():
 	gen = docker_service('postgres:10.3', 5432,
 		environ={'POSTGRES_USER': 'ampel', 'POSTGRES_DB': 'ztfarchive', 'ARCHIVE_READ_USER': 'archive-readonly', 'ARCHIVE_WRITE_USER': 'ampel-client'},
 		mounts=[(join(abspath(dirname(__file__)), 'deploy', 'production', 'initdb', 'archive'), '/docker-entrypoint-initdb.d/')],
-		healthcheck='psql --username ampel --port 5432 ztfarchive || exit 1')
+		healthcheck='pg_isready -U postgres -p 5432 -h `hostname` || exit 1')
 	port = next(gen)
 	yield 'postgresql://ampel@localhost:{}/ztfarchive'.format(port)
 
