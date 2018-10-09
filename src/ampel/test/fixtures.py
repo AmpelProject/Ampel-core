@@ -225,7 +225,7 @@ def minimal_ingestion_config(mongod):
 			},
 			"t2Compute" : []
 	}
-	make_channel = lambda name: (str(name), {'active': True, 'sources': [source]})
+	make_channel = lambda name: (str(name), {'channel': name, 'active': True, 'sources': [source]})
 	config = {
 		'resources': {'mongo': {'writer': mongod, 'logger': mongod}},
 		't2Units': {},
