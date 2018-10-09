@@ -155,7 +155,7 @@ class AlertProcessor():
 			ingester = self.input_setup.get_alert_ingester(self.t0_channels, self.logger)
 
 		if not full_console_logging:
-			self.logger.quieten_console_logger()
+			self.logger.quieten_console()
 
 		# New job document in the 'jobs' collection
 		db_job_doc = DBJobDocument(tier=0)
@@ -469,7 +469,7 @@ class AlertProcessor():
 
 		# Restore console logging settings
 		if not full_console_logging:
-			self.logger.louden_console_logger()
+			self.logger.louden_console()
 
 		# Flush loggers
 		if iter_count > 0:
