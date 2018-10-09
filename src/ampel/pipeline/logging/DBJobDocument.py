@@ -23,6 +23,7 @@ class DBJobDocument():
 		self.tier = tier
 		self.col = AmpelDB.get_collection(col)
 		self.run_ids = []
+		self.job_info = {}
 
 
 	def set_job_info(self, job_info):
