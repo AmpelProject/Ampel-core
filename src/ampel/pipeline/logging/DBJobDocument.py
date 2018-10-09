@@ -14,7 +14,7 @@ class DBJobDocument():
 	"""
 	"""
 
-	def __init__(self, tier, col="jobs"):
+	def __init__(self, tier, col="events"):
 		""" 
 		:param int tier: value (0,1,2,3) indicating at which ampel tier level logging is done
 		:param str col: name of db collection to use (default 'jobs'). 
