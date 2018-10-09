@@ -42,7 +42,7 @@ class DBJobDocument():
 		This action flushes the logs as well
 		"""
 
-		AmpelDB.get_collection('jobs').update_one(
+		self.col.update_one(
 			{
 				'_id': int(
 					datetime.today().strftime('%Y%m%d')
