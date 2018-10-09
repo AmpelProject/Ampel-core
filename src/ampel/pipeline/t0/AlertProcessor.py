@@ -69,11 +69,15 @@ class AlertProcessor():
 		self.logger.info("Setting up new AlertProcessor instance")
 
 		# Set input_setup
-		self.input_setup = next(
-			pkg_resources.iter_entry_points(
-				'ampel.pipeline.t0.sources', survey_id
-			), None
-		).resolve()()
+		if isinstance(survey_id, AbsT0Setup):
+			self.input_setup = survey_id
+			survey_id = self.input_setup.survey_id
+		else:
+			self.input_setup = next(
+				pkg_resources.iter_entry_points(
+					'ampel.pipeline.t0.sources', survey_id
+				), None
+			).resolve()()
 
 		# Load channels
 		self.t0_channels = [
