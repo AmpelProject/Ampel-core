@@ -69,7 +69,7 @@ def gendocstring(klass):
 			sel = el.strip()
 			if not sel:
 				continue
-			exisiting_doc.append(sel)
+			exisiting_doc.append(el)
 
 	for el in inspect.getsource(klass).split('\n'):
 		sel = el.strip()
