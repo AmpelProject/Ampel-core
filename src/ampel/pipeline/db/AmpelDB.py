@@ -36,7 +36,8 @@ class AmpelDB:
 			'counter': None,
 			'runConfig': None,
 			'journal': None
-		}
+		},
+		'rej': {},
 	}
 
 	# Existing mongo clients
