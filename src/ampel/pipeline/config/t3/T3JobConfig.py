@@ -88,7 +88,7 @@ class T3JobConfig(BaseModel, AmpelModelExtension):
 			# Copy entire 'transients' value if missing
 			if task_config.get('transients') is None:
 				# json.loads(json.dumps) is 2x faster than copy.deepcopy
-				task_config['transients'] = json.loads(json.dumps(values['transients']))
+				task_config['transients'] = json.loads(json.dumps(values['transients'].dict()))
 				continue
 
 			# Copy state value if missing
