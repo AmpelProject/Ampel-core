@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 02.09.2018
-# Last Modified Date: 09.10.2018
+# Last Modified Date: 10.10.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from pydantic import BaseModel, validator
@@ -18,23 +18,40 @@ from ampel.pipeline.config.ReadOnlyDict import ReadOnlyDict
 class ChannelConfig(BaseModel):
 	"""
 	Config holder for AMPEL channels
+
+	Note: pydantic does not support typing.Sequence
+	https://github.com/samuelcolvin/pydantic/issues/185
+	We are thus forced to use Union[List, Tuple]
 	"""
 	channel: str
 	active: bool = True
 	author: str = "Unspecified"
-	# pydantic does not support typing.Sequence
-	# https://github.com/samuelcolvin/pydantic/issues/185
 	sources: Union[List[StreamConfig], Tuple[StreamConfig]]
 	t3Supervise: Union[None, List[T3TaskConfig], Tuple[T3TaskConfig]] = None
 
-	def __init__(self, **arg):
+	def __init__(self, **values):
 
-		# Because we allow - out of convenience - for sources or t3Supervise
-		# to be a single dict (a cast into tuple happens then, which modifies input)
-		if isinstance(arg['sources'], dict) or isinstance(arg.get('t3Supervise'), dict):
-			super().__init__(**dict(arg)) # shallow copy
+		# We allow - for convenience - sources or t3Supervise to be defined as single dicts.
+		# A cast into sequence (tuple) is necessary in this case (validator cast_to_tuple). 
+		# Since a such cast modifies input, a shallow dict copy is necessary.
+		if isinstance(values['sources'], dict) or isinstance(values.get('t3Supervise'), dict):
+			super().__init__(**dict(values)) # shallow copy
 		else:
-			super().__init__(**arg)
+			super().__init__(**values)
+
+
+	@classmethod
+	def create(cls, tier="all", **values):
+		"""
+		:param str load: either 'all', 0, 3
+		"""
+		if tier == "all":
+			if hasattr(StreamConfig, '__tier__'):
+				delattr(StreamConfig, '__tier__')
+		else:
+			setattr(StreamConfig, '__tier__', tier)
+			setattr(cls, '__tier__', tier)
+		return cls(**values)
 
 
 	@validator('sources', pre=True, whole=True)
@@ -44,5 +61,19 @@ class ChannelConfig(BaseModel):
 			return (sources,)
 		return sources
 
+
+	@validator('t3Supervise', pre=True, whole=True)
+	def remove_if_not_needed(cls, value):
+		""" """
+		if hasattr(cls, "__tier__") and cls.__tier__ == 0:
+			return None
+		return value
+
+
 	def get_stream_config(self, source):
+		"""
+		:param str source:
+		:returns: instance of ampel.pipeline.config.channel.StreamConfig
+		:rtype: StreamConfig
+		"""
 		return next(filter(lambda x: x.stream==source, self.sources), None)
