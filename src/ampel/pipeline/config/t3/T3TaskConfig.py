@@ -8,7 +8,7 @@
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from pydantic import BaseModel, validator
-from typing import Dict, Any, Union, List
+from typing import Dict, Union, List
 from ampel.pipeline.common.AmpelUnitLoader import AmpelUnitLoader
 from ampel.pipeline.common.docstringutils import gendocstring
 from ampel.pipeline.config.AmpelModelExtension import AmpelModelExtension
@@ -21,23 +21,34 @@ class T3TaskConfig(BaseModel, AmpelModelExtension):
 	"""
 	task: str
 	unitId: str
-	schedule: Union[None, str, List[str]] = None
+	schedule: Union[None, List[str]] = None
 	verbose: bool = False
 	transients: Union[None, TranConfig] = None
-	runConfig: Union[None, dict] = None
+	runConfig: Union[None, Dict] = None
+
+
+	@validator('unitId', pre=True)
+	def validate_t3_unit(cls, unit_id, values, **kwargs):
+		"""
+		"""
+		if AmpelUnitLoader.get_class(tier=3, unit_name=unit_id) is None:
+			cls.print_and_raise(
+				header="T3 task config error",
+				msg="Unable to find T3 unit %s" % unit_id
+			)
+
+		return unit_id
 
 
 	@validator('runConfig')
-	def validate_unit_run_config(cls, run_config, values, **kwargs):
+	def validate_run_config(cls, run_config, values, **kwargs):
 		"""
 		"""
 
+		# Exists (checked by prior validator)
 		T3UnitClass = AmpelUnitLoader.get_class(
 			tier=3, unit_name=values['unitId']
 		)
-
-		if T3UnitClass is None:
-			raise ValueError("Unable to load T3 unit %s" % values['unitId'])
 
 		if hasattr(T3UnitClass, 'RunConfig'):
 			return getattr(T3UnitClass, 'RunConfig')(**run_config)
