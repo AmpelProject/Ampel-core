@@ -39,29 +39,29 @@ class ConfigUtils:
 		"""
 		Converts JSON encoded conditional statements from Ampel config file 
 		into arrays with dimention up to two.
-		'any' -> or operator -> encoded in a array elements of depth=1
-		'all' -> and operator -> encoded in array elements of depth=2
+		'anyOf' -> or operator -> encoded in a array elements of depth=1
+		'allOf' -> and operator -> encoded in array elements of depth=2
 
 		Accepted input: 
 		---------------
 		
 		atomar values str, int float: "a" / 1 / 1.2
 	
-		1d sequences of atomar values (automatically treated as 'any' sequence):
+		1d sequences of atomar values (automaticallOfy treated as 'anyOf' sequence):
 		[1, 2, 3]  / [1, "a", 3.4]
 	
-		'any' dict containing 1d list of atomar values (explicit 'any' sequence):
-		{'any': [1, 2, 3]} / {'any': [1, "a", 3.4]}
+		'anyOf' dict containing 1d list of atomar values (explicit 'anyOf' sequence):
+		{'anyOf': [1, 2, 3]} / {'anyOf': [1, "a", 3.4]}
 	
-		'all' dict containing 1d list of atomar values
-		{'all': [1, 2, 3]} / {'any': [1, "a", 3.4]}
+		'allOf' dict containing 1d list of atomar values
+		{'allOf': [1, 2, 3]} / {'anyOf': [1, "a", 3.4]}
 	
-		Nested structure whereby 'all' closes the nesting (can contain only a sequence of atomar values)
+		Nested structure whereby 'allOf' closes the nesting (can contain only a sequence of atomar values)
 		{
-			'any': [
-				{'all': ["HUSN1", "HUSN2"]}, 
+			'anyOf': [
+				{'allOf': ["HUSN1", "HUSN2"]}, 
 				"HUBH1", 
-				{'all': ["HUSN1", "HUSN3"]}
+				{'allOf': ["HUSN1", "HUSN3"]}
 			]
 		}
 	
@@ -72,40 +72,40 @@ class ConfigUtils:
 		In []: conditional_expr_converter("abc")
 		Out[]: 'abc'
 	
-		In []: conditional_expr_converter([1,2,3])
-		Out[]: [1, 2, 3]
+		In []: conditional_expr_converter(["1","2","3"])
+		Out[]: ["1", "2", "3"]
 	
-		In []: conditional_expr_converter({'all': [3, 1, 2]})
-		Out[]: [[3, 1, 2]]
+		In []: conditional_expr_converter({'allOf': ["3", "1", "2"]})
+		Out[]: [["3", "1", "2"]]
 	
-		In []: conditional_expr_converter({'any': [3, 1, 2]})
-		Out[]: [3, 1, 2]
+		In []: conditional_expr_converter({'anyOf': ["3", "1", "2"]})
+		Out[]: ["3", "1", "2"]
 	
-		In []: conditional_expr_converter({'any': [{'all': [1,2]}, 3, 1, 2]})
-		Out[]: [[1, 2], 3, 1, 2]
+		In []: conditional_expr_converter({'anyOf': [{'allOf': ["1","2"]}, "3", "1", "2"]})
+		Out[]: [["1", "2"], "3", "1", "2"]
 	
-		In []: conditional_expr_converter({'any': [{'all': [1,2]}, 3, {'all': [1,3]}]})
-		Out[]: [[1, 2], 3, [1, 3]]
+		In []: conditional_expr_converter({'anyOf': [{'allOf': ["1","2"]}, "3", {'allOf': ["1","3"]}]})
+		Out[]: [["1", "2"], "3", ["1", "3"]]
 	
-		In []: conditional_expr_converter([1, 2, [1, 23]])
+		In []: conditional_expr_converter(["1", "2", ["1", "2""3"]])
 		ValueError: Unsupported format (0)
 	
-		In []: conditional_expr_converter({'all': [1, 2, [1,2]]})
+		In []: conditional_expr_converter({'allOf': ["1", "2", ["1","2"]]})
 		ValueError: Unsupported nesting
 	
-		In []: conditional_expr_converter({'all': [1, 2], 'abc': 2})
-		ValueError: Unsupported format (1)
+		In []: conditional_expr_converter({'allOf': ["1", "2"], 'abc': "2"})
+		ValueError: Unsupported format ("1")
 	
-		In []: conditional_expr_converter({'any': [{'any': [1,2]}, 2]})
+		In []: conditional_expr_converter({'anyOf': [{'anyOf': ["1","2"]}, "2"]})
 		ValueError: Unsupported nesting
 	
-		In []: conditional_expr_converter({'any': [{'all': [1,2]}, 3, {'any': [1,2]}]})
+		In []: conditional_expr_converter({'anyOf': [{'allOf': ["1","2"]}, "3", {'anyOf': ["1","2"]}]})
 		ValueError: Unsupported nesting
 	
-		In []: conditional_expr_converter({'all': [{'all': [1,2]}, 3, 1, 2]})
+		In []: conditional_expr_converter({'allOf': [{'allOf': ["1","2"]}, "3", "1", "2"]})
 		ValueError: Unsupported nesting
 	
-		In []: conditional_expr_converter({'any': [{'all': [1,2]}, 3, {'all': [1,{'all':[1,2]}]}]})
+		In []: conditional_expr_converter({'anyOf': [{'allOf': ["1","2"]}, "3", {'allOf': ["1",{'allOf':["1","2"]}]}]})
 		ValueError: Unsupported nesting
 		```
 		"""
@@ -131,19 +131,19 @@ class ConfigUtils:
 	
 			key = next(iter(arg.keys()))
 	
-			if key == "all":
+			if key == "allOf":
 	
 				# Value must be a sequence
 				if type(arg[key]) not in sequences:
 					raise ValueError("Unsupported format (3)")
 	
-				# 'all' closes nesting (content must be atomar elements of type 'ok') 
+				# 'allOf' closes nesting (content must be atomar elements of type 'ok') 
 				if not AmpelUtils.check_seq_inner_type(arg[key], ok, multi_type=True):
 					raise ValueError("Unsupported nesting")
 	
 				return [arg[key]] if level == 1 else arg[key]
 	
-			elif key == "any":
+			elif key == "anyOf":
 	
 				if level > 1:
 					raise ValueError("Unsupported nesting")
