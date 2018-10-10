@@ -24,13 +24,13 @@ class ConfigLoader:
 		"""
 		Load the JSON configuration file at path
 		and add plugins registered via pkg_resources
+
 		:param tier: possible values are: 'all', 0, 2, 3.
 		Loads configuration by taking the given scope restriction into account.
 		Less checks are performed when restricting config loading to a given tier,
 		which yields quicker procedure. For example, with tier set to 3, 
 		T0/T2 units and run configurations are not loaded/checked.
 		"""
-
 
 		try:
 	
