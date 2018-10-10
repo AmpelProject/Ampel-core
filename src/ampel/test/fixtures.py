@@ -1,10 +1,15 @@
 from os.path import abspath, join, dirname
 import pytest, json, subprocess, socket
 
-def docker_service(image, port, environ={}, mounts=[], healthcheck=None):
+def docker_service(image, port, environ={}, mounts=[], healthcheck=None, port_mapping=None):
 	container = None
 	try:
-		cmd = ['docker', 'run', '-d', '--restart', 'always', '-P']
+		cmd = ['docker', 'run', '-d', '--restart', 'always']
+		if port_mapping is None:
+			cmd += ['-P']
+		else:
+			for item in port_mapping.items():
+				cmd += ['-p', '{}:{}'.format(*item)]
 		for k, v in environ.items():
 			cmd += ['-e', '{}={}'.format(k,v)]
 		if healthcheck is not None:
