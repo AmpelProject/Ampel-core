@@ -11,6 +11,7 @@ import pkg_resources
 from ampel.base.abstract.AbsAlertFilter import AbsAlertFilter
 from ampel.base.abstract.AbsT2Unit import AbsT2Unit
 from ampel.base.abstract.AbsT3Unit import AbsT3Unit
+from ampel.pipeline.config.AmpelConfig import AmpelConfig
 
 class AmpelUnitLoader:
 	"""
@@ -20,7 +21,7 @@ class AmpelUnitLoader:
 	among several different tasks/jobs
 	"""
 
-	Classes = {
+	UnitClasses = {
 		0: {},
 		2: {},
 		3: {}
@@ -34,7 +35,7 @@ class AmpelUnitLoader:
 
 
 	@classmethod
-	def get_class(cls, tier, unit_name, logger=None):
+	def get_class(cls, tier, unit_name, logger=None, raise_exc=False):
 		"""
 		Retrieve and return unit class registered at entry point 
 		ampel.pipeline.t%is.units where %i can be 0, 2 or 3
@@ -42,18 +43,23 @@ class AmpelUnitLoader:
 		:param int tier: 0, 2 or 3
 		:param str unit_name: unit name 
 		:param Logger logger: optional logger from python module 'logging'
+		:raises: if raise_exc is True, errors are raises:
+		- NameError if unit is not found
+		- ValueError if unit parent is not AbsAlertFilter or AbsT2Unit or AbsT3Unit
 		:returns: ampel unit class or None
 		"""
 
-		if unit_name in cls.Classes[tier]:
-			return cls.Classes[tier][unit_name]
+		# return saved class if unit class was already loaded
+		if unit_name in cls.UnitClasses[tier]:
+			return cls.UnitClasses[tier][unit_name]
 		
 		if logger:
 			logger.info("Loading T%i unit: %s" % (tier, unit_name))
 
+		# Load resource
 		resource = next(
 			pkg_resources.iter_entry_points(
-				'ampel.pipeline.t%i.units' % tier, 
+				'ampel.pipeline.t%s.units' % tier, 
 				unit_name
 			),
 			None
@@ -62,19 +68,44 @@ class AmpelUnitLoader:
 		if resource is None:
 			if logger:
 				logger.error("Unknown T%s unit: %s" % (tier, unit_name))
+			if raise_exc:
+				raise NameError("Unknown T%s unit: %s" % (tier, unit_name))
 			return None
 
-		Class = resource.resolve()
-		if not issubclass(Class, cls._AbsClasses[tier]):
+		# Get class
+		UnitClass = resource.resolve()
+
+		# Check parent
+		if not issubclass(UnitClass, cls._AbsClasses[tier]):
+
 			if logger:
 				logger.error(
 					"T{} unit {} from {} is not a subclass of AbsT3Unit".format(
-						tier, Class.__name__, resource.dist
+						tier, UnitClass.__name__, resource.dist
 					)
 				)
+
+			if raise_exc:
+				raise ValueError(
+					"T{} unit {} from {} is not a subclass of AbsT3Unit".format(
+						tier, UnitClass.__name__, resource.dist
+					)
+				)
+
 			return None
 
 		# Save loaded class to static dict
-		cls.Classes[tier][unit_name] = Class
+		cls.UnitClasses[tier][unit_name] = UnitClass
 
-		return Class
+		return UnitClass
+
+
+	@classmethod
+	def get_resources(cls, UnitClass):
+		""" 
+		Gather resources associated with provided class
+		"""
+		return {
+			k: AmpelConfig.get_config('resources.{}'.format(k)) 
+			for k in getattr(UnitClass, 'resources', [])
+		}
