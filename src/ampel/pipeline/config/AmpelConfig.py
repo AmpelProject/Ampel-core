@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : Jakob van Santen <jakob.van.santen@desy.de>
 # Date              : 14.06.2018
-# Last Modified Date: 30.09.2018
+# Last Modified Date: 06.10.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import warnings
@@ -16,6 +16,7 @@ class AmpelConfig:
 
 	# Static dict/ReadOnlyDict holding all ampel configurations
 	_global_config = None
+	_ignore_unavailable_units = set()
 
 
 	@classmethod
@@ -25,11 +26,38 @@ class AmpelConfig:
 
 
 	@classmethod
-	def load_defaults(cls):
+	def ignore_unavailable_units(cls, from_tiers):
+		"""
+		:param from_tiers: combination of "t0", "t2", "t3".
+		:type from_tiers: list(str), str
+		Enables scenario such as: 
+		- the AlertProcessor creates T2 documents that are processed by external ressources 
+		(say on an external grid such as NERSC).
+		The corresponding t2 unit(s) do not need to be present in the ampel image.
+		- Ampel T3 is run on a dedicated server but a general common ampelconfig is used.
+		"""
+		if isinstance(from_tiers, str):
+			cls._ignore_unavailable_units.add(from_tiers)
+		elif AmpelUtils.is_sequence(from_tiers):
+			cls._ignore_unavailable_units.update(from_tiers)
+		else:
+			raise ValueError("Invalid argument")
+
+
+	@classmethod
+	def load_defaults(cls, ignore_unavailable_units=None):
+		"""
+		:param set(str) ignore_unavailable_units: combination of "t0", "t2", "t3". See 
+		:func:`ignore_unavailable_units <ampel.pipeline.config.AmpelConfig.ignore_unavailable_units>`
+		docstring
+		"""
+		if ignore_unavailable_units:
+			cls._ignore_unavailable_units = set(ignore_unavailable_units)
 		from ampel.pipeline.config.ConfigLoader import ConfigLoader
 		cls.set_config(
 			ConfigLoader.load_config(gather_plugins=True)
 		)
+
 
 	@classmethod
 	def get_config(cls, key=None):
@@ -125,25 +153,3 @@ class AmpelConfig:
 
 		else:
 			return arg
-
-
-	@staticmethod
-	def has_nested_type(obj, target_type):
-		"""
-		:param obj: object instance (dict/list/set/tuple)
-		:param type target_type: example: ReadOnlyDict/list
-		"""
-		if type(obj) is target_type:
-			return True
-
-		if isinstance(obj, dict):
-			for el in obj.values():
-				if AmpelConfig.has_nested_type(el, target_type):
-					return True
-
-		elif AmpelUtils.is_sequence(obj):
-			for el in obj:
-				if AmpelConfig.has_nested_type(el, target_type):
-					return True
-
-		return False
