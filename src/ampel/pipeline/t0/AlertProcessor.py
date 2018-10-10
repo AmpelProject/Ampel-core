@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 10.10.2017
-# Last Modified Date: 09.10.2018
+# Last Modified Date: 10.10.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import time, pkg_resources, numpy as np
