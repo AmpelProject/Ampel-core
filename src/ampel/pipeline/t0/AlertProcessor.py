@@ -83,7 +83,7 @@ class AlertProcessor():
 		self.t0_channels = [
 			# Create T0Channel instance (instantiates channel's filter class as well)
 			T0Channel(channel_config, survey_id, self.logger) 
-			for channel_config in ChannelConfigLoader.load_configurations(channels, self.logger)
+			for channel_config in ChannelConfigLoader.load_configurations(channels, 0, self.logger)
 		]
 
 		AmpelDB.enable_rejected_collections(
