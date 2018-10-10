@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 29.09.2018
-# Last Modified Date: 07.10.2018
+# Last Modified Date: 10.10.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from pydantic import BaseModel, validator, ValidationError
@@ -12,9 +12,10 @@ from typing import Dict, Union, List, Any
 from ampel.pipeline.common.AmpelUtils import AmpelUtils
 from ampel.pipeline.common.docstringutils import gendocstring
 from ampel.pipeline.config.AmpelModelExtension import AmpelModelExtension
-from ampel.pipeline.config.t3.LoadableContent import LoadableContent
+from ampel.pipeline.config.ConfigUtils import ConfigUtils
 from ampel.core.flags.AlDocType import AlDocType
 from ampel.core.flags.FlagUtils import FlagUtils
+
 
 @gendocstring
 class TranContentConfig(BaseModel, AmpelModelExtension):
@@ -70,11 +71,26 @@ class TranContentConfig(BaseModel, AmpelModelExtension):
 		return v
 
 
+	@validator('docs', pre=True)
+	def check_flag_exist(cls, v, values, **kwargs):
+		""" """
+		return v
+
+
+	@validator('docs', whole=True)
+	def check_valid_docs(cls, value, values, **kwargs):
+		""" """
+		ConfigUtils.check_flags_from_dict(value, AlDocType, **kwargs)
+		return value
+
+
 	@validator('t2SubSelection')
-	def check_correct_use_of_subselection(cls, t2SubSelection, values, **kwargs):
+	def validate_subselection(cls, t2SubSelection, values, **kwargs):
 		"""
 		Check transients->content->t2SubSelection
 		"""
+
+		# Docs should never be None (checked by prio validators)
 		docs = values.get("docs").get("anyOf")
 
 		if t2SubSelection.get("anyOf") and "T2RECORD" not in docs:
@@ -86,3 +102,5 @@ class TranContentConfig(BaseModel, AmpelModelExtension):
 			)
 
 		return t2SubSelection
+
+	# TODO: check transient flags here

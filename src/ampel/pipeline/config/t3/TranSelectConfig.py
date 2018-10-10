@@ -12,11 +12,14 @@ from typing import Union, List
 from ampel.pipeline.common.AmpelUtils import AmpelUtils
 from ampel.pipeline.config.time.TimeConstraintConfig import TimeConstraintConfig
 from ampel.pipeline.config.AmpelModelExtension import AmpelModelExtension
+from ampel.pipeline.config.ConfigUtils import ConfigUtils
 from ampel.pipeline.common.docstringutils import gendocstring
 from ampel.base.flags.TransientFlags import TransientFlags
 
+
 class AllOf(BaseModel):
 	allOf: List[str]
+
 
 class AnyOf(BaseModel):
 	anyOf: List[Union[str, AllOf]]
@@ -157,34 +160,6 @@ class TranSelectConfig(BaseModel, AmpelModelExtension):
 
 	@validator('withFlags', 'withoutFlags', whole=True)
 	def check_valid_flag(cls, value, values, **kwargs):
-
-		field_name = kwargs['field'].name.split("_")[0]
-		v = next(iter(value.dict().values())) # v is a list
-
-		if AmpelUtils.check_seq_inner_type(v, str):
-			cls.check_flags(v, field_name, TransientFlags)
-		else:
-			for vv in v:  
-				if type(vv) is str:
-					cls.check_flags([vv], field_name, TransientFlags)
-				elif isinstance(vv, dict):
-					cls.check_flags(next(iter(vv.values())), field_name, TransientFlags)
-
+		""" """
+		ConfigUtils.check_flags_from_dict(value, TransientFlags, **kwargs)
 		return value
-
-
-	@classmethod
-	def check_flags(cls, flags, field_name, Class):
-		"""
-		"""
-		for el in AmpelUtils.iter(flags):
-
-			if type(el) is str:
-				try:
-					# pylint: disable=unsubscriptable-object
-					Class[el]
-				except KeyError:
-					cls.print_and_raise(
-						header="transients->select->%s config error" % field_name,
-						msg="Unknown flag '%s'" % el
-					)
