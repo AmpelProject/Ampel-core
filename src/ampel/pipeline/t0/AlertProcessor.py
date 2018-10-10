@@ -19,7 +19,7 @@ from ampel.pipeline.logging.DBEventDoc import DBEventDoc
 from ampel.pipeline.db.AmpelDB import AmpelDB
 from ampel.pipeline.config.AmpelConfig import AmpelConfig
 from ampel.pipeline.config.channel.ChannelConfigLoader import ChannelConfigLoader
-from ampel.pipeline.config.channel.T0Channel import T0Channel
+from ampel.pipeline.t0.Channel import Channel
 from ampel.pipeline.common.AmpelUtils import AmpelUtils
 from ampel.pipeline.common.GraphiteFeeder import GraphiteFeeder
 from ampel.core.abstract.AbsT0Setup import AbsT0Setup
@@ -81,8 +81,8 @@ class AlertProcessor():
 
 		# Load channels
 		self.t0_channels = [
-			# Create T0Channel instance (instantiates channel's filter class as well)
-			T0Channel(channel_config, survey_id, self.logger) 
+			# Create Channel instance (instantiates channel's filter class as well)
+			Channel(channel_config, survey_id, self.logger) 
 			for channel_config in ChannelConfigLoader.load_configurations(channels, 0, self.logger)
 		]
 
