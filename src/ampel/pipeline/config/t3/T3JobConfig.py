@@ -7,16 +7,16 @@
 # Last Modified Date: 01.10.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-import schedule as module_schedule
+import json, schedule as module_schedule
 from pydantic import BaseModel, validator
 from typing import Union, List
 from ampel.pipeline.logging.AmpelLogger import AmpelLogger
 from ampel.pipeline.common.AmpelUtils import AmpelUtils
 from ampel.pipeline.common.docstringutils import gendocstring
-from ampel.pipeline.config.AmpelBaseModel import AmpelBaseModel
 from ampel.pipeline.config.AmpelConfig import AmpelConfig
+from ampel.pipeline.config.ConfigUtils import ConfigUtils
 from ampel.pipeline.config.ReadOnlyDict import ReadOnlyDict
-from ampel.pipeline.config.GettableConfig import GettableConfig
+from ampel.pipeline.config.AmpelModelExtension import AmpelModelExtension
 from ampel.pipeline.config.t3.ScheduleEvaluator import ScheduleEvaluator
 from ampel.pipeline.config.t3.T3TaskConfig import T3TaskConfig
 from ampel.pipeline.config.t3.TranConfig import TranConfig
@@ -27,7 +27,7 @@ def nothing():
 	pass
 
 @gendocstring
-class T3JobConfig(BaseModel, GettableConfig):
+class T3JobConfig(BaseModel, AmpelModelExtension):
 	"""
 	Possible 'schedule' values (https://schedule.readthedocs.io/en/stable/):
 	"every(10).minutes"
@@ -41,9 +41,9 @@ class T3JobConfig(BaseModel, GettableConfig):
 	job: str
 	active: bool = True
 	globalInfo: bool = False
-	schedule: Union[str, List[str]]
+	schedule: List[str]
 	transients: Union[None, TranConfig]
-	tasks: Union[T3TaskConfig, List[T3TaskConfig]]
+	tasks: List[T3TaskConfig]
 
 
 	@staticmethod
@@ -54,13 +54,15 @@ class T3JobConfig(BaseModel, GettableConfig):
 
 	@validator('transients', 'tasks', pre=True, whole=True)
 	def unfreeze_if_frozen(cls, arg):
-		if AmpelConfig.has_nested_type(arg, ReadOnlyDict):
+		if ConfigUtils.has_nested_type(arg, ReadOnlyDict):
 			return AmpelConfig.recursive_unfreeze(arg)
-		return arg
+		else:
+			# Twice faster than copy.deepcopy(arg) (and twice slower than ujson)
+			return json.loads(json.dumps(arg))
 
 
 	@validator('schedule', 'tasks', pre=True, whole=True)
-	def cast_to_list(cls, v):
+	def cast_to_list(cls, v, values, **kwargs):
 		if type(v) is not list:
 			return [v]
 		return v
@@ -80,16 +82,14 @@ class T3JobConfig(BaseModel, GettableConfig):
 
 		# forward 'transient' attributes from job to tasks
 		# -> makes task validation easier
-		# -> usefull if one wants to run this task in a stand-alone way
+		# -> usefull if one wants to run tasks in a stand-alone way
 		for task_config in tasks: # task_config is a dict 
 
 			# Copy entire 'transients' value if missing
 			if task_config.get('transients') is None:
-				task_config['transients'] = values['transients']
+				# json.loads(json.dumps) is 2x faster than copy.deepcopy
+				task_config['transients'] = json.loads(json.dumps(values['transients']))
 				continue
-
-			import copy
-			values['transients'] = copy.deepcopy(values['transients'])
 
 			# Copy state value if missing
 			if 'state' not in task_config['transients']:
@@ -112,34 +112,8 @@ class T3JobConfig(BaseModel, GettableConfig):
 					for field in el[1].__fields__.keys():
 
 						# Don't override task specific values
-						if task_cont_select_conf.get(field) is not None:
-
-							# But perform some validation of the following docs while we are here
-							if field in ["docs", "t2SubSelection", "channels", "withFlags", "withoutFlags"]:
-
-								# Allowed: job: no selection -> task: selection
-								if job_cont_or_sel_conf.get(field) is None:
-									continue
-
-								# build sets to easily check subselections 
-								set_job = AmpelUtils.to_set(job_cont_or_sel_conf.get(field))
-								set_task = AmpelUtils.to_set(task_cont_select_conf.get(field))
-
-								# Allowed (subset): job: selection -> task: sub-selection
-								if len(set_task - set_job) == 0:
-									continue
-								else:
-									# Forbidden: no-subset
-									AmpelUtils.print_and_raise(
-										"T3JobConfig logic error",
-										"Invalid Task %s sub-selection (no subset of Job %s selection)" %
-										(field, field)
-									)
-								pass
-
-							continue
-
-						task_cont_select_conf[field] = job_cont_or_sel_conf.get(field)
+						if task_cont_select_conf.get(field) is None:
+							task_cont_select_conf[field] = job_cont_or_sel_conf.get(field)
 
 		return tasks
 	
@@ -153,9 +127,9 @@ class T3JobConfig(BaseModel, GettableConfig):
 			# Make sure tasks do not require transients
 			for task_config in tasks:
 				if task_config.transients is None:
-					AmpelUtils.print_and_raise(
-						"T3JobConfig logic error",
-						"T3 task logic error: field 'transients' cannot be " +
+					cls.print_and_raise(
+						header="T3JobConfig logic error",
+						msg="T3 task logic error: field 'transients' cannot be " +
 						"defined in task(s) if not defined in job"
 					)
 			if hasattr(T3JobConfig, 'logger'):
@@ -177,9 +151,17 @@ class T3JobConfig(BaseModel, GettableConfig):
 			)
 
 			# State
-			T3JobConfig.check_task_state(
+			T3JobConfig.validate_task_state(
 				job_state, task_config.transients.state
 			)
+
+			# docs, t2SubSelection
+			T3JobConfig.validate_content_sub_selection(
+				values["transients"], task_config.transients
+			)
+
+			# We do not validate withFlags withoutFlags 
+			# sub-selections yet (anymore actually)
 
 
 		# Check $forEach channel sub-selection of all tasks combined
@@ -187,9 +169,9 @@ class T3JobConfig(BaseModel, GettableConfig):
 
 			# Either none or all tasks must make use of the $forEach operator
 			if len(joined_tasks_selections['channels']) != 1:
-				AmpelUtils.print_and_raise(
-					"T3JobConfig logic error",
-					"Illegal task sub-channel selection: Either none task or all " +
+				cls.print_and_raise(
+					header="T3JobConfig logic error",
+					msg="Illegal task sub-channel selection: Either none task or all " +
 					"tasks must make use of the $forEach operator"
 				)
 
@@ -216,7 +198,30 @@ class T3JobConfig(BaseModel, GettableConfig):
 
 
 	@staticmethod
-	def get_merged_tasks_selections(task_configs):
+	def extract_to_set(arg):
+		"""
+		"""
+		if arg is None:
+			return set()
+
+		if hasattr(arg, "dict"):
+			arg = arg.dict()
+
+		if AmpelUtils.is_sequence(arg):
+			return AmpelUtils.to_set(arg)
+
+		if isinstance(arg, dict):
+			s=set()
+			for el in next(iter(arg.values()), []):
+				if type(el) is str:
+					s.add(el)
+				elif isinstance(el, dict):
+					s |= AmpelUtils.to_set(next(iter(el.values())))
+			return s
+
+
+	@classmethod
+	def get_merged_tasks_selections(cls, task_configs):
 		"""
 		Merges together all "channels", "t2SubSelection" and "docs" values 
 		from all tasks defined in job.
@@ -235,7 +240,7 @@ class T3JobConfig(BaseModel, GettableConfig):
 				if 'channels' not in joined_tasks_selections:
 					joined_tasks_selections['channels'] = set()
 				joined_tasks_selections['channels'].update(
-					AmpelUtils.to_set(tran_config.select.channels)
+					cls.extract_to_set(tran_config.select.channels)
 				)
 
 			for key in ('t2SubSelection', 'docs'):
@@ -244,15 +249,15 @@ class T3JobConfig(BaseModel, GettableConfig):
 					if key not in joined_tasks_selections:
 						joined_tasks_selections[key] = set()
 					joined_tasks_selections[key].update(
-						AmpelUtils.to_set(val)
+						cls.extract_to_set(val)
 					)
 
 		return joined_tasks_selections
 
 
-	@staticmethod
+	@classmethod
 	def validate_channel_sub_selection(
-		job_tran_config, task_tran_config, joined_tasks_selections
+		cls, job_tran_config, task_tran_config, joined_tasks_selections
 	):
 
 		""" 
@@ -312,9 +317,9 @@ class T3JobConfig(BaseModel, GettableConfig):
 					
 				# Case 1
 				else:
-					AmpelUtils.print_and_raise(
-						"T3JobConfig logic error",
-						"Channels %s must be defined in parent job config" % 
+					cls.print_and_raise(
+						header="T3JobConfig logic error",
+						msg="Channels %s must be defined in parent job config" % 
 						task_tran_config.select.channels
 					)
 
@@ -339,27 +344,27 @@ class T3JobConfig(BaseModel, GettableConfig):
 				# Case 2, 3, 4
 				else:
 
-					set_task_chans = AmpelUtils.to_set(
+					set_task_chans = cls.extract_to_set(
 						task_tran_config.select.channels
 					)
 
-					set_job_chans = AmpelUtils.to_set(
+					set_job_chans = cls.extract_to_set(
 						job_tran_config.select.channels
 					)
 
 					# case 2
 					if len(set_task_chans - set_job_chans) > 0:
-						AmpelUtils.print_and_raise(
-							"T3JobConfig logic error",
-							"channels defined in task 'select' must be a sub-set "+
+						cls.print_and_raise(
+							header="T3JobConfig logic error",
+							msg="channels defined in task 'select' must be a sub-set "+
 							"of channels defined in job config"
 						)
 
 					# case 3:
 					if len(set(set_job_chans) - joined_tasks_selections['channels']) > 0:
-						AmpelUtils.print_and_raise(
-							"T3JobConfig logic error",
-							"Set of job channels must equal set of combined tasks channels"
+						cls.print_and_raise(
+							header="T3JobConfig logic error",
+							msg="Set of job channels must equal set of combined tasks channels"
 						)
 
 					# case 4
@@ -375,8 +380,8 @@ class T3JobConfig(BaseModel, GettableConfig):
 					)
 				
 
-	@staticmethod
-	def check_task_state(job_state, task_state):
+	@classmethod
+	def validate_task_state(cls, job_state, task_state):
 		"""
 		Allowed:   main:'$all' -> sub:'$all' 
 		Allowed:   main:'$latest' -> sub:'$latest' 
@@ -385,7 +390,36 @@ class T3JobConfig(BaseModel, GettableConfig):
 		"""
 		if job_state != task_state:
 			if job_state == '$latest':
-				AmpelUtils.print_and_raise(
-					"T3JobConfig error",
-					"invalid state sub-selection criteria: main:'$latest' -> sub:'$all"
+				cls.print_and_raise(
+					header="T3JobConfig error",
+					msg="invalid state sub-selection criteria: main:'$latest' -> sub:'$all"
 				)
+
+
+	@classmethod
+	def validate_content_sub_selection(cls, job_tran_config, task_tran_config):
+		"""
+		"""
+
+		# Forbidden: no-subset
+		if len(
+			cls.extract_to_set(task_tran_config.content.docs) - 
+			cls.extract_to_set(job_tran_config.content.docs)
+		) > 0:
+			cls.print_and_raise(
+				header="T3 Task transients->content->docs error",
+				msg="Invalid task 'docs' sub-selection (no subset of job selection)\n" + 
+				"Offending value: %s" % task_tran_config.content.docs
+
+			)
+
+		# Forbidden: no-subset
+		if job_tran_config.content.t2SubSelection and len(
+			cls.extract_to_set(task_tran_config.content.t2SubSelection) - 
+			cls.extract_to_set(job_tran_config.content.t2SubSelection)
+		) > 0:
+			cls.print_and_raise(
+				header="T3 Task transients->content->t2SubSelection error",
+				msg="Invalid task 't2SubSelection' sub-selection (no subset of job " +
+				"selection)\nOffending value: %s" % task_tran_config.content.t2SubSelection
+			)

@@ -44,11 +44,14 @@ class TranConfig(BaseModel, AmpelModelExtension):
 	chunk: int = 200
 
 
-	@validator('state')
+	@validator('state', always=True, pre=True)
 	def validate_state(cls, state):
 		"""
 		"""
 		if state != "$latest" and state != "$all":
-			raise ValueError('Parameter "state" must be either "$latest" of "$all"')
+			cls.print_and_raise(
+				header="transients->state config error",
+				msg='Parameter "state" must be either "$latest" of "$all"'
+			)
 
 		return state
