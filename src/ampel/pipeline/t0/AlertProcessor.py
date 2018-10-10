@@ -18,7 +18,7 @@ from ampel.pipeline.logging.DBLoggingHandler import DBLoggingHandler
 from ampel.pipeline.logging.DBEventDoc import DBEventDoc
 from ampel.pipeline.db.AmpelDB import AmpelDB
 from ampel.pipeline.config.AmpelConfig import AmpelConfig
-from ampel.pipeline.config.channel.ChannelLoader import ChannelLoader
+from ampel.pipeline.config.channel.ChannelConfigLoader import ChannelConfigLoader
 from ampel.pipeline.config.channel.T0Channel import T0Channel
 from ampel.pipeline.common.AmpelUtils import AmpelUtils
 from ampel.pipeline.common.GraphiteFeeder import GraphiteFeeder
@@ -83,7 +83,7 @@ class AlertProcessor():
 		self.t0_channels = [
 			# Create T0Channel instance (instantiates channel's filter class as well)
 			T0Channel(channel_config, survey_id, self.logger) 
-			for channel_config in ChannelLoader.load_channels(channels, self.logger)
+			for channel_config in ChannelConfigLoader.load_configurations(channels, self.logger)
 		]
 
 		AmpelDB.enable_rejected_collections(
