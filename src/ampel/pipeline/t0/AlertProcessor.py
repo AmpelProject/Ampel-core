@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 10.10.2017
-# Last Modified Date: 30.09.2018
+# Last Modified Date: 09.10.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import time, pkg_resources, numpy as np
@@ -15,7 +15,7 @@ from ampel.pipeline.logging.LoggingUtils import LoggingUtils
 from ampel.pipeline.logging.RecordsBufferingHandler import RecordsBufferingHandler
 from ampel.pipeline.logging.LogsBufferingHandler import LogsBufferingHandler
 from ampel.pipeline.logging.DBLoggingHandler import DBLoggingHandler
-from ampel.pipeline.logging.DBJobDocument import DBJobDocument
+from ampel.pipeline.logging.DBEventDoc import DBEventDoc
 from ampel.pipeline.db.AmpelDB import AmpelDB
 from ampel.pipeline.config.AmpelConfig import AmpelConfig
 from ampel.pipeline.config.channel.ChannelLoader import ChannelLoader
@@ -161,8 +161,8 @@ class AlertProcessor():
 		if not full_console_logging:
 			self.logger.quieten_console()
 
-		# New job document in the 'jobs' collection
-		db_job_doc = DBJobDocument(tier=0)
+		# New document in the 'events' collection
+		db_job_doc = DBEventDoc(name="ap", tier=0)
 		db_job_doc.add_run_id(run_id)
 
 		# Forward jobId to ingester instance 
@@ -452,7 +452,7 @@ class AlertProcessor():
 
 				# Publish metrics into document in collection 'runs'
 				if "jobs" in self.publish_stats:
-					db_job_doc.set_job_info(
+					db_job_doc.set_event_info(
 						{
 							'metrics': {
 								"count": count_stats,

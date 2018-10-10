@@ -14,25 +14,27 @@ class DBEventDoc():
 	"""
 	"""
 
-	def __init__(self, tier, col="events"):
+	def __init__(self, name, tier, col="events"):
 		""" 
+		:param str name: event name. For example 'ap' (alertprocessor) or task name
 		:param int tier: value (0,1,2,3) indicating at which ampel tier level logging is done
 		:param str col: name of db collection to use (default 'events'). 
 
 		Collection is retrieved using AmpelDB.get_collection()
 		"""
+		self.event_name = name
 		self.tier = tier
 		self.col = AmpelDB.get_collection(col)
 		self.run_ids = []
-		self.job_info = {}
+		self.event_info = {}
 
 
-	def set_job_info(self, job_info):
+	def set_event_info(self, event_info):
 		""" 
-		:param dict job_info:
+		:param dict event_info:
 		:returns: None
 		"""
-		self.job_info = job_info
+		self.event_info = event_info
 
 
 	def add_run_id(self, run_id):
@@ -59,14 +61,15 @@ class DBEventDoc():
 			{
 				'$push': {
 					'events': {
+						'event': self.event_name,
 						'tier': self.tier,
 						'dt': datetime.utcnow().timestamp(),
 						'runId': self.run_ids[0] if len(self.run_ids) == 1 else self.run_ids,
-						**self.job_info
+						**self.event_info
 					}
 				}
 			},
 			upsert=True
 		)
 
-		self.job_info = {}
+		self.event_info = {}
