@@ -15,6 +15,8 @@ from ampel.pipeline.config.time.TimeLastRunConfig import TimeLastRunConfig
 from ampel.pipeline.config.time.TimeStringConfig import TimeStringConfig
 from ampel.pipeline.config.time.UnixTimeConfig import UnixTimeConfig
 
+
+@gendocstring
 class TimeConstraintConfig(BaseModel):
 	"""
 	example1:
@@ -50,6 +52,7 @@ class TimeConstraintConfig(BaseModel):
 		}
 	)
 	"""
+
 	before: Union[
 		TimeDeltaConfig, 
 		TimeLastRunConfig, 
