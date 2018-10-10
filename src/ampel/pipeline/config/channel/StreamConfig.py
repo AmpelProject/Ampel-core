@@ -36,7 +36,7 @@ class StreamConfig(BaseModel):
 		# We allow - for convenience - t2Compute or t3Supervise to be defined as single dicts.
 		# A cast into sequence (tuple) is necessary in this case (validator cast_to_tuple). 
 		# Since a such cast modifies input, a shallow dict copy is necessary.
-		if isinstance(arg['t2Compute'], dict) or isinstance(arg.get('t3Supervise'), dict):
+		if isinstance(arg.get('t2Compute'), dict) or isinstance(arg.get('t3Supervise'), dict):
 			super().__init__(**dict(arg)) # shallow copy
 		else:
 			super().__init__(**arg)
