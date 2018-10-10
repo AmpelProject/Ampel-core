@@ -14,16 +14,14 @@ from ampel.pipeline.config.ReadOnlyDict import ReadOnlyDict
 class AmpelUtils():
 	""" 
 	Static methods (as of Sept 2019):
-	iter(arg):
-	try_reduce(arg):
-	is_sequence(obj):
-	to_set(arg):
-	check_seq_inner_type(seq, types, multi_type=False):
-	get_by_path(mapping, path, delimiter='.'):
-	recursive_freeze(arg):
-	flatten_dict(d, separator='.'):
-	unflatten_dict(d, separator='.'):
-	print_and_raise(header, msg):
+	iter(arg)
+	try_reduce(arg)
+	is_sequence(obj)
+	to_set(arg)
+	check_seq_inner_type(seq, types, multi_type=False)
+	get_by_path(mapping, path, delimiter='.')
+	flatten_dict(d, separator='.')
+	unflatten_dict(d, separator='.')
 	"""
 
 	@staticmethod
@@ -200,18 +198,3 @@ class AmpelUtils():
 			d[parts[-1]] = value
 
 		return res
-
-
-	@staticmethod	
-	def print_and_raise(header, msg):
-		"""
-		Prints a msg and raises a ValueError with the same msg.
-		Main use: sometimes, pydantic ValueError do not propagate properly
-		and secondary Exceptions occur. 
-		Printing the msg helps troubleshooting bad configurations.
-		"""
-		print(header)
-		print("#"*len(msg))
-		print(msg)
-		print("#"*len(msg))
-		raise ValueError(msg)
