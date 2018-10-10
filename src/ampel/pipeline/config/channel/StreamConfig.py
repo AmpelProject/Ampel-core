@@ -9,13 +9,14 @@
 
 from pydantic import BaseModel, validator
 from typing import Tuple, Dict, Union, Any, List
+from ampel.pipeline.config.AmpelModelExtension import AmpelModelExtension
 from ampel.pipeline.common.docstringutils import gendocstring
 from ampel.pipeline.config.channel.T0UnitConfig import T0UnitConfig
 from ampel.pipeline.config.channel.T2UnitConfig import T2UnitConfig
 from ampel.pipeline.config.t3.T3TaskConfig import T3TaskConfig
 
 @gendocstring
-class StreamConfig(BaseModel):
+class StreamConfig(BaseModel, AmpelModelExtension):
 	"""
 	Config holder for AMPEL channel input streams (ex: ZTFIPAC) 
 	-> values defined in channel configuration section 'sources'
@@ -43,7 +44,7 @@ class StreamConfig(BaseModel):
 
 
 	@validator('t3Supervise', pre=True, whole=True)
-	def t0_partial_loading_removal(cls, value):
+	def enable_t0_partial_loading(cls, value):
 		""" """
 		# StreamConfig.__tier__ = 0 is set upstream by ChannelConfig
 		if hasattr(cls, "__tier__") and cls.__tier__ == 0:
@@ -52,7 +53,7 @@ class StreamConfig(BaseModel):
 
 
 	@validator('t0Filter', 't2Compute', pre=True, whole=True)
-	def t3_partial_loading_removal(cls, value):
+	def enable_t3_partial_loading(cls, value):
 		""" """
 		# StreamConfig.__tier__ = 0 is set upstream by ChannelConfig
 		if hasattr(cls, "__tier__") and cls.__tier__ == 3:

@@ -8,6 +8,7 @@
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from ampel.pipeline.config.AmpelConfig import AmpelConfig
+from ampel.pipeline.config.channel.T2UnitConfig import T2UnitConfig
 from ampel.pipeline.config.channel.ChannelConfig import ChannelConfig
 
 class ChannelConfigLoader:
@@ -17,7 +18,7 @@ class ChannelConfigLoader:
 	"""
 
 	@staticmethod
-	def load_configurations(chan_names=None, tier="all", logger=None):
+	def load_configurations(chan_names=None, tier="all", logger=None, allow_unknown_t2_units=False):
 		"""
 		Convenience method that creates :obj:`ChannelConfig <ampel.pipeline.config.channel.ChannelConfig>`
 		using channel dicts loaded from AmpelConfig (retrieved by channel names).
@@ -36,6 +37,11 @@ class ChannelConfigLoader:
 		a lighter and quicker ChannelConfig loading procedure. For example, with tier=0, 
 		T3 units existence or T3 run configurations are not checked.
 		:type tier: str, int
+		:param bool allow_unknown_t2_units: Enables scenario such as: 
+		the AlertProcessor creates T2 documents that are processed by external ressources 
+		(say on an external grid such as NERSC).  The corresponding t2 unit(s) 
+		do not need to be present in the ampel image.
+
 		:raises NameError: if a channel is not found
 		:raises ValueError: if duplicate values are found in chan_names
 		:returns: list of ampel.pipeline.config.channel.ChannelConfig instances
@@ -44,6 +50,9 @@ class ChannelConfigLoader:
 
 		# list of chan configs
 		ret = []
+
+		if allow_unknown_t2_units:
+			T2UnitConfig.allow_unknown_t2_units()
 
 		# Robustness check
 		if chan_names is None:

@@ -10,12 +10,13 @@
 from pydantic import BaseModel, validator
 from typing import List, Sequence, Any, Union, Tuple
 from ampel.pipeline.common.docstringutils import gendocstring
+from ampel.pipeline.config.AmpelModelExtension import AmpelModelExtension
 from ampel.pipeline.config.channel.StreamConfig import StreamConfig
 from ampel.pipeline.config.t3.T3TaskConfig import T3TaskConfig
 from ampel.pipeline.config.ReadOnlyDict import ReadOnlyDict
 
 @gendocstring
-class ChannelConfig(BaseModel):
+class ChannelConfig(BaseModel, AmpelModelExtension):
 	"""
 	Config holder for AMPEL channels
 
@@ -43,7 +44,11 @@ class ChannelConfig(BaseModel):
 	@classmethod
 	def create(cls, tier="all", **values):
 		"""
-		:param str load: either 'all', 0, 3
+		:param tier: at which tier level the returned ChannelConfig will be used. 
+		Possible values are: 'all', 0, 3.
+		Less checks are performed when restricting tier to 0 or 3 which yields 
+		a lighter and thus quicker ChannelConfig loading procedure. For example, 
+		with tier=0, T3 units existence or T3 run configurations are not checked.
 		"""
 		if tier == "all":
 			if hasattr(StreamConfig, '__tier__'):
@@ -63,7 +68,7 @@ class ChannelConfig(BaseModel):
 
 
 	@validator('t3Supervise', pre=True, whole=True)
-	def remove_if_not_needed(cls, value):
+	def enable_t0_partial_loading(cls, value):
 		""" """
 		if hasattr(cls, "__tier__") and cls.__tier__ == 0:
 			return None
