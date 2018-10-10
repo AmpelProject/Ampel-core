@@ -12,9 +12,10 @@ from typing import Dict, Any, Union
 from pydantic import BaseModel, validator
 from ampel.pipeline.common.docstringutils import gendocstring
 from ampel.pipeline.config.AmpelConfig import AmpelConfig
+from ampel.pipeline.config.AmpelModelExtension import AmpelModelExtension
 
 @gendocstring
-class T0UnitConfig(BaseModel):
+class T0UnitConfig(BaseModel, AmpelModelExtension):
 	"""
 	Config holder for T0 units (filters)
 	"""
