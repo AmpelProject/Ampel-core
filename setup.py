@@ -50,8 +50,9 @@ setup(name='Ampel-core',
               'slack = ampel.pipeline.common.resources:SlackToken',
               'archive = ampel.archive.resources:ArchiveDBURI'
           ],
-          'ampel.pipeline.t0' : [
-              'BasicFilter = ampel.pipeline.t0.filter.BasicFilter:BasicFilter'
+          'ampel.pipeline.t0.units' : [
+              'BasicFilter = ampel.pipeline.t0.filter.BasicFilter:BasicFilter',
+              'BasicMultiFilter = ampel.pipeline.t0.filter.BasicMultiFilter:BasicMultiFilter'
           ],
       }
 )
