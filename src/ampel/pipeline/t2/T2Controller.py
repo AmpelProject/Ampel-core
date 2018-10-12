@@ -16,8 +16,9 @@ import pkg_resources, math
 from ampel.base.abstract.AbsT2Unit import AbsT2Unit
 from ampel.core.flags.AlDocType import AlDocType
 from ampel.core.flags.T2RunStates import T2RunStates
-from ampel.pipeline.logging.LoggingUtils import LoggingUtils
+from ampel.pipeline.logging.AmpelLogger import AmpelLogger
 from ampel.pipeline.logging.DBLoggingHandler import DBLoggingHandler
+from ampel.pipeline.logging.LoggingUtils import LoggingUtils
 from ampel.pipeline.db.AmpelDB import AmpelDB
 from ampel.pipeline.db.LightCurveLoader import LightCurveLoader
 from ampel.pipeline.common.Schedulable import Schedulable
@@ -26,10 +27,8 @@ from ampel.pipeline.common.AmpelUtils import AmpelUtils
 
 class T2Controller(Schedulable):
 	"""
-	Beta state
 	"""
 
-	version = 1.0
 	# Dict saving t2 classes. 
 	# Key: unit name. Value: unit class
 	t2_classes = {}
@@ -48,7 +47,7 @@ class T2Controller(Schedulable):
 		"""
 
 		# Get logger 
-		self.logger = LoggingUtils.get_logger(unique=True)
+		self.logger = AmpelLogger.get_unique_logger()
 
 		# check interval is in seconds
 		self.check_interval = check_interval
@@ -126,7 +125,6 @@ class T2Controller(Schedulable):
 		# This class formats, saves and pushes log records into the DB
 		db_logging_handler = DBLoggingHandler(
 			tier=2, info={
-				"version": str(T2Controller.version), 
 				"runState": str(self.run_state.value),
 				"t2Units": str(self.required_unit_names)
 			}
@@ -210,12 +208,12 @@ class T2Controller(Schedulable):
 			except:
 				# Record any uncaught exceptions in troubles collection.
 				ret = T2RunStates.EXCEPTION
-				AmpelUtils.report_exception(
-					self.logger, tier=2, info={
+				LoggingUtils.report_exception(
+					tier=2, run_id=db_logging_handler.get_log_id(),
+					logger=self.logger, info={
 						'unit': t2_unit_name,
 						'run_config': run_config_id,
-						't2_doc': t2_doc['_id'],
-						'logs':  db_logging_handler.get_log_id(),
+						't2_doc': t2_doc['_id']
 					}
 				)
 
@@ -346,8 +344,10 @@ class T2Controller(Schedulable):
 
 
 	@classmethod
-	def load_unit(cls, unit_name, logger):
+	def load_unit(cls, unit_name, logger=None):
 		"""	
+		:param unit_name: str
+		:param logger: optional logger instance (python logging module)
 		Loads a T2 unit class using information loaded from the ampel config.
 		This method populates the class variable self.t2_classes 
 		Return code is a t2 class object
@@ -357,8 +357,14 @@ class T2Controller(Schedulable):
 		if unit_name in cls.t2_classes:
 			return cls.t2_classes[unit_name]
 
-		logger.info("Loading T2 unit: %s" % unit_name)
-		resource = next(pkg_resources.iter_entry_points('ampel.pipeline.t2.units', unit_name), None)
+		if logger:
+			logger.info("Loading T2 unit: %s" % unit_name)
+
+		resource = next(
+			pkg_resources.iter_entry_points('ampel.pipeline.t2.units', unit_name), 
+			None
+		)
+
 		if resource is None:
 			raise ValueError("Unknown T2 unit: %s" % unit_name)
 
@@ -392,7 +398,7 @@ class T2Controller(Schedulable):
 
 def run():
 	
-	from ampel.pipeline.config.ConfigLoader import AmpelArgumentParser
+	from ampel.pipeline.config.AmpelArgumentParser import AmpelArgumentParser
 	from ampel.pipeline.config.AmpelConfig import AmpelConfig
 	from ampel.pipeline.config.ChannelLoader import ChannelLoader
 	
