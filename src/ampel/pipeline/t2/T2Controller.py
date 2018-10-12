@@ -124,10 +124,12 @@ class T2Controller(Schedulable):
 		# Create DB logging handler instance (logging.Handler child class)
 		# This class formats, saves and pushes log records into the DB
 		db_logging_handler = DBLoggingHandler(
-			tier=2, info={
-				"runState": str(self.run_state.value),
-				"t2Units": str(self.required_unit_names)
-			}
+			tier=2, 
+			# valery: fix me later
+			#info={
+			#	"runState": str(self.run_state.value),
+			#	"t2Units": str(self.required_unit_names)
+			#}
 		)
 
 		# Add db logging handler to the logger stack of handlers 
@@ -209,7 +211,7 @@ class T2Controller(Schedulable):
 				# Record any uncaught exceptions in troubles collection.
 				ret = T2RunStates.EXCEPTION
 				LoggingUtils.report_exception(
-					tier=2, run_id=db_logging_handler.get_log_id(),
+					tier=2, run_id=db_logging_handler.get_run_id(),
 					logger=self.logger, info={
 						'unit': t2_unit_name,
 						'run_config': run_config_id,
@@ -237,7 +239,7 @@ class T2Controller(Schedulable):
 									'versions': self.versions[t2_unit_name],
 									'dt': now,
 									'duration': now - before_run,
-									'logs': db_logging_handler.get_log_id(),
+									'runId': db_logging_handler.get_run_id(),
 									'error': ret.value
 								}
 							},
@@ -262,7 +264,7 @@ class T2Controller(Schedulable):
 									'versions': self.versions[t2_unit_name],
 									'dt': now,
 									'duration': round(now - before_run, 3),
-									'logs': db_logging_handler.get_log_id(),
+									'runId': db_logging_handler.get_run_id(),
 									'output': ret
 								}
 							},
@@ -292,7 +294,7 @@ class T2Controller(Schedulable):
 								'unit': t2_unit_name,
 								'success': int(not isinstance(ret, T2RunStates)),
 								'channel(s)': t2_doc['channels'],
-								'logs': db_logging_handler.get_log_id()
+								'runId': db_logging_handler.get_run_id()
 							}
 						}
 					}
@@ -400,7 +402,7 @@ def run():
 	
 	from ampel.pipeline.config.AmpelArgumentParser import AmpelArgumentParser
 	from ampel.pipeline.config.AmpelConfig import AmpelConfig
-	from ampel.pipeline.config.ChannelLoader import ChannelLoader
+	from ampel.pipeline.config.channel.ChannelConfigLoader import ChannelConfigLoader
 	
 	parser = AmpelArgumentParser()
 	parser.add_argument('--source', default='ZTFIPAC', help='Alert source')
@@ -408,7 +410,7 @@ def run():
 	# partially parse command line to get config
 	opts, argv = parser.parse_known_args(args=[])
 	# flesh out parser with resources required by t2 units
-	loader = ChannelLoader(source=opts.source, tier=2)
+	loader = ChannelConfigLoader(source=opts.source, tier=2)
 	parser.require_resources(*loader.get_required_resources())
 	# parse again, filling the resource config
 	opts = parser.parse_args()
