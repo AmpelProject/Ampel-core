@@ -4,87 +4,81 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 14.02.2018
-# Last Modified Date: 02.08.2018
+# Last Modified Date: 11.10.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from bson.binary import Binary
 from ampel.core.flags.AlDocType import AlDocType
 from ampel.core.flags.FlagUtils import FlagUtils
 from ampel.pipeline.common.AmpelUtils import AmpelUtils
-from ampel.pipeline.db.query.QueryMatchCriteria import QueryMatchCriteria
+from ampel.pipeline.db.query.QueryMatchSchema import QueryMatchSchema
 
 class QueryLoadTransientInfo:
 	"""
 	"""
 
-	limited_altypes = (
-		AlDocType.COMPOUND,
-		AlDocType.TRANSIENT
-	)
+	limited_altypes = (AlDocType.COMPOUND, AlDocType.TRANSIENT)
 
-	@staticmethod
-	def build_stateless_query(tran_ids, content, channels=None, t2_subsel=None):
+
+	@classmethod
+	def build_stateless_query(cls, tran_ids, docs, channels=None, t2_subsel=None):
 		"""
-		Loads transient info (not including photpoints/upper limits which are in a separate collection).
-		Stateless query: all compounds and t2docs (although possibly constrained by parameter t2_subsel) 
-		will be retrieved.
+		| Builds a pymongo query aiming at loading transient docs (transient, t2s, coumpounds)\
+		(not including photpoints/upper limits which are in a separate collection). 
+		| Stateless query: all avail compounds and t2docs (although possibly \
+		constrained by parameter t2_subsel) are targeted.
 
-		:param tran_id: transient id(s) (int, list of ints, set of ints). 
-		  Query can be built so that it is performed on multiple ids at once.
 		:type tran_id: int, list(int), set(int)
+		:param tran_id: transient id(s) (int, list of ints, set of ints). \
+		Query is generated to be performed on multiple ids at once.
 
-		:param channels: A string, a list of strings or a 2d list of strings:
-			- a list of strings (whereby each string represents a channel name)
-			- a 2d list of strings 
-				* outer list: elements connected by OR
-				* innerlist: elements connected by AND
-		:type channels: str, list(str)
+		:type channels: str, dict
+		:param channels: string (one channel only) or a dict \
+		(see :obj:`QueryMatchSchema <ampel.pipeline.db.query.QueryMatchSchema>` \
+		for syntax details). None (no criterium) means all channels are considered. 
 
-		:param AlDocType content: instance of AlDocType. 
+		:param list(AlDocType) docs: list of AlDocType enum members. \
 		AlDocType.PHOTOPOINT and AlDocType.UPPERLIMIT will be ignored (separate collection).
-		Note: list are not accepted. AlDocType Enum members are AND connected which one 
-		could interpret as one wants to collect "all" provided content (which in the end, 
-		said aside, ends up in a search query with search criteria connected by OR).
 
-		:param t2_subsel: optional sub-selection of t2 results based on t2 unit id(s).
-		t2_subsel will *include* the provided results of t2s with the given ids
-		and thus exclude other t2 results.
-		If None or an empty list: all t2 docs associated with the matched transients will be loaded. 
-		A single t2 unit id (string) or a list of t2 unit ids can be provided.
 		:type t2_subsel: str or list(str)
+		:param t2_subsel: optional sub-selection of t2 results based on t2 unit id(s). \
+		t2_subsel will *include* the provided results of t2s with the given ids \
+		and thus exclude other t2 results. \
+		If None or an empty list: all t2 docs associated with the matched transients will be loaded. \
+		A single t2 unit id (string) or a list of t2 unit ids can be provided.
+
+		:returns: pymongo query matching criteria in form of a dict
+		:rtype: dict
 		"""
 
-		match_dict = QueryLoadTransientInfo.create_broad_match_dict(tran_ids, channels)
+		query = cls.create_broad_query(tran_ids, channels)
 
-		# Everything should be retrieved (AlDocType: 1+2+4+8=15)
-		if not t2_subsel and content.value == 15:
-			return match_dict
+		# Everything should be retrieved (len(docs) is then 5)
+		if not t2_subsel and len(docs) == 5:
+			return query
 
 		# Build array of AlDocType (AlDocType.T2RECORD will be set later since it depends in t2_subsel)
-		al_types = [
-			al_type for al_type in QueryLoadTransientInfo.limited_altypes 
-			if al_type in content
-		]
+		al_types = [al_type for al_type in cls.limited_altypes if al_type in docs]
 
 		if not t2_subsel:
 
 			# Complete alDocType with type T2RECORD if so wished
-			if AlDocType.T2RECORD in content:
+			if AlDocType.T2RECORD in docs:
 				al_types.append(AlDocType.T2RECORD)
 
-			match_dict['alDocType'] = (
+			query['alDocType'] = (
 				al_types[0] if len(al_types) == 1 
 				else {'$in': al_types}
 			)
 
 			# return query matching criteria
-			return match_dict
+			return query
 
 		else:
 
 			# Combine first part of query (transient+compounds) 
 			# with t2UnitId targeted T2RECORD query
-			match_dict['$or'] = [
+			query['$or'] = [
 				# transient+compounds 
 				{
 					'alDocType': (
@@ -101,25 +95,18 @@ class QueryLoadTransientInfo:
 				}
 			]
 
-		return match_dict
+		return query
 
 
-	@staticmethod
+	@classmethod
 	def build_statebound_query(
-		tran_ids, content, states, channels=None, t2_subsel=None, comp_already_loaded=False
+		cls, tran_ids, docs, states, channels=None, t2_subsel=None, comp_already_loaded=False
 	):
 		"""
-		See build_stateless_query docstring
+		See :func:`build_stateless_query <build_stateless_query>` docstring
 		"""
 
-		# Logic check
-		#if AlDocType.COMPOUND not in content and AlDocType.T2RECORD not in content :
-		#	raise ValueError(
-		#		"State scoped queries make no sense without either AlDocType.COMPOUND " +
-		#		"or AlDocType.T2RECORD set in content"
-		#	)
-
-		match_dict = QueryLoadTransientInfo.create_broad_match_dict(tran_ids, channels)
+		query = cls.create_broad_query(tran_ids, channels)
 
 		# Check if correct state(s) was provided
 		type_state = type(states)
@@ -180,13 +167,13 @@ class QueryLoadTransientInfo:
 		# build query with 'or' connected search criteria
 		or_list = []
 
-		if AlDocType.TRANSIENT in content:
+		if AlDocType.TRANSIENT in docs:
 
 			or_list.append(
 				{'alDocType': AlDocType.TRANSIENT}
 			)
 
-		if AlDocType.COMPOUND in content and comp_already_loaded is False:
+		if AlDocType.COMPOUND in docs and comp_already_loaded is False:
 
 			or_list.append(
 				{
@@ -195,7 +182,7 @@ class QueryLoadTransientInfo:
 				}
 			)
 
-		if AlDocType.T2RECORD in content:
+		if AlDocType.T2RECORD in docs:
 
 			t2_match = {
 				'alDocType': AlDocType.T2RECORD, 
@@ -213,35 +200,39 @@ class QueryLoadTransientInfo:
 
 			or_list.append(t2_match)
 
-		# If only 1 $or criteria was generated, then 
+		# If only 1 '$or' criteria was generated, then 
 		# just add this criteria to the root dict ('and' connected with tranId: ...)
 		if len(or_list) == 1:
 			el = or_list[0]
 			for key in el.keys():
-				match_dict[key] = el[key]
+				query[key] = el[key]
 		else:
-			match_dict['$or'] = or_list
+			query['$or'] = or_list
 
-		return match_dict
+		return query
 
 
 	@staticmethod
-	def create_broad_match_dict(tran_ids, channels):
+	def create_broad_query(tran_ids, channels):
 		"""
+		Creates a broad matching query
+
+
+		:type tran_id: int, list(int), set(int)
+		:param tran_id: transient id(s) (int, list of ints, set of ints). \
+
+		:param channels: see :func:`build_stateless_query <build_stateless_query>` docstring
+
+		:returns: updated match dict
+		:rtype: dict
 		"""
 
-		match_dict = {}
-
-		match_dict['tranId'] = ( 
-			tran_ids if type(tran_ids) is int
+		query = {
+			'tranId': tran_ids if type(tran_ids) is int
 			else {'$in': tran_ids if type(tran_ids) is list else list(tran_ids)}
-		)
+		}
 
 		if channels is not None:
-			QueryMatchCriteria.add_from_list(
-				match_dict, 'channels',
-				(channels if not FlagUtils.contains_enum_flag(channels) 
-				else FlagUtils.enum_flags_to_lists(channels)), 
-			)
+			QueryMatchSchema.parse_schema(query, 'channels', channels)
 
-		return match_dict
+		return query
