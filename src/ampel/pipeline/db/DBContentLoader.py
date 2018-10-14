@@ -4,12 +4,10 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 13.01.2018
-# Last Modified Date: 03.10.2018
+# Last Modified Date: 13.10.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from bson import ObjectId
-from datetime import datetime
-from collections import namedtuple
 
 from ampel.base.LightCurve import LightCurve
 from ampel.base.TransientView import TransientView
@@ -33,18 +31,14 @@ from ampel.pipeline.db.LightCurveLoader import LightCurveLoader
 from ampel.pipeline.db.query.QueryLatestCompound import QueryLatestCompound
 from ampel.pipeline.db.query.QueryLoadTransientInfo import QueryLoadTransientInfo
 from ampel.pipeline.t3.TransientData import TransientData
-
-from ampel.base.Frozen import Frozen
+from ampel.pipeline.config.t3.LogicSchemaUtils import LogicSchemaUtils
 
 class DBContentLoader:
 	"""
 	"""
 	all_doc_types = (
-		AlDocType.PHOTOPOINT |
-		AlDocType.UPPERLIMIT |
-		AlDocType.COMPOUND |
-		AlDocType.TRANSIENT |
-		AlDocType.T2RECORD
+		AlDocType.PHOTOPOINT, AlDocType.UPPERLIMIT, AlDocType.COMPOUND, 
+		AlDocType.TRANSIENT, AlDocType.T2RECORD,
 	)
 
 
@@ -74,89 +68,88 @@ class DBContentLoader:
 
 	def load_new(
 		self, tran_id, channels=None, state_op="$latest", states=None, 
-		content=all_doc_types, t2_subsel=None
+		docs=all_doc_types, t2_subsel=None
 	):
 		"""
-		:returns: an instance of TransientData
+		:type tran_id: int, list(int)
+		:param tran_id: transient id. Can be a multiple IDs (list) \
+		if state_op is '$all' or states are provided 
 
-		Arguments:
-		----------
+		:type channels: str, dict
+		:param channels: string (one channel only) or a dict \
+		(see :obj:`QueryMatchSchema <ampel.pipeline.db.query.QueryMatchSchema>` \
+		for syntax details). None (no criterium) means all channels are considered. 
 
-		:param tran_id: transient id (string). 
-		Can be a multiple IDs (list) if state_op is '$all' or states are provided (states cannot be '$latest')
+		:param str state_op:\n
+			- "$latest": latest state will be retrieved
+			- "$all": all states present in DB (at execution time) will be retrieved
 
-		:param channels: channel(s) criteria that will be used in the search criteria
-		:type channels: str, list(str)
-
-		:param str state_op:
-		  * "$latest": latest state will be retrieved
-		  * "$all": all states present in DB (at execution time) will be retrieved
-
-		:param states:
-		  * <compound_id> or list of <compound_id>: provided state(s) will be loaded. 
-		    Each compound id must be either:
-				- a 32 alphanumerical string
-				- 16 bytes (128 bits)
-				- a bson.binary.Binary instance with subtype 5
 		:type states: str, bytes, bson.binary.Binary
+		:param states: <compound_id> or list of <compound_id>: \
+		provided state(s) will be loaded. Each compound id must be either:\n
+			- a 32 alphanumerical string
+			- 16 bytes (128 bits)
+			- a bson.binary.Binary instance with subtype 5
 
-		:param AlDocType content: AlDocType flags. Possible combinable values are:
+		:param list(AlDocType) docs: list of AlDocType enum members:
 
-		  * 'AlDocType.TRANSIENT': 
-			-> Add info from DB doc to the returned TransientData instance
-			-> For example: channels, flags (has processing errors), 
+		  * AlDocType.TRANSIENT: 
+			| -> Add info from DB doc to the returned TransientData instance
+			| -> For example: channels, flags (has processing errors), 
 			   latest photopoint observation date, ...
 
-		  * 'AlDocType.PHOTOPOINT': 
-			-> load *all* photopoints avail for this transient (regardless of provided state)
-			-> The transient will contain a list of ampel.base.PlainPhotoPoint instances 
-			-> (PlainPhotoPoint (unlike PhotoPoint) instances come without policy)
+		  * AlDocType.PHOTOPOINT: 
+			| -> load *all* photopoints avail for this transient (regardless of provided state)
+			| -> The transient will contain a list of ampel.base.PlainPhotoPoint instances 
+			| -> (PlainPhotoPoint (unlike PhotoPoint) instances come without policy)
 
-		  * 'AlDocType.UPPERLIMIT': 
-			-> load *all* upper limits avail for this transient (regardless of provided state)
-			-> The transient will contain a list of ampel.base.PlainUpperLimit instances 
-			-> (PlainUpperLimit (unlike UpperLimit) instances come without policy)
+		  * AlDocType.UPPERLIMIT: 
+			| -> load *all* upper limits avail for this transient (regardless of provided state)
+			| -> The transient will contain a list of ampel.base.PlainUpperLimit instances 
+			| -> (PlainUpperLimit (unlike UpperLimit) instances come without policy)
 
-		  * 'AlDocType.COMPOUND': 
-			-> ampel.base.LightCurve instances are created based on DB documents 
+		  * AlDocType.COMPOUND: 
+			| -> ampel.base.LightCurve instances are created based on DB documents 
 			   (with alDocType AlDocType.COMPOUND)
-			-> if 'state' is '$latest' or a state id (md5 bytes) is provided, 
+			| -> if 'state' is '$latest' or a state id (md5 bytes) is provided, 
 			   only one LightCurve instance is created. 
 			   if 'state' is '$all', all available lightcurves are created.
-			-> the lightcurve instance(s) will be associated with the returned TransientData instance
+			| -> the lightcurve instance(s) will be associated with the returned TransientData instance
 
-		  * 'AlDocType.T2RECORD': 
+		  * AlDocType.T2RECORD: 
 			...
 
-			Note: list are not accepted. AlDocType Enum members are AND connected which one 
-			could interpret as one wants to collect "all" provided content (which in the end, 
-			said aside, ends up in a search query with search criteria connected by OR).
+		:type t2_subsel: str, list(str)
+		:param t2_subsel: optional sub-selection of t2 results based on t2 unit id(s). \
+		t2_subsel will *include* the provided results of t2s with the given ids \
+		and thus exclude other t2 results. If None or an empty list is provided: \
+		all t2 docs associated with the matched transients will be loaded. \
+		A single t2 unit id (string) can be provided.
 
-		:param t2_subsel: optional sub-selection of t2 results based on t2 unit id(s).
-		t2_subsel will *include* the provided results of t2s with the given ids
-		and thus exclude other t2 results.
-		If None or an empty list: all t2 docs associated with the matched transients will be loaded. 
-		A single t2 unit id (string) or a list of t2 unit ids can be provided.
-		:type t2_subsel: str or list(str)
+		:returns: a TransientData instance
+		:rtype: ampel.pipeline.t3.TransientData
 		"""
 
 		# Robustness check 1
-		if content is None or content == 0:
-			raise ValueError("Parameter 'content' not conform")
+		if not docs:
+			raise ValueError("Invalid parameter 'docs'")
 
+		extra={'docs': docs} 
 
 		# Option 2: Load a user provided state(s)
 		if states is not None:
 
 			# Feedback
 			self.logger.info(
-				"Retrieving %s for provided state(s) of transient(s) %s" % 
-				(content, tran_id)
+				"Retrieving docs associated with provided state(s)",
+				extra={'docs': docs} 
+				# TODO: make sure tran_id is set in logger
+				# TODO: add states ?
 			)
 
 			# Build query parameters (will return adequate number of docs)
 			search_params = QueryLoadTransientInfo.build_statebound_query(
-				tran_id, content, states, channels, t2_subsel
+				tran_id, docs, states, channels, t2_subsel
 			)
 
 		else:
@@ -165,12 +158,16 @@ class DBContentLoader:
 			if state_op == "$latest":
 	
 				if type(tran_id) in (list, tuple):
-					raise ValueError("Querying multiple transient ids not supported with state_op == '$latest'")
+					raise ValueError(
+						"Querying multiple transient ids not supported with state_op := '$latest'"
+					)
 	
 				# Feedback
 				self.logger.info(
-					"Retrieving %s for latest state of transient %s" % 
-					(content, tran_id)
+					"Retrieving docs from latest tran state",
+					extra={'docs': docs} 
+					# TODO: make sure tran_id is set in logger
+					# TODO: add states ?
 				)
 	
 				# Execute DB query returning the latest compound dict
@@ -181,17 +178,19 @@ class DBContentLoader:
 				)
 	
 				if latest_compound_dict is None:
+					# TODO: extra
 					self.logger.info("Transient %s not found" % tran_id)
 					return None
 	
 				self.logger.info(
+					# TODO: extra
 					" -> Latest lightcurve id: %s " % 
 					latest_compound_dict['_id']
 				)
 	
 				# Build query parameters (will return adequate number of docs)
 				search_params = QueryLoadTransientInfo.build_statebound_query(
-					tran_id, content, latest_compound_dict["_id"], 
+					tran_id, docs, latest_compound_dict["_id"], 
 					channels, t2_subsel, comp_already_loaded=True
 				)
 	
@@ -200,17 +199,18 @@ class DBContentLoader:
 	
 				# Feedback
 				self.logger.info(
+					# TODO: extra
 					"Retrieving %s for all states of transient(s) %s" % 
-					(content, tran_id)
+					(docs, tran_id)
 				)
 	
 				# Build query parameters (will return adequate number of docs)
 				search_params = QueryLoadTransientInfo.build_stateless_query(
-					tran_id, content, channels, t2_subsel
+					tran_id, docs, channels, t2_subsel
 				)
 
-
 		self.logger.debug(
+			# TODO: extra
 			"Retrieving transient(s) info using query: %s" % 
 			search_params
 		)
@@ -221,26 +221,29 @@ class DBContentLoader:
 		# Robustness: check empty
 		res_count = main_cursor.count()
 		if res_count == 0:
+			# TODO: extra
 			self.logger.warn("No db document found associated with %s" % tran_id)
 			return None
 
 		# Effectively perform DB query (triggered by casting cursor to list)
+		# TODO: extra
 		self.logger.info(" -> Fetching %i results from main col" % res_count)
 		res_main_list = list(main_cursor)
 		res_photo_list = None
 
 		# Photo DB query 
-		if (AlDocType.PHOTOPOINT|AlDocType.UPPERLIMIT) in content:
+		if AlDocType.PHOTOPOINT in docs and AlDocType.UPPERLIMIT in docs:
 
 			photo_cursor = self.photo_col.find(
 				{'tranId': {'$in': tran_id} if type(tran_id) in (list, tuple) else tran_id}
 			)
+			# TODO: extra
 			self.logger.info(" -> Fetching %i photo measurements" % photo_cursor.count())
 			res_photo_list = list(photo_cursor)
 
 		else:
 
-			if AlDocType.PHOTOPOINT in content:
+			if AlDocType.PHOTOPOINT in docs:
 				photo_cursor = self.photo_col.find(
 					{
 						'tranId': {'$in': tran_id} if type(tran_id) in (list, tuple) else tran_id, 
@@ -248,16 +251,18 @@ class DBContentLoader:
 					}
 				)
 
+				# TODO: extra
 				self.logger.info(" -> Fetching %i photo points" % photo_cursor.count())
 				res_photo_list = list(photo_cursor)
 
-			if AlDocType.UPPERLIMIT in content:
+			if AlDocType.UPPERLIMIT in docs:
 				photo_cursor = self.photo_col.find(
 					{
 						'tranId': {'$in': tran_id} if type(tran_id) in (list, tuple) else tran_id, 
 						'_id': {'$lt': 0}
 					}
 				)
+				# TODO: extra
 				self.logger.info(" -> Fetching %i upper limits" % photo_cursor.count())
 				res_photo_list = list(photo_cursor)
 
@@ -275,7 +280,7 @@ class DBContentLoader:
 		self.logger.info("Creating TransientData")
 
 		# Build set: we need intersections later
-		channels_set = AmpelUtils.to_set(channels)
+		channels_set = LogicSchemaUtils.reduce_to_set(channels)
 
 		# Stores loaded transient items. 
 		# Key: tran_id, value: TransientData instance
@@ -553,10 +558,10 @@ class DBContentLoader:
 
 				if len_srs > 0:
 
-					t2_subsel = {ell.t2_unit_id for el in tran_data.science_records.values() for ell in el}
+					subsel = {ell.t2_unit_id for el in tran_data.science_records.values() for ell in el}
 	
 					for channel in tran_data.science_records.keys():
-						for t2_id in t2_subsel:
+						for t2_id in subsel:
 							srs = len(list(filter(
 								lambda x: x.t2_unit_id == t2_id,
 								tran_data.science_records[channel]
