@@ -85,6 +85,9 @@ class T3JobConfig(BaseModel, AmpelModelExtension):
 		# -> usefull if one wants to run tasks in a stand-alone way
 		for task_config in tasks: # task_config is a dict 
 
+			if task_config.get('globalInfo'):
+				values['globalInfo'] = True
+
 			# Copy entire 'transients' value if missing
 			if task_config.get('transients') is None:
 				# json.loads(json.dumps) is 2x faster than copy.deepcopy

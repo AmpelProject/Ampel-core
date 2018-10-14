@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 29.09.2018
-# Last Modified Date: 10.10.2018
+# Last Modified Date: 11.10.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from pydantic import BaseModel, validator, ValidationError
@@ -32,56 +32,68 @@ class TranContentConfig(BaseModel, AmpelModelExtension):
 	"""
 
 
-	docs: Dict
-	t2SubSelection: Dict = None
-
-	@validator('docs', always=True, pre=True)
-	def check_non_empty(cls, v):
-		""" """
-		if not v:
-			cls.print_and_raise(
-				header="transients->content->docs config error",
-				msg='Parameter "docs" cannot be empty'
-			)
-		return v
+	docs: List[AlDocType]
+	t2SubSelection: List[str] = None
 
 
-	@validator('docs', 't2SubSelection', pre=True)
-	def to_dict(cls, v, values, **kwargs):
+	@validator('docs', 't2SubSelection', pre=True, whole=True)
+	def to_seq(cls, v, values, **kwargs):
 		""" """
 
-		if type(v) is str:
-			return {'anyOf': v}
-
-		if type(v) is list:
-			if not AmpelUtils.check_seq_inner_type(v, str):
+		if AmpelUtils.is_sequence(v):
+			if AmpelUtils.check_seq_inner_type(v, (str, int, AlDocType)):
+				return v
+			else:
 				cls.print_and_raise(
 					header="transients->content->%s config error" % kwargs['field'],
-					msg='dict value must be list containing strings'
+					msg='List values must be string'
 				)
-			return {'anyOf': v}
 
+		if type(v) is str:
+			return [v]
+
+		# For convenience and syntax consistency, we accept docs format such as: 
+		# {'anyOf': ['a', 'b]} which we convert as simple list
 		if type(v) is dict:
 			if 'anyOf' not in v or 'allOf' in v or len(v) !=1:
 				cls.print_and_raise(
 					header="transients->content->%s config error" % kwargs['field'],
 					msg='dict value can only contain the key "anyOf"'
 				)
+			return v['anyOf']
 
-		return v
+		cls.print_and_raise(
+			header="transients->content->%s config error" % kwargs['field'],
+			msg='Unknown format: %s' % v
+		)
 
 
-	@validator('docs', pre=True)
-	def check_flag_exist(cls, v, values, **kwargs):
+	@validator('docs', whole=True, pre=True)
+	def convert_to_int(cls, value, values, **kwargs):
 		""" """
-		return v
 
+		if not value:
+			cls.print_and_raise(
+				header="transients->content->docs config error",
+				msg='Parameter "docs" cannot be empty'
+			)
 
-	@validator('docs', whole=True)
-	def check_valid_docs(cls, value, values, **kwargs):
-		""" """
-		ConfigUtils.check_flags_from_dict(value, AlDocType, **kwargs)
-		return value
+		ret = []
+
+		for el in AmpelUtils.iter(value):
+
+			if type(el) is str:
+				try:
+					ret.append(AlDocType[el])
+				except KeyError:
+					cls.print_and_raise(
+						header="transients->select->docs config error",
+						msg="Unknown flag '%s'.\nPlease check class AlDocType for allowed flags" % el
+					)
+			else:
+				return value
+
+		return ret
 
 
 	@validator('t2SubSelection')
@@ -90,17 +102,14 @@ class TranContentConfig(BaseModel, AmpelModelExtension):
 		Check transients->content->t2SubSelection
 		"""
 
-		# Docs should never be None (checked by prio validators)
-		docs = values.get("docs").get("anyOf")
+		# Docs should never be None (checked by prior validators)
+		docs = values.get("docs")
 
-		if t2SubSelection.get("anyOf") and "T2RECORD" not in docs:
+		if AlDocType.T2RECORD not in docs:
 			cls.print_and_raise(
 				header="T3 transients->select->docs config error",
 				msg="T2RECORD must be defined in transients->select->docs\n"+
-				"when transients->content->t2SubSelection " +
-				"(%s)\n filtering is requested." % t2SubSelection.get("anyOf")
+				"when transients->content->t2SubSelection filtering is requested."
 			)
 
 		return t2SubSelection
-
-	# TODO: check transient flags here
