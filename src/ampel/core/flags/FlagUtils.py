@@ -63,6 +63,53 @@ class FlagUtils():
 
 
 	@staticmethod
+	def to_dbflags_schema(arg, FlagClass):
+		"""
+		Converts dict schema containing str representation of enum class members, \
+		into integers whose values are the index position of each member within the enum. \
+		We do a such conversion to ensure storing flags into mongoDB remains \
+		easy even if the enum hosts more than 64 members (in this case, \
+		storing flag values would require a cumbersome conversion to BinData)
+
+		:param arg": schema dict. See :obj:`QueryMatchSchema <ampel.pipeline.db.query.QueryMatchSchema>` \
+		for syntax detail.
+		:param FlagClass: enum class (not instance) ex: ampel.base.flags.TransientFlags
+
+		:returns: new schema dict where flag elements are integer
+		:rtype: dict
+		"""
+
+		flag_pos = {el.name: i for i, el in enumerate(FlagClass, 1)}
+		out={}
+		
+		if isinstance(arg, str):
+			return 1
+		elif isinstance(arg, dict):
+			if "anyOf" in arg:
+				if AmpelUtils.check_seq_inner_type(arg['anyOf'], str):
+					out['anyOf'] = [flag_pos[el] for el in arg['anyOf']]
+				else:
+					out['anyOf'] = []
+					for el in arg['anyOf']:
+						if isinstance(el, str):
+							out['anyOf'].append(flag_pos[el])
+						elif isinstance(el, dict):
+							if 'allOf' not in el:
+								raise ValueError("Unsupported format (1)")
+							out['anyOf'].append({'allOf': [flag_pos[ell] for ell in el['allOf']]})
+						else:
+							raise ValueError("Unsupported format (type: %s)" % type(el))
+	
+			elif 'allOf':
+				out['allOf'] = [flag_pos[el] for el in arg['allOf']]
+		else:
+			raise ValueError("Unsupported format (2)")
+		
+		return out
+
+
+
+	@staticmethod
 	def contains_enum_flag(flags):
 		"""
 		"""
