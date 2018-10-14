@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 14.12.2017
-# Last Modified Date: 28.09.2018
+# Last Modified Date: 14.10.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import logging, struct, os
@@ -155,6 +155,38 @@ class DBLoggingHandler(logging.Handler):
 	def get_run_id(self):
 		""" """
 		return self.run_id
+
+
+	def add_run_id(self, run_id):
+		""" 
+		:param int run_id: run ID
+		"""
+		if type(self.run_id) is int:
+			self.run_id = [self.run_id, run_id]
+		else:
+			self.run_id.append(run_id)
+
+
+	def fork(self):
+		""" 
+		:returns: new instance of DBLoggingHandler
+		"""
+		# New instance of DBLoggingHandler with same parameters
+		dblh = DBLoggingHandler(
+			self.tier, self.col, self.level, self.aggregate_interval, self.flush_len
+		)
+
+		# Add runId from new instance to current instance
+		self.add_run_id(
+			dblh.get_run_id()
+		)
+
+		# Vice-versa
+		dblh.add_run_id(
+			self.get_run_id()
+		)
+
+		return dblh
 
 
 	def purge(self):
