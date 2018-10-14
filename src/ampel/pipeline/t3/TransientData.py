@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 31.05.2018
-# Last Modified Date: 21.08.2018
+# Last Modified Date: 13.10.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from ampel.base.TransientView import TransientView
@@ -20,10 +20,9 @@ class TransientData:
 
 	def __init__(self, tran_id, state, logger):
 		"""
-		Parameters:
-		* tran_id: transient id (string)
-		* state: string ('$all' or '$latest') or bytes or list of md5 bytes.
-		* logger: logger instance from python module 'logging'
+		:param int tran_id: transient id
+		:param state: string ('$all' or '$latest') or bytes or list of md5 bytes.
+		:param logger: logger instance from python module 'logging'
 
 		NOTE: in this class, dictionnaries using channel name as dict key 
 		(self.compounds, self.lightcurves...) will accept *None* as dict key 
@@ -31,7 +30,6 @@ class TransientData:
 		self.tran_id = tran_id
 		self.state = state
 		self.logger = logger
-
 
 		# key: pp id (photo collection does not include channel info)
 		self.photopoints = {}
@@ -46,12 +44,16 @@ class TransientData:
 
 
 	def set_channels(self, channels):
-		""" channels: list or set (of strings) """
+		""" 
+		:param set(str) channels: set of channel names
+		"""
 		self.channels = channels
 
 
 	def set_flags(self, flags):
-		""" """
+		"""
+		:param flags: enum flag instance of :py:class:`TransientFlags `<ampel.base.flags.TransientFlags>`
+		"""
 		self.flags = flags
 
 
@@ -61,20 +63,25 @@ class TransientData:
 
 
 	def add_photopoint(self, photopoint):
-		""" argument 'photopoint' must be an instance of ampel.base.PhotoPoint """
-		self.photopoints[photopoint.get_id()] = photopoint
+		""" 
+		:type photopoint: :py:class:`PhotoPoint <ampel.base.PhotoPoint>`
+		"""
+		self.photopoints[photopoint.content["_id"]] = photopoint
 
 
 	def add_upperlimit(self, upperlimit):
-		""" argument 'upperlimit' must be an instance of ampel.base.UpperLimit """
-		self.upperlimits[upperlimit.get_id()] = upperlimit
+		"""
+		:type upperlimit: :py:class:`UpperLimit <ampel.base.UpperLimit>`
+		"""
+		self.upperlimits[upperlimit.content["_id"]] = upperlimit
 
 
 	def add_science_record(self, channels, science_record):
 		"""
 		Saves science record and tag it with provided channels
-		channels: list of strings whereby each element is a string channel id 
-		science_record: instance of ampel.base.ScienceRecord
+
+		:param list(str) channels: list of strings whereby each element is a channel id 
+		:type science_record: :py:class:`ScienceRecord <ampel.base.ScienceRecord>`
 		"""
 		self._add(self.science_records, science_record, channels)
 
@@ -82,8 +89,9 @@ class TransientData:
 	def add_lightcurve(self, channels, lightcurve):
 		"""
 		Saves lightcurve and tag it with provided channels
-		channels: list of strings whereby each element is a string channel id 
-		lightcurve: instance of ampel.base.LightCurve
+
+		:param list(str) channels: list of strings whereby each element is a channel id 
+		:type lightcurve: :py:class:`ScienceRecord <ampel.base.lightcurve>`
 		"""
 		self._add(self.lightcurves, lightcurve, channels)
 
@@ -91,23 +99,24 @@ class TransientData:
 	def add_compound(self, channels, compound):
 		"""
 		Saves compound and tag it with provided channels
-		channels: list of strings whereby each element is a string channel id 
-		compound: namedtuple
+
+		:param list(str) channels: list of strings whereby each element is a channel id 
+		:param dataclass compound: instance of :py:class:`Compound <ampel.base.Compound>`
 		"""
 		self._add(self.compounds, compound, channels)
 
 
 	def add_journal_entry(self, channels, entry):
 		""" 
-		channels: list/set of strings whereby each element is a string channel id 
-		entry: dict instance
+		:param channels: list/set of strings whereby each element is a string channel id 
+		:param dict entry: journal entry
 		"""
 		self._add(self.journal, entry, channels)
 
 
 	def create_view(self, channels, t2_ids=None):
 		"""
-		Returns instance of ampel.base.TransientView
+		:returns: instance of :py:class:`TransientView <ampel.base.TransientView>` or None
 		"""
 
 		# Create transient based on info combined from different channels.
@@ -137,7 +146,7 @@ class TransientData:
 
 	def _create_one_view(self, channel, t2_ids=None):
 		"""
-		Returns instance of ampel.base.TransientView
+		:returns: instance of :py:class:`TransientView <ampel.base.TransientView>` or None
 		"""
 
 		if not type(channel) is str:
@@ -172,7 +181,7 @@ class TransientData:
 
 	def _create_multi_view(self, channels, t2_ids=None):
 		"""
-		Returns instance of ampel.base.TransientView
+		:returns: instance of :py:class:`TransientView <ampel.base.TransientView>` or None
 		"""
 
 		# Sequence with single value
@@ -278,17 +287,14 @@ class TransientData:
 	@staticmethod
 	def get_latest_compound(compounds):
 		""" 
-		Static method. 
+		| Static method which from a list of compound dict instances, \
+		returns the compound dict that corresponds to the latest state of the transient.
+		| Finding this out is not as obvious as it may appear.
 
-		From a list of compound dict instances, return the compound dict 
-		that corresponds to the latest state of the transient.
-		Finding this out is not as obvious as it may appear at first.
-
-		The same selection algorithm is also implemented in the method:
-			DBQueryBuilder.latest_compound_query(tran_id) 
-		which is evaluated by the mongoDB database aggregation framework
-		(instead of locally by Python based on DB query results 
-		as is the case for the present method).
+		The same selection algorithm is also implemented in the method: \
+		:func:`QueryLatestCompound.general_query(...)` which is evaluated \
+		by the mongoDB aggregation framework (instead of locally by python \
+		based on DB query results as is the case for the present method).
 		"""
 
 		# Check exit
