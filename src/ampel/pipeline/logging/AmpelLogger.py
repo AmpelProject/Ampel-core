@@ -95,13 +95,13 @@ class AmpelLogger(logging.Logger):
 		return logger
 
 
-	def __init__(self, name, level=logging.DEBUG, channel=None):
+	def __init__(self, name, level=logging.DEBUG, channels=None):
 		""" """
 
 		super().__init__(name, level)
 		self.__extra = None
-		if channel:
-			self.__extra = {'channels': channel}
+		if channels:
+			self.__extra = {'channels': channels}
 
 
 	def __add_extra(self, key, value):

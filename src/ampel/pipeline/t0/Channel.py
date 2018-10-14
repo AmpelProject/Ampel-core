@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 03.05.2018
-# Last Modified Date: 10.10.2018
+# Last Modified Date: 14.10.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import pkg_resources, logging
@@ -24,7 +24,8 @@ class Channel:
 
 	def __init__(self, chan_config, survey_id, parent_logger):
 		"""
-		:param chan_config: instance of ampel.pipeline.config.channel.ChannelConfig
+		:param ChannelConfig chan_config: instance of :obj:`ChannelConfig \
+			<ampel.pipeline.config.channel.ChannelConfig>`
 		:param str survey_id: name of the survey id (ex:ZTFIPAC)
 		:param Logger parent_logger: logger instance (python module logging)
 		:raises: NameError if the provided survey id is not defined as source in the channel config 
@@ -53,7 +54,7 @@ class Channel:
 		parent_logger.info("On match t2 units: %s" % self.t2_units)
 
 		# Create channel (buffering) logger
-		self.buff_logger = AmpelLogger(self.name, channel=self.name)
+		self.buff_logger = AmpelLogger(self.name, channels=self.name)
 		self.log_extra = self.buff_logger._AmpelLogger__extra
 		sh = next(filter( # Will raise Exception if not found
 			lambda hdlr: isinstance(hdlr, logging.StreamHandler), 
