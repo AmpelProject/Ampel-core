@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 16.06.2018
-# Last Modified Date: 05.10.2018
+# Last Modified Date: 14.10.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from ampel.pipeline.config.AmpelConfig import AmpelConfig
@@ -14,65 +14,81 @@ class AmpelDB:
 	"""
 	"""
 
-	_db_names = {
-		'data': 'Ampel_data',
-		'var': 'Ampel_var',
-		'ext': 'Ampel_ext'
-	}
-
-	# None will be replaced by instance of pymongo.collection.Collection the first time
-	# that AmpelDB.get_collection(...) is called for a given collection
-	_existing_cols = {
-		'data': {
-			'main': None,
-			'photo': None
-		},
-		'var': {
-			'logs': None,
-			'events': None,
-			'troubles': None
-		},
-		'ext': {
-			'counter': None,
-			'runConfig': None,
-			'journal': None
-		},
-		'rej': {},
-	}
+	_db_prefix = "Ampel"
 
 	# Existing mongo clients
 	_existing_mcs = {}
 
-	# least priviledged role required to write
-	_db_config_roles = {
-		'data': 'writer',
-		'var': 'logger',
-		'ext': 'logger'
+	# 'col' None will be replaced by instance of pymongo.collection.Collection 
+	# the first time AmpelDB.get_collection(...) is called for a given collection
+	_ampel_cols = {
+		'main': {
+			'dbLabel': 'data',
+			'dbPrefix': _db_prefix,
+			'col': None
+		},
+		'photo': {
+			'dbLabel': 'data',
+			'dbPrefix': _db_prefix,
+			'col': None
+		},
+		'logs': {
+			'dbLabel': 'var',
+			'dbPrefix': _db_prefix,
+			'col': None
+		},
+		'events': {
+			'dbLabel': 'var',
+			'dbPrefix': _db_prefix,
+			'col': None
+		},
+		'troubles': {
+			'dbLabel': 'var',
+			'dbPrefix': _db_prefix,
+			'col': None
+		},
+		'counter': {
+			'dbLabel': 'ext',
+			'dbPrefix': _db_prefix,
+			'col': None
+		},
+		'runConfig': {
+			'dbLabel': 'ext',
+			'dbPrefix': _db_prefix,
+			'col': None
+		},
+		'journal': {
+			'dbLabel': 'ext',
+			'dbPrefix': _db_prefix,
+			'col': None
+		},
+	}
+
+	# least priviledged role required to read or write
+	_db_roles = {
+		'data': {
+			'r': 'logger',
+			'w': 'writer'
+		},
+		'var': {
+			'r': 'logger',
+			'w': 'logger'
+		},
+		'ext': {
+			'r': 'logger',
+			'w': 'logger'
+		}
 	}
 	
-	# least priviledged role required to read
-	_db_config_reader_roles = {
-		'data': 'logger',
-		'var': 'logger',
-		'ext': 'logger'
-	}
-
-	db_contact = {
-		'data': False,	
-		'var': False,	
-		'ext': False
-	}
-
-
 	@classmethod
-	def set_central_db_name(cls, db_name):
+	def set_db_prefix(cls, prefix):
 		"""
 		:returns: None
 		"""
-		# TODO: change this method to 'set_db_prefix(db_label, db_name_prefix)' 
-		# which could thus affect other db than Ampel_data (actually Prefix_data),
-		# say Ampel_var, Ampel_rej etc...
-		cls._db_names['data'] = db_name
+		cls._db_name_prefix = prefix
+		for d in cls._ampel_cols.values():
+			d['dbPrefix'] = prefix
+			d['col'] = None
 
 
 	@classmethod
@@ -84,11 +100,14 @@ class AmpelDB:
 		:param list(str) channel_names: list of channel names
 		:returns: None
 		"""
-		cls.db_contact['rej'] = False
-		cls._db_config_reader_roles['rej'] = 'logger'
-		cls._db_config_roles['rej'] = 'logger'
-		cls._db_names['rej'] = 'Ampel_rej'
-		cls._existing_cols['rej'] = {chan_name: None for chan_name in channel_names}
+
+		cls._db_roles['rej'] = {'r': 'logger', 'w': 'logger'}
+		for chan_name in channel_names:
+			cls._ampel_cols[chan_name] = {
+				'dbLabel': 'rej',
+				'dbPrefix': cls._db_prefix,
+				'col': None
+			}
 
 
 	@classmethod
@@ -102,56 +121,36 @@ class AmpelDB:
 		:returns: instance or list of instances of pymongo.collection.Collection.
 		"""
 
+		# Convenience
 		if type(col_name) in (list, tuple):
 			return (cls.get_collection(name) for name in col_name)
 
-		# For now, either 'Ampel' or 'Ampel_logs'
-		db_label, db_name = cls._get_associated_db_name(col_name)
+		if col_name not in cls._ampel_cols:
+			raise ValueError("Unknown collection: '%s'" % col_name)
 
-		if db_label is None:
-			raise ValueError("Unknown collection name: '%s'" % col_name)
+		# Shortcut
+		col_config = cls._ampel_cols[col_name]
 
 		# the collection already exists, no need to create it
-		if cls._existing_cols[db_label][col_name] is not None:
-			return cls._existing_cols[db_label][col_name]
+		if col_config['col'] is not None:
+			return col_config['col']
 
-		# db_label.collection_names() wasn't called yet (we just need to call it once)
-		if not cls.db_contact[db_label]:
+		# db_label.collection_names() wasn't called yet for this col
+		mc = cls._get_mongo_client(col_config['dbLabel'], mode)
+		db = mc[col_config['dbPrefix']+"_"+col_config['dbLabel']]
 
-			mc = cls._get_mongo_client(db_label, mode)
-			cls.db_contact[db_label] = True
-
-			for el in mc[db_name].collection_names():
-
-				# Skip unkown existing collections
-				if el not in cls._existing_cols[db_label]:
-					continue
-
-				# Prior manual customization may have been done
-				if cls._existing_cols[db_label][el] is None:
-					cls._existing_cols[db_label][el] = mc[db_name][el]
-		
-		# Ensure indexes for new collection 
-		mc = cls._get_mongo_client(db_label, mode)
-		col = mc[db_name].get_collection(col_name)
 		if 'w' in mode:
-			cls.create_indexes(col)
+			if col_name not in db.list_collection_names():
+				try:
+					cls.create_indexes(db[col_name])
+				except Exception:
+					import logging
+					logging.error("Col index creation failed", exc_info=True)
 
-		return col
+		col_config['col'] = db[col_name]
+		return db[col_name]
 
 	
-	@classmethod
-	def _get_associated_db_name(cls, col_name):
-		"""
-		:returns: db label (data/var/ext) and db name (Ampel_data/Ampel_var/...)
-		:rtype: tuple(str)
-		""" 
-		for db_label in cls._existing_cols:
-			if col_name in cls._existing_cols[db_label].keys():
-				return db_label, cls._db_names[db_label]
-		return None, None
-
-
 	@classmethod
 	def _get_mongo_client(cls, db_label, mode='w'):
 		"""
@@ -161,20 +160,18 @@ class AmpelDB:
 		""" 
 		from pymongo import MongoClient
 
+		# example: 'logger' or 'writer'
+		role = cls._db_roles[db_label][mode]
+
 		# If a mongoclient does not already exists for this db_label (ex: 'data')
-		if not (db_label, mode) in cls._existing_mcs:
+		if not role in cls._existing_mcs:
 
-			# As of Juli 2018: 'Ampel' -> 'writer' and 'Ampel_logs' -> 'logger'
-			if 'w' in mode:
-				role = cls._db_config_roles[db_label]
-			else:
-				role = cls._db_config_reader_roles[db_label]
-
-			cls._existing_mcs[(db_label, mode)] = MongoClient(
+			# As of Juli 2018: 'Ampel_data' -> 'writer' and 'Ampel_logs' -> 'logger'
+			cls._existing_mcs[role] = MongoClient(
 				AmpelConfig.get_config('resources.mongo.%s' % role)
 			)
 
-		return cls._existing_mcs[(db_label, mode)] 
+		return cls._existing_mcs[role] 
 
 
 	@staticmethod
@@ -185,6 +182,11 @@ class AmpelDB:
 
 		:returns: None
 		"""
+		import logging
+		logging.info(
+			"Creating index for collection '%s' (db: '%s')" % 
+			(col.name, col.database.name)
+		)
 
 		if col.name == "main":
 
@@ -253,7 +255,7 @@ class AmpelDB:
 		elif col.name == "troubles":
 			pass
 
-		elif col.name in AmpelDB._existing_cols['rej'].keys():
+		elif col.name in AmpelDB._ampel_cols and AmpelDB._ampel_cols[col.name]['dbLabel'] == 'rej':
 
 			# Create sparse index for key runId
 			col.create_index([("tranId", 1)])
