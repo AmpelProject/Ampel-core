@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 02.09.2018
-# Last Modified Date: 30.09.2018
+# Last Modified Date: 14.10.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from pydantic import BaseModel, validator
@@ -23,6 +23,7 @@ class T3TaskConfig(BaseModel, AmpelModelExtension):
 	unitId: str
 	schedule: Union[None, List[str]] = None
 	verbose: bool = False
+	globalInfo: bool = False
 	transients: Union[None, TranConfig] = None
 	runConfig: Union[None, Dict] = None
 
