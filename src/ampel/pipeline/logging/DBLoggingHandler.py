@@ -186,7 +186,22 @@ class DBLoggingHandler(logging.Handler):
 			self.get_run_id()
 		)
 
+		if not hasattr(self, "child_handlers"):
+			self.child_handlers = []
+
+		self.child_handlers.append(dblh)
+
 		return dblh
+
+
+	def flush_all(self):
+		"""
+		Flushes also child handlers if any
+		"""
+		if hasattr(self, "child_handlers"):
+			for handler in self.child_handlers:
+				handler.flush()
+		self.flush()
 
 
 	def purge(self):
