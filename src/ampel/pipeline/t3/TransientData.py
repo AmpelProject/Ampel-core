@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 31.05.2018
-# Last Modified Date: 13.10.2018
+# Last Modified Date: 15.10.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from ampel.base.TransientView import TransientView
@@ -114,14 +114,17 @@ class TransientData:
 		self._add(self.journal, entry, channels)
 
 
-	def create_view(self, channels, t2_ids=None):
+	# TODO: implement docs filtering
+	def create_view(self, channels, docs=None, t2_ids=None):
 		"""
+		:param channels: channel names
+		:type channels: sequence, set(str)
 		:returns: instance of :py:class:`TransientView <ampel.base.TransientView>` or None
 		"""
 
 		# Create transient based on info combined from different channels.
 		if AmpelUtils.is_sequence(channels):
-			return self._create_multi_view(channels, t2_ids)
+			return self._create_multi_view(channels, docs, t2_ids)
 
 		# Unspecified channel. We create a view based on what's available
 		if channels is None:
@@ -133,18 +136,19 @@ class TransientData:
 			# At least one channel association exisits
 			elif len(self.channels) == 1:
 				return self._create_one_view(
-					channel=next(iter(self.channels)), t2_ids=t2_ids
+					next(iter(self.channels)), docs, t2_ids
 				)
 
 			else:
 				self.logger.warning("Creating multi-view transient with all available channels")
-				return self._create_multi_view(self.channels, t2_ids)
+				return self._create_multi_view(self.channels, docs, t2_ids)
 
 		# Channel was specificied (channels is actually a channel)
-		return self._create_one_view(channels, t2_ids)
+		return self._create_one_view(channels, docs, t2_ids)
 
 
-	def _create_one_view(self, channel, t2_ids=None):
+	# TODO: implement docs filtering
+	def _create_one_view(self, channel, docs=None, t2_ids=None):
 		"""
 		:returns: instance of :py:class:`TransientView <ampel.base.TransientView>` or None
 		"""
@@ -179,7 +183,8 @@ class TransientData:
 		)	
 
 
-	def _create_multi_view(self, channels, t2_ids=None):
+	# TODO: implement docs filtering
+	def _create_multi_view(self, channels, docs=None, t2_ids=None):
 		"""
 		:returns: instance of :py:class:`TransientView <ampel.base.TransientView>` or None
 		"""
@@ -242,7 +247,12 @@ class TransientData:
 
 	def _get_combined_elements(self, var, channels):
 		""" """
-		elements = [el for channel in AmpelUtils.iter(channels) if channel in var for el in var[channel]]
+		elements = [
+			el for channel in AmpelUtils.iter(channels) 
+			if channel in var 
+			for el in var[channel]
+		]
+
 		try:
 			return tuple(set(elements))
 		except TypeError:
