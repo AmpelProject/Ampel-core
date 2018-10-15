@@ -36,51 +36,33 @@ class TranContentConfig(BaseModel, AmpelModelExtension):
 	t2SubSelection: List[str] = None
 
 
-	@validator('docs', 't2SubSelection', pre=True, whole=True)
-	def to_seq(cls, v, values, **kwargs):
+	@validator('docs', whole=True, pre=True, always=True)
+	def convert_to_enum(cls, v, values, **kwargs):
 		""" """
 
-		if AmpelUtils.is_sequence(v):
-			if AmpelUtils.check_seq_inner_type(v, (str, int, AlDocType)):
-				return v
-			else:
-				cls.print_and_raise(
-					header="transients->content->%s config error" % kwargs['field'],
-					msg='List values must be string'
-				)
-
-		if type(v) is str:
-			return [v]
-
-		# For convenience and syntax consistency, we accept docs format such as: 
-		# {'anyOf': ['a', 'b]} which we convert as simple list
-		if type(v) is dict:
-			if 'anyOf' not in v or 'allOf' in v or len(v) !=1:
-				cls.print_and_raise(
-					header="transients->content->%s config error" % kwargs['field'],
-					msg='dict value can only contain the key "anyOf"'
-				)
-			return v['anyOf']
-
-		cls.print_and_raise(
-			header="transients->content->%s config error" % kwargs['field'],
-			msg='Unknown format: %s' % v
-		)
-
-
-	@validator('docs', whole=True, pre=True)
-	def convert_to_int(cls, value, values, **kwargs):
-		""" """
-
-		if not value:
+		if not v:
 			cls.print_and_raise(
 				header="transients->content->docs config error",
 				msg='Parameter "docs" cannot be empty'
 			)
 
+		# Due to pydantic bug, validators can be called twice
+		if AmpelUtils.check_seq_inner_type(v, (int, AlDocType)):
+			return v
+		else:
+			# For convenience and syntax consistency, we accept dicts
+			if isinstance(v, dict):
+				return cls.logic_dict_to_list("docs", v)
+
+			if not isinstance(v, str) and not AmpelUtils.check_seq_inner_type(v, str):
+				cls.print_and_raise(
+					header="transients->content->docs config error",
+					msg='List values must be string'
+				)
+
 		ret = []
 
-		for el in AmpelUtils.iter(value):
+		for el in AmpelUtils.iter(v):
 
 			if type(el) is str:
 				try:
@@ -91,9 +73,53 @@ class TranContentConfig(BaseModel, AmpelModelExtension):
 						msg="Unknown flag '%s'.\nPlease check class AlDocType for allowed flags" % el
 					)
 			else:
-				return value
+				raise ValueError("Unexpected format")
 
 		return ret
+
+
+	@validator('t2SubSelection', pre=True, whole=True)
+	def to_seq(cls, v, values, **kwargs):
+		""" """
+
+		if AmpelUtils.is_sequence(v):
+		
+			# Due to pydantic bug, validators can be called twice
+			if AmpelUtils.check_seq_inner_type(v, str):
+				return v
+			else:
+				# For convenience and syntax consistency, we accept dicts
+				if isinstance(v, dict):
+					return cls.logic_dict_to_list("t2SubSelection", v)
+
+				cls.print_and_raise(
+					header="transients->content->t2SubSelection config error",
+					msg='List values must be string'
+				)
+
+		if type(v) is str:
+			return [v]
+
+
+		cls.print_and_raise(
+			header="transients->content->t2SubSelection unknown format",
+			msg='Offending value: %s' % v
+		)
+
+
+	@classmethod
+	def logic_dict_to_list(cls, field, v):
+		"""
+		For convenience and syntax consistency, we accept docs format such as: 
+		{'anyOf': ['a', 'b]} which we convert as simple list
+		"""
+		if 'anyOf' not in v or 'allOf' in v or len(v) !=1:
+			cls.print_and_raise(
+				header="transients->content->%s config error" % field,
+				msg='Dict value can only contain the key "anyOf"'
+			)
+
+		return v['anyOf']
 
 
 	@validator('t2SubSelection')

@@ -22,6 +22,7 @@ from ampel.pipeline.config.t3.T3TaskConfig import T3TaskConfig
 from ampel.pipeline.config.t3.TranConfig import TranConfig
 from ampel.pipeline.config.t3.TranSelectConfig import TranSelectConfig
 from ampel.pipeline.config.t3.TranContentConfig import TranContentConfig
+from ampel.pipeline.config.t3.LogicSchemaUtils import LogicSchemaUtils
 
 def nothing():
 	pass
@@ -174,8 +175,8 @@ class T3JobConfig(BaseModel, AmpelModelExtension):
 			if len(joined_tasks_selections['channels']) != 1:
 				cls.print_and_raise(
 					header="T3JobConfig logic error",
-					msg="Illegal task sub-channel selection: Either none task or all " +
-					"tasks must make use of the $forEach operator"
+					msg="Invalid task sub-channel selection: Either none \n" +
+					"or all tasks must make use of the $forEach operator"
 				)
 
 		return tasks
@@ -237,22 +238,20 @@ class T3JobConfig(BaseModel, AmpelModelExtension):
 		# Build set of channels/t2SubSelection/docs for all tasks combined
 		for task_config in task_configs if type(task_configs) is list else [task_configs]:
 
-			tran_config = task_config.transients
-
-			if tran_config.get('select.channels'):
+			if task_config.get('transients.select.channels'):
 				if 'channels' not in joined_tasks_selections:
 					joined_tasks_selections['channels'] = set()
 				joined_tasks_selections['channels'].update(
-					cls.extract_to_set(tran_config.select.channels)
+					LogicSchemaUtils.reduce_to_set(task_config.transients.select.channels)
 				)
 
 			for key in ('t2SubSelection', 'docs'):
-				val = tran_config.content.get(key)
+				val = task_config.get('transients.content.%s' % key)
 				if val:
 					if key not in joined_tasks_selections:
 						joined_tasks_selections[key] = set()
 					joined_tasks_selections[key].update(
-						cls.extract_to_set(val)
+						AmpelUtils.to_set(val)
 					)
 
 		return joined_tasks_selections
@@ -309,13 +308,13 @@ class T3JobConfig(BaseModel, AmpelModelExtension):
 			return
 
 		# Case 1, 6, 7
-		if job_tran_config.select.channels is None:
+		if job_tran_config.get("select.channels") is None:
 
 			# Case 1, 7
-			if task_tran_config.select.channels:
+			if task_tran_config.get("select.channels"):
 
 				# Case 7
-				if task_tran_config.select.channels == "$forEach":
+				if task_tran_config.get("select.channels.anyOf") == ["$forEach"]:
 					pass
 					
 				# Case 1
@@ -341,7 +340,7 @@ class T3JobConfig(BaseModel, AmpelModelExtension):
 			if task_tran_config.get('select.channels'):
 
 				# Case 8
-				if task_tran_config.select.channels == "$forEach":
+				if task_tran_config.get("select.channels.anyOf") == ["$forEach"]:
 					pass
 
 				# Case 2, 3, 4
