@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 29.09.2018
-# Last Modified Date: 07.10.2018
+# Last Modified Date: 15.10.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from pydantic import BaseModel, validator
@@ -15,14 +15,8 @@ from ampel.pipeline.config.AmpelModelExtension import AmpelModelExtension
 from ampel.pipeline.config.ConfigUtils import ConfigUtils
 from ampel.pipeline.common.docstringutils import gendocstring
 from ampel.base.flags.TransientFlags import TransientFlags
-
-
-class AllOf(BaseModel):
-	allOf: List[str]
-
-
-class AnyOf(BaseModel):
-	anyOf: List[Union[str, AllOf]]
+from ampel.pipeline.config.t3.AllOf import AllOf
+from ampel.pipeline.config.t3.AnyOf import AnyOf
 
 
 @gendocstring
