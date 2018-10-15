@@ -8,6 +8,8 @@
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from ampel.pipeline.config.t3.LogicSchemaIterator import LogicSchemaIterator
+from ampel.pipeline.config.t3.AllOf import AllOf
+from ampel.pipeline.config.t3.AnyOf import AnyOf
 
 class LogicSchemaUtils:
 	"""
@@ -44,7 +46,11 @@ class LogicSchemaUtils:
 		
 		if type(arg) in in_type:
 			return {arg}
-		elif isinstance(arg, dict):
+
+		if type(arg) in (AllOf, AnyOf):
+			arg = arg.dict()
+
+		if isinstance(arg, dict):
 			if "anyOf" in arg:
 				s = set()
 				for el in arg['anyOf']:
@@ -54,12 +60,14 @@ class LogicSchemaUtils:
 						for ell in next(iter(el.values())):
 							s.add(ell)
 					else:
-						raise ValueError("Unsupported format (1)")
+						raise ValueError("LogicSchemaUtils.reduce_to_set: unsupported format (1)")
 				return s
 			elif 'allOf' in arg:
 				return set(arg['allOf'])
 			else:
-				raise ValueError("Unsupported format (2)")
+				raise ValueError("LogicSchemaUtils.reduce_to_set: unsupported format (2)")
+		else:
+			raise ValueError("LogicSchemaUtils.reduce_to_set: unsupported type: %s" % type(arg))
 
 
 	@staticmethod
