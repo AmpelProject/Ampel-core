@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 25.01.2018
-# Last Modified Date: 22.08.2018
+# Last Modified Date: 16.10.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from datetime import datetime, timedelta
@@ -35,11 +35,10 @@ class T2Controller(Schedulable):
 	versions = {}
 	
 	def __init__(
-		self, central_db=None, run_state=T2RunStates.TO_RUN, t2_units=None, 
+		self, run_state=T2RunStates.TO_RUN, t2_units=None, 
 		check_interval=10, batch_size=200
 	): 
 		"""
-		'central_db': string. Use provided DB name rather than Ampel default database ('Ampel')
 		run_state: one on ampel.core.flags.T2RunStates int value (for example: T0_RUN)
 		t2_units: list of string id of the t2 units to run. If not specified, any t2 unit will be run
 		check_interval: int value in seconds
@@ -81,14 +80,9 @@ class T2Controller(Schedulable):
 					'$in': t2_units
 				}
 
-		# Optional override of AmpelConfig defaults
-		if central_db is not None:
-			AmpelDB.set_central_db_name(central_db)
-
 		# How many docs per 'job document'
 		# batch_size is defined because the job log entry cannot grow above 16MB (of logs).
 		self.batch_size = batch_size
-		self.tran_col = AmpelDB.get_collection('main')
 
 		Schedulable.__init__(self)
 
@@ -103,7 +97,7 @@ class T2Controller(Schedulable):
 		"""
 
 		# get t2 documents (runState is usually TO_RUN or TO_RUN_PRIO)
-		cursor = self.tran_col.find(self.query)
+		cursor = AmpelDB.get_collection('main').find(self.query)
 
 		# No result
 		if cursor.count() == 0:
@@ -141,7 +135,7 @@ class T2Controller(Schedulable):
 		t2_instances = {}
 
 		# Instantiate LightCurveLoader (that returns ampel.base.LightCurve instances)
-		lcl = LightCurveLoader(self.tran_col.database, logger=self.logger)
+		lcl = LightCurveLoader(logger=self.logger)
 
 		counter = 0
 
@@ -207,15 +201,14 @@ class T2Controller(Schedulable):
 						else None
 					)
 				)
-			except:
+			except Exception as e:
 				# Record any uncaught exceptions in troubles collection.
 				ret = T2RunStates.EXCEPTION
 				LoggingUtils.report_exception(
-					tier=2, run_id=db_logging_handler.get_run_id(),
-					logger=self.logger, info={
+					self.logger, e, tier=2, run_id=db_logging_handler.get_run_id(), info={
 						'unit': t2_unit_name,
-						'run_config': run_config_id,
-						't2_doc': t2_doc['_id']
+						'runConfig': run_config_id,
+						't2Doc': t2_doc['_id']
 					}
 				)
 
