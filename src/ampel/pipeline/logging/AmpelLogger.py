@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 27.09.2018
-# Last Modified Date: 28.09.2018
+# Last Modified Date: 16.10.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import logging, sys
@@ -101,6 +101,8 @@ class AmpelLogger(logging.Logger):
 		super().__init__(name, level)
 		self.__extra = None
 		if channels:
+			if type(channels) not in (list, str):
+				raise ValueError("Unsupported type for parameter 'channels' (%s)" % type(channels))
 			self.__extra = {'channels': channels}
 
 
@@ -147,12 +149,12 @@ class AmpelLogger(logging.Logger):
 
 	def propagate_log(self, level, msg, exc_info=False, extra=None):
 		"""
-		Calls set_console_log_level(logging.DEBUG), logs the log message and 
-		then sets the StreamHandler log level back to its initial value.
-		On production, the StreamHandler log level is usually set to WARN.
-		It is indeed unnecessary to produce a lot of console logs since we are 
-		saving log entries in the DB anyway (using DBLoggingHandler).
-		However, selected INFO log entries might be worth logging on the console.
+		| Calls set_console_log_level(logging.DEBUG), logs the log message and \
+		then sets the StreamHandler log level back to its initial value. 
+		| On production, the StreamHandler log level is usually set to WARN \
+		because it is unnecessary to emit a lot of console logs since \
+		log entries are saved in the DB anyway (using DBLoggingHandler).
+		| Selected INFO log entries are worth logging on the console though, hence this method.
 
 		:param int level: log level (ex: logging.INFO)
 		:param str msg: message to be logged
@@ -173,7 +175,10 @@ class AmpelLogger(logging.Logger):
 		if level < logging.WARN:
 			level = logging.WARN
 
-		self.log(level, "Forced log propagation: "+msg, exc_info=exc_info, extra=extra)
+		self.log(
+			level, "Forced log propagation: %s" % msg, 
+			exc_info=exc_info, extra=extra
+		)
 
 
 	def makeRecord(self, name, level, fn, lno, msg, args, exc_info, func=None, extra=None, sinfo=None):
