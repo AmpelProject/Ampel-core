@@ -114,7 +114,7 @@ class TimeConstraint:
 				if res is None:
 					return None
 
-			return datetime.fromtimestamp(res['jobs']['dt'])
+			return datetime.fromtimestamp(res['events']['dt'])
 
 		elif tc_type is UnixTimeConfig:
 			return datetime.fromtimestamp(tc.value)

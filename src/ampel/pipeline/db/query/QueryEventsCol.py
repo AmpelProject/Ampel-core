@@ -104,7 +104,7 @@ class QueryEventsCol:
 		second_match_stage = {'events.tier': tier}
 
 		if event_name is not None:
-			second_match_stage['events.name'] = event_name
+			second_match_stage['events.event'] = event_name
 
 		if dt is not None:
 			second_match_stage['events.dt'] = {'$gt': dt}
