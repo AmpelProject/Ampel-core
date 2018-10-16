@@ -14,19 +14,20 @@ class DBEventDoc():
 	"""
 	"""
 
-	def __init__(self, name, tier, col="events"):
+	def __init__(self, event_name, tier, dt=None, col_name="events"):
 		""" 
-		:param str name: event name. For example 'ap' (alertprocessor) or task name
+		:param str event_name: event name. For example 'ap' (alertprocessor) or task name
 		:param int tier: value (0,1,2,3) indicating at which ampel tier level logging is done
-		:param str col: name of db collection to use (default 'events'). 
+		:param str col_name: name of db collection to use (default 'events'). 
 
 		Collection is retrieved using AmpelDB.get_collection()
 		"""
-		self.event_name = name
+		self.event_name = event_name
 		self.tier = tier
-		self.col = AmpelDB.get_collection(col)
+		self.col = AmpelDB.get_collection(col_name)
 		self.run_ids = []
 		self.event_info = {}
+		self.dt = int(datetime.utcnow().timestamp()) if dt is None else dt
 
 
 	def set_event_info(self, event_info):
@@ -52,7 +53,8 @@ class DBEventDoc():
 		:returns: None
 		"""
 
-		self.col.update_one(
+		# Record event info into DB
+		res = self.col.update_one(
 			{
 				'_id': int(
 					datetime.today().strftime('%Y%m%d')
@@ -63,7 +65,7 @@ class DBEventDoc():
 					'events': {
 						'event': self.event_name,
 						'tier': self.tier,
-						'dt': datetime.utcnow().timestamp(),
+						'dt': self.dt,
 						'runId': self.run_ids[0] if len(self.run_ids) == 1 else self.run_ids,
 						**self.event_info
 					}
@@ -71,5 +73,13 @@ class DBEventDoc():
 			},
 			upsert=True
 		)
+
+		if res.modified_count == 0 and res.upserted_id is None:
+			raise ValueError(
+				"Events collection update failed (%s)" % {
+					'mongoUpdateResult': res.raw_result,
+					'event': self.event_name
+				}
+			)
 
 		self.event_info = {}
