@@ -21,6 +21,7 @@ from ampel.pipeline.db.AmpelDB import AmpelDB
 from ampel.pipeline.logging.DBLoggingHandler import DBLoggingHandler
 from ampel.pipeline.logging.AmpelLogger import AmpelLogger
 from ampel.pipeline.logging.LoggingUtils import LoggingUtils
+from ampel.pipeline.logging.DBEventDoc import DBEventDoc
 from ampel.pipeline.common.AmpelUtils import AmpelUtils
 from ampel.pipeline.config.t3.LogicSchemaUtils import LogicSchemaUtils
 from ampel.pipeline.config.t3.T3JobConfig import T3JobConfig
@@ -127,6 +128,10 @@ class T3Event:
 
 			if not full_console_logging:
 				self.logger.quieten_console()
+			
+			if self.update_events:
+				self.event_doc = DBEventDoc(self.name, tier=3)
+				self.event_doc.add_run_id(self.run_id)
 
 		else:
 			self.logger = logger
@@ -488,10 +493,14 @@ class T3Event:
 						info={self.event_type: self.name}
 					)
 
+			# Register the execution of this event into the events col
 			if self.update_events:
-
-				# Register the execution of this event into the events col
-				self._update_events_col(self.name, self.run_id, time_start)
+				self.event_doc.set_event_info({
+					'metrics': {
+						'duration': int(datetime.utcnow().timestamp() - time_start)
+					}
+				})
+				self.event_doc.publish()
 
 			# Feedback
 			self.logger.shout("Done running %s" % self.name)
@@ -508,52 +517,6 @@ class T3Event:
 			LoggingUtils.report_exception(
 				self.logger, e, tier=3, run_id=self.run_id,
 				info={self.event_type: self.name}
-			)
-
-
-	def _update_events_col(self, event_name, run_id, time_start):
-		"""
-		"""
-	
-		# Record event info into DB
-		upd_res = AmpelDB.get_collection('events').update_one(
-			{
-				'_id': int(
-					datetime.today().strftime("%Y%m%d")
-				)
-			},
-			{
-				'$push': {
-					'events': {
-						'event': event_name,
-						'tier': 3,
-						'dt': int(time_start),
-						'runId': self.run_id,
-						'metrics': {
-							'duration': int(
-								datetime.utcnow().timestamp() - time_start
-							)
-						}
-					}
-				}
-			},
-			upsert=True
-		)
-
-		if upd_res.modified_count == 0 and upd_res.upserted_id is None:
-
-			info={
-				'mongoUpdateResult': upd_res.raw_result,
-				'event': self.name
-			}
-
-			if self.raise_exc:
-				raise ValueError("runs collection update failed (%s)" % info)
-
-			# Populate troubles collection
-			LoggingUtils.report_error(
-				tier=3, logger=self.logger, info=info,
-				msg="events collection update failed"
 			)
 
 
