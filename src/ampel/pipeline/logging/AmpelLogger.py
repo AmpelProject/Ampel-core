@@ -11,10 +11,12 @@ import logging, sys
 from logging import _logRecordFactory
 from ampel.pipeline.logging.ExtraLogFormatter import ExtraLogFormatter
 
+# DEBUG: 10, INFO: 20, WARNING: 30
+logging.addLevelName(21, "SHOUT")
+
 class AmpelLogger(logging.Logger):
 
 	loggers = {}
-
 
 	@staticmethod
 	def get_unique_logger(**kwargs):
@@ -40,7 +42,7 @@ class AmpelLogger(logging.Logger):
 
 
 	@staticmethod
-	def get_logger(name="Ampel", **kwargs):
+	def get_logger(name="Ampel", force_refresh=False, **kwargs):
 		"""
 		Creates or returns an instance of :obj:`AmpelLogger <ampel.pipeline.logging.AmpelLogger>` 
 		that is registered in static dict :func:`loggers <ampel.pipeline.logging.AmpelLogger.loggers>` 
@@ -60,7 +62,7 @@ class AmpelLogger(logging.Logger):
 			logger = AmpelLogger.get_logger()
 		"""
 
-		if name not in AmpelLogger.loggers:
+		if name not in AmpelLogger.loggers or force_refresh:
 			AmpelLogger.loggers[name] = AmpelLogger._new_logger(
 				name, **kwargs
 			)
@@ -96,10 +98,16 @@ class AmpelLogger(logging.Logger):
 
 
 	def __init__(self, name, level=logging.DEBUG, channels=None):
-		""" """
+		""" 
+		:param str name:
+		:param int level:
+		:param channels: 
+		:type channels: list(str), str
+		"""
 
 		super().__init__(name, level)
 		self.__extra = None
+
 		if channels:
 			if type(channels) not in (list, str):
 				raise ValueError("Unsupported type for parameter 'channels' (%s)" % type(channels))
@@ -131,11 +139,11 @@ class AmpelLogger(logging.Logger):
 
 	def quieten_console(self):
 		""" 
-		Shortcut for set_console_log_level(logging.WARN)\n
+		Shortcut for set_console_log_level(21)\n
 		:returns: None
 		"""
 
-		self.set_console_log_level(logging.WARN)
+		self.set_console_log_level(21)
 
 		
 	def louden_console(self):
@@ -145,6 +153,14 @@ class AmpelLogger(logging.Logger):
 		"""
 
 		self.set_console_log_level(logging.DEBUG)
+
+
+	def shout(self, msg, *args, **kwargs):
+		"""
+		shout: custom msg with log level SHOUT (21) that should make its way \
+		through the StreamHandler (even quietened)
+		"""
+		self._log(21, msg, args, **kwargs)
 
 
 	def propagate_log(self, level, msg, exc_info=False, extra=None):
