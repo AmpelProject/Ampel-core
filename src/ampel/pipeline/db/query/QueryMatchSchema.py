@@ -10,6 +10,9 @@
 import collections
 from ampel.core.flags.FlagUtils import FlagUtils
 from ampel.pipeline.common.AmpelUtils import AmpelUtils
+from ampel.pipeline.config.t3.AnyOf import AnyOf
+from ampel.pipeline.config.t3.AllOf import AllOf
+
 
 class QueryMatchSchema:
 	"""
@@ -39,11 +42,12 @@ class QueryMatchSchema:
 
 		:param str field_name: name of the DB field containing the flag values
 
-		:type arg: str, dict
-		:param arg: should be dict but can be a string for convenience \
+		:param arg: should be dict/AllOf/AnyOf but can be a string for convenience \
 		(if only one value is to be matched). The dict can be nested up to one level. \
 		Please see :obj:`QueryMatchSchema <ampel.pipeline.db.query.QueryMatchSchema>` \
 		docstring for syntax details).
+		:type arg: str, dict, :py:class:`AllOf <ampel.pipeline.config.t3.AllOf>`, \
+			:py:class:`AnyOf <ampel.pipeline.config.t3.AnyOf>`
 
 		:param list in_type: type of elements embedded in schema dict (str, int, ...)
 
@@ -55,10 +59,14 @@ class QueryMatchSchema:
 		:rtype: dict
 		"""
 
-		# Be robust
-		if cls.arg_check(arg, in_type): # True if arg is in_type
-			query[field_name] = arg
-			return
+		# Checks were already performed by validators
+		if type(arg) in (AllOf, AnyOf):
+			arg = arg.dict()
+		else:
+			# Be robust
+			if cls.arg_check(arg, in_type): # True if arg is in_type
+				query[field_name] = arg
+				return
 
 		if 'allOf' in arg:
 
@@ -151,8 +159,6 @@ class QueryMatchSchema:
 		return query
 
 
-
-
 	@classmethod
 	def apply_excl_schema(cls, query, field_name, arg, in_type=(int, str)):
 		"""
@@ -166,17 +172,20 @@ class QueryMatchSchema:
 		Returns: dict instance referenced by parameter 'query' (which was updated)
 		"""
 
-		# Be robust
-		cls.arg_check(arg, in_type)
+		# Checks were already performed by validators
+		if type(arg) in (AllOf, AnyOf):
+			arg = arg.dict()
+		else:
+			cls.arg_check(arg, in_type) # Be robust
 
 		# Check if field_name criteria were set previously
 		if field_name in query:
-			if type(query[field_name]) is in_type:
+			if type(query[field_name]) in in_type:
 				# If a previous scalar flag matching criteria was set
 				# then we need rename it since query[field_name] will become a dict 
 				query[field_name] = {'$eq': query[field_name]}
 
-		if type(arg) is in_type:
+		if type(arg) in in_type:
 			if field_name not in query:
 				query[field_name] = {}
 			query[field_name]['$ne'] = arg
@@ -322,7 +331,7 @@ class QueryMatchSchema:
 
 		# Dict must be provided
 		if not isinstance(arg, dict):
-			raise ValueError("Parameter 'arg' should be a dict")
+			raise ValueError("Parameter 'arg' should be a dict (is %s)" % type(arg))
 
 		# With only one key
 		if len(arg) != 1:
