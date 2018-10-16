@@ -1,14 +1,15 @@
 import pytest, subprocess, json, schedule
 
 from ampel.pipeline.t3.T3Controller import T3Controller
-from ampel.pipeline.t3.T3JobConfig import T3JobConfig, ScheduleEvaluator
-from ampel.pipeline.t3.T3TaskConfig import T3TaskConfig
+from ampel.pipeline.config.t3.T3JobConfig import T3JobConfig
+from ampel.pipeline.t3.T3Job import T3Job
+
+from ampel.pipeline.common.AmpelUnitLoader import AmpelUnitLoader
 
 from ampel.base.abstract.AbsT3Unit import AbsT3Unit
 from ampel.pipeline.config.AmpelConfig import AmpelConfig
 from ampel.pipeline.common.AmpelUtils import AmpelUtils
-from ampel.pipeline.config.ArgumentParser import AmpelArgumentParser
-
+from ampel.pipeline.config.AmpelArgumentParser import AmpelArgumentParser
 
 class PotemkinError(RuntimeError):
 	pass
@@ -26,68 +27,58 @@ class PotemkinT3(AbsT3Unit):
 
 @pytest.fixture
 def testing_class():
-	prev = T3TaskConfig.t3_classes
-	T3TaskConfig.t3_classes = {'potemkin': PotemkinT3}
+	assert 'potemkin' not in AmpelUnitLoader.UnitClasses[3]
+	AmpelUnitLoader.UnitClasses[3]['potemkin'] = PotemkinT3
 	yield
-	T3TaskConfig.t3_classes = prev
+	del AmpelUnitLoader.UnitClasses[3]['potemkin']
 
 @pytest.fixture
 def t3_jobs():
-    return {"jobbyjob": {
+    return [ {
+      "job": "jobbyjob",
       "active": True,
       "schedule": "every().minute",
-      "onError": {
-        "sendMail": {
-          "to": "ztf-software@desy.de",
-          "excStack": True
-        },
-        "stopAmpel": False,
-        "retry": False
-      },
-      "input": {
+      "transients": {
+        "state": "$latest",
         "select": {
           "created" : {
-                "from" : {
-                    "timeDelta" : {
-                        "days" : -40
-                    }
+                "after" : {
+                  "use": "$timeDelta",
+                  "arguments": {"days": -40}
                 }
             },
             "modified" : {
-                "from" : {
-                    "timeDelta" : {
-                        "days" : -1
-                    }
+                "after" : {
+                  "use": "$timeDelta",
+                  "arguments": {"days": -1}
                 }
             },
-            "channel(s)": [
+            "channels": {'anyOf': [
               "NUCLEAR_CHARLOTTE",
               "NUCLEAR_SJOERT"
-            ],
-            "withFlag(s)": "INST_ZTF",
-            "withoutFlag(s)": "HAS_ERROR"
+            ]},
+            "withFlags": "INST_ZTF",
+            "withoutFlags": "HAS_ERROR"
         },
-        "load": {
+        "content": {
           "state": "$latest",
-          "doc(s)": [
+          "docs": [
             "TRANSIENT",
             "COMPOUND",
             "T2RECORD",
             "PHOTOPOINT"
           ],
-          "t2(s)": [
+          "t2SubSelection": [
             "SNCOSMO",
             "AGN"
-          ],
-		  'verbose': True,
-		  'debug': False
+          ]
         },
         "chunk": 200
       },
-      "task(s)": [
+      "tasks": [
         {
-          "name": "SpaceCowboy",
-          "t3Unit": "potemkin",
+          "task": "SpaceCowboy",
+          "unitId": "potemkin",
           "runConfig": None,
           "updateJournal": True,
           "select": {
@@ -95,13 +86,13 @@ def t3_jobs():
               "NUCLEAR_CHARLOTTE",
               "NUCLEAR_SJOERT"
             ],
-            "state(s)": "$latest",
-            "t2(s)": "SNCOSMO"
+            "state": "$latest",
+            "t2SubSelection": "SNCOSMO"
           }
         }
       ]
     }
-    }
+    ]
 
 @pytest.fixture
 def testing_config(testing_class, t3_jobs, mongod, graphite):
@@ -117,27 +108,33 @@ def testing_config(testing_class, t3_jobs, mongod, graphite):
 	    		'classFullPath': 'potemkin'
 	    	}
 	    },
-	    't3Jobs': t3_jobs,
+	    't3Jobs': {job['job']: job for job in t3_jobs},
 	}
 	AmpelConfig.set_config(config)
 	return config
 
-@pytest.mark.xfail(reason="Exceptions aren't raised to caller yet")
 def test_launch_job(testing_config):
-	job = T3JobConfig.load('jobbyjob')
-	with pytest.raises(PotemkinError):
-		job.run()
-	with pytest.raises(PotemkinError):
-		proc = job.launch_t3_job()
-		proc.join()
+	from ampel.pipeline.db.AmpelDB import AmpelDB
+
+	# invoke job directly
+	job = T3Job(T3JobConfig(**AmpelConfig.get_config('t3Jobs.jobbyjob')))
+	troubles = AmpelDB.get_collection('troubles').count()
+	job.run()
+	assert AmpelDB.get_collection('troubles').count() == troubles+1, "an exception was logged"
+
+	# start job in subprocess via T3Controller
+	controller = T3Controller(['jobbyjob'])
+	proc = controller.launch_t3_job(controller.job_configs['jobbyjob'])
+	proc.join()
+	assert AmpelDB.get_collection('troubles').count() == troubles+2, "an exception was logged"
 
 def test_monitor_processes(testing_config):
 	controller = T3Controller()
 	try:
 		controller.start()
-		controller.job_configs['jobbyjob'].launch_t3_job()
+		controller.launch_t3_job(controller.job_configs['jobbyjob'])
 		stats = controller.monitor_processes()
-		assert stats['jobbyjob']['processes'] == 1
+		assert stats['processes'] == 1
 	finally:
 		controller.stop()
 
@@ -161,8 +158,9 @@ def minimal_config(mongod, testing_class):
 		'channels': dict(map(make_channel, range(2))),
 		't3Jobs' : {
 			'jobbyjob': {
+				'job': 'jobbyjob',
 				'schedule': 'every(1).hour',
-				'input': {
+				'trasients': {
 					'select':  {
 						'channel(s)': ['0', '1'],
 					},
@@ -171,12 +169,12 @@ def minimal_config(mongod, testing_class):
 						'doc(s)': ['TRANSIENT', 'COMPOUND', 'T2RECORD', 'PHOTOPOINT']
 					}
 				},
-				'task(s)': [
-					{'name': 'noselect', 't3Unit': 'potemkin'},
-					{'name': 'config', 't3Unit': 'potemkin', 'runConfig': 'default'},
+				'tasks': [
+					{'task': 'noselect', 'unitId': 'potemkin'},
+					{'task': 'config', 'unitId': 'potemkin', 'runConfig': {}},
 					# {'name': 'badconfig', 't3Unit': 'potemkin', 'runConfig': 'default_doesnotexist'},
-					{'name': 'select0', 't3Unit': 'potemkin', 'select': {'channel(s)': ['0']}},
-					{'name': 'select1', 't3Unit': 'potemkin', 'select': {'channel(s)': ['1']}},
+					{'task': 'select0', 'unitId': 'potemkin', 'select': {'channel(s)': ['0']}},
+					{'task': 'select1', 'unitId': 'potemkin', 'select': {'channel(s)': ['1']}},
 					
 				]
 			}
@@ -193,21 +191,7 @@ def minimal_config(mongod, testing_class):
 	AmpelConfig.reset()
 
 def test_missing_job(minimal_config):
-	with pytest.raises(ValueError):
-		T3JobConfig.load('jobbyjob_doesnotexist')
-
-def test_missing_task(minimal_config):
-	with pytest.raises(ValueError):
-		T3TaskConfig.load('theytookrjerbs', 'case1')
-	with pytest.raises(ValueError):
-		T3TaskConfig.load('jobbyjob', 'doesnotexist')
-
-def test_task_config(minimal_config):
-	T3TaskConfig.load('jobbyjob', 'noselect')
-	T3TaskConfig.load('jobbyjob', 'config')
-	with pytest.raises(ValueError):
-		T3TaskConfig.load('jobbyjob', 'badconfig')
-	T3TaskConfig.load('jobbyjob', 'select0')
+	assert AmpelConfig.get_config("t3Jobs.jobbyjob_doesnotexist") is None
 
 @pytest.mark.skip('Depends on ampel-ztf')
 def test_get_transient_view(ingested_transients, t3_selected_transients, minimal_ingestion_config):
@@ -229,14 +213,16 @@ def test_get_transient_view(ingested_transients, t3_selected_transients, minimal
 		assert count == len(list(chans for chans in ingested_transients.values() if any(c in task_chans for c in chans))), "Number of views matches ingested transients passing criteria"
 
 def test_schedule_job(minimal_config):
-	job = T3JobConfig.load('jobbyjob')
-	scheduler = schedule.Scheduler()
-	job.schedule_job(scheduler)
-
-
+	controller = T3Controller(['jobbyjob'])
+	assert len(controller.scheduler.jobs) > 1
+	job = controller.scheduler.jobs[0]
+	assert job.unit == 'hours'
+	assert job.interval == 1
+	assert 'jobbyjob' in job.tags
 
 def test_schedule_malicious_job():
 	import schedule
+	from ampel.pipeline.config.t3.ScheduleEvaluator import ScheduleEvaluator
 	scheduler = schedule.Scheduler()
 	ev = ScheduleEvaluator()
 
