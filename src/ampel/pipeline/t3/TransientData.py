@@ -126,6 +126,11 @@ class TransientData:
 		if AmpelUtils.is_sequence(channels):
 			return self._create_multi_view(channels, docs, t2_ids)
 
+		if isinstance(channels, set):
+			if len(channels) == 1:
+				return self._create_one_view(next(iter(channels)), docs, t2_ids)
+			return self._create_multi_view(channels, docs, t2_ids)
+
 		# Unspecified channel. We create a view based on what's available
 		if channels is None:
 
@@ -191,7 +196,7 @@ class TransientData:
 
 		# Sequence with single value
 		if len(channels) == 1:
-			return self._create_one_view(next(iter(channels)), t2_ids=t2_ids)
+			return self._create_one_view(next(iter(channels)), docs, t2_ids)
 
 		# Gather compounds from different channels 
 		# (will be empty of coumpound loading was not requested)
