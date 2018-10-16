@@ -44,10 +44,10 @@ class ChannelConfig(BaseModel, AmpelModelExtension):
 	@classmethod
 	def create(cls, tier="all", **values):
 		"""
-		:param tier: at which tier level the returned ChannelConfig will be used. 
-		Possible values are: 'all', 0, 3.
-		Less checks are performed when restricting tier to 0 or 3 which yields 
-		a lighter and thus quicker ChannelConfig loading procedure. For example, 
+		:param tier: at which tier level the returned ChannelConfig will be used. \
+		Possible values are: 'all', 0, 3. \
+		Less checks are performed when restricting tier to 0 or 3 which yields  \
+		a lighter and thus quicker ChannelConfig loading procedure. For example, \
 		with tier=0, T3 units existence or T3 run configurations are not checked.
 		"""
 		if tier == "all":
