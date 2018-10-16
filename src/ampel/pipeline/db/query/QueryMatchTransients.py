@@ -94,7 +94,7 @@ class QueryMatchTransients:
 		"""
 		if tc_obj.has_constraint():
 			for key, op in {'after': '$gte', 'before': '$lte'}.items():
-				val = tc_obj._get(key)
+				val = tc_obj.get(key)
 				if val is not None:
 					if target_field not in query:
 						query[target_field] = {}
