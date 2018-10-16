@@ -315,7 +315,7 @@ class DBContentLoader:
 				for entry in doc['journal']:
 
 					# Not sure if those entries will exist. Time will tell.
-					if entry.get('channel(s)') is None:
+					if entry.get('channels') is None:
 						self.logger.warn(
 							'Ignoring following channel-less journal entry: %s' % 
 							str(entry)
@@ -324,16 +324,16 @@ class DBContentLoader:
 
 					# Set intersection between registered and requested channels (if any)
 					chans_intersec = (
-						entry['channel(s)'] if channels is None 
-						else (channels_set & AmpelUtils.to_set(entry['channel(s)']))
+						entry['channels'] if channels is None 
+						else (channels_set & AmpelUtils.to_set(entry['channels']))
 					)
 
 					# Removing embedded 'channels' key/value and add journal entry 
-					# to transient data while maintaining the channel(s) association
+					# to transient data while maintaining the channels association
 					tran_data.add_journal_entry(
 						chans_intersec,
 						# journal entry without the channels key/value
-						{k:v for k, v in entry.items() if k != 'channel(s)'}	
+						{k:v for k, v in entry.items() if k != 'channels'}	
 					)
 
 
