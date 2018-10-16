@@ -4,8 +4,11 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 12.10.2018
-# Last Modified Date: 13.10.2018
+# Last Modified Date: 16.10.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
+
+from ampel.pipeline.config.t3.AllOf import AllOf
+from ampel.pipeline.config.t3.AnyOf import AnyOf
 
 class LogicSchemaIterator:
 	
@@ -38,8 +41,12 @@ class LogicSchemaIterator:
 		""" """
 		self.arg = arg
 		
+		if type(arg) in (AllOf, AnyOf):
+			arg = arg.dict()
+
 		if type(arg) in in_type:
 			self.values = [arg]
+
 		elif isinstance(arg, dict):
 			if "anyOf" in arg:
 				self.values = arg['anyOf']
@@ -47,6 +54,8 @@ class LogicSchemaIterator:
 				self.values = [arg]
 			else:
 				raise ValueError("Unsupported format")
+		else:
+			raise ValueError("Unsupported type: %s" % type(arg))
 				
 		self.count = 0
 		self.limit = len(self.values)
