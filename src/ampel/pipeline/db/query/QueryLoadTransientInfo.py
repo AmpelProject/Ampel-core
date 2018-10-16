@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 14.02.2018
-# Last Modified Date: 11.10.2018
+# Last Modified Date: 16.10.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from bson.binary import Binary
@@ -233,6 +233,6 @@ class QueryLoadTransientInfo:
 		}
 
 		if channels is not None:
-			QueryMatchSchema.parse_schema(query, 'channels', channels)
+			QueryMatchSchema.apply_schema(query, 'channels', channels)
 
 		return query
