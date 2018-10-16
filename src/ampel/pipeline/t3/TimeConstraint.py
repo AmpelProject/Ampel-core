@@ -22,9 +22,8 @@ class TimeConstraint:
 
 	def __init__(self, tc_config=None):
 		"""
-		:param TimeConstraintConfig tc_config: TimeConstraintConfig instance (see docstring) 
-		if not provided, please make sure to use the method 
-		:func:`set <ampel.pipeline.t3.TimeConstraint.set>` 
+		:param TimeConstraintConfig tc_config: TimeConstraintConfig instance (see docstring) \
+		if not provided, please make sure to call method :func:`set <ampel.pipeline.t3.TimeConstraint.set>` 
 		"""
 
 		self.constraints = {}
@@ -53,8 +52,8 @@ class TimeConstraint:
 		""" 
 		:param str constraint_name: "before" or "after"
 		:param value: "before" or "after"
-		:type value: datetime or timedelta or TimeDeltaConfig or 
-		TimeLastRunConfig or UnixTimeConfig or TimeStringConfig
+		:type value: datetime, timedelta, TimeDeltaConfig, \
+		TimeLastRunConfig, UnixTimeConfig, TimeStringConfig
 		""" 
 
 		if constraint_name not in ["before", "after"]:
@@ -71,8 +70,9 @@ class TimeConstraint:
 
 	def get(self, param):
 		""" 
-		param: either 'after' or 'before'
-		Schema validation ensures val can be only either None, dict, datetime or timedelta
+		Schema validation ensures value can be only either None, dict, datetime or timedelta
+
+		:param str param: either 'after' or 'before'
 		"""
 
 		tc = self.constraints.get(param, None)
