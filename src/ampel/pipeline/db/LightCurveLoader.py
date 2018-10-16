@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 13.01.2018
-# Last Modified Date: 22.08.2018
+# Last Modified Date: 16.10.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from ampel.core.flags.FlagUtils import FlagUtils
@@ -24,11 +24,10 @@ class LightCurveLoader:
 	"""
 
 
-	def __init__(self, central_db=None, read_only=True, logger=None):
+	def __init__(self, read_only=True, logger=None):
 		"""
 		Parameters:
 		-----------
-		central_db:  
 		read_only: if True, the LightCurve instance returned by the methods of this class will be:
 			* a frozen class
 			* containing a immutable list (tuple) of PhotoPoint
@@ -37,14 +36,8 @@ class LightCurveLoader:
 		"""
 		self.logger = AmpelLogger.get_logger() if logger is None else logger
 		self.read_only = read_only
-
-		# Optional override of AmpelConfig defaults
-		if central_db is None:
-			self.main_col = AmpelDB.get_collection("main")
-			self.photo_col = AmpelDB.get_collection("photo")
-		else:
-			self.main_col = central_db["main"]
-			self.photo_col = central_db["photo"]
+		self.main_col = AmpelDB.get_collection("main")
+		self.photo_col = AmpelDB.get_collection("photo")
 
 
 	def load_from_db(self, tran_id, compound_id):
