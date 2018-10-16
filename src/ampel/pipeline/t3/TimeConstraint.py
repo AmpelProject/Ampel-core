@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 06.06.2018
-# Last Modified Date: 29.09.2018
+# Last Modified Date: 16.10.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from datetime import datetime, timedelta
@@ -61,10 +61,10 @@ class TimeConstraint:
 			raise ValueError("constraint_name must be 'before' or 'after'")
 
 		if type(value) not in [
-			datetime, timedelta, TimeDeltaConfig, TimeLastRunConfig, 
+			type(None), datetime, timedelta, TimeDeltaConfig, TimeLastRunConfig, 
 			UnixTimeConfig, TimeStringConfig
 		]: 
-			raise ValueError("Unsupported type")
+			raise ValueError("Unsupported type (%s)" % type(value))
 
 		self.constraints[constraint_name] = value
 
@@ -93,11 +93,11 @@ class TimeConstraint:
 
 		elif tc_type is TimeLastRunConfig:
 
-			from ampel.pipeline.db.query.QueryRunsCol import QueryRunsCol
-			col = AmpelDB.get_collection('jobs')
+			from ampel.pipeline.db.query.QueryEventsCol import QueryEventsCol
+			col = AmpelDB.get_collection('events')
 			res = next(
 				col.aggregate(
-					QueryRunsCol.get_job_last_run(tc.jobName)
+					QueryEventsCol.get_last_run(tc.event)
 				),
 				None
 			)
@@ -105,7 +105,7 @@ class TimeConstraint:
 			if res is None:
 				res = next(
 					col.aggregate(
-						QueryRunsCol.get_job_last_run(
+						QueryEventsCol.get_last_run(
 							tc.jobName, days_back=None
 						)
 					), 
