@@ -469,6 +469,13 @@ class T3Event:
 					# execute embedded t3unit instance method done()
 					specific_journal_entries = t3_unit.done()
 
+					# method done() might return a dict with key: transient id, 
+					# value journal entries. In this case, we update the Transient journal 
+					# with those entries
+					if self.update_tran_journal and specific_journal_entries:
+						# TODO: update journal with t3 unit specific info
+						pass
+
 				except Exception as e:
 
 					if self.raise_exc:
@@ -479,13 +486,6 @@ class T3Event:
 						info={self.event_type: self.name}
 					)
 
-				# method done() might return a dict with key: transient id, 
-				# value journal entries. In this case, we update the Transient journal 
-				# with those entries
-				if self.update_tran_journal and specific_journal_entries:
-					# TODO: update journal with t3 unit specific info
-					pass
-	
 			if self.update_events:
 
 				# Register the execution of this event into the events col
