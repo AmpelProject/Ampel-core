@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 26.09.2018
-# Last Modified Date: 10.10.2018
+# Last Modified Date: 16.10.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from datetime import datetime
@@ -48,8 +48,6 @@ class DBEventDoc():
 
 	def publish(self):
 		"""
-		This action flushes the logs as well.
-
 		:returns: None
 		"""
 
