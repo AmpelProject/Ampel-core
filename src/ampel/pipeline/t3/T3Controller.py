@@ -9,9 +9,12 @@
 
 import schedule, time, threading, logging, json
 from types import MappingProxyType
+from multiprocessing import Process
 from ampel.pipeline.t3.T3Job import T3Job
-from ampel.pipeline.t3.T3JobConfig import T3JobConfig, T3TaskConfig
+from ampel.pipeline.config.t3.T3JobConfig import T3JobConfig
+from ampel.pipeline.config.t3.T3TaskConfig import T3TaskConfig
 from ampel.pipeline.common.Schedulable import Schedulable
+from ampel.pipeline.config.t3.ScheduleEvaluator import ScheduleEvaluator
 from ampel.pipeline.logging.AmpelLogger import AmpelLogger
 from ampel.pipeline.common.GraphiteFeeder import GraphiteFeeder
 from ampel.pipeline.config.AmpelConfig import AmpelConfig
@@ -26,13 +29,13 @@ class T3Controller(Schedulable):
 		"""
 		job_configs = {}
 
-		for job_name in AmpelConfig.get_config("t3Jobs").keys():
+		for job_name, job_dict in AmpelConfig.get_config("t3Jobs").items():
 
-			if t3_job_names is not None and job_name in t3_job_names:
+			if t3_job_names is not None and job_name not in t3_job_names:
 				logger.info("Ignoring job '%s' as requested" % job_name)
 				continue
 
-			job_configs[job_name] = T3JobConfig.load(job_name, logger)
+			job_configs[job_name] = T3JobConfig(**job_dict)
 
 		return job_configs
 
@@ -61,16 +64,42 @@ class T3Controller(Schedulable):
 
 		# Setup logger
 		self.logger = AmpelLogger.get_unique_logger()
-		self.logger.info("Setting up T3Controler")
+		self.logger.info("Setting up T3Controller")
 
 		# Load job configurations
 		self.job_configs = T3Controller.load_job_configs(t3_job_names, self.logger)
 
-		for job_config in self.job_configs.values():
-			job_config.schedule_job(self.scheduler)
+		schedule = ScheduleEvaluator()
+		self._processes = {}
+		for name, job_config in self.job_configs.items():
+			for appointment in job_config.get('schedule'):
+				schedule(self.scheduler, appointment).do(self.launch_t3_job, job_config).tag(name)
 
 		self.scheduler.every(5).minutes.do(self.monitor_processes)
 
+	def launch_t3_job(self, job_config):
+		if self.process_count > 5:
+			self.logger.warn("{} processes are still lingering".format(self.process_count))
+		
+		# NB: we defer instantiation of T3Job to the subprocess to avoid
+		# creating multiple MongoClients in the master process
+		proc = Process(target=self._run_t3_job, args=(job_config,))
+		proc.start()
+		self._processes[proc.pid] = proc
+		return proc
+
+	def _run_t3_job(self, job_config, **kwargs):
+		job = T3Job(job_config)
+		return job.run(**kwargs)
+
+	@property
+	def process_count(self):
+		""" """
+		for pid, proc in self._processes.items():
+			if proc.exitcode is not None:
+				proc.join()
+				del self._processes[pid]
+		return len(self._processes)
 
 	def monitor_processes(self):
 		"""
@@ -78,10 +107,7 @@ class T3Controller(Schedulable):
 		feeder = GraphiteFeeder(
 			AmpelConfig.get_config('resources.graphite.default')
 		)
-		stats = {}
-
-		for job_name, job_config in self.job_configs.items():
-			stats[job_name] = {'processes': job_config.process_count}
+		stats = {'processes': self.process_count}
 
 		feeder.add_stats(stats, 't3.jobs')
 		feeder.send()
@@ -94,8 +120,8 @@ def run(args):
 
 def list(args):
 	"""List configured tasks"""
-	jobs = T3Controller.load_job_configs(None, None)
-	labels = {name: [t.get('name') for t in job.get_task_configs()] for name, job in jobs.items()}
+	jobs = AmpelConfig.get_config('t3Jobs')
+	labels = {name: [t.get('task') for t in job['tasks']] for name, job in jobs.items()}
 	columns = max([len(k) for k in labels.keys()]), max([max([len(k) for k in tasks]) for tasks in labels.values()])
 	template = "{{:{}s}} {{:{}s}}".format(*columns)
 	print(template.format('Job', 'Tasks'))
@@ -116,34 +142,28 @@ class FrozenEncoder(json.JSONEncoder):
 
 def show(args):
 	"""Display job and task configuration"""
-	job = T3JobConfig.load(args.job)
+	job_doc = AmpelConfig.get_config('t3Jobs.{}'.format(args.job))
 	if args.task is None:
-		print(FrozenEncoder(indent=1).encode(job.job_doc))
+		print(FrozenEncoder(indent=1).encode(job_doc))
 	else:
-		task = next(t for t in job.get_task_configs() if t.get('name') == args.task)
+		task = next(t for t in job_doc['tasks'] if t['task'] == args.task)
 		print(FrozenEncoder(indent=1).encode(task))
 
 def runjob(args):
-	job_config = T3JobConfig.load(args.job)
+	job_config = T3JobConfig(**AmpelConfig.get_config('t3Jobs.{}'.format(args.job)))
 	job = T3Job(job_config, full_console_logging=True)
 	job.run()
-
-def runtask(args):
-	job_config = T3JobConfig.load(args.job)
-	job_config.t3_task_configs = [t for t in job_config.get_task_configs() if t.get('name') == args.task]
-	job = T3Job(job_config, full_console_logging=False)
-	for param in 'created', 'modified':
-		if getattr(args, param) is not None:
-			job.overwrite_parameter(param, getattr(args, param))
 
 def rununit(args):
 	"""
 	Run a single T3 unit
 	"""
 	job_doc = {
+		"job": "rununit",
 		"active": True,
-		"schedule": "manual",
-		"input": {
+		"schedule": "every().sunday",
+		"transients": {
+			"state": "$latest",
 			"select": {
 				"created": {
 					"after": {
@@ -161,13 +181,12 @@ def rununit(args):
 						}
 					}
 				},
-				"channel(s)": args.channels,
+				"channels": {'anyOf': args.channels},
 				"withFlag(s)": "INST_ZTF",
 				"withoutFlag(s)": "HAS_ERROR"
 			},
-			"load": {
-				"state": "$latest",
-				"doc(s)": [
+			"content": {
+				"docs": [
 					"TRANSIENT",
 					"COMPOUND",
 					"T2RECORD",
@@ -178,21 +197,21 @@ def rununit(args):
 			},
 			"chunk": 200
 		},
-		"task(s)": [
+		"tasks": [
 			{
-				"name": "FroopyFlarj",
-				"t3Unit": args.unit,
+				"task": "rununit.task",
+				"unitId": args.unit,
 				"runConfig": args.runconfig,
 				"updateJournal": False
 			}
 		]
 	}
-	job_config = T3JobConfig.from_doc("froopydyhoop", job_doc)
+	job_config = T3JobConfig(**job_doc)
 	# Record logs in the db only if the run itself will be recorded
-	logger = logging.getLogger(__name__) if not args.update_run_col else None
+	db_logging = logging.getLogger(__name__) if not args.update_run_col else None
 	# Likewise, only catch exceptions if the run is being recorded
-	report_exceptions = logger is None
-	job = T3Job(job_config, full_console_logging=True, logger=logger)
+	report_exceptions = args.update_run_col
+	job = T3Job(job_config, full_console_logging=True, db_logging=db_logging)
 	job.run(args.update_run_col, args.update_tran_journal, report_exceptions)
 
 def main():
