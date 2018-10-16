@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 10.10.2017
-# Last Modified Date: 10.10.2018
+# Last Modified Date: 16.10.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import time, pkg_resources, numpy as np
@@ -38,7 +38,7 @@ class AlertProcessor():
 	iter_max = 5000
 
 	def __init__(self, 
-		survey_id, channels=None, central_db=None, publish_stats=['graphite', 'jobs']
+		survey_id, channels=None, publish_stats=['graphite', 'jobs']
 	):
 		"""
 		:param str survey_id: id of the survey (ex: 'ZTFIPAC').
@@ -57,7 +57,6 @@ class AlertProcessor():
 		  in Ampel_config)
 		- jobs: include t0 metrics in job document
 
-		:param str central_db: use provided DB name rather than Ampel default database ('Ampel')
 		:param bool db_logging: whether to save log entries (and the corresponding job doc) into the DB
 		"""
 
@@ -104,10 +103,6 @@ class AlertProcessor():
 		# Robustness
 		if len(self.t0_channels) == 0:
 			raise ValueError("No channel loaded, please check your config")
-
-		# Optional override of AmpelConfig defaults
-		if central_db is not None:
-			AmpelDB.set_central_db_name(central_db)
 
 		# Which stats to publish (see doctring)
 		self.publish_stats = publish_stats
@@ -313,12 +308,12 @@ class AlertProcessor():
 						# Write log entries from buffer handler to main log db
 						channel.buff_handler.forward(db_logging_handler)
 
-				except:
+				except Exception as e:
 
 					channel.buff_handler.forward(db_logging_handler)
 					LoggingUtils.report_exception(
-						tier=0, run_id=db_logging_handler.get_run_id(),
-						logger=self.logger, info={
+						self.logger, e, tier=0, 
+						run_id=db_logging_handler.get_run_id(), info={
 							'section': 'ap_filter',
 							'channel': channel.name,
 							'tranId': tran_id,
@@ -345,10 +340,10 @@ class AlertProcessor():
 						alert_content['uls'], 
 						scheduled_t2_units
 					)
-				except:
+				except Exception as e:
 					LoggingUtils.report_exception(
-						tier=0, run_id=db_logging_handler.get_run_id(),
-						logger=self.logger, info={
+						self.logger, e, tier=0, 
+						run_id=db_logging_handler.get_run_id(), info={
 							'section': 'ap_ingest',
 							'tranId': tran_id,
 							'alert': AlertProcessor._alert_essential(alert_content)
@@ -460,10 +455,9 @@ class AlertProcessor():
 							}
 						}
 					)
-		except:
+		except Exception as e:
 			LoggingUtils.report_exception(
-				tier=0, run_id=db_logging_handler.get_run_id(), 
-				logger=self.logger
+				self.logger, e, tier=0, run_id=db_logging_handler.get_run_id()
 			)
 			
 		log_info(
