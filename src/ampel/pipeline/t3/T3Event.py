@@ -501,12 +501,16 @@ class T3Event:
 				})
 				self.event_doc.publish()
 
-			# Feedback
-			self.logger.shout("Done running %s" % self.name)
+			# Write journal entries to DB
+			if self.update_tran_journal:
+				self.journal_updater.flush()
 
 			# Write log entries to DB
 			if hasattr(self, 'db_logging_handler'):
 				self.db_logging_handler.flush_all()
+
+			# Feedback
+			self.logger.shout("Done running %s" % self.name)
 
 		except Exception as e:
 
