@@ -130,7 +130,7 @@ class T3JobConfig(BaseModel, AmpelModelExtension):
 		if values.get('transients', None) is None:
 			# Make sure tasks do not require transients
 			for task_config in tasks:
-				if task_config.transients is None:
+				if task_config.transients is not None:
 					cls.print_and_raise(
 						header="T3JobConfig logic error",
 						msg="T3 task logic error: field 'transients' cannot be " +
