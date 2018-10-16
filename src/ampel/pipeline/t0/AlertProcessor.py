@@ -157,7 +157,7 @@ class AlertProcessor():
 			self.logger.quieten_console()
 
 		# New document in the 'events' collection
-		db_job_doc = DBEventDoc(name="ap", tier=0)
+		db_job_doc = DBEventDoc(event_name="ap", tier=0)
 		db_job_doc.add_run_id(run_id)
 
 		# Forward jobId to ingester instance 
