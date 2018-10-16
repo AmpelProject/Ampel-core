@@ -182,8 +182,8 @@ def rununit(args):
 					}
 				},
 				"channels": {'anyOf': args.channels},
-				"withFlag(s)": "INST_ZTF",
-				"withoutFlag(s)": "HAS_ERROR"
+				"withFlags": "INST_ZTF",
+				"withoutFlags": "HAS_ERROR"
 			},
 			"content": {
 				"docs": [
@@ -207,12 +207,12 @@ def rununit(args):
 		]
 	}
 	job_config = T3JobConfig(**job_doc)
-	# Record logs in the db only if the run itself will be recorded
-	db_logging = logging.getLogger(__name__) if not args.update_run_col else None
-	# Likewise, only catch exceptions if the run is being recorded
+	# Record logs and exceptions in the db only if the run itself will be recorded
 	report_exceptions = args.update_run_col
-	job = T3Job(job_config, full_console_logging=True, db_logging=db_logging)
-	job.run(args.update_run_col, args.update_tran_journal, report_exceptions)
+	job = T3Job(job_config, full_console_logging=True, db_logging=args.update_run_col,
+	    update_events=args.update_run_col, update_tran_journal=args.update_tran_journal,
+	    raise_exc=not args.update_run_col)
+	job.run()
 
 def main():
 
