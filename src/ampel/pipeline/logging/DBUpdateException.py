@@ -4,13 +4,16 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 29.09.2018
-# Last Modified Date: 30.09.2018
+# Last Modified Date: 16.10.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from ampel.pipeline.logging.AmpelLogger import AmpelLogger
 from ampel.pipeline.logging.LoggingUtils import LoggingUtils
 
 class DBUpdateException:
+	"""
+	TODO: rename misleading name
+	"""
 
 
 	@staticmethod
@@ -37,7 +40,7 @@ class DBUpdateException:
 		try: 
 			# This will fail as well if we have DB connectivity issues
 			LoggingUtils.report_exception(
-				0, run_id=handler.get_run_id(),
+				logger, e, tier=0, run_id=handler.get_run_id(),
 				info = None if bwe_details is None else {'BulkWriteError': str(bwe_details)}
 			)
 		except Exception as ee:
