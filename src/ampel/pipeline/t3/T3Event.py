@@ -54,11 +54,14 @@ class T3Event:
 		:param config: instance of :obj:`T3JobConfig <ampel.pipeline.config.t3.T3JobConfig>` \
 		or :obj:`T3TaskConfig <ampel.pipeline.config.t3.T3JobConfig>`
 
-		:param Logger logger:\n
+		:param AmpelLogger logger:\n
 			- If None, a new logger associated with a DBLoggingHandler will be created, \
 			which means a new document will be inserted into the 'events' collection.
-			- If you provide a logger, please note that it will NOT be changed in any way, \
-			in particular, no DBLoggingHandler will be added so that no DB logging will occur.
+			- If you provide a logger, please note:
+				- that it will NOT be changed in any way in particular, \
+				  no DBLoggingHandler will be added so that no DB logging will occur.
+				- it must be an AmpelLogger (or you could implement the method `shout` to your own logger)
+		:type logger: :py:class:`AmpelLogger <ampel.pipeline.logging.AmpelLogger>`
 
 		:param bool full_console_logging: If False, the logging level of the streamhandler \
 		associated with the logger will be set to WARN.
@@ -75,6 +78,7 @@ class T3Event:
 		"""
 		
 		self.tran_config = config.transients
+		self.full_console_logging = full_console_logging
 		self.update_tran_journal = update_tran_journal
 		self.update_events = update_events
 		self.raise_exc = raise_exc
@@ -103,7 +107,7 @@ class T3Event:
 
 			# Create logger
 			self.logger = AmpelLogger.get_logger(
-				name=self.name, 
+				name=self.name, force_refresh=True
 				#channels=list(
 				#	LogicSchemaUtils.reduce_to_set(
 				#		self.tran_config.select.channels
@@ -120,6 +124,10 @@ class T3Event:
 				self.logger.addHandler(self.db_logging_handler)
 
 				self.run_id = self.db_logging_handler.get_run_id()
+
+			if not full_console_logging:
+				self.logger.quieten_console()
+
 		else:
 			self.logger = logger
 
@@ -137,14 +145,10 @@ class T3Event:
 				logger=self.logger
 			)
 
-
 		if update_tran_journal:
 			self.journal_updater = T3JournalUpdater(
 				self.run_id, self.name, self.logger, raise_exc
 			)
-
-		if not full_console_logging:
-			self.logger.quieten_console_logger(self.logger)
 
 
 	def _get_match_criteria(self):
@@ -427,9 +431,7 @@ class T3Event:
 		time_start = datetime.utcnow().timestamp()
 
 		# Feedback
-		self.logger.propagate_log(
-			logging.INFO, "Running %s" % self.name
-		)
+		self.logger.shout("Running %s" % self.name)
 		
 		try:
 
@@ -492,9 +494,7 @@ class T3Event:
 				self._update_events_col(self.name, self.run_id, time_start)
 
 			# Feedback
-			self.logger.propagate_log(
-				logging.INFO, "Done running %s" % self.name
-			)
+			self.logger.shout("Done running %s" % self.name)
 
 			# Write log entries to DB
 			if hasattr(self, 'db_logging_handler'):

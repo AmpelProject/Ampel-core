@@ -148,7 +148,7 @@ class AlertProcessor():
 		# Add db logging handler to the logger stack of handlers 
 		self.logger.addHandler(db_logging_handler)
 
-		self.logger.info("Starting")
+		self.logger.shout("Starting")
 
 		if ingester is None:
 			ingester = self.input_setup.get_alert_ingester(self.t0_channels, self.logger)
@@ -221,10 +221,6 @@ class AlertProcessor():
 			ingester.set_stats_dict(
 				dur_stats, count_stats['dbUpd']
 			)
-
-		# shortcuts
-		log_info = self.logger.info
-		log_debug = self.logger.debug
 
 		# Save pre run time
 		pre_run = time_now()
@@ -327,7 +323,7 @@ class AlertProcessor():
 			if any(t2 is not None for t2 in scheduled_t2_units):
 
 				# Ingest alert
-				log_info("Ingesting")
+				self.logger.info("Ingesting")
 
 				# stats
 				ingested_count += 1
@@ -460,7 +456,7 @@ class AlertProcessor():
 				self.logger, e, tier=0, run_id=db_logging_handler.get_run_id()
 			)
 			
-		log_info(
+		self.logger.shout(
 			"Alert processing completed (time required: %is)" % 
 			int(time_now() - run_start)
 		)

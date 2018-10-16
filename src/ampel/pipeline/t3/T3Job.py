@@ -79,6 +79,10 @@ class T3Job(T3Event):
 					#	)
 					#) if task_config.get("transients.select.channels") else None
 				)
+
+				# Quieten logger if so wished
+				if not self.full_console_logging:
+					logger.quieten_console()
 	
 				# T3Event parameter db_logging is True (default)
 				if hasattr(self, "db_logging_handler"):
@@ -186,8 +190,7 @@ class T3Job(T3Event):
 				)
 
 				# Feedback
-				self.logger.propagate_log(
-					logging.INFO,
+				self.logger.shout(
 					"Providing %s (task %s) with %i TransientViews" % 
 						(
 							self.t3_units[task_config.task].__class__.__name__,
@@ -203,8 +206,6 @@ class T3Job(T3Event):
 					self.journal_updater.add_default_entries(
 						tran_views, chan_list, task_config.task
 					)
-
-					self.t3_units[task_config.task].add(tran_views)
 
 					self.journal_updater.add_custom_entries(
 						# Adding tviews to t3_units may return JournalUpdate dataclasses
