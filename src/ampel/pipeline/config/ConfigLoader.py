@@ -112,30 +112,28 @@ class ConfigLoader:
 			if tier in ("all", 3):
 	
 				for resource in pkg_resources.iter_entry_points('ampel.pipeline.t3.jobs'):
+					try:
+						# T3 job can be provided as single dict
+						job_resource = resource.resolve()()
+						if type(job_resource) is dict:
+							job_resource = [job_resource]
 		
-					# T3 job can be provided as single dict
-					job_resource = resource.resolve()()
-					if type(job_resource) is dict:
-						job_resource = [job_resource]
-		
-					for job_dict in job_resource:
+						for job_dict in job_resource:
 	
-						# Check duplicated job names
-						if job_dict['job'] in config['t3Jobs']:
-							raise KeyError(
-								"T3 job {} (defined as entry point {} in {}) {}".format(
-									job_dict['job'], resource.name, resource.dist,
-									"already exists in the provided config file"
+							# Check duplicated job names
+							if job_dict['job'] in config['t3Jobs']:
+								raise KeyError(
+									"T3 job {} (defined as entry point {} in {}) {}".format(
+										job_dict['job'], resource.name, resource.dist,
+										"already exists in the provided config file"
+									)
 								)
-							)
-		
-						# Schema validation
-						try:
+							# Schema validation
 							T3JobConfig(**job_dict)
 							config['t3Jobs'][job_dict['job']] = job_dict
-						except Exception as e:
-							print("Error in {} from {}".format(resource.name, resource.dist))
-							raise
+					except Exception as e:
+						print("Error in {} from {}".format(resource.name, resource.dist))
+						raise
 	
 		except Exception as e:
 
