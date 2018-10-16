@@ -24,6 +24,7 @@ from ampel.pipeline.db.LightCurveLoader import LightCurveLoader
 from ampel.pipeline.common.Schedulable import Schedulable
 from ampel.pipeline.config.AmpelConfig import AmpelConfig
 from ampel.pipeline.common.AmpelUtils import AmpelUtils
+from ampel.pipeline.common.AmpelUnitLoader import AmpelUnitLoader
 
 class T2Controller(Schedulable):
 	"""
@@ -391,20 +392,34 @@ class T2Controller(Schedulable):
 		elif issubclass(arg, AbsT2Unit):
 			cls.versions[unit_name][key] = arg.version
 
+def get_required_resources(config, units=None, tier=2):
+	if units is None:
+		units = set()
+		for name, channel_config in config['channels'].items():
+			channel = ChannelConfig.parse_obj(channel_config)
+			if not channel.active or (channels is not None and name not in channels):
+				continue
+			# FIXME: load t2 jobs instead
+			for source in channel.sources:
+				units.add(source.t0Filter.unitId)
+	resources = set()
+	for unit in units:
+		for resource in AmpelUnitLoader.get_class(tier, unit).required_resources:
+			resources.add(resource)
+	return resources
+
 def run():
-	
+
 	from ampel.pipeline.config.AmpelArgumentParser import AmpelArgumentParser
 	from ampel.pipeline.config.AmpelConfig import AmpelConfig
-	from ampel.pipeline.config.channel.ChannelConfigLoader import ChannelConfigLoader
-	
+
 	parser = AmpelArgumentParser()
 	parser.add_argument('--source', default='ZTFIPAC', help='Alert source')
+	parser.add_argument('--units', default=None, nargs='+', help='T2 units to run')
 	parser.require_resource('mongo', ['writer', 'logger'])
 	# partially parse command line to get config
 	opts, argv = parser.parse_known_args(args=[])
-	# flesh out parser with resources required by t2 units
-	loader = ChannelConfigLoader(source=opts.source, tier=2)
-	parser.require_resources(*loader.get_required_resources())
+	parser.require_resources(*get_required_resources(opts.config, opts.units))
 	# parse again, filling the resource config
 	opts = parser.parse_args()
 	
