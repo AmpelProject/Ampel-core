@@ -469,29 +469,23 @@ class T3Event:
 								info={self.event_type: self.name}
 							)
 
-			# For each t3_unit, execute done()
-			for t3_unit in self.t3_units.values():
+				# For each t3_unit, execute done()
+				for t3_unit in self.t3_units.values():
 
-				try:
-					# execute embedded t3unit instance method done()
-					specific_journal_entries = t3_unit.done()
+					try:
+						t3_unit.done()
+					except Exception as e:
 
-					# method done() might return a dict with key: transient id, 
-					# value journal entries. In this case, we update the Transient journal 
-					# with those entries
-					if self.update_tran_journal and specific_journal_entries:
-						# TODO: update journal with t3 unit specific info
-						pass
+						if self.raise_exc:
+							raise e
 
-				except Exception as e:
-
-					if self.raise_exc:
-						raise e
-
-					LoggingUtils.report_exception(
-						self.logger, e, tier=3, run_id=self.run_id,
-						info={self.event_type: self.name}
-					)
+						LoggingUtils.report_exception(
+							self.logger, e, tier=3, run_id=self.run_id,
+							info={self.event_type: self.name}
+						)
+			else:
+				# Handle transient-less T3 units here
+				pass
 
 			# Register the execution of this event into the events col
 			if self.update_events:
