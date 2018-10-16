@@ -121,7 +121,7 @@ class LoggingUtils:
 			trouble.update(info)
 
 		# Feedback
-		logger.propagate_log(ERROR, "Error occured", extra=trouble)
+		logger.error("Error occured", extra=trouble)
 
 		# Populate 'troubles' collection
 		LoggingUtils._insert_trouble(trouble, logger)
