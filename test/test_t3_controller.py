@@ -10,6 +10,7 @@ from ampel.base.abstract.AbsT3Unit import AbsT3Unit
 from ampel.pipeline.config.AmpelConfig import AmpelConfig
 from ampel.pipeline.common.AmpelUtils import AmpelUtils
 from ampel.pipeline.config.AmpelArgumentParser import AmpelArgumentParser
+from argparse import Namespace
 
 class PotemkinError(RuntimeError):
 	pass
@@ -244,3 +245,40 @@ def test_schedule_malicious_job():
 	for line in bad:
 		with pytest.raises(ValueError):
 			ev(scheduler, line)
+
+def test_entrypoint_list(testing_config, capsys):
+	from ampel.pipeline.t3.T3Controller import list
+
+	list(Namespace())
+	captured = capsys.readouterr()
+	assert len(captured.out.split('\n'))-4 == 1
+
+def test_entrypoint_show(testing_config, capsys):
+	from ampel.pipeline.t3.T3Controller import show
+
+	show(Namespace(job='jobbyjob', task=None))
+	captured = capsys.readouterr()
+	assert len(captured.out.split('\n')) == 65
+
+	show(Namespace(job='jobbyjob', task='SpaceCowboy'))
+	captured = capsys.readouterr()
+	print('\n'+captured.out)
+	assert len(captured.out.split('\n')) == 15
+
+def test_entrypoint_runjob(testing_config, capsys):
+	from ampel.pipeline.db.AmpelDB import AmpelDB
+	from ampel.pipeline.t3.T3Controller import runjob
+
+	troubles = AmpelDB.get_collection('troubles').count()
+
+	runjob(Namespace(job='jobbyjob'))
+	assert AmpelDB.get_collection('troubles').count() == troubles+1, "an exception was logged"
+
+def test_entrypoint_rununit(testing_config, capsys):
+	from ampel.pipeline.db.AmpelDB import AmpelDB
+	from ampel.pipeline.t3.T3Controller import rununit
+
+	troubles = AmpelDB.get_collection('troubles').count()
+
+	rununit(Namespace(unit='potemkin', created=-1, modified=-1, channels=['0', '1'], runconfig=None, update_tran_journal=False, update_run_col=False))
+	assert AmpelDB.get_collection('troubles').count() == troubles+1, "an exception was logged"
