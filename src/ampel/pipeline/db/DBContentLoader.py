@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 13.01.2018
-# Last Modified Date: 13.10.2018
+# Last Modified Date: 16.10.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from bson import ObjectId
@@ -15,6 +15,7 @@ from ampel.base.ScienceRecord import ScienceRecord
 from ampel.base.PlainPhotoPoint import PlainPhotoPoint
 from ampel.base.PlainUpperLimit import PlainUpperLimit
 from ampel.base.Compound import Compound
+from ampel.pipeline.logging.LoggingUtils import LoggingUtils
 
 from ampel.core.flags.FlagUtils import FlagUtils
 from ampel.core.flags.AlDocType import AlDocType
@@ -42,26 +43,18 @@ class DBContentLoader:
 	)
 
 
-	def __init__(self, central_db=None, verbose=True, debug=False, logger=None):
+	def __init__(self, verbose=True, debug=False, logger=None):
 		"""
-		:param central_db: string. Use provided DB name rather than Ampel default database ('Ampel')
 		"""
 		self.logger = AmpelLogger.get_logger() if logger is None else logger
-		self.lcl = LightCurveLoader(central_db, logger=self.logger)
-
-		# Optional override of AmpelConfig defaults
-		if central_db is None:
-			self.main_col = AmpelDB.get_collection("main")
-			self.photo_col = AmpelDB.get_collection("photo")
-		else:
-			self.main_col = central_db["main"]
-			self.photo_col = central_db["photo"]
-
+		self.lcl = LightCurveLoader(logger=self.logger)
+		self.main_col = AmpelDB.get_collection("main")
+		self.photo_col = AmpelDB.get_collection("photo")
+		self.verbose = verbose
+		self.debug = debug
 		self.al_pps = {}
 		self.lc = {}
 
-		self.verbose = verbose
-		self.debug = debug
 		if self.debug:
 			self.verbose = True
 
@@ -126,8 +119,8 @@ class DBContentLoader:
 		all t2 docs associated with the matched transients will be loaded. \
 		A single t2 unit id (string) can be provided.
 
-		:returns: a TransientData instance
-		:rtype: ampel.pipeline.t3.TransientData
+		:returns: list of TransientData instances
+		:rtype: list(:py:class:`TransientData <ampel.pipeline.t3.TransientData>`)
 		"""
 
 		# Robustness check 1
@@ -210,9 +203,8 @@ class DBContentLoader:
 				)
 
 		self.logger.debug(
-			# TODO: extra
-			"Retrieving transient(s) info using query: %s" % 
-			search_params
+			"Retrieving transients\n %s" % search_params,
+			#extra=LoggingUtils.safe_query_dict(search_params)
 		)
 
 		# Execute DB query
@@ -266,8 +258,10 @@ class DBContentLoader:
 				self.logger.info(" -> Fetching %i upper limits" % photo_cursor.count())
 				res_photo_list = list(photo_cursor)
 
+		# key: tran_id, value: instance of TransientData
+		dict_tran_data = self.create_tran_data(res_main_list, res_photo_list, channels, state_op)
 
-		return self.create_tran_data(res_main_list, res_photo_list, channels, state_op)
+		return dict_tran_data.values() if dict is not None else []
 
 
 	def create_tran_data(
