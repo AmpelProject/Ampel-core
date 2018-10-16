@@ -50,15 +50,15 @@ class AmpelUtils():
 
 
 	@staticmethod
-	def is_sequence(obj):
+	def is_sequence(arg):
 		"""
 		False if str, bytes, bytearrsay
 		True is instance of collections.abc.Sequence
 		"""
-		if obj is None:
+		if arg is None:
 			return None
 
-		return isinstance(obj, collections.abc.Sequence) and not isinstance(obj, (str, bytes, bytearray))
+		return isinstance(arg, collections.abc.Sequence) and not isinstance(arg, (str, bytes, bytearray))
 
 
 	@staticmethod
@@ -86,6 +86,17 @@ class AmpelUtils():
 		Out[]: {1, 2}
 		"""
 		return set(arg) if AmpelUtils.is_sequence(arg) else {arg}
+
+
+	@classmethod
+	def to_list(cls, arg, try_reduce=False):
+		"""
+		"""
+		if isinstance(arg, (int, str, bytes, bytearray)):
+			return arg if try_reduce else [arg]
+		if isinstance(arg, collections.abc.Iterable):
+			return next(iter(arg)) if try_reduce else list(arg)
+		raise ValueError("Unsupported format (%s)" % type(arg))
 
 
 	@staticmethod
