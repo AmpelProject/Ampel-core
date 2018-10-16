@@ -4,12 +4,14 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 14.12.2017
-# Last Modified Date: 04.07.2018
+# Last Modified Date: 16.10.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import enum
 from bson import Binary
 from ampel.pipeline.common.AmpelUtils import AmpelUtils
+from ampel.pipeline.config.t3.AnyOf import AnyOf
+from ampel.pipeline.config.t3.AllOf import AllOf
 
 class FlagUtils():
 
@@ -71,8 +73,10 @@ class FlagUtils():
 		easy even if the enum hosts more than 64 members (in this case, \
 		storing flag values would require a cumbersome conversion to BinData)
 
-		:param arg": schema dict. See :obj:`QueryMatchSchema <ampel.pipeline.db.query.QueryMatchSchema>` \
+		:param arg: schema dict. See :obj:`QueryMatchSchema <ampel.pipeline.db.query.QueryMatchSchema>` \
 		for syntax detail.
+		:type arg: str, dict, :py:class:`AllOf <ampel.pipeline.config.t3.AllOf>`, \
+			:py:class:`AnyOf <ampel.pipeline.config.t3.AnyOf>`
 		:param FlagClass: enum class (not instance) ex: ampel.base.flags.TransientFlags
 
 		:returns: new schema dict where flag elements are integer
@@ -84,7 +88,10 @@ class FlagUtils():
 		
 		if isinstance(arg, str):
 			return 1
-		elif isinstance(arg, dict):
+		if type(arg) in (AllOf, AnyOf):
+			arg = arg.dict()
+
+		if isinstance(arg, dict):
 			if "anyOf" in arg:
 				if AmpelUtils.check_seq_inner_type(arg['anyOf'], str):
 					out['anyOf'] = [flag_pos[el] for el in arg['anyOf']]
@@ -103,7 +110,7 @@ class FlagUtils():
 			elif 'allOf':
 				out['allOf'] = [flag_pos[el] for el in arg['allOf']]
 		else:
-			raise ValueError("Unsupported format (2)")
+			raise ValueError("Unsupported format (%s)" % type(arg))
 		
 		return out
 
