@@ -132,61 +132,60 @@ class T3JournalUpdater:
 			# 'main' collection (DB: Ampel_data)
 			####################################
 
-			self.logger.info("Updating transients journal")
+			if self.journal_updates[False]:
 
-			ret = AmpelDB.get_collection('main').bulk_write(
-				self.journal_updates[False]
-			)
-
-			if ret.modified_count != self.journal_updates[False]:
-
-				info={
-					'mongoRawResult': ret.raw_result,
-					'journalUpdateCount': self.journal_updates[False],
-					'event': self.event_name
-				}
-
-				if self.raise_exc:
-					raise ValueError("Journal update error: %s" % info)
-
-				# Populate troubles collection
-				LoggingUtils.report_error(
-					tier=3, logger=self.logger, info=info,
-					msg="Journal update error"
+				ret = AmpelDB.get_collection('main').bulk_write(
+					self.journal_updates[False]
 				)
-
-
-			if not self.journal_updates[False]:
-				self.reset()
-				return
+	
+				if ret.modified_count != self.journal_updates_count[False]:
+	
+					info={
+						'bulkWriteResult': ret.bulk_api_result,
+						'journalUpdateCount': self.journal_updates_count[False],
+						'event': self.event_name
+					}
+	
+					if self.raise_exc:
+						raise ValueError("Journal update error: %s" % info)
+	
+					# Populate troubles collection
+					LoggingUtils.report_error(
+						tier=3, logger=self.logger, info=info,
+						msg="Journal update error"
+					)
+	
+				self.logger.info("Transients journal updated")
 
 
 			# Journal entries to be inserted in
 			# 'journal' collection (DB: Ampel_ext)
 			######################################
 
-			self.logger.info("Updating resilient transients journal")
+			if self.journal_updates[True]:
 
-			ret = AmpelDB.get_collection('journal').bulk_write(
-				self.journal_updates[True]
-			)
-
-			if ret.modified_count != self.journal_updates[True]:
-
-				info={
-					'mongoRawResult': ret.raw_result,
-					'journalUpdateCount': self.journal_updates[True],
-					'event': self.event_name
-				}
-
-				if self.raise_exc:
-					raise ValueError("Resilient journal update error: %s" % info)
-
-				# Populate troubles collection
-				LoggingUtils.report_error(
-					tier=3, logger=self.logger, info=info,
-					msg="Resilient journal update error"
+				ret = AmpelDB.get_collection('journal').bulk_write(
+					self.journal_updates[True]
 				)
+	
+				if ret.modified_count != self.journal_updates_count[True]:
+	
+					info={
+						'bulkWriteResult': ret.bulk_api_result,
+						'journalUpdateCount': self.journal_updates_count[True],
+						'event': self.event_name
+					}
+	
+					if self.raise_exc:
+						raise ValueError("Resilient journal update error: %s" % info)
+	
+					# Populate troubles collection
+					LoggingUtils.report_error(
+						tier=3, logger=self.logger, info=info,
+						msg="Resilient journal update error"
+					)
+	
+				self.logger.info("Transients resilient journal updated")
 
 			self.reset()
 
