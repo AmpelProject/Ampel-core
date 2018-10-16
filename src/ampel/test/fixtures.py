@@ -256,9 +256,8 @@ def minimal_ingestion_config(mongod):
 		}
 	}
 	AmpelConfig.set_config(config)
-	for db in AmpelDB._existing_cols.values():
-		for collection in db.keys():
-			AmpelDB.get_collection(collection).drop()
+	for collection in AmpelDB._ampel_cols.keys():
+		AmpelDB.get_collection(collection).drop()
 	yield config
 	AmpelConfig.reset()
 
