@@ -8,7 +8,7 @@
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import time
-from pymongo.operations import UpdateMany
+from pymongo.operations import UpdateMany, UpdateOne
 from pymongo.errors import BulkWriteError
 from ampel.core.flags.AlDocType import AlDocType
 from ampel.pipeline.db.AmpelDB import AmpelDB
@@ -97,17 +97,25 @@ class T3JournalUpdater:
 
 			if AmpelUtils.is_sequence(jup.tran_id):
 				self.journal_updates_count[jup.ext] += len(jup.tran_id)
-				match =	{'$in': jup.tran_id}
+				tran_match = {'$in': jup.tran_id}
+				Op = UpdateMany
 			else:
 				self.journal_updates_count[jup.ext] += 1
-				match = jup.tran_id
+				tran_match = jup.tran_id
+				Op = UpdateOne
+
+			if jup.ext:
+				# No need for alDocType in Ampel_ext->journal
+				match = {'_id': tran_match}
+			else:
+				match = {
+					'tranId': tran_match,
+					'alDocType': AlDocType.TRANSIENT
+				}
 
 			self.journal_updates[jup.ext].append(
-				UpdateMany(
- 					{	
-						'tranId': match,
-						'alDocType': AlDocType.TRANSIENT
-					},
+				Op(
+					match,
 					{
 						'$push': {
 							"journal": {
@@ -119,7 +127,8 @@ class T3JournalUpdater:
 								'runId': self.run_id
 							}
 						}
-					}
+					},
+					upsert=True
 				)
 			)
 
@@ -155,7 +164,7 @@ class T3JournalUpdater:
 						msg="Journal update error"
 					)
 	
-				self.logger.info("Transients journal updated")
+				self.logger.info("Transient journals updated")
 
 
 			# Journal entries to be inserted in
@@ -168,14 +177,14 @@ class T3JournalUpdater:
 					self.journal_updates[True]
 				)
 	
-				if ret.modified_count != self.journal_updates_count[True]:
+				if ret.modified_count + ret.upserted_count != self.journal_updates_count[True]:
 	
 					info={
 						'bulkWriteResult': ret.bulk_api_result,
 						'journalUpdateCount': self.journal_updates_count[True],
 						'event': self.event_name
 					}
-	
+
 					if self.raise_exc:
 						raise ValueError("Resilient journal update error: %s" % info)
 	
@@ -185,7 +194,7 @@ class T3JournalUpdater:
 						msg="Resilient journal update error"
 					)
 	
-				self.logger.info("Transients resilient journal updated")
+				self.logger.info("Resilient transient journals updated")
 
 			self.reset()
 
