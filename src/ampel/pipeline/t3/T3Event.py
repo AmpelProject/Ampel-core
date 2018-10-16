@@ -88,6 +88,7 @@ class T3Event:
 		self.t3_units = {}
 		self.global_info = None
 		self.run_id = None
+		self.no_run = False
 
 		if not db_logging:
 			if update_tran_journal:
@@ -429,6 +430,10 @@ class T3Event:
 	def run(self):
 		"""
 		"""
+
+		if self.no_run:
+			self.logger.warn("run execution not possible")
+			return
 
 		if len(self.t3_units) == 0:
 			raise ValueError("No instantiated t3 unit")

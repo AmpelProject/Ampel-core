@@ -45,6 +45,7 @@ class T3Job(T3Event):
 			# There is no channel-less transient (no channel == no transient)
 			if chans is None:
 				self.logger.info("No matching transient")
+				self.no_run = True
 				return
 
 			self.logger.info("$forEach operator will be applied to %s" % chans)
