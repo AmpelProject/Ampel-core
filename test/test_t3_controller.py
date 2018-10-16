@@ -279,6 +279,8 @@ def test_entrypoint_rununit(testing_config, capsys):
 	from ampel.pipeline.t3.T3Controller import rununit
 
 	troubles = AmpelDB.get_collection('troubles').count()
-
-	rununit(Namespace(unit='potemkin', created=-1, modified=-1, channels=['0', '1'], runconfig=None, update_tran_journal=False, update_run_col=False))
+	
+	with pytest.raises(PotemkinError):
+		rununit(Namespace(unit='potemkin', created=-1, modified=-1, channels=['0', '1'], runconfig=None, update_tran_journal=False, update_run_col=False))
+	rununit(Namespace(unit='potemkin', created=-1, modified=-1, channels=['0', '1'], runconfig=None, update_tran_journal=False, update_run_col=True))
 	assert AmpelDB.get_collection('troubles').count() == troubles+1, "an exception was logged"
