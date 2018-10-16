@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 14.12.2017
-# Last Modified Date: 14.10.2018
+# Last Modified Date: 16.10.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import logging, struct, os
@@ -22,7 +22,7 @@ class DBLoggingHandler(logging.Handler):
 	"""
 
 	def __init__(
-		self, tier, col="logs", level=logging.DEBUG, aggregate_interval=1, flush_len=1000
+		self, tier, col_name="logs", level=logging.DEBUG, aggregate_interval=1, flush_len=1000
 	):
 		""" 
 		:param int tier: number indicating at which ampel tier level logging is done (0,1,2,3) 
@@ -45,7 +45,6 @@ class DBLoggingHandler(logging.Handler):
 		self.flush_len = flush_len
 		self.aggregate_interval = aggregate_interval
 		self.tran_id = None
-		self.channels = None
 		self.tier = tier
 		self.log_dicts = []
 		self.prev_records = None
@@ -53,7 +52,7 @@ class DBLoggingHandler(logging.Handler):
 		self.headers = []
 
 		# Get reference to pymongo collection
-		self.col = AmpelDB.get_collection(col)
+		self.col = AmpelDB.get_collection(col_name)
 			
 		# Set loggingHandler properties
 		self.setLevel(level)
@@ -139,7 +138,7 @@ class DBLoggingHandler(logging.Handler):
 						'msg': record.msg
 					}
 	
-				if record.levelno > logging.INFO:
+				if record.levelno > logging.WARNING:
 					ldict['filename'] = record.filename,
 					ldict['lineno'] = record.lineno,
 					ldict['funcName'] = record.funcName,
@@ -173,7 +172,7 @@ class DBLoggingHandler(logging.Handler):
 		"""
 		# New instance of DBLoggingHandler with same parameters
 		dblh = DBLoggingHandler(
-			self.tier, self.col, self.level, self.aggregate_interval, self.flush_len
+			self.tier, self.col.name, self.level, self.aggregate_interval, self.flush_len
 		)
 
 		# Add runId from new instance to current instance
