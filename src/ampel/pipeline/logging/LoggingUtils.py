@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 30.09.2018
-# Last Modified Date: 30.09.2018
+# Last Modified Date: 15.10.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from logging import ERROR, CRITICAL, Logger
@@ -13,10 +13,10 @@ class LoggingUtils:
 
 
 	@staticmethod
-	def log_exception(logger: Logger, ex: Exception, last: bool=False, msg: str=None):
+	def log_exception(logger, exc, last=False, msg=None):
 		"""
 		:param Logger logger: logger instance (python logging module)
-		:param Exception ex: the exception
+		:param Exception exc: the exception
 		:param bool last: whether to print only the last exception in the stack
 		:param str msg: Optional message
 
@@ -44,10 +44,10 @@ class LoggingUtils:
 			logger.error(msg)
 
 		if last:
-			ex.__context__ = None
+			exc.__context__ = None
 
 		for el in traceback.format_exception(
-			etype=type(ex), value=ex, tb=ex.__traceback__
+			etype=type(exc), value=exc, tb=exc.__traceback__
 		):
 			for ell in el.split('\n'):
 				if len(ell) > 0:
@@ -56,19 +56,18 @@ class LoggingUtils:
 		logger.error("#"*50)
 
 
-	@staticmethod
-	def report_exception(tier: int, logger: Logger, run_id: int=None, info: dict=None):
+	@classmethod
+	def report_exception(cls, logger, exc, tier, run_id=None, info=None):
 		"""
 		:param int tier: Ampel tier level (0, 1, 2, 3)
-		:param logger: optional logger instance (logging module). If provided, 
+		:param logger: logger instance (logging module). \
 		propagate_log() will be used to print details about the exception
-		:param int run_id: If provided, the runId associated with the current job 
+		:param int run_id: If provided, the runId associated with the current job \
 		will be saved into the reported dict instance.
-		:param dict info: optional dict instance whose values wil be included 
+		:param dict info: optional dict instance whose values will be included \
 		in the document inserted into Ampel_troubles
 		"""
 
-		from ampel.pipeline.db.AmpelDB import AmpelDB
 		from traceback import format_exc
 		from sys import exc_info
 
@@ -77,7 +76,7 @@ class LoggingUtils:
 			return 
 
 		# Feedback
-		logger.propagate_log(CRITICAL, "Exception occured", exc_info=True)
+		cls.log_exception(logger, exc)
 
 		# Basis dict 
 		trouble = {'tier': tier}
@@ -97,7 +96,7 @@ class LoggingUtils:
 
 
 	@staticmethod
-	def report_error(tier: int, msg: str, info: dict, logger: Logger):
+	def report_error(tier, msg, info, logger):
 		"""
 		:param int tier:
 		:param str tier:
@@ -107,10 +106,8 @@ class LoggingUtils:
 		:raises: Should not raise errors
 		"""
 
-		import inspect
-		from ampel.pipeline.db.AmpelDB import AmpelDB
-
 		## Get filename and line number using inspect
+		import inspect
 		frame,filename,line_number,function_name,lines,index = inspect.stack()[1]
 
 		trouble = {
@@ -149,43 +146,49 @@ class LoggingUtils:
 			)
 
 
-	@staticmethod
-	def safe_query_dict(match: dict, update: dict = None) -> dict:
+	@classmethod
+	def safe_query_dict(cls, match, update=None):
 		u"""
-		Builds a dict that can be passed as "extra" parameter to instances of AmpelLogger.
-		Returned dict has the following structure:
-		```py
-		{
-			"query": {
-				"match": dict,
-				"update": optional_dict
-			}
-		}
-		```
-		Possibly embedded dollar signs in dict keys of dicts "match" and "update" are replaced
-		with the the unicode character 'Fullwidth Dollar Sign': ＄ (see docstring of 
-		:func:`convert_dollars <ampel.pipeline.logging.LoggingUtils.convert_dollars>`)
+		| Builds a dict that can be passed as "extra" parameter \
+		  to instances of AmpelLogger.
+		| Returned dict has the following structure:
 
+		.. sourcecode:: python\n
+			{
+				"query": {
+					"match": dict,
+					"update": optional_dict
+				}
+			}
+
+		Possibly embedded dollar signs in dict keys of parameters \
+		"match" and "update" are replaced with the the unicode character \
+		'Fullwidth Dollar Sign': ＄ (see docstring of :func:`convert_dollars \
+		<ampel.pipeline.logging.LoggingUtils.convert_dollars>`)
+
+		:param dict match:
+		:param dict update:
 		:returns: dict
 		"""
-		extra = {'query': {'match': match}}
+		extra = {'query': {'match': cls.convert_dollars(match)}}
 
 		if update:
-			extra['query']['update'] = update
+			extra['query']['update'] = cls.convert_dollars(update)
 
 		return extra
 
 
 	@staticmethod
-	def convert_dollars(arg: dict) -> dict:
+	def convert_dollars(arg):
 		"""	
-		MongoDB does not allow documents containing dollars in 'top level key' (raises InvalidDocument).
-		In order to log DB queries commands, we substitute the dollar sign with 
-		the unicode character 'Fullwidth Dollar Sign': ＄.
-		Another option would be do cast the dict to string (what we did before v0.5)
+		MongoDB does not allow documents containing dollars in 'top level key' \
+		(raises InvalidDocument). In order to log DB queries commands, we substitute \
+		the dollar sign with the unicode character 'Fullwidth Dollar Sign': ＄.
+		Another option would be do cast the dict to string (what we did before v0.5) \
 		but it is less readable and takes more storage space. 
 		Nested dict shallow copies are performed.
 
+		:param dict arg:
 		:returns: dict
 		"""	
 
