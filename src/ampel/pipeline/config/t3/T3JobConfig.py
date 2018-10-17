@@ -53,7 +53,7 @@ class T3JobConfig(BaseModel, AmpelModelExtension):
 		T3JobConfig.logger = AmpelLogger.get_unique_logger()
 
 
-	@validator('transients', 'tasks', pre=True, whole=True)
+	@validator('transients', 'tasks', 'schedule', pre=True, whole=True)
 	def unfreeze_if_frozen(cls, arg):
 		if ConfigUtils.has_nested_type(arg, ReadOnlyDict):
 			return AmpelConfig.recursive_unfreeze(arg)
