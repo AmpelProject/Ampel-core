@@ -23,6 +23,7 @@ from ampel.pipeline.db.AmpelDB import AmpelDB
 from ampel.pipeline.db.LightCurveLoader import LightCurveLoader
 from ampel.pipeline.common.Schedulable import Schedulable
 from ampel.pipeline.config.AmpelConfig import AmpelConfig
+from ampel.pipeline.config.channel.ChannelConfig import ChannelConfig
 from ampel.pipeline.common.AmpelUtils import AmpelUtils
 from ampel.pipeline.common.AmpelUnitLoader import AmpelUnitLoader
 
@@ -397,14 +398,14 @@ def get_required_resources(config, units=None, tier=2):
 		units = set()
 		for name, channel_config in config['channels'].items():
 			channel = ChannelConfig.parse_obj(channel_config)
-			if not channel.active or (channels is not None and name not in channels):
+			if not channel.active:
 				continue
-			# FIXME: load t2 jobs instead
 			for source in channel.sources:
-				units.add(source.t0Filter.unitId)
+				for t2 in source.t2Compute:
+					units.add(t2.unitId)
 	resources = set()
 	for unit in units:
-		for resource in AmpelUnitLoader.get_class(tier, unit).required_resources:
+		for resource in AmpelUnitLoader.get_class(tier, unit).resources:
 			resources.add(resource)
 	return resources
 
