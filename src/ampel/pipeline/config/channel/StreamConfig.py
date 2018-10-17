@@ -28,8 +28,8 @@ class StreamConfig(BaseModel, AmpelModelExtension):
 	stream: str
 	parameters: Union[None, Any] = None
 	t0Filter: Union[None, T0UnitConfig] # None allowed bc of the t3 partial loading option
-	t2Compute: Union[None, List[T2UnitConfig], Tuple[T2UnitConfig]] = None
-	t3Supervise: Union[None, List[T3TaskConfig], Tuple[T3TaskConfig]] = None
+	t2Compute: Union[None, List[T2UnitConfig], Tuple[T2UnitConfig]] = []
+	t3Supervise: Union[None, List[T3TaskConfig], Tuple[T3TaskConfig]] = []
 
 
 	def __init__(self, **arg):
