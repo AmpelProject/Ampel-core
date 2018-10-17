@@ -18,13 +18,14 @@ from ampel.pipeline.config.t3.ScheduleEvaluator import ScheduleEvaluator
 from ampel.pipeline.logging.AmpelLogger import AmpelLogger
 from ampel.pipeline.common.GraphiteFeeder import GraphiteFeeder
 from ampel.pipeline.config.AmpelConfig import AmpelConfig
+from ampel.pipeline.common.AmpelUnitLoader import AmpelUnitLoader
 
 class T3Controller(Schedulable):
 	"""
 	"""
 
 	@staticmethod
-	def load_job_configs(t3_job_names, logger):
+	def load_job_configs(t3_job_names=None):
 		"""
 		"""
 		job_configs = {}
@@ -32,27 +33,11 @@ class T3Controller(Schedulable):
 		for job_name, job_dict in AmpelConfig.get_config("t3Jobs").items():
 
 			if t3_job_names is not None and job_name not in t3_job_names:
-				logger.info("Ignoring job '%s' as requested" % job_name)
 				continue
-
+			
 			job_configs[job_name] = T3JobConfig(**job_dict)
 
 		return job_configs
-
-
-	@staticmethod
-	def get_required_resources(t3_job_names=None):
-		"""
-		"""
-		logger = AmpelLogger.get_unique_logger()
-		resources = set()
-
-		for job_config in T3Controller.load_job_configs(t3_job_names, logger).values():
-			for task_config in job_config.get_task_configs():
-				resources.update(task_config.t3_unit_class.resources)
-
-		return resources
-
 
 	def __init__(self, t3_job_names=None):
 		"""
@@ -214,6 +199,18 @@ def rununit(args):
 	    raise_exc=not args.update_run_col)
 	job.run()
 
+def get_required_resources():
+	
+	units = set()
+	for job in T3Controller.load_job_configs().values():
+		for task in job.tasks:
+			units.add(task.unitId)
+	resources = set()
+	for unit in units:
+		for resource in AmpelUnitLoader.get_class(3, unit).resources:
+			resources.add(resource)
+	return resources
+
 def main():
 
 	from ampel.pipeline.config.AmpelArgumentParser import AmpelArgumentParser
@@ -226,7 +223,7 @@ def main():
 	# partially parse command line to get config
 	opts, argv = parser.parse_known_args()
 	# flesh out parser with resources required by t3 units
-	parser.require_resources(*T3Controller.get_required_resources())
+	parser.require_resources(*get_required_resources())
 
 	subparsers = parser.add_subparsers(help='command help')
 	subparser_list = []
@@ -266,8 +263,7 @@ def main():
 	
 	opts, argv = parser.parse_known_args()
 	if hasattr(opts, 'func') and opts.func == rununit:
-		unit = T3TaskConfig.get_t3_unit(opts.unit, logging.getLogger(__name__))
-		parser.require_resources(*unit.resources)
+		parser.require_resources(*AmpelUnitLoader.get_class(3, opts.unit).resources)
 
 	# Now that side-effect-laden parsing is done, add help
 	for p in [parser] + subparser_list:

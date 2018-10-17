@@ -284,3 +284,13 @@ def test_entrypoint_rununit(testing_config, capsys):
 		rununit(Namespace(unit='potemkin', created=-1, modified=-1, channels=['0', '1'], runconfig=None, update_tran_journal=False, update_run_col=False))
 	rununit(Namespace(unit='potemkin', created=-1, modified=-1, channels=['0', '1'], runconfig=None, update_tran_journal=False, update_run_col=True))
 	assert AmpelDB.get_collection('troubles').count() == troubles+1, "an exception was logged"
+
+def test_get_required_resources():
+	from ampel.pipeline.t3.T3Controller import get_required_resources
+	from ampel.pipeline.config.ConfigLoader import ConfigLoader
+	from ampel.pipeline.config.AmpelConfig import AmpelConfig
+	
+	AmpelConfig.set_config(ConfigLoader.load_config(tier="all"))
+
+	resources = get_required_resources()
+	assert len(resources) > 0
