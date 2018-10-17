@@ -240,12 +240,6 @@ def main():
 	p = add_command(runjob)
 	p.add_argument('job')
 
-	p = add_command(runtask)
-	p.add_argument('job')
-	p.add_argument('task')
-	p.add_argument('--created')
-	p.add_argument('--modified')
-
 	p = add_command(rununit)
 	p.add_argument('unit')
 	p.add_argument('--runconfig', default=None)
