@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 06.10.2018
-# Last Modified Date: 10.10.2018
+# Last Modified Date: 17.10.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from pydantic import BaseModel
@@ -15,13 +15,18 @@ class ConfigUtils:
 
 
 	@classmethod
-	def has_nested_type(cls, obj, target_type):
+	def has_nested_type(cls, obj, target_type, strict=True):
 		"""
 		:param obj: object instance (dict/list/set/tuple)
 		:param type target_type: example: ReadOnlyDict/list
 		"""
-		if type(obj) is target_type:
-			return True
+
+		if strict: 
+			if type(obj) is target_type:
+				return True
+		else:
+			if isinstance(obj, target_type):
+				return True
 
 		if isinstance(obj, dict):
 			for el in obj.values():
