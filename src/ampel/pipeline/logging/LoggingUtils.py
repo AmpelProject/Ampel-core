@@ -8,6 +8,7 @@
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from logging import ERROR, CRITICAL, Logger
+from ampel.pipeline.config.ConfigUtils import ConfigUtils
 
 class LoggingUtils:
 
@@ -147,7 +148,7 @@ class LoggingUtils:
 
 
 	@classmethod
-	def safe_query_dict(cls, match, update=None):
+	def safe_query_dict(cls, match, update=None, dict_key='query'):
 		u"""
 		| Builds a dict that can be passed as "extra" parameter \
 		  to instances of AmpelLogger.
@@ -170,16 +171,17 @@ class LoggingUtils:
 		:param dict update:
 		:returns: dict
 		"""
-		extra = {'query': {'match': cls.convert_dollars(match)}}
+
+		extra = {'match': cls.convert_dollars(match)}
 
 		if update:
-			extra['query']['update'] = cls.convert_dollars(update)
+			extra['update'] = cls.convert_dollars(update)
 
-		return extra
+		return {dict_key: extra} if dict_key else extra
 
 
-	@staticmethod
-	def convert_dollars(arg):
+	@classmethod
+	def convert_dollars(cls, arg):
 		"""	
 		MongoDB does not allow documents containing dollars in 'top level key' \
 		(raises InvalidDocument). In order to log DB queries commands, we substitute \
@@ -192,13 +194,27 @@ class LoggingUtils:
 		:returns: dict
 		"""	
 
-		# shallow copy
-		d = arg.copy()
 
-		for key in d.keys():
-			if type(d[key]) is dict:
-				d[key] = LoggingUtils.convert_dollars(d[key])
-			if key.startswith('$'):
-				d[key.replace('$', "\uFF04")] = d.pop(key)
+		if isinstance(arg, dict):
 
-		return d
+			pblm_keys = [key for key in arg.keys() if "$" in key]
+			if pblm_keys:
+				arg = arg.copy() # shallow copy 
+				for key in pblm_keys:
+					arg[key.replace('$', "\uFF04")] = arg.pop(key)
+
+			if not ConfigUtils.has_nested_type(arg, dict):
+				return arg
+
+			if not pblm_keys:
+				arg = arg.copy()
+
+			for key in arg.keys():
+				arg[key] = cls.convert_dollars(arg[key])
+
+		elif isinstance(arg, list):
+			if ConfigUtils.has_nested_type(arg, dict):
+				arg=arg.copy()
+				return [cls.convert_dollars(el) for el in arg]
+
+		return arg
