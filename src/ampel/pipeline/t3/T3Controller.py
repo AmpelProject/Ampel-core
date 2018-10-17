@@ -52,7 +52,7 @@ class T3Controller(Schedulable):
 		self.logger.info("Setting up T3Controller")
 
 		# Load job configurations
-		self.job_configs = T3Controller.load_job_configs(t3_job_names, self.logger)
+		self.job_configs = T3Controller.load_job_configs(t3_job_names)
 
 		schedule = ScheduleEvaluator()
 		self._processes = {}
