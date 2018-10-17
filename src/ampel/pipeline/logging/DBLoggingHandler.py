@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 14.12.2017
-# Last Modified Date: 16.10.2018
+# Last Modified Date: 17.10.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import logging, struct, os
@@ -44,7 +44,6 @@ class DBLoggingHandler(logging.Handler):
 		# Own stuff
 		self.flush_len = flush_len
 		self.aggregate_interval = aggregate_interval
-		self.tran_id = None
 		self.tier = tier
 		self.log_dicts = []
 		self.prev_records = None
