@@ -30,6 +30,7 @@ from ampel.pipeline.t3.TimeConstraint import TimeConstraint
 from ampel.pipeline.t3.T3JournalUpdater import T3JournalUpdater
 from ampel.core.flags.AlDocType import AlDocType
 from ampel.core.flags.FlagUtils import FlagUtils
+from ampel.core.flags.LogRecordFlags import LogRecordFlags
 from ampel.base.TransientView import TransientView
 from ampel.base.flags.TransientFlags import TransientFlags
 from ampel.base.dataclass.GlobalInfo import GlobalInfo
@@ -118,9 +119,10 @@ class T3Event:
 			)
 
 			if db_logging:
+
 				# Create DB logging handler instance (logging.Handler child class)
 				# This class formats, saves and pushes log records into the DB
-				self.db_logging_handler = DBLoggingHandler(tier=3)
+				self.db_logging_handler = DBLoggingHandler(LogRecordFlags.T3 | LogRecordFlags.CORE)
 
 				# Add db logging handler to the logger stack of handlers 
 				self.logger.addHandler(self.db_logging_handler)
@@ -251,8 +253,8 @@ class T3Event:
 
 		# Execute 'find transients' query
 		trans_cursor = AmpelDB.get_collection('main').find(
-			match_query, {'_id':0, 'tranId':1}
-		)
+			match_query, {'_id':0, 'tranId':1} # indexed query
+		).hint(AmpelDB.hint_full_compound_index)
 		
 		# Count results 
 		if trans_cursor.count() == 0:
@@ -272,7 +274,6 @@ class T3Event:
 		Yield selected TransientData in chunks of length `chunk_size`
 		"""
 
-		self.logger.info("#"*60)
 		self.logger.info("Processing chunk")
 
 		# Load ids (chunk_size number of ids)
@@ -389,7 +390,6 @@ class T3Event:
 		#if self.db_logging_handler:
 		#	self.db_logging_handler.set_channels(self.task_config.channels)
 
-		self.logger.info("~"*60)
 		self.logger.info("Creating TranViews")
 
 		if isinstance(channels, dict):
