@@ -61,12 +61,11 @@ class QueryLatestCompound:
 		elif not type_tran_ids in (int, str, bson.int64.Int64):
 			raise ValueError("tran_ids must have type str or int (or sequence of these types)")
 
-		query = {'alDocType': AlDocType.COMPOUND}
-
-		query['tranId'] = ( 
-			tran_ids if type(tran_ids) in (str, int)
-			else {'$in': tran_ids if type(tran_ids) is list else list(tran_ids)}
-		)
+		query = {
+			'tranId': tran_ids if type(tran_ids) in (str, int)
+				else {'$in': tran_ids if type(tran_ids) is list else list(tran_ids)},
+			'alDocType': AlDocType.COMPOUND
+		}
 
 		if channels is not None:
 			QueryMatchSchema.apply_schema(
@@ -185,7 +184,7 @@ class QueryLatestCompound:
 			)
 
 		query = {
-			'tranId': tran_id, 
+			'tranId': tran_id,
 			'alDocType': AlDocType.COMPOUND
 		}
 
