@@ -4,11 +4,12 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 13.01.2018
-# Last Modified Date: 12.10.2018
+# Last Modified Date: 18.10.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from bson.objectid import ObjectId
 from ampel.core.flags.AlDocType import AlDocType
+from ampel.pipeline.config.t3.LogicSchemaUtils import LogicSchemaUtils
 from ampel.pipeline.t3.TimeConstraint import TimeConstraint
 from ampel.pipeline.db.query.QueryMatchSchema import QueryMatchSchema
 
@@ -48,8 +49,14 @@ class QueryMatchTransients:
 		"""
 
 		query = {
+			'tranId': {'$gt': 1}, # indexed query
 			'alDocType': AlDocType.TRANSIENT
 		}
+
+		if channels is not None:
+			QueryMatchSchema.apply_schema(
+				query, 'channels', channels
+			)
 
 		if with_flags is not None:
 			QueryMatchSchema.apply_schema(
@@ -62,11 +69,7 @@ class QueryMatchTransients:
 				query, 'alFlags', without_flags
 			)
 
-		if channels is not None:
-			QueryMatchSchema.apply_schema(
-				query, 'channels', channels
-			)
-	
+		# TODO: use channel-specific creation/acceptation date from journal ?
 		if time_created is not None:
 			if type(time_created) is not TimeConstraint:
 				raise ValueError("Parameter 'time_created' must be a TimeConstraint instance")
@@ -75,11 +78,22 @@ class QueryMatchTransients:
 			)
 
 		if time_modified is not None:
+
 			if type(time_modified) is not TimeConstraint:
 				raise ValueError("Parameter 'time_modified' must be a TimeConstraint instance")
+
+			query['journal'] = {'$elemMatch': {'tier': 0}}
+
 			QueryMatchTransients._add_time_constraint(
-				query, 'modified', time_modified
+				query['journal']['$elemMatch'], 'dt', time_modified
 			)
+
+			if channels is not None:
+				query['journal']['$elemMatch']['channels'] = {
+					'$in': list(
+						LogicSchemaUtils.reduce_to_set(channels)
+					)
+				}
 
 		return query
 
