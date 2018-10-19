@@ -22,13 +22,13 @@ class LoggingUtils:
 		:param str msg: Optional message
 
 		logs exception like this:
-		2018-09-26 20:37:07 <ipython-input>:11 ERROR ##################################################
+		2018-09-26 20:37:07 <ipython-input>:11 ERROR --------------------------------------------------
 		2018-09-26 20:37:07 <ipython-input>:11 ERROR Optional message
 		2018-09-26 20:37:07 <ipython-input>:15 ERROR Traceback (most recent call last):
 		2018-09-26 20:37:07 <ipython-input>:15 ERROR   File "<ipython-input-28-4b9e4d999eb4>", line 7, in <module>
 		2018-09-26 20:37:07 <ipython-input>:15 ERROR     a.add(2)
 		2018-09-26 20:37:07 <ipython-input>:15 ERROR AttributeError: 'list' object has no attribute 'add'
-		2018-09-26 20:37:07 <ipython-input>:11 ERROR ##################################################
+		2018-09-26 20:37:07 <ipython-input>:11 ERROR --------------------------------------------------
 
 		instead of:
 		2018-09-26 20:38:07 <ipython-input>:11 CRITICAL 'list' object has no attribute 'add'
@@ -39,7 +39,7 @@ class LoggingUtils:
 		"""
 
 		import traceback
-		logger.error("#"*50)
+		logger.error("-"*50)
 
 		if msg:
 			logger.error(msg)
@@ -54,7 +54,7 @@ class LoggingUtils:
 				if len(ell) > 0:
 					logger.error(ell)
 
-		logger.error("#"*50)
+		logger.error("-"*50)
 
 
 	@classmethod

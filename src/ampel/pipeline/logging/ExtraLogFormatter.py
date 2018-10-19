@@ -10,10 +10,12 @@ class ExtraLogFormatter(logging.Formatter):
 			self.formatTime(record, datefmt=self.datefmt),
 			record.filename[:-3], # cut the '.py'
 			record.levelname,
-			record.msg
 		]
 
 		if extra:
-			out.insert(-1, "[%s]" % ', '.join("%s=%s" % itm for itm in extra.items()))
+			out.append("[%s]" % ', '.join("%s=%s" % itm for itm in extra.items()))
 
-		return " ".join(out)
+		if record.msg:
+			return "<%s>\n%s" % (" ".join(out), record.msg)
+		else:
+			return "<%s>" % " ".join(out)

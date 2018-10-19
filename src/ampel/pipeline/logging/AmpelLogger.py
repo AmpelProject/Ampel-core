@@ -4,19 +4,33 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 27.09.2018
-# Last Modified Date: 16.10.2018
+# Last Modified Date: 17.10.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import logging, sys
 from logging import _logRecordFactory
 from ampel.pipeline.logging.ExtraLogFormatter import ExtraLogFormatter
 
-# DEBUG: 10, INFO: 20, WARNING: 30
-logging.addLevelName(21, "SHOUT")
+# Custom log int level (needed for efficient storing in DB)
+logging.DEBUG = 65536 
+logging.VERBOSE = 131072
+logging.INFO = 262144
+logging.SHOUT = 262145
+logging.WARNING = 524288
+logging.ERROR = 1048576
+
+logging.addLevelName(logging.DEBUG, "DEBUG")
+logging.addLevelName(logging.VERBOSE, "VERBOSE")
+logging.addLevelName(logging.INFO, "INFO")
+logging.addLevelName(logging.SHOUT, "SHOUT")
+logging.addLevelName(logging.WARNING, "WARNING")
+logging.addLevelName(logging.ERROR, "ERROR")
 
 class AmpelLogger(logging.Logger):
 
 	loggers = {}
+	current_logger = None
+	aggregation_ok = True
 
 	@staticmethod
 	def get_unique_logger(**kwargs):
@@ -76,7 +90,7 @@ class AmpelLogger(logging.Logger):
 		Creates an instance of :obj:`AmpelLogger <ampel.pipeline.logging.AmpelLogger>` 
 		with the following properties:\n
 		- `propagate` is set to False
-		- it is associated with a `logging.StreamHandler` instance initialized with sys.stderr
+		- it is associated with an AmpelLoggingStreamHandler instance initialized with sys.stderr
 		- the later uses ampel.pipeline.logging.ExtraLogFormatter as formatter
 
 		:param str name: logger name
@@ -86,7 +100,11 @@ class AmpelLogger(logging.Logger):
 		logger = AmpelLogger(name)
 		logger.propagate = False
 		logger.setLevel(log_level)
-		sh = logging.StreamHandler(sys.stderr)
+		
+		# Perform import here to avoid cyclic import errro
+		from ampel.pipeline.logging.AmpelLoggingStreamHandler import AmpelLoggingStreamHandler
+		sh = AmpelLoggingStreamHandler(sys.stderr)
+		#sh = logging.StreamHandler(sys.stderr)
 		sh.setLevel(log_level)
 		sh.setFormatter(
 			# Allows to print values passed in dict 'extra'
@@ -115,7 +133,9 @@ class AmpelLogger(logging.Logger):
 
 
 	def __add_extra(self, key, value):
-		""" """
+		"""
+		Note: whatever you add here, it must be BSON encodable
+		"""
 		if self.__extra:
 			self.__extra[key] = value
 		else:
@@ -163,6 +183,13 @@ class AmpelLogger(logging.Logger):
 		self._log(21, msg, args, **kwargs)
 
 
+	def verbose(self, msg, *args, **kwargs):
+		"""
+		shout: custom msg with log level VERBOSE (15)
+		"""
+		self._log(15, msg, args, **kwargs)
+
+
 	def propagate_log(self, level, msg, exc_info=False, extra=None):
 		"""
 		| Calls set_console_log_level(logging.DEBUG), logs the log message and \
@@ -208,6 +235,14 @@ class AmpelLogger(logging.Logger):
 		Formatters and Handlers can thus access a single property using getattr(log_record, 'extra', None)
 		and loop over dict keys.
 		"""
+
+		if AmpelLogger.current_logger == self:
+			AmpelLogger.aggregation_ok = True
+		else:
+			if AmpelLogger.current_logger: # not the first logging
+				AmpelLogger.aggregation_ok = False
+			AmpelLogger.current_logger = self
+
 		rv = _logRecordFactory(name, level, fn, lno, msg, args, exc_info, func, sinfo)
 
 		if extra is not None:

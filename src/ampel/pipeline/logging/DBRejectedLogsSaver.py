@@ -4,26 +4,27 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 29.09.2018
-# Last Modified Date: 29.09.2018
+# Last Modified Date: 19.10.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-import logging, struct, os
-from bson import ObjectId
+import time
+from logging import WARNING
 from pymongo.errors import BulkWriteError
+from pymongo.operations import UpdateOne
 from ampel.pipeline.db.AmpelDB import AmpelDB
 from ampel.pipeline.logging.DBUpdateException import DBUpdateException
 
 
+#class RejectedLogs():
 class DBRejectedLogsSaver():
 	"""
 	Class responsible for saving rejected log events (by T0 filters) 
-	into the NoSQL database.
-	This class does not inherit logging.Handler but the method handle() 
-	is implemented so that this class can be used together with 
-	RecordsBufferingHandler.forward() or copy()
+	into the NoSQL database. This class does not inherit logging.Handler 
+	but implements the method handle() so that this class can be used together 
+	with RecordsBufferingHandler.forward() or copy()
 	"""
 
-	def __init__(self, channel, aggregate_interval=1, flush_len=1000):
+	def __init__(self, channel, logger, aggregate_interval=1, flush_len=1000):
 		""" 
 		:param str channel: channel name
 		:param int aggregate_interval: logs with similar attributes (log level, 
@@ -36,18 +37,21 @@ class DBRejectedLogsSaver():
 		self.flush_len = flush_len
 		self.aggregate_interval = aggregate_interval
 		self.channel = channel
+		self.logger = logger
 		self.log_dicts = []
 		self.prev_records = None
 		self.run_id = None
 		self.col = None 
 			
-		# ObjectID middle: 3 bytes machine + # 2 bytes pid
-		self.oid_middle = ObjectId._machine_bytes + struct.pack(">H", os.getpid() % 0xFFFF)
-
 
 	def set_run_id(self, run_id):
 		""" """
 		self.run_id = run_id
+
+
+	def get_run_id(self):
+		""" """
+		return self.run_id
 
 
 	def handle(self, record):
@@ -61,41 +65,38 @@ class DBRejectedLogsSaver():
 			# Same flag, date (+- 1 sec), tran_id and chans
 			if (
 				self.prev_records and 
-				record.levelno == self.prev_records.levelno and 
 				record.created - self.prev_records.created < self.aggregate_interval and 
 				extra == getattr(self.prev_records, 'extra', None)
 			):
 	
-				ldict = self.log_dicts[-1]
-				if type(ldict['msg']) is not list:
-					ldict['msg'] = [ldict['msg']]
-	
-				ldict['msg'].append(record.msg)
+				prev_dict = self.log_dicts[-1]
+				if type(prev_dict['msg']) is not list:
+					prev_dict['msg'] = [prev_dict['msg'], record.msg]
+				else:
+					prev_dict['msg'].append(record.msg)
 	
 			else:
 	
 				if len(self.log_dicts) > self.flush_len:
 					self.flush()
-	
-				# Generate object id with log record.created as current time
-				with ObjectId._inc_lock:
-					oid = struct.pack(">i", int(record.created)) + \
-						  self.oid_middle + struct.pack(">i", ObjectId._inc)[1:4]
-					ObjectId._inc = (ObjectId._inc + 1) % 0xFFFFFF
+
+				log_id = record.extra.pop('alertId')
 	
 				# If duplication exists between keys in extra and in standard rec,
 				# the corresponding extra items will be overwritten (and thus ignored)
-				self.log_dicts.append(
-					{
-						**extra, # position matters, should be first
-						'_id': ObjectId(oid=oid),
-						'lvl': record.levelno,
-						'runId': self.run_id,
-						'msg': record.msg,
-						'channel': self.channel
-					}
-				)
-	
+				d = {
+					**extra, # position matters, should be first
+					'_id': log_id,
+					'dt': int(time.time())
+				}
+
+				if record.levelno > WARNING:
+					d['runId'] = self.run_id
+
+				if record.msg:
+					d['msg'] = record.msg
+
+				self.log_dicts.append(d)
 				self.prev_records = record
 
 		except Exception as e:
@@ -105,22 +106,60 @@ class DBRejectedLogsSaver():
 
 	def flush(self):
 		""" 
-		Will throw Exception if DB issue occurs
+		Will raise Exception if DB issue occurs
 		"""
 
 		# No log entries
 		if not self.log_dicts:
 			return
 
-		if self.col is None:
-			self.col = AmpelDB.get_collection(self.channel)
-
 		try:
-			self.col.insert_many(self.log_dicts)
+
+			AmpelDB.get_collection(self.channel).insert_many(
+				self.log_dicts, ordered=False
+			)
+
 		except BulkWriteError as bwe:
+
+			upserts = []
+
+			# Recovery procedure for 'already existing logs' 
+			# In production, we should process alerts only once (per channel(s))
+			# but during testing, reprocessing may occur. 
+			# In this case, we overwrite previous rejected logs
+			for err_dict in bwe.details.get('writeErrors', []):
+
+				# 'code': 11000, 'errmsg': 'E11000 duplicate key error collection: ...
+				if err_dict.get("code") == 11000:
+					lid = {'_id': err_dict['op'].pop('_id')}
+					del err_dict['op']['tranId']
+					upserts.append(
+						UpdateOne(lid, {'$set': err_dict['op']})
+					)
+
+			if len(upserts) != len(bwe.details.get('writeErrors', [])):
+				DBUpdateException.report(self, bwe, bwe.details)
+				raise bwe from None
+
+			self.logger.warn("Overwriting rejected alerts logs")
+			try:
+
+				# Try again, with updates this time
+				AmpelDB.get_collection(self.channel).bulk_write(
+					upserts, ordered=False
+				)
+				self.log_dicts = []
+				self.prev_records = None
+				return
+
+			except BulkWriteError as bwee:
+				DBUpdateException.report(self, bwee, bwee.details)
+
 			DBUpdateException.report(self, bwe, bwe.details)
 			raise bwe from None
+
 		except Exception as e:
+
 			DBUpdateException.report(self, e)
 			# If we can no longer keep track of what Ampel is doing, 
 			# better raise Exception to stop processing
