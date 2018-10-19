@@ -177,7 +177,7 @@ class QueryLoadTransientInfo:
 
 			or_list.append(
 				{
-					'alDocType': AlDocType.COMPOUND, 
+					# no need to specify alDocType: AlDocType.COMPOUND
 					'_id': match_comp_ids	
 				}
 			)
@@ -216,7 +216,6 @@ class QueryLoadTransientInfo:
 	def create_broad_query(tran_ids, channels):
 		"""
 		Creates a broad matching query
-
 
 		:type tran_id: int, list(int), set(int)
 		:param tran_id: transient id(s) (int, list of ints, set of ints). \
