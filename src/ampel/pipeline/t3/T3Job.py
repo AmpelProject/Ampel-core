@@ -14,6 +14,7 @@ from ampel.pipeline.logging.DBLoggingHandler import DBLoggingHandler
 from ampel.pipeline.logging.AmpelLogger import AmpelLogger
 from ampel.pipeline.logging.LoggingUtils import LoggingUtils
 from ampel.base.flags.TransientFlags import TransientFlags
+from ampel.core.flags.LogRecordFlags import LogRecordFlags
 from ampel.pipeline.common.AmpelUnitLoader import AmpelUnitLoader
 from ampel.pipeline.config.t3.LogicSchemaUtils import LogicSchemaUtils
 from ampel.pipeline.t3.T3Event import T3Event
@@ -64,7 +65,7 @@ class T3Job(T3Event):
 		if len(config.tasks) > 1:
 
 			# Instantiate T3 units
-			for task_config in config.tasks:
+			for i, task_config in enumerate(config.tasks):
 				
 				# Instanciate t3 unit
 				T3Unit = AmpelUnitLoader.get_class(
@@ -73,7 +74,7 @@ class T3Job(T3Event):
 	
 				# Create logger
 				logger = AmpelLogger.get_logger(
-					name=task_config.task, # task name
+					name = task_config.task + str(i),
 					#channels = list(
 					#	LogicSchemaUtils.reduce_to_set(
 					#		task_config.transients.select.channels
@@ -87,7 +88,14 @@ class T3Job(T3Event):
 	
 				# T3Event parameter db_logging is True (default)
 				if hasattr(self, "db_logging_handler"):
-					logger.addHandler(self.db_logging_handler.fork())
+					logger.addHandler(
+						self.db_logging_handler.fork(LogRecordFlags.T3 | LogRecordFlags.TASK)
+					)
+				else:
+					self.logger.warn(
+						"Logger for task '%s' will not write log entries into DB" % 
+						task_config.task
+					)
 	
 				# Instantiate t3 unit
 				self.t3_units[task_config.task] = T3Unit(
