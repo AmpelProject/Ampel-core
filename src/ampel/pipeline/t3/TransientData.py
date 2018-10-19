@@ -179,7 +179,11 @@ class TransientData:
 		photopoints, upperlimits = self._get_photo(channel)
 
 		return TransientView(
-			self.tran_id, self.flags, self.journal.get(channel), 
+			self.tran_id, self.flags, 
+			sorted(
+				self.journal.get(channel) + self.journal.get("Any", []), 
+				key=lambda k: k['dt']
+			), 
 			latest_state, photopoints, upperlimits, 
 			tuple(self.compounds[channel]) if channel in self.compounds else None, 
 			tuple(self.lightcurves[channel]) if channel in self.lightcurves else None, 
@@ -223,11 +227,18 @@ class TransientData:
 					if entry not in entries:
 						entries.append(entry)
 
+		# Add general journal entries
+		if "Any" in self.journal:
+			for entry in self.journal["Any"]:
+				if entry not in entries:
+					entries.append(entry)
+
 		# Handles data permission
 		photopoints, upperlimits = self._get_photo(channels)
 
 		return TransientView(
-			self.tran_id, self.flags, entries, latest_state, photopoints, upperlimits, 
+			self.tran_id, self.flags, sorted(entries, key=lambda k: k['dt']), 
+			latest_state, photopoints, upperlimits, 
 			tuple(all_comps.values()),
 			self._get_combined_elements(self.lightcurves, channels),
 			self._get_combined_elements(self.science_records, channels),
