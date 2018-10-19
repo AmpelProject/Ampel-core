@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 02.09.2018
-# Last Modified Date: 10.10.2018
+# Last Modified Date: 18.10.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import pkg_resources
@@ -21,6 +21,7 @@ class T2UnitConfig(BaseModel, AmpelModelExtension):
 	"""
 
 	unitId: str
+	upperLimits: bool = True
 	runConfig: str = "default"
 
 
