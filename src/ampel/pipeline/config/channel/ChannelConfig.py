@@ -24,7 +24,7 @@ class ChannelConfig(BaseModel, AmpelModelExtension):
 	https://github.com/samuelcolvin/pydantic/issues/185
 	We are thus forced to use Union[List, Tuple]
 	"""
-	channel: str
+	channel: Union[int, str]
 	active: bool = True
 	author: str = "Unspecified"
 	sources: Union[List[StreamConfig], Tuple[StreamConfig]]

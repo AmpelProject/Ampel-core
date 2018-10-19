@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/pipeline/config/channel/ChannelLoader.py
+# File              : ampel/pipeline/config/channel/ChannelConfigLoader.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 03.05.2018
-# Last Modified Date: 10.10.2018
+# Last Modified Date: 19.10.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from ampel.pipeline.config.AmpelConfig import AmpelConfig
@@ -18,7 +18,7 @@ class ChannelConfigLoader:
 	"""
 
 	@staticmethod
-	def load_configurations(chan_names=None, tier="all", logger=None, allow_unknown_t2_units=False):
+	def load_configurations(chan_names=None, tier="all", logger=None):
 		"""
 		Convenience method that creates :obj:`ChannelConfig <ampel.pipeline.config.channel.ChannelConfig>`
 		using channel dicts loaded from AmpelConfig (retrieved by channel names).
@@ -37,10 +37,6 @@ class ChannelConfigLoader:
 		a lighter and quicker ChannelConfig loading procedure. For example, with tier=0, 
 		T3 units existence or T3 run configurations are not checked.
 		:type tier: str, int
-		:param bool allow_unknown_t2_units: Enables scenario such as: 
-		the AlertProcessor creates T2 documents that are processed by external ressources 
-		(say on an external grid such as NERSC).  The corresponding t2 unit(s) 
-		do not need to be present in the ampel image.
 
 		:raises NameError: if a channel is not found
 		:raises ValueError: if duplicate values are found in chan_names
@@ -50,9 +46,6 @@ class ChannelConfigLoader:
 
 		# list of chan configs
 		ret = []
-
-		if allow_unknown_t2_units:
-			T2UnitConfig.allow_unknown_t2_units()
 
 		# Robustness check
 		if chan_names is None:
@@ -81,7 +74,7 @@ class ChannelConfigLoader:
 			# Loop through all channels
 			for chan_name in chan_names: 
 				
-				chan_doc = AmpelConfig.get_config('channels.%s' % chan_name)
+				chan_doc = AmpelConfig.get_config(['channels', chan_name])
 
 				if chan_doc['active'] is False and logger:
 					logger.info("Loading requested non-active channel %s" % chan_doc['channel'])

@@ -87,7 +87,7 @@ class AlertProcessor():
 		]
 
 		AmpelDB.enable_rejected_collections(
-			[chan.name for chan in self.t0_channels]	
+			[chan.str_name for chan in self.t0_channels]
 		)
 
 		# Shortcuts
@@ -216,11 +216,11 @@ class AlertProcessor():
 
 		dur_stats['allFilters'].fill(np.nan)
 		for i, channel in self.chan_enum:
-			# dur_stats['filters'][channel.name] records filter performances
+			# dur_stats['filters'][channel.str_name] records filter performances
 			# nan will remain only if exception occur for particular alerts
-			dur_stats['filters'][channel.name] = np.empty(iter_max)
-			dur_stats['filters'][channel.name].fill(np.nan)
-			count_stats['matches'][channel.name] = 0
+			dur_stats['filters'][channel.str_name] = np.empty(iter_max)
+			dur_stats['filters'][channel.str_name].fill(np.nan)
+			count_stats['matches'][channel.str_name] = 0
 
 		# The (standard) ingester will update DB insert operations
 		if hasattr(ingester, "set_stats_dict"):
@@ -276,7 +276,7 @@ class AlertProcessor():
 					scheduled_t2_units[i] = channel.filter_func(ampel_alert)
 
 					# stats
-					dur_stats['filters'][channel.name][iter_count] = time_now() - per_filter_start
+					dur_stats['filters'][channel.str_name][iter_count] = time_now() - per_filter_start
 
 					# Filter rejected alert
 					if scheduled_t2_units[i] is None:
@@ -284,7 +284,7 @@ class AlertProcessor():
 						# Autocomplete required for this channel
 						if self.live_ac and self.chan_auto_complete[i] and tran_id in tran_ids_before[i]:
 							channel.buff_logger.info("Live ac")
-							count_stats['matches'][channel.name] += 1
+							count_stats['matches'][channel.str_name] += 1
 							scheduled_t2_units[i] = channel.t2_units
 
 						else:
@@ -305,7 +305,7 @@ class AlertProcessor():
 					# Filter accepted alert
 					else:
 
-						count_stats['matches'][channel.name] += 1
+						count_stats['matches'][channel.str_name] += 1
 
 						# If channel did not log anything, do it for it
 						if not channel.buff_handler.buffer:
@@ -421,7 +421,7 @@ class AlertProcessor():
 
 				# per chan filter metrics
 				len_non_nan = lambda x: iter_max - np.count_nonzero(np.isnan(x))
-				for key in [channel.name for channel in self.t0_channels]:
+				for key in [channel.str_name for channel in self.t0_channels]:
 					dur_stats['filters'][key] = self.compute_stat(
 						dur_stats['filters'][key], mean=np.nanmean, std=np.nanstd
 					)

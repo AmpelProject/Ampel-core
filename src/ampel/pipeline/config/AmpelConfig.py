@@ -60,19 +60,20 @@ class AmpelConfig:
 
 
 	@classmethod
-	def get_config(cls, key=None):
+	def get_config(cls, sub_element=None):
 		""" 
 		Optional arguments:
-		'key' -> only sub-config elements with provided key will be returned.
-		    Example: get_config("channels.HU_RANDOM")
+		:param sub_element: only sub-config element will be returned. \
+		Example: get_config("channels.HU_RANDOM")
+		:type sub_element: str, list
 		"""
 		if not cls.initialized():
 			raise RuntimeError("Ampel global config not set")
 
-		if key is None:
+		if sub_element is None:
 			return cls._global_config
 
-		sub_conf = AmpelUtils.get_by_path(cls._global_config, key)
+		sub_conf = AmpelUtils.get_by_path(cls._global_config, sub_element)
 		if sub_conf is None:
 			return sub_conf
 			

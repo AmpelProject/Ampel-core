@@ -36,8 +36,9 @@ class Channel:
 		if self.stream_config is None:
 			raise NameError("Unknown survey id: '%s'" % survey_id)
 
-		# Channel name (ex: HU_SN)
+		# Channel name (ex: HU_SN, 1)
 		self.name = chan_config.channel
+		self.str_name = str(self.name) if type(self.name) is int else self.name
 
 		self.auto_complete = self.stream_config.parameters.get('autoComplete', False)
 
@@ -76,7 +77,7 @@ class Channel:
 			logger = self.buff_logger
 		).apply
 
-		self.rejected_logs_saver = DBRejectedLogsSaver(self.name, parent_logger)
+		self.rejected_logs_saver = DBRejectedLogsSaver(self.str_name, parent_logger)
 
 
 	def set_log_extra(self, log_extra):

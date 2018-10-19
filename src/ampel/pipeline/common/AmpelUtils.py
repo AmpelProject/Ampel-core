@@ -136,12 +136,14 @@ class AmpelUtils():
 		'foo.bar.baz' -> mapping['foo']['bar']['baz']
 
 		:param dict mapping: 
-		:param str path: example: 'foo.bar.baz'
+		:param path: example: 'foo.bar.baz' or ['foo', 'bar', 'baz']
+		:type path: str, list
 		:param str delimiter: example: '.'
 		:rtype: object or None
 		"""
 		try:
-			return reduce(lambda d, k: d.get(k), path.split(delimiter), mapping)
+			array = path.split(delimiter) if type(path) is str else path
+			return reduce(lambda d, k: d.get(k), array, mapping)
 		except AttributeError:
 			return None
 
