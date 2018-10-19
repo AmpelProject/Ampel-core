@@ -54,15 +54,19 @@ class Channel:
 		parent_logger.info("On match t2 units: %s" % self.t2_units)
 
 		# Create channel (buffering) logger
-		self.buff_logger = AmpelLogger(self.name, channels=self.name)
+		#self.buff_logger = AmpelLogger(self.name, channels=self.name)
+		self.buff_logger = AmpelLogger(self.name)
+
+		# Shortcut used by AlertProcessor
 		self.log_extra = self.buff_logger._AmpelLogger__extra
+
 		sh = next(filter( # Will raise Exception if not found
 			lambda hdlr: isinstance(hdlr, logging.StreamHandler), 
 			parent_logger.handlers
 		))
 
 		self.buff_logger.addHandler(sh)
-		self.buff_handler = RecordsBufferingHandler()
+		self.buff_handler = RecordsBufferingHandler(self.name)
 		self.buff_logger.addHandler(self.buff_handler)
 
 		self.filter_func = FilterClass(
@@ -72,4 +76,9 @@ class Channel:
 			logger = self.buff_logger
 		).apply
 
-		self.rejected_logs_saver = DBRejectedLogsSaver(self.name)
+		self.rejected_logs_saver = DBRejectedLogsSaver(self.name, parent_logger)
+
+
+	def set_log_extra(self, log_extra):
+		""" """
+		self.buff_logger._AmpelLogger__extra = log_extra
