@@ -79,6 +79,8 @@ class AmpelDB:
 			'w': 'logger'
 		}
 	}
+
+	hint_full_compound_index = "tranId_1_alDocType_1_channels_1"
 	
 	@classmethod
 	def set_db_prefix(cls, prefix):
@@ -137,7 +139,7 @@ class AmpelDB:
 
 		# db_label.collection_names() wasn't called yet for this col
 		mc = cls._get_mongo_client(col_config['dbLabel'], mode)
-		db = mc[col_config['dbPrefix']+"_"+col_config['dbLabel']]
+		db = mc[col_config['dbPrefix'] + "_" + col_config['dbLabel']]
 
 		if 'w' in mode:
 			if col_name not in db.collection_names():
@@ -190,67 +192,87 @@ class AmpelDB:
 
 		if col.name == "main":
 
+			# For various indexed queries and live auto-complete *covered* queries
 			col.create_index(
-	        	[
-	    	        ("tranId", 1), 
-	        	    ("alDocType", 1), 
-	        	    ("channels", 1)
+				[
+					('tranId', 1), 
+					('alDocType', 1), 
+					('channels', 1)
 				]
+			)
+
+			# avoid annoying mongdb concurency pblms with upserts
+			# or put differently:
+			# docs.mongodb.com/manual/reference/method/db.collection.update/#use-unique-indexes
+			# -------------------------------------------------------------
+			# Warning
+			# To avoid inserting the same document more than once, 
+			# only use upsert: true if the query field is uniquely indexed.
+			# -------------------------------------------------------------
+			col.create_index(
+				[
+					('tranId', 1), 
+					('alDocType', 1)
+				],
+				unique = True,
+				partialFilterExpression = {
+					'alDocType': AlDocType.TRANSIENT
+				}
 			)
 
 			# Create sparse runstate index
 			col.create_index(
-				[("runState", 1)],
-				**{ 
-					"partialFilterExpression": {
-						"alDocType": AlDocType.T2RECORD
-					}
+				[('runState', 1)],
+				partialFilterExpression = {
+					'alDocType': AlDocType.T2RECORD
 				}
 			)
 
 		elif col.name == "photo":
 
 			col.create_index(
-				[("tranId", 1)],
+				[('tranId', 1)]
 			)
 
 		elif col.name == "logs":
 
 			col.create_index(
-				[("runId", 1)],
+				[('runId', 1)],
 			)
 
-			# Create sparse index for key runId
+			# Create sparse index for key tranId
+			# Note: this is more of a convenience index. The transient doc
+			# contains a list of runIds which could greatly reduce the 
+			# number of log entries to scan. Matching tranId in a such 
+			# reduced scope should be achievable without waiting ages.
+			# On the other side, there should not be a lot of log entries 
+			# associated with a tranId, so that the indexing perf penalty 
+			# should not be an issue. Time will tell...
 			col.create_index(
-				[("tranId", 1)],
-				**{ 
-					"partialFilterExpression": {
-						"tranId": { "$exists": True } 
-					}
+				[('tranId', 1)],
+				partialFilterExpression = {
+					'tranId': { '$exists': True } 
 				}
 			)
 
-			# Create sparse index for key runId
+			# Create sparse index for key channels
 			col.create_index(
-				[("channels", 1)],
-				**{ 
-					"partialFilterExpression": {
-						"channels": { "$exists": True } 
-					}
+				[('channels', 1)],
+				partialFilterExpression = {
+					'channels': { '$exists': True } 
 				}
 			)
 
 		elif col.name == "events":
+			pass
 
 			# Create sparse index for key hasError
-			col.create_index(
-				[("hasError", 1)],
-				**{ 
-					"partialFilterExpression": {
-						"hasError": { "$exists": True } 
-					}
-				}
-			)
+			# col.create_index(
+			#	[('hasError', 1)],
+			#	partialFilterExpression = {
+			#		'hasError': { '$exists': True } 
+			#	}
+			#)
 
 		elif col.name == "troubles":
 			pass
@@ -258,5 +280,5 @@ class AmpelDB:
 		elif col.name in AmpelDB._ampel_cols and AmpelDB._ampel_cols[col.name]['dbLabel'] == 'rej':
 
 			# Create sparse index for key runId
-			col.create_index([("tranId", 1)])
+			col.create_index([('tranId', 1)])
 
