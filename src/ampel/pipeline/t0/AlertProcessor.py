@@ -9,8 +9,8 @@
 
 import time, pkg_resources, numpy as np
 from datetime import datetime
-from logging import LogRecord, INFO
 from ampel.pipeline.logging.AmpelLogger import AmpelLogger
+from logging import LogRecord, INFO
 from ampel.pipeline.logging.LoggingUtils import LoggingUtils
 from ampel.pipeline.logging.RecordsBufferingHandler import RecordsBufferingHandler
 from ampel.pipeline.logging.LogsBufferingHandler import LogsBufferingHandler
@@ -23,6 +23,7 @@ from ampel.pipeline.t0.Channel import Channel
 from ampel.pipeline.common.AmpelUtils import AmpelUtils
 from ampel.pipeline.common.GraphiteFeeder import GraphiteFeeder
 from ampel.core.abstract.AbsT0Setup import AbsT0Setup
+from ampel.core.flags.LogRecordFlags import LogRecordFlags
 from ampel.core.flags.AlDocType import AlDocType
 from ampel.base.AmpelAlert import AmpelAlert
 
@@ -141,7 +142,12 @@ class AlertProcessor():
 
 		# Create DB logging handler instance (logging.Handler child class)
 		# This class formats, saves and pushes log records into the DB
-		db_logging_handler = DBLoggingHandler(tier=0)
+		db_logging_handler = DBLoggingHandler(
+			self.input_setup.get_log_flags() |
+			LogRecordFlags.T0 | 
+			LogRecordFlags.CORE
+		)
+
 		db_logging_handler.add_headers(self.log_headers)
 		run_id = db_logging_handler.get_run_id()
 
@@ -254,8 +260,12 @@ class AlertProcessor():
 			# Loop through initialized channels
 			for i, channel in self.chan_enum:
 
-				channel.log_extra['tranId'] = tran_id
-				channel.log_extra['alertId'] = alert_content['alert_id']
+				channel.set_log_extra(
+					{
+						'tranId': tran_id, 
+						'alertId': alert_content['alert_id']
+					}
+				)
 
 				try:
 
@@ -273,7 +283,7 @@ class AlertProcessor():
 
 						# Autocomplete required for this channel
 						if self.live_ac and self.chan_auto_complete[i] and tran_id in tran_ids_before[i]:
-							channel.buff_logger.info("OK live ac")
+							channel.buff_logger.info("Live ac")
 							count_stats['matches'][channel.name] += 1
 							scheduled_t2_units[i] = channel.t2_units
 
@@ -281,11 +291,11 @@ class AlertProcessor():
 
 							# Save possibly existing error to 'main' logs
 							if channel.buff_handler.has_error:
-								channel.buff_handler.copy(db_logging_handler)
+								channel.buff_handler.copy(db_logging_handler, True)
 
 							# If channel did not log anything, do it for it
 							if not channel.buff_handler.buffer:
-								channel.buff_logger.info("NO")
+								channel.buff_logger.info(None)
 
 							# Save rejected logs to separate (channel specific) db collection
 							channel.buff_handler.forward(
@@ -299,10 +309,10 @@ class AlertProcessor():
 
 						# If channel did not log anything, do it for it
 						if not channel.buff_handler.buffer:
-							channel.buff_logger.info("OK")
+							channel.buff_logger.info(None)
 
-						# Write log entries from buffer handler to main log db
-						channel.buff_handler.forward(db_logging_handler)
+						# Write log entries from buffer handler to main log collection
+						channel.buff_handler.forward(db_logging_handler, True)
 
 				except Exception as e:
 
@@ -321,9 +331,6 @@ class AlertProcessor():
 			dur_stats['allFilters'][iter_count] = time_now() - all_filters_start
 
 			if any(t2 is not None for t2 in scheduled_t2_units):
-
-				# Ingest alert
-				self.logger.info("Ingesting")
 
 				# stats
 				ingested_count += 1
