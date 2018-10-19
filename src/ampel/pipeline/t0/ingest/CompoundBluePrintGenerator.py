@@ -165,9 +165,11 @@ class CompoundBluePrintGenerator():
 			if eff_id != strict_id:
 	
 				self.logger.info(
-					"%s compound id: (eff: %s, strict: %s)" % (
-						chan_name, eff_id_str, strict_id_str
-					)
+					None, extra={
+						'channels': chan_name,
+						'compIdEff': eff_id,
+						'compIdStrict': strict_id
+					}
 				)
 	
 				# Add tupple (chan_name, strict id) to internal dict using eff_id as key
@@ -186,7 +188,10 @@ class CompoundBluePrintGenerator():
 			else:
 	
 				self.logger.info(
-					"%s compound id: %s" % (chan_name, eff_id_str)
+					None, extra={
+						'channels': chan_name,
+						'compId': eff_id
+					}
 				)
 
 		# Return instance of CompoundBluePrint
