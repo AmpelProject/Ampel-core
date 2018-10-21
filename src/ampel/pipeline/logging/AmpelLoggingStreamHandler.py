@@ -7,10 +7,11 @@
 # Last Modified Date: 17.10.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-from logging import StreamHandler, DEBUG
+from logging import StreamHandler, DEBUG, _logRecordFactory
 from ampel.pipeline.logging.AmpelLogger import AmpelLogger
 	
 class AmpelLoggingStreamHandler(StreamHandler):
+
 
 	def __init__(self, stream, level=DEBUG, aggregate_interval=1):
 		""" 
@@ -23,7 +24,7 @@ class AmpelLoggingStreamHandler(StreamHandler):
 
 		super().__init__(stream)
 		self.aggregate_interval = aggregate_interval
-		self.prev_records = None
+		self.prev_records = _logRecordFactory(None, None, None, None, None, None, None, None, None)
 		self.setLevel(level)
 
 
@@ -45,9 +46,6 @@ class AmpelLoggingStreamHandler(StreamHandler):
 			if record.msg:
 				print(record.msg)
 		else:
-
-			if record.msg or self.prev_records.msg:
-				print("")
 
 			print(self.format(record))
 			self.prev_records = record
