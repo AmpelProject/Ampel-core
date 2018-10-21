@@ -6,12 +6,13 @@
 # Last Modified Date: 25.01.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-import datetime
+from datetime import datetime
 from ampel.core.flags.LogRecordFlags import LogRecordFlags
 from ampel.pipeline.logging.DBLoggingHandler import DBLoggingHandler
 
 class DBLogPrinter:
 	"""
+	NEEDS OBERHAUL, NO LONGER WORKING
 	"""
 
 	def __init__(self, db):
@@ -75,7 +76,7 @@ class DBLogPrinter:
 		for jobevent in lres:
 			for rec in jobevent['records']:
 				print(
-					datetime.datetime.fromtimestamp(
+					datetime.utcfromtimestamp(
 						int(rec['date'])
 					).strftime('%Y-%m-%d %H:%M:%S') + " " + rec['msg']
 				)

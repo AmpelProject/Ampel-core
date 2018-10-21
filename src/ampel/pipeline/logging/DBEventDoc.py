@@ -4,10 +4,10 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 26.09.2018
-# Last Modified Date: 16.10.2018
+# Last Modified Date: 19.10.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-from datetime import datetime
+import time
 from ampel.pipeline.db.AmpelDB import AmpelDB
 
 class DBEventDoc():
@@ -19,6 +19,7 @@ class DBEventDoc():
 		:param str event_name: event name. For example 'ap' (alertprocessor) or task name
 		:param int tier: value (0,1,2,3) indicating at which ampel tier level logging is done
 		:param str col_name: name of db collection to use (default 'events'). 
+		:param int dt: timestamp
 
 		Collection is retrieved using AmpelDB.get_collection()
 		"""
@@ -27,7 +28,7 @@ class DBEventDoc():
 		self.col = AmpelDB.get_collection(col_name)
 		self.run_ids = []
 		self.event_info = {}
-		self.dt = int(datetime.utcnow().timestamp()) if dt is None else dt
+		self.dt = int(time.time()) if dt is None else int(dt)
 
 
 	def set_event_info(self, event_info):
@@ -55,7 +56,7 @@ class DBEventDoc():
 		res = self.col.update_one(
 			{
 				'_id': int(
-					datetime.today().strftime('%Y%m%d')
+					time.strftime('%Y%m%d')
 				)
 			},
 			{

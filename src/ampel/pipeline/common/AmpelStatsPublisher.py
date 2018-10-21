@@ -8,7 +8,7 @@
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import json
-from datetime import datetime
+from time import time, strftime
 from ampel.pipeline.logging.AmpelLogger import AmpelLogger
 from ampel.pipeline.common.AmpelUtils import AmpelUtils
 from ampel.pipeline.common.Schedulable import Schedulable
@@ -412,12 +412,12 @@ class AmpelStatsPublisher(Schedulable):
 			else:
 				# Record job info into DB
 				self.col_runs.update_one(
-					{'_id': int(datetime.today().strftime('%Y%m%d'))},
+					{'_id': int(strftime('%Y%m%d'))},
 					{
 						'$push': {
 							'jobs': {
 								'name': 'asp',
-								'dt': datetime.utcnow().timestamp(),
+								'dt': time(),
 								'metrics': AmpelUtils.unflatten_dict(out_dict)
 							}
 						}

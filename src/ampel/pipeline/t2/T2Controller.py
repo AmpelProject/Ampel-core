@@ -7,11 +7,11 @@
 # Last Modified Date: 16.10.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-from datetime import datetime, timedelta
+import pkg_resources, math
+from time import time
 from pymongo.errors import BulkWriteError
 from pymongo import UpdateOne
 from types import MappingProxyType
-import pkg_resources, math
 
 from ampel.base.abstract.AbsT2Unit import AbsT2Unit
 from ampel.core.flags.AlDocType import AlDocType
@@ -57,8 +57,6 @@ class T2Controller(Schedulable):
 		# Key: run config id(unit name + "_" + run_config name), Value: dict instance
 		# Key example: POLYFIT_default
 		self.t2_run_config = {}
-
-		# self.from_dt = datetime.utcnow() - datetime.timedelta(*backtime)
 
 		# run_state must be an int value (see ampel.core.flags.T2RunStates).
 		# Only the documents matching this run_state will be processed (for example: TO_RUN)
@@ -194,7 +192,7 @@ class T2Controller(Schedulable):
 			assert lc is not None
 
 			# Run t2
-			before_run = datetime.utcnow().timestamp()
+			before_run = time()
 			try:
 				ret = t2_instances[t2_unit_name].run(
 					lc, (
@@ -215,7 +213,7 @@ class T2Controller(Schedulable):
 				)
 
 			# Used as timestamp and to compute duration below (using before_run)
-			now = datetime.utcnow().timestamp()
+			now = time()
 
 			# T2 units can return a T2RunStates flag rather than a dict instance
 			# for example: T2RunStates.EXCEPTION, T2RunStates.BAD_CONFIG, ...
@@ -233,7 +231,7 @@ class T2Controller(Schedulable):
 								"results": {
 									'versions': self.versions[t2_unit_name],
 									'dt': now,
-									'duration': now - before_run,
+									'duration': int(now - before_run),
 									'runId': db_logging_handler.get_run_id(),
 									'error': ret.value
 								}
@@ -258,7 +256,7 @@ class T2Controller(Schedulable):
 								"results": {
 									'versions': self.versions[t2_unit_name],
 									'dt': now,
-									'duration': round(now - before_run, 3),
+									'duration': int(now - before_run),
 									'runId': db_logging_handler.get_run_id(),
 									'output': ret
 								}

@@ -7,7 +7,8 @@
 # Last Modified Date: 15.10.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-import logging, time
+import logging
+from time import time
 from datetime import datetime
 from itertools import islice
 from abc import abstractmethod
@@ -199,7 +200,7 @@ class T3Event:
 				}
 			)
 
-		# Get datetime of last run
+		# Get date-time of last run
 		last_run = AmpelUtils.get_by_path(
 			next(
 				AmpelDB.get_collection('events').aggregate(
@@ -232,7 +233,7 @@ class T3Event:
 		return GlobalInfo(
 			**{
 				'event': self.name,
-				'last_run': datetime.fromtimestamp(last_run),
+				'last_run': datetime.utcfromtimestamp(last_run),
 				'processed_alerts': None if res is None else res.get('alerts'),
 				'admin_msg': admin_msg
 			}
@@ -438,7 +439,7 @@ class T3Event:
 		if len(self.t3_units) == 0:
 			raise ValueError("No instantiated t3 unit")
 
-		time_start = datetime.utcnow().timestamp()
+		time_start = time()
 
 		# Feedback
 		self.logger.shout("Running %s" % self.name)
@@ -496,7 +497,7 @@ class T3Event:
 			if self.update_events:
 				self.event_doc.set_event_info({
 					'metrics': {
-						'duration': int(datetime.utcnow().timestamp() - time_start)
+						'duration': int(time() - time_start)
 					}
 				})
 				self.event_doc.publish()
