@@ -10,6 +10,7 @@
 import logging, sys
 from logging import _logRecordFactory
 from ampel.pipeline.logging.ExtraLogFormatter import ExtraLogFormatter
+from ampel.pipeline.config.ReadOnlyDict import ReadOnlyDict
 
 # Custom log int level (needed for efficient storing in DB)
 logging.DEBUG = 65536 
@@ -49,9 +50,10 @@ class AmpelLogger(logging.Logger):
 			logger = AmpelLogger.get_unique_logger()
 		"""
 
-		from datetime import datetime
+		import time
 		return AmpelLogger.get_logger(
-			"Ampel-"+str(datetime.utcnow().time()), **kwargs
+			name="Ampel-"+str(time.time()), 
+			**kwargs
 		)
 
 
@@ -85,7 +87,7 @@ class AmpelLogger(logging.Logger):
 
 
 	@staticmethod
-	def _new_logger(name, log_level=logging.DEBUG, datefmt="%Y-%m-%d %H:%M:%S"):
+	def _new_logger(name, log_level=logging.DEBUG, formatter=None, formatter_options={}):
 		"""
 		Creates an instance of :obj:`AmpelLogger <ampel.pipeline.logging.AmpelLogger>` 
 		with the following properties:\n
@@ -95,6 +97,9 @@ class AmpelLogger(logging.Logger):
 
 		:param str name: logger name
 		:returns: :obj:`AmpelLogger <ampel.pipeline.logging.AmpelLogger>` instance
+
+		:param dict formatter_options: possible keys: 'datefmt' (default "%Y-%m-%d %H:%M:%S"), 
+		'line_number' (bool, default false), 'channels' (default: None)
 		"""
 
 		logger = AmpelLogger(name)
@@ -104,15 +109,36 @@ class AmpelLogger(logging.Logger):
 		# Perform import here to avoid cyclic import errro
 		from ampel.pipeline.logging.AmpelLoggingStreamHandler import AmpelLoggingStreamHandler
 		sh = AmpelLoggingStreamHandler(sys.stderr)
-		#sh = logging.StreamHandler(sys.stderr)
 		sh.setLevel(log_level)
 		sh.setFormatter(
 			# Allows to print values passed in dict 'extra'
-			ExtraLogFormatter(datefmt=datefmt)
+			ExtraLogFormatter(**formatter_options) if formatter is None else formatter
 		)
 		logger.addHandler(sh)
 
 		return logger
+
+
+	@classmethod
+	def quieten_console_loggers(self):
+		""" 
+		Quieten all loggers registered in AmpelLogger.loggers.
+		See quieten_console (without s) docstring for more info
+		:returns: None
+		"""
+		for logger in AmpelLogger.loggers:
+			logger.set_console_log_level(21)
+
+		
+	@classmethod
+	def louden_console_loggers(self):
+		""" 
+		Louden all loggers registered in AmpelLogger.loggers.
+		See louden_console (without s) docstring for more info
+		:returns: None
+		"""
+		for logger in AmpelLogger.loggers:
+			logger.set_console_log_level(logging.DEBUG)
 
 
 	def __init__(self, name, level=logging.DEBUG, channels=None):
@@ -129,7 +155,7 @@ class AmpelLogger(logging.Logger):
 		if channels:
 			if type(channels) not in (list, str):
 				raise ValueError("Unsupported type for parameter 'channels' (%s)" % type(channels))
-			self.__extra = {'channels': channels}
+			self.__extra = ReadOnlyDict({'channels': channels})
 
 
 	def __add_extra(self, key, value):
@@ -137,9 +163,12 @@ class AmpelLogger(logging.Logger):
 		Note: whatever you add here, it must be BSON encodable
 		"""
 		if self.__extra:
-			self.__extra[key] = value
+			d = dict(self.__extra)
+			d = value
+			self.__extra = ReadOnlyDict(d)
 		else:
-			self.__extra = {key: value}
+			self.__extra = ReadOnlyDict({key: value})
+
 
 
 	def set_console_log_level(self, lvl):
@@ -245,11 +274,8 @@ class AmpelLogger(logging.Logger):
 
 		rv = _logRecordFactory(name, level, fn, lno, msg, args, exc_info, func, sinfo)
 
-		if extra is not None:
-			if self.__extra:
-				rv.__dict__['extra'] = {**extra, **self.__extra}
-			else:
-				rv.__dict__['extra'] = extra
+		if extra:
+			rv.__dict__['extra'] = {**extra, **self.__extra} if self.__extra else extra
 		else:
 			rv.__dict__['extra'] = self.__extra
 				
