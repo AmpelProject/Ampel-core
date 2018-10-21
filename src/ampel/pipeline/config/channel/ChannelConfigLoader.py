@@ -53,7 +53,8 @@ class ChannelConfigLoader:
 			# if chan_names is None, load all available channels (unless non-active)
 			for chan_doc in AmpelConfig.get_config('channels').values():
 
-				if chan_doc['active'] is False:
+				# None is not False and active defaults to True
+				if chan_doc.get('active') is False:
 					# Do not load channels with active=False if not specifically required (by name) 
 					if logger:
 						logger.info("Ignoring non-active channel %s" % chan_doc['channel'])
@@ -76,7 +77,8 @@ class ChannelConfigLoader:
 				
 				chan_doc = AmpelConfig.get_config(['channels', chan_name])
 
-				if chan_doc['active'] is False and logger:
+				# None is not False and active defaults to True
+				if chan_doc.get('active') is False and logger:
 					logger.info("Loading requested non-active channel %s" % chan_doc['channel'])
 
 				ret.append(
