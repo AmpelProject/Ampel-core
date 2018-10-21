@@ -111,6 +111,11 @@ class DBLoggingHandler(logging.Handler):
 			):
 	
 				prev_dict = self.log_dicts[-1]
+
+				if 'msg' not in prev_dict:
+					prev_dict['msg'] = "None log entry with identical 'extra' repeated twice"
+					return
+
 				if type(prev_dict['msg']) is not list:
 					prev_dict['msg'] = [prev_dict['msg'], record.msg]
 				else:
@@ -243,7 +248,8 @@ class DBLoggingHandler(logging.Handler):
 
 	def flush(self):
 		""" 
-		Will throw Exception if DB issue occur
+		Will throw Exception if DB issue occur.
+		Note: we do not lock because for now, T0 does not use threading
 		"""
 
 		# No log entries
