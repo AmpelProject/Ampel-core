@@ -185,14 +185,14 @@ class CompoundBluePrintGenerator():
 				# Save strict compound using strict id as key
 				cbp.d_sid_compdiff[strict_id] = strict_comp
 	
-			else:
-	
-				self.logger.info(
-					None, extra={
-						'channels': chan_name,
-						'compId': eff_id
-					}
-				)
+		# Feedback
+		for eff_id, chans in cbp.d_eid_chnames.items():
+			self.logger.info(
+				None, extra={
+					'channels': next(iter(chans)) if len(chans) == 1 else list(chans),
+					'compId': eff_id
+				}
+			)
 
 		# Return instance of CompoundBluePrint
 		return cbp
