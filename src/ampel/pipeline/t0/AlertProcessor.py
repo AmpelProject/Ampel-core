@@ -12,6 +12,7 @@ from datetime import datetime
 from ampel.pipeline.logging.AmpelLogger import AmpelLogger
 from logging import LogRecord, INFO
 from ampel.pipeline.logging.LoggingUtils import LoggingUtils
+from ampel.pipeline.logging.T0ConsoleFormatter import T0ConsoleFormatter
 from ampel.pipeline.logging.RecordsBufferingHandler import RecordsBufferingHandler
 from ampel.pipeline.logging.LogsBufferingHandler import LogsBufferingHandler
 from ampel.pipeline.logging.DBLoggingHandler import DBLoggingHandler
@@ -39,7 +40,7 @@ class AlertProcessor():
 	iter_max = 5000
 
 	def __init__(self, 
-		survey_id, channels=None, publish_stats=['graphite', 'jobs']
+		survey_id, channels=None, publish_stats=['graphite', 'jobs'], log_line_nbr=False
 	):
 		"""
 		:param str survey_id: id of the survey (ex: 'ZTFIPAC').
@@ -62,7 +63,10 @@ class AlertProcessor():
 		"""
 
 		# Setup logger
-		self.logger = AmpelLogger.get_unique_logger()
+		self.logger = AmpelLogger.get_unique_logger(
+			formatter=T0ConsoleFormatter(line_number=log_line_nbr)
+		)
+
 		lbh = LogsBufferingHandler(tier=0)
 		self.logger.addHandler(lbh)
 
@@ -82,7 +86,7 @@ class AlertProcessor():
 		# Load channels
 		self.t0_channels = [
 			# Create Channel instance (instantiates channel's filter class as well)
-			Channel(channel_config, survey_id, self.logger) 
+			Channel(channel_config, survey_id, self.logger, log_line_nbr) 
 			for channel_config in ChannelConfigLoader.load_configurations(channels, 0, self.logger)
 		]
 
@@ -152,7 +156,7 @@ class AlertProcessor():
 		run_id = db_logging_handler.get_run_id()
 
 		# Add db logging handler to the logger stack of handlers 
-		self.logger.addHandler(db_logging_handler)
+		self.logger.handlers.insert(0, db_logging_handler)
 
 		self.logger.shout("Starting")
 
@@ -172,7 +176,7 @@ class AlertProcessor():
 
 		# Add current run_id to channel specific rejected log saver
 		for t0_chan in self.t0_channels:
-			t0_chan.rejected_logs_saver.set_run_id(run_id)
+			t0_chan.rejected_log_handler.set_run_id(run_id)
 
 
 		# divers
@@ -242,7 +246,6 @@ class AlertProcessor():
 
 			# Associate upcoming log entries with the current transient id
 			tran_id = alert_content['tran_id']
-			self.logger._AmpelLogger__tran_id = tran_id
 
 			# Create AmpelAlert instance
 			ampel_alert = AmpelAlert(
@@ -257,15 +260,13 @@ class AlertProcessor():
 			# stats
 			all_filters_start = time_now()
 
+			extra = {
+				'tranId': tran_id, 
+				'alertId': alert_content['alert_id']
+			}
+
 			# Loop through initialized channels
 			for i, channel in self.chan_enum:
-
-				channel.set_log_extra(
-					{
-						'tranId': tran_id, 
-						'alertId': alert_content['alert_id']
-					}
-				)
 
 				try:
 
@@ -291,16 +292,15 @@ class AlertProcessor():
 
 							# Save possibly existing error to 'main' logs
 							if channel.buff_handler.has_error:
-								channel.buff_handler.copy(db_logging_handler, True)
+								channel.buff_handler.copy(db_logging_handler, extra)
 
 							# If channel did not log anything, do it for it
 							if not channel.buff_handler.buffer:
-								channel.buff_logger.info(None)
+								extra['filter'] = channel.unit_name
+								channel.buff_logger.info(None, extra)
 
 							# Save rejected logs to separate (channel specific) db collection
-							channel.buff_handler.forward(
-								channel.rejected_logs_saver
-							)
+							channel.buff_handler.forward(channel.rejected_logger, extra=extra)
 
 					# Filter accepted alert
 					else:
@@ -309,14 +309,15 @@ class AlertProcessor():
 
 						# If channel did not log anything, do it for it
 						if not channel.buff_handler.buffer:
-							channel.buff_logger.info(None)
+							extra['filter'] = channel.unit_name
+							channel.buff_logger.info(None, channel.name, extra)
 
-						# Write log entries from buffer handler to main log collection
-						channel.buff_handler.forward(db_logging_handler, True)
+						# Write log entries to main logger
+						channel.buff_handler.forward(self.logger, channel.name, extra)
 
 				except Exception as e:
 
-					channel.buff_handler.forward(db_logging_handler)
+					channel.buff_handler.forward(db_logging_handler, extra=extra)
 					LoggingUtils.report_exception(
 						self.logger, e, tier=0, 
 						run_id=db_logging_handler.get_run_id(), info={
@@ -368,10 +369,10 @@ class AlertProcessor():
 				}
 				db_logging_handler.handle(lr)
 
-			# Unset log entries association with transient id
-			self.logger._AmpelLogger__tran_id = None
-
 			iter_count += 1
+
+			if full_console_logging:
+				print("")
 
 			if iter_count == iter_max:
 				self.logger.info("Reached max number of iterations")
@@ -480,7 +481,7 @@ class AlertProcessor():
 
 			# Flush channel-specific rejected logs
 			for t0_chan in self.t0_channels:
-				t0_chan.rejected_logs_saver.flush()
+				t0_chan.rejected_log_handler.flush()
 
 		else:
 			db_logging_handler.purge()
