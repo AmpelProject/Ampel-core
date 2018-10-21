@@ -39,18 +39,26 @@ class RecordsBufferingHandler(BufferingHandler):
 		self.buffer.append(record)
 		
 
-	def forward(self, logger_or_handler, incl_channel=False):
+	def forward(self, logger_or_handler, channels=None, extra=None):
 		"""
 		Forwards saved log records to provided logger instance.
 		The internal record buffer will be deleted.
 		:param logger_or_handler: logger or LoggingHandler instance
 		"""
-		if incl_channel:
+
+		if channels:
+			if extra:
+				extra = extra.copy() # shallow copy
+				extra['channels'] = channels
+			else:
+				extra={'channels': channels}
+
+		if extra:
 			for el in self.buffer:
-				if not el.__dict__["extra"]:
-					el.__dict__["extra"] = {'channels': self.channel}
+				if el.__dict__["extra"]:
+					el.__dict__["extra"].update(extra)
 				else:
-					el.__dict__["extra"]['channels'] = self.channel
+					el.__dict__["extra"] = extra
 				logger_or_handler.handle(el)
 		else:
 			for el in self.buffer:
@@ -58,17 +66,24 @@ class RecordsBufferingHandler(BufferingHandler):
 		self.buffer = []
 
 
-	def copy(self, logger, incl_channel=False):
+	def copy(self, logger, channels, extra):
 		"""
 		Copy saved log records to provided logger instance.
 		The internal record buffer is kept.
 		"""
-		if incl_channel:
+		if channels:
+			if extra:
+				extra = extra.copy() # shallow copy
+				extra['channels'] = channels
+			else:
+				extra={'channels': channels}
+
+		if extra:
 			for el in self.buffer:
-				if not el.__dict__["extra"]:
-					el.__dict__["extra"] = {'channels': self.channel}
+				if el.__dict__["extra"]:
+					el.__dict__["extra"].update(extra)
 				else:
-					el.__dict__["extra"]['channels'] = self.channel
+					el.__dict__["extra"] = extra
 				logger.handle(el)
 
 		else:

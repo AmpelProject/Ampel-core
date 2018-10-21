@@ -8,7 +8,7 @@
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import time
-from logging import WARNING
+from logging import DEBUG, WARNING, Handler
 from pymongo.errors import BulkWriteError
 from pymongo.operations import UpdateOne
 from ampel.pipeline.db.AmpelDB import AmpelDB
@@ -16,7 +16,7 @@ from ampel.pipeline.logging.DBUpdateException import DBUpdateException
 
 
 #class RejectedLogs():
-class DBRejectedLogsSaver():
+class DBRejectedLogsSaver(Handler):
 	"""
 	Class responsible for saving rejected log events (by T0 filters) 
 	into the NoSQL database. This class does not inherit logging.Handler 
@@ -33,6 +33,12 @@ class DBRejectedLogsSaver():
 		of time in seconds during which log aggregation takes place. Beyond this value, 
 		attempting a database bulk_write operation.
 		"""
+
+		# required when not using super().__init__
+		self.filters = []
+		self.lock = None
+		self._name = None
+		self.level = DEBUG
 
 		self.flush_len = flush_len
 		self.aggregate_interval = aggregate_interval
@@ -54,12 +60,14 @@ class DBRejectedLogsSaver():
 		return self.run_id
 
 
-	def handle(self, record):
+	def emit(self, record):
+
 		""" 
 		"""
 
 		try: 
 
+			# extra (alertId, tranId) is set by AlertProcessor
 			extra = getattr(record, 'extra')
 			
 			# Same flag, date (+- 1 sec), tran_id and chans
@@ -80,21 +88,23 @@ class DBRejectedLogsSaver():
 				if len(self.log_dicts) > self.flush_len:
 					self.flush()
 
-				log_id = record.extra.pop('alertId')
-	
 				# If duplication exists between keys in extra and in standard rec,
 				# the corresponding extra items will be overwritten (and thus ignored)
-				d = {
-					**extra, # position matters, should be first
-					'_id': log_id,
-					'dt': int(time.time())
-				}
+				d = extra.copy()
+
+				d['_id'] = extra['alertId']
+				d['dt']= int(time.time())
 
 				if record.levelno > WARNING:
 					d['runId'] = self.run_id
 
 				if record.msg:
 					d['msg'] = record.msg
+
+				try:
+					del d['alertId'], d['channels']
+				except:
+					pass
 
 				self.log_dicts.append(d)
 				self.prev_records = record
