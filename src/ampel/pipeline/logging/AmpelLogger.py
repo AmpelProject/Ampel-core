@@ -87,7 +87,7 @@ class AmpelLogger(logging.Logger):
 
 
 	@staticmethod
-	def _new_logger(name, log_level=logging.DEBUG, formatter=None, formatter_options={}):
+	def _new_logger(name, log_level=logging.DEBUG, formatter=None, channels=None, formatter_options={}):
 		"""
 		Creates an instance of :obj:`AmpelLogger <ampel.pipeline.logging.AmpelLogger>` 
 		with the following properties:\n
@@ -102,7 +102,7 @@ class AmpelLogger(logging.Logger):
 		'line_number' (bool, default false), 'channels' (default: None)
 		"""
 
-		logger = AmpelLogger(name)
+		logger = AmpelLogger(name, channels=channels)
 		logger.propagate = False
 		logger.setLevel(log_level)
 		
