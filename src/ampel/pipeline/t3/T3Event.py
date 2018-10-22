@@ -378,7 +378,7 @@ class T3Event:
 			yield al_tran_data
 
 
-	def create_tran_views(self, transients, channels, docs=None, t2_subsel=None):
+	def create_tran_views(self, event_name, transients, channels, docs=None, t2_subsel=None):
 		"""
 		:param transients: list of TransientData instances
 		:type transients: list(:py:class:`TransientData <ampel.pipeline.t3.TransientData>`)
@@ -390,7 +390,7 @@ class T3Event:
 		#if self.db_logging_handler:
 		#	self.db_logging_handler.set_channels(self.task_config.channels)
 
-		self.logger.info("Creating TranViews")
+		self.logger.info("%s: creating TranViews" % event_name)
 
 		if isinstance(channels, dict):
 			channels = LogicSchemaUtils.reduce_to_set(channels)
@@ -485,28 +485,11 @@ class T3Event:
 								self.logger, e, tier=3, run_id=self.run_id,
 								info={self.event_type: self.name}
 							)
-
-				# For each t3_unit, execute done()
-				for t3_unit in self.t3_units.values():
-
-					try:
-						t3_unit.done()
-					except Exception as e:
-
-						if self.raise_exc:
-							raise e
-
-						LoggingUtils.report_exception(
-							self.logger, e, tier=3, run_id=self.run_id,
-							info={self.event_type: self.name}
-						)
 			else:
+
 				# Handle transient-less T3 units here
+				# TODO: implement
 				pass
-
-
-			# Feedback
-			self.logger.shout("Done running %s" % self.name)
 
 		except Exception as e:
 
@@ -520,6 +503,10 @@ class T3Event:
 
 		finally:
 
+			# Feedback
+			self.logger.shout("Done running %s" % self.name)
+
+			# Calls done() for each T3 unit instance (among other things)
 			self.finish()
 
 			# Register the execution of this event into the events col

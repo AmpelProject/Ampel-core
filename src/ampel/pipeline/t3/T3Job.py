@@ -14,6 +14,7 @@ from ampel.pipeline.logging.DBLoggingHandler import DBLoggingHandler
 from ampel.pipeline.logging.DBEventDoc import DBEventDoc
 from ampel.pipeline.logging.AmpelLogger import AmpelLogger
 from ampel.pipeline.logging.LoggingUtils import LoggingUtils
+from ampel.pipeline.common.AmpelUtils import AmpelUtils
 from ampel.base.flags.TransientFlags import TransientFlags
 from ampel.core.flags.LogRecordFlags import LogRecordFlags
 from ampel.pipeline.common.AmpelUnitLoader import AmpelUnitLoader
@@ -53,7 +54,10 @@ class T3Job(T3Event):
 				self.no_run = True
 				return
 
-			self.logger.info("$forEach operator will be applied to %s" % chans)
+			self.logger.info(
+				"$forEach operator will be applied", 
+				extra={'channels': chans}
+			)
 
 			new_tasks = []
 
@@ -61,6 +65,7 @@ class T3Job(T3Event):
 				for chan_name in chans:
 					new_task = task_config.copy(deep=True)
 					new_task.transients.select.channels = chan_name
+					new_task.task = new_task.task + "_" + str(chan_name)
 					new_tasks.append(new_task)
 
 			# Update tasks with those generated 
@@ -77,14 +82,7 @@ class T3Job(T3Event):
 				)
 	
 				# Create logger
-				logger = AmpelLogger.get_logger(
-					name = task_config.task + str(i),
-					#channels = list(
-					#	LogicSchemaUtils.reduce_to_set(
-					#		task_config.transients.select.channels
-					#	)
-					#) if task_config.get("transients.select.channels") else None
-				)
+				logger = self._create_task_logger(task_config, str(i))
 
 				# Quieten logger if so wished
 				if not self.full_console_logging:
@@ -106,13 +104,10 @@ class T3Job(T3Event):
 
 				else:
 
-					self.logger.warn(
-						"Logger for task '%s' will not write log entries into DB" % 
-						task_config.task
-					)
+					logger.warn("DB-less logger", extra={'task': task_config.task})
 
 					if self.update_tran_journal:
-						self.logger.warn("WARNING: will update transient journal without reference to runId")
+						logger.warn("WARNING: journal updates will not reference runId!")
 	
 				# Instantiate t3 unit
 				self.add_t3_unit(
@@ -152,6 +147,20 @@ class T3Job(T3Event):
 			self.journal_updater = T3JournalUpdater(
 				self.run_id, self.name, self.logger, self.raise_exc
 			)
+
+
+	def _create_task_logger(self, task_config, name_suffix=""):
+		""" """
+		return AmpelLogger.get_logger(
+			name = task_config.task + name_suffix,
+			channels = AmpelUtils.try_reduce(
+				list(
+					LogicSchemaUtils.reduce_to_set(
+						task_config.transients.select.channels
+					)
+				) if task_config.get("transients.select.channels") else None
+			)
+		)
 
 
 	def _get_channels(self):
@@ -201,6 +210,8 @@ class T3Job(T3Event):
 		for task_config in self.config.tasks:
 
 			task_name = task_config.task
+
+			self.logger.info("%s: processing TranData" % task_name)
 
 			try:
 
@@ -264,6 +275,7 @@ class T3Job(T3Event):
 				)
 
 				tran_views = self.create_tran_views(
+					task_name,
 					tran_selection.values(), chan_set, 
 					task_config.transients.content.docs,
 					task_config.transients.content.t2SubSelection
@@ -315,11 +327,23 @@ class T3Job(T3Event):
 		# Feed each task with transient views
 		for task_config in self.config.tasks:
 
-			task_name = task_config.task
+			try:
 
-			# Calling T3Unit closing method done()
-			start = time()
-			self.get_t3_unit(task_name).done()
-			self.event_docs[task_name].add_duration(time()-start)
+				task_name = task_config.task
 
-			self.event_docs[task_name].publish()
+				# Calling T3Unit closing method done()
+				start = time()
+				self.get_t3_unit(task_name).done()
+				self.event_docs[task_name].add_duration(time()-start)
+
+				self.event_docs[task_name].publish()
+
+			except Exception as e:
+
+				if self.raise_exc:
+					raise e
+
+				LoggingUtils.report_exception(
+					self.logger, e, tier=3, run_id=self.run_id,
+					info={self.event_type: self.name}
+				)
