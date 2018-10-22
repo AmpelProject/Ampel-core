@@ -66,7 +66,7 @@ class ChannelConfigLoader:
 
 		else:
 
-			if isinstance(chan_names, str):
+			if isinstance(chan_names, (int, str)):
 				chan_names = [chan_names]
 
 			if len(chan_names) != len(set(chan_names)):

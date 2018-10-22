@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 29.09.2018
-# Last Modified Date: 15.10.2018
+# Last Modified Date: 22.10.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from pydantic import BaseModel, validator
@@ -60,7 +60,7 @@ class TranSelectConfig(BaseModel, AmpelModelExtension):
 					"ConfigUtils.conditional_expr_converter(..) docstring for more info"
 			)
 
-		if type(v) is str:
+		if type(v) in (str, int):
 			return {'anyOf': [v]}
 
 		if type(v) is dict:
@@ -79,14 +79,14 @@ class TranSelectConfig(BaseModel, AmpelModelExtension):
 						msg="Invalid dict value type: %s. Must be a sequence" % type(v['anyOf'])
 					)
 
-				# 'anyOf' supports only a list of dicts and str
-				if not AmpelUtils.check_seq_inner_type(v['anyOf'], (str, dict), multi_type=True):
+				# 'anyOf' supports only a list of dicts and str/int
+				if not AmpelUtils.check_seq_inner_type(v['anyOf'], (str, int, dict), multi_type=True):
 					cls.print_and_raise(
 						header="transients->select->%s:anyOf config error" % field_name,
 						msg="Unsupported nesting (err 2)"
 					)
 
-				if not AmpelUtils.check_seq_inner_type(v['anyOf'], str) and len(v['anyOf']) < 2:
+				if not AmpelUtils.check_seq_inner_type(v['anyOf'], (int, str)) and len(v['anyOf']) < 2:
 					cls.print_and_raise(
 						header="transients->select->%s:anyOf config error" % field_name,
 						msg="anyOf list must contain more than one element when containing allOf\n" + 
@@ -106,10 +106,10 @@ class TranSelectConfig(BaseModel, AmpelModelExtension):
 						elif 'allOf' in el:
 
 							# 'allOf' closes nesting  
-							if not AmpelUtils.check_seq_inner_type(el['allOf'], str):
+							if not AmpelUtils.check_seq_inner_type(el['allOf'], (int, str)):
 								cls.print_and_raise(
 									header="transients->select->%s:anyOf.allOf config error" % field_name,
-									msg="Unsupported nesting (allOf list content must be str)"
+									msg="Unsupported nesting (allOf list content must be str/int)"
 								)
 
 							if len(set(el['allOf'])) < 2:
@@ -128,7 +128,7 @@ class TranSelectConfig(BaseModel, AmpelModelExtension):
 			elif 'allOf' in v:
 
 				# 'allOf' closes nesting  
-				if not AmpelUtils.is_sequence(v['allOf']) or not AmpelUtils.check_seq_inner_type(v['allOf'], str):
+				if not AmpelUtils.is_sequence(v['allOf']) or not AmpelUtils.check_seq_inner_type(v['allOf'], (int, str)):
 					cls.print_and_raise(
 						header="transients->select->%s:allOf config error" % field_name,
 						msg="Invalid type for value %s\n(must be a sequence, is: %s)\n" % 

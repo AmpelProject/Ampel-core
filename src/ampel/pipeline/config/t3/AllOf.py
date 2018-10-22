@@ -8,7 +8,7 @@
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from pydantic import BaseModel
-from typing import List
+from typing import List, Union
 
 class AllOf(BaseModel):
-	allOf: List[str]
+	allOf: Union[List[int], List[str]]

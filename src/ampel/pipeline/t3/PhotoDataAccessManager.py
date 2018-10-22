@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 02.06.2018
-# Last Modified Date: 16.10.2018
+# Last Modified Date: 22.10.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from ampel.pipeline.config.AmpelConfig import AmpelConfig
@@ -22,12 +22,12 @@ class PhotoDataAccessManager:
 		"""
 
 		self.photo_flags = None
-		chan = AmpelConfig.get_config('channels.%s' % chan_name)
+		chan = AmpelConfig.get_config(['channels', chan_name])
 
 		if chan is None:
 			raise ValueError(
-				"Unknown channel name '%s', please check your config" % 
-				chan_name
+				"Unknown channel name: %s (type: %s), please check your config" % 
+				(chan_name, type(chan_name))
 			)
 
 		channel = ChannelConfig.create(tier=0, **chan)

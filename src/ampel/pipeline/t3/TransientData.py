@@ -45,7 +45,8 @@ class TransientData:
 
 	def set_channels(self, channels):
 		""" 
-		:param set(str) channels: set of channel names
+		:param channels: channel ids
+		:type channels: Iterable[str], Iterable[int]
 		"""
 		self.channels = channels
 
@@ -58,7 +59,10 @@ class TransientData:
 
 
 	def set_latest_state(self, channels, state):
-		""" Saves latest state of transient for the provided channel """
+		""" Saves latest state of transient for the provided channel\n
+		:param channels: channel ids
+		:type channels: Iterable[str], Iterable[int]
+		"""
 		self._set(self.latest_state, state, channels)
 
 
@@ -80,7 +84,8 @@ class TransientData:
 		"""
 		Saves science record and tag it with provided channels
 
-		:param list(str) channels: list of strings whereby each element is a channel id 
+		:param channels: channel ids
+		:type channels: Iterable[str], Iterable[int]
 		:type science_record: :py:class:`ScienceRecord <ampel.base.ScienceRecord>`
 		"""
 		self._add(self.science_records, science_record, channels)
@@ -90,7 +95,8 @@ class TransientData:
 		"""
 		Saves lightcurve and tag it with provided channels
 
-		:param list(str) channels: list of strings whereby each element is a channel id 
+		:param channels: channel ids
+		:type channels: Iterable[str], Iterable[int]
 		:type lightcurve: :py:class:`ScienceRecord <ampel.base.lightcurve>`
 		"""
 		self._add(self.lightcurves, lightcurve, channels)
@@ -100,7 +106,8 @@ class TransientData:
 		"""
 		Saves compound and tag it with provided channels
 
-		:param list(str) channels: list of strings whereby each element is a channel id 
+		:param channels: channel ids
+		:type channels: Iterable[str], Iterable[int]
 		:param dataclass compound: instance of :py:class:`Compound <ampel.base.Compound>`
 		"""
 		self._add(self.compounds, compound, channels)
@@ -108,7 +115,8 @@ class TransientData:
 
 	def add_journal_entry(self, channels, entry):
 		""" 
-		:param channels: list/set of strings whereby each element is a string channel id 
+		:param channels: channel ids
+		:type channels: Iterable[str], Iterable[int]
 		:param dict entry: journal entry
 		"""
 		self._add(self.journal, entry, channels)
@@ -117,8 +125,8 @@ class TransientData:
 	# TODO: implement docs filtering
 	def create_view(self, channels, docs=None, t2_ids=None):
 		"""
-		:param channels: channel names
-		:type channels: sequence, set(str)
+		:param channels: channel ids
+		:type channels: Iterable[str], Iterable[int]
 		:returns: instance of :py:class:`TransientView <ampel.base.TransientView>` or None
 		"""
 
@@ -155,11 +163,13 @@ class TransientData:
 	# TODO: implement docs filtering
 	def _create_one_view(self, channel, docs=None, t2_ids=None):
 		"""
+		:param channel: channel id 
+		:type channel: str, int
 		:returns: instance of :py:class:`TransientView <ampel.base.TransientView>` or None
 		"""
 
-		if not type(channel) is str:
-			raise ValueError("type(channel) must be str and not %s" % type(channel))
+		if not type(channel) in (int, str):
+			raise ValueError("type(channel) must be str/int and not %s" % type(channel))
 
 		if channel not in self.channels:
 			self.logger.debug("No transient data avail for %s and channel(s) %s" % 
@@ -198,7 +208,7 @@ class TransientData:
 		:returns: instance of :py:class:`TransientView <ampel.base.TransientView>` or None
 		"""
 
-		# Sequence with single value
+		# Iterable with single value
 		if len(channels) == 1:
 			return self._create_one_view(next(iter(channels)), docs, t2_ids)
 

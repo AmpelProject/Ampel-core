@@ -30,7 +30,7 @@ class AmpelUtils():
 		-> suppressing python3 treatment of str as iterable (a really dumb choice...)
 		-> Making None iterable
 		"""
-		return [arg] if type(arg) in (type(None), str, bytes, bytearray) else arg
+		return [arg] if type(arg) in (type(None), str, int, bytes, bytearray) else arg
 
 
 	@staticmethod
