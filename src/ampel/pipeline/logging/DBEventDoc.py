@@ -7,7 +7,7 @@
 # Last Modified Date: 19.10.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-import time
+from time import time, strftime
 from ampel.pipeline.db.AmpelDB import AmpelDB
 
 class DBEventDoc():
@@ -28,7 +28,8 @@ class DBEventDoc():
 		self.col = AmpelDB.get_collection(col_name)
 		self.run_ids = []
 		self.event_info = {}
-		self.dt = int(time.time()) if dt is None else int(dt)
+		self.dt = int(time()) if dt is None else int(dt)
+		self.duration = 0
 
 
 	def set_event_info(self, event_info):
@@ -47,6 +48,14 @@ class DBEventDoc():
 		self.run_ids.append(run_id)
 
 
+	def add_duration(self, seconds):
+		"""
+		:param seconds:
+		:type seconds: int, float
+		"""
+		self.duration += seconds
+
+
 	def publish(self):
 		"""
 		:returns: None
@@ -55,9 +64,7 @@ class DBEventDoc():
 		# Record event info into DB
 		res = self.col.update_one(
 			{
-				'_id': int(
-					time.strftime('%Y%m%d')
-				)
+				'_id': int(strftime('%Y%m%d'))
 			},
 			{
 				'$push': {
@@ -65,6 +72,7 @@ class DBEventDoc():
 						'event': self.event_name,
 						'tier': self.tier,
 						'dt': self.dt,
+						'duration': int(time()-self.dt) if self.duration == 0 else int(self.duration),
 						'runId': self.run_ids[0] if len(self.run_ids) == 1 else self.run_ids,
 						**self.event_info
 					}
