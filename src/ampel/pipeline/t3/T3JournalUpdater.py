@@ -4,10 +4,10 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 15.10.2018
-# Last Modified Date: 16.10.2018
+# Last Modified Date: 22.10.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-import time
+from time import time
 from pymongo.operations import UpdateMany, UpdateOne
 from pymongo.errors import BulkWriteError
 from ampel.core.flags.AlDocType import AlDocType
@@ -49,12 +49,13 @@ class T3JournalUpdater:
 		}
 
 
-	def add_default_entries(self, tran_views, channels, event_name=None):
+	def add_default_entries(self, tran_views, channels, event_name=None, run_id=None):
 		"""
 		:param tran_views: TransientView instances
 		:type tran_views: list(:py:class:`TransientView <ampel.base.TransientView>`)
 		:param list(str) channels: list of channel names
 		:param str event_name: optional event name override (ex: subtask name of job)
+		:param int run_id: optional run_id override (ex: job subtask run_id)
 		:returns: None
 		"""
 
@@ -69,10 +70,10 @@ class T3JournalUpdater:
 					'$push': {
 						"journal": {
 							'tier': 3,
-							'dt': int(time.time()),
-							'event':  self.event_name if event_name is None else event_name,
-							'channels': channels,
-							'runId': self.run_id
+							'dt': int(time()),
+							'event':  event_name if event_name else self.event_name,
+							'runId':  run_id if run_id else self.run_id,
+							'channels': channels
 						}
 					}
 				}
@@ -80,13 +81,14 @@ class T3JournalUpdater:
 		)
 
 
-	def add_custom_entries(self, journal_updates, channels, event_name=None):
+	def add_custom_entries(self, journal_updates, channels, event_name=None, run_id=None):
 		"""
 		:param journal_updates: list of JournalUpdate dataclass instances
 		:type journal_updates: list(:py:class:`JournalUpdate \
 			<ampel.base.dataclass.JournalUpdate>`)
 		:param list(str) channels: list of channel names
 		:param str event_name: optional event name override (ex: subtask name of job)
+		:param int run_id: optional run_id override (ex: job subtask run_id)
 		:returns: None
 		"""
 
@@ -121,10 +123,10 @@ class T3JournalUpdater:
 							"journal": {
 								**jup.content,
 								'tier': 3,
-								'dt': int(time.time()),
-								'event':  self.event_name if event_name is None else event_name,
-								'channels': channels,
-								'runId': self.run_id
+								'dt': int(time()),
+								'event':  event_name if event_name else self.event_name,
+								'runId':  run_id if run_id else self.run_id,
+								'channels': channels
 							}
 						}
 					},
