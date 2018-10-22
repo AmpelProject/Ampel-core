@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 26.02.2018
-# Last Modified Date: 15.10.2018
+# Last Modified Date: 22.10.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import logging
@@ -12,7 +12,6 @@ from time import time
 from datetime import datetime
 from itertools import islice
 from abc import abstractmethod
-from pymongo.operations import UpdateMany
 
 from ampel.pipeline.db.query.QueryMatchTransients import QueryMatchTransients
 from ampel.pipeline.db.query.QueryLatestCompound import QueryLatestCompound
@@ -28,14 +27,12 @@ from ampel.pipeline.config.t3.LogicSchemaUtils import LogicSchemaUtils
 from ampel.pipeline.config.t3.T3JobConfig import T3JobConfig
 from ampel.pipeline.config.t3.T3TaskConfig import T3TaskConfig
 from ampel.pipeline.t3.TimeConstraint import TimeConstraint
-from ampel.pipeline.t3.T3JournalUpdater import T3JournalUpdater
 from ampel.core.flags.AlDocType import AlDocType
 from ampel.core.flags.FlagUtils import FlagUtils
 from ampel.core.flags.LogRecordFlags import LogRecordFlags
 from ampel.base.TransientView import TransientView
 from ampel.base.flags.TransientFlags import TransientFlags
 from ampel.base.dataclass.GlobalInfo import GlobalInfo
-from ampel.base.dataclass.JournalUpdate import JournalUpdate
 
 
 class T3Event:
@@ -133,10 +130,6 @@ class T3Event:
 			if not full_console_logging:
 				self.logger.quieten_console()
 			
-			if self.update_events:
-				self.event_doc = DBEventDoc(self.name, tier=3)
-				self.event_doc.add_run_id(self.run_id)
-
 		else:
 			self.logger = logger
 
@@ -154,10 +147,16 @@ class T3Event:
 				logger=self.logger
 			)
 
-		if update_tran_journal:
-			self.journal_updater = T3JournalUpdater(
-				self.run_id, self.name, self.logger, raise_exc
-			)
+
+	@abstractmethod
+	def process_tran_data(self, transients):
+		""" """
+		pass
+
+
+	@abstractmethod
+	def finish(self):
+		pass
 
 
 	def _get_match_criteria(self):
@@ -422,30 +421,42 @@ class T3Event:
 		return tran_views
 
 
-	@abstractmethod
-	def process_tran_data(self, transients):
-		"""Method documentation"""
-		raise NotImplementedError()
+	def add_t3_unit(self, task_name, t3_unit):
+		"""
+		Called by child classes (T3Job / T3Task)
+		"""
+		self.t3_units[task_name] = t3_unit
+
+
+	def get_t3_unit(self, task_name):
+		"""
+		Called by child classes (T3Job / T3Task)
+		"""
+		return self.t3_units[task_name]
 
 
 	def run(self):
 		"""
 		"""
 
-		if self.no_run:
-			self.logger.warn("run execution not possible")
-			return
-
 		if len(self.t3_units) == 0:
 			raise ValueError("No instantiated t3 unit")
 
 		time_start = time()
 
-		# Feedback
-		self.logger.shout("Running %s" % self.name)
-		
 		try:
 
+			# Feedback
+			self.logger.shout("Running %s" % self.name)
+
+			if self.update_events:
+				event_doc = DBEventDoc(self.name, tier=3)
+				event_doc.add_run_id(self.run_id)
+
+			if self.no_run:
+				self.logger.warn("Run execution not possible")
+				return
+		
 			# T3 event requiring prior transient loading 
 			if self.config.transients.select is not None:
 	
@@ -493,22 +504,6 @@ class T3Event:
 				# Handle transient-less T3 units here
 				pass
 
-			# Register the execution of this event into the events col
-			if self.update_events:
-				self.event_doc.set_event_info({
-					'metrics': {
-						'duration': int(time() - time_start)
-					}
-				})
-				self.event_doc.publish()
-
-			# Write journal entries to DB
-			if self.update_tran_journal:
-				self.journal_updater.flush()
-
-			# Write log entries to DB
-			if hasattr(self, 'db_logging_handler'):
-				self.db_logging_handler.flush_all()
 
 			# Feedback
 			self.logger.shout("Done running %s" % self.name)
@@ -522,6 +517,18 @@ class T3Event:
 				self.logger, e, tier=3, run_id=self.run_id,
 				info={self.event_type: self.name}
 			)
+
+		finally:
+
+			self.finish()
+
+			# Register the execution of this event into the events col
+			if self.update_events:
+				event_doc.publish()
+
+			# Write log entries to DB
+			if hasattr(self, 'db_logging_handler'):
+				self.db_logging_handler.flush_all()
 
 
 	@staticmethod
