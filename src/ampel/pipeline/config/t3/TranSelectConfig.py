@@ -17,6 +17,7 @@ from ampel.pipeline.common.docstringutils import gendocstring
 from ampel.base.flags.TransientFlags import TransientFlags
 from ampel.pipeline.config.t3.AllOf import AllOf
 from ampel.pipeline.config.t3.AnyOf import AnyOf
+from ampel.pipeline.config.t3.OneOf import OneOf
 
 
 @gendocstring
@@ -37,9 +38,9 @@ class TranSelectConfig(BaseModel, AmpelModelExtension):
 
 	created: Union[None, TimeConstraintConfig] = None
 	modified: Union[None, TimeConstraintConfig] = None
-	channels: Union[None, AnyOf, AllOf] = None
-	withFlags: Union[None, AnyOf, AllOf] = None
-	withoutFlags: Union[None, AnyOf, AllOf] = None
+	channels: Union[None, AnyOf, AllOf, OneOf] = None
+	withFlags: Union[None, AnyOf, AllOf, OneOf] = None
+	withoutFlags: Union[None, AnyOf, AllOf, OneOf] = None
 
 
 	@validator('channels', 'withFlags', 'withoutFlags', pre=True, whole=True)
@@ -53,9 +54,11 @@ class TranSelectConfig(BaseModel, AmpelModelExtension):
 				msg= \
 					"'%s' parameter cannot be a list because it would be\n" % field_name + 
 					"ambiguous to interpret. Please rather use the following syntax:\n" +
-					" -> {'any': ['Ab', 'Cd', 'Ef']}\n" + 
+					" -> {'anyOf': ['Ab', 'Cd']}\n" + 
 					"or\n" + 
-					" -> {'all': ['Ab', 'Cd', 'Ef']}\n\n" + 
+					" -> {'allOf': ['Ab', 'Cd']}\n\n" + 
+					"or\n" + 
+					" -> {'oneOf': ['Ab', 'Cd']}\n\n" + 
 					"One level nesting is allowed, please the see\n" + 
 					"ConfigUtils.conditional_expr_converter(..) docstring for more info"
 			)
@@ -143,10 +146,21 @@ class TranSelectConfig(BaseModel, AmpelModelExtension):
 						"Offending value: %s" % v
 					)
 
+			elif 'oneOf' in v:
+
+				# 'oneOf' closes nesting  
+				if not AmpelUtils.is_sequence(v['oneOf']) or not AmpelUtils.check_seq_inner_type(v['oneOf'], (int, str)):
+					cls.print_and_raise(
+						header="transients->select->%s:oneOf config error" % field_name,
+						msg="Invalid type for value %s\n(must be a sequence, is: %s)\n" % 
+							(v['oneOf'], type(v['oneOf'])) + 
+							"Note: no nesting is allowed below 'oneOf'"
+					)
+
 			else: 
 				cls.print_and_raise(
 					header="transients->select->%s config error" % field_name,
-					msg="Invalid dict key (only 'anyOf' and 'allOf' allowed)"
+					msg="Invalid dict key (only 'anyOf', 'allOf', 'oneOf' are allowed)"
 				)
 
 		return v

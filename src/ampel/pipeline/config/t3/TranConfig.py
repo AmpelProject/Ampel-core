@@ -51,7 +51,8 @@ class TranConfig(BaseModel, AmpelModelExtension):
 		if state != "$latest" and state != "$all":
 			cls.print_and_raise(
 				header="transients->state config error",
-				msg='Parameter "state" must be either "$latest" of "$all"'
+				msg="Parameter 'state' must be either '$latest' of '$all'\n" +
+					"Offending value: %s" % state
 			)
 
 		return state

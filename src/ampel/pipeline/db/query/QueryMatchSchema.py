@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 11.03.2018
-# Last Modified Date: 12.10.2018
+# Last Modified Date: 22.10.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import collections
@@ -12,7 +12,7 @@ from ampel.core.flags.FlagUtils import FlagUtils
 from ampel.pipeline.common.AmpelUtils import AmpelUtils
 from ampel.pipeline.config.t3.AnyOf import AnyOf
 from ampel.pipeline.config.t3.AllOf import AllOf
-
+from ampel.pipeline.config.t3.OneOf import OneOf
 
 class QueryMatchSchema:
 	"""
@@ -21,6 +21,7 @@ class QueryMatchSchema:
 	.. sourcecode:: python\n
 		{'anyOf': ["a", "b", "c"]}
 		{'allOf': ["a", "b", "c"]}
+		{'oneOf': ["a", "b", "c"]}
 		{'anyOf': [{'allOf': ["a","b"]}, "c"]}
 		{'anyOf': [{'allOf': ["a","b"]}, {'allOf': ["a","c"]}, "d"]}
 	"""
@@ -42,12 +43,13 @@ class QueryMatchSchema:
 
 		:param str field_name: name of the DB field containing the flag values
 
-		:param arg: should be dict/AllOf/AnyOf but can be a string for convenience \
+		:param arg: should be dict/AllOf/AnyOf/OneOf but can be a string for convenience \
 		(if only one value is to be matched). The dict can be nested up to one level. \
 		Please see :obj:`QueryMatchSchema <ampel.pipeline.db.query.QueryMatchSchema>` \
 		docstring for syntax details).
 		:type arg: str, dict, :py:class:`AllOf <ampel.pipeline.config.t3.AllOf>`, \
-			:py:class:`AnyOf <ampel.pipeline.config.t3.AnyOf>`
+			:py:class:`AnyOf <ampel.pipeline.config.t3.AnyOf>`, \
+			:py:class:`OneOf <ampel.pipeline.config.t3.OneOf>`
 
 		:param list in_type: type of elements embedded in schema dict (str, int, ...)
 
@@ -60,7 +62,7 @@ class QueryMatchSchema:
 		"""
 
 		# Checks were already performed by validators
-		if type(arg) in (AllOf, AnyOf):
+		if type(arg) in (AllOf, AnyOf, OneOf):
 			arg = arg.dict()
 		else:
 			# Be robust
@@ -150,6 +152,9 @@ class QueryMatchSchema:
 				else:
 					query['$or'] = or_list
 
+		elif 'oneOf' in arg:
+			query[field_name] = arg['oneOf']
+
 		else:
 			raise ValueError(
 				"Invalid 'arg' keys (must contain either 'anyOf' or 'allOf'" +
@@ -173,7 +178,7 @@ class QueryMatchSchema:
 		"""
 
 		# Checks were already performed by validators
-		if type(arg) in (AllOf, AnyOf):
+		if type(arg) in (AllOf, AnyOf, OneOf):
 			arg = arg.dict()
 		else:
 			cls.arg_check(arg, in_type) # Be robust
@@ -283,6 +288,9 @@ class QueryMatchSchema:
 					query[field_name] = and_list[0][field_name]
 				else:
 					query['$and'] = and_list
+
+		elif 'oneOf' in arg:
+			query[field_name] = arg['oneOf']
 
 		else:
 			raise ValueError(

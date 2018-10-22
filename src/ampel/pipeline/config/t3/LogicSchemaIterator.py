@@ -9,6 +9,7 @@
 
 from ampel.pipeline.config.t3.AllOf import AllOf
 from ampel.pipeline.config.t3.AnyOf import AnyOf
+from ampel.pipeline.config.t3.OneOf import OneOf
 
 class LogicSchemaIterator:
 	
@@ -41,7 +42,7 @@ class LogicSchemaIterator:
 		""" """
 		self.arg = arg
 		
-		if type(arg) in (AllOf, AnyOf):
+		if type(arg) in (AllOf, AnyOf, OneOf):
 			arg = arg.dict()
 
 		if type(arg) in in_type:
@@ -51,6 +52,8 @@ class LogicSchemaIterator:
 			if "anyOf" in arg:
 				self.values = arg['anyOf']
 			elif 'allOf' in arg:
+				self.values = [arg]
+			elif 'oneOf' in arg:
 				self.values = [arg]
 			else:
 				raise ValueError("Unsupported format")

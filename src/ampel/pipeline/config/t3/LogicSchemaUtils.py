@@ -1,15 +1,16 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel/src/ampel/pipeline/config/t3/LogicSchemaUtils.py
+# File              : ampel/pipeline/config/t3/LogicSchemaUtils.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 13.10.2018
-# Last Modified Date: 13.10.2018
+# Last Modified Date: 22.10.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from ampel.pipeline.config.t3.LogicSchemaIterator import LogicSchemaIterator
 from ampel.pipeline.config.t3.AllOf import AllOf
 from ampel.pipeline.config.t3.AnyOf import AnyOf
+from ampel.pipeline.config.t3.OneOf import OneOf
 
 class LogicSchemaUtils:
 	"""
@@ -47,7 +48,7 @@ class LogicSchemaUtils:
 		if type(arg) in in_type:
 			return {arg}
 
-		if type(arg) in (AllOf, AnyOf):
+		if type(arg) in (AllOf, AnyOf, OneOf):
 			arg = arg.dict()
 
 		if isinstance(arg, dict):
@@ -64,6 +65,8 @@ class LogicSchemaUtils:
 				return s
 			elif 'allOf' in arg:
 				return set(arg['allOf'])
+			elif 'oneOf' in arg:
+				return set(arg['oneOf'])
 			else:
 				raise ValueError("LogicSchemaUtils.reduce_to_set: unsupported format (2)")
 		else:

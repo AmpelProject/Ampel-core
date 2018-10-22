@@ -12,6 +12,7 @@ from bson import Binary
 from ampel.pipeline.common.AmpelUtils import AmpelUtils
 from ampel.pipeline.config.t3.AnyOf import AnyOf
 from ampel.pipeline.config.t3.AllOf import AllOf
+from ampel.pipeline.config.t3.OneOf import OneOf
 
 class FlagUtils():
 
@@ -76,7 +77,8 @@ class FlagUtils():
 		:param arg: schema dict. See :obj:`QueryMatchSchema <ampel.pipeline.db.query.QueryMatchSchema>` \
 		for syntax detail.
 		:type arg: str, dict, :py:class:`AllOf <ampel.pipeline.config.t3.AllOf>`, \
-			:py:class:`AnyOf <ampel.pipeline.config.t3.AnyOf>`
+			:py:class:`AnyOf <ampel.pipeline.config.t3.AnyOf>`, \
+			:py:class:`OneOf <ampel.pipeline.config.t3.OneOf>`,
 		:param FlagClass: enum class (not instance) ex: ampel.base.flags.TransientFlags
 
 		:returns: new schema dict where flag elements are integer
@@ -87,11 +89,13 @@ class FlagUtils():
 		out={}
 		
 		if isinstance(arg, str):
-			return 1
-		if type(arg) in (AllOf, AnyOf):
+			return flag_pos[arg]
+
+		if type(arg) in (AllOf, AnyOf, OneOf):
 			arg = arg.dict()
 
 		if isinstance(arg, dict):
+
 			if "anyOf" in arg:
 				if AmpelUtils.check_seq_inner_type(arg['anyOf'], str):
 					out['anyOf'] = [flag_pos[el] for el in arg['anyOf']]
@@ -109,6 +113,9 @@ class FlagUtils():
 	
 			elif 'allOf':
 				out['allOf'] = [flag_pos[el] for el in arg['allOf']]
+
+			elif 'oneOf':
+				out['oneOf'] = [flag_pos[el] for el in arg['oneOf']]
 		else:
 			raise ValueError("Unsupported format (%s)" % type(arg))
 		
