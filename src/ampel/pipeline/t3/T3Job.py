@@ -4,19 +4,21 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 26.02.2018
-# Last Modified Date: 15.10.2018
+# Last Modified Date: 22.10.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import logging
-from datetime import datetime
+from time import time
 from ampel.pipeline.db.AmpelDB import AmpelDB
 from ampel.pipeline.logging.DBLoggingHandler import DBLoggingHandler
+from ampel.pipeline.logging.DBEventDoc import DBEventDoc
 from ampel.pipeline.logging.AmpelLogger import AmpelLogger
 from ampel.pipeline.logging.LoggingUtils import LoggingUtils
 from ampel.base.flags.TransientFlags import TransientFlags
 from ampel.core.flags.LogRecordFlags import LogRecordFlags
 from ampel.pipeline.common.AmpelUnitLoader import AmpelUnitLoader
 from ampel.pipeline.config.t3.LogicSchemaUtils import LogicSchemaUtils
+from ampel.pipeline.t3.T3JournalUpdater import T3JournalUpdater
 from ampel.pipeline.t3.T3Event import T3Event
 
 
@@ -36,6 +38,8 @@ class T3Job(T3Event):
 		"""
 		
 		super().__init__(config, logger=logger, **kwargs)
+		self.event_docs = {}
+		self.run_ids = {}
 
 		# $forEach' channel operator
 		if config.tasks[0].get("transients.select.channels.anyOf") == ["$forEach"]:
@@ -88,20 +92,39 @@ class T3Job(T3Event):
 	
 				# T3Event parameter db_logging is True (default)
 				if hasattr(self, "db_logging_handler"):
+
+					forked_handler = self.db_logging_handler.fork(
+						LogRecordFlags.T3 | LogRecordFlags.TASK
+					)
+
+					if self.update_tran_journal:
+						self.run_ids[task_config.task] = self.db_logging_handler.get_run_id()
+
 					logger.addHandler(
 						self.db_logging_handler.fork(LogRecordFlags.T3 | LogRecordFlags.TASK)
 					)
+
 				else:
+
 					self.logger.warn(
 						"Logger for task '%s' will not write log entries into DB" % 
 						task_config.task
 					)
+
+					if self.update_tran_journal:
+						self.logger.warn("WARNING: will update transient journal without reference to runId")
 	
 				# Instantiate t3 unit
-				self.t3_units[task_config.task] = T3Unit(
-					logger, AmpelUnitLoader.get_resources(T3Unit),
-					task_config.runConfig, self.global_info
+				self.add_t3_unit(
+					task_config.task,
+					T3Unit(
+						logger, AmpelUnitLoader.get_resources(T3Unit),
+						task_config.runConfig, self.global_info
+					)
 				)
+
+				# Create event document for each task
+				self.event_docs[task_config.task] = DBEventDoc(task_config.task, tier=3)
 
 		else:
 
@@ -113,10 +136,56 @@ class T3Job(T3Event):
 			)
 	
 			# Instantiate t3 unit
-			self.t3_units[task_config.task] = T3Unit(
-				self.logger, AmpelUnitLoader.get_resources(T3Unit),
-				task_config.runConfig, self.global_info
+			self.add_t3_unit(
+				task_config.task,
+				T3Unit(
+					self.logger, AmpelUnitLoader.get_resources(T3Unit),
+					task_config.runConfig, self.global_info
+				)
 			)
+
+			# Create event document 
+			self.event_docs[task_config.task] = DBEventDoc(task_config.task, tier=3)
+
+
+		if self.update_tran_journal:
+			self.journal_updater = T3JournalUpdater(
+				self.run_id, self.name, self.logger, self.raise_exc
+			)
+
+
+	def _get_channels(self):
+		"""
+		Method used for T3 Jobs configured with channels: $forEach
+
+		:returns: a list of all channels found in the matched transients. \
+		or None if no matching transient exists. \
+		The list does not contain duplicates.
+		:rtype: list(str), None
+		"""
+
+		query_res = next(
+			AmpelDB.get_collection('main').aggregate(
+				[
+					{'$match': self._get_match_criteria()},
+					{"$unwind": "$channels"},
+					{
+						"$group": {
+		  					"_id": None,
+		        			"channels": {
+								"$addToSet": "$channels"
+							}
+						}
+					}
+				]
+			),
+			None
+		)
+
+		if query_res is None:
+			return None
+
+		return query_res['channels']
 
 
 	def process_tran_data(self, transients):
@@ -131,6 +200,8 @@ class T3Job(T3Event):
 		# Feed each task with transient views
 		for task_config in self.config.tasks:
 
+			task_name = task_config.task
+
 			try:
 
 				tran_selection = {}
@@ -141,7 +212,7 @@ class T3Job(T3Event):
 		
 					for el in LogicSchemaUtils.iter(task_sel_conf.channels):
 		
-						if type(el) is str:
+						if type(el) in (int, str):
 							task_chan_set = {el}
 						elif isinstance(el, dict):
 							task_chan_set = set(el['allOf'])
@@ -201,29 +272,30 @@ class T3Job(T3Event):
 				# Feedback
 				self.logger.shout(
 					"Providing %s (task %s) with %i TransientViews" % 
-						(
-							self.t3_units[task_config.task].__class__.__name__,
-							task_config.task,
-							len(tran_views)
-						)
+					(task_config.unitId, task_name, len(tran_views))
 				)
+
+				# Compute and add task duration for each transients chunks
+				start = time()
+
+				# Adding tviews to t3_units may return JournalUpdate dataclasses
+				custom_journal_entries = self.get_t3_unit(task_name).add(tran_views)
+
+				self.event_docs[task_name].add_duration(time()-start)
 
 				if self.update_tran_journal:
 
 					chan_list = list(chan_set)
 
 					self.journal_updater.add_default_entries(
-						tran_views, chan_list, task_config.task
+						tran_views, chan_list, event_name=task_name, 
+						run_id=self.run_ids.get(task_name)
 					)
 
 					self.journal_updater.add_custom_entries(
-						# Adding tviews to t3_units may return JournalUpdate dataclasses
-						self.t3_units[task_config.task].add(tran_views),
-						chan_list, task_config.task
+						custom_journal_entries, chan_list, event_name=task_name, 
+						run_id=self.run_ids.get(task_name)
 					)
-
-				else:
-					self.t3_units[task_config.task].add(tran_views)
 
 			except Exception as e:
 
@@ -238,34 +310,16 @@ class T3Job(T3Event):
 				)
 
 
+	def finish(self):
 
-	def _get_channels(self):
-		"""
-		:returns: a list of all channels found in the matched transients. \
-		or None if no matching transient exists. \
-		The list does not contain duplicates.
-		:rtype: list(str), None
-		"""
+		# Feed each task with transient views
+		for task_config in self.config.tasks:
 
-		query_res = next(
-			AmpelDB.get_collection('main').aggregate(
-				[
-					{'$match': self._get_match_criteria()},
-					{"$unwind": "$channels"},
-					{
-						"$group": {
-		  					"_id": None,
-		        			"channels": {
-								"$addToSet": "$channels"
-							}
-						}
-					}
-				]
-			),
-			None
-		)
+			task_name = task_config.task
 
-		if query_res is None:
-			return None
+			# Calling T3Unit closing method done()
+			start = time()
+			self.get_t3_unit(task_name).done()
+			self.event_docs[task_name].add_duration(time()-start)
 
-		return query_res['channels']
+			self.event_docs[task_name].publish()
