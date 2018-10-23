@@ -149,7 +149,8 @@ class AlertProcessor():
 		db_logging_handler = DBLoggingHandler(
 			self.input_setup.get_log_flags() |
 			LogRecordFlags.T0 | 
-			LogRecordFlags.CORE
+			LogRecordFlags.CORE |
+			LogRecordFlags.SCHEDULED_RUN
 		)
 
 		db_logging_handler.add_headers(self.log_headers)
