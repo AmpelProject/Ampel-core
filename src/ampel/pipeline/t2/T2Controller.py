@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 25.01.2018
-# Last Modified Date: 16.10.2018
+# Last Modified Date: 24.10.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import pkg_resources, math
@@ -16,6 +16,7 @@ from types import MappingProxyType
 from ampel.base.abstract.AbsT2Unit import AbsT2Unit
 from ampel.core.flags.AlDocType import AlDocType
 from ampel.core.flags.T2RunStates import T2RunStates
+from ampel.core.flags.LogRecordFlags import LogRecordFlags
 from ampel.pipeline.logging.AmpelLogger import AmpelLogger
 from ampel.pipeline.logging.DBLoggingHandler import DBLoggingHandler
 from ampel.pipeline.logging.LoggingUtils import LoggingUtils
@@ -118,7 +119,9 @@ class T2Controller(Schedulable):
 		# Create DB logging handler instance (logging.Handler child class)
 		# This class formats, saves and pushes log records into the DB
 		db_logging_handler = DBLoggingHandler(
-			tier=2, 
+			LogRecordFlags.T2 | 
+			LogRecordFlags.CORE | 
+			LogRecordFlags.SCHEDULED_RUN
 			# valery: fix me later
 			#info={
 			#	"runState": str(self.run_state.value),
