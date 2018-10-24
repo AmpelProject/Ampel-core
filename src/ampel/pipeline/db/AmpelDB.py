@@ -103,7 +103,7 @@ class AmpelDB:
 		:returns: None
 		"""
 
-		cls._db_roles['rej'] = {'r': 'logger', 'w': 'writer'}
+		cls._db_roles['rej'] = {'r': 'logger', 'w': 'logger'}
 		for chan_name in channel_names:
 			cls._ampel_cols[chan_name] = {
 				'dbLabel': 'rej',
