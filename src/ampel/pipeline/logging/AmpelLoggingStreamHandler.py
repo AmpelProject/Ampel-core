@@ -47,5 +47,6 @@ class AmpelLoggingStreamHandler(StreamHandler):
 				print(record.msg)
 		else:
 
-			print(self.format(record))
+			if record.msg:
+				print(self.format(record))
 			self.prev_records = record
