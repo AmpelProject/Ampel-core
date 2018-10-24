@@ -363,7 +363,7 @@ class AlertProcessor():
 				# by the StreamHandler in channel specific RecordsBufferingHandler instances. 
 				# So we address directly db_logging_handler, and for that, we create
 				# a LogRecord manually.
-				lr = LogRecord(None, INFO, None, None, "Done", None, None)
+				lr = LogRecord(None, INFO, None, None, "OK", None, None)
 				lr.extra = {
 					'tranId': tran_id,
 					'alertId': alert_content['alert_id']
