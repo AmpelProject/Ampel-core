@@ -58,7 +58,7 @@ class ConfigLoader:
 						if chan_dict['channel'] in config['channels']:
 							raise KeyError(
 								"Channel {} (defined as entry point {} in {}) {}".format(
-									chan_dict['job'], resource.name, resource.dist,
+									chan_dict['channel'], resource.name, resource.dist,
 									"already exists in the provided config file"
 								)
 							)
