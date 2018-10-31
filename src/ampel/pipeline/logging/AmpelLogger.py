@@ -153,7 +153,7 @@ class AmpelLogger(logging.Logger):
 		self.__extra = None
 
 		if channels:
-			if type(channels) not in (list, str):
+			if type(channels) not in (list, int, str):
 				raise ValueError("Unsupported type for parameter 'channels' (%s)" % type(channels))
 			self.__extra = ReadOnlyDict({'channels': channels})
 
