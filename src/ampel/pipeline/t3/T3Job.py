@@ -199,6 +199,7 @@ class T3Job(T3Event):
 
 	def process_tran_data(self, transients):
 		"""
+		:param List[TransientData] transients:
 		"""
 
 		if transients is None:
@@ -211,103 +212,127 @@ class T3Job(T3Event):
 
 			task_name = task_config.task
 
-			self.logger.info("%s: processing TranData" % task_name)
+			self.logger.info(
+				"%s: processing %i TranData" % 
+				(task_name, len(transients))
+			)
 
 			try:
 
-				tran_selection = {}
+				# cast dict_values to list
+				tran_selection = list(transients)
 				task_sel_conf = task_config.transients.select
+
+				#############################################################
+				# NOTE: task sub-selection is in a beta state               #
+				# Some complex sub-logic may not work or be supported       #
+				# More importantly: someone needs to find time to test this #
+				# NOTE2: OneOf sub-selection currently not implemented      #
+				#############################################################
 		
 				# Channel filter
-				if task_sel_conf.channels != job_sel_conf.channels:
+				if task_sel_conf.channels and task_sel_conf.channels != job_sel_conf.channels:
 		
+					# TODO: handle oneOf ?
 					for el in LogicSchemaUtils.iter(task_sel_conf.channels):
 		
 						if type(el) in (int, str):
 							task_chan_set = {el}
 						elif isinstance(el, dict):
+							# TODO: handle oneOf ?
 							task_chan_set = set(el['allOf'])
 						else:
 							raise ValueError("Unsupported channel format")
 		
 						for tran_data in transients:
-							if task_chan_set.issubset(tran_data.channels):
-								tran_selection[tran_data.tran_id] = tran_data
+							if not task_chan_set.issubset(tran_data.channels):
+								transients.remove(tran_data)
 		
 		
 				# withFlags filter
-				if task_sel_conf.withFlags != job_sel_conf.withFlags:
+				if task_sel_conf.withFlags and task_sel_conf.withFlags != job_sel_conf.withFlags:
 		
+					# TODO: handle oneOf ?
 					for el in LogicSchemaUtils.iter(task_sel_conf.withFlags):
 		
 						if type(el) is str:
 							# pylint: disable=unsubscriptable-object
 							with_flags = TransientFlags[el]
 						elif isinstance(el, dict):
+							# TODO: handle oneOf ?
 							with_flags = LogicSchemaUtils.allOf_to_enum(el, TransientFlags)
 						else:
 							raise ValueError("Unsupported withFlags format")
 		
-						for tran_id, tran_data in tran_selection.items():
-							if with_flags in tran_data.flags:
-								tran_selection[tran_data.tran_id] = tran_data
+						for tran_data in tran_selection:
+							if not with_flags in tran_data.flags:
+								tran_selection.remove(tran_data)
 		
 		
 				# withoutFlags filter
-				if task_sel_conf.withoutFlags != job_sel_conf.withoutFlags:
+				if task_sel_conf.withoutFlags and task_sel_conf.withoutFlags != job_sel_conf.withoutFlags:
 		
+					# TODO: handle oneOf ?
 					for el in LogicSchemaUtils.iter(task_sel_conf.withoutFlags):
 		
 						if type(el) is str:
 							# pylint: disable=unsubscriptable-object
 							without_flags = TransientFlags[el]
 						elif isinstance(el, dict):
+							# TODO: handle oneOf ?
 							without_flags = LogicSchemaUtils.allOf_to_enum(el, TransientFlags)
 						else:
 							raise ValueError("Unsupported withoutFlags format")
 		
-						for tran_id, tran_data in tran_selection.items():
-							if without_flags in tran_data.flags and tran_id in tran_selection:
-								del tran_selection[tran_data.tran_id]
+						for tran_data in tran_selection:
+							if without_flags in tran_data.flags:
+								tran_selection.remove(tran_data)
 
-				chan_set = LogicSchemaUtils.reduce_to_set(
-					task_sel_conf.channels
-				)
 
-				tran_views = self.create_tran_views(
-					task_name,
-					tran_selection.values(), chan_set, 
-					task_config.transients.content.docs,
-					task_config.transients.content.t2SubSelection
-				)
+				if tran_selection:
 
-				# Feedback
-				self.logger.shout(
-					"Providing %s (task %s) with %i TransientViews" % 
-					(task_config.unitId, task_name, len(tran_views))
-				)
-
-				# Compute and add task duration for each transients chunks
-				start = time()
-
-				# Adding tviews to t3_units may return JournalUpdate dataclasses
-				custom_journal_entries = self.get_t3_unit(task_name).add(tran_views)
-
-				self.event_docs[task_name].add_duration(time()-start)
-
-				if self.update_tran_journal:
-
-					chan_list = list(chan_set)
-
-					self.journal_updater.add_default_entries(
-						tran_views, chan_list, event_name=task_name, 
-						run_id=self.run_ids.get(task_name)
+					chan_set = LogicSchemaUtils.reduce_to_set(
+						task_sel_conf.channels
 					)
 
-					self.journal_updater.add_custom_entries(
-						custom_journal_entries, chan_list, event_name=task_name, 
-						run_id=self.run_ids.get(task_name)
+					tran_views = self.create_tran_views(
+						task_name,
+						tran_selection, chan_set, 
+						task_config.transients.content.docs,
+						task_config.transients.content.t2SubSelection
 					)
+
+					# Feedback
+					self.logger.shout(
+						"Providing %s (task %s) with %i TransientViews" % 
+						(task_config.unitId, task_name, len(tran_views))
+					)
+
+					# Compute and add task duration for each transients chunks
+					start = time()
+
+					# Adding tviews to t3_units may return JournalUpdate dataclasses
+					custom_journal_entries = self.get_t3_unit(task_name).add(tran_views)
+
+					self.event_docs[task_name].add_duration(time()-start)
+
+					if self.update_tran_journal:
+
+						chan_list = list(chan_set)
+
+						self.journal_updater.add_default_entries(
+							tran_views, chan_list, event_name=task_name, 
+							run_id=self.run_ids.get(task_name)
+						)
+
+						self.journal_updater.add_custom_entries(
+							custom_journal_entries, chan_list, event_name=task_name, 
+							run_id=self.run_ids.get(task_name)
+						)
+				else:
+
+					self.logger.info("%s: No transients matched selection criteria" % task_name)
+
 
 			except Exception as e:
 
