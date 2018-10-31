@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 26.05.2018
-# Last Modified Date: 28.09.2018
+# Last Modified Date: 31.10.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import json
@@ -32,10 +32,10 @@ class AmpelStatsPublisher(Schedulable):
 		"dbInfo.photo.storageSize": size on disk
 		"dbInfo.photo.totalIndexSize": index size
 
-	mongodb collection 'main'
-		"dbInfo.main.size"
-		"dbInfo.main.storageSize"
-		"dbInfo.main.totalIndexSize"
+	mongodb collection 'blend'
+		"dbInfo.blend.size"
+		"dbInfo.blend.storageSize"
+		"dbInfo.blend.totalIndexSize"
 
 	mongodb collection 'logs'
 		"dbInfo.logs.size"
@@ -46,9 +46,9 @@ class AmpelStatsPublisher(Schedulable):
 		"count.docs.troubles": 1
 		"count.docs.photo.pps": 84
 		"count.docs.photo.uls": 1583
-		"count.docs.main.comps": 22
-		"count.docs.main.t2s": 66
-		"count.docs.main.trans": 22
+		"count.docs.blend.comps": 22
+		"count.docs.blend.t2s": 66
+		"count.docs.blend.trans": 22
 
 	Channel specific stats
 		"count.chans.HU_SN1": 0
@@ -119,9 +119,10 @@ class AmpelStatsPublisher(Schedulable):
 		self.publish_to = publish_to
 
 		# DB collection handles
+		self.col_tran = AmpelDB.get_collection("tran", "r")
 		self.col_photo = AmpelDB.get_collection("photo", "r")
-		self.col_main = AmpelDB.get_collection("main", "r")
-		self.col_runs = AmpelDB.get_collection("runs", "r")
+		self.col_blend = AmpelDB.get_collection("blend", "r")
+		self.col_events = AmpelDB.get_collection("events", "r")
 		self.col_logs = AmpelDB.get_collection("jobs", "r")
 		self.col_troubles = AmpelDB.get_collection('troubles', "r")
 
@@ -238,8 +239,6 @@ class AmpelStatsPublisher(Schedulable):
 		:returns: None
 		"""
 
-		main_col = AmpelDB.get_collection("main", "r")
-		photo_col = AmpelDB.get_collection("photo", "r")
 		stats_dict = {'dbInfo': {}, 'count': {}}
 
 		if not any([daemon, col_stats, docs_count, channels]):
@@ -252,13 +251,14 @@ class AmpelStatsPublisher(Schedulable):
 		# Stats from mongod running daemon (such as RAM usage)
 		if daemon:
 			stats_dict['dbInfo']['daemon'] = self.get_server_stats(
-				main_col.database
+				self.col_blend.database
 			)
 
 		# Stats related to mongo collections (colstats)
 		if col_stats:
+			stats_dict['dbInfo']['tran'] = self.get_col_stats(self.col_tran)
 			stats_dict['dbInfo']['photo'] = self.get_col_stats(self.col_photo)
-			stats_dict['dbInfo']['main'] = self.get_col_stats(self.col_main)
+			stats_dict['dbInfo']['blend'] = self.get_col_stats(self.col_blend)
 			stats_dict['dbInfo']['logs'] = self.get_col_stats(self.col_logs)
 
 
@@ -269,22 +269,30 @@ class AmpelStatsPublisher(Schedulable):
 
 				'troubles': self.col_troubles.find({}).count(),
 
+				'tran': {
+
+					'trans': self.col_tran.find(
+						{},
+						{'_id': 1}
+					).count()
+				},
+
 				'photo': {
 
-					'pps': photo_col.find(
+					'pps': self.col_photo.find(
 						{'_id': {"$gt" : 0}}, 
 						self.id_proj
 					).count(),
 
-					'uls': photo_col.find(
+					'uls': self.col_photo.find(
 						{'_id': {"$lt" : 0}}, 
 						self.id_proj
 					).count()
 				},
 
-				'main': {
+				'blend': {
 
-					'comps': self.col_main.find(
+					'comps': self.col_blend.find(
 						{
 							'tranId': {"$gt" : 1}, 
 							'alDocType': AlDocType.COMPOUND
@@ -292,18 +300,10 @@ class AmpelStatsPublisher(Schedulable):
 						self.tran_proj
 					).count(),
 
-					't2s': self.col_main.find(
+					't2s': self.col_blend.find(
 						{
 							'tranId': {"$gt" : 1}, 
 							'alDocType': AlDocType.T2RECORD
-						},
-						self.tran_proj
-					).count(),
-
-					'trans': self.col_main.find(
-						{	
-							'tranId': {"$gt" : 1}, 
-							'alDocType': AlDocType.TRANSIENT
 						},
 						self.tran_proj
 					).count()
@@ -314,7 +314,7 @@ class AmpelStatsPublisher(Schedulable):
 #		if alerts_count:
 #
 #			res = next(
-#				self.col_runs.aggregate(
+#				self.col_events.aggregate(
 #					[
 #						#{
 #						#	"$match": { 
@@ -411,12 +411,12 @@ class AmpelStatsPublisher(Schedulable):
 
 			else:
 				# Record job info into DB
-				self.col_runs.update_one(
+				self.col_events.update_one(
 					{'_id': int(strftime('%Y%m%d'))},
 					{
 						'$push': {
-							'jobs': {
-								'name': 'asp',
+							'events': {
+								'name': 'statsPublisher',
 								'dt': time(),
 								'metrics': AmpelUtils.unflatten_dict(out_dict)
 							}
@@ -464,23 +464,22 @@ class AmpelStatsPublisher(Schedulable):
 
 		if channel_name is None:
 
-			return self.col_main.find(
-				{
-					'tranId': {'$gt': 1},
-					'alDocType': AlDocType.TRANSIENT
-				},
-				{'tranId': 1, '_id': 0}
+			return self.col_tran.find(
+				{},
+				{'_id': 1}
 			).count()
 
 		else:
 
-			return self.col_main.find(
+			return self.col_tran.find(
 				{
-					'tranId': {'$gt': 1},
-					'alDocType': AlDocType.TRANSIENT, 
+					'_id': {'$gt': 1},
 					'channels': channel_name
 				},
-				{'tranId': 1, '_id': 0}
+				{'_id': 1}
+			).hint(
+				# Hint is very important here. It ensures the query is covered
+				'_id_1_channels_1'
 			).count()
 
 def run():
