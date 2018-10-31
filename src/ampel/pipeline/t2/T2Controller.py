@@ -289,7 +289,7 @@ class T2Controller(Schedulable):
 								'dt': now,
 								'unit': t2_unit_name,
 								'success': int(not isinstance(ret, T2RunStates)),
-								'channel(s)': t2_doc['channels'],
+								'channels': t2_doc['channels'],
 								'runId': db_logging_handler.get_run_id()
 							}
 						}
