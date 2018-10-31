@@ -390,7 +390,10 @@ class T3Event:
 		#if self.db_logging_handler:
 		#	self.db_logging_handler.set_channels(self.task_config.channels)
 
-		self.logger.info("%s: creating TranViews" % event_name)
+		self.logger.info(
+			"%s: creating TranViews for %i TranData" % 
+			(event_name, len(transients))
+		)
 
 		if isinstance(channels, dict):
 			channels = LogicSchemaUtils.reduce_to_set(channels)
@@ -503,15 +506,15 @@ class T3Event:
 
 		finally:
 
-			# Feedback
-			self.logger.shout("Done running %s" % self.name)
-
 			# Calls done() for each T3 unit instance (among other things)
 			self.finish()
 
 			# Register the execution of this event into the events col
 			if self.update_events:
 				event_doc.publish()
+
+			# Feedback
+			self.logger.shout("Done running %s" % self.name)
 
 			# Write log entries to DB
 			if hasattr(self, 'db_logging_handler'):
