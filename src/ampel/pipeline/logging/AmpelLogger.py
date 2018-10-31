@@ -209,14 +209,14 @@ class AmpelLogger(logging.Logger):
 		shout: custom msg with log level SHOUT (21) that should make its way \
 		through the StreamHandler (even quietened)
 		"""
-		self._log(21, msg, args, **kwargs)
+		self._log(logging.SHOUT, msg, args, **kwargs)
 
 
 	def verbose(self, msg, *args, **kwargs):
 		"""
 		shout: custom msg with log level VERBOSE (15)
 		"""
-		self._log(15, msg, args, **kwargs)
+		self._log(logging.VERBOSE, msg, args, **kwargs)
 
 
 	def propagate_log(self, level, msg, exc_info=False, extra=None):
