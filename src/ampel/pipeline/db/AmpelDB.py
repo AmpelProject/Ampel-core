@@ -22,12 +22,17 @@ class AmpelDB:
 	# 'col' None will be replaced by instance of pymongo.collection.Collection 
 	# the first time AmpelDB.get_collection(...) is called for a given collection
 	_ampel_cols = {
-		'main': {
+		'tran': {
 			'dbLabel': 'data',
 			'dbPrefix': _db_prefix,
 			'col': None
 		},
 		'photo': {
+			'dbLabel': 'data',
+			'dbPrefix': _db_prefix,
+			'col': None
+		},
+		'blend': {
 			'dbLabel': 'data',
 			'dbPrefix': _db_prefix,
 			'col': None
@@ -80,8 +85,6 @@ class AmpelDB:
 		}
 	}
 
-	hint_full_compound_index = "tranId_1_alDocType_1_channels_1"
-	
 	@classmethod
 	def set_db_prefix(cls, prefix):
 		"""
@@ -180,7 +183,7 @@ class AmpelDB:
 	def create_indexes(col):
 		"""
 		The method will set indexes for collections with names: 
-		'main', 'photo', 'events', 'logs', 'troubles', ...
+		'tran', 'photo', 'blend', 'events', 'logs', 'troubles', ...
 
 		:returns: None
 		"""
@@ -190,9 +193,25 @@ class AmpelDB:
 			(col.name, col.database.name)
 		)
 
-		if col.name == "main":
+		if col.name == "tran":
 
 			# For various indexed queries and live auto-complete *covered* queries
+			col.create_index(
+				[
+					('_id', 1),
+					('channels', 1)
+				],
+				unique = True
+			)
+
+		elif col.name == "photo":
+
+			col.create_index(
+				[('tranId', 1)]
+			)
+
+		elif col.name == "blend":
+
 			col.create_index(
 				[
 					('tranId', 1), 
@@ -201,37 +220,12 @@ class AmpelDB:
 				]
 			)
 
-			# avoid annoying mongdb concurency pblms with upserts
-			# or put differently:
-			# docs.mongodb.com/manual/reference/method/db.collection.update/#use-unique-indexes
-			# -------------------------------------------------------------
-			# Warning
-			# To avoid inserting the same document more than once, 
-			# only use upsert: true if the query field is uniquely indexed.
-			# -------------------------------------------------------------
-			col.create_index(
-				[
-					('tranId', 1), 
-					('alDocType', 1)
-				],
-				unique = True,
-				partialFilterExpression = {
-					'alDocType': AlDocType.TRANSIENT
-				}
-			)
-
 			# Create sparse runstate index
 			col.create_index(
 				[('runState', 1)],
 				partialFilterExpression = {
 					'alDocType': AlDocType.T2RECORD
 				}
-			)
-
-		elif col.name == "photo":
-
-			col.create_index(
-				[('tranId', 1)]
 			)
 
 		elif col.name == "logs":
@@ -277,6 +271,7 @@ class AmpelDB:
 		elif col.name == "troubles":
 			pass
 
+		# Rejected logs collections
 		elif col.name in AmpelDB._ampel_cols and AmpelDB._ampel_cols[col.name]['dbLabel'] == 'rej':
 
 			# Create sparse index for key runId

@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 13.01.2018
-# Last Modified Date: 16.10.2018
+# Last Modified Date: 31.10.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from ampel.core.flags.FlagUtils import FlagUtils
@@ -36,7 +36,7 @@ class LightCurveLoader:
 		"""
 		self.logger = AmpelLogger.get_logger() if logger is None else logger
 		self.read_only = read_only
-		self.main_col = AmpelDB.get_collection("main")
+		self.blend_col = AmpelDB.get_collection("blend")
 		self.photo_col = AmpelDB.get_collection("photo")
 
 
@@ -64,9 +64,9 @@ class LightCurveLoader:
 			comp_hex = compound_id.hex()
 
 		# Retrieve compound document
-		main_cursor = self.main_col.find(match_crit)
+		blend_cursor = self.blend_col.find(match_crit)
 
-		if main_cursor.count() == 0:
+		if blend_cursor.count() == 0:
 			self.logger.warn("No compound found with id: %s " % compound_id)
 			return None
 
@@ -88,7 +88,7 @@ class LightCurveLoader:
 			else:
 				uls_list.append(el)
 
-		return self.load_using_results(pps_list, uls_list, next(main_cursor))
+		return self.load_using_results(pps_list, uls_list, next(blend_cursor))
 
 
 	def load_using_results(self, ppd_list, uld_list, compound):
@@ -133,12 +133,17 @@ class LightCurveLoader:
 			# Get corresponding photopoint / upper limit
 			if 'pp' in el:
 
-				photo_dict = next((pp for pp in ppd_list if pp["_id"] == el["pp"]), None)
+				photo_dict = next(
+					(pp for pp in ppd_list if pp["_id"] == el["pp"]), 
+					None
+				)
 
 				if photo_dict is None:
 
-					self.logger.warn("Photo point %i not found" % el['pp'])
-					self.logger.info("Trying to recover from this error")
+					self.logger.warn(
+						"Photo point not found, trying to recover.",
+						extra={'pp': el['pp']}
+					)
 
 					# TODO: populate 'troubles collection'
 					cursor = self.photo_col.find({"_id": el['pp']})
@@ -238,8 +243,10 @@ class LightCurveLoader:
 
 				if pp_id not in already_loaded_photo:
 
-					self.logger.warn("Photo point %i not provided" % pp_id)
-					self.logger.info("Trying to recover from this error")
+					self.logger.warn(
+						"Photo point not provided, trying to recover.",
+						extra={'pp': pp_id}
+					)
 
 					cursor = self.photo_col.find({"_id": pp_id})
 	

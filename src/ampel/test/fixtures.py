@@ -277,7 +277,6 @@ def ingested_transients(alert_generator, minimal_ingestion_config, caplog):
 	numpy.random.seed(0)
 	
 	from ampel.pipeline.db.AmpelDB import AmpelDB
-	col_tran = AmpelDB.get_collection('main')
 	
 	# TODO: fix this: T0Channel __init__(self, chan_config, source, logger): where :param chan_config: instance of ampel.pipeline.config.ChannelConfig
 	channels = [T0Channel(str(i), {'sources': AmpelConfig.get_config('global.sources')}, 'ZTFIPAC', lambda *args: True, set()) for i in range(2)]
@@ -298,8 +297,7 @@ def ingested_transients(alert_generator, minimal_ingestion_config, caplog):
 	from ampel.pipeline.db.AmpelDB import AmpelDB
 	from ampel.core.flags.AlDocType import AlDocType
 	
-	col_tran = AmpelDB.get_collection('main')
-	assert col_tran.count({'alDocType': AlDocType.TRANSIENT}) == len(choices), "Transient docs exist for all ingested alerts"
+	assert AmpelDB.get_collection('tran').find({}).count() == len(choices), "Transient docs exist for all ingested alerts"
 	assert max(num_pps) > 0, "At least 1 photopoint was ingested"
 	
 	return dict(choices)

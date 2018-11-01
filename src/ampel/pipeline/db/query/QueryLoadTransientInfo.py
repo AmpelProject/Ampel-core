@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 14.02.2018
-# Last Modified Date: 16.10.2018
+# Last Modified Date: 31.10.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from bson.binary import Binary
@@ -12,19 +12,18 @@ from ampel.core.flags.AlDocType import AlDocType
 from ampel.core.flags.FlagUtils import FlagUtils
 from ampel.pipeline.common.AmpelUtils import AmpelUtils
 from ampel.pipeline.db.query.QueryMatchSchema import QueryMatchSchema
+from ampel.pipeline.db.query.QueryUtils import QueryUtils
 
 class QueryLoadTransientInfo:
 	"""
 	"""
 
-	limited_altypes = (AlDocType.COMPOUND, AlDocType.TRANSIENT)
-
 
 	@classmethod
 	def build_stateless_query(cls, tran_ids, docs, channels=None, t2_subsel=None):
 		"""
-		| Builds a pymongo query aiming at loading transient docs (transient, t2s, coumpounds)\
-		(not including photpoints/upper limits which are in a separate collection). 
+		| Builds a pymongo query aiming at loading transient docs (t2s, coumpounds)\
+		(not including photpoints/upper limits/transient doc which are in a separate collection). 
 		| Stateless query: all avail compounds and t2docs (although possibly \
 		constrained by parameter t2_subsel) are targeted.
 
@@ -53,48 +52,36 @@ class QueryLoadTransientInfo:
 
 		query = cls.create_broad_query(tran_ids, channels)
 
-		# Everything should be retrieved (len(docs) is then 5)
-		if not t2_subsel and len(docs) == 5:
-			return query
+		if AlDocType.COMPOUND in docs:
+			
+			if t2_subsel:
+				query['$or'] = [
+					{'alDocType': AlDocType.COMPOUND},
+					{
+						'alDocType': AlDocType.T2RECORD,
+						't2UnitId': \
+							t2_subsel if type(t2_subsel) is str \
+							else QueryUtils.match_array(t2_subsel)
+					}
+				]
 
-		# Build array of AlDocType (AlDocType.T2RECORD will be set later since it depends in t2_subsel)
-		al_types = [al_type for al_type in cls.limited_altypes if al_type in docs]
-
-		if not t2_subsel:
-
-			# Complete alDocType with type T2RECORD if so wished
-			if AlDocType.T2RECORD in docs:
-				al_types.append(AlDocType.T2RECORD)
-
-			query['alDocType'] = (
-				al_types[0] if len(al_types) == 1 
-				else {'$in': al_types}
-			)
-
-			# return query matching criteria
-			return query
+			elif AlDocType.T2RECORD in docs:
+				query['alDocType'] = {
+					'$in': [AlDocType.COMPOUND, AlDocType.T2RECORD]
+				}
+			else:
+				query['alDocType'] = AlDocType.COMPOUND
 
 		else:
 
-			# Combine first part of query (transient+compounds) 
-			# with t2UnitId targeted T2RECORD query
-			query['$or'] = [
-				# transient+compounds 
-				{
-					'alDocType': (
-						al_types[0] if len(al_types) == 1 
-						else {'$in': al_types}
-					)
-				},
-				# t2s
-				{
-					'alDocType': AlDocType.T2RECORD,
-					't2Unit': t2_subsel if type(t2_subsel) is str else (
-						t2_subsel[0] if len(t2_subsel) == 1 else {'$in': t2_subsel}
-					)
-				}
-			]
+			if AlDocType.T2RECORD in docs or t2_subsel:
+				query['alDocType'] = {'alDocType': AlDocType.T2RECORD}
+				if t2_subsel:
+					query['t2UnitId'] = \
+						t2_subsel if type(t2_subsel) is str \
+						else QueryUtils.match_array(t2_subsel)
 
+		# return query matching criteria
 		return query
 
 
@@ -167,12 +154,6 @@ class QueryLoadTransientInfo:
 		# build query with 'or' connected search criteria
 		or_list = []
 
-		if AlDocType.TRANSIENT in docs:
-
-			or_list.append(
-				{'alDocType': AlDocType.TRANSIENT}
-			)
-
 		if AlDocType.COMPOUND in docs and comp_already_loaded is False:
 
 			or_list.append(
@@ -190,13 +171,9 @@ class QueryLoadTransientInfo:
 			}
 
 			if t2_subsel:
-				t2_match['t2Unit'] = (
-					t2_subsel if type(t2_subsel) is str 
-					else (
-						t2_subsel[0] if len(t2_subsel) == 1 
-						else {'$in': t2_subsel}
-					)
-				)
+				t2_match['t2UnitId'] = \
+					t2_subsel if type(t2_subsel) is str \
+					else QueryUtils.match_array(t2_subsel)
 
 			or_list.append(t2_match)
 
@@ -227,8 +204,8 @@ class QueryLoadTransientInfo:
 		"""
 
 		query = {
-			'tranId': tran_ids if type(tran_ids) is int
-			else {'$in': tran_ids if type(tran_ids) is list else list(tran_ids)}
+			'tranId': tran_ids if type(tran_ids) is int 
+			else QueryUtils.match_array(tran_ids)
 		}
 
 		if channels is not None:
