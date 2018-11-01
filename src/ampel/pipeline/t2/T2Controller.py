@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 25.01.2018
-# Last Modified Date: 24.10.2018
+# Last Modified Date: 31.10.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import pkg_resources, math
@@ -42,10 +42,11 @@ class T2Controller(Schedulable):
 		check_interval=10, batch_size=200
 	): 
 		"""
-		run_state: one on ampel.core.flags.T2RunStates int value (for example: T0_RUN)
-		t2_units: list of string id of the t2 units to run. If not specified, any t2 unit will be run
-		check_interval: int value in seconds
-		batch_size: integer. It is defined because the job log entry cannot grow above 16MB (of logs).
+		:param T2RunStates run_state: one on ampel.core.flags.T2RunStates int value (for example: T0_RUN)
+		:param t2_units: ids of the t2 units to run. If not specified, any t2 unit will be run
+		:type t2_units: List[str]
+		:param int check_interval: in seconds
+		:param int batch_size: 
 		"""
 
 		# Get logger 
@@ -75,9 +76,9 @@ class T2Controller(Schedulable):
 		# Update query accordingly
 		if not t2_units is None:
 			if len(t2_units) == 1:
-				self.query['t2Unit'] = t2_units[0]
+				self.query['t2UnitId'] = t2_units[0]
 			else:
-				self.query['t2Unit'] = {
+				self.query['t2UnitId'] = {
 					'$in': t2_units
 				}
 
@@ -155,13 +156,13 @@ class T2Controller(Schedulable):
 			counter += 1
 
 			# Shortcut
-			t2_unit_name = t2_doc['t2Unit']
+			t2_unit_id = t2_doc['t2UnitId']
 
 			# Check if T2 instance exists in this run
-			if not t2_unit_name in t2_instances:
+			if not t2_unit_id in t2_instances:
 
 				# Get T2 class
-				unit = self.load_unit(t2_unit_name, self.logger)
+				unit = self.load_unit(t2_unit_id, self.logger)
 
 				# Load resources
 				resources = {
@@ -170,12 +171,12 @@ class T2Controller(Schedulable):
 				}
 
 				# Instantiate T2 class
-				t2_instances[t2_unit_name] = unit(
+				t2_instances[t2_unit_id] = unit(
 					self.logger, resources
 				)
 
 			# Build run config id (example: )
-			run_config_id = t2_unit_name + "_" + t2_doc['runConfig']
+			run_config_id = t2_unit_id + "_" + t2_doc['runConfig']
 
 			# if run_config was not loaded not previously done
 			if not run_config_id in self.t2_run_config:
@@ -185,7 +186,7 @@ class T2Controller(Schedulable):
 
 				# add run_config version info for jobreporter
 				self.add_version(
-					t2_unit_name, 'run_config', self.t2_run_config[run_config_id]
+					t2_unit_id, 'run_config', self.t2_run_config[run_config_id]
 				)
 
 			# Load ampel.base.LightCurve instance
@@ -197,7 +198,7 @@ class T2Controller(Schedulable):
 			# Run t2
 			before_run = time()
 			try:
-				ret = t2_instances[t2_unit_name].run(
+				ret = t2_instances[t2_unit_id].run(
 					lc, (
 						self.t2_run_config[run_config_id]['parameters'].copy()
 						if self.t2_run_config[run_config_id] is not None
@@ -209,7 +210,7 @@ class T2Controller(Schedulable):
 				ret = T2RunStates.EXCEPTION
 				LoggingUtils.report_exception(
 					self.logger, e, tier=2, run_id=db_logging_handler.get_run_id(), info={
-						'unit': t2_unit_name,
+						'unit': t2_unit_id,
 						'runConfig': run_config_id,
 						't2Doc': t2_doc['_id']
 					}
@@ -232,7 +233,7 @@ class T2Controller(Schedulable):
 						{
 							'$push': {
 								"results": {
-									'versions': self.versions[t2_unit_name],
+									'versions': self.versions[t2_unit_id],
 									'dt': now,
 									'duration': int(now - before_run),
 									'runId': db_logging_handler.get_run_id(),
@@ -257,7 +258,7 @@ class T2Controller(Schedulable):
 						{
 							'$push': {
 								"results": {
-									'versions': self.versions[t2_unit_name],
+									'versions': self.versions[t2_unit_id],
 									'dt': now,
 									'duration': int(now - before_run),
 									'runId': db_logging_handler.get_run_id(),
@@ -287,7 +288,7 @@ class T2Controller(Schedulable):
 							"journal": {
 								'tier': 2,
 								'dt': now,
-								'unit': t2_unit_name,
+								'unit': t2_unit_id,
 								'success': int(not isinstance(ret, T2RunStates)),
 								'channels': t2_doc['channels'],
 								'runId': db_logging_handler.get_run_id()
