@@ -49,7 +49,7 @@ class CompoundBluePrintGenerator():
 		The sorting is not done within this method because CompoundBluePrint 
 		aims at being instrument independant.  For ZTF, the field 'jd' is used:
 		-> sorted(dict_list, key=lambda k: k['jd'])
-		:param channel_names: iterable sequence of of channel names (string)
+		:param channel_names: iterable sequence of channel names (string)
 		:returns: instance of CompoundBluePrint
 		"""	
 
