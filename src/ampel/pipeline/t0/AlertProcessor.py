@@ -7,8 +7,8 @@
 # Last Modified Date: 16.10.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-import time, pkg_resources, numpy as np
-from datetime import datetime
+import pkg_resources, numpy as np
+from time import time
 from ampel.pipeline.logging.AmpelLogger import AmpelLogger
 from logging import LogRecord, INFO
 from ampel.pipeline.logging.LoggingUtils import LoggingUtils
@@ -20,6 +20,7 @@ from ampel.pipeline.logging.DBEventDoc import DBEventDoc
 from ampel.pipeline.db.AmpelDB import AmpelDB
 from ampel.pipeline.config.AmpelConfig import AmpelConfig
 from ampel.pipeline.config.channel.ChannelConfigLoader import ChannelConfigLoader
+from ampel.pipeline.t0.ingest.DBUpdatesBuffer import DBUpdatesBuffer
 from ampel.pipeline.t0.Channel import Channel
 from ampel.pipeline.common.AmpelUtils import AmpelUtils
 from ampel.pipeline.common.GraphiteFeeder import GraphiteFeeder
@@ -141,8 +142,7 @@ class AlertProcessor():
 		"""
 
 		# Save current time to later evaluate how low was the pipeline processing time
-		time_now = time.time
-		run_start = time_now()
+		run_start = time()
 
 		# Create DB logging handler instance (logging.Handler child class)
 		# This class formats, saves and pushes log records into the DB
@@ -162,7 +162,9 @@ class AlertProcessor():
 		self.logger.shout("Starting")
 
 		if ingester is None:
-			ingester = self.input_setup.get_alert_ingester(self.t0_channels, self.logger)
+			ingester = self.input_setup.get_alert_ingester(
+				self.t0_channels, self.logger
+			)
 
 		if not full_console_logging:
 			self.logger.quieten_console()
@@ -215,8 +217,7 @@ class AlertProcessor():
 			'pps': 0,
 			'uls': 0,
 			'reprocs': 0,
-			'matches': {},
-			'dbUpd': {}
+			'matches': {}
 		}
 
 		dur_stats['allFilters'].fill(np.nan)
@@ -234,7 +235,11 @@ class AlertProcessor():
 			)
 
 		# Save pre run time
-		pre_run = time_now()
+		pre_run = time()
+
+		# Accepts and execute pymongo.operations
+		updates_buffer = DBUpdatesBuffer(run_id)
+		updates_buffer.start()
 
 
 		# Process alerts
@@ -259,7 +264,7 @@ class AlertProcessor():
 				uls_loaded += len(alert_content['uls'])
 
 			# stats
-			all_filters_start = time_now()
+			all_filters_start = time()
 
 			extra = {
 				'tranId': tran_id, 
@@ -272,13 +277,13 @@ class AlertProcessor():
 				try:
 
 					# stats
-					per_filter_start = time_now()
+					per_filter_start = time()
 
 					# Apply filter (returns None in case of rejection or t2 runnable ids in case of match)
 					scheduled_t2_units[i] = channel.filter_func(ampel_alert)
 
 					# stats
-					dur_stats['filters'][channel.str_name][iter_count] = time_now() - per_filter_start
+					dur_stats['filters'][channel.str_name][iter_count] = time() - per_filter_start
 
 					# Filter rejected alert
 					if scheduled_t2_units[i] is None:
@@ -330,7 +335,7 @@ class AlertProcessor():
 					)
 
 			# time required for all filters
-			dur_stats['allFilters'][iter_count] = time_now() - all_filters_start
+			dur_stats['allFilters'][iter_count] = time() - all_filters_start
 
 			if any(t2 is not None for t2 in scheduled_t2_units):
 
@@ -340,11 +345,14 @@ class AlertProcessor():
 				# TODO: build tran_id <-> alert_id map (replayability)
 				#processed_alert[tran_id]
 				try: 
-					ingester.ingest(
+					ingester_start = time()
+					db_updates = ingester.ingest(
 						tran_id, alert_content['pps'], 
 						alert_content['uls'], 
 						scheduled_t2_units
 					)
+					dur_stats['preIngestTime'].append(time()-ingester_start)
+					updates_buffer.add_updates(db_updates)
 				except Exception as e:
 					LoggingUtils.report_exception(
 						self.logger, e, tier=0, 
@@ -379,8 +387,12 @@ class AlertProcessor():
 				self.logger.info("Reached max number of iterations")
 				break
 
+
+		# This writes remaining bulk ops to DB
+		updates_buffer.stop()
+
 		# Save post run time
-		post_run = time_now()
+		post_run = time()
 
 		# Post run section
 		try: 
@@ -406,20 +418,25 @@ class AlertProcessor():
 				count_stats['pps'] = pps_loaded
 				count_stats['uls'] = uls_loaded
 
-				# Cleaner structure
-				count_stats['ppReprocs'] = count_stats['dbUpd'].pop('ppReprocs')
+				if hasattr(ingester, 'count_dict'):
+					count_stats['dbUpd'] = ingester.count_dict
+					# Cleaner structure
+					count_stats['ppReprocs'] = count_stats['dbUpd'].pop('ppReprocs')
+
 
 				# Compute mean time & std dev in microseconds
 				#############################################
 
 				self.logger.info("Computing job stats")
 
+				dur_stats['preIngestTime'] = self.compute_stat(dur_stats['preIngestTime'])
+
 				# For ingest metrics
-				for key in ('preIngestTime', 'dbBulkTimePhoto', 'dbBulkTimeMain', 
-					'dbPerOpMeanTimePhoto', 'dbPerOpMeanTimeMain'
-				):
-					if dur_stats[key]: 
-						dur_stats[key] = self.compute_stat(dur_stats[key])
+				for time_metric in ('dbBulkTime', 'dbPerOpMeanTime'):
+					for col in ("Photo", "Blend", "Tran"):
+						key = time_metric+col
+						if updates_buffer.metrics[key]: 
+							dur_stats[key] = self.compute_stat(updates_buffer.metrics[key])
 
 				# per chan filter metrics
 				len_non_nan = lambda x: iter_max - np.count_nonzero(np.isnan(x))
@@ -436,7 +453,7 @@ class AlertProcessor():
 				# Durations in seconds
 				dur_stats['apPreLoop'] = int(pre_run - run_start)
 				dur_stats['apMain'] = int(post_run - pre_run)
-				dur_stats['apPostLoop'] = int(time.time() - post_run)
+				dur_stats['apPostLoop'] = int(time() - post_run)
 
 				# Publish metrics to graphite
 				if "graphite" in self.publish_stats:
@@ -467,7 +484,7 @@ class AlertProcessor():
 			
 		self.logger.shout(
 			"Alert processing completed (time required: %is)" % 
-			int(time_now() - run_start)
+			int(time() - run_start)
 		)
 
 		# Restore console logging settings
