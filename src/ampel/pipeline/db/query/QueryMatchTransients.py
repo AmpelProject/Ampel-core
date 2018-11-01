@@ -48,10 +48,7 @@ class QueryMatchTransients:
 		:returns: query dict with matching criteria
 		"""
 
-		query = {
-			'tranId': {'$gt': 1}, # indexed query
-			'alDocType': AlDocType.TRANSIENT
-		}
+		query = {}
 
 		if channels is not None:
 			QueryMatchSchema.apply_schema(
@@ -69,47 +66,60 @@ class QueryMatchTransients:
 				query, 'alFlags', without_flags
 			)
 
-		# TODO: use channel-specific creation/acceptation date from journal ?
-		if time_created is not None:
-			if type(time_created) is not TimeConstraint:
-				raise ValueError("Parameter 'time_created' must be a TimeConstraint instance")
-			QueryMatchTransients._add_time_constraint(
-				query, '_id', time_created, oid_match=True
-			)
+		if time_created or time_modified:
+				
+			chans = LogicSchemaUtils.reduce_to_set("Any" if channels is None else channels)
+			or_list = []
 
-		if time_modified is not None:
+			for chan_name in chans:
 
-			if type(time_modified) is not TimeConstraint:
-				raise ValueError("Parameter 'time_modified' must be a TimeConstraint instance")
-
-			query['journal'] = {'$elemMatch': {'tier': 0}}
-
-			QueryMatchTransients._add_time_constraint(
-				query['journal']['$elemMatch'], 'dt', time_modified
-			)
-
-			if channels is not None:
-				query['journal']['$elemMatch']['channels'] = {
-					'$in': list(
-						LogicSchemaUtils.reduce_to_set(channels)
+				if time_created:
+					or_list.append(
+						{
+							'created.%s' % chan_name: \
+								QueryMatchTransients._add_time_constraint(time_created)
+						}
 					)
-				}
+
+				if time_modified:
+					or_list.append(
+						{
+							'modified.%s' % chan_name: \
+								QueryMatchTransients._add_time_constraint(time_modified)
+						}
+					)
+
+			if or_list:
+				if len(or_list) == 1:
+					tupl = next(iter(or_list[0].items())) 
+					query[tupl[0]] = tupl[1]
+				else:
+					if '$or' in query:
+						query['$or'] += or_list
+					else:
+						query['$or'] = or_list
 
 		return query
 
 
 	@staticmethod
-	def _add_time_constraint(query, target_field, tc_obj, oid_match=False):
+	def _add_time_constraint(tc):
 		"""
-		'query': dict used for the pymongo find() request
-		'target_field': typically '_id' or 'modified'
-		'tc_obj': instance of ampel/pipeline/t3/TimeConstraint.py
-		'oid_match': is the targeted field value an ObjectId or not
+		:param TimeConstrain tc: instance of ampel.pipeline.t3.TimeConstraint.py
+		:returns: dict such as:
+			{
+				'$gt': 1223142,
+				'$lt': 9894324923
+			}
 		"""
-		if tc_obj.has_constraint():
+
+		if type(tc) is not TimeConstraint:
+			raise ValueError("Parameter must be a TimeConstraint instance")
+
+		d = {}
+		if tc.has_constraint():
 			for key, op in {'after': '$gte', 'before': '$lte'}.items():
-				val = tc_obj.get(key)
-				if val is not None:
-					if target_field not in query:
-						query[target_field] = {}
-					query[target_field][op] = ObjectId.from_datetime(val) if oid_match else val.timestamp()
+				val = tc.get(key)
+				if val:
+					d[op] = val.timestamp()
+		return d
