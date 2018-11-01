@@ -197,11 +197,14 @@ class LoggingUtils:
 
 		if isinstance(arg, dict):
 
-			pblm_keys = [key for key in arg.keys() if "$" in key]
+			pblm_keys = [key for key in arg.keys() if "$" in key or "." in key]
 			if pblm_keys:
 				arg = arg.copy() # shallow copy 
 				for key in pblm_keys:
-					arg[key.replace('$', "\uFF04")] = arg.pop(key)
+					if "$" in key:
+						arg[key.replace("$", "\uFF04")] = arg.pop(key)
+					if "." in key:
+						arg[key.replace(".", "\u2219")] = arg.pop(key)
 
 			if not ConfigUtils.has_nested_type(arg, dict):
 				return arg
