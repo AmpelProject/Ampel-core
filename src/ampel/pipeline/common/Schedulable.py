@@ -7,7 +7,7 @@
 # Last Modified Date: 28.05.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-import schedule, time, threading, signal
+import schedule, logging, time, threading, signal
 from ampel.pipeline.logging.AmpelLogger import AmpelLogger
 
 
@@ -21,6 +21,9 @@ class Schedulable():
 		'start_callback': method to be executed before starting the run thread.
 		'stop_callback': method to be executed after run thread join().
 		"""
+
+		logging.getLogger('schedule').propagate = False
+		logging.getLogger('schedule').setLevel(logging.CRITICAL + 10)
 
 		# Catch kill
 		signal.signal(signal.SIGINT, self.sig_exit)
