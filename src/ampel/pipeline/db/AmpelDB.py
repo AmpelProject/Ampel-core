@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 16.06.2018
-# Last Modified Date: 14.10.2018
+# Last Modified Date: 06.11.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from ampel.pipeline.config.AmpelConfig import AmpelConfig
@@ -47,6 +47,11 @@ class AmpelDB:
 			'dbPrefix': _db_prefix,
 			'col': None
 		},
+		'beacon': {
+			'dbLabel': 'var',
+			'dbPrefix': _db_prefix,
+			'col': None
+		},
 		'troubles': {
 			'dbLabel': 'var',
 			'dbPrefix': _db_prefix,
@@ -66,7 +71,7 @@ class AmpelDB:
 			'dbLabel': 'ext',
 			'dbPrefix': _db_prefix,
 			'col': None
-		},
+		}
 	}
 
 	# least priviledged role required to read or write
@@ -268,12 +273,8 @@ class AmpelDB:
 			#	}
 			#)
 
-		elif col.name == "troubles":
-			pass
-
 		# Rejected logs collections
 		elif col.name in AmpelDB._ampel_cols and AmpelDB._ampel_cols[col.name]['dbLabel'] == 'rej':
 
 			# Create sparse index for key runId
 			col.create_index([('tranId', 1)])
-
