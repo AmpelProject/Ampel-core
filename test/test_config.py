@@ -18,4 +18,4 @@ def test_validate_config(mocker):
 	for channel_config in ChannelConfigLoader.load_configurations(None, 0):
 		pass
 	
-	assert len(T3Controller.load_job_configs(None, logging.getLogger())) > 0
+	assert len(T3Controller.load_job_configs(None)) > 0
