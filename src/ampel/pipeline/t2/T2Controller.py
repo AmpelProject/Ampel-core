@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 25.01.2018
-# Last Modified Date: 31.10.2018
+# Last Modified Date: 06.11.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import pkg_resources, math
@@ -86,10 +86,22 @@ class T2Controller(Schedulable):
 		# batch_size is defined because the job log entry cannot grow above 16MB (of logs).
 		self.batch_size = batch_size
 
+		# Parent constructor
 		Schedulable.__init__(self)
 
+		# Schedule processing of t2 docs
 		self.get_scheduler().every(check_interval).seconds.do(
 			self.process_new_docs
+		)
+
+		# Shortcut
+		self.beacon_col = AmpelDB.get_collection('beacon')
+
+		# Create t2Controller beacon doc if it does not exist yet
+		self.beacon_col.update_one(
+			{'_id': "t2Controller"},
+			{'$set': {'_id': "t2Controller"}},
+			upsert=True
 		)
 
 
@@ -99,11 +111,14 @@ class T2Controller(Schedulable):
 		"""
 
 		# get t2 documents (runState is usually TO_RUN or TO_RUN_PRIO)
-		cursor = AmpelDB.get_collection('main').find(self.query)
+		cursor = AmpelDB.get_collection('blend').find(self.query)
 
 		# No result
 		if cursor.count() == 0:
-			self.logger.info("No T2 docs found")
+			self.beacon_col.update_one(
+				{'_id': "t2Controller"}, 
+				{'$set': {'dt': time()}}
+			)
 		else:
 
 			# Process t2_docs
@@ -299,7 +314,7 @@ class T2Controller(Schedulable):
 			)
 
 			try: 
-				result = AmpelDB.get_collection('main').bulk_write(db_ops)
+				result = AmpelDB.get_collection('blend').bulk_write(db_ops)
 				self.logger.info(result.bulk_api_result)
 			except BulkWriteError as bwe: 
 				# TODO add error flag to Job and Transient
