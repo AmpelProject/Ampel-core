@@ -106,7 +106,8 @@ class Channel:
 			formatter=T0RejConsoleFormatter(
 				line_number=log_line_nbr,
 				implicit_channels=self.name
-			)
+			),
+			log_level=logging.WARNING
 		)
 
 		self.rejected_log_handler = DBRejectedLogsSaver(self.str_name, parent_logger)
