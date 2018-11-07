@@ -23,7 +23,7 @@ class Schedulable():
 		"""
 
 		logging.getLogger('schedule').propagate = False
-		logging.getLogger('schedule').setLevel(logging.CRITICAL + 10)
+		logging.getLogger('schedule').setLevel(logging.WARNING)
 
 		# Catch kill
 		signal.signal(signal.SIGINT, self.sig_exit)
