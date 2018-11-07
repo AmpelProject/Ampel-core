@@ -18,6 +18,7 @@ logging.VERBOSE = 131072
 logging.INFO = 262144
 logging.SHOUT = 262145
 logging.WARNING = 524288
+logging.WARN = logging.WARNING
 logging.ERROR = 1048576
 
 logging.addLevelName(logging.DEBUG, "DEBUG")
@@ -25,6 +26,7 @@ logging.addLevelName(logging.VERBOSE, "VERBOSE")
 logging.addLevelName(logging.INFO, "INFO")
 logging.addLevelName(logging.SHOUT, "SHOUT")
 logging.addLevelName(logging.WARNING, "WARNING")
+logging.addLevelName(logging.WARN, "WARN")
 logging.addLevelName(logging.ERROR, "ERROR")
 
 class AmpelLogger(logging.Logger):
