@@ -158,6 +158,8 @@ class AlertProcessor():
 
 		# Add db logging handler to the logger stack of handlers 
 		self.logger.handlers.insert(0, db_logging_handler)
+		if not full_console_logging:
+			self.logger.quieten_console()
 
 		self.logger.shout("Starting")
 
@@ -165,9 +167,6 @@ class AlertProcessor():
 			ingester = self.input_setup.get_alert_ingester(
 				self.t0_channels, self.logger
 			)
-
-		if not full_console_logging:
-			self.logger.quieten_console()
 
 		# New document in the 'events' collection
 		db_job_doc = DBEventDoc(event_name="ap", tier=0)
