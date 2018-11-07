@@ -129,7 +129,7 @@ class AmpelLogger(logging.Logger):
 		:returns: None
 		"""
 		for logger in AmpelLogger.loggers:
-			logger.set_console_log_level(21)
+			logger.set_console_log_level(logging.WARNING)
 
 		
 	@classmethod
@@ -194,7 +194,7 @@ class AmpelLogger(logging.Logger):
 		:returns: None
 		"""
 
-		self.set_console_log_level(21)
+		self.set_console_log_level(logging.WARNING)
 
 		
 	def louden_console(self):
