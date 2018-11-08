@@ -45,7 +45,7 @@ class AmpelLoggingStreamHandler(StreamHandler):
 		):
 			if record.msg:
 				stream = self.stream
-				stream.write(record.msg)
+				stream.write(str(record.msg))
 				stream.write(self.terminator)
 				self.flush()
 		else:
