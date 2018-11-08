@@ -254,6 +254,23 @@ class AmpelLogger(logging.Logger):
 			exc_info=exc_info, extra=extra
 		)
 
+	def validate_extra(self, obj):
+		"""
+		Ensure that extra items are BSON serializable, converting non-BSON types
+		such as numpy integers and floats to their native Python representations
+		"""
+		if obj is None or type(obj) in (str, bytes, int, float, bool):
+			return obj
+		elif isinstance(obj, tuple) or isinstance(obj, list):
+			return type(obj)(self.validate_extra(v) for v in obj)
+		elif isinstance(obj, dict):
+			return dict(self.validate_extra(kv) for kv in obj.items())
+		elif hasattr(obj, 'tolist'):
+			# convert numpy arrays to a (possibly nested) list, and scalars to
+			# the nearest compatible Python type
+			return obj.tolist()
+
+		raise TypeError("Extras item {} ({}.{}) is not BSON serializable".format(obj, type(obj).__module__, type(obj).__name__))
 
 	def makeRecord(self, name, level, fn, lno, msg, args, exc_info, func=None, extra=None, sinfo=None):
 		"""
@@ -277,8 +294,8 @@ class AmpelLogger(logging.Logger):
 		rv = _logRecordFactory(name, level, fn, lno, msg, args, exc_info, func, sinfo)
 
 		if extra:
-			rv.__dict__['extra'] = {**extra, **self.__extra} if self.__extra else extra
+			rv.__dict__['extra'] = self.validate_extra({**extra, **self.__extra} if self.__extra else extra)
 		else:
-			rv.__dict__['extra'] = self.__extra
-				
+			rv.__dict__['extra'] = self.validate_extra(self.__extra)
+
 		return rv
