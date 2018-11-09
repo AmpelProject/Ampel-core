@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 25.09.2018
-# Last Modified Date: 18.10.2018
+# Last Modified Date: 08.11.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from logging import WARNING
@@ -17,10 +17,14 @@ class RecordsBufferingHandler(BufferingHandler):
 	and features convenient methods such as 'forward' and 'copy'
 	"""
 
-	def __init__(self, channel=None):
-		super().__init__(0) # 0 capacity but that does not matter
+	def __init__(self, embed_channel=False):
+		"""
+		:param bool embed_channel: 
+		"""
+		# Set parent capacity to 0
+		super().__init__(0) 
 		self.has_error = False
-		self.channel = channel
+		self.embed = embed_channel
 
 
 	def flush(self):
@@ -41,17 +45,28 @@ class RecordsBufferingHandler(BufferingHandler):
 
 	def forward(self, logger_or_handler, channels=None, extra=None):
 		"""
-		Forwards saved log records to provided logger instance.
-		The internal record buffer will be deleted.
 		:param logger_or_handler: logger or LoggingHandler instance
+
+		Forwards saved log records to provided logger instance.
+		The internal record buffer will be cleared.
 		"""
 
 		if channels:
-			if extra:
-				extra = extra.copy() # shallow copy
-				extra['channels'] = channels
+			if self.embed:
+				for el in self.buffer:
+					if el.__dict__["msg"]:
+						el.__dict__["msg"] = {
+							'txt': el.__dict__["msg"],
+							'channels': channels
+						}
+					else:
+						el.__dict__["msg"] = {'channels': channels}
 			else:
-				extra={'channels': channels}
+				if extra:
+					extra = extra.copy() # shallow copy
+					extra['channels'] = channels
+				else:
+					extra={'channels': channels}
 
 		if extra:
 			for el in self.buffer:

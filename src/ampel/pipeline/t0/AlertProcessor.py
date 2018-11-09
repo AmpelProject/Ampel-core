@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 10.10.2017
-# Last Modified Date: 16.10.2018
+# Last Modified Date: 09.11.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import pkg_resources, numpy as np
@@ -41,7 +41,8 @@ class AlertProcessor():
 	iter_max = 5000
 
 	def __init__(self, 
-		survey_id, channels=None, publish_stats=['graphite', 'jobs'], log_line_nbr=False
+		survey_id, channels=None, publish_stats=['graphite', 'jobs'], 
+		log_line_nbr=False, log_format="compact" 
 	):
 		"""
 		:param str survey_id: id of the survey (ex: 'ZTFIPAC').
@@ -54,13 +55,60 @@ class AlertProcessor():
 		- String: channel with the provided id will be loaded
 		- List of strings: channels with the provided ids will be loaded 
 
-		:param publish_stats: publish performance stats:
+		:param List[str] publish_stats: publish performance stats:
 
 		- graphite: send t0 metrics to graphite (graphite server must be defined 
 		  in Ampel_config)
 		- jobs: include t0 metrics in job document
 
 		:param bool db_logging: whether to save log entries (and the corresponding job doc) into the DB
+		:param str log_format: 'compact' (saves RAM by reducing the number of indexed document) or standard. \
+		The 'compact' log entries can be later converted into 'standard' format using the aggregation pipeline.
+		Avoid using 'compact' if you run the alert processor with a single channel.
+		Examples:
+			- 'compact': embed channel information withing log record 'msg' field. \
+			```
+			{
+			    "_id" : ObjectId("5be4aa6254048041edbac352"),
+    			"tranId" : NumberLong(1810101032122523),
+    			"alertId" : NumberLong(404105201415015004),
+    			"flag" : 572784643,
+    			"runId" : 509,
+    			"msg" : [ 
+    			    {
+    					"channels" : "NO_FILTER",
+						"txt": "Alert accepted"
+    			    },
+    			    {
+    					"channels" : "HU_RANDOM",
+						"txt": "Alert accepted"
+    				}
+    			]
+			}
+			```
+			- 'standard': channel info are encoded in log parameter 'extra'. \
+			For a given alert, one log entry is created per channel since log concatenation \
+			cannot happen (the 'extra' dicts from the two log entries differ): \
+			```
+			{
+			    "_id" : ObjectId("5be4aa6254048041edbac353"),
+    			"tranId" : NumberLong(1810101032122523),
+    			"alertId" : NumberLong(404105201415015004),
+    			"flag" : 572784643,
+    			"runId" : 509,
+    			"channels" : "NO_FILTER",
+    			"msg" : "Alert accepted"
+			}
+			{
+			    "_id" : ObjectId("5be4aa6254048041edbac352"),
+    			"tranId" : NumberLong(1810101032122523),
+    			"alertId" : NumberLong(404105201415015004),
+    			"flag" : 572784643,
+    			"runId" : 509,
+    			"channels" : "HU_RANDOM",
+    			"msg" : "Alert accepted"
+			}
+			```
 		"""
 
 		# Setup logger
@@ -84,10 +132,12 @@ class AlertProcessor():
 				), None
 			).resolve()()
 
+		self.embed = log_format == "compact"
+
 		# Load channels
 		self.t0_channels = [
 			# Create Channel instance (instantiates channel's filter class as well)
-			Channel(channel_config, survey_id, self.logger, log_line_nbr) 
+			Channel(channel_config, survey_id, self.logger, log_line_nbr, self.embed) 
 			for channel_config in ChannelConfigLoader.load_configurations(channels, 0, self.logger)
 		]
 
@@ -301,7 +351,6 @@ class AlertProcessor():
 
 							# If channel did not log anything, do it for it
 							if not channel.buff_handler.buffer:
-								extra['filter'] = channel.unit_name
 								channel.buff_logger.info(None, extra)
 
 							# Save rejected logs to separate (channel specific) db collection
@@ -314,8 +363,12 @@ class AlertProcessor():
 
 						# If channel did not log anything, do it for it
 						if not channel.buff_handler.buffer:
-							extra['filter'] = channel.unit_name
 							channel.buff_logger.info(None, channel.name, extra)
+
+						# enables log concatenation across different loggers
+						if self.embed:
+							AmpelLogger.current_logger = None 
+							AmpelLogger.aggregation_ok = True
 
 						# Write log entries to main logger
 						channel.buff_handler.forward(self.logger, channel.name, extra)

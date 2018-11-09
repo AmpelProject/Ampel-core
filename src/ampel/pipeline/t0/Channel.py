@@ -54,12 +54,13 @@ class Channel:
 	whether the alert is accepeted or not.
 	"""
 
-	def __init__(self, chan_config, survey_id, parent_logger, log_line_nbr=False):
+	def __init__(self, chan_config, survey_id, parent_logger, log_line_nbr=False, embed=False):
 		"""
 		:param ChannelConfig chan_config: instance of :obj:`ChannelConfig \
 			<ampel.pipeline.config.channel.ChannelConfig>`
 		:param str survey_id: name of the survey id (ex:ZTFIPAC)
 		:param Logger parent_logger: logger instance (python module logging)
+		:param bool embed: 
 		:raises: NameError if the provided survey id is not defined as source in the channel config 
 		:returns: None
 		"""
@@ -88,7 +89,7 @@ class Channel:
 
 		# Create channel (buffering) logger
 		self.buff_logger = AmpelLogger("buff_" + self.str_name)
-		self.buff_handler = RecordsBufferingHandler(self.name)
+		self.buff_handler = RecordsBufferingHandler(embed)
 		self.buff_logger.addHandler(self.buff_handler)
 
 		self.filter_func = FilterClass(
