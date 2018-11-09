@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 26.02.2018
-# Last Modified Date: 22.10.2018
+# Last Modified Date: 09.11.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import logging
@@ -205,16 +205,16 @@ class T3Event:
 			next(
 				AmpelDB.get_collection('events').aggregate(
 					QueryEventsCol.get_last_run(self.name)
-				), 
+				),
 				None
-			), 
+			),
 			'events.dt'
 		)
 
 		if last_run is None:
 
 			# Feedback
-			self.logger.error(
+			self.logger.warning(
 				"Event %s: last run time unavailable" % 
 				self.name
 			)
