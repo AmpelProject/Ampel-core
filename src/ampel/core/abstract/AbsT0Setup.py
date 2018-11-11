@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 02.09.2018
-# Last Modified Date: 20.10.2018
+# Last Modified Date: 11.11.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from ampel.base.abstract.AmpelABC import AmpelABC, abstractmethod
@@ -32,6 +32,17 @@ class AbsT0Setup(metaclass=AmpelABC):
 	def get_alert_ingester(self, channels, logger):
 		pass
 
+	@staticmethod
 	@abstractmethod
-	def get_log_flags(self):
+	def get_log_flags():
+		pass
+
+	@staticmethod
+	@abstractmethod
+	def get_instrument_flags():
+		pass
+
+	@staticmethod
+	@abstractmethod
+	def get_instrument_flag_names():
 		pass
