@@ -25,7 +25,7 @@ class ConfigLoader:
 		Load the JSON configuration file at path
 		and add plugins registered via pkg_resources
 
-		:param tier: possible values are: 'all', 0, 2, 3.
+		:param tier: possible values are: 'all', 0, 1, 2, 3.
 		Loads configuration by taking the given scope restriction into account.
 		Less checks are performed when restricting config loading to a given tier,
 		which yields quicker procedure. For example, with tier set to 3, 
@@ -106,10 +106,13 @@ class ConfigLoader:
 							)
 						config['t2RunConfig'][name] = channel_config
 	
-			# T3 Jobs
-			#########
+			# T3 Jobs and Tasks
+			###################
 
 			if tier in ("all", 3):
+
+				# T3 Jobs 
+				#########
 	
 				for resource in pkg_resources.iter_entry_points('ampel.pipeline.t3.jobs'):
 					try:
@@ -134,6 +137,47 @@ class ConfigLoader:
 					except Exception as e:
 						print("Error in {} from {}".format(resource.name, resource.dist))
 						raise
+
+				# T3 Tasks
+				##########
+
+				for resource in pkg_resources.iter_entry_points('ampel.channels'):
+	
+					# Channel can be provided as single dict or list of dicts
+					chan_resource = resource.resolve()()
+					if type(chan_resource) is dict:
+						chan_resource = [chan_resource]
+		
+					for chan_dict in chan_resource:
+	
+						# Schema validation
+						try:
+
+							cc = ChannelConfig.create(3, **chan_dict)
+
+							for source in cc.sources:
+
+								if not hasattr(source, 't3Supervise'):
+									continue
+							
+								for t3_task in getattr(source, 't3Supervise', []):
+					
+									# Check duplicated task names
+									if t3_task.get('task') in config['t3Tasks']:
+										raise KeyError(
+											"Task {} (defined as entry point {} in {}) {}".format(
+												t3_task.get('task'), resource.name, resource.dist,
+												"already exists in the provided config file"
+											)
+										)
+
+									config['t3Tasks'][t3_task.get('task')] = t3_task.json()
+
+						except Exception as e:
+							print("Error in {} from {}".format(resource.name, resource.dist))
+							raise
+	
+
 	
 		except Exception as e:
 
