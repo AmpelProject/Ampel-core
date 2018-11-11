@@ -36,6 +36,15 @@ class AmpelLogger(logging.Logger):
 	current_logger = None
 	aggregation_ok = True
 
+
+	@classmethod
+	def set_default_stream(cls, arg):
+		"""
+		:param arg: either sys.stdout or sys.stderr
+		"""
+		cls.default_stream = arg
+
+
 	@staticmethod
 	def get_unique_logger(**kwargs):
 		"""
@@ -90,7 +99,7 @@ class AmpelLogger(logging.Logger):
 
 
 	@staticmethod
-	def _new_logger(name, stream=default_stream, log_level=logging.DEBUG, formatter=None, channels=None, formatter_options={}):
+	def _new_logger(name, stream=None, log_level=logging.DEBUG, formatter=None, channels=None, formatter_options={}):
 		"""
 		Creates an instance of :obj:`AmpelLogger <ampel.pipeline.logging.AmpelLogger>` 
 		with the following properties:\n
@@ -111,7 +120,7 @@ class AmpelLogger(logging.Logger):
 		
 		# Perform import here to avoid cyclic import errro
 		from ampel.pipeline.logging.AmpelLoggingStreamHandler import AmpelLoggingStreamHandler
-		sh = AmpelLoggingStreamHandler(stream)
+		sh = AmpelLoggingStreamHandler(stream if stream else AmpelLogger.default_stream)
 		sh.setLevel(log_level)
 		sh.setFormatter(
 			# Allows to print values passed in dict 'extra'
@@ -295,8 +304,8 @@ class AmpelLogger(logging.Logger):
 		rv = _logRecordFactory(name, level, fn, lno, msg, args, exc_info, func, sinfo)
 
 		if extra:
-			rv.__dict__['extra'] = self.validate_extra({**extra, **self.__extra} if self.__extra else extra)
+			rv.__dict__['extra'] = {**extra, **self.__extra} if self.__extra else extra
 		else:
-			rv.__dict__['extra'] = self.validate_extra(self.__extra)
+			rv.__dict__['extra'] = self.__extra
 
 		return rv
