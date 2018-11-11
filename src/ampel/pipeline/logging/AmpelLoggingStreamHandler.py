@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 17.10.2018
-# Last Modified Date: 17.10.2018
+# Last Modified Date: 11.11.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from logging import StreamHandler, DEBUG, _logRecordFactory
@@ -41,18 +41,14 @@ class AmpelLoggingStreamHandler(StreamHandler):
 			record.levelno == self.prev_records.levelno and 
 			record.filename == self.prev_records.filename and 
 			record.created - self.prev_records.created < self.aggregate_interval and 
-			extra == getattr(self.prev_records, 'extra', None)
+			extra == getattr(self.prev_records, 'extra', None) and
+			record.msg
 		):
-			if record.msg:
-				stream = self.stream
-				stream.write(str(record.msg))
-				stream.write(self.terminator)
-				self.flush()
+			self.stream.write(str(record.msg))
 		else:
 
-			if record.msg:
-				stream = self.stream
-				stream.write(self.format(record))
-				stream.write(self.terminator)
-				self.flush()
+			self.stream.write(self.format(record))
 			self.prev_records = record
+
+		#self.stream.write(self.terminator)
+		self.flush()
