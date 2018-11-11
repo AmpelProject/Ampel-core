@@ -19,6 +19,8 @@ class ExtraLogFormatter(Formatter):
 		super().__init__(datefmt=datefmt)
 		self.line_number = line_number
 
+		self.tohex_ids = ["compId", "compIdEff", "compIdStrict"]
+
 	def format(self, record):
 
 		extra = getattr(record, 'extra', None)
@@ -35,8 +37,9 @@ class ExtraLogFormatter(Formatter):
 		if extra:
 
 			# Show compound ids as hex rather than as Binary
-			if 'compId' in extra:
-				extra['compId'] = extra['compId'].hex()
+			for key in self.tohex_ids:
+				if key in extra:
+					extra[key] = extra[key].hex()
 
 			out.append("[%s]" % ', '.join("%s=%s" % itm for itm in extra.items()))
 
