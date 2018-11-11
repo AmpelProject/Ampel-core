@@ -41,6 +41,7 @@ class T3Job(T3Event):
 		super().__init__(config, logger=logger, **kwargs)
 		self.event_docs = {}
 		self.run_ids = {}
+		self.t3_units = {}
 
 		# $forEach' channel operator
 		if config.tasks[0].get("transients.select.channels.anyOf") == ["$forEach"]:
@@ -110,12 +111,9 @@ class T3Job(T3Event):
 						logger.warn("WARNING: journal updates will not reference runId!")
 	
 				# Instantiate t3 unit
-				self.add_t3_unit(
-					task_config.task,
-					T3Unit(
-						logger, AmpelUnitLoader.get_resources(T3Unit),
-						task_config.runConfig, self.global_info
-					)
+				self.t3_units[task_config.task] = T3Unit(
+					logger, AmpelUnitLoader.get_resources(T3Unit),
+					task_config.runConfig, self.global_info
 				)
 
 				# Create event document for each task
@@ -131,12 +129,9 @@ class T3Job(T3Event):
 			)
 	
 			# Instantiate t3 unit
-			self.add_t3_unit(
-				task_config.task,
-				T3Unit(
-					self.logger, AmpelUnitLoader.get_resources(T3Unit),
-					task_config.runConfig, self.global_info
-				)
+			self.t3_units[task_config.task] = T3Unit(
+				self.logger, AmpelUnitLoader.get_resources(T3Unit),
+				task_config.runConfig, self.global_info
 			)
 
 			# Create event document 
@@ -312,7 +307,7 @@ class T3Job(T3Event):
 					start = time()
 
 					# Adding tviews to t3_units may return JournalUpdate dataclasses
-					custom_journal_entries = self.get_t3_unit(task_name).add(tran_views)
+					custom_journal_entries = self.t3_units[task_name].add(tran_views)
 
 					self.event_docs[task_name].add_duration(time()-start)
 
@@ -358,7 +353,7 @@ class T3Job(T3Event):
 
 				# Calling T3Unit closing method done()
 				start = time()
-				self.get_t3_unit(task_name).done()
+				self.t3_units[task_name].done()
 				self.event_docs[task_name].add_duration(time()-start)
 
 				self.event_docs[task_name].publish()
