@@ -24,7 +24,7 @@ class CompoundBluePrintGenerator():
 	"opt": option
 	"""
 
-	def __init__(self, t0_channels, CompoundShaper, logger, verbose=True):
+	def __init__(self, t0_channels, CompoundShaper, logger, verbose=False):
 		"""
 		:param t0_channels: list of instances of ampel.pipeline.config.T0Channel
 		:param CompoundShaper: child *class* (not instance) of ampel.core.abstract.AbsCompoundShaper
