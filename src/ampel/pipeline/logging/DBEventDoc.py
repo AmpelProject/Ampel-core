@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 26.09.2018
-# Last Modified Date: 19.10.2018
+# Last Modified Date: 11.11.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from time import time, strftime
@@ -14,11 +14,14 @@ class DBEventDoc():
 	"""
 	"""
 
-	def __init__(self, event_name, tier, dt=None, col_name="events"):
+	default_doc_id = '%Y%m%d'
+
+	def __init__(self, event_name, tier, dt=None, col_name="events", doc_id=None):
 		""" 
 		:param str event_name: event name. For example 'ap' (alertprocessor) or task name
 		:param int tier: value (0,1,2,3) indicating at which ampel tier level logging is done
 		:param str col_name: name of db collection to use (default 'events'). 
+		:param str doc_id: optional string that will be provided as argument to method `strftime` (default: '%Y%m%d')
 		:param int dt: timestamp
 
 		Collection is retrieved using AmpelDB.get_collection()
@@ -27,6 +30,7 @@ class DBEventDoc():
 		self.tier = tier
 		self.col = AmpelDB.get_collection(col_name)
 		self.run_ids = []
+		self.doc_id = doc_id if doc_id else DBEventDoc.default_doc_id
 		self.event_info = {}
 		self.dt = int(time()) if dt is None else int(dt)
 		self.duration = 0
@@ -64,7 +68,7 @@ class DBEventDoc():
 		# Record event info into DB
 		res = self.col.update_one(
 			{
-				'_id': int(strftime('%Y%m%d'))
+				'_id': int(strftime(self.doc_id))
 			},
 			{
 				'$push': {
