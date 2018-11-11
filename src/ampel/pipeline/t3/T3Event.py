@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 26.02.2018
-# Last Modified Date: 09.11.2018
+# Last Modified Date: 11.11.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import logging
@@ -84,7 +84,6 @@ class T3Event:
 		self.raise_exc = raise_exc
 		self.logger = logger
 		self.config = config
-		self.t3_units = {}
 		self.global_info = None
 		self.run_id = None
 		self.no_run = False
@@ -175,10 +174,10 @@ class T3Event:
 			time_modified = TimeConstraint(self.tran_config.select.modified),
 			with_flags = FlagUtils.to_dbflags_schema(
 				self.tran_config.select.withFlags, TransientFlags
-			),
+			) if self.tran_config.select.withFlags else None,
 			without_flags = FlagUtils.to_dbflags_schema(
 				self.tran_config.select.withoutFlags, TransientFlags
-			)
+			) if self.tran_config.select.withoutFlags else None
 		)
 
 
@@ -425,26 +424,9 @@ class T3Event:
 		return tran_views
 
 
-	def add_t3_unit(self, task_name, t3_unit):
-		"""
-		Called by child classes (T3Job / T3Task)
-		"""
-		self.t3_units[task_name] = t3_unit
-
-
-	def get_t3_unit(self, task_name):
-		"""
-		Called by child classes (T3Job / T3Task)
-		"""
-		return self.t3_units[task_name]
-
-
 	def run(self):
 		"""
 		"""
-
-		if len(self.t3_units) == 0:
-			raise ValueError("No instantiated t3 unit")
 
 		time_start = time()
 
