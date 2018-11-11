@@ -274,7 +274,10 @@ class AmpelDB:
 			#)
 
 		# Rejected logs collections
-		elif col.name in AmpelDB._ampel_cols and AmpelDB._ampel_cols[col.name]['dbLabel'] == 'rej':
+		elif (
+			col.name == "rejected" or
+			(col.name in AmpelDB._ampel_cols and AmpelDB._ampel_cols[col.name]['dbLabel'] == 'rej')
+		):
 
 			# Create sparse index for key runId
 			col.create_index([('tranId', 1)])

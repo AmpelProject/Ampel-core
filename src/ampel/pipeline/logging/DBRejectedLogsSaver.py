@@ -4,10 +4,10 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 29.09.2018
-# Last Modified Date: 19.10.2018
+# Last Modified Date: 10.11.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-import time
+from time import time
 from logging import DEBUG, WARNING, Handler
 from pymongo.errors import BulkWriteError
 from pymongo.operations import UpdateOne
@@ -24,14 +24,21 @@ class DBRejectedLogsSaver(Handler):
 	with RecordsBufferingHandler.forward() or copy()
 	"""
 
-	def __init__(self, channel, logger, aggregate_interval=1, flush_len=1000):
+	def __init__(self, channel, logger, single_rej_col=False, aggregate_interval=1, flush_len=1000):
 		""" 
+		:param AmpelLogger logger:
+		:type channel: str, None
 		:param str channel: channel name
+		:param bool single_rej_col: 
+			- False: rejected logs are saved in channel specific collections
+			 (collection name equals channel name)
+			- True: rejected logs are saved in a single collection called 'logs'
 		:param int aggregate_interval: logs with similar attributes (log level, 
 		possibly tranId & channels) are aggregated in one document instead of being split
 		into several documents (spares some index RAM). *aggregate_interval* is the max interval 
 		of time in seconds during which log aggregation takes place. Beyond this value, 
 		attempting a database bulk_write operation.
+		:raises: None
 		"""
 
 		# required when not using super().__init__
@@ -39,15 +46,17 @@ class DBRejectedLogsSaver(Handler):
 		self.lock = None
 		self._name = None
 		self.level = DEBUG
-
 		self.flush_len = flush_len
 		self.aggregate_interval = aggregate_interval
-		self.channel = channel
 		self.logger = logger
 		self.log_dicts = []
 		self.prev_records = None
 		self.run_id = None
-		self.col = None 
+		self.channel = channel
+		self.single_rej_col = single_rej_col
+		col_name = "rejected" if single_rej_col else channel
+		AmpelDB.enable_rejected_collections([col_name])
+		self.col = AmpelDB.get_collection(col_name)
 			
 
 	def set_run_id(self, run_id):
@@ -93,7 +102,7 @@ class DBRejectedLogsSaver(Handler):
 				d = extra.copy()
 
 				d['_id'] = extra['alertId']
-				d['dt']= int(time.time())
+				d['dt']= int(time())
 
 				if record.levelno > WARNING:
 					d['runId'] = self.run_id
@@ -101,8 +110,11 @@ class DBRejectedLogsSaver(Handler):
 				if record.msg:
 					d['msg'] = record.msg
 
+				if self.single_rej_col:
+					d['channels'] = self.channel
+
 				try:
-					del d['alertId'], d['channels']
+					del d['alertId']
 				except:
 					pass
 
@@ -125,7 +137,7 @@ class DBRejectedLogsSaver(Handler):
 
 		try:
 
-			AmpelDB.get_collection(self.channel).insert_many(
+			self.col.insert_many(
 				self.log_dicts, ordered=False
 			)
 
@@ -155,9 +167,7 @@ class DBRejectedLogsSaver(Handler):
 			try:
 
 				# Try again, with updates this time
-				AmpelDB.get_collection(self.channel).bulk_write(
-					upserts, ordered=False
-				)
+				self.col.bulk_write(upserts, ordered=False)
 				self.log_dicts = []
 				self.prev_records = None
 				return

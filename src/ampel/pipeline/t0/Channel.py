@@ -54,13 +54,17 @@ class Channel:
 	whether the alert is accepeted or not.
 	"""
 
-	def __init__(self, chan_config, survey_id, parent_logger, log_line_nbr=False, embed=False):
+	def __init__(self, chan_config, survey_id, parent_logger, log_line_nbr=False, embed=False, single_rej_col=False):
 		"""
 		:param ChannelConfig chan_config: instance of :obj:`ChannelConfig \
 			<ampel.pipeline.config.channel.ChannelConfig>`
 		:param str survey_id: name of the survey id (ex:ZTFIPAC)
 		:param Logger parent_logger: logger instance (python module logging)
 		:param bool embed: 
+		:param bool single_rej_col: 
+			- False: rejected logs are saved in channel specific collections
+			 (collection name equals channel name)
+			- True: rejected logs are saved in a single collection called 'logs'
 		:raises: NameError if the provided survey id is not defined as source in the channel config 
 		:returns: None
 		"""
@@ -103,7 +107,7 @@ class Channel:
 		self.buff_handler.buffer = []
 
 		self.rejected_logger = AmpelLogger.get_logger(
-			name = self.str_name + "_rej", 
+			name=self.str_name + "_rej", 
 			formatter=T0RejConsoleFormatter(
 				line_number=log_line_nbr,
 				implicit_channels=self.name
@@ -111,5 +115,7 @@ class Channel:
 			log_level=logging.WARNING
 		)
 
-		self.rejected_log_handler = DBRejectedLogsSaver(self.str_name, parent_logger)
+		self.rejected_log_handler = DBRejectedLogsSaver(
+			self.str_name, parent_logger, single_rej_col
+		)
 		self.rejected_logger.addHandler(self.rejected_log_handler)

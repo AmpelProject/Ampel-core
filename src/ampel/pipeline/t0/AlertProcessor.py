@@ -42,7 +42,7 @@ class AlertProcessor():
 
 	def __init__(self, 
 		survey_id, channels=None, publish_stats=['graphite', 'jobs'], 
-		log_line_nbr=False, log_format="compact" 
+		log_line_nbr=False, single_rej_col=False, log_format="compact" 
 	):
 		"""
 		:param str survey_id: id of the survey (ex: 'ZTFIPAC').
@@ -62,6 +62,10 @@ class AlertProcessor():
 		- jobs: include t0 metrics in job document
 
 		:param bool db_logging: whether to save log entries (and the corresponding job doc) into the DB
+		:param bool single_rej_col: 
+			- False: rejected logs are saved in channel specific collections
+			 (collection name equals channel name)
+			- True: rejected logs are saved in a single collection called 'logs'
 		:param str log_format: 'compact' (saves RAM by reducing the number of indexed document) or standard. \
 		The 'compact' log entries can be later converted into 'standard' format using the aggregation pipeline.
 		Avoid using 'compact' if you run the alert processor with a single channel.
@@ -137,7 +141,10 @@ class AlertProcessor():
 		# Load channels
 		self.t0_channels = [
 			# Create Channel instance (instantiates channel's filter class as well)
-			Channel(channel_config, survey_id, self.logger, log_line_nbr, self.embed) 
+			Channel(
+				channel_config, survey_id, self.logger, 
+				log_line_nbr, self.embed, single_rej_col=single_rej_col
+			)
 			for channel_config in ChannelConfigLoader.load_configurations(channels, 0, self.logger)
 		]
 
