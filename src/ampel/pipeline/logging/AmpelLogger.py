@@ -32,6 +32,7 @@ logging.addLevelName(logging.ERROR, "ERROR")
 class AmpelLogger(logging.Logger):
 
 	loggers = {}
+	default_stream = sys.stdout
 	current_logger = None
 	aggregation_ok = True
 
@@ -89,12 +90,12 @@ class AmpelLogger(logging.Logger):
 
 
 	@staticmethod
-	def _new_logger(name, log_level=logging.DEBUG, formatter=None, channels=None, formatter_options={}):
+	def _new_logger(name, stream=default_stream, log_level=logging.DEBUG, formatter=None, channels=None, formatter_options={}):
 		"""
 		Creates an instance of :obj:`AmpelLogger <ampel.pipeline.logging.AmpelLogger>` 
 		with the following properties:\n
 		- `propagate` is set to False
-		- it is associated with an AmpelLoggingStreamHandler instance initialized with sys.stderr
+		- it is associated with an AmpelLoggingStreamHandler instance (initialized with provided stream)
 		- the later uses ampel.pipeline.logging.ExtraLogFormatter as formatter
 
 		:param str name: logger name
@@ -110,7 +111,7 @@ class AmpelLogger(logging.Logger):
 		
 		# Perform import here to avoid cyclic import errro
 		from ampel.pipeline.logging.AmpelLoggingStreamHandler import AmpelLoggingStreamHandler
-		sh = AmpelLoggingStreamHandler(sys.stderr)
+		sh = AmpelLoggingStreamHandler(stream)
 		sh.setLevel(log_level)
 		sh.setFormatter(
 			# Allows to print values passed in dict 'extra'
