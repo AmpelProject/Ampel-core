@@ -1,13 +1,14 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/pipeline/t0/ingesters/CompoundBluePrintGenerator.py
+# File              : ampel/pipeline/t0/ingest/CompoundBluePrintGenerator.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 01.01.2018
-# Last Modified Date: 16.07.2018
+# Last Modified Date: 11.11.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import hashlib, json
+from bson import Binary
 from ampel.pipeline.t0.ingest.CompoundBluePrint import CompoundBluePrint
 
 class CompoundBluePrintGenerator():
@@ -23,15 +24,17 @@ class CompoundBluePrintGenerator():
 	"opt": option
 	"""
 
-	def __init__(self, t0_channels, CompoundShaper, logger):
+	def __init__(self, t0_channels, CompoundShaper, logger, verbose=True):
 		"""
 		:param t0_channels: list of instances of ampel.pipeline.config.T0Channel
 		:param CompoundShaper: child *class* (not instance) of ampel.core.abstract.AbsCompoundShaper
 		:param logger: logger instance (python module 'logging')
+		:param bool verbose: be verbose
 		:returns: None
 		"""
 
 		self.logger = logger
+		self.verbose = verbose
 		self.chan_opts = {
 			chan.name: chan.stream_config.parameters
 			for chan in t0_channels
@@ -164,13 +167,14 @@ class CompoundBluePrintGenerator():
 			# should to be created in the compound document
 			if eff_id != strict_id:
 	
-				self.logger.info(
-					None, extra={
-						'channels': chan_name,
-						'compIdEff': eff_id,
-						'compIdStrict': strict_id
-					}
-				)
+				if self.verbose:
+					self.logger.info(
+						None, extra={
+							'channels': chan_name,
+							'compIdEff': Binary(eff_id, 5),
+							'compIdStrict': Binary(strict_id, 5)
+						}
+					)
 	
 				# Add tupple (chan_name, strict id) to internal dict using eff_id as key
 				if not eff_id in cbp.d_eid_tuple_chan_sid:
@@ -185,14 +189,5 @@ class CompoundBluePrintGenerator():
 				# Save strict compound using strict id as key
 				cbp.d_sid_compdiff[strict_id] = strict_comp
 	
-		# Feedback
-		for eff_id, chans in cbp.d_eid_chnames.items():
-			self.logger.info(
-				None, extra={
-					'channels': next(iter(chans)) if len(chans) == 1 else list(chans),
-					'compId': eff_id
-				}
-			)
-
 		# Return instance of CompoundBluePrint
 		return cbp

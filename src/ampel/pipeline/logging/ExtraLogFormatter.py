@@ -19,7 +19,7 @@ class ExtraLogFormatter(Formatter):
 		super().__init__(datefmt=datefmt)
 		self.line_number = line_number
 
-		self.tohex_ids = ["compId", "compIdEff", "compIdStrict"]
+		self.tohex_ids = ["compId", "cp", "compIdEff", "compIdStrict"]
 
 	def format(self, record):
 
