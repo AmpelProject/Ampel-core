@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 02.09.2018
-# Last Modified Date: 14.10.2018
+# Last Modified Date: 11.11.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from pydantic import BaseModel, validator
@@ -39,6 +39,17 @@ class T3TaskConfig(BaseModel, AmpelModelExtension):
 			)
 
 		return unit_id
+
+
+	@validator('schedule', pre=True, whole=True)
+	def validate_schedule(cls, schedule):
+		"""
+		"""
+		# cast to sequence
+		if type(schedule) is str:
+			return (schedule,)
+
+		return schedule
 
 
 	@validator('runConfig')
