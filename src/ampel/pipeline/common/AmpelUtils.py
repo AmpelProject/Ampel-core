@@ -7,7 +7,7 @@
 # Last Modified Date: 02.10.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-import collections
+import collections, hashlib
 from functools import reduce
 from ampel.pipeline.config.ReadOnlyDict import ReadOnlyDict
 
@@ -59,6 +59,25 @@ class AmpelUtils():
 			return None
 
 		return isinstance(arg, collections.abc.Sequence) and not isinstance(arg, (str, bytes, bytearray))
+
+
+	@staticmethod
+	def build_unsafe_dict_id(dict_arg):
+		"""
+		:param dict dict_arg: can be nested
+		:returns: short dict id (ex: 'b2202f') made of a the last 6 characters of a SHA1 hex string.
+		:rtype: str
+		"""
+		import json, hashlib
+		return hashlib.sha1(
+			bytes(
+				json.dumps(
+					dict_arg, sort_keys=True, 
+					indent=None, separators=(',', ':')
+				),
+				"utf8"
+			)
+		).hexdigest()[-6:]
 
 
 	@staticmethod
