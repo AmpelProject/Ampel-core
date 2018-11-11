@@ -4,11 +4,13 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 02.09.2018
-# Last Modified Date: 10.10.2018
+# Last Modified Date: 11.11.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
+import json, pkg_resources
 from pydantic import BaseModel, validator
 from typing import List, Sequence, Any, Union, Tuple
+from ampel.pipeline.common.AmpelUtils import AmpelUtils
 from ampel.pipeline.common.docstringutils import gendocstring
 from ampel.pipeline.config.AmpelModelExtension import AmpelModelExtension
 from ampel.pipeline.config.channel.StreamConfig import StreamConfig
@@ -60,11 +62,57 @@ class ChannelConfig(BaseModel, AmpelModelExtension):
 
 
 	@validator('sources', pre=True, whole=True)
-	def cast_to_tuple(cls, sources):
+	def validate_source(cls, sources, values, **kwargs):
 		""" """
-		if type(sources) is dict:
-			return (sources,)
-		return sources
+
+		# cast to tuple if dict
+		if isinstance(sources, dict):
+			return (sources, )
+
+		# StreamConfig.__tier__ = 3/"all" is set by method create
+		if hasattr(cls, "__tier__") and cls.__tier__ not in (3, "all"):
+
+			for source in sources:
+				if source.get('t3Supervise'):
+					del source['t3Supervise']
+			return sources
+
+		else:
+
+
+			s = []
+
+			# add various required config entries to channel-embedded task config 
+			for source in sources:
+
+				if source.get('t3Supervise'):
+
+					# will raise exc if not found
+					source_setup = next(
+						pkg_resources.iter_entry_points(
+							'ampel.pipeline.t0.sources', source.get('stream')
+						), None
+					).resolve()()
+
+					# faster deep copy
+					src = json.loads(json.dumps(source))
+					for el in AmpelUtils.iter(src.get('t3Supervise')):
+						if not el.get('task'):
+							el['task'] = "%s_%s_%s" % (
+								values['channel'], el['unitId'], 
+								AmpelUtils.build_unsafe_dict_id(el)
+							)
+						trans = el.get("transients", {})
+						sel = trans.get("select", {})
+						sel["channels"] = values['channel']
+						sel["withFlags"] = {'allOf': source_setup.get_instrument_flag_names()}
+						if type(sel["withFlags"]['allOf']) is str:
+							sel["withFlags"]['allOf'] = [sel["withFlags"]['allOf']]
+					s.append(src)
+				else:
+					s.append(source)
+	
+			return tuple(s)
 
 
 	@validator('t3Supervise', pre=True, whole=True)
