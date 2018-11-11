@@ -50,5 +50,5 @@ class AmpelLoggingStreamHandler(StreamHandler):
 			self.stream.write(self.format(record))
 			self.prev_records = record
 
-		#self.stream.write(self.terminator)
+		self.stream.write(self.terminator)
 		self.flush()
