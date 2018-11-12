@@ -7,8 +7,7 @@
       "extcats": {
         "reader": "mongodb://localhost:27017",
         "writer": "mongodb://localhost:27017"
-      },
-      "catsHTM": "file:///path/to/catsHTM/should/be/set"
+      }
     },
     "channels": {},
     "t0Filters": {},
