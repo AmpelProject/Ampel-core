@@ -106,7 +106,7 @@ class TimeConstraint:
 				res = next(
 					col.aggregate(
 						QueryEventsCol.get_last_run(
-							tc.jobName, days_back=None
+							tc.event, days_back=None
 						)
 					), 
 					None
