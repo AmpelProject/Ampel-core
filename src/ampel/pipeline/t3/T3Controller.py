@@ -26,31 +26,33 @@ class T3Controller(Schedulable):
 	"""
 
 	@staticmethod
-	def load_job_configs(t3_job_names=None):
+	def load_job_configs(t3_job_names=None, skip_jobs=set()):
 		"""
 		"""
 		job_configs = {}
 
-		for job_name, job_dict in AmpelConfig.get_config("t3Jobs").items():
+		def veto(job_name):
+			if (t3_job_names is not None and job_name not in t3_job_names) or job_name in skip_jobs:
+				return True
+			else:
+				return False
 
-			if t3_job_names is not None and job_name not in t3_job_names:
-				continue
-			
-			job_configs[job_name] = T3JobConfig(**job_dict)
+		for job_name, job_dict in AmpelConfig.get_config("t3Jobs").items():
+			if not veto(job_name):
+				job_configs[job_name] = T3JobConfig(**job_dict)
 
 		for job_name, job_dict in AmpelConfig.get_config("t3Tasks").items():
-
-			if t3_job_names is not None and job_name not in t3_job_names:
-				continue
-			
-			job_configs[job_name] = T3TaskConfig(**job_dict)
+			if not veto(job_name):
+				job_configs[job_name] = T3TaskConfig(**job_dict)
 
 		return job_configs
 
-	def __init__(self, t3_job_names=None):
+	def __init__(self, t3_job_names=None, skip_jobs=set()):
 		"""
 		t3_job_names: optional list of strings. 
 		If specified, only job with matching the provided names will be run.
+		skip_jobs: optional list of strings. 
+		If specified, jobs in this list will not be run.
 		"""
 
 		super(T3Controller, self).__init__()
@@ -89,7 +91,10 @@ class T3Controller(Schedulable):
 	@property
 	def process_count(self):
 		""" """
-		for pid, proc in self._processes.items():
+		items = list(self._processes.items())
+		if items is None:
+			return 0
+		for pid, proc in items:
 			if proc.exitcode is not None:
 				proc.join()
 				del self._processes[pid]
@@ -110,7 +115,7 @@ class T3Controller(Schedulable):
 
 def run(args):
 	"""Run tasks at configured intervals"""
-	T3Controller().run()
+	T3Controller(args.jobs, args.skip_jobs).run()
 
 def list(args):
 	"""List configured tasks"""
@@ -252,6 +257,8 @@ def main():
 		return p
 	
 	p = add_command(run)
+	p.add_argument('--jobs', nargs='+', default=None, help='run only these jobs')
+	p.add_argument('--skip-jobs', nargs='+', default=None, help='do not run these jobs')
 
 	p = add_command(runjob)
 	p.add_argument('job')
