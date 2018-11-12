@@ -11,6 +11,7 @@ import schedule, time, threading, logging, json
 from types import MappingProxyType
 from multiprocessing import Process
 from ampel.pipeline.t3.T3Job import T3Job
+from ampel.pipeline.t3.T3Task import T3Task
 from ampel.pipeline.config.t3.T3JobConfig import T3JobConfig
 from ampel.pipeline.config.t3.T3TaskConfig import T3TaskConfig
 from ampel.pipeline.common.Schedulable import Schedulable
@@ -36,6 +37,13 @@ class T3Controller(Schedulable):
 				continue
 			
 			job_configs[job_name] = T3JobConfig(**job_dict)
+
+		for job_name, job_dict in AmpelConfig.get_config("t3Tasks").items():
+
+			if t3_job_names is not None and job_name not in t3_job_names:
+				continue
+			
+			job_configs[job_name] = T3TaskConfig(**job_dict)
 
 		return job_configs
 
@@ -74,7 +82,8 @@ class T3Controller(Schedulable):
 		return proc
 
 	def _run_t3_job(self, job_config, **kwargs):
-		job = T3Job(job_config)
+		klass = T3Job if isinstance(job_config, T3JobConfig) else T3Task
+		job = klass(job_config)
 		return job.run(**kwargs)
 
 	@property
@@ -106,7 +115,10 @@ def run(args):
 def list(args):
 	"""List configured tasks"""
 	jobs = AmpelConfig.get_config('t3Jobs')
-	labels = {name: [t.get('task') for t in job['tasks']] for name, job in jobs.items()}
+	labels = {name: [t.get('task') for t in job['tasks']] for name, job in jobs.items() if job.get('active', True)}
+	tasks = [t.get('task') for t in AmpelConfig.get_config('t3Tasks').values()]
+	if len(tasks):
+		labels['(channel tasks)'] = tasks
 	columns = max([len(k) for k in labels.keys()]), max([max([len(k) for k in tasks]) for tasks in labels.values()])
 	template = "{{:{}s}} {{:{}s}}".format(*columns)
 	print(template.format('Job', 'Tasks'))
@@ -203,7 +215,11 @@ def get_required_resources():
 	
 	units = set()
 	for job in T3Controller.load_job_configs().values():
-		for task in job.tasks:
+		if isinstance(job, T3JobConfig):
+			for task in job.tasks:
+				units.add(task.unitId)
+		else:
+			task = job
 			units.add(task.unitId)
 	resources = set()
 	for unit in units:
