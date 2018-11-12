@@ -86,7 +86,7 @@ class QueryEventsCol:
 			for i in range(1, days_back+1):
 				match.append(
 					int(
-						strftime(gmtime(time() - 86400 * i), '%Y%m%d')
+						strftime('%Y%m%d', gmtime(time() - 86400 * i))
 					)
 				)
 
