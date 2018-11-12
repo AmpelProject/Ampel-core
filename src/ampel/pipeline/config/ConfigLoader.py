@@ -171,7 +171,7 @@ class ConfigLoader:
 											)
 										)
 
-									config['t3Tasks'][t3_task.get('task')] = t3_task.json()
+									config['t3Tasks'][t3_task.get('task')] = t3_task.dict()
 
 						except Exception as e:
 							print("Error in {} from {}".format(resource.name, resource.dist))
