@@ -24,7 +24,7 @@ from ampel.pipeline.db.AmpelDB import AmpelDB
 from ampel.pipeline.db.LightCurveLoader import LightCurveLoader
 from ampel.pipeline.common.Schedulable import Schedulable
 from ampel.pipeline.config.AmpelConfig import AmpelConfig
-from ampel.pipeline.config.channel.ChannelConfig import ChannelConfig
+from ampel.pipeline.config.channel.ChannelConfigLoader import ChannelConfigLoader
 from ampel.pipeline.common.AmpelUtils import AmpelUtils
 from ampel.pipeline.common.AmpelUnitLoader import AmpelUnitLoader
 
@@ -410,13 +410,10 @@ class T2Controller(Schedulable):
 		elif issubclass(arg, AbsT2Unit):
 			cls.versions[unit_name][key] = arg.version
 
-def get_required_resources(config, units=None, tier=2):
+def get_required_resources(units=None, tier=2):
 	if units is None:
 		units = set()
-		for name, channel_config in config['channels'].items():
-			channel = ChannelConfig.parse_obj(channel_config)
-			if not channel.active:
-				continue
+		for channel in ChannelConfigLoader.load_configurations(None, 2):
 			for source in channel.sources:
 				for t2 in source.t2Compute:
 					units.add(t2.unitId)
@@ -437,7 +434,7 @@ def run():
 	parser.require_resource('mongo', ['writer', 'logger'])
 	# partially parse command line to get config
 	opts, argv = parser.parse_known_args(args=[])
-	parser.require_resources(*get_required_resources(opts.config, opts.units))
+	parser.require_resources(*get_required_resources(opts.units))
 	# parse again, filling the resource config
 	opts = parser.parse_args()
 	
