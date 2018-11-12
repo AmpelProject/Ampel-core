@@ -72,6 +72,7 @@ class ChannelConfig(BaseModel, AmpelModelExtension):
 		# StreamConfig.__tier__ = 3/"all" is set by method create
 		if hasattr(cls, "__tier__") and cls.__tier__ not in (3, "all"):
 
+			sources = [dict(s) for s in sources]
 			for source in sources:
 				if source.get('t3Supervise'):
 					del source['t3Supervise']
