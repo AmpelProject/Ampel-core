@@ -157,7 +157,7 @@ class ConfigLoader:
 
 							for source in cc.sources:
 
-								if not hasattr(source, 't3Supervise'):
+								if not hasattr(source, 't3Supervise') or not cc.active:
 									continue
 							
 								for t3_task in getattr(source, 't3Supervise', []):
