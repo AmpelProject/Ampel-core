@@ -117,7 +117,7 @@ def run(args):
 	"""Run tasks at configured intervals"""
 	T3Controller(args.jobs, args.skip_jobs).run()
 
-def list(args):
+def list_tasks(args):
 	"""List configured tasks"""
 	jobs = AmpelConfig.get_config('t3Jobs')
 	labels = {name: [t.get('task') for t in job['tasks']] for name, job in jobs.items() if job.get('active', True)}
@@ -272,7 +272,7 @@ def main():
 	p.add_argument('--created', type=int, default=-40)
 	p.add_argument('--modified', type=int, default=-1)
 
-	p = add_command(list)
+	p = add_command(list_tasks, 'list')
 
 	p = add_command(show)
 	p.add_argument('job')
