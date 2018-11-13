@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 31.05.2018
-# Last Modified Date: 15.10.2018
+# Last Modified Date: 13.11.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from ampel.base.TransientView import TransientView
@@ -28,6 +28,7 @@ class TransientData:
 		(self.compounds, self.lightcurves...) will accept *None* as dict key 
 		"""
 		self.tran_id = tran_id
+		self.tran_names = None
 		self.state = state
 		self.logger = logger
 
@@ -56,6 +57,13 @@ class TransientData:
 		:param flags: enum flag instance of :py:class:`TransientFlags `<ampel.base.flags.TransientFlags>`
 		"""
 		self.flags = flags
+
+
+	def set_tran_names(self, names):
+		"""
+		:param List[str] names:
+		"""
+		self.tran_names = names
 
 
 	def set_latest_state(self, channels, state):
@@ -194,7 +202,7 @@ class TransientData:
 				self.journal.get(channel) + self.journal.get("Any", []), 
 				key=lambda k: k['dt']
 			), 
-			latest_state, photopoints, upperlimits, 
+			self.tran_names, latest_state, photopoints, upperlimits, 
 			tuple(self.compounds[channel]) if channel in self.compounds else None, 
 			tuple(self.lightcurves[channel]) if channel in self.lightcurves else None, 
 			tuple(self.science_records[channel]) if channel in self.science_records else None, 
@@ -248,7 +256,7 @@ class TransientData:
 
 		return TransientView(
 			self.tran_id, self.flags, sorted(entries, key=lambda k: k['dt']), 
-			latest_state, photopoints, upperlimits, 
+			self.tran_names, latest_state, photopoints, upperlimits, 
 			tuple(all_comps.values()),
 			self._get_combined_elements(self.lightcurves, channels),
 			self._get_combined_elements(self.science_records, channels),

@@ -4,18 +4,15 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 13.01.2018
-# Last Modified Date: 17.10.2018
+# Last Modified Date: 13.11.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from bson import ObjectId
 
-from ampel.base.LightCurve import LightCurve
-from ampel.base.TransientView import TransientView
 from ampel.base.ScienceRecord import ScienceRecord
 from ampel.base.PlainPhotoPoint import PlainPhotoPoint
 from ampel.base.PlainUpperLimit import PlainUpperLimit
 from ampel.base.Compound import Compound
-from ampel.pipeline.logging.LoggingUtils import LoggingUtils
 
 from ampel.core.flags.FlagUtils import FlagUtils
 from ampel.core.flags.AlDocType import AlDocType
@@ -24,6 +21,7 @@ from ampel.core.flags.CompoundFlags import CompoundFlags
 from ampel.base.flags.TransientFlags import TransientFlags
 from ampel.base.flags.PhotoFlags import PhotoFlags
 
+from ampel.pipeline.logging.LoggingUtils import LoggingUtils
 from ampel.pipeline.logging.AmpelLogger import AmpelLogger
 from ampel.pipeline.common.AmpelUtils import AmpelUtils
 from ampel.pipeline.config.AmpelConfig import AmpelConfig
@@ -287,6 +285,10 @@ class DBContentLoader:
 						doc['alFlags'], TransientFlags
 					)
 				)
+
+				# Set transient names (ex: ZTF18acdzzyf) 
+				# tranNames is a list as TNS name and other kind of names may be added later
+				tran_data.set_tran_names(doc['tranNames'])
 
 				# Use all avail channels if no channel query constraint was used, 
 				# otherwise: intersection
