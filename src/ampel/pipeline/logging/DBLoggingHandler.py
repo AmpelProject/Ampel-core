@@ -66,8 +66,9 @@ class DBLoggingHandler(logging.Handler):
 		# Set loggingHandler properties
 		self.setLevel(level)
 
-		# ObjectID middle: 3 bytes machine + # 2 bytes pid
-		self.oid_middle = ObjectId._machine_bytes + struct.pack(">H", os.getpid() % 0xFFFF)
+		# ObjectID middle: 3 bytes machine + 2 random bytes
+		# NB: pid is not always unique if running in a jail or container
+		self.oid_middle = ObjectId._machine_bytes + os.urandom(2)
 
 
 	def new_run_id(self):
