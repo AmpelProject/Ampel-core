@@ -18,10 +18,11 @@ from bson import ObjectId
 log = logging.getLogger()
 
 class AmpelExceptionPublisher:
-	def __init__(self):
+	def __init__(self, dry_run=False):
 		token = AmpelConfig.get_config('resources.slack.operator')
 		self._slack = SlackClient(token)
 		self._troubles = AmpelDB.get_collection('troubles', 'r')
+		self._dry_run = dry_run
 
 		self._last_timestamp = ObjectId.from_datetime(datetime.datetime.now() - datetime.timedelta(days=1))
 
@@ -91,6 +92,8 @@ class AmpelExceptionPublisher:
 			else:
 				time_range = '{} seconds'.format(int(dt.seconds))
 		except UnboundLocalError:
+			if self._dry_run:
+				log.info("No exceptions")
 			return
 
 		count = cursor.count()
@@ -99,9 +102,12 @@ class AmpelExceptionPublisher:
 		else:
 			message['text'] = 'There were {} exceptions in the last {}.'.format(len(message['attachments']), time_range)
 
-		result = self._slack.api_call('chat.postMessage', **message)
-		if not result['ok']:
-			raise RuntimeError(result['error'])
+		if self._dry_run:
+			log.info(json.dumps(message, indent=1))
+		else:
+			result = self._slack.api_call('chat.postMessage', **message)
+			if not result['ok']:
+				raise RuntimeError(result['error'])
 		log.info("{} exceptions in the last {}".format(count, time_range))
 
 def run():
@@ -111,10 +117,12 @@ def run():
 	parser.require_resource('mongo', ['logger'])
 	parser.require_resource('slack', ['operator'])
 	parser.add_argument('--interval', type=int, default=10, help='Check for new exceptions every INTERVAL minutes')
+	parser.add_argument('--dry-run', action='store_true', default=False,
+	    help='Print exceptions rather than publishing to Slack')
 
 	args = parser.parse_args()
 
-	atp = AmpelExceptionPublisher()
+	atp = AmpelExceptionPublisher(dry_run=args.dry_run)
 	scheduler = schedule.Scheduler()
 	scheduler.every(args.interval).minutes.do(atp.publish)
 
