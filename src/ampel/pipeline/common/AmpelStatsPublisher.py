@@ -7,6 +7,7 @@
 # Last Modified Date: 31.10.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
+import sys
 import json
 from time import time, strftime
 from ampel.pipeline.logging.AmpelLogger import AmpelLogger
@@ -123,7 +124,7 @@ class AmpelStatsPublisher(Schedulable):
 		self.col_photo = AmpelDB.get_collection("photo", "r")
 		self.col_blend = AmpelDB.get_collection("blend", "r")
 		self.col_events = AmpelDB.get_collection("events", "r")
-		self.col_logs = AmpelDB.get_collection("jobs", "r")
+		self.col_logs = AmpelDB.get_collection("logs", "r")
 		self.col_troubles = AmpelDB.get_collection('troubles', "r")
 
 		# Projections
@@ -383,6 +384,7 @@ class AmpelStatsPublisher(Schedulable):
 
 			# pylint: disable=undefined-variable
 			print("Updated metrics: %s" % json.dumps(out_dict, indent=4))
+			sys.stdout.flush()
 
 
 		# Log metrics using logger (logging module)
