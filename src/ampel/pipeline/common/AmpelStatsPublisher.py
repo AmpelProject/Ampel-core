@@ -489,8 +489,11 @@ def run():
 	parser.require_resource('mongo', ['logger'])
 	parser.require_resource('archive', ['reader'])
 	parser.require_resource('graphite')
-	parser.parse_args()
+	parser.add_argument('--publish-to', nargs='+', default=['log', 'graphite'],
+	    choices=['mongo', 'graphite', 'log', 'print'],
+	    help='Publish stats by these methods')
+	args = parser.parse_args()
 
-	asp = AmpelStatsPublisher(publish_to=['log', 'graphite'])
+	asp = AmpelStatsPublisher(publish_to=args.publish_to)
 	asp.send_all_metrics()
 	asp.run()
