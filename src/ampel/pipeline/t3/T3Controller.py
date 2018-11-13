@@ -120,19 +120,19 @@ def run(args):
 def list_tasks(args):
 	"""List configured tasks"""
 	jobs = AmpelConfig.get_config('t3Jobs')
-	labels = {name: [t.get('task') for t in job['tasks']] for name, job in jobs.items() if job.get('active', True)}
-	tasks = [t.get('task') for t in AmpelConfig.get_config('t3Tasks').values()]
+	labels = {name: [(t.get('task'),t.get('unitId')) for t in job['tasks']] for name, job in jobs.items() if job.get('active', True)}
+	tasks = [(t.get('task'), t.get('unitId')) for t in AmpelConfig.get_config('t3Tasks').values()]
 	if len(tasks):
 		labels['(channel tasks)'] = tasks
-	columns = max([len(k) for k in labels.keys()]), max([max([len(k) for k in tasks]) for tasks in labels.values()])
-	template = "{{:{}s}} {{:{}s}}".format(*columns)
-	print(template.format('Job', 'Tasks'))
-	print(template.format('='*columns[0], '='*columns[1]))
+	columns = max([len(k) for k in labels.keys()]), max([max([len(k[0]) for k in tasks]) for tasks in labels.values()]), max([max([len(k[1]) for k in tasks]) for tasks in labels.values()])
+	template = "{{:{}s}} {{:{}s}} {{:{}s}}".format(*columns)
+	print(template.format('Job', 'Task', 'Unit'))
+	print(template.format('='*columns[0], '='*columns[1], '='*columns[2]))
 	for job, tasks in labels.items():
-		for task in tasks:
-			print(template.format(job,task))
+		for task,unit in tasks:
+			print(template.format(job,task,unit))
 			job = ''
-		print(template.format('-'*columns[0], '-'*columns[1]))
+		print(template.format('-'*columns[0], '-'*columns[1], '-'*columns[2]))
 
 class FrozenEncoder(json.JSONEncoder):
 	def default(self, obj):
