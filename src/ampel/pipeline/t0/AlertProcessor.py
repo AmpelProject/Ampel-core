@@ -576,7 +576,7 @@ class AlertProcessor():
 		"""
 		"""
 
-		if AlertProcessor.iter_max - np.count_nonzero(np.isnan(seq)) == 0:
+		if np.all(np.isnan(seq)):
 			return (0, 0)
 
 		# mean time & std dev in microseconds
