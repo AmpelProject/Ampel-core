@@ -153,6 +153,8 @@ def show(args):
 
 def runjob(args):
 	job_config = T3JobConfig(**AmpelConfig.get_config('t3Jobs.{}'.format(args.job)))
+	if args.task is not None:
+		job_config.tasks = [t for t in job_config.tasks if t.task == args.task]
 	job = T3Job(job_config, full_console_logging=True)
 	job.run()
 
@@ -262,6 +264,7 @@ def main():
 
 	p = add_command(runjob)
 	p.add_argument('job')
+	p.add_argument('task', nargs='?')
 
 	p = add_command(rununit)
 	p.add_argument('unit')
