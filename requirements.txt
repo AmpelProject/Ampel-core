@@ -6,3 +6,4 @@ sqlalchemy
 psycopg2
 ipython
 pydantic
+sjcl
