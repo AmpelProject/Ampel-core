@@ -4,10 +4,11 @@
 # License           : BSD-3-Clause
 # Author            : Jakob van Santen <jakob.van.santen@desy.de>
 # Date              : 14.06.2018
-# Last Modified Date: 06.10.2018
+# Last Modified Date: 14.11.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import warnings
+from sjcl import SJCL
 from ampel.pipeline.config.ReadOnlyDict import ReadOnlyDict
 from ampel.pipeline.common.AmpelUtils import AmpelUtils
 
@@ -78,6 +79,24 @@ class AmpelConfig:
 			return sub_conf
 			
 		return sub_conf
+
+
+	@classmethod
+	def decrypt_config(cls, enc_dict):
+		""" 
+		See ampel.pipeline.config.EncryptedConfig for more info
+		:raises: ValueError if decryption fails
+		:returns: string
+		"""
+		for conf_pwd in cls.get_config("pwds"):
+			try:
+				return SJCL().decrypt(
+					enc_dict, conf_pwd	
+				).decode("utf-8") 
+			except Exception as e:
+				pass
+
+		raise ValueError("Decryption failed, wrong password ?")
 
 
 	@classmethod

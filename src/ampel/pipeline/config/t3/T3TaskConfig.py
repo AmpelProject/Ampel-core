@@ -13,6 +13,8 @@ from ampel.pipeline.common.AmpelUnitLoader import AmpelUnitLoader
 from ampel.pipeline.common.docstringutils import gendocstring
 from ampel.pipeline.config.AmpelModelExtension import AmpelModelExtension
 from ampel.pipeline.config.t3.TranConfig import TranConfig
+from ampel.pipeline.config.EncryptedConfig import EncryptedConfig
+from ampel.pipeline.config.AmpelConfig import AmpelConfig
 
 @gendocstring
 class T3TaskConfig(BaseModel, AmpelModelExtension):
@@ -63,6 +65,15 @@ class T3TaskConfig(BaseModel, AmpelModelExtension):
 		)
 
 		if hasattr(T3UnitClass, 'RunConfig'):
-			return getattr(T3UnitClass, 'RunConfig')(**run_config)
+
+			RunConfig = getattr(T3UnitClass, 'RunConfig')
+			rc = RunConfig(**run_config)
+
+			for k in rc.fields.keys():
+				v = getattr(rc, k)
+				if type(v) is EncryptedConfig:
+					setattr(rc, k, AmpelConfig.decrypt_config(v.dict()))
+
+			return rc
 
 		return run_config

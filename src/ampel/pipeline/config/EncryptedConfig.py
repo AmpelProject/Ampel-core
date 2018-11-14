@@ -8,7 +8,6 @@
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from pydantic import BaseModel
-from sjcl import SJCL
 from ampel.pipeline.common.docstringutils import gendocstring
 from ampel.pipeline.config.AmpelConfig import AmpelConfig
 
@@ -50,28 +49,9 @@ class EncryptedConfig(BaseModel):
 
 	def get(self):
 
-		if self.pwd:
-			return self.pwd
+		if not self.pwd:
+			self.pwd = AmpelConfig.decrypt_config(
+				self.dict()
+			)
 
-		for conf_pwd in AmpelConfig.get_config("pwds"):
-			try:
-				self.pwd = SJCL().decrypt(
-					{
-						"iv": getattr(self, "iv"),
-						"v": getattr(self, "v"),
-						"iter": getattr(self, "iter"),
-						"ks": getattr(self, "ks"),
-						"ts": getattr(self, "ts"),
-						"mode": getattr(self, "mode"),
-						"adata": getattr(self, "adata"),
-						"cipher": getattr(self, "cipher"),
-						"salt": getattr(self, "salt"),
-						"ct": getattr(self, "ct")
-					}, 
-					conf_pwd	
-				).decode("utf-8") 
-				return self.pwd
-			except Exception as e:
-				pass
-
-		raise ValueError("Decryption failed, wrong password ?")
+		return self.pwd
