@@ -8,7 +8,6 @@
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import warnings
-from sjcl import SJCL
 from ampel.pipeline.config.ReadOnlyDict import ReadOnlyDict
 from ampel.pipeline.common.AmpelUtils import AmpelUtils
 
@@ -88,6 +87,7 @@ class AmpelConfig:
 		:raises: ValueError if decryption fails
 		:returns: string
 		"""
+		from sjcl import SJCL
 		for conf_pwd in cls.get_config("pwds"):
 			try:
 				return SJCL().decrypt(
