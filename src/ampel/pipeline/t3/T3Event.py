@@ -138,7 +138,7 @@ class T3Event:
 			self.global_info = self.get_global_info(admin_msg)
 
 		# T3 Event requiring prior transient loading 
-		if self.tran_config.select is not None:
+		if self.tran_config is not None and self.tran_config.select is not None:
 	
 			# Required to get transient info
 			self.db_content_loader = DBContentLoader(
