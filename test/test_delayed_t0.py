@@ -64,7 +64,7 @@ class TargetSourceListener(AbsTargetSource):
 		server.close()
 		await server.wait_closed()
 
-from ampel.archive.ArchiveDB import ArchiveDB
+from ampel.ztf.archive.ArchiveDB import ArchiveDB
 from sqlite3 import OperationalError
 
 @pytest.fixture

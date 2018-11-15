@@ -12,10 +12,10 @@ import logging
 import multiprocessing
 from astropy import units as u
 from ampel.pipeline.config.AmpelConfig import AmpelConfig
-from ampel.archive import ArchiveDB
+from ampel.ztf.archive import ArchiveDB
 from ampel.pipeline.t0.AlertProcessor import AlertProcessor
 from ampel.pipeline.t0.load.AlertSupplier import AlertSupplier
-from ampel.pipeline.t0.load.ZIAlertShaper import ZIAlertShaper
+from ampel.ztf.pipeline.t0.load.ZIAlertShaper import ZIAlertShaper
 
 log = logging.getLogger(__name__)
 
