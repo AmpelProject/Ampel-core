@@ -239,9 +239,9 @@ class T3Job(T3Event):
 						else:
 							raise ValueError("Unsupported channel format")
 		
-						for tran_data in transients:
+						for tran_data in tran_selection:
 							if not task_chan_set.issubset(tran_data.channels):
-								transients.remove(tran_data)
+								tran_selection.remove(tran_data)
 		
 		
 				# withFlags filter
