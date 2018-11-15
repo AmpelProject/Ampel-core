@@ -187,7 +187,7 @@ class TransientData:
 
 		if self.state == "$all":
 			if channel in self.compounds:
-				latest_state = TransientData.get_latest_compound(self.compounds[channel]).get_id()
+				latest_state = TransientData.get_latest_compound(self.compounds[channel]).id
 			else:
 				latest_state = None	
 		else:
