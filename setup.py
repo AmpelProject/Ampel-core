@@ -48,7 +48,6 @@ setup(name='Ampel-core',
               'mongo = ampel.pipeline.common.resources:LiveMongoURI',
               'graphite = ampel.pipeline.common.resources:Graphite',
               'slack = ampel.pipeline.common.resources:SlackToken',
-              'archive = ampel.archive.resources:ArchiveDBURI'
           ],
           'ampel.pipeline.t0.units' : [
               'BasicFilter = ampel.pipeline.t0.filter.BasicFilter:BasicFilter',
