@@ -63,6 +63,8 @@ def test_validate_config(mocker, t3_unit_mocker):
 		'raise_exc': True,
 	}
 	
+	get_channels = mocker.patch('ampel.pipeline.t3.T3Job.T3Job._get_channels')
+	get_channels.return_value = ['FOO', 'BAR', 'BAZ']
 	for name, config in job_configs.items():
 		if isinstance(config, T3JobConfig):
 			for task in config.tasks:
