@@ -105,10 +105,10 @@ class T3Job(T3Event):
 
 				else:
 
-					logger.warn("DB-less logger", extra={'task': task_config.task})
+					logger.warning("DB-less logger", extra={'task': task_config.task})
 
 					if self.update_tran_journal:
-						logger.warn("WARNING: journal updates will not reference runId!")
+						logger.warning("journal updates will not reference runId!")
 	
 				# Instantiate t3 unit
 				self.t3_units[task_config.task] = T3Unit(
