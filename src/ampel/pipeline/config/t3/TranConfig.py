@@ -39,7 +39,7 @@ class TranConfig(BaseModel, AmpelModelExtension):
 	state: str
 	select: TranSelectConfig = None
 	content: TranContentConfig = None
-	verbose: bool = True
+	verbose: bool = False
 	debug: bool = False
 	chunk: int = 200
 
