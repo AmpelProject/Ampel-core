@@ -144,7 +144,7 @@ class AmpelStatsPublisher(Schedulable):
 
 		# Instanciate ArchiveDB if required
 		if 'archive' in publish_what:
-			from ampel.archive.ArchiveDB import ArchiveDB
+			from ampel.ztf.archive.ArchiveDB import ArchiveDB
 			self.archive_client = ArchiveDB(
 				AmpelConfig.get_config('resources.archive.reader')
 			)
