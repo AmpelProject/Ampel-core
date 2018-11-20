@@ -441,8 +441,11 @@ def run():
 	from ampel.pipeline.config.AmpelConfig import AmpelConfig
 
 	parser = AmpelArgumentParser()
-	parser.add_argument('--source', default='ZTFIPAC', help='Alert source')
+	parser.add_argument('-v', '--verbose', default=False, action="store_true")
 	parser.add_argument('--units', default=None, nargs='+', help='T2 units to run')
+	parser.add_argument('--interval', default=10, type=int, help='Seconds to wait between database polls')
+	parser.add_argument('--batch-size', default=200, type=int, help='Process this many T2 docs at a time')
+	
 	parser.require_resource('mongo', ['writer', 'logger'])
 	# partially parse command line to get config
 	opts, argv = parser.parse_known_args(args=[])
@@ -450,4 +453,8 @@ def run():
 	# parse again, filling the resource config
 	opts = parser.parse_args()
 	
+	controller = T2Controller(batch_size=opts.batch_size, check_interval=opts.interval)
+	if not opts.verbose:
+		controller.logger.quieten_console()
+	controller.process_new_docs()
 	T2Controller().run()
