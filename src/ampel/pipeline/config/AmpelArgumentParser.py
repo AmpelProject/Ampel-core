@@ -7,7 +7,7 @@
 # Last Modified Date: 30.09.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-import os, sys, pkg_resources
+import os, sys, pkg_resources, warnings
 from functools import partial
 from configargparse import ArgumentParser
 from ampel.pipeline.config.ConfigLoader import ConfigLoader
@@ -78,7 +78,9 @@ class AmpelArgumentParser(ArgumentParser):
 		args.config['resources'] = {}
 		for name, klass in self._resources.items():
 			args.config['resources'][name] = klass.parse_args(args)
-		AmpelConfig.set_config(args.config)
+		with warnings.catch_warnings():
+			warnings.filterwarnings('ignore', message='resetting global configuration')
+			AmpelConfig.set_config(args.config)
 		return args, argv
 
 
