@@ -104,26 +104,37 @@ class T2Controller(Schedulable):
 			upsert=True
 		)
 
+	def _fetch_new_docs(self):
+		"""
+		Iterate over T2 documents, setting the runState of each to RUNNING
+		as it is yielded
+		"""
+		doc = {}
+		while doc is not None:
+			# get t2 document (runState is usually TO_RUN or TO_RUN_PRIO)
+			doc = AmpelDB.get_collection('blend').find_one_and_update(
+			    self.query, {'$set': {'runState': T2RunStates.RUNNING.value}}
+			)
+			yield doc
 
 	def process_new_docs(self):
 		"""
 		check transient database for T2 documents with the given run_state
 		"""
+		batch = 0
+		while True:
+			# Process t2_docs
+			chunk = self.process_docs(self._fetch_new_docs())
+			batch += chunk
+			if chunk == 0:
+				break
 
-		# get t2 documents (runState is usually TO_RUN or TO_RUN_PRIO)
-		cursor = AmpelDB.get_collection('blend').find(self.query)
-
-		# No result
-		if cursor.count() == 0:
+		# Update heartbeat if no result
+		if batch == 0:
 			self.beacon_col.update_one(
 				{'_id': "t2Controller"}, 
 				{'$set': {'dt': time()}}
 			)
-		else:
-
-			# Process t2_docs
-			for i in range(math.ceil(cursor.count()/self.batch_size)):
-				self.process_docs(cursor)
 
 
 	def process_docs(self, cursor):
@@ -166,7 +177,7 @@ class T2Controller(Schedulable):
 
 			# No new T2 doc with the given run state
 			if t2_doc is None:
-				return
+				return counter
 
 			counter += 1
 
@@ -330,6 +341,7 @@ class T2Controller(Schedulable):
 		# Remove DB logging handler
 		db_logging_handler.flush()
 		self.logger.removeHandler(db_logging_handler)
+		return counter
 
 
 	def load_run_config(self, run_config_id):
