@@ -76,6 +76,8 @@ class ChannelConfigLoader:
 			for chan_name in chan_names: 
 				
 				chan_doc = AmpelConfig.get_config(['channels', chan_name])
+				if chan_doc is None:
+					raise ValueError("Channel {} is not defined".format(chan_name))
 
 				# None is not False and active defaults to True
 				if chan_doc.get('active') is False and logger:
