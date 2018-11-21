@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 15.10.2018
-# Last Modified Date: 22.10.2018
+# Last Modified Date: 21.11.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from time import time
@@ -140,12 +140,12 @@ class T3JournalUpdater:
 		try:
 
 			# Journal entries to be inserted in 
-			# 'main' collection (DB: Ampel_data)
+			# 'tran' collection (DB: Ampel_data)
 			####################################
 
 			if self.journal_updates[False]:
 
-				ret = AmpelDB.get_collection('main').bulk_write(
+				ret = AmpelDB.get_collection('tran').bulk_write(
 					self.journal_updates[False]
 				)
 	
