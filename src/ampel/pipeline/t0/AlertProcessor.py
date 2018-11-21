@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/pipeline/t0/AlertProcessor.py
+# File              : Ampel/src/ampel/pipeline/t0/AlertProcessor.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 10.10.2017
-# Last Modified Date: 09.11.2018
+# Last Modified Date: 21.11.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import pkg_resources, numpy as np
@@ -148,9 +148,12 @@ class AlertProcessor():
 			for channel_config in ChannelConfigLoader.load_configurations(channels, 0, self.logger)
 		]
 
-		AmpelDB.enable_rejected_collections(
-			[chan.str_name for chan in self.t0_channels]
-		)
+		if single_rej_col:
+			AmpelDB.enable_rejected_collections(['rejected'])
+		else:
+			AmpelDB.enable_rejected_collections(
+				[chan.str_name for chan in self.t0_channels]
+			)
 
 		# Shortcuts
 		self.chan_enum = list(enumerate(self.t0_channels))
@@ -242,7 +245,7 @@ class AlertProcessor():
 		########
 
 		# Create array
-		scheduled_t2_units = len(self.t0_channels) * [None]
+		filter_results = len(self.t0_channels) * [None]
 
 		# Save ampel 'state' and get list of tran ids required for autocomplete
 		if self.live_ac:
@@ -336,19 +339,19 @@ class AlertProcessor():
 					per_filter_start = time()
 
 					# Apply filter (returns None in case of rejection or t2 runnable ids in case of match)
-					scheduled_t2_units[i] = channel.filter_func(ampel_alert)
+					filter_results[i] = channel.filter_func(ampel_alert)
 
 					# stats
 					dur_stats['filters'][channel.str_name][iter_count] = time() - per_filter_start
 
 					# Filter rejected alert
-					if scheduled_t2_units[i] is None:
+					if filter_results[i] is None:
 
 						# Autocomplete required for this channel
 						if self.live_ac and self.chan_auto_complete[i] and tran_id in tran_ids_before[i]:
 							channel.buff_logger.info("Live ac")
 							count_stats['matches'][channel.str_name] += 1
-							scheduled_t2_units[i] = channel.t2_units
+							filter_results[i] = channel.t2_units
 
 						else:
 
@@ -396,7 +399,7 @@ class AlertProcessor():
 			# time required for all filters
 			dur_stats['allFilters'][iter_count] = time() - all_filters_start
 
-			if any(t2 is not None for t2 in scheduled_t2_units):
+			if any(t2 is not None for t2 in filter_results):
 
 				# stats
 				ingested_count += 1
@@ -408,7 +411,7 @@ class AlertProcessor():
 					db_updates = ingester.ingest(
 						tran_id, alert_content['pps'], 
 						alert_content['uls'], 
-						scheduled_t2_units
+						filter_results
 					)
 					dur_stats['preIngestTime'].append(time()-ingester_start)
 					updates_buffer.add_updates(db_updates)
