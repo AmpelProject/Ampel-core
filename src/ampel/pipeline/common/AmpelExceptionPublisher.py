@@ -24,7 +24,7 @@ class AmpelExceptionPublisher:
 		self._troubles = AmpelDB.get_collection('troubles', 'r')
 		self._dry_run = dry_run
 
-		self._last_timestamp = ObjectId.from_datetime(datetime.datetime.now() - datetime.timedelta(days=1))
+		self._last_timestamp = ObjectId.from_datetime(datetime.datetime.now() - datetime.timedelta(hours=1))
 
 	def t3_fields(self, doc):
 		fields = []
@@ -76,9 +76,8 @@ class AmpelExceptionPublisher:
 		t0 = self._last_timestamp.generation_time
 		cursor = self._troubles.find({'_id': {'$gt': self._last_timestamp}})
 		for doc in cursor:
-			message['attachments'].append(self.format_attachment(doc))
-			if len(message['attachments']) == 20:
-				break
+			if len(message['attachments']) < 20:
+				message['attachments'].append(self.format_attachment(doc))
 
 		try:
 			self._last_timestamp = doc['_id']
