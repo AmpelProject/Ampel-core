@@ -444,7 +444,7 @@ class T3Event:
 				return
 		
 			# T3 event requiring prior transient loading 
-			if self.config.transients.select is not None:
+			if self.config.transients is not None and self.config.transients.select is not None:
 	
 				# Job with transient input
 				trans_cursor = self._get_selected_transients()
