@@ -21,6 +21,8 @@ from ampel.pipeline.common.GraphiteFeeder import GraphiteFeeder
 from ampel.pipeline.config.AmpelConfig import AmpelConfig
 from ampel.pipeline.common.AmpelUnitLoader import AmpelUnitLoader
 
+log = logging.getLogger(__name__)
+
 class T3Controller(Schedulable):
 	"""
 	"""
@@ -218,6 +220,37 @@ def rununit(args):
 	    raise_exc=not args.update_run_col)
 	job.run()
 
+def dryrun(args):
+	def make_dry(task):
+		if args.task and task.task != args.task:
+			return False
+		klass = AmpelUnitLoader.get_class(3, task.unitId)
+		safe = hasattr(klass, 'RunConfig') and 'dryRun' in klass.RunConfig.__fields__
+		if safe:
+			if task.runConfig is None:
+				task.runConfig = klass.RunConfig()
+			task.runConfig.dryRun = True
+			return True
+		else:
+			log.info('Task {} ({}) has no dryRun config'.format(task.task, klass.__name__))
+			return False
+
+	for config in T3Controller.load_job_configs([args.job] if args.job else None).values():
+		if not isinstance(config, T3JobConfig):
+			continue
+		config.tasks = [t for t in config.tasks if make_dry(t)]
+		if len(config.tasks) == 0:
+			continue
+		job = T3Job(config, full_console_logging=True, db_logging=False,
+		    update_events=False, update_tran_journal=False,
+		    raise_exc=True)
+		try:
+			job.run()
+			log.info('Job {} complete'.format(config.job))
+		except:
+			log.error('Job {} failed'.format(config.job))
+			raise
+
 def get_required_resources():
 	
 	units = set()
@@ -264,6 +297,10 @@ def main():
 
 	p = add_command(runjob)
 	p.add_argument('job')
+	p.add_argument('task', nargs='?')
+
+	p = add_command(dryrun)
+	p.add_argument('job', nargs='?')
 	p.add_argument('task', nargs='?')
 
 	p = add_command(rununit)
