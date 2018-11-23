@@ -137,86 +137,48 @@ class T3JournalUpdater:
 
 	def flush(self):
 
+		if self.journal_updates[False]:
+			self._flush(False)
+
+		if self.journal_updates[True]:
+			self._flush(True)
+
+		self.reset()
+
+	def _flush(self, permanent=False):
+		"""
+		:param bool permanent:
+
+		self.reset() is not called.
+		"""
 		try:
 
-			# Journal entries to be inserted in 
-			# 'tran' collection (DB: Ampel_data)
-			####################################
+			# Journal entries to be inserted
+			ret = AmpelDB.get_collection(
+				'journal' if permanent else 'tran'
+			).bulk_write(
+				self.journal_updates[permanent]
+			)
 
-			if self.journal_updates[False]:
-
-				ret = AmpelDB.get_collection('tran').bulk_write(
-					self.journal_updates[False]
+			self.logger.info(
+				"%i %s entries inserted" % (
+					self.journal_updates_count[permanent],
+					"permanent journal" if permanent else "journal"
 				)
+			)
 	
-				if ret.modified_count != self.journal_updates_count[False]:
-	
-					info={
-						'bulkWriteResult': ret.bulk_api_result,
-						'journalUpdateCount': self.journal_updates_count[False],
-						'event': self.event_name
-					}
-	
-					if self.raise_exc:
-						raise ValueError("Journal update error: %s" % info)
-	
-					# Populate troubles collection
-					LoggingUtils.report_error(
-						tier=3, logger=self.logger, info=info,
-						msg="Journal update error"
-					)
-				
-				else:
-
-					self.logger.info(
-						"%i journals entries inserted" % 
-						self.journal_updates_count[False]
-					)
-
-
-			# Journal entries to be inserted in
-			# 'journal' collection (DB: Ampel_ext)
-			######################################
-
-			if self.journal_updates[True]:
-
-				ret = AmpelDB.get_collection('journal').bulk_write(
-					self.journal_updates[True]
-				)
-	
-				if ret.modified_count + ret.upserted_count != self.journal_updates_count[True]:
-	
-					info={
-						'bulkWriteResult': ret.bulk_api_result,
-						'journalUpdateCount': self.journal_updates_count[True],
-						'event': self.event_name
-					}
-
-					if self.raise_exc:
-						raise ValueError("Resilient journal update error: %s" % info)
-	
-					# Populate troubles collection
-					LoggingUtils.report_error(
-						tier=3, logger=self.logger, info=info,
-						msg="Resilient journal update error"
-					)
-	
-				else:
-
-					self.logger.info(
-						"%i resilient journals entries inserted" % 
-						self.journal_updates_count[True]
-					)
-
-			self.reset()
-
 		except BulkWriteError as bwe:
 
+			if self.raise_exc:
+				raise ValueError("Journal update error: %s" % str(bwe.details))
+	
 			# Populate troubles collection
 			LoggingUtils.report_exception(
 				self.logger, bwe, tier=3, run_id=self.run_id, info={
-					'msg': 'Exception in flush()',
 					'event': self.event_name,
+					'msg': 'Exception in flush()',
+					'journalUpdateCount': self.journal_updates_count[permanent],
+					'permanentjournalEntries': permanent,
 					'BulkWriteError': str(bwe.details)
 				}
 			)
