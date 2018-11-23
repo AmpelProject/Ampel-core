@@ -17,6 +17,7 @@ from ampel.pipeline.config.t3.T3TaskConfig import T3TaskConfig
 from ampel.pipeline.common.Schedulable import Schedulable
 from ampel.pipeline.config.t3.ScheduleEvaluator import ScheduleEvaluator
 from ampel.pipeline.logging.AmpelLogger import AmpelLogger
+from ampel.pipeline.logging.LoggingUtils import LoggingUtils
 from ampel.pipeline.common.GraphiteFeeder import GraphiteFeeder
 from ampel.pipeline.config.AmpelConfig import AmpelConfig
 from ampel.pipeline.common.AmpelUnitLoader import AmpelUnitLoader
@@ -86,8 +87,17 @@ class T3Controller(Schedulable):
 		return proc
 
 	def _run_t3_job(self, job_config, **kwargs):
+		name = getattr(job_config, 'job' if isinstance(job_config, T3JobConfig) else 'task')
 		klass = T3Job if isinstance(job_config, T3JobConfig) else T3Task
-		job = klass(job_config)
+		try:
+			job = klass(job_config)
+		except Exception as e:
+			LoggingUtils.report_exception(
+				self.logger, e, tier=3, info={
+					'job': name,
+				}
+			)
+			raise e
 		return job.run(**kwargs)
 
 	@property
