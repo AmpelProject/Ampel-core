@@ -130,7 +130,7 @@ class T3JournalUpdater:
 							}
 						}
 					},
-					upsert=True
+					upsert=jup.ext
 				)
 			)
 
