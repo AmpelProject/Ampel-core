@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 15.10.2018
-# Last Modified Date: 21.11.2018
+# Last Modified Date: 23.11.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from time import time
@@ -165,8 +165,13 @@ class T3JournalUpdater:
 						tier=3, logger=self.logger, info=info,
 						msg="Journal update error"
 					)
-	
-				self.logger.info("Transient journals updated")
+				
+				else:
+
+					self.logger.info(
+						"%i journals entries inserted" % 
+						self.journal_updates_count[False]
+					)
 
 
 			# Journal entries to be inserted in
@@ -196,7 +201,12 @@ class T3JournalUpdater:
 						msg="Resilient journal update error"
 					)
 	
-				self.logger.info("Resilient transient journals updated")
+				else:
+
+					self.logger.info(
+						"%i resilient journals entries inserted" % 
+						self.journal_updates_count[True]
+					)
 
 			self.reset()
 
