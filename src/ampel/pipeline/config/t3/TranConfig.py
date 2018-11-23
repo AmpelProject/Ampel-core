@@ -16,7 +16,7 @@ from ampel.pipeline.config.t3.TranContentConfig import TranContentConfig
 
 
 @gendocstring
-class TranConfig(BaseModel, AmpelModelExtension):
+class TranConfig(AmpelModelExtension):
 	""" 
 	Example: 
 	{

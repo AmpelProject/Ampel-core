@@ -28,7 +28,7 @@ def nothing():
 	pass
 
 @gendocstring
-class T3JobConfig(BaseModel, AmpelModelExtension):
+class T3JobConfig(AmpelModelExtension):
 	"""
 	Possible 'schedule' values (https://schedule.readthedocs.io/en/stable/):
 	"every(10).minutes"

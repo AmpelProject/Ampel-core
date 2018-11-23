@@ -17,7 +17,7 @@ from ampel.pipeline.config.EncryptedConfig import EncryptedConfig
 from ampel.pipeline.config.AmpelConfig import AmpelConfig
 
 @gendocstring
-class T3TaskConfig(BaseModel, AmpelModelExtension):
+class T3TaskConfig(AmpelModelExtension):
 	"""
 	Example:
 	"""

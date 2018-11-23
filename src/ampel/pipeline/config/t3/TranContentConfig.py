@@ -18,7 +18,7 @@ from ampel.core.flags.FlagUtils import FlagUtils
 
 
 @gendocstring
-class TranContentConfig(BaseModel, AmpelModelExtension):
+class TranContentConfig(AmpelModelExtension):
 	""" 
 	Example: 
 

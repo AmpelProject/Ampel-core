@@ -16,7 +16,7 @@ from ampel.pipeline.config.channel.T2UnitConfig import T2UnitConfig
 from ampel.pipeline.config.t3.T3TaskConfig import T3TaskConfig
 
 @gendocstring
-class StreamConfig(BaseModel, AmpelModelExtension):
+class StreamConfig(AmpelModelExtension):
 	"""
 	Config holder for AMPEL channel input streams (ex: ZTFIPAC) 
 	-> values defined in channel configuration section 'sources'

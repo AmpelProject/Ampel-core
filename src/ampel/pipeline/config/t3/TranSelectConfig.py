@@ -21,7 +21,7 @@ from ampel.pipeline.config.t3.OneOf import OneOf
 
 
 @gendocstring
-class TranSelectConfig(BaseModel, AmpelModelExtension):
+class TranSelectConfig(AmpelModelExtension):
 	"""
 	Example: 
 	.. sourcecode:: python\n

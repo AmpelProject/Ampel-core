@@ -15,7 +15,7 @@ from ampel.pipeline.config.AmpelConfig import AmpelConfig
 
 
 @gendocstring
-class T2UnitConfig(BaseModel, AmpelModelExtension):
+class T2UnitConfig(AmpelModelExtension):
 	"""
 	Config holder for T2 units
 	"""

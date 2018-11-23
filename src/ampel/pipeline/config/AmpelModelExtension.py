@@ -8,8 +8,16 @@
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from ampel.pipeline.common.AmpelUtils import AmpelUtils
+from pydantic import BaseModel, BaseConfig
 
-class AmpelModelExtension:
+class AmpelModelExtension(BaseModel):
+
+	class Config(BaseConfig):
+		"""
+		Raise validation errors if extra fields are present
+		"""
+		allow_extra = False
+		ignore_extra = False
 
 	class ValidationError(Exception):
 		"""
@@ -22,7 +30,6 @@ class AmpelModelExtension:
 		which as a consequence breaks the chain of validation as soon as it is raised.
 		"""
 		pass
-
 
 	def get(self, path):
 		return AmpelUtils.get_nested_attr(self, path)

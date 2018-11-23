@@ -18,7 +18,7 @@ from ampel.pipeline.config.t3.T3TaskConfig import T3TaskConfig
 from ampel.pipeline.config.ReadOnlyDict import ReadOnlyDict
 
 @gendocstring
-class ChannelConfig(BaseModel, AmpelModelExtension):
+class ChannelConfig(AmpelModelExtension):
 	"""
 	Config holder for AMPEL channels
 

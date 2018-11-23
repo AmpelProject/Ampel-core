@@ -17,7 +17,7 @@ from ampel.core.flags.AlDocType import AlDocType
 from ampel.core.flags.FlagUtils import FlagUtils
 
 @gendocstring
-class QueryMatchConfig(BaseModel, AmpelModelExtension):
+class QueryMatchConfig(AmpelModelExtension):
 	""" 
 
 	Note: If logic parameter is a string or a simple list, 

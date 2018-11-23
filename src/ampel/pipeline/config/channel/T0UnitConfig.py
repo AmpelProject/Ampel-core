@@ -15,7 +15,7 @@ from ampel.pipeline.config.AmpelConfig import AmpelConfig
 from ampel.pipeline.config.AmpelModelExtension import AmpelModelExtension
 
 @gendocstring
-class T0UnitConfig(BaseModel, AmpelModelExtension):
+class T0UnitConfig(AmpelModelExtension):
 	"""
 	Config holder for T0 units (filters)
 	"""
