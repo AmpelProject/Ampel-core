@@ -324,6 +324,10 @@ class T3Job(T3Event):
 							custom_journal_entries, chan_list, event_name=task_name, 
 							run_id=self.run_ids.get(task_name)
 						)
+
+					# Publish journal entries to DB
+					self.journal_updater.flush()
+
 				else:
 
 					self.logger.info("%s: No transients matched selection criteria" % task_name)

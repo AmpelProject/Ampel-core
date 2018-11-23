@@ -108,6 +108,9 @@ class T3Task(T3Event):
 					run_id=self.run_ids.get(self.name)
 				)
 
+				# Publish journal entries to DB
+				self.journal_updater.flush()
+
 		except Exception as e:
 
 			if self.raise_exc:
