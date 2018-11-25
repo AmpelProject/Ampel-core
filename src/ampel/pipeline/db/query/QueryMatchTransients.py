@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 13.01.2018
-# Last Modified Date: 18.10.2018
+# Last Modified Date: 25.11.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from bson.objectid import ObjectId
@@ -69,35 +69,16 @@ class QueryMatchTransients:
 		if time_created or time_modified:
 				
 			chans = LogicSchemaUtils.reduce_to_set("Any" if channels is None else channels)
-			or_list = []
 
 			for chan_name in chans:
 
 				if time_created:
-					or_list.append(
-						{
-							'created.%s' % chan_name: \
-								QueryMatchTransients._add_time_constraint(time_created)
-						}
-					)
+					query['created.' + chan_name] = \
+						QueryMatchTransients._add_time_constraint(time_created)
 
 				if time_modified:
-					or_list.append(
-						{
-							'modified.%s' % chan_name: \
-								QueryMatchTransients._add_time_constraint(time_modified)
-						}
-					)
-
-			if or_list:
-				if len(or_list) == 1:
-					tupl = next(iter(or_list[0].items())) 
-					query[tupl[0]] = tupl[1]
-				else:
-					if '$or' in query:
-						query['$or'] += or_list
-					else:
-						query['$or'] = or_list
+					query['modified.' + chan_name] = \
+						QueryMatchTransients._add_time_constraint(time_modified)
 
 		return query
 
