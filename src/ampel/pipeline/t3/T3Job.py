@@ -325,8 +325,8 @@ class T3Job(T3Event):
 							run_id=self.run_ids.get(task_name)
 						)
 
-					# Publish journal entries to DB
-					self.journal_updater.flush()
+						# Publish journal entries to DB
+						self.journal_updater.flush()
 
 				else:
 
