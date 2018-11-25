@@ -211,7 +211,7 @@ def rununit(args):
 				],
 				"verbose": False
 			},
-			"chunk": 200
+			"chunk": args.chunk
 		},
 		"tasks": [
 			{
@@ -319,6 +319,7 @@ def main():
 	p.add_argument('--update-run-col', default=False, action="store_true", help="Record this run in the jobs collection")
 	p.add_argument('--update-tran-journal', default=False, action="store_true", help="Record this run in the transient journal")
 	p.add_argument('--channels', nargs='+', default=[])
+	p.add_argument('--chunk', type=int, default=200)
 	p.add_argument('--created', type=int, default=-40)
 	p.add_argument('--modified', type=int, default=-1)
 
