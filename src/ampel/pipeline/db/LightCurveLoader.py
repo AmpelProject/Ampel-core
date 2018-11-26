@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 13.01.2018
-# Last Modified Date: 31.10.2018
+# Last Modified Date: 26.11.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from ampel.core.flags.FlagUtils import FlagUtils
@@ -19,7 +19,7 @@ from ampel.pipeline.db.AmpelDB import AmpelDB
 
 class LightCurveLoader:
 	"""
-	Class with methods each returning an instance of ampel.base.LightCurve
+	Each method returns an instance of ampel.base.LightCurve.
 	Either through DB query (load_through_db_query) or through parsing of DB query results 
 	"""
 
@@ -67,16 +67,25 @@ class LightCurveLoader:
 		blend_cursor = self.blend_col.find(match_crit)
 
 		if blend_cursor.count() == 0:
-			self.logger.warn("No compound found with id: %s " % compound_id)
+			self.logger.warn(
+				"Found no compound", 
+				extra={
+					'tranId': tran_id, 
+					'compId': compound_id
+				}
+			)
 			return None
 
 		if photo_cursor.count() == 0:
-			self.logger.warn("No photopoint found for tranId: %s " % tran_id)
+			self.logger.warn("Found no photo data", extra={'tranId': tran_id})
 			return None
 
-		self.logger.info(
-			"DB query for tranId: %s and compoundId(s): %s returned %i documents" %
-			(tran_id, comp_hex, photo_cursor.count())
+		self.logger.debug(
+			None, {
+				'tranId': tran_id, 
+				'compId': compound_id,
+				'nDoc': photo_cursor.count()
+			}
 		)
 
 		pps_list = []
@@ -125,8 +134,11 @@ class LightCurveLoader:
 			# Check exclusion
 			if 'excl' in el:
 				self.logger.debug(
-					"Ignoring excluded photodata %s (%s)" % 
-					(el['pp'] if 'pp' in el else el['ul'], el['excl'])
+					"Ignoring excluded photodata",
+					extra={
+						'pp': el['pp'] if 'pp' in el else el['ul'],
+						'reason': el['excl']
+					}
 				)
 				continue
 
@@ -141,7 +153,7 @@ class LightCurveLoader:
 				if photo_dict is None:
 
 					self.logger.warn(
-						"Photo point not found, trying to recover.",
+						"Photo point not found, trying to recover",
 						extra={'pp': el['pp']}
 					)
 
@@ -149,7 +161,7 @@ class LightCurveLoader:
 					cursor = self.photo_col.find({"_id": el['pp']})
 	
 					if (cursor.count()) == 0:
-						self.logger.error("PhotoPoint with id %i not found" % el['pp'])
+						self.logger.error("PhotoPoint not found", extra={'pp': el['pp']})
 						raise ValueError("PhotoPoint with id %i not found" % el['pp'])
 
 					photo_dict = next(cursor)
@@ -230,8 +242,11 @@ class LightCurveLoader:
 			# Check exclusion
 			if 'excl' in el:
 				self.logger.debug(
-					"Ignoring excluded photodata %s (%s)" % 
-					(el['pp'] if 'pp' in el else el['ul'], el['excl'])
+					"Ignoring excluded photodata",
+					extra={
+						'pp': el['pp'] if 'pp' in el else el['ul'],
+						'reason': el['excl']
+					}
 				)
 				continue
 
@@ -244,7 +259,7 @@ class LightCurveLoader:
 				if pp_id not in already_loaded_photo:
 
 					self.logger.warn(
-						"Photo point not provided, trying to recover.",
+						"Photo point not provided, trying to recover",
 						extra={'pp': pp_id}
 					)
 
@@ -252,7 +267,7 @@ class LightCurveLoader:
 	
 					if (cursor.count()) == 0:
 						# TODO: populate 'troubles collection'
-						self.logger.error("PhotoPoint with id %i not found" % pp_id)
+						self.logger.error("PhotoPoint not found", extra={'pp': pp_id})
 						raise ValueError("PhotoPoint with id %i not found" % pp_id)
 
 					pp_doc = next(cursor)
