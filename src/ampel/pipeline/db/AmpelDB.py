@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 16.06.2018
-# Last Modified Date: 06.11.2018
+# Last Modified Date: 26.11.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from ampel.pipeline.config.AmpelConfig import AmpelConfig
@@ -152,7 +152,7 @@ class AmpelDB:
 		if 'w' in mode:
 			if col_name not in db.collection_names():
 				try:
-					cls.create_indexes(db[col_name])
+					cls.create_indexes(db, col_name)
 				except Exception:
 					import logging
 					logging.error("Col index creation failed", exc_info=True)
@@ -185,7 +185,7 @@ class AmpelDB:
 
 
 	@staticmethod
-	def create_indexes(col):
+	def create_indexes(db, col_name):
 		"""
 		The method will set indexes for collections with names: 
 		'tran', 'photo', 'blend', 'events', 'logs', 'troubles', ...
@@ -195,13 +195,13 @@ class AmpelDB:
 		import logging
 		logging.info(
 			"Creating index for collection '%s' (db: '%s')" % 
-			(col.name, col.database.name)
+			(col_name, db.name)
 		)
 
-		if col.name == "tran":
+		if col_name == "tran":
 
 			# For various indexed queries and live auto-complete *covered* queries
-			col.create_index(
+			db[col_name].create_index(
 				[
 					('_id', 1),
 					('channels', 1)
@@ -209,15 +209,15 @@ class AmpelDB:
 				unique = True
 			)
 
-		elif col.name == "photo":
+		elif col_name == "photo":
 
-			col.create_index(
+			db[col_name].create_index(
 				[('tranId', 1)]
 			)
 
-		elif col.name == "blend":
+		elif col_name == "blend":
 
-			col.create_index(
+			db[col_name].create_index(
 				[
 					('tranId', 1), 
 					('alDocType', 1), 
@@ -226,16 +226,25 @@ class AmpelDB:
 			)
 
 			# Create sparse runstate index
-			col.create_index(
+			db[col_name].create_index(
 				[('runState', 1)],
 				partialFilterExpression = {
 					'alDocType': AlDocType.T2RECORD
 				}
 			)
 
-		elif col.name == "logs":
+		elif col_name == "logs":
 
-			col.create_index(
+			db.create_collection(
+				'logs',
+				storageEngine={
+					'wiredTiger': {
+						'configString': 'block_compressor=zlib'
+					}
+				}
+			)
+
+			db[col_name].create_index(
 				[('runId', 1)],
 			)
 
@@ -247,26 +256,26 @@ class AmpelDB:
 			# On the other side, there should not be a lot of log entries 
 			# associated with a tranId, so that the indexing perf penalty 
 			# should not be an issue. Time will tell...
-			col.create_index(
+			db[col_name].create_index(
 				[('tranId', 1)],
 				partialFilterExpression = {
-					'tranId': { '$exists': True } 
+					'tranId': {'$exists': True} 
 				}
 			)
 
 			# Create sparse index for key channels
-			col.create_index(
+			db[col_name].create_index(
 				[('channels', 1)],
 				partialFilterExpression = {
-					'channels': { '$exists': True } 
+					'channels': {'$exists': True} 
 				}
 			)
 
-		elif col.name == "events":
+		elif col_name == "events":
 			pass
 
 			# Create sparse index for key hasError
-			# col.create_index(
+			# db[col_name].create_index(
 			#	[('hasError', 1)],
 			#	partialFilterExpression = {
 			#		'hasError': { '$exists': True } 
@@ -275,9 +284,18 @@ class AmpelDB:
 
 		# Rejected logs collections
 		elif (
-			col.name == "rejected" or
-			(col.name in AmpelDB._ampel_cols and AmpelDB._ampel_cols[col.name]['dbLabel'] == 'rej')
+			col_name == "rejected" or
+			(col_name in AmpelDB._ampel_cols and AmpelDB._ampel_cols[col_name]['dbLabel'] == 'rej')
 		):
 
+			db.create_collection(
+				col_name,
+				storageEngine={
+					'wiredTiger': {
+						'configString': 'block_compressor=zlib'
+					}
+				}
+			)
+
 			# Create sparse index for key runId
-			col.create_index([('tranId', 1)])
+			db[col_name].create_index([('tranId', 1)])
