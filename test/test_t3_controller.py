@@ -294,3 +294,21 @@ def test_get_required_resources():
 
 	resources = get_required_resources()
 	assert len(resources) > 0
+
+def test_time_selection():
+	from ampel.pipeline.db.query.QueryMatchTransients import QueryMatchTransients
+	from ampel.pipeline.t3.TimeConstraint import TimeConstraint
+	from ampel.pipeline.config.time.TimeConstraintConfig import TimeConstraintConfig
+	from ampel.pipeline.config.time.TimeDeltaConfig import TimeDeltaConfig
+	
+	channels = {'anyOf': ['DESY_NEUTRINO', 'HU_SNSAMPLE']}
+	created = TimeConstraint(TimeConstraintConfig(after=dict(use='$timeDelta', arguments=dict(days=-30))))
+	modified = TimeConstraint(TimeConstraintConfig(after=dict(use='$timeDelta', arguments=dict(days=-2))))
+	
+	query = QueryMatchTransients.match_transients(channels, time_created=created, time_modified=modified)
+	assert len(query['$or']) == len(channels['anyOf']), "OR on time constraints for all channels"
+	for or_clause in query['$or']:
+		assert list(or_clause.keys()) == ['$and'], "each element is an AND clause"
+		assert len(next(iter(or_clause.values()))) == 2, "each element is an AND clause "
+
+

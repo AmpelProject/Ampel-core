@@ -70,15 +70,22 @@ class QueryMatchTransients:
 				
 			chans = LogicSchemaUtils.reduce_to_set("Any" if channels is None else channels)
 
+			or_list = []
 			for chan_name in chans:
-
+				and_list = []
 				if time_created:
-					query['created.' + chan_name] = \
+					and_list.append({
+						'created.' + chan_name:
 						QueryMatchTransients._add_time_constraint(time_created)
+					})
 
 				if time_modified:
-					query['modified.' + chan_name] = \
+					and_list.append({
+						'modified.' + chan_name:
 						QueryMatchTransients._add_time_constraint(time_modified)
+					})
+				or_list.append({'$and': and_list})
+			query['$or'] = or_list
 
 		return query
 
