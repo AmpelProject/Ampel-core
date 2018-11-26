@@ -18,8 +18,8 @@ class QueryMatchTransients:
 	"""
 	"""
 
-	@staticmethod
-	def match_transients(
+	@classmethod
+	def match_transients(cls,
 		channels=None, with_flags=None, without_flags=None, time_created=None, time_modified=None
 	):
 		"""
@@ -66,23 +66,23 @@ class QueryMatchTransients:
 				query, 'alFlags', without_flags
 			)
 
-		if time_created or time_modified:
+		created_constraint = cls._add_time_constraint(time_created)
+		modified_constraint = cls._add_time_constraint(time_modified)
+		if created_constraint or modified_constraint:
 				
 			chans = LogicSchemaUtils.reduce_to_set("Any" if channels is None else channels)
 
 			or_list = []
 			for chan_name in chans:
 				and_list = []
-				if time_created:
+				if created_constraint:
 					and_list.append({
-						'created.' + chan_name:
-						QueryMatchTransients._add_time_constraint(time_created)
+						'created.' + chan_name: created_constraint
 					})
 
-				if time_modified:
+				if modified_constraint:
 					and_list.append({
-						'modified.' + chan_name:
-						QueryMatchTransients._add_time_constraint(time_modified)
+						'modified.' + chan_name: modified_constraint
 					})
 				or_list.append({'$and': and_list})
 			query['$or'] = or_list
@@ -101,6 +101,8 @@ class QueryMatchTransients:
 			}
 		"""
 
+		if tc is None:
+			return None
 		if type(tc) is not TimeConstraint:
 			raise ValueError("Parameter must be a TimeConstraint instance")
 
@@ -110,4 +112,7 @@ class QueryMatchTransients:
 				val = tc.get(key)
 				if val:
 					d[op] = val.timestamp()
-		return d
+		if len(d) == 0:
+			return None
+		else:
+			return d
