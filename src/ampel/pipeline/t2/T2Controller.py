@@ -8,6 +8,7 @@
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import pkg_resources, math
+import logging
 from time import time
 from pymongo.errors import BulkWriteError
 from pymongo import UpdateOne
@@ -39,7 +40,7 @@ class T2Controller(Schedulable):
 	
 	def __init__(
 		self, run_state=T2RunStates.TO_RUN, t2_units=None, 
-		check_interval=10, batch_size=200
+		check_interval=10, batch_size=200, log_level=logging.DEBUG
 	): 
 		"""
 		:param T2RunStates run_state: one on ampel.core.flags.T2RunStates int value (for example: T0_RUN)
@@ -50,7 +51,7 @@ class T2Controller(Schedulable):
 		"""
 
 		# Get logger 
-		self.logger = AmpelLogger.get_unique_logger()
+		self.logger = AmpelLogger.get_unique_logger(log_level=log_level)
 
 		# check interval is in seconds
 		self.check_interval = check_interval
@@ -274,7 +275,7 @@ class T2Controller(Schedulable):
 				]
 
 			else:
-				self.logger.info("Saving dict returned by T2 unit")
+				self.logger.debug("Saving dict returned by T2 unit")
 
 				db_ops = [
 					UpdateOne(
@@ -358,7 +359,7 @@ class T2Controller(Schedulable):
 
 		# Robustness
 		if t2_run_config_doc is None:
-			self.logger.info(
+			self.logger.debug(
 				"Cound not find t2 run config doc with id %s" %
 				run_config_id
 			)
@@ -383,7 +384,7 @@ class T2Controller(Schedulable):
 			return cls.t2_classes[unit_name]
 
 		if logger:
-			logger.info("Loading T2 unit: %s" % unit_name)
+			logger.debug("Loading T2 unit: %s" % unit_name)
 
 		resource = next(
 			pkg_resources.iter_entry_points('ampel.pipeline.t2.units', unit_name), 
@@ -452,8 +453,12 @@ def run():
 	# parse again, filling the resource config
 	opts = parser.parse_args()
 	
-	controller = T2Controller(batch_size=opts.batch_size, check_interval=opts.interval)
+	controller = T2Controller(
+	    batch_size=opts.batch_size,
+	    check_interval=opts.interval,
+	    log_level=logging.DEBUG if opts.verbose else logging.INFO
+	)
 	if not opts.verbose:
 		controller.logger.quieten_console()
 	controller.process_new_docs()
-	T2Controller().run()
+	controller.run()
