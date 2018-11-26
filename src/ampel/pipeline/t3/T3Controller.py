@@ -208,8 +208,7 @@ def rununit(args):
 					"T2RECORD",
 					"PHOTOPOINT",
 					"UPPERLIMIT"
-				],
-				"verbose": False
+				]
 			},
 			"chunk": args.chunk
 		},
@@ -217,8 +216,7 @@ def rununit(args):
 			{
 				"task": "rununit.task",
 				"unitId": args.unit,
-				"runConfig": args.runconfig,
-				"updateJournal": False
+				"runConfig": args.runconfig
 			}
 		]
 	}
