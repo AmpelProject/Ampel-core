@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 25.01.2018
-# Last Modified Date: 06.11.2018
+# Last Modified Date: 26.11.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import pkg_resources, math
@@ -326,7 +326,6 @@ class T2Controller(Schedulable):
 
 			try: 
 				result = AmpelDB.get_collection('blend').bulk_write(db_ops)
-				self.logger.info(result.bulk_api_result)
 			except BulkWriteError as bwe: 
 				# TODO add error flag to Job and Transient
 				# TODO populate Ampel_troubles collection
