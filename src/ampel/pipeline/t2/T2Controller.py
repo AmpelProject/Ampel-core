@@ -9,6 +9,7 @@
 
 import pkg_resources, math
 import logging
+import sys
 from time import time
 from pymongo.errors import BulkWriteError
 from pymongo import UpdateOne
@@ -453,6 +454,7 @@ def run():
 	# parse again, filling the resource config
 	opts = parser.parse_args()
 	
+	AmpelLogger.set_default_stream(sys.stderr)
 	controller = T2Controller(
 	    batch_size=opts.batch_size,
 	    check_interval=opts.interval,
