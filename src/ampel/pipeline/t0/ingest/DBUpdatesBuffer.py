@@ -210,7 +210,7 @@ class DBUpdatesBuffer(Schedulable):
 					else:
 	
 						dup_key_only = False
-						self.err_ops.append(err_dict)
+						self.err_ops[col_name].append(err_dict)
 
 						LoggingUtils.report_error(
 							tier=0, msg="BulkWriteError entry details", 
