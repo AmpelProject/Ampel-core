@@ -309,7 +309,7 @@ class AlertProcessor():
 		# Process alerts
 		################
 
-		self.logger.info("#######     Processing alerts     #######")
+		self.logger.debug("#######     Processing alerts     #######")
 
 		# Iterate over alerts
 		for alert_content in self.input_setup.get_alert_supplier(alert_loader):
