@@ -139,7 +139,7 @@ class AmpelLogger(logging.Logger):
 		See quieten_console (without s) docstring for more info
 		:returns: None
 		"""
-		for logger in AmpelLogger.loggers:
+		for logger in AmpelLogger.loggers.values():
 			logger.set_console_log_level(logging.WARNING)
 
 		
@@ -150,7 +150,7 @@ class AmpelLogger(logging.Logger):
 		See louden_console (without s) docstring for more info
 		:returns: None
 		"""
-		for logger in AmpelLogger.loggers:
+		for logger in AmpelLogger.loggers.values():
 			logger.set_console_log_level(logging.DEBUG)
 
 

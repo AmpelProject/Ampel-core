@@ -222,7 +222,7 @@ class AlertProcessor():
 		# Add db logging handler to the logger stack of handlers 
 		self.logger.handlers.insert(0, db_logging_handler)
 		if not full_console_logging:
-			self.logger.quieten_console()
+			self.logger.quieten_console_loggers()
 
 		self.logger.shout("Starting")
 
@@ -555,7 +555,7 @@ class AlertProcessor():
 
 		# Restore console logging settings
 		if not full_console_logging:
-			self.logger.louden_console()
+			self.logger.louden_console_loggers()
 
 		# Flush loggers
 		if iter_count > 0:
