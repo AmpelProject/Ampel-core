@@ -44,6 +44,6 @@ class ExtraLogFormatter(Formatter):
 			out.append("[%s]" % ', '.join("%s=%s" % itm for itm in extra.items()))
 
 		if record.msg:
-			return "<%s>\n%s" % (" ".join(out), record.msg)
+			return "<%s>\n  %s" % (" ".join(out), record.msg)
 		else:
 			return "<%s>" % " ".join(out)

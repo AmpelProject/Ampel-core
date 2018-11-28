@@ -44,7 +44,7 @@ class AmpelLoggingStreamHandler(StreamHandler):
 			extra == getattr(self.prev_records, 'extra', None) and
 			record.msg
 		):
-			self.stream.write(str(record.msg))
+			self.stream.write('  '+str(record.msg))
 		else:
 
 			self.stream.write(self.format(record))
