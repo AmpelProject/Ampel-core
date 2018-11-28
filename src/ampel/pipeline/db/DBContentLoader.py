@@ -373,16 +373,16 @@ class DBContentLoader:
 					
 					# Photopoints instance attached to the transient instance 
 					# are not bound to a compound and come thus without policy
-					if type(doc['tranId']) is int:
+					if type(doc['tranId']) is list:
+						for tran_id in (loaded_tran_ids & doc['tranId']):
+							tran_register[tran_id].add_photopoint(
+								PlainPhotoPoint(doc, photo_flag, read_only=True)
+							)
+					else:
 						tran_register[doc['tranId']].add_photopoint(
 							PlainPhotoPoint(doc, photo_flag, read_only=True)
 						)
-					else:
-						for tran_id in (loaded_tran_ids & doc['tranId']):
-							tran_register[tranid].add_photopoint(
-								PlainPhotoPoint(doc, photo_flag, read_only=True)
-							)
-	
+
 				# Pick upper limit dicts
 				else:
 
