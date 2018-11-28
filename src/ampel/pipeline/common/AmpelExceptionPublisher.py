@@ -38,8 +38,9 @@ class AmpelExceptionPublisher:
 		fields = [{'title': 'Tier', 'value': doc['tier'], 'short': True}]
 		more = doc.get('more', {})
 		if doc['tier'] == 0:
-			fields.append({'title': 'Section', 'value': more.get('section', None), 'short': True})
-			fields.append({'title': 'tranId', 'value': more.get('tranId', None), 'short': True})
+			for field in 'section', 'tranId', 'runId':
+				if field in more:
+					fields.append({'title': field, 'value': more.get(field, None), 'short': True})
 		elif doc['tier'] == 2:
 			fields.append({'title': 'run_config', 'value': more.get('run_config', None), 'short': True})
 			if isinstance(more.get('t2_doc', None), ObjectId):
@@ -52,6 +53,8 @@ class AmpelExceptionPublisher:
 			text = '{}: {}'.format(doc['location'], doc.get('ampelMsg', ''))
 			if 'mongoUpdateResult' in doc:
 				text += '\nmongoUpdateResult: `{}`'.format(doc['mongoUpdateResult'])
+			elif 'errDict' in doc:
+				text += '```\n{}```'.format(repr(doc['errDict']))
 		else:
 			text = 'Unknown exception type. Doc keys are: ```{}```'.format(doc.keys())
 
