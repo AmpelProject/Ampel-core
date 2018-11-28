@@ -169,7 +169,7 @@ class DBUpdatesBuffer(Schedulable):
 				time_delta / len(ops)
 			)
 
-			self.logger.info(
+			self.logger.debug(
 				"%s: inserted: %i, upserted: %i, modified: %i" % (
 					col_name,
 					db_res.bulk_api_result['nInserted'],
@@ -235,7 +235,7 @@ class DBUpdatesBuffer(Schedulable):
 					# Do something ?
 					pass
 	
-				self.logger.info(
+				self.logger.debug(
 					"%s: inserted: %i, upserted: %i, modified: %i, race condition(s) recovered: %i" % (
 						col_name,
 						bwe.details['nInserted'],
