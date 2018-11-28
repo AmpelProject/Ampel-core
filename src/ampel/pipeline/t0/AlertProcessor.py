@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel/src/ampel/pipeline/t0/AlertProcessor.py
+# File              : ampel/pipeline/t0/AlertProcessor.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 10.10.2017
-# Last Modified Date: 21.11.2018
+# Last Modified Date: 28.11.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import pkg_resources, numpy as np
@@ -147,6 +147,9 @@ class AlertProcessor():
 			)
 			for channel_config in ChannelConfigLoader.load_configurations(channels, 0, self.logger)
 		]
+
+		if len(self.t0_channels) == 1 and log_format == "compact":
+			self.logger.warning("You should not use log_format='compact' using only one channel")
 
 		if single_rej_col:
 			AmpelDB.enable_rejected_collections(['rejected'])
@@ -297,8 +300,10 @@ class AlertProcessor():
 		pre_run = time()
 
 		# Accepts and execute pymongo.operations
-		updates_buffer = DBUpdatesBuffer(run_id)
+		updates_buffer = DBUpdatesBuffer(run_id, self.logger)
 		updates_buffer.start()
+
+		chan_names = [chan.str_name for chan in self.t0_channels]
 
 
 		# Process alerts
@@ -433,10 +438,12 @@ class AlertProcessor():
 				# by the StreamHandler in channel specific RecordsBufferingHandler instances. 
 				# So we address directly db_logging_handler, and for that, we create
 				# a LogRecord manually.
-				lr = LogRecord(None, INFO, None, None, "OK", None, None)
+				lr = LogRecord(None, INFO, None, None, None, None, None)
 				lr.extra = {
 					'tranId': tran_id,
-					'alertId': alert_content['alert_id']
+					'alertId': alert_content['alert_id'],
+					'allRejected': True,
+					'channels': chan_names
 				}
 				db_logging_handler.handle(lr)
 
