@@ -449,9 +449,6 @@ class AlertProcessor():
 
 			iter_count += 1
 
-			if full_console_logging:
-				print("")
-
 			if iter_count == iter_max:
 				self.logger.info("Reached max number of iterations")
 				break
