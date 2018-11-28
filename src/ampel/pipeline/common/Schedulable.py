@@ -55,9 +55,6 @@ class Schedulable():
 		start_callback() will be executed before run()
 		"""
 
-		# Setup logger
-		self.logger = AmpelLogger.get_unique_logger() if logger is None else logger
-
 		self.keep_going = True
 
 		if self.start_callback is not None:
@@ -98,11 +95,15 @@ class Schedulable():
 		"""
 
 		# Setup logger
-		self.logger = AmpelLogger.get_unique_logger() if logger is None else logger
-		self.logger.info("Starting scheduler loop")
+		if logger is None:
+			if hasattr(self, 'logger') and isinstance(self.logger, logging.Logger):
+				logger = self.logger
+			else:
+				logger = AmpelLogger.get_unique_logger()
+		logger.info("Starting scheduler loop")
 
 		while self.keep_going:
 			self.scheduler.run_pending()
 			time.sleep(1)
 
-		self.logger.info("Stopping scheduler loop")
+		logger.info("Stopping scheduler loop")
