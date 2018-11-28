@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/pipeline/t0/ingest/DBInsertAggregator.py
+# File              : ampel/pipeline/t0/ingest/DBUpdatesBuffer.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 31.10.2018
-# Last Modified Date: 31.10.2018
+# Last Modified Date: 28.11.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from time import time
@@ -28,8 +28,11 @@ class DBUpdatesBuffer(Schedulable):
 	which does drop the GIL while sending and receiving data over the network.
 	"""
 
-	def __init__(self, run_id, threads=0, push_interval=5, autopush_size=50): 
+	def __init__(self, run_id, logger, threads=0, push_interval=5, autopush_size=50): 
 		"""
+		:param int run_id:
+		:param logger:
+		:type logger: :py:class:`AmpelLogger <ampel.pipeline.logging.AmpelLogger>` 
 		:param int push_interval: in seconds
 		:param int autopush_size: 
 		"""
@@ -49,6 +52,7 @@ class DBUpdatesBuffer(Schedulable):
 
 		self.err_ops = {k: [] for k in self.ops.keys()}
 		self.run_id = run_id
+		self.logger = logger
 		self.autopush_size = autopush_size
 
 		self.metrics = {
