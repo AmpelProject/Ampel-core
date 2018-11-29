@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 13.01.2018
-# Last Modified Date: 26.11.2018
+# Last Modified Date: 29.11.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from ampel.core.flags.FlagUtils import FlagUtils
@@ -19,20 +19,18 @@ from ampel.pipeline.db.AmpelDB import AmpelDB
 
 class LightCurveLoader:
 	"""
-	Each method returns an instance of ampel.base.LightCurve.
+	Each method returns an instance of :py:class:`LightCurve <ampel.base.LightCurve`.
 	Either through DB query (load_through_db_query) or through parsing of DB query results 
 	"""
 
 
 	def __init__(self, read_only=True, logger=None):
 		"""
-		Parameters:
-		-----------
-		read_only: if True, the LightCurve instance returned by the methods of this class will be:
-			* a frozen class
-			* containing a immutable list (tuple) of PhotoPoint
-			* whereby each PhotoPoint is a frozen class as well
-			* and each PhotoPoint dict content is an immutable dict
+		:param bool read_only: if True, the LightCurve instance returned by the methods of this class will be:
+		- a frozen class
+		- containing a immutable list (tuple) of PhotoPoint
+		- whereby each PhotoPoint is a frozen class as well
+		- and each PhotoPoint dict content is an immutable dict
 		"""
 		self.logger = AmpelLogger.get_logger() if logger is None else logger
 		self.read_only = read_only
@@ -46,9 +44,8 @@ class LightCurveLoader:
 		to the method 'load_from_db_results' from this class.
 		This function returns an instance of ampel.base.LightCurve
 
-		Parameters:
-		tran_id: transient id (int or string)
-		compound_id: instance of bson.binary.Binary (subtype 5)
+		:param int tran_id: transient id (int or string)
+		:param compound_id: instance of :py:class:`Binary <bson.binary.Binary>` (subtype 5)
 		"""
 
 		# TODO : provide list or cursor as func parameter ?
@@ -105,11 +102,9 @@ class LightCurveLoader:
 		Creates and returns an instance of ampel.base.LightCurve using db results.
 		This function is used at both T2 and T3 levels 
 
-		Required parameters:
-		--------------------
-		ppd_list: list of photopoint dict instances loaded from DB
-		uld_list: list of upper limit dict instances loaded from DB
-		compound: compound doc (dict instance) loaded from DB
+		:param ppd_list: list of photopoint dict instances loaded from DB
+		:param uld_list: list of upper limit dict instances loaded from DB
+		:param compound: compound doc (dict instance) loaded from DB
 		"""
 
 		# Robustness check 
@@ -213,15 +208,13 @@ class LightCurveLoader:
 		Creates and returns an instance of ampel.base.LightCurve using db results.
 		This function is used at both T2 and T3 levels 
 
-		Required parameters:
-		--------------------
-		compound: namedtuple loaded from DB
-		'already_loaded_photo': dict instance containing references to already existing 
+		:param compound: namedtuple loaded from DB
+		:param dict already_loaded_photo: dict instance containing references to already existing 
 		frozen PhotoPoint and UpperLimit instances. PhotoPoint/UpperLimit instances 
 		are then 're-used' rather than re-instantiated  for every LightCurve object 
 		(different LightCurves can share common Photopoints).
-		-> key: photopoint or upperlimit id 
-		-> value: corresponding PhotoPoint or UpperLimit instance
+		- key: photopoint or upperlimit id 
+		- value: corresponding PhotoPoint or UpperLimit instance
 		- must only contain PhotoPoint/UpperLimit instances *without* custom policy
 		- will only be used if read_only is True (see LightCurveLoader constructor)
 		- dict can be populated in case new photopoint/upper limit  instance(s) 
