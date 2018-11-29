@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 10.10.2017
-# Last Modified Date: 28.11.2018
+# Last Modified Date: 29.11.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import pkg_resources, numpy as np
@@ -38,7 +38,7 @@ class AlertProcessor():
 		* Filter alert based on the configured T0 filter
 		* Ingest alert based on the configured ingester
 	"""
-	iter_max = 5000
+	iter_max = 50000
 
 	def __init__(self, 
 		survey_id, channels=None, publish_stats=['graphite', 'jobs'], 
