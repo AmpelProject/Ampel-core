@@ -32,6 +32,7 @@ from ampel.pipeline.common.AmpelUnitLoader import AmpelUnitLoader
 
 class T2Controller(Schedulable):
 	"""
+	TODO: submit UpdateOne operations in batch ?
 	"""
 
 	# Dict saving t2 classes. 
@@ -97,10 +98,12 @@ class T2Controller(Schedulable):
 		)
 
 		# Shortcut
-		self.beacon_col = AmpelDB.get_collection('beacon')
+		self.col_beacon = AmpelDB.get_collection('beacon')
+		self.col_blend = AmpelDB.get_collection('blend')
+		self.col_tran = AmpelDB.get_collection('tran')
 
 		# Create t2Controller beacon doc if it does not exist yet
-		self.beacon_col.update_one(
+		self.col_beacon.update_one(
 			{'_id': "t2Controller"},
 			{'$set': {'_id': "t2Controller"}},
 			upsert=True
@@ -133,7 +136,7 @@ class T2Controller(Schedulable):
 
 		# Update heartbeat if no result
 		if batch == 0:
-			self.beacon_col.update_one(
+			self.col_beacon.update_one(
 				{'_id': "t2Controller"}, 
 				{'$set': {'dt': time()}}
 			)
@@ -246,15 +249,17 @@ class T2Controller(Schedulable):
 
 			# Used as timestamp and to compute duration below (using before_run)
 			now = time()
+			inow = int(now)
 
-			# T2 units can return a T2RunStates flag rather than a dict instance
-			# for example: T2RunStates.EXCEPTION, T2RunStates.BAD_CONFIG, ...
-			if isinstance(ret, T2RunStates):
+			try: 
 
-				self.logger.error("T2 unit returned %s" % ret)
+				# T2 units can return a T2RunStates flag rather than a dict instance
+				# for example: T2RunStates.EXCEPTION, T2RunStates.BAD_CONFIG, ...
+				if isinstance(ret, T2RunStates):
 
-				db_ops = [
-					UpdateOne(
+					self.logger.error("T2 unit returned %s" % ret)
+
+					self.col_blend.update_one(
 						{
 							"_id": t2_doc['_id']
 						},
@@ -262,8 +267,8 @@ class T2Controller(Schedulable):
 							'$push': {
 								"results": {
 									'versions': self.versions[t2_unit_id],
-									'dt': now,
-									'duration': int(now - before_run),
+									'dt': inow,
+									'duration': round(now - before_run,3),
 									'runId': db_logging_handler.get_run_id(),
 									'error': ret.value
 								}
@@ -273,13 +278,12 @@ class T2Controller(Schedulable):
 							}
 						}
 					)
-				]
 
-			else:
-				self.logger.debug("Saving dict returned by T2 unit")
+				else:
 
-				db_ops = [
-					UpdateOne(
+					self.logger.debug("Saving dict returned by T2 unit")
+
+					self.col_blend.update_one(
 						{
 							"_id": t2_doc['_id']
 						},
@@ -287,8 +291,8 @@ class T2Controller(Schedulable):
 							'$push': {
 								"results": {
 									'versions': self.versions[t2_unit_id],
-									'dt': now,
-									'duration': int(now - before_run),
+									'dt': inow,
+									'duration': round(now - before_run,3),
 									'runId': db_logging_handler.get_run_id(),
 									'output': ret
 								}
@@ -299,23 +303,29 @@ class T2Controller(Schedulable):
 							}
 						}
 					)
-				]
 
+			except Exception as e: 
+				# TODO add error flag to Job and Transient
+				LoggingUtils.report_exception(
+					self.logger, e, tier=2, 
+					run_id=db_logging_handler.get_run_id(), 
+					info={'t2UnitId': t2_unit_id, 'tranId': t2_doc['tranId']}
+				)
 
-			db_ops.append(
-				UpdateOne(
+			try: 
+
+				self.col_tran.update_one(
 					{
-						"tranId": t2_doc['tranId'],
-						"alDocType": AlDocType.TRANSIENT
+						"_id": t2_doc['tranId']
 					},
 					{
 						"$max": {
-							"modified": now
+							"modified."+chan: inow for chan in t2_doc['channels']
 						},
 						"$push": {
 							"journal": {
 								'tier': 2,
-								'dt': now,
+								'dt': inow,
 								'unit': t2_unit_id,
 								'success': int(not isinstance(ret, T2RunStates)),
 								'channels': t2_doc['channels'],
@@ -324,15 +334,14 @@ class T2Controller(Schedulable):
 						}
 					}
 				)
-			)
 
-			try: 
-				result = AmpelDB.get_collection('blend').bulk_write(db_ops)
-			except BulkWriteError as bwe: 
+			except Exception as e: 
 				# TODO add error flag to Job and Transient
-				# TODO populate Ampel_troubles collection
-				# TODO add return code 
-				self.logger.error(bwe.details) 
+				LoggingUtils.report_exception(
+					self.logger, e, tier=2, 
+					run_id=db_logging_handler.get_run_id(), 
+					info={'t2UnitId': t2_unit_id, 'tranId': t2_doc['tranId']}
+				)
 
 			# Take batch_size reqs into consideration
 			if counter > self.batch_size:
