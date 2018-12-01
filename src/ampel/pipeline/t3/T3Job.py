@@ -53,6 +53,7 @@ class T3Job(T3Event):
 			if chans is None:
 				self.logger.info("No matching transient")
 				self.no_run = True
+				config.tasks.clear()
 				return
 
 			self.logger.info(
