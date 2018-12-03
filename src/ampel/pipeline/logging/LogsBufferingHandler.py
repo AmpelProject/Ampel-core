@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 27.09.2018
-# Last Modified Date: 30.09.2018
+# Last Modified Date: 03.12.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import logging, struct, os
@@ -37,8 +37,9 @@ class LogsBufferingHandler(logging.Handler):
 		self.log_dicts = []
 		self.last_log_dict = None
 
-		# ObjectID middle: 3 bytes machine + # 2 bytes pid
-		self.oid_middle = ObjectId._machine_bytes + struct.pack(">H", os.getpid() % 0xFFFF)
+		# ObjectID middle: 3 bytes machine + # 2 random bytes 
+		# NB: pid is not always unique if running in a jail or container
+		self.oid_middle = ObjectId._machine_bytes + os.urandom(2)
 
 
 	def emit(self, record):
@@ -93,4 +94,4 @@ class LogsBufferingHandler(logging.Handler):
 			logger = AmpelLogger.get_unique_logger()
 			LoggingUtils.log_exception(logger, e, msg="Primary exception:")
 
-			raise e from None
+			raise e
