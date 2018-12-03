@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 10.10.2017
-# Last Modified Date: 29.11.2018
+# Last Modified Date: 03.12.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import pkg_resources, numpy as np
@@ -543,38 +543,39 @@ class AlertProcessor():
 							}
 						}
 					)
+
+			self.logger.shout(
+				"Alert processing completed (time required: %is)" % 
+				int(time() - run_start)
+			)
+
+			# Restore console logging settings
+			if not full_console_logging:
+				self.logger.louden_console_loggers()
+
+			# Flush loggers
+			if iter_count > 0:
+
+				# Main logs logger
+				db_logging_handler.flush()
+
+				# Flush channel-specific rejected logs
+				for t0_chan in self.t0_channels:
+					t0_chan.rejected_log_handler.flush()
+
+			else:
+				db_logging_handler.purge()
+
+			# Remove DB logging handler
+			self.logger.removeHandler(db_logging_handler)
+
+			db_job_doc.publish()
+
 		except Exception as e:
 			LoggingUtils.report_exception(
 				self.logger, e, tier=0, run_id=db_logging_handler.get_run_id()
 			)
 			
-		self.logger.shout(
-			"Alert processing completed (time required: %is)" % 
-			int(time() - run_start)
-		)
-
-		# Restore console logging settings
-		if not full_console_logging:
-			self.logger.louden_console_loggers()
-
-		# Flush loggers
-		if iter_count > 0:
-
-			# Main logs logger
-			db_logging_handler.flush()
-
-			# Flush channel-specific rejected logs
-			for t0_chan in self.t0_channels:
-				t0_chan.rejected_log_handler.flush()
-
-		else:
-			db_logging_handler.purge()
-
-		# Remove DB logging handler
-		self.logger.removeHandler(db_logging_handler)
-
-		db_job_doc.publish()
-
 		# Return number of processed alerts
 		return iter_count
 
