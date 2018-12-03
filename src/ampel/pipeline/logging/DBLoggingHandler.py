@@ -251,7 +251,6 @@ class DBLoggingHandler(logging.Handler):
 	def flush(self):
 		""" 
 		Will throw Exception if DB issue occur.
-		Note: we do not lock because for now, T0 does not use threading
 		"""
 
 		# No log entries
@@ -278,7 +277,13 @@ class DBLoggingHandler(logging.Handler):
 				)
 				self.headers = None
 
-			self.col.insert_many(self.log_dicts)
+			# Empty referenced logs entries
+			dicts = self.log_dicts 
+			self.log_dicts = []
+			self.prev_records = None
+
+			# pymongo does drop the GIL while sending and receiving data over the network
+			self.col.insert_many(dicts)
 
 		except BulkWriteError as bwe:
 			DBUpdateException.report(self, bwe, bwe.details)
@@ -289,7 +294,3 @@ class DBLoggingHandler(logging.Handler):
 			# If we can no longer keep track of what Ampel is doing, 
 			# better raise Exception to stop processing
 			raise e
-
-		# Empty referenced logs entries
-		self.log_dicts = []
-		self.prev_records = None
