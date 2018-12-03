@@ -131,6 +131,7 @@ class DBLoggingHandler(logging.Handler):
 				if record.levelno == logging.SHOUT:
 					record.levelno = logging.INFO
 					self.emit(record)
+					return
 	
 				# Generate object id with log record.created as current time
 				with ObjectId._inc_lock:
