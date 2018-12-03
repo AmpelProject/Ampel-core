@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 14.12.2017
-# Last Modified Date: 18.10.2018
+# Last Modified Date: 03.12.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import logging, struct, os
@@ -66,9 +66,9 @@ class DBLoggingHandler(logging.Handler):
 		# Set loggingHandler properties
 		self.setLevel(level)
 
-		# ObjectID middle: 3 bytes machine + 2 random bytes
+		# ObjectID middle: 3 bytes machine + 2 bytes encoding the last 4 digits of run_id (unique)
 		# NB: pid is not always unique if running in a jail or container
-		self.oid_middle = ObjectId._machine_bytes + os.urandom(2)
+		self.oid_middle = ObjectId._machine_bytes + int(str(self.run_id)[-4:]).to_bytes(2, 'big')
 
 
 	def new_run_id(self):
