@@ -92,19 +92,19 @@ class Channel:
 		parent_logger.info("On match t2 units: %s" % self.t2_units)
 
 		# Create channel (buffering) logger
-		self.buff_logger = AmpelLogger("buff_" + self.str_name)
-		self.buff_handler = RecordsBufferingHandler(embed)
-		self.buff_logger.addHandler(self.buff_handler)
+		self.logger = AmpelLogger("buf_" + self.str_name)
+		self.rec_buf_hdlr = RecordsBufferingHandler(embed)
+		self.logger.addHandler(self.rec_buf_hdlr)
 
 		self.filter_func = FilterClass(
 			self.t2_units,
 			base_config = AmpelUnitLoader.get_resources(FilterClass),
 			run_config = self.stream_config.t0Filter.runConfig, 
-			logger = self.buff_logger
+			logger = self.logger
 		).apply
 
 		# Clear possibly existing log entries (logged by FilterClass__init__) to parent_logger
-		self.buff_handler.buffer = []
+		self.rec_buf_hdlr.buffer = []
 
 		self.rejected_logger = AmpelLogger.get_logger(
 			name=self.str_name + "_rej", 
