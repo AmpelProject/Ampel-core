@@ -99,9 +99,9 @@ class DBUpdatesBuffer(Schedulable):
 			self.ops[k] += v
 			if len(self.ops[k]) > self.autopush_size:
 				if self.thread_pool:
-					self.thread_pool.map(self.col_bulk_write, [k])
+					self.thread_pool.map(self.call_bulk_write, [k])
 				else:
-					self.col_bulk_write(k)
+					self.call_bulk_write(k)
 
 
 	def submit_updates(self):
@@ -111,12 +111,12 @@ class DBUpdatesBuffer(Schedulable):
 		for col_name in self.ops.keys():
 			if self.ops[col_name]:
 				if self.thread_pool:
-					self.thread_pool.map(self.col_bulk_write, [col_name])
+					self.thread_pool.map(self.call_bulk_write, [col_name])
 				else:
-					self.col_bulk_write(col_name)
+					self.call_bulk_write(col_name)
 
 
-	def col_bulk_write(self, col_name, extra=None):
+	def call_bulk_write(self, col_name, extra=None):
 		"""
 		:param str col_name: Ampel DB collection name (ex: photo, tran, blend)
 		:returns: None
