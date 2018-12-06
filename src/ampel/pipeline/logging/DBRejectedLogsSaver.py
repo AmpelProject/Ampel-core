@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 29.09.2018
-# Last Modified Date: 10.11.2018
+# Last Modified Date: 06.12.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from time import time
@@ -137,9 +137,12 @@ class DBRejectedLogsSaver(Handler):
 
 		try:
 
-			self.col.insert_many(
-				self.log_dicts, ordered=False
-			)
+			# Empty referenced logs entries
+			dicts = self.log_dicts
+			self.log_dicts = []
+			self.prev_records = None
+
+			self.col.insert_many(dicts, ordered=False)
 
 		except BulkWriteError as bwe:
 
@@ -164,12 +167,10 @@ class DBRejectedLogsSaver(Handler):
 				raise bwe from None
 
 			self.logger.warn("Overwriting rejected alerts logs")
-			try:
 
+			try:
 				# Try again, with updates this time
 				self.col.bulk_write(upserts, ordered=False)
-				self.log_dicts = []
-				self.prev_records = None
 				return
 
 			except BulkWriteError as bwee:
@@ -184,7 +185,3 @@ class DBRejectedLogsSaver(Handler):
 			# If we can no longer keep track of what Ampel is doing, 
 			# better raise Exception to stop processing
 			raise e from None
-
-		# Empty referenced logs entries
-		self.log_dicts = []
-		self.prev_records = None
