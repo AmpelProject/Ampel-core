@@ -349,16 +349,27 @@ class AlertProcessor():
 					# stats
 					dur_stats['filters'][channel.str_name][iter_count] = time() - per_filter_start
 
+					# Log minimal entry if channel did not log anything
+					if not channel.rec_buf_hdlr.buffer:
+						channel.logger.info(None, extra)
+
 					# Filter rejected alert
 					if filter_results[i] is None:
 
-						# Autocomplete required for this channel
+						# "live" autocomplete activated for this channel
 						if self.live_ac and self.chan_auto_complete[i] and tran_id in tran_ids_before[i]:
 
 							# Main logger feedback
-							self.logger.info(None, extra={**extra, 'autoComplete': True})
+							self.logger.info(None, 
+								extra={
+									**extra, 'channel': channel.name, 'autoComplete': True
+								}
+							)
 
+							# Update counter
 							count_stats['matches'][channel.str_name] += 1
+
+							# Use default t2 units as filter results
 							filter_results[i] = channel.t2_units
 						
 							# Rejected logs go to separate collection
@@ -370,11 +381,7 @@ class AlertProcessor():
 
 							# Save possibly existing error to 'main' logs
 							if channel.rec_buf_hdlr.has_error:
-								channel.rec_buf_hdlr.copy(db_logging_handler, extra)
-
-							# If channel did not log anything, do it for it
-							if not channel.rec_buf_hdlr.buffer:
-								channel.logger.info(None, extra)
+								channel.rec_buf_hdlr.copy(db_logging_handler, channel.name, extra)
 
 							# Save rejected logs to separate (channel specific) db collection
 							channel.rec_buf_hdlr.forward(channel.rejected_logger, extra=extra)
@@ -382,11 +389,8 @@ class AlertProcessor():
 					# Filter accepted alert
 					else:
 
+						# Update counter
 						count_stats['matches'][channel.str_name] += 1
-
-						# If channel did not log anything, do it for it
-						if not channel.rec_buf_hdlr.buffer:
-							channel.logger.info(None, channel.name, extra)
 
 						# enables log concatenation across different loggers
 						if self.embed:
