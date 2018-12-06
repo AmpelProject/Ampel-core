@@ -354,22 +354,30 @@ class AlertProcessor():
 
 						# Autocomplete required for this channel
 						if self.live_ac and self.chan_auto_complete[i] and tran_id in tran_ids_before[i]:
-							channel.buff_logger.info("Live ac")
+
+							# Main logger feedback
+							self.logger.info(None, extra={**extra, 'autoComplete': True})
+
 							count_stats['matches'][channel.str_name] += 1
 							filter_results[i] = channel.t2_units
+						
+							# Rejected logs go to separate collection
+							channel.rec_buf_hdlr.forward(
+								channel.rejected_logger, extra={**extra, 'autoComplete': True}
+							)
 
 						else:
 
 							# Save possibly existing error to 'main' logs
-							if channel.buff_handler.has_error:
-								channel.buff_handler.copy(db_logging_handler, extra)
+							if channel.rec_buf_hdlr.has_error:
+								channel.rec_buf_hdlr.copy(db_logging_handler, extra)
 
 							# If channel did not log anything, do it for it
-							if not channel.buff_handler.buffer:
-								channel.buff_logger.info(None, extra)
+							if not channel.rec_buf_hdlr.buffer:
+								channel.logger.info(None, extra)
 
 							# Save rejected logs to separate (channel specific) db collection
-							channel.buff_handler.forward(channel.rejected_logger, extra=extra)
+							channel.rec_buf_hdlr.forward(channel.rejected_logger, extra=extra)
 
 					# Filter accepted alert
 					else:
@@ -377,8 +385,8 @@ class AlertProcessor():
 						count_stats['matches'][channel.str_name] += 1
 
 						# If channel did not log anything, do it for it
-						if not channel.buff_handler.buffer:
-							channel.buff_logger.info(None, channel.name, extra)
+						if not channel.rec_buf_hdlr.buffer:
+							channel.logger.info(None, channel.name, extra)
 
 						# enables log concatenation across different loggers
 						if self.embed:
@@ -386,7 +394,7 @@ class AlertProcessor():
 							AmpelLogger.aggregation_ok = True
 
 						# Write log entries to main logger
-						channel.buff_handler.forward(self.logger, channel.name, extra)
+						channel.rec_buf_hdlr.forward(self.logger, channel.name, extra)
 
 				except Exception as e:
 
@@ -615,15 +623,9 @@ class AlertProcessor():
 
 				# Build set of transient ids for this channel
 				tran_ids[i] = {
-					el['tranId'] for el in col.find(
-						{
-							'tranId': {'$gt': 1}, 
-							'alDocType': AlDocType.TRANSIENT, 
-							'channels': channel.name
-						},
-						{
-							'_id': 0, 'tranId': 1
-						}
+					el['_id'] for el in col.find(
+						{'channels': channel.name},
+						{'_id': 1}
 					)
 				}
 
