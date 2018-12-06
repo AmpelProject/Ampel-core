@@ -4,15 +4,11 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 25.01.2018
-# Last Modified Date: 26.11.2018
+# Last Modified Date: 06.12.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-import pkg_resources, math
-import logging
-import sys
+import pkg_resources, math, logging, sys
 from time import time
-from pymongo.errors import BulkWriteError
-from pymongo import UpdateOne
 from types import MappingProxyType
 
 from ampel.base.abstract.AbsT2Unit import AbsT2Unit
@@ -27,8 +23,8 @@ from ampel.pipeline.db.LightCurveLoader import LightCurveLoader
 from ampel.pipeline.common.Schedulable import Schedulable
 from ampel.pipeline.config.AmpelConfig import AmpelConfig
 from ampel.pipeline.config.channel.ChannelConfigLoader import ChannelConfigLoader
-from ampel.pipeline.common.AmpelUtils import AmpelUtils
 from ampel.pipeline.common.AmpelUnitLoader import AmpelUnitLoader
+
 
 class T2Controller(Schedulable):
 	"""
