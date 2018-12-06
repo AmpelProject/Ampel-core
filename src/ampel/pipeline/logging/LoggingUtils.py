@@ -4,11 +4,12 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 30.09.2018
-# Last Modified Date: 15.10.2018
+# Last Modified Date: 03.12.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from logging import ERROR, CRITICAL, Logger
 from ampel.pipeline.config.ConfigUtils import ConfigUtils
+from ampel.core.flags.LogRecordFlags import LogRecordFlags
 
 class LoggingUtils:
 
@@ -126,6 +127,18 @@ class LoggingUtils:
 
 		# Populate 'troubles' collection
 		LoggingUtils._insert_trouble(trouble, logger)
+
+
+	@classmethod
+	def get_tier_from_log_flags(cls, flags):
+		"""
+		:param LogRecordFlags flags:
+		"""
+		for i, flag in enumerate(LogRecordFlags.T0, LogRecordFlags.T1, LogRecordFlags.T2, LogRecordFlags.T3):
+			if flag in flags:
+				return i
+
+		return -1
 
 
 	@staticmethod
