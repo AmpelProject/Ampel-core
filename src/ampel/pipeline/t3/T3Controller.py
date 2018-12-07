@@ -216,7 +216,7 @@ def rununit(args):
 			{
 				"task": "rununit.task",
 				"unitId": args.unit,
-				"runConfig": args.runconfig
+				"runConfig": getattr(args, 'runConfig', None)
 			}
 		]
 	}
@@ -278,7 +278,7 @@ def get_required_resources():
 def main():
 
 	from ampel.pipeline.config.AmpelArgumentParser import AmpelArgumentParser
-	from argparse import SUPPRESS
+	from argparse import SUPPRESS, Action, Namespace
 	import sys
 
 	parser = AmpelArgumentParser(add_help=False)
@@ -289,7 +289,8 @@ def main():
 	# flesh out parser with resources required by t3 units
 	parser.require_resources(*get_required_resources())
 
-	subparsers = parser.add_subparsers(help='command help')
+	subparsers = parser.add_subparsers(help='command help', dest='command')
+	subparsers.required = True
 	subparser_list = []
 	def add_command(f, name=None):
 		if name is None:
@@ -313,7 +314,6 @@ def main():
 
 	p = add_command(rununit)
 	p.add_argument('unit')
-	p.add_argument('--runconfig', default=None)
 	p.add_argument('--update-run-col', default=False, action="store_true", help="Record this run in the jobs collection")
 	p.add_argument('--update-tran-journal', default=False, action="store_true", help="Record this run in the transient journal")
 	p.add_argument('--channels', nargs='+', default=[])
@@ -328,8 +328,24 @@ def main():
 	p.add_argument('task', nargs='?', default=None)
 	
 	opts, argv = parser.parse_known_args()
-	if hasattr(opts, 'func') and opts.func == rununit:
-		parser.require_resources(*AmpelUnitLoader.get_class(3, opts.unit).resources)
+	if opts.command == 'rununit':
+		klass = AmpelUnitLoader.get_class(3, opts.unit)
+		parser.require_resources(*klass.resources)
+		if hasattr(klass, 'RunConfig'):
+			p = subparsers.choices[opts.command]
+			class GroupAction(Action):
+				def __call__(self, parser, namespace, values, option_string=None):
+					group,dest = self.dest.split('.',2)
+					groupspace = getattr(namespace, group, dict())
+					groupspace[dest] = values
+					setattr(namespace, group, groupspace)
+			for f in klass.RunConfig.__fields__.values():
+				if f.required:
+					p.add_argument('runConfig.'+f.name, type=f.type_, 
+					    action=GroupAction, metavar=f.name)
+				else:
+					p.add_argument('--'+f.name, dest='runConfig.'+f.name, type=f.type_,
+					    default=f.default, action=GroupAction, metavar=f.name.upper())
 
 	# Now that side-effect-laden parsing is done, add help
 	for p in [parser] + subparser_list:
