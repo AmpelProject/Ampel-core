@@ -8,7 +8,7 @@
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import pkg_resources
-from pydantic import BaseModel, validator
+from pydantic import validator
 from ampel.pipeline.common.docstringutils import gendocstring
 from ampel.pipeline.config.AmpelModelExtension import AmpelModelExtension
 from ampel.pipeline.config.AmpelConfig import AmpelConfig
