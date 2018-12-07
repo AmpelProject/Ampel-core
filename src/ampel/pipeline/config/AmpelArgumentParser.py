@@ -9,7 +9,7 @@
 
 import os, sys, pkg_resources, warnings
 from functools import partial
-from configargparse import ArgumentParser
+from configargparse import ArgumentParser, ArgumentDefaultsRawHelpFormatter
 from ampel.pipeline.config.ConfigLoader import ConfigLoader
 from ampel.pipeline.config.AmpelConfig import AmpelConfig
 
@@ -18,6 +18,8 @@ class AmpelArgumentParser(ArgumentParser):
 
 	def __init__(self, *args, **kwargs):
 		""" """
+		if not 'formatter_class' in kwargs:
+			kwargs['formatter_class'] = ArgumentDefaultsRawHelpFormatter
 		super(AmpelArgumentParser, self).__init__(*args, **kwargs)
 		self._resources = {}
 
