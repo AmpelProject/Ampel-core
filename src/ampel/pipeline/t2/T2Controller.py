@@ -320,7 +320,7 @@ class T2Controller(Schedulable):
 					},
 					{
 						"$max": {
-							"modified."+chan: inow for chan in t2_doc['channels']
+							"modified.%s" % chan: inow for chan in t2_doc['channels']
 						},
 						"$push": {
 							"journal": {
