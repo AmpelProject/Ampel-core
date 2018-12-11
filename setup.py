@@ -1,6 +1,6 @@
 from setuptools import setup
 setup(name='Ampel-core',
-      version='0.4.1',
+      version='0.5.1',
       package_dir={'':'src'},
       packages=[
           'ampel.core',
@@ -10,6 +10,7 @@ setup(name='Ampel-core',
           'ampel.pipeline.config',
           'ampel.pipeline.config.channel',
           'ampel.pipeline.config.t3',
+          'ampel.pipeline.config.time',
           'ampel.pipeline.common',
           'ampel.pipeline.db',
           'ampel.pipeline.db.query',
