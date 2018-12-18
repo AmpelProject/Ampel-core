@@ -402,7 +402,7 @@ class AlertProcessor():
 
 				except Exception as e:
 
-					channel.buff_handler.forward(db_logging_handler, extra=extra)
+					channel.rec_buf_hdlr.forward(db_logging_handler, extra=extra)
 					LoggingUtils.report_exception(
 						self.logger, e, tier=0, 
 						run_id=db_logging_handler.get_run_id(), info={
