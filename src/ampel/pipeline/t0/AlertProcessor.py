@@ -300,174 +300,168 @@ class AlertProcessor():
 		pre_run = time()
 
 		# Accepts and execute pymongo.operations
-		updates_buffer = DBUpdatesBuffer(run_id, self.logger)
-		updates_buffer.start()
+		with DBUpdatesBuffer(run_id, self.logger).run_in_thread() as updates_buffer:
 
-		chan_names = [chan.str_name for chan in self.t0_channels]
+			chan_names = [chan.str_name for chan in self.t0_channels]
 
+			# Process alerts
+			################
 
-		# Process alerts
-		################
+			self.logger.debug("#######     Processing alerts     #######")
 
-		self.logger.debug("#######     Processing alerts     #######")
+			# Iterate over alerts
+			for alert_content in self.input_setup.get_alert_supplier(alert_loader):
 
-		# Iterate over alerts
-		for alert_content in self.input_setup.get_alert_supplier(alert_loader):
+				# Associate upcoming log entries with the current transient id
+				tran_id = alert_content['tran_id']
 
-			# Associate upcoming log entries with the current transient id
-			tran_id = alert_content['tran_id']
+				# Create AmpelAlert instance
+				ampel_alert = AmpelAlert(
+					tran_id, alert_content['ro_pps'], alert_content['ro_uls']
+				)
 
-			# Create AmpelAlert instance
-			ampel_alert = AmpelAlert(
-				tran_id, alert_content['ro_pps'], alert_content['ro_uls']
-			)
+				# Update cumul stats
+				pps_loaded += len(alert_content['pps'])
+				if alert_content['uls'] is not None:
+					uls_loaded += len(alert_content['uls'])
 
-			# Update cumul stats
-			pps_loaded += len(alert_content['pps'])
-			if alert_content['uls'] is not None:
-				uls_loaded += len(alert_content['uls'])
+				# stats
+				all_filters_start = time()
 
-			# stats
-			all_filters_start = time()
+				extra = {
+					'tranId': tran_id, 
+					'alertId': alert_content['alert_id']
+				}
 
-			extra = {
-				'tranId': tran_id, 
-				'alertId': alert_content['alert_id']
-			}
+				# Loop through initialized channels
+				for i, channel in self.chan_enum:
 
-			# Loop through initialized channels
-			for i, channel in self.chan_enum:
+					try:
 
-				try:
+						# stats
+						per_filter_start = time()
 
-					# stats
-					per_filter_start = time()
+						# Apply filter (returns None in case of rejection or t2 runnable ids in case of match)
+						filter_results[i] = channel.filter_func(ampel_alert)
 
-					# Apply filter (returns None in case of rejection or t2 runnable ids in case of match)
-					filter_results[i] = channel.filter_func(ampel_alert)
+						# stats
+						dur_stats['filters'][channel.str_name][iter_count] = time() - per_filter_start
 
-					# stats
-					dur_stats['filters'][channel.str_name][iter_count] = time() - per_filter_start
+						# Log minimal entry if channel did not log anything
+						if not channel.rec_buf_hdlr.buffer:
+							channel.logger.info(None, extra)
 
-					# Log minimal entry if channel did not log anything
-					if not channel.rec_buf_hdlr.buffer:
-						channel.logger.info(None, extra)
+						# Filter rejected alert
+						if filter_results[i] is None:
 
-					# Filter rejected alert
-					if filter_results[i] is None:
+							# "live" autocomplete activated for this channel
+							if self.live_ac and self.chan_auto_complete[i] and tran_id in tran_ids_before[i]:
 
-						# "live" autocomplete activated for this channel
-						if self.live_ac and self.chan_auto_complete[i] and tran_id in tran_ids_before[i]:
+								# Main logger feedback
+								self.logger.info(None, 
+									extra={
+										**extra, 'channel': channel.name, 'autoComplete': True
+									}
+								)
 
-							# Main logger feedback
-							self.logger.info(None, 
-								extra={
-									**extra, 'channel': channel.name, 'autoComplete': True
-								}
-							)
+								# Update counter
+								count_stats['matches'][channel.str_name] += 1
+
+								# Use default t2 units as filter results
+								filter_results[i] = channel.t2_units
+						
+								# Rejected logs go to separate collection
+								channel.rec_buf_hdlr.forward(
+									channel.rejected_logger, extra={**extra, 'autoComplete': True}
+								)
+
+							else:
+
+								# Save possibly existing error to 'main' logs
+								if channel.rec_buf_hdlr.has_error:
+									channel.rec_buf_hdlr.copy(db_logging_handler, channel.name, extra)
+
+								# Save rejected logs to separate (channel specific) db collection
+								channel.rec_buf_hdlr.forward(channel.rejected_logger, extra=extra)
+
+						# Filter accepted alert
+						else:
 
 							# Update counter
 							count_stats['matches'][channel.str_name] += 1
 
-							# Use default t2 units as filter results
-							filter_results[i] = channel.t2_units
-						
-							# Rejected logs go to separate collection
-							channel.rec_buf_hdlr.forward(
-								channel.rejected_logger, extra={**extra, 'autoComplete': True}
-							)
+							# enables log concatenation across different loggers
+							if self.embed:
+								AmpelLogger.current_logger = None 
+								AmpelLogger.aggregation_ok = True
 
-						else:
+							# Write log entries to main logger
+							channel.rec_buf_hdlr.forward(self.logger, channel.name, extra)
 
-							# Save possibly existing error to 'main' logs
-							if channel.rec_buf_hdlr.has_error:
-								channel.rec_buf_hdlr.copy(db_logging_handler, channel.name, extra)
+					except Exception as e:
 
-							# Save rejected logs to separate (channel specific) db collection
-							channel.rec_buf_hdlr.forward(channel.rejected_logger, extra=extra)
+						channel.rec_buf_hdlr.forward(db_logging_handler, extra=extra)
+						LoggingUtils.report_exception(
+							self.logger, e, tier=0, 
+							run_id=db_logging_handler.get_run_id(), info={
+								'section': 'ap_filter',
+								'channel': channel.name,
+								'tranId': tran_id,
+								'alert': AlertProcessor._alert_essential(alert_content)
+							}
+						)
 
-					# Filter accepted alert
-					else:
+				# time required for all filters
+				dur_stats['allFilters'][iter_count] = time() - all_filters_start
 
-						# Update counter
-						count_stats['matches'][channel.str_name] += 1
+				if any(t2 is not None for t2 in filter_results):
 
-						# enables log concatenation across different loggers
-						if self.embed:
-							AmpelLogger.current_logger = None 
-							AmpelLogger.aggregation_ok = True
+					# stats
+					ingested_count += 1
 
-						# Write log entries to main logger
-						channel.rec_buf_hdlr.forward(self.logger, channel.name, extra)
+					# TODO: build tran_id <-> alert_id map (replayability)
+					#processed_alert[tran_id]
+					try: 
+						ingester_start = time()
+						db_updates = ingester.ingest(
+							tran_id, alert_content['pps'], 
+							alert_content['uls'], 
+							filter_results
+						)
+						dur_stats['preIngestTime'].append(time()-ingester_start)
+						updates_buffer.add_updates(db_updates)
+					except Exception as e:
+						LoggingUtils.report_exception(
+							self.logger, e, tier=0, 
+							run_id=db_logging_handler.get_run_id(), info={
+								'section': 'ap_ingest',
+								'tranId': tran_id,
+								'alert': AlertProcessor._alert_essential(alert_content)
+							}
+						)
+				else:
 
-				except Exception as e:
+					# If all channels reject this alert, no log entries goes into
+					# the main logs collection sinces those are redirected to Ampel_rej.
+					# So we add a notification manually. For that, we don't use self.logger 
+					# cause rejection messages were alreary logged into the console 
+					# by the StreamHandler in channel specific RecordsBufferingHandler instances. 
+					# So we address directly db_logging_handler, and for that, we create
+					# a LogRecord manually.
+					lr = LogRecord(None, INFO, None, None, None, None, None)
+					lr.extra = {
+						'tranId': tran_id,
+						'alertId': alert_content['alert_id'],
+						'allRejected': True,
+						'channels': chan_names
+					}
+					db_logging_handler.handle(lr)
 
-					channel.rec_buf_hdlr.forward(db_logging_handler, extra=extra)
-					LoggingUtils.report_exception(
-						self.logger, e, tier=0, 
-						run_id=db_logging_handler.get_run_id(), info={
-							'section': 'ap_filter',
-							'channel': channel.name,
-							'tranId': tran_id,
-							'alert': AlertProcessor._alert_essential(alert_content)
-						}
-					)
+				iter_count += 1
 
-			# time required for all filters
-			dur_stats['allFilters'][iter_count] = time() - all_filters_start
-
-			if any(t2 is not None for t2 in filter_results):
-
-				# stats
-				ingested_count += 1
-
-				# TODO: build tran_id <-> alert_id map (replayability)
-				#processed_alert[tran_id]
-				try: 
-					ingester_start = time()
-					db_updates = ingester.ingest(
-						tran_id, alert_content['pps'], 
-						alert_content['uls'], 
-						filter_results
-					)
-					dur_stats['preIngestTime'].append(time()-ingester_start)
-					updates_buffer.add_updates(db_updates)
-				except Exception as e:
-					LoggingUtils.report_exception(
-						self.logger, e, tier=0, 
-						run_id=db_logging_handler.get_run_id(), info={
-							'section': 'ap_ingest',
-							'tranId': tran_id,
-							'alert': AlertProcessor._alert_essential(alert_content)
-						}
-					)
-			else:
-
-				# If all channels reject this alert, no log entries goes into
-				# the main logs collection sinces those are redirected to Ampel_rej.
-				# So we add a notification manually. For that, we don't use self.logger 
-				# cause rejection messages were alreary logged into the console 
-				# by the StreamHandler in channel specific RecordsBufferingHandler instances. 
-				# So we address directly db_logging_handler, and for that, we create
-				# a LogRecord manually.
-				lr = LogRecord(None, INFO, None, None, None, None, None)
-				lr.extra = {
-					'tranId': tran_id,
-					'alertId': alert_content['alert_id'],
-					'allRejected': True,
-					'channels': chan_names
-				}
-				db_logging_handler.handle(lr)
-
-			iter_count += 1
-
-			if iter_count == iter_max:
-				self.logger.info("Reached max number of iterations")
-				break
-
-
-		# This writes remaining bulk ops to DB
-		updates_buffer.stop()
+				if iter_count == iter_max:
+					self.logger.info("Reached max number of iterations")
+					break
 
 		# Save post run time
 		post_run = time()
