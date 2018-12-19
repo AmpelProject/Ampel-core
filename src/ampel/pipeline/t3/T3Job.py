@@ -289,7 +289,7 @@ class T3Job(T3Event):
 
 					chan_set = LogicSchemaUtils.reduce_to_set(
 						task_sel_conf.channels
-					)
+					) if task_sel_conf.channels else None
 
 					tran_views = self.create_tran_views(
 						task_name,
