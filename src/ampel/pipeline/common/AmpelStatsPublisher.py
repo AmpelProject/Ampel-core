@@ -4,11 +4,12 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 26.05.2018
-# Last Modified Date: 31.10.2018
-# Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
+# Last Modified Date: 19.12.2018
+# Last Modified By  : Jakob van Santen <jakob.van.santen@desy.de>
 
 import sys
 import json
+import psutil
 from time import time, strftime
 from ampel.pipeline.logging.AmpelLogger import AmpelLogger
 from ampel.pipeline.common.AmpelUtils import AmpelUtils
@@ -69,7 +70,7 @@ class AmpelStatsPublisher(Schedulable):
 	def __init__(
 		self, channel_names=None, 
 		publish_to=['graphite', 'mongo', 'print'],
-		publish_what=['col_stats', 'docs_count', 'daemon', 'channels', 'archive'],
+		publish_what=['col_stats', 'docs_count', 'daemon', 'channels', 'archive', 'system'],
 	):
 		"""
 		:param list(str) channel_names: list of channel names, if None, stats for all avail channels will be reported. 
@@ -108,7 +109,8 @@ class AmpelStatsPublisher(Schedulable):
 			'docs_count': 30, 
 			'daemon': 10, 
 			'channels': 10,
-			'archive': 10
+			'archive': 10,
+			'system': 1,
 		}
 
 		# update interval dict. Values in minutes
@@ -232,7 +234,7 @@ class AmpelStatsPublisher(Schedulable):
 
 
 	def send_metrics(
-		self, daemon=False, col_stats=False, docs_count=False, channels=False, archive=False
+		self, daemon=False, col_stats=False, docs_count=False, channels=False, archive=False, system=True,
 	):
 		"""
 		Send/publish metrics\n
@@ -242,7 +244,7 @@ class AmpelStatsPublisher(Schedulable):
 
 		stats_dict = {'dbInfo': {}, 'count': {}}
 
-		if not any([daemon, col_stats, docs_count, channels]):
+		if not any([daemon, col_stats, docs_count, channels, archive, system]):
 			raise ValueError("Bad arguments")
 
 
@@ -356,6 +358,14 @@ class AmpelStatsPublisher(Schedulable):
 			stats_dict["archive"] = {}
 			stats_dict["archive"]["tables"] = self.archive_client.get_statistics()
 
+		if system:
+			stats_dict["system"] = {
+				"cpu_percent": psutil.cpu_percent(),
+				"disk_io_counters": {k:v._asdict() for k,v in psutil.disk_io_counters(perdisk=True).items() if not (k.startswith('loop') or k.startswith('dm-'))},
+				"net_io_counters": {k:v._asdict() for k,v in psutil.net_io_counters(pernic=True).items()}
+			}
+			for field in 'cpu_stats', 'swap_memory', 'virtual_memory':
+				stats_dict["system"][field] = getattr(psutil, field)()._asdict()
 
 		# Build dict with changed items only
 		out_dict = {
