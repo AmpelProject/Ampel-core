@@ -41,7 +41,7 @@ class PhotoDataAccessManager:
 		# pylint: disable=no-member
 		self.photo_flags = PhotoFlags.INST_ZTF
 
-		if not channel.get("parameters.ZTFPartner"):
+		if not stream_config.parameters['ZTFPartner']:
 			self.photo_flags |= PhotoFlags.ZTF_PUBLIC
 
 
