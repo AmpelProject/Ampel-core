@@ -314,7 +314,7 @@ class T3Job(T3Event):
 
 					if self.update_tran_journal:
 
-						chan_list = list(chan_set)
+						chan_list = list(chan_set) if chan_set else None
 
 						self.journal_updater.add_default_entries(
 							tran_views, chan_list, event_name=task_name, 
