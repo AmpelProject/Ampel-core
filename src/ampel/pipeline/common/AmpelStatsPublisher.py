@@ -498,14 +498,21 @@ def run():
 
 	from ampel.pipeline.config.AmpelArgumentParser import AmpelArgumentParser
 	parser = AmpelArgumentParser()
-	parser.require_resource('mongo', ['logger'])
-	parser.require_resource('archive', ['reader'])
-	parser.require_resource('graphite')
 	parser.add_argument('--publish-to', nargs='+', default=['log', 'graphite'],
 	    choices=['mongo', 'graphite', 'log', 'print'],
 	    help='Publish stats by these methods')
+	parser.add_argument('--publish-what', nargs='+', default=['col_stats', 'docs_count', 'daemon', 'channels', 'archive', 'system'],
+	    choices=['col_stats', 'docs_count', 'daemon', 'channels', 'archive', 'system'],
+	    help='Publish these stats')
+	args, _ = parser.parse_known_args()
+	if 'archive' in args.publish_what:
+		parser.require_resource('archive', ['reader'])
+	if 'graphite' in args.publish_to:
+		parser.require_resource('graphite')
+	if 'mongo' in args.publish_to or set(args.publish_what).difference(['archive', 'system']):
+		parser.require_resource('mongo', ['logger'])
 	args = parser.parse_args()
 
-	asp = AmpelStatsPublisher(publish_to=args.publish_to)
-	asp.send_all_metrics()
+	asp = AmpelStatsPublisher(publish_to=args.publish_to, publish_what=args.publish_what)
+	asp.send_metrics(**{k:True for k in args.publish_what})
 	asp.run()
