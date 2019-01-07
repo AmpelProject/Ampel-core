@@ -12,10 +12,11 @@ import logging
 import multiprocessing
 from astropy import units as u
 from ampel.pipeline.config.AmpelConfig import AmpelConfig
-from ampel.ztf.archive import ArchiveDB
+from ampel.ztf.archive.ArchiveDB import ArchiveDB
 from ampel.pipeline.t0.AlertProcessor import AlertProcessor
-from ampel.pipeline.t0.load.AlertSupplier import AlertSupplier
-from ampel.ztf.pipeline.t0.load.ZIAlertShaper import ZIAlertShaper
+from ampel.pipeline.common.AmpelUnitLoader import AmpelUnitLoader
+from ampel.pipeline.config.channel.ChannelConfigLoader import ChannelConfigLoader
+from ampel.ztf.pipeline.t0.ZISetup import ZISetup
 
 log = logging.getLogger(__name__)
 
@@ -58,12 +59,11 @@ class DelayedT0Controller:
 		    pos[0].to(u.deg).value, pos[1].to(u.deg).value, 
 		    radius.to(u.deg).value,
 		    dt[0].jd, dt[1].jd)
-		supplier = AlertSupplier(alerts, alert_shaper=ZIAlertShaper())
-		
-		ap = AlertProcessor(channels=channels)
+
+		ap = AlertProcessor(ZISetup(serialization=None), publish_stats=['jobs'], channels=channels)
 		alert_processed = ap.iter_max
 		while alert_processed == ap.iter_max:
-			alert_processed = ap.run(supplier, console_logging=False)
+			alert_processed = ap.run(alerts, full_console_logging=False)
 			logging.getLogger().info('{} alerts from {} around {}'.format(alert_processed, radius, pos))
 	
 	def launch_alertprocessor(self, pos, radius, dt, channels):
@@ -85,7 +85,8 @@ class DelayedT0Controller:
 				pos, radius, dt, channels = target
 				self.launch_alertprocessor(pos, radius, dt, channels)
 			except:
-				log.critical("Exception while processing target", exc_info=1)
+				log.error("Exception while processing target {}".format(target), exc_info=1)
+				raise
 		
 		# in the rare event that the target streams finish, wait for
 		# remaining AlertProcessors to complete
@@ -93,6 +94,7 @@ class DelayedT0Controller:
 			while proc.exitcode is None:
 				asyncio.sleep(1)
 			proc.join()
+		log.info("Finishing")
 	
 	def run(self):
 		"""
@@ -101,11 +103,21 @@ class DelayedT0Controller:
 		loop = asyncio.get_event_loop()
 		loop.run_until_complete(self.listen())
 
+def get_required_resources(channels=None):
+	units = set()
+	for channel in ChannelConfigLoader.load_configurations(channels, 0):
+		for source in channel.sources:
+			units.add(source.t0Filter.unitId)
+	resources = set()
+	for unit in units:
+		for resource in AmpelUnitLoader.get_class(0, unit).resources:
+			resources.add(resource)
+	return resources
+
 def run():
 	
 	from ampel.pipeline.config.AmpelArgumentParser import AmpelArgumentParser
 	from ampel.pipeline.config.AmpelConfig import AmpelConfig
-	from ampel.pipeline.config.ChannelLoader import ChannelLoader
 	import pkg_resources
 
 	parser = AmpelArgumentParser()
@@ -116,8 +128,8 @@ def run():
 	# partially parse command line to get config
 	opts, argv = parser.parse_known_args()
 	# flesh out parser with resources required by t0 units
-	loader = ChannelLoader(source="ZTFIPAC", tier=0)
-	resources = set(loader.get_required_resources())
+	AmpelConfig.set_config(opts.config)
+	resources = set(get_required_resources())
 	source_classes = []
 	for resource in pkg_resources.iter_entry_points('ampel.target_sources'):
 		klass = resource.resolve()
