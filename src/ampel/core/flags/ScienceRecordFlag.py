@@ -7,10 +7,12 @@
 # Last Modified Date: 18.01.2019
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-from abc import ABCMeta
+class ScienceRecordFlag():
+	""" """	
 
-class ScienceRecordFlag(metaclass=ABCMeta):
-	"""
-	"""
-	HAS_ERROR              = ()
-	HAS_EXCEPTION          = ()
+	# Force subclassing
+	def __init__(self):
+		raise NotImplementedError()
+
+	HAS_ERROR         = None
+	HAS_EXCEPTION     = None
