@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 02.09.2018
-# Last Modified Date: 07.12.2018
+# Last Modified Date: 18.01.2019
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from ampel.base.abstract.AmpelABC import AmpelABC, abstractmethod
@@ -20,8 +20,6 @@ class AbsSurveySetup(metaclass=AmpelABC):
 	-> get_alert_supplier(...): iterable class instance that for each alert yielded by 
 	the alert_loader, returns a dict with a format that the AMPEL AlertProcessor understands
 	-> get_alert_ingester(...): returns an adequate ingester instance
-	-> get_log_flags(self): returns adequate log flags 
-	(:py:class:`LogRecordFlags <ampel.core.flags.LogRecordFlags>`)
 	"""
 
 	@abstractmethod
@@ -34,10 +32,20 @@ class AbsSurveySetup(metaclass=AmpelABC):
 
 	@staticmethod
 	@abstractmethod
-	def get_instrument_flags():
+	def get_TransientFlag():
 		pass
 
 	@staticmethod
 	@abstractmethod
-	def get_instrument_flag_names():
+	def get_PhotoFlag():
+		pass
+
+	@staticmethod
+	@abstractmethod
+	def get_CompoundFlag():
+		pass
+
+	@staticmethod
+	@abstractmethod
+	def get_ScienceRecordFlag():
 		pass
