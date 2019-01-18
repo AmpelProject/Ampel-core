@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 13.01.2018
-# Last Modified Date: 04.07.2018
+# Last Modified Date: 18.01.2019
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from types import MappingProxyType
@@ -23,7 +23,7 @@ class PhotoPoint(PhotoData):
 	def get_mag(self):
 		"""
 		"""
-		if hasattr(self, 'policy_flags'):
+		if hasattr(self, 'policy_flag'):
 			raise NotImplementedError("Not implemented yet")
 
 		return self.content[
@@ -34,8 +34,8 @@ class PhotoPoint(PhotoData):
 	def get_policy(self):
 		"""
 		"""
-		if hasattr(self, 'policy_flags'):
-			return self.policy_flags
+		if hasattr(self, 'policy_flag'):
+			return self.policy_flag
 		else:
 			return 0
 
@@ -45,9 +45,9 @@ class PhotoPoint(PhotoData):
 		"""
 		# Check if corrected / alternative magnitudes should be returned
 		if compound_pp_entry is not None:
-			self.policy_flags = PhotoPolicy(0)
+			self.policy_flag = PhotoPolicy(0)
 			if 'huzp' in compound_pp_entry:
-				self.policy_flags |= PhotoPolicy.USE_HUMBOLDT_ZP
+				self.policy_flag |= PhotoPolicy.USE_HUMBOLDT_ZP
 
 		if read_only:
 			self.content = MappingProxyType(self.content)
