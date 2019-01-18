@@ -34,11 +34,6 @@ class AbsSurveySetup(metaclass=AmpelABC):
 
 	@staticmethod
 	@abstractmethod
-	def get_log_flags():
-		pass
-
-	@staticmethod
-	@abstractmethod
 	def get_instrument_flags():
 		pass
 
