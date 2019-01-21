@@ -54,5 +54,8 @@ setup(name='Ampel-core',
               'BasicFilter = ampel.pipeline.t0.filter.BasicFilter:BasicFilter',
               'BasicMultiFilter = ampel.pipeline.t0.filter.BasicMultiFilter:BasicMultiFilter'
           ],
+          'ampel.pipeline.t3.units' : [
+              'T3PlaceboUnit = ampel.pipeline.t3.T3PlaceboUnit:T3PlaceboUnit'
+          ],
       }
 )
