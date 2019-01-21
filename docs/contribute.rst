@@ -115,6 +115,65 @@ In this example, we use a general purpose ``CATALOGMATCH`` T2 module to look for
 
 to the ``t2Compute`` list of our channel configuration (the ``channels.json`` configuration file).
 
+Configure T3 (scheduled output)
+===============================
+
+The simplest way to configure scheduled summary output for your channel is to
+add a source->t3Supervise to your channel config, e.g.:
+
+.. code-block:: json
+  
+  {
+    "channel": "EXAMPLE",
+    "sources": [
+      {
+        ...
+        "t3Supervise": [
+          {
+            "task": "ExampleSummary",
+            "schedule": "every().day.at('15:00')",
+            "transients": {
+              "select": {
+                "created": {
+                  "after": {
+                    "use": "$timeDelta",
+                    "arguments": {"days": -40}
+                  }
+                },
+                "modified": {
+                  "after": {
+                    "use": "$timeLastRun",
+                    "event": "ExampleSummary"
+                  }
+                }
+                "scienceRecords": {
+                  "unitId": "SNCOSMO",
+                  "match": {
+                    "fit_acceptable": true,
+                    "sncosmo_info.success": true,
+                    "fit_results.z": {"$gt": 0},
+                    "fit_results.x1": {"$lt": 10}
+                  }
+                }
+              },
+              "state": "$latest",
+              "content": {
+                "docs": ["TRANSIENT", "COMPOUND", "T2RECORD", "PHOTOPOINT"],
+                "t2SubSelection": ["SNCOSMO", "CATALOGMATCH"]
+              }
+            },
+            "unitId": "SlackSummaryPublisher",
+            "runConfig": {
+              "quiet": true,
+              "slackToken": "SECRETSLACKTOKEN",
+              "slackChannel": "#ampel-live",
+              "fullPhotometry": true
+            }
+          }
+        ]
+      }
+    }
+
 Dependencies
 ============
 

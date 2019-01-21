@@ -18,6 +18,7 @@ from ampel.base.flags.TransientFlags import TransientFlags
 from ampel.pipeline.config.t3.AllOf import AllOf
 from ampel.pipeline.config.t3.AnyOf import AnyOf
 from ampel.pipeline.config.t3.OneOf import OneOf
+from ampel.pipeline.config.t3.ScienceRecordMatchConfig import ScienceRecordMatchConfig
 
 
 @gendocstring
@@ -31,7 +32,8 @@ class TranSelectConfig(AmpelModelExtension):
 				"modified": {"after": {"use": "$timeDelta", "arguments": {"days": -1}}},
 				"channels": "HU_GP_CLEAN",
 				"withFlags": "INST_ZTF",
-				"withoutFlags": "HAS_ERROR"
+				"withoutFlags": "HAS_ERROR",
+				"scienceRecords": {"unitId": "SNCOSMO", "match": {"fit_acceptable": True}}
 			}
 		}
 	"""
@@ -41,7 +43,25 @@ class TranSelectConfig(AmpelModelExtension):
 	channels: Union[None, AnyOf, AllOf, OneOf] = None
 	withFlags: Union[None, AnyOf, AllOf, OneOf] = None
 	withoutFlags: Union[None, AnyOf, AllOf, OneOf] = None
+	scienceRecords: Union[None, ScienceRecordMatchConfig, List[ScienceRecordMatchConfig]] = None
 
+	@validator('scienceRecords')
+	def build_t2_query(cls, v):
+		def create_query(filter_config):
+			return {
+				't2records': {
+					'$elemMatch': {
+						't2_unit_id': filter_config.unitId,
+						'info.runConfig': filter_config.runConfig,
+						'info.hasError': False,
+						**{'results.-1.output.{}'.format(k): v for k,v in filter_config.match.items()}
+					}
+				}
+			}
+		if isinstance(v, list):
+			return {'$and': list(map(create_query, v))}
+		else:
+			return create_query(v)
 
 	@validator('channels', 'withFlags', 'withoutFlags', pre=True, whole=True)
 	def cast(cls, v, values, **kwargs):

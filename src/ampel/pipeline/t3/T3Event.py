@@ -12,7 +12,9 @@ from time import time
 from datetime import datetime
 from itertools import islice
 from abc import abstractmethod
+from mongomock.filtering import filter_applies
 
+from ampel.utils.json import AmpelEncoder
 from ampel.pipeline.db.query.QueryMatchTransients import QueryMatchTransients
 from ampel.pipeline.db.query.QueryLatestCompound import QueryLatestCompound
 from ampel.pipeline.db.query.QueryEventsCol import QueryEventsCol
@@ -377,6 +379,15 @@ class T3Event:
 			
 			yield al_tran_data
 
+	def _matches_selection(self, view : TransientView) -> bool:
+		"""
+		Match transient view against a Mongo query
+		"""
+		try:
+			match = self.tran_config.select.scienceRecords
+		except AttributeError:
+			match = None
+		return match is None or view is None or filter_applies(match, AmpelEncoder(lossy=True).default(view))
 
 	def create_tran_views(self, event_name, transients, channels, docs=None, t2_subsel=None):
 		"""
@@ -401,7 +412,7 @@ class T3Event:
 		# Build specific array of ampel TransientView instances where each transient 
 		# is cut down according to the specified sub-selections parameters
 		# None means no view exists for the given channel(s)
-		tran_views = tuple(filter(None, 
+		tran_views = tuple(filter(self._matches_selection,
 			[
 				el.create_view(channels, docs, t2_subsel)
 				for el in transients
