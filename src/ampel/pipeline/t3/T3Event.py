@@ -409,7 +409,7 @@ class T3Event:
 		))
 
 		# Feedback if so wished
-		if self.config.transients.debug:
+		if self.config.transients is not None and self.config.transients.debug:
 
 			list_chan = AmpelUtils.to_list(channels, try_reduce=True)
 			for tran_view in tran_views:
