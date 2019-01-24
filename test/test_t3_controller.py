@@ -161,21 +161,21 @@ def minimal_config(mongod, testing_class):
 			'jobbyjob': {
 				'job': 'jobbyjob',
 				'schedule': 'every(1).hour',
-				'trasients': {
+				'transients': {
 					'select':  {
-						'channel(s)': ['0', '1'],
+						'channels': {'anyOf': ['0', '1']},
 					},
-					'load': {
-						'state': '$latest',
-						'doc(s)': ['TRANSIENT', 'COMPOUND', 'T2RECORD', 'PHOTOPOINT']
-					}
+					'content': {
+						'docs': ['TRANSIENT', 'COMPOUND', 'T2RECORD', 'PHOTOPOINT']
+					},
+					'state': '$all'
 				},
 				'tasks': [
 					{'task': 'noselect', 'unitId': 'potemkin'},
 					{'task': 'config', 'unitId': 'potemkin', 'runConfig': {}},
 					# {'name': 'badconfig', 't3Unit': 'potemkin', 'runConfig': 'default_doesnotexist'},
-					{'task': 'select0', 'unitId': 'potemkin', 'select': {'channel(s)': ['0']}},
-					{'task': 'select1', 'unitId': 'potemkin', 'select': {'channel(s)': ['1']}},
+					{'task': 'select0', 'unitId': 'potemkin', 'transients': {'select': {'channels': '0'}, 'state': '$all'}},
+					{'task': 'select1', 'unitId': 'potemkin', 'transients': {'select': {'channels': '1'}, 'state': '$latest'}},
 					
 				]
 			}
@@ -185,7 +185,8 @@ def minimal_config(mongod, testing_class):
 		},
 		't3Units': {
 			'potemkin': {'classFullPath': 'potemkin'}
-		}
+		},
+		't3Tasks': {}
 	}
 	AmpelConfig.set_config(config)
 	yield config
