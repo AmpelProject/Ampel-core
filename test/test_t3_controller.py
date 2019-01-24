@@ -247,9 +247,9 @@ def test_schedule_malicious_job():
 			ev(scheduler, line)
 
 def test_entrypoint_list(testing_config, capsys):
-	from ampel.pipeline.t3.T3Controller import list
+	from ampel.pipeline.t3.T3Controller import list_tasks
 
-	list(Namespace())
+	list_tasks(Namespace())
 	captured = capsys.readouterr()
 	assert len(captured.out.split('\n'))-4 == 1
 
