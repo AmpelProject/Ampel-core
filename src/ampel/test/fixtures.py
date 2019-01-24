@@ -1,4 +1,5 @@
 from os.path import abspath, join, dirname
+from os import environ
 import pytest, json, subprocess, socket
 
 def docker_service(image, port, environ={}, mounts=[], healthcheck=None, port_mapping=None):
@@ -40,24 +41,33 @@ def docker_service(image, port, environ={}, mounts=[], healthcheck=None, port_ma
 
 @pytest.fixture(scope="session")
 def mongod():
-	gen = docker_service('mongo:3.6', 27017)
-	port = next(gen)
-	yield 'mongodb://localhost:{}/'.format(port)
+	if 'MONGO_HOST' in environ and 'MONGO_PORT' in environ:
+		yield 'mongodb://{}:{}'.format(environ['MONGO_HOST'], environ['MONGO_PORT'])
+	else:
+		gen = docker_service('mongo:3.6', 27017)
+		port = next(gen)
+		yield 'mongodb://localhost:{}/'.format(port)
 
 @pytest.fixture(scope="session")
 def graphite():
-	gen = docker_service('gographite/go-graphite:latest', 2003)
-	port = next(gen)
-	yield 'graphite://localhost:{}/'.format(port)
+	if 'GRAPHITE_HOST' in environ and 'GRAPHITE_PORT' in environ:
+		yield 'graphite://{}:{}'.format(environ['GRAPHITE_HOST'], environ['GRAPHITE_PORT'])
+	else:
+		gen = docker_service('gographite/go-graphite:latest', 2003)
+		port = next(gen)
+		yield 'graphite://localhost:{}/'.format(port)
 
 @pytest.fixture(scope="session")
 def postgres():
-	gen = docker_service('postgres:10.3', 5432,
-		environ={'POSTGRES_USER': 'ampel', 'POSTGRES_DB': 'ztfarchive', 'ARCHIVE_READ_USER': 'archive-readonly', 'ARCHIVE_WRITE_USER': 'ampel-client'},
-		mounts=[(join(abspath(dirname(__file__)), 'deploy', 'production', 'initdb', 'archive'), '/docker-entrypoint-initdb.d/')],
-		healthcheck='pg_isready -U postgres -p 5432 -h `hostname` || exit 1')
-	port = next(gen)
-	yield 'postgresql://ampel@localhost:{}/ztfarchive'.format(port)
+	if 'ARCHIVE_HOST' in environ and 'ARCHIVE_PORT' in environ:
+		yield 'postgresql://ampel@{}:{}'.format(environ['ARCHIVE_HOST'], environ['ARCHIVE_PORT'])
+	else:
+		gen = docker_service('postgres:10.3', 5432,
+			environ={'POSTGRES_USER': 'ampel', 'POSTGRES_DB': 'ztfarchive', 'ARCHIVE_READ_USER': 'archive-readonly', 'ARCHIVE_WRITE_USER': 'ampel-client'},
+			mounts=[(join(abspath(dirname(__file__)), 'deploy', 'production', 'initdb', 'archive'), '/docker-entrypoint-initdb.d/')],
+			healthcheck='pg_isready -U postgres -p 5432 -h `hostname` || exit 1')
+		port = next(gen)
+		yield 'postgresql://ampel@localhost:{}/ztfarchive'.format(port)
 
 @pytest.fixture
 def empty_archive(postgres):
