@@ -42,7 +42,7 @@ def docker_service(image, port, environ={}, mounts=[], healthcheck=None, port_ma
 @pytest.fixture(scope="session")
 def mongod():
 	if 'MONGO_HOSTNAME' in environ and 'MONGO_PORT' in environ:
-		yield 'mongodb://{}:{}'.format(environ['MONGO_HOST'], environ['MONGO_PORT'])
+		yield 'mongodb://{}:{}'.format(environ['MONGO_HOSTNAME'], environ['MONGO_PORT'])
 	else:
 		gen = docker_service('mongo:3.6', 27017)
 		port = next(gen)
@@ -51,7 +51,7 @@ def mongod():
 @pytest.fixture(scope="session")
 def graphite():
 	if 'GRAPHITE_HOSTNAME' in environ and 'GRAPHITE_PORT' in environ:
-		yield 'graphite://{}:{}'.format(environ['GRAPHITE_HOST'], environ['GRAPHITE_PORT'])
+		yield 'graphite://{}:{}'.format(environ['GRAPHITE_HOSTNAME'], environ['GRAPHITE_PORT'])
 	else:
 		gen = docker_service('gographite/go-graphite:latest', 2003)
 		port = next(gen)
@@ -60,7 +60,7 @@ def graphite():
 @pytest.fixture(scope="session")
 def postgres():
 	if 'ARCHIVE_HOSTNAME' in environ and 'ARCHIVE_PORT' in environ:
-		yield 'postgresql://ampel@{}:{}'.format(environ['ARCHIVE_HOST'], environ['ARCHIVE_PORT'])
+		yield 'postgresql://ampel@{}:{}'.format(environ['ARCHIVE_HOSTNAME'], environ['ARCHIVE_PORT'])
 	else:
 		gen = docker_service('postgres:10.3', 5432,
 			environ={'POSTGRES_USER': 'ampel', 'POSTGRES_DB': 'ztfarchive', 'ARCHIVE_READ_USER': 'archive-readonly', 'ARCHIVE_WRITE_USER': 'ampel-client'},
