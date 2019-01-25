@@ -1,5 +1,6 @@
 
 from ampel.pipeline.config.AmpelConfig import AmpelConfig
+from ampel.pipeline.db.AmpelDB import AmpelDB
 from ampel.pipeline.config.ConfigLoader import ConfigLoader
 from ampel.pipeline.config.channel.ChannelConfigLoader import ChannelConfigLoader
 from ampel.pipeline.common.AmpelUnitLoader import AmpelUnitLoader
@@ -37,9 +38,15 @@ class T3UnitMocker:
 def t3_unit_mocker(mocker):
 	yield T3UnitMocker(mocker)
 
-def test_validate_config(mocker, t3_unit_mocker):
-
+@pytest.fixture
+def mock_mongo(mocker):
 	mocker.patch('pymongo.MongoClient')
+	yield
+	# clean up cached mock collections
+	AmpelDB.reset()
+
+def test_validate_config(mocker, mock_mongo, t3_unit_mocker):
+
 	mocker.patch('extcats.CatalogQuery.CatalogQuery')
 	log = logging.getLogger()
 

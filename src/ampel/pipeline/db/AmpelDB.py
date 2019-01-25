@@ -100,6 +100,11 @@ class AmpelDB:
 			d['dbPrefix'] = prefix
 			d['col'] = None
 
+	@classmethod
+	def reset(cls):
+		cls._existing_mcs.clear()
+		for col_config in cls._ampel_cols.values():
+			col_config['col'] = None
 
 	@classmethod
 	def enable_rejected_collections(cls, channel_names):
