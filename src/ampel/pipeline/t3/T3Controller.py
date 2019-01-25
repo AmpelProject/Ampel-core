@@ -112,6 +112,10 @@ class T3Controller(Schedulable):
 				del self._processes[pid]
 		return len(self._processes)
 
+	def join(self):
+		while self.process_count > 0:
+			time.sleep(1)
+
 	def monitor_processes(self):
 		"""
 		"""
