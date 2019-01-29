@@ -4,28 +4,31 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 10.10.2017
-# Last Modified Date: 03.12.2018
+# Last Modified Date: 18.01.2019
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import pkg_resources, numpy as np
 from time import time
 from ampel.pipeline.logging.AmpelLogger import AmpelLogger
 from logging import LogRecord, INFO
+from pymongo.errors import PyMongoError
 from ampel.pipeline.logging.LoggingUtils import LoggingUtils
 from ampel.pipeline.logging.T0ConsoleFormatter import T0ConsoleFormatter
 from ampel.pipeline.logging.RecordsBufferingHandler import RecordsBufferingHandler
 from ampel.pipeline.logging.LogsBufferingHandler import LogsBufferingHandler
 from ampel.pipeline.logging.DBLoggingHandler import DBLoggingHandler
 from ampel.pipeline.logging.DBEventDoc import DBEventDoc
+from ampel.pipeline.logging.AmpelLoggingError import AmpelLoggingError
 from ampel.pipeline.db.AmpelDB import AmpelDB
+from ampel.pipeline.db.DBUpdateError import DBUpdateError
 from ampel.pipeline.config.AmpelConfig import AmpelConfig
 from ampel.pipeline.config.channel.ChannelConfigLoader import ChannelConfigLoader
 from ampel.pipeline.t0.ingest.DBUpdatesBuffer import DBUpdatesBuffer
 from ampel.pipeline.t0.Channel import Channel
 from ampel.pipeline.common.AmpelUtils import AmpelUtils
 from ampel.pipeline.common.GraphiteFeeder import GraphiteFeeder
-from ampel.core.abstract.AbsT0Setup import AbsT0Setup
-from ampel.core.flags.LogRecordFlags import LogRecordFlags
+from ampel.core.abstract.AbsSurveySetup import AbsSurveySetup
+from ampel.core.flags.LogRecordFlag import LogRecordFlag
 from ampel.core.flags.AlDocType import AlDocType
 from ampel.base.AmpelAlert import AmpelAlert
 
@@ -127,7 +130,7 @@ class AlertProcessor():
 		self.logger.info("Setting up new AlertProcessor instance")
 
 		# Set input_setup
-		if isinstance(survey_id, AbsT0Setup):
+		if isinstance(survey_id, AbsSurveySetup):
 			self.input_setup = survey_id
 			survey_id = self.input_setup.survey_id
 		else:
@@ -203,6 +206,9 @@ class AlertProcessor():
 		:param full_console_logging: bool. If false, the logging level of the stdout streamhandler 
 		associated with the logger will be set to WARN during the execution of this method
 		(it will be reverted to DEBUG before return)
+
+		:rtype: int
+		:raises: LogFlushingError, DBUpdateError, PyMongoError
 		"""
 
 		# Save current time to later evaluate how low was the pipeline processing time
@@ -211,10 +217,9 @@ class AlertProcessor():
 		# Create DB logging handler instance (logging.Handler child class)
 		# This class formats, saves and pushes log records into the DB
 		db_logging_handler = DBLoggingHandler(
-			self.input_setup.get_log_flags() |
-			LogRecordFlags.T0 | 
-			LogRecordFlags.CORE |
-			LogRecordFlags.SCHEDULED_RUN
+			LogRecordFlag.T0 | 
+			LogRecordFlag.CORE |
+			LogRecordFlag.SCHEDULED_RUN
 		)
 
 		db_logging_handler.add_headers(self.log_headers)
@@ -382,11 +387,78 @@ class AlertProcessor():
 								if channel.rec_buf_hdlr.has_error:
 									channel.rec_buf_hdlr.copy(db_logging_handler, channel.name, extra)
 
-								# Save rejected logs to separate (channel specific) db collection
-								channel.rec_buf_hdlr.forward(channel.rejected_logger, extra=extra)
+							# Save rejected logs to separate (channel specific) db collection
+							channel.rec_buf_hdlr.forward(channel.rejected_logger, extra=extra)
 
-						# Filter accepted alert
-						else:
+					# Filter accepted alert
+					else:
+
+						# Update counter
+						count_stats['matches'][channel.str_name] += 1
+
+						# enables log concatenation across different loggers
+						if self.embed:
+							AmpelLogger.current_logger = None 
+							AmpelLogger.aggregation_ok = True
+
+						# Write log entries to main logger
+						channel.rec_buf_hdlr.forward(self.logger, channel.name, extra)
+
+				# Unrecoverable errors
+				except (PyMongoError, AmpelLoggingError, DBUpdateError) as e:
+					print("%s: stopping run() procedure" % e.__class__.__name__)
+					self.report_alertproc_exception(e, run_id, alert_content)
+					raise e
+
+				# Tolerable errors
+				except Exception as e:
+					channel.rec_buf_hdlr.forward(db_logging_handler, extra=extra)
+					self.report_alertproc_exception(
+						e, run_id, alert_content, include_photo=True,
+						extra={'section': 'filter', 'channel': channel.name}
+					)
+
+			# time required for all filters
+			dur_stats['allFilters'][iter_count] = time() - all_filters_start
+
+			if any(t2 is not None for t2 in filter_results):
+
+				# stats
+				ingested_count += 1
+
+				# TODO: build tran_id <-> alert_id map (replayability)
+				#processed_alert[tran_id]
+				try: 
+
+					ingester_start = time()
+
+					# Ingest alert
+					db_updates = ingester.ingest(
+						tran_id, alert_content['pps'], 
+						alert_content['uls'], 
+						filter_results
+					)
+
+					dur_stats['preIngestTime'].append(time()-ingester_start)
+					updates_buffer.add_updates(db_updates)
+
+				except AmpelLoggingError as e:
+					print("AmpelLoggingError: stopping run() procedure")
+					self.report_alertproc_exception(e, run_id, alert_content, include_photo=False)
+					raise e
+
+				except DBUpdateError as e:
+					print("DBUpdateError: stopping run() procedure")
+					# Flush loggers (possible Exceptions handled by method)
+					self.conclude_logging(iter_count, db_logging_handler, full_console_logging)
+					raise e
+
+				except Exception as e:
+					self.report_alertproc_exception(
+						e, run_id, alert_content, filter_results,
+						extra={'section': 'ingest'}, include_photo=False
+					)
+			else:
 
 							# Update counter
 							count_stats['matches'][channel.str_name] += 1
@@ -557,6 +629,36 @@ class AlertProcessor():
 				int(time() - run_start)
 			)
 
+			# Flush loggers
+			self.conclude_logging(
+				iter_count, db_logging_handler, full_console_logging
+			)
+
+			db_job_doc.publish()
+
+		except Exception as e:
+
+			# Try to insert doc into trouble collection (raises no exception)
+			# Possible exception will be logged out to console in any case
+			LoggingUtils.report_exception(
+				self.logger, e, tier=0, run_id=db_logging_handler.get_run_id()
+			)
+			
+		# Return number of processed alerts
+		return iter_count
+
+
+	def conclude_logging(self, iter_count, db_logging_handler, full_console_logging):
+		"""
+		:param int iter_count:
+		:param DBLoggingHandler db_logging_handler:
+		:param bool full_console_logging:
+		:returns: None
+		:raises: None
+		"""
+
+		try:
+
 			# Restore console logging settings
 			if not full_console_logging:
 				self.logger.louden_console_loggers()
@@ -564,7 +666,7 @@ class AlertProcessor():
 			# Flush loggers
 			if iter_count > 0:
 
-				# Main logs logger
+				# Main logs logger. This can raise exceptions
 				db_logging_handler.flush()
 
 				# Flush channel-specific rejected logs
@@ -577,15 +679,13 @@ class AlertProcessor():
 			# Remove DB logging handler
 			self.logger.removeHandler(db_logging_handler)
 
-			db_job_doc.publish()
-
 		except Exception as e:
+
+			# Try to insert doc into trouble collection (raises no exception)
+			# Possible exception will be logged out to console in any case
 			LoggingUtils.report_exception(
 				self.logger, e, tier=0, run_id=db_logging_handler.get_run_id()
 			)
-			
-		# Return number of processed alerts
-		return iter_count
 
 
 	def compute_stat(self, seq, mean=np.mean, std=np.std):
@@ -632,10 +732,46 @@ class AlertProcessor():
 		return tran_ids
 
 
-	@staticmethod	
-	def _alert_essential(alert_content):
-		return {
-			'id': alert_content.get('alert_id'),
-			'pps': alert_content.get('pps'),
-			'uls': alert_content.get('uls')
+	def report_alertproc_exception(
+		self, arg_e, run_id, alert_content, filter_results=None, extra=None, include_photo=True
+	):
+		"""
+		:param Exception arg_e:
+		:param int run_id:
+		:param dict alert_content:
+		:param list filter_results:
+		:param dict extra: optional extra key/value fields to add to 'trouble' doc
+		:param bool include_photo: whether to include alert content into 'trouble' doc
+		:rtype: bool
+		:returns: True on error (doc could not be published), otherwise False
+		:raises: None
+
+		If an exception occurs while handling the provided exception, both exception stacks
+		are printed out to the console and True is returned by this method.
+		"""
+
+		info={
+			'tranId': alert_content.get('alert_id'),
+			'alertId': alert_content.get('alert_id')
 		}
+
+		if include_photo:
+			info['alertPPS'] = alert_content.get('pps')
+			info['alertULS'] = alert_content.get('uls')
+
+		if extra:
+			for k in extra.keys():
+				info[k] = extra[k]
+
+		if filter_results:
+			extra['channels'] = [
+				channel.str_name 
+				for i, channel in self.chan_enum 
+				if filter_results[i]
+			]
+
+		# Try to insert doc into trouble collection (raises no exception)
+		# Possible exception will be logged out to console in any case
+		LoggingUtils.report_exception(
+			self.logger, arg_e, tier=0, run_id=run_id, info=info
+		)
