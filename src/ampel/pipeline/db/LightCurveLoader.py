@@ -10,7 +10,7 @@
 from ampel.core.flags.FlagUtils import FlagUtils
 from ampel.core.PhotoPoint import PhotoPoint
 from ampel.core.UpperLimit import UpperLimit
-from ampel.base.flags.PhotoFlags import PhotoFlags
+from ampel.base.flags.PhotoFlag import PhotoFlag
 from ampel.base.PlainPhotoPoint import PlainPhotoPoint
 from ampel.base.PlainUpperLimit import PlainUpperLimit
 from ampel.base.LightCurve import LightCurve
@@ -167,17 +167,17 @@ class LightCurveLoader:
 				if photo_dict is None:
 					raise ValueError("Upper limit %i not found" % el['ul'])
 
-			# Create PhotoFlags instance
-			flags = FlagUtils.dbflag_to_enumflag(photo_dict['alFlags'], PhotoFlags) 
+			# Create PhotoFlag instance
+			flag = FlagUtils.dbflag_to_enumflag(photo_dict['alFlags'], PhotoFlag) 
 
 			# If custom options avail (if dict contains more than the dict key 'pp')
 			if (len(el.keys()) > 1):
 				
 				obj = (
 					# Create photopoint wrapper instance
-					PhotoPoint(photo_dict, flags, read_only=False) if 'pp' in el 
+					PhotoPoint(photo_dict, flag, read_only=False) if 'pp' in el 
 					# Create upperlimit wrapper instance
-					else UpperLimit(photo_dict, flags, read_only=False)
+					else UpperLimit(photo_dict, flag, read_only=False)
 				)
 
 				# Update pp options dict and cast internal to immutable dict if required
@@ -186,8 +186,8 @@ class LightCurveLoader:
 			# Photopoint defined in the compound has no special policy, i.e len(el.keys()) == 1
 			else:
 				obj = (
-					PlainPhotoPoint(photo_dict, flags, self.read_only) if 'pp' in el 
-					else PlainUpperLimit(photo_dict, flags, self.read_only)
+					PlainPhotoPoint(photo_dict, flag, self.read_only) if 'pp' in el 
+					else PlainUpperLimit(photo_dict, flag, self.read_only)
 				)
 
 			# Update internal list of PhotoPoint/UpperLimit instances
@@ -264,7 +264,7 @@ class LightCurveLoader:
 						raise ValueError("PhotoPoint with id %i not found" % pp_id)
 
 					pp_doc = next(cursor)
-					pp_flags = FlagUtils.dbflag_to_enumflag(pp_doc['alFlags'], PhotoFlags)
+					pp_flags = FlagUtils.dbflag_to_enumflag(pp_doc['alFlags'], PhotoFlag)
 
 					# Update dict already_loaded_photo
 					already_loaded_photo[pp_id] = PlainPhotoPoint(pp_doc, pp_flags, read_only=True)
@@ -276,7 +276,7 @@ class LightCurveLoader:
 						# Create photopoint wrapper instance
 						PhotoPoint(
 							already_loaded_photo[pp_id].content, 
-							already_loaded_photo[pp_id].flags,
+							already_loaded_photo[pp_id].flag,
 							read_only=False
 						) 
 					)
@@ -298,7 +298,7 @@ class LightCurveLoader:
 						# Create upperlimit wrapper instance
 						UpperLimit(
 							already_loaded_photo[ul_id].content, 
-							already_loaded_photo[ul_id].flags,
+							already_loaded_photo[ul_id].flag,
 							read_only=False
 						) 
 					)
