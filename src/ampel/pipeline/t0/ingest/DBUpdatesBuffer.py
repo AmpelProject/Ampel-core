@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 31.10.2018
-# Last Modified Date: 28.11.2018
+# Last Modified Date: 18.01.2019
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from time import time
@@ -12,6 +12,7 @@ import threading
 from multiprocessing.pool import ThreadPool
 from pymongo.errors import BulkWriteError
 from ampel.pipeline.db.AmpelDB import AmpelDB
+from ampel.pipeline.db.DBUpdateError import DBUpdateError
 from ampel.pipeline.config.AmpelConfig import AmpelConfig
 from ampel.pipeline.common.Schedulable import Schedulable
 from ampel.pipeline.logging.LoggingUtils import LoggingUtils
@@ -120,6 +121,7 @@ class DBUpdatesBuffer(Schedulable):
 		"""
 		:param str col_name: Ampel DB collection name (ex: photo, tran, blend)
 		:returns: None
+		:raises: DBUpdateError
 
 		Regarding the handling of BulkWriteError:
 		Concurent upserts triggers a DuplicateKeyError exception.
@@ -134,7 +136,7 @@ class DBUpdatesBuffer(Schedulable):
 				that incorporates the query fields and the update.
 		</quote>
 
-		There are *many* tickets opened on the mongoDB bug tracker regarding this issue.
+		There are many tickets opened on the mongoDB bug tracker regarding this issue.
 		One of which: https://jira.mongodb.org/browse/SERVER-14322
 		where is stated:
 			"It is expected that the client will take appropriate action 
@@ -178,7 +180,8 @@ class DBUpdatesBuffer(Schedulable):
 				), extra=extra
 			)
 
-		# Catch BulkWriteError only, other exceptions are caught in AlertProcessor
+			return
+
 		except BulkWriteError as bwe:
 
 			try: 
@@ -216,8 +219,11 @@ class DBUpdatesBuffer(Schedulable):
 						dup_key_only = False
 						self.err_ops[col_name].append(err_dict)
 
+						# Try to insert doc into trouble collection (raises no exception)
+						# Possible exception will be logged out to console in any case
 						LoggingUtils.report_error(
-							tier=0, msg="BulkWriteError entry details", 
+							tier=0, 
+							msg="BulkWriteError entry details", 
 							logger=self.logger, info={
 								'run_id': self.run_id, 
 								'errDict': LoggingUtils.convert_dollars(err_dict)
@@ -232,29 +238,30 @@ class DBUpdatesBuffer(Schedulable):
 	
 
 				if dup_key_only:
-					# Do something ?
-					pass
 	
-				self.logger.debug(
-					"%s: inserted: %i, upserted: %i, modified: %i, race condition(s) recovered: %i" % (
-						col_name,
-						bwe.details['nInserted'],
-						bwe.details['nUpserted'],
-						bwe.details['nModified'],
-						len(bwe.details.get('writeErrors'))
-					), extra=extra
-				)
+					self.logger.debug(
+						"%s: inserted: %i, upserted: %i, modified: %i, race condition(s) recovered: %i" % (
+							col_name,
+							bwe.details['nInserted'],
+							bwe.details['nUpserted'],
+							bwe.details['nModified'],
+							len(bwe.details.get('writeErrors'))
+						), extra=extra
+					)
+
+					return
 
 			except Exception as ee: 
-
-				self.err_ops[col_name] += ops
+				# Log exc and try to insert doc into trouble collection (raises no exception)
 				LoggingUtils.report_exception(
 					self.logger, ee, tier=0, run_id=self.run_id
 				)
 
 		except Exception as e: 
-
-			self.err_ops[col_name] += ops
+			# Log exc and rry to insert doc into trouble collection (raises no exception)
 			LoggingUtils.report_exception(
 				self.logger, e, tier=0, run_id=self.run_id
 			)
+
+		self.err_ops[col_name] += ops
+		raise DBUpdateError from None
