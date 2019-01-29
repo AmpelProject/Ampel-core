@@ -12,9 +12,10 @@ from bson import ObjectId
 from pymongo.errors import BulkWriteError
 from pymongo.operations import UpdateOne
 from ampel.pipeline.db.AmpelDB import AmpelDB
-from ampel.pipeline.logging.DBUpdateException import DBUpdateException
 from ampel.pipeline.logging.AmpelLogger import AmpelLogger
-from ampel.core.flags.LogRecordFlags import LogRecordFlags
+from ampel.pipeline.logging.LoggingUtils import LoggingUtils
+from ampel.pipeline.logging.AmpelLoggingError import AmpelLoggingError
+from ampel.core.flags.LogRecordFlag import LogRecordFlag
 
 
 class DBLoggingHandler(logging.Handler):
@@ -27,7 +28,7 @@ class DBLoggingHandler(logging.Handler):
 		self, flags, col_name="logs", level=logging.DEBUG, aggregate_interval=1, flush_len=1000
 	):
 		""" 
-		:param int flags: instance of :py:class:`LogRecordFlags <ampel.core.flags.LogRecordFlags>`
+		:param int flags: instance of :py:class:`LogRecordFlag <ampel.core.flags.LogRecordFlag>`
 		:param str col: name of db collection to use (default: 'logs' in database Ampel_var)
 		:param int aggregate_interval: logs with similar attributes (log level, 
 		possibly tranId & channels) are aggregated in one document instead of being split
@@ -51,13 +52,13 @@ class DBLoggingHandler(logging.Handler):
 		self.prev_records = None
 		self.run_id = self.new_run_id()
 		self.flags = {
-			logging.DEBUG: LogRecordFlags.DEBUG | flags,
-			logging.VERBOSE: LogRecordFlags.VERBOSE | flags,
-			logging.INFO: LogRecordFlags.INFO | flags,
-			logging.WARNING: LogRecordFlags.WARNING | flags,
-			logging.ERROR: LogRecordFlags.ERROR | flags,
+			logging.DEBUG: LogRecordFlag.DEBUG | flags,
+			logging.VERBOSE: LogRecordFlag.VERBOSE | flags,
+			logging.INFO: LogRecordFlag.INFO | flags,
+			logging.WARNING: LogRecordFlag.WARNING | flags,
+			logging.ERROR: LogRecordFlag.ERROR | flags,
 			# Treat critical as error
-			logging.CRITICAL: LogRecordFlags.ERROR | flags
+			logging.CRITICAL: LogRecordFlag.ERROR | flags
 		}
 
 		# Get reference to pymongo collection
@@ -96,6 +97,7 @@ class DBLoggingHandler(logging.Handler):
 
 	def emit(self, record):
 		""" 
+		:raises AmpelLoggingError: on error
 		"""
 
 		extra = getattr(record, 'extra', None)
@@ -170,8 +172,9 @@ class DBLoggingHandler(logging.Handler):
 				self.prev_records = record
 
 		except Exception as e:
-			DBUpdateException.report(self, e)
-			raise e from None
+			from ampel.pipeline.logging.LoggingErrorReporter import LoggingErrorReporter
+			LoggingErrorReporter.report(self, e)
+			raise AmpelLoggingError from None
 
 
 	def get_run_id(self):
@@ -250,7 +253,7 @@ class DBLoggingHandler(logging.Handler):
 
 	def flush(self):
 		""" 
-		Will throw Exception if DB issue occur.
+		:raises AmpelLoggingError: on error
 		"""
 
 		# No log entries
@@ -258,6 +261,7 @@ class DBLoggingHandler(logging.Handler):
 			return
 
 		try:
+
 			if self.headers:
 				self.col.bulk_write(
 					[
@@ -286,11 +290,104 @@ class DBLoggingHandler(logging.Handler):
 			self.col.insert_many(dicts)
 
 		except BulkWriteError as bwe:
-			DBUpdateException.report(self, bwe, bwe.details)
-			raise bwe
+			if self.handle_bulk_write_error(bwe):
+				raise AmpelLoggingError from None
 
 		except Exception as e:
-			DBUpdateException.report(self, e)
+			from ampel.pipeline.logging.LoggingErrorReporter import LoggingErrorReporter
+			LoggingErrorReporter.report(self, e)
 			# If we can no longer keep track of what Ampel is doing, 
 			# better raise Exception to stop processing
-			raise e
+			raise AmpelLoggingError from None
+
+
+	def handle_bulk_write_error(self, bwe):
+		"""
+		:returns: true if error could not be handled properly
+		:param BulkWriteError bwe:
+		"""
+		# We try here to handle duplicate key errors as they could occur 
+		# in weird scenarios (quick connection issues for example). 
+		# we loop through each element in the returned writeErrors and 
+		# see for the E11000 cases if - in the DB - the runId of the log record 
+		# with conflicting ObjectId is the same as the one from the current instance.
+		# If the runId are the same, then the conflicting log entry originates from 
+		# the current instance and we trust it as being the same than the one in the buffer 
+		# Further equality checks (msg content) could be done but we don't do them for now.
+
+		try: 
+
+			raise_exc = False
+
+			for err_dict in bwe.details.get('writeErrors', []):
+
+				# This log entry was already inserted into DB
+				# 'code': 11000, 'errmsg': 'E11000 duplicate key error collection: ...
+				if err_dict.get("code") == 11000:
+
+					# Fetch corresponding log entry from DB
+					db_rec = next(self.col.find({'_id': err_dict['op']['_id']}))
+
+					# if runIds are equal, just print out a feedback
+					if db_rec['runId'] == self.run_id:
+						print("Disregardable E11000: "+str(err_dict['op']))
+
+					# Otherwise print error and create trouble doc
+					else:
+
+						raise_exc = True
+
+						print("CRITICAL: OID collision occured between two different log entries")
+						print("Current process:")
+						print(err_dict['op'])
+						print("In DB:")
+						print(db_rec)
+
+						AmpelDB.get_collection('troubles').insert_one(
+							{
+								'tier': LoggingUtils.get_tier_from_log_flags(self.flags),	
+								'location': 'DBLoggingHandler',
+								'msg': "OID collision occured between two different log entries",
+								'ownLogEntry': str(err_dict['op']),
+								'existingLogEntry': str(db_rec)
+							}
+						)
+				else:
+
+					raise_exc = True
+					print("writeError dict entry: " + str(err_dict))
+
+					AmpelDB.get_collection('troubles').insert_one(
+						{
+							'tier': LoggingUtils.get_tier_from_log_flags(self.flags),	
+							'location': 'DBLoggingHandler',
+							'msg': "non-E11000 writeError occured",
+							'errorDict': LoggingUtils.convert_dollars(err_dict)
+						}
+					)
+
+			return raise_exc
+
+		# bad day
+		except Exception as ee:
+
+			try: 
+				from traceback import format_exc
+				AmpelDB.get_collection('troubles').insert_one(
+					{
+						'tier': LoggingUtils.get_tier_from_log_flags(self.flags),	
+						'location': 'DBLoggingHandler',
+						'msg': "Exception occured in handle_bulk_write_error",
+						'exception': format_exc().replace("\"", "'").split("\n")
+					}
+				)
+			except Exception as another_exc:
+				LoggingUtils.log_exception(
+					AmpelLogger.get_unique_logger(), 
+					another_exc
+				)
+
+			from ampel.pipeline.logging.LoggingErrorReporter import LoggingErrorReporter
+			LoggingErrorReporter.report(self, bwe, bwe.details)
+
+			return True
