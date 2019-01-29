@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 29.09.2018
-# Last Modified Date: 06.12.2018
+# Last Modified Date: 18.01.2019
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from time import time
@@ -12,10 +12,10 @@ from logging import DEBUG, WARNING, Handler
 from pymongo.errors import BulkWriteError
 from pymongo.operations import UpdateOne
 from ampel.pipeline.db.AmpelDB import AmpelDB
-from ampel.pipeline.logging.DBUpdateException import DBUpdateException
+from ampel.pipeline.logging.AmpelLoggingError import AmpelLoggingError
+from ampel.pipeline.logging.LoggingErrorReporter import LoggingErrorReporter
 
 
-#class RejectedLogs():
 class DBRejectedLogsSaver(Handler):
 	"""
 	Class responsible for saving rejected log events (by T0 filters) 
@@ -122,8 +122,8 @@ class DBRejectedLogsSaver(Handler):
 				self.prev_records = record
 
 		except Exception as e:
-			DBUpdateException.report(self, e)
-			raise e from None
+			LoggingErrorReporter.report(self, e)
+			raise AmpelLoggingError from None
 
 
 	def flush(self):
@@ -163,8 +163,8 @@ class DBRejectedLogsSaver(Handler):
 					)
 
 			if len(upserts) != len(bwe.details.get('writeErrors', [])):
-				DBUpdateException.report(self, bwe, bwe.details)
-				raise bwe from None
+				LoggingErrorReporter.report(self, bwe, bwe.details)
+				raise AmpelLoggingError from None
 
 			self.logger.warn("Overwriting rejected alerts logs")
 
@@ -174,14 +174,14 @@ class DBRejectedLogsSaver(Handler):
 				return
 
 			except BulkWriteError as bwee:
-				DBUpdateException.report(self, bwee, bwee.details)
+				LoggingErrorReporter.report(self, bwe, bwe.details)
+				LoggingErrorReporter.report(self, bwee, bwee.details)
 
-			DBUpdateException.report(self, bwe, bwe.details)
-			raise bwe from None
+			raise AmpelLoggingError from None
 
 		except Exception as e:
 
-			DBUpdateException.report(self, e)
+			LoggingErrorReporter.report(self, e)
 			# If we can no longer keep track of what Ampel is doing, 
 			# better raise Exception to stop processing
-			raise e from None
+			raise AmpelLoggingError from None
