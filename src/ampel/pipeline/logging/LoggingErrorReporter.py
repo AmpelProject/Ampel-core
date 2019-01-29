@@ -1,25 +1,27 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/pipeline/logging/DBUpdateException.py
+# File              : ampel/pipeline/logging/LoggingErrorReporter.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 29.09.2018
-# Last Modified Date: 16.10.2018
+# Last Modified Date: 18.01.2019
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from ampel.pipeline.logging.AmpelLogger import AmpelLogger
 from ampel.pipeline.logging.LoggingUtils import LoggingUtils
 
-class DBUpdateException:
+class LoggingErrorReporter:
 	"""
-	TODO: rename misleading name
 	"""
-
 
 	@staticmethod
 	def report(handler, e, bwe_details=None):
 		"""
+		:param DBLoggingHandler handler: 
+		:param Exception e: 
+		:param BulkWriteError bwe_details: 
 		"""
+
 		# Print log stack using std logging 
 		logger = AmpelLogger.get_unique_logger()
 
