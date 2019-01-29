@@ -4,14 +4,13 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 27.09.2018
-# Last Modified Date: 03.12.2018
+# Last Modified Date: 18.01.2019
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import logging, struct, os
 from bson import ObjectId
-from pymongo.errors import BulkWriteError
-from pymongo.operations import UpdateOne
 from ampel.pipeline.db.AmpelDB import AmpelDB
+from ampel.pipeline.logging.AmpelLoggingError import AmpelLoggingError
 
 class LogsBufferingHandler(logging.Handler):
 	"""
@@ -44,6 +43,7 @@ class LogsBufferingHandler(logging.Handler):
 
 	def emit(self, record):
 		""" 
+		:raises AmpelLoggingError:
 		"""
 
 		try: 
@@ -94,4 +94,4 @@ class LogsBufferingHandler(logging.Handler):
 			logger = AmpelLogger.get_unique_logger()
 			LoggingUtils.log_exception(logger, e, msg="Primary exception:")
 
-			raise e
+			raise AmpelLoggingError from None
