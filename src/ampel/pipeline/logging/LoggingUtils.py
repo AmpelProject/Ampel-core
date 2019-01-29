@@ -4,12 +4,12 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 30.09.2018
-# Last Modified Date: 03.12.2018
+# Last Modified Date: 18.01.2019
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from logging import ERROR, CRITICAL, Logger
 from ampel.pipeline.config.ConfigUtils import ConfigUtils
-from ampel.core.flags.LogRecordFlags import LogRecordFlags
+from ampel.core.flags.LogRecordFlag import LogRecordFlag
 
 class LoggingUtils:
 
@@ -17,8 +17,8 @@ class LoggingUtils:
 	@staticmethod
 	def log_exception(logger, exc, last=False, msg=None):
 		"""
-		:param Logger logger: logger instance (python logging module)
-		:param Exception exc: the exception
+		:param AmpelLogger logger:
+		:param Exception exc:
 		:param bool last: whether to print only the last exception in the stack
 		:param str msg: Optional message
 
@@ -40,7 +40,7 @@ class LoggingUtils:
 		"""
 
 		import traceback
-		logger.error("-"*50)
+		logger.propagate_log(ERROR, "-"*50)
 
 		if msg:
 			logger.error(msg)
@@ -53,9 +53,9 @@ class LoggingUtils:
 		):
 			for ell in el.split('\n'):
 				if len(ell) > 0:
-					logger.error(ell)
+					logger.propagate_log(ERROR, ell)
 
-		logger.error("-"*50)
+		logger.propagate_log(ERROR, "-"*50)
 
 
 	@classmethod
@@ -132,18 +132,18 @@ class LoggingUtils:
 	@classmethod
 	def get_tier_from_log_flags(cls, flags):
 		"""
-		:param LogRecordFlags flags:
+		:param LogRecordFlag flags:
 		"""
-		for i, flag in enumerate(LogRecordFlags.T0, LogRecordFlags.T1, LogRecordFlags.T2, LogRecordFlags.T3):
+		for i, flag in enumerate(LogRecordFlag.T0, LogRecordFlag.T1, LogRecordFlag.T2, LogRecordFlag.T3):
 			if flag in flags:
 				return i
-
 		return -1
 
 
 	@staticmethod
 	def _insert_trouble(trouble, logger):
 		"""
+		:raises None:
 		"""
 
 		from ampel.pipeline.db.AmpelDB import AmpelDB
@@ -151,11 +151,17 @@ class LoggingUtils:
 		# Populate troubles collection
 		try:
 			AmpelDB.get_collection('troubles').insert_one(trouble)
+
 		except:
+
 			# Bad luck (possible cause: DB offline)
 			logger.propagate_log(
-				ERROR, 
-				"Exception occured while populating 'troubles' collection",
+				ERROR, "Exception occured while populating 'troubles' collection",
+				exc_info=True
+			)
+
+			logger.propagate_log(
+				ERROR, "Unpublished 'troubles' document: %s" % str(trouble),
 				exc_info=True
 			)
 
