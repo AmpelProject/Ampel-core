@@ -300,6 +300,7 @@ def test_get_required_resources():
 	from ampel.pipeline.config.AmpelConfig import AmpelConfig
 	
 	AmpelConfig.set_config(ConfigLoader.load_config(tier="all"))
+	assert len(AmpelConfig.get_config("t3Jobs")) > 0
 
 	resources = get_required_resources()
 	assert len(resources) > 0
