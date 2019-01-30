@@ -295,7 +295,8 @@ class T3Job(T3Event):
 						task_name,
 						tran_selection, chan_set, 
 						task_config.transients.content.docs,
-						task_config.transients.content.t2SubSelection
+						task_config.transients.content.t2SubSelection,
+						task_config.transients.select.scienceRecords
 					)
 
 					# Feedback

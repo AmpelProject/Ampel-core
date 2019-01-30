@@ -81,7 +81,8 @@ class T3Task(T3Event):
 		try:
 
 			tran_views = self.create_tran_views(
-				self.name, transients, self.channels
+				self.name, transients, self.channels,
+				t2_filter=self.config.transients.select.scienceRecords
 			)
 
 			# Feedback

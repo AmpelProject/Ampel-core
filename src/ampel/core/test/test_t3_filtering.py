@@ -67,32 +67,63 @@ def transients(t3_transient_views):
 def test_transient_data_filter(transients, mocker):
 
     from ampel.pipeline.t3.T3Event import T3Event
+    from ampel.pipeline.t3.T3Task import T3Task
+    from ampel.pipeline.t3.T3Job import T3Job
     from ampel.pipeline.config.t3.T3TaskConfig import T3TaskConfig
+    from ampel.pipeline.config.t3.T3JobConfig import T3JobConfig
+    from ampel.pipeline.logging.AmpelLogger import AmpelLogger
     
     mocker.patch('pymongo.MongoClient')
-    config = T3TaskConfig(task='foo', unitId='T3PlaceboUnit',
-        transients={
-            'state': '$latest',
-            'select': {
-                'scienceRecords': {
-                    'unitId': 'SNCOSMO',
-                    'match': {
-                        'fit_acceptable': True,
-                        'sncosmo_info.success': True,
-                        'fit_results.z': {'$gt': 0},
-                        'fit_results.x1': {'$lt': 10}
-                    }
+    tran_config={
+        'state': '$latest',
+        'select': {
+            'scienceRecords': {
+                'unitId': 'SNCOSMO',
+                'match': {
+                    'fit_acceptable': True,
+                    'sncosmo_info.success': True,
+                    'fit_results.z': {'$gt': 0},
+                    'fit_results.x1': {'$lt': 10}
                 }
             }
+        },
+        'content': {
+            'docs': ['T2RECORD']
         }
-    )
-    job = T3Event(config, logger=logging.getLogger(), db_logging=False,
+    }
+    add = mocker.patch('ampel.pipeline.t3.T3PlaceboUnit.T3PlaceboUnit.add')
+    task = T3Task(
+        T3TaskConfig(task='foo', unitId='T3PlaceboUnit', transients=tran_config),
+        logger=AmpelLogger.get_logger(), db_logging=False,
         full_console_logging=True, update_tran_journal=False, 
         update_events=False, raise_exc=True)
-    tran_views = job.create_tran_views(
-        'foo', transients, None
-    )
-    assert len(tran_views) == 4
+    task.process_tran_data(transients)
+    assert add.called
+    assert len(add.call_args[0][0]) == 4
+
+    add.reset_mock()
+    assert not add.called
+    job = T3Job(
+        T3JobConfig(job='foo',
+            schedule='every().sunday',
+            transients={
+                'state': '$latest',
+                'select': {},
+                'content': {
+                    'docs': ['T2RECORD']
+                }
+            },
+            tasks={
+                'task': 'foo',
+                'unitId': 'T3PlaceboUnit',
+                'transients': tran_config
+            }),
+        logger=AmpelLogger.get_logger(), db_logging=False,
+        full_console_logging=True, update_tran_journal=False, 
+        update_events=False, raise_exc=True)
+    job.process_tran_data(transients)
+    assert add.called
+    assert len(add.call_args[0][0]) == 4
 
 def test_t3_match_config():
     from ampel.pipeline.config.t3.ScienceRecordMatchConfig import ScienceRecordMatchConfig
