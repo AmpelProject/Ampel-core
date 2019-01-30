@@ -127,7 +127,7 @@ def test_transient_data_filter(transients, mocker):
 
 def test_t3_match_config():
     from ampel.pipeline.config.t3.ScienceRecordMatchConfig import ScienceRecordMatchConfig
-    
+
     config = {
         'unitId': 'SNCOSMO',
         'match': {
@@ -145,5 +145,8 @@ def test_t3_match_config():
             'fit_results.z': {'$ngt': 0},
         }
     }
-    with pytest.raises(ValueError):
+    with pytest.raises(ScienceRecordMatchConfig.ValidationError):
         ScienceRecordMatchConfig(**config)
+
+    with pytest.raises(ScienceRecordMatchConfig.ValidationError):
+        ScienceRecordMatchConfig(unitId='SNCOSMO', runConfig='not a thing')
