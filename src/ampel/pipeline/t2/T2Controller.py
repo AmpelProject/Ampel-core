@@ -453,7 +453,7 @@ def run():
 	parser = AmpelArgumentParser()
 	parser.add_argument('-v', '--verbose', default=False, action="store_true")
 	parser.add_argument('--units', default=None, nargs='+', help='T2 units to run')
-	parser.add_argument('--interval', default=10, type=int, help='Seconds to wait between database polls')
+	parser.add_argument('--interval', default=10, type=int, help='Seconds to wait between database polls. If < 0, exit after one poll')
 	parser.add_argument('--batch-size', default=200, type=int, help='Process this many T2 docs at a time')
 	
 	parser.require_resource('mongo', ['writer', 'logger'])
@@ -472,4 +472,5 @@ def run():
 	if not opts.verbose:
 		controller.logger.quieten_console()
 	controller.process_new_docs()
-	controller.run()
+	if parser.interval >= 0:
+		controller.run()
