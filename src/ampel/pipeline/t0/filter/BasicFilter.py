@@ -30,7 +30,7 @@ class BasicFilter(AbsAlertFilter):
 
 		self.on_match_default_t2_units = on_match_t2_units
 
-		if run_config is None or type(run_config) not in (dict, MappingProxyType):
+		if run_config is None or not isinstance(run_config, (dict, MappingProxyType)):
 			raise ValueError("run_config type must be a dict or MappingProxyType (got {})".format(type(run_config)))
 
 		self.param = {
