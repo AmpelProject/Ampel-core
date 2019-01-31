@@ -385,7 +385,7 @@ class T3Event:
 		"""
 		Match transient view against a Mongo query
 		"""
-		return match is None or view is None or filter_applies(match, AmpelEncoder(lossy=True).default(view))
+		return view is not None and (match is None or filter_applies(match, AmpelEncoder(lossy=True).default(view)))
 
 	def create_tran_views(self, event_name, transients, channels, docs=None, t2_subsel=None, t2_filter : Optional[Dict[str,Any]]=None):
 		"""
