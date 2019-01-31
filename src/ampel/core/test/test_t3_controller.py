@@ -295,12 +295,27 @@ def test_entrypoint_rununit(testing_config, capsys):
 		))
 
 def test_get_required_resources():
-	from ampel.pipeline.t3.T3Controller import get_required_resources
+	from ampel.pipeline.t3.T3Controller import get_required_resources, T3Controller, T3JobConfig, AmpelUnitLoader
 	from ampel.pipeline.config.ConfigLoader import ConfigLoader
 	from ampel.pipeline.config.AmpelConfig import AmpelConfig
 	
 	AmpelConfig.set_config(ConfigLoader.load_config(tier="all"))
 	assert len(AmpelConfig.get_config("t3Jobs")) > 0
+	assert len(T3Controller.load_job_configs()) > 0
+	units = set()
+	for job in T3Controller.load_job_configs().values():
+		if isinstance(job, T3JobConfig):
+			for task in job.tasks:
+				units.add(task.unitId)
+		else:
+			task = job
+			units.add(task.unitId)
+	assert len(units) > 0
+	resources = set()
+	for unit in units:
+		for resource in AmpelUnitLoader.get_class(3, unit).resources:
+			resources.add(resource)
+	assert len(resources) > 0
 
 	resources = get_required_resources()
 	assert len(resources) > 0
