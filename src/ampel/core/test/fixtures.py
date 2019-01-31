@@ -216,9 +216,11 @@ def alert_factory(latest_schema):
 @pytest.fixture
 def minimal_ingestion_config(mongod):
 	from ampel.pipeline.config.AmpelConfig import AmpelConfig
+	from ampel.pipeline.common.AmpelUnitLoader import AmpelUnitLoader
 	from ampel.pipeline.db.AmpelDB import AmpelDB
 	
 	AmpelConfig.reset()
+	AmpelUnitLoader.reset()
 	source = {
 			"stream": 'ZTFIPAC',
 			"parameters": {
@@ -270,6 +272,7 @@ def minimal_ingestion_config(mongod):
 		AmpelDB.get_collection(collection).drop()
 	yield config
 	AmpelConfig.reset()
+	AmpelUnitLoader.reset()
 
 @pytest.fixture
 def ingested_transients(alert_generator, minimal_ingestion_config, caplog):
