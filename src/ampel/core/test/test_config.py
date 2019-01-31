@@ -14,29 +14,18 @@ from unittest.mock import MagicMock
 import pytest
 import logging
 
-class T3UnitMocker:
-	"""
-	Mock AbsT3Unit instances, restoring state on deletion
-	"""
-	def __init__(self, mocker):
-		self._mocker = mocker
-		self._patched = set()
-	def __call__(self, unit):
-		if unit in self._patched:
-			return AmpelUnitLoader.UnitClasses[3][unit]
-		else:
-			klass = AmpelUnitLoader.get_class(3, unit)
-			patched = self._mocker.patch('{}.{}'.format(klass.__module__, klass.__name__))
-			AmpelUnitLoader.UnitClasses[3][unit] = patched
-			self._patched.add(unit)
-			return AmpelUnitLoader.UnitClasses[3][unit]
-	def __del__(self):
-		for unit in self._patched:
-			del AmpelUnitLoader.UnitClasses[3][unit]
-
 @pytest.fixture
 def t3_unit_mocker(mocker):
-	yield T3UnitMocker(mocker)
+	patched = set()
+	def patch(unit):
+		if not unit in patched:
+			klass = AmpelUnitLoader.get_class(3, unit)
+			mock = mocker.patch('{}.{}'.format(klass.__module__, klass.__name__))
+			AmpelUnitLoader.UnitClasses[3][unit] = mock
+			patched.add(unit)
+		return AmpelUnitLoader.UnitClasses[3][unit]
+	yield patch
+	AmpelUnitLoader.UnitClasses[3].clear()
 
 @pytest.fixture
 def mock_mongo(mocker):
