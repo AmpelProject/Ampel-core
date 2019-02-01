@@ -316,7 +316,11 @@ class TransientData:
 		uls = set()
 		for channel in AmpelUtils.iter(channels):
 			if channel not in TransientData.pdams:
-				TransientData.pdams[channel] =  PhotoDataAccessManager(channel)
+				try:
+					TransientData.pdams[channel] =  PhotoDataAccessManager(channel)
+				except ValueError:
+					# channel was defined in the past, but is no longer
+					continue
 			pps.update(TransientData.pdams[channel].get_photopoints(self.photopoints))
 			uls.update(TransientData.pdams[channel].get_upperlimits(self.upperlimits))
 
