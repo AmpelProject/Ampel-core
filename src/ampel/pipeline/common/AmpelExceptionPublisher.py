@@ -28,10 +28,8 @@ class AmpelExceptionPublisher:
 
 	def t3_fields(self, doc):
 		fields = []
-		fields.append({'title': 'Job', 'value': doc.get('jobName', None), 'short': True})
-		fields.append({'title': 'Task', 'value': doc.get('taskName', None), 'short': True})
-		if isinstance(doc.get('logs', None), ObjectId):
-			fields.append({'title': 'logs', 'value': doc['logs'].binary.hex(), 'short': True})
+		fields.append({'title': 'Job', 'value': doc.get('job', None), 'short': True})
+		fields.append({'title': 'Run', 'value': doc.get('runId', None), 'short': True})
 		return fields
 
 	def format_attachment(self, doc):
