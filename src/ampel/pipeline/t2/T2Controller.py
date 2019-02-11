@@ -472,5 +472,5 @@ def run():
 	if not opts.verbose:
 		controller.logger.quieten_console()
 	controller.process_new_docs()
-	if parser.interval >= 0:
+	if opts.interval >= 0:
 		controller.run()
