@@ -17,7 +17,7 @@ from ampel.pipeline.common.Schedulable import Schedulable
 from ampel.pipeline.config.AmpelConfig import AmpelConfig
 from ampel.pipeline.db.AmpelDB import AmpelDB
 from ampel.core.flags.AlDocType import AlDocType
-
+from ampel.core.flags.T2RunStates import T2RunStates
 
 class AmpelStatsPublisher(Schedulable):
 	""" 
@@ -309,7 +309,30 @@ class AmpelStatsPublisher(Schedulable):
 							'alDocType': AlDocType.T2RECORD
 						},
 						self.tran_proj
-					).count()
+					).count(),
+
+					't2_states': {
+						T2RunStates(doc['_id']).name: doc['count'] \
+						for doc in self.col_blend.aggregate([
+							{'$match':
+								{
+									'tranId': {"$gt" : 1},
+									'alDocType': AlDocType.T2RECORD
+								}
+							},
+							{'$project':
+								{
+									'runState': 1
+								}
+							},
+							{'$group':
+								{
+									'_id': '$runState',
+									'count': {'$sum': 1}
+								}
+							}
+						])
+					}
 				}
 			}
 
