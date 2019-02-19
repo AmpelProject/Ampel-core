@@ -4,11 +4,10 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 11.03.2018
-# Last Modified Date: 22.10.2018
+# Last Modified Date: 19.02.2019
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import collections
-from ampel.core.flags.FlagUtils import FlagUtils
 from ampel.pipeline.common.AmpelUtils import AmpelUtils
 from ampel.pipeline.config.t3.AnyOf import AnyOf
 from ampel.pipeline.config.t3.AllOf import AllOf
@@ -41,7 +40,7 @@ class QueryMatchSchema:
 			- {}  (empty dict)
 			- {'tranId': 'ZTFabc'}  (basic transient ID matching criteria)
 
-		:param str field_name: name of the DB field containing the flag values
+		:param str field_name: name of the DB field containing the tag values
 
 		:param arg: should be dict/AllOf/AnyOf/OneOf but can be a string for convenience \
 		(if only one value is to be matched). The dict can be nested up to one level. \
@@ -186,7 +185,7 @@ class QueryMatchSchema:
 		# Check if field_name criteria were set previously
 		if field_name in query:
 			if type(query[field_name]) in in_type:
-				# If a previous scalar flag matching criteria was set
+				# If a previous scalar tag matching criteria was set
 				# then we need rename it since query[field_name] will become a dict 
 				query[field_name] = {'$eq': query[field_name]}
 
