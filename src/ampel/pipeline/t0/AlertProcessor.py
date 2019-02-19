@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 10.10.2017
-# Last Modified Date: 18.01.2019
+# Last Modified Date: 19.02.2019
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import pkg_resources, numpy as np
@@ -406,7 +406,7 @@ class AlertProcessor():
 
 				# Unrecoverable errors
 				except (PyMongoError, AmpelLoggingError, DBUpdateError) as e:
-					print("%s: stopping run() procedure" % e.__class__.__name__)
+					print("%s: abording run() procedure" % e.__class__.__name__)
 					self.report_alertproc_exception(e, run_id, alert_content)
 					raise e
 
@@ -443,12 +443,12 @@ class AlertProcessor():
 					updates_buffer.add_updates(db_updates)
 
 				except AmpelLoggingError as e:
-					print("AmpelLoggingError: stopping run() procedure")
+					print("AmpelLoggingError: abording run() procedure")
 					self.report_alertproc_exception(e, run_id, alert_content, include_photo=False)
 					raise e
 
 				except DBUpdateError as e:
-					print("DBUpdateError: stopping run() procedure")
+					print("DBUpdateError: abording run() procedure")
 					# Flush loggers (possible Exceptions handled by method)
 					self.conclude_logging(iter_count, db_logging_handler, full_console_logging)
 					raise e
@@ -745,9 +745,6 @@ class AlertProcessor():
 		:rtype: bool
 		:returns: True on error (doc could not be published), otherwise False
 		:raises: None
-
-		If an exception occurs while handling the provided exception, both exception stacks
-		are printed out to the console and True is returned by this method.
 		"""
 
 		info={
