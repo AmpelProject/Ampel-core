@@ -11,7 +11,7 @@
 def test_flag_crc_collisions():
 	"""
 	collision example: 'codding' <-> 'gnu'
-	No exception raised -> everything good
+	No exception raised means everything good
 	"""
 
 	import pkg_resources, binascii
