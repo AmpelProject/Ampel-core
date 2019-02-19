@@ -40,12 +40,12 @@ class DBDocVizualizer:
 
 		d = collections.OrderedDict()
 			
-		#al_doc_type = FlagUtils.dbflag_to_enumflag(d['alDocType'], AlDocType)
+		#al_doc_type = FlagUtils.dbtags_to_enumflag(d['alDocType'], AlDocType)
 		if db_dict['alDocType'] == AlDocType.PHOTOPOINT:
 			self.set_dict_first_keys(db_dict, d, "PHOTOPOINT")
-			if "alFlags" in db_dict:
-				d['alFlags'] = self.pretty_print_flag(
-					FlagUtils.dbflag_to_enumflag(db_dict['alFlags'], PhotoFlags)
+			if "alTags" in db_dict:
+				d['alTags'] = self.pretty_print_flag(
+					FlagUtils.dbtags_to_enumflag(db_dict['alTags'], PhotoFlags)
 				)
 
 			# Convert JD into gregorian date
@@ -61,9 +61,9 @@ class DBDocVizualizer:
 
 		elif db_dict['alDocType'] == AlDocType.TRANSIENT:
 			self.set_dict_first_keys(db_dict, d, "TRANSIENT")
-			if "alFlags" in db_dict:
-				d['alFlags'] = self.pretty_print_flag(
-					FlagUtils.dbflag_to_enumflag(db_dict['alFlags'], TransientFlags)
+			if "alTags" in db_dict:
+				d['alTags'] = self.pretty_print_flag(
+					FlagUtils.dbtags_to_enumflag(db_dict['alTags'], TransientFlags)
 				)
 			self.copy_the_rest(db_dict, d)
 			job_ids = [] 
@@ -139,7 +139,7 @@ class DBDocVizualizer:
 	def fine_tune_output(self, json_str):
 
  		# replace "alDocType": "T2RECORD"    with    "alDocType": T2RECORD
-		for el in ["alDocType", "alFlags", "channels", "t2Compute", "runState"]:
+		for el in ["alDocType", "alTags", "channels", "t2Compute", "runState"]:
 			json_str = re.sub(el+"\": \"(.*)\"", el+"\": \\1", json_str)
   
 		# replace "ObjectId(5a58ee386f21dad72c56f95e)" with ObjectId("5a58ee386f21dad72c56f95e")
@@ -163,7 +163,7 @@ class DBDocVizualizer:
 
 		if "runState" in d_src:
 			d_dest['runState'] = self.pretty_print_flag(
-				FlagUtils.dbflag_to_enumflag([d_src['runState']], T2RunStates)
+				FlagUtils.dbtags_to_enumflag([d_src['runState']], T2RunStates)
 			)
 
 		for key in d_src.keys():
