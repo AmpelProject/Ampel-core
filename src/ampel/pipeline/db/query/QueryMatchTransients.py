@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 13.01.2018
-# Last Modified Date: 25.11.2018
+# Last Modified Date: 19.02.2019
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from bson.objectid import ObjectId
@@ -20,7 +20,7 @@ class QueryMatchTransients:
 
 	@classmethod
 	def match_transients(cls,
-		channels=None, with_flags=None, without_flags=None, time_created=None, time_modified=None
+		channels=None, with_tags=None, without_tags=None, time_created=None, time_modified=None
 	):
 		"""
 		Merely a shortcut method made of several function calls
@@ -30,16 +30,16 @@ class QueryMatchTransients:
 		(see :obj:`QueryMatchSchema <ampel.pipeline.db.query.QueryMatchSchema>` \
 		for syntax details). None (no criterium) means all channels are considered. 
 
-		:type with_flags: str, int, dict
-		:param with_flags: string/int (one flag only) or a dict schema \
+		:type with_tags: str, int, dict
+		:param with_tags: string/int (one flag only) or a dict schema \
 		(see :obj:`QueryMatchSchema <ampel.pipeline.db.query.QueryMatchSchema>` \
 		for syntax details). Important: dict schema must contain **db flags** \
 		(integers representing enum members position within enum class), please see \
-		:func:`FlagUtils.to_dbflags_schema <ampel.core.flags.FlagUtils.to_dbflags_schema>` \
+		:func:`FlagUtils.to_dbtags_schema <ampel.core.flags.FlagUtils.to_dbtags_schema>` \
 		docstring for more info.
 
-		:type without_flags: str, int, dict
-		:param without_flags: similar to parameter with_flags, except it's without.
+		:type without_tags: str, int, dict
+		:param without_tags: similar to parameter with_tags, except it's without.
 
 		:param TimeConstraint time_created: instance of ampel.pipeline.t3.TimeConstraint
 		:param TimeConstraint time_modified: instance of ampel.pipeline.t3.TimeConstraint
@@ -55,15 +55,15 @@ class QueryMatchTransients:
 				query, 'channels', channels
 			)
 
-		if with_flags is not None:
+		if with_tags is not None:
 			QueryMatchSchema.apply_schema(
-				query, 'alFlags', with_flags
+				query, 'alTags', with_tags
 			)
 
 		# Order matters, parse_dict(...) must be called *after* parse_excl_dict(...)
-		if without_flags is not None:
+		if without_tags is not None:
 			QueryMatchSchema.apply_excl_schema(
-				query, 'alFlags', without_flags
+				query, 'alTags', without_tags
 			)
 
 		created_constraint = cls._add_time_constraint(time_created)
