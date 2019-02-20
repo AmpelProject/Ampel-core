@@ -146,10 +146,10 @@ class CompoundBluePrintGenerator():
 			# Save channel name <-> effective comp id association
 			if eff_id in cbp.d_eid_chnames:
 				cbp.d_eid_chnames[eff_id].add(chan_name)
-				cbp.d_eid_compflags[eff_id] |= comp_shaper.flags
+				cbp.d_eid_comptags[eff_id] |= comp_shaper.tags
 			else:
 				cbp.d_eid_chnames[eff_id] = {chan_name}
-				cbp.d_eid_compflags[eff_id] = comp_shaper.flags
+				cbp.d_eid_comptags[eff_id] = comp_shaper.tags
 
 			# Save channel name <-> pp comp id association
 			if pp_id in cbp.d_ppid_chnames:

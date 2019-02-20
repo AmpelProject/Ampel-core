@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 31.05.2018
-# Last Modified Date: 13.11.2018
+# Last Modified Date: 20.02.2019
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from ampel.base.TransientView import TransientView
@@ -52,11 +52,11 @@ class TransientData:
 		self.channels = channels
 
 
-	def set_flags(self, flags):
+	def set_tags(self, tags):
 		"""
-		:param flags: enum flag instance of :py:class:`TransientFlags `<ampel.base.flags.TransientFlags>`
+		:param tags: list of strings
 		"""
-		self.flags = flags
+		self.tags = tags
 
 
 	def set_tran_names(self, names):
@@ -197,7 +197,7 @@ class TransientData:
 		photopoints, upperlimits = self._get_photo(channel)
 
 		return TransientView(
-			self.tran_id, self.flags, 
+			self.tran_id, self.tags, 
 			sorted(
 				self.journal.get(channel) + self.journal.get("Any", []), 
 				key=lambda k: k['dt']
@@ -255,7 +255,7 @@ class TransientData:
 		photopoints, upperlimits = self._get_photo(channels)
 
 		return TransientView(
-			self.tran_id, self.flags, sorted(entries, key=lambda k: k['dt']), 
+			self.tran_id, self.tags, sorted(entries, key=lambda k: k['dt']), 
 			self.tran_names, latest_state, photopoints, upperlimits, 
 			tuple(all_comps.values()),
 			self._get_combined_elements(self.lightcurves, channels),

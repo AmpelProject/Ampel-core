@@ -4,9 +4,10 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 13.01.2018
-# Last Modified Date: 29.11.2018
+# Last Modified Date: 20.02.2019
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
+from pkg_resources import iter_entry_points
 from ampel.core.flags.FlagUtils import FlagUtils
 from ampel.core.PhotoPoint import PhotoPoint
 from ampel.core.UpperLimit import UpperLimit
@@ -36,6 +37,12 @@ class LightCurveLoader:
 		self.read_only = read_only
 		self.blend_col = AmpelDB.get_collection("blend")
 		self.photo_col = AmpelDB.get_collection("photo")
+
+		for el in iter_entry_points('ampel.pipeline.sources'):
+			# Implementation of ampel/core/abstract/AbsSurveySetup.py
+			SurveySetup = el.load()
+			if not SurveySetup.tags_registered:
+				SurveySetup.register_tags()
 
 
 	def load_from_db(self, tran_id, compound_id):
@@ -168,7 +175,7 @@ class LightCurveLoader:
 					raise ValueError("Upper limit %i not found" % el['ul'])
 
 			# Create PhotoFlag instance
-			flag = FlagUtils.dbflag_to_enumflag(photo_dict['alFlags'], PhotoFlag) 
+			flag = FlagUtils.dbtags_to_enumflag(photo_dict['alTags'], PhotoFlag) 
 
 			# If custom options avail (if dict contains more than the dict key 'pp')
 			if (len(el.keys()) > 1):
@@ -264,7 +271,7 @@ class LightCurveLoader:
 						raise ValueError("PhotoPoint with id %i not found" % pp_id)
 
 					pp_doc = next(cursor)
-					pp_flags = FlagUtils.dbflag_to_enumflag(pp_doc['alFlags'], PhotoFlag)
+					pp_flags = FlagUtils.dbtags_to_enumflag(pp_doc['alTags'], PhotoFlag)
 
 					# Update dict already_loaded_photo
 					already_loaded_photo[pp_id] = PlainPhotoPoint(pp_doc, pp_flags, read_only=True)

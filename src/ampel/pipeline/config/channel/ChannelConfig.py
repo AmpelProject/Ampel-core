@@ -106,9 +106,9 @@ class ChannelConfig(AmpelModelExtension):
 						trans = el.get("transients", {})
 						sel = trans.get("select", {})
 						sel["channels"] = values['channel']
-						sel["withFlags"] = {'allOf': source_setup.get_instrument_flag_names()}
-						if type(sel["withFlags"]['allOf']) is str:
-							sel["withFlags"]['allOf'] = [sel["withFlags"]['allOf']]
+						sel["withTags"] = {'allOf': source_setup.get_instrument_flag_names()}
+						if type(sel["withTags"]['allOf']) is str:
+							sel["withTags"]['allOf'] = [sel["withTags"]['allOf']]
 					s.append(src)
 				else:
 					s.append(source)

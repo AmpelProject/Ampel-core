@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 13.01.2018
-# Last Modified Date: 13.11.2018
+# Last Modified Date: 20.02.2019
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from bson import ObjectId
@@ -13,13 +13,11 @@ from ampel.base.ScienceRecord import ScienceRecord
 from ampel.base.PlainPhotoPoint import PlainPhotoPoint
 from ampel.base.PlainUpperLimit import PlainUpperLimit
 from ampel.base.Compound import Compound
+from ampel.base.AmpelTags import AmpelTags
 
 from ampel.core.flags.FlagUtils import FlagUtils
 from ampel.core.flags.AlDocType import AlDocType
 from ampel.core.flags.T2RunStates import T2RunStates
-from ampel.core.flags.CompoundFlags import CompoundFlags
-from ampel.base.flags.TransientFlags import TransientFlags
-from ampel.base.flags.PhotoFlags import PhotoFlags
 
 from ampel.pipeline.logging.LoggingUtils import LoggingUtils
 from ampel.pipeline.logging.AmpelLogger import AmpelLogger
@@ -45,7 +43,9 @@ class DBContentLoader:
 		"""
 		"""
 		self.logger = AmpelLogger.get_logger() if logger is None else logger
+		# LightCurveLoader will register survey tags
 		self.lcl = LightCurveLoader(logger=self.logger)
+		self.tags = {v: k for k, v in AmpelTags.hashes.items()}
 		self.tran_col = AmpelDB.get_collection("tran")
 		self.photo_col = AmpelDB.get_collection("photo")
 		self.blend_col = AmpelDB.get_collection("blend")
@@ -88,7 +88,7 @@ class DBContentLoader:
 
 		  * AlDocType.TRANSIENT: 
 			| -> Add info from DB doc to the returned TransientData instance
-			| -> For example: channels, flags (has processing errors), 
+			| -> For example: channels, tags (has processing errors), 
 			   latest photopoint observation date, ...
 
 		  * AlDocType.PHOTOPOINT: 
@@ -278,12 +278,10 @@ class DBContentLoader:
 				else:
 					tran_data = tran_register[doc['_id']]
 
-				# Load, translate alFlags from DB into a TransientFlags enum flag instance 
+				# Load, translate alTags from DB into a TransientFlags enum flag instance 
 				# and associate it with the TransientData object instance
-				tran_data.set_flags(
-					FlagUtils.dbflag_to_enumflag(
-						doc['alFlags'], TransientFlags
-					)
+				tran_data.set_tags(
+					[self.tags[el] if el in self.tags else el for el in doc['alTags']]
 				)
 
 				# Set transient names (ex: ZTF18acdzzyf) 
@@ -318,9 +316,9 @@ class DBContentLoader:
 
 				doc['id'] = doc.pop('_id')
 				doc_chans = doc.pop('channels')
-				doc['alFlags'] = FlagUtils.dbflag_to_enumflag(
-					doc['alFlags'], CompoundFlags
-				)
+				doc['alTags'] = [
+					self.tags[el] if el in self.tags else el for el in doc['alTags']
+				]
 
 				comp_chans = doc_chans if channels is None else (channels_set & set(doc_chans))
 
@@ -336,7 +334,10 @@ class DBContentLoader:
 			if doc['alDocType'] == AlDocType.T2RECORD:
 
 				science_record = ScienceRecord(
-					doc['tranId'], doc['t2UnitId'], doc['compId'], doc.get('results'),
+					doc['tranId'],
+					doc['t2UnitId'],
+					doc['compId'],
+					doc.get('results'),
 					info={
 						'runConfig': doc['runConfig'], 
 						'runState': doc['runState'],
@@ -364,9 +365,7 @@ class DBContentLoader:
 			for doc in photo_list:
 
 				# Generate PhotoFlags
-				photo_flag = FlagUtils.dbflag_to_enumflag(
-					doc['alFlags'], PhotoFlags
-				)
+				photo_flag = [self.tags[el] if el in self.tags else el for el in doc['alTags']]
 
 				# Pick photo point dicts
 				if doc["_id"] > 0:

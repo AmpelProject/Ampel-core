@@ -198,8 +198,8 @@ def rununit(args):
 					}
 				},
 				"channels": {'anyOf': args.channels},
-				"withFlags": "INST_ZTF",
-				"withoutFlags": "HAS_ERROR"
+				"withTags": "INST_ZTF",
+				"withoutTags": "HAS_ERROR"
 			},
 			"content": {
 				"docs": [

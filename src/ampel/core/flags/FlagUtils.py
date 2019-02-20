@@ -9,6 +9,7 @@
 
 import enum, binascii
 from bson import Binary
+from ampel.base.AmpelTags import AmpelTags
 from ampel.pipeline.common.AmpelUtils import AmpelUtils
 from ampel.pipeline.config.t3.AnyOf import AnyOf
 from ampel.pipeline.config.t3.AllOf import AllOf
@@ -16,7 +17,6 @@ from ampel.pipeline.config.t3.OneOf import OneOf
 
 class FlagUtils():
 
-	saved_crcs = {}
 
 	@staticmethod
 	def has_any(enum_flag, *flags):
@@ -27,51 +27,7 @@ class FlagUtils():
 
 
 	@classmethod
-	def enumflag_to_dbtags(cls, enum_flag):
-		"""
-		Converts an enum flag instance such as: <ZICompoundFlag.SURVEY_ZTF|HAS_CUSTOM_POLICIES: 192>
-		into an array of ints: [2815847261, 131172144]
-		whereby each list element in the output list is the computed crc32 of a flag member name
-			In []: binascii.crc32(bytes("SURVEY_ZTF", "ascii"))
-			Out[]: 131172144
-		"""
-		if enum_flag.__class__ not in cls.saved_crcs:
-			cls._save_crcs(enum_flag.__class__)
-
-		return [
-			cls.saved_crcs[enum_flag.__class__][el[0]] 
-			for el in enum_flag.__class__.__members__.items() 
-			if el[1] in enum_flag
-		]
-
-
-	@classmethod
-	def dbtags_to_enumflag(cls, db_flag, EnumClass):
-		"""
-		Converts: [2815847261, 131172144]
-		Into: <ZICompoundFlag.SURVEY_ZTF|HAS_CUSTOM_POLICIES: 192>
-		"""
-		enum_flag = EnumClass(0)
-
-		if EnumClass not in cls.saved_crcs:
-			cls._save_crcs(EnumClass)
-
-		for el in EnumClass.__members__.items():
-			if cls.saved_crcs[EnumClass][el[0]] in db_flag:
-				enum_flag |= el[1]
-
-		return enum_flag
-
-
-	@classmethod
-	def _save_crcs(cls, EnumClass):
-		cls.saved_crcs[EnumClass] = {}
-		for el in EnumClass.__members__.items():
-			cls.saved_crcs[EnumClass][el[0]] = binascii.crc32(bytes(el[0], 'ascii'))
-
-
-	@classmethod
-	def to_dbtags_schema(cls, arg, EnumClass):
+	def to_dbtags_schema(cls, arg):
 		"""
 		Converts dict schema containing str representation of enum class members, \
 		into integers whose values are the index position of each member within the enum. \
@@ -90,13 +46,10 @@ class FlagUtils():
 		:rtype: dict
 		"""
 
-		if EnumClass not in cls.saved_crcs:
-			cls._save_crcs(EnumClass)
-
 		out={}
 		
 		if isinstance(arg, str):
-			return cls.saved_crcs[EnumClass][arg]
+			return AmpelTags.hashes[arg]
 
 		if type(arg) in (AllOf, AnyOf, OneOf):
 			arg = arg.dict()
@@ -105,24 +58,24 @@ class FlagUtils():
 
 			if "anyOf" in arg:
 				if AmpelUtils.check_seq_inner_type(arg['anyOf'], str):
-					out['anyOf'] = [cls.saved_crcs[EnumClass][el] for el in arg['anyOf']]
+					out['anyOf'] = [AmpelTags.hashes[el] for el in arg['anyOf']]
 				else:
 					out['anyOf'] = []
 					for el in arg['anyOf']:
 						if isinstance(el, str):
-							out['anyOf'].append(cls.saved_crcs[EnumClass][el])
+							out['anyOf'].append(AmpelTags.hashes[el])
 						elif isinstance(el, dict):
 							if 'allOf' not in el:
 								raise ValueError("Unsupported format (1)")
-							out['anyOf'].append({'allOf': [cls.saved_crcs[EnumClass][ell] for ell in el['allOf']]})
+							out['anyOf'].append({'allOf': [AmpelTags.hashes[ell] for ell in el['allOf']]})
 						else:
 							raise ValueError("Unsupported format (type: %s)" % type(el))
 	
 			elif 'allOf':
-				out['allOf'] = [cls.saved_crcs[EnumClass][el] for el in arg['allOf']]
+				out['allOf'] = [AmpelTags.hashes[el] for el in arg['allOf']]
 
 			elif 'oneOf':
-				out['oneOf'] = [cls.saved_crcs[EnumClass][el] for el in arg['oneOf']]
+				out['oneOf'] = [AmpelTags.hashes[el] for el in arg['oneOf']]
 		else:
 			raise ValueError("Unsupported format (%s)" % type(arg))
 		

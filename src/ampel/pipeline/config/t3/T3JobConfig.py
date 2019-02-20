@@ -100,7 +100,7 @@ class T3JobConfig(AmpelModelExtension):
 				task_config['transients']['state'] = values['transients'].get('state')
 
 			# Either copy entire 'transients.select' and 'transients.content' values if missing
-			# or the sub-key values (t2SubSelection, docs, channels, withFlags ...) that were not set
+			# or the sub-key values (t2SubSelection, docs, channels, withTags ...) that were not set
 			for el in {'select': TranSelectConfig, 'content': TranContentConfig}.items():
 
 				cont_or_sel_str = el[0]
@@ -164,7 +164,7 @@ class T3JobConfig(AmpelModelExtension):
 				values["transients"], task_config.transients
 			)
 
-			# We do not validate withFlags withoutFlags 
+			# We do not validate withTags withoutTags 
 			# sub-selections yet (anymore actually)
 
 
