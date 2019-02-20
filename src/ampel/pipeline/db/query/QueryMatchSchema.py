@@ -124,16 +124,16 @@ class QueryMatchSchema:
 						)
 
 
-				# ex: add_from_dict(query, 'withFlags', {'anyOf': [{'allOf': ["a","b"]}, "3", "1", "2"]})
+				# ex: add_from_dict(query, 'withTags', {'anyOf': [{'allOf': ["a","b"]}, "3", "1", "2"]})
 				# optimize_potentially enables to replace:
 				#   '$or': [
-				#		{'withFlags': {'$all': ['a', 'b']}},
-  				#   	{'withFlags': '3'}, {'withFlags': '1'}, {'withFlags': '2'}
+				#		{'withTags': {'$all': ['a', 'b']}},
+  				#   	{'withTags': '3'}, {'withTags': '1'}, {'withTags': '2'}
 				#	]
 				# with:
 				#   '$or': [
-				#		{'withFlags': {'$all': ['a', 'b']}},
-  				#   	{'withFlags': {'$in': ['3', '1', '2']}}
+				#		{'withTags': {'$all': ['a', 'b']}},
+  				#   	{'withTags': {'$in': ['3', '1', '2']}}
 				#	]
 				if len(optimize_potentially) > 1:
 					or_list.append(
@@ -261,16 +261,16 @@ class QueryMatchSchema:
 							"\nOffending value: %s" % el
 						)
 
-				# ex: add_from_excl_dict(query, 'withFlags', {'anyOf': [{'allOf': ["a","b"]}, "3", "1", "2"]})
+				# ex: add_from_excl_dict(query, 'withTags', {'anyOf': [{'allOf': ["a","b"]}, "3", "1", "2"]})
 				# optimize_potentially allows to replace:
 				#   '$and': [
-				#		{'withFlags': {'$not': {'$all': ['a', 'b']}}},
-  				#   	{'withFlags': {'$ne': '3'}}, {'withFlags': {'$ne': '1'}}, {'withFlags': {'$ne': '2'}}
+				#		{'withTags': {'$not': {'$all': ['a', 'b']}}},
+  				#   	{'withTags': {'$ne': '3'}}, {'withTags': {'$ne': '1'}}, {'withTags': {'$ne': '2'}}
 				#	]
 				# with:
 				#   '$and': [
-				#		{'withFlags': {'$not': {'$all': ['a', 'b']}}},
-  				#   	{'withFlags': {'$nin': ['3', '1', '2']}}
+				#		{'withTags': {'$not': {'$all': ['a', 'b']}}},
+  				#   	{'withTags': {'$nin': ['3', '1', '2']}}
 				#	]
 				if len(optimize_potentially) > 1:
 					and_list.append(
