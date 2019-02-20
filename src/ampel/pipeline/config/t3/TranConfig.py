@@ -25,8 +25,8 @@ class TranConfig(AmpelModelExtension):
 	    		"created": {"after": {"use": "$timeDelta", "arguments": {"days": -40}}},
 	    		"modified": {"after": {"use": "$timeDelta", "arguments": {"days": -1}}},
 	    		"channels": "HU_GP_CLEAN",
-				"withFlags": "INST_ZTF",
-	    		"withoutFlags": "HAS_ERROR"
+				"withTags": "INST_ZTF",
+	    		"withoutTags": "HAS_ERROR"
 			},
 			"state": "$latest",
 			"content": {

@@ -14,7 +14,6 @@ from ampel.pipeline.config.time.TimeConstraintConfig import TimeConstraintConfig
 from ampel.pipeline.config.AmpelModelExtension import AmpelModelExtension
 from ampel.pipeline.config.ConfigUtils import ConfigUtils
 from ampel.pipeline.common.docstringutils import gendocstring
-from ampel.base.flags.TransientFlags import TransientFlags
 from ampel.pipeline.config.t3.AllOf import AllOf
 from ampel.pipeline.config.t3.AnyOf import AnyOf
 from ampel.pipeline.config.t3.OneOf import OneOf
@@ -31,9 +30,8 @@ class TranSelectConfig(AmpelModelExtension):
 				"created": {"after": {"use": "$timeDelta", "arguments": {"days": -40}}},
 				"modified": {"after": {"use": "$timeDelta", "arguments": {"days": -1}}},
 				"channels": "HU_GP_CLEAN",
-				"withFlags": "INST_ZTF",
-				"withoutFlags": "HAS_ERROR",
-				"scienceRecords": {"unitId": "SNCOSMO", "match": {"fit_acceptable": True}}
+				"withTags": "SURVEY_ZTF",
+				"withoutTags": "HAS_ERROR"
 			}
 		}
 	"""
@@ -41,22 +39,8 @@ class TranSelectConfig(AmpelModelExtension):
 	created: Union[None, TimeConstraintConfig] = None
 	modified: Union[None, TimeConstraintConfig] = None
 	channels: Union[None, AnyOf, AllOf, OneOf] = None
-	withFlags: Union[None, AnyOf, AllOf, OneOf] = None
-	withoutFlags: Union[None, AnyOf, AllOf, OneOf] = None
-	scienceRecords: Union[None, ScienceRecordMatchConfig, List[ScienceRecordMatchConfig]] = None
-
-	@staticmethod
-	def _create_query(filter_config):
-		return {
-			't2records': {
-				'$elemMatch': {
-					't2_unit_id': filter_config.unitId,
-					'info.runConfig': filter_config.runConfig,
-					'info.hasError': False,
-					**{'results.-1.output.{}'.format(k): v for k,v in filter_config.match.items()}
-				}
-			}
-		}
+	withTags: Union[None, AnyOf, AllOf, OneOf] = None
+	withoutTags: Union[None, AnyOf, AllOf, OneOf] = None
 
 	def get_t2_query(self):
 		if not self.scienceRecords:
@@ -66,7 +50,7 @@ class TranSelectConfig(AmpelModelExtension):
 		else:
 			return self._create_query(self.scienceRecords)
 
-	@validator('channels', 'withFlags', 'withoutFlags', pre=True, whole=True)
+	@validator('channels', 'withTags', 'withoutTags', pre=True, whole=True)
 	def cast(cls, v, values, **kwargs):
 
 		field_name = kwargs['field'].name.split("_")[0]
@@ -189,8 +173,8 @@ class TranSelectConfig(AmpelModelExtension):
 		return v
 
 
-	@validator('withFlags', 'withoutFlags', whole=True)
+	@validator('withTags', 'withoutTags', whole=True)
 	def check_valid_flag(cls, value, values, **kwargs):
 		""" """
-		ConfigUtils.check_flags_from_dict(value, TransientFlags, **kwargs)
+		ConfigUtils.check_tags_from_dict(value, **kwargs)
 		return value

@@ -33,9 +33,8 @@ from ampel.pipeline.config.t3.T3TaskConfig import T3TaskConfig
 from ampel.pipeline.t3.TimeConstraint import TimeConstraint
 from ampel.core.flags.AlDocType import AlDocType
 from ampel.core.flags.FlagUtils import FlagUtils
-from ampel.core.flags.LogRecordFlags import LogRecordFlags
+from ampel.core.flags.LogRecordFlag import LogRecordFlag
 from ampel.base.TransientView import TransientView
-from ampel.base.flags.TransientFlags import TransientFlags
 from ampel.base.dataclass.GlobalInfo import GlobalInfo
 
 
@@ -124,7 +123,7 @@ class T3Event:
 
 				# Create DB logging handler instance (logging.Handler child class)
 				# This class formats, saves and pushes log records into the DB
-				self.db_logging_handler = DBLoggingHandler(LogRecordFlags.T3 | LogRecordFlags.CORE)
+				self.db_logging_handler = DBLoggingHandler(LogRecordFlag.T3 | LogRecordFlag.CORE)
 
 				# Add db logging handler to the logger stack of handlers 
 				self.logger.addHandler(self.db_logging_handler)
@@ -177,11 +176,11 @@ class T3Event:
 			time_created = TimeConstraint(self.tran_config.select.created),
 			time_modified = TimeConstraint(self.tran_config.select.modified),
 			with_tags = FlagUtils.to_dbtags_schema(
-				self.tran_config.select.withFlags, TransientFlags
-			) if self.tran_config.select.withFlags else None,
+				self.tran_config.select.withTags
+			) if self.tran_config.select.withTags else None,
 			without_tags = FlagUtils.to_dbtags_schema(
-				self.tran_config.select.withoutFlags, TransientFlags
-			) if self.tran_config.select.withoutFlags else None
+				self.tran_config.select.withoutTags
+			) if self.tran_config.select.withoutTags else None
 		)
 
 

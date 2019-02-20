@@ -220,9 +220,8 @@ def rununit(args):
 					}
 				},
 				"channels": {'anyOf': args.channels},
-				"scienceRecords": [r.dict() for r in args.science_records] if args.science_records else None,
-				"withFlags": "INST_ZTF",
-				"withoutFlags": "HAS_ERROR"
+				"withTags": "INST_ZTF",
+				"withoutTags": "HAS_ERROR"
 			},
 			"content": {
 				"docs": [

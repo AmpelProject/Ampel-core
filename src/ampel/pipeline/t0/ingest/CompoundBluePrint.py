@@ -43,8 +43,8 @@ class CompoundBluePrint:
 		#6 save eid <-> ppid association
 		self.d_eid_ppid = {}
 
-		#7 save eid <-> compound flags association
-		self.d_eid_compflags = {}
+		#7 save eid <-> compound tags association
+		self.d_eid_comptags = {}
 
 
 	def get_effids_of_chans(self, chan_names):
@@ -78,11 +78,11 @@ class CompoundBluePrint:
 		return self.d_eid_chnames[eff_comp_id]
 
 
-	def get_comp_flags(self, eff_comp_id):
+	def get_comp_tags(self, eff_comp_id):
 		"""	
 		Parameter eff_comp_id: effective compound id (string)
 		"""	
-		return self.d_eid_compflags[eff_comp_id]
+		return self.d_eid_comptags[eff_comp_id]
 
 
 	def get_eff_compound(self, eff_comp_id):

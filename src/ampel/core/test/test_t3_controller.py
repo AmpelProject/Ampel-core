@@ -39,8 +39,8 @@ def t3_jobs():
               "NUCLEAR_CHARLOTTE",
               "NUCLEAR_SJOERT"
             ]},
-            "withFlags": "INST_ZTF",
-            "withoutFlags": "HAS_ERROR"
+            "withTags": "INST_ZTF",
+            "withoutTags": "HAS_ERROR"
         },
         "content": {
           "docs": [

@@ -8,8 +8,16 @@
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from pydantic import BaseModel
+from ampel.base.AmpelTags import AmpelTags
+from pkg_resources import iter_entry_points
 from ampel.pipeline.common.AmpelUtils import AmpelUtils
 from ampel.pipeline.config.AmpelModelExtension import AmpelModelExtension
+
+for el in iter_entry_points('ampel.pipeline.sources'):
+	# Implementation of ampel/core/abstract/AbsSurveySetup.py
+	SurveySetup = el.load()
+	if not SurveySetup.tags_registered:
+		SurveySetup.register_tags()
 
 class ConfigUtils:
 
@@ -42,7 +50,7 @@ class ConfigUtils:
 
 
 	@classmethod
-	def check_flags_from_dict(cls, value, FlagClass, **kwargs):
+	def check_tags_from_dict(cls, value, **kwargs):
 		""" """
 		if isinstance(value, BaseModel):
 			arg = next(iter(value.dict().values()))
@@ -51,17 +59,17 @@ class ConfigUtils:
 		field_name = kwargs['field'].name.split("_")[0]
 
 		if AmpelUtils.check_seq_inner_type(arg, str):
-			cls.check_flags_from_seq(arg, field_name, FlagClass)
+			cls.check_tags_from_seq(arg, field_name)
 		else:
 			for v in arg:  
 				if isinstance(v, str):
-					cls.check_flags_from_seq([v], field_name, FlagClass)
+					cls.check_tags_from_seq([v], field_name)
 				elif isinstance(v, dict):
-					cls.check_flags_from_seq(next(iter(v.values())), field_name, FlagClass)
+					cls.check_tags_from_seq(next(iter(v.values())), field_name)
 
 
 	@classmethod
-	def check_flags_from_seq(cls, flags, field_name, FlagClass):
+	def check_tags_from_seq(cls, flags, field_name):
 		"""
 		"""
 		for el in AmpelUtils.iter(flags):
@@ -69,12 +77,11 @@ class ConfigUtils:
 			if type(el) is str:
 				try:
 					# pylint: disable=unsubscriptable-object
-					FlagClass[el]
+					AmpelTags.hashes[el]
 				except KeyError:
 					AmpelModelExtension.print_and_raise(
 						header="transients->select->%s config error" % field_name,
-						msg="Unknown flag '%s'.\nPlease check class %s for allowed flags" % 
-							(el, FlagClass.__name__)
+						msg="Unknown tag '%s'.\n" % el
 					)
 
 

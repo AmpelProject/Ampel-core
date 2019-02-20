@@ -261,11 +261,11 @@ class T3Job(T3Event):
 								tran_selection.remove(tran_data)
 		
 		
-				# withFlags filter
-				if task_sel_conf.withFlags and task_sel_conf.withFlags != job_sel_conf.withFlags:
+				# withTags filter
+				if task_sel_conf.withTags and task_sel_conf.withTags != job_sel_conf.withTags:
 		
 					# TODO: handle oneOf ?
-					for el in LogicSchemaUtils.iter(task_sel_conf.withFlags):
+					for el in LogicSchemaUtils.iter(task_sel_conf.withTags):
 		
 						if type(el) is str:
 							# pylint: disable=unsubscriptable-object
@@ -274,18 +274,18 @@ class T3Job(T3Event):
 							# TODO: handle oneOf ?
 							with_flags = LogicSchemaUtils.allOf_to_enum(el, TransientFlags)
 						else:
-							raise ValueError("Unsupported withFlags format")
+							raise ValueError("Unsupported withTags format")
 		
 						for tran_data in tran_selection:
 							if not with_flags in tran_data.flags:
 								tran_selection.remove(tran_data)
 		
 		
-				# withoutFlags filter
-				if task_sel_conf.withoutFlags and task_sel_conf.withoutFlags != job_sel_conf.withoutFlags:
+				# withoutTags filter
+				if task_sel_conf.withoutTags and task_sel_conf.withoutTags != job_sel_conf.withoutTags:
 		
 					# TODO: handle oneOf ?
-					for el in LogicSchemaUtils.iter(task_sel_conf.withoutFlags):
+					for el in LogicSchemaUtils.iter(task_sel_conf.withoutTags):
 		
 						if type(el) is str:
 							# pylint: disable=unsubscriptable-object
@@ -294,7 +294,7 @@ class T3Job(T3Event):
 							# TODO: handle oneOf ?
 							without_flags = LogicSchemaUtils.allOf_to_enum(el, TransientFlags)
 						else:
-							raise ValueError("Unsupported withoutFlags format")
+							raise ValueError("Unsupported withoutTags format")
 		
 						for tran_data in tran_selection:
 							if without_flags in tran_data.flags:
