@@ -20,6 +20,7 @@ class AbsSurveySetup(metaclass=AmpelABC):
 	-> get_alert_supplier(...): iterable class instance that for each alert yielded by 
 	the alert_loader, returns a dict with a format that the AMPEL AlertProcessor understands
 	-> get_alert_ingester(...): returns an adequate ingester instance
+	-> register_tags(...): see ampel.ztf.ZISetup for example.
 	"""
 
 	@abstractmethod
@@ -32,20 +33,5 @@ class AbsSurveySetup(metaclass=AmpelABC):
 
 	@staticmethod
 	@abstractmethod
-	def get_TransientFlag():
-		pass
-
-	@staticmethod
-	@abstractmethod
-	def get_PhotoFlag():
-		pass
-
-	@staticmethod
-	@abstractmethod
-	def get_CompoundFlag():
-		pass
-
-	@staticmethod
-	@abstractmethod
-	def get_ScienceRecordFlag():
+	def register_tags():
 		pass
