@@ -27,7 +27,8 @@ class AmpelArgumentParser(ArgumentParser):
 			'-c', '--config', 
 			type=partial(ConfigLoader.load_config, gather_plugins=False),
 		    default=ConfigLoader.DEFAULT_CONFIG, 
-			help='Path to Ampel config file in JSON format'
+			help='Path to Ampel config file in JSON format',
+			env_var='AMPEL_CONFIG',
 		)
 
 		# parse a first pass to get the resource defaults

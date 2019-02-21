@@ -72,7 +72,6 @@ def test_validate_config(mocker, mock_mongo, t3_unit_mocker):
 
 def test_db_prefix(mongod):
 	from ampel.pipeline.db.AmpelDB import AmpelDB
-	from ampel.pipeline.config.AmpelArgumentParser import AmpelArgumentParser
 	from ampel.pipeline.config.AmpelConfig import AmpelConfig
 	from ampel.pipeline.config.ConfigLoader import ConfigLoader
 	import json
@@ -109,3 +108,10 @@ def test_db_prefix(mongod):
 	finally:
 		AmpelConfig.reset()
 		AmpelDB.reset()
+
+def test_config_from_env():
+	from ampel.pipeline.config.AmpelArgumentParser import AmpelArgumentParser
+	from os import environ
+	environ['AMPEL_CONFIG'] = '{"AmpelDB":{"prefix":"foo"}}'
+	args = AmpelArgumentParser().parse_args([])
+	assert args.config['AmpelDB']['prefix'] == 'foo'
