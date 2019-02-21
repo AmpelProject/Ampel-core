@@ -159,7 +159,7 @@ class AmpelDB:
 		db = mc[col_config['dbPrefix'] + "_" + col_config['dbLabel']]
 
 		if 'w' in mode:
-			if col_name not in db.collection_names():
+			if col_name not in db.list_collection_names():
 				try:
 					cls.create_indexes(db, col_name)
 				except Exception:
