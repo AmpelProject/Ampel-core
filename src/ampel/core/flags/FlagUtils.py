@@ -4,11 +4,10 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 14.12.2017
-# Last Modified Date: 19.02.2019
+# Last Modified Date: 21.02.2019
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-import enum, binascii
-from bson import Binary
+#from bson import Binary
 from ampel.base.AmpelTags import AmpelTags
 from ampel.pipeline.common.AmpelUtils import AmpelUtils
 from ampel.pipeline.config.t3.AnyOf import AnyOf
@@ -27,22 +26,19 @@ class FlagUtils():
 
 
 	@classmethod
-	def to_dbtags_schema(cls, arg):
+	def hash_schema(cls, arg):
 		"""
-		Converts dict schema containing str representation of enum class members, \
-		into integers whose values are the index position of each member within the enum. \
-		We do a such conversion to ensure storing flags into mongoDB remains \
-		easy even if the enum hosts more than 64 members (in this case, \
-		storing flag values would require a cumbersome conversion to BinData)
+		Converts dict schema containing str representation of tags into 
+		a dict schema containing hashed values (int64).
 
 		:param arg: schema dict. See :obj:`QueryMatchSchema <ampel.pipeline.db.query.QueryMatchSchema>` \
-		for syntax detail.
-		:type arg: str, dict, :py:class:`AllOf <ampel.pipeline.config.t3.AllOf>`, \
+		docstring for more info regarding the used syntax.
+		:type arg: str, dict, \
+			:py:class:`AllOf <ampel.pipeline.config.t3.AllOf>`, \
 			:py:class:`AnyOf <ampel.pipeline.config.t3.AnyOf>`, \
 			:py:class:`OneOf <ampel.pipeline.config.t3.OneOf>`,
-		:param EnumClass: enum class (not instance) ex: ampel.base.flags.TransientFlags
 
-		:returns: new schema dict where flag elements are integer
+		:returns: new schema dict where tag elements are integers
 		:rtype: dict
 		"""
 
