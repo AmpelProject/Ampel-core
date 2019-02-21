@@ -171,10 +171,10 @@ class T3Event:
 			channels = self.tran_config.select.channels,
 			time_created = TimeConstraint(self.tran_config.select.created),
 			time_modified = TimeConstraint(self.tran_config.select.modified),
-			with_tags = FlagUtils.to_dbtags_schema(
+			with_tags = FlagUtils.hash_schema(
 				self.tran_config.select.withTags
 			) if self.tran_config.select.withTags else None,
-			without_tags = FlagUtils.to_dbtags_schema(
+			without_tags = FlagUtils.hash_schema(
 				self.tran_config.select.withoutTags
 			) if self.tran_config.select.withoutTags else None
 		)
