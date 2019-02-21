@@ -1,23 +1,16 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/pipeline/config/ConfigUtils.py
+# File              : Ampel/src/ampel/pipeline/config/ConfigUtils.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 06.10.2018
-# Last Modified Date: 17.10.2018
+# Last Modified Date: 21.02.2019
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from pydantic import BaseModel
-from ampel.base.AmpelTags import AmpelTags
-from pkg_resources import iter_entry_points
+from ampel.pipeline.config.AmpelConfig import AmpelConfig
 from ampel.pipeline.common.AmpelUtils import AmpelUtils
 from ampel.pipeline.config.AmpelModelExtension import AmpelModelExtension
-
-for el in iter_entry_points('ampel.pipeline.sources'):
-	# Implementation of ampel/core/abstract/AbsSurveySetup.py
-	SurveySetup = el.load()
-	if not SurveySetup.tags_registered:
-		SurveySetup.register_tags()
 
 class ConfigUtils:
 
@@ -73,12 +66,8 @@ class ConfigUtils:
 		"""
 		"""
 		for el in AmpelUtils.iter(flags):
-
 			if type(el) is str:
-				try:
-					# pylint: disable=unsubscriptable-object
-					AmpelTags.hashes[el]
-				except KeyError:
+				if el not in AmpelConfig._tags.keys():
 					AmpelModelExtension.print_and_raise(
 						header="transients->select->%s config error" % field_name,
 						msg="Unknown tag '%s'.\n" % el
