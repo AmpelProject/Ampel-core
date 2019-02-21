@@ -50,7 +50,7 @@ class AlertProcessor():
 		"""
 		:param str survey_id: id of the survey (ex: 'ZTFIPAC').
 		Associated ressources will be loaded using the entry_point with id 'survey_id'
-		defined by ampel plugins such as Ampel-ZTF (ampel.pipeline.t0.sources)
+		defined by ampel plugins such as Ampel-ZTF (ampel.pipeline.sources)
 
 		:param channels:
 
@@ -136,7 +136,7 @@ class AlertProcessor():
 		else:
 			self.input_setup = next(
 				pkg_resources.iter_entry_points(
-					'ampel.pipeline.t0.sources', survey_id
+					'ampel.pipeline.sources', survey_id
 				), None
 			).resolve()()
 
