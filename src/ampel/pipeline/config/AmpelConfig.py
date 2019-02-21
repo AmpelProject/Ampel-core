@@ -4,19 +4,21 @@
 # License           : BSD-3-Clause
 # Author            : Jakob van Santen <jakob.van.santen@desy.de>
 # Date              : 14.06.2018
-# Last Modified Date: 14.11.2018
+# Last Modified Date: 21.02.2019
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-import warnings
+from pkg_resources import iter_entry_points
 from ampel.pipeline.config.ReadOnlyDict import ReadOnlyDict
 from ampel.pipeline.common.AmpelUtils import AmpelUtils
+from ampel.base.AmpelTags import AmpelTags
+from ampel.pipeline.db.DBUtils import DBUtils
 
 class AmpelConfig:
-
 
 	# Static dict/ReadOnlyDict holding all ampel configurations
 	_global_config = None
 	_ignore_unavailable_units = set()
+	_tags = {}
 
 
 	@classmethod
@@ -57,6 +59,28 @@ class AmpelConfig:
 		cls.set_config(
 			ConfigLoader.load_config(gather_plugins=True)
 		)
+		cls.load_tags()
+
+	
+	@classmethod
+	def load_tags(cls):
+
+		d = {
+			ell: DBUtils.b2_hash(ell)		
+			for el in AmpelTags.__dict__.items()
+			if not el[0].startswith("__")
+			for ell in el[1]
+		}
+
+		for el in iter_entry_points('ampel.pipeline.sources'):
+			SurveySetup = el.load()
+			for el in SurveySetup.get_tags():
+				d[el] = DBUtils.b2_hash(el)
+	
+		if len(d) != len(set(d)):
+			raise ValueError("Hash collision detected")
+
+		cls._tags = cls.recursive_freeze(d)
 
 
 	@classmethod
@@ -73,11 +97,7 @@ class AmpelConfig:
 		if sub_element is None:
 			return cls._global_config
 
-		sub_conf = AmpelUtils.get_by_path(cls._global_config, sub_element)
-		if sub_conf is None:
-			return sub_conf
-			
-		return sub_conf
+		return AmpelUtils.get_by_path(cls._global_config, sub_element)
 
 
 	@classmethod
@@ -109,8 +129,10 @@ class AmpelConfig:
 	def set_config(cls, config):
 		""" """
 		if cls._global_config is not None:
+			import warnings
 			warnings.warn("Resetting global configuration")
 		cls._global_config = AmpelConfig.recursive_freeze(config)
+		cls.load_tags()
 		return cls._global_config
 
 
