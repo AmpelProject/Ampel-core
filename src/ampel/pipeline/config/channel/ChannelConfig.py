@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 02.09.2018
-# Last Modified Date: 11.11.2018
+# Last Modified Date: 21.02.2019
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import json, pkg_resources
@@ -27,6 +27,7 @@ class ChannelConfig(AmpelModelExtension):
 	We are thus forced to use Union[List, Tuple]
 	"""
 	channel: Union[int, str]
+	b2hash: int = None
 	active: bool = True
 	author: str = "Unspecified"
 	sources: Union[List[StreamConfig], Tuple[StreamConfig]]
@@ -91,7 +92,7 @@ class ChannelConfig(AmpelModelExtension):
 					# will raise exc if not found
 					source_setup = next(
 						pkg_resources.iter_entry_points(
-							'ampel.pipeline.t0.sources', source.get('stream')
+							'ampel.pipeline.sources', source.get('stream')
 						), None
 					).resolve()()
 
