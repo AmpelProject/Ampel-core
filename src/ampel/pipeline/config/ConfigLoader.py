@@ -44,6 +44,8 @@ class ConfigLoader:
 			##########
 
 			if tier in ("all", 0, 3):
+
+				from ampel.pipeline.db.DBUtils import DBUtils
 	
 				for resource in pkg_resources.iter_entry_points('ampel.channels'):
 	
@@ -66,6 +68,7 @@ class ConfigLoader:
 						# Schema validation
 						try:
 							ChannelConfig.create(tier, **chan_dict)
+							chan_dict["b2hash"] = DBUtils.b2_hash(chan_dict['channel'])
 							config['channels'][chan_dict['channel']] = chan_dict
 						except Exception as e:
 							print("Error in {} from {}".format(resource.name, resource.dist))
