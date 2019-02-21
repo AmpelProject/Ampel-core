@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 02.09.2018
-# Last Modified Date: 18.01.2019
+# Last Modified Date: 21.02.2019
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from ampel.base.abstract.AmpelABC import AmpelABC, abstractmethod
@@ -33,5 +33,5 @@ class AbsSurveySetup(metaclass=AmpelABC):
 
 	@staticmethod
 	@abstractmethod
-	def register_tags():
+	def get_tags():
 		pass
