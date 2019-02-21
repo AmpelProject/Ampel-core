@@ -11,11 +11,11 @@ from pkg_resources import iter_entry_points
 from ampel.core.flags.FlagUtils import FlagUtils
 from ampel.core.PhotoPoint import PhotoPoint
 from ampel.core.UpperLimit import UpperLimit
-from ampel.base.flags.PhotoFlag import PhotoFlag
 from ampel.base.PlainPhotoPoint import PlainPhotoPoint
 from ampel.base.PlainUpperLimit import PlainUpperLimit
 from ampel.base.LightCurve import LightCurve
 from ampel.pipeline.logging.AmpelLogger import AmpelLogger
+from ampel.pipeline.config.AmpelConfig import AmpelConfig
 from ampel.pipeline.db.AmpelDB import AmpelDB
 
 class LightCurveLoader:
@@ -37,12 +37,7 @@ class LightCurveLoader:
 		self.read_only = read_only
 		self.blend_col = AmpelDB.get_collection("blend")
 		self.photo_col = AmpelDB.get_collection("photo")
-
-		for el in iter_entry_points('ampel.pipeline.sources'):
-			# Implementation of ampel/core/abstract/AbsSurveySetup.py
-			SurveySetup = el.load()
-			if not SurveySetup.tags_registered:
-				SurveySetup.register_tags()
+		self.rev_tags = {v: k for k, v in AmpelConfig._tags.items()}
 
 
 	def load_from_db(self, tran_id, compound_id):
@@ -174,17 +169,20 @@ class LightCurveLoader:
 				if photo_dict is None:
 					raise ValueError("Upper limit %i not found" % el['ul'])
 
-			# Create PhotoFlag instance
-			flag = FlagUtils.dbtags_to_enumflag(photo_dict['alTags'], PhotoFlag) 
+			# Convert int tags into str
+			photo_dict['alTags'] = [
+				self.rev_tags[el] if el in self.rev_tags else el 
+				for el in photo_dict['alTags']
+			]
 
 			# If custom options avail (if dict contains more than the dict key 'pp')
 			if (len(el.keys()) > 1):
 				
 				obj = (
 					# Create photopoint wrapper instance
-					PhotoPoint(photo_dict, flag, read_only=False) if 'pp' in el 
+					PhotoPoint(photo_dict, read_only=False) if 'pp' in el 
 					# Create upperlimit wrapper instance
-					else UpperLimit(photo_dict, flag, read_only=False)
+					else UpperLimit(photo_dict, read_only=False)
 				)
 
 				# Update pp options dict and cast internal to immutable dict if required
@@ -193,8 +191,8 @@ class LightCurveLoader:
 			# Photopoint defined in the compound has no special policy, i.e len(el.keys()) == 1
 			else:
 				obj = (
-					PlainPhotoPoint(photo_dict, flag, self.read_only) if 'pp' in el 
-					else PlainUpperLimit(photo_dict, flag, self.read_only)
+					PlainPhotoPoint(photo_dict, self.read_only) if 'pp' in el 
+					else PlainUpperLimit(photo_dict, self.read_only)
 				)
 
 			# Update internal list of PhotoPoint/UpperLimit instances
@@ -271,10 +269,15 @@ class LightCurveLoader:
 						raise ValueError("PhotoPoint with id %i not found" % pp_id)
 
 					pp_doc = next(cursor)
-					pp_flags = FlagUtils.dbtags_to_enumflag(pp_doc['alTags'], PhotoFlag)
+
+					# Convert int tags into str
+					pp_doc['alTags'] = [
+						self.rev_tags[el] if el in self.rev_tags else el 
+						for el in pp_doc['alTags']
+					]
 
 					# Update dict already_loaded_photo
-					already_loaded_photo[pp_id] = PlainPhotoPoint(pp_doc, pp_flags, read_only=True)
+					already_loaded_photo[pp_id] = PlainPhotoPoint(pp_doc, read_only=True)
 
 
 				# If custom options avail (if dict contains more than the dict key 'pp')
