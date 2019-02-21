@@ -35,7 +35,7 @@ class QueryMatchTransients:
 		(see :obj:`QueryMatchSchema <ampel.pipeline.db.query.QueryMatchSchema>` \
 		for syntax details). Important: dict schema must contain **db flags** \
 		(integers representing enum members position within enum class), please see \
-		:func:`FlagUtils.to_dbtags_schema <ampel.core.flags.FlagUtils.to_dbtags_schema>` \
+		:func:`FlagUtils.hash_schema <ampel.core.flags.FlagUtils.hash_schema>` \
 		docstring for more info.
 
 		:type without_tags: str, int, dict
