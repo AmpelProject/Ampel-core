@@ -69,4 +69,43 @@ def test_validate_config(mocker, mock_mongo, t3_unit_mocker):
 		else:
 			t3_unit_mocker(task.unitId)
 			T3Task(config, **kwargs)
-	
+
+def test_db_prefix(mongod):
+	from ampel.pipeline.db.AmpelDB import AmpelDB
+	from ampel.pipeline.config.AmpelArgumentParser import AmpelArgumentParser
+	from ampel.pipeline.config.AmpelConfig import AmpelConfig
+	from ampel.pipeline.config.ConfigLoader import ConfigLoader
+	import json
+
+	AmpelConfig.reset()
+	AmpelDB.reset()
+	try:
+		# default case
+		config = {
+			'resources': {
+				'mongo': {
+					'writer': mongod,
+					'logger': mongod,
+				}
+			}
+		}
+		AmpelConfig.set_config(ConfigLoader.load_config(json.dumps(config)))
+		assert AmpelDB.get_collection('photo').database.name == 'Ampel_data'
+		AmpelDB.reset()
+		# override default
+		config = {
+			'AmpelDB': {
+				'prefix': 'foo'
+			},
+			'resources': {
+				'mongo': {
+					'writer': mongod,
+					'logger': mongod,
+				}
+			}
+		}
+		AmpelConfig.set_config(ConfigLoader.load_config(json.dumps(config)))
+		assert AmpelDB.get_collection('photo').database.name == 'foo_data'
+	finally:
+		AmpelConfig.reset()
+		AmpelDB.reset()

@@ -8,8 +8,9 @@
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import json, pkg_resources, traceback
-from os.path import join, dirname, abspath, realpath
+from os.path import join, dirname, abspath, realpath, exists
 from ampel.pipeline.config.channel.ChannelConfig import ChannelConfig
+from ampel.pipeline.config.AmpelConfig import AmpelConfig
 from ampel.pipeline.config.t3.T3JobConfig import T3JobConfig
 
 class ConfigLoader:
@@ -18,11 +19,25 @@ class ConfigLoader:
 		abspath(dirname(realpath(__file__))), 
 		'ztf_config.json'
 	)
+	BASE_CONFIG = AmpelConfig.recursive_freeze({
+	    "AmpelDB" : {
+	      "prefix": "Ampel"
+	    },
+	    "resources": {},
+	    "channels": {},
+	    "t0Filters": {},
+	    "t2RunConfig": {},
+	    "t2Units": {},
+	    "t3Jobs": {},
+	    "t3Tasks": {},
+	    "t3Units": {},
+	    "pwds": []
+	})
 
 	@staticmethod
 	def load_config(path=DEFAULT_CONFIG, tier="all", gather_plugins=True):
 		"""
-		Load the JSON configuration file at path
+		Load the JSON configuration from the string path (or the file at that path)
 		and add plugins registered via pkg_resources
 
 		:param tier: possible values are: 'all', 0, 1, 2, 3.
@@ -33,9 +48,12 @@ class ConfigLoader:
 		"""
 
 		try:
-	
-			with open(path) as f:
-				config = json.load(f)
+			config = AmpelConfig.recursive_unfreeze(ConfigLoader.BASE_CONFIG)
+			if exists(path):
+				with open(path) as f:
+					config.update(json.load(f))
+			else:
+				config.update(json.loads(path))
 			if not gather_plugins:
 				return config
 	
