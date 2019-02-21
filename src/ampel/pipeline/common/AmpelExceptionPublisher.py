@@ -18,11 +18,13 @@ from bson import ObjectId
 log = logging.getLogger()
 
 class AmpelExceptionPublisher:
-	def __init__(self, dry_run=False):
+	def __init__(self, dry_run=False, user='AMPEL-live', channel='ampel-troubles'):
 		token = AmpelConfig.get_config('resources.slack.operator')
 		self._slack = SlackClient(token)
 		self._troubles = AmpelDB.get_collection('troubles', 'r')
 		self._dry_run = dry_run
+		self._user = user
+		self._channel = channel
 
 		self._last_timestamp = ObjectId.from_datetime(datetime.datetime.now() - datetime.timedelta(hours=1))
 
@@ -68,8 +70,8 @@ class AmpelExceptionPublisher:
 
 		message = {
 			'attachments': [],
-			'channel': '#ampel-troubles',
-			'username': 'AMPEL-live',
+			'channel': '#'+self._channel,
+			'username': self._user,
 			'as_user': False
 		}
 
@@ -117,12 +119,14 @@ def run():
 	parser.require_resource('mongo', ['logger'])
 	parser.require_resource('slack', ['operator'])
 	parser.add_argument('--interval', type=int, default=10, help='Check for new exceptions every INTERVAL minutes')
+	parser.add_argument('-c', '--channel', type=str, default='ampel-troubles', help='Publish to this Slack channel')
+	parser.add_argument('-u', '--user', type=str, default='AMPEL-live', help='Publish to as this username')
 	parser.add_argument('--dry-run', action='store_true', default=False,
 	    help='Print exceptions rather than publishing to Slack')
 
 	args = parser.parse_args()
 
-	atp = AmpelExceptionPublisher(dry_run=args.dry_run)
+	atp = AmpelExceptionPublisher(dry_run=args.dry_run, channel=args.channel, user=args.user)
 	scheduler = schedule.Scheduler()
 	scheduler.every(args.interval).minutes.do(atp.publish)
 
