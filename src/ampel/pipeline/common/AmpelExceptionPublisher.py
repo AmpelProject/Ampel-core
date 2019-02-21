@@ -119,8 +119,8 @@ def run():
 	parser.require_resource('mongo', ['logger'])
 	parser.require_resource('slack', ['operator'])
 	parser.add_argument('--interval', type=int, default=10, help='Check for new exceptions every INTERVAL minutes')
-	parser.add_argument('-c', '--channel', type=str, default='ampel-troubles', help='Publish to this Slack channel')
-	parser.add_argument('-u', '--user', type=str, default='AMPEL-live', help='Publish to as this username')
+	parser.add_argument('--channel', type=str, default='ampel-troubles', help='Publish to this Slack channel')
+	parser.add_argument('--user', type=str, default='AMPEL-live', help='Publish to as this username')
 	parser.add_argument('--dry-run', action='store_true', default=False,
 	    help='Print exceptions rather than publishing to Slack')
 
