@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 13.10.2018
-# Last Modified Date: 22.10.2018
+# Last Modified Date: 21.02.2019
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from ampel.pipeline.config.t3.LogicSchemaIterator import LogicSchemaIterator
@@ -71,19 +71,3 @@ class LogicSchemaUtils:
 				raise ValueError("LogicSchemaUtils.reduce_to_set: unsupported format (2)")
 		else:
 			raise ValueError("LogicSchemaUtils.reduce_to_set: unsupported type: %s" % type(arg))
-
-
-	@staticmethod
-	def allOf_to_enum(arg, ClassFlag):
-		"""
-		.. sourcecode:: python\n
-		In []: LogicSchemaUtils.allOf_to_enum({'allOf': ['INST_ZTF', 'HAS_ERROR']}, TransientFlags)
-		Out[]: <TransientFlags.HAS_ERROR|INST_ZTF: 1048577>
-		"""
-		if "allOf" in arg:
-			ret = ClassFlag[arg['allOf'][0]]
-			for el in arg['allOf'][1:]:
-				ret |= ClassFlag[el]
-			return ret
-		else:
-			raise ValueError("Unsupported format")
