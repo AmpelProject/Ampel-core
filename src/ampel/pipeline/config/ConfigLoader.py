@@ -11,6 +11,9 @@ import json, pkg_resources, traceback
 from os.path import join, dirname, abspath, realpath
 from ampel.pipeline.config.channel.ChannelConfig import ChannelConfig
 from ampel.pipeline.config.t3.T3JobConfig import T3JobConfig
+from ampel.pipeline.config.AmpelConfig import AmpelConfig
+
+AmpelConfig.load_tags()
 
 class ConfigLoader:
 
