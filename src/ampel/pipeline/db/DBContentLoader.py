@@ -4,10 +4,11 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 13.01.2018
-# Last Modified Date: 21.02.2019
+# Last Modified Date: 22.02.2019
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from bson import ObjectId
+from pkg_resources import iter_entry_points
 
 from ampel.base.ScienceRecord import ScienceRecord
 from ampel.base.PlainPhotoPoint import PlainPhotoPoint
@@ -235,6 +236,12 @@ class DBContentLoader:
 		if tran_list: feedback += ", tran: " + str(len(tran_list))
 		if ext_jour_list: feedback += ", ext journal: " + str(len(ext_jour_list))
 
+		if photo_list and not TransientData.data_access_controllers:
+			for el in iter_entry_points('ampel.pipeline.sources'):
+				TransientData.add_data_access_controller(
+					el.load().get_data_access_controller()
+				)
+
 		self.logger.info(feedback, extra=extra)
 
 		# key: tran_id, value: instance of TransientData
@@ -291,7 +298,7 @@ class DBContentLoader:
 				tran_data.set_channels(
 					# Transient doc['channels'] cannot be None
 					AmpelUtils.to_set(doc['channels']) if channels_set is None
-					else (channels_set & set(doc['channels'])) # intersection
+					else (channels_set & AmpelUtils.to_set(doc['channels'])) # intersection
 				)
 
 				# Save journal entries associated with provided channels
