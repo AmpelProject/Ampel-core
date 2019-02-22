@@ -9,7 +9,6 @@
 
 from ampel.base.TransientView import TransientView
 from ampel.pipeline.common.AmpelUtils import AmpelUtils
-from ampel.pipeline.t3.PhotoDataAccessManager import PhotoDataAccessManager
 
 class TransientData:
 	"""
