@@ -4,23 +4,23 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 26.02.2018
-# Last Modified Date: 22.10.2018
+# Last Modified Date: 22.02.2019
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import logging
 from time import time
-from ampel.pipeline.db.AmpelDB import AmpelDB
+from ampel.core.flags.LogRecordFlag import LogRecordFlag
 from ampel.pipeline.logging.DBLoggingHandler import DBLoggingHandler
 from ampel.pipeline.logging.DBEventDoc import DBEventDoc
 from ampel.pipeline.logging.AmpelLogger import AmpelLogger
 from ampel.pipeline.logging.LoggingUtils import LoggingUtils
 from ampel.pipeline.common.AmpelUtils import AmpelUtils
-from ampel.base.flags.TransientFlags import TransientFlags
-from ampel.core.flags.LogRecordFlags import LogRecordFlags
 from ampel.pipeline.common.AmpelUnitLoader import AmpelUnitLoader
 from ampel.pipeline.config.t3.LogicSchemaUtils import LogicSchemaUtils
+from ampel.pipeline.config.t3.LogicSchemaIterator import LogicSchemaIterator
 from ampel.pipeline.t3.T3JournalUpdater import T3JournalUpdater
 from ampel.pipeline.t3.T3Event import T3Event
+from ampel.pipeline.db.AmpelDB import AmpelDB
 
 
 class T3Job(T3Event):
@@ -94,14 +94,14 @@ class T3Job(T3Event):
 				if hasattr(self, "db_logging_handler"):
 
 					forked_handler = self.db_logging_handler.fork(
-						LogRecordFlags.T3 | LogRecordFlags.TASK
+						LogRecordFlag.T3 | LogRecordFlag.TASK
 					)
 
 					if self.update_tran_journal:
 						self.run_ids[task_config.task] = self.db_logging_handler.get_run_id()
 
 					logger.addHandler(
-						self.db_logging_handler.fork(LogRecordFlags.T3 | LogRecordFlags.TASK)
+						self.db_logging_handler.fork(LogRecordFlag.T3 | LogRecordFlag.TASK)
 					)
 
 				else:
@@ -195,7 +195,7 @@ class T3Job(T3Event):
 
 	def process_tran_data(self, transients):
 		"""
-		:param List[TransientData] transients:
+		:param transients: TransientData iterable (dict_values in most cases)
 		"""
 
 		if transients is None:
@@ -215,8 +215,7 @@ class T3Job(T3Event):
 
 			try:
 
-				# cast dict_values to list
-				tran_selection = list(transients)
+				# shortcut
 				task_sel_conf = task_config.transients.select
 
 				#############################################################
@@ -229,110 +228,125 @@ class T3Job(T3Event):
 				# Channel filter
 				if task_sel_conf.channels and task_sel_conf.channels != job_sel_conf.channels:
 		
-					# TODO: handle oneOf ?
-					for el in LogicSchemaUtils.iter(task_sel_conf.channels):
+					tran_selection = set()
+
+					# Members between iterations are 'or' connected
+					for el in LogicSchemaIterator(task_sel_conf.channels):
 		
-						if type(el) in (int, str):
-							task_chan_set = {el}
-						elif isinstance(el, dict):
-							# TODO: handle oneOf ?
-							task_chan_set = set(el['allOf'])
+						# scalar
+						if isinstance(el, (str, int)):
+							for tran_data in transients:
+								if el in tran_data.channels:
+									tran_selection.add(tran_data)
+
+						# 'and' connected elements
+						elif isinstance(el, (list, tuple)):
+							for tran_data in transients:
+								if all(x in tran_data.channels for x in el):
+									tran_selection.add(tran_data)
+
 						else:
 							raise ValueError("Unsupported channel format")
+				else:
+					# No channel subselection means we accept every channel
+					tran_selection = set(transients)
 		
-						for tran_data in tran_selection:
-							if not task_chan_set.issubset(tran_data.channels):
-								tran_selection.remove(tran_data)
-		
-		
+
 				# withTags filter
 				if task_sel_conf.withTags and task_sel_conf.withTags != job_sel_conf.withTags:
-		
-					# TODO: handle oneOf ?
-					for el in LogicSchemaUtils.iter(task_sel_conf.withTags):
-		
-						if type(el) is str:
-							# pylint: disable=unsubscriptable-object
-							with_flags = TransientFlags[el]
-						elif isinstance(el, dict):
-							# TODO: handle oneOf ?
-							with_flags = LogicSchemaUtils.allOf_to_enum(el, TransientFlags)
+
+					# new empty set containing tran_data matching withTags 
+					wt_selection = set()
+
+					# Members between iterations are 'or' connected
+					for el in LogicSchemaIterator(task_sel_conf.withTags):
+
+						# scalar
+						if isinstance(el, (str, int)):
+							for tran_data in tran_selection:
+								if el in tran_data.tags:
+									wt_selection.add(tran_data)
+
+						# 'and' connected elements
+						elif isinstance(el, (tuple, list)):
+							for tran_data in tran_selection:
+								if all(x in tran_data.tags for x in el):
+									tran_selection.add(tran_data)
 						else:
 							raise ValueError("Unsupported withTags format")
-		
-						for tran_data in tran_selection:
-							if not with_flags in tran_data.flags:
-								tran_selection.remove(tran_data)
+
+					tran_selection = tran_selection.intersection(wt_selection)
 		
 		
 				# withoutTags filter
 				if task_sel_conf.withoutTags and task_sel_conf.withoutTags != job_sel_conf.withoutTags:
 		
-					# TODO: handle oneOf ?
-					for el in LogicSchemaUtils.iter(task_sel_conf.withoutTags):
+					# Members between iterations are 'or' connected
+					for el in LogicSchemaIterator(task_sel_conf.withoutTags):
 		
-						if type(el) is str:
-							# pylint: disable=unsubscriptable-object
-							without_flags = TransientFlags[el]
-						elif isinstance(el, dict):
-							# TODO: handle oneOf ?
-							without_flags = LogicSchemaUtils.allOf_to_enum(el, TransientFlags)
+						# scalar
+						if isinstance(el, (str, int)):
+							for tran_data in transients:
+								if tran_data in tran_selection and el in tran_data.tags:
+									tran_selection.remove(tran_data)
+
+						# 'and' connected elements
+						elif isinstance(el, (tuple, list)):
+							for tran_data in transients:
+								if tran_data in tran_selection and all(x in tran_data.tags for x in el):
+									tran_selection.remove(tran_data)
+
 						else:
 							raise ValueError("Unsupported withoutTags format")
 		
-						for tran_data in tran_selection:
-							if without_flags in tran_data.flags:
-								tran_selection.remove(tran_data)
 
-
-				if tran_selection:
-
-					chan_set = LogicSchemaUtils.reduce_to_set(
-						task_sel_conf.channels
-					)
-
-					tran_views = self.create_tran_views(
-						task_name,
-						tran_selection, chan_set, 
-						task_config.transients.content.docs,
-						task_config.transients.content.t2SubSelection
-					)
-
-					# Feedback
-					self.logger.shout(
-						"Providing %s (task %s) with %i TransientViews" % 
-						(task_config.unitId, task_name, len(tran_views))
-					)
-
-					# Compute and add task duration for each transients chunks
-					start = time()
-
-					# Adding tviews to t3_units may return JournalUpdate dataclasses
-					custom_journal_entries = self.t3_units[task_name].add(tran_views)
-
-					self.event_docs[task_name].add_duration(time()-start)
-
-					if self.update_tran_journal:
-
-						chan_list = list(chan_set)
-
-						self.journal_updater.add_default_entries(
-							tran_views, chan_list, event_name=task_name, 
-							run_id=self.run_ids.get(task_name)
-						)
-
-						self.journal_updater.add_custom_entries(
-							custom_journal_entries, chan_list, event_name=task_name, 
-							run_id=self.run_ids.get(task_name)
-						)
-
-						# Publish journal entries to DB
-						self.journal_updater.flush()
-
-				else:
-
+				if not tran_selection:
 					self.logger.info("%s: No transients matched selection criteria" % task_name)
+					return 
 
+				# Temporary solution, please improve
+				chan_set = LogicSchemaUtils.reduce_to_set(
+					task_sel_conf.channels
+				)
+
+				tran_views = self.create_tran_views(
+					task_name,
+					tran_selection, 
+					chan_set, 
+					task_config.transients.content.docs,
+					task_config.transients.content.t2SubSelection
+				)
+
+				# Feedback
+				self.logger.shout(
+					"Providing %s (task %s) with %i TransientViews" % 
+					(task_config.unitId, task_name, len(tran_views))
+				)
+
+				# Compute and add task duration for each transients chunks
+				start = time()
+
+				# Adding tviews to t3_units may return JournalUpdate dataclasses
+				custom_journal_entries = self.t3_units[task_name].add(tran_views)
+
+				self.event_docs[task_name].add_duration(time()-start)
+
+				if self.update_tran_journal:
+
+					chan_list = list(chan_set)
+
+					self.journal_updater.add_default_entries(
+						tran_views, chan_list, event_name=task_name, 
+						run_id=self.run_ids.get(task_name)
+					)
+
+					self.journal_updater.add_custom_entries(
+						custom_journal_entries, chan_list, event_name=task_name, 
+						run_id=self.run_ids.get(task_name)
+					)
+
+					# Publish journal entries to DB
+					self.journal_updater.flush()
 
 			except Exception as e:
 
