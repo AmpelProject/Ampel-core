@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 31.05.2018
-# Last Modified Date: 20.02.2019
+# Last Modified Date: 22.02.2019
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from ampel.base.TransientView import TransientView
@@ -15,8 +15,14 @@ class TransientData:
 	"""
 	"""
 
-	# Static dict with key=channel, value=instance of PhotoDataAccessManager
-	pdams = {}
+	# Static list of DataAccessControllers
+	data_access_controllers = set()
+
+
+	@classmethod
+	def add_data_access_controller(cls, ControllerClass):
+		cls.data_access_controllers.add(ControllerClass)
+
 
 	def __init__(self, tran_id, state, logger):
 		"""
@@ -130,8 +136,8 @@ class TransientData:
 		self._add(self.journal, entry, channels)
 
 
-	# TODO: implement docs filtering
-	def create_view(self, channels, docs=None, t2_ids=None):
+	# TODO: implement doc_selection filtering
+	def create_view(self, channels, doc_selection=None, t2_ids=None):
 		"""
 		:param channels: channel ids
 		:type channels: Iterable[str], Iterable[int]
@@ -140,12 +146,12 @@ class TransientData:
 
 		# Create transient based on info combined from different channels.
 		if AmpelUtils.is_sequence(channels):
-			return self._create_multi_view(channels, docs, t2_ids)
+			return self._create_multi_view(channels, doc_selection, t2_ids)
 
 		if isinstance(channels, set):
 			if len(channels) == 1:
-				return self._create_one_view(next(iter(channels)), docs, t2_ids)
-			return self._create_multi_view(channels, docs, t2_ids)
+				return self._create_one_view(next(iter(channels)), doc_selection, t2_ids)
+			return self._create_multi_view(channels, doc_selection, t2_ids)
 
 		# Unspecified channel. We create a view based on what's available
 		if channels is None:
@@ -157,19 +163,19 @@ class TransientData:
 			# At least one channel association exisits
 			elif len(self.channels) == 1:
 				return self._create_one_view(
-					next(iter(self.channels)), docs, t2_ids
+					next(iter(self.channels)), doc_selection, t2_ids
 				)
 
 			else:
 				self.logger.warning("Creating multi-view transient with all available channels")
-				return self._create_multi_view(self.channels, docs, t2_ids)
+				return self._create_multi_view(self.channels, doc_selection, t2_ids)
 
 		# Channel was specificied (channels is actually a channel)
-		return self._create_one_view(channels, docs, t2_ids)
+		return self._create_one_view(channels, doc_selection, t2_ids)
 
 
-	# TODO: implement docs filtering
-	def _create_one_view(self, channel, docs=None, t2_ids=None):
+	# TODO: implement doc_selection filtering
+	def _create_one_view(self, channel, doc_selection=None, t2_ids=None):
 		"""
 		:param channel: channel id 
 		:type channel: str, int
@@ -210,15 +216,24 @@ class TransientData:
 		)	
 
 
-	# TODO: implement docs filtering
-	def _create_multi_view(self, channels, docs=None, t2_ids=None):
+	# TODO: implement doc_selection filtering
+	def _create_multi_view(self, channels, doc_selection=None, t2_ids=None):
 		"""
+		Important Note: to the unlucky future maintainer of this code:
+		The possibly encoded channel logic (see LogicSchemaUtils) is ignored by the projection. 
+		In others words, the logic defined for channel members 
+		is reduced to an 'or' connected chain.
+		ScienceRecord for any channels of the chain will be included in the transient view.
+		Feel free to improve this if you consider it necessary.
+		The filtering done at the transient level performed in T3Job.process_tran_data() 
+		could be a good starting point. Over.
+
 		:returns: instance of :py:class:`TransientView <ampel.base.TransientView>` or None
 		"""
 
 		# Iterable with single value
 		if len(channels) == 1:
-			return self._create_one_view(next(iter(channels)), docs, t2_ids)
+			return self._create_one_view(next(iter(channels)), doc_selection, t2_ids)
 
 		# Gather compounds from different channels 
 		# (will be empty of coumpound loading was not requested)
@@ -309,16 +324,27 @@ class TransientData:
 
 		# Past this point, regardless of how many channel info we have (one is enough) 
 		# we have to check permissions (db results contain all pps/uls, 
-		# wether or not they are public/private)
+		# whether or not they are public/private)
 	
 		# Loop through channel(s)
 		pps = set()
 		uls = set()
+
 		for channel in AmpelUtils.iter(channels):
-			if channel not in TransientData.pdams:
-				TransientData.pdams[channel] =  PhotoDataAccessManager(channel)
-			pps.update(TransientData.pdams[channel].get_photopoints(self.photopoints))
-			uls.update(TransientData.pdams[channel].get_upperlimits(self.upperlimits))
+
+			for Controller in TransientData.data_access_controllers:
+
+				pps.update(
+					Controller.get_photodata(
+						channel, self.photopoints
+					)
+				)
+
+				uls.update(
+					Controller.get_photodata(
+						channel, self.upperlimits
+					)
+				)
 
 		# Return pps / uls for given combination of channels.
 		# Example for single source ZTF:
