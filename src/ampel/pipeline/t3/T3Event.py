@@ -374,8 +374,10 @@ class T3Event:
 			# Load ampel TransientData instances with given states
 			self.logger.info("Loading transients")
 			al_tran_data = self.db_content_loader.load_new(
-				chunked_tran_ids, self.tran_config.select.channels, 
-				self.tran_config.state, state_ids, self.tran_config.content.docs, 
+				chunked_tran_ids, 
+				self.tran_config.select.channels, 
+				self.tran_config.state, state_ids, 
+				self.tran_config.content.docs, 
 				self.tran_config.content.t2SubSelection
 			)
 			
@@ -389,10 +391,10 @@ class T3Event:
 
 	def create_tran_views(self, event_name, transients, channels, docs=None, t2_subsel=None, t2_filter : Optional[Dict[str,Any]]=None):
 		"""
-		:param transients: list of TransientData instances
-		:type transients: list(:py:class:`TransientData <ampel.pipeline.t3.TransientData>`)
+		:param transients: TransientData instances
+		:type transients: iterable(:py:class:`TransientData <ampel.pipeline.t3.TransientData>`)
 
-		:rtype: list(:py:class:`TransientView <ampel.base.TransientView>`)
+		:rtype: tuple(:py:class:`TransientView <ampel.base.TransientView>`)
 		"""
 
 		# Append channel info to upcoming DB logging entries
