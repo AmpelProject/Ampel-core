@@ -16,11 +16,12 @@ class AbsSurveySetup(metaclass=AmpelABC):
 	performed before alert ingestion happens (ex: static settings may be set in AmpelAlert).
 	Please perform those tasks in __init__().
 
-	Also, the following three methods must be implemented:
+	Also, the following methods must be implemented:
 	-> get_alert_supplier(...): iterable class instance that for each alert yielded by 
 	the alert_loader, returns a dict with a format that the AMPEL AlertProcessor understands
 	-> get_alert_ingester(...): returns an adequate ingester instance
-	-> register_tags(...): see ampel.ztf.ZISetup for example.
+	-> get_tags(...): see ampel.ztf.ZISetup for implementation details.
+	-> get_data_access_controller(...): see ampel.ztf.ZISetup implementation details.
 	"""
 
 	@abstractmethod
@@ -34,4 +35,9 @@ class AbsSurveySetup(metaclass=AmpelABC):
 	@staticmethod
 	@abstractmethod
 	def get_tags():
+		pass
+
+	@staticmethod
+	@abstractmethod
+	def get_data_access_controller():
 		pass
