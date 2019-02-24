@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 14.12.2017
-# Last Modified Date: 03.12.2018
+# Last Modified Date: 24.02.2019
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import logging, struct, os
@@ -260,9 +260,18 @@ class DBLoggingHandler(logging.Handler):
 		if not self.log_dicts:
 			return
 
+		# save referenced log entries locally
+		dicts = self.log_dicts 
+
+		# clear referenced log entries
+		self.log_dicts = []
+		self.prev_records = None
+
 		try:
 
 			if self.headers:
+			
+				# following command drops the GIL
 				self.col.bulk_write(
 					[
 						UpdateOne(
@@ -281,12 +290,7 @@ class DBLoggingHandler(logging.Handler):
 				)
 				self.headers = None
 
-			# Empty referenced logs entries
-			dicts = self.log_dicts 
-			self.log_dicts = []
-			self.prev_records = None
-
-			# pymongo does drop the GIL while sending and receiving data over the network
+			# pymongo drops the GIL while sending and receiving data over the network
 			self.col.insert_many(dicts)
 
 		except BulkWriteError as bwe:
