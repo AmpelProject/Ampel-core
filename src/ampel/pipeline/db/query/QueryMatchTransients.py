@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 13.01.2018
-# Last Modified Date: 19.02.2019
+# Last Modified Date: 24.02.2019
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from bson.objectid import ObjectId
@@ -77,12 +77,12 @@ class QueryMatchTransients:
 				and_list = []
 				if created_constraint:
 					and_list.append({
-						'created.' + chan_name: created_constraint
+						'created.%s' % chan_name: created_constraint
 					})
 
 				if modified_constraint:
 					and_list.append({
-						'modified.' + chan_name: modified_constraint
+						'modified.%s' % chan_name: modified_constraint
 					})
 				or_list.append({'$and': and_list})
 			query['$or'] = or_list
