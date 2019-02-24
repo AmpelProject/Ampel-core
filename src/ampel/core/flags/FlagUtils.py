@@ -4,11 +4,11 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 14.12.2017
-# Last Modified Date: 21.02.2019
+# Last Modified Date: 24.02.2019
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 #from bson import Binary
-from ampel.base.AmpelTags import AmpelTags
+from ampel.pipeline.config.AmpelConfig import AmpelConfig
 from ampel.pipeline.common.AmpelUtils import AmpelUtils
 from ampel.pipeline.config.t3.AnyOf import AnyOf
 from ampel.pipeline.config.t3.AllOf import AllOf
@@ -45,7 +45,7 @@ class FlagUtils():
 		out={}
 		
 		if isinstance(arg, str):
-			return AmpelTags.hashes[arg]
+			return AmpelConfig._tags[arg]
 
 		if type(arg) in (AllOf, AnyOf, OneOf):
 			arg = arg.dict()
@@ -54,24 +54,24 @@ class FlagUtils():
 
 			if "anyOf" in arg:
 				if AmpelUtils.check_seq_inner_type(arg['anyOf'], str):
-					out['anyOf'] = [AmpelTags.hashes[el] for el in arg['anyOf']]
+					out['anyOf'] = [AmpelConfig._tags[el] for el in arg['anyOf']]
 				else:
 					out['anyOf'] = []
 					for el in arg['anyOf']:
 						if isinstance(el, str):
-							out['anyOf'].append(AmpelTags.hashes[el])
+							out['anyOf'].append(AmpelConfig._tags[el])
 						elif isinstance(el, dict):
 							if 'allOf' not in el:
 								raise ValueError("Unsupported format (1)")
-							out['anyOf'].append({'allOf': [AmpelTags.hashes[ell] for ell in el['allOf']]})
+							out['anyOf'].append({'allOf': [AmpelConfig._tags[ell] for ell in el['allOf']]})
 						else:
 							raise ValueError("Unsupported format (type: %s)" % type(el))
 	
 			elif 'allOf':
-				out['allOf'] = [AmpelTags.hashes[el] for el in arg['allOf']]
+				out['allOf'] = [AmpelConfig._tags[el] for el in arg['allOf']]
 
 			elif 'oneOf':
-				out['oneOf'] = [AmpelTags.hashes[el] for el in arg['oneOf']]
+				out['oneOf'] = [AmpelConfig._tags[el] for el in arg['oneOf']]
 		else:
 			raise ValueError("Unsupported format (%s)" % type(arg))
 		
