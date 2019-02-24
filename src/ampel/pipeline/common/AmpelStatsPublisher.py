@@ -4,11 +4,12 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 26.05.2018
-# Last Modified Date: 31.10.2018
-# Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
+# Last Modified Date: 19.12.2018
+# Last Modified By  : Jakob van Santen <jakob.van.santen@desy.de>
 
 import sys
 import json
+import psutil
 from time import time, strftime
 from ampel.pipeline.logging.AmpelLogger import AmpelLogger
 from ampel.pipeline.common.AmpelUtils import AmpelUtils
@@ -16,7 +17,7 @@ from ampel.pipeline.common.Schedulable import Schedulable
 from ampel.pipeline.config.AmpelConfig import AmpelConfig
 from ampel.pipeline.db.AmpelDB import AmpelDB
 from ampel.core.flags.AlDocType import AlDocType
-
+from ampel.core.flags.T2RunStates import T2RunStates
 
 class AmpelStatsPublisher(Schedulable):
 	""" 
@@ -69,7 +70,7 @@ class AmpelStatsPublisher(Schedulable):
 	def __init__(
 		self, channel_names=None, 
 		publish_to=['graphite', 'mongo', 'print'],
-		publish_what=['col_stats', 'docs_count', 'daemon', 'channels', 'archive'],
+		publish_what=['col_stats', 'docs_count', 'daemon', 'channels', 'archive', 'system'],
 	):
 		"""
 		:param list(str) channel_names: list of channel names, if None, stats for all avail channels will be reported. 
@@ -108,7 +109,8 @@ class AmpelStatsPublisher(Schedulable):
 			'docs_count': 30, 
 			'daemon': 10, 
 			'channels': 10,
-			'archive': 10
+			'archive': 10,
+			'system': 1,
 		}
 
 		# update interval dict. Values in minutes
@@ -232,7 +234,7 @@ class AmpelStatsPublisher(Schedulable):
 
 
 	def send_metrics(
-		self, daemon=False, col_stats=False, docs_count=False, channels=False, archive=False
+		self, daemon=False, col_stats=False, docs_count=False, channels=False, archive=False, system=True,
 	):
 		"""
 		Send/publish metrics\n
@@ -242,7 +244,7 @@ class AmpelStatsPublisher(Schedulable):
 
 		stats_dict = {'dbInfo': {}, 'count': {}}
 
-		if not any([daemon, col_stats, docs_count, channels]):
+		if not any([daemon, col_stats, docs_count, channels, archive, system]):
 			raise ValueError("Bad arguments")
 
 
@@ -307,7 +309,30 @@ class AmpelStatsPublisher(Schedulable):
 							'alDocType': AlDocType.T2RECORD
 						},
 						self.tran_proj
-					).count()
+					).count(),
+
+					't2_states': {
+						T2RunStates(doc['_id']).name: doc['count'] \
+						for doc in self.col_blend.aggregate([
+							{'$match':
+								{
+									'tranId': {"$gt" : 1},
+									'alDocType': AlDocType.T2RECORD
+								}
+							},
+							{'$project':
+								{
+									'runState': 1
+								}
+							},
+							{'$group':
+								{
+									'_id': '$runState',
+									'count': {'$sum': 1}
+								}
+							}
+						])
+					}
 				}
 			}
 
@@ -356,6 +381,14 @@ class AmpelStatsPublisher(Schedulable):
 			stats_dict["archive"] = {}
 			stats_dict["archive"]["tables"] = self.archive_client.get_statistics()
 
+		if system:
+			stats_dict["system"] = {
+				"cpu_percent": psutil.cpu_percent(),
+				"disk_io_counters": {k:v._asdict() for k,v in psutil.disk_io_counters(perdisk=True).items() if not (k.startswith('loop') or k.startswith('dm-'))},
+				"net_io_counters": {k:v._asdict() for k,v in psutil.net_io_counters(pernic=True).items()}
+			}
+			for field in 'cpu_stats', 'swap_memory', 'virtual_memory':
+				stats_dict["system"][field] = getattr(psutil, field)()._asdict()
 
 		# Build dict with changed items only
 		out_dict = {
@@ -488,14 +521,21 @@ def run():
 
 	from ampel.pipeline.config.AmpelArgumentParser import AmpelArgumentParser
 	parser = AmpelArgumentParser()
-	parser.require_resource('mongo', ['logger'])
-	parser.require_resource('archive', ['reader'])
-	parser.require_resource('graphite')
 	parser.add_argument('--publish-to', nargs='+', default=['log', 'graphite'],
 	    choices=['mongo', 'graphite', 'log', 'print'],
 	    help='Publish stats by these methods')
+	parser.add_argument('--publish-what', nargs='+', default=['col_stats', 'docs_count', 'daemon', 'channels', 'archive', 'system'],
+	    choices=['col_stats', 'docs_count', 'daemon', 'channels', 'archive', 'system'],
+	    help='Publish these stats')
+	args, _ = parser.parse_known_args()
+	if 'archive' in args.publish_what:
+		parser.require_resource('archive', ['reader'])
+	if 'graphite' in args.publish_to:
+		parser.require_resource('graphite')
+	if 'mongo' in args.publish_to or set(args.publish_what).difference(['archive', 'system']):
+		parser.require_resource('mongo', ['logger'])
 	args = parser.parse_args()
 
-	asp = AmpelStatsPublisher(publish_to=args.publish_to)
-	asp.send_all_metrics()
+	asp = AmpelStatsPublisher(publish_to=args.publish_to, publish_what=args.publish_what)
+	asp.send_metrics(**{k:True for k in args.publish_what})
 	asp.run()

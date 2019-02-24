@@ -99,6 +99,10 @@ class AmpelUnitLoader:
 
 		return UnitClass
 
+	@classmethod
+	def reset(cls):
+		for value in cls.UnitClasses.values():
+			value.clear()
 
 	@classmethod
 	def get_resources(cls, UnitClass):

@@ -37,11 +37,13 @@ class T3Task(T3Event):
 		self.run_ids = {}
 
 		self.config = config
-		self.channels = list(
-			LogicSchemaUtils.reduce_to_set(
-				self.config.transients.select.channels
+		self.channels = None
+		if self.config.transients.select.channels is not None:
+			self.channels = list(
+				LogicSchemaUtils.reduce_to_set(
+					self.config.transients.select.channels
+				)
 			)
-		)
 			
 		# Instanciate t3 unit
 		T3Unit = AmpelUnitLoader.get_class(
@@ -79,7 +81,8 @@ class T3Task(T3Event):
 		try:
 
 			tran_views = self.create_tran_views(
-				self.name, transients, self.channels
+				self.name, transients, self.channels,
+				t2_filter=self.config.transients.select.scienceRecords
 			)
 
 			# Feedback

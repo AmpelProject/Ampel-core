@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 29.09.2018
-# Last Modified Date: 22.10.2018
+# Last Modified Date: 22.02.2019
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from pydantic import BaseModel, validator
@@ -17,6 +17,7 @@ from ampel.pipeline.common.docstringutils import gendocstring
 from ampel.pipeline.config.t3.AllOf import AllOf
 from ampel.pipeline.config.t3.AnyOf import AnyOf
 from ampel.pipeline.config.t3.OneOf import OneOf
+from ampel.pipeline.config.t3.ScienceRecordMatchConfig import ScienceRecordMatchConfig
 
 
 @gendocstring
@@ -29,8 +30,14 @@ class TranSelectConfig(AmpelModelExtension):
 				"created": {"after": {"use": "$timeDelta", "arguments": {"days": -40}}},
 				"modified": {"after": {"use": "$timeDelta", "arguments": {"days": -1}}},
 				"channels": "HU_GP_CLEAN",
+<<<<<<< HEAD
 				"withTags": "SURVEY_ZTF",
 				"withoutTags": "HAS_ERROR"
+=======
+				"withFlags": "INST_ZTF",
+				"withoutFlags": "HAS_ERROR",
+				"scienceRecords": {"unitId": "SNCOSMO", "match": {"fit_acceptable": True}}
+>>>>>>> master
 			}
 		}
 	"""
@@ -40,6 +47,26 @@ class TranSelectConfig(AmpelModelExtension):
 	channels: Union[None, AnyOf, AllOf, OneOf] = None
 	withTags: Union[None, AnyOf, AllOf, OneOf] = None
 	withoutTags: Union[None, AnyOf, AllOf, OneOf] = None
+	scienceRecords: Union[None, ScienceRecordMatchConfig, List[ScienceRecordMatchConfig]] = None
+
+
+	@validator('scienceRecords')
+	def build_t2_query(cls, v):
+		def create_query(filter_config):
+			return {
+				't2records': {
+					'$elemMatch': {
+						't2_unit_id': filter_config.unitId,
+						'info.runConfig': filter_config.runConfig,
+						'info.hasError': False,
+						**{'results.-1.output.{}'.format(k): v for k,v in filter_config.match.items()}
+					}
+				}
+			}
+		if isinstance(v, list):
+			return {'$and': list(map(create_query, v))}
+		else:
+			return create_query(v)
 
 
 	@validator('channels', 'withTags', 'withoutTags', pre=True, whole=True)

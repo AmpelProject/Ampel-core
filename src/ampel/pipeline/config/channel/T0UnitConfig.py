@@ -13,6 +13,8 @@ from pydantic import BaseModel, validator
 from ampel.pipeline.common.docstringutils import gendocstring
 from ampel.pipeline.config.AmpelConfig import AmpelConfig
 from ampel.pipeline.config.AmpelModelExtension import AmpelModelExtension
+from ampel.pipeline.common.AmpelUnitLoader import AmpelUnitLoader
+from ampel.pipeline.config.EncryptedConfig import EncryptedConfig
 
 @gendocstring
 class T0UnitConfig(AmpelModelExtension):
@@ -21,7 +23,7 @@ class T0UnitConfig(AmpelModelExtension):
 	"""
 
 	unitId: str
-	runConfig: Union[None, Dict[str, Any]] = None
+	runConfig: Union[None, Dict] = None
 
 
 	@validator('unitId', pre=True)
@@ -49,3 +51,27 @@ class T0UnitConfig(AmpelModelExtension):
 			)
 
 		return value
+
+	@validator('runConfig')
+	def validate_run_config(cls, run_config, values, **kwargs):
+		"""
+		"""
+
+		# Exists (checked by prior validator)
+		klass = AmpelUnitLoader.get_class(
+			tier=0, unit_name=values['unitId']
+		)
+
+		if hasattr(klass, 'RunConfig'):
+
+			RunConfig = getattr(klass, 'RunConfig')
+			rc = RunConfig(**run_config)
+
+			for k in rc.fields.keys():
+				v = getattr(rc, k)
+				if type(v) is EncryptedConfig:
+					setattr(rc, k, AmpelConfig.decrypt_config(v.dict()))
+
+			return rc
+
+		return run_config

@@ -74,8 +74,12 @@ def test_get_required_resources():
 	from ampel.pipeline.t2.T2Controller import get_required_resources
 	from ampel.pipeline.config.ConfigLoader import ConfigLoader
 	
-	config = ConfigLoader.load_config(tier="all")
-	assert len(config['channels']) > 0
-	resources = get_required_resources(config)
-	assert len(resources) > 0
-	
+	from ampel.pipeline.config.AmpelConfig import AmpelConfig
+	AmpelConfig.reset()
+	try:
+		AmpelConfig.set_config(ConfigLoader.load_config(tier="all"))
+		assert len(AmpelConfig.get_config('channels')) > 0
+		resources = get_required_resources()
+		assert len(resources) > 0
+	finally:
+		AmpelConfig.reset()

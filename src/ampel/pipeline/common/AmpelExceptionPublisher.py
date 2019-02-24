@@ -18,20 +18,20 @@ from bson import ObjectId
 log = logging.getLogger()
 
 class AmpelExceptionPublisher:
-	def __init__(self, dry_run=False):
+	def __init__(self, dry_run=False, user='AMPEL-live', channel='ampel-troubles'):
 		token = AmpelConfig.get_config('resources.slack.operator')
 		self._slack = SlackClient(token)
 		self._troubles = AmpelDB.get_collection('troubles', 'r')
 		self._dry_run = dry_run
+		self._user = user
+		self._channel = channel
 
 		self._last_timestamp = ObjectId.from_datetime(datetime.datetime.now() - datetime.timedelta(hours=1))
 
 	def t3_fields(self, doc):
 		fields = []
-		fields.append({'title': 'Job', 'value': doc.get('jobName', None), 'short': True})
-		fields.append({'title': 'Task', 'value': doc.get('taskName', None), 'short': True})
-		if isinstance(doc.get('logs', None), ObjectId):
-			fields.append({'title': 'logs', 'value': doc['logs'].binary.hex(), 'short': True})
+		fields.append({'title': 'Job', 'value': doc.get('job', None), 'short': True})
+		fields.append({'title': 'Run', 'value': doc.get('runId', None), 'short': True})
 		return fields
 
 	def format_attachment(self, doc):
@@ -42,9 +42,9 @@ class AmpelExceptionPublisher:
 				if field in more:
 					fields.append({'title': field, 'value': more.get(field, None), 'short': True})
 		elif doc['tier'] == 2:
-			fields.append({'title': 'run_config', 'value': more.get('run_config', None), 'short': True})
-			if isinstance(more.get('t2_doc', None), ObjectId):
-				fields.append({'title': 't2_doc', 'value': more['t2_doc'].binary.hex(), 'short': True})
+			fields.append({'title': 'unit', 'value': doc.get('t2UnitId', None), 'short': True})
+			fields.append({'title': 'tran', 'value': doc.get('tranId', None), 'short': True})
+			fields.append({'title': 'run', 'value': doc.get('runId', None), 'short': True})
 		elif doc['tier'] == 3:
 			fields += self.t3_fields(more if 'jobName' in more else doc)
 		if 'exception' in doc:
@@ -70,8 +70,8 @@ class AmpelExceptionPublisher:
 
 		message = {
 			'attachments': [],
-			'channel': '#ampel-troubles',
-			'username': 'AMPEL-live',
+			'channel': '#'+self._channel,
+			'username': self._user,
 			'as_user': False
 		}
 
@@ -119,12 +119,14 @@ def run():
 	parser.require_resource('mongo', ['logger'])
 	parser.require_resource('slack', ['operator'])
 	parser.add_argument('--interval', type=int, default=10, help='Check for new exceptions every INTERVAL minutes')
+	parser.add_argument('--channel', type=str, default='ampel-troubles', help='Publish to this Slack channel')
+	parser.add_argument('--user', type=str, default='AMPEL-live', help='Publish to as this username')
 	parser.add_argument('--dry-run', action='store_true', default=False,
 	    help='Print exceptions rather than publishing to Slack')
 
 	args = parser.parse_args()
 
-	atp = AmpelExceptionPublisher(dry_run=args.dry_run)
+	atp = AmpelExceptionPublisher(dry_run=args.dry_run, channel=args.channel, user=args.user)
 	scheduler = schedule.Scheduler()
 	scheduler.every(args.interval).minutes.do(atp.publish)
 

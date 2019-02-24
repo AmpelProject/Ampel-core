@@ -62,7 +62,6 @@ def t3_jobs():
             "withoutTags": "HAS_ERROR"
         },
         "content": {
-          "state": "$latest",
           "docs": [
             "TRANSIENT",
             "COMPOUND",
@@ -81,14 +80,18 @@ def t3_jobs():
           "task": "SpaceCowboy",
           "unitId": "potemkin",
           "runConfig": None,
-          "updateJournal": True,
-          "select": {
-            "channel(s)": [
-              "NUCLEAR_CHARLOTTE",
-              "NUCLEAR_SJOERT"
-            ],
-            "state": "$latest",
-            "t2SubSelection": "SNCOSMO"
+          "transients" : {
+            "select": {
+                "channels": {
+                    "anyOf": [
+                        "NUCLEAR_CHARLOTTE",
+                        "NUCLEAR_SJOERT"
+                    ]
+                }
+            },
+            "content": {
+                "t2SubSelection": "SNCOSMO"
+            }
           }
         }
       ]
@@ -110,6 +113,7 @@ def testing_config(testing_class, t3_jobs, mongod, graphite):
 	    	}
 	    },
 	    't3Jobs': {job['job']: job for job in t3_jobs},
+	    't3Tasks': {},
 	}
 	AmpelConfig.set_config(config)
 	return config
@@ -131,13 +135,10 @@ def test_launch_job(testing_config):
 
 def test_monitor_processes(testing_config):
 	controller = T3Controller()
-	try:
-		controller.start()
-		controller.launch_t3_job(controller.job_configs['jobbyjob'])
-		stats = controller.monitor_processes()
-		assert stats['processes'] == 1
-	finally:
-		controller.stop()
+	controller.launch_t3_job(controller.job_configs['jobbyjob'])
+	stats = controller.monitor_processes()
+	assert stats['processes'] == 1
+	controller.join()
 
 @pytest.fixture
 def minimal_config(mongod, testing_class):
@@ -161,21 +162,21 @@ def minimal_config(mongod, testing_class):
 			'jobbyjob': {
 				'job': 'jobbyjob',
 				'schedule': 'every(1).hour',
-				'trasients': {
+				'transients': {
 					'select':  {
-						'channel(s)': ['0', '1'],
+						'channels': {'anyOf': ['0', '1']},
 					},
-					'load': {
-						'state': '$latest',
-						'doc(s)': ['TRANSIENT', 'COMPOUND', 'T2RECORD', 'PHOTOPOINT']
-					}
+					'content': {
+						'docs': ['TRANSIENT', 'COMPOUND', 'T2RECORD', 'PHOTOPOINT']
+					},
+					'state': '$all'
 				},
 				'tasks': [
 					{'task': 'noselect', 'unitId': 'potemkin'},
 					{'task': 'config', 'unitId': 'potemkin', 'runConfig': {}},
 					# {'name': 'badconfig', 't3Unit': 'potemkin', 'runConfig': 'default_doesnotexist'},
-					{'task': 'select0', 'unitId': 'potemkin', 'select': {'channel(s)': ['0']}},
-					{'task': 'select1', 'unitId': 'potemkin', 'select': {'channel(s)': ['1']}},
+					{'task': 'select0', 'unitId': 'potemkin', 'transients': {'select': {'channels': '0'}, 'state': '$all'}},
+					{'task': 'select1', 'unitId': 'potemkin', 'transients': {'select': {'channels': '1'}, 'state': '$latest'}},
 					
 				]
 			}
@@ -185,7 +186,8 @@ def minimal_config(mongod, testing_class):
 		},
 		't3Units': {
 			'potemkin': {'classFullPath': 'potemkin'}
-		}
+		},
+		't3Tasks': {}
 	}
 	AmpelConfig.set_config(config)
 	yield config
@@ -247,9 +249,9 @@ def test_schedule_malicious_job():
 			ev(scheduler, line)
 
 def test_entrypoint_list(testing_config, capsys):
-	from ampel.pipeline.t3.T3Controller import list
+	from ampel.pipeline.t3.T3Controller import list_tasks
 
-	list(Namespace())
+	list_tasks(Namespace())
 	captured = capsys.readouterr()
 	assert len(captured.out.split('\n'))-4 == 1
 
@@ -258,12 +260,12 @@ def test_entrypoint_show(testing_config, capsys):
 
 	show(Namespace(job='jobbyjob', task=None))
 	captured = capsys.readouterr()
-	assert len(captured.out.split('\n')) == 65
+	assert len(captured.out.split('\n')) == 68
 
 	show(Namespace(job='jobbyjob', task='SpaceCowboy'))
 	captured = capsys.readouterr()
 	print('\n'+captured.out)
-	assert len(captured.out.split('\n')) == 15
+	assert len(captured.out.split('\n')) == 19
 
 def test_entrypoint_runjob(testing_config, capsys):
 	from ampel.pipeline.db.AmpelDB import AmpelDB
@@ -271,8 +273,8 @@ def test_entrypoint_runjob(testing_config, capsys):
 
 	troubles = AmpelDB.get_collection('troubles').count()
 
-	runjob(Namespace(job='jobbyjob'))
-	assert AmpelDB.get_collection('troubles').count() == troubles+1, "an exception was logged"
+	with pytest.raises(PotemkinError):
+		runjob(Namespace(job='jobbyjob', task=None))
 
 def test_entrypoint_rununit(testing_config, capsys):
 	from ampel.pipeline.db.AmpelDB import AmpelDB
@@ -281,16 +283,39 @@ def test_entrypoint_rununit(testing_config, capsys):
 	troubles = AmpelDB.get_collection('troubles').count()
 	
 	with pytest.raises(PotemkinError):
-		rununit(Namespace(unit='potemkin', created=-1, modified=-1, channels=['0', '1'], runconfig=None, update_tran_journal=False, update_run_col=False))
-	rununit(Namespace(unit='potemkin', created=-1, modified=-1, channels=['0', '1'], runconfig=None, update_tran_journal=False, update_run_col=True))
-	assert AmpelDB.get_collection('troubles').count() == troubles+1, "an exception was logged"
+		rununit(Namespace(
+			unit='potemkin',
+			created=-1,
+			modified=-1,
+			channels=['0', '1'],
+			runconfig=None,
+			update_tran_journal=False,
+			update_run_col=False,
+			chunk=10
+		))
 
 def test_get_required_resources():
-	from ampel.pipeline.t3.T3Controller import get_required_resources
+	from ampel.pipeline.t3.T3Controller import get_required_resources, T3Controller, T3JobConfig, AmpelUnitLoader
 	from ampel.pipeline.config.ConfigLoader import ConfigLoader
 	from ampel.pipeline.config.AmpelConfig import AmpelConfig
 	
 	AmpelConfig.set_config(ConfigLoader.load_config(tier="all"))
+	assert len(AmpelConfig.get_config("t3Jobs")) > 0
+	assert len(T3Controller.load_job_configs()) > 0
+	units = set()
+	for job in T3Controller.load_job_configs().values():
+		if isinstance(job, T3JobConfig):
+			for task in job.tasks:
+				units.add(task.unitId)
+		else:
+			task = job
+			units.add(task.unitId)
+	assert len(units) > 0
+	resources = set()
+	for unit in units:
+		for resource in AmpelUnitLoader.get_class(3, unit).resources:
+			resources.add(resource)
+	assert len(resources) > 0
 
 	resources = get_required_resources()
 	assert len(resources) > 0

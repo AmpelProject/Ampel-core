@@ -12,7 +12,11 @@ from time import time
 from datetime import datetime
 from itertools import islice
 from abc import abstractmethod
+from mongomock.filtering import filter_applies
+from functools import partial
+from typing import Optional, Dict, Any
 
+from ampel.utils.json import AmpelEncoder
 from ampel.pipeline.db.query.QueryMatchTransients import QueryMatchTransients
 from ampel.pipeline.db.query.QueryLatestCompound import QueryLatestCompound
 from ampel.pipeline.db.query.QueryEventsCol import QueryEventsCol
@@ -378,8 +382,13 @@ class T3Event:
 			
 			yield al_tran_data
 
+	def _matches_selection(self, view : TransientView, match : Optional[Dict[str,Any]]) -> bool:
+		"""
+		Match transient view against a Mongo query
+		"""
+		return view is not None and (match is None or filter_applies(match, AmpelEncoder(lossy=True).default(view)))
 
-	def create_tran_views(self, event_name, transients, channels, docs=None, t2_subsel=None):
+	def create_tran_views(self, event_name, transients, channels, docs=None, t2_subsel=None, t2_filter : Optional[Dict[str,Any]]=None):
 		"""
 		:param transients: TransientData instances
 		:type transients: iterable(:py:class:`TransientData <ampel.pipeline.t3.TransientData>`)
@@ -402,7 +411,7 @@ class T3Event:
 		# Build specific array of ampel TransientView instances where each transient 
 		# is cut down according to the specified sub-selections parameters
 		# None means no view exists for the given channel(s)
-		tran_views = tuple(filter(None, 
+		tran_views = tuple(filter(partial(self._matches_selection, match=t2_filter),
 			[
 				el.create_view(channels, docs, t2_subsel)
 				for el in transients
@@ -410,7 +419,7 @@ class T3Event:
 		))
 
 		# Feedback if so wished
-		if self.config.transients.debug:
+		if self.config.transients is not None and self.config.transients.debug:
 
 			list_chan = AmpelUtils.to_list(channels, try_reduce=True)
 			for tran_view in tran_views:

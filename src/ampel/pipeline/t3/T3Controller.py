@@ -112,6 +112,10 @@ class T3Controller(Schedulable):
 				del self._processes[pid]
 		return len(self._processes)
 
+	def join(self):
+		while self.process_count > 0:
+			time.sleep(1)
+
 	def monitor_processes(self):
 		"""
 		"""
@@ -133,9 +137,10 @@ def list_tasks(args):
 	"""List configured tasks"""
 	jobs = AmpelConfig.get_config('t3Jobs')
 	labels = {name: [(t.get('task'),t.get('unitId')) for t in job['tasks']] for name, job in jobs.items() if job.get('active', True)}
-	tasks = [(t.get('task'), t.get('unitId')) for t in AmpelConfig.get_config('t3Tasks').values()]
-	if len(tasks):
-		labels['(channel tasks)'] = tasks
+	if AmpelConfig.get_config('t3Tasks') is not None:
+		tasks = [(t.get('task'), t.get('unitId')) for t in AmpelConfig.get_config('t3Tasks').values()]
+		if len(tasks):
+			labels['(channel tasks)'] = tasks
 	columns = max([len(k) for k in labels.keys()]), max([max([len(k[0]) for k in tasks]) for tasks in labels.values()]), max([max([len(k[1]) for k in tasks]) for tasks in labels.values()])
 	template = "{{:{}s}} {{:{}s}} {{:{}s}}".format(*columns)
 	print(template.format('Job', 'Task', 'Unit'))
@@ -185,7 +190,7 @@ def rununit(args):
 					"after": {
 						"use": "$timeDelta",
 						"arguments": {
-							"days": args.created
+							"days": -args.created
 						}
 					}
 				},
@@ -193,7 +198,7 @@ def rununit(args):
 					"after": {
 						"use": "$timeDelta",
 						"arguments": {
-							"days": args.modified
+							"days": -args.modified
 						}
 					}
 				},
@@ -216,7 +221,7 @@ def rununit(args):
 			{
 				"task": "rununit.task",
 				"unitId": args.unit,
-				"runConfig": args.runconfig
+				"runConfig": getattr(args, 'runConfig', None)
 			}
 		]
 	}
@@ -278,7 +283,7 @@ def get_required_resources():
 def main():
 
 	from ampel.pipeline.config.AmpelArgumentParser import AmpelArgumentParser
-	from argparse import SUPPRESS
+	from argparse import SUPPRESS, Action, Namespace
 	import sys
 
 	parser = AmpelArgumentParser(add_help=False)
@@ -289,7 +294,8 @@ def main():
 	# flesh out parser with resources required by t3 units
 	parser.require_resources(*get_required_resources())
 
-	subparsers = parser.add_subparsers(help='command help')
+	subparsers = parser.add_subparsers(help='command help', dest='command')
+	subparsers.required = True
 	subparser_list = []
 	def add_command(f, name=None):
 		if name is None:
@@ -313,13 +319,12 @@ def main():
 
 	p = add_command(rununit)
 	p.add_argument('unit')
-	p.add_argument('--runconfig', default=None)
 	p.add_argument('--update-run-col', default=False, action="store_true", help="Record this run in the jobs collection")
 	p.add_argument('--update-tran-journal', default=False, action="store_true", help="Record this run in the transient journal")
-	p.add_argument('--channels', nargs='+', default=[])
-	p.add_argument('--chunk', type=int, default=200)
-	p.add_argument('--created', type=int, default=-40)
-	p.add_argument('--modified', type=int, default=-1)
+	p.add_argument('--channels', nargs='+', default=[], help="Select transients in any of these channels")
+	p.add_argument('--chunk', type=int, default=200, help="Provide CHUNK transients at a time")
+	p.add_argument('--created', type=int, default=40, help="Select transients created in the last CREATED days")
+	p.add_argument('--modified', type=int, default=1, help="Select transients modified in the last MODIFIED days")
 
 	p = add_command(list_tasks, 'list')
 
@@ -328,8 +333,24 @@ def main():
 	p.add_argument('task', nargs='?', default=None)
 	
 	opts, argv = parser.parse_known_args()
-	if hasattr(opts, 'func') and opts.func == rununit:
-		parser.require_resources(*AmpelUnitLoader.get_class(3, opts.unit).resources)
+	if opts.command == 'rununit':
+		klass = AmpelUnitLoader.get_class(3, opts.unit)
+		parser.require_resources(*klass.resources)
+		if hasattr(klass, 'RunConfig'):
+			p = subparsers.choices[opts.command]
+			class GroupAction(Action):
+				def __call__(self, parser, namespace, values, option_string=None):
+					group,dest = self.dest.split('.',2)
+					groupspace = getattr(namespace, group, dict())
+					groupspace[dest] = values
+					setattr(namespace, group, groupspace)
+			for f in klass.RunConfig.__fields__.values():
+				if f.required:
+					p.add_argument('runConfig.'+f.name, type=f.type_, 
+					    action=GroupAction, metavar=f.name)
+				else:
+					p.add_argument('--'+f.name, dest='runConfig.'+f.name, type=f.type_,
+					    default=f.default, action=GroupAction, metavar=f.name.upper(), help="{} parameter".format(opts.unit))
 
 	# Now that side-effect-laden parsing is done, add help
 	for p in [parser] + subparser_list:

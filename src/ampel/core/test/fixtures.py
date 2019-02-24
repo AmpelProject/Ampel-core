@@ -1,4 +1,5 @@
 from os.path import abspath, join, dirname
+from os import environ
 import pytest, json, subprocess, socket
 
 def docker_service(image, port, environ={}, mounts=[], healthcheck=None, port_mapping=None):
@@ -40,24 +41,33 @@ def docker_service(image, port, environ={}, mounts=[], healthcheck=None, port_ma
 
 @pytest.fixture(scope="session")
 def mongod():
-	gen = docker_service('mongo:3.6', 27017)
-	port = next(gen)
-	yield 'mongodb://localhost:{}/'.format(port)
+	if 'MONGO_HOSTNAME' in environ and 'MONGO_PORT' in environ:
+		yield 'mongodb://{}:{}'.format(environ['MONGO_HOSTNAME'], environ['MONGO_PORT'])
+	else:
+		gen = docker_service('mongo:3.6', 27017)
+		port = next(gen)
+		yield 'mongodb://localhost:{}/'.format(port)
 
 @pytest.fixture(scope="session")
 def graphite():
-	gen = docker_service('gographite/go-graphite:latest', 2003)
-	port = next(gen)
-	yield 'graphite://localhost:{}/'.format(port)
+	if 'GRAPHITE_HOSTNAME' in environ and 'GRAPHITE_PORT' in environ:
+		yield 'graphite://{}:{}'.format(environ['GRAPHITE_HOSTNAME'], environ['GRAPHITE_PORT'])
+	else:
+		gen = docker_service('gographite/go-graphite:latest', 2003)
+		port = next(gen)
+		yield 'graphite://localhost:{}/'.format(port)
 
 @pytest.fixture(scope="session")
 def postgres():
-	gen = docker_service('postgres:10.3', 5432,
-		environ={'POSTGRES_USER': 'ampel', 'POSTGRES_DB': 'ztfarchive', 'ARCHIVE_READ_USER': 'archive-readonly', 'ARCHIVE_WRITE_USER': 'ampel-client'},
-		mounts=[(join(abspath(dirname(__file__)), 'deploy', 'production', 'initdb', 'archive'), '/docker-entrypoint-initdb.d/')],
-		healthcheck='pg_isready -U postgres -p 5432 -h `hostname` || exit 1')
-	port = next(gen)
-	yield 'postgresql://ampel@localhost:{}/ztfarchive'.format(port)
+	if 'ARCHIVE_HOSTNAME' in environ and 'ARCHIVE_PORT' in environ:
+		yield 'postgresql://ampel@{}:{}/ztfarchive'.format(environ['ARCHIVE_HOSTNAME'], environ['ARCHIVE_PORT'])
+	else:
+		gen = docker_service('postgres:10.3', 5432,
+			environ={'POSTGRES_USER': 'ampel', 'POSTGRES_DB': 'ztfarchive', 'ARCHIVE_READ_USER': 'archive-readonly', 'ARCHIVE_WRITE_USER': 'ampel-client'},
+			mounts=[(join(abspath(dirname(__file__)), 'deploy', 'production', 'initdb', 'archive'), '/docker-entrypoint-initdb.d/')],
+			healthcheck='pg_isready -U postgres -p 5432 -h `hostname` || exit 1')
+		port = next(gen)
+		yield 'postgresql://ampel@localhost:{}/ztfarchive'.format(port)
 
 @pytest.fixture
 def empty_archive(postgres):
@@ -206,9 +216,11 @@ def alert_factory(latest_schema):
 @pytest.fixture
 def minimal_ingestion_config(mongod):
 	from ampel.pipeline.config.AmpelConfig import AmpelConfig
+	from ampel.pipeline.common.AmpelUnitLoader import AmpelUnitLoader
 	from ampel.pipeline.db.AmpelDB import AmpelDB
 	
 	AmpelConfig.reset()
+	AmpelUnitLoader.reset()
 	source = {
 			"stream": 'ZTFIPAC',
 			"parameters": {
@@ -260,6 +272,7 @@ def minimal_ingestion_config(mongod):
 		AmpelDB.get_collection(collection).drop()
 	yield config
 	AmpelConfig.reset()
+	AmpelUnitLoader.reset()
 
 @pytest.fixture
 def ingested_transients(alert_generator, minimal_ingestion_config, caplog):

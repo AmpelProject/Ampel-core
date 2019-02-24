@@ -1,6 +1,6 @@
 from setuptools import setup
 setup(name='Ampel-core',
-      version='0.4.1',
+      version='0.5.1',
       package_dir={'':'src'},
       packages=[
           'ampel.core',
@@ -10,6 +10,7 @@ setup(name='Ampel-core',
           'ampel.pipeline.config',
           'ampel.pipeline.config.channel',
           'ampel.pipeline.config.t3',
+          'ampel.pipeline.config.time',
           'ampel.pipeline.common',
           'ampel.pipeline.db',
           'ampel.pipeline.db.query',
@@ -20,7 +21,7 @@ setup(name='Ampel-core',
           'ampel.pipeline.t0.ingest',
           'ampel.pipeline.t2',
           'ampel.pipeline.t3',
-          'ampel.test',
+          'ampel.core.test',
           'ampel.utils',
           'ampel.view',
       ],
@@ -52,6 +53,9 @@ setup(name='Ampel-core',
           'ampel.pipeline.t0.units' : [
               'BasicFilter = ampel.pipeline.t0.filter.BasicFilter:BasicFilter',
               'BasicMultiFilter = ampel.pipeline.t0.filter.BasicMultiFilter:BasicMultiFilter'
+          ],
+          'ampel.pipeline.t3.units' : [
+              'T3PlaceboUnit = ampel.pipeline.t3.T3PlaceboUnit:T3PlaceboUnit'
           ],
       }
 )

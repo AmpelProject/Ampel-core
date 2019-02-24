@@ -87,8 +87,8 @@ class DBRejectedLogsSaver(Handler):
 			):
 	
 				prev_dict = self.log_dicts[-1]
-				if type(prev_dict['msg']) is not list:
-					prev_dict['msg'] = [prev_dict['msg'], record.msg]
+				if type(prev_dict.get('msg', None)) is not list:
+					prev_dict['msg'] = [prev_dict.get('msg', None), record.msg]
 				else:
 					prev_dict['msg'].append(record.msg)
 	

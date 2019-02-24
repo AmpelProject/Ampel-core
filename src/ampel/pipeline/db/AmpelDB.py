@@ -14,7 +14,7 @@ class AmpelDB:
 	"""
 	"""
 
-	_db_prefix = "Ampel"
+	_db_prefix = None
 
 	# Existing mongo clients
 	_existing_mcs = {}
@@ -95,11 +95,17 @@ class AmpelDB:
 		"""
 		:returns: None
 		"""
-		cls._db_name_prefix = prefix
+		cls._db_prefix = prefix
 		for d in cls._ampel_cols.values():
 			d['dbPrefix'] = prefix
 			d['col'] = None
 
+	@classmethod
+	def reset(cls):
+		cls._db_prefix = None
+		cls._existing_mcs.clear()
+		for col_config in cls._ampel_cols.values():
+			col_config['col'] = None
 
 	@classmethod
 	def enable_rejected_collections(cls, channel_names):
@@ -138,6 +144,9 @@ class AmpelDB:
 		if col_name not in cls._ampel_cols:
 			raise ValueError("Unknown collection: '%s'" % col_name)
 
+		if cls._db_prefix is None:
+			cls.set_db_prefix(AmpelConfig.get_config('AmpelDB.prefix') or "Ampel")
+
 		# Shortcut
 		col_config = cls._ampel_cols[col_name]
 
@@ -150,7 +159,7 @@ class AmpelDB:
 		db = mc[col_config['dbPrefix'] + "_" + col_config['dbLabel']]
 
 		if 'w' in mode:
-			if col_name not in db.collection_names():
+			if col_name not in db.list_collection_names():
 				try:
 					cls.create_indexes(db, col_name)
 				except Exception:
