@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 29.09.2018
-# Last Modified Date: 22.02.2019
+# Last Modified Date: 24.02.2019
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from pydantic import BaseModel, validator
@@ -30,14 +30,9 @@ class TranSelectConfig(AmpelModelExtension):
 				"created": {"after": {"use": "$timeDelta", "arguments": {"days": -40}}},
 				"modified": {"after": {"use": "$timeDelta", "arguments": {"days": -1}}},
 				"channels": "HU_GP_CLEAN",
-<<<<<<< HEAD
 				"withTags": "SURVEY_ZTF",
 				"withoutTags": "HAS_ERROR"
-=======
-				"withFlags": "INST_ZTF",
-				"withoutFlags": "HAS_ERROR",
 				"scienceRecords": {"unitId": "SNCOSMO", "match": {"fit_acceptable": True}}
->>>>>>> master
 			}
 		}
 	"""
