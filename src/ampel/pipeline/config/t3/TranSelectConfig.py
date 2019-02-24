@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 29.09.2018
-# Last Modified Date: 22.10.2018
+# Last Modified Date: 24.02.2019
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from pydantic import BaseModel, validator
