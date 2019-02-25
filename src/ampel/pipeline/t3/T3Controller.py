@@ -9,6 +9,7 @@
 
 import schedule, time, threading, logging, json
 from types import MappingProxyType
+from functools import partial
 from multiprocessing import Process
 from ampel.pipeline.t3.T3Job import T3Job
 from ampel.pipeline.t3.T3Task import T3Task
@@ -344,12 +345,27 @@ def main():
 					groupspace = getattr(namespace, group, dict())
 					groupspace[dest] = values
 					setattr(namespace, group, groupspace)
+			def validate_union(v, types):
+				for t in types:
+					try:
+						return validate(t)(v)
+					except:
+						pass
+				raise TypeError
+			def validate(typus):
+				if repr(type(typus)) == 'typing.Union':
+					return partial(validate_union, types=typus.__args__)
+				elif hasattr(typus, 'parse_raw'):
+					return lambda v: typus.parse_raw(v).dict()
+				else:
+					return typus
 			for f in klass.RunConfig.__fields__.values():
+				validator = validate(f.type_)
 				if f.required:
-					p.add_argument('runConfig.'+f.name, type=f.type_, 
+					p.add_argument('runConfig.'+f.name, type=validator, 
 					    action=GroupAction, metavar=f.name)
 				else:
-					p.add_argument('--'+f.name, dest='runConfig.'+f.name, type=f.type_,
+					p.add_argument('--'+f.name, dest='runConfig.'+f.name, type=validator,
 					    default=f.default, action=GroupAction, metavar=f.name.upper(), help="{} parameter".format(opts.unit))
 
 	# Now that side-effect-laden parsing is done, add help
