@@ -76,6 +76,7 @@ class T3Job(T3Event):
 		if len(config.tasks) > 1:
 
 			# Instantiate T3 units
+			tasks = []
 			for i, task_config in enumerate(config.tasks):
 				
 				# Instanciate t3 unit
@@ -111,14 +112,29 @@ class T3Job(T3Event):
 					if self.update_tran_journal:
 						logger.warning("journal updates will not reference runId!")
 	
-				# Instantiate t3 unit
-				self.t3_units[task_config.task] = T3Unit(
-					logger, AmpelUnitLoader.get_resources(T3Unit),
-					task_config.runConfig, self.global_info
-				)
+				try:
+					# Instantiate t3 unit
+					self.t3_units[task_config.task] = T3Unit(
+						logger, AmpelUnitLoader.get_resources(T3Unit),
+						task_config.runConfig, self.global_info
+					)
+				except Exception as e:
+
+					if self.raise_exc:
+						raise e
+
+					LoggingUtils.report_exception(
+						self.logger, e, tier=3, info={
+							'job': self.name,
+							'runId':  self.run_id,
+						}
+					)
+					continue
 
 				# Create event document for each task
 				self.event_docs[task_config.task] = DBEventDoc(task_config.task, tier=3)
+				tasks.append(task_config)
+			config.tasks = tasks
 
 		else:
 
