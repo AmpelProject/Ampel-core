@@ -12,7 +12,7 @@ from ampel.pipeline.config.ReadOnlyDict import ReadOnlyDict
 from ampel.pipeline.db.LogsMatcher import LogsMatcher
 from ampel.pipeline.db.AmpelDB import AmpelDB
 
-class LogsLoader(LogsMatcher):
+class LogsLoader:
 	"""
 	"""
 
