@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 10.10.2017
-# Last Modified Date: 19.02.2019
+# Last Modified Date: 09.03.2019
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import pkg_resources, numpy as np
@@ -146,7 +146,7 @@ class AlertProcessor():
 		self.t0_channels = [
 			# Create Channel instance (instantiates channel's filter class as well)
 			Channel(
-				channel_config, survey_id, self.logger, skip_t2_units,
+				channel_config, survey_id, self.logger, 
 				log_line_nbr, self.embed, single_rej_col=single_rej_col
 			)
 			for channel_config in ChannelConfigLoader.load_configurations(channels, 0, self.logger)
@@ -192,7 +192,10 @@ class AlertProcessor():
 		self.log_headers = lbh.log_dicts
 
 
-	def run(self, alert_loader, ingester=None, full_console_logging=True, raise_exc=False):
+	def run(
+		self, alert_loader, ingester=None, full_console_logging=True, 
+		run_type=LogRecordFlag.SCHEDULED_RUN
+	):
 		"""
 		Run the alert processing using the provided alert_loader
 
@@ -207,6 +210,8 @@ class AlertProcessor():
 		associated with the logger will be set to WARN during the execution of this method
 		(it will be reverted to DEBUG before return)
 
+		:param LogRecordFlag run_type: LogRecordFlag.SCHEDULED_RUN or LogRecordFlag.MANUAL_RUN
+
 		:rtype: int
 		:raises: LogFlushingError, DBUpdateError, PyMongoError
 		"""
@@ -217,9 +222,7 @@ class AlertProcessor():
 		# Create DB logging handler instance (logging.Handler child class)
 		# This class formats, saves and pushes log records into the DB
 		db_logging_handler = DBLoggingHandler(
-			LogRecordFlag.T0 | 
-			LogRecordFlag.CORE |
-			LogRecordFlag.SCHEDULED_RUN
+			LogRecordFlag.T0 | LogRecordFlag.CORE | run_type
 		)
 
 		db_logging_handler.add_headers(self.log_headers)
@@ -387,78 +390,11 @@ class AlertProcessor():
 								if channel.rec_buf_hdlr.has_error:
 									channel.rec_buf_hdlr.copy(db_logging_handler, channel.name, extra)
 
-							# Save rejected logs to separate (channel specific) db collection
-							channel.rec_buf_hdlr.forward(channel.rejected_logger, extra=extra)
+								# Save rejected logs to separate (channel specific) db collection
+								channel.rec_buf_hdlr.forward(channel.rejected_logger, extra=extra)
 
-					# Filter accepted alert
-					else:
-
-						# Update counter
-						count_stats['matches'][channel.str_name] += 1
-
-						# enables log concatenation across different loggers
-						if self.embed:
-							AmpelLogger.current_logger = None 
-							AmpelLogger.aggregation_ok = True
-
-						# Write log entries to main logger
-						channel.rec_buf_hdlr.forward(self.logger, channel.name, extra)
-
-				# Unrecoverable errors
-				except (PyMongoError, AmpelLoggingError, DBUpdateError) as e:
-					print("%s: abording run() procedure" % e.__class__.__name__)
-					self.report_alertproc_exception(e, run_id, alert_content)
-					raise e
-
-				# Tolerable errors
-				except Exception as e:
-					channel.rec_buf_hdlr.forward(db_logging_handler, extra=extra)
-					self.report_alertproc_exception(
-						e, run_id, alert_content, include_photo=True,
-						extra={'section': 'filter', 'channel': channel.name}
-					)
-
-			# time required for all filters
-			dur_stats['allFilters'][iter_count] = time() - all_filters_start
-
-			if any(t2 is not None for t2 in filter_results):
-
-				# stats
-				ingested_count += 1
-
-				# TODO: build tran_id <-> alert_id map (replayability)
-				#processed_alert[tran_id]
-				try: 
-
-					ingester_start = time()
-
-					# Ingest alert
-					db_updates = ingester.ingest(
-						tran_id, alert_content['pps'], 
-						alert_content['uls'], 
-						filter_results
-					)
-
-					dur_stats['preIngestTime'].append(time()-ingester_start)
-					updates_buffer.add_updates(db_updates)
-
-				except AmpelLoggingError as e:
-					print("AmpelLoggingError: abording run() procedure")
-					self.report_alertproc_exception(e, run_id, alert_content, include_photo=False)
-					raise e
-
-				except DBUpdateError as e:
-					print("DBUpdateError: abording run() procedure")
-					# Flush loggers (possible Exceptions handled by method)
-					self.conclude_logging(iter_count, db_logging_handler, full_console_logging)
-					raise e
-
-				except Exception as e:
-					self.report_alertproc_exception(
-						e, run_id, alert_content, filter_results,
-						extra={'section': 'ingest'}, include_photo=False
-					)
-			else:
+						# Filter accepted alert
+						else:
 
 							# Update counter
 							count_stats['matches'][channel.str_name] += 1
@@ -471,18 +407,20 @@ class AlertProcessor():
 							# Write log entries to main logger
 							channel.rec_buf_hdlr.forward(self.logger, channel.name, extra)
 
+					# Unrecoverable errors
+					except (PyMongoError, AmpelLoggingError, DBUpdateError) as e:
+						print("%s: abording run() procedure" % e.__class__.__name__)
+						self.report_alertproc_exception(e, run_id, alert_content)
+						raise e
+
+					# Tolerable errors
 					except Exception as e:
 						if raise_exc:
 							raise
 						channel.rec_buf_hdlr.forward(db_logging_handler, extra=extra)
-						LoggingUtils.report_exception(
-							self.logger, e, tier=0, 
-							run_id=db_logging_handler.get_run_id(), info={
-								'section': 'ap_filter',
-								'channel': channel.name,
-								'tranId': tran_id,
-								'alert': AlertProcessor._alert_essential(alert_content)
-							}
+						self.report_alertproc_exception(
+							e, run_id, alert_content, include_photo=True,
+							extra={'section': 'filter', 'channel': channel.name}
 						)
 
 				# time required for all filters
@@ -496,22 +434,34 @@ class AlertProcessor():
 					# TODO: build tran_id <-> alert_id map (replayability)
 					#processed_alert[tran_id]
 					try: 
+
 						ingester_start = time()
+
+						# Ingest alert
 						db_updates = ingester.ingest(
 							tran_id, alert_content['pps'], 
 							alert_content['uls'], 
 							filter_results
 						)
+
 						dur_stats['preIngestTime'].append(time()-ingester_start)
 						updates_buffer.add_updates(db_updates)
+
+					except AmpelLoggingError as e:
+						print("AmpelLoggingError: abording run() procedure")
+						self.report_alertproc_exception(e, run_id, alert_content, include_photo=False)
+						raise e
+
+					except DBUpdateError as e:
+						print("DBUpdateError: abording run() procedure")
+						# Flush loggers (possible Exceptions handled by method)
+						self.conclude_logging(iter_count, db_logging_handler, full_console_logging)
+						raise e
+
 					except Exception as e:
-						LoggingUtils.report_exception(
-							self.logger, e, tier=0, 
-							run_id=db_logging_handler.get_run_id(), info={
-								'section': 'ap_ingest',
-								'tranId': tran_id,
-								'alert': AlertProcessor._alert_essential(alert_content)
-							}
+						self.report_alertproc_exception(
+							e, run_id, alert_content, filter_results,
+							extra={'section': 'ingest'}, include_photo=False
 						)
 				else:
 
