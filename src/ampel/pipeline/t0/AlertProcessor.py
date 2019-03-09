@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 10.10.2017
-# Last Modified Date: 19.02.2019
+# Last Modified Date: 09.03.2019
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import pkg_resources, numpy as np
@@ -191,7 +191,10 @@ class AlertProcessor():
 		self.log_headers = lbh.log_dicts
 
 
-	def run(self, alert_loader, ingester=None, full_console_logging=True):
+	def run(
+		self, alert_loader, ingester=None, full_console_logging=True, 
+		run_type=LogRecordFlag.SCHEDULED_RUN
+	):
 		"""
 		Run the alert processing using the provided alert_loader
 
@@ -206,6 +209,8 @@ class AlertProcessor():
 		associated with the logger will be set to WARN during the execution of this method
 		(it will be reverted to DEBUG before return)
 
+		:param LogRecordFlag run_type: LogRecordFlag.SCHEDULED_RUN or LogRecordFlag.MANUAL_RUN
+
 		:rtype: int
 		:raises: LogFlushingError, DBUpdateError, PyMongoError
 		"""
@@ -216,9 +221,7 @@ class AlertProcessor():
 		# Create DB logging handler instance (logging.Handler child class)
 		# This class formats, saves and pushes log records into the DB
 		db_logging_handler = DBLoggingHandler(
-			LogRecordFlag.T0 | 
-			LogRecordFlag.CORE |
-			LogRecordFlag.SCHEDULED_RUN
+			LogRecordFlag.T0 | LogRecordFlag.CORE | run_type
 		)
 
 		db_logging_handler.add_headers(self.log_headers)
