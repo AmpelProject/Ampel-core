@@ -92,7 +92,10 @@ class DBLoggingHandler(logging.Handler):
 			# We could do something about that.. later if need be
 			raise ValueError("Too many logrecord headers")
 
-		self.headers = dicts
+		for el in dicts:
+			d = el.copy()
+			d['flag'] = self.flags[d.pop("lvl")]
+			self.headers.append(d)
 
 
 	def emit(self, record):
@@ -278,10 +281,12 @@ class DBLoggingHandler(logging.Handler):
 							{'_id': rec['_id']},
 							{
 								'$setOnInsert': rec,
-								'$addToSet': (
-									{'runId': {'$each': self.run_id}} if type(self.run_id) is list
-									else {'runId': self.run_id}
-								)
+								'$addToSet': {
+									'runId': {'$each': self.run_id}
+								} if type(self.run_id) is list
+								else {
+									'runId': self.run_id
+								}
 							},
 							upsert=True
 						)
