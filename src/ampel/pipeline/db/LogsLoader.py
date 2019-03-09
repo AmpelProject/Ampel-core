@@ -9,7 +9,6 @@
 
 from ampel.pipeline.logging.AmpelLogger import AmpelLogger
 from ampel.pipeline.config.ReadOnlyDict import ReadOnlyDict
-from ampel.pipeline.db.LogsMatcher import LogsMatcher
 from ampel.pipeline.db.AmpelDB import AmpelDB
 
 class LogsLoader:
