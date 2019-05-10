@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 01.01.2018
-# Last Modified Date: 18.10.2018
+# Last Modified Date: 09.03.2019
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from enum import IntEnum
@@ -27,3 +27,5 @@ class AlDocType(IntEnum):
 	# was split into two collections: main & photo)
 	PHOTOPOINT    = 8
 	UPPERLIMIT    = 16
+
+	LOGRECORD     = 32
