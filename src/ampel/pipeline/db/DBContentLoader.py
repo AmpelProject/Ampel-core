@@ -532,7 +532,9 @@ class DBContentLoader:
 				'tranId': tran_data.tran_id,
 				'channels': AmpelUtils.try_reduce(tran_data.channels)
 			}
-			if not isinstance(extra['channels'], str):
+
+			if not isinstance(extra['channels'], (str, int)):
+				# convert set to list (otherwise pymongo complains)
 				extra['channels'] = list(extra['channels'])
 
 			if self.debug:
