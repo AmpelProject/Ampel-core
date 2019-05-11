@@ -114,7 +114,13 @@ class T2Controller(Schedulable):
 		while doc is not None:
 			# get t2 document (runState is usually TO_RUN or TO_RUN_PRIO)
 			doc = AmpelDB.get_collection('blend').find_one_and_update(
-			    self.query, {'$set': {'runState': T2RunStates.RUNNING.value}}
+			    self.query, 
+				{
+					'$set': {
+						# pylint: disable=no-member
+						'runState': T2RunStates.RUNNING.value
+					}
+				}
 			)
 			yield doc
 
@@ -140,15 +146,15 @@ class T2Controller(Schedulable):
 
 	def process_docs(self, cursor, raise_exc=False):
 		"""
-		cursor: mongodb cursor
-		Return: nothing
+		:param cursor: mongodb cursor
+		:returns: None
 		"""
 
 		# Create DB logging handler instance (logging.Handler child class)
 		# This class formats, saves and pushes log records into the DB
 		db_logging_handler = DBLoggingHandler(
-			LogRecordFlag.T2 | 
-			LogRecordFlag.CORE | 
+			LogRecordFlag.T2 |
+			LogRecordFlag.CORE |
 			LogRecordFlag.SCHEDULED_RUN
 			# valery: fix me later
 			#info={
@@ -226,11 +232,9 @@ class T2Controller(Schedulable):
 			before_run = time()
 			try:
 				ret = t2_instances[t2_unit_id].run(
-					lc, (
-						self.t2_run_config[run_config_id]['parameters'].copy()
-						if self.t2_run_config[run_config_id] is not None
-						else None
-					)
+					lc, 
+					self.t2_run_config[run_config_id]['parameters'].copy()
+					if self.t2_run_config[run_config_id] is not None else None
 				)
 			except Exception as e:
 				# Record any uncaught exceptions in troubles collection.
@@ -238,7 +242,9 @@ class T2Controller(Schedulable):
 					raise
 				ret = T2RunStates.EXCEPTION
 				LoggingUtils.report_exception(
-					self.logger, e, tier=2, run_id=db_logging_handler.get_run_id(), info={
+					self.logger, e, tier=2, 
+					run_id=db_logging_handler.get_run_id(), 
+					info={
 						'unit': t2_unit_id,
 						'runConfig': run_config_id,
 						't2Doc': t2_doc['_id']
@@ -307,15 +313,16 @@ class T2Controller(Schedulable):
 				LoggingUtils.report_exception(
 					self.logger, e, tier=2, 
 					run_id=db_logging_handler.get_run_id(), 
-					info={'t2UnitId': t2_unit_id, 'tranId': t2_doc['tranId']}
+					info={
+						't2UnitId': t2_unit_id, 
+						'tranId': t2_doc['tranId']
+					}
 				)
 
 			try: 
 
 				self.col_tran.update_one(
-					{
-						"_id": t2_doc['tranId']
-					},
+					{"_id": t2_doc['tranId']},
 					{
 						"$max": {
 							"modified.%s" % chan: inow for chan in t2_doc['channels']
@@ -338,13 +345,15 @@ class T2Controller(Schedulable):
 				LoggingUtils.report_exception(
 					self.logger, e, tier=2, 
 					run_id=db_logging_handler.get_run_id(), 
-					info={'t2UnitId': t2_unit_id, 'tranId': t2_doc['tranId']}
+					info={
+						't2UnitId': t2_unit_id, 
+						'tranId': t2_doc['tranId']
+					}
 				)
 
 			# Take batch_size reqs into consideration
 			if counter > self.batch_size:
 				break
-
 
 		# Remove DB logging handler
 		db_logging_handler.flush()
@@ -354,16 +363,18 @@ class T2Controller(Schedulable):
 
 	def load_run_config(self, run_config_id):
 		"""
-		run_config_id: string (unit name + "_" + run config name)
-	        example: "POLYFIT_default"
-		This method populates the instance variable self.t2_run_config 
+		:param run_config_id: string 
+		(Usually: unit name + "_" + run config name, for example: "POLYFIT_default")
+		This method updates the instance variable self.t2_run_config 
 		with a reference to a dict instance loaded from the database.
 		(dict key is run_config_id)
-		This method does not return anything.
+		:returns: None
 		"""
 
 		# Get T2 run config doc from ampel config DB
-		t2_run_config_doc = AmpelConfig.get_config("t2RunConfig.{}".format(run_config_id))
+		t2_run_config_doc = AmpelConfig.get_config(
+			"t2RunConfig.{}".format(run_config_id)
+		)
 
 		# Robustness
 		if t2_run_config_doc is None:
@@ -380,11 +391,13 @@ class T2Controller(Schedulable):
 	@classmethod
 	def load_unit(cls, unit_name, logger=None):
 		"""	
-		:param unit_name: str
-		:param logger: optional logger instance (python logging module)
+		:param str unit_name: t2 unit name
+		:param AmpelLogger logger: optional logger instance
+
 		Loads a T2 unit class using information loaded from the ampel config.
 		This method populates the class variable self.t2_classes 
-		Return code is a t2 class object
+
+		:returns: t2 class object
 		"""	
 
 		# Return already loaded t2 unit if avail
@@ -429,6 +442,7 @@ class T2Controller(Schedulable):
 				cls.versions[unit_name][key] = arg['version']
 		elif issubclass(arg, AbsT2Unit):
 			cls.versions[unit_name][key] = arg.version
+
 
 def get_required_resources(units=None, tier=2):
 	if units is None:
