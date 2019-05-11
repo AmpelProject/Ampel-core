@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 25.01.2018
-# Last Modified Date: 06.12.2018
+# Last Modified Date: 11.05.2019
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import pkg_resources, math, logging, sys
@@ -44,8 +44,9 @@ class T2Controller(Schedulable):
 		:param T2RunStates run_state: one on ampel.core.flags.T2RunStates int value (for example: T0_RUN)
 		:param t2_units: ids of the t2 units to run. If not specified, any t2 unit will be run
 		:type t2_units: List[str]
-		:param int check_interval: in seconds
+		:param int check_interval: check interval in seconds
 		:param int batch_size: 
+		:param int log_level: logging level (ex: logging.DEBUG, logging.INFO, ...)
 		"""
 
 		# Get logger 
@@ -104,6 +105,7 @@ class T2Controller(Schedulable):
 			{'$set': {'_id': "t2Controller"}},
 			upsert=True
 		)
+
 
 	def _fetch_new_docs(self):
 		"""
@@ -199,7 +201,9 @@ class T2Controller(Schedulable):
 
 				# Load resources
 				resources = {
-					k: AmpelConfig.get_config('resources.{}'.format(k)) 
+					k: AmpelConfig.get_config(
+						'resources.{}'.format(k)
+					)
 					for k in getattr(unit, 'resources')
 				}
 
@@ -209,7 +213,7 @@ class T2Controller(Schedulable):
 				)
 
 			# Build run config id (example: )
-			run_config_id = t2_unit_id + "_" + t2_doc['runConfig']
+			run_config_id = "%s_%s" % (t2_unit_id, t2_doc['runConfig'])
 
 			# if run_config was not loaded not previously done
 			if not run_config_id in self.t2_run_config:
@@ -219,12 +223,15 @@ class T2Controller(Schedulable):
 
 				# add run_config version info for jobreporter
 				self.add_version(
-					t2_unit_id, 'run_config', self.t2_run_config[run_config_id]
+					t2_unit_id, 
+					'run_config', 
+					self.t2_run_config[run_config_id]
 				)
 
 			# Load ampel.base.LightCurve instance
 			lc = lcl.load_from_db(
-				t2_doc['tranId'], t2_doc['compId']
+				t2_doc['tranId'], 
+				t2_doc['compId']
 			)
 			assert lc is not None
 
@@ -309,7 +316,8 @@ class T2Controller(Schedulable):
 					)
 
 			except Exception as e: 
-				# TODO add error flag to Job and Transient
+
+				# TODO add error tag to Job and Transient
 				LoggingUtils.report_exception(
 					self.logger, e, tier=2, 
 					run_id=db_logging_handler.get_run_id(), 
@@ -325,7 +333,8 @@ class T2Controller(Schedulable):
 					{"_id": t2_doc['tranId']},
 					{
 						"$max": {
-							"modified.%s" % chan: inow for chan in t2_doc['channels']
+							"modified.%s" % chan: inow 
+							for chan in t2_doc['channels']
 						},
 						"$push": {
 							"journal": {
@@ -341,6 +350,7 @@ class T2Controller(Schedulable):
 				)
 
 			except Exception as e: 
+
 				# TODO add error flag to Job and Transient
 				LoggingUtils.report_exception(
 					self.logger, e, tier=2, 
@@ -358,13 +368,14 @@ class T2Controller(Schedulable):
 		# Remove DB logging handler
 		db_logging_handler.flush()
 		self.logger.removeHandler(db_logging_handler)
+
 		return counter
 
 
 	def load_run_config(self, run_config_id):
 		"""
-		:param run_config_id: string 
-		(Usually: unit name + "_" + run config name, for example: "POLYFIT_default")
+		:param str run_config_id: (Usually: unit name + "_" + run config name, 
+		for example: "POLYFIT_default")
 		This method updates the instance variable self.t2_run_config 
 		with a reference to a dict instance loaded from the database.
 		(dict key is run_config_id)
@@ -378,11 +389,13 @@ class T2Controller(Schedulable):
 
 		# Robustness
 		if t2_run_config_doc is None:
+
 			self.logger.debug(
 				"Cound not find t2 run config doc with id %s" %
 				run_config_id
 			)
 			self.t2_run_config[run_config_id] = None
+
 			return 
 
 		self.t2_run_config[run_config_id] = t2_run_config_doc
@@ -393,11 +406,10 @@ class T2Controller(Schedulable):
 		"""	
 		:param str unit_name: t2 unit name
 		:param AmpelLogger logger: optional logger instance
+		:returns: t2 class object
 
 		Loads a T2 unit class using information loaded from the ampel config.
 		This method populates the class variable self.t2_classes 
-
-		:returns: t2 class object
 		"""	
 
 		# Return already loaded t2 unit if avail
@@ -408,7 +420,9 @@ class T2Controller(Schedulable):
 			logger.debug("Loading T2 unit: %s" % unit_name)
 
 		resource = next(
-			pkg_resources.iter_entry_points('ampel.pipeline.t2.units', unit_name), 
+			pkg_resources.iter_entry_points(
+				'ampel.pipeline.t2.units', unit_name
+			), 
 			None
 		)
 
@@ -431,8 +445,7 @@ class T2Controller(Schedulable):
 
 	@classmethod
 	def add_version(cls, unit_name, key, arg):
-		"""
-		"""
+		""" """
 		if not unit_name in cls.versions:
 			cls.versions[unit_name] = {}
 		if arg is None:
@@ -481,6 +494,7 @@ def run():
 	opts = parser.parse_args()
 	
 	AmpelLogger.set_default_stream(sys.stderr)
+
 	controller = T2Controller(
 	    batch_size=opts.batch_size,
 	    check_interval=opts.interval,
@@ -488,6 +502,7 @@ def run():
 	    run_state=opts.state,
 	    log_level=logging.DEBUG if opts.verbose else logging.INFO
 	)
+
 	if not opts.verbose:
 		controller.logger.quieten_console()
 	controller.process_new_docs(raise_exc=opts.raise_exc)
