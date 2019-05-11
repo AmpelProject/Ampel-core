@@ -40,6 +40,18 @@ class LightCurveLoader:
 		self.rev_tags = {v: k for k, v in AmpelConfig._tags.items()}
 
 
+	def load(self, t2_doc):
+		"""
+		Load a lightcurve by performing a DB query
+
+		:param dict t2_doc: t2 document loaded from DB
+		"""
+		return self.load_from_db(
+			t2_doc['tranId'], 
+			t2_doc['compId']
+		)
+
+
 	def load_from_db(self, tran_id, compound_id):
 		"""
 		Load a lightcurve by performing a DB query and feeding the results 
