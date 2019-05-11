@@ -7,7 +7,7 @@
 # Last Modified Date: 11.05.2019
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-import pkg_resources, math, logging, sys
+import pkg_resources, math, logging, sys, importlib, re
 from time import time
 from types import MappingProxyType
 
@@ -33,7 +33,7 @@ class T2Controller(Schedulable):
 
 	# Dict saving t2 classes. 
 	# Key: unit name. Value: unit class
-	t2_classes = {}
+	t2_unit_classes = {}
 	versions = {}
 	
 	def __init__(
@@ -170,12 +170,10 @@ class T2Controller(Schedulable):
 		self.logger.addHandler(db_logging_handler)
 
 		# we instantiate t2 unit only once per check interval.
-		# The dict t2_instances stores those instances so that these can 
+		# The dict t2_instance stores those instances so that these can 
 		# be re-used int the while loop below
-		t2_instances = {}
-
-		# Instantiate LightCurveLoader (that returns ampel.base.LightCurve instances)
-		lcl = LightCurveLoader(logger=self.logger)
+		t2_instance = {}
+		t2_content_loader = {}
 
 		counter = 0
 
@@ -195,22 +193,26 @@ class T2Controller(Schedulable):
 			t2_unit_id = t2_doc['t2UnitId']
 
 			# Check if T2 instance exists in this run
-			if not t2_unit_id in t2_instances:
+			if not t2_unit_id in t2_instance:
 
-				# Get T2 class
-				unit = self.load_unit(t2_unit_id, self.logger)
+				# Get T2 class and content loader class
+				T2Unit, ContentLoader = self.load_t2_classes(t2_unit_id, self.logger)
 
 				# Load resources
 				resources = {
 					k: AmpelConfig.get_config(
 						'resources.{}'.format(k)
 					)
-					for k in getattr(unit, 'resources')
+					for k in getattr(T2Unit, 'resources')
 				}
 
 				# Instantiate T2 class
-				t2_instances[t2_unit_id] = unit(
+				t2_instance[t2_unit_id] = T2Unit(
 					self.logger, resources
+				)
+
+				t2_content_loader[t2_unit_id] = ContentLoader(
+					logger=self.logger
 				)
 
 			# Build run config id (example: )
@@ -230,17 +232,17 @@ class T2Controller(Schedulable):
 				)
 
 			# Load ampel.base.LightCurve instance
-			lc = lcl.load_from_db(
+			t2_payload = t2_content_loader[t2_unit_id].load(
 				t2_doc['tranId'], 
 				t2_doc['compId']
 			)
-			assert lc is not None
+			assert t2_payload is not None
 
 			# Run t2
 			before_run = time()
 			try:
-				ret = t2_instances[t2_unit_id].run(
-					lc, 
+				ret = t2_instance[t2_unit_id].run(
+					t2_payload, 
 					self.t2_run_config[run_config_id]['parameters'].copy()
 					if self.t2_run_config[run_config_id] is not None else None
 				)
@@ -399,19 +401,20 @@ class T2Controller(Schedulable):
 
 
 	@classmethod
-	def load_unit(cls, unit_name, logger=None):
+	def load_t2_classes(cls, unit_name, logger=None):
 		"""	
 		:param str unit_name: t2 unit name
 		:param AmpelLogger logger: optional logger instance
-		:returns: t2 class object
+		:returns: tuple of t2 class and t2 content loader class object
 
-		Loads a T2 unit class using information loaded from the ampel config.
-		This method populates the class variable self.t2_classes 
+		Loads a T2 unit and content loader classes using information 
+		loaded from the ampel config.
+		This method updates the static variable self.t2_Units 
 		"""	
 
-		# Return already loaded t2 unit if avail
-		if unit_name in cls.t2_classes:
-			return cls.t2_classes[unit_name]
+		# Return already loaded classes if avail
+		if unit_name in cls.t2_unit_classes:
+			return cls.t2_unit_classes[unit_name]
 
 		if logger:
 			logger.debug("Loading T2 unit: %s" % unit_name)
@@ -426,18 +429,35 @@ class T2Controller(Schedulable):
 		if resource is None:
 			raise ValueError("Unknown T2 unit: %s" % unit_name)
 
-		class_obj = resource.resolve()
-		if not issubclass(class_obj, AbsT2Unit):
+		T2Unit = resource.resolve()
+
+		if not issubclass(T2Unit, AbsT2Unit):
 			raise TypeError(
 				"T2 unit {} from {} is not a subclass of AbsT2Unit".format(
-					class_obj.__name__, resource.dist
+					T2Unit.__name__, resource.dist
 				)
 			)
 
-		cls.t2_classes[unit_name] = class_obj
-		cls.add_version(unit_name, "py", class_obj)
+		cls.add_version(unit_name, "py", T2Unit)
 
-		return class_obj
+		# Load content loader associated with T2 unit 
+		# (ex: LightCurveLoader for T2SNCOSMO)
+		cl_module_path = getattr(T2Unit, 'content_loader')
+
+		# get module
+		content_loader_module = importlib.import_module(
+			cl_module_path
+		)
+
+		# get class object
+		LoaderClass = getattr(
+			content_loader_module, 
+			re.sub(".*\.", "", cl_module_path)
+		)
+
+		cls.t2_unit_classes[unit_name] = (T2Unit, LoaderClass)
+
+		return T2Unit, LoaderClass
 
 
 	@classmethod
