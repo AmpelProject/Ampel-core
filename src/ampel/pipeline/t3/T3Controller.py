@@ -9,6 +9,7 @@
 
 import schedule, time, threading, logging, json
 from types import MappingProxyType
+from functools import partial
 from multiprocessing import Process
 from ampel.pipeline.t3.T3Job import T3Job
 from ampel.pipeline.t3.T3Task import T3Task
@@ -344,13 +345,48 @@ def main():
 					groupspace = getattr(namespace, group, dict())
 					groupspace[dest] = values
 					setattr(namespace, group, groupspace)
-			for f in klass.RunConfig.__fields__.values():
-				if f.required:
-					p.add_argument('runConfig.'+f.name, type=f.type_, 
-					    action=GroupAction, metavar=f.name)
+			class YesNoGroupAction(GroupAction):
+				def __init__(self, option_strings, dest=None, default=True, **kwargs):
+					name = option_strings[0].lstrip('-')
+					super(YesNoGroupAction, self).__init__(
+					    [
+					       name,
+					        '--no-' + name,
+					    ] + option_strings[1:],
+					    dest=(name.replace('-', '_') if dest is None else dest),
+					    nargs=0, const=None, default=default, **kwargs)
+				def __call__(self, parser, namespace, values, option_string=None):
+					if option_string.startswith('--no-'):
+						v = False
+					else:
+						v = True
+					super(YesNoGroupAction, self).__call__(parser, namespace, v, option_string)
+			def validate_union(v, types):
+				for t in types:
+					try:
+						return validate(t)(v)
+					except:
+						pass
+				raise TypeError
+			def validate(typus):
+				if repr(type(typus)) == 'typing.Union':
+					return partial(validate_union, types=typus.__args__)
+				elif hasattr(typus, 'parse_raw'):
+					return lambda v: typus.parse_raw(v).dict()
 				else:
-					p.add_argument('--'+f.name, dest='runConfig.'+f.name, type=f.type_,
-					    default=f.default, action=GroupAction, metavar=f.name.upper(), help="{} parameter".format(opts.unit))
+					return typus
+			for f in klass.RunConfig.__fields__.values():
+				validator = validate(f.type_)
+				if f.type_ is bool:
+					action = YesNoGroupAction
+				else:
+					action = GroupAction
+				if f.required:
+					p.add_argument('runConfig.'+f.name, type=validator, 
+					    action=action, metavar=f.name)
+				else:
+					p.add_argument('--'+f.name, dest='runConfig.'+f.name, type=validator,
+					    default=f.default, action=action, metavar=f.name.upper(), help="{} parameter".format(opts.unit))
 
 	# Now that side-effect-laden parsing is done, add help
 	for p in [parser] + subparser_list:
