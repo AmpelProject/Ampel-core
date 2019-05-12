@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 14.02.2018
-# Last Modified Date: 31.10.2018
+# Last Modified Date: 12.05.2019
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from bson.binary import Binary
@@ -18,7 +18,6 @@ class QueryLoadTransientInfo:
 	"""
 	"""
 
-
 	@classmethod
 	def build_stateless_query(cls, tran_ids, docs, channels=None, t2_subsel=None):
 		"""
@@ -27,7 +26,7 @@ class QueryLoadTransientInfo:
 		| Stateless query: all avail compounds and t2docs (although possibly \
 		constrained by parameter t2_subsel) are targeted.
 
-		:type tran_id: int, list(int), set(int)
+		:type tran_id: int, List[int], set[int]
 		:param tran_id: transient id(s) (int, list of ints, set of ints). \
 		Query is generated to be performed on multiple ids at once.
 
@@ -36,10 +35,10 @@ class QueryLoadTransientInfo:
 		(see :obj:`QueryMatchSchema <ampel.pipeline.db.query.QueryMatchSchema>` \
 		for syntax details). None (no criterium) means all channels are considered. 
 
-		:param list(AlDocType) docs: list of AlDocType enum members. \
+		:param List[AlDocType] docs: list of AlDocType enum members. \
 		AlDocType.PHOTOPOINT and AlDocType.UPPERLIMIT will be ignored (separate collection).
 
-		:type t2_subsel: str or list(str)
+		:type t2_subsel: str or List[str]
 		:param t2_subsel: optional sub-selection of t2 results based on t2 unit id(s). \
 		t2_subsel will *include* the provided results of t2s with the given ids \
 		and thus exclude other t2 results. \
@@ -75,7 +74,7 @@ class QueryLoadTransientInfo:
 		else:
 
 			if AlDocType.T2RECORD in docs or t2_subsel:
-				query['alDocType'] = {'alDocType': AlDocType.T2RECORD}
+				query['alDocType'] = AlDocType.T2RECORD
 				if t2_subsel:
 					query['t2UnitId'] = \
 						t2_subsel if type(t2_subsel) is str \
