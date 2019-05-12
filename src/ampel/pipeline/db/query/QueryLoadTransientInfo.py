@@ -166,7 +166,7 @@ class QueryLoadTransientInfo:
 
 			t2_match = {
 				'alDocType': AlDocType.T2RECORD, 
-				'compId': match_comp_ids
+				'docId': match_comp_ids
 			}
 
 			if t2_subsel:
