@@ -291,7 +291,8 @@ class DBContentLoader:
 
 				# Set transient names (ex: ZTF18acdzzyf) 
 				# tranNames is a list as TNS name and other kind of names may be added later
-				tran_data.set_tran_names(doc['tranNames'])
+				if 'tranNames' in doc:
+					tran_data.set_tran_names(doc['tranNames'])
 
 				# Use all avail channels if no channel query constraint was used, 
 				# otherwise: intersection
@@ -341,7 +342,7 @@ class DBContentLoader:
 				science_record = ScienceRecord(
 					doc['tranId'],
 					doc['t2UnitId'],
-					doc['compId'],
+					doc['docId'],
 					doc.get('results'),
 					info={
 						'runConfig': doc['runConfig'], 

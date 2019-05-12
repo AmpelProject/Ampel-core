@@ -48,7 +48,7 @@ class LightCurveLoader:
 		"""
 		return self.load_from_db(
 			t2_doc['tranId'], 
-			t2_doc['compId']
+			t2_doc['docId']
 		)
 
 
@@ -79,7 +79,7 @@ class LightCurveLoader:
 
 		if blend_cursor.count() == 0:
 			self.logger.warn(
-				"Found no compound", 
+				"No compound found with the given doc id", 
 				extra={
 					'tranId': tran_id, 
 					'compId': compound_id
