@@ -86,13 +86,15 @@ class T2Controller(Schedulable):
 		# batch_size is defined because the job log entry cannot grow above 16MB (of logs).
 		self.batch_size = batch_size
 
-		# Parent constructor
-		Schedulable.__init__(self)
+		if check_interval:
 
-		# Schedule processing of t2 docs
-		self.get_scheduler().every(check_interval).seconds.do(
-			self.process_new_docs
-		)
+			# Parent constructor
+			Schedulable.__init__(self)
+
+			# Schedule processing of t2 docs
+			self.get_scheduler().every(check_interval).seconds.do(
+				self.process_new_docs
+			)
 
 		# Shortcut
 		self.col_beacon = AmpelDB.get_collection('beacon')
@@ -232,10 +234,7 @@ class T2Controller(Schedulable):
 				)
 
 			# Load ampel.base.LightCurve instance
-			t2_payload = t2_content_loader[t2_unit_id].load(
-				t2_doc['tranId'], 
-				t2_doc['compId']
-			)
+			t2_payload = t2_content_loader[t2_unit_id].load(t2_doc)
 			assert t2_payload is not None
 
 			# Run t2
