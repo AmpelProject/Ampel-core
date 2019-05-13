@@ -100,7 +100,7 @@ Add a new extcats catalog
 .. note:: If the catalog container was not started with the initdb dir mounted,
           execute from a separate container::
     
-    SINGULARITYENV_MONGO_INITDB_ROOT_PASSWORD=`cat ~/dryrun/secrets/mongo-root-password.txt` SINGULARITYENV_MONGO_INITDB_ROOT_USERNAME=root SINGULARITYENV_MONGODUMP_DIR=/mnt  SINGULARITYENV_MONGO_USER=filterclient singularity exec -B ~/Ampel-v0.5.1/ampel-deploy/production/initdb/catalog/:/docker-entrypoint-initdb.d/ -B /data/ampel/catalogs/mongodumps:/mnt /data/ampel/singularity/mongo-4.0.simg /docker-entrypoint-initdb.d/add_catalog.sh $CATALOG_NAME
+    SINGULARITYENV_MONGO_INITDB_ROOT_PASSWORD=`cat ~/dryrun/secrets/mongo-root-password.txt` SINGULARITYENV_MONGO_INITDB_ROOT_USERNAME=root SINGULARITYENV_MONGODUMP_DIR=/mnt  SINGULARITYENV_MONGO_USER=filterclient singularity exec -B ~/Ampel-v0.6.0/ampel-deploy/production/initdb/catalog/:/docker-entrypoint-initdb.d/ -B /data/ampel/catalogs/mongodumps:/mnt /data/ampel/singularity/mongo-4.0.simg /docker-entrypoint-initdb.d/add_catalog.sh $CATALOG_NAME
 
 Add a new catsHTM catalog
 =========================
