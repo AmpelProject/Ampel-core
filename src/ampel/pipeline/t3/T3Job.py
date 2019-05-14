@@ -131,9 +131,14 @@ class T3Job(T3Event):
 					)
 					continue
 
-				# Create event document for each task
-				self.event_docs[task_config.task] = DBEventDoc(task_config.task, tier=3)
+				if self.update_events:
+					# Create event document for each task
+					self.event_docs[task_config.task] = DBEventDoc(
+						task_config.task, tier=3
+					)
+
 				tasks.append(task_config)
+
 			config.tasks = tasks
 
 		else:
@@ -151,8 +156,11 @@ class T3Job(T3Event):
 				task_config.runConfig, self.global_info
 			)
 
-			# Create event document 
-			self.event_docs[task_config.task] = DBEventDoc(task_config.task, tier=3)
+			if self.update_events:
+				# Create event document 
+				self.event_docs[task_config.task] = DBEventDoc(
+					task_config.task, tier=3
+				)
 
 
 		if self.update_tran_journal:
@@ -345,7 +353,8 @@ class T3Job(T3Event):
 				# Adding tviews to t3_units may return JournalUpdate dataclasses
 				custom_journal_entries = self.t3_units[task_name].add(tran_views)
 
-				self.event_docs[task_name].add_duration(time()-start)
+				if self.update_events:
+					self.event_docs[task_name].add_duration(time()-start)
 
 				if self.update_tran_journal:
 
@@ -389,9 +398,12 @@ class T3Job(T3Event):
 				# Calling T3Unit closing method done()
 				start = time()
 				self.t3_units[task_name].done()
-				self.event_docs[task_name].add_duration(time()-start)
 
-				self.event_docs[task_name].publish()
+				if self.update_events:
+					self.event_docs[task_name].add_duration(
+						time() - start
+					)
+					self.event_docs[task_name].publish()
 
 			except Exception as e:
 
