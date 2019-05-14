@@ -72,7 +72,10 @@ class T3Controller(Schedulable):
 		self._processes = {}
 		for name, job_config in self.job_configs.items():
 			for appointment in job_config.get('schedule'):
-				schedule(self.scheduler, appointment).do(self.launch_t3_job, job_config).tag(name)
+				if appointment is not None:
+					schedule(self.scheduler, appointment).do(
+						self.launch_t3_job, job_config
+					).tag(name)
 
 		self.scheduler.every(5).minutes.do(self.monitor_processes)
 

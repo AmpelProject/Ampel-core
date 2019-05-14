@@ -42,7 +42,7 @@ class T3JobConfig(AmpelModelExtension):
 	job: str
 	active: bool = True
 	globalInfo: bool = False
-	schedule: List[str]
+	schedule: List[str] = None
 	transients: Union[None, TranConfig]
 	tasks: List[T3TaskConfig]
 
