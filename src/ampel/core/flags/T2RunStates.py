@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 14.12.2017
-# Last Modified Date: 04.07.2018
+# Last Modified Date: 12.05.2019
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from enum import Flag
@@ -20,8 +20,9 @@ class T2RunStates(Flag):
 	COMPLETED                   = 8
 	QUEUED                      = 16
 	RUNNING                     = 32
+	EXPORTED                    = 64 
 
-	MISSING_INFO                = 64
-	BAD_CONFIG                  = 128
-	ERROR                       = 256
-	EXCEPTION                   = 512
+	MISSING_INFO                = 128
+	BAD_CONFIG                  = 256
+	ERROR                       = 512
+	EXCEPTION                   = 1024
