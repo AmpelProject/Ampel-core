@@ -4,12 +4,13 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 29.11.2018
-# Last Modified Date: 09.03.2019
+# Last Modified Date: 15.05.2019
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from ampel.pipeline.logging.AmpelLogger import AmpelLogger
 from ampel.pipeline.config.ReadOnlyDict import ReadOnlyDict
 from ampel.pipeline.db.AmpelDB import AmpelDB
+from ampel.core.flags.LogRecordFlag import LogRecordFlag
 
 class LogsLoader:
 	"""
@@ -23,13 +24,17 @@ class LogsLoader:
 
 
 	def fetch_main_logs(
-		self, matcher, decompactify=True, hexify=True, remove=["channel"], 
-		datetime='string', datetime_key='_id', verbose=False
+		self, matcher, decompactify=True, simplify=False, hexify=True, resolve_flag=True, 
+		remove=["channel"], datetime='string', datetime_key='_id', verbose=False
 	):
 		""" 
 		:param matcher: insance of LogsMatcher
 		:type matcher: LogsMatcher
 		:param bool decompactify: 
+		:param bool resolve_flag: \
+			prints 'flag': <LogRecordFlag.SCHEDULED_RUN|CORE|T2|INFO: 8836> \
+			instead of 'flag': 8836
+		:param bool simplify: 
 		:param datetime: if not None, datetime of each log entry (extracted from ObjectId) \
 			will be added to the log content (use param datetime_key to configure whished key). \
 			Possible values: \
@@ -174,10 +179,28 @@ class LogsLoader:
 			el for el in AmpelDB.get_collection("logs").aggregate(stages)
 		)
 
-		if hexify:
+		if simplify:
 			for el in log_entries:
+				print("%s %s" % (el['_id'], el['msg']))
+			return
+
+		if hexify and resolve_flag:
+
+			for el in log_entries:
+				el['flag'] = LogRecordFlag(el['flag'])
 				if 'compId' in el:
 					el['compId'] = el['compId'].hex()
+
+		else:
+
+			if hexify:
+				for el in log_entries:
+					if 'compId' in el:
+						el['compId'] = el['compId'].hex()
+	
+			if resolve_flag:
+				for el in log_entries:
+					el['flag'] = LogRecordFlag(el['flag'])
 
 		if self.read_only:
 			return tuple(ReadOnlyDict(el) for el in log_entries)
