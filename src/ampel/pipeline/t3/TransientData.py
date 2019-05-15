@@ -8,6 +8,7 @@
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from ampel.base.TransientView import TransientView
+from ampel.core.flags.AlDocType import AlDocType
 from ampel.pipeline.common.AmpelUtils import AmpelUtils
 from ampel.pipeline.t3.PhotoDataAccessManager import PhotoDataAccessManager
 
@@ -130,7 +131,6 @@ class TransientData:
 		self._add(self.journal, entry, channels)
 
 
-	# TODO: implement docs filtering
 	def create_view(self, channels, docs=None, t2_ids=None):
 		"""
 		:param channels: channel ids
@@ -168,7 +168,6 @@ class TransientData:
 		return self._create_one_view(channels, docs, t2_ids)
 
 
-	# TODO: implement docs filtering
 	def _create_one_view(self, channel, docs=None, t2_ids=None):
 		"""
 		:param channel: channel id 
@@ -194,7 +193,7 @@ class TransientData:
 			latest_state = self.latest_state[channel] if channel in self.latest_state else None
 
 		# Handles data permission
-		photopoints, upperlimits = self._get_photo(channel)
+		photopoints, upperlimits = self._get_photo(channel, docs)
 
 		return TransientView(
 			self.tran_id, self.flags, 
@@ -203,14 +202,13 @@ class TransientData:
 				key=lambda k: k['dt']
 			), 
 			self.tran_names, latest_state, photopoints, upperlimits, 
-			tuple(self.compounds[channel]) if channel in self.compounds else None, 
-			tuple(self.lightcurves[channel]) if channel in self.lightcurves else None, 
-			tuple(self.science_records[channel]) if channel in self.science_records else None, 
+			tuple(self.compounds[channel]) if (channel in self.compounds and (docs and AlDocType.COMPOUND in docs)) else None,
+			tuple(self.lightcurves[channel]) if (channel in self.lightcurves and (docs and AlDocType.LIGHTCURVE in docs)) else None,
+			tuple(self.science_records[channel]) if (channel in self.science_records and (docs and AlDocType.T2RECORD in docs)) else None,
 			channel
 		)	
 
 
-	# TODO: implement docs filtering
 	def _create_multi_view(self, channels, docs=None, t2_ids=None):
 		"""
 		:returns: instance of :py:class:`TransientView <ampel.base.TransientView>` or None
@@ -225,7 +223,7 @@ class TransientData:
 		all_comps = {
 			el.id: el for channel in AmpelUtils.iter(channels) if channel in self.compounds 
 			for el in self.compounds[channel]
-		}
+		} if (docs and AlDocType.COMPOUND in docs) else {}
 
 		# State operator was provided
 		if self.state in ["$latest", "$all"]:
@@ -252,14 +250,14 @@ class TransientData:
 					entries.append(entry)
 
 		# Handles data permission
-		photopoints, upperlimits = self._get_photo(channels)
+		photopoints, upperlimits = self._get_photo(channels, docs)
 
 		return TransientView(
 			self.tran_id, self.flags, sorted(entries, key=lambda k: k['dt']), 
 			self.tran_names, latest_state, photopoints, upperlimits, 
 			tuple(all_comps.values()),
-			self._get_combined_elements(self.lightcurves, channels),
-			self._get_combined_elements(self.science_records, channels),
+			self._get_combined_elements(self.lightcurves, channels) if (docs and AlDocType.COMPOUND in docs) else None,
+			self._get_combined_elements(self.science_records, channels) if (docs and AlDocType.T2RECORD in docs) else None,
 			tuple(self.channels & set(channels))
 		)
 
@@ -294,7 +292,7 @@ class TransientData:
 			return tuple({id(k): k for k in elements}.values())
 
 
-	def _get_photo(self, channels):
+	def _get_photo(self, channels, docs=None):
 		""" """
 
 		# no photometric info were requested / loaded
@@ -305,7 +303,7 @@ class TransientData:
 		# The caller should have specified a channel 
 		# if data access policies were to be applied
 		if channels is None:
-			return tuple(self.photopoints), tuple(self.upperlimits)
+			return tuple(self.photopoints) if (docs and AlDocType.PHOTOPOINT in docs) else None, tuple(self.upperlimits) if (docs and AlDocType.UPPERLIMIT in docs) else None
 
 		# Past this point, regardless of how many channel info we have (one is enough) 
 		# we have to check permissions (db results contain all pps/uls, 
@@ -321,8 +319,10 @@ class TransientData:
 				except ValueError:
 					# channel was defined in the past, but is no longer
 					continue
-			pps.update(TransientData.pdams[channel].get_photopoints(self.photopoints))
-			uls.update(TransientData.pdams[channel].get_upperlimits(self.upperlimits))
+			if docs and AlDocType.PHOTOPOINT in docs:
+				pps.update(TransientData.pdams[channel].get_photopoints(self.photopoints))
+			if docs and AlDocType.UPPERLIMIT in docs:
+				uls.update(TransientData.pdams[channel].get_upperlimits(self.upperlimits))
 
 		# Return pps / uls for given combination of channels.
 		# Example for single source ZTF:
