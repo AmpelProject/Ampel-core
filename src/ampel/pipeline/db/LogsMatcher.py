@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 29.11.2018
-# Last Modified Date: 09.03.2019
+# Last Modified Date: 15.05.2019
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from ampel.pipeline.logging.AmpelLogger import AmpelLogger
@@ -34,6 +34,7 @@ class LogsMatcher:
 		:param LogRecordFlag arg:
 		"""
 		self.match['flag'] = {"$bitsAllSet": arg}
+		return self
 
 
 	def set_channels(self, channels, compact_logs=True):
@@ -48,6 +49,7 @@ class LogsMatcher:
 			]
 		else:
 			self.match['channels'] = channels
+		return self
 			
 
 	def set_tran_ids(self, tran_ids):
@@ -55,6 +57,7 @@ class LogsMatcher:
 		:type tran_ids: int, List[int]
 		"""
 		self.match['tranId'] = tran_ids
+		return self
 
 
 	def set_run_ids(self, run_ids):
@@ -62,11 +65,13 @@ class LogsMatcher:
 		:type run_id: int, List[int]
 		"""
 		self.match['runId'] = run_ids
+		return self
 
 
 	def set_alert_ids(self, arg):
 		""" """
 		self.match['alertId'] = arg
+		return self
 
 
 	def set_after(self, dt):
@@ -75,6 +80,7 @@ class LogsMatcher:
 		:param datetime dt:
 		""" 
 		self._set_time_constraint(dt, '$gte')
+		return self
 
 
 	def set_before(self, dt):
@@ -83,6 +89,7 @@ class LogsMatcher:
 		:param datetime dt:
 		""" 
 		self._set_time_constraint(dt, '$lte')
+		return self
 
 
 	def _set_time_constraint(self, dt, op):
@@ -95,5 +102,6 @@ class LogsMatcher:
 			self.match["_id"] = {}
 			
 		self.match["_id"][op] = ObjectId.from_datetime(dt)
+		return self
 
 
