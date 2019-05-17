@@ -149,7 +149,10 @@ class T2Controller(Schedulable):
 			)
 
 
-	def process_docs(self, cursor):
+	def process_docs(
+		self, cursor, 
+		log_flags=LogRecordFlag.CORE|LogRecordFlag.T2|LogRecordFlag.SCHEDULED_RUN
+	):
 		"""
 		:param cursor: mongodb cursor
 		:returns: None
@@ -157,16 +160,7 @@ class T2Controller(Schedulable):
 
 		# Create DB logging handler instance (logging.Handler child class)
 		# This class formats, saves and pushes log records into the DB
-		db_logging_handler = DBLoggingHandler(
-			LogRecordFlag.T2 |
-			LogRecordFlag.CORE |
-			LogRecordFlag.SCHEDULED_RUN
-			# valery: fix me later
-			#info={
-			#	"runState": str(self.run_state.value),
-			#	"t2Units": str(self.required_unit_names)
-			#}
-		)
+		db_logging_handler = DBLoggingHandler(log_flags)
 
 		# Add db logging handler to the logger stack of handlers 
 		self.logger.addHandler(db_logging_handler)
