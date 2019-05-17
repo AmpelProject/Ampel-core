@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 27.09.2018
-# Last Modified Date: 17.10.2018
+# Last Modified Date: 17.05.2019
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import logging, sys
@@ -30,7 +30,10 @@ logging.addLevelName(logging.WARNING, "WARNING")
 logging.addLevelName(logging.WARN, "WARN")
 logging.addLevelName(logging.ERROR, "ERROR")
 
+
 class AmpelLogger(logging.Logger):
+	"""
+	"""
 
 	loggers = {}
 	default_stream = sys.stdout
@@ -100,7 +103,10 @@ class AmpelLogger(logging.Logger):
 
 
 	@staticmethod
-	def _new_logger(name, stream=None, log_level=logging.DEBUG, formatter=None, channels=None, formatter_options={}):
+	def _new_logger(
+		name, stream=None, log_level=logging.DEBUG, 
+		formatter=None, channels=None, formatter_options={}
+	):
 		"""
 		Creates an instance of :obj:`AmpelLogger <ampel.pipeline.logging.AmpelLogger>` 
 		with the following properties:\n
@@ -167,21 +173,30 @@ class AmpelLogger(logging.Logger):
 
 		if channels:
 			if type(channels) not in (list, int, str):
-				raise ValueError("Unsupported type for parameter 'channels' (%s)" % type(channels))
+				raise ValueError(
+					"Unsupported type for parameter 'channels' (%s)" % 
+					type(channels)
+				)
 			self.__extra = ReadOnlyDict({'channels': channels})
 
 
-	def __add_extra(self, key, value):
+	def set_extra(self, key, value):
 		"""
 		Note: whatever you add here, it must be BSON encodable
 		"""
 		if self.__extra:
+			# pylint: disable=access-member-before-definition
 			d = dict(self.__extra)
-			d = value
-			self.__extra = ReadOnlyDict(d)
+			if value is None:
+				del d[key]
+			else:
+				d[key] = value
+			if len(d) == 0:
+				self.__extra = None
+			else:
+				self.__extra = ReadOnlyDict(d)
 		else:
 			self.__extra = ReadOnlyDict({key: value})
-
 
 
 	def set_console_log_level(self, lvl):
@@ -265,16 +280,22 @@ class AmpelLogger(logging.Logger):
 			exc_info=exc_info, extra=extra
 		)
 
-	def makeRecord(self, name, level, fn, lno, msg, args, exc_info, func=None, extra=None, sinfo=None):
+
+	def makeRecord(
+		self, name, level, fn, lno, msg, args, exc_info, 
+		func=None, extra=None, sinfo=None
+	):
 		"""
 		Override of parent factory method.
 
-		Anything passed to 'extra' during logging is added as a property of LogRecord and formatters/handlers 
-		cannot distinguish it from other LogRecord properties. To access those, you would need to use: 
+		Anything passed to 'extra' during logging is added 
+		as a property of LogRecord and formatters/handlers 
+		cannot distinguish it from other LogRecord properties. 
+		To access those, you would need to use: 
 		log_record.property_name but how to know the property names of those can vary ?
 		We nest the 'extra' dict into a another dict: {'extra': <provided_extra>}
-		Formatters and Handlers can thus access a single property using getattr(log_record, 'extra', None)
-		and loop over dict keys.
+		Formatters and Handlers can thus access a single property 
+		using getattr(log_record, 'extra', None) and loop over dict keys.
 		"""
 
 		if AmpelLogger.current_logger == self:
@@ -284,13 +305,18 @@ class AmpelLogger(logging.Logger):
 				AmpelLogger.aggregation_ok = False
 			AmpelLogger.current_logger = self
 
-		rv = _logRecordFactory(name, level, fn, lno, msg, args, exc_info, func, sinfo)
+		rv = _logRecordFactory(
+			name, level, fn, lno, msg, args, exc_info, func, sinfo
+		)
 
 		if extra:
 			rv.__dict__['extra'] = {**extra, **self.__extra} if self.__extra else extra
 		else:
 			rv.__dict__['extra'] = self.__extra
+
 		# Verify serializability at point of call
+		# TODO: replace this (performance penalty) by implementing 
+		# unit tests for contributed modules
 		BSON.encode({'extra': rv.__dict__['extra']})
 
 		return rv
