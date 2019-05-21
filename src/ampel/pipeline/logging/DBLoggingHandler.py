@@ -7,7 +7,7 @@
 # Last Modified Date: 24.02.2019
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-import logging, struct, os
+import logging, struct, os, socket
 from bson import ObjectId
 from pymongo.errors import BulkWriteError
 from pymongo.operations import UpdateOne
@@ -16,6 +16,31 @@ from ampel.pipeline.logging.AmpelLogger import AmpelLogger
 from ampel.pipeline.logging.LoggingUtils import LoggingUtils
 from ampel.pipeline.logging.AmpelLoggingError import AmpelLoggingError
 from ampel.core.flags.LogRecordFlag import LogRecordFlag
+
+
+# http://isthe.com/chongo/tech/comp/fnv/index.html#FNV-1a
+def _fnv_1a_24(data, _ord=lambda x: x):
+	"""FNV-1a 24 bit hash"""
+	# http://www.isthe.com/chongo/tech/comp/fnv/index.html#xor-fold
+	# Start with FNV-1a 32 bit.
+	hash_size = 2 ** 32
+	fnv_32_prime = 16777619
+	fnv_1a_hash = 2166136261  # 32-bit FNV-1 offset basis
+	for elt in data:
+		fnv_1a_hash = fnv_1a_hash ^ _ord(elt)
+		fnv_1a_hash = (fnv_1a_hash * fnv_32_prime) % hash_size
+
+	# xor-fold the result to 24 bit.
+	return (fnv_1a_hash >> 24) ^ (fnv_1a_hash & 0xffffff)
+
+
+def _machine_bytes():
+	"""Get the machine portion of an ObjectId.
+	"""
+	# gethostname() returns a unicode string in python 3.x
+	# We only need 3 bytes, and _fnv_1a_24 returns a 24 bit integer.
+	# Remove the padding byte.
+	return struct.pack("<I", _fnv_1a_24(socket.gethostname().encode()))[:3]
 
 
 class DBLoggingHandler(logging.Handler):
@@ -69,7 +94,7 @@ class DBLoggingHandler(logging.Handler):
 
 		# ObjectID middle: 3 bytes machine + 2 bytes encoding the last 4 digits of run_id (unique)
 		# NB: pid is not always unique if running in a jail or container
-		self.oid_middle = ObjectId._machine_bytes + int(str(self.run_id)[-4:]).to_bytes(2, 'big')
+		self.oid_middle = _machine_bytes() + int(str(self.run_id)[-4:]).to_bytes(2, 'big')
 
 
 	def new_run_id(self):
