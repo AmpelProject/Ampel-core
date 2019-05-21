@@ -135,6 +135,8 @@ class TransientData:
 		"""
 		:param channels: channel ids
 		:type channels: Iterable[str], Iterable[int]
+		:param docs: optional set of docs to return 
+		:type docs: Iterable[Union[str,AlDocType]]
 		:returns: instance of :py:class:`TransientView <ampel.base.TransientView>` or None
 		"""
 
@@ -166,7 +168,6 @@ class TransientData:
 
 		# Channel was specificied (channels is actually a channel)
 		return self._create_one_view(channels, docs, t2_ids)
-
 
 	def _create_one_view(self, channel, docs=None, t2_ids=None):
 		"""
@@ -202,9 +203,9 @@ class TransientData:
 				key=lambda k: k['dt']
 			), 
 			self.tran_names, latest_state, photopoints, upperlimits, 
-			tuple(self.compounds[channel]) if (channel in self.compounds and (docs and AlDocType.COMPOUND in docs)) else None,
-			tuple(self.lightcurves[channel]) if (channel in self.lightcurves and (docs and AlDocType.LIGHTCURVE in docs)) else None,
-			tuple(self.science_records[channel]) if (channel in self.science_records and (docs and AlDocType.T2RECORD in docs)) else None,
+			tuple(self.compounds[channel]) if (channel in self.compounds and ((not docs) or AlDocType.COMPOUND in docs)) else None,
+			tuple(self.lightcurves[channel]) if (channel in self.lightcurves and ((not docs) or AlDocType.LIGHTCURVE in docs)) else None,
+			tuple(self.science_records[channel]) if (channel in self.science_records and ((not docs) or AlDocType.T2RECORD in docs)) else None,
 			channel
 		)	
 
@@ -223,7 +224,7 @@ class TransientData:
 		all_comps = {
 			el.id: el for channel in AmpelUtils.iter(channels) if channel in self.compounds 
 			for el in self.compounds[channel]
-		} if (docs and AlDocType.COMPOUND in docs) else {}
+		} if ((not docs) or AlDocType.COMPOUND in docs) else {}
 
 		# State operator was provided
 		if self.state in ["$latest", "$all"]:
@@ -256,8 +257,8 @@ class TransientData:
 			self.tran_id, self.flags, sorted(entries, key=lambda k: k['dt']), 
 			self.tran_names, latest_state, photopoints, upperlimits, 
 			tuple(all_comps.values()),
-			self._get_combined_elements(self.lightcurves, channels) if (docs and AlDocType.COMPOUND in docs) else None,
-			self._get_combined_elements(self.science_records, channels) if (docs and AlDocType.T2RECORD in docs) else None,
+			self._get_combined_elements(self.lightcurves, channels) if ((not docs) or AlDocType.COMPOUND in docs) else None,
+			self._get_combined_elements(self.science_records, channels) if ((not docs) or AlDocType.T2RECORD in docs) else None,
 			tuple(self.channels & set(channels))
 		)
 
@@ -303,7 +304,7 @@ class TransientData:
 		# The caller should have specified a channel 
 		# if data access policies were to be applied
 		if channels is None:
-			return tuple(self.photopoints) if (docs and AlDocType.PHOTOPOINT in docs) else None, tuple(self.upperlimits) if (docs and AlDocType.UPPERLIMIT in docs) else None
+			return tuple(self.photopoints) if ((not docs) or AlDocType.PHOTOPOINT in docs) else None, tuple(self.upperlimits) if ((not docs) or AlDocType.UPPERLIMIT in docs) else None
 
 		# Past this point, regardless of how many channel info we have (one is enough) 
 		# we have to check permissions (db results contain all pps/uls, 
@@ -319,9 +320,9 @@ class TransientData:
 				except ValueError:
 					# channel was defined in the past, but is no longer
 					continue
-			if docs and AlDocType.PHOTOPOINT in docs:
+			if (not docs) or AlDocType.PHOTOPOINT in docs:
 				pps.update(TransientData.pdams[channel].get_photopoints(self.photopoints))
-			if docs and AlDocType.UPPERLIMIT in docs:
+			if (not docs) or AlDocType.UPPERLIMIT in docs:
 				uls.update(TransientData.pdams[channel].get_upperlimits(self.upperlimits))
 
 		# Return pps / uls for given combination of channels.

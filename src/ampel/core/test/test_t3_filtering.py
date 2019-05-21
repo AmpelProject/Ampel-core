@@ -100,6 +100,12 @@ def test_transient_data_filter(transients, mocker):
     task.process_tran_data(transients)
     assert add.called
     assert len(add.call_args[0][0]) == 4
+    # no docs loaded except T2 records
+    for view in add.call_args[0][0]:
+        assert not view.photopoints
+        assert not view.upperlimits
+        assert not view.compounds
+        assert view.t2records
 
     add.reset_mock()
     assert not add.called
@@ -124,6 +130,12 @@ def test_transient_data_filter(transients, mocker):
     job.process_tran_data(transients)
     assert add.called
     assert len(add.call_args[0][0]) == 4
+    # no docs loaded except T2 records
+    for view in add.call_args[0][0]:
+        assert not view.photopoints
+        assert not view.upperlimits
+        assert not view.compounds
+        assert view.t2records
 
 def test_t3_match_config():
     from ampel.pipeline.config.t3.ScienceRecordMatchConfig import ScienceRecordMatchConfig
