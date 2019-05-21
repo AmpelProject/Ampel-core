@@ -104,8 +104,8 @@ class AmpelLogger(logging.Logger):
 
 	@staticmethod
 	def _new_logger(
-		name, stream=None, log_level=logging.DEBUG, 
-		formatter=None, channels=None, formatter_options={}
+		name, stream=None, log_level=logging.DEBUG, formatter=None, 
+		channels=None, aggregate_interval=1, formatter_options={}
 	):
 		"""
 		Creates an instance of :obj:`AmpelLogger <ampel.pipeline.logging.AmpelLogger>` 
@@ -127,7 +127,10 @@ class AmpelLogger(logging.Logger):
 		
 		# Perform import here to avoid cyclic import errro
 		from ampel.pipeline.logging.AmpelLoggingStreamHandler import AmpelLoggingStreamHandler
-		sh = AmpelLoggingStreamHandler(stream if stream else AmpelLogger.default_stream)
+		sh = AmpelLoggingStreamHandler(
+			stream if stream else AmpelLogger.default_stream,
+			aggregate_interval=aggregate_interval
+		)
 		sh.setLevel(log_level)
 		sh.setFormatter(
 			# Allows to print values passed in dict 'extra'
