@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel/src/ampel/utils/PlotUtils.py
+# File              : ampel/utils/PlotUtils.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 17.05.2019
-# Last Modified Date: 17.05.2019
+# Last Modified Date: 21.05.2019
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import zipfile, io
@@ -17,7 +17,8 @@ class PlotUtils:
 	@staticmethod
 	def mplfig_to_svg_dict(
 		mpl_fig, file_name, title=None, tags=None,
-		compress=True, width=None, height=None, close=True
+		compress=True, width=None, height=None, 
+		close=True, logger=None
 	):
 		"""
 		:param mpl_fig: matplotlib figure
@@ -28,6 +29,9 @@ class PlotUtils:
 		:param int height: figure height, for example 10 inches
 		:returns: dict
 		"""
+
+		if logger:
+			logger.info("Saving plot %s" % file_name)
 
 		imgdata = io.StringIO()
 
