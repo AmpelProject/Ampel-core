@@ -202,6 +202,12 @@ class AmpelLogger(logging.Logger):
 			self.__extra = ReadOnlyDict({key: value})
 
 
+	def unset_extra(self):
+		"""
+		"""
+		self.__extra = None
+
+
 	def set_console_log_level(self, lvl):
 		"""
 		Sets log level of StreamHandler instance possibly associated with this logger.
