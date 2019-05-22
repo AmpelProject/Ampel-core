@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 25.01.2018
-# Last Modified Date: 11.05.2019
+# Last Modified Date: 22.05.2019
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import pkg_resources, math, logging, sys, importlib, re
@@ -22,7 +22,6 @@ from ampel.pipeline.db.AmpelDB import AmpelDB
 from ampel.pipeline.db.LightCurveLoader import LightCurveLoader
 from ampel.pipeline.common.Schedulable import Schedulable
 from ampel.pipeline.config.AmpelConfig import AmpelConfig
-from ampel.pipeline.config.channel.ChannelConfigLoader import ChannelConfigLoader
 from ampel.pipeline.common.AmpelUnitLoader import AmpelUnitLoader
 
 
@@ -468,6 +467,7 @@ class T2Controller(Schedulable):
 
 
 def get_required_resources(units=None, tier=2):
+	from ampel.pipeline.config.channel.ChannelConfigLoader import ChannelConfigLoader
 	if units is None:
 		units = set()
 		for channel in ChannelConfigLoader.load_configurations(None, 2):
