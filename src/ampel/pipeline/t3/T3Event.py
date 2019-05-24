@@ -16,7 +16,7 @@ from mongomock.filtering import filter_applies
 from functools import partial
 from typing import Optional, Dict, Any
 
-from ampel.utils.json import AmpelEncoder
+from ampel.utils.json_serialization import AmpelEncoder
 from ampel.pipeline.db.query.QueryMatchTransients import QueryMatchTransients
 from ampel.pipeline.db.query.QueryLatestCompound import QueryLatestCompound
 from ampel.pipeline.db.query.QueryEventsCol import QueryEventsCol

@@ -4,7 +4,7 @@ import logging
 
 def test_t3_filtering_demo(t3_transient_views):
     from mongomock.filtering import filter_applies
-    from ampel.utils.json import AmpelEncoder
+    from ampel.utils.json_serialization import AmpelEncoder
     # the user supplies a query against results like this, along with a unit id and config name
     q = {
         'fit_acceptable': True,
