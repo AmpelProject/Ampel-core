@@ -204,7 +204,7 @@ class TransientData:
 			), 
 			self.tran_names, latest_state, photopoints, upperlimits, 
 			tuple(self.compounds[channel]) if (channel in self.compounds and ((not docs) or AlDocType.COMPOUND in docs)) else None,
-			tuple(self.lightcurves[channel]) if (channel in self.lightcurves and ((not docs) or AlDocType.LIGHTCURVE in docs)) else None,
+			tuple(self.lightcurves[channel]) if (channel in self.lightcurves and ((not docs) or AlDocType.COMPOUND in docs)) else None,
 			tuple(self.science_records[channel]) if (channel in self.science_records and ((not docs) or AlDocType.T2RECORD in docs)) else None,
 			channel
 		)	
