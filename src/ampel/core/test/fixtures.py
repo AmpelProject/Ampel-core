@@ -337,7 +337,7 @@ def t3_selected_transients(ingested_transients, minimal_ingestion_config, caplog
 @pytest.fixture
 def t3_transient_views():
 	from os.path import dirname, join
-	from ampel.utils.json import load
+	from ampel.utils.json_serialization import load
 	with open(join(dirname(__file__), 'test-data', 'transient_views.json')) as f:
 		views = [v for v in load(f)]
 	return views
