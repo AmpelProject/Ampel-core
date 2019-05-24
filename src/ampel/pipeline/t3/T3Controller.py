@@ -134,6 +134,7 @@ def run(args):
 	"""Run tasks at configured intervals"""
 	T3Controller(args.jobs, args.skip_jobs).run()
 
+# pylint: disable=bad-builtin
 def list_tasks(args):
 	"""List configured tasks"""
 	jobs = AmpelConfig.get_config('t3Jobs')
@@ -160,6 +161,7 @@ class FrozenEncoder(json.JSONEncoder):
 			return dict(obj.task_doc)
 		return super(FrozenEncoder, self).default(obj)
 
+# pylint: disable=bad-builtin
 def show(args):
 	"""Display job and task configuration"""
 	job_doc = AmpelConfig.get_config('t3Jobs.{}'.format(args.job))

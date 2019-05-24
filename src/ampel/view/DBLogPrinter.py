@@ -70,11 +70,13 @@ class DBLogPrinter:
 		)
 
 		if len(lres) == 0:
+			# pylint: disable=bad-builtin
 			print("No log entry matches this criteria")
 			return 
 
 		for jobevent in lres:
 			for rec in jobevent['records']:
+				# pylint: disable=bad-builtin
 				print(
 					datetime.utcfromtimestamp(
 						int(rec['date'])

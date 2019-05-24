@@ -74,7 +74,7 @@ class QueryMatchConfig(AmpelModelExtension):
 	def check_format(cls, v, values, **kwargs):
 
 		#print("--------------------------------")
-		print("QueryMatchConfig: v: %s" % str(v))
+		#print("QueryMatchConfig: v: %s" % str(v))
 		#print("QueryMatchConfig: kwargs: %s" % kwargs)
 		#print("QueryMatchConfig: values: %s" % values)
 

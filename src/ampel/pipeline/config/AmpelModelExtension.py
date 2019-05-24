@@ -9,6 +9,9 @@
 
 from ampel.pipeline.common.AmpelUtils import AmpelUtils
 from pydantic import BaseModel, BaseConfig
+import logging
+
+log = logging.getLogger(__name__)
 
 class AmpelModelExtension(BaseModel):
 
@@ -61,5 +64,5 @@ class AmpelModelExtension(BaseModel):
 		output += "\n" + msg
 		output += "\n" + "#"*len_msg + "\n"
 
-		print(output)
+		log.error(output)
 		raise cls.ValidationError(output) from None

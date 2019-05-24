@@ -8,10 +8,14 @@
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import json, pkg_resources, traceback
+import logging
 from os.path import join, dirname, abspath, realpath, exists
 from ampel.pipeline.config.channel.ChannelConfig import ChannelConfig
 from ampel.pipeline.config.AmpelConfig import AmpelConfig
 from ampel.pipeline.config.t3.T3JobConfig import T3JobConfig
+from ampel.pipeline.logging.LoggingUtils import LoggingUtils
+
+log = logging.getLogger(__name__)
 
 class ConfigLoader:
 
@@ -86,7 +90,7 @@ class ConfigLoader:
 							ChannelConfig.create(tier, **chan_dict)
 							config['channels'][chan_dict['channel']] = chan_dict
 						except Exception as e:
-							print("Error in {} from {}".format(resource.name, resource.dist))
+							log.error("Error in {} from {}".format(resource.name, resource.dist))
 							raise
 	
 
@@ -153,7 +157,7 @@ class ConfigLoader:
 							T3JobConfig(**job_dict)
 							config['t3Jobs'][job_dict['job']] = job_dict
 					except Exception as e:
-						print("Error in {} from {}".format(resource.name, resource.dist))
+						log.error("Error in {} from {}".format(resource.name, resource.dist))
 						raise
 
 				# T3 Tasks
@@ -192,18 +196,14 @@ class ConfigLoader:
 									config['t3Tasks'][t3_task.get('task')] = t3_task.dict()
 
 						except Exception as e:
-							print("Error in {} from {}".format(resource.name, resource.dist))
+							log.error("Error in {} from {}".format(resource.name, resource.dist))
 							raise
 	
 
 	
 		except Exception as e:
 
-			import sys
-			print("Exception in load_config:")
-			print("-"*60)
-			traceback.print_exc(file=sys.stdout)
-			print("-"*60)
+			LoggingUtils.report_exception(log, e, msg="Exception in load_config")
 			raise
 
 		return config

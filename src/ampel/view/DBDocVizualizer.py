@@ -21,6 +21,7 @@ class DBDocVizualizer:
 	""" 
 
 	def pretty_print_db_entry(self, db_dict):
+		# pylint: disable=bad-builtin
 		print(
 			json.dumps(
 				self.translate_db_entry(db_dict), 

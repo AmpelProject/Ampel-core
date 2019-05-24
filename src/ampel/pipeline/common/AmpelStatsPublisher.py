@@ -408,14 +408,14 @@ class AmpelStatsPublisher(Schedulable):
 		# Print metrics to stdout
 		if "print" in self.publish_to:
 
-			# pylint: disable=undefined-variable
+			# pylint: disable=undefined-variable,bad-builtin
 			print(
 				"Computed metrics: %s" % json.dumps(
 					AmpelUtils.flatten_dict(stats_dict), indent=4
 				)
 			)
 
-			# pylint: disable=undefined-variable
+			# pylint: disable=undefined-variable,bad-builtin
 			print("Updated metrics: %s" % json.dumps(out_dict, indent=4))
 			sys.stdout.flush()
 
