@@ -4,10 +4,10 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 24.05.2019
-# Last Modified Date: 24.05.2019
+# Last Modified Date: 25.05.2019
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-import pkg_resources, math, logging, sys, importlib, re
+import pkg_resources, logging, importlib, re, gc
 from time import time
 from types import MappingProxyType
 
@@ -20,10 +20,7 @@ from ampel.pipeline.logging.DBLoggingHandler import DBLoggingHandler
 from ampel.pipeline.logging.LoggingUtils import LoggingUtils
 from ampel.pipeline.db.AmpelDB import AmpelDB
 from ampel.pipeline.db.DBUtils import DBUtils
-from ampel.pipeline.db.LightCurveLoader import LightCurveLoader
-from ampel.pipeline.common.Schedulable import Schedulable
 from ampel.pipeline.config.AmpelConfig import AmpelConfig
-from ampel.pipeline.common.AmpelUnitLoader import AmpelUnitLoader
 
 
 class T2Executor:
@@ -39,7 +36,7 @@ class T2Executor:
 	def __init__(
 		self, t2_units=None, run_state=T2RunStates.TO_RUN, 
 		log_level=logging.DEBUG, schedule_tag=None, 
-		update_beacon=True
+		update_beacon=True, gc_collect=True
 	): 
 		"""
 		:param t2_units: ids of the t2 units to run. 
@@ -54,9 +51,12 @@ class T2Executor:
 		scheduled entry.
 		:param bool update_beacon: whether to update the beacon collection
 		when no new t2 docs were found
+		:param bool gc_collect: whether to actively perform garbage collection
+		between the processing of T2 documents
 		"""
 
 		self.schedule_tag = schedule_tag
+		self.gc_collect = gc_collect
 
 		# Get logger 
 		self.logger = AmpelLogger.get_unique_logger(
@@ -379,8 +379,11 @@ class T2Executor:
 				)
 
 			# Check possibly defined doc_limit
-			if doc_limit and counter > doc_limit:
+			if doc_limit and counter >= doc_limit:
 				break
+
+			if self.gc_collect:
+				gc.collect()
 
 		# Remove DB logging handler
 		db_logging_handler.flush()
