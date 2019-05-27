@@ -202,8 +202,6 @@ class ConfigLoader:
 
 	
 		except Exception as e:
-
-			LoggingUtils.report_exception(log, e, msg="Exception in load_config")
 			raise
 
 		return config
