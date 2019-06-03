@@ -30,7 +30,10 @@ class AmpelExceptionPublisher:
 
 	def t3_fields(self, doc):
 		fields = []
-		fields.append({'title': 'Job', 'value': doc.get('job', None), 'short': True})
+		if 'job' in doc:
+			fields.append({'title': 'Job', 'value': doc.get('job', None), 'short': True})
+		if 'task' in doc:
+			fields.append({'title': 'Task', 'value': doc.get('task', None), 'short': True})
 		fields.append({'title': 'Run', 'value': doc.get('runId', None), 'short': True})
 		return fields
 
