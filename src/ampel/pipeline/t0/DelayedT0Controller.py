@@ -125,6 +125,8 @@ def run():
 	parser.require_resource('archive', ['reader'])
 	parser.require_resource('graphite')
 
+	logging.basicConfig()
+
 	# partially parse command line to get config
 	opts, argv = parser.parse_known_args()
 	# flesh out parser with resources required by t0 units
