@@ -118,7 +118,7 @@ class ConfigLoader:
 			if tier in ("all", 2):
 
 				for resource in pkg_resources.iter_entry_points('ampel.pipeline.t2.configs'):
-					for name, channel_config in resource.resolve()().items():
+					for name, t2config in resource.resolve()().items():
 						if name in config['t2RunConfig']:
 							raise KeyError(
 								"T2 run config {} (defined as entry point {} in {}) {}".format(
@@ -126,7 +126,14 @@ class ConfigLoader:
 									"already exists in the provided config file"
 								)
 							)
-						config['t2RunConfig'][name] = channel_config
+						if name != '{t2Unit}_{runConfig}'.format(**t2config):
+							raise KeyError(
+								"T2 run config {} (defined as entry point {} in {}) {}".format(
+									name, resource.name, resource.dist,
+									"should be named {t2Unit}_{runConfig}".format(**t2config)
+								)
+							)
+						config['t2RunConfig'][name] = t2config
 	
 			# T3 Jobs and Tasks
 			###################
