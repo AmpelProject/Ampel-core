@@ -46,9 +46,11 @@ class AmpelExceptionPublisher:
 			if 'id' in doc.get('alert', {}):
 				fields.append({'title': 'alertId', 'value': doc.get('alert', {}).get('id', None), 'short': True})
 		elif doc['tier'] == 2:
-			fields.append({'title': 'unit', 'value': doc.get('t2UnitId', None), 'short': True})
-			fields.append({'title': 'tran', 'value': doc.get('tranId', None), 'short': True})
+			fields.append({'title': 'unit', 'value': doc.get('unit', None), 'short': True})
 			fields.append({'title': 'run', 'value': doc.get('runId', None), 'short': True})
+			t2Doc = doc.get('t2Doc', None):
+			if hasattr(t2Doc, 'binary'):
+				fields.append({'title': 't2Doc', 'value': t2Doc.binary.hex(), 'short': True})
 		elif doc['tier'] == 3:
 			fields += self.t3_fields(more if 'jobName' in more else doc)
 		if 'exception' in doc:
