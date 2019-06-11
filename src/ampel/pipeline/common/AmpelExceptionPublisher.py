@@ -42,8 +42,9 @@ class AmpelExceptionPublisher:
 		more = doc.get('more', {})
 		if doc['tier'] == 0:
 			for field in 'section', 'tranId', 'runId':
-				if field in more:
-					fields.append({'title': field, 'value': more.get(field, None), 'short': True})
+				fields.append({'title': field, 'value': doc.get(field, None), 'short': True})
+			if 'id' in doc.get('alert', {}):
+				fields.append({'title': 'alertId', 'value': doc.get('alert', {}).get('id', None), 'short': True})
 		elif doc['tier'] == 2:
 			fields.append({'title': 'unit', 'value': doc.get('t2UnitId', None), 'short': True})
 			fields.append({'title': 'tran', 'value': doc.get('tranId', None), 'short': True})
