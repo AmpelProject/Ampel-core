@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/utils/PlotUtils.py
+# File              : ampel/view/plot/SVGUtils.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 17.05.2019
@@ -9,8 +9,9 @@
 
 import zipfile, io
 import matplotlib as plt
+import svgutils as su
 
-class PlotUtils:
+class SVGUtils:
 	"""
 	"""
 
@@ -100,3 +101,31 @@ class PlotUtils:
 		del svg_dict['compressed']
 
 		return svg_dict
+
+
+	@staticmethod
+	def rescale(svg, scale=1.0):
+    
+		# Get SVGFigure from file
+		original = su.transform.fromstring(svg)
+
+		# Original size is represetnted as string (examle: '600px'); convert to float
+		original_width = float(original.width.split('.')[0])
+		original_height = float(original.height.split('.')[0])
+		
+		scaled = su.transform.SVGFigure(
+			original_width * scale, 
+			original_height * scale
+		)
+		
+		# Get the root element
+		svg = original.getroot()
+
+		# Scale the root element
+		svg.scale_xy(scale, scale)
+
+		# Add scaled svg element to figure
+		scaled.append(svg)
+		
+		return str(scaled.to_str(), "utf-8")
+		#return scaled.to_str()
