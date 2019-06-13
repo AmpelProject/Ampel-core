@@ -10,6 +10,9 @@
 import zipfile, io
 import matplotlib as plt
 import svgutils as su
+from IPython.display import Image
+from cairosvg import svg2png
+import base64
 
 class SVGUtils:
 	"""
@@ -129,3 +132,16 @@ class SVGUtils:
 		
 		return str(scaled.to_str(), "utf-8")
 		#return scaled.to_str()
+
+
+	@staticmethod
+	def to_png_img(content):
+		""" """
+		return '<img src="data:image/png;base64,' + str(
+			base64.b64encode(
+				Image(
+					svg2png(bytestring=content),
+				).data
+			), 
+			"utf-8"
+		) + '">'
