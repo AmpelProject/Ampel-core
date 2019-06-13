@@ -41,10 +41,16 @@ class SVGLoader:
 		""" """
 
 		if self._data_query is not None:
-			self._data_query['tranId'] = tran_id
+			if isinstance(tran_id, (list, tuple)):
+				self._data_query['tranId'] = {'$in' :tran_id}
+			else:
+				self._data_query['tranId'] = tran_id
 
 		if self._t2_query is not None:
-			self._t2_query['tranId'] = tran_id
+			if isinstance(tran_id, (list, tuple)):
+				self._t2_query['tranId'] = {'$in' :tran_id}
+			else:
+				self._t2_query['tranId'] = tran_id
 
 
 	def set_tag(self, tag):

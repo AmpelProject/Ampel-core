@@ -96,7 +96,7 @@ class SVGCollection:
 
 	def _repr_html_(
 		self, scale=None, show_col_title=True, title_prefix=None,
-		show_svg_titles=True, hide_if_empty=True
+		show_svg_titles=True, hide_if_empty=True, png_convert=False
 	):
 		"""
 		:param int scale: if None, native scaling is used
@@ -120,6 +120,7 @@ class SVGCollection:
 				show_title=show_svg_titles, 
 				title_prefix=title_prefix,
 				padding_bottom=self._inter_padding,
+				png_convert = png_convert
 			)
 
 		return html + "</div></center>" if self._center else html + "</div>"

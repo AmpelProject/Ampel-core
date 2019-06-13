@@ -51,7 +51,7 @@ class SVGPlot:
 
 	def _repr_html_(
 		self, scale=None, show_title=True, title_prefix=None, 
-		show_tags=False, padding_bottom=0
+		show_tags=False, padding_bottom=0, png_convert=False
 	):
 		"""
 		:param int scale: if None, native scaling is used
@@ -74,9 +74,14 @@ class SVGPlot:
 		html += SVGPlot.display_div
 		
 		if scale is not None and isinstance(scale, (float, int)):
-			html += SVGUtils.rescale(self._content, scale)
+			if png_convert:
+				html += SVGUtils.to_png_img(
+					SVGUtils.rescale(self._content, scale)
+				)
+			else:
+				html += SVGUtils.rescale(self._content, scale)
 		else:
-			html += self._content 
+			html += SVGUtils.to_png_img(self._content) if png_convert else self._content
 		
 		return html + '</div></div></center>' if self._center else '</div></div>'
 
@@ -89,3 +94,6 @@ class SVGPlot:
 		return HTML(
 			self._repr_html_(**kwargs)
 		)
+
+
+

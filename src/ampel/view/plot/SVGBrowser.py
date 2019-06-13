@@ -34,7 +34,8 @@ class SVGBrowser:
 
 	def show_single_window(
 		self, scale=None, append_tran_name=True, 
-		win_title="Ampel plots", tran_ids=None
+		win_title="Ampel plots", tran_ids=None, 
+		png_convert=False
 	):
 		""" 
 		:param bool append_tran_name: appends transient name to plot titles
