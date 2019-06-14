@@ -37,11 +37,11 @@ class SVGLoader:
 		if t2_run_config:
 			self.set_t2_run_config(t2_run_config)
 
-		if tag:
-			self.set_plot_tag(tag)
+		if plot_tag:
+			self.set_plot_tag(plot_tag)
 
-		if tags:
-			self.set_plot_tags(tags)
+		if plot_tags:
+			self.set_plot_tags(plot_tags)
 
 
 	def set_tran_id(self, tran_id):
