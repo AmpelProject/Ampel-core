@@ -135,12 +135,15 @@ class SVGUtils:
 
 
 	@staticmethod
-	def to_png_img(content):
+	def to_png_img(content, dpi=96):
 		""" """
 		return '<img src="data:image/png;base64,' + str(
 			base64.b64encode(
 				Image(
-					svg2png(bytestring=content),
+					svg2png(
+						bytestring=content,
+						dpi=dpi
+					),
 				).data
 			), 
 			"utf-8"
