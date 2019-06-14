@@ -74,7 +74,8 @@ class SVGBrowser:
 						continue
 
 				html += self._svg_loader._plots[tran_name]._repr_html_(
-					scale=scale, title_prefix=tran_name, png_convert=png_convert
+					scale=scale, title_prefix=tran_name, 
+					png_convert=png_convert
 				)
 
 		s  = '<script type="text/Javascript">'

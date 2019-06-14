@@ -76,12 +76,13 @@ class SVGPlot:
 		if scale is not None and isinstance(scale, (float, int)):
 			if png_convert:
 				html += SVGUtils.to_png_img(
-					SVGUtils.rescale(self._content, scale)
+					SVGUtils.rescale(self._content, scale), 
+					dpi=png_convert
 				)
 			else:
 				html += SVGUtils.rescale(self._content, scale)
 		else:
-			html += SVGUtils.to_png_img(self._content) if png_convert else self._content
+			html += SVGUtils.to_png_img(self._content, dpi=png_convert) if png_convert else self._content
 		
 		return html + '</div></div></center>' if self._center else '</div></div>'
 
