@@ -120,7 +120,7 @@ class SVGCollection:
 				show_title=show_svg_titles, 
 				title_prefix=title_prefix,
 				padding_bottom=self._inter_padding,
-				png_convert = png_convert
+				png_convert=png_convert
 			)
 
 		return html + "</div></center>" if self._center else html + "</div>"

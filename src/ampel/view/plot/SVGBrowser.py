@@ -58,7 +58,8 @@ class SVGBrowser:
 							tran_id, 
 							self._svg_loader._data_query,
 							self._svg_loader._t2_query,
-							scale
+							scale,
+							png_convert
 						)
 					)
 
@@ -88,7 +89,7 @@ class SVGBrowser:
 
 
 
-def get_html(tran_id, data_query, t2_query, scale=1.0):
+def get_html(tran_id, data_query, t2_query, scale=1.0, png_convert=False):
 	""" 
 	"""
 
@@ -101,5 +102,5 @@ def get_html(tran_id, data_query, t2_query, scale=1.0):
 	return svg_loader._plots[tran_id]._repr_html_(
 		scale=scale, 
 		title_prefix=tran_id, 
-		png_convert=True
+		png_convert=png_convert
 	)
