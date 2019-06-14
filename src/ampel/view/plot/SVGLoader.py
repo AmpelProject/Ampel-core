@@ -16,14 +16,14 @@ class SVGLoader:
 	"""
 
 	def __init__(
-		self, tran_id=None, tag=None, tags=None,
+		self, tran_id=None, plot_tag=None, plot_tags=None,
 		query_data=True, query_t2=True, 
 		t2_unit_id=None, t2_run_config=None
 	):
 		""" """
 
 		self._data_query = {} if query_data else None
-		self._t2_query = {} if query_data else None
+		self._t2_query = {} if query_t2 else None
 		self._plots = defaultdict(SVGCollection)
 		self.tag = None
 		self.tags = None
@@ -38,10 +38,10 @@ class SVGLoader:
 			self.set_t2_run_config(t2_run_config)
 
 		if tag:
-			self.set_tag(tag)
+			self.set_plot_tag(tag)
 
 		if tags:
-			self.set_tags(tags)
+			self.set_plot_tags(tags)
 
 
 	def set_tran_id(self, tran_id):
@@ -60,14 +60,14 @@ class SVGLoader:
 				self._t2_query['tranId'] = tran_id
 
 
-	def set_tag(self, tag):
+	def set_plot_tag(self, tag):
 		""" """
 		self.tag = tag
 		self._data_query['plots.tags'] = tag
 		self._t2_query['results.output.plots.tags'] = tag
 
 
-	def set_tags(self, tags):
+	def set_plot_tags(self, tags):
 		""" """
 		self.tags = tags
 		self._data_query['plots.tags'] = {'$all': tags}
