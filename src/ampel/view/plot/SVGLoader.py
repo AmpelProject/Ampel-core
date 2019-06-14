@@ -57,14 +57,14 @@ class SVGLoader:
 		""" """
 		self.tag = tag
 		self._data_query['plots.tags'] = tag
-		self._t2_query['results.-1.output.plots.tags'] = tag
+		self._t2_query['results.output.plots.tags'] = tag
 
 
 	def set_tags(self, tags):
 		""" """
 		self.tags = tags
 		self._data_query['plots.tags'] = {'$all': tags}
-		self._t2_query['results.-1.output.plots.tags'] = {'$all': tags}
+		self._t2_query['results.output.plots.tags'] = {'$all': tags}
 
 
 	def load_plots(self):
@@ -75,7 +75,7 @@ class SVGLoader:
 				self._load_plots(el['tranId'], el['plots'])
 
 		if self._t2_query is not None:
-			for el in AmpelDB.get_collection("blend").find(self._data_query):
+			for el in AmpelDB.get_collection("blend").find(self._t2_query):
 				if 'output' in el['results'][-1] and 'plots' in el['results'][-1]['output']:
 					self._load_plots(el['tranId'], el['results'][-1]['output']['plots'])
 
