@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 13.06.2019
-# Last Modified Date: 13.06.2019
+# Last Modified Date: 14.06.2019
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from ampel.pipeline.db.AmpelDB import AmpelDB
@@ -17,7 +17,8 @@ class SVGLoader:
 
 	def __init__(
 		self, tran_id=None, tag=None, tags=None,
-		query_data=True, query_t2=True,
+		query_data=True, query_t2=True, 
+		t2_unit_id=None, t2_run_config=None
 	):
 		""" """
 
@@ -29,6 +30,12 @@ class SVGLoader:
 
 		if tran_id:
 			self.set_tran_id(tran_id)
+
+		if t2_unit_id:
+			self.set_t2_unit_id(t2_unit_id)
+
+		if t2_run_config:
+			self.set_t2_run_config(t2_run_config)
 
 		if tag:
 			self.set_tag(tag)
@@ -65,6 +72,34 @@ class SVGLoader:
 		self.tags = tags
 		self._data_query['plots.tags'] = {'$all': tags}
 		self._t2_query['results.output.plots.tags'] = {'$all': tags}
+
+
+	def set_t2_query_parameter(self, name, value, overwrite=False):
+		""" 
+		For example:
+		set_t2_query_parameter(
+			"$or", [
+				{'t2UnitId': 'myFirstT2', 'runConfig': 'default'}, 
+				{'t2UnitId': 'myT2'}
+			]
+		)
+		"""
+		if name in self._t2_query and not overwrite:
+			raise ValueError(
+				"Parameter %s already defined (use overwrite=True if you know what you're doing)" % name
+			)
+
+		self._t2_query[name] = value
+
+
+	def set_t2_unit_id(self, t2_unit_id):
+		""" """
+		self._t2_query['t2UnitId'] = t2_unit_id
+
+
+	def set_t2_run_config(self, run_config_name):
+		""" """
+		self._t2_query['runConfig'] = run_config_name
 
 
 	def load_plots(self):
