@@ -9,6 +9,7 @@
 
 from ampel.pipeline.db.AmpelDB import AmpelDB
 from ampel.view.plot.SVGCollection import SVGCollection
+from ampel.view.plot.SVGLoader import SVGLoader
 from IPython.display import HTML, display
 from collections import defaultdict
 
@@ -35,7 +36,7 @@ class SVGBrowser:
 	def show_single_window(
 		self, scale=None, append_tran_name=True, 
 		win_title="Ampel plots", tran_ids=None, 
-		png_convert=False
+		png_convert=False, multiproc=0
 	):
 		""" 
 		:param bool append_tran_name: appends transient name to plot titles
@@ -43,15 +44,38 @@ class SVGBrowser:
 
 		html = ""
 
-		for tran_name in self._svg_loader._plots:
+		if multiproc:
 
-			if tran_ids:
-				if self._svg_loader._plots[tran_name] not in tran_ids:
-					continue
+			futures = []
+			from concurrent.futures import ProcessPoolExecutor
 
-			html += self._svg_loader._plots[tran_name]._repr_html_(
-				scale=scale, title_prefix=tran_name, png_convert=png_convert
-			)
+			with ProcessPoolExecutor(max_workers=multiproc) as executor:
+
+				for tran_id in self._svg_loader._plots.keys():
+					futures.append(
+						executor.submit(
+							get_html, 
+							tran_id, 
+							self._svg_loader._data_query,
+							self._svg_loader._t2_query,
+							scale
+						)
+					)
+
+				for future in futures:
+					html += future.result()
+
+		else:
+
+			for tran_name in self._svg_loader._plots:
+
+				if tran_ids:
+					if self._svg_loader._plots[tran_name] not in tran_ids:
+						continue
+
+				html += self._svg_loader._plots[tran_name]._repr_html_(
+					scale=scale, title_prefix=tran_name, png_convert=png_convert
+				)
 
 		s  = '<script type="text/Javascript">'
 		s += 'var win = window.open("", "' + win_title + '");'
@@ -60,3 +84,21 @@ class SVGBrowser:
 		s += '</script>'
 
 		display(HTML(s))
+
+
+
+def get_html(tran_id, data_query, t2_query, scale=1.0):
+	""" 
+	"""
+
+	svg_loader = SVGLoader()
+	svg_loader._data_query = data_query
+	svg_loader._t2_query = t2_query
+	svg_loader.set_tran_id(tran_id)
+	svg_loader.load_plots()
+
+	return svg_loader._plots[tran_id]._repr_html_(
+		scale=scale, 
+		title_prefix=tran_id, 
+		png_convert=True
+	)
