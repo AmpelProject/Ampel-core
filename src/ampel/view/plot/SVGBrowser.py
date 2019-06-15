@@ -12,6 +12,7 @@ from ampel.view.plot.SVGCollection import SVGCollection
 from ampel.view.plot.SVGLoader import SVGLoader
 from IPython.display import HTML, display
 from collections import defaultdict
+import random
 
 class SVGBrowser:
 	"""
@@ -42,12 +43,12 @@ class SVGBrowser:
 		:param bool append_tran_name: appends transient name to plot titles
 		"""
 
-		html = ""
+		win_id = SVGBrowser._new_window(win_title)
 
 		if multiproc:
 
-			futures = []
 			from concurrent.futures import ProcessPoolExecutor
+			futures = []
 
 			with ProcessPoolExecutor(max_workers=multiproc) as executor:
 
@@ -64,29 +65,63 @@ class SVGBrowser:
 					)
 
 				for future in futures:
-					html += future.result()
-
+					SVGBrowser._write_to_window(
+						win_id, future.result(), 
+						'Adding %s info to %s<br>' % (tran_id, win_title)
+					)
 		else:
 
-			for tran_name in self._svg_loader._plots:
+			for tran_id in self._svg_loader._plots:
 
 				if tran_ids:
-					if self._svg_loader._plots[tran_name] not in tran_ids:
+					if self._svg_loader._plots[tran_id] not in tran_ids:
 						continue
 
-				html += self._svg_loader._plots[tran_name]._repr_html_(
-					scale=scale, title_prefix=tran_name, 
-					png_convert=png_convert
+				SVGBrowser._write_to_window(
+					win_id, 
+					self._svg_loader._plots[tran_id]._repr_html_(
+						scale=scale, 
+						title_prefix=tran_id, 
+						png_convert=png_convert
+					), 
+					'Adding %s info to %s<br>' % (tran_id, win_title)
 				)
 
-		s  = '<script type="text/Javascript">'
-		s += 'var win = window.open("", "' + win_title + '");'
-		s += 'win.document.body.innerHTML = \'' + html.replace("\n",'\\') + '\';'
-		s += 'win.document.title = \'' + win_title + '\';'
-		s += '</script>'
+		display(HTML("Done"))
 
-		display(HTML(s))
 
+	@staticmethod
+	def _new_window(title):
+		""" """
+
+		win_id = "win_" + str(random.randint(0, 100000))
+
+		display(
+			HTML(
+				'<script type="text/Javascript"> \
+					var %s=window.open("", "%s"); \
+					win.document.title="%s"; \
+				 </script>' % (win_id, title, title)
+			)
+		)
+
+		return win_id
+
+
+	@staticmethod
+	def _write_to_window(js_var_name, html_content, feedback=""):
+		""" """
+		display(
+			HTML(
+				'%s<script type="text/Javascript"> \
+					%s.document.body.innerHTML += \'%s\';' \
+				'</script>' % (
+					feedback, 
+					js_var_name, 
+					html_content.replace("\n","\\")
+				)
+			)
+		)
 
 
 def get_html(tran_id, data_query, t2_query, scale=1.0, png_convert=False):
@@ -96,7 +131,6 @@ def get_html(tran_id, data_query, t2_query, scale=1.0, png_convert=False):
 	svg_loader = SVGLoader()
 	svg_loader._data_query = data_query
 	svg_loader._t2_query = t2_query
-	svg_loader.set_tran_id(tran_id)
 	svg_loader.load_plots()
 
 	return svg_loader._plots[tran_id]._repr_html_(
