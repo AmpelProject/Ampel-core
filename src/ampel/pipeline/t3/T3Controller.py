@@ -178,6 +178,11 @@ def runjob(args):
 	job = T3Job(job_config, full_console_logging=True, raise_exc=True)
 	job.run()
 
+def runtask(args):
+	job_config = T3TaskConfig(**AmpelConfig.get_config('t3Tasks.{}'.format(args.task)))
+	job = T3Task(job_config, full_console_logging=True, raise_exc=True)
+	job.run()
+
 def rununit(args):
 	"""
 	Run a single T3 unit
@@ -315,6 +320,9 @@ def main():
 	p = add_command(runjob)
 	p.add_argument('job')
 	p.add_argument('task', nargs='?')
+
+	p = add_command(runtask)
+	p.add_argument('task')
 
 	p = add_command(dryrun)
 	p.add_argument('job', nargs='?')
