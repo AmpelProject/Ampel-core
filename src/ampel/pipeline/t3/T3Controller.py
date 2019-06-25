@@ -30,24 +30,21 @@ class T3Controller(Schedulable):
 	"""
 
 	@staticmethod
-	def load_job_configs(t3_job_names=None, skip_jobs=set()):
+	def load_job_configs(include=None, exclude=None):
 		"""
+		:param include: sequence of job names to explicitly include. If
+		    specified, any job name not in this sequence will be excluded.
+		:param exclude: sequence of job names to explicitly exclude. If
+		    specified, any job name in this sequence will be excluded.
 		"""
 		job_configs = {}
-
-		def veto(job_name):
-			if (t3_job_names is not None and job_name not in t3_job_names) or job_name in skip_jobs:
-				return True
-			else:
-				return False
-
-		for job_name, job_dict in AmpelConfig.get_config("t3Jobs").items():
-			if not veto(job_name):
-				job_configs[job_name] = T3JobConfig(**job_dict)
-
-		for job_name, job_dict in AmpelConfig.get_config("t3Tasks").items():
-			if not veto(job_name):
-				job_configs[job_name] = T3TaskConfig(**job_dict)
+		for key, klass in [('t3Jobs', T3JobConfig), ('t3Tasks', T3TaskConfig)]:
+			for job_name, job_dict in AmpelConfig.get_config(key).items():
+				if (include and job_name not in include) or (exclude and job_name in exclude):
+					continue
+				config = klass(**job_dict)
+				if getattr(config, 'active', True):
+					job_configs[job_name] = config
 
 		return job_configs
 
@@ -66,7 +63,7 @@ class T3Controller(Schedulable):
 		self.logger.info("Setting up T3Controller")
 
 		# Load job configurations
-		self.job_configs = T3Controller.load_job_configs(t3_job_names)
+		self.job_configs = T3Controller.load_job_configs(t3_job_names, skip_jobs)
 
 		schedule = ScheduleEvaluator()
 		self._processes = {}
