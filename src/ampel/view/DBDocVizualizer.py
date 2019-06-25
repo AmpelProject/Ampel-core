@@ -143,7 +143,7 @@ class DBDocVizualizer:
 			json_str = re.sub(el+"\": \"(.*)\"", el+"\": \\1", json_str)
   
 		# replace "ObjectId(5a58ee386f21dad72c56f95e)" with ObjectId("5a58ee386f21dad72c56f95e")
-		json_str = re.sub("\"ObjectId\((.*)\)\"", "ObjectId(\"\\1\")", json_str)
+		json_str = re.sub(r'"ObjectId\((.*)\)"', r'ObjectId("\1")', json_str)
 
 		# replace 
 		# {
