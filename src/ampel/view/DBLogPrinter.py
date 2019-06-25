@@ -35,6 +35,7 @@ class DBLogPrinter:
 			lp = DBLogPrinter(mc)
 			lp.set_logging_log_level(logging.INFO) 
 		"""
+		# pylint: disable=no-member
 		self.log_filter_flags |= DBLoggingHandler.severity_map[lvl]
 
 
