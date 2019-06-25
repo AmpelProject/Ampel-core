@@ -62,7 +62,7 @@ disable=all
 # either give multiple identifier separated by comma (,) or put this option
 # multiple time (only on the command line, not in the configuration file where
 # it should appear only once). See also the "--disable" option for examples.
-enable=undefined-variable,bad-builtin,no-member,syntax-error
+enable=undefined-variable,bad-builtin,no-member,syntax-error,invalid-escape-sequence
 
 
 [REPORTS]
