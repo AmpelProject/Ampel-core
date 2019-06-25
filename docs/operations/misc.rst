@@ -78,6 +78,21 @@ whitelisted on the UW Kafka server):
 	ztf_20181115_programid2        7          0
 5. Restart the consumers
 
+
+There is also a much easier way to do this with kt_:
+    
+    ./kt group -brokers partnership.alerts.ztf.uw.edu:9092 -group ampel-v0.5.1-public -topic ztf_20181115_programid2 -reset oldest
+
+You can also combine this with jq_ to loop over multiple topics, e.g. to reset
+the offsets to the latest message on all topics for a given consumer group:
+    
+    ./kt topic -brokers partnership.alerts.ztf.uw.edu:9092 | ./jq --raw-output 'select(.name | contains("ztf")).name' | while read topic; do
+    ./kt group -brokers partnership.alerts.ztf.uw.edu:9092 -group ampel-v0.5.1-public -topic $topic -reset newest
+    done
+
+.. _kt: https://github.com/fgeller/kt
+.. _jq: https://stedolan.github.io/jq/
+
 Add a new extcats catalog
 =========================
 
