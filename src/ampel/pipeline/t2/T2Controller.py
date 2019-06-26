@@ -118,7 +118,7 @@ class T2Controller(Schedulable):
 		while doc is not None:
 			# get t2 document (runState is usually TO_RUN or TO_RUN_PRIO)
 			doc = AmpelDB.get_collection('blend').find_one_and_update(
-			    self.query, {'$set': {'runState': int(T2RunStates.RUNNING)}}
+			    self.query, {'$set': {'runState': T2RunStates.RUNNING.value}}
 			)
 			yield doc
 
