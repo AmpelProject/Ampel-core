@@ -2,6 +2,47 @@
 Odds and ends
 *************
 
+.. _ssh-tunnel-config:
+
+Tunnel directly to Ampel subnet
+===============================
+
+The Ampel subnet is behind two different firewalls, requiring two nested ssh
+tunnels to reach. This can be automated by putting the following block in
+.ssh/config::
+  
+  host burst.ifh.de transit.ifh.de
+    ControlMaster no
+    IdentityFile ~/.ssh/id_rsa.zeuthen
+    GSSAPIAuthentication no
+    GSSAPIDelegateCredentials no
+    ProxyCommand ssh -q ztf-wgs.ifh.de "nc %h %p"
+
+  host pub*.zeuthen.desy.de
+    ProxyCommand none
+
+  host *.ifh.de *.zeuthen.desy.de
+    User YOURUSERNAME
+    ControlMaster auto 
+    ForwardX11 yes
+    ForwardX11Trusted yes
+    GSSAPIAuthentication yes
+    GSSAPIDelegateCredentials yes
+    KeepAlive yes
+    ServerAliveInterval 55
+    ProxyCommand ssh -q pub2.zeuthen.desy.de "nc %h %p"
+
+  host *
+    AddKeysToAgent Yes
+    UseKeychain Yes
+
+Replace `~/.ssh/id_rsa.zeuthen` with the path to your public key, and
+YOURUSERNAME with your DESY username. Here we've used the `ifh.de` alias for
+`zeuthen.desy.de` to save typing. Now, you should be able to connect directly
+to e.g. `burst` via::
+  
+  ssh burst.ifh.de
+
 Reset Kafka consumer group offsets
 ==================================
 
