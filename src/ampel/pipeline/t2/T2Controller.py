@@ -122,14 +122,14 @@ class T2Controller(Schedulable):
 			)
 			yield doc
 
-	def process_new_docs(self):
+	def process_new_docs(self, raise_exc=False):
 		"""
 		check transient database for T2 documents with the given run_state
 		"""
 		batch = 0
 		while True:
 			# Process t2_docs
-			chunk = self.process_docs(self._fetch_new_docs())
+			chunk = self.process_docs(self._fetch_new_docs(), raise_exc)
 			batch += chunk
 			if chunk == 0:
 				break
@@ -142,7 +142,7 @@ class T2Controller(Schedulable):
 			)
 
 
-	def process_docs(self, cursor):
+	def process_docs(self, cursor, raise_exc=False):
 		"""
 		cursor: mongodb cursor
 		Return: nothing
@@ -238,6 +238,8 @@ class T2Controller(Schedulable):
 				)
 			except Exception as e:
 				# Record any uncaught exceptions in troubles collection.
+				if raise_exc:
+					raise
 				ret = T2RunStates.EXCEPTION
 				LoggingUtils.report_exception(
 					self.logger, e, tier=2, run_id=db_logging_handler.get_run_id(), info={
@@ -455,6 +457,7 @@ def run():
 	parser.add_argument('--units', default=None, nargs='+', help='T2 units to run')
 	parser.add_argument('--interval', default=10, type=int, help='Seconds to wait between database polls. If < 0, exit after one poll')
 	parser.add_argument('--batch-size', default=200, type=int, help='Process this many T2 docs at a time')
+	parser.add_argument('--raise-exc', default=False, action="store_true", help='Raise exceptions immediately instead of logging')
 	
 	parser.require_resource('mongo', ['writer', 'logger'])
 	# partially parse command line to get config
@@ -471,6 +474,6 @@ def run():
 	)
 	if not opts.verbose:
 		controller.logger.quieten_console()
-	controller.process_new_docs()
+	controller.process_new_docs(raise_exc=opts.raise_exc)
 	if opts.interval >= 0:
 		controller.run()

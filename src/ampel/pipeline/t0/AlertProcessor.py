@@ -188,7 +188,7 @@ class AlertProcessor():
 		self.log_headers = lbh.log_dicts
 
 
-	def run(self, alert_loader, ingester=None, full_console_logging=True):
+	def run(self, alert_loader, ingester=None, full_console_logging=True, raise_exc=False):
 		"""
 		Run the alert processing using the provided alert_loader
 
@@ -399,7 +399,8 @@ class AlertProcessor():
 							channel.rec_buf_hdlr.forward(self.logger, channel.name, extra)
 
 					except Exception as e:
-
+						if raise_exc:
+							raise
 						channel.rec_buf_hdlr.forward(db_logging_handler, extra=extra)
 						LoggingUtils.report_exception(
 							self.logger, e, tier=0, 
