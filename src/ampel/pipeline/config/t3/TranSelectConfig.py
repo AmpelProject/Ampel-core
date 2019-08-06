@@ -45,23 +45,26 @@ class TranSelectConfig(AmpelModelExtension):
 	withoutFlags: Union[None, AnyOf, AllOf, OneOf] = None
 	scienceRecords: Union[None, ScienceRecordMatchConfig, List[ScienceRecordMatchConfig]] = None
 
-	@validator('scienceRecords')
-	def build_t2_query(cls, v):
-		def create_query(filter_config):
-			return {
-				't2records': {
-					'$elemMatch': {
-						't2_unit_id': filter_config.unitId,
-						'info.runConfig': filter_config.runConfig,
-						'info.hasError': False,
-						**{'results.-1.output.{}'.format(k): v for k,v in filter_config.match.items()}
-					}
+	@staticmethod
+	def _create_query(filter_config):
+		return {
+			't2records': {
+				'$elemMatch': {
+					't2_unit_id': filter_config.unitId,
+					'info.runConfig': filter_config.runConfig,
+					'info.hasError': False,
+					**{'results.-1.output.{}'.format(k): v for k,v in filter_config.match.items()}
 				}
 			}
-		if isinstance(v, list):
-			return {'$and': list(map(create_query, v))}
+		}
+
+	def get_t2_query(self):
+		if not self.scienceRecords:
+			return
+		elif isinstance(self.scienceRecords, list):
+			return {'$and': list(map(self._create_query, self.scienceRecords))}
 		else:
-			return create_query(v)
+			return self._create_query(self.scienceRecords)
 
 	@validator('channels', 'withFlags', 'withoutFlags', pre=True, whole=True)
 	def cast(cls, v, values, **kwargs):

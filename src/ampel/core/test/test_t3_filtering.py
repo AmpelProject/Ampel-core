@@ -112,6 +112,29 @@ def test_transient_data_filter(transients, mocker):
     job = T3Job(
         T3JobConfig(job='foo',
             schedule='every().sunday',
+            transients=tran_config,
+            tasks={
+                'task': 'foo',
+                'unitId': 'T3PlaceboUnit'
+            }),
+        logger=AmpelLogger.get_logger(), db_logging=False,
+        full_console_logging=True, update_tran_journal=False, 
+        update_events=False, raise_exc=True)
+    job.process_tran_data(transients)
+    assert add.called
+    assert len(add.call_args[0][0]) == 4
+    # no docs loaded except T2 records
+    for view in add.call_args[0][0]:
+        assert not view.photopoints
+        assert not view.upperlimits
+        assert not view.compounds
+        assert view.t2records
+
+    add.reset_mock()
+    assert not add.called
+    job = T3Job(
+        T3JobConfig(job='foo',
+            schedule='every().sunday',
             transients={
                 'state': '$latest',
                 'select': {},
