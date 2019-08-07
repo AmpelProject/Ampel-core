@@ -208,6 +208,7 @@ def rununit(args):
 					}
 				},
 				"channels": {'anyOf': args.channels},
+				"scienceRecords": [r.dict() for r in args.science_records],
 				"withFlags": "INST_ZTF",
 				"withoutFlags": "HAS_ERROR"
 			},
@@ -287,6 +288,7 @@ def get_required_resources():
 
 def main():
 
+	from ampel.pipeline.config.t3.ScienceRecordMatchConfig import ScienceRecordMatchConfig
 	from ampel.pipeline.config.AmpelArgumentParser import AmpelArgumentParser
 	from argparse import SUPPRESS, Action, Namespace
 	import sys
@@ -330,6 +332,9 @@ def main():
 	p.add_argument('--update-run-col', default=False, action="store_true", help="Record this run in the jobs collection")
 	p.add_argument('--update-tran-journal', default=False, action="store_true", help="Record this run in the transient journal")
 	p.add_argument('--channels', nargs='+', default=[], help="Select transients in any of these channels")
+	p.add_argument('--science-records', nargs='+', default=None,
+	    type=ScienceRecordMatchConfig.parse_raw,
+	    help="Filter based on transient records. The filter should be the JSON representation of a ScienceRecordMatchConfig")
 	p.add_argument('--chunk', type=int, default=200, help="Provide CHUNK transients at a time")
 	p.add_argument('--created', type=int, default=40, help="Select transients created in the last CREATED days")
 	p.add_argument('--modified', type=int, default=1, help="Select transients modified in the last MODIFIED days")
