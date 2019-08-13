@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 13.06.2019
-# Last Modified Date: 13.06.2019
+# Last Modified Date: 15.06.2019
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from ampel.view.plot.SVGUtils import SVGUtils
@@ -96,7 +96,8 @@ class SVGCollection:
 
 	def _repr_html_(
 		self, scale=None, show_col_title=True, title_prefix=None,
-		show_svg_titles=True, hide_if_empty=True, png_convert=False
+		show_svg_titles=True, hide_if_empty=True, png_convert=False,
+		flexbox_wrap=True
 	):
 		"""
 		:param int scale: if None, native scaling is used
@@ -111,8 +112,13 @@ class SVGCollection:
 		if show_col_title and self._col_title:
 			html += '<h1 style="color: darkred">' + self._col_title + '</h1>'
 
-		html += '<div style="text-align:center; display: flex; flex-direction: row; \
-				flex-wrap: wrap; justify-content: center">'
+		if flexbox_wrap:
+			html += '<div style="\
+				text-align:center; \
+				display: flex; \
+				flex-direction: row; \
+				flex-wrap: wrap; \
+				justify-content: center">'
 
 		for svg in self._svgs:
 			html += svg._repr_html_(
@@ -123,7 +129,10 @@ class SVGCollection:
 				png_convert=png_convert
 			)
 
-		return html + "</div></center>" if self._center else html + "</div>"
+		if flexbox_wrap:
+			return html + "</div></center>" if self._center else html + "</div>"
+		else:
+			return html + "</center>" if self._center else html
 		
 
 	def show_html(self, **kwargs):

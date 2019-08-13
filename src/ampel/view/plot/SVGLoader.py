@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ZTF/Ampel/src/ampel/view/plot/SVGLoader.py
+# File              : ampel/view/plot/SVGLoader.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 13.06.2019
-# Last Modified Date: 14.06.2019
+# Last Modified Date: 15.06.2019
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from ampel.pipeline.db.AmpelDB import AmpelDB
