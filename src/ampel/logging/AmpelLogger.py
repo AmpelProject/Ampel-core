@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/pipeline/logging/AmpelLogger.py
+# File              : ampel/logging/AmpelLogger.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 27.09.2018
@@ -10,8 +10,8 @@
 import logging, sys
 from bson import BSON
 from logging import _logRecordFactory
-from ampel.pipeline.logging.ExtraLogFormatter import ExtraLogFormatter
-from ampel.pipeline.config.ReadOnlyDict import ReadOnlyDict
+from ampel.logging.ExtraLogFormatter import ExtraLogFormatter
+from ampel.config.ReadOnlyDict import ReadOnlyDict
 
 # Custom log int level (needed for efficient storing in DB)
 logging.DEBUG = 65536 
@@ -126,7 +126,7 @@ class AmpelLogger(logging.Logger):
 		logger.setLevel(log_level)
 		
 		# Perform import here to avoid cyclic import errro
-		from ampel.pipeline.logging.AmpelLoggingStreamHandler import AmpelLoggingStreamHandler
+		from ampel.logging.AmpelLoggingStreamHandler import AmpelLoggingStreamHandler
 		sh = AmpelLoggingStreamHandler(
 			stream if stream else AmpelLogger.default_stream,
 			aggregate_interval=aggregate_interval

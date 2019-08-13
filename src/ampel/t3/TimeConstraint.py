@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/pipeline/t3/TimeConstraint.py
+# File              : ampel/t3/TimeConstraint.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 06.06.2018
@@ -8,12 +8,12 @@
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from datetime import datetime, timedelta
-from ampel.pipeline.config.AmpelConfig import AmpelConfig
-from ampel.pipeline.db.AmpelDB import AmpelDB
-from ampel.pipeline.config.time.TimeDeltaConfig import TimeDeltaConfig
-from ampel.pipeline.config.time.TimeLastRunConfig import TimeLastRunConfig
-from ampel.pipeline.config.time.TimeStringConfig import TimeStringConfig
-from ampel.pipeline.config.time.UnixTimeConfig import UnixTimeConfig
+from ampel.config.AmpelConfig import AmpelConfig
+from ampel.db.AmpelDB import AmpelDB
+from ampel.config.time.TimeDeltaConfig import TimeDeltaConfig
+from ampel.config.time.TimeLastRunConfig import TimeLastRunConfig
+from ampel.config.time.TimeStringConfig import TimeStringConfig
+from ampel.config.time.UnixTimeConfig import UnixTimeConfig
 
 
 class TimeConstraint:
@@ -93,7 +93,7 @@ class TimeConstraint:
 
 		elif tc_type is TimeLastRunConfig:
 
-			from ampel.pipeline.db.query.QueryEventsCol import QueryEventsCol
+			from ampel.db.query.QueryEventsCol import QueryEventsCol
 			col = AmpelDB.get_collection('events')
 			res = next(
 				col.aggregate(

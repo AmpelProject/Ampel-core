@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/pipeline/db/query/QueryMatchTransients.py
+# File              : ampel/db/query/QueryMatchTransients.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 13.01.2018
@@ -9,9 +9,9 @@
 
 from bson.objectid import ObjectId
 from ampel.core.flags.AlDocType import AlDocType
-from ampel.pipeline.config.t3.LogicSchemaUtils import LogicSchemaUtils
-from ampel.pipeline.t3.TimeConstraint import TimeConstraint
-from ampel.pipeline.db.query.QueryMatchSchema import QueryMatchSchema
+from ampel.config.t3.LogicSchemaUtils import LogicSchemaUtils
+from ampel.t3.TimeConstraint import TimeConstraint
+from ampel.db.query.QueryMatchSchema import QueryMatchSchema
 
 
 class QueryMatchTransients:

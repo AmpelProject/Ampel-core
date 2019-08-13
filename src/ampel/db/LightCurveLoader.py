@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/pipeline/db/LightCurveLoader.py
+# File              : ampel/db/LightCurveLoader.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 13.01.2018
@@ -14,9 +14,9 @@ from ampel.core.UpperLimit import UpperLimit
 from ampel.base.PlainPhotoPoint import PlainPhotoPoint
 from ampel.base.PlainUpperLimit import PlainUpperLimit
 from ampel.base.LightCurve import LightCurve
-from ampel.pipeline.logging.AmpelLogger import AmpelLogger
-from ampel.pipeline.config.AmpelConfig import AmpelConfig
-from ampel.pipeline.db.AmpelDB import AmpelDB
+from ampel.logging.AmpelLogger import AmpelLogger
+from ampel.config.AmpelConfig import AmpelConfig
+from ampel.db.AmpelDB import AmpelDB
 
 class LightCurveLoader:
 	"""

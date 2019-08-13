@@ -7,7 +7,7 @@
 # Last Modified Date: 15.06.2019
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-from ampel.pipeline.db.AmpelDB import AmpelDB
+from ampel.db.AmpelDB import AmpelDB
 from ampel.view.plot.SVGCollection import SVGCollection
 from ampel.view.plot.SVGLoader import SVGLoader
 from IPython.display import HTML, display

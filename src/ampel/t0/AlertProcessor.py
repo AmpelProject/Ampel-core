@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/pipeline/t0/AlertProcessor.py
+# File              : ampel/t0/AlertProcessor.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 10.10.2017
@@ -9,24 +9,24 @@
 
 import pkg_resources, numpy as np
 from time import time
-from ampel.pipeline.logging.AmpelLogger import AmpelLogger
+from ampel.logging.AmpelLogger import AmpelLogger
 from logging import LogRecord, INFO
 from pymongo.errors import PyMongoError
-from ampel.pipeline.logging.LoggingUtils import LoggingUtils
-from ampel.pipeline.logging.T0ConsoleFormatter import T0ConsoleFormatter
-from ampel.pipeline.logging.RecordsBufferingHandler import RecordsBufferingHandler
-from ampel.pipeline.logging.LogsBufferingHandler import LogsBufferingHandler
-from ampel.pipeline.logging.DBLoggingHandler import DBLoggingHandler
-from ampel.pipeline.logging.DBEventDoc import DBEventDoc
-from ampel.pipeline.logging.AmpelLoggingError import AmpelLoggingError
-from ampel.pipeline.db.AmpelDB import AmpelDB
-from ampel.pipeline.db.DBUpdateError import DBUpdateError
-from ampel.pipeline.config.AmpelConfig import AmpelConfig
-from ampel.pipeline.config.channel.ChannelConfigLoader import ChannelConfigLoader
-from ampel.pipeline.t0.ingest.DBUpdatesBuffer import DBUpdatesBuffer
-from ampel.pipeline.t0.Channel import Channel
-from ampel.pipeline.common.AmpelUtils import AmpelUtils
-from ampel.pipeline.common.GraphiteFeeder import GraphiteFeeder
+from ampel.logging.LoggingUtils import LoggingUtils
+from ampel.logging.T0ConsoleFormatter import T0ConsoleFormatter
+from ampel.logging.RecordsBufferingHandler import RecordsBufferingHandler
+from ampel.logging.LogsBufferingHandler import LogsBufferingHandler
+from ampel.logging.DBLoggingHandler import DBLoggingHandler
+from ampel.logging.DBEventDoc import DBEventDoc
+from ampel.logging.AmpelLoggingError import AmpelLoggingError
+from ampel.db.AmpelDB import AmpelDB
+from ampel.db.DBUpdateError import DBUpdateError
+from ampel.config.AmpelConfig import AmpelConfig
+from ampel.config.channel.ChannelConfigLoader import ChannelConfigLoader
+from ampel.t0.ingest.DBUpdatesBuffer import DBUpdatesBuffer
+from ampel.t0.Channel import Channel
+from ampel.common.AmpelUtils import AmpelUtils
+from ampel.common.GraphiteFeeder import GraphiteFeeder
 from ampel.core.abstract.AbsSurveySetup import AbsSurveySetup
 from ampel.core.flags.LogRecordFlag import LogRecordFlag
 from ampel.core.flags.AlDocType import AlDocType

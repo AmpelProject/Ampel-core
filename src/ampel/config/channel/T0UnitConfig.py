@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/pipeline/config/channel/T0UnitConfig.py
+# File              : ampel/config/channel/T0UnitConfig.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 02.09.2018
@@ -10,11 +10,11 @@
 import pkg_resources
 from typing import Dict, Any, Union
 from pydantic import BaseModel, validator
-from ampel.pipeline.common.docstringutils import gendocstring
-from ampel.pipeline.config.AmpelConfig import AmpelConfig
-from ampel.pipeline.config.AmpelModelExtension import AmpelModelExtension
-from ampel.pipeline.common.AmpelUnitLoader import AmpelUnitLoader
-from ampel.pipeline.config.EncryptedConfig import EncryptedConfig
+from ampel.common.docstringutils import gendocstring
+from ampel.config.AmpelConfig import AmpelConfig
+from ampel.config.AmpelModelExtension import AmpelModelExtension
+from ampel.common.AmpelUnitLoader import AmpelUnitLoader
+from ampel.config.EncryptedConfig import EncryptedConfig
 
 @gendocstring
 class T0UnitConfig(AmpelModelExtension):

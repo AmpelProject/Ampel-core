@@ -1,15 +1,15 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/pipeline/db/LogsLoader.py
+# File              : ampel/db/LogsLoader.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 29.11.2018
 # Last Modified Date: 15.05.2019
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-from ampel.pipeline.logging.AmpelLogger import AmpelLogger
-from ampel.pipeline.config.ReadOnlyDict import ReadOnlyDict
-from ampel.pipeline.db.AmpelDB import AmpelDB
+from ampel.logging.AmpelLogger import AmpelLogger
+from ampel.config.ReadOnlyDict import ReadOnlyDict
+from ampel.db.AmpelDB import AmpelDB
 from ampel.core.flags.LogRecordFlag import LogRecordFlag
 
 class LogsLoader:

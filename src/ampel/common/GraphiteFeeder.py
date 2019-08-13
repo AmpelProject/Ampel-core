@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/pipeline/common/GraphiteFeeder.py
+# File              : ampel/common/GraphiteFeeder.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 26.04.2018
@@ -10,7 +10,7 @@
 import socket
 from urllib.parse import urlparse
 from graphitesend import GraphiteClient
-from ampel.pipeline.common.AmpelUtils import AmpelUtils
+from ampel.common.AmpelUtils import AmpelUtils
 
 class GraphiteFeeder:
 	"""

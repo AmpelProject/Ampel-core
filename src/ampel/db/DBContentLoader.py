@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/pipeline/db/DBContentLoader.py
+# File              : ampel/db/DBContentLoader.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 13.01.2018
@@ -19,16 +19,16 @@ from ampel.core.flags.FlagUtils import FlagUtils
 from ampel.core.flags.AlDocType import AlDocType
 from ampel.core.flags.T2RunStates import T2RunStates
 
-from ampel.pipeline.logging.LoggingUtils import LoggingUtils
-from ampel.pipeline.logging.AmpelLogger import AmpelLogger
-from ampel.pipeline.common.AmpelUtils import AmpelUtils
-from ampel.pipeline.db.AmpelDB import AmpelDB
-from ampel.pipeline.db.LightCurveLoader import LightCurveLoader
-from ampel.pipeline.db.query.QueryLatestCompound import QueryLatestCompound
-from ampel.pipeline.db.query.QueryLoadTransientInfo import QueryLoadTransientInfo
-from ampel.pipeline.t3.TransientData import TransientData
-from ampel.pipeline.config.AmpelConfig import AmpelConfig
-from ampel.pipeline.config.t3.LogicSchemaUtils import LogicSchemaUtils
+from ampel.logging.LoggingUtils import LoggingUtils
+from ampel.logging.AmpelLogger import AmpelLogger
+from ampel.common.AmpelUtils import AmpelUtils
+from ampel.db.AmpelDB import AmpelDB
+from ampel.db.LightCurveLoader import LightCurveLoader
+from ampel.db.query.QueryLatestCompound import QueryLatestCompound
+from ampel.db.query.QueryLoadTransientInfo import QueryLoadTransientInfo
+from ampel.t3.TransientData import TransientData
+from ampel.config.AmpelConfig import AmpelConfig
+from ampel.config.t3.LogicSchemaUtils import LogicSchemaUtils
 
 class DBContentLoader:
 	"""

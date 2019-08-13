@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/pipeline/common/AmpelExceptionPublisher.py
+# File              : ampel/common/AmpelExceptionPublisher.py
 # License           : BSD-3-Clause
 # Author            : Jakob van Santen <jakob.van.santen@desy.de>
 # Date              : 03.09.2018
@@ -9,8 +9,8 @@
 
 import datetime, json, logging, time
 
-from ampel.pipeline.db.AmpelDB import AmpelDB
-from ampel.pipeline.config.AmpelConfig import AmpelConfig
+from ampel.db.AmpelDB import AmpelDB
+from ampel.config.AmpelConfig import AmpelConfig
 
 from slackclient import SlackClient
 from bson import ObjectId
@@ -120,7 +120,7 @@ class AmpelExceptionPublisher:
 
 def run():
 	import schedule
-	from ampel.pipeline.config.AmpelArgumentParser import AmpelArgumentParser
+	from ampel.config.AmpelArgumentParser import AmpelArgumentParser
 	parser = AmpelArgumentParser()
 	parser.require_resource('mongo', ['logger'])
 	parser.require_resource('slack', ['operator'])

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/pipeline/config/t3/TranContentConfig.py
+# File              : ampel/config/t3/TranContentConfig.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 29.09.2018
@@ -9,10 +9,10 @@
 
 from pydantic import BaseModel, validator, ValidationError
 from typing import Dict, Union, List, Any
-from ampel.pipeline.common.AmpelUtils import AmpelUtils
-from ampel.pipeline.common.docstringutils import gendocstring
-from ampel.pipeline.config.AmpelModelExtension import AmpelModelExtension
-from ampel.pipeline.config.ConfigUtils import ConfigUtils
+from ampel.common.AmpelUtils import AmpelUtils
+from ampel.common.docstringutils import gendocstring
+from ampel.config.AmpelModelExtension import AmpelModelExtension
+from ampel.config.ConfigUtils import ConfigUtils
 from ampel.core.flags.AlDocType import AlDocType
 from ampel.core.flags.FlagUtils import FlagUtils
 

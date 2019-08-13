@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/pipeline/t2/T2Executor.py
+# File              : ampel/t2/T2Executor.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 24.05.2019
@@ -15,12 +15,12 @@ from ampel.base.abstract.AbsT2Unit import AbsT2Unit
 from ampel.core.flags.AlDocType import AlDocType
 from ampel.core.flags.T2RunStates import T2RunStates
 from ampel.core.flags.LogRecordFlag import LogRecordFlag
-from ampel.pipeline.logging.AmpelLogger import AmpelLogger
-from ampel.pipeline.logging.DBLoggingHandler import DBLoggingHandler
-from ampel.pipeline.logging.LoggingUtils import LoggingUtils
-from ampel.pipeline.db.AmpelDB import AmpelDB
-from ampel.pipeline.db.DBUtils import DBUtils
-from ampel.pipeline.config.AmpelConfig import AmpelConfig
+from ampel.logging.AmpelLogger import AmpelLogger
+from ampel.logging.DBLoggingHandler import DBLoggingHandler
+from ampel.logging.LoggingUtils import LoggingUtils
+from ampel.db.AmpelDB import AmpelDB
+from ampel.db.DBUtils import DBUtils
+from ampel.config.AmpelConfig import AmpelConfig
 
 
 class T2Executor:

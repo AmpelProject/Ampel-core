@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/pipeline/config/t3/T3JobConfig.py
+# File              : ampel/config/t3/T3JobConfig.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 29.09.2018
@@ -11,20 +11,20 @@ import json, schedule as module_schedule
 import logging
 from pydantic import BaseModel, validator
 from typing import Union, List
-from ampel.pipeline.logging.AmpelLogger import AmpelLogger
-from ampel.pipeline.common.AmpelUtils import AmpelUtils
-from ampel.pipeline.common.docstringutils import gendocstring
-from ampel.pipeline.config.AmpelConfig import AmpelConfig
-from ampel.pipeline.config.ConfigUtils import ConfigUtils
-from ampel.pipeline.config.ReadOnlyDict import ReadOnlyDict
-from ampel.pipeline.config.AmpelModelExtension import AmpelModelExtension
-from ampel.pipeline.config.t3.ScheduleEvaluator import ScheduleEvaluator
-from ampel.pipeline.config.t3.T3TaskConfig import T3TaskConfig
-from ampel.pipeline.config.t3.TranConfig import TranConfig
-from ampel.pipeline.config.t3.TranSelectConfig import TranSelectConfig
-from ampel.pipeline.config.t3.TranContentConfig import TranContentConfig
-from ampel.pipeline.config.t3.LogicSchemaUtils import LogicSchemaUtils
-from ampel.pipeline.logging.LoggingUtils import LoggingUtils
+from ampel.logging.AmpelLogger import AmpelLogger
+from ampel.common.AmpelUtils import AmpelUtils
+from ampel.common.docstringutils import gendocstring
+from ampel.config.AmpelConfig import AmpelConfig
+from ampel.config.ConfigUtils import ConfigUtils
+from ampel.config.ReadOnlyDict import ReadOnlyDict
+from ampel.config.AmpelModelExtension import AmpelModelExtension
+from ampel.config.t3.ScheduleEvaluator import ScheduleEvaluator
+from ampel.config.t3.T3TaskConfig import T3TaskConfig
+from ampel.config.t3.TranConfig import TranConfig
+from ampel.config.t3.TranSelectConfig import TranSelectConfig
+from ampel.config.t3.TranContentConfig import TranContentConfig
+from ampel.config.t3.LogicSchemaUtils import LogicSchemaUtils
+from ampel.logging.LoggingUtils import LoggingUtils
 
 log = logging.getLogger(__name__)
 

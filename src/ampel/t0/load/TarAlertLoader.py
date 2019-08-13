@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/pipeline/t0/alerts/TarAlertLoader.py
+# File              : ampel/t0/alerts/TarAlertLoader.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 13.05.2018
@@ -8,7 +8,7 @@
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import tarfile
-from ampel.pipeline.logging.AmpelLogger import AmpelLogger
+from ampel.logging.AmpelLogger import AmpelLogger
 
 
 class TarAlertLoader():

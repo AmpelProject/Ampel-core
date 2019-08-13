@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/pipeline/config/channel/ChannelConfig.py
+# File              : ampel/config/channel/ChannelConfig.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 02.09.2018
@@ -10,12 +10,12 @@
 import json, pkg_resources
 from pydantic import BaseModel, validator
 from typing import List, Sequence, Any, Union, Tuple
-from ampel.pipeline.common.AmpelUtils import AmpelUtils
-from ampel.pipeline.common.docstringutils import gendocstring
-from ampel.pipeline.config.AmpelModelExtension import AmpelModelExtension
-from ampel.pipeline.config.channel.StreamConfig import StreamConfig
-from ampel.pipeline.config.t3.T3TaskConfig import T3TaskConfig
-from ampel.pipeline.config.ReadOnlyDict import ReadOnlyDict
+from ampel.common.AmpelUtils import AmpelUtils
+from ampel.common.docstringutils import gendocstring
+from ampel.config.AmpelModelExtension import AmpelModelExtension
+from ampel.config.channel.StreamConfig import StreamConfig
+from ampel.config.t3.T3TaskConfig import T3TaskConfig
+from ampel.config.ReadOnlyDict import ReadOnlyDict
 
 @gendocstring
 class ChannelConfig(AmpelModelExtension):

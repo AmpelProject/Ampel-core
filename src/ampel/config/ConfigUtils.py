@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel/src/ampel/pipeline/config/ConfigUtils.py
+# File              : Ampel/src/ampel/config/ConfigUtils.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 06.10.2018
@@ -8,9 +8,9 @@
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from pydantic import BaseModel
-from ampel.pipeline.config.AmpelConfig import AmpelConfig
-from ampel.pipeline.common.AmpelUtils import AmpelUtils
-from ampel.pipeline.config.AmpelModelExtension import AmpelModelExtension
+from ampel.config.AmpelConfig import AmpelConfig
+from ampel.common.AmpelUtils import AmpelUtils
+from ampel.config.AmpelModelExtension import AmpelModelExtension
 
 class ConfigUtils:
 

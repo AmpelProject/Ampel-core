@@ -8,11 +8,11 @@
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 #from bson import Binary
-from ampel.pipeline.config.AmpelConfig import AmpelConfig
-from ampel.pipeline.common.AmpelUtils import AmpelUtils
-from ampel.pipeline.config.t3.AnyOf import AnyOf
-from ampel.pipeline.config.t3.AllOf import AllOf
-from ampel.pipeline.config.t3.OneOf import OneOf
+from ampel.config.AmpelConfig import AmpelConfig
+from ampel.common.AmpelUtils import AmpelUtils
+from ampel.config.t3.AnyOf import AnyOf
+from ampel.config.t3.AllOf import AllOf
+from ampel.config.t3.OneOf import OneOf
 
 class FlagUtils():
 

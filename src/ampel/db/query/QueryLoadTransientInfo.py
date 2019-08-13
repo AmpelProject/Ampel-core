@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/pipeline/db/query/QueryLoadTransientInfo.py
+# File              : ampel/db/query/QueryLoadTransientInfo.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 14.02.2018
@@ -10,9 +10,9 @@
 from bson.binary import Binary
 from ampel.core.flags.AlDocType import AlDocType
 from ampel.core.flags.FlagUtils import FlagUtils
-from ampel.pipeline.common.AmpelUtils import AmpelUtils
-from ampel.pipeline.db.query.QueryMatchSchema import QueryMatchSchema
-from ampel.pipeline.db.query.QueryUtils import QueryUtils
+from ampel.common.AmpelUtils import AmpelUtils
+from ampel.db.query.QueryMatchSchema import QueryMatchSchema
+from ampel.db.query.QueryUtils import QueryUtils
 
 class QueryLoadTransientInfo:
 	"""

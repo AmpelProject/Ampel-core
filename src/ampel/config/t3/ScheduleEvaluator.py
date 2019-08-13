@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/pipeline/config/t3/ScheduleEvaluator.py
+# File              : ampel/config/t3/ScheduleEvaluator.py
 # License           : BSD-3-Clause
 # Author            : jvs
 # Date              : Unspecified

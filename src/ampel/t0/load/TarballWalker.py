@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/pipeline/t0/alerts/TarballWalker.py
+# File              : ampel/t0/alerts/TarballWalker.py
 # License           : BSD-3-Clause
 # Author            : jvs
 # Date              : 14.02.2019

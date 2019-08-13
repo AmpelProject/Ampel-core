@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/pipeline/logging/DBLoggingHandler.py
+# File              : ampel/logging/DBLoggingHandler.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 14.12.2017
@@ -11,10 +11,10 @@ import logging, struct, os, socket
 from bson import ObjectId
 from pymongo.errors import BulkWriteError
 from pymongo.operations import UpdateOne
-from ampel.pipeline.db.AmpelDB import AmpelDB
-from ampel.pipeline.logging.AmpelLogger import AmpelLogger
-from ampel.pipeline.logging.LoggingUtils import LoggingUtils
-from ampel.pipeline.logging.AmpelLoggingError import AmpelLoggingError
+from ampel.db.AmpelDB import AmpelDB
+from ampel.logging.AmpelLogger import AmpelLogger
+from ampel.logging.LoggingUtils import LoggingUtils
+from ampel.logging.AmpelLoggingError import AmpelLoggingError
 from ampel.core.flags.LogRecordFlag import LogRecordFlag
 
 
@@ -200,7 +200,7 @@ class DBLoggingHandler(logging.Handler):
 				self.prev_records = record
 
 		except Exception as e:
-			from ampel.pipeline.logging.LoggingErrorReporter import LoggingErrorReporter
+			from ampel.logging.LoggingErrorReporter import LoggingErrorReporter
 			LoggingErrorReporter.report(self, e)
 			raise AmpelLoggingError from None
 
@@ -328,7 +328,7 @@ class DBLoggingHandler(logging.Handler):
 				raise AmpelLoggingError from None
 
 		except Exception as e:
-			from ampel.pipeline.logging.LoggingErrorReporter import LoggingErrorReporter
+			from ampel.logging.LoggingErrorReporter import LoggingErrorReporter
 			LoggingErrorReporter.report(self, e)
 			# If we can no longer keep track of what Ampel is doing, 
 			# better raise Exception to stop processing
@@ -421,7 +421,7 @@ class DBLoggingHandler(logging.Handler):
 					another_exc
 				)
 
-			from ampel.pipeline.logging.LoggingErrorReporter import LoggingErrorReporter
+			from ampel.logging.LoggingErrorReporter import LoggingErrorReporter
 			LoggingErrorReporter.report(self, bwe, bwe.details)
 
 			return True

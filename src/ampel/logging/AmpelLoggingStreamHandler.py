@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/pipeline/logging/AmpelLoggingStreamHandler.py
+# File              : ampel/logging/AmpelLoggingStreamHandler.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 17.10.2018
@@ -8,7 +8,7 @@
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from logging import StreamHandler, DEBUG, _logRecordFactory
-from ampel.pipeline.logging.AmpelLogger import AmpelLogger
+from ampel.logging.AmpelLogger import AmpelLogger
 	
 class AmpelLoggingStreamHandler(StreamHandler):
 

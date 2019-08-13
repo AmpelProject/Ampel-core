@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/pipeline/config/channel/StreamConfig.py
+# File              : ampel/config/channel/StreamConfig.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 02.09.2018
@@ -9,12 +9,12 @@
 
 from pydantic import BaseModel, validator
 from typing import Tuple, Dict, Union, Any, List
-from ampel.pipeline.config.AmpelModelExtension import AmpelModelExtension
-from ampel.pipeline.common.docstringutils import gendocstring
-from ampel.pipeline.config.channel.T0UnitConfig import T0UnitConfig
-from ampel.pipeline.config.channel.T1UnitConfig import T1UnitConfig
-from ampel.pipeline.config.channel.T2UnitConfig import T2UnitConfig
-from ampel.pipeline.config.t3.T3TaskConfig import T3TaskConfig
+from ampel.config.AmpelModelExtension import AmpelModelExtension
+from ampel.common.docstringutils import gendocstring
+from ampel.config.channel.T0UnitConfig import T0UnitConfig
+from ampel.config.channel.T1UnitConfig import T1UnitConfig
+from ampel.config.channel.T2UnitConfig import T2UnitConfig
+from ampel.config.t3.T3TaskConfig import T3TaskConfig
 
 @gendocstring
 class StreamConfig(AmpelModelExtension):

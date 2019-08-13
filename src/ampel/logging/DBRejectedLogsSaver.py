@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/pipeline/logging/DBRejectedLogsSaver.py
+# File              : ampel/logging/DBRejectedLogsSaver.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 29.09.2018
@@ -11,9 +11,9 @@ from time import time
 from logging import DEBUG, WARNING, Handler
 from pymongo.errors import BulkWriteError
 from pymongo.operations import UpdateOne
-from ampel.pipeline.db.AmpelDB import AmpelDB
-from ampel.pipeline.logging.AmpelLoggingError import AmpelLoggingError
-from ampel.pipeline.logging.LoggingErrorReporter import LoggingErrorReporter
+from ampel.db.AmpelDB import AmpelDB
+from ampel.logging.AmpelLoggingError import AmpelLoggingError
+from ampel.logging.LoggingErrorReporter import LoggingErrorReporter
 
 
 class DBRejectedLogsSaver(Handler):

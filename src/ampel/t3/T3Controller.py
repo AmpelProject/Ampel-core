@@ -1,27 +1,27 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/pipeline/t3/T3Controller.py
+# File              : ampel/t3/T3Controller.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 26.02.2018
-# Last Modified Date: 23.07.2018
+# Last Modified Date: 13.08.2019
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import schedule, time, threading, logging, json
 from types import MappingProxyType
 from functools import partial
-import multiprocessing
-from ampel.pipeline.t3.T3Job import T3Job
-from ampel.pipeline.t3.T3Task import T3Task
-from ampel.pipeline.config.t3.T3JobConfig import T3JobConfig
-from ampel.pipeline.config.t3.T3TaskConfig import T3TaskConfig
-from ampel.pipeline.common.Schedulable import Schedulable
-from ampel.pipeline.config.t3.ScheduleEvaluator import ScheduleEvaluator
-from ampel.pipeline.logging.AmpelLogger import AmpelLogger
-from ampel.pipeline.logging.LoggingUtils import LoggingUtils
-from ampel.pipeline.common.GraphiteFeeder import GraphiteFeeder
-from ampel.pipeline.config.AmpelConfig import AmpelConfig
-from ampel.pipeline.common.AmpelUnitLoader import AmpelUnitLoader
+from multiprocessing import Process
+from ampel.t3.T3Job import T3Job
+from ampel.t3.T3Task import T3Task
+from ampel.config.t3.T3JobConfig import T3JobConfig
+from ampel.config.t3.T3TaskConfig import T3TaskConfig
+from ampel.common.Schedulable import Schedulable
+from ampel.config.t3.ScheduleEvaluator import ScheduleEvaluator
+from ampel.logging.AmpelLogger import AmpelLogger
+from ampel.logging.LoggingUtils import LoggingUtils
+from ampel.common.GraphiteFeeder import GraphiteFeeder
+from ampel.config.AmpelConfig import AmpelConfig
+from ampel.common.AmpelUnitLoader import AmpelUnitLoader
 
 log = logging.getLogger(__name__)
 
@@ -302,8 +302,8 @@ def get_required_resources():
 
 def main():
 
-	from ampel.pipeline.config.t3.ScienceRecordMatchConfig import ScienceRecordMatchConfig
-	from ampel.pipeline.config.AmpelArgumentParser import AmpelArgumentParser
+	from ampel.config.t3.ScienceRecordMatchConfig import ScienceRecordMatchConfig
+	from ampel.config.AmpelArgumentParser import AmpelArgumentParser
 	from argparse import SUPPRESS, Action, Namespace
 	import sys
 

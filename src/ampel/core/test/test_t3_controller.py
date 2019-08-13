@@ -1,15 +1,15 @@
 import pytest, subprocess, json, schedule
 
-from ampel.pipeline.t3.T3Controller import T3Controller
-from ampel.pipeline.config.t3.T3JobConfig import T3JobConfig
-from ampel.pipeline.t3.T3Job import T3Job
+from ampel.t3.T3Controller import T3Controller
+from ampel.config.t3.T3JobConfig import T3JobConfig
+from ampel.t3.T3Job import T3Job
 
-from ampel.pipeline.common.AmpelUnitLoader import AmpelUnitLoader
+from ampel.common.AmpelUnitLoader import AmpelUnitLoader
 
 from ampel.base.abstract.AbsT3Unit import AbsT3Unit
-from ampel.pipeline.config.AmpelConfig import AmpelConfig
-from ampel.pipeline.common.AmpelUtils import AmpelUtils
-from ampel.pipeline.config.AmpelArgumentParser import AmpelArgumentParser
+from ampel.config.AmpelConfig import AmpelConfig
+from ampel.common.AmpelUtils import AmpelUtils
+from ampel.config.AmpelArgumentParser import AmpelArgumentParser
 from argparse import Namespace
 
 from ampel.pipeline.t3.T3PlaceboUnit import T3PlaceboUnitError
@@ -95,7 +95,7 @@ def testing_config(t3_jobs, mongod, graphite):
 	return config
 
 def test_launch_job(testing_config):
-	from ampel.pipeline.db.AmpelDB import AmpelDB
+	from ampel.db.AmpelDB import AmpelDB
 
 	# invoke job directly
 	troubles = AmpelDB.get_collection('troubles').count_documents({})
@@ -195,7 +195,7 @@ def test_schedule_job(minimal_config):
 
 def test_schedule_malicious_job():
 	import schedule
-	from ampel.pipeline.config.t3.ScheduleEvaluator import ScheduleEvaluator
+	from ampel.config.t3.ScheduleEvaluator import ScheduleEvaluator
 	scheduler = schedule.Scheduler()
 	ev = ScheduleEvaluator()
 
@@ -219,14 +219,14 @@ def test_schedule_malicious_job():
 			ev(scheduler, line)
 
 def test_entrypoint_list(testing_config, capsys):
-	from ampel.pipeline.t3.T3Controller import list_tasks
+	from ampel.t3.T3Controller import list_tasks
 
 	list_tasks(Namespace())
 	captured = capsys.readouterr()
 	assert len(captured.out.split('\n'))-4 == 1
 
 def test_entrypoint_show(testing_config, capsys):
-	from ampel.pipeline.t3.T3Controller import show
+	from ampel.t3.T3Controller import show
 
 	show(Namespace(job='jobbyjob', task=None))
 	captured = capsys.readouterr()
@@ -237,8 +237,8 @@ def test_entrypoint_show(testing_config, capsys):
 	assert len(captured.out.split('\n')) == 21
 
 def test_entrypoint_runjob(testing_config, capsys):
-	from ampel.pipeline.db.AmpelDB import AmpelDB
-	from ampel.pipeline.t3.T3Controller import runjob
+	from ampel.db.AmpelDB import AmpelDB
+	from ampel.t3.T3Controller import runjob
 
 	troubles = AmpelDB.get_collection('troubles').count()
 
@@ -246,8 +246,8 @@ def test_entrypoint_runjob(testing_config, capsys):
 		runjob(Namespace(job='jobbyjob', task=None, update_run_col=True, update_tran_journal=True))
 
 def test_entrypoint_rununit(testing_config, capsys):
-	from ampel.pipeline.db.AmpelDB import AmpelDB
-	from ampel.pipeline.t3.T3Controller import rununit
+	from ampel.db.AmpelDB import AmpelDB
+	from ampel.t3.T3Controller import rununit
 
 	troubles = AmpelDB.get_collection('troubles').count()
 	
@@ -265,9 +265,9 @@ def test_entrypoint_rununit(testing_config, capsys):
 		))
 
 def test_get_required_resources():
-	from ampel.pipeline.t3.T3Controller import get_required_resources, T3Controller, T3JobConfig, AmpelUnitLoader
-	from ampel.pipeline.config.ConfigLoader import ConfigLoader
-	from ampel.pipeline.config.AmpelConfig import AmpelConfig
+	from ampel.t3.T3Controller import get_required_resources, T3Controller, T3JobConfig, AmpelUnitLoader
+	from ampel.config.ConfigLoader import ConfigLoader
+	from ampel.config.AmpelConfig import AmpelConfig
 	
 	AmpelConfig.set_config(ConfigLoader.load_config(tier="all"))
 	assert len(AmpelConfig.get_config("t3Jobs")) > 0
@@ -291,10 +291,10 @@ def test_get_required_resources():
 	assert len(resources) > 0
 
 def test_time_selection():
-	from ampel.pipeline.db.query.QueryMatchTransients import QueryMatchTransients
-	from ampel.pipeline.t3.TimeConstraint import TimeConstraint
-	from ampel.pipeline.config.time.TimeConstraintConfig import TimeConstraintConfig
-	from ampel.pipeline.config.time.TimeDeltaConfig import TimeDeltaConfig
+	from ampel.db.query.QueryMatchTransients import QueryMatchTransients
+	from ampel.t3.TimeConstraint import TimeConstraint
+	from ampel.config.time.TimeConstraintConfig import TimeConstraintConfig
+	from ampel.config.time.TimeDeltaConfig import TimeDeltaConfig
 	
 	channels = {'anyOf': ['DESY_NEUTRINO', 'HU_SNSAMPLE']}
 	created = TimeConstraint(TimeConstraintConfig(after=dict(use='$timeDelta', arguments=dict(days=-30))))

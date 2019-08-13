@@ -1,8 +1,8 @@
 
 import pytest
 from ampel.base.abstract.AbsT2Unit import *
-from ampel.pipeline.t2.T2Controller import T2Controller
-from ampel.pipeline.db.AmpelDB import AmpelDB
+from ampel.t2.T2Controller import T2Controller
+from ampel.db.AmpelDB import AmpelDB
 
 class PotemkinError(RuntimeError):
 	pass
@@ -38,7 +38,7 @@ def alert_tarball():
 def alert_generator(alert_tarball):
 	import itertools
 	import fastavro
-	from ampel.pipeline.t0.load.TarballWalker import TarballWalker
+	from ampel.t0.load.TarballWalker import TarballWalker
 	def alerts(with_schema=False):
 		atat = TarballWalker(alert_tarball)
 		for fileobj in itertools.islice(atat.get_files(), 0, 1000, 1):
@@ -71,10 +71,10 @@ def test_t2_error_reporting(potemkin_t2, ingested_transients):
 	assert doc['more'] == 1
 
 def test_get_required_resources():
-	from ampel.pipeline.t2.T2Controller import get_required_resources
-	from ampel.pipeline.config.ConfigLoader import ConfigLoader
+	from ampel.t2.T2Controller import get_required_resources
+	from ampel.config.ConfigLoader import ConfigLoader
 	
-	from ampel.pipeline.config.AmpelConfig import AmpelConfig
+	from ampel.config.AmpelConfig import AmpelConfig
 	AmpelConfig.reset()
 	try:
 		AmpelConfig.set_config(ConfigLoader.load_config(tier="all"))

@@ -42,9 +42,9 @@ def test_t3_filtering_demo(t3_transient_views):
 
 @pytest.fixture
 def transients(t3_transient_views):
-    from ampel.pipeline.t3.TransientData import TransientData
-    from ampel.pipeline.config.ConfigLoader import ConfigLoader
-    from ampel.pipeline.config.AmpelConfig import AmpelConfig
+    from ampel.t3.TransientData import TransientData
+    from ampel.config.ConfigLoader import ConfigLoader
+    from ampel.config.AmpelConfig import AmpelConfig
 
     AmpelConfig.set_config(ConfigLoader.load_config())
     def view_to_data(view):
@@ -66,12 +66,12 @@ def transients(t3_transient_views):
 
 def test_transient_data_filter(transients, mocker):
 
-    from ampel.pipeline.t3.T3Event import T3Event
-    from ampel.pipeline.t3.T3Task import T3Task
-    from ampel.pipeline.t3.T3Job import T3Job
-    from ampel.pipeline.config.t3.T3TaskConfig import T3TaskConfig
-    from ampel.pipeline.config.t3.T3JobConfig import T3JobConfig
-    from ampel.pipeline.logging.AmpelLogger import AmpelLogger
+    from ampel.t3.T3Event import T3Event
+    from ampel.t3.T3Task import T3Task
+    from ampel.t3.T3Job import T3Job
+    from ampel.config.t3.T3TaskConfig import T3TaskConfig
+    from ampel.config.t3.T3JobConfig import T3JobConfig
+    from ampel.logging.AmpelLogger import AmpelLogger
     
     mocker.patch('pymongo.MongoClient')
     tran_config={
@@ -161,7 +161,7 @@ def test_transient_data_filter(transients, mocker):
         assert view.t2records
 
 def test_t3_match_config():
-    from ampel.pipeline.config.t3.ScienceRecordMatchConfig import ScienceRecordMatchConfig
+    from ampel.config.t3.ScienceRecordMatchConfig import ScienceRecordMatchConfig
 
     config = {
         'unitId': 'SNCOSMO',

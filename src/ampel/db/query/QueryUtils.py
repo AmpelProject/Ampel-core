@@ -1,13 +1,13 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/pipeline/db/query/QueryUtils.py
+# File              : ampel/db/query/QueryUtils.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 31.10.2018
 # Last Modified Date: 31.10.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-from ampel.pipeline.common.AmpelUtils import AmpelUtils
+from ampel.common.AmpelUtils import AmpelUtils
 
 
 class QueryUtils:

@@ -77,7 +77,7 @@ def archivedb():
 		raise e # TODO: return won't be called after this
 		return pytest.skip("No archive db found")
 
-from ampel.pipeline.config.AmpelConfig import AmpelConfig
+from ampel.config.AmpelConfig import AmpelConfig
 @pytest.fixture
 def testing_config(mongod, archivedb):
 	AmpelConfig.reset()
@@ -118,7 +118,7 @@ def testing_config(mongod, archivedb):
 	yield config
 	AmpelConfig.reset()
 
-from ampel.pipeline.t0.DelayedT0Controller import DelayedT0Controller
+from ampel.t0.DelayedT0Controller import DelayedT0Controller
 
 def test_source():
 	ts = PotemkinTargetSource(0)

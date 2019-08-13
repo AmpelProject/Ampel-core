@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/pipeline/config/AmpelConfig.py
+# File              : ampel/config/AmpelConfig.py
 # License           : BSD-3-Clause
 # Author            : Jakob van Santen <jakob.van.santen@desy.de>
 # Date              : 14.06.2018
@@ -8,10 +8,10 @@
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from pkg_resources import iter_entry_points
-from ampel.pipeline.config.ReadOnlyDict import ReadOnlyDict
-from ampel.pipeline.common.AmpelUtils import AmpelUtils
+from ampel.config.ReadOnlyDict import ReadOnlyDict
+from ampel.common.AmpelUtils import AmpelUtils
 from ampel.base.AmpelTags import AmpelTags
-from ampel.pipeline.db.DBUtils import DBUtils
+from ampel.db.DBUtils import DBUtils
 
 class AmpelConfig:
 
@@ -56,7 +56,7 @@ class AmpelConfig:
 		if ignore_unavailable_units:
 			cls._ignore_unavailable_units = set(ignore_unavailable_units)
 
-		from ampel.pipeline.config.ConfigLoader import ConfigLoader
+		from ampel.config.ConfigLoader import ConfigLoader
 		cls.set_config(
 			ConfigLoader.load_config(gather_plugins=True)
 		)
