@@ -286,7 +286,6 @@ class AlertProcessor():
 			'ingested': 0,
 			'pps': 0,
 			'uls': 0,
-			'reprocs': 0,
 			'matches': {}
 		}
 
