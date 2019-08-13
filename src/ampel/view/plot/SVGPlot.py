@@ -13,7 +13,7 @@ class SVGPlot:
 	"""
 	"""
 
-	display_div = '<div style="display: inline-flex; justify-content: center;">'
+	#display_div = '<div style="display: inline-flex; justify-content: center;">'
 
 	def __init__(
 		self, content, scale=1.0, title=None, tags=None, tran_id=None, 
@@ -71,7 +71,8 @@ class SVGPlot:
 		if show_tags:
 			html += '<h3>' + str(self._tags) + '</h3>'
 
-		html += SVGPlot.display_div
+		#html += SVGPlot.display_div
+		html += "<div>"
 		
 		if scale is not None and isinstance(scale, (float, int)):
 			if png_convert:
@@ -95,6 +96,3 @@ class SVGPlot:
 		return HTML(
 			self._repr_html_(**kwargs)
 		)
-
-
-

@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ZTF/Ampel/src/ampel/view/plot/SVGBrowser.py
+# File              : ampel/view/plot/SVGBrowser.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 13.06.2019
-# Last Modified Date: 13.06.2019
+# Last Modified Date: 15.06.2019
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from ampel.pipeline.db.AmpelDB import AmpelDB
@@ -37,13 +37,17 @@ class SVGBrowser:
 	def show_single_window(
 		self, scale=None, append_tran_name=True, 
 		win_title="Ampel plots", tran_ids=None, 
-		png_convert=False, multiproc=0
+		png_convert=False, multiproc=0, 
+		global_flex_box=False
 	):
 		""" 
 		:param bool append_tran_name: appends transient name to plot titles
 		"""
 
-		win_id = SVGBrowser._new_window(win_title)
+		win_id, dom_id = SVGBrowser._new_window(win_title)
+
+		if global_flex_box:
+			dom_id = SVGBrowser._insert_flex_box(win_id)
 
 		if multiproc:
 
@@ -60,13 +64,14 @@ class SVGBrowser:
 							self._svg_loader._data_query,
 							self._svg_loader._t2_query,
 							scale,
-							png_convert
+							png_convert,
+							not global_flex_box
 						)
 					)
 
 				for future in futures:
-					SVGBrowser._write_to_window(
-						win_id, future.result(), 
+					SVGBrowser._write_to_dom(
+						dom_id, future.result(), 
 						'Adding %s info to %s<br>' % (tran_id, win_title)
 					)
 		else:
@@ -77,54 +82,94 @@ class SVGBrowser:
 					if self._svg_loader._plots[tran_id] not in tran_ids:
 						continue
 
-				SVGBrowser._write_to_window(
-					win_id, 
+				SVGBrowser._write_to_dom(
+					dom_id, 
 					self._svg_loader._plots[tran_id]._repr_html_(
 						scale=scale, 
 						title_prefix=tran_id, 
-						png_convert=png_convert
+						png_convert=png_convert,
+						flexbox_wrap=not global_flex_box
 					), 
 					'Adding %s info to %s<br>' % (tran_id, win_title)
 				)
+
 
 		display(HTML("Done"))
 
 
 	@staticmethod
 	def _new_window(title):
-		""" """
+		"""
+		:returns: js variable *name* pointing to body DOM element within the newly created window
+		"""
 
-		win_id = "win_" + str(random.randint(0, 100000))
+		rand_str = str(random.randint(0, 100000))
+		win_id = "win_" + rand_str
+		body_id = "body_" + rand_str
 
 		display(
 			HTML(
 				'<script type="text/Javascript"> \
 					var %s=window.open("", "%s"); \
-					win.document.title="%s"; \
-				 </script>' % (win_id, title, title)
+					%s.document.title="%s"; \
+					var %s=%s.document.body; \
+				 </script>' % (win_id, title, win_id, title, body_id, win_id)
 			)
 		)
 
-		return win_id
+		return win_id, body_id
 
 
 	@staticmethod
-	def _write_to_window(js_var_name, html_content, feedback=""):
+	def _write_to_dom(js_body_var_name, html_content, feedback=""):
 		""" """
+
 		display(
 			HTML(
 				'%s<script type="text/Javascript"> \
-					%s.document.body.innerHTML += \'%s\';' \
+					%s.innerHTML += \'%s\';' \
+					#%s.document.body.innerHTML += \'%s\';' \
 				'</script>' % (
 					feedback, 
-					js_var_name, 
+					js_body_var_name, 
 					html_content.replace("\n","\\")
 				)
 			)
 		)
 
 
-def get_html(tran_id, data_query, t2_query, scale=1.0, png_convert=False):
+	@staticmethod
+	def _insert_flex_box(js_body_var_name):
+		"""
+		:returns: js variable *name* pointing to (flexbox)
+		div DOM element within the newly created window
+		"""
+		flex_id = "flex_" + str(random.randint(0, 100000))
+
+		display(
+			HTML(
+				'<script type="text/Javascript"> \
+					%s.document.body.innerHTML += \'<div id=%s style="\
+						text-align:center; \
+						display: flex; \
+						flex-direction: row; \
+						flex-wrap: wrap; \
+						justify-content: center"></div>\'; \
+					var %s = %s.document.getElementById("%s");\
+				</script>' % (
+					js_body_var_name, flex_id, 
+					flex_id, js_body_var_name, flex_id
+				)
+			)
+		)
+
+		return flex_id
+
+
+def get_html(
+	tran_id, data_query, t2_query, scale=1.0, 
+	png_convert=False, flexbox_wrap_svg_col=True
+):
 	""" 
 	"""
 
@@ -136,5 +181,6 @@ def get_html(tran_id, data_query, t2_query, scale=1.0, png_convert=False):
 	return svg_loader._plots[tran_id]._repr_html_(
 		scale=scale, 
 		title_prefix=tran_id, 
-		png_convert=png_convert
+		png_convert=png_convert,
+		flexbox_wrap=flexbox_wrap_svg_col
 	)
