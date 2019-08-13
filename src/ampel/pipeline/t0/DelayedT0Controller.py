@@ -46,7 +46,7 @@ class DelayedT0Controller:
 		self._processes = {}
 
 	@staticmethod
-	def run_alertprocessor(pos, radius, dt, channels):
+	def run_alertprocessor(pos, radius, dt, channels, raise_exc=False):
 		"""
 		Run an AlertProcessor over alerts from the given target field
 		
@@ -63,7 +63,7 @@ class DelayedT0Controller:
 		ap = AlertProcessor(ZISetup(serialization=None), publish_stats=['jobs'], channels=channels)
 		alert_processed = ap.iter_max
 		while alert_processed == ap.iter_max:
-			alert_processed = ap.run(alerts, full_console_logging=False)
+			alert_processed = ap.run(alerts, full_console_logging=False, raise_exc=raise_exc)
 			logging.getLogger().info('{} alerts from {} around {}'.format(alert_processed, radius, pos))
 	
 	def launch_alertprocessor(self, pos, radius, dt, channels):
@@ -114,34 +114,88 @@ def get_required_resources(channels=None):
 			resources.add(resource)
 	return resources
 
+def replay(opts):
+	"""
+	Replay alerts from a cone
+	"""
+	from astropy import units as u
+
+	DelayedT0Controller.run_alertprocessor(
+		(opts.ra*u.deg,opts.dec*u.deg),
+		opts.radius*u.deg,
+		(opts.start_time,opts.stop_time),
+		opts.channels,
+		opts.raise_exc)
+
+def listen(opts):
+	"""
+	Listen for new targets
+	"""
+	from ampel.pipeline.config.AmpelConfig import AmpelConfig
+	import pkg_resources
+
+	sources = []
+	for resource in pkg_resources.iter_entry_points('ampel.target_sources'):
+		klass = resource.resolve()
+		base_config = {k: AmpelConfig.get_config('resources.{}'.format(k)) for k in klass.resources}
+		run_config = {}
+		sources.append(klass(base_config=base_config, run_config=run_config))
+
+	DelayedT0Controller(sources).run()
+
 def run():
 	
 	from ampel.pipeline.config.AmpelArgumentParser import AmpelArgumentParser
 	from ampel.pipeline.config.AmpelConfig import AmpelConfig
+	from astropy.time import Time
+	import astropy.units as u
 	import pkg_resources
+	from argparse import SUPPRESS
 
-	parser = AmpelArgumentParser()
+	logging.basicConfig()
+
+	parser = AmpelArgumentParser(add_help=False)
 	parser.require_resource('mongo', ['writer', 'logger'])
 	parser.require_resource('archive', ['reader'])
 	parser.require_resource('graphite')
+
+	subparsers = parser.add_subparsers(help='command help', dest='command')
+	subparsers.required = True
+	subparser_list = []
+	def add_command(f, name=None):
+		if name is None:
+			name = f.__name__
+		p = subparsers.add_parser(name, help=f.__doc__, add_help=False)
+		p.set_defaults(func=f)
+		subparser_list.append(p)
+		return p
+
+	p = add_command(listen)
+
+	p = add_command(replay)
+	p.add_argument('ra', type=float, help='ra of target field (deg)')
+	p.add_argument('dec', type=float, help='dec of target field (deg)')
+	p.add_argument('radius', type=float, help='radius of target field (deg)')
+	p.add_argument('start_time', type=Time, help='date range to replay')
+	p.add_argument('stop_time', type=Time, help='date range to replay')
+	p.add_argument('channels', nargs='+', help='filters channels to apply')
+	p.add_argument('--raise-exc', default=False, action='store_true', help='raise exceptions from filter units')
 
 	# partially parse command line to get config
 	opts, argv = parser.parse_known_args()
 	# flesh out parser with resources required by t0 units
 	AmpelConfig.set_config(opts.config)
 	resources = set(get_required_resources())
-	source_classes = []
-	for resource in pkg_resources.iter_entry_points('ampel.target_sources'):
-		klass = resource.resolve()
-		resources.update(klass.resources)
-		source_classes.append(klass)
+	if opts.func == listen:
+		for resource in pkg_resources.iter_entry_points('ampel.target_sources'):
+			klass = resource.resolve()
+			resources.update(klass.resources)
 	parser.require_resources(*resources)
+
+	# Now that side-effect-laden parsing is done, add help
+	for p in [parser] + subparser_list:
+		p.add_argument('-h', '--help', action="help", default=SUPPRESS, help="show this message and exit")
 	# parse again
 	opts = parser.parse_args()
 
-	def create_source(klass):
-		base_config = {k: AmpelConfig.get_config('resources.{}'.format(k)) for k in klass.resources}
-		run_config = {}
-		return klass(base_config=base_config, run_config=run_config)
-
-	DelayedT0Controller(list(map(create_source, source_classes))).run()
+	opts.func(opts)

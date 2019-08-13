@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 26.02.2018
-# Last Modified Date: 22.02.2019
+# Last Modified Date: 13.08.2019
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import logging
@@ -338,7 +338,8 @@ class T3Job(T3Event):
 					tran_selection, 
 					chan_set, 
 					task_config.transients.content.docs,
-					task_config.transients.content.t2SubSelection
+					task_config.transients.content.t2SubSelection,
+					task_config.transients.content.get_t2_query()
 				)
 
 				# Feedback

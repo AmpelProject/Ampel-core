@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 26.02.2018
-# Last Modified Date: 23.07.2018
+# Last Modified Date: 13.08.2019
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import schedule, time, threading, logging, json
@@ -30,24 +30,21 @@ class T3Controller(Schedulable):
 	"""
 
 	@staticmethod
-	def load_job_configs(t3_job_names=None, skip_jobs=set()):
+	def load_job_configs(include=None, exclude=None):
 		"""
+		:param include: sequence of job names to explicitly include. If
+		    specified, any job name not in this sequence will be excluded.
+		:param exclude: sequence of job names to explicitly exclude. If
+		    specified, any job name in this sequence will be excluded.
 		"""
 		job_configs = {}
-
-		def veto(job_name):
-			if (t3_job_names is not None and job_name not in t3_job_names) or job_name in skip_jobs:
-				return True
-			else:
-				return False
-
-		for job_name, job_dict in AmpelConfig.get_config("t3Jobs").items():
-			if not veto(job_name):
-				job_configs[job_name] = T3JobConfig(**job_dict)
-
-		for job_name, job_dict in AmpelConfig.get_config("t3Tasks").items():
-			if not veto(job_name):
-				job_configs[job_name] = T3TaskConfig(**job_dict)
+		for key, klass in [('t3Jobs', T3JobConfig), ('t3Tasks', T3TaskConfig)]:
+			for job_name, job_dict in AmpelConfig.get_config(key).items():
+				if (include and job_name not in include) or (exclude and job_name in exclude):
+					continue
+				config = klass(**job_dict)
+				if getattr(config, 'active', True):
+					job_configs[job_name] = config
 
 		return job_configs
 
@@ -66,7 +63,7 @@ class T3Controller(Schedulable):
 		self.logger.info("Setting up T3Controller")
 
 		# Load job configurations
-		self.job_configs = T3Controller.load_job_configs(t3_job_names)
+		self.job_configs = T3Controller.load_job_configs(t3_job_names, skip_jobs)
 
 		schedule = ScheduleEvaluator()
 		self._processes = {}
@@ -137,6 +134,7 @@ def run(args):
 	"""Run tasks at configured intervals"""
 	T3Controller(args.jobs, args.skip_jobs).run()
 
+# pylint: disable=bad-builtin
 def list_tasks(args):
 	"""List configured tasks"""
 	jobs = AmpelConfig.get_config('t3Jobs')
@@ -163,6 +161,7 @@ class FrozenEncoder(json.JSONEncoder):
 			return dict(obj.task_doc)
 		return super(FrozenEncoder, self).default(obj)
 
+# pylint: disable=bad-builtin
 def show(args):
 	"""Display job and task configuration"""
 	job_doc = AmpelConfig.get_config('t3Jobs.{}'.format(args.job))
@@ -177,6 +176,11 @@ def runjob(args):
 	if args.task is not None:
 		job_config.tasks = [t for t in job_config.tasks if t.task == args.task]
 	job = T3Job(job_config, full_console_logging=True, raise_exc=True)
+	job.run()
+
+def runtask(args):
+	job_config = T3TaskConfig(**AmpelConfig.get_config('t3Tasks.{}'.format(args.task)))
+	job = T3Task(job_config, full_console_logging=True, raise_exc=True)
 	job.run()
 
 def rununit(args):
@@ -207,7 +211,8 @@ def rununit(args):
 					}
 				},
 				"channels": {'anyOf': args.channels},
-				"withTags": "INST_ZTF",
+				"scienceRecords": [r.dict() for r in args.science_records],
+				"withTags": "SURVEY_ZTF",
 				"withoutTags": "HAS_ERROR"
 			},
 			"content": {
@@ -286,6 +291,7 @@ def get_required_resources():
 
 def main():
 
+	from ampel.pipeline.config.t3.ScienceRecordMatchConfig import ScienceRecordMatchConfig
 	from ampel.pipeline.config.AmpelArgumentParser import AmpelArgumentParser
 	from argparse import SUPPRESS, Action, Namespace
 	import sys
@@ -317,6 +323,9 @@ def main():
 	p.add_argument('job')
 	p.add_argument('task', nargs='?')
 
+	p = add_command(runtask)
+	p.add_argument('task')
+
 	p = add_command(dryrun)
 	p.add_argument('job', nargs='?')
 	p.add_argument('task', nargs='?')
@@ -326,6 +335,9 @@ def main():
 	p.add_argument('--update-run-col', default=False, action="store_true", help="Record this run in the jobs collection")
 	p.add_argument('--update-tran-journal', default=False, action="store_true", help="Record this run in the transient journal")
 	p.add_argument('--channels', nargs='+', default=[], help="Select transients in any of these channels")
+	p.add_argument('--science-records', nargs='+', default=None,
+	    type=ScienceRecordMatchConfig.parse_raw,
+	    help="Filter based on transient records. The filter should be the JSON representation of a ScienceRecordMatchConfig")
 	p.add_argument('--chunk', type=int, default=200, help="Provide CHUNK transients at a time")
 	p.add_argument('--created', type=int, default=40, help="Select transients created in the last CREATED days")
 	p.add_argument('--modified', type=int, default=1, help="Select transients modified in the last MODIFIED days")

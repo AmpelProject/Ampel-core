@@ -4,7 +4,7 @@ import logging
 
 def test_t3_filtering_demo(t3_transient_views):
     from mongomock.filtering import filter_applies
-    from ampel.utils.json import AmpelEncoder
+    from ampel.utils.json_serialization import AmpelEncoder
     # the user supplies a query against results like this, along with a unit id and config name
     q = {
         'fit_acceptable': True,
@@ -100,6 +100,35 @@ def test_transient_data_filter(transients, mocker):
     task.process_tran_data(transients)
     assert add.called
     assert len(add.call_args[0][0]) == 4
+    # no docs loaded except T2 records
+    for view in add.call_args[0][0]:
+        assert not view.photopoints
+        assert not view.upperlimits
+        assert not view.compounds
+        assert view.t2records
+
+    add.reset_mock()
+    assert not add.called
+    job = T3Job(
+        T3JobConfig(job='foo',
+            schedule='every().sunday',
+            transients=tran_config,
+            tasks={
+                'task': 'foo',
+                'unitId': 'T3PlaceboUnit'
+            }),
+        logger=AmpelLogger.get_logger(), db_logging=False,
+        full_console_logging=True, update_tran_journal=False, 
+        update_events=False, raise_exc=True)
+    job.process_tran_data(transients)
+    assert add.called
+    assert len(add.call_args[0][0]) == 4
+    # no docs loaded except T2 records
+    for view in add.call_args[0][0]:
+        assert not view.photopoints
+        assert not view.upperlimits
+        assert not view.compounds
+        assert view.t2records
 
     add.reset_mock()
     assert not add.called
@@ -124,6 +153,12 @@ def test_transient_data_filter(transients, mocker):
     job.process_tran_data(transients)
     assert add.called
     assert len(add.call_args[0][0]) == 4
+    # no docs loaded except T2 records
+    for view in add.call_args[0][0]:
+        assert not view.photopoints
+        assert not view.upperlimits
+        assert not view.compounds
+        assert view.t2records
 
 def test_t3_match_config():
     from ampel.pipeline.config.t3.ScienceRecordMatchConfig import ScienceRecordMatchConfig

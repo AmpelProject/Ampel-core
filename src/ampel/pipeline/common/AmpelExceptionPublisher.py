@@ -30,7 +30,10 @@ class AmpelExceptionPublisher:
 
 	def t3_fields(self, doc):
 		fields = []
-		fields.append({'title': 'Job', 'value': doc.get('job', None), 'short': True})
+		if 'job' in doc:
+			fields.append({'title': 'Job', 'value': doc.get('job', None), 'short': True})
+		if 'task' in doc:
+			fields.append({'title': 'Task', 'value': doc.get('task', None), 'short': True})
 		fields.append({'title': 'Run', 'value': doc.get('runId', None), 'short': True})
 		return fields
 
@@ -39,12 +42,15 @@ class AmpelExceptionPublisher:
 		more = doc.get('more', {})
 		if doc['tier'] == 0:
 			for field in 'section', 'tranId', 'runId':
-				if field in more:
-					fields.append({'title': field, 'value': more.get(field, None), 'short': True})
+				fields.append({'title': field, 'value': doc.get(field, None), 'short': True})
+			if 'id' in doc.get('alert', {}):
+				fields.append({'title': 'alertId', 'value': doc.get('alert', {}).get('id', None), 'short': True})
 		elif doc['tier'] == 2:
-			fields.append({'title': 'unit', 'value': doc.get('t2UnitId', None), 'short': True})
-			fields.append({'title': 'tran', 'value': doc.get('tranId', None), 'short': True})
+			fields.append({'title': 'unit', 'value': doc.get('unit', None), 'short': True})
 			fields.append({'title': 'run', 'value': doc.get('runId', None), 'short': True})
+			t2Doc = doc.get('t2Doc', None)
+			if hasattr(t2Doc, 'binary'):
+				fields.append({'title': 't2Doc', 'value': t2Doc.binary.hex(), 'short': True})
 		elif doc['tier'] == 3:
 			fields += self.t3_fields(more if 'jobName' in more else doc)
 		if 'exception' in doc:

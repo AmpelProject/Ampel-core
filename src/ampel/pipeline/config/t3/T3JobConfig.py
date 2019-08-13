@@ -8,6 +8,7 @@
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import json, schedule as module_schedule
+import logging
 from pydantic import BaseModel, validator
 from typing import Union, List
 from ampel.pipeline.logging.AmpelLogger import AmpelLogger
@@ -23,6 +24,9 @@ from ampel.pipeline.config.t3.TranConfig import TranConfig
 from ampel.pipeline.config.t3.TranSelectConfig import TranSelectConfig
 from ampel.pipeline.config.t3.TranContentConfig import TranContentConfig
 from ampel.pipeline.config.t3.LogicSchemaUtils import LogicSchemaUtils
+from ampel.pipeline.logging.LoggingUtils import LoggingUtils
+
+log = logging.getLogger(__name__)
 
 def nothing():
 	pass
@@ -192,10 +196,7 @@ class T3JobConfig(AmpelModelExtension):
 			try:
 				evaluator(module_schedule.Scheduler(), el).do(nothing)
 			except Exception as e:
-				print("#"*len(str(e)))
-				print("ScheduleEvaluator exception:")
-				print(str(e))
-				print("#"*len(str(e)))
+				LoggingUtils.log_exception(log, e, msg="ScheduleEvaluator exception")
 				raise
 
 		return schedule

@@ -193,7 +193,7 @@ class AlertProcessor():
 
 	def run(
 		self, alert_loader, ingester=None, full_console_logging=True, 
-		run_type=LogRecordFlag.SCHEDULED_RUN
+		run_type=LogRecordFlag.SCHEDULED_RUN, raise_exc=False
 	):
 		"""
 		Run the alert processing using the provided alert_loader
@@ -413,11 +413,15 @@ class AlertProcessor():
 
 					# Tolerable errors
 					except Exception as e:
+				
 						channel.rec_buf_hdlr.forward(db_logging_handler, extra=extra)
 						self.report_alertproc_exception(
 							e, run_id, alert_content, include_photo=True,
 							extra={'section': 'filter', 'channel': channel.name}
 						)
+
+						if raise_exc:
+							raise e
 
 				# time required for all filters
 				dur_stats['allFilters'][iter_count] = time() - all_filters_start

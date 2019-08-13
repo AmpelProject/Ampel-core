@@ -4,15 +4,14 @@
 # License           : BSD-3-Clause
 # Author            : Jakob van Santen <jakob.van.santen@desy.de>
 # Date              : Unspecified
-# Last Modified Date: 11.10.2018
+# Last Modified Date: 13.08.2019
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-import json, pkg_resources, traceback
+import json, pkg_resources, traceback, logging
 from os.path import join, dirname, abspath, realpath, exists
 from ampel.pipeline.config.channel.ChannelConfig import ChannelConfig
 from ampel.pipeline.config.AmpelConfig import AmpelConfig
 from ampel.pipeline.config.t3.T3JobConfig import T3JobConfig
-from ampel.pipeline.config.AmpelConfig import AmpelConfig
 
 AmpelConfig.load_tags()
 
@@ -92,7 +91,7 @@ class ConfigLoader:
 							chan_dict["b2hash"] = DBUtils.b2_hash(chan_dict['channel'])
 							config['channels'][chan_dict['channel']] = chan_dict
 						except Exception as e:
-							print("Error in {} from {}".format(resource.name, resource.dist))
+							log.error("Error in {} from {}".format(resource.name, resource.dist))
 							raise
 	
 
@@ -120,7 +119,7 @@ class ConfigLoader:
 			if tier in ("all", 2):
 
 				for resource in pkg_resources.iter_entry_points('ampel.pipeline.t2.configs'):
-					for name, channel_config in resource.resolve()().items():
+					for name, t2config in resource.resolve()().items():
 						if name in config['t2RunConfig']:
 							raise KeyError(
 								"T2 run config {} (defined as entry point {} in {}) {}".format(
@@ -128,7 +127,14 @@ class ConfigLoader:
 									"already exists in the provided config file"
 								)
 							)
-						config['t2RunConfig'][name] = channel_config
+						if name != '{t2Unit}_{runConfig}'.format(**t2config):
+							raise KeyError(
+								"T2 run config {} (defined as entry point {} in {}) {}".format(
+									name, resource.name, resource.dist,
+									"should be named {t2Unit}_{runConfig}".format(**t2config)
+								)
+							)
+						config['t2RunConfig'][name] = t2config
 	
 			# T3 Jobs and Tasks
 			###################
@@ -159,7 +165,7 @@ class ConfigLoader:
 							T3JobConfig(**job_dict)
 							config['t3Jobs'][job_dict['job']] = job_dict
 					except Exception as e:
-						print("Error in {} from {}".format(resource.name, resource.dist))
+						log.error("Error in {} from {}".format(resource.name, resource.dist))
 						raise
 
 				# T3 Tasks
@@ -198,18 +204,12 @@ class ConfigLoader:
 									config['t3Tasks'][t3_task.get('task')] = t3_task.dict()
 
 						except Exception as e:
-							print("Error in {} from {}".format(resource.name, resource.dist))
+							log.error("Error in {} from {}".format(resource.name, resource.dist))
 							raise
 	
 
 	
 		except Exception as e:
-
-			import sys
-			print("Exception in load_config:")
-			print("-"*60)
-			traceback.print_exc(file=sys.stdout)
-			print("-"*60)
 			raise
 
 		return config

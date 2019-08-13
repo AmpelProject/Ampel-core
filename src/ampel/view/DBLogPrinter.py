@@ -35,6 +35,7 @@ class DBLogPrinter:
 			lp = DBLogPrinter(mc)
 			lp.set_logging_log_level(logging.INFO) 
 		"""
+		# pylint: disable=no-member
 		self.log_filter_flags |= DBLoggingHandler.severity_map[lvl]
 
 
@@ -70,11 +71,13 @@ class DBLogPrinter:
 		)
 
 		if len(lres) == 0:
+			# pylint: disable=bad-builtin
 			print("No log entry matches this criteria")
 			return 
 
 		for jobevent in lres:
 			for rec in jobevent['records']:
+				# pylint: disable=bad-builtin
 				print(
 					datetime.utcfromtimestamp(
 						int(rec['date'])

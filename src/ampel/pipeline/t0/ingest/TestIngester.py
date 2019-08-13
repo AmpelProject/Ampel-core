@@ -14,12 +14,14 @@ class TestIngester(AbsAlertIngester):
 	version = 1.0
 
 	def __init__(self):
+		# pylint: disable=bad-builtin
 		print("init")
 
 	def set_job_id(self, job_id):
 		pass
 	
 	def ingest(self, tran_id, alert_pps_list, all_channels_t2_flags, force=False):
+		# pylint: disable=bad-builtin
 		print("apply")
 
 	# pylint: disable=no-member

@@ -2,6 +2,47 @@
 Odds and ends
 *************
 
+.. _ssh-tunnel-config:
+
+Tunnel directly to Ampel subnet
+===============================
+
+The Ampel subnet is behind two different firewalls, requiring two nested ssh
+tunnels to reach. This can be automated by putting the following block in
+.ssh/config::
+  
+  host burst.ifh.de transit.ifh.de
+    ControlMaster no
+    IdentityFile ~/.ssh/id_rsa.zeuthen
+    GSSAPIAuthentication no
+    GSSAPIDelegateCredentials no
+    ProxyCommand ssh -q ztf-wgs.ifh.de "nc %h %p"
+
+  host pub*.zeuthen.desy.de
+    ProxyCommand none
+
+  host *.ifh.de *.zeuthen.desy.de
+    User YOURUSERNAME
+    ControlMaster auto 
+    ForwardX11 yes
+    ForwardX11Trusted yes
+    GSSAPIAuthentication yes
+    GSSAPIDelegateCredentials yes
+    KeepAlive yes
+    ServerAliveInterval 55
+    ProxyCommand ssh -q pub2.zeuthen.desy.de "nc %h %p"
+
+  host *
+    AddKeysToAgent Yes
+    UseKeychain Yes
+
+Replace `~/.ssh/id_rsa.zeuthen` with the path to your public key, and
+YOURUSERNAME with your DESY username. Here we've used the `ifh.de` alias for
+`zeuthen.desy.de` to save typing. Now, you should be able to connect directly
+to e.g. `burst` via::
+  
+  ssh burst.ifh.de
+
 Reset Kafka consumer group offsets
 ==================================
 
@@ -78,6 +119,21 @@ whitelisted on the UW Kafka server):
 	ztf_20181115_programid2        7          0
 5. Restart the consumers
 
+
+There is also a much easier way to do this with kt_:
+    
+    ./kt group -brokers partnership.alerts.ztf.uw.edu:9092 -group ampel-v0.5.1-public -topic ztf_20181115_programid2 -reset oldest
+
+You can also combine this with jq_ to loop over multiple topics, e.g. to reset
+the offsets to the latest message on all topics for a given consumer group:
+    
+    ./kt topic -brokers partnership.alerts.ztf.uw.edu:9092 | ./jq --raw-output 'select(.name | contains("ztf")).name' | while read topic; do
+    ./kt group -brokers partnership.alerts.ztf.uw.edu:9092 -group ampel-v0.5.1-public -topic $topic -reset newest
+    done
+
+.. _kt: https://github.com/fgeller/kt
+.. _jq: https://stedolan.github.io/jq/
+
 Add a new extcats catalog
 =========================
 
@@ -100,7 +156,7 @@ Add a new extcats catalog
 .. note:: If the catalog container was not started with the initdb dir mounted,
           execute from a separate container::
     
-    SINGULARITYENV_MONGO_INITDB_ROOT_PASSWORD=`cat ~/dryrun/secrets/mongo-root-password.txt` SINGULARITYENV_MONGO_INITDB_ROOT_USERNAME=root SINGULARITYENV_MONGODUMP_DIR=/mnt  SINGULARITYENV_MONGO_USER=filterclient singularity exec -B ~/Ampel-v0.5.1/ampel-deploy/production/initdb/catalog/:/docker-entrypoint-initdb.d/ -B /data/ampel/catalogs/mongodumps:/mnt /data/ampel/singularity/mongo-4.0.simg /docker-entrypoint-initdb.d/add_catalog.sh $CATALOG_NAME
+    SINGULARITYENV_MONGO_INITDB_ROOT_PASSWORD=`cat ~/dryrun/secrets/mongo-root-password.txt` SINGULARITYENV_MONGO_INITDB_ROOT_USERNAME=root SINGULARITYENV_MONGODUMP_DIR=/mnt  SINGULARITYENV_MONGO_USER=filterclient singularity exec -B ~/Ampel-v0.6.0/ampel-deploy/production/initdb/catalog/:/docker-entrypoint-initdb.d/ -B /data/ampel/catalogs/mongodumps:/mnt /data/ampel/singularity/mongo-4.0.simg /docker-entrypoint-initdb.d/add_catalog.sh $CATALOG_NAME
 
 Add a new catsHTM catalog
 =========================

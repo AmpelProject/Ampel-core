@@ -31,23 +31,22 @@ class ScienceRecordMatchConfig(AmpelModelExtension):
                 cls.validate_match(v)
         return value
 
-    @validator('unitId', 'runConfig', always=True)
+    @validator('runConfig')
     def validate_config(cls, v, values, config, field):
-        if field.name == 'runConfig':
-            configs = set()
-            for ep in pkg_resources.iter_entry_points('ampel.pipeline.t2.configs'):
-                for config in ep.resolve()().values():
-                    if config['t2Unit'] == values['unitId']:
-                        configs.add(config['runConfig'])
-            if not configs:
-                cls.print_and_raise(
-                    header="select->scienceRecords->unitId config error",
-                    msg="Unknown T2 unit: '%s'" %  values['unitId']
-                )
-            if not v in configs:
-                cls.print_and_raise(
-                    header="select->scienceRecords->runConfig config error",
-                    msg="Unknown {} config: '{}'\n".format(values['unitId'], v) +
-                        "Valid choices are: {}".format(configs)
-                )
+        configs = set()
+        for ep in pkg_resources.iter_entry_points('ampel.pipeline.t2.configs'):
+            for config in ep.resolve()().values():
+                if config['t2Unit'] == values['unitId']:
+                    configs.add(config['runConfig'])
+        if not configs:
+            cls.print_and_raise(
+                header="select->scienceRecords->unitId config error",
+                msg="Unknown T2 unit: '%s'" %  values['unitId']
+            )
+        if not v in configs:
+            cls.print_and_raise(
+                header="select->scienceRecords->runConfig config error",
+                msg="Unknown {} config: '{}'\n".format(values['unitId'], v) +
+                    "Valid choices are: {}".format(configs)
+            )
         return v

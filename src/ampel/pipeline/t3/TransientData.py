@@ -8,6 +8,7 @@
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from ampel.base.TransientView import TransientView
+from ampel.core.flags.AlDocType import AlDocType
 from ampel.pipeline.common.AmpelUtils import AmpelUtils
 
 class TransientData:
@@ -135,11 +136,12 @@ class TransientData:
 		self._add(self.journal, entry, channels)
 
 
-	# TODO: implement doc_selection filtering
 	def create_view(self, channels, doc_selection=None, t2_ids=None):
 		"""
 		:param channels: channel ids
 		:type channels: Iterable[str], Iterable[int]
+		:param doc_selection: optional set of docs to return 
+		:type doc_selection: Iterable[Union[str, AlDocType]]
 		:returns: instance of :py:class:`TransientView <ampel.base.TransientView>` or None
 		"""
 
@@ -173,7 +175,7 @@ class TransientData:
 		return self._create_one_view(channels, doc_selection, t2_ids)
 
 
-	# TODO: implement doc_selection filtering
+
 	def _create_one_view(self, channel, doc_selection=None, t2_ids=None):
 		"""
 		:param channel: channel id 
@@ -199,7 +201,7 @@ class TransientData:
 			latest_state = self.latest_state[channel] if channel in self.latest_state else None
 
 		# Handles data permission
-		photopoints, upperlimits = self._get_photo(channel)
+		photopoints, upperlimits = self._get_photo(channel, doc_selection)
 
 		return TransientView(
 			self.tran_id, self.tags, 
@@ -208,14 +210,23 @@ class TransientData:
 				key=lambda k: k['dt']
 			), 
 			self.tran_names, latest_state, photopoints, upperlimits, 
-			tuple(self.compounds[channel]) if channel in self.compounds else None, 
-			tuple(self.lightcurves[channel]) if channel in self.lightcurves else None, 
-			tuple(self.science_records[channel]) if channel in self.science_records else None, 
+			tuple(self.compounds[channel]) if (
+				channel in self.compounds and 
+				((not doc_selection) or AlDocType.COMPOUND in doc_selection)
+			) else None,
+			tuple(self.lightcurves[channel]) if (
+				channel in self.lightcurves and 
+				((not doc_selection) or AlDocType.COMPOUND in doc_selection)
+			) else None,
+			tuple(self.science_records[channel]) if (
+				channel in self.science_records and 
+				((not doc_selection) or AlDocType.T2RECORD in doc_selection)
+			) else None,
 			channel
 		)	
 
 
-	# TODO: implement doc_selection filtering
+
 	def _create_multi_view(self, channels, doc_selection=None, t2_ids=None):
 		"""
 		Important Note: to the unlucky future maintainer of this code:
@@ -225,7 +236,7 @@ class TransientData:
 		ScienceRecord for any channels of the chain will be included in the transient view.
 		Feel free to improve this if you consider it necessary.
 		The filtering done at the transient level performed in T3Job.process_tran_data() 
-		could be a good starting point. Over.
+		could be a good starting point.
 
 		:returns: instance of :py:class:`TransientView <ampel.base.TransientView>` or None
 		"""
@@ -239,7 +250,7 @@ class TransientData:
 		all_comps = {
 			el.id: el for channel in AmpelUtils.iter(channels) if channel in self.compounds 
 			for el in self.compounds[channel]
-		}
+		} if ((not doc_selection) or AlDocType.COMPOUND in doc_selection) else {}
 
 		# State operator was provided
 		if self.state in ["$latest", "$all"]:
@@ -266,14 +277,14 @@ class TransientData:
 					entries.append(entry)
 
 		# Handles data permission
-		photopoints, upperlimits = self._get_photo(channels)
+		photopoints, upperlimits = self._get_photo(channels, doc_selection)
 
 		return TransientView(
 			self.tran_id, self.tags, sorted(entries, key=lambda k: k['dt']), 
 			self.tran_names, latest_state, photopoints, upperlimits, 
 			tuple(all_comps.values()),
-			self._get_combined_elements(self.lightcurves, channels),
-			self._get_combined_elements(self.science_records, channels),
+			self._get_combined_elements(self.lightcurves, channels) if ((not doc_selection) or AlDocType.COMPOUND in doc_selection) else None,
+			self._get_combined_elements(self.science_records, channels) if ((not doc_selection) or AlDocType.T2RECORD in doc_selection) else None,
 			tuple(self.channels & set(channels))
 		)
 
@@ -308,7 +319,7 @@ class TransientData:
 			return tuple({id(k): k for k in elements}.values())
 
 
-	def _get_photo(self, channels):
+	def _get_photo(self, channels, doc_selection=None):
 		""" """
 
 		# no photometric info were requested / loaded
@@ -319,7 +330,7 @@ class TransientData:
 		# The caller should have specified a channel 
 		# if data access policies were to be applied
 		if channels is None:
-			return tuple(self.photopoints), tuple(self.upperlimits)
+			return tuple(self.photopoints) if ((not doc_selection) or AlDocType.PHOTOPOINT in doc_selection) else None, tuple(self.upperlimits) if ((not doc_selection) or AlDocType.UPPERLIMIT in doc_selection) else None
 
 		# Past this point, regardless of how many channel info we have (one is enough) 
 		# we have to check permissions (db results contain all pps/uls, 
@@ -333,17 +344,19 @@ class TransientData:
 
 			for Controller in TransientData.data_access_controllers:
 
-				pps.update(
-					Controller.get_photodata(
-						channel, self.photopoints
+				if (not doc_selection) or AlDocType.PHOTOPOINT in doc_selection:
+					pps.update(
+						Controller.get_photodata(
+							channel, self.photopoints
+						)
 					)
-				)
 
-				uls.update(
-					Controller.get_photodata(
-						channel, self.upperlimits
+				if (not doc_selection) or AlDocType.UPPERLIMIT in doc_selection:
+					uls.update(
+						Controller.get_photodata(
+							channel, self.upperlimits
+						)
 					)
-				)
 
 		# Return pps / uls for given combination of channels.
 		# Example for single source ZTF:

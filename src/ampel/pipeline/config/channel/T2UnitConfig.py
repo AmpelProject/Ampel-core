@@ -49,3 +49,27 @@ class T2UnitConfig(AmpelModelExtension):
 			)
 
 		return value
+
+	@validator('runConfig', pre=True)
+	def validate_config(cls, v, values, **kwargs):
+		if (
+			"t2" in AmpelConfig._ignore_unavailable_units or 
+			v in AmpelConfig._ignore_unavailable_units
+		):
+			return v
+
+		if v == 'default':
+			return v
+		key = '{}_{}'.format(values['unitId'],v)
+		for resource in pkg_resources.iter_entry_points('ampel.pipeline.t2.configs'):
+			if key in resource.resolve()().keys():
+				return v
+		cls.print_and_raise(
+			header="t2Compute->runConfig config error",
+			msg="Unknown T2 run config: '%s'\n" % key +
+				"Please either install the corresponding Ampel plugin\n" +
+				"or allow explicitely unavailable T2 units by calling\n" + 
+				"AmpelConfig.ignore_unavailable_units('t2')\n" +
+				"or alternatively load ampel defaults using:\n" +
+				"AmpelConfig.load_defaults(ignore_unavailable_units=['t2'])"
+		)

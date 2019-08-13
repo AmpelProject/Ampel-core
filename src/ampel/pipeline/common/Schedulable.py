@@ -13,7 +13,7 @@ from ampel.pipeline.logging.AmpelLogger import AmpelLogger
 class Schedulable():
 	""" 
 	"""
-
+	logger = None
 	def __init__(self, start_callback=None, stop_callback=None):
 		"""
 		Optional arguments:

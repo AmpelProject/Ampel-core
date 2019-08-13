@@ -89,6 +89,9 @@ class ResourceURI(Resource):
     A resource that can be represented as a URI
     """
     
+    # keep pylint happy
+    name = None
+
     @classmethod
     @abstractmethod
     def name(cls):
