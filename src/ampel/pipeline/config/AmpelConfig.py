@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : Jakob van Santen <jakob.van.santen@desy.de>
 # Date              : 14.06.2018
-# Last Modified Date: 21.02.2019
+# Last Modified Date: 29.06.2019
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from pkg_resources import iter_entry_points
@@ -55,6 +55,7 @@ class AmpelConfig:
 		"""
 		if ignore_unavailable_units:
 			cls._ignore_unavailable_units = set(ignore_unavailable_units)
+
 		from ampel.pipeline.config.ConfigLoader import ConfigLoader
 		cls.set_config(
 			ConfigLoader.load_config(gather_plugins=True)
@@ -97,7 +98,10 @@ class AmpelConfig:
 		if sub_element is None:
 			return cls._global_config
 
-		return AmpelUtils.get_by_path(cls._global_config, sub_element)
+		return AmpelUtils.get_by_path(
+			cls._global_config, 
+			sub_element
+		)
 
 
 	@classmethod
@@ -131,8 +135,10 @@ class AmpelConfig:
 		if cls._global_config is not None:
 			import warnings
 			warnings.warn("Resetting global configuration")
-		cls._global_config = AmpelConfig.recursive_freeze(config)
+
+		cls._global_config = cls.recursive_freeze(config)
 		cls.load_tags()
+
 		return cls._global_config
 
 
@@ -142,8 +148,8 @@ class AmpelConfig:
 		return type(cls._global_config) is ReadOnlyDict
 
 
-	@staticmethod
-	def recursive_freeze(arg):
+	@classmethod
+	def recursive_freeze(cls, arg):
 		"""
 		Return an immutable shallow copy
 		:param arg:
@@ -155,14 +161,14 @@ class AmpelConfig:
 		if isinstance(arg, dict):
 			return ReadOnlyDict(
 				{
-					AmpelConfig.recursive_freeze(k): AmpelConfig.recursive_freeze(v) 
+					cls.recursive_freeze(k): cls.recursive_freeze(v) 
 					for k,v in arg.items()
 				}
 			)
 
 		elif isinstance(arg, list):
 			return tuple(
-				map(AmpelConfig.recursive_freeze, arg)
+				map(cls.recursive_freeze, arg)
 			)
 
 		elif isinstance(arg, set):
