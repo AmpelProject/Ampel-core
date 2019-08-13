@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/pipeline/config/ArgumentParser.py
+# File              : ampel/config/ArgumentParser.py
 # License           : BSD-3-Clause
 # Author            : jvs
 # Date              : Unspecified
@@ -10,8 +10,8 @@
 import os, sys, pkg_resources, warnings
 from functools import partial
 from configargparse import ArgumentParser, ArgumentDefaultsRawHelpFormatter
-from ampel.pipeline.config.ConfigLoader import ConfigLoader
-from ampel.pipeline.config.AmpelConfig import AmpelConfig
+from ampel.config.ConfigLoader import ConfigLoader
+from ampel.config.AmpelConfig import AmpelConfig
 
 class AmpelArgumentParser(ArgumentParser):
 	""" """

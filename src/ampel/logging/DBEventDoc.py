@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/pipeline/logging/DBEventDoc.py
+# File              : ampel/logging/DBEventDoc.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 26.09.2018
@@ -8,7 +8,7 @@
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from time import time, strftime
-from ampel.pipeline.db.AmpelDB import AmpelDB
+from ampel.db.AmpelDB import AmpelDB
 
 class DBEventDoc():
 	"""

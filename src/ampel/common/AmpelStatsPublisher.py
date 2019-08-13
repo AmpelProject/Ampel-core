@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/pipeline/common/AmpelStatsPublisher.py
+# File              : ampel/common/AmpelStatsPublisher.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 26.05.2018
@@ -11,11 +11,11 @@ import sys
 import json
 import psutil
 from time import time, strftime
-from ampel.pipeline.logging.AmpelLogger import AmpelLogger
-from ampel.pipeline.common.AmpelUtils import AmpelUtils
-from ampel.pipeline.common.Schedulable import Schedulable
-from ampel.pipeline.config.AmpelConfig import AmpelConfig
-from ampel.pipeline.db.AmpelDB import AmpelDB
+from ampel.logging.AmpelLogger import AmpelLogger
+from ampel.common.AmpelUtils import AmpelUtils
+from ampel.common.Schedulable import Schedulable
+from ampel.config.AmpelConfig import AmpelConfig
+from ampel.db.AmpelDB import AmpelDB
 from ampel.core.flags.AlDocType import AlDocType
 from ampel.core.flags.T2RunStates import T2RunStates
 
@@ -139,7 +139,7 @@ class AmpelStatsPublisher(Schedulable):
 
 		# Instanciate GraphiteFeeder if required
 		if 'graphite' in publish_to:
-			from ampel.pipeline.common.GraphiteFeeder import GraphiteFeeder
+			from ampel.common.GraphiteFeeder import GraphiteFeeder
 			self.graphite_feeder = GraphiteFeeder(
 				AmpelConfig.get_config('resources.graphite.default')
 			)
@@ -519,7 +519,7 @@ class AmpelStatsPublisher(Schedulable):
 
 def run():
 
-	from ampel.pipeline.config.AmpelArgumentParser import AmpelArgumentParser
+	from ampel.config.AmpelArgumentParser import AmpelArgumentParser
 	parser = AmpelArgumentParser()
 	parser.add_argument('--publish-to', nargs='+', default=['log', 'graphite'],
 	    choices=['mongo', 'graphite', 'log', 'print'],

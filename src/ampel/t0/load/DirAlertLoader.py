@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/pipeline/t0/alerts/DirAlertLoader.py
+# File              : ampel/t0/alerts/DirAlertLoader.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 14.12.2017
@@ -8,7 +8,7 @@
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 
-from ampel.pipeline.logging.AmpelLogger import AmpelLogger
+from ampel.logging.AmpelLogger import AmpelLogger
 import logging, io
 
 

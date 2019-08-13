@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/pipeline/db/query/QueryLatestCompound.py
+# File              : ampel/db/query/QueryLatestCompound.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 13.01.2018
@@ -9,8 +9,8 @@
 
 import collections, bson
 from ampel.core.flags.AlDocType import AlDocType
-from ampel.pipeline.common.AmpelUtils import AmpelUtils
-from ampel.pipeline.db.query.QueryMatchSchema import QueryMatchSchema
+from ampel.common.AmpelUtils import AmpelUtils
+from ampel.db.query.QueryMatchSchema import QueryMatchSchema
 
 class QueryLatestCompound:
 	"""

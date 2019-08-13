@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel/src/ampel/pipeline/t1/T1Controller.py
+# File              : Ampel/src/ampel/t1/T1Controller.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 06.12.2018
@@ -9,10 +9,10 @@
 
 import logging
 from ampel.core.flags.LogRecordFlags import LogRecordFlags
-from ampel.pipeline.logging.AmpelLogger import AmpelLogger
-from ampel.pipeline.logging.DBLoggingHandler import DBLoggingHandler
-from ampel.pipeline.db.AmpelDB import AmpelDB
-from ampel.pipeline.common.Schedulable import Schedulable
+from ampel.logging.AmpelLogger import AmpelLogger
+from ampel.logging.DBLoggingHandler import DBLoggingHandler
+from ampel.db.AmpelDB import AmpelDB
+from ampel.common.Schedulable import Schedulable
 
 
 class T1Controller(Schedulable):

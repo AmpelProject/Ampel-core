@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/pipeline/logging/LoggingUtils.py
+# File              : ampel/logging/LoggingUtils.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 30.09.2018
@@ -8,7 +8,7 @@
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from logging import ERROR, CRITICAL, Logger
-from ampel.pipeline.config.ConfigUtils import ConfigUtils
+from ampel.config.ConfigUtils import ConfigUtils
 from ampel.core.flags.LogRecordFlag import LogRecordFlag
 
 class LoggingUtils:
@@ -146,7 +146,7 @@ class LoggingUtils:
 		:raises None:
 		"""
 
-		from ampel.pipeline.db.AmpelDB import AmpelDB
+		from ampel.db.AmpelDB import AmpelDB
 
 		# Populate troubles collection
 		try:

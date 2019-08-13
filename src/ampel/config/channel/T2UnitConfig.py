@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/pipeline/config/channel/T2UnitConfig.py
+# File              : ampel/config/channel/T2UnitConfig.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 02.09.2018
@@ -9,9 +9,9 @@
 
 import pkg_resources
 from pydantic import validator
-from ampel.pipeline.common.docstringutils import gendocstring
-from ampel.pipeline.config.AmpelModelExtension import AmpelModelExtension
-from ampel.pipeline.config.AmpelConfig import AmpelConfig
+from ampel.common.docstringutils import gendocstring
+from ampel.config.AmpelModelExtension import AmpelModelExtension
+from ampel.config.AmpelConfig import AmpelConfig
 
 
 @gendocstring

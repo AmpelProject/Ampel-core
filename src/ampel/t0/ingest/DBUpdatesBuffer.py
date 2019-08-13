@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/pipeline/t0/ingest/DBUpdatesBuffer.py
+# File              : ampel/t0/ingest/DBUpdatesBuffer.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 31.10.2018
@@ -11,11 +11,11 @@ from time import time
 import threading
 from multiprocessing.pool import ThreadPool
 from pymongo.errors import BulkWriteError
-from ampel.pipeline.db.AmpelDB import AmpelDB
-from ampel.pipeline.db.DBUpdateError import DBUpdateError
-from ampel.pipeline.config.AmpelConfig import AmpelConfig
-from ampel.pipeline.common.Schedulable import Schedulable
-from ampel.pipeline.logging.LoggingUtils import LoggingUtils
+from ampel.db.AmpelDB import AmpelDB
+from ampel.db.DBUpdateError import DBUpdateError
+from ampel.config.AmpelConfig import AmpelConfig
+from ampel.common.Schedulable import Schedulable
+from ampel.logging.LoggingUtils import LoggingUtils
 
 
 class DBUpdatesBuffer(Schedulable):

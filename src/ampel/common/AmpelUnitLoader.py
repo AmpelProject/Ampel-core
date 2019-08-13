@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/pipeline/common/AmpelUnitLoader.py
+# File              : ampel/common/AmpelUnitLoader.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 02.10.2018
@@ -11,7 +11,7 @@ import pkg_resources
 from ampel.base.abstract.AbsAlertFilter import AbsAlertFilter
 from ampel.base.abstract.AbsT2Unit import AbsT2Unit
 from ampel.base.abstract.AbsT3Unit import AbsT3Unit
-from ampel.pipeline.config.AmpelConfig import AmpelConfig
+from ampel.config.AmpelConfig import AmpelConfig
 
 class AmpelUnitLoader:
 	"""

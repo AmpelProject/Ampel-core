@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/pipeline/common/AmpelUtils.py
+# File              : ampel/common/AmpelUtils.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 07.06.2018
@@ -9,7 +9,7 @@
 
 import collections, hashlib
 from functools import reduce
-from ampel.pipeline.config.ReadOnlyDict import ReadOnlyDict
+from ampel.config.ReadOnlyDict import ReadOnlyDict
 
 class AmpelUtils():
 	""" 

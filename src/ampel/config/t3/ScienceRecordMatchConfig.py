@@ -3,9 +3,9 @@ from typing import Dict, Optional, Any
 from pydantic import BaseModel, validator
 import pkg_resources
 
-from ampel.pipeline.config.AmpelModelExtension import AmpelModelExtension
-from ampel.pipeline.common.docstringutils import gendocstring
-from ampel.pipeline.config.AmpelConfig import AmpelConfig
+from ampel.config.AmpelModelExtension import AmpelModelExtension
+from ampel.common.docstringutils import gendocstring
+from ampel.config.AmpelConfig import AmpelConfig
 
 @gendocstring
 class ScienceRecordMatchConfig(AmpelModelExtension):

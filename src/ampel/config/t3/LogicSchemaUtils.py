@@ -1,16 +1,16 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/pipeline/config/t3/LogicSchemaUtils.py
+# File              : ampel/config/t3/LogicSchemaUtils.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 13.10.2018
 # Last Modified Date: 21.02.2019
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-from ampel.pipeline.config.t3.LogicSchemaIterator import LogicSchemaIterator
-from ampel.pipeline.config.t3.AllOf import AllOf
-from ampel.pipeline.config.t3.AnyOf import AnyOf
-from ampel.pipeline.config.t3.OneOf import OneOf
+from ampel.config.t3.LogicSchemaIterator import LogicSchemaIterator
+from ampel.config.t3.AllOf import AllOf
+from ampel.config.t3.AnyOf import AnyOf
+from ampel.config.t3.OneOf import OneOf
 
 class LogicSchemaUtils:
 	"""

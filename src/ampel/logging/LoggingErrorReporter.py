@@ -1,14 +1,14 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/pipeline/logging/LoggingErrorReporter.py
+# File              : ampel/logging/LoggingErrorReporter.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 29.09.2018
 # Last Modified Date: 18.01.2019
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-from ampel.pipeline.logging.AmpelLogger import AmpelLogger
-from ampel.pipeline.logging.LoggingUtils import LoggingUtils
+from ampel.logging.AmpelLogger import AmpelLogger
+from ampel.logging.LoggingUtils import LoggingUtils
 
 class LoggingErrorReporter:
 	"""

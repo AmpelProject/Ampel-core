@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/pipeline/common/docstringutils.py
+# File              : ampel/common/docstringutils.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 02.09.2018
@@ -24,7 +24,7 @@ def gendocstring(klass):
 	~~~~~~~~~~~~~
 	
 		from pydantic import BaseModel
-		from ampel.pipeline.common.docstringutils import gendocstring
+		from ampel.common.docstringutils import gendocstring
 	
 		@gendocstring
 		class MyConfig(BaseModel):

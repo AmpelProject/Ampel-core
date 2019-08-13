@@ -1,13 +1,13 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/pipeline/config/AmpelModelExtension.py
+# File              : ampel/config/AmpelModelExtension.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 30.09.2018
 # Last Modified Date: 07.10.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-from ampel.pipeline.common.AmpelUtils import AmpelUtils
+from ampel.common.AmpelUtils import AmpelUtils
 from pydantic import BaseModel, BaseConfig
 import logging
 

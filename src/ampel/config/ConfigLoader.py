@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/pipeline/config/ConfigLoader.py
+# File              : ampel/config/ConfigLoader.py
 # License           : BSD-3-Clause
 # Author            : Jakob van Santen <jakob.van.santen@desy.de>
 # Date              : Unspecified
@@ -9,9 +9,9 @@
 
 import json, pkg_resources, traceback, logging
 from os.path import join, dirname, abspath, realpath, exists
-from ampel.pipeline.config.channel.ChannelConfig import ChannelConfig
-from ampel.pipeline.config.AmpelConfig import AmpelConfig
-from ampel.pipeline.config.t3.T3JobConfig import T3JobConfig
+from ampel.config.channel.ChannelConfig import ChannelConfig
+from ampel.config.AmpelConfig import AmpelConfig
+from ampel.config.t3.T3JobConfig import T3JobConfig
 
 AmpelConfig.load_tags()
 
@@ -65,7 +65,7 @@ class ConfigLoader:
 
 			if tier in ("all", 0, 3):
 
-				from ampel.pipeline.db.DBUtils import DBUtils
+				from ampel.db.DBUtils import DBUtils
 	
 				for resource in pkg_resources.iter_entry_points('ampel.channels'):
 	

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/pipeline/db/query/QueryMatchSchema.py
+# File              : ampel/db/query/QueryMatchSchema.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 11.03.2018
@@ -8,10 +8,10 @@
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import collections
-from ampel.pipeline.common.AmpelUtils import AmpelUtils
-from ampel.pipeline.config.t3.AnyOf import AnyOf
-from ampel.pipeline.config.t3.AllOf import AllOf
-from ampel.pipeline.config.t3.OneOf import OneOf
+from ampel.common.AmpelUtils import AmpelUtils
+from ampel.config.t3.AnyOf import AnyOf
+from ampel.config.t3.AllOf import AllOf
+from ampel.config.t3.OneOf import OneOf
 
 class QueryMatchSchema:
 	"""

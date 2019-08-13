@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/pipeline/t3/T3Event.py
+# File              : ampel/t3/T3Event.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 26.02.2018
@@ -17,20 +17,20 @@ from functools import partial
 from typing import Optional, Dict, Any
 
 from ampel.utils.json_serialization import AmpelEncoder
-from ampel.pipeline.db.query.QueryMatchTransients import QueryMatchTransients
-from ampel.pipeline.db.query.QueryLatestCompound import QueryLatestCompound
-from ampel.pipeline.db.query.QueryEventsCol import QueryEventsCol
-from ampel.pipeline.db.DBContentLoader import DBContentLoader
-from ampel.pipeline.db.AmpelDB import AmpelDB
-from ampel.pipeline.logging.DBLoggingHandler import DBLoggingHandler
-from ampel.pipeline.logging.AmpelLogger import AmpelLogger
-from ampel.pipeline.logging.LoggingUtils import LoggingUtils
-from ampel.pipeline.logging.DBEventDoc import DBEventDoc
-from ampel.pipeline.common.AmpelUtils import AmpelUtils
-from ampel.pipeline.config.t3.LogicSchemaUtils import LogicSchemaUtils
-from ampel.pipeline.config.t3.T3JobConfig import T3JobConfig
-from ampel.pipeline.config.t3.T3TaskConfig import T3TaskConfig
-from ampel.pipeline.t3.TimeConstraint import TimeConstraint
+from ampel.db.query.QueryMatchTransients import QueryMatchTransients
+from ampel.db.query.QueryLatestCompound import QueryLatestCompound
+from ampel.db.query.QueryEventsCol import QueryEventsCol
+from ampel.db.DBContentLoader import DBContentLoader
+from ampel.db.AmpelDB import AmpelDB
+from ampel.logging.DBLoggingHandler import DBLoggingHandler
+from ampel.logging.AmpelLogger import AmpelLogger
+from ampel.logging.LoggingUtils import LoggingUtils
+from ampel.logging.DBEventDoc import DBEventDoc
+from ampel.common.AmpelUtils import AmpelUtils
+from ampel.config.t3.LogicSchemaUtils import LogicSchemaUtils
+from ampel.config.t3.T3JobConfig import T3JobConfig
+from ampel.config.t3.T3TaskConfig import T3TaskConfig
+from ampel.t3.TimeConstraint import TimeConstraint
 from ampel.core.flags.AlDocType import AlDocType
 from ampel.core.flags.FlagUtils import FlagUtils
 from ampel.core.flags.LogRecordFlag import LogRecordFlag

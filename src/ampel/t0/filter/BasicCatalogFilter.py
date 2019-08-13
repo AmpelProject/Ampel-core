@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/pipeline/t0/filters/BasicCatalogFilter.py
+# File              : ampel/t0/filters/BasicCatalogFilter.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 14.01.2018
@@ -12,7 +12,7 @@ from extcats import CatalogQuery
 from pymongo import MongoClient
 from numpy import mean
 
-from ampel.pipeline.config.AmpelConfig import AmpelConfig
+from ampel.config.AmpelConfig import AmpelConfig
 from ampel.base.abstract.AbsAlertFilter import AbsAlertFilter
 
 class BasicCatalogFilter(AbsAlertFilter):

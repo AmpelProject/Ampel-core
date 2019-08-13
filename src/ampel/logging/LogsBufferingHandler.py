@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/pipeline/logging/LogsBufferingHandler.py
+# File              : ampel/logging/LogsBufferingHandler.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 27.09.2018
@@ -9,9 +9,9 @@
 
 import logging, struct, os
 from bson import ObjectId
-from ampel.pipeline.db.AmpelDB import AmpelDB
-from ampel.pipeline.logging.AmpelLoggingError import AmpelLoggingError
-from ampel.pipeline.logging.DBLoggingHandler import _machine_bytes, _fnv_1a_24
+from ampel.db.AmpelDB import AmpelDB
+from ampel.logging.AmpelLoggingError import AmpelLoggingError
+from ampel.logging.DBLoggingHandler import _machine_bytes, _fnv_1a_24
 
 class LogsBufferingHandler(logging.Handler):
 	"""
@@ -88,8 +88,8 @@ class LogsBufferingHandler(logging.Handler):
 
 		except Exception as e:
 			
-			from ampel.pipeline.logging.AmpelLogger import AmpelLogger
-			from ampel.pipeline.logging.LoggingUtils import LoggingUtils
+			from ampel.logging.AmpelLogger import AmpelLogger
+			from ampel.logging.LoggingUtils import LoggingUtils
 
 			# Print log stack using std logging 
 			logger = AmpelLogger.get_unique_logger()

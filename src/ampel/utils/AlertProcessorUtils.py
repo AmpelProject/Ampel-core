@@ -9,10 +9,10 @@
 
 import importlib
 
-from ampel.pipeline.config.AmpelConfig import AmpelConfig
-from ampel.pipeline.t0.load.AlertSupplier import AlertSupplier
-from ampel.pipeline.t0.AlertProcessor import AlertProcessor
-from ampel.pipeline.t0.load.DirAlertLoader import DirAlertLoader
+from ampel.config.AmpelConfig import AmpelConfig
+from ampel.t0.load.AlertSupplier import AlertSupplier
+from ampel.t0.AlertProcessor import AlertProcessor
+from ampel.t0.load.DirAlertLoader import DirAlertLoader
 
 class AlertProcessorUtils:
 

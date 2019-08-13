@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/pipeline/t0/DelayedT0Controller.py
+# File              : ampel/t0/DelayedT0Controller.py
 # License           : BSD-3-Clause
 # Author            : Jakob van Santen <jakob.van.santen@desy.de>
 # Date              : 19.06.2018
@@ -11,11 +11,11 @@ import asyncio
 import logging
 import multiprocessing
 from astropy import units as u
-from ampel.pipeline.config.AmpelConfig import AmpelConfig
+from ampel.config.AmpelConfig import AmpelConfig
 from ampel.ztf.archive.ArchiveDB import ArchiveDB
-from ampel.pipeline.t0.AlertProcessor import AlertProcessor
-from ampel.pipeline.common.AmpelUnitLoader import AmpelUnitLoader
-from ampel.pipeline.config.channel.ChannelConfigLoader import ChannelConfigLoader
+from ampel.t0.AlertProcessor import AlertProcessor
+from ampel.common.AmpelUnitLoader import AmpelUnitLoader
+from ampel.config.channel.ChannelConfigLoader import ChannelConfigLoader
 from ampel.ztf.pipeline.t0.ZISetup import ZISetup
 
 log = logging.getLogger(__name__)
@@ -131,7 +131,7 @@ def listen(opts):
 	"""
 	Listen for new targets
 	"""
-	from ampel.pipeline.config.AmpelConfig import AmpelConfig
+	from ampel.config.AmpelConfig import AmpelConfig
 	import pkg_resources
 
 	sources = []
@@ -145,8 +145,8 @@ def listen(opts):
 
 def run():
 	
-	from ampel.pipeline.config.AmpelArgumentParser import AmpelArgumentParser
-	from ampel.pipeline.config.AmpelConfig import AmpelConfig
+	from ampel.config.AmpelArgumentParser import AmpelArgumentParser
+	from ampel.config.AmpelConfig import AmpelConfig
 	from astropy.time import Time
 	import astropy.units as u
 	import pkg_resources

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/pipeline/t0/Channel.py
+# File              : ampel/t0/Channel.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 03.05.2018
@@ -8,13 +8,13 @@
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import pkg_resources, logging
-from ampel.pipeline.logging.AmpelLogger import AmpelLogger
-from ampel.pipeline.common.AmpelUtils import AmpelUtils
-from ampel.pipeline.common.AmpelUnitLoader import AmpelUnitLoader
-from ampel.pipeline.config.AmpelConfig import AmpelConfig
-from ampel.pipeline.logging.RecordsBufferingHandler import RecordsBufferingHandler
-from ampel.pipeline.logging.DBRejectedLogsSaver import DBRejectedLogsSaver
-from ampel.pipeline.logging.T0RejConsoleFormatter import T0RejConsoleFormatter
+from ampel.logging.AmpelLogger import AmpelLogger
+from ampel.common.AmpelUtils import AmpelUtils
+from ampel.common.AmpelUnitLoader import AmpelUnitLoader
+from ampel.config.AmpelConfig import AmpelConfig
+from ampel.logging.RecordsBufferingHandler import RecordsBufferingHandler
+from ampel.logging.DBRejectedLogsSaver import DBRejectedLogsSaver
+from ampel.logging.T0RejConsoleFormatter import T0RejConsoleFormatter
 
 class Channel:
 	"""

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/pipeline/config/time/TimeConstraintConfig.py
+# File              : ampel/config/time/TimeConstraintConfig.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 29.09.2018
@@ -9,11 +9,11 @@
 
 from pydantic import BaseModel
 from typing import Union, List
-from ampel.pipeline.common.docstringutils import gendocstring
-from ampel.pipeline.config.time.TimeDeltaConfig import TimeDeltaConfig
-from ampel.pipeline.config.time.TimeLastRunConfig import TimeLastRunConfig
-from ampel.pipeline.config.time.TimeStringConfig import TimeStringConfig
-from ampel.pipeline.config.time.UnixTimeConfig import UnixTimeConfig
+from ampel.common.docstringutils import gendocstring
+from ampel.config.time.TimeDeltaConfig import TimeDeltaConfig
+from ampel.config.time.TimeLastRunConfig import TimeLastRunConfig
+from ampel.config.time.TimeStringConfig import TimeStringConfig
+from ampel.config.time.UnixTimeConfig import UnixTimeConfig
 
 
 @gendocstring

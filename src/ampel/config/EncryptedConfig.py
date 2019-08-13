@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/pipeline/config/EncryptedConfig.py
+# File              : ampel/config/EncryptedConfig.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 14.11.2018
@@ -8,8 +8,8 @@
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from pydantic import BaseModel
-from ampel.pipeline.common.docstringutils import gendocstring
-from ampel.pipeline.config.AmpelConfig import AmpelConfig
+from ampel.common.docstringutils import gendocstring
+from ampel.config.AmpelConfig import AmpelConfig
 
 @gendocstring
 class EncryptedConfig(BaseModel):

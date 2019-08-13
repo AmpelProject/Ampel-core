@@ -3,8 +3,8 @@
 # License           : BSD-3-Clause
 # Author            : Jakob van Santen <jakob.van.santen@desy.de>
 
-from ampel.pipeline.config.resources import Resource, ResourceURI, argparse
-from ampel.pipeline.common.GraphiteFeeder import GraphiteFeeder
+from ampel.config.resources import Resource, ResourceURI, argparse
+from ampel.common.GraphiteFeeder import GraphiteFeeder
 from os import environ
 from urllib.parse import urlparse
 

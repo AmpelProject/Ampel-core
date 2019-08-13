@@ -8,7 +8,7 @@
 
 from datetime import datetime
 from ampel.core.flags.LogRecordFlags import LogRecordFlags
-from ampel.pipeline.logging.DBLoggingHandler import DBLoggingHandler
+from ampel.logging.DBLoggingHandler import DBLoggingHandler
 
 class DBLogPrinter:
 	"""

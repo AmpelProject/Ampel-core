@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/pipeline/t0/ingest/CompoundBluePrintGenerator.py
+# File              : ampel/t0/ingest/CompoundBluePrintGenerator.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 01.01.2018
@@ -9,7 +9,7 @@
 
 import hashlib, json
 from bson import Binary
-from ampel.pipeline.t0.ingest.CompoundBluePrint import CompoundBluePrint
+from ampel.t0.ingest.CompoundBluePrint import CompoundBluePrint
 
 class CompoundBluePrintGenerator():
 	"""

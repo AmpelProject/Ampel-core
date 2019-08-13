@@ -1,14 +1,14 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/pipeline/db/LogsMatcher.py
+# File              : ampel/db/LogsMatcher.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 29.11.2018
 # Last Modified Date: 15.05.2019
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-from ampel.pipeline.logging.AmpelLogger import AmpelLogger
-from ampel.pipeline.db.AmpelDB import AmpelDB
+from ampel.logging.AmpelLogger import AmpelLogger
+from ampel.db.AmpelDB import AmpelDB
 
 class LogsMatcher:
 	"""

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/pipeline/t3/TransientData.py
+# File              : ampel/t3/TransientData.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 31.05.2018
@@ -9,7 +9,7 @@
 
 from ampel.base.TransientView import TransientView
 from ampel.core.flags.AlDocType import AlDocType
-from ampel.pipeline.common.AmpelUtils import AmpelUtils
+from ampel.common.AmpelUtils import AmpelUtils
 
 class TransientData:
 	"""

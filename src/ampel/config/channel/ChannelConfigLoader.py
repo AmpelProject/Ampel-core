@@ -1,15 +1,15 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/pipeline/config/channel/ChannelConfigLoader.py
+# File              : ampel/config/channel/ChannelConfigLoader.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 03.05.2018
 # Last Modified Date: 19.10.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-from ampel.pipeline.config.AmpelConfig import AmpelConfig
-from ampel.pipeline.config.channel.T2UnitConfig import T2UnitConfig
-from ampel.pipeline.config.channel.ChannelConfig import ChannelConfig
+from ampel.config.AmpelConfig import AmpelConfig
+from ampel.config.channel.T2UnitConfig import T2UnitConfig
+from ampel.config.channel.ChannelConfig import ChannelConfig
 
 class ChannelConfigLoader:
 	"""

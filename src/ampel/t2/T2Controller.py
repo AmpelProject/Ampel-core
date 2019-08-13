@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/pipeline/t2/T2Controller.py
+# File              : ampel/t2/T2Controller.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 25.01.2018
@@ -12,13 +12,13 @@ from time import time
 
 from ampel.core.flags.T2RunStates import T2RunStates
 from ampel.core.flags.LogRecordFlag import LogRecordFlag
-from ampel.pipeline.t2.T2Executor import T2Executor
-from ampel.pipeline.common.AmpelUtils import AmpelUtils
-from ampel.pipeline.logging.AmpelLogger import AmpelLogger
-from ampel.pipeline.db.AmpelDB import AmpelDB
-from ampel.pipeline.common.Schedulable import Schedulable
-from ampel.pipeline.config.AmpelConfig import AmpelConfig
-from ampel.pipeline.common.AmpelUnitLoader import AmpelUnitLoader
+from ampel.t2.T2Executor import T2Executor
+from ampel.common.AmpelUtils import AmpelUtils
+from ampel.logging.AmpelLogger import AmpelLogger
+from ampel.db.AmpelDB import AmpelDB
+from ampel.common.Schedulable import Schedulable
+from ampel.config.AmpelConfig import AmpelConfig
+from ampel.common.AmpelUnitLoader import AmpelUnitLoader
 
 
 class T2Controller(Schedulable):
@@ -147,7 +147,7 @@ class T2Controller(Schedulable):
 
 
 def get_required_resources(units=None, tier=2):
-	from ampel.pipeline.config.channel.ChannelConfigLoader import ChannelConfigLoader
+	from ampel.config.channel.ChannelConfigLoader import ChannelConfigLoader
 	if units is None:
 		units = set()
 		for channel in ChannelConfigLoader.load_configurations(None, 2):
@@ -162,8 +162,8 @@ def get_required_resources(units=None, tier=2):
 
 def run():
 
-	from ampel.pipeline.config.AmpelArgumentParser import AmpelArgumentParser
-	from ampel.pipeline.config.AmpelConfig import AmpelConfig
+	from ampel.config.AmpelArgumentParser import AmpelArgumentParser
+	from ampel.config.AmpelConfig import AmpelConfig
 
 	multiprocessing.log_to_stderr(logging.DEBUG)
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/pipeline/config/t3/TranSelectConfig.py
+# File              : ampel/config/t3/TranSelectConfig.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 29.09.2018
@@ -9,15 +9,15 @@
 
 from pydantic import BaseModel, validator
 from typing import Union, List
-from ampel.pipeline.common.AmpelUtils import AmpelUtils
-from ampel.pipeline.config.time.TimeConstraintConfig import TimeConstraintConfig
-from ampel.pipeline.config.AmpelModelExtension import AmpelModelExtension
-from ampel.pipeline.config.ConfigUtils import ConfigUtils
-from ampel.pipeline.common.docstringutils import gendocstring
-from ampel.pipeline.config.t3.AllOf import AllOf
-from ampel.pipeline.config.t3.AnyOf import AnyOf
-from ampel.pipeline.config.t3.OneOf import OneOf
-from ampel.pipeline.config.t3.ScienceRecordMatchConfig import ScienceRecordMatchConfig
+from ampel.common.AmpelUtils import AmpelUtils
+from ampel.config.time.TimeConstraintConfig import TimeConstraintConfig
+from ampel.config.AmpelModelExtension import AmpelModelExtension
+from ampel.config.ConfigUtils import ConfigUtils
+from ampel.common.docstringutils import gendocstring
+from ampel.config.t3.AllOf import AllOf
+from ampel.config.t3.AnyOf import AnyOf
+from ampel.config.t3.OneOf import OneOf
+from ampel.config.t3.ScienceRecordMatchConfig import ScienceRecordMatchConfig
 
 
 @gendocstring

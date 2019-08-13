@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/pipeline/t3/T3Job.py
+# File              : ampel/t3/T3Job.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 26.02.2018
@@ -10,17 +10,17 @@
 import logging
 from time import time
 from ampel.core.flags.LogRecordFlag import LogRecordFlag
-from ampel.pipeline.logging.DBLoggingHandler import DBLoggingHandler
-from ampel.pipeline.logging.DBEventDoc import DBEventDoc
-from ampel.pipeline.logging.AmpelLogger import AmpelLogger
-from ampel.pipeline.logging.LoggingUtils import LoggingUtils
-from ampel.pipeline.common.AmpelUtils import AmpelUtils
-from ampel.pipeline.common.AmpelUnitLoader import AmpelUnitLoader
-from ampel.pipeline.config.t3.LogicSchemaUtils import LogicSchemaUtils
-from ampel.pipeline.config.t3.LogicSchemaIterator import LogicSchemaIterator
-from ampel.pipeline.t3.T3JournalUpdater import T3JournalUpdater
-from ampel.pipeline.t3.T3Event import T3Event
-from ampel.pipeline.db.AmpelDB import AmpelDB
+from ampel.logging.DBLoggingHandler import DBLoggingHandler
+from ampel.logging.DBEventDoc import DBEventDoc
+from ampel.logging.AmpelLogger import AmpelLogger
+from ampel.logging.LoggingUtils import LoggingUtils
+from ampel.common.AmpelUtils import AmpelUtils
+from ampel.common.AmpelUnitLoader import AmpelUnitLoader
+from ampel.config.t3.LogicSchemaUtils import LogicSchemaUtils
+from ampel.config.t3.LogicSchemaIterator import LogicSchemaIterator
+from ampel.t3.T3JournalUpdater import T3JournalUpdater
+from ampel.t3.T3Event import T3Event
+from ampel.db.AmpelDB import AmpelDB
 
 
 class T3Job(T3Event):

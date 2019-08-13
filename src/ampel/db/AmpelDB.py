@@ -1,13 +1,13 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/pipeline/db/AmpelDB.py
+# File              : ampel/db/AmpelDB.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 16.06.2018
 # Last Modified Date: 26.11.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-from ampel.pipeline.config.AmpelConfig import AmpelConfig
+from ampel.config.AmpelConfig import AmpelConfig
 from ampel.core.flags.AlDocType import AlDocType
 
 class AmpelDB:

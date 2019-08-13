@@ -95,7 +95,7 @@ import copy
 from ampel.base.AmpelAlert import AmpelAlert
 class AlertFactoryFixture(object):
 	def __init__(self, schema):
-		from ampel.pipeline.t0.load.ZIAlertShaper import ZIAlertShaper
+		from ampel.t0.load.ZIAlertShaper import ZIAlertShaper
 		native_types = {'int': int, 'long': int, 'float': float, 'double': float, 'string': str}
 		def get_defaults(schema):
 			required = dict()
@@ -215,9 +215,9 @@ def alert_factory(latest_schema):
 	
 @pytest.fixture
 def minimal_ingestion_config(mongod):
-	from ampel.pipeline.config.AmpelConfig import AmpelConfig
-	from ampel.pipeline.common.AmpelUnitLoader import AmpelUnitLoader
-	from ampel.pipeline.db.AmpelDB import AmpelDB
+	from ampel.config.AmpelConfig import AmpelConfig
+	from ampel.common.AmpelUnitLoader import AmpelUnitLoader
+	from ampel.db.AmpelDB import AmpelDB
 	
 	AmpelConfig.reset()
 	AmpelUnitLoader.reset()
@@ -279,17 +279,17 @@ def ingested_transients(alert_generator, minimal_ingestion_config, caplog):
 	"""
 	Ingest alertsw tih 
 	"""
-	from ampel.pipeline.config.AmpelConfig import AmpelConfig
-	from ampel.pipeline.t0.load.AlertSupplier import AlertSupplier
-	from ampel.pipeline.t0.load.ZIAlertShaper import ZIAlertShaper
-	from ampel.pipeline.t0.ingest.ZIAlertIngester import ZIAlertIngester
-	from ampel.pipeline.config.channel.T0Channel import T0Channel
+	from ampel.config.AmpelConfig import AmpelConfig
+	from ampel.t0.load.AlertSupplier import AlertSupplier
+	from ampel.t0.load.ZIAlertShaper import ZIAlertShaper
+	from ampel.t0.ingest.ZIAlertIngester import ZIAlertIngester
+	from ampel.config.channel.T0Channel import T0Channel
 	from bson import ObjectId
 	
 	import numpy
 	numpy.random.seed(0)
 	
-	from ampel.pipeline.db.AmpelDB import AmpelDB
+	from ampel.db.AmpelDB import AmpelDB
 	
 	# TODO: fix this: T0Channel __init__(self, chan_config, source, logger): where :param chan_config: instance of ampel.pipeline.config.ChannelConfig
 	channels = [T0Channel(str(i), {'sources': AmpelConfig.get_config('global.sources')}, 'ZTFIPAC', lambda *args: True, set()) for i in range(2)]
@@ -307,7 +307,7 @@ def ingested_transients(alert_generator, minimal_ingestion_config, caplog):
 		num_pps.append(len(shaped_alert['pps']))
 		choices.append((shaped_alert['tran_id'], [c.name for c,k in zip(channels, choice) if k]))
 	
-	from ampel.pipeline.db.AmpelDB import AmpelDB
+	from ampel.db.AmpelDB import AmpelDB
 	from ampel.core.flags.AlDocType import AlDocType
 	
 	assert AmpelDB.get_collection('tran').find({}).count() == len(choices), "Transient docs exist for all ingested alerts"
@@ -317,9 +317,9 @@ def ingested_transients(alert_generator, minimal_ingestion_config, caplog):
 
 @pytest.fixture
 def t3_selected_transients(ingested_transients, minimal_ingestion_config, caplog):
-	from ampel.pipeline.t3.T3Job import T3Job
-	from ampel.pipeline.t3.T3JobConfig import T3JobConfig
-	from ampel.pipeline.db.DBContentLoader import DBContentLoader
+	from ampel.t3.T3Job import T3Job
+	from ampel.t3.T3JobConfig import T3JobConfig
+	from ampel.db.DBContentLoader import DBContentLoader
 	
 	job = T3Job(T3JobConfig.load('jobbyjob'))
 	trans_cursor = job.get_selected_transients()
