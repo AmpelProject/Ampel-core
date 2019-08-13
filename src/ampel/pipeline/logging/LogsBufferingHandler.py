@@ -11,6 +11,7 @@ import logging, struct, os
 from bson import ObjectId
 from ampel.pipeline.db.AmpelDB import AmpelDB
 from ampel.pipeline.logging.AmpelLoggingError import AmpelLoggingError
+from ampel.pipeline.logging.DBLoggingHandler import _machine_bytes, _fnv_1a_24
 
 class LogsBufferingHandler(logging.Handler):
 	"""
@@ -38,7 +39,7 @@ class LogsBufferingHandler(logging.Handler):
 
 		# ObjectID middle: 3 bytes machine + # 2 random bytes 
 		# NB: pid is not always unique if running in a jail or container
-		self.oid_middle = ObjectId._machine_bytes + os.urandom(2)
+		self.oid_middle = _machine_bytes() + os.urandom(2)
 
 
 	def emit(self, record):
