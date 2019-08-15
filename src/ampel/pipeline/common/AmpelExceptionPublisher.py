@@ -35,6 +35,8 @@ class AmpelExceptionPublisher:
 		if 'task' in doc:
 			fields.append({'title': 'Task', 'value': doc.get('task', None), 'short': True})
 		fields.append({'title': 'Run', 'value': doc.get('runId', None), 'short': True})
+		if 'chunk' in doc:
+			fields.append({'title': 'Chunk', 'value': doc.get('chunk', None), 'short': True})
 		return fields
 
 	def format_attachment(self, doc):

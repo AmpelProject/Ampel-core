@@ -282,10 +282,10 @@ class T3Event:
 		self.logger.info("Processing chunk")
 
 		# Load ids (chunk_size number of ids)
-		for chunked_tran_ids in T3Event._chunk(
+		for chunk_index, chunked_tran_ids in enumerate(T3Event._chunk(
 			map(lambda el: el['_id'], trans_cursor), 
 			chunk_size
-		):
+		)):
 
 			self.logger.info("Loading %i transients " % len(chunked_tran_ids))
 			state_ids = None
@@ -380,7 +380,7 @@ class T3Event:
 				self.tran_config.content.t2SubSelection
 			)
 			
-			yield al_tran_data
+			yield chunk_index, al_tran_data
 
 	def _matches_selection(self, view : TransientView, match : Optional[Dict[str,Any]]) -> bool:
 		"""
@@ -467,11 +467,11 @@ class T3Event:
 					# No chunk size == all transients loaded at once
 					if chunk_size is None:
 						chunk_size = trans_cursor.count()
-	
-					for transients in self._get_tran_data(trans_cursor, chunk_size):
+
+					for chunk_index, transients in self._get_tran_data(trans_cursor, chunk_size):
 	
 						try:
-							self.process_tran_data(transients)
+							self.process_tran_data(transients, chunk_index)
 						except Exception as e:
 
 							if self.raise_exc:
@@ -479,7 +479,7 @@ class T3Event:
 
 							LoggingUtils.report_exception(
 								self.logger, e, tier=3, run_id=self.run_id,
-								info={self.event_type: self.name}
+								info={self.event_type: self.name, 'chunk': chunk_index}
 							)
 			else:
 

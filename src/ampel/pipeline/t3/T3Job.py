@@ -209,9 +209,10 @@ class T3Job(T3Event):
 		return query_res['channels']
 
 
-	def process_tran_data(self, transients):
+	def process_tran_data(self, transients, chunk_index):
 		"""
-		:param List[TransientData] transients:
+		:param List[TransientData] transients: chunk of TransientData to process
+		:param int chunk_index: index of chunk in this run
 		"""
 
 		if transients is None:
@@ -226,7 +227,7 @@ class T3Job(T3Event):
 
 			self.logger.info(
 				"%s: processing %i TranData" % 
-				(task_name, len(transients))
+				(task_name, len(transients)), extra={'chunk': chunk_index}
 			)
 
 			try:
@@ -318,7 +319,8 @@ class T3Job(T3Event):
 					# Feedback
 					self.logger.shout(
 						"Providing %s (task %s) with %i TransientViews" % 
-						(task_config.unitId, task_name, len(tran_views))
+						(task_config.unitId, task_name, len(tran_views)),
+						extra={'chunk': chunk_index}
 					)
 
 					# Compute and add task duration for each transients chunks
@@ -360,6 +362,7 @@ class T3Job(T3Event):
 					self.logger, e, tier=3, info={
 						'job': self.name,
 						'runId':  self.run_id,
+						'chunk': chunk_index,
 					}
 				)
 

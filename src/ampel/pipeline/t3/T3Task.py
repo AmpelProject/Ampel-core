@@ -65,7 +65,7 @@ class T3Task(T3Event):
 			)
 
 
-	def process_tran_data(self, transients):
+	def process_tran_data(self, transients, chunk_index):
 		"""
 		:param List[TransientData] transients:
 		"""
@@ -75,7 +75,8 @@ class T3Task(T3Event):
 
 		self.logger.info(
 			"%s: processing %i TranData" % 
-			(self.name, len(transients))
+			(self.name, len(transients)),
+			extra={'chunk': chunk_index}
 		)
 
 		try:
@@ -124,6 +125,7 @@ class T3Task(T3Event):
 				self.logger, e, tier=3, info={
 					'task': self.name,
 					'runId':  self.run_id,
+					'chunk': chunk_index
 				}
 			)
 
