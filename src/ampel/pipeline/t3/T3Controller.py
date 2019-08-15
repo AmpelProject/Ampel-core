@@ -11,8 +11,8 @@ import schedule, time, threading, logging, json
 from types import MappingProxyType
 from functools import partial
 from multiprocessing import Process
-from ampel.pipeline.t3.T3Job import T3Job
-from ampel.pipeline.t3.T3Task import T3Task
+from ampel.pipeline.t3.T3Job import T3Job, T3ReplayJob
+from ampel.pipeline.t3.T3Task import T3Task, T3ReplayTask
 from ampel.pipeline.config.t3.T3JobConfig import T3JobConfig
 from ampel.pipeline.config.t3.T3TaskConfig import T3TaskConfig
 from ampel.pipeline.common.Schedulable import Schedulable
@@ -158,6 +158,20 @@ class FrozenEncoder(json.JSONEncoder):
 			return dict(obj.task_doc)
 		return super(FrozenEncoder, self).default(obj)
 
+def make_dry(task, include=None):
+	if include and task.task not in include:
+		return False
+	klass = AmpelUnitLoader.get_class(3, task.unitId)
+	safe = hasattr(klass, 'RunConfig') and 'dryRun' in klass.RunConfig.__fields__
+	if safe:
+		if task.runConfig is None:
+			task.runConfig = klass.RunConfig()
+		task.runConfig.dryRun = True
+		return True
+	else:
+		log.info('Task {} ({}) has no dryRun config'.format(task.task, klass.__name__))
+		return False
+
 # pylint: disable=bad-builtin
 def show(args):
 	"""Display job and task configuration"""
@@ -169,15 +183,30 @@ def show(args):
 		print(FrozenEncoder(indent=1).encode(task))
 
 def runjob(args):
-	job_config = T3JobConfig(**AmpelConfig.get_config('t3Jobs.{}'.format(args.job)))
+	config = T3JobConfig(**AmpelConfig.get_config('t3Jobs.{}'.format(args.job)))
 	if args.task is not None:
-		job_config.tasks = [t for t in job_config.tasks if t.task == args.task]
-	job = T3Job(job_config, full_console_logging=True, raise_exc=True)
+		config.tasks = [t for t in config.tasks if t.task == args.task]
+	elif args.dryrun:
+		config.tasks = [t for t in config.tasks if make_dry(t, {args.task} if args.task else None)]
+		kwargs = dict(full_console_logging=True, raise_exc=True, db_logging=False,
+		    update_events=False, update_tran_journal=False,)
+	if args.replay:
+		job = T3ReplayJob(config, replay_run=args.replay, chunk_offset=args.chunk, chunks=args.limit, **kwargs)
+	else:
+		job = T3Job(config, **kwargs)
 	job.run()
 
 def runtask(args):
-	job_config = T3TaskConfig(**AmpelConfig.get_config('t3Tasks.{}'.format(args.task)))
-	job = T3Task(job_config, full_console_logging=True, raise_exc=True)
+	config = T3TaskConfig(**AmpelConfig.get_config('t3Tasks.{}'.format(args.task)))
+	if args.dryrun:
+		if not make_dry(config):
+			raise ValueError("Task {} has no dryRun config".format(args.task))
+		kwargs = dict(full_console_logging=True, raise_exc=True, db_logging=False,
+		    update_events=False, update_tran_journal=False,)
+	if args.replay:
+		job = T3ReplayTask(config, replay_run=args.replay, chunk_offset=args.chunk, chunks=args.limit, **kwargs)
+	else:
+		job = T3Task(config, **kwargs)
 	job.run()
 
 def rununit(args):
@@ -240,24 +269,11 @@ def rununit(args):
 	job.run()
 
 def dryrun(args):
-	def make_dry(task):
-		if args.task and task.task != args.task:
-			return False
-		klass = AmpelUnitLoader.get_class(3, task.unitId)
-		safe = hasattr(klass, 'RunConfig') and 'dryRun' in klass.RunConfig.__fields__
-		if safe:
-			if task.runConfig is None:
-				task.runConfig = klass.RunConfig()
-			task.runConfig.dryRun = True
-			return True
-		else:
-			log.info('Task {} ({}) has no dryRun config'.format(task.task, klass.__name__))
-			return False
 
 	for config in T3Controller.load_job_configs([args.job] if args.job else None).values():
 		if not isinstance(config, T3JobConfig):
 			continue
-		config.tasks = [t for t in config.tasks if make_dry(t)]
+		config.tasks = [t for t in config.tasks if make_dry(t, {args.task} if args.task else None)]
 		if len(config.tasks) == 0:
 			continue
 		job = T3Job(config, full_console_logging=True, db_logging=False,
@@ -319,9 +335,17 @@ def main():
 	p = add_command(runjob)
 	p.add_argument('job')
 	p.add_argument('task', nargs='?')
+	p.add_argument('--replay', type=int, default=None, help='run number to replay')
+	p.add_argument('--chunk', type=int, default=0, help='start replay with chunk number CHUNK')
+	p.add_argument('--limit', type=int, default=None, help='replay only LIMIT chunks')
+	p.add_argument('--dryrun', action='store_true', default=None, help='run only dryRun tasks')
 
 	p = add_command(runtask)
 	p.add_argument('task')
+	p.add_argument('--replay', type=int, default=None, help='run number to replay')
+	p.add_argument('--chunk', type=int, default=0, help='start replay with chunk number CHUNK')
+	p.add_argument('--limit', type=int, default=None, help='replay only LIMIT chunks')
+	p.add_argument('--dryrun', action='store_true', default=None, help='run only dryRun tasks')
 
 	p = add_command(dryrun)
 	p.add_argument('job', nargs='?')
