@@ -195,6 +195,10 @@ class DBContentLoader:
 				'query': LoggingUtils.safe_query_dict(search_params, dict_key=None)
 			}
 		)
+		return self.load_new_from_query(self, tran_id, search_params, channels, state_op, docs, t2_subsel)
+
+	def load_new_from_query(self, tran_id, search_params, channels=None, state_op="$latest", docs=all_doc_types, t2_subsel=None):
+		extra={'tranId': tran_id}
 
 		# Execute DB query
 		blend_cursor = self.blend_col.find(search_params)

@@ -15,7 +15,7 @@ from ampel.pipeline.logging.LoggingUtils import LoggingUtils
 from ampel.pipeline.common.AmpelUnitLoader import AmpelUnitLoader
 from ampel.pipeline.config.t3.LogicSchemaUtils import LogicSchemaUtils
 from ampel.pipeline.t3.T3JournalUpdater import T3JournalUpdater
-from ampel.pipeline.t3.T3Event import T3Event
+from ampel.pipeline.t3.T3Event import T3Event, T3ReplayMixin
 
 
 class T3Task(T3Event):
@@ -149,3 +149,6 @@ class T3Task(T3Event):
 				self.logger, e, tier=3, run_id=self.run_id,
 				info={self.event_type: self.name}
 			)
+
+class T3ReplayTask(T3ReplayMixin, T3Task):
+	pass

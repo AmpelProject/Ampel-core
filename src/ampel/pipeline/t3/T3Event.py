@@ -522,3 +522,53 @@ class T3Event:
 				yield group
 			else:
 				break
+
+class T3ReplayMixin:
+	"""
+	Replay a T3Event based on queries logged in a previous invocation
+	"""
+	def __init__(self, config, replay_run : int, chunk_offset : int = 0, chunks : Optional[int] = None, **kwargs):
+		super().__init__(config, **kwargs)
+		self.__target_run_id = replay_run
+		self.__chunk_offset = chunk_offset
+		self.__num_chunks = chunks
+
+	def _get_tran_data(self, trans_cursor, chunk_size):
+		"""
+		Yield chunks of TransientData from queries logged by DBContentLoader
+		"""
+		cursor = AmpelDB.get_collection('logs').find(
+		    {
+		        'msg': {'$exists': 0},
+		        'query': {'$exists': 1},
+		        'runId': self.__target_run_id
+		    },{'tranId': 1, 'query.match': 1}
+		    ).sort('tranId', 1)
+		if self.__chunk_offset:
+			cursor = cursor.skip(self.__chunk_offset)
+		if self.__num_chunks:
+			cursor = cursor.limit(self.__num_chunks)
+		for chunk_index, record in enumerate(cursor, self.__chunk_offset):
+			chunked_tran_ids = record['tranId']
+			search_params = LoggingUtils.unconvert_dollars(record['query']['match'])
+
+			# Load ampel TransientData instances with given states
+			al_tran_data = self.db_content_loader.load_new_from_query(
+				chunked_tran_ids, search_params, self.tran_config.select.channels, 
+				self.tran_config.state, self.tran_config.content.docs, 
+				self.tran_config.content.t2SubSelection
+			)
+
+			yield chunk_index, al_tran_data
+
+	def _get_match_criteria(self):
+		"""
+		Reexecute the logged match query
+		"""
+		return LoggingUtils.unconvert_dollars(next(
+			AmpelDB.get_collection('logs').find(
+				{
+					'msg': 'Executing search query',
+					'runId': self.__target_run_id
+				},{'query': 1}
+				))['query']['match'])

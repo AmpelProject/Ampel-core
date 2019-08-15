@@ -221,3 +221,40 @@ class LoggingUtils:
 				return [cls.convert_dollars(el) for el in arg]
 
 		return arg
+
+	@classmethod
+	def unconvert_dollars(cls, arg):
+		"""
+		Invert `convert_dollars`
+
+		:param dict arg:
+		:returns: dict
+		"""
+
+
+		if isinstance(arg, dict):
+
+			pblm_keys = [key for key in arg.keys() if "\uFF04" in key or "\u2219" in key]
+			if pblm_keys:
+				arg = arg.copy() # shallow copy
+				for key in pblm_keys:
+					if "\uFF04" in key:
+						arg[key.replace("\uFF04", "$")] = arg.pop(key)
+					if "\u2219" in key:
+						arg[key.replace("\u2219", ".")] = arg.pop(key)
+
+			if not ConfigUtils.has_nested_type(arg, dict):
+				return arg
+
+			if not pblm_keys:
+				arg = arg.copy()
+
+			for key in arg.keys():
+				arg[key] = cls.unconvert_dollars(arg[key])
+
+		elif isinstance(arg, list):
+			if ConfigUtils.has_nested_type(arg, dict):
+				arg=arg.copy()
+				return [cls.unconvert_dollars(el) for el in arg]
+
+		return arg
