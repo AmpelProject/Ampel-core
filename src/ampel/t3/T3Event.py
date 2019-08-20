@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 26.02.2018
-# Last Modified Date: 11.11.2018
+# Last Modified Date: 20.08.2019
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import logging
@@ -90,7 +90,7 @@ class T3Event:
 		self.global_info = None
 		self.run_id = None
 		self.no_run = False
-		self.col_t2 = AmpelDB.get_collection("t2")
+		self.col_t1 = AmpelDB.get_collection("t1")
 
 		if not db_logging:
 			if update_tran_journal:
@@ -255,25 +255,25 @@ class T3Event:
 		)
 
 		# Execute 'find transients' query
-		trans_cursor = AmpelDB.get_collection('register').find(
+		cursor_tran = AmpelDB.get_collection('register').find(
 			match_query, {'_id':1}, # indexed query
 			no_cursor_timeout=True, # allow query to live for > 10 minutes
 		).hint('_id_1_channels_1')
 		
 		# Count results 
-		if trans_cursor.count() == 0:
+		if cursor_tran.count() == 0:
 			self.logger.info("No transient matches the given criteria")
 			return None
 
 		self.logger.info(
 			"%i transients match search criteria" % 
-			trans_cursor.count()
+			cursor_tran.count()
 		)
 
-		return trans_cursor
+		return cursor_tran
 
 
-	def _get_tran_data(self, trans_cursor, chunk_size):
+	def _get_tran_data(self, cursor_tran, chunk_size):
 		"""
 		Yield selected TransientData in chunks of length `chunk_size`
 		"""
@@ -282,7 +282,7 @@ class T3Event:
 
 		# Load ids (chunk_size number of ids)
 		for chunked_tran_ids in T3Event._chunk(
-			map(lambda el: el['_id'], trans_cursor), 
+			map(lambda el: el['_id'], cursor_tran), 
 			chunk_size
 		):
 
@@ -296,12 +296,11 @@ class T3Event:
 
 				# ids for which the fast query cannot be used (results cast into set)
 				slow_ids = set(
-					el['tranId'] for el in self.col_t2.find(
+					el['tranId'] for el in self.col_t1.find(
 						{
 							'tranId': {
 								'$in': chunked_tran_ids
 							},
-							'alDocType': AlDocType.COMPOUND, 
 							'tier': {'$ne': 0}
 						},
 						{'_id':0, 'tranId':1}
@@ -330,7 +329,7 @@ class T3Event:
 					# ]
 					state_ids.update(
 						[
-							el['_id'] for el in self.col_t2.aggregate(
+							el['_id'] for el in self.col_t1.aggregate(
 								QueryLatestCompound.fast_query(
 									slow_ids.symmetric_difference(chunked_tran_ids), 
 									channels=chan_logic
@@ -347,7 +346,7 @@ class T3Event:
 
 						# get latest state for single transients using general query
 						g_latest_state = next(
-							self.col_t2.aggregate(
+							self.col_t1.aggregate(
 								QueryLatestCompound.general_query(
 									tran_id, project={
 										'$project': {'_id':1}
@@ -383,13 +382,23 @@ class T3Event:
 			
 			yield al_tran_data
 
+
 	def _matches_selection(self, view : TransientView, match : Optional[Dict[str,Any]]) -> bool:
 		"""
 		Match transient view against a Mongo query
 		"""
-		return view is not None and (match is None or filter_applies(match, AmpelEncoder(lossy=True).default(view)))
+		return view is not None and (
+			match is None or 
+			filter_applies(
+				match, AmpelEncoder(lossy=True).default(view)
+			)
+		)
 
-	def create_tran_views(self, event_name, transients, channels, docs=None, t2_subsel=None, t2_filter : Optional[Dict[str,Any]]=None):
+
+	def create_tran_views(
+		self, event_name, transients, channels, docs=None, 
+		t2_subsel=None, t2_filter: Optional[Dict[str,Any]]=None
+	):
 		"""
 		:param transients: TransientData instances
 		:type transients: iterable(:py:class:`TransientData <ampel.pipeline.t3.TransientData>`)
@@ -458,18 +467,18 @@ class T3Event:
 			if self.config.transients is not None and self.config.transients.select is not None:
 	
 				# Job with transient input
-				trans_cursor = self._get_selected_transients()
+				cursor_tran = self._get_selected_transients()
 	
-				if trans_cursor is not None:
+				if cursor_tran is not None:
 	
 					# Set chunk_size to 'number of transients found' if not defined
 					chunk_size = self.tran_config.chunk
 	
 					# No chunk size == all transients loaded at once
 					if chunk_size is None:
-						chunk_size = trans_cursor.count()
+						chunk_size = cursor_tran.count()
 	
-					for transients in self._get_tran_data(trans_cursor, chunk_size):
+					for transients in self._get_tran_data(cursor_tran, chunk_size):
 	
 						try:
 							self.process_tran_data(transients)
