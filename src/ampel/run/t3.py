@@ -1,151 +1,28 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/t3/T3Controller.py
+# File              : ampel/run/t3.py
 # License           : BSD-3-Clause
-# Author            : vb <vbrinnel@physik.hu-berlin.de>
-# Date              : 26.02.2018
-# Last Modified Date: 13.08.2019
+# Author            : jvs
+# Date              : Unspecified
+# Last Modified Date: 20.08.2019
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-import schedule, time, threading, logging, json
+import json, logging
 from types import MappingProxyType
 from functools import partial
-from multiprocessing import Process
 from ampel.t3.T3Job import T3Job
 from ampel.t3.T3Task import T3Task
+from ampel.t3.T3Controller import T3Controller
 from ampel.config.t3.T3JobConfig import T3JobConfig
 from ampel.config.t3.T3TaskConfig import T3TaskConfig
-from ampel.common.Schedulable import Schedulable
-from ampel.config.t3.ScheduleEvaluator import ScheduleEvaluator
-from ampel.logging.AmpelLogger import AmpelLogger
-from ampel.logging.LoggingUtils import LoggingUtils
-from ampel.common.GraphiteFeeder import GraphiteFeeder
 from ampel.config.AmpelConfig import AmpelConfig
 from ampel.common.AmpelUnitLoader import AmpelUnitLoader
 
 log = logging.getLogger(__name__)
 
-class T3Controller(Schedulable):
-	"""
-	"""
-
-	@staticmethod
-	def load_job_configs(include=None, exclude=None, exclude_units=None):
-		"""
-		:param include: sequence of job names to explicitly include. If
-		    specified, any job name not in this sequence will be excluded.
-		:param exclude: sequence of job names to explicitly exclude. If
-		    specified, any job name in this sequence will be excluded.
-		"""
-		job_configs = {}
-		for key, klass in [('t3Jobs', T3JobConfig), ('t3Tasks', T3TaskConfig)]:
-			for job_name, job_dict in AmpelConfig.get_config(key).items():
-				if (include and job_name not in include) or (exclude and job_name in exclude):
-					continue
-				config = klass(**job_dict)
-				if exclude_units:
-					if klass is T3TaskConfig and config.unitId in exclude_units:
-						continue
-					elif klass is T3JobConfig:
-						config.tasks = [t for t in config.tasks if not t.unitId in exclude_units]
-						if not config.tasks:
-							continue
-				if getattr(config, 'active', True):
-					job_configs[job_name] = config
-
-		return job_configs
-
-	def __init__(self, t3_job_names=None, skip_jobs=set(), exclude_units=set()):
-		"""
-		t3_job_names: optional list of strings. 
-		If specified, only job with matching the provided names will be run.
-		skip_jobs: optional list of strings. 
-		If specified, jobs in this list will not be run.
-		"""
-
-		super(T3Controller, self).__init__()
-
-		# Setup logger
-		self.logger = AmpelLogger.get_unique_logger()
-		self.logger.info("Setting up T3Controller")
-
-		# Load job configurations
-		self.job_configs = T3Controller.load_job_configs(t3_job_names, skip_jobs, exclude_units)
-
-		schedule = ScheduleEvaluator()
-		self._pool = multiprocessing.get_context('spawn').Pool(maxtasksperchild=1,)
-		self._tasks = []
-		for name, job_config in self.job_configs.items():
-			for appointment in job_config.get('schedule'):
-				if appointment is not None:
-					schedule(self.scheduler, appointment).do(
-						self.launch_t3_job, job_config
-					).tag(name)
-
-		self.scheduler.every(5).minutes.do(self.monitor_processes)
-
-
-	def launch_t3_job(self, job_config):
-		# NB: we defer instantiation of T3Job to the subprocess to avoid
-		# creating multiple MongoClients in the master process
-		fut = self._pool.apply_async(self._run_t3_job,
-		    args=(
-		        AmpelConfig.recursive_unfreeze(AmpelConfig.get_config()),
-		        job_config,
-		))
-		self._tasks.append(fut)
-		return fut
-
-	@staticmethod
-	def _run_t3_job(ampel_config, job_config, **kwargs):
-		AmpelConfig.set_config(ampel_config)
-		name = getattr(job_config, 'job' if isinstance(job_config, T3JobConfig) else 'task')
-		klass = T3Job if isinstance(job_config, T3JobConfig) else T3Task
-		try:
-			job = klass(job_config)
-		except Exception as e:
-			LoggingUtils.report_exception(
-				AmpelLogger.get_unique_logger(), e, tier=3, info={
-					'job': name,
-				}
-			)
-			raise e
-		return job.run(**kwargs)
-
-
-	@property
-	def process_count(self):
-		""" """
-		pending = []
-		for fut in self._tasks:
-			if fut.ready():
-				fut.get()
-			else:
-				pending.append(fut)
-		self._tasks = pending
-		return len(self._tasks)
-
-
-	def join(self):
-		self._pool.close()
-		self._pool.join()
-
-	def monitor_processes(self):
-		"""
-		"""
-		feeder = GraphiteFeeder(
-			AmpelConfig.get_config('resources.graphite.default')
-		)
-		stats = {'processes': self.process_count}
-
-		feeder.add_stats(stats, 't3.jobs')
-		feeder.send()
-
-		return stats
-
 def run(args):
 	"""Run tasks at configured intervals"""
-	T3Controller(args.jobs, args.skip_jobs, args.skip_units).run()
+	T3Controller(args.jobs, args.skip_jobs).run()
 
 # pylint: disable=bad-builtin
 def list_tasks(args):
@@ -188,9 +65,7 @@ def runjob(args):
 	job_config = T3JobConfig(**AmpelConfig.get_config('t3Jobs.{}'.format(args.job)))
 	if args.task is not None:
 		job_config.tasks = [t for t in job_config.tasks if t.task == args.task]
-	job = T3Job(job_config, full_console_logging=True, raise_exc=True,
-	    db_logging=args.update_run_col, update_events=args.update_run_col,
-	    update_tran_journal=args.update_tran_journal)
+	job = T3Job(job_config, full_console_logging=True, raise_exc=True)
 	job.run()
 
 def runtask(args):
@@ -226,7 +101,8 @@ def rununit(args):
 					}
 				},
 				"channels": {'anyOf': args.channels},
-				"withTags": "INST_ZTF",
+				"scienceRecords": [r.dict() for r in args.science_records],
+				"withTags": "SURVEY_ZTF",
 				"withoutTags": "HAS_ERROR"
 			},
 			"content": {
@@ -332,13 +208,10 @@ def main():
 	p = add_command(run)
 	p.add_argument('--jobs', nargs='+', default=None, help='run only these jobs')
 	p.add_argument('--skip-jobs', nargs='+', default=None, help='do not run these jobs')
-	p.add_argument('--skip-units', nargs='+', default=None, help='do not run tasks that use these units')
 
 	p = add_command(runjob)
 	p.add_argument('job')
 	p.add_argument('task', nargs='?')
-	p.add_argument('--no-update-run-col', dest='update_run_col', default=True, action="store_false", help="Record this run in the jobs collection")
-	p.add_argument('--no-update-tran-journal', dest='update_tran_journal', default=True, action="store_false", help="Record this run in the transient journal")
 
 	p = add_command(runtask)
 	p.add_argument('task')
@@ -356,8 +229,8 @@ def main():
 	    type=ScienceRecordMatchConfig.parse_raw,
 	    help="Filter based on transient records. The filter should be the JSON representation of a ScienceRecordMatchConfig")
 	p.add_argument('--chunk', type=int, default=200, help="Provide CHUNK transients at a time")
-	p.add_argument('--created', type=float, default=40, help="Select transients created in the last CREATED days")
-	p.add_argument('--modified', type=float, default=1, help="Select transients modified in the last MODIFIED days")
+	p.add_argument('--created', type=int, default=40, help="Select transients created in the last CREATED days")
+	p.add_argument('--modified', type=int, default=1, help="Select transients modified in the last MODIFIED days")
 
 	p = add_command(list_tasks, 'list')
 
@@ -382,7 +255,7 @@ def main():
 					name = option_strings[0].lstrip('-')
 					super(YesNoGroupAction, self).__init__(
 					    [
-					       '--' + name,
+					       name,
 					        '--no-' + name,
 					    ] + option_strings[1:],
 					    dest=(name.replace('-', '_') if dest is None else dest),
