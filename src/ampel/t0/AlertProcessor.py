@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 10.10.2017
-# Last Modified Date: 09.03.2019
+# Last Modified Date: 20.08.2019
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import pkg_resources, numpy as np
@@ -307,185 +307,223 @@ class AlertProcessor():
 		pre_run = time()
 
 		# Accepts and execute pymongo.operations
-		with DBUpdatesBuffer(run_id, self.logger).run_in_thread() as updates_buffer:
+		updates_buffer = DBUpdatesBuffer(self, run_id, self.logger)
+		self.cancel_run = False
 
-			chan_names = [chan.str_name for chan in self.t0_channels]
+		chan_names = [chan.str_name for chan in self.t0_channels]
 
-			# Process alerts
-			################
+		# Process alerts
+		################
 
-			self.logger.debug("#######     Processing alerts     #######")
+		self.logger.debug("#######     Processing alerts     #######")
 
-			# Iterate over alerts
-			for alert_content in self.input_setup.get_alert_supplier(alert_loader):
+		# Iterate over alerts
+		for alert_content in self.input_setup.get_alert_supplier(alert_loader):
 
-				# Associate upcoming log entries with the current transient id
-				tran_id = alert_content['tran_id']
-
-				# Create AmpelAlert instance
-				ampel_alert = AmpelAlert(
-					tran_id, alert_content['ro_pps'], alert_content['ro_uls']
+			if self.cancel_run:
+				print("Abording run() procedure")
+				# Flush loggers (possible Exceptions handled by method)
+				self.conclude_logging(
+					iter_count, db_logging_handler, 
+					full_console_logging
 				)
+				return
 
-				# Update cumul stats
-				pps_loaded += len(alert_content['pps'])
-				if alert_content['uls'] is not None:
-					uls_loaded += len(alert_content['uls'])
+			# Associate upcoming log entries with the current transient id
+			tran_id = alert_content['tran_id']
 
-				# stats
-				all_filters_start = time()
+			# Create AmpelAlert instance
+			ampel_alert = AmpelAlert(
+				tran_id, alert_content['ro_pps'], 
+				alert_content['ro_uls']
+			)
 
-				extra = {
-					'tranId': tran_id, 
-					'alertId': alert_content['alert_id']
-				}
+			# Update cumul stats
+			pps_loaded += len(alert_content['pps'])
+			if alert_content['uls'] is not None:
+				uls_loaded += len(alert_content['uls'])
 
-				# Loop through initialized channels
-				for i, channel in self.chan_enum:
+			# stats
+			all_filters_start = time()
 
-					try:
+			extra = {
+				'tranId': tran_id, 
+				'alertId': alert_content['alert_id']
+			}
 
-						# stats
-						per_filter_start = time()
+			# Loop through initialized channels
+			for i, channel in self.chan_enum:
 
-						# Apply filter (returns None in case of rejection or t2 runnable ids in case of match)
-						filter_results[i] = channel.filter_func(ampel_alert)
+				try:
 
-						# stats
-						dur_stats['filters'][channel.str_name][iter_count] = time() - per_filter_start
+					# stats
+					per_filter_start = time()
 
-						# Log minimal entry if channel did not log anything
-						if not channel.rec_buf_hdlr.buffer:
-							channel.logger.info(None, extra)
+					# Apply filter (returns None in case of rejection or t2 runnable ids in case of match)
+					filter_results[i] = channel.filter_func(ampel_alert)
 
-						# Filter rejected alert
-						if filter_results[i] is None:
+					# stats
+					dur_stats['filters'][channel.str_name][iter_count] = time() - per_filter_start
 
-							# "live" autocomplete activated for this channel
-							if self.live_ac and self.chan_auto_complete[i] and tran_id in tran_ids_before[i]:
+					# Log minimal entry if channel did not log anything
+					if not channel.rec_buf_hdlr.buffer:
+						channel.logger.info(None, extra)
 
-								# Main logger feedback
-								self.logger.info(None, 
-									extra={
-										**extra, 'channel': channel.name, 'autoComplete': True
-									}
-								)
+					# Filter rejected alert
+					if filter_results[i] is None:
 
-								# Update counter
-								count_stats['matches'][channel.str_name] += 1
+						# "live" autocomplete activated for this channel
+						if (
+							self.live_ac and 
+							self.chan_auto_complete[i] and 
+							tran_id in tran_ids_before[i]
+						):
 
-								# Use default t2 units as filter results
-								filter_results[i] = channel.t2_units
-						
-								# Rejected logs go to separate collection
-								channel.rec_buf_hdlr.forward(
-									channel.rejected_logger, extra={**extra, 'autoComplete': True}
-								)
-
-							else:
-
-								# Save possibly existing error to 'main' logs
-								if channel.rec_buf_hdlr.has_error:
-									channel.rec_buf_hdlr.copy(db_logging_handler, channel.name, extra)
-
-								# Save rejected logs to separate (channel specific) db collection
-								channel.rec_buf_hdlr.forward(channel.rejected_logger, extra=extra)
-
-						# Filter accepted alert
-						else:
+							# Main logger feedback
+							self.logger.info(None, 
+								extra={
+									**extra, 
+									'channel': channel.name, 
+									'autoComplete': True
+								}
+							)
 
 							# Update counter
 							count_stats['matches'][channel.str_name] += 1
 
-							# enables log concatenation across different loggers
-							if self.embed:
-								AmpelLogger.current_logger = None 
-								AmpelLogger.aggregation_ok = True
+							# Use default t2 units as filter results
+							filter_results[i] = channel.t2_units
+					
+							# Rejected logs go to separate collection
+							channel.rec_buf_hdlr.forward(
+								channel.rejected_logger, 
+								extra={**extra, 'autoComplete': True}
+							)
 
-							# Write log entries to main logger
-							channel.rec_buf_hdlr.forward(self.logger, channel.name, extra)
+						else:
 
-					# Unrecoverable errors
-					except (PyMongoError, AmpelLoggingError, DBUpdateError) as e:
-						print("%s: abording run() procedure" % e.__class__.__name__)
-						self.report_alertproc_exception(e, run_id, alert_content)
-						raise e
+							# Save possibly existing error to 'main' logs
+							if channel.rec_buf_hdlr.has_error:
+								channel.rec_buf_hdlr.copy(
+									db_logging_handler, channel.name, extra
+								)
 
-					# Tolerable errors
-					except Exception as e:
-				
-						channel.rec_buf_hdlr.forward(db_logging_handler, extra=extra)
-						self.report_alertproc_exception(
-							e, run_id, alert_content, include_photo=True,
-							extra={'section': 'filter', 'channel': channel.name}
+							# Save rejected logs to separate (channel specific) db collection
+							channel.rec_buf_hdlr.forward(
+								channel.rejected_logger, extra=extra
+							)
+
+					# Filter accepted alert
+					else:
+
+						# Update counter
+						count_stats['matches'][channel.str_name] += 1
+
+						# enables log concatenation across different loggers
+						if self.embed:
+							AmpelLogger.current_logger = None 
+							AmpelLogger.aggregation_ok = True
+
+						# Write log entries to main logger
+						channel.rec_buf_hdlr.forward(
+							self.logger, channel.name, extra
 						)
 
-						if raise_exc:
-							raise e
+				# Unrecoverable (logging related) errors
+				except (PyMongoError, AmpelLoggingError) as e:
+					print("%s: abording run() procedure" % e.__class__.__name__)
+					self.report_alertproc_exception(e, run_id, alert_content)
+					updates_buffer.push_updates() # try to push these
+					raise e
 
-				# time required for all filters
-				dur_stats['allFilters'][iter_count] = time() - all_filters_start
+				# Tolerable errors (could be an error from a contributed filter)
+				except Exception as e:
+			
+					channel.rec_buf_hdlr.forward(
+						db_logging_handler, extra=extra
+					)
 
-				if any(t2 is not None for t2 in filter_results):
+					self.report_alertproc_exception(
+						e, run_id, alert_content, include_photo=True,
+						extra={'section': 'filter', 'channel': channel.name}
+					)
 
-					# stats
-					ingested_count += 1
-
-					# TODO: build tran_id <-> alert_id map (replayability)
-					#processed_alert[tran_id]
-					try: 
-
-						ingester_start = time()
-
-						# Ingest alert
-						db_updates = ingester.ingest(
-							tran_id, alert_content['pps'], 
-							alert_content['uls'], 
-							filter_results
-						)
-
-						dur_stats['preIngestTime'].append(time()-ingester_start)
-						updates_buffer.add_updates(db_updates)
-
-					except AmpelLoggingError as e:
-						print("AmpelLoggingError: abording run() procedure")
-						self.report_alertproc_exception(e, run_id, alert_content, include_photo=False)
+					if raise_exc:
+						updates_buffer.push_updates() # try to push these
 						raise e
 
-					except DBUpdateError as e:
-						print("DBUpdateError: abording run() procedure")
-						# Flush loggers (possible Exceptions handled by method)
-						self.conclude_logging(iter_count, db_logging_handler, full_console_logging)
+			# time required for all filters
+			dur_stats['allFilters'][iter_count] = time() - all_filters_start
+
+			if any(t2 is not None for t2 in filter_results):
+
+				# stats
+				ingested_count += 1
+
+				# TODO: build tran_id <-> alert_id map (replayability)
+				#processed_alert[tran_id]
+				try: 
+
+					ingester_start = time()
+
+					# Ingest alert
+					db_updates = ingester.ingest(
+						tran_id, alert_content['pps'], 
+						alert_content['uls'], 
+						filter_results
+					)
+
+					dur_stats['preIngestTime'].append(time()-ingester_start)
+					updates_buffer.add_updates(db_updates)
+
+				except (PyMongoError, AmpelLoggingError) as e:
+
+					print("%s: abording run() procedure" % e.__class__.__name__)
+					self.report_alertproc_exception(
+						e, run_id, alert_content, 
+						include_photo=False
+					)
+					updates_buffer.push_updates() # try to push these
+					raise e
+
+				except Exception as e:
+
+					self.report_alertproc_exception(
+						e, run_id, alert_content, filter_results,
+						extra={'section': 'ingest'}, include_photo=False
+					)
+
+					if raise_exc:
+						updates_buffer.push_updates() # try to push these
 						raise e
+			else:
 
-					except Exception as e:
-						self.report_alertproc_exception(
-							e, run_id, alert_content, filter_results,
-							extra={'section': 'ingest'}, include_photo=False
-						)
-				else:
+				# If all channels reject this alert, no log entries goes into
+				# the main logs collection sinces those are redirected to Ampel_rej.
+				# So we add a notification manually. For that, we don't use self.logger 
+				# cause rejection messages were alreary logged into the console 
+				# by the StreamHandler in channel specific RecordsBufferingHandler instances. 
+				# So we address directly db_logging_handler, and for that, we create
+				# a LogRecord manually.
+				lr = LogRecord(None, INFO, None, None, None, None, None)
+				lr.extra = {
+					'tranId': tran_id,
+					'alertId': alert_content['alert_id'],
+					'allRejected': True,
+					'channels': chan_names
+				}
+				db_logging_handler.handle(lr)
 
-					# If all channels reject this alert, no log entries goes into
-					# the main logs collection sinces those are redirected to Ampel_rej.
-					# So we add a notification manually. For that, we don't use self.logger 
-					# cause rejection messages were alreary logged into the console 
-					# by the StreamHandler in channel specific RecordsBufferingHandler instances. 
-					# So we address directly db_logging_handler, and for that, we create
-					# a LogRecord manually.
-					lr = LogRecord(None, INFO, None, None, None, None, None)
-					lr.extra = {
-						'tranId': tran_id,
-						'alertId': alert_content['alert_id'],
-						'allRejected': True,
-						'channels': chan_names
-					}
-					db_logging_handler.handle(lr)
+			iter_count += 1
 
-				iter_count += 1
+			if iter_count == iter_max:
+				self.logger.info("Reached max number of iterations")
+				break
 
-				if iter_count == iter_max:
-					self.logger.info("Reached max number of iterations")
-					break
+			updates_buffer.ap_push_updates()
+
+		# Push all remaining DB updates
+		updates_buffer.push_updates()
 
 		# Save post run time
 		post_run = time()
@@ -596,6 +634,16 @@ class AlertProcessor():
 			
 		# Return number of processed alerts
 		return iter_count
+
+
+	def set_cancel_run(self):
+		"""
+		Cancels current processing of alerts
+		(when DB becomes unresponsive for example).
+		This is an indirect method because DB updates 
+		are pushed asyncronously (by threads)
+		"""
+		self.cancel_run = True
 
 
 	def conclude_logging(self, iter_count, db_logging_handler, full_console_logging):
