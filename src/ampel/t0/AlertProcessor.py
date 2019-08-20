@@ -28,10 +28,9 @@ from ampel.common.AmpelUtils import AmpelUtils
 from ampel.common.GraphiteFeeder import GraphiteFeeder
 from ampel.core.abstract.AbsSurveySetup import AbsSurveySetup
 from ampel.core.flags.LogRecordFlag import LogRecordFlag
-from ampel.core.flags.AlDocType import AlDocType
 from ampel.base.AmpelAlert import AmpelAlert
 
-class AlertProcessor():
+class AlertProcessor:
 	""" 
 	Class handling T0 pipeline operations.
 	For each alert, following tasks are performed:
