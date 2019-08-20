@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 13.01.2018
-# Last Modified Date: 20.02.2019
+# Last Modified Date: 20.08.2019
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from pkg_resources import iter_entry_points
@@ -35,8 +35,8 @@ class LightCurveLoader:
 		"""
 		self.logger = AmpelLogger.get_logger() if logger is None else logger
 		self.read_only = read_only
-		self.col_t2 = AmpelDB.get_collection("t2")
-		self.photo_col = AmpelDB.get_collection("t0")
+		self.col_t0 = AmpelDB.get_collection("t0")
+		self.col_t1 = AmpelDB.get_collection("t1")
 		self.rev_tags = {v: k for k, v in AmpelConfig._tags.items()}
 
 
@@ -64,7 +64,7 @@ class LightCurveLoader:
 
 		# TODO : provide list or cursor as func parameter ?
 		# T3 will have larger queries (including t3 results)
-		photo_cursor = self.photo_col.find({"tranId": tran_id})
+		cursor_t0 = self.col_t0.find({"tranId": tran_id})
 
 		# pymongo 'sequence' are always list
 		if type(compound_id) is list: 
@@ -75,40 +75,42 @@ class LightCurveLoader:
 			comp_hex = compound_id.hex()
 
 		# Retrieve compound document
-		blend_cursor = self.col_t2.find(match_crit)
+		cursor_t1 = self.col_t1.find(match_crit)
 
-		if blend_cursor.count() == 0:
+		if cursor_t1.count() == 0:
 			self.logger.warn(
 				"No compound found with the given doc id", 
 				extra={
 					'tranId': tran_id, 
-					'compId': compound_id
+					'docId': compound_id
 				}
 			)
 			return None
 
-		if photo_cursor.count() == 0:
-			self.logger.warn("Found no photo data", extra={'tranId': tran_id})
+		if cursor_t0.count() == 0:
+			self.logger.warn("No t0 data found", extra={'tranId': tran_id})
 			return None
 
 		self.logger.debug(
 			None, {
 				'tranId': tran_id, 
-				'compId': compound_id,
-				'nDoc': photo_cursor.count()
+				'docId': compound_id,
+				'nDoc': cursor_t0.count()
 			}
 		)
 
 		pps_list = []
 		uls_list = []
 
-		for el in photo_cursor:
+		for el in cursor_t0:
 			if el['_id'] > 0:
 				pps_list.append(el)
 			else:
 				uls_list.append(el)
 
-		return self.load_using_results(pps_list, uls_list, next(blend_cursor))
+		return self.load_using_results(
+			pps_list, uls_list, next(cursor_t1)
+		)
 
 
 	def load_using_results(self, ppd_list, uld_list, compound):
@@ -167,7 +169,7 @@ class LightCurveLoader:
 					)
 
 					# TODO: populate 'troubles collection'
-					cursor = self.photo_col.find({"_id": el['pp']})
+					cursor = self.col_t0.find({"_id": el['pp']})
 	
 					if (cursor.count()) == 0:
 						self.logger.error("PhotoPoint not found", extra={'pp': el['pp']})
@@ -273,7 +275,7 @@ class LightCurveLoader:
 						extra={'pp': pp_id}
 					)
 
-					cursor = self.photo_col.find({"_id": pp_id})
+					cursor = self.col_t0.find({"_id": pp_id})
 	
 					if (cursor.count()) == 0:
 						# TODO: populate 'troubles collection'
