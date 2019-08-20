@@ -4,11 +4,10 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 13.01.2018
-# Last Modified Date: 12.10.2018
+# Last Modified Date: 20.08.2019
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import collections, bson
-from ampel.core.flags.AlDocType import AlDocType
 from ampel.common.AmpelUtils import AmpelUtils
 from ampel.db.query.QueryMatchSchema import QueryMatchSchema
 
@@ -63,8 +62,10 @@ class QueryLatestCompound:
 
 		query = {
 			'tranId': tran_ids if type(tran_ids) in (str, int)
-				else {'$in': tran_ids if type(tran_ids) is list else list(tran_ids)},
-			'alDocType': AlDocType.COMPOUND
+			else {
+				'$in': tran_ids if type(tran_ids) is list 
+				else list(tran_ids)
+			}
 		}
 
 		if channels is not None:
@@ -183,10 +184,7 @@ class QueryLatestCompound:
 				"Type of tran_id must be a string or an int (multi tran_id queries not supported)"
 			)
 
-		query = {
-			'tranId': tran_id,
-			'alDocType': AlDocType.COMPOUND
-		}
+		query = {'tranId': tran_id}
 
 		if channels is not None:
 			QueryMatchSchema.apply_schema(
