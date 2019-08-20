@@ -20,7 +20,6 @@ from ampel.logging.DBLoggingHandler import DBLoggingHandler
 from ampel.logging.DBEventDoc import DBEventDoc
 from ampel.logging.AmpelLoggingError import AmpelLoggingError
 from ampel.db.AmpelDB import AmpelDB
-from ampel.db.DBUpdateError import DBUpdateError
 from ampel.config.AmpelConfig import AmpelConfig
 from ampel.config.channel.ChannelConfigLoader import ChannelConfigLoader
 from ampel.t0.ingest.DBUpdatesBuffer import DBUpdatesBuffer
@@ -212,7 +211,7 @@ class AlertProcessor():
 		:param LogRecordFlag run_type: LogRecordFlag.SCHEDULED_RUN or LogRecordFlag.MANUAL_RUN
 
 		:rtype: int
-		:raises: LogFlushingError, DBUpdateError, PyMongoError
+		:raises: LogFlushingError, PyMongoError
 		"""
 
 		# Save current time to later evaluate how low was the pipeline processing time
