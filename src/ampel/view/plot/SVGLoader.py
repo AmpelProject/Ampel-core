@@ -61,7 +61,7 @@ class SVGLoader:
 
 		if self._data_query is not None:
 
-			for el in AmpelDB.get_collection("photo").find(self._data_query._query):
+			for el in AmpelDB.get_collection("t0").find(self._data_query._query):
 				self._load_plots(
 					el['tranId'], 
 					self._data_query, el['plots']
@@ -69,7 +69,7 @@ class SVGLoader:
 
 		if self._t2_query is not None:
 
-			for el in AmpelDB.get_collection("blend").find(self._t2_query._query):
+			for el in AmpelDB.get_collection("t2").find(self._t2_query._query):
 				if 'results' not in el or not el['results']:
 					continue
 				if 'output' in el['results'][-1] and 'plots' in el['results'][-1]['output']:

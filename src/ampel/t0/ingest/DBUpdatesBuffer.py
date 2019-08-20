@@ -57,12 +57,14 @@ class DBUpdatesBuffer(Schedulable):
 		self.size = 0
 
 		self.metrics = {
-			'dbBulkTimePhoto': [],
-			'dbBulkTimeBlend': [],
-			'dbBulkTimeTran': [],
-			'dbPerOpMeanTimePhoto': [],
-			'dbPerOpMeanTimeBlend': [],
-			'dbPerOpMeanTimeTran': []
+			'dbBulkTimeT0': [],
+			'dbBulkTimeT1': [],
+			'dbBulkTimeT2': [],
+			'dbBulkTimeRegister': [],
+			'dbPerOpMeanTimeT0': [],
+			'dbPerOpMeanTimeT1': [],
+			'dbPerOpMeanTimeT2': [],
+			'dbPerOpMeanTimeRegister': []
 		}
 
 		if push_interval:

@@ -89,7 +89,7 @@ def test_db_prefix(mongod):
 			}
 		}
 		AmpelConfig.set_config(ConfigLoader.load_config(json.dumps(config)))
-		assert AmpelDB.get_collection('photo').database.name == 'Ampel_data'
+		assert AmpelDB.get_collection('t0').database.name == 'Ampel_data'
 		AmpelDB.reset()
 		# override default
 		config = {
@@ -104,7 +104,7 @@ def test_db_prefix(mongod):
 			}
 		}
 		AmpelConfig.set_config(ConfigLoader.load_config(json.dumps(config)))
-		assert AmpelDB.get_collection('photo').database.name == 'foo_data'
+		assert AmpelDB.get_collection('t0').database.name == 'foo_data'
 	finally:
 		AmpelConfig.reset()
 		AmpelDB.reset()

@@ -194,7 +194,7 @@ class T3Job(T3Event):
 		"""
 
 		query_res = next(
-			AmpelDB.get_collection('tran').aggregate(
+			AmpelDB.get_collection('register').aggregate(
 				[
 					{'$match': self._get_match_criteria()},
 					{"$unwind": "$channels"},

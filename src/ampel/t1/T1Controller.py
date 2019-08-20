@@ -40,7 +40,7 @@ class T1Controller(Schedulable):
 
 		# Shortcut
 		self.col_beacon = AmpelDB.get_collection('beacon')
-		self.col_tran = AmpelDB.get_collection('tran')
+		self.col_tran = AmpelDB.get_collection('register')
 
 		# Create t1Controller beacon doc if it does not exist yet
 		self.col_beacon.update_one(

@@ -91,8 +91,8 @@ class T2Executor:
 				}
 
 		# Shortcut
-		self.col_blend = AmpelDB.get_collection('blend')
-		self.col_tran = AmpelDB.get_collection('tran')
+		self.col_t2 = AmpelDB.get_collection('t2')
+		self.col_tran = AmpelDB.get_collection('register')
 
 		if update_beacon:
 		
@@ -151,7 +151,7 @@ class T2Executor:
 		while doc is not None:
 
 			# get t2 document (runState is usually TO_RUN or TO_RUN_PRIO)
-			doc = self.col_blend.find_one_and_update(
+			doc = self.col_t2.find_one_and_update(
 			    self.query, 
 				{
 					'$set': {
@@ -288,7 +288,7 @@ class T2Executor:
 				if isinstance(ret, T2RunStates):
 
 					self.logger.error("T2 unit returned %s" % ret)
-					self.col_blend.update_one(
+					self.col_t2.update_one(
 						{
 							"_id": t2_doc['_id']
 						},
@@ -311,7 +311,7 @@ class T2Executor:
 				else:
 
 					self.logger.debug("Saving dict returned by T2 unit")
-					self.col_blend.update_one(
+					self.col_t2.update_one(
 						{
 							"_id": t2_doc['_id']
 						},

@@ -564,7 +564,7 @@ class AlertProcessor:
 
 				# For ingest metrics
 				for time_metric in ('dbBulkTime', 'dbPerOpMeanTime'):
-					for col in ("Photo", "Blend", "Tran"):
+					for col in ("T0", "T1", "T2", "Register"):
 						key = time_metric+col
 						if updates_buffer.metrics[key]: 
 							dur_stats[key] = self.compute_stat(updates_buffer.metrics[key])
@@ -708,7 +708,7 @@ class AlertProcessor:
 		Otherwise, tran_ids_before[i] will be None
 		"""
 
-		col = AmpelDB.get_collection('tran')
+		col = AmpelDB.get_collection('register')
 		tran_ids = len(self.t0_channels) * [None]
 
 		# Loop through activated channels

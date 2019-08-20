@@ -45,9 +45,9 @@ class DBContentLoader:
 		self.logger = AmpelLogger.get_logger() if logger is None else logger
 		self.lcl = LightCurveLoader(logger=self.logger)
 		self.rev_tags = self.lcl.rev_tags # shortcut
-		self.tran_col = AmpelDB.get_collection("tran")
-		self.photo_col = AmpelDB.get_collection("photo")
-		self.blend_col = AmpelDB.get_collection("blend")
+		self.tran_col = AmpelDB.get_collection("register")
+		self.photo_col = AmpelDB.get_collection("t0")
+		self.col_t2 = AmpelDB.get_collection("t2")
 		self.ext_journal_col = AmpelDB.get_collection("journal")
 		self.verbose = verbose
 		self.debug = debug
@@ -151,7 +151,7 @@ class DBContentLoader:
 		
 				# Note: we use general_query on a single transient. T3Event works more efficiently: 
 				# it determines latest states for multiple transients and calls this method with those states.
-				latest_state_query = self.blend_col.aggregate(
+				latest_state_query = self.col_t2.aggregate(
 					QueryLatestCompound.general_query(tran_id)
 				)
 
@@ -196,7 +196,7 @@ class DBContentLoader:
 		)
 
 		# Execute DB query
-		blend_cursor = self.blend_col.find(search_params)
+		blend_cursor = self.col_t2.find(search_params)
 
 		# Robustness: check empty
 		res_count = blend_cursor.count()
