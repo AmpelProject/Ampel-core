@@ -4,11 +4,10 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 16.06.2018
-# Last Modified Date: 26.11.2018
+# Last Modified Date: 20.08.2019
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from ampel.config.AmpelConfig import AmpelConfig
-from ampel.core.flags.AlDocType import AlDocType
 
 class AmpelDB:
 	"""
@@ -22,17 +21,22 @@ class AmpelDB:
 	# 'col' None will be replaced by instance of pymongo.collection.Collection 
 	# the first time AmpelDB.get_collection(...) is called for a given collection
 	_ampel_cols = {
-		'tran': {
+		'register': {
 			'dbLabel': 'data',
 			'dbPrefix': _db_prefix,
 			'col': None
 		},
-		'photo': {
+		't0': {
 			'dbLabel': 'data',
 			'dbPrefix': _db_prefix,
 			'col': None
 		},
-		'blend': {
+		't1': {
+			'dbLabel': 'data',
+			'dbPrefix': _db_prefix,
+			'col': None
+		},
+		't2': {
 			'dbLabel': 'data',
 			'dbPrefix': _db_prefix,
 			'col': None
@@ -100,12 +104,15 @@ class AmpelDB:
 			d['dbPrefix'] = prefix
 			d['col'] = None
 
+
 	@classmethod
 	def reset(cls):
+		""" """
 		cls._db_prefix = None
 		cls._existing_mcs.clear()
 		for col_config in cls._ampel_cols.values():
 			col_config['col'] = None
+
 
 	@classmethod
 	def enable_rejected_collections(cls, channel_names):
@@ -197,7 +204,7 @@ class AmpelDB:
 	def create_indexes(db, col_name):
 		"""
 		The method will set indexes for collections with names: 
-		'tran', 'photo', 'blend', 'events', 'logs', 'troubles', ...
+		'register', 't0', 't1', 't2', 'events', 'logs', 'troubles', ...
 
 		:returns: None
 		"""
@@ -207,7 +214,7 @@ class AmpelDB:
 			(col_name, db.name)
 		)
 
-		if col_name == "tran":
+		if col_name == "register":
 
 			# For various indexed queries and live auto-complete *covered* queries
 			db[col_name].create_index(
@@ -218,28 +225,30 @@ class AmpelDB:
 				unique = True
 			)
 
-		elif col_name == "photo":
+		elif col_name == "t0":
 
 			db[col_name].create_index(
 				[('tranId', 1)]
 			)
 
-		elif col_name == "blend":
+		elif col_name == "t1":
+
+			db[col_name].create_index(
+				[('tranId', 1)]
+			)
+
+		elif col_name == "t2":
 
 			db[col_name].create_index(
 				[
-					('tranId', 1), 
-					('alDocType', 1), 
+					('tranId', 1),
 					('channels', 1)
 				]
 			)
 
 			# Create sparse runstate index
 			db[col_name].create_index(
-				[('runState', 1)],
-				partialFilterExpression = {
-					'alDocType': AlDocType.T2RECORD
-				}
+				[('runState', 1)]
 			)
 
 		elif col_name == "logs":
