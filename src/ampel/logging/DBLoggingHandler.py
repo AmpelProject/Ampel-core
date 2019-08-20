@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/logging/DBLoggingHandler.py
+# File              : Ampel-core/src/ampel/logging/DBLoggingHandler.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 14.12.2017
-# Last Modified Date: 24.02.2019
+# Last Modified Date: 16.08.2019
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import logging, struct, os, socket
@@ -241,7 +241,8 @@ class DBLoggingHandler(logging.Handler):
 		"""
 		# New instance of DBLoggingHandler with same parameters
 		dblh = DBLoggingHandler(
-			flags, self.col.name, self.level, self.aggregate_interval, self.flush_len
+			flags, self.col.name, self.level, 
+			self.aggregate_interval, self.flush_len
 		)
 
 		# Add runId from new instance to current instance
@@ -316,7 +317,8 @@ class DBLoggingHandler(logging.Handler):
 							upsert=True
 						)
 						for rec in self.headers
-					]
+					],
+					ordered=False
 				)
 				self.headers = None
 
