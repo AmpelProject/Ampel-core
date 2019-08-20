@@ -14,7 +14,6 @@ from logging import LogRecord, INFO
 from pymongo.errors import PyMongoError
 from ampel.logging.LoggingUtils import LoggingUtils
 from ampel.logging.T0ConsoleFormatter import T0ConsoleFormatter
-from ampel.logging.RecordsBufferingHandler import RecordsBufferingHandler
 from ampel.logging.LogsBufferingHandler import LogsBufferingHandler
 from ampel.logging.DBLoggingHandler import DBLoggingHandler
 from ampel.logging.DBEventDoc import DBEventDoc
