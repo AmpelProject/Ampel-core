@@ -524,7 +524,7 @@ class AlertProcessor():
 			updates_buffer.ap_push_updates()
 
 		# Push all remaining DB updates
-		updates_buffer.push_updates()
+		updates_buffer.close()
 
 		# Save post run time
 		post_run = time()

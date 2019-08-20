@@ -88,8 +88,9 @@ class DBUpdatesBuffer(Schedulable):
 		"""
 		:returns: None
 		"""
-		self.push_updates(force=true)
-		if thread_pool:
+		self.push_updates()
+
+		if self.thread_pool:
 			self.thread_pool.close()
 			self.thread_pool.join()
 
@@ -115,7 +116,7 @@ class DBUpdatesBuffer(Schedulable):
 		if time() - self.last_check() < self.push_interval:
 			return
 
-		self.push_updates(force=True)
+		self.push_updates()
 
 
 	def ap_push_updates(self):
@@ -132,7 +133,7 @@ class DBUpdatesBuffer(Schedulable):
 			self.last_check = time()
 			return
 
-		self.push_updates(force=True)
+		self.push_updates()
 
 
 	def push_updates(self):
