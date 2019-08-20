@@ -35,8 +35,8 @@ class LightCurveLoader:
 		"""
 		self.logger = AmpelLogger.get_logger() if logger is None else logger
 		self.read_only = read_only
-		self.blend_col = AmpelDB.get_collection("blend")
-		self.photo_col = AmpelDB.get_collection("photo")
+		self.col_t2 = AmpelDB.get_collection("t2")
+		self.photo_col = AmpelDB.get_collection("t0")
 		self.rev_tags = {v: k for k, v in AmpelConfig._tags.items()}
 
 
@@ -75,7 +75,7 @@ class LightCurveLoader:
 			comp_hex = compound_id.hex()
 
 		# Retrieve compound document
-		blend_cursor = self.blend_col.find(match_crit)
+		blend_cursor = self.col_t2.find(match_crit)
 
 		if blend_cursor.count() == 0:
 			self.logger.warn(

@@ -310,7 +310,7 @@ def ingested_transients(alert_generator, minimal_ingestion_config, caplog):
 	from ampel.db.AmpelDB import AmpelDB
 	from ampel.core.flags.AlDocType import AlDocType
 	
-	assert AmpelDB.get_collection('tran').find({}).count() == len(choices), "Transient docs exist for all ingested alerts"
+	assert AmpelDB.get_collection('register').find({}).count() == len(choices), "Transient docs exist for all ingested alerts"
 	assert max(num_pps) > 0, "At least 1 photopoint was ingested"
 	
 	return dict(choices)

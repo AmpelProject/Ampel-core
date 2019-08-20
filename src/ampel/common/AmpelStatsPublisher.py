@@ -4,8 +4,8 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 26.05.2018
-# Last Modified Date: 19.12.2018
-# Last Modified By  : Jakob van Santen <jakob.van.santen@desy.de>
+# Last Modified Date: 20.08.2019
+# Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import sys
 import json
@@ -16,7 +16,6 @@ from ampel.common.AmpelUtils import AmpelUtils
 from ampel.common.Schedulable import Schedulable
 from ampel.config.AmpelConfig import AmpelConfig
 from ampel.db.AmpelDB import AmpelDB
-from ampel.core.flags.AlDocType import AlDocType
 from ampel.core.flags.T2RunStates import T2RunStates
 
 class AmpelStatsPublisher(Schedulable):
@@ -29,15 +28,15 @@ class AmpelStatsPublisher(Schedulable):
 		"dbInfo.daemon.memRes": RAM usage
 		"dbInfo.daemon.connections": number of opened TCP connection
 
-	mongodb collection 'photo'
-		"dbInfo.photo.size": size 
-		"dbInfo.photo.storageSize": size on disk
-		"dbInfo.photo.totalIndexSize": index size
+	mongodb collection 't0'
+		"dbInfo.t0.size": size 
+		"dbInfo.t0.storageSize": size on disk
+		"dbInfo.t0.totalIndexSize": index size
 
-	mongodb collection 'blend'
-		"dbInfo.blend.size"
-		"dbInfo.blend.storageSize"
-		"dbInfo.blend.totalIndexSize"
+	mongodb collection 't2'
+		"dbInfo.t2.size"
+		"dbInfo.t2.storageSize"
+		"dbInfo.t2.totalIndexSize"
 
 	mongodb collection 'logs'
 		"dbInfo.logs.size"
@@ -46,11 +45,11 @@ class AmpelStatsPublisher(Schedulable):
 
 	number of documents in collections
 		"count.docs.troubles": 1
-		"count.docs.photo.pps": 84
-		"count.docs.photo.uls": 1583
-		"count.docs.blend.comps": 22
-		"count.docs.blend.t2s": 66
-		"count.docs.blend.trans": 22
+		"count.docs.t0": 1667
+		"count.docs.pps": 84
+		"count.docs.uls": 1583
+		"count.docs.t1": 22
+		"count.docs.t2": 66
 
 	Channel specific stats
 		"count.chans.HU_SN1": 0
@@ -122,16 +121,13 @@ class AmpelStatsPublisher(Schedulable):
 		self.publish_to = publish_to
 
 		# DB collection handles
-		self.col_tran = AmpelDB.get_collection("tran", "r")
-		self.col_photo = AmpelDB.get_collection("photo", "r")
-		self.col_blend = AmpelDB.get_collection("blend", "r")
+		self.col_tran = AmpelDB.get_collection("register", "r")
+		self.col_t0 = AmpelDB.get_collection("t0", "r")
+		self.col_t1 = AmpelDB.get_collection("t1", "r")
+		self.col_t2 = AmpelDB.get_collection("t2", "r")
 		self.col_events = AmpelDB.get_collection("events", "r")
 		self.col_logs = AmpelDB.get_collection("logs", "r")
 		self.col_troubles = AmpelDB.get_collection('troubles', "r")
-
-		# Projections
-		self.id_proj = {'_id': 1}
-		self.tran_proj = {'tranId': 1, '_id': 0}
 
 		# Optional import
 		if 'print' in publish_to:
@@ -254,14 +250,15 @@ class AmpelStatsPublisher(Schedulable):
 		# Stats from mongod running daemon (such as RAM usage)
 		if daemon:
 			stats_dict['dbInfo']['daemon'] = self.get_server_stats(
-				self.col_blend.database
+				self.col_t2.database
 			)
 
 		# Stats related to mongo collections (colstats)
 		if col_stats:
 			stats_dict['dbInfo']['tran'] = self.get_col_stats(self.col_tran)
-			stats_dict['dbInfo']['photo'] = self.get_col_stats(self.col_photo)
-			stats_dict['dbInfo']['blend'] = self.get_col_stats(self.col_blend)
+			stats_dict['dbInfo']['t0'] = self.get_col_stats(self.col_t0)
+			stats_dict['dbInfo']['t1'] = self.get_col_stats(self.col_t1)
+			stats_dict['dbInfo']['t2'] = self.get_col_stats(self.col_t2)
 			stats_dict['dbInfo']['logs'] = self.get_col_stats(self.col_logs)
 
 
@@ -272,67 +269,36 @@ class AmpelStatsPublisher(Schedulable):
 
 				'troubles': self.col_troubles.find({}).count(),
 
-				'tran': {
+				'tran': self.col_tran.find({}).count(),
 
-					'trans': self.col_tran.find(
-						{},
-						{'_id': 1}
-					).count()
-				},
+				't0': self.col_t0.find({}).count(),
 
-				'photo': {
+				'uls': self.col_t0.find(
+					{'_id': {"$lt" : 0}}
+				).count(),
 
-					'pps': self.col_photo.find(
-						{'_id': {"$gt" : 0}}, 
-						self.id_proj
-					).count(),
+				'pps': self.col_t0.find(
+					{'_id': {"$gt" : 0}}, 
+				).count(),
 
-					'uls': self.col_photo.find(
-						{'_id': {"$lt" : 0}}, 
-						self.id_proj
-					).count()
-				},
+				't1': self.col_t1.find({}).count(),
 
-				'blend': {
+				't2': self.col_t2.find({}).count(),
 
-					'comps': self.col_blend.find(
-						{
-							'tranId': {"$gt" : 1}, 
-							'alDocType': AlDocType.COMPOUND
+				't2States': {
+					T2RunStates(doc['_id']).name: doc['count'] \
+					for doc in self.col_t2.aggregate([
+						{'$match': {}},
+						{'$project':
+							{'runState': 1}
 						},
-						self.tran_proj
-					).count(),
-
-					't2s': self.col_blend.find(
-						{
-							'tranId': {"$gt" : 1}, 
-							'alDocType': AlDocType.T2RECORD
-						},
-						self.tran_proj
-					).count(),
-
-					't2_states': {
-						T2RunStates(doc['_id']).name: doc['count'] \
-						for doc in self.col_blend.aggregate([
-							{'$match':
-								{
-									'tranId': {"$gt" : 1},
-									'alDocType': AlDocType.T2RECORD
-								}
-							},
-							{'$project':
-								{
-									'runState': 1
-								}
-							},
-							{'$group':
-								{
-									'_id': '$runState',
-									'count': {'$sum': 1}
-								}
+						{'$group':
+							{
+								'_id': '$runState',
+								'count': {'$sum': 1}
 							}
-						])
-					}
+						}
+					])
 				}
 			}
 
@@ -499,10 +465,9 @@ class AmpelStatsPublisher(Schedulable):
 
 		if channel_name is None:
 
-			return self.col_tran.find(
-				{},
-				{'_id': 1}
-			).count()
+			return self.col_tran \
+				.find({}, {'_id': 1}) \
+				.count()
 
 		else:
 

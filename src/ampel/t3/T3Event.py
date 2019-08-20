@@ -90,7 +90,7 @@ class T3Event:
 		self.global_info = None
 		self.run_id = None
 		self.no_run = False
-		self.blend_col = AmpelDB.get_collection("blend")
+		self.col_t2 = AmpelDB.get_collection("t2")
 
 		if not db_logging:
 			if update_tran_journal:
@@ -255,7 +255,7 @@ class T3Event:
 		)
 
 		# Execute 'find transients' query
-		trans_cursor = AmpelDB.get_collection('tran').find(
+		trans_cursor = AmpelDB.get_collection('register').find(
 			match_query, {'_id':1}, # indexed query
 			no_cursor_timeout=True, # allow query to live for > 10 minutes
 		).hint('_id_1_channels_1')
@@ -296,7 +296,7 @@ class T3Event:
 
 				# ids for which the fast query cannot be used (results cast into set)
 				slow_ids = set(
-					el['tranId'] for el in self.blend_col.find(
+					el['tranId'] for el in self.col_t2.find(
 						{
 							'tranId': {
 								'$in': chunked_tran_ids
@@ -330,7 +330,7 @@ class T3Event:
 					# ]
 					state_ids.update(
 						[
-							el['_id'] for el in self.blend_col.aggregate(
+							el['_id'] for el in self.col_t2.aggregate(
 								QueryLatestCompound.fast_query(
 									slow_ids.symmetric_difference(chunked_tran_ids), 
 									channels=chan_logic
@@ -347,7 +347,7 @@ class T3Event:
 
 						# get latest state for single transients using general query
 						g_latest_state = next(
-							self.blend_col.aggregate(
+							self.col_t2.aggregate(
 								QueryLatestCompound.general_query(
 									tran_id, project={
 										'$project': {'_id':1}
