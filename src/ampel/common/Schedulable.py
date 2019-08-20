@@ -7,18 +7,20 @@
 # Last Modified Date: 18.12.2018
 # Last Modified By  : Jakob van Santen <jakob.van.santen@desy.de>
 
-import schedule, logging, time, threading, signal, contextlib
+import schedule, logging, time, threading, signal
+from contextlib import contextmanager
 from ampel.logging.AmpelLogger import AmpelLogger
 
 class Schedulable():
 	""" 
 	"""
 	logger = None
+
 	def __init__(self, start_callback=None, stop_callback=None):
 		"""
 		Optional arguments:
-		'start_callback': method to be executed before starting the run thread.
-		'stop_callback': method to be executed after run thread join().
+		:param start_callback: method to be executed before starting the run thread.
+		:param stop_callback: method to be executed after run thread join().
 		"""
 
 		logging.getLogger('schedule').propagate = False
@@ -38,6 +40,7 @@ class Schedulable():
 		# Create scheduler
 		self.scheduler = schedule.Scheduler()
 
+
 	def get_scheduler(self):
 		"""
 		Returns instance of schedule.Scheduler associated with this class instance
@@ -45,7 +48,8 @@ class Schedulable():
 
 		return self.scheduler
 
-	@contextlib.contextmanager
+
+	@contextmanager
 	def run_in_thread(self, logger=None):
 		"""
 		Executes method 'run()' in its own thread.
@@ -57,18 +61,24 @@ class Schedulable():
 		if self.start_callback is not None:
 			self.start_callback()
 
-		self.run_thread = threading.Thread(target=self.run, args=(logger,))
+		self.run_thread = threading.Thread(
+			target=self.run, args=(logger,)
+		)
+
 		self.run_thread.start()
 
 		try:
 			yield self
+
 		finally:
 			self._stop.set()
+
 			if hasattr(self, 'run_thread'):
 				self.run_thread.join()
 
 			if self.stop_callback is not None:
 				self.stop_callback()
+
 
 	def sig_exit(self, signum, frame):
 		"""
@@ -76,6 +86,7 @@ class Schedulable():
 		sig_exit() is executed when SIGTERM/SIGINT is caught.
 		"""
 		self._stop.set()
+
 
 	def run(self, logger=None):
 		"""
@@ -89,6 +100,7 @@ class Schedulable():
 				logger = self.logger
 			else:
 				logger = AmpelLogger.get_unique_logger()
+
 		logger.info("Starting scheduler loop")
 
 		while not self._stop.wait(1):
