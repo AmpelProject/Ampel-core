@@ -288,6 +288,7 @@ def test_entrypoint_rununit(testing_config, capsys):
 			created=-1,
 			modified=-1,
 			channels=['0', '1'],
+			science_records=None,
 			runconfig=None,
 			update_tran_journal=False,
 			update_run_col=False,
