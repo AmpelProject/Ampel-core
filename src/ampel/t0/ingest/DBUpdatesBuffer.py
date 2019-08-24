@@ -33,7 +33,7 @@ class DBUpdatesBuffer(Schedulable):
 		:param alert_processor: AlertProcessor instance
 		:param int run_id:
 		:param logger:
-		:type logger: :py:class:`AmpelLogger <ampel.pipeline.logging.AmpelLogger>` 
+		:type logger: :py:class:`AmpelLogger <ampel.logging.AmpelLogger>` 
 		:param int push_interval: in seconds
 		:param int autopush_size: 
 		"""

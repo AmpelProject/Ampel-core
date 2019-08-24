@@ -34,7 +34,7 @@ class ScienceRecordMatchConfig(AmpelModelExtension):
     @validator('runConfig')
     def validate_config(cls, v, values, config, field):
         configs = set()
-        for ep in pkg_resources.iter_entry_points('ampel.pipeline.t2.configs'):
+        for ep in pkg_resources.iter_entry_points('ampel.t2.configs'):
             for config in ep.resolve()().values():
                 if config['t2Unit'] == values['unitId']:
                     configs.add(config['runConfig'])

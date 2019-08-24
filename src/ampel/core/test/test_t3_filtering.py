@@ -91,7 +91,7 @@ def test_transient_data_filter(transients, mocker):
             'docs': ['T2RECORD']
         }
     }
-    add = mocker.patch('ampel.pipeline.t3.T3PlaceboUnit.T3PlaceboUnit.add')
+    add = mocker.patch('ampel.t3.T3PlaceboUnit.T3PlaceboUnit.add')
     task = T3Task(
         T3TaskConfig(task='foo', unitId='T3PlaceboUnit', transients=tran_config),
         logger=AmpelLogger.get_logger(), db_logging=False,

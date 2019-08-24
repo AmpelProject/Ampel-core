@@ -45,7 +45,7 @@ class AmpelArgumentParser(ArgumentParser):
 			return
 
 		entry = next(
-			pkg_resources.iter_entry_points('ampel.pipeline.resources', name), 
+			pkg_resources.iter_entry_points('ampel.resources', name), 
 			None
 		)
 

@@ -54,8 +54,8 @@ class T3Event:
 		- update_events=False (no update to the events collection)
 		- raise_exc=True (troubles collection will not be populated if an exception occurs)
 
-		:param config: instance of :obj:`T3JobConfig <ampel.pipeline.config.t3.T3JobConfig>` \
-		or :obj:`T3TaskConfig <ampel.pipeline.config.t3.T3JobConfig>`
+		:param config: instance of :obj:`T3JobConfig <ampel.config.t3.T3JobConfig>` \
+		or :obj:`T3TaskConfig <ampel.config.t3.T3JobConfig>`
 
 		:param AmpelLogger logger:\n
 			- If None, a new logger associated with a DBLoggingHandler will be created, \
@@ -64,7 +64,7 @@ class T3Event:
 				- that it will NOT be changed in any way in particular, \
 				  no DBLoggingHandler will be added so that no DB logging will occur.
 				- it must be an AmpelLogger (or you could implement the method `shout` to your own logger)
-		:type logger: :py:class:`AmpelLogger <ampel.pipeline.logging.AmpelLogger>`
+		:type logger: :py:class:`AmpelLogger <ampel.logging.AmpelLogger>`
 
 		:param bool full_console_logging: If False, the logging level of the streamhandler \
 		associated with the logger will be set to WARN.
@@ -345,7 +345,7 @@ class T3Event:
 					for tran_id in slow_ids:
 
 						# get latest state for single transients using general query
-						g_latest_state = next(
+						latest_state = next(
 							self.col_t1.aggregate(
 								QueryLatestCompound.general_query(
 									tran_id, project={
@@ -357,7 +357,7 @@ class T3Event:
 						)
 
 						# Robustness
-						if g_latest_state is None:
+						if latest_state is None:
 							# TODO: add error flag to transient doc ?
 							# TODO: add error flag to event doc
 							# TODO: add doc to Ampel_troubles
@@ -367,7 +367,7 @@ class T3Event:
 							)
 							continue
 
-						state_ids.add(g_latest_state['_id'])
+						state_ids.add(latest_state['_id'])
 
 
 			# Load ampel TransientData instances with given states
@@ -401,7 +401,7 @@ class T3Event:
 	):
 		"""
 		:param transients: TransientData instances
-		:type transients: iterable(:py:class:`TransientData <ampel.pipeline.t3.TransientData>`)
+		:type transients: iterable(:py:class:`TransientData <ampel.t3.TransientData>`)
 
 		:rtype: tuple(:py:class:`TransientView <ampel.base.TransientView>`)
 		"""

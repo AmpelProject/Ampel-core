@@ -50,7 +50,7 @@ class AmpelConfig:
 	def load_defaults(cls, ignore_unavailable_units=None):
 		"""
 		:param set(str) ignore_unavailable_units: combination of "t0", "t2", "t3". See 
-		:func:`ignore_unavailable_units <ampel.pipeline.config.AmpelConfig.ignore_unavailable_units>`
+		:func:`ignore_unavailable_units <ampel.config.AmpelConfig.ignore_unavailable_units>`
 		docstring
 		"""
 		if ignore_unavailable_units:
@@ -73,7 +73,7 @@ class AmpelConfig:
 			for ell in el[1]
 		}
 
-		for el in iter_entry_points('ampel.pipeline.sources'):
+		for el in iter_entry_points('ampel.sources'):
 			SurveySetup = el.load()
 			for el in SurveySetup.get_tags():
 				d[el] = DBUtils.b2_hash(el)
@@ -107,7 +107,7 @@ class AmpelConfig:
 	@classmethod
 	def decrypt_config(cls, enc_dict):
 		""" 
-		See ampel.pipeline.config.EncryptedConfig for more info
+		See ampel.config.EncryptedConfig for more info
 		:raises: ValueError if decryption fails
 		:returns: string
 		"""

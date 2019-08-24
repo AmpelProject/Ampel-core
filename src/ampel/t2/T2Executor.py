@@ -460,7 +460,7 @@ class T2Executor:
 
 		resource = next(
 			pkg_resources.iter_entry_points(
-				'ampel.pipeline.t2.units', unit_name
+				'ampel.t2.units', unit_name
 			), 
 			None
 		)

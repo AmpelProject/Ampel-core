@@ -34,7 +34,7 @@ def test_override_mongo():
 	import pkg_resources
 	from configargparse import ArgumentParser
 	
-	entry = next(pkg_resources.iter_entry_points('ampel.pipeline.resources', 'mongo'), None)
+	entry = next(pkg_resources.iter_entry_points('ampel.resources', 'mongo'), None)
 	if entry is None:
 		raise NameError("Resource {} is not defined".format(name))
 	resource = entry.resolve()
@@ -58,7 +58,7 @@ def test_override_graphite():
 	import pkg_resources
 	from configargparse import ArgumentParser
 	
-	entry = next(pkg_resources.iter_entry_points('ampel.pipeline.resources', 'graphite'), None)
+	entry = next(pkg_resources.iter_entry_points('ampel.resources', 'graphite'), None)
 	if entry is None:
 		raise NameError("Resource {} is not defined".format(name))
 	resource = entry.resolve()

@@ -38,7 +38,7 @@ class AmpelUnitLoader:
 	def get_class(cls, tier, unit_name, logger=None, raise_exc=False):
 		"""
 		Retrieve and return unit class registered at entry point 
-		ampel.pipeline.t%is.units where %i can be 0, 2 or 3
+		ampel.t%is.units where %i can be 0, 2 or 3
 
 		:param int tier: 0, 2 or 3
 		:param str unit_name: unit name 
@@ -59,7 +59,7 @@ class AmpelUnitLoader:
 		# Load resource
 		resource = next(
 			pkg_resources.iter_entry_points(
-				'ampel.pipeline.t%s.units' % tier, 
+				'ampel.t%s.units' % tier, 
 				unit_name
 			),
 			None

@@ -23,10 +23,10 @@ class AlertProcessorUtils:
 		extension="*.avro", serialization="avro", max_entries=None
 	):
 		"""
-		Process alerts in a given directory (using ampel.pipeline.t0.AlertFileList)
+		Process alerts in a given directory (using ampel.t0.AlertFileList)
 
 		Parameters:
-		:param ampel.pipeline.t0.AlertProcessor alert_processor: alert processor instance
+		:param ampel.t0.AlertProcessor alert_processor: alert processor instance
 		:param str base_dir: input directory where alerts are stored
 		:param str extension: extension of alert files (default: *.avro. Alternative: *.json)
 		:param max_entries: limit number of files loaded 

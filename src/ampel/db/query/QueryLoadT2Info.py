@@ -31,7 +31,7 @@ class QueryLoadT2Info:
 
 		:type channels: str, dict
 		:param channels: string (one channel only) or a dict \
-		(see :obj:`QueryMatchSchema <ampel.pipeline.db.query.QueryMatchSchema>` \
+		(see :obj:`QueryMatchSchema <ampel.db.query.QueryMatchSchema>` \
 		for syntax details). None (no criterium) means all channels are considered. 
 
 		:type t2_subsel: str or List[str]
