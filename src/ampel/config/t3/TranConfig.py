@@ -25,13 +25,43 @@ class TranConfig(AmpelModelExtension):
 	    		"created": {"after": {"use": "$timeDelta", "arguments": {"days": -40}}},
 	    		"modified": {"after": {"use": "$timeDelta", "arguments": {"days": -1}}},
 	    		"channels": "HU_GP_CLEAN",
-				"withTags": "INST_ZTF",
+				"withTags": "SURVEY_ZTF",
 	    		"withoutTags": "HAS_ERROR"
 			},
 			"state": "$latest",
 			"content": {
-				"docs": ["TRANSIENT", "COMPOUND", "PHOTOPOINT", "UPPERLIMIT", "T2RECORD"],
+				"docs": [
+					"TRANSIENT",
+					"COMPOUND",
+					"DATAPOINT",
+					"T2RECORD",
+					{
+						col: "t2",
+						query: {
+							'unitId': 'T2SNCOSMO',
+							'docId': '#latestDefault'
+						}
+					},
+					"#LATEST_T2RECORD"
+				],
 				"t2SubSelection": ["SNCOSMO", "CATALOGMATCH"]
+			}
+		}
+
+		whereby "#latestDefault" is defined in the AmpelConfig aliases as:
+		'alias': {
+			't3': {
+				'docs': {
+					'#latestDefault': {
+						'unitId': 'QueryLatestCompound'
+					},
+					"#LATEST_T2RECORD": {
+						col: "t2",
+						query: {
+							'docId': '#latestDefault'
+						}
+					}
+				}
 			}
 		}
 	}
