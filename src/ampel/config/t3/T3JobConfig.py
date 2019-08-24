@@ -96,7 +96,9 @@ class T3JobConfig(AmpelModelExtension):
 			# Copy entire 'transients' value if missing
 			if task_config.get('transients') is None:
 				# json.loads(json.dumps) is 2x faster than copy.deepcopy
-				task_config['transients'] = json.loads(json.dumps(values['transients'].dict()))
+				task_config['transients'] = json.loads(
+					json.dumps(values['transients'].dict())
+				)
 				continue
 
 			# Copy state value if missing
@@ -160,12 +162,14 @@ class T3JobConfig(AmpelModelExtension):
 
 			# State
 			T3JobConfig.validate_task_state(
-				job_state, task_config.transients.state
+				job_state, 
+				task_config.transients.state
 			)
 
 			# docs, t2SubSelection
 			T3JobConfig.validate_content_sub_selection(
-				values["transients"], task_config.transients
+				values["transients"], 
+				task_config.transients
 			)
 
 			# We do not validate withTags withoutTags 
@@ -269,8 +273,8 @@ class T3JobConfig(AmpelModelExtension):
 
 		In the following: 
 		* 'a' and 'b' are channel names
-		* Task channels means attribute 'channels' defined in the task config
-		* Job channels means attribute 'channels' defined in the job config
+		* Task channels refers to the attribute 'channels' defined in the task config
+		* Job channels refers to the attribute 'channels' defined in the job config
 
 		=x=>   means forbidden (arrow with cross)
 		===>   means ok
@@ -413,7 +417,6 @@ class T3JobConfig(AmpelModelExtension):
 				header="T3 Task transients->content->docs error",
 				msg="Invalid task 'docs' sub-selection (no subset of job selection)\n" + 
 				"Offending value: %s" % task_tran_config.content.docs
-
 			)
 
 		# Forbidden: no-subset
