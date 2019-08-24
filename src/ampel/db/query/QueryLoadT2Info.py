@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/db/query/QueryLoadTransientInfo.py
+# File              : ampel/db/query/QueryLoadT2Info.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 14.02.2018
-# Last Modified Date: 12.05.2019
+# Last Modified Date: 20.08.2019
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from bson.binary import Binary
@@ -14,15 +14,14 @@ from ampel.common.AmpelUtils import AmpelUtils
 from ampel.db.query.QueryMatchSchema import QueryMatchSchema
 from ampel.db.query.QueryUtils import QueryUtils
 
-class QueryLoadTransientInfo:
+class QueryLoadT2Info:
 	"""
 	"""
 
 	@classmethod
-	def build_stateless_query(cls, tran_ids, docs, channels=None, t2_subsel=None):
+	def build_stateless_query(cls, tran_ids, channels=None, t2_subsel=None):
 		"""
-		| Builds a pymongo query aiming at loading transient docs (t2s, coumpounds)\
-		(not including photpoints/upper limits/transient doc which are in a separate collection). 
+		| Builds a pymongo query aiming at loading transient t2 or compounds docs \
 		| Stateless query: all avail compounds and t2docs (although possibly \
 		constrained by parameter t2_subsel) are targeted.
 
@@ -34,9 +33,6 @@ class QueryLoadTransientInfo:
 		:param channels: string (one channel only) or a dict \
 		(see :obj:`QueryMatchSchema <ampel.pipeline.db.query.QueryMatchSchema>` \
 		for syntax details). None (no criterium) means all channels are considered. 
-
-		:param List[AlDocType] docs: list of AlDocType enum members. \
-		AlDocType.PHOTOPOINT and AlDocType.UPPERLIMIT will be ignored (separate collection).
 
 		:type t2_subsel: str or List[str]
 		:param t2_subsel: optional sub-selection of t2 results based on t2 unit id(s). \
@@ -51,48 +47,46 @@ class QueryLoadTransientInfo:
 
 		query = cls.create_broad_query(tran_ids, channels)
 
-		if AlDocType.COMPOUND in docs:
-			
-			if t2_subsel:
-				query['$or'] = [
-					{'alDocType': AlDocType.COMPOUND},
-					{
-						'alDocType': AlDocType.T2RECORD,
-						't2UnitId': \
-							t2_subsel if type(t2_subsel) is str \
-							else QueryUtils.match_array(t2_subsel)
-					}
-				]
+		if t2_subsel:
+			query['t2UnitId'] = t2_subsel if type(t2_subsel) is str \
+			else QueryUtils.match_array(t2_subsel)
 
-			elif AlDocType.T2RECORD in docs:
-				query['alDocType'] = {
-					'$in': [AlDocType.COMPOUND, AlDocType.T2RECORD]
-				}
-			else:
-				query['alDocType'] = AlDocType.COMPOUND
-
-		else:
-
-			if AlDocType.T2RECORD in docs or t2_subsel:
-				query['alDocType'] = AlDocType.T2RECORD
-				if t2_subsel:
-					query['t2UnitId'] = \
-						t2_subsel if type(t2_subsel) is str \
-						else QueryUtils.match_array(t2_subsel)
-
-		# return query matching criteria
 		return query
 
 
 	@classmethod
-	def build_statebound_query(
-		cls, tran_ids, docs, states, channels=None, t2_subsel=None, comp_already_loaded=False
-	):
+	def build_statebound_t1_query(cls, states):
+		"""
+		"""
+		return {
+			'_id': cls.get_compound_match(states)
+		}
+
+
+	@classmethod
+	def build_statebound_t2_query(cls, tran_ids, states, channels=None, t2_subsel=None):
 		"""
 		See :func:`build_stateless_query <build_stateless_query>` docstring
 		"""
 
 		query = cls.create_broad_query(tran_ids, channels)
+
+		t2_match = {
+			'docId': cls.get_compound_match(states)
+		}
+
+		if t2_subsel:
+			t2_match['t2UnitId'] = t2_subsel if type(t2_subsel) is str \
+			else QueryUtils.match_array(t2_subsel)
+
+		return query
+
+
+	@staticmethod
+	def get_compound_match(states):
+		"""
+		:returns: dict
+		"""
 
 		# Check if correct state(s) was provided
 		type_state = type(states)
@@ -150,42 +144,7 @@ class QueryLoadTransientInfo:
 				"Type of provided state (%s) must be bytes, str, or sequences of these " % type(states)
 			)
 
-		# build query with 'or' connected search criteria
-		or_list = []
-
-		if AlDocType.COMPOUND in docs and comp_already_loaded is False:
-
-			or_list.append(
-				{
-					# no need to specify alDocType: AlDocType.COMPOUND
-					'_id': match_comp_ids	
-				}
-			)
-
-		if AlDocType.T2RECORD in docs:
-
-			t2_match = {
-				'alDocType': AlDocType.T2RECORD, 
-				'docId': match_comp_ids
-			}
-
-			if t2_subsel:
-				t2_match['t2UnitId'] = \
-					t2_subsel if type(t2_subsel) is str \
-					else QueryUtils.match_array(t2_subsel)
-
-			or_list.append(t2_match)
-
-		# If only 1 '$or' criteria was generated, then 
-		# just add this criteria to the root dict ('and' connected with tranId: ...)
-		if len(or_list) == 1:
-			el = or_list[0]
-			for key in el.keys():
-				query[key] = el[key]
-		else:
-			query['$or'] = or_list
-
-		return query
+		return match_comp_ids
 
 
 	@staticmethod
