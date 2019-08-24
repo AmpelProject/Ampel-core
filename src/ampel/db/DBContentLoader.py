@@ -25,7 +25,7 @@ from ampel.common.AmpelUtils import AmpelUtils
 from ampel.db.AmpelDB import AmpelDB
 from ampel.db.LightCurveLoader import LightCurveLoader
 from ampel.db.query.QueryLatestCompound import QueryLatestCompound
-from ampel.db.query.QueryLoadTransientInfo import QueryLoadTransientInfo
+from ampel.db.query.QueryLoadT2Info import QueryLoadT2Info
 from ampel.t3.TransientData import TransientData
 from ampel.config.AmpelConfig import AmpelConfig
 from ampel.config.t3.LogicSchemaUtils import LogicSchemaUtils
@@ -45,14 +45,13 @@ class DBContentLoader:
 		self.logger = AmpelLogger.get_logger() if logger is None else logger
 		self.lcl = LightCurveLoader(logger=self.logger)
 		self.rev_tags = self.lcl.rev_tags # shortcut
-		self.tran_col = AmpelDB.get_collection("register")
-		self.photo_col = AmpelDB.get_collection("t0")
+		self.col_tran = AmpelDB.get_collection("register")
+		self.col_t0 = AmpelDB.get_collection("t0")
+		self.col_t1 = AmpelDB.get_collection("t1")
 		self.col_t2 = AmpelDB.get_collection("t2")
 		self.ext_journal_col = AmpelDB.get_collection("journal")
 		self.verbose = verbose
 		self.debug = debug
-		self.al_pps = {}
-		self.lc = {}
 
 		if self.debug:
 			self.verbose = True
@@ -83,24 +82,24 @@ class DBContentLoader:
 			- 16 bytes (128 bits)
 			- a bson.binary.Binary instance with subtype 5
 
-		:param list(AlDocType) docs: list of AlDocType enum members:
+		:param List[AlDocType] docs: list of AlDocType enum members:
 
-		  * AlDocType.TRANSIENT: 
+		  * TRANSIENT: 
 			| -> Add info from DB doc to the returned TransientData instance
 			| -> For example: channels, tags (has processing errors), 
 			   latest photopoint observation date, ...
 
-		  * AlDocType.PHOTOPOINT: 
+		  * PHOTOPOINT: 
 			| -> load *all* photopoints avail for this transient (regardless of provided state)
 			| -> The transient will contain a list of ampel.base.PlainPhotoPoint instances 
-			| -> (PlainPhotoPoint (unlike PhotoPoint) instances come without policy)
+			| -> (PlainPhotoPoint, unlike PhotoPoint, instances come without policy)
 
-		  * AlDocType.UPPERLIMIT: 
+		  * UPPERLIMIT: 
 			| -> load *all* upper limits avail for this transient (regardless of provided state)
 			| -> The transient will contain a list of ampel.base.PlainUpperLimit instances 
-			| -> (PlainUpperLimit (unlike UpperLimit) instances come without policy)
+			| -> (PlainUpperLimit, unlike UpperLimit, instances come without policy)
 
-		  * AlDocType.COMPOUND: 
+		  * COMPOUND: 
 			| -> ampel.base.LightCurve instances are created based on DB documents 
 			   (with alDocType AlDocType.COMPOUND)
 			| -> if 'state' is '$latest' or a state id (md5 bytes) is provided, 
@@ -108,7 +107,7 @@ class DBContentLoader:
 			   if 'state' is '$all', all available lightcurves are created.
 			| -> the lightcurve instance(s) will be associated with the returned TransientData instance
 
-		  * AlDocType.T2RECORD: 
+		  * T2RECORD: 
 			...
 
 		:type t2_subsel: str, list(str)
@@ -126,136 +125,139 @@ class DBContentLoader:
 		if not docs:
 			raise ValueError("Invalid 'docs' parameter")
 
-		extra={'tranId': tran_id}
+		extra = {'tranId': tran_id}
+		db_docs = {}
 
-		# Option 2: Load a user provided state(s)
-		if states is not None:
+		if AlDocType.T2RECORD in docs or AlDocType.COMPOUND in docs:
 
-			# Feedback
-			self.logger.info("Retrieving docs associated with provided state(s)")
-
-			# Build query parameters (will return adequate number of docs)
-			search_params = QueryLoadTransientInfo.build_statebound_query(
-				tran_id, docs, states, channels, t2_subsel
-			)
-
-		else:
-
-			# Option 2: Find latest state, then update search query parameters
-			if state_op == "$latest":
-	
-				if type(tran_id) in (list, tuple):
-					raise ValueError(
-						"Querying multiple transients is not supported with state_op '$latest'"
-					)
-		
-				# Note: we use general_query on a single transient. T3Event works more efficiently: 
-				# it determines latest states for multiple transients and calls this method with those states.
-				latest_state_query = self.col_t2.aggregate(
-					QueryLatestCompound.general_query(tran_id)
-				)
+			# Option 1: Load a t2s for user provided state(s)
+			if states is not None:
 
 				# Feedback
-				self.logger.debug(
-					"Determining latest state", extra={
-						'tranId': tran_id,
-						'query': LoggingUtils.safe_query_dict(
-							latest_state_query, dict_key=None
+				self.logger.info(
+					"Retrieving docs associated with provided state%s" %
+					"s" if len(states) > 1 else ""
+				)
+
+				if AlDocType.T2RECORD in docs:
+
+					# Build query
+					t2_query = QueryLoadT2Info.build_statebound_query(
+						tran_id, states, channels, t2_subsel
+					)
+
+			else:
+
+				# Option 2: Find latest state, then update search query parameters
+				if state_op == "$latest":
+		
+					if type(tran_id) in (list, tuple):
+						raise ValueError(
+							"Querying multiple transients is not supported with state_op '$latest'"
 						)
-					}
-				)
-	
-				# Execute DB query 
-				d_latest_compound = next(latest_state_query, None)
-	
-				if d_latest_compound is None:
-					self.logger.info("Transient not found", extra=extra)
-					return None
-	
-				# Build query parameters (will return adequate number of docs)
-				search_params = QueryLoadTransientInfo.build_statebound_query(
-					tran_id, docs, d_latest_compound["_id"], 
-					channels, t2_subsel, comp_already_loaded=True
-				)
-	
-			# Option 3: Load every available transient state
-			elif state_op == "$all":
-	
-				# Build query parameters (will return adequate number of docs)
-				self.logger.debug("State operator: $all")
-				search_params = QueryLoadTransientInfo.build_stateless_query(
-					tran_id, docs, channels, t2_subsel
-				)
+			
+					# Note: we use general_query on a single transient. T3Event works more efficiently: 
+					# it determines latest states for multiple transients and calls this method with those states.
+					latest_state_query = QueryLatestCompound.general_query(tran_id)
 
-		# Record query
-		self.logger.debug(
-			None, extra={
-				'tranId': tran_id,
-				'query': LoggingUtils.safe_query_dict(search_params, dict_key=None)
-			}
-		)
+					# Feedback
+					self.logger.debug(
+						"Determining latest state", extra={
+							'tranId': tran_id,
+							'query': LoggingUtils.safe_query_dict(
+								latest_state_query, dict_key=None
+							)
+						}
+					)
 
-		# Execute DB query
-		blend_cursor = self.col_t2.find(search_params)
+					latest_state_result = self.col_t1.aggregate(
+						latest_state_query
+					)
+		
+					# Execute DB query 
+					latest_compound = next(latest_state_result, None)
+		
+					if latest_compound is not None:
+	
+						if AlDocType.T2RECORD in docs:
 
-		# Robustness: check empty
-		res_count = blend_cursor.count()
-		if res_count == 0:
-			self.logger.warn("No db document found", extra=extra)
-			return None
+							# Build query parameters (will return adequate number of docs)
+							t2_query = QueryLoadT2Info.build_statebound_query(
+								tran_id, latest_compound["_id"], channels, t2_subsel
+							)
 
-		# Effectively perform DB query (by casting cursor to list)
-		blend_list = list(blend_cursor)
+						if AlDocType.COMPOUND in docs:
+							db_docs['t1'] = [latest_compound]
+		
+				# Option 3: Load t2s for every available transient state
+				elif state_op == "$all":
+		
+					# Build query parameters (will return adequate number of docs)
+					self.logger.debug("State operator: $all")
+					t2_query = QueryLoadT2Info.build_stateless_query(
+						tran_id, channels, t2_subsel
+					)
+
+			# Record query
+			self.logger.debug(
+				None, extra={
+					'tranId': tran_id,
+					'query': LoggingUtils.safe_query_dict(t2_query, dict_key=None)
+				}
+			)
+
+			# Execute DB query
+			db_docs['t2'] = list(
+				self.col_t2.find(t2_query)
+			)
+
 		lookup_id = {'$in': tran_id} if type(tran_id) in (list, tuple) else tran_id
-		photo_list = None
-		tran_list = None
-		ext_jour_list = None
 
 		# Photo DB query 
 		if AlDocType.PHOTOPOINT in docs and AlDocType.UPPERLIMIT in docs:
-			photo_list = list(self.photo_col.find({'tranId': lookup_id}))
+			db_docs['t0'] = list(self.col_t0.find({'tranId': lookup_id}))
 
 		else:
 
 			if AlDocType.PHOTOPOINT in docs:
-				photo_list = list(
-					self.photo_col.find({'_id': {'$gt': 0}, 'tranId': lookup_id})
+				db_docs['t0'] = list(
+					self.col_t0.find({'_id': {'$gt': 0}, 'tranId': lookup_id})
 				)
 
 			if AlDocType.UPPERLIMIT in docs:
-				photo_list = list(
-					self.photo_col.find({'_id': {'$lt': 0}, 'tranId': lookup_id})
+				db_docs['t0'] = list(
+					self.col_t0.find({'_id': {'$lt': 0}, 'tranId': lookup_id})
 				)
 
 		if AlDocType.TRANSIENT in docs:
-			ext_jour_list = list(self.ext_journal_col.find({'_id': lookup_id}))
-			tran_list = list(self.tran_col.find({'_id': lookup_id}))
+			db_docs['ext_journal'] = list(self.ext_journal_col.find({'_id': lookup_id}))
+			list_tran = list(self.col_tran.find({'_id': lookup_id}))
 
-		feedback = "Fetched docs: blend: " + str(len(blend_list))
-		if photo_list: feedback += ", photo: " + str(len(photo_list))
-		if tran_list: feedback += ", tran: " + str(len(tran_list))
-		if ext_jour_list: feedback += ", ext journal: " + str(len(ext_jour_list))
-
-		if photo_list and not TransientData.data_access_controllers:
+		if 't0' in db_docs and not TransientData.data_access_controllers:
 			for el in iter_entry_points('ampel.pipeline.sources'):
 				TransientData.add_data_access_controller(
 					el.load().get_data_access_controller()
 				)
 
-		self.logger.info(feedback, extra=extra)
+		self.logger.info(
+			"Fetched docs: " + ", ".join([
+				"%s: %s" % (el, str(len(db_docs[el]))) 
+				for el in ("t0", "t1", "t2", "register", "ext_journal")
+			]), 
+			extra=extra
+		)
 
 		# key: tran_id, value: instance of TransientData
 		dict_tran_data = self.create_tran_data(
-			blend_list, tran_list, photo_list, ext_jour_list, 
-			channels, state_op, extra=extra
+			db_docs, channels=channels, state_op=state_op, extra=extra
 		)
 
 		return dict_tran_data.values() if dict is not None else []
 
 
 	def create_tran_data(
-		self, blend_list, tran_list=None, photo_list=None, ext_journal_list=None, 
-		channels=None, state_op=None, load_lightcurves=True, extra=None
+		self, db_docs=None, channels=None, state_op=None, 
+		load_lightcurves=True, extra=None
 	):
 		"""
 		:returns: dict with key: tran_id, value: instance of :py:class:`TransientData <ampel.pipeline.t3.TransientData>`
@@ -273,9 +275,9 @@ class DBContentLoader:
 		tran_id = ""
 
 		# Loop through transient docs
-		if tran_list:
+		if "register" in db_docs:
 
-			for doc in tran_list:
+			for doc in db_docs["register"]:
 
 				if doc['_id'] not in tran_register:
 					tran_data = TransientData(doc['_id'], state_op, self.logger)
@@ -306,19 +308,18 @@ class DBContentLoader:
 				self.import_journal(tran_data, doc['journal'], channels_set)
 
 
-		# Loop through t2/compounds docs
-		for doc in blend_list:
+		# Loop through compound docs
+		if "t1" in db_docs:
 			
-			tran_id = doc['tranId']
+			for doc in db_docs["t1"]:
 
-			if tran_id in tran_register:
-				tran_data = tran_register[tran_id]
-			else:
-				tran_data = TransientData(tran_id, state_op, self.logger)
-				tran_register[tran_id] = tran_data
+				tran_id = doc['tranId']
 
-			# Pick compound dicts 
-			if doc['alDocType'] == AlDocType.COMPOUND:
+				if tran_id in tran_register:
+					tran_data = tran_register[tran_id]
+				else:
+					tran_data = TransientData(tran_id, state_op, self.logger)
+					tran_register[tran_id] = tran_data
 
 				doc['id'] = doc.pop('_id')
 				doc_chans = doc.pop('channels')
@@ -336,8 +337,19 @@ class DBContentLoader:
 				if len(comp_chans) == 1 and state_op == "$latest":
 					tran_data.set_latest_state(comp_chans, doc['id'])
 
-			# Pick t2 records
-			if doc['alDocType'] == AlDocType.T2RECORD:
+
+		if 't2' in db_docs:
+
+			# Loop through t2 docs
+			for doc in db_docs['t2']:
+				
+				tran_id = doc['tranId']
+
+				if tran_id in tran_register:
+					tran_data = tran_register[tran_id]
+				else:
+					tran_data = TransientData(tran_id, state_op, self.logger)
+					tran_register[tran_id] = tran_data
 
 				science_record = ScienceRecord(
 					doc['tranId'],
@@ -360,7 +372,7 @@ class DBContentLoader:
 				)
 
 		# Loop through photometric data
-		if photo_list:
+		if 't0' in db_docs:
 
 			loaded_tran_ids = tran_register.keys()
 
@@ -368,7 +380,7 @@ class DBContentLoader:
 			loaded_uls = {}
 
 			# Loop through photo results
-			for doc in photo_list:
+			for doc in db_docs['t0']:
 
 				# Generate PhotoFlags
 				photo_flag = [self.rev_tags[el] if el in self.rev_tags else el for el in doc['alTags']]
@@ -409,17 +421,17 @@ class DBContentLoader:
 							tran_register[tran_id].add_upperlimit(loaded_uls[doc_id])
 
 		# Import ext journal entries
-		if ext_journal_list:
+		if 'ext_journal' in db_docs:
 
-			for doc in ext_journal_list:
+			for doc in db_docs['ext_journal']:
+
 				self.import_journal(
 					tran_register[doc['_id']], 
-					doc['journal'], 
-					channels_set
+					doc['journal'], channels_set
 				)
 
 		# Load lightcurve objects if all ingredients were loaded
-		if load_lightcurves and photo_list is not None:
+		if load_lightcurves and 't0' in db_docs:
 		
 			for tran_data in tran_register.values():
 
@@ -473,7 +485,7 @@ class DBContentLoader:
 
 		# Feedback
 		if self.verbose:
-			self.feedback(tran_register.values(), photo_list)
+			self.feedback(tran_register.values(), db_docs['t0'])
 
 		return tran_register
 
@@ -517,7 +529,7 @@ class DBContentLoader:
 
 
 
-	def feedback(self, dict_values, photo_list):
+	def feedback(self, dict_values, list_t0):
 		"""
 		"""
 
@@ -540,7 +552,7 @@ class DBContentLoader:
 
 			if self.debug:
 
-				if photo_list:
+				if list_t0:
 					if len(pps) > 0:
 						extra['pp'] = AmpelUtils.try_reduce(tuple(pps.keys()))
 
