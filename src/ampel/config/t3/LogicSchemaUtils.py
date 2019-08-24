@@ -19,7 +19,7 @@ class LogicSchemaUtils:
 	@staticmethod
 	def iter(arg):
 		"""
-		Please see :obj:`LogicSchemaIterator <ampel.pipeline.config.t3.LogicSchemaIterator>` \
+		Please see :obj:`LogicSchemaIterator <ampel.config.t3.LogicSchemaIterator>` \
 		docstring for more info
 		"""
 		return LogicSchemaIterator(arg)

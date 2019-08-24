@@ -92,7 +92,7 @@ class ChannelConfig(AmpelModelExtension):
 					# will raise exc if not found
 					source_setup = next(
 						pkg_resources.iter_entry_points(
-							'ampel.pipeline.sources', source.get('stream')
+							'ampel.sources', source.get('stream')
 						), None
 					).resolve()()
 
@@ -126,7 +126,7 @@ class ChannelConfig(AmpelModelExtension):
 	def get_stream_config(self, source):
 		"""
 		:param str source:
-		:returns: instance of ampel.pipeline.config.channel.StreamConfig
+		:returns: instance of ampel.config.channel.StreamConfig
 		:rtype: StreamConfig
 		"""
 		return next(filter(lambda x: x.stream==source, self.sources), None)

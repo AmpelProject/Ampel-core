@@ -249,7 +249,7 @@ def minimal_ingestion_config(mongod):
 		'channels': dict(map(make_channel, range(2))),
 		't0Filters' : {
 			'BasicFilter': {
-				'classFullPath': 'ampel.pipeline.t0.filter.BasicFilter'
+				'classFullPath': 'ampel.t0.filter.BasicFilter'
 			}
 		},
 		't3Jobs' : {
@@ -291,7 +291,7 @@ def ingested_transients(alert_generator, minimal_ingestion_config, caplog):
 	
 	from ampel.db.AmpelDB import AmpelDB
 	
-	# TODO: fix this: T0Channel __init__(self, chan_config, source, logger): where :param chan_config: instance of ampel.pipeline.config.ChannelConfig
+	# TODO: fix this: T0Channel __init__(self, chan_config, source, logger): where :param chan_config: instance of ampel.config.ChannelConfig
 	channels = [T0Channel(str(i), {'sources': AmpelConfig.get_config('global.sources')}, 'ZTFIPAC', lambda *args: True, set()) for i in range(2)]
 	ingester = ZIAlertIngester(channels)
 	ingester.set_log_id(ObjectId())

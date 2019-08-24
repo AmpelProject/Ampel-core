@@ -44,11 +44,11 @@ class QueryMatchSchema:
 
 		:param arg: should be dict/AllOf/AnyOf/OneOf but can be a string for convenience \
 		(if only one value is to be matched). The dict can be nested up to one level. \
-		Please see :obj:`QueryMatchSchema <ampel.pipeline.db.query.QueryMatchSchema>` \
+		Please see :obj:`QueryMatchSchema <ampel.db.query.QueryMatchSchema>` \
 		docstring for syntax details).
-		:type arg: str, dict, :py:class:`AllOf <ampel.pipeline.config.t3.AllOf>`, \
-			:py:class:`AnyOf <ampel.pipeline.config.t3.AnyOf>`, \
-			:py:class:`OneOf <ampel.pipeline.config.t3.OneOf>`
+		:type arg: str, dict, :py:class:`AllOf <ampel.config.t3.AllOf>`, \
+			:py:class:`AnyOf <ampel.config.t3.AnyOf>`, \
+			:py:class:`OneOf <ampel.config.t3.OneOf>`
 
 		:param list in_type: type of elements embedded in schema dict (str, int, ...)
 

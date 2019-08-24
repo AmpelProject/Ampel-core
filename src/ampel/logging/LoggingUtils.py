@@ -184,7 +184,7 @@ class LoggingUtils:
 		Possibly embedded dollar signs in dict keys of parameters \
 		"match" and "update" are replaced with the the unicode character \
 		'Fullwidth Dollar Sign': ＄ (see docstring of :func:`convert_dollars \
-		<ampel.pipeline.logging.LoggingUtils.convert_dollars>`)
+		<ampel.logging.LoggingUtils.convert_dollars>`)
 
 		:param dict match:
 		:param dict update:

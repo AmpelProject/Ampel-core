@@ -35,7 +35,7 @@ class AmpelAlertPlotter:
 			----------
 			
 				ampel_alert: 
-					instance of `ampel.pipeline.t0.AmpelAlert` or `ampel.pipeline.t0.DevAmpelAlert`
+					instance of `ampel.t0.AmpelAlert` or `ampel.t0.DevAmpelAlert`
 				
 				which: `str`
 					either 'cutoutScience', 'cutoutTemplate', or 'cutoutDiffernce'.
@@ -130,7 +130,7 @@ class AmpelAlertPlotter:
 			-----------
 			
 			ampel_alert: 
-				instance of `ampel.pipeline.t0.AmpelAlert` or `ampel.pipeline.t0.DevAmpelAlert`
+				instance of `ampel.t0.AmpelAlert` or `ampel.t0.DevAmpelAlert`
 			
 			p1[2]: `str`
 				x[y]-axis parameter (ex: p1 = 'obs_date', p2 = 'magpsf' to plot lightcurve)

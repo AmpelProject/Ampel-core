@@ -20,7 +20,7 @@ class T2DocsBluePrint():
 	def __init__(self, t0_channels, t2_units_using_uls):
 		"""
 		Parameters:
-		:param t0_channels: list of instances of ampel.pipeline.config.T0Channel
+		:param t0_channels: list of instances of ampel.config.T0Channel
 		NOTE: order of 't0_channels' matters: the parameter 'array_of_scheduled_t2_units'
 		used in method 'create_blueprint' must have the same channel order 
 		:param t2_units_using_uls: list/set of t2 unit names making use of upper limits

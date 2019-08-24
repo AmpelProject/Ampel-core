@@ -23,7 +23,7 @@ class TimeConstraint:
 	def __init__(self, tc_config=None):
 		"""
 		:param TimeConstraintConfig tc_config: TimeConstraintConfig instance (see docstring) \
-		if not provided, please make sure to call method :func:`set <ampel.pipeline.t3.TimeConstraint.set>` 
+		if not provided, please make sure to call method :func:`set <ampel.t3.TimeConstraint.set>` 
 		"""
 
 		self.constraints = {}

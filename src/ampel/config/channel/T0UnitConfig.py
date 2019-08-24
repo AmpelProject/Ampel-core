@@ -37,7 +37,7 @@ class T0UnitConfig(AmpelModelExtension):
 			return value
 
 		if next(
-			pkg_resources.iter_entry_points('ampel.pipeline.t0.units', value), 
+			pkg_resources.iter_entry_points('ampel.t0.units', value), 
 			None
 		) is None:
 			cls.print_and_raise(

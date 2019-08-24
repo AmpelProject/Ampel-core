@@ -68,7 +68,7 @@ class DBContentLoader:
 
 		:type channels: str, dict
 		:param channels: string (one channel only) or a dict \
-		(see :obj:`QueryMatchSchema <ampel.pipeline.db.query.QueryMatchSchema>` \
+		(see :obj:`QueryMatchSchema <ampel.db.query.QueryMatchSchema>` \
 		for syntax details). None (no criterium) means all channels are considered. 
 
 		:param str state_op:\n
@@ -118,7 +118,7 @@ class DBContentLoader:
 		A single t2 unit id (string) can be provided.
 
 		:returns: list of TransientData instances
-		:rtype: list(:py:class:`TransientData <ampel.pipeline.t3.TransientData>`)
+		:rtype: list(:py:class:`TransientData <ampel.t3.TransientData>`)
 		"""
 
 		# Robustness check 1
@@ -234,7 +234,7 @@ class DBContentLoader:
 			list_tran = list(self.col_tran.find({'_id': lookup_id}))
 
 		if 't0' in db_docs and not TransientData.data_access_controllers:
-			for el in iter_entry_points('ampel.pipeline.sources'):
+			for el in iter_entry_points('ampel.sources'):
 				TransientData.add_data_access_controller(
 					el.load().get_data_access_controller()
 				)
@@ -260,7 +260,7 @@ class DBContentLoader:
 		load_lightcurves=True, extra=None
 	):
 		"""
-		:returns: dict with key: tran_id, value: instance of :py:class:`TransientData <ampel.pipeline.t3.TransientData>`
+		:returns: dict with key: tran_id, value: instance of :py:class:`TransientData <ampel.t3.TransientData>`
 		:rtype: Dict[int, TransientData]
 		"""
 
@@ -493,7 +493,7 @@ class DBContentLoader:
 	def import_journal(self, tran_data, journal_entries, channels_set):
 		"""
 		:param tran_data: instance of TransientData
-		:type tran_data: :py:class:`TransientData <ampel.pipeline.t3.TransientData>`
+		:type tran_data: :py:class:`TransientData <ampel.t3.TransientData>`
 		:param list(Dict) journal_entries:
 		:param channels_set:
 		:type channels_set: set(str), str

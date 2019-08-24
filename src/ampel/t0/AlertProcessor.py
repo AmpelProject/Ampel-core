@@ -47,7 +47,7 @@ class AlertProcessor:
 		"""
 		:param str survey_id: id of the survey (ex: 'ZTFIPAC').
 		Associated ressources will be loaded using the entry_point with id 'survey_id'
-		defined by ampel plugins such as Ampel-ZTF (ampel.pipeline.sources)
+		defined by ampel plugins such as Ampel-ZTF (ampel.sources)
 
 		:param channels:
 
@@ -132,7 +132,7 @@ class AlertProcessor:
 		else:
 			self.input_setup = next(
 				pkg_resources.iter_entry_points(
-					'ampel.pipeline.sources', survey_id
+					'ampel.sources', survey_id
 				), None
 			).resolve()()
 
@@ -200,7 +200,7 @@ class AlertProcessor:
 		:param ingester: sets a custom ingester instance. 
 		If unspecified, the ingester loaded is the default ingester associated with 
 		the current AbsInputStreamSetup. For ZTFIPAC: a new instance of ZIAlertIngester() is used:
-		Other possible ingester (as of Sept 2018) ampel.pipeline.t0.ingest.MemoryIngester
+		Other possible ingester (as of Sept 2018) ampel.t0.ingest.MemoryIngester
 
 		:param full_console_logging: bool. If false, the logging level of the stdout streamhandler 
 		associated with the logger will be set to WARN during the execution of this method

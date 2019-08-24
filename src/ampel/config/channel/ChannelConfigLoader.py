@@ -13,14 +13,14 @@ from ampel.config.channel.ChannelConfig import ChannelConfig
 
 class ChannelConfigLoader:
 	"""
-	Convenience class that creates :obj:`ChannelConfig <ampel.pipeline.config.channel.ChannelConfig>`
+	Convenience class that creates :obj:`ChannelConfig <ampel.config.channel.ChannelConfig>`
 	using channel dicts loaded from AmpelConfig (retrieved by channel names).
 	"""
 
 	@staticmethod
 	def load_configurations(chan_names=None, tier="all", logger=None):
 		"""
-		Convenience method that creates :obj:`ChannelConfig <ampel.pipeline.config.channel.ChannelConfig>`
+		Convenience method that creates :obj:`ChannelConfig <ampel.config.channel.ChannelConfig>`
 		using channel dicts loaded from AmpelConfig (retrieved by channel names).
 		If no channel name is provided, all _active_ channels are loaded.
 		If a list of name is provided, a warning will be printer (provided argument _logger_ is not None)
@@ -40,8 +40,8 @@ class ChannelConfigLoader:
 
 		:raises NameError: if a channel is not found
 		:raises ValueError: if duplicate values are found in chan_names
-		:returns: list of ampel.pipeline.config.channel.ChannelConfig instances
-		:rtype: list(ampel.pipeline.config.channel.ChannelConfig)
+		:returns: list of ampel.config.channel.ChannelConfig instances
+		:rtype: list(ampel.config.channel.ChannelConfig)
 		"""
 
 		# list of chan configs

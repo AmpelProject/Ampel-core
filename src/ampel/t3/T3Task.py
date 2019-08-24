@@ -24,7 +24,7 @@ class T3Task(T3Event):
 
 	def __init__(self, config, logger=None, **kwargs):
 		""" 
-		:param config: instance of :obj:`T3TaskConfig <ampel.pipeline.config.t3.T3TaskConfig>`
+		:param config: instance of :obj:`T3TaskConfig <ampel.config.t3.T3TaskConfig>`
 
 		:param Logger logger:\n
 			- If None, a new logger associated with a DBLoggingHandler will be created, \

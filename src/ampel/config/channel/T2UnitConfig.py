@@ -35,7 +35,7 @@ class T2UnitConfig(AmpelModelExtension):
 			return value
 
 		if next(
-			pkg_resources.iter_entry_points('ampel.pipeline.t2.units', value), 
+			pkg_resources.iter_entry_points('ampel.t2.units', value), 
 			None
 		) is None:
 			cls.print_and_raise(
@@ -61,7 +61,7 @@ class T2UnitConfig(AmpelModelExtension):
 		if v == 'default':
 			return v
 		key = '{}_{}'.format(values['unitId'],v)
-		for resource in pkg_resources.iter_entry_points('ampel.pipeline.t2.configs'):
+		for resource in pkg_resources.iter_entry_points('ampel.t2.configs'):
 			if key in resource.resolve()().keys():
 				return v
 		cls.print_and_raise(

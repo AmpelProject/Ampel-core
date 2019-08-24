@@ -31,12 +31,12 @@ class FlagUtils():
 		Converts dict schema containing str representation of tags into 
 		a dict schema containing hashed values (int64).
 
-		:param arg: schema dict. See :obj:`QueryMatchSchema <ampel.pipeline.db.query.QueryMatchSchema>` \
+		:param arg: schema dict. See :obj:`QueryMatchSchema <ampel.db.query.QueryMatchSchema>` \
 		docstring for more info regarding the used syntax.
 		:type arg: str, dict, \
-			:py:class:`AllOf <ampel.pipeline.config.t3.AllOf>`, \
-			:py:class:`AnyOf <ampel.pipeline.config.t3.AnyOf>`, \
-			:py:class:`OneOf <ampel.pipeline.config.t3.OneOf>`,
+			:py:class:`AllOf <ampel.config.t3.AllOf>`, \
+			:py:class:`AnyOf <ampel.config.t3.AnyOf>`, \
+			:py:class:`OneOf <ampel.config.t3.OneOf>`,
 
 		:returns: new schema dict where tag elements are integers
 		:rtype: dict

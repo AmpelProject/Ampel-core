@@ -27,7 +27,7 @@ class QueryLatestCompound:
 
 		:type channels: str, dict
 		:param channels: string (one channel only) or a dict schema \
-		(see :obj:`QueryMatchSchema <ampel.pipeline.db.query.QueryMatchSchema>` \
+		(see :obj:`QueryMatchSchema <ampel.db.query.QueryMatchSchema>` \
 		for syntax details). None (no criterium) means all channels are considered. 
 
 		:returns: a dict instance to be used with the mongoDB **aggregation** framework.
@@ -122,7 +122,7 @@ class QueryLatestCompound:
 
 		:type channels: str, dict
 		:param channels: string (one channel only) or a dict schema \
-		(see :obj:`QueryMatchSchema <ampel.pipeline.db.query.QueryMatchSchema>` \
+		(see :obj:`QueryMatchSchema <ampel.db.query.QueryMatchSchema>` \
 		for syntax details). None (no criterium) means all channels are considered. 
 
 		:returns: A dict instance intended to be used with the mongoDB **aggregation** framework.

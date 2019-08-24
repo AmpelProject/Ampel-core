@@ -19,7 +19,7 @@ from ampel.logging.T0RejConsoleFormatter import T0RejConsoleFormatter
 class Channel:
 	"""
 	This class instantiates loggers and elements such as T0 filter classes
-	(using ampel.pipeline.config.channel.ChannelConfig)
+	(using ampel.config.channel.ChannelConfig)
 
 	A note regarding logging: 
 	AmpelLogger can be setup with a default 'extra' parameter (with a channel for example),
@@ -57,7 +57,7 @@ class Channel:
 	def __init__(self, chan_config, survey_id, parent_logger, log_line_nbr=False, embed=False, single_rej_col=False):
 		"""
 		:param ChannelConfig chan_config: instance of :obj:`ChannelConfig \
-			<ampel.pipeline.config.channel.ChannelConfig>`
+			<ampel.config.channel.ChannelConfig>`
 		:param str survey_id: name of the survey id (ex:ZTFIPAC)
 		:param Logger parent_logger: logger instance (python module logging)
 		:param bool embed: 
