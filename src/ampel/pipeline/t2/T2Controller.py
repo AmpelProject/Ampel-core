@@ -470,6 +470,7 @@ def run():
 	controller = T2Controller(
 	    batch_size=opts.batch_size,
 	    check_interval=opts.interval,
+	    t2_units=opts.units,
 	    log_level=logging.DEBUG if opts.verbose else logging.INFO
 	)
 	if not opts.verbose:
