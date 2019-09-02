@@ -30,7 +30,7 @@ class T3Controller(Schedulable):
 	"""
 
 	@staticmethod
-	def load_job_configs(include=None, exclude=None):
+	def load_job_configs(include=None, exclude=None, exclude_units=None):
 		"""
 		:param include: sequence of job names to explicitly include. If
 		    specified, any job name not in this sequence will be excluded.
@@ -43,12 +43,19 @@ class T3Controller(Schedulable):
 				if (include and job_name not in include) or (exclude and job_name in exclude):
 					continue
 				config = klass(**job_dict)
+				if exclude_units:
+					if klass is T3TaskConfig and config.unitId in exclude_units:
+						continue
+					elif klass is T3JobConfig:
+						config.tasks = [t for t in config.tasks if not t.unitId in exclude_units]
+						if not config.tasks:
+							continue
 				if getattr(config, 'active', True):
 					job_configs[job_name] = config
 
 		return job_configs
 
-	def __init__(self, t3_job_names=None, skip_jobs=set()):
+	def __init__(self, t3_job_names=None, skip_jobs=set(), exclude_units=set()):
 		"""
 		t3_job_names: optional list of strings. 
 		If specified, only job with matching the provided names will be run.
@@ -129,7 +136,7 @@ class T3Controller(Schedulable):
 
 def run(args):
 	"""Run tasks at configured intervals"""
-	T3Controller(args.jobs, args.skip_jobs).run()
+	T3Controller(args.jobs, args.skip_jobs, args.skip_units).run()
 
 # pylint: disable=bad-builtin
 def list_tasks(args):
@@ -315,6 +322,7 @@ def main():
 	p = add_command(run)
 	p.add_argument('--jobs', nargs='+', default=None, help='run only these jobs')
 	p.add_argument('--skip-jobs', nargs='+', default=None, help='do not run these jobs')
+	p.add_argument('--skip-units', nargs='+', default=None, help='do not run tasks that use these units')
 
 	p = add_command(runjob)
 	p.add_argument('job')
