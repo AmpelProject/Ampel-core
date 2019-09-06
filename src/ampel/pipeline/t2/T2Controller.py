@@ -457,6 +457,10 @@ def run():
 	parser.add_argument('--units', default=None, nargs='+', help='T2 units to run')
 	parser.add_argument('--interval', default=10, type=int, help='Seconds to wait between database polls. If < 0, exit after one poll')
 	parser.add_argument('--batch-size', default=200, type=int, help='Process this many T2 docs at a time')
+	parser.add_argument('--state', default=T2RunStates.TO_RUN,
+	    choices=T2RunStates.__members__.keys(),
+	    type=lambda s: T2RunStates.__members__[s],
+	    help='State to process')
 	parser.add_argument('--raise-exc', default=False, action="store_true", help='Raise exceptions immediately instead of logging')
 	
 	parser.require_resource('mongo', ['writer', 'logger'])
@@ -471,6 +475,7 @@ def run():
 	    batch_size=opts.batch_size,
 	    check_interval=opts.interval,
 	    t2_units=opts.units,
+	    run_state=opts.state,
 	    log_level=logging.DEBUG if opts.verbose else logging.INFO
 	)
 	if not opts.verbose:
