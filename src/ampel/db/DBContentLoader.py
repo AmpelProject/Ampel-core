@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 13.01.2018
-# Last Modified Date: 22.02.2019
+# Last Modified Date: 26.09.2019
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from bson import ObjectId
@@ -45,7 +45,7 @@ class DBContentLoader:
 		self.logger = AmpelLogger.get_logger() if logger is None else logger
 		self.lcl = LightCurveLoader(logger=self.logger)
 		self.rev_tags = self.lcl.rev_tags # shortcut
-		self.col_tran = AmpelDB.get_collection("register")
+		self.col_stock = AmpelDB.get_collection('stock')
 		self.col_t0 = AmpelDB.get_collection("t0")
 		self.col_t1 = AmpelDB.get_collection("t1")
 		self.col_t2 = AmpelDB.get_collection("t2")
@@ -58,8 +58,8 @@ class DBContentLoader:
 
 
 	def load_new(
-		self, tran_id, channels=None, state_op="$latest", states=None, 
-		docs=all_doc_types, t2_subsel=None
+		self, tran_id, channels=None, state_op="$latest", 
+		states=None, docs=all_doc_types, t2_subsel=None
 	):
 		"""
 		:type tran_id: int, list(int)
@@ -121,7 +121,6 @@ class DBContentLoader:
 		:rtype: list(:py:class:`TransientData <ampel.t3.TransientData>`)
 		"""
 
-		# Robustness check 1
 		if not docs:
 			raise ValueError("Invalid 'docs' parameter")
 
@@ -156,8 +155,9 @@ class DBContentLoader:
 							"Querying multiple transients is not supported with state_op '$latest'"
 						)
 			
-					# Note: we use general_query on a single transient. T3Event works more efficiently: 
-					# it determines latest states for multiple transients and calls this method with those states.
+					# Note1 : we use general_query on a single transient. 
+					# Note2: T3Event works more efficiently, it determines latest states 
+					# for multiple transients at once and calls this method with those states.
 					latest_state_query = QueryLatestCompound.general_query(tran_id)
 
 					# Feedback
@@ -202,7 +202,9 @@ class DBContentLoader:
 			self.logger.debug(
 				None, extra={
 					'tranId': tran_id,
-					'query': LoggingUtils.safe_query_dict(t2_query, dict_key=None)
+					'query': LoggingUtils.safe_query_dict(
+						t2_query, dict_key=None
+					)
 				}
 			)
 
@@ -215,7 +217,9 @@ class DBContentLoader:
 
 		# Photo DB query 
 		if AlDocType.PHOTOPOINT in docs and AlDocType.UPPERLIMIT in docs:
-			db_docs['t0'] = list(self.col_t0.find({'tranId': lookup_id}))
+			db_docs['t0'] = list(
+				self.col_t0.find({'tranId': lookup_id})
+			)
 
 		else:
 
@@ -230,8 +234,12 @@ class DBContentLoader:
 				)
 
 		if AlDocType.TRANSIENT in docs:
-			db_docs['ext_journal'] = list(self.ext_journal_col.find({'_id': lookup_id}))
-			list_tran = list(self.col_tran.find({'_id': lookup_id}))
+			db_docs['ext_journal'] = list(
+				self.ext_journal_col.find({'_id': lookup_id})
+			)
+			list_tran = list(
+				self.col_stock.find({'_id': lookup_id})
+			)
 
 		if 't0' in db_docs and not TransientData.data_access_controllers:
 			for el in iter_entry_points('ampel.sources'):
@@ -242,17 +250,21 @@ class DBContentLoader:
 		self.logger.info(
 			"Fetched docs: " + ", ".join([
 				"%s: %s" % (el, str(len(db_docs[el]))) 
-				for el in ("t0", "t1", "t2", "register", "ext_journal")
+				for el in ("t0", "t1", "t2", 'stock', "ext_journal")
 			]), 
 			extra=extra
 		)
 
 		# key: tran_id, value: instance of TransientData
 		dict_tran_data = self.create_tran_data(
-			db_docs, channels=channels, state_op=state_op, extra=extra
+			db_docs, channels=channels, 
+			state_op=state_op, extra=extra
 		)
 
-		return dict_tran_data.values() if dict is not None else []
+		if dict_tran_data is None:
+			return []
+
+		return dict_tran_data.values()
 
 
 	def create_tran_data(
@@ -275,9 +287,9 @@ class DBContentLoader:
 		tran_id = ""
 
 		# Loop through transient docs
-		if "register" in db_docs:
+		if 'stock' in db_docs:
 
-			for doc in db_docs["register"]:
+			for doc in db_docs['stock']:
 
 				if doc['_id'] not in tran_register:
 					tran_data = TransientData(doc['_id'], state_op, self.logger)
@@ -285,11 +297,7 @@ class DBContentLoader:
 				else:
 					tran_data = tran_register[doc['_id']]
 
-				# Load, translate alTags from DB into a TransientFlags enum flag instance 
-				# and associate it with the TransientData object instance
-				tran_data.set_tags(
-					[self.rev_tags[el] if el in self.rev_tags else el for el in doc['alTags']]
-				)
+				tran_data.set_tags(doc['alTags'])
 
 				# Set transient names (ex: ZTF18acdzzyf) 
 				# tranNames is a list as TNS name and other kind of names may be added later
@@ -298,8 +306,7 @@ class DBContentLoader:
 
 				# Use all avail channels if no channel query constraint was used, 
 				# otherwise: intersection
-				tran_data.set_channels(
-					# Transient doc['channels'] cannot be None
+				tran_data.set_channels( # Transient doc['channels'] cannot be None
 					AmpelUtils.to_set(doc['channels']) if channels_set is None
 					else (channels_set & AmpelUtils.to_set(doc['channels'])) # intersection
 				)
@@ -615,4 +622,3 @@ class DBContentLoader:
 				(len(pps), len(uls), len_comps, len_lcs, len_srs),
 				extra=extra
 			)
-

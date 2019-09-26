@@ -708,7 +708,7 @@ class AlertProcessor:
 		Otherwise, tran_ids_before[i] will be None
 		"""
 
-		col = AmpelDB.get_collection('register')
+		col = AmpelDB.get_collection('stock')
 		tran_ids = len(self.t0_channels) * [None]
 
 		# Loop through activated channels
