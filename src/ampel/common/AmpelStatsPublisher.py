@@ -121,7 +121,7 @@ class AmpelStatsPublisher(Schedulable):
 		self.publish_to = publish_to
 
 		# DB collection handles
-		self.col_tran = AmpelDB.get_collection("register", "r")
+		self.col_tran = AmpelDB.get_collection("stock", "r")
 		self.col_t0 = AmpelDB.get_collection("t0", "r")
 		self.col_t1 = AmpelDB.get_collection("t1", "r")
 		self.col_t2 = AmpelDB.get_collection("t2", "r")

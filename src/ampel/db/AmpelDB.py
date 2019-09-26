@@ -21,7 +21,7 @@ class AmpelDB:
 	# 'col' None will be replaced by instance of pymongo.collection.Collection 
 	# the first time AmpelDB.get_collection(...) is called for a given collection
 	_ampel_cols = {
-		'register': {
+		'stock': {
 			'dbLabel': 'data',
 			'dbPrefix': _db_prefix,
 			'col': None
@@ -204,7 +204,7 @@ class AmpelDB:
 	def create_indexes(db, col_name):
 		"""
 		The method will set indexes for collections with names: 
-		'register', 't0', 't1', 't2', 'events', 'logs', 'troubles', ...
+		'stock', 't0', 't1', 't2', 'events', 'logs', 'troubles', ...
 
 		:returns: None
 		"""
@@ -214,7 +214,7 @@ class AmpelDB:
 			(col_name, db.name)
 		)
 
-		if col_name == "register":
+		if col_name == "stock":
 
 			# For various indexed queries and live auto-complete *covered* queries
 			db[col_name].create_index(

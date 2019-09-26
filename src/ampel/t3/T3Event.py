@@ -255,7 +255,7 @@ class T3Event:
 		)
 
 		# Execute 'find transients' query
-		cursor_tran = AmpelDB.get_collection('register').find(
+		cursor_tran = AmpelDB.get_collection('stock').find(
 			match_query, {'_id':1}, # indexed query
 			no_cursor_timeout=True, # allow query to live for > 10 minutes
 		).hint('_id_1_channels_1')

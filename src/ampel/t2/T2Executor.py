@@ -92,7 +92,7 @@ class T2Executor:
 
 		# Shortcut
 		self.col_t2 = AmpelDB.get_collection('t2')
-		self.col_tran = AmpelDB.get_collection('register')
+		self.col_tran = AmpelDB.get_collection('stock')
 
 		if update_beacon:
 		
@@ -460,7 +460,7 @@ class T2Executor:
 
 		resource = next(
 			pkg_resources.iter_entry_points(
-				'ampel.t2.units', unit_name
+				'ampel_t2Units', unit_name
 			), 
 			None
 		)
