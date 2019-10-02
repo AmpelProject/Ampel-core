@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 07.06.2018
-# Last Modified Date: 02.10.2018
+# Last Modified Date: 01.10.2019
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import collections, hashlib
@@ -108,13 +108,16 @@ class AmpelUtils():
 
 
 	@classmethod
-	def to_list(cls, arg, try_reduce=False):
+	def to_list(cls, arg):
 		"""
 		"""
 		if isinstance(arg, (int, str, bytes, bytearray)):
-			return arg if try_reduce else [arg]
+			return [arg]
+		if isinstance(arg, list):
+			return arg
 		if isinstance(arg, collections.abc.Iterable):
-			return next(iter(arg)) if try_reduce else list(arg)
+			return list(arg)
+
 		raise ValueError("Unsupported format (%s)" % type(arg))
 
 
