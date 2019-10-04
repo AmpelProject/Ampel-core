@@ -4,148 +4,98 @@
 # License           : BSD-3-Clause
 # Author            : Jakob van Santen <jakob.van.santen@desy.de>
 # Date              : 14.06.2018
-# Last Modified Date: 29.06.2019
+# Last Modified Date: 04.10.2019
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-from pkg_resources import iter_entry_points
-from ampel.config.ReadOnlyDict import ReadOnlyDict
+import json
 from ampel.common.AmpelUtils import AmpelUtils
-from ampel.base.AmpelTags import AmpelTags
-from ampel.db.DBUtils import DBUtils
+from ampel.config.ReadOnlyDict import ReadOnlyDict
 
 class AmpelConfig:
+	""" """
 
-	# Static dict/ReadOnlyDict holding all ampel configurations
-	_global_config = None
-	_ignore_unavailable_units = set()
-	_tags = {}
-
-
-	@classmethod
-	def initialized(cls):
-		""" """ 
-		return cls._global_config is not None
-
-
-	@classmethod
-	def ignore_unavailable_units(cls, from_tiers):
+	@staticmethod
+	def new_default(pwd_file=None, verbose=False, ignore_errors=False):
 		"""
-		:param from_tiers: combination of "t0", "t2", "t3".
-		:type from_tiers: list(str), str
-		Enables scenario such as: 
-		- the AlertProcessor creates T2 documents that are processed by external ressources 
-		(say on an external grid such as NERSC).
-		The corresponding t2 unit(s) do not need to be present in the ampel image.
-		- Ampel T3 is run on a dedicated server but a general common ampelconfig is used.
 		"""
-		if isinstance(from_tiers, str):
-			cls._ignore_unavailable_units.add(from_tiers)
-		elif AmpelUtils.is_sequence(from_tiers):
-			cls._ignore_unavailable_units.update(from_tiers)
-		else:
-			raise ValueError("Invalid argument")
+		# Import here to avoid cyclic import error
+		from ampel.config.ConfigBuilder import ConfigBuilder
 
+		ampel_config = AmpelConfig()
+		cb = ConfigBuilder(verbose=verbose)
+		cb.load_distributions()
 
-	@classmethod
-	def load_defaults(cls, ignore_unavailable_units=None):
-		"""
-		:param set(str) ignore_unavailable_units: combination of "t0", "t2", "t3". See 
-		:func:`ignore_unavailable_units <ampel.config.AmpelConfig.ignore_unavailable_units>`
-		docstring
-		"""
-		if ignore_unavailable_units:
-			cls._ignore_unavailable_units = set(ignore_unavailable_units)
+		if pwd_file:
+			cb.add_passwords(
+				json.load(
+					open(pwd_file, "r")
+				)
+			)
 
-		from ampel.config.ConfigLoader import ConfigLoader
-		cls.set_config(
-			ConfigLoader.load_config(gather_plugins=True)
+		ampel_config.set(
+			cb.get_config(ignore_errors=ignore_errors)
 		)
-		cls.load_tags()
 
-	
-	@classmethod
-	def load_tags(cls):
-
-		d = {
-			ell: DBUtils.b2_hash(ell)		
-			for el in AmpelTags.__dict__.items()
-			if not el[0].startswith("__")
-			for ell in el[1]
-		}
-
-		for el in iter_entry_points('ampel.sources'):
-			SurveySetup = el.load()
-			for el in SurveySetup.get_tags():
-				d[el] = DBUtils.b2_hash(el)
-	
-		if len(d) != len(set(d)):
-			raise ValueError("Hash collision detected")
-
-		cls._tags = cls.recursive_freeze(d)
+		return ampel_config
 
 
-	@classmethod
-	def get_config(cls, sub_element=None):
+	def __init__(self):
+		""" """
+		self._config = {}
+
+
+	def get(self, sub_element:str=None):
 		""" 
 		Optional arguments:
 		:param sub_element: only sub-config element will be returned. \
-		Example: get_config("channels.HU_RANDOM")
+		Example: get("channels.HU_RANDOM")
 		:type sub_element: str, list
 		"""
-		if not cls.initialized():
+		if not self.initialized():
 			raise RuntimeError("Ampel global config not set")
 
 		if sub_element is None:
-			return cls._global_config
+			return self._config
 
 		return AmpelUtils.get_by_path(
-			cls._global_config, 
-			sub_element
+			self._config, sub_element
 		)
 
 
-	@classmethod
-	def decrypt_config(cls, enc_dict):
-		""" 
-		See ampel.config.EncryptedConfig for more info
-		:raises: ValueError if decryption fails
-		:returns: string
+	def print(self, sub_element: str=None) -> None:
 		"""
-		from sjcl import SJCL
-		for conf_pwd in cls.get_config("pwds"):
-			try:
-				return SJCL().decrypt(
-					enc_dict, conf_pwd	
-				).decode("utf-8") 
-			except Exception as e:
-				pass
-
-		raise ValueError("Decryption failed, wrong password ?")
+		"""
+		print(
+			json.dumps(
+				self.get(sub_element), indent=4
+			)
+		)
 
 
-	@classmethod
-	def reset(cls):
-		""" """ 
-		cls._global_config = None
-	
-
-	@classmethod
-	def set_config(cls, config):
+	def set(self, config):
 		""" """
-		if cls._global_config is not None:
+		if self._config is not None:
 			import warnings
 			warnings.warn("Resetting global configuration")
 
-		cls._global_config = cls.recursive_freeze(config)
-		cls.load_tags()
+		self._config = AmpelConfig.recursive_freeze(config)
 
-		return cls._global_config
+		return self._config
 
 
-	@classmethod
-	def is_frozen(cls):
+	def reset(self):
 		""" """ 
-		return type(cls._global_config) is ReadOnlyDict
+		self._config = None
+
+
+	def initialized(self):
+		""" """ 
+		return self._config is not None
+
+
+	def is_frozen(self):
+		""" """ 
+		return isinstance(self._config, ReadOnlyDict)
 
 
 	@classmethod
