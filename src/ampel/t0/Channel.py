@@ -35,7 +35,7 @@ class Channel:
 
 	So we we optimize logging for the most frequent case by doing the following:
 
-	1) For accepeted alerts:
+	1) For accepted alerts:
 	For the few times where we accept an alert, we add 'channels' to the parameter 'extra' of
 	log entries before passing them to the DBLoggingHandler. That's what the option 
 	'channels' in RecordsBufferingHandler.copy() or RecordsBufferingHandler.forward() is for.
