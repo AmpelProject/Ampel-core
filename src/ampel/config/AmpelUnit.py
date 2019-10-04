@@ -97,7 +97,7 @@ class AmpelUnit:
 
 		elif type(run_config) is int:
 			run_config = self.ampel_config.get(
-				"runConfig.t2." + run_config
+				"runConfig.t2.%s" % run_config
 			)
 
 		# Check for possibly defined RunConfig model
