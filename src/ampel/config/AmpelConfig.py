@@ -47,9 +47,8 @@ class AmpelConfig:
 	def get(self, sub_element:str=None):
 		""" 
 		Optional arguments:
-		:param sub_element: only sub-config element will be returned. \
-		Example: get("channels.HU_RANDOM")
-		:type sub_element: str, list
+		:param str sub_element: only sub-config element will be returned. \
+		Example: get("channel.HU_RANDOM")
 		"""
 		if not self.initialized():
 			raise RuntimeError("Ampel global config not set")
