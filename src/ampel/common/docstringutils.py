@@ -73,9 +73,13 @@ def gendocstring(klass):
 
 	for el in inspect.getsource(klass).split('\n'):
 		sel = el.strip()
-		if not sel or "class " in sel or "\"\"\"" in sel or sel in exisiting_doc:
+		if (
+			not sel or "class " in sel or "\"\"\"" in sel or 
+			sel in exisiting_doc or 'ClassVar' in sel or 
+			sel.startswith("#")
+		):
 			continue
-		if '@validator' in sel or '@staticmethod' in sel or '@classmethod' in sel:
+		if '@' in sel or 'def' in sel:
 			break
 		out_doc.append("  "+sel)
 
