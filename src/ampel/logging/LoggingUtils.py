@@ -7,7 +7,8 @@
 # Last Modified Date: 18.01.2019
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-from logging import ERROR, CRITICAL, Logger
+import sys, traceback, logging
+from typing import Dict
 from ampel.config.ConfigUtils import ConfigUtils
 from ampel.core.flags.LogRecordFlag import LogRecordFlag
 
@@ -15,32 +16,35 @@ class LoggingUtils:
 
 
 	@staticmethod
-	def log_exception(logger, exc, last=False, msg=None):
+	# using forward reference for type hinting: "When a type hint contains name that have not 
+	# been defined yet, that definition may be expressed as string literal, tp be resolved later"
+	# (PEP 484). This is to avoid cyclic import errors
+	def log_exception(logger: "AmpelLogger", exc: Exception=None, extra: Dict=None, last=False, msg=None):
 		"""
 		:param AmpelLogger logger:
 		:param Exception exc:
 		:param bool last: whether to print only the last exception in the stack
 		:param str msg: Optional message
-
-		logs exception like this:
-		2018-09-26 20:37:07 <ipython-input>:11 ERROR --------------------------------------------------
-		2018-09-26 20:37:07 <ipython-input>:11 ERROR Optional message
-		2018-09-26 20:37:07 <ipython-input>:15 ERROR Traceback (most recent call last):
-		2018-09-26 20:37:07 <ipython-input>:15 ERROR   File "<ipython-input-28-4b9e4d999eb4>", line 7, in <module>
-		2018-09-26 20:37:07 <ipython-input>:15 ERROR     a.add(2)
-		2018-09-26 20:37:07 <ipython-input>:15 ERROR AttributeError: 'list' object has no attribute 'add'
-		2018-09-26 20:37:07 <ipython-input>:11 ERROR --------------------------------------------------
-
-		instead of:
-		2018-09-26 20:38:07 <ipython-input>:11 CRITICAL 'list' object has no attribute 'add'
-		Traceback (most recent call last):
-		  File "<ipython-input-30-548af09552c1>", line 7, in <module>
-		    a.add(2)
-		AttributeError: 'list' object has no attribute 'add'
 		"""
 
-		import traceback
-		logger.propagate_log(ERROR, "-"*50)
+		sys_exc = False
+
+		if not exc:
+
+			exc = getattr(sys, "last_value", None)
+			sys_exc = True
+			logger.propagate_log(
+				logging.ERROR, "loading exception from sys", extra=extra
+			)
+
+			if not exc:
+				logger.propagate_log(
+					logging.ERROR, "log_exception(..) was called but not exception could be found",
+					extra=extra
+				)
+				return
+
+		logger.propagate_log(logging.ERROR, "-"*50, extra=extra)
 
 		if msg:
 			logger.error(msg)
@@ -53,9 +57,15 @@ class LoggingUtils:
 		):
 			for ell in el.split('\n'):
 				if len(ell) > 0:
-					logger.propagate_log(ERROR, ell)
+					logger.propagate_log(logging.ERROR, ell, extra=extra)
 
-		logger.propagate_log(ERROR, "-"*50)
+		logger.propagate_log(logging.ERROR, "-"*50, extra=extra)
+
+		# Clear up recorded exception (avoiding potential multiple reports)
+		if sys_exc:
+			sys.last_value=None
+			sys.last_traceback=None
+			sys.last_type=None
 
 
 	@classmethod
@@ -103,7 +113,7 @@ class LoggingUtils:
 		:param int tier:
 		:param str tier:
 		:param dict info:
-		:param Logger logger:
+		:param AmpelLogger logger:
 		:returns: None
 		:raises: Should not raise errors
 		"""
@@ -156,12 +166,12 @@ class LoggingUtils:
 
 			# Bad luck (possible cause: DB offline)
 			logger.propagate_log(
-				ERROR, "Exception occured while populating 'troubles' collection",
+				logging.ERROR, "Exception occured while populating 'troubles' collection",
 				exc_info=True
 			)
 
 			logger.propagate_log(
-				ERROR, "Unpublished 'troubles' document: %s" % str(trouble),
+				logging.ERROR, "Unpublished 'troubles' document: %s" % str(trouble),
 				exc_info=True
 			)
 
