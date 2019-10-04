@@ -60,7 +60,7 @@ class LogsBufferingHandler(logging.Handler):
 				if type(rec['msg']) is not list:
 					rec['msg'] = [rec['msg']]
 	
-				rec['msg'].append(record.msg)
+				rec['msg'].append(record.getMessage())
 	
 			else:
 	
@@ -75,7 +75,7 @@ class LogsBufferingHandler(logging.Handler):
 					'_id': ObjectId(oid=oid),
 					'tier': self.tier,
 					'lvl': record.levelno,
-					'msg': record.msg
+					'msg': record.getMessage()
 				}
 	
 				if record.levelno > logging.INFO:

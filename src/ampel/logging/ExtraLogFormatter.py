@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 01.10.2018
-# Last Modified Date: 21.10.2018
+# Last Modified Date: 03.10.2019
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from logging import Formatter
@@ -44,6 +44,6 @@ class ExtraLogFormatter(Formatter):
 			out.append("[%s]" % ', '.join("%s=%s" % itm for itm in extra.items()))
 
 		if record.msg:
-			return "<%s>\n  %s" % (" ".join(out), record.msg)
+			return "<%s>\n  %s" % (" ".join(out), record.getMessage())
 		else:
 			return "<%s>" % " ".join(out)
