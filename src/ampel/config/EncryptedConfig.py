@@ -4,34 +4,34 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 14.11.2018
-# Last Modified Date: 14.11.2018
+# Last Modified Date: 01.10.2019
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from pydantic import BaseModel
+from typing import List, Union
 from ampel.common.docstringutils import gendocstring
-from ampel.config.AmpelConfig import AmpelConfig
 
 @gendocstring
 class EncryptedConfig(BaseModel):
 	"""
 	AES encrypted config entry.
 	It loads an encrypted config (dict with a given set of key/values)
-	and tries to decrypt it [function get()] using passwords loaded from AmpelConfig.get_config("pwds")
+	and tries to decrypt it [function get()] using passwords loaded from AmpelConfig.get("pwds")
 
 	To create an encrypted config, do *exactly* this:
-		- go to https://bitwiseshiftleft.github.io/sjcl/demo/ 
-		- enter the shared password in the green box
-		- enter the secret message (authtoken for example) in the red box
-		- leave authenticated data empty
-		- in "Cipher Parameters", check the option CCM. (OCB2 will *not* work)
-		- click on the red arrow "encrypt"
-		- copy the "Ciphertext" JSON dict 
-		- paste it in your config
+	- go to https://bitwiseshiftleft.github.io/sjcl/demo/ 
+	- enter the shared password in the green box
+	- enter the secret message (authtoken for example) in the red box
+	- leave authenticated data empty
+	- in "Cipher Parameters", check the option CCM. (OCB2 will *not* work)
+	- click on the red arrow "encrypt"
+	- copy the "Ciphertext" JSON dict 
+	- paste it in your config
 
 	Make sure the 'shared password' used in step 2 is known to us. 
-	When Ampel starts, we populate the ampel config (class AmpelConfig).
+	When Ampel starts, an instance AmpelConfig is set up.
 	The used shared password *must* be a member of the list of passwords 
-	returned by AmpelConfig.get_config("pwds"), otherwise decryption will fail.
+	returned by ampel_config.get("pwds"), otherwise decryption will fail.
 	"""
 
 	iv: str
@@ -44,14 +44,23 @@ class EncryptedConfig(BaseModel):
 	cipher: str
 	salt: str
 	ct: str
-	pwd: str = None
 
+	def decrypt(self, pwds: Union[str, List[str]]) -> str:
+		"""
+		:raises: ValueError if no correct pwd is provided
+		"""
+		from sjcl import SJCL
+		sjcl = SJCL()
 
-	def get(self):
+		if isinstance(pwds, str):
+			pwds = [pwds]
 
-		if not self.pwd:
-			self.pwd = AmpelConfig.decrypt_config(
-				self.dict()
-			)
+		for pwd in pwds:
+			try:
+				return sjcl \
+					.decrypt(self.dict(), pwd) \
+					.decode("utf-8") 
+			except Exception as e:
+				pass
 
-		return self.pwd
+		raise ValueError("Decryption failed, wrong password ?")
