@@ -4,13 +4,16 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 27.09.2018
-# Last Modified Date: 17.05.2019
+# Last Modified Date: 03.10.2019
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-import logging, sys
+import logging, sys, traceback
 from bson import BSON
 from logging import _logRecordFactory
+from typing import Dict
+from ampel.logging.AggregatableLogRecord import AggregatableLogRecord
 from ampel.logging.ExtraLogFormatter import ExtraLogFormatter
+from ampel.logging.LoggingUtils import LoggingUtils
 from ampel.config.ReadOnlyDict import ReadOnlyDict
 
 # Custom log int level (needed for efficient storing in DB)
@@ -19,7 +22,7 @@ logging.VERBOSE = 131072
 logging.INFO = 262144
 logging.SHOUT = 262145
 logging.WARNING = 524288
-logging.WARN = logging.WARNING
+logging.WARN = 524288
 logging.ERROR = 1048576
 
 logging.addLevelName(logging.DEBUG, "DEBUG")
@@ -256,10 +259,10 @@ class AmpelLogger(logging.Logger):
 		self._log(logging.VERBOSE, msg, args, **kwargs)
 
 
-	def propagate_log(self, level, msg, exc_info=False, extra=None):
+	def propagate_log(self, level: int, msg: str, extra: Dict = None):
 		"""
-		| Calls set_console_log_level(logging.DEBUG), logs the log message and \
-		then sets the StreamHandler log level back to its initial value. 
+		| Set StreamHandler logging level to DEBUG, log the log message and \
+		then set the StreamHandler log level back to its initial value. 
 		| On production, the StreamHandler log level is usually set to WARN \
 		because it is unnecessary to emit a lot of console logs since \
 		log entries are saved in the DB anyway (using DBLoggingHandler).
@@ -267,7 +270,6 @@ class AmpelLogger(logging.Logger):
 
 		:param int level: log level (ex: logging.INFO)
 		:param str msg: message to be logged
-		:param bool exc_info: whether to log the possibly existing exception stack
 		:returns: None
 		"""
 
@@ -275,19 +277,11 @@ class AmpelLogger(logging.Logger):
 			if isinstance(handler, logging.StreamHandler):
 				previous_level = handler.level
 				try:
-					handler.level = logging.DEBUG
-					self.log(level, msg, exc_info=exc_info)
+					handler.setLevel(logging.DEBUG)
+					self.log(level, msg, extra=extra)
 				finally:
-					handler.level = previous_level
+					handler.setLevel(previous_level)
 				break
-				
-		if level < logging.WARN:
-			level = logging.WARN
-
-		self.log(
-			level, "Forced log propagation: %s" % msg, 
-			exc_info=exc_info, extra=extra
-		)
 
 
 	def makeRecord(
@@ -314,14 +308,30 @@ class AmpelLogger(logging.Logger):
 				AmpelLogger.aggregation_ok = False
 			AmpelLogger.current_logger = self
 
-		rv = _logRecordFactory(
-			name, level, fn, lno, msg, args, exc_info, func, sinfo
-		)
+		rv = _logRecordFactory(name, level, fn, lno, msg, args, exc_info, func, sinfo)
 
 		if extra:
 			rv.__dict__['extra'] = {**extra, **self.__extra} if self.__extra else extra
 		else:
 			rv.__dict__['extra'] = self.__extra
+
+		if exc_info:
+
+			addlog = lambda x: self.handle(AggregatableLogRecord(rv, x))
+
+			if exc_info[0] == None:
+				addlog("exc_info was requested but no exception could be found")
+				exc_info = None
+
+			if isinstance(exc_info, tuple):
+				addlog("-"*50)
+				for el in traceback.format_exception(
+					etype=type(exc_info[0]), value=exc_info[1], tb=exc_info[2]
+				):
+					for ell in el.split('\n'):
+						if len(ell) > 0:
+							addlog(ell)
+				addlog("-"*50)
 
 		# Verify serializability at point of call
 		# TODO: replace this (performance penalty) by implementing 
