@@ -148,9 +148,9 @@ class DBLoggingHandler(logging.Handler):
 					return
 
 				if type(prev_dict['msg']) is not list:
-					prev_dict['msg'] = [prev_dict['msg'], record.msg]
+					prev_dict['msg'] = [prev_dict['msg'], record.getMessage()]
 				else:
-					prev_dict['msg'].append(record.msg)
+					prev_dict['msg'].append(record.getMessage())
 	
 			else:
 	
@@ -178,14 +178,14 @@ class DBLoggingHandler(logging.Handler):
 						'_id': ObjectId(oid=oid),
 						'flag': self.flags[record.levelno],
 						'runId': self.run_id,
-						'msg': record.msg
+						'msg': record.getMessage()
 					}
 				else:
 					ldict = {
 						'_id': ObjectId(oid=oid),
 						'flag': self.flags[record.levelno],
 						'runId': self.run_id,
-						'msg': record.msg
+						'msg': record.getMessage()
 					}
 
 				if not record.msg:
