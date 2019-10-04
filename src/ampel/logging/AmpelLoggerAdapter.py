@@ -1,3 +1,12 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+# File              : ampel/logging/AmpelLoggerAdapter.py
+# License           : BSD-3-Clause
+# Author            : vb <vbrinnel@physik.hu-berlin.de>
+# Date              : Unspecified
+# Last Modified Date: 30.09.2019
+# Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
+
 import logging
 
 
