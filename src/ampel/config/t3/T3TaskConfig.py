@@ -1,21 +1,18 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/config/t3/T3TaskConfig.py
+# File              : Ampel-core/src/ampel/config/t3/T3TaskConfig.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 02.09.2018
-# Last Modified Date: 26.09.2019
+# Last Modified Date: 05.10.2019
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-from pydantic import BaseModel, validator
+from pydantic import validator
 from typing import Dict, Union, List
-from ampel.common.AmpelUnitLoader import AmpelUnitLoader
 from ampel.common.docstringutils import gendocstring
 from ampel.config.AmpelModelExtension import AmpelModelExtension
 from ampel.config.t3.TranConfig import TranConfig
-from ampel.config.EncryptedConfig import EncryptedConfig
 from ampel.config.UnitConfig import UnitConfig
-from ampel.config.AmpelConfig import AmpelConfig
 
 @gendocstring
 class T3TaskConfig(AmpelModelExtension):
