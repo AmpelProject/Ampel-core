@@ -302,7 +302,7 @@ class ConfigBuilder:
 
 						task['transients']['select']['channel'] = arg['hash']
 						task['repo'] = repo_name
-						task_name = task.pop('task')
+						task_name = task['task']
 
 						if task_name in self._config['task']:
 							self.logger.error(
@@ -423,7 +423,7 @@ class ConfigBuilder:
 			self.error = True
 			return
 
-		job_name = arg.pop("job")
+		job_name = arg["job"]
 		arg['repo'] = repo_name
 
 		if self.verbose:
