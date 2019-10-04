@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 02.09.2018
-# Last Modified Date: 11.11.2018
+# Last Modified Date: 26.09.2019
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from pydantic import BaseModel, validator
@@ -14,6 +14,7 @@ from ampel.common.docstringutils import gendocstring
 from ampel.config.AmpelModelExtension import AmpelModelExtension
 from ampel.config.t3.TranConfig import TranConfig
 from ampel.config.EncryptedConfig import EncryptedConfig
+from ampel.config.UnitConfig import UnitConfig
 from ampel.config.AmpelConfig import AmpelConfig
 
 @gendocstring
@@ -22,25 +23,12 @@ class T3TaskConfig(AmpelModelExtension):
 	Example:
 	"""
 	task: str
-	unitId: str
+	unit: UnitConfig
 	schedule: Union[None, List[str]] = None
 	verbose: bool = False
 	globalInfo: bool = False
 	transients: Union[None, TranConfig] = None
-	runConfig: Union[None, Dict] = None
-
-
-	@validator('unitId', pre=True)
-	def validate_t3_unit(cls, unit_id, values, **kwargs):
-		"""
-		"""
-		if AmpelUnitLoader.get_class(tier=3, unit_name=unit_id) is None:
-			cls.print_and_raise(
-				header="T3 task config error",
-				msg="Unable to find T3 unit %s" % unit_id
-			)
-
-		return unit_id
+	repo: str = None
 
 
 	@validator('schedule', pre=True, whole=True)
@@ -52,28 +40,3 @@ class T3TaskConfig(AmpelModelExtension):
 			return (schedule,)
 
 		return schedule
-
-
-	@validator('runConfig')
-	def validate_run_config(cls, run_config, values, **kwargs):
-		"""
-		"""
-
-		# Exists (checked by prior validator)
-		T3UnitClass = AmpelUnitLoader.get_class(
-			tier=3, unit_name=values['unitId']
-		)
-
-		if hasattr(T3UnitClass, 'RunConfig'):
-
-			RunConfig = getattr(T3UnitClass, 'RunConfig')
-			rc = RunConfig(**run_config)
-
-			for k in rc.fields.keys():
-				v = getattr(rc, k)
-				if type(v) is EncryptedConfig:
-					setattr(rc, k, AmpelConfig.decrypt_config(v.dict()))
-
-			return rc
-
-		return run_config
