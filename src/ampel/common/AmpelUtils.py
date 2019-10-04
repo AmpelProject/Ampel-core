@@ -165,6 +165,8 @@ class AmpelUtils():
 		"""
 		try:
 			array = path.split(delimiter) if type(path) is str else path
+			# check for int elements encoded as str
+			array = [(el if not el.isdigit() else int(el)) for el in array]
 			return reduce(lambda d, k: d.get(k), array, mapping)
 		except AttributeError:
 			return None
