@@ -4,12 +4,12 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 02.09.2018
-# Last Modified Date: 07.12.2018
+# Last Modified Date: 26.09.2019
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from pydantic import BaseModel, validator
 from typing import Tuple, Dict, Union, Any, List
-from ampel.config.AmpelModelExtension import AmpelModelExtension
+from ampel.config.AmpelBaseModel import AmpelBaseModel
 from ampel.common.docstringutils import gendocstring
 from ampel.config.channel.T0UnitConfig import T0UnitConfig
 from ampel.config.channel.T1UnitConfig import T1UnitConfig
@@ -17,7 +17,7 @@ from ampel.config.channel.T2UnitConfig import T2UnitConfig
 from ampel.config.t3.T3TaskConfig import T3TaskConfig
 
 @gendocstring
-class StreamConfig(AmpelModelExtension):
+class StreamConfig(AmpelBaseModel):
 	"""
 	Config holder for AMPEL channel input streams (ex: ZTFIPAC) 
 	-> values defined in channel configuration section 'sources'
@@ -32,7 +32,7 @@ class StreamConfig(AmpelModelExtension):
 	stream: str
 	parameters: Union[None, Any] = None
 	t0Filter: Union[None, T0UnitConfig] # None allowed bc of the t3 partial loading option
-	t1Update: Union[None, List[T1UnitConfig], Tuple[T1UnitConfig]] = []
+	# t1Combine: later
 	t2Compute: Union[None, List[T2UnitConfig], Tuple[T2UnitConfig]] = []
 	t3Supervise: Union[None, List[T3TaskConfig], Tuple[T3TaskConfig]] = []
 
@@ -52,33 +52,7 @@ class StreamConfig(AmpelModelExtension):
 			super().__init__(**arg)
 
 
-	@validator('t1Update', 't3Supervise', pre=True, whole=True)
-	def t0_partial_loading(cls, value):
-		""" """
-		return cls.partial_loading(0, value)
-
-
-	@validator('t0Filter', 't2Compute', 't3Supervise', pre=True, whole=True)
-	def t1_partial_loading(cls, value):
-		""" """
-		return cls.partial_loading(1, value)
-
-
-	@validator('t0Filter', 't1Update', 't2Compute', pre=True, whole=True)
-	def t3_partial_loading(cls, value):
-		""" """
-		return cls.partial_loading(3, value)
-
-
-	@classmethod		
-	def partial_loading(cls, tier, value):
-		# StreamConfig.__tier__ is set upstream by ChannelConfig
-		if hasattr(cls, "__tier__") and cls.__tier__ == tier:
-			return None
-		return value
-
-
-	@validator('t2Compute', pre=True, whole=True)
+	@validator('t2Compute', 't3Supervise', pre=True, whole=True)
 	def cast_to_tuple(cls, arg):
 		""" """
 		if type(arg) is dict:
