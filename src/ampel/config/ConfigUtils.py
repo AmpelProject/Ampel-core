@@ -10,7 +10,7 @@
 from pydantic import BaseModel
 from ampel.config.AmpelConfig import AmpelConfig
 from ampel.common.AmpelUtils import AmpelUtils
-from ampel.config.AmpelModelExtension import AmpelModelExtension
+from ampel.config.AmpelBaseModel import AmpelBaseModel
 
 class ConfigUtils:
 
@@ -43,42 +43,10 @@ class ConfigUtils:
 
 
 	@classmethod
-	def check_tags_from_dict(cls, value, **kwargs):
-		""" """
-		if isinstance(value, BaseModel):
-			arg = next(iter(value.dict().values()))
-		else:
-			arg = next(iter(value.values()))
-		field_name = kwargs['field'].name.split("_")[0]
-
-		if AmpelUtils.check_seq_inner_type(arg, str):
-			cls.check_tags_from_seq(arg, field_name)
-		else:
-			for v in arg:  
-				if isinstance(v, str):
-					cls.check_tags_from_seq([v], field_name)
-				elif isinstance(v, dict):
-					cls.check_tags_from_seq(next(iter(v.values())), field_name)
-
-
-	@classmethod
-	def check_tags_from_seq(cls, flags, field_name):
-		"""
-		"""
-		for el in AmpelUtils.iter(flags):
-			if type(el) is str:
-				if el not in AmpelConfig._tags.keys():
-					AmpelModelExtension.print_and_raise(
-						header="transients->select->%s config error" % field_name,
-						msg="Unknown tag '%s'.\n" % el
-					)
-
-
-	@classmethod
 	def conditional_expr_converter(cls, arg, level=1):
 		"""
 		Converts JSON encoded conditional statements from Ampel config file 
-		into arrays with dimention up to two.
+		into arrays with dimension up to two.
 		'anyOf' -> or operator -> encoded in a array elements of depth=1
 		'allOf' -> and operator -> encoded in array elements of depth=2
 
