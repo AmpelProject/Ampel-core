@@ -11,14 +11,14 @@ from pydantic import BaseModel, validator, ValidationError
 from typing import Dict, Union, List, Any
 from ampel.common.AmpelUtils import AmpelUtils
 from ampel.common.docstringutils import gendocstring
-from ampel.config.AmpelModelExtension import AmpelModelExtension
+from ampel.config.AmpelBaseModel import AmpelBaseModel
 from ampel.config.ConfigUtils import ConfigUtils
 from ampel.core.flags.AlDocType import AlDocType
 from ampel.core.flags.FlagUtils import FlagUtils
 
 
 @gendocstring
-class TranContentConfig(AmpelModelExtension):
+class TranContentConfig(AmpelBaseModel):
 	""" 
 	Example: 
 

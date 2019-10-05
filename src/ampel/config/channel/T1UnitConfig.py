@@ -9,10 +9,10 @@
 
 from typing import Dict, Any, Union
 from ampel.common.docstringutils import gendocstring
-from ampel.config.AmpelModelExtension import AmpelModelExtension
+from ampel.config.AmpelBaseModel import AmpelBaseModel
 
 @gendocstring
-class T1UnitConfig(AmpelModelExtension):
+class T1UnitConfig(AmpelBaseModel):
 	"""
 	Config holder for T1 units
 	"""
