@@ -17,7 +17,8 @@ from ampel.common.docstringutils import gendocstring
 from ampel.config.AmpelConfig import AmpelConfig
 from ampel.config.ConfigUtils import ConfigUtils
 from ampel.config.ReadOnlyDict import ReadOnlyDict
-from ampel.config.AmpelModelExtension import AmpelModelExtension
+from ampel.config.ValidationError import ValidationError
+from ampel.config.AmpelBaseModel import AmpelBaseModel
 from ampel.config.t3.ScheduleEvaluator import ScheduleEvaluator
 from ampel.config.t3.T3TaskConfig import T3TaskConfig
 from ampel.config.t3.TranConfig import TranConfig
@@ -26,17 +27,13 @@ from ampel.config.t3.TranContentConfig import TranContentConfig
 from ampel.config.t3.LogicSchemaUtils import LogicSchemaUtils
 from ampel.logging.LoggingUtils import LoggingUtils
 
-log = logging.getLogger(__name__)
-
-def nothing():
-	pass
 
 @gendocstring
-class T3JobConfig(AmpelModelExtension):
+class T3JobConfig(AmpelBaseModel):
 	"""
 	Possible 'schedule' values (https://schedule.readthedocs.io/en/stable/):
 	"every(10).minutes"
-	"every().hour"
+	"every().hours"
 	"every().day.at("10:30")"
 	"every().monday"
 	"every().wednesday.at("13:15")"
@@ -198,10 +195,9 @@ class T3JobConfig(AmpelModelExtension):
 		evaluator = ScheduleEvaluator()
 		for el in schedule:
 			try:
-				evaluator(module_schedule.Scheduler(), el).do(nothing)
+				evaluator(module_schedule.Scheduler(), el).do(lambda x: None)
 			except Exception as e:
-				LoggingUtils.log_exception(log, e, msg="ScheduleEvaluator exception")
-				raise
+				raise ValidationError("Bad 'schedule' parameter")
 
 		return schedule
 
