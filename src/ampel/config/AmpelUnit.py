@@ -82,7 +82,7 @@ class AmpelUnit:
 		return UnitClass
 
 
-	def get_run_config(self):
+	def get_run_config(self, repo_name: str=None):
 		""" """
 		run_config = self.unit_config.run_config
 
@@ -91,13 +91,21 @@ class AmpelUnit:
 
 		# Load run config from alias if str was provided
 		if type(run_config) is str:
+			if not repo_name:
+				raise ValueError("Repo name is required to fetch run_config alias")
 			run_config = self.ampel_config.get(
-				"alias." + run_config
+				"alias.%s.%s" % (repo_name, run_config)
 			)
 
 		elif type(run_config) is int:
 			run_config = self.ampel_config.get(
 				"runConfig.t2.%s" % run_config
+			)
+
+		if not run_config:
+			raise ValueError(
+				"Runconfig %s not found" % 
+				self.unit_config.run_config
 			)
 
 		# Check for possibly defined RunConfig model
@@ -111,10 +119,10 @@ class AmpelUnit:
 		return run_config
 
 
-	def get_run_config_id(self):
+	def get_run_config_id(self, repo_name: str=None):
 		""" """
 		return DBUtils.b2_dict_hash(
-			self.get_run_config()
+			self.get_run_config(repo_name)
 		)
 
 
@@ -141,13 +149,20 @@ class AmpelUnit:
 		# Load possibly defined local resources 
 		if self.unit_config.resources:
 
-			local_resource = self.ampel_config.get('resource.' + context_repo)
-			if local_resource is None:
+			local_resources = self.ampel_config.get('resource.' + context_repo)
+			if local_resources is None:
 				raise ValueError("No local resource defined for repo: "+ context_repo)
 
 			for k in self.unit_config.resources:
+
+				if k not in local_resources:
+					raise ValueError(
+						"Local resource '%s' not found in repo: %s" %
+						(k, context_repo)
+					)
+
 				resources[k] = self.recursive_check_decrypt(
-					local_resource[k], self.ampel_config
+					local_resources[k], self.ampel_config
 				)
 
 		return resources
