@@ -51,7 +51,7 @@ class AmpelConfig:
 		Example: get("channel.HU_RANDOM")
 		"""
 		if not self.initialized():
-			raise RuntimeError("Ampel global config not set")
+			raise RuntimeError("Ampel config not set")
 
 		if sub_element is None:
 			return self._config
@@ -75,7 +75,7 @@ class AmpelConfig:
 		""" """
 		if self._config is not None:
 			import warnings
-			warnings.warn("Resetting global configuration")
+			warnings.warn("Resetting configuration")
 
 		self._config = AmpelConfig.recursive_freeze(config)
 
