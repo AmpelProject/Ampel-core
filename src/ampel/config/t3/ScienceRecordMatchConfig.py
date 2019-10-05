@@ -3,12 +3,12 @@ from typing import Dict, Optional, Any
 from pydantic import BaseModel, validator
 import pkg_resources
 
-from ampel.config.AmpelModelExtension import AmpelModelExtension
+from ampel.config.AmpelBaseModel import AmpelBaseModel
 from ampel.common.docstringutils import gendocstring
 from ampel.config.AmpelConfig import AmpelConfig
 
 @gendocstring
-class ScienceRecordMatchConfig(AmpelModelExtension):
+class ScienceRecordMatchConfig(AmpelBaseModel):
     unitId: str
     runConfig: str = "default"
     match: Dict[str,Any] = {}
@@ -34,7 +34,7 @@ class ScienceRecordMatchConfig(AmpelModelExtension):
     @validator('runConfig')
     def validate_config(cls, v, values, config, field):
         configs = set()
-        for ep in pkg_resources.iter_entry_points('ampel.t2.configs'):
+        for ep in pkg_resources.iter_entry_points('ampel_t2RunConfigs'):
             for config in ep.resolve()().values():
                 if config['t2Unit'] == values['unitId']:
                     configs.add(config['runConfig'])

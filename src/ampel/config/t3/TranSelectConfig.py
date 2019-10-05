@@ -11,7 +11,7 @@ from pydantic import BaseModel, validator
 from typing import Union, List
 from ampel.common.AmpelUtils import AmpelUtils
 from ampel.config.time.TimeConstraintConfig import TimeConstraintConfig
-from ampel.config.AmpelModelExtension import AmpelModelExtension
+from ampel.config.AmpelBaseModel import AmpelBaseModel
 from ampel.config.ConfigUtils import ConfigUtils
 from ampel.common.docstringutils import gendocstring
 from ampel.config.t3.AllOf import AllOf
@@ -21,7 +21,7 @@ from ampel.config.t3.ScienceRecordMatchConfig import ScienceRecordMatchConfig
 
 
 @gendocstring
-class TranSelectConfig(AmpelModelExtension):
+class TranSelectConfig(AmpelBaseModel):
 	"""
 	Example: 
 	.. sourcecode:: python\n
@@ -131,7 +131,7 @@ class TranSelectConfig(AmpelModelExtension):
 
 						elif 'allOf' in el:
 
-							# 'allOf' closes nesting  
+							# 'allOf' closes nesting
 							if not AmpelUtils.check_seq_inner_type(el['allOf'], (int, str)):
 								cls.print_and_raise(
 									header="transients->select->%s:anyOf.allOf config error" % field_name,
@@ -141,7 +141,7 @@ class TranSelectConfig(AmpelModelExtension):
 							if len(set(el['allOf'])) < 2:
 								cls.print_and_raise(
 									header="transients->select->%s:allOf config error" % field_name,
-									msg="Please do not use allOf with just one element\n" + 
+									msg="Please do not use allOf with just one element\n" +
 									"Offending value: %s" % el
 							)
 
@@ -154,7 +154,10 @@ class TranSelectConfig(AmpelModelExtension):
 			elif 'allOf' in v:
 
 				# 'allOf' closes nesting  
-				if not AmpelUtils.is_sequence(v['allOf']) or not AmpelUtils.check_seq_inner_type(v['allOf'], (int, str)):
+				if (
+					not AmpelUtils.is_sequence(v['allOf']) or 
+					not AmpelUtils.check_seq_inner_type(v['allOf'], (int, str))
+				):
 					cls.print_and_raise(
 						header="transients->select->%s:allOf config error" % field_name,
 						msg="Invalid type for value %s\n(must be a sequence, is: %s)\n" % 
@@ -172,7 +175,10 @@ class TranSelectConfig(AmpelModelExtension):
 			elif 'oneOf' in v:
 
 				# 'oneOf' closes nesting  
-				if not AmpelUtils.is_sequence(v['oneOf']) or not AmpelUtils.check_seq_inner_type(v['oneOf'], (int, str)):
+				if (
+					not AmpelUtils.is_sequence(v['oneOf']) or 
+					not AmpelUtils.check_seq_inner_type(v['oneOf'], (int, str))
+				):
 					cls.print_and_raise(
 						header="transients->select->%s:oneOf config error" % field_name,
 						msg="Invalid type for value %s\n(must be a sequence, is: %s)\n" % 
@@ -187,10 +193,3 @@ class TranSelectConfig(AmpelModelExtension):
 				)
 
 		return v
-
-
-	@validator('withTags', 'withoutTags', whole=True)
-	def check_valid_flag(cls, value, values, **kwargs):
-		""" """
-		ConfigUtils.check_tags_from_dict(value, **kwargs)
-		return value

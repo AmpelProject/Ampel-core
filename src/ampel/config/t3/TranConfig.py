@@ -10,13 +10,13 @@
 from pydantic import BaseModel, validator
 from ampel.common.docstringutils import gendocstring
 from ampel.common.AmpelUtils import AmpelUtils
-from ampel.config.AmpelModelExtension import AmpelModelExtension
+from ampel.config.AmpelBaseModel import AmpelBaseModel
 from ampel.config.t3.TranSelectConfig import TranSelectConfig
 from ampel.config.t3.TranContentConfig import TranContentConfig
 
 
 @gendocstring
-class TranConfig(AmpelModelExtension):
+class TranConfig(AmpelBaseModel):
 	""" 
 	Example: 
 	{
@@ -79,10 +79,9 @@ class TranConfig(AmpelModelExtension):
 		"""
 		"""
 		if state != "$latest" and state != "$all":
-			cls.print_and_raise(
-				header="transients->state config error",
-				msg="Parameter 'state' must be either '$latest' of '$all'\n" +
-					"Offending value: %s" % state
+			raise ValueError(
+				"Parameter 'state' must be either '$latest' of '$all'" +
+				" (Offending value: %s)" % state
 			)
 
 		return state
