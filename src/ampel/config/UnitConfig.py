@@ -7,13 +7,13 @@
 # Last Modified Date: 04.10.2019
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-from pydantic import BaseModel
+from pydantic import BaseModel, validator
 from typing import Dict, Union, List
 from ampel.common.docstringutils import gendocstring
-from ampel.config.AmpelModelExtension import AmpelModelExtension
+from ampel.config.AmpelBaseModel import AmpelBaseModel
 
 @gendocstring
-class UnitConfig(AmpelModelExtension):
+class UnitConfig(AmpelBaseModel):
 	"""
 	run_config types:
 	* None -> no run config
@@ -25,3 +25,12 @@ class UnitConfig(AmpelModelExtension):
 	run_config: Union[None, int, str, Dict] = None
 	override: Union[None, Dict] = None
 	resources: Union[None, List[str]] = None
+
+	@validator('resources', pre=True, whole=True)
+	def validate_resources(cls, resources):
+		""" """
+		# cast to sequence
+		if type(resources) is str:
+			return (resources,)
+
+		return resources
