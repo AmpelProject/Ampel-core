@@ -9,6 +9,7 @@
 
 from ampel.logging.AmpelLogger import AmpelLogger
 from ampel.db.AmpelDB import AmpelDB
+from datetime import datetime
 
 class LogsMatcher:
 	"""
@@ -74,11 +75,19 @@ class LogsMatcher:
 		return self
 
 
+	def set_custom(self, key, value):
+		""" """
+		self.match[key] = value
+		return self
+
+
 	def set_after(self, dt):
 		""" 
 		Note: time operation is greater than / *equals*
-		:param datetime dt:
+		:param dt: date-time
+		:type dt: either datetime object or string (ex: '2018-06-29 08:15:27')
 		""" 
+
 		self._set_time_constraint(dt, '$gte')
 		return self
 
@@ -86,7 +95,8 @@ class LogsMatcher:
 	def set_before(self, dt):
 		""" 
 		Note: time operation is before than / *equals*
-		:param datetime dt:
+		:param dt: date-time
+		:type dt: either datetime object or string (ex: '2018-06-29 08:15:27')
 		""" 
 		self._set_time_constraint(dt, '$lte')
 		return self
@@ -95,8 +105,17 @@ class LogsMatcher:
 	def _set_time_constraint(self, dt, op):
 		""" 
 		Note: time operation is greater than / *equals*
-		:param datetime dt:
+		:param dt: date-time
+		:type dt: either datetime object or string (ex: '2018-06-29 08:15:27.243860')
 		""" 
+
+		if isinstance(dt, datetime):
+			pass
+		elif isinstance(dt, str):
+			dt = datetime.strptime(dt, '%Y-%m-%d %H:%M:%S')
+		else:
+			raise ValueError()
+
 		from bson.objectid import ObjectId
 		if "_id" not in self.match:
 			self.match["_id"] = {}
