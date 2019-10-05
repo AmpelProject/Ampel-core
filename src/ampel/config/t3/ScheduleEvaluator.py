@@ -24,21 +24,28 @@ class ScheduleEvaluator(ast.NodeVisitor):
 		self._scheduler = scheduler
 		elem = ast.parse(line).body[0]
 		return self.visit(elem)
+
 	def generic_visit(self, node):
 		raise ValueError("Illegal operation {}".format(type(node)))
+	
 	def visit_Num(self, node):
 		return node.n
+	
 	def visit_Str(self, node):
 		return node.s
+	
 	def visit_Name(self, node):
 		return node.id
+	
 	def visit_Attribute(self, node):
 		return getattr(self.visit(node.value), node.attr)
+	
 	def visit_Call(self, node):
 		args = [self.visit(arg) for arg in node.args]
 		func = self.visit(node.func)
 		if isinstance(func, str):
 			func = getattr(self._scheduler, func)
 		return func(*args)
+	
 	def visit_Expr(self, node):
 		return self.visit(node.value)
