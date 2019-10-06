@@ -85,6 +85,7 @@ class AmpelUnit:
 	def get_run_config(self, repo_name: str=None):
 		""" """
 		run_config = self.unit_config.run_config
+		klass =  self.get_class()
 
 		if not run_config:
 			return None
@@ -94,12 +95,12 @@ class AmpelUnit:
 			if not repo_name:
 				raise ValueError("Repo name is required to fetch run_config alias")
 			run_config = self.ampel_config.get(
-				"alias.%s.%s" % (repo_name, run_config)
+				"t%s.alias.%s.%s" % (klass.tier, repo_name, run_config)
 			)
 
 		elif type(run_config) is int:
 			run_config = self.ampel_config.get(
-				"runConfig.t2.%s" % run_config
+				"t%s.runConfig.%s" % (klass.tier, run_config)
 			)
 
 		if not run_config:
@@ -109,10 +110,7 @@ class AmpelUnit:
 			)
 
 		# Check for possibly defined RunConfig model
-		InnerRunConfigClass = getattr(
-			self.get_class(), 'RunConfig', None
-		)
-
+		InnerRunConfigClass = getattr(klass, 'RunConfig', None)
 		if InnerRunConfigClass:
 			return InnerRunConfigClass(**run_config)
 
