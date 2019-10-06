@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 26.02.2018
-# Last Modified Date: 11.11.2018
+# Last Modified Date: 06.10.2019
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import logging
@@ -52,8 +52,10 @@ class T3Task(T3Event):
 	
 		# Instantiate t3 unit
 		self.t3_unit = T3Unit(
-			self.logger, AmpelUnitLoader.get_resources(T3Unit),
-			config.runConfig, self.global_info
+			self.logger, 
+			base_config=AmpelUnitLoader.get_resources(T3Unit),
+			run_config=config.runConfig, 
+			global_info=self.global_info
 		)
 
 		# Create event document 
