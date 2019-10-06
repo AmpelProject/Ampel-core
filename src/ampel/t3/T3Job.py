@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 26.02.2018
-# Last Modified Date: 22.02.2019
+# Last Modified Date: 06.10.2019
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import logging
@@ -115,8 +115,10 @@ class T3Job(T3Event):
 				try:
 					# Instantiate t3 unit
 					self.t3_units[task_config.task] = T3Unit(
-						logger, AmpelUnitLoader.get_resources(T3Unit),
-						task_config.runConfig, self.global_info
+						logger, 
+						base_config=AmpelUnitLoader.get_resources(T3Unit),
+						run_config=task_config.runConfig, 
+						global_info=self.global_info
 					)
 				except Exception as e:
 
@@ -331,14 +333,15 @@ class T3Job(T3Event):
 				# Temporary solution, please improve
 				chan_set = LogicSchemaUtils.reduce_to_set(
 					task_sel_conf.channels
-				)
+				) if task_sel_conf.channels else None
 
 				tran_views = self.create_tran_views(
 					task_name,
 					tran_selection, 
 					chan_set, 
 					task_config.transients.content.docs,
-					task_config.transients.content.t2SubSelection
+					task_config.transients.content.t2SubSelection,
+					task_config.transients.content.get_t2_query()
 				)
 
 				# Feedback
@@ -358,7 +361,7 @@ class T3Job(T3Event):
 
 				if self.update_tran_journal:
 
-					chan_list = list(chan_set)
+					chan_list = list(chan_set) if chan_set else None
 
 					self.journal_updater.add_default_entries(
 						tran_views, chan_list, event_name=task_name, 
