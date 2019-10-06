@@ -34,14 +34,14 @@ class ConfigBuilder:
 		self.error = False
 
 		self._config = {
-			"db": {"prefix": "Ampel"},
+			"db": {"prefix": "Ampel", "options": {"hashChanNames": True}},
+			"t0": {"task": [], "alias": {}},
+			"t1": {"task": {}, "alias": {}},
+			"t2": {"alias": {}, "runConfig": {}},
+			"t3": {"task": {}, "job": {}, "alias": {}},
 			"channel": {},
 			"unit": {},
-			"alias": {},
-			"runConfig": {"t2": {}}, # internal use only
 			"resource": {},
-			"job": {},
-			"task": {},
 			"instrument": {},
 			"pwd": []
 		}
@@ -304,18 +304,18 @@ class ConfigBuilder:
 						task['repo'] = repo_name
 						task_name = task['task']
 
-						if task_name in self._config['task']:
+						if task_name in self._config['t3']['task']:
 							self.logger.error(
 								"Duplicated task name: %s %s", task_name, 
 								self.get_collision_help_msg(
-									self._config['task'][task_name]['repo'],
+									self._config['t3']['task'][task_name]['repo'],
 									repo_name
 								)
 							)
 							self.error = True
 							return
 
-						self._config['task'][task_name] = task
+						self._config['t3']['task'][task_name] = task
 
 			self._config['channel'][chan_name] = arg
 
@@ -329,36 +329,56 @@ class ConfigBuilder:
 	def load_aliases(self, arg: Dict, repo_name: str=None) -> None:
 		""" 
 		"""
-		for key in arg:
+		for tier in arg:
 
-			try:
-				if self.verbose:
-					self.logger.verbose("-> Loading alias " + key)
-
-				if repo_name:
-					if repo_name not in self._config['alias']:
-						d = {}
-						self._config['alias'][repo_name] = d
-					else:
-						d = self._config['alias'][repo_name]
-				else:
-					d = self._config['alias']
-
-				if key in d and (
-					AmpelUtils.build_unsafe_dict_id(arg[key]) == \
-					AmpelUtils.build_unsafe_dict_id(d[key])
-				):
-					self.logger.error("Duplicated alias: " + key)
-					self.error = True
-					return
-
-				d[key] = arg[key]
-
-			except Exception as e:
-				self.error = True
+			if tier not in ("t0", "t1", "t2", "t3"):
 				self.logger.error(
-					"Error occured while loading alias " + key, exc_info=e
+					"Alias error: ignoring unknown key: %s (repo: %s)" % 
+					(tier, repo_name)
 				)
+				self.error = True
+				continue
+
+			if not isinstance(arg[tier], dict):
+				self.logger.error(
+					"Alias error: provided value must be have dict type (key: %s, repo: %s)" % 
+					(tier, repo_name)
+				)
+				self.error = True
+				continue
+
+			for key in arg[tier]:
+
+				try:
+
+					if self.verbose:
+						self.logger.verbose("-> Loading alias " + key)
+
+					if repo_name:
+						if repo_name not in self._config[tier]['alias']:
+							d = {}
+							self._config[tier]['alias'][repo_name] = d
+						else:
+							d = self._config[tier]['alias'][repo_name]
+					else:
+						d = self._config[tier]['alias']
+
+					if key in d and (
+						AmpelUtils.build_unsafe_dict_id(arg[tier][key]) == \
+						AmpelUtils.build_unsafe_dict_id(d[key])
+					):
+						self.logger.error("Duplicated alias: %s.%s" % (tier, key))
+						self.error = True
+						return
+
+					d[key] = arg[tier][key]
+
+				except Exception as e:
+					self.error = True
+					self.logger.error(
+						"Error occured while loading alias %s.%s" %
+						(tier, key), exc_info=e
+					)
 
 
 	def load_units(self, arg: List[str], repo_name: str="Undefined") -> None:
@@ -429,12 +449,12 @@ class ConfigBuilder:
 		if self.verbose:
 			self.logger.verbose("-> Loading job " + job_name)
 
-		if job_name in self._config['job']:
+		if job_name in self._config['t3']['job']:
 			self.logger.error("Duplicated job: '%s'", job_name)
 			self.error = True
 			return
 
-		self._config['job'][job_name] = arg
+		self._config['t3']['job'][job_name] = arg
 
 
 	def get_config(self, ignore_errors: bool=False) -> Dict:
@@ -468,11 +488,11 @@ class ConfigBuilder:
 							repo_name = self._config['channel'][channel]['repo']
 
 							if (
-								repo_name not in self._config['alias'] or 
-								rc not in self._config['alias'][repo_name]
+								repo_name not in self._config['t2']['alias'] or 
+								rc not in self._config['t2']['alias'][repo_name]
 							):
 								self.logger.error(
-									"Error in channel %s (defined in repo %s)", 
+									"Error in channel %s (repo %s)", 
 									channel, self._config['channel'][channel]['repo']
 								)
 								raise ValueError(
@@ -480,7 +500,7 @@ class ConfigBuilder:
 									(channel, t2)
 								)
 
-							rc = self._config['alias'][repo_name][rc]
+							rc = self._config['t2']['alias'][repo_name][rc]
 
 						if isinstance(rc, Dict):
 							override = t2.get('override', None)
@@ -488,11 +508,11 @@ class ConfigBuilder:
 								rc = {**rc, **override}
 							b2_hash = DBUtils.b2_dict_hash(rc)
 							t2['runConfig'] = b2_hash
-							self._config['runConfig']['t2'][b2_hash] = rc
+							self._config['t2']['runConfig'][b2_hash] = rc
 							continue
 
 						if isinstance(rc, int):
-							if rc in self._config['runConfig']['t2']:
+							if rc in self._config['t2']['runConfig']:
 								continue
 							raise ValueError(
 								"Unknown T2 run config alias defined in channel %s:\n %s" %
