@@ -431,13 +431,14 @@ class T3Event:
 		# Feedback if so wished
 		if self.config.transients is not None and self.config.transients.debug:
 
-			list_chan = AmpelUtils.to_list(channels, try_reduce=True)
 			for tran_view in tran_views:
 				self.logger.debug(
 					"TranView created: %s" % TransientView.content_summary(tran_view),
 					extra={
 						'tranId': tran_view.tran_id,	
-						'channels': list_chan
+						'channels': AmpelUtils.try_reduce(
+							AmpelUtils.to_list(channels)
+						)
 					}
 				)
 
