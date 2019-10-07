@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 04.10.2019
-# Last Modified Date: 04.10.2019
+# Last Modified Date: 07.10.2019
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import importlib
@@ -21,7 +21,9 @@ from ampel.base.abstract.AbsT3Unit import AbsT3Unit
 
 class AmpelUnit:
 	"""
-	Central class for the modular ampel design
+	Central class of the modular ampel design, 
+	whose purpose it to hold information related to 
+	user contributed unit and configuration
 	"""
 
 	classes = {}
