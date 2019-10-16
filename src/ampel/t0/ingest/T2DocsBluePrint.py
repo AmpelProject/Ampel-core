@@ -49,7 +49,7 @@ class T2DocsBluePrint():
 		Values are a set of channel names
 		"""
 
-		if not type(t0_channels) is list:
+		if not isinstance(t0_channels, list):
 			raise ValueError("Parameter t0_channels must be of type: list")
 
 		if len(t0_channels) == 0:
@@ -284,5 +284,3 @@ class T2DocsBluePrint():
 		# Or using a different representation:
 		# t2s_eff['PHOTO_Z']['default']['a1b2c3d4'] = CHANNEL_SN | CHANNEL_LEN | CHANNEL_5
 		# t2s_eff['PHOTO_Z']['default']['d4c3b2a1'] = CHANNEL_GRB
-
-
