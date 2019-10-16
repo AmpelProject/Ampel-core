@@ -1,13 +1,14 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/t0/alerts/TarAlertLoader.py
+# File              : ampel/t0/load/TarAlertLoader.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 13.05.2018
-# Last Modified Date: 08.06.2018
+# Last Modified Date: 16.10.2019
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import tarfile
+from typing import Optional, BinaryIO
 from ampel.logging.AmpelLogger import AmpelLogger
 
 
@@ -15,7 +16,10 @@ class TarAlertLoader():
 	"""
 	"""
 
-	def __init__(self, tar_path=None, file_obj=None, start=0, tar_mode='r:gz', logger=None):
+	def __init__(
+		self, tar_path: str = None, file_obj: BinaryIO = None, start: int = 0, 
+		tar_mode: str = 'r:gz', logger: AmpelLogger = None
+	):
 		"""
 		"""
 		self.logger = AmpelLogger.get_logger() if logger is None else logger
@@ -41,8 +45,14 @@ class TarAlertLoader():
 		return self
 	
 
-	def __next__(self):
+	def __next__(self) -> tarfile.ExFileObject:
 		"""
+		FYI: 
+		from io import IOBase
+		In []: tar_file = tarfile.open("file.tar")
+		In []: tar_info = tar_file.next()
+		In []: isinstance(tar_file.extractfile(tar_info), IOBase)
+		Out[]: True
 		"""
 		# Free memory 
 		self.tar_file.members.clear() 
@@ -75,16 +85,18 @@ class TarAlertLoader():
 				self.chained_tal = TarAlertLoader(file_obj=file_obj)
 				file_obj = self.get_chained_next()
 				return file_obj if file_obj is not None else next(self)
-			else:
-				return file_obj
+
+			return file_obj
+
+		return next(self)
 
 
-	def get_chained_next(self):
+	def get_chained_next(self) -> Optional[tarfile.ExFileObject]:
 		"""
 		"""
 		file_obj = next(self.chained_tal, None)
 		if file_obj is None:
 			self.chained_tal = None
 			return None
-		else:
-			return file_obj
+
+		return file_obj
