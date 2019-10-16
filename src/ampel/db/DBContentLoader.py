@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 13.01.2018
-# Last Modified Date: 26.09.2019
+# Last Modified Date: 11.10.2019
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from bson import ObjectId
@@ -15,7 +15,6 @@ from ampel.base.PlainPhotoPoint import PlainPhotoPoint
 from ampel.base.PlainUpperLimit import PlainUpperLimit
 from ampel.base.Compound import Compound
 
-from ampel.core.flags.FlagUtils import FlagUtils
 from ampel.core.flags.AlDocType import AlDocType
 from ampel.core.flags.T2RunStates import T2RunStates
 
@@ -28,7 +27,7 @@ from ampel.db.query.QueryLatestCompound import QueryLatestCompound
 from ampel.db.query.QueryLoadT2Info import QueryLoadT2Info
 from ampel.t3.TransientData import TransientData
 from ampel.config.AmpelConfig import AmpelConfig
-from ampel.config.t3.LogicSchemaUtils import LogicSchemaUtils
+from ampel.config.utils.LogicSchemaUtils import LogicSchemaUtils
 
 class DBContentLoader:
 	"""
@@ -37,7 +36,6 @@ class DBContentLoader:
 		AlDocType.PHOTOPOINT, AlDocType.UPPERLIMIT, AlDocType.COMPOUND, 
 		AlDocType.TRANSIENT, AlDocType.T2RECORD,
 	)
-
 
 	def __init__(self, verbose=True, debug=False, logger=None):
 		"""
@@ -150,7 +148,7 @@ class DBContentLoader:
 				# Option 2: Find latest state, then update search query parameters
 				if state_op == "$latest":
 		
-					if type(tran_id) in (list, tuple):
+					if isinstance(tran_id, (list, tuple)):
 						raise ValueError(
 							"Querying multiple transients is not supported with state_op '$latest'"
 						)
@@ -213,7 +211,7 @@ class DBContentLoader:
 				self.col_t2.find(t2_query)
 			)
 
-		lookup_id = {'$in': tran_id} if type(tran_id) in (list, tuple) else tran_id
+		lookup_id = {'$in': tran_id} if isinstance(tran_id, (list, tuple)) else tran_id
 
 		# Photo DB query 
 		if AlDocType.PHOTOPOINT in docs and AlDocType.UPPERLIMIT in docs:
@@ -237,9 +235,9 @@ class DBContentLoader:
 			db_docs['ext_journal'] = list(
 				self.ext_journal_col.find({'_id': lookup_id})
 			)
-			list_tran = list(
-				self.col_stock.find({'_id': lookup_id})
-			)
+			#list_tran = list(
+			#	self.col_stock.find({'_id': lookup_id})
+			#)
 
 		if 't0' in db_docs and not TransientData.data_access_controllers:
 			for el in iter_entry_points('ampel.sources'):
@@ -397,7 +395,7 @@ class DBContentLoader:
 					
 					# Photopoints instance attached to the transient instance 
 					# are not bound to a compound and come thus without policy
-					if type(doc['tranId']) is list:
+					if isinstance(doc['tranId'], list):
 						for tran_id in (loaded_tran_ids & doc['tranId']):
 							tran_register[tran_id].add_photopoint(
 								PlainPhotoPoint(doc, photo_flag, read_only=True)
@@ -412,7 +410,7 @@ class DBContentLoader:
 
 					# UpperLimits instance attached to the transient instance 
 					# are not bound to a compound and come thus without policy 
-					if type(doc['tranId']) is int:
+					if isinstance(doc['tranId'], int):
 						tran_register[doc['tranId']].add_upperlimit(
 							PlainUpperLimit(doc, photo_flag, read_only=True)
 						)
@@ -422,7 +420,7 @@ class DBContentLoader:
 						doc_id = doc["_id"]
 						for tran_id in (loaded_tran_ids & doc['tranId']):
 							if doc_id not in loaded_uls:
-								loaded_uls[doc_id]= PlainUpperLimit(
+								loaded_uls[doc_id] = PlainUpperLimit(
 									doc, photo_flag, read_only=True
 								)
 							tran_register[tran_id].add_upperlimit(loaded_uls[doc_id])
