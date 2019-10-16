@@ -145,14 +145,14 @@ class AmpelDB:
 		"""
 
 		# Convenience
-		if type(col_name) in (list, tuple):
+		if isinstance(col_name, (list, tuple)):
 			return (cls.get_collection(name) for name in col_name)
 
 		if col_name not in cls._ampel_cols:
 			raise ValueError("Unknown collection: '%s'" % col_name)
 
 		if cls._db_prefix is None:
-			cls.set_db_prefix(AmpelConfig.get_config('AmpelDB.prefix') or "Ampel")
+			cls.set_db_prefix(AmpelConfig.get('db.prefix') or "Ampel")
 
 		# Shortcut
 		col_config = cls._ampel_cols[col_name]
@@ -194,7 +194,7 @@ class AmpelDB:
 
 			# As of Juli 2018: 'Ampel_data' -> 'writer' and 'Ampel_logs' -> 'logger'
 			cls._existing_mcs[role] = MongoClient(
-				AmpelConfig.get_config('resources.mongo.%s' % role)
+				AmpelConfig.get('resource.mongo.%s' % role)
 			)
 
 		return cls._existing_mcs[role] 

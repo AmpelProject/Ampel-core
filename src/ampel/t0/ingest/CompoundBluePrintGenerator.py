@@ -126,17 +126,14 @@ class CompoundBluePrintGenerator():
 			# eff_id = effective compound id = md5 hash of effective payload
 			eff_id_ho = hashlib.md5(bytes(eff_hash_payload, "utf-8"))
 			eff_id = eff_id_ho.digest()
-			eff_id_str = eff_id_ho.hexdigest()
 
 			# strict_id = strict compound id = md5 hash of strict payload
 			strict_id_ho = hashlib.md5(bytes(strict_hash_payload, "utf-8"))
 			strict_id = strict_id_ho.digest()
-			strict_id_str = strict_id_ho.hexdigest()
 	
 			# pp_id = photopoints compound id = md5 hash of photopoins payload (without upper limits)
 			pp_id_ho = hashlib.md5(bytes(pp_hash_payload, "utf-8"))
 			pp_id = pp_id_ho.digest()
-			pp_id_str = pp_id_ho.hexdigest()
 			
 
 			################
@@ -177,7 +174,7 @@ class CompoundBluePrintGenerator():
 					)
 	
 				# Add tupple (chan_name, strict id) to internal dict using eff_id as key
-				if not eff_id in cbp.d_eid_tuple_chan_sid:
+				if eff_id not in cbp.d_eid_tuple_chan_sid:
 					cbp.d_eid_tuple_chan_sid[eff_id] = {
 						(chan_name, strict_id)
 					}
