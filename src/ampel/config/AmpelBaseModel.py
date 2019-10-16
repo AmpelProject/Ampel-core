@@ -4,11 +4,11 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 30.09.2018
-# Last Modified Date: 01.10.2019
+# Last Modified Date: 10.10.2019
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from ampel.common.AmpelUtils import AmpelUtils
-from pydantic import BaseModel, BaseConfig
+from pydantic import BaseModel, BaseConfig, Extra
 import logging
 
 log = logging.getLogger(__name__)
@@ -27,16 +27,15 @@ def to_camel_case(arg: str) -> str:
 		word.capitalize() for word in s[1:]
 	)
 
-# TODO: rename to AmpelBaseSchema
 class AmpelBaseModel(BaseModel):
+	""" """
 
 	class Config(BaseConfig):
 		"""
 		Raise validation errors if extra fields are present,
 		allows camelCase members
 		"""
-		allow_extra = False
-		ignore_extra = False
+		extra = Extra.forbid
 		allow_population_by_alias = True
 		alias_generator = to_camel_case
 
