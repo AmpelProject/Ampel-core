@@ -78,7 +78,7 @@ def test_get_required_resources():
 	AmpelConfig.reset()
 	try:
 		AmpelConfig.set_config(ConfigLoader.load_config(tier="all"))
-		assert len(AmpelConfig.get_config('channels')) > 0
+		assert len(AmpelConfig.get('channel')) > 0
 		resources = get_required_resources()
 		assert len(resources) > 0
 	finally:

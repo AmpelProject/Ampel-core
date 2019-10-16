@@ -220,7 +220,7 @@ class T2Executor:
 
 				# Load resources
 				resources = {
-					k: AmpelConfig.get_config(
+					k: AmpelConfig.get(
 						'resources.{}'.format(k)
 					)
 					for k in getattr(T2Unit, 'resources')
@@ -421,7 +421,7 @@ class T2Executor:
 		"""
 
 		# Get T2 run config doc from ampel config DB
-		t2_run_config_doc = AmpelConfig.get_config(
+		t2_run_config_doc = AmpelConfig.get(
 			"t2RunConfig.{}".format(run_config_id)
 		)
 

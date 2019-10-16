@@ -122,7 +122,7 @@ def test_launch_job(testing_config):
 	from ampel.db.AmpelDB import AmpelDB
 
 	# invoke job directly
-	job = T3Job(T3JobConfig(**AmpelConfig.get_config('t3Jobs.jobbyjob')))
+	job = T3Job(T3JobConfig(**AmpelConfig.get('job.jobbyjob')))
 	troubles = AmpelDB.get_collection('troubles').count()
 	job.run()
 	assert AmpelDB.get_collection('troubles').count() == troubles+1, "an exception was logged"
@@ -194,7 +194,7 @@ def minimal_config(mongod, testing_class):
 	AmpelConfig.reset()
 
 def test_missing_job(minimal_config):
-	assert AmpelConfig.get_config("t3Jobs.jobbyjob_doesnotexist") is None
+	assert AmpelConfig.get("t3Jobs.jobbyjob_doesnotexist") is None
 
 @pytest.mark.skip('Depends on ampel-ztf')
 def test_get_transient_view(ingested_transients, t3_selected_transients, minimal_ingestion_config):
@@ -300,7 +300,7 @@ def test_get_required_resources():
 	from ampel.config.AmpelConfig import AmpelConfig
 	
 	AmpelConfig.set_config(ConfigLoader.load_config(tier="all"))
-	assert len(AmpelConfig.get_config("t3Jobs")) > 0
+	assert len(AmpelConfig.get("t3Jobs")) > 0
 	assert len(T3Controller.load_job_configs()) > 0
 	units = set()
 	for job in T3Controller.load_job_configs().values():
