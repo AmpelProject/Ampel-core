@@ -1,31 +1,33 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/config/t3/T3JobConfig.py
+# File              : ampel/model/t3/T3JobConfig.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 29.09.2018
-# Last Modified Date: 01.10.2018
+# Last Modified Date: 10.10.2019
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import json, schedule as module_schedule
-import logging
-from pydantic import BaseModel, validator
-from typing import Union, List
+from pydantic import validator
+from typing import Union, Sequence
+
+from ampel.logging.LoggingUtils import LoggingUtils
 from ampel.logging.AmpelLogger import AmpelLogger
+
 from ampel.common.AmpelUtils import AmpelUtils
 from ampel.common.docstringutils import gendocstring
+
+from ampel.model.AmpelBaseModel import AmpelBaseModel
+from ampel.model.t3.T3TaskConfig import T3TaskConfig
+from ampel.model.t3.StockConfig import StockConfig
+from ampel.model.t3.StockSelectionConfig import StockSelectionConfig
+from ampel.model.t3.StockContentConfig import StockContentConfig
+
 from ampel.config.AmpelConfig import AmpelConfig
 from ampel.config.ConfigUtils import ConfigUtils
 from ampel.config.ReadOnlyDict import ReadOnlyDict
-from ampel.config.ValidationError import ValidationError
-from ampel.config.AmpelBaseModel import AmpelBaseModel
-from ampel.config.t3.ScheduleEvaluator import ScheduleEvaluator
-from ampel.config.t3.T3TaskConfig import T3TaskConfig
-from ampel.config.t3.TranConfig import TranConfig
-from ampel.config.t3.TranSelectConfig import TranSelectConfig
-from ampel.config.t3.TranContentConfig import TranContentConfig
-from ampel.config.t3.LogicSchemaUtils import LogicSchemaUtils
-from ampel.logging.LoggingUtils import LoggingUtils
+from ampel.config.LogicSchemaUtils import LogicSchemaUtils
+from ampel.config.ScheduleEvaluator import ScheduleEvaluator
 
 
 @gendocstring
@@ -43,9 +45,9 @@ class T3JobConfig(AmpelBaseModel):
 	job: str
 	active: bool = True
 	globalInfo: bool = False
-	schedule: List[str] = None
-	transients: Union[None, TranConfig]
-	tasks: List[T3TaskConfig]
+	schedule: Sequence[str] = None
+	transients: Union[None, StockConfig]
+	tasks: Sequence[T3TaskConfig]
 
 
 	@staticmethod
@@ -64,16 +66,16 @@ class T3JobConfig(AmpelBaseModel):
 
 
 	@validator('schedule', 'tasks', pre=True, whole=True)
-	def cast_to_list(cls, v, values, **kwargs):
-		if type(v) is not list:
-			return [v]
+	def cast_to_tuple(cls, v):
+		if isinstance(v, dict):
+			return (v, )
 		return v
 
 
 	@validator('tasks', pre=True, whole=True)
 	def do_before_validation(cls, tasks, values, **kwargs):
 		""" 
-		tasks is a dict (pre is True) but values['transients'] is a TranConfig obj.
+		tasks is a dict (pre is True) but values['transients'] is a StockConfig obj.
 		Here we add some info extracted from the job into the tasks
 		so that the task validators do not complain about possible null values.
 		"""
@@ -104,7 +106,7 @@ class T3JobConfig(AmpelBaseModel):
 
 			# Either copy entire 'transients.select' and 'transients.content' values if missing
 			# or the sub-key values (t2SubSelection, docs, channels, withTags ...) that were not set
-			for el in {'select': TranSelectConfig, 'content': TranContentConfig}.items():
+			for el in {'select': StockSelectionConfig, 'content': StockContentConfig}.items():
 
 				cont_or_sel_str = el[0]
 				job_cont_or_sel_conf = values['transients'].get(cont_or_sel_str)
@@ -115,7 +117,7 @@ class T3JobConfig(AmpelBaseModel):
 					task_config['transients'][cont_or_sel_str] = job_cont_or_sel_conf
 				else:
 
-					# el.value is either T3TranContentConfig or T3TranSelectConfig
+					# el.value is either T3StockContentConfig or T3StockSelectionConfig
 					for field in el[1].__fields__.keys():
 
 						# Don't override task specific values
@@ -134,9 +136,9 @@ class T3JobConfig(AmpelBaseModel):
 			# Make sure tasks do not require transients
 			for task_config in tasks:
 				if task_config.transients is not None:
-					cls.print_and_raise(
-						header="T3JobConfig logic error",
-						msg="T3 task logic error: field 'transients' cannot be " +
+					raise ValueError(
+						"T3JobConfig logic error\n" +
+						"T3 task logic error: field 'transients' cannot be " +
 						"defined in task(s) if not defined in job"
 					)
 			if hasattr(T3JobConfig, 'logger'):
@@ -178,9 +180,9 @@ class T3JobConfig(AmpelBaseModel):
 
 			# Either none or all tasks must make use of the $forEach operator
 			if len(joined_tasks_selections['channels']) != 1:
-				cls.print_and_raise(
-					header="T3JobConfig logic error",
-					msg="Invalid task sub-channel selection: Either none \n" +
+				raise ValueError(
+					"T3JobConfig logic error\n" +
+					"Invalid task sub-channel selection: Either none \n" +
 					"or all tasks must make use of the $forEach operator"
 				)
 
@@ -197,7 +199,7 @@ class T3JobConfig(AmpelBaseModel):
 			try:
 				evaluator(module_schedule.Scheduler(), el).do(lambda x: None)
 			except Exception as e:
-				raise ValidationError("Bad 'schedule' parameter")
+				raise ValueError("Bad 'schedule' parameter")
 
 		return schedule
 
@@ -320,9 +322,9 @@ class T3JobConfig(AmpelBaseModel):
 					
 				# Case 1
 				else:
-					cls.print_and_raise(
-						header="T3JobConfig logic error",
-						msg="Channels %s must be defined in parent job config" % 
+					raise ValueError(
+						"T3JobConfig logic error\n" +
+						"Channels %s must be defined in parent job config" % 
 						task_tran_config.select.channels
 					)
 
@@ -357,17 +359,17 @@ class T3JobConfig(AmpelBaseModel):
 
 					# case 2
 					if len(set_task_chans - set_job_chans) > 0:
-						cls.print_and_raise(
-							header="T3JobConfig logic error",
-							msg="channels defined in task 'select' must be a sub-set "+
+						raise ValueError(
+							"T3JobConfig logic error\n" +
+							"channels defined in task 'select' must be a sub-set "+
 							"of channels defined in job config"
 						)
 
 					# case 3:
 					if len(set(set_job_chans) - joined_tasks_selections['channels']) > 0:
-						cls.print_and_raise(
-							header="T3JobConfig logic error",
-							msg="Set of job channels must equal set of combined tasks channels"
+						raise ValueError(
+							"T3JobConfig logic error\n" +
+							"Set of job channels must equal set of combined tasks channels"
 						)
 
 					# case 4
@@ -393,9 +395,9 @@ class T3JobConfig(AmpelBaseModel):
 		"""
 		if job_state != task_state:
 			if job_state == '$latest':
-				cls.print_and_raise(
-					header="T3JobConfig error",
-					msg="invalid state sub-selection criteria: main:'$latest' -> sub:'$all"
+				raise ValueError(
+					"T3JobConfig error\n" +
+					"invalid state sub-selection criteria: main:'$latest' -> sub:'$all"
 				)
 
 
@@ -409,9 +411,9 @@ class T3JobConfig(AmpelBaseModel):
 			cls.extract_to_set(task_tran_config.content.docs) - 
 			cls.extract_to_set(job_tran_config.content.docs)
 		) > 0:
-			cls.print_and_raise(
-				header="T3 Task transients->content->docs error",
-				msg="Invalid task 'docs' sub-selection (no subset of job selection)\n" + 
+			raise ValueError(
+				"T3 Task transients->content->docs error\n" +
+				"Invalid task 'docs' sub-selection (no subset of job selection)\n" + 
 				"Offending value: %s" % task_tran_config.content.docs
 			)
 
@@ -420,8 +422,8 @@ class T3JobConfig(AmpelBaseModel):
 			cls.extract_to_set(task_tran_config.content.t2SubSelection) - 
 			cls.extract_to_set(job_tran_config.content.t2SubSelection)
 		) > 0:
-			cls.print_and_raise(
-				header="T3 Task transients->content->t2SubSelection error",
-				msg="Invalid task 't2SubSelection' sub-selection (no subset of job " +
+			raise ValueError(
+				"T3 Task transients->content->t2SubSelection error\n" +
+				"Invalid task 't2SubSelection' sub-selection (no subset of job " +
 				"selection)\nOffending value: %s" % task_tran_config.content.t2SubSelection
 			)
