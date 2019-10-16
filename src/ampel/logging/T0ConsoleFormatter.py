@@ -44,6 +44,6 @@ class T0ConsoleFormatter(Formatter):
 			out.append("[%s]" % ', '.join("%s=%s" % itm for itm in extra.items()))
 
 		if record.msg:
-			return "<%s>\n  %s" % (" ".join(out), record.msg)
-		else:
-			return "<%s>" % " ".join(out)
+			return f"<{' '.join(out)}>\n  " + "\n  ".join(record.getMessage().split("\n"))
+
+		return f"<{' '.join(out)}>"
