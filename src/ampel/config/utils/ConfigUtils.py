@@ -1,0 +1,96 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+# File              : ampel/config/utils/ConfigUtils.py
+# License           : BSD-3-Clause
+# Author            : vb <vbrinnel@physik.hu-berlin.de>
+# Date              : 06.10.2018
+# Last Modified Date: 16.10.2019
+# Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
+
+from ampel.common.AmpelUtils import AmpelUtils
+
+class ConfigUtils:
+
+
+	@classmethod
+	def has_nested_type(cls, obj, target_type, strict=True):
+		"""
+		:param obj: object instance (dict/list/set/tuple)
+		:param type target_type: example: ReadOnlyDict/list
+		"""
+
+		if strict: 
+			# pylint: disable=unidiomatic-typecheck
+			if type(obj) is target_type:
+				return True
+		else:
+			if isinstance(obj, target_type):
+				return True
+
+		if isinstance(obj, dict):
+			for el in obj.values():
+				if cls.has_nested_type(el, target_type):
+					return True
+
+		elif AmpelUtils.is_sequence(obj):
+			for el in obj:
+				if cls.has_nested_type(el, target_type):
+					return True
+
+		return False
+
+
+	@classmethod
+	def flatten_dict(cls, d, separator='.'):
+		""" 
+		Unlike the flatten_dict method from AmpelUtils, 
+		this version converts list into dicts as well.
+
+		Illustration:
+		In []: flatten_dict({'a': [{'b':{'f':2}}, {'c':2}], 'd': {'e':1}})
+		Out[]: {'a.0.b.f': 2, 'a.1.c': 2, 'd.e': 1}
+		"""
+		out = {}
+		for k, v in d.items():
+			if isinstance(v, dict):
+				for kk, vv in cls.flatten_dict(v, separator=separator).items():
+					out["%s%s%s" % (k, separator, kk)] = vv
+			elif isinstance(v, list):
+				for kk, vv in cls.flatten_dict(cls.list_to_dict(v), separator=separator).items():
+					out["%s%s%s" % (k, separator, kk)] = vv
+			else:
+				out[k] = v
+
+		return out
+
+
+	@staticmethod
+	def list_to_dict(l):
+		""" """
+		return {i: l[i] for i in range(len(l))}
+
+
+	@classmethod
+	def unflatten_dict(cls, d, separator='.'):		
+		""" 
+		Unlike the unflatten_dict method from AmpelUtils, 
+		this version restores dict-encoded lists.
+
+		Illustration:
+		In []: unflatten_dict({'a.0.b.f': 2, 'a.1.c': 2, 'd.e': 1})
+		Out[]: {'a': [{'b': {'f': 2}}, {'c': 2}], 'd': {'e': 1}}
+		"""
+		out = AmpelUtils.unflatten_dict(d)
+
+		for k, v in out.items():
+			try:
+				# Check if dict keys are integers
+				_ = [int(el) for el in v]
+				out[k] = [
+					cls.unflatten_dict(out[k][el], separator) 
+					for el in v
+				]
+			except ValueError:
+				pass
+
+		return out
