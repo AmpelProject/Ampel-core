@@ -19,7 +19,7 @@ class ExtraLogFormatter(Formatter):
 		super().__init__(datefmt=datefmt)
 		self.line_number = line_number
 
-		self.tohex_ids = ["compId", "cp", "compIdEff", "compIdStrict"]
+		self.tohex_ids = ["docId", "cp", "docIdEff", "docIdStrict"]
 
 	def format(self, record):
 
@@ -44,6 +44,6 @@ class ExtraLogFormatter(Formatter):
 			out.append("[%s]" % ', '.join("%s=%s" % itm for itm in extra.items()))
 
 		if record.msg:
-			return "<%s>\n  %s" % (" ".join(out), record.getMessage())
-		else:
-			return "<%s>" % " ".join(out)
+			return f"<{' '.join(out)}>\n  " + "\n  ".join(record.getMessage().split("\n"))
+
+		return f"<{' '.join(out)}>"
