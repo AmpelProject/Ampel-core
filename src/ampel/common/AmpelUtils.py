@@ -4,15 +4,14 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 07.06.2018
-# Last Modified Date: 02.10.2019
+# Last Modified Date: 11.10.2019
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-import collections, hashlib
+import collections
 from functools import reduce
-from ampel.config.ReadOnlyDict import ReadOnlyDict
 
 class AmpelUtils():
-	""" 
+	"""
 	Static methods (as of Sept 2019):
 	iter(arg)
 	try_reduce(arg)
@@ -72,7 +71,7 @@ class AmpelUtils():
 		return hashlib.sha1(
 			bytes(
 				json.dumps(
-					dict_arg, sort_keys=True, 
+					dict_arg, sort_keys=True,
 					indent=None, separators=(',', ':')
 				),
 				"utf8"
@@ -140,16 +139,16 @@ class AmpelUtils():
 
 		# monotype
 		if not isinstance(types, collections.Sequence):
-			return all(type(el) is types for el in seq)
+			return all(isinstance(el, types) for el in seq)
+
 		# different types accepted ('or' connected)
-		else:
-			if multi_type:
-				return all(type(el) in types for el in seq)
-			else:
-				return any(
-					tuple(AmpelUtils.check_seq_inner_type(seq, _type) for _type in types)
-				)
-	
+		if multi_type:
+			return all(isinstance(el, types) for el in seq)
+
+		return any(
+			tuple(AmpelUtils.check_seq_inner_type(seq, _type) for _type in types)
+		)
+
 
 	@staticmethod
 	def get_by_path(mapping, path, delimiter='.'):
@@ -157,14 +156,14 @@ class AmpelUtils():
 		Get an item from a nested mapping by path, e.g.
 		'foo.bar.baz' -> mapping['foo']['bar']['baz']
 
-		:param dict mapping: 
+		:param dict mapping:
 		:param path: example: 'foo.bar.baz' or ['foo', 'bar', 'baz']
 		:type path: str, list
 		:param str delimiter: example: '.'
 		:rtype: object or None
 		"""
 		try:
-			array = path.split(delimiter) if type(path) is str else path
+			array = path.split(delimiter) if isinstance(path, str) else path
 			# check for int elements encoded as str
 			array = [(el if not el.isdigit() else int(el)) for el in array]
 			return reduce(lambda d, k: d.get(k), array, mapping)
@@ -177,7 +176,7 @@ class AmpelUtils():
 		"""
 		Get a nested attribute from object:
 
-		:param Object obj: 
+		:param Object obj:
 		:param str path: example: 'foo.bar.baz'
 		:rtype: object or None
 
