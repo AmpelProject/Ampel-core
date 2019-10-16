@@ -27,10 +27,10 @@ def run(args):
 # pylint: disable=bad-builtin
 def list_tasks(args):
 	"""List configured tasks"""
-	jobs = AmpelConfig.get_config('t3Jobs')
+	jobs = AmpelConfig.get('job')
 	labels = {name: [(t.get('task'),t.get('unitId')) for t in job['tasks']] for name, job in jobs.items() if job.get('active', True)}
-	if AmpelConfig.get_config('t3Tasks') is not None:
-		tasks = [(t.get('task'), t.get('unitId')) for t in AmpelConfig.get_config('t3Tasks').values()]
+	if AmpelConfig.get('task') is not None:
+		tasks = [(t.get('task'), t.get('unitId')) for t in AmpelConfig.get('task').values()]
 		if len(tasks):
 			labels['(channel tasks)'] = tasks
 	columns = max([len(k) for k in labels.keys()]), max([max([len(k[0]) for k in tasks]) for tasks in labels.values()]), max([max([len(k[1]) for k in tasks]) for tasks in labels.values()])
@@ -54,7 +54,7 @@ class FrozenEncoder(json.JSONEncoder):
 # pylint: disable=bad-builtin
 def show(args):
 	"""Display job and task configuration"""
-	job_doc = AmpelConfig.get_config('t3Jobs.{}'.format(args.job))
+	job_doc = AmpelConfig.get('job.{}'.format(args.job))
 	if args.task is None:
 		print(FrozenEncoder(indent=1).encode(job_doc))
 	else:
@@ -62,14 +62,14 @@ def show(args):
 		print(FrozenEncoder(indent=1).encode(task))
 
 def runjob(args):
-	job_config = T3JobConfig(**AmpelConfig.get_config('t3Jobs.{}'.format(args.job)))
+	job_config = T3JobConfig(**AmpelConfig.get('job.{}'.format(args.job)))
 	if args.task is not None:
 		job_config.tasks = [t for t in job_config.tasks if t.task == args.task]
 	job = T3Job(job_config, full_console_logging=True, raise_exc=True)
 	job.run()
 
 def runtask(args):
-	job_config = T3TaskConfig(**AmpelConfig.get_config('t3Tasks.{}'.format(args.task)))
+	job_config = T3TaskConfig(**AmpelConfig.get('task.{}'.format(args.task)))
 	job = T3Task(job_config, full_console_logging=True, raise_exc=True)
 	job.run()
 

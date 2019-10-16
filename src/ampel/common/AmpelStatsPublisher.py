@@ -7,9 +7,7 @@
 # Last Modified Date: 20.08.2019
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-import sys
-import json
-import psutil
+import sys, json, psutil
 from time import time, strftime
 from ampel.logging.AmpelLogger import AmpelLogger
 from ampel.common.AmpelUtils import AmpelUtils
@@ -98,7 +96,7 @@ class AmpelStatsPublisher(Schedulable):
 
 		# Load provided channels or all channels defined in AmpelConfig
 		self.channel_names = (
-			tuple(AmpelConfig.get_config('channels').keys()) if channel_names is None 
+			tuple(AmpelConfig.get('channel').keys()) if channel_names is None 
 			else channel_names
 		)
 
@@ -129,22 +127,18 @@ class AmpelStatsPublisher(Schedulable):
 		self.col_logs = AmpelDB.get_collection("logs", "r")
 		self.col_troubles = AmpelDB.get_collection('troubles', "r")
 
-		# Optional import
-		if 'print' in publish_to:
-			import json
-
 		# Instanciate GraphiteFeeder if required
 		if 'graphite' in publish_to:
 			from ampel.common.GraphiteFeeder import GraphiteFeeder
 			self.graphite_feeder = GraphiteFeeder(
-				AmpelConfig.get_config('resources.graphite.default')
+				AmpelConfig.get('resource.graphite.default')
 			)
 
 		# Instanciate ArchiveDB if required
 		if 'archive' in publish_what:
 			from ampel.ztf.archive.ArchiveDB import ArchiveDB
 			self.archive_client = ArchiveDB(
-				AmpelConfig.get_config('resources.archive.reader')
+				AmpelConfig.get('resource.archive.reader')
 			)
 
 		# Schedule jobs
@@ -230,7 +224,8 @@ class AmpelStatsPublisher(Schedulable):
 
 
 	def send_metrics(
-		self, daemon=False, col_stats=False, docs_count=False, channels=False, archive=False, system=True,
+		self, daemon=False, col_stats=False, docs_count=False, 
+		channels=False, archive=False, system=True,
 	):
 		"""
 		Send/publish metrics\n
@@ -350,15 +345,15 @@ class AmpelStatsPublisher(Schedulable):
 		if system:
 			stats_dict["system"] = {
 				"cpu_percent": psutil.cpu_percent(),
-				"disk_io_counters": {k:v._asdict() for k,v in psutil.disk_io_counters(perdisk=True).items() if not (k.startswith('loop') or k.startswith('dm-'))},
-				"net_io_counters": {k:v._asdict() for k,v in psutil.net_io_counters(pernic=True).items()}
+				"disk_io_counters": {k:v._asdict() for k, v in psutil.disk_io_counters(perdisk=True).items() if not (k.startswith('loop') or k.startswith('dm-'))},
+				"net_io_counters": {k:v._asdict() for k, v in psutil.net_io_counters(pernic=True).items()}
 			}
 			for field in 'cpu_stats', 'swap_memory', 'virtual_memory':
 				stats_dict["system"][field] = getattr(psutil, field)()._asdict()
 
 		# Build dict with changed items only
 		out_dict = {
-			k:v for k,v in AmpelUtils.flatten_dict(stats_dict).items() 
+			k:v for k, v in AmpelUtils.flatten_dict(stats_dict).items() 
 			if self.past_items.get(k) != v
 		}
 
@@ -374,14 +369,14 @@ class AmpelStatsPublisher(Schedulable):
 		# Print metrics to stdout
 		if "print" in self.publish_to:
 
-			# pylint: disable=undefined-variable,bad-builtin
+			# pylint: disable=undefined-variable
 			print(
 				"Computed metrics: %s" % json.dumps(
 					AmpelUtils.flatten_dict(stats_dict), indent=4
 				)
 			)
 
-			# pylint: disable=undefined-variable,bad-builtin
+			# pylint: disable=undefined-variable
 			print("Updated metrics: %s" % json.dumps(out_dict, indent=4))
 			sys.stdout.flush()
 
@@ -426,12 +421,12 @@ class AmpelStatsPublisher(Schedulable):
 					upsert=True
 				)
 
-
-	def get_server_stats(self, db, ret_dict=None, suffix=""):
+	@staticmethod
+	def get_server_stats(db, ret_dict=None, suffix=""):
 		"""
 		"""
 
-		if ret_dict == None:
+		if ret_dict is None:
 			ret_dict = {}
 
 		server_status = db.command("serverStatus")
@@ -441,7 +436,8 @@ class AmpelStatsPublisher(Schedulable):
 		return ret_dict
 
 
-	def get_col_stats(self, col, suffix=""):
+	@staticmethod
+	def get_col_stats(col, suffix=""):
 		"""
 		"""
 		colstats = col.database.command("collstats", col.name)
@@ -469,18 +465,19 @@ class AmpelStatsPublisher(Schedulable):
 				.find({}, {'_id': 1}) \
 				.count()
 
-		else:
-
-			return self.col_tran.find(
+		return self.col_tran \
+			.find(
 				{
 					'_id': {'$gt': 1},
 					'channels': channel_name
 				},
 				{'_id': 1}
-			).hint(
+			) \
+			.hint(
 				# Hint is very important here. It ensures the query is covered
 				'_id_1_channels_1'
-			).count()
+			) \
+			.count()
 
 def run():
 

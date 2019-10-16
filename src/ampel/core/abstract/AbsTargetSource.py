@@ -5,7 +5,7 @@
 # Author            : jvs
 # Date              : 15.08.2018
 # Last Modified Date: 15.09.2018
-# Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
+# Last Modified By  : jvs
 
 from ampel.base.abstract.AmpelABC import AmpelABC, abstractmethod
 

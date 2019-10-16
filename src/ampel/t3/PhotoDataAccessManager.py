@@ -22,7 +22,7 @@ class PhotoDataAccessManager:
 		"""
 
 		self.photo_flags = None
-		chan = AmpelConfig.get_config(['channels', chan_name])
+		chan = AmpelConfig.get(['channels', chan_name])
 
 		if chan is None:
 			raise ValueError(
@@ -50,7 +50,7 @@ class PhotoDataAccessManager:
 #
 #			# pylint: disable=unsubscriptable-object
 #			current_photo_flag = PhotoFlags[
-#				AmpelConfig.get_config('global.sources.%s.flags.photo' % src_name)			
+#				AmpelConfig.get('global.sources.%s.flags.photo' % src_name)			
 #			]
 #
 #			if (

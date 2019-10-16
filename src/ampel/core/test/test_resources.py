@@ -7,7 +7,7 @@ from urllib import parse
 def test_initial_state():
 	AmpelConfig.reset()
 	with pytest.raises(RuntimeError):
-		AmpelConfig.get_config(str())
+		AmpelConfig.get(str())
 
 @pytest.fixture
 def config():
@@ -23,7 +23,7 @@ def test_default_resource():
 	AmpelConfig.reset()
 	AmpelConfig.set_config({'resources': {'mongo': {'writer': uri}}})
 	
-	assert AmpelConfig.get_config('resources.mongo.writer') == uri
+	assert AmpelConfig.get('resource.mongo.writer') == uri
 
 def test_override_mongo():
 	uri = "mongodb://foo:bar@hostymchostington:27018"
@@ -34,13 +34,13 @@ def test_override_mongo():
 	import pkg_resources
 	from configargparse import ArgumentParser
 	
-	entry = next(pkg_resources.iter_entry_points('ampel.resources', 'mongo'), None)
+	entry = next(pkg_resources.iter_entry_points('ampel_resources', 'mongo'), None)
 	if entry is None:
 		raise NameError("Resource {} is not defined".format(name))
 	resource = entry.resolve()
 	
 	parser = ArgumentParser()
-	default = resource.parse_default(AmpelConfig.get_config('resources'))
+	default = resource.parse_default(AmpelConfig.get('resource'))
 	resource.add_arguments(parser, default, ['writer'])
 	opts = parser.parse_args(args=['--mongo-host', 'blergh'])
 	
@@ -58,13 +58,13 @@ def test_override_graphite():
 	import pkg_resources
 	from configargparse import ArgumentParser
 	
-	entry = next(pkg_resources.iter_entry_points('ampel.resources', 'graphite'), None)
+	entry = next(pkg_resources.iter_entry_points('ampel_resources', 'graphite'), None)
 	if entry is None:
 		raise NameError("Resource {} is not defined".format(name))
 	resource = entry.resolve()
 	
 	parser = ArgumentParser()
-	default = resource.parse_default(AmpelConfig.get_config('resources'))
+	default = resource.parse_default(AmpelConfig.get('resource'))
 	resource.add_arguments(parser, default, [])
 	opts = parser.parse_args(args=['--graphite-host', 'blergh'])
 	
@@ -84,7 +84,7 @@ def test_argumentparser():
 	
 	parser.parse_args(args=['--mongo-host', parts.hostname, '--mongo-port', str(parts.port), '--mongo-writer-username', parts.username, '--mongo-writer-password', parts.password])
 	
-	assert AmpelConfig.get_config('resources.mongo.writer') == uri
+	assert AmpelConfig.get('resource.mongo.writer') == uri
 
 def test_slack():
 	AmpelConfig.reset()
@@ -93,5 +93,5 @@ def test_slack():
 	
 	parser.parse_args(args=['--slack-operator-token', 'foo'])
 	
-	assert AmpelConfig.get_config('resources.slack.operator') == 'foo'
+	assert AmpelConfig.get('resource.slack.operator') == 'foo'
 	

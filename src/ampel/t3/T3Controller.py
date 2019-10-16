@@ -39,7 +39,7 @@ class T3Controller(Schedulable):
 		"""
 		job_configs = {}
 		for key, klass in [('t3Jobs', T3JobConfig), ('t3Tasks', T3TaskConfig)]:
-			for job_name, job_dict in AmpelConfig.get_config(key).items():
+			for job_name, job_dict in AmpelConfig.get(key).items():
 				if (include and job_name not in include) or (exclude and job_name in exclude):
 					continue
 				config = klass(**job_dict)
@@ -134,7 +134,7 @@ class T3Controller(Schedulable):
 		"""
 		"""
 		feeder = GraphiteFeeder(
-			AmpelConfig.get_config('resources.graphite.default')
+			AmpelConfig.get('resource.graphite.default')
 		)
 		stats = {'processes': self.process_count}
 
