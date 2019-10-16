@@ -4,12 +4,12 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 30.09.2018
-# Last Modified Date: 18.01.2019
+# Last Modified Date: 11.10.2019
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import sys, traceback, logging
 from typing import Dict
-from ampel.config.ConfigUtils import ConfigUtils
+from ampel.config.utils.ConfigUtils import ConfigUtils
 from ampel.core.flags.LogRecordFlag import LogRecordFlag
 
 class LoggingUtils:
@@ -120,6 +120,8 @@ class LoggingUtils:
 
 		## Get filename and line number using inspect
 		import inspect
+
+		# pylint: disable=unused-variable
 		frame,filename,line_number,function_name,lines,index = inspect.stack()[1]
 
 		trouble = {
@@ -162,7 +164,7 @@ class LoggingUtils:
 		try:
 			AmpelDB.get_collection('troubles').insert_one(trouble)
 
-		except:
+		except Exception:
 
 			# Bad luck (possible cause: DB offline)
 			logger.propagate_log(
