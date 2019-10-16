@@ -1,18 +1,16 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/config/time/TimeLastRunConfig.py
+# File              : ampel/model/time/UnixTimeConfig.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 29.09.2018
-# Last Modified Date: 16.10.2018
+# Last Modified Date: 10.10.2019
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from pydantic import BaseModel, constr
-from typing import Union, Dict
 from ampel.common.docstringutils import gendocstring
 
 @gendocstring
-class TimeLastRunConfig(BaseModel):
-	use: constr(regex='.timeLastRun$')
-	event: str
-	fallback: Union[None, Dict] = None
+class UnixTimeConfig(BaseModel):
+    use: constr(regex='unixTime$')
+    value: int

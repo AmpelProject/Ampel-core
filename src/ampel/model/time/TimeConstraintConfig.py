@@ -1,23 +1,23 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/config/time/TimeConstraintConfig.py
+# File              : ampel/model/time/TimeConstraintConfig.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 29.09.2018
-# Last Modified Date: 29.09.2018
+# Last Modified Date: 10.10.2019
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-from pydantic import BaseModel
 from typing import Union, List
 from ampel.common.docstringutils import gendocstring
-from ampel.config.time.TimeDeltaConfig import TimeDeltaConfig
-from ampel.config.time.TimeLastRunConfig import TimeLastRunConfig
-from ampel.config.time.TimeStringConfig import TimeStringConfig
-from ampel.config.time.UnixTimeConfig import UnixTimeConfig
+from ampel.model.time.TimeDeltaConfig import TimeDeltaConfig
+from ampel.model.time.TimeLastRunConfig import TimeLastRunConfig
+from ampel.model.time.TimeStringConfig import TimeStringConfig
+from ampel.model.time.UnixTimeConfig import UnixTimeConfig
+from ampel.model.AmpelBaseModel import AmpelBaseModel
 
 
 @gendocstring
-class TimeConstraintConfig(BaseModel):
+class TimeConstraintConfig(AmpelBaseModel):
 	"""
 	example1:
 	
