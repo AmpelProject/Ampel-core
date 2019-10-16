@@ -1,21 +1,21 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/t0/alerts/DirAlertLoader.py
+# File              : ampel/t0/load/DirAlertLoader.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 14.12.2017
-# Last Modified Date: 24.04.2018
+# Last Modified Date: 16.10.2019
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 
 from ampel.logging.AmpelLogger import AmpelLogger
-import logging, io
+from io import BytesIO
 
 
 class DirAlertLoader():
 
 
-	def __init__(self, logger=None):
+	def __init__(self, logger: AmpelLogger = None):
 		""" """
 
 		self.files = []
@@ -27,38 +27,38 @@ class DirAlertLoader():
 		self.logger = AmpelLogger.get_logger() if logger is None else logger
 
 
-	def set_extension(self, extension):
+	def set_extension(self, extension: str) -> None:
 		""" """
 		self.extension = extension
 
 
-	def set_folder(self, arg):
+	def set_folder(self, arg: str) -> None:
 		""" """
 		self.folder = arg
 		self.logger.debug("Target incoming folder: " + self.folder)
 
 
-	def set_index_range(self, min_index=None, max_index=None):
+	def set_index_range(self, min_index: int = None, max_index: int = None) -> None:
 		""" """
 		self.min_index = min_index
 		self.max_index = max_index
-		self.logger.debug("Min index set to: " + str(self.min_index))
-		self.logger.debug("Max index set to: " + str(self.max_index))
+		self.logger.debug(f"Min index set to: {self.min_index}")
+		self.logger.debug(f"Max index set to: {self.max_index}")
 
 
-	def set_max_entries(self, max_entries):
+	def set_max_entries(self, max_entries: int):
 		""" """
 		self.max_entries = max_entries
-		self.logger.debug("Max entries set to: " + str(self.max_entries))
+		self.logger.debug(f"Max entries set to: {self.max_entries}")
 
 
-	def add_files(self, arg):
+	def add_files(self, arg: str):
 		""" """
 		self.files.append(arg)
-		self.logger.debug("Adding " + str(len(arg)) + " files to the list")
+		self.logger.debug(f"Adding {len(arg)} files to the list")
 
 
-	def build_file_list(self):
+	def build_file_list(self) -> None:
 		""" """
 		self.logger.debug("Building internal file list")
 
@@ -87,14 +87,14 @@ class DirAlertLoader():
 		else:
 			self.files = all_files
 
-		self.logger.debug("File list contains " + str(len(self.files)) + " elements")
+		self.logger.debug(f"File list contains {len(self.files)} elements")
 
 
 	def __iter__(self):
 		return self
 
 
-	def __next__(self):
+	def __next__(self) -> BytesIO:
 		""" 
 		"""
 		if not self.files:
@@ -106,4 +106,4 @@ class DirAlertLoader():
 			raise StopIteration
 
 		with open(fpath, "rb") as alert_file:
-			return io.BytesIO(alert_file.read())
+			return BytesIO(alert_file.read())
