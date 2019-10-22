@@ -9,18 +9,21 @@
 
 from ampel.base.abstract.AbsT3Unit import AbsT3Unit
 
+class T3PlaceboUnitError(RuntimeError):
+	pass
+
 class T3PlaceboUnit(AbsT3Unit):
 	"""
 	A T3 unit that does not perform any action.
 	Goal: testing the T3 job/task machinery
 	"""
 
-	def __init__(self, logger, run_config=None, base_config=None, global_info=None):
+	def __init__(self, logger, base_config=None, run_config=None, global_info=None):
 		""" """
 		self.logger = logger
 		if global_info is not None:
 			self.logger.info("Provided global info: %s" % global_info)
-
+		self._raise = (run_config if run_config else {}).get('raise', False)
 
 	def add(self, transients):
 		""" """
@@ -30,3 +33,5 @@ class T3PlaceboUnit(AbsT3Unit):
 	def done(self):
 		""" """
 		self.logger.info("Method done() called")
+		if self._raise:
+			raise T3PlaceboUnitError

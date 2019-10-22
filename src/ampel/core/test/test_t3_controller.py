@@ -12,26 +12,7 @@ from ampel.pipeline.common.AmpelUtils import AmpelUtils
 from ampel.pipeline.config.AmpelArgumentParser import AmpelArgumentParser
 from argparse import Namespace
 
-class PotemkinError(RuntimeError):
-	pass
-
-class PotemkinT3(AbsT3Unit):
-	
-	def __init__(self, logger, base_config=None, run_config=None, global_info=None):
-		pass
-
-	def add(self, transients):
-		pass
-
-	def done(self):
-		raise PotemkinError
-
-@pytest.fixture
-def testing_class():
-	assert 'potemkin' not in AmpelUnitLoader.UnitClasses[3]
-	AmpelUnitLoader.UnitClasses[3]['potemkin'] = PotemkinT3
-	yield
-	del AmpelUnitLoader.UnitClasses[3]['potemkin']
+from ampel.pipeline.t3.T3PlaceboUnit import T3PlaceboUnitError
 
 @pytest.fixture
 def t3_jobs():
@@ -78,8 +59,8 @@ def t3_jobs():
       "tasks": [
         {
           "task": "SpaceCowboy",
-          "unitId": "potemkin",
-          "runConfig": None,
+          "unitId": "T3PlaceboUnit",
+          "runConfig": {"raise": True},
           "transients" : {
             "select": {
                 "channels": {
@@ -99,19 +80,14 @@ def t3_jobs():
     ]
 
 @pytest.fixture
-def testing_config(testing_class, t3_jobs, mongod, graphite):
+def testing_config(t3_jobs, mongod, graphite):
 	AmpelConfig.reset()
 	config = {
 	    'global': {},
 	    'resources': {
 	        'mongo': {'writer': mongod, 'logger': mongod},
 	        'graphite': {'default': graphite},
-	        },
-	    't3Units': {
-	    	'potemkin': {
-	    		'classFullPath': 'potemkin'
-	    	}
-	    },
+	     },
 	    't3Jobs': {job['job']: job for job in t3_jobs},
 	    't3Tasks': {},
 	}
@@ -122,16 +98,16 @@ def test_launch_job(testing_config):
 	from ampel.pipeline.db.AmpelDB import AmpelDB
 
 	# invoke job directly
+	troubles = AmpelDB.get_collection('troubles').count_documents({})
 	job = T3Job(T3JobConfig(**AmpelConfig.get_config('t3Jobs.jobbyjob')))
-	troubles = AmpelDB.get_collection('troubles').count()
 	job.run()
-	assert AmpelDB.get_collection('troubles').count() == troubles+1, "an exception was logged"
+	assert AmpelDB.get_collection('troubles').count_documents({}) == troubles+1, "an exception was logged"
 
 	# start job in subprocess via T3Controller
 	controller = T3Controller(['jobbyjob'])
-	proc = controller.launch_t3_job(controller.job_configs['jobbyjob'])
-	proc.join()
-	assert AmpelDB.get_collection('troubles').count() == troubles+2, "an exception was logged"
+	fut = controller.launch_t3_job(controller.job_configs['jobbyjob'])
+	fut.get(10)
+	assert AmpelDB.get_collection('troubles').count_documents({}) == troubles+2, "an exception was logged"
 
 def test_monitor_processes(testing_config):
 	controller = T3Controller()
@@ -141,7 +117,7 @@ def test_monitor_processes(testing_config):
 	controller.join()
 
 @pytest.fixture
-def minimal_config(mongod, testing_class):
+def minimal_config(mongod):
 	AmpelConfig.reset()
 	sources = {
 		'ZTFIPAC': {
@@ -172,20 +148,14 @@ def minimal_config(mongod, testing_class):
 					'state': '$all'
 				},
 				'tasks': [
-					{'task': 'noselect', 'unitId': 'potemkin'},
-					{'task': 'config', 'unitId': 'potemkin', 'runConfig': {}},
+					{'task': 'noselect', 'unitId': 'T3PlaceboUnit'},
+					{'task': 'config', 'unitId': 'T3PlaceboUnit', 'runConfig': {}},
 					# {'name': 'badconfig', 't3Unit': 'potemkin', 'runConfig': 'default_doesnotexist'},
-					{'task': 'select0', 'unitId': 'potemkin', 'transients': {'select': {'channels': '0'}, 'state': '$all'}},
-					{'task': 'select1', 'unitId': 'potemkin', 'transients': {'select': {'channels': '1'}, 'state': '$latest'}},
+					{'task': 'select0', 'unitId': 'T3PlaceboUnit', 'transients': {'select': {'channels': '0'}, 'state': '$all'}},
+					{'task': 'select1', 'unitId': 'T3PlaceboUnit', 'transients': {'select': {'channels': '1'}, 'state': '$latest'}},
 					
 				]
 			}
-		},
-		't3RunConfig' : {
-			'potemkin_default': {},
-		},
-		't3Units': {
-			'potemkin': {'classFullPath': 'potemkin'}
 		},
 		't3Tasks': {}
 	}
@@ -260,12 +230,11 @@ def test_entrypoint_show(testing_config, capsys):
 
 	show(Namespace(job='jobbyjob', task=None))
 	captured = capsys.readouterr()
-	assert len(captured.out.split('\n')) == 68
+	assert len(captured.out.split('\n')) == 70
 
 	show(Namespace(job='jobbyjob', task='SpaceCowboy'))
 	captured = capsys.readouterr()
-	print('\n'+captured.out)
-	assert len(captured.out.split('\n')) == 19
+	assert len(captured.out.split('\n')) == 21
 
 def test_entrypoint_runjob(testing_config, capsys):
 	from ampel.pipeline.db.AmpelDB import AmpelDB
@@ -273,7 +242,7 @@ def test_entrypoint_runjob(testing_config, capsys):
 
 	troubles = AmpelDB.get_collection('troubles').count()
 
-	with pytest.raises(PotemkinError):
+	with pytest.raises(T3PlaceboUnitError):
 		runjob(Namespace(job='jobbyjob', task=None))
 
 def test_entrypoint_rununit(testing_config, capsys):
@@ -282,14 +251,14 @@ def test_entrypoint_rununit(testing_config, capsys):
 
 	troubles = AmpelDB.get_collection('troubles').count()
 	
-	with pytest.raises(PotemkinError):
+	with pytest.raises(T3PlaceboUnitError):
 		rununit(Namespace(
-			unit='potemkin',
+			unit='T3PlaceboUnit',
 			created=-1,
 			modified=-1,
 			channels=['0', '1'],
 			science_records=None,
-			runconfig=None,
+			runConfig={'raise': True},
 			update_tran_journal=False,
 			update_run_col=False,
 			chunk=10

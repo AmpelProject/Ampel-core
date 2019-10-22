@@ -10,7 +10,7 @@
 import schedule, time, threading, logging, json
 from types import MappingProxyType
 from functools import partial
-from multiprocessing import Process
+import multiprocessing
 from ampel.pipeline.t3.T3Job import T3Job
 from ampel.pipeline.t3.T3Task import T3Task
 from ampel.pipeline.config.t3.T3JobConfig import T3JobConfig
@@ -73,7 +73,8 @@ class T3Controller(Schedulable):
 		self.job_configs = T3Controller.load_job_configs(t3_job_names, skip_jobs, exclude_units)
 
 		schedule = ScheduleEvaluator()
-		self._processes = {}
+		self._pool = multiprocessing.get_context('spawn').Pool(maxtasksperchild=1,)
+		self._tasks = []
 		for name, job_config in self.job_configs.items():
 			for appointment in job_config.get('schedule'):
 				schedule(self.scheduler, appointment).do(self.launch_t3_job, job_config).tag(name)
@@ -86,19 +87,24 @@ class T3Controller(Schedulable):
 		
 		# NB: we defer instantiation of T3Job to the subprocess to avoid
 		# creating multiple MongoClients in the master process
-		proc = Process(target=self._run_t3_job, args=(job_config,))
-		proc.start()
-		self._processes[proc.pid] = proc
-		return proc
+		fut = self._pool.apply_async(self._run_t3_job,
+		    args=(
+		        AmpelConfig.recursive_unfreeze(AmpelConfig.get_config()),
+		        job_config,
+		))
+		self._tasks.append(fut)
+		return fut
 
-	def _run_t3_job(self, job_config, **kwargs):
+	@staticmethod
+	def _run_t3_job(ampel_config, job_config, **kwargs):
+		AmpelConfig.set_config(ampel_config)
 		name = getattr(job_config, 'job' if isinstance(job_config, T3JobConfig) else 'task')
 		klass = T3Job if isinstance(job_config, T3JobConfig) else T3Task
 		try:
 			job = klass(job_config)
 		except Exception as e:
 			LoggingUtils.report_exception(
-				self.logger, e, tier=3, info={
+				AmpelLogger.get_unique_logger(), e, tier=3, info={
 					'job': name,
 				}
 			)
@@ -108,18 +114,18 @@ class T3Controller(Schedulable):
 	@property
 	def process_count(self):
 		""" """
-		items = list(self._processes.items())
-		if items is None:
-			return 0
-		for pid, proc in items:
-			if proc.exitcode is not None:
-				proc.join()
-				del self._processes[pid]
-		return len(self._processes)
+		pending = []
+		for fut in self._tasks:
+			if fut.ready():
+				fut.get()
+			else:
+				pending.append(fut)
+		self._tasks = pending
+		return len(self._tasks)
 
 	def join(self):
-		while self.process_count > 0:
-			time.sleep(1)
+		self._pool.close()
+		self._pool.join()
 
 	def monitor_processes(self):
 		"""
