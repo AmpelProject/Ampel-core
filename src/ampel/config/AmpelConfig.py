@@ -2,151 +2,98 @@
 # -*- coding: utf-8 -*-
 # File              : ampel/config/AmpelConfig.py
 # License           : BSD-3-Clause
-# Author            : Jakob van Santen <jakob.van.santen@desy.de>
+# Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 14.06.2018
-# Last Modified Date: 04.10.2019
+# Last Modified Date: 22.10.2019
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import json
-from ampel.common.AmpelUtils import AmpelUtils
-from ampel.config.ReadOnlyDict import ReadOnlyDict
+from typing import Dict
+from ampel.model.EncryptedData import EncryptedData
+from ampel.config.AmpelBaseConfig import AmpelBaseConfig
 
-class AmpelConfig:
-	""" """
+
+class AmpelConfig(AmpelBaseConfig):
+	""" 
+	"""
 
 	@staticmethod
-	def new_default(pwd_file=None, verbose=False, ignore_errors=False):
+	def new_default(
+		pwd_file: str = None, verbose: bool = False, ignore_errors: bool = False
+	) -> 'AmpelConfig':
 		"""
 		"""
 		# Import here to avoid cyclic import error
-		from ampel.config.ConfigBuilder import ConfigBuilder
+		from ampel.config.builder.DistConfigBuilder import DistConfigBuilder
 
-		ampel_config = AmpelConfig()
-		cb = ConfigBuilder(verbose=verbose)
+		cb = DistConfigBuilder(verbose=verbose)
 		cb.load_distributions()
 
 		if pwd_file:
-			cb.add_passwords(
+			cb.conf_collector.add_passwords(
 				json.load(
 					open(pwd_file, "r")
 				)
 			)
 
-		ampel_config.set(
+		return AmpelConfig(
 			cb.get_config(ignore_errors=ignore_errors)
 		)
 
-		return ampel_config
 
-
-	def __init__(self):
+	def deactivate_all_processes(self) -> None:
 		""" """
-		self._config = {}
+		for i in range(4):
+			self._config["t%s"%i]['process']['active'] = False
 
 
-	def get(self, sub_element:str=None):
-		""" 
-		Optional arguments:
-		:param str sub_element: only sub-config element will be returned. \
-		Example: get("channel.HU_RANDOM")
-		"""
-		if not self.initialized():
-			raise RuntimeError("Ampel config not set")
-
-		if sub_element is None:
-			return self._config
-
-		return AmpelUtils.get_by_path(
-			self._config, sub_element
-		)
-
-
-	def print(self, sub_element: str=None) -> None:
-		"""
-		"""
-		print(
-			json.dumps(
-				self.get(sub_element), indent=4
-			)
-		)
-
-
-	def set(self, config):
+	def activate_process(self, channel: str = None, tier: int = None) -> None:
 		""" """
-		if self._config is not None:
-			import warnings
-			warnings.warn("Resetting configuration")
-
-		self._config = AmpelConfig.recursive_freeze(config)
-
-		return self._config
-
-
-	def reset(self):
-		""" """ 
-		self._config = None
+		for i in range(4):
+			if tier and i != tier:
+				continue
+			if not channel:
+				continue
+			if tier == 1:
+				self._config["t%s"%i]['process']['active'] = True
+			if tier == 3:
+				self._config["t%s"%i]['process']['active'] = True
 
 
-	def initialized(self):
-		""" """ 
-		return self._config is not None
+	def remove_process(self, tier: int = None) -> None:
+		pass
 
 
-	def is_frozen(self):
-		""" """ 
-		return isinstance(self._config, ReadOnlyDict)
-
-
-	@classmethod
-	def recursive_freeze(cls, arg):
+	def recursive_decrypt(self, conf_key: str) -> Dict:
 		"""
-		Return an immutable shallow copy
-		:param arg:
-			dict: ReadOnlyDict is returned
-			list: tuple is returned
-			set: frozenset is returned
-			otherwise: arg is returned 'as is'
+		Note:
+		- returns None if conf with provided key is not a Dict
+		- returns the fetched dict 'as is' if it is not an encrypted config
 		"""
-		if isinstance(arg, dict):
-			return ReadOnlyDict(
-				{
-					cls.recursive_freeze(k): cls.recursive_freeze(v) 
-					for k,v in arg.items()
-				}
-			)
+		ret = None
+		d = self.get(conf_key)
 
-		elif isinstance(arg, list):
-			return tuple(
-				map(cls.recursive_freeze, arg)
-			)
+		if not isinstance(d, Dict):
+			return ret
 
-		elif isinstance(arg, set):
-			return frozenset(arg)
+		for key in d.keys():
 
-		else:
-			return arg
+			value = d[key]
 
+			if isinstance(value, Dict):
 
-	@classmethod
-	def recursive_unfreeze(cls, arg):
-		"""
-		Inverse of AmpelConfig.recursice_freeze
-		"""
-		if isinstance(arg, ReadOnlyDict):
-			return dict(
-				{
-					cls.recursive_unfreeze(k): cls.recursive_unfreeze(v) 
-					for k,v in arg.items()
-				}
-			)
+				if "iv" in value:
+		
+					if not ret:
+						ret = d.copy()
 
-		elif isinstance(arg, tuple):
-			return list(
-				map(cls.recursive_unfreeze, arg)
-			)
+					try:
+						ec = EncryptedData(**value)
+						ret[key] = ec.decrypt(
+							self.get("pwd")
+						)
+					except Exception:
+						self.recursive_decrypt(value)
+						continue
 
-		elif isinstance(arg, frozenset):
-			return set(arg)
-
-		else:
-			return arg
+		return ret if ret else d
