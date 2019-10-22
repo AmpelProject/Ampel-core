@@ -4,137 +4,72 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 16.06.2018
-# Last Modified Date: 20.08.2019
+# Last Modified Date: 22.10.2019
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
+from pymongo import MongoClient
+from pymongo.collection import Collection
+from pymongo.database import Database
+from typing import Union, Tuple, Sequence
 from ampel.config.AmpelConfig import AmpelConfig
+from ampel.logging.AmpelLogger import AmpelLogger
+from ampel.model.db.AmpelColData import AmpelColData
+from ampel.model.db.AmpelDBData import AmpelDBData
+from ampel.model.db.IndexData import IndexData
+
 
 class AmpelDB:
 	"""
 	"""
 
-	_db_prefix = None
+	def __init__(self, ampel_config: AmpelConfig, prefix_override=None):
+		"""
+		:param prefix_override: Convenience parameter that overrides 
+		the db prefix name defined in AmpelConfig (db.prefix)
+		"""
+		self.ampel_config = ampel_config
+		self.logger = AmpelLogger.get_logger()
+		self._db_prefix = ampel_config.get('db.prefix') if not prefix_override else prefix_override
+		self._mongo_resources = ampel_config.get('resource.mongo')
 
-	# Existing mongo clients
-	_existing_mcs = {}
+		if self._mongo_resources is None:
+			raise ValueError("Mongo resources not set in provided ampel config")
 
-	# 'col' None will be replaced by instance of pymongo.collection.Collection 
-	# the first time AmpelDB.get_collection(...) is called for a given collection
-	_ampel_cols = {
-		'stock': {
-			'dbLabel': 'data',
-			'dbPrefix': _db_prefix,
-			'col': None
-		},
-		't0': {
-			'dbLabel': 'data',
-			'dbPrefix': _db_prefix,
-			'col': None
-		},
-		't1': {
-			'dbLabel': 'data',
-			'dbPrefix': _db_prefix,
-			'col': None
-		},
-		't2': {
-			'dbLabel': 'data',
-			'dbPrefix': _db_prefix,
-			'col': None
-		},
-		'logs': {
-			'dbLabel': 'var',
-			'dbPrefix': _db_prefix,
-			'col': None
-		},
-		'events': {
-			'dbLabel': 'var',
-			'dbPrefix': _db_prefix,
-			'col': None
-		},
-		'beacon': {
-			'dbLabel': 'var',
-			'dbPrefix': _db_prefix,
-			'col': None
-		},
-		'troubles': {
-			'dbLabel': 'var',
-			'dbPrefix': _db_prefix,
-			'col': None
-		},
-		'counter': {
-			'dbLabel': 'ext',
-			'dbPrefix': _db_prefix,
-			'col': None
-		},
-		'runConfig': {
-			'dbLabel': 'ext',
-			'dbPrefix': _db_prefix,
-			'col': None
-		},
-		'journal': {
-			'dbLabel': 'ext',
-			'dbPrefix': _db_prefix,
-			'col': None
+		self.dbs_config = [
+			AmpelDBData(**el) for el in ampel_config.get('db.databases')
+		]
+
+		self._col_config = {
+			col.name: col
+			for db_config in self.dbs_config
+				for col in db_config.collections
 		}
-	}
 
-	# least priviledged role required to read or write
-	_db_roles = {
-		'data': {
-			'r': 'logger',
-			'w': 'writer'
-		},
-		'var': {
-			'r': 'logger',
-			'w': 'logger'
-		},
-		'ext': {
-			'r': 'logger',
-			'w': 'logger'
-		}
-	}
+		self._mongo_collections = {}
+		self._mongo_clients = {}
 
-	@classmethod
-	def set_db_prefix(cls, prefix):
+
+	def enable_rejected_collections(self, channel_names: Sequence[str]) -> None:
 		"""
-		:returns: None
-		"""
-		cls._db_prefix = prefix
-		for d in cls._ampel_cols.values():
-			d['dbPrefix'] = prefix
-			d['col'] = None
-
-
-	@classmethod
-	def reset(cls):
-		""" """
-		cls._db_prefix = None
-		cls._existing_mcs.clear()
-		for col_config in cls._ampel_cols.values():
-			col_config['col'] = None
-
-
-	@classmethod
-	def enable_rejected_collections(cls, channel_names):
-		"""
-		Makes rejected collections (DB: Ampel_rej, colllection: channel_name)
+		Makes rejected collections (DB: Ampel_rej, collection: <channel_name>)
 		available through standard method call AmpelDB.get_collection(channel_name)
-
-		:param list(str) channel_names: list of channel names
-		:returns: None
+		:param channel_names: list of channel names
 		"""
+		db_config = AmpelDBData(
+			name='rej',
+			collections=[
+				{'name': chan_name} for chan_name in channel_names
+			],
+			role={'r': 'logger', 'w': 'logger'}
+		)
 
-		cls._db_roles['rej'] = {'r': 'logger', 'w': 'logger'}
-		for chan_name in channel_names:
-			cls._ampel_cols[chan_name] = {
-				'dbLabel': 'rej',
-				'dbPrefix': cls._db_prefix,
-				'col': None
-			}
+		self.dbs_config.append(db_config)
 
+		for col in db_config.collections:
+			self._col_config[col.name] = col
+			
 
-	@classmethod
-	def get_collection(cls, col_name, mode='w'):
+	def get_collection(self, col_name: str, mode: str = 'w') -> Union[Collection, Tuple[Collection]]:
 		""" 
 		If a collection does not exist, it will be created and the 
 		proper mongoDB indexes will be set.
@@ -146,174 +81,183 @@ class AmpelDB:
 
 		# Convenience
 		if isinstance(col_name, (list, tuple)):
-			return (cls.get_collection(name) for name in col_name)
+			return (self.get_collection(name) for name in col_name)
 
-		if col_name not in cls._ampel_cols:
-			raise ValueError("Unknown collection: '%s'" % col_name)
+		if col_name in self._mongo_collections:
+			if mode in self._mongo_collections[col_name]:
+				return self._mongo_collections[col_name][mode]
+		else:
+			if col_name not in self._col_config:
+				raise ValueError(f"Unknown collection: '{col_name}'")
+			self._mongo_collections[col_name] = {}
 
-		if cls._db_prefix is None:
-			cls.set_db_prefix(AmpelConfig.get('db.prefix') or "Ampel")
-
-		# Shortcut
-		col_config = cls._ampel_cols[col_name]
-
-		# the collection already exists, no need to create it
-		if col_config['col'] is not None:
-			return col_config['col']
-
-		# db_label.collection_names() wasn't called yet for this col
-		mc = cls._get_mongo_client(col_config['dbLabel'], mode)
-		db = mc[col_config['dbPrefix'] + "_" + col_config['dbLabel']]
-
-		if 'w' in mode:
-			if col_name not in db.list_collection_names():
-				try:
-					cls.create_indexes(db, col_name)
-				except Exception:
-					import logging
-					logging.error("Col index creation failed", exc_info=True)
-
-		col_config['col'] = db[col_name]
-		return db[col_name]
-
-	
-	@classmethod
-	def _get_mongo_client(cls, db_label, mode='w'):
-		"""
-		:param str db_label: db label (data/var/ext) 
-		:param str mode: access mode "w" or "r"
-		:returns: MongoClient instance
-		""" 
-		from pymongo import MongoClient
-
-		# example: 'logger' or 'writer'
-		role = cls._db_roles[db_label][mode]
-
-		# If a mongoclient does not already exists for this db_label (ex: 'data')
-		if not role in cls._existing_mcs:
-
-			# As of Juli 2018: 'Ampel_data' -> 'writer' and 'Ampel_logs' -> 'logger'
-			cls._existing_mcs[role] = MongoClient(
-				AmpelConfig.get('resource.mongo.%s' % role)
-			)
-
-		return cls._existing_mcs[role] 
-
-
-	@staticmethod
-	def create_indexes(db, col_name):
-		"""
-		The method will set indexes for collections with names: 
-		'stock', 't0', 't1', 't2', 'events', 'logs', 'troubles', ...
-
-		:returns: None
-		"""
-		import logging
-		logging.info(
-			"Creating index for collection '%s' (db: '%s')" % 
-			(col_name, db.name)
+		db_config = self._get_db_config(col_name)
+		resource_name = db_config.role.dict()[mode]
+			
+		db = self._get_mongo_db(
+			resource_name, 
+			f"{self._db_prefix}_{db_config.name}"
 		)
 
-		if col_name == "stock":
+		if 'w' in mode and col_name not in db.list_collection_names():
+			self._mongo_collections[col_name][mode] = self.create_collection(
+				resource_name, db.name, self._col_config[col_name]
+			)
+		else:
+			self._mongo_collections[col_name][mode] = db.get_collection(col_name)
 
-			# For various indexed queries and live auto-complete *covered* queries
-			db[col_name].create_index(
-				[
-					('_id', 1),
-					('channels', 1)
-				],
-				unique = True
+		return self._mongo_collections[col_name][mode]
+
+
+	def _get_mongo_db(self, resource_name: str, db_name: str) -> Database:
+		""" """
+		if resource_name not in self._mongo_clients:
+			self._mongo_clients[resource_name] = MongoClient(
+				self._mongo_resources[resource_name]
 			)
 
-		elif col_name == "t0":
+		return self._mongo_clients[resource_name].get_database(db_name)
 
-			db[col_name].create_index(
-				[('tranId', 1)]
+
+	def _get_db_config(self, col_name: str) -> AmpelDBData:
+		""" """
+		return next(
+			filter(
+				lambda x: self._col_config[col_name] in x.collections,
+				self.dbs_config
 			)
+		)
 
-		elif col_name == "t1":
 
-			db[col_name].create_index(
-				[('tranId', 1)]
+	def init_db(self):
+		"""
+		"""
+		for db_config in self.dbs_config:
+			for col_config in db_config.collections:
+				self.create_collection(
+					db_config.role.dict()['w'],
+					f"{self._db_prefix}_{db_config.name}",
+					col_config
+				)
+
+	
+	def create_collection(
+		self, resource_name: str, db_name: str, col_config: AmpelColData
+	) -> Collection:
+		""" 
+		:param resource_name: name of the AmpelConfig resource (resource.mongo) to be fed to MongoClient()
+		:param db_name: name of the database to be used/created
+		:param col_name: name of the collection to be created
+		"""
+
+		self.logger.info("Creating %s -> %s", db_name, col_config.name)
+		db = self._get_mongo_db(resource_name, db_name)
+
+		# Create collection with custom args
+		if col_config.args:
+			col = db.create_collection(
+				col_config.name, **col_config.args
 			)
+		else:
+			col = db.create_collection(col_config.name)
 
-		elif col_name == "t2":
+		if col_config.indexes:
 
-			db[col_name].create_index(
-				[
-					('tranId', 1),
-					('channels', 1)
-				]
+			for idx in col_config.indexes:
+
+				try:
+
+					idx_params = idx.dict(skip_defaults=True)
+					self.logger.info("  Creating index: %s", idx_params)
+
+					if idx_params.get('args'):
+						col.create_index(
+							idx_params['index'], **idx_params['args']
+						)
+					else:
+						col.create_index(
+							idx_params['index']
+						)
+									
+				except Exception as e:
+					self.logger.error(
+						"Index creation failed for '%s' (db: '%s', args: %s)", 
+						col_config.name, db_name, idx_params, 
+						exc_info=e
+					)
+
+		return col
+
+
+	def set_col_index( 
+		self, resource_name: str, db_name: str, 
+		col_config: AmpelColData, force_overwrite: bool = False
+	) -> None:
+		"""
+		:param force_overwrite: delete index if it already exists. 
+		This can be useful if you want to change index options (for example: sparse=True/False)
+		"""
+
+		if not col_config.indexes:
+			self.logger.info(
+				"No index data configured for collection " +
+				col_config.name
 			)
+			return
 
-			# Create sparse runstate index
-			db[col_name].create_index(
-				[('runState', 1)]
+		db = self._get_mongo_db(resource_name, db_name)
+
+		if col_config.name not in db.list_collection_names():
+			self.create_collection(resource_name, db_name, col_config)
+			return
+
+		col = self.get_collection(col_config.name)
+		col_index_info = col.index_information()
+		flat_indexes = []
+
+		for idx in col_config.indexes:
+
+			idx_id = idx.get_id()
+			flat_indexes.append(idx_id)
+
+			if idx_id in col_index_info:
+				if force_overwrite:
+					self.logger.info("  Deleting existing index: "+idx_id)
+					col.drop_index(idx_id)
+				else:
+					self.logger.info("  Skipping already existing index: "+idx_id)
+					continue
+
+			self._create_index(col, idx)
+
+		for k in col_index_info:
+			if k not in flat_indexes and k != "_id_":
+				self.logger.info("  Removing index "+k)
+				col.drop_index(k)
+								
+
+	def _create_index(self, col: Collection, index_data: IndexData) -> None:
+		"""
+		"""
+
+		try:
+
+			idx_params = index_data.dict(skip_defaults=True)
+			self.logger.info("  Creating index: %s", idx_params)
+
+			if idx_params.get('args'):
+				col.create_index(
+					idx_params['index'], 
+					**idx_params['args']
+				)
+			else:
+				col.create_index(
+					idx_params['index']
+				)
+
+		except Exception as e:
+			self.logger.error(
+				"Index creation failed for '%s' ( args: %s)", 
+				col.name, idx_params, 
+				exc_info=e
 			)
-
-		elif col_name == "logs":
-
-			db.create_collection(
-				'logs',
-				storageEngine={
-					'wiredTiger': {
-						'configString': 'block_compressor=zlib'
-					}
-				}
-			)
-
-			db[col_name].create_index(
-				[('runId', 1)],
-			)
-
-			# Create sparse index for key tranId
-			# Note: this is more of a convenience index. The transient doc
-			# contains a list of runIds which could greatly reduce the 
-			# number of log entries to scan. Matching tranId in a such 
-			# reduced scope should be achievable without waiting ages.
-			# On the other side, there should not be a lot of log entries 
-			# associated with a tranId, so that the indexing perf penalty 
-			# should not be an issue. Time will tell...
-			db[col_name].create_index(
-				[('tranId', 1)],
-				partialFilterExpression = {
-					'tranId': {'$exists': True} 
-				}
-			)
-
-			# Create sparse index for key channels
-			db[col_name].create_index(
-				[('channels', 1)],
-				partialFilterExpression = {
-					'channels': {'$exists': True} 
-				}
-			)
-
-		elif col_name == "events":
-			pass
-
-			# Create sparse index for key hasError
-			# db[col_name].create_index(
-			#	[('hasError', 1)],
-			#	partialFilterExpression = {
-			#		'hasError': { '$exists': True } 
-			#	}
-			#)
-
-		# Rejected logs collections
-		elif (
-			col_name == "rejected" or
-			(col_name in AmpelDB._ampel_cols and AmpelDB._ampel_cols[col_name]['dbLabel'] == 'rej')
-		):
-
-			db.create_collection(
-				col_name,
-				storageEngine={
-					'wiredTiger': {
-						'configString': 'block_compressor=zlib'
-					}
-				}
-			)
-
-			# Create sparse index for key runId
-			db[col_name].create_index([('tranId', 1)])
