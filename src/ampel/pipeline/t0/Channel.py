@@ -54,7 +54,7 @@ class Channel:
 	whether the alert is accepeted or not.
 	"""
 
-	def __init__(self, chan_config, survey_id, parent_logger, log_line_nbr=False, embed=False, single_rej_col=False):
+	def __init__(self, chan_config, survey_id, parent_logger, skip_t2_units={}, log_line_nbr=False, embed=False, single_rej_col=False):
 		"""
 		:param ChannelConfig chan_config: instance of :obj:`ChannelConfig \
 			<ampel.pipeline.config.channel.ChannelConfig>`
@@ -88,7 +88,7 @@ class Channel:
 			tier=0, unit_name=self.unit_name, raise_exc=True
 		)
 
-		self.t2_units = {el.unitId for el in self.stream_config.t2Compute}
+		self.t2_units = {el.unitId for el in self.stream_config.t2Compute if not el.unitId in skip_t2_units}
 		parent_logger.info("On match t2 units: %s" % self.t2_units)
 
 		# Create channel (buffering) logger

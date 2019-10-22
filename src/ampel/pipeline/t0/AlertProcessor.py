@@ -41,7 +41,7 @@ class AlertProcessor():
 	iter_max = 50000
 
 	def __init__(self, 
-		survey_id, channels=None, publish_stats=['graphite', 'jobs'], 
+		survey_id, channels=None, publish_stats=['graphite', 'jobs'], skip_t2_units={},
 		log_line_nbr=False, single_rej_col=False, log_format="compact" 
 	):
 		"""
@@ -61,6 +61,7 @@ class AlertProcessor():
 		  in Ampel_config)
 		- jobs: include t0 metrics in job document
 
+		:param set skip_t2_units: do not create tickets for these T2 units
 		:param bool db_logging: whether to save log entries (and the corresponding job doc) into the DB
 		:param bool single_rej_col: 
 			- False: rejected logs are saved in channel specific collections
@@ -142,7 +143,7 @@ class AlertProcessor():
 		self.t0_channels = [
 			# Create Channel instance (instantiates channel's filter class as well)
 			Channel(
-				channel_config, survey_id, self.logger, 
+				channel_config, survey_id, self.logger, skip_t2_units,
 				log_line_nbr, self.embed, single_rej_col=single_rej_col
 			)
 			for channel_config in ChannelConfigLoader.load_configurations(channels, 0, self.logger)

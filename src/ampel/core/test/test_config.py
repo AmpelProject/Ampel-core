@@ -28,6 +28,12 @@ def t3_unit_mocker(mocker):
 	AmpelUnitLoader.UnitClasses[3].clear()
 
 @pytest.fixture
+def default_config():
+	AmpelConfig.set_config(ConfigLoader.load_config(gather_plugins=True))
+	yield AmpelConfig.get_config()
+	AmpelConfig.reset()
+
+@pytest.fixture
 def mock_mongo(mocker):
 	mocker.patch('pymongo.MongoClient')
 	yield
@@ -115,3 +121,41 @@ def test_config_from_env():
 	environ['AMPEL_CONFIG'] = '{"AmpelDB":{"prefix":"foo"}}'
 	args = AmpelArgumentParser().parse_args([])
 	assert args.config['AmpelDB']['prefix'] == 'foo'
+
+def test_skip_t2_units(default_config, mock_mongo):
+	from ampel.pipeline.config.channel.ChannelConfig import ChannelConfig
+	from ampel.pipeline.t0.Channel import Channel
+
+	config = ChannelConfig.create(0, **{
+		"channel": "HU_TNS_MSIP",
+		"sources": [
+			{
+				"stream": "ZTFIPAC",
+				"parameters" : {
+					"ZTFPartner" : False,
+					"autoComplete" : "live",
+					"updatedHUZP" : False
+				},
+				"t0Filter" : {
+					"unitId" : "BasicFilter",
+					"runConfig": {
+						"operator": ">",
+						"len": 1,
+						"criteria": 1
+					}
+				},
+				"t2Compute" : [ 
+					{
+						"unitId" : "MARSHALMONITOR",
+						"runConfig" : "simple"
+					},
+					{
+						"unitId" : "CATALOGMATCH",
+						"runConfig": "general"
+					}
+				]
+			}
+		]
+	})
+	c = Channel(config, 'ZTFIPAC', logging.getLogger(), {'MARSHALMONITOR'})
+	assert c.t2_units == {'CATALOGMATCH'}
