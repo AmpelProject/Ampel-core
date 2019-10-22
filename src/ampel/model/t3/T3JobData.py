@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/model/t3/T3JobConfig.py
+# File              : ampel/model/t3/T3JobData.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 29.09.2018
@@ -18,10 +18,10 @@ from ampel.common.AmpelUtils import AmpelUtils
 from ampel.common.docstringutils import gendocstring
 
 from ampel.model.AmpelBaseModel import AmpelBaseModel
-from ampel.model.t3.T3TaskConfig import T3TaskConfig
-from ampel.model.t3.StockConfig import StockConfig
-from ampel.model.t3.StockSelectionConfig import StockSelectionConfig
-from ampel.model.t3.StockContentConfig import StockContentConfig
+from ampel.model.t3.T3TaskData import T3TaskData
+from ampel.model.t3.StockData import StockData
+from ampel.model.t3.StockSelectionData import StockSelectionData
+from ampel.model.t3.StockContentData import StockContentData
 
 from ampel.config.AmpelConfig import AmpelConfig
 from ampel.config.ConfigUtils import ConfigUtils
@@ -31,7 +31,7 @@ from ampel.config.ScheduleEvaluator import ScheduleEvaluator
 
 
 @gendocstring
-class T3JobConfig(AmpelBaseModel):
+class T3JobData(AmpelBaseModel):
 	"""
 	Possible 'schedule' values (https://schedule.readthedocs.io/en/stable/):
 	"every(10).minutes"
@@ -40,20 +40,20 @@ class T3JobConfig(AmpelBaseModel):
 	"every().monday"
 	"every().wednesday.at("13:15")"
 
-	Note: Use `T3JobConfig.be_verbose()` if you want feedback
+	Note: Use `T3JobData.be_verbose()` if you want feedback
 	"""
 	job: str
 	active: bool = True
 	globalInfo: bool = False
 	schedule: Sequence[str] = None
-	transients: Union[None, StockConfig]
-	tasks: Sequence[T3TaskConfig]
+	transients: Union[None, StockData]
+	tasks: Sequence[T3TaskData]
 
 
 	@staticmethod
 	def be_verbose():
 		""" """
-		T3JobConfig.logger = AmpelLogger.get_unique_logger()
+		T3JobData.logger = AmpelLogger.get_unique_logger()
 
 
 	@validator('transients', 'tasks', 'schedule', pre=True, whole=True)
@@ -75,7 +75,7 @@ class T3JobConfig(AmpelBaseModel):
 	@validator('tasks', pre=True, whole=True)
 	def do_before_validation(cls, tasks, values, **kwargs):
 		""" 
-		tasks is a dict (pre is True) but values['transients'] is a StockConfig obj.
+		tasks is a dict (pre is True) but values['transients'] is a StockData obj.
 		Here we add some info extracted from the job into the tasks
 		so that the task validators do not complain about possible null values.
 		"""
@@ -106,7 +106,7 @@ class T3JobConfig(AmpelBaseModel):
 
 			# Either copy entire 'transients.select' and 'transients.content' values if missing
 			# or the sub-key values (t2SubSelection, docs, channels, withTags ...) that were not set
-			for el in {'select': StockSelectionConfig, 'content': StockContentConfig}.items():
+			for el in {'select': StockSelectionData, 'content': StockContentData}.items():
 
 				cont_or_sel_str = el[0]
 				job_cont_or_sel_conf = values['transients'].get(cont_or_sel_str)
@@ -117,7 +117,7 @@ class T3JobConfig(AmpelBaseModel):
 					task_config['transients'][cont_or_sel_str] = job_cont_or_sel_conf
 				else:
 
-					# el.value is either T3StockContentConfig or T3StockSelectionConfig
+					# el.value is either T3StockContentData or T3StockSelectionData
 					for field in el[1].__fields__.keys():
 
 						# Don't override task specific values
@@ -137,36 +137,36 @@ class T3JobConfig(AmpelBaseModel):
 			for task_config in tasks:
 				if task_config.transients is not None:
 					raise ValueError(
-						"T3JobConfig logic error\n" +
+						"T3JobData logic error\n" +
 						"T3 task logic error: field 'transients' cannot be " +
 						"defined in task(s) if not defined in job"
 					)
-			if hasattr(T3JobConfig, 'logger'):
-				T3JobConfig.logger.info('Job not requiring TransientViews as input')
+			if hasattr(T3JobData, 'logger'):
+				T3JobData.logger.info('Job not requiring TransientViews as input')
 			return tasks
 
 		# This information is required to validate tasks (see method doctring)
-		joined_tasks_selections = T3JobConfig.get_merged_tasks_selections(tasks)
+		joined_tasks_selections = T3JobData.get_merged_tasks_selections(tasks)
 		job_state = values["transients"].state
 
 		# Check sub-selection of each task
 		for task_config in tasks:
 
 			# Channel
-			T3JobConfig.validate_channel_sub_selection(
+			T3JobData.validate_channel_sub_selection(
 				values['transients'], 
 				task_config.transients, 
 				joined_tasks_selections
 			)
 
 			# State
-			T3JobConfig.validate_task_state(
+			T3JobData.validate_task_state(
 				job_state, 
 				task_config.transients.state
 			)
 
 			# docs, t2SubSelection
-			T3JobConfig.validate_content_sub_selection(
+			T3JobData.validate_content_sub_selection(
 				values["transients"], 
 				task_config.transients
 			)
@@ -181,7 +181,7 @@ class T3JobConfig(AmpelBaseModel):
 			# Either none or all tasks must make use of the $forEach operator
 			if len(joined_tasks_selections['channels']) != 1:
 				raise ValueError(
-					"T3JobConfig logic error\n" +
+					"T3JobData logic error\n" +
 					"Invalid task sub-channel selection: Either none \n" +
 					"or all tasks must make use of the $forEach operator"
 				)
@@ -323,15 +323,15 @@ class T3JobConfig(AmpelBaseModel):
 				# Case 1
 				else:
 					raise ValueError(
-						"T3JobConfig logic error\n" +
+						"T3JobData logic error\n" +
 						"Channels %s must be defined in parent job config" % 
 						task_tran_config.select.channels
 					)
 
 			# Case 6
 			else:
-				if hasattr(T3JobConfig, 'logger'):
-					T3JobConfig.logger.info(
+				if hasattr(T3JobData, 'logger'):
+					T3JobData.logger.info(
 						"Mixed-channels transients will be provided to task %s" %
 						task_tran_config.task
 					)
@@ -360,7 +360,7 @@ class T3JobConfig(AmpelBaseModel):
 					# case 2
 					if len(set_task_chans - set_job_chans) > 0:
 						raise ValueError(
-							"T3JobConfig logic error\n" +
+							"T3JobData logic error\n" +
 							"channels defined in task 'select' must be a sub-set "+
 							"of channels defined in job config"
 						)
@@ -368,18 +368,18 @@ class T3JobConfig(AmpelBaseModel):
 					# case 3:
 					if len(set(set_job_chans) - joined_tasks_selections['channels']) > 0:
 						raise ValueError(
-							"T3JobConfig logic error\n" +
+							"T3JobData logic error\n" +
 							"Set of job channels must equal set of combined tasks channels"
 						)
 
 					# case 4
-					if hasattr(T3JobConfig, 'logger'):
-						T3JobConfig.logger.info("Tasks sub-channel selection is valid")
+					if hasattr(T3JobData, 'logger'):
+						T3JobData.logger.info("Tasks sub-channel selection is valid")
 
 			# Case 5
 			else:
-				if hasattr(T3JobConfig, 'logger'):
-					T3JobConfig.logger.info(
+				if hasattr(T3JobData, 'logger'):
+					T3JobData.logger.info(
 						"Mixed-channels transients will be provided to task %s" %
 						task_tran_config.task
 					)
@@ -396,7 +396,7 @@ class T3JobConfig(AmpelBaseModel):
 		if job_state != task_state:
 			if job_state == '$latest':
 				raise ValueError(
-					"T3JobConfig error\n" +
+					"T3JobData error\n" +
 					"invalid state sub-selection criteria: main:'$latest' -> sub:'$all"
 				)
 

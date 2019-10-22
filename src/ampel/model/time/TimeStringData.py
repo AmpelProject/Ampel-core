@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/model/time/TimeStringConfig.py
+# File              : ampel/model/time/TimeStringData.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 29.09.2018
@@ -11,7 +11,7 @@ from pydantic import BaseModel, constr
 from ampel.common.docstringutils import gendocstring
 
 @gendocstring
-class TimeStringConfig(BaseModel):
+class TimeStringData(BaseModel):
     use: constr(regex='timeString$')
     dateTimeStr: str
     dateTimeFormat: str

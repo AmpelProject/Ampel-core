@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/model/time/TimeConstraintConfig.py
+# File              : ampel/model/time/TimeConstraintData.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 29.09.2018
@@ -9,19 +9,19 @@
 
 from typing import Union, List
 from ampel.common.docstringutils import gendocstring
-from ampel.model.time.TimeDeltaConfig import TimeDeltaConfig
-from ampel.model.time.TimeLastRunConfig import TimeLastRunConfig
-from ampel.model.time.TimeStringConfig import TimeStringConfig
-from ampel.model.time.UnixTimeConfig import UnixTimeConfig
+from ampel.model.time.TimeDeltaData import TimeDeltaData
+from ampel.model.time.TimeLastRunData import TimeLastRunData
+from ampel.model.time.TimeStringData import TimeStringData
+from ampel.model.time.UnixTimeData import UnixTimeData
 from ampel.model.AmpelBaseModel import AmpelBaseModel
 
 
 @gendocstring
-class TimeConstraintConfig(AmpelBaseModel):
+class TimeConstraintData(AmpelBaseModel):
 	"""
 	example1:
 	
-	TimeConstraintConfig(
+	TimeConstraintData(
 	   **{
 			"after": {
 				"use": "$timeDelta",
@@ -39,7 +39,7 @@ class TimeConstraintConfig(AmpelBaseModel):
 
 	example2: 
 
-	TimeConstraintConfig(
+	TimeConstraintData(
 	   **{
 			"after": {
 				"use": "$timeLastRun",
@@ -54,15 +54,15 @@ class TimeConstraintConfig(AmpelBaseModel):
 	"""
 
 	before: Union[
-		TimeDeltaConfig, 
-		TimeLastRunConfig, 
-		TimeStringConfig, 
-		UnixTimeConfig
+		TimeDeltaData, 
+		TimeLastRunData, 
+		TimeStringData, 
+		UnixTimeData
 	] = None
 
 	after: Union[
-		TimeDeltaConfig, 
-		TimeLastRunConfig, 
-		TimeStringConfig, 
-		UnixTimeConfig
+		TimeDeltaData, 
+		TimeLastRunData, 
+		TimeStringData, 
+		UnixTimeData
 	] = None

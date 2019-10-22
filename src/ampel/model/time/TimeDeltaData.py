@@ -1,19 +1,19 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/model/time/TimeLastRunConfig.py
+# File              : ampel/model/time/TimeDeltaData.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 29.09.2018
 # Last Modified Date: 10.10.2019
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-from pydantic import constr
-from typing import Union, Dict
+from pydantic import BaseModel, constr
+from typing import Union, Dict, Any
 from ampel.common.docstringutils import gendocstring
 from ampel.model.AmpelBaseModel import AmpelBaseModel
 
+
 @gendocstring
-class TimeLastRunConfig(AmpelBaseModel):
-	use: constr(regex='.timeLastRun$')
-	event: str
-	fallback: Union[None, Dict] = None
+class TimeDeltaData(AmpelBaseModel):
+    use: constr(regex='.timeDelta$')
+    arguments: Dict[str, Any]
