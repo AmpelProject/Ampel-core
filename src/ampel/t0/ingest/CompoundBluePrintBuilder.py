@@ -1,17 +1,20 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/t0/ingest/CompoundBluePrintGenerator.py
+# File              : ampel/t0/ingest/CompoundBluePrintBuilder.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 01.01.2018
-# Last Modified Date: 11.11.2018
+# Last Modified Date: 17.10.2019
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import hashlib, json
 from bson import Binary
+from typing import Union, Any, Sequence, Dict
+from ampel.logging.AmpelLogger import AmpelLogger
 from ampel.t0.ingest.CompoundBluePrint import CompoundBluePrint
+from ampel.abstract.AbsCompoundItemBuilder import AbsCompoundItemBuilder
 
-class CompoundBluePrintGenerator():
+class CompoundBluePrintBuilder:
 	"""
 	This class requires documentation to be understood.
 	I'll try to do that in the future.
@@ -24,35 +27,33 @@ class CompoundBluePrintGenerator():
 	"opt": option
 	"""
 
-	def __init__(self, t0_channels, CompoundShaper, logger, verbose=False):
+	def __init__(
+		self, comp_itm_builder: AbsCompoundItemBuilder, logger: AmpelLogger, verbose: bool = False
+	):
 		"""
-		:param t0_channels: list of instances of ampel.config.T0Channel
-		:param CompoundShaper: child *class* (not instance) of ampel.core.abstract.AbsCompoundShaper
-		:param logger: logger instance (python module 'logging')
-		:param bool verbose: be verbose
+		:param comp_itm_builder: child *class* (not instance) of ampel.core.abstract.AbsCompoundItemGenerator
+		:param logger: AmpelLogger instance
 		:returns: None
 		"""
 
 		self.logger = logger
 		self.verbose = verbose
-		self.chan_opts = {
-			chan.name: chan.stream_config.parameters
-			for chan in t0_channels
-		}
-		self.CompoundShaper = CompoundShaper
+		self.comp_itm_builder = comp_itm_builder
 
 
-	def generate(self, tran_id, dict_list, channel_names):
+	def build(
+		self, tran_id: Union[int, str], dicts: Sequence[Dict[str, Any]], channel_names: Sequence[str]
+	) -> CompoundBluePrint:
 		"""	
 		:param tran_id: transient id (int or str)
-		:param dict_list: list of dict instances representing photopoint or upperlimis measurements
+		:param dicts: sequence of dict instances representing photopoint or upperlimis measurements
 		######################################
-		IMPORTANT: list must be timely sorted.
+		IMPORTANT: sequence must be timely sorted.
 		######################################
 		The sorting is not done within this method because CompoundBluePrint 
 		aims at being instrument independant.  For ZTF, the field 'jd' is used:
-		-> sorted(dict_list, key=lambda k: k['jd'])
-		:param channel_names: iterable sequence of channel names (string)
+		-> sorted(dicts, key=lambda k: k['jd'])
+		:param channel_names: iterable sequence of channel names (int or string)
 		:returns: instance of CompoundBluePrint
 		"""	
 
@@ -69,13 +70,12 @@ class CompoundBluePrintGenerator():
 			eff_comp = []
 			strict_comp = []
 			eff_hash_payload = strict_hash_payload = pp_hash_payload = tran_id_str
-			comp_shaper = self.CompoundShaper(self.chan_opts)
 	
 			# Create compound and compoundId
-			for el in dict_list:
+			for el in dicts:
 	
 				# Generate compound entry dictionary
-				comp_entry = comp_shaper.gen_compound_item(el, chan_name)	
+				comp_entry, tags = self.comp_itm_builder.build(el, chan_name)	
 
 				# Append generated dict to effective compound list
 				eff_comp.append(comp_entry)
@@ -143,10 +143,10 @@ class CompoundBluePrintGenerator():
 			# Save channel name <-> effective comp id association
 			if eff_id in cbp.d_eid_chnames:
 				cbp.d_eid_chnames[eff_id].add(chan_name)
-				cbp.d_eid_comptags[eff_id] |= comp_shaper.tags
+				cbp.d_eid_comptags[eff_id] |= tags
 			else:
 				cbp.d_eid_chnames[eff_id] = {chan_name}
-				cbp.d_eid_comptags[eff_id] = comp_shaper.tags
+				cbp.d_eid_comptags[eff_id] = tags
 
 			# Save channel name <-> pp comp id association
 			if pp_id in cbp.d_ppid_chnames:
