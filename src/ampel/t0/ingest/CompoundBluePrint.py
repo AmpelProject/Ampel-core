@@ -1,13 +1,12 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/t0/ingesters/CompoundBluePrint.py
+# File              : ampel/t0/ingest/CompoundBluePrint.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 01.01.2018
-# Last Modified Date: 13.06.2018
+# Last Modified Date: 17.10.2019
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-import hashlib, json
 
 class CompoundBluePrint:
 	"""
