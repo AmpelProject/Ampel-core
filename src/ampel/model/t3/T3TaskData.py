@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/model/t3/T3TaskConfig.py
+# File              : ampel/model/t3/T3TaskData.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 02.09.2018
@@ -13,21 +13,21 @@ from typing import Dict, Union, List
 from ampel.common.docstringutils import gendocstring
 from ampel.model.AmpelBaseModel import AmpelBaseModel
 from ampel.config.ScheduleEvaluator import ScheduleEvaluator
-from ampel.model.legacy.stock.StockConfig import StockConfig
-from ampel.model.UnitConfig import UnitConfig
+from ampel.model.legacy.stock.StockData import StockData
+from ampel.model.UnitData import UnitData
 
 @gendocstring
-class T3TaskConfig(AmpelBaseModel):
+class T3TaskData(AmpelBaseModel):
 	"""
 	Example:
 	"""
 	task: str
-	unit: UnitConfig
+	unit: UnitData
 	schedule: Union[None, List[str]] = None
 	verbose: bool = False
 	globalInfo: bool = False
-	transients: Union[None, StockConfig] = None
-	repo: str = None
+	transients: Union[None, StockData] = None
+	distName: str = None
 
 
 	@validator('schedule', pre=True, whole=True)

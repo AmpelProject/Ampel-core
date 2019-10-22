@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/model/UnitConfig.py
+# File              : ampel/model/UnitData.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 26.09.2019
@@ -8,13 +8,13 @@
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from pydantic import validator
-from typing import Dict, Union, Tuple
+from typing import Dict, Union, Tuple, Optional
 from ampel.common.docstringutils import gendocstring
 from ampel.model.AmpelBaseModel import AmpelBaseModel
 
 
 @gendocstring
-class UnitConfig(AmpelBaseModel):
+class UnitData(AmpelBaseModel):
 	"""
 	run_config types:
 	* None -> no run config
@@ -26,8 +26,8 @@ class UnitConfig(AmpelBaseModel):
 	unit_id: str
 	init_config: Union[None, int, str, Dict] = None
 	run_config: Union[None, int, str, Dict] = None
-	resources: Union[None, Tuple[str]] = None
-	override: Union[None, Dict] = None
+	resources: Optional[Tuple[str]] = None
+	override: Optional[Dict] = None
 
 	@validator('resources', pre=True, whole=True)
 	def validate_resources(cls, resources):

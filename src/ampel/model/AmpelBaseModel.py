@@ -9,9 +9,6 @@
 
 from ampel.common.AmpelUtils import AmpelUtils
 from pydantic import BaseModel, BaseConfig, Extra
-import logging
-
-log = logging.getLogger(__name__)
 
 def to_camel_case(arg: str) -> str:
 	"""
@@ -36,6 +33,7 @@ class AmpelBaseModel(BaseModel):
 		allows camelCase members
 		"""
 		extra = Extra.forbid
+		arbitrary_types_allowed = True
 		allow_population_by_alias = True
 		alias_generator = to_camel_case
 
