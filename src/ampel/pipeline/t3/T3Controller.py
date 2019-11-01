@@ -376,7 +376,7 @@ def main():
 					name = option_strings[0].lstrip('-')
 					super(YesNoGroupAction, self).__init__(
 					    [
-					       name,
+					       '--' + name,
 					        '--no-' + name,
 					    ] + option_strings[1:],
 					    dest=(name.replace('-', '_') if dest is None else dest),
