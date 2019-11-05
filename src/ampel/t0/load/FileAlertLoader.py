@@ -14,11 +14,10 @@ from ampel.logging.AmpelLogger import AmpelLogger
 
 
 class FileAlertLoader():
-
+	""" """
 
 	def __init__(self, files: Union[List[str], str] = None, logger: AmpelLogger = None):
-		""" 
-		"""
+		""" """
 		self.logger = AmpelLogger.get_logger() if logger is None else logger
 		self.iter_files = None
 		self.files = []
@@ -28,14 +27,13 @@ class FileAlertLoader():
 
 
 	def add_files(self, arg: Union[List[str], str]) -> None:
-		"""
-		"""
+		""" """
 		if isinstance(arg, str):
 			arg = [arg]
 
 		for fp in arg:
 			self.files.append(fp)
-			self.logger.debug(f"Adding {len(fp)} files to the list")
+			self.logger.debug(f"Adding {len(arg)} file(s) to the list")
 
 		self.iter_files = iter(self.files)
 
@@ -45,7 +43,6 @@ class FileAlertLoader():
 
 
 	def __next__(self) -> BytesIO:
-		""" 
-		"""
+		""" """
 		with open(next(self.iter_files), "rb") as alert_file:
 			return BytesIO(alert_file.read())
