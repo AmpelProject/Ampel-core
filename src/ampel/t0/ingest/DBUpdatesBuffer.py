@@ -1,18 +1,16 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-core/src/ampel/t0/ingest/DBUpdatesBuffer.py
+# File              : ampel/t0/ingest/DBUpdatesBuffer.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 31.10.2018
-# Last Modified Date: 20.08.2019
+# Last Modified Date: 04.11.2019
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from time import time
-import threading
+from typing import Dict, List
 from multiprocessing.pool import ThreadPool
 from pymongo.errors import BulkWriteError
-from ampel.db.AmpelDB import AmpelDB
-from ampel.config.AmpelConfig import AmpelConfig
 from ampel.common.Schedulable import Schedulable
 from ampel.logging.LoggingUtils import LoggingUtils
 
@@ -21,50 +19,48 @@ class DBUpdatesBuffer(Schedulable):
 	"""
 	TODO: 
 	* Try to mark transient docs on error
-	* Do something with self.err_db_ops
+	* Do something with self._err_db_ops
 
 	Note regarding multithreading:
 	PyMongo uses the standard Python socket module, 
 	which does drop the GIL while sending and receiving data over the network.
 	"""
 
-	def __init__(self, alert_processor, run_id, logger, threads=8, push_interval=5, autopush_size=100): 
+	def __init__(
+		self, alert_processor: 'AlertProcessor', run_id: int, logger: 'AmpelLogger', 
+		threads: int = 8, push_interval: int = 5, autopush_size: int = 100
+	): 
 		"""
-		:param alert_processor: AlertProcessor instance
-		:param int run_id:
-		:param logger:
-		:type logger: :py:class:`AmpelLogger <ampel.logging.AmpelLogger>` 
-		:param int push_interval: in seconds
-		:param int autopush_size: 
+		:param push_interval: in seconds
 		"""
 
 		Schedulable.__init__(self)
-		self.reset_db_ops()
+		self._new_buffer()
 
-
-		self.cols = {
-			col_name: AmpelDB.get_collection(col_name) 
+		self._cols = {
+			col_name: alert_processor._ampel_db.get_collection(col_name) 
 			for col_name in self.db_ops.keys()
 		}
 
-		self.err_db_ops = {k: [] for k in self.db_ops.keys()}
-		self.alert_processor = alert_processor
-		self.push_interval = push_interval
-		self.autopush_size = autopush_size
-		self.last_check = time()
+		self._err_db_ops = {k: [] for k in self.db_ops.keys()}
+		self._alert_processor = alert_processor
+		self._ampel_db = alert_processor._ampel_db
+		self._last_check = time()
+		self._size = 0
 		self.run_id = run_id
 		self.logger = logger
-		self.size = 0
+		self.push_interval = push_interval
+		self.autopush_size = autopush_size
 
 		self.metrics = {
 			'dbBulkTimeT0': [],
 			'dbBulkTimeT1': [],
 			'dbBulkTimeT2': [],
-			'dbBulkTimeRegister': [],
+			'dbBulkTimeStock': [],
 			'dbPerOpMeanTimeT0': [],
 			'dbPerOpMeanTimeT1': [],
 			'dbPerOpMeanTimeT2': [],
-			'dbPerOpMeanTimeRegister': []
+			'dbPerOpMeanTimeStock': []
 		}
 
 		if push_interval:
@@ -76,17 +72,17 @@ class DBUpdatesBuffer(Schedulable):
 		self.stop_callback = self.close
 
 
-	def reset_db_ops(self):
-		"""
-		"""
+	def _new_buffer(self) -> None:
+		""" """
 		self.db_ops = {
-			'tran': [],
-			'photo': [],
-			'blend': []
+			'stock': [],
+			't0': [],
+			't1': [],
+			't2': []
 		}
 
 
-	def close(self):
+	def close(self) -> None:
 		"""
 		:returns: None
 		"""
@@ -97,74 +93,68 @@ class DBUpdatesBuffer(Schedulable):
 			self.thread_pool.join()
 
 
-	def add_updates(self, updates):
+	def add_updates(self, updates: Dict[str, List]) -> None:
 		"""
-		:param updates:
-		:type updates: Dict[str, List[pymongo.operations]]
-		:returns: None
-		:raises: KeyError if dict key is unknown (known keys: photo, tran, blend)
+		:param updates: Dict[str, List[<pymongo.operations>]]
+		:raises: KeyError if dict key is unknown (known keys: stock, t0, t1, t2)
 		"""
-
 		for k, v in updates.items():
 			self.db_ops[k] += v
-			self.size += len(v)
+			self._size += len(v)
 
 
-	def auto_push_updates(self):
+	def auto_push_updates(self) -> None:
 		"""
 		:returns: None
 		"""
-
-		if time() - self.last_check() < self.push_interval:
+		if time() - self._last_check() < self.push_interval:
 			return
 
 		self.push_updates()
 
 
-	def ap_push_updates(self):
+	def ap_push_updates(self) -> None:
 		"""
 		Called by the AlertProcessor after the processing of an alert.
 		If the pool is not yet big enough (self.autopush_size)
-		the self.last_check is updated.
+		the self._last_check is updated.
 		By doing that, the regularly scheduled auto_push_updates() 
 		will be delayed as long as the AP processes alerts.
 		:returns: None
 		"""
 
-		if self.size < self.autopush_size:
-			self.last_check = time()
+		if self._size < self.autopush_size:
+			self._last_check = time()
 			return
 
 		self.push_updates()
 
 
-	def push_updates(self):
+	def push_updates(self) -> None:
 		"""
-		:returns: None
 		"""
 		
-		self.last_check = time()
+		self._last_check = time()
 
-		if self.size == 0:
+		if self._size == 0:
 			return
 
 		db_ops = self.db_ops
-		self.reset_db_ops()
-		self.size = 0
+		self._new_buffer()
+		self._size = 0
 
 		for col_name in db_ops.keys():
 			if db_ops[col_name]:
 				if self.thread_pool:
-					self.thread_pool.map(self.call_bulk_write, [col_name, db_ops[col_name]])
+					self.thread_pool.starmap(self.call_bulk_write, ([col_name, db_ops[col_name]],))
 				else:
 					self.call_bulk_write(col_name, db_ops[col_name])
 
 
-	def call_bulk_write(self, col_name, db_ops, extra=None):
+	def call_bulk_write(self, col_name: str, db_ops: List, extra: Dict = None) -> None:
 		"""
-		:param str col_name: Ampel DB collection name (ex: photo, tran, blend)
-		:param List db_ops: list of pymongo operations
-		:returns: None
+		:param col_name: Ampel DB collection name (ex: stock, t0, t1, t2)
+		:param db_ops: list of pymongo operations
 		:raises: None, but stops the AlertProcessor processing by using the method
 		cancel_run() when unrecoverable exceptions occur.
 
@@ -201,7 +191,7 @@ class DBUpdatesBuffer(Schedulable):
 
 			# Update DB
 			start = time()
-			db_res = self.cols[col_name].bulk_write(db_ops, ordered=False)
+			db_res = self._cols[col_name].bulk_write(db_ops, ordered=False)
 			time_delta = time() - start
 
 			# Save metrics
@@ -240,7 +230,7 @@ class DBUpdatesBuffer(Schedulable):
 	
 						# Should no longer raise pymongo.errors.DuplicateKeyError
 						start = time()
-						self.cols[col_name].update_one(
+						self._cols[col_name].update_one(
 							err_dict['op']['q'], 
 							err_dict['op']['u'], 
 							upsert=err_dict['op']['upsert']
@@ -256,12 +246,12 @@ class DBUpdatesBuffer(Schedulable):
 					else:
 	
 						dup_key_only = False
-						self.err_db_ops[col_name].append(err_dict)
+						self._err_db_ops[col_name].append(err_dict)
 
 						# Try to insert doc into trouble collection (raises no exception)
 						# Possible exception will be logged out to console in any case
 						LoggingUtils.report_error(
-							tier=0, 
+							self._ampel_db, tier=0, 
 							msg="BulkWriteError entry details", 
 							logger=self.logger, info={
 								'run_id': self.run_id, 
@@ -293,14 +283,16 @@ class DBUpdatesBuffer(Schedulable):
 			except Exception as ee: 
 				# Log exc and try to insert doc into trouble collection (raises no exception)
 				LoggingUtils.report_exception(
-					self.logger, ee, tier=0, run_id=self.run_id
+					self._ampel_db, self.logger, tier=0, 
+					exc=ee, run_id=self.run_id
 				)
 
 		except Exception as e: 
 			# Log exc and try to insert doc into trouble collection (raises no exception)
 			LoggingUtils.report_exception(
-				self.logger, e, tier=0, run_id=self.run_id
+				self._ampel_db, self.logger, tier=0, 
+				exc=e, run_id=self.run_id
 			)
 
-		self.err_db_ops[col_name] += db_ops
-		self.alert_processor.set_cancel_run()
+		self._err_db_ops[col_name] += db_ops
+		self._alert_processor.set_cancel_run()
