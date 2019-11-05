@@ -12,6 +12,7 @@ from logging import DEBUG, WARNING, Handler
 from pymongo.errors import BulkWriteError
 from pymongo.operations import UpdateOne
 from ampel.db.AmpelDB import AmpelDB
+from ampel.logging.AmpelLogger import AmpelLogger
 from ampel.logging.AmpelLoggingError import AmpelLoggingError
 from ampel.logging.LoggingErrorReporter import LoggingErrorReporter
 
@@ -24,7 +25,10 @@ class DBRejectedLogsSaver(Handler):
 	with RecordsBufferingHandler.forward() or copy()
 	"""
 
-	def __init__(self, channel, logger, single_rej_col=False, aggregate_interval=1, flush_len=1000):
+	def __init__(
+		self, ampel_db: AmpelDB, channel: str, logger: AmpelLogger, 
+		single_rej_col: bool = False, aggregate_interval: int = 1, flush_len: int = 1000
+	):
 		""" 
 		:param AmpelLogger logger:
 		:type channel: str, None
@@ -55,8 +59,8 @@ class DBRejectedLogsSaver(Handler):
 		self.channel = channel
 		self.single_rej_col = single_rej_col
 		col_name = "rejected" if single_rej_col else channel
-		AmpelDB.enable_rejected_collections([col_name])
-		self.col = AmpelDB.get_collection(col_name)
+		ampel_db.enable_rejected_collections([col_name])
+		self.col = ampel_db.get_collection(col_name)
 			
 
 	def set_run_id(self, run_id):
