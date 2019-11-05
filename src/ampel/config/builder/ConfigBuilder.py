@@ -4,434 +4,294 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 03.09.2019
-# Last Modified Date: 09.10.2019
+# Last Modified Date: 15.10.2019
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-import json, pkg_resources, re
-from typing import Dict, Callable, List, Union, Sequence, Any
-
-from ampel.db.DBUtils import DBUtils
+import importlib, re, json
+from typing import Dict, Callable, List, Union, Sequence
 from ampel.common.AmpelUtils import AmpelUtils
 from ampel.logging.AmpelLogger import AmpelLogger
-from ampel.config.builder.T3ConfigMorpher import T3ConfigMorpher
+from ampel.config.utils.ConfigUtils import ConfigUtils
+from ampel.config.builder.BaseConfig import BaseConfig
+from ampel.config.collector.ConfigCollector import ConfigCollector
+from ampel.config.collector.T2RunConfigCollector import T2RunConfigCollector
+from ampel.model.template.NestedProcsChannelTemplate import NestedProcsChannelTemplate
+from ampel.config.collector.ProcessConfigCollector import ProcessConfigCollector
+from ampel.config.collector.ChannelConfigCollector import ChannelConfigCollector
+from ampel.config.builder.ProcessMorpher import ProcessMorpher
 
 
 class ConfigBuilder:
 	"""
 	Builds a central configuration dict for ampel.
-	Typically, the output of this class (method get_config())
+	Typically, the output of this class (method build_config())
 	is used as input for the method set_config() of an AmpelConfig instance.
-	This class can automcatically detect and load various configuration files 
-	contained in ampel sub-packages installed with pip [see the methods
-	load_distributions(...), load_distrib(...) or load_global_conf_from_repo(...)]
-	Manual loading of custom / self loaded dict is also possible.
 	The method add_passwords(...) allows to add a list of passwords used to later
 	decrypt encrypted config entries.
 	"""
 
-	def __init__(self, verbose: bool=False, logger=None):
+	def __init__(self, verbose: bool = False, logger: AmpelLogger = None):
 		""" """
 		self.logger = AmpelLogger.get_logger() if logger is None else logger
+		self.base_config = BaseConfig(logger, verbose)
+		self.templates = {}
+		self.pwd = []
 		self.verbose = verbose
 		self.error = False
 
-		self.func_load_file = {
-			"unit": lambda x, y: self.add_units("unit", x, y),
-			"executor": lambda x, y: self.add_units("executor", x, y),
-			"controller": lambda x, y: self.add_units("controller", x, y),
-			"alias": self.add_aliases,
-			"resource": self.add_resources
-		}
 
-		self._config = {
-			"db": {"prefix": "Ampel", "options": {"hashChanNames": True}},
-			"t0": {"process": [], "alias": {}},
-			"t1": {"process": {}, "alias": {}},
-			"t2": {"process": {}, "alias": {}, "runConfig": {}},
-			"t3": {"process": {}, "alias": {}, "job": {}},
-			"channel": {},
-			"unit": {},
-			"executor": {},
-			"controller": {},
-			"resource": {},
-			"pwd": []
-		}
+	def load_ampel_conf(self, arg: Dict, dist_name: str = None) -> None:
+		""" """
+
+		# ("channel", "db", "resource", "pwd")
+		for k in self.base_config.general_keys:
+			if k in arg:
+				self.base_config[k].add(arg[k], dist_name)
+
+		for k in ("t0", "t1", "t2", "t3"):
+			if k in arg:
+				# ("controller", "processor", "unit", "alias", "process")
+				for kk in self.base_config.tier_keys:
+					if kk in arg[k]:
+						self.base_config[k][kk].add(
+							arg[k][kk], dist_name
+						)
+
+		if "template" in arg:
+			self.register_channel_templates(arg['template'], dist_name)
+
+
+	def load_conf_section(self, section: str, arg: Dict, dist_name: str = None) -> None:
+		""" 
+		Depending on the value of parameter 'section', a structure may be expected for dict 'arg'.
+		1) tier-less sections: "channel", "db", "resource"
+		-> no structure imposed
+		2) tier-dependent sub-sections: "controller", "processor", "unit", "alias", "process"
+		-> arg must have the following JSON structure:
+		{"t0": { ... }, "t1": { ... }, ...}
+		whereby the t0, t1, t2 and t3 keys are optional (at least one is required though)	
+		"""
+
+		# ("channel", "db", "resource")
+		if section in self.base_config.general_keys:
+			self.base_config[section].add(arg, dist_name)
+			return
+
+		# ("controller", "processor", "unit", "alias", "process")
+		if section in self.base_config.tier_keys:
+			for k in ("t0", "t1", "t2", "t3"):
+				if k in arg:
+					self.base_config[k][section].add(
+						arg[k], dist_name
+					)
+
+		raise ValueError("Unknown config section: " + section)
+
+
+	def register_channel_templates(self, chan_templates: Dict[str, str], dist_name: str = None) -> None:
+		""" """
+
+		if not isinstance(chan_templates, dict):
+			raise ValueError("Provided argument must be a dict instance")
+
+		for k, v in chan_templates.items():
+
+			if k in self.templates:
+				raise ValueError("Duplicated channel template: " + k)
+
+			if self.verbose:
+				self.logger.verbose(
+					f"-> Registering template '{k}' " +
+					ConfigCollector.distrib_hint(dist_name)
+				)
+			
+			self.templates[k] = getattr(
+				importlib.import_module(v),
+				v.split(".")[-1]
+			)
 
 
 	def add_passwords(self, arg: Union[str, List[str]]) -> None:
 		""" """
-		# Not set() is not directly json encodable
+		# Not using set() as is not directly json encodable
 		for el in AmpelUtils.iter(arg):
-			if el not in self._config['pwd']:
-				self._config['pwd'].append(el)
+			if el not in self.base_config['pwd']:
+				self.base_config['pwd'].append(el)
 
 
-	def load_general_conf(self, arg: Dict, repo_name: str="undefined") -> None:
-		""" """
-		if 'channel' in arg:
-			if not isinstance(arg['channel'], Sequence):
-				raise ValueError("General conf error: channel value type must be a sequence")
-			self.load_from_dict(arg, 'channel', self.add_channels, repo_name)
-
-		if 'job' in arg:
-			if not isinstance(arg['job'], Sequence):
-				raise ValueError("General conf error: channel value type must be a sequence")
-			self.load_from_dict(arg, 'job', self.add_job, repo_name)
-
-		for key, val in self.func_load_file.items():
-			if key in arg:
-				val(arg[key], repo_name)
-
-
-	def load_from_dict(
-		self, conf: Dict, key_name: str, func: Callable[[Dict], None], repo_name: str="undefined"
-	) -> None:
-		""" """
-
-		value = conf[key_name]
-
-		# Be flexible
-		if isinstance(value, Dict):
-			func(value, repo_name)
-
-		elif isinstance(value, list):
-			for chan in value:
-				func(chan, repo_name)
-		else:
-			self.logger.error(
-				"Value must be a of type Dict or List (Dict key %s)" % key_name
-			)
-
-
-	def add_channels(
-		self, arg: Union[Dict[str, Any], List[Dict[str, Any]]], repo_name: str="Undefined"
-	) -> None:
-		""" """
-
-		if isinstance(arg, dict):
-			arg = (arg, )
-
-		for chan_dict in arg:
-
-			if "channel" not in chan_dict:
-				self.logger.error(
-					"Channel dict is missing key 'channel' (repo %s)" % repo_name
-				)
-				self.error = True
-				return
-
-			try:
-
-				chan_name = chan_dict.pop('channel')
-
-				if self.verbose:
-					self.logger.verbose("-> Loading channel: " + chan_name)
-
-				chan_dict['repo'] = repo_name
-
-				# Check duplicated channel names
-				if chan_name in self._config['channel']:
-					self.logger.error(
-						"Duplicated channel name: '%s' %s", chan_name, 
-						self.get_collision_help_msg(
-							self._config['channel'][chan_name]['repo'],
-							repo_name
-						)
-					)
-					self.error = True
-					return
-
-				if type(chan_name) is str:
-					chan_dict['hashedName'] = DBUtils.b2_hash(chan_name)
-				elif type(chan_name) is int:
-					chan_dict['hashedName'] = chan_name
-				else:
-					self.logger.error(
-						"Channel name must be of type str or int (chan: %s, repo %s)" % 
-						(chan_name ,repo_name)
-					)
-					self.error = True
-					return
-
-				for i, process in enumerate(AmpelUtils.iter(chan_dict['process'])):
-
-					if process.get("tier", None) == 3:
-
-						conf = T3ConfigMorpher(process).get_conf(chan_name, i)
-						process_name = conf["processName"]
-						if process_name in self._config['t3']['process']:
-							self.logger.error(
-								"Duplicated process name: %s %s", process_name, 
-								self.get_collision_help_msg(
-									self._config['t3']['process'][process_name]['repo'],
-									repo_name
-								)
-							)
-							self.error = True
-							return
-
-						tasks = AmpelUtils.get_by_path(conf, "executor.runConfig.task")
-
-						if tasks: 
-
-							if not getattr(self, "tmp_tasks"):
-								self.tmp_tasks = {}
-
-							for task in tasks:
-
-								task['repo'] = repo_name
-								task_name = task['taskName']
-
-								if task_name in self.tmp_tasks:
-									self.logger.error(
-										"Duplicated task name: %s %s", task_name, 
-										self.get_collision_help_msg(
-											self.tmp_tasks['t3'][task_name]['repo'],
-											repo_name
-										)
-									)
-									self.error = True
-									return
-
-						self._config['t3']['process'][process_name] = process
-						del chan_dict['process'][i]
-
-				self._config['channel'][chan_name] = chan_dict
-
-			except Exception as e:
-				self.error = True
-				self.logger.error(
-					"Error occured while loading channel config (repo: %s). Offending value: %s" % 
-					(repo_name, chan_dict), exc_info=e
-				)
-
-
-	def add_aliases(self, arg: Dict, repo_name: str=None) -> None:
-		""" 
+	def build_config(self, ignore_errors: bool = False) -> Dict:
 		"""
-		for tier in arg:
-
-			if tier not in ("t0", "t1", "t2", "t3"):
-				self.logger.error(
-					"Alias error: ignoring unknown key: %s (repo: %s)" % 
-					(tier, repo_name)
-				)
-				self.error = True
-				continue
-
-			if not isinstance(arg[tier], dict):
-				self.logger.error(
-					"Alias error: provided value must be have dict type (key: %s, repo: %s)" % 
-					(tier, repo_name)
-				)
-				self.error = True
-				continue
-
-			for key in arg[tier]:
-
-				try:
-
-					if self.verbose:
-						self.logger.verbose("-> Loading alias: " + key)
-
-					if repo_name:
-						if repo_name not in self._config[tier]['alias']:
-							d = {}
-							self._config[tier]['alias'][repo_name] = d
-						else:
-							d = self._config[tier]['alias'][repo_name]
-					else:
-						d = self._config[tier]['alias']
-
-					if key in d and (
-						AmpelUtils.build_unsafe_dict_id(arg[tier][key]) == \
-						AmpelUtils.build_unsafe_dict_id(d[key])
-					):
-						self.logger.error("Duplicated alias: %s.%s" % (tier, key))
-						self.error = True
-						return
-
-					d[key] = arg[tier][key]
-
-				except Exception as e:
-					self.error = True
-					self.logger.error(
-						"Error occured while loading alias %s.%s" %
-						(tier, key), exc_info=e
-					)
-
-
-	def add_units(self, config_root_key: str, arg: List[str], repo_name: str="Undefined") -> None:
-		""" """
-		for el in arg:
-
-			try:
-
-				k = re.sub(".*\.", "", el)
-
-				if k in self._config[config_root_key]:
-					self.logger.error('Duplicated ampel %s: %s' % (config_root_key, k))
-					self.error = True
-					return
-
-				self._config[config_root_key][k] = {
-					'fqn': el,
-					'repo': repo_name
-				}
-
-				if self.verbose:
-					self.logger.verbose("-> Loading %s: %s" + (config_root_key, k))
-
-			except Exception as e:
-				self.error = True
-				self.logger.error(
-					"Error occured while loading %s: %s" % 
-					(config_root_key, el), exc_info=e
-				)
-
-
-	def add_resources(self, arg: Dict, repo_name: str="Undefined") -> None:
-		""" 
-		"""
-		for key in arg:
-
-			try:
-				if self.verbose:
-					self.logger.verbose("-> Loading resource: " + key)
-
-				if repo_name not in self._config['resource']:
-					self._config['resource'][repo_name] = {}
-				else:
-					if key in self._config['resource'][repo_name]:
-						self.logger.error("Duplicated resource: " + key)
-						self.error = True
-						return
-
-				self._config['resource'][repo_name][key] = arg[key]
-
-			except Exception as e:
-				self.error = True
-				self.logger.error(
-					"Error occured while loading resource " + key, exc_info=e
-				)
-
-
-	def add_job(self, arg: Dict, repo_name: str="Undefined") -> None:
-		""" """
-
-		if "job" not in arg:
-			self.logger.error("Job dict is missing key 'job'")
-			self.error = True
-			return
-
-		job_name = arg["job"]
-		arg['repo'] = repo_name
-
-		if self.verbose:
-			self.logger.verbose("-> Loading job: " + job_name)
-
-		if job_name in self._config['t3']['job']:
-			self.logger.error("Duplicated job: '%s'", job_name)
-			self.error = True
-			return
-
-		self._config['t3']['job'][job_name] = arg
-
-
-	def get_config(self, ignore_errors: bool=False) -> Dict:
-		""" 
+		Builds the final ampel config using previously collected config pieces (contained in self.base_config)
+		This involves a multi-step process where the config is 'morphed' its final structure.
 		:raises: ValueError if self.error is True - this behavior can be disabled using the parameter ignore_errors
 		"""
-		if self.error:
+		if self.base_config.has_nested_error():
 			if not ignore_errors:
 				raise ValueError(
 					"Error occured while building config, you can use the option ignore_errors=True \n" +
 					"to bypass this exception and get the (possibly non-working) config nonetheless"
 				)
 
-		for channel in self._config['channel'].keys():
+		out = BaseConfig(self.base_config.logger, self.verbose)
 
-			for el in AmpelUtils.iter(self._config['channel'][channel]['process']):
+		# there could be a nice way to do this
+		out = self.base_config.copy()
 
-				# We could not do the following on the fly previously (in add_channel(...))
-				# because some aliases might not have been added at the time
-				if "t2Compute" in el:
+		# Add t2 run config collector (in which both hashed values of t2 run configs 
+		# and t2 run config will be added)
+		out['t2']['runConfig'] = T2RunConfigCollector(
+			tier=2, conf_section="runConfig", logger=self.logger, verbose=self.verbose
+		)
 
-					for t2 in AmpelUtils.iter(el['t2Compute']):
+		# Add (possibly transformed) processes to output config 
+		for tier in (0, 1, 2, 3):
 
-						rc = t2.get('runConfig', None)
-
-						if not rc:
-							continue
-
-						if isinstance(rc, str):
-
-							repo_name = self._config['channel'][channel]['repo']
-
-							if (
-								repo_name not in self._config['t2']['alias'] or 
-								rc not in self._config['t2']['alias'][repo_name]
-							):
-								self.logger.error(
-									"Error in channel %s (repo %s)", 
-									channel, self._config['channel'][channel]['repo']
-								)
-								raise ValueError(
-									"Unknown T2 run config alias defined in channel %s:\n %s" % 
-									(channel, t2)
-								)
-
-							rc = self._config['t2']['alias'][repo_name][rc]
-
-						if isinstance(rc, Dict):
-							override = t2.get('override', None)
-							if override:
-								rc = {**rc, **override}
-							b2_hash = DBUtils.b2_dict_hash(rc)
-							t2['runConfig'] = b2_hash
-							self._config['t2']['runConfig'][b2_hash] = rc
-							continue
-
-						if isinstance(rc, int):
-							if rc in self._config['t2']['runConfig']:
-								continue
-							raise ValueError(
-								"Unknown T2 run config alias defined in channel %s:\n %s" %
-								(channel, t2)
-							)
-
-						raise ValueError(
-							"Invalid T2 run config defined in channel %s:\n %s" %
-							(channel, t2)
-						)
-
-		return self._config
-
-	
-	def print(self, ignore_errors: bool=False) -> None:
-		"""
-		"""
-		print(
-			json.dumps(
-				self.get_config(ignore_errors), 
-				indent=4
+			p_collector = ProcessConfigCollector(
+				tier=tier, conf_section="process", 
+				logger=self.logger, verbose=self.verbose
 			)
-		)	
+
+			# We overwrite the previous collector (out = self.base_config.copy()) 
+			# with a new empty one
+			out[f"t{tier}"]['process'] = p_collector
+
+			# For each process collected before, apply transformations
+			# and add it to our (almost) final process collector.
+			# 'almost' because a gathering of T0 processes may occure later
+			for p in self.base_config[f"t{tier}"]["process"]:
+				p_collector.add(
+					self.morph_process(p) \
+						.apply_template() \
+						.scope_aliases(self.base_config) \
+						.hash_t2_run_config(out) \
+						.get()
+				)
+
+		# Setup empty channel collector
+		out['channel'] = ChannelConfigCollector(
+			conf_section="channel", logger=self.logger, verbose=self.verbose
+		)
+
+		# Fill it with (possibly transformed) channels
+		for chan_name, chan_dict in self.base_config['channel'].items():
+
+			# Get possibly required template for this particular channel
+			tpl = self._get_channel_tpl(chan_dict)
+
+			# If templating is required
+			if tpl:
+
+				# Extract channel definition from template instance
+				out['channel'].add(
+					tpl.get_channel(self.logger)
+				)
+
+				# Check if processes exist embedded in channel def
+				for p in tpl.get_processes(self.logger):
+
+					# Add transformed process to final process collector
+					out[f"t{p['tier']}"]['process'].add(
+						self.morph_process(p) \
+							.apply_template() \
+							.scope_aliases(self.base_config) \
+							.hash_t2_run_config(out) \
+							.enforce_t3_channel_selection(chan_name) \
+							.get()
+					)
+
+			else:
+
+				# Raw/Simple/Standard channel definition
+				# (encouraged behavior actually)
+				out['channel'].add(chan_dict)
+				
+
+		self.logger.info("Done building config")
+		return out
 
 
-	def do_not_hash_chan_names(self) -> None:
-		""" Not recommended """
-		self._config['db']['options']["hashChanNames"] = False
+	def morph_process(self, process: Dict) -> ProcessMorpher:
+		""" 
+		Returns an instance of ProcessMorpher using the provided 
+		process dict and the internal logger and templates
+		"""
+		return ProcessMorpher(
+			process, self.templates, self.logger, self.verbose
+		)
 
 
-	@staticmethod
-	def get_collision_help_msg(src_def: str, new_def: str) -> str:
+	def _get_channel_tpl(self, chan_dict):
+		"""
+		Internal method used to check if a template (and which one) 
+		shoud be applied to a given channel dict.
+		"""
+		if "process" in chan_dict:
+			return NestedProcsChannelTemplate(**chan_dict)
+
+		if "template" in chan_dict:
+			if chan_dict['template'] not in self.templates:
+				raise ValueError(f"Unknown template: {chan_dict['template']}")
+			return self.templates[chan_dict['template']](**chan_dict)
+
+		return None
+
+
+	def gather_processes(
+		self, config: BaseConfig, tier: int, match: str, collect: str
+	) -> Dict:
+		"""
+		:param channel_names:
+		- None: all the available channels from the ampel config will be loaded
+		- String: channel with the provided id will be loaded
+		- List of strings: channels with the provided ids will be loaded 
+		"""
+
+		processes = [
+			el for el in config[f't{tier}']['process'].values()
+			if re.match(match, el.get('processName'))
+		]
+
+		if len(processes) <= 1:
+			return None
+
+		init_configs = []
+		dist_names = set()
+		out_proc = None
+
+		for p in processes:
+
+			if not p.get('active', False):
+				self.logger.info(f"Ignoring deactivated process {p['processName']}")
+				continue
+
+			# Use first active proces as template for the multi-channel process
+			# to be generated by this method
+			if not out_proc:
+				# Faster deep copy
+				out_proc = json.loads(json.dumps(p))
+				
+			# Inactivate this particular process as it will be run in a multi-channel process
+			self.logger.info(f"Deactivating process {p['processName']}")
+			p['active'] = False
+
+			# Gather init config
+			init_configs.append(
+				AmpelUtils.get_by_path(p, collect)
+			)
+
+			# Collect distribution name
+			if p.get("distName"):
+				dist_names.add(p.get("distName"))
+
+		# for T0 processes: collect=processor.initConfig.channel
+		ConfigUtils.set_by_path(out_proc, collect, init_configs)
+		out_proc['processName'] = match
+		out_proc['distName'] = "/".join(dist_names)
+
+		return out_proc
+
+
+	def print(self) -> None:
 		"""
 		"""
-		if src_def == "Undefined":
-			return ""
-
-		if src_def == new_def:
-			return "(collision originates from different definitions in the same repository %s)" % src_def
-
-		return "(initialy defined by repository %s)" % src_def
+		self.base_config.print()
