@@ -7,7 +7,7 @@
 # Last Modified Date: 15.09.2018
 # Last Modified By  : jvs
 
-from ampel.base.abstract.AmpelABC import AmpelABC, abstractmethod
+from ampel.abstract.AmpelABC import AmpelABC, abstractmethod
 
 class AbsTargetSource(metaclass=AmpelABC):
 	"""

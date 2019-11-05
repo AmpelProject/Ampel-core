@@ -7,7 +7,7 @@
 # Last Modified Date: 22.02.2019
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-from ampel.base.abstract.AmpelABC import AmpelABC, abstractmethod
+from ampel.abstract.AmpelABC import AmpelABC, abstractmethod
 
 class AbsDataAccessController(metaclass=AmpelABC):
 	"""
