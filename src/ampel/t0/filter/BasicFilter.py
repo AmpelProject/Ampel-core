@@ -10,9 +10,9 @@
 import operator
 from types import MappingProxyType
 
-from ampel.base.abstract.AbsAlertFilter import AbsAlertFilter
+from ampel.abstract.AbsT0AlertFilter import AbsT0AlertFilter
 
-class BasicFilter(AbsAlertFilter):
+class BasicFilter(AbsT0AlertFilter):
 
 	version = 1.0
 

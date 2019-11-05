@@ -13,9 +13,9 @@ from pymongo import MongoClient
 from numpy import mean
 
 from ampel.config.AmpelConfig import AmpelConfig
-from ampel.base.abstract.AbsAlertFilter import AbsAlertFilter
+from ampel.abstract.AbsT0AlertFilter import AbsT0AlertFilter
 
-class BasicCatalogFilter(AbsAlertFilter):
+class BasicCatalogFilter(AbsT0AlertFilter):
 
     version = 0.1
     
