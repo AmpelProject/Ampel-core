@@ -4,15 +4,15 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 16.06.2018
-# Last Modified Date: 22.10.2019
+# Last Modified Date: 04.11.2019
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
+from logging import Logger
 from pymongo import MongoClient
 from pymongo.collection import Collection
 from pymongo.database import Database
 from typing import Union, Tuple, Sequence
 from ampel.config.AmpelConfig import AmpelConfig
-from ampel.logging.AmpelLogger import AmpelLogger
 from ampel.model.db.AmpelColData import AmpelColData
 from ampel.model.db.AmpelDBData import AmpelDBData
 from ampel.model.db.IndexData import IndexData
@@ -28,7 +28,6 @@ class AmpelDB:
 		the db prefix name defined in AmpelConfig (db.prefix)
 		"""
 		self.ampel_config = ampel_config
-		self.logger = AmpelLogger.get_logger()
 		self._db_prefix = ampel_config.get('db.prefix') if not prefix_override else prefix_override
 		self._mongo_resources = ampel_config.get('resource.mongo')
 
@@ -142,7 +141,7 @@ class AmpelDB:
 
 	
 	def create_collection(
-		self, resource_name: str, db_name: str, col_config: AmpelColData
+		self, resource_name: str, db_name: str, col_config: AmpelColData, logger: Logger = None
 	) -> Collection:
 		""" 
 		:param resource_name: name of the AmpelConfig resource (resource.mongo) to be fed to MongoClient()
@@ -150,7 +149,12 @@ class AmpelDB:
 		:param col_name: name of the collection to be created
 		"""
 
-		self.logger.info("Creating %s -> %s", db_name, col_config.name)
+		if not logger:
+			# Avoid cyclic import error
+			from ampel.logging.AmpelLogger import AmpelLogger
+			logger = AmpelLogger.get_logger()
+			logger.info("Creating %s -> %s", db_name, col_config.name)
+
 		db = self._get_mongo_db(resource_name, db_name)
 
 		# Create collection with custom args
@@ -168,7 +172,7 @@ class AmpelDB:
 				try:
 
 					idx_params = idx.dict(skip_defaults=True)
-					self.logger.info("  Creating index: %s", idx_params)
+					logger.info("  Creating index: %s", idx_params)
 
 					if idx_params.get('args'):
 						col.create_index(
@@ -180,7 +184,7 @@ class AmpelDB:
 						)
 									
 				except Exception as e:
-					self.logger.error(
+					logger.error(
 						"Index creation failed for '%s' (db: '%s', args: %s)", 
 						col_config.name, db_name, idx_params, 
 						exc_info=e
@@ -190,16 +194,21 @@ class AmpelDB:
 
 
 	def set_col_index( 
-		self, resource_name: str, db_name: str, 
-		col_config: AmpelColData, force_overwrite: bool = False
+		self, resource_name: str, db_name: str, col_config: AmpelColData, 
+		force_overwrite: bool = False, logger: Logger = None
 	) -> None:
 		"""
 		:param force_overwrite: delete index if it already exists. 
 		This can be useful if you want to change index options (for example: sparse=True/False)
 		"""
 
+		if not logger:
+			# Avoid cyclic import error
+			from ampel.logging.AmpelLogger import AmpelLogger
+			logger = AmpelLogger.get_logger()
+
 		if not col_config.indexes:
-			self.logger.info(
+			logger.info(
 				"No index data configured for collection " +
 				col_config.name
 			)
@@ -222,28 +231,29 @@ class AmpelDB:
 
 			if idx_id in col_index_info:
 				if force_overwrite:
-					self.logger.info("  Deleting existing index: "+idx_id)
+					logger.info("  Deleting existing index: "+idx_id)
 					col.drop_index(idx_id)
 				else:
-					self.logger.info("  Skipping already existing index: "+idx_id)
+					logger.info("  Skipping already existing index: "+idx_id)
 					continue
 
-			self._create_index(col, idx)
+			self._create_index(col, idx, logger)
 
 		for k in col_index_info:
 			if k not in flat_indexes and k != "_id_":
-				self.logger.info("  Removing index "+k)
+				logger.info("  Removing index "+k)
 				col.drop_index(k)
-								
 
-	def _create_index(self, col: Collection, index_data: IndexData) -> None:
+								
+	@staticmethod
+	def _create_index(col: Collection, index_data: IndexData, logger: Logger) -> None:
 		"""
 		"""
 
 		try:
 
 			idx_params = index_data.dict(skip_defaults=True)
-			self.logger.info("  Creating index: %s", idx_params)
+			logger.info("  Creating index: %s", idx_params)
 
 			if idx_params.get('args'):
 				col.create_index(
@@ -256,8 +266,7 @@ class AmpelDB:
 				)
 
 		except Exception as e:
-			self.logger.error(
-				"Index creation failed for '%s' ( args: %s)", 
-				col.name, idx_params, 
-				exc_info=e
+			logger.error(
+				"Index creation failed for '%s' (args: %s)", 
+				col.name, idx_params, exc_info=e
 			)
