@@ -30,14 +30,14 @@ class AmpelConfig(AmpelBaseConfig):
 		cb.load_distributions()
 
 		if pwd_file:
-			cb.conf_collector.add_passwords(
+			cb.add_passwords(
 				json.load(
 					open(pwd_file, "r")
 				)
 			)
 
 		return AmpelConfig(
-			cb.get_config(ignore_errors=ignore_errors)
+			cb.build_config(ignore_errors=ignore_errors)
 		)
 
 
@@ -64,7 +64,14 @@ class AmpelConfig(AmpelBaseConfig):
 		pass
 
 
-	def recursive_decrypt(self, conf_key: str) -> Dict:
+	def get_resource(self, conf_key: str, debug: bool = False) -> Dict:
+		""" """
+		return self.recursive_decrypt(
+			f"resource.{conf_key}", debug
+		)
+
+
+	def recursive_decrypt(self, conf_key: str, debug: bool = False) -> Dict:
 		"""
 		Note:
 		- returns None if conf with provided key is not a Dict
@@ -93,6 +100,11 @@ class AmpelConfig(AmpelBaseConfig):
 							self.get("pwd")
 						)
 					except Exception:
+						if debug:
+							import traceback
+							print("#"*50)
+							traceback.print_exc()
+							print("#"*50)
 						self.recursive_decrypt(value)
 						continue
 
