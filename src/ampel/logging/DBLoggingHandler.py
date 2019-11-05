@@ -1,13 +1,13 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-core/src/ampel/logging/DBLoggingHandler.py
+# File              : ampel/logging/DBLoggingHandler.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 14.12.2017
 # Last Modified Date: 16.08.2019
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-import logging, struct, os, socket
+import logging, struct, socket
 from bson import ObjectId
 from pymongo.errors import BulkWriteError
 from pymongo.operations import UpdateOne
@@ -50,7 +50,8 @@ class DBLoggingHandler(logging.Handler):
 	"""
 
 	def __init__(
-		self, flags, col_name="logs", level=logging.DEBUG, aggregate_interval=1, flush_len=1000
+		self, ampel_db: AmpelDB, flags: LogRecordFlag, col_name: str = "logs", 
+		level: int = logging.DEBUG, aggregate_interval: int = 1, flush_len: int = 1000
 	):
 		""" 
 		:param int flags: instance of :py:class:`LogRecordFlag <ampel.core.flags.LogRecordFlag>`
@@ -69,7 +70,7 @@ class DBLoggingHandler(logging.Handler):
 		self.lock = None
 		self._name = None
 
-		# Own stuff
+		self._ampel_db = ampel_db
 		self.flush_len = flush_len
 		self.aggregate_interval = aggregate_interval
 		self.log_dicts = []
@@ -87,7 +88,8 @@ class DBLoggingHandler(logging.Handler):
 		}
 
 		# Get reference to pymongo collection
-		self.col = AmpelDB.get_collection(col_name)
+		self.col = ampel_db.get_collection(col_name)
+
 			
 		# Set loggingHandler properties
 		self.setLevel(level)
@@ -102,11 +104,14 @@ class DBLoggingHandler(logging.Handler):
 		runId is a global (ever increasing) counter stored in the DB
 		used to tie log entries from the same process with each other
 		"""
-		return AmpelDB.get_collection('counter').find_one_and_update(
-			{'_id': 'current_run_id'},
-			{'$inc': {'value': 1}},
-			new=True, upsert=True
-		).get('value')
+		return self._ampel_db \
+			.get_collection('counter') \
+			.find_one_and_update(
+				{'_id': 'current_run_id'},
+				{'$inc': {'value': 1}},
+				new=True, upsert=True
+			) \
+			.get('value')
 
 
 	def add_headers(self, dicts):
@@ -379,7 +384,7 @@ class DBLoggingHandler(logging.Handler):
 						print("In DB:")
 						print(db_rec)
 
-						AmpelDB.get_collection('troubles').insert_one(
+						self._ampel_db.get_collection('troubles').insert_one(
 							{
 								'tier': LoggingUtils.get_tier_from_log_flags(self.flags),	
 								'location': 'DBLoggingHandler',
@@ -393,7 +398,7 @@ class DBLoggingHandler(logging.Handler):
 					raise_exc = True
 					print("writeError dict entry: " + str(err_dict))
 
-					AmpelDB.get_collection('troubles').insert_one(
+					self._ampel_db.get_collection('troubles').insert_one(
 						{
 							'tier': LoggingUtils.get_tier_from_log_flags(self.flags),	
 							'location': 'DBLoggingHandler',
@@ -409,7 +414,7 @@ class DBLoggingHandler(logging.Handler):
 
 			try: 
 				from traceback import format_exc
-				AmpelDB.get_collection('troubles').insert_one(
+				self._ampel_db.get_collection('troubles').insert_one(
 					{
 						'tier': LoggingUtils.get_tier_from_log_flags(self.flags),	
 						'location': 'DBLoggingHandler',

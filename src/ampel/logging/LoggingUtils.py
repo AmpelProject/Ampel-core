@@ -4,11 +4,12 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 30.09.2018
-# Last Modified Date: 11.10.2019
+# Last Modified Date: 04.11.2019
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import sys, traceback, logging
 from typing import Dict
+from ampel.db.AmpelDB import AmpelDB
 from ampel.config.utils.ConfigUtils import ConfigUtils
 from ampel.core.flags.LogRecordFlag import LogRecordFlag
 
@@ -69,14 +70,17 @@ class LoggingUtils:
 
 
 	@classmethod
-	def report_exception(cls, logger, exc, tier, run_id=None, info=None):
+	def report_exception(
+		cls, ampel_db: AmpelDB, logger: "AmpelLogger", tier: int, 
+		exc: Exception=None, run_id: int = None, info: Dict = None
+	) -> None:
 		"""
-		:param int tier: Ampel tier level (0, 1, 2, 3)
+		:param tier: Ampel tier level (0, 1, 2, 3)
 		:param logger: logger instance (logging module). \
 		propagate_log() will be used to print details about the exception
-		:param int run_id: If provided, the runId associated with the current job \
+		:param run_id: If provided, the runId associated with the current job \
 		will be saved into the reported dict instance.
-		:param dict info: optional dict instance whose values will be included \
+		:param info: optional dict instance whose values will be included \
 		in the document inserted into Ampel_troubles
 		"""
 
@@ -104,17 +108,17 @@ class LoggingUtils:
 		trouble['exception'] = format_exc().replace("\"", "'").split("\n")
 
 		# Populate 'troubles' collection
-		LoggingUtils._insert_trouble(trouble, logger)
+		LoggingUtils._insert_trouble(trouble, ampel_db, logger)
 
 
 	@staticmethod
-	def report_error(tier, msg, info, logger):
+	def report_error(ampel_db: AmpelDB, tier: int, msg: str, info: Dict, logger: 'AmpelLogger') -> None:
 		"""
-		:param int tier:
-		:param str tier:
-		:param dict info:
-		:param AmpelLogger logger:
-		:returns: None
+		This method is used to report bad states or errors which are grave enough 
+		to be worth the creation of a 'trouble document'. 
+		Information concerning the error can be provided as strine message through the 'msg' argument 
+		as well as dict through the parameter 'info'.
+		This method should not be used to report Exceptions (please use report_exception(...))
 		:raises: Should not raise errors
 		"""
 
@@ -138,7 +142,7 @@ class LoggingUtils:
 		logger.error("Error occured", extra=trouble)
 
 		# Populate 'troubles' collection
-		LoggingUtils._insert_trouble(trouble, logger)
+		LoggingUtils._insert_trouble(trouble, ampel_db, logger)
 
 
 	@classmethod
@@ -153,16 +157,14 @@ class LoggingUtils:
 
 
 	@staticmethod
-	def _insert_trouble(trouble, logger):
+	def _insert_trouble(trouble: Dict, ampel_db: AmpelDB, logger: 'AmpelLogger') -> None:
 		"""
 		:raises None:
 		"""
 
-		from ampel.db.AmpelDB import AmpelDB
-
 		# Populate troubles collection
 		try:
-			AmpelDB.get_collection('troubles').insert_one(trouble)
+			ampel_db.get_collection('troubles').insert_one(trouble)
 
 		except Exception:
 
