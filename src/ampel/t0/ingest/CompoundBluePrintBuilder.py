@@ -31,7 +31,7 @@ class CompoundBluePrintBuilder:
 		self, comp_itm_builder: AbsCompoundItemBuilder, logger: AmpelLogger, verbose: bool = False
 	):
 		"""
-		:param comp_itm_builder: child *class* (not instance) of ampel.core.abstract.AbsCompoundItemGenerator
+		:param comp_itm_builder: child *class* (not instance) of ampel.abstract.AbsCompoundItemGenerator
 		:param logger: AmpelLogger instance
 		:returns: None
 		"""

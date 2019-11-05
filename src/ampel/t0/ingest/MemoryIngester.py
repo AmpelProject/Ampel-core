@@ -8,7 +8,7 @@
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from ampel.base.flags.TransientFlags import TransientFlags
-from ampel.core.abstract.AbsAlertIngester import AbsAlertIngester
+from ampel.abstract.AbsAlertIngester import AbsAlertIngester
 
 class MemoryIngester(AbsAlertIngester):
 
