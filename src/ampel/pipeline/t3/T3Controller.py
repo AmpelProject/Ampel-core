@@ -350,8 +350,8 @@ def main():
 	    type=ScienceRecordMatchConfig.parse_raw,
 	    help="Filter based on transient records. The filter should be the JSON representation of a ScienceRecordMatchConfig")
 	p.add_argument('--chunk', type=int, default=200, help="Provide CHUNK transients at a time")
-	p.add_argument('--created', type=int, default=40, help="Select transients created in the last CREATED days")
-	p.add_argument('--modified', type=int, default=1, help="Select transients modified in the last MODIFIED days")
+	p.add_argument('--created', type=float, default=40, help="Select transients created in the last CREATED days")
+	p.add_argument('--modified', type=float, default=1, help="Select transients modified in the last MODIFIED days")
 
 	p = add_command(list_tasks, 'list')
 
