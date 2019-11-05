@@ -1,25 +1,26 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/t0/Channel.py
+# File              : ampel/t0/APFilter.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 03.05.2018
-# Last Modified Date: 14.10.2018
+# Last Modified Date: 03.11.2019
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-import pkg_resources, logging
+
+from ampel.model.t0.APChanData import APChanData
+from ampel.db.AmpelDB import AmpelDB
+from ampel.core.AmpelUnitLoader import AmpelUnitLoader
 from ampel.logging.AmpelLogger import AmpelLogger
-from ampel.common.AmpelUtils import AmpelUtils
-from ampel.common.AmpelUnitLoader import AmpelUnitLoader
-from ampel.config.AmpelConfig import AmpelConfig
-from ampel.logging.RecordsBufferingHandler import RecordsBufferingHandler
 from ampel.logging.DBRejectedLogsSaver import DBRejectedLogsSaver
 from ampel.logging.T0RejConsoleFormatter import T0RejConsoleFormatter
+from ampel.logging.RecordsBufferingHandler import RecordsBufferingHandler
 
-class Channel:
+class APFilter:
 	"""
-	This class instantiates loggers and elements such as T0 filter classes
-	(using ampel.config.channel.ChannelConfig)
+	Helper class for the AlertProcessor.
+	It instantiates and references loggers, T0 filter and the list of T2 tickets to be created
+	A better class name is welcome.
 
 	A note regarding logging: 
 	AmpelLogger can be setup with a default 'extra' parameter (with a channel for example),
@@ -33,7 +34,7 @@ class Channel:
 	We could add the 'channels' property to the logger anyway and remove it later in DBRejectedLogsSaver, 
 	but better is not to add it at all. 
 
-	So we we optimize logging for the most frequent case by doing the following:
+	So we optimize logging for the most frequent case by doing the following:
 
 	1) For accepted alerts:
 	For the few times where we accept an alert, we add 'channels' to the parameter 'extra' of
@@ -54,67 +55,66 @@ class Channel:
 	whether the alert is accepeted or not.
 	"""
 
-	def __init__(self, chan_config, survey_id, parent_logger, skip_t2_units={}, log_line_nbr=False, embed=False, single_rej_col=False):
+	def __init__(
+		self, ampel_db: AmpelDB, ampel_unit_loader: AmpelUnitLoader, ap_chan_data: APChanData,
+		parent_logger: AmpelLogger, log_line_nbr=False, embed=False, single_rej_col=False
+	):
 		"""
-		:param ChannelConfig chan_config: instance of :obj:`ChannelConfig \
-			<ampel.config.channel.ChannelConfig>`
-		:param str survey_id: name of the survey id (ex:ZTFIPAC)
-		:param Logger parent_logger: logger instance (python module logging)
-		:param bool embed: 
 		:param bool single_rej_col: 
-			- False: rejected logs are saved in channel specific collections
-			 (collection name equals channel name)
-			- True: rejected logs are saved in a single collection called 'logs'
-		:raises: NameError if the provided survey id is not defined as source in the channel config 
-		:returns: None
+		- False: rejected logs are saved in channel specific collections
+		 (collection name equals channel name)
+		- True: rejected logs are saved in a single collection called 'logs'
 		"""
-
-		self.stream_config = chan_config.get_stream_config(survey_id)
-		if self.stream_config is None:
-			raise NameError("Unknown survey id: '%s'" % survey_id)
 
 		# Channel name (ex: HU_SN, 1)
-		self.name = chan_config.channel
-		self.str_name = str(self.name) if type(self.name) is int else self.name
-
-		self.auto_complete = self.stream_config.parameters.get('autoComplete', False)
-		self.unit_name = self.stream_config.t0Filter.unitId
-
-		# Instantiate/get filter class associated with this channel
-		parent_logger.info("Loading filter: %s" % self.unit_name)
-
-		# Raise exception if not found / invalid
-		FilterClass = AmpelUnitLoader.get_class(
-			tier=0, unit_name=self.unit_name, raise_exc=True
-		)
-
-		self.t2_units = {el.unitId for el in self.stream_config.t2Compute if not el.unitId in skip_t2_units}
-		parent_logger.info("On match t2 units: %s" % self.t2_units)
+		self.channel = ap_chan_data.name
+		self.chan_str = str(self.channel) if isinstance(self.channel, int) else self.channel
+		self.auto_complete = ap_chan_data.auto_complete
 
 		# Create channel (buffering) logger
-		self.logger = AmpelLogger("buf_" + self.str_name)
+		self.logger = AmpelLogger("buf_" + self.chan_str)
 		self.rec_buf_hdlr = RecordsBufferingHandler(embed)
 		self.logger.addHandler(self.rec_buf_hdlr)
 
-		self.filter_func = FilterClass(
-			self.t2_units,
-			base_config = AmpelUnitLoader.get_resources(FilterClass),
-			run_config = self.stream_config.t0Filter.runConfig, 
-			logger = self.logger
-		).apply
+		# Instantiate/get filter class associated with this channel
+		parent_logger.info(
+			f"Loading filter: {ap_chan_data.t0_add.unit.class_name}"
+		)
 
-		# Clear possibly existing log entries (logged by FilterClass__init__) to parent_logger
+		ampel_unit = ampel_unit_loader.get_ampel_unit(
+			ap_chan_data.t0_add.unit
+		)
+
+		self.t2_units = {
+			el.class_name for el in ap_chan_data.t0_add.t2_compute
+		}
+
+		ampel_unit.init_config.on_match_t2_units = self.t2_units
+			
+		self.filter_func = ampel_unit \
+			.instantiate(self.logger) \
+			.apply
+
+		parent_logger.info(
+			f"On match t2 units: {self.t2_units}"
+		)
+
+		# Clear possibly existing log entries 
+		# (logged by FilterClass__init__) to parent_logger
 		self.rec_buf_hdlr.buffer = []
 
 		self.rejected_logger = AmpelLogger.get_logger(
-			name=self.str_name + "_rej", 
-			formatter=T0RejConsoleFormatter(
-				line_number=log_line_nbr,
-				implicit_channels=self.name
+			name = self.chan_str + "_rej", 
+			formatter = T0RejConsoleFormatter(
+				line_number = log_line_nbr,
+				implicit_channels = self.channel
 			)
 		)
 
 		self.rejected_log_handler = DBRejectedLogsSaver(
-			self.str_name, parent_logger, single_rej_col
+			ampel_db, self.chan_str, parent_logger, single_rej_col
 		)
-		self.rejected_logger.addHandler(self.rejected_log_handler)
+
+		self.rejected_logger.addHandler(
+			self.rejected_log_handler
+		)
