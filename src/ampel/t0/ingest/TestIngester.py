@@ -7,7 +7,7 @@
 # Last Modified Date: 02.03.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-from ampel.core.abstract.AbsAlertIngester import AbsAlertIngester
+from ampel.abstract.AbsAlertIngester import AbsAlertIngester
 
 class TestIngester(AbsAlertIngester):
 
