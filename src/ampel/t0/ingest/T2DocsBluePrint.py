@@ -1,28 +1,31 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/t0/ingesters/T2DocsBluePrint.py
+# File              : ampel/t0/ingest/T2DocsBluePrint.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 14.12.2017
-# Last Modified Date: 08.05.2018
+# Last Modified Date: 03.11.2019
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-import logging, hashlib
+from typing import List, Sequence
+from ampel.model.t0.APChanData import APChanData
 
 
-class T2DocsBluePrint():
+class T2DocsBluePrint:
 	"""
 	Creates a nested dict struct that is used as basis to create T2 documents.
 	The generated structure (create_blueprint) is optimized: 
-		-> A T2 documents for a given compound shared among different channels is referenced only once.
+	-> A T2 documents for a given compound shared among different channels is referenced only once.
 	"""
 
-	def __init__(self, t0_channels, t2_units_using_uls):
+	def __init__(self, t2_units: List[str], t2_units_using_uls: List[str], chan_bundle: Sequence[APChanData]):
 		"""
 		Parameters:
-		:param t0_channels: list of instances of ampel.config.T0Channel
-		NOTE: order of 't0_channels' matters: the parameter 'array_of_scheduled_t2_units'
-		used in method 'create_blueprint' must have the same channel order 
+		:param t2_units: all schedulable t2s for the given t0 processes
+		:param chan_bundle: list of instances of ampel.t0.Channel
+		NOTE: the order of the APChanConfig instance listed in chan_bundle matters: 
+		the parameter 'array_of_scheduled_t2_units' used in method 'create_blueprint' 
+		must have the same channel order 
 		:param t2_units_using_uls: list/set of t2 unit names making use of upper limits
 
 		Purpose:
@@ -49,38 +52,33 @@ class T2DocsBluePrint():
 		Values are a set of channel names
 		"""
 
-		if not isinstance(t0_channels, list):
-			raise ValueError("Parameter t0_channels must be of type: list")
+		if not isinstance(chan_bundle, Sequence):
+			raise ValueError("Parameter bundle must be a sequence of APChanData instances")
 
-		if len(t0_channels) == 0:
-			raise ValueError("Provided list of t0_channels cannot be empty")
+		if len(chan_bundle) == 0:
+			raise ValueError("Parameter bundle cannot be empty")
 
 		self.dd_full_t2Ids_runConfigs_chanlist = {}
-		self.t0_channels = t0_channels
+		self.chan_bundle = chan_bundle
 
 		# T2 unit making use of upper limits
 		self.t2_units_using_uls = t2_units_using_uls
 
-		# All schedulable t2s for the given t0_channels
-		all_t2s = set()
-		for channel in t0_channels:
-			all_t2s |= channel.t2_units
-
 		# Loop through schedulable t2 units
-		for t2_id in all_t2s:
+		for t2_id in t2_units:
 
 			# Each entry of dd_full_t2Ids_runConfigs_chanlist is also a dict (1st dict key: t2 runnable id)
 			self.dd_full_t2Ids_runConfigs_chanlist[t2_id] = {}
 
-			# Loop through the t0 channels 
-			for t0_channel in t0_channels:
+			# Loop through the t0 channel configurations
+			for ap_chan_data in chan_bundle:
 			
 				# Extract default run_config (= run parameter ID = wished configuration) associated with 
 				# with current T2 unit and for the current T0 channel only.
 				t2_execution_unit = next(
 					filter(
-						lambda x: x.unitId==t2_id, 
-						t0_channel.stream_config.t2Compute
+						lambda x: x.class_name == t2_id, 
+						ap_chan_data.t0_add.t2_compute
 					), None
 				)
 
@@ -89,17 +87,17 @@ class T2DocsBluePrint():
 				if t2_execution_unit is None:
 					continue
 
-				#  shortcut
-				run_config = t2_execution_unit.runConfig
+				# shortcut
+				run_config = t2_execution_unit.run_config
 				
 				# if run_config key was not yet stored in dd_full_t2Ids_runConfigs_chanlist struct
 				# create an empty ChannelFlags enum flag
 				if not run_config in self.dd_full_t2Ids_runConfigs_chanlist[t2_id]:
-					self.dd_full_t2Ids_runConfigs_chanlist[t2_id][run_config] = {t0_channel.name}
+					self.dd_full_t2Ids_runConfigs_chanlist[t2_id][run_config] = {ap_chan_data.name}
 				else:
 					# Add current t0 channel to dd_full_t2Ids_runConfigs_chanlist
 					# For example: dd_full_t2Ids_runConfigs_chanlist[SCM_LC_FIT]["default"].add("CHANNEL_SN")
-					self.dd_full_t2Ids_runConfigs_chanlist[t2_id][run_config].add(t0_channel.name)
+					self.dd_full_t2Ids_runConfigs_chanlist[t2_id][run_config].add(ap_chan_data.name)
 
 		
 	def create_blueprint(self, compound_blueprint, array_of_scheduled_t2_units):
@@ -207,7 +205,7 @@ class T2DocsBluePrint():
 			if single_channel_scheduled_t2s is None:
 				continue
 
-			channel = self.t0_channels[i]
+			ap_chan_data = self.chan_bundle[i]
 
 			# loop through scheduled runnable ids
 			for t2_id in single_channel_scheduled_t2s:
@@ -220,14 +218,14 @@ class T2DocsBluePrint():
 				for run_config in self.dd_full_t2Ids_runConfigs_chanlist[t2_id].keys():
 				
 					# If channel flag of current channel (index i) is registered in dd_full_t2Ids_runConfigs_chanlist
-					if channel.name in self.dd_full_t2Ids_runConfigs_chanlist[t2_id][run_config]:
+					if ap_chan_data.name in self.dd_full_t2Ids_runConfigs_chanlist[t2_id][run_config]:
 
 						# create flag if necessary
 						if not run_config in t2s_eff[t2_id]:
-							t2s_eff[t2_id][run_config] = {channel.name}
+							t2s_eff[t2_id][run_config] = {ap_chan_data.name}
 						else:
 							# append t0 channel value
-							t2s_eff[t2_id][run_config].add(channel.name)
+							t2s_eff[t2_id][run_config].add(ap_chan_data.name)
 
 
 		##################
