@@ -185,7 +185,9 @@ def runjob(args):
 	job_config = T3JobConfig(**AmpelConfig.get_config('t3Jobs.{}'.format(args.job)))
 	if args.task is not None:
 		job_config.tasks = [t for t in job_config.tasks if t.task == args.task]
-	job = T3Job(job_config, full_console_logging=True, raise_exc=True)
+	job = T3Job(job_config, full_console_logging=True, raise_exc=True,
+	    db_logging=args.update_run_col, update_events=args.update_run_col,
+	    update_tran_journal=args.update_tran_journal)
 	job.run()
 
 def runtask(args):
@@ -333,6 +335,8 @@ def main():
 	p = add_command(runjob)
 	p.add_argument('job')
 	p.add_argument('task', nargs='?')
+	p.add_argument('--no-update-run-col', dest='update_run_col', default=True, action="store_false", help="Record this run in the jobs collection")
+	p.add_argument('--no-update-tran-journal', dest='update_tran_journal', default=True, action="store_false", help="Record this run in the transient journal")
 
 	p = add_command(runtask)
 	p.add_argument('task')
