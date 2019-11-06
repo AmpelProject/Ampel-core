@@ -6,7 +6,7 @@ from ampel.t3.T3Job import T3Job
 
 from ampel.common.AmpelUnitLoader import AmpelUnitLoader
 
-from ampel.base.abstract.AbsT3Unit import AbsT3Unit
+from ampel.abstract.AbsT3Unit import AbsT3Unit
 from ampel.config.AmpelConfig import AmpelConfig
 from ampel.common.AmpelUtils import AmpelUtils
 from ampel.config.AmpelArgumentParser import AmpelArgumentParser
@@ -59,7 +59,7 @@ def t3_jobs():
       "tasks": [
         {
           "task": "SpaceCowboy",
-          "unitId": "T3PlaceboUnit",
+          "className": "T3PlaceboUnit",
           "runConfig": {"raise": True},
           "transients" : {
             "select": {
@@ -148,11 +148,11 @@ def minimal_config(mongod):
 					'state': '$all'
 				},
 				'tasks': [
-					{'task': 'noselect', 'unitId': 'T3PlaceboUnit'},
-					{'task': 'config', 'unitId': 'T3PlaceboUnit', 'runConfig': {}},
+					{'task': 'noselect', 'className': 'T3PlaceboUnit'},
+					{'task': 'config', 'className': 'T3PlaceboUnit', 'runConfig': {}},
 					# {'name': 'badconfig', 't3Unit': 'potemkin', 'runConfig': 'default_doesnotexist'},
-					{'task': 'select0', 'unitId': 'T3PlaceboUnit', 'transients': {'select': {'channels': '0'}, 'state': '$all'}},
-					{'task': 'select1', 'unitId': 'T3PlaceboUnit', 'transients': {'select': {'channels': '1'}, 'state': '$latest'}},
+					{'task': 'select0', 'className': 'T3PlaceboUnit', 'transients': {'select': {'channels': '0'}, 'state': '$all'}},
+					{'task': 'select1', 'className': 'T3PlaceboUnit', 'transients': {'select': {'channels': '1'}, 'state': '$latest'}},
 					
 				]
 			}
@@ -276,10 +276,10 @@ def test_get_required_resources():
 	for job in T3Controller.load_job_configs().values():
 		if isinstance(job, T3JobConfig):
 			for task in job.tasks:
-				units.add(task.unitId)
+				units.add(task.className)
 		else:
 			task = job
-			units.add(task.unitId)
+			units.add(task.className)
 	assert len(units) > 0
 	resources = set()
 	for unit in units:

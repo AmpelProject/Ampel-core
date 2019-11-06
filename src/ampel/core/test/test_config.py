@@ -70,10 +70,10 @@ def test_validate_config(mocker, mock_mongo, t3_unit_mocker):
 	for name, config in job_configs.items():
 		if isinstance(config, T3JobConfig):
 			for task in config.tasks:
-				t3_unit_mocker(task.unitId)
+				t3_unit_mocker(task.className)
 			T3Job(config, **kwargs)
 		else:
-			t3_unit_mocker(task.unitId)
+			t3_unit_mocker(task.className)
 			T3Task(config, **kwargs)
 
 def test_db_prefix(mongod):

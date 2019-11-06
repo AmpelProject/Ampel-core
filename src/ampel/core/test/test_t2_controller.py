@@ -1,6 +1,6 @@
 
 import pytest
-from ampel.base.abstract.AbsT2Unit import *
+from ampel.abstract.AbsT2Unit import *
 from ampel.t2.T2Controller import T2Controller
 from ampel.db.AmpelDB import AmpelDB
 
