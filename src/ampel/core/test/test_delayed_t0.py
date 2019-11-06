@@ -1,5 +1,5 @@
 
-from ampel.core.abstract.AbsTargetSource import AbsTargetSource
+from ampel.abstract.AbsTargetSource import AbsTargetSource
 
 import pytest
 import logging
@@ -99,7 +99,7 @@ def testing_config(mongod, archivedb):
 	                        "updatedHUZP": True
 	                    },
 	                    "t0Filter": {
-	                        "unitId": "NoFilter",
+	                        "className": "NoFilter",
 	                        "runConfig": {}
 	                    },
 	                    "t2Compute": []

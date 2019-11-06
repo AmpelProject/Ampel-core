@@ -229,7 +229,7 @@ def minimal_ingestion_config(mongod):
 				"updatedHUZP": False
 			},
 			"t0Filter" : {
-				"unitId": "BasicFilter",
+				"className": "BasicFilter",
 				"runConfig": {
 					"operator": ">",
 					"len": 1,

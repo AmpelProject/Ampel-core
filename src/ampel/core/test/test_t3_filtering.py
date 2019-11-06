@@ -12,13 +12,13 @@ def test_t3_filtering_demo(t3_transient_views):
         'fit_results.z': {'$gt': 0},
         'fit_results.x1': {'$lt': 10}
     }
-    t2_unit_id = 'SNCOSMO'
+    t2_class_name = 'SNCOSMO'
     runConfig = 'default'
     # we flesh it out into a full query
     query = {
             't2records': {
                 '$elemMatch': {
-                    't2_unit_id': t2_unit_id,
+                    't2_class_name': t2_class_name,
                     'info.runConfig': runConfig,
                     'info.hasError': False,
                     **{'results.-1.output.{}'.format(k): v for k,v in q.items()}
@@ -30,7 +30,7 @@ def test_t3_filtering_demo(t3_transient_views):
     filtered = [view for view in t3_transient_views if filter_applies(query, AmpelEncoder(lossy=True).default(view))]
     assert len(filtered) == 4
     for view in filtered:
-        records = [s for s in view.t2records if s.t2_unit_id == t2_unit_id and not s.info['hasError']]
+        records = [s for s in view.t2records if s.t2_class_name == t2_class_name and not s.info['hasError']]
         assert len(records) == 1
         results = records[0].results[-1]['output']
         assert all((
@@ -78,7 +78,7 @@ def test_transient_data_filter(transients, mocker):
         'state': '$latest',
         'select': {
             'scienceRecords': {
-                'unitId': 'SNCOSMO',
+                'className': 'SNCOSMO',
                 'match': {
                     'fit_acceptable': True,
                     'sncosmo_info.success': True,
@@ -93,7 +93,7 @@ def test_transient_data_filter(transients, mocker):
     }
     add = mocker.patch('ampel.t3.T3PlaceboUnit.T3PlaceboUnit.add')
     task = T3Task(
-        T3TaskConfig(task='foo', unitId='T3PlaceboUnit', transients=tran_config),
+        T3TaskConfig(task='foo', className='T3PlaceboUnit', transients=tran_config),
         logger=AmpelLogger.get_logger(), db_logging=False,
         full_console_logging=True, update_tran_journal=False, 
         update_events=False, raise_exc=True)
@@ -115,7 +115,7 @@ def test_transient_data_filter(transients, mocker):
             transients=tran_config,
             tasks={
                 'task': 'foo',
-                'unitId': 'T3PlaceboUnit'
+                'className': 'T3PlaceboUnit'
             }),
         logger=AmpelLogger.get_logger(), db_logging=False,
         full_console_logging=True, update_tran_journal=False, 
@@ -144,7 +144,7 @@ def test_transient_data_filter(transients, mocker):
             },
             tasks={
                 'task': 'foo',
-                'unitId': 'T3PlaceboUnit',
+                'className': 'T3PlaceboUnit',
                 'transients': tran_config
             }),
         logger=AmpelLogger.get_logger(), db_logging=False,
@@ -164,7 +164,7 @@ def test_t3_match_config():
     from ampel.config.t3.ScienceRecordMatchConfig import ScienceRecordMatchConfig
 
     config = {
-        'unitId': 'SNCOSMO',
+        'className': 'SNCOSMO',
         'match': {
             'fit_acceptable': True,
             'sncosmo_info.success': True,
@@ -175,7 +175,7 @@ def test_t3_match_config():
     ScienceRecordMatchConfig(**config)
     # Throws on unknown operator
     config = {
-        'unitId': 'SNCOSMO',
+        'className': 'SNCOSMO',
         'match': {
             'fit_results.z': {'$ngt': 0},
         }
@@ -184,4 +184,4 @@ def test_t3_match_config():
         ScienceRecordMatchConfig(**config)
 
     with pytest.raises(ScienceRecordMatchConfig.ValidationError):
-        ScienceRecordMatchConfig(unitId='SNCOSMO', runConfig='not a thing')
+        ScienceRecordMatchConfig(className='SNCOSMO', runConfig='not a thing')
