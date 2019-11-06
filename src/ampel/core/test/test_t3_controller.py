@@ -243,7 +243,7 @@ def test_entrypoint_runjob(testing_config, capsys):
 	troubles = AmpelDB.get_collection('troubles').count()
 
 	with pytest.raises(T3PlaceboUnitError):
-		runjob(Namespace(job='jobbyjob', task=None))
+		runjob(Namespace(job='jobbyjob', task=None, update_run_col=True, update_tran_journal=True))
 
 def test_entrypoint_rununit(testing_config, capsys):
 	from ampel.pipeline.db.AmpelDB import AmpelDB
