@@ -82,9 +82,6 @@ class T3Controller(Schedulable):
 		self.scheduler.every(5).minutes.do(self.monitor_processes)
 
 	def launch_t3_job(self, job_config):
-		if self.process_count > 5:
-			self.logger.warn("{} processes are still lingering".format(self.process_count))
-		
 		# NB: we defer instantiation of T3Job to the subprocess to avoid
 		# creating multiple MongoClients in the master process
 		fut = self._pool.apply_async(self._run_t3_job,
