@@ -23,7 +23,7 @@ class UnitData(AmpelBaseModel):
 	a corresponding runConfig key must match the provided integer
 	* Dict -> run config parameters are provided directly
 	"""
-	unit_id: str
+	class_name: str
 	init_config: Union[None, int, str, Dict] = None
 	run_config: Union[None, int, str, Dict] = None
 	resources: Optional[Tuple[str]] = None
