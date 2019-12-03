@@ -26,7 +26,7 @@ from ampel.db.AmpelDB import AmpelDB
 from ampel.t0.APFilter import APFilter
 from ampel.t0.load.AlertSupplier import AlertSupplier
 from ampel.t0.ingest.DBUpdatesBuffer import DBUpdatesBuffer
-from ampel.base.AmpelAlert import AmpelAlert
+from ampel.object.AmpelAlert import AmpelAlert
 from ampel.config.AmpelConfig import AmpelConfig
 from ampel.common.GraphiteFeeder import GraphiteFeeder
 from ampel.core.flags.LogRecordFlag import LogRecordFlag
