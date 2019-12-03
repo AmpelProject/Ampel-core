@@ -17,10 +17,20 @@ from ampel.common.Schedulable import Schedulable
 
 class T1Controller(Schedulable):
 	"""
+	T1 aims at updating photometric information.
+	The following operations will be supported:
+
+	- Ingest missing photometric data from alerts rejected by channels (RetroAlertProcessor)
+	- Update pps/uls with improved zero point (PhotoDataUpdater)
+	- Insert generated photometric data from science images (PhotoDataInserter)
+	- Discard existing pps/uls (PhotoDataDiscarder)
 	"""
 
-	def __init__(self, channels=None, check_interval=120, log_level=logging.DEBUG): 
+	def __init__(self, survey_id, channels=None, check_interval=120, log_level=logging.DEBUG): 
 		"""
+		:param str survey_id: id of the survey (ex: 'ZTFIPAC').
+		Associated ressources will be loaded using the entry_point with id 'survey_id'
+		defined by ampel plugins such as Ampel-ZTF (ampel.pipeline.sources)
 		:param int check_interval: in minutes
 		"""
 
