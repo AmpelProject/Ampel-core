@@ -224,7 +224,7 @@ class TransientData:
 		ScienceRecord for any channels of the chain will be included in the transient view.
 		Feel free to improve this if you consider it necessary.
 		The filtering done at the transient level performed in T3Job.process_tran_data() 
-		could be a good starting point. Over.
+		could be a good starting point.
 
 		:returns: instance of :py:class:`TransientView <ampel.base.TransientView>` or None
 		"""
@@ -332,15 +332,19 @@ class TransientData:
 
 			for Controller in TransientData.data_access_controllers:
 
-				pps.update(
-					Controller.get_photodata(
-						channel, self.photopoints
+				if (not docs) or AlDocType.PHOTOPOINT in docs:
+					pps.update(
+						Controller.get_photodata(
+							channel, self.photopoints
+						)
 					)
 				)
 
-				uls.update(
-					Controller.get_photodata(
-						channel, self.upperlimits
+				if (not docs) or AlDocType.UPPERLIMIT in docs:
+					uls.update(
+						Controller.get_photodata(
+							channel, self.upperlimits
+						)
 					)
 				)
 

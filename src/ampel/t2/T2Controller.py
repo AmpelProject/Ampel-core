@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 25.01.2018
-# Last Modified Date: 24.05.2019
+# Last Modified Date: 13.08.2019
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import logging, sys, multiprocessing, schedule
@@ -170,12 +170,15 @@ def run():
 	parser = AmpelArgumentParser()
 	parser.add_argument('-v', '--verbose', default=False, action="store_true")
 	parser.add_argument('--units', default=None, nargs='+', help='T2 units to run')
-	parser.add_argument('--interval', default=10, type=int, help='Seconds to wait between database polls. If < 0, exit after one poll')
-	parser.add_argument('--batch-size', default=200, type=int, help='Process this many T2 docs at a time')
-	parser.add_argument('--state', default=T2RunStates.TO_RUN,
-	    choices=T2RunStates.__members__.keys(),
-	    type=lambda s: T2RunStates.__members__[s],
-	    help='State to process')
+	parser.add_argument(
+		'--interval', default=10, type=int, 
+		help='Seconds to wait between database polls. If < 0, exit after one poll'
+	)
+	parser.add_argument(
+		'--batch-size', default=200, type=int, 
+		help='Process this many T2 docs at a time'
+	)
+
 	parser.add_argument('--raise-exc', default=False, action="store_true", help='Raise exceptions immediately instead of logging')
 	
 	parser.require_resource('mongo', ['writer', 'logger'])
@@ -199,7 +202,8 @@ def run():
 		controller.executors[0].logger.quieten_console()
 
 	controller.executors[0].process_docs(
-		limit=opts.batch_size
+		limit=opts.batch_size,
+		raise_exc=opts.raise_exc
 	)
 
 	if opts.interval >= 0:
