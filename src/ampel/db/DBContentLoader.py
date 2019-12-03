@@ -10,10 +10,10 @@
 from bson import ObjectId
 from pkg_resources import iter_entry_points
 
-from ampel.base.ScienceRecord import ScienceRecord
-from ampel.base.PlainPhotoPoint import PlainPhotoPoint
-from ampel.base.PlainUpperLimit import PlainUpperLimit
-from ampel.base.Compound import Compound
+from ampel.object.ScienceRecord import ScienceRecord
+from ampel.object.PlainPhotoPoint import PlainPhotoPoint
+from ampel.object.PlainUpperLimit import PlainUpperLimit
+from ampel.object.Compound import Compound
 
 from ampel.core.flags.AlDocType import AlDocType
 from ampel.core.flags.T2RunStates import T2RunStates
@@ -22,7 +22,7 @@ from ampel.logging.LoggingUtils import LoggingUtils
 from ampel.logging.AmpelLogger import AmpelLogger
 from ampel.common.AmpelUtils import AmpelUtils
 from ampel.db.AmpelDB import AmpelDB
-from ampel.db.LightCurveLoader import LightCurveLoader
+from ampel.t2.loader.LightCurveLoader import LightCurveLoader
 from ampel.db.query.QueryLatestCompound import QueryLatestCompound
 from ampel.db.query.QueryLoadT2Info import QueryLoadT2Info
 from ampel.t3.TransientData import TransientData
@@ -551,9 +551,12 @@ class DBContentLoader:
 				'channels': AmpelUtils.try_reduce(tran_data.channels)
 			}
 
-			if not isinstance(extra['channels'], (str, int)):
+			if not isinstance(extra['channels'], str):
 				# convert set to list (otherwise pymongo complains)
-				extra['channels'] = list(extra['channels'])
+				if isinstance(extra['channels'], int):
+					extra['channels'] = [extra['channels']]
+				else:
+					extra['channels'] = list(extra['channels'])
 
 			if self.debug:
 
