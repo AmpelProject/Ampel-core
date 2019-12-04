@@ -7,7 +7,6 @@
 # Last Modified Date: 16.10.2019
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-
 from ampel.logging.AmpelLogger import AmpelLogger
 from io import BytesIO
 
@@ -15,9 +14,10 @@ from io import BytesIO
 class DirAlertLoader():
 
 
-	def __init__(self, logger: AmpelLogger = None):
+	def __init__(self, logger: AmpelLogger = None, verbose: bool = False):
 		""" """
 
+		self.verbose = verbose
 		self.files = []
 		self.min_index = None
 		self.max_index = None
@@ -102,8 +102,12 @@ class DirAlertLoader():
 			self.iter_files = iter(self.files)
 
 		fpath = next(self.iter_files, None)
+
 		if fpath is None:
 			raise StopIteration
+
+		if self.verbose:
+			self.logger.debug("Loading " + fpath)
 
 		with open(fpath, "rb") as alert_file:
 			return BytesIO(alert_file.read())
