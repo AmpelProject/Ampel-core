@@ -48,11 +48,11 @@ class AlertSupplier:
 				type(self).__next__ = json_next
 				
 			elif serialization == "avro":
-				import fastavro
+				from fastavro import reader
 				def avro_next(self):
 					return self.shape(
 						next(
-							fastavro.reader(
+							reader(
 								next(self.alert_loader)
 							)
 						)

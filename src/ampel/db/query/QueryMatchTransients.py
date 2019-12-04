@@ -8,7 +8,7 @@
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from bson.objectid import ObjectId
-from ampel.core.flags.AlDocType import AlDocType
+from ampel.flags.AlDocType import AlDocType
 from ampel.config.t3.LogicSchemaUtils import LogicSchemaUtils
 from ampel.t3.TimeConstraint import TimeConstraint
 from ampel.db.query.QueryMatchSchema import QueryMatchSchema
@@ -35,7 +35,7 @@ class QueryMatchTransients:
 		(see :obj:`QueryMatchSchema <ampel.db.query.QueryMatchSchema>` \
 		for syntax details). Important: dict schema must contain **db flags** \
 		(integers representing enum members position within enum class), please see \
-		:func:`FlagUtils.hash_schema <ampel.core.flags.FlagUtils.hash_schema>` \
+		:func:`FlagUtils.hash_schema <ampel.flags.FlagUtils.hash_schema>` \
 		docstring for more info.
 
 		:type without_tags: str, int, dict

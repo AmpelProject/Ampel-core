@@ -15,7 +15,7 @@ from ampel.db.AmpelDB import AmpelDB
 from ampel.logging.AmpelLogger import AmpelLogger
 from ampel.logging.LoggingUtils import LoggingUtils
 from ampel.logging.AmpelLoggingError import AmpelLoggingError
-from ampel.core.flags.LogRecordFlag import LogRecordFlag
+from ampel.flags.LogRecordFlag import LogRecordFlag
 
 
 # http://isthe.com/chongo/tech/comp/fnv/index.html#FNV-1a
@@ -54,7 +54,7 @@ class DBLoggingHandler(logging.Handler):
 		level: int = logging.DEBUG, aggregate_interval: int = 1, flush_len: int = 1000
 	):
 		""" 
-		:param int flags: instance of :py:class:`LogRecordFlag <ampel.core.flags.LogRecordFlag>`
+		:param int flags: instance of :py:class:`LogRecordFlag <ampel.flags.LogRecordFlag>`
 		:param str col: name of db collection to use (default: 'logs' in database Ampel_var)
 		:param int aggregate_interval: logs with similar attributes (log level, 
 		possibly tranId & channels) are aggregated in one document instead of being split

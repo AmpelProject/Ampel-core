@@ -29,7 +29,7 @@ from ampel.t0.ingest.DBUpdatesBuffer import DBUpdatesBuffer
 from ampel.object.AmpelAlert import AmpelAlert
 from ampel.config.AmpelConfig import AmpelConfig
 from ampel.common.GraphiteFeeder import GraphiteFeeder
-from ampel.core.flags.LogRecordFlag import LogRecordFlag
+from ampel.flags.LogRecordFlag import LogRecordFlag
 from ampel.core.AmpelUnitLoader import AmpelUnitLoader
 from ampel.abstract.AbsAmpelProcessor import AbsAmpelProcessor
 from ampel.abstract.AbsAlertIngester import AbsAlertIngester
@@ -786,7 +786,7 @@ class AlertProcessor(AbsAmpelProcessor):
 		"""
 
 		info={
-			'alId': alert_content.get('tran_id'),
+			'stockId': alert_content.get('tran_id'),
 			'alertId': alert_content.get('alert_id')
 		}
 

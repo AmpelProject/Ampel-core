@@ -10,7 +10,7 @@
 from ampel.logging.AmpelLogger import AmpelLogger
 from ampel.config.ReadOnlyDict import ReadOnlyDict
 from ampel.db.AmpelDB import AmpelDB
-from ampel.core.flags.LogRecordFlag import LogRecordFlag
+from ampel.flags.LogRecordFlag import LogRecordFlag
 
 class LogsLoader:
 	"""

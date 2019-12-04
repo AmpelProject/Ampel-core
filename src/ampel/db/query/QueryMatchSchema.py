@@ -9,9 +9,9 @@
 
 import collections
 from ampel.common.AmpelUtils import AmpelUtils
-from ampel.config.t3.AnyOf import AnyOf
-from ampel.config.t3.AllOf import AllOf
-from ampel.config.t3.OneOf import OneOf
+from ampel.model.operator.AnyOf import AnyOf
+from ampel.model.operator.AllOf import AllOf
+from ampel.model.operator.OneOf import OneOf
 
 class QueryMatchSchema:
 	"""
@@ -46,9 +46,9 @@ class QueryMatchSchema:
 		(if only one value is to be matched). The dict can be nested up to one level. \
 		Please see :obj:`QueryMatchSchema <ampel.db.query.QueryMatchSchema>` \
 		docstring for syntax details).
-		:type arg: str, dict, :py:class:`AllOf <ampel.config.t3.AllOf>`, \
-			:py:class:`AnyOf <ampel.config.t3.AnyOf>`, \
-			:py:class:`OneOf <ampel.config.t3.OneOf>`
+		:type arg: str, dict, :py:class:`AllOf <ampel.model.operator.AllOf>`, \
+			:py:class:`AnyOf <ampel.model.operator.AnyOf>`, \
+			:py:class:`OneOf <ampel.model.operator.OneOf>`
 
 		:param list in_type: type of elements embedded in schema dict (str, int, ...)
 

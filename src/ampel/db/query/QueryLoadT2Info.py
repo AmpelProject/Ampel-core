@@ -8,8 +8,7 @@
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from bson.binary import Binary
-from ampel.core.flags.AlDocType import AlDocType
-from ampel.core.flags.FlagUtils import FlagUtils
+from ampel.flags.AlDocType import AlDocType
 from ampel.common.AmpelUtils import AmpelUtils
 from ampel.db.query.QueryMatchSchema import QueryMatchSchema
 from ampel.db.query.QueryUtils import QueryUtils

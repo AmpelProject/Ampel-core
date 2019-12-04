@@ -8,7 +8,7 @@
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import collections
-from ampel.core.flags.FlagUtils import FlagUtils
+from ampel.flags.FlagUtils import FlagUtils
 
 class QueryMatchCriteria:
 	"""

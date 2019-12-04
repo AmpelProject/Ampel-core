@@ -7,7 +7,7 @@
 # Last Modified Date: 04.07.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-from ampel.core.flags.FlagUtils import FlagUtils
+from ampel.flags.FlagUtils import FlagUtils
 import enum
 
 

@@ -12,9 +12,9 @@ from IPython.display import Markdown, display
 
 from ampel.base.flags.TransientFlags import TransientFlags
 from ampel.base.flags.PhotoFlags import PhotoFlags
-from ampel.core.flags.T2RunStates import T2RunStates
-from ampel.core.flags.AlDocType import AlDocType
-from ampel.core.flags.FlagUtils import FlagUtils
+from ampel.flags.T2RunStates import T2RunStates
+from ampel.flags.AlDocType import AlDocType
+from ampel.flags.FlagUtils import FlagUtils
 
 class DBDocVizualizer:
 	""" 

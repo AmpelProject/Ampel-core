@@ -8,8 +8,8 @@
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from types import MappingProxyType
-from ampel.base.PhotoData import PhotoData
-from ampel.core.flags.PhotoPolicy import PhotoPolicy
+from ampel.object.PhotoData import PhotoData
+from ampel.flags.PhotoPolicy import PhotoPolicy
 
 class UpperLimit(PhotoData):
 	"""

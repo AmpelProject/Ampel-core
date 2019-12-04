@@ -31,9 +31,9 @@ from ampel.config.t3.LogicSchemaUtils import LogicSchemaUtils
 from ampel.config.t3.T3JobConfig import T3JobConfig
 from ampel.config.t3.T3TaskConfig import T3TaskConfig
 from ampel.t3.TimeConstraint import TimeConstraint
-from ampel.core.flags.AlDocType import AlDocType
-from ampel.core.flags.FlagUtils import FlagUtils
-from ampel.core.flags.LogRecordFlag import LogRecordFlag
+from ampel.flags.AlDocType import AlDocType
+from ampel.flags.FlagUtils import FlagUtils
+from ampel.flags.LogRecordFlag import LogRecordFlag
 from ampel.base.TransientView import TransientView
 from ampel.base.dataclass.GlobalInfo import GlobalInfo
 

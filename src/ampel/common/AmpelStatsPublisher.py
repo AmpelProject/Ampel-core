@@ -14,7 +14,7 @@ from ampel.common.AmpelUtils import AmpelUtils
 from ampel.common.Schedulable import Schedulable
 from ampel.config.AmpelConfig import AmpelConfig
 from ampel.db.AmpelDB import AmpelDB
-from ampel.core.flags.T2RunStates import T2RunStates
+from ampel.flags.T2RunStates import T2RunStates
 
 class AmpelStatsPublisher(Schedulable):
 	""" 

@@ -15,8 +15,8 @@ from ampel.object.PlainPhotoPoint import PlainPhotoPoint
 from ampel.object.PlainUpperLimit import PlainUpperLimit
 from ampel.object.Compound import Compound
 
-from ampel.core.flags.AlDocType import AlDocType
-from ampel.core.flags.T2RunStates import T2RunStates
+from ampel.flags.AlDocType import AlDocType
+from ampel.flags.T2RunStates import T2RunStates
 
 from ampel.logging.LoggingUtils import LoggingUtils
 from ampel.logging.AmpelLogger import AmpelLogger

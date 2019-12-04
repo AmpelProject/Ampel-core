@@ -92,7 +92,7 @@ def empty_archive(postgres):
 					connection.execute(table.delete())
 
 import copy
-from ampel.base.AmpelAlert import AmpelAlert
+from ampel.object.AmpelAlert import AmpelAlert
 class AlertFactoryFixture(object):
 	def __init__(self, schema):
 		from ampel.t0.load.ZIAlertShaper import ZIAlertShaper
@@ -308,7 +308,7 @@ def ingested_transients(alert_generator, minimal_ingestion_config, caplog):
 		choices.append((shaped_alert['tran_id'], [c.name for c,k in zip(channels, choice) if k]))
 	
 	from ampel.db.AmpelDB import AmpelDB
-	from ampel.core.flags.AlDocType import AlDocType
+	from ampel.flags.AlDocType import AlDocType
 	
 	assert AmpelDB.get_collection('stock').find({}).count() == len(choices), "Transient docs exist for all ingested alerts"
 	assert max(num_pps) > 0, "At least 1 photopoint was ingested"

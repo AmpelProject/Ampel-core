@@ -9,8 +9,8 @@
 
 
 import logging, time, sys, fastavro, tarfile
-from ampel.base.dev.DevAmpelAlert import DevAmpelAlert
-from ampel.base.AmpelAlert import AmpelAlert
+from ampel.dev.DevAmpelAlert import DevAmpelAlert
+from ampel.object.AmpelAlert import AmpelAlert
 
 
 class DevAlertProcessor():
@@ -25,7 +25,7 @@ class DevAlertProcessor():
 		
 		alert_filter:
 			Instance of a t0 alert filter. It must implement method:
-			apply(<instance of ampel.base.AmpelAlert>)
+			apply(<instance of ampel.object.AmpelAlert>)
 		
 		save:
 			either 

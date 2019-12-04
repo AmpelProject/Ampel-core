@@ -7,7 +7,7 @@
 # Last Modified Date: 15.09.2018
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-from ampel.base.abstract.AbsT3Unit import AbsT3Unit
+from ampel.abstract.AbsT3Unit import AbsT3Unit
 
 class T3PlaceboUnitError(RuntimeError):
 	pass

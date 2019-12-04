@@ -7,7 +7,7 @@
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from datetime import datetime
-from ampel.core.flags.LogRecordFlags import LogRecordFlags
+from ampel.flags.LogRecordFlags import LogRecordFlags
 from ampel.logging.DBLoggingHandler import DBLoggingHandler
 
 class DBLogPrinter:
