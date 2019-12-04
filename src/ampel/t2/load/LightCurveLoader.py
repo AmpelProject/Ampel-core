@@ -1,31 +1,31 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/db/LightCurveLoader.py
+# File              : ampel/t2/load/LightCurveLoader.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 13.01.2018
-# Last Modified Date: 20.08.2019
+# Last Modified Date: 28.11.2019
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-from pkg_resources import iter_entry_points
-from ampel.core.flags.FlagUtils import FlagUtils
+from typing import Dict, Any, Union, Sequence
+from ampel.abstract.AbsT2ObjectLoader import AbsT2ObjectLoader
 from ampel.core.PhotoPoint import PhotoPoint
 from ampel.core.UpperLimit import UpperLimit
-from ampel.base.PlainPhotoPoint import PlainPhotoPoint
-from ampel.base.PlainUpperLimit import PlainUpperLimit
-from ampel.base.LightCurve import LightCurve
+from ampel.object.PlainPhotoPoint import PlainPhotoPoint
+from ampel.object.PlainUpperLimit import PlainUpperLimit
+from ampel.object.LightCurve import LightCurve
 from ampel.logging.AmpelLogger import AmpelLogger
-from ampel.config.AmpelConfig import AmpelConfig
 from ampel.db.AmpelDB import AmpelDB
 
-class LightCurveLoader:
+
+class LightCurveLoader(AbsT2ObjectLoader):
 	"""
-	Each method returns an instance of :py:class:`LightCurve <ampel.base.LightCurve`.
+	Each method returns an instance of :py:class:`LightCurve <ampel.object.LightCurve`.
 	Either through DB query (load_through_db_query) or through parsing of DB query results 
 	"""
 
-
-	def __init__(self, read_only=True, logger=None):
+	# pylint: disable=super-init-not-called
+	def __init__(self, ampel_db: AmpelDB, read_only=True, logger=None):
 		"""
 		:param bool read_only: if True, the LightCurve instance returned by the methods of this class will be:
 		- a frozen class
@@ -35,28 +35,27 @@ class LightCurveLoader:
 		"""
 		self.logger = AmpelLogger.get_logger() if logger is None else logger
 		self.read_only = read_only
-		self.col_t0 = AmpelDB.get_collection("t0")
-		self.col_t1 = AmpelDB.get_collection("t1")
-		self.rev_tags = {v: k for k, v in AmpelConfig._tags.items()}
+		self.col_t0 = ampel_db.get_collection("t0")
+		self.col_t1 = ampel_db.get_collection("t1")
 
 
-	def load(self, t2_doc):
+	def load(self, t2_doc: Dict[str, Any]) -> LightCurve:
 		"""
 		Load a lightcurve by performing a DB query
 
 		:param dict t2_doc: t2 document loaded from DB
 		"""
 		return self.load_from_db(
-			t2_doc['tranId'], 
+			t2_doc['stockId'], 
 			t2_doc['docId']
 		)
 
 
-	def load_from_db(self, tran_id, compound_id):
+	def load_from_db(self, tran_id: Union[int, str], compound_id) -> LightCurve:
 		"""
 		Load a lightcurve by performing a DB query and feeding the results 
 		to the method 'load_from_db_results' from this class.
-		This function returns an instance of ampel.base.LightCurve
+		This function returns an instance of ampel.object.LightCurve
 
 		:param int tran_id: transient id (int or string)
 		:param compound_id: instance of :py:class:`Binary <bson.binary.Binary>` (subtype 5)
@@ -64,15 +63,13 @@ class LightCurveLoader:
 
 		# TODO : provide list or cursor as func parameter ?
 		# T3 will have larger queries (including t3 results)
-		cursor_t0 = self.col_t0.find({"tranId": tran_id})
+		cursor_t0 = self.col_t0.find({"stockId": tran_id})
 
 		# pymongo 'sequence' are always list
-		if type(compound_id) is list: 
+		if isinstance(compound_id, list):
 			match_crit = {"_id": {'$in': compound_id}}
-			comp_hex = [el.hex() for el in compound_id]
 		else:
 			match_crit = {"_id": compound_id}
-			comp_hex = compound_id.hex()
 
 		# Retrieve compound document
 		cursor_t1 = self.col_t1.find(match_crit)
@@ -81,19 +78,19 @@ class LightCurveLoader:
 			self.logger.warn(
 				"No compound found with the given doc id", 
 				extra={
-					'tranId': tran_id, 
+					'stockId': tran_id, 
 					'docId': compound_id
 				}
 			)
 			return None
 
 		if cursor_t0.count() == 0:
-			self.logger.warn("No t0 data found", extra={'tranId': tran_id})
+			self.logger.warn("No t0 data found", extra={'stockId': tran_id})
 			return None
 
 		self.logger.debug(
 			None, {
-				'tranId': tran_id, 
+				'stockId': tran_id,
 				'docId': compound_id,
 				'nDoc': cursor_t0.count()
 			}
@@ -113,9 +110,11 @@ class LightCurveLoader:
 		)
 
 
-	def load_using_results(self, ppd_list, uld_list, compound):
+	def load_using_results(
+		self, ppd_list: Sequence[Dict], uld_list: Sequence[Dict], compound
+	) -> LightCurve:
 		"""
-		Creates and returns an instance of ampel.base.LightCurve using db results.
+		Creates and returns an instance of ampel.object.LightCurve using db results.
 		This function is used at both T2 and T3 levels 
 
 		:param ppd_list: list of photopoint dict instances loaded from DB
@@ -127,7 +126,7 @@ class LightCurveLoader:
 		if compound is None:
 			raise ValueError("Required parameter 'compound' cannot be None")
 
-		if ppd_list is None or type(ppd_list) is not list:
+		if ppd_list is None or not isinstance(ppd_list, list):
 			raise ValueError("Parameter 'ppd_list' must be a list")
 
 		if uld_list is None:
@@ -183,12 +182,6 @@ class LightCurveLoader:
 				if photo_dict is None:
 					raise ValueError("Upper limit %i not found" % el['ul'])
 
-			# Convert int tags into str
-			photo_dict['alTags'] = [
-				self.rev_tags[el] if el in self.rev_tags else el 
-				for el in photo_dict['alTags']
-			]
-
 			# If custom options avail (if dict contains more than the dict key 'pp')
 			if (len(el.keys()) > 1):
 				
@@ -222,9 +215,9 @@ class LightCurveLoader:
 		)
 
 
-	def load_using_objects(self, compound, already_loaded_photo):
+	def load_using_objects(self, compound, already_loaded_photo) -> LightCurve:
 		"""
-		Creates and returns an instance of ampel.base.LightCurve using db results.
+		Creates and returns an instance of ampel.object.LightCurve using db results.
 		This function is used at both T2 and T3 levels 
 
 		:param compound: namedtuple loaded from DB
@@ -283,12 +276,6 @@ class LightCurveLoader:
 						raise ValueError("PhotoPoint with id %i not found" % pp_id)
 
 					pp_doc = next(cursor)
-
-					# Convert int tags into str
-					pp_doc['alTags'] = [
-						self.rev_tags[el] if el in self.rev_tags else el 
-						for el in pp_doc['alTags']
-					]
 
 					# Update dict already_loaded_photo
 					already_loaded_photo[pp_id] = PlainPhotoPoint(pp_doc, read_only=True)
