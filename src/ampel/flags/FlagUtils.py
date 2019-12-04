@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/core/flags/FlagUtils.py
+# File              : ampel/flags/FlagUtils.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 14.12.2017
@@ -10,9 +10,9 @@
 #from bson import Binary
 from ampel.config.AmpelConfig import AmpelConfig
 from ampel.common.AmpelUtils import AmpelUtils
-from ampel.config.t3.AnyOf import AnyOf
-from ampel.config.t3.AllOf import AllOf
-from ampel.config.t3.OneOf import OneOf
+from ampel.model.operator.AnyOf import AnyOf
+from ampel.model.operator.AllOf import AllOf
+from ampel.model.operator.OneOf import OneOf
 
 class FlagUtils():
 
@@ -34,9 +34,9 @@ class FlagUtils():
 		:param arg: schema dict. See :obj:`QueryMatchSchema <ampel.db.query.QueryMatchSchema>` \
 		docstring for more info regarding the used syntax.
 		:type arg: str, dict, \
-			:py:class:`AllOf <ampel.config.t3.AllOf>`, \
-			:py:class:`AnyOf <ampel.config.t3.AnyOf>`, \
-			:py:class:`OneOf <ampel.config.t3.OneOf>`,
+			:py:class:`AllOf <ampel.model.operator.AllOf>`, \
+			:py:class:`AnyOf <ampel.model.operator.AnyOf>`, \
+			:py:class:`OneOf <ampel.model.operator.OneOf>`,
 
 		:returns: new schema dict where tag elements are integers
 		:rtype: dict
