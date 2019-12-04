@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 23.04.2018
-# Last Modified Date: 16.10.2019
+# Last Modified Date: 04.12.2019
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from io import IOBase
@@ -13,10 +13,10 @@ from typing import Iterable, Dict, Callable, Any
 class AlertSupplier:
 	"""
 	Iterable class that for each alert yielded by the provided alert_loader, 
-	returns a dict in a format that the AMPEL AlertProcessor understands.
+	returns a dict in a format that AlertProcessor understands.
 	It is essentially made of two parts:
 	- An alert loader that returns either bytes, file-like objects or dicts
-	- An alert shaper that shapes loaded dicts.
+	- An alert shaper that enforce a fixed structure for the loaded dicts
 	"""
 
 	def __init__(
@@ -67,7 +67,7 @@ class AlertSupplier:
 
 	def set_alert_source(self, alert_loader: Iterable[IOBase]) -> None:
 		""" 
-		param alert_loader: iterable that returns alerts content 
+		:param alert_loader: iterable that returns alerts content 
 		as as file-like objects / bytes
 		"""
 		self.alert_loader = alert_loader
@@ -96,14 +96,15 @@ class AlertSupplier:
 
 
 	def __iter__(self):
+		""" """
 		return self
 
 	
 	def __next__(self) -> Dict[str, Any]:
 		"""
-		:returns: a dict with a format that the AMPEL AlertProcessor understands 
-		:raises StopIteration: when the alert_loader dries out.
-		:raises AttributeError: if the alert_loader was not set properly before this method is called
+		:returns: a dict with a structure that AlertProcessor understands 
+		:raises StopIteration: when alert_loader dries out.
+		:raises AttributeError: if alert_loader was not set properly before this method is called
 		"""
 		return self.shape(
 			next(self.alert_loader)
