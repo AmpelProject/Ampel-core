@@ -9,7 +9,7 @@
 
 from pydantic import validator
 from typing import Any, List, Dict
-from ampel.model.legacy.TranData import TranData
+from ampel.model.legacy.TranModel import TranModel
 from ampel.model.legacy.BaseT3Process import BaseT3Process
 from ampel.model.AmpelBaseModel import AmpelBaseModel
 from ampel.common.docstringutils import gendocstring
@@ -21,7 +21,7 @@ class TaskData(AmpelBaseModel):
 	Example:
 	"""
 	name: str
-	transients: TranData
+	transients: TranModel
 	className: str
 	initConfig: Dict[str, Any]
 

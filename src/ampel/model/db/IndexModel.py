@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/model/db/IndexData.py
+# File              : ampel/model/db/IndexModel.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 19.10.2019
@@ -10,13 +10,13 @@
 from pydantic import BaseModel
 from typing import List, Optional, Dict
 from ampel.model.BetterConfigDefaults import BetterConfigDefaults
-from ampel.model.db.FieldData import FieldData
+from ampel.model.db.FieldModel import FieldModel
 
-class IndexData(BaseModel):
+class IndexModel(BaseModel):
 	""" """
 	Config = BetterConfigDefaults
 
-	index: Optional[List[FieldData]]
+	index: Optional[List[FieldModel]]
 	dbField: Optional[str]
 	args: Dict = None
 
@@ -37,6 +37,6 @@ class IndexData(BaseModel):
 		"""
 		# Shortcut
 		if self.dbField:
-			return FieldData(dbField=self.dbField).get_id()
+			return FieldModel(dbField=self.dbField).get_id()
 
 		return "_".join(el.get_id() for el in self.index)

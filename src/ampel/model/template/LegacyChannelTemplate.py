@@ -7,10 +7,9 @@
 # Last Modified Date: 27.10.2019
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-
 from pydantic import validator
 from typing import Union, List #, Dict, Any
-from ampel.model.UnitData import UnitData
+from ampel.model.UnitModel import UnitModel
 from ampel.abstract.AbsChannelTemplate import AbsChannelTemplate
 
 
@@ -22,8 +21,8 @@ class LegacyChannelTemplate(AbsChannelTemplate, abstract=True):
 	Known subclass: ZTFLegacyChannelTemplate
 	"""
 	autoComplete: Union[bool, str]
-	t0Filter: UnitData
-	t2Compute: List[UnitData] = []
+	t0Filter: UnitModel
+	t2Compute: List[UnitModel] = []
 	# bugging with pydantic 1.0, no idea why..
 	#t3Supervize: List[Dict[str, Any]] = []
 	t3Supervize: List = []

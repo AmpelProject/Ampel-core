@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/model/time/TimeDeltaData.py
+# File              : ampel/model/time/TimeDeltaModel.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 29.09.2018
@@ -14,6 +14,6 @@ from ampel.model.AmpelBaseModel import AmpelBaseModel
 
 
 @gendocstring
-class TimeDeltaData(AmpelBaseModel):
+class TimeDeltaModel(AmpelBaseModel):
     use: constr(regex='.timeDelta$')
     arguments: Dict[str, Any]

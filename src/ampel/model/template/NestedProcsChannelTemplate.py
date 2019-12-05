@@ -8,7 +8,7 @@
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from typing import List, Dict, Any
-from ampel.model.ProcessData import ProcessData
+from ampel.model.ProcessModel import ProcessModel
 from logging import Logger
 from ampel.abstract.AbsChannelTemplate import AbsChannelTemplate
 
@@ -18,7 +18,7 @@ class NestedProcsChannelTemplate(AbsChannelTemplate):
 	Convenience class which allows channel definitions to include processes.
 	"""
 	#template: str = "default"
-	process: List[ProcessData]
+	process: List[ProcessModel]
 
 
 	def get_channel(self, logger: Logger) -> Dict[str, Any]:

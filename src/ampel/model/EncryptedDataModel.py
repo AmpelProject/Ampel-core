@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/model/EncryptedData.py
+# File              : ampel/model/EncryptedDataModel.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 14.11.2018
@@ -12,7 +12,7 @@ from typing import List, Union
 from ampel.common.docstringutils import gendocstring
 
 @gendocstring
-class EncryptedData(BaseModel):
+class EncryptedDataModel(BaseModel):
 	"""
 	AES encrypted config entry.
 	It loads an encrypted config (dict with a given set of key/values)

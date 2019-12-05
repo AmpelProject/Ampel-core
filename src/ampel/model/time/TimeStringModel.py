@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/model/time/UnixTimeData.py
+# File              : ampel/model/time/TimeStringModel.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 29.09.2018
@@ -11,6 +11,7 @@ from pydantic import BaseModel, constr
 from ampel.common.docstringutils import gendocstring
 
 @gendocstring
-class UnixTimeData(BaseModel):
-    use: constr(regex='unixTime$')
-    value: int
+class TimeStringModel(BaseModel):
+    use: constr(regex='timeString$')
+    dateTimeStr: str
+    dateTimeFormat: str

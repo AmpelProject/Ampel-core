@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/model/ChannelData.py
+# File              : ampel/model/ChannelModel.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 09.10.2019
@@ -13,7 +13,7 @@ from ampel.model.AmpelBaseModel import AmpelBaseModel
 
 
 @gendocstring
-class ChannelData(AmpelBaseModel):
+class ChannelModel(AmpelBaseModel):
 	""" 
 	"""
 	channel: Union[int, str]

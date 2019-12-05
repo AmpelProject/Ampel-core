@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/model/ProcessData.py
+# File              : ampel/model/ProcessModel.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 06.10.2019
@@ -12,17 +12,17 @@ from pydantic import validator
 from typing import Sequence, Union, Optional
 from ampel.common.docstringutils import gendocstring
 from ampel.model.AmpelBaseModel import AmpelBaseModel
-from ampel.model.UnitData import UnitData
+from ampel.model.UnitModel import UnitModel
 from ampel.config.ScheduleEvaluator import ScheduleEvaluator
 
 @gendocstring
-class ProcessData(AmpelBaseModel):
+class ProcessModel(AmpelBaseModel):
 
 	schedule: Sequence[str]
 	tier: int
 	processName: Optional[str]
-	controller: UnitData
-	processor: UnitData
+	controller: UnitModel
+	processor: UnitModel
 	distName: Optional[str] = None
 	channel: Optional[Union[int, str]] = None
 

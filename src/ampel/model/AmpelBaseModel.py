@@ -24,6 +24,7 @@ def to_camel_case(arg: str) -> str:
 		word.capitalize() for word in s[1:]
 	)
 
+# pylint: disable=no-self-argument,no-self-use
 class AmpelBaseModel(BaseModel):
 	""" """
 

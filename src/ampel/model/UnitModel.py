@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/model/UnitData.py
+# File              : ampel/model/UnitModel.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 26.09.2019
@@ -14,7 +14,7 @@ from ampel.model.AmpelBaseModel import AmpelBaseModel
 
 
 @gendocstring
-class UnitData(AmpelBaseModel):
+class UnitModel(AmpelBaseModel):
 	"""
 	run_config types:
 	* None -> no run config
@@ -30,6 +30,7 @@ class UnitData(AmpelBaseModel):
 	override: Optional[Dict] = None
 
 	@validator('resources', pre=True, whole=True)
+	# pylint: disable=no-self-argument,no-self-use
 	def validate_resources(cls, resources):
 		""" """
 		# cast to sequence
