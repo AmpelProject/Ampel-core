@@ -4,11 +4,12 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 14.12.2017
-# Last Modified Date: 16.08.2019
+# Last Modified Date: 05.12.2019
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import logging, struct, socket
 from bson import ObjectId
+from typing import List, Dict
 from pymongo.errors import BulkWriteError
 from pymongo.operations import UpdateOne
 from ampel.db.AmpelDB import AmpelDB
@@ -49,6 +50,7 @@ class DBLoggingHandler(logging.Handler):
 	saving log events into the NoSQL database.
 	"""
 
+	# pylint: disable=super-init-not-called
 	def __init__(
 		self, ampel_db: AmpelDB, flags: LogRecordFlag, col_name: str = "logs", 
 		level: int = logging.DEBUG, aggregate_interval: int = 1, flush_len: int = 1000
@@ -99,7 +101,7 @@ class DBLoggingHandler(logging.Handler):
 		self.oid_middle = _machine_bytes() + int(str(self.run_id)[-4:]).to_bytes(2, 'big')
 
 
-	def new_run_id(self):
+	def new_run_id(self) -> None:
 		""" 
 		runId is a global (ever increasing) counter stored in the DB
 		used to tie log entries from the same process with each other
@@ -114,7 +116,7 @@ class DBLoggingHandler(logging.Handler):
 			.get('value')
 
 
-	def add_headers(self, dicts):
+	def add_headers(self, dicts: List[Dict]) -> None:
 		"""
 		:param list dicts: list of dict instances
 		"""
@@ -128,7 +130,7 @@ class DBLoggingHandler(logging.Handler):
 			self.headers.append(d)
 
 
-	def emit(self, record):
+	def emit(self, record: logging.LogRecord) -> None:
 		""" 
 		:raises AmpelLoggingError: on error
 		"""
@@ -152,7 +154,7 @@ class DBLoggingHandler(logging.Handler):
 					prev_dict['msg'] = "None log entry with identical 'extra' repeated twice"
 					return
 
-				if type(prev_dict['msg']) is not list:
+				if not isinstance(prev_dict['msg'], list):
 					prev_dict['msg'] = [prev_dict['msg'], record.getMessage()]
 				else:
 					prev_dict['msg'].append(record.getMessage())
@@ -169,6 +171,7 @@ class DBLoggingHandler(logging.Handler):
 					return
 	
 				# Generate object id with log record.created as current time
+				# pylint: disable=protected-access
 				with ObjectId._inc_lock:
 					oid = struct.pack(">i", int(record.created)) + \
 						  self.oid_middle + \
@@ -197,9 +200,9 @@ class DBLoggingHandler(logging.Handler):
 					del ldict['msg']
 	
 				if record.levelno > logging.WARNING:
-					ldict['filename'] = record.filename,
-					ldict['lineno'] = record.lineno,
-					ldict['funcName'] = record.funcName,
+					ldict['filename'] = record.filename
+					ldict['lineno'] = record.lineno
+					ldict['funcName'] = record.funcName
 			
 				self.log_dicts.append(ldict)
 				self.prev_records = record
@@ -210,37 +213,37 @@ class DBLoggingHandler(logging.Handler):
 			raise AmpelLoggingError from None
 
 
-	def get_run_id(self):
+	def get_run_id(self) -> int:
 		""" """
 		return self.run_id
 
 
-	def add_run_id(self, arg):
+	def add_run_id(self, arg: int) -> None:
 		""" 
-		:param int arg: run ID
+		:param arg: run ID
 		"""
-		if type(self.run_id) is int:
-			if type(arg) is int:
+		if isinstance(self.run_id, int):
+			if isinstance(arg, int):
 				self.run_id = [self.run_id, arg]
-			elif type(arg) is list:
+			elif isinstance(arg, list):
 				self.run_id = [self.run_id] + arg
 			else:
-				raise ValueError("Unsupported type %s" % type(arg))
-		elif type(self.run_id) is list:
-			if type(arg) is int:
+				raise ValueError(f"Unsupported type {type(arg)}")
+		elif isinstance(self.run_id, list):
+			if isinstance(arg, int):
 				self.run_id.append(arg)
-			elif type(arg) is list:
+			elif isinstance(arg, list):
 				self.run_id.extend(arg)
 			else:
-				raise ValueError("Unsupported type %s" % type(arg))
+				raise ValueError(f"Unsupported type {type(arg)}")
 		else:
-			raise ValueError("Invalid self.run_id %s" % type(self.run_id))
+			raise ValueError(f"Invalid self.run_id {type(self.run_id)}")
 
 		# Make sure there is no duplicate
 		self.run_id = list(set(self.run_id))
 
 
-	def fork(self, flags):
+	def fork(self, flags: LogRecordFlag) -> 'DBLoggingHandler':
 		""" 
 		:returns: new instance of DBLoggingHandler
 		"""
@@ -268,7 +271,7 @@ class DBLoggingHandler(logging.Handler):
 		return dblh
 
 
-	def flush_all(self):
+	def flush_all(self) -> None:
 		"""
 		Flushes also child handlers if any
 		"""
@@ -278,14 +281,14 @@ class DBLoggingHandler(logging.Handler):
 		self.flush()
 
 
-	def purge(self):
+	def purge(self) -> None:
 		""" 
 		"""
 		self.log_dicts=[]
 		self.prev_records = None
 
 
-	def flush(self):
+	def flush(self) -> None:
 		""" 
 		:raises AmpelLoggingError: on error
 		"""
@@ -314,8 +317,7 @@ class DBLoggingHandler(logging.Handler):
 								'$setOnInsert': rec,
 								'$addToSet': {
 									'runId': {'$each': self.run_id}
-								} if type(self.run_id) is list
-								else {
+								} if isinstance(self.run_id, list) else {
 									'runId': self.run_id
 								}
 							},
@@ -342,10 +344,9 @@ class DBLoggingHandler(logging.Handler):
 			raise AmpelLoggingError from None
 
 
-	def handle_bulk_write_error(self, bwe):
+	def handle_bulk_write_error(self, bwe: BulkWriteError) -> bool:
 		"""
 		:returns: true if error could not be handled properly
-		:param BulkWriteError bwe:
 		"""
 		# We try here to handle duplicate key errors as they could occur 
 		# in weird scenarios (quick connection issues for example). 
@@ -410,7 +411,7 @@ class DBLoggingHandler(logging.Handler):
 			return raise_exc
 
 		# bad day
-		except Exception as ee:
+		except Exception:
 
 			try: 
 				from traceback import format_exc
