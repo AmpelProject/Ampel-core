@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/db/query/QueryMatchTransients.py
+# File              : ampel/query/QueryMatchTransients.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 13.01.2018
@@ -11,7 +11,7 @@ from bson.objectid import ObjectId
 from ampel.flags.AlDocType import AlDocType
 from ampel.config.t3.LogicSchemaUtils import LogicSchemaUtils
 from ampel.t3.TimeConstraint import TimeConstraint
-from ampel.db.query.QueryMatchSchema import QueryMatchSchema
+from ampel.query.QueryMatchSchema import QueryMatchSchema
 
 
 class QueryMatchTransients:
@@ -27,12 +27,12 @@ class QueryMatchTransients:
 
 		:type channels: str, dict
 		:param channels: string (one channel only) or a dict schema \
-		(see :obj:`QueryMatchSchema <ampel.db.query.QueryMatchSchema>` \
+		(see :obj:`QueryMatchSchema <ampel.query.QueryMatchSchema>` \
 		for syntax details). None (no criterium) means all channels are considered. 
 
 		:type with_tags: str, int, dict
 		:param with_tags: string/int (one flag only) or a dict schema \
-		(see :obj:`QueryMatchSchema <ampel.db.query.QueryMatchSchema>` \
+		(see :obj:`QueryMatchSchema <ampel.query.QueryMatchSchema>` \
 		for syntax details). Important: dict schema must contain **db flags** \
 		(integers representing enum members position within enum class), please see \
 		:func:`FlagUtils.hash_schema <ampel.flags.FlagUtils.hash_schema>` \

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/db/query/QueryMatchSchema.py
+# File              : ampel/query/QueryMatchSchema.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 11.03.2018
@@ -44,7 +44,7 @@ class QueryMatchSchema:
 
 		:param arg: should be dict/AllOf/AnyOf/OneOf but can be a string for convenience \
 		(if only one value is to be matched). The dict can be nested up to one level. \
-		Please see :obj:`QueryMatchSchema <ampel.db.query.QueryMatchSchema>` \
+		Please see :obj:`QueryMatchSchema <ampel.query.QueryMatchSchema>` \
 		docstring for syntax details).
 		:type arg: str, dict, :py:class:`AllOf <ampel.model.operator.AllOf>`, \
 			:py:class:`AnyOf <ampel.model.operator.AnyOf>`, \

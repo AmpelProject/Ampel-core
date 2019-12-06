@@ -1,17 +1,16 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/db/query/QueryLoadT2Info.py
+# File              : ampel/query/QueryLoadT2Info.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 14.02.2018
-# Last Modified Date: 20.08.2019
+# Last Modified Date: 06.12.2019
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from bson.binary import Binary
-from ampel.flags.AlDocType import AlDocType
 from ampel.common.AmpelUtils import AmpelUtils
-from ampel.db.query.QueryMatchSchema import QueryMatchSchema
-from ampel.db.query.QueryUtils import QueryUtils
+from ampel.query.QueryMatchSchema import QueryMatchSchema
+from ampel.query.QueryUtils import QueryUtils
 
 class QueryLoadT2Info:
 	"""
@@ -30,7 +29,7 @@ class QueryLoadT2Info:
 
 		:type channels: str, dict
 		:param channels: string (one channel only) or a dict \
-		(see :obj:`QueryMatchSchema <ampel.db.query.QueryMatchSchema>` \
+		(see :obj:`QueryMatchSchema <ampel.query.QueryMatchSchema>` \
 		for syntax details). None (no criterium) means all channels are considered. 
 
 		:type t2_subsel: str or List[str]
@@ -47,7 +46,7 @@ class QueryLoadT2Info:
 		query = cls.create_broad_query(tran_ids, channels)
 
 		if t2_subsel:
-			query['t2UnitId'] = t2_subsel if type(t2_subsel) is str \
+			query['t2UnitId'] = t2_subsel if isinstance(t2_subsel, str) \
 			else QueryUtils.match_array(t2_subsel)
 
 		return query
@@ -75,7 +74,7 @@ class QueryLoadT2Info:
 		}
 
 		if t2_subsel:
-			t2_match['t2UnitId'] = t2_subsel if type(t2_subsel) is str \
+			t2_match['t2UnitId'] = t2_subsel if isinstance(t2_subsel, str) \
 			else QueryUtils.match_array(t2_subsel)
 
 		return query
@@ -118,7 +117,7 @@ class QueryLoadT2Info:
 			first_state = next(iter(states))
 
 			# multiple states were provided as string
-			if type(first_state) is str:
+			if isinstance(first_state, str):
 				if not all(len(st) == 32 for st in states):
 					raise ValueError("Provided state strings must have 32 characters")
 				match_comp_ids = {
@@ -126,7 +125,7 @@ class QueryLoadT2Info:
 				}
 
 			# multiple states were provided as bytes
-			elif type(first_state) is bytes:
+			elif isinstance(first_state, bytes):
 				if not all(len(st) == 16 for st in states):
 					raise ValueError("Provided state bytes must have a length of 16")
 				match_comp_ids = {
@@ -134,10 +133,10 @@ class QueryLoadT2Info:
 				}
 
 			# multiple states were provided as bson Binary objects
-			elif type(first_state) is Binary:
+			elif isinstance(first_state, Binary):
 				if not all(st.subtype == 5 for st in states):
 					raise ValueError("Bson Binary states must have subtype 5")
-				match_comp_ids = {'$in': states if type(states) is list else list(states)}
+				match_comp_ids = {'$in': states if isinstance(states, list) else list(states)}
 		else:
 			raise ValueError(
 				"Type of provided state (%s) must be bytes, str, or sequences of these " % type(states)
@@ -161,7 +160,7 @@ class QueryLoadT2Info:
 		"""
 
 		query = {
-			'tranId': tran_ids if type(tran_ids) is int 
+			'tranId': tran_ids if isinstance(tran_ids, int)
 			else QueryUtils.match_array(tran_ids)
 		}
 

@@ -31,7 +31,7 @@ class FlagUtils():
 		Converts dict schema containing str representation of tags into 
 		a dict schema containing hashed values (int64).
 
-		:param arg: schema dict. See :obj:`QueryMatchSchema <ampel.db.query.QueryMatchSchema>` \
+		:param arg: schema dict. See :obj:`QueryMatchSchema <ampel.query.QueryMatchSchema>` \
 		docstring for more info regarding the used syntax.
 		:type arg: str, dict, \
 			:py:class:`AllOf <ampel.model.operator.AllOf>`, \
