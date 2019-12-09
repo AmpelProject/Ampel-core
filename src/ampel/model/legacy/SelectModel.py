@@ -23,15 +23,15 @@ class SelectModel(AmpelBaseModel):
 	"""
 	Example: 
 	.. sourcecode:: python\n
-		{
-			"select": {
-				"created": {"after": {"use": "$timeDelta", "arguments": {"days": -40}}},
-				"modified": {"after": {"use": "$timeDelta", "arguments": {"days": -1}}},
-				"channels": "HU_GP_CLEAN",
-				"withTags": "SURVEY_ZTF",
-				"withoutTags": "HAS_ERROR"
-			}
+	{
+		"select": {
+			"created": {"after": {"use": "$timeDelta", "arguments": {"days": -40}}},
+			"modified": {"after": {"use": "$timeDelta", "arguments": {"days": -1}}},
+			"channels": "HU_GP_CLEAN",
+			"withTags": "SURVEY_ZTF",
+			"withoutTags": "HAS_ERROR"
 		}
+	}
 	"""
 
 	created: Union[None, TimeConstraintModel] = None
@@ -40,7 +40,7 @@ class SelectModel(AmpelBaseModel):
 	withoutTags: Union[None, AnyOf, AllOf, OneOf] = None
 	channels: Union[None, AnyOf, AllOf, OneOf] = None
 
-
+	# pylint: disable=unused-argument,no-self-argument,no-self-use
 	@validator('channels', 'withTags', 'withoutTags', pre=True, whole=True)
 	def cast(cls, v, values, **kwargs):
 		""" """
