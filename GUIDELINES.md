@@ -20,6 +20,7 @@ File structure
 File content
 ------------
 
+- Use type hints
 - Prefer tab over space
 - Every file should contain a header. Example:
 ```
@@ -37,7 +38,7 @@ File content
 """
 :param param1: this is a first param
 :param param2: this is a second param
-:returns: this is a description of what is returned
+:returns: description
 :raises keyError: raises an exception
 """
 ```
