@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/config/utils/LogicSchemaUtils.py
+# File              : ampel/config/LogicSchemaUtils.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 13.10.2018
@@ -8,7 +8,7 @@
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from ampel.common.AmpelUtils import AmpelUtils
-from ampel.config.utils.LogicSchemaIterator import LogicSchemaIterator
+from ampel.config.LogicSchemaIterator import LogicSchemaIterator
 from ampel.model.operator.AllOf import AllOf
 from ampel.model.operator.AnyOf import AnyOf
 from ampel.model.operator.OneOf import OneOf
@@ -29,7 +29,7 @@ class LogicSchemaUtils:
 	@staticmethod
 	def to_logical_struct(v, field_name):
 
-		if type(v) is list:
+		if isinstance(v, list):
 			raise ValueError(
 				"transients->select->%s config error\n" % field_name +
 				"'%s' parameter cannot be a list. " % field_name + 
@@ -41,10 +41,10 @@ class LogicSchemaUtils:
 				"ConfigUtils.conditional_expr_converter(..) docstring for more info"
 			)
 
-		if type(v) in (str, int):
+		if isinstance(v, (str, int)):
 			return {'anyOf': [v]}
 
-		if type(v) is dict:
+		if isinstance(v, dict):
 
 			if len(v) != 1:
 				raise ValueError(
@@ -84,7 +84,7 @@ class LogicSchemaUtils:
 								"Unsupported nesting (anyOf in anyOf)"
 							)
 
-						elif 'allOf' in el:
+						if 'allOf' in el:
 
 							# 'allOf' closes nesting
 							if not AmpelUtils.check_seq_inner_type(el['allOf'], (int, str)):
@@ -170,17 +170,18 @@ class LogicSchemaUtils:
 			Reduced set: {'d', 'b', 'a', 'c'}
 		"""
 		
-		if type(arg) in in_type:
+		if isinstance(arg, in_type):
 			return {arg}
 
-		if type(arg) in (AllOf, AnyOf, OneOf):
+		if isinstance(arg, (AllOf, AnyOf, OneOf)):
 			arg = arg.dict()
 
 		if isinstance(arg, dict):
+
 			if "anyOf" in arg:
 				s = set()
 				for el in arg['anyOf']:
-					if type(el) in in_type:
+					if isinstance(el, in_type):
 						s.add(el)
 					elif isinstance(el, dict):
 						for ell in next(iter(el.values())):
@@ -188,14 +189,16 @@ class LogicSchemaUtils:
 					else:
 						raise ValueError("LogicSchemaUtils.reduce_to_set: unsupported format (1)")
 				return s
-			elif 'allOf' in arg:
+
+			if 'allOf' in arg:
 				return set(arg['allOf'])
-			elif 'oneOf' in arg:
+
+			if 'oneOf' in arg:
 				return set(arg['oneOf'])
-			else:
-				raise ValueError("LogicSchemaUtils.reduce_to_set: unsupported format (2)")
-		else:
-			raise ValueError("LogicSchemaUtils.reduce_to_set: unsupported type: %s" % type(arg))
+
+			raise ValueError("LogicSchemaUtils.reduce_to_set: unsupported format (2)")
+
+		raise ValueError("LogicSchemaUtils.reduce_to_set: unsupported type: %s" % type(arg))
 
 
 	@classmethod
@@ -280,15 +283,15 @@ class LogicSchemaUtils:
 		if level > 2:
 			raise ValueError("Unsupported nesting level")
 	
-		if type(arg) in (str, int, float):
+		if isinstance(arg, (str, int, float)):
 			return arg
 	
-		if type(arg) in sequences:
+		if isinstance(arg, sequences):
 			if not AmpelUtils.check_seq_inner_type(arg, ok, multi_type=True):
 				raise ValueError("Unsupported format (0)")
 			return arg
 
-		if type(arg) is dict:
+		if isinstance(arg, dict):
 	
 			if len(arg) != 1:
 				raise ValueError("Unsupported format (1)")
@@ -298,7 +301,7 @@ class LogicSchemaUtils:
 			if key == "allOf":
 	
 				# Value must be a sequence
-				if type(arg[key]) not in sequences:
+				if not isinstance(arg[key], sequences):
 					raise ValueError("Unsupported format (3)")
 	
 				# 'allOf' closes nesting (content must be atomar elements of type 'ok') 
@@ -307,13 +310,13 @@ class LogicSchemaUtils:
 	
 				return [arg[key]] if level == 1 else arg[key]
 	
-			elif key == "anyOf":
+			if key == "anyOf":
 	
 				if level > 1:
 					raise ValueError("Unsupported nesting")
 	
 				# Value must be a sequence
-				if type(arg[key]) not in sequences:
+				if not isinstance(arg[key], sequences):
 					raise ValueError("Unsupported format (4)")
 	
 				if AmpelUtils.check_seq_inner_type(arg[key], ok, multi_type=True):
@@ -321,8 +324,6 @@ class LogicSchemaUtils:
 	
 				return [cls.conditional_expr_converter(el, level=level+1) for el in arg[key]]
 	
-			else:
-				raise ValueError("Unsupported format (5)")
+			raise ValueError("Unsupported format (5)")
 	
-		else:
-			raise ValueError("Unsupported format (6)")
+		raise ValueError("Unsupported format (6)")

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/config/utils/ConfigUtils.py
+# File              : ampel/config/ConfigUtils.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 06.10.2018
@@ -86,6 +86,7 @@ class ConfigUtils:
 		out = AmpelUtils.unflatten_dict(d)
 		for k, v in out.items():
 			try:
+				# pylint: disable=expression-not-assigned
 				[int(el) for el in v]
 				out[k] = [cls.unflatten_dict(out[k][el], separator) for el in v]
 			except Exception:

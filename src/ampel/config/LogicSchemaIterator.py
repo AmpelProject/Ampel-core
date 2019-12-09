@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/config/utils/LogicSchemaIterator.py
+# File              : ampel/config/LogicSchemaIterator.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 12.10.2018
@@ -49,10 +49,10 @@ class LogicSchemaIterator:
 		""" """
 		self.arg = arg
 		
-		if type(arg) in (AllOf, AnyOf, OneOf):
+		if isinstance(arg, (AllOf, AnyOf, OneOf)):
 			arg = arg.dict()
 
-		if type(arg) in in_type:
+		if isinstance(arg, in_type):
 			self.values = [arg]
 
 		elif isinstance(arg, dict):
