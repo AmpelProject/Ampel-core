@@ -1,6 +1,6 @@
 
 from ampel.config.AmpelConfig import AmpelConfig
-from ampel.config.AmpelArgumentParser import AmpelArgumentParser
+from ampel.run.AmpelArgumentParser import AmpelArgumentParser
 import pytest
 from urllib import parse
 

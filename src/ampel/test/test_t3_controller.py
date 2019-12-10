@@ -4,12 +4,12 @@ from ampel.t3.T3Controller import T3Controller
 from ampel.config.t3.T3JobConfig import T3JobConfig
 from ampel.t3.T3Job import T3Job
 
-from ampel.common.AmpelUnitLoader import AmpelUnitLoader
+from ampel.core.AmpelUnitLoader import AmpelUnitLoader
 
 from ampel.abstract.AbsT3Unit import AbsT3Unit
 from ampel.config.AmpelConfig import AmpelConfig
 from ampel.common.AmpelUtils import AmpelUtils
-from ampel.config.AmpelArgumentParser import AmpelArgumentParser
+from ampel.run.AmpelArgumentParser import AmpelArgumentParser
 from argparse import Namespace
 
 from ampel.pipeline.t3.T3PlaceboUnit import T3PlaceboUnitError
@@ -291,8 +291,8 @@ def test_get_required_resources():
 	assert len(resources) > 0
 
 def test_time_selection():
-	from ampel.db.query.QueryMatchTransients import QueryMatchTransients
-	from ampel.t3.TimeConstraint import TimeConstraint
+	from ampel.query.QueryMatchStock import QueryMatchStock
+	from ampel.t3.TimeConstraintBuilder import TimeConstraintBuilder
 	from ampel.config.time.TimeConstraintConfig import TimeConstraintConfig
 	from ampel.config.time.TimeDeltaConfig import TimeDeltaConfig
 	
@@ -300,7 +300,7 @@ def test_time_selection():
 	created = TimeConstraint(TimeConstraintConfig(after=dict(use='$timeDelta', arguments=dict(days=-30))))
 	modified = TimeConstraint(TimeConstraintConfig(after=dict(use='$timeDelta', arguments=dict(days=-2))))
 	
-	query = QueryMatchTransients.match_transients(channels, time_created=created, time_modified=modified)
+	query = QueryMatchStock.build_query(channels, time_created=created, time_modified=modified)
 	assert len(query['$or']) == len(channels['anyOf']), "OR on time constraints for all channels"
 	for or_clause in query['$or']:
 		assert list(or_clause.keys()) == ['$and'], "each element is an AND clause"

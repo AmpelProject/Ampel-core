@@ -3,7 +3,7 @@ from ampel.config.AmpelConfig import AmpelConfig
 from ampel.db.AmpelDB import AmpelDB
 from ampel.config.ConfigLoader import ConfigLoader
 from ampel.config.channel.ChannelConfigLoader import ChannelConfigLoader
-from ampel.common.AmpelUnitLoader import AmpelUnitLoader
+from ampel.core.AmpelUnitLoader import AmpelUnitLoader
 from ampel.t3.T3Controller import T3Controller
 from ampel.t3.T3Task import T3Task
 from ampel.config.t3.T3TaskConfig import T3TaskConfig
@@ -116,7 +116,7 @@ def test_db_prefix(mongod):
 		AmpelDB.reset()
 
 def test_config_from_env():
-	from ampel.config.AmpelArgumentParser import AmpelArgumentParser
+	from ampel.run.AmpelArgumentParser import AmpelArgumentParser
 	from os import environ
 	environ['AMPEL_CONFIG'] = '{"AmpelDB":{"prefix":"foo"}}'
 	args = AmpelArgumentParser().parse_args([])

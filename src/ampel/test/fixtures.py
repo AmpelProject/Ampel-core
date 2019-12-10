@@ -216,7 +216,7 @@ def alert_factory(latest_schema):
 @pytest.fixture
 def minimal_ingestion_config(mongod):
 	from ampel.config.AmpelConfig import AmpelConfig
-	from ampel.common.AmpelUnitLoader import AmpelUnitLoader
+	from ampel.core.AmpelUnitLoader import AmpelUnitLoader
 	from ampel.db.AmpelDB import AmpelDB
 	
 	AmpelConfig.reset()
