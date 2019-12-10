@@ -8,7 +8,6 @@
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from pydantic import constr
-from datetime import datetime
 from typing import Union, Dict, Optional
 from ampel.db.AmpelDB import AmpelDB
 from ampel.common.docstringutils import gendocstring
@@ -54,6 +53,4 @@ class TimeLastRunModel(AmpelBaseModel):
 			if res is None:
 				return None
 
-		return datetime.fromtimestamp(
-			res['events']['ts']
-		)
+		return res['events']['ts']
