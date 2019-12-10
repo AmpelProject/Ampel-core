@@ -7,7 +7,7 @@
 # Last Modified Date: 10.10.2019
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-from typing import Union, List
+from typing import Union, Optional, Dict
 from ampel.common.docstringutils import gendocstring
 from ampel.model.time.TimeDeltaModel import TimeDeltaModel
 from ampel.model.time.TimeLastRunModel import TimeLastRunModel
@@ -24,13 +24,11 @@ class TimeConstraintModel(AmpelBaseModel):
 	TimeConstraintModel(
 	   **{
 			"after": {
-				"use": "$timeDelta",
-				"arguments" :  {
-				   	"days" : -40
-			   	}
+				"matchType": "timeDelta",
+				"days": -1
 			},
 			"before": {
-				"use": "timeString",
+				"matchType": "timeString",
 				"dateTimeStr": "21/11/06 16:30",
 				"dateTimeFormat": "%d/%m/%y %H:%M"
 			}
@@ -42,27 +40,47 @@ class TimeConstraintModel(AmpelBaseModel):
 	TimeConstraintModel(
 	   **{
 			"after": {
-				"use": "$timeLastRun",
-				"jobName": "val_test"
+				"matchType": "timeLastRun",
+				"processName": "val_test"
 			},
 			"before": {
-				"use": "unixTime",
+				"matchType": "unixTime",
 				"value": 1531306299
 			}
 		}
 	)
 	"""
 
-	before: Union[
-		TimeDeltaModel, 
-		TimeLastRunModel, 
-		TimeStringModel, 
-		UnixTimeModel
+	before: Optional[
+		Union[
+			TimeDeltaModel, TimeLastRunModel, 
+			TimeStringModel, UnixTimeModel
+		]
 	] = None
 
-	after: Union[
-		TimeDeltaModel, 
-		TimeLastRunModel, 
-		TimeStringModel, 
-		UnixTimeModel
+	after: Optional[
+		Union[
+			TimeDeltaModel, TimeLastRunModel, 
+			TimeStringModel, UnixTimeModel
+		]
 	] = None
+
+
+	def build_dict(self, **kwargs) -> Optional[Dict]:
+		""" 
+		Call this method with ampelDB=<instance of AmpelDB> 
+		if your time constraint is based on TimeLastRunModel
+		"""
+
+		if self.before is None and self.after is None:
+			return None
+
+		ret = {}
+
+		if self.before:
+			ret['before'] = self.before.get_timestamp(**kwargs)
+
+		if self.after:
+			ret['after'] = self.after.get_timestamp(**kwargs)
+
+		return ret

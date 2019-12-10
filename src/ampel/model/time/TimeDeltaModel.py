@@ -7,13 +7,31 @@
 # Last Modified Date: 10.10.2019
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-from pydantic import BaseModel, constr
-from typing import Union, Dict, Any
+from pydantic import constr
+from datetime import datetime, timedelta
 from ampel.common.docstringutils import gendocstring
 from ampel.model.AmpelBaseModel import AmpelBaseModel
 
 
 @gendocstring
 class TimeDeltaModel(AmpelBaseModel):
-    use: constr(regex='.timeDelta$')
-    arguments: Dict[str, Any]
+
+	matchType: constr(regex='^timeDelta$')
+	days: int = 0
+	seconds: int = 0 
+	microseconds: int = 0
+	milliseconds: int = 0
+	minutes: int = 0
+	hours: int = 0
+	weeks: int = 0
+
+	# pylint: disable=unused-argument
+	def get_timestamp(self, **kwargs) -> float:
+		""" """
+		dt = datetime.today() + timedelta(
+			days=self.days, seconds=self.seconds, microseconds=self.microseconds, 
+			milliseconds=self.milliseconds, minutes=self.minutes, 
+			hours=self.hours, weeks=self.hours
+		)
+
+		return dt.timestamp()
