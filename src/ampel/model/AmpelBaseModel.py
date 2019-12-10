@@ -4,11 +4,13 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 30.09.2018
-# Last Modified Date: 10.10.2019
+# Last Modified Date: 10.12.2019
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-from ampel.common.AmpelUtils import AmpelUtils
 from pydantic import BaseModel, BaseConfig, Extra
+from ampel.utils.Freeze import Freeze
+from ampel.common.AmpelUtils import AmpelUtils
+
 
 def to_camel_case(arg: str) -> str:
 	"""
@@ -35,7 +37,7 @@ class AmpelBaseModel(BaseModel):
 		"""
 		extra = Extra.forbid
 		arbitrary_types_allowed = True
-		allow_population_by_alias = True
+		allow_population_by_field_name = True
 		alias_generator = to_camel_case
 
 
@@ -44,14 +46,4 @@ class AmpelBaseModel(BaseModel):
 
 
 	def immutable(self) -> None:
-		self.recursive_lock(self)
-
-
-	@classmethod
-	def recursive_lock(cls, model: BaseModel) -> None:
-		""" """
-		model.Config.allow_mutation=False
-		for key in model.fields.keys():
-			value = getattr(model, key)
-			if isinstance(value, BaseModel):
-				cls.recursive_lock(value)
+		Freeze.recursive_lock(self)
