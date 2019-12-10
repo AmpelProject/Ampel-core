@@ -4,11 +4,11 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 09.10.2019
-# Last Modified Date: 27.10.2019
+# Last Modified Date: 10.12.2019
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-from typing import Union
 from pydantic import validator
+from typing import Union, Optional
 from ampel.common.docstringutils import gendocstring
 from ampel.model.operator.AllOf import AllOf
 from ampel.model.operator.AnyOf import AnyOf
@@ -34,11 +34,11 @@ class SelectModel(AmpelBaseModel):
 	}
 	"""
 
-	created: Union[None, TimeConstraintModel] = None
-	modified: Union[None, TimeConstraintModel] = None
-	withTags: Union[None, AnyOf, AllOf, OneOf] = None
-	withoutTags: Union[None, AnyOf, AllOf, OneOf] = None
-	channels: Union[None, AnyOf, AllOf, OneOf] = None
+	created: Optional[TimeConstraintModel] = None
+	modified: Optional[TimeConstraintModel] = None
+	channels: Optional[Union[AnyOf, AllOf, OneOf]] = None
+	withTags: Optional[Union[AnyOf, AllOf, OneOf]] = None
+	withoutTags: Optional[Union[AnyOf, AllOf, OneOf]] = None
 
 	# pylint: disable=unused-argument,no-self-argument,no-self-use
 	@validator('channels', 'withTags', 'withoutTags', pre=True, whole=True)
