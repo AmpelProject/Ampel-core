@@ -27,6 +27,7 @@ class DistConfigBuilder(ConfigBuilder):
 		"""
 		for distrib_name in self.get_dist_names(prefix):
 			if self.verbose:
+				self.logger.verbose("#"*150)
 				self.logger.verbose("Checking " + distrib_name)
 			self.load_distrib(distrib_name, conf_dir)
 
