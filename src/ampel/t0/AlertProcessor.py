@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 10.10.2017
-# Last Modified Date: 03.11.2019
+# Last Modified Date: 06.12.2019
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import numpy as np
@@ -33,7 +33,7 @@ from ampel.flags.LogRecordFlag import LogRecordFlag
 from ampel.core.AmpelUnitLoader import AmpelUnitLoader
 from ampel.abstract.AbsAmpelProcessor import AbsAmpelProcessor
 from ampel.abstract.AbsAlertIngester import AbsAlertIngester
-from ampel.model.t0.APChanData import APChanData
+from ampel.model.t0.APChanModel import APChanModel
 from ampel.model.AmpelBaseModel import AmpelBaseModel
 
 class AlertProcessor(AbsAmpelProcessor):
@@ -49,24 +49,16 @@ class AlertProcessor(AbsAmpelProcessor):
 
 	class InitConfig(AmpelBaseModel):
 		""" 
+		Parameters defined in the config associated with the current alert processor process
+
 		:param publish_stats: publish performance metrics:
 		- graphite: send t0 metrics to graphite (graphite server must be defined in ampel_config)
 		- processDoc: include t0 metrics in the process event document which is written into the DB
-
-		:param raise_exc: whether the AP should raise Exceptions rather than catching them (default false)
-
-		:param db_logging: whether to save log entries (and the corresponding process doc) into the DB
 
 		:param single_rej_col: 
 		- False: rejected logs are saved in channel specific collections
 		 (collection name equals channel name)
 		- True: rejected logs are saved in a single collection called 'logs'
-
-		:param run_type: LogRecordFlag.SCHEDULED_RUN or LogRecordFlag.MANUAL_RUN
-
-		:param full_console_logging: If false, the logging level of the stdout streamhandler 
-		associated with the logger will be set to WARN during the execution of this method
-		(it will be reverted to DEBUG before return)
 
 		:param log_format: 'compact' (saves RAM by reducing the number of indexed document) or standard. \
 		The 'compact' log entries can be later converted into 'standard' format using the aggregation pipeline.
@@ -76,7 +68,7 @@ class AlertProcessor(AbsAmpelProcessor):
 		```
 		{
 			"_id" : ObjectId("5be4aa6254048041edbac352"),
-			"tranId" : NumberLong(1810101032122523),
+			"stockId" : NumberLong(1810101032122523),
 			"alertId" : NumberLong(404105201415015004),
 			"flag" : 572784643,
 			"runId" : 509,
@@ -98,7 +90,7 @@ class AlertProcessor(AbsAmpelProcessor):
 		```
 		{
 			"_id" : ObjectId("5be4aa6254048041edbac353"),
-			"tranId" : NumberLong(1810101032122523),
+			"stockId" : NumberLong(1810101032122523),
 			"alertId" : NumberLong(404105201415015004),
 			"flag" : 572784643,
 			"runId" : 509,
@@ -107,7 +99,7 @@ class AlertProcessor(AbsAmpelProcessor):
 		}
 		{
 			"_id" : ObjectId("5be4aa6254048041edbac352"),
-			"tranId" : NumberLong(1810101032122523),
+			"stockId" : NumberLong(1810101032122523),
 			"alertId" : NumberLong(404105201415015004),
 			"flag" : 572784643,
 			"runId" : 509,
@@ -116,15 +108,12 @@ class AlertProcessor(AbsAmpelProcessor):
 		}
 		```
 		"""
-		channel: Sequence[APChanData]
+		channel: Sequence[APChanModel]
 		publish_stats: Sequence[str] = ('graphite', 'processDoc')
-		raise_exc: bool = False
-		log_line_nbr: bool = False
-		single_rej_col: bool = False
-		full_console_logging: bool = True
 		log_format: str = "compact"
-		run_type: LogRecordFlag = LogRecordFlag.SCHEDULED_RUN
+		single_rej_col: bool = False
 
+		# pylint: disable=no-self-argument,no-self-use
 		@validator('channel', pre=True, whole=True)
 		def cast_to_list(cls, v):
 			if isinstance(v, dict):
@@ -132,11 +121,27 @@ class AlertProcessor(AbsAmpelProcessor):
 			return v
 
 
+	class InitOptions(AmpelBaseModel):
+		"""
+		Options tweakable at run time (not definable in the config)
+
+		:param raise_exc: whether the AP should raise Exceptions rather than catching them (default False)
+		:param log_line_nbr: whether each log entries should contain: filename & line number info (default False)
+		:param full_console_logging: If false, the logging level of the stdout streamhandler 
+		associated with the logger will be set to WARN during the execution of this method
+		(it will be reverted to DEBUG before return)
+		:param run_type: LogRecordFlag.SCHEDULED_RUN or LogRecordFlag.MANUAL_RUN
+		"""
+		raise_exc: bool = False
+		log_line_nbr: bool = False
+		full_console_logging: bool = True
+		run_type: LogRecordFlag = LogRecordFlag.SCHEDULED_RUN
+
+
 	@classmethod
 	def from_process(cls, ampel_config: AmpelConfig, process_name: str):
 		""" 
-		Convenience methods that instantiates an AP instance using the configuration
-		from a given T0 process
+		Convenience method instantiating an AP using the config entry from a given T0 process
 		example: AlertProcessor.by_proc_name(ampel_config, ampel_db, "t0_nersc_delayed")
 		"""
 		cls_name = ampel_config.get(
@@ -157,11 +162,20 @@ class AlertProcessor(AbsAmpelProcessor):
 
 	# pylint: disable=super-init-not-called
 	# Using forward reference type hinting for init_config
-	def __init__(self, ampel_config: AmpelConfig, init_config: 'AlerProcessor.InitConfig'):
+	def __init__(self,
+		ampel_config: AmpelConfig,
+		init_config: 'AlertProcessor.InitConfig', 
+		options: 'AlertProcessor.InitOptions' = None
+	):
 		"""
 		"""
 	
-		self._init_config = init_config if isinstance(init_config, BaseModel) else self.InitConfig(**init_config)
+		self._init_config = init_config if isinstance(init_config, BaseModel) \
+			else self.InitConfig(**init_config)
+
+		self._init_options = options if isinstance(options, BaseModel) \
+			else self.InitOptions(**options)
+
 		self._ampel_db = AmpelDB(ampel_config)
 		self._alert_ingester = None
 
@@ -403,7 +417,7 @@ class AlertProcessor(AbsAmpelProcessor):
 			all_filters_start = time()
 
 			extra = {
-				'tranId': tran_id, 
+				'stockId': tran_id, 
 				'alertId': alert_content['alert_id']
 			}
 
@@ -563,7 +577,7 @@ class AlertProcessor(AbsAmpelProcessor):
 				# a LogRecord manually.
 				lr = LogRecord(None, INFO, None, None, None, None, None)
 				lr.extra = {
-					'tranId': tran_id,
+					'stockId': tran_id,
 					'alertId': alert_content['alert_id'],
 					'allRejected': True,
 					'channels': chan_names
