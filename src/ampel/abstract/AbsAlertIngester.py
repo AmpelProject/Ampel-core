@@ -8,7 +8,7 @@
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from typing import Sequence
-from ampel.model.t0.APChanData import APChanData
+from ampel.model.t0.APChanModel import APChanModel
 from ampel.abstract.AmpelABC import AmpelABC, abstractmethod
 
 class AbsAlertIngester(metaclass=AmpelABC):
@@ -24,5 +24,5 @@ class AbsAlertIngester(metaclass=AmpelABC):
 		""" """
 
 	@abstractmethod
-	def set_config(self, chan_data: Sequence[APChanData]):
+	def set_config(self, chan_data: Sequence[APChanModel]):
 		""" """
