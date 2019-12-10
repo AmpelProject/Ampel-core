@@ -11,7 +11,7 @@ import json
 from typing import Dict, List
 from ampel.common.AmpelUtils import AmpelUtils
 from ampel.logging.AmpelLogger import AmpelLogger
-from ampel.config.utils.ConfigUtils import ConfigUtils
+from ampel.config.ConfigUtils import ConfigUtils
 from ampel.config.builder.BaseConfig import BaseConfig
 
 
