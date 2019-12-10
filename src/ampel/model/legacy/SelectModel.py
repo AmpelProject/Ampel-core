@@ -15,7 +15,7 @@ from ampel.model.operator.AnyOf import AnyOf
 from ampel.model.operator.OneOf import OneOf
 from ampel.model.AmpelBaseModel import AmpelBaseModel
 from ampel.model.time.TimeConstraintModel import TimeConstraintModel
-from ampel.config.utils.LogicSchemaUtils import LogicSchemaUtils
+from ampel.config.LogicSchemaUtils import LogicSchemaUtils
 
 
 @gendocstring
