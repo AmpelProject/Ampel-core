@@ -1,50 +1,42 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/query/QueryMatchTransients.py
+# File              : ampel/query/QueryMatchStock.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 13.01.2018
-# Last Modified Date: 24.02.2019
+# Last Modified Date: 10.12.2019
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-from bson.objectid import ObjectId
-from ampel.flags.AlDocType import AlDocType
-from ampel.config.t3.LogicSchemaUtils import LogicSchemaUtils
-from ampel.t3.TimeConstraint import TimeConstraint
+from typing import Dict, Optional, Union
+
+from ampel.model.operator.AnyOf import AnyOf
+from ampel.model.operator.AllOf import AllOf
+from ampel.model.operator.OneOf import OneOf
+from ampel.model.time.QueryTimeModel import QueryTimeModel
+from ampel.config.LogicSchemaUtils import LogicSchemaUtils
 from ampel.query.QueryMatchSchema import QueryMatchSchema
 
 
-class QueryMatchTransients:
+class QueryMatchStock:
 	"""
+	Builds a dict to be used as parameter in a mongoDB collection query.
 	"""
 
 	@classmethod
-	def match_transients(cls,
-		channels=None, with_tags=None, without_tags=None, time_created=None, time_modified=None
-	):
+	def build_query(cls,
+		channels: Optional[Union[int, str, Dict, AllOf, AnyOf, OneOf]] = None,
+		with_tags: Optional[Union[int, str, Dict, AllOf, AnyOf, OneOf]] = None,
+		without_tags: Optional[Union[int, str, Dict, AllOf, AnyOf, OneOf]] = None,
+		time_created: Optional[QueryTimeModel] = None,
+		time_modified: Optional[QueryTimeModel] = None
+	) -> Dict:
 		"""
-		Merely a shortcut method made of several function calls
-
-		:type channels: str, dict
 		:param channels: string (one channel only) or a dict schema \
-		(see :obj:`QueryMatchSchema <ampel.query.QueryMatchSchema>` \
-		for syntax details). None (no criterium) means all channels are considered. 
-
-		:type with_tags: str, int, dict
-		:param with_tags: string/int (one flag only) or a dict schema \
-		(see :obj:`QueryMatchSchema <ampel.query.QueryMatchSchema>` \
-		for syntax details). Important: dict schema must contain **db flags** \
-		(integers representing enum members position within enum class), please see \
-		:func:`FlagUtils.hash_schema <ampel.flags.FlagUtils.hash_schema>` \
-		docstring for more info.
-
-		:type without_tags: str, int, dict
-		:param without_tags: similar to parameter with_tags, except it's without.
-
-		:param TimeConstraint time_created: instance of ampel.t3.TimeConstraint
-		:param TimeConstraint time_modified: instance of ampel.t3.TimeConstraint
-
-		:rtype: dict
+			(see :obj:`QueryMatchSchema <ampel.query.QueryMatchSchema>` \
+			for syntax details). None (no criterium) means all channels are considered. 
+		:param with_tags: "tags" to be matched by query \
+			(see :obj:`QueryMatchSchema <ampel.query.QueryMatchSchema>` syntax details). \
+		:param without_tags: "tags" not to be matched by query
 		:returns: query dict with matching criteria
 		"""
 
@@ -66,53 +58,30 @@ class QueryMatchTransients:
 				query, 'alTags', without_tags
 			)
 
-		created_constraint = cls._add_time_constraint(time_created)
-		modified_constraint = cls._add_time_constraint(time_modified)
-		if created_constraint or modified_constraint:
+		if time_created or time_modified:
 				
-			chans = LogicSchemaUtils.reduce_to_set("Any" if channels is None else channels)
+			chans = LogicSchemaUtils.reduce_to_set(
+				"Any" if channels is None else channels
+			)
 
 			or_list = []
+
 			for chan_name in chans:
+
 				and_list = []
-				if created_constraint:
+
+				if time_created:
 					and_list.append({
-						'created.%s' % chan_name: created_constraint
+						f'created.{chan_name}': time_created.dict()
 					})
 
-				if modified_constraint:
+				if time_modified:
 					and_list.append({
-						'modified.%s' % chan_name: modified_constraint
+						f'modified.{chan_name}': time_modified.dict()
 					})
+
 				or_list.append({'$and': and_list})
+
 			query['$or'] = or_list
 
 		return query
-
-
-	@staticmethod
-	def _add_time_constraint(tc):
-		"""
-		:param TimeConstrain tc: instance of ampel.t3.TimeConstraint.py
-		:returns: dict such as:
-			{
-				'$gt': 1223142,
-				'$lt': 9894324923
-			}
-		"""
-
-		if tc is None:
-			return None
-		if type(tc) is not TimeConstraint:
-			raise ValueError("Parameter must be a TimeConstraint instance")
-
-		d = {}
-		if tc.has_constraint():
-			for key, op in {'after': '$gte', 'before': '$lte'}.items():
-				val = tc.get(key)
-				if val:
-					d[op] = val.timestamp()
-		if len(d) == 0:
-			return None
-		else:
-			return d
