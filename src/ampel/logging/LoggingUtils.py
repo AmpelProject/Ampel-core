@@ -10,7 +10,7 @@
 import sys, traceback, logging
 from typing import Dict
 from ampel.db.AmpelDB import AmpelDB
-from ampel.config.utils.ConfigUtils import ConfigUtils
+from ampel.config.ConfigUtils import ConfigUtils
 from ampel.flags.LogRecordFlag import LogRecordFlag
 
 class LoggingUtils:
