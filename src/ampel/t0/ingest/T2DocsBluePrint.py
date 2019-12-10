@@ -8,7 +8,7 @@
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from typing import List, Sequence
-from ampel.model.t0.APChanData import APChanData
+from ampel.model.t0.APChanModel import APChanModel
 
 
 class T2DocsBluePrint:
@@ -18,7 +18,7 @@ class T2DocsBluePrint:
 	-> A T2 documents for a given compound shared among different channels is referenced only once.
 	"""
 
-	def __init__(self, t2_units: List[str], t2_units_using_uls: List[str], chan_bundle: Sequence[APChanData]):
+	def __init__(self, t2_units: List[str], t2_units_using_uls: List[str], chan_bundle: Sequence[APChanModel]):
 		"""
 		Parameters:
 		:param t2_units: all schedulable t2s for the given t0 processes
@@ -53,7 +53,7 @@ class T2DocsBluePrint:
 		"""
 
 		if not isinstance(chan_bundle, Sequence):
-			raise ValueError("Parameter bundle must be a sequence of APChanData instances")
+			raise ValueError("Parameter bundle must be a sequence of APChanModel instances")
 
 		if len(chan_bundle) == 0:
 			raise ValueError("Parameter bundle cannot be empty")
