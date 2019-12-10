@@ -7,12 +7,13 @@
 # Last Modified Date: 10.10.2019
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-from typing import Union, Optional, Dict
+from typing import Union, Optional
 from ampel.common.docstringutils import gendocstring
 from ampel.model.time.TimeDeltaModel import TimeDeltaModel
 from ampel.model.time.TimeLastRunModel import TimeLastRunModel
 from ampel.model.time.TimeStringModel import TimeStringModel
 from ampel.model.time.UnixTimeModel import UnixTimeModel
+from ampel.model.time.QueryTimeModel import QueryTimeModel
 from ampel.model.AmpelBaseModel import AmpelBaseModel
 
 
@@ -66,7 +67,7 @@ class TimeConstraintModel(AmpelBaseModel):
 	] = None
 
 
-	def build_dict(self, **kwargs) -> Optional[Dict]:
+	def get_query_model(self, **kwargs) -> QueryTimeModel:
 		""" 
 		Call this method with ampelDB=<instance of AmpelDB> 
 		if your time constraint is based on TimeLastRunModel
@@ -75,12 +76,7 @@ class TimeConstraintModel(AmpelBaseModel):
 		if self.before is None and self.after is None:
 			return None
 
-		ret = {}
-
-		if self.before:
-			ret['before'] = self.before.get_timestamp(**kwargs)
-
-		if self.after:
-			ret['after'] = self.after.get_timestamp(**kwargs)
-
-		return ret
+		return QueryTimeModel(
+			before = self.before.get_timestamp(**kwargs) if self.before else None,
+			after = self.after.get_timestamp(**kwargs) if self.after else None
+		)
