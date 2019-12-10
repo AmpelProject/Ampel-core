@@ -9,7 +9,7 @@
 
 import json
 from typing import Dict
-from ampel.model.EncryptedData import EncryptedData
+from ampel.model.EncryptedDataModel import EncryptedDataModel
 from ampel.config.AmpelBaseConfig import AmpelBaseConfig
 
 
@@ -95,7 +95,7 @@ class AmpelConfig(AmpelBaseConfig):
 						ret = d.copy()
 
 					try:
-						ec = EncryptedData(**value)
+						ec = EncryptedDataModel(**value)
 						ret[key] = ec.decrypt(
 							self.get("pwd")
 						)
