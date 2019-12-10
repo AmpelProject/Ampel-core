@@ -13,9 +13,9 @@ from pymongo.collection import Collection
 from pymongo.database import Database
 from typing import Union, Tuple, Sequence
 from ampel.config.AmpelConfig import AmpelConfig
-from ampel.model.db.AmpelColData import AmpelColData
-from ampel.model.db.AmpelDBData import AmpelDBData
-from ampel.model.db.IndexData import IndexData
+from ampel.model.db.AmpelColModel import AmpelColModel
+from ampel.model.db.AmpelDBModel import AmpelDBModel
+from ampel.model.db.IndexModel import IndexModel
 
 
 class AmpelDB:
@@ -35,7 +35,7 @@ class AmpelDB:
 			raise ValueError("Mongo resources not set in provided ampel config")
 
 		self.dbs_config = [
-			AmpelDBData(**el) for el in ampel_config.get('db.databases')
+			AmpelDBModel(**el) for el in ampel_config.get('db.databases')
 		]
 
 		self._col_config = {
@@ -54,7 +54,7 @@ class AmpelDB:
 		available through standard method call AmpelDB.get_collection(channel_name)
 		:param channel_names: list of channel names
 		"""
-		db_config = AmpelDBData(
+		db_config = AmpelDBModel(
 			name='rej',
 			collections=[
 				{'name': chan_name} for chan_name in channel_names
@@ -118,7 +118,7 @@ class AmpelDB:
 		return self._mongo_clients[resource_name].get_database(db_name)
 
 
-	def _get_db_config(self, col_name: str) -> AmpelDBData:
+	def _get_db_config(self, col_name: str) -> AmpelDBModel:
 		""" """
 		return next(
 			filter(
@@ -141,7 +141,7 @@ class AmpelDB:
 
 	
 	def create_collection(
-		self, resource_name: str, db_name: str, col_config: AmpelColData, logger: Logger = None
+		self, resource_name: str, db_name: str, col_config: AmpelColModel, logger: Logger = None
 	) -> Collection:
 		""" 
 		:param resource_name: name of the AmpelConfig resource (resource.mongo) to be fed to MongoClient()
@@ -194,7 +194,7 @@ class AmpelDB:
 
 
 	def set_col_index( 
-		self, resource_name: str, db_name: str, col_config: AmpelColData, 
+		self, resource_name: str, db_name: str, col_config: AmpelColModel, 
 		force_overwrite: bool = False, logger: Logger = None
 	) -> None:
 		"""
@@ -246,7 +246,7 @@ class AmpelDB:
 
 								
 	@staticmethod
-	def _create_index(col: Collection, index_data: IndexData, logger: Logger) -> None:
+	def _create_index(col: Collection, index_data: IndexModel, logger: Logger) -> None:
 		"""
 		"""
 
