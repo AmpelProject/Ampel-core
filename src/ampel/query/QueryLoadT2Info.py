@@ -15,7 +15,7 @@ from ampel.model.operator.AllOf import AllOf
 from ampel.model.operator.OneOf import OneOf
 from ampel.common.AmpelUtils import AmpelUtils
 from ampel.query.QueryUtils import QueryUtils
-from ampel.query.QueryMatchSchema import QueryMatchSchema
+from ampel.query.QueryGeneralMatch import QueryGeneralMatch
 
 
 class QueryLoadT2Info:
@@ -42,7 +42,9 @@ class QueryLoadT2Info:
 		If None (or empty iterable): all t2 docs associated with the matched transients will be targeted. \
 		"""
 
-		query = cls.create_broad_query(stock_ids, channels)
+		query = QueryGeneralMatch.build(
+			stock_ids=stock_ids, channels=channels
+		)
 
 		if t2_subsel:
 			query['t2Id'] = t2_subsel if isinstance(t2_subsel, str) \
@@ -73,7 +75,10 @@ class QueryLoadT2Info:
 		See :func:`build_stateless_query <build_stateless_query>` docstring
 		"""
 
-		query = cls.create_broad_query(stock_ids, channels)
+		query = QueryGeneralMatch.build(
+			stock_ids=stock_ids, channels=channels
+		)
+
 		query['docId'] = cls.get_compound_match(states)
 
 		if t2_subsel:
@@ -147,23 +152,3 @@ class QueryLoadT2Info:
 			)
 
 		return match_comp_ids
-
-
-	@staticmethod
-	def create_broad_query(
-		stock_ids: Union[int, str, Iterable[Union[int, str]]], 
-		channels: Union[int, str, Dict, AllOf, AnyOf, OneOf]
-	) -> Dict[str, Any]:
-		"""
-		:param channels: see :func:`build_stateless_query <build_stateless_query>` docstring
-		"""
-
-		query = {
-			'stockId': QueryUtils.match_array(stock_ids) \
-				if isinstance(stock_ids, StrictIterable) else stock_ids
-		}
-
-		if channels is not None:
-			QueryMatchSchema.apply_schema(query, 'channels', channels)
-
-		return query
