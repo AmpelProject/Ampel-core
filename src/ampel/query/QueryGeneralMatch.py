@@ -46,6 +46,8 @@ class QueryGeneralMatch:
 			"tags" not to be matched by query
 
 		:returns: query dict with matching criteria
+		:raises ValueError: QueryMatchSchema.apply_schema can raise ValueError \
+			in case the provided dict schema structure is unsupported
 		"""
 
 		query = {}
