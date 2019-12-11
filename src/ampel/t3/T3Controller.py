@@ -21,7 +21,7 @@ from ampel.logging.AmpelLogger import AmpelLogger
 from ampel.logging.LoggingUtils import LoggingUtils
 from ampel.common.GraphiteFeeder import GraphiteFeeder
 from ampel.config.AmpelConfig import AmpelConfig
-from ampel.common.AmpelUnitLoader import AmpelUnitLoader
+from ampel.core.AmpelUnitLoader import AmpelUnitLoader
 
 log = logging.getLogger(__name__)
 
@@ -306,7 +306,7 @@ def get_required_resources():
 def main():
 
 	from ampel.config.t3.ScienceRecordMatchConfig import ScienceRecordMatchConfig
-	from ampel.config.AmpelArgumentParser import AmpelArgumentParser
+	from ampel.run.AmpelArgumentParser import AmpelArgumentParser
 	from argparse import SUPPRESS, Action, Namespace
 	import sys
 

@@ -27,7 +27,7 @@ class LegacyChannelTemplate(AbsChannelTemplate, abstract=True):
 	#t3Supervize: List[Dict[str, Any]] = []
 	t3Supervize: List = []
 
-
+	# pylint: disable=no-self-argument,no-self-use
 	@validator('t3Supervize', 't2Compute', pre=True, whole=True)
 	def cast_to_list_if_required(cls, v):
 		if isinstance(v, dict):

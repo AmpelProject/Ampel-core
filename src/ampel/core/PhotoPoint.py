@@ -8,7 +8,7 @@
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from types import MappingProxyType
-from ampel.object.PhotoData import PhotoData
+from ampel.content.PhotoData import PhotoData
 from ampel.flags.PhotoPolicy import PhotoPolicy
 
 class PhotoPoint(PhotoData):

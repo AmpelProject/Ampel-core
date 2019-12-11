@@ -10,7 +10,7 @@
 import schedule as sched
 from pydantic import validator
 from typing import Sequence, Union, Optional
-from ampel.common.docstringutils import gendocstring
+from ampel.utils.docstringutils import gendocstring
 from ampel.model.AmpelBaseModel import AmpelBaseModel
 from ampel.model.UnitModel import UnitModel
 from ampel.config.ScheduleEvaluator import ScheduleEvaluator

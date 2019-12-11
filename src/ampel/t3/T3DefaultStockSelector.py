@@ -16,7 +16,7 @@ from ampel.db.AmpelDB import AmpelDB
 from ampel.logging.AmpelLogger import AmpelLogger
 from ampel.logging.LoggingUtils import LoggingUtils
 from ampel.abstract.AbsStockSelector import AbsStockSelector
-from ampel.common.docstringutils import gendocstring
+from ampel.utils.docstringutils import gendocstring
 from ampel.model.operator.AllOf import AllOf
 from ampel.model.operator.AnyOf import AnyOf
 from ampel.model.operator.OneOf import OneOf

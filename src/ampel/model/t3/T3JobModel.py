@@ -15,12 +15,12 @@ from ampel.logging.LoggingUtils import LoggingUtils
 from ampel.logging.AmpelLogger import AmpelLogger
 
 from ampel.common.AmpelUtils import AmpelUtils
-from ampel.common.docstringutils import gendocstring
+from ampel.utils.docstringutils import gendocstring
 
 from ampel.model.AmpelBaseModel import AmpelBaseModel
 from ampel.model.t3.T3TaskModel import T3TaskModel
 from ampel.model.t3.StockModel import StockModel
-from ampel.model.t3.StockSelectionModel import StockSelectionModel
+from ampel.model.t3.SelectModel import SelectModel
 from ampel.model.t3.StockContentModel import StockContentModel
 
 from ampel.config.AmpelConfig import AmpelConfig
@@ -106,7 +106,7 @@ class T3JobModel(AmpelBaseModel):
 
 			# Either copy entire 'transients.select' and 'transients.content' values if missing
 			# or the sub-key values (t2SubSelection, docs, channels, withTags ...) that were not set
-			for el in {'select': StockSelectionModel, 'content': StockContentModel}.items():
+			for el in {'select': SelectModel, 'content': StockContentModel}.items():
 
 				cont_or_sel_str = el[0]
 				job_cont_or_sel_conf = values['transients'].get(cont_or_sel_str)
@@ -117,7 +117,7 @@ class T3JobModel(AmpelBaseModel):
 					task_config['transients'][cont_or_sel_str] = job_cont_or_sel_conf
 				else:
 
-					# el.value is either T3StockContentModel or T3StockSelectionModel
+					# el.value is either T3StockContentModel or T3SelectModel
 					for field in el[1].__fields__.keys():
 
 						# Don't override task specific values

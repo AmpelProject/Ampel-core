@@ -9,7 +9,7 @@
 
 from pydantic import constr
 from datetime import datetime, timedelta
-from ampel.common.docstringutils import gendocstring
+from ampel.utils.docstringutils import gendocstring
 from ampel.model.AmpelBaseModel import AmpelBaseModel
 
 

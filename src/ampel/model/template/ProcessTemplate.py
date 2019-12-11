@@ -7,7 +7,7 @@
 # Last Modified Date: 14.10.2019
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-from typing import Dict, Any, Optional
+from typing import Dict, Any
 from ampel.model.AmpelBaseModel import AmpelBaseModel
 from ampel.common.AmpelUtils import AmpelUtils
 

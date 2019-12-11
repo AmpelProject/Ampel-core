@@ -10,7 +10,7 @@
 from pydantic import constr
 from typing import Union, Dict, Optional
 from ampel.db.AmpelDB import AmpelDB
-from ampel.common.docstringutils import gendocstring
+from ampel.utils.docstringutils import gendocstring
 from ampel.model.AmpelBaseModel import AmpelBaseModel
 from ampel.query.QueryEventsCol import QueryEventsCol
 

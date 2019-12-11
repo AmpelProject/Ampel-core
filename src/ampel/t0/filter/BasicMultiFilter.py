@@ -10,9 +10,9 @@
 import operator
 from types import MappingProxyType
 
-from ampel.abstract.AbsT0AlertFilter import AbsT0AlertFilter
+from ampel.abstract.AbsPhotoAlertFilter import AbsPhotoAlertFilter
 
-class BasicMultiFilter(AbsT0AlertFilter):
+class BasicMultiFilter(AbsPhotoAlertFilter):
 
 	version = 0.1
 
@@ -69,7 +69,7 @@ class BasicMultiFilter(AbsT0AlertFilter):
 		return BasicMultiFilter.version
 
 
-	def apply(self, ampel_alert):
+	def apply(self, alert):
 		"""
 		Doc will follow
 		"""
@@ -81,7 +81,7 @@ class BasicMultiFilter(AbsT0AlertFilter):
 			filter_res.append(
 				param['operator'](
 					len(
-						ampel_alert.get_values(
+						alert.get_values(
 							'candid', 
 							filters = param['criteria']
 						)

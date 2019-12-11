@@ -9,7 +9,7 @@
 
 from pydantic import Field
 from typing import Union, Optional
-from ampel.common.docstringutils import gendocstring
+from ampel.utils.docstringutils import gendocstring
 from ampel.model.AmpelBaseModel import AmpelBaseModel
 
 

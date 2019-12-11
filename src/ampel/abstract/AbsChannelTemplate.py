@@ -9,12 +9,12 @@
 
 from logging import Logger
 from typing import Dict, Any, Optional
-from ampel.model.ChannelData import ChannelData
+from ampel.model.ChannelModel import ChannelModel
 from ampel.abstract.AmpelABC import abstractmethod
 from ampel.abstract.AbsAmpelBaseModel import AbsAmpelBaseModel
 
 
-class AbsChannelTemplate(AbsAmpelBaseModel, ChannelData, abstract=True):
+class AbsChannelTemplate(AbsAmpelBaseModel, ChannelModel, abstract=True):
 	""" 
 	"""
 	template: Optional[str]

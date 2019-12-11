@@ -92,7 +92,7 @@ def empty_archive(postgres):
 					connection.execute(table.delete())
 
 import copy
-from ampel.object.AmpelAlert import AmpelAlert
+from ampel.standard.PhotoAlert import PhotoAlert
 class AlertFactoryFixture(object):
 	def __init__(self, schema):
 		from ampel.t0.load.ZIAlertShaper import ZIAlertShaper
@@ -207,7 +207,7 @@ class AlertFactoryFixture(object):
 		alert['candidate'].update(defaults)
 		alert['candidate'].update(kwargs)
 		shaped = self._shaper.shape(alert)
-		return AmpelAlert(shaped['tran_id'], shaped['ro_pps'], shaped['ro_uls'])
+		return PhotoAlert(shaped['tran_id'], shaped['ro_pps'], shaped['ro_uls'])
 
 @pytest.fixture
 def alert_factory(latest_schema):

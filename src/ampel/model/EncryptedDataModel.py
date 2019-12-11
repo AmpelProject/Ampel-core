@@ -9,7 +9,7 @@
 
 from pydantic import BaseModel
 from typing import List, Union
-from ampel.common.docstringutils import gendocstring
+from ampel.utils.docstringutils import gendocstring
 
 @gendocstring
 class EncryptedDataModel(BaseModel):

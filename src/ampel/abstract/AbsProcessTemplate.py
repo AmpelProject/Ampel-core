@@ -11,10 +11,10 @@ from logging import Logger
 from typing import Dict, Any
 from ampel.abstract.AmpelABC import abstractmethod
 from ampel.abstract.AbsAmpelBaseModel import AbsAmpelBaseModel
-from ampel.model.ChannelData import ChannelData
+from ampel.model.ChannelModel import ChannelModel
 
 
-class AbsProcessTemplate(ChannelData, AbsAmpelBaseModel, abstract=True):
+class AbsProcessTemplate(ChannelModel, AbsAmpelBaseModel, abstract=True):
 	""" 
 	"""
 

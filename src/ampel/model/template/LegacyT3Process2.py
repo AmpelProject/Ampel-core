@@ -9,7 +9,7 @@
 
 from typing import List, Dict, Any
 from ampel.model.legacy.BaseT3Process import BaseT3Process
-from ampel.common.docstringutils import gendocstring
+from ampel.utils.docstringutils import gendocstring
 from ampel.model.AmpelBaseModel import AmpelBaseModel
 
 

@@ -13,9 +13,9 @@ from pymongo import MongoClient
 from numpy import mean
 
 from ampel.config.AmpelConfig import AmpelConfig
-from ampel.abstract.AbsT0AlertFilter import AbsT0AlertFilter
+from ampel.abstract.AbsPhotoAlertFilter import AbsPhotoAlertFilter
 
-class BasicCatalogFilter(AbsT0AlertFilter):
+class BasicCatalogFilter(AbsPhotoAlertFilter):
 
     version = 0.1
     
@@ -56,7 +56,7 @@ class BasicCatalogFilter(AbsT0AlertFilter):
                 "dropped"*self.reject_on_match + "accepted"*(not self.reject_on_match)))
 
 
-    def apply(self, ampel_alert):
+    def apply(self, alert):
         """
             Apply this filter to one ampel_alter object. 
             The steps are the following:
@@ -73,10 +73,10 @@ class BasicCatalogFilter(AbsT0AlertFilter):
         
         # compute alert position
         if self.alert_pos_type == "av":
-            av_values = mean( ampel_alert.get_tuples('ra', 'dec'), axis = 0 )
+            av_values = mean( alert.get_tuples('ra', 'dec'), axis = 0 )
             ra, dec = av_values[0], av_values[1]
         elif self.alert_pos_type == "latest":
-            latest = ampel_alert.get_photopoints()[0]
+            latest = alert.get_photopoints()[0]
             ra, dec = latest['ra'], latest['dec']
         else:
             raise ValueError("value %s for BasicCatalogFilter param alertPosType not recognized.")

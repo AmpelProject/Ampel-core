@@ -11,7 +11,7 @@ from typing import Optional
 from datetime import datetime
 from pydantic import BaseModel, constr
 
-from ampel.common.docstringutils import gendocstring
+from ampel.utils.docstringutils import gendocstring
 
 @gendocstring
 class TimeStringModel(BaseModel):

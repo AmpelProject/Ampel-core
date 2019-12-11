@@ -11,7 +11,7 @@ from typing import List
 from pydantic import validator
 
 from ampel.common.AmpelUtils import AmpelUtils
-from ampel.common.docstringutils import gendocstring
+from ampel.utils.docstringutils import gendocstring
 from ampel.model.AmpelBaseModel import AmpelBaseModel
 from ampel.flags.AlDocType import AlDocType
 
