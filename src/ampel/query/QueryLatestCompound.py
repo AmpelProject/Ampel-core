@@ -19,6 +19,9 @@ from ampel.query.QueryMatchSchema import QueryMatchSchema
 
 class QueryLatestCompound:
 	"""
+	Lastest by mean of compound data length.
+	Validity requirement: compound size should always increase with time.
+	Especially: if a compound member is discarded, it should not be deleted
 	"""
 
 	@staticmethod
@@ -158,7 +161,7 @@ class QueryLatestCompound:
 				  'channels': ['HU_SN1'],
 				  'lastppdt': 2458158.7708565,
 				  'len': 12,
-				  'pps': [{'pp': 375300016315010040},
+				  'data': [{'pp': 375300016315010040},
 				   {'pp': 375320176315010034},
 				   {'pp': 375337116315010046},
 				   {'pp': 375356366315010056},
