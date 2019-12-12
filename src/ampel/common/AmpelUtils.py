@@ -27,7 +27,7 @@ class AmpelUtils():
 	def iter(arg):
 		"""
 		-> suppressing python3 treatment of str as iterable (a really dumb choice...)
-		-> Making None iterable
+		-> Makes None iterable
 		"""
 		return [arg] if isinstance(arg, (type(None), str, int, bytes, bytearray)) else arg
 
@@ -46,18 +46,6 @@ class AmpelUtils():
 			return next(iter(arg))
 
 		return arg
-
-
-	@staticmethod
-	def is_sequence(arg):
-		"""
-		False if str, bytes, bytearrsay
-		True is instance of collections.abc.Sequence
-		"""
-		if arg is None:
-			return None
-
-		return isinstance(arg, collections.abc.Sequence) and not isinstance(arg, (str, bytes, bytearray))
 
 
 	@staticmethod
