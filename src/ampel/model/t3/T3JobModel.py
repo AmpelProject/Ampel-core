@@ -14,6 +14,7 @@ from typing import Union, Sequence
 from ampel.logging.LoggingUtils import LoggingUtils
 from ampel.logging.AmpelLogger import AmpelLogger
 
+from ampel.typing import StrictIterable
 from ampel.common.AmpelUtils import AmpelUtils
 from ampel.utils.docstringutils import gendocstring
 
@@ -214,7 +215,7 @@ class T3JobModel(AmpelBaseModel):
 		if hasattr(arg, "dict"):
 			arg = arg.dict()
 
-		if AmpelUtils.is_sequence(arg):
+		if isinstance(arg, StrictIterable):
 			return AmpelUtils.to_set(arg)
 
 		if isinstance(arg, dict):

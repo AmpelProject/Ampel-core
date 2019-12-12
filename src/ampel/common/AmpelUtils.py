@@ -9,6 +9,7 @@
 
 import collections
 from functools import reduce
+from ampel.typing import StrictIterable
 
 class AmpelUtils():
 	"""
@@ -91,7 +92,7 @@ class AmpelUtils():
 		In []: AmpelUtils.to_set([1,2])
 		Out[]: {1, 2}
 		"""
-		return set(arg) if AmpelUtils.is_sequence(arg) else {arg}
+		return set(arg) if isinstance(arg, StrictIterable) else {arg}
 
 
 	@classmethod

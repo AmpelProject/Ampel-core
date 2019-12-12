@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+!/usr/bin/env python
 # -*- coding: utf-8 -*-
 # File              : ampel/query/QueryMatchSchema.py
 # License           : BSD-3-Clause
@@ -198,7 +198,7 @@ class QueryMatchSchema:
 			query[field_name]['$ne'] = arg
 			return
 
-		if not isinstance(arg, dict):
+		if not isinstance(arg, Dict):
 			raise ValueError('Illegal "arg" parameter')
 
 		if 'allOf' in arg:

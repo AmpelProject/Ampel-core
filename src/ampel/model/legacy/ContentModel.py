@@ -10,6 +10,7 @@
 from typing import List
 from pydantic import validator
 
+from ampel.typing import StrictIterable
 from ampel.common.AmpelUtils import AmpelUtils
 from ampel.utils.docstringutils import gendocstring
 from ampel.model.AmpelBaseModel import AmpelBaseModel
@@ -82,7 +83,7 @@ class ContentModel(AmpelBaseModel):
 	def to_seq(cls, v, values, **kwargs):
 		""" """
 
-		if AmpelUtils.is_sequence(v):
+		if isinstance(v, StrictIterable):
 		
 			# Due to pydantic bug (validators can be called twice)
 			if AmpelUtils.check_seq_inner_type(v, str):

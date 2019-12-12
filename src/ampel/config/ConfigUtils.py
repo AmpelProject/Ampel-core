@@ -8,16 +8,16 @@
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from typing import Dict, List, Callable, Union, Optional
-from ampel.common.AmpelUtils import AmpelUtils
 from ampel.db.DBUtils import DBUtils
+from ampel.typing import StrictIterable
 from ampel.model.operator.AnyOf import AnyOf
 from ampel.model.operator.AllOf import AllOf
 from ampel.model.operator.OneOf import OneOf
+from ampel.common.AmpelUtils import AmpelUtils
 
 
 class ConfigUtils:
-	"""
-	"""
+	""" """
 
 	@classmethod
 	def has_nested_type(cls, obj, target_type, strict=True):
@@ -39,7 +39,7 @@ class ConfigUtils:
 				if cls.has_nested_type(el, target_type):
 					return True
 
-		elif AmpelUtils.is_sequence(obj):
+		elif isinstance(obj, StrictIterable):
 			for el in obj:
 				if cls.has_nested_type(el, target_type):
 					return True

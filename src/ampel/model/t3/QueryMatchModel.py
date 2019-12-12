@@ -9,6 +9,7 @@
 
 from typing import Any
 from pydantic import validator
+from ampel.typing import StrictIterable
 from ampel.common.AmpelUtils import AmpelUtils
 from ampel.utils.docstringutils import gendocstring
 from ampel.model.AmpelBaseModel import AmpelBaseModel
@@ -96,7 +97,7 @@ class QueryMatchModel(AmpelBaseModel):
 
 			if 'anyOf' in v:
 
-				if not AmpelUtils.is_sequence(v['anyOf']):
+				if not isinstance(v['anyOf'], StrictIterable):
 					raise ValueError(
 						"QueryMatchModel error\n" +
 						"Invalid dict value type: %s. Must be a sequence" % type(v['anyOf'])
@@ -135,7 +136,7 @@ class QueryMatchModel(AmpelBaseModel):
 
 			elif 'allOf' in v:
 
-				if not AmpelUtils.is_sequence(v['allOf']):
+				if not isinstance(v['allOf'], StrictIterable):
 					raise ValueError(
 						"QueryMatchModel error\n" +
 						"Invalid dict value type: %s. Must be a sequence" % type(v['anyOf']))

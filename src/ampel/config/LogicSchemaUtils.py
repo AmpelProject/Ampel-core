@@ -7,6 +7,7 @@
 # Last Modified Date: 10.10.2019
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
+from ampel.typing import StrictIterable
 from ampel.common.AmpelUtils import AmpelUtils
 from ampel.config.LogicSchemaIterator import LogicSchemaIterator
 from ampel.model.operator.AllOf import AllOf
@@ -54,7 +55,7 @@ class LogicSchemaUtils:
 
 			if 'anyOf' in v:
 
-				if not AmpelUtils.is_sequence(v['anyOf']):
+				if not isinstance(v['anyOf'], StrictIterable):
 					raise ValueError(
 						"transients->select->%s:anyOf config error\n" % field_name +
 						"Invalid dict value type: %s. Must be a sequence" % type(v['anyOf'])
@@ -110,7 +111,7 @@ class LogicSchemaUtils:
 
 				# 'allOf' closes nesting  
 				if (
-					not AmpelUtils.is_sequence(v['allOf']) or 
+					not isinstance(v['allOf'], StrictIterable) or 
 					not AmpelUtils.check_seq_inner_type(v['allOf'], (int, str))
 				):
 					raise ValueError(
@@ -131,7 +132,7 @@ class LogicSchemaUtils:
 
 				# 'oneOf' closes nesting  
 				if (
-					not AmpelUtils.is_sequence(v['oneOf']) or 
+					not isinstance(v['oneOf'], StrictIterable) or 
 					not AmpelUtils.check_seq_inner_type(v['oneOf'], (int, str))
 				):
 					raise ValueError(
