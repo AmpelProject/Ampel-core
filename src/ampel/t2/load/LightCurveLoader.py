@@ -4,23 +4,23 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 13.01.2018
-# Last Modified Date: 28.11.2019
+# Last Modified Date: 19.12.2019
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from typing import Dict, Any, Union, Sequence
 from ampel.abstract.AbsT2ObjectLoader import AbsT2ObjectLoader
 from ampel.core.PhotoPoint import PhotoPoint
 from ampel.core.UpperLimit import UpperLimit
-from ampel.object.PlainPhotoPoint import PlainPhotoPoint
-from ampel.object.PlainUpperLimit import PlainUpperLimit
-from ampel.object.LightCurve import LightCurve
+from ampel.content.PlainPhotoPoint import PlainPhotoPoint
+from ampel.content.PlainUpperLimit import PlainUpperLimit
+from ampel.view.LightCurve import LightCurve
 from ampel.logging.AmpelLogger import AmpelLogger
 from ampel.db.AmpelDB import AmpelDB
 
 
 class LightCurveLoader(AbsT2ObjectLoader):
 	"""
-	Each method returns an instance of :py:class:`LightCurve <ampel.object.LightCurve`.
+	Each method returns an instance of :py:class:`LightCurve <ampel.view.LightCurve`.
 	Either through DB query (load_through_db_query) or through parsing of DB query results 
 	"""
 
@@ -55,10 +55,10 @@ class LightCurveLoader(AbsT2ObjectLoader):
 		"""
 		Load a lightcurve by performing a DB query and feeding the results 
 		to the method 'load_from_db_results' from this class.
-		This function returns an instance of ampel.object.LightCurve
+		This function returns an instance of ampel.view.LightCurve
 
 		:param int tran_id: transient id (int or string)
-		:param compound_id: instance of :py:class:`Binary <bson.binary.Binary>` (subtype 5)
+		:param compound_id: instance of :py:class:`Binary <bson.binary.Binary>` (subtype 0)
 		"""
 
 		# TODO : provide list or cursor as func parameter ?
@@ -114,7 +114,7 @@ class LightCurveLoader(AbsT2ObjectLoader):
 		self, ppd_list: Sequence[Dict], uld_list: Sequence[Dict], compound
 	) -> LightCurve:
 		"""
-		Creates and returns an instance of ampel.object.LightCurve using db results.
+		Creates and returns an instance of ampel.view.LightCurve using db results.
 		This function is used at both T2 and T3 levels 
 
 		:param ppd_list: list of photopoint dict instances loaded from DB
@@ -217,7 +217,7 @@ class LightCurveLoader(AbsT2ObjectLoader):
 
 	def load_using_objects(self, compound, already_loaded_photo) -> LightCurve:
 		"""
-		Creates and returns an instance of ampel.object.LightCurve using db results.
+		Creates and returns an instance of ampel.view.LightCurve using db results.
 		This function is used at both T2 and T3 levels 
 
 		:param compound: namedtuple loaded from DB

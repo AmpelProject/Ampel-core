@@ -9,7 +9,7 @@
 
 import collections
 from bson.int64 import Int64
-from typing import Union, List, Sequence, Dict, Optional, Any
+from typing import Union, Sequence, Dict, Optional, Any
 
 from ampel.common.AmpelUtils import AmpelUtils
 from ampel.model.operator.AnyOf import AnyOf
@@ -55,9 +55,9 @@ class QueryLatestCompound:
 			In []: list(cursor)
 			Out[]: 
 			[
-				{'_id': Binary(b'T6TG\x96\x80\x1d\x86\x9f\x11\xf2G\xe7\xf4\xe0\xc3', 5), 'stockId': 'ZTF18aaayyuq'},
- 				{'_id': Binary(b'\xaaL|\x94?\xa4\xa1D\xbe\x0c[D\x9b\xc6\xe6o', 5), 'stockId': 'ZTF18aaabikt'},
- 				{'_id': Binary(b'\xaaL|\x14?\xb4\xc3D\xd2\x2a?L\x9a\xa6\xa1o', 5), 'stockId': 'ZTF17aaagvng'}
+				{'_id': b'T6TG\x96\x80\x1d\x86\x9f\x11\xf2G\xe7\xf4\xe0\xc3', 'stockId': 'ZTF18aaayyuq'},
+ 				{'_id': b'\xaaL|\x94?\xa4\xa1D\xbe\x0c[D\x9b\xc6\xe6o', 'stockId': 'ZTF18aaabikt'},
+ 				{'_id': b'\xaaL|\x14?\xb4\xc3D\xd2\x2a?L\x9a\xa6\xa1o', 'stockId': 'ZTF17aaagvng'}
 			]
 		"""
 
@@ -72,7 +72,7 @@ class QueryLatestCompound:
 		query = {
 			'stockId': tran_ids if isinstance(tran_ids, (int, Int64, str))
 			else {
-				'$in': tran_ids if isinstance(tran_ids, List)
+				'$in': tran_ids if isinstance(tran_ids, list)
 					else list(tran_ids)
 			}
 		}
@@ -155,7 +155,7 @@ class QueryLatestCompound:
 			Out[]: 
 			[
 			  {
-				'_id': Binary(b'T6TG\x96\x80\x1d\x86\x9f\x11\xf2G\xe7\xf4\xe0\xc3', 5),
+				'_id': b'T6TG\x96\x80\x1d\x86\x9f\x11\xf2G\xe7\xf4\xe0\xc3',
 				  'added': 1520796310.496276,
 				  'alDocType': 2,
 				  'channels': ['HU_SN1'],

@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 14.02.2018
-# Last Modified Date: 11.12.2019
+# Last Modified Date: 19.12.2019
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from bson.binary import Binary
@@ -100,18 +100,18 @@ class QueryLoadT2Info:
 		if isinstance(states, str):
 			if len(states) != 32:
 				raise ValueError("Provided state string must have 32 characters")
-			match_comp_ids = Binary(bytes.fromhex(states), 5) # convert to bson Binary
+			match_comp_ids = Binary(bytes.fromhex(states), 0) # convert to bson Binary
 
 		# Single state was provided as bytes
 		elif isinstance(states, bytes):
 			if len(states) != 16:
 				raise ValueError("Provided state bytes must have a length of 16")
-			match_comp_ids = Binary(states, 5) # convert to bson Binary
+			match_comp_ids = Binary(states, 0) # convert to bson Binary
 
 		# Single state was provided as bson Binary
 		elif isinstance(states, Binary):
-			if states.subtype != 5:
-				raise ValueError("Provided bson Binary state must have subtype 5")
+			if states.subtype != 0:
+				raise ValueError("Provided bson Binary state must have subtype 0")
 			match_comp_ids = states
 
 		# Multiple states were provided
@@ -128,7 +128,7 @@ class QueryLoadT2Info:
 				if not all(len(st) == 32 for st in states):
 					raise ValueError("Provided state strings must have 32 characters")
 				match_comp_ids = {
-					'$in': [Binary(bytes.fromhex(st), 5) for st in states] # convert to bson Binary
+					'$in': [Binary(bytes.fromhex(st), 0) for st in states] # convert to bson Binary
 				}
 
 			# multiple states were provided as bytes
@@ -136,13 +136,13 @@ class QueryLoadT2Info:
 				if not all(len(st) == 16 for st in states):
 					raise ValueError("Provided state bytes must have a length of 16")
 				match_comp_ids = {
-					'$in': [Binary(st, 5) for st in states] # convert to bson Binary
+					'$in': [Binary(st, 0) for st in states] # convert to bson Binary
 				}
 
 			# multiple states were provided as bson Binary objects
 			elif isinstance(first_state, Binary):
-				if not all(st.subtype == 5 for st in states):
-					raise ValueError("Bson Binary states must have subtype 5")
+				if not all(st.subtype == 0 for st in states):
+					raise ValueError("Bson Binary states must have subtype 0")
 				match_comp_ids = {'$in': states if isinstance(states, list) else list(states)}
 
 		else:

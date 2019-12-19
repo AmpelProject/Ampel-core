@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 01.01.2018
-# Last Modified Date: 17.10.2019
+# Last Modified Date: 19.12.2019
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import hashlib, json
@@ -168,8 +168,8 @@ class CompoundBluePrintBuilder:
 					self.logger.info(
 						None, extra={
 							'channels': chan_name,
-							'compIdEff': Binary(eff_id, 5),
-							'compIdStrict': Binary(strict_id, 5)
+							'compIdEff': Binary(eff_id, 0),
+							'compIdStrict': Binary(strict_id, 0)
 						}
 					)
 	
