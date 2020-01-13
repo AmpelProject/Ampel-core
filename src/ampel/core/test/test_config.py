@@ -94,7 +94,7 @@ def test_db_prefix(mongod):
 				}
 			}
 		}
-		AmpelConfig.set_config(ConfigLoader.load_config(json.dumps(config)))
+		AmpelConfig.set_config(ConfigLoader.load_config(json.dumps(config), gather_plugins=False))
 		assert AmpelDB.get_collection('photo').database.name == 'Ampel_data'
 		AmpelDB.reset()
 		# override default
@@ -109,7 +109,7 @@ def test_db_prefix(mongod):
 				}
 			}
 		}
-		AmpelConfig.set_config(ConfigLoader.load_config(json.dumps(config)))
+		AmpelConfig.set_config(ConfigLoader.load_config(json.dumps(config), gather_plugins=False))
 		assert AmpelDB.get_collection('photo').database.name == 'foo_data'
 	finally:
 		AmpelConfig.reset()
@@ -119,7 +119,7 @@ def test_config_from_env():
 	from ampel.pipeline.config.AmpelArgumentParser import AmpelArgumentParser
 	from os import environ
 	environ['AMPEL_CONFIG'] = '{"AmpelDB":{"prefix":"foo"}}'
-	args = AmpelArgumentParser().parse_args([])
+	args = AmpelArgumentParser(tier=None).parse_args([])
 	assert args.config['AmpelDB']['prefix'] == 'foo'
 
 def test_skip_t2_units(default_config, mock_mongo):

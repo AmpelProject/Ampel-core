@@ -16,7 +16,7 @@ from ampel.pipeline.config.AmpelConfig import AmpelConfig
 class AmpelArgumentParser(ArgumentParser):
 	""" """
 
-	def __init__(self, *args, **kwargs):
+	def __init__(self, tier="all", *args, **kwargs):
 		""" """
 		if not 'formatter_class' in kwargs:
 			kwargs['formatter_class'] = ArgumentDefaultsRawHelpFormatter
@@ -25,7 +25,7 @@ class AmpelArgumentParser(ArgumentParser):
 
 		action = self.add_argument(
 			'-c', '--config', 
-			type=partial(ConfigLoader.load_config, gather_plugins=False),
+			type=partial(ConfigLoader.load_config, gather_plugins=False, tier=tier),
 		    default=ConfigLoader.DEFAULT_CONFIG, 
 			help='Path to Ampel config file in JSON format',
 			env_var='AMPEL_CONFIG',
@@ -35,7 +35,7 @@ class AmpelArgumentParser(ArgumentParser):
 		argv = [v for v in sys.argv[1:] if not v in ('-h', '--help')]
 		opts, argv = super(AmpelArgumentParser, self).parse_known_args(argv)
 		self._resource_defaults = opts.config.get('resources', None)
-		action.type = ConfigLoader.load_config
+		action.type = partial(ConfigLoader.load_config, tier=tier)
 
 	def require_resource(self, name, roles=[]):
 		""" 

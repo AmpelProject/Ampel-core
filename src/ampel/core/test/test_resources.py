@@ -76,7 +76,7 @@ def test_override_graphite():
 
 def test_argumentparser():
 	AmpelConfig.reset()
-	parser = AmpelArgumentParser()
+	parser = AmpelArgumentParser(tier=None)
 	parser.require_resource('mongo', ['writer'])
 	
 	uri = 'mongodb://foo:bar@testirific:2001/'
@@ -88,7 +88,7 @@ def test_argumentparser():
 
 def test_slack():
 	AmpelConfig.reset()
-	parser = AmpelArgumentParser()
+	parser = AmpelArgumentParser(tier=None)
 	parser.require_resource('slack', ['operator'])
 	
 	parser.parse_args(args=['--slack-operator-token', 'foo'])
