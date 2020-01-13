@@ -52,6 +52,10 @@ class ConfigLoader:
 		"""
 
 		try:
+			prev_config = AmpelConfig.get_config()
+		except RuntimeError:
+			prev_config = None
+		try:
 			config = AmpelConfig.recursive_unfreeze(ConfigLoader.BASE_CONFIG)
 			if exists(path):
 				with open(path) as f:
@@ -60,7 +64,10 @@ class ConfigLoader:
 				config.update(json.loads(path))
 			if not gather_plugins:
 				return config
-	
+
+			# Set partial config to enable AmpelConfig.decrypt_config
+			AmpelConfig.reset()
+			AmpelConfig.set_config(config)
 
 			# Channels
 			##########
@@ -161,8 +168,8 @@ class ConfigLoader:
 									)
 								)
 							# Schema validation
-							T3JobConfig(**job_dict)
-							config['t3Jobs'][job_dict['job']] = job_dict
+							job = T3JobConfig(**job_dict)
+							config['t3Jobs'][job_dict['job']] = job.dict()
 					except Exception as e:
 						log.error("Error in {} from {}".format(resource.name, resource.dist))
 						raise
@@ -205,10 +212,12 @@ class ConfigLoader:
 						except Exception as e:
 							log.error("Error in {} from {}".format(resource.name, resource.dist))
 							raise
-	
 
-	
 		except Exception as e:
 			raise
+		finally:
+			if prev_config is not None:
+				AmpelConfig.reset()
+				AmpelConfig.set_config(prev_config)
 
 		return config
