@@ -72,7 +72,7 @@ def postgres():
 @pytest.fixture(scope="session")
 def zudsarchive():
 	if 'ZUDSARCHIVE_HOSTNAME' in environ and 'ZUDSARCHIVE_PORT' in environ:
-		yield 'postgresql://ampel@{}:{}/zudsarchive'.format(environ['ZUDSARCHIVE_HOSTNAME'], environ['ZUDSARCHIVE_HOSTNAME'])
+		yield 'postgresql://ampel@{}:{}/zudsarchive'.format(environ['ZUDSARCHIVE_HOSTNAME'], environ['ZUDSARCHIVE_PORT'])
 	else:
 		gen = docker_service('ampelproject/postgres:10.6', 5432,
 			environ={'POSTGRES_USER': 'ampel', 'POSTGRES_DB': 'zudsarchive', 'ARCHIVE_READ_USER': 'archive-readonly', 'ARCHIVE_WRITE_USER': 'ampel-client'},
