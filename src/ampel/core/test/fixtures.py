@@ -62,7 +62,7 @@ def postgres():
 	if 'ARCHIVE_HOSTNAME' in environ and 'ARCHIVE_PORT' in environ:
 		yield 'postgresql://ampel@{}:{}/ztfarchive'.format(environ['ARCHIVE_HOSTNAME'], environ['ARCHIVE_PORT'])
 	else:
-		gen = docker_service('postgres:10.3', 5432,
+		gen = docker_service('ampelproject/postgres:10.6', 5432,
 			environ={'POSTGRES_USER': 'ampel', 'POSTGRES_DB': 'ztfarchive', 'ARCHIVE_READ_USER': 'archive-readonly', 'ARCHIVE_WRITE_USER': 'ampel-client'},
 			mounts=[(join(abspath(dirname(__file__)), 'deploy', 'production', 'initdb', 'archive'), '/docker-entrypoint-initdb.d/')],
 			healthcheck='pg_isready -U postgres -p 5432 -h `hostname` || exit 1')
@@ -74,7 +74,7 @@ def zudsarchive():
 	if 'ARCHIVE_HOSTNAME' in environ and 'ARCHIVE_PORT' in environ:
 		yield 'postgresql://ampel@{}:{}/zudsarchive'.format(environ['ARCHIVE_HOSTNAME'], environ['ARCHIVE_PORT'])
 	else:
-		gen = docker_service('postgres:10.3', 5432,
+		gen = docker_service('ampelproject/postgres:10.6', 5432,
 			environ={'POSTGRES_USER': 'ampel', 'POSTGRES_DB': 'zudsarchive', 'ARCHIVE_READ_USER': 'archive-readonly', 'ARCHIVE_WRITE_USER': 'ampel-client'},
 			mounts=[(join(abspath(dirname(__file__)), 'deploy', 'production', 'initdb', 'zuds-archive'), '/docker-entrypoint-initdb.d/')],
 			healthcheck='pg_isready -U postgres -p 5432 -h `hostname` || exit 1')
