@@ -13,6 +13,7 @@ from unittest.mock import MagicMock
 
 import pytest
 import logging
+from contextlib import contextmanager
 
 @pytest.fixture
 def t3_unit_mocker(mocker):
@@ -115,11 +116,20 @@ def test_db_prefix(mongod):
 		AmpelConfig.reset()
 		AmpelDB.reset()
 
+@contextmanager
+def mod_env(**kwargs):
+	from os import environ
+	nil = object()
+	old_env = dict(environ)
+	environ.update(**kwargs)
+	yield
+	environ.clear()
+	environ.update(**old_env)
+
 def test_config_from_env():
 	from ampel.pipeline.config.AmpelArgumentParser import AmpelArgumentParser
-	from os import environ
-	environ['AMPEL_CONFIG'] = '{"AmpelDB":{"prefix":"foo"}}'
-	args = AmpelArgumentParser(tier=None).parse_args([])
+	with mod_env(**{'AMPEL_CONFIG': '{"AmpelDB":{"prefix":"foo"}}'}):
+		args = AmpelArgumentParser(tier=None).parse_args([])
 	assert args.config['AmpelDB']['prefix'] == 'foo'
 
 def test_skip_t2_units(default_config, mock_mongo):
