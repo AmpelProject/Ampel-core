@@ -4,12 +4,13 @@
 # License           : BSD-3-Clause
 # Author            : jvs/vb
 # Date              : 12.10.2019
-# Last Modified Date: 12.10.2019
+# Last Modified Date: 28.01.2020
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from setuptools import setup, find_namespace_packages
+
 setup(
-	name='Ampel-core',
+	name='ampel-core',
 	version='0.7',
 	packages=find_namespace_packages(),
 	package_data = {
@@ -18,7 +19,9 @@ setup(
 			  'test-data/*.json',
 			  'deploy/production/initdb/*/*.sql',
 			  'deploy/prodution/initdb/*/*.sh'
-		  ]
+		  ],
+		  'ampel': ['py.typed'],
+		  'conf': ['*.conf', '**/*.conf']
 	},
 	entry_points = {
 		'console_scripts' : [
