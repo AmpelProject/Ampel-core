@@ -109,7 +109,7 @@ class DBRejectedLogsSaver(Handler):
 				d['dt']= int(time())
 
 				if record.levelno > WARNING:
-					d['runId'] = self.run_id
+					d['run'] = self.run_id
 
 				if record.msg:
 					d['msg'] = record.msg
