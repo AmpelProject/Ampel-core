@@ -8,10 +8,12 @@
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import sys, traceback, logging
-from typing import Dict
+from typing import Dict, Optional, Union, List, Any
+
 from ampel.db.AmpelDB import AmpelDB
 from ampel.config.ConfigUtils import ConfigUtils
 from ampel.flags.LogRecordFlag import LogRecordFlag
+from ampel.logging.AmpelLogger import AmpelLogger
 
 class LoggingUtils:
 
@@ -20,12 +22,13 @@ class LoggingUtils:
 	# using forward reference for type hinting: "When a type hint contains name that have not 
 	# been defined yet, that definition may be expressed as string literal, tp be resolved later"
 	# (PEP 484). This is to avoid cyclic import errors
-	def log_exception(logger: "AmpelLogger", exc: Exception=None, extra: Dict=None, last=False, msg=None):
+	def log_exception(
+		logger: AmpelLogger, exc: Optional[Exception] = None, 
+		extra: Optional[Dict] = None, last: bool = False, msg: Optional[str] = None
+	) -> None:
 		"""
-		:param AmpelLogger logger:
-		:param Exception exc:
-		:param bool last: whether to print only the last exception in the stack
-		:param str msg: Optional message
+		:param last: whether to print only the last exception in the stack
+		:param msg: Optional message
 		"""
 
 		sys_exc = False
@@ -70,9 +73,9 @@ class LoggingUtils:
 
 
 	@classmethod
-	def report_exception(
-		cls, ampel_db: AmpelDB, logger: "AmpelLogger", tier: int, 
-		exc: Exception=None, run_id: int = None, info: Dict = None
+	def report_exception(cls, 
+		ampel_db: AmpelDB, logger: AmpelLogger, tier: int, exc: Exception = None, 
+		run_id: Optional[Union[int, List[int]]] = None, info: Dict = None
 	) -> None:
 		"""
 		:param tier: Ampel tier level (0, 1, 2, 3)
@@ -95,11 +98,11 @@ class LoggingUtils:
 		cls.log_exception(logger, exc)
 
 		# Basis dict 
-		trouble = {'tier': tier}
+		trouble: Dict[str, Any] = {'tier': tier}
 
 		# Should be provided systematically
 		if run_id is not None:
-			trouble['runId'] = run_id
+			trouble['run'] = run_id
 
 		# Additional info might have been provided (such as alert information)
 		if info is not None:
@@ -112,7 +115,10 @@ class LoggingUtils:
 
 
 	@staticmethod
-	def report_error(ampel_db: AmpelDB, tier: int, msg: str, info: Dict, logger: 'AmpelLogger') -> None:
+	def report_error(
+		ampel_db: AmpelDB, tier: int, msg: str, 
+		info: Optional[Dict[str, Any]], logger: AmpelLogger
+	) -> None:
 		"""
 		This method is used to report bad states or errors which are grave enough 
 		to be worth the creation of a 'trouble document'. 
@@ -146,45 +152,49 @@ class LoggingUtils:
 
 
 	@classmethod
-	def get_tier_from_log_flags(cls, flags):
+	def get_tier_from_log_flags(cls, flags: LogRecordFlag) -> int:
 		"""
-		:param LogRecordFlag flags:
+		:param flags:
 		"""
-		for i, flag in enumerate(LogRecordFlag.T0, LogRecordFlag.T1, LogRecordFlag.T2, LogRecordFlag.T3):
+		for i, flag in enumerate(LogRecordFlag.T0, LogRecordFlag.T1, LogRecordFlag.T2, LogRecordFlag.T3): # type: ignore
 			if flag in flags:
 				return i
 		return -1
 
 
 	@staticmethod
-	def _insert_trouble(trouble: Dict, ampel_db: AmpelDB, logger: 'AmpelLogger') -> None:
-		"""
-		:raises None:
-		"""
+	def _insert_trouble(
+		trouble: Dict[str, Any], ampel_db: AmpelDB, logger: AmpelLogger
+	) -> None:
+		""" """
 
 		# Populate troubles collection
 		try:
-			ampel_db.get_collection('troubles').insert_one(trouble)
+
+			ampel_db \
+				.get_collection('troubles') \
+				.insert_one(trouble)
 
 		except Exception:
 
 			# Bad luck (possible cause: DB offline)
 			logger.propagate_log(
-				logging.ERROR, "Exception occured while populating 'troubles' collection",
-				exc_info=True
+				logging.ERROR, exc_info=True, 
+				msg = "Exception occured while populating 'troubles' collection", 
 			)
 
 			logger.propagate_log(
-				logging.ERROR, "Unpublished 'troubles' document: %s" % str(trouble),
-				exc_info=True
+				logging.ERROR, exc_info=True, 
+				msg = f"Unpublished 'troubles' document: {str(trouble)}"
 			)
 
 
 	@classmethod
-	def safe_query_dict(cls, match, update=None, dict_key='query'):
+	def safe_query_dict(cls,
+		match: Dict[str, Any], update: Optional[Dict[str, Any]] = None, dict_key: str = 'query'
+	) -> Dict[str, Any]:
 		u"""
-		| Builds a dict that can be passed as "extra" parameter \
-		  to instances of AmpelLogger.
+		| Builds a dict that can be passed as "extra" parameter to instances of AmpelLogger.
 		| Returned dict has the following structure:
 
 		.. sourcecode:: python\n
@@ -199,10 +209,6 @@ class LoggingUtils:
 		"match" and "update" are replaced with the the unicode character \
 		'Fullwidth Dollar Sign': ＄ (see docstring of :func:`convert_dollars \
 		<ampel.logging.LoggingUtils.convert_dollars>`)
-
-		:param dict match:
-		:param dict update:
-		:returns: dict
 		"""
 
 		extra = {'match': cls.convert_dollars(match)}
@@ -214,7 +220,7 @@ class LoggingUtils:
 
 
 	@classmethod
-	def convert_dollars(cls, arg):
+	def convert_dollars(cls, arg: Dict[str, Any]) -> Dict[str, Any]:
 		"""	
 		MongoDB does not allow documents containing dollars in 'top level key' \
 		(raises InvalidDocument). In order to log DB queries commands, we substitute \
@@ -222,9 +228,6 @@ class LoggingUtils:
 		Another option would be do cast the dict to string (what we did before v0.5) \
 		but it is less readable and takes more storage space. 
 		Nested dict shallow copies are performed.
-
-		:param dict arg:
-		:returns: dict
 		"""	
 
 
