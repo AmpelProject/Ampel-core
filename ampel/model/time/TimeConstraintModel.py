@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/model/time/TimeConstraintModel.py
+# File              : Ampel-core/ampel/model/time/TimeConstraintModel.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 29.09.2018
-# Last Modified Date: 10.10.2019
+# Last Modified Date: 29.01.2020
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from typing import Union, Optional
@@ -21,7 +21,7 @@ from ampel.model.AmpelBaseModel import AmpelBaseModel
 class TimeConstraintModel(AmpelBaseModel):
 	"""
 	example1:
-	
+
 	TimeConstraintModel(
 	   **{
 			"after": {
@@ -67,7 +67,7 @@ class TimeConstraintModel(AmpelBaseModel):
 	] = None
 
 
-	def get_query_model(self, **kwargs) -> QueryTimeModel:
+	def get_query_model(self, **kwargs) -> Optional[QueryTimeModel]:
 		"""
 		Call this method with db=<instance of AmpelDB>
 		if your time constraint is based on TimeLastRunModel

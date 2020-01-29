@@ -1,23 +1,22 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/model/time/TimeLastRunModel.py
+# File              : Ampel-core/ampel/model/time/TimeLastRunModel.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 29.09.2018
-# Last Modified Date: 10.12.2019
+# Last Modified Date: 29.01.2020
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-from pydantic import constr
-from typing import Union, Dict, Optional
-from ampel.db.AmpelDB import AmpelDB
+from typing import Union, Dict, Optional, Literal
 from ampel.utils.docstringutils import gendocstring
 from ampel.model.AmpelBaseModel import AmpelBaseModel
 from ampel.query.QueryEventsCol import QueryEventsCol
+from ampel.db.AmpelDB import AmpelDB
 
 @gendocstring
 class TimeLastRunModel(AmpelBaseModel):
 
-	matchType: constr(regex='^timeLastRun$')
+	matchType: Literal['timeLastRun']
 	processName: str
 	fallback: Union[None, Dict] = None
 
@@ -28,7 +27,7 @@ class TimeLastRunModel(AmpelBaseModel):
 
 
 	@staticmethod
-	def _query_events_col(ampel_db: AmpelDB, model: 'TimeLastRunModel') -> float:
+	def _query_events_col(ampel_db: AmpelDB, model: 'TimeLastRunModel') -> Optional[float]:
 
 		col = ampel_db.get_collection('events')
 

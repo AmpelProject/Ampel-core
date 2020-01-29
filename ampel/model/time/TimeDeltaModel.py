@@ -1,13 +1,13 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/model/time/TimeDeltaModel.py
+# File              : Ampel-core/ampel/model/time/TimeDeltaModel.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 29.09.2018
-# Last Modified Date: 10.10.2019
+# Last Modified Date: 29.01.2020
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-from pydantic import constr
+from typing import Literal
 from datetime import datetime, timedelta
 from ampel.utils.docstringutils import gendocstring
 from ampel.model.AmpelBaseModel import AmpelBaseModel
@@ -16,9 +16,9 @@ from ampel.model.AmpelBaseModel import AmpelBaseModel
 @gendocstring
 class TimeDeltaModel(AmpelBaseModel):
 
-	matchType: constr(regex='^timeDelta$')
+	matchType: Literal['timeDelta']
 	days: int = 0
-	seconds: int = 0 
+	seconds: int = 0
 	microseconds: int = 0
 	milliseconds: int = 0
 	minutes: int = 0
@@ -29,8 +29,8 @@ class TimeDeltaModel(AmpelBaseModel):
 	def get_timestamp(self, **kwargs) -> float:
 		""" """
 		dt = datetime.today() + timedelta(
-			days=self.days, seconds=self.seconds, microseconds=self.microseconds, 
-			milliseconds=self.milliseconds, minutes=self.minutes, 
+			days=self.days, seconds=self.seconds, microseconds=self.microseconds,
+			milliseconds=self.milliseconds, minutes=self.minutes,
 			hours=self.hours, weeks=self.hours
 		)
 
