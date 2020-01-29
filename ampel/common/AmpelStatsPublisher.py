@@ -14,7 +14,7 @@ from ampel.common.AmpelUtils import AmpelUtils
 from ampel.common.Schedulable import Schedulable
 from ampel.config.AmpelConfig import AmpelConfig
 from ampel.db.AmpelDB import AmpelDB
-from ampel.flags.T2RunStates import T2RunStates
+from ampel.flags.T2RunState import T2RunState
 
 class AmpelStatsPublisher(Schedulable):
 	""" 
@@ -281,7 +281,7 @@ class AmpelStatsPublisher(Schedulable):
 				't2': self.col_t2.find({}).count(),
 
 				't2States': {
-					T2RunStates(doc['_id']).name: doc['count'] \
+					T2RunState(doc['_id']).name: doc['count'] \
 					for doc in self.col_t2.aggregate([
 						{'$match': {}},
 						{'$project':
@@ -481,7 +481,7 @@ class AmpelStatsPublisher(Schedulable):
 
 def run():
 
-	from ampel.config.AmpelArgumentParser import AmpelArgumentParser
+	from ampel.run.AmpelArgumentParser import AmpelArgumentParser
 	parser = AmpelArgumentParser()
 	parser.add_argument('--publish-to', nargs='+', default=['log', 'graphite'],
 	    choices=['mongo', 'graphite', 'log', 'print'],
