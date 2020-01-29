@@ -1,13 +1,13 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/config/builder/ConfigCollector.py
+# File              : Ampel-core/ampel/config/collector/ConfigCollector.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 16.10.2019
-# Last Modified Date: 25.10.2019
+# Last Modified Date: 29.01.2020
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-from typing import Dict, Any, List, Union
+from typing import Dict, Any, List, Union, Optional
 from ampel.abstract.AmpelABC import AmpelABC, abstractmethod
 from ampel.logging.AmpelLogger import AmpelLogger
 
@@ -16,10 +16,10 @@ class ConfigCollector(dict, metaclass=AmpelABC):
 	"""
 	"""
 
-	def __init__(
-		self, conf_section: str, content: Dict = None, 
+	def __init__(self, 
+		conf_section: str, content: Dict = None, 
 		logger: AmpelLogger = None, verbose: bool = False
-	):
+	) -> None:
 		""" """
 		super().__init__(content if content else {})
 		self.verbose = verbose
@@ -29,7 +29,10 @@ class ConfigCollector(dict, metaclass=AmpelABC):
 
 
 	@abstractmethod
-	def add(self, arg: Union[Dict[str, Any], List[str]], dist_name: str = None) -> None:
+	def add(self, 
+		arg: Union[Dict[str, Any], List[str]],
+		dist_name: str = None
+	) -> None:
 		""" """
 
 
@@ -46,8 +49,8 @@ class ConfigCollector(dict, metaclass=AmpelABC):
 		)
 
 
-	def duplicated_entry(
-		self, conf_key: str, prev_dist: str = None,
+	def duplicated_entry(self,
+		conf_key: str, prev_dist: str = None,
 		new_dist: str = None, section_detail: str = None
 	) -> None:
 		""" """
@@ -72,6 +75,6 @@ class ConfigCollector(dict, metaclass=AmpelABC):
 
 
 	@staticmethod
-	def distrib_hint(distrib: str) -> str:
-		""" """
-		return f"(ampel distribution: {distrib})" if distrib else ""
+	def distrib_hint(distrib: Optional[str]) -> str:
+		""" Adds distribution name if available """
+		return f"(distribution: '{distrib}')" if distrib else ""
