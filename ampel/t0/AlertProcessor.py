@@ -10,10 +10,10 @@
 import numpy as np
 from time import time
 from io import IOBase
-from pydantic import BaseModel, validator
+from pydantic import validator
 from logging import LogRecord, INFO
 from pymongo.errors import PyMongoError
-from typing import Sequence, List, Dict, Union, Any, Iterable, Tuple, Set, Callable
+from typing import Sequence, List, Dict, Union, Any, Iterable, Tuple, Set, Callable, Optional
 
 from ampel.logging.AmpelLogger import AmpelLogger
 from ampel.logging.LoggingUtils import LoggingUtils
@@ -26,17 +26,17 @@ from ampel.db.AmpelDB import AmpelDB
 from ampel.t0.APFilter import APFilter
 from ampel.t0.load.AlertSupplier import AlertSupplier
 from ampel.t0.ingest.DBUpdatesBuffer import DBUpdatesBuffer
-from ampel.object.AmpelAlert import AmpelAlert
+from ampel.alert.PhotoAlert import PhotoAlert
 from ampel.config.AmpelConfig import AmpelConfig
 from ampel.common.GraphiteFeeder import GraphiteFeeder
 from ampel.flags.LogRecordFlag import LogRecordFlag
 from ampel.core.AmpelUnitLoader import AmpelUnitLoader
-from ampel.abstract.AbsAmpelProcessor import AbsAmpelProcessor
+from ampel.core.AmpelProcessor import AmpelProcessor
 from ampel.abstract.AbsAlertIngester import AbsAlertIngester
 from ampel.model.t0.APChanModel import APChanModel
 from ampel.model.AmpelBaseModel import AmpelBaseModel
 
-class AlertProcessor(AbsAmpelProcessor):
+class AlertProcessor(AmpelProcessor):
 	""" 
 	Class handling the processing of alerts (T0 level).
 	For each alert, following tasks are performed:
@@ -68,7 +68,7 @@ class AlertProcessor(AbsAmpelProcessor):
 		```
 		{
 			"_id" : ObjectId("5be4aa6254048041edbac352"),
-			"stockId" : NumberLong(1810101032122523),
+			"stock" : NumberLong(1810101032122523),
 			"alertId" : NumberLong(404105201415015004),
 			"flag" : 572784643,
 			"runId" : 509,
@@ -90,7 +90,7 @@ class AlertProcessor(AbsAmpelProcessor):
 		```
 		{
 			"_id" : ObjectId("5be4aa6254048041edbac353"),
-			"stockId" : NumberLong(1810101032122523),
+			"stock" : NumberLong(1810101032122523),
 			"alertId" : NumberLong(404105201415015004),
 			"flag" : 572784643,
 			"runId" : 509,
@@ -99,7 +99,7 @@ class AlertProcessor(AbsAmpelProcessor):
 		}
 		{
 			"_id" : ObjectId("5be4aa6254048041edbac352"),
-			"stockId" : NumberLong(1810101032122523),
+			"stock" : NumberLong(1810101032122523),
 			"alertId" : NumberLong(404105201415015004),
 			"flag" : 572784643,
 			"runId" : 509,
@@ -160,31 +160,25 @@ class AlertProcessor(AbsAmpelProcessor):
 		)
 
 
-	# pylint: disable=super-init-not-called
-	# Using forward reference type hinting for init_config
-	def __init__(self,
-		ampel_config: AmpelConfig,
-		init_config: 'AlertProcessor.InitConfig', 
-		options: 'AlertProcessor.InitOptions' = None
+	def __init__(self, 
+		ampel_config: AmpelConfig, 
+		init_config: Union[InitConfig, dict] = None,
+		options: Optional[Union[InitOptions, dict]] = None,
+		logger: Optional[AmpelLogger] = None
 	):
-		"""
-		"""
+		""" """
 	
-		self._init_config = init_config if isinstance(init_config, BaseModel) \
-			else self.InitConfig(**init_config)
-
-		self._init_options = options if isinstance(options, BaseModel) \
-			else self.InitOptions(**options)
-
+		super().__init__(ampel_config, init_config, options, logger)
 		self._ampel_db = AmpelDB(ampel_config)
 		self._alert_ingester = None
 
-		# Setup logger
-		self.logger = AmpelLogger.get_unique_logger(
-			formatter = T0ConsoleFormatter(
-				line_number = self._init_config.log_line_nbr
+		if not logger:
+			# Setup logger
+			self.logger = AmpelLogger.get_unique_logger(
+				formatter = T0ConsoleFormatter(
+					line_number = self._init_config.log_line_nbr
+				)
 			)
-		)
 
 		lbh = LogsBufferingHandler(tier=0)
 		self.logger.addHandler(lbh)
@@ -400,12 +394,13 @@ class AlertProcessor(AbsAmpelProcessor):
 				return iter_count
 
 			# Associate upcoming log entries with the current transient id
-			tran_id = alert_content['tran_id']
+			tran_id = alert_content['stockId']
 
-			# Create AmpelAlert instance
-			ampel_alert = AmpelAlert(
-				tran_id, alert_content['ro_pps'], 
-				alert_content['ro_uls']
+			# Create PhotoAlert instance
+			alert = PhotoAlert(
+				tran_id, 
+				alert_content['fpps'], 
+				alert_content['fuls']
 			)
 
 			# Update cumul stats
@@ -417,8 +412,8 @@ class AlertProcessor(AbsAmpelProcessor):
 			all_filters_start = time()
 
 			extra = {
-				'stockId': tran_id, 
-				'alertId': alert_content['alert_id']
+				'stock': tran_id, 
+				'alertId': alert_content['alertId']
 			}
 
 			# Loop through initialized channels
@@ -430,7 +425,7 @@ class AlertProcessor(AbsAmpelProcessor):
 					per_filter_start = time()
 
 					# Apply filter (returns None in case of rejection or t2 runnable ids in case of match)
-					filter_results[i] = ap_filter.filter_func(ampel_alert)
+					filter_results[i] = ap_filter.filter_func(alert)
 
 					# stats
 					dur_stats['filters'][ap_filter.chan_str][iter_count] = time() - per_filter_start
@@ -538,7 +533,8 @@ class AlertProcessor(AbsAmpelProcessor):
 
 					# Ingest alert
 					db_updates = self._alert_ingester.ingest(
-						tran_id, alert_content['pps'], 
+						tran_id, 
+						alert_content['pps'], 
 						alert_content['uls'], 
 						filter_results
 					)
@@ -577,8 +573,8 @@ class AlertProcessor(AbsAmpelProcessor):
 				# a LogRecord manually.
 				lr = LogRecord(None, INFO, None, None, None, None, None)
 				lr.extra = {
-					'stockId': tran_id,
-					'alertId': alert_content['alert_id'],
+					'stock': tran_id,
+					'alertId': alert_content['alertId'],
 					'allRejected': True,
 					'channels': chan_names
 				}
@@ -800,8 +796,8 @@ class AlertProcessor(AbsAmpelProcessor):
 		"""
 
 		info={
-			'stockId': alert_content.get('tran_id'),
-			'alertId': alert_content.get('alert_id')
+			'stock': alert_content.get('stockId'),
+			'alertId': alert_content.get('alertId')
 		}
 
 		if include_photo:
