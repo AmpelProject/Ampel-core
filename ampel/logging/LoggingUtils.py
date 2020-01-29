@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/logging/LoggingUtils.py
+# File              : Ampel-core/ampel/logging/LoggingUtils.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 30.09.2018
-# Last Modified Date: 04.11.2019
+# Last Modified Date: 29.01.2020
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import sys, traceback, logging
@@ -19,11 +19,11 @@ class LoggingUtils:
 
 
 	@staticmethod
-	# using forward reference for type hinting: "When a type hint contains name that have not 
+	# using forward reference for type hinting: "When a type hint contains name that have not
 	# been defined yet, that definition may be expressed as string literal, tp be resolved later"
 	# (PEP 484). This is to avoid cyclic import errors
 	def log_exception(
-		logger: AmpelLogger, exc: Optional[Exception] = None, 
+		logger: AmpelLogger, exc: Optional[Exception] = None,
 		extra: Optional[Dict] = None, last: bool = False, msg: Optional[str] = None
 	) -> None:
 		"""
@@ -73,9 +73,9 @@ class LoggingUtils:
 
 
 	@classmethod
-	def report_exception(cls, 
-		ampel_db: AmpelDB, logger: AmpelLogger, tier: int, exc: Exception = None, 
-		run_id: Optional[Union[int, List[int]]] = None, info: Dict = None
+	def report_exception(cls,
+		ampel_db: AmpelDB, logger: AmpelLogger, tier: int, exc: Exception = None,
+		run_id: Optional[Union[int, List[int]]] = None, info: Dict[str, Any] = None
 	) -> None:
 		"""
 		:param tier: Ampel tier level (0, 1, 2, 3)
@@ -92,12 +92,12 @@ class LoggingUtils:
 
 		# Don't create report for executions canceled manually
 		if exc_info()[0] == KeyboardInterrupt:
-			return 
+			return
 
 		# Feedback
 		cls.log_exception(logger, exc)
 
-		# Basis dict 
+		# Basis dict
 		trouble: Dict[str, Any] = {'tier': tier}
 
 		# Should be provided systematically
@@ -116,13 +116,13 @@ class LoggingUtils:
 
 	@staticmethod
 	def report_error(
-		ampel_db: AmpelDB, tier: int, msg: str, 
+		ampel_db: AmpelDB, tier: int, msg: str,
 		info: Optional[Dict[str, Any]], logger: AmpelLogger
 	) -> None:
 		"""
-		This method is used to report bad states or errors which are grave enough 
-		to be worth the creation of a 'trouble document'. 
-		Information concerning the error can be provided as strine message through the 'msg' argument 
+		This method is used to report bad states or errors which are grave enough
+		to be worth the creation of a 'trouble document'.
+		Information concerning the error can be provided as strine message through the 'msg' argument
 		as well as dict through the parameter 'info'.
 		This method should not be used to report Exceptions (please use report_exception(...))
 		:raises: Should not raise errors
@@ -179,12 +179,12 @@ class LoggingUtils:
 
 			# Bad luck (possible cause: DB offline)
 			logger.propagate_log(
-				logging.ERROR, exc_info=True, 
-				msg = "Exception occured while populating 'troubles' collection", 
+				logging.ERROR, exc_info=True,
+				msg = "Exception occured while populating 'troubles' collection",
 			)
 
 			logger.propagate_log(
-				logging.ERROR, exc_info=True, 
+				logging.ERROR, exc_info=True,
 				msg = f"Unpublished 'troubles' document: {str(trouble)}"
 			)
 
@@ -221,21 +221,21 @@ class LoggingUtils:
 
 	@classmethod
 	def convert_dollars(cls, arg: Dict[str, Any]) -> Dict[str, Any]:
-		"""	
+		"""
 		MongoDB does not allow documents containing dollars in 'top level key' \
 		(raises InvalidDocument). In order to log DB queries commands, we substitute \
 		the dollar sign with the unicode character 'Fullwidth Dollar Sign': ＄.
 		Another option would be do cast the dict to string (what we did before v0.5) \
-		but it is less readable and takes more storage space. 
+		but it is less readable and takes more storage space.
 		Nested dict shallow copies are performed.
-		"""	
+		"""
 
 
 		if isinstance(arg, dict):
 
 			pblm_keys = [key for key in arg.keys() if "$" in key or "." in key]
 			if pblm_keys:
-				arg = arg.copy() # shallow copy 
+				arg = arg.copy() # shallow copy
 				for key in pblm_keys:
 					if "$" in key:
 						arg[key.replace("$", "\uFF04")] = arg.pop(key)
