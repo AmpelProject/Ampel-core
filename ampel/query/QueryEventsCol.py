@@ -1,13 +1,13 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/query/QueryEventsCol.py
+# File              : Ampel-core/ampel/query/QueryEventsCol.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 11.07.2018
-# Last Modified Date: 10.12.2019
+# Last Modified Date: 06.01.2020
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-from typing import Dict, Union, Optional
+from typing import Dict, Union, Optional, List, Literal, Any
 from time import time, strftime, gmtime
 
 class QueryEventsCol:
@@ -15,7 +15,7 @@ class QueryEventsCol:
 	"""
 
 	@staticmethod
-	def get_last_run(process_name: str, days_back: Optional[int] = 10) -> Dict:
+	def get_last_run(process_name: str, days_back: Optional[int] = 10) -> List[Dict]:
 		"""
 		"""
 
@@ -32,7 +32,7 @@ class QueryEventsCol:
 
 
 	@staticmethod
-	def get_t0_stats(timestamp: Union[float, int]) -> Dict:
+	def get_t0_stats(timestamp: Union[float, int]) -> List[Dict]:
 		"""
 		:param timestamp: unix timestamp
 		"""
@@ -59,18 +59,20 @@ class QueryEventsCol:
 
 	@staticmethod
 	def get(
-		tier: int = 0, process_name: Optional[str] = None, 
-		days_back: Optional[int] = 10, 
+		tier: Literal[0, 1, 2, 3] = 0,
+		process_name: Optional[str] = None,
+		days_back: Optional[int] = 10,
 		timestamp: Optional[Union[int, float]] = None
-	) -> Dict:
+	) -> List[Dict]:
 		"""
 		:param tier: positive integer between 0 and 3
-		:param int days_back: positive integer or None
+		:param days_back: positive integer or None
 		:param timestamp: unix time
+		:returns: list of dict to be used as aggregation pipeline query parameters
 		"""
 
 		# Array returned by this method
-		ret = []
+		ret: List[Dict] = []
 
 		# restrict match criteria 
 		if days_back is not None:
@@ -101,7 +103,7 @@ class QueryEventsCol:
 				}
 			)
 
-		second_match_stage = {'events.tier': tier}
+		second_match_stage: Dict[str, Any] = {'events.tier': tier}
 
 		if process_name:
 			second_match_stage['events.process'] = process_name
