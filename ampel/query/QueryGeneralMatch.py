@@ -9,7 +9,7 @@
 
 from typing import Dict, Optional, Union, Any, Iterable
 
-from ampel.typing import StrictIterable
+from ampel.types import strict_iterable
 from ampel.model.operator.AnyOf import AnyOf
 from ampel.model.operator.AllOf import AllOf
 from ampel.model.operator.OneOf import OneOf
@@ -54,8 +54,8 @@ class QueryGeneralMatch:
 
 
 		if stock_ids:
-			query['stockId'] = QueryUtils.match_array(stock_ids) \
-				if isinstance(stock_ids, StrictIterable) else stock_ids
+			query['stock'] = QueryUtils.match_array(stock_ids) \
+				if isinstance(stock_ids, strict_iterable) else stock_ids
 
 		if channels:
 			QueryMatchSchema.apply_schema(
