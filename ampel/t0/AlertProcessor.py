@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/t0/AlertProcessor.py
+# File              : Ampel-core/ampel/t0/AlertProcessor.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 10.10.2017
-# Last Modified Date: 06.12.2019
+# Last Modified Date: 29.01.2020
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import numpy as np
@@ -13,31 +13,36 @@ from io import IOBase
 from pydantic import validator
 from logging import LogRecord, INFO
 from pymongo.errors import PyMongoError
-from typing import Sequence, List, Dict, Union, Any, Iterable, Tuple, Set, Callable, Optional
+from typing import Sequence, List, Dict, Union, Any, Iterable, Tuple, Set, Callable, Optional, cast
 
+from ampel.types import StockId
+from ampel.alert.PhotoAlert import PhotoAlert
+from ampel.config.AmpelConfig import AmpelConfig
+from ampel.flags.LogRecordFlag import LogRecordFlag
+from ampel.abstract.AmpelProcessor import AmpelProcessor
+from ampel.abstract.AbsAlertIngester import AbsAlertIngester
+
+from ampel.logging.DBEventDoc import DBEventDoc
 from ampel.logging.AmpelLogger import AmpelLogger
 from ampel.logging.LoggingUtils import LoggingUtils
+from ampel.logging.DBLoggingHandler import DBLoggingHandler
+from ampel.logging.AmpelLoggingError import AmpelLoggingError
 from ampel.logging.T0ConsoleFormatter import T0ConsoleFormatter
 from ampel.logging.LogsBufferingHandler import LogsBufferingHandler
-from ampel.logging.DBLoggingHandler import DBLoggingHandler
-from ampel.logging.DBEventDoc import DBEventDoc
-from ampel.logging.AmpelLoggingError import AmpelLoggingError
-from ampel.db.AmpelDB import AmpelDB
+
 from ampel.t0.APFilter import APFilter
 from ampel.t0.load.AlertSupplier import AlertSupplier
 from ampel.t0.ingest.DBUpdatesBuffer import DBUpdatesBuffer
-from ampel.alert.PhotoAlert import PhotoAlert
-from ampel.config.AmpelConfig import AmpelConfig
-from ampel.common.GraphiteFeeder import GraphiteFeeder
-from ampel.flags.LogRecordFlag import LogRecordFlag
+
+from ampel.metrics.GraphiteFeeder import GraphiteFeeder
 from ampel.core.AmpelUnitLoader import AmpelUnitLoader
-from ampel.core.AmpelProcessor import AmpelProcessor
-from ampel.abstract.AbsAlertIngester import AbsAlertIngester
+
 from ampel.model.t0.APChanModel import APChanModel
 from ampel.model.AmpelBaseModel import AmpelBaseModel
 
+
 class AlertProcessor(AmpelProcessor):
-	""" 
+	"""
 	Class handling the processing of alerts (T0 level).
 	For each alert, following tasks are performed:
 	* Load the alert
@@ -48,14 +53,14 @@ class AlertProcessor(AmpelProcessor):
 	iter_max = 50000
 
 	class InitConfig(AmpelBaseModel):
-		""" 
+		"""
 		Parameters defined in the config associated with the current alert processor process
 
 		:param publish_stats: publish performance metrics:
 		- graphite: send t0 metrics to graphite (graphite server must be defined in ampel_config)
 		- processDoc: include t0 metrics in the process event document which is written into the DB
 
-		:param single_rej_col: 
+		:param single_rej_col:
 		- False: rejected logs are saved in channel specific collections
 		 (collection name equals channel name)
 		- True: rejected logs are saved in a single collection called 'logs'
@@ -72,7 +77,7 @@ class AlertProcessor(AmpelProcessor):
 			"alertId" : NumberLong(404105201415015004),
 			"flag" : 572784643,
 			"runId" : 509,
-			"msg" : [ 
+			"msg" : [
 				{
 					"channels" : "NO_FILTER",
 					"txt": "Alert accepted"
@@ -127,7 +132,7 @@ class AlertProcessor(AmpelProcessor):
 
 		:param raise_exc: whether the AP should raise Exceptions rather than catching them (default False)
 		:param log_line_nbr: whether each log entries should contain: filename & line number info (default False)
-		:param full_console_logging: If false, the logging level of the stdout streamhandler 
+		:param full_console_logging: If false, the logging level of the stdout streamhandler
 		associated with the logger will be set to WARN during the execution of this method
 		(it will be reverted to DEBUG before return)
 		:param run_type: LogRecordFlag.SCHEDULED_RUN or LogRecordFlag.MANUAL_RUN
@@ -140,7 +145,7 @@ class AlertProcessor(AmpelProcessor):
 
 	@classmethod
 	def from_process(cls, ampel_config: AmpelConfig, process_name: str):
-		""" 
+		"""
 		Convenience method instantiating an AP using the config entry from a given T0 process
 		example: AlertProcessor.by_proc_name(ampel_config, ampel_db, "t0_nersc_delayed")
 		"""
@@ -154,35 +159,40 @@ class AlertProcessor(AmpelProcessor):
 			)
 
 		return cls(
-			ampel_config, ampel_config.get(
+			ampel_config, ampel_config.get( # type: ignore
 				f"t0.process.{process_name}.processor.initConfig.channel"
 			)
 		)
 
 
-	def __init__(self, 
-		ampel_config: AmpelConfig, 
-		init_config: Union[InitConfig, dict] = None,
-		options: Optional[Union[InitOptions, dict]] = None,
+	def __init__(self,
+		ampel_config: AmpelConfig,
+		init_config: Union[InitConfig, Dict] = None,
+		options: Optional[Union[InitOptions, Dict]] = None,
 		logger: Optional[AmpelLogger] = None
 	):
 		""" """
-	
-		super().__init__(ampel_config, init_config, options, logger)
-		self._ampel_db = AmpelDB(ampel_config)
-		self._alert_ingester = None
 
-		if not logger:
+		super().__init__(ampel_config, init_config, options, logger)
+		self.init_config = cast('AlertProcessor.InitConfig', self.init_config)
+		self.init_options = cast('AlertProcessor.InitOptions', self.init_options)
+
+		self._ampel_db = ampel_config.get_db()
+		self._alert_ingester: Optional[AbsAlertIngester] = None
+
+		if logger:
+			self.logger = cast(AmpelLogger, logger)
+		else:
 			# Setup logger
-			self.logger = AmpelLogger.get_unique_logger(
+			self.logger: AmpelLogger = AmpelLogger.get_unique_logger(
 				formatter = T0ConsoleFormatter(
-					line_number = self._init_config.log_line_nbr
+					line_number = self.init_options.log_line_nbr
 				)
 			)
 
 		lbh = LogsBufferingHandler(tier=0)
 		self.logger.addHandler(lbh)
-		self._embed = self._init_config.log_format == "compact"
+		self._embed = self.init_config.log_format == "compact"
 
 		self.logger.info("Setting up new AlertProcessor instance")
 
@@ -192,17 +202,17 @@ class AlertProcessor(AmpelProcessor):
 		self._ap_filters = [
 			# Create APFilter instances (instantiates channel filter and loggers)
 			APFilter(
-				self._ampel_db, ampel_unit_loader, ap_chan_data, 
-				self.logger, self._init_config.log_line_nbr, 
-				self._embed, self._init_config.single_rej_col
+				self._ampel_db, ampel_unit_loader, ap_chan_data,
+				self.logger, self.init_options.log_line_nbr,
+				self._embed, self.init_config.single_rej_col
 			)
-			for ap_chan_data in self._init_config.channel
+			for ap_chan_data in self.init_config.channel
 		]
 
-		if len(self._ap_filters) == 1 and self._init_config.log_format == "compact":
+		if len(self._ap_filters) == 1 and self.init_config.log_format == "compact":
 			self.logger.warning("You should not use log_format='compact' when working with only one T0 process")
 
-		if self._init_config.single_rej_col:
+		if self.init_config.single_rej_col:
 			self._ampel_db.enable_rejected_collections(['rejected'])
 		else:
 			self._ampel_db.enable_rejected_collections(
@@ -229,39 +239,39 @@ class AlertProcessor(AmpelProcessor):
 		self._log_headers = lbh.log_dicts
 
 		# Graphite
-		if "graphite" in self._init_config.publish_stats:
+		if "graphite" in self.init_config.publish_stats:
 			self._gfeeder = GraphiteFeeder(
-				ampel_config.get('resource.graphite.default'),
+				ampel_config.get('resource.graphite.default'), # type: ignore
 				autoreconnect = True
 			)
 
 
 	def set_alert_ingester(self, alert_ingester: AbsAlertIngester) -> None:
 		"""
-		:param alert_ingester: sets ingester instance. 
+		:param alert_ingester: sets ingester instance.
 		"""
 		self._alert_ingester = alert_ingester
 		self._alert_ingester.set_config(
-			self._init_config.channel
+			self.init_config.channel
 		)
 
 
 	def set_alert_supplier(self, alert_supplier: AlertSupplier) -> None:
 		"""
-		:param alert_supplier: sets supplier instance. 
+		:param alert_supplier: sets supplier instance.
 		"""
 		self.alert_supplier = alert_supplier
 
 
 	def source_alert_supplier(self, alert_loader: Iterable[IOBase]) -> None:
 		"""
-		:param alert_loader: sets ingester instance. 
+		:param alert_loader: sets ingester instance.
 		"""
 		self.alert_supplier.set_alert_source(alert_loader)
 
 
 	def process_alerts(self, alert_loader: Iterable[IOBase]) -> None:
-		""" 
+		"""
 		shortcut method: process all alerts from a given loader until its dries out
 		:param alert_loader: iterable returning alert payloads
 		"""
@@ -290,16 +300,16 @@ class AlertProcessor(AmpelProcessor):
 		# Create DB logging handler instance (logging.Handler child class)
 		# This class formats, saves and pushes log records into the DB
 		db_logging_handler = DBLoggingHandler(
-			self._ampel_db, LogRecordFlag.T0 | LogRecordFlag.CORE | 
-			self._init_config.run_type
+			self._ampel_db, LogRecordFlag.T0 | LogRecordFlag.CORE |
+			self.init_config.run_type
 		)
 
 		db_logging_handler.add_headers(self._log_headers)
 		run_id = db_logging_handler.get_run_id()
 
-		# Add db logging handler to the logger stack of handlers 
+		# Add db logging handler to the logger stack of handlers
 		self.logger.handlers.insert(0, db_logging_handler)
-		if not self._init_config.full_console_logging:
+		if not self.init_config.full_console_logging:
 			self.logger.quieten_console_loggers()
 
 		self.logger.shout("Starting")
@@ -310,7 +320,7 @@ class AlertProcessor(AmpelProcessor):
 		)
 		db_proc_doc.add_run_id(run_id)
 
-		# Forward jobId to ingester instance 
+		# Forward jobId to ingester instance
 		# (will be inserted in the transient documents)
 		self._alert_ingester.set_log_id(run_id)
 
@@ -319,7 +329,7 @@ class AlertProcessor(AmpelProcessor):
 			ap_filter.rejected_log_handler.set_run_id(run_id)
 
 		# Create array
-		filter_results = len(self._ap_filters) * [None]
+		filter_results: List[Optional[Set[str]]] = [None] * len(self._ap_filters)
 
 		# Save ampel 'state' and get list of tran ids required for autocomplete
 		if self._live_ac:
@@ -348,7 +358,7 @@ class AlertProcessor(AmpelProcessor):
 		}
 
 		# Count statistics (incrementing integer values)
-		count_stats = {
+		count_stats: Dict[str, Any] = {
 			'alerts': 0, 'ingested': 0, 'pps': 0,
 			'uls': 0, 'matches': {}
 		}
@@ -369,13 +379,15 @@ class AlertProcessor(AmpelProcessor):
 
 		# Save pre run time
 		pre_run = time()
-
-		# Accepts and execute pymongo.operations
-		updates_buffer = DBUpdatesBuffer(self, run_id, self.logger)
 		self._cancel_run = False
 
+		# Collect and execute pymongo.operations
+		updates_buffer = DBUpdatesBuffer(
+			self._ampel_db, run_id, self.logger, self.set_cancel_run
+		)
+
 		chan_names = [
-			ap_filter.chan_str 
+			ap_filter.chan_str
 			for ap_filter in self._ap_filters
 		]
 
@@ -398,8 +410,8 @@ class AlertProcessor(AmpelProcessor):
 
 			# Create PhotoAlert instance
 			alert = PhotoAlert(
-				tran_id, 
-				alert_content['fpps'], 
+				tran_id,
+				alert_content['fpps'],
 				alert_content['fuls']
 			)
 
@@ -411,8 +423,8 @@ class AlertProcessor(AmpelProcessor):
 			# stats
 			all_filters_start = time()
 
-			extra = {
-				'stock': tran_id, 
+			extra: Dict[str, Any] = {
+				'stock': tran_id,
 				'alertId': alert_content['alertId']
 			}
 
@@ -437,18 +449,18 @@ class AlertProcessor(AmpelProcessor):
 					# Filter rejected alert
 					if filter_results[i] is None:
 
-						# "live" autocomplete activated for this channel
+						# "live" autocomplete requested for this channel
 						if (
-							self._live_ac and 
-							self._chan_auto_complete[i] and 
-							tran_id in tran_ids_before[i]
+							self._live_ac and
+							self._chan_auto_complete[i] and
+							tran_id in tran_ids_before[i] # type: ignore
 						):
 
 							# Main logger feedback
-							self.logger.info(None, 
+							self.logger.info(None,
 								extra={
-									**extra, 
-									'channel': ap_filter.channel, 
+									**extra,
+									'channel': ap_filter.channel,
 									'autoComplete': True
 								}
 							)
@@ -458,10 +470,10 @@ class AlertProcessor(AmpelProcessor):
 
 							# Use default t2 units as filter results
 							filter_results[i] = ap_filter.t2_units
-					
+
 							# Rejected logs go to separate collection
 							ap_filter.rec_buf_hdlr.forward(
-								ap_filter.rejected_logger, 
+								ap_filter.rejected_logger,
 								extra={**extra, 'autoComplete': True}
 							)
 
@@ -486,7 +498,7 @@ class AlertProcessor(AmpelProcessor):
 
 						# enables log concatenation across different loggers
 						if self._embed:
-							AmpelLogger.current_logger = None 
+							AmpelLogger.current_logger = None
 							AmpelLogger.aggregation_ok = True
 
 						# Write log entries to main logger
@@ -503,7 +515,7 @@ class AlertProcessor(AmpelProcessor):
 
 				# Tolerable errors (could be an error from a contributed filter)
 				except Exception as e:
-			
+
 					ap_filter.rec_buf_hdlr.forward(
 						db_logging_handler, extra=extra
 					)
@@ -513,7 +525,7 @@ class AlertProcessor(AmpelProcessor):
 						extra={'section': 'filter', 'channel': ap_filter.channel}
 					)
 
-					if self._init_config.raise_exc:
+					if self.init_config.raise_exc:
 						updates_buffer.push_updates() # try to push these
 						raise e
 
@@ -527,15 +539,15 @@ class AlertProcessor(AmpelProcessor):
 
 				# TODO: build tran_id <-> alert_id map (replayability)
 				#processed_alert[tran_id]
-				try: 
+				try:
 
 					ingester_start = time()
 
 					# Ingest alert
 					db_updates = self._alert_ingester.ingest(
-						tran_id, 
-						alert_content['pps'], 
-						alert_content['uls'], 
+						tran_id,
+						alert_content['pps'],
+						alert_content['uls'],
 						filter_results
 					)
 
@@ -546,7 +558,7 @@ class AlertProcessor(AmpelProcessor):
 
 					print("%s: abording run() procedure" % e.__class__.__name__)
 					self._report_alertproc_exception(
-						e, run_id, alert_content, 
+						e, run_id, alert_content,
 						include_photo=False
 					)
 					updates_buffer.push_updates() # try to push these
@@ -559,20 +571,20 @@ class AlertProcessor(AmpelProcessor):
 						extra={'section': 'ingest'}, include_photo=False
 					)
 
-					if self._init_config.raise_exc:
+					if self.init_config.raise_exc:
 						updates_buffer.push_updates() # try to push these
 						raise e
 			else:
 
 				# If all channels reject this alert, no log entries goes into
 				# the main logs collection sinces those are redirected to Ampel_rej.
-				# So we add a notification manually. For that, we don't use self.logger 
-				# cause rejection messages were alreary logged into the console 
-				# by the StreamHandler in channel specific RecordsBufferingHandler instances. 
+				# So we add a notification manually. For that, we don't use self.logger
+				# cause rejection messages were alreary logged into the console
+				# by the StreamHandler in channel specific RecordsBufferingHandler instances.
 				# So we address directly db_logging_handler, and for that, we create
 				# a LogRecord manually.
-				lr = LogRecord(None, INFO, None, None, None, None, None)
-				lr.extra = {
+				lr = LogRecord(None, INFO, None, None, None, None, None) # type: ignore
+				lr.extra = { # type: ignore
 					'stock': tran_id,
 					'alertId': alert_content['alertId'],
 					'allRejected': True,
@@ -595,23 +607,23 @@ class AlertProcessor(AmpelProcessor):
 		post_run = time()
 
 		# Post run section
-		try: 
+		try:
 
 			# Optional autocomplete
 			if self._live_ac:
 
 				tran_ids_after = self.get_tran_ids()
-	
+
 				# Check post auto-complete
 				for i, ap_filter in self._filter_enum:
-					if isinstance(tran_ids_after[i], set):
-						auto_complete_diff = tran_ids_after[i] - tran_ids_before[i]
+					if tran_ids_after[i]:
+						auto_complete_diff = tran_ids_after[i] - tran_ids_before[i] # type: ignore
 						if auto_complete_diff:
 							# TODO: implement fetch from archive
-							pass 
-	
-			if self._init_config.publish_stats is not None and iter_count > 0:
-	
+							pass
+
+			if self.init_config.publish_stats is not None and iter_count > 0:
+
 				# include loop counts
 				count_stats['alerts'] = iter_count
 				count_stats['ingested'] = ingested_count
@@ -637,7 +649,7 @@ class AlertProcessor(AmpelProcessor):
 				for time_metric in ('dbBulkTime', 'dbPerOpMeanTime'):
 					for col in ("Stock", "T0", "T1", "T2"):
 						key = time_metric+col
-						if updates_buffer.metrics[key]: 
+						if updates_buffer.metrics[key]:
 							dur_stats[key] = self._compute_stat(
 								updates_buffer.metrics[key]
 							)
@@ -659,7 +671,7 @@ class AlertProcessor(AmpelProcessor):
 				dur_stats['apPostLoop'] = int(time() - post_run)
 
 				# Publish metrics to graphite
-				if "graphite" in self._init_config.publish_stats:
+				if "graphite" in self.init_config.publish_stats:
 					self.logger.info("Sending stats to Graphite")
 					self._gfeeder.add_stats_with_mean_std(
 						{
@@ -671,7 +683,7 @@ class AlertProcessor(AmpelProcessor):
 					self._gfeeder.send()
 
 				# Publish metrics into document in collection 'runs'
-				if "processDoc" in self._init_config.publish_stats:
+				if "processDoc" in self.init_config.publish_stats:
 					db_proc_doc.set_event_info(
 						{
 							'metrics': {
@@ -698,7 +710,7 @@ class AlertProcessor(AmpelProcessor):
 				self._ampel_db, self.logger, tier=0, exc=e,
 				run_id=db_logging_handler.get_run_id()
 			)
-			
+
 		# Return number of processed alerts
 		return iter_count
 
@@ -707,7 +719,7 @@ class AlertProcessor(AmpelProcessor):
 		"""
 		Cancels current processing of alerts
 		(when DB becomes unresponsive for example).
-		This is an indirect method because DB updates 
+		This is an indirect method because DB updates
 		are pushed asyncronously (by threads)
 		"""
 		self._cancel_run = True
@@ -721,7 +733,7 @@ class AlertProcessor(AmpelProcessor):
 		try:
 
 			# Restore console logging settings
-			if not self._init_config.full_console_logging:
+			if not self.init_config.full_console_logging:
 				self.logger.louden_console_loggers()
 
 			# Flush loggers
@@ -750,18 +762,18 @@ class AlertProcessor(AmpelProcessor):
 			)
 
 
-	def get_tran_ids(self) -> Set[Union[int, str]]:
+	def get_tran_ids(self) -> List[Optional[Set[StockId]]]:
 		"""
 		:returns: array whose length equals len(self._ap_filters), possibly containing sets of transient ids.
-		If channel[i] is the channel with index i wrt the list of channels 'self._ap_filters', 
-		and if channel[i] was configured to make use of the 'live' auto_complete feature, 
-		then tran_ids[i] will hold a {set} of transient ids listing all known 
+		If channel[i] is the channel with index i wrt the list of channels 'self._ap_filters',
+		and if channel[i] was configured to make use of the 'live' auto_complete feature,
+		then stock_ids[i] will hold a {set} of transient ids listing all known
 		transients currently available in the DB for this particular channel.
 		Otherwise, tran_ids_before[i] will be None
 		"""
 
 		col = self._ampel_db.get_collection('stock')
-		tran_ids = len(self._ap_filters) * [None]
+		stock_ids: List[Optional[Set[StockId]]] = [None] * len(self._ap_filters)
 
 		# Loop through activated channels
 		for i, ap_filter in self._filter_enum:
@@ -769,33 +781,27 @@ class AlertProcessor(AmpelProcessor):
 			if self._chan_auto_complete[i]:
 
 				# Build set of transient ids for this channel
-				tran_ids[i] = {
+				stock_ids[i] = {
 					el['_id'] for el in col.find(
 						{'channels': ap_filter.channel},
 						{'_id': 1}
 					)
 				}
 
-		return tran_ids
+		return stock_ids
 
 
-	def _report_alertproc_exception(
-		self, arg_e: Exception, run_id: int, alert_content: Dict[str, Any], 
-		filter_results: List = None, extra: Dict[str, Any] = None, include_photo: bool = True
+	def _report_alertproc_exception(self,
+		arg_e: Exception, run_id: Union[int, List[int]], alert_content: Dict[str, Any],
+		filter_results: List = None, extra: Optional[Dict[str, Any]] = None,
+		include_photo: bool = True
 	) -> None:
 		"""
-		:param Exception arg_e:
-		:param int run_id:
-		:param dict alert_content:
-		:param list filter_results:
-		:param dict extra: optional extra key/value fields to add to 'trouble' doc
-		:param bool include_photo: whether to include alert content into 'trouble' doc
-		:rtype: bool
-		:returns: True on error (doc could not be published), otherwise False
-		:raises: None
+		:param extra: optional extra key/value fields to add to 'trouble' doc
+		:param include_photo: whether to include alert content into 'trouble' doc
 		"""
 
-		info={
+		info = {
 			'stock': alert_content.get('stockId'),
 			'alertId': alert_content.get('alertId')
 		}
@@ -809,23 +815,25 @@ class AlertProcessor(AmpelProcessor):
 				info[k] = extra[k]
 
 		if filter_results:
+			if not extra:
+				extra = {}
 			extra['channels'] = [
-				ap_filter.chan_str for i, ap_filter in self._filter_enum 
+				ap_filter.chan_str for i, ap_filter in self._filter_enum
 				if filter_results[i]
 			]
 
 		# Try to insert doc into trouble collection (raises no exception)
 		# Possible exception will be logged out to console in any case
 		LoggingUtils.report_exception(
-			self._ampel_db, self.logger, tier=0, 
+			self._ampel_db, self.logger, tier=0,
 			exc=arg_e, run_id=run_id, info=info
 		)
 
 
 	@staticmethod
 	def _compute_stat(
-		seq, mean: Callable[[Sequence], Sequence] = np.mean, 
-		std: Callable[[Sequence], Sequence] = np.std
+		seq, mean: Callable[[Sequence], float] = np.mean,
+		std: Callable[[Sequence], float] = np.std
 	) -> Tuple[int, int]:
 		"""
 		Returns mean time & std dev in microseconds
@@ -836,5 +844,5 @@ class AlertProcessor(AmpelProcessor):
 		# mean time & std dev in microseconds
 		return (
 			int(round(mean(seq) * 1000000)),
-			int(round(std(seq) * 1000000)) 
+			int(round(std(seq) * 1000000))
 		)
