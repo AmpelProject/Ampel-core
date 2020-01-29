@@ -1,29 +1,32 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/config/ConfigUtils.py
+# File              : Ampel-core/ampel/config/ConfigUtils.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 06.10.2018
-# Last Modified Date: 10.12.2019
+# Last Modified Date: 28.01.2020
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-from typing import Dict, List, Callable, Union, Optional
-from ampel.db.DBUtils import DBUtils
-from ampel.typing import StrictIterable
+from typing import List, Callable, Union, Optional, Dict, Any, Type
+from ampel.types import strict_iterable, StrictIterable
 from ampel.model.operator.AnyOf import AnyOf
 from ampel.model.operator.AllOf import AllOf
 from ampel.model.operator.OneOf import OneOf
 from ampel.common.AmpelUtils import AmpelUtils
+from ampel.db.DBUtils import DBUtils
 
 
 class ConfigUtils:
 	""" """
 
 	@classmethod
-	def has_nested_type(cls, obj, target_type, strict=True):
+	def has_nested_type(cls, 
+		obj: StrictIterable, target_type: Type, strict: bool = True
+	) -> bool:
 		"""
 		:param obj: object instance (dict/list/set/tuple)
-		:param type target_type: example: ReadOnlyDict/list
+		:param target_type: example: ReadOnlyDict/list
+		:param strict: must be an instance of the provided type (subclass instances would be rejected)
 		"""
 
 		if strict: 
@@ -39,7 +42,7 @@ class ConfigUtils:
 				if cls.has_nested_type(el, target_type):
 					return True
 
-		elif isinstance(obj, StrictIterable):
+		elif isinstance(obj, strict_iterable):
 			for el in obj:
 				if cls.has_nested_type(el, target_type):
 					return True
@@ -48,7 +51,7 @@ class ConfigUtils:
 
 
 	@classmethod
-	def flatten_dict(cls, d, separator='.'):
+	def flatten_dict(cls, d: Dict, separator: str = '.') -> Dict:
 		""" 
 		Unlike the flatten_dict method from AmpelUtils, 
 		this version converts list into dicts as well.
@@ -61,10 +64,10 @@ class ConfigUtils:
 		for k, v in d.items():
 			if isinstance(v, dict):
 				for kk, vv in cls.flatten_dict(v, separator=separator).items():
-					out["%s%s%s" % (k, separator, kk)] = vv
+					out[f"{k}{separator}{kk}"] = vv
 			elif isinstance(v, list):
 				for kk, vv in cls.flatten_dict(cls.list_to_dict(v), separator=separator).items():
-					out["%s%s%s" % (k, separator, kk)] = vv
+					out[f"{k}{separator}{kk}"] = vv
 			else:
 				out[k] = v
 
@@ -72,13 +75,13 @@ class ConfigUtils:
 
 
 	@staticmethod
-	def list_to_dict(l):
+	def list_to_dict(l: List[Any]) -> Dict[int, Any]:
 		""" """
 		return {i: l[i] for i in range(len(l))}
 
 
 	@classmethod
-	def unflatten_dict(cls, d, separator='.'):		
+	def unflatten_dict(cls, d: Dict[str, Any], separator: str = '.') -> Dict[str, Any]:		
 		""" 
 		Unlike the unflatten_dict method from AmpelUtils, 
 		this version restores dict-encoded lists.
@@ -96,12 +99,14 @@ class ConfigUtils:
 				out[k] = [cls.unflatten_dict(out[k][el], separator) for el in v]
 			except Exception:
 				pass
+
 		return out
 
 
 	@classmethod
-	def walk_and_process_dict(
-		cls, arg: Union[Dict, List], callback: Callable, match: List[str], path: str = None, **kwargs
+	def walk_and_process_dict(cls, 
+		arg: Union[dict, list], callback: Callable, 
+		match: List[str], path: str = None, **kwargs
 	) -> None:
 		"""
 		callback is called with 4 arguments:
@@ -141,13 +146,15 @@ class ConfigUtils:
 
 
 	@staticmethod
-	def set_by_path(mapping, path, val, delimiter='.', create=True) -> bool:
+	def set_by_path(
+		d: Dict, path: str, val: Any, 
+		delimiter: str = '.', create: bool = True
+	) -> bool:
 		"""
 		:param create: whether to create directory sub-structures if they do not exits 
 		(in this case, this method will alawys return False)
 		:returns: False if the key was successfully set, True otherwise
 		"""
-		d = mapping
 		keys = path.split(delimiter)
 		l = len(keys) - 1
 		for i, k in enumerate(keys):
@@ -163,11 +170,10 @@ class ConfigUtils:
 
 
 	@staticmethod
-	def del_by_path(mapping, path, delimiter='.') -> bool:
+	def del_by_path(d: Dict, path: str, delimiter: str = '.') -> bool:
 		"""
 		:returns: False if the key was successfully deleted, True otherwise
 		"""
-		d = mapping
 		keys = path.split(delimiter)
 		l = len(keys) - 1
 		for i, k in enumerate(keys):
@@ -182,8 +188,8 @@ class ConfigUtils:
 
 	@staticmethod
 	def hash_schema(
-		arg: Optional[Union[str, Dict, AllOf, AnyOf, OneOf]]
-	) -> Union[int, Dict]:
+		arg: Optional[Union[str, dict, AllOf, AnyOf, OneOf]]
+	) -> Union[int, dict]:
 		"""
 		Converts dict schema containing str representation of tags into 
 		a dict schema containing hashed values (int64).
@@ -201,7 +207,7 @@ class ConfigUtils:
 		:returns: new schema dict where tag elements are integers
 		"""
 
-		out={}
+		out: Dict[str, Any] = {}
 		
 		if isinstance(arg, str):
 			return DBUtils.b2_hash(arg)
