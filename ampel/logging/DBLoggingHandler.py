@@ -9,7 +9,7 @@
 
 import logging, struct, socket
 from bson import ObjectId
-from typing import List, Dict
+from typing import List, Dict, Any, Optional, Union
 from pymongo.errors import BulkWriteError
 from pymongo.operations import UpdateOne
 from ampel.db.AmpelDB import AmpelDB
@@ -51,20 +51,21 @@ class DBLoggingHandler(logging.Handler):
 	"""
 
 	# pylint: disable=super-init-not-called
-	def __init__(
-		self, ampel_db: AmpelDB, flags: LogRecordFlag, col_name: str = "logs", 
+	def __init__(self, 
+		ampel_db: AmpelDB, flags: LogRecordFlag, col_name: str = "logs", 
 		level: int = logging.DEBUG, aggregate_interval: int = 1, flush_len: int = 1000
 	):
 		""" 
-		:param int flags: instance of :py:class:`LogRecordFlag <ampel.flags.LogRecordFlag>`
-		:param str col: name of db collection to use (default: 'logs' in database Ampel_var)
-		:param int aggregate_interval: logs with similar attributes (log level, 
-		possibly tranId & channels) are aggregated in one document instead of being split
-		into several documents (spares some index RAM). *aggregate_interval* is the max interval 
-		of time in seconds during which log aggregation takes place. Beyond this value, 
-		a new log document is created no matter what. It thus impacts the logging time granularity.
-		:param int flush_len: How many log documents should be kept in memory before
-		attempting a database bulk_write operation.
+		:param col_name: name of db collection to use (default: 'logs' in database Ampel_var)
+		:param aggregate_interval: logs with similar attributes (log level, possibly tranId & channels) \
+			are aggregated in one document instead of being split \
+			into several documents (spares some index RAM). \
+			*aggregate_interval* is the max interval of time in seconds \
+			during which log aggregation takes place. \
+			Beyond this value, a new log document is created no matter what. \
+			This parameter thus impacts the logging time granularity.
+		:param flush_len: How many log documents should be kept in memory before \
+			attempting a database bulk_write operation.
 		"""
 
 		# required when not using super().__init__
@@ -75,13 +76,14 @@ class DBLoggingHandler(logging.Handler):
 		self._ampel_db = ampel_db
 		self.flush_len = flush_len
 		self.aggregate_interval = aggregate_interval
-		self.log_dicts = []
-		self.headers = []
-		self.prev_records = None
-		self.run_id = self.new_run_id()
+		self.log_dicts: List[Dict] = []
+		self.headers: List[Dict] = []
+		self.prev_records: Optional[logging.LogRecord] = None
+		self.run_id: Union[int, List[int]] = self.new_run_id()
 		self.flags = {
 			logging.DEBUG: LogRecordFlag.DEBUG | flags,
-			logging.VERBOSE: LogRecordFlag.VERBOSE | flags,
+			# we use/set our own logging level (we add VERBOSE as well)
+			logging.VERBOSE: LogRecordFlag.VERBOSE | flags, # type: ignore
 			logging.INFO: LogRecordFlag.INFO | flags,
 			logging.WARNING: LogRecordFlag.WARNING | flags,
 			logging.ERROR: LogRecordFlag.ERROR | flags,
@@ -92,7 +94,6 @@ class DBLoggingHandler(logging.Handler):
 		# Get reference to pymongo collection
 		self.col = ampel_db.get_collection(col_name)
 
-			
 		# Set loggingHandler properties
 		self.setLevel(level)
 
@@ -101,9 +102,9 @@ class DBLoggingHandler(logging.Handler):
 		self.oid_middle = _machine_bytes() + int(str(self.run_id)[-4:]).to_bytes(2, 'big')
 
 
-	def new_run_id(self) -> None:
+	def new_run_id(self) -> int:
 		""" 
-		runId is a global (ever increasing) counter stored in the DB
+		runId is a global (ever increasing) counter stored in the DB \
 		used to tie log entries from the same process with each other
 		"""
 		return self._ampel_db \
@@ -117,9 +118,7 @@ class DBLoggingHandler(logging.Handler):
 
 
 	def add_headers(self, dicts: List[Dict]) -> None:
-		"""
-		:param list dicts: list of dict instances
-		"""
+		""" """
 		if len(dicts) > self.flush_len:
 			# We could do something about that.. later if need be
 			raise ValueError("Too many logrecord headers")
@@ -165,7 +164,7 @@ class DBLoggingHandler(logging.Handler):
 					self.flush()
 
 				# Treat SHOUT msg as INFO msg (and try again to concatenate)
-				if record.levelno == logging.SHOUT:
+				if record.levelno == logging.SHOUT: # type: ignore
 					record.levelno = logging.INFO
 					self.emit(record)
 					return
@@ -185,14 +184,14 @@ class DBLoggingHandler(logging.Handler):
 						**extra, # position matters, should be first
 						'_id': ObjectId(oid=oid),
 						'flag': self.flags[record.levelno],
-						'runId': self.run_id,
+						'run': self.run_id,
 						'msg': record.getMessage()
 					}
 				else:
 					ldict = {
 						'_id': ObjectId(oid=oid),
 						'flag': self.flags[record.levelno],
-						'runId': self.run_id,
+						'run': self.run_id,
 						'msg': record.getMessage()
 					}
 
@@ -213,15 +212,13 @@ class DBLoggingHandler(logging.Handler):
 			raise AmpelLoggingError from None
 
 
-	def get_run_id(self) -> int:
+	def get_run_id(self) -> Union[int, List[int]]:
 		""" """
 		return self.run_id
 
 
-	def add_run_id(self, arg: int) -> None:
-		""" 
-		:param arg: run ID
-		"""
+	def add_run_id(self, arg: Union[int, List[int]]) -> None:
+		""" """
 		if isinstance(self.run_id, int):
 			if isinstance(arg, int):
 				self.run_id = [self.run_id, arg]
@@ -245,11 +242,20 @@ class DBLoggingHandler(logging.Handler):
 
 	def fork(self, flags: LogRecordFlag) -> 'DBLoggingHandler':
 		""" 
-		:returns: new instance of DBLoggingHandler
+		Creates a new instance of DBLoggingHandler that, additionlly to its own runId, 
+		embedds also the runId from the parent class.
+		Ex: if lh is the parent DBLoggingHandler instance with runId say 12.
+		Calling lh.fork() will create another DBLoggingHandler instance with runId [12, 23] 
+		(12 inherited from parent and 23 self generated (see get_run_id docstring))
+		Different "connected" logger are typically used for T3 processes running 
+		multiple T3 units. Querying all logs with the master runId (12) will 
+		provide you with all logs from the process. Querying logs with runId 23
+		will return only the logs associated with a given T3-Unit requested by the T3 process.
 		"""
+
 		# New instance of DBLoggingHandler with same parameters
 		dblh = DBLoggingHandler(
-			flags, self.col.name, self.level, 
+			self._ampel_db, flags, self.col.name, self.level, 
 			self.aggregate_interval, self.flush_len
 		)
 
@@ -263,20 +269,20 @@ class DBLoggingHandler(logging.Handler):
 			self.get_run_id()
 		)
 
-		if not hasattr(self, "child_handlers"):
-			self.child_handlers = []
+		if not hasattr(self, "sub_handlers"):
+			self.sub_handlers = []
 
-		self.child_handlers.append(dblh)
+		self.sub_handlers.append(dblh)
 
 		return dblh
 
 
 	def flush_all(self) -> None:
 		"""
-		Flushes also child handlers if any
+		Flushes also sub handlers if any
 		"""
-		if hasattr(self, "child_handlers"):
-			for handler in self.child_handlers:
+		if hasattr(self, "sub_handlers"):
+			for handler in self.sub_handlers:
 				handler.flush()
 		self.flush()
 
@@ -284,7 +290,7 @@ class DBLoggingHandler(logging.Handler):
 	def purge(self) -> None:
 		""" 
 		"""
-		self.log_dicts=[]
+		self.log_dicts = []
 		self.prev_records = None
 
 
@@ -316,9 +322,9 @@ class DBLoggingHandler(logging.Handler):
 							{
 								'$setOnInsert': rec,
 								'$addToSet': {
-									'runId': {'$each': self.run_id}
+									'run': {'$each': self.run_id}
 								} if isinstance(self.run_id, list) else {
-									'runId': self.run_id
+									'run': self.run_id
 								}
 							},
 							upsert=True
@@ -371,7 +377,7 @@ class DBLoggingHandler(logging.Handler):
 					db_rec = next(self.col.find({'_id': err_dict['op']['_id']}))
 
 					# if runIds are equal, just print out a feedback
-					if db_rec['runId'] == self.run_id:
+					if db_rec['run'] == self.run_id:
 						print("Disregardable E11000: "+str(err_dict['op']))
 
 					# Otherwise print error and create trouble doc
