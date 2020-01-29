@@ -1,15 +1,15 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/query/QueryLoadT2Info.py
+# File              : Ampel-core/ampel/query/QueryLoadT2Info.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 14.02.2018
-# Last Modified Date: 19.12.2019
+# Last Modified Date: 27.12.2019
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from bson.binary import Binary
 from typing import Iterable, Union, Dict, Any
-from ampel.typing import StrictIterable
+from ampel.types import strict_iterable
 from ampel.model.operator.AnyOf import AnyOf
 from ampel.model.operator.AllOf import AllOf
 from ampel.model.operator.OneOf import OneOf
@@ -115,7 +115,7 @@ class QueryLoadT2Info:
 			match_comp_ids = states
 
 		# Multiple states were provided
-		elif isinstance(states, StrictIterable):
+		elif isinstance(states, strict_iterable):
 
 			# check_seq_inner_type makes sure the sequence is monotype
 			if not AmpelUtils.check_seq_inner_type(states, (str, bytes, Binary)):
