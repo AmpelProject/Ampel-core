@@ -8,12 +8,13 @@
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from typing import Union, Optional
+from ampel.types import ChannelId
 from ampel.model.AmpelBaseModel import AmpelBaseModel
 from ampel.model.t0.T0FilterModel import T0FilterModel
 
 class APChanModel(AmpelBaseModel):
 	""" """
-	name: Union[int, str]
+	name: ChannelId
 	dist_name: Optional[str]
 	auto_complete: Union[bool, str]
 	t0_add: T0FilterModel
