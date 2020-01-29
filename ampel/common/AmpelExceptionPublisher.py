@@ -19,7 +19,7 @@ log = logging.getLogger()
 
 class AmpelExceptionPublisher:
 	def __init__(self, dry_run=False, user='AMPEL-live', channel='ampel-troubles'):
-		token = AmpelConfig.get_config('resources.slack.operator')
+		token = AmpelConfig.get('resource.slack.operator')
 		self._slack = SlackClient(token)
 		self._troubles = AmpelDB.get_collection('troubles', 'r')
 		self._dry_run = dry_run
@@ -34,20 +34,20 @@ class AmpelExceptionPublisher:
 			fields.append({'title': 'Job', 'value': doc.get('job', None), 'short': True})
 		if 'task' in doc:
 			fields.append({'title': 'Task', 'value': doc.get('task', None), 'short': True})
-		fields.append({'title': 'Run', 'value': doc.get('runId', None), 'short': True})
+		fields.append({'title': 'Run', 'value': doc.get('run', None), 'short': True})
 		return fields
 
 	def format_attachment(self, doc):
 		fields = [{'title': 'Tier', 'value': doc['tier'], 'short': True}]
 		more = doc.get('more', {})
 		if doc['tier'] == 0:
-			for field in 'section', 'tranId', 'runId':
+			for field in 'section', 'stock', 'run':
 				fields.append({'title': field, 'value': doc.get(field, None), 'short': True})
 			if 'id' in doc.get('alert', {}):
 				fields.append({'title': 'alertId', 'value': doc.get('alert', {}).get('id', None), 'short': True})
 		elif doc['tier'] == 2:
 			fields.append({'title': 'unit', 'value': doc.get('unit', None), 'short': True})
-			fields.append({'title': 'run', 'value': doc.get('runId', None), 'short': True})
+			fields.append({'title': 'run', 'value': doc.get('run', None), 'short': True})
 			t2Doc = doc.get('t2Doc', None)
 			if hasattr(t2Doc, 'binary'):
 				fields.append({'title': 't2Doc', 'value': t2Doc.binary.hex(), 'short': True})
@@ -120,7 +120,7 @@ class AmpelExceptionPublisher:
 
 def run():
 	import schedule
-	from ampel.config.AmpelArgumentParser import AmpelArgumentParser
+	from ampel.run.AmpelArgumentParser import AmpelArgumentParser
 	parser = AmpelArgumentParser()
 	parser.require_resource('mongo', ['logger'])
 	parser.require_resource('slack', ['operator'])
