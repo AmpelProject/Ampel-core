@@ -3,4 +3,5 @@ pytest
 ipython
 pydantic
 sjcl
-squedule
+schedule
+psutil
