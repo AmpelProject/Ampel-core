@@ -1,29 +1,29 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/logging/ExtraLogFormatter.py
+# File              : Ampel-core/ampel/logging/ExtraLogFormatter.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 01.10.2018
-# Last Modified Date: 03.10.2019
+# Last Modified Date: 16.01.2020
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-from logging import Formatter
+import logging
 
 #class AmpelConsoleFormatter(logging.Formatter):
-class ExtraLogFormatter(Formatter):
+class ExtraLogFormatter(logging.Formatter):
 
 
 	def __init__(self, datefmt="%Y-%m-%d %H:%M:%S", line_number=False):
-		""" 
-		"""
+		""" """
 		super().__init__(datefmt=datefmt)
 		self.line_number = line_number
+		self.tohex_ids = ["link", "cp", "docIdEff", "docIdStrict"]
 
-		self.tohex_ids = ["docId", "cp", "docIdEff", "docIdStrict"]
 
-	def format(self, record):
+	def format(self, record: logging.LogRecord) -> str:
+		""" """
 
-		extra = getattr(record, 'extra', None)
+		extra = getattr(record, 'extra')
 
 		out = [
 			self.formatTime(record, datefmt=self.datefmt),
