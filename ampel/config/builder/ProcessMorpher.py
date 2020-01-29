@@ -1,14 +1,14 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/config/builder/ProcessMorpher.py
+# File              : Ampel-core/ampel/config/builder/ProcessMorpher.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 16.10.2019
-# Last Modified Date: 30.10.2019
+# Last Modified Date: 28.01.2020
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import json
-from typing import Dict, List
+from typing import Dict, Any
 from ampel.common.AmpelUtils import AmpelUtils
 from ampel.logging.AmpelLogger import AmpelLogger
 from ampel.config.ConfigUtils import ConfigUtils
@@ -20,10 +20,10 @@ class ProcessMorpher:
 	Applies various transformations to process dicts
 	"""
 
-	def __init__(
-		self, process: Dict, templates: List, logger: AmpelLogger, 
+	def __init__(self,
+		process: Dict[str, Any], templates: Dict[str, Any], logger: AmpelLogger,
 		verbose: bool = False, deep_copy: bool = False
-	):
+	) -> None:
 		""" """
 		self.process = json.loads(json.dumps(process)) if deep_copy else process 
 		self.templates = templates
@@ -31,7 +31,7 @@ class ProcessMorpher:
 		self.verbose = verbose
 
 
-	def get(self):
+	def get(self) -> Dict[str, Any]:
 		""" """
 		return self.process
 
@@ -74,6 +74,7 @@ class ProcessMorpher:
 		return self
 
 
+	# TODO: verbose print path ?
 	def _scope_alias_callback(self, path, k, d, **kwargs):
 		""" """
 
@@ -107,10 +108,10 @@ class ProcessMorpher:
 		if self.process.get('distName'):
 
 			ConfigUtils.walk_and_process_dict(
-				arg=self.process, 
-				callback=self._scope_alias_callback,
-				match=("initConfig", "runConfig", "init_config", "run_config"),
-				base_config=base_config
+				arg = self.process,
+				callback = self._scope_alias_callback,
+				match = ["initConfig", "runConfig", "init_config", "run_config"],
+				base_config = base_config
 			)
 
 		else:
@@ -123,6 +124,7 @@ class ProcessMorpher:
 		return self
 
 
+	# TODO: verbose print path ?
 	def _hash_t2_run_config_callback(self, path, k, d, **kwargs) -> None:
 		""" 
 		"""
@@ -175,10 +177,10 @@ class ProcessMorpher:
 			return self
 
 		ConfigUtils.walk_and_process_dict(
-			arg=self.process, 
-			callback=self._hash_t2_run_config_callback,
-			match=("t2Compute"),
-			out_config=out_config
+			arg = self.process,
+			callback = self._hash_t2_run_config_callback,
+			match = ["t2Compute"],
+			out_config = out_config
 		)
 
 		return self
