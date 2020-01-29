@@ -8,7 +8,7 @@
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from ampel.config.resource.resources import ResourceURI
-from ampel.common.GraphiteFeeder import GraphiteFeeder
+from ampel.metrics.GraphiteFeeder import GraphiteFeeder
 from urllib.parse import urlparse
 
 class Graphite(ResourceURI):
