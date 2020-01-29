@@ -1,13 +1,13 @@
-!/usr/bin/env python
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/query/QueryMatchSchema.py
+# File              : Ampel-core/ampel/query/QueryMatchSchema.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 11.03.2018
-# Last Modified Date: 10.12.2019
+# Last Modified Date: 27.12.2019
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-from typing import Dict, Union, Tuple
+from typing import Union, Tuple
 from ampel.common.AmpelUtils import AmpelUtils
 from ampel.model.operator.AnyOf import AnyOf
 from ampel.model.operator.AllOf import AllOf
@@ -29,9 +29,9 @@ class QueryMatchSchema:
 
 	@classmethod
 	def apply_schema(cls, 
-		query: Dict, field_name: str, 
-		arg: Union[int, str, Dict, AllOf, AnyOf, OneOf]
-	) -> Dict:
+		query: dict, field_name: str, 
+		arg: Union[int, str, dict, AllOf, AnyOf, OneOf]
+	) -> dict:
 		"""
 		Warning: The method changes keys and values in the input dict parameter "query"
 
@@ -163,9 +163,9 @@ class QueryMatchSchema:
 
 	@classmethod
 	def apply_excl_schema(cls,
-		query: Dict, field_name: str, 
-		arg: Union[int, str, Dict, AllOf, AnyOf, OneOf]
-	) -> Dict:
+		query: dict, field_name: str, 
+		arg: Union[int, str, dict, AllOf, AnyOf, OneOf]
+	) -> dict:
 		"""
 		###############################################################################
 		Warning: The method changes keys and values in the input dict parameter "query"
@@ -198,7 +198,7 @@ class QueryMatchSchema:
 			query[field_name]['$ne'] = arg
 			return
 
-		if not isinstance(arg, Dict):
+		if not isinstance(arg, dict):
 			raise ValueError('Illegal "arg" parameter')
 
 		if 'allOf' in arg:
@@ -296,8 +296,8 @@ class QueryMatchSchema:
 
 		else:
 			raise ValueError(
-				"Invalid 'arg' keys (must contain either 'anyOf' or 'allOf'" +
-				"\nOffending value: %s" % arg
+				f"Invalid 'arg' keys (must contain either 'anyOf' or 'allOf'"
+				f"\nOffending value: {arg}"
 			)
 
 		return query
@@ -310,25 +310,25 @@ class QueryMatchSchema:
 		"""
 		if 'allOf' not in el:
 			raise ValueError(
-				"Expected dict with key 'allOf'" + 
-				"\nOffending value: %s" % el
+				f"Expected dict with key 'allOf'"
+				f"\nOffending value: {el}"
 			)
 
 		if not AmpelUtils.check_seq_inner_type(el['allOf'], in_type):
 			raise ValueError(
-				"No further nesting allowed beyond 'allOf'" + 
-				"\nOffending value: %s" % el
+				f"No further nesting allowed beyond 'allOf'"
+				f"\nOffending value: {el}"
 			)
 
 		if len(el) != 1:
 			raise ValueError(
-				"'allOf' dict should have only one key" + 
-				"\nOffending value: %s" % el
+				f"'allOf' dict should have only one key"
+				f"\nOffending value: {el}"
 			)
 
 
 	@staticmethod
-	def arg_check(arg, in_type: Union[int, str, Tuple]) -> bool:
+	def arg_check(arg, in_type: Union[int, str, tuple]) -> bool:
 		"""
 		:raises: ValueError
 		"""
@@ -342,14 +342,16 @@ class QueryMatchSchema:
 			return True
 
 		# Dict must be provided
-		if not isinstance(arg, Dict):
-			raise ValueError("Parameter 'arg' should be a dict (is %s)" % type(arg))
+		if not isinstance(arg, dict):
+			raise ValueError(
+				f"Parameter 'arg' should be a dict (is {type(arg)})"
+			)
 
 		# With only one key
 		if len(arg) != 1:
 			raise ValueError(
-				"Invalid 'arg' parameter. Should have only one key ('anyOf' or 'allOf')" +
-				"\nOffending value: %s" % arg
+				f"Invalid 'arg' parameter. Should have only one key ('anyOf' or 'allOf')"
+				f"\nOffending value: {arg}"
 			)
 
 		return False
