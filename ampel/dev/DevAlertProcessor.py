@@ -9,8 +9,8 @@
 
 
 import logging, time, sys, fastavro, tarfile
-from ampel.dev.DevAmpelAlert import DevAmpelAlert
-from ampel.object.AmpelAlert import AmpelAlert
+from ampel.dev.DevPhotoAlert import DevPhotoAlert
+from ampel.alert.PhotoAlert import PhotoAlert
 
 
 class DevAlertProcessor():
@@ -25,17 +25,17 @@ class DevAlertProcessor():
 		
 		alert_filter:
 			Instance of a t0 alert filter. It must implement method:
-			apply(<instance of ampel.object.AmpelAlert>)
+			apply(<instance of ampel.alert.PhotoAlert>)
 		
 		save:
 			either 
-				* 'alert': references to AmpelAlert instances will be kept
+				* 'alert': references to PhotoAlert instances will be kept
 				* 'objectId': only objectId strings will be kept
 				* 'candid': only candid integers will be kept
 				* 'objectId_candid': tuple ('candid', 'objectId') will be kept
 		
 		use_dev_alerts:
-			choose to use DevAmpelAlerts or AmpelAlert. If False, AmpelAlert will
+			choose to use DevPhotoAlerts or PhotoAlert. If False, PhotoAlert will
 			be used and these won't contain cutouts images.
 		"""
 		logging.basicConfig( # Setup logger
@@ -92,12 +92,12 @@ class DevAlertProcessor():
 		# Iterate over alerts
 		for content in iterable:
 
-			ampel_alert = load(content) 
-			if ampel_alert is None:
+			alert = load(content) 
+			if alert is None:
 				break
 
 			# filter alert
-			self._filter(ampel_alert)
+			self._filter(alert)
 
 			iter_count += 1
 			if iter_count == iter_max:
@@ -129,36 +129,36 @@ class DevAlertProcessor():
 			self.tar_file.extractfile(tar_info)
 		)
 		
-		# Create (Dev)AmpelAlert instance
+		# Create (Dev)PhotoAlert instance
 		if self.use_dev_alerts:
-			return DevAmpelAlert.load_from_avro_content(alert_content)
+			return DevPhotoAlert.load_from_avro_content(alert_content)
 		else:
-			return AmpelAlert(alert_content['objectId'], *self._shape(alert_content))
+			return PhotoAlert(alert_content['objectId'], *self._shape(alert_content))
 
 
-	def _filter(self, ampel_alert):
+	def _filter(self, alert):
 		""" """
-		if self._alert_filter.apply(ampel_alert) is not None:
+		if self._alert_filter.apply(alert) is not None:
 			self._logger.info(
 				"+ Ingesting %i (objectId: %s)" % 
-				(ampel_alert.pps[0]['candid'], ampel_alert.tran_id)
+				(alert.pps[0]['candid'], alert.tran_id)
 			)
 			target_array = self._accepted_alerts
 		else:
 			self._logger.info(
 				"- Rejecting %i (objectId: %s)" % 
-				(ampel_alert.pps[0]['candid'], ampel_alert.tran_id)
+				(alert.pps[0]['candid'], alert.tran_id)
 			)
 			target_array = self._rejected_alerts
 
 		if self.save == "alert":
-			target_array.append(ampel_alert)
+			target_array.append(alert)
 		elif self.save == 'objectId':
-			target_array.append(ampel_alert['objectId'])
+			target_array.append(alert['objectId'])
 		elif self.save == 'candid':
-			target_array.append(ampel_alert['candid'])
+			target_array.append(alert['candid'])
 		elif self.save == 'objectId_candid':
-			target_array.append(ampel_alert['objectId'], ampel_alert['candid'])
+			target_array.append(alert['objectId'], alert['candid'])
 
 
 	def _deserialize(self, f):
