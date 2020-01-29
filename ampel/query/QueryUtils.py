@@ -1,20 +1,35 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/query/QueryUtils.py
+# File              : Ampel-core/ampel/query/QueryUtils.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 31.10.2018
-# Last Modified Date: 31.10.2018
+# Last Modified Date: 27.12.2019
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-from ampel.common.AmpelUtils import AmpelUtils
-
+from ampel.types import strict_iterable, StrictIterable
 
 class QueryUtils:
 
 
 	@staticmethod
-	def match_array(arg):
+	def add_or(query: dict, arg: dict) -> None:
+		"""
+		"""
+		if '$or' in query:
+			if '$and' in query:
+				if not isinstance(query['$and'], list):
+					raise ValueError(f"Illegal $and value in query: {query}")
+				query['$and'].append(arg)
+			else:
+				query['$and'] = [query.pop('$or'), arg]
+
+		else:
+			query['$or'] = arg
+
+
+	@staticmethod
+	def match_array(arg: StrictIterable):
 		"""
 		match_array(['ab']) -> returns 'ab'
 		match_array({'ab'}) -> returns 'ab'
@@ -22,13 +37,15 @@ class QueryUtils:
 		match_array({'a', 'b'}) -> returns {$in: ['a', 'b']}
 		"""
 
-		if not AmpelUtils.is_sequence(arg):
-			raise ValueError("Provided argument is not sequence (%s)" % type(arg))
+		if not isinstance(arg, strict_iterable):
+			raise ValueError(
+				f"Provided argument is not sequence ({type(arg)})"
+			)
 
 		if len(arg) == 1:
 			return next(iter(arg))
 
-		if type(arg) is set:
+		if isinstance(arg, (set, frozenset, tuple)):
 			return {'$in' : list(arg)}
 
 		return {'$in' : arg}
