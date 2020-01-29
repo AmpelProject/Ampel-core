@@ -24,7 +24,7 @@ class TimeLastRunModel(AmpelBaseModel):
 	# pylint: disable=unused-argument
 	def get_timestamp(self, **kwargs) -> Optional[float]:
 		""" """
-		return self._query_events_col(kwargs['ampelDB'], self)
+		return self._query_events_col(kwargs['db'], self)
 
 
 	@staticmethod

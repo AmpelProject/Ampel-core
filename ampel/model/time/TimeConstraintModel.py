@@ -36,7 +36,7 @@ class TimeConstraintModel(AmpelBaseModel):
 		}
 	)
 
-	example2: 
+	example2:
 
 	TimeConstraintModel(
 	   **{
@@ -54,22 +54,22 @@ class TimeConstraintModel(AmpelBaseModel):
 
 	before: Optional[
 		Union[
-			TimeDeltaModel, TimeLastRunModel, 
+			TimeDeltaModel, TimeLastRunModel,
 			TimeStringModel, UnixTimeModel
 		]
 	] = None
 
 	after: Optional[
 		Union[
-			TimeDeltaModel, TimeLastRunModel, 
+			TimeDeltaModel, TimeLastRunModel,
 			TimeStringModel, UnixTimeModel
 		]
 	] = None
 
 
 	def get_query_model(self, **kwargs) -> QueryTimeModel:
-		""" 
-		Call this method with ampelDB=<instance of AmpelDB> 
+		"""
+		Call this method with db=<instance of AmpelDB>
 		if your time constraint is based on TimeLastRunModel
 		"""
 
