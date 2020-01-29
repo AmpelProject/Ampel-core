@@ -21,7 +21,7 @@ setup(
 			  'deploy/prodution/initdb/*/*.sh'
 		  ],
 		  'ampel': ['py.typed'],
-		  'conf': ['*.conf', '**/*.conf']
+		  'conf': ['*.conf', '**/*.conf', '**/**/*.conf']
 	},
 	entry_points = {
 		'console_scripts' : [
