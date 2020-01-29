@@ -1,15 +1,16 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/common/AmpelUtils.py
+# File              : Ampel-core/ampel/common/AmpelUtils.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 07.06.2018
-# Last Modified Date: 11.10.2019
+# Last Modified Date: 29.01.2020
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import collections
 from functools import reduce
-from ampel.typing import StrictIterable
+from ampel.types import strict_iterable
+
 
 class AmpelUtils():
 	"""
@@ -92,7 +93,7 @@ class AmpelUtils():
 		In []: AmpelUtils.to_set([1,2])
 		Out[]: {1, 2}
 		"""
-		return set(arg) if isinstance(arg, StrictIterable) else {arg}
+		return set(arg) if isinstance(arg, strict_iterable) else {arg}
 
 
 	@classmethod
