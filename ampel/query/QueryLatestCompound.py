@@ -55,9 +55,9 @@ class QueryLatestCompound:
 			In []: list(cursor)
 			Out[]: 
 			[
-				{'_id': b'T6TG\x96\x80\x1d\x86\x9f\x11\xf2G\xe7\xf4\xe0\xc3', 'stockId': 'ZTF18aaayyuq'},
- 				{'_id': b'\xaaL|\x94?\xa4\xa1D\xbe\x0c[D\x9b\xc6\xe6o', 'stockId': 'ZTF18aaabikt'},
- 				{'_id': b'\xaaL|\x14?\xb4\xc3D\xd2\x2a?L\x9a\xa6\xa1o', 'stockId': 'ZTF17aaagvng'}
+				{'_id': b'T6TG\x96\x80\x1d\x86\x9f\x11\xf2G\xe7\xf4\xe0\xc3', 'stock': 'ZTF18aaayyuq'},
+ 				{'_id': b'\xaaL|\x94?\xa4\xa1D\xbe\x0c[D\x9b\xc6\xe6o', 'stock': 'ZTF18aaabikt'},
+ 				{'_id': b'\xaaL|\x14?\xb4\xc3D\xd2\x2a?L\x9a\xa6\xa1o', 'stock': 'ZTF17aaagvng'}
 			]
 		"""
 
@@ -70,7 +70,7 @@ class QueryLatestCompound:
 				raise ValueError("tran_ids must be of type str or int or Int64 (or sequence of these types)")
 
 		query = {
-			'stockId': tran_ids if isinstance(tran_ids, (int, Int64, str))
+			'stock': tran_ids if isinstance(tran_ids, (int, Int64, str))
 			else {
 				'$in': tran_ids if isinstance(tran_ids, list)
 					else list(tran_ids)
@@ -88,19 +88,19 @@ class QueryLatestCompound:
 			},
 			{
 				'$project': {
-					'stockId': 1,
+					'stock': 1,
 					'len': 1
 				}
 			},
 			{
 				'$sort': {
-					'stockId': 1, 
+					'stock': 1, 
 					'len': -1
 				} 
 			},
 			{
 				'$group': {
-					'_id': '$stockId',
+					'_id': '$stock',
 					'data': {
 						'$first': '$$ROOT'
 					}
@@ -174,7 +174,7 @@ class QueryLatestCompound:
 				   {'pp': 378334946315010000},
 				   {'pp': 404270856315015007}],
 				  'tier': 0,
-				  'stockId': 'ZTF18aaayyuq'
+				  'stock': 'ZTF18aaayyuq'
 				}
 			]
 
@@ -183,12 +183,12 @@ class QueryLatestCompound:
 			In []: list(
 				col.aggregate(
 					QueryLatestCompound.general_query(
-						'ZTF18aaayyuq', project={'$project': {'stockId':1}}
+						'ZTF18aaayyuq', project={'$project': {'stock':1}}
 					)
 				)
 			)
 			Out[]: 
-				[{'_id': '5de2480f28bfca0bd3baae890cb2d2ae', 'stockId': 'ZTF18aaayyuq'}]
+				[{'_id': '5de2480f28bfca0bd3baae890cb2d2ae', 'stock': 'ZTF18aaayyuq'}]
 		"""
 
 		# Robustness
@@ -198,7 +198,7 @@ class QueryLatestCompound:
 				"Type of tran_id must be a string or an int (multi tran_id queries not supported)"
 			)
 
-		query = {'stockId': tran_id}
+		query = {'stock': tran_id}
 
 		if channels is not None:
 			QueryMatchSchema.apply_schema(
