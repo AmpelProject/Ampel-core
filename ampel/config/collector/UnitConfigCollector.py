@@ -13,9 +13,8 @@ from ampel.common.AmpelUtils import AmpelUtils
 from ampel.model.AmpelBaseModel import AmpelBaseModel
 from ampel.config.collector.TierConfigCollector import TierConfigCollector
 
-class UnitDefinitionData(AmpelBaseModel):
-	"""
-	"""
+class UnitDefinitionModel(AmpelBaseModel):
+	""" """
 	class_name: str
 	short_mro: List[str]
 
@@ -24,7 +23,10 @@ class UnitConfigCollector(TierConfigCollector):
 	""" """
 
 	# pylint: disable=inconsistent-return-statements
-	def add(self, arg: List[Union[Dict[str, str], str]], dist_name: str = None) -> None:
+	def add(self, 
+		arg: List[Union[Dict[str, str], str]], 
+		dist_name: str = None
+	) -> None:
 		"""
 		"""
 		for el in AmpelUtils.iter(arg):
@@ -39,9 +41,9 @@ class UnitConfigCollector(TierConfigCollector):
 						'distName': dist_name
 					}
 					
-				elif isinstance(el, Dict):
+				elif isinstance(el, dict):
 					try:
-						d = UnitDefinitionData(**el)
+						d = UnitDefinitionModel(**el)
 					except Exception:
 						self.error(
 							"Unsupported unit definition (dict)" + 
@@ -70,6 +72,7 @@ class UnitConfigCollector(TierConfigCollector):
 					)
 					continue
 
+				# check for AmpelUnit in mro ?
 				if self.verbose:
 					self.logger.verbose(
 						f"-> Adding T{self.tier} {self.conf_section}: {class_name}"
@@ -78,8 +81,10 @@ class UnitConfigCollector(TierConfigCollector):
 				self.__setitem__(class_name, entry)
 
 			except Exception as e:
+
 				if 'class_name' not in locals():
 					class_name = "Unknown"
+
 				self.error(
 					f"Error occured while loading {self.conf_section} {class_name} " +
 					self.distrib_hint(dist_name),
@@ -97,7 +102,7 @@ class UnitConfigCollector(TierConfigCollector):
 
 
 	@staticmethod
-	def get_trimmed_mro(fqn: str, class_name: str) -> str:
+	def get_trimmed_mro(fqn: str, class_name: str) -> List[str]:
 		"""
 		Returns method return order 
 		(except for the first and last members 
@@ -112,6 +117,7 @@ class UnitConfigCollector(TierConfigCollector):
 
 		for el in UnitClass.__mro__[1:-1]:
 			print(el)
+
 		return [
 			UnitConfigCollector.get_class_name(el.__name__) 
 			for el in UnitClass.__mro__[1:-1]
