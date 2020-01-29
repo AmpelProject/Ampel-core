@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : jvs/vb
 # Date              : 12.10.2019
-# Last Modified Date: 28.01.2020
+# Last Modified Date: 29.01.2020
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from setuptools import setup, find_namespace_packages
@@ -20,7 +20,6 @@ setup(
 			  'deploy/production/initdb/*/*.sql',
 			  'deploy/prodution/initdb/*/*.sh'
 		  ],
-		  'ampel': ['py.typed'],
 		  'conf': ['*.conf', '**/*.conf', '**/**/*.conf']
 	},
 	entry_points = {
@@ -34,9 +33,9 @@ setup(
 			'ampel-archive-topic = ampel.t0.load.fetcherutils:archive_topic',
 		],
 		'ampel_resources' : [
-			'mongo = ampel.common.resources:LiveMongoURI',
-			'graphite = ampel.common.resources:Graphite',
-			'slack = ampel.common.resources:SlackToken',
+			'mongo = ampel.config.resource.LiveMongoURI:LiveMongoURI',
+			'graphite = ampel.config.resource.Graphite:Graphite',
+			'slack = ampel.config.resource.SlackToken:SlackToken',
 		]
 	}
 )
