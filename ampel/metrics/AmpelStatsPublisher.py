@@ -16,7 +16,7 @@ from pymongo.database import Database
 from ampel.types import ChannelId
 from ampel.logging.AmpelLogger import AmpelLogger
 from ampel.utils.AmpelUtils import AmpelUtils
-from ampel.common.Schedulable import Schedulable
+from ampel.core.Schedulable import Schedulable
 from ampel.config.AmpelConfig import AmpelConfig
 from ampel.db.AmpelDB import AmpelDB
 from ampel.flags.T2RunState import T2RunState
@@ -132,7 +132,7 @@ class AmpelStatsPublisher(Schedulable):
 
 		# Instanciate GraphiteFeeder if required
 		if 'graphite' in publish_to:
-			from ampel.common.GraphiteFeeder import GraphiteFeeder
+			from ampel.metrics.GraphiteFeeder import GraphiteFeeder
 			self.graphite_feeder = GraphiteFeeder(
 				AmpelConfig.get('resource.graphite.default')
 			)
