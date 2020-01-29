@@ -55,8 +55,8 @@ class QueryMatchStock:
 		"""
 
 		query = QueryGeneralMatch.build(
-			channels=channels, 
-			with_tags=with_tags, 
+			channels=channels,
+			with_tags=with_tags,
 			without_tags=without_tags
 		)
 

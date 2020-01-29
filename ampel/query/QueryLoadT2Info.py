@@ -13,7 +13,7 @@ from ampel.types import strict_iterable
 from ampel.model.operator.AnyOf import AnyOf
 from ampel.model.operator.AllOf import AllOf
 from ampel.model.operator.OneOf import OneOf
-from ampel.common.AmpelUtils import AmpelUtils
+from ampel.utils.AmpelUtils import AmpelUtils
 from ampel.query.QueryUtils import QueryUtils
 from ampel.query.QueryGeneralMatch import QueryGeneralMatch
 
