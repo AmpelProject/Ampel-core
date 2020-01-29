@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-core/ampel/common/AmpelUtils.py
+# File              : Ampel-core/ampel/utils/AmpelUtils.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 07.06.2018
@@ -10,25 +10,16 @@
 import collections
 from functools import reduce
 from ampel.types import strict_iterable
+from typing import Dict, Any, List, Iterable, Union, Type, Tuple, Optional, Set
 
 
-class AmpelUtils():
-	"""
-	Static methods (as of Sept 2019):
-	iter(arg)
-	try_reduce(arg)
-	is_sequence(obj)
-	to_set(arg)
-	check_seq_inner_type(seq, types, multi_type=False)
-	get_by_path(mapping, path, delimiter='.')
-	flatten_dict(d, separator='.')
-	unflatten_dict(d, separator='.')
-	"""
+class AmpelUtils:
+	""" """
 
 	@staticmethod
 	def iter(arg):
 		"""
-		-> suppressing python3 treatment of str as iterable (a really dumb choice...)
+		-> suppressing python3 treatment of str as iterable (a really dumb choice)
 		-> Makes None iterable
 		"""
 		return [arg] if isinstance(arg, (type(None), str, int, bytes, bytearray)) else arg
@@ -51,7 +42,7 @@ class AmpelUtils():
 
 
 	@staticmethod
-	def build_unsafe_dict_id(dict_arg):
+	def build_unsafe_dict_id(dict_arg: Dict) -> str:
 		"""
 		:param dict dict_arg: can be nested
 		:returns: short dict id (ex: 'b2202f') made of a the last 6 characters of a SHA1 hex string.
@@ -70,19 +61,13 @@ class AmpelUtils():
 
 
 	@staticmethod
-	def to_set(arg):
+	def to_set(arg) -> Set:
 		"""
-		1) Reminder of python deep logic:
+		Reminder of python questionable logic:
 		In []: set('abc')
 		Out[]: {'a', 'b', 'c'}
 		In []: {'abc'}
 		Out[]: {'abc'}
-
-		2) Reminder of python unbreakable robustness:
-		In []: set([1,2])
-		Out[]: {1, 2}
-		In []: {[1,2]}
-		Out[]: -> TypeError: unhashable type: 'list'
 
 		In []: AmpelUtils.to_set("abc")
 		Out[]: {'abc'}
@@ -97,8 +82,9 @@ class AmpelUtils():
 
 
 	@classmethod
-	def to_list(cls, arg):
+	def to_list(cls, arg: Union[int, str, bytes, bytearray, list, Iterable]) -> List:
 		"""
+		raises ValueError is arg is not int, str, bytes, bytearray, list, or Iterable
 		"""
 		if isinstance(arg, (int, str, bytes, bytearray)):
 			return [arg]
@@ -111,7 +97,9 @@ class AmpelUtils():
 
 
 	@staticmethod
-	def check_seq_inner_type(seq, types, multi_type=False):
+	def check_seq_inner_type(
+		seq, types: Union[Type, Tuple[Type, ...]], multi_type: bool = False
+	) -> bool:
 		"""
 		check type of all elements contained in a sequence.
 		*all* members of the provided sequence must match with:
@@ -141,22 +129,22 @@ class AmpelUtils():
 
 
 	@staticmethod
-	def get_by_path(mapping, path, delimiter='.'):
+	def get_by_path(
+		mapping: Dict, path: Union[str, List[str]], delimiter: str = '.'
+	) -> Optional[Any]:
 		"""
 		Get an item from a nested mapping by path, e.g.
 		'foo.bar.baz' -> mapping['foo']['bar']['baz']
 
-		:param dict mapping:
 		:param path: example: 'foo.bar.baz' or ['foo', 'bar', 'baz']
-		:type path: str, list
-		:param str delimiter: example: '.'
-		:rtype: object or None
+		:param delimiter: example: '.'
 		"""
 		try:
-			array = path.split(delimiter) if isinstance(path, str) else path
+			if isinstance(path, str):
+				path = path.split(delimiter)
 			# check for int elements encoded as str
-			array = [(el if not el.isdigit() else int(el)) for el in array]
-			return reduce(lambda d, k: d.get(k), array, mapping)
+			array: List[Union[int, str]] = [(el if not el.isdigit() else int(el)) for el in path]
+			return reduce(lambda d, k: d.get(k), array, mapping) # type: ignore
 		except AttributeError:
 			return None
 
@@ -186,14 +174,14 @@ class AmpelUtils():
 
 
 	@staticmethod
-	def flatten_dict(d, separator='.'):
+	def flatten_dict(d: Dict, separator: str = '.') -> Dict:
 		"""
-		Example: 
+		Example:
 		input: {'count': {'chans': {'HU_SN': 10}}}
 		output: {'count.chans.HU_SN': 10}
 		"""
 		expand = lambda key, val: (
-			[(key + separator + k, v) for k, v in AmpelUtils.flatten_dict(val).items()] 
+			[(key + separator + k, v) for k, v in AmpelUtils.flatten_dict(val).items()]
 			if isinstance(val, dict) else [(key, val)]
 		)
 
@@ -203,13 +191,13 @@ class AmpelUtils():
 
 
 	@staticmethod
-	def unflatten_dict(d, separator='.'):
+	def unflatten_dict(d: Dict, separator: str = '.') -> Dict:
 		"""
-		Example: 
+		Example:
 		input: {'count.chans.HU_SN': 10}
 		output: {'count': {'chans': {'HU_SN': 10}}}
 		"""
-		res = {}
+		res: Dict = {}
 
 		for key, value in d.items():
 
