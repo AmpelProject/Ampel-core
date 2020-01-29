@@ -1,14 +1,14 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/config/builder/ConfigBuilder.py
+# File              : Ampel-core/ampel/config/builder/ConfigBuilder.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 03.09.2019
-# Last Modified Date: 15.10.2019
+# Last Modified Date: 28.01.2020
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import importlib, re, json
-from typing import Dict, Callable, List, Union, Sequence
+from typing import Dict, List, Union, Any, Optional
 from ampel.common.AmpelUtils import AmpelUtils
 from ampel.logging.AmpelLogger import AmpelLogger
 from ampel.config.ConfigUtils import ConfigUtils
@@ -34,8 +34,8 @@ class ConfigBuilder:
 		""" """
 		self.logger = AmpelLogger.get_logger() if logger is None else logger
 		self.base_config = BaseConfig(logger, verbose)
-		self.templates = {}
-		self.pwd = []
+		self.templates: Dict[str, Any] = {}
+		self.pwd: List[str] = []
 		self.verbose = verbose
 		self.error = False
 
@@ -88,7 +88,9 @@ class ConfigBuilder:
 		raise ValueError("Unknown config section: " + section)
 
 
-	def register_channel_templates(self, chan_templates: Dict[str, str], dist_name: str = None) -> None:
+	def register_channel_templates(self, 
+		chan_templates: Dict[str, str], dist_name: Optional[str] = None
+	) -> None:
 		""" """
 
 		if not isinstance(chan_templates, dict):
@@ -238,7 +240,7 @@ class ConfigBuilder:
 
 	def gather_processes(
 		self, config: BaseConfig, tier: int, match: str, collect: str
-	) -> Dict:
+	) -> Optional[Dict]:
 		"""
 		:param channel_names:
 		- None: all the available channels from the ampel config will be loaded
@@ -256,7 +258,7 @@ class ConfigBuilder:
 
 		init_configs = []
 		dist_names = set()
-		out_proc = None
+		out_proc: Optional[Dict] = None
 
 		for p in processes:
 
@@ -282,6 +284,9 @@ class ConfigBuilder:
 			# Collect distribution name
 			if p.get("distName"):
 				dist_names.add(p.get("distName"))
+
+		if out_proc is None:
+			return None
 
 		# for T0 processes: collect=processor.initConfig.channel
 		ConfigUtils.set_by_path(out_proc, collect, init_configs)
