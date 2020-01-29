@@ -1,34 +1,34 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/logging/AmpelLogger.py
+# File              : Ampel-core/ampel/logging/AmpelLogger.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 27.09.2018
-# Last Modified Date: 03.10.2019
+# Last Modified Date: 22.01.2020
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import logging, sys, traceback
 from bson import BSON
-from logging import _logRecordFactory
-from typing import Dict
+from logging import _logRecordFactory # type: ignore
+from typing import Dict, TextIO, Optional, Union, Sequence, Any
+from ampel.types import ChannelId
 from ampel.logging.AggregatableLogRecord import AggregatableLogRecord
 from ampel.logging.ExtraLogFormatter import ExtraLogFormatter
-from ampel.logging.LoggingUtils import LoggingUtils
-from ampel.config.ReadOnlyDict import ReadOnlyDict
+from ampel.view.ReadOnlyDict import ReadOnlyDict
 
 # Custom log int level (needed for efficient storing in DB)
 logging.DEBUG = 65536 
-logging.VERBOSE = 131072
+logging.VERBOSE = 131072 # type: ignore
 logging.INFO = 262144
-logging.SHOUT = 262145
+logging.SHOUT = 262145 # type: ignore
 logging.WARNING = 524288
 logging.WARN = 524288
 logging.ERROR = 1048576
 
 logging.addLevelName(logging.DEBUG, "DEBUG")
-logging.addLevelName(logging.VERBOSE, "VERBOSE")
+logging.addLevelName(logging.VERBOSE, "VERBOSE") # type: ignore
 logging.addLevelName(logging.INFO, "INFO")
-logging.addLevelName(logging.SHOUT, "SHOUT")
+logging.addLevelName(logging.SHOUT, "SHOUT") # type: ignore
 logging.addLevelName(logging.WARNING, "WARNING")
 logging.addLevelName(logging.WARN, "WARN")
 logging.addLevelName(logging.ERROR, "ERROR")
@@ -38,14 +38,14 @@ class AmpelLogger(logging.Logger):
 	"""
 	"""
 
-	loggers = {}
+	loggers: Dict[str, 'AmpelLogger'] = {}
 	default_stream = sys.stdout
 	current_logger = None
 	aggregation_ok = True
 
 
 	@classmethod
-	def set_default_stream(cls, arg):
+	def set_default_stream(cls, arg: TextIO) -> None:
 		"""
 		:param arg: either sys.stdout or sys.stderr
 		"""
@@ -53,7 +53,7 @@ class AmpelLogger(logging.Logger):
 
 
 	@staticmethod
-	def get_unique_logger(**kwargs):
+	def get_unique_logger(**kwargs) -> 'AmpelLogger':
 		"""
 		Returns a new instance of :obj:`AmpelLogger <ampel.logging.AmpelLogger>` at each execution.
 		This method calls :func:`get_logger <al.AmpelLogger.get_logger>` with a logger *name* 
@@ -62,7 +62,6 @@ class AmpelLogger(logging.Logger):
 		for more info regarding the returned logger.
 
 		:param dict ``**kwargs``: passed to :func:`_new_logger <al.AmpelLogger._new_logger>`
-		:returns: :func:`AmpelLogger <al.AmpelLogger>` instance
 
 		Typical use:\n
 		.. sourcecode:: python\n
@@ -77,7 +76,7 @@ class AmpelLogger(logging.Logger):
 
 
 	@staticmethod
-	def get_logger(name="Ampel", force_refresh=False, **kwargs):
+	def get_logger(name: str = "Ampel", force_refresh: bool = False, **kwargs) -> 'AmpelLogger':
 		"""
 		Creates or returns an instance of :obj:`AmpelLogger <ampel.logging.AmpelLogger>` 
 		that is registered in static dict :func:`loggers <ampel.logging.AmpelLogger.loggers>` 
@@ -88,8 +87,8 @@ class AmpelLogger(logging.Logger):
 		Please check :func:`_new_logger <ampel.logging.AmpelLogger._new_logger>`
 		for more info regarding the returned logger.
 
-		:param str name: logger name
-		:param dict ``**kwargs``: passed to :func:`_new_logger <al.AmpelLogger._new_logger>`
+		:param name: logger name
+		:param ``**kwargs``: passed to :func:`_new_logger <al.AmpelLogger._new_logger>`
 		:returns: :obj:`AmpelLogger <ampel.logging.AmpelLogger>` instance
 
 		Typical use:\n
@@ -107,9 +106,11 @@ class AmpelLogger(logging.Logger):
 
 	@staticmethod
 	def _new_logger(
-		name, stream=None, log_level=logging.DEBUG, formatter=None, 
-		channels=None, aggregate_interval=1, formatter_options={}
-	):
+		name: str, stream: Optional[TextIO] = None,
+		log_level: int = logging.DEBUG, formatter: logging.Formatter = None,
+		channels: Optional[Union[ChannelId, Sequence[ChannelId]]] = None,
+		aggregate_interval: int = 1, formatter_options: Optional[Dict] = None
+	) -> 'AmpelLogger':
 		"""
 		Creates an instance of :obj:`AmpelLogger <ampel.logging.AmpelLogger>` 
 		with the following properties:\n
@@ -117,10 +118,8 @@ class AmpelLogger(logging.Logger):
 		- it is associated with an AmpelLoggingStreamHandler instance (initialized with provided stream)
 		- the later uses ampel.logging.ExtraLogFormatter as formatter
 
-		:param str name: logger name
-		:returns: :obj:`AmpelLogger <ampel.logging.AmpelLogger>` instance
-
-		:param dict formatter_options: possible keys: 'datefmt' (default "%Y-%m-%d %H:%M:%S"), 
+		:param name: logger name
+		:param formatter_options: possible keys: 'datefmt' (default "%Y-%m-%d %H:%M:%S"), 
 		'line_number' (bool, default false), 'channels' (default: None)
 		"""
 
@@ -135,58 +134,57 @@ class AmpelLogger(logging.Logger):
 			aggregate_interval=aggregate_interval
 		)
 		sh.setLevel(log_level)
-		sh.setFormatter(
-			# Allows to print values passed in dict 'extra'
-			ExtraLogFormatter(**formatter_options) if formatter is None else formatter
-		)
+
+		if formatter is None:
+			formatter = ExtraLogFormatter(**formatter_options) \
+				if formatter_options else ExtraLogFormatter()
+
+		# Allows to print values passed in dict 'extra'
+		sh.setFormatter(formatter)
 		logger.addHandler(sh)
 
 		return logger
 
 
 	@classmethod
-	def quieten_console_loggers(self):
+	def quieten_console_loggers(cls) -> None:
 		""" 
 		Quieten all loggers registered in AmpelLogger.loggers.
 		See quieten_console (without s) docstring for more info
-		:returns: None
 		"""
-		for logger in AmpelLogger.loggers.values():
+		for logger in cls.loggers.values():
 			logger.set_console_log_level(logging.WARNING)
 
 		
 	@classmethod
-	def louden_console_loggers(self):
+	def louden_console_loggers(cls) -> None:
 		""" 
 		Louden all loggers registered in AmpelLogger.loggers.
 		See louden_console (without s) docstring for more info
 		:returns: None
 		"""
-		for logger in AmpelLogger.loggers.values():
+		for logger in cls.loggers.values():
 			logger.set_console_log_level(logging.DEBUG)
 
 
-	def __init__(self, name, level=logging.DEBUG, channels=None):
-		""" 
-		:param str name:
-		:param int level:
-		:param channels: 
-		:type channels: list(str), str
-		"""
+	def __init__(self, 
+		name: str, level: int = logging.DEBUG, 
+		channels: Optional[Union[ChannelId, Sequence[ChannelId]]] = None
+	):
+		""" """
 
 		super().__init__(name, level)
 		self.__extra = None
 
 		if channels:
-			if type(channels) not in (list, int, str):
+			if not isinstance(channels, (list, int, str)):
 				raise ValueError(
-					"Unsupported type for parameter 'channels' (%s)" % 
-					type(channels)
+					f"Unsupported type for parameter 'channels' ({type(channels)})"
 				)
 			self.__extra = ReadOnlyDict({'channels': channels})
 
 
-	def set_extra(self, key, value):
+	def set_extra(self, key: str, value: Any) -> None:
 		"""
 		Note: whatever you add here, it must be BSON encodable
 		"""
@@ -205,13 +203,13 @@ class AmpelLogger(logging.Logger):
 			self.__extra = ReadOnlyDict({key: value})
 
 
-	def unset_extra(self):
+	def unset_extra(self) -> None:
 		"""
 		"""
 		self.__extra = None
 
 
-	def set_console_log_level(self, lvl):
+	def set_console_log_level(self, lvl: int) -> None:
 		"""
 		Sets log level of StreamHandler instance possibly associated with this logger.
 		If no StreamHandler instance exists, nothing is performed.
@@ -226,7 +224,7 @@ class AmpelLogger(logging.Logger):
 				return
 
 
-	def quieten_console(self):
+	def quieten_console(self) -> None:
 		""" 
 		Shortcut for set_console_log_level(21)\n
 		:returns: None
@@ -235,7 +233,7 @@ class AmpelLogger(logging.Logger):
 		self.set_console_log_level(logging.WARNING)
 
 		
-	def louden_console(self):
+	def louden_console(self) -> None:
 		""" 
 		Shortcut for set_console_log_level(logging.DEBUG)\n
 		:returns: None
@@ -244,22 +242,24 @@ class AmpelLogger(logging.Logger):
 		self.set_console_log_level(logging.DEBUG)
 
 
-	def shout(self, msg, *args, **kwargs):
+	def shout(self, msg: str, *args, **kwargs) -> None:
 		"""
-		shout: custom msg with log level SHOUT (21) that should make its way \
+		log custom msg with log level SHOUT (21) that should make its way \
 		through the StreamHandler (even quietened)
 		"""
-		self._log(logging.SHOUT, msg, args, **kwargs)
+		self._log(logging.SHOUT, msg, args, **kwargs) # type: ignore
 
 
-	def verbose(self, msg, *args, **kwargs):
+	def verbose(self, msg, *args, **kwargs) -> None:
 		"""
-		shout: custom msg with log level VERBOSE (15)
+		log custom msg with log level VERBOSE (15)
 		"""
-		self._log(logging.VERBOSE, msg, args, **kwargs)
+		self._log(logging.VERBOSE, msg, args, **kwargs) # type: ignore
 
 
-	def propagate_log(self, level: int, msg: str, extra: Dict = None):
+	def propagate_log(self, 
+		level: int, msg: str, extra: Optional[Dict[str, Any]] = None, exc_info: bool = False
+	) -> None:
 		"""
 		| Set StreamHandler logging level to DEBUG, log the log message and \
 		then set the StreamHandler log level back to its initial value. 
@@ -268,9 +268,8 @@ class AmpelLogger(logging.Logger):
 		log entries are saved in the DB anyway (using DBLoggingHandler).
 		| Selected INFO log entries are worth logging on the console though, hence this method.
 
-		:param int level: log level (ex: logging.INFO)
-		:param str msg: message to be logged
-		:returns: None
+		:param level: log level (ex: logging.INFO)
+		:param msg: message to be logged
 		"""
 
 		for handler in self.handlers:
@@ -278,16 +277,16 @@ class AmpelLogger(logging.Logger):
 				previous_level = handler.level
 				try:
 					handler.setLevel(logging.DEBUG)
-					self.log(level, msg, extra=extra)
+					self.log(level, msg, extra=extra, exc_info=exc_info)
 				finally:
 					handler.setLevel(previous_level)
 				break
 
 
-	def makeRecord(
-		self, name, level, fn, lno, msg, args, exc_info, 
+	def makeRecord(self, 
+		name, level, fn, lno, msg, args, exc_info, 
 		func=None, extra=None, sinfo=None
-	):
+	) -> logging.LogRecord:
 		"""
 		Override of parent factory method.
 
@@ -319,7 +318,7 @@ class AmpelLogger(logging.Logger):
 
 			addlog = lambda x: self.handle(AggregatableLogRecord(rv, x))
 
-			if exc_info[0] == None:
+			if exc_info[0] is None:
 				addlog("exc_info was requested but no exception could be found")
 				exc_info = None
 
