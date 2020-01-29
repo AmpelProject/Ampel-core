@@ -1,16 +1,16 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/model/t3/QueryMatchModel.py
+# File              : Ampel-core/ampel/model/t3/QueryMatchModel.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 29.09.2018
-# Last Modified Date: 10.10.2019
+# Last Modified Date: 27.12.2019
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from typing import Any
 from pydantic import validator
-from ampel.typing import StrictIterable
-from ampel.common.AmpelUtils import AmpelUtils
+from ampel.types import strict_iterable
+from ampel.utils.AmpelUtils import AmpelUtils
 from ampel.utils.docstringutils import gendocstring
 from ampel.model.AmpelBaseModel import AmpelBaseModel
 
@@ -97,7 +97,7 @@ class QueryMatchModel(AmpelBaseModel):
 
 			if 'anyOf' in v:
 
-				if not isinstance(v['anyOf'], StrictIterable):
+				if not isinstance(v['anyOf'], strict_iterable):
 					raise ValueError(
 						"QueryMatchModel error\n" +
 						"Invalid dict value type: %s. Must be a sequence" % type(v['anyOf'])
@@ -136,7 +136,7 @@ class QueryMatchModel(AmpelBaseModel):
 
 			elif 'allOf' in v:
 
-				if not isinstance(v['allOf'], StrictIterable):
+				if not isinstance(v['allOf'], strict_iterable):
 					raise ValueError(
 						"QueryMatchModel error\n" +
 						"Invalid dict value type: %s. Must be a sequence" % type(v['anyOf']))
