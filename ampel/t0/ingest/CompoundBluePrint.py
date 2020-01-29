@@ -1,11 +1,14 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/t0/ingest/CompoundBluePrint.py
+# File              : Ampel-core/ampel/t0/ingest/CompoundBluePrint.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 01.01.2018
-# Last Modified Date: 17.10.2019
+# Last Modified Date: 30.01.2020
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
+
+from typing import Set, Optional
+from ampel.types import ChannelId, StrictIterable
 
 
 class CompoundBluePrint:
@@ -36,7 +39,7 @@ class CompoundBluePrint:
 		#4 save tuple (chan name, strict id) using effective id as key
 		self.d_eid_tuple_chan_sid = {}
 
-		#5 save strict compound difference (wrt to effective compound) using strict if as key 
+		#5 save strict compound difference (wrt to effective compound) using strict if as key
 		self.d_sid_compdiff = {}
 
 		#6 save eid <-> ppid association
@@ -46,10 +49,10 @@ class CompoundBluePrint:
 		self.d_eid_comptags = {}
 
 
-	def get_effids_of_chans(self, chan_names):
+	def get_effids_of_chans(self, chan_names: StrictIterable[ChannelId]) -> Set[str]:
 		"""
-		chan_names: list/tuple/set of channel names (string)
-		Returns a set of strings containing effective compound ids (string)
+		:param chan_names: list/tuple/set of channel names (string)
+		:returns: a set of strings containing effective compound ids (string)
 		"""
 		eids = set()
 		for chan_name in chan_names:
@@ -57,46 +60,46 @@ class CompoundBluePrint:
 				if chan_name in self.d_eid_chnames[eid]:
 					eids.add(eid)
 		return eids
-	
 
-	def get_effid_of_chan(self, chan_name):
+
+	def get_effid_of_chan(self, chan_name: ChannelId) -> Optional[str]:
 		"""
-		chan_name: channel name (string)
-		Returns a set of strings containing effective compound ids (string)
+		:returns: a set of strings containing effective compound ids (string)
 		"""
 		for eid in self.d_eid_chnames.keys():
 			if chan_name in self.d_eid_chnames[eid]:
 				return eid
+		return None
 
 
 	def get_chans_with_effid(self, eff_comp_id):
 		"""
-		Parameter eff_comp_id: effective compound id (string)
-		Returns a set of strings containing channel names
+		:param eff_comp_id: effective compound id (string)
+		:returns: a set of strings containing channel names
 		"""
 		return self.d_eid_chnames[eff_comp_id]
 
 
 	def get_comp_tags(self, eff_comp_id):
-		"""	
-		Parameter eff_comp_id: effective compound id (string)
-		"""	
+		"""
+		:param eff_comp_id: effective compound id (string)
+		"""
 		return self.d_eid_comptags[eff_comp_id]
 
 
 	def get_eff_compound(self, eff_comp_id):
-		"""	
-		Parameter eff_comp_id: effective compound id (string)
-		Returns the effective compound: a list of dict instances, 
+		"""
+		:param eff_comp_id: effective compound id (string)
+		:returns: the effective compound: a list of dict instances,
 		each created by CompoundShaper.gen_compound_item()
-		"""	
+		"""
 		return self.d_eid_comp[eff_comp_id]
 
 
 	def get_ppids_of_chans(self, chan_names):
 		"""
-		Parameter chan_names: list/tuple/set of channel names (string)
-		Returns a set of strings containing pp compound ids (string)
+		:param chan_names: list/tuple/set of channel names (string)
+		:returns: a set of strings containing pp compound ids (string)
 		"""
 		ppids = set()
 		for chan_name in chan_names:
@@ -109,15 +112,14 @@ class CompoundBluePrint:
 
 	def get_ppid_of_effid(self, eff_comp_id):
 		"""
-		Parameter eff_comp_id: effective compound id (string)
-		Returns the associated pp compound id (string)
+		:param eff_comp_id: effective compound id (string)
+		:returns: the associated pp compound id (string)
 		"""
 		return self.d_eid_ppid[eff_comp_id]
 
 
 	def has_flavors(self, compound_id):
-		"""	
-		"""	
+		""" """
 		if not compound_id in self.d_eid_tuple_chan_sid:
 			return False
 
@@ -137,8 +139,8 @@ class CompoundBluePrint:
 
 
 	def get_channel_flavors(self, compound_id):
-		"""	
-		"""	
+		"""
+		"""
 		return [
 			{
 				'channel': [ell.name for ell in el[0].as_list()],
