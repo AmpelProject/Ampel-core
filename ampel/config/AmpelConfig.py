@@ -8,7 +8,6 @@
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import json
-from typing import Dict
 from ampel.model.EncryptedDataModel import EncryptedDataModel
 from ampel.config.AmpelBaseConfig import AmpelBaseConfig
 
@@ -41,6 +40,15 @@ class AmpelConfig(AmpelBaseConfig):
 		)
 
 
+	def get_db(self) -> 'ampel.db.AmpelDB': # type: ignore
+		""" """
+		if not hasattr(self, 'ampel_db'):
+			# avoid cyclic import
+			from ampel.db.AmpelDB import AmpelDB
+			self.ampel_db = AmpelDB(self)
+		return self.ampel_db
+
+
 	def deactivate_all_processes(self) -> None:
 		""" """
 		for i in range(4):
@@ -64,14 +72,14 @@ class AmpelConfig(AmpelBaseConfig):
 		pass
 
 
-	def get_resource(self, conf_key: str, debug: bool = False) -> Dict:
+	def get_resource(self, conf_key: str, debug: bool = False) -> dict:
 		""" """
 		return self.recursive_decrypt(
 			f"resource.{conf_key}", debug
 		)
 
 
-	def recursive_decrypt(self, conf_key: str, debug: bool = False) -> Dict:
+	def recursive_decrypt(self, conf_key: str, debug: bool = False) -> dict:
 		"""
 		Note:
 		- returns None if conf with provided key is not a Dict
@@ -80,14 +88,14 @@ class AmpelConfig(AmpelBaseConfig):
 		ret = None
 		d = self.get(conf_key)
 
-		if not isinstance(d, Dict):
+		if not isinstance(d, dict):
 			return ret
 
 		for key in d.keys():
 
 			value = d[key]
 
-			if isinstance(value, Dict):
+			if isinstance(value, dict):
 
 				if "iv" in value:
 		
