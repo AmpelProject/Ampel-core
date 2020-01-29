@@ -1,23 +1,28 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/common/AmpelStatsPublisher.py
+# File              : Ampel-core/ampel/metrics/AmpelStatsPublisher.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 26.05.2018
-# Last Modified Date: 20.08.2019
+# Last Modified Date: 29.01.2020
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import sys, json, psutil
 from time import time, strftime
+from typing import Optional, Dict, Any, Iterable, Container
+from pymongo.collection import Collection
+from pymongo.database import Database
+
+from ampel.types import ChannelId
 from ampel.logging.AmpelLogger import AmpelLogger
-from ampel.common.AmpelUtils import AmpelUtils
+from ampel.utils.AmpelUtils import AmpelUtils
 from ampel.common.Schedulable import Schedulable
 from ampel.config.AmpelConfig import AmpelConfig
 from ampel.db.AmpelDB import AmpelDB
 from ampel.flags.T2RunState import T2RunState
 
 class AmpelStatsPublisher(Schedulable):
-	""" 
+	"""
 
 	EXAMPLE of graphite stats
 	#########################
@@ -27,7 +32,7 @@ class AmpelStatsPublisher(Schedulable):
 		"dbInfo.daemon.connections": number of opened TCP connection
 
 	mongodb collection 't0'
-		"dbInfo.t0.size": size 
+		"dbInfo.t0.size": size
 		"dbInfo.t0.storageSize": size on disk
 		"dbInfo.t0.totalIndexSize": index size
 
@@ -64,29 +69,29 @@ class AmpelStatsPublisher(Schedulable):
 	col_stats_keys = ('size', 'storageSize', 'totalIndexSize')
 
 
-	def __init__(
-		self, channel_names=None, 
-		publish_to=['graphite', 'mongo', 'print'],
-		publish_what=['col_stats', 'docs_count', 'daemon', 'channels', 'archive', 'system'],
-	):
+	def __init__(self,
+		channel_names: Optional[Iterable[ChannelId]] = None,
+		publish_to: Container[str] = ('graphite', 'mongo', 'print'),
+		publish_what: Container[str] = ('col_stats', 'docs_count', 'daemon', 'channels', 'archive', 'system'),
+	) -> None:
 		"""
-		:param list(str) channel_names: list of channel names, if None, stats for all avail channels will be reported. 
-		:param list(str) publish_to: send stats to\n
+		:param channel_names: list of channel names, if None, stats for all avail channels will be reported.
+		:param publish_to: send stats to\n
 		  * mongo: send metrics to dedicated mongo collection (mongodb_uri must be set)
 		  * graphite: send db metrics to graphite (graphite server must be defined in Ampel_config)
 		  * print: print db metrics to stdout
 		  * log: log db metrics using logger instance
-		:param list(str) publish_what:\n
+		:param publish_what:\n
 		  * col_stats -> collection stats (size, compressedSize, indexSize)
 		  * docs_count -> number of documents in collections
 		  * daemon -> mongod stats (ram usage, number of sockets open)
 		  * channels -> number of transients in each channel
-		  * archive -> 
+		  * archive ->
 		"""
 
 		# Pass custom args to Parent class constructor
-		Schedulable.__init__(self, 
-			start_callback=self.send_all_metrics, 
+		Schedulable.__init__(self,
+			start_callback=self.send_all_metrics,
 			stop_callback=self.send_all_metrics
 		)
 
@@ -95,23 +100,21 @@ class AmpelStatsPublisher(Schedulable):
 		self.logger.info("Setting up AmpelStatsPublisher")
 
 		# Load provided channels or all channels defined in AmpelConfig
-		self.channel_names = (
-			tuple(AmpelConfig.get('channel').keys()) if channel_names is None 
+		self.channel_names = tuple(AmpelConfig.get('channel').keys()) if channel_names is None \
 			else channel_names
-		)
 
 		# update interval dict. Values in minutes
-		self.update_intervals = {
-			'col_stats': 30, 
-			'docs_count': 30, 
-			'daemon': 10, 
+		self.update_intervals: Dict[str, int] = {
+			'col_stats': 30,
+			'docs_count': 30,
+			'daemon': 10,
 			'channels': 10,
 			'archive': 10,
 			'system': 1,
 		}
 
 		# update interval dict. Values in minutes
-		for key in self.update_intervals.keys(): 
+		for key in self.update_intervals.keys():
 			if key not in publish_what:
 				self.update_intervals[key] = None
 
@@ -151,14 +154,13 @@ class AmpelStatsPublisher(Schedulable):
 		self.logger.info("AmpelStatsPublisher setup completed")
 
 
-	def set_all_update_intervals(self, value):
+	def set_all_update_intervals(self, value: int) -> None:
 		"""
 		Convenience method.\n
-		Sets all update intervals ('col_stats', 'docs_count', 
-		'daemon', 'channels', 'archive') to provided value.
+		Set all update intervals ('col_stats', 'docs_count',
+		'daemon', 'channels', 'archive') to the provided value.
 
-		:param int value: number of minutes between checks.
-		:returns: None
+		:param value: number of minutes between checks
 		"""
 		for k in self.update_intervals.keys():
 			if self.update_intervals[k] is not None:
@@ -167,12 +169,11 @@ class AmpelStatsPublisher(Schedulable):
 		self.schedule_send_metrics()
 
 
-	def set_custom_update_intervals(self, d):
+	def set_custom_update_intervals(self, d: Dict[str, Any]) -> None:
 		"""
-		:param dict d: dict instance containing one or more items:\n
-			* posisible keys: 'col_stats', 'docs_count', 'daemon', 'channels', 'archive'
-			* possible values: number of minutes between checks (int).
-		:returns: None
+		:param d:
+		- posisible keys: 'col_stats', 'docs_count', 'daemon', 'channels', 'archive'
+		- possible values: number of minutes between checks (int).
 		"""
 		for key in d.keys():
 			if key not in self.update_intervals:
@@ -182,7 +183,7 @@ class AmpelStatsPublisher(Schedulable):
 		self.schedule_send_metrics()
 
 
-	def schedule_send_metrics(self):
+	def schedule_send_metrics(self) -> None:
 		"""
 		Converts 'update_intervals': {
 			'channels': 5, 'col_stats': 5, 'deamon': 2, 'docs_count': 10
@@ -193,7 +194,6 @@ class AmpelStatsPublisher(Schedulable):
  		 	  10: {'docs_count': True}
 		}
 		and schedule method send_metrics accordingly\n
-		:returns: None
 		"""
 		inv_map = {}
 		for k, v in self.update_intervals.items():
@@ -210,27 +210,23 @@ class AmpelStatsPublisher(Schedulable):
 
 		for interval in inv_map.keys():
 			scheduler.every(interval).minutes.do(
-				self.send_metrics, 
+				self.send_metrics,
 				**inv_map[interval]
 			)
 
 
-	def send_all_metrics(self):
-		"""
-		Convenience method\n
-		:returns: None
-		"""
+	def send_all_metrics(self) -> None:
+		""" Convenience method """
 		self.send_metrics(True, True, True, True, False)
 
 
-	def send_metrics(
-		self, daemon=False, col_stats=False, docs_count=False, 
-		channels=False, archive=False, system=True,
-	):
+	def send_metrics(self,
+		daemon: bool = False, col_stats: bool = False, docs_count: bool = False,
+		channels: bool = False, archive: bool =False, system: bool = True,
+	) -> None:
 		"""
 		Send/publish metrics\n
 		:raises ValueError: when bad configuration was provided
-		:returns: None
 		"""
 
 		stats_dict = {'dbInfo': {}, 'count': {}}
@@ -273,7 +269,7 @@ class AmpelStatsPublisher(Schedulable):
 				).count(),
 
 				'pps': self.col_t0.find(
-					{'_id': {"$gt" : 0}}, 
+					{'_id': {"$gt" : 0}},
 				).count(),
 
 				't1': self.col_t1.find({}).count(),
@@ -304,8 +300,8 @@ class AmpelStatsPublisher(Schedulable):
 #				self.col_events.aggregate(
 #					[
 #						#{
-#						#	"$match": { 
-#						#		# TODO: add time constrain here 
+#						#	"$match": {
+#						#		# TODO: add time constrain here
 #								# example: since last AMPEL start
 #						#	}
 #						#},
@@ -321,7 +317,7 @@ class AmpelStatsPublisher(Schedulable):
 #				), None
 #			)
 #
-#			if res is None: 
+#			if res is None:
 #				# TODO: something
 #				pass
 #
@@ -343,17 +339,24 @@ class AmpelStatsPublisher(Schedulable):
 			stats_dict["archive"]["tables"] = self.archive_client.get_statistics()
 
 		if system:
+
 			stats_dict["system"] = {
 				"cpu_percent": psutil.cpu_percent(),
-				"disk_io_counters": {k:v._asdict() for k, v in psutil.disk_io_counters(perdisk=True).items() if not (k.startswith('loop') or k.startswith('dm-'))},
-				"net_io_counters": {k:v._asdict() for k, v in psutil.net_io_counters(pernic=True).items()}
+				"disk_io_counters": {
+					k: v._asdict() for k, v in psutil.disk_io_counters(perdisk=True).items()
+					if not (k.startswith('loop') or k.startswith('dm-'))
+				},
+				"net_io_counters": {
+					k: v._asdict() for k, v in psutil.net_io_counters(pernic=True).items()
+				}
 			}
+
 			for field in 'cpu_stats', 'swap_memory', 'virtual_memory':
 				stats_dict["system"][field] = getattr(psutil, field)()._asdict()
 
 		# Build dict with changed items only
 		out_dict = {
-			k:v for k, v in AmpelUtils.flatten_dict(stats_dict).items() 
+			k: v for k, v in AmpelUtils.flatten_dict(stats_dict).items()
 			if self.past_items.get(k) != v
 		}
 
@@ -384,8 +387,8 @@ class AmpelStatsPublisher(Schedulable):
 		# Log metrics using logger (logging module)
 		if "log" in self.publish_to:
 
-			self.logger.info("Computed metrics: %s" % str(stats_dict))
-			self.logger.info("Updated metrics: %s" % str(out_dict))
+			self.logger.info(f"Computed metrics: {stats_dict}")
+			self.logger.info(f"Updated metrics: {out_dict}")
 
 
 		# Publish metrics to graphite
@@ -422,7 +425,9 @@ class AmpelStatsPublisher(Schedulable):
 				)
 
 	@staticmethod
-	def get_server_stats(db, ret_dict=None, suffix=""):
+	def get_server_stats(
+		db: Database, ret_dict: Optional[Dict] = None, suffix: str = ""
+	) -> Dict:
 		"""
 		"""
 
@@ -437,9 +442,9 @@ class AmpelStatsPublisher(Schedulable):
 
 
 	@staticmethod
-	def get_col_stats(col, suffix=""):
-		"""
-		"""
+	def get_col_stats(col: Collection, suffix: str = "") -> Dict:
+		""" """
+
 		colstats = col.database.command("collstats", col.name)
 		ret_dict = {}
 
@@ -448,8 +453,8 @@ class AmpelStatsPublisher(Schedulable):
 
 		return ret_dict
 
-	
-	def get_tran_count(self, channel_name=None):
+
+	def get_tran_count(self, channel_name: Optional[ChannelId] = None) -> int:
 		"""
 		get number of unique transient in collection.
 		Query should be covered.
