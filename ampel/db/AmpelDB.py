@@ -1,17 +1,18 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/db/AmpelDB.py
+# File              : Ampel-core/ampel/db/AmpelDB.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 16.06.2018
-# Last Modified Date: 04.11.2019
+# Last Modified Date: 29.01.2020
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from logging import Logger
 from pymongo import MongoClient
-from pymongo.collection import Collection
 from pymongo.database import Database
-from typing import Union, Tuple, Sequence
+from pymongo.collection import Collection
+from typing import Sequence, Dict, List, Any
+
 from ampel.config.AmpelConfig import AmpelConfig
 from ampel.model.db.AmpelColModel import AmpelColModel
 from ampel.model.db.AmpelDBModel import AmpelDBModel
@@ -22,20 +23,20 @@ class AmpelDB:
 	"""
 	"""
 
-	def __init__(self, ampel_config: AmpelConfig, prefix_override=None):
+	def __init__(self, ampel_config: AmpelConfig, prefix_override=None) -> None:
 		"""
 		:param prefix_override: Convenience parameter that overrides 
 		the db prefix name defined in AmpelConfig (db.prefix)
 		"""
 		self.ampel_config = ampel_config
 		self._db_prefix = ampel_config.get('db.prefix') if not prefix_override else prefix_override
-		self._mongo_resources = ampel_config.get('resource.mongo')
+		self._mongo_resources: Dict[str, Any] = ampel_config.get('resource.mongo') # type: ignore
 
 		if self._mongo_resources is None:
 			raise ValueError("Mongo resources not set in provided ampel config")
 
-		self.dbs_config = [
-			AmpelDBModel(**el) for el in ampel_config.get('db.databases')
+		self.dbs_config: List[AmpelDBModel] = [
+			AmpelDBModel(**el) for el in ampel_config.get('db.databases') # type: ignore
 		]
 
 		self._col_config = {
@@ -44,8 +45,8 @@ class AmpelDB:
 				for col in db_config.collections
 		}
 
-		self._mongo_collections = {}
-		self._mongo_clients = {}
+		self._mongo_collections: Dict[str, Collection] = {}
+		self._mongo_clients: Dict[str, MongoClient] = {}
 
 
 	def enable_rejected_collections(self, channel_names: Sequence[str]) -> None:
@@ -55,11 +56,9 @@ class AmpelDB:
 		:param channel_names: list of channel names
 		"""
 		db_config = AmpelDBModel(
-			name='rej',
-			collections=[
-				{'name': chan_name} for chan_name in channel_names
-			],
-			role={'r': 'logger', 'w': 'logger'}
+			name = 'rej',
+			collections = [{'name': chan_name} for chan_name in channel_names],
+			role = {'r': 'logger', 'w': 'logger'}
 		)
 
 		self.dbs_config.append(db_config)
@@ -68,19 +67,11 @@ class AmpelDB:
 			self._col_config[col.name] = col
 			
 
-	def get_collection(self, col_name: str, mode: str = 'w') -> Union[Collection, Tuple[Collection]]:
+	def get_collection(self, col_name: str, mode: str = 'w') -> Collection:
 		""" 
-		If a collection does not exist, it will be created and the 
-		proper mongoDB indexes will be set.
-
-		:param str col_name: string or list of strings.
-		:param str mode: required permission level, either 'r' for read-only or 'rw' for read-write
-		:returns: instance or list of instances of pymongo.collection.Collection.
+		:param mode: required permission level, either 'r' for read-only or 'rw' for read-write
+		If a collection does not exist, it will be created and the proper mongoDB indexes will be set.
 		"""
-
-		# Convenience
-		if isinstance(col_name, (list, tuple)):
-			return (self.get_collection(name) for name in col_name)
 
 		if col_name in self._mongo_collections:
 			if mode in self._mongo_collections[col_name]:
@@ -128,7 +119,7 @@ class AmpelDB:
 		)
 
 
-	def init_db(self):
+	def init_db(self) -> None:
 		"""
 		"""
 		for db_config in self.dbs_config:
@@ -140,8 +131,8 @@ class AmpelDB:
 				)
 
 	
-	def create_collection(
-		self, resource_name: str, db_name: str, col_config: AmpelColModel, logger: Logger = None
+	def create_collection(self, 
+		resource_name: str, db_name: str, col_config: AmpelColModel, logger: Logger = None
 	) -> Collection:
 		""" 
 		:param resource_name: name of the AmpelConfig resource (resource.mongo) to be fed to MongoClient()
@@ -193,8 +184,8 @@ class AmpelDB:
 		return col
 
 
-	def set_col_index( 
-		self, resource_name: str, db_name: str, col_config: AmpelColModel, 
+	def set_col_index(self, 
+		resource_name: str, db_name: str, col_config: AmpelColModel, 
 		force_overwrite: bool = False, logger: Logger = None
 	) -> None:
 		"""
