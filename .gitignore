@@ -1,4 +1,8 @@
-Ampel_core.egg-info
+*.egg-info
+*.swp
+*.swo
+*.swn
 __pycache__
 .pytest_cache
-*.swn
+.DS_Store
+.mypy_cache
