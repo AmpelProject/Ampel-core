@@ -259,7 +259,7 @@ class T2Controller(Schedulable):
 				# for example: T2RunStates.EXCEPTION, T2RunStates.BAD_CONFIG, ...
 				if isinstance(ret, T2RunStates):
 
-					self.logger.error("T2 unit returned %s" % ret)
+					self.logger.debug("T2 unit returned %s" % ret)
 
 					self.col_blend.update_one(
 						{
