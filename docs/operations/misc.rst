@@ -182,3 +182,20 @@ On burst: (replace `af186630` with the container id of the catalog service, and 
   singularity shell instance://af186630
   cd /docker-entrypoint-initdb.d/
   mongoexport --port 27018 --username filterclient --password $PASSWORD --authenticationDatabase admin --db ToO --collection neutrinos --jsonArray -o neutrinos.json
+
+Create channels access info for the front-end
+=============================================
+
+On burst:
+  
+  singularity-stack exec burst t3-controller -- python -m ampel.contrib.hu.t3.TransientWebPublisher frontend-config > /scratch/frontend_config.tar.gz
+
+From ztf-wgs:
+  
+  cd ~jvsanten/public/www/ampel/FrontEnd
+  scp burst:/scratch/frontend_config.tar.gz .
+  tar xzf frontend_config.tar.gz
+
+Or in one shot:
+
+  echo 'exec bash -ic "singularity-stack exec burst t3-controller -- python -m ampel.contrib.hu.t3.TransientWebPublisher frontend-config"' | ssh burst sudo su ampel > ~/public/www/ampel/FrontEnd/frontend_config.tar.gz
