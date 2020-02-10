@@ -8,6 +8,7 @@
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import warnings
+from functools import lru_cache
 from ampel.pipeline.config.ReadOnlyDict import ReadOnlyDict
 from ampel.pipeline.common.AmpelUtils import AmpelUtils
 
@@ -79,6 +80,16 @@ class AmpelConfig:
 			
 		return sub_conf
 
+	@staticmethod
+	@lru_cache(maxsize=256)
+	def _decrypt(enc, passphrase):
+		"""
+		Decrypt a secret in SJCL format
+		"""
+		from sjcl import SJCL
+		return SJCL().decrypt(
+			dict(enc), passphrase
+		).decode("utf-8")
 
 	@classmethod
 	def decrypt_config(cls, enc_dict):
@@ -87,12 +98,12 @@ class AmpelConfig:
 		:raises: ValueError if decryption fails
 		:returns: string
 		"""
-		from sjcl import SJCL
+		enc = tuple((k,enc_dict[k]) for k in sorted(enc_dict.keys()))
 		for conf_pwd in cls.get_config("pwds"):
 			try:
-				return SJCL().decrypt(
-					enc_dict, conf_pwd	
-				).decode("utf-8") 
+				return cls._decrypt(
+					enc, conf_pwd
+				)
 			except Exception as e:
 				pass
 

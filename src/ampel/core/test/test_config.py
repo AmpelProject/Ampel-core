@@ -169,3 +169,12 @@ def test_skip_t2_units(default_config, mock_mongo):
 	})
 	c = Channel(config, 'ZTFIPAC', logging.getLogger(), {'MARSHALMONITOR'})
 	assert c.t2_units == {'CATALOGMATCH'}
+
+def test_decrypt_config():
+	from sjcl import SJCL
+	AmpelConfig.reset()
+	secret = 'flerpyfloo'
+	passphrase = 'grax'
+	enc_dict = SJCL().encrypt(secret.encode(), passphrase)
+	AmpelConfig.set_config({'pwds': [passphrase]})
+	assert AmpelConfig.decrypt_config(enc_dict) == secret
