@@ -1,14 +1,17 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/model/operator/AllOf.py
+# File              : Ampel-core/ampel/model/operator/AllOf.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 15.10.2018
-# Last Modified Date: 10.10.2019
+# Last Modified Date: 13.02.2020
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-from ampel.model.AmpelBaseModel import AmpelBaseModel
-from typing import List, Union
+from pydantic.generics import GenericModel
+from typing import List, TypeVar, Generic
+from pydantic import StrictInt, StrictStr, StrictFloat
 
-class AllOf(AmpelBaseModel):
-	allOf: Union[List[int], List[str]]
+T = TypeVar("T", StrictInt, StrictStr, StrictFloat, bytes)
+
+class AllOf(GenericModel, Generic[T]):
+	all_of: List[T]
