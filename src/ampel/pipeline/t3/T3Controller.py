@@ -74,7 +74,7 @@ class T3Controller(Schedulable):
 
 		schedule = ScheduleEvaluator()
 		self._pool = multiprocessing.get_context('spawn').Pool(maxtasksperchild=1,)
-		self._tasks = []
+		self._tasks = {}
 		for name, job_config in self.job_configs.items():
 			for appointment in job_config.get('schedule'):
 				schedule(self.scheduler, appointment).do(self.launch_t3_job, job_config).tag(name)
@@ -82,6 +82,14 @@ class T3Controller(Schedulable):
 		self.scheduler.every(5).minutes.do(self.monitor_processes)
 
 	def launch_t3_job(self, job_config):
+		# Check whether a task of the name name is already pending
+		name = getattr(job_config, 'job' if isinstance(job_config, T3JobConfig) else 'task')
+		if name in self._tasks:
+			if self._tasks[name].ready():
+				self._tasks[name].get()
+				del self._tasks[name]
+			else:
+				return
 		# NB: we defer instantiation of T3Job to the subprocess to avoid
 		# creating multiple MongoClients in the master process
 		fut = self._pool.apply_async(self._run_t3_job,
@@ -89,7 +97,7 @@ class T3Controller(Schedulable):
 		        AmpelConfig.recursive_unfreeze(AmpelConfig.get_config()),
 		        job_config,
 		))
-		self._tasks.append(fut)
+		self._tasks[name] = fut
 		return fut
 
 	@staticmethod
@@ -111,12 +119,12 @@ class T3Controller(Schedulable):
 	@property
 	def process_count(self):
 		""" """
-		pending = []
-		for fut in self._tasks:
+		pending = {}
+		for name, fut in self._tasks.items():
 			if fut.ready():
 				fut.get()
 			else:
-				pending.append(fut)
+				pending[name] = fut
 		self._tasks = pending
 		return len(self._tasks)
 
