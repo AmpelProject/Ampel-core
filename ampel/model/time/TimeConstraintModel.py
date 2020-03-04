@@ -14,22 +14,22 @@ from ampel.model.time.TimeLastRunModel import TimeLastRunModel
 from ampel.model.time.TimeStringModel import TimeStringModel
 from ampel.model.time.UnixTimeModel import UnixTimeModel
 from ampel.model.time.QueryTimeModel import QueryTimeModel
-from ampel.model.AmpelBaseModel import AmpelBaseModel
+from ampel.model.AmpelStrictModel import AmpelStrictModel
 
 
 @gendocstring
-class TimeConstraintModel(AmpelBaseModel):
+class TimeConstraintModel(AmpelStrictModel):
 	"""
 	example1:
 
 	TimeConstraintModel(
-	   **{
+		**{
 			"after": {
-				"matchType": "timeDelta",
+				"match_type": "timeDelta",
 				"days": -1
 			},
 			"before": {
-				"matchType": "timeString",
+				"match_type": "timeString",
 				"dateTimeStr": "21/11/06 16:30",
 				"dateTimeFormat": "%d/%m/%y %H:%M"
 			}
@@ -39,13 +39,13 @@ class TimeConstraintModel(AmpelBaseModel):
 	example2:
 
 	TimeConstraintModel(
-	   **{
+		**{
 			"after": {
-				"matchType": "timeLastRun",
-				"processName": "val_test"
+				"match_type": "timeLastRun",
+				"name": "val_test"
 			},
 			"before": {
-				"matchType": "unixTime",
+				"match_type": "unixTime",
 				"value": 1531306299
 			}
 		}

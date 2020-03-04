@@ -10,13 +10,13 @@
 from typing import Literal
 from datetime import datetime, timedelta
 from ampel.utils.docstringutils import gendocstring
-from ampel.model.AmpelBaseModel import AmpelBaseModel
+from ampel.model.AmpelStrictModel import AmpelStrictModel
 
 
 @gendocstring
-class TimeDeltaModel(AmpelBaseModel):
+class TimeDeltaModel(AmpelStrictModel):
 
-	matchType: Literal['timeDelta']
+	match_type: Literal['time_delta']
 	days: int = 0
 	seconds: int = 0
 	microseconds: int = 0

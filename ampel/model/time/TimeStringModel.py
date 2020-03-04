@@ -16,7 +16,7 @@ from ampel.utils.docstringutils import gendocstring
 @gendocstring
 class TimeStringModel(BaseModel):
 
-	matchType: Literal['timeString']
+	match_type: Literal['time_string']
 	dateTimeStr: str
 	dateTimeFormat: str
 

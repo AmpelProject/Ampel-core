@@ -10,11 +10,11 @@
 from pydantic import Field
 from typing import Union, Optional, Dict, Any
 from ampel.utils.docstringutils import gendocstring
-from ampel.model.AmpelBaseModel import AmpelBaseModel
+from ampel.model.AmpelStrictModel import AmpelStrictModel
 
 
 @gendocstring
-class QueryTimeModel(AmpelBaseModel):
+class QueryTimeModel(AmpelStrictModel):
 	"""
 	Standardized parameter for the class QueryMatchStock
 	"""

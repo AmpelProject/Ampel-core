@@ -15,7 +15,7 @@ from ampel.utils.docstringutils import gendocstring
 @gendocstring
 class UnixTimeModel(BaseModel):
 
-	matchType: Literal['unixTime']
+	match_type: Literal['unix_time']
 	value: int
 
 	# pylint: disable=unused-argument

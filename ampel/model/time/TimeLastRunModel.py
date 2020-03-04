@@ -9,15 +9,15 @@
 
 from typing import Union, Dict, Optional, Literal
 from ampel.utils.docstringutils import gendocstring
-from ampel.model.AmpelBaseModel import AmpelBaseModel
+from ampel.model.AmpelStrictModel import AmpelStrictModel
 from ampel.query.QueryEventsCol import QueryEventsCol
 from ampel.db.AmpelDB import AmpelDB
 
 @gendocstring
-class TimeLastRunModel(AmpelBaseModel):
+class TimeLastRunModel(AmpelStrictModel):
 
-	matchType: Literal['timeLastRun']
-	processName: str
+	match_type: Literal['time_last_run']
+	process_name: str
 	fallback: Union[None, Dict] = None
 
 	# pylint: disable=unused-argument
@@ -34,7 +34,7 @@ class TimeLastRunModel(AmpelBaseModel):
 		# First query the last 10 days (default value for back_days in QueryEventsCol)
 		res = next(
 			col.aggregate(
-				QueryEventsCol.get_last_run(model.processName)
+				QueryEventsCol.get_last_run(model.process_name)
 			), None
 		)
 
@@ -44,7 +44,7 @@ class TimeLastRunModel(AmpelBaseModel):
 			res = next(
 				col.aggregate(
 					QueryEventsCol.get_last_run(
-						model.processName, days_back=None
+						model.process_name, days_back=None
 					)
 				), None
 			)
