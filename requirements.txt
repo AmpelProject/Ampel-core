@@ -1,4 +1,5 @@
 pymongo
+pyyaml
 pytest
 ipython
 pydantic
