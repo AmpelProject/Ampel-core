@@ -4,37 +4,53 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 09.10.2019
-# Last Modified Date: 29.01.2020
+# Last Modified Date: 06.02.2020
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-import json
-import pkg_resources
-from pkg_resources import EggInfoDistribution, DistInfoDistribution # type: ignore
+import json, yaml, pkg_resources
+from pkg_resources import EggInfoDistribution, DistInfoDistribution # type: ignore[attr-defined]
 from typing import Dict, Any, Union, Callable, List, Optional
 from ampel.config.builder.ConfigBuilder import ConfigBuilder
 
 
 class DistConfigBuilder(ConfigBuilder):
 	"""
-	Subclass of ConfigLoader allowing to automatically detect and load 
-	various configuration files contained in ampel sub-packages installed with pip 
+	Subclass of ConfigLoader allowing to automatically detect and load
+	various configuration files contained in ampel sub-packages installed with pip
 	"""
 
-	def load_distributions(self, prefix: str = "ampel-", conf_dir: str = "conf") -> None:
+	def load_distributions(self,
+		prefixes: List[str] = ["pyampel-", "ampel-"],
+		conf_dirs: List[str] = ["conf"],
+		exts: List[str] = ["json", "yaml", "yml"]
+	) -> None:
 		"""
-		Loads all known conf files from all distributions with name starting with ampel-
+		:param prefixes: loads all known conf files from all distributions with name starting with prefixes
+		:param conf_dirs: loads only conf files from these directories
+		:param exts: loads only conf files with these extensions
 		"""
-		for distrib_name in self.get_dist_names(prefix):
+		for prefix in prefixes:
+
+			for dist_name in self.get_dist_names(prefix):
+
+				if self.verbose:
+					self.logger.verbose(f"Checking distribution '{dist_name}'")
+
+				for conf_dir in conf_dirs:
+					for ext in exts:
+						self.load_distrib(dist_name, conf_dir, ext)
+
+				if self.verbose:
+					self.logger.verbose(f"Done checking distribution '{dist_name}'")
 
 			if self.verbose:
-				self.logger.verbose("#"*150)
-				self.logger.verbose(f"Checking distribution '{distrib_name}'")
-
-			self.load_distrib(distrib_name, conf_dir)
+				self.logger.verbose("Done loading distributions")
 
 
-	def load_distrib(self, dist_name: str, conf_dir: str = "conf") -> None:
-		""" 
+	def load_distrib(self,
+		dist_name: str, conf_dir: str = "conf", ext: str = "json"
+	) -> None:
+		"""
 		Loads all known conf files of the provided distribution (name)
 		"""
 		try:
@@ -47,46 +63,49 @@ class DistConfigBuilder(ConfigBuilder):
 			# DistInfoDistribution: look for metadata RECORD (in <dist_name>.dist-info)
 			if isinstance(distrib, DistInfoDistribution):
 				# Example of the ouput of distrib.get_metadata_lines('RECORD'):
- 				# 'ampel-conf/ampel-ztf.conf,sha256=FZkChNKKpcMPTO4pwyKq4WS8FAbznuR7oL9rtNYS7U0,322',
- 				# 'ampel/model/ZTFLegacyChannelTemplate.py,sha256=zVtv4Iry3FloofSazIFc4h8l6hhV-wpIFbX3fOW2njA,2182',
- 				# 'ampel/model/__pycache__/ZTFLegacyChannelTemplate.cpython-38.pyc,,',
+				# 'conf/ampel-ztf.conf,sha256=FZkChNKKpcMPTO4pwyKq4WS8FAbznuR7oL9rtNYS7U0,322',
+				# 'ampel/model/ZTFLegacyChannelTemplate.py,sha256=zVtv4Iry3FloofSazIFc4h8l6hhV-wpIFbX3fOW2njA,2182',
+				# 'ampel/model/__pycache__/ZTFLegacyChannelTemplate.cpython-38.pyc,,',
 				all_conf_files = [
-					el.split(",")[0] for el in distrib.get_metadata_lines('RECORD') 
-					if el.startswith(conf_dir) and ".conf," in el
+					el.split(",")[0] for el in distrib.get_metadata_lines('RECORD')
+					if el.startswith(conf_dir) and f".{ext}," in el
 				]
 
 			elif isinstance(distrib, EggInfoDistribution):
 				# Example of the ouput of distrib.get_metadata_lines('SOURCES.txt'):
- 				# 'setup.py',
- 				# 'ampel-conf/ampel-ztf.conf',
- 				# 'ampel/model/ZTFLegacyChannelTemplate.py',
+				# 'setup.py',
+				# 'conf/ampel-ztf.json',
+				# 'ampel/model/ZTFLegacyChannelTemplate.py',
 				all_conf_files = [
-					el for el in distrib.get_metadata_lines('SOURCES.txt') 
-					if (el.startswith("ampel-conf/") and el.endswith(".conf"))
+					el for el in distrib.get_metadata_lines('SOURCES.txt')
+					if (el.startswith(f"{conf_dir}") and el.endswith(f".{ext}"))
 				]
 
 			else:
 				raise ValueError(f"Unsupported distribution type: '{type(distrib)}'")
 
-			if ampel_conf := self.get_conf_file(all_conf_files, "ampel.conf"):
+			if all_conf_files and self.verbose:
+				self.logger.verbose(f"Following conf files will be parse: {all_conf_files}")
+
+			if ampel_conf := self.get_conf_file(all_conf_files, f"ampel.{ext}"):
 				self.load_conf_using_func(distrib, ampel_conf, self.load_ampel_conf) # type: ignore
 
 			# Channel, db (and template) can be defined by multiple files
 			# in a directory named after the corresponding config section name
-			for key in ("channel", "db"):
+			for key in ("channel", "db", "process"):
 				if specialized_conf_files := self.get_conf_files(all_conf_files, f"/{key}/"):
 					for f in specialized_conf_files:
-						self.load_conf_using_func(distrib, f, self.base_config[key].add)
+						self.load_conf_using_func(distrib, f, self.first_pass_config[key].add)
 
 			# ("channel", "db", "resource")
-			for key in self.base_config.general_keys.keys():
-				if section_conf_file := self.get_conf_file(all_conf_files, f"{key}.conf"):
-					self.load_conf_using_func(distrib, section_conf_file, self.base_config[key].add) # type: ignore
+			for key in self.first_pass_config.general_keys.keys():
+				if section_conf_file := self.get_conf_file(all_conf_files, f"{key}.{ext}"):
+					self.load_conf_using_func(distrib, section_conf_file, self.first_pass_config[key].add) # type: ignore
 
 			# ("controller", "processor", "unit", "alias", "process")
-			for category in self.base_config.tier_keys.keys():
-				if tier_conf_file := self.get_conf_file(all_conf_files, f"{category}.conf"):
-					self.load_tier_config_file(distrib, tier_conf_file, category) # type: ignore
+			for unit_type in self.first_pass_config.tier_keys.keys():
+				if tier_conf_file := self.get_conf_file(all_conf_files, f"{unit_type}.{ext}"):
+					self.load_tier_config_file(distrib, tier_conf_file, unit_type) # type: ignore
 
 			# Try to load templates from folder template (defined by 'Ampel-ZTF' for ex.)
 
@@ -95,27 +114,25 @@ class DistConfigBuilder(ConfigBuilder):
 					self.load_conf_using_func(distrib, f, self.register_channel_templates)
 
 			# Try to load templates from template.conf
-			if template_conf := self.get_conf_file(all_conf_files, "/template.conf"):
+			if template_conf := self.get_conf_file(all_conf_files, "/template.{ext}"):
 				self.load_conf_using_func(distrib, template_conf, self.register_channel_templates) # type: ignore
 
 			if all_conf_files:
-				self.logger.info(
-					f"Not all conf files were loaded from distribution '{distrib.project_name}'\n"
-					f"Unprocessed conf files: {all_conf_files}"
-				)
+				self.logger.info(f"Not all conf files were loaded from distribution '{distrib.project_name}'")
+				self.logger.info(f"Unprocessed conf files: {all_conf_files}")
 
 		except Exception as e:
 			self.error = True
 			self.logger.error(
-				f"Error occured while loading conf from the distribution '{dist_name}'",
+				f"Error occured while loading configuration files from the distribution '{dist_name}'",
 				exc_info=e
 			)
 
 
-	def load_conf_using_func(self, 
-		distrib: Union[EggInfoDistribution, DistInfoDistribution], 
-		file_rel_path: str, 
-		func: Callable[[Dict[str, Any], str], None]
+	def load_conf_using_func(self,
+		distrib: Union[EggInfoDistribution, DistInfoDistribution],
+		file_rel_path: str,
+		func: Callable[[Dict[str, Any], str, str], None]
 	) -> None:
 		""" """
 
@@ -126,34 +143,46 @@ class DistConfigBuilder(ConfigBuilder):
 					f"Loading {file_rel_path} from distribution '{distrib.project_name}'"
 				)
 
+			if file_rel_path.endswith("json"):
+				load = json.loads
+			elif file_rel_path.endswith("yml") or file_rel_path.endswith("yaml"):
+				load = yaml.safe_load # type: ignore
+
 			func(
-				json.loads(
+				load(
 					distrib.get_resource_string(__name__, file_rel_path)
 				),
+				file_rel_path,
 				distrib.project_name
+			)
+
+		except FileNotFoundError:
+			self.error = True
+			self.logger.error(
+				f"File '{file_rel_path}' not found in distribution '{distrib.project_name}'"
 			)
 
 		except Exception as e:
 			self.error = True
 			self.logger.error(
-				f"Error occured loading {file_rel_path} from distribution '{distrib.project_name}'",
-				distrib.project_name, exc_info=e
+				f"Error occured loading '{file_rel_path}' from distribution '{distrib.project_name}'",
+				exc_info=e
 			)
 
 
-	def load_tier_config_file(self, 
-		distrib: Union[EggInfoDistribution, DistInfoDistribution], 
-		file_rel_path: str, 
-		category: str
+	def load_tier_config_file(self,
+		distrib: Union[EggInfoDistribution, DistInfoDistribution],
+		file_rel_path: str,
+		category: Optional[str] = None
 	) -> None:
-		""" 
+		"""
 		Files loaded by this method must have the following JSON structure:
 		{
 			"t0": { ... },
 			"t1": { ... },
 			...
 		}
-		whereby the t0, t1, t2 and t3 keys are optional (at least one is required though)	
+		whereby the t0, t1, t2 and t3 keys are optional (at least one is required though)
 		"""
 
 		try:
@@ -167,23 +196,41 @@ class DistConfigBuilder(ConfigBuilder):
 				distrib.get_resource_string(__name__, file_rel_path)
 			)
 
+			# Allow conf name "unit.json" for base units
+			if category == "unit":
+				category = "base"
+
 			for k in ("t0", "t1", "t2", "t3"):
 				if k in d:
-					self.base_config[k][category].add(
-						d[k], distrib.project_name
-					)
+					if category in self.first_pass_config[k]['unit']:
+						self.first_pass_config[k]['unit'][category].add(
+							d[k], file_name=file_rel_path,
+							dist_name=distrib.project_name
+						)
+					else:
+						self.first_pass_config[k][category].add(
+							d[k], file_name=file_rel_path,
+							dist_name=distrib.project_name
+						)
+
+		except FileNotFoundError:
+			self.error = True
+			self.logger.error(
+				f"File '{file_rel_path}' not found in distribution '{distrib.project_name}'"
+			)
 
 		except Exception as e:
 			self.error = True
 			self.logger.error(
-				f"Error occured loading {file_rel_path} from distribution '{distrib.project_name}'",
+				f"Error occured loading '{file_rel_path}' "
+				f"from distribution '{distrib.project_name}' (category: '{category}')",
 				exc_info=e
 			)
 
 
 	@staticmethod
-	def get_dist_names(distrib_prefix: str="ampel-") -> List[str]:
-		""" 
+	def get_dist_names(distrib_prefix: str = "ampel-") -> List[str]:
+		"""
 		Get all installed distributions whose names start with the provided prefix
 		"""
 		return [
