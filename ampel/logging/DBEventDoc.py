@@ -11,7 +11,7 @@ from time import time, strftime
 from typing import Dict, Union, List, Any, Optional, Literal, Iterable
 from ampel.db.AmpelDB import AmpelDB
 from ampel.logging.AmpelLoggingError import AmpelLoggingError
-from ampel.common.AmpelUtils import AmpelUtils
+from ampel.utils.AmpelUtils import AmpelUtils
 
 
 class DBEventDoc:
