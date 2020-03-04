@@ -23,7 +23,7 @@ class ExtraLogFormatter(logging.Formatter):
 	def format(self, record: logging.LogRecord) -> str:
 		""" """
 
-		extra = getattr(record, 'extra')
+		extra = getattr(record, 'extra', None)
 
 		out = [
 			self.formatTime(record, datefmt=self.datefmt),
@@ -44,6 +44,6 @@ class ExtraLogFormatter(logging.Formatter):
 			out.append("[%s]" % ', '.join("%s=%s" % itm for itm in extra.items()))
 
 		if record.msg:
-			return f"<{' '.join(out)}>\n  " + "\n  ".join(record.getMessage().split("\n"))
+			return f"{' '.join(out)}\n " + record.getMessage().replace("\n", "\n ")
 
-		return f"<{' '.join(out)}>"
+		return f"{' '.join(out)}"
