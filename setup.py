@@ -14,16 +14,20 @@ setup(
 	version='0.7',
 	packages=find_namespace_packages(),
 	package_data = {
-		  '': ['*.json'],
-		  'ampel.test': [
-			  'test-data/*.json',
-			  'deploy/production/initdb/*/*.sql',
-			  'deploy/prodution/initdb/*/*.sh'
-		  ],
-		  'conf': ['*.conf', '**/*.conf', '**/**/*.conf']
+		'': ['*.json'],
+		'ampel.test': [
+			'test-data/*.json',
+			'deploy/production/initdb/*/*.sql',
+			'deploy/prodution/initdb/*/*.sh'
+		],
+		'conf': [
+			'*.json', '**/*.json', '**/**/*.json',
+			'*.yaml', '**/*.yaml', '**/**/*.yaml',
+			'*.yml', '**/*.yml', '**/**/*.yml'
+		]
 	},
 	entry_points = {
-		'console_scripts' : [
+		'console_scripts': [
 			'ampel-followup = ampel.t0.DelayedT0Controller:run',
 			'ampel-statspublisher = ampel.metrics.AmpelStatsPublisher:run',
 			'ampel-exceptionpublisher = ampel.core.AmpelExceptionPublisher:run',
@@ -32,7 +36,7 @@ setup(
 			'ampel-check-broker = ampel.t0.load.fetcherutils:list_kafka',
 			'ampel-archive-topic = ampel.t0.load.fetcherutils:archive_topic',
 		],
-		'ampel_resources' : [
+		'ampel_resources': [
 			'mongo = ampel.config.resource.LiveMongoURI:LiveMongoURI',
 			'graphite = ampel.config.resource.Graphite:Graphite',
 			'slack = ampel.config.resource.SlackToken:SlackToken',
