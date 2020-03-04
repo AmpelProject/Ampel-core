@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 30.09.2018
-# Last Modified Date: 29.01.2020
+# Last Modified Date: 15.02.2020
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import sys, traceback, logging
@@ -20,7 +20,7 @@ class LoggingUtils:
 
 	@staticmethod
 	# using forward reference for type hinting: "When a type hint contains name that have not
-	# been defined yet, that definition may be expressed as string literal, tp be resolved later"
+	# been defined yet, that definition may be expressed as string literal, to be resolved later"
 	# (PEP 484). This is to avoid cyclic import errors
 	def log_exception(
 		logger: AmpelLogger, exc: Optional[Exception] = None,
@@ -48,7 +48,7 @@ class LoggingUtils:
 				)
 				return
 
-		logger.propagate_log(logging.ERROR, "-"*50, extra=extra)
+		logger.propagate_log(logging.ERROR, "-" * 50, extra=extra)
 
 		if msg:
 			logger.error(msg)
@@ -63,13 +63,13 @@ class LoggingUtils:
 				if len(ell) > 0:
 					logger.propagate_log(logging.ERROR, ell, extra=extra)
 
-		logger.propagate_log(logging.ERROR, "-"*50, extra=extra)
+		logger.propagate_log(logging.ERROR, "-" * 50, extra=extra)
 
 		# Clear up recorded exception (avoiding potential multiple reports)
 		if sys_exc:
-			sys.last_value=None
-			sys.last_traceback=None
-			sys.last_type=None
+			sys.last_value = None
+			sys.last_traceback = None
+			sys.last_type = None
 
 
 	@classmethod
@@ -191,7 +191,7 @@ class LoggingUtils:
 
 	@classmethod
 	def safe_query_dict(cls,
-		match: Dict[str, Any], update: Optional[Dict[str, Any]] = None, dict_key: str = 'query'
+		match: Dict[str, Any], update: Optional[Dict[str, Any]] = None, dict_key: Optional[str] = 'query'
 	) -> Dict[str, Any]:
 		u"""
 		| Builds a dict that can be passed as "extra" parameter to instances of AmpelLogger.
