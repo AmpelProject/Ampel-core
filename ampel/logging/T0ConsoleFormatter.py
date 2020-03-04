@@ -13,7 +13,7 @@ class T0ConsoleFormatter(Formatter):
 
 
 	def __init__(self, col_name='log', datefmt="%Y-%m-%d %H:%M:%S", line_number=False):
-		""" 
+		"""
 		"""
 		super().__init__(datefmt=datefmt)
 		self.col_name = col_name
@@ -36,14 +36,14 @@ class T0ConsoleFormatter(Formatter):
 		if extra:
 
 			# Show compound ids as hex rather than as Binary
-			# Note: we *modify* 'extra' but it does not matter because we should 
+			# Note: we *modify* 'extra' but it does not matter because we should
 			# be the last handler (DBLoggingHandler is inserted in first position)
-			if 'compId' in extra:
-				extra['compId'] = extra['compId'].hex()
+			if 'comp' in extra:
+				extra['comp'] = extra['comp'].hex()
 
 			out.append("[%s]" % ', '.join("%s=%s" % itm for itm in extra.items()))
 
 		if record.msg:
-			return f"<{' '.join(out)}>\n  " + "\n  ".join(record.getMessage().split("\n"))
+			return f"\n{' '.join(out)}\n" + record.getMessage()
 
-		return f"<{' '.join(out)}>"
+		return f"{' '.join(out)}"
