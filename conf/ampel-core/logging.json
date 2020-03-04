@@ -1,0 +1,7 @@
+{
+	"aggregate_interval": 1.0,
+	"console_logging_option": "default",
+	"default_stream": "stdout",
+	"flush_len": 1000,
+	"col_name": "logs"
+}
