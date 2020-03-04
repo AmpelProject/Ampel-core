@@ -7,11 +7,10 @@
 # Last Modified Date: 13.02.2020
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-from typing import List, TypeVar, Generic
+from typing import List, Generic
 from pydantic.generics import GenericModel
-from pydantic import StrictInt, StrictStr, StrictFloat
+from ampel.types import T
 
-T = TypeVar("T", StrictInt, StrictStr, StrictFloat, bytes)
 
 class OneOf(GenericModel, Generic[T]):
 	one_of: List[T]

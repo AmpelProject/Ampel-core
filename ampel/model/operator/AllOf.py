@@ -8,10 +8,9 @@
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from pydantic.generics import GenericModel
-from typing import List, TypeVar, Generic
-from pydantic import StrictInt, StrictStr, StrictFloat
+from typing import List, Generic
+from ampel.types import T
 
-T = TypeVar("T", StrictInt, StrictStr, StrictFloat, bytes)
 
 class AllOf(GenericModel, Generic[T]):
 	all_of: List[T]
