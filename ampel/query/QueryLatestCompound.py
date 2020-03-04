@@ -1,21 +1,21 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/query/QueryLatestCompound.py
+# File              : Ampel-core/ampel/query/QueryLatestCompound.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 13.01.2018
-# Last Modified Date: 10.12.2019
+# Last Modified Date: 04.03.2020
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import collections
 from bson.int64 import Int64
-from typing import Union, Sequence, Dict, Optional, Any
-
+from typing import Union, Sequence, Dict, Optional, Any, List
 from ampel.utils.AmpelUtils import AmpelUtils
 from ampel.model.operator.AnyOf import AnyOf
 from ampel.model.operator.AllOf import AllOf
 from ampel.model.operator.OneOf import OneOf
 from ampel.query.QueryMatchSchema import QueryMatchSchema
+
 
 class QueryLatestCompound:
 	"""
@@ -26,9 +26,9 @@ class QueryLatestCompound:
 
 	@staticmethod
 	def fast_query(
-		tran_ids: Union[int, Int64, str, Sequence[Union[int, Int64, str]]], 
+		tran_ids: Union[int, Int64, str, Sequence[Union[int, Int64, str]]],
 		channels: Optional[Union[int, str, Dict, AllOf, AnyOf, OneOf]] = None
-	) -> Dict:
+	) -> List[Dict]:
 		"""
 		| **Must be used on transients whose compounds were solely created by T0** \
 		(i.e with no T3 compounds)
@@ -38,7 +38,7 @@ class QueryLatestCompound:
 
 		:param channels: a single channel or a dict schema \
 		(see :obj:`QueryMatchSchema <ampel.query.QueryMatchSchema>` for details. \
-		None (no criterium) means all channels are considered. 
+		None (no criterium) means all channels are considered.
 
 		:returns: a dict instance to be used with the mongoDB **aggregation** framework.
 
@@ -53,11 +53,11 @@ class QueryLatestCompound:
 			)
 
 			In []: list(cursor)
-			Out[]: 
+			Out[]:
 			[
 				{'_id': b'T6TG\x96\x80\x1d\x86\x9f\x11\xf2G\xe7\xf4\xe0\xc3', 'stock': 'ZTF18aaayyuq'},
- 				{'_id': b'\xaaL|\x94?\xa4\xa1D\xbe\x0c[D\x9b\xc6\xe6o', 'stock': 'ZTF18aaabikt'},
- 				{'_id': b'\xaaL|\x14?\xb4\xc3D\xd2\x2a?L\x9a\xa6\xa1o', 'stock': 'ZTF17aaagvng'}
+				{'_id': b'\xaaL|\x94?\xa4\xa1D\xbe\x0c[D\x9b\xc6\xe6o', 'stock': 'ZTF18aaabikt'},
+				{'_id': b'\xaaL|\x14?\xb4\xc3D\xd2\x2a?L\x9a\xa6\xa1o', 'stock': 'ZTF17aaagvng'}
 			]
 		"""
 
@@ -79,7 +79,7 @@ class QueryLatestCompound:
 
 		if channels is not None:
 			QueryMatchSchema.apply_schema(
-				query, 'channels', channels
+				query, 'channel', channels
 			)
 
 		return [
@@ -94,9 +94,9 @@ class QueryLatestCompound:
 			},
 			{
 				'$sort': {
-					'stock': 1, 
+					'stock': 1,
 					'len': -1
-				} 
+				}
 			},
 			{
 				'$group': {
@@ -111,8 +111,8 @@ class QueryLatestCompound:
 					'newRoot': '$data'
 				}
 			},
-			{ 
-				'$project': { 
+			{
+				'$project': {
 					'len': 0
 				}
 			}
@@ -121,10 +121,10 @@ class QueryLatestCompound:
 
 	@staticmethod
 	def general_query(
-		tran_id: Union[int, Int64, str], 
-		project: Optional[Dict[str, Any]] = None, 
+		tran_id: Union[int, Int64, str],
+		project: Optional[Dict[str, Any]] = None,
 		channels: Optional[Union[int, str, Dict, AllOf, AnyOf, OneOf]] = None
-	) -> Dict:
+	) -> List[Dict[str, Any]]:
 		"""
 		| Should work with any ampel transients.
 		| A detailed explanation of each step of the aggregation \
@@ -137,7 +137,7 @@ class QueryLatestCompound:
 
 		:param channels: single channel or a dict schema \
 		(see :obj:`QueryMatchSchema <ampel.query.QueryMatchSchema>` for details. \
-		None (no criterium) means all channels are considered. 
+		None (no criterium) means all channels are considered.
 
 		:returns: A dict instance intended to be used with the mongoDB **aggregation** framework.
 
@@ -152,29 +152,31 @@ class QueryLatestCompound:
 					QueryLatestCompound.general_query('ZTF18aaayyuq')
 				)
 			)
-			Out[]: 
+			Out[]:
 			[
-			  {
-				'_id': b'T6TG\x96\x80\x1d\x86\x9f\x11\xf2G\xe7\xf4\xe0\xc3',
-				  'added': 1520796310.496276,
-				  'alDocType': 2,
-				  'channels': ['HU_SN1'],
-				  'lastppdt': 2458158.7708565,
-				  'len': 12,
-				  'data': [{'pp': 375300016315010040},
-				   {'pp': 375320176315010034},
-				   {'pp': 375337116315010046},
-				   {'pp': 375356366315010056},
-				   {'pp': 377293446315010009},
-				   {'pp': 377313156315010027},
-				   {'pp': 377334096315010020},
-				   {'pp': 377376126315010004},
-				   {'pp': 377416496315010000},
-				   {'pp': 378293006315010001},
-				   {'pp': 378334946315010000},
-				   {'pp': 404270856315015007}],
-				  'tier': 0,
-				  'stock': 'ZTF18aaayyuq'
+				{
+					'_id': b'T6TG\x96\x80\x1d\x86\x9f\x11\xf2G\xe7\xf4\xe0\xc3',
+					'added': 1520796310.496276,
+					'alDocType': 2,
+					'channel': ['HU_SN1'],
+					'lastppdt': 2458158.7708565,
+					'len': 12,
+					'data': [
+						{'id': 375300016315010040},
+						{'id': 375320176315010034},
+						{'id': 375337116315010046},
+						{'id': 375356366315010056},
+						{'id': 377293446315010009},
+						{'id': 377313156315010027},
+						{'id': 377334096315010020},
+						{'id': 377376126315010004},
+						{'id': 377416496315010000},
+						{'id': 378293006315010001},
+						{'id': 378334946315010000},
+						{'id': 404270856315015007}
+					],
+					'tier': 0,
+					'stock': 'ZTF18aaayyuq'
 				}
 			]
 
@@ -187,13 +189,13 @@ class QueryLatestCompound:
 					)
 				)
 			)
-			Out[]: 
+			Out[]:
 				[{'_id': '5de2480f28bfca0bd3baae890cb2d2ae', 'stock': 'ZTF18aaayyuq'}]
 		"""
 
 		# Robustness
 		if isinstance(tran_id, collections.Sequence) or \
-		not isinstance(tran_id, (int, Int64, str)):
+			not isinstance(tran_id, (int, Int64, str)):
 			raise ValueError(
 				"Type of tran_id must be a string or an int (multi tran_id queries not supported)"
 			)
@@ -202,19 +204,19 @@ class QueryLatestCompound:
 
 		if channels is not None:
 			QueryMatchSchema.apply_schema(
-				query, 'channels', channels
+				query, 'channel', channels
 			)
 
-		ret = [
+		ret: List[Dict[str, Any]] = [
 			{
 				'$match': query
 			},
 			{
 				'$group': {
-					'_id': '$tier', 
+					'_id': '$tier',
 					'latestAdded': {
 						'$max': '$added'
-					}, 
+					},
 					'comp': {
 						'$push': '$$ROOT'
 					}
@@ -234,7 +236,7 @@ class QueryLatestCompound:
 			{
 				'$project': {
 					'_id': 0,
-					'comp': 1, 
+					'comp': 1,
 					'sortValueUsed': {
 						'$cond': {
 							'if': {
@@ -256,7 +258,7 @@ class QueryLatestCompound:
 			},
 			{
 				'$replaceRoot': {
-					'newRoot': '$comp' 
+					'newRoot': '$comp'
 				}
 			}
 		]

@@ -33,7 +33,7 @@ class QueryMatchStock:
 		"""
 		:param channels: string (one channel only) or a dict schema \
 			(see :obj:`QueryMatchSchema <ampel.query.QueryMatchSchema>` \
-			for syntax details). None (no criterium) means all channels are considered. 
+			for syntax details). None (no criterium) means all channels are considered.
 
 		:param with_tags: "tags" to be matched by query \
 			(see :obj:`QueryMatchSchema <ampel.query.QueryMatchSchema>` syntax details). \
@@ -61,7 +61,7 @@ class QueryMatchStock:
 		)
 
 		if time_created or time_modified:
-				
+
 			chans = LogicSchemaUtils.reduce_to_set(
 				"Any" if channels is None else channels
 			)

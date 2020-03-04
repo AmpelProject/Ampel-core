@@ -4,16 +4,17 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 31.10.2018
-# Last Modified Date: 27.12.2019
+# Last Modified Date: 16.02.2020
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
+from typing import Dict, Any
 from ampel.types import strict_iterable, StrictIterable
 
 class QueryUtils:
 
 
 	@staticmethod
-	def add_or(query: dict, arg: dict) -> None:
+	def add_or(query: Dict[str, Any], arg: Dict[str, Any]) -> None:
 		"""
 		"""
 		if '$or' in query:
@@ -45,7 +46,8 @@ class QueryUtils:
 		if len(arg) == 1:
 			return next(iter(arg))
 
-		if isinstance(arg, (set, frozenset, tuple)):
-			return {'$in' : list(arg)}
+		if isinstance(arg, list):
+			return {'$in': arg}
 
-		return {'$in' : arg}
+		# Otherwise cast to list
+		return {'$in': list(arg)}

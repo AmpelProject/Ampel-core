@@ -19,7 +19,7 @@ from ampel.query.QueryMatchSchema import QueryMatchSchema
 
 class QueryGeneralMatch:
 	"""
-	Builds a query usable with the ampel "stock", "t0" (with channels=None), 
+	Builds a query usable with the ampel "stock", "t0" (with channels=None),
 	"t1" and "t2" collections
 	"""
 
@@ -36,7 +36,7 @@ class QueryGeneralMatch:
 		:param channels: \
 			a single channel or a dict schema \
 			(see :obj:`QueryMatchSchema <ampel.query.QueryMatchSchema>` for details). \
-			None (no criterium) means all channels are considered. 
+			None (no criterium) means all channels are considered.
 
 		:param with_tags: \
 			"tags" to be matched by query \
@@ -59,18 +59,18 @@ class QueryGeneralMatch:
 
 		if channels:
 			QueryMatchSchema.apply_schema(
-				query, 'channels', channels
+				query, 'channel', channels
 			)
 
 		if with_tags:
 			QueryMatchSchema.apply_schema(
-				query, 'alTags', with_tags
+				query, 'tag', with_tags
 			)
 
 		# Order matters, parse_dict(...) must be called *after* parse_excl_dict(...)
 		if without_tags is not None:
 			QueryMatchSchema.apply_excl_schema(
-				query, 'alTags', without_tags
+				query, 'tag', without_tags
 			)
 
 		return query

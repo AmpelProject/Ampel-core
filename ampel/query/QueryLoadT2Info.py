@@ -22,8 +22,8 @@ class QueryLoadT2Info:
 	""" """
 
 	@classmethod
-	def build_stateless_query(cls, 
-		stock_ids: Union[int, str, Iterable[Union[int, str]]], 
+	def build_stateless_query(cls,
+		stock_ids: Union[int, str, Iterable[Union[int, str]]],
 		channels: Union[int, str, Dict, AllOf, AnyOf, OneOf],
 		t2_subsel: Union[int, str, Iterable[Union[int, str]]] = None
 	) -> Dict[str, Any]:
@@ -35,7 +35,7 @@ class QueryLoadT2Info:
 		:param stock_ids: (query can be performed on multiple ids at once)
 
 		:param channels: see :obj:`QueryMatchSchema <ampel.query.QueryMatchSchema>` for details. \
-		None (no criterium) means all channels are considered. 
+		None (no criterium) means all channels are considered.
 
 		:param t2_subsel: optional sub-selection of t2 records based on t2 class names. \
 		-> only t2 records matching with the provided t2 class names will be returned. \
@@ -65,8 +65,8 @@ class QueryLoadT2Info:
 
 
 	@classmethod
-	def build_statebound_t2_query(cls, 
-		stock_ids: Union[int, str, Iterable[Union[int, str]]], 
+	def build_statebound_t2_query(cls,
+		stock_ids: Union[int, str, Iterable[Union[int, str]]],
 		states: Union[str, bytes, Binary, Iterable[str], Iterable[bytes], Iterable[Binary]],
 		channels: Union[int, str, Dict, AllOf, AnyOf, OneOf],
 		t2_subsel: Union[int, str, Iterable[Union[int, str]]] = None
@@ -83,7 +83,7 @@ class QueryLoadT2Info:
 
 		if t2_subsel:
 			query['t2Id'] = t2_subsel if isinstance(t2_subsel, str) \
-			else QueryUtils.match_array(t2_subsel)
+				else QueryUtils.match_array(t2_subsel)
 
 		return query
 

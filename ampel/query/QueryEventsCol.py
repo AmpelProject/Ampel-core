@@ -20,7 +20,7 @@ class QueryEventsCol:
 		"""
 
 		ret = QueryEventsCol.get(
-			tier=3, process_name=process_name, 
+			tier=3, process_name=process_name,
 			days_back=days_back
 		)
 
@@ -38,20 +38,20 @@ class QueryEventsCol:
 		"""
 
 		ret = QueryEventsCol.get(
-			tier=0, 
+			tier=0,
 			timestamp=timestamp,
 			days_back=int((time() - timestamp) / 86400) + 1
 		)
 
 		ret.append(
 			{
-                "$group": {
-                    "_id": 1,
-                    "alerts": {
-                        "$sum": "$events.metrics.count.alerts"
-                    }
-                }
-            }
+				"$group": {
+					"_id": 1,
+					"alerts": {
+						"$sum": "$events.metrics.count.alerts"
+					}
+				}
+			}
 		)
 
 		return ret
@@ -74,7 +74,7 @@ class QueryEventsCol:
 		# Array returned by this method
 		ret: List[Dict] = []
 
-		# restrict match criteria 
+		# restrict match criteria
 		if days_back is not None:
 
 			# Matching db doc ids. Example: [20180711, 20180710]
@@ -86,7 +86,7 @@ class QueryEventsCol:
 			)
 
 			# add docs from previous days. Example: 20180710, 20180709
-			for i in range(1, days_back+1):
+			for i in range(1, days_back + 1):
 				match.append(
 					int(
 						strftime('%Y%m%d', gmtime(time() - 86400 * i))
