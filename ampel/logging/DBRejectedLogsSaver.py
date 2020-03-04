@@ -1,14 +1,15 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/logging/DBRejectedLogsSaver.py
+# File              : Ampel-core/ampel/logging/DBRejectedLogsSaver.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 29.09.2018
-# Last Modified Date: 18.01.2019
+# Last Modified Date: 04.03.2020
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from time import time
-from logging import DEBUG, WARNING, Handler
+from logging import DEBUG, WARNING, Handler, LogRecord
+from typing import Dict, Any, List, Union, Optional
 from pymongo.errors import BulkWriteError
 from pymongo.operations import UpdateOne
 from ampel.db.AmpelDB import AmpelDB
@@ -19,28 +20,28 @@ from ampel.logging.LoggingErrorReporter import LoggingErrorReporter
 
 class DBRejectedLogsSaver(Handler):
 	"""
-	Class responsible for saving rejected log events (by T0 filters) 
-	into the NoSQL database. This class does not inherit logging.Handler 
-	but implements the method handle() so that this class can be used together 
+	Class responsible for saving rejected log events (by T0 filters)
+	into the NoSQL database. This class does not inherit logging.Handler
+	but implements the method handle() so that this class can be used together
 	with RecordsBufferingHandler.forward() or copy()
 	"""
 
 	def __init__(
-		self, ampel_db: AmpelDB, channel: str, logger: AmpelLogger, 
+		self, ampel_db: AmpelDB, channel: str, logger: AmpelLogger,
 		single_rej_col: bool = False, aggregate_interval: int = 1, flush_len: int = 1000
 	):
-		""" 
+		"""
 		:param AmpelLogger logger:
 		:type channel: str, None
 		:param str channel: channel name
-		:param bool single_rej_col: 
+		:param bool single_rej_col:
 			- False: rejected logs are saved in channel specific collections
-			 (collection name equals channel name)
+			(collection name equals channel name)
 			- True: rejected logs are saved in a single collection called 'logs'
-		:param int aggregate_interval: logs with similar attributes (log level, 
-		possibly tranId & channels) are aggregated in one document instead of being split
-		into several documents (spares some index RAM). *aggregate_interval* is the max interval 
-		of time in seconds during which log aggregation takes place. Beyond this value, 
+		:param int aggregate_interval: logs with similar attributes (log level,
+		possibly stock id & channels) are aggregated in one document instead of being split
+		into several documents (spares some index RAM). *aggregate_interval* is the max interval
+		of time in seconds during which log aggregation takes place. Beyond this value,
 		attempting a database bulk_write operation.
 		:raises: None
 		"""
@@ -53,51 +54,46 @@ class DBRejectedLogsSaver(Handler):
 		self.flush_len = flush_len
 		self.aggregate_interval = aggregate_interval
 		self.logger = logger
-		self.log_dicts = []
-		self.prev_records = None
-		self.run_id = None
+		self.log_dicts: List[Dict[str, Any]] = []
+		self.prev_records: Optional[LogRecord] = None
+		self.run_id: Optional[Union[int, List[int]]] = None
 		self.channel = channel
 		self.single_rej_col = single_rej_col
 		col_name = "rejected" if single_rej_col else channel
 		ampel_db.enable_rejected_collections([col_name])
 		self.col = ampel_db.get_collection(col_name)
-			
 
-	def set_run_id(self, run_id):
-		""" """
+
+	def set_run_id(self, run_id: Union[int, List[int]]) -> None:
 		self.run_id = run_id
 
 
-	def get_run_id(self):
-		""" """
+	def get_run_id(self) -> Optional[Union[int, List[int]]]:
 		return self.run_id
 
 
-	def emit(self, record):
+	def emit(self, record: LogRecord) -> None:
 
-		""" 
-		"""
+		try:
 
-		try: 
-
-			# extra (alertId, tranId) is set by AlertProcessor
+			# extra (alert id, stock id) is set by AlertProcessor
 			extra = getattr(record, 'extra')
-			
+
 			# Same flag, date (+- 1 sec), tran_id and chans
 			if (
-				self.prev_records and 
-				record.created - self.prev_records.created < self.aggregate_interval and 
+				self.prev_records and
+				record.created - self.prev_records.created < self.aggregate_interval and
 				extra == getattr(self.prev_records, 'extra', None)
 			):
-	
+
 				prev_dict = self.log_dicts[-1]
 				if type(prev_dict.get('msg', None)) is not list:
 					prev_dict['msg'] = [prev_dict.get('msg', None), record.msg]
 				else:
 					prev_dict['msg'].append(record.msg)
-	
+
 			else:
-	
+
 				if len(self.log_dicts) > self.flush_len:
 					self.flush()
 
@@ -105,8 +101,8 @@ class DBRejectedLogsSaver(Handler):
 				# the corresponding extra items will be overwritten (and thus ignored)
 				d = extra.copy()
 
-				d['_id'] = extra['alertId']
-				d['dt']= int(time())
+				d['_id'] = extra['alert']
+				d['dt'] = int(time())
 
 				if record.levelno > WARNING:
 					d['run'] = self.run_id
@@ -115,11 +111,11 @@ class DBRejectedLogsSaver(Handler):
 					d['msg'] = record.msg
 
 				if self.single_rej_col:
-					d['channels'] = self.channel
+					d['channel'] = self.channel
 
 				try:
-					del d['alertId']
-				except:
+					del d['alert']
+				except Exception:
 					pass
 
 				self.log_dicts.append(d)
@@ -130,10 +126,8 @@ class DBRejectedLogsSaver(Handler):
 			raise AmpelLoggingError from None
 
 
-	def flush(self):
-		""" 
-		Will raise Exception if DB issue occurs
-		"""
+	def flush(self) -> None:
+		""" Will raise Exception if DB issue occurs """
 
 		# No log entries
 		if not self.log_dicts:
@@ -152,16 +146,16 @@ class DBRejectedLogsSaver(Handler):
 
 			upserts = []
 
-			# Recovery procedure for 'already existing logs' 
+			# Recovery procedure for 'already existing logs'
 			# In production, we should process alerts only once (per channel(s))
-			# but during testing, reprocessing may occur. 
+			# but during testing, reprocessing may occur.
 			# In this case, we overwrite previous rejected logs
 			for err_dict in bwe.details.get('writeErrors', []):
 
 				# 'code': 11000, 'errmsg': 'E11000 duplicate key error collection: ...
 				if err_dict.get("code") == 11000:
 					lid = {'_id': err_dict['op'].pop('_id')}
-					del err_dict['op']['tranId']
+					del err_dict['op']['stock']
 					upserts.append(
 						UpdateOne(lid, {'$set': err_dict['op']})
 					)
@@ -186,6 +180,6 @@ class DBRejectedLogsSaver(Handler):
 		except Exception as e:
 
 			LoggingErrorReporter.report(self, e)
-			# If we can no longer keep track of what Ampel is doing, 
+			# If we can no longer keep track of what Ampel is doing,
 			# better raise Exception to stop processing
 			raise AmpelLoggingError from None
