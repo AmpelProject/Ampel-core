@@ -1,44 +1,60 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/config/collector/ChannelConfigCollector.py
+# File              : Ampel-core/ampel/config/collector/ChannelConfigCollector.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 16.10.2019
-# Last Modified Date: 05.11.2019
+# Last Modified Date: 06.02.2020
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 from ampel.db.DBUtils import DBUtils
-from ampel.config.collector.ConfigCollector import ConfigCollector
+from ampel.config.collector.AbsDictConfigCollector import AbsDictConfigCollector
 
 
-class ChannelConfigCollector(ConfigCollector):
+class ChannelConfigCollector(AbsDictConfigCollector):
 	"""
 	"""
 
-	def add(self, arg: Dict[str, Any], dist_name: str = None) -> None:
+	def add(self,
+		arg: Dict[str, Any],
+		file_name: Optional[str] = None,
+		dist_name: Optional[str] = None
+	) -> None:
 		""" """
 
 		if "channel" not in arg:
-			self.missing_key("channel", "channel", dist_name)
+			self.missing_key("channel", "channel", file_name, dist_name)
 			return
 
 		try:
 
-			chan_name = arg.get('channel')
+			chan_name = arg['channel']
 
 			if self.verbose:
-				self.logger.verbose("-> Adding channel: " + chan_name)
+				self.logger.verbose(f"Adding channel: {chan_name}")
 
-			if 'distName' in arg:
-				dist_name = arg['distName']
+			if 'distrib' in arg:
+				dist_name = arg['distrib']
 			else:
 				if dist_name:
-					arg['distName'] = dist_name
+					arg['distrib'] = dist_name
+
+			if 'source' in arg:
+				file_name = arg['source']
+			else:
+				if file_name:
+					arg['source'] = file_name
 
 			# Check duplicated channel names
 			if self.get(chan_name):
-				self.duplicated_entry(chan_name, new_dist=dist_name)
+				self.duplicated_entry(
+					conf_key = chan_name,
+					new_file = file_name,
+					new_dist = dist_name,
+					prev_file = self.get(chan_name).get("conf", "unknown"), # type: ignore
+					prev_dist = self.get(chan_name).get("distrib", "unknown") # type: ignore
+				)
 				return
 
 			if "NO_HASH" not in arg.get('policy', []):
@@ -55,7 +71,7 @@ class ChannelConfigCollector(ConfigCollector):
 
 		except Exception as e:
 			self.error(
-				f"Error occured while loading channel config {self.distrib_hint(dist_name)}. "
+				f"Error occured while loading channel config {self.distrib_hint(file_name, dist_name)}. "
 				f"Offending value: {arg}",
 				exc_info=e
 			)

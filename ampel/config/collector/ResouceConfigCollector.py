@@ -1,37 +1,43 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/config/builder/collector/ResouceConfigCollector.py
+# File              : Ampel-core/ampel/config/collector/ResouceConfigCollector.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 16.10.2019
-# Last Modified Date: 25.10.2019
+# Last Modified Date: 18.02.2020
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 from ampel.logging.AmpelLogger import AmpelLogger
-from ampel.config.collector.ConfigCollector import ConfigCollector
+from ampel.config.collector.AbsDictConfigCollector import AbsDictConfigCollector
 
 
-class ResouceConfigCollector(ConfigCollector):
+class ResouceConfigCollector(AbsDictConfigCollector):
 	"""
 	"""
 
 	def __init__(
-		self, conf_section: str, content: Dict = None, 
-		logger: AmpelLogger = None, verbose: bool = False
+		self, conf_section: str, content: Optional[Dict] = None,
+		logger: Optional[AmpelLogger] = None, verbose: bool = False
 	):
 		super().__init__(conf_section, content, logger, verbose)
-		self.global_resource = {}
+
+		# Used to temporarily save distribution/source conf information of aliases
+		# (usefuly in case of conflicts)
+		self.tmp_resource: Dict[str, Any] = {}
 
 
-	def add(self, arg: Dict[str, Any], dist_name: str = None) -> None:
+	def add(self,
+		arg: Dict[str, Any], file_name: Optional[str] = None,
+		dist_name: Optional[str] = None
+	) -> None:
 		""" """
 
 		if not isinstance(arg, dict):
 			self.error(
 				f"Resource value must be a dict. "
 				f"Offending value {arg}\n"
-				f"{self.distrib_hint(dist_name)}" 
+				f"{self.distrib_hint(file_name, dist_name)}"
 			)
 			return
 
@@ -45,7 +51,6 @@ class ResouceConfigCollector(ConfigCollector):
 				if k and k[0] == "%":
 					key = k[1:]
 					scope = "global"
-					self.global_resource[key] = dist_name
 				else:
 					# Distribution scoped alias
 					if dist_name:
@@ -54,14 +59,22 @@ class ResouceConfigCollector(ConfigCollector):
 					else:
 						scope = ""
 
+				self.tmp_resource[key] = file_name, dist_name
+
 				if self.verbose:
-					self.logger.verbose(f"-> Adding {scope} resource: {k}")
+					self.logger.verbose(
+						f"Adding {scope} resource '{k}' " +
+						f"from file {file_name}" if file_name else ""
+					)
 
 				if self.get(key):
 					self.duplicated_entry(
-						conf_key = key, section_detail = f"{scope} resource", 
-						new_dist = dist_name, 
-						prev_dist = dist_name if "/" in key else self.global_resource.get(key, "unknown")
+						conf_key = key,
+						section_detail = f"{scope} resource",
+						new_file = file_name,
+						new_dist = dist_name,
+						prev_file = self.tmp_resource.get(key, "unknown")[0],
+						prev_dist = self.tmp_resource.get(key, "unknown")[1]
 					)
 					continue
 
@@ -70,6 +83,6 @@ class ResouceConfigCollector(ConfigCollector):
 			except Exception as e:
 				self.error(
 					f"Error occured while loading resource {k} " +
-					self.distrib_hint(dist_name),
+					self.distrib_hint(file_name, dist_name),
 					exc_info=e
 				)

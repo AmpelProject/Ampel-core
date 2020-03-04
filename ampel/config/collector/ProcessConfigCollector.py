@@ -1,48 +1,53 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/config/builder/collector/ProcessConfigCollector.py
+# File              : Ampel-core/ampel/config/collector/ProcessConfigCollector.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 16.10.2019
-# Last Modified Date: 25.10.2019
+# Last Modified Date: 09.02.2020
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-from typing import Dict, Any
-from ampel.config.collector.TierConfigCollector import TierConfigCollector
+from typing import Dict, Any, Optional
+from ampel.config.collector.AbsDictConfigCollector import AbsDictConfigCollector
 
 
-class ProcessConfigCollector(TierConfigCollector):
+class ProcessConfigCollector(AbsDictConfigCollector):
 	"""
 	"""
 
 	# pylint: disable=inconsistent-return-statements
-	def add(self, arg: Dict[str, Any], dist_name: str = None) -> None:
+	def add(self,
+		arg: Dict[str, Any], file_name: Optional[str] = None,
+		dist_name: Optional[str] = None
+	) -> None:
 		""" """
 
 		# Doing basic validation here already
-		for k in ("processName", "schedule"):
+		for k in ("name", "schedule"):
 			if k not in arg:
-				return self.missing_key("Process", k, dist_name)
+				return self.missing_key("Process", k, file_name, dist_name)
 
-		proc_name = arg["processName"]
+		proc_name = arg["name"]
 
 		if 'tier' not in arg:
-			arg['tier'] = self.tier
+			arg['tier'] = int(self.tier[1])
 
 		if dist_name:
-			arg['distName'] = dist_name
+			arg['distrib'] = dist_name
+
+		if file_name:
+			arg['source'] = file_name
 
 		if self.verbose:
 			self.logger.verbose(
-				f"-> Adding t{arg['tier']} process: {proc_name}"
+				f"Adding t{arg['tier']} process: '{proc_name}'" +
+				f" from file '{file_name}'" if file_name else ""
 			)
 
 		if self.get(proc_name):
 			return self.duplicated_entry(
-				section_detail=f"t{arg['tier']}.process", 
-				conf_key=proc_name, 
-				prev_dist=self.get(proc_name).get('distName'),
-				new_dist=dist_name if dist_name else arg.get('distName')
+				section_detail = f"{arg['tier']}.process",
+				conf_key = proc_name, new_dist = dist_name, new_file = file_name
 			)
 
 		self.__setitem__(proc_name, arg)

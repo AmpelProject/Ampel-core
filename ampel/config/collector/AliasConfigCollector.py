@@ -1,39 +1,38 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/config/builder/AliasConfigCollector.py
+# File              : Ampel-core/ampel/config/collector/AliasConfigCollector.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 16.10.2019
-# Last Modified Date: 25.10.2019
+# Last Modified Date: 18.02.2020
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-from typing import Dict, Any
-from ampel.logging.AmpelLogger import AmpelLogger
-from ampel.config.collector.TierConfigCollector import TierConfigCollector
+from typing import Dict, Any, Optional
+from ampel.config.collector.AbsDictConfigCollector import AbsDictConfigCollector
 
 
-class AliasConfigCollector(TierConfigCollector):
+class AliasConfigCollector(AbsDictConfigCollector):
 	"""
-	Aliases are "tier" scoped and by default scoped 
+	Aliases are "tier" scoped and by default scoped
 	at the (package) distribution level as well
 	"""
 
-	def __init__(
-		self, tier: int, conf_section: str, content: Dict = None, 
-		logger: AmpelLogger = None, verbose: bool = False
-	):
-		super().__init__(tier, conf_section, content, logger, verbose)
-		self.global_alias = {}
+	def __init__(self, **kwargs):
+		super().__init__(**kwargs)
+		self.global_alias: Dict[str, Any] = {}
 
 
-	def add(self, arg: Dict[str, Any], dist_name: str = None) -> None:
+	def add(self,
+		arg: Dict[str, Any], file_name: Optional[str] = None,
+		dist_name: Optional[str] = None
+	) -> None:
 		""" """
 
 		if not isinstance(arg, dict):
 			self.error(
-				f"T{self.tier} alias value must be a dict. "
+				f"{self.tier} alias value must be a dict. "
 				f"Offending value {arg}\n"
-				f"{self.distrib_hint(dist_name)}" 
+				f"{self.distrib_hint(file_name, dist_name)}"
 			)
 			return
 
@@ -58,13 +57,16 @@ class AliasConfigCollector(TierConfigCollector):
 
 				if self.verbose:
 					self.logger.verbose(
-						f"-> Adding {scope} T{self.tier} alias: {key}"
+						f"Adding {scope} {self.tier} alias: {key}"
 					)
 
 				if self.get(key):
 					self.duplicated_entry(
-						conf_key = key, section_detail = f"T{self.tier} {scope} alias", 
-						new_dist = dist_name, 
+						conf_key = key,
+						section_detail = f"{self.tier} {scope} alias",
+						new_file = file_name,
+						new_dist = dist_name,
+						prev_file = self.get(key).get("conf", "unknown"), # type: ignore
 						prev_dist = dist_name if "/" in key else self.global_alias.get(key, "unknown")
 					)
 					continue
@@ -74,6 +76,6 @@ class AliasConfigCollector(TierConfigCollector):
 			except Exception as e:
 				self.error(
 					f"Error occured while loading {self.tier} alias {key} " +
-					self.distrib_hint(dist_name), 
+					self.distrib_hint(file_name, dist_name),
 					exc_info=e
 				)
