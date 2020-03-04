@@ -12,36 +12,29 @@ from logging.handlers import BufferingHandler
 
 class RecordsBufferingHandler(BufferingHandler):
 	"""
-	MemoryHandler-like class that can grown infinetely 
-	(constructor parameter capacity is ignored) 
+	MemoryHandler-like class that can grown infinetely
+	(constructor parameter capacity is ignored)
 	and features convenient methods such as 'forward' and 'copy'
 	"""
 
-	def __init__(self, embed_channel=False):
-		"""
-		:param bool embed_channel: 
-		"""
+	def __init__(self, embed_channel: bool = False) -> None:
 		# Set parent capacity to 0
-		super().__init__(0) 
+		super().__init__(0)
 		self.has_error = False
 		self.embed = embed_channel
 
 
 	def flush(self):
-		"""
-		Flush just means: 'erase exisiting log records'
-		"""
+		""" Flush just means: 'erase exisiting log records' """
 		self.buffer = []
 		self.has_error = False
 
 
 	def emit(self, record):
-		""" 
-		"""
 		if record.levelno > WARNING:
 			self.has_error = True
 		self.buffer.append(record)
-		
+
 
 	def forward(self, logger_or_handler, channels=None, extra=None):
 		"""
@@ -57,16 +50,16 @@ class RecordsBufferingHandler(BufferingHandler):
 					if el.__dict__["msg"]:
 						el.__dict__["msg"] = {
 							'txt': el.__dict__["msg"],
-							'channels': channels
+							'channel': channels
 						}
 					else:
-						el.__dict__["msg"] = {'channels': channels}
+						el.__dict__["msg"] = {'channel': channels}
 			else:
 				if extra:
 					extra = extra.copy() # shallow copy
-					extra['channels'] = channels
+					extra['channel'] = channels
 				else:
-					extra={'channels': channels}
+					extra = {'channel': channels}
 
 		if extra:
 			for el in self.buffer:
@@ -89,9 +82,9 @@ class RecordsBufferingHandler(BufferingHandler):
 		if channels:
 			if extra:
 				extra = extra.copy() # shallow copy
-				extra['channels'] = channels
+				extra['channel'] = channels
 			else:
-				extra={'channels': channels}
+				extra = {'channel': channels}
 
 		if extra:
 			for el in self.buffer:
@@ -108,9 +101,9 @@ class RecordsBufferingHandler(BufferingHandler):
 
 	def shouldFlush(self, record):
 		"""
-		The 'standard' memory handler provided by logging makes use of a value called 
+		The 'standard' memory handler provided by logging makes use of a value called
 		'capacity', which once reached, triggers the flush() method when new log records are emitted.
-		Since we trust ourselves to do things right (to never let the buffer grow indefinitely), 
+		Since we trust ourselves to do things right (to never let the buffer grow indefinitely),
 		we renounce using a such security measure.
 		"""
 		return False
