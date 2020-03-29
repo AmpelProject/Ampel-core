@@ -1,29 +1,43 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/abstract/AbsAmpelProcessor.py
+# File              : Ampel-core/ampel/abstract/AbsProcessorUnit.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 07.10.2019
-# Last Modified Date: 22.10.2019
+# Last Modified Date: 18.02.2020
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-from pydantic import BaseModel
-from typing import Dict, Any, Union
-from ampel.config.AmpelBaseConfig import AmpelBaseConfig
-from ampel.model.AmpelBaseModel import AmpelBaseModel
-from ampel.abstract.AmpelABC import AmpelABC, abstractmethod
+from typing import Optional
+from pydantic import BaseModel, root_validator, Extra
+from ampel.abc import defaultmethod
+from ampel.abc.AmpelABC import AmpelABC
+from ampel.core.AmpelContext import AmpelContext
 
-class AbsAmpelProcessor(metaclass=AmpelABC):
+
+class AbsProcessorUnit(AmpelABC, BaseModel, abstract=True):
 	"""
+	Top level abstract class containing a handle to an AmpelContext instance
 	"""
 
-	@abstractmethod
-	def __init__(
-		self, ampel_config: AmpelBaseConfig, 
-		init_config: Union[AmpelBaseModel, BaseModel, Dict[str, Any]]
-	):
-		""" """
+	class Config:
+		extra = Extra.forbid
+		arbitrary_types_allowed = True
 
-	@abstractmethod
-	def run(self):
-		""" """
+	context: AmpelContext
+	process_name: Optional[str]
+	verbose: bool = False
+	debug: bool = False
+
+
+	@defaultmethod(check_super_call=True)
+	def __init__(self, **kwargs):
+		self.__config__.extra = Extra.forbid
+		super().__init__(**kwargs)
+		self.__config__.extra = Extra.allow
+
+
+	@root_validator
+	def _set_defaults(cls, values):
+		if values.get('debug'):
+			values['verbose'] = True
+		return values

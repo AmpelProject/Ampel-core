@@ -1,28 +1,26 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/abstract/AbsChannelTemplate.py
+# File              : Ampel-core/ampel/abstract/AbsChannelTemplate.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 27.10.2019
-# Last Modified Date: 27.10.2019
+# Last Modified Date: 21.03.2020
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from logging import Logger
-from typing import Dict, Any, Optional
+from typing import List, Dict, Any, Optional
+from ampel.abc import abstractmethod
+from ampel.abc.AmpelABC import AmpelABC
 from ampel.model.ChannelModel import ChannelModel
-from ampel.abstract.AmpelABC import abstractmethod
-from ampel.abstract.AbsAmpelBaseModel import AbsAmpelBaseModel
 
+class AbsChannelTemplate(AmpelABC, ChannelModel, abstract=True):
 
-class AbsChannelTemplate(AbsAmpelBaseModel, ChannelModel, abstract=True):
-	""" 
-	"""
 	template: Optional[str]
 
-	@abstractmethod	
+	@abstractmethod
 	def get_channel(self, logger: Logger) -> Dict[str, Any]:
-		""" """
+		...
 
-	@abstractmethod	
-	def get_processes(self, logger: Logger) -> Dict[str, Any]:
-		""" """
+	@abstractmethod
+	def get_processes(self, units_config: Dict[str, Any], logger: Logger) -> List[Dict[str, Any]]:
+		...
