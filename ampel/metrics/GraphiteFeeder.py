@@ -4,23 +4,20 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 26.04.2018
-# Last Modified Date: 29.01.2020
+# Last Modified Date: 16.03.2020
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import socket
 from typing import Dict, Any
 from urllib.parse import urlparse
 from graphitesend import GraphiteClient
-from ampel.utils.AmpelUtils import AmpelUtils
+from ampel.utils.mappings import flatten_dict
 
 
 class GraphiteFeeder:
-	"""
-	"""
+
 
 	def __init__(self, uri: str, autoreconnect: bool = True) -> None:
-		"""
-		"""
 
 		# URI example: graphite://localhost:2003/
 		parts = urlparse(uri)
@@ -57,7 +54,7 @@ class GraphiteFeeder:
 		if len(prefix) > 0 and prefix[-1] != ".":
 			prefix += "."
 
-		fdict = AmpelUtils.flatten_dict(in_dict)
+		fdict = flatten_dict(in_dict)
 
 		for key in fdict:
 			self.stats[prefix + key] = fdict[key]
@@ -69,7 +66,7 @@ class GraphiteFeeder:
 		if len(prefix) > 0 and prefix[-1] != ".":
 			prefix += "."
 
-		fdict = AmpelUtils.flatten_dict(in_dict)
+		fdict = flatten_dict(in_dict)
 		key_to_delete = []
 
 		for key in fdict:
