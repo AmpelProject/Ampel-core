@@ -15,10 +15,11 @@ class DBUtils:
 	@staticmethod
 	def b2_dict_hash(val: Dict) -> int:
 		"""
+		Takes ~7µs on a MBP 2017 for a small dict
 		"""
 		return DBUtils.b2_hash(
 			json.dumps(
-				val, sort_keys=True, 
+				val, sort_keys=True,
 				indent=None, separators=(',', ':')
 			)
 		)
@@ -30,15 +31,14 @@ class DBUtils:
 		https://github.com/dwyl/english-words/blob/master/words.txt
 		containing 466544 english words
 
-		:param val: str
 		:returns: 7bytes int (using 8 bytes yields a mongodb OverflowError)
 		"""
 		return int.from_bytes(
 			# don't undestand why pylint complains about  digest_size
 			# pylint: disable=unexpected-keyword-arg
 			hashlib.blake2b(
-				bytes(val, "utf-8"), 
+				bytes(val, "utf-8"),
 				digest_size=7 # using 8 bytes yields a mongodb OverflowError
-			).digest(), 
+			).digest(),
 			byteorder=sys.byteorder
 		)

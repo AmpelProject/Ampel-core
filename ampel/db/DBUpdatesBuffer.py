@@ -1,17 +1,20 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-core/ampel/t0/ingest/DBUpdatesBuffer.py
+# File              : Ampel-core/ampel/db/DBUpdatesBuffer.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 31.10.2018
-# Last Modified Date: 29.01.2020
+# Last Modified Date: 20.03.2020
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from time import time
 from pymongo.errors import BulkWriteError
+from pymongo.collection import Collection
+from pymongo import UpdateOne, InsertOne, UpdateMany
 from multiprocessing.pool import ThreadPool
-from typing import Dict, List, Any, Union, Callable
+from typing import Dict, List, Any, Union, Callable, Literal, Tuple
 
+from ampel.types import AmpelMainCol, DataPointId
 from ampel.core.Schedulable import Schedulable
 from ampel.logging.LoggingUtils import LoggingUtils
 from ampel.logging.AmpelLogger import AmpelLogger
@@ -43,15 +46,29 @@ class DBUpdatesBuffer(Schedulable):
 		self._new_buffer()
 		self.on_error_func = on_error_func
 
-		self._cols = {
+		self._cols: Dict[AmpelMainCol, Collection] = {
 			col_name: ampel_db.get_collection(col_name)
 			for col_name in self.db_ops.keys()
+		}
+
+		self.stats: Dict[AmpelMainCol, int] = {
+			'stock': 0, 't0': 0, 't1': 0, 't2': 0,
+		}
+
+		self.data_cols: Tuple[Literal['t0', 't1', 't2'], ...] = ('t0', 't1', 't2')
+
+		# Record IDs of docs inserted/modified
+		# Note: not flushed during the update flushing procedure but manually
+		# (by the AlertProcessor typically)
+		self.doc_ids: Dict[Literal['t0', 't1', 't2'], List[Union[DataPointId, bytes]]] = {
+			't0': [], 't1': [], 't2': [],
 		}
 
 		self._err_db_ops: Dict[str, Any] = {k: [] for k in self.db_ops.keys()}
 		self._ampel_db = ampel_db
 		self._last_check = time()
 		self._size = 0
+		self._lock = False
 		self.run_id = run_id
 		self.logger = logger
 		self.push_interval = push_interval
@@ -78,8 +95,8 @@ class DBUpdatesBuffer(Schedulable):
 
 
 	def _new_buffer(self) -> None:
-		""" """
-		self.db_ops: Dict[str, List] = {
+
+		self.db_ops: Dict[AmpelMainCol, List[Union[UpdateOne, UpdateMany, InsertOne]]] = {
 			'stock': [],
 			't0': [],
 			't1': [],
@@ -88,9 +105,7 @@ class DBUpdatesBuffer(Schedulable):
 
 
 	def close(self) -> None:
-		"""
-		:returns: None
-		"""
+
 		self.push_updates()
 
 		if self.thread_pool:
@@ -98,9 +113,10 @@ class DBUpdatesBuffer(Schedulable):
 			self.thread_pool.join()
 
 
-	def add_updates(self, updates: Dict[str, List]) -> None:
+	def add_updates(self,
+		updates: Dict[AmpelMainCol, List[Union[UpdateOne, UpdateMany, InsertOne]]]
+	) -> None:
 		"""
-		:param updates: Dict[str, List[<pymongo.operations>]]
 		:raises: KeyError if dict key is unknown (known keys: stock, t0, t1, t2)
 		"""
 		for k, v in updates.items():
@@ -108,10 +124,87 @@ class DBUpdatesBuffer(Schedulable):
 			self._size += len(v)
 
 
+	def add_col_updates(self,
+		col: AmpelMainCol,
+		updates: List[Union[UpdateOne, UpdateMany, InsertOne]]
+	) -> None:
+		"""
+		:raises: KeyError if dict key is unknown (known keys: stock, t0, t1, t2)
+		"""
+		self.db_ops[col] += updates
+		self._size += len(updates)
+
+
+	def add_col_update(self,
+		col: AmpelMainCol,
+		update: Union[UpdateOne, UpdateMany, InsertOne]
+	) -> None:
+		"""
+		:raises: KeyError if dict key is unknown (known keys: stock, t0, t1, t2)
+		"""
+		self.db_ops[col].append(update)
+		self._size += 1
+
+
+	def add_t0_update(self,
+		update: Union[UpdateOne, UpdateMany, InsertOne]
+	) -> None:
+		"""
+		:raises: KeyError if dict key is unknown (known keys: stock, t0, t1, t2)
+		"""
+		self.db_ops['t0'].append(update)
+		self.doc_ids['t0'].append(update._filter['_id'])
+		self._size += 1
+
+
+	def add_t1_update(self,
+		update: Union[UpdateOne, UpdateMany, InsertOne]
+	) -> None:
+		"""
+		:raises: KeyError if dict key is unknown (known keys: stock, t0, t1, t2)
+		"""
+		self.db_ops['t1'].append(update)
+		self.doc_ids['t1'].append(update._filter['_id'])
+		self._size += 1
+
+
+	def add_t2_update(self,
+		update: Union[UpdateOne, UpdateMany, InsertOne]
+	) -> None:
+		"""
+		:raises: KeyError if dict key is unknown (known keys: stock, t0, t1, t2)
+		"""
+		self.db_ops['t2'].append(update)
+		self.doc_ids['t2'].append(update._filter)
+		self._size += 1
+
+
+	def add_stock_update(self,
+		update: Union[UpdateOne, UpdateMany, InsertOne]
+	) -> None:
+		"""
+		:raises: KeyError if dict key is unknown (known keys: stock, t0, t1, t2)
+		"""
+		self.db_ops['stock'].append(update)
+		self._size += 1
+
+
+	def get_ids(self,
+		update: Union[UpdateOne, UpdateMany, InsertOne]
+	) -> Dict[Literal['t0', 't1', 't2'], List[Union[DataPointId, bytes]]]:
+		"""
+		Note: resets self.doc_ids
+		"""
+		ret = {}
+		for t in self.data_cols:
+			if self.doc_ids[t]:
+				ret[t] = self.doc_ids[t]
+				self.doc_ids[t] = []
+		return ret
+
+
 	def auto_push_updates(self) -> None:
-		"""
-		:returns: None
-		"""
+
 		if time() - self._last_check < self.push_interval:
 			return
 
@@ -125,7 +218,6 @@ class DBUpdatesBuffer(Schedulable):
 		the self._last_check is updated.
 		By doing that, the regularly scheduled auto_push_updates()
 		will be delayed as long as the AP processes alerts.
-		:returns: None
 		"""
 
 		if self._size < self.autopush_size:
@@ -136,7 +228,9 @@ class DBUpdatesBuffer(Schedulable):
 
 
 	def push_updates(self) -> None:
-		""" """
+
+		if self._lock:
+			return
 
 		self._last_check = time()
 
@@ -158,7 +252,7 @@ class DBUpdatesBuffer(Schedulable):
 					self.call_bulk_write(col_name, db_ops[col_name])
 
 
-	def call_bulk_write(self, col_name: str, db_ops: List, extra: Dict = None) -> None:
+	def call_bulk_write(self, col_name: AmpelMainCol, db_ops: List, extra: Dict = {}) -> None:
 		"""
 		:param col_name: Ampel DB collection name (ex: stock, t0, t1, t2)
 		:param db_ops: list of pymongo operations
@@ -172,9 +266,9 @@ class DBUpdatesBuffer(Schedulable):
 		<quote>
 			An upsert that results in a document insert is not a fully atomic operation.
 			Think of the upsert as performing the following discrete steps:
-    			Query for the identified document to upsert.
-    			If the document exists, atomically update the existing document.
-    			Else (the document doesn't exist), atomically insert a new document
+				Query for the identified document to upsert.
+				If the document exists, atomically update the existing document.
+				Else (the document doesn't exist), atomically insert a new document
 				that incorporates the query fields and the update.
 		</quote>
 
@@ -198,6 +292,7 @@ class DBUpdatesBuffer(Schedulable):
 
 			# Update DB
 			start = time()
+			self.stats[col_name] += len(db_ops)
 			db_res = self._cols[col_name].bulk_write(db_ops, ordered=False)
 			time_delta = time() - start
 
@@ -207,11 +302,15 @@ class DBUpdatesBuffer(Schedulable):
 				time_delta / len(db_ops)
 			)
 
-			self.logger.debug(
-				f"{col_name}: inserted: {db_res.bulk_api_result['nInserted']}, "
-				f"upserted: {db_res.bulk_api_result['nUpserted']}, "
-				f"modified: {db_res.bulk_api_result['nModified']}",
-				extra=extra
+			self.logger.debug(None,
+				extra={
+					**extra,
+					col_name: {
+						"inserted": db_res.bulk_api_result['nInserted'],
+						"upserted": db_res.bulk_api_result['nUpserted'],
+						"modified": db_res.bulk_api_result['nModified']
+					}
+				}
 			)
 
 			return
@@ -228,9 +327,7 @@ class DBUpdatesBuffer(Schedulable):
 					if err_dict.get("code") == 11000:
 
 						self.logger.info(
-							"Race condition during ingestion in '%s': %s" % (
-								col_name, err_dict
-							)
+							f"Race condition during ingestion in '{col_name}': {err_dict}"
 						)
 
 						# Should no longer raise pymongo.errors.DuplicateKeyError
@@ -258,8 +355,8 @@ class DBUpdatesBuffer(Schedulable):
 						LoggingUtils.report_error(
 							self._ampel_db, tier=0, msg="BulkWriteError entry details",
 							logger=self.logger, info={
-								'run_id': self.run_id,
-								'errDict': LoggingUtils.convert_dollars(err_dict)
+								'run': self.run_id,
+								'err': LoggingUtils.convert_dollars(err_dict)
 							}
 						)
 
@@ -272,10 +369,15 @@ class DBUpdatesBuffer(Schedulable):
 
 				if dup_key_only:
 					self.logger.debug(
-						f"{col_name}: inserted: {bwe.details['nInserted']}, "
-						f"upserted: {bwe.details['nUpserted']}, modified: {bwe.details['nModified']}, "
-						f"race condition(s) recovered: {len(bwe.details.get('writeErrors'))}",
-						extra=extra
+						f"Race condition(s) recovered: {len(bwe.details.get('writeErrors'))}",
+						extra={
+							**extra,
+							col_name: {
+								"inserted": bwe.details['nInserted'],
+								"upserted": bwe.details['nUpserted'],
+								"modified": bwe.details['nModified'],
+							}
+						}
 					)
 
 					return
@@ -293,6 +395,9 @@ class DBUpdatesBuffer(Schedulable):
 				self._ampel_db, self.logger, tier=0,
 				exc=e, run_id=self.run_id
 			)
+
+		print(f"Collection {col_name} update failed")
+		print(db_ops)
 
 		self._err_db_ops[col_name] += db_ops
 		self.on_error_func()

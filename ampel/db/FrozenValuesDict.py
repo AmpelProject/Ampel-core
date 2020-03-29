@@ -7,7 +7,7 @@
 # Last Modified Date: 18.12.2019
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-from ampel.utils.ReadOnlyDict import ReadOnlyDict
+from ampel.view.ReadOnlyDict import ReadOnlyDict
 
 def ro(arg):
 	if arg.__class__ is list:
@@ -17,8 +17,8 @@ def ro(arg):
 	return arg
 
 class FrozenValuesDict(dict):
-	""" 
-	Dict that recursively casts all values to immutable structures. 
+	"""
+	Dict that recursively casts all values to immutable structures.
 	Note that the dict itself is not Immutable
 	"""
 
