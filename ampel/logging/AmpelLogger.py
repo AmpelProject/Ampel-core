@@ -57,7 +57,7 @@ class AmpelLogger(Logger):
 				raise ValueError(
 					f"Unsupported type for parameter 'channels' ({type(channels)})"
 				)
-			self.__extra = ReadOnlyDict({'channels': channels})
+			self.__extra = ReadOnlyDict({'channel': channels})
 
 
 	@staticmethod

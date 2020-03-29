@@ -17,7 +17,7 @@ class ExtraLogFormatter(logging.Formatter):
 		""" """
 		super().__init__(datefmt=datefmt)
 		self.line_number = line_number
-		self.tohex_ids = ["link", "cp", "docIdEff", "docIdStrict"]
+		self.tohex_ids = ["link", "cp", "eff", "strict"]
 
 
 	def format(self, record: logging.LogRecord) -> str:

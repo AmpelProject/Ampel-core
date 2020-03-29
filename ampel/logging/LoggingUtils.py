@@ -12,7 +12,7 @@ from typing import Dict, Optional, Union, List, Any
 
 from ampel.db.AmpelDB import AmpelDB
 from ampel.config.ConfigUtils import ConfigUtils
-from ampel.flags.LogRecordFlag import LogRecordFlag
+from ampel.logging.LogRecordFlag import LogRecordFlag
 from ampel.logging.AmpelLogger import AmpelLogger
 
 class LoggingUtils:

@@ -50,6 +50,6 @@ class T0RejConsoleFormatter(Formatter):
 				out.append("[%s]" % ', '.join("%s=%s" % itm for itm in extra.items()))
 
 		if record.msg:
-			return "%s\n%s" % (" ".join(out), record.msg)
+			return f"{' '.join(out)}\n{record.msg}"
 
-		return "%s" % " ".join(out)
+		return " ".join(out)

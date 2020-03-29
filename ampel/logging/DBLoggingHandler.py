@@ -16,7 +16,7 @@ from ampel.db.AmpelDB import AmpelDB
 from ampel.logging.AmpelLogger import AmpelLogger
 from ampel.logging.LoggingUtils import LoggingUtils
 from ampel.logging.AmpelLoggingError import AmpelLoggingError
-from ampel.flags.LogRecordFlag import LogRecordFlag
+from ampel.logging.LogRecordFlag import LogRecordFlag
 
 
 # http://isthe.com/chongo/tech/comp/fnv/index.html#FNV-1a

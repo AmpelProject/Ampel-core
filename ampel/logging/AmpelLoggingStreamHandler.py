@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 17.10.2018
-# Last Modified Date: 27.02.2020
+# Last Modified Date: 05.03.2020
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from typing import Literal, Optional
@@ -19,6 +19,7 @@ class AmpelLoggingStreamHandler(StreamHandler):
 	def __init__(self,
 		stream, level=DEBUG,
 		aggregate_interval: float = 1.,
+		log_separator = StreamHandler.terminator,
 		options: Optional[Literal['default', 'compact', 'compacter', 'headerless']] = None
 	) -> None:
 		"""
@@ -57,10 +58,9 @@ class AmpelLoggingStreamHandler(StreamHandler):
 		self.aggregate_interval = aggregate_interval
 		self.prev_record = _logRecordFactory(None, 0, None, None, None, None, None, None, None)
 		self.prev_record.recs = []
-		#self.prev_record.extra = {}
-		#self.prev_record = None
 		self.setLevel(level)
 		self.nl = self.terminator
+		self.logsep = log_separator
 		self.nlsp = self.nl + ' ' # newline space
 		if not options:
 			options = AmpelLogger.console_logging_option
@@ -82,7 +82,7 @@ class AmpelLoggingStreamHandler(StreamHandler):
 		):
 			self.stream.write(f" {record.getMessage()}{self.nl}")
 		else:
-			self.stream.write(f"{self.nl}{self.format(record)}{self.nl}")
+			self.stream.write(f"{self.logsep}{self.format(record)}{self.nl}")
 			self.prev_record = record
 
 		self.flush()
@@ -101,7 +101,7 @@ class AmpelLoggingStreamHandler(StreamHandler):
 		):
 			self.stream.write(f" {record.getMessage()}{self.nl}")
 		else:
-			self.stream.write(f"{self.nl}{self.format(record)}{self.nl}")
+			self.stream.write(f"{self.logsep}{self.format(record)}{self.nl}")
 			self.prev_record = record
 
 		self.flush()
@@ -125,7 +125,7 @@ class AmpelLoggingStreamHandler(StreamHandler):
 			if rec.levelno > first_rec.levelno:
 				first_rec.levelno = rec.levelno
 			self.stream.write( # Using fstring is faster than using multiple stream.write calls
-				f"{self.nl}{self.format(first_rec)}{self.nlsp}" +
+				f"{self.logsep}{self.format(first_rec)}{self.nlsp}" +
 				self.nlsp.join([el.getMessage() for el in prev_rec.recs[1:]]) +
 				f"{self.nlsp}{rec.getMessage()}{self.nl}"
 			)

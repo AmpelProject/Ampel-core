@@ -4,14 +4,14 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 26.09.2018
-# Last Modified Date: 06.01.2020
+# Last Modified Date: 16.03.2020
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from time import time, strftime
 from typing import Dict, Union, List, Any, Optional, Literal, Iterable
 from ampel.db.AmpelDB import AmpelDB
 from ampel.logging.AmpelLoggingError import AmpelLoggingError
-from ampel.utils.AmpelUtils import AmpelUtils
+from ampel.utils.collections import ampel_iter
 
 
 class DBEventDoc:
@@ -21,14 +21,14 @@ class DBEventDoc:
 
 	default_id_format = '%Y%m%d'
 
-	def __init__(self, 
-		ampel_db: AmpelDB, event_name: str, tier: Literal[0, 1, 2, 3], 
+	def __init__(self,
+		ampel_db: AmpelDB, event_name: str, tier: Literal[0, 1, 2, 3],
 		ts: Optional[int] = None, col_name: str = "events", id_format: Optional[str] = None
 	):
 		"""
 		:param event_name: event name. For example 'ap' (alertprocessor) or process name
 		:param tier: indicates at which tier level logging is done
-		:param col_name: name of db collection to use (default 'events'). 
+		:param col_name: name of db collection to use (default 'events').
 		:param id_format: optional string that will be provided as argument to method `strftime` (default: '%Y%m%d')
 		:param ts: provided timestamp will be used as 'start' time rather than current time
 		"""
@@ -51,25 +51,23 @@ class DBEventDoc:
 		"""
 		Multiple run ids can be provided at once
 		"""
-		for run_id in AmpelUtils.iter(run_ids):
+		for run_id in ampel_iter(run_ids):
 			self.run_ids.append(run_id)
 
 
 	def add_duration(self, seconds: Union[float, int]) -> None:
-		""" 
-		Add seconds to the internal 'duration' buffer. 
-		If you use this method, the final 'duration' of the process associated with 
+		"""
+		Add seconds to the internal 'duration' buffer.
+		If you use this method, the final 'duration' of the process associated with
 		this event doc will be the sum of the values provided with add_duration
-		rather than the default time interval between class instantiation 
+		rather than the default time interval between class instantiation
 		and the final call to the method publish()
 		"""
 		self.duration += seconds
 
 
 	def publish(self) -> None:
-		""" 
-		:raises: AmpelLoggingError
-		"""
+		""" :raises: AmpelLoggingError """
 
 		# Record event info into DB
 		res = self.col.update_one(
@@ -82,7 +80,7 @@ class DBEventDoc:
 						'process': self.event_name,
 						'tier': self.tier,
 						'ts': self.ts,
-						'duration': int(time()-self.ts) if self.duration == 0 else int(self.duration),
+						'duration': int(time() - self.ts) if self.duration == 0 else int(self.duration),
 						'run': self.run_ids[0] if len(self.run_ids) == 1 else self.run_ids,
 						**self.event_info
 					}
