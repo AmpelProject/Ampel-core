@@ -1,11 +1,32 @@
 {
 	"t0": {
-		"controller": "ampel.t0.T0Controller",
-		"processor": "ampel.t0.AlertProcessor"
+		"unit": {
+			"controller": "ampel.t0.T0Controller",
+			"processor": [
+				"ampel.ingest.PointT2Ingester"
+			]
+		}
+	},
+	"t2": {
+		"unit": {
+			"base": [
+				"ampel.test.unit.DemoPointT2Unit",
+				"ampel.test.unit.DemoFirstPointT2Unit"
+			]
+		}
 	},
 	"t3": {
-		"controller": "ampel.t3.T3Controller",
-		"processor": "ampel.t3.T3Job",
+		"unit": {
+			"controller": "ampel.t3.T3Controller",
+			"processor": [
+				"ampel.t3.T3DefaultProcessor",
+				"ampel.t3.load.T3LatestStateDataLoader",
+				"ampel.t3.select.T3DefaultStockSelector"
+			],
+			"aux": [
+				"ampel.t3.run.filter.SnapDataArrayFilter"
+			]
+		},
 		"alias": {
 			"%TRANSIENT": {"col": "stock"},
 			"%DATAPOINT": {"col": "t0"},
@@ -14,6 +35,9 @@
 			"%LOGRECORD": {"col": "logs"}
 		}
 	},
+	"aux": [
+		"ampel.utils.filter.SimpleDictArrayFilter"
+	],
 	"template": {
 		"legacy_simple_process": "ampel.model.template.LegacyT3Process1"
 	},

@@ -6,8 +6,8 @@
 			"indexes": [
 				{
 					"index": [
-						{"dbField": "_id"},
-						{"dbField": "channel"}
+						{"db_field": "_id"},
+						{"db_field": "channel"}
 					],
 					"args": {
 						"unique": true
@@ -18,13 +18,13 @@
 		{
 			"name": "t0",
 			"indexes": [
-				{"dbField": "stockId"}
+				{"db_field": "stock"}
 			]
 		},
 		{
 			"name": "t1",
 			"indexes": [
-				{"dbField": "stockId"}
+				{"db_field": "stock"}
 			]
 		},
 		{
@@ -32,11 +32,11 @@
 			"indexes": [
 				{
 					"index": [
-						{"dbField": "stockId"},
-						{"dbField": "channel"}
+						{"db_field": "stock"},
+						{"db_field": "channel"}
 					]
 				},
-				{"dbField": "runState"}
+				{"db_field": "status"}
 			]
 		}
 	],

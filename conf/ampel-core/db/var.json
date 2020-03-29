@@ -4,13 +4,13 @@
 		{
 			"name": "logs",
 			"indexes": [
-				{"dbField": "runId"},
+				{"db_field": "run"},
 				{
-					"dbField": "stockId",
+					"db_field": "stock",
 					"args": {"sparse": true}
 				},
 				{
-					"dbField": "channels",
+					"db_field": "channel",
 					"args": {"sparse": true}
 				}
 			],
