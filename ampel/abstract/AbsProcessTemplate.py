@@ -9,15 +9,14 @@
 
 from logging import Logger
 from typing import Dict, Any
-from ampel.abstract.AmpelABC import abstractmethod
-from ampel.abstract.AbsAmpelBaseModel import AbsAmpelBaseModel
+from ampel.abc import abstractmethod
+from ampel.abstract.AbsAmpelStrictModel import AbsAmpelStrictModel
 from ampel.model.ChannelModel import ChannelModel
 
 
-class AbsProcessTemplate(ChannelModel, AbsAmpelBaseModel, abstract=True):
-	""" 
-	"""
+class AbsProcessTemplate(ChannelModel, AbsAmpelStrictModel, abstract=True):
+
 
 	@abstractmethod	
 	def get_process(self, logger: Logger) -> Dict[str, Any]:
-		""" """
+		...
