@@ -95,19 +95,19 @@ def testing_config(mongod, archivedb):
 						"stream": "ZTFIPAC",
 	                    "parameters": {
 	                        "ZTFPartner": True,
-	                        "autoComplete": True,
+	                        "auto_complete": True,
 	                        "updatedHUZP": True
 	                    },
-	                    "t0Filter": {
+	                    "t0_filter": {
 	                        "className": "NoFilter",
-	                        "runConfig": {}
+	                        "run_config": {}
 	                    },
-	                    "t2Compute": []
+	                    "t2_compute": []
 	                }
 	            ]
 	        },
 	    ],
-	    't0Filters' : {
+	    't0_filters' : {
 	        'NoFilter' : {
 	            'classFullPath': 'ampel.contrib.hu.t0.NoFilter',
 	        },

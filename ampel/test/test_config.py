@@ -3,7 +3,7 @@ from ampel.config.AmpelConfig import AmpelConfig
 from ampel.db.AmpelDB import AmpelDB
 from ampel.config.ConfigLoader import ConfigLoader
 from ampel.config.channel.ChannelConfigLoader import ChannelConfigLoader
-from ampel.core.AmpelUnitLoader import AmpelUnitLoader
+from ampel.abstract.AmpelUnitLoader import AmpelUnitLoader
 from ampel.t3.T3Controller import T3Controller
 from ampel.t3.T3Task import T3Task
 from ampel.config.t3.T3TaskConfig import T3TaskConfig
@@ -133,25 +133,25 @@ def test_skip_t2_units(default_config, mock_mongo):
 				"stream": "ZTFIPAC",
 				"parameters" : {
 					"ZTFPartner" : False,
-					"autoComplete" : "live",
+					"auto_complete" : "live",
 					"updatedHUZP" : False
 				},
-				"t0Filter" : {
+				"t0_filter" : {
 					"unitId" : "BasicFilter",
-					"runConfig": {
+					"run_config": {
 						"operator": ">",
 						"len": 1,
 						"criteria": 1
 					}
 				},
-				"t2Compute" : [ 
+				"t2_compute" : [ 
 					{
 						"unitId" : "MARSHALMONITOR",
-						"runConfig" : "simple"
+						"run_config" : "simple"
 					},
 					{
 						"unitId" : "CATALOGMATCH",
-						"runConfig": "general"
+						"run_config": "general"
 					}
 				]
 			}

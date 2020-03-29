@@ -4,7 +4,7 @@ import logging
 
 def test_t3_filtering_demo(t3_transient_views):
     from mongomock.filtering import filter_applies
-    from ampel.utils.json_serialization import AmpelEncoder
+    from ampel.utils.json import AmpelEncoder
     # the user supplies a query against results like this, along with a unit id and config name
     q = {
         'fit_acceptable': True,
@@ -13,13 +13,13 @@ def test_t3_filtering_demo(t3_transient_views):
         'fit_results.x1': {'$lt': 10}
     }
     t2_class_name = 'SNCOSMO'
-    runConfig = 'default'
+    run_config = 'default'
     # we flesh it out into a full query
     query = {
             't2records': {
                 '$elemMatch': {
                     't2_class_name': t2_class_name,
-                    'info.runConfig': runConfig,
+                    'info.run_config': run_config,
                     'info.hasError': False,
                     **{'results.-1.output.{}'.format(k): v for k,v in q.items()}
                 }
@@ -161,7 +161,7 @@ def test_transient_data_filter(transients, mocker):
         assert view.t2records
 
 def test_t3_match_config():
-    from ampel.config.t3.ScienceRecordMatchConfig import ScienceRecordMatchConfig
+    from ampel.config.t3.T2RecordMatchConfig import T2RecordMatchConfig
 
     config = {
         'className': 'SNCOSMO',
@@ -172,7 +172,7 @@ def test_t3_match_config():
             'fit_results.x1': {'$lt': 10}
         }
     }
-    ScienceRecordMatchConfig(**config)
+    T2RecordMatchConfig(**config)
     # Throws on unknown operator
     config = {
         'className': 'SNCOSMO',
@@ -180,8 +180,8 @@ def test_t3_match_config():
             'fit_results.z': {'$ngt': 0},
         }
     }
-    with pytest.raises(ScienceRecordMatchConfig.ValidationError):
-        ScienceRecordMatchConfig(**config)
+    with pytest.raises(T2RecordMatchConfig.ValidationError):
+        T2RecordMatchConfig(**config)
 
-    with pytest.raises(ScienceRecordMatchConfig.ValidationError):
-        ScienceRecordMatchConfig(className='SNCOSMO', runConfig='not a thing')
+    with pytest.raises(T2RecordMatchConfig.ValidationError):
+        T2RecordMatchConfig(className='SNCOSMO', run_config='not a thing')

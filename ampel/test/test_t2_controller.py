@@ -7,7 +7,7 @@ from ampel.db.AmpelDB import AmpelDB
 class PotemkinError(RuntimeError):
 	pass
 
-class PotemkinT2(AbsT2Unit):
+class PotemkinT2(AbsLightCurveT2Unit):
 	
 	version = 1.0
 	

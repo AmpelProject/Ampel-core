@@ -1,17 +1,9 @@
-import pytest, subprocess, json, schedule
-
+import pytest
+from argparse import Namespace
 from ampel.t3.T3Controller import T3Controller
 from ampel.config.t3.T3JobConfig import T3JobConfig
 from ampel.t3.T3Job import T3Job
-
-from ampel.core.AmpelUnitLoader import AmpelUnitLoader
-
-from ampel.abstract.AbsT3Unit import AbsT3Unit
 from ampel.config.AmpelConfig import AmpelConfig
-from ampel.common.AmpelUtils import AmpelUtils
-from ampel.run.AmpelArgumentParser import AmpelArgumentParser
-from argparse import Namespace
-
 from ampel.pipeline.t3.T3PlaceboUnit import T3PlaceboUnitError
 
 @pytest.fixture
@@ -60,7 +52,7 @@ def t3_jobs():
         {
           "task": "SpaceCowboy",
           "className": "T3PlaceboUnit",
-          "runConfig": {"raise": True},
+          "run_config": {"raise": True},
           "transients" : {
             "select": {
                 "channels": {
@@ -123,7 +115,7 @@ def minimal_config(mongod):
 		'ZTFIPAC': {
 			"parameters": {
 				"ZTFPartner": True,
-				"autoComplete": False,
+				"auto_complete": False,
 				"updatedHUZP": False
 			}
 		}
@@ -149,8 +141,8 @@ def minimal_config(mongod):
 				},
 				'tasks': [
 					{'task': 'noselect', 'className': 'T3PlaceboUnit'},
-					{'task': 'config', 'className': 'T3PlaceboUnit', 'runConfig': {}},
-					# {'name': 'badconfig', 't3Unit': 'potemkin', 'runConfig': 'default_doesnotexist'},
+					{'task': 'config', 'className': 'T3PlaceboUnit', 'run_config': {}},
+					# {'name': 'badconfig', 't3Unit': 'potemkin', 'run_config': 'default_doesnotexist'},
 					{'task': 'select0', 'className': 'T3PlaceboUnit', 'transients': {'select': {'channels': '0'}, 'state': '$all'}},
 					{'task': 'select1', 'className': 'T3PlaceboUnit', 'transients': {'select': {'channels': '1'}, 'state': '$latest'}},
 					
@@ -258,7 +250,7 @@ def test_entrypoint_rununit(testing_config, capsys):
 			modified=-1,
 			channels=['0', '1'],
 			science_records=None,
-			runConfig={'raise': True},
+			run_config={'raise': True},
 			update_tran_journal=False,
 			update_run_col=False,
 			chunk=10

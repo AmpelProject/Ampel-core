@@ -92,7 +92,7 @@ def empty_archive(postgres):
 					connection.execute(table.delete())
 
 import copy
-from ampel.standard.PhotoAlert import PhotoAlert
+from ampel.alert.PhotoAlert import PhotoAlert
 class AlertFactoryFixture(object):
 	def __init__(self, schema):
 		from ampel.t0.load.ZIAlertShaper import ZIAlertShaper
@@ -216,7 +216,7 @@ def alert_factory(latest_schema):
 @pytest.fixture
 def minimal_ingestion_config(mongod):
 	from ampel.config.AmpelConfig import AmpelConfig
-	from ampel.core.AmpelUnitLoader import AmpelUnitLoader
+	from ampel.abstract.AmpelUnitLoader import AmpelUnitLoader
 	from ampel.db.AmpelDB import AmpelDB
 	
 	AmpelConfig.reset()
@@ -225,12 +225,12 @@ def minimal_ingestion_config(mongod):
 			"stream": 'ZTFIPAC',
 			"parameters": {
 				"ZTFPartner": True,
-				"autoComplete": False,
+				"auto_complete": False,
 				"updatedHUZP": False
 			},
-			"t0Filter" : {
+			"t0_filter" : {
 				"className": "BasicFilter",
-				"runConfig": {
+				"run_config": {
 					"operator": ">",
 					"len": 1,
 					"criteria" : [{
@@ -240,14 +240,14 @@ def minimal_ingestion_config(mongod):
 					}]
 				},
 			},
-			"t2Compute" : []
+			"t2_compute" : []
 	}
 	make_channel = lambda name: (str(name), {'channel': name, 'active': True, 'sources': [source]})
 	config = {
 		'resources': {'mongo': {'writer': mongod, 'logger': mongod}},
 		't2Units': {},
 		'channels': dict(map(make_channel, range(2))),
-		't0Filters' : {
+		't0_filters' : {
 			'BasicFilter': {
 				'classFullPath': 'ampel.t0.filter.BasicFilter'
 			}
@@ -337,7 +337,7 @@ def t3_selected_transients(ingested_transients, minimal_ingestion_config, caplog
 @pytest.fixture
 def t3_transient_views():
 	from os.path import dirname, join
-	from ampel.utils.json_serialization import load
+	from ampel.utils.json import load
 	with open(join(dirname(__file__), 'test-data', 'transient_views.json')) as f:
 		views = [v for v in load(f)]
 	return views
