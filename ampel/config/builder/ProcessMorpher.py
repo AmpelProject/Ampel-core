@@ -4,12 +4,11 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 16.10.2019
-# Last Modified Date: 03.03.2020
+# Last Modified Date: 28.03.2020
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import json
 from typing import Dict, Any
-from ampel.utils.AmpelUtils import AmpelUtils
 from ampel.logging.AmpelLogger import AmpelLogger
 from ampel.config.ConfigUtils import ConfigUtils
 
@@ -130,7 +129,10 @@ class ProcessMorpher:
 		if not out_config:
 			raise ValueError("Parameter 'out_config' missing in kwargs")
 
-		for t2 in AmpelUtils.iter(d[k]):
+		for t2 in d[k]['units']:
+
+			if not isinstance(t2, dict):
+				raise ValueError(f"Illegal argument: {t2}")
 
 			rc = t2.get('config', None)
 

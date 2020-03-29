@@ -4,14 +4,15 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 16.10.2019
-# Last Modified Date: 02.03.2020
+# Last Modified Date: 20.03.2020
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import json
-from typing import Optional, Dict, Any, Callable
+from typing import Optional, Dict, Any, Callable, Type, Union
 from ampel.logging.AmpelLogger import AmpelLogger
-from ampel.utils.AmpelUtils import AmpelUtils
+from ampel.utils.mappings import flatten_dict, unflatten_dict
 
+from ampel.config.collector.ConfigCollector import ConfigCollector
 from ampel.config.collector.LoggingCollector import LoggingCollector
 from ampel.config.collector.DBConfigCollector import DBConfigCollector
 from ampel.config.collector.UnitConfigCollector import UnitConfigCollector
@@ -22,13 +23,14 @@ from ampel.config.collector.ResouceConfigCollector import ResouceConfigCollector
 from ampel.config.collector.ForwardUnitConfigCollector import ForwardUnitConfigCollector
 from ampel.config.collector.ForwardProcessConfigCollector import ForwardProcessConfigCollector
 
+ConfigDict = Dict[str, Type[ConfigCollector]]
 
 class FirstPassConfig(dict):
 	"""
 	Class used to aggregate config pieces into a central configuration dict for ampel.
 	"""
 
-	general_keys = {
+	general_keys: ConfigDict = {
 		"db": DBConfigCollector,
 		"logging": LoggingCollector,
 		"resource": ResouceConfigCollector,
@@ -36,7 +38,7 @@ class FirstPassConfig(dict):
 		"channel": ChannelConfigCollector
 	}
 
-	tier_keys = {
+	tier_keys: Dict[str, Union[Type[ConfigCollector], ConfigDict]] = {
 		"unit": {
 			"controller": UnitConfigCollector,
 			"processor": UnitConfigCollector,
@@ -60,13 +62,13 @@ class FirstPassConfig(dict):
 			},
 			'pwd': [],
 			**{
-				f"t{k}": AmpelUtils.unflatten_dict(
+				f"t{k}": unflatten_dict(
 					{
 						kk: Klass(
 							conf_section=kk.split(".")[-1],
 							logger=logger, verbose=verbose, tier=k
 						)
-						for kk, Klass in AmpelUtils.flatten_dict(self.tier_keys).items()
+						for kk, Klass in flatten_dict(self.tier_keys).items()
 					}
 				)
 				for k in (0, 1, 2, 3)

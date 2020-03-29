@@ -4,12 +4,13 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 03.09.2019
-# Last Modified Date: 04.03.2020
+# Last Modified Date: 16.03.2020
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import importlib, re, json
 from typing import Dict, List, Union, Any, Optional, Set
-from ampel.utils.AmpelUtils import AmpelUtils
+from ampel.utils.mappings import get_by_path
+from ampel.utils.collections import ampel_iter
 from ampel.logging.AmpelLogger import AmpelLogger
 from ampel.config.ConfigUtils import ConfigUtils
 from ampel.config.builder.FirstPassConfig import FirstPassConfig
@@ -53,12 +54,24 @@ class ConfigBuilder:
 
 		for k in ("t0", "t1", "t2", "t3"):
 			if k in arg:
-				# ("controller", "processor", "unit", "alias", "process")
-				for kk in self.first_pass_config.tier_keys:
-					if kk in arg[k]:
-						self.first_pass_config[k][kk].add(
-							arg[k][kk], file_name=file_name, dist_name=dist_name
-						)
+				# ("controller", "processor", "base", "aux")
+				if "unit" in arg[k]:
+					for kk in self.first_pass_config.tier_keys['unit'].keys(): # type: ignore[call-arg]
+						if kk in arg[k]['unit']:
+							self.first_pass_config[k]['unit'][kk].add(
+								arg[k]['unit'][kk],
+								file_name=file_name,
+								dist_name=dist_name
+							)
+				# ("process", "alias")
+				else:
+					for kk in self.first_pass_config.tier_keys:
+						if kk in arg[k]:
+							self.first_pass_config[k][kk].add(
+								arg[k][kk],
+								file_name=file_name,
+								dist_name=dist_name
+							)
 
 		if "template" in arg:
 			self.register_channel_templates(arg['template'], file_name, dist_name)
@@ -127,7 +140,7 @@ class ConfigBuilder:
 	def add_passwords(self, arg: Union[str, List[str]]) -> None:
 		""" """
 		# Not using set() as is not directly json encodable
-		for el in AmpelUtils.iter(arg):
+		for el in ampel_iter(arg):
 			if el not in self.first_pass_config['pwd']:
 				self.first_pass_config['pwd'].append(el)
 
@@ -221,26 +234,33 @@ class ConfigBuilder:
 					tpl.get_channel(self.logger)
 				)
 
-				# Check if processes exist embedded in channel def
-				for p in tpl.get_processes(self.logger):
+				try:
+					# Retrieve processes possibly embeded in channel def
+					for p in tpl.get_processes(self.first_pass_config['t2']['unit']['base'], self.logger):
 
-					if self.verbose:
-						self.logger.verbose(f"Morphing channel embedded t{p['tier']} process {p['name']}")
+						if self.verbose:
+							self.logger.verbose(
+								f"Morphing channel embedded t{p['tier']} process {p['name']}"
+							)
 
-					try:
-						# Add transformed process to final process collector
-						out[f"t{p['tier']}"]['process'].add(
-							self.morph_process(p) \
-								.apply_template() \
-								.scope_aliases(self.first_pass_config) \
-								.hash_t2_run_config(out) \
-								.enforce_t3_channel_selection(chan_name) \
-								.get(),
-							p.get('source'),
-							p.get('distrib')
-						)
-					except Exception:
-						self.logger.error(f"Unable to morph process '{p['name']}'", exc_info=True)
+						try:
+							# Add transformed process to final process collector
+							out[f"t{p['tier']}"]['process'].add(
+								self.morph_process(p) \
+									.apply_template() \
+									.scope_aliases(self.first_pass_config) \
+									.hash_t2_run_config(out) \
+									.enforce_t3_channel_selection(chan_name) \
+									.get(),
+								p.get('source'),
+								p.get('distrib')
+							)
+
+						except Exception:
+							self.logger.error(f"Unable to morph process '{p['name']}'", exc_info=True)
+
+				except Exception:
+					self.logger.error(f"Unable to morph channel '{chan_name}'", exc_info=True)
 
 			else:
 
@@ -327,7 +347,7 @@ class ConfigBuilder:
 
 			# Gather init config
 			init_configs.append(
-				AmpelUtils.get_by_path(p, collect)
+				get_by_path(p, collect)
 			)
 
 			# Collect distribution name
@@ -337,7 +357,7 @@ class ConfigBuilder:
 		if out_proc is None:
 			return None
 
-		# for T0 processes: collect=processor.config.pipes
+		# for T0 processes: collect=processor.config.directives
 		ConfigUtils.set_by_path(out_proc, collect, init_configs)
 		out_proc['name'] = match
 		out_proc['distrib'] = "/".join(dist_names)
@@ -346,6 +366,4 @@ class ConfigBuilder:
 
 
 	def print(self) -> None:
-		"""
-		"""
 		self.first_pass_config.print()
