@@ -9,14 +9,14 @@
 
 from typing import List, Dict, Any, Optional, Union
 from pydantic import validator
-from ampel.model.AmpelBaseModel import AmpelBaseModel
+from ampel.model.AmpelStrictModel import AmpelStrictModel
 from ampel.model.ProcessModel import ProcessModel
 from ampel.model.builder.BuilderAliasModel import BuilderAliasModel
 from ampel.model.builder.ChanT3Process1 import ChanT3Process1
 from ampel.model.builder.ChanT3Process3 import ChanT3Process3
 
 
-class ModelGeneralDistConf(AmpelBaseModel):
+class ModelGeneralDistConf(AmpelStrictModel):
 
 	channel: Optional[List[Dict[str, Any]]]
 	unit: Optional[List[str]]
@@ -27,7 +27,7 @@ class ModelGeneralDistConf(AmpelBaseModel):
 
 	@validator('channel', 'process', pre=True, whole=True)
 	def cast_to_list(cls, value):
-		if not isinstance(value, List):
+		if not isinstance(value, list):
 			return [value]
 
 		return value

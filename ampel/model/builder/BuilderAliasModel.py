@@ -8,9 +8,9 @@
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from typing import Dict, Any, Optional
-from ampel.model.AmpelBaseModel import AmpelBaseModel
+from ampel.model.AmpelStrictModel import AmpelStrictModel
 
-class BuilderAliasModel(AmpelBaseModel):
+class BuilderAliasModel(AmpelStrictModel):
 
 	t0: Optional[Dict[str, Any]]
 	t1: Optional[Dict[str, Any]]

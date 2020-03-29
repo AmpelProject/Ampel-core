@@ -8,10 +8,10 @@
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from typing import List
-from ampel.model.AmpelBaseModel import AmpelBaseModel
+from ampel.model.AmpelStrictModel import AmpelStrictModel
 
-class UnitDefinitionModel(AmpelBaseModel):
+class UnitDefinitionModel(AmpelStrictModel):
 	"""
 	"""
-	fqn: str
-	mro: List['str']
+	class_name: str
+	short_mro: List['str']
