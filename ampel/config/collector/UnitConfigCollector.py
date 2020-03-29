@@ -4,19 +4,19 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 16.10.2019
-# Last Modified Date: 06.02.2020
+# Last Modified Date: 16.03.2020
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import re, importlib
 from typing import List, Union, Dict, Optional
-from ampel.utils.AmpelUtils import AmpelUtils
+from ampel.utils.collections import ampel_iter
 from ampel.model.AmpelStrictModel import AmpelStrictModel
 from ampel.config.collector.AbsListConfigCollector import AbsListConfigCollector
 
 class UnitDefinitionModel(AmpelStrictModel):
 	""" """
 	class_name: str
-	short_mro: List[str]
+	abc: List[str]
 
 
 class UnitConfigCollector(AbsListConfigCollector):
@@ -31,7 +31,7 @@ class UnitConfigCollector(AbsListConfigCollector):
 		"""
 
 		# tolerate list containing only 1 element defined as dict
-		for el in AmpelUtils.iter(arg):
+		for el in ampel_iter(arg):
 
 			try:
 
@@ -39,7 +39,7 @@ class UnitConfigCollector(AbsListConfigCollector):
 					class_name = self.get_class_name(el)
 					entry = {
 						'fqn': el,
-						'mro': self.get_trimmed_mro(el, class_name),
+						'abc': self.get_abstract_classes(el, class_name),
 						'distrib': dist_name,
 						'file': file_name
 					}
@@ -56,7 +56,7 @@ class UnitConfigCollector(AbsListConfigCollector):
 
 					class_name = d.class_name
 					entry = {
-						'mro': d.short_mro,
+						'abc': d.abc,
 						'distrib': dist_name,
 						'file': file_name
 					}
@@ -110,20 +110,21 @@ class UnitConfigCollector(AbsListConfigCollector):
 
 
 	@staticmethod
-	def get_trimmed_mro(mfqn: str, class_name: str) -> List[str]:
+	def get_abstract_classes(module_fqn: str, class_name: str) -> List[str]:
 		"""
-		:param mfqn: fully qualified name of module
-		:param class_name: declared class name in the module specified by mfqn
+		:param module_fqn: fully qualified name of module
+		:param class_name: declared class name in the module specified by "module_fqn"
 		:returns: the method resolution order (except for the first and last members
 		that is of no use for our purpose) of the specified class
 		"""
 		UnitClass = getattr(
 			# import using fully qualified name
-			importlib.import_module(mfqn),
+			importlib.import_module(module_fqn),
 			class_name
 		)
 
 		return [
 			UnitConfigCollector.get_class_name(el.__name__)
 			for el in UnitClass.__mro__[1:-1]
+			if "Abs" in el.__name__
 		]
