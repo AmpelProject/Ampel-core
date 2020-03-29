@@ -4,15 +4,16 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 06.10.2018
-# Last Modified Date: 28.01.2020
+# Last Modified Date: 16.03.2020
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-from typing import List, Callable, Union, Optional, Dict, Any, Type
+from typing import List, Callable, Union, Optional, Dict, Any, Type, Sequence
 from ampel.types import strict_iterable, StrictIterable
 from ampel.model.operator.AnyOf import AnyOf
 from ampel.model.operator.AllOf import AllOf
 from ampel.model.operator.OneOf import OneOf
-from ampel.common.AmpelUtils import AmpelUtils
+from ampel.utils.mappings import unflatten_dict as utils_unflatten_dict
+from ampel.utils.collections import check_seq_inner_type
 from ampel.db.DBUtils import DBUtils
 
 
@@ -20,7 +21,7 @@ class ConfigUtils:
 	""" """
 
 	@classmethod
-	def has_nested_type(cls, 
+	def has_nested_type(cls,
 		obj: StrictIterable, target_type: Type, strict: bool = True
 	) -> bool:
 		"""
@@ -29,7 +30,7 @@ class ConfigUtils:
 		:param strict: must be an instance of the provided type (subclass instances would be rejected)
 		"""
 
-		if strict: 
+		if strict:
 			# pylint: disable=unidiomatic-typecheck
 			if type(obj) is target_type:
 				return True
@@ -51,9 +52,9 @@ class ConfigUtils:
 
 
 	@classmethod
-	def flatten_dict(cls, d: Dict, separator: str = '.') -> Dict:
-		""" 
-		Unlike the flatten_dict method from AmpelUtils, 
+	def flatten_dict(cls, d: Dict, separator: str = '.') -> Dict[str, Any]:
+		"""
+		Unlike the flatten_dict method from ampel.utils,
 		this version converts list into dicts as well.
 
 		Illustration:
@@ -81,9 +82,9 @@ class ConfigUtils:
 
 
 	@classmethod
-	def unflatten_dict(cls, d: Dict[str, Any], separator: str = '.') -> Dict[str, Any]:		
-		""" 
-		Unlike the unflatten_dict method from AmpelUtils, 
+	def unflatten_dict(cls, d: Dict[str, Any], separator: str = '.') -> Dict[str, Any]:
+		"""
+		Unlike the unflatten_dict method from ampel.utils,
 		this version restores dict-encoded lists.
 
 		Illustration:
@@ -91,7 +92,7 @@ class ConfigUtils:
 		Out[]: {'a': [{'b': {'f': 2}}, {'c': 2}], 'd': {'e': 1}}
 		"""
 
-		out = AmpelUtils.unflatten_dict(d)
+		out = utils_unflatten_dict(d)
 		for k, v in out.items():
 			try:
 				# pylint: disable=expression-not-assigned
@@ -104,8 +105,8 @@ class ConfigUtils:
 
 
 	@classmethod
-	def walk_and_process_dict(cls, 
-		arg: Union[dict, list], callback: Callable, 
+	def walk_and_process_dict(cls,
+		arg: Union[dict, list], callback: Callable,
 		match: List[str], path: str = None, **kwargs
 	) -> None:
 		"""
@@ -147,17 +148,18 @@ class ConfigUtils:
 
 	@staticmethod
 	def set_by_path(
-		d: Dict, path: str, val: Any, 
+		d: Dict, path: Union[str, Sequence[str]], val: Any,
 		delimiter: str = '.', create: bool = True
 	) -> bool:
 		"""
-		:param create: whether to create directory sub-structures if they do not exits 
+		:param create: whether to create directory sub-structures if they do not exits
 		(in this case, this method will alawys return False)
 		:returns: False if the key was successfully set, True otherwise
 		"""
-		keys = path.split(delimiter)
-		l = len(keys) - 1
-		for i, k in enumerate(keys):
+		if isinstance(path, str):
+			path = path.split(delimiter) # type: ignore
+		l = len(path) - 1
+		for i, k in enumerate(path):
 			if k not in d:
 				if not create:
 					return True
@@ -170,13 +172,14 @@ class ConfigUtils:
 
 
 	@staticmethod
-	def del_by_path(d: Dict, path: str, delimiter: str = '.') -> bool:
+	def del_by_path(d: Dict, path: Union[str, Sequence[str]], delimiter: str = '.') -> bool:
 		"""
 		:returns: False if the key was successfully deleted, True otherwise
 		"""
-		keys = path.split(delimiter)
-		l = len(keys) - 1
-		for i, k in enumerate(keys):
+		if isinstance(path, str):
+			path = path.split(delimiter) # type: ignore
+		l = len(path) - 1
+		for i, k in enumerate(path):
 			if k not in d:
 				return True
 			if i == l:
@@ -191,7 +194,7 @@ class ConfigUtils:
 		arg: Optional[Union[str, dict, AllOf, AnyOf, OneOf]]
 	) -> Union[int, dict]:
 		"""
-		Converts dict schema containing str representation of tags into 
+		Converts dict schema containing str representation of tags into
 		a dict schema containing hashed values (int64).
 
 		:param arg: schema dict. \
@@ -208,7 +211,7 @@ class ConfigUtils:
 		"""
 
 		out: Dict[str, Any] = {}
-		
+
 		if isinstance(arg, str):
 			return DBUtils.b2_hash(arg)
 
@@ -218,7 +221,7 @@ class ConfigUtils:
 		if isinstance(arg, dict):
 
 			if "anyOf" in arg:
-				if AmpelUtils.check_seq_inner_type(arg['anyOf'], str):
+				if check_seq_inner_type(arg['anyOf'], str):
 					out['anyOf'] = [DBUtils.b2_hash(el) for el in arg['anyOf']]
 				else:
 					out['anyOf'] = []
@@ -233,7 +236,7 @@ class ConfigUtils:
 							)
 						else:
 							raise ValueError("Unsupported format (type: %s)" % type(el))
-	
+
 			elif 'allOf' in arg:
 				out['allOf'] = [DBUtils.b2_hash(el) for el in arg['allOf']]
 
@@ -241,5 +244,5 @@ class ConfigUtils:
 				out['oneOf'] = [DBUtils.b2_hash(el) for el in arg['oneOf']]
 		else:
 			raise ValueError("Unsupported format (%s)" % type(arg))
-		
+
 		return out

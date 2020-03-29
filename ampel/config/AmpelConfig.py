@@ -1,24 +1,38 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/config/AmpelConfig.py
+# File              : Ampel-core/ampel/config/AmpelConfig.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 14.06.2018
-# Last Modified Date: 22.10.2019
+# Last Modified Date: 12.02.2020
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import json
+from typing import Literal, Optional, Dict
 from ampel.model.EncryptedDataModel import EncryptedDataModel
 from ampel.config.AmpelBaseConfig import AmpelBaseConfig
+from ampel.abstract.AbsAuxiliaryUnit import AbsAuxiliaryUnit
 
 
 class AmpelConfig(AmpelBaseConfig):
-	""" 
-	"""
+	""" """
+
+	def __init__(self, config: Dict, freeze: bool = True) -> None:
+
+		super().__init__(config, freeze)
+
+		# Automcatically register auxiliary units
+		AbsAuxiliaryUnit.aux.update(
+			{
+				k: v for t in ('', 't0.unit.', 't1.unit.', 't2.unit.', 't3.unit.')
+				for k, v in self.get(f'{t}aux', dict, True).items()
+			}
+		)
+
 
 	@staticmethod
 	def new_default(
-		pwd_file: str = None, verbose: bool = False, ignore_errors: bool = False
+		pwd_file: Optional[str] = None, verbose: bool = False, ignore_errors: bool = False
 	) -> 'AmpelConfig':
 		"""
 		"""
@@ -40,22 +54,15 @@ class AmpelConfig(AmpelBaseConfig):
 		)
 
 
-	def get_db(self) -> 'ampel.db.AmpelDB': # type: ignore
-		""" """
-		if not hasattr(self, 'ampel_db'):
-			# avoid cyclic import
-			from ampel.db.AmpelDB import AmpelDB
-			self.ampel_db = AmpelDB(self)
-		return self.ampel_db
-
-
 	def deactivate_all_processes(self) -> None:
 		""" """
 		for i in range(4):
-			self._config["t%s"%i]['process']['active'] = False
+			self._config[f"t{i}"]['process']['active'] = False
 
 
-	def activate_process(self, channel: str = None, tier: int = None) -> None:
+	def activate_process(self,
+		channel: str = None, tier: Optional[Literal[0, 1, 2, 3]] = None
+	) -> None:
 		""" """
 		for i in range(4):
 			if tier and i != tier:
@@ -63,23 +70,23 @@ class AmpelConfig(AmpelBaseConfig):
 			if not channel:
 				continue
 			if tier == 1:
-				self._config["t%s"%i]['process']['active'] = True
+				self._config[f"t{i}"]['process']['active'] = True
 			if tier == 3:
-				self._config["t%s"%i]['process']['active'] = True
+				self._config[f"t{i}"]['process']['active'] = True
 
 
-	def remove_process(self, tier: int = None) -> None:
+	def remove_process(self, tier: Optional[Literal[0, 1, 2, 3]] = None) -> None:
 		pass
 
 
-	def get_resource(self, conf_key: str, debug: bool = False) -> dict:
+	def get_resource(self, conf_key: str, debug: bool = False) -> Optional[dict]:
 		""" """
 		return self.recursive_decrypt(
 			f"resource.{conf_key}", debug
 		)
 
 
-	def recursive_decrypt(self, conf_key: str, debug: bool = False) -> dict:
+	def recursive_decrypt(self, conf_key: str, debug: bool = False) -> Optional[dict]:
 		"""
 		Note:
 		- returns None if conf with provided key is not a Dict
@@ -98,21 +105,19 @@ class AmpelConfig(AmpelBaseConfig):
 			if isinstance(value, dict):
 
 				if "iv" in value:
-		
+
 					if not ret:
 						ret = d.copy()
 
 					try:
 						ec = EncryptedDataModel(**value)
-						ret[key] = ec.decrypt(
-							self.get("pwd")
-						)
+						ret[key] = ec.decrypt(self.get("pwd"))
 					except Exception:
 						if debug:
 							import traceback
-							print("#"*50)
+							print("#" * 50)
 							traceback.print_exc()
-							print("#"*50)
+							print("#" * 50)
 						self.recursive_decrypt(value)
 						continue
 
