@@ -57,7 +57,7 @@ class ChannelConfigCollector(AbsDictConfigCollector):
 				)
 				return
 
-			if "NO_HASH" not in arg.get('policy', []):
+			if not ("NO_HASH" in arg.get('policy', []) or isinstance(chan_name, int)):
 				arg['hash'] = DBUtils.b2_hash(chan_name)
 				for k, v in self.items():
 					if arg['hash'] == v.get('hash'):
