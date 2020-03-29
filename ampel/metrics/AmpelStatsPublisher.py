@@ -15,11 +15,11 @@ from pymongo.database import Database
 
 from ampel.types import ChannelId
 from ampel.logging.AmpelLogger import AmpelLogger
-from ampel.utils.AmpelUtils import AmpelUtils
+from ampel.utils.mappings import flatten_dict, unflatten_dict, get_by_path
 from ampel.core.Schedulable import Schedulable
 from ampel.config.AmpelConfig import AmpelConfig
 from ampel.db.AmpelDB import AmpelDB
-from ampel.flags.T2RunState import T2RunState
+from ampel.t2.T2RunState import T2RunState
 
 class AmpelStatsPublisher(Schedulable):
 	"""
@@ -77,16 +77,16 @@ class AmpelStatsPublisher(Schedulable):
 		"""
 		:param channel_names: list of channel names, if None, stats for all avail channels will be reported.
 		:param publish_to: send stats to\n
-		  * mongo: send metrics to dedicated mongo collection (mongodb_uri must be set)
-		  * graphite: send db metrics to graphite (graphite server must be defined in Ampel_config)
-		  * print: print db metrics to stdout
-		  * log: log db metrics using logger instance
+		* mongo: send metrics to dedicated mongo collection (mongodb_uri must be set)
+		* graphite: send db metrics to graphite (graphite server must be defined in Ampel_config)
+		* print: print db metrics to stdout
+		* log: log db metrics using logger instance
 		:param publish_what:\n
-		  * col_stats -> collection stats (size, compressedSize, indexSize)
-		  * docs_count -> number of documents in collections
-		  * daemon -> mongod stats (ram usage, number of sockets open)
-		  * channels -> number of transients in each channel
-		  * archive ->
+		* col_stats -> collection stats (size, compressedSize, indexSize)
+		* docs_count -> number of documents in collections
+		* daemon -> mongod stats (ram usage, number of sockets open)
+		* channels -> number of transients in each channel
+		* archive ->
 		"""
 
 		# Pass custom args to Parent class constructor
@@ -222,14 +222,14 @@ class AmpelStatsPublisher(Schedulable):
 
 	def send_metrics(self,
 		daemon: bool = False, col_stats: bool = False, docs_count: bool = False,
-		channels: bool = False, archive: bool =False, system: bool = True,
+		channels: bool = False, archive: bool = False, system: bool = True,
 	) -> None:
 		"""
 		Send/publish metrics\n
 		:raises ValueError: when bad configuration was provided
 		"""
 
-		stats_dict = {'dbInfo': {}, 'count': {}}
+		stats_dict: Dict[str, Any] = {'dbInfo': {}, 'count': {}}
 
 		if not any([daemon, col_stats, docs_count, channels, archive, system]):
 			raise ValueError("Bad arguments")
@@ -265,11 +265,11 @@ class AmpelStatsPublisher(Schedulable):
 				't0': self.col_t0.find({}).count(),
 
 				'uls': self.col_t0.find(
-					{'_id': {"$lt" : 0}}
+					{'_id': {"$lt": 0}}
 				).count(),
 
 				'pps': self.col_t0.find(
-					{'_id': {"$gt" : 0}},
+					{'_id': {"$gt": 0}},
 				).count(),
 
 				't1': self.col_t1.find({}).count(),
@@ -356,7 +356,7 @@ class AmpelStatsPublisher(Schedulable):
 
 		# Build dict with changed items only
 		out_dict = {
-			k: v for k, v in AmpelUtils.flatten_dict(stats_dict).items()
+			k: v for k, v in flatten_dict(stats_dict).items()
 			if self.past_items.get(k) != v
 		}
 
@@ -375,7 +375,7 @@ class AmpelStatsPublisher(Schedulable):
 			# pylint: disable=undefined-variable
 			print(
 				"Computed metrics: %s" % json.dumps(
-					AmpelUtils.flatten_dict(stats_dict), indent=4
+					flatten_dict(stats_dict), indent=4
 				)
 			)
 
@@ -417,7 +417,7 @@ class AmpelStatsPublisher(Schedulable):
 							'events': {
 								'name': 'statsPublisher',
 								'dt': time(),
-								'metrics': AmpelUtils.unflatten_dict(out_dict)
+								'metrics': unflatten_dict(out_dict)
 							}
 						}
 					},
@@ -436,7 +436,7 @@ class AmpelStatsPublisher(Schedulable):
 
 		server_status = db.command("serverStatus")
 		for k, v in AmpelStatsPublisher.db_metrics.items():
-			ret_dict[suffix + v] = AmpelUtils.get_by_path(server_status, k)
+			ret_dict[suffix + v] = get_by_path(server_status, k)
 
 		return ret_dict
 
@@ -488,12 +488,16 @@ def run():
 
 	from ampel.run.AmpelArgumentParser import AmpelArgumentParser
 	parser = AmpelArgumentParser()
-	parser.add_argument('--publish-to', nargs='+', default=['log', 'graphite'],
-	    choices=['mongo', 'graphite', 'log', 'print'],
-	    help='Publish stats by these methods')
-	parser.add_argument('--publish-what', nargs='+', default=['col_stats', 'docs_count', 'daemon', 'channels', 'archive', 'system'],
-	    choices=['col_stats', 'docs_count', 'daemon', 'channels', 'archive', 'system'],
-	    help='Publish these stats')
+	parser.add_argument(
+		'--publish-to', nargs='+', default=['log', 'graphite'],
+		choices=['mongo', 'graphite', 'log', 'print'],
+		help='Publish stats by these methods'
+	)
+	parser.add_argument(
+		'--publish-what', nargs='+', default=['col_stats', 'docs_count', 'daemon', 'channels', 'archive', 'system'],
+		choices=['col_stats', 'docs_count', 'daemon', 'channels', 'archive', 'system'],
+		help='Publish these stats'
+	)
 	args, _ = parser.parse_known_args()
 	if 'archive' in args.publish_what:
 		parser.require_resource('archive', ['reader'])
@@ -504,5 +508,5 @@ def run():
 	args = parser.parse_args()
 
 	asp = AmpelStatsPublisher(publish_to=args.publish_to, publish_what=args.publish_what)
-	asp.send_metrics(**{k:True for k in args.publish_what})
+	asp.send_metrics(**{k: True for k in args.publish_what})
 	asp.run()
