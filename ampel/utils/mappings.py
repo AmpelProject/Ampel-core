@@ -31,18 +31,18 @@ def build_unsafe_dict_id(dict_arg: Optional[Dict]) -> str:
 
 
 @overload
-def build_safe_dict_id(dict_arg: Optional[Dict], ret: Type[bytes]) -> bytes:
+def build_dict_id(dict_arg: Optional[Dict], ret: Type[bytes]) -> bytes:
 	...
 
 @overload
-def build_safe_dict_id(dict_arg: Optional[Dict], ret: Type[str]) -> str:
+def build_dict_id(dict_arg: Optional[Dict], ret: Type[str]) -> str:
 	...
 
 @overload
-def build_safe_dict_id(dict_arg: Optional[Dict], ret: Type[int]) -> int:
+def build_dict_id(dict_arg: Optional[Dict], ret: Type[int]) -> int:
 	...
 
-def build_safe_dict_id(
+def build_dict_id(
 	dict_arg: Optional[Dict], ret: Type[Union[bytes, str, int]] = bytes
 ) -> Union[bytes, str, int]:
 	"""
@@ -69,6 +69,10 @@ def build_safe_dict_id(
 		)
 
 	return ho.hexdigest()
+
+
+def build_dict_int_id(dict_arg: Optional[Dict]) -> int:
+	return build_dict_id(dict_arg, int)
 
 
 def get_by_path(
@@ -159,3 +163,16 @@ def unflatten_dict(d: Dict, separator: str = '.') -> Dict:
 		d[parts[-1]] = value
 
 	return res
+
+
+def merge_dict(d1: Dict, d2: Dict) -> None:
+    """
+	Recursive dict merge.
+    :param d1: dict onto which the merge is executed
+    :param d2: dict merged into d1
+    """
+    for k, v in d2.items():
+        if k in d1 and isinstance(d1[k], dict):
+            merge_dict(d1[k], v)
+        else:
+            d1[k] = v

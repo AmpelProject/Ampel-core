@@ -12,12 +12,27 @@ from typing import Dict, Any, List, Iterable, Union, Type, Tuple, Optional, Set,
 from ampel.types import strict_iterable
 
 
-def iter(arg: Any) -> Any:
+def ampel_iter(arg: Any) -> Any:
 	"""
 	-> suppresses python3 treatment of str as iterable (a really dumb choice)
 	-> Makes None iterable
 	"""
 	return [arg] if isinstance(arg, (type(None), str, int, bytes, bytearray)) else arg
+
+
+def try_reduce(arg):
+	"""
+	Returns element contained by sequence if sequence contains only one element.
+	Example:
+	try_reduce(['ab']) -> returns 'ab'
+	try_reduce({'ab'}) -> returns 'ab'
+	try_reduce(['a', 'b']) -> returns ['a', 'b']
+	try_reduce({'a', 'b'}) -> returns {'a', 'b'}
+	"""
+	if len(arg) == 1:
+		return next(iter(arg))
+
+	return arg
 
 
 def to_set(arg) -> Set:
@@ -28,13 +43,13 @@ def to_set(arg) -> Set:
 	In []: {'abc'}
 	Out[]: {'abc'}
 
-	In []: AmpelUtils.to_set("abc")
+	In []: to_set("abc")
 	Out[]: {'abc'}
-	In []: AmpelUtils.to_set(["abc"])
+	In []: to_set(["abc"])
 	Out[]: {'abc'}
-	In []: AmpelUtils.to_set(['a','b','c'])
+	In []: to_set(['a','b','c'])
 	Out[]: {'a', 'b', 'c'}
-	In []: AmpelUtils.to_set([1,2])
+	In []: to_set([1,2])
 	Out[]: {1, 2}
 	"""
 	return set(arg) if isinstance(arg, strict_iterable) else {arg}
