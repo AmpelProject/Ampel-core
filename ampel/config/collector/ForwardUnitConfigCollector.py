@@ -17,7 +17,7 @@ from ampel.config.collector.AbsForwardConfigCollector import AbsForwardConfigCol
 tier_class: Dict[str, List[str]] = {
 	"t0": ["AbsPhotoAlertFilter", "AbsT0Unit", "AlertProcessor"],
 	"t1": [""],
-	"t2": ["AbsT2DataPointUnit", "AbsT2StateUnit", "AbsT2StockUnit"],
+	"t2": ["AbsPointT2Unit", "AbsStateT2Unit", "AbsStockT2Unit"],
 	"t3": ["AbsT3Unit"]
 }
 
