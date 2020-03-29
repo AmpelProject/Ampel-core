@@ -4,61 +4,61 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 29.09.2018
-# Last Modified Date: 27.12.2019
+# Last Modified Date: 16.03.2020
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from typing import Any
 from pydantic import validator
 from ampel.types import strict_iterable
-from ampel.utils.AmpelUtils import AmpelUtils
+from ampel.utils.collections import check_seq_inner_type
 from ampel.utils.docstringutils import gendocstring
-from ampel.model.AmpelBaseModel import AmpelBaseModel
+from ampel.model.AmpelStrictModel import AmpelStrictModel
 
 @gendocstring
-class QueryMatchModel(AmpelBaseModel):
-	""" 
+class QueryMatchModel(AmpelStrictModel):
+	"""
 
-	Note: If logic parameter is a string or a simple list, 
+	Note: If logic parameter is a string or a simple list,
 	it is interpreted as if it was 'anyOf' (OR operator)
 
 	.. sourcecode:: python\n
 
 		In []: QueryMatchModel(**{"field":"ab", "logic":'3'})
 		Out[]: <QueryMatchModel field='ab' logic={'anyOf': ['3']}>
-		
+
 		In []: QueryMatchModel(**{"field":"ab", "logic":['3', '1', '2']})
 		Out[]: <QueryMatchModel field='ab' logic={'anyOf': ['3', '1', '2']}>
-		
+
 		In []: QueryMatchModel(**{"field":"ab", "logic":{'allOf': ['3', '1', '2']}})
 		Out[]: <QueryMatchModel field='ab' logic={'allOf': ['3', '1', '2']}>
-		
+
 		In []: QueryMatchModel(**{"field":"ab", "logic":{'anyOf': ['3', '1', '2']}})
 		Out[]: <QueryMatchModel field='ab' logic={'anyOf': ['3', '1', '2']}>
-		
+
 		In []: QueryMatchModel(**{"field":"ab", "logic":{'anyOf': [{'allOf': ['1','2']}, '3', '1', '2']}})
 		Out[]: <QueryMatchModel field='ab' logic={'anyOf': [{'allOf': ['1', '2']}, '3', '1', '2']}>
-		
+
 		In []: QueryMatchModel(**{"field":"ab", "logic":{'anyOf': [{'allOf': ['1','2']}, '3', {'allOf': ['1','3']}]}})
 		Out[]: <QueryMatchModel field='ab' logic={'anyOf': [{'allOf': ['1', '2']}, '3', {'allOf': ['1', '3']}]}>
-		
+
 		In []: QueryMatchModel(**{"field":"ab", "logic":['1', '2', ['1', '2', '3']]})
 		Out[]: Unsupported nesting (err 1)
-		
+
 		In []: QueryMatchModel(**{"field":"ab", "logic":{'allOf': ['1', '2', ['1','2']]}})
 		Out[]: Unsupported nesting (err 5)
-		
+
 		In []: QueryMatchModel(**{"field":"ab", "logic":{'allOf': ['1', '2'], 'abc': '2'}})
 		Out[]: Unsupported dict format {'allOf': ['1', '2'], 'abc': '2'}
-		
+
 		In []: QueryMatchModel(**{"field":"ab", "logic":{'anyOf': [{'anyOf': ['1','2']}, '2']}})
 		Out[]: Unsupported nesting (err 3)
-		
+
 		In []: QueryMatchModel(**{"field":"ab", "logic":{'anyOf': [{'allOf': ['1','2']}, '3', {'anyOf': ['1','2']}]}})
 		Out[]: Unsupported nesting (err 3)
-		
+
 		In []: QueryMatchModel(**{"field":"ab", "logic":{'allOf': [{'allOf': ['1','2']}, '3', '1', '2']}})
 		Out[]: Unsupported nesting (err 5)
-		
+
 		In []: QueryMatchModel(**{"field":"ab", "logic":{'anyOf': [{'allOf': ['1','2']}, '3', {'allOf': ['1',{'allOf':['1','2']}]}]}})
 		Out[]: Unsupported nesting (err 4)
 	"""
@@ -80,7 +80,7 @@ class QueryMatchModel(AmpelBaseModel):
 			return {'anyOf': [v]}
 
 		if type(v) is list:
-			if not AmpelUtils.check_seq_inner_type(v, str):
+			if not check_seq_inner_type(v, str):
 				raise ValueError(
 					"QueryMatchModel error\n" +
 					"Unsupported nesting (err 1)"
@@ -104,7 +104,7 @@ class QueryMatchModel(AmpelBaseModel):
 					)
 
 				# 'anyOf' supports only a list of dicts and str
-				if not AmpelUtils.check_seq_inner_type(v['anyOf'], (str, dict), multi_type=True):
+				if not check_seq_inner_type(v['anyOf'], (str, dict), multi_type=True):
 					raise ValueError(
 						"QueryMatchModel error\n" +
 						"Unsupported nesting (err 2)"
@@ -122,8 +122,8 @@ class QueryMatchModel(AmpelBaseModel):
 
 						elif 'allOf' in el:
 
-							# 'allOf' closes nesting  
-							if not AmpelUtils.check_seq_inner_type(el['allOf'], str):
+							# 'allOf' closes nesting
+							if not check_seq_inner_type(el['allOf'], str):
 								raise ValueError(
 									"QueryMatchModel error\n" +
 									"Unsupported nesting (err 4)"
@@ -141,13 +141,13 @@ class QueryMatchModel(AmpelBaseModel):
 						"QueryMatchModel error\n" +
 						"Invalid dict value type: %s. Must be a sequence" % type(v['anyOf']))
 
-				# 'allOf' closes nesting  
-				if not AmpelUtils.check_seq_inner_type(v['allOf'], str):
+				# 'allOf' closes nesting
+				if not check_seq_inner_type(v['allOf'], str):
 					raise ValueError(
 						"QueryMatchModel error\n" +
 						"Unsupported nesting (err 5)"
 					)
-			else: 
+			else:
 				raise ValueError(
 					"QueryMatchModel error\n" +
 					"Invalid dict key (only 'anyOf' and 'allOf' allowed)"

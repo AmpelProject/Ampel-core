@@ -9,7 +9,7 @@
 
 from pydantic import BaseModel
 from typing import List, Optional, Dict
-from ampel.model.BetterConfigDefaults import BetterConfigDefaults
+from ampel.config.pydantic import BetterConfigDefaults
 from ampel.model.db.FieldModel import FieldModel
 
 class IndexModel(BaseModel):
@@ -17,16 +17,16 @@ class IndexModel(BaseModel):
 	Config = BetterConfigDefaults
 
 	index: Optional[List[FieldModel]]
-	dbField: Optional[str]
+	db_field: Optional[str]
 	args: Dict = None
 
 	# pylint: disable=arguments-differ,unused-argument
 	def dict(self, **kwargs) -> Dict:
-		if self.dbField:
+		if self.db_field:
 			return {
-				"index": [(self.dbField, 1)],
+				"index": [(self.db_field, 1)],
 				"args": self.args
-			} if self.args else {"index": [(self.dbField, 1)]}
+			} if self.args else {"index": [(self.db_field, 1)]}
 		return super().dict(**kwargs)
 
 
@@ -36,7 +36,7 @@ class IndexModel(BaseModel):
 		Ex: [('tranId', 1), ('channel', 1)] -> tranId_1_channel_1
 		"""
 		# Shortcut
-		if self.dbField:
-			return FieldModel(dbField=self.dbField).get_id()
+		if self.db_field:
+			return FieldModel(db_field=self.db_field).get_id()
 
 		return "_".join(el.get_id() for el in self.index)

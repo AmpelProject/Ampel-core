@@ -8,7 +8,7 @@
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from pydantic import BaseModel
-from ampel.model.BetterConfigDefaults import BetterConfigDefaults
+from ampel.config.pydantic import BetterConfigDefaults
 
 class MongoClientRoleModel(BaseModel):
 	""" """

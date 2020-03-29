@@ -14,11 +14,11 @@ from typing import Union, Sequence
 from ampel.logging.LoggingUtils import LoggingUtils
 from ampel.logging.AmpelLogger import AmpelLogger
 
-from ampel.typing import StrictIterable
-from ampel.common.AmpelUtils import AmpelUtils
+from ampel.types import strict_iterable
+from ampel.utils.AmpelUtils import AmpelUtils
 from ampel.utils.docstringutils import gendocstring
 
-from ampel.model.AmpelBaseModel import AmpelBaseModel
+from ampel.model.AmpelStrictModel import AmpelStrictModel
 from ampel.model.t3.T3TaskModel import T3TaskModel
 from ampel.model.t3.StockModel import StockModel
 from ampel.model.t3.SelectModel import SelectModel
@@ -26,13 +26,13 @@ from ampel.model.t3.StockContentModel import StockContentModel
 
 from ampel.config.AmpelConfig import AmpelConfig
 from ampel.config.ConfigUtils import ConfigUtils
-from ampel.config.ReadOnlyDict import ReadOnlyDict
+from ampel.view.ReadOnlyDict import ReadOnlyDict
 from ampel.config.LogicSchemaUtils import LogicSchemaUtils
 from ampel.config.ScheduleEvaluator import ScheduleEvaluator
 
 
 @gendocstring
-class T3JobModel(AmpelBaseModel):
+class T3JobModel(AmpelStrictModel):
 	"""
 	Possible 'schedule' values (https://schedule.readthedocs.io/en/stable/):
 	"every(10).minutes"
@@ -215,13 +215,13 @@ class T3JobModel(AmpelBaseModel):
 		if hasattr(arg, "dict"):
 			arg = arg.dict()
 
-		if isinstance(arg, StrictIterable):
+		if isinstance(arg, strict_iterable):
 			return AmpelUtils.to_set(arg)
 
 		if isinstance(arg, dict):
 			s=set()
 			for el in next(iter(arg.values()), []):
-				if type(el) is str:
+				if isinstance(el, str):
 					s.add(el)
 				elif isinstance(el, dict):
 					s |= AmpelUtils.to_set(next(iter(el.values())))

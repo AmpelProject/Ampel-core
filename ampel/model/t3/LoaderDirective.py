@@ -1,38 +1,45 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/model/t3/LoaderDirective.py
+# File              : Ampel-core/ampel/model/t3/LoaderDirective.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 09.12.2019
-# Last Modified Date: 16.12.2019
+# Last Modified Date: 16.02.2020
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-from pydantic import Field, BaseModel, validator
-from typing import Dict, Any, Optional, Type, Literal, Union, NewType
+from pydantic import validator, root_validator
+from typing import Dict, Any, Optional, Type, Literal
+from ampel.content.StockRecord import StockRecord
+from ampel.content.DataPoint import DataPoint
+from ampel.content.Compound import Compound
+from ampel.content.T2Record import T2Record
+from ampel.content.LogRecord import LogRecord
+from ampel.model.AmpelStrictModel import AmpelStrictModel
 
-from ampel.utils.ReadOnlyDict import ReadOnlyDict
-from ampel.utils.docstringutils import gendocstring
-from ampel.model.AmpelBaseModel import AmpelBaseModel
+models = {
+	"stock": StockRecord,
+	"t0": DataPoint,
+	"t1": Compound,
+	"t2": T2Record,
+	"logs": LogRecord
+}
 
-DataClass = NewType('DataClass', Any)
-
-@gendocstring
-class LoaderDirective(AmpelBaseModel):
+class LoaderDirective(AmpelStrictModel):
 	""" """
-	col: Literal["stock", "t0", "t1", "t2", "logs"]
-	model: Optional[Type[Union[ReadOnlyDict, DataClass, BaseModel]]] = None
-	# loader: Optional[Type] = None
-	queryComplement: Optional[Dict[str, Any]] = Field(None, alias="query_complement")
 
+	col: Literal["stock", "t0", "t1", "t2", "logs"]
+	model: Optional[Type] # TypedDict
+	query_complement: Optional[Dict[str, Any]]
+	options: Optional[Dict[str, Any]]
 
 	@validator('model')
-	# pylint: disable=no-self-argument,no-self-use
-	def check_dataclass(cls, v):
-		""" """
-		if v is ReadOnlyDict or issubclass(v, BaseModel):
-			return v
-			
-		if not hasattr(v, '__dataclass_fields__'):
-			raise ValueError("Invalid value provided")	
-			
+	def validate(cls, v):
+		if not hasattr(v, "__annotations__"):
+			raise ValueError("TypedDict expected for parameter 'model'")
 		return v
+
+	@root_validator
+	def _set_defaults(cls, values):
+		if not values.get('model') and values.get('col') in models:
+			values['model'] = models[values.get('col')]
+		return values

@@ -1,33 +1,36 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/model/ProcessModel.py
+# File              : Ampel-core/ampel/model/ProcessModel.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 06.10.2019
-# Last Modified Date: 11.10.2019
+# Last Modified Date: 19.02.2020
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import schedule as sched
 from pydantic import validator
-from typing import Sequence, Union, Optional
-from ampel.utils.docstringutils import gendocstring
-from ampel.model.AmpelBaseModel import AmpelBaseModel
-from ampel.model.UnitModel import UnitModel
+from typing import Sequence, Optional, Literal
+from ampel.types import ProcUnitModels
+from ampel.model.AmpelStrictModel import AmpelStrictModel
+from ampel.types import ChannelId
+from ampel.model.PlainUnitModel import PlainUnitModel
 from ampel.config.ScheduleEvaluator import ScheduleEvaluator
 
-@gendocstring
-class ProcessModel(AmpelBaseModel):
+
+class ProcessModel(AmpelStrictModel):
 
 	schedule: Sequence[str]
-	tier: int
-	processName: Optional[str]
-	controller: UnitModel
-	processor: UnitModel
-	distName: Optional[str] = None
-	channel: Optional[Union[int, str]] = None
+	tier: Literal[0, 1, 2, 3]
+	name: Optional[str]
+	active: bool = True
+	controller: PlainUnitModel
+	processor: ProcUnitModels
+	distrib: Optional[str]
+	source: Optional[str]
+	channel: Optional[ChannelId]
 
 
-	@validator('processName')
+	@validator('name')
 	def t3_processes_must_define_process_name(cls, v, values):
 		if values['tier'] == 3 and not v:
 			raise ValueError("T3 processes must define a process name")
@@ -44,7 +47,7 @@ class ProcessModel(AmpelBaseModel):
 	@validator('schedule', whole=True)
 	def schedule_must_not_contain_bad_things(cls, schedule):
 		"""
-		Safety check for "schedule" parameters 
+		Safety check for "schedule" parameters
 		"""
 		evaluator = ScheduleEvaluator()
 		for el in schedule:

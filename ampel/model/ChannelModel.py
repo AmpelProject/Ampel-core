@@ -1,25 +1,23 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/model/ChannelModel.py
+# File              : Ampel-core/ampel/model/ChannelModel.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 09.10.2019
-# Last Modified Date: 27.10.2019
+# Last Modified Date: 09.02.2020
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from typing import Union, List, Optional
-from ampel.utils.docstringutils import gendocstring
-from ampel.model.AmpelBaseModel import AmpelBaseModel
+from ampel.model.AmpelStrictModel import AmpelStrictModel
 
 
-@gendocstring
-class ChannelModel(AmpelBaseModel):
-	""" 
-	"""
+class ChannelModel(AmpelStrictModel):
+
 	channel: Union[int, str]
 	hash: Optional[int]
-	distName: str = ""
+	distrib: Optional[str]
+	source: Optional[str]
 	active: bool = True
-	contact: str
+	contact: Optional[str]
 	access: Optional[List[str]]
 	policy: List[str] = []

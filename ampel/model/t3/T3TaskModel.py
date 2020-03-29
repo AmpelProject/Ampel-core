@@ -9,15 +9,15 @@
 
 import schedule as sched
 from pydantic import validator
-from typing import Dict, Union, List
-from ampel.common.docstringutils import gendocstring
-from ampel.model.AmpelBaseModel import AmpelBaseModel
+from typing import Dict, Union, List, Optional
+from ampel.utils.docstringutils import gendocstring
+from ampel.model.AmpelStrictModel import AmpelStrictModel
 from ampel.config.ScheduleEvaluator import ScheduleEvaluator
 from ampel.model.legacy.stock.StockModel import StockModel
 from ampel.model.UnitModel import UnitModel
 
 @gendocstring
-class T3TaskModel(AmpelBaseModel):
+class T3TaskModel(AmpelStrictModel):
 	"""
 	Example:
 	"""
@@ -27,7 +27,7 @@ class T3TaskModel(AmpelBaseModel):
 	verbose: bool = False
 	globalInfo: bool = False
 	transients: Union[None, StockModel] = None
-	distName: str = None
+	distrib: Optional[str] = None
 
 
 	@validator('schedule', pre=True, whole=True)
