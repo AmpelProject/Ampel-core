@@ -13,7 +13,7 @@ from ampel.types import strict_iterable
 from ampel.model.operator.AnyOf import AnyOf
 from ampel.model.operator.AllOf import AllOf
 from ampel.model.operator.OneOf import OneOf
-from ampel.utils.AmpelUtils import AmpelUtils
+from ampel.utils.collections import check_seq_inner_type
 from ampel.query.QueryUtils import QueryUtils
 from ampel.query.QueryGeneralMatch import QueryGeneralMatch
 
@@ -118,7 +118,7 @@ class QueryLoadT2Info:
 		elif isinstance(states, strict_iterable):
 
 			# check_seq_inner_type makes sure the sequence is monotype
-			if not AmpelUtils.check_seq_inner_type(states, (str, bytes, Binary)):
+			if not check_seq_inner_type(states, (str, bytes, Binary)):
 				raise ValueError("Sequence of state must contain element with type: bytes or str")
 
 			first_state = next(iter(states))

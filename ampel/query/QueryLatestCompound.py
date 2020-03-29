@@ -4,13 +4,13 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 13.01.2018
-# Last Modified Date: 04.03.2020
+# Last Modified Date: 16.03.2020
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import collections
 from bson.int64 import Int64
 from typing import Union, Sequence, Dict, Optional, Any, List
-from ampel.utils.AmpelUtils import AmpelUtils
+from ampel.utils.collections import check_seq_inner_type
 from ampel.model.operator.AnyOf import AnyOf
 from ampel.model.operator.AllOf import AllOf
 from ampel.model.operator.OneOf import OneOf
@@ -46,7 +46,7 @@ class QueryLatestCompound:
 		.. sourcecode:: python\n
 			In []: cursor = col.aggregate(
 				QueryLatestCompound.fast_query(
-					ZTFUtils.to_ampel_id(
+					to_ampel_id(
 						['ZTF18aaayyuq', 'ZTF17aaagvng', 'ZTF18aaabikt']
 					)
 				)
@@ -63,7 +63,7 @@ class QueryLatestCompound:
 
 		# Robustness
 		if isinstance(tran_ids, Sequence):
-			if not AmpelUtils.check_seq_inner_type(tran_ids, (int, Int64, str)):
+			if not check_seq_inner_type(tran_ids, (int, Int64, str)):
 				raise ValueError("Elements in tran_ids must be of type str or int or Int64 (bson)")
 		else:
 			if not isinstance(tran_ids, (int, Int64, str)):

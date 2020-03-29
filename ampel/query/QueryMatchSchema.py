@@ -8,7 +8,7 @@
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from typing import Union, Tuple, Dict
-from ampel.utils.AmpelUtils import AmpelUtils
+from ampel.utils.collections import check_seq_inner_type
 from ampel.model.operator.AnyOf import AnyOf
 from ampel.model.operator.AllOf import AllOf
 from ampel.model.operator.OneOf import OneOf
@@ -80,7 +80,7 @@ class QueryMatchSchema:
 		elif 'anyOf' in arg:
 
 			# Case 1: no nesting below anyOf
-			if AmpelUtils.check_seq_inner_type(arg['anyOf'], valid_types):
+			if check_seq_inner_type(arg['anyOf'], valid_types):
 				if len(arg['anyOf']) == 1: # dumb case
 					query[field_name] = arg['anyOf'][0]
 				else:
@@ -217,7 +217,7 @@ class QueryMatchSchema:
 		elif 'anyOf' in arg:
 
 			# Case 1: no nesting below anyOf
-			if AmpelUtils.check_seq_inner_type(arg['anyOf'], valid_types):
+			if check_seq_inner_type(arg['anyOf'], valid_types):
 
 				if field_name not in query:
 					query[field_name] = {}
@@ -314,7 +314,7 @@ class QueryMatchSchema:
 				f"\nOffending value: {el}"
 			)
 
-		if not AmpelUtils.check_seq_inner_type(el['allOf'], in_type):
+		if not check_seq_inner_type(el['allOf'], in_type):
 			raise ValueError(
 				f"No further nesting allowed beyond 'allOf'"
 				f"\nOffending value: {el}"
