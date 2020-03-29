@@ -1,29 +1,29 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/model/template/LegacyT3Process3.py
+# File              : Ampel-core/ampel/model/template/LegacyT3Process3.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 09.10.2019
-# Last Modified Date: 27.10.2019
+# Last Modified Date: 06.02.2020
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from pydantic import validator
 from typing import Any, List, Dict
 from ampel.model.legacy.TranModel import TranModel
 from ampel.model.legacy.BaseT3Process import BaseT3Process
-from ampel.model.AmpelBaseModel import AmpelBaseModel
+from ampel.model.AmpelStrictModel import AmpelStrictModel
 from ampel.utils.docstringutils import gendocstring
 
 
 @gendocstring
-class TaskData(AmpelBaseModel):
+class TaskData(AmpelStrictModel):
 	"""
 	Example:
 	"""
 	name: str
 	transients: TranModel
-	className: str
-	initConfig: Dict[str, Any]
+	unit: str
+	config: Dict[str, Any]
 
 	@validator('transients')
 	def transient_selection_must_not_contain_channel(cls, tran):
@@ -37,7 +37,7 @@ class TaskData(AmpelBaseModel):
 
 @gendocstring
 class LegacyT3Process3(BaseT3Process):
-	""" 
+	"""
 	"""
 	task: List[TaskData]
 
@@ -54,15 +54,15 @@ class LegacyT3Process3(BaseT3Process):
 
 		return {
 			"tier": 3,
-			"processName": d['processName'],
-			"distName": d['distName'],
+			"name": d['name'],
+			"distrib": d['distrib'],
 			"schedule": d['schedule'],
 			"controller": {
-				"className": "T3Controller"
+				"unit": "T3Controller"
 			},
 			"executor": {
-				"className": "T3ComplexExecutor",
-				"initConfig": {
+				"unit": "T3ComplexExecutor",
+				"config": {
 					"transients": tran,
 					"task": [el.dict(skip_defaults=True) for el in d['task']]
 				}

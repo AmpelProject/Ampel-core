@@ -1,54 +1,54 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/model/template/LegacyT3Process1.py
+# File              : Ampel-core/ampel/model/template/LegacyT3Process1.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 09.10.2019
-# Last Modified Date: 28.10.2019
+# Last Modified Date: 06.02.2020
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from pydantic import validator
 from typing import Union, List, Dict, Any, Optional
 from ampel.model.legacy.BaseT3Process import BaseT3Process
-from ampel.model.AmpelBaseModel import AmpelBaseModel
-from ampel.common.docstringutils import gendocstring
+from ampel.model.AmpelStrictModel import AmpelStrictModel
+from ampel.utils.docstringutils import gendocstring
 
 
 @gendocstring
-class TaskData(AmpelBaseModel):
+class TaskData(AmpelStrictModel):
 	"""
 	Example:
 	"""
 	name: Optional[str]
-	className: str
-	initConfig: Dict[str, Any]
+	unit: str
+	config: Dict[str, Any]
 
 
 @gendocstring
 class LegacyT3Process1(BaseT3Process):
-	""" 
+	"""
 	Handles the two following possible formats:
 
 	Simplest
 	{
-		"processName": "RapidLowzMarshal",
+		"name": "RapidLowzMarshal",
 		"tier": 3,
 		"schedule": "every(10).minutes",
 		"transients": {...},
-		"className": "MarshalPublisher",
-		"initConfig": {...}
+		"unit": "MarshalPublisher",
+		"config": {...}
 	}
 
 	Simple (only 1 task is accepted):
 	{
-		"processName": "RapidLowzMarshal",
+		"name": "RapidLowzMarshal",
 		"tier": 3,
 		"schedule": "every(10).minutes",
 		"transients": {...},
 		"task": [
 			{
-				"className": "MarshalPublisher",
-				"initConfig": {
+				"unit": "MarshalPublisher",
+				"config": {
 					"marshal_program": "AmpelRapid"
 				}
 			}
@@ -56,8 +56,8 @@ class LegacyT3Process1(BaseT3Process):
 	}
 	"""
 	template: str
-	className: str = None
-	initConfig: Dict[str, Any] = None
+	unit: Optional[str]
+	config: Optional[Dict[str, Any]]
 	task: Optional[Union[TaskData, List[TaskData]]]
 
 
@@ -67,7 +67,7 @@ class LegacyT3Process1(BaseT3Process):
 		if not task:
 			return None
 
-		if isinstance(task, List):
+		if isinstance(task, list):
 			if len(task) == 1:
 				v = task[0]
 			else:
@@ -76,8 +76,8 @@ class LegacyT3Process1(BaseT3Process):
 		if isinstance(task, dict):
 			v = task
 
-		values['className'] = v['className']
-		values['initConfig'] = v['initConfig']
+		values['unit'] = v['unit']
+		values['config'] = v['config']
 
 		return None
 
@@ -93,27 +93,33 @@ class LegacyT3Process1(BaseT3Process):
 
 		return {
 			"tier": 3,
-			"processName": d['processName'],
-			"distName": d['distName'],
+			"name": d['name'],
+			"distrib": d['distrib'],
+			"source": d['source'],
 			"schedule": d['schedule'],
 			"controller": {
-				"className": "T3Controller"
+				"unit": "T3Controller"
 			},
 			"processor": {
-				"className": "T3MonoUnitExecutor",
-				"initConfig": {
+				"unit": "T3DefaultProcessor",
+				"config": {
+					"context": [
+						{'unit': 'T3AddLastRunTime'},
+						{'unit': 'T3AddAlertsNumber'}
+					],
 					"select": {
-						"className": "T3StockSelector",
-						"initConfig": tran['select']
+						"unit": "T3DefaultStockSelector",
+						"config": tran['select'],
+						"config": tran['select']
 					},
 					"load": {
-						"className": "DBContentLoader",
-						"initConfig": tran['content']
+						"unit": "DBContentLoader",
+						"config": tran['content']
 					},
 					"run": {
-						"className": d['className'],
-						"initConfig": d['initConfig']
-					}
+						"unit": "T3MonoUnitExecutor",
+						"config": d['config']
+					} if not d.get('task') else d.get('task')
 				}
 			}
 		}

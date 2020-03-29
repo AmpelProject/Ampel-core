@@ -13,13 +13,13 @@ from ampel.utils.docstringutils import gendocstring
 from ampel.model.operator.AllOf import AllOf
 from ampel.model.operator.AnyOf import AnyOf
 from ampel.model.operator.OneOf import OneOf
-from ampel.model.AmpelBaseModel import AmpelBaseModel
+from ampel.model.AmpelStrictModel import AmpelStrictModel
 from ampel.model.time.TimeConstraintModel import TimeConstraintModel
 from ampel.config.LogicSchemaUtils import LogicSchemaUtils
 
 
 @gendocstring
-class SelectModel(AmpelBaseModel):
+class SelectModel(AmpelStrictModel):
 	"""
 	Example: 
 	.. sourcecode:: python\n
@@ -28,7 +28,7 @@ class SelectModel(AmpelBaseModel):
 			"created": {"after": {"use": "$timeDelta", "arguments": {"days": -40}}},
 			"modified": {"after": {"use": "$timeDelta", "arguments": {"days": -1}}},
 			"channels": "HU_GP_CLEAN",
-			"withTags": "SURVEY_ZTF",
+			"withTags": "ZTF",
 			"withoutTags": "HAS_ERROR"
 		}
 	}

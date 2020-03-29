@@ -7,20 +7,37 @@
 # Last Modified Date: 10.12.2019
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-from typing import List
+from typing import List, Optional
 from pydantic import validator
+from enum import IntEnum
 
-from ampel.typing import StrictIterable
-from ampel.common.AmpelUtils import AmpelUtils
+from ampel.types import strict_iterable
+from ampel.utils.collections import check_seq_inner_type, ampel_iter
 from ampel.utils.docstringutils import gendocstring
-from ampel.model.AmpelBaseModel import AmpelBaseModel
-from ampel.flags.AlDocType import AlDocType
+from ampel.model.AmpelStrictModel import AmpelStrictModel
+#from ampel.flags.AlDocType import AlDocType
+
+
+class AlDocType(IntEnum):
+	"""
+	Ampel Document Type.
+	Enum members are used to identify document types in the main ampel collection.
+	(Majoritarily used by the mongo $match stage of the aggregation pipeline)
+	DB field name: alDocType
+	IntEnum is used rather than Enum in order to  allow quicker syntax for comparison of the kind
+	al_doc_type == 8 intead of al_doc_type.value == 8
+	"""
+	TRANSIENT = 1
+	COMPOUND = 2
+	T2RECORD = 4
+	PHOTOPOINT = 8
+	UPPERLIMIT = 16
 
 
 @gendocstring
-class ContentModel(AmpelBaseModel):
-	""" 
-	Example: 
+class ContentModel(AmpelStrictModel):
+	"""
+	Example:
 
 	.. sourcecode:: python\n
 		{
@@ -31,8 +48,9 @@ class ContentModel(AmpelBaseModel):
 		}
 	"""
 
-	docs: List[AlDocType]
-	t2SubSelection: List[str] = None
+	#docs: List[AlDocType]
+	docs: List[int]
+	t2SubSelection: Optional[List[str]]
 
 
 	@validator('docs', whole=True, pre=True, always=True)
@@ -47,14 +65,14 @@ class ContentModel(AmpelBaseModel):
 			)
 
 		# Due to pydantic bug, validators can be called twice
-		if AmpelUtils.check_seq_inner_type(v, (int, AlDocType)):
+		if check_seq_inner_type(v, (int, AlDocType)):
 			return v
 
 		# For convenience and syntax consistency, we accept dicts
 		if isinstance(v, dict):
 			return cls.logic_dict_to_list("docs", v)
 
-		if not isinstance(v, str) and not AmpelUtils.check_seq_inner_type(v, str):
+		if not isinstance(v, str) and not check_seq_inner_type(v, str):
 			raise ValueError(
 				"transients->content->docs model error\n" +
 				'List values must be string'
@@ -62,7 +80,7 @@ class ContentModel(AmpelBaseModel):
 
 		ret = []
 
-		for el in AmpelUtils.iter(v):
+		for el in ampel_iter(v):
 
 			if isinstance(el, str):
 				try:
@@ -83,10 +101,10 @@ class ContentModel(AmpelBaseModel):
 	def to_seq(cls, v, values, **kwargs):
 		""" """
 
-		if isinstance(v, StrictIterable):
-		
+		if isinstance(v, strict_iterable):
+
 			# Due to pydantic bug (validators can be called twice)
-			if AmpelUtils.check_seq_inner_type(v, str):
+			if check_seq_inner_type(v, str):
 				return v
 
 			# For convenience and syntax consistency, we accept dicts
@@ -110,10 +128,10 @@ class ContentModel(AmpelBaseModel):
 	@classmethod
 	def logic_dict_to_list(cls, field, v):
 		"""
-		For convenience and syntax consistency, we accept docs format such as: 
+		For convenience and syntax consistency, we accept docs format such as:
 		{'anyOf': ['a', 'b]} which we convert as simple list
 		"""
-		if 'anyOf' not in v or 'allOf' in v or len(v) !=1:
+		if 'anyOf' not in v or 'allOf' in v or len(v) != 1:
 			raise ValueError(
 				"transients->content->%s model error" % field,
 				'Dict value can only contain the key "anyOf"'
@@ -135,7 +153,7 @@ class ContentModel(AmpelBaseModel):
 		if AlDocType.T2RECORD not in docs:
 			raise ValueError(
 				"T3 transients->select->docs model error\n" +
-				"T2RECORD must be defined in transients->select->docs\n"+
+				"T2RECORD must be defined in transients->select->docs\n" +
 				"when transients->content->t2SubSelection filtering is requested."
 			)
 

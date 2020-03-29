@@ -1,47 +1,47 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/model/template/LegacyT3Process2.py
+# File              : Ampel-core/ampel/model/template/LegacyT3Process2.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 09.10.2019
-# Last Modified Date: 27.10.2019
+# Last Modified Date: 06.02.2020
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from typing import List, Dict, Any
 from ampel.model.legacy.BaseT3Process import BaseT3Process
 from ampel.utils.docstringutils import gendocstring
-from ampel.model.AmpelBaseModel import AmpelBaseModel
+from ampel.model.AmpelStrictModel import AmpelStrictModel
 
 
 @gendocstring
-class TaskData(AmpelBaseModel):
+class TaskData(AmpelStrictModel):
 	"""
 	Example:
 	"""
 	name: str
-	className: str
-	initConfig: Dict[str, Any]
+	unit: str
+	config: Dict[str, Any]
 
 
 @gendocstring
 class LegacyT3Process2(BaseT3Process):
-	""" 
+	"""
 	Handles the following formats:
 	{
-		"processName": "RapidLowzMarshal",
+		"name": "RapidLowzMarshal",
 		"tier": 3,
 		"schedule": "every(10).minutes",
 		"transients": {...},
 		"task": [
 			{
-				"className": "MarshalPublisher",
-				"initConfig": {
+				"unit": "MarshalPublisher",
+				"config": {
 					"marshal_program": "AmpelRapid"
 				}
 			},
 			{
-				"className": "MarshalPublisher",
-				"initConfig": {
+				"unit": "MarshalPublisher",
+				"config": {
 					"marshal_program": "AmpelRapid"
 				}
 			}
@@ -62,15 +62,15 @@ class LegacyT3Process2(BaseT3Process):
 
 		return {
 			"tier": 3,
-			"processName": d['processName'],
-			"distName": d['distName'],
+			"name": d['name'],
+			"distrib": d['distrib'],
 			"schedule": d['schedule'],
 			"controller": {
-				"className": "T3Controller"
+				"unit": "T3Controller"
 			},
 			"processor": {
-				"className": "T3MultiUnitExecutor",
-				"initConfig": {
+				"unit": "T3MultiUnitExecutor",
+				"config": {
 					"transients": tran,
 					"task": d['task'].dict(skip_defaults=True)
 				}

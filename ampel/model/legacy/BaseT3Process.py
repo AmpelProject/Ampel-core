@@ -1,27 +1,25 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/model/builder/BaseT3Process.py
+# File              : Ampel-core/ampel/model/legacy/BaseT3Process.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 09.10.2019
-# Last Modified Date: 10.10.2019
+# Last Modified Date: 09.02.2020
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-from typing import List
+from typing import List, Optional
 from pydantic import validator
-from ampel.model.AmpelBaseModel import AmpelBaseModel
+from ampel.model.AmpelStrictModel import AmpelStrictModel
 from ampel.model.legacy.TranModel import TranModel
-from ampel.utils.docstringutils import gendocstring
 
 
-@gendocstring
-class BaseT3Process(AmpelBaseModel):
-	""" 
-	"""
+class BaseT3Process(AmpelStrictModel):
+
 	schedule: List[str]
 	tier: int
-	processName: str
-	distName: str
+	name: str
+	distrib: Optional[str]
+	source: Optional[str]
 	transients: TranModel
 
 
@@ -47,5 +45,5 @@ class BaseT3Process(AmpelBaseModel):
 
 		if "channel" in d['select']:
 			raise ValueError("Channel selection not permitted here. Offending dict: %s" % d)
-	
+
 		return d
