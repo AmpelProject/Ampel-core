@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-core/ampel/config/AmpelConfig.py
+# File              : Ampel-core/ampel/config/AmpelCoreConfig.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 14.06.2018
@@ -10,18 +10,21 @@
 import json
 from typing import Literal, Optional, Dict
 from ampel.model.EncryptedDataModel import EncryptedDataModel
-from ampel.config.AmpelBaseConfig import AmpelBaseConfig
+from ampel.config.AmpelConfig import AmpelConfig
 from ampel.abstract.AbsAuxiliaryUnit import AbsAuxiliaryUnit
 
 
-class AmpelConfig(AmpelBaseConfig):
-	""" """
+class AmpelCoreConfig(AmpelConfig):
+	"""
+	Class based on AmpelConfig that provides additional functionalities,
+	especially the ability to auto-decrypt encrypted resources
+	"""
 
 	def __init__(self, config: Dict, freeze: bool = True) -> None:
 
 		super().__init__(config, freeze)
 
-		# Automcatically register auxiliary units
+		# Automatically register auxiliary units
 		AbsAuxiliaryUnit.aux.update(
 			{
 				k: v for t in ('', 't0.unit.', 't1.unit.', 't2.unit.', 't3.unit.')
