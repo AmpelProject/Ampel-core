@@ -4,15 +4,17 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 14.12.2017
-# Last Modified Date: 14.02.2020
+# Last Modified Date: 01.05.2020
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import logging, struct, socket
 from bson import ObjectId
 from typing import List, Dict, Optional, Union
+from logging import LogRecord
 from pymongo.errors import BulkWriteError
-from pymongo.operations import UpdateOne
 from ampel.db.AmpelDB import AmpelDB
+from ampel.utils.mappings import compare_dict_values
+from ampel.logging.LighterLogRecord import LighterLogRecord
 from ampel.logging.AmpelLogger import AmpelLogger
 from ampel.logging.LoggingUtils import LoggingUtils
 from ampel.logging.AmpelLoggingError import AmpelLoggingError
@@ -44,57 +46,60 @@ def _machine_bytes():
 	return struct.pack("<I", _fnv_1a_24(socket.gethostname().encode()))[:3]
 
 
-class DBLoggingHandler(logging.Handler):
+class DBLoggingHandler:
 	"""
-	Custom subclass of logging.Handler responsible for
-	saving log events into the NoSQL database.
+	Class capable of saving log events into the NoSQL database.
 	"""
 
 	def __init__(self,
-		ampel_db: AmpelDB, flags: LogRecordFlag, col_name: str = "logs",
-		level: int = logging.DEBUG, aggregate_interval: float = 1, flush_len: int = 1000
+		ampel_db: AmpelDB,
+		flags: LogRecordFlag,
+		col_name: str = "logs",
+		level: int = logging.DEBUG,
+		aggregate_interval: float = 1,
+		expand_extra: bool = True,
+		flush_len: int = 1000
 	):
 		"""
 		:param col_name: name of db collection to use (default: 'logs' in database Ampel_var)
 		:param aggregate_interval: logs with similar attributes (log level, possibly tranId & channels) \
-			are aggregated in one document instead of being split \
-			into several documents (spares some index RAM). \
-			*aggregate_interval* is the max interval of time in seconds \
-			during which log aggregation takes place. \
-			Beyond this value, a new log document is created no matter what. \
-			This parameter thus impacts the logging time granularity.
-		:param flush_len: How many log documents should be kept in memory before \
-			attempting a database bulk_write operation.
+		are aggregated in one document instead of being split into several documents (spares some index RAM). \
+		*aggregate_interval* is the max interval of time in seconds during which log aggregation takes place. \
+		Beyond this value, a new log document is created no matter what. This parameter thus impacts logging time granularity.
+		:param flush_len: How many log documents should be kept in memory before attempting a database bulk_write operation.
 		"""
 
 		# required when not using super().__init__
-		self.filters = []
-		self.lock = None
-		self._name = None
+		#self.filters = []
+		#self.lock = None
+		#self._name = None
 
 		self._ampel_db = ampel_db
 		self.flush_len = flush_len
 		self.aggregate_interval = aggregate_interval
 		self.log_dicts: List[Dict] = []
-		self.headers: List[Dict] = []
-		self.prev_records: Optional[logging.LogRecord] = None
-		self.run_id: Union[int, List[int]] = self.new_run_id()
+		self.prev_record: Optional[Union[LighterLogRecord, LogRecord]] = None
+		self.run_id: int = self.new_run_id()
+		self.fields_check = ['extra', 'stock', 'channel']
+		self.expand_extra = expand_extra
+		self.warn_lvl = logging.WARNING
 		self.flags = {
 			logging.DEBUG: LogRecordFlag.DEBUG | flags,
 			# we use/set our own logging level (we add VERBOSE as well)
 			logging.VERBOSE: LogRecordFlag.VERBOSE | flags, # type: ignore
+			logging.SHOUT: LogRecordFlag.INFO | flags, # type: ignore
 			logging.INFO: LogRecordFlag.INFO | flags,
 			logging.WARNING: LogRecordFlag.WARNING | flags,
 			logging.ERROR: LogRecordFlag.ERROR | flags,
-			# Treat critical as error
-			logging.CRITICAL: LogRecordFlag.ERROR | flags
+			logging.CRITICAL: LogRecordFlag.ERROR | flags # Treat critical as error
 		}
 
 		# Get reference to pymongo collection
 		self.col = ampel_db.get_collection(col_name)
 
 		# Set loggingHandler properties
-		self.setLevel(level)
+		#self.setLevel(level)
+		self.level = level
 
 		# ObjectID middle: 3 bytes machine + 2 bytes encoding the last 4 digits of run_id (unique)
 		# NB: pid is not always unique if running in a jail or container
@@ -116,46 +121,32 @@ class DBLoggingHandler(logging.Handler):
 			.get('value')
 
 
-	def add_headers(self, dicts: List[Dict]) -> None:
-		""" """
-		if len(dicts) > self.flush_len:
-			# We could do something about that.. later if need be
-			raise ValueError("Too many logrecord headers")
+	def handle(self, record: Union[LighterLogRecord, LogRecord]) -> None:
+		""" :raises AmpelLoggingError: on error """
 
-		for el in dicts:
-			d = el.copy()
-			d['flag'] = self.flags[d.pop("lvl")]
-			self.headers.append(d)
-
-
-	def emit(self, record: logging.LogRecord) -> None:
-		"""
-		:raises AmpelLoggingError: on error
-		"""
-
-		extra = getattr(record, 'extra', None)
+		rd = record.__dict__
 
 		try:
 
 			# Same flag, date (+- 1 sec), tran_id and chans
 			if (
-				AmpelLogger.aggregation_ok and
-				self.prev_records and
-				record.levelno <= self.prev_records.levelno and
-				record.created - self.prev_records.created < self.aggregate_interval and
-				extra == getattr(self.prev_records, 'extra', None)
+				self.prev_record and
+				(record.name is None or record.name == self.prev_record.name) and
+				record.levelno <= self.prev_record.levelno and
+				record.created - self.prev_record.created < self.aggregate_interval and
+				compare_dict_values(rd, self.prev_record.__dict__, self.fields_check)
 			):
 
 				prev_dict = self.log_dicts[-1]
 
-				if 'msg' not in prev_dict:
-					prev_dict['msg'] = "None log entry with identical 'extra' repeated twice"
+				if 'm' not in prev_dict:
+					prev_dict['m'] = "None log entry with identical fields repeated twice"
 					return
 
-				if isinstance(prev_dict['msg'], list):
-					prev_dict['msg'].append(record.getMessage())
+				if isinstance(prev_dict['m'], list):
+					prev_dict['m'].append(record.msg)
 				else:
-					prev_dict['msg'] = [prev_dict['msg'], record.getMessage()]
+					prev_dict['m'] = [prev_dict['m'], record.msg]
 
 			else:
 
@@ -164,49 +155,60 @@ class DBLoggingHandler(logging.Handler):
 
 				# Treat SHOUT msg as INFO msg (and try again to concatenate)
 				if record.levelno == logging.SHOUT: # type: ignore
-					record.levelno = logging.INFO
-					self.emit(record)
+					if isinstance(record, LighterLogRecord):
+						new_rec = LighterLogRecord(name=0, msg=None, levelno=0)
+					else:
+						new_rec = LogRecord(name=None, pathname=None, level=None, # type: ignore
+							lineno=None, exc_info=None, msg=None, args=None) # type: ignore
+					for k, v in record.__dict__.items():
+						new_rec.__dict__[k] = v
+					new_rec.levelno = logging.INFO
+					self.handle(new_rec)
 					return
 
 				# Generate object id with log record.created as current time
-				# pylint: disable=protected-access
 				with ObjectId._inc_lock:
 					oid = struct.pack(">i", int(record.created)) + \
-						self.oid_middle + \
-						struct.pack(">i", ObjectId._inc)[1:4]
-					ObjectId._inc = (ObjectId._inc + 1) % 0xFFFFFF
+						self.oid_middle + struct.pack(">i", ObjectId._inc)[1:4]
+					ObjectId._inc = (ObjectId._inc + 1) % 0xFFFFFF # limit result to 32bits
 
-				ldict = {
-					'_id': ObjectId(oid=oid),
-					'flag': self.flags[record.levelno],
-					'run': self.run_id,
-				}
+				if 'extra' in rd:
+					if self.expand_extra:
+						ldict = {
+							**rd['extra'],
+							'_id': ObjectId(oid=oid),
+							'f': self.flags[record.levelno],
+							'r': self.run_id,
+						}
+					else:
+						ldict = {
+							'_id': ObjectId(oid=oid),
+							'f': self.flags[record.levelno],
+							'r': self.run_id,
+							'x': rd['extra']
+						}
+				else:
+					ldict = {
+						'_id': ObjectId(oid=oid),
+						'f': self.flags[record.levelno],
+						'r': self.run_id,
+					}
 
 				if record.msg:
-					ldict['msg'] = record.getMessage()
+					ldict['m'] = record.msg
 
-				if extra:
+				if 'channel' in rd:
+					ldict['c'] = rd['channel']
 
-					if 'channel' in extra or 'stock' in extra:
+				if 'stock' in rd:
+					ldict['s'] = rd['stock']
 
-						extra = dict(extra)
-
-						if 'channel' in extra:
-							ldict['channel'] = extra.pop('channel')
-
-						if 'stock' in extra:
-							ldict['stock'] = extra.pop('stock')
-
-					ldict['extra'] = extra
-
-
-				if record.levelno > logging.WARNING:
+				if record.levelno > self.warn_lvl:
 					ldict['file'] = record.filename
 					ldict['line'] = record.lineno
-					ldict['func'] = record.funcName
 
 				self.log_dicts.append(ldict)
-				self.prev_records = record
+				self.prev_record = record
 
 		except Exception as e:
 			from ampel.logging.LoggingErrorReporter import LoggingErrorReporter
@@ -214,92 +216,17 @@ class DBLoggingHandler(logging.Handler):
 			raise AmpelLoggingError from None
 
 
-	def get_run_id(self) -> Union[int, List[int]]:
-		""" """
+	def get_run_id(self) -> int:
 		return self.run_id
 
 
-	def add_run_id(self, arg: Union[int, List[int]]) -> None:
-		""" """
-		if isinstance(self.run_id, int):
-			if isinstance(arg, int):
-				self.run_id = [self.run_id, arg]
-			elif isinstance(arg, list):
-				self.run_id = [self.run_id] + arg
-			else:
-				raise ValueError(f"Unsupported type {type(arg)}")
-		elif isinstance(self.run_id, list):
-			if isinstance(arg, int):
-				self.run_id.append(arg)
-			elif isinstance(arg, list):
-				self.run_id.extend(arg)
-			else:
-				raise ValueError(f"Unsupported type {type(arg)}")
-		else:
-			raise ValueError(f"Invalid self.run_id {type(self.run_id)}")
-
-		# Make sure there is no duplicate
-		self.run_id = list(set(self.run_id))
-
-
-	def fork(self, flags: LogRecordFlag) -> 'DBLoggingHandler':
-		"""
-		Creates a new instance of DBLoggingHandler that, additionlly to its own runId,
-		embedds also the runId from the parent class.
-		Ex: if lh is the parent DBLoggingHandler instance with runId say 12.
-		Calling lh.fork() will create another DBLoggingHandler instance with runId [12, 23]
-		(12 inherited from parent and 23 self generated (see get_run_id docstring))
-		Different "connected" logger are typically used for T3 processes running
-		multiple T3 units. Querying all logs with the master runId (12) will
-		provide you with all logs from the process. Querying logs with runId 23
-		will return only the logs associated with a given T3-Unit requested by the T3 process.
-		"""
-
-		# New instance of DBLoggingHandler with same parameters
-		dblh = DBLoggingHandler(
-			self._ampel_db, flags, self.col.name, self.level,
-			self.aggregate_interval, self.flush_len
-		)
-
-		# Add runId from new instance to current instance
-		self.add_run_id(
-			dblh.get_run_id()
-		)
-
-		# Vice-versa
-		dblh.add_run_id(
-			self.get_run_id()
-		)
-
-		if not hasattr(self, "sub_handlers"):
-			self.sub_handlers = []
-
-		self.sub_handlers.append(dblh)
-
-		return dblh
-
-
-	def flush_all(self) -> None:
-		"""
-		Flushes also sub handlers if any
-		"""
-		if hasattr(self, "sub_handlers"):
-			for handler in self.sub_handlers:
-				handler.flush()
-		self.flush()
-
-
 	def purge(self) -> None:
-		"""
-		"""
 		self.log_dicts = []
-		self.prev_records = None
+		self.prev_record = None
 
 
 	def flush(self) -> None:
-		"""
-		:raises AmpelLoggingError: on error
-		"""
+		""" :raises AmpelLoggingError: on error """
 
 		# No log entries
 		if not self.log_dicts:
@@ -310,35 +237,11 @@ class DBLoggingHandler(logging.Handler):
 
 		# clear referenced log entries
 		self.log_dicts = []
-		self.prev_records = None
+		self.prev_record = None
 
 		try:
-
-			if self.headers:
-
-				# following command drops the GIL
-				self.col.bulk_write(
-					[
-						UpdateOne(
-							{'_id': rec['_id']},
-							{
-								'$setOnInsert': rec,
-								'$addToSet': {
-									'run': {'$each': self.run_id}
-								} if isinstance(self.run_id, list) else {
-									'run': self.run_id
-								}
-							},
-							upsert=True
-						)
-						for rec in self.headers
-					],
-					ordered=False
-				)
-				self.headers = []
-
 			# pymongo drops the GIL while sending and receiving data over the network
-			self.col.insert_many(dicts)
+			self.col.insert_many(dicts, ordered=False)
 
 		except BulkWriteError as bwe:
 			if self.handle_bulk_write_error(bwe):
@@ -394,7 +297,7 @@ class DBLoggingHandler(logging.Handler):
 
 						self._ampel_db.get_collection('troubles').insert_one(
 							{
-								'tier': LoggingUtils.get_tier_from_log_flags(db_rec['flag']),
+								'tier': LoggingUtils.get_tier_from_log_flags(db_rec['f']),
 								'location': 'DBLoggingHandler',
 								'msg': "OID collision occured between two different log entries",
 								'ownLogEntry': str(err_dict['op']),
