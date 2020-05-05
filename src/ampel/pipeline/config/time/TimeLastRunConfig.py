@@ -11,8 +11,16 @@ from pydantic import BaseModel, constr
 from typing import Union, Dict
 from ampel.pipeline.common.docstringutils import gendocstring
 
+from ampel.pipeline.config.time.TimeDeltaConfig import TimeDeltaConfig
+from ampel.pipeline.config.time.TimeStringConfig import TimeStringConfig
+from ampel.pipeline.config.time.UnixTimeConfig import UnixTimeConfig
+
 @gendocstring
 class TimeLastRunConfig(BaseModel):
 	use: constr(regex='.timeLastRun$')
 	event: str
-	fallback: Union[None, Dict] = None
+	fallback: Union[
+	    TimeDeltaConfig,
+	    TimeStringConfig,
+	    UnixTimeConfig
+	] = None

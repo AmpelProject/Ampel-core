@@ -77,6 +77,9 @@ class TimeConstraint:
 
 		tc = self.constraints.get(param, None)
 
+		return self._resolve(tc)
+
+	def _resolve(self, tc):
 		if tc is None:
 			return None
 
@@ -112,7 +115,7 @@ class TimeConstraint:
 					None
 				)
 				if res is None:
-					return None
+					return self._resolve(tc.fallback)
 
 			return datetime.fromtimestamp(res['events']['dt'])
 
@@ -122,4 +125,4 @@ class TimeConstraint:
 		elif tc_type is TimeStringConfig:
 			return datetime.strptime(tc.dateTimeStr, tc.dateTimeFormat)
 
-		raise ValueError("Illegal argument (type: %s)" % tc_type)
+		raise TypeError("Illegal argument (type: %s)" % tc_type)
