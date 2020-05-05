@@ -76,7 +76,9 @@ def uri_string(props):
         if props.get('password', None) is not None:
             auth = ':'.join((auth, parse.quote(props['password'])))
         netloc = '@'.join((auth, netloc))
-    return "{}://{}/{}".format(props['scheme'], netloc, props.get('path', ''))
+    query = {k: v for k, v in props.items() if k not in ('scheme', 'hostname', 'port', 'username', 'password', 'path', 'roles')}
+    qs = '?'+parse.urlencode(query) if query else ''
+    return f"{props['scheme']}://{netloc}/{props.get('path', '')}{qs}"
 
 def render_uris(props):
     if len(props.get('roles', {})) == 0:
@@ -147,7 +149,7 @@ class ResourceURI(Resource):
             group.add_argument('--{}-{}'.format(cls.name, prop), env_var='{}_{}'.format(cls.name.upper(), prop.upper()),
                 action=BuildURI, type=typus, default=argparse.SUPPRESS)
         for role in roles:
-            for prop in 'username', 'password':
+            for prop in ('username', 'password'):
                 group.add_argument('--{}-{}-{}'.format(cls.name, role, prop), env_var='{}_{}_{}'.format(cls.name.upper(), role.upper(), prop.upper()),
                     action=BuildURI, default=argparse.SUPPRESS)
 
