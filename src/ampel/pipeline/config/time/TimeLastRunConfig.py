@@ -23,4 +23,4 @@ class TimeLastRunConfig(BaseModel):
 	    TimeDeltaConfig,
 	    TimeStringConfig,
 	    UnixTimeConfig
-	] = None
+	] = TimeDeltaConfig(use='$timeDelta', arguments={'days': -1})
