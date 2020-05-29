@@ -1,21 +1,22 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-core/ampel/logging/LoggingUtils.py
+# File              : Ampel-core/ampel/logging/LogUtils.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 30.09.2018
-# Last Modified Date: 15.02.2020
+# Last Modified Date: 10.05.2020
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-import sys, traceback, logging
-from typing import Dict, Optional, Union, List, Any
-
+import sys, traceback
+from math import log2
+from typing import Dict, Optional, Union, List, Any, Literal
 from ampel.db.AmpelDB import AmpelDB
-from ampel.config.ConfigUtils import ConfigUtils
-from ampel.logging.LogRecordFlag import LogRecordFlag
-from ampel.logging.AmpelLogger import AmpelLogger
+from ampel.util.general import has_nested_type
+from ampel.log.AmpelLogger import AmpelLogger
+from ampel.log.LogRecordFlag import LogRecordFlag
 
-class LoggingUtils:
+
+class LogUtils:
 
 
 	@staticmethod
@@ -37,18 +38,16 @@ class LoggingUtils:
 
 			exc = getattr(sys, "last_value", None)
 			sys_exc = True
-			logger.propagate_log(
-				logging.ERROR, "loading exception from sys", extra=extra
-			)
+			logger.error("loading exception from sys", extra=extra)
 
 			if not exc:
-				logger.propagate_log(
-					logging.ERROR, "log_exception(..) was called but not exception could be found",
+				logger.error(
+					"log_exception(..) was called but not exception could be found",
 					extra=extra
 				)
 				return
 
-		logger.propagate_log(logging.ERROR, "-" * 50, extra=extra)
+		logger.error("-" * 50, extra=extra)
 
 		if msg:
 			logger.error(msg)
@@ -61,9 +60,9 @@ class LoggingUtils:
 		):
 			for ell in el.split('\n'):
 				if len(ell) > 0:
-					logger.propagate_log(logging.ERROR, ell, extra=extra)
+					logger.error(ell, extra=extra)
 
-		logger.propagate_log(logging.ERROR, "-" * 50, extra=extra)
+		logger.error("-" * 50, extra=extra)
 
 		# Clear up recorded exception (avoiding potential multiple reports)
 		if sys_exc:
@@ -74,14 +73,15 @@ class LoggingUtils:
 
 	@classmethod
 	def report_exception(cls,
-		ampel_db: AmpelDB, logger: AmpelLogger, tier: int, exc: Exception = None,
-		run_id: Optional[Union[int, List[int]]] = None, info: Dict[str, Any] = None
+		ampel_db: AmpelDB, logger: AmpelLogger, tier: Literal[0, 1, 2, 3],
+		exc: Optional[Exception] = None, run_id: Optional[Union[int, List[int]]] = None,
+		info: Dict[str, Any] = None
 	) -> None:
 		"""
 		:param tier: Ampel tier level (0, 1, 2, 3)
 		:param logger: logger instance (logging module). \
 		propagate_log() will be used to print details about the exception
-		:param run_id: If provided, the runId associated with the current job \
+		:param run_id: If provided, the run id associated with the current job \
 		will be saved into the reported dict instance.
 		:param info: optional dict instance whose values will be included \
 		in the document inserted into Ampel_troubles
@@ -100,7 +100,8 @@ class LoggingUtils:
 		# Basis dict
 		trouble: Dict[str, Any] = {'tier': tier}
 
-		# Should be provided systematically
+		# Should be provided in most of the cases
+		# (run id can alternatively be provided through 'info' though)
 		if run_id is not None:
 			trouble['run'] = run_id
 
@@ -111,7 +112,7 @@ class LoggingUtils:
 		trouble['exception'] = format_exc().replace("\"", "'").split("\n")
 
 		# Populate 'troubles' collection
-		LoggingUtils._insert_trouble(trouble, ampel_db, logger)
+		LogUtils._insert_trouble(trouble, ampel_db, logger)
 
 
 	@staticmethod
@@ -128,11 +129,9 @@ class LoggingUtils:
 		:raises: Should not raise errors
 		"""
 
-		## Get filename and line number using inspect
+		# Get filename and line number using inspect
 		import inspect
-
-		# pylint: disable=unused-variable
-		frame,filename,line_number,function_name,lines,index = inspect.stack()[1]
+		frame, filename, line_number, function_name, lines, index = inspect.stack()[1]
 
 		trouble = {
 			'tier': tier,
@@ -148,17 +147,14 @@ class LoggingUtils:
 		logger.error("Error occured", extra=trouble)
 
 		# Populate 'troubles' collection
-		LoggingUtils._insert_trouble(trouble, ampel_db, logger)
+		LogUtils._insert_trouble(trouble, ampel_db, logger)
 
 
 	@classmethod
-	def get_tier_from_log_flags(cls, flags: LogRecordFlag) -> int:
-		"""
-		:param flags:
-		"""
-		for i, flag in enumerate(LogRecordFlag.T0, LogRecordFlag.T1, LogRecordFlag.T2, LogRecordFlag.T3): # type: ignore
-			if flag in flags:
-				return i
+	def get_tier_from_log_flags(cls, flags: Union[int, LogRecordFlag]) -> int:
+		for i in (1, 2, 4, 8):
+			if i & flags.__int__():
+				return int(log2(i))
 		return -1
 
 
@@ -166,32 +162,32 @@ class LoggingUtils:
 	def _insert_trouble(
 		trouble: Dict[str, Any], ampel_db: AmpelDB, logger: AmpelLogger
 	) -> None:
-		""" """
 
 		# Populate troubles collection
 		try:
-
 			ampel_db \
 				.get_collection('troubles') \
 				.insert_one(trouble)
 
-		except Exception:
+		except Exception as e:
 
 			# Bad luck (possible cause: DB offline)
-			logger.propagate_log(
-				logging.ERROR, exc_info=True,
+			logger.error(
 				msg = "Exception occured while populating 'troubles' collection",
+				exc_info=e
 			)
 
-			logger.propagate_log(
-				logging.ERROR, exc_info=True,
-				msg = f"Unpublished 'troubles' document: {str(trouble)}"
+			logger.error(
+				msg = f"Unpublished 'troubles' document: {str(trouble)}",
+				exc_info=e
 			)
 
 
 	@classmethod
 	def safe_query_dict(cls,
-		match: Dict[str, Any], update: Optional[Dict[str, Any]] = None, dict_key: Optional[str] = 'query'
+		match: Dict[str, Any],
+		update: Optional[Dict[str, Any]] = None,
+		dict_key: Optional[str] = 'query'
 	) -> Dict[str, Any]:
 		u"""
 		| Builds a dict that can be passed as "extra" parameter to instances of AmpelLogger.
@@ -208,7 +204,7 @@ class LoggingUtils:
 		Possibly embedded dollar signs in dict keys of parameters \
 		"match" and "update" are replaced with the the unicode character \
 		'Fullwidth Dollar Sign': ＄ (see docstring of :func:`convert_dollars \
-		<ampel.logging.LoggingUtils.convert_dollars>`)
+		<ampel.log.LogUtils.convert_dollars>`)
 		"""
 
 		extra = {'match': cls.convert_dollars(match)}
@@ -242,7 +238,7 @@ class LoggingUtils:
 					if "." in key:
 						arg[key.replace(".", "\u2219")] = arg.pop(key)
 
-			if not ConfigUtils.has_nested_type(arg, dict):
+			if not has_nested_type(arg, dict): # type: ignore
 				return arg
 
 			if not pblm_keys:
@@ -252,8 +248,8 @@ class LoggingUtils:
 				arg[key] = cls.convert_dollars(arg[key])
 
 		elif isinstance(arg, list):
-			if ConfigUtils.has_nested_type(arg, dict):
-				arg=arg.copy()
+			if has_nested_type(arg, dict):
+				arg = arg.copy()
 				return [cls.convert_dollars(el) for el in arg]
 
 		return arg
