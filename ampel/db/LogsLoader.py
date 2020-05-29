@@ -7,10 +7,10 @@
 # Last Modified Date: 15.02.2020
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-from ampel.logging.AmpelLogger import AmpelLogger
+from ampel.log.AmpelLogger import AmpelLogger
 from ampel.view.ReadOnlyDict import ReadOnlyDict
 from ampel.db.AmpelDB import AmpelDB
-from ampel.logging.LogRecordFlag import LogRecordFlag
+from ampel.log.LogRecordFlag import LogRecordFlag
 
 # TODO: update this class
 class LogsLoader:
