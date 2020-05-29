@@ -216,11 +216,11 @@ def alert_factory(latest_schema):
 @pytest.fixture
 def minimal_ingestion_config(mongod):
 	from ampel.config.AmpelConfig import AmpelConfig
-	from ampel.abstract.AmpelUnitLoader import AmpelUnitLoader
+	from ampel.abstract.UnitLoader import UnitLoader
 	from ampel.db.AmpelDB import AmpelDB
 	
 	AmpelConfig.reset()
-	AmpelUnitLoader.reset()
+	UnitLoader.reset()
 	source = {
 			"stream": 'ZTFIPAC',
 			"parameters": {
@@ -272,7 +272,7 @@ def minimal_ingestion_config(mongod):
 		AmpelDB.get_collection(collection).drop()
 	yield config
 	AmpelConfig.reset()
-	AmpelUnitLoader.reset()
+	UnitLoader.reset()
 
 @pytest.fixture
 def ingested_transients(alert_generator, minimal_ingestion_config, caplog):
@@ -337,7 +337,7 @@ def t3_selected_transients(ingested_transients, minimal_ingestion_config, caplog
 @pytest.fixture
 def t3_transient_views():
 	from os.path import dirname, join
-	from ampel.utils.json import load
+	from ampel.util.json import load
 	with open(join(dirname(__file__), 'test-data', 'transient_views.json')) as f:
 		views = [v for v in load(f)]
 	return views

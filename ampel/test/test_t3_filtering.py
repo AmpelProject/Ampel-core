@@ -4,7 +4,7 @@ import logging
 
 def test_t3_filtering_demo(t3_transient_views):
     from mongomock.filtering import filter_applies
-    from ampel.utils.json import AmpelEncoder
+    from ampel.util.json import AmpelEncoder
     # the user supplies a query against results like this, along with a unit id and config name
     q = {
         'fit_acceptable': True,
@@ -71,7 +71,7 @@ def test_transient_data_filter(transients, mocker):
     from ampel.t3.T3Job import T3Job
     from ampel.config.t3.T3TaskConfig import T3TaskConfig
     from ampel.config.t3.T3JobConfig import T3JobConfig
-    from ampel.logging.AmpelLogger import AmpelLogger
+    from ampel.log.AmpelLogger import AmpelLogger
     
     mocker.patch('pymongo.MongoClient')
     tran_config={

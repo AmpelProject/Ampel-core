@@ -257,7 +257,7 @@ def test_entrypoint_rununit(testing_config, capsys):
 		))
 
 def test_get_required_resources():
-	from ampel.t3.T3Controller import get_required_resources, T3Controller, T3JobConfig, AmpelUnitLoader
+	from ampel.t3.T3Controller import get_required_resources, T3Controller, T3JobConfig, UnitLoader
 	from ampel.config.ConfigLoader import ConfigLoader
 	from ampel.config.AmpelConfig import AmpelConfig
 	
@@ -275,7 +275,7 @@ def test_get_required_resources():
 	assert len(units) > 0
 	resources = set()
 	for unit in units:
-		for resource in AmpelUnitLoader.get_class(3, unit).resources:
+		for resource in UnitLoader.get_class(3, unit).resources:
 			resources.add(resource)
 	assert len(resources) > 0
 

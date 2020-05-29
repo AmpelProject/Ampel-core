@@ -1,7 +1,7 @@
 
 import logging
 
-from ampel.logging.AmpelLogger import AmpelLogger
+from ampel.log.AmpelLogger import AmpelLogger
 
 def test_log_suppression(mocker):
 	class Handler(logging.Handler):
