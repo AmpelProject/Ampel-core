@@ -8,17 +8,15 @@
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from typing import Dict, Optional, Any
-from ampel.logging.AmpelLogger import AmpelLogger
-from ampel.logging.LogsBufferDict import LogsBufferDict
+from ampel.log.LogsBufferDict import LogsBufferDict
 from ampel.db.DBUpdatesBuffer import DBUpdatesBuffer
-from ampel.abstract.AbsProcessorUnit import AbsProcessorUnit
+from ampel.abstract.AbsAdminUnit import AbsAdminUnit
 
 
-class AbsIngester(AbsProcessorUnit, abstract=True):
+class AbsIngester(AbsAdminUnit, abstract=True):
 
-	logger: AmpelLogger
-	logd: LogsBufferDict
 	updates_buffer: DBUpdatesBuffer
+	logd: LogsBufferDict
 	run_id: int
 	hash: Optional[int]
 
@@ -31,7 +29,6 @@ class AbsIngester(AbsProcessorUnit, abstract=True):
 	def __eq__(self, other) -> bool:
 		if isinstance(other, int):
 			return self.hash == other
-		elif isinstance(other, AbsIngester):
+		if isinstance(other, AbsIngester):
 			return self.hash == other.hash
-		else:
-			return False
+		return False

@@ -4,51 +4,45 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 23.03.2020
-# Last Modified Date: 24.03.2020
+# Last Modified Date: 30.04.2020
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import importlib
-from typing import Sequence, Dict, Any, Optional, Union, List, Literal
-from ampel.types import ChannelId
+from typing import Sequence, Dict, Any, Optional, Union, List, Literal, Set, Tuple
+from ampel.type import ChannelId
+from ampel.abstract.AbsDataUnit import AbsDataUnit
 from ampel.abstract.ingest.AbsIngester import AbsIngester
-from ampel.abstract.ingest.AbsT2Compiler import AbsT2Compiler
+from ampel.abstract.ingest.AbsStateT2Compiler import AbsStateT2Compiler
+from ampel.abstract.ingest.AbsPointT2Compiler import AbsPointT2Compiler
+from ampel.abstract.ingest.AbsStockT2Compiler import AbsStockT2Compiler
 from ampel.model.T2IngestModel import T2IngestModel
 
 
 class AbsT2Ingester(AbsIngester, abstract=True):
 
 	run_id: int
-	compiler: AbsT2Compiler
+	compiler: Union[AbsStateT2Compiler, AbsPointT2Compiler, AbsStockT2Compiler]
 	tags: Optional[List[Union[int, str]]]
 	tier: Literal[0, 1, 3] = 0
 	default_options: Dict = {}
 
 
 	def add_ingest_models(self, channel: ChannelId, models: Sequence[T2IngestModel]):
-		"""
-		This method is usually called multiple times by the AP
-		"""
-
-		if self.debug:
-			self.logger.info(
-				'Loading config',
-				extra={'channel': channel}
-			)
+		""" This method is typically called multiple times by the AP """
 
 		for im in models:
 
 			T2Class = None
 			unit_name = im.unit
-			t2_info = self.context.config.get(f't2.unit.base.{unit_name}', dict)
+			t2_info = self.context.config.get(f'unit.base.{unit_name}', dict)
 
 			if not t2_info:
 				raise ValueError(f'Unknown T2 unit {unit_name}')
 
 			# The unit is installed locally
 			if 'fqn' in t2_info:
-				T2Class = self.context.loader.get_class(
-					class_name = unit_name,
-					unit_type = 'base'
+				T2Class = self.context.loader.get_class_by_name(
+					name = unit_name, unit_type = AbsDataUnit
 				)
 
 			for el in t2_info['abc']:
@@ -72,11 +66,31 @@ class AbsT2Ingester(AbsIngester, abstract=True):
 			# 3) Default options from T2 class (ex: T2SNCosmo might default upper_limits to False)
 			# 4) Specific options from model config (t2_compute)
 			# (ex: custom T2SNCosmo ticket might request upper_limits nonetheless)
-			ingest_config: Dict[str, Any] = {
+			ingest_options: Dict[str, Any] = {
 				**self.default_options,
 				**getattr(T2AbsClass, 'ingest', {}),
 				**getattr(T2Class, 'ingest', {}),
 				**(im.ingest if im.ingest else {})
 			}
 
-			self.compiler.add_ingest_config(channel, im, ingest_config, self.logger)
+			self.compiler.add_ingest_model(channel, im)
+
+			if ingest_options:
+				self.compiler.set_ingest_options(channel, im, ingest_options)
+
+
+	@staticmethod
+	def build_query_parts(chan_set: Set[ChannelId]) -> Tuple[
+		Union[ChannelId, List[ChannelId]],
+		Union[ChannelId, Dict[Literal['$each'], List[ChannelId]]]
+	]:
+		"""
+		First tuple member is for the journal 'channel' field
+		Second tuple member if for the operation $addToSet on root 'channel' field
+		"""
+		if len(chan_set) == 1:
+			chan = next(iter(chan_set))
+			return chan, chan
+		else:
+			chans = list(chan_set) # pymongo requires list
+			return chans, {'$each': chans}

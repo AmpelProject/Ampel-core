@@ -7,23 +7,22 @@
 # Last Modified Date: 18.03.2020
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-from typing import Dict, Sequence, Generic, Any, List
-
-from ampel.abc import abstractmethod
+from typing import Dict, Sequence, Generic, Any
+from ampel.base import abstractmethod
 from ampel.content.DataPoint import DataPoint
 from ampel.abstract.ingest.AbsIngester import AbsIngester
-from ampel.types import StockId, TypeVar, ChannelId
+from ampel.type import StockId, TypeVar
 
 T = TypeVar("T", bound=DataPoint)
 
 
 class AbsDataPointIngester(Generic[T], AbsIngester, abstract=True):
+	""" No known implementing class as of May 2020 """
 
 
 	@abstractmethod
 	def ingest(self,
 		stock_id: StockId,
-		datapoints: Sequence[Dict[str, Any]],
-		channels: List[ChannelId]
+		datapoints: Sequence[Dict[str, Any]]
 	) -> Sequence[T]:
 		...
