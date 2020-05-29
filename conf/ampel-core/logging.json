@@ -1,7 +1,25 @@
 {
-	"aggregate_interval": 1.0,
-	"console_logging_option": "default",
-	"default_stream": "stdout",
-	"flush_len": 1000,
-	"col_name": "logs"
+	"AmpelLogger": {
+		"default": {
+			"console_logging": true,
+			"console_options": {
+				"std_stream": "stdout",
+				"datefmt": "%Y-%m-%d %H:%M:%S",
+				"level": 0,
+				"aggregate_interval": 1.0,
+				"density": "compact",
+				"terminator": "\n",
+				"log_sep": "\n",
+				"prefix": null,
+				"provenance": true
+			}
+		},
+		"quiet": {
+			"console_logging": true,
+			"console_options": {"level": 2048}
+		},
+		"silent": {
+			"console_logging": false
+		}
+	}
 }
