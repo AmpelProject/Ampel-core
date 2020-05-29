@@ -8,7 +8,7 @@
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from typing import Union, Tuple, Dict
-from ampel.utils.collections import check_seq_inner_type
+from ampel.util.collections import check_seq_inner_type
 from ampel.model.operator.AnyOf import AnyOf
 from ampel.model.operator.AllOf import AllOf
 from ampel.model.operator.OneOf import OneOf

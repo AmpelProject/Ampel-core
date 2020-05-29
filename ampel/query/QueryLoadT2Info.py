@@ -9,11 +9,11 @@
 
 from bson.binary import Binary
 from typing import Iterable, Union, Dict, Any
-from ampel.types import strict_iterable
+from ampel.type import strict_iterable
 from ampel.model.operator.AnyOf import AnyOf
 from ampel.model.operator.AllOf import AllOf
 from ampel.model.operator.OneOf import OneOf
-from ampel.utils.collections import check_seq_inner_type
+from ampel.util.collections import check_seq_inner_type
 from ampel.query.QueryUtils import QueryUtils
 from ampel.query.QueryGeneralMatch import QueryGeneralMatch
 

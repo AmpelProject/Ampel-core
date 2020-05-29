@@ -9,7 +9,7 @@
 
 from typing import Dict, Optional, Union, Any, Iterable
 
-from ampel.types import strict_iterable
+from ampel.type import strict_iterable
 from ampel.model.operator.AnyOf import AnyOf
 from ampel.model.operator.AllOf import AllOf
 from ampel.model.operator.OneOf import OneOf

@@ -8,7 +8,7 @@
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from typing import Dict, Any
-from ampel.types import strict_iterable, StrictIterable
+from ampel.type import strict_iterable, StrictIterable
 
 class QueryUtils:
 
