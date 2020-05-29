@@ -10,24 +10,24 @@
 from bson.codec_options import CodecOptions
 from typing import Iterable, Union, Dict, Iterator, Optional
 
-from ampel.types import StockId, ChannelId, StrictIterable
+from ampel.type import StockId, ChannelId, StrictIterable
 from ampel.model.operator.AnyOf import AnyOf
 from ampel.model.operator.AllOf import AllOf
 from ampel.model.operator.OneOf import OneOf
 from ampel.model.t3.LoaderDirective import LoaderDirective
 from ampel.db.FrozenValuesDict import FrozenValuesDict
-from ampel.logging.LoggingUtils import LoggingUtils
-from ampel.logging.AmpelLogger import AmpelLogger
+from ampel.log.LogUtils import LogUtils
+from ampel.log.AmpelLogger import AmpelLogger
 from ampel.query.QueryUtils import QueryUtils
 from ampel.t3.SnapData import SnapData
-from ampel.utils.collections import ampel_iter, to_set
-from ampel.abstract.AbsProcessorUnit import AbsProcessorUnit
+from ampel.util.collections import ampel_iter, to_set
+from ampel.abstract.AbsAdminUnit import AbsAdminUnit
 
 freeze_codec_options = CodecOptions(
 	document_class=FrozenValuesDict
 )
 
-class DBContentLoader(AbsProcessorUnit):
+class DBContentLoader(AbsAdminUnit):
 
 	logger: Optional[AmpelLogger]
 
@@ -83,7 +83,7 @@ class DBContentLoader(AbsProcessorUnit):
 					None, extra={
 						'col': directive.col,
 						'stock': list(register.keys()),
-						'query': LoggingUtils.safe_query_dict(query, dict_key=None)
+						'query': LogUtils.safe_query_dict(query, dict_key=None)
 					}
 				)
 
