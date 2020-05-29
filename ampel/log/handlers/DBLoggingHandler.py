@@ -7,18 +7,18 @@
 # Last Modified Date: 01.05.2020
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-import logging, struct, socket
+import struct, socket
 from bson import ObjectId
 from typing import List, Dict, Optional, Union
 from logging import LogRecord
 from pymongo.errors import BulkWriteError
 from ampel.db.AmpelDB import AmpelDB
-from ampel.utils.mappings import compare_dict_values
-from ampel.logging.LighterLogRecord import LighterLogRecord
-from ampel.logging.AmpelLogger import AmpelLogger
-from ampel.logging.LoggingUtils import LoggingUtils
-from ampel.logging.AmpelLoggingError import AmpelLoggingError
-from ampel.logging.LogRecordFlag import LogRecordFlag
+from ampel.util.mappings import compare_dict_values
+from ampel.log.LighterLogRecord import LighterLogRecord
+from ampel.log.AmpelLogger import AmpelLogger
+from ampel.log.LogUtils import LogUtils
+from ampel.log.AmpelLoggingError import AmpelLoggingError
+from ampel.log.LogRecordFlag import LogRecordFlag
 
 
 # http://isthe.com/chongo/tech/comp/fnv/index.html#FNV-1a
@@ -47,18 +47,17 @@ def _machine_bytes():
 
 
 class DBLoggingHandler:
-	"""
-	Class capable of saving log events into the NoSQL database.
-	"""
+	""" Saves log events into mongo database """
 
 	def __init__(self,
 		ampel_db: AmpelDB,
-		flags: LogRecordFlag,
 		col_name: str = "logs",
-		level: int = logging.DEBUG,
+		level: int = LogRecordFlag.DEBUG,
+		run_id: int = 0,
 		aggregate_interval: float = 1,
 		expand_extra: bool = True,
-		flush_len: int = 1000
+		flush_len: int = 1000,
+		auto_flush: bool = False
 	):
 		"""
 		:param col_name: name of db collection to use (default: 'logs' in database Ampel_var)
@@ -76,23 +75,14 @@ class DBLoggingHandler:
 
 		self._ampel_db = ampel_db
 		self.flush_len = flush_len
+		self.auto_flush = auto_flush
 		self.aggregate_interval = aggregate_interval
 		self.log_dicts: List[Dict] = []
 		self.prev_record: Optional[Union[LighterLogRecord, LogRecord]] = None
-		self.run_id: int = self.new_run_id()
+		self.run_id = run_id if run_id else self.new_run_id()
 		self.fields_check = ['extra', 'stock', 'channel']
 		self.expand_extra = expand_extra
-		self.warn_lvl = logging.WARNING
-		self.flags = {
-			logging.DEBUG: LogRecordFlag.DEBUG | flags,
-			# we use/set our own logging level (we add VERBOSE as well)
-			logging.VERBOSE: LogRecordFlag.VERBOSE | flags, # type: ignore
-			logging.SHOUT: LogRecordFlag.INFO | flags, # type: ignore
-			logging.INFO: LogRecordFlag.INFO | flags,
-			logging.WARNING: LogRecordFlag.WARNING | flags,
-			logging.ERROR: LogRecordFlag.ERROR | flags,
-			logging.CRITICAL: LogRecordFlag.ERROR | flags # Treat critical as error
-		}
+		self.warn_lvl = LogRecordFlag.WARNING
 
 		# Get reference to pymongo collection
 		self.col = ampel_db.get_collection(col_name)
@@ -125,16 +115,17 @@ class DBLoggingHandler:
 		""" :raises AmpelLoggingError: on error """
 
 		rd = record.__dict__
+		prev_record = self.prev_record
 
 		try:
 
 			# Same flag, date (+- 1 sec), tran_id and chans
 			if (
-				self.prev_record and
-				(record.name is None or record.name == self.prev_record.name) and
-				record.levelno <= self.prev_record.levelno and
-				record.created - self.prev_record.created < self.aggregate_interval and
-				compare_dict_values(rd, self.prev_record.__dict__, self.fields_check)
+				prev_record and
+				(record.name is None or record.name == prev_record.name) and
+				record.levelno <= prev_record.levelno and
+				record.created - prev_record.created < self.aggregate_interval and
+				compare_dict_values(rd, prev_record.__dict__, self.fields_check)
 			):
 
 				prev_dict = self.log_dicts[-1]
@@ -150,11 +141,11 @@ class DBLoggingHandler:
 
 			else:
 
-				if len(self.log_dicts) > self.flush_len:
+				if self.auto_flush and len(self.log_dicts) > self.flush_len:
 					self.flush()
 
 				# Treat SHOUT msg as INFO msg (and try again to concatenate)
-				if record.levelno == logging.SHOUT: # type: ignore
+				if record.levelno == LogRecordFlag.SHOUT: # type: ignore
 					if isinstance(record, LighterLogRecord):
 						new_rec = LighterLogRecord(name=0, msg=None, levelno=0)
 					else:
@@ -162,7 +153,7 @@ class DBLoggingHandler:
 							lineno=None, exc_info=None, msg=None, args=None) # type: ignore
 					for k, v in record.__dict__.items():
 						new_rec.__dict__[k] = v
-					new_rec.levelno = logging.INFO
+					new_rec.levelno = LogRecordFlag.INFO
 					self.handle(new_rec)
 					return
 
@@ -177,20 +168,20 @@ class DBLoggingHandler:
 						ldict = {
 							**rd['extra'],
 							'_id': ObjectId(oid=oid),
-							'f': self.flags[record.levelno],
+							'f': record.levelno,
 							'r': self.run_id,
 						}
 					else:
 						ldict = {
 							'_id': ObjectId(oid=oid),
-							'f': self.flags[record.levelno],
+							'f': record.levelno,
 							'r': self.run_id,
 							'x': rd['extra']
 						}
 				else:
 					ldict = {
 						'_id': ObjectId(oid=oid),
-						'f': self.flags[record.levelno],
+						'f': record.levelno,
 						'r': self.run_id,
 					}
 
@@ -211,7 +202,7 @@ class DBLoggingHandler:
 				self.prev_record = record
 
 		except Exception as e:
-			from ampel.logging.LoggingErrorReporter import LoggingErrorReporter
+			from ampel.log.LoggingErrorReporter import LoggingErrorReporter
 			LoggingErrorReporter.report(self, e)
 			raise AmpelLoggingError from None
 
@@ -223,6 +214,11 @@ class DBLoggingHandler:
 	def purge(self) -> None:
 		self.log_dicts = []
 		self.prev_record = None
+
+
+	def check_flush(self) -> None:
+		if len(self.log_dicts) > self.flush_len:
+			self.flush()
 
 
 	def flush(self) -> None:
@@ -248,7 +244,7 @@ class DBLoggingHandler:
 				raise AmpelLoggingError from None
 
 		except Exception as e:
-			from ampel.logging.LoggingErrorReporter import LoggingErrorReporter
+			from ampel.log.LoggingErrorReporter import LoggingErrorReporter
 			LoggingErrorReporter.report(self, e)
 			# If we can no longer keep track of what Ampel is doing,
 			# better raise Exception to stop processing
@@ -297,7 +293,7 @@ class DBLoggingHandler:
 
 						self._ampel_db.get_collection('troubles').insert_one(
 							{
-								'tier': LoggingUtils.get_tier_from_log_flags(db_rec['f']),
+								'tier': LogUtils.get_tier_from_log_flags(db_rec['f']),
 								'location': 'DBLoggingHandler',
 								'msg': "OID collision occured between two different log entries",
 								'ownLogEntry': str(err_dict['op']),
@@ -311,10 +307,9 @@ class DBLoggingHandler:
 
 					self._ampel_db.get_collection('troubles').insert_one(
 						{
-							'tier': LoggingUtils.get_tier_from_log_flags(self.flags[logging.DEBUG]),
 							'location': 'DBLoggingHandler',
 							'msg': "non-E11000 writeError occured",
-							'errorDict': LoggingUtils.convert_dollars(err_dict)
+							'errorDict': LogUtils.convert_dollars(err_dict)
 						}
 					)
 
@@ -327,19 +322,18 @@ class DBLoggingHandler:
 				from traceback import format_exc
 				self._ampel_db.get_collection('troubles').insert_one(
 					{
-						'tier': LoggingUtils.get_tier_from_log_flags(self.flags[logging.DEBUG]),
 						'location': 'DBLoggingHandler',
 						'msg': "Exception occured in handle_bulk_write_error",
 						'exception': format_exc().replace("\"", "'").split("\n")
 					}
 				)
 			except Exception as another_exc:
-				LoggingUtils.log_exception(
+				LogUtils.log_exception(
 					AmpelLogger.get_unique_logger(),
 					another_exc
 				)
 
-			from ampel.logging.LoggingErrorReporter import LoggingErrorReporter
+			from ampel.log.LoggingErrorReporter import LoggingErrorReporter
 			LoggingErrorReporter.report(self, bwe, bwe.details)
 
 			return True
