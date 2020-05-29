@@ -4,21 +4,24 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 31.10.2018
-# Last Modified Date: 20.03.2020
+# Last Modified Date: 01.05.2020
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from time import time
+from math import inf
+from multiprocessing.pool import ThreadPool
 from pymongo.errors import BulkWriteError
 from pymongo.collection import Collection
 from pymongo import UpdateOne, InsertOne, UpdateMany
-from multiprocessing.pool import ThreadPool
-from typing import Dict, List, Any, Union, Callable, Literal, Tuple
+from typing import Dict, List, Any, Union, Callable, Optional, Iterable
 
-from ampel.types import AmpelMainCol, DataPointId
+from ampel.type import AmpelMainCol
 from ampel.core.Schedulable import Schedulable
-from ampel.logging.LoggingUtils import LoggingUtils
-from ampel.logging.AmpelLogger import AmpelLogger
-from ampel.db.AmpelDB import AmpelDB
+from ampel.log.LogUtils import LogUtils
+from ampel.log.AmpelLogger import AmpelLogger
+from ampel.db.AmpelDB import AmpelDB, intcol
+
+DBOp = Union[UpdateOne, UpdateMany, InsertOne]
 
 
 class DBUpdatesBuffer(Schedulable):
@@ -27,24 +30,70 @@ class DBUpdatesBuffer(Schedulable):
 	* Try to mark transient docs on error
 	* Do something with self._err_db_ops
 
-	Note regarding multithreading:
-	PyMongo uses the standard Python socket module,
-	which does drop the GIL while sending and receiving data over the network.
+	Note1:
+	Regarding multithreading: pymongo uses the standard Python socket module,
+	which can drop the GIL while sending and receiving data over the network.
+
+	Note2:
+	On the advantages of buffering updates and submitting them in bulk
+
+	-> Without buffering:
+	In []:
+		start=time()
+		for i in range(200000):
+			col.insert_one({'_id':i})
+		print(f"{round(time()-start, 1)}s")
+	Out []: 60.4s
+
+
+	-> With buffering:
+	In []:
+		ops=[]
+		start=time()
+		for i in range(200000):
+			ops.append(InsertOne({'_id': i}))
+			if i % 2000 == 0:
+				col.bulk_write(list(ops), ordered=False)
+				ops=[]
+		col.bulk_write(ops, ordered=False)
+		print(f"{round(time()-start, 1)}s")
+	Out []: 1.7s
 	"""
 
 	def __init__(self,
-		ampel_db: AmpelDB, run_id: Union[int, List[int]],
-		logger: AmpelLogger, on_error_func: Callable[[], None],
-		threads: int = 8, push_interval: int = 5, autopush_size: int = 100
+		ampel_db: AmpelDB,
+		run_id: Union[int, List[int]],
+		logger: AmpelLogger,
+		error_callback: Optional[Callable[[], None]] = None,
+		catch_signals: bool = True,
+		log_doc_ids: Optional[Iterable[int]] = None,
+		push_interval: Optional[float] = 3.,
+		max_size: Optional[int] = None,
+		threads: Optional[int] = None
 	):
 		"""
-		:param on_error_func: callback method to be called on errors
-		:param push_interval: in seconds
+		:param error_callback: callback method to be called on errors
+		:param catch_signals: see Schedulable docstring
+		:param log_doc_ids: logs inserted/updated document IDs for the given collections.
+		Collection integer identifiers are: 't0' -> 0, 't1' -> 1, 't2' -> 2, 'stock' -> 3.
+		Thus, if you want to activate this behavior for all collections, use log_doc_ids=[0, 1, 2, 3].
+		Notes: 1) it this will significantly increase the log size/amount.
+		2) the "_id" of T2 documents is generated server-side and bulk_write does not return it,
+		so it is not avail 'as is'. We instead log the natching filter (t2id, config, link)
+		which is guaranteed to be unique, so it's an equivalent.
+		3) Huge values of push_interval can yield a document size overflow (16MB limit per doc)
+		:param push_interval: If provided, updates will be flushed every x seconds.
+		:param max_size: If provided, updates will be flushed as soon as possible after the
+		number of updated in any collection (stock, t0, t1, t2) exceeds the provided limit.
+		:param threads: perform the various collection bound bulk_write() operations in dedicated threads.
+		The provided integer number defines the size of the thread pool. Note that no real performance gain
+		was yet noticed using a meaningful value such as 4 (OSX, python 3.8.1). Since bulk_write drops the GIL,
+		a multithreading-like effect already occurs without the specific use a threads.
 		"""
 
-		Schedulable.__init__(self)
+		Schedulable.__init__(self, catch_signals=catch_signals)
 		self._new_buffer()
-		self.on_error_func = on_error_func
+		self.error_callback = error_callback
 
 		self._cols: Dict[AmpelMainCol, Collection] = {
 			col_name: ampel_db.get_collection(col_name)
@@ -55,24 +104,16 @@ class DBUpdatesBuffer(Schedulable):
 			'stock': 0, 't0': 0, 't1': 0, 't2': 0,
 		}
 
-		self.data_cols: Tuple[Literal['t0', 't1', 't2'], ...] = ('t0', 't1', 't2')
-
-		# Record IDs of docs inserted/modified
-		# Note: not flushed during the update flushing procedure but manually
-		# (by the AlertProcessor typically)
-		self.doc_ids: Dict[Literal['t0', 't1', 't2'], List[Union[DataPointId, bytes]]] = {
-			't0': [], 't1': [], 't2': [],
-		}
-
 		self._err_db_ops: Dict[str, Any] = {k: [] for k in self.db_ops.keys()}
 		self._ampel_db = ampel_db
-		self._last_check = time()
-		self._size = 0
-		self._lock = False
 		self.run_id = run_id
 		self.logger = logger
-		self.push_interval = push_interval
-		self.autopush_size = autopush_size
+		self.max_size = max_size
+		self.log_doc_ids = set(log_doc_ids) if log_doc_ids else None
+
+		self._autopush_asap = False
+		self._block_autopush = False
+		self._last_update = time()
 
 		self.metrics: Dict[str, List] = {
 			'dbBulkTimeT0': [],
@@ -86,173 +127,132 @@ class DBUpdatesBuffer(Schedulable):
 		}
 
 		if push_interval:
+			self.push_interval = push_interval
 			self.get_scheduler() \
 				.every(push_interval) \
-				.seconds.do(self.auto_push_updates)
+				.seconds \
+				.do(self.request_autopush)
+
+			self._job = self.get_scheduler().jobs[0]
+		else:
+			self.push_interval = inf
 
 		self.thread_pool = ThreadPool(threads) if threads else None
-		self.stop_callback = self.close
 
 
 	def _new_buffer(self) -> None:
+		""" Creates new buffer for pymongo operations """
 
-		self.db_ops: Dict[AmpelMainCol, List[Union[UpdateOne, UpdateMany, InsertOne]]] = {
-			'stock': [],
-			't0': [],
-			't1': [],
-			't2': []
+		# total number of updates (of all kinds/collections)
+		self.db_ops: Dict[AmpelMainCol, List[DBOp]] = {
+			't2': [], 't0': [], 'stock': [], 't1': []
 		}
 
 
-	def close(self) -> None:
+	def stop(self) -> None:
 
-		self.push_updates()
+		super().stop()
+		self.push_updates(force=True)
 
 		if self.thread_pool:
 			self.thread_pool.close()
 			self.thread_pool.join()
 
 
-	def add_updates(self,
-		updates: Dict[AmpelMainCol, List[Union[UpdateOne, UpdateMany, InsertOne]]]
-	) -> None:
+	def add_updates(self, updates: Dict[AmpelMainCol, List[DBOp]]) -> None:
 		"""
 		:raises: KeyError if dict key is unknown (known keys: stock, t0, t1, t2)
 		"""
 		for k, v in updates.items():
 			self.db_ops[k] += v
-			self._size += len(v)
 
 
-	def add_col_updates(self,
-		col: AmpelMainCol,
-		updates: List[Union[UpdateOne, UpdateMany, InsertOne]]
-	) -> None:
-		"""
-		:raises: KeyError if dict key is unknown (known keys: stock, t0, t1, t2)
-		"""
+	def add_col_updates(self, col: AmpelMainCol, updates: List[DBOp]) -> None:
+		""" :raises: KeyError if col is unknown (known cols: stock, t0, t1, t2) """
 		self.db_ops[col] += updates
-		self._size += len(updates)
 
 
-	def add_col_update(self,
-		col: AmpelMainCol,
-		update: Union[UpdateOne, UpdateMany, InsertOne]
-	) -> None:
-		"""
-		:raises: KeyError if dict key is unknown (known keys: stock, t0, t1, t2)
-		"""
+	def add_col_update(self, col: AmpelMainCol, update: DBOp) -> None:
+		""" :raises: KeyError if col is unknown (known cols: stock, t0, t1, t2) """
 		self.db_ops[col].append(update)
-		self._size += 1
 
 
-	def add_t0_update(self,
-		update: Union[UpdateOne, UpdateMany, InsertOne]
-	) -> None:
-		"""
-		:raises: KeyError if dict key is unknown (known keys: stock, t0, t1, t2)
-		"""
+	def add_t0_update(self, update: DBOp) -> None:
 		self.db_ops['t0'].append(update)
-		self.doc_ids['t0'].append(update._filter['_id'])
-		self._size += 1
 
 
-	def add_t1_update(self,
-		update: Union[UpdateOne, UpdateMany, InsertOne]
-	) -> None:
-		"""
-		:raises: KeyError if dict key is unknown (known keys: stock, t0, t1, t2)
-		"""
+	def add_t1_update(self, update: DBOp) -> None:
 		self.db_ops['t1'].append(update)
-		self.doc_ids['t1'].append(update._filter['_id'])
-		self._size += 1
 
 
-	def add_t2_update(self,
-		update: Union[UpdateOne, UpdateMany, InsertOne]
-	) -> None:
-		"""
-		:raises: KeyError if dict key is unknown (known keys: stock, t0, t1, t2)
-		"""
+	def add_t2_update(self, update: DBOp) -> None:
 		self.db_ops['t2'].append(update)
-		self.doc_ids['t2'].append(update._filter)
-		self._size += 1
 
 
-	def add_stock_update(self,
-		update: Union[UpdateOne, UpdateMany, InsertOne]
-	) -> None:
-		"""
-		:raises: KeyError if dict key is unknown (known keys: stock, t0, t1, t2)
-		"""
+	def add_stock_update(self, update: DBOp) -> None:
 		self.db_ops['stock'].append(update)
-		self._size += 1
 
 
-	def get_ids(self,
-		update: Union[UpdateOne, UpdateMany, InsertOne]
-	) -> Dict[Literal['t0', 't1', 't2'], List[Union[DataPointId, bytes]]]:
+	def request_autopush(self) -> None:
+
+		t = time()
+		if t - self._last_update > self.push_interval:
+			if self._block_autopush:
+				self._autopush_asap = True
+			else:
+				self.push_updates()
+
+
+	def check_push(self) -> None:
 		"""
-		Note: resets self.doc_ids
-		"""
-		ret = {}
-		for t in self.data_cols:
-			if self.doc_ids[t]:
-				ret[t] = self.doc_ids[t]
-				self.doc_ids[t] = []
-		return ret
-
-
-	def auto_push_updates(self) -> None:
-
-		if time() - self._last_check < self.push_interval:
-			return
-
-		self.push_updates()
-
-
-	def ap_push_updates(self) -> None:
-		"""
-		Called by the AlertProcessor after the processing of an alert.
-		If the pool is not yet big enough (self.autopush_size)
-		the self._last_check is updated.
-		By doing that, the regularly scheduled auto_push_updates()
-		will be delayed as long as the AP processes alerts.
+		Call this method to signal that now is a good time to push updates.
+		Usually called by the AlertProcessor after the processing of an alert.
+		If _autopush_asap is True, it means that self.push_interval has been reached
+		and thus that updates must be pushed.
+		Otherwise, if the updates buffer is capped, its size must be checked.
+		If it is not yet big enough (self.max_size), then self._last_update is updated.
+		By doing that, the regularly scheduled request_autopush() will be delayed as long as the AP processes alerts.
 		"""
 
-		if self._size < self.autopush_size:
-			self._last_check = time()
-			return
+		self._block_autopush = False
 
-		self.push_updates()
+		if self._autopush_asap:
+			return self.push_updates()
+
+		if self.max_size:
+			for v in self.db_ops.values():
+				if len(v) > self.max_size:
+					return self.push_updates()
 
 
-	def push_updates(self) -> None:
+	def push_updates(self, force: bool = False) -> None:
 
-		if self._lock:
-			return
+		# Do not push updates in the middle of the processing of an alert
+		if self._block_autopush:
+			if not force:
+				return
+			self._block_autopush = False
 
-		self._last_check = time()
+		self._last_update = time()
+		if self._autopush_asap:
+			self._autopush_asap = False
+			self._job._schedule_next_run()
 
-		if self._size == 0:
-			return
-
+		# Reference instance buffer locally before creating a new one
 		db_ops = self.db_ops
 		self._new_buffer()
-		self._size = 0
 
 		for col_name in db_ops.keys():
 			if db_ops[col_name]:
 				if self.thread_pool:
 					self.thread_pool.starmap(
-						self.call_bulk_write,
-						([col_name, db_ops[col_name]], )
+						self.call_bulk_write, ([col_name, db_ops[col_name]], )
 					)
 				else:
 					self.call_bulk_write(col_name, db_ops[col_name])
 
 
-	def call_bulk_write(self, col_name: AmpelMainCol, db_ops: List, extra: Dict = {}) -> None:
+	def call_bulk_write(self, col_name: AmpelMainCol, db_ops: List, *, extra: Optional[Dict] = None) -> None:
 		"""
 		:param col_name: Ampel DB collection name (ex: stock, t0, t1, t2)
 		:param db_ops: list of pymongo operations
@@ -302,15 +302,10 @@ class DBUpdatesBuffer(Schedulable):
 				time_delta / len(db_ops)
 			)
 
-			self.logger.debug(None,
-				extra={
-					**extra,
-					col_name: {
-						"inserted": db_res.bulk_api_result['nInserted'],
-						"upserted": db_res.bulk_api_result['nUpserted'],
-						"modified": db_res.bulk_api_result['nModified']
-					}
-				}
+			self.logger.debug(
+				None, extra=self._build_log_extra(
+					col_name, db_ops, db_res.bulk_api_result, extra
+				)
 			)
 
 			return
@@ -352,16 +347,16 @@ class DBUpdatesBuffer(Schedulable):
 
 						# Try to insert doc into trouble collection (raises no exception)
 						# Possible exception will be logged out to console in any case
-						LoggingUtils.report_error(
+						LogUtils.report_error(
 							self._ampel_db, tier=0, msg="BulkWriteError entry details",
 							logger=self.logger, info={
 								'run': self.run_id,
-								'err': LoggingUtils.convert_dollars(err_dict)
+								'err': LogUtils.convert_dollars(err_dict)
 							}
 						)
 
 						################################
-						# TODO: do better than this.
+						# TODO: better than this.
 						# - Mark corresponding transients with an error flag (add channel info?)
 						# - Implement something for temp DB connectivity issues ?
 						################################
@@ -370,28 +365,21 @@ class DBUpdatesBuffer(Schedulable):
 				if dup_key_only:
 					self.logger.debug(
 						f"Race condition(s) recovered: {len(bwe.details.get('writeErrors'))}",
-						extra={
-							**extra,
-							col_name: {
-								"inserted": bwe.details['nInserted'],
-								"upserted": bwe.details['nUpserted'],
-								"modified": bwe.details['nModified'],
-							}
-						}
+						extra=self._build_log_extra(col_name, db_ops, bwe.details, extra)
 					)
 
 					return
 
 			except Exception as ee:
 				# Log exc and try to insert doc into trouble collection (raises no exception)
-				LoggingUtils.report_exception(
+				LogUtils.report_exception(
 					self._ampel_db, self.logger, tier=0,
 					exc=ee, run_id=self.run_id
 				)
 
 		except Exception as e:
 			# Log exc and try to insert doc into trouble collection (raises no exception)
-			LoggingUtils.report_exception(
+			LogUtils.report_exception(
 				self._ampel_db, self.logger, tier=0,
 				exc=e, run_id=self.run_id
 			)
@@ -400,4 +388,37 @@ class DBUpdatesBuffer(Schedulable):
 		print(db_ops)
 
 		self._err_db_ops[col_name] += db_ops
-		self.on_error_func()
+		if self.error_callback:
+			self.error_callback()
+
+
+	def _build_log_extra(self,
+		col_name: str, ops: List[DBOp],
+		bulk_api_result: Dict[str, Any],
+		extra: Optional[Dict[str, Any]] = None
+	) -> Dict[str, Any]:
+
+		ret = {
+			'col': intcol[col_name],
+			'ins': bulk_api_result['nInserted'],
+			'ups': bulk_api_result['nUpserted'],
+			'mod': bulk_api_result['nModified']
+		}
+
+		if self.log_doc_ids and ret['col'] in self.log_doc_ids:
+			if ret['col'] != 2:
+				ret['docs'] = [op._filter['_id'] for op in ops]
+			else:
+				ret['docs'] = [
+					{
+						'unit': op._filter['unit'],
+						'config': op._filter['config'],
+						'link': op._filter['link']
+					}
+					for op in ops
+				]
+
+		if extra:
+			return {**extra, **ret}
+
+		return ret
