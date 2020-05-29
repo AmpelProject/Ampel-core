@@ -4,24 +4,28 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 16.06.2018
-# Last Modified Date: 16.02.2020
+# Last Modified Date: 10.05.2020
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import collections
-from logging import Logger
 from pymongo import MongoClient
 from pymongo.database import Database
 from pymongo.collection import Collection
-from typing import Sequence, Dict, List, Any
+from typing import Sequence, Dict, List, Any, Union, Optional, TYPE_CHECKING
 
-from ampel.types import ChannelId
+from ampel.type import ChannelId
 from ampel.config.AmpelConfig import AmpelConfig
 from ampel.model.AmpelStrictModel import AmpelStrictModel
 from ampel.model.db.AmpelColModel import AmpelColModel
 from ampel.model.db.AmpelDBModel import AmpelDBModel
 from ampel.model.db.IndexModel import IndexModel
+from ampel.model.db.ShortIndexModel import ShortIndexModel
 from ampel.model.db.MongoClientRoleModel import MongoClientRoleModel
 
+if TYPE_CHECKING:
+	from ampel.log.AmpelLogger import AmpelLogger
+
+intcol = {'t0': 0, 't1': 1, 't2': 2, 'stock': 3}
 
 class AmpelDB(AmpelStrictModel):
 
@@ -31,22 +35,18 @@ class AmpelDB(AmpelStrictModel):
 
 
 	@staticmethod
-	def from_config(ampel_config: AmpelConfig) -> 'AmpelDB':
-		"""
-		:raises: ValueError in case a required config entry is missing
-		"""
+	def new(config: AmpelConfig) -> 'AmpelDB':
+		""" :raises: ValueError in case a required config entry is missing """
 		return AmpelDB(
-			mongo_resources = ampel_config.get('resource.mongo', dict, True),
-			dbs_config = ampel_config.get(
-				'db.databases', collections.abc.Sequence, True
-			), # type: ignore
-			prefix = ampel_config.get('db.prefix', str, True)
+			prefix = config.get('db.prefix', str, raise_exc=True),
+			mongo_resources = config.get('resource.mongo', dict, raise_exc=True),
+			dbs_config = config.get('db.databases', collections.abc.Sequence, raise_exc=True) # type: ignore
 		)
 
 
-	def __init__(self, **kwargs):
+	def __init__(self, **kwargs) -> None:
 
-		super().__init__(**kwargs)
+		super().__init__(**kwargs) # type: ignore[call-arg]
 
 		self.col_config: Dict[str, AmpelColModel] = {
 			col.name: col
@@ -80,11 +80,14 @@ class AmpelDB(AmpelStrictModel):
 			self.col_config[col.name] = col
 
 
-	def get_collection(self, col_name: str, mode: str = 'w') -> Collection:
+	def get_collection(self, col_name: Union[int, str], mode: str = 'w') -> Collection:
 		"""
 		:param mode: required permission level, either 'r' for read-only or 'rw' for read-write
 		If a collection does not exist, it will be created and the proper mongoDB indexes will be set.
 		"""
+
+		if isinstance(col_name, int):
+			col_name = str(col_name)
 
 		if col_name in self.mongo_collections:
 			if mode in self.mongo_collections[col_name]:
@@ -98,8 +101,7 @@ class AmpelDB(AmpelStrictModel):
 		resource_name = db_config.role.dict()[mode]
 
 		db = self._get_mongo_db(
-			resource_name,
-			f"{self.prefix}_{db_config.name}"
+			resource_name, f"{self.prefix}_{db_config.name}"
 		)
 
 		if 'w' in mode and col_name not in db.list_collection_names():
@@ -113,7 +115,6 @@ class AmpelDB(AmpelStrictModel):
 
 
 	def _get_mongo_db(self, resource_name: str, db_name: str) -> Database:
-		""" """
 		if resource_name not in self.mongo_clients:
 			self.mongo_clients[resource_name] = MongoClient(
 				self.mongo_resources[resource_name]
@@ -123,7 +124,6 @@ class AmpelDB(AmpelStrictModel):
 
 
 	def _get_db_config(self, col_name: str) -> AmpelDBModel:
-		""" """
 		return next(
 			filter(
 				lambda x: self.col_config[col_name] in x.collections,
@@ -133,8 +133,7 @@ class AmpelDB(AmpelStrictModel):
 
 
 	def init_db(self) -> None:
-		"""
-		"""
+
 		for db_config in self.dbs_config:
 			for col_config in db_config.collections:
 				self.create_collection(
@@ -145,7 +144,8 @@ class AmpelDB(AmpelStrictModel):
 
 
 	def create_collection(self,
-		resource_name: str, db_name: str, col_config: AmpelColModel, logger: Logger = None
+		resource_name: str, db_name: str,
+		col_config: AmpelColModel, logger: Optional['AmpelLogger'] = None
 	) -> Collection:
 		"""
 		:param resource_name: name of the AmpelConfig resource (resource.mongo) to be fed to MongoClient()
@@ -153,11 +153,11 @@ class AmpelDB(AmpelStrictModel):
 		:param col_name: name of the collection to be created
 		"""
 
-		if not logger:
+		if logger is None:
 			# Avoid cyclic import error
-			from ampel.logging.AmpelLogger import AmpelLogger
+			from ampel.log.AmpelLogger import AmpelLogger
 			logger = AmpelLogger.get_logger()
-			logger.info("Creating %s -> %s", db_name, col_config.name)
+			logger.info(f"Creating {db_name} -> {col_config.name}")
 
 		db = self._get_mongo_db(resource_name, db_name)
 
@@ -176,7 +176,7 @@ class AmpelDB(AmpelStrictModel):
 				try:
 
 					idx_params = idx.dict(skip_defaults=True)
-					logger.info("  Creating index: %s", idx_params)
+					logger.info(f"  Creating index: {idx_params}")
 
 					if idx_params.get('args'):
 						col.create_index(
@@ -189,8 +189,8 @@ class AmpelDB(AmpelStrictModel):
 
 				except Exception as e:
 					logger.error(
-						"Index creation failed for '%s' (db: '%s', args: %s)",
-						col_config.name, db_name, idx_params,
+						f"Index creation failed for '{col_config.name}' "
+						f"(db: '{db_name}', args: {idx_params})",
 						exc_info=e
 					)
 
@@ -199,7 +199,7 @@ class AmpelDB(AmpelStrictModel):
 
 	def set_col_index(self,
 		resource_name: str, db_name: str, col_config: AmpelColModel,
-		force_overwrite: bool = False, logger: Logger = None
+		force_overwrite: bool = False, logger: Optional['AmpelLogger'] = None
 	) -> None:
 		"""
 		:param force_overwrite: delete index if it already exists.
@@ -208,7 +208,7 @@ class AmpelDB(AmpelStrictModel):
 
 		if not logger:
 			# Avoid cyclic import error
-			from ampel.logging.AmpelLogger import AmpelLogger
+			from ampel.log.AmpelLogger import AmpelLogger
 			logger = AmpelLogger.get_logger()
 
 		if not col_config.indexes:
@@ -232,7 +232,7 @@ class AmpelDB(AmpelStrictModel):
 
 			if idx_id in col_index_info:
 				if force_overwrite:
-					logger.info("  Deleting existing index: {idx_id}")
+					logger.info(f"  Deleting existing index: {idx_id}")
 					col.drop_index(idx_id)
 				else:
 					logger.info(f"  Skipping already existing index: {idx_id}")
@@ -251,27 +251,34 @@ class AmpelDB(AmpelStrictModel):
 
 
 	@staticmethod
-	def _create_index(col: Collection, index_data: IndexModel, logger: Logger) -> None:
-		"""
-		"""
+	def _create_index(
+		col: Collection,
+		index_data: Union[IndexModel, ShortIndexModel],
+		logger: 'AmpelLogger'
+	) -> None:
 
 		try:
 
 			idx_params = index_data.dict(skip_defaults=True)
-			logger.info("  Creating index: %s", idx_params)
+			logger.info(f"  Creating index: {idx_params}")
 
 			if idx_params.get('args'):
-				col.create_index(
-					idx_params['index'],
-					**idx_params['args']
-				)
+				col.create_index(idx_params['index'], **idx_params['args'])
 			else:
-				col.create_index(
-					idx_params['index']
-				)
+				col.create_index(idx_params['index'])
 
 		except Exception as e:
 			logger.error(
-				"Index creation failed for '%s' (args: %s)",
-				col.name, idx_params, exc_info=e
+				f"Index creation failed for '{col.name}' (args: {idx_params})",
+				exc_info=e
 			)
+
+
+	@staticmethod
+	def delete_ampel_databases(
+		config: AmpelConfig, prefix: str, resource: str = 'mongo.writer'
+	) -> None:
+
+		mc = MongoClient(config.get(f'resource.{resource}', str))
+		for el in ['data', 'ext', 'var', 'rej']:
+			mc.drop_database(f'{prefix}_{el}')
