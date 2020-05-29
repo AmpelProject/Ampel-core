@@ -1,22 +1,19 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-core/ampel/abstract/ingest/AbsT2Compiler.py
+# File              : Ampel-core/ampel/ingest/compile/CompilerBase.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 23.03.2020
-# Last Modified Date: 28.03.2020
+# Last Modified Date: 01.05.2020
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-from typing import Dict, Any, Union, Set, TypeVar, Generic, Optional
-from ampel.types import ChannelId, T
-from ampel.abc import abstractmethod
-from ampel.abc.AmpelABC import AmpelABC
-from ampel.logging.AmpelLogger import AmpelLogger
+from typing import Dict, Any, Union, Set, Generator, Tuple, List
+from ampel.type import ChannelId
+from ampel.base import AmpelABC, defaultmethod
 from ampel.model.T2IngestModel import T2IngestModel
 
-U = TypeVar("U")
 
-class AbsT2Compiler(Generic[T, U], AmpelABC, abstract=True):
+class CompilerBase(AmpelABC):
 	"""
 	T2 compilers optimize the ingestion of T2 documents into the DB.
 	In particular, T2 documents shared among different channels are merged with each other.
@@ -24,18 +21,44 @@ class AbsT2Compiler(Generic[T, U], AmpelABC, abstract=True):
 	Then, the method `compile` can be used to optimize the creation of T2 documents.
 	"""
 
-	@abstractmethod
-	def add_ingest_config(self,
-		channel: ChannelId,
-		im: T2IngestModel,
-		ingest_config: Dict[str, Any],
-		logger: AmpelLogger
-	) -> None:
-		...
 
-	@abstractmethod
-	def compile(self,
-		arg: T,
-		chan_selection: Dict[ChannelId, Optional[Union[bool, int]]]
-	) -> Dict[U, Set[ChannelId]]:
-		...
+	@defaultmethod(check_super_call=True)
+	def __init__(self) -> None:
+		self.t2_models: Dict[ChannelId, List[T2IngestModel]] = {}
+		self.channels: Set[ChannelId] = set()
+
+
+	def add_ingest_model(self, channel: ChannelId, model: T2IngestModel) -> None:
+
+		if channel not in self.t2_models:
+			self.channels.add(channel)
+			self.t2_models[channel] = []
+
+		self.t2_models[channel].append(model)
+
+
+	def set_ingest_options(self,
+		channel: ChannelId, model: T2IngestModel, options: Dict[str, Any]
+	) -> None:
+		pass
+
+
+	def get_ingest_models(self,
+		chan_selection: List[Tuple[ChannelId, Union[bool, int]]]
+	) -> Generator[Tuple[ChannelId, T2IngestModel], None, None]:
+
+		# loop through all channels,
+		for chan, res in chan_selection:
+
+			# Skip channels unknown to/undefined by this particular ingester
+			if chan not in self.channels:
+				continue
+
+			# loop through state t2 unit ids to be scheduled for this channel
+			for ingest_model in self.t2_models[chan]:
+
+				# Filters can return an int value to filter out t2s by "group id"
+				if not (res is True or res in ingest_model.group): # type: ignore
+					continue
+
+				yield chan, ingest_model

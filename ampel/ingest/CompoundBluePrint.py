@@ -9,7 +9,7 @@
 
 from dataclasses import dataclass, field
 from typing import Set, Optional, Dict, List, Union, Tuple, Any
-from ampel.types import ChannelId, StrictIterable, DataPointId
+from ampel.type import ChannelId, StrictIterable, DataPointId
 from ampel.content.Compound import CompoundElement
 
 

@@ -1,20 +1,20 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-core/ampel/ingest/StockDefaultIngester.py
+# File              : Ampel-core/ampel/ingest/StockIngester.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 14.12.2017
-# Last Modified Date: 18.03.2020
+# Last Modified Date: 01.05.2020
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from time import time
 from pymongo import UpdateOne
-from typing import Optional, Dict, List, Any, Union, Iterable, Literal
-from ampel.types import StockId, ChannelId
-from ampel.utils.collections import try_reduce
+from typing import Tuple, Dict, List, Any, Union, Literal, Optional
+from ampel.type import StockId, ChannelId
 from ampel.abstract.ingest.AbsStockIngester import AbsStockIngester
 
-class StockDefaultIngester(AbsStockIngester):
+
+class StockIngester(AbsStockIngester):
 
 	# setOnInsert tag
 	tag: Optional[List[Union[int, str]]]
@@ -28,7 +28,7 @@ class StockDefaultIngester(AbsStockIngester):
 
 	def ingest(self,
 		stock_id: StockId,
-		chan_names: Iterable[ChannelId],
+		chan_selection: List[Tuple[ChannelId, Union[bool, int]]],
 		jextra: Dict[str, Any]
 	) -> None:
 		"""
@@ -37,37 +37,48 @@ class StockDefaultIngester(AbsStockIngester):
 		"""
 
 		now = int(time())
+		created = {'Any': now}
+		modified = {'Any': now}
+		chan_add_to_set = None
+		jchan: List[ChannelId] = []
 
-		# Insert/Update transient document into 'transients' collection
+		update: Dict[str, Any] = {
+			'$addToSet': {'channel': chan_add_to_set},
+			'$setOnInsert': self.get_setOnInsert(stock_id),
+			'$min': {'created': created},
+			'$set': {'modified': modified},
+			'$push': {
+				'journal': {
+					'tier': self.tier,
+					'dt': now,
+					'channel': jchan,
+					'run': self.run_id,
+					'extra': jextra
+				}
+			}
+		}
+
+		# loop through all channels,
+		for chan, res in chan_selection:
+			# json requires dict keys to be str
+			if isinstance(chan, int):
+				c = str(chan)
+				created[c] = now
+				modified[c] = now
+			else:
+				created[chan] = now
+				modified[chan] = now
+			jchan.append(chan)
+
+		if len(jchan) == 1:
+			jchan = jchan[0] # type: ignore[assignment]
+			chan_add_to_set = jchan
+		else:
+			chan_add_to_set = {'$each': jchan} # type: ignore[assignment]
+
+		# Insert/Update transient document into stock collection
 		self.updates_buffer.add_stock_update(
-			UpdateOne(
-				{'_id': stock_id},
-				{
-					'$addToSet': {
-						'channel': next(iter(chan_names)) if len(chan_names) == 1 \
-							else {'$each': chan_names}
-					},
-					'$setOnInsert': self.get_setOnInsert(stock_id),
-					'$min': {
-						f'created.{chan_name}': now
-						for chan_name in [*chan_names, 'Any']
-					},
-					'$set': {
-						f'modified.{chan_name}': now
-						for chan_name in [*chan_names, 'Any']
-					},
-					'$push': {
-						'journal': {
-							'tier': self.tier,
-							'dt': now,
-							'channel': try_reduce(chan_names),
-							'run': self.run_id,
-							'extra': jextra
-						}
-					}
-				},
-				upsert=True
-			)
+			UpdateOne({'_id': stock_id}, update, upsert=True)
 		)
 
 

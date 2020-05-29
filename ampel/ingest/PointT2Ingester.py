@@ -4,45 +4,43 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 23.03.2020
-# Last Modified Date: 23.03.2020
+# Last Modified Date: 30.04.2020
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from time import time
 from pymongo import UpdateOne
-from typing import Sequence, Dict, Optional, Union, Literal, Tuple
-
-from ampel.types import StockId, ChannelId, DataPointId
-from ampel.utils.collections import try_reduce
-from ampel.content.DataPoint import DataPoint
+from typing import Sequence, Dict, Optional, Union, Literal, Tuple, List
+from ampel.type import StockId, ChannelId
 from ampel.t2.T2RunState import T2RunState
+from ampel.content.DataPoint import DataPoint
+from ampel.ingest.compile.PointT2Compiler import PointT2Compiler
+from ampel.abstract.ingest.AbsT2Ingester import AbsT2Ingester
 from ampel.abstract.ingest.AbsPointT2Ingester import AbsPointT2Ingester
-from ampel.abstract.ingest.AbsT2Compiler import AbsT2Compiler
-from ampel.ingest.PointT2Compiler import PointT2Compiler
+from ampel.abstract.ingest.AbsPointT2Compiler import AbsPointT2Compiler
 
 
 class PointT2Ingester(AbsPointT2Ingester):
 
-	compiler: AbsT2Compiler[Sequence[DataPoint], DataPointId] = PointT2Compiler()
+	compiler: AbsPointT2Compiler = PointT2Compiler()
 	default_options: Dict[
 		Literal['eligible'],
-		Optional[Union[Literal['first', 'last', Tuple[int, int, int]]]]
+		Optional[Union[Literal['first', 'last'], Tuple[int, int, int]]]
 	] = {"eligible": None} # None means all eligible
 
 
 	def ingest(self,
 		stock_id: StockId,
 		datapoints: Sequence[DataPoint],
-		chan_selection: Dict[ChannelId, Optional[Union[bool, int]]]
+		chan_selection: List[Tuple[ChannelId, Union[bool, int]]]
 	) -> None:
 
-		optimized_t2s = self.compiler.compile(datapoints, chan_selection)
+		optimized_t2s = self.compiler.compile(chan_selection, datapoints)
 		now = int(time())
 
 		# Loop over t2 units to be created
-		for (t2_id, run_config, link_id), chan_names in optimized_t2s.items():
+		for (t2_id, run_config, link_id), chans in optimized_t2s.items():
 
-			# Set of channel names
-			eff_chan_names = list(chan_names) # pymongo requires list
+			jchan, chan_add_to_set = AbsT2Ingester.build_query_parts(chans)
 
 			# Append update operation to bulk list
 			self.updates_buffer.add_t2_update(
@@ -68,11 +66,11 @@ class PointT2Ingester(AbsPointT2Ingester):
 						},
 						# Journal and channel update
 						'$addToSet': {
-							'channel': {'$each': eff_chan_names},
+							'channel': chan_add_to_set,
 							'journal': {
 								'tier': self.tier,
 								'dt': now,
-								'channel': try_reduce(eff_chan_names)
+								'channel': jchan
 							}
 						}
 					},

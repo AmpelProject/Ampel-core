@@ -12,7 +12,7 @@ from typing import Sequence, List, Union, Generic, TypeVar, Tuple, Optional, Set
 from ampel.content.DataPoint import DataPoint
 from ampel.content.Compound import CompoundElement
 from ampel.ingest.CompoundBluePrint import CompoundBluePrint
-from ampel.types import StockId, ChannelId, DataPointId
+from ampel.type import StockId, ChannelId, DataPointId
 from ampel.abstract.AbsT1Unit import AbsT1Unit
 
 T = TypeVar("T", bound=CompoundBluePrint)
@@ -27,7 +27,7 @@ class T1DefaultCombiner(Generic[T], AbsT1Unit[T]):
 	"chan": channel name, "comp": compound
 	"""
 
-	debug: bool = True
+	debug: bool = False
 
 	def combine(self,
 		stock_id: StockId,
