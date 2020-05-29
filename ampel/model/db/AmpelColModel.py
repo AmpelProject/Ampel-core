@@ -7,16 +7,13 @@
 # Last Modified Date: 19.10.2019
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-from pydantic import BaseModel
-from typing import List, Optional, Dict, ClassVar
+from typing import List, Optional, Dict, Union
 from ampel.model.db.IndexModel import IndexModel
-from ampel.config.pydantic import BetterConfigDefaults
+from ampel.model.db.ShortIndexModel import ShortIndexModel
+from ampel.model.AmpelStrictModel import AmpelStrictModel
 
 
-class AmpelColModel(BaseModel):
-	""" """
-	Config: ClassVar = BetterConfigDefaults # type: ignore
-
+class AmpelColModel(AmpelStrictModel):
 	name: str
-	indexes: Optional[List[IndexModel]]
-	args: Optional[Dict] = None
+	indexes: Optional[List[Union[ShortIndexModel, IndexModel]]]
+	args: Optional[Dict]
