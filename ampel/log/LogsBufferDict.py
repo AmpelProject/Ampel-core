@@ -13,8 +13,9 @@ class LogsBufferDict(TypedDict, total=False):
 	"""
 	Allows to concatenate various log entries with different 'extra' parameters
 	(that in this case normally do not self-aggregate automatically).
-	This class is used for example by the AlertProcessor to force aggregation
+	This class is used for example by the AlertProcessor to ensure the aggregation
 	of log entries emitted by different ingesters (T0, T1, T2)
 	"""
 	logs: List[str]
 	extra: Dict[str, Any]
+	err: bool
