@@ -26,7 +26,6 @@ class AliasConfigCollector(AbsDictConfigCollector):
 		arg: Dict[str, Any], file_name: Optional[str] = None,
 		dist_name: Optional[str] = None
 	) -> None:
-		""" """
 
 		if not isinstance(arg, dict):
 			self.error(

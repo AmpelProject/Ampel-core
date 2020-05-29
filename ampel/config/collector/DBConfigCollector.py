@@ -20,29 +20,41 @@ class DBConfigCollector(AbsDictConfigCollector):
 		file_name: Optional[str] = None,
 		dist_name: Optional[str] = None
 	) -> None:
-		""" """
+
+		# Allow 'db': {'prefix': 'abc'} in general ampel.conf
+		if len(arg) == 1 and 'prefix' in arg:
+			self.__setitem__('prefix', arg['prefix'])
+			return
+
+		# At this point, arg usually contains content of files
+		# contained in pyampel-core/conf/ampel-core/db/*
+
 		dbs = self.get('databases')
 
 		if not dbs:
 			dbs = []
-			self.__setitem__('prefix', 'Ampel')
 			self.__setitem__('databases', dbs)
+			if 'prefix' not in self:
+				self.__setitem__('prefix', 'Ampel')
+
 
 		# validate model
 		if self.verbose:
-			self.logger.verbose("Validating DB configuration")
+			self.logger.verbose('Validating DB configuration')
 
 		try:
 
 			m = AmpelDBModel(**arg)
 
 			if self.verbose:
-				self.logger.verbose(f"Configuration of DB collection '{m.name}' is valid")
+				self.logger.verbose(f'Configuration of DB collection "{m.name}" is valid')
 
 			dbs.append(arg)
 
-		except Exception:
+		except Exception as e:
+
 			self.error(
-				"Incorrect DB configuration " +
-				ConfigCollector.distrib_hint(file_name, dist_name)
+				'Incorrect DB configuration ' +
+				ConfigCollector.distrib_hint(file_name, dist_name),
+				exc_info = e
 			)

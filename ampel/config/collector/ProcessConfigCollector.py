@@ -12,15 +12,11 @@ from ampel.config.collector.AbsDictConfigCollector import AbsDictConfigCollector
 
 
 class ProcessConfigCollector(AbsDictConfigCollector):
-	"""
-	"""
 
-	# pylint: disable=inconsistent-return-statements
 	def add(self,
 		arg: Dict[str, Any], file_name: Optional[str] = None,
 		dist_name: Optional[str] = None
 	) -> None:
-		""" """
 
 		# Doing basic validation here already
 		for k in ("name", "schedule"):

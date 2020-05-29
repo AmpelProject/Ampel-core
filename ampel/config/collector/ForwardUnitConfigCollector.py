@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 02.03.2020
-# Last Modified Date: 02.03.2020
+# Last Modified Date: 08.05.2020
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import re, importlib
@@ -14,23 +14,14 @@ from ampel.config.collector.UnitConfigCollector import UnitConfigCollector
 from ampel.config.collector.ConfigCollector import ConfigCollector
 from ampel.config.collector.AbsForwardConfigCollector import AbsForwardConfigCollector
 
-tier_class: Dict[str, List[str]] = {
-	"t0": ["AbsPhotoAlertFilter", "AbsT0Unit", "AlertProcessor"],
-	"t1": [""],
-	"t2": ["AbsPointT2Unit", "AbsStateT2Unit", "AbsStockT2Unit"],
-	"t3": ["AbsT3Unit"]
-}
-
 path_el_type: Dict[str, str] = {
 	"base": "AbsDataUnit",
-	"aux": "AbsAuxiliaryUnit",
-	"processor": "AbsProcessorUnit",
+	"processor": "AbsAdminUnit",
 	"controller": "AbsControllerUnit",
 }
 
 
 class ForwardUnitConfigCollector(AbsForwardConfigCollector):
-	""" """
 
 	def get_path(self,
 		arg: Union[Dict[str, Any], str],
@@ -42,20 +33,25 @@ class ForwardUnitConfigCollector(AbsForwardConfigCollector):
 
 			if isinstance(arg, str):
 				class_id = arg
-				mro = self.get_trimmed_mro(arg, UnitConfigCollector.get_class_name(arg))
+				try:
+					mro = self.get_trimmed_mro(arg, UnitConfigCollector.get_class_name(arg))
+				except Exception:
+					self.error(f"Unit import error: {arg} " + ConfigCollector.distrib_hint(file_name, dist_name))
+					return None
 
 			elif isinstance(arg, dict):
+
 				try:
 					d = UnitDefinitionModel(**arg)
+					mro = d.abc
+					class_id = d.class_name
 				except Exception:
+					# Note: cannot use shorter "return self.error(...)" because of stubborn mypy
 					self.error(
 						"Unsupported unit definition (dict)" +
 						ConfigCollector.distrib_hint(file_name, dist_name)
 					)
 					return None
-
-				mro = d.short_mro
-				class_id = d.class_name
 
 			else:
 				self.error(
@@ -64,17 +60,7 @@ class ForwardUnitConfigCollector(AbsForwardConfigCollector):
 				)
 				return None
 
-			tier = None
 			unit_type = None
-
-			for k, v in tier_class.items():
-				if [klass for klass in mro if klass in v]:
-					tier = k
-
-			if tier is None:
-				self.error(f"Could not auto-associate a tier with unit {class_id}")
-				return None
-
 			for k in path_el_type:
 				if path_el_type[k] in mro:
 					unit_type = k
@@ -84,12 +70,12 @@ class ForwardUnitConfigCollector(AbsForwardConfigCollector):
 				return None
 
 			# check for AbsDataUnit in mro ?
-			if self.debug:
+			if self.verbose:
 				self.logger.verbose(
-					f"-> Routing {self.conf_section} unit '{class_id}' to {tier}.unit.{unit_type}"
+					f"-> Routing unit '{class_id}' to unit.{unit_type}"
 				)
 
-			return [tier, "unit", unit_type]
+			return ["unit", unit_type]
 
 		except Exception as e:
 
@@ -97,7 +83,7 @@ class ForwardUnitConfigCollector(AbsForwardConfigCollector):
 				class_id = "Unknown"
 
 			self.error(
-				f"Error occured while loading {self.conf_section} {class_id} " +
+				f"Error occured while loading unit {class_id} " +
 				ConfigCollector.distrib_hint(file_name, dist_name),
 				exc_info=e
 			)

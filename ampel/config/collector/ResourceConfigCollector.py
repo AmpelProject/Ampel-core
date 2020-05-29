@@ -1,23 +1,21 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-core/ampel/config/collector/ResouceConfigCollector.py
+# File              : Ampel-core/ampel/config/collector/ResourceConfigCollector.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 16.10.2019
-# Last Modified Date: 18.02.2020
+# Last Modified Date: 22.04.2020
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from typing import Dict, Any, Optional
-from ampel.logging.AmpelLogger import AmpelLogger
+from ampel.log.AmpelLogger import AmpelLogger
 from ampel.config.collector.AbsDictConfigCollector import AbsDictConfigCollector
 
 
-class ResouceConfigCollector(AbsDictConfigCollector):
-	"""
-	"""
+class ResourceConfigCollector(AbsDictConfigCollector):
 
-	def __init__(
-		self, conf_section: str, content: Optional[Dict] = None,
+	def __init__(self,
+		conf_section: str, content: Optional[Dict] = None,
 		logger: Optional[AmpelLogger] = None, verbose: bool = False
 	):
 		super().__init__(conf_section, content, logger, verbose)

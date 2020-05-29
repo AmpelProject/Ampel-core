@@ -8,7 +8,7 @@
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from typing import Dict, Any, Optional, Literal
-from ampel.logging.AmpelLogger import AmpelLogger
+from ampel.log.AmpelLogger import AmpelLogger
 
 
 class ConfigCollector(dict):
@@ -21,36 +21,33 @@ class ConfigCollector(dict):
 		debug: bool = False,
 		tier: Optional[Literal[0, 1, 2, 3]] = None
 	) -> None:
-		""" """
+
 		super().__init__(content if content else {})
 		self.verbose = verbose
 		self.has_error = False
 		self.conf_section = conf_section
 		self.logger = AmpelLogger.get_logger() if logger is None else logger
-		self.tier = f"T{tier}" if tier is not None else "general"
+		self.tier = f'T{tier}' if tier is not None else 'general'
 
 		if debug:
 			self.logger.info(
-				f"Creating {self.__class__.__name__} collector "
-				"for T{self.tier'} config section {conf_section}"
+				f'Creating {self.__class__.__name__} collector '
+				f'for T{self.tier} config section {conf_section}'
 			)
 
 
 	def error(self, msg: str, exc_info: Optional[Any] = None) -> None:
-		""" """
 		self.logger.error(msg, exc_info=exc_info)
 		self.has_error = True
-		AmpelLogger.break_aggregation()
 
 
 	def missing_key(self,
 		what: str, key: str, file_name: Optional[str],
 		dist_name: Optional[str]
 	) -> None:
-		""" """
 		self.error(
-			f"{what} dict is missing key '{key}' "
-			f"{self.distrib_hint(file_name, dist_name)}"
+			f'{what} dict is missing key "{key}" '
+			f'{self.distrib_hint(file_name, dist_name)}'
 		)
 
 
@@ -62,13 +59,12 @@ class ConfigCollector(dict):
 		new_dist: Optional[str] = None,
 		section_detail: Optional[str] = None
 	) -> None:
-		""" """
 
 		from string import Template
 		t = Template(
-			"Duplicated $what definition: '$conf_key'\n" +
-			"Previously set by $prev\n" +
-			"Redefined by $new"
+			'Duplicated $what definition: "$conf_key"\n' +
+			'Previously set by $prev\n' +
+			'Redefined by $new'
 		)
 
 		if prev_file is None:
@@ -98,19 +94,19 @@ class ConfigCollector(dict):
 	) -> str:
 		""" Adds distribution name if available """
 
-		ret = ""
+		ret = ''
 
 		if file_name:
 			if parenthesis:
-				ret += "("
-			ret += f"conf file: {file_name}"
+				ret += '('
+			ret += f'conf file: {file_name}'
 
 		if distrib:
 			if ret:
-				return f"{ret} from distribution: {distrib}{')' if parenthesis else ''}"
-			return f"(distribution: {distrib})" if parenthesis else f"distribution: {distrib}"
+				return f'{ret} from distribution: {distrib}{")" if parenthesis else ""}'
+			return f'(distribution: {distrib})' if parenthesis else f'distribution: {distrib}'
 
 		if ret:
-			return f"{ret})" if parenthesis else ret
+			return f'{ret})' if parenthesis else ret
 
 		return ret

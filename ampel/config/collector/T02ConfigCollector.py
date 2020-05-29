@@ -9,7 +9,7 @@
 
 import hashlib, json
 from typing import Dict, Any, Optional, Union, List
-from ampel.db.DBUtils import DBUtils
+from ampel.util.mappings import build_unsafe_short_dict_id
 from ampel.config.collector.AbsDictConfigCollector import AbsDictConfigCollector
 
 
@@ -31,7 +31,7 @@ class T02ConfigCollector(AbsDictConfigCollector):
 			raise ValueError("Illegal argument")
 
 		# Uses blake2 hash algorithm
-		hh = DBUtils.b2_dict_hash(arg)
+		hh = build_unsafe_short_dict_id(arg)
 
 		if self.get(hh):
 

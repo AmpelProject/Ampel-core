@@ -8,8 +8,8 @@
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from typing import Any, Optional, Dict
-from ampel.abc import abstractmethod
-from ampel.abc.AmpelABC import AmpelABC
+from ampel.base import abstractmethod
+from ampel.base.AmpelABC import AmpelABC
 from ampel.config.collector.ConfigCollector import ConfigCollector
 
 

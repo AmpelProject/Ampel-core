@@ -8,36 +8,35 @@
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from typing import List, Union, Optional, Sequence, Dict, Any, Type
-from ampel.abc import abstractmethod
-from ampel.abc.AmpelABC import AmpelABC
-from ampel.logging.AmpelLogger import AmpelLogger
-import ampel.config.builder.FirstPassConfig as poc # avoid circular import issue
+import ampel.config.builder.FirstPassConfig as fpc # avoid circular import issue
+from ampel.base import abstractmethod
+from ampel.base.AmpelABC import AmpelABC
+from ampel.log.AmpelLogger import AmpelLogger
 
 
 class AbsForwardConfigCollector(dict, AmpelABC, abstract=True):
-	"""
-	"""
+
 
 	def __init__(self,
 		# Forward reference type hint to avoid cyclic import issues
-		root_config: "poc.FirstPassConfig",
+		root_config: 'fpc.FirstPassConfig',
 		conf_section: str,
 		target_collector_type: Type,
 		logger: Optional[AmpelLogger] = None,
 		verbose: bool = False,
 	) -> None:
-		""" """
+
 		self.has_error = False
 		self.verbose = verbose
-		self.pass_one_config = root_config
+		self.root_config = root_config
 		self.conf_section = conf_section
 		self.target_collector_type = target_collector_type
 		self.logger = AmpelLogger.get_logger() if logger is None else logger
 
 		if verbose:
 			self.logger.verbose(
-				f"Creating {self.__class__.__name__} collector "
-				"for config section '{conf_section}'"
+				f'Creating {self.__class__.__name__} collector '
+				f'for config section "{conf_section}"'
 			)
 
 
@@ -52,20 +51,20 @@ class AbsForwardConfigCollector(dict, AmpelABC, abstract=True):
 
 			path_elements = self.get_path(el, file_name, dist_name)
 			if not path_elements:
-				self.error(f"Could not identify routing for {el}")
+				self.error(f'Could not identify routing for {el}')
 				continue
 
-			d = self.pass_one_config
+			d = self.root_config
 			for path in path_elements:
 				d = d[path]
 
 			if not isinstance(d, self.target_collector_type):
 				self.error(
-					f"Routing destination must be an instance of {self.target_collector_type}"
+					f'Routing destination must be an instance of {self.target_collector_type}'
 				)
 				self.error(
-					f"Type of config element with path '"
-					f"{'.'.join(str(x) for x in path_elements)}': {type(d)}"
+					f'Type of config element with path '
+					f'{".".join(str(x) for x in path_elements)}: {type(d)}'
 				)
 				return
 
@@ -82,6 +81,5 @@ class AbsForwardConfigCollector(dict, AmpelABC, abstract=True):
 
 
 	def error(self, msg: str, exc_info: Optional[Any] = None) -> None:
-		""" """
 		self.logger.error(msg, exc_info=exc_info)
 		self.has_error = True

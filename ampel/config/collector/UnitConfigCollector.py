@@ -4,31 +4,28 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 16.10.2019
-# Last Modified Date: 16.03.2020
+# Last Modified Date: 12.04.2020
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import re, importlib
-from typing import List, Union, Dict, Optional
-from ampel.utils.collections import ampel_iter
+from typing import List, Union, Dict, Optional, Any
+from ampel.util.collections import ampel_iter
+from ampel.util.crypto import b2_short_hash
 from ampel.model.AmpelStrictModel import AmpelStrictModel
 from ampel.config.collector.AbsListConfigCollector import AbsListConfigCollector
 
 class UnitDefinitionModel(AmpelStrictModel):
-	""" """
 	class_name: str
 	abc: List[str]
 
 
 class UnitConfigCollector(AbsListConfigCollector):
-	""" """
 
 	def add(self,
 		arg: List[Union[Dict[str, str], str]],
 		file_name: Optional[str] = None,
 		dist_name: Optional[str] = None
 	) -> None:
-		"""
-		"""
 
 		# tolerate list containing only 1 element defined as dict
 		for el in ampel_iter(arg):
@@ -37,7 +34,7 @@ class UnitConfigCollector(AbsListConfigCollector):
 
 				if isinstance(el, str):
 					class_name = self.get_class_name(el)
-					entry = {
+					entry: Dict[str, Any] = {
 						'fqn': el,
 						'abc': self.get_abstract_classes(el, class_name),
 						'distrib': dist_name,
@@ -49,7 +46,7 @@ class UnitConfigCollector(AbsListConfigCollector):
 						d = UnitDefinitionModel(**el)
 					except Exception:
 						self.error(
-							"Unsupported unit definition (dict)" +
+							'Unsupported unit definition (dict)' +
 							self.distrib_hint(file_name, dist_name)
 						)
 						continue
@@ -63,7 +60,7 @@ class UnitConfigCollector(AbsListConfigCollector):
 
 				else:
 					self.error(
-						"Unsupported unit config format" +
+						'Unsupported unit config format' +
 						self.distrib_hint(file_name, dist_name)
 					)
 					continue
@@ -71,17 +68,31 @@ class UnitConfigCollector(AbsListConfigCollector):
 				if self.get(class_name):
 					self.duplicated_entry(
 						conf_key = class_name,
-						section_detail = f"{self.tier} {self.conf_section}",
+						section_detail = f'{self.tier} {self.conf_section}',
 						new_file = file_name,
 						new_dist = dist_name,
-						prev_file = self.get(class_name).get("conf", "unknown") # type: ignore
+						prev_file = self.get(class_name).get('conf', 'unknown') # type: ignore
 					)
 					continue
 
-				# check for AbsDataUnit in mro ?
+				# Auxiliary and core units do not need to inherit a super class
+				if not ('aux' in self.conf_section or 'core' in self.conf_section):
+					if not any(el in entry['abc'] for el in ['AbsDataUnit', 'AbsAdminUnit', 'AbsControllerUnit']):
+						self.logger.info(
+							f'Unrecognized abstract class for {self.conf_section} {class_name} ' +
+							self.distrib_hint(file_name, dist_name)
+						)
+						return
+
+				# Hash class name of T2 units
+				for el in entry['abc']:
+					if 'T2Unit' in el:
+						entry['hash'] = b2_short_hash(class_name)
+						break
+
 				if self.verbose:
 					self.logger.verbose(
-						f"Adding {self.tier} {self.conf_section} unit: {class_name}"
+						f'Adding {self.conf_section}: {class_name}'
 					)
 
 				self.__setitem__(class_name, entry)
@@ -89,10 +100,10 @@ class UnitConfigCollector(AbsListConfigCollector):
 			except Exception as e:
 
 				if 'class_name' not in locals():
-					class_name = "Unknown"
+					class_name = 'Unknown'
 
 				self.error(
-					f"Error occured while loading {self.conf_section} unit {class_name} " +
+					f'Error occured while loading {self.conf_section} {class_name} ' +
 					self.distrib_hint(file_name, dist_name),
 					exc_info=e
 				)
@@ -106,7 +117,7 @@ class UnitConfigCollector(AbsListConfigCollector):
 		(i.e that we have one class per module)
 		"""
 		# pylint: disable=anomalous-backslash-in-string
-		return re.sub(".*\.", "", fqn) # noqa
+		return re.sub('.*\.', '', fqn) # noqa
 
 
 	@staticmethod
@@ -126,5 +137,5 @@ class UnitConfigCollector(AbsListConfigCollector):
 		return [
 			UnitConfigCollector.get_class_name(el.__name__)
 			for el in UnitClass.__mro__[1:-1]
-			if "Abs" in el.__name__
+			if 'Abs' in el.__name__
 		]
