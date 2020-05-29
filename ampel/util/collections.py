@@ -7,9 +7,9 @@
 # Last Modified Date: 16.03.2020
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-import collections, json, hashlib, sys
-from typing import Dict, Any, List, Iterable, Union, Type, Tuple, Optional, Set, Sequence, overload
-from ampel.types import strict_iterable
+from collections.abc import Sequence as sequence, Iterable as iterable, Sized as sized
+from typing import Dict, Any, List, Iterable, Union, Type, Tuple, Set, Sized
+from ampel.type import strict_iterable
 
 
 def ampel_iter(arg: Any) -> Any:
@@ -20,17 +20,23 @@ def ampel_iter(arg: Any) -> Any:
 	return [arg] if isinstance(arg, (type(None), str, int, bytes, bytearray)) else arg
 
 
-def try_reduce(arg):
+def try_reduce(arg: Any) -> Any:
 	"""
 	Returns element contained by sequence if sequence contains only one element.
 	Example:
 	try_reduce(['ab']) -> returns 'ab'
 	try_reduce({'ab'}) -> returns 'ab'
+	try_reduce('ab') -> returns 'ab'
 	try_reduce(['a', 'b']) -> returns ['a', 'b']
-	try_reduce({'a', 'b'}) -> returns {'a', 'b'}
+	try_reduce(['a', 'b']) -> returns {'a', 'b'}
+	try_reduce(dict(a=1).keys()) -> returns 'a'
+	try_reduce(dict(a=1, b=1).keys()) -> returns dict_keys(['a', 'b'])
 	"""
-	if len(arg) == 1:
-		return next(iter(arg))
+
+	if isinstance(arg, sized) and len(arg) == 1:
+		if isinstance(arg, sequence):
+			return arg[0]
+		return next(iter(arg)) # type: ignore
 
 	return arg
 
@@ -55,7 +61,7 @@ def to_set(arg) -> Set:
 	return set(arg) if isinstance(arg, strict_iterable) else {arg}
 
 
-def to_list(cls, arg: Union[int, str, bytes, bytearray, list, Iterable]) -> List:
+def to_list(cls, arg: Union[int, str, bytes, bytearray, List, Iterable]) -> List:
 	"""
 	raises ValueError is arg is not int, str, bytes, bytearray, list, or Iterable
 	"""
@@ -63,10 +69,10 @@ def to_list(cls, arg: Union[int, str, bytes, bytearray, list, Iterable]) -> List
 		return [arg]
 	if isinstance(arg, list):
 		return arg
-	if isinstance(arg, collections.abc.Iterable):
+	if isinstance(arg, iterable):
 		return list(arg)
 
-	raise ValueError("Unsupported format (%s)" % type(arg))
+	raise ValueError(f"Unsupported argument type ({type(arg)})")
 
 
 def check_seq_inner_type(
@@ -76,7 +82,7 @@ def check_seq_inner_type(
 	check type of all elements contained in a sequence.
 	*all* members of the provided sequence must match with:
 		* multi_type == False: one of the provided type.
-		* multi_type == False: any of the provided type.
+		* multi_type == True: any of the provided type.
 
 	check_seq_inner_type((1,2), int) -> True
 	check_seq_inner_type([1,2], int) -> True
@@ -88,7 +94,7 @@ def check_seq_inner_type(
 	"""
 
 	# monotype
-	if not isinstance(types, collections.Sequence):
+	if not isinstance(types, sequence):
 		return all(isinstance(el, types) for el in seq)
 
 	# different types accepted ('or' connected)
