@@ -14,25 +14,30 @@ class LogRecordFlag(IntFlag):
 	"""
 	Flag used for each log entry stored in the DB.
 	Value fits in a MongoDB int32.
+	bits 0-4: tier
+	bits 5-6: run type
+	bits 6-7: location (core system or base units)
+	bits 8-13: log level
 	"""
 
-	# Log level
-	DEBUG                   = 1
-	VERBOSE                 = 2
-	INFO                    = 4
-	WARNING                 = 8
-	ERROR                   = 16
-
 	# Execution layer
-	T0                      = 32
-	T1                      = 64
-	T2                      = 128
-	T3                      = 256
-
-	# Section
-	CORE                    = 512
-	UNIT                    = 1024
+	T0                      = 1
+	T1                      = 2
+	T2                      = 4
+	T3                      = 8
 
 	# Run type
-	SCHEDULED_RUN           = 2048
-	MANUAL_RUN              = 4096
+	SCHEDULED_RUN           = 16
+	MANUAL_RUN              = 32
+
+	# Location
+	UNIT                    = 64
+	CORE                    = 128
+
+	# Log level
+	DEBUG                   = 1<<8
+	VERBOSE                 = 1<<9
+	INFO                    = 1<<10
+	SHOUT                   = 1<<11 # SHOUT is for convenience only, saved as INFO into DB
+	WARNING                 = 1<<12
+	ERROR                   = 1<<13
