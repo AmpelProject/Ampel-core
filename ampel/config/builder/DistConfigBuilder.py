@@ -43,8 +43,8 @@ class DistConfigBuilder(ConfigBuilder):
 				if self.verbose:
 					self.logger.verbose(f"Done checking distribution '{dist_name}'")
 
-			if self.verbose:
-				self.logger.verbose("Done loading distributions")
+		if self.verbose:
+			self.logger.verbose("Done loading distributions")
 
 
 	def load_distrib(self,
@@ -85,7 +85,7 @@ class DistConfigBuilder(ConfigBuilder):
 				raise ValueError(f"Unsupported distribution type: '{type(distrib)}'")
 
 			if all_conf_files and self.verbose:
-				self.logger.verbose(f"Following conf files will be parse: {all_conf_files}")
+				self.logger.verbose(f"Following conf files will be parsed: {all_conf_files}")
 
 			if ampel_conf := self.get_conf_file(all_conf_files, f"ampel.{ext}"):
 				self.load_conf_using_func(distrib, ampel_conf, self.load_ampel_conf) # type: ignore
@@ -98,17 +98,18 @@ class DistConfigBuilder(ConfigBuilder):
 						self.load_conf_using_func(distrib, f, self.first_pass_config[key].add)
 
 			# ("channel", "db", "resource")
-			for key in self.first_pass_config.general_keys.keys():
+			for key in self.first_pass_config.conf_keys.keys():
+				if key == "alias":
+					continue
 				if section_conf_file := self.get_conf_file(all_conf_files, f"{key}.{ext}"):
 					self.load_conf_using_func(distrib, section_conf_file, self.first_pass_config[key].add) # type: ignore
 
 			# ("controller", "processor", "unit", "alias", "process")
-			for unit_type in self.first_pass_config.tier_keys.keys():
+			for unit_type in ("alias", "process"):
 				if tier_conf_file := self.get_conf_file(all_conf_files, f"{unit_type}.{ext}"):
 					self.load_tier_config_file(distrib, tier_conf_file, unit_type) # type: ignore
 
 			# Try to load templates from folder template (defined by 'Ampel-ZTF' for ex.)
-
 			if template_conf_files := self.get_conf_files(all_conf_files, "/template/"):
 				for f in template_conf_files:
 					self.load_conf_using_func(distrib, f, self.register_channel_templates)
@@ -134,7 +135,6 @@ class DistConfigBuilder(ConfigBuilder):
 		file_rel_path: str,
 		func: Callable[[Dict[str, Any], str, str], None]
 	) -> None:
-		""" """
 
 		try:
 
@@ -173,7 +173,7 @@ class DistConfigBuilder(ConfigBuilder):
 	def load_tier_config_file(self,
 		distrib: Union[EggInfoDistribution, DistInfoDistribution],
 		file_rel_path: str,
-		category: Optional[str] = None
+		root_key: str
 	) -> None:
 		"""
 		Files loaded by this method must have the following JSON structure:
@@ -196,22 +196,12 @@ class DistConfigBuilder(ConfigBuilder):
 				distrib.get_resource_string(__name__, file_rel_path)
 			)
 
-			# Allow conf name "unit.json" for base units
-			if category == "unit":
-				category = "base"
-
 			for k in ("t0", "t1", "t2", "t3"):
 				if k in d:
-					if category in self.first_pass_config[k]['unit']:
-						self.first_pass_config[k]['unit'][category].add(
-							d[k], file_name=file_rel_path,
-							dist_name=distrib.project_name
-						)
-					else:
-						self.first_pass_config[k][category].add(
-							d[k], file_name=file_rel_path,
-							dist_name=distrib.project_name
-						)
+					self.first_pass_config[root_key][k].add(
+						d[k], file_name=file_rel_path,
+						dist_name=distrib.project_name
+					)
 
 		except FileNotFoundError:
 			self.error = True
@@ -223,7 +213,7 @@ class DistConfigBuilder(ConfigBuilder):
 			self.error = True
 			self.logger.error(
 				f"Error occured loading '{file_rel_path}' "
-				f"from distribution '{distrib.project_name}' (category: '{category}')",
+				f"from distribution '{distrib.project_name}')",
 				exc_info=e
 			)
 
