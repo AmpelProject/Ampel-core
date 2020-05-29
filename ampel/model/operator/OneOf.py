@@ -9,7 +9,7 @@
 
 from typing import List, Generic
 from pydantic.generics import GenericModel
-from ampel.types import T
+from ampel.type import T
 
 
 class OneOf(GenericModel, Generic[T]):

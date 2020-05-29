@@ -8,7 +8,6 @@
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from typing import Union, Dict, Any, Optional
-from pydantic import StrictInt, StrictStr
 from ampel.model.PlainUnitModel import PlainUnitModel
 
 
@@ -20,10 +19,10 @@ class AliasedUnitModel(PlainUnitModel):
 	- int: should not be used (used internally for T2 units, a corresponding
 	t2 config key must match the provided integer)
 
-	*Adds definition of 'override' which allows the override of selected config kyes
+	* Adds definition of 'override' which allows the override of selected config kyes
 
-	Note: From the superclass field definitions remains 'unit' untouched
+	Note: Field 'units' from superclass remains untouched
 	"""
 	# we override parent's type
-	config: Union[StrictInt, StrictStr] # type: ignore
+	config: Union[int, str] # type: ignore
 	override: Optional[Dict[str, Any]]

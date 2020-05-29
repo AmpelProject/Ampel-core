@@ -8,9 +8,9 @@
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from pydantic import BaseModel, BaseConfig, Extra
-from ampel.utils.Freeze import Freeze
+from ampel.util.Freeze import Freeze
 from ampel.model.AmpelStrictModel import to_camel_case
-from ampel.utils.AmpelUtils import AmpelUtils
+from ampel.util.AmpelUtils import AmpelUtils
 
 
 class AmpelFlexModel(BaseModel):

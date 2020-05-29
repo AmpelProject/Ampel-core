@@ -10,7 +10,7 @@
 from typing import Literal
 from datetime import datetime
 from pydantic import BaseModel
-from ampel.utils.docstringutils import gendocstring
+from ampel.util.docstringutils import gendocstring
 
 
 @gendocstring

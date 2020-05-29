@@ -9,7 +9,7 @@
 
 from typing import Dict, Any
 from ampel.model.AmpelStrictModel import AmpelStrictModel
-from ampel.utils.mappings import flatten_dict, unflatten_dict
+from ampel.util.mappings import flatten_dict, unflatten_dict
 
 class ProcessTemplate(AmpelStrictModel):
 

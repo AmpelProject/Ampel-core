@@ -11,7 +11,7 @@ import collections
 from typing import Union, List, Generic
 from pydantic import validator
 from pydantic.generics import GenericModel
-from ampel.types import T
+from ampel.type import T
 from ampel.model.operator.AllOf import AllOf
 
 

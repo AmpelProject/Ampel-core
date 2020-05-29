@@ -25,7 +25,6 @@ models = {
 }
 
 class LoaderDirective(AmpelStrictModel):
-	""" """
 
 	col: Literal["stock", "t0", "t1", "t2", "logs"]
 	model: Optional[Type] # TypedDict

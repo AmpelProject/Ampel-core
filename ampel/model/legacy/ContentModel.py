@@ -11,9 +11,9 @@ from typing import List, Optional
 from pydantic import validator
 from enum import IntEnum
 
-from ampel.types import strict_iterable
-from ampel.utils.collections import check_seq_inner_type, ampel_iter
-from ampel.utils.docstringutils import gendocstring
+from ampel.type import strict_iterable
+from ampel.util.collections import check_seq_inner_type, ampel_iter
+from ampel.util.docstringutils import gendocstring
 from ampel.model.AmpelStrictModel import AmpelStrictModel
 #from ampel.flags.AlDocType import AlDocType
 

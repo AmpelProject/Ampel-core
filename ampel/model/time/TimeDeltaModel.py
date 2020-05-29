@@ -9,7 +9,7 @@
 
 from typing import Literal
 from datetime import datetime, timedelta
-from ampel.utils.docstringutils import gendocstring
+from ampel.util.docstringutils import gendocstring
 from ampel.model.AmpelStrictModel import AmpelStrictModel
 
 

@@ -9,7 +9,7 @@
 
 from pydantic import Field
 from typing import Union, Optional, Dict, Any
-from ampel.utils.docstringutils import gendocstring
+from ampel.util.docstringutils import gendocstring
 from ampel.model.AmpelStrictModel import AmpelStrictModel
 
 

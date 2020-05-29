@@ -8,21 +8,19 @@
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from typing import Union, Dict, Optional, Literal
-from ampel.utils.docstringutils import gendocstring
 from ampel.model.AmpelStrictModel import AmpelStrictModel
 from ampel.query.QueryEventsCol import QueryEventsCol
 from ampel.db.AmpelDB import AmpelDB
 
-@gendocstring
+
 class TimeLastRunModel(AmpelStrictModel):
 
 	match_type: Literal['time_last_run']
 	process_name: str
 	fallback: Union[None, Dict] = None
 
-	# pylint: disable=unused-argument
+
 	def get_timestamp(self, **kwargs) -> Optional[float]:
-		""" """
 		return self._query_events_col(kwargs['db'], self)
 
 

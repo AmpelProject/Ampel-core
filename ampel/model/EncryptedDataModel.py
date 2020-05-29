@@ -7,9 +7,10 @@
 # Last Modified Date: 03.02.2020
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
+from sjcl import SJCL
 from pydantic import BaseModel
-from typing import List, Union
-from ampel.utils.docstringutils import gendocstring
+from typing import Iterable, Union
+from ampel.util.docstringutils import gendocstring
 
 @gendocstring
 class EncryptedDataModel(BaseModel):
@@ -45,11 +46,9 @@ class EncryptedDataModel(BaseModel):
 	salt: str
 	ct: str
 
-	def decrypt(self, pwds: Union[str, List[str]]) -> str:
-		"""
-		:raises: ValueError if no correct pwd is provided
-		"""
-		from sjcl import SJCL
+	def decrypt(self, pwds: Union[str, Iterable[str]]) -> str:
+		""" :raises: ValueError if no correct pwd is provided """
+
 		sjcl = SJCL()
 
 		if isinstance(pwds, str):

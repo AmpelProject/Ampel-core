@@ -14,10 +14,10 @@ from ampel.model.AmpelStrictModel import AmpelStrictModel
 class ChannelModel(AmpelStrictModel):
 
 	channel: Union[int, str]
+	active: bool = True
 	hash: Optional[int]
 	distrib: Optional[str]
 	source: Optional[str]
-	active: bool = True
 	contact: Optional[str]
 	access: Optional[List[str]]
 	policy: List[str] = []

@@ -11,12 +11,12 @@ import json, schedule as module_schedule
 from pydantic import validator
 from typing import Union, Sequence
 
-from ampel.logging.LoggingUtils import LoggingUtils
-from ampel.logging.AmpelLogger import AmpelLogger
+from ampel.log.LogUtils import LogUtils
+from ampel.log.AmpelLogger import AmpelLogger
 
-from ampel.types import strict_iterable
-from ampel.utils.AmpelUtils import AmpelUtils
-from ampel.utils.docstringutils import gendocstring
+from ampel.type import strict_iterable
+from ampel.util.AmpelUtils import AmpelUtils
+from ampel.util.docstringutils import gendocstring
 
 from ampel.model.AmpelStrictModel import AmpelStrictModel
 from ampel.model.t3.T3TaskModel import T3TaskModel

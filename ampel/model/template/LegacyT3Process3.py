@@ -12,7 +12,7 @@ from typing import Any, List, Dict
 from ampel.model.legacy.TranModel import TranModel
 from ampel.model.legacy.BaseT3Process import BaseT3Process
 from ampel.model.AmpelStrictModel import AmpelStrictModel
-from ampel.utils.docstringutils import gendocstring
+from ampel.util.docstringutils import gendocstring
 
 
 @gendocstring

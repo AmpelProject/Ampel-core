@@ -8,7 +8,7 @@
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from typing import Union, Optional
-from ampel.utils.docstringutils import gendocstring
+from ampel.util.docstringutils import gendocstring
 from ampel.model.time.TimeDeltaModel import TimeDeltaModel
 from ampel.model.time.TimeLastRunModel import TimeLastRunModel
 from ampel.model.time.TimeStringModel import TimeStringModel

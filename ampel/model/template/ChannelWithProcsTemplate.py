@@ -1,70 +1,40 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/model/template/NestedProcsChannelTemplate.py
+# File              : Ampel-core/ampel/model/template/ChannelWithProcsTemplate.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 16.10.2019
-# Last Modified Date: 28.10.2019
+# Last Modified Date: 14.04.2020
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-from logging import Logger
+from ampel.log.AmpelLogger import AmpelLogger
 from typing import List, Dict, Any
-from ampel.model.ProcessModel import ProcessModel
+from ampel.config.builder.FirstPassConfig import FirstPassConfig
 from ampel.abstract.AbsChannelTemplate import AbsChannelTemplate
 
 
-class NestedProcsChannelTemplate(AbsChannelTemplate):
-	"""
-	Convenience class which allows channel definitions to include processes.
-	"""
-	#template: str = "default"
-	process: List[ProcessModel]
+class ChannelWithProcsTemplate(AbsChannelTemplate):
+	""" Convenience class allowing channel definitions to include processes.  """
+
+	# Note: not using List[ProcessModel] on purpose since embedded processes
+	# might need template processing as well
+	process: List[Dict[str, Any]]
+
+	def get_channel(self, logger: AmpelLogger) -> Dict[str, Any]:
+
+		d = self.dict(by_alias=True)
+		del d["process"]
+		if 'template' in d:
+			del d['template']
+		return d
 
 
-	def get_channel(self, logger: Logger) -> Dict[str, Any]:
+	def get_processes(self, logger: AmpelLogger, first_pass_config: FirstPassConfig) -> List[Dict[str, Any]]:
 
-		return {
-			"channel": self.channel,
-			"distrib": self.distrib,
-			"active": self.active,
-			"access": self.access,
-			"contact": self.contact,
-			"policy": self.policy
-		}
-
-
-	def get_processes(self, units_config: Dict[str, Any], logger: Logger) -> Dict[str, Any]:
-		""" """
-		# pylint: disable=no-member
-		for p in self.process:
-
-			if p.tier == 3:
-
-				try:
-
-					# Enforce channel criteria for "stock" (transients) selection
-					p.processor.config.select.config.channels = self.channel
-					logger.info(
-						f" -> {self.channel} channel selection criteria "
-						f"applied to process {p.name}"
-					)
-
-				except Exception as e:
-
-					logger.error(
-						f" -> Warning: cannot enforce channel selection "
-						f"criteria in process {p.name}",
-						exc_info=e
-					)
-
-					raise ValueError(
-						f"Invalid process {p.name} embedded in "
-						f"channel {self.channel}"
-					)
-
-			p.dist_name = self.distrib
+		# Note: not enforcing channel selection for t3 processes
+		# as these could require template processing first
 
 		return [
-			p.dict(skip_defaults=True, by_alias=True)
+			self.transfer_channel_parameters(p)
 			for p in self.process
 		]
