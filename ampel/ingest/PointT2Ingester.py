@@ -24,7 +24,7 @@ class PointT2Ingester(AbsPointT2Ingester):
 	compiler: AbsPointT2Compiler = PointT2Compiler()
 	default_options: Dict[
 		Literal['eligible'],
-		Optional[Union[Literal['first', 'last'], Tuple[int, int, int]]]
+		Optional[Union[Literal['first', 'last', 'all'], Tuple[int, int, int]]]
 	] = {"eligible": None} # None means all eligible
 
 
