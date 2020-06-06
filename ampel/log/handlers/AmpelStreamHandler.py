@@ -136,7 +136,7 @@ class AmpelStreamHandler(AmpelUnit):
 		if lvl & 128:
 			out += ' CORE'
 
-		if self.provenance:
+		if self.provenance and record.filename:
 			if record.filename[0] == '<': # ipython
 				out += f' {record.filename} {levels[lvl >> 8]}'
 			else:
