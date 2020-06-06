@@ -4,16 +4,14 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 10.12.2019
-# Last Modified Date: 29.01.2020
+# Last Modified Date: 06.06.2020
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from pydantic import Field
 from typing import Union, Optional, Dict, Any
-from ampel.util.docstringutils import gendocstring
 from ampel.model.AmpelStrictModel import AmpelStrictModel
 
 
-@gendocstring
 class QueryTimeModel(AmpelStrictModel):
 	"""
 	Standardized parameter for the class QueryMatchStock
@@ -21,7 +19,6 @@ class QueryTimeModel(AmpelStrictModel):
 	before: Optional[Union[int, float]] = Field(None, alias='$lt')
 	after: Optional[Union[int, float]] = Field(None, alias='$gt')
 
-	# pylint: disable=arguments-differ
 	def dict(self, **kwargs) -> Dict[str, Any]:
 		"""
 		Example:

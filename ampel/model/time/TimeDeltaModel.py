@@ -4,16 +4,14 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 29.09.2018
-# Last Modified Date: 29.01.2020
+# Last Modified Date: 06.06.2020
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from typing import Literal
 from datetime import datetime, timedelta
-from ampel.util.docstringutils import gendocstring
 from ampel.model.AmpelStrictModel import AmpelStrictModel
 
 
-@gendocstring
 class TimeDeltaModel(AmpelStrictModel):
 
 	match_type: Literal['time_delta']
@@ -25,9 +23,8 @@ class TimeDeltaModel(AmpelStrictModel):
 	hours: int = 0
 	weeks: int = 0
 
-	# pylint: disable=unused-argument
 	def get_timestamp(self, **kwargs) -> float:
-		""" """
+
 		dt = datetime.today() + timedelta(
 			days=self.days, seconds=self.seconds, microseconds=self.microseconds,
 			milliseconds=self.milliseconds, minutes=self.minutes,

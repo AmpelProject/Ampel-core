@@ -4,21 +4,17 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 29.09.2018
-# Last Modified Date: 29.01.2020
+# Last Modified Date: 06.06.2020
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from typing import Literal
 from pydantic import BaseModel
-from ampel.util.docstringutils import gendocstring
 
 
-@gendocstring
 class UnixTimeModel(BaseModel):
 
 	match_type: Literal['unix_time']
 	value: int
 
-	# pylint: disable=unused-argument
 	def get_timestamp(self, **kwargs) -> int:
-		""" """
 		return self.value
