@@ -10,7 +10,7 @@
 from typing import List, Dict, Set, Optional, Union, Sequence, Any, Literal, Tuple
 from ampel.content.DataPoint import DataPoint
 from ampel.type import ChannelId, DataPointId
-from ampel.model.T2IngestModel import T2IngestModel
+from ampel.model.ingest.T2IngestModel import T2IngestModel
 from ampel.abstract.ingest.AbsPointT2Compiler import AbsPointT2Compiler
 
 
@@ -52,6 +52,8 @@ class PointT2Compiler(AbsPointT2Compiler):
 		"""
 		if arg is None:
 			return slice(None)
+		elif arg == "all":
+			return slice(None)
 		elif arg == "first":
 			return slice(1)
 		elif arg == "last":
@@ -87,6 +89,7 @@ class PointT2Compiler(AbsPointT2Compiler):
 		"""
 
 		t2s_eff: Dict[Tuple[str, int, DataPointId], Set[ChannelId]] = {}
+		datapoints = list(reversed(datapoints))
 
 		for chan, ingest_model in self.get_ingest_models(chan_selection):
 
