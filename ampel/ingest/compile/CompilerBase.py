@@ -4,13 +4,13 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 23.03.2020
-# Last Modified Date: 01.05.2020
+# Last Modified Date: 05.06.2020
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from typing import Dict, Any, Union, Set, Generator, Tuple, List
 from ampel.type import ChannelId
 from ampel.base import AmpelABC, defaultmethod
-from ampel.model.T2IngestModel import T2IngestModel
+from ampel.model.ingest.T2IngestModel import T2IngestModel
 
 
 class CompilerBase(AmpelABC):
