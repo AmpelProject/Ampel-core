@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 23.03.2020
-# Last Modified Date: 30.04.2020
+# Last Modified Date: 05.06.2020
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import importlib
@@ -15,7 +15,7 @@ from ampel.abstract.ingest.AbsIngester import AbsIngester
 from ampel.abstract.ingest.AbsStateT2Compiler import AbsStateT2Compiler
 from ampel.abstract.ingest.AbsPointT2Compiler import AbsPointT2Compiler
 from ampel.abstract.ingest.AbsStockT2Compiler import AbsStockT2Compiler
-from ampel.model.T2IngestModel import T2IngestModel
+from ampel.model.ingest.T2IngestModel import T2IngestModel
 
 
 class AbsT2Ingester(AbsIngester, abstract=True):
@@ -74,9 +74,7 @@ class AbsT2Ingester(AbsIngester, abstract=True):
 			}
 
 			self.compiler.add_ingest_model(channel, im)
-
-			if ingest_options:
-				self.compiler.set_ingest_options(channel, im, ingest_options)
+			self.compiler.set_ingest_options(channel, im, ingest_options)
 
 
 	@staticmethod
