@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 13.01.2018
-# Last Modified Date: 16.03.2020
+# Last Modified Date: 06.06.2020
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from bson.codec_options import CodecOptions
@@ -78,7 +78,7 @@ class DBContentLoader(AbsAdminUnit):
 			if directive.query_complement:
 				query = {**directive.query_complement, **query}
 
-			if self.debug: # log query parameters
+			if self.verbose > 1: # log query parameters
 				logger.debug(
 					None, extra={
 						'col': directive.col,
@@ -150,7 +150,7 @@ class DBContentLoader(AbsAdminUnit):
 				)
 
 
-		if self.debug:
+		if self.verbose:
 			s = f"Unique ids: {len(register)}"
 			for col in (col_set - set(["stock"])):
 				s += f", {col}: "
