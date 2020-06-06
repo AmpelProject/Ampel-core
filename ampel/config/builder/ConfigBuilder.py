@@ -8,6 +8,7 @@
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import importlib, re, json
+from math import inf # noqa: required for eval(repr(...)) below
 from typing import Dict, List, Any, Optional, Set, Iterable
 from ampel.util.mappings import get_by_path, set_by_path
 from ampel.util.crypto import aes_recursive_decrypt
@@ -263,7 +264,9 @@ class ConfigBuilder:
 			out['resource'] = aes_recursive_decrypt(out['resource'], pwds)
 
 		self.logger.info('Done building config')
-		return out
+
+		# Casts ConfigCollector instances into real dicts
+		return eval(repr(out))
 
 
 	def new_morpher(self, process: Dict[str, Any]) -> ProcessMorpher:
