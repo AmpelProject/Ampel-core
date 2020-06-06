@@ -34,10 +34,10 @@ class DefaultRecordBufferingHandler(RecordBufferingHandler):
 		for rec in self.buffer:
 
 			if channel:
-				rec.channel = self._channel # type: ignore
+				rec.channel = channel # type: ignore[union-attr]
 
 			if stock:
-				rec.stock = stock # type: ignore
+				rec.stock = stock # type: ignore[union-attr]
 
 			if extra:
 				if 'extra' in rec.__dict__:
