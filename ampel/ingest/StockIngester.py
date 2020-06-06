@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 14.12.2017
-# Last Modified Date: 01.05.2020
+# Last Modified Date: 03.06.2020
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from time import time
@@ -39,24 +39,7 @@ class StockIngester(AbsStockIngester):
 		now = int(time())
 		created = {'Any': now}
 		modified = {'Any': now}
-		chan_add_to_set = None
 		jchan: List[ChannelId] = []
-
-		update: Dict[str, Any] = {
-			'$addToSet': {'channel': chan_add_to_set},
-			'$setOnInsert': self.get_setOnInsert(stock_id),
-			'$min': {'created': created},
-			'$set': {'modified': modified},
-			'$push': {
-				'journal': {
-					'tier': self.tier,
-					'dt': now,
-					'channel': jchan,
-					'run': self.run_id,
-					'extra': jextra
-				}
-			}
-		}
 
 		# loop through all channels,
 		for chan, res in chan_selection:
@@ -78,7 +61,25 @@ class StockIngester(AbsStockIngester):
 
 		# Insert/Update transient document into stock collection
 		self.updates_buffer.add_stock_update(
-			UpdateOne({'_id': stock_id}, update, upsert=True)
+			UpdateOne(
+				{'_id': stock_id},
+				{
+					'$addToSet': {'channel': chan_add_to_set},
+					'$setOnInsert': self.get_setOnInsert(stock_id),
+					'$min': {'created': created},
+					'$set': {'modified': modified},
+					'$push': {
+						'journal': {
+							'tier': self.tier,
+							'dt': now,
+							'channel': jchan,
+							'run': self.run_id,
+							'extra': jextra
+						}
+					}
+				},
+				upsert=True
+			)
 		)
 
 
