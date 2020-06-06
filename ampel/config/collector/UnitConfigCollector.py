@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 16.10.2019
-# Last Modified Date: 12.04.2020
+# Last Modified Date: 03.06.2020
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import re, importlib
@@ -84,11 +84,22 @@ class UnitConfigCollector(AbsListConfigCollector):
 						)
 						return
 
-				# Hash class name of T2 units
-				for el in entry['abc']:
-					if 'T2Unit' in el:
-						entry['hash'] = b2_short_hash(class_name)
-						break
+				if self.conf_section == "admin unit":
+					if "AbsAdminUnit" not in entry['abc']:
+						raise ValueError(f"AbsAdminUnit missing for admin unit {entry}")
+					entry['abc'].remove("AbsAdminUnit")
+
+				elif self.conf_section == "base unit":
+
+					# Hash class name of T2 units
+					for el in entry['abc']:
+						if 'T2Unit' in el:
+							entry['hash'] = b2_short_hash(class_name)
+							break
+
+					if "AbsDataUnit" not in entry['abc']:
+						raise ValueError(f"AbsDataUnit missing for base unit {entry}")
+					entry['abc'].remove("AbsDataUnit")
 
 				if self.verbose:
 					self.logger.verbose(
