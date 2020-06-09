@@ -25,7 +25,6 @@ chan_type = get_args(ChannelId)
 
 class JournalUpdater:
 
-
 	def __init__(self,
 		ampel_db: AmpelDB, tier: Literal[0, 1, 2, 3], run_id: int, process_name: str,
 		logger: AmpelLogger, verbose: int = 0, raise_exc: bool = False,
@@ -83,7 +82,7 @@ class JournalUpdater:
 
 	def add_record(self,
 		stock: Union[StockId, List[StockId]],
-		journal_extra: Optional[JournalExtra] = None,
+		jextra: Optional[JournalExtra] = None,
 		doc_id: Optional[ObjectId] = None,
 		unit: Optional[Union[int, str]] = None,
 		channel: Optional[Union[ChannelId, Sequence[ChannelId]]] = None,
@@ -107,16 +106,16 @@ class JournalUpdater:
 
 		jrec = self.new_record(unit, channel, doc_id, now)
 
-		if journal_extra:
+		if jextra:
 
-			if journal_extra.tag:
-				self.include_tags(jrec, journal_extra.tag)
+			if jextra.tag:
+				self.include_tags(jrec, jextra.tag)
 
-			if journal_extra.extra:
-				jrec['extra'] = journal_extra.extra
+			if jextra.extra:
+				jrec['extra'] = jextra.extra
 
-			if journal_extra.status and journal_extra.status > 0:
-				jrec['status'] = journal_extra.status
+			if jextra.status and jextra.status > 0:
+				jrec['status'] = jextra.status
 
 		if channel:
 			if isinstance(channel, chan_type):
@@ -126,6 +125,8 @@ class JournalUpdater:
 					f'modified.{chan}': jrec['ts']
 					for chan in channel # type: ignore[union-attr]
 				}
+		else:
+			maxd = {}
 
 		maxd['modified.any'] = jrec['ts']
 
@@ -179,7 +180,6 @@ class JournalUpdater:
 				self._ampel_db, self.logger, tier=self.tier,
 				exc=e, run_id=self.run_id, info=info
 			)
-
 
 
 	@staticmethod
