@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 14.12.2017
-# Last Modified Date: 03.06.2020
+# Last Modified Date: 09.06.2020
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from time import time
@@ -37,8 +37,8 @@ class StockIngester(AbsStockIngester):
 		"""
 
 		now = int(time())
-		created = {'Any': now}
-		modified = {'Any': now}
+		created = {'any': now}
+		modified = {'any': now}
 		jchan: List[ChannelId] = []
 
 		# loop through all channels,
@@ -71,7 +71,7 @@ class StockIngester(AbsStockIngester):
 					'$push': {
 						'journal': {
 							'tier': self.tier,
-							'dt': now,
+							'ts': now,
 							'channel': jchan,
 							'run': self.run_id,
 							'extra': jextra
