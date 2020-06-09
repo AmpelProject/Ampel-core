@@ -51,9 +51,9 @@ class DBLoggingHandler:
 
 	def __init__(self,
 		ampel_db: AmpelDB,
+		run_id: int,
 		col_name: str = "logs",
 		level: int = LogRecordFlag.DEBUG,
-		run_id: int = 0,
 		aggregate_interval: float = 1,
 		expand_extra: bool = True,
 		flush_len: int = 1000,
@@ -79,7 +79,7 @@ class DBLoggingHandler:
 		self.aggregate_interval = aggregate_interval
 		self.log_dicts: List[Dict] = []
 		self.prev_record: Optional[Union[LighterLogRecord, LogRecord]] = None
-		self.run_id = run_id if run_id else self.new_run_id()
+		self.run_id = run_id
 		self.fields_check = ['extra', 'stock', 'channel']
 		self.expand_extra = expand_extra
 		self.warn_lvl = LogRecordFlag.WARNING
@@ -94,21 +94,6 @@ class DBLoggingHandler:
 		# ObjectID middle: 3 bytes machine + 2 bytes encoding the last 4 digits of run_id (unique)
 		# NB: pid is not always unique if running in a jail or container
 		self.oid_middle = _machine_bytes() + int(str(self.run_id)[-4:]).to_bytes(2, 'big')
-
-
-	def new_run_id(self) -> int:
-		"""
-		run_id is a global (ever increasing) counter stored in the DB \
-		used to tie log entries from the same process with each other
-		"""
-		return self._ampel_db \
-			.get_collection('counter') \
-			.find_one_and_update(
-				{'_id': 'current_run_id'},
-				{'$inc': {'value': 1}},
-				new=True, upsert=True
-			) \
-			.get('value')
 
 
 	def handle(self, record: Union[LighterLogRecord, LogRecord]) -> None:
