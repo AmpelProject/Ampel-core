@@ -21,6 +21,7 @@ from ampel.content.T2Record import T2Record
 from ampel.content.T2SubRecord import T2SubRecord
 from ampel.content.JournalRecord import JournalRecord
 from ampel.log.AmpelLogger import AmpelLogger
+from ampel.log.DBEventDoc import DBEventDoc
 from ampel.log.LogRecordFlag import LogRecordFlag
 from ampel.log.handlers.DBLoggingHandler import DBLoggingHandler
 from ampel.log.handlers.DefaultRecordBufferingHandler import DefaultRecordBufferingHandler
@@ -140,15 +141,22 @@ class T2Processor(AbsRunnable):
 	def run(self, pre_check: bool = True) -> int:
 		""" :returns: number of t2 docs processed """
 
+		# Add new doc in the 'events' collection
+		event_doc = DBEventDoc(
+			self._ampel_db, process_name=self.process_name,
+			tier=2, logger=self.logger
+		)
+
 		# Avoid 'burning' a run_id for nothing (at the cost of a request)
 		if pre_check and self.col_t2.find(self.query).count() == 0:
 			return 0
 
-		# Create DB logging handler instance (logging.Handler child class)
-		# This class formats, saves and pushes log records into the DB
-		db_logging_handler = DBLoggingHandler(self._ampel_db, **self.db_logging_handler_kwargs)
+		run_id = self.new_run_id()
 
-		run_id: int = db_logging_handler.get_run_id() # type: ignore[assignment]
+		# Create DB logging handler instance (formats, saves and pushes logs into DB)
+		db_logging_handler = DBLoggingHandler(
+			self._ampel_db, run_id=run_id, **self.db_logging_handler_kwargs
+		)
 
 		# Add db logging handler to the logger stack of handlers
 		self.logger.addHandler(db_logging_handler)
@@ -313,6 +321,7 @@ class T2Processor(AbsRunnable):
 		self.logger.removeHandler(db_logging_handler)
 		self.t2_instances = {}
 
+		event_doc.update(docs=counter)
 		return counter
 
 
