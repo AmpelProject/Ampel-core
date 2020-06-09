@@ -1,100 +1,90 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-core/ampel/logging/DBEventDoc.py
+# File              : Ampel-core/ampel/log/DBEventDoc.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 26.09.2018
-# Last Modified Date: 16.03.2020
+# Last Modified Date: 09.06.2020
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-from time import time, strftime
-from typing import Dict, Union, List, Any, Optional, Literal, Iterable
+from time import time
+from typing import Dict, Any, Optional, Literal
 from ampel.db.AmpelDB import AmpelDB
+from ampel.log.AmpelLogger import AmpelLogger
 from ampel.log.AmpelLoggingError import AmpelLoggingError
-from ampel.util.collections import ampel_iter
 
 
 class DBEventDoc:
 	"""
-	Class handling the creation and publication of event documents into the event database
+	Handles the creation and publication of event documents into the event database
 	"""
 
-	default_id_format = '%Y%m%d'
-
 	def __init__(self,
-		ampel_db: AmpelDB, event_name: str, tier: Literal[0, 1, 2, 3],
-		ts: Optional[int] = None, col_name: str = "events", id_format: Optional[str] = None
+		ampel_db: AmpelDB, process_name: str, tier: Literal[0, 1, 2, 3], logger: AmpelLogger,
+		run_id: Optional[int] = None, col_name: str = "events", extra: Optional[Dict[str, Any]] = None
 	):
 		"""
-		:param event_name: event name. For example 'ap' (alertprocessor) or process name
-		:param tier: indicates at which tier level logging is done
 		:param col_name: name of db collection to use (default 'events').
-		:param id_format: optional string that will be provided as argument to method `strftime` (default: '%Y%m%d')
-		:param ts: provided timestamp will be used as 'start' time rather than current time
 		"""
-		self.event_name = event_name
-		self.tier = tier
+
+		self.logger = logger
+		self.process_name = process_name
 		self.col = ampel_db.get_collection(col_name)
-		self.run_ids: List[int] = []
-		self.id_format = id_format if id_format else self.default_id_format
-		self.event_info: Dict[str, Any] = {}
-		self.ts = int(time()) if ts is None else int(ts)
-		self.duration = 0.0
+		doc: Dict[str, Any] = {'process': process_name, 'tier': tier}
+
+		if run_id:
+			doc['run'] = run_id
+
+		if extra:
+			doc = {**extra, **doc}
+
+		self.dkeys = doc.keys()
+		self.extra: Optional[Dict[str, Any]] = None
+		self.ins_id = self.col.insert_one(doc).inserted_id
 
 
-	def set_event_info(self, event_info: Dict) -> None:
-		""" """
-		self.event_info = event_info
+	def add_extra(self, **extra) -> None:
+
+		if self.extra is None:
+			self.extra = extra
+			return
+
+		for k, v in extra.items():
+			if k in self.extra:
+				self.logger.error(f"Cannot overwrite alread existing event value for key {k}")
+				continue
+			self.extra[k] = v
 
 
-	def add_run_id(self, run_ids: Union[int, Iterable[int]]) -> None:
-		"""
-		Multiple run ids can be provided at once
-		"""
-		for run_id in ampel_iter(run_ids):
-			self.run_ids.append(run_id)
-
-
-	def add_duration(self, seconds: Union[float, int]) -> None:
-		"""
-		Add seconds to the internal 'duration' buffer.
-		If you use this method, the final 'duration' of the process associated with
-		this event doc will be the sum of the values provided with add_duration
-		rather than the default time interval between class instantiation
-		and the final call to the method publish()
-		"""
-		self.duration += seconds
-
-
-	def publish(self) -> None:
+	def update(self, save_duration: bool = True, **kwargs) -> None:
 		""" :raises: AmpelLoggingError """
 
-		# Record event info into DB
-		res = self.col.update_one(
-			{
-				'_id': int(strftime(self.id_format))
-			},
-			{
-				'$push': {
-					'events': {
-						'process': self.event_name,
-						'tier': self.tier,
-						'ts': self.ts,
-						'duration': int(time() - self.ts) if self.duration == 0 else int(self.duration),
-						'run': self.run_ids[0] if len(self.run_ids) == 1 else self.run_ids,
-						**self.event_info
-					}
-				}
-			},
-			upsert=True
-		)
+		upd: Dict[str, Any] = {}
+
+		if self.extra:
+			for k, v in self.extra.items():
+				if k in self.dkeys:
+					self.logger.error(f"Cannot overwrite alread existing event value for key {k}")
+					continue
+				upd[k] = v
+
+		for k, v in kwargs.items():
+			if k in self.dkeys:
+				self.logger.error(f"Cannot overwrite alread existing event value for key {k}")
+				continue
+			upd[k] = v
+
+		if save_duration:
+			upd['duration'] = round(time() - self.ins_id.generation_time.timestamp(), 3)
+		elif not upd:
+			return
+
+		res = self.col.update_one({'_id': self.ins_id}, {'$set': upd})
 
 		if res.modified_count == 0 and res.upserted_id is None:
 			raise AmpelLoggingError(
 				"Events collection update failed (%s)" % {
 					'mongoUpdateResult': res.raw_result,
-					'process': self.event_name
+					'process': self.process_name
 				}
 			)
-
-		self.event_info = {}
