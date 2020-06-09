@@ -8,18 +8,16 @@
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from typing import Optional, Dict, List, Any, TypedDict, Literal
-from ampel.types import StockId
+from ampel.type import StockId
 
 # Please update SnapKey on SnapData udpates
 # There is currently unfortunately no way of extracting a Literal out of a TypedDict
 SnapKey = Literal['id', 'stock', 't0', 't1', 't2', 'logs', 'extra']
 
 class SnapData(TypedDict, total=False):
-	""" """
 
+	# could stock be of type List[Dict[str, Any]] for hybrid/dual transients ?
 	id: StockId
-	# could stock also be of type List[Dict[str, Any]] ?
-	# for hybrid/dual transients for example ?
 	stock: Optional[Dict[str, Any]]
 	t0: Optional[List[Dict[str, Any]]]
 	t1: Optional[List[Dict[str, Any]]]
