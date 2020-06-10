@@ -40,7 +40,8 @@ class AmpelContext:
 	@classmethod
 	def new(cls,
 		config: AmpelConfig,
-		tier: Optional[Literal[0, 1, 2, 3]] = None
+		tier: Optional[Literal[0, 1, 2, 3]] = None,
+		**kwargs
 	) -> 'AmpelContext':
 
 		if not isinstance(config, AmpelConfig):
@@ -53,7 +54,8 @@ class AmpelContext:
 			config = config,
 			db = AmpelDB.new(config),
 			loader = UnitLoader(config=config, tier=tier),
-			tier = tier
+			tier = tier,
+			**kwargs
 		)
 
 	@classmethod
@@ -62,7 +64,8 @@ class AmpelContext:
 		pwd_file_path: Optional[str] = None,
 		pwds: Optional[Iterable[str]] = None,
 		freeze_config: bool = True,
-		tier: Optional[Literal[0, 1, 2, 3]] = None
+		tier: Optional[Literal[0, 1, 2, 3]] = None,
+		**kwargs
 	) -> 'AmpelContext':
 		"""
 		Instantiates a new AmpelContext instance.
@@ -77,10 +80,8 @@ class AmpelContext:
 		"""
 
 		return cls.new(
-			config = AmpelConfig.load(
-				config_file_path, pwd_file_path, pwds, freeze_config
-			),
-			tier = tier
+			config = AmpelConfig.load(config_file_path, pwd_file_path, pwds, freeze_config),
+			tier = tier, **kwargs
 		)
 
 
