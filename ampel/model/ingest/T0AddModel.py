@@ -9,13 +9,13 @@
 
 from pydantic import Field
 from typing import List, Optional
-from ampel.model.PlainUnitModel import PlainUnitModel
+from ampel.model.UnitModel import UnitModel
 from ampel.model.ingest.T1CombineModel import T1CombineModel
 from ampel.model.ingest.T2ComputeModel import T2ComputeModel
 
-class T0AddModel(PlainUnitModel):
+class T0AddModel(UnitModel):
 	# Override 'unit' to enable alias
 	unit: str = Field(..., alias='ingester')
-	# config (datapoint ingester config [from PlainUnitModel])
+	# config (datapoint ingester config [from UnitModel])
 	t1_combine: Optional[List[T1CombineModel]]
 	t2_compute: Optional[T2ComputeModel]

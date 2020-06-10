@@ -10,11 +10,11 @@
 from pydantic import Field
 from typing import Sequence
 from ampel.model.ingest.T2IngestModel import T2IngestModel
-from ampel.model.PlainUnitModel import PlainUnitModel
+from ampel.model.UnitModel import UnitModel
 
 
-class T2ComputeModel(PlainUnitModel):
+class T2ComputeModel(UnitModel):
 	# Override of 'unit' to enable alias
 	unit: str = Field(..., alias='ingester')
-	# config (t2 ingester config [from PlainUnitModel])
+	# config (t2 ingester config [from UnitModel])
 	units: Sequence[T2IngestModel]

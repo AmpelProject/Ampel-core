@@ -33,8 +33,7 @@ from ampel.abstract.AbsStockT2Unit import AbsStockT2Unit
 from ampel.abstract.AbsPointT2Unit import AbsPointT2Unit
 from ampel.abstract.AbsStateT2Unit import AbsStateT2Unit
 from ampel.abstract.AbsCustomStateT2Unit import AbsCustomStateT2Unit
-from ampel.model.AliasedDataUnitModel import AliasedDataUnitModel
-from ampel.model.DataUnitModel import DataUnitModel
+from ampel.model.UnitModel import UnitModel
 from ampel.core.JournalUpdater import JournalUpdater
 from ampel.struct.JournalExtra import JournalExtra
 
@@ -600,8 +599,6 @@ class T2Processor(AbsRunnable):
 				else:
 					raise ValueError(f'Unsupported t2 unit (base classes: {bcs})')
 
-			Model = AliasedDataUnitModel if t2_doc['config'] else DataUnitModel
-
 			# Create channel (buffering) logger
 			buf_logger = self.context.get_logger(
 				name=k, console_logging=False,
@@ -612,7 +609,7 @@ class T2Processor(AbsRunnable):
 
 			# Instantiate t2 unit
 			unit_instance = self._loader.new_base_unit(
-				unit_model = Model(
+				unit_model = UnitModel(
 					unit = t2_doc['unit'] if isinstance(t2_doc['unit'], str)
 						else self.hashes[t2_doc['unit']],
 					config = t2_doc['config']

@@ -12,7 +12,7 @@ from pydantic import validator
 from typing import Sequence, Optional, Literal, Union, Dict, Any
 from ampel.model.AmpelStrictModel import AmpelStrictModel
 from ampel.type import ChannelId
-from ampel.model.PlainUnitModel import PlainUnitModel
+from ampel.model.UnitModel import UnitModel
 from ampel.config.ScheduleEvaluator import ScheduleEvaluator
 
 
@@ -28,8 +28,8 @@ class ProcessModel(AmpelStrictModel):
 	isolate: bool = True
 	multiplier: int = 1
 	logger: Optional[Union[str, Dict[str, Any]]]
-	controller: PlainUnitModel = PlainUnitModel(unit='DefaultProcessController')
-	processor: PlainUnitModel
+	controller: UnitModel = UnitModel(unit='DefaultProcessController')
+	processor: UnitModel
 
 
 	@validator('schedule', pre=True, whole=True)
