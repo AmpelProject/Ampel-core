@@ -42,7 +42,7 @@ from struct import iter_unpack, calcsize
 from os import path, strerror
 from zlib import compress, decompress
 from typing import BinaryIO, Optional, Dict, Any, List, Union, Tuple, TypedDict, Generator, Callable
-from ampel.log.AmpelLogger import AmpelLogger
+from ampel.log.AmpelLogger import AmpelLogger, VERBOSE
 
 ampel_magic_bytes = bytes([97, 109, 112, 101, 108])
 
@@ -71,7 +71,7 @@ def get_outer_file_handle(
 			raise FileNotFoundError(ENOENT, strerror(ENOENT), file_path)
 
 	if logger:
-		logger.verbose(f"Opening {file_path} with mode {mode}")
+		logger.log(VERBOSE, f"Opening {file_path} with mode {mode}")
 
 	f: BinaryIO = open(file_path, mode) # type: ignore[assignment]
 	if file_exists:
@@ -96,17 +96,17 @@ def get_inner_file_handle(
 
 	if fh.name.endswith('gz'):
 		from gzip import GzipFile
-		if logger: logger.verbose(f"New GzipFile from {fh.name} (mode {mode})") # noqa: E701
+		if logger: logger.log(VERBOSE, f"New GzipFile from {fh.name} (mode {mode})") # noqa: E701
 		return GzipFile(fileobj=fh, mode=mode) # type: ignore[return-value]
 
 	elif fh.name.endswith('bz2'):
 		from bz2 import BZ2File
-		if logger: logger.verbose(f"New BZ2File from {fh.name} (mode {mode})") # noqa: E701
+		if logger: logger.log(VERBOSE, f"New BZ2File from {fh.name} (mode {mode})") # noqa: E701
 		return BZ2File(fh, mode=mode) # type: ignore[return-value]
 
 	elif fh.name.endswith('xz'):
 		from lzma import LZMAFile
-		if logger: logger.verbose(f"New LZMAFile from {fh.name} (mode {mode})") # noqa: E701
+		if logger: logger.log(VERBOSE, f"New LZMAFile from {fh.name} (mode {mode})") # noqa: E701
 		return LZMAFile(fh, mode=mode) # type: ignore[return-value]
 
 	return fh
@@ -183,10 +183,10 @@ def read_header(
 	header = decode_header(h, header_len)
 
 	if logger:
-		logger.verbose(f"Header size={header_size}, len={header_len}")
-		logger.verbose(f"================== {file_handle.name} header info ==================")
-		logger.verbose(json.dumps(header, indent=4))
-		logger.verbose("=" * (50 + len(file_handle.name)))
+		logger.log(VERBOSE, f"Header size={header_size}, len={header_len}")
+		logger.log(VERBOSE, f"================== {file_handle.name} header info ==================")
+		logger.log(VERBOSE, json.dumps(header, indent=4))
+		logger.log(VERBOSE, "=" * (50 + len(file_handle.name)))
 
 	return HeaderInfo(size=header_size, len=header_len, payload=header)
 
@@ -228,7 +228,7 @@ def write_header(
 	hlen = len(header)
 
 	if logger:
-		logger.verbose(f"Writing header (block_size={hsize}, len={hlen})")
+		logger.log(VERBOSE, f"Writing header (block_size={hsize}, len={hlen})")
 
 	# try to compress header if we are above the max size
 	# (takes up to 80 micro-seconds on a MBP for a 4000 bytes payload)
