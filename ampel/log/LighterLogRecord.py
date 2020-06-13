@@ -18,7 +18,7 @@ class LighterLogRecord:
 	In []: %timeit LogRecord(name=12, pathname=None, level=12, lineno=12, exc_info=None, msg=None, args=None)
 	Out[]: 4.7 µs ± 77.9 ns per loop (mean ± std. dev. of 7 runs, 100000 loops each)
 
-	In []: %timeit SwiftLogRecord(name=12, levelno=1, msg=None)
+	In []: %timeit LighterLogRecord(name=12, levelno=1, msg=None)
 	Out[]: 657 ns ± 6.51 ns per loop (mean ± std. dev. of 7 runs, 1000000 loops each)
 	"""
 
@@ -32,7 +32,7 @@ class LighterLogRecord:
 	def __init__(self,
 		name: Union[int, str],
 		levelno: int,
-		msg: Optional[Union[str, Dict[str, Any]]]
+		msg: Optional[Union[str, Dict[str, Any]]] = None
 	) -> None:
 
 		d = self.__dict__
