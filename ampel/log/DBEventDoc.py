@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 26.09.2018
-# Last Modified Date: 09.06.2020
+# Last Modified Date: 13.06.2020
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from time import time
@@ -15,19 +15,16 @@ from ampel.log.AmpelLoggingError import AmpelLoggingError
 
 
 class DBEventDoc:
-	"""
-	Handles the creation and publication of event documents into the event database
-	"""
+	""" Handles the creation and publication of event documents into the event database """
 
 	def __init__(self,
-		ampel_db: AmpelDB, process_name: str, tier: Literal[0, 1, 2, 3], logger: AmpelLogger,
+		ampel_db: AmpelDB, process_name: str, tier: Literal[0, 1, 2, 3],
 		run_id: Optional[int] = None, col_name: str = "events", extra: Optional[Dict[str, Any]] = None
 	):
 		"""
 		:param col_name: name of db collection to use (default 'events').
 		"""
 
-		self.logger = logger
 		self.process_name = process_name
 		self.col = ampel_db.get_collection(col_name)
 		doc: Dict[str, Any] = {'process': process_name, 'tier': tier}
@@ -43,7 +40,7 @@ class DBEventDoc:
 		self.ins_id = self.col.insert_one(doc).inserted_id
 
 
-	def add_extra(self, **extra) -> None:
+	def add_extra(self, logger: AmpelLogger, **extra) -> None:
 
 		if self.extra is None:
 			self.extra = extra
@@ -51,12 +48,12 @@ class DBEventDoc:
 
 		for k, v in extra.items():
 			if k in self.extra:
-				self.logger.error(f"Cannot overwrite alread existing event value for key {k}")
+				logger.error(f"Cannot overwrite already existing event value for key {k}")
 				continue
 			self.extra[k] = v
 
 
-	def update(self, save_duration: bool = True, **kwargs) -> None:
+	def update(self, logger: AmpelLogger, save_duration: bool = True, **kwargs) -> None:
 		""" :raises: AmpelLoggingError """
 
 		upd: Dict[str, Any] = {}
@@ -64,13 +61,13 @@ class DBEventDoc:
 		if self.extra:
 			for k, v in self.extra.items():
 				if k in self.dkeys:
-					self.logger.error(f"Cannot overwrite alread existing event value for key {k}")
+					logger.error(f"Cannot overwrite already existing event value for key {k}")
 					continue
 				upd[k] = v
 
 		for k, v in kwargs.items():
 			if k in self.dkeys:
-				self.logger.error(f"Cannot overwrite alread existing event value for key {k}")
+				logger.error(f"Cannot overwrite already existing event value for key {k}")
 				continue
 			upd[k] = v
 
