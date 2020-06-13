@@ -15,7 +15,7 @@ from typing import Sequence, Dict, List, Any, Union, Optional, TYPE_CHECKING
 
 from ampel.type import ChannelId
 from ampel.config.AmpelConfig import AmpelConfig
-from ampel.model.AmpelStrictModel import AmpelStrictModel
+from ampel.base.AmpelUnit import AmpelUnit
 from ampel.model.db.AmpelColModel import AmpelColModel
 from ampel.model.db.AmpelDBModel import AmpelDBModel
 from ampel.model.db.IndexModel import IndexModel
@@ -27,7 +27,7 @@ if TYPE_CHECKING:
 
 intcol = {'t0': 0, 't1': 1, 't2': 2, 'stock': 3}
 
-class AmpelDB(AmpelStrictModel):
+class AmpelDB(AmpelUnit):
 
 	prefix: str = 'Ampel'
 	dbs_config: List[AmpelDBModel]
