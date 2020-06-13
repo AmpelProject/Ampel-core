@@ -26,3 +26,9 @@ class UnitModel(AmpelStrictModel):
 	unit: Union[str, Type[AmpelUnit]]
 	config: Optional[Union[int, str, Dict[str, Any]]]
 	override: Optional[Dict[str, Any]]
+
+	@property
+	def unit_name(self) -> str:
+		if isinstance(self.unit, str):
+			return self.unit
+		return self.unit.__name__
