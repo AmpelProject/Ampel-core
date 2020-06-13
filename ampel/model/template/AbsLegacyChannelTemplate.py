@@ -4,15 +4,14 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 16.10.2019
-# Last Modified Date: 19.02.2020
+# Last Modified Date: 10.06.2020
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from pydantic import validator
 from typing import List, Dict, Any, Union, Tuple, Optional
 from ampel.log.AmpelLogger import AmpelLogger
 from ampel.config.builder.FirstPassConfig import FirstPassConfig
-from ampel.model.DataUnitModel import DataUnitModel
-from ampel.model.AliasedDataUnitModel import AliasedDataUnitModel
+from ampel.model.UnitModel import UnitModel
 from ampel.abstract.AbsChannelTemplate import AbsChannelTemplate
 
 
@@ -24,8 +23,8 @@ class AbsLegacyChannelTemplate(AbsChannelTemplate, abstract=True):
 	Known subclass: ZTFLegacyChannelTemplate
 	"""
 	auto_complete: Union[bool, str]
-	t0_filter: Union[DataUnitModel, AliasedDataUnitModel]
-	t2_compute: List[Union[DataUnitModel, AliasedDataUnitModel]] = []
+	t0_filter: UnitModel
+	t2_compute: List[UnitModel] = []
 	t3_supervize: List[Dict[str, Any]] = []
 
 
@@ -40,7 +39,8 @@ class AbsLegacyChannelTemplate(AbsChannelTemplate, abstract=True):
 	def get_channel(self, logger: AmpelLogger) -> Dict[str, Any]:
 		d = self.dict(by_alias=True)
 		for k in ("auto_complete", "t0_filter", "t2_compute", "t3_supervize"):
-			del d[k]
+			if k in d:
+				del d[k]
 		return d
 
 
@@ -73,7 +73,7 @@ class AbsLegacyChannelTemplate(AbsChannelTemplate, abstract=True):
 
 		ret: Dict[str, Any] = {
 			"tier": 0,
-			"schedule": "super",
+			"schedule": ["super"],
 			"active": self.active,
 			"distrib": self.distrib,
 			"source": self.source,
