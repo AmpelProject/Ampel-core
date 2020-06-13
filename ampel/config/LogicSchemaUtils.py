@@ -7,8 +7,8 @@
 # Last Modified Date: 16.03.2020
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-from ampel.types import strict_iterable
-from ampel.utils.collections import check_seq_inner_type
+from ampel.type import strict_iterable
+from ampel.util.collections import check_seq_inner_type
 from ampel.config.LogicSchemaIterator import LogicSchemaIterator
 from ampel.model.operator.AllOf import AllOf
 from ampel.model.operator.AnyOf import AnyOf
