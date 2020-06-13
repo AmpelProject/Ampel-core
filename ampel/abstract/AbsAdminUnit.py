@@ -15,4 +15,3 @@ class AbsAdminUnit(AmpelABC, AmpelUnit, abstract=True):
 	""" Top level abstract class containing a handle to an AmpelContext instance """
 
 	context: AmpelContext
-	verbose: int = 0
