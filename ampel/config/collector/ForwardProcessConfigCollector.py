@@ -10,6 +10,7 @@
 from typing import Union, Dict, Optional, Any, Sequence
 from ampel.config.collector.ConfigCollector import ConfigCollector
 from ampel.config.collector.AbsForwardConfigCollector import AbsForwardConfigCollector
+from ampel.log import VERBOSE
 
 
 class ForwardProcessConfigCollector(AbsForwardConfigCollector):
@@ -28,7 +29,7 @@ class ForwardProcessConfigCollector(AbsForwardConfigCollector):
 			return None
 
 		if self.verbose:
-			self.logger.verbose(
+			self.logger.log(VERBOSE,
 				f"Routing process '{arg['name']}' to 'process.t{arg['tier']}'"
 			)
 

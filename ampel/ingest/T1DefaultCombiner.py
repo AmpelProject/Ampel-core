@@ -14,6 +14,7 @@ from ampel.content.Compound import CompoundElement
 from ampel.ingest.CompoundBluePrint import CompoundBluePrint
 from ampel.type import StockId, ChannelId, DataPointId
 from ampel.abstract.AbsT1Unit import AbsT1Unit
+from ampel.log import VERBOSE
 
 T = TypeVar("T", bound=CompoundBluePrint)
 
@@ -144,7 +145,7 @@ class T1DefaultCombiner(Generic[T], AbsT1Unit[T]):
 			# should to be created in the compound document
 			if eff_id != strict_id:
 				if self.logger:
-					self.logger.verbose(
+					self.logger.log(VERBOSE,
 						None, extra = {
 							'channel': chan_name,
 							'eff': eff_id,

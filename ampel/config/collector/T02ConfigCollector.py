@@ -11,6 +11,7 @@ import hashlib, json
 from typing import Dict, Any, Optional, Union, List
 from ampel.util.mappings import build_unsafe_short_dict_id
 from ampel.config.collector.AbsDictConfigCollector import AbsDictConfigCollector
+from ampel.log import VERBOSE
 
 
 class T02ConfigCollector(AbsDictConfigCollector):
@@ -43,12 +44,12 @@ class T02ConfigCollector(AbsDictConfigCollector):
 				raise ValueError("Hash collision detected")
 
 			if self.verbose:
-				self.logger.verbose(f"Re-using T2 config hash: {hh}")
+				self.logger.log(VERBOSE, f"Re-using T2 config hash: {hh}")
 
 			return hh
 
 		if self.verbose:
-			self.logger.verbose(f"Adding T2 config hash: {hh}")
+			self.logger.log(VERBOSE, f"Adding T2 config hash: {hh}")
 
 		self.__setitem__(hh, arg)
 		return hh

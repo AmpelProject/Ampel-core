@@ -14,7 +14,7 @@ from pathlib import Path
 from struct import calcsize
 from typing import BinaryIO, Optional, Literal, Dict, Any, List, Union, Tuple, TypedDict
 
-from ampel.log.AmpelLogger import AmpelLogger
+from ampel.log.AmpelLogger import AmpelLogger, VERBOSE
 from ampel.base.AmpelUnit import AmpelUnit
 from ampel.util.mappings import build_unsafe_dict_id
 from ampel.util.register import read_header, write_header, \
@@ -497,7 +497,7 @@ class AmpelRegister(AmpelUnit):
 			return
 		else:
 			if self.verbose:
-				self.logger.verbose(f"Closing {self.get_file_path()}")
+				self.logger.log(VERBOSE, f"Closing {self.get_file_path()}")
 
 		if hasattr(self, 'header') and update_header:
 
@@ -519,7 +519,7 @@ class AmpelRegister(AmpelUnit):
 				):
 
 					if self.verbose:
-						self.logger.verbose("Header has changed, triggering update")
+						self.logger.log(VERBOSE, "Header has changed, triggering update")
 
 					try:
 						write_header(

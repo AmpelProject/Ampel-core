@@ -8,7 +8,7 @@
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from typing import Dict, Any, Optional
-from ampel.log.AmpelLogger import AmpelLogger
+from ampel.log.AmpelLogger import AmpelLogger, VERBOSE
 from ampel.config.collector.AbsDictConfigCollector import AbsDictConfigCollector
 
 
@@ -60,7 +60,7 @@ class ResourceConfigCollector(AbsDictConfigCollector):
 				self.tmp_resource[key] = file_name, dist_name
 
 				if self.verbose:
-					self.logger.verbose(
+					self.logger.log(VERBOSE,
 						f"Adding {scope} resource '{k}' " +
 						f"from file {file_name}" if file_name else ""
 					)

@@ -11,6 +11,7 @@ import json, yaml, pkg_resources
 from pkg_resources import EggInfoDistribution, DistInfoDistribution # type: ignore[attr-defined]
 from typing import Dict, Any, Union, Callable, List, Optional
 from ampel.config.builder.ConfigBuilder import ConfigBuilder
+from ampel.log import VERBOSE
 
 
 class DistConfigBuilder(ConfigBuilder):
@@ -34,17 +35,17 @@ class DistConfigBuilder(ConfigBuilder):
 			for dist_name in self.get_dist_names(prefix):
 
 				if self.verbose:
-					self.logger.verbose(f"Checking distribution '{dist_name}'")
+					self.logger.log(VERBOSE, f"Checking distribution '{dist_name}'")
 
 				for conf_dir in conf_dirs:
 					for ext in exts:
 						self.load_distrib(dist_name, conf_dir, ext)
 
 				if self.verbose:
-					self.logger.verbose(f"Done checking distribution '{dist_name}'")
+					self.logger.log(VERBOSE, f"Done checking distribution '{dist_name}'")
 
 		if self.verbose:
-			self.logger.verbose("Done loading distributions")
+			self.logger.log(VERBOSE, "Done loading distributions")
 
 
 	def load_distrib(self,
@@ -85,7 +86,7 @@ class DistConfigBuilder(ConfigBuilder):
 				raise ValueError(f"Unsupported distribution type: '{type(distrib)}'")
 
 			if all_conf_files and self.verbose:
-				self.logger.verbose(f"Following conf files will be parsed: {all_conf_files}")
+				self.logger.log(VERBOSE, f"Following conf files will be parsed: {all_conf_files}")
 
 			if ampel_conf := self.get_conf_file(all_conf_files, f"ampel.{ext}"):
 				self.load_conf_using_func(distrib, ampel_conf, self.load_ampel_conf) # type: ignore
@@ -139,7 +140,7 @@ class DistConfigBuilder(ConfigBuilder):
 		try:
 
 			if self.verbose:
-				self.logger.verbose(
+				self.logger.log(VERBOSE,
 					f"Loading {file_rel_path} from distribution '{distrib.project_name}'"
 				)
 
@@ -188,7 +189,7 @@ class DistConfigBuilder(ConfigBuilder):
 		try:
 
 			if self.verbose:
-				self.logger.verbose(
+				self.logger.log(VERBOSE,
 					f"Loading {file_rel_path} from distribution '{distrib.project_name}'"
 				)
 

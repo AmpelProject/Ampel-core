@@ -13,6 +13,8 @@ from ampel.model.builder.UnitDefinitionModel import UnitDefinitionModel
 from ampel.config.collector.UnitConfigCollector import UnitConfigCollector
 from ampel.config.collector.ConfigCollector import ConfigCollector
 from ampel.config.collector.AbsForwardConfigCollector import AbsForwardConfigCollector
+from ampel.log import VERBOSE
+
 
 path_el_type: Dict[str, str] = {
 	"base": "AbsDataUnit",
@@ -71,7 +73,7 @@ class ForwardUnitConfigCollector(AbsForwardConfigCollector):
 
 			# check for AbsDataUnit in mro ?
 			if self.verbose:
-				self.logger.verbose(
+				self.logger.log(VERBOSE,
 					f"-> Routing unit '{class_id}' to unit.{unit_type}"
 				)
 

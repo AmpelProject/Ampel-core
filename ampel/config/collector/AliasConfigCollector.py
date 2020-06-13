@@ -9,6 +9,7 @@
 
 from typing import Dict, Any, Optional
 from ampel.config.collector.AbsDictConfigCollector import AbsDictConfigCollector
+from ampel.log import VERBOSE
 
 
 class AliasConfigCollector(AbsDictConfigCollector):
@@ -55,7 +56,7 @@ class AliasConfigCollector(AbsDictConfigCollector):
 						scope = ""
 
 				if self.verbose:
-					self.logger.verbose(
+					self.logger.log(VERBOSE,
 						f"Adding {scope} {self.tier} alias: {key}"
 					)
 

@@ -11,6 +11,7 @@ from typing import Dict, Any, Optional
 from ampel.model.db.AmpelDBModel import AmpelDBModel
 from ampel.config.collector.ConfigCollector import ConfigCollector
 from ampel.config.collector.AbsDictConfigCollector import AbsDictConfigCollector
+from ampel.log import VERBOSE
 
 
 class DBConfigCollector(AbsDictConfigCollector):
@@ -40,14 +41,14 @@ class DBConfigCollector(AbsDictConfigCollector):
 
 		# validate model
 		if self.verbose:
-			self.logger.verbose('Validating DB configuration')
+			self.logger.log(VERBOSE, 'Validating DB configuration')
 
 		try:
 
 			m = AmpelDBModel(**arg)
 
 			if self.verbose:
-				self.logger.verbose(f'Configuration of DB collection "{m.name}" is valid')
+				self.logger.log(VERBOSE, f'Configuration of DB collection "{m.name}" is valid')
 
 			dbs.append(arg)
 

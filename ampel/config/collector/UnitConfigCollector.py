@@ -13,6 +13,8 @@ from ampel.util.collections import ampel_iter
 from ampel.util.crypto import b2_short_hash
 from ampel.model.AmpelStrictModel import AmpelStrictModel
 from ampel.config.collector.AbsListConfigCollector import AbsListConfigCollector
+from ampel.log import VERBOSE
+
 
 class UnitDefinitionModel(AmpelStrictModel):
 	class_name: str
@@ -102,7 +104,7 @@ class UnitConfigCollector(AbsListConfigCollector):
 					entry['abc'].remove("AbsDataUnit")
 
 				if self.verbose:
-					self.logger.verbose(
+					self.logger.log(VERBOSE,
 						f'Adding {self.conf_section}: {class_name}'
 					)
 

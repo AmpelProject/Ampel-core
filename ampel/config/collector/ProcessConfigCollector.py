@@ -9,6 +9,7 @@
 
 from typing import Dict, Any, Optional
 from ampel.config.collector.AbsDictConfigCollector import AbsDictConfigCollector
+from ampel.log import VERBOSE
 
 
 class ProcessConfigCollector(AbsDictConfigCollector):
@@ -35,7 +36,7 @@ class ProcessConfigCollector(AbsDictConfigCollector):
 			arg['source'] = file_name
 
 		if self.verbose:
-			self.logger.verbose(
+			self.logger.log(VERBOSE,
 				f"Adding t{arg['tier']} process: '{proc_name}'" +
 				f" from file '{file_name}'" if file_name else ""
 			)

@@ -10,6 +10,7 @@
 from typing import Dict, Any, Optional
 from ampel.util.crypto import b2_short_hash
 from ampel.config.collector.AbsDictConfigCollector import AbsDictConfigCollector
+from ampel.log import VERBOSE
 
 
 class ChannelConfigCollector(AbsDictConfigCollector):
@@ -29,7 +30,7 @@ class ChannelConfigCollector(AbsDictConfigCollector):
 			chan_name = arg['channel']
 
 			if self.verbose:
-				self.logger.verbose(f'Adding channel: {chan_name}')
+				self.logger.log(VERBOSE, f'Adding channel: {chan_name}')
 
 			if 'distrib' in arg:
 				dist_name = arg['distrib']

@@ -13,7 +13,7 @@ from typing import Dict, List, Any, Optional, Set, Iterable
 from ampel.util.mappings import get_by_path, set_by_path
 from ampel.util.crypto import aes_recursive_decrypt
 from ampel.abstract.AbsChannelTemplate import AbsChannelTemplate
-from ampel.log.AmpelLogger import AmpelLogger
+from ampel.log.AmpelLogger import AmpelLogger, VERBOSE
 from ampel.config.builder.FirstPassConfig import FirstPassConfig
 from ampel.config.collector.ConfigCollector import ConfigCollector
 from ampel.config.collector.T02ConfigCollector import T02ConfigCollector
@@ -46,7 +46,7 @@ class ConfigBuilder:
 	) -> None:
 
 		if self.verbose:
-			self.logger.verbose(f"Loading global ampel conf ({file_name}) from repo {dist_name}")
+			self.logger.log(VERBOSE, f"Loading global ampel conf ({file_name}) from repo {dist_name}")
 
 		# "db" "logging" "channel" "unit" "process" "alias" "resource"
 		for k in self.first_pass_config.conf_keys:
@@ -122,7 +122,7 @@ class ConfigBuilder:
 				raise ValueError('Duplicated channel template: ' + k)
 
 			if self.verbose:
-				self.logger.verbose(
+				self.logger.log(VERBOSE,
 					f'Registering template "{k}" ' +
 					file_name if file_name else '' +
 					ConfigCollector.distrib_hint(distrib=dist_name)
@@ -171,7 +171,7 @@ class ConfigBuilder:
 		for tier in (0, 1, 2, 3):
 
 			if self.verbose:
-				self.logger.verbose(f'Checking standalone t{tier} processes')
+				self.logger.log(VERBOSE, f'Checking standalone t{tier} processes')
 
 			p_collector = ProcessConfigCollector(
 				tier=tier, conf_section='process', # type: ignore[arg-type]
@@ -192,7 +192,7 @@ class ConfigBuilder:
 			for p in self.first_pass_config['process'][f't{tier}'].values():
 
 				if self.verbose:
-					self.logger.verbose(f'Morphing standalone t{tier} processes: {p["name"]}')
+					self.logger.log(VERBOSE, f'Morphing standalone t{tier} processes: {p["name"]}')
 					pass
 
 				try:
@@ -229,7 +229,7 @@ class ConfigBuilder:
 					for p in tpl.get_processes(self.logger, self.first_pass_config):
 
 						if self.verbose:
-							self.logger.verbose(
+							self.logger.log(VERBOSE,
 								f'Morphing channel embedded t{p["tier"]} process: {p["name"]}'
 							)
 
@@ -288,7 +288,7 @@ class ConfigBuilder:
 		if 'template' in chan_dict:
 
 			if self.verbose:
-				self.logger.verbose(
+				self.logger.log(VERBOSE,
 					f'Channel {chan_dict["channel"]} ({chan_dict["source"]}) '
 					f'declares template: {chan_dict["template"]}'
 				)

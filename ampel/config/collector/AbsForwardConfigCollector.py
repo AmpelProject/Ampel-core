@@ -11,7 +11,7 @@ from typing import List, Union, Optional, Sequence, Dict, Any, Type
 import ampel.config.builder.FirstPassConfig as fpc # avoid circular import issue
 from ampel.base import abstractmethod
 from ampel.base.AmpelABC import AmpelABC
-from ampel.log.AmpelLogger import AmpelLogger
+from ampel.log.AmpelLogger import AmpelLogger, VERBOSE
 
 
 class AbsForwardConfigCollector(dict, AmpelABC, abstract=True):
@@ -34,7 +34,7 @@ class AbsForwardConfigCollector(dict, AmpelABC, abstract=True):
 		self.logger = AmpelLogger.get_logger() if logger is None else logger
 
 		if verbose:
-			self.logger.verbose(
+			self.logger.log(VERBOSE,
 				f'Creating {self.__class__.__name__} collector '
 				f'for config section "{conf_section}"'
 			)
@@ -51,7 +51,7 @@ class AbsForwardConfigCollector(dict, AmpelABC, abstract=True):
 
 			path_elements = self.get_path(el, file_name, dist_name)
 			if not path_elements:
-				self.error(f'Could not identify routing for {el}')
+				self.error(f' Follow-up error: could not identify routing for {el}')
 				continue
 
 			d = self.root_config
