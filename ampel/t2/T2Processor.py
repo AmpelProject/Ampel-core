@@ -20,12 +20,9 @@ from ampel.content.Compound import Compound
 from ampel.content.T2Record import T2Record
 from ampel.content.T2SubRecord import T2SubRecord
 from ampel.content.JournalRecord import JournalRecord
-from ampel.log.AmpelLogger import AmpelLogger
-from ampel.log.DBEventDoc import DBEventDoc
-from ampel.log.LogRecordFlag import LogRecordFlag
-from ampel.log.handlers.DBLoggingHandler import DBLoggingHandler
+from ampel.log import AmpelLogger, DBEventDoc, LogRecordFlag, VERBOSE
+from ampel.log.utils import report_exception, report_error
 from ampel.log.handlers.DefaultRecordBufferingHandler import DefaultRecordBufferingHandler
-from ampel.log.LogUtils import LogUtils
 from ampel.util.collections import ampel_iter
 from ampel.util.mappings import build_unsafe_short_dict_id
 from ampel.abstract.AbsRunnable import AbsRunnable
@@ -54,7 +51,7 @@ class T2Processor(AbsRunnable):
 	:param send_beacon: whether to update the beacon collection before run() is executed
 	:param gc_collect: whether to actively perform garbage collection between processing of T2 docs
 
-	:param logger_profile: See AbsRunnable docstring
+	:param log_profile: See AbsRunnable docstring
 	:param db_logging_handler_kwargs: See AbsRunnable docstring
 	:param log_flag: See AbsRunnable docstring
 	:param raise_exc: See AbsRunnable docstring (default False)
@@ -74,11 +71,6 @@ class T2Processor(AbsRunnable):
 		super().__init__(**kwargs)
 		self._ampel_db = self.context.db
 		self._loader = self.context.loader
-
-		# Get logger
-		self.logger = AmpelLogger.get_unique_logger(
-			log_level = (LogRecordFlag.T2 | LogRecordFlag.CORE | self.log_flag).__int__()
-		)
 
 		# Ampel hashes unit class names in prod environment
 		self.hashes: Dict[int, str] = {}
@@ -142,8 +134,7 @@ class T2Processor(AbsRunnable):
 
 		# Add new doc in the 'events' collection
 		event_doc = DBEventDoc(
-			self._ampel_db, process_name=self.process_name,
-			tier=2, logger=self.logger
+			self._ampel_db, process_name=self.process_name, tier=2
 		)
 
 		# Avoid 'burning' a run_id for nothing (at the cost of a request)
@@ -152,13 +143,10 @@ class T2Processor(AbsRunnable):
 
 		run_id = self.new_run_id()
 
-		# Create DB logging handler instance (formats, saves and pushes logs into DB)
-		db_logging_handler = DBLoggingHandler(
-			self._ampel_db, run_id=run_id, **self.db_logging_handler_kwargs
+		logger = AmpelLogger.from_profile(
+			self.context, self.log_profile, run_id,
+			base_flag = LogRecordFlag.T2 | LogRecordFlag.CORE | self.log_flag
 		)
-
-		# Add db logging handler to the logger stack of handlers
-		self.logger.addHandler(db_logging_handler)
 
 		if self.send_beacon:
 			self.col_beacon.update_one(
@@ -168,9 +156,8 @@ class T2Processor(AbsRunnable):
 
 		jupdater = JournalUpdater(
 			ampel_db = self.context.db, tier = 2, run_id = run_id,
-			process_name = self.process_name, logger = self.logger,
-			verbose = self.verbose, raise_exc = self.raise_exc,
-			extra_tag = self.stock_jtag
+			process_name = self.process_name, logger = logger,
+			raise_exc = self.raise_exc, extra_tag = self.stock_jtag
 		)
 
 		# we instantiate t2 unit only once per check interval.
@@ -195,14 +182,14 @@ class T2Processor(AbsRunnable):
 			# Cursor exhausted
 			if t2_doc is None:
 				break
-			elif self.verbose > 1:
-				self.logger.debug(f"T2 doc: {t2_doc}")
+			elif logger.verbose > 1:
+				logger.debug(f"T2 doc: {t2_doc}")
 
 			counter += 1
 			before_run = time()
 
-			t2_unit = self.get_unit_instance(t2_doc)
-			ret = self.process_t2_doc(t2_unit, t2_doc, run_id)
+			t2_unit = self.get_unit_instance(t2_doc, logger)
+			ret = self.process_t2_doc(t2_unit, t2_doc, logger)
 
 			# Used as timestamp and to compute duration below (using before_run)
 			now = time()
@@ -230,21 +217,21 @@ class T2Processor(AbsRunnable):
 				# T2 units can return a T2RunState integer rather than a dict instance / tuple
 				# for example: T2RunState.EXCEPTION, T2RunState.BAD_CONFIG, ...
 				if isinstance(ret, int):
-					self.logger.error(f'T2 unit returned int {ret}')
+					logger.error(f'T2 unit returned int {ret}')
 					sub_rec['error'] = ret
 					jrec['status'] = ret
-					push_t2_update(t2_doc, sub_rec, status=ret)
+					push_t2_update(t2_doc, sub_rec, logger, status=ret)
 
 				# Unit returned just a dict result
 				elif isinstance(ret, dict):
 
 					sub_rec['result'] = ret
 					jrec['status'] = 0
-					push_t2_update(t2_doc, sub_rec)
+					push_t2_update(t2_doc, sub_rec, logger)
 
 					# Empty dict, should not happen
 					if not ret:
-						self.logger.warn(
+						logger.warn(
 							"T2 unit return empty content",
 							extra={'t2_doc': t2_doc.pop}
 						)
@@ -254,11 +241,11 @@ class T2Processor(AbsRunnable):
 
 					jrec['status'] = 0
 					update_records(sub_rec, jrec, ret[0], ret[1])
-					push_t2_update(t2_doc, sub_rec)
+					push_t2_update(t2_doc, sub_rec, logger)
 
 					# Empty dict, should not happen
 					if not ret:
-						self.logger.warn(
+						logger.warn(
 							"T2 unit return empty content",
 							extra={'t2_doc': t2_doc.pop}
 						)
@@ -273,14 +260,14 @@ class T2Processor(AbsRunnable):
 						# Error code returned by unit
 						if isinstance(unit_result, int):
 							sub_rec_copy['error'] = unit_result
-							push_t2_update(t2_doc, sub_rec_copy, status=unit_result)
+							push_t2_update(t2_doc, sub_rec_copy, logger, status=unit_result)
 
 						# No custom JournalExtra returned by unit
 						elif isinstance(unit_result, dict):
 							jrec_copy = jrec.copy()
 							jrec_copy['status'] = 0
 							sub_rec_copy['channel'] = chans
-							push_t2_update(t2_doc, sub_rec_copy)
+							push_t2_update(t2_doc, sub_rec_copy, logger)
 
 						# Custom JournalExtra returned by unit
 						elif isinstance(unit_result, tuple):
@@ -289,14 +276,14 @@ class T2Processor(AbsRunnable):
 							jrec_copy['channel'] = chans
 							jrec_copy['status'] = 0
 							update_records(sub_rec_copy, jrec_copy, unit_result[0], unit_result[1])
-							push_t2_update(t2_doc, sub_rec_copy)
+							push_t2_update(t2_doc, sub_rec_copy, logger)
 
 						else:
-							self._unsupported_result(unit_result, t2_doc, sub_rec, jrec)
+							self._unsupported_result(unit_result, t2_doc, sub_rec, jrec, logger)
 
 				# Unsupported object returned by unit
 				else:
-					self._unsupported_result(ret, t2_doc, sub_rec, jrec)
+					self._unsupported_result(ret, t2_doc, sub_rec, jrec, logger)
 
 				# Update stock document
 				jupdater.flush()
@@ -304,7 +291,7 @@ class T2Processor(AbsRunnable):
 			except Exception as e:
 
 				self._processing_error(
-					t2_rec=t2_doc, sub_rec=sub_rec, jrec=jrec,
+					logger, t2_rec=t2_doc, sub_rec=sub_rec, jrec=jrec,
 					exception=e, sub_rec_msg='An exception occured'
 				)
 
@@ -315,17 +302,16 @@ class T2Processor(AbsRunnable):
 			if gc_collect:
 				gc.collect()
 
-		# Remove DB logging handler
-		db_logging_handler.flush()
-		self.logger.removeHandler(db_logging_handler)
-		self.t2_instances = {}
 
-		event_doc.update(docs=counter)
+		event_doc.update(logger, docs=counter, run=run_id)
+
+		logger.flush()
+		self.t2_instances = {}
 		return counter
 
 
 	def process_t2_doc(self,
-		t2_unit: AbsT2s, t2_doc: T2Record, run_id: int
+		t2_unit: AbsT2s, t2_doc: T2Record, logger: AmpelLogger,
 	) -> Union[T2UnitResult, ItemsView[ChannelId, T2UnitResult]]:
 		"""
 		Regarding the possible int return code:
@@ -346,9 +332,9 @@ class T2Processor(AbsRunnable):
 
 				# compound doc must exist (None could mean an ingester bug)
 				if compound is None:
-					LogUtils.report_error(
-						self._ampel_db, tier=2, msg='Compound not found', logger=self.logger,
-						info={'run': run_id, 'id': t2_doc['link'], 'doc': t2_doc}
+					report_error(
+						self._ampel_db, msg='Compound not found', logger=logger,
+						info={'id': t2_doc['link'], 'doc': t2_doc}
 					)
 					return T2RunState.ERROR
 
@@ -365,10 +351,9 @@ class T2Processor(AbsRunnable):
 					elif isinstance(el, datapoint_id):
 						dpid = el
 					else:
-						LogUtils.report_error(
-							self._ampel_db, tier=2, msg='Invalid compound doc',
-							logger=self.logger, info={'run': run_id,
-							'compound': compound, 'doc': t2_doc}
+						report_error(
+							self._ampel_db, msg='Invalid compound doc', logger=logger,
+							info={'compound': compound, 'doc': t2_doc}
 						)
 						raise StopIteration
 
@@ -378,10 +363,9 @@ class T2Processor(AbsRunnable):
 						dp.pop('policy', None)
 						datapoints.append(dp)
 					else:
-						LogUtils.report_error(
-							self._ampel_db, tier=2, msg='Datapoint not found',
-							logger=self.logger, info={'run': run_id,
-							'id': compound, 'doc': t2_doc}
+						report_error(
+							self._ampel_db, msg='Datapoint not found', logger=logger,
+							info={'id': compound, 'doc': t2_doc}
 						)
 						return T2RunState.ERROR
 
@@ -422,9 +406,9 @@ class T2Processor(AbsRunnable):
 
 				ret = t2_unit.run(*args) # type: ignore[arg-type]
 
-				if t2_unit.buf_hdlr.buffer: # type: ignore
-					t2_unit.buf_hdlr.forward( # type: ignore
-						self.logger, stock=t2_doc['stock'], channel=t2_doc['channel']
+				if t2_unit._buf_hdlr.buffer: # type: ignore[union-attr]
+					t2_unit._buf_hdlr.forward( # type: ignore[union-attr]
+						logger, stock=t2_doc['stock'], channel=t2_doc['channel']
 					)
 
 				return ret
@@ -433,26 +417,24 @@ class T2Processor(AbsRunnable):
 
 				if doc := next(self.col_t0.find({'_id': t2_doc['link']}), None):
 					ret = t2_unit.run(doc)
-					if t2_unit.buf_hdlr.buffer: # type: ignore
-						t2_unit.buf_hdlr.forward( # type: ignore
-							self.logger, stock=t2_doc['stock'], channel=t2_doc['channel']
+					if t2_unit._buf_hdlr.buffer: # type: ignore[union-attr]
+						t2_unit._buf_hdlr.forward( # type: ignore[union-attr]
+							logger, stock=t2_doc['stock'], channel=t2_doc['channel']
 						)
 					return ret
 
-				LogUtils.report_error(
-					self._ampel_db, tier=2,
-					msg='Datapoint not found' if isinstance(t2_unit, AbsPointT2Unit)
-						else 'Stock doc not found',
-					logger=self.logger, info={'run': run_id, 'doc': t2_doc}
+				report_error(
+					self._ampel_db, msg='Datapoint not found' if isinstance(t2_unit, AbsPointT2Unit)
+					else 'Stock doc not found', logger=logger, info={'doc': t2_doc}
 				)
 
 				return T2RunState.ERROR
 
 			else:
 
-				LogUtils.report_error(
-					self._ampel_db, tier=2, msg='Unknown T2 unit type',
-					logger=self.logger, info={'run': run_id, 'doc': t2_doc}
+				report_error(
+					self._ampel_db, msg='Unknown T2 unit type',
+					logger=logger, info={'doc': t2_doc}
 				)
 
 				return T2RunState.ERROR
@@ -460,9 +442,8 @@ class T2Processor(AbsRunnable):
 		except Exception as e:
 
 			# Record any uncaught exceptions in troubles collection.
-			LogUtils.report_exception(
-				self._ampel_db, self.logger, tier=2, exc=e,
-				run_id=run_id, info={
+			report_exception(
+				self._ampel_db, logger, exc=e, info={
 					'_id': t2_doc['_id'],
 					'unit': t2_doc['unit'],
 					'config': t2_doc['config'],
@@ -474,12 +455,12 @@ class T2Processor(AbsRunnable):
 
 
 	def _unsupported_result(self,
-		unit_ret: Any, t2_rec: T2Record,
-		sub_rec: T2SubRecord, jrec: JournalRecord
+		unit_ret: Any, t2_rec: T2Record, sub_rec: T2SubRecord,
+		jrec: JournalRecord, logger: AmpelLogger
 	) -> None:
 
 		self._processing_error(
-			t2_rec=t2_rec, sub_rec=sub_rec, jrec=jrec,
+			logger, t2_rec=t2_rec, sub_rec=sub_rec, jrec=jrec,
 			sub_rec_msg='Unit returned invalid content',
 			report_msg='Invalid T2 unit return code',
 			extra={'ret': unit_ret}
@@ -487,8 +468,8 @@ class T2Processor(AbsRunnable):
 
 
 	def _processing_error(self,
-		t2_rec: T2Record, sub_rec: T2SubRecord, jrec: JournalRecord,
-		sub_rec_msg: str, report_msg: Optional[str] = None,
+		logger: AmpelLogger, t2_rec: T2Record, sub_rec: T2SubRecord,
+		jrec: JournalRecord, sub_rec_msg: str, report_msg: Optional[str] = None,
 		extra: Dict[str, Any] = {}, exception: Optional[Exception] = None
 	) -> None:
 		"""
@@ -509,8 +490,8 @@ class T2Processor(AbsRunnable):
 		sub_rec['msg'] = sub_rec_msg
 
 		self.push_t2_update(
-			t2_rec, sub_rec, status = T2RunState.EXCEPTION if exception
-			else T2RunState.ERROR
+			t2_rec, sub_rec, logger,
+			status = T2RunState.EXCEPTION if exception else T2RunState.ERROR
 		)
 
 		info: Dict[str, Any] = {
@@ -521,13 +502,13 @@ class T2Processor(AbsRunnable):
 		}
 
 		if exception:
-			LogUtils.report_exception(
-				self._ampel_db, tier=2, logger=self.logger,
+			report_exception(
+				self._ampel_db, logger=logger,
 				exc=exception, info=info
 			)
 		else:
-			LogUtils.report_error(
-				self._ampel_db, tier=2, logger=self.logger,
+			report_error(
+				self._ampel_db, logger=logger,
 				msg=report_msg if report_msg else '', info=info
 			)
 
@@ -557,12 +538,13 @@ class T2Processor(AbsRunnable):
 
 
 	def push_t2_update(self,
-		rec: T2Record, sub_rec: T2SubRecord, status: int = T2RunState.COMPLETED
+		rec: T2Record, sub_rec: T2SubRecord, logger: AmpelLogger,
+		*, status: int = T2RunState.COMPLETED
 	) -> None:
 		""" Performs DB updates of the T2 doc and stock journal """
 
-		if self.verbose > 0:
-			self.logger.verbose('Saving T2 unit result')
+		if logger.verbose:
+			logger.log(VERBOSE, 'Saving T2 unit result')
 
 		# Update T2 document
 		self.col_t2.update_one(
@@ -574,7 +556,7 @@ class T2Processor(AbsRunnable):
 		)
 
 
-	def get_unit_instance(self, t2_doc: T2Record) -> AbsT2s:
+	def get_unit_instance(self, t2_doc: T2Record, logger: AmpelLogger) -> AbsT2s:
 
 		k = f'{t2_doc["unit"]}_{t2_doc["config"]}'
 
@@ -600,12 +582,13 @@ class T2Processor(AbsRunnable):
 					raise ValueError(f'Unsupported t2 unit (base classes: {bcs})')
 
 			# Create channel (buffering) logger
-			buf_logger = self.context.get_logger(
-				name=k, console_logging=False,
-				level=(LogRecordFlag.T2 | LogRecordFlag.UNIT).__int__()
+			buf_hdlr = DefaultRecordBufferingHandler(level=logger.level)
+			buf_logger = AmpelLogger.get_logger(
+				name = k,
+				base_flag = (getattr(logger, 'base_flag', 0) & ~LogRecordFlag.CORE) | LogRecordFlag.UNIT,
+				console = False,
+				handlers = [buf_hdlr]
 			)
-			buf_hdlr = DefaultRecordBufferingHandler()
-			buf_logger.addHandler(buf_hdlr)
 
 			# Instantiate t2 unit
 			unit_instance = self._loader.new_base_unit(
@@ -618,7 +601,8 @@ class T2Processor(AbsRunnable):
 				sub_type = sub_type
 			)
 
-			setattr(unit_instance, 'buf_hdlr', buf_hdlr)
+			# Shortcut to avoid unit_instance.logger.handlers[?]
+			setattr(unit_instance, '_buf_hdlr', buf_hdlr)
 
 			# Check for possibly defined dependencies
 			if hasattr(unit_instance, 'dependency'):
