@@ -11,7 +11,6 @@ from dataclasses import dataclass
 from typing import Dict, Any, Optional, Literal, Iterable, TYPE_CHECKING
 from ampel.config.AmpelConfig import AmpelConfig
 from ampel.db.AmpelDB import AmpelDB
-from ampel.log.AmpelLogger import AmpelLogger
 
 # Avoid cyclic import issues
 if TYPE_CHECKING:
@@ -132,18 +131,6 @@ class AmpelContext:
 		Note: in the future, this class might hold references to multiple different databases
 		"""
 		return self.db
-
-
-	def get_logger(self, profile: str = 'default', **kwargs) -> AmpelLogger:
-		return AmpelLogger.get_logger(
-			**{**self.config.get(f'logging.AmpelLogger.{profile}', dict, raise_exc=True), **kwargs}
-		)
-
-
-	def get_unique_logger(self, profile: str = 'default', **kwargs) -> AmpelLogger:
-		return AmpelLogger.get_unique_logger(
-			**{**self.config.get(f'logging.AmpelLogger.{profile}', dict, raise_exc=True), **kwargs}
-		)
 
 
 	def __repr__(self) -> str:
