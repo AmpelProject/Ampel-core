@@ -4,13 +4,23 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 03.03.2020
-# Last Modified Date: 28.05.2020
+# Last Modified Date: 12.06.2020
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-from importlib import import_module
 from typing import Dict, Any, Optional
 from ampel.config.collector.AbsDictConfigCollector import AbsDictConfigCollector
 from ampel.config.collector.ConfigCollector import ConfigCollector
+from ampel.log.handlers.AmpelStreamHandler import AmpelStreamHandler
+from ampel.log.handlers.DBLoggingHandler import DBLoggingHandler
+from ampel.db.AmpelDB import AmpelDB
+from ampel.log import VERBOSE
+
+
+class FakeAmpelDB(AmpelDB):
+	def __init__(self, **kwargs):
+		pass
+	def get_collection(self, arg):
+		return None
 
 
 class LoggingCollector(AbsDictConfigCollector):
@@ -23,51 +33,39 @@ class LoggingCollector(AbsDictConfigCollector):
 
 		# validate model
 		if self.verbose:
-			self.logger.verbose("Validating logging configuration")
+			self.logger.log(VERBOSE, "Validating logging configuration")
 
 		try:
 
-			# Loop through logger/handler class names
-			for logger_class, profiles in arg.items():
+			# Loop through logging profiles
+			for profile, config in arg.items():
 
-				# Loop through logging profiles
-				for profile, config in profiles.items():
-
+				if "console" in config:
 					try:
-						UnitClass = getattr(import_module(f"ampel.log.{logger_class}"), logger_class)
-					except Exception:
-						try:
-							UnitClass = getattr(import_module(f"ampel.log.handlers.{logger_class}"), logger_class)
-						except Exception:
-							try: # dict key could also be a FQN
-								UnitClass = getattr(import_module(f"{logger_class}"), logger_class.split('\n')[-1])
-							except Exception:
-								self.error(
-									f"Unknown logger: {logger_class} " +
-									ConfigCollector.distrib_hint(file_name, dist_name)
-								)
-								continue
-
-					try:
-						UnitClass(**config)
+						AmpelStreamHandler(**config['console'])
 					except Exception as e:
 						self.error(
-							f"Incorrect logging configuration for {logger_class}: {config}" +
+							f"Incorrect console logging configuration for: {config['console']} " +
 							ConfigCollector.distrib_hint(file_name, dist_name) +
 							": \n" + str(e)
 						)
 						continue
 
-					if logger_class in self:
-						profiles = self.__getitem__(logger_class)
-					else:
-						profiles = {}
-						self.__setitem__(logger_class, profiles)
+				if "db" in config:
+					try:
+						DBLoggingHandler(FakeAmpelDB(), 12, **config['db'])
+					except Exception as e:
+						self.error(
+							f"Incorrect db logging configuration for: {config['db']} " +
+							ConfigCollector.distrib_hint(file_name, dist_name) +
+							": \n" + str(e)
+						)
+						continue
 
-					if self.verbose:
-						self.logger.verbose(f"Adding logging profile '{profile}' associated with logger {logger_class}")
+				self.__setitem__(profile, config)
 
-					profiles[profile] = config
+				if self.verbose:
+					self.logger.log(VERBOSE, f"Adding logging profile '{profile}'")
 
 		except Exception as e:
 			print(e)
