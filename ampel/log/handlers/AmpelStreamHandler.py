@@ -10,18 +10,17 @@
 import sys, time
 from sys import _getframe
 from os.path import basename
+from time import strftime
 from typing import Literal, Dict, List, Optional
 from ampel.log.LogRecordFlag import LogRecordFlag
 from ampel.log.LighterLogRecord import LighterLogRecord
-from ampel.log.AmpelLogger import AmpelLogger
-from ampel.base.AmpelUnit import AmpelUnit
 from ampel.util.mappings import compare_dict_values
 
 mappings = {'a': 'alert', 'n': 'new'}
 levels = {1: 'DEBUG', 2: 'VERBOSE', 4: 'INFO', 8: 'SHOUT', 16: 'WARNING', 32: 'ERROR'}
 
 # flake8: noqa: E101
-class AmpelStreamHandler(AmpelUnit):
+class AmpelStreamHandler:
 	"""
 	:param int aggregate_interval: logs with similar attributes (log level, ...) are aggregated
 	in one document instead of being split into several documents (spares some index RAM).
@@ -54,35 +53,43 @@ class AmpelStreamHandler(AmpelUnit):
 	Adding T0 base unit: XShooterFilter
 	"""
 
-	std_stream: Literal['stdout', 'stderr'] = 'stdout'
-	datefmt: str = "%Y-%m-%d %H:%M:%S"
-	level: int = LogRecordFlag.SHOUT
-	aggregate_interval: float = 1.
-	density: Literal["default", "compact", "compacter", "headerless"] = "default"
-	terminator: str = '\n'
-	log_sep: str = '\n' # separator between aggregated log entries
-	prefix: Optional[str] = None
-	provenance: bool = True
+	__slots__ = "__dict__", "stream", "prev_record", "timefunc", \
+		"prefix", "provenance", "nl", "aggregate_interval"
 
 
-	def __init__(self, **kwargs) -> None:
+	def __init__(self,
+		std_stream: Literal['stdout', 'stderr'] = 'stdout',
+		datefmt: str = "%Y-%m-%d %H:%M:%S",
+		level: int = LogRecordFlag.INFO,
+		aggregate_interval: float = 1.,
+		density: Literal["default", "compact", "compacter", "headerless"] = "default",
+		terminator: str = '\n',
+		log_sep: str = '\n', # separator between aggregated log entries
+		prefix: Optional[str] = None,
+		provenance: bool = True
+	) -> None:
 
-		super().__init__(**kwargs) # type: ignore[call-arg]
+		self.aggregate_interval = aggregate_interval
 		self.dummy_record = LighterLogRecord(name='dummy', levelno=1<<10, msg=None)
 		self.prev_record: LighterLogRecord = self.dummy_record
-		self.nl = self.terminator
-		self.nlsp = self.nl + ' ' # newline space
-		self.stream = getattr(sys, self.std_stream)
-		self.timefunc = time.strftime
+		self.datefmt = datefmt
+		self.prefix = prefix
+		self.level = level
+		self.nl = terminator
+		self.log_sep = log_sep
+		self.provenance = provenance
+		self.stream = getattr(sys, std_stream)
 
-		if self.density == "default":
+		if density == "default":
 			self.fields_check = ['extra', 'stock', 'channel', 'filename', 'levelno']
-		elif self.density == "compact":
+		elif density == "compact":
 			self.fields_check = ['extra', 'stock', 'channel', 'levelno']
-		elif self.density == "compacter":
+		elif density == "compacter":
 			self.log_sep = ''
 			self.fields_check = ['extra', 'stock', 'channel']
-			self.handle = getattr(self, f"handle_compacter") # type: ignore
+			self.handle = getattr(self, f"handle_compacter") # type: ignore[assignment]
+		elif density == "headerless":
+			self.handle = getattr(self, f"handle_headerless") # type: ignore[assignment]
 
 
 	def handle(self, rec: LighterLogRecord) -> None:
@@ -116,15 +123,18 @@ class AmpelStreamHandler(AmpelUnit):
 
 
 	def handle_headerless(self, rec: LighterLogRecord) -> None:
-		if rec.msg == None:
-			return
-		self.stream.write(rec.msg)
-		self.stream.write(self.terminator)
+		if rec.msg:
+			self.stream.write(rec.msg)
+		if rec.extra:
+			if rec.msg:
+				self.stream.write(f" ")
+			self.stream.write(str(rec.extra))
+		self.stream.write(self.nl)
 
 
 	def format(self, record: LighterLogRecord) -> str:
 
-		out = self.timefunc(self.datefmt)
+		out = strftime(self.datefmt)
 		lvl = record.levelno
 
 		if self.prefix:
@@ -138,6 +148,7 @@ class AmpelStreamHandler(AmpelUnit):
 
 		if self.provenance and record.filename:
 			if record.filename[0] == '<': # ipython
+				print(lvl)
 				out += f' {record.filename} {levels[lvl >> 8]}'
 			else:
 				out += f' {record.filename[:-3]}:{record.lineno} {levels[lvl >> 8]}'
@@ -164,3 +175,7 @@ class AmpelStreamHandler(AmpelUnit):
 			return out + "\n " + record.msg.replace("\n", "\n ") # type: ignore[union-attr]
 
 		return out
+
+
+	def flush(self) -> None:
+		self.stream.flush()

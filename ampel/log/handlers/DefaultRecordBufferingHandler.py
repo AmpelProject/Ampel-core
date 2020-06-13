@@ -7,11 +7,9 @@
 # Last Modified Date: 05.05.2020
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-from logging import Handler, Logger
-from typing import Union, Optional, Dict
-from ampel.log.AmpelLogger import AmpelLogger
-from ampel.abstract.AbsLoggingHandler import AbsLoggingHandler
+from typing import Optional, Dict
 from ampel.log.handlers.RecordBufferingHandler import RecordBufferingHandler
+from ampel.log.handlers.LoggingHandlerProtocol import LoggingHandlerProtocol
 from ampel.type import StockId, ChannelId
 
 
@@ -21,7 +19,7 @@ class DefaultRecordBufferingHandler(RecordBufferingHandler):
 	"""
 
 	def forward(self,
-		target: Union[AmpelLogger, Logger, AbsLoggingHandler, Handler],
+		target: LoggingHandlerProtocol,
 		channel: Optional[ChannelId] = None,
 		stock: Optional[StockId] = None,
 		extra: Optional[Dict] = None,
@@ -32,6 +30,9 @@ class DefaultRecordBufferingHandler(RecordBufferingHandler):
 		Clears the internal record buffer.
 		"""
 		for rec in self.buffer:
+
+			if rec.levelno < target.level:
+				continue
 
 			if channel:
 				rec.channel = channel # type: ignore[union-attr]
@@ -48,5 +49,5 @@ class DefaultRecordBufferingHandler(RecordBufferingHandler):
 			target.handle(rec) # type: ignore
 
 		if clear:
-			self.buffer = []
+			self.buffer.clear()
 			self.has_error = False

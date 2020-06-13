@@ -15,8 +15,6 @@ from pymongo.errors import BulkWriteError
 from ampel.db.AmpelDB import AmpelDB
 from ampel.util.mappings import compare_dict_values
 from ampel.log.LighterLogRecord import LighterLogRecord
-from ampel.log.AmpelLogger import AmpelLogger
-from ampel.log.LogUtils import LogUtils
 from ampel.log.AmpelLoggingError import AmpelLoggingError
 from ampel.log.LogRecordFlag import LogRecordFlag
 
@@ -52,8 +50,8 @@ class DBLoggingHandler:
 	def __init__(self,
 		ampel_db: AmpelDB,
 		run_id: int,
+		level: int,
 		col_name: str = "logs",
-		level: int = LogRecordFlag.DEBUG,
 		aggregate_interval: float = 1,
 		expand_extra: bool = True,
 		flush_len: int = 1000,
@@ -88,7 +86,6 @@ class DBLoggingHandler:
 		self.col = ampel_db.get_collection(col_name)
 
 		# Set loggingHandler properties
-		#self.setLevel(level)
 		self.level = level
 
 		# ObjectID middle: 3 bytes machine + 2 bytes encoding the last 4 digits of run_id (unique)
@@ -196,11 +193,6 @@ class DBLoggingHandler:
 		return self.run_id
 
 
-	def purge(self) -> None:
-		self.log_dicts = []
-		self.prev_record = None
-
-
 	def check_flush(self) -> None:
 		if len(self.log_dicts) > self.flush_len:
 			self.flush()
@@ -250,6 +242,7 @@ class DBLoggingHandler:
 
 		try:
 
+			from ampel.log.utils import get_tier_from_log_flags, convert_dollars, log_exception
 			raise_exc = False
 
 			for err_dict in bwe.details.get('writeErrors', []):
@@ -278,7 +271,7 @@ class DBLoggingHandler:
 
 						self._ampel_db.get_collection('troubles').insert_one(
 							{
-								'tier': LogUtils.get_tier_from_log_flags(db_rec['f']),
+								'tier': get_tier_from_log_flags(db_rec['f']),
 								'location': 'DBLoggingHandler',
 								'msg': "OID collision occured between two different log entries",
 								'ownLogEntry': str(err_dict['op']),
@@ -294,7 +287,7 @@ class DBLoggingHandler:
 						{
 							'location': 'DBLoggingHandler',
 							'msg': "non-E11000 writeError occured",
-							'errorDict': LogUtils.convert_dollars(err_dict)
+							'errorDict': convert_dollars(err_dict)
 						}
 					)
 
@@ -313,8 +306,9 @@ class DBLoggingHandler:
 					}
 				)
 			except Exception as another_exc:
-				LogUtils.log_exception(
-					AmpelLogger.get_unique_logger(),
+				from ampel.log.AmpelLogger import AmpelLogger
+				log_exception(
+					AmpelLogger.get_logger(),
 					another_exc
 				)
 

@@ -7,7 +7,6 @@
 # Last Modified Date: 05.05.2020
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-from logging import Logger, Handler
 from typing import Union, Optional, Dict
 from ampel.log.handlers.RecordBufferingHandler import RecordBufferingHandler
 from ampel.log.handlers.LoggingHandlerProtocol import LoggingHandlerProtocol
@@ -29,13 +28,13 @@ class ChanRecordBufHandler(RecordBufferingHandler):
 
 	__slots__ = '_channel',
 
-	def __init__(self, channel: ChannelId) -> None:
-		super().__init__()
+	def __init__(self, level: int, channel: ChannelId) -> None:
+		super().__init__(level)
 		self._channel = channel
 
 
 	def forward(self,
-		target: Union[Logger, Handler, LoggingHandlerProtocol],
+		target: Union[LoggingHandlerProtocol],
 		stock: StockId,
 		extra: Optional[Dict] = None,
 		clear: bool = True
@@ -46,17 +45,19 @@ class ChanRecordBufHandler(RecordBufferingHandler):
 		"""
 		for rec in self.buffer:
 
-			rec.channel = self._channel # type: ignore[union-attr]
-			rec.stock = stock # type: ignore[union-attr]
+			if rec.levelno >= target.level:
 
-			if extra:
-				if 'extra' in rec.__dict__:
-					rec.extra = {**rec.extra, **extra} # type: ignore
-				else:
-					rec.extra = extra # type: ignore
+				rec.channel = self._channel # type: ignore[union-attr]
+				rec.stock = stock # type: ignore[union-attr]
 
-			target.handle(rec) # type: ignore
+				if extra:
+					if 'extra' in rec.__dict__:
+						rec.extra = {**rec.extra, **extra} # type: ignore
+					else:
+						rec.extra = extra # type: ignore
+
+				target.handle(rec) # type: ignore
 
 		if clear:
-			self.buffer = []
+			self.buffer.clear()
 			self.has_error = False

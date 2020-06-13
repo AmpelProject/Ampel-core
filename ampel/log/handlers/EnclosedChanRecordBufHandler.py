@@ -19,8 +19,8 @@ class EnclosedChanRecordBufHandler(RecordBufferingHandler):
 	__slots__ = '_channel', '_empty_msg'
 
 
-	def __init__(self, channel: ChannelId) -> None:
-		super().__init__()
+	def __init__(self, level: int, channel: ChannelId) -> None:
+		super().__init__(level)
 		self._channel = channel
 		self._empty_msg = {'c': channel}
 
@@ -37,21 +37,23 @@ class EnclosedChanRecordBufHandler(RecordBufferingHandler):
 		"""
 		for rec in self.buffer:
 
-			if rec.msg:
-				rec.msg = {'t': rec.msg, 'c': self._channel}
-			else:
-				rec.msg = self._empty_msg
+			if rec.levelno >= target.level:
 
-			rec.stock = stock # type: ignore
-
-			if extra:
-				if 'extra' in rec.__dict__:
-					rec.extra = {**rec.extra, **extra} # type: ignore
+				if rec.msg:
+					rec.msg = {'t': rec.msg, 'c': self._channel}
 				else:
-					rec.extra = extra # type: ignore
+					rec.msg = self._empty_msg
 
-			target.handle(rec) # type: ignore
+				rec.stock = stock # type: ignore
+
+				if extra:
+					if 'extra' in rec.__dict__:
+						rec.extra = {**rec.extra, **extra} # type: ignore
+					else:
+						rec.extra = extra # type: ignore
+
+				target.handle(rec) # type: ignore
 
 		if clear:
-			self.buffer = []
+			self.buffer.clear()
 			self.has_error = False
