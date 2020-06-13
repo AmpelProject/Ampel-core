@@ -4,12 +4,12 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 06.10.2019
-# Last Modified Date: 07.04.2020
+# Last Modified Date: 12.06.2020
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import schedule as sched
 from pydantic import validator
-from typing import Sequence, Optional, Literal, Union, Dict, Any
+from typing import Sequence, Optional, Literal
 from ampel.model.AmpelStrictModel import AmpelStrictModel
 from ampel.type import ChannelId
 from ampel.model.UnitModel import UnitModel
@@ -27,7 +27,7 @@ class ProcessModel(AmpelStrictModel):
 	source: Optional[str]
 	isolate: bool = True
 	multiplier: int = 1
-	logger: Optional[Union[str, Dict[str, Any]]]
+	log: Optional[str]
 	controller: UnitModel = UnitModel(unit='DefaultProcessController')
 	processor: UnitModel
 
