@@ -1,20 +1,24 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-core/ampel/logging/AmpelLogger.py
+# File              : Ampel-core/ampel/log/AmpelLogger.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 27.09.2018
-# Last Modified Date: 23.04.2020
+# Last Modified Date: 11.06.2020
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import logging, sys, traceback
 from sys import _getframe
 from os.path import basename
-from typing import Dict, Optional, Union, Any, ClassVar, List
+from typing import Dict, Optional, Union, Any, List
 from ampel.type import ChannelId, StockId
+from ampel.core.AmpelContext import AmpelContext
 from ampel.log.LighterLogRecord import LighterLogRecord
 from ampel.log.LogRecordFlag import LogRecordFlag
-from ampel.base.AmpelUnit import AmpelUnit
+from ampel.log.handlers.LoggingHandlerProtocol import LoggingHandlerProtocol
+from ampel.log.handlers.AmpelStreamHandler import AmpelStreamHandler
+from ampel.log.handlers.DBLoggingHandler import DBLoggingHandler
+
 
 ERROR = LogRecordFlag.ERROR
 WARNING = LogRecordFlag.WARNING
@@ -24,58 +28,30 @@ VERBOSE = LogRecordFlag.VERBOSE
 DEBUG = LogRecordFlag.DEBUG
 
 
-class AmpelLogger(AmpelUnit):
+class AmpelLogger:
 
-	loggers: ClassVar[Dict[Union[int, str], 'AmpelLogger']] = {}
-	_counter: ClassVar[int] = 0
-
-	level: int = 0 # type: ignore
-	name: Union[int, str] = 0
-	channel: Optional[Union[ChannelId, List[ChannelId]]] = None
-	console_logging: bool = True
-
-	# See AmpelStreamHandler annotations for more details
-	console_options: Optional[Dict[str, Any]] = None
+	loggers: Dict[Union[int, str], 'AmpelLogger'] = {}
+	_counter: int = 0
+	verbose: int = 0
 
 
 	@classmethod
-	def get_unique_logger(cls, **kwargs) -> 'AmpelLogger':
-		"""
-		:returns: a new instance of :obj:`AmpelLogger <ampel.log.AmpelLogger>` for each call.
-		Please check method :func:`_new_logger <ampel.log.AmpelLogger._new_logger>`
-		for more info regarding the returned logger.
-		:param dict ``**kwargs``: passed to :obj:`AmpelLogger <ampel.log.AmpelLogger>`
-		Note: The created logger is not referenced by internal static dict 'loggers',
-		meaning once it is not longer used/internally referenced, it will be garbage collected.
-
-		Typical use:\n
-		.. sourcecode:: python\n
-			logger = AmpelLogger.get_unique_logger()
-		"""
-		cls._counter += 1
-		return AmpelLogger(name=cls._counter, **kwargs)
-
-
-	@staticmethod
-	def get_logger(name: Union[int, str] = 0, force_refresh: bool = False, **kwargs) -> 'AmpelLogger':
+	def get_logger(cls, name: Optional[Union[int, str]] = None, force_refresh: bool = False, **kwargs) -> 'AmpelLogger':
 		"""
 		Creates or returns an instance of :obj:`AmpelLogger <ampel.log.AmpelLogger>`
-		that is registered in static dict :func:`loggers <ampel.log.AmpelLogger.loggers>`
-		using the provided name.
+		that is registered in static dict 'loggers' using the provided name as key.
 		If a logger with the given name already exists, the existing logger instance is returned.
-		This method calls :func:`_new_logger <ampel.log.AmpelLogger._new_logger>`
-		with the provided logger *name* (default: *Ampel*).
-		Please check :func:`_new_logger <ampel.log.AmpelLogger._new_logger>`
-		for more info regarding the returned logger.
-
-		:param name: logger name
-		:param ``**kwargs``: passed to :func:`_new_logger <al.AmpelLogger._new_logger>`
-		:returns: :obj:`AmpelLogger <ampel.log.AmpelLogger>` instance
+		If name is None, unique (int) name will be generated
+		:param ``**kwargs``: passed to constructor
 
 		Typical use:\n
 		.. sourcecode:: python\n
 			logger = AmpelLogger.get_logger()
 		"""
+
+		if not name:
+			cls._counter += 1
+			name = cls._counter
 
 		if name not in AmpelLogger.loggers or force_refresh:
 			AmpelLogger.loggers[name] = AmpelLogger(name=name, **kwargs)
@@ -83,35 +59,110 @@ class AmpelLogger(AmpelUnit):
 		return AmpelLogger.loggers[name]
 
 
-	def __init__(self, **kwargs):
+	@staticmethod
+	def from_profile(context: AmpelContext, profile: str, run_id: Optional[int] = None, **kwargs) -> 'AmpelLogger':
 
-		AmpelUnit.__init__(self, **kwargs)
+		handlers = context.config.get(f'logging.{profile}', dict, raise_exc=True)
+		logger = AmpelLogger.get_logger(console=False, **kwargs)
+
+		if "db" in handlers:
+
+			if run_id is None:
+				raise ValueError("Parameter 'run_id' is required when log_profile requires db logging handler")
+
+			logger.add_handler(
+				DBLoggingHandler(context.db, run_id, **handlers['db'])
+			)
+
+		if "console" in handlers:
+			logger.add_handler(
+				AmpelStreamHandler(**handlers['console'])
+			)
+
+		return logger
+
+
+	@staticmethod
+	def get_console_level(context: AmpelContext, profile: str) -> Optional[int]:
+
+		handlers = context.config.get(f'logging.{profile}', dict, raise_exc=True)
+
+		if "console" in handlers:
+			if 'level' in handlers['console']:
+				return handlers['console']['level']
+			return LogRecordFlag.INFO.__int__()
+
+		return None
+
+
+	@classmethod
+	def has_verbose_console(cls, context: AmpelContext, profile: str) -> bool:
+
+		if lvl := cls.get_console_level(context, profile):
+			return lvl < INFO
+		return False
+
+
+	def __init__(self,
+		name: Union[int, str] = 0,
+		base_flag: Optional[LogRecordFlag] = None,
+		handlers: Optional[List[LoggingHandlerProtocol]] = None,
+		channel: Optional[Union[ChannelId, List[ChannelId]]] = None,
+		# See AmpelStreamHandler annotations for more details
+		console: Optional[Union[bool, Dict[str, Any]]] = True
+	) -> None:
+
+		self.name = name
+		self.base_flag = base_flag.__int__() if base_flag else 0
+		self.handlers = handlers or []
+		self.channel = channel
+		self.level = 0
 		self.fname = _getframe().f_code.co_filename
-		self.handlers = []
 
-		if self.console_logging:
-			self._add_stream_handler(self.console_options)
+		if console:
+			self.add_handler(
+				AmpelStreamHandler() if console is True else AmpelStreamHandler(console) # type: ignore
+			)
 		else:
 			self.provenance = False
 
+		self._auto_level()
 
-	def _add_stream_handler(self, options: Optional[Dict] = None) -> None:
 
-		from ampel.log.handlers.AmpelStreamHandler import AmpelStreamHandler
-		sh = AmpelStreamHandler(**(options or {}))
-		if options is None or 'level' not in options:
-			sh.level = self.level
-		self.handlers.append(sh)
-		if sh.provenance:
+	def _auto_level(self):
+
+		self.level = min([h.level for h in self.handlers]) if self.handlers else 0
+		if self.level < INFO:
+			self.verbose = 2 if self.level < VERBOSE else 1
+		else:
+			if self.verbose != 0:
+				self.verbose = 0
+
+
+	def add_handler(self, handler: LoggingHandlerProtocol) -> None:
+
+		if handler.level < self.level:
+			self.level = handler.level
+
+		if isinstance(handler, AmpelStreamHandler) and handler.provenance:
 			self.provenance = True
 
+		if self.level < INFO:
+			self.verbose = 2 if self.level < VERBOSE else 1
 
-	def addHandler(self, handler: Any) -> None:
 		self.handlers.append(handler)
 
 
-	def removeHandler(self, handler: Any) -> None:
+	def remove_handler(self, handler: LoggingHandlerProtocol) -> None:
 		self.handlers.remove(handler)
+		self._auto_level()
+
+
+	def get_db_logging_handler(self) -> Optional[DBLoggingHandler]:
+		for el in self.handlers:
+			if isinstance(el, DBLoggingHandler):
+				return el
+		return None
 
 
 	def error(self, msg: Union[str, Dict[str, Any]], *args,
@@ -130,20 +181,8 @@ class AmpelLogger(AmpelUnit):
 		extra: Optional[Dict[str, Any]] = None,
 		**kwargs
 	):
-		self.log(WARNING, msg, *args, channel=channel or self.channel, stock=stock, extra=extra)
-
-
-	def shout(self, msg: Union[str, Dict[str, Any]], *args,
-		channel: Optional[Union[ChannelId, List[ChannelId]]] = None,
-		stock: Optional[StockId] = None,
-		extra: Optional[Dict[str, Any]] = None,
-		**kwargs
-	):
-		"""
-		log custom msg with log level SHOUT (21) that should make its way \
-		through the StreamHandler (even quietened)
-		"""
-		self.log(SHOUT, msg, *args, channel=channel or self.channel, stock=stock, extra=extra)
+		if self.level <= WARNING:
+			self.log(WARNING, msg, *args, channel=channel or self.channel, stock=stock, extra=extra)
 
 
 	def info(self, msg: Optional[Union[str, Dict[str, Any]]], *args,
@@ -152,16 +191,8 @@ class AmpelLogger(AmpelUnit):
 		extra: Optional[Dict[str, Any]] = None,
 		**kwargs
 	) -> None:
-		self.log(INFO, msg, *args, channel=channel or self.channel, stock=stock, extra=extra)
-
-
-	def verbose(self, msg: Optional[Union[str, Dict[str, Any]]], *args,
-		channel: Optional[Union[ChannelId, List[ChannelId]]] = None,
-		stock: Optional[StockId] = None,
-		extra: Optional[Dict[str, Any]] = None,
-		**kwargs
-	):
-		self.log(VERBOSE, msg, *args, channel=channel or self.channel, stock=stock, extra=extra)
+		if self.level <= INFO:
+			self.log(INFO, msg, *args, channel=channel or self.channel, stock=stock, extra=extra)
 
 
 	def debug(self, msg: Optional[Union[str, Dict[str, Any]]], *args,
@@ -170,13 +201,19 @@ class AmpelLogger(AmpelUnit):
 		extra: Optional[Dict[str, Any]] = None,
 		**kwargs
 	):
-		self.log(DEBUG, msg, *args, channel=channel or self.channel, stock=stock, extra=extra)
+		if self.level <= DEBUG:
+			self.log(DEBUG, msg, *args, channel=channel or self.channel, stock=stock, extra=extra)
 
 
 	def handle(self, record: Union[LighterLogRecord, logging.LogRecord]) -> None:
 		for h in self.handlers:
 			if record.levelno >= h.level:
 				h.handle(record)
+
+
+	def flush(self) -> None:
+		for h in self.handlers:
+			h.flush()
 
 
 	def log(self,
@@ -191,7 +228,7 @@ class AmpelLogger(AmpelUnit):
 		if args and isinstance(msg, str):
 			msg = msg % args
 
-		record = LighterLogRecord(name=self.name, levelno=lvl ^ self.level, msg=msg)
+		record = LighterLogRecord(name=self.name, levelno=lvl | self.base_flag, msg=msg)
 
 		if lvl > WARNING or self.provenance:
 			frame = _getframe(1) # logger.log(...) was called directly
@@ -206,8 +243,8 @@ class AmpelLogger(AmpelUnit):
 		if stock:
 			record.stock = stock
 
-		if channel:
-			record.channel = channel
+		if channel or self.channel:
+			record.channel = channel or self.channel
 
 		if exc_info:
 
