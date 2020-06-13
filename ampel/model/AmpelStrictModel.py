@@ -31,6 +31,7 @@ class AmpelStrictModel(BaseModel):
 		arbitrary_types_allowed = True
 		allow_population_by_field_name = True
 		validate_all = True
+		extra = Extra.forbid
 
 
 	def __init__(self, **kwargs) -> None:
