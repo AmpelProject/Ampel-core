@@ -4,15 +4,15 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 06.03.2020
-# Last Modified Date: 10.03.2020
+# Last Modified Date: 10.06.2020
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from typing import Dict, Any, Optional, Union, List
-from ampel.model.DataUnitModel import DataUnitModel
+from ampel.model.UnitModel import UnitModel
 
-class T2UnitIngestionModel(DataUnitModel):
+class T2UnitIngestionModel(UnitModel):
 	"""
-	DataUnitModel defines 'resource'
+	UnitModel defines 'resource'
 	"""
 	ingest: Optional[Dict[str, Any]]
 	group: Union[int, List[int]]
