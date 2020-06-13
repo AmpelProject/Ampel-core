@@ -10,15 +10,20 @@
 		"admin": [
 			"ampel.ingest.PointT2Ingester",
 			"ampel.t3.T3DefaultProcessor",
+			"ampel.t3.context.T3AddLastRunTime",
+			"ampel.t3.context.T3AddAlertsNumber",
+			"ampel.t3.load.T3DataLoader",
 			"ampel.t3.load.T3LatestStateDataLoader",
-			"ampel.t3.select.T3DefaultStockSelector"
+			"ampel.t3.select.T3DefaultStockSelector",
+			"ampel.t3.run.T3DefaultUnitRunner"
 		],
 		"base": [
 			"ampel.test.unit.DemoPointT2Unit",
 			"ampel.test.unit.DemoFirstPointT2Unit"
 		],
 		"aux": [
-			"ampel.utils.filter.SimpleDictArrayFilter",
+			"ampel.util.filter.SimpleDictArrayFilter",
+			"ampel.t3.run.project.T3ChannelProjector",
 			"ampel.t3.run.filter.SnapDataArrayFilter"
 		]
 	},
