@@ -8,7 +8,7 @@
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import json
-from typing import Optional, Dict, Any, Callable, Type, Tuple, Literal
+from typing import Optional, Dict, Any, Type, Tuple, Literal
 from ampel.log.AmpelLogger import AmpelLogger
 
 from ampel.config.collector.ConfigCollector import ConfigCollector
@@ -42,7 +42,6 @@ class FirstPassConfig(dict):
 	def __init__(self, logger: AmpelLogger = None, verbose: bool = False) -> None:
 
 		self.logger = AmpelLogger.get_logger() if logger is None else logger
-		self.log: Callable = self.logger.verbose if verbose else self.logger.info # type: ignore
 
 		d: Dict[str, Any] = {
 			k: Klass(conf_section=k, logger=logger, verbose=verbose)
@@ -86,31 +85,27 @@ class FirstPassConfig(dict):
 				self.unset_errors(v)
 
 
-	def has_nested_error(self, d=None) -> bool:
-		""" """
+	def has_nested_error(self, d=None, k=None) -> bool:
+
 		ret = False
 
-		for v in d.values() if d is not None else self.values():
-			if isinstance(v, dict):
-				if getattr(v, 'has_error', False):
+		for kk, dd in d.items() if d is not None else self.items():
+			if isinstance(dd, dict):
+				if getattr(dd, 'has_error', False):
 					ret = True
-					if hasattr(v, 'tier'):
-						self.log(
-							f"{v.tier} {v.__class__.__name__} has errors" # type: ignore
-						)
-					else:
-						self.log(f"{v} has errors")
-				if self.has_nested_error(v):
+					hint = f"(key: '{kk}')" if kk else ""
+					self.logger.warn(f"{dd.__class__.__name__} {hint} has errors")
+				if self.has_nested_error(dd, kk):
 					ret = True
 
 		return ret
 
 
 	def print(self) -> None:
-		""" """
+
 		if self.has_nested_error():
-			self.log(
+			self.logger.warn(
 				"Warning: error were reported while collecting configurations"
 			)
 
-		self.log(json.dumps(self, indent=4))
+		self.logger.info(json.dumps(self, indent=4))
