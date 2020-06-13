@@ -17,7 +17,7 @@ from typing import Dict, List, Any, Union, Callable, Optional, Iterable
 
 from ampel.type import AmpelMainCol
 from ampel.core.Schedulable import Schedulable
-from ampel.log.LogUtils import LogUtils
+from ampel.log.utils import report_exception, report_error, convert_dollars
 from ampel.log.AmpelLogger import AmpelLogger
 from ampel.db.AmpelDB import AmpelDB, intcol
 
@@ -347,11 +347,11 @@ class DBUpdatesBuffer(Schedulable):
 
 						# Try to insert doc into trouble collection (raises no exception)
 						# Possible exception will be logged out to console in any case
-						LogUtils.report_error(
-							self._ampel_db, tier=0, msg="BulkWriteError entry details",
+						report_error(
+							self._ampel_db, msg="BulkWriteError entry details",
 							logger=self.logger, info={
 								'run': self.run_id,
-								'err': LogUtils.convert_dollars(err_dict)
+								'err': convert_dollars(err_dict)
 							}
 						)
 
@@ -372,17 +372,11 @@ class DBUpdatesBuffer(Schedulable):
 
 			except Exception as ee:
 				# Log exc and try to insert doc into trouble collection (raises no exception)
-				LogUtils.report_exception(
-					self._ampel_db, self.logger, tier=0,
-					exc=ee, run_id=self.run_id
-				)
+				report_exception(self._ampel_db, self.logger, exc=ee)
 
 		except Exception as e:
 			# Log exc and try to insert doc into trouble collection (raises no exception)
-			LogUtils.report_exception(
-				self._ampel_db, self.logger, tier=0,
-				exc=e, run_id=self.run_id
-			)
+			report_exception(self._ampel_db, self.logger, exc=e)
 
 		print(f"Collection {col_name} update failed")
 		print(db_ops)

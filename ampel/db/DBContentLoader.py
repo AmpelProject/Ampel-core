@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 13.01.2018
-# Last Modified Date: 06.06.2020
+# Last Modified Date: 13.06.2020
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from bson.codec_options import CodecOptions
@@ -16,7 +16,7 @@ from ampel.model.operator.AllOf import AllOf
 from ampel.model.operator.OneOf import OneOf
 from ampel.model.t3.LoaderDirective import LoaderDirective
 from ampel.db.FrozenValuesDict import FrozenValuesDict
-from ampel.log.LogUtils import LogUtils
+from ampel.log.utils import safe_query_dict
 from ampel.log.AmpelLogger import AmpelLogger
 from ampel.query.QueryUtils import QueryUtils
 from ampel.t3.SnapData import SnapData
@@ -78,12 +78,12 @@ class DBContentLoader(AbsAdminUnit):
 			if directive.query_complement:
 				query = {**directive.query_complement, **query}
 
-			if self.verbose > 1: # log query parameters
+			if logger.verbose > 1: # log query parameters
 				logger.debug(
 					None, extra={
 						'col': directive.col,
 						'stock': list(register.keys()),
-						'query': LogUtils.safe_query_dict(query, dict_key=None)
+						'query': safe_query_dict(query, dict_key=None)
 					}
 				)
 
@@ -150,7 +150,7 @@ class DBContentLoader(AbsAdminUnit):
 				)
 
 
-		if self.verbose:
+		if logger.verbose:
 			s = f"Unique ids: {len(register)}"
 			for col in (col_set - set(["stock"])):
 				s += f", {col}: "

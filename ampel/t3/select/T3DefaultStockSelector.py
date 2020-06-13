@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 06.12.2019
-# Last Modified Date: 17.02.2020
+# Last Modified Date: 13.06.2020
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from pydantic import validator
@@ -13,8 +13,8 @@ from typing import Union, Optional
 
 from ampel.type import ChannelId, Tag
 from ampel.query.QueryMatchStock import QueryMatchStock
-from ampel.log.LogUtils import LogUtils
 from ampel.log.AmpelLogger import AmpelLogger
+from ampel.log.utils import safe_query_dict
 from ampel.t3.select.AbsStockSelector import AbsStockSelector
 from ampel.model.operator.AllOf import AllOf
 from ampel.model.operator.AnyOf import AnyOf
@@ -76,10 +76,7 @@ class T3DefaultStockSelector(AbsStockSelector):
 			without_tags = self.without_tags
 		)
 
-		self.logger.info(
-			"Executing search query",
-			extra=LogUtils.safe_query_dict(match_query)
-		)
+		self.logger.info("Executing search query", extra=safe_query_dict(match_query))
 
 		# Execute 'find transients' query
 		cursor = self.context.db \
