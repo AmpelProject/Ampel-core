@@ -14,20 +14,20 @@ from pymongo.operations import UpdateMany, UpdateOne
 from typing import List, Any, Optional, Sequence, Union, Dict, Literal, get_args
 
 from ampel.db.AmpelDB import AmpelDB
-from ampel.log.LogUtils import LogUtils
-from ampel.log.AmpelLogger import AmpelLogger
-from ampel.content.JournalRecord import JournalRecord
-from ampel.struct.JournalExtra import JournalExtra
 from ampel.type import ChannelId, Tag, StockId
+from ampel.log import AmpelLogger, VERBOSE
+from ampel.log.utils import report_exception
+from ampel.struct.JournalExtra import JournalExtra
+from ampel.content.JournalRecord import JournalRecord
 
-tag_type = get_args(Tag)
-chan_type = get_args(ChannelId)
+tag_type = get_args(Tag) # type: ignore[misc]
+chan_type = get_args(ChannelId) # type: ignore[misc]
 
 class JournalUpdater:
 
 	def __init__(self,
-		ampel_db: AmpelDB, tier: Literal[0, 1, 2, 3], run_id: int, process_name: str,
-		logger: AmpelLogger, verbose: int = 0, raise_exc: bool = False,
+		ampel_db: AmpelDB, tier: Literal[0, 1, 2, 3], run_id: int,
+		process_name: str, logger: AmpelLogger, raise_exc: bool = False,
 		extra_tag: Optional[Union[Tag, Sequence[Tag]]] = None
 	) -> None:
 		"""
@@ -42,7 +42,6 @@ class JournalUpdater:
 		self.process_name = process_name
 		self.extra_tag = extra_tag
 		self.logger = logger
-		self.verbose = verbose
 		self.reset()
 
 
@@ -150,14 +149,16 @@ class JournalUpdater:
 
 		try:
 
-			if self.verbose > 1:
+			if self.logger.verbose > 1:
 				for el in jupds:
-					self.logger.verbose(f"Journal update: {str(el)}")
+					self.logger.log(VERBOSE, f"Journal update: {str(el)}")
 
 			self.col_stock.bulk_write(jupds)
 
-			if self.verbose:
-				self.logger.verbose(f"{len(jupds)} journal entries inserted")
+			if self.logger.verbose:
+				self.logger.log(VERBOSE,
+					f"{len(jupds)} journal entr{'ies' if len(jupds) > 1 else 'y'} inserted"
+				)
 
 		except Exception as e:
 
@@ -176,10 +177,7 @@ class JournalUpdater:
 				info['BulkWriteError'] = str(e.details)
 
 			# Populate troubles collection
-			LogUtils.report_exception(
-				self._ampel_db, self.logger, tier=self.tier,
-				exc=e, run_id=self.run_id, info=info
-			)
+			report_exception(self._ampel_db, self.logger, exc=e, info=info)
 
 
 	@staticmethod
