@@ -7,13 +7,10 @@
 # Last Modified Date: 15.09.2018
 # Last Modified By  : jvs
 
-from ampel.abc import abstractmethod
-from ampel.abc.AmpelABC import AmpelABC
+from ampel.base import abstractmethod, AmpelABC
 
 class AbsTargetSource(AmpelABC, abstract=True):
-	"""
-	Provides target fields for follow-up searches
-	"""
+	""" Provides target fields for follow-up searches """
 
 	@abstractmethod
 	async def get_targets(self):
