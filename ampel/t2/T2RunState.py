@@ -27,3 +27,4 @@ class T2RunState(IntEnum):
 	UNKNOWN_LINK         = -9
 	UNKNOWN_CONFIG       = -10
 	MISSING_DEPENDENCY   = -11
+	MISSING_INFO         = -12
