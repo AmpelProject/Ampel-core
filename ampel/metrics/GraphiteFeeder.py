@@ -11,7 +11,7 @@ import socket
 from typing import Dict, Any
 from urllib.parse import urlparse
 from graphitesend import GraphiteClient
-from ampel.utils.mappings import flatten_dict
+from ampel.util.mappings import flatten_dict
 
 
 class GraphiteFeeder:
