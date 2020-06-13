@@ -9,8 +9,13 @@
 
 import json
 from typing import Dict, Any
-from ampel.log.AmpelLogger import AmpelLogger
+from importlib import import_module
+from pydantic import create_model
+from ampel.log.AmpelLogger import AmpelLogger, VERBOSE
+from ampel.model.AmpelStrictModel import AmpelStrictModel
 from ampel.model.ProcessModel import ProcessModel
+from ampel.abstract.AbsDataUnit import AbsDataUnit
+from ampel.abstract.AbsPointT2Unit import AbsPointT2Unit
 from ampel.util.mappings import walk_and_process_dict
 
 
@@ -32,9 +37,7 @@ class ProcessMorpher:
 
 
 	def get(self) -> Dict[str, Any]:
-		"""
-		:raises: Error if the morphed process does not comply with ProcessModel
-		"""
+		""" :raises: Error if the morphed process does not comply with ProcessModel """
 		return ProcessModel(**self.process).dict()
 
 
@@ -58,7 +61,7 @@ class ProcessMorpher:
 
 			if self.verbose:
 				action = 'Modifying' if 'channel' in select['config'] else 'Adding'
-				self.logger.verbose(
+				self.logger.log(VERBOSE,
 					f'{action} channel selection criteria ({chan_name}) '
 					f'for process {self.process["name"]}'
 				)
@@ -78,7 +81,7 @@ class ProcessMorpher:
 		if 'template' in self.process:
 
 			if self.verbose:
-				self.logger.verbose(
+				self.logger.log(VERBOSE,
 					f'Applying template {self.process["template"]} '
 					f'to process {self.process["name"]} '
 					f'from distribution {self.process["distrib"]}'
@@ -141,22 +144,48 @@ class ProcessMorpher:
 				raise ValueError(f'Illegal unit definition: {t2}')
 
 			rc = t2.get('config', None)
+			t2_unit_name = t2['unit']
+
+			if t2_unit_name not in out_config['unit']['base']:
+				raise ValueError(f"Unknown T2 unit: {t2_unit_name}")
 
 			if not rc:
 				continue
 
 			# alias
 			if isinstance(rc, str):
-				if (rc not in out_config['alias']['t2']):
+				if rc not in out_config['alias']['t2']:
 					raise ValueError(
 						f'Unknown T2 config alias ({rc}) defined in process {self.process["name"]}'
 					)
 				rc = out_config['alias']['t2'][rc]
 
 			if isinstance(rc, dict):
-				override = t2.get('override', None)
-				if override:
+
+				if override := t2.get('override', None):
 					rc = {**rc, **override}
+
+				if fqn := out_config['unit']['base'][t2_unit_name].get('fqn'):
+
+					T2Unit = getattr(import_module(fqn), fqn.split('.')[-1])
+					excl: Any = AbsDataUnit._annots.keys()
+					if issubclass(T2Unit, AbsPointT2Unit):
+						excl = list(excl) + ["ingest"]
+					model = create_model(
+						t2_unit_name, __config__ = AmpelStrictModel.__config__,
+						**{k: (v, T2Unit._defaults[k] if k in T2Unit._defaults else ...)
+						for k, v in T2Unit._annots.items() if k not in excl} # type: ignore
+					)
+
+					rc = model(**rc).dict()
+
+				else:
+					self.logger.warn(
+						f"T2 unit {t2_unit_name} not installed locally. "
+						f"Building *unsafe* conf dict hash: "
+						f"changes in unit defaults between releases will go undetected"
+					)
+
 				# out_config['confid'] is an instance of T02ConfigCollector
 				t2['config'] = out_config['confid'].add(rc)
 				continue
@@ -196,4 +225,4 @@ class ProcessMorpher:
 			d[k] = scoped_alias
 
 			if self.verbose:
-				self.logger.verbose(f'Alias "{v}" renamed into "{scoped_alias}"')
+				self.logger.log(VERBOSE, f'Alias "{v}" renamed into "{scoped_alias}"')
