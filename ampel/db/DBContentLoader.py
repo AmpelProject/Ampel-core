@@ -19,7 +19,7 @@ from ampel.db.FrozenValuesDict import FrozenValuesDict
 from ampel.log.utils import safe_query_dict
 from ampel.log.AmpelLogger import AmpelLogger
 from ampel.query.QueryUtils import QueryUtils
-from ampel.t3.SnapData import SnapData
+from ampel.core.AmpelBuffer import AmpelBuffer
 from ampel.util.collections import ampel_iter, to_set
 from ampel.abstract.AbsAdminUnit import AbsAdminUnit
 
@@ -36,7 +36,7 @@ class DBContentLoader(AbsAdminUnit):
 		directives: Iterable[LoaderDirective],
 		channels: Union[None, ChannelId, AllOf[ChannelId], AnyOf[ChannelId], OneOf[ChannelId]] = None,
 		codec_options = freeze_codec_options
-	) -> Iterable[SnapData]:
+	) -> Iterable[AmpelBuffer]:
 		"""
 		:param channels: None means all channels are considered (no criterium).
 		:param directives: see LoaderDirective docstrings for more information.  Notes:
@@ -57,8 +57,8 @@ class DBContentLoader(AbsAdminUnit):
 
 		# Note: the following operation will consume
 		# stock_ids if it is an Iterator/Cursor
-		register: Dict[StockId, SnapData] = {
-			stock_id: SnapData(
+		register: Dict[StockId, AmpelBuffer] = {
+			stock_id: AmpelBuffer(
 				id = stock_id,
 				t0 = [] if "t0" in col_set else None,
 				t1 = [] if "t1" in col_set else None,
@@ -163,8 +163,8 @@ class DBContentLoader(AbsAdminUnit):
 	@staticmethod
 	def import_journal(tran_data, journal_entries, channels_set, logger):
 		"""
-		:param tran_data: instance of SnapData
-		:type tran_data: :py:class:`SnapData <ampel.t3.SnapData>`
+		:param tran_data: instance of AmpelBuffer
+		:type tran_data: :py:class:`AmpelBuffer <ampel.core.AmpelBuffer>`
 		:param list(Dict) journal_entries:
 		:param channels_set:
 		:type channels_set: set(str), str
