@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-core/ampel/model/AmpelStrictModel.py
+# File              : Ampel-core/ampel/model/StrictModel.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 30.09.2018
@@ -11,9 +11,9 @@ from pydantic import BaseModel, BaseConfig, Extra
 from typing import Any, Dict
 from ampel.config.AmpelConfig import AmpelConfig
 
-class AmpelStrictModel(BaseModel):
+class StrictModel(BaseModel):
 	"""
-	In []: class A(AmpelStrictModel):
+	In []: class A(StrictModel):
 		...:     a: int
 		...:     b: Optional[str]
 		...:     c: Optional[int] = 12
