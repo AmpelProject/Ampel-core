@@ -8,10 +8,10 @@
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from typing import Dict, Any
-from ampel.model.AmpelStrictModel import AmpelStrictModel
+from ampel.model.StrictModel import StrictModel
 from ampel.util.mappings import flatten_dict, unflatten_dict
 
-class ProcessTemplate(AmpelStrictModel):
+class ProcessTemplate(StrictModel):
 
 	tier: int
 	template: str

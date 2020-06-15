@@ -11,12 +11,12 @@ from pydantic import validator
 from typing import Any, List, Dict
 from ampel.model.legacy.TranModel import TranModel
 from ampel.model.legacy.BaseT3Process import BaseT3Process
-from ampel.model.AmpelStrictModel import AmpelStrictModel
+from ampel.model.StrictModel import StrictModel
 from ampel.util.docstringutils import gendocstring
 
 
 @gendocstring
-class TaskData(AmpelStrictModel):
+class TaskData(StrictModel):
 	"""
 	Example:
 	"""

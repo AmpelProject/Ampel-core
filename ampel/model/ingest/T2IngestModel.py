@@ -8,9 +8,9 @@
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from typing import Any, Dict, List, Union, Optional
-from ampel.model.AmpelStrictModel import AmpelStrictModel
+from ampel.model.StrictModel import StrictModel
 
-class T2IngestModel(AmpelStrictModel):
+class T2IngestModel(StrictModel):
 
 	unit: str
 	config: Optional[int]

@@ -9,12 +9,12 @@
 
 from typing import Optional
 from ampel.util.docstringutils import gendocstring
-from ampel.model.AmpelStrictModel import AmpelStrictModel
+from ampel.model.StrictModel import StrictModel
 from ampel.model.legacy.SelectModel import SelectModel
 from ampel.model.legacy.ContentModel import ContentModel
 
 @gendocstring
-class TranModel(AmpelStrictModel):
+class TranModel(StrictModel):
 	""" 
 	"""
 	select: SelectModel = None

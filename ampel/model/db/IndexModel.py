@@ -8,10 +8,10 @@
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from typing import List, Optional, Dict
-from ampel.model.AmpelStrictModel import AmpelStrictModel
+from ampel.model.StrictModel import StrictModel
 from ampel.model.db.FieldModel import FieldModel
 
-class IndexModel(AmpelStrictModel):
+class IndexModel(StrictModel):
 
 	index: List[FieldModel]
 	args: Optional[Dict]

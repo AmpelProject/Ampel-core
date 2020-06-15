@@ -8,10 +8,10 @@
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from typing import Optional, Dict, Any
-from ampel.model.AmpelStrictModel import AmpelStrictModel
+from ampel.model.StrictModel import StrictModel
 from ampel.model.db.FieldModel import FieldModel
 
-class ShortIndexModel(AmpelStrictModel):
+class ShortIndexModel(StrictModel):
 
 	field: str
 	args: Optional[Dict]

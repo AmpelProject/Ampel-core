@@ -8,12 +8,12 @@
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from typing import Union, Dict, Optional, Literal
-from ampel.model.AmpelStrictModel import AmpelStrictModel
+from ampel.model.StrictModel import StrictModel
 from ampel.query.QueryEventsCol import QueryEventsCol
 from ampel.db.AmpelDB import AmpelDB
 
 
-class TimeLastRunModel(AmpelStrictModel):
+class TimeLastRunModel(StrictModel):
 
 	match_type: Literal['time_last_run']
 	process_name: str

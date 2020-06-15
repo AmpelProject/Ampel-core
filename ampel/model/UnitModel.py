@@ -8,11 +8,11 @@
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from typing import Dict, Optional, Any, Union, Type
-from ampel.base.AmpelUnit import AmpelUnit
-from ampel.model.AmpelStrictModel import AmpelStrictModel
+from ampel.base.AmpelModel import AmpelModel
+from ampel.model.StrictModel import StrictModel
 
 
-class UnitModel(AmpelStrictModel):
+class UnitModel(StrictModel):
 	"""
 	:param config:
 	- None: no config
@@ -23,7 +23,7 @@ class UnitModel(AmpelStrictModel):
 	:param override: allows the override of selected config keys
 	"""
 
-	unit: Union[str, Type[AmpelUnit]]
+	unit: Union[str, Type[AmpelModel]]
 	config: Optional[Union[int, str, Dict[str, Any]]]
 	override: Optional[Dict[str, Any]]
 

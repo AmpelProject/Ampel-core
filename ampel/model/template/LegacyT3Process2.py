@@ -10,11 +10,11 @@
 from typing import List, Dict, Any
 from ampel.model.legacy.BaseT3Process import BaseT3Process
 from ampel.util.docstringutils import gendocstring
-from ampel.model.AmpelStrictModel import AmpelStrictModel
+from ampel.model.StrictModel import StrictModel
 
 
 @gendocstring
-class TaskData(AmpelStrictModel):
+class TaskData(StrictModel):
 	"""
 	Example:
 	"""

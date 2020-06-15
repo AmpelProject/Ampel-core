@@ -10,13 +10,13 @@
 import schedule as sched
 from pydantic import validator
 from typing import Sequence, Optional, Literal
-from ampel.model.AmpelStrictModel import AmpelStrictModel
+from ampel.model.StrictModel import StrictModel
 from ampel.type import ChannelId
 from ampel.model.UnitModel import UnitModel
 from ampel.config.ScheduleEvaluator import ScheduleEvaluator
 
 
-class ProcessModel(AmpelStrictModel):
+class ProcessModel(StrictModel):
 
 	name: str
 	active: bool = True

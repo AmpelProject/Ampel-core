@@ -12,10 +12,10 @@ from pydantic import validator
 from ampel.type import strict_iterable
 from ampel.util.collections import check_seq_inner_type
 from ampel.util.docstringutils import gendocstring
-from ampel.model.AmpelStrictModel import AmpelStrictModel
+from ampel.model.StrictModel import StrictModel
 
 @gendocstring
-class QueryMatchModel(AmpelStrictModel):
+class QueryMatchModel(StrictModel):
 	"""
 
 	Note: If logic parameter is a string or a simple list,

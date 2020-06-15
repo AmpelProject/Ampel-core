@@ -8,10 +8,10 @@
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from typing import Union, List, Optional, Dict, Any
-from ampel.model.AmpelStrictModel import AmpelStrictModel
+from ampel.model.StrictModel import StrictModel
 
 
-class ChannelModel(AmpelStrictModel):
+class ChannelModel(StrictModel):
 
 	channel: Union[int, str]
 	active: bool = True

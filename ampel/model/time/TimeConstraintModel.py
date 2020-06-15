@@ -13,10 +13,10 @@ from ampel.model.time.TimeLastRunModel import TimeLastRunModel
 from ampel.model.time.TimeStringModel import TimeStringModel
 from ampel.model.time.UnixTimeModel import UnixTimeModel
 from ampel.model.time.QueryTimeModel import QueryTimeModel
-from ampel.model.AmpelStrictModel import AmpelStrictModel
+from ampel.model.StrictModel import StrictModel
 
 
-class TimeConstraintModel(AmpelStrictModel):
+class TimeConstraintModel(StrictModel):
 	"""
 	example1:
 

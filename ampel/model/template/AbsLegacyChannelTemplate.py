@@ -157,7 +157,7 @@ class AbsLegacyChannelTemplate(AbsChannelTemplate, abstract=True):
 			el.dict(skip_defaults=True, by_alias=True)
 			for el in self.t2_compute
 			if any(
-				unit in first_pass_config['unit']['base'][el.unit]['abc']
+				unit in first_pass_config['unit']['base'][el.unit]['base']
 				for unit in abs_unit
 			)
 		]

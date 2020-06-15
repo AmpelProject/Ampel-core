@@ -7,8 +7,8 @@
 # Last Modified Date: 13.04.2020
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-from ampel.model.AmpelStrictModel import AmpelStrictModel
+from ampel.model.StrictModel import StrictModel
 
-class MongoClientRoleModel(AmpelStrictModel):
+class MongoClientRoleModel(StrictModel):
 	r: str
 	w: str

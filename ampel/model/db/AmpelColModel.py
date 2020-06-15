@@ -10,10 +10,10 @@
 from typing import List, Optional, Dict, Union
 from ampel.model.db.IndexModel import IndexModel
 from ampel.model.db.ShortIndexModel import ShortIndexModel
-from ampel.model.AmpelStrictModel import AmpelStrictModel
+from ampel.model.StrictModel import StrictModel
 
 
-class AmpelColModel(AmpelStrictModel):
+class AmpelColModel(StrictModel):
 	name: str
 	indexes: Optional[List[Union[ShortIndexModel, IndexModel]]]
 	args: Optional[Dict]

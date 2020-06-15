@@ -10,9 +10,9 @@
 from typing import Sequence
 from ampel.model.db.AmpelColModel import AmpelColModel
 from ampel.model.db.MongoClientRoleModel import MongoClientRoleModel
-from ampel.model.AmpelStrictModel import AmpelStrictModel
+from ampel.model.StrictModel import StrictModel
 
-class AmpelDBModel(AmpelStrictModel):
+class AmpelDBModel(StrictModel):
 	name: str
 	collections: Sequence[AmpelColModel]
 	role: MongoClientRoleModel

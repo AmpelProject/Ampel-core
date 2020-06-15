@@ -14,7 +14,7 @@ from enum import IntEnum
 from ampel.type import strict_iterable
 from ampel.util.collections import check_seq_inner_type, ampel_iter
 from ampel.util.docstringutils import gendocstring
-from ampel.model.AmpelStrictModel import AmpelStrictModel
+from ampel.model.StrictModel import StrictModel
 #from ampel.flags.AlDocType import AlDocType
 
 
@@ -35,7 +35,7 @@ class AlDocType(IntEnum):
 
 
 @gendocstring
-class ContentModel(AmpelStrictModel):
+class ContentModel(StrictModel):
 	"""
 	Example:
 

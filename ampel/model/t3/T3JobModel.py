@@ -18,7 +18,7 @@ from ampel.type import strict_iterable
 from ampel.util.AmpelUtils import AmpelUtils
 from ampel.util.docstringutils import gendocstring
 
-from ampel.model.AmpelStrictModel import AmpelStrictModel
+from ampel.model.StrictModel import StrictModel
 from ampel.model.t3.T3TaskModel import T3TaskModel
 from ampel.model.t3.StockModel import StockModel
 from ampel.model.t3.SelectModel import SelectModel
@@ -32,7 +32,7 @@ from ampel.config.ScheduleEvaluator import ScheduleEvaluator
 
 
 @gendocstring
-class T3JobModel(AmpelStrictModel):
+class T3JobModel(StrictModel):
 	"""
 	Possible 'schedule' values (https://schedule.readthedocs.io/en/stable/):
 	"every(10).minutes"
@@ -41,7 +41,7 @@ class T3JobModel(AmpelStrictModel):
 	"every().monday"
 	"every().wednesday.at("13:15")"
 
-	Note: Use `T3JobModel.be_verbose()` if you want feedback
+	Note: Use `T3JobModel.be_log(VERBOSE, )` if you want feedback
 	"""
 	job: str
 	active: bool = True
@@ -52,9 +52,9 @@ class T3JobModel(AmpelStrictModel):
 
 
 	@staticmethod
-	def be_verbose():
+	def be_log(VERBOSE, ):
 		""" """
-		T3JobModel.logger = AmpelLogger.get_unique_logger()
+		T3JobModel.logger = AmpelLogger.get_logger()
 
 
 	@validator('transients', 'tasks', 'schedule', pre=True, whole=True)

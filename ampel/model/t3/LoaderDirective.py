@@ -14,7 +14,7 @@ from ampel.content.DataPoint import DataPoint
 from ampel.content.Compound import Compound
 from ampel.content.T2Record import T2Record
 from ampel.content.LogRecord import LogRecord
-from ampel.model.AmpelStrictModel import AmpelStrictModel
+from ampel.model.StrictModel import StrictModel
 
 models = {
 	"stock": StockRecord,
@@ -24,18 +24,18 @@ models = {
 	"logs": LogRecord
 }
 
-class LoaderDirective(AmpelStrictModel):
+class LoaderDirective(StrictModel):
 
 	col: Literal["stock", "t0", "t1", "t2", "logs"]
 	model: Optional[Type] # TypedDict
 	query_complement: Optional[Dict[str, Any]]
 	options: Optional[Dict[str, Any]]
 
-	@validator('model')
-	def validate(cls, v):
-		if not hasattr(v, "__annotations__"):
-			raise ValueError("TypedDict expected for parameter 'model'")
-		return v
+	#@validator('model')
+	#def validate(cls, v):
+	#	if not hasattr(v, "__annotations__"):
+	#		raise ValueError("TypedDict expected for parameter 'model'")
+	#	return v
 
 	@root_validator
 	def _set_defaults(cls, values):

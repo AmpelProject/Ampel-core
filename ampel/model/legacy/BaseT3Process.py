@@ -9,11 +9,11 @@
 
 from typing import List, Optional
 from pydantic import validator
-from ampel.model.AmpelStrictModel import AmpelStrictModel
+from ampel.model.StrictModel import StrictModel
 from ampel.model.legacy.TranModel import TranModel
 
 
-class BaseT3Process(AmpelStrictModel):
+class BaseT3Process(StrictModel):
 
 	schedule: List[str]
 	tier: int

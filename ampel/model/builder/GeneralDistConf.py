@@ -9,14 +9,14 @@
 
 from typing import List, Dict, Any, Optional, Union
 from pydantic import validator
-from ampel.model.AmpelStrictModel import AmpelStrictModel
+from ampel.model.StrictModel import StrictModel
 from ampel.model.ProcessModel import ProcessModel
 from ampel.model.builder.BuilderAliasModel import BuilderAliasModel
 from ampel.model.builder.ChanT3Process1 import ChanT3Process1
 from ampel.model.builder.ChanT3Process3 import ChanT3Process3
 
 
-class ModelGeneralDistConf(AmpelStrictModel):
+class ModelGeneralDistConf(StrictModel):
 
 	channel: Optional[List[Dict[str, Any]]]
 	unit: Optional[List[str]]

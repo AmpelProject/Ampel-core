@@ -11,13 +11,13 @@ from pydantic import validator
 from typing import Union, Optional, List
 from ampel.type import ChannelId
 from ampel.model.UnitModel import UnitModel
-from ampel.model.AmpelStrictModel import AmpelStrictModel
+from ampel.model.StrictModel import StrictModel
 from ampel.model.ingest.T0AddModel import T0AddModel
 from ampel.model.ingest.T1CombineModel import T1CombineModel
 from ampel.model.ingest.T2ComputeModel import T2ComputeModel
 
 
-class IngestionDirective(AmpelStrictModel):
+class IngestionDirective(StrictModel):
 
 	channel: ChannelId
 	t0_add: T0AddModel

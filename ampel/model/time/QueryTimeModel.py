@@ -9,10 +9,10 @@
 
 from pydantic import Field
 from typing import Union, Optional, Dict, Any
-from ampel.model.AmpelStrictModel import AmpelStrictModel
+from ampel.model.StrictModel import StrictModel
 
 
-class QueryTimeModel(AmpelStrictModel):
+class QueryTimeModel(StrictModel):
 	"""
 	Standardized parameter for the class QueryMatchStock
 	"""

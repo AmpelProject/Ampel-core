@@ -11,13 +11,13 @@ import schedule as sched
 from pydantic import validator
 from typing import Dict, Union, List, Optional
 from ampel.util.docstringutils import gendocstring
-from ampel.model.AmpelStrictModel import AmpelStrictModel
+from ampel.model.StrictModel import StrictModel
 from ampel.config.ScheduleEvaluator import ScheduleEvaluator
 from ampel.model.legacy.stock.StockModel import StockModel
 from ampel.model.UnitModel import UnitModel
 
 @gendocstring
-class T3TaskModel(AmpelStrictModel):
+class T3TaskModel(StrictModel):
 	"""
 	Example:
 	"""
