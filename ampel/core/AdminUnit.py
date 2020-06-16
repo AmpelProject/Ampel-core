@@ -1,17 +1,23 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-core/ampel/abstract/AbsAdminUnit.py
+# File              : Ampel-core/ampel/core/AdminUnit.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 07.10.2019
-# Last Modified Date: 16.05.2020
+# Last Modified Date: 15.06.2020
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-from ampel.base import AmpelABC, AmpelUnit
+from ampel.base.AmpelABC import AmpelABC
+from ampel.base.AmpelBaseModel import AmpelBaseModel
 from ampel.core.AmpelContext import AmpelContext
 
 
-class AbsAdminUnit(AmpelABC, AmpelUnit, abstract=True):
-	""" Top level abstract class containing a handle to an AmpelContext instance """
+class AdminUnit(AmpelABC, AmpelBaseModel, abstract=True):
+	"""
+	Top level abstract class receiving a reference to
+	an AmpelContext instance as constructor parameter
+	"""
 
-	context: AmpelContext
+	def __init__(self, context: AmpelContext, **kwargs):
+		self.context = context
+		AmpelBaseModel.__init__(self, **kwargs)
