@@ -52,8 +52,8 @@ class T2Processor(AbsRunnable):
 	:param gc_collect: whether to actively perform garbage collection between processing of T2 docs
 
 	:param log_profile: See AbsRunnable docstring
-	:param db_logging_handler_kwargs: See AbsRunnable docstring
-	:param log_flag: See AbsRunnable docstring
+	:param log_db_handler_kwargs: See AbsRunnable docstring
+	:param log_base_flag: See AbsRunnable docstring
 	:param raise_exc: See AbsRunnable docstring (default False)
 	"""
 
@@ -106,7 +106,7 @@ class T2Processor(AbsRunnable):
 			'class': self.__class__.__name__,
 			't2_units': self.t2_units,
 			'run_state': self.run_state,
-			'log_flag': self.log_flag.__int__(),
+			'log_base_flag': self.log_base_flag.__int__(),
 			'doc_limit': self.doc_limit
 		}
 
@@ -145,7 +145,7 @@ class T2Processor(AbsRunnable):
 
 		logger = AmpelLogger.from_profile(
 			self.context, self.log_profile, run_id,
-			base_flag = LogRecordFlag.T2 | LogRecordFlag.CORE | self.log_flag
+			base_flag = LogRecordFlag.T2 | LogRecordFlag.CORE | self.log_base_flag
 		)
 
 		if self.send_beacon:
@@ -395,7 +395,7 @@ class T2Processor(AbsRunnable):
 								'stock': t2_doc['stock'],
 								'channel': {'$in': t2_doc['channel']},
 								'link': t2_doc[
-									'stock' if 'AbsStockT2Unit' in t2_info['abc'] # type: ignore
+									'stock' if 'AbsStockT2Unit' in t2_info['base'] # type: ignore
 									else 'link'
 								]
 							}
@@ -571,7 +571,7 @@ class T2Processor(AbsRunnable):
 				else:
 					raise ValueError('Unsupported t2 unit type')
 			else:
-				bcs = self.context.config.get(f"unit.base.{t2_doc['unit']}.abc", (list, tuple)) # type: ignore
+				bcs = self.context.config.get(f"unit.base.{t2_doc['unit']}.base", (list, tuple)) # type: ignore
 				if bcs is None:
 					raise ValueError(f'Unknown t2 unit: {t2_doc["unit"]}')
 				if "AbsStateT2Unit" in bcs:
