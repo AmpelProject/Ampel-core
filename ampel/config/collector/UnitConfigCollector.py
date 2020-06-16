@@ -11,14 +11,14 @@ import re, importlib
 from typing import List, Union, Dict, Optional, Any
 from ampel.util.collections import ampel_iter
 from ampel.util.crypto import b2_short_hash
-from ampel.model.AmpelStrictModel import AmpelStrictModel
+from ampel.model.StrictModel import StrictModel
 from ampel.config.collector.AbsListConfigCollector import AbsListConfigCollector
 from ampel.log import VERBOSE
 
 
-class UnitDefinitionModel(AmpelStrictModel):
+class RemoteUnitDefinition(StrictModel):
 	class_name: str
-	abc: List[str]
+	base: List[str]
 
 
 class UnitConfigCollector(AbsListConfigCollector):
@@ -38,14 +38,14 @@ class UnitConfigCollector(AbsListConfigCollector):
 					class_name = self.get_class_name(el)
 					entry: Dict[str, Any] = {
 						'fqn': el,
-						'abc': self.get_abstract_classes(el, class_name),
+						'base': self.get_mro(el, class_name),
 						'distrib': dist_name,
 						'file': file_name
 					}
 
 				elif isinstance(el, dict):
 					try:
-						d = UnitDefinitionModel(**el)
+						d = RemoteUnitDefinition(**el)
 					except Exception:
 						self.error(
 							'Unsupported unit definition (dict)' +
@@ -55,7 +55,7 @@ class UnitConfigCollector(AbsListConfigCollector):
 
 					class_name = d.class_name
 					entry = {
-						'abc': d.abc,
+						'base': d.base,
 						'distrib': dist_name,
 						'file': file_name
 					}
@@ -77,31 +77,29 @@ class UnitConfigCollector(AbsListConfigCollector):
 					)
 					continue
 
-				# Auxiliary and core units do not need to inherit a super class
-				if not ('aux' in self.conf_section or 'core' in self.conf_section):
-					if not any(el in entry['abc'] for el in ['AbsDataUnit', 'AbsAdminUnit', 'AbsControllerUnit']):
-						self.logger.info(
-							f'Unrecognized abstract class for {self.conf_section} {class_name} ' +
-							self.distrib_hint(file_name, dist_name)
-						)
-						return
+				if "AmpelBaseModel" not in entry['base']:
+					self.logger.info(
+						f'Unrecognized base class for {self.conf_section} {class_name} ' +
+						self.distrib_hint(file_name, dist_name)
+					)
+					return
 
 				if self.conf_section == "admin unit":
-					if "AbsAdminUnit" not in entry['abc']:
-						raise ValueError(f"AbsAdminUnit missing for admin unit {entry}")
-					entry['abc'].remove("AbsAdminUnit")
+					if "AdminUnit" not in entry['base']:
+						raise ValueError(f"AdminUnit missing for admin unit {entry}")
+					entry['base'].remove("AdminUnit")
 
 				elif self.conf_section == "base unit":
 
 					# Hash class name of T2 units
-					for el in entry['abc']:
+					for el in entry['base']:
 						if 'T2Unit' in el:
 							entry['hash'] = b2_short_hash(class_name)
 							break
 
-					if "AbsDataUnit" not in entry['abc']:
-						raise ValueError(f"AbsDataUnit missing for base unit {entry}")
-					entry['abc'].remove("AbsDataUnit")
+					if "DataUnit" not in entry['base']:
+						raise ValueError(f"DataUnit missing for base unit {entry}")
+					entry['base'].remove("DataUnit")
 
 				if self.verbose:
 					self.logger.log(VERBOSE,
@@ -134,7 +132,7 @@ class UnitConfigCollector(AbsListConfigCollector):
 
 
 	@staticmethod
-	def get_abstract_classes(module_fqn: str, class_name: str) -> List[str]:
+	def get_mro(module_fqn: str, class_name: str) -> List[str]:
 		"""
 		:param module_fqn: fully qualified name of module
 		:param class_name: declared class name in the module specified by "module_fqn"
@@ -150,5 +148,5 @@ class UnitConfigCollector(AbsListConfigCollector):
 		return [
 			UnitConfigCollector.get_class_name(el.__name__)
 			for el in UnitClass.__mro__[1:-1]
-			if 'Abs' in el.__name__
+			if 'ampel' in el.__module__
 		]
