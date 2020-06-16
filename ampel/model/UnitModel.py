@@ -8,7 +8,7 @@
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from typing import Dict, Optional, Any, Union, Type
-from ampel.base.AmpelModel import AmpelModel
+from ampel.base.AmpelBaseModel import AmpelBaseModel
 from ampel.model.StrictModel import StrictModel
 
 
@@ -23,7 +23,7 @@ class UnitModel(StrictModel):
 	:param override: allows the override of selected config keys
 	"""
 
-	unit: Union[str, Type[AmpelModel]]
+	unit: Union[str, Type[AmpelBaseModel]]
 	config: Optional[Union[int, str, Dict[str, Any]]]
 	override: Optional[Dict[str, Any]]
 

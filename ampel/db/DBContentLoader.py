@@ -21,13 +21,13 @@ from ampel.log.AmpelLogger import AmpelLogger
 from ampel.query.QueryUtils import QueryUtils
 from ampel.core.AmpelBuffer import AmpelBuffer
 from ampel.util.collections import ampel_iter, to_set
-from ampel.abstract.AbsAdminUnit import AbsAdminUnit
+from ampel.core.AdminUnit import AdminUnit
 
 freeze_codec_options = CodecOptions(
 	document_class=FrozenValuesDict
 )
 
-class DBContentLoader(AbsAdminUnit):
+class DBContentLoader(AdminUnit):
 
 	logger: Optional[AmpelLogger]
 
