@@ -42,10 +42,7 @@ class Graphite(ResourceURI):
 
 		return GraphiteFeeder(config)
 
-class SlackToken(Resource):
-
-	name = "slack"
-
+class Token(Resource):
 	class BuildValue(argparse.Action):
 		def __call__(self, parser, namespace, values, option_string):
 			parts = option_string.strip('-').split('-')
@@ -85,3 +82,11 @@ class SlackToken(Resource):
 	def parse_args(cls, args):
 		key = cls.name+'_tokens'
 		return cls.render_tokens(getattr(args, key))
+
+class SlackToken(Token):
+
+	name = "slack"
+
+class DropboxToken(Token):
+
+	name = "dropbox"
