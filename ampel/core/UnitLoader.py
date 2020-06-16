@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 07.10.2019
-# Last Modified Date: 07.05.2020
+# Last Modified Date: 15.06.2020
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from importlib import import_module
@@ -15,17 +15,17 @@ from typing import ( # type: ignore[attr-defined]
 
 from ampel.util.collections import ampel_iter
 from ampel.util.mappings import flatten_dict, unflatten_dict
-from ampel.base.AmpelUnit import AmpelUnit
+from ampel.base.AmpelBaseModel import AmpelBaseModel
+from ampel.base.DataUnit import DataUnit
 from ampel.core.AmpelContext import AmpelContext
 from ampel.model.UnitModel import UnitModel
 from ampel.config.AmpelConfig import AmpelConfig
 from ampel.log.AmpelLogger import AmpelLogger
-from ampel.abstract.AbsDataUnit import AbsDataUnit
-from ampel.abstract.AbsAdminUnit import AbsAdminUnit
+from ampel.core.AdminUnit import AdminUnit
 
-T = TypeVar('T', bound=AmpelUnit)
-BT = TypeVar('BT', bound=AbsDataUnit)
-PT = TypeVar('PT', bound=AbsAdminUnit)
+T = TypeVar('T', bound=AmpelBaseModel)
+BT = TypeVar('BT', bound=DataUnit)
+PT = TypeVar('PT', bound=AdminUnit)
 
 
 # flake8: noqa: E704
@@ -130,16 +130,16 @@ class UnitLoader:
 	@overload
 	def get_class_by_name(self, name: str, unit_type: Type[T]) -> Type[T]: ...
 	@overload
-	def get_class_by_name(self, name: str, unit_type: None = ...) -> Type[AmpelUnit]: ...
+	def get_class_by_name(self, name: str, unit_type: None = ...) -> Type[AmpelBaseModel]: ...
 
-	def get_class_by_name(self, name: str, unit_type: Optional[Type[T]] = None) -> Union[Type[T], Type[AmpelUnit]]:
+	def get_class_by_name(self, name: str, unit_type: Optional[Type[T]] = None) -> Union[Type[T], Type[AmpelBaseModel]]:
 		"""
 		Matches the parameter 'name' with the unit definitions defined in the ampel_config.
 		This allows to retrieve the corresponding fully qualified name of the class and to load it.
 
 		:param unit_type:
-		- AbsDataUnit or any sublcass of AbsDataUnit
-		- AbsAdminUnit or any sublcass of AbsAdminUnit
+		- DataUnit or any sublcass of DataUnit
+		- AdminUnit or any sublcass of AdminUnit
 		- If None, FQN will be retrieved from the auxiliary class conf entries and returned object will have Type[Any]
 
 		:raises: ValueError if unit cannot be found or loaded or if parent class is unrecognized
@@ -165,9 +165,9 @@ class UnitLoader:
 	@overload
 	def new(self, unit_model: UnitModel, *, unit_type: Type[T], **kwargs) -> T: ...
 	@overload
-	def new(self, unit_model: UnitModel, *, unit_type: None = ..., **kwargs) -> AmpelUnit: ...
+	def new(self, unit_model: UnitModel, *, unit_type: None = ..., **kwargs) -> AmpelBaseModel: ...
 
-	def new(self, unit_model: UnitModel, *, unit_type: Optional[Type[T]] = None, **kwargs) -> Union[T, AmpelUnit]:
+	def new(self, unit_model: UnitModel, *, unit_type: Optional[Type[T]] = None, **kwargs) -> Union[T, AmpelBaseModel]:
 		"""
 		Instantiate new object based on provided model and kwargs.
 		:param 'unit_type': performs isinstance check and raise error on mismatch. Enables mypy/other static checks.
@@ -190,11 +190,11 @@ class UnitLoader:
 	@overload
 	def new_base_unit(self, unit_model: UnitModel, logger: AmpelLogger, *, sub_type: Type[BT], **kwargs) -> BT: ...
 	@overload
-	def new_base_unit(self, unit_model: UnitModel, logger: AmpelLogger, *, sub_type: None = ..., **kwargs) -> AbsDataUnit: ...
+	def new_base_unit(self, unit_model: UnitModel, logger: AmpelLogger, *, sub_type: None = ..., **kwargs) -> DataUnit: ...
 
 	def new_base_unit(self,
 		unit_model: UnitModel, logger: AmpelLogger, *, sub_type: Optional[Type[BT]] = None, **kwargs
-	) -> Union[BT, AbsDataUnit]:
+	) -> Union[BT, DataUnit]:
 		"""
 		Base units require logger and resource as init parameters, additionaly to the potentialy
 		defined custom parameters which will be provided as a union of the model config
@@ -202,8 +202,8 @@ class UnitLoader:
 		:raises: ValueError is the unit defined in the model is unknown
 		"""
 
-		if sub_type is None or not issubclass(get_origin(sub_type) or sub_type, AbsDataUnit):
-			sub_type = cast(Type[BT], AbsDataUnit) # remove cast when mypy gets smarter
+		if sub_type is None or not issubclass(get_origin(sub_type) or sub_type, DataUnit):
+			sub_type = cast(Type[BT], DataUnit) # remove cast when mypy gets smarter
 
 		return self.new(
 			unit_model, unit_type=sub_type, logger=logger, resource=self.get_resources(unit_model),
@@ -214,11 +214,11 @@ class UnitLoader:
 	@overload
 	def new_admin_unit(self, unit_model: UnitModel, context: AmpelContext, *, sub_type: Type[PT], **kwargs) -> PT: ...
 	@overload
-	def new_admin_unit(self, unit_model: UnitModel, context: AmpelContext, *, sub_type: None = ..., **kwargs) -> AbsAdminUnit: ...
+	def new_admin_unit(self, unit_model: UnitModel, context: AmpelContext, *, sub_type: None = ..., **kwargs) -> AdminUnit: ...
 
 	def new_admin_unit(self,
 		unit_model: UnitModel, context: AmpelContext, *, sub_type: Optional[Type[PT]] = None, **kwargs
-	) -> Union[AbsAdminUnit, PT]:
+	) -> Union[AdminUnit, PT]:
 		"""
 		Processor units require a context as init parameters, additionaly to the potentialy
 		defined custom parameters which will be provided as a union of the model config
@@ -226,8 +226,8 @@ class UnitLoader:
 		:raises: ValueError is the unit defined in the model is unknown
 		"""
 
-		if sub_type is None or not issubclass(get_origin(sub_type) or sub_type, AbsAdminUnit):
-			sub_type = cast(Type[PT], AbsAdminUnit) # remove cast when mypy gets smarter
+		if sub_type is None or not issubclass(get_origin(sub_type) or sub_type, AdminUnit):
+			sub_type = cast(Type[PT], AdminUnit) # remove cast when mypy gets smarter
 
 		return self.new(
 			unit_model, unit_type=sub_type, context=context,
@@ -240,12 +240,12 @@ class UnitLoader:
 	def new_aux_unit(unit_model: UnitModel, *, sub_type: Type[T], **kwargs) -> T: ...
 	@overload
 	@staticmethod
-	def new_aux_unit(unit_model: UnitModel, *, sub_type: None = ..., **kwargs) -> AmpelUnit: ...
+	def new_aux_unit(unit_model: UnitModel, *, sub_type: None = ..., **kwargs) -> AmpelBaseModel: ...
 
 	@staticmethod
 	def new_aux_unit(
 		unit_model: UnitModel, *, sub_type: Optional[Type[T]] = None, **kwargs
-	) -> Union[T, AmpelUnit]:
+	) -> Union[T, AmpelBaseModel]:
 		"""	:raises: ValueError is unit_model.config is not of type Optional[dict] """
 
 		Klass = UnitLoader.get_aux_class(klass=unit_model.unit, sub_type=sub_type)
@@ -261,10 +261,10 @@ class UnitLoader:
 	def get_aux_class(klass: Union[str, Type], *, sub_type: Type[T]) -> Type[T]: ...
 	@overload
 	@staticmethod
-	def get_aux_class(klass: Union[str, Type], *, sub_type: None = ...) -> Type[AmpelUnit]: ...
+	def get_aux_class(klass: Union[str, Type], *, sub_type: None = ...) -> Type[AmpelBaseModel]: ...
 
 	@staticmethod
-	def get_aux_class(klass: Union[str, Type], *, sub_type: Optional[Type[T]] = None) -> Union[Type[T], Type[AmpelUnit]]:
+	def get_aux_class(klass: Union[str, Type], *, sub_type: Optional[Type[T]] = None) -> Union[Type[T], Type[AmpelBaseModel]]:
 		""" :raises: ValueError if unit is unknown """
 
 		if isinstance(klass, str):
@@ -282,7 +282,7 @@ class UnitLoader:
 
 
 	@staticmethod
-	def check_class(Klass: Type, class_type: Union[Type[AmpelUnit], _GenericAlias]) -> None:
+	def check_class(Klass: Type, class_type: Union[Type[AmpelBaseModel], _GenericAlias]) -> None:
 		""" :raises: ValueError """
 
 		if isinstance(class_type, _GenericAlias):
