@@ -10,7 +10,7 @@
 import importlib
 from typing import Sequence, Dict, Any, Optional, Union, List, Literal, Set, Tuple
 from ampel.type import ChannelId
-from ampel.abstract.AbsDataUnit import AbsDataUnit
+from ampel.base.DataUnit import DataUnit
 from ampel.abstract.ingest.AbsIngester import AbsIngester
 from ampel.abstract.ingest.AbsStateT2Compiler import AbsStateT2Compiler
 from ampel.abstract.ingest.AbsPointT2Compiler import AbsPointT2Compiler
@@ -42,10 +42,10 @@ class AbsT2Ingester(AbsIngester, abstract=True):
 			# The unit is installed locally
 			if 'fqn' in t2_info:
 				T2Class = self.context.loader.get_class_by_name(
-					name = unit_name, unit_type = AbsDataUnit
+					name = unit_name, unit_type = DataUnit
 				)
 
-			for el in t2_info['abc']:
+			for el in t2_info['base']:
 				# Pickup first Abstract class in mro()
 				# Note: this strategy might cause pblms
 				if el.startswith("Abs"):
