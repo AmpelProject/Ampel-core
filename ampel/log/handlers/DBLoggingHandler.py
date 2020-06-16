@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-core/ampel/logging/DBLoggingHandler.py
+# File              : Ampel-core/ampel/log/handlers/DBLoggingHandler.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 14.12.2017
-# Last Modified Date: 01.05.2020
+# Last Modified Date: 15.06.2020
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import struct, socket
@@ -13,6 +13,7 @@ from typing import List, Dict, Optional, Union
 from logging import LogRecord
 from pymongo.errors import BulkWriteError
 from ampel.db.AmpelDB import AmpelDB
+from ampel.base.AmpelBaseModel import AmpelBaseModel
 from ampel.util.mappings import compare_dict_values
 from ampel.log.LighterLogRecord import LighterLogRecord
 from ampel.log.AmpelLoggingError import AmpelLoggingError
@@ -44,19 +45,20 @@ def _machine_bytes():
 	return struct.pack("<I", _fnv_1a_24(socket.gethostname().encode()))[:3]
 
 
-class DBLoggingHandler:
+class DBLoggingHandler(AmpelBaseModel):
 	""" Saves log events into mongo database """
 
-	def __init__(self,
-		ampel_db: AmpelDB,
-		run_id: int,
-		level: int,
-		col_name: str = "logs",
-		aggregate_interval: float = 1,
-		expand_extra: bool = True,
-		flush_len: int = 1000,
-		auto_flush: bool = False
-	):
+	__slots__ = "prev_record", "fields_check", "log_dicts", "oid_middle", "warn_lvl"
+
+	level: int
+	col_name: str = "logs"
+	aggregate_interval: float = 1
+	expand_extra: bool = True
+	flush_len: int = 1000
+	auto_flush: bool = False
+
+
+	def __init__(self, ampel_db: AmpelDB, run_id: int, **kwargs) -> None:
 		"""
 		:param col_name: name of db collection to use (default: 'logs' in database Ampel_var)
 		:param aggregate_interval: logs with similar attributes (log level, possibly tranId & channels) \
@@ -66,27 +68,17 @@ class DBLoggingHandler:
 		:param flush_len: How many log documents should be kept in memory before attempting a database bulk_write operation.
 		"""
 
-		# required when not using super().__init__
-		#self.filters = []
-		#self.lock = None
-		#self._name = None
-
+		AmpelBaseModel.__init__(self, **kwargs)
 		self._ampel_db = ampel_db
-		self.flush_len = flush_len
-		self.auto_flush = auto_flush
-		self.aggregate_interval = aggregate_interval
+		self.run_id = run_id
+
 		self.log_dicts: List[Dict] = []
 		self.prev_record: Optional[Union[LighterLogRecord, LogRecord]] = None
-		self.run_id = run_id
 		self.fields_check = ['extra', 'stock', 'channel']
-		self.expand_extra = expand_extra
 		self.warn_lvl = LogRecordFlag.WARNING
 
 		# Get reference to pymongo collection
-		self.col = ampel_db.get_collection(col_name)
-
-		# Set loggingHandler properties
-		self.level = level
+		self.col = ampel_db.get_collection(self.col_name)
 
 		# ObjectID middle: 3 bytes machine + 2 bytes encoding the last 4 digits of run_id (unique)
 		# NB: pid is not always unique if running in a jail or container
