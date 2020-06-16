@@ -9,7 +9,7 @@
 
 import re, importlib
 from typing import List, Union, Dict, Optional, Any, Sequence
-from ampel.model.builder.UnitDefinitionModel import UnitDefinitionModel
+from ampel.model.builder.RemoteUnitDefinition import RemoteUnitDefinition
 from ampel.config.collector.UnitConfigCollector import UnitConfigCollector
 from ampel.config.collector.ConfigCollector import ConfigCollector
 from ampel.config.collector.AbsForwardConfigCollector import AbsForwardConfigCollector
@@ -17,8 +17,8 @@ from ampel.log import VERBOSE
 
 
 path_el_type: Dict[str, str] = {
-	"base": "AbsDataUnit",
-	"processor": "AbsAdminUnit",
+	"base": "DataUnit",
+	"processor": "AdminUnit",
 	"controller": "AbsControllerUnit",
 }
 
@@ -44,8 +44,8 @@ class ForwardUnitConfigCollector(AbsForwardConfigCollector):
 			elif isinstance(arg, dict):
 
 				try:
-					d = UnitDefinitionModel(**arg)
-					mro = d.abc
+					d = RemoteUnitDefinition(**arg)
+					mro = d.base
 					class_id = d.class_name
 				except Exception:
 					# Note: cannot use shorter "return self.error(...)" because of stubborn mypy
@@ -71,7 +71,7 @@ class ForwardUnitConfigCollector(AbsForwardConfigCollector):
 				self.error(f"Could not auto-associate a type with unit {class_id}")
 				return None
 
-			# check for AbsDataUnit in mro ?
+			# check for DataUnit in mro ?
 			if self.verbose:
 				self.logger.log(VERBOSE,
 					f"-> Routing unit '{class_id}' to unit.{unit_type}"
