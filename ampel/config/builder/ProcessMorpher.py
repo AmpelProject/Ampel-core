@@ -12,9 +12,9 @@ from typing import Dict, Any
 from importlib import import_module
 from pydantic import create_model
 from ampel.log.AmpelLogger import AmpelLogger, VERBOSE
-from ampel.model.AmpelStrictModel import AmpelStrictModel
+from ampel.model.StrictModel import StrictModel
 from ampel.model.ProcessModel import ProcessModel
-from ampel.abstract.AbsDataUnit import AbsDataUnit
+from ampel.base.DataUnit import DataUnit
 from ampel.abstract.AbsPointT2Unit import AbsPointT2Unit
 from ampel.util.mappings import walk_and_process_dict
 
@@ -168,11 +168,11 @@ class ProcessMorpher:
 				if fqn := out_config['unit']['base'][t2_unit_name].get('fqn'):
 
 					T2Unit = getattr(import_module(fqn), fqn.split('.')[-1])
-					excl: Any = AbsDataUnit._annots.keys()
+					excl: Any = DataUnit._annots.keys()
 					if issubclass(T2Unit, AbsPointT2Unit):
 						excl = list(excl) + ["ingest"]
 					model = create_model(
-						t2_unit_name, __config__ = AmpelStrictModel.__config__,
+						t2_unit_name, __config__ = StrictModel.__config__,
 						**{k: (v, T2Unit._defaults[k] if k in T2Unit._defaults else ...)
 						for k, v in T2Unit._annots.items() if k not in excl} # type: ignore
 					)
