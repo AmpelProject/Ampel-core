@@ -7,10 +7,8 @@
 # Last Modified Date: 10.06.2020
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-from typing import Optional, Literal
+from typing import Optional
 from ampel.core.AmpelContext import AmpelContext
-from ampel.db.AmpelDB import AmpelDB
-from ampel.config.AmpelConfig import AmpelConfig
 
 
 class DevAmpelContext(AmpelContext):
@@ -23,4 +21,5 @@ class DevAmpelContext(AmpelContext):
 			dict.__setitem__(self.config._config['db'], 'prefix', 'AmpelTest')
 
 		if purge_db:
+			from ampel.db.AmpelDB import AmpelDB
 			AmpelDB.delete_ampel_databases(self.config, "AmpelTest")

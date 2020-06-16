@@ -10,9 +10,8 @@
 import logging, sys, traceback
 from sys import _getframe
 from os.path import basename
-from typing import Dict, Optional, Union, Any, List
+from typing import Dict, Optional, Union, Any, List, TYPE_CHECKING
 from ampel.type import ChannelId, StockId
-from ampel.core.AmpelContext import AmpelContext
 from ampel.log.LighterLogRecord import LighterLogRecord
 from ampel.log.LogRecordFlag import LogRecordFlag
 from ampel.log.handlers.LoggingHandlerProtocol import LoggingHandlerProtocol
@@ -27,6 +26,8 @@ INFO = LogRecordFlag.INFO
 VERBOSE = LogRecordFlag.VERBOSE
 DEBUG = LogRecordFlag.DEBUG
 
+if TYPE_CHECKING:
+	from ampel.core.AmpelContext import AmpelContext
 
 class AmpelLogger:
 
@@ -60,7 +61,7 @@ class AmpelLogger:
 
 
 	@staticmethod
-	def from_profile(context: AmpelContext, profile: str, run_id: Optional[int] = None, **kwargs) -> 'AmpelLogger':
+	def from_profile(context: 'AmpelContext', profile: str, run_id: Optional[int] = None, **kwargs) -> 'AmpelLogger':
 
 		handlers = context.config.get(f'logging.{profile}', dict, raise_exc=True)
 		logger = AmpelLogger.get_logger(console=False, **kwargs)
@@ -83,7 +84,7 @@ class AmpelLogger:
 
 
 	@staticmethod
-	def get_console_level(context: AmpelContext, profile: str) -> Optional[int]:
+	def get_console_level(context: 'AmpelContext', profile: str) -> Optional[int]:
 
 		handlers = context.config.get(f'logging.{profile}', dict, raise_exc=True)
 
@@ -96,7 +97,7 @@ class AmpelLogger:
 
 
 	@classmethod
-	def has_verbose_console(cls, context: AmpelContext, profile: str) -> bool:
+	def has_verbose_console(cls, context: 'AmpelContext', profile: str) -> bool:
 
 		if lvl := cls.get_console_level(context, profile):
 			return lvl < INFO

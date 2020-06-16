@@ -10,10 +10,10 @@
 from dataclasses import dataclass
 from typing import Dict, Any, Optional, Literal, Iterable, TYPE_CHECKING
 from ampel.config.AmpelConfig import AmpelConfig
-from ampel.db.AmpelDB import AmpelDB
 
 # Avoid cyclic import issues
 if TYPE_CHECKING:
+	from ampel.db.AmpelDB import AmpelDB
 	from ampel.core.UnitLoader import UnitLoader # noqa
 
 
@@ -27,7 +27,7 @@ class AmpelContext:
 	"""
 
 	config: AmpelConfig
-	db: AmpelDB
+	db: 'AmpelDB'
 	loader: 'UnitLoader' # forward reference to avoid cyclic import issues
 	tier: Optional[Literal[0, 1, 2, 3]] = None
 	resource: Optional[Dict[str, Any]] = None
@@ -48,6 +48,7 @@ class AmpelContext:
 
 		# Avoid cyclic import issues
 		from ampel.core.UnitLoader import UnitLoader # noqa
+		from ampel.db.AmpelDB import AmpelDB
 
 		return cls(
 			config = config,
@@ -56,6 +57,7 @@ class AmpelContext:
 			tier = tier,
 			**kwargs
 		)
+
 
 	@classmethod
 	def load(cls,
@@ -126,7 +128,7 @@ class AmpelContext:
 		return self.config
 
 
-	def get_database(self) -> AmpelDB:
+	def get_database(self) -> 'AmpelDB':
 		"""
 		Note: in the future, this class might hold references to multiple different databases
 		"""
