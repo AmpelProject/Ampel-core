@@ -8,19 +8,12 @@
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from typing import Dict, Any, Optional
+from pydantic import validate_model
 from ampel.config.collector.AbsDictConfigCollector import AbsDictConfigCollector
 from ampel.config.collector.ConfigCollector import ConfigCollector
 from ampel.log.handlers.AmpelStreamHandler import AmpelStreamHandler
 from ampel.log.handlers.DBLoggingHandler import DBLoggingHandler
-from ampel.db.AmpelDB import AmpelDB
 from ampel.log import VERBOSE
-
-
-class FakeAmpelDB(AmpelDB):
-	def __init__(self, **kwargs):
-		pass
-	def get_collection(self, arg):
-		return None
 
 
 class LoggingCollector(AbsDictConfigCollector):
@@ -46,19 +39,19 @@ class LoggingCollector(AbsDictConfigCollector):
 					except Exception as e:
 						self.error(
 							f"Incorrect console logging configuration for: {config['console']} " +
-							ConfigCollector.distrib_hint(file_name, dist_name) +
-							": \n" + str(e)
+							ConfigCollector.distrib_hint(file_name, dist_name) + ": \n" + str(e)
 						)
 						continue
 
 				if "db" in config:
 					try:
-						DBLoggingHandler(FakeAmpelDB(), 12, **config['db'])
+						if DBLoggingHandler._model is None:
+							DBLoggingHandler._create_model()
+						validate_model(DBLoggingHandler._model, config['db'])
 					except Exception as e:
 						self.error(
 							f"Incorrect db logging configuration for: {config['db']} " +
-							ConfigCollector.distrib_hint(file_name, dist_name) +
-							": \n" + str(e)
+							ConfigCollector.distrib_hint(file_name, dist_name) + ": \n" + str(e)
 						)
 						continue
 
