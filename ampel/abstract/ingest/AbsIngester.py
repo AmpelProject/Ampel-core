@@ -10,10 +10,10 @@
 from typing import Dict, Optional, Any
 from ampel.log.LogsBufferDict import LogsBufferDict
 from ampel.db.DBUpdatesBuffer import DBUpdatesBuffer
-from ampel.abstract.AbsAdminUnit import AbsAdminUnit
+from ampel.core.AdminUnit import AdminUnit
 
 
-class AbsIngester(AbsAdminUnit, abstract=True):
+class AbsIngester(AdminUnit, abstract=True):
 
 	updates_buffer: DBUpdatesBuffer
 	logd: LogsBufferDict
