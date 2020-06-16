@@ -7,7 +7,6 @@
 # Last Modified Date: 10.05.2020
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-import collections
 from pymongo import MongoClient
 from pymongo.database import Database
 from pymongo.collection import Collection
@@ -15,7 +14,7 @@ from typing import Sequence, Dict, List, Any, Union, Optional, TYPE_CHECKING
 
 from ampel.type import ChannelId
 from ampel.config.AmpelConfig import AmpelConfig
-from ampel.base.AmpelUnit import AmpelUnit
+from ampel.base.AmpelBaseModel import AmpelBaseModel
 from ampel.model.db.AmpelColModel import AmpelColModel
 from ampel.model.db.AmpelDBModel import AmpelDBModel
 from ampel.model.db.IndexModel import IndexModel
@@ -25,22 +24,22 @@ from ampel.model.db.MongoClientRoleModel import MongoClientRoleModel
 if TYPE_CHECKING:
 	from ampel.log.AmpelLogger import AmpelLogger
 
+
 intcol = {'t0': 0, 't1': 1, 't2': 2, 'stock': 3}
 
-class AmpelDB(AmpelUnit):
+class AmpelDB(AmpelBaseModel):
 
 	prefix: str = 'Ampel'
-	dbs_config: List[AmpelDBModel]
-	mongo_resources: Dict[str, Any]
+	databases: List[AmpelDBModel]
+	mongo_resource: Dict[str, Any]
 
 
 	@staticmethod
 	def new(config: AmpelConfig) -> 'AmpelDB':
 		""" :raises: ValueError in case a required config entry is missing """
 		return AmpelDB(
-			prefix = config.get('db.prefix', str, raise_exc=True),
-			mongo_resources = config.get('resource.mongo', dict, raise_exc=True),
-			dbs_config = config.get('db.databases', collections.abc.Sequence, raise_exc=True) # type: ignore
+			mongo_resource = config.get('resource.mongo', dict, raise_exc=True),
+			**config.get('db', dict, raise_exc=True)
 		)
 
 
@@ -50,7 +49,7 @@ class AmpelDB(AmpelUnit):
 
 		self.col_config: Dict[str, AmpelColModel] = {
 			col.name: col
-			for db_config in self.dbs_config
+			for db_config in self.databases
 				for col in db_config.collections
 		}
 
@@ -74,7 +73,7 @@ class AmpelDB(AmpelUnit):
 			role = MongoClientRoleModel(r='logger', w='logger')
 		)
 
-		self.dbs_config.append(db_config)
+		self.databases.append(db_config)
 
 		for col in db_config.collections:
 			self.col_config[col.name] = col
@@ -117,7 +116,7 @@ class AmpelDB(AmpelUnit):
 	def _get_mongo_db(self, resource_name: str, db_name: str) -> Database:
 		if resource_name not in self.mongo_clients:
 			self.mongo_clients[resource_name] = MongoClient(
-				self.mongo_resources[resource_name]
+				self.mongo_resource[resource_name]
 			)
 
 		return self.mongo_clients[resource_name].get_database(db_name)
@@ -127,14 +126,14 @@ class AmpelDB(AmpelUnit):
 		return next(
 			filter(
 				lambda x: self.col_config[col_name] in x.collections,
-				self.dbs_config
+				self.databases
 			)
 		)
 
 
 	def init_db(self) -> None:
 
-		for db_config in self.dbs_config:
+		for db_config in self.databases:
 			for col_config in db_config.collections:
 				self.create_collection(
 					db_config.role.dict()['w'],
