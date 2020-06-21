@@ -7,7 +7,7 @@
 # Last Modified Date: 21.06.2020
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-from typing import Dict, Any, Sequence, List
+from typing import Dict, Any, Sequence, List, Optional, Union
 
 from ampel.abstract.AbsProcessorUnit import AbsProcessorUnit
 from ampel.log import AmpelLogger, LogRecordFlag, DBEventDoc, SHOUT
@@ -41,9 +41,14 @@ class T3Processor(AbsProcessorUnit):
 	chunk_size: int = 200
 
 
-	def __init__(self, update_journal: bool = True, update_events: bool = True, **kwargs) -> None:
+	def __init__(self,
+		update_journal: bool = True,
+		update_events: bool = True,
+		extra_journal_tag: Optional[Union[int, str]] = None,
+		**kwargs
+	) -> None:
 		"""
-		Note that update_journal and update_event are admin run options and
+		Note that update_journal, update_event and extra_journal_tag are admin run options and
 		should be set only on command line. They are thus not defined as part of the underlying model.
 		"""
 
@@ -51,6 +56,7 @@ class T3Processor(AbsProcessorUnit):
 
 		self.update_journal = update_journal
 		self.update_events = update_events
+		self.extra_journal_tag = extra_journal_tag
 
 		if 'db' not in self.context.config.get(f"logging.{self.log_profile}", dict, raise_exc=True):
 			for el in ("update_journal", "update_events"):
@@ -164,7 +170,7 @@ class T3Processor(AbsProcessorUnit):
 					# Unit runner
 					#############
 
-					# The default runner provided by pyampel-core is T3DefaultUnitRunner
+					# The default runner provided by pyampel-core is T3UnitRunner
 					runner = self.context.loader \
 						.new_admin_unit(
 							unit_model = directive.run,
@@ -175,6 +181,7 @@ class T3Processor(AbsProcessorUnit):
 							process_name = self.process_name,
 							channel = self.channel,
 							raise_exc = self.raise_exc,
+							extra_journal_tag = self.extra_journal_tag,
 							run_context = run_context
 						)
 
