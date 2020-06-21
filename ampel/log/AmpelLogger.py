@@ -122,7 +122,7 @@ class AmpelLogger:
 
 		if console:
 			self.add_handler(
-				AmpelStreamHandler() if console is True else AmpelStreamHandler(console) # type: ignore
+				AmpelStreamHandler() if console is True else AmpelStreamHandler(**console) # type: ignore
 			)
 		else:
 			self.provenance = False
