@@ -35,7 +35,7 @@ class ChanRecordBufHandler(RecordBufferingHandler):
 
 	def forward(self,
 		target: Union[LoggingHandlerProtocol],
-		stock: StockId,
+		stock: Optional[StockId] = None,
 		extra: Optional[Dict] = None,
 		clear: bool = True
 	) -> None:
@@ -48,7 +48,9 @@ class ChanRecordBufHandler(RecordBufferingHandler):
 			if rec.levelno >= target.level:
 
 				rec.channel = self._channel # type: ignore[union-attr]
-				rec.stock = stock # type: ignore[union-attr]
+
+				if stock:
+					rec.stock = stock # type: ignore[union-attr]
 
 				if extra:
 					if 'extra' in rec.__dict__:
