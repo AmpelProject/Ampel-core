@@ -298,7 +298,7 @@ class UnitLoader:
 
 		# Interal: uncomment to check if mypy works adequately
 
-		from ampel.abstract.AbsRunnable import AbsRunnable
+		from ampel.abstract.AbsProcessorUnit import AbsProcessorUnit
 		from ampel.abstract.AbsLightCurveT2Unit import AbsLightCurveT2Unit
 
 		reveal_type(self.new(model))
@@ -306,8 +306,8 @@ class UnitLoader:
 		reveal_type(self.new(model, unit_type = None))
 		reveal_type(self.new(model, unit_type=AbsLightCurveT2Unit))
 		reveal_type(self.new(model, unit_type=AbsLightCurveT2Unit, bla=12))
-		reveal_type(self.new(model, unit_type=AbsRunnable))
-		reveal_type(self.new(model, unit_type=AbsRunnable, bla=12))
+		reveal_type(self.new(model, unit_type=AbsProcessorUnit))
+		reveal_type(self.new(model, unit_type=AbsProcessorUnit, bla=12))
 
 		reveal_type(self.new_base_unit(model, logger))
 		reveal_type(self.new_base_unit(model, logger, bla=12))
@@ -316,14 +316,14 @@ class UnitLoader:
 		reveal_type(self.new_base_unit(model, logger, sub_type = AbsLightCurveT2Unit, bla=12))
 
 		# Next two lines *should* fail
-		reveal_type(self.new_base_unit(model, logger, sub_type=AbsRunnable))
-		reveal_type(self.new_base_unit(model, logger, sub_type = AbsRunnable, bla=12))
+		reveal_type(self.new_base_unit(model, logger, sub_type=AbsProcessorUnit))
+		reveal_type(self.new_base_unit(model, logger, sub_type = AbsProcessorUnit, bla=12))
 
 		reveal_type(self.new_admin_unit(model, context))
 		reveal_type(self.new_admin_unit(model, context, bla=12))
 		reveal_type(self.new_admin_unit(model, context, sub_type = None))
-		reveal_type(self.new_admin_unit(model, context, sub_type = AbsRunnable))
-		reveal_type(self.new_admin_unit(model, context, sub_type = AbsRunnable, bla=12))
+		reveal_type(self.new_admin_unit(model, context, sub_type = AbsProcessorUnit))
+		reveal_type(self.new_admin_unit(model, context, sub_type = AbsProcessorUnit, bla=12))
 
 		# Next two lines *should* fail
 		reveal_type(self.new_admin_unit(model, context, sub_type = AbsLightCurveT2Unit))
