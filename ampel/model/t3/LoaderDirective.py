@@ -4,10 +4,9 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 09.12.2019
-# Last Modified Date: 16.02.2020
+# Last Modified Date: 18.06.2020
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-from pydantic import validator, root_validator
 from typing import Dict, Any, Optional, Type, Literal
 from ampel.content.StockRecord import StockRecord
 from ampel.content.DataPoint import DataPoint
@@ -21,24 +20,19 @@ models = {
 	"t0": DataPoint,
 	"t1": Compound,
 	"t2": T2Record,
-	"logs": LogRecord
+	"log": LogRecord
 }
 
 class LoaderDirective(StrictModel):
 
-	col: Literal["stock", "t0", "t1", "t2", "logs"]
+	col: Literal["stock", "t0", "t1", "t2", "log"]
 	model: Optional[Type] # TypedDict
 	query_complement: Optional[Dict[str, Any]]
 	options: Optional[Dict[str, Any]]
 
-	#@validator('model')
-	#def validate(cls, v):
-	#	if not hasattr(v, "__annotations__"):
-	#		raise ValueError("TypedDict expected for parameter 'model'")
-	#	return v
-
-	@root_validator
-	def _set_defaults(cls, values):
-		if not values.get('model') and values.get('col') in models:
-			values['model'] = models[values.get('col')]
-		return values
+	def __init__(self, **kwargs):
+		super().__init__(**kwargs)
+		if not self.model and self.col in models:
+			self.model = models[self.col]
+		elif self.model and not hasattr(self.model, "__annotations__"):
+			raise ValueError("TypedDict expected for parameter 'model'")
