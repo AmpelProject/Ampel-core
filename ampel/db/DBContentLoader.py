@@ -8,9 +8,9 @@
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from bson.codec_options import CodecOptions
-from typing import Iterable, Union, Dict, Iterator, Optional
+from typing import Iterable, Union, Dict, Iterator, Optional, Literal
 
-from ampel.type import StockId, ChannelId, StrictIterable
+from ampel.type import StockId, ChannelId, StrictIterable, Tag
 from ampel.model.operator.AnyOf import AnyOf
 from ampel.model.operator.AllOf import AllOf
 from ampel.model.operator.OneOf import OneOf
@@ -18,14 +18,12 @@ from ampel.model.t3.LoaderDirective import LoaderDirective
 from ampel.db.FrozenValuesDict import FrozenValuesDict
 from ampel.log.utils import safe_query_dict
 from ampel.log.AmpelLogger import AmpelLogger
-from ampel.query.QueryUtils import QueryUtils
+from ampel.db.query.general import build_general_query
 from ampel.core.AmpelBuffer import AmpelBuffer
 from ampel.util.collections import ampel_iter, to_set
 from ampel.core.AdminUnit import AdminUnit
 
-freeze_codec_options = CodecOptions(
-	document_class=FrozenValuesDict
-)
+freeze_codec_options = CodecOptions(document_class=FrozenValuesDict)
 
 class DBContentLoader(AdminUnit):
 
@@ -34,18 +32,26 @@ class DBContentLoader(AdminUnit):
 	def load(self,
 		stock_ids: Union[StockId, Iterator[StockId], StrictIterable[StockId]],
 		directives: Iterable[LoaderDirective],
-		channels: Union[None, ChannelId, AllOf[ChannelId], AnyOf[ChannelId], OneOf[ChannelId]] = None,
-		codec_options = freeze_codec_options
+		channel: Union[None, ChannelId, AllOf[ChannelId], AnyOf[ChannelId], OneOf[ChannelId]] = None,
+		tag: Optional[Dict[Literal['with', 'without'], Union[Tag, Dict, AllOf[Tag], AnyOf[Tag], OneOf[Tag]]]] = None,
+		auto_project: bool = True,
+		codec_options: CodecOptions = freeze_codec_options,
 	) -> Iterable[AmpelBuffer]:
 		"""
-		:param channels: None means all channels are considered (no criterium).
+		:param tag: If specified, query selection critera will apply to all directives.
+		:param channel: If specified, query selection critera will apply to all directives (except t0).
+		None means all channels are considered (no criterium).
+
 		:param directives: see LoaderDirective docstrings for more information.  Notes:
-			- T3 unit configurations can use aliased directives.
-			For example, the alias COMPOUND is translated into the directive
-			LoaderDirective(col="t1")
-			- LoaderDirective can contain "query_complement", which can be used
-			among other thingd to further sub-select t2 documents or select given states
-			(such as the latest state)
+		- T3 unit configurations can use aliased directives. For example, the alias COMPOUND
+		is translated into the directive LoaderDirective(col="t1")
+		- LoaderDirective can contain "query_complement", which can be used among other thing to further
+		sub-select t2 documents or select given states (such as the latest state)
+
+		:param auto_project: each LoaderDirective is associated with a db collection with is itself associated with
+		a default "content" typed dict. By default, we request a projection that projects only the fields defined
+		in those TypedDict. Custom/admin fields would thus not be retrieved.
+		Set this setting to False if it is not the whished behavior.
 		"""
 
 		logger = self.logger if self.logger else AmpelLogger.get_logger()
@@ -63,16 +69,20 @@ class DBContentLoader(AdminUnit):
 				t0 = [] if "t0" in col_set else None,
 				t1 = [] if "t1" in col_set else None,
 				t2 = [] if "t2" in col_set else None,
-				logs = [] if "logs" in col_set else None,
+				log = [] if "log" in col_set else None,
 			) for stock_id in ampel_iter(stock_ids)
 		}
 
 		for directive in directives:
 
-			query = {'stock': QueryUtils.match_array(register.keys())}
+			query = build_general_query(
+				stock=register.keys(), channel=channel, tag=tag
+			)
 
 			if directive.col == "stock":
 				query['_id'] = query.pop("stock")
+			elif directive.col == "t0" and channel:
+				query.pop('channel')
 
 			# query 'stock' parameter primes over query complements
 			if directive.query_complement:
@@ -82,7 +92,6 @@ class DBContentLoader(AdminUnit):
 				logger.debug(
 					None, extra={
 						'col': directive.col,
-						'stock': list(register.keys()),
 						'query': safe_query_dict(query, dict_key=None)
 					}
 				)
@@ -97,12 +106,12 @@ class DBContentLoader(AdminUnit):
 			cursor = col.find(
 				filter=query, projection={
 					k: 1 for k in directive.model.__annotations__.keys()
-				}
+				} if auto_project else None
 			)
 
-			if directive.col in ("t1", "logs"):
+			if directive.col in ("t1", "log"):
 				for res in cursor:
-					register[res['stock']][directive.col].append(res) # type: ignore[union-attr]
+					register[res['stock']][directive.col].append(res)
 
 			elif directive.col == "stock":
 				for res in cursor:
