@@ -4,16 +4,15 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 27.02.2020
-# Last Modified Date: 27.02.2020
+# Last Modified Date: 09.05.2020
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-from typing import Optional, Any
-from ampel.abc import abstractmethod
-from ampel.abstract.AbsAuxiliaryUnit import AbsAuxiliaryUnit
+from typing import Any
+from ampel.base import abstractmethod, AmpelBaseModel
+from ampel.base.AmpelABC import AmpelABC
 
-class AbsApplicable(AbsAuxiliaryUnit, abstract=True):
-	""" """
+class AbsApplicable(AmpelABC, AmpelBaseModel, abstract=True):
 
 	@abstractmethod
-	def apply(self, arg: Any) -> Optional[Any]:
+	def apply(self, arg: Any) -> Any:
 		...
