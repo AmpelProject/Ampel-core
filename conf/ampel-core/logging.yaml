@@ -16,7 +16,6 @@ default:
   db:
     level: 1024
 
-
 compact:
   console:
     level: 1024
