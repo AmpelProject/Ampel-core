@@ -8,6 +8,7 @@
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from typing import Any, Dict, Optional
+from ampel.type import ChannelId
 from ampel.base import abstractmethod
 from ampel.core.AdminUnit import AdminUnit
 from ampel.log.LogRecordFlag import LogRecordFlag
@@ -24,6 +25,8 @@ class AbsProcessorUnit(AdminUnit, abstract=True):
 	"""
 
 	process_name: str
+	channel: Optional[ChannelId] = None
+
 	raise_exc: bool = False
 	log_profile: str = "default"
 	base_log_flag: LogRecordFlag = LogRecordFlag.SCHEDULED_RUN
