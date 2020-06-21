@@ -14,7 +14,6 @@ from ampel.base import abstractmethod
 from ampel.core.AmpelBuffer import AmpelBuffer
 from ampel.log.AmpelLogger import AmpelLogger
 from ampel.core.AdminUnit import AdminUnit
-from ampel.model.StrictModel import StrictModel
 
 
 class AbsT3UnitRunner(AdminUnit, abstract=True):
@@ -30,18 +29,10 @@ class AbsT3UnitRunner(AdminUnit, abstract=True):
 
 	raise_exc: bool = False
 	update_journal: bool = True
-	journal_tag: Optional[Union[int, str]] = None
+	extra_journal_tag: Optional[Union[int, str]] = None
 	run_context: Optional[Dict[str, Any]] = None
-
 
 
 	@abstractmethod
 	def run(self, data: Sequence[AmpelBuffer]) -> None:
 		...
-
-	def set_master_config(self, config: StrictModel):
-		"""
-		Sets the T3 process config
-		(required for example by T3MonoChanViewUnitRunner)
-		"""
-		self._master_config = config
