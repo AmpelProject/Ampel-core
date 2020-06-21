@@ -1,14 +1,14 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-core/ampel/utils/mappings.py
+# File              : Ampel-core/ampel/util/mappings.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 07.06.2018
-# Last Modified Date: 11.04.2020
+# Last Modified Date: 17.06.2020
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import json, hashlib, sys
-from typing import Dict, Any, List, Union, Type, Optional, Sequence, TypeVar, Literal, Callable, Iterable
+from typing import Dict, Any, List, Union, Type, Optional, Sequence, TypeVar, Literal, Callable, Iterable, Mapping, MutableMapping
 from ampel.type import strict_iterable
 from ampel.util.crypto import hash_payload, HT
 from ampel.model.operator.AnyOf import AnyOf
@@ -205,13 +205,13 @@ def walk_and_process_dict(
 
 
 def flatten_dict(
-	d: Dict,
+	d: Mapping,
 	separator: str = '.',
 	sort_keys: bool = False,
 	flatten_list_members: bool = False,
 	flatten_lists: bool = False,
 	sort_lists: bool = False
-) -> Dict:
+) -> MutableMapping:
 	"""
 	This function is useful, among other things, for building "hash ids" of serializable dicts
 
@@ -244,56 +244,61 @@ def flatten_dict(
 	In []: flatten_dict({'d': {'e':1}, 'a': [{'c':2}, {'b':{'f':[3, 1, 2]}}]}, sort_keys=True, flatten_list_members=True, sort_lists=True, flatten_lists=True)
 	Out[]: {'a.0.b.f.0': 1, 'a.0.b.f.1': 2, 'a.0.b.f.2': 3, 'a.1.c': 2, 'd.e': 1}
 	"""
-	out = {}
-	for k in sorted(d.keys()) if sort_keys else d:
 
-		v = d[k]
+	try:
+		out = {}
+		for k in sorted(d.keys()) if sort_keys else d:
 
-		if isinstance(v, dict):
+			v = d[k]
 
-			for kk, vv in flatten_dict(
-				v, separator, sort_keys, flatten_list_members, flatten_lists, sort_lists
-			).items():
-				out[f'{k}{separator}{kk}'] = vv
+			if isinstance(v, dict):
 
-		elif isinstance(v, strict_iterable):
-
-			if flatten_list_members:
-				v = [
-					flatten_dict(el, separator, sort_keys, flatten_list_members, flatten_lists, sort_lists)
-					if isinstance(el, dict) else el
-					for el in v
-				]
-
-			if sort_lists:
-
-				try:
-					# allow int/str mixed up
-					v = sorted(v, key=lambda x: str(x))
-				except:
-					pass
-
-				# In []: sorted([{'c': 2}, {'b.f.0': 1, 'b.f.1': 2, 'b.f.2': 3}], key=lambda x: next(iter(x.keys())))
-				# Out[]: [{'b.f.0': 1, 'b.f.1': 2, 'b.f.2': 3}, {'c': 2}]
-				if flatten_list_members and all(isinstance(el, dict) for el in v):
-					v = sorted(v, key=lambda x: next(iter(x.keys())))
-
-			if flatten_lists:
 				for kk, vv in flatten_dict(
-					{i: v[i] for i in range(len(v))},
-					separator, sort_keys, flatten_list_members, flatten_lists, sort_lists
+					v, separator, sort_keys, flatten_list_members, flatten_lists, sort_lists
 				).items():
 					out[f'{k}{separator}{kk}'] = vv
 
+			elif isinstance(v, strict_iterable):
+
+				if flatten_list_members:
+					v = [
+						flatten_dict(el, separator, sort_keys, flatten_list_members, flatten_lists, sort_lists)
+						if isinstance(el, dict) else el
+						for el in v
+					]
+
+				if sort_lists:
+
+					try:
+						# allow int/str mixed up
+						v = sorted(v, key=lambda x: str(x))
+					except:
+						pass
+
+					# In []: sorted([{'c': 2}, {'b.f.0': 1, 'b.f.1': 2, 'b.f.2': 3}], key=lambda x: next(iter(x.keys())))
+					# Out[]: [{'b.f.0': 1, 'b.f.1': 2, 'b.f.2': 3}, {'c': 2}]
+					if flatten_list_members and all(isinstance(el, dict) for el in v):
+						v = sorted(v, key=lambda x: next(iter(x.keys())))
+
+				if flatten_lists:
+					for kk, vv in flatten_dict(
+						{i: v[i] for i in range(len(v))},
+						separator, sort_keys, flatten_list_members, flatten_lists, sort_lists
+					).items():
+						out[f'{k}{separator}{kk}'] = vv
+
+				else:
+					out[k] = v
 			else:
 				out[k] = v
-		else:
-			out[k] = v
 
-	return out
+		return out
+
+	except Exception as e:
+		raise ValueError(f"Offending input: {d}") from e
 
 
-def unflatten_dict(d: Dict, separator: str = '.', unflatten_list: bool = False) -> Dict:
+def unflatten_dict(d: Mapping, separator: str = '.', unflatten_list: bool = False) -> MutableMapping:
 	"""
 	Example:
 
