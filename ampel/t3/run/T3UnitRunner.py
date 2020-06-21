@@ -11,19 +11,18 @@ from typing import Dict, Optional, Sequence, List, Type, Tuple, TypeVar, get_arg
 from pydantic import validator
 
 from ampel.log import VERBOSE, AmpelLogger, LogRecordFlag
+from ampel.log.utils import report_exception
 from ampel.log.handlers.ChanRecordBufHandler import ChanRecordBufHandler
 from ampel.log.handlers.DefaultRecordBufferingHandler import DefaultRecordBufferingHandler
 from ampel.core.AmpelBuffer import AmpelBuffer
-from ampel.util.mappings import build_unsafe_dict_id
 from ampel.core.UnitLoader import UnitLoader
 from ampel.core.JournalUpdater import JournalUpdater
-from ampel.struct.JournalExtra import JournalExtra
 from ampel.view.SnapView import SnapView
+from ampel.util.mappings import build_unsafe_dict_id
 from ampel.util.freeze import recursive_freeze
-
 from ampel.model.StrictModel import StrictModel
 from ampel.model.UnitModel import UnitModel
-
+from ampel.struct.JournalExtra import JournalExtra
 from ampel.abstract.AbsT3Unit import AbsT3Unit
 from ampel.t3.run.AbsT3UnitRunner import AbsT3UnitRunner
 from ampel.t3.run.filter.AbsT3Filter import AbsT3Filter
@@ -159,68 +158,79 @@ class T3UnitRunner(AbsT3UnitRunner):
 
 	def run(self, data: Sequence[AmpelBuffer]) -> None:
 
-		jupdater = JournalUpdater(
-			ampel_db = self.context.db, tier = 3, run_id = self.run_id,
-			process_name = self.process_name, logger = self.logger,
-			raise_exc = self.raise_exc, extra_tag = self.journal_tag
-		)
+		try:
 
-		for i, run_block in enumerate(self.run_blocks):
+			jupdater = JournalUpdater(
+				ampel_db = self.context.db, tier = 3, run_id = self.run_id,
+				process_name = self.process_name, logger = self.logger,
+				raise_exc = self.raise_exc, extra_tag = self.extra_journal_tag
+			)
 
-			if self.logger.verbose > 1:
-				self.logger.debug(f"Running run-block {i}")
+			for i, run_block in enumerate(self.run_blocks):
 
-			if run_block.filter:
+				if self.logger.verbose > 1:
+					self.logger.debug(f"Running run-block {i}")
 
-				if self.logger.verbose:
-					self.logger.log(VERBOSE, "Applying run-block filter")
+				if run_block.filter:
 
-				data = run_block.filter.filter(data)
+					if self.logger.verbose:
+						self.logger.log(VERBOSE, "Applying run-block filter")
 
-			if run_block.projector:
+					data = run_block.filter.filter(data)
 
-				if self.logger.verbose:
-					self.logger.log(VERBOSE, "Applying run-block projection")
+				if run_block.projector:
 
-				data = run_block.projector.project(data)
+					if self.logger.verbose:
+						self.logger.log(VERBOSE, "Applying run-block projection")
 
-			for t3_unit, View in run_block.units:
+					data = run_block.projector.project(data)
 
-				# python: we're all consenting adults
-				# ampel: let's rather be suspicious consenting adults
-				# We cast ampel buffers into views possibly redundantly (for each sub-unit)
-				# since there is no real read-only struct in python
+				for t3_unit, View in run_block.units:
 
-				if self.logger.verbose:
-					self.logger.log(VERBOSE, f"Creating views for {t3_unit.__class__.__name__}")
+					# python: we're all consenting adults
+					# ampel: let's rather be suspicious consenting adults
+					# We cast ampel buffers into views possibly redundantly (for each sub-unit)
+					# since there is no real read-only struct in python
 
-				views = tuple(View(**recursive_freeze(el)) for el in data)
+					if self.logger.verbose:
+						self.logger.log(VERBOSE, f"Creating views for {t3_unit.__class__.__name__}")
 
-				if ret := t3_unit.add(views):
+					views = tuple(View(**recursive_freeze(el)) for el in data)
 
-					unit_name = t3_unit.__class__.__name__
+					if ret := t3_unit.add(views):
 
-					if isinstance(ret, dict):
-						for k, v in ret.items():
-							jupdater.add_record(stock=k, jextra=v, unit=unit_name)
+						unit_name = t3_unit.__class__.__name__
 
-					elif isinstance(ret, JournalExtra):
-						jupdater.add_record(
-							stock = [sv.id for sv in views], jextra = ret, unit = unit_name
-						)
+						if isinstance(ret, dict):
+							for k, v in ret.items():
+								jupdater.add_record(stock=k, jextra=v, unit=unit_name)
+
+						elif isinstance(ret, JournalExtra):
+							jupdater.add_record(
+								stock = [sv.id for sv in views], jextra = ret, unit = unit_name
+							)
+
+						else:
+							self.logger.error(
+								f"Unsupported result type returned by {unit_name}: {type(ret)}"
+							)
 
 					else:
-						self.logger.error(
-							f"Unsupported result type returned by {unit_name}: {type(ret)}"
+						jupdater.add_record(
+							stock = [sv.id for sv in views],
+							unit = t3_unit.__class__.__name__
 						)
 
-				else:
-					jupdater.add_record(
-						stock = [sv.id for sv in views],
-						unit = t3_unit.__class__.__name__
-					)
+					if self.buf_hdlr.buffer:
+						self.buf_hdlr.forward(self.logger)
 
-				if self.buf_hdlr.buffer:
-					self.buf_hdlr.forward(self.logger)
+				if self.update_journal:
+					jupdater.flush()
 
-			jupdater.flush()
+		except Exception as e:
+
+			if self.raise_exc:
+				raise e
+
+			# Try to insert doc into trouble collection (raises no exception)
+			report_exception(self.context.db, self.logger, exc=e)
