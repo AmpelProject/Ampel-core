@@ -1,35 +1,27 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/t2/T2Controller.py
+# File              : Ampel-core/ampel/t2/T2Controller.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 25.01.2018
-# Last Modified Date: 13.08.2019
+# Last Modified Date: 30.01.2020
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-import logging, sys, multiprocessing, schedule
-from time import time
+import logging, multiprocessing, schedule
+from typing import ClassVar, Dict, Optional, List
 
-from ampel.core.flags.T2RunStates import T2RunStates
-from ampel.core.flags.LogRecordFlag import LogRecordFlag
-from ampel.t2.T2Executor import T2Executor
-from ampel.common.AmpelUtils import AmpelUtils
-from ampel.logging.AmpelLogger import AmpelLogger
-from ampel.db.AmpelDB import AmpelDB
-from ampel.common.Schedulable import Schedulable
-from ampel.config.AmpelConfig import AmpelConfig
-from ampel.common.AmpelUnitLoader import AmpelUnitLoader
+from ampel.t2.T2RunState import T2RunState
+from ampel.log.LogRecordFlag import LogRecordFlag
+from ampel.t2.T2Processor import T2Processor
+from ampel.util.collections import to_set
+from ampel.core.Schedulable import Schedulable
 
 
 class T2Controller(Schedulable):
-	"""
-	"""
 
-	executors = {}
+	processors: ClassVar[Dict[str, T2Processor]] = {}
 
-	def __init__(self, use_defaults=True): 
-		"""
-		"""
+	def __init__(self, use_defaults=True):
 
 		# Parent constructor
 		Schedulable.__init__(self)
@@ -40,75 +32,88 @@ class T2Controller(Schedulable):
 			# -> t2 unit unspecific
 			# -> runs (every 10 mins) in the same process
 			# -> without limitation regarding the max # of t2 docs to process
-			self.schedule_executor()
+			self.schedule_processor()
 
 
-	def schedule_executor(
-		self, t2_units=None, run_state=T2RunStates.TO_RUN, 
-		doc_limit=None, check_interval=10, log_level=logging.DEBUG
+	def schedule_processor(self,
+		t2_units: Optional[str] = None,
+		run_state: T2RunState = T2RunState.TO_RUN,
+		doc_limit: Optional[int] = None,
+		check_interval: int = 10,
+		log_level: int = logging.DEBUG
 	):
 		"""
-		:param int check_interval: check interval in seconds. 
-		If None, the created executor is not scheduled for 
-		execution but it is added to self.executors
+		:param check_interval: check interval in seconds.
+		If None, the created executor is not scheduled for
+		execution but it is added to self.processors
 		"""
 
-		dict_key = "%s%s" % (AmpelUtils.to_set(t2_units), T2RunStates.TO_RUN)
+		key = f"{to_set(t2_units)}{run_state}"
 
-		if dict_key in self.executors:
-			schedule.clear(dict_key)
+		if key in self.processors:
+			schedule.clear(key)
 
-		self.executors[dict_key] = T2Executor(
-			t2_units=t2_units, 
-			run_state=run_state, 
-			log_level=logging.DEBUG,
-			schedule_tag=dict_key
+		self.processors[key] = T2Processor(
+			t2_units = t2_units,
+			run_state = run_state,
+			log_level = logging.DEBUG,
+			schedule_tag = key
 		)
 
 		if check_interval:
 
 			# Schedule processing of t2 docs
-			self.get_scheduler().every(check_interval).seconds.do(
-				self.executors[dict_key].process_docs, 
-				extra_log_flags=LogRecordFlag.SCHEDULED_RUN,
-				doc_limit=doc_limit
-			).tag(dict_key)
+			self.get_scheduler() \
+				.every(check_interval) \
+				.seconds \
+				.do(
+					self.processors[key].process_t2_doc,
+					extra_base_log_flags = LogRecordFlag.SCHEDULED_RUN,
+					doc_limit = doc_limit
+				) \
+				.tag(key)
 
 
-	def schedule_mp_executor(
-		self, t2_units=None, run_state=T2RunStates.TO_RUN, 
-		doc_limit=None, check_interval=10, log_level=logging.DEBUG,
-		join=True, stop_when_exhausted=False
-	):
-		"""
-		"""
+	def schedule_mp_processor(self,
+		t2_units: Optional[List[str]] = None,
+		run_state: T2RunState = T2RunState.TO_RUN,
+		doc_limit: Optional[int] = None,
+		check_interval: int = 10,
+		log_level: int = logging.DEBUG,
+		join: bool = True,
+		stop_when_exhausted: bool = False
+	) -> None:
 
 		# Schedule processing of t2 docs
-		self.get_scheduler().every(check_interval).seconds.do(
-			self.create_mp_process, 
-			t2_units=t2_units, 
-			run_state=run_state,
-			doc_limit=doc_limit, 
-			log_level=logging.DEBUG,
-			join=join,
-			stop_when_exhausted=stop_when_exhausted
-		)
+		self.get_scheduler() \
+			.every(check_interval) \
+			.seconds \
+			.do(
+				self.create_mp_process,
+				t2_units = t2_units,
+				run_state = run_state,
+				doc_limit = doc_limit,
+				log_level = logging.DEBUG,
+				join = join,
+				stop_when_exhausted = stop_when_exhausted
+			)
 
 		print("MP executor scheduled")
 
 
-	def create_mp_process(
-		self, t2_units=None, run_state=T2RunStates.TO_RUN, 
-		doc_limit=None, log_level=logging.DEBUG,
-		join=True, stop_when_exhausted=False
+	def create_mp_process(self,
+		t2_units: Optional[List[str]] = None,
+		run_state: T2RunState = T2RunState.TO_RUN,
+		doc_limit: Optional[int] = None,
+		log_level: int = logging.DEBUG,
+		join: bool = True,
+		stop_when_exhausted: bool = False
 	):
-		"""
-		"""
 
 		q = multiprocessing.Queue()
 		p = multiprocessing.Process(
-			target=T2Controller.run_mp_executor, 
-			args=(q, t2_units, run_state, doc_limit, log_level)
+			target = T2Controller.run_mp_processor,
+			args = (q, t2_units, run_state, doc_limit, log_level)
 		)
 
 		p.start()
@@ -123,88 +128,23 @@ class T2Controller(Schedulable):
 
 
 	@staticmethod
-	def run_mp_executor(
-		mp_queue, t2_units=None, 
-		run_state=T2RunStates.TO_RUN, 
-		doc_limit=None, log_level=logging.DEBUG, 
-		
-	):
-		"""
-		"""
+	def run_mp_processor(
+		mp_queue: multiprocessing.Queue,
+		t2_units: Optional[str] = None,
+		run_state: T2RunState = T2RunState.TO_RUN,
+		doc_limit: Optional[int] = None,
+		log_level: int = logging.DEBUG
+	) -> None:
 
-		t2_exec = T2Executor(
-			t2_units=t2_units, 
-			run_state=run_state, 
-			log_level=logging.DEBUG
+		proc = T2Processor(
+			t2_units = t2_units,
+			run_state = run_state,
+			log_level = logging.DEBUG
 		)
 
 		mp_queue.put(
-			t2_exec.process_docs(
-				doc_limit=doc_limit,
-				extra_log_flags=LogRecordFlag.SCHEDULED_RUN
+			proc.process_t2_doc(
+				doc_limit = doc_limit,
+				extra_base_log_flags = LogRecordFlag.SCHEDULED_RUN
 			)
 		)
-
-
-def get_required_resources(units=None, tier=2):
-	from ampel.config.channel.ChannelConfigLoader import ChannelConfigLoader
-	if units is None:
-		units = set()
-		for channel in ChannelConfigLoader.load_configurations(None, 2):
-			for source in channel.sources:
-				for t2 in source.t2Compute:
-					units.add(t2.unitId)
-	resources = set()
-	for unit in units:
-		for resource in AmpelUnitLoader.get_class(tier, unit).resources:
-			resources.add(resource)
-	return resources
-
-def run():
-
-	from ampel.config.AmpelArgumentParser import AmpelArgumentParser
-	from ampel.config.AmpelConfig import AmpelConfig
-
-	multiprocessing.log_to_stderr(logging.DEBUG)
-
-	parser = AmpelArgumentParser()
-	parser.add_argument('-v', '--verbose', default=False, action="store_true")
-	parser.add_argument('--units', default=None, nargs='+', help='T2 units to run')
-	parser.add_argument(
-		'--interval', default=10, type=int, 
-		help='Seconds to wait between database polls. If < 0, exit after one poll'
-	)
-	parser.add_argument(
-		'--batch-size', default=200, type=int, 
-		help='Process this many T2 docs at a time'
-	)
-
-	parser.add_argument('--raise-exc', default=False, action="store_true", help='Raise exceptions immediately instead of logging')
-	
-	parser.require_resource('mongo', ['writer', 'logger'])
-	# partially parse command line to get config
-	opts, argv = parser.parse_known_args(args=[])
-	parser.require_resources(*get_required_resources(opts.units))
-	# parse again, filling the resource config
-	opts = parser.parse_args()
-	
-	AmpelLogger.set_default_stream(sys.stderr)
-
-	controller = T2Controller(use_defaults=False)
-
-	controller.schedule_executor(
-		doc_limit=logging.DEBUG if opts.verbose else logging.INFO, 
-		check_interval=opts.interval,
-		log_level=logging.DEBUG if opts.verbose else logging.INFO
-	)
-
-	if not opts.verbose:
-		controller.executors[0].logger.quieten_console()
-
-	controller.executors[0].process_docs(
-		limit=opts.batch_size,
-		raise_exc=opts.raise_exc
-	)
-
-	if opts.interval >= 0:
-		controller.run()
