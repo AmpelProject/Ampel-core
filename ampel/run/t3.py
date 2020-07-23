@@ -16,7 +16,7 @@ from ampel.t3.T3Controller import T3Controller
 from ampel.config.t3.T3JobConfig import T3JobConfig
 from ampel.config.t3.T3TaskConfig import T3TaskConfig
 from ampel.config.AmpelConfig import AmpelConfig
-from ampel.common.AmpelUnitLoader import AmpelUnitLoader
+from ampel.abstract.UnitLoader import UnitLoader
 
 log = logging.getLogger(__name__)
 
@@ -28,9 +28,9 @@ def run(args):
 def list_tasks(args):
 	"""List configured tasks"""
 	jobs = AmpelConfig.get('job')
-	labels = {name: [(t.get('task'),t.get('unitId')) for t in job['tasks']] for name, job in jobs.items() if job.get('active', True)}
+	labels = {name: [(t.get('task'),t.get('className')) for t in job['tasks']] for name, job in jobs.items() if job.get('active', True)}
 	if AmpelConfig.get('task') is not None:
-		tasks = [(t.get('task'), t.get('unitId')) for t in AmpelConfig.get('task').values()]
+		tasks = [(t.get('task'), t.get('className')) for t in AmpelConfig.get('task').values()]
 		if len(tasks):
 			labels['(channel tasks)'] = tasks
 	columns = max([len(k) for k in labels.keys()]), max([max([len(k[0]) for k in tasks]) for tasks in labels.values()]), max([max([len(k[1]) for k in tasks]) for tasks in labels.values()])
@@ -102,7 +102,7 @@ def rununit(args):
 				},
 				"channels": {'anyOf': args.channels},
 				"scienceRecords": [r.dict() for r in args.science_records],
-				"withTags": "SURVEY_ZTF",
+				"withTags": "ZTF",
 				"withoutTags": "HAS_ERROR"
 			},
 			"content": {
@@ -119,8 +119,8 @@ def rununit(args):
 		"tasks": [
 			{
 				"task": "rununit.task",
-				"unitId": args.unit,
-				"runConfig": getattr(args, 'runConfig', None)
+				"className": args.unit,
+				"run_config": getattr(args, 'run_config', None)
 			}
 		]
 	}
@@ -136,12 +136,12 @@ def dryrun(args):
 	def make_dry(task):
 		if args.task and task.task != args.task:
 			return False
-		klass = AmpelUnitLoader.get_class(3, task.unitId)
+		klass = UnitLoader.get_class(3, task.className)
 		safe = hasattr(klass, 'RunConfig') and 'dryRun' in klass.RunConfig.__fields__
 		if safe:
-			if task.runConfig is None:
-				task.runConfig = klass.RunConfig()
-			task.runConfig.dryRun = True
+			if task.run_config is None:
+				task.run_config = klass.RunConfig()
+			task.run_config.dryRun = True
 			return True
 		else:
 			log.info('Task {} ({}) has no dryRun config'.format(task.task, klass.__name__))
@@ -169,20 +169,20 @@ def get_required_resources():
 	for job in T3Controller.load_job_configs().values():
 		if isinstance(job, T3JobConfig):
 			for task in job.tasks:
-				units.add(task.unitId)
+				units.add(task.className)
 		else:
 			task = job
-			units.add(task.unitId)
+			units.add(task.className)
 	resources = set()
 	for unit in units:
-		for resource in AmpelUnitLoader.get_class(3, unit).resources:
+		for resource in UnitLoader.get_class(3, unit).resources:
 			resources.add(resource)
 	return resources
 
 def main():
 
-	from ampel.config.t3.ScienceRecordMatchConfig import ScienceRecordMatchConfig
-	from ampel.config.AmpelArgumentParser import AmpelArgumentParser
+	from ampel.config.t3.T2RecordMatchConfig import T2RecordMatchConfig
+	from ampel.run.AmpelArgumentParser import AmpelArgumentParser
 	from argparse import SUPPRESS, Action, Namespace
 	import sys
 
@@ -226,8 +226,8 @@ def main():
 	p.add_argument('--update-tran-journal', default=False, action="store_true", help="Record this run in the transient journal")
 	p.add_argument('--channels', nargs='+', default=[], help="Select transients in any of these channels")
 	p.add_argument('--science-records', nargs='+', default=None,
-	    type=ScienceRecordMatchConfig.parse_raw,
-	    help="Filter based on transient records. The filter should be the JSON representation of a ScienceRecordMatchConfig")
+	    type=T2RecordMatchConfig.parse_raw,
+	    help="Filter based on transient records. The filter should be the JSON representation of a T2RecordMatchConfig")
 	p.add_argument('--chunk', type=int, default=200, help="Provide CHUNK transients at a time")
 	p.add_argument('--created', type=int, default=40, help="Select transients created in the last CREATED days")
 	p.add_argument('--modified', type=int, default=1, help="Select transients modified in the last MODIFIED days")
@@ -240,7 +240,7 @@ def main():
 	
 	opts, argv = parser.parse_known_args()
 	if opts.command == 'rununit':
-		klass = AmpelUnitLoader.get_class(3, opts.unit)
+		klass = UnitLoader.get_class(3, opts.unit)
 		parser.require_resources(*klass.resources)
 		if hasattr(klass, 'RunConfig'):
 			p = subparsers.choices[opts.command]
@@ -287,10 +287,10 @@ def main():
 				else:
 					action = GroupAction
 				if f.required:
-					p.add_argument('runConfig.'+f.name, type=validator, 
+					p.add_argument('run_config.'+f.name, type=validator, 
 					    action=action, metavar=f.name)
 				else:
-					p.add_argument('--'+f.name, dest='runConfig.'+f.name, type=validator,
+					p.add_argument('--'+f.name, dest='run_config.'+f.name, type=validator,
 					    default=f.default, action=action, metavar=f.name.upper(), help="{} parameter".format(opts.unit))
 
 	# Now that side-effect-laden parsing is done, add help
