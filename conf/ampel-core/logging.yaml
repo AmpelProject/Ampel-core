@@ -1,0 +1,71 @@
+default:
+  console:
+    std_stream: stdout
+    datefmt: '%Y-%m-%d %H:%M:%S'
+    level: 1024
+    aggregate_interval: 1.0
+    density: default
+    terminator: '
+
+      '
+    log_sep: '
+
+      '
+    prefix: null
+    provenance: true
+  db:
+    level: 1024
+
+compact:
+  console:
+    level: 1024
+    density: compact
+    log_sep: ''
+  db:
+    level: 1024
+
+headerless:
+  console:
+    level: 1024
+    density: headerless
+  db:
+    level: 1024
+
+prod:
+  console:
+    std_stream: stderr
+    level: 2048
+  db:
+    level: 1024
+
+verbose:
+  console:
+    std_stream: stdout
+    level: 512
+  db:
+    level: 512
+
+debug:
+  console:
+    std_stream: stdout
+    level: 256
+  db:
+    level: 256
+
+silent: {}
+
+console_quiet:
+  console:
+    level: 2048
+
+console_info:
+  console:
+    level: 1024
+
+console_verbose:
+  console:
+    level: 512
+
+console_debug:
+  console:
+    level: 256

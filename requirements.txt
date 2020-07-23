@@ -1,9 +1,8 @@
 pymongo
-fastavro
+pyyaml
 pytest
-pykafka
-sqlalchemy
-psycopg2
 ipython
 pydantic
 sjcl
+schedule
+psutil

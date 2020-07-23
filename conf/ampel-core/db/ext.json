@@ -1,0 +1,17 @@
+{
+	"name": "ext",
+	"collections": [
+		{
+			"name": "counter",
+			"indexes": null
+		},
+		{
+			"name": "journal",
+			"indexes": null
+		}
+	],
+	"role":	{
+		"r": "logger",
+		"w": "logger"
+	}
+}
