@@ -101,6 +101,7 @@ class UnitConfigCollector(AbsListConfigCollector):
 						raise ValueError(f"DataUnit missing for base unit {entry}")
 					entry['base'].remove("DataUnit")
 
+				entry['base'] = entry['base'][:-2]
 				if self.verbose:
 					self.logger.log(VERBOSE,
 						f'Adding {self.conf_section}: {class_name}'
