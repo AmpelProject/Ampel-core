@@ -25,7 +25,7 @@ from ampel.log.utils import report_exception, report_error
 from ampel.log.handlers.DefaultRecordBufferingHandler import DefaultRecordBufferingHandler
 from ampel.util.collections import ampel_iter
 from ampel.util.mappings import build_unsafe_short_dict_id
-from ampel.abstract.AbsRunnable import AbsRunnable
+from ampel.abstract.AbsProcessorUnit import AbsProcessorUnit
 from ampel.abstract.AbsStockT2Unit import AbsStockT2Unit
 from ampel.abstract.AbsPointT2Unit import AbsPointT2Unit
 from ampel.abstract.AbsStateT2Unit import AbsStateT2Unit
@@ -41,7 +41,7 @@ class T2UnitDependency(TypedDict):
 	config: int
 
 
-class T2Processor(AbsRunnable):
+class T2Processor(AbsProcessorUnit):
 	"""
 	:param t2_units: ids of the t2 units to run. If not specified, any t2 unit will be run
 	:param run_state: only t2 docs with field 'status' matching with provided integer number will be processed
@@ -51,10 +51,10 @@ class T2Processor(AbsRunnable):
 	:param send_beacon: whether to update the beacon collection before run() is executed
 	:param gc_collect: whether to actively perform garbage collection between processing of T2 docs
 
-	:param log_profile: See AbsRunnable docstring
-	:param log_db_handler_kwargs: See AbsRunnable docstring
-	:param log_base_flag: See AbsRunnable docstring
-	:param raise_exc: See AbsRunnable docstring (default False)
+	:param log_profile: See AbsProcessorUnit docstring
+	:param db_handler_kwargs: See AbsProcessorUnit docstring
+	:param base_log_flag: See AbsProcessorUnit docstring
+	:param raise_exc: See AbsProcessorUnit docstring (default False)
 	"""
 
 	t2_units: Optional[List[str]]
@@ -106,7 +106,7 @@ class T2Processor(AbsRunnable):
 			'class': self.__class__.__name__,
 			't2_units': self.t2_units,
 			'run_state': self.run_state,
-			'log_base_flag': self.log_base_flag.__int__(),
+			'base_log_flag': self.base_log_flag.__int__(),
 			'doc_limit': self.doc_limit
 		}
 
@@ -145,7 +145,7 @@ class T2Processor(AbsRunnable):
 
 		logger = AmpelLogger.from_profile(
 			self.context, self.log_profile, run_id,
-			base_flag = LogRecordFlag.T2 | LogRecordFlag.CORE | self.log_base_flag
+			base_flag = LogRecordFlag.T2 | LogRecordFlag.CORE | self.base_log_flag
 		)
 
 		if self.send_beacon:
@@ -343,7 +343,7 @@ class T2Processor(AbsRunnable):
 				compound.pop('channel')
 
 				# Load each datapoint referenced by the loaded compound
-				for el in compound['data']:
+				for el in compound['body']:
 
 					# Dict means custom policy/exclusion is set for this datapoint
 					if isinstance(el, dict):
