@@ -126,11 +126,6 @@ class T3BaseProjector(AbsT3Projector):
 
 
 	def project(self, ampel_buffer: Sequence[AmpelBuffer]) -> Sequence[AmpelBuffer]:
-		"""
-		Note that even though the created SnapViews are pseudo-immutable classes,
-		setting attribute values still works using either object.__setattr__(...)
-		or directly modifying <instance>.__dict__ (which we use in this method)
-		"""
 
 		# micro optimization
 		projectors = self.projectors
