@@ -10,18 +10,14 @@
 import schedule, time, threading, logging, json
 from types import MappingProxyType
 from functools import partial
-from multiprocessing import Process
-from ampel.t3.T3Job import T3Job
-from ampel.t3.T3Task import T3Task
-from ampel.config.t3.T3JobConfig import T3JobConfig
-from ampel.config.t3.T3TaskConfig import T3TaskConfig
-from ampel.common.Schedulable import Schedulable
-from ampel.config.t3.ScheduleEvaluator import ScheduleEvaluator
-from ampel.logging.AmpelLogger import AmpelLogger
-from ampel.logging.LoggingUtils import LoggingUtils
-from ampel.common.GraphiteFeeder import GraphiteFeeder
+from ampel.core.Schedulable import Schedulable
+#from ampel.config.t3.ScheduleEvaluator import ScheduleEvaluator
+from ampel.log.AmpelLogger import AmpelLogger
+from ampel.log.LogUtils import LogUtils
+from ampel.metrics.GraphiteFeeder import GraphiteFeeder
 from ampel.config.AmpelConfig import AmpelConfig
-from ampel.core.AmpelUnitLoader import AmpelUnitLoader
+from ampel.util.freeze import recursive_unfreeze
+#from ampel.abstract.UnitLoader import UnitLoader
 
 log = logging.getLogger(__name__)
 
@@ -66,7 +62,7 @@ class T3Controller(Schedulable):
 		super(T3Controller, self).__init__()
 
 		# Setup logger
-		self.logger = AmpelLogger.get_unique_logger()
+		self.logger = AmpelLogger.get_logger()
 		self.logger.info("Setting up T3Controller")
 
 		# Load job configurations
@@ -90,7 +86,7 @@ class T3Controller(Schedulable):
 		# creating multiple MongoClients in the master process
 		fut = self._pool.apply_async(self._run_t3_job,
 		    args=(
-		        AmpelConfig.recursive_unfreeze(AmpelConfig.get_config()),
+		        recursive_unfreeze(AmpelConfig.get_config()),
 		        job_config,
 		))
 		self._tasks.append(fut)
@@ -104,8 +100,8 @@ class T3Controller(Schedulable):
 		try:
 			job = klass(job_config)
 		except Exception as e:
-			LoggingUtils.report_exception(
-				AmpelLogger.get_unique_logger(), e, tier=3, info={
+			LogUtils.report_exception(
+				AmpelLogger.get_logger(), e, tier=3, info={
 					'job': name,
 				}
 			)
@@ -244,7 +240,7 @@ def rununit(args):
 			{
 				"task": "rununit.task",
 				"unitId": args.unit,
-				"runConfig": getattr(args, 'runConfig', None)
+				"run_config": getattr(args, 'run_config', None)
 			}
 		]
 	}
@@ -260,12 +256,12 @@ def dryrun(args):
 	def make_dry(task):
 		if args.task and task.task != args.task:
 			return False
-		klass = AmpelUnitLoader.get_class(3, task.unitId)
+		klass = UnitLoader.get_class(3, task.unitId)
 		safe = hasattr(klass, 'RunConfig') and 'dryRun' in klass.RunConfig.__fields__
 		if safe:
-			if task.runConfig is None:
-				task.runConfig = klass.RunConfig()
-			task.runConfig.dryRun = True
+			if task.run_config is None:
+				task.run_config = klass.RunConfig()
+			task.run_config.dryRun = True
 			return True
 		else:
 			log.info('Task {} ({}) has no dryRun config'.format(task.task, klass.__name__))
@@ -299,13 +295,13 @@ def get_required_resources():
 			units.add(task.unitId)
 	resources = set()
 	for unit in units:
-		for resource in AmpelUnitLoader.get_class(3, unit).resources:
+		for resource in UnitLoader.get_class(3, unit).resources:
 			resources.add(resource)
 	return resources
 
 def main():
 
-	from ampel.config.t3.ScienceRecordMatchConfig import ScienceRecordMatchConfig
+	from ampel.config.t3.T2RecordMatchConfig import T2RecordMatchConfig
 	from ampel.run.AmpelArgumentParser import AmpelArgumentParser
 	from argparse import SUPPRESS, Action, Namespace
 	import sys
@@ -353,8 +349,8 @@ def main():
 	p.add_argument('--update-tran-journal', default=False, action="store_true", help="Record this run in the transient journal")
 	p.add_argument('--channels', nargs='+', default=[], help="Select transients in any of these channels")
 	p.add_argument('--science-records', nargs='+', default=None,
-	    type=ScienceRecordMatchConfig.parse_raw,
-	    help="Filter based on transient records. The filter should be the JSON representation of a ScienceRecordMatchConfig")
+	    type=T2RecordMatchConfig.parse_raw,
+	    help="Filter based on transient records. The filter should be the JSON representation of a T2RecordMatchConfig")
 	p.add_argument('--chunk', type=int, default=200, help="Provide CHUNK transients at a time")
 	p.add_argument('--created', type=float, default=40, help="Select transients created in the last CREATED days")
 	p.add_argument('--modified', type=float, default=1, help="Select transients modified in the last MODIFIED days")
@@ -367,7 +363,7 @@ def main():
 	
 	opts, argv = parser.parse_known_args()
 	if opts.command == 'rununit':
-		klass = AmpelUnitLoader.get_class(3, opts.unit)
+		klass = UnitLoader.get_class(3, opts.unit)
 		parser.require_resources(*klass.resources)
 		if hasattr(klass, 'RunConfig'):
 			p = subparsers.choices[opts.command]
@@ -414,10 +410,10 @@ def main():
 				else:
 					action = GroupAction
 				if f.required:
-					p.add_argument('runConfig.'+f.name, type=validator, 
+					p.add_argument('run_config.'+f.name, type=validator, 
 					    action=action, metavar=f.name)
 				else:
-					p.add_argument('--'+f.name, dest='runConfig.'+f.name, type=validator,
+					p.add_argument('--'+f.name, dest='run_config.'+f.name, type=validator,
 					    default=f.default, action=action, metavar=f.name.upper(), help="{} parameter".format(opts.unit))
 
 	# Now that side-effect-laden parsing is done, add help
