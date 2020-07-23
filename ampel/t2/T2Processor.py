@@ -326,9 +326,7 @@ class T2Processor(AbsProcessorUnit):
 
 				datapoints: List[DataPoint] = []
 				link = t2_doc['link'][0] if isinstance(t2_doc['link'], list) else t2_doc['link']
-				compound: Optional[Compound] = next(
-					self.col_t1.find({'_id': link}), None
-				)
+				compound: Optional[Compound] = next(self.col_t1.find({'_id': link}), None)
 
 				# compound doc must exist (None could mean an ingester bug)
 				if compound is None:
@@ -342,11 +340,16 @@ class T2Processor(AbsProcessorUnit):
 				# 'projection' technic that should not be necessary here)
 				compound.pop('channel')
 
+				dps_ids: List[Any] = []
+
 				# Load each datapoint referenced by the loaded compound
 				for el in compound['body']:
 
 					# Dict means custom policy/exclusion is set for this datapoint
 					if isinstance(el, dict):
+						if 'excl' in el:
+							logger.debug("Ignoring excluded datapoint", extra={'id': el['id']})
+							continue
 						dpid = el['id']
 					elif isinstance(el, datapoint_id):
 						dpid = el
@@ -357,17 +360,26 @@ class T2Processor(AbsProcessorUnit):
 						)
 						raise StopIteration
 
-					if dp := next(self.col_t0.find({'_id': dpid}), None):
-						dp.pop('excl', None)
-						dp.pop('extra', None)
-						dp.pop('policy', None)
-						datapoints.append(dp)
-					else:
-						report_error(
-							self._ampel_db, msg='Datapoint not found', logger=logger,
-							info={'id': compound, 'doc': t2_doc}
-						)
-						return T2RunState.ERROR
+					dps_ids.append(dpid)
+
+				datapoints = list(self.col_t0.find({'_id': {"$in": dps_ids}}))
+
+				if not datapoints:
+					report_error(
+						self._ampel_db, msg='Datapoints not found', logger=logger,
+						info={'id': compound, 'doc': t2_doc}
+					)
+					return T2RunState.ERROR
+
+				elif len(datapoints) != len(dps_ids):
+					for el in set(dps_ids) - {el['_id'] for el in datapoints}:
+						logger.error(f"Datapoint {el} referenced in compound not found")
+					return T2RunState.ERROR
+
+				for dp in datapoints:
+					dp.pop('excl', None)
+					dp.pop('extra', None)
+					dp.pop('policy', None)
 
 				if isinstance(t2_unit, AbsStateT2Unit):
 					args = [compound, datapoints]
