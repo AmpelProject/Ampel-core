@@ -16,6 +16,7 @@ from ampel.model.operator.AllOf import AllOf
 
 
 class AnyOf(GenericModel, Generic[T]):
+
 	any_of: List[Union[T, AllOf[T]]]
 
 	@validator('any_of', pre=True)
