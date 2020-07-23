@@ -101,14 +101,14 @@ class LegacyT3Process1(BaseT3Process):
 				"unit": "T3Controller"
 			},
 			"processor": {
-				"unit": "T3DefaultProcessor",
+				"unit": "T3Processor",
 				"config": {
 					"context": [
 						{'unit': 'T3AddLastRunTime'},
 						{'unit': 'T3AddAlertsNumber'}
 					],
 					"select": {
-						"unit": "T3DefaultStockSelector",
+						"unit": "T3StockSelector",
 						"config": tran['select'],
 						"config": tran['select']
 					},
