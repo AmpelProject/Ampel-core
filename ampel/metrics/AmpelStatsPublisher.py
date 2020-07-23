@@ -13,9 +13,9 @@ from typing import Optional, Dict, Any, Iterable, Container
 from pymongo.collection import Collection
 from pymongo.database import Database
 
-from ampel.types import ChannelId
-from ampel.logging.AmpelLogger import AmpelLogger
-from ampel.utils.mappings import flatten_dict, unflatten_dict, get_by_path
+from ampel.type import ChannelId
+from ampel.log.AmpelLogger import AmpelLogger
+from ampel.util.mappings import flatten_dict, unflatten_dict, get_by_path
 from ampel.core.Schedulable import Schedulable
 from ampel.config.AmpelConfig import AmpelConfig
 from ampel.db.AmpelDB import AmpelDB
@@ -96,7 +96,7 @@ class AmpelStatsPublisher(Schedulable):
 		)
 
 		# Setup logger
-		self.logger = AmpelLogger.get_unique_logger()
+		self.logger = AmpelLogger.get_logger()
 		self.logger.info("Setting up AmpelStatsPublisher")
 
 		# Load provided channels or all channels defined in AmpelConfig
