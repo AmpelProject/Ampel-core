@@ -47,13 +47,13 @@ class ProcessMorpher:
 
 			if 'select' in self.process['processor']['config']:
 				select = self.process['processor']['config']['select']
-				if select['unit'] != 'T3DefaultStockSelector':
+				if select['unit'] != 'T3StockSelector':
 					raise ValueError(
 						f'Cannot enforce channel selection: '
 						f'unknown stock selection unit {select["unit"]}'
 					)
 			else:
-				select = {'unit': 'T3DefaultStockSelector', 'config': {}}
+				select = {'unit': 'T3StockSelector', 'config': {}}
 				self.process['processor']['config']['select'] = select
 
 			if 'config' not in select:
