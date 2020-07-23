@@ -64,7 +64,7 @@ class SVGCollection:
 			SVGPlot(
 				content=svg_dict['svg'], 
 				title=svg_dict['title'], 
-				tags=svg_dict['tags'], 
+				tags=svg_dict['tag'], 
 				title_left_padding=title_left_padding
 			)
 		)

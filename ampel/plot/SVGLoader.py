@@ -28,7 +28,7 @@ class SVGLoader:
 	@staticmethod	
 	def load_all(
 		tran_id=None, plot_tag=None, plot_tags=None,
-		t2_unit_id=None, t2_run_config=None
+		t2_class_name=None, t2_run_config=None
 	):
 		""" """
 
@@ -42,7 +42,7 @@ class SVGLoader:
 			tran_id=tran_id, 
 			plot_tag=plot_tag, 
 			plot_tags=plot_tags,
-			t2_unit_id=t2_unit_id, 
+			t2_class_name=t2_class_name, 
 			t2_run_config=t2_run_config
 		)
 
@@ -70,13 +70,13 @@ class SVGLoader:
 		if self._t2_query is not None:
 
 			for el in AmpelDB.get_collection("t2").find(self._t2_query._query):
-				if 'results' not in el or not el['results']:
+				if 'body' not in el or not el['body']:
 					continue
-				if 'output' in el['results'][-1] and 'plots' in el['results'][-1]['output']:
+				if 'output' in el['body'][-1] and 'plots' in el['body'][-1]['output']:
 					self._load_plots(
 						el['tranId'], 
 						self._t2_query, 
-						el['results'][-1]['output']['plots']
+						el['body'][-1]['output']['plots']
 					)
 
 
@@ -84,13 +84,13 @@ class SVGLoader:
 		""" """
 
 		for p in plots:
-			
+
 			if query.tag:
-				if not query.tag in p['tags']:
+				if not query.tag in p['tag']:
 					continue
 
 			if query.tags:
-				if not all(x in p['tags'] for x in query.tags):
+				if not all(x in p['tag'] for x in query.tags):
 					continue
 					
 			self._plots[tran_id].add_raw_db_dict(p)

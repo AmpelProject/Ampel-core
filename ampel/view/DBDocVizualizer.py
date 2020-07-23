@@ -12,7 +12,7 @@ from IPython.display import Markdown, display
 
 from ampel.base.flags.TransientFlags import TransientFlags
 from ampel.base.flags.PhotoFlags import PhotoFlags
-from ampel.flags.T2RunStates import T2RunStates
+from ampel.t2.T2RunState import T2RunState
 from ampel.flags.AlDocType import AlDocType
 from ampel.flags.FlagUtils import FlagUtils
 
@@ -75,7 +75,7 @@ class DBDocVizualizer:
 			self.set_dict_first_keys(db_dict, d, "T2RECORD")
 			d['channels'] = db_dict['channels']
 			d['t2Unit'] = db_dict['t2Unit']
-			d['runConfig'] = db_dict['runConfig']
+			d['config'] = db_dict['config']
 			d['compoundId'] = db_dict['compoundId']
 			self.copy_the_rest(db_dict, d)
 
@@ -139,7 +139,7 @@ class DBDocVizualizer:
 	def fine_tune_output(self, json_str):
 
  		# replace "alDocType": "T2RECORD"    with    "alDocType": T2RECORD
-		for el in ["alDocType", "alTags", "channels", "t2Compute", "runState"]:
+		for el in ["alDocType", "alTags", "channels", "t2_compute", "runState"]:
 			json_str = re.sub(el+"\": \"(.*)\"", el+"\": \\1", json_str)
   
 		# replace "ObjectId(5a58ee386f21dad72c56f95e)" with ObjectId("5a58ee386f21dad72c56f95e")
@@ -163,7 +163,7 @@ class DBDocVizualizer:
 
 		if "runState" in d_src:
 			d_dest['runState'] = self.pretty_print_flag(
-				FlagUtils.dbtags_to_enumflag([d_src['runState']], T2RunStates)
+				FlagUtils.dbtags_to_enumflag([d_src['runState']], T2RunState)
 			)
 
 		for key in d_src.keys():

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/view/AmpelAlertPlotter.py
+# File              : ampel/view/PhotoAlertPlotter.py
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 23.01.2018
 # Last Modified Date: 13.06.2018
@@ -18,7 +18,7 @@ from matplotlib.colors import Normalize
 import logging
 logger =  None
 
-class AmpelAlertPlotter:
+class PhotoAlertPlotter:
 	
 	
 	pp_colors = ["C2","C3","C1"]
@@ -27,15 +27,15 @@ class AmpelAlertPlotter:
 	
 	
 	@staticmethod
-	def get_cutout_numeric(ampel_alert, which, scaler = None):
+	def get_cutout_numeric(alert, which, scaler = None):
 		"""
 			parse the cutout tstamp into numeric data
 			
 			Parameters:
 			----------
 			
-				ampel_alert: 
-					instance of `ampel.t0.AmpelAlert` or `ampel.t0.DevAmpelAlert`
+				alert: 
+					instance of `ampel.t0.PhotoAlert` or `ampel.t0.DevPhotoAlert`
 				
 				which: `str`
 					either 'cutoutScience', 'cutoutTemplate', or 'cutoutDiffernce'.
@@ -45,9 +45,9 @@ class AmpelAlertPlotter:
 					accept and return a 2d numpy array.
 			"""
 		
-		#TODO: check that ampel_alert is a DevAmpelAlert
+		#TODO: check that alert is a DevPhotoAlert
 		
-		stamp = ampel_alert.get_cutout(which)
+		stamp = alert.get_cutout(which)
 		with gzip.open(io.BytesIO(stamp), 'rb') as f:
 			raw = fits.open(io.BytesIO(f.read()))[0].data
 			if not scaler is None:
@@ -83,7 +83,7 @@ class AmpelAlertPlotter:
 		
 		self.interactive = interactive
 		if self.interactive:
-			self.logger.info("Initialized AmpelAlertPlotter in interactive mode.")
+			self.logger.info("Initialized PhotoAlertPlotter in interactive mode.")
 		else:
 			if plot_dir is None:
 				plot_dir = "./"
@@ -91,12 +91,12 @@ class AmpelAlertPlotter:
 				os.makedirs(plot_dir)
 			self.plot_dir = plot_dir
 			self.logger.info(
-				"Initialized AmpelAlertPlotter in bash-mode. Plots will be saved to %s."%self.plot_dir)
+				"Initialized PhotoAlertPlotter in bash-mode. Plots will be saved to %s."%self.plot_dir)
 		self.base_plot_name_tmpl = plot_name_tmpl
 
 
-	def save_current_plot(self, ampel_alert, file_name_template, **kwargs):
-		alert_props = {**ampel_alert.pps[0], 'objectId': ampel_alert.tran_id}
+	def save_current_plot(self, alert, file_name_template, **kwargs):
+		alert_props = {**alert.pps[0], 'objectId': alert.tran_id}
 		fname = file_name_template.format(**alert_props)
 		fname = os.path.join(self.plot_dir, fname)
 		fig = plt.gcf()
@@ -105,7 +105,7 @@ class AmpelAlertPlotter:
 		self.logger.info("current figure saved to %s"%fname)
 
 
-	def exit(self, ampel_alert, fine_name_tag, ax_given, ax, **kwargs):
+	def exit(self, alert, fine_name_tag, ax_given, ax, **kwargs):
 		"""
 			depeding on wheather you are in interactive mode, and if an
 			axes was given to the function, either show, save, or return axes.
@@ -118,19 +118,19 @@ class AmpelAlertPlotter:
 			return ax
 		else:
 			fname_tmplt = fine_name_tag+self.base_plot_name_tmpl
-			self.save_current_plot(ampel_alert, fname_tmplt, **kwargs)
+			self.save_current_plot(alert, fname_tmplt, **kwargs)
 			return None
 
 
-	def scatter_plot(self, ampel_alert, p1, p2, ax = None, **kwargs):
+	def scatter_plot(self, alert, p1, p2, ax = None, **kwargs):
 		"""
 			Make scatter plot of parameter p1 vs p2.
 		
 			Parameters:
 			-----------
 			
-			ampel_alert: 
-				instance of `ampel.t0.AmpelAlert` or `ampel.t0.DevAmpelAlert`
+			alert: 
+				instance of `ampel.t0.PhotoAlert` or `ampel.t0.DevPhotoAlert`
 			
 			p1[2]: `str`
 				x[y]-axis parameter (ex: p1 = 'obs_date', p2 = 'magpsf' to plot lightcurve)
@@ -152,28 +152,28 @@ class AmpelAlertPlotter:
 		if ax is None:
 			ax = plt.axes()
 			ax_given = False
-		ax.scatter(*zip(*ampel_alert.get_tuples(p1, p2)), **kwargs)
+		ax.scatter(*zip(*alert.get_tuples(p1, p2)), **kwargs)
 		ax.set_xlabel(p1)
 		ax.set_ylabel(p2)
 		ax.grid(True)
 		
-		return self.exit(ampel_alert, "scatter_%s_%s"%(p1, p2), ax_given, ax, **kwargs)
+		return self.exit(alert, "scatter_%s_%s"%(p1, p2), ax_given, ax, **kwargs)
 
 
-	def plot_lc(self, ampel_alert, ax = None, time_format = 'datetime', **kwargs):
+	def plot_lc(self, alert, ax = None, time_format = 'datetime', **kwargs):
 		"""
 			plot lightcurve for transient: magpsf vs. jd
 		"""
 		
 		# dectections and upper limits
 		mag, mag_err, jd, fid = [
-			np.array(x) for x in zip(*ampel_alert.get_ntuples(["magpsf", "sigmapsf", "jd","fid"]))]
+			np.array(x) for x in zip(*alert.get_ntuples(["magpsf", "sigmapsf", "jd","fid"]))]
 		
 		# if there are upper limits get them
 		has_ulim = False
-		if not ampel_alert.uls is None and len(ampel_alert.uls)>0:
+		if not alert.uls is None and len(alert.uls)>0:
 			ul_mag_lim, ul_jd, ul_fid = [
-				np.array(x) for x in zip(*ampel_alert.get_ntuples(["diffmaglim", "jd","fid"], upper_limits=True))]
+				np.array(x) for x in zip(*alert.get_ntuples(["diffmaglim", "jd","fid"], target_upper_limits=True))]
 			has_ulim = True
 		
 		# convert the time
@@ -226,10 +226,10 @@ class AmpelAlertPlotter:
 		ax.set_ylabel("mag (magpsf)", fontsize="large")
 		ax.xaxis.set_major_formatter(mdates.DateFormatter('%m/%d/%y'))
 		
-		return self.exit(ampel_alert, "lc_", ax_given, ax, **kwargs)
+		return self.exit(alert, "lc_", ax_given, ax, **kwargs)
 
 
-	def plot_cutout(self, ampel_alert, which, ax = None, cb = False, scaler = None, **kwargs):
+	def plot_cutout(self, alert, which, ax = None, cb = False, scaler = None, **kwargs):
 		"""
 			plot image cutout.
 		"""
@@ -238,7 +238,7 @@ class AmpelAlertPlotter:
 			ax = plt.axes()
 			ax_given = False
 		
-		img_data = AmpelAlertPlotter.get_cutout_numeric(ampel_alert, which, scaler)
+		img_data = PhotoAlertPlotter.get_cutout_numeric(alert, which, scaler)
 		mask = np.isfinite(img_data)
 		im = ax.imshow(
 			img_data, 
@@ -252,14 +252,14 @@ class AmpelAlertPlotter:
 		ax.set_xticks([])
 		
 		# return show
-		return self.exit(ampel_alert, which+"_", ax_given, ax, **kwargs)
+		return self.exit(alert, which+"_", ax_given, ax, **kwargs)
 
 
 	@staticmethod
-	def plot_ps1_cutout(ampel_alert, ax = None):
+	def plot_ps1_cutout(alert, ax = None):
 		pass
 	
-	def summary_plot(self, ampel_alert, ps1_cutout=False, **kwargs):
+	def summary_plot(self, alert, ps1_cutout=False, **kwargs):
 		"""
 			create a summary plot for the given alert. This includes
 			the three cutouts (ref, sci, diff), the light curve, and
@@ -283,13 +283,13 @@ class AmpelAlertPlotter:
 
 		# plot the cutouts
 		for which in ('cutoutScience', 'cutoutTemplate', 'cutoutDifference'):
-			yy = self.plot_cutout(ampel_alert, which, ax=cutout_axes[which])
+			yy = self.plot_cutout(alert, which, ax=cutout_axes[which])
 		
 		# plot the lightcurve
-		xx = self.plot_lc(ampel_alert, ax=axlc)
+		xx = self.plot_lc(alert, ax=axlc)
 
 		# add text
-		candidate = ampel_alert.pps[0]
+		candidate = alert.pps[0]
 		info = []
 		for k in ["rb","fwhm","nbad", "elong", "isdiffpos", "ssdistnr"]:
 			try:
@@ -300,13 +300,13 @@ class AmpelAlertPlotter:
 			for k in [k for k in candidate.keys() if kk in k]:
 				info.append("%s : %.2f"%(k, float(candidate.get(k))) )
 		fig.text(0.68,0.6, " \n".join(info), va="top", fontsize="medium", color="0.3")
-		fig.text(0.01,0.99, ampel_alert.tran_id, fontsize="x-large", color="k", va="top", ha="left")
+		fig.text(0.01,0.99, alert.tran_id, fontsize="x-large", color="k", va="top", ha="left")
 		
 		# now go back to previous state
 		if self.interactive:
 			plt.show(fig)
 		else:
-			self.save_current_plot(ampel_alert, "summary_"+self.base_plot_name_tmpl, **kwargs)
+			self.save_current_plot(alert, "summary_"+self.base_plot_name_tmpl, **kwargs)
 
 
 

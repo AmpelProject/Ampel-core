@@ -65,8 +65,8 @@ class SVGQuery:
 		For example:
 		set_query_parameter(
 			"$or", [
-				{'t2UnitId': 'myFirstT2', 'runConfig': 'default'}, 
-				{'t2UnitId': 'myT2'}
+				{'t2Id': 'myFirstT2', 'run_config': 'default'}, 
+				{'t2Id': 'myT2'}
 			]
 		)
 		"""

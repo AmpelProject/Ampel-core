@@ -52,7 +52,7 @@ class SVGUtils:
 		ret = {'name': file_name}
 
 		if tags:
-			ret['tags'] = tags
+			ret['tag'] = tags
 
 		if title:
 			ret['title'] = title
