@@ -4,16 +4,21 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 09.10.2019
-# Last Modified Date: 13.06.2020
+# Last Modified Date: 18.06.2020
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from typing import Union, List, Optional, Dict, Any
 from ampel.model.StrictModel import StrictModel
+from ampel.model.purge.PurgeModel import PurgeModel
 
 
 class ChannelModel(StrictModel):
 
 	channel: Union[int, str]
+	purge: PurgeModel = {
+		'content': {'delay': 100, 'format': 'json', 'unify': True},
+		'logs': {'delay': 50, 'format': 'csv'}
+	}
 	active: bool = True
 	hash: Optional[int]
 	distrib: Optional[str]
@@ -21,6 +26,7 @@ class ChannelModel(StrictModel):
 	contact: Optional[str]
 	access: Optional[List[str]]
 	policy: List[str] = []
+
 
 	def dict(self, **kwargs) -> Dict[str, Any]:
 		if 'exclude_defaults' not in kwargs:
