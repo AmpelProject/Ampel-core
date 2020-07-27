@@ -4,7 +4,7 @@ db:
 unit:
 
   controller:
-    - ampel.t0.T0Controller
+#    - ampel.t0.T0Controller
     - ampel.t3.T3Controller
 
   admin:
