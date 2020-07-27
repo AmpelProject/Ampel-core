@@ -13,7 +13,7 @@ from functools import partial
 from ampel.core.Schedulable import Schedulable
 #from ampel.config.t3.ScheduleEvaluator import ScheduleEvaluator
 from ampel.log.AmpelLogger import AmpelLogger
-from ampel.log.LogUtils import LogUtils
+from ampel.log.utils import report_exception
 from ampel.metrics.GraphiteFeeder import GraphiteFeeder
 from ampel.config.AmpelConfig import AmpelConfig
 from ampel.util.freeze import recursive_unfreeze
@@ -108,7 +108,7 @@ class T3Controller(Schedulable):
 		try:
 			job = klass(job_config)
 		except Exception as e:
-			LogUtils.report_exception(
+			report_exception(
 				AmpelLogger.get_logger(), e, tier=3, info={
 					'job': name,
 				}
