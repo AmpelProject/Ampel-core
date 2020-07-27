@@ -33,7 +33,7 @@ class ConfigBuilder:
 
 	def __init__(self, logger: AmpelLogger = None, verbose: bool = False):
 
-		self.logger = AmpelLogger.get_logger(console_options={'level': 0} if verbose else None) if logger is None else logger
+		self.logger = AmpelLogger.get_logger(console={'level': 0} if verbose else None) if logger is None else logger
 		self.first_pass_config = FirstPassConfig(logger, verbose)
 		self.templates: Dict[str, Any] = {}
 		self.verbose = verbose
