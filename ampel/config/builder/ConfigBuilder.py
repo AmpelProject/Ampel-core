@@ -207,6 +207,8 @@ class ConfigBuilder:
 					)
 				except Exception as e:
 					self.logger.error(f'Unable to morph process {p["name"]}', exc_info=e)
+					if not ignore_errors:
+						raise
 
 		# Setup empty channel collector
 		out['channel'] = ChannelConfigCollector(
@@ -248,9 +250,13 @@ class ConfigBuilder:
 
 						except Exception as ee:
 							self.logger.error(f'Unable to morph process: {p["name"]}', exc_info=ee)
+							if not ignore_errors:
+								raise
 
 				except Exception as e:
 					self.logger.error(f'Unable to morph channel "{chan_name}"', exc_info=e)
+					if not ignore_errors:
+						raise
 
 			else:
 
