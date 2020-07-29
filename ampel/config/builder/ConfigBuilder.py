@@ -15,6 +15,9 @@ from ampel.util.crypto import aes_recursive_decrypt
 from ampel.abstract.AbsChannelTemplate import AbsChannelTemplate
 from ampel.log.AmpelLogger import AmpelLogger, VERBOSE
 from ampel.config.builder.FirstPassConfig import FirstPassConfig
+from ampel.config.AmpelConfig import AmpelConfig
+from ampel.core.UnitLoader import UnitLoader
+from ampel.model.UnitModel import UnitModel
 from ampel.config.collector.ConfigCollector import ConfigCollector
 from ampel.config.collector.T02ConfigCollector import T02ConfigCollector
 from ampel.model.template.ChannelWithProcsTemplate import ChannelWithProcsTemplate
@@ -158,6 +161,8 @@ class ConfigBuilder:
 			k: self.first_pass_config[k]
 			for k in FirstPassConfig.conf_keys.keys()
 		}
+
+		UnitModel._unit_loader = UnitLoader(AmpelConfig(self.first_pass_config))
 
 		out['process'] = {}
 
