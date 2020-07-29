@@ -45,7 +45,7 @@ class UnitModel(StrictModel):
 			if cls._unit_loader is None:
 				return v
 			unit = cls._unit_loader.get_class_by_name(values['unit'])
-		if not isinstance(unit, DataUnit):
+		if not issubclass(unit, DataUnit):
 			return v
 		config = dict()
 		if v:
