@@ -52,6 +52,7 @@ class UnitLoader:
 
 		self.ampel_config = config
 		self.unit_defs: List[Dict] = [
+			config._config['unit']['controller'],
 			config._config['unit']['base'],
 			config._config['unit']['admin'],
 			config._config["unit"]["core"],
