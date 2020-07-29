@@ -39,7 +39,7 @@ class UnitModel(StrictModel):
 
 	@validator('config')
 	def validate_config(cls, v, values, **kwargs):
-		if unit := values.get('unit', None) is None:
+		if (unit := values.get('unit', None)) is None:
 			return v
 		elif isinstance(unit, str):
 			if cls._unit_loader is None:
