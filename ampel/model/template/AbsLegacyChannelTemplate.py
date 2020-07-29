@@ -98,18 +98,19 @@ class AbsLegacyChannelTemplate(AbsChannelTemplate, abstract=True):
 				"unit": "AlertProcessor",
 				"config": {
 					"publish_stats": ["graphite", "processDoc"],
-					"directives": {
+					"process_name": f"{self.channel}|T0|{self.template}",
+					"directives": [{
 						"channel": self.channel,
 						"stock_match": self.auto_complete,
 						"filter": self.t0_filter.dict(skip_defaults=True, by_alias=True),
 						"t0_add": self._get_dict(t0_ingester),
 						"stock_update": self._get_dict(stock_ingester)
-					}
+					}]
 				}
 			}
 		}
 
-		directives = ret['processor']['config']['directives']
+		directives = ret['processor']['config']['directives'][0]
 
 		if t2_state_units := self.get_t2_units(["AbsStateT2Unit", "AbsCustomStateT2Unit"], first_pass_config):
 
