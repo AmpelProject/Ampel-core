@@ -34,6 +34,20 @@ class AbsLegacyChannelTemplate(AbsChannelTemplate, abstract=True):
 			return [v]
 		return v
 
+	@validator('auto_complete')
+	def make_auto_stock_match(cls, v):
+		if v is True or v == 'live':
+			return {
+				'filter': 'bypass',
+				'update_rej': True,
+				'retro_complete': True
+			}
+		else:
+			return {
+				'filter': 'overrule',
+				'update_rej': False,
+				'retro_complete': False
+			}
 
 	# Mandatory implementation
 	def get_channel(self, logger: AmpelLogger) -> Dict[str, Any]:
@@ -86,7 +100,7 @@ class AbsLegacyChannelTemplate(AbsChannelTemplate, abstract=True):
 					"publish_stats": ["graphite", "processDoc"],
 					"directives": {
 						"channel": self.channel,
-						"auto_complete": self.auto_complete,
+						"stock_match": self.auto_complete,
 						"filter": self.t0_filter.dict(skip_defaults=True, by_alias=True),
 						"t0_add": self._get_dict(t0_ingester),
 						"stock_update": self._get_dict(stock_ingester)
