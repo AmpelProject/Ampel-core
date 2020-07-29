@@ -119,7 +119,7 @@ class UnitLoader:
 				continue
 
 			# Global resource example: extcat
-			if resource := self.ampel_config.get(f'resource.{k}') is None:
+			if (resource := self.ampel_config.get(f'resource.{k}')) is None:
 				raise ValueError(f"Global resource not available: {k}")
 
 			resources[k] = resource
