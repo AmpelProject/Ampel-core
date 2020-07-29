@@ -289,7 +289,8 @@ class T2Processor(AbsProcessorUnit):
 				jupdater.flush()
 
 			except Exception as e:
-
+				if self.raise_exc:
+					raise e
 				self._processing_error(
 					logger, t2_rec=t2_doc, sub_rec=sub_rec, jrec=jrec,
 					exception=e, sub_rec_msg='An exception occured'
@@ -452,7 +453,8 @@ class T2Processor(AbsProcessorUnit):
 				return T2RunState.ERROR
 
 		except Exception as e:
-
+			if self.raise_exc:
+				raise e
 			# Record any uncaught exceptions in troubles collection.
 			report_exception(
 				self._ampel_db, logger, exc=e, info={
