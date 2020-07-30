@@ -155,9 +155,9 @@ class AbsLegacyChannelTemplate(AbsChannelTemplate, abstract=True):
 		""" internal use """
 		if isinstance(arg, tuple):
 			if arg[1]:
-				return {"ingester": arg[0], "config": arg[1], **kwargs}
-			return {"ingester": arg[0], **kwargs}
-		return {"ingester": arg, **kwargs}
+				return {"unit": arg[0], "config": arg[1], **kwargs}
+			return {"unit": arg[0], **kwargs}
+		return {"unit": arg, **kwargs}
 
 
 	def get_t2_units(self, abs_unit: Union[str, List[str]], first_pass_config: FirstPassConfig) -> List[Dict]:

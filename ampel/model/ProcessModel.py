@@ -35,7 +35,7 @@ class ProcessModel(StrictModel):
 	@validator('schedule', pre=True, whole=True)
 	def _cast_to_list(cls, v):
 		if isinstance(v, str):
-			return (v, )
+			return [v]
 		return v
 
 
