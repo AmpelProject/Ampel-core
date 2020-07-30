@@ -20,7 +20,7 @@ from ampel.model.ingest.T2ComputeModel import T2ComputeModel
 class IngestionDirective(StrictModel):
 
 	channel: ChannelId
-	t0_add: T0AddModel
+	t0_add: Optional[T0AddModel]
 	t1_combine: Optional[List[T1CombineModel]]
 	t2_compute: Optional[T2ComputeModel]
 	stock_update: Union[UnitModel, str]
