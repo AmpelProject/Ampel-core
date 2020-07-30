@@ -109,15 +109,14 @@ class LegacyT3Process1(BaseT3Process):
 					],
 					"select": {
 						"unit": "T3StockSelector",
-						"config": tran['select'],
 						"config": tran['select']
 					},
 					"load": {
-						"unit": "DBContentLoader",
+						"unit": "T3SimpleDataLoader",
 						"config": tran['content']
 					},
 					"run": {
-						"unit": "T3MonoUnitExecutor",
+						"unit": "T3UnitRunner",
 						"config": d['config']
 					} if not d.get('task') else d.get('task')
 				}
