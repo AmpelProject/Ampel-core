@@ -41,8 +41,7 @@ def build_stateless_query(
 	query = build_general_query(stock=stock, channel=channel)
 
 	if t2_subsel:
-		query['t2Id'] = t2_subsel if isinstance(t2_subsel, str) \
-			else match_array(t2_subsel)
+		query['unit'] = t2_subsel if isinstance(t2_subsel, str) else match_array(t2_subsel)
 
 	return query
 
@@ -67,8 +66,7 @@ def build_statebound_t2_query(
 	query['link'] = get_compound_match(states)
 
 	if t2_subsel:
-		query['unit'] = t2_subsel if isinstance(t2_subsel, str) \
-			else match_array(t2_subsel)
+		query['unit'] = t2_subsel if isinstance(t2_subsel, str) else match_array(t2_subsel)
 
 	return query
 
