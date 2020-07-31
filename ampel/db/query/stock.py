@@ -53,7 +53,7 @@ def build_stock_query(
 	if time_created or time_modified:
 
 		chans = LogicSchemaUtils.reduce_to_set(
-			"Any" if channel is None else channel
+			"any" if channel is None else channel
 		)
 
 		or_list = []
