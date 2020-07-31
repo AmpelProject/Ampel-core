@@ -25,10 +25,10 @@ class AbsLegacyChannelTemplate(AbsChannelTemplate, abstract=True):
 	auto_complete: Union[bool, str]
 	t0_filter: UnitModel
 	t2_compute: List[UnitModel] = []
-	t3_supervize: List[Dict[str, Any]] = []
+	t3_supervise: List[Dict[str, Any]] = []
 
 
-	@validator('t3_supervize', 't2_compute', pre=True, whole=True)
+	@validator('t3_supervise', 't2_compute', pre=True, whole=True)
 	def cast_to_list_if_required(cls, v):
 		if isinstance(v, dict):
 			return [v]
@@ -52,7 +52,7 @@ class AbsLegacyChannelTemplate(AbsChannelTemplate, abstract=True):
 	# Mandatory implementation
 	def get_channel(self, logger: AmpelLogger) -> Dict[str, Any]:
 		d = self.dict(by_alias=True)
-		for k in ("auto_complete", "t0_filter", "t2_compute", "t3_supervize"):
+		for k in ("auto_complete", "t0_filter", "t2_compute", "t3_supervise"):
 			if k in d:
 				del d[k]
 		return d
