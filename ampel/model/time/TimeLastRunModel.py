@@ -18,7 +18,7 @@ class TimeLastRunModel(StrictModel):
 
 	match_type: Literal['time_last_run']
 	process_name: str
-	fallback: Union[None, Dict] = None
+	fallback: Union[None, Dict] = {'days': -1}
 
 
 	def get_timestamp(self, **kwargs) -> Optional[float]:
