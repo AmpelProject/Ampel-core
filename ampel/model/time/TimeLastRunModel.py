@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 29.09.2018
-# Last Modified Date: 20.06.2020
+# Last Modified Date: 31.07.2020
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from typing import Union, Dict, Optional, Literal
@@ -35,19 +35,15 @@ class TimeLastRunModel(StrictModel):
 		col = ampel_db.get_collection('events')
 
 		# First query the last 10 days
-		res = next(
-			col.aggregate(
-				get_last_run(
-					col, model.process_name,
-					gte_time=(datetime.today() - timedelta(days=10)).timestamp()
-				)
-			), None
+		res = get_last_run(
+			col, model.process_name,
+			gte_time=(datetime.today() - timedelta(days=10)).timestamp()
 		)
 
 		# If nothing is found, try querying the entire collection (days_back=None)
 		if res is None:
-			res = next(col.aggregate(get_last_run(col, model.process_name)), None)
+			res = get_last_run(col, model.process_name)
 			if not res:
 				return None
 
-		return res['events']['ts']
+		return res
