@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 07.10.2019
-# Last Modified Date: 15.06.2020
+# Last Modified Date: 01.08.2020
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from importlib import import_module
@@ -64,34 +64,37 @@ class UnitLoader:
 		]
 
 
-	def get_init_config(self, unit_model: UnitModel) -> Dict[str, Any]:
+	def get_init_config(self,
+		config: Optional[Union[int, str, Dict[str, Any]]] = None,
+		override: Optional[Dict[str, Any]] = None
+	) -> Dict[str, Any]:
 		""" :raises: ValueError is model type is not recognized """
 
-		if not unit_model.config:
+		if not config:
 			return {}
 
 		ret: Optional[Dict[str, Any]] = None
 
-		if isinstance(unit_model.config, dict):
-			ret = unit_model.config
+		if isinstance(config, dict):
+			ret = config
 
-		elif isinstance(unit_model.config, int):
-			ret = self.ampel_config.get(f"confid.{unit_model.config}", dict)
+		elif isinstance(config, int):
+			ret = self.ampel_config.get(f"confid.{config}", dict)
 
 		# Load init config from alias
-		elif isinstance(unit_model.config, (int, str)):
+		elif isinstance(config, (int, str)):
 
 			for adict in self.aliases:
-				if unit_model.config in adict:
-					ret = adict[unit_model.config]
+				if config in adict:
+					ret = adict[config]
 					break
 
 		if not ret:
-			raise ValueError(f"Config alias {unit_model.config} not found")
+			raise ValueError(f"Config alias {config} not found")
 
-		if ret and getattr(unit_model, 'override', None):
+		if ret and override:
 			return unflatten_dict(
-				{**flatten_dict(ret), **flatten_dict(unit_model.override)} # type: ignore
+				{**flatten_dict(ret), **flatten_dict(override)} # type: ignore
 			)
 
 		return ret
@@ -184,7 +187,7 @@ class UnitLoader:
 			self.check_class(unit_model.unit, unit_type)
 
 		return unit_model.unit(
-			**{**self.get_init_config(unit_model), **kwargs} # py3.9 will allow more concise writing
+			**{**self.get_init_config(unit_model.config, unit_model.override), **kwargs} # py3.9 will allow more concise writing
 		) # type: ignore[call-arg]
 
 
@@ -208,7 +211,7 @@ class UnitLoader:
 
 		return self.new(
 			unit_model, unit_type=sub_type, logger=logger, resource=self.get_resources(unit_model),
-			**{**self.get_init_config(unit_model), **kwargs}
+			**{**self.get_init_config(unit_model.config, unit_model.override), **kwargs}
 		)
 
 
@@ -232,7 +235,7 @@ class UnitLoader:
 
 		return self.new(
 			unit_model, unit_type=sub_type, context=context,
-			**{**self.get_init_config(unit_model), **kwargs}
+			**{**self.get_init_config(unit_model.config, unit_model.override), **kwargs}
 		)
 
 
