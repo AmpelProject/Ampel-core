@@ -137,7 +137,11 @@ class ConfigBuilder:
 			)
 
 
-	def build_config(self, ignore_errors: bool = False, pwds: Optional[Iterable[str]] = None) -> Dict[str, Any]:
+	def build_config(self,
+		ignore_errors: bool = False,
+		validate_unit_models: bool = True,
+		pwds: Optional[Iterable[str]] = None
+	) -> Dict[str, Any]:
 		"""
 		Pass 2.
 		Builds the final ampel config using previously collected config pieces (contained in self.first_pass_config)
@@ -162,7 +166,8 @@ class ConfigBuilder:
 			for k in FirstPassConfig.conf_keys.keys()
 		}
 
-		UnitModel._unit_loader = UnitLoader(AmpelConfig(self.first_pass_config))
+		if validate_unit_models:
+			UnitModel._unit_loader = UnitLoader(AmpelConfig(self.first_pass_config))
 
 		out['process'] = {}
 
