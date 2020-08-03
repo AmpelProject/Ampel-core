@@ -13,6 +13,8 @@ from pydantic import validator
 
 from ampel.t3.select.T3StockSelector import T3StockSelector
 from ampel.model.t3.T2FilterModel import T2FilterModel
+from ampel.db.query.general import build_general_query
+from ampel.db.query.utils import match_array
 
 class T3FilteringStockSelector(T3StockSelector):
 	"""
@@ -43,26 +45,23 @@ class T3FilteringStockSelector(T3StockSelector):
 		# Execute query on T0 collection to get target stocks
 		stock_ids = [doc['_id'] for doc in super().fetch()]
 
-		# Extract parameters for T2 query
-		target_t2s = list(set(f.unit for f in self.t2_filter))
-		match_doc = {f"{f.unit}.{k}": v for f in self.t2_filter for k,v in f.match.items()}
-
 		# Execute aggregation on T2 collection to get matching subset of stocks
-		pipeline = self._t2_filter_pipeline(stock_ids, target_t2s, match_doc)
 		cursor = self.context.db.get_collection('t2').aggregate(
-			pipeline
+			self._t2_filter_pipeline(stock_ids)
 		)
 
 		return cursor
 
-	def _t2_filter_pipeline(self, stock_ids: Sequence, target_t2s: Sequence[str], match_doc: Dict) -> List[Dict]:
-		merge = self._t2_merge_pipeline(stock_ids, target_t2s)
+	def _t2_filter_pipeline(self, stock_ids: Sequence) -> List[Dict]:
+		merge = self._t2_merge_pipeline(stock_ids)
+		# Extract parameters for T2 query
+		match_doc = {f"{f.unit}.{k}": v for f in self.t2_filter for k,v in f.match.items()}
 		return merge + [
 			{'$match': match_doc},
 			{'$project': {'_id': 1}}
 		]
 
-	def _t2_merge_pipeline(self, stock_ids: Sequence, target_t2s: Sequence[str]) -> List[Dict[str, Any]]:
+	def _t2_merge_pipeline(self, stock_ids: Sequence) -> List[Dict[str, Any]]:
 		"""
 		Create a pipeline for the T2 collection that yields docs whose _id is
 		the stock id and whose remaining fields are the latest result for each
@@ -96,18 +95,17 @@ class T3FilteringStockSelector(T3StockSelector):
 				'Unit2': {'thing2': 7}
 			}
 		"""
+		# NB: we reuse the general query here to ensure that we only process
+		# T2s associated with the requested channels
+		match = {
+			'status': 0,
+			'unit': match_array(set(f.unit for f in self.t2_filter)),
+			**build_general_query(stock_ids, self.channel, self.tag)
+		}
 		return [
 			# select t2 docs for target stocks
 			{
-				'$match': {
-					'stock': {
-						'$in': stock_ids
-					},
-					'status': 0,
-					'unit': {
-						'$in': target_t2s
-					}
-				}
+				'$match': match
 			},
 			# find latest result for each stock and unit
 			{
