@@ -113,7 +113,10 @@ class T3UnitRunner(AbsT3UnitRunner):
 				config_id = build_unsafe_dict_id(
 					{
 						"unit": exec_def.unit_name,
-						"config": self.context.loader.get_init_config(exec_def)
+						"config": self.context.loader.get_init_config(
+							exec_def.config,
+							exec_def.override,
+						)
 					},
 					ret = int
 				)
