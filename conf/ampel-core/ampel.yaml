@@ -13,6 +13,7 @@ unit:
     - ampel.t3.context.T3AddLastRunTime
     - ampel.t3.context.T3AddAlertsNumber
     - ampel.t3.select.T3StockSelector
+    - ampel.t3.select.T3FilteringStockSelector
     - ampel.t3.load.T3SimpleDataLoader
     - ampel.t3.load.T3LatestStateDataLoader
     - ampel.t3.complement.T3RandIntAppender
