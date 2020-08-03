@@ -1,6 +1,6 @@
 
-Ampel: Alert Management, Photometry and Evaluation of Light curves
-==================================================================
+Ampel
+=====
 
 Astronomers have during the past century continuously refined tools for
 analyzing individual astronomical transients. Simultaneously, progress in instrument and CCD
