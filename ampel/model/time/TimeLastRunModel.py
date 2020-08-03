@@ -19,6 +19,7 @@ class TimeLastRunModel(StrictModel):
 	match_type: Literal['time_last_run']
 	process_name: str
 	fallback: Union[None, Dict] = {'days': -1}
+	require_success: bool = True
 
 
 	def get_timestamp(self, **kwargs) -> Optional[float]:
@@ -36,13 +37,13 @@ class TimeLastRunModel(StrictModel):
 
 		# First query the last 10 days
 		res = get_last_run(
-			col, model.process_name,
+			col, model.process_name, model.require_success,
 			gte_time=(datetime.today() - timedelta(days=10)).timestamp()
 		)
 
 		# If nothing is found, try querying the entire collection (days_back=None)
 		if res is None:
-			res = get_last_run(col, model.process_name)
+			res = get_last_run(col, model.process_name, model.require_success)
 			if not res:
 				return None
 

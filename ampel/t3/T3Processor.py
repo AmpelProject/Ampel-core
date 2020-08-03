@@ -70,6 +70,7 @@ class T3Processor(AbsProcessorUnit):
 
 		event_doc = None
 		run_id = self.new_run_id()
+		exc = None
 
 		try:
 
@@ -215,10 +216,10 @@ class T3Processor(AbsProcessorUnit):
 							# Run T3 units defined for this process
 							runner.run(list(tran_data))
 
-		except Exception as e:
+		except Exception as exc:
 
 			if self.raise_exc:
-				raise e
+				raise exc
 
 			if not logger:
 				logger = AmpelLogger.get_logger()
@@ -239,4 +240,4 @@ class T3Processor(AbsProcessorUnit):
 
 			# Register the execution of this event into the events col
 			if event_doc:
-				event_doc.update(logger)
+				event_doc.update(logger, success=(exc is None))

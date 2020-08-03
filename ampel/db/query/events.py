@@ -48,6 +48,7 @@ def build_query(
 
 def get_last_run(
 	col: Collection, process_name: str,
+	require_success: bool,
 	gte_time: Optional[Union[dict, float]] = None
 ) -> Optional[float]:
 	"""
@@ -55,8 +56,12 @@ def get_last_run(
 	"""
 
 	query = build_query(tier=3, process_name=process_name, gte_time=gte_time)
+	if require_success:
+		query['success'] = True
 	if ret := list(col.find(query).sort('_id', -1).limit(2)):
-		if len(ret) > 1:
+		if require_success and ret:
+			return ret[0]['_id'].generation_time.timestamp()
+		elif len(ret) > 1:
 			return ret[1]['_id'].generation_time.timestamp()
 	return None
 
