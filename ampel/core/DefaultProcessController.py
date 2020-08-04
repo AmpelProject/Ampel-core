@@ -118,14 +118,14 @@ class DefaultProcessController(AbsProcessController, AmpelBaseModel, Schedulable
 
 	def schedule_process(self, pm: ProcessModel, func: Callable) -> None:
 
+		evaluator = ScheduleEvaluator()
 		for appointment in pm.schedule:
 
 			if not appointment:
 				continue
 
-			self.get_scheduler() \
-				.every(appointment) \
-				.do(func, process=pm) \
+			evaluator(self.get_scheduler(), appointment) \
+				.do(func, pm=pm) \
 				.tag(pm.name)
 
 
