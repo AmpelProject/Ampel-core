@@ -8,13 +8,14 @@
 # Last Modified By	: Jakob van Santen <jakob.van.santen@desy.de>
 
 from pymongo.cursor import Cursor
-from typing import Sequence, Dict, List, Any, Union
-from pydantic import validator
+from typing import Sequence, Dict, List, Any
 
+from ampel.type import StockId
 from ampel.t3.select.T3StockSelector import T3StockSelector
 from ampel.model.t3.T2FilterModel import T2FilterModel
 from ampel.db.query.general import build_general_query
 from ampel.db.query.utils import match_array
+
 
 class T3FilteringStockSelector(T3StockSelector):
 	"""
@@ -30,8 +31,7 @@ class T3FilteringStockSelector(T3StockSelector):
 					"fit_acceptable": True,
 					"fit_results.c": {"$gt": 1},
 				},
-			},
-			
+			}
 		]
 	}
 	"""
@@ -52,16 +52,18 @@ class T3FilteringStockSelector(T3StockSelector):
 
 		return cursor
 
-	def _t2_filter_pipeline(self, stock_ids: Sequence) -> List[Dict]:
+
+	def _t2_filter_pipeline(self, stock_ids: List[StockId]) -> List[Dict]:
 		merge = self._t2_merge_pipeline(stock_ids)
 		# Extract parameters for T2 query
-		match_doc = {f"{f.unit}.{k}": v for f in self.t2_filter for k,v in f.match.items()}
+		match_doc = {f"{f.unit}.{k}": v for f in self.t2_filter for k, v in f.match.items()}
 		return merge + [
 			{'$match': match_doc},
 			{'$project': {'_id': 1}}
 		]
 
-	def _t2_merge_pipeline(self, stock_ids: Sequence) -> List[Dict[str, Any]]:
+
+	def _t2_merge_pipeline(self, stock_ids: List[StockId]) -> List[Dict[str, Any]]:
 		"""
 		Create a pipeline for the T2 collection that yields docs whose _id is
 		the stock id and whose remaining fields are the latest result for each
@@ -102,6 +104,7 @@ class T3FilteringStockSelector(T3StockSelector):
 			'unit': match_array(set(f.unit for f in self.t2_filter)),
 			**build_general_query(stock_ids, self.channel, self.tag)
 		}
+
 		return [
 			# select t2 docs for target stocks
 			{
