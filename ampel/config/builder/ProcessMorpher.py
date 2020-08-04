@@ -212,9 +212,12 @@ class ProcessMorpher:
 
 		v = d[k]
 
-		if v and isinstance(v, str) and v[0] != '%':
+		if v and isinstance(v, str):
 
-			scoped_alias = f'{self.process["distrib"]}/{v}'
+			if v[0] == '%':
+				scoped_alias = v[1:]
+			else:
+				scoped_alias = f'{self.process["distrib"]}/{v}'
 
 			if not any([
 				scoped_alias in kwargs['first_pass_config']['alias'][f't{tier}']

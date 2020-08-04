@@ -8,6 +8,7 @@
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import importlib, re, json
+from contextlib import contextmanager
 from math import inf # noqa: required for eval(repr(...)) below
 from typing import Dict, List, Any, Optional, Set, Iterable
 from ampel.util.mappings import get_by_path, set_by_path
@@ -166,8 +167,15 @@ class ConfigBuilder:
 			for k in FirstPassConfig.conf_keys.keys()
 		}
 
-		if validate_unit_models:
-			UnitModel._unit_loader = UnitLoader(AmpelConfig(self.first_pass_config))
+		unit_loader = UnitLoader(AmpelConfig(self.first_pass_config))
+		@contextmanager
+		def unit_model_validator():
+			"Temporarily enable unit model validation"
+			prev = UnitModel._unit_loader
+			if validate_unit_models:
+				UnitModel._unit_loader = unit_loader
+			yield
+			UnitModel._unit_loader = prev
 
 		out['process'] = {}
 
@@ -206,15 +214,16 @@ class ConfigBuilder:
 					pass
 
 				try:
-					p_collector.add(
-						self.new_morpher(p) \
-							.apply_template() \
-							.scope_aliases(self.first_pass_config) \
-							.hash_t2_config(out) \
-							.get(),
-						p.get('source'),
-						p.get('distrib')
-					)
+					with unit_model_validator():
+						p_collector.add(
+							self.new_morpher(p) \
+								.apply_template() \
+								.scope_aliases(self.first_pass_config) \
+								.hash_t2_config(out) \
+								.get(),
+							p.get('source'),
+							p.get('distrib')
+						)
 				except Exception as e:
 					self.logger.error(f'Unable to morph process {p["name"]}', exc_info=e)
 					if not ignore_errors:
@@ -247,16 +256,17 @@ class ConfigBuilder:
 
 						try:
 							# Add transformed process to final process collector
-							out['process'][f't{p["tier"]}'].add(
-								self.new_morpher(p) \
-									.apply_template() \
-									.scope_aliases(self.first_pass_config) \
-									.hash_t2_config(out) \
-									.enforce_t3_channel_selection(chan_name) \
-									.get(),
-								p.get('source'),
-								p.get('distrib')
-							)
+							with unit_model_validator():
+								out['process'][f't{p["tier"]}'].add(
+									self.new_morpher(p) \
+										.apply_template() \
+										.scope_aliases(self.first_pass_config) \
+										.hash_t2_config(out) \
+										.enforce_t3_channel_selection(chan_name) \
+										.get(),
+									p.get('source'),
+									p.get('distrib')
+								)
 
 						except Exception as ee:
 							self.logger.error(f'Unable to morph process: {p["name"]}', exc_info=ee)
