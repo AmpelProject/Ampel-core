@@ -56,3 +56,6 @@ class T3ChannelUnitRunner(AbsT3UnitRunner):
 
 	def run(self, data: Sequence[AmpelBuffer]) -> None:
 		self._unit_runner.run(data)
+
+	def done(self) -> None:
+		self._unit_runner.done()

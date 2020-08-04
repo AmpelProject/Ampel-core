@@ -153,3 +153,7 @@ class T3DynamicUnitRunnner(AbsT3UnitRunner):
 				self.logger.debug(f"Running unit runner for chan {chan}")
 
 			self.runners[chan].run(data)
+
+	def done(self) -> None:
+		for runner in self.runners.values():
+			runner.done()
