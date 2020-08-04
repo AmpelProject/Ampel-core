@@ -16,7 +16,7 @@ from ampel.log.AmpelLogger import AmpelLogger, VERBOSE
 from ampel.model.ProcessModel import ProcessModel
 from ampel.util.mappings import build_unsafe_dict_id
 from ampel.abstract.AbsProcessController import AbsProcessController
-
+from ampel.core.UnitLoader import UnitLoader
 
 class AmpelController:
 	"""
@@ -59,6 +59,7 @@ class AmpelController:
 		d: Dict[int, List[ProcessModel]] = {}
 		self.controllers: List[AbsProcessController] = []
 		config = AmpelConfig.load(config_file_path, pwd_file_path, pwds, freeze=False)
+		loader = UnitLoader(config)
 
 		if verbose:
 			if not logger:
@@ -77,7 +78,7 @@ class AmpelController:
 
 			d[controller_id] = [pm]
 
-		for k in d:
+		for k, processes in d.items():
 
 			if verbose > 1:
 				logger.log(VERBOSE,  # type: ignore[union-attr]
@@ -87,15 +88,14 @@ class AmpelController:
 				logger.debug( # type: ignore[union-attr]
 					f'Spawing new process controller with processes: {list(p.name for p in d[k])}'
 				)
-
-			# get class object
-			ProcessController = getattr(
-				importlib.import_module(f"ampel.core.{d[k][0].controller.unit}"),
-				d[k][0].controller.unit_name
-			)
+			controller_kwargs = {
+				'config': config,
+				'processes': processes,
+				**kwargs
+			}
 
 			self.controllers.append(
-				ProcessController(config=config, processes=d[k], verbose=verbose)
+				loader.new(processes[0].controller, **controller_kwargs)
 			)
 
 

@@ -4,8 +4,7 @@ db:
 unit:
 
   controller:
-#    - ampel.t0.T0Controller
-    - ampel.t3.T3Controller
+    - ampel.core.DefaultProcessController
 
   admin:
     - ampel.ingest.PointT2Ingester

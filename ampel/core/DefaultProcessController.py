@@ -12,15 +12,17 @@ from multiprocessing import Queue, Process
 from typing import Dict, Sequence, Callable, Any, List, Literal
 
 from ampel.abstract.AbsProcessorUnit import AbsProcessorUnit
+from ampel.base.AmpelBaseModel import AmpelBaseModel
 from ampel.core.AmpelContext import AmpelContext
 from ampel.core.Schedulable import Schedulable
 from ampel.abstract.AbsProcessController import AbsProcessController
 from ampel.config.AmpelConfig import AmpelConfig
+from ampel.config.ScheduleEvaluator import ScheduleEvaluator
 from ampel.model.ProcessModel import ProcessModel
 from ampel.model.UnitModel import UnitModel
 
 
-class DefaultProcessController(AbsProcessController, Schedulable):
+class DefaultProcessController(AbsProcessController, AmpelBaseModel, Schedulable):
 	"""
 	Process controller based on ampel.core.Schedulable, i.e which uses
 	the module 'schedule' for scheduling ampel processes. It supports:
