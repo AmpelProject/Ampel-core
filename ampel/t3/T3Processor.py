@@ -216,10 +216,12 @@ class T3Processor(AbsProcessorUnit):
 							# Run T3 units defined for this process
 							runner.run(list(tran_data))
 
-		except Exception as exc:
+		except Exception as e:
 
 			if self.raise_exc:
-				raise exc
+				raise e
+			else:
+				exc = e
 
 			if not logger:
 				logger = AmpelLogger.get_logger()
