@@ -216,6 +216,8 @@ class T3Processor(AbsProcessorUnit):
 							# Run T3 units defined for this process
 							runner.run(list(tran_data))
 
+				runner.done()
+
 		except Exception as e:
 
 			if self.raise_exc:

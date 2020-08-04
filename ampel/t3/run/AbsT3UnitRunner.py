@@ -36,3 +36,7 @@ class AbsT3UnitRunner(AdminUnit, abstract=True):
 	@abstractmethod
 	def run(self, data: Sequence[AmpelBuffer]) -> None:
 		...
+
+	@abstractmethod
+	def done(self) -> None:
+		...

@@ -237,3 +237,8 @@ class T3UnitRunner(AbsT3UnitRunner):
 
 			# Try to insert doc into trouble collection (raises no exception)
 			report_exception(self.context.db, self.logger, exc=e)
+
+	def done(self) -> None:
+		for run_block in self.run_blocks:
+			for t3_unit, *_ in run_block.units:
+				t3_unit.done()
