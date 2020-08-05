@@ -48,9 +48,10 @@ class T3StockSelector(AbsT3Selector):
 			kwargs['channel'] = LogicSchemaUtils.to_logical_struct(kwargs['channel'], 'channel')
 
 		if 'tag' in kwargs:
-			for k in ('with', 'without'):
-				if k in kwargs['tag']:
-					kwargs['tag'][k] = LogicSchemaUtils.to_logical_struct(kwargs['tag'][k], 'tag')
+			kwargs['tag'] = {
+				k: LogicSchemaUtils.to_logical_struct(v, 'tag')
+				for k,v in kwargs['tag'].items()
+			}
 
 		super().__init__(**kwargs)
 		if self.logger is None:
