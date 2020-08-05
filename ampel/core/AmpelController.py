@@ -146,8 +146,7 @@ class AmpelController:
 		if exclude:
 			rexcl = [re.compile(el) for el in exclude]
 
-		for t in ([tier] if tier else [0, 1, 2, 3]): # type: ignore[list-item]
-
+		for t in ([tier] if tier is not None else [0, 1, 2, 3]): # type: ignore[list-item]
 			for p in config.get(f'process.t{t}', dict, raise_exc=True).values():
 
 				# Process name inclusion filter
