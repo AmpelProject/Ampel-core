@@ -9,6 +9,7 @@
 
 import yaml
 from typing import Dict, Optional, Literal, Sequence
+
 from ampel.base import abstractmethod
 from ampel.base.AmpelABC import AmpelABC
 from ampel.config.AmpelConfig import AmpelConfig
@@ -55,5 +56,10 @@ class AbsProcessController(AmpelABC, abstract=True):
 
 
 	@abstractmethod
-	def schedule_processes(self):
+	async def run(self) -> None:
+		"""
+		Run this controller. This coroutine should not return until all its
+		tasks have completed or it receives asyncio.CancelledError.
+		"""
 		...
+

@@ -9,6 +9,8 @@
 
 import importlib, re
 from typing import Dict, Sequence, List, Literal, Optional, Iterable
+import asyncio
+import logging
 
 from ampel.core.Schedulable import Schedulable
 from ampel.config.AmpelConfig import AmpelConfig
@@ -99,24 +101,14 @@ class AmpelController:
 			)
 
 
-	def start(self) -> None:
-		for controller in self.controllers:
-			controller.schedule_processes()
-
-
-	def stop(self) -> None:
-
-		for controller in self.controllers:
-			try:
-				if isinstance(controller, Schedulable):
-					controller.stop()
-				else:
-					# TODO: nothing ?
-					pass
-			except Exception:
-				# TODO: something
-				pass
-
+	async def run(self):
+		tasks = [asyncio.create_task(controller.run()) for controller in self.controllers]
+		try:
+			return await asyncio.gather(*tasks, return_exceptions=True)
+		except asyncio.CancelledError:
+			for t in tasks:
+				t.cancel()
+			return await asyncio.gather(*tasks, return_exceptions=True)
 
 	@staticmethod
 	def get_processes(
@@ -184,3 +176,40 @@ class AmpelController:
 				ret.append(pm)
 
 		return ret
+
+
+	@classmethod
+	def main(cls):
+		from argparse import ArgumentParser
+		import signal
+		import sys
+
+		parser = ArgumentParser(add_help=True)
+		parser.add_argument('config_file_path')
+		parser.add_argument('--tier', type=int, choices=(0,1,2,3), default=None)
+		parser.add_argument('--match', type=str, nargs='*', default=None)
+		args = parser.parse_args()
+
+		mcp = cls(**args.__dict__)
+
+		async def shutdown(signal, task, loop):
+			"""Stop root task on signal"""
+			logging.info(f"Received exit signal {signal.name}...")
+			task.cancel()
+			await task
+			loop.stop()
+
+		loop = asyncio.get_event_loop()
+		task = loop.create_task(mcp.run())
+		signals = (signal.SIGHUP, signal.SIGTERM, signal.SIGINT)
+		for s in signals:
+			loop.add_signal_handler(
+				s,
+				lambda s=s: asyncio.create_task(shutdown(s, task, loop))
+			)
+
+		for result in loop.run_until_complete(task):
+			if isinstance(result, asyncio.CancelledError):
+				...
+			elif isinstance(result, BaseException):
+				raise result
