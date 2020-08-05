@@ -137,7 +137,7 @@ class DefaultProcessController(AbsProcessController, AmpelBaseModel, Schedulable
 				unit_model = pm.processor,
 				context = self.context,
 				sub_type = AbsProcessorUnit,
-				verbose = self.verbose
+				log_profile = self.log_profile
 			) \
 			.run()
 
@@ -203,7 +203,7 @@ class DefaultProcessController(AbsProcessController, AmpelBaseModel, Schedulable
 		queue: Queue,
 		config: Dict[str, Any],
 		p: Dict[str, Any],
-		verbose: int = 0
+		log_profile: str = "default"
 	) -> None:
 
 		# Create new context with frozen config
@@ -216,7 +216,7 @@ class DefaultProcessController(AbsProcessController, AmpelBaseModel, Schedulable
 			unit_model = UnitModel(**p['processor']),
 			context = context,
 			sub_type = AbsProcessorUnit,
-			verbose = verbose
+			log_profile = log_profile
 		)
 
 		queue.put(

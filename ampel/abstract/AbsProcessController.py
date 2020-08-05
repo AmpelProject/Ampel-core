@@ -26,7 +26,7 @@ class AbsProcessController(AmpelABC, abstract=True):
 		match: Optional[Sequence[str]] = None,
 		exclude: Optional[Sequence[str]] = None,
 		override: Optional[Dict] = None,
-		verbose: int = 0,
+		log_profile: str = "default",
 		**kwargs
 	):
 
@@ -44,14 +44,14 @@ class AbsProcessController(AmpelABC, abstract=True):
 			logger=AmpelLogger.get_logger() if verbose else None, verbose=verbose
 		)
 
-		return cls(config, proc_models, verbose)
+		return cls(config, proc_models, log_profile)
 
 
-	def __init__(self, config: AmpelConfig, processes: Sequence[ProcessModel], verbose: int = 0) -> None:
+	def __init__(self, config: AmpelConfig, processes: Sequence[ProcessModel], log_profile: str = "default") -> None:
 
 		self.config = config
 		self.proc_models = processes
-		self.verbose = verbose
+		self.log_profile = log_profile
 
 
 	@abstractmethod
