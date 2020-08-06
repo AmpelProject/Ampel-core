@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 06.01.2020
-# Last Modified Date: 10.06.2020
+# Last Modified Date: 06.08.2020
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from typing import Dict, Any, Optional
@@ -26,6 +26,7 @@ class T3AddLastRunTime(AbsT3RunContextAppender):
 
 		last_run = get_last_run(
 			self.context.db.get_collection('events'),
+			require_success = True,
 			process_name = self.process_name,
 			gte_time = self.lookup_range
 		)
