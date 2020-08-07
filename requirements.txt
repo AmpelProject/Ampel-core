@@ -6,3 +6,4 @@ pydantic
 sjcl
 schedule
 psutil
+aiopipe
