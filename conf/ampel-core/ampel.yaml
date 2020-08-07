@@ -8,6 +8,7 @@ unit:
 
   admin:
     - ampel.ingest.PointT2Ingester
+    - ampel.t2.T2Processor
     - ampel.t3.T3Processor
     - ampel.t3.context.T3AddLastRunTime
     - ampel.t3.context.T3AddAlertsNumber
