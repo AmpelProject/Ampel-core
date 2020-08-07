@@ -157,9 +157,9 @@ class ConfigBuilder:
 		Note that issues might then later arise with your ampel system.
 		:param pwds: config section 'resource' might contain AES encrypted entries. \
 		If passwords are provided to this method, thoses entries will be decrypted.
-		:param skip_default_processes: Set this to True to discard default processes defined by ampel-core.
-		Those processes are referenced by name in the static variable ConfigBuilder_default_processes.
-		Use this if your repositories define their own default T2/T3 processes.
+		:param skip_default_processes: set to True to discard default processes defined by ampel-core.
+		The static variable ConfigBuilder._default_processes references those processes by name.
+		Set skip_default_processes=True if your repositories define their own default T2/T3 processes.
 		:raises: ValueError if self.error is True - this behavior can be disabled using the parameter ignore_errors
 		"""
 
