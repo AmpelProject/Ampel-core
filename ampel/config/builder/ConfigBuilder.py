@@ -66,6 +66,8 @@ class ConfigBuilder:
 					# kk = 't0', 't1', 't2', 't3', ... for root key "process" or "alias"
 					for kk, v in d[k].items(): # kk = 'processor', 'base', ... for root key "unit"
 						if kk in self.first_pass_config[k]:
+							if self.verbose:
+								self.logger.log(VERBOSE, f"Parsing {k}.{kk}")
 							self.first_pass_config[k][kk].add(v, file_name=file_name, dist_name=dist_name)
 						else:
 							self.logger.error(f"Unknown config element: {k}.{kk}")
