@@ -76,3 +76,5 @@ process:
     schedule: every(5).minutes
     processor:
       unit: T2Processor
+      config:
+        process_name: DefaultT2Process
