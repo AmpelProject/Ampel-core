@@ -35,6 +35,8 @@ class ConfigBuilder:
 	Then, the config is 'morphed' into its final structure by a multi-step process (method build_config)
 	"""
 
+	_default_processes = ["DefaultT2Process", "DefaultPurge"]
+
 	def __init__(self, logger: AmpelLogger = None, verbose: bool = False):
 
 		self.logger = AmpelLogger.get_logger(console={'level': 0} if verbose else None) if logger is None else logger
@@ -143,6 +145,7 @@ class ConfigBuilder:
 	def build_config(self,
 		ignore_errors: bool = False,
 		validate_unit_models: bool = True,
+		skip_default_processes: bool = False,
 		pwds: Optional[Iterable[str]] = None
 	) -> Dict[str, Any]:
 		"""
@@ -154,6 +157,9 @@ class ConfigBuilder:
 		Note that issues might then later arise with your ampel system.
 		:param pwds: config section 'resource' might contain AES encrypted entries. \
 		If passwords are provided to this method, thoses entries will be decrypted.
+		:param skip_default_processes: Set this to True to discard default processes defined by ampel-core.
+		Those processes are referenced by name in the static variable ConfigBuilder_default_processes.
+		Use this if your repositories define their own default T2/T3 processes.
 		:raises: ValueError if self.error is True - this behavior can be disabled using the parameter ignore_errors
 		"""
 
@@ -170,6 +176,7 @@ class ConfigBuilder:
 		}
 
 		unit_loader = UnitLoader(AmpelConfig(self.first_pass_config))
+
 		@contextmanager
 		def unit_model_validator():
 			"Temporarily enable unit model validation"
@@ -210,6 +217,10 @@ class ConfigBuilder:
 			# and add it to our (almost) final process collector.
 			# 'almost' because a gathering of T0 processes may occure later
 			for p in self.first_pass_config['process'][f't{tier}'].values():
+
+				if skip_default_processes and p["name"] in self._default_processes:
+					self.logger.info(f'Skipping t{tier} default processes: {p["name"]}')
+					continue
 
 				if self.verbose:
 					self.logger.log(VERBOSE, f'Morphing standalone t{tier} processes: {p["name"]}')
