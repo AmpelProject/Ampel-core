@@ -68,3 +68,10 @@ resource:
   '%extcats':
     reader: mongodb://localhost:27017
     writer: mongodb://localhost:27017
+
+process:
+  - name: DefaultT2Process
+    tier: 2
+    schedule: every(5).minutes
+    processor:
+      unit: T2Processor
