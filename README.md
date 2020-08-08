@@ -10,7 +10,7 @@ AMPEL is a _modular_ and _scalable_ platform with explicit _provenance_ tracking
 
 The framework is general enough to be applicable in various fields, it was originaly developped to solve challenges in the context of experimental astrophysics.
 
-It requires analysis and reaction logic to be broken down in adequate indepentent unit.
+It requires analysis and reaction logic to be broken down in adequate indepentent units.
 
 
 # Architecture
@@ -79,7 +79,7 @@ https://github.com/AmpelProject/Ampel-photometry
 Example of an instrument specific implementation:  
 https://github.com/AmpelProject/Ampel-ztf
 
-Numerous _base units_, the majority being specific to astronomy:
+Numerous _base units_, the majority being specific to astronomy:  
 https://github.com/AmpelProject/Ampel-contrib-HU/
 
 
