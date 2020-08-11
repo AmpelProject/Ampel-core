@@ -305,7 +305,17 @@ class ConfigBuilder:
 		self.logger.info('Done building config')
 
 		# Casts ConfigCollector instances into real dicts
-		return eval(repr(out))
+		return self._recursive_dictify(out)
+
+
+	@classmethod
+	def _recursive_dictify(cls, item):
+		if isinstance(item, dict):
+			return {k: cls._recursive_dictify(v) for k,v in item.items()}
+		elif isinstance(item, list):
+			return [cls._recursive_dictify(v) for v in item]
+		else:
+			return item
 
 
 	def new_morpher(self, process: Dict[str, Any]) -> ProcessMorpher:
