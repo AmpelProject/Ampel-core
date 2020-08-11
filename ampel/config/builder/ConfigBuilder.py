@@ -230,8 +230,8 @@ class ConfigBuilder:
 					with unit_model_validator():
 						p_collector.add(
 							self.new_morpher(p) \
-								.apply_template() \
 								.scope_aliases(self.first_pass_config) \
+								.apply_template() \
 								.hash_t2_config(out) \
 								.get(),
 							p.get('source'),
@@ -272,8 +272,8 @@ class ConfigBuilder:
 							with unit_model_validator():
 								out['process'][f't{p["tier"]}'].add(
 									self.new_morpher(p) \
-										.apply_template() \
 										.scope_aliases(self.first_pass_config) \
+										.apply_template() \
 										.hash_t2_config(out) \
 										.enforce_t3_channel_selection(chan_name) \
 										.get(),
