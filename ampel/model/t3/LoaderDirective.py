@@ -36,3 +36,10 @@ class LoaderDirective(StrictModel):
 			self.model = models[self.col]
 		elif self.model and not hasattr(self.model, "__annotations__"):
 			raise ValueError("TypedDict expected for parameter 'model'")
+
+	def dict(self, **kwargs):
+		# do not emit model if it was equivalent to the default
+		rep = super().dict(**kwargs)
+		if self.model == models[self.col]:
+			del rep["model"]
+		return rep
