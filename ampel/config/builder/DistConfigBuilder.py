@@ -193,7 +193,12 @@ class DistConfigBuilder(ConfigBuilder):
 					f"Loading {file_rel_path} from distribution '{distrib.project_name}'"
 				)
 
-			d = json.loads(
+			if file_rel_path.endswith("json"):
+				load = json.loads
+			elif file_rel_path.endswith("yml") or file_rel_path.endswith("yaml"):
+				load = yaml.safe_load # type: ignore
+
+			d = load(
 				distrib.get_resource_string(__name__, file_rel_path)
 			)
 
