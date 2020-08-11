@@ -115,10 +115,10 @@ class PeriodicSummaryT3(AbsProcessTemplate):
     def get_t2_filters(self) -> Sequence[T2FilterModel]:
         if not self.filter:
             return []
-        elif isinstance(self.filter, FilterModel):
-            return [self.filter.t2]
+        elif isinstance(self.filter.t2, Sequence):
+            return self.filter.t2
         else:
-            return [f.t2 for f in self.filter]
+            return [self.filter.t2]
 
     def get_channel_tag(self) -> Union[None, str, int]:
         """
