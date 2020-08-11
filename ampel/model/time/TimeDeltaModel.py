@@ -28,7 +28,7 @@ class TimeDeltaModel(StrictModel):
 		dt = datetime.today() + timedelta(
 			days=self.days, seconds=self.seconds, microseconds=self.microseconds,
 			milliseconds=self.milliseconds, minutes=self.minutes,
-			hours=self.hours, weeks=self.hours
+			hours=self.hours, weeks=self.weeks
 		)
 
 		return dt.timestamp()
