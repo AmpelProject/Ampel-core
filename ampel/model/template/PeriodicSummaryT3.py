@@ -15,6 +15,7 @@ from ampel.model.operator.AllOf import AllOf
 from ampel.model.operator.AnyOf import AnyOf
 from ampel.model.operator.OneOf import OneOf
 from ampel.model.StrictModel import StrictModel
+from ampel.model.t3.LoaderDirective import LoaderDirective
 from ampel.model.t3.T2FilterModel import T2FilterModel
 from ampel.model.UnitModel import UnitModel
 from ampel.type import ChannelId, Tag
@@ -45,7 +46,7 @@ class PeriodicSummaryT3(AbsProcessTemplate):
             Union[Tag, Dict, AllOf[Tag], AnyOf[Tag], OneOf[Tag]],
         ]
     ] = None
-    load: Optional[Sequence[str]] = None
+    load: Optional[Sequence[Union[str,LoaderDirective]]] = None
     filter: Optional[FilterModel] = None
     run: Union[UnitModel, Sequence[UnitModel]]
 
