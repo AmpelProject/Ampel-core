@@ -18,7 +18,7 @@ from ampel.t3.run.AbsT3UnitRunner import AbsT3UnitRunner
 from ampel.t3.run.T3UnitRunner import T3UnitRunner
 
 
-class T3DynamicUnitRunnner(AbsT3UnitRunner):
+class T3DynamicUnitRunner(AbsT3UnitRunner):
 	"""
 	Unit runner that for each channel found in the elements loaded by the stages:
 	- spawns a dedicated T3UnitRunner instance configured to filter and project elements wrt this channel

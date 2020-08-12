@@ -21,7 +21,7 @@ unit:
     - ampel.t3.complement.T3LegacyExtJournalAppender
     - ampel.t3.run.T3UnitRunner
     - ampel.t3.run.T3ChannelUnitRunner
-    - ampel.t3.run.T3DynamicUnitRunnner
+    - ampel.t3.run.T3DynamicUnitRunner
 
   base:
     - ampel.demo.unit.base.DemoPointT2Unit
