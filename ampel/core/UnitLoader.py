@@ -64,6 +64,24 @@ class UnitLoader:
 		]
 
 
+
+	def resolve_aliases(self, value):
+		"""
+		Recursively resolve aliases from config
+		"""
+		if isinstance(value, str):
+			for adict in self.aliases:
+				if value in adict:
+					return self.resolve_aliases(adict[value])
+			return value
+		elif isinstance(value, list):
+			return [self.resolve_aliases(v) for v in value]
+		elif isinstance(value, dict):
+			return {k: self.resolve_aliases(v) for k,v in value.items()}
+		else:
+			return value
+
+
 	def get_init_config(self,
 		config: Optional[Union[int, str, Dict[str, Any]]] = None,
 		override: Optional[Dict[str, Any]] = None
@@ -75,19 +93,11 @@ class UnitLoader:
 
 		ret: Optional[Dict[str, Any]] = None
 
-		if isinstance(config, dict):
-			ret = config
+		if isinstance(config, (dict, str)):
+			ret = self.resolve_aliases(config)
 
 		elif isinstance(config, int):
 			ret = self.ampel_config.get(f"confid.{config}", dict)
-
-		# Load init config from alias
-		elif isinstance(config, (int, str)):
-
-			for adict in self.aliases:
-				if config in adict:
-					ret = adict[config]
-					break
 
 		if not ret:
 			raise ValueError(f"Config alias {config} not found")
