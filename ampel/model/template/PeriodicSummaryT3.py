@@ -22,7 +22,7 @@ from ampel.type import ChannelId, Tag
 
 
 class FilterModel(StrictModel):
-    t2: Union[T2FilterModel, Sequence[T2FilterModel]]
+    t2: Union[T2FilterModel, AllOf[T2FilterModel], AnyOf[T2FilterModel]]
 
 
 class PeriodicSummaryT3(AbsProcessTemplate):
@@ -66,6 +66,7 @@ class PeriodicSummaryT3(AbsProcessTemplate):
                     "tag": self.tag,
                 },
             },
+            # FIXME: use T3LatestStateLoader here by default
             "load": {"unit": "T3SimpleDataLoader"},
             "run": {
                 "unit": "T3UnitRunner",
@@ -76,9 +77,9 @@ class PeriodicSummaryT3(AbsProcessTemplate):
         }
 
         # Restrict stock selection according to T2 values
-        if t2_filters := self.get_t2_filters():
+        if self.filter:
             directive["select"]["unit"] = "T3FilteringStockSelector"
-            directive["select"]["config"]["t2_filter"] = [f.dict() for f in t2_filters]
+            directive["select"]["config"]["t2_filter"] = self.filter.t2.dict()
 
         # Restrict document types to load
         if self.load is not None:
@@ -111,14 +112,6 @@ class PeriodicSummaryT3(AbsProcessTemplate):
             return [self.schedule]
         else:
             return self.schedule
-
-    def get_t2_filters(self) -> Sequence[T2FilterModel]:
-        if not self.filter:
-            return []
-        elif isinstance(self.filter.t2, Sequence):
-            return self.filter.t2
-        else:
-            return [self.filter.t2]
 
     def get_channel_tag(self) -> Union[None, str, int]:
         """

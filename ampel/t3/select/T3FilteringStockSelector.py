@@ -8,10 +8,13 @@
 # Last Modified By	: Jakob van Santen <jakob.van.santen@desy.de>
 
 from pymongo.cursor import Cursor
-from typing import Sequence, Dict, List, Any
+from typing import Sequence, Dict, List, Any, Union
 
 from ampel.type import StockId
 from ampel.t3.select.T3StockSelector import T3StockSelector
+from ampel.model.operator.AllOf import AllOf
+from ampel.model.operator.AnyOf import AnyOf
+from ampel.model.operator.OneOf import OneOf
 from ampel.model.t3.T2FilterModel import T2FilterModel
 from ampel.db.query.general import build_general_query
 from ampel.db.query.utils import match_array
@@ -36,7 +39,7 @@ class T3FilteringStockSelector(T3StockSelector):
 	}
 	"""
 
-	t2_filter: Sequence[T2FilterModel]
+	t2_filter: Union[T2FilterModel, AllOf[T2FilterModel], AnyOf[T2FilterModel]]
 
 	# Override/Implement
 	def fetch(self) -> Cursor:
@@ -53,12 +56,18 @@ class T3FilteringStockSelector(T3StockSelector):
 		return cursor
 
 
+	def _build_match(self, f: Union[T2FilterModel, AllOf[T2FilterModel], AnyOf[T2FilterModel]]) -> Dict[str,Any]:
+		if isinstance(f, T2FilterModel):
+			return {f"{f.unit}.{k}": v for k, v in f.match.items()}
+		elif isinstance(f, AllOf):
+			return {'$and': [self._build_match(el) for el in f.all_of]}
+		elif isinstance(f, AnyOf):
+			return {'$or': [self._build_match(el) for el in f.any_of]}
+
+
 	def _t2_filter_pipeline(self, stock_ids: List[StockId]) -> List[Dict]:
-		merge = self._t2_merge_pipeline(stock_ids)
-		# Extract parameters for T2 query
-		match_doc = {f"{f.unit}.{k}": v for f in self.t2_filter for k, v in f.match.items()}
-		return merge + [
-			{'$match': match_doc},
+		return self._t2_merge_pipeline(stock_ids) + [
+			{'$match': self._build_match(self.t2_filter)},
 			{'$project': {'_id': 1}}
 		]
 
