@@ -14,7 +14,7 @@ from ampel.model.StrictModel import StrictModel
 class T3Directive(StrictModel):
 
 	context: Optional[Sequence[UnitModel]]
-	select: UnitModel
-	load: UnitModel
+	select: Optional[UnitModel]
+	load: Optional[UnitModel]
 	complement: Optional[Sequence[UnitModel]]
 	run: UnitModel
