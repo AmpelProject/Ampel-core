@@ -49,8 +49,32 @@ class UnitModel(StrictModel):
 	def validate_config(cls, values):
 		if cls._unit_loader:
 			unit = cls._unit_loader.get_class_by_name(values['unit'])
-			if issubclass(unit, DataUnit):
+			if issubclass(unit, (DataUnit, AbsProcessorUnit)):
+				# Instances of DataUnit and AbsProcessorUnit are initializable
+				# entirely from the config
 				if not unit._model:
 					unit._create_model()
 				unit._model.validate(cls._unit_loader.get_init_config(values['config'], values['override']))
+			elif issubclass(unit, AbsIngester):
+				# AbsIngester requires runtime parameters not in the config
+				...
+			elif issubclass(unit, AdminUnit):
+				# Instances of AdminUnit are _mostly_ initializable from the
+				# config
+				if not unit._model:
+					unit._create_model()
+				try:
+					unit._model.validate(cls._unit_loader.get_init_config(values['config'], values['override']))
+				except ValidationError as exc:
+					# filter out false positives from parameters that are known
+					# to be supplied at runtime rather than from the config
+					true_positives = [
+						err for err in exc.raw_errors
+						if not (
+							isinstance(err.exc, MissingError) and
+							(err.loc_tuple()[0] in {'logger', 'run_id', 'process_name'})
+						)
+					]
+					if true_positives:
+						raise ValidationError(true_positives, exc.model)
 		return values
