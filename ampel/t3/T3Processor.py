@@ -118,6 +118,23 @@ class T3Processor(AbsProcessorUnit):
 							) \
 							.update(run_context)
 
+				# Unit runner
+				#############
+
+				# The default runner provided by pyampel-core is T3UnitRunner
+				runner = self.context.loader \
+					.new_admin_unit(
+						unit_model = directive.run,
+						context = self.context,
+						sub_type = AbsT3UnitRunner,
+						logger = logger,
+						run_id = run_id,
+						process_name = self.process_name,
+						channel = self.channel,
+						raise_exc = self.raise_exc,
+						extra_journal_tag = self.extra_journal_tag,
+						run_context = run_context
+					)
 
 				# target selection
 				##################
@@ -166,25 +183,6 @@ class T3Processor(AbsProcessorUnit):
 								)
 							for conf_el in directive.complement
 						]
-
-
-					# Unit runner
-					#############
-
-					# The default runner provided by pyampel-core is T3UnitRunner
-					runner = self.context.loader \
-						.new_admin_unit(
-							unit_model = directive.run,
-							context = self.context,
-							sub_type = AbsT3UnitRunner,
-							logger = logger,
-							run_id = run_id,
-							process_name = self.process_name,
-							channel = self.channel,
-							raise_exc = self.raise_exc,
-							extra_journal_tag = self.extra_journal_tag,
-							run_context = run_context
-						)
 
 					# get pymongo cursor
 					if stock_ids := selector.fetch():
