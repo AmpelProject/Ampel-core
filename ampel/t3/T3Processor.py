@@ -220,10 +220,9 @@ class T3Processor(AbsProcessorUnit):
 
 		except Exception as e:
 
+			exc = e
 			if self.raise_exc:
 				raise e
-			else:
-				exc = e
 
 			if not logger:
 				logger = AmpelLogger.get_logger()
