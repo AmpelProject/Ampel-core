@@ -7,6 +7,7 @@
 # Last Modified Date: 10.06.2020
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
+from dataclasses import dataclass, field
 from typing import Dict, Optional, Sequence, List, Type, Tuple, TypeVar, get_args, Union
 from pydantic import validator
 
@@ -29,14 +30,14 @@ from ampel.t3.run.filter.AbsT3Filter import AbsT3Filter
 from ampel.t3.run.project.AbsT3Projector import AbsT3Projector
 
 
+@dataclass
 class RunBlock:
 	"""
-	data class (without need for @dataclass)
-	used internally by T3UnitRunner
+	data class used internally by T3UnitRunner
 	"""
 	filter: Optional[AbsT3Filter] = None
 	projector: Optional[AbsT3Projector] = None
-	units: List[Tuple[AbsT3Unit, Type]] = []
+	units: List[Tuple[AbsT3Unit, Type]] = field(default_factory=list)
 
 
 class T3UnitRunner(AbsT3UnitRunner):
