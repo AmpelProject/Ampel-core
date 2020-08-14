@@ -18,7 +18,6 @@ unit:
     - ampel.t3.load.T3LatestStateDataLoader
     - ampel.t3.complement.T3RandIntAppender
     - ampel.t3.complement.T3ExtJournalAppender
-    - ampel.t3.complement.T3LegacyExtJournalAppender
     - ampel.t3.run.T3UnitRunner
     - ampel.t3.run.T3ChannelUnitRunner
     - ampel.t3.run.T3DynamicUnitRunner
