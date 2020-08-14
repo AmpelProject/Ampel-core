@@ -122,13 +122,7 @@ class UnitLoader:
 	) -> Dict[str, Any]:
 		""" :raises: ValueError is model type is not recognized """
 
-		if not config:
-			return {}
-
-		if isinstance(unit, str):
-			unit = self.get_class_by_name(unit)
-
-		ret: Optional[Dict[str, Any]] = None
+		ret: Dict[str, Any] = {}
 
 		if isinstance(config, (dict, str)):
 			ret = self.resolve_aliases(config)
@@ -136,7 +130,7 @@ class UnitLoader:
 		elif isinstance(config, int):
 			ret = self.ampel_config.get(f"confid.{config}", dict)
 
-		if not ret:
+		if not ret and config is not None:
 			raise ValueError(f"Config alias {config} not found")
 
 		ret = merge_dicts([ret, override, kwargs])
@@ -229,7 +223,6 @@ class UnitLoader:
 			raise ValueError(f"Unexpected model: '{type(unit_model)}'")
 
 		if isinstance(unit_model.unit, str):
-			print(unit_model)
 			unit_model.unit = self.get_class_by_name(unit_model.unit, unit_type)
 
 		if unit_type:
