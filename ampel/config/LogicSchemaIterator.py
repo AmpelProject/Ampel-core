@@ -24,15 +24,15 @@ class LogicSchemaIterator:
 		Schema: 'a'
 		Iteration 1: a
 
-		Schema: {'anyOf': ['a', 'b', 'c']}
+		Schema: {'any_of': ['a', 'b', 'c']}
 		Iteration 1: a
 		Iteration 2: b
 		Iteration 3: c
 
-		Schema: {'allOf': ['a', 'b', 'c']}
+		Schema: {'all_of': ['a', 'b', 'c']}
 		Iteration 1: ['a', 'b', 'c']
 
-		Schema: {'anyOf': [{'allOf': ['a', 'b']}, {'allOf': ['a', 'c']}, 'd']}
+		Schema: {'any_of': [{'all_of': ['a', 'b']}, {'all_of': ['a', 'c']}, 'd']}
 		Iteration 1: ['a', 'b']
 		Iteration 2: ['a', 'c']
 		Iteration 3: d
@@ -56,9 +56,9 @@ class LogicSchemaIterator:
 			self.values = [arg]
 
 		elif isinstance(arg, dict):
-			if "anyOf" in arg:
-				self.values = arg['anyOf']
-			elif 'allOf' in arg or 'oneOf' in arg:
+			if "any_of" in arg:
+				self.values = arg['any_of']
+			elif 'all_of' in arg or 'one_of' in arg:
 				self.values = [arg]
 			else:
 				raise ValueError("Unsupported format")
@@ -78,10 +78,10 @@ class LogicSchemaIterator:
 		try:
 			self.count += 1
 			if isinstance(self.values[self.count], dict):
-				if 'allOf' in self.values[self.count]:
-					return self.values[self.count]['allOf']
-				if 'oneOf' in self.values[self.count]:
-					return self.values[self.count]['oneOf']
+				if 'all_of' in self.values[self.count]:
+					return self.values[self.count]['all_of']
+				if 'one_of' in self.values[self.count]:
+					return self.values[self.count]['one_of']
 			return self.values[self.count]
 		except IndexError:
 			raise StopIteration
