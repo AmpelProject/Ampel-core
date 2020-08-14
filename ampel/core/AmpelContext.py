@@ -50,10 +50,12 @@ class AmpelContext:
 		from ampel.core.UnitLoader import UnitLoader # noqa
 		from ampel.db.AmpelDB import AmpelDB
 
+		secrets = kwargs.pop("secrets", None)
+
 		return cls(
 			config = config,
 			db = AmpelDB.new(config),
-			loader = UnitLoader(config=config, tier=tier),
+			loader = UnitLoader(config=config, tier=tier, secrets=secrets),
 			tier = tier,
 			**kwargs
 		)

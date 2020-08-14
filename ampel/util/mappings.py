@@ -352,17 +352,30 @@ def _unflatten_lists(d: Dict) -> Dict:
 	return d
 
 
-def merge_dict(d1: Dict, d2: Dict) -> None:
-    """
-	Recursive dict merge.
-    :param d1: dict onto which the merge is executed
-    :param d2: dict merged into d1
-    """
-    for k, v in d2.items():
-        if k in d1 and isinstance(d1[k], dict):
-            merge_dict(d1[k], v)
-        else:
-            d1[k] = v
+def merge_dict(d1: Dict, d2: Dict) -> Dict:
+	k1 = set(d1.keys())
+	k2 = set(d2.keys())
+	return {
+		**{k: d1[k] for k in k1.difference(k2)},
+		**{k: d2[k] for k in k2.difference(k1)},
+		**{
+			k: merge_dict(d1[k], d2[k]) if isinstance(d1[k], dict) else d2[k]
+			for k in k1.intersection(k2)
+		}
+	}
+
+
+def merge_dicts(items: Sequence[Optional[Dict]]) -> Optional[Dict]:
+	"""
+	Merge a sequence of dicts recursively. Elements that are None are skipped.
+	"""
+	left = None
+	for right in items:
+		if left and right:
+			left = merge_dict(left, right)
+		elif right:
+			left = right
+	return left
 
 
 def compare_dict_values(d1: Dict, d2: Dict, keys: Iterable[str]) -> bool:

@@ -13,6 +13,7 @@ from ampel.util.freeze import recursive_unfreeze
 from ampel.config.AmpelConfig import AmpelConfig
 from ampel.db.AmpelDB import AmpelDB
 from ampel.util.mappings import set_by_path, build_unsafe_short_dict_id
+from .DictSecretProvider import PotemkinSecretProvider
 
 
 class DevAmpelContext(AmpelContext):
@@ -44,6 +45,9 @@ class DevAmpelContext(AmpelContext):
 			for k, v in custom_conf.items():
 				set_by_path(conf, k, v)
 			self._set_new_conf(conf)
+
+		if not self.loader.secrets:
+			self.loader.secrets = PotemkinSecretProvider()
 
 
 	def add_config_id(self, arg: Dict[str, Any]) -> int:

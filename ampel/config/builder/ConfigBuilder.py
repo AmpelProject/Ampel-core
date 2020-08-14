@@ -25,6 +25,7 @@ from ampel.model.template.ChannelWithProcsTemplate import ChannelWithProcsTempla
 from ampel.config.collector.ProcessConfigCollector import ProcessConfigCollector
 from ampel.config.collector.ChannelConfigCollector import ChannelConfigCollector
 from ampel.config.builder.ProcessMorpher import ProcessMorpher
+from ampel.dev.DictSecretProvider import PotemkinSecretProvider
 
 
 class ConfigBuilder:
@@ -175,7 +176,10 @@ class ConfigBuilder:
 			for k in FirstPassConfig.conf_keys.keys()
 		}
 
-		unit_loader = UnitLoader(AmpelConfig(self.first_pass_config))
+		unit_loader = UnitLoader(
+			AmpelConfig(self.first_pass_config),
+			secrets=PotemkinSecretProvider(),
+		)
 
 		@contextmanager
 		def unit_model_validator():

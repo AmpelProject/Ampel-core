@@ -54,7 +54,13 @@ class UnitModel(StrictModel):
 				# entirely from the config
 				if not unit._model:
 					unit._create_model()
-				unit._model.validate(cls._unit_loader.get_init_config(values['config'], values['override']))
+				unit._model.validate(
+					cls._unit_loader.get_init_config(
+						values['unit'],
+						values['config'],
+						values['override']
+					)
+				)
 			elif issubclass(unit, AbsIngester):
 				# AbsIngester requires runtime parameters not in the config
 				...
@@ -64,7 +70,13 @@ class UnitModel(StrictModel):
 				if not unit._model:
 					unit._create_model()
 				try:
-					unit._model.validate(cls._unit_loader.get_init_config(values['config'], values['override']))
+					unit._model.validate(
+						cls._unit_loader.get_init_config(
+							values['unit'],
+							values['config'],
+							values['override']
+						)
+					)
 				except ValidationError as exc:
 					# filter out false positives from parameters that are known
 					# to be supplied at runtime rather than from the config

@@ -115,8 +115,10 @@ class T3UnitRunner(AbsT3UnitRunner):
 					{
 						"unit": exec_def.unit_name,
 						"config": self.context.loader.get_init_config(
+							exec_def.unit_name,
 							exec_def.config,
 							exec_def.override,
+							resolve_secrets = False,
 						)
 					},
 					ret = int

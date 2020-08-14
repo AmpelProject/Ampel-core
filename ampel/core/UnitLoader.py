@@ -14,7 +14,7 @@ from typing import ( # type: ignore[attr-defined]
 )
 
 from ampel.util.collections import ampel_iter
-from ampel.util.mappings import flatten_dict, unflatten_dict
+from ampel.util.mappings import flatten_dict, unflatten_dict, merge_dicts
 from ampel.base.AmpelBaseModel import AmpelBaseModel
 from ampel.base.DataUnit import DataUnit
 from ampel.core.AmpelContext import AmpelContext
@@ -22,6 +22,8 @@ from ampel.model.UnitModel import UnitModel
 from ampel.config.AmpelConfig import AmpelConfig
 from ampel.log.AmpelLogger import AmpelLogger
 from ampel.core.AdminUnit import AdminUnit
+from ampel.model.Secret import Secret
+from ampel.abstract.AbsSecretProvider import AbsSecretProvider
 
 T = TypeVar('T', bound=AmpelBaseModel)
 BT = TypeVar('BT', bound=DataUnit)
@@ -35,7 +37,11 @@ class UnitLoader:
 	# to allow aux units to be able to load other aux units
 	aux_defs: ClassVar[Dict[str, Any]] = {}
 
-	def __init__(self, config: AmpelConfig, tier: Optional[Literal[0, 1, 2, 3]] = None) -> None:
+	def __init__(self,
+		config: AmpelConfig,
+		tier: Optional[Literal[0, 1, 2, 3]] = None,
+		secrets: Optional[AbsSecretProvider] = None,
+		) -> None:
 		"""
 		For optimization purposes, try to set the parameter tier.
 		For example, a T2 controller should spawn an UnitLoader
@@ -63,6 +69,7 @@ class UnitLoader:
 			config._config['alias'][f"t{el}"] for el in (0, 3, 1, 2)
 		]
 
+		self.secrets = secrets
 
 
 	def resolve_aliases(self, value):
@@ -81,15 +88,45 @@ class UnitLoader:
 		else:
 			return value
 
+	@classmethod
+	def _issubclass(cls, typ, target):
+		if getattr(typ, '__origin__', None) is Union and any(cls._issubclass(t,target) for t in typ.__args__):
+			return True
+		else:
+			try:
+				if issubclass(typ, target):
+					return True
+			except:
+				...
+			return False
+
+	def resolve_secrets(self, unit: Type[AmpelBaseModel], init_config: Dict[str, Any]):
+		for field, typ in unit._annots.items():
+			if field in init_config and self._issubclass(typ, Secret):
+				if not self.secrets:
+					raise RuntimeError(f"{unit.__qualname__}.{field} needs a secret provider")
+				# ensure that the config value is a valid Secret
+				value = init_config[field]
+				if not (isinstance(value, dict) and "key" in value):
+					raise ValueError(f"{unit.__qualname__}.{field}"+" should be configured with a dict of the form {\"key\": \"secret-name\"}")
+				init_config[field] = self.secrets.get(value["key"])
+		return init_config
+
 
 	def get_init_config(self,
+		unit: Union[str, Type],
 		config: Optional[Union[int, str, Dict[str, Any]]] = None,
-		override: Optional[Dict[str, Any]] = None
+		override: Optional[Dict[str, Any]] = None,
+		kwargs: Optional[Dict[str, Any]] = None,
+		resolve_secrets = True,
 	) -> Dict[str, Any]:
 		""" :raises: ValueError is model type is not recognized """
 
 		if not config:
 			return {}
+
+		if isinstance(unit, str):
+			unit = self.get_class_by_name(unit)
 
 		ret: Optional[Dict[str, Any]] = None
 
@@ -102,12 +139,13 @@ class UnitLoader:
 		if not ret:
 			raise ValueError(f"Config alias {config} not found")
 
-		if ret and override:
-			return unflatten_dict(
-				{**flatten_dict(ret), **flatten_dict(override)} # type: ignore
-			)
-
-		return ret
+		ret = merge_dicts([ret, override, kwargs])
+		if resolve_secrets:
+			if isinstance(unit, str):
+				unit = self.get_class_by_name(unit)
+			return self.resolve_secrets(unit, ret)
+		else:
+			return ret
 
 
 	def get_resources(self, unit_model: UnitModel) -> Dict[str, Any]:
@@ -191,14 +229,20 @@ class UnitLoader:
 			raise ValueError(f"Unexpected model: '{type(unit_model)}'")
 
 		if isinstance(unit_model.unit, str):
+			print(unit_model)
 			unit_model.unit = self.get_class_by_name(unit_model.unit, unit_type)
 
 		if unit_type:
 			self.check_class(unit_model.unit, unit_type)
 
-		return unit_model.unit(
-			**{**self.get_init_config(unit_model.config, unit_model.override), **kwargs} # py3.9 will allow more concise writing
-		) # type: ignore[call-arg]
+		init_args = self.get_init_config(
+			unit_model.unit,
+			unit_model.config,
+			unit_model.override,
+			kwargs
+		)
+
+		return unit_model.unit(**init_args) # type: ignore[call-arg]
 
 
 	@overload
@@ -221,7 +265,7 @@ class UnitLoader:
 
 		return self.new(
 			unit_model, unit_type=sub_type, logger=logger, resource=self.get_resources(unit_model),
-			**{**self.get_init_config(unit_model.config, unit_model.override), **kwargs}
+			**kwargs
 		)
 
 
@@ -245,7 +289,7 @@ class UnitLoader:
 
 		return self.new(
 			unit_model, unit_type=sub_type, context=context,
-			**{**self.get_init_config(unit_model.config, unit_model.override), **kwargs}
+			**kwargs
 		)
 
 
