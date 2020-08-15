@@ -12,8 +12,9 @@ from time import time
 from typing import Optional, List, Union, Type, Dict, TypedDict, ItemsView, Any, Sequence
 from collections.abc import ItemsView as ColItemsView
 
-from ampel.type import T2UnitResult, datapoint_id, ChannelId, Tag
+from ampel.type import T2UnitResult, ChannelId, Tag
 from ampel.util.collections import try_reduce
+from ampel.util.t1 import get_datapoint_ids
 from ampel.t2.T2RunState import T2RunState
 from ampel.content.DataPoint import DataPoint
 from ampel.content.Compound import Compound
@@ -341,28 +342,7 @@ class T2Processor(AbsProcessorUnit):
 				# 'projection' technic that should not be necessary here)
 				compound.pop('channel')
 
-				dps_ids: List[Any] = []
-
-				# Load each datapoint referenced by the loaded compound
-				for el in compound['body']:
-
-					# Dict means custom policy/exclusion is set for this datapoint
-					if isinstance(el, dict):
-						if 'excl' in el:
-							logger.debug("Ignoring excluded datapoint", extra={'id': el['id']})
-							continue
-						dpid = el['id']
-					elif isinstance(el, datapoint_id):
-						dpid = el
-					else:
-						report_error(
-							self._ampel_db, msg='Invalid compound doc', logger=logger,
-							info={'compound': compound, 'doc': t2_doc}
-						)
-						raise StopIteration
-
-					dps_ids.append(dpid)
-
+				dps_ids = get_datapoint_ids(compound, logger)
 				datapoints = list(self.col_t0.find({'_id': {"$in": dps_ids}}))
 
 				if not datapoints:
