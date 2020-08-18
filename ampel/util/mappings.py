@@ -373,7 +373,7 @@ def merge_dicts(items: Sequence[Optional[Dict]]) -> Optional[Dict]:
 	for right in items:
 		if left and right:
 			left = merge_dict(left, right)
-		elif right:
+		elif right or left is None:
 			left = right
 	return left
 
