@@ -83,6 +83,7 @@ class UnitModel(StrictModel):
 					true_positives = [
 						err for err in exc.raw_errors
 						if not (
+							hasattr(err, "exc") and
 							isinstance(err.exc, MissingError) and
 							(err.loc_tuple()[0] in {'logger', 'run_id', 'process_name'})
 						)
