@@ -102,11 +102,15 @@ class UnitLoader:
 
 	def resolve_secrets(self, unit: Type[AmpelBaseModel], init_config: Dict[str, Any]):
 		for field, typ in unit._annots.items():
-			if field in init_config and self._issubclass(typ, Secret):
+			if self._issubclass(typ, Secret):
 				if not self.secrets:
 					raise RuntimeError(f"{unit.__qualname__}.{field} needs a secret provider")
-				# ensure that the config value is a valid Secret
-				value = init_config[field]
+				if field in init_config:
+					value = init_config[field]
+				elif field in unit._defaults:
+					value = unit._defaults[field]
+				else:
+					raise KeyError(f"{unit.__qualname__}.{field} needs a value")
 				if not (isinstance(value, dict) and "key" in value):
 					raise ValueError(f"{unit.__qualname__}.{field}"+" should be configured with a dict of the form {\"key\": \"secret-name\"}")
 				init_config[field] = self.secrets.get(value["key"])
