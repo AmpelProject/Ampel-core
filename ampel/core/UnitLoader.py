@@ -15,6 +15,7 @@ from typing import ( # type: ignore[attr-defined]
 
 from ampel.util.collections import ampel_iter
 from ampel.util.mappings import flatten_dict, unflatten_dict, merge_dicts
+from ampel.util.type_analysis import is_subtype
 from ampel.base.AmpelBaseModel import AmpelBaseModel
 from ampel.base.DataUnit import DataUnit
 from ampel.core.AmpelContext import AmpelContext
@@ -88,30 +89,23 @@ class UnitLoader:
 		else:
 			return value
 
-	@classmethod
-	def _issubclass(cls, typ, target):
-		if getattr(typ, '__origin__', None) is Union and any(cls._issubclass(t,target) for t in typ.__args__):
-			return True
-		else:
-			try:
-				if issubclass(typ, target):
-					return True
-			except:
-				...
-			return False
 
 	def resolve_secrets(self, unit: Type[AmpelBaseModel], init_config: Dict[str, Any]):
 		for field, typ in unit._annots.items():
-			if self._issubclass(typ, Secret):
-				if not self.secrets:
-					raise RuntimeError(f"{unit.__qualname__}.{field} needs a secret provider")
+			if is_subtype(Secret, typ):
 				if field in init_config:
 					value = init_config[field]
 				elif field in unit._defaults:
 					value = unit._defaults[field]
 				else:
 					raise KeyError(f"{unit.__qualname__}.{field} needs a value")
-				if not (isinstance(value, dict) and "key" in value):
+
+				# skip if optional
+				if value is None and is_subtype(type(None), typ):
+					continue
+				elif not self.secrets:
+					raise RuntimeError(f"{unit.__qualname__}.{field} needs a secret provider")
+				elif not (isinstance(value, dict) and "key" in value):
 					raise ValueError(f"{unit.__qualname__}.{field}"+" should be configured with a dict of the form {\"key\": \"secret-name\"}")
 				init_config[field] = self.secrets.get(value["key"])
 		return init_config
@@ -138,6 +132,7 @@ class UnitLoader:
 			raise ValueError(f"Config alias {config} not found")
 
 		ret = merge_dicts([ret, override, kwargs])
+		print(unit, ret)
 		if resolve_secrets:
 			if isinstance(unit, str):
 				unit = self.get_class_by_name(unit)

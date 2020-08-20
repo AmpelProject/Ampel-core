@@ -8,15 +8,17 @@
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import json
-from typing import Dict, Any
+from typing import Dict, Any, Literal
 from importlib import import_module
 from pydantic import create_model
 from ampel.log.AmpelLogger import AmpelLogger, VERBOSE
 from ampel.model.StrictModel import StrictModel
 from ampel.model.ProcessModel import ProcessModel
+from ampel.model.Secret import Secret
 from ampel.base.DataUnit import DataUnit
 from ampel.abstract.AbsPointT2Unit import AbsPointT2Unit
 from ampel.util.mappings import walk_and_process_dict
+from ampel.util.type_analysis import is_subtype
 
 
 class ProcessMorpher:
@@ -172,10 +174,21 @@ class ProcessMorpher:
 					excl: Any = DataUnit._annots.keys()
 					if issubclass(T2Unit, AbsPointT2Unit):
 						excl = list(excl) + ["ingest"]
+					fields = {
+						k: (v, T2Unit._defaults[k] if k in T2Unit._defaults else ...)
+						for k, v in T2Unit._annots.items() if k not in excl
+					} # type: ignore
+					# special case for Secret fields
+					for k in list(fields.keys()):
+						field_type = fields[k][0]
+						if is_subtype(Secret, field_type):
+							field_type = Dict[Literal["key"],str]
+							if is_subtype(type(None), field_type):
+								field_type = Optional[field_type]
+							fields[k] = (field_type,) + fields[k][1:]
 					model = create_model(
 						t2_unit_name, __config__ = StrictModel.__config__,
-						**{k: (v, T2Unit._defaults[k] if k in T2Unit._defaults else ...)
-						for k, v in T2Unit._annots.items() if k not in excl} # type: ignore
+						**fields
 					)
 
 					rc = model(**rc).dict()
