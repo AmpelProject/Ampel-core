@@ -66,4 +66,4 @@ class DevAmpelContext(AmpelContext):
 
 	def _set_new_conf(self, conf: Dict[str, Any]) -> None:
 		self.config = AmpelConfig(conf, True)
-		self.loader = UnitLoader(self.config)
+		self.loader = UnitLoader(self.config, secrets=self.loader.secrets)
