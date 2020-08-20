@@ -18,7 +18,7 @@ from ampel.model.Secret import Secret
 from ampel.base.DataUnit import DataUnit
 from ampel.abstract.AbsPointT2Unit import AbsPointT2Unit
 from ampel.util.mappings import walk_and_process_dict
-from ampel.util.type_analysis import is_subtype
+from ampel.util.type_analysis import get_subtype
 
 
 class ProcessMorpher:
