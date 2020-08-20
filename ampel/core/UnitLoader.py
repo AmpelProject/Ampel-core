@@ -133,7 +133,6 @@ class UnitLoader:
 			raise ValueError(f"Config alias {config} not found")
 
 		ret = merge_dicts([ret, override, kwargs])
-		print(unit, ret)
 		if resolve_secrets:
 			if isinstance(unit, str):
 				unit = self.get_class_by_name(unit)
