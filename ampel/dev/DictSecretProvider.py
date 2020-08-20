@@ -7,6 +7,7 @@
 # Last Modified Date: 14.08.2020
 # Last Modified By  : Jakob van Santen <jakob.van.santen@desy.de>
 
+from typing import Any
 import yaml, json
 
 from ampel.abstract.AbsSecretProvider import AbsSecretProvider, Secret
@@ -14,9 +15,9 @@ from ampel.abstract.AbsSecretProvider import AbsSecretProvider, Secret
 
 class SecretWrapper(Secret):
 
-    value: str
+    value: Any
 
-    def get(self) -> str:
+    def get(self) -> Any:
         return self.value
 
 
