@@ -7,17 +7,18 @@
 # Last Modified Date: 14.08.2020
 # Last Modified By  : Jakob van Santen <jakob.van.santen@desy.de>
 
-from typing import Any
+from typing import Any, Tuple
 import yaml, json
 
-from ampel.abstract.AbsSecretProvider import AbsSecretProvider, Secret
+from ampel.abstract.AbsSecretProvider import AbsSecretProvider
+from ampel.model.Secret import Secret, T
 
 
-class SecretWrapper(Secret):
+class SecretWrapper(Secret[T]):
 
-    value: Any
+    value: T
 
-    def get(self) -> Any:
+    def get(self) -> T:
         return self.value
 
 
@@ -28,13 +29,19 @@ class DictSecretProvider(AbsSecretProvider, dict):
         with open(path) as f:
             return cls(yaml.safe_load(f))
 
-    def get(self, key: str) -> SecretWrapper:
+    def get(self, key: str, type_: T) -> SecretWrapper[T]:
         try:
-            return SecretWrapper(key=key, value=self[key])
+            return SecretWrapper[type_](key=key, value=self[key])
         except KeyError:
             raise KeyError(f"Unknown secret '{key}'")
 
 
 class PotemkinSecretProvider(AbsSecretProvider):
-    def get(self, key: str) -> SecretWrapper:
-        return SecretWrapper(key=key, value=key)
+    def get(self, key: str, type_: T) -> SecretWrapper[T]:
+        origin = getattr(type_, '__origin__', None)
+        print({'key': key, 'type': type_, 'origin': origin})
+        if origin is tuple:
+            value = tuple(t() for t in type_.__args__)
+        else:
+            value = type_()
+        return SecretWrapper[T](key=key, value=value)

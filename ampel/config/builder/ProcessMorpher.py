@@ -181,9 +181,9 @@ class ProcessMorpher:
 					# special case for Secret fields
 					for k in list(fields.keys()):
 						field_type = fields[k][0]
-						if is_subtype(Secret, field_type):
+						if get_subtype(Secret, field_type):
 							field_type = Dict[Literal["key"],str]
-							if is_subtype(type(None), field_type):
+							if get_subtype(type(None), field_type):
 								field_type = Optional[field_type]
 							fields[k] = (field_type,) + fields[k][1:]
 					model = create_model(

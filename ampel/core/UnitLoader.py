@@ -15,7 +15,7 @@ from typing import ( # type: ignore[attr-defined]
 
 from ampel.util.collections import ampel_iter
 from ampel.util.mappings import flatten_dict, unflatten_dict, merge_dicts
-from ampel.util.type_analysis import is_subtype
+from ampel.util.type_analysis import get_subtype
 from ampel.base.AmpelBaseModel import AmpelBaseModel
 from ampel.base.DataUnit import DataUnit
 from ampel.core.AmpelContext import AmpelContext
@@ -92,7 +92,7 @@ class UnitLoader:
 
 	def resolve_secrets(self, unit: Type[AmpelBaseModel], init_config: Dict[str, Any]):
 		for field, typ in unit._annots.items():
-			if is_subtype(Secret, typ):
+			if secret_field := get_subtype(Secret, typ):
 				if field in init_config:
 					value = init_config[field]
 				elif field in unit._defaults:
@@ -101,13 +101,14 @@ class UnitLoader:
 					raise KeyError(f"{unit.__qualname__}.{field} needs a value")
 
 				# skip if optional
-				if value is None and is_subtype(type(None), typ):
+				if value is None and get_subtype(type(None), typ):
 					continue
 				elif not self.secrets:
 					raise RuntimeError(f"{unit.__qualname__}.{field} needs a secret provider")
 				elif not (isinstance(value, dict) and "key" in value):
 					raise ValueError(f"{unit.__qualname__}.{field}"+" should be configured with a dict of the form {\"key\": \"secret-name\"}")
-				init_config[field] = self.secrets.get(value["key"])
+				target_type = getattr(secret_field, '__args__', [str])[0]
+				init_config[field] = self.secrets.get(value["key"], target_type)
 		return init_config
 
 

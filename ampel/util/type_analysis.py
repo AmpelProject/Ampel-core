@@ -9,13 +9,14 @@
 
 from typing import Any, Iterable, Union
 
-def is_subtype(candidate_type : Any, field_type) -> bool:
+def get_subtype(candidate_type : Any, field_type) -> Any:
     """
-    Return True if `candidate_type` is compatible with `field_type`.
-    Essentially issubclass() that handles typing.Union.
+    Return the first element of `field_type` with which `candidate_type` is
+    compatible, or None if no compabible types are found.
+    This is essentially a version of issubclass() that handles typing.Union and
+    returns the target type instead of just a bool.
     
     :param field_type: a type, sequence of types, or typing.Union
-    return True if `maybe_type` is a subclass of cls, or a typing.Union containing one
     """
     subfields = None
     origin = getattr(field_type, '__origin__', None)
@@ -24,11 +25,18 @@ def is_subtype(candidate_type : Any, field_type) -> bool:
             subfields = field_type 
     elif origin is Union:
         subfields = field_type.__args__
+    elif origin is candidate_type:
+        return origin
 
     if subfields:
-        return any(is_subtype(candidate_type, subfield) for subfield in subfields)
+        for subfield in subfields:
+            if subtype := get_subtype(candidate_type, subfield):
+                return subtype
+        else:
+            return None
     else:
         try:
-            return issubclass(candidate_type, field_type)
+            if issubclass(candidate_type, field_type):
+                return field_type
         except TypeError:
-            return False
+            return None
