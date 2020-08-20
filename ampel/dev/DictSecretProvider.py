@@ -39,7 +39,6 @@ class DictSecretProvider(AbsSecretProvider, dict):
 class PotemkinSecretProvider(AbsSecretProvider):
     def get(self, key: str, type_: T) -> SecretWrapper[T]:
         origin = getattr(type_, '__origin__', None)
-        print({'key': key, 'type': type_, 'origin': origin})
         if origin is tuple:
             value = tuple(t() for t in type_.__args__)
         else:
