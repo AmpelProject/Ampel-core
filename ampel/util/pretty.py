@@ -1,4 +1,4 @@
-import types, re
+import types, re, html
 
 # https://stackoverflow.com/a/56497521/104668
 
@@ -160,7 +160,7 @@ def set_bold(s: str, match: str):
 
 	for el in s.split("\n"):
 		if re.match(match, el):
-			out.append(f"<b>{el}</b>")
+			out.append(f"<b>{html.escape(el)}</b>")
 		else:
-			out.append(el)
+			out.append(html.escape(el))
 	return HTML("<pre style='font-size: 13px'>" + "<br/>".join(out) + "</pre>")
