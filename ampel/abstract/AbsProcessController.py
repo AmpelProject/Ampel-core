@@ -13,6 +13,7 @@ from typing import Dict, Optional, Literal, Sequence
 from ampel.base import abstractmethod
 from ampel.base.AmpelABC import AmpelABC
 from ampel.config.AmpelConfig import AmpelConfig
+from ampel.abstract.AbsSecretProvider import AbsSecretProvider
 from ampel.model.ProcessModel import ProcessModel
 from ampel.log.AmpelLogger import AmpelLogger
 
@@ -48,9 +49,16 @@ class AbsProcessController(AmpelABC, abstract=True):
 		return cls(config, proc_models, log_profile)
 
 
-	def __init__(self, config: AmpelConfig, processes: Sequence[ProcessModel], log_profile: str = "default") -> None:
+	def __init__(
+		self,
+		config: AmpelConfig,
+		processes: Sequence[ProcessModel],
+		secrets: Optional[AbsSecretProvider] = None,
+		log_profile: str = "default"
+	) -> None:
 
 		self.config = config
+		self.secrets = secrets
 		self.proc_models = processes
 		self.log_profile = log_profile
 

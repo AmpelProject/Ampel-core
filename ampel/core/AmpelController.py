@@ -11,6 +11,7 @@ import importlib, re
 from typing import Dict, Sequence, List, Literal, Optional, Iterable
 import asyncio
 import logging
+import yaml
 
 from ampel.core.Schedulable import Schedulable
 from ampel.config.AmpelConfig import AmpelConfig
@@ -18,6 +19,7 @@ from ampel.log.AmpelLogger import AmpelLogger, VERBOSE
 from ampel.model.ProcessModel import ProcessModel
 from ampel.util.mappings import build_unsafe_dict_id
 from ampel.abstract.AbsProcessController import AbsProcessController
+from ampel.abstract.AbsSecretProvider import AbsSecretProvider
 from ampel.core.UnitLoader import UnitLoader
 
 class AmpelController:
@@ -32,6 +34,7 @@ class AmpelController:
 		config_file_path: str,
 		pwd_file_path: Optional[str] = None,
 		pwds: Optional[Iterable[str]] = None,
+		secrets: Optional[AbsSecretProvider] = None,
 		tier: Optional[Literal[0, 1, 2, 3]] = None,
 		match: Optional[Sequence[str]] = None,
 		exclude: Optional[Sequence[str]] = None,
@@ -61,7 +64,7 @@ class AmpelController:
 		d: Dict[int, List[ProcessModel]] = {}
 		self.controllers: List[AbsProcessController] = []
 		config = AmpelConfig.load(config_file_path, pwd_file_path, pwds, freeze=False)
-		loader = UnitLoader(config)
+		loader = UnitLoader(config, secrets=secrets)
 
 		if verbose:
 			if not logger:
@@ -92,6 +95,7 @@ class AmpelController:
 				)
 			controller_kwargs = {
 				'config': config,
+				'secrets': loader.secrets,
 				'processes': processes,
 				**kwargs
 			}
@@ -184,8 +188,11 @@ class AmpelController:
 		import signal
 		import sys
 
+		from ampel.dev.DictSecretProvider import DictSecretProvider
+
 		parser = ArgumentParser(add_help=True)
 		parser.add_argument('config_file_path')
+		parser.add_argument('--secrets', type=DictSecretProvider.load, default=None)
 		parser.add_argument('--tier', type=int, choices=(0,1,2,3), default=None)
 		parser.add_argument('--match', type=str, nargs='*', default=None)
 		args = parser.parse_args()

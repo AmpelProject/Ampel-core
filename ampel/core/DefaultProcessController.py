@@ -11,9 +11,7 @@ import asyncio
 import schedule
 import traceback
 import sys
-from concurrent import futures
-from threading import Lock
-from typing import Dict, Sequence, Callable, Any, List, Literal
+from typing import Dict, Sequence, Callable, Any, List, Literal, Optional
 
 from ampel.util import concurrent
 
@@ -22,6 +20,7 @@ from ampel.base.AmpelBaseModel import AmpelBaseModel
 from ampel.core.AmpelContext import AmpelContext
 from ampel.core.Schedulable import Schedulable
 from ampel.abstract.AbsProcessController import AbsProcessController
+from ampel.abstract.AbsSecretProvider import AbsSecretProvider
 from ampel.config.AmpelConfig import AmpelConfig
 from ampel.config.ScheduleEvaluator import ScheduleEvaluator
 from ampel.model.ProcessModel import ProcessModel
@@ -67,7 +66,7 @@ class DefaultProcessController(AbsProcessController, AmpelBaseModel):
 		If set to 2, additionaly, the scheduling will be stopped if the processes returns 0/None
 		"""
 
-		AbsProcessController.__init__(self, config, processes)
+		AbsProcessController.__init__(self, config, processes, **kwargs)
 		self.scheduler = schedule.Scheduler()
 
 		if isolate:
@@ -114,7 +113,7 @@ class DefaultProcessController(AbsProcessController, AmpelBaseModel):
 		if len(isolated_processes) != len(self.proc_models):
 			self.config.freeze()
 			self.context = AmpelContext.new(
-				tier=self.proc_models[0].tier, config=self.config
+				tier=self.proc_models[0].tier, config=self.config, secrets=self.secrets,
 			)
 
 
@@ -228,6 +227,7 @@ class DefaultProcessController(AbsProcessController, AmpelBaseModel):
 	@concurrent.process
 	def run_mp_process(
 		config: Dict[str, Any],
+		secrets: Optional[AbsSecretProvider],
 		p: Dict[str, Any],
 		log_profile: str = "default"
 	) -> Any:
@@ -235,7 +235,8 @@ class DefaultProcessController(AbsProcessController, AmpelBaseModel):
 		# Create new context with frozen config
 		context = AmpelContext.new(
 			tier = p['tier'],
-			config = AmpelConfig(config, freeze=True)
+			config = AmpelConfig(config, freeze=True),
+			secrets = secrets,
 		)
 
 		processor = context.loader.new_admin_unit(
