@@ -281,7 +281,7 @@ class AmpelRegister(AmpelBaseModel):
 
 		if 'blocks' in self.file_rotate:
 
-			if header['blocks'] > self.file_rotate['blocks']:
+			if header['blocks'] >= self.file_rotate['blocks']:
 				return True
 
 			if self.verbose > 1:
