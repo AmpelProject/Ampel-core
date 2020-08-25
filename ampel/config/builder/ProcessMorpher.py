@@ -11,6 +11,7 @@ import json
 from typing import Dict, Any, Literal
 from importlib import import_module
 from pydantic import create_model
+from pydantic.main import ModelMetaclass
 from ampel.log.AmpelLogger import AmpelLogger, VERBOSE
 from ampel.model.StrictModel import StrictModel
 from ampel.model.ProcessModel import ProcessModel
@@ -133,6 +134,40 @@ class ProcessMorpher:
 		return self
 
 
+	@classmethod
+	def _create_model(cls, name, annotations, defaults, exclude):
+		"""
+		Build a pydantic model from annotations and defaults, replacing Secret
+		fields with their dict representations
+		"""
+		fields = {
+			k: (v, defaults[k] if k in defaults else ...)
+			for k, v in annotations.items() if k not in exclude
+		} # type: ignore
+		# special case for Secret fields
+		for k in list(fields.keys()):
+			field_type = fields[k][0]
+			if get_subtype(Secret, field_type):
+				field_type = Dict[Literal["key"],str]
+				if get_subtype(type(None), field_type):
+					field_type = Optional[field_type]
+				fields[k] = (field_type,) + fields[k][1:]
+			elif type(field_type) is ModelMetaclass:
+				fields[k] = (
+					cls._create_model(
+						field_type.__name__,
+						field_type.__annotations__,
+						field_type.__field_defaults__,
+						set()
+					),
+					field_type.__field_defaults__
+				)
+		return create_model(
+			name, __config__ = StrictModel.__config__,
+			**fields
+		)
+
+
 	# TODO: verbose print path ?
 	def _hash_t2_config_callback(self, path, k, d, **kwargs) -> None:
 
@@ -174,21 +209,11 @@ class ProcessMorpher:
 					excl: Any = DataUnit._annots.keys()
 					if issubclass(T2Unit, AbsPointT2Unit):
 						excl = list(excl) + ["ingest"]
-					fields = {
-						k: (v, T2Unit._defaults[k] if k in T2Unit._defaults else ...)
-						for k, v in T2Unit._annots.items() if k not in excl
-					} # type: ignore
-					# special case for Secret fields
-					for k in list(fields.keys()):
-						field_type = fields[k][0]
-						if get_subtype(Secret, field_type):
-							field_type = Dict[Literal["key"],str]
-							if get_subtype(type(None), field_type):
-								field_type = Optional[field_type]
-							fields[k] = (field_type,) + fields[k][1:]
-					model = create_model(
-						t2_unit_name, __config__ = StrictModel.__config__,
-						**fields
+					model = self._create_model(
+						t2_unit_name,
+						T2Unit._annots,
+						T2Unit._defaults,
+						excl,
 					)
 
 					rc = model(**rc).dict()
