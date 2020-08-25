@@ -10,7 +10,8 @@
 from importlib import import_module
 from typing import ( # type: ignore[attr-defined]
 	Dict, Type, Any, Union, Optional, ClassVar, TypeVar,
-	Literal, List, _GenericAlias, overload, get_origin, cast
+	Literal, List, _GenericAlias, overload, get_args,
+	get_origin, cast
 )
 
 from pydantic.main import ModelMetaclass
@@ -98,7 +99,11 @@ class UnitLoader:
 		defaults: Dict[str, Any],
 		init_config: Dict[str, Any]
 	) -> Dict[str, Any]:
+		"""
+		Recursively walk annotations, resolving any Secret fields that are found
+		"""
 		for field, typ in annotations.items():
+			# Secret, or Union containing Secret
 			if secret_field := get_subtype(Secret, typ):
 				if field in init_config:
 					value = init_config[field]
@@ -116,6 +121,8 @@ class UnitLoader:
 					raise ValueError(f"{unit.__qualname__}.{field}"+" should be configured with a dict of the form {\"key\": \"secret-name\"}")
 				target_type = getattr(secret_field, '__args__', [str])[0]
 				init_config[field] = self.secrets.get(value["key"], target_type)
+
+			# other model, possibly containing Secret fields
 			elif type(typ) is ModelMetaclass:
 				value = {}
 				if field in init_config:
@@ -123,6 +130,23 @@ class UnitLoader:
 				elif field in defaults:
 					value = defaults[field]
 				init_config[field] = self.resolve_secrets(typ, typ.__annotations__, typ.__field_defaults__, value)
+
+			# Union, possibly containing other models
+			elif (uni := get_origin(typ)) is Union:
+				value = {}
+				if field in init_config:
+					value = init_config[field]
+				elif field in defaults:
+					value = defaults[field]
+				# skip if optional
+				if value is None and type(None) in get_args(typ):
+					continue
+				for subtyp in get_args(typ):
+					if type(subtyp) is ModelMetaclass:
+						# configure for first model that satisfied by the initial value
+						if set(value.keys()).union(subtyp.__field_defaults__) == set(subtyp.__fields__.keys()):
+							init_config[field] = self.resolve_secrets(subtyp, subtyp.__annotations__, subtyp.__field_defaults__, value)
+							break
 		return init_config
 
 
