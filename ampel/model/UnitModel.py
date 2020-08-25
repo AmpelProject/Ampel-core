@@ -11,10 +11,6 @@ from typing import Dict, Optional, Any, Union, Type, TYPE_CHECKING
 from pydantic import root_validator, ValidationError, MissingError
 from ampel.base.AmpelBaseModel import AmpelBaseModel
 from ampel.model.StrictModel import StrictModel
-from ampel.base.DataUnit import DataUnit
-from ampel.core.AdminUnit import AdminUnit
-from ampel.abstract.AbsProcessorUnit import AbsProcessorUnit
-from ampel.abstract.ingest.AbsIngester import AbsIngester
 
 if TYPE_CHECKING:
 	from ampel.core.UnitLoader import UnitLoader
@@ -48,6 +44,11 @@ class UnitModel(StrictModel):
 	@root_validator
 	def validate_config(cls, values):
 		if cls._unit_loader:
+			from ampel.base.DataUnit import DataUnit
+			from ampel.core.AdminUnit import AdminUnit
+			from ampel.abstract.AbsProcessorUnit import AbsProcessorUnit
+			from ampel.abstract.ingest.AbsIngester import AbsIngester
+
 			unit = cls._unit_loader.get_class_by_name(values['unit'])
 			if issubclass(unit, (DataUnit, AbsProcessorUnit)):
 				# Instances of DataUnit and AbsProcessorUnit are initializable
