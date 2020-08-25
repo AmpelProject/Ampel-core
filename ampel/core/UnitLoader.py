@@ -91,7 +91,7 @@ class UnitLoader:
 		else:
 			return value
 
-	def _resolve_secrets(
+	def resolve_secrets(
 		self,
 		unit: Union[Type[AmpelBaseModel], Type[ModelMetaclass]],
 		annotations: Dict[str, Any],
@@ -122,12 +122,8 @@ class UnitLoader:
 					value = init_config[field]
 				elif field in defaults:
 					value = defaults[field]
-				init_config[field] = self._resolve_secrets(typ, typ.__annotations__, typ.__field_defaults__, value)
+				init_config[field] = self.resolve_secrets(typ, typ.__annotations__, typ.__field_defaults__, value)
 		return init_config
-
-
-	def resolve_secrets(self, unit: Type[AmpelBaseModel], init_config: Dict[str, Any]) -> Dict[str, Any]:
-		return self._resolve_secrets(unit, unit._annots, unit._defaults, init_config)
 
 
 	def get_init_config(self,
@@ -154,7 +150,7 @@ class UnitLoader:
 		if resolve_secrets:
 			if isinstance(unit, str):
 				unit = self.get_class_by_name(unit)
-			return self.resolve_secrets(unit, ret)
+			return self.resolve_secrets(unit, unit._annots, unit._defaults, ret)
 		else:
 			return ret
 
