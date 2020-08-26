@@ -11,7 +11,7 @@ import asyncio
 import schedule
 import traceback
 import sys
-from typing import Dict, Sequence, Callable, Any, List, Literal, Optional
+from typing import Dict, Sequence, Callable, Any, List, Literal, Optional, Set
 
 from ampel.util import concurrent
 
@@ -78,9 +78,9 @@ class DefaultProcessController(AbsProcessController, AmpelBaseModel):
 
 		# one top-level task per ProcessModel
 		# invocations of run_async_process
-		self._pending_schedules: Set[asyncio.Task] = set()
+		self._pending_schedules: Set[asyncio.Future] = set()
 		# individual process replicas
-		self._processes: Dict[str: Set[asyncio.Task]] = dict()
+		self._processes: Dict[str, Set[asyncio.Task]] = dict()
 
 		# Note: no need to freeze config if only isolated processes are to be run since
 		# each isolated process will spawn its own AmpelConfig instance in its own environment
