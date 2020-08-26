@@ -8,6 +8,10 @@ try:
 	from astropy.time import Time
 except ImportError:
 	pytest.skip("Delayed T0 requires astropy", allow_module_level=True)
+try:
+    from ampel.t0.DelayedT0Controller import DelayedT0Controller
+except ImportError:
+    pytest.skip("DelayedT0Controller is not finished", allow_module_level=True)
 from numpy import random, arccos
 random.seed(0)
 import asyncio
@@ -117,8 +121,6 @@ def testing_config(mongod, archivedb):
 	AmpelConfig.set_config(config)
 	yield config
 	AmpelConfig.reset()
-
-from ampel.t0.DelayedT0Controller import DelayedT0Controller
 
 def test_source():
 	ts = PotemkinTargetSource(0)

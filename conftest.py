@@ -10,8 +10,8 @@ from io import BytesIO
 from glob import glob
 import fastavro
 
-collect_ignore = ['src/ampel/core/test/fixtures.py']
-pytest_plugins = ['ampel.core.test.fixtures']
+collect_ignore = ['ampel/test/fixtures.py']
+pytest_plugins = ['ampel.test.fixtures']
 
 def alert_blobs():
     parent = os.path.dirname(os.path.realpath(__file__)) + '/../'
