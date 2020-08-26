@@ -58,7 +58,7 @@ class AmpelStreamHandler:
 
 
 	def __init__(self,
-		std_stream: Literal['stdout', 'stderr'] = 'stdout',
+		std_stream: Literal['stdout', 'stderr'] = 'stderr',
 		datefmt: str = "%Y-%m-%d %H:%M:%S",
 		level: int = LogRecordFlag.INFO,
 		aggregate_interval: float = 1.,
