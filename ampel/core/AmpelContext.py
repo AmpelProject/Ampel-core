@@ -116,7 +116,7 @@ class AmpelContext:
 
 		return cls.new(
 			AmpelConfig(
-				cb.build_config(ignore_errors, pwds),
+				cb.build_config(ignore_errors, pwds=pwds),
 				freeze_config
 			),
 			tier=tier
