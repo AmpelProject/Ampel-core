@@ -1,0 +1,28 @@
+pipeline {
+  agent none
+  stages {
+    stage('dependencies') {
+      agent any
+      steps {
+          dir(path: '.jenkins/Ampel-interface') {
+            git(url: 'https://github.com/AmpelProject/Ampel-interface', credentialsId: 'github')
+          }
+      }
+    }
+    stage('build') {
+      agent {
+        dockerfile {
+          filename '.jenkins/Dockerfile.build'
+        }
+      }
+      steps {
+        sh 'mypy ampel --junit-xml mypy.xml'
+      }
+      post {
+        always {
+          junit 'mypy.xml'
+        }
+      }
+    }
+  }
+}

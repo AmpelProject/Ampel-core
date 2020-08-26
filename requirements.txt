@@ -2,7 +2,7 @@ pymongo
 pyyaml
 pytest
 ipython
-pydantic
+pydantic==1.4
 sjcl
 schedule
 psutil
