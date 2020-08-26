@@ -144,7 +144,9 @@ class UnitLoader:
 				for subtyp in get_args(typ):
 					if type(subtyp) is ModelMetaclass:
 						# configure for first model that satisfied by the initial value
-						if set(value.keys()).union(subtyp.__field_defaults__) == set(subtyp.__fields__.keys()):
+						if isinstance(value, subtyp):
+							break
+						elif isinstance(value, dict) and set(value.keys()).union(subtyp.__field_defaults__) == set(subtyp.__fields__.keys()):
 							init_config[field] = self.resolve_secrets(subtyp, subtyp.__annotations__, subtyp.__field_defaults__, value)
 							break
 		return init_config
