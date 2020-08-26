@@ -14,7 +14,7 @@ setup(
 	version='0.7',
 	packages=find_namespace_packages(),
 	package_data = {
-		'': ['*.json'],
+		'': ['*.json', 'py.typed'],
 		'ampel.test': [
 			'test-data/*.json',
 			'deploy/production/initdb/*/*.sql',
@@ -26,6 +26,7 @@ setup(
 			'*.yml', '**/*.yml', '**/**/*.yml'
 		]
 	},
+	zip_safe=False,
 	entry_points = {
 		'console_scripts': [
 			'ampel-controller = ampel.core.AmpelController:AmpelController.main',
