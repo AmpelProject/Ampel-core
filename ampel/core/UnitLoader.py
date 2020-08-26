@@ -153,7 +153,7 @@ class UnitLoader:
 
 
 	def get_init_config(self,
-		unit: Union[str, Type],
+		unit: Union[str, Type[AmpelBaseModel]],
 		config: Optional[Union[int, str, Dict[str, Any]]] = None,
 		override: Optional[Dict[str, Any]] = None,
 		kwargs: Optional[Dict[str, Any]] = None,
@@ -161,7 +161,7 @@ class UnitLoader:
 	) -> Dict[str, Any]:
 		""" :raises: ValueError is model type is not recognized """
 
-		ret: Dict[str, Any] = {}
+		ret: Optional[Dict[str, Any]] = {}
 
 		if isinstance(config, (dict, str)):
 			ret = self.resolve_aliases(config)
@@ -169,16 +169,21 @@ class UnitLoader:
 		elif isinstance(config, int):
 			ret = self.ampel_config.get(f"confid.{config}", dict)
 
-		if not ret and config is not None:
+		if ret is None and config is not None:
 			raise ValueError(f"Config alias {config} not found")
 
 		ret = merge_dicts([ret, override, kwargs])
-		if resolve_secrets:
+		if resolve_secrets and ret is not None:
 			if isinstance(unit, str):
 				unit = self.get_class_by_name(unit)
-			return self.resolve_secrets(unit, unit._annots, unit._defaults, ret)
-		else:
-			return ret
+			if isinstance(unit, ModelMetaclass):
+				annotations, defaults = unit.__annotations__, unit.__field_defaults__
+			elif issubclass(unit, AmpelBaseModel):
+				annotations, defaults = unit._annots, unit._defaults
+			else:
+				raise TypeError
+			ret = self.resolve_secrets(unit, annotations, defaults, ret)
+		return ret if ret is not None else {}
 
 
 	def get_resources(self, unit_model: UnitModel) -> Dict[str, Any]:
