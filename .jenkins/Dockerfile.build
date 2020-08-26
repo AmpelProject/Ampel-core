@@ -4,7 +4,7 @@ RUN apt-get install bash gcc && \
     pip install mypy==0.782
 
 ADD .jenkins/Ampel-interface /Ampel-interface
-RUN pip install -r /Ampel-interface/requirements.txt /Ampel-core
+RUN pip install -r /Ampel-interface/requirements.txt /Ampel-interface
 
 ADD requirements.txt /
 RUN pip install -r /requirements.txt
