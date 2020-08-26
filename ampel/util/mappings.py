@@ -17,6 +17,7 @@ from ampel.model.operator.OneOf import OneOf
 from ampel.util.collections import check_seq_inner_type
 from ampel.util.crypto import b2_short_hash
 
+T = TypeVar('T')
 
 def build_unsafe_short_dict_id(dict_arg: Optional[Dict]) -> int:
 	"""
@@ -365,7 +366,7 @@ def merge_dict(d1: Dict, d2: Dict) -> Dict:
 	}
 
 
-def merge_dicts(items: Sequence[Optional[Dict]]) -> Optional[Dict]:
+def merge_dicts(items: Sequence[Optional[Dict[T,Any]]]) -> Optional[Dict[T,Any]]:
 	"""
 	Merge a sequence of dicts recursively. Elements that are None are skipped.
 	"""
