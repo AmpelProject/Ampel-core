@@ -1,7 +1,6 @@
 pymongo
 pyyaml
 pytest
-ipython
 pydantic==1.4
 sjcl
 schedule
