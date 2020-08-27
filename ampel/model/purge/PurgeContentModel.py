@@ -32,7 +32,7 @@ class PurgeContentModel(StrictModel):
 	compress: bool = True
 
 	def __init__(self, **kwargs) -> None:
-		super().__init__(**kwargs)
+		super().__init__(**kwargs) # type: ignore[call-arg]
 		if self.format == 'bson' and self.unify:
 			raise ValueError(
 				"Parameter 'unify' can only by used in combination with " +
