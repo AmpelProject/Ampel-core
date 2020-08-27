@@ -111,7 +111,7 @@ class DBContentLoader(AdminUnit):
 
 			if directive.col in ("t1", "log"):
 				for res in cursor:
-					register[res['stock']][directive.col].append(res)
+					register[res['stock']][directive.col].append(res) # type: ignore[union-attr]
 
 			elif directive.col == "stock":
 				for res in cursor:
