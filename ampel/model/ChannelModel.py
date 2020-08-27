@@ -18,7 +18,7 @@ class ChannelModel(StrictModel):
 	purge: PurgeModel = {
 		'content': {'delay': 100, 'format': 'json', 'unify': True},
 		'logs': {'delay': 50, 'format': 'csv'}
-	}
+	} # type: ignore[assignment]
 	active: bool = True
 	hash: Optional[int]
 	distrib: Optional[str]
