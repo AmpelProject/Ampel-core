@@ -29,8 +29,8 @@ class DictSecretProvider(AbsSecretProvider):
         with open(path) as f:
             return cls(yaml.safe_load(f))
 
-    def __init__(self, dictlike: Dict[str,Any]) -> None:
-        self.store : Dict[str,Any] = dict(dictlike)
+    def __init__(self, dictlike: Dict[str, Any]) -> None:
+        self.store: Dict[str, Any] = dict(dictlike)
 
     # FIXME: find a way to express the desired return type statically
     def get(self, key: str, type_: T) -> SecretWrapper[T]:
