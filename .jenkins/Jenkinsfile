@@ -16,7 +16,7 @@ pipeline {
         }
       }
       steps {
-        sh 'rm mypy.*.xml'
+        sh 'rm mypy.*.xml || true'
         sh 'run_mypy.sh ampel'
       }
       post {
