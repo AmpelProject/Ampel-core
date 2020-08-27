@@ -24,7 +24,10 @@ class AbsIngester(AdminUnit, abstract=True):
 		return None
 
 	def __hash__(self) -> int:
-		return self.hash
+		if self.hash is None:
+			return id(self)
+		else:
+			return self.hash
 
 	def __eq__(self, other) -> bool:
 		if isinstance(other, int):
