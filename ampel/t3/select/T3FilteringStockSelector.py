@@ -63,6 +63,8 @@ class T3FilteringStockSelector(T3StockSelector):
 			return {'$and': [self._build_match(el) for el in f.all_of]}
 		elif isinstance(f, AnyOf):
 			return {'$or': [self._build_match(el) for el in f.any_of]}
+		else:
+			raise TypeError()
 
 
 	def _t2_filter_pipeline(self, stock_ids: List[StockId]) -> List[Dict]:
@@ -110,7 +112,7 @@ class T3FilteringStockSelector(T3StockSelector):
 		# T2s associated with the requested channels
 		match = {
 			'status': 0,
-			'unit': match_array(set(f.unit for f in self.t2_filter)),
+			'unit': match_array(_all_units(self.t2_filter)),
 			**build_general_query(stock_ids, self.channel, self.tag)
 		}
 
@@ -165,3 +167,17 @@ class T3FilteringStockSelector(T3StockSelector):
 				}
 			}
 		]
+
+def _all_units(filters: Union[T2FilterModel, AllOf[T2FilterModel], AnyOf[T2FilterModel]]) -> List[str]:
+	"""
+	Get the set of all units involved in the selection
+	"""
+	if isinstance(filters, T2FilterModel):
+		return [filters.unit]
+	elif isinstance(filters, AllOf):
+		return list(set(f.unit for f in filters.all_of))
+	elif isinstance(filters, AnyOf):
+		# NB: AnyOf may contain AllOf
+		return list(set(sum((_all_units(f) for f in filters.any_of), [])))
+	else:
+		raise TypeError()
