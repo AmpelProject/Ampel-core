@@ -13,7 +13,7 @@ from ampel.util.freeze import recursive_unfreeze
 from ampel.config.AmpelConfig import AmpelConfig
 from ampel.db.AmpelDB import AmpelDB
 from ampel.util.mappings import set_by_path, build_unsafe_short_dict_id
-from .DictSecretProvider import PotemkinSecretProvider
+from ampel.dev.DictSecretProvider import PotemkinSecretProvider
 
 
 class DevAmpelContext(AmpelContext):
