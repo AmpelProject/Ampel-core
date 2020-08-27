@@ -24,11 +24,11 @@ import sys
 import traceback
 from textwrap import dedent
 from functools import wraps
-from multiprocessing import reduction, spawn
+from multiprocessing import reduction, spawn # type: ignore
 from multiprocessing.context import set_spawning_popen
-from subprocess import _args_from_interpreter_flags
+from subprocess import _args_from_interpreter_flags # type: ignore
 
-import aiopipe
+import aiopipe # type: ignore
 
 
 def process(function):
