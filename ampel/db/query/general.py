@@ -15,7 +15,7 @@ from ampel.model.operator.OneOf import OneOf
 from ampel.db.query.utils import match_array
 from ampel.db.query.schema import apply_schema, apply_excl_schema
 
-type_stock_id = get_args(StockId)
+type_stock_id = get_args(StockId) # type: ignore[misc]
 
 
 def build_general_query(
