@@ -158,14 +158,15 @@ class T3Processor(AbsProcessorUnit):
 					# Content loader
 					################
 
-					# Spawn requested content loader
-					content_loader = self.context.loader \
-						.new_admin_unit(
-							unit_model = directive.load,
-							context = self.context,
-							sub_type = AbsT3Loader,
-							logger = logger
-						)
+					if directive.load:
+						# Spawn requested content loader
+						content_loader = self.context.loader \
+							.new_admin_unit(
+								unit_model = directive.load,
+								context = self.context,
+								sub_type = AbsT3Loader,
+								logger = logger
+							)
 
 
 					# Content complementer
