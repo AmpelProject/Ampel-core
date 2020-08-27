@@ -8,7 +8,7 @@
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from bson.binary import Binary
-from typing import Union, Dict, Any, Optional
+from typing import Union, Dict, Any, Optional, List
 from ampel.type import StockId, ChannelId, StrictIterable, strict_iterable
 from ampel.model.operator.AnyOf import AnyOf
 from ampel.model.operator.AllOf import AllOf
@@ -41,7 +41,7 @@ def build_stateless_query(
 	query = build_general_query(stock=stock, channel=channel)
 
 	if t2_subsel:
-		query['unit'] = t2_subsel if isinstance(t2_subsel, str) else match_array(t2_subsel)
+		query['unit'] = t2_subsel if isinstance(t2_subsel, (str,int)) else match_array(t2_subsel)
 
 	return query
 
@@ -66,71 +66,48 @@ def build_statebound_t2_query(
 	query['link'] = get_compound_match(states)
 
 	if t2_subsel:
-		query['unit'] = t2_subsel if isinstance(t2_subsel, str) else match_array(t2_subsel)
+		query['unit'] = t2_subsel if isinstance(t2_subsel, (str,int)) else match_array(t2_subsel)
 
 	return query
+
+def _to_binary(st: Union[str, bytes, Binary]) -> Binary:
+	if isinstance(st, str):
+		if len(st) == 32:
+			return Binary(bytes.fromhex(st), 0)
+		else:
+			raise ValueError("Provided state strings must have 32 characters")
+	elif isinstance(st, bytes):
+		if len(st) == 16:
+			return Binary(st, 0)
+		else:
+			raise ValueError("Provided state bytes must have a length of 16")
+	else:
+		if st.subtype == 0:
+			return st
+		else:
+			raise ValueError("Bson Binary states must have subtype 0")
 
 
 def get_compound_match(
 	states: Union[str, bytes, Binary, StrictIterable[Union[str, bytes, Binary]]],
-) -> Dict[str, Any]:
+) -> Union[Binary, Dict[str, List[Binary]]]:
 	"""
 	:raises ValueError: if provided states parameter is invalid
 	"""
 
-	# Single state was provided as string
-	if isinstance(states, str):
-		if len(states) != 32:
-			raise ValueError("Provided state string must have 32 characters")
-		match_comp_ids = Binary(bytes.fromhex(states), 0) # convert to bson Binary
-
-	# Single state was provided as bytes
-	elif isinstance(states, bytes):
-		if len(states) != 16:
-			raise ValueError("Provided state bytes must have a length of 16")
-		match_comp_ids = Binary(states, 0) # convert to bson Binary
-
-	# Single state was provided as bson Binary
-	elif isinstance(states, Binary):
-		if states.subtype != 0:
-			raise ValueError("Provided bson Binary state must have subtype 0")
-		match_comp_ids = states
+	# Single state was provided
+	if isinstance(states, (str, bytes, Binary)):
+		return _to_binary(states)
 
 	# Multiple states were provided
 	elif isinstance(states, strict_iterable):
 
-		# check_seq_inner_type makes sure the sequence is monotype
-		if not check_seq_inner_type(states, (str, bytes, Binary)):
-			raise ValueError("Sequence of state must contain element with type: bytes or str")
-
-		first_state = next(iter(states))
-
-		# multiple states were provided as string
-		if isinstance(first_state, str):
-			if not all(len(st) == 32 for st in states):
-				raise ValueError("Provided state strings must have 32 characters")
-			match_comp_ids = {
-				'$in': [Binary(bytes.fromhex(st), 0) for st in states] # convert to bson Binary
-			}
-
-		# multiple states were provided as bytes
-		elif isinstance(first_state, bytes):
-			if not all(len(st) == 16 for st in states):
-				raise ValueError("Provided state bytes must have a length of 16")
-			match_comp_ids = {
-				'$in': [Binary(st, 0) for st in states] # convert to bson Binary
-			}
-
-		# multiple states were provided as bson Binary objects
-		elif isinstance(first_state, Binary):
-			if not all(st.subtype == 0 for st in states):
-				raise ValueError("Bson Binary states must have subtype 0")
-			match_comp_ids = {'$in': states if isinstance(states, list) else list(states)}
+		return {
+			'$in': [_to_binary(st) for st in states]
+		}
 
 	else:
 		raise ValueError(
 			f"Type of provided state ({type(states)}) must be "
 			f"bytes, str, bson.Binary or sequences of these"
 		)
-
-	return match_comp_ids
