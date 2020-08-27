@@ -4,8 +4,8 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 26.05.2018
-# Last Modified Date: 29.01.2020
-# Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
+# Last Modified Date: 27.08.2020
+# Last Modified By  : Jakob van Santen <jakob.van.santen@desy.de>
 
 import sys, json, psutil
 from time import time, strftime
@@ -21,7 +21,11 @@ from ampel.config.AmpelConfig import AmpelConfig
 from ampel.db.AmpelDB import AmpelDB
 from ampel.t2.T2RunState import T2RunState
 
-class AmpelStatsPublisher(Schedulable):
+from ampel.core.AdminUnit import AdminUnit
+from ampel.model.Secret import Secret
+
+
+class AmpelStatsPublisher(AdminUnit, Schedulable):
 	"""
 
 	EXAMPLE of graphite stats
@@ -68,12 +72,13 @@ class AmpelStatsPublisher(Schedulable):
 	# mongod colStats key values to publish
 	col_stats_keys = ('size', 'storageSize', 'totalIndexSize')
 
+	channel_names: Optional[Iterable[ChannelId]] = None
+	publish_to: Container[str] = ('graphite', 'mongo', 'print')
+	publish_what: Container[str] = ('col_stats', 'docs_count', 'daemon', 'channels', 'archive', 'system')
 
-	def __init__(self,
-		channel_names: Optional[Iterable[ChannelId]] = None,
-		publish_to: Container[str] = ('graphite', 'mongo', 'print'),
-		publish_what: Container[str] = ('col_stats', 'docs_count', 'daemon', 'channels', 'archive', 'system'),
-	) -> None:
+	archive_auth: Secret[dict] = {'key': 'ztf/archive/reader'} # type: ignore[assignment]
+
+	def __init__(self, **kwargs) -> None:
 		"""
 		:param channel_names: list of channel names, if None, stats for all avail channels will be reported.
 		:param publish_to: send stats to\n
@@ -89,6 +94,7 @@ class AmpelStatsPublisher(Schedulable):
 		* archive ->
 		"""
 
+		AdminUnit.__init__(self, **kwargs)
 		# Pass custom args to Parent class constructor
 		Schedulable.__init__(self,
 			start_callback=self.send_all_metrics,
@@ -99,12 +105,17 @@ class AmpelStatsPublisher(Schedulable):
 		self.logger = AmpelLogger.get_logger()
 		self.logger.info("Setting up AmpelStatsPublisher")
 
-		# Load provided channels or all channels defined in AmpelConfig
-		self.channel_names = tuple(AmpelConfig.get('channel').keys()) if channel_names is None \
-			else channel_names
+		if self.channel_names is None:
+			self.channels_names = tuple(
+				self.context.config.get(
+					'channel',
+					Dict[str,Any],
+					raise_exc=True
+				).keys()
+			)
 
 		# update interval dict. Values in minutes
-		self.update_intervals: Dict[str, int] = {
+		self.update_intervals: Dict[str, Optional[int]] = {
 			'col_stats': 30,
 			'docs_count': 30,
 			'daemon': 10,
@@ -115,40 +126,46 @@ class AmpelStatsPublisher(Schedulable):
 
 		# update interval dict. Values in minutes
 		for key in self.update_intervals.keys():
-			if key not in publish_what:
+			if key not in self.publish_what:
 				self.update_intervals[key] = None
 
-		# Which stats to publish (see doctring)
-		self.publish_to = publish_to
-
 		# DB collection handles
-		self.col_tran = AmpelDB.get_collection("stock", "r")
-		self.col_t0 = AmpelDB.get_collection("t0", "r")
-		self.col_t1 = AmpelDB.get_collection("t1", "r")
-		self.col_t2 = AmpelDB.get_collection("t2", "r")
-		self.col_events = AmpelDB.get_collection("events", "r")
-		self.col_logs = AmpelDB.get_collection("logs", "r")
-		self.col_troubles = AmpelDB.get_collection('troubles', "r")
+		self.col_tran = self.context.db.get_collection("stock", "r")
+		self.col_t0 = self.context.db.get_collection("t0", "r")
+		self.col_t1 = self.context.db.get_collection("t1", "r")
+		self.col_t2 = self.context.db.get_collection("t2", "r")
+		self.col_events = self.context.db.get_collection("events", "r")
+		self.col_logs = self.context.db.get_collection("logs", "r")
+		self.col_troubles = self.context.db.get_collection('troubles', "r")
 
-		# Instanciate GraphiteFeeder if required
-		if 'graphite' in publish_to:
+		# Instantiate GraphiteFeeder if required
+		if 'graphite' in self.publish_to:
 			from ampel.metrics.GraphiteFeeder import GraphiteFeeder
 			self.graphite_feeder = GraphiteFeeder(
-				AmpelConfig.get('resource.graphite.default')
+				self.context.config.get(
+					'resource.graphite',
+					str,
+					raise_exc=True
+				)
 			)
 
-		# Instanciate ArchiveDB if required
-		if 'archive' in publish_what:
-			from ampel.ztf.archive.ArchiveDB import ArchiveDB
+		# Instantiate ArchiveDB if required
+		if 'archive' in self.publish_what:
+			from ampel.ztf.archive.ArchiveDB import ArchiveDB # type: ignore[import]
 			self.archive_client = ArchiveDB(
-				AmpelConfig.get('resource.archive.reader')
+				self.context.config.get(
+					'resource.archive',
+					str,
+					raise_exc=True
+				),
+				**self.archive_auth.get()
 			)
 
 		# Schedule jobs
 		self.schedule_send_metrics()
 
 		# Dict used to save metrics previously retrieved
-		self.past_items = {}
+		self.past_items: Dict[str,Any] = {}
 
 		# Feeback
 		self.logger.info("AmpelStatsPublisher setup completed")
@@ -195,7 +212,7 @@ class AmpelStatsPublisher(Schedulable):
 		}
 		and schedule method send_metrics accordingly\n
 		"""
-		inv_map = {}
+		inv_map: Dict[int, Dict[str, bool]] = {}
 		for k, v in self.update_intervals.items():
 			if v is None:
 				continue
@@ -325,7 +342,7 @@ class AmpelStatsPublisher(Schedulable):
 
 
 		# Channel specific metrics
-		if channels:
+		if channels and self.channel_names:
 
 			# get number of transient docs for each channel
 			stats_dict["count"]['chans'] = {}
@@ -484,10 +501,16 @@ class AmpelStatsPublisher(Schedulable):
 			) \
 			.count()
 
-def run():
+def run() -> None:
+	from argparse import ArgumentParser
 
-	from ampel.run.AmpelArgumentParser import AmpelArgumentParser
-	parser = AmpelArgumentParser()
+	from ampel.core import AmpelContext
+	from ampel.dev.DictSecretProvider import DictSecretProvider
+	from ampel.model.UnitModel import UnitModel
+
+	parser = ArgumentParser(add_help=True)
+	parser.add_argument('config_file_path')
+	parser.add_argument('--secrets', type=DictSecretProvider.load, default=None)
 	parser.add_argument(
 		'--publish-to', nargs='+', default=['log', 'graphite'],
 		choices=['mongo', 'graphite', 'log', 'print'],
@@ -498,15 +521,18 @@ def run():
 		choices=['col_stats', 'docs_count', 'daemon', 'channels', 'archive', 'system'],
 		help='Publish these stats'
 	)
-	args, _ = parser.parse_known_args()
-	if 'archive' in args.publish_what:
-		parser.require_resource('archive', ['reader'])
-	if 'graphite' in args.publish_to:
-		parser.require_resource('graphite')
-	if 'mongo' in args.publish_to or set(args.publish_what).difference(['archive', 'system']):
-		parser.require_resource('mongo', ['logger'])
+	parser.add_argument('--dry-run', action='store_true', default=False,
+	    help='Print exceptions rather than publishing to Slack')
+
 	args = parser.parse_args()
 
-	asp = AmpelStatsPublisher(publish_to=args.publish_to, publish_what=args.publish_what)
+	ctx = AmpelContext.load(args.config_file_path, secrets=args.secrets)
+
+	asp = ctx.loader.new_admin_unit(
+		UnitModel(unit=AmpelStatsPublisher),
+		ctx,
+		**{k: getattr(args, k) for k in ['publish_to', 'publish_what']}
+	)
+
 	asp.send_metrics(**{k: True for k in args.publish_what})
 	asp.run()
