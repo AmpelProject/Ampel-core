@@ -7,6 +7,10 @@
 # Last Modified Date: 27.08.2020
 # Last Modified By  : Jakob van Santen <jakob.van.santen@desy.de>
 
+# on mypy 0.770, triggers
+# AssertionError: Cannot find component 'Deque' for 'typing.Deque'
+# type: ignore
+
 import datetime
 import json
 import logging
@@ -16,7 +20,6 @@ from typing import Any, Dict, List
 from bson import ObjectId
 from slack import WebClient
 from slack.web.slack_response import SlackResponse
-
 from ampel.core.AdminUnit import AdminUnit
 from ampel.model.Secret import Secret
 
