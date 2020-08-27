@@ -4,31 +4,38 @@
 # License           : BSD-3-Clause
 # Author            : Jakob van Santen <jakob.van.santen@desy.de>
 # Date              : 03.09.2018
-# Last Modified Date: 04.09.2018
+# Last Modified Date: 27.08.2020
 # Last Modified By  : Jakob van Santen <jakob.van.santen@desy.de>
 
-import datetime, json, logging, time
+import datetime
+import json
+import logging
+import time
+from typing import Any, Dict, List
 
-from ampel.db.AmpelDB import AmpelDB
-from ampel.config.AmpelConfig import AmpelConfig
-
-from slackclient import SlackClient
 from bson import ObjectId
+from slack import WebClient
+from slack.web.slack_response import SlackResponse
+
+from ampel.core.AdminUnit import AdminUnit
+from ampel.model.Secret import Secret
 
 log = logging.getLogger()
 
-class AmpelExceptionPublisher:
-	def __init__(self, dry_run=False, user='AMPEL-live', channel='ampel-troubles'):
-		token = AmpelConfig.get('resource.slack.operator')
-		self._slack = SlackClient(token)
-		self._troubles = AmpelDB.get_collection('troubles', 'r')
-		self._dry_run = dry_run
-		self._user = user
-		self._channel = channel
+class AmpelExceptionPublisher(AdminUnit):
 
-		self._last_timestamp = ObjectId.from_datetime(datetime.datetime.now() - datetime.timedelta(hours=1))
+	slack_token: Secret[str] = {'key': 'slack/operator'} # type: ignore[assignment]
+	user: str = 'AMPEL-live'
+	channel: str = 'ampel-troubles'
+	dry_run: bool = False
 
-	def t3_fields(self, doc):
+	def __init__(self, **kwargs) -> None:
+		super().__init__(**kwargs)
+		self.slack = WebClient(self.slack_token.get())
+		self.last_timestamp = ObjectId.from_datetime(datetime.datetime.now() - datetime.timedelta(hours=1))
+		self.troubles = self.context.db.get_collection("troubles", "r")
+
+	def t3_fields(self, doc: Dict[str, Any]) -> List[Dict[str,Any]]:
 		fields = []
 		if 'job' in doc:
 			fields.append({'title': 'Job', 'value': doc.get('job', None), 'short': True})
@@ -37,7 +44,7 @@ class AmpelExceptionPublisher:
 		fields.append({'title': 'Run', 'value': doc.get('run', None), 'short': True})
 		return fields
 
-	def format_attachment(self, doc):
+	def format_attachment(self, doc: Dict[str, Any]) -> Dict[str,Any]:
 		fields = [{'title': 'Tier', 'value': doc['tier'], 'short': True}]
 		more = doc.get('more', {})
 		if doc['tier'] == 0:
@@ -72,24 +79,25 @@ class AmpelExceptionPublisher:
 		}
 		return attachment
 
-	def publish(self):
+	def publish(self) -> None:
 
+		attachments: List[Dict[str,Any]] = []
 		message = {
-			'attachments': [],
-			'channel': '#'+self._channel,
-			'username': self._user,
+			'attachments': attachments,
+			'channel': '#'+self.channel,
+			'username': self.user,
 			'as_user': False
 		}
 
 		projection = ['_id', 'exception']
-		t0 = self._last_timestamp.generation_time
-		cursor = self._troubles.find({'_id': {'$gt': self._last_timestamp}})
+		t0 = self.last_timestamp.generation_time
+		cursor = self.troubles.find({'_id': {'$gt': self.last_timestamp}})
 		for doc in cursor:
-			if len(message['attachments']) < 20:
-				message['attachments'].append(self.format_attachment(doc))
+			if len(attachments) < 20:
+				attachments.append(self.format_attachment(doc))
 
 		try:
-			self._last_timestamp = doc['_id']
+			self.last_timestamp = doc['_id']
 			dt = ObjectId.from_datetime(datetime.datetime.now()).generation_time - t0
 			if dt.days > 3:
 				time_range = '{} days'.format(dt.days)
@@ -100,30 +108,39 @@ class AmpelExceptionPublisher:
 			else:
 				time_range = '{} seconds'.format(int(dt.seconds))
 		except UnboundLocalError:
-			if self._dry_run:
+			if self.dry_run:
 				log.info("No exceptions")
 			return
 
 		count = cursor.count()
-		if len(message['attachments']) < count:
-			message['text'] = 'Here are the first {} exceptions. There were {} more in the last {}.'.format(len(message['attachments']), count-len(message['attachments']), time_range)
+		if len(attachments) < count:
+			message['text'] = f'Here are the first {len(attachments)} exceptions. There were {count-len(attachments)} more in the last {time_range}.'
 		else:
-			message['text'] = 'There were {} exceptions in the last {}.'.format(len(message['attachments']), time_range)
+			message['text'] = f'There were {len(attachments)} exceptions in the last {time_range}.'
 
-		if self._dry_run:
+		if self.dry_run:
 			log.info(json.dumps(message, indent=1))
 		else:
-			result = self._slack.api_call('chat.postMessage', **message)
-			if not result['ok']:
-				raise RuntimeError(result['error'])
-		log.info("{} exceptions in the last {}".format(count, time_range))
+			result = self.slack.api_call('chat.postMessage', data=message)
+			if isinstance(result, SlackResponse):
+				if not result['ok']:
+					raise RuntimeError(result['error'])
+			else:
+				raise TypeError(f"Sync client returned a future {result}")
+		log.info(f"{count} exceptions in the last {time_range}".format(count))
 
-def run():
+def run() -> None:
+	from argparse import ArgumentParser
+
 	import schedule
-	from ampel.run.AmpelArgumentParser import AmpelArgumentParser
-	parser = AmpelArgumentParser()
-	parser.require_resource('mongo', ['logger'])
-	parser.require_resource('slack', ['operator'])
+
+	from ampel.core import AmpelContext
+	from ampel.dev.DictSecretProvider import DictSecretProvider
+	from ampel.model.UnitModel import UnitModel
+
+	parser = ArgumentParser(add_help=True)
+	parser.add_argument('config_file_path')
+	parser.add_argument('--secrets', type=DictSecretProvider.load, default=None)
 	parser.add_argument('--interval', type=int, default=10, help='Check for new exceptions every INTERVAL minutes')
 	parser.add_argument('--channel', type=str, default='ampel-troubles', help='Publish to this Slack channel')
 	parser.add_argument('--user', type=str, default='AMPEL-live', help='Publish to as this username')
@@ -132,7 +149,14 @@ def run():
 
 	args = parser.parse_args()
 
-	atp = AmpelExceptionPublisher(dry_run=args.dry_run, channel=args.channel, user=args.user)
+	ctx = AmpelContext.load(args.config_file_path, secrets=args.secrets)
+
+	atp = ctx.loader.new_admin_unit(
+		UnitModel(unit=AmpelExceptionPublisher),
+		ctx,
+		**{k: getattr(args, k) for k in ['channel', 'user', 'dry_run']}
+	)
+
 	scheduler = schedule.Scheduler()
 	scheduler.every(args.interval).minutes.do(atp.publish)
 
