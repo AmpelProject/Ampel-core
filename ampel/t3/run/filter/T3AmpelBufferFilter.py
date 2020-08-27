@@ -20,7 +20,9 @@ from ampel.core.UnitLoader import UnitLoader
 from ampel.log.AmpelLogger import AmpelLogger
 from ampel.t3.run.filter.AbsT3Filter import AbsT3Filter
 from ampel.aux.filter.AbsLogicOperatorFilter import AbsLogicOperatorFilter
-channel_id = get_args(ChannelId)
+
+
+channel_id = get_args(ChannelId) # type: ignore[misc]
 
 
 class FilterBlock(StrictModel):
