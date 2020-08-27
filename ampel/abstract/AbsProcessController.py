@@ -12,14 +12,19 @@ from typing import Dict, Optional, Literal, Sequence
 
 from ampel.base import abstractmethod
 from ampel.base.AmpelABC import AmpelABC
+from ampel.base.AmpelBaseModel import AmpelBaseModel
 from ampel.config.AmpelConfig import AmpelConfig
 from ampel.abstract.AbsSecretProvider import AbsSecretProvider
 from ampel.model.ProcessModel import ProcessModel
 from ampel.log.AmpelLogger import AmpelLogger
 
 
-class AbsProcessController(AmpelABC, abstract=True):
+class AbsProcessController(AmpelABC, AmpelBaseModel, abstract=True):
 
+	config: AmpelConfig
+	processes: Sequence[ProcessModel]
+	secrets: Optional[AbsSecretProvider] = None
+	log_profile: str = "default"
 
 	@classmethod
 	def new(cls,
@@ -31,36 +36,20 @@ class AbsProcessController(AmpelABC, abstract=True):
 		log_profile: str = "default",
 		**kwargs
 	):
-
+		from ampel.core.AmpelContext import AmpelContext
 		if config_file_path:
-			with open(config_file_path, "r") as conf_file:
-				config = AmpelConfig(yaml.load(conf_file), freeze=False)
+			context = AmpelContext.load(config_file_path)
 		else:
-			from ampel.core.AmpelContext import AmpelContext
-			config = AmpelContext.build(tier=tier, freeze_config=False).config
+			context = AmpelContext.build(tier=tier, freeze_config=False)
 
 		# Avoid circular imports
 		from ampel.core.AmpelController import AmpelController
 		proc_models = AmpelController.get_processes(
-			config, tier=tier, match=match, exclude=exclude, controllers=[cls.__name__],
-			logger=AmpelLogger.get_logger() if verbose else None, verbose=verbose
+			context.config, tier=tier, match=match, exclude=exclude, controllers=[cls.__name__],
+			logger=AmpelLogger.from_profile(context, log_profile)
 		)
 
-		return cls(config, proc_models, log_profile)
-
-
-	def __init__(
-		self,
-		config: AmpelConfig,
-		processes: Sequence[ProcessModel],
-		secrets: Optional[AbsSecretProvider] = None,
-		log_profile: str = "default"
-	) -> None:
-
-		self.config = config
-		self.secrets = secrets
-		self.proc_models = processes
-		self.log_profile = log_profile
+		return cls(config=context.config, processes=proc_models, log_profile=log_profile)
 
 
 	@abstractmethod

@@ -27,7 +27,7 @@ from ampel.model.ProcessModel import ProcessModel
 from ampel.model.UnitModel import UnitModel
 
 
-class DefaultProcessController(AbsProcessController, AmpelBaseModel):
+class DefaultProcessController(AbsProcessController):
 	"""
 	Process controller based on ampel.core.Schedulable, i.e which uses
 	the module 'schedule' for scheduling ampel processes. It supports:
@@ -36,14 +36,11 @@ class DefaultProcessController(AbsProcessController, AmpelBaseModel):
 	- running processes in the current environment otherwise
 	"""
 
-	def __init__(self,
-		config: AmpelConfig,
-		processes: Sequence[ProcessModel],
-		isolate: bool = False,
-		mp_overlap: Literal['terminate', 'wait', 'ignore', 'skip'] = 'skip',
-		mp_join: int = 0,
-		**kwargs
-	) -> None:
+	isolate: bool = False
+	mp_overlap: Literal['terminate', 'wait', 'ignore', 'skip'] = 'skip'
+	mp_join: int = 0
+
+	def __init__(self, **kwargs) -> None:
 		"""
 		:param isolate: global isolate override (applies to all processes regardless of \
 		the property 'isolate' defined in their own definition. 'isolate' is a process parameter \
@@ -65,16 +62,15 @@ class DefaultProcessController(AbsProcessController, AmpelBaseModel):
 		If set to 1, scheduled mp processes will be joined.
 		If set to 2, additionaly, the scheduling will be stopped if the processes returns 0/None
 		"""
-
-		AbsProcessController.__init__(self, config, processes, **kwargs)
+		super().__init__(**kwargs)
 		self.scheduler = schedule.Scheduler()
 
-		if isolate:
-			for p in self.proc_models:
+		if self.isolate:
+			for p in self.processes:
 				if not p.isolate:
 					p.isolate = True
 
-		isolated_processes = [p for p in self.proc_models if p.isolate]
+		isolated_processes = [p for p in self.processes if p.isolate]
 
 		# one top-level task per ProcessModel
 		# invocations of run_async_process
@@ -86,16 +82,13 @@ class DefaultProcessController(AbsProcessController, AmpelBaseModel):
 		# each isolated process will spawn its own AmpelConfig instance in its own environment
 		if isolated_processes:
 
-			self.mp_join = mp_join
-			self.mp_overlap = mp_overlap
-
 			# get (serializable) ampelconfig content to be provided to mp processes
 			# also: lighten the config by removing process definitions which
 			# are un-necessary in this case and can be rather large
-			if len(isolated_processes) == len(self.proc_models):
+			if len(isolated_processes) == len(self.processes):
 
 				# Having only isolated processes, we can afford to modify the config
-				self.mp_config = config.get()
+				self.mp_config = self.config.get()
 				for el in ('t0', 't1', 't2', 't3'):
 					if el in self.mp_config:
 						del self.mp_config['process'][el]
@@ -103,22 +96,22 @@ class DefaultProcessController(AbsProcessController, AmpelBaseModel):
 
 				# Otherwise, do a shallow copy of the first two depths
 				# (and remove the 'process' key/values)
-				for k, v in config.get().items():
+				for k, v in self.config.get().items():
 					if k != 'process':
 						self.mp_config[k] = {kk: vv for kk, vv in v.items()}
 
 		# If processes are to be run in the current environment, make sure the
 		# config is frozen i.e recursively cast members of the loaded config
 		# to immutable types (func does nothing if config is already frozen)
-		if len(isolated_processes) != len(self.proc_models):
+		if len(isolated_processes) != len(self.processes):
 			self.config.freeze()
 			self.context = AmpelContext.new(
-				tier=self.proc_models[0].tier, config=self.config, secrets=self.secrets,
+				tier=self.processes[0].tier, config=self.config, secrets=self.secrets,
 			)
 
 
 	async def run(self) -> None:
-		assert self.proc_models
+		assert self.processes
 		self.populate_schedule()
 		try:
 			await (task := asyncio.create_task(self.run_scheduler()))
@@ -131,7 +124,7 @@ class DefaultProcessController(AbsProcessController, AmpelBaseModel):
 		self.scheduler.clear()
 		evaluator = ScheduleEvaluator()
 		every = lambda appointment: evaluator(self.scheduler, appointment)
-		for pm in self.proc_models:
+		for pm in self.processes:
 			for appointment in pm.schedule:
 				if not appointment:
 					continue

@@ -101,7 +101,7 @@ class AmpelController:
 			}
 
 			self.controllers.append(
-				loader.new(processes[0].controller, **controller_kwargs)
+				loader.new(processes[0].controller, unit_type=AbsProcessController, **controller_kwargs)
 			)
 
 
