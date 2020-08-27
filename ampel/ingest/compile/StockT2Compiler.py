@@ -7,7 +7,7 @@
 # Last Modified Date: 01.05.2020
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-from typing import Dict, Set, List, Union, Tuple
+from typing import Dict, Set, List, Union, Tuple, Optional
 from ampel.type import ChannelId
 from ampel.abstract.ingest.AbsStockT2Compiler import AbsStockT2Compiler
 
@@ -22,7 +22,7 @@ class StockT2Compiler(AbsStockT2Compiler):
 
 	def compile(self,
 		chan_selection: List[Tuple[ChannelId, Union[bool, int]]]
-	) -> Dict[Tuple[str, int], Set[ChannelId]]:
+	) -> Dict[Tuple[str, Optional[int]], Set[ChannelId]]:
 		"""
 		TLDR: This function computes and returns a dict structure helpful for creating T2 docs.
 		This computation is required since:
@@ -33,7 +33,7 @@ class StockT2Compiler(AbsStockT2Compiler):
 		:returns: Dict[(unit, config): set(<channel ids>)]
 		"""
 
-		t2s_eff: Dict[Tuple[str, int], Set[ChannelId]] = {}
+		t2s_eff: Dict[Tuple[str, Optional[int]], Set[ChannelId]] = {}
 
 		for chan, ingest_model in self.get_ingest_models(chan_selection):
 

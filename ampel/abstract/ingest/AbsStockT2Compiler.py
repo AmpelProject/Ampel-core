@@ -7,7 +7,7 @@
 # Last Modified Date: 08.05.2020
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-from typing import Dict, Union, Set, Tuple, List
+from typing import Dict, Union, Set, Tuple, List, Optional
 from ampel.base import abstractmethod
 from ampel.type import ChannelId
 from ampel.ingest.compile.CompilerBase import CompilerBase
@@ -18,5 +18,5 @@ class AbsStockT2Compiler(CompilerBase, abstract=True):
 	@abstractmethod
 	def compile(self,
 		chan_selection: List[Tuple[ChannelId, Union[bool, int]]],
-	) -> Dict[Tuple[str, int], Set[ChannelId]]:
+	) -> Dict[Tuple[str, Optional[int]], Set[ChannelId]]:
 		...
