@@ -7,7 +7,9 @@
 # Last Modified Date: 13.06.2019
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-from ampel.view.plot.SVGUtils import SVGUtils
+# type: ignore[import]
+
+from ampel.plot.SVGUtils import SVGUtils
 
 class SVGPlot:
 	"""

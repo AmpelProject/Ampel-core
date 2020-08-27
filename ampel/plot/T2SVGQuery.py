@@ -7,7 +7,9 @@
 # Last Modified Date: 15.06.2019
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-from ampel.view.plot.SVGQuery import SVGQuery
+# type: ignore[import]
+
+from ampel.plot.SVGQuery import SVGQuery
 
 class T2SVGQuery(SVGQuery):
 	"""

@@ -7,9 +7,11 @@
 # Last Modified Date: 15.06.2019
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
+# type: ignore[import]
+
 from ampel.db.AmpelDB import AmpelDB
-from ampel.view.plot.SVGCollection import SVGCollection
-from ampel.view.plot.SVGLoader import SVGLoader
+from ampel.plot.SVGCollection import SVGCollection
+from ampel.plot.SVGLoader import SVGLoader
 from IPython.display import HTML, display
 from collections import defaultdict
 import random

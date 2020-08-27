@@ -7,6 +7,8 @@
 # Last Modified Date: 21.05.2019
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
+# type: ignore[import]
+
 import zipfile, io
 import matplotlib as plt
 import svgutils as su

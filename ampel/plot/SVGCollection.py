@@ -7,8 +7,10 @@
 # Last Modified Date: 15.06.2019
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-from ampel.view.plot.SVGUtils import SVGUtils
-from ampel.view.plot.SVGPlot import SVGPlot
+# type: ignore[import]
+
+from ampel.plot.SVGUtils import SVGUtils
+from ampel.plot.SVGPlot import SVGPlot
 
 class SVGCollection:
 	"""
@@ -50,7 +52,7 @@ class SVGCollection:
 		:param SVGPlot svg
 		"""
 		if not isinstance(svg, SVGPlot):
-			raise ValueError("Instance of ampel.view.plot.SVGPlot expected")
+			raise ValueError("Instance of ampel.plot.SVGPlot expected")
 
 		self._svgs.append(svg)
 

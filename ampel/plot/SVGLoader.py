@@ -7,10 +7,12 @@
 # Last Modified Date: 15.06.2019
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
+# type: ignore[import]
+
 from ampel.db.AmpelDB import AmpelDB
-from ampel.view.plot.SVGCollection import SVGCollection
-from ampel.view.plot.SVGQuery import SVGQuery
-from ampel.view.plot.T2SVGQuery import T2SVGQuery
+from ampel.plot.SVGCollection import SVGCollection
+from ampel.plot.SVGQuery import SVGQuery
+from ampel.plot.T2SVGQuery import T2SVGQuery
 from collections import defaultdict
 
 class SVGLoader:
