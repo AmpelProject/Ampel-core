@@ -7,3 +7,4 @@ schedule
 slackclient>=2.7,<3.0
 psutil
 aiopipe
+yq
