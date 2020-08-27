@@ -7,7 +7,7 @@
 # Last Modified Date: 30.04.2020
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-from typing import Dict, Union, Set, Tuple, List, Sequence
+from typing import Dict, Union, Set, Tuple, List, Sequence, Optional
 from ampel.base import abstractmethod
 from ampel.type import DataPointId, ChannelId
 from ampel.ingest.compile.CompilerBase import CompilerBase
@@ -19,5 +19,5 @@ class AbsPointT2Compiler(CompilerBase, abstract=True):
 	def compile(self,
 		chan_selection: List[Tuple[ChannelId, Union[bool, int]]],
 		datapoints: Sequence[DataPoint]
-	) -> Dict[Tuple[str, int, DataPointId], Set[ChannelId]]:
+	) -> Dict[Tuple[str, Optional[int], DataPointId], Set[ChannelId]]:
 		pass

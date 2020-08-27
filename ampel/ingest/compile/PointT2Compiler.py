@@ -24,7 +24,7 @@ class PointT2Compiler(AbsPointT2Compiler):
 
 	def __init__(self) -> None:
 		super().__init__()
-		self.slices: Dict[Tuple[ChannelId, str, int], List[slice]] = {}
+		self.slices: Dict[Tuple[ChannelId, str, Optional[int]], List[slice]] = {}
 
 
 	def set_ingest_options(self,
@@ -69,7 +69,7 @@ class PointT2Compiler(AbsPointT2Compiler):
 	def compile(self,
 		chan_selection: List[Tuple[ChannelId, Union[bool, int]]],
 		datapoints: Sequence[DataPoint]
-	) -> Dict[Tuple[str, int, DataPointId], Set[ChannelId]]:
+	) -> Dict[Tuple[str, Optional[int], DataPointId], Set[ChannelId]]:
 		"""
 		TLDR: This function computes and returns a dict structure helpful for creating T2 docs.
 		This computation is required since:
@@ -88,7 +88,7 @@ class PointT2Compiler(AbsPointT2Compiler):
 		Dict values: set of channel ids
 		"""
 
-		t2s_eff: Dict[Tuple[str, int, DataPointId], Set[ChannelId]] = {}
+		t2s_eff: Dict[Tuple[str, Optional[int], DataPointId], Set[ChannelId]] = {}
 		datapoints = list(reversed(datapoints))
 
 		for chan, ingest_model in self.get_ingest_models(chan_selection):
