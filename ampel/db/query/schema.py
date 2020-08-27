@@ -7,7 +7,7 @@
 # Last Modified Date: 27.12.2019
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-from typing import Union, Tuple, Dict
+from typing import Union, Tuple, Dict, List, Type
 from ampel.util.collections import check_seq_inner_type
 from ampel.model.operator.AnyOf import AnyOf
 from ampel.model.operator.AllOf import AllOf
@@ -58,39 +58,41 @@ def apply_schema(
 
 	# Checks were already performed by validators
 	if isinstance(arg, (AllOf, AnyOf, OneOf)):
-		arg = arg.dict()
+		arg_dict = arg.dict()
 	else:
 		# Be robust
 		if _arg_check(arg, (int, str)):
 			query[field_name] = arg
 			return query
 
-	if 'all_of' in arg:
+	if 'all_of' in arg_dict:
 
 		# Raises error if invalid
-		_check_all_of(arg, valid_types)
+		_check_all_of(arg_dict, valid_types)
 
-		if len(arg['all_of']) == 1:
-			query[field_name] = arg['all_of'][0]
+		if len(arg_dict['all_of']) == 1:
+			query[field_name] = arg_dict['all_of'][0]
 		else:
-			query[field_name] = {'$all': arg['all_of']}
+			query[field_name] = {'$all': arg_dict['all_of']}
 
-	elif 'any_of' in arg:
+	elif 'any_of' in arg_dict:
 
 		# Case 1: no nesting below any_of
-		if check_seq_inner_type(arg['any_of'], valid_types):
-			if len(arg['any_of']) == 1: # dumb case
-				query[field_name] = arg['any_of'][0]
+		if check_seq_inner_type(arg_dict['any_of'], valid_types):
+			if len(arg_dict['any_of']) == 1: # dumb case
+				query[field_name] = arg_dict['any_of'][0]
 			else:
-				query[field_name] = {'$in': arg['any_of']}
+				query[field_name] = {'$in': arg_dict['any_of']}
 
 		# Case 2: nesting below any_of
 		else:
 
-			or_list = []
-			optimize_potentially = []
+			QueryValue = Union[int,str,Dict[str,List[Union[int,str]]]]
+			QueryList = List[Dict[str, QueryValue]]
+			or_list: QueryList = []
+			optimize_potentially: QueryList = []
 
-			for el in arg['any_of']:
+			for el in arg_dict['any_of']:
 
 				if isinstance(el, valid_types):
 					or_list.append(
@@ -135,7 +137,11 @@ def apply_schema(
 				or_list.append(
 					{
 						field_name: {
-							'$in': [el[field_name] for el in optimize_potentially]
+							'$in': [
+								item
+								for el in optimize_potentially
+								if isinstance((item := el[field_name]), (int,str))
+							]
 						}
 					}
 				)
@@ -147,13 +153,13 @@ def apply_schema(
 			else:
 				query['$or'] = or_list
 
-	elif 'one_of' in arg:
-		query[field_name] = arg['one_of']
+	elif 'one_of' in arg_dict:
+		query[field_name] = arg_dict['one_of']
 
 	else:
 		raise ValueError(
-			"Invalid 'arg' keys (must contain either 'any_of' or 'all_of'" +
-			"\nOffending value: %s" % arg
+			"Invalid 'arg_dict' keys (must contain either 'any_of' or 'all_of'" +
+			"\nOffending value: %s" % arg_dict
 		)
 
 	return query
@@ -226,8 +232,10 @@ def apply_excl_schema(
 
 		else:
 
-			and_list = []
-			optimize_potentially = []
+			QueryValue = Union[int,str,Dict[str,Union[int,str]]]
+			QueryList = List[Dict[str, QueryValue]]
+			and_list: QueryList = []
+			optimize_potentially: QueryList = []
 
 			for el in arg['any_of']:
 
@@ -251,7 +259,7 @@ def apply_excl_schema(
 						and_list.append(
 							{
 								field_name: {
-									'$not': {'$all': el['all_of']}
+									'$not': {'$all': el['all_of']} # type: ignore[dict-item]
 								}
 							}
 						)
@@ -276,7 +284,7 @@ def apply_excl_schema(
 				and_list.append(
 					{
 						field_name: {
-							'$nin': [el[field_name]['$ne'] for el in optimize_potentially]
+							'$nin': [el[field_name]['$ne'] for el in optimize_potentially] # type: ignore
 						}
 					}
 				)
@@ -300,7 +308,7 @@ def apply_excl_schema(
 	return query
 
 
-def _check_all_of(el, in_type: Union[int, str, Tuple]) -> None:
+def _check_all_of(el, in_type: Tuple[Type,...]) -> None:
 	""" :raises: ValueError """
 
 	if 'all_of' not in el:
