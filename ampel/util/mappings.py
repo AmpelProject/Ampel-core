@@ -299,7 +299,7 @@ def flatten_dict(
 		raise ValueError(f"Offending input: {d}") from e
 
 
-def unflatten_dict(d: Mapping, separator: str = '.', unflatten_list: bool = False) -> MutableMapping:
+def unflatten_dict(d: Mapping[str,Any], separator: str = '.', unflatten_list: bool = False) -> MutableMapping[str,Any]:
 	"""
 	Example:
 
@@ -309,19 +309,19 @@ def unflatten_dict(d: Mapping, separator: str = '.', unflatten_list: bool = Fals
 	In []: unflatten_dict({'a.0.b.f.0': 1, 'a.0.b.f.1': 2, 'a.0.b.f.2': 3, 'a.1.c': 2, 'd.e': 1}, unflatten_list=True)
 	Out[]: {'a': [{'b': {'f': [1, 2, 3]}}, {'c': 2}], 'd': {'e': 1}}
 	"""
-	out: Dict = {}
+	out: Dict[str,Any] = {}
 
 	for key, value in d.items():
 
 		parts = key.split(separator)
-		d = out
+		target: Dict[str,Any] = out
 
 		for part in parts[:-1]:
 			if part not in d:
-				d[part] = {}
-			d = d[part]
+				target[part] = {}
+			target = target[part]
 
-		d[parts[-1]] = value
+		target[parts[-1]] = value
 
 	if unflatten_list:
 		return _unflatten_lists(out)
