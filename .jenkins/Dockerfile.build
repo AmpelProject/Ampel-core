@@ -1,6 +1,7 @@
 FROM python:3.8.5
 
-RUN apt-get install bash && \
+RUN apt-get update && \
+    apt-get install -y bash jq && \
     pip install mypy==0.770 mypy2junit
 
 ADD .jenkins/run_mypy.sh /bin

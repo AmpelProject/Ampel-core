@@ -10,11 +10,11 @@
 import sys
 from argparse import (Action, ArgumentParser, ArgumentTypeError, FileType,
                       Namespace, SUPPRESS)
-from io import IOBase, StringIO
-from typing import Optional
+from io import StringIO
+from typing import Any, Dict, Optional, TextIO
 
 import yaml
-from yq import yq
+from yq import yq # type: ignore[import]
 
 from ampel.config.AmpelConfig import AmpelConfig
 from ampel.config.builder.DistConfigBuilder import DistConfigBuilder
@@ -60,27 +60,40 @@ def build(args: Namespace) -> None:
         config, args.output_file if args.output_file else sys.stdout, sort_keys=False
     )
 
+def _load_dict(source: TextIO) -> Dict[str, Any]:
+    if isinstance((payload := yaml.safe_load(source)), dict):
+        return payload
+    else:
+        raise TypeError(f"buf does not deserialize to a dict")
 
-def _validate(config_file: IOBase, secrets: Optional[IOBase] = None) -> None:
+def _validate(config_file: TextIO, secrets: Optional[TextIO] = None) -> None:
     from ampel.model.ChannelModel import ChannelModel
     from ampel.model.ProcessModel import ProcessModel
     from ampel.model.UnitModel import UnitModel
     ctx = AmpelContext.new(
-        AmpelConfig.new(yaml.safe_load(config_file)),
+        AmpelConfig.new(_load_dict(config_file)),
         secrets=(
-            DictSecretProvider(yaml.safe_load(secrets))
-            if secrets
+            DictSecretProvider(_load_dict(secrets))
+            if secrets is not None
             else PotemkinSecretProvider()
         ),
     )
     UnitModel._unit_loader = ctx.loader
-    for channel in ctx.config.get("channel").values():
+    for channel in ctx.config.get(
+        "channel",
+        Dict[str,Any],
+        raise_exc=True
+    ).values():
         ChannelModel(**{
             k:v for k,v in channel.items()
             if not k in {"template"}
         })
     for tier in range(3):
-        for process in ctx.config.get(f"process.t{tier}").values():
+        for process in ctx.config.get(
+            f"process.t{tier}",
+            Dict[str,Any],
+            raise_exc=True
+        ).values():
             ProcessModel(**process)
 
 
