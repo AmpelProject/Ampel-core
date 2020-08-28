@@ -94,7 +94,7 @@ class UnitLoader:
 
 	def resolve_secrets(
 		self,
-		unit: Union[Type[AmpelBaseModel], Type[ModelMetaclass]],
+		unit: Union[Type[AmpelBaseModel], ModelMetaclass],
 		annotations: Dict[str, Any],
 		defaults: Dict[str, Any],
 		init_config: Dict[str, Any]
