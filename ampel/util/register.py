@@ -273,9 +273,6 @@ def rescale_header(
 	logger = AmpelLogger.get_logger()
 	with open(file_path, "r+b") as f1:
 
-		if not header:
-			logger.info("Old header information:")
-
 		if not (hinfo := read_header(f1, None if header else logger)):
 			return logger.info(f"Unable to load header info from {file_path}")
 
