@@ -287,7 +287,7 @@ def rescale_header(
 		with open(f"{file_path}.new", "w+b") as f2:
 
 			logger.info("Writing new header")
-			write_header(f2, header=hinfo['payload'], hsize=new_size, logger=logger)
+			write_header(f2, header=header if header else hinfo['payload'], hsize=new_size, logger=logger)
 
 			with mmap(f1.fileno(), 0) as m1:
 
