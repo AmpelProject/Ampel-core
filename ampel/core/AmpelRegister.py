@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 16.05.2020
-# Last Modified Date: 26.05.2020
+# Last Modified Date: 31.08.2020
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import bson
@@ -54,8 +54,9 @@ class AmpelRegister(AmpelBaseModel):
 	- Header updates are fast if enough space was reserved for updates in the first place.
 	- Header size can be increased afterwards at the cost of having to rewrite the entire file once.
 	  This happens automatically when needed.
-	- Logging read and write access to the register is supported
-	- File rotation is supported (based on max content length or max number of run ids)
+	- Logging read and write access to the register content into the register header is supported
+	- Registers can be capped (based on max content length or max number of run ids).
+	  Once the limit is reached, the full register is renamed and a new one is created.
 
 	Note: the module ampel.util.register contains tools to manually change ampel registers, such as:
 	`get_header_content`, `open_file_and_write_header` and `rescale_header`
@@ -70,11 +71,21 @@ class AmpelRegister(AmpelBaseModel):
 	:param file_handle: if you provide a file handle to a register file (parameter file handle),
 	it will be used and all path options will be ignored.
 
-	:param file_rotate: this class is able to rotate files based on a maximum number of blocks.
-	Note1: file rotation occurs during the opening of registers, meaning that once a register is opened,
-	no check is performed (a register can thus grow beyond the defined limit as long as a process keeps it open)
-	Note2: the current file rotation number is encoded in the header. If the current rotation number is 10 and
-	you move the rotated file to another folder, the next rotation will create ampel_register.bin.gz.11 nonetheless.
+	:param file_cap: registers can be capped, typically based on a maximum number of blocks.
+	When access to a full register is requested, the original file is renamed and a new register is created.
+	During files renames, an index is appended (suffix) to the original file name.
+	The current (newest) register file always comes without index suffix.
+	This index is saved into the current register header.
+
+	Example:
+	ampel_register.bin.gz (current - newest)
+	ampel_register.bin.gz.1 (first renamed register - oldest)
+	ampel_register.bin.gz.2
+	ampel_register.bin.gz.3 (second newest)
+
+	Note1: file renames occur during the opening procedure of registers, no check is performed during the filling of registers
+	once a register is opened. A register can thus grow beyond the defined limit as long as a process keeps it open.
+
 
 	Header:
 	-------
@@ -126,39 +137,7 @@ class AmpelRegister(AmpelBaseModel):
 	- if the target file is not a register file (existing empty files are ok)
 	- if the 'struct' parameter of sub-class of this class differs with the values registered
 	  in the file's header (this behavior can be deactivated from parameter `on_exist_check`)
-	- during file rotation if the target file already exists
-
-	Possible setups:
-	----------------
-	Register files are named after run_id:
-	<path>/<channel>/121.bin.gz
-	<path>/<channel>/122.bin.gz
-	<path>/<channel>/123.bin.gz
-	...
-
-	The register header is updated before each file is closed to save min and max alert IDs
-	and min and max stock ids. That way, a potential query for a given alert rejection could
-	go through all register files, parse only the header and check if min_alert < target_alert < max_alert,
-	and will by that not have to go through the file if the condition is not fulfilled.
-
-	Pro:
-	- Avoids any potential concurency issue
-	- Fast query
-	Cons:
-	- Can generate numerous files (whichs should not be a pblm for any modern file system)
-
-	2) register file are named after channel id:
-	<path>/AMPEL_CHANNEL1.register.gz
-	<path>/AMPEL_CHANNEL2.register.gz
-	...
-
-	Log rotate can be performed based on file size (file_rotate='blocks')
-
-	Pro:
-	- Less files ?
-	Cons:
-	- beware: re-run should not use this scheme, as concurent updates to a register are not supported!
-	- slower query (bigger files)
+	- during file renames (in case capped registers are used) if the target file already exists
 	"""
 
 	struct: str
@@ -171,7 +150,7 @@ class AmpelRegister(AmpelBaseModel):
 	file_prefix: Optional[str]
 	path_full: Optional[str] # Ignore all previous options and use a fixed file path
 
-	file_rotate: Optional[Dict[Literal['blocks'], int]]
+	file_cap: Optional[Dict[Literal['blocks'], int]]
 
 	# Option to provide an existing file handle
 	file_handle: Optional[BinaryIO]
@@ -234,8 +213,8 @@ class AmpelRegister(AmpelBaseModel):
 			if self.on_exist_check:
 				self.check_header(hinfo['payload'])
 
-			if self.file_rotate and self.check_rotate(hinfo['payload']):
-				self._outer_fh = self.rotate_file(self._outer_fh, hinfo['payload'])
+			if self.file_cap and self.check_rename(hinfo['payload']):
+				self._outer_fh = self.rename_file(self._outer_fh, hinfo['payload'])
 				hinfo = None
 
 			else:
@@ -273,15 +252,15 @@ class AmpelRegister(AmpelBaseModel):
 		self.header_sig = build_unsafe_dict_id(self.header['payload'])
 
 
-	def check_rotate(self, header: Dict[str, Any]) -> bool:
+	def check_rename(self, header: Dict[str, Any]) -> bool:
 		""" override if needed """
 
-		if not self.file_rotate:
+		if not self.file_cap:
 			return False
 
-		if 'blocks' in self.file_rotate:
+		if 'blocks' in self.file_cap:
 
-			if header['blocks'] >= self.file_rotate['blocks']:
+			if header['blocks'] >= self.file_cap['blocks']:
 				return True
 
 			if self.verbose > 1:
@@ -289,27 +268,27 @@ class AmpelRegister(AmpelBaseModel):
 
 			return False
 
-		self.logger.warn(f"Unknown 'file_rotate' value: {self.file_rotate}")
+		self.logger.warn(f"Unknown 'file_cap' value: {self.file_cap}")
 
 		return False
 
 
-	def rotate_file(self, fh: BinaryIO, header: Dict[str, Any]) -> BinaryIO:
+	def rename_file(self, fh: BinaryIO, header: Dict[str, Any]) -> BinaryIO:
 
 		fh.close()
-		self.rotated = header.get('rotate', 0) + 1
+		self.file_index = header.get('findex', 0) + 1
 
 		from os import rename
-		rotated_file_path = f"{fh.name}.{self.rotated}"
+		target_file_path = f"{fh.name}.{self.file_index}"
 
 		# we might handle this rather than raising an error in the future
-		if isfile(rotated_file_path):
-			raise ValueError(f"File rotation failure: {rotated_file_path} already exists")
+		if isfile(target_file_path):
+			raise ValueError(f"File rotation failure: {target_file_path} already exists")
 
-		rename(fh.name, rotated_file_path)
+		rename(fh.name, target_file_path)
 
 		if self.verbose > 0:
-			self.logger.info(f"Current register rotated into {rotated_file_path}")
+			self.logger.info(f"Current register renamed into {target_file_path}")
 
 		return get_outer_file_handle(
 			fh.name, write=True, logger=self.logger if self.verbose > 1 else None
@@ -430,10 +409,10 @@ class AmpelRegister(AmpelBaseModel):
 		if self.header_extra_base:
 			hdr = {**self.header_extra_base, **hdr}
 
-		if hasattr(self, 'rotated'):
-			hdr['rotate'] = self.rotated
-		elif self.file_rotate:
-			hdr['rotate'] = 0
+		if hasattr(self, 'file_index'):
+			hdr['findex'] = self.file_index
+		elif self.file_cap:
+			hdr['findex'] = 0
 
 		hdr_bytes = bson.encode(hdr)
 		hlen = len(hdr_bytes)
