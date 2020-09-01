@@ -21,7 +21,7 @@ def get_subtype(candidate_type : Any, field_type) -> Any:
     subfields = None
     origin = getattr(field_type, '__origin__', None)
     if origin is None:
-        if isinstance(field_type, Iterable):
+        if isinstance(field_type, Iterable) and not isinstance(field_type, str):
             subfields = field_type 
     elif origin is Union:
         subfields = field_type.__args__
