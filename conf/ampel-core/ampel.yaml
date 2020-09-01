@@ -56,9 +56,6 @@ alias:
     '%LOG':
       col: logs
 
-template:
-  legacy_simple_process: ampel.model.template.LegacyT3Process1
-
 resource:
 
   '%mongo':
