@@ -8,7 +8,7 @@
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from typing import Dict, Optional, Any, Union, Type, TYPE_CHECKING
-from pydantic import root_validator, ValidationError, MissingError
+from pydantic import create_model, root_validator
 from ampel.base.AmpelBaseModel import AmpelBaseModel
 from ampel.model.StrictModel import StrictModel
 
@@ -42,53 +42,37 @@ class UnitModel(StrictModel):
 
 
 	@root_validator
-	def validate_config(cls, values):
+	def validate_config(cls, values: Dict[str,Any]) -> Dict[str,Any]:
 		if cls._unit_loader:
 			from ampel.base.DataUnit import DataUnit
 			from ampel.core.AdminUnit import AdminUnit
 			from ampel.abstract.AbsProcessorUnit import AbsProcessorUnit
 			from ampel.abstract.ingest.AbsIngester import AbsIngester
+			from ampel.t3.run.AbsT3UnitRunner import AbsT3UnitRunner
 
 			unit = cls._unit_loader.get_class_by_name(values['unit'])
-			if issubclass(unit, (DataUnit, AbsProcessorUnit)):
-				# Instances of DataUnit and AbsProcessorUnit are initializable
-				# entirely from the config
-				if not unit._model:
-					unit._create_model()
-				unit._model.validate(
+			if issubclass(unit, AbsIngester):
+				# AbsIngester requires runtime parameters not in the config
+				...
+			elif issubclass(unit, (DataUnit, AdminUnit, AbsProcessorUnit)):
+				# exclude base class fields provided at runtime
+				exclude = {"logger"}
+				for parent in (DataUnit, AdminUnit, AbsT3UnitRunner):
+					if issubclass(unit, parent):
+						exclude.update(parent._annots.keys())
+				fields = {
+					k: (v, unit._defaults[k] if k in unit._defaults else ...)
+					for k, v in unit._annots.items() if k not in exclude
+				} # type: ignore
+				model = create_model(
+					unit.__name__, __config__ = StrictModel.__config__,
+					**fields
+				)
+				model.validate(
 					cls._unit_loader.get_init_config(
 						values['unit'],
 						values['config'],
 						values['override']
 					)
 				)
-			elif issubclass(unit, AbsIngester):
-				# AbsIngester requires runtime parameters not in the config
-				...
-			elif issubclass(unit, AdminUnit):
-				# Instances of AdminUnit are _mostly_ initializable from the
-				# config
-				if not unit._model:
-					unit._create_model()
-				try:
-					unit._model.validate(
-						cls._unit_loader.get_init_config(
-							values['unit'],
-							values['config'],
-							values['override']
-						)
-					)
-				except ValidationError as exc:
-					# filter out false positives from parameters that are known
-					# to be supplied at runtime rather than from the config
-					true_positives = [
-						err for err in exc.raw_errors
-						if not (
-							hasattr(err, "exc") and
-							isinstance(err.exc, MissingError) and
-							(err.loc_tuple()[0] in {'logger', 'run_id', 'process_name'})
-						)
-					]
-					if true_positives:
-						raise ValidationError(true_positives, exc.model)
 		return values
