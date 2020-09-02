@@ -7,7 +7,7 @@
 # Last Modified Date: 14.08.2020
 # Last Modified By  : Jakob van Santen <jakob.van.santen@desy.de>
 
-from typing import Any, Dict, get_args, get_origin
+from typing import Any, Dict, Type, Tuple, get_args, get_origin, overload
 import yaml
 
 from ampel.abstract.AbsSecretProvider import AbsSecretProvider
@@ -32,18 +32,27 @@ class DictSecretProvider(AbsSecretProvider):
     def __init__(self, dictlike: Dict[str, Any]) -> None:
         self.store: Dict[str, Any] = dict(dictlike)
 
-    # FIXME: find a way to express the desired return type statically
-    def get(self, key: str, type_: T) -> SecretWrapper[T]:
+    def get(self, key: str, value_type: Type[T]) -> SecretWrapper[T]:
         try:
-            return SecretWrapper[T](key=key, value=self.store[key])
+            value = self.store[key]
         except KeyError:
             raise KeyError(f"Unknown secret '{key}'")
+        if origin := get_origin(value_type):
+            value_type = origin
+        if not isinstance(value, value_type): # type: ignore[arg-type]
+            raise ValueError(
+                f"Retrieved value has not the expected type.\n"
+                f"Expected: {value_type}\n"
+                f"Found: {type(value)}"
+            )
+        return SecretWrapper(key=key, value=value)
 
 
 class PotemkinSecretProvider(AbsSecretProvider):
-    def get(self, key: str, type_: T) -> SecretWrapper[T]:
-        if get_origin(type_) is tuple:
-            value = tuple(t() for t in get_args(type_))
+
+    def get(self, key: str, value_type: Type[T]) -> SecretWrapper[T]:
+        if get_origin(value_type) is tuple:
+            value = tuple(t() for t in get_args(value_type))
         else:
-            value = type_() # type: ignore[operator]
-        return SecretWrapper[T](key=key, value=value) # type: ignore[arg-type]
+            value = value_type() # type: ignore[assignment]
+        return SecretWrapper(key=key, value=value) # type: ignore[arg-type]
