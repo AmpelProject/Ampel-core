@@ -16,8 +16,9 @@ from ampel.log.LighterLogRecord import LighterLogRecord
 from ampel.log.LogRecordFlag import LogRecordFlag
 from ampel.log.handlers.LoggingHandlerProtocol import LoggingHandlerProtocol
 from ampel.log.handlers.AmpelStreamHandler import AmpelStreamHandler
-from ampel.log.handlers.DBLoggingHandler import DBLoggingHandler
 
+if TYPE_CHECKING:
+	from ampel.log.handlers.DBLoggingHandler import DBLoggingHandler
 
 ERROR = LogRecordFlag.ERROR
 WARNING = LogRecordFlag.WARNING
@@ -67,6 +68,8 @@ class AmpelLogger:
 		logger = AmpelLogger.get_logger(console=False, **kwargs)
 
 		if "db" in handlers:
+			# avoid circular import
+			from ampel.log.handlers.DBLoggingHandler import DBLoggingHandler
 
 			if run_id is None:
 				raise ValueError("Parameter 'run_id' is required when log_profile requires db logging handler")
@@ -159,7 +162,9 @@ class AmpelLogger:
 		self._auto_level()
 
 
-	def get_db_logging_handler(self) -> Optional[DBLoggingHandler]:
+	def get_db_logging_handler(self) -> Optional['DBLoggingHandler']:
+		# avoid circular import
+		from ampel.log.handlers.DBLoggingHandler import DBLoggingHandler
 		for el in self.handlers:
 			if isinstance(el, DBLoggingHandler):
 				return el

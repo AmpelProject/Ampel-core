@@ -8,17 +8,18 @@
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from time import time
-from typing import Dict, Any, Optional, Literal
-from ampel.db.AmpelDB import AmpelDB
+from typing import Dict, Any, Optional, Literal, TYPE_CHECKING
 from ampel.log.AmpelLogger import AmpelLogger
 from ampel.log.AmpelLoggingError import AmpelLoggingError
 
+if TYPE_CHECKING:
+	from ampel.db.AmpelDB import AmpelDB
 
 class DBEventDoc:
 	""" Handles the creation and publication of event documents into the event database """
 
 	def __init__(self,
-		ampel_db: AmpelDB, process_name: str, tier: Literal[0, 1, 2, 3],
+		ampel_db: 'AmpelDB', process_name: str, tier: Literal[0, 1, 2, 3],
 		run_id: Optional[int] = None, col_name: str = "events", extra: Optional[Dict[str, Any]] = None
 	):
 		"""

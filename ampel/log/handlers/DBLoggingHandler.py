@@ -9,15 +9,17 @@
 
 import struct, socket
 from bson import ObjectId
-from typing import List, Dict, Optional, Union
+from typing import List, Dict, Optional, Union, TYPE_CHECKING
 from logging import LogRecord
 from pymongo.errors import BulkWriteError
-from ampel.db.AmpelDB import AmpelDB
 from ampel.base.AmpelBaseModel import AmpelBaseModel
 from ampel.util.mappings import compare_dict_values
 from ampel.log.LighterLogRecord import LighterLogRecord
 from ampel.log.AmpelLoggingError import AmpelLoggingError
 from ampel.log.LogRecordFlag import LogRecordFlag
+
+if TYPE_CHECKING:
+	from ampel.db.AmpelDB import AmpelDB
 
 
 # http://isthe.com/chongo/tech/comp/fnv/index.html#FNV-1a
@@ -58,7 +60,7 @@ class DBLoggingHandler(AmpelBaseModel):
 	auto_flush: bool = False
 
 
-	def __init__(self, ampel_db: AmpelDB, run_id: int, **kwargs) -> None:
+	def __init__(self, ampel_db: 'AmpelDB', run_id: int, **kwargs) -> None:
 		"""
 		:param col_name: name of db collection to use (default: 'logs' in database Ampel_var)
 		:param aggregate_interval: logs with similar attributes (log level, possibly tranId & channels) \
