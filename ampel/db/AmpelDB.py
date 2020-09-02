@@ -317,7 +317,6 @@ def revoke_accounts(ampel_db: AmpelDB, auth: Dict[str,str]={}) -> None:
 	admin = MongoClient(ampel_db.mongo_uri, **auth).get_database("admin")
 	roles = {role for db in ampel_db.databases for role in db.role.dict().values()}
 	for role in roles:
-		reveal_type(ampel_db.secrets.get(f"mongo/{role}", str))
 		username = ampel_db.secrets.get(f"mongo/{role}", dict).get()["username"]
 		admin.command("dropUser", username)
 
