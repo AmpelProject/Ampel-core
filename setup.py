@@ -31,6 +31,7 @@ setup(
 		'console_scripts': [
 			'ampel-controller = ampel.core.AmpelController:AmpelController.main',
 			'ampel-config = ampel.config.cli:main',
+			'ampel-db = ampel.db.AmpelDB:main',
 			'ampel-followup = ampel.t0.DelayedT0Controller:run',
 			'ampel-statspublisher = ampel.metrics.AmpelStatsPublisher:run',
 			'ampel-exceptionpublisher = ampel.core.AmpelExceptionPublisher:run',

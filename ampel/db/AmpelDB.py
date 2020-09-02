@@ -7,11 +7,14 @@
 # Last Modified Date: 10.05.2020
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
+import secrets
+from collections import defaultdict
+from typing import Sequence, Dict, List, Any, Union, Optional, TYPE_CHECKING
+
 from pymongo import MongoClient
 from pymongo.database import Database
 from pymongo.collection import Collection
 from pymongo.errors import ConfigurationError
-from typing import Sequence, Dict, List, Any, Union, Optional, TYPE_CHECKING
 
 from ampel.type import ChannelId
 from ampel.config.AmpelConfig import AmpelConfig
@@ -288,4 +291,71 @@ class AmpelDB(AmpelBaseModel):
 		for db in self.databases:
 			self._get_mongo_db(db.name, 'w').client.drop_database(db.name)
 		self.mongo_collections.clear()
+
+
+def provision_accounts(ampel_db: AmpelDB, auth: Dict[str,str]={}) -> Dict[str,Any]:
+	"""Create temp accounts for the given database config"""
+	roles = defaultdict(list)
+	for db in ampel_db.databases:
+		name = f"{ampel_db.prefix}_{db.name}"
+		roles[db.role.r].append({"db": name, "role": "read"})
+		roles[db.role.w].append({"db": name, "role": "readWrite"})
+	users = dict()
+	admin = MongoClient(ampel_db.mongo_uri, **auth).get_database("admin")
+	for name, all_roles in roles.items():
+		username = f"{name}-{secrets.token_hex(8)}"
+		password = secrets.token_hex()
+		admin.command("createUser", username, pwd=password, roles=all_roles)
+		users[f"mongo/{name}"] = {"username": username, "password": password}
+	return users
+
+
+def revoke_accounts(ampel_db: AmpelDB, auth: Dict[str,str]={}) -> None:
+	"""Delete temp accounts created for the given database config"""
+	if ampel_db.secrets is None:
+		raise ValueError("No secrets configured")
+	admin = MongoClient(ampel_db.mongo_uri, **auth).get_database("admin")
+	roles = {role for db in ampel_db.databases for role in db.role.dict().values()}
+	for role in roles:
+		reveal_type(ampel_db.secrets.get(f"mongo/{role}", str))
+		username = ampel_db.secrets.get(f"mongo/{role}", dict).get()["username"]
+		admin.command("dropUser", username)
+
+
+def list_accounts(ampel_db: AmpelDB, auth: Dict[str,str]={}) -> Dict[str,Any]:
+	admin = MongoClient(ampel_db.mongo_uri, **auth).get_database("admin")
+	return admin.command("usersInfo")
+
+
+def main() -> None:
+	import sys
+	from argparse import ArgumentParser
+
+	import yaml
+
+	from ampel.core import AmpelContext
+	from ampel.dev.DictSecretProvider import DictSecretProvider
+
+	parser = ArgumentParser(add_help=True)
+	parser.add_argument('config_file_path')
+	parser.add_argument('--secrets', type=DictSecretProvider.load, default=None)
+
+	subparsers = parser.add_subparsers(dest="command")
+	subparsers.required = True
+
+	p = subparsers.add_parser("provision", help=provision_accounts.__doc__)
+	p.set_defaults(command=provision_accounts)
+
+	p = subparsers.add_parser("revoke", help=revoke_accounts.__doc__)
+	p.set_defaults(command=revoke_accounts)
+
+	p = subparsers.add_parser("users", help=list_accounts.__doc__)
+	p.set_defaults(command=list_accounts)
+
+	args = parser.parse_args()
+
+	ctx = AmpelContext.load(args.config_file_path, secrets=args.secrets)
+
+	if (ret := args.command(ctx.db)) is not None:
+		yaml.dump(ret, sys.stdout, sort_keys=False)
 
