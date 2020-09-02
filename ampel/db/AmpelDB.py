@@ -10,6 +10,7 @@
 from pymongo import MongoClient
 from pymongo.database import Database
 from pymongo.collection import Collection
+from pymongo.errors import ConfigurationError
 from typing import Sequence, Dict, List, Any, Union, Optional, TYPE_CHECKING
 
 from ampel.type import ChannelId
@@ -24,6 +25,8 @@ from ampel.model.db.MongoClientRoleModel import MongoClientRoleModel
 if TYPE_CHECKING:
 	from ampel.log.AmpelLogger import AmpelLogger
 
+from ampel.abstract.AbsSecretProvider import AbsSecretProvider
+
 
 intcol = {'t0': 0, 't1': 1, 't2': 2, 'stock': 3}
 
@@ -31,14 +34,15 @@ class AmpelDB(AmpelBaseModel):
 
 	prefix: str = 'Ampel'
 	databases: List[AmpelDBModel]
-	mongo_resource: Dict[str, Any]
-
+	mongo_uri: str
+	secrets: Optional[AbsSecretProvider]
 
 	@staticmethod
-	def new(config: AmpelConfig) -> 'AmpelDB':
+	def new(config: AmpelConfig, secrets: Optional[AbsSecretProvider]=None) -> 'AmpelDB':
 		""" :raises: ValueError in case a required config entry is missing """
 		return AmpelDB(
-			mongo_resource = config.get('resource.mongo', dict, raise_exc=True),
+			mongo_uri=config.get('resource.mongo', str, raise_exc=True),
+			secrets=secrets,
 			**config.get('db', dict, raise_exc=True)
 		)
 
@@ -54,6 +58,7 @@ class AmpelDB(AmpelBaseModel):
 		}
 
 		self.mongo_collections: Dict[str, Collection] = {}
+		# map from role to client
 		self.mongo_clients: Dict[str, MongoClient] = {}
 
 
@@ -97,15 +102,15 @@ class AmpelDB(AmpelBaseModel):
 			self.mongo_collections[col_name] = {}
 
 		db_config = self._get_db_config(col_name)
-		resource_name = db_config.role.dict()[mode]
+		role = db_config.role.dict()[mode]
 
 		db = self._get_mongo_db(
-			resource_name, f"{self.prefix}_{db_config.name}"
+			role, f"{self.prefix}_{db_config.name}"
 		)
 
 		if 'w' in mode and col_name not in db.list_collection_names():
 			self.mongo_collections[col_name][mode] = self.create_collection(
-				resource_name, db.name, self.col_config[col_name]
+				role, db.name, self.col_config[col_name]
 			)
 		else:
 			self.mongo_collections[col_name][mode] = db.get_collection(col_name)
@@ -113,13 +118,19 @@ class AmpelDB(AmpelBaseModel):
 		return self.mongo_collections[col_name][mode]
 
 
-	def _get_mongo_db(self, resource_name: str, db_name: str) -> Database:
-		if resource_name not in self.mongo_clients:
-			self.mongo_clients[resource_name] = MongoClient(
-				self.mongo_resource[resource_name]
-			)
+	def _get_mongo_db(self, role: str, db_name: str) -> Database:
+		if role not in self.mongo_clients:
+			key = f'mongo/{role}'
+			auth = self.secrets.get(key, dict).get() if self.secrets else {}
+			try:
+				self.mongo_clients[role] = MongoClient(
+					self.mongo_uri, **auth
+				)
+			except ConfigurationError as exc:
+				# hint at error source
+				raise ConfigurationError(exc.args[0] + f' (from secret {key})', *exc.args[1:])
 
-		return self.mongo_clients[resource_name].get_database(db_name)
+		return self.mongo_clients[role].get_database(db_name)
 
 
 	def _get_db_config(self, col_name: str) -> AmpelDBModel:
@@ -143,7 +154,7 @@ class AmpelDB(AmpelBaseModel):
 
 
 	def create_collection(self,
-		resource_name: str, db_name: str,
+		role: str, db_name: str,
 		col_config: AmpelColModel, logger: Optional['AmpelLogger'] = None
 	) -> Collection:
 		"""
@@ -158,7 +169,7 @@ class AmpelDB(AmpelBaseModel):
 			logger = AmpelLogger.get_logger()
 			logger.info(f"Creating {db_name} -> {col_config.name}")
 
-		db = self._get_mongo_db(resource_name, db_name)
+		db = self._get_mongo_db(role, db_name)
 
 		# Create collection with custom args
 		if col_config.args:
@@ -197,7 +208,7 @@ class AmpelDB(AmpelBaseModel):
 
 
 	def set_col_index(self,
-		resource_name: str, db_name: str, col_config: AmpelColModel,
+		role: str, db_name: str, col_config: AmpelColModel,
 		force_overwrite: bool = False, logger: Optional['AmpelLogger'] = None
 	) -> None:
 		"""
@@ -214,10 +225,10 @@ class AmpelDB(AmpelBaseModel):
 			logger.info(f"No index data configured for collection {col_config.name}")
 			return
 
-		db = self._get_mongo_db(resource_name, db_name)
+		db = self._get_mongo_db(role, db_name)
 
 		if col_config.name not in db.list_collection_names():
-			self.create_collection(resource_name, db_name, col_config)
+			self.create_collection(role, db_name, col_config)
 			return
 
 		col = self.get_collection(col_config.name)
@@ -273,11 +284,8 @@ class AmpelDB(AmpelBaseModel):
 			)
 
 
-	@staticmethod
-	def delete_ampel_databases(
-		config: AmpelConfig, prefix: str, resource: str = 'mongo.writer'
-	) -> None:
+	def drop_all_databases(self):
+		for db in self.databases:
+			self._get_mongo_db(db.name, 'w').client.drop_database(db.name)
+		self.mongo_collections.clear()
 
-		mc = MongoClient(config.get(f'resource.{resource}', str))
-		for el in ['data', 'ext', 'var', 'rej']:
-			mc.drop_database(f'{prefix}_{el}')

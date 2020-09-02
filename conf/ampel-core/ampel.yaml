@@ -58,13 +58,8 @@ alias:
 
 resource:
 
-  '%mongo':
-    writer: mongodb://localhost:27017
-    logger: mongodb://localhost:27017
-
-  '%extcats':
-    reader: mongodb://localhost:27017
-    writer: mongodb://localhost:27017
+  '%mongo': mongodb://localhost:27017
+  '%extcats': mongodb://localhost:27017
 
 process:
   - name: DefaultT2Process

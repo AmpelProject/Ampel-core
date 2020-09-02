@@ -54,7 +54,7 @@ class AmpelContext:
 
 		return cls(
 			config = config,
-			db = AmpelDB.new(config),
+			db = AmpelDB.new(config, secrets),
 			loader = UnitLoader(config=config, tier=tier, secrets=secrets),
 			tier = tier,
 			**kwargs

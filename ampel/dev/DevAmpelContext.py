@@ -35,10 +35,10 @@ class DevAmpelContext(AmpelContext):
 
 		if db_prefix:
 			dict.__setitem__(self.config._config['db'], 'prefix', db_prefix)
-			self.db = AmpelDB.new(self.config)
+			self.db = AmpelDB.new(self.config, self.loader.secrets)
 
 		if purge_db:
-			AmpelDB.delete_ampel_databases(self.config, db_prefix or self.config._config['db']['prefix'])
+			self.db.drop_all_databases()
 
 		if custom_conf:
 			conf = self._get_unprotected_conf()
