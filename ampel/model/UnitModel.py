@@ -7,7 +7,7 @@
 # Last Modified Date: 01.08.2020
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-from typing import Dict, Optional, Any, Union, Type, TYPE_CHECKING
+from typing import Dict, Optional, Any, Union, Type, Sequence, cast, TYPE_CHECKING
 from pydantic import create_model, root_validator
 from ampel.base.AmpelBaseModel import AmpelBaseModel
 from ampel.model.StrictModel import StrictModel
@@ -57,7 +57,7 @@ class UnitModel(StrictModel):
 			elif issubclass(unit, (DataUnit, AdminUnit, AbsProcessorUnit)):
 				# exclude base class fields provided at runtime
 				exclude = {"logger"}
-				for parent in (DataUnit, AdminUnit, AbsT3UnitRunner):
+				for parent in cast(Sequence[Type[AmpelBaseModel]], (DataUnit, AdminUnit, AbsT3UnitRunner)):
 					if issubclass(unit, parent):
 						exclude.update(parent._annots.keys())
 				fields = {
@@ -66,6 +66,7 @@ class UnitModel(StrictModel):
 				} # type: ignore
 				model = create_model(
 					unit.__name__, __config__ = StrictModel.__config__,
+					__base__=None, __module__=None, __validators__=None,
 					**fields
 				)
 				model.validate(
