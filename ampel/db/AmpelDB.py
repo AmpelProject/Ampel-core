@@ -294,7 +294,7 @@ class AmpelDB(AmpelBaseModel):
 
 
 def provision_accounts(ampel_db: AmpelDB, auth: Dict[str,str]={}) -> Dict[str,Any]:
-	"""Create temp accounts for the given database config"""
+	"""Create accounts required by the given Ampel configuration."""
 	roles = defaultdict(list)
 	for db in ampel_db.databases:
 		name = f"{ampel_db.prefix}_{db.name}"
@@ -311,7 +311,7 @@ def provision_accounts(ampel_db: AmpelDB, auth: Dict[str,str]={}) -> Dict[str,An
 
 
 def revoke_accounts(ampel_db: AmpelDB, auth: Dict[str,str]={}) -> None:
-	"""Delete temp accounts created for the given database config"""
+	"""Delete accounts previously created with "provision"."""
 	if ampel_db.secrets is None:
 		raise ValueError("No secrets configured")
 	admin = MongoClient(ampel_db.mongo_uri, **auth).get_database("admin")
@@ -322,39 +322,88 @@ def revoke_accounts(ampel_db: AmpelDB, auth: Dict[str,str]={}) -> None:
 
 
 def list_accounts(ampel_db: AmpelDB, auth: Dict[str,str]={}) -> Dict[str,Any]:
+	"""List configured accounts and roles."""
 	admin = MongoClient(ampel_db.mongo_uri, **auth).get_database("admin")
 	return admin.command("usersInfo")
 
 
 def main() -> None:
+	import os
 	import sys
 	from argparse import ArgumentParser
+	from getpass import getpass
 
 	import yaml
 
 	from ampel.core import AmpelContext
 	from ampel.dev.DictSecretProvider import DictSecretProvider
 
-	parser = ArgumentParser(add_help=True)
-	parser.add_argument('config_file_path')
-	parser.add_argument('--secrets', type=DictSecretProvider.load, default=None)
+	parser = ArgumentParser(description="Manage access to Ampel databases")
+
+	def from_env(key) -> Optional[str]:
+		if fname := os.environ.get(key+'_FILE', None):
+			with open(fname, "r") as f:
+				return f.read().rstrip()
+		else:
+			return os.environ.get(key, None)
+
+	common = ArgumentParser(add_help=False)
+	common.add_argument(
+		'config_file_path',
+		help="Path to an Ampel configuration file"
+	)
+	common.add_argument(
+		'-u',
+		'--username',
+		type=str,
+		default=from_env('MONGO_ROOT_USERNAME'),
+		help="Mongo admin username",
+	)
+	common.add_argument(
+		'-p',
+		'--password',
+		type=str,
+		default=from_env('MONGO_ROOT_PASSWORD'),
+		help="Mongo admin password",
+	)
 
 	subparsers = parser.add_subparsers(dest="command")
 	subparsers.required = True
 
-	p = subparsers.add_parser("provision", help=provision_accounts.__doc__)
-	p.set_defaults(command=provision_accounts)
+	def add_command(func, name=None):
+		p = subparsers.add_parser(
+			func.__name__ if not name else name,
+			help=func.__doc__,
+			parents=[common],
+		)
+		p.set_defaults(command=func)
+		return p
 
-	p = subparsers.add_parser("revoke", help=revoke_accounts.__doc__)
-	p.set_defaults(command=revoke_accounts)
+	add_command(provision_accounts, "provision")
 
-	p = subparsers.add_parser("users", help=list_accounts.__doc__)
-	p.set_defaults(command=list_accounts)
+	p = add_command(revoke_accounts, "revoke")
+	p.add_argument(
+		'secrets',
+		type=DictSecretProvider.load,
+		default=None,
+		help="Path to yaml file containing the accounts entries to be revoked",
+	)
+
+	add_command(list_accounts, "list")
 
 	args = parser.parse_args()
+	if args.username is not None:
+		if args.password is None:
+			args.password = getpass(prompt=f"Password for Mongo user {args.username}: ")
+		auth = {
+			"username": args.username,
+			"password": args.password,
+		}
+	else:
+		auth = {}
 
-	ctx = AmpelContext.load(args.config_file_path, secrets=args.secrets)
+	ctx = AmpelContext.load(args.config_file_path, secrets=getattr(args, "secrets", None))
 
-	if (ret := args.command(ctx.db)) is not None:
+	if (ret := args.command(ctx.db, auth)):
 		yaml.dump(ret, sys.stdout, sort_keys=False)
 
