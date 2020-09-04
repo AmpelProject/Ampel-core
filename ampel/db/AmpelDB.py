@@ -302,8 +302,9 @@ def provision_accounts(ampel_db: AmpelDB, auth: Dict[str,str]={}) -> Dict[str,An
 		roles[db.role.w].append({"db": name, "role": "readWrite"})
 	users = dict()
 	admin = MongoClient(ampel_db.mongo_uri, **auth).get_database("admin")
+	tag = secrets.token_hex(8)
 	for name, all_roles in roles.items():
-		username = f"{name}-{secrets.token_hex(8)}"
+		username = f"{name}-{tag}"
 		password = secrets.token_hex()
 		admin.command("createUser", username, pwd=password, roles=all_roles)
 		users[f"mongo/{name}"] = {"username": username, "password": password}
