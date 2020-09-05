@@ -32,14 +32,14 @@ class ProcessModel(StrictModel):
 	processor: UnitModel
 
 
-	@validator('schedule', pre=True, whole=True)
+	@validator('schedule', pre=True, each_item=False)
 	def _cast_to_list(cls, v):
 		if isinstance(v, str):
 			return [v]
 		return v
 
 
-	@validator('schedule', whole=True)
+	@validator('schedule', each_item=False)
 	def _check_schedule_validity(cls, schedule):
 		"""
 		Safety check for "schedule" parameters

@@ -28,7 +28,7 @@ class AbsLegacyChannelTemplate(AbsChannelTemplate, abstract=True):
 	t3_supervise: List[Dict[str, Any]] = []
 
 
-	@validator('t3_supervise', 't2_compute', pre=True, whole=True)
+	@validator('t3_supervise', 't2_compute', pre=True, each_item=False)
 	def cast_to_list_if_required(cls, v):
 		if isinstance(v, dict):
 			return [v]
