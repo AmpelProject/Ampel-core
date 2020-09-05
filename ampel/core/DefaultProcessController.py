@@ -140,7 +140,7 @@ class DefaultProcessController(AbsProcessController):
 					job.next_run -= job.period
 
 
-	def run_process(self, pm: ProcessModel):
+	def run_process(self, pm: ProcessModel) -> None:
 		if pm.isolate:
 			task = asyncio.ensure_future(self.run_async_process(pm))
 			self._pending_schedules.add(task)
@@ -177,7 +177,7 @@ class DefaultProcessController(AbsProcessController):
 			.run()
 
 
-	async def run_async_process(self, pm: ProcessModel):
+	async def run_async_process(self, pm: ProcessModel) -> Sequence:
 		"""
 		Launch target process, potentially after previous invocations have
 		finished
@@ -209,6 +209,7 @@ class DefaultProcessController(AbsProcessController):
 		to_wait = {
 			self.run_mp_process(
 				self.mp_config,
+				self.secrets,
 				pm.dict(),
 				self.log_profile
 			)
