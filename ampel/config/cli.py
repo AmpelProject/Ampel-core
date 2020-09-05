@@ -133,7 +133,7 @@ def main():
         action="store_true",
         help="Validate config after applying transformation",
     )
-    p.add_argument("-o", "--output-file", type=FileType("w"))
+    p.add_argument("-o", "--output-file", type=FileType("w"), default=sys.stdout)
 
     args = parser.parse_args()
     args.func(args)
