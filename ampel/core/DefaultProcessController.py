@@ -8,6 +8,7 @@
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import asyncio
+import datetime
 import schedule
 import traceback
 import sys
@@ -128,11 +129,15 @@ class DefaultProcessController(AbsProcessController):
 			for appointment in pm.schedule:
 				if not appointment:
 					continue
-				(
+				job = (
 					every(appointment)
 					.do(self.run_process, pm=pm)
 					.tag(pm.name)
 				)
+				# Pull back the first run if the first wait time is within 10
+				# seconds of the period
+				if abs((job.next_run-datetime.datetime.now()-job.period).total_seconds()) < 10:
+					job.next_run -= job.period
 
 
 	def run_process(self, pm: ProcessModel):
