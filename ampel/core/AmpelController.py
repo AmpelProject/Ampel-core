@@ -15,7 +15,7 @@ import yaml
 
 from ampel.core.Schedulable import Schedulable
 from ampel.config.AmpelConfig import AmpelConfig
-from ampel.log.AmpelLogger import AmpelLogger, VERBOSE
+from ampel.log.AmpelLogger import AmpelLogger, VERBOSE, DEBUG
 from ampel.model.ProcessModel import ProcessModel
 from ampel.util.mappings import build_unsafe_dict_id
 from ampel.abstract.AbsProcessController import AbsProcessController
@@ -68,7 +68,7 @@ class AmpelController:
 
 		if verbose:
 			if not logger:
-				logger = AmpelLogger.get_logger()
+				logger = AmpelLogger.get_logger(console={"level": DEBUG if verbose > 1 else VERBOSE})
 			logger.log(VERBOSE, "Config file loaded")
 
 		for pm in self.get_processes(
@@ -85,13 +85,9 @@ class AmpelController:
 
 		for k, processes in d.items():
 
-			if verbose > 1:
+			if verbose:
 				logger.log(VERBOSE,  # type: ignore[union-attr]
-					f'Spawing new process controller with processes: {d[k]}'
-				)
-			elif verbose == 1:
-				logger.debug( # type: ignore[union-attr]
-					f'Spawing new process controller with processes: {list(p.name for p in d[k])}'
+					f'Spawing new {processes[0].controller.unit} with processes: {list(p.name for p in d[k])}'
 				)
 			controller_kwargs = {
 				'config': config,
@@ -149,18 +145,14 @@ class AmpelController:
 				if match and not any(rm.match(p['name']) for rm in rmatch):
 					if logger:
 						if verbose > 1:
-							logger.debug('Ignoring process {p["name"]} unmatched by {rmatch}')
-						else:
-							logger.log(VERBOSE, 'Ignoring unmatched process {p["name"]}')
+							logger.debug(f'Ignoring process {p["name"]} unmatched by {rmatch}')
 					continue
 
 				# Process name exclusion filter
 				if exclude and any(rx.match(p['name']) for rx in rexcl):
 					if logger:
 						if verbose > 1:
-							logger.info('Excluding process {p["name"]} matched by {rmatch}')
-						else:
-							logger.info('Excluding matched process {p["name"]}')
+							logger.info(f'Excluding process {p["name"]} matched by {rmatch}')
 					continue
 
 				try:
@@ -174,7 +166,7 @@ class AmpelController:
 				# Controller exclusion
 				if controllers and pm.controller.unit not in controllers:
 					if logger:
-						logger.log(VERBOSE, "Ignoring process {p.name} with controller {pm.controller.unit}")
+						logger.log(VERBOSE, f"Ignoring process {p.name} with controller {pm.controller.unit}")
 					continue
 
 				ret.append(pm)
@@ -195,6 +187,7 @@ class AmpelController:
 		parser.add_argument('--secrets', type=DictSecretProvider.load, default=None)
 		parser.add_argument('--tier', type=int, choices=(0,1,2,3), default=None)
 		parser.add_argument('--match', type=str, nargs='*', default=None)
+		parser.add_argument('-v', '--verbose', action='count', default=0)
 		args = parser.parse_args()
 
 		mcp = cls(**args.__dict__)
