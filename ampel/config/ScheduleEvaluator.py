@@ -28,11 +28,8 @@ class ScheduleEvaluator(ast.NodeVisitor):
 	def generic_visit(self, node):
 		raise ValueError("Illegal operation {}".format(type(node)))
 	
-	def visit_Num(self, node):
+	def visit_Constant(self, node):
 		return node.n
-	
-	def visit_Str(self, node):
-		return node.s
 	
 	def visit_Name(self, node):
 		return node.id
