@@ -92,8 +92,10 @@ class UnitLoader:
 		else:
 			return value
 
+	@classmethod
 	def resolve_secrets(
-		self,
+		cls,
+		secrets: Optional[AbsSecretProvider],
 		unit: Union[Type[AmpelBaseModel], ModelMetaclass],
 		annotations: Dict[str, Any],
 		defaults: Dict[str, Any],
@@ -115,12 +117,12 @@ class UnitLoader:
 				# skip if optional or preconfigured
 				if value is None and get_subtype(type(None), typ) or isinstance(value, Secret):
 					continue
-				elif not self.secrets:
+				elif not secrets:
 					raise RuntimeError(f"{unit.__qualname__}.{field} needs a secret provider")
 				elif not (isinstance(value, dict) and "key" in value):
 					raise ValueError(f"{unit.__qualname__}.{field}"+" should be configured with a dict of the form {\"key\": \"secret-name\"}")
 				target_type = getattr(secret_field, '__args__', [str])[0]
-				init_config[field] = self.secrets.get(value["key"], target_type)
+				init_config[field] = secrets.get(value["key"], target_type)
 
 			# other model, possibly containing Secret fields
 			elif type(typ) is ModelMetaclass:
@@ -129,7 +131,7 @@ class UnitLoader:
 					value = init_config[field]
 				elif field in defaults:
 					value = defaults[field]
-				init_config[field] = self.resolve_secrets(typ, typ.__annotations__, typ.__field_defaults__, value)
+				init_config[field] = cls.resolve_secrets(secrets, typ, typ.__annotations__, typ.__field_defaults__, value)
 
 			# Union, possibly containing other models
 			elif (uni := get_origin(typ)) is Union:
@@ -147,7 +149,7 @@ class UnitLoader:
 						if isinstance(value, subtyp):
 							break
 						elif isinstance(value, dict) and set(value.keys()).union(subtyp.__field_defaults__) == set(subtyp.__fields__.keys()):
-							init_config[field] = self.resolve_secrets(subtyp, subtyp.__annotations__, subtyp.__field_defaults__, value)
+							init_config[field] = cls.resolve_secrets(secrets, subtyp, subtyp.__annotations__, subtyp.__field_defaults__, value)
 							break
 		return init_config
 
@@ -182,7 +184,7 @@ class UnitLoader:
 				annotations, defaults = unit._annots, unit._defaults
 			else:
 				raise TypeError
-			ret = self.resolve_secrets(unit, annotations, defaults, ret)
+			ret = self.resolve_secrets(self.secrets, unit, annotations, defaults, ret)
 		return ret if ret is not None else {}
 
 
