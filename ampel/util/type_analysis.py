@@ -7,7 +7,7 @@
 # Last Modified Date: 20.08.2020
 # Last Modified By  : Jakob van Santen <jakob.van.santen@desy.de>
 
-from typing import Any, Iterable, Union
+from typing import Any, Iterable, Union, get_origin
 
 def get_subtype(candidate_type : Any, field_type) -> Any:
     """
@@ -19,14 +19,14 @@ def get_subtype(candidate_type : Any, field_type) -> Any:
     :param field_type: a type, sequence of types, or typing.Union
     """
     subfields = None
-    origin = getattr(field_type, '__origin__', None)
-    if origin is None:
-        if isinstance(field_type, Iterable) and not isinstance(field_type, str):
+    if (origin := get_origin(field_type)) is None:
+        if isinstance(field_type, Iterable) and not isinstance(field_type, (str, bytes)):
             subfields = field_type 
     elif origin is Union:
         subfields = field_type.__args__
     elif origin is candidate_type:
-        return origin
+        # return subscripted generic
+        return field_type
 
     if subfields:
         for subfield in subfields:
