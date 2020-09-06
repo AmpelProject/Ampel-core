@@ -7,47 +7,54 @@
 # Last Modified Date: 26.08.2020
 # Last Modified By  : Jakob van Santen <jakob.van.santen@desy.de>
 
+import json
+import subprocess
 import sys
-from argparse import (Action, ArgumentParser, ArgumentTypeError, FileType,
-                      Namespace, SUPPRESS)
+from argparse import (
+    Action,
+    ArgumentParser,
+    ArgumentTypeError,
+    FileType,
+    Namespace,
+    SUPPRESS,
+)
 from io import StringIO
-from typing import Any, Dict, Optional, TextIO
+from typing import Any, Dict, Iterable, Mapping, Optional, TextIO
 
 import yaml
-from yq import yq # type: ignore[import]
 
 from ampel.config.AmpelConfig import AmpelConfig
 from ampel.config.builder.DistConfigBuilder import DistConfigBuilder
 from ampel.core import AmpelContext
-from ampel.dev.DictSecretProvider import (DictSecretProvider,
-                                          PotemkinSecretProvider)
+from ampel.dev.DictSecretProvider import (
+    DictSecretProvider,
+    PotemkinSecretProvider,
+)
 
 
 def transform(args: Namespace) -> None:
     """Transform existing configuration with jq"""
-    input_streams = [args.config_file]
     try:
         with FileType()(args.filter) as f:
             jq_args = [f.read()]
     except ArgumentTypeError:
         jq_args = [args.filter]
-    if args.validate:
-        output = StringIO()
-    else:
-        output = args.output_file
-    yq(
-        input_streams,
-        output_stream=output,
-        input_format="yaml",
-        output_format="yaml",
-        jq_args=jq_args,
-        exit_func=lambda code: None
+    # Use a custom transformation to losslessly round-trip from YAML to JSON,
+    # in particular:
+    # - wrap large ints to prevent truncation to double precision
+    # - preserve non-string keys
+    input_json = json.dumps(_to_json(yaml.safe_load(args.config_file)))
+    config = json.loads(
+        subprocess.check_output(["jq"] + jq_args, input=input_json.encode()),
+        object_hook=_from_json,
     )
-    if args.validate:
-        output.seek(0)
-        _validate(output)
-        output.seek(0)
-        args.output_file.write(output.read())
+    with StringIO() as output_yaml:
+        yaml.dump(config, output_yaml, sort_keys=False)
+        if args.validate:
+            output_yaml.seek(0)
+            _validate(output_yaml)
+        output_yaml.seek(0)
+        args.output_file.write(output_yaml.read())
 
 
 def build(args: Namespace) -> None:
@@ -60,16 +67,19 @@ def build(args: Namespace) -> None:
         config, args.output_file if args.output_file else sys.stdout, sort_keys=False
     )
 
+
 def _load_dict(source: TextIO) -> Dict[str, Any]:
     if isinstance((payload := yaml.safe_load(source)), dict):
         return payload
     else:
         raise TypeError(f"buf does not deserialize to a dict")
 
+
 def _validate(config_file: TextIO, secrets: Optional[TextIO] = None) -> None:
     from ampel.model.ChannelModel import ChannelModel
     from ampel.model.ProcessModel import ProcessModel
     from ampel.model.UnitModel import UnitModel
+
     ctx = AmpelContext.new(
         AmpelConfig.new(_load_dict(config_file)),
         secrets=(
@@ -79,20 +89,11 @@ def _validate(config_file: TextIO, secrets: Optional[TextIO] = None) -> None:
         ),
     )
     UnitModel._unit_loader = ctx.loader
-    for channel in ctx.config.get(
-        "channel",
-        Dict[str,Any],
-        raise_exc=True
-    ).values():
-        ChannelModel(**{
-            k:v for k,v in channel.items()
-            if not k in {"template"}
-        })
+    for channel in ctx.config.get("channel", Dict[str, Any], raise_exc=True).values():
+        ChannelModel(**{k: v for k, v in channel.items() if not k in {"template"}})
     for tier in range(3):
         for process in ctx.config.get(
-            f"process.t{tier}",
-            Dict[str,Any],
-            raise_exc=True
+            f"process.t{tier}", Dict[str, Any], raise_exc=True
         ).values():
             ProcessModel(**process)
 
@@ -137,3 +138,35 @@ def main():
 
     args = parser.parse_args()
     args.func(args)
+
+
+def _to_json(obj):
+    """Get JSON-compliant representation of obj"""
+    if isinstance(obj, Mapping):
+        assert not "__nonstring_keys" in obj
+        doc = {str(k): _to_json(v) for k, v in obj.items()}
+        nonstring_keys = {
+            str(k): _to_json(k) for k in obj.keys() if not isinstance(k, str)
+        }
+        if nonstring_keys:
+            doc["__nonstring_keys"] = nonstring_keys
+        return doc
+    elif isinstance(obj, Iterable) and not isinstance(obj, str):
+        return [_to_json(v) for v in obj]
+    elif isinstance(obj, int) and abs(obj) >> 53:
+        # use canonical BSON representation for ints larger than the precision
+        # of a double
+        return {"$numberLong": str(obj)}
+    else:
+        return obj
+
+
+def _from_json(doc):
+    """Invert _to_json()"""
+    if "$numberLong" in doc:
+        return int(doc["$numberLong"])
+    elif "__nonstring_keys" in doc:
+        nonstring_keys = doc.pop("__nonstring_keys")
+        return {nonstring_keys[k]: v for k, v in doc.items()}
+    else:
+        return doc
