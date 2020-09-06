@@ -35,12 +35,11 @@ class DevAmpelContext(AmpelContext):
 
 		if db_prefix:
 			dict.__setitem__(self.config._config['db'], 'prefix', db_prefix)
-			self.db = AmpelDB.new(self.config, self.loader.secrets)
 
 		if purge_db:
 			self.db.drop_all_databases()
 
-		if custom_conf:
+		if custom_conf or db_prefix:
 			conf = self._get_unprotected_conf()
 			for k, v in custom_conf.items():
 				set_by_path(conf, k, v)
@@ -67,3 +66,4 @@ class DevAmpelContext(AmpelContext):
 	def _set_new_conf(self, conf: Dict[str, Any]) -> None:
 		self.config = AmpelConfig(conf, True)
 		self.loader = UnitLoader(self.config, secrets=self.loader.secrets)
+		self.db = AmpelDB.new(self.config, self.loader.secrets)
