@@ -17,6 +17,7 @@ from typing import ( # type: ignore[attr-defined]
 from pydantic.main import ModelMetaclass
 
 from ampel.util.collections import ampel_iter
+from ampel.util.freeze import recursive_unfreeze
 from ampel.util.mappings import flatten_dict, unflatten_dict, merge_dicts
 from ampel.util.type_analysis import get_subtype
 from ampel.base.AmpelBaseModel import AmpelBaseModel
@@ -169,7 +170,7 @@ class UnitLoader:
 			ret = self.resolve_aliases(config)
 
 		elif isinstance(config, int):
-			ret = self.ampel_config.get(f"confid.{config}", dict)
+			ret = recursive_unfreeze(self.ampel_config.get(f"confid.{config}", dict))
 
 		if ret is None and config is not None:
 			raise ValueError(f"Config alias {config} not found")
