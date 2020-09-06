@@ -47,8 +47,6 @@ class T2Processor(AbsProcessorUnit):
 	:param t2_units: ids of the t2 units to run. If not specified, any t2 unit will be run
 	:param run_state: only t2 docs with field 'status' matching with provided integer number will be processed
 	:param doc_limit: max number of t2 docs to process in run loop
-	:param schedule_tag: tag associated with job scheduled by T2Controller using module schedule.\
-		This tag can be used to cancel the associated scheduled entry.
 	:param send_beacon: whether to update the beacon collection before run() is executed
 	:param gc_collect: whether to actively perform garbage collection between processing of T2 docs
 
@@ -62,7 +60,6 @@ class T2Processor(AbsProcessorUnit):
 	run_state: T2RunState = T2RunState.TO_RUN
 	doc_limit: Optional[int]
 	stock_jtag: Optional[Union[Tag, Sequence[Tag]]]
-	schedule_tag: Optional[str]
 	send_beacon: bool = True
 	gc_collect: bool = True
 
