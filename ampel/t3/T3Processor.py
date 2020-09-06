@@ -132,6 +132,7 @@ class T3Processor(AbsProcessorUnit):
 						process_name = self.process_name,
 						channel = self.channel,
 						raise_exc = self.raise_exc,
+						update_journal = self.update_journal,
 						extra_journal_tag = self.extra_journal_tag,
 						run_context = run_context
 					)

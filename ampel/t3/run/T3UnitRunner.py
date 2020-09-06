@@ -169,7 +169,8 @@ class T3UnitRunner(AbsT3UnitRunner):
 			jupdater = JournalUpdater(
 				ampel_db = self.context.db, tier = 3, run_id = self.run_id,
 				process_name = self.process_name, logger = self.logger,
-				raise_exc = self.raise_exc, extra_tag = self.extra_journal_tag
+				raise_exc = self.raise_exc, extra_tag = self.extra_journal_tag,
+				update_journal = self.update_journal,
 			)
 
 			for i, run_block in enumerate(self.run_blocks):

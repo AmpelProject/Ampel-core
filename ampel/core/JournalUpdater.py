@@ -28,6 +28,7 @@ class JournalUpdater:
 	def __init__(self,
 		ampel_db: AmpelDB, tier: Literal[0, 1, 2, 3], run_id: int,
 		process_name: str, logger: AmpelLogger, raise_exc: bool = False,
+		update_journal: bool = True,
 		extra_tag: Optional[Union[Tag, Sequence[Tag]]] = None
 	) -> None:
 		"""
@@ -39,6 +40,7 @@ class JournalUpdater:
 		self.run_id = run_id
 		self.tier = tier
 		self.raise_exc = raise_exc
+		self.update_journal = update_journal
 		self.process_name = process_name
 		self.extra_tag = extra_tag
 		self.logger = logger
@@ -129,12 +131,13 @@ class JournalUpdater:
 
 		maxd['modified.any'] = jrec['ts']
 
-		self.journal_updates.append(
-			Op(
-				{'_id': match},
-				{'$push': {'journal': jrec}, '$max': maxd}
+		if self.update_journal:
+			self.journal_updates.append(
+				Op(
+					{'_id': match},
+					{'$push': {'journal': jrec}, '$max': maxd}
+				)
 			)
-		)
 
 		return jrec
 
@@ -208,3 +211,4 @@ class JournalUpdater:
 			# journal record contains no tag
 			else:
 				jrec['tag'] = tag
+
