@@ -12,6 +12,7 @@ import datetime
 import schedule
 import traceback
 import sys
+from functools import partial
 from typing import Dict, Sequence, Callable, Any, List, Literal, Optional, Set
 
 from ampel.util import concurrent
@@ -140,11 +141,19 @@ class DefaultProcessController(AbsProcessController):
 					job.next_run -= job.period
 
 
+	def _finalize_task(self, pm: ProcessModel, future: asyncio.Future) -> None:
+		result = future.result()
+		self._pending_schedules.remove(future)
+		if self.mp_join >= 2 and not any(bool(r) for r in result):
+			for job in [job for job in self.scheduler.jobs if pm.name in job.tags]:
+				self.scheduler.cancel_job(job)
+
+
 	def run_process(self, pm: ProcessModel) -> None:
 		if pm.isolate:
 			task = asyncio.ensure_future(self.run_async_process(pm))
 			self._pending_schedules.add(task)
-			task.add_done_callback(lambda t: self._pending_schedules.remove(t))
+			task.add_done_callback(partial(self._finalize_task, pm))
 		else:
 			self.run_sync_process(pm)
 
@@ -152,12 +161,15 @@ class DefaultProcessController(AbsProcessController):
 	async def run_scheduler(self):
 		while True:
 			try:
+				if self.mp_join >= 1 and self._pending_schedules:
+					await asyncio.gather(*self._pending_schedules)
+				if self.mp_join >= 2 and not self.scheduler.jobs:
+					break
 				await asyncio.sleep(1)
 				self.scheduler.run_pending()
 			except asyncio.CancelledError:
 				for t in self._pending_schedules:
 					t.cancel()
-					print(t)
 				await asyncio.gather(*self._pending_schedules)
 				assert not self._pending_schedules, "all tasks removed themselves"
 				raise
