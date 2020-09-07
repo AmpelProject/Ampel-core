@@ -246,3 +246,5 @@ class T3UnitRunner(AbsT3UnitRunner):
 		for run_block in self.run_blocks:
 			for t3_unit, *_ in run_block.units:
 				t3_unit.done()
+				if self.buf_hdlr.buffer:
+					self.buf_hdlr.forward(self.logger)
