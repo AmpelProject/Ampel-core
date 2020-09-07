@@ -64,6 +64,8 @@ def apply_schema(
 		if _arg_check(arg, (int, str)):
 			query[field_name] = arg
 			return query
+		else:
+			arg_dict = arg
 
 	if 'all_of' in arg_dict:
 
