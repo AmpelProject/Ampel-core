@@ -8,7 +8,7 @@
 # Last Modified By  : Jakob van Santen <jakob.van.santen@desy.de>
 
 from logging import Logger
-from typing import Any, Dict, Literal, Optional, Sequence, Union
+from typing import Any, Dict, Literal, Optional, Sequence, Union, List
 
 from ampel.abstract.AbsProcessTemplate import AbsProcessTemplate
 from ampel.model.operator.AllOf import AllOf
@@ -24,6 +24,8 @@ from ampel.type import ChannelId, Tag
 class FilterModel(StrictModel):
     t2: Union[T2FilterModel, AllOf[T2FilterModel], AnyOf[T2FilterModel]]
 
+UnitModelOrString = Union[UnitModel, str]
+UnitModelSequence = Union[UnitModelOrString, Sequence[UnitModelOrString]]
 
 class PeriodicSummaryT3(AbsProcessTemplate):
     """
@@ -48,7 +50,8 @@ class PeriodicSummaryT3(AbsProcessTemplate):
     ] = None
     load: Optional[Sequence[Union[str,LoaderDirective]]] = None
     filter: Optional[FilterModel] = None
-    run: Union[UnitModel, Sequence[UnitModel]]
+    complement: Optional[UnitModelSequence]
+    run: UnitModelSequence
 
     def get_process(self, logger: Logger) -> Dict[str, Any]:
         directive: Dict[str, Any] = {
@@ -71,7 +74,7 @@ class PeriodicSummaryT3(AbsProcessTemplate):
             "run": {
                 "unit": "T3UnitRunner",
                 "config": {
-                    "directives": [{"execute": [run.dict() for run in self.get_run()]}]
+                    "directives": [{"execute": self.get_units(self.run)}]
                 },
             },
         }
@@ -84,6 +87,9 @@ class PeriodicSummaryT3(AbsProcessTemplate):
         # Restrict document types to load
         if self.load is not None:
             directive["load"]["config"] = {"directives": self.load}
+
+        if self.complement is not None:
+            directive["complement"] = self.get_units(self.complement)
 
         ret: Dict[str, Any] = {
             "tier": self.tier,
@@ -101,11 +107,13 @@ class PeriodicSummaryT3(AbsProcessTemplate):
 
         return ret
 
-    def get_run(self) -> Sequence[UnitModel]:
-        if isinstance(self.run, UnitModel):
-            return [self.run]
+    def get_units(self, units: UnitModelSequence) -> List[Dict[str,Any]]:
+        if isinstance(units, str):
+            return [UnitModel(unit=units).dict()]
+        elif isinstance(units, UnitModel):
+            return [units.dict()]
         else:
-            return self.run
+            return [self.get_units(u)[0] for u in units]
 
     def get_schedule(self) -> Sequence[str]:
         if isinstance(self.schedule, str):
