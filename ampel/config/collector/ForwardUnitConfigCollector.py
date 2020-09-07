@@ -17,8 +17,9 @@ from ampel.log import VERBOSE
 
 
 path_el_type: Dict[str, str] = {
+	"admin": "AdminUnit",
 	"base": "DataUnit",
-	"processor": "AdminUnit",
+	"processor": "AbsProcessorUnit",
 	"controller": "AbsControllerUnit",
 }
 
