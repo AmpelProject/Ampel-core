@@ -242,9 +242,27 @@ class T3UnitRunner(AbsT3UnitRunner):
 			# Try to insert doc into trouble collection (raises no exception)
 			report_exception(self.context.db, self.logger, exc=e)
 
+		finally:
+			if self.buf_hdlr.buffer:
+				self.buf_hdlr.forward(self.logger)
+
 	def done(self) -> None:
-		for run_block in self.run_blocks:
-			for t3_unit, *_ in run_block.units:
-				t3_unit.done()
-				if self.buf_hdlr.buffer:
-					self.buf_hdlr.forward(self.logger)
+		try:
+
+			for run_block in self.run_blocks:
+				for t3_unit, *_ in run_block.units:
+					t3_unit.done()
+					if self.buf_hdlr.buffer:
+						self.buf_hdlr.forward(self.logger)
+
+		except Exception as e:
+
+			if self.raise_exc:
+				raise e
+
+			# Try to insert doc into trouble collection (raises no exception)
+			report_exception(self.context.db, self.logger, exc=e)
+
+		finally:
+			if self.buf_hdlr.buffer:
+				self.buf_hdlr.forward(self.logger)
