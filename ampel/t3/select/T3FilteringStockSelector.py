@@ -8,7 +8,7 @@
 # Last Modified By	: Jakob van Santen <jakob.van.santen@desy.de>
 
 from pymongo.cursor import Cursor
-from typing import Sequence, Dict, List, Any, Union
+from typing import Sequence, Dict, List, Any, Union, Optional
 
 from ampel.type import StockId
 from ampel.t3.select.T3StockSelector import T3StockSelector
@@ -42,11 +42,14 @@ class T3FilteringStockSelector(T3StockSelector):
 	t2_filter: Union[T2FilterModel, AllOf[T2FilterModel], AnyOf[T2FilterModel]]
 
 	# Override/Implement
-	def fetch(self) -> Cursor:
+	def fetch(self) -> Optional[Cursor]:
 		""" The returned Iterator is a pymongo Cursor """
 
 		# Execute query on T0 collection to get target stocks
-		stock_ids = [doc['_id'] for doc in super().fetch()]
+		if cursor := super().fetch():
+			stock_ids = [doc['_id'] for doc in cursor]
+		else:
+			return None
 
 		# Execute aggregation on T2 collection to get matching subset of stocks
 		cursor = self.context.db.get_collection('t2').aggregate(

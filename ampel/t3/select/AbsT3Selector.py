@@ -7,7 +7,7 @@
 # Last Modified Date: 17.02.2020
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-from typing import Iterable, ClassVar
+from typing import Iterable, ClassVar, Optional
 from ampel.base import abstractmethod
 from ampel.core.AdminUnit import AdminUnit
 
@@ -17,5 +17,5 @@ class AbsT3Selector(AdminUnit, abstract=True):
 	field_name: ClassVar[str] = "_id"
 
 	@abstractmethod
-	def fetch(self) -> Iterable:
+	def fetch(self) -> Optional[Iterable]:
 		...

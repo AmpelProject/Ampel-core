@@ -59,7 +59,7 @@ class T3StockSelector(AbsT3Selector):
 
 
 	# Override/Implement
-	def fetch(self) -> Cursor:
+	def fetch(self) -> Optional[Cursor]:
 		""" The returned Iterator is a pymongo Cursor """
 
 		# Build query for matching transients using criteria defined in config
