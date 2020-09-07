@@ -71,6 +71,7 @@ class T3Processor(AbsProcessorUnit):
 		event_doc = None
 		run_id = self.new_run_id()
 		exc = None
+		logger = None
 
 		try:
 
