@@ -89,7 +89,7 @@ def report_exception(
 		return
 
 	# Feedback
-	log_exception(logger, exc)
+	log_exception(logger, exc, info)
 
 	trouble: Dict[str, Any] = {'tier': get_tier_from_logger(logger)}
 
