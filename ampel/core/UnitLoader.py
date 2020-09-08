@@ -20,6 +20,7 @@ from ampel.util.collections import ampel_iter
 from ampel.util.freeze import recursive_unfreeze
 from ampel.util.mappings import flatten_dict, unflatten_dict, merge_dicts
 from ampel.util.type_analysis import get_subtype
+from ampel.view.ReadOnlyDict import ReadOnlyDict
 from ampel.base.AmpelBaseModel import AmpelBaseModel
 from ampel.base.DataUnit import DataUnit
 from ampel.core.AmpelContext import AmpelContext
@@ -170,7 +171,13 @@ class UnitLoader:
 			ret = self.resolve_aliases(config)
 
 		elif isinstance(config, int):
-			ret = recursive_unfreeze(self.ampel_config.get(f"confid.{config}", dict))
+			if isinstance(
+				confid := self.ampel_config.get(f"confid.{config}", dict, raise_exc=True),
+				ReadOnlyDict
+			):
+				ret = recursive_unfreeze(confid)
+			else:
+				ret = confid
 
 		if ret is None and config is not None:
 			raise ValueError(f"Config alias {config} not found")
