@@ -24,11 +24,11 @@ import sys
 import traceback
 from textwrap import dedent
 from functools import wraps
-from multiprocessing import reduction, spawn # type: ignore
+from multiprocessing import reduction, spawn  # type: ignore
 from multiprocessing.context import set_spawning_popen
-from subprocess import _args_from_interpreter_flags # type: ignore
+from subprocess import _args_from_interpreter_flags  # type: ignore
 
-import aiopipe # type: ignore
+import aiopipe  # type: ignore
 
 
 def process(function):
@@ -153,15 +153,15 @@ class _Process:
         parent_r, child_w = aiopipe.aiopipe()
         child_r, parent_w = aiopipe.aiopipe()
 
-        with child_r.detach() as crx:
-            with child_w.detach() as ctx:
-                proc = await asyncio.subprocess.create_subprocess_exec(
-                    *self._get_command_line(crx._fd, ctx._fd),
-                    pass_fds=sorted(p._fd for p in (crx, ctx)),
-                )
-                async with parent_w.open() as tx:
-                    tx.write(fp.getbuffer())
-                    await tx.drain()
+        with child_r.detach() as crx, child_w.detach() as ctx:
+            proc = await asyncio.subprocess.create_subprocess_exec(
+                *self._get_command_line(crx._fd, ctx._fd),
+                pass_fds=sorted(p._fd for p in (crx, ctx)),
+            )
+
+        async with parent_w.open() as tx:
+            tx.write(fp.getbuffer())
+            await tx.drain()
 
         async with parent_r.open() as rx:
             try:
