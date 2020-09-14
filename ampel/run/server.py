@@ -40,7 +40,6 @@ log = logging.getLogger("ampel.run.server")
 context: AmpelContext = None
 
 
-
 class task_manager:
     process_name_to_task: Dict[str, Tuple[AbsProcessController, asyncio.Task]] = {}
     task_to_process_names: Dict[asyncio.Task, List[str]] = {}
@@ -129,8 +128,13 @@ async def get_processes_status(
         None, description="include processes with these controllers"
     ),
 ) -> List[str]:
-    processes = (await get_processes(tier, name, include, exclude, controllers))["processes"]
-    return [{"name": pm.name, "tier": pm.tier, "status": task_manager.get_status(pm.name)} for pm in processes]
+    processes = (await get_processes(tier, name, include, exclude, controllers))[
+        "processes"
+    ]
+    return [
+        {"name": pm.name, "tier": pm.tier, "status": task_manager.get_status(pm.name)}
+        for pm in processes
+    ]
     return {"processes": [pm.name for pm in processes]}
 
 
@@ -177,7 +181,9 @@ async def start_processes(
         None, description="include processes with these controllers"
     ),
 ) -> List[str]:
-    processes = (await get_processes(tier, name, include, exclude, controllers))["processes"]
+    processes = (await get_processes(tier, name, include, exclude, controllers))[
+        "processes"
+    ]
     response = {"controllers": []}
     for controller in create_controllers(processes):
         task = task_manager.start_controller(controller)
@@ -241,6 +247,31 @@ async def kill_process(process: str) -> ProcessModel:
 def get_stock(stock_id: int):
     doc = context.db.get_collection("stock").find_one({"_id": stock_id})
     return json_util._json_convert(doc, json_util.RELAXED_JSON_OPTIONS)
+
+
+@app.get("/summary/channels")
+def stock_summary():
+    cursor = context.db.get_collection("stock").aggregate(
+        [
+            {
+                "$facet": {
+                    "channels": [
+                        {"$unwind": "$channel"},
+                        {"$group": {"_id": "$channel", "count": {"$sum": 1},}},
+                    ],
+                    "total": [{"$count": "count"}],
+                }
+            }
+        ]
+    )
+    facets = next(cursor)
+    return {
+        "channels": {
+            doc["_id"]: doc["count"]
+            for doc in sorted(facets["channels"], key=lambda doc: doc["_id"])
+        },
+        "total": facets["total"][0]["count"],
+    }
 
 
 @app.get("/stock/{stock_id}/t{tier}")
@@ -348,12 +379,13 @@ def get_events(
         ]
     }
 
+
 @app.get("/troubles")
 def get_troubles(
     tier: Optional[int] = Query(None, ge=0, le=3, description="tier to include"),
     process: Optional[str] = None,
     after: Optional[datetime] = None,
-    before: Optional[datetime] = None
+    before: Optional[datetime] = None,
 ):
     query = {}
     if tier:
@@ -372,11 +404,7 @@ def get_troubles(
         "troubles": [
             {
                 "timestamp": doc["_id"].generation_time,
-                **{
-                    k: v
-                    for k, v in doc.items()
-                    if k not in {"_id"}
-                },
+                **{k: v for k, v in doc.items() if k not in {"_id"}},
             }
             for doc in cursor
         ]
