@@ -8,7 +8,8 @@
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from collections.abc import Sequence as sequence, Iterable as iterable, Sized as sized
-from typing import Dict, Any, List, Iterable, Union, Type, Tuple, Set, Sized
+from typing import Dict, Any, List, Iterable, Union, Type, Tuple, Set, Sized, Generator
+from itertools import islice
 from ampel.type import strict_iterable
 
 
@@ -18,6 +19,18 @@ def ampel_iter(arg: Any) -> Any:
 	-> Makes None iterable
 	"""
 	return [arg] if isinstance(arg, (type(None), str, int, bytes, bytearray)) else arg
+
+
+def chunks(seq: Iterable, n: int) -> Generator[List, None, None]:
+	"""
+	Yield chunks of length `n` from `seq`
+	"""
+	source = iter(seq)
+	while True:
+		chunk = list(islice(source, n))
+		yield chunk
+		if len(chunk) < n:
+			break
 
 
 def try_reduce(arg: Any) -> Any:

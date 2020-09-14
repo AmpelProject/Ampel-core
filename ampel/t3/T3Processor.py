@@ -18,6 +18,7 @@ from ampel.t3.run.AbsT3UnitRunner import AbsT3UnitRunner
 from ampel.t3.select.AbsT3Selector import AbsT3Selector
 from ampel.t3.complement.AbsT3DataAppender import AbsT3DataAppender
 from ampel.t3.context.AbsT3RunContextAppender import AbsT3RunContextAppender
+from ampel.util.collections import chunks
 
 
 class T3Processor(AbsProcessorUnit):
@@ -194,20 +195,10 @@ class T3Processor(AbsProcessorUnit):
 						###########
 
 						# Loop until cursor/iterator dries out
-						while True:
-
-							# Chunk stock ids, thereby we consume the pymongo cursor
-							chunk_ids = [
-								sid[id_key] for i, sid in enumerate(stock_ids, start=1)
-								if i < self.chunk_size
-							]
-
-							# iterator dried out
-							if not chunk_ids:
-								break
+						for chunk_ids in chunks(stock_ids, self.chunk_size):
 
 							# Load info from DB
-							tran_data = content_loader.load(chunk_ids)
+							tran_data = content_loader.load([sid[id_key] for sid in chunk_ids])
 
 							# Potentialy add complementary information (spectra, TNS names, ...)
 							if directive.complement:
