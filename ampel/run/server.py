@@ -11,6 +11,7 @@ from datetime import datetime
 
 from bson import json_util, ObjectId
 from fastapi import FastAPI, HTTPException, Query
+from fastapi.middleware.cors import CORSMiddleware
 
 from ampel.abstract.AbsProcessController import AbsProcessController
 from ampel.core.AmpelContext import AmpelContext
@@ -22,8 +23,23 @@ from ampel.t2.T2RunState import T2RunState
 from ampel.util.mappings import build_unsafe_dict_id
 
 app = FastAPI()
+origins = [
+    "http://localhost",
+    "http://localhost:8080",
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 log = logging.getLogger("ampel.run.server")
 context: AmpelContext = None
+
+
 
 class task_manager:
     process_name_to_task: Dict[str, Tuple[AbsProcessController, asyncio.Task]] = {}
@@ -48,6 +64,13 @@ class task_manager:
         for name in cls.task_to_process_names.pop(task):
             cls.process_name_to_task.pop(name)
 
+    @classmethod
+    def get_status(cls, name: str) -> bool:
+        if name in cls.process_name_to_task:
+            return "running"
+        else:
+            return "idle"
+
 
 @app.on_event("startup")
 async def init():
@@ -69,6 +92,7 @@ async def init():
 @app.get("/processes")
 async def get_processes(
     tier: Optional[int] = Query(None, ge=0, le=3, description="tier to include"),
+    name: Optional[List[str]] = Query(None),
     include: Optional[List[str]] = Query(
         None, description="include processes with names that match"
     ),
@@ -86,12 +110,15 @@ async def get_processes(
         exclude=exclude,
         controllers=controllers,
     )
+    if name:
+        processes = [pm for pm in processes if pm.name in name]
     return {"processes": processes}
 
 
-@app.get("/processes/summary")
-async def get_processes_summary(
+@app.get("/processes/status")
+async def get_processes_status(
     tier: Optional[int] = Query(None, ge=0, le=3, description="tier to include"),
+    name: Optional[List[str]] = Query(None),
     include: Optional[List[str]] = Query(
         None, description="include processes with names that match"
     ),
@@ -102,7 +129,8 @@ async def get_processes_summary(
         None, description="include processes with these controllers"
     ),
 ) -> List[str]:
-    processes = (await get_processes(tier, include, exclude, controllers))["processes"]
+    processes = (await get_processes(tier, name, include, exclude, controllers))["processes"]
+    return [{"name": pm.name, "tier": pm.tier, "status": task_manager.get_status(pm.name)} for pm in processes]
     return {"processes": [pm.name for pm in processes]}
 
 
@@ -138,6 +166,7 @@ def create_controllers(processes: List[ProcessModel]) -> List[AbsProcessControll
 @app.post("/processes/start")
 async def start_processes(
     tier: Optional[int] = Query(None, ge=0, le=3, description="tier to include"),
+    name: Optional[List[str]] = Query(None),
     include: Optional[List[str]] = Query(
         None, description="include processes with names that match"
     ),
@@ -148,7 +177,7 @@ async def start_processes(
         None, description="include processes with these controllers"
     ),
 ) -> List[str]:
-    processes = (await get_processes(tier, include, exclude, controllers))["processes"]
+    processes = (await get_processes(tier, name, include, exclude, controllers))["processes"]
     response = {"controllers": []}
     for controller in create_controllers(processes):
         task = task_manager.start_controller(controller)
