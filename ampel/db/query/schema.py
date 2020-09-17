@@ -13,7 +13,7 @@ from ampel.model.operator.AnyOf import AnyOf
 from ampel.model.operator.AllOf import AllOf
 from ampel.model.operator.OneOf import OneOf
 
-valid_types = (int, str)
+VALID_TYPES = (int, str)
 
 """
 Schema syntax example:
@@ -59,18 +59,16 @@ def apply_schema(
 	# Checks were already performed by validators
 	if isinstance(arg, (AllOf, AnyOf, OneOf)):
 		arg_dict = arg.dict()
+	elif isinstance(arg, (int, str)):
+		query[field_name] = arg
+		return query
 	else:
-		# Be robust
-		if _arg_check(arg, (int, str)):
-			query[field_name] = arg
-			return query
-		else:
-			arg_dict = arg
+		arg_dict = arg
 
 	if 'all_of' in arg_dict:
 
 		# Raises error if invalid
-		_check_all_of(arg_dict, valid_types)
+		_check_all_of(arg_dict, VALID_TYPES)
 
 		if len(arg_dict['all_of']) == 1:
 			query[field_name] = arg_dict['all_of'][0]
@@ -80,7 +78,7 @@ def apply_schema(
 	elif 'any_of' in arg_dict:
 
 		# Case 1: no nesting below any_of
-		if check_seq_inner_type(arg_dict['any_of'], valid_types):
+		if check_seq_inner_type(arg_dict['any_of'], VALID_TYPES):
 			if len(arg_dict['any_of']) == 1: # dumb case
 				query[field_name] = arg_dict['any_of'][0]
 			else:
@@ -96,7 +94,7 @@ def apply_schema(
 
 			for el in arg_dict['any_of']:
 
-				if isinstance(el, valid_types):
+				if isinstance(el, VALID_TYPES):
 					or_list.append(
 						{field_name: el}
 					)
@@ -105,7 +103,7 @@ def apply_schema(
 				elif isinstance(el, dict):
 
 					# Raises error if invalid
-					_check_all_of(el, valid_types)
+					_check_all_of(el, VALID_TYPES)
 
 					if len(el['all_of']) == 1:
 						or_list.append(
@@ -119,7 +117,7 @@ def apply_schema(
 
 				else:
 					raise ValueError(
-						f"Unsupported format: depth 2 element is not a of type {valid_types} or dict)"
+						f"Unsupported format: depth 2 element is not a of type {VALID_TYPES} or dict)"
 						f"\nOffending value: {el}"
 					)
 
@@ -188,16 +186,16 @@ def apply_excl_schema(
 	if isinstance(arg, (AllOf, AnyOf, OneOf)):
 		arg = arg.dict()
 	else:
-		_arg_check(arg, valid_types)
+		_arg_check(arg)
 
 	# Check if field_name criteria were set previously
 	if field_name in query:
-		if isinstance(query[field_name], valid_types):
+		if isinstance(query[field_name], VALID_TYPES):
 			# If a previous scalar tag matching criteria was set
 			# then we need rename it since query[field_name] will become a dict
 			query[field_name] = {'$eq': query[field_name]}
 
-	if isinstance(arg, valid_types):
+	if isinstance(arg, VALID_TYPES):
 		if field_name not in query:
 			query[field_name] = {}
 		query[field_name]['$ne'] = arg
@@ -209,7 +207,7 @@ def apply_excl_schema(
 	if 'all_of' in arg:
 
 		# Raises error if invalid
-		_check_all_of(arg, valid_types)
+		_check_all_of(arg, VALID_TYPES)
 
 		if field_name not in query:
 			query[field_name] = {}
@@ -222,7 +220,7 @@ def apply_excl_schema(
 	elif 'any_of' in arg:
 
 		# Case 1: no nesting below any_of
-		if check_seq_inner_type(arg['any_of'], valid_types):
+		if check_seq_inner_type(arg['any_of'], VALID_TYPES):
 
 			if field_name not in query:
 				query[field_name] = {}
@@ -241,7 +239,7 @@ def apply_excl_schema(
 
 			for el in arg['any_of']:
 
-				if isinstance(el, valid_types):
+				if isinstance(el, VALID_TYPES):
 					and_list.append(
 						{field_name: {'$ne': el}}
 					)
@@ -250,7 +248,7 @@ def apply_excl_schema(
 				elif isinstance(el, dict):
 
 					# Raises error if el is invalid
-					_check_all_of(el, valid_types)
+					_check_all_of(el, VALID_TYPES)
 
 					if len(el['all_of']) == 1:
 						and_list.append(
@@ -267,7 +265,7 @@ def apply_excl_schema(
 						)
 				else:
 					raise ValueError(
-						f"Unsupported format: depth 2 element is not a {valid_types} or dict)"
+						f"Unsupported format: depth 2 element is not a {VALID_TYPES} or dict)"
 						f"\nOffending value: {el}"
 					)
 
@@ -332,7 +330,7 @@ def _check_all_of(el, in_type: Tuple[Type,...]) -> None:
 		)
 
 
-def _arg_check(arg, in_type: Union[int, str, tuple]) -> bool:
+def _arg_check(arg) -> bool:
 	""" :raises: ValueError """
 
 	if arg is None:
