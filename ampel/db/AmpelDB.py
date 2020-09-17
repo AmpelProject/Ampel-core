@@ -8,7 +8,7 @@
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import secrets
-from collections import defaultdict
+from collections import defaultdict  # type: ignore[attr-defined]
 from typing import Sequence, Dict, List, Any, Union, Optional, TYPE_CHECKING
 
 from pymongo import MongoClient
