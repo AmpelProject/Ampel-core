@@ -27,9 +27,11 @@ def chunks(seq: Iterable, n: int) -> Generator[List, None, None]:
 	"""
 	source = iter(seq)
 	while True:
-		chunk = list(islice(source, n))
-		yield chunk
-		if len(chunk) < n:
+		if chunk := list(islice(source, n)):
+			yield chunk
+			if len(chunk) < n:
+				break
+		else:
 			break
 
 
