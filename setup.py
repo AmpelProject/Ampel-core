@@ -28,6 +28,7 @@ setup(
 	},
 	zip_safe=False,
 	install_requires = [
+		"typing_extensions",
 		"pymongo",
 		"pyyaml",
 		"pytest",
