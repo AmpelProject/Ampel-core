@@ -27,6 +27,18 @@ setup(
 		]
 	},
 	zip_safe=False,
+	install_requires = [
+		"pymongo",
+		"pyyaml",
+		"pytest",
+		"pydantic==1.4",
+		"sjcl",
+		"schedule",
+		"slackclient>=2.7,<3.0",
+		"psutil",
+		"aiopipe",
+		"yq",
+	],
 	entry_points = {
 		'console_scripts': [
 			'ampel-controller = ampel.core.AmpelController:AmpelController.main',
