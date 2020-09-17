@@ -41,7 +41,7 @@ class DevAmpelContext(AmpelContext):
 
 		if custom_conf or db_prefix:
 			conf = self._get_unprotected_conf()
-			for k, v in custom_conf.items():
+			for k, v in (custom_conf or {}).items():
 				set_by_path(conf, k, v)
 			self._set_new_conf(conf)
 
