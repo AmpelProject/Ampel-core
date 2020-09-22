@@ -18,7 +18,7 @@ Option 1: Dedicated `conda` environment
 
 3. Create the environment: `conda env create -f ampel-environment.yml`
 
-4. Activate the environment: `. activate ampel-dev`.
+4. Activate the environment: `source activate ampel-dev`.
 
 If you later add packages (or new dependencies to support your contribution), add them to the environment file and `conda env update -f ampel-environment.yml`.
 

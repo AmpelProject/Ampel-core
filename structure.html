@@ -1,23 +1,22 @@
 
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
-  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<!DOCTYPE html>
 
-<html xmlns="http://www.w3.org/1999/xhtml">
+<html>
   <head>
-    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
-    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>Structure &#8212; Ampel 0.4.0 documentation</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Structure &#8212; Ampel 0.7.0a0 documentation</title>
     <link rel="stylesheet" href="_static/sphinxdoc.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
-    <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
-    <script type="text/javascript" src="_static/jquery.js"></script>
-    <script type="text/javascript" src="_static/underscore.js"></script>
-    <script type="text/javascript" src="_static/doctools.js"></script>
-    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="Ampel projects" href="projects/index.html" />
-    <link rel="prev" title="Contribute" href="contribute.html" /> 
+    <link rel="prev" title="Porting contrib projects from v0.6" href="legacy.html" /> 
   </head><body>
     <div class="related" role="navigation" aria-label="related navigation">
       <h3>Navigation</h3>
@@ -29,36 +28,12 @@
           <a href="projects/index.html" title="Ampel projects"
              accesskey="N">next</a> |</li>
         <li class="right" >
-          <a href="contribute.html" title="Contribute"
+          <a href="legacy.html" title="Porting contrib projects from v0.6"
              accesskey="P">previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">Ampel 0.4.0 documentation</a> &#187;</li> 
+        <li class="nav-item nav-item-0"><a href="index.html">Ampel 0.7.0a0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Structure</a></li> 
       </ul>
-    </div>
-      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
-        <div class="sphinxsidebarwrapper">
-            <p class="logo"><a href="index.html">
-              <img class="logo" src="_static/ampel.png" alt="Logo"/>
-            </a></p>
-  <h4>Previous topic</h4>
-  <p class="topless"><a href="contribute.html"
-                        title="previous chapter">Contribute</a></p>
-  <h4>Next topic</h4>
-  <p class="topless"><a href="projects/index.html"
-                        title="next chapter">Ampel projects</a></p>
-<div id="searchbox" style="display: none" role="search">
-  <h3>Quick search</h3>
-    <div class="searchformwrapper">
-    <form class="search" action="search.html" method="get">
-      <input type="text" name="q" />
-      <input type="submit" value="Go" />
-      <input type="hidden" name="check_keywords" value="yes" />
-      <input type="hidden" name="area" value="default" />
-    </form>
-    </div>
-</div>
-<script type="text/javascript">$('#searchbox').show(0);</script>
-        </div>
-      </div>
+    </div>  
 
     <div class="document">
       <div class="documentwrapper">
@@ -89,20 +64,21 @@
 <h2>Ampel flags<a class="headerlink" href="#ampel-flags" title="Permalink to this headline">¶</a></h2>
 <p>Ampel flags are twofold.</p>
 <ul class="simple">
-<li>On the Python side, those are implemented using Flag enumerations (enum.Flag).
+<li><p>On the Python side, those are implemented using Flag enumerations (enum.Flag).
 As a consequence, flags are quite convenient to manipulate. Since python has no
-integer size limitation, Flag enumerations can grow above 64 elements.</li>
-<li>On the Mongo DB side, the situation is more complicated. Following restrictions
-apply:<ul>
-<li>The <cite>$bit</cite> update operator is not usable for numbers no longer
+integer size limitation, Flag enumerations can grow above 64 elements.</p></li>
+<li><p>On the Mongo DB side, the situation is more complicated. Following restrictions
+apply:</p>
+<ul>
+<li><p>The <cite>$bit</cite> update operator is not usable for numbers no longer
 representable as <cite>int64_t</cite>. (<a class="reference external" href="https://jira.mongodb.org/browse/SERVER-15680">https://jira.mongodb.org/browse/SERVER-15680</a>).
 It means that if the number of flag values of a given enum exceeds 63,
 updates have to be performed using the $set operator which can lead to race
-conditions.</li>
-<li>Bitwise query operators (for example <cite>$bitsAnySet</cite>) are not available in the
-aggregation framework (<a class="reference external" href="https://jira.mongodb.org/browse/SERVER-25823">https://jira.mongodb.org/browse/SERVER-25823</a>).</li>
-<li>There is no index support for Bitwise query operations
-(<a class="reference external" href="https://jira.mongodb.org/browse/SERVER-24749">https://jira.mongodb.org/browse/SERVER-24749</a>).</li>
+conditions.</p></li>
+<li><p>Bitwise query operators (for example <cite>$bitsAnySet</cite>) are not available in the
+aggregation framework (<a class="reference external" href="https://jira.mongodb.org/browse/SERVER-25823">https://jira.mongodb.org/browse/SERVER-25823</a>).</p></li>
+<li><p>There is no index support for Bitwise query operations
+(<a class="reference external" href="https://jira.mongodb.org/browse/SERVER-24749">https://jira.mongodb.org/browse/SERVER-24749</a>).</p></li>
 </ul>
 </li>
 </ul>
@@ -143,7 +119,31 @@ Out[6]: &lt;PhotoPointFlags.ZTF_G|FLUX_MAG_AB: 20&gt;
 </div>
 
 
+            <div class="clearer"></div>
           </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="index.html">
+              <img class="logo" src="_static/ampel.png" alt="Logo"/>
+            </a></p>
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="legacy.html"
+                        title="previous chapter">Porting contrib projects from v0.6</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="projects/index.html"
+                        title="next chapter">Ampel projects</a></p>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
         </div>
       </div>
       <div class="clearer"></div>
@@ -158,14 +158,15 @@ Out[6]: &lt;PhotoPointFlags.ZTF_G|FLUX_MAG_AB: 20&gt;
           <a href="projects/index.html" title="Ampel projects"
              >next</a> |</li>
         <li class="right" >
-          <a href="contribute.html" title="Contribute"
+          <a href="legacy.html" title="Porting contrib projects from v0.6"
              >previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">Ampel 0.4.0 documentation</a> &#187;</li> 
+        <li class="nav-item nav-item-0"><a href="index.html">Ampel 0.7.0a0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Structure</a></li> 
       </ul>
     </div>
     <div class="footer" role="contentinfo">
         &#169; Copyright 2018, Ampel Project.
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.7.5.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 3.2.1.
     </div>
   </body>
 </html>

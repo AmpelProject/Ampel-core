@@ -1,0 +1,546 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Porting contrib projects from v0.6 &#8212; Ampel 0.7.0a0 documentation</title>
+    <link rel="stylesheet" href="_static/sphinxdoc.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Structure" href="structure.html" />
+    <link rel="prev" title="Contribute" href="contribute.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="structure.html" title="Structure"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="contribute.html" title="Contribute"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">Ampel 0.7.0a0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Porting contrib projects from v0.6</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="porting-contrib-projects-from-v0-6">
+<h1>Porting contrib projects from v0.6<a class="headerlink" href="#porting-contrib-projects-from-v0-6" title="Permalink to this headline">¶</a></h1>
+<p>Ampel v0.7 introduced a major internal restructuring to apply lessons learned
+from operating v0.6 during the first 1.5 years of ZTF. Here is a summary of the
+changes you need to make to adapt your project from v0.6 to v0.7. An example
+project using the current config system can be found in
+<a class="reference external" href="https://github.com/AmpelProject/Ampel-contrib-sample/tree/03950a37dc4dc74c610df72887bd417239cd58aa">Ampel-contrib-sample</a>.</p>
+<div class="section" id="environment">
+<h2>Environment<a class="headerlink" href="#environment" title="Permalink to this headline">¶</a></h2>
+<p>Ampel v0.7 requires Python &gt;= 3.8. If you already have Python 3.8 on your system, create and activate a virtualenv for Ampel with:</p>
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>python3 -m venv ampel-v0.7
+<span class="nb">source</span> ampel-v0.7/bin/activate
+</pre></div>
+</div>
+<p>Otherwise, a good way to get Python 3.8 is with <a class="reference external" href="https://docs.conda.io/en/latest/miniconda.html">miniconda</a>. After installing <code class="docutils literal notranslate"><span class="pre">miniconda</span></code>, create an environment containing Python 3.8 with:</p>
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>conda create -y -n ampel-v0.7 <span class="nv">python</span><span class="o">=</span><span class="m">3</span>.8
+conda activate ampel-v0.7
+</pre></div>
+</div>
+<p>Inside your environment, clone the Ampel-contrib-HU project and install its dependencies with:</p>
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>git clone https://github.com/AmpelProject/Ampel-contrib-HU.git
+<span class="nb">cd</span> Ampel-contrib-HU
+pip install -r requirements.txt
+</pre></div>
+</div>
+<p>You can then install your own project in the environment with:</p>
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span><span class="nb">cd</span> ampel-contrib-PROJECTNAME
+pip install -e .
+</pre></div>
+</div>
+<p>After this, you should be able to run <cite>ampel-config build</cite> and see a gigantic blob of YAML being generated.</p>
+</div>
+<div class="section" id="configuration">
+<h2>Configuration<a class="headerlink" href="#configuration" title="Permalink to this headline">¶</a></h2>
+<p>All configuration now lives in YAML or JSON files in a directory
+<cite>conf/ampel-contrib-PROJECTNAME</cite> at the top level of your repository. In your
+setup.py, the call to <code class="xref py py-meth docutils literal notranslate"><span class="pre">setuptools.setup()</span></code> should include:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">package_data</span><span class="o">=</span><span class="p">{</span>
+  <span class="s1">&#39;conf&#39;</span><span class="p">:</span> <span class="p">[</span>
+    <span class="s1">&#39;*.json&#39;</span><span class="p">,</span> <span class="s1">&#39;**/*.json&#39;</span><span class="p">,</span> <span class="s1">&#39;**/**/*.json&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;*.yaml&#39;</span><span class="p">,</span> <span class="s1">&#39;**/*.yaml&#39;</span><span class="p">,</span> <span class="s1">&#39;**/**/*.yaml&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;*.yml&#39;</span><span class="p">,</span> <span class="s1">&#39;**/*.yml&#39;</span><span class="p">,</span> <span class="s1">&#39;**/**/*.yml&#39;</span>
+  <span class="p">]</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p><cite>conf/ampel-contrib-PROJECTNAME</cite> should contain at least a top-level configuration file named ampel.yaml (or ampel.json if in JSON format), containining at least the definitions of your channels and any custom units
+you may have. For example:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">channel</span><span class="p">:</span>
+  <span class="nt">EXAMPLE_CHANNEL</span><span class="p">:</span>
+    <span class="nt">channel</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">EXAMPLE_CHANNEL</span>
+    <span class="nt">contact</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">ampel@desy.de</span>
+    <span class="nt">active</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">true</span>
+    <span class="nt">auto_complete</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">live</span>
+<span class="nt">unit</span><span class="p">:</span>
+  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">ampel.contrib.groupname.t0.DecentFilterCopy</span>
+</pre></div>
+</div>
+<p>Dictionaries can be either embedded directly into the top-level configuration
+file, or in standalone files named after the key. For example, <cite>channel</cite> key
+in the example above can be replaced with a file conf/ampel-contrib-PROJECTNAME/channel/EXAMPLE_CHANNEL.yaml with the contents:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">channel</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">EXAMPLE_CHANNEL</span>
+<span class="nt">contact</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">ampel@desy.de</span>
+<span class="nt">active</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="nt">auto_complete</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">live</span>
+</pre></div>
+</div>
+<p>This can be useful for keeping large configurations neatly organized.</p>
+<p>Validate your configuration with <cite>ampel-config build</cite>.</p>
+<div class="section" id="terminology-changes-and-renamed-classes">
+<h3>Terminology changes and renamed classes<a class="headerlink" href="#terminology-changes-and-renamed-classes" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li><p>T3Job and T3Task are no more. Everything is just a Process now.</p></li>
+<li><p>Many classes have been renamed to more accurately reflect their meaning. A partial list is below. Note that the names refer to the class with the same name as the module, e.g. <code class="docutils literal notranslate"><span class="pre">ampel.view.LightCurve</span></code> means <code class="docutils literal notranslate"><span class="pre">from</span> <span class="pre">ampel.view.LightCurve</span> <span class="pre">import</span> <span class="pre">LightCurve</span></code></p></li>
+</ul>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 46%" />
+<col style="width: 54%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>v0.6 class</p></th>
+<th class="head"><p>v0.7 (nearest equivalent)</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">ampel.base.LightCurve</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">ampel.view.LightCurve</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">ampel.base.AmpelAlert</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">ampel.alert.PhotoAlert</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">ampel.base.ScienceRecord</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">ampel.content.T2Record</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">ampel.base.TransientView</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">ampel.view.TransientView</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">ampel.base.PlainPhotoPoint</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">ampel.content.DataPoint</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">ampel.base.PlainUpperLimit</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">ampel.content.DataPoint</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">ampel.base.flags.PhotoFlags</span></code></p></td>
+<td><p>None (replaced by tags)</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">ampel.base.flags.TransientFlags</span></code></p></td>
+<td><p>None (replaced by tags)</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">ampel.base.dataclass.JournalUpdate</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">ampel.struct.JournalExtra</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">ampel.base.dataclass.GlobalInfo</span></code></p></td>
+<td><p>None?</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">ampel.base.abstract.AbsAlertFilter</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">ampel.abstract.AbsAlertFilter[PhotoAlert]</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">ampel.base.abstract.AbsT2Unit</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">ampel.abstract.AbsLightCurveT2Unit</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">ampel.base.abstract.AbsT3Unit</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">ampel.abstract.AbsPhotoT3Unit</span></code></p></td>
+</tr>
+</tbody>
+</table>
+<ul class="simple">
+<li><p>Classes in <code class="docutils literal notranslate"><span class="pre">ampel.content</span></code> are declared as <code class="docutils literal notranslate"><span class="pre">TypedDict</span></code>. At runtime these are <code class="docutils literal notranslate"><span class="pre">ReadOnlyDict</span></code>, but the annotations in the class definition tell you which keys they have.</p></li>
+</ul>
+</div>
+<div class="section" id="channel-definitions">
+<h3>Channel definitions<a class="headerlink" href="#channel-definitions" title="Permalink to this headline">¶</a></h3>
+<p>The easiest way to define a channel is with a YAML file, e.g. conf/ampel-contrib-PROJECTNAME/channel/EXAMPLE_BRIGHT_N_STABLE.yaml. The content is similar to the JSON-based channel definitions in v0.6, but simplified. A few notable differences:</p>
+<ul class="simple">
+<li><p><em>templates</em> define common configurations that don’t need to be repeated in every channel definition, and replace much of the boilerplate found in v0.6 channel definitions.</p></li>
+<li><p>T2 unit configurations can be defined either inline or in the <cite>alias</cite> section of the top-level config. A separate t2_config.json is no longer needed.</p></li>
+<li><p>T3 process definitions embedded in the channel definition can also use templates.</p></li>
+</ul>
+<p>A slightly truncated example:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">channel</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">EXAMPLE_BRIGHT_N_STABLE</span>
+<span class="nt">contact</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">ampel@desy.de</span>
+<span class="nt">active</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="c1"># Auto-complete mode: how to treat photopoints be treated once a transient has</span>
+<span class="c1"># been accepted.</span>
+<span class="c1"># - false: apply filter to all photopoints</span>
+<span class="c1"># - true or &quot;live&quot;: bypass filter once a transient has been accepted once</span>
+<span class="nt">auto_complete</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">live</span>
+<span class="c1"># Channel template: basic settings for which alert stream to listen to, how to</span>
+<span class="c1"># build light curves from alert packets, etc.</span>
+<span class="nt">template</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">ztf_uw_public</span>
+<span class="c1"># T0: which photopoints should be accepted to build light curves for each</span>
+<span class="c1">#     transient?</span>
+<span class="nt">t0_filter</span><span class="p">:</span>
+  <span class="nt">unit</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">DecentFilterCopy</span>
+  <span class="nt">config</span><span class="p">:</span>
+    <span class="nt">min_ndet</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">2</span>
+    <span class="nt">min_tspan</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">0</span>
+    <span class="nt">max_tspan</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">5</span>
+    <span class="l l-Scalar l-Scalar-Plain">...</span>
+<span class="c1"># T2: how should the collected photopoints and light curves be augmented?</span>
+<span class="nt">t2_compute</span><span class="p">:</span>
+  <span class="p p-Indicator">-</span> <span class="nt">unit</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">T2SNCosmo</span>
+    <span class="nt">config</span><span class="p">:</span>
+      <span class="nt">model</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">salt2</span>
+      <span class="nt">upper_limits</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">false</span>
+  <span class="c1"># config can be omitted if the unit has defaults</span>
+  <span class="p p-Indicator">-</span> <span class="nt">unit</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">T2ExamplePolyFit</span>
+  <span class="p p-Indicator">-</span> <span class="nt">unit</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">T2CatalogMatch</span>
+    <span class="c1"># A named configuration, defined in alias/t2. Names that start with &quot;%&quot; are</span>
+    <span class="c1"># global, other names are local to the project</span>
+    <span class="nt">config</span><span class="p">:</span> <span class="s">&#39;%T2CatalogMatch_general&#39;</span>
+<span class="c1"># T3: what should I do with the collected data?</span>
+<span class="nt">t3_supervise</span><span class="p">:</span>
+  <span class="c1"># A minimal T3: select all data for transients modified since last run</span>
+  <span class="c1"># the optional parameters `name`, `load`, `filter`, and `complement` are set</span>
+  <span class="c1"># to sensible defaults.</span>
+  <span class="p p-Indicator">-</span> <span class="nt">template</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">ztf_periodic_summary</span>
+    <span class="nt">schedule</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">every().day.at(&#39;15:00&#39;)</span>
+    <span class="nt">run</span><span class="p">:</span>
+      <span class="nt">unit</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">DemoT3Unit</span>
+  <span class="c1"># More settings: load only transient and T2 records for transients modified</span>
+  <span class="c1"># since last run where `sncosmo` color parameter is &gt; 1</span>
+  <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">set_all_the_things</span>
+    <span class="nt">template</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">ztf_periodic_summary</span>
+    <span class="nt">schedule</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">every(4).hours</span>
+    <span class="nt">load</span><span class="p">:</span>
+      <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">TRANSIENT</span>
+      <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">T2RECORD</span>
+    <span class="nt">filter</span><span class="p">:</span>
+      <span class="nt">t2</span><span class="p">:</span>
+        <span class="nt">unit</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">T2SNCosmo</span>
+        <span class="nt">match</span><span class="p">:</span>
+          <span class="nt">fit_results.c</span><span class="p">:</span>
+            <span class="nt">$gt</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">1</span>
+    <span class="nt">run</span><span class="p">:</span>
+      <span class="nt">unit</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">DemoT3Unit</span>
+</pre></div>
+</div>
+<p>Some operations that were previously embedded in T3 units, like filtering
+TransientViews in <code class="xref py py-meth docutils literal notranslate"><span class="pre">AbsT3Unit.add()</span></code>, now have their own dedicated
+stages. This makes it possible to reuse these stages without writing new code.</p>
+</div>
+<div class="section" id="standalone-t3-processes">
+<h3>Standalone T3 processes<a class="headerlink" href="#standalone-t3-processes" title="Permalink to this headline">¶</a></h3>
+<p>Just like in v0.6, T3 processes embedded in a channel definition implicitly
+select only transients associated with that channel. To consume transients from
+multiple channels, you have to define a standalone T3 process. These definitions
+also use templates, however, so can be quite compact:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">TNSCompleteSummary</span>
+<span class="nt">tier</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">3</span>
+<span class="c1"># every 60 minutes, consume all transients that were updated since the</span>
+<span class="c1"># previous run in channels HU_GP_10 or HU_GU_59</span>
+<span class="nt">template</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">ztf_periodic_summary</span>
+<span class="nt">schedule</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">every(60).minutes</span>
+<span class="nt">channel</span><span class="p">:</span>
+  <span class="nt">any_of</span><span class="p">:</span>
+    <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">HU_GP_10</span>
+    <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">HU_GP_59</span>
+<span class="c1"># load the stock, t0, and t2 records associated with the transient (and channel)</span>
+<span class="nt">load</span><span class="p">:</span>
+  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">TRANSIENT</span>
+  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">DATAPOINT</span>
+  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">T2RECORD</span>
+<span class="c1"># for each selected transient, look up the TNS name</span>
+<span class="nt">complement</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">TNSNames</span>
+<span class="c1"># and pass to TNSTalker</span>
+<span class="nt">run</span><span class="p">:</span>
+  <span class="nt">unit</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">TNSTalker</span>
+  <span class="nt">config</span><span class="p">:</span>
+    <span class="c1"># a Secret item, kept separate from the rest of the config</span>
+    <span class="nt">tns_api_key</span><span class="p">:</span>
+      <span class="nt">key</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">tns/jnordin</span>
+    <span class="nt">submit_tns</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">true</span>
+    <span class="nt">sandbox</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">false</span>
+    <span class="nt">max_age</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">30</span>
+    <span class="nt">needed_catalogs</span><span class="p">:</span> <span class="p p-Indicator">[]</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="section" id="t0-units">
+<h2>T0 units<a class="headerlink" href="#t0-units" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="legacy-t0-configuration">
+<span id="id1"></span><h3>Configuration<a class="headerlink" href="#legacy-t0-configuration" title="Permalink to this headline">¶</a></h3>
+<p>All units in v0.7 use type annotations and <code class="docutils literal notranslate"><span class="pre">pydantic</span></code> to define and validate their configuration. This means that if you previously used a nested <code class="xref py py-class docutils literal notranslate"><span class="pre">RunConfig</span></code> class to define a configuration, you can move its fields up to the parent class, and access them as attributes from instances. In other words, the following v0.6 filter defintion:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">pydantic</span> <span class="kn">import</span> <span class="n">BaseModel</span>
+<span class="kn">from</span> <span class="nn">ampel.base.abstract.AbsAlertFilter</span> <span class="kn">import</span> <span class="n">AbsAlertFilter</span>
+
+<span class="k">class</span> <span class="nc">AwesomeFilter</span><span class="p">(</span><span class="n">AbsAlertFilter</span><span class="p">):</span>
+
+    <span class="k">class</span> <span class="nc">RunConfig</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Necessary class to validate configuration.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">MIN_NDET</span><span class="p">:</span> <span class="nb">int</span> <span class="c1"># number of previous detections</span>
+        <span class="n">MIN_TSPAN</span><span class="p">:</span> <span class="nb">float</span> <span class="c1"># minimum duration of alert detection history [days]</span>
+        <span class="n">MAX_TSPAN</span><span class="p">:</span> <span class="nb">float</span> <span class="c1"># maximum duration of alert detection history [days]</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">on_match_t2_units</span><span class="p">,</span> <span class="n">base_config</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">run_config</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">logger</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">run_config</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Please check your run configuration&quot;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">on_match_t2_units</span> <span class="o">=</span> <span class="n">on_match_t2_units</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span> <span class="o">=</span> <span class="n">logger</span> <span class="k">if</span> <span class="n">logger</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">()</span>
+
+        <span class="c1"># parse the run config</span>
+        <span class="n">rc_dict</span> <span class="o">=</span> <span class="n">run_config</span><span class="o">.</span><span class="n">dict</span><span class="p">()</span>
+
+        <span class="c1"># ----- set filter proerties ----- #</span>
+
+        <span class="c1"># history</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">min_ndet</span> <span class="o">=</span> <span class="n">rc_dict</span><span class="p">[</span><span class="s1">&#39;MIN_NDET&#39;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">min_tspan</span> <span class="o">=</span> <span class="n">rc_dict</span><span class="p">[</span><span class="s1">&#39;MIN_TSPAN&#39;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">max_tspan</span> <span class="o">=</span> <span class="n">rc_dict</span><span class="p">[</span><span class="s1">&#39;MAX_TSPAN&#39;</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>shrinks down to:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">pydantic</span> <span class="kn">import</span> <span class="n">Field</span>
+<span class="kn">from</span> <span class="nn">ampel.alert.PhotoAlert</span> <span class="kn">import</span> <span class="n">PhotoAlert</span>
+<span class="kn">from</span> <span class="nn">ampel.abstract.AbsAlertFilter</span> <span class="kn">import</span> <span class="n">AbsAlertFilter</span>
+
+<span class="k">class</span> <span class="nc">AwesomeFilter</span><span class="p">(</span><span class="n">AbsAlertFilter</span><span class="p">[</span><span class="n">PhotoAlert</span><span class="p">]):</span>
+
+    <span class="n">min_ndet</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="o">...</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">&quot;number of previous detections&quot;</span><span class="p">)</span>
+    <span class="n">min_tspan</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="o">...</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">&quot;minimum duration of alert detection history [days]&quot;</span><span class="p">)</span>
+    <span class="n">max_tspan</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="o">...</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">&quot;maximum duration of alert detection history [days]&quot;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">post_init</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="o">...</span>
+</pre></div>
+</div>
+<p>You no longer have to define an <code class="xref py py-meth docutils literal notranslate"><span class="pre">__init__()</span></code>; the default <code class="xref py py-meth docutils literal notranslate"><span class="pre">__init__()</span></code> will set <code class="docutils literal notranslate"><span class="pre">self.min_ndet</span></code> and raise an exception if required fields are not set or set with invalid values. If you need to do any custom setup, however, you can define a <code class="xref py py-meth docutils literal notranslate"><span class="pre">post_init()</span></code> that will be called within the base class <code class="xref py py-meth docutils literal notranslate"><span class="pre">__init__()</span></code>. A few other things to note:</p>
+<ul class="simple">
+<li><p>All instances of <code class="xref py py-class docutils literal notranslate"><span class="pre">AbsAlertFilter</span></code> have a <code class="docutils literal notranslate"><span class="pre">self.logger</span></code> property. You do not have to set one up yourself.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">AbsAlertFilter[PhotoAlert]</span></code> indicates that the <code class="xref py py-meth docutils literal notranslate"><span class="pre">apply()</span></code> method expects a <code class="xref py py-class docutils literal notranslate"><span class="pre">PhotoAlert</span></code>. Instances of <code class="xref py py-class docutils literal notranslate"><span class="pre">PhotoAlert</span></code> have separate photopoints and upper limits. If you omit the parameter to <code class="xref py py-class docutils literal notranslate"><span class="pre">AbsAlertFilter</span></code> in your class definition, your <code class="xref py py-meth docutils literal notranslate"><span class="pre">apply()</span></code> method will receive the base class, <code class="xref py py-class docutils literal notranslate"><span class="pre">AmpelAlert</span></code>, instead. Instances of <code class="xref py py-class docutils literal notranslate"><span class="pre">AmpelAlert</span></code> only have one collection of datapoints.</p></li>
+<li><p>The call to <code class="xref py py-meth docutils literal notranslate"><span class="pre">Field()</span></code> is optional, but makes the field description machine-readable. You can also use this to define jsonschema-style constraints on the field value, for example requiring an integer to be positive, or a list to have a specified number of items. For more information, see the <a class="reference external" href="https://pydantic-docs.helpmanual.io/usage/schema/#field-customisation">pydantic docs</a>.</p></li>
+<li><p>Field names should be lower camel-cased by convention.</p></li>
+</ul>
+<p>Base classes also exist to automate the configuration of e.g. catalog matching services. For example, if you were previously setting up <code class="docutils literal notranslate"><span class="pre">catsHTM</span></code> matching
+like this:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">pydantic</span> <span class="kn">import</span> <span class="n">BaseModel</span>
+<span class="kn">from</span> <span class="nn">ampel.base.abstract.AbsAlertFilter</span> <span class="kn">import</span> <span class="n">AbsAlertFilter</span>
+<span class="kn">from</span> <span class="nn">ampel.contrib.hu</span> <span class="kn">import</span> <span class="n">catshtm_server</span>
+
+<span class="k">class</span> <span class="nc">GaiaVetoFilter</span><span class="p">(</span><span class="n">AbsAlertFilter</span><span class="p">):</span>
+
+    <span class="n">resources</span> <span class="o">=</span> <span class="p">(</span><span class="s1">&#39;catsHTM.default&#39;</span><span class="p">,)</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">on_match_t2_units</span><span class="p">,</span> <span class="n">base_config</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">run_config</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">logger</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="n">catshtm_uri</span> <span class="o">=</span> <span class="n">base_confg</span><span class="p">[</span><span class="s2">&quot;catsHTM.default&quot;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">catshtm</span> <span class="o">=</span> <span class="n">catshtm_server</span><span class="o">.</span><span class="n">get_client</span><span class="p">(</span><span class="n">catshtm_uri</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>you can simplify to:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">ampel.alert.PhotoAlert</span> <span class="kn">import</span> <span class="n">PhotoAlert</span>
+<span class="kn">from</span> <span class="nn">ampel.abstract.AbsAlertFilter</span> <span class="kn">import</span> <span class="n">AbsAlertFilter</span>
+<span class="kn">from</span> <span class="nn">ampel.contrib.hu.base.CatsHTMUnit</span> <span class="kn">import</span> <span class="n">CatsHTMUnit</span>
+
+<span class="k">class</span> <span class="nc">GaiaVetoFilter</span><span class="p">(</span><span class="n">CatsHTMUnit</span><span class="p">,</span> <span class="n">AbsAlertFilter</span><span class="p">[</span><span class="n">PhotoAlert</span><span class="p">]):</span>
+    <span class="o">...</span>
+</pre></div>
+</div>
+<p><code class="xref py py-class docutils literal notranslate"><span class="pre">ExtCatsUnit</span></code> is the equivalent for <cite>extcats &lt;https://github.com/MatteoGiomi/extcats&gt;</cite>.</p>
+</div>
+<div class="section" id="filtering">
+<h3>Filtering<a class="headerlink" href="#filtering" title="Permalink to this headline">¶</a></h3>
+<p><code class="xref py py-class docutils literal notranslate"><span class="pre">PhotoAlert</span></code> is mostly a drop-in replacement for the v0.6 <code class="xref py py-class docutils literal notranslate"><span class="pre">AmpelAlert</span></code>. There are important differences, however:</p>
+<ul class="simple">
+<li><p><code class="xref py py-meth docutils literal notranslate"><span class="pre">PhotoAlert.get_values()</span></code> uses native field names instead of the internal aliases from v0.6. Use <code class="docutils literal notranslate"><span class="pre">jd</span></code> instead of <code class="docutils literal notranslate"><span class="pre">obs_date</span></code>, <code class="docutils literal notranslate"><span class="pre">magpsf</span></code> instead of <code class="docutils literal notranslate"><span class="pre">mag</span></code>, etc.</p></li>
+<li><p>The third argument to <code class="xref py py-meth docutils literal notranslate"><span class="pre">PhotoAlert.get_values()</span></code> is now a string rather than a bool. Where you formerly used <code class="docutils literal notranslate"><span class="pre">get_values(...,</span> <span class="pre">upper_limits=True)</span></code> to get values from upper limits, use <code class="docutils literal notranslate"><span class="pre">get_values(...,</span> <span class="pre">data=&quot;uls&quot;)</span></code>. To get both detections and upper limits, use <code class="docutils literal notranslate"><span class="pre">get_values(...,</span> <span class="pre">data=&quot;all&quot;)</span></code>.</p></li>
+</ul>
+<p>The return value of <code class="xref py py-meth docutils literal notranslate"><span class="pre">AbsAlertFilter.apply()</span></code> may now return a <a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a> or an <a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a>.</p>
+<ul class="simple">
+<li><p>If you previously returned <code class="docutils literal notranslate"><span class="pre">self.on_match_t2_units</span></code> to accept an alert and trigger all configured T2s, return <code class="docutils literal notranslate"><span class="pre">True</span></code> instead.</p></li>
+<li><p>If you previously returned <code class="docutils literal notranslate"><span class="pre">False</span></code> or <code class="docutils literal notranslate"><span class="pre">None</span></code> to reject an alert, you may continue to do so. You may also return an integer “rejection code” between -255 and -1. You can define these codes however you like, and use them to efficiently query the properties of rejected alerts after the fact.</p></li>
+<li><p>If you previously returned a subset of <code class="docutils literal notranslate"><span class="pre">self.on_match_t2_units</span></code> depending on the exact properties of the alert, return a positive integer instead. This will be interpreted as id of the group of T2s to run.</p></li>
+</ul>
+</div>
+</div>
+<div class="section" id="t2-units">
+<h2>T2 units<a class="headerlink" href="#t2-units" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="new-base-classes">
+<h3>New base classes<a class="headerlink" href="#new-base-classes" title="Permalink to this headline">¶</a></h3>
+<p>There are now 3 different kinds of T2 unit. If your T2 does something other than a light curve analysis, it may be a better fit for one of the new ones:</p>
+<ul class="simple">
+<li><p><code class="xref py py-class docutils literal notranslate"><span class="pre">ampel.abstract.AbsLightCurveT2Unit.AbsLightCurveT2Unit</span></code> operates on entire light curves, and runs every time a new photopoint or upper limit is added to a transient. This is equivalent to the old <code class="xref py py-class docutils literal notranslate"><span class="pre">AbsT2Unit</span></code>, but can be configured to operate on all photopoints, or on detections only.</p></li>
+<li><p><code class="xref py py-class docutils literal notranslate"><span class="pre">ampel.abstract.AbsPointT2Unit.AbsPointT2Unit</span></code> operates on single data points. It can be configured to run on a subset of photopoints, e.g. to run catalog matching on only the first detection.</p></li>
+<li><p><code class="xref py py-class docutils literal notranslate"><span class="pre">ampel.abstract.AbsStockT2Unit.AbsStockT2Unit</span></code> operates on the stock (transient) record itself. This can be used to perform some action when the transient is added to a channel.</p></li>
+</ul>
+<p>There are also “tied” variants of these that can be used to make one T2 depend on the results of other T2s.</p>
+</div>
+<div class="section" id="id2">
+<h3>Configuration<a class="headerlink" href="#id2" title="Permalink to this headline">¶</a></h3>
+<p>Like T0 units, T2 units take their configuration as fields. See:ref:<cite>legacy-t0-configuration</cite>.</p>
+</div>
+<div class="section" id="run">
+<h3><code class="xref py py-meth docutils literal notranslate"><span class="pre">run()</span></code><a class="headerlink" href="#run" title="Permalink to this headline">¶</a></h3>
+<p>T2 units now have a single configuration, so the <code class="xref py py-meth docutils literal notranslate"><span class="pre">run()</span></code> method no longer takes a <code class="docutils literal notranslate"><span class="pre">run_config</span></code> argument. If your <code class="xref py py-meth docutils literal notranslate"><span class="pre">run()</span></code> method previously looked like this [contrived] example:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">light_curve</span><span class="p">,</span> <span class="n">run_config</span><span class="p">):</span>
+    <span class="n">count</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">light_curve</span><span class="o">.</span><span class="n">get_values</span><span class="p">(</span><span class="s2">&quot;jd&quot;</span><span class="p">,</span> <span class="n">upper_limits</span><span class="o">=</span><span class="kc">False</span><span class="p">))</span>
+    <span class="k">if</span> <span class="n">run_config</span><span class="p">[</span><span class="s2">&quot;include_upper_limits&quot;</span><span class="p">]:</span>
+        <span class="n">count</span> <span class="o">+=</span> <span class="nb">len</span><span class="p">(</span><span class="n">light_curve</span><span class="o">.</span><span class="n">get_values</span><span class="p">(</span><span class="s2">&quot;jd&quot;</span><span class="p">,</span> <span class="n">upper_limits</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>
+    <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;length&quot;</span><span class="p">:</span> <span class="n">count</span><span class="p">}</span>
+</pre></div>
+</div>
+<p>it should be replaced with:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">lightcurve</span><span class="p">:</span> <span class="n">LightCurve</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">T2UnitResult</span><span class="p">:</span>
+    <span class="n">count</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">light_curve</span><span class="o">.</span><span class="n">get_values</span><span class="p">(</span><span class="s2">&quot;jd&quot;</span><span class="p">,</span> <span class="n">of_upper_limits</span><span class="o">=</span><span class="kc">False</span><span class="p">))</span>
+    <span class="k">if</span> <span class="n">run_config</span><span class="p">[</span><span class="s2">&quot;include_upper_limits&quot;</span><span class="p">]:</span>
+        <span class="n">count</span> <span class="o">+=</span> <span class="nb">len</span><span class="p">(</span><span class="n">light_curve</span><span class="o">.</span><span class="n">get_values</span><span class="p">(</span><span class="s2">&quot;jd&quot;</span><span class="p">,</span> <span class="n">of_upper_limits</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>
+    <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;length&quot;</span><span class="p">:</span> <span class="n">count</span><span class="p">}</span>
+</pre></div>
+</div>
+<p>The <a class="reference external" href="https://www.python.org/dev/peps/pep-0484/">PEP 484 annotations</a> in the method signature are optional but highly encouraged. If these type hints are present, static type checkers like <a class="reference external" href="https://mypy.readthedocs.io/en/stable/">mypy</a> will be able to spot mistakes like returning the wrong type, calling a method that does not exist or with the wrong arguments, etc.</p>
+</div>
+</div>
+<div class="section" id="t3-units">
+<h2>T3 units<a class="headerlink" href="#t3-units" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="id3">
+<h3>Configuration<a class="headerlink" href="#id3" title="Permalink to this headline">¶</a></h3>
+<p>See <a class="reference internal" href="#legacy-t0-configuration"><span class="std std-ref">Configuration</span></a>.</p>
+<p>If your T3 authenticates with an external service like Slack or DropBox using a secret token, you should <em>not</em> check this token into your repository. Slack in particular scans all commits to public GitHub repositories and revokes any of its tokens it finds there. Instead, you can use the special <code class="xref py py-class docutils literal notranslate"><span class="pre">Secret</span></code> type hint to indicate that the value should be looked up in a separate secret store. For example, if you previously had:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">pydantic</span> <span class="kn">import</span> <span class="n">BaseModel</span><span class="p">,</span> <span class="n">BaseConfig</span>
+<span class="kn">from</span> <span class="nn">ampel.base.abstract.AbsT3Unit</span> <span class="kn">import</span> <span class="n">AbsT3Unit</span>
+
+<span class="k">class</span> <span class="nc">LooseLipsSinkShips</span><span class="p">(</span><span class="n">AbsT3Unit</span><span class="p">):</span>
+    <span class="k">class</span> <span class="nc">RunConfig</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+        <span class="n">slack_token</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span>  <span class="s2">&quot;xoxb-216058338329-819573451732-Rjxt1zb9WpjhVZ6H6Y3ZUuHo&quot;</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">logger</span><span class="p">,</span> <span class="n">base_config</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">run_config</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">global_info</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">run_config</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">RunConfig</span><span class="p">()</span> <span class="k">if</span> <span class="n">run_config</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">run_config</span>
+    <span class="k">def</span> <span class="nf">add</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">views</span><span class="p">):</span>
+        <span class="n">token</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">run_config</span><span class="p">[</span><span class="s2">&quot;slack_token&quot;</span><span class="p">]</span>
+        <span class="o">...</span>
+</pre></div>
+</div>
+<p>you should have this:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">Tuple</span>
+
+<span class="kn">from</span> <span class="nn">ampel.abstract.AbsT3Unit</span> <span class="kn">import</span> <span class="n">AbsT3Unit</span>
+<span class="kn">from</span> <span class="nn">ampel.model.Secret</span> <span class="kn">import</span> <span class="n">Secret</span>
+<span class="kn">from</span> <span class="nn">ampel.struct.JournalExtra</span> <span class="kn">import</span> <span class="n">JournalExtra</span>
+<span class="kn">from</span> <span class="nn">ampel.type</span> <span class="kn">import</span> <span class="n">StockId</span>
+<span class="kn">from</span> <span class="nn">ampel.view.TransientView</span> <span class="kn">import</span> <span class="n">TransientView</span>
+
+<span class="k">class</span> <span class="nc">Skrytnost</span><span class="p">(</span><span class="n">AbsPhotoT3Unit</span><span class="p">):</span>
+
+    <span class="n">slack_token</span><span class="p">:</span> <span class="n">Secret</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;key&quot;</span><span class="p">:</span> <span class="s2">&quot;my-slack-token&quot;</span><span class="p">}</span>  <span class="c1"># type: ignore[assignment]</span>
+
+    <span class="k">def</span> <span class="nf">add</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">transients</span><span class="p">:</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">TransientView</span><span class="p">,</span> <span class="o">...</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="n">StockId</span><span class="p">,</span> <span class="n">JournalExtra</span><span class="p">]:</span>
+        <span class="n">token</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">slack_token</span><span class="o">.</span><span class="n">get</span><span class="p">()</span>
+        <span class="o">...</span>
+</pre></div>
+</div>
+<p>Again, all type annotations in method signatures (and the associated imports) are optional, but encouraged. The default value of <code class="docutils literal notranslate"><span class="pre">slack_token</span></code> tells Ampel to look up the value under the name “my-slack-token” in its secret store. Your T3 instance will get an object whose <code class="xref py py-meth docutils literal notranslate"><span class="pre">get()</span></code> method returns the value. This mechanism allows you to specify which token you want by default as a symbolic name rather than a value. The trailing comment instructs <a class="reference external" href="https://mypy.readthedocs.io/en/stable/">mypy</a> to not complain about the assignment.</p>
+</div>
+<div class="section" id="add">
+<h3><code class="xref py py-meth docutils literal notranslate"><span class="pre">add()</span></code><a class="headerlink" href="#add" title="Permalink to this headline">¶</a></h3>
+<ul>
+<li><p>return a <code class="docutils literal notranslate"><span class="pre">Dict[StockId,JournalExtra]</span></code> instead of a list of <code class="docutils literal notranslate"><span class="pre">JournalUpdate</span></code>. For example, if you were previously doing something like this:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">jupdates</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="k">for</span> <span class="n">tran_view</span> <span class="ow">in</span> <span class="n">views</span><span class="p">:</span>
+    <span class="n">jcontent</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;t3unit&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="s1">&#39;reactDict&#39;</span><span class="p">:</span> <span class="n">do_something</span><span class="p">(</span><span class="n">tran_view</span><span class="p">),</span> <span class="s1">&#39;success&#39;</span><span class="p">:</span><span class="n">success</span><span class="p">}</span>
+    <span class="n">jupdates</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">JournalUpdate</span><span class="p">(</span><span class="n">tran_id</span><span class="o">=</span><span class="n">tran_view</span><span class="o">.</span><span class="n">tran_id</span><span class="p">)</span> <span class="n">ext</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">run_config</span><span class="o">.</span><span class="n">ext_journal</span><span class="p">,</span> <span class="n">content</span><span class="o">=</span><span class="n">jcontent</span><span class="p">)</span>
+<span class="k">return</span> <span class="n">jupdates</span>
+</pre></div>
+</div>
+<p>you can replace that with:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">jupdates</span> <span class="o">=</span> <span class="p">{}</span>
+<span class="k">for</span> <span class="n">tran_view</span> <span class="ow">in</span> <span class="n">views</span><span class="p">:</span>
+    <span class="n">jupdates</span><span class="p">[</span><span class="n">tran_view</span><span class="o">.</span><span class="n">id</span><span class="p">]</span> <span class="o">=</span> <span class="n">JournalExtra</span><span class="p">(</span><span class="n">extra</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;reactDict&#39;</span><span class="p">:</span> <span class="n">do_something</span><span class="p">(</span><span class="n">tran_view</span><span class="p">),</span> <span class="s1">&#39;success&#39;</span><span class="p">:</span><span class="n">success</span><span class="p">})</span>
+<span class="k">return</span> <span class="n">jupdates</span>
+</pre></div>
+</div>
+</li>
+<li><p>For current ZTF transients, the ZTF name is the first element of the stock name, e.g.:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">transient_view</span><span class="o">.</span><span class="n">stock</span><span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>To be extra-pendantic (and pass all <a class="reference external" href="https://mypy.readthedocs.io/en/stable/">mypy</a> checks), use:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">assert</span> <span class="n">view</span><span class="o">.</span><span class="n">stock</span> <span class="ow">and</span> <span class="n">view</span><span class="o">.</span><span class="n">stock</span><span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">]</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+<span class="n">name</span> <span class="o">=</span> <span class="nb">next</span><span class="p">(</span>
+    <span class="n">n</span> <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">view</span><span class="o">.</span><span class="n">stock</span><span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">]</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="ow">and</span> <span class="n">n</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;ZTF&quot;</span><span class="p">)</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</li>
+</ul>
+</div>
+</div>
+</div>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="index.html">
+              <img class="logo" src="_static/ampel.png" alt="Logo"/>
+            </a></p>
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="contribute.html"
+                        title="previous chapter">Contribute</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="structure.html"
+                        title="next chapter">Structure</a></p>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="structure.html" title="Structure"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="contribute.html" title="Contribute"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">Ampel 0.7.0a0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Porting contrib projects from v0.6</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2018, Ampel Project.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 3.2.1.
+    </div>
+  </body>
+</html>

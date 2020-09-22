@@ -1,24 +1,25 @@
 
-Ampel-base
-==========
+Ampel-interface
+===============
 
-Ampel-base provides base classes for implementing Ampel processing units, as
-well as the data classes that are provided as input to those units by the core.
+Ampel-interface provides base classes for implementing Ampel processing units,
+as well as the data classes that are provided as input to those units by the
+core.
 
 Ampel processing units
 ----------------------
 
-.. autoclass:: ampel.base.abstract.AbsAlertFilter.AbsAlertFilter
+.. autoclass:: ampel.abstract.AbsAlertFilter.AbsAlertFilter
   :members:
   
   .. automethod:: __init__
 
-.. autoclass:: ampel.base.abstract.AbsT2Unit.AbsT2Unit
+.. autoclass:: ampel.abstract.AbsT2Unit.AbsT2Unit
   :members:
   
   .. automethod:: __init__
 
-.. autoclass:: ampel.base.abstract.AbsT3Unit.AbsT3Unit
+.. autoclass:: ampel.abstract.AbsT3Unit.AbsT3Unit
   :members:
   
   .. automethod:: __init__
@@ -26,14 +27,17 @@ Ampel processing units
 Ampel data classes
 ------------------
 
-.. autoclass:: ampel.base.AmpelAlert.AmpelAlert
+.. autoclass:: ampel.alert.AmpelAlert.AmpelAlert
   :members:
 
-.. autoclass:: ampel.base.LightCurve.LightCurve
+.. autoclass:: ampel.view.LightCurve.LightCurve
   :members:
 
-.. autoclass:: ampel.base.ScienceRecord.ScienceRecord
+.. autoclass:: ampel.content.T2Record.T2Record
   :members:
 
-.. autoclass:: ampel.base.TransientView.TransientView
+.. autoclass:: ampel.view.SnapView.SnapView
+  :members:
+
+.. autoclass:: ampel.view.TransientView.TransientView
   :members:
