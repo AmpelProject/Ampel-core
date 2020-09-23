@@ -10,17 +10,32 @@ Processing units
 ----------------
 
 .. autoclass:: ampel.abstract.AbsAlertFilter.AbsAlertFilter
+  :show-inheritance:
   :members:
 
 .. autoclass:: ampel.abstract.AbsPointT2Unit.AbsPointT2Unit
+  :show-inheritance:
   :members:
 
 .. autoclass:: ampel.abstract.AbsStockT2Unit.AbsStockT2Unit
+  :show-inheritance:
   :members:
 
 .. autoclass:: ampel.abstract.AbsT3Unit.AbsT3Unit
+  :show-inheritance:
   :members:
 
+Base classes for processing units
+---------------------------------
+
+.. autoclass:: ampel.base.DataUnit.DataUnit
+  :members:
+
+Context and configuration
+-------------------------
+
+.. autoclass:: ampel.config.AmpelConfig.AmpelConfig
+  :members:
 
 Data classes
 ------------
@@ -72,6 +87,10 @@ Data classes
 .. autoclass:: ampel.view.SnapView.SnapView
   :members:
 
+.. autoclass:: ampel.view.ReadOnlyDict.ReadOnlyDict
+  :members:
+  :private-members:
+
 Data models
 -----------
 
@@ -79,4 +98,7 @@ These models are used to parse and validate the configuration of the Ampel syste
 
 .. autoclass:: ampel.model.Secret.Secret
   :show-inheritance:
+  :members:
+
+.. autoclass:: ampel.model.UnitModel.UnitModel
   :members:

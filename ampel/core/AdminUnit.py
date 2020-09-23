@@ -19,5 +19,6 @@ class AdminUnit(AmpelABC, AmpelBaseModel, abstract=True):
 	"""
 
 	def __init__(self, context: AmpelContext, **kwargs):
-		self.context = context
+		#: Configuration, database client, etc.
+		self.context: AmpelContext = context
 		AmpelBaseModel.__init__(self, **kwargs)

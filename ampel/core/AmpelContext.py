@@ -26,9 +26,13 @@ class AmpelContext:
 	of handling multiple AmpelConfig/AmpelDB instances
 	"""
 
+	#: System configuration
 	config: AmpelConfig
+	#: Database client
 	db: 'AmpelDB'
+	#: Instantiates a unit from a :class:`~ampel.model.UnitModel.UnitModel`.
 	loader: 'UnitLoader' # forward reference to avoid cyclic import issues
+	#: Context is valid for this processing tier only (if None, valid for all).
 	tier: Optional[Literal[0, 1, 2, 3]] = None
 	resource: Optional[Dict[str, Any]] = None
 
@@ -72,14 +76,19 @@ class AmpelContext:
 	) -> 'AmpelContext':
 		"""
 		Instantiates a new AmpelContext instance.
-		:param config: either a local path to an ampel config file (yaml or json) \
-		or directly an AmpelConfig instance.
-		:param pwd_file_path: if provided, the encrypted conf entries possibly contained \
-		in the ampel config instance will be decrypted using the provided password file. \
-		The password file must define one password per line.
-		:param freeze_config: whether to convert the elements contained of ampel config \
-		into immutable structures (dict -> ReadOnlyDict, list -> tuple). Parameter does \
-		only apply if the config is loaded by this method, i.e if parameter 'config' is a str.
+
+		:param config:
+			either a local path to an ampel config file (yaml or json) 
+			or directly an AmpelConfig instance.
+		:param pwd_file_path:
+			if provided, the encrypted conf entries possibly contained in the
+			ampel config instance will be decrypted using the provided password file.
+			The password file must define one password per line.
+		:param freeze_config:
+			whether to convert the elements contained of ampel config
+			into immutable structures (:class:`dict` ->
+			:class:`~ampel.view.ReadOnlyDict.ReadOnlyDict`, :class:`list` -> :class:`tuple`).
+			Parameter does only apply if the config is loaded by this method, i.e if parameter 'config' is a str.
 		"""
 
 		return cls.new(
@@ -99,7 +108,8 @@ class AmpelContext:
 	) -> 'AmpelContext':
 		"""
 		Instantiates a new AmpelContext instance.
-		The required underlying ampel configuration (AmpelConfig) is built from scratch,
+		
+		The required underlying ampel configuration (:class:`~ampel.config.AmpelConfig.AmpelConfig`) is built from scratch,
 		meaning all available configurations defined in the various ampel repositories available locally
 		are collected, merged merged together and morphed the info into the final ampel config.
 		This is a convenience method, do not use for production
@@ -125,14 +135,14 @@ class AmpelContext:
 
 	def get_config(self) -> AmpelConfig:
 		"""
-		Note: in the future, AmpelContext might hold references to multiple different config
+		.. note:: in the future, AmpelContext might hold references to multiple different config
 		"""
 		return self.config
 
 
 	def get_database(self) -> 'AmpelDB':
 		"""
-		Note: in the future, this class might hold references to multiple different databases
+		.. note:: in the future, this class might hold references to multiple different databases
 		"""
 		return self.db
 
