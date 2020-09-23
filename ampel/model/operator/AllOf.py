@@ -13,4 +13,5 @@ from ampel.type import T
 
 
 class AllOf(GenericModel, Generic[T]):
+	#: Select items by logical AND
 	all_of: List[T]

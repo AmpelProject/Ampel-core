@@ -13,4 +13,7 @@ from ampel.type import T
 
 
 class OneOf(GenericModel, Generic[T]):
+	#: Select items by logical XOR
+	#:
+	#: .. warning:: This can't be modelled in Mongo, as it has no logical XOR operation
 	one_of: List[T]
