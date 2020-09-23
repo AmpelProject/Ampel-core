@@ -1,6 +1,8 @@
 Contribute
 ----------
 
+.. warning:: This section is obsolete. See :ref:`legacy-porting-guide`.
+
 Users can contribute a plugin that provides any combination of the following components:
 
 1. A *channel*, or set of configurations for existing T0 (filter), T2 (compute), and T3 (reporting) modules.

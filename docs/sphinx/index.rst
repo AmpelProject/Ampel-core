@@ -3,8 +3,6 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-.. include:: ../README.rst
-
 .. toctree::
    :maxdepth: 2
    :caption: Contents:
@@ -12,11 +10,10 @@
    motivations
    roadmap
    science
-   contribute
-   legacy
    structure
    projects/index
-   dev
+   legacy
+   contribute
    testing
    installing
    people

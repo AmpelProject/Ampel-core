@@ -1,6 +1,8 @@
 Installing
 ----------
 
+.. warning:: This section is obsolete. See :ref:`legacy-porting-guide`.
+
 Ampel is written in Python 3.6, and split into multiple packages (see :ref:`projects` for a full list). Of these, you should only need ampel-base and an instrument-specific package like ampel-ztf.
 
 There are a number of ways to install Ampel for local development and testing. We recommend :ref:`conda_dedicated`.
