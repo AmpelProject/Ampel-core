@@ -21,25 +21,28 @@ from ampel.t3.run.T3UnitRunner import T3UnitRunner
 class T3DynamicUnitRunner(AbsT3UnitRunner):
 	"""
 	Unit runner that for each channel found in the elements loaded by the stages:
-	- spawns a dedicated T3UnitRunner instance configured to filter and project elements wrt this channel
+	
+	- spawns a dedicated :class:`~ampel.t3.run.T3UnitRunner.T3UnitRunner` instance configured to filter and project elements wrt this channel
 	- execute the associated T3 units
 
 	Example:
-	A general T3 process performs a broad channel-less query.
-	Many ampel 'elements' are returned, each possibly associated with different channels.
+	A general T3 process performs a broad, channel-less query.
+	Many stocks are returned, each possibly associated with different channels.
 	This unit builds a set of all channels referenced by the results.
 	Then, for each channel, the information about the referenced elements are posted into
-	a dedicated slack channel whose name corresponds to the ampel channel:
+	a dedicated Slack channel whose name corresponds to the Ampel channel. Suppose,
+	for example, that the results contain objects:
 
-	Say the results contains 3 objects:
-	<object 1 with channel {A}>,
-	<object 2 with channel {A, B}>
-	<object 3 with channel {B, C, D}>
+	- ``<object 1 with channel {A}>``
+	- ``<object 2 with channel {A, B}>``
+	- ``<object 3 with channel {B, C, D}>``
 
-	Object 1 and 2 will be posted to slack channel #A
-	Object 2 and 3  will be posted to slack channel #B
-	Object 3 will be posted to slack channel #C
-	Object 3 will be posted to slack channel #D
+	This will cause:
+	
+	- Object 1 and 2 to be posted to slack channel #A
+	- Object 2 and 3  to be posted to slack channel #B
+	- Object 3 to be posted to slack channel #C
+	- Object 3 to be posted to slack channel #D
 	"""
 
 	logger: AmpelLogger

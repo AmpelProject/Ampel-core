@@ -23,20 +23,20 @@ from ampel.db.query.utils import match_array
 class T3FilteringStockSelector(T3StockSelector):
 	"""
 	Selector subclass that filters stocks based on their latest T2 results.
-	Example:
-	.. sourcecode:: python\n
-	{
-		...
-		"t2_filter": [
-			{
-				"unit": "T2SNCosmo",
-				"match": {
-					"fit_acceptable": True,
-					"fit_results.c": {"$gt": 1},
-				},
-			}
-		]
-	}
+	Example::
+		
+		{
+			...
+			"t2_filter": [
+				{
+					"unit": "T2SNCosmo",
+					"match": {
+						"fit_acceptable": True,
+						"fit_results.c": {"$gt": 1},
+					},
+				}
+			]
+		}
 	"""
 
 	t2_filter: Union[T2FilterModel, AllOf[T2FilterModel], AnyOf[T2FilterModel]]
@@ -82,6 +82,7 @@ class T3FilteringStockSelector(T3StockSelector):
 		Create a pipeline for the T2 collection that yields docs whose _id is
 		the stock id and whose remaining fields are the latest result for each
 		T2. For example, given the following T2 docs::
+			
 			{
 				'_id': 1,
 				...
@@ -104,7 +105,9 @@ class T3FilteringStockSelector(T3StockSelector):
 					'results': {'thing2': 7}
 				}]
 			}
-		the pipeline yields a single doc of the form:
+		
+		the pipeline yields a single doc of the form::
+			
 			{
 				'_id': 42,
 				'Unit1': {'thing1': 3},

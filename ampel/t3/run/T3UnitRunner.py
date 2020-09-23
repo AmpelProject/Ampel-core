@@ -43,7 +43,7 @@ class RunBlock:
 class T3UnitRunner(AbsT3UnitRunner):
 	"""
 	Default implementation handling the instructions defined
-	by the field 'run' of T3Directive
+	by :class:`T3Directive.run <ampel.model.t3.T3Directive.T3Directive>`.
 	"""
 
 	class RunDirective(StrictModel):

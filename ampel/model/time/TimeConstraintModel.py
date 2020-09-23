@@ -18,36 +18,36 @@ from ampel.model.StrictModel import StrictModel
 
 class TimeConstraintModel(StrictModel):
 	"""
-	example1:
+	Examples::
+	  
+	  TimeConstraintModel(
+	      **{
+	          "after": {
+	              "match_type": "time_delta",
+	              "days": -1
+	          },
+	          "before": {
+	              "match_type": "time_string",
+	              "dateTimeStr": "21/11/06 16:30",
+	              "dateTimeFormat": "%d/%m/%y %H:%M"
+	          }
+	      }
+	  )
 
-	TimeConstraintModel(
-		**{
-			"after": {
-				"match_type": "timeDelta",
-				"days": -1
-			},
-			"before": {
-				"match_type": "timeString",
-				"dateTimeStr": "21/11/06 16:30",
-				"dateTimeFormat": "%d/%m/%y %H:%M"
-			}
-		}
-	)
-
-	example2:
-
-	TimeConstraintModel(
-		**{
-			"after": {
-				"match_type": "timeLastRun",
-				"name": "val_test"
-			},
-			"before": {
-				"match_type": "unixTime",
-				"value": 1531306299
-			}
-		}
-	)
+	::
+	  
+	  TimeConstraintModel(
+	      **{
+	          "after": {
+	              "match_type": "time_last_run",
+	              "name": "val_test"
+	          },
+	          "before": {
+	              "match_type": "unix_time",
+	              "value": 1531306299
+	          }
+	      }
+	  )
 	"""
 
 	before: Optional[

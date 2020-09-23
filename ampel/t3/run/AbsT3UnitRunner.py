@@ -17,10 +17,6 @@ from ampel.core.AdminUnit import AdminUnit
 
 
 class AbsT3UnitRunner(AdminUnit, abstract=True):
-	"""
-	:param update_journal: Record the invocation of this event
-	in the journal of each selected transient
-	"""
 
 	logger: AmpelLogger
 	run_id: int
@@ -28,6 +24,7 @@ class AbsT3UnitRunner(AdminUnit, abstract=True):
 	channel: Optional[ChannelId] = None
 
 	raise_exc: bool = False
+	#: Record the invocation of this evetn in the journal of each selected transient
 	update_journal: bool = True
 	extra_journal_tag: Optional[Union[int, str]] = None
 	run_context: Optional[Dict[str, Any]] = None

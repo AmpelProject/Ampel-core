@@ -32,6 +32,7 @@ class T3Processor(AbsProcessorUnit):
 	:param update_events: Record this event in the events collection
 
 	Note: if you want to run an "anonymous" event, please:
+	
 	- use a log_profile without db logging (profiles are defined under 'logging' in the ampel config)
 	- set update_journal = False (no update to the transient doc)
 	- set update_events = False (no update to the events collection)

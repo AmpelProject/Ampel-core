@@ -25,20 +25,24 @@ from ampel.config.LogicSchemaUtils import LogicSchemaUtils
 class T3StockSelector(AbsT3Selector):
 	"""
 	Default stock/transient selector used by T3Processor
-	Example:
-	.. sourcecode:: python\n
-	{
-		"created": {"after": {"use": "$timeDelta", "arguments": {"days": -40}}},
-		"modified": {"after": {"use": "$timeDelta", "arguments": {"days": -1}}},
-		"channel": "HU_GP_CLEAN",
-		"tags": {"with": "ZTF", "without": "HAS_ERROR"}
-	}
+	Example::
+	  
+	  {
+	     "created": {"after": {"use": "$timeDelta", "arguments": {"days": -40}}},
+	     "modified": {"after": {"use": "$timeDelta", "arguments": {"days": -1}}},
+	     "channel": "HU_GP_CLEAN",
+	     "tags": {"with": "ZTF", "without": "HAS_ERROR"}
+	  }
 	"""
 
 	logger: AmpelLogger
+	#: Select by creation time
 	created: Optional[TimeConstraintModel] = None
+	#: Select by modification time
 	modified: Optional[TimeConstraintModel] = None
+	#: Select by channel
 	channel: Optional[Union[ChannelId, AnyOf[ChannelId], AllOf[ChannelId], OneOf[ChannelId]]] = None
+	#: Select by tag
 	tag: Optional[Dict[Literal['with', 'without'], Union[Tag, Dict, AllOf[Tag], AnyOf[Tag], OneOf[Tag]]]] = None
 
 

@@ -20,13 +20,15 @@ from ampel.t3.run.project.AbsT3Projector import AbsT3Projector
 class T3BaseProjector(AbsT3Projector):
 	"""
 	Creates SnapView(s) based on AmpelBuffer(s)
+	
 	AmpelBuffer attributes are selected according to 'filters' content:
+	
 	- missing fields will not be included
-		(for example, if 'names' is absent in filters dict,
-		the field 'names' of all snapviews will be None)
+	(for example, if 'names' is absent in filters dict,
+	the field 'names' of all snapviews will be None)
 	- a "pass-through" behavior occurs when a dict value are None.
-		(for example, if 'names' is set to None, snapviews instances
-		will contain the all the names of the corresponding ampel_buffer)
+	(for example, if 'names' is set to None, snapviews instances
+	will contain the all the names of the corresponding AmpelBuffer)
 	"""
 
 	class ClassModel(StrictModel):
