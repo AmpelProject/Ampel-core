@@ -114,15 +114,12 @@ Models
 
 .. autoclass:: ampel.model.operator.AnyOf.AnyOf
   :members:
-  :undoc-members:
 
 .. autoclass:: ampel.model.operator.AllOf.AllOf
   :members:
-  :undoc-members:
 
 .. autoclass:: ampel.model.operator.OneOf.OneOf
   :members:
-  :undoc-members:
 
 .. autoclass:: ampel.model.time.TimeConstraintModel.TimeConstraintModel
   :members:

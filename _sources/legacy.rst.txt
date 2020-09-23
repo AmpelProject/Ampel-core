@@ -1,4 +1,6 @@
 
+.. _legacy-porting-guide:
+
 Porting contrib projects from v0.6
 ----------------------------------
 
