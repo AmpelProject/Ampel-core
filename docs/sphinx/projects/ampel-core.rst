@@ -4,9 +4,26 @@ Ampel-core
 
 The actual implementation of the Ampel framework
 
-.. autoclass:: ampel.pipeline.t3.T3JobConfig.T3JobConfig
-  
-  .. autoattribute:: ampel.pipeline.t3.T3JobConfig.T3JobConfig.job_schema
+Processing units
+----------------
 
-.. autoclass:: ampel.pipeline.config.resources.ResourceURI
+.. autoclass:: ampel.t3.context.AbsT3RunContextAppender.AbsT3RunContextAppender
   :members:
+
+.. autoclass:: ampel.t3.complement.AbsT3DataAppender.AbsT3DataAppender
+  :members:
+  :show-inheritance:
+
+Data classes
+------------
+
+.. autoclass:: ampel.core.AmpelBuffer.AmpelBuffer
+  :members:
+  :undoc-members:
+
+Enums
+-----
+
+.. autoclass:: ampel.t2.T2RunState.T2RunState
+  :members:
+  :undoc-members:

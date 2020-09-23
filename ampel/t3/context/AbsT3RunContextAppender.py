@@ -15,8 +15,10 @@ from ampel.core.AdminUnit import AdminUnit
 
 class AbsT3RunContextAppender(AdminUnit, abstract=True):
 	"""
-	Context definition: "the circumstances that form the setting for an event"
-	Subclass of AdminUnit because subclasses might need access to
+	Add contextual information to a T3 process, such as the time of the previous
+	run, or the number of alerts processed since that run.
+	
+	Inherits from AdminUnit because subclasses might need access to
 	the AmpelConfig (foremost to the contained resource definitions)
 	"""
 

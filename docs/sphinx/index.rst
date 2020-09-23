@@ -13,6 +13,7 @@
    roadmap
    science
    contribute
+   legacy
    structure
    projects/index
    dev

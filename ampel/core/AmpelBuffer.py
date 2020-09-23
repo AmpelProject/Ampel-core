@@ -20,7 +20,11 @@ from ampel.content.LogRecord import LogRecord
 BufferKey = Literal['id', 'stock', 't0', 't1', 't2', 'log', 'extra']
 
 class AmpelBuffer(TypedDict, total=False):
-
+	"""
+	Content bundle used to build :class:`~ampel.view.SnapView.SnapView`.
+	
+	This is a dict containing 1 or more of the following items:
+	"""
 	# Could stock be of type List[StockRecord] to enable hybrid/dual transients ?
 	id: StockId
 	stock: Optional[StockRecord]

@@ -11,6 +11,7 @@ from enum import IntEnum
 
 # flake8: noqa: E221
 class T2RunState(IntEnum):
+	"""States of a :class:`~ampel.content.T2Record.T2Record`"""
 
 	COMPLETED            = 0
 	TO_RUN               = -1

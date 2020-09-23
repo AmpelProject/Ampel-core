@@ -1,8 +1,8 @@
 
 .. _projects:
 
-Ampel projects
-**************
+API documentation by project
+****************************
 
 .. toctree::
    :maxdepth: 2
@@ -10,3 +10,5 @@ Ampel projects
 
    ampel-base
    ampel-core
+   ampel-alerts
+   ampel-photometry

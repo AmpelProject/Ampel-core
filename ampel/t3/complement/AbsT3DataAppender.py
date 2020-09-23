@@ -24,4 +24,5 @@ class AbsT3DataAppender(AdminUnit, abstract=True):
 
 	@abstractmethod
 	def complement(self, it: Iterable[AmpelBuffer]) -> None:
+		"""Add information to each :class:`~ampel.core.AmpelBuffer.AmpelBuffer` """
 		...
