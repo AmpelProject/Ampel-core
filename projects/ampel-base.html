@@ -16,7 +16,7 @@
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="Ampel-core" href="ampel-core.html" />
-    <link rel="prev" title="Ampel projects" href="index.html" /> 
+    <link rel="prev" title="API documentation by project" href="index.html" /> 
   </head><body>
     <div class="related" role="navigation" aria-label="related navigation">
       <h3>Navigation</h3>
@@ -28,10 +28,10 @@
           <a href="ampel-core.html" title="Ampel-core"
              accesskey="N">next</a> |</li>
         <li class="right" >
-          <a href="index.html" title="Ampel projects"
+          <a href="index.html" title="API documentation by project"
              accesskey="P">previous</a> |</li>
         <li class="nav-item nav-item-0"><a href="../index.html">Ampel 0.7.0a0 documentation</a> &#187;</li>
-          <li class="nav-item nav-item-1"><a href="index.html" accesskey="U">Ampel projects</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="index.html" accesskey="U">API documentation by project</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">Ampel-interface</a></li> 
       </ul>
     </div>  
@@ -46,28 +46,76 @@
 <p>Ampel-interface provides base classes for implementing Ampel processing units,
 as well as the data classes that are provided as input to those units by the
 core.</p>
-<div class="section" id="ampel-processing-units">
-<h2>Ampel processing units<a class="headerlink" href="#ampel-processing-units" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="processing-units">
+<h2>Processing units<a class="headerlink" href="#processing-units" title="Permalink to this headline">¶</a></h2>
 <dl class="py class">
 <dt id="ampel.abstract.AbsAlertFilter.AbsAlertFilter">
 <em class="property">class </em><code class="sig-prename descclassname">ampel.abstract.AbsAlertFilter.</code><code class="sig-name descname">AbsAlertFilter</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">resource</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#ampel.abstract.AbsAlertFilter.AbsAlertFilter" title="Permalink to this definition">¶</a></dt>
-<dd><p>Base class for T0 alert filters</p>
-<dl class="py method">
-<dt id="ampel.abstract.AbsAlertFilter.AbsAlertFilter.__init__">
-<code class="sig-name descname">__init__</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">resource</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#ampel.abstract.AbsAlertFilter.AbsAlertFilter.__init__" title="Permalink to this definition">¶</a></dt>
-<dd><p>Initialize self.  See help(type(self)) for accurate signature.</p>
-</dd></dl>
-
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Generic" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">typing.Generic</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">ampel.base.AmpelABC.AmpelABC</span></code>, <a class="reference internal" href="#ampel.base.DataUnit.DataUnit" title="ampel.base.DataUnit.DataUnit"><code class="xref py py-class docutils literal notranslate"><span class="pre">ampel.base.DataUnit.DataUnit</span></code></a></p>
+<p>Base class for T0 alert filters</p>
 <dl class="py method">
 <dt id="ampel.abstract.AbsAlertFilter.AbsAlertFilter.apply">
 <code class="sig-name descname">apply</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">alert</span></em><span class="sig-paren">)</span><a class="headerlink" href="#ampel.abstract.AbsAlertFilter.AbsAlertFilter.apply" title="Permalink to this definition">¶</a></dt>
-<dd><p>Filters an alert.
-:rtype: <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Union" title="(in Python v3.8)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a>, <code class="docutils literal notranslate"><span class="pre">None</span></code>]
-:returns:
-- None or False: reject the alert
-- True: accept the alert and create all defined t2 documents
-- positive integer: accept the alert and create t2 documents associated with this group id
-- negative integer: filter rejection code (must not exceed 255)</p>
+<dd><p>Filters an alert.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Union" title="(in Python v3.8)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a>, <code class="docutils literal notranslate"><span class="pre">None</span></code>]</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p>None or False: reject the alert</p></li>
+<li><p>True: accept the alert and create all defined t2 documents</p></li>
+<li><p>positive integer: accept the alert and create t2 documents associated with this group id</p></li>
+<li><p>negative integer: filter rejection code (must not exceed 255)</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="ampel.abstract.AbsPointT2Unit.AbsPointT2Unit">
+<em class="property">class </em><code class="sig-prename descclassname">ampel.abstract.AbsPointT2Unit.</code><code class="sig-name descname">AbsPointT2Unit</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">resource</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#ampel.abstract.AbsPointT2Unit.AbsPointT2Unit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">ampel.base.AmpelABC.AmpelABC</span></code>, <a class="reference internal" href="#ampel.base.DataUnit.DataUnit" title="ampel.base.DataUnit.DataUnit"><code class="xref py py-class docutils literal notranslate"><span class="pre">ampel.base.DataUnit.DataUnit</span></code></a></p>
+<p>Top level abstract class for t2 units bound to datapoint(s)</p>
+<p>The parameter ingest (used by the ingester) supports the key/value ‘eligible’.
+If customized, the alert ingester will not create a T2 document for each datapoint
+of a given transient, but only for the one fulfilling the selection criteria below:</p>
+<ul class="simple">
+<li><p>Either the “first” or the current “last” one</p></li>
+<li><p>The one selected by the function “slice” whose 3 integer arguments are to be provided</p></li>
+</ul>
+<dl class="py method">
+<dt id="ampel.abstract.AbsPointT2Unit.AbsPointT2Unit.run">
+<code class="sig-name descname">run</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">datapoint</span></em><span class="sig-paren">)</span><a class="headerlink" href="#ampel.abstract.AbsPointT2Unit.AbsPointT2Unit.run" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returned object should contain computed science results to be saved into the DB.
+Notes: dict must have only string keys and values must be bson encodable</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Union" title="(in Python v3.8)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.8)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code></a>], <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Tuple" title="(in Python v3.8)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Tuple</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.8)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code></a>], <a class="reference internal" href="#ampel.struct.JournalExtra.JournalExtra" title="ampel.struct.JournalExtra.JournalExtra"><code class="xref py py-class docutils literal notranslate"><span class="pre">JournalExtra</span></code></a>]]</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="ampel.abstract.AbsStockT2Unit.AbsStockT2Unit">
+<em class="property">class </em><code class="sig-prename descclassname">ampel.abstract.AbsStockT2Unit.</code><code class="sig-name descname">AbsStockT2Unit</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">resource</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#ampel.abstract.AbsStockT2Unit.AbsStockT2Unit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">ampel.base.AmpelABC.AmpelABC</span></code>, <a class="reference internal" href="#ampel.base.DataUnit.DataUnit" title="ampel.base.DataUnit.DataUnit"><code class="xref py py-class docutils literal notranslate"><span class="pre">ampel.base.DataUnit.DataUnit</span></code></a></p>
+<p>Top level abstract class for t2 units bound to transient doc</p>
+<dl class="py method">
+<dt id="ampel.abstract.AbsStockT2Unit.AbsStockT2Unit.run">
+<code class="sig-name descname">run</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">stock_record</span></em><span class="sig-paren">)</span><a class="headerlink" href="#ampel.abstract.AbsStockT2Unit.AbsStockT2Unit.run" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returned object should contain computed science results to be saved into the DB.
+Note: dict must have only string keys</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Union" title="(in Python v3.8)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.8)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code></a>], <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Tuple" title="(in Python v3.8)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Tuple</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.8)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code></a>], <a class="reference internal" href="#ampel.struct.JournalExtra.JournalExtra" title="ampel.struct.JournalExtra.JournalExtra"><code class="xref py py-class docutils literal notranslate"><span class="pre">JournalExtra</span></code></a>]]</p>
+</dd>
+</dl>
 </dd></dl>
 
 </dd></dl>
@@ -75,33 +123,37 @@ core.</p>
 <dl class="py class">
 <dt id="ampel.abstract.AbsT3Unit.AbsT3Unit">
 <em class="property">class </em><code class="sig-prename descclassname">ampel.abstract.AbsT3Unit.</code><code class="sig-name descname">AbsT3Unit</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">resource</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#ampel.abstract.AbsT3Unit.AbsT3Unit" title="Permalink to this definition">¶</a></dt>
-<dd><p>General generic abstract class for T3 units.
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Generic" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">typing.Generic</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">ampel.base.AmpelABC.AmpelABC</span></code>, <a class="reference internal" href="#ampel.base.DataUnit.DataUnit" title="ampel.base.DataUnit.DataUnit"><code class="xref py py-class docutils literal notranslate"><span class="pre">ampel.base.DataUnit.DataUnit</span></code></a></p>
+<p>General generic abstract class for T3 units.
 Inherit this class if your unit is compatible with multiple type of views,
 that is if you access only SnapView fields or perform dedicated isinstance checks.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>context</strong> – a dictionary containing context information, which can be</p>
+<dd class="field-odd"><p><strong>context</strong> – <p>a dictionary containing context information, which can be
+requested in the process configuration. Examples of context information are:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>Date and time the current process was last run</p></li>
+<li><p>Number of alerts processed since then</p></li>
+</ul>
+</div></blockquote>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Custom context information can be added to this dict by
+implementing a subclass of
+<a class="reference internal" href="ampel-core.html#ampel.t3.context.AbsT3RunContextAppender.AbsT3RunContextAppender" title="ampel.t3.context.AbsT3RunContextAppender.AbsT3RunContextAppender"><code class="xref py py-class docutils literal notranslate"><span class="pre">AbsT3RunContextAppender</span></code></a>
+and adding the custom unit to the process configuration</p>
+</div>
+</p>
 </dd>
 </dl>
-<p>requested in the process configuration. Examples of context information are:
-- Date and time the current process was last run
-- Number of alerts processed since then</p>
-<p>Note: custom context information can be added to this dict by
-implementing a class inheriting AbsT3ContextAppender
-and adding the custom unit to the process configuration</p>
-<dl class="py method">
-<dt id="ampel.abstract.AbsT3Unit.AbsT3Unit.__init__">
-<code class="sig-name descname">__init__</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">resource</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#ampel.abstract.AbsT3Unit.AbsT3Unit.__init__" title="Permalink to this definition">¶</a></dt>
-<dd><p>Initialize self.  See help(type(self)) for accurate signature.</p>
-</dd></dl>
-
 <dl class="py method">
 <dt id="ampel.abstract.AbsT3Unit.AbsT3Unit.add">
 <code class="sig-name descname">add</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">views</span></em><span class="sig-paren">)</span><a class="headerlink" href="#ampel.abstract.AbsT3Unit.AbsT3Unit.add" title="Permalink to this definition">¶</a></dt>
 <dd><p>Implementing T3 units get SnapView (or subclasses of SnapView) instances via this method</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Union" title="(in Python v3.8)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code></a>[<code class="xref py py-class docutils literal notranslate"><span class="pre">JournalExtra</span></code>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Union" title="(in Python v3.8)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#bytes" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bytes</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>], <code class="xref py py-class docutils literal notranslate"><span class="pre">JournalExtra</span></code>], <code class="docutils literal notranslate"><span class="pre">None</span></code>]</p>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Union" title="(in Python v3.8)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code></a>[<a class="reference internal" href="#ampel.struct.JournalExtra.JournalExtra" title="ampel.struct.JournalExtra.JournalExtra"><code class="xref py py-class docutils literal notranslate"><span class="pre">JournalExtra</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Union" title="(in Python v3.8)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#bytes" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bytes</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>], <a class="reference internal" href="#ampel.struct.JournalExtra.JournalExtra" title="ampel.struct.JournalExtra.JournalExtra"><code class="xref py py-class docutils literal notranslate"><span class="pre">JournalExtra</span></code></a>], <code class="docutils literal notranslate"><span class="pre">None</span></code>]</p>
 </dd>
 </dl>
 </dd></dl>
@@ -120,150 +172,270 @@ and adding the custom unit to the process configuration</p>
 </dd></dl>
 
 </div>
-<div class="section" id="ampel-data-classes">
-<h2>Ampel data classes<a class="headerlink" href="#ampel-data-classes" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="base-classes-for-processing-units">
+<h2>Base classes for processing units<a class="headerlink" href="#base-classes-for-processing-units" title="Permalink to this headline">¶</a></h2>
 <dl class="py class">
-<dt id="ampel.alert.AmpelAlert.AmpelAlert">
-<em class="property">class </em><code class="sig-prename descclassname">ampel.alert.AmpelAlert.</code><code class="sig-name descname">AmpelAlert</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">id</span></em>, <em class="sig-param"><span class="n">stock_id</span></em>, <em class="sig-param"><span class="n">dps</span></em><span class="sig-paren">)</span><a class="headerlink" href="#ampel.alert.AmpelAlert.AmpelAlert" title="Permalink to this definition">¶</a></dt>
-<dd><dl class="py method">
-<dt id="ampel.alert.AmpelAlert.AmpelAlert.get_values">
-<code class="sig-name descname">get_values</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">key</span></em>, <em class="sig-param"><span class="n">filters</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">data</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#ampel.alert.AmpelAlert.AmpelAlert.get_values" title="Permalink to this definition">¶</a></dt>
-<dd><p>ex: get_values(“magpsf”)</p>
-<dl class="field-list simple">
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.List" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.8)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code></a>]</p>
-</dd>
-</dl>
+<dt id="ampel.base.DataUnit.DataUnit">
+<em class="property">class </em><code class="sig-prename descclassname">ampel.base.DataUnit.</code><code class="sig-name descname">DataUnit</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">resource</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#ampel.base.DataUnit.DataUnit" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="py attribute">
+<dt id="ampel.base.DataUnit.DataUnit.require">
+<code class="sig-name descname">require</code><em class="property">: ClassVar<span class="p">[</span>Optional<span class="p">[</span>Tuple<span class="p">[</span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)">str</a><span class="p">, </span><span class="p">…</span><span class="p">]</span><span class="p">]</span><span class="p">]</span></em><em class="property"> = None</em><a class="headerlink" href="#ampel.base.DataUnit.DataUnit.require" title="Permalink to this definition">¶</a></dt>
+<dd><p>Named resources required by this unit.
+These are passed on to subclasses.</p>
 </dd></dl>
 
-<dl class="py method">
-<dt id="ampel.alert.AmpelAlert.AmpelAlert.get_tuples">
-<code class="sig-name descname">get_tuples</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">key1</span></em>, <em class="sig-param"><span class="n">key2</span></em>, <em class="sig-param"><span class="n">filters</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">data</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#ampel.alert.AmpelAlert.AmpelAlert.get_tuples" title="Permalink to this definition">¶</a></dt>
-<dd><p>ex: get_tuples(“jd”, “magpsf”)</p>
-<dl class="field-list simple">
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.List" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Tuple" title="(in Python v3.8)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Tuple</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.8)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.8)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code></a>]]</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt id="ampel.alert.AmpelAlert.AmpelAlert.get_ntuples">
-<code class="sig-name descname">get_ntuples</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">params</span></em>, <em class="sig-param"><span class="n">filters</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">data</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#ampel.alert.AmpelAlert.AmpelAlert.get_ntuples" title="Permalink to this definition">¶</a></dt>
-<dd><p>ex: get_ntuples([“fid”, “jd”, “magpsf”])</p>
-<dl class="field-list simple">
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.List" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Tuple" title="(in Python v3.8)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Tuple</span></code></a>]</p>
-</dd>
-</dl>
+<dl class="py attribute">
+<dt id="ampel.base.DataUnit.DataUnit.resource">
+<code class="sig-name descname">resource</code><em class="property">: Optional<span class="p">[</span>Dict<span class="p">[</span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)">str</a><span class="p">, </span>Any<span class="p">]</span><span class="p">]</span></em><a class="headerlink" href="#ampel.base.DataUnit.DataUnit.resource" title="Permalink to this definition">¶</a></dt>
+<dd><p>Named resources configured for this unit. The keys are the elements of <a class="reference internal" href="#ampel.base.DataUnit.DataUnit.require" title="ampel.base.DataUnit.DataUnit.require"><code class="xref py py-attr docutils literal notranslate"><span class="pre">require</span></code></a>.</p>
 </dd></dl>
 
 </dd></dl>
 
+</div>
+<div class="section" id="context-and-configuration">
+<h2>Context and configuration<a class="headerlink" href="#context-and-configuration" title="Permalink to this headline">¶</a></h2>
 <dl class="py class">
-<dt id="ampel.view.LightCurve.LightCurve">
-<em class="property">class </em><code class="sig-prename descclassname">ampel.view.LightCurve.</code><code class="sig-name descname">LightCurve</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">compound_id</span><span class="p">:</span> <span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#bytes" title="(in Python v3.8)">bytes</a></span></em>, <em class="sig-param"><span class="n">photopoints</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>Sequence<span class="p">[</span>ampel.content.DataPoint.DataPoint<span class="p">]</span><span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">upperlimits</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>Sequence<span class="p">[</span>ampel.content.DataPoint.DataPoint<span class="p">]</span><span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">tier</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>Literal<span class="p">[</span>0<span class="p">, </span>1<span class="p">, </span>2<span class="p">, </span>3<span class="p">]</span><span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">added</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)">float</a><span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#ampel.view.LightCurve.LightCurve" title="Permalink to this definition">¶</a></dt>
-<dd><p>Contains a collection of DataPoint (typed) dicts (photo points and upper limits),
-and a few convenience methods to return values from internal collections.</p>
+<dt id="ampel.config.AmpelConfig.AmpelConfig">
+<em class="property">class </em><code class="sig-prename descclassname">ampel.config.AmpelConfig.</code><code class="sig-name descname">AmpelConfig</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">config</span></em>, <em class="sig-param"><span class="n">freeze</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="headerlink" href="#ampel.config.AmpelConfig.AmpelConfig" title="Permalink to this definition">¶</a></dt>
+<dd><p>Container for the central Ampel configuration</p>
 <dl class="py method">
-<dt id="ampel.view.LightCurve.LightCurve.get_values">
-<code class="sig-name descname">get_values</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">key</span></em>, <em class="sig-param"><span class="n">filters</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">of_upper_limits</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="headerlink" href="#ampel.view.LightCurve.LightCurve.get_values" title="Permalink to this definition">¶</a></dt>
-<dd><p>usage example: get_values(‘obs_date’)
-:type filters: <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Union" title="(in Python v3.8)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.8)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code></a>], <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Sequence" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.8)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code></a>]], <code class="docutils literal notranslate"><span class="pre">None</span></code>]
-:param filters: example: {‘attribute’: ‘magpsf’, ‘operator’: ‘&lt;’, ‘value’: 18}
-:type of_upper_limits: <a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a>
-:param of_upper_limits: if True, upper limits are returned instead of photo points</p>
+<dt id="ampel.config.AmpelConfig.AmpelConfig.get">
+<code class="sig-name descname">get</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; Dict<span class="p">[</span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)">str</a><span class="p">, </span>Any<span class="p">]</span><a class="headerlink" href="#ampel.config.AmpelConfig.AmpelConfig.get" title="Permalink to this definition">¶</a></dt>
+<dt>
+<code class="sig-name descname">get</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">entry</span><span class="p">:</span> <span class="n"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.8)">None</a></span></em><span class="sig-paren">)</span> &#x2192; Dict<span class="p">[</span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)">str</a><span class="p">, </span>Any<span class="p">]</span></dt>
+<dt>
+<code class="sig-name descname">get</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">entry</span><span class="p">:</span> <span class="n"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.8)">None</a></span></em>, <em class="sig-param"><span class="n">ret_type</span><span class="p">:</span> <span class="n">Any</span></em><span class="sig-paren">)</span> &#x2192; Dict<span class="p">[</span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)">str</a><span class="p">, </span>Any<span class="p">]</span></dt>
+<dt>
+<code class="sig-name descname">get</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">entry</span><span class="p">:</span> <span class="n"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.8)">None</a></span></em>, <em class="sig-param"><span class="n">ret_type</span><span class="p">:</span> <span class="n">Any</span></em>, <em class="sig-param"><span class="o">*</span></em>, <em class="sig-param"><span class="n">raise_exc</span><span class="p">:</span> <span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.8)">bool</a></span></em><span class="sig-paren">)</span> &#x2192; Dict<span class="p">[</span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)">str</a><span class="p">, </span>Any<span class="p">]</span></dt>
+<dt>
+<code class="sig-name descname">get</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">entry</span><span class="p">:</span> <span class="n"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.8)">None</a></span></em>, <em class="sig-param"><span class="o">*</span></em>, <em class="sig-param"><span class="n">raise_exc</span><span class="p">:</span> <span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.8)">bool</a></span></em><span class="sig-paren">)</span> &#x2192; Dict<span class="p">[</span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)">str</a><span class="p">, </span>Any<span class="p">]</span></dt>
+<dt>
+<code class="sig-name descname">get</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">entry</span><span class="p">:</span> <span class="n">Union<span class="p">[</span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)">str</a><span class="p">, </span>List<span class="p">[</span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)">str</a><span class="p">]</span><span class="p">]</span></span></em><span class="sig-paren">)</span> &#x2192; Union<span class="p">[</span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)">str</a><span class="p">, </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.8)">int</a><span class="p">, </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)">float</a><span class="p">, </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.8)">bool</a><span class="p">, </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#bytes" title="(in Python v3.8)">bytes</a><span class="p">, </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.8)">None</a><span class="p">, </span>List<span class="p">, </span>Dict<span class="p">[</span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)">str</a><span class="p">, </span>Any<span class="p">]</span><span class="p">]</span></dt>
+<dt>
+<code class="sig-name descname">get</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">entry</span><span class="p">:</span> <span class="n">Union<span class="p">[</span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)">str</a><span class="p">, </span>List<span class="p">[</span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)">str</a><span class="p">]</span><span class="p">]</span></span></em>, <em class="sig-param"><span class="n">ret_type</span><span class="p">:</span> <span class="n"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.8)">None</a></span></em><span class="sig-paren">)</span> &#x2192; Union<span class="p">[</span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)">str</a><span class="p">, </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.8)">int</a><span class="p">, </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)">float</a><span class="p">, </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.8)">bool</a><span class="p">, </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#bytes" title="(in Python v3.8)">bytes</a><span class="p">, </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.8)">None</a><span class="p">, </span>List<span class="p">, </span>Dict<span class="p">[</span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)">str</a><span class="p">, </span>Any<span class="p">]</span><span class="p">]</span></dt>
+<dt>
+<code class="sig-name descname">get</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">entry</span><span class="p">:</span> <span class="n">Union<span class="p">[</span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)">str</a><span class="p">, </span>List<span class="p">[</span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)">str</a><span class="p">]</span><span class="p">]</span></span></em>, <em class="sig-param"><span class="o">*</span></em>, <em class="sig-param"><span class="n">raise_exc</span><span class="p">:</span> <span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.8)">bool</a></span></em><span class="sig-paren">)</span> &#x2192; Union<span class="p">[</span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)">str</a><span class="p">, </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.8)">int</a><span class="p">, </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)">float</a><span class="p">, </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.8)">bool</a><span class="p">, </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#bytes" title="(in Python v3.8)">bytes</a><span class="p">, </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.8)">None</a><span class="p">, </span>List<span class="p">, </span>Dict<span class="p">[</span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)">str</a><span class="p">, </span>Any<span class="p">]</span><span class="p">]</span></dt>
+<dt>
+<code class="sig-name descname">get</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">entry</span><span class="p">:</span> <span class="n">Union<span class="p">[</span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)">str</a><span class="p">, </span>List<span class="p">[</span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)">str</a><span class="p">]</span><span class="p">]</span></span></em>, <em class="sig-param"><span class="n">ret_type</span><span class="p">:</span> <span class="n"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.8)">None</a></span></em>, <em class="sig-param"><span class="o">*</span></em>, <em class="sig-param"><span class="n">raise_exc</span><span class="p">:</span> <span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.8)">bool</a></span></em><span class="sig-paren">)</span> &#x2192; Union<span class="p">[</span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)">str</a><span class="p">, </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.8)">int</a><span class="p">, </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)">float</a><span class="p">, </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.8)">bool</a><span class="p">, </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#bytes" title="(in Python v3.8)">bytes</a><span class="p">, </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.8)">None</a><span class="p">, </span>List<span class="p">, </span>Dict<span class="p">[</span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)">str</a><span class="p">, </span>Any<span class="p">]</span><span class="p">]</span></dt>
+<dt>
+<code class="sig-name descname">get</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">entry</span><span class="p">:</span> <span class="n">Union<span class="p">[</span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)">str</a><span class="p">, </span>List<span class="p">[</span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)">str</a><span class="p">]</span><span class="p">]</span></span></em>, <em class="sig-param"><span class="n">ret_type</span><span class="p">:</span> <span class="n">Type<span class="p">[</span>JT<span class="p">]</span></span></em><span class="sig-paren">)</span> &#x2192; Optional<span class="p">[</span>JT<span class="p">]</span></dt>
+<dt>
+<code class="sig-name descname">get</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">entry</span><span class="p">:</span> <span class="n">Union<span class="p">[</span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)">str</a><span class="p">, </span>List<span class="p">[</span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)">str</a><span class="p">]</span><span class="p">]</span></span></em>, <em class="sig-param"><span class="n">ret_type</span><span class="p">:</span> <span class="n">Type<span class="p">[</span>JT<span class="p">]</span></span></em>, <em class="sig-param"><span class="o">*</span></em>, <em class="sig-param"><span class="n">raise_exc</span><span class="p">:</span> <span class="n">Literal<span class="p">[</span>False<span class="p">]</span></span></em><span class="sig-paren">)</span> &#x2192; Optional<span class="p">[</span>JT<span class="p">]</span></dt>
+<dt>
+<code class="sig-name descname">get</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">entry</span><span class="p">:</span> <span class="n">Union<span class="p">[</span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)">str</a><span class="p">, </span>List<span class="p">[</span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)">str</a><span class="p">]</span><span class="p">]</span></span></em>, <em class="sig-param"><span class="n">ret_type</span><span class="p">:</span> <span class="n">Type<span class="p">[</span>JT<span class="p">]</span></span></em>, <em class="sig-param"><span class="o">*</span></em>, <em class="sig-param"><span class="n">raise_exc</span><span class="p">:</span> <span class="n">Literal<span class="p">[</span>True<span class="p">]</span></span></em><span class="sig-paren">)</span> &#x2192; JT</dt>
+<dd><p>Optional arguments:</p>
 <dl class="field-list simple">
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.8)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.List" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.8)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code></a>]]</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt id="ampel.view.LightCurve.LightCurve.get_tuples">
-<code class="sig-name descname">get_tuples</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">key1</span></em>, <em class="sig-param"><span class="n">key2</span></em>, <em class="sig-param"><span class="n">filters</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">of_upper_limits</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="headerlink" href="#ampel.view.LightCurve.LightCurve.get_tuples" title="Permalink to this definition">¶</a></dt>
-<dd><p>usage example: get_tuples(‘obs_date’, ‘mag’)
-:type filters: <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Union" title="(in Python v3.8)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.8)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code></a>], <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Sequence" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.8)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code></a>]], <code class="docutils literal notranslate"><span class="pre">None</span></code>]
-:param filters: example: {‘attribute’: ‘magpsf’, ‘operator’: ‘&lt;’, ‘value’: 18}
-‘of_upper_limits’: if True, upper limits are returned instead of photo points</p>
-<dl class="field-list simple">
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.8)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.List" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Tuple" title="(in Python v3.8)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Tuple</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.8)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.8)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code></a>]]]</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt id="ampel.view.LightCurve.LightCurve.get_ntuples">
-<code class="sig-name descname">get_ntuples</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">params</span></em>, <em class="sig-param"><span class="n">filters</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">of_upper_limits</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="headerlink" href="#ampel.view.LightCurve.LightCurve.get_ntuples" title="Permalink to this definition">¶</a></dt>
-<dd><p>params: list of strings
-ex: get_ntuples([“fid”, “jd”, “magpsf”])
-:type filters: <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Union" title="(in Python v3.8)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.8)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code></a>], <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Sequence" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.8)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code></a>]], <code class="docutils literal notranslate"><span class="pre">None</span></code>]
-:param filters: example: {‘attribute’: ‘magpsf’, ‘operator’: ‘&lt;’, ‘value’: 18}
-‘of_upper_limits’: if set to True, upper limits are returned instead of photo points</p>
-<dl class="field-list simple">
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.8)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.List" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Tuple" title="(in Python v3.8)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Tuple</span></code></a>]]</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt id="ampel.view.LightCurve.LightCurve.get_photopoints">
-<code class="sig-name descname">get_photopoints</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">filters</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#ampel.view.LightCurve.LightCurve.get_photopoints" title="Permalink to this definition">¶</a></dt>
-<dd><dl class="field-list simple">
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.8)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Sequence" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code></a>[<code class="xref py py-class docutils literal notranslate"><span class="pre">DataPoint</span></code>]]</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt id="ampel.view.LightCurve.LightCurve.get_upperlimits">
-<code class="sig-name descname">get_upperlimits</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">filters</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#ampel.view.LightCurve.LightCurve.get_upperlimits" title="Permalink to this definition">¶</a></dt>
-<dd><dl class="field-list simple">
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.8)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Sequence" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code></a>[<code class="xref py py-class docutils literal notranslate"><span class="pre">DataPoint</span></code>]]</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt id="ampel.view.LightCurve.LightCurve.get_pos">
-<code class="sig-name descname">get_pos</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">ret</span><span class="o">=</span><span class="default_value">'brightest'</span></em>, <em class="sig-param"><span class="n">filters</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#ampel.view.LightCurve.LightCurve.get_pos" title="Permalink to this definition">¶</a></dt>
-<dd><dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>ret</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>) – <ul class="simple">
-<li><p>raw: returns ((ra, dec), (ra, dec), …)</p></li>
-<li><p>mean: returns (&lt;ra&gt;, &lt;dec&gt;)</p></li>
-<li><p>brightest: returns (ra, dec)</p></li>
-<li><p>latest: returns (ra, dec)</p></li>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>ret_type</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.8)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Type" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Type</span></code></a>[~JT]]) – expected return type (str, int, Dict, List, …).</p></li>
+<li><p><strong>entry</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Union" title="(in Python v3.8)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.List" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>], <code class="docutils literal notranslate"><span class="pre">None</span></code>]) – sub-config element will be returned.</p></li>
 </ul>
-</p>
 </dd>
 </dl>
-<p>example:</p>
-<dl class="simple">
-<dt>instance.get_pos(</dt><dd><p>“brightest”,
-{‘attribute’: ‘alTags’, ‘operator’: ‘in’, ‘value’: ‘ZTF_G’}</p>
-</dd>
-</dl>
-<p>)</p>
-<p>returns the position of the brightest PhotoPoint in the ZTF G band</p>
-<dl class="simple">
-<dt>instance.get_pos(</dt><dd><p>“lastest”,
-{‘attribute’: ‘magpsf’, ‘operator’: ‘&lt;’, ‘value’: 18}</p>
-</dd>
-</dl>
-<p>)</p>
-<p>returns the position of the latest photopoint with a magnitude brighter than 18
-(or an empty array if no photopoint matches this criteria)</p>
+<p>Examples:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;channel.HU_RANDOM&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">get</span><span class="p">([</span><span class="s1">&#39;foo&#39;</span><span class="p">,</span> <span class="s1">&#39;bar&#39;</span><span class="p">,</span> <span class="s1">&#39;baz&#39;</span><span class="p">])</span>
+</pre></div>
+</div>
 <dl class="field-list simple">
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Union" title="(in Python v3.8)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Tuple" title="(in Python v3.8)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Tuple</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.8)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.8)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code></a>], <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Sequence" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Tuple" title="(in Python v3.8)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Tuple</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.8)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.8)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code></a>]], <code class="docutils literal notranslate"><span class="pre">None</span></code>]</p>
+<dt class="field-odd">Raises</dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#ValueError" title="(in Python v3.8)"><strong>ValueError</strong></a> – if the retrieved value has not the expected type</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Union" title="(in Python v3.8)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#bytes" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bytes</span></code></a>, <code class="docutils literal notranslate"><span class="pre">None</span></code>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.List" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.8)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code></a>], ~JT]</p>
 </dd>
 </dl>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="data-classes">
+<h2>Data classes<a class="headerlink" href="#data-classes" title="Permalink to this headline">¶</a></h2>
+<dl class="py class">
+<dt id="ampel.content.StockRecord.StockRecord">
+<em class="property">class </em><code class="sig-prename descclassname">ampel.content.StockRecord.</code><code class="sig-name descname">StockRecord</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">*</span><span class="n">args</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#ampel.content.StockRecord.StockRecord" title="Permalink to this definition">¶</a></dt>
+<dd><p>An object being observed.</p>
+<p>The stock record ties together data from various sources, selected by
+various channels, but all related to the same underlying object. Each
+channel has a different view of the stock. From the perspective of a given
+channel, the stock is created the first time one of its datapoints is
+selected by the channel. Likewise, it is modified whenever a new datapoint
+is selected by the channel.</p>
+<p>This is a dict containing 1 or more of the following items:</p>
+<dl class="py attribute">
+<dt id="ampel.content.StockRecord.StockRecord._id">
+<code class="sig-name descname">_id</code><em class="property">: Union<span class="p">[</span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.8)">int</a><span class="p">, </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#bytes" title="(in Python v3.8)">bytes</a><span class="p">, </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)">str</a><span class="p">]</span></em><a class="headerlink" href="#ampel.content.StockRecord.StockRecord._id" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="ampel.content.StockRecord.StockRecord.tag">
+<code class="sig-name descname">tag</code><em class="property">: Optional<span class="p">[</span>Sequence<span class="p">[</span>Union<span class="p">[</span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.8)">int</a><span class="p">, </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)">str</a><span class="p">]</span><span class="p">]</span><span class="p">]</span></em><a class="headerlink" href="#ampel.content.StockRecord.StockRecord.tag" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="ampel.content.StockRecord.StockRecord.channel">
+<code class="sig-name descname">channel</code><em class="property">: Optional<span class="p">[</span>Sequence<span class="p">[</span>Union<span class="p">[</span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.8)">int</a><span class="p">, </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)">str</a><span class="p">]</span><span class="p">]</span><span class="p">]</span></em><a class="headerlink" href="#ampel.content.StockRecord.StockRecord.channel" title="Permalink to this definition">¶</a></dt>
+<dd><p>Channels that have selected datapoints for this stock</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="ampel.content.StockRecord.StockRecord.journal">
+<code class="sig-name descname">journal</code><em class="property">: Sequence<span class="p">[</span><a class="reference internal" href="#ampel.content.JournalRecord.JournalRecord" title="ampel.content.JournalRecord.JournalRecord">ampel.content.JournalRecord.JournalRecord</a><span class="p">]</span></em><a class="headerlink" href="#ampel.content.StockRecord.StockRecord.journal" title="Permalink to this definition">¶</a></dt>
+<dd><p>Records of activity on the stock</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="ampel.content.StockRecord.StockRecord.name">
+<code class="sig-name descname">name</code><em class="property">: Optional<span class="p">[</span>Sequence<span class="p">[</span>Union<span class="p">[</span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.8)">int</a><span class="p">, </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)">str</a><span class="p">]</span><span class="p">]</span><span class="p">]</span></em><a class="headerlink" href="#ampel.content.StockRecord.StockRecord.name" title="Permalink to this definition">¶</a></dt>
+<dd><p>Names associated with the stock</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="ampel.content.StockRecord.StockRecord.modified">
+<code class="sig-name descname">modified</code><em class="property">: Dict<span class="p">[</span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)">str</a><span class="p">, </span>Any<span class="p">]</span></em><a class="headerlink" href="#ampel.content.StockRecord.StockRecord.modified" title="Permalink to this definition">¶</a></dt>
+<dd><p>Last modification time (UNIX epoch) in each channel</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="ampel.content.StockRecord.StockRecord.created">
+<code class="sig-name descname">created</code><em class="property">: Dict<span class="p">[</span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)">str</a><span class="p">, </span>Any<span class="p">]</span></em><a class="headerlink" href="#ampel.content.StockRecord.StockRecord.created" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creation time (UNIX epoch) in each channel</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="ampel.content.DataPoint.DataPoint">
+<em class="property">class </em><code class="sig-prename descclassname">ampel.content.DataPoint.</code><code class="sig-name descname">DataPoint</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">*</span><span class="n">args</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#ampel.content.DataPoint.DataPoint" title="Permalink to this definition">¶</a></dt>
+<dd><p>A single data point.</p>
+<p>This is a dict containing 1 or more of the following items:</p>
+<dl class="py attribute">
+<dt id="ampel.content.DataPoint.DataPoint._id">
+<code class="sig-name descname">_id</code><em class="property">: <a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.8)">int</a></em><a class="headerlink" href="#ampel.content.DataPoint.DataPoint._id" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="ampel.content.DataPoint.DataPoint.tag">
+<code class="sig-name descname">tag</code><em class="property">: Sequence<span class="p">[</span>Union<span class="p">[</span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.8)">int</a><span class="p">, </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)">str</a><span class="p">]</span><span class="p">]</span></em><a class="headerlink" href="#ampel.content.DataPoint.DataPoint.tag" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="ampel.content.DataPoint.DataPoint.stock">
+<code class="sig-name descname">stock</code><em class="property">: Optional<span class="p">[</span>Union<span class="p">[</span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.8)">int</a><span class="p">, </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#bytes" title="(in Python v3.8)">bytes</a><span class="p">, </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)">str</a><span class="p">, </span>Sequence<span class="p">[</span>Union<span class="p">[</span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.8)">int</a><span class="p">, </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#bytes" title="(in Python v3.8)">bytes</a><span class="p">, </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)">str</a><span class="p">]</span><span class="p">]</span><span class="p">]</span><span class="p">]</span></em><a class="headerlink" href="#ampel.content.DataPoint.DataPoint.stock" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="ampel.content.DataPoint.DataPoint.channel">
+<code class="sig-name descname">channel</code><em class="property">: Optional<span class="p">[</span>Union<span class="p">[</span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.8)">int</a><span class="p">, </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)">str</a><span class="p">, </span>Sequence<span class="p">[</span>Union<span class="p">[</span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.8)">int</a><span class="p">, </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)">str</a><span class="p">]</span><span class="p">]</span><span class="p">]</span><span class="p">]</span></em><a class="headerlink" href="#ampel.content.DataPoint.DataPoint.channel" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="ampel.content.DataPoint.DataPoint.excl">
+<code class="sig-name descname">excl</code><em class="property">: Optional<span class="p">[</span>Sequence<span class="p">[</span>Union<span class="p">[</span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.8)">int</a><span class="p">, </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)">str</a><span class="p">]</span><span class="p">]</span><span class="p">]</span></em><a class="headerlink" href="#ampel.content.DataPoint.DataPoint.excl" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="ampel.content.DataPoint.DataPoint.extra">
+<code class="sig-name descname">extra</code><em class="property">: Optional<span class="p">[</span>Dict<span class="p">[</span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)">str</a><span class="p">, </span>Any<span class="p">]</span><span class="p">]</span></em><a class="headerlink" href="#ampel.content.DataPoint.DataPoint.extra" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="ampel.content.DataPoint.DataPoint.policy">
+<code class="sig-name descname">policy</code><em class="property">: Optional<span class="p">[</span>Dict<span class="p">[</span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)">str</a><span class="p">, </span>Any<span class="p">]</span><span class="p">]</span></em><a class="headerlink" href="#ampel.content.DataPoint.DataPoint.policy" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="ampel.content.DataPoint.DataPoint.body">
+<code class="sig-name descname">body</code><em class="property">: Dict<span class="p">[</span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)">str</a><span class="p">, </span>Any<span class="p">]</span></em><a class="headerlink" href="#ampel.content.DataPoint.DataPoint.body" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="ampel.content.Compound.Compound">
+<em class="property">class </em><code class="sig-prename descclassname">ampel.content.Compound.</code><code class="sig-name descname">Compound</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">*</span><span class="n">args</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#ampel.content.Compound.Compound" title="Permalink to this definition">¶</a></dt>
+<dd><p>A symbolic collection of <a class="reference internal" href="#ampel.content.DataPoint.DataPoint" title="ampel.content.DataPoint.DataPoint"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataPoint</span></code></a>,
+representing the state of a stock at a given point in time as viewed
+through one or more channels.</p>
+<p>This is a dict containing 1 or more of the following items:</p>
+<dl class="py attribute">
+<dt id="ampel.content.Compound.Compound._id">
+<code class="sig-name descname">_id</code><em class="property">: <a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#bytes" title="(in Python v3.8)">bytes</a></em><a class="headerlink" href="#ampel.content.Compound.Compound._id" title="Permalink to this definition">¶</a></dt>
+<dd><p>unique identifier (database key)</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="ampel.content.Compound.Compound.tag">
+<code class="sig-name descname">tag</code><em class="property">: Optional<span class="p">[</span>Sequence<span class="p">[</span>Union<span class="p">[</span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.8)">int</a><span class="p">, </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)">str</a><span class="p">]</span><span class="p">]</span><span class="p">]</span></em><a class="headerlink" href="#ampel.content.Compound.Compound.tag" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="ampel.content.Compound.Compound.stock">
+<code class="sig-name descname">stock</code><em class="property">: Union<span class="p">[</span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.8)">int</a><span class="p">, </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#bytes" title="(in Python v3.8)">bytes</a><span class="p">, </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)">str</a><span class="p">, </span>Sequence<span class="p">[</span>Union<span class="p">[</span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.8)">int</a><span class="p">, </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#bytes" title="(in Python v3.8)">bytes</a><span class="p">, </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)">str</a><span class="p">]</span><span class="p">]</span><span class="p">]</span></em><a class="headerlink" href="#ampel.content.Compound.Compound.stock" title="Permalink to this definition">¶</a></dt>
+<dd><p>stock that datapoints belong to</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="ampel.content.Compound.Compound.channel">
+<code class="sig-name descname">channel</code><em class="property">: Union<span class="p">[</span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.8)">int</a><span class="p">, </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)">str</a><span class="p">, </span>Sequence<span class="p">[</span>Union<span class="p">[</span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.8)">int</a><span class="p">, </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)">str</a><span class="p">]</span><span class="p">]</span><span class="p">]</span></em><a class="headerlink" href="#ampel.content.Compound.Compound.channel" title="Permalink to this definition">¶</a></dt>
+<dd><p>channel(s) that selected the datapoints</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="ampel.content.Compound.Compound.body">
+<code class="sig-name descname">body</code><em class="property">: Sequence<span class="p">[</span>Union<span class="p">[</span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.8)">int</a><span class="p">, </span><a class="reference internal" href="#ampel.content.Compound.CompoundElement" title="ampel.content.Compound.CompoundElement">ampel.content.Compound.CompoundElement</a><span class="p">]</span><span class="p">]</span></em><a class="headerlink" href="#ampel.content.Compound.Compound.body" title="Permalink to this definition">¶</a></dt>
+<dd><p>references to datapoints</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="ampel.content.Compound.Compound.tier">
+<code class="sig-name descname">tier</code><em class="property">: Literal<span class="p">[</span>0<span class="p">, </span>1<span class="p">, </span>2<span class="p">, </span>3<span class="p">]</span></em><a class="headerlink" href="#ampel.content.Compound.Compound.tier" title="Permalink to this definition">¶</a></dt>
+<dd><p>tier of process that created this</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="ampel.content.Compound.Compound.run">
+<code class="sig-name descname">run</code><em class="property">: Union<span class="p">[</span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.8)">int</a><span class="p">, </span>Sequence<span class="p">[</span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.8)">int</a><span class="p">]</span><span class="p">]</span></em><a class="headerlink" href="#ampel.content.Compound.Compound.run" title="Permalink to this definition">¶</a></dt>
+<dd><p>id of process invocation that created this</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="ampel.content.Compound.Compound.added">
+<code class="sig-name descname">added</code><em class="property">: <a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)">float</a></em><a class="headerlink" href="#ampel.content.Compound.Compound.added" title="Permalink to this definition">¶</a></dt>
+<dd><p>UNIX epoch when this was created</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="ampel.content.Compound.Compound.len">
+<code class="sig-name descname">len</code><em class="property">: <a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.8)">int</a></em><a class="headerlink" href="#ampel.content.Compound.Compound.len" title="Permalink to this definition">¶</a></dt>
+<dd><p>number of referenced datapoints</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="ampel.content.Compound.CompoundElement">
+<em class="property">class </em><code class="sig-prename descclassname">ampel.content.Compound.</code><code class="sig-name descname">CompoundElement</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">*</span><span class="n">args</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#ampel.content.Compound.CompoundElement" title="Permalink to this definition">¶</a></dt>
+<dd><p>Annotated reference to a <a class="reference internal" href="#ampel.content.DataPoint.DataPoint" title="ampel.content.DataPoint.DataPoint"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataPoint</span></code></a></p>
+<p>This is a dict containing 1 or more of the following items:</p>
+<dl class="py attribute">
+<dt id="ampel.content.Compound.CompoundElement.id">
+<code class="sig-name descname">id</code><em class="property">: <a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.8)">int</a></em><a class="headerlink" href="#ampel.content.Compound.CompoundElement.id" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="ampel.content.Compound.CompoundElement.tag">
+<code class="sig-name descname">tag</code><em class="property">: Optional<span class="p">[</span>Sequence<span class="p">[</span>Union<span class="p">[</span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.8)">int</a><span class="p">, </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)">str</a><span class="p">]</span><span class="p">]</span><span class="p">]</span></em><a class="headerlink" href="#ampel.content.Compound.CompoundElement.tag" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="ampel.content.Compound.CompoundElement.excl">
+<code class="sig-name descname">excl</code><em class="property">: Optional<span class="p">[</span>Union<span class="p">[</span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.8)">int</a><span class="p">, </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)">str</a><span class="p">]</span><span class="p">]</span></em><a class="headerlink" href="#ampel.content.Compound.CompoundElement.excl" title="Permalink to this definition">¶</a></dt>
+<dd><p>exclusion reason</p>
 </dd></dl>
 
 </dd></dl>
@@ -271,22 +443,320 @@ ex: get_ntuples([“fid”, “jd”, “magpsf”])
 <dl class="py class">
 <dt id="ampel.content.T2Record.T2Record">
 <em class="property">class </em><code class="sig-prename descclassname">ampel.content.T2Record.</code><code class="sig-name descname">T2Record</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">*</span><span class="n">args</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#ampel.content.T2Record.T2Record" title="Permalink to this definition">¶</a></dt>
+<dd><p>Specification of a calculation based on a <a class="reference internal" href="#ampel.content.StockRecord.StockRecord" title="ampel.content.StockRecord.StockRecord"><code class="xref py py-class docutils literal notranslate"><span class="pre">StockRecord</span></code></a>,
+<a class="reference internal" href="#ampel.content.DataPoint.DataPoint" title="ampel.content.DataPoint.DataPoint"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataPoint</span></code></a>, or <a class="reference internal" href="#ampel.content.Compound.Compound" title="ampel.content.Compound.Compound"><code class="xref py py-class docutils literal notranslate"><span class="pre">Compound</span></code></a>.</p>
+<p>This is a dict containing 1 or more of the following items:</p>
+<dl class="py attribute">
+<dt id="ampel.content.T2Record.T2Record._id">
+<code class="sig-name descname">_id</code><em class="property">: <a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#bytes" title="(in Python v3.8)">bytes</a></em><a class="headerlink" href="#ampel.content.T2Record.T2Record._id" title="Permalink to this definition">¶</a></dt>
+<dd><p>Database key</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="ampel.content.T2Record.T2Record.stock">
+<code class="sig-name descname">stock</code><em class="property">: Union<span class="p">[</span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.8)">int</a><span class="p">, </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#bytes" title="(in Python v3.8)">bytes</a><span class="p">, </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)">str</a><span class="p">, </span>Sequence<span class="p">[</span>Union<span class="p">[</span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.8)">int</a><span class="p">, </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#bytes" title="(in Python v3.8)">bytes</a><span class="p">, </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)">str</a><span class="p">]</span><span class="p">]</span><span class="p">]</span></em><a class="headerlink" href="#ampel.content.T2Record.T2Record.stock" title="Permalink to this definition">¶</a></dt>
+<dd><p>Stock associated with the input data</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="ampel.content.T2Record.T2Record.unit">
+<code class="sig-name descname">unit</code><em class="property">: Union<span class="p">[</span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.8)">int</a><span class="p">, </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)">str</a><span class="p">]</span></em><a class="headerlink" href="#ampel.content.T2Record.T2Record.unit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Name of the unit to be run. This may be hashed for performance reasons.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="ampel.content.T2Record.T2Record.config">
+<code class="sig-name descname">config</code><em class="property">: Optional<span class="p">[</span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.8)">int</a><span class="p">]</span></em><a class="headerlink" href="#ampel.content.T2Record.T2Record.config" title="Permalink to this definition">¶</a></dt>
+<dd><p>Configuration hash, if unit defaults were overridden. The underlying
+values can be resolved with
+<code class="xref py py-meth docutils literal notranslate"><span class="pre">UnitLoader.get_init_config()</span></code></p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="ampel.content.T2Record.T2Record.link">
+<code class="sig-name descname">link</code><em class="property">: Union<span class="p">[</span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.8)">int</a><span class="p">, </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#bytes" title="(in Python v3.8)">bytes</a><span class="p">, </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)">str</a><span class="p">, </span>Sequence<span class="p">[</span>Union<span class="p">[</span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.8)">int</a><span class="p">, </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#bytes" title="(in Python v3.8)">bytes</a><span class="p">, </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)">str</a><span class="p">]</span><span class="p">]</span><span class="p">]</span></em><a class="headerlink" href="#ampel.content.T2Record.T2Record.link" title="Permalink to this definition">¶</a></dt>
+<dd><p>References to input data</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="ampel.content.T2Record.T2Record.tag">
+<code class="sig-name descname">tag</code><em class="property">: Optional<span class="p">[</span>Sequence<span class="p">[</span>Union<span class="p">[</span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.8)">int</a><span class="p">, </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)">str</a><span class="p">]</span><span class="p">]</span><span class="p">]</span></em><a class="headerlink" href="#ampel.content.T2Record.T2Record.tag" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="ampel.content.T2Record.T2Record.channel">
+<code class="sig-name descname">channel</code><em class="property">: Sequence<span class="p">[</span>Union<span class="p">[</span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.8)">int</a><span class="p">, </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)">str</a><span class="p">]</span><span class="p">]</span></em><a class="headerlink" href="#ampel.content.T2Record.T2Record.channel" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="ampel.content.T2Record.T2Record.col">
+<code class="sig-name descname">col</code><em class="property">: Optional<span class="p">[</span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)">str</a><span class="p">]</span></em><a class="headerlink" href="#ampel.content.T2Record.T2Record.col" title="Permalink to this definition">¶</a></dt>
+<dd><p>Name of the database collection holding the input data</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="ampel.content.T2Record.T2Record.run">
+<code class="sig-name descname">run</code><em class="property">: Union<span class="p">[</span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.8)">int</a><span class="p">, </span>Sequence<span class="p">[</span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.8)">int</a><span class="p">]</span><span class="p">]</span></em><a class="headerlink" href="#ampel.content.T2Record.T2Record.run" title="Permalink to this definition">¶</a></dt>
+<dd><p>Identifier of the process that created this record</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="ampel.content.T2Record.T2Record.status">
+<code class="sig-name descname">status</code><em class="property">: <a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.8)">int</a></em><a class="headerlink" href="#ampel.content.T2Record.T2Record.status" title="Permalink to this definition">¶</a></dt>
+<dd><p>A member of <a class="reference internal" href="ampel-core.html#ampel.t2.T2RunState.T2RunState" title="ampel.t2.T2RunState.T2RunState"><code class="xref py py-class docutils literal notranslate"><span class="pre">T2RunState</span></code></a></p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="ampel.content.T2Record.T2Record.body">
+<code class="sig-name descname">body</code><em class="property">: Optional<span class="p">[</span>Sequence<span class="p">[</span><a class="reference internal" href="#ampel.content.T2SubRecord.T2SubRecord" title="ampel.content.T2SubRecord.T2SubRecord">ampel.content.T2SubRecord.T2SubRecord</a><span class="p">]</span><span class="p">]</span></em><a class="headerlink" href="#ampel.content.T2Record.T2Record.body" title="Permalink to this definition">¶</a></dt>
+<dd><p>value(s) returned by T2 unit execution(s)</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="ampel.content.T2SubRecord.T2SubRecord">
+<em class="property">class </em><code class="sig-prename descclassname">ampel.content.T2SubRecord.</code><code class="sig-name descname">T2SubRecord</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">*</span><span class="n">args</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#ampel.content.T2SubRecord.T2SubRecord" title="Permalink to this definition">¶</a></dt>
+<dd><p>Dict crafted by <code class="xref py py-class docutils literal notranslate"><span class="pre">T2Processor</span></code> based on return
+value from t2 base unit, which can be either</p>
+<ul class="simple">
+<li><p>a BSON serializable-dict,</p></li>
+<li><p>a tuple of dict, <a class="reference internal" href="#ampel.struct.JournalExtra.JournalExtra" title="ampel.struct.JournalExtra.JournalExtra"><code class="xref py py-class docutils literal notranslate"><span class="pre">JournalExtra</span></code></a>,</p></li>
+<li><p>or, if an error occurred, a <a class="reference internal" href="ampel-core.html#ampel.t2.T2RunState.T2RunState" title="ampel.t2.T2RunState.T2RunState"><code class="xref py py-class docutils literal notranslate"><span class="pre">T2RunState</span></code></a>.</p></li>
+</ul>
+<p>This is a dict containing 1 or more of the following items:</p>
+<dl class="py attribute">
+<dt id="ampel.content.T2SubRecord.T2SubRecord.version">
+<code class="sig-name descname">version</code><em class="property">: Optional<span class="p">[</span>Union<span class="p">[</span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)">str</a><span class="p">, </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)">float</a><span class="p">]</span><span class="p">]</span></em><a class="headerlink" href="#ampel.content.T2SubRecord.T2SubRecord.version" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="ampel.content.T2SubRecord.T2SubRecord.ts">
+<code class="sig-name descname">ts</code><em class="property">: Union<span class="p">[</span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)">float</a><span class="p">, </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.8)">int</a><span class="p">]</span></em><a class="headerlink" href="#ampel.content.T2SubRecord.T2SubRecord.ts" title="Permalink to this definition">¶</a></dt>
+<dd><p>UNIX epoch when <a class="reference internal" href="#ampel.content.T2SubRecord.T2SubRecord.run" title="ampel.content.T2SubRecord.T2SubRecord.run"><code class="xref py py-meth docutils literal notranslate"><span class="pre">run()</span></code></a> was invoked</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="ampel.content.T2SubRecord.T2SubRecord.duration">
+<code class="sig-name descname">duration</code><em class="property">: Union<span class="p">[</span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)">float</a><span class="p">, </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.8)">int</a><span class="p">]</span></em><a class="headerlink" href="#ampel.content.T2SubRecord.T2SubRecord.duration" title="Permalink to this definition">¶</a></dt>
+<dd><p>Duration of <a class="reference internal" href="#ampel.content.T2SubRecord.T2SubRecord.run" title="ampel.content.T2SubRecord.T2SubRecord.run"><code class="xref py py-meth docutils literal notranslate"><span class="pre">run()</span></code></a>, in seconds</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="ampel.content.T2SubRecord.T2SubRecord.run">
+<code class="sig-name descname">run</code><em class="property">: <a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.8)">int</a></em><a class="headerlink" href="#ampel.content.T2SubRecord.T2SubRecord.run" title="Permalink to this definition">¶</a></dt>
+<dd><p>Identifier of the <code class="xref py py-class docutils literal notranslate"><span class="pre">T2Processor</span></code> invocation
+that created this</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="ampel.content.T2SubRecord.T2SubRecord.channel">
+<code class="sig-name descname">channel</code><em class="property">: Union<span class="p">[</span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.8)">int</a><span class="p">, </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)">str</a><span class="p">, </span>Sequence<span class="p">[</span>Union<span class="p">[</span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.8)">int</a><span class="p">, </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)">str</a><span class="p">]</span><span class="p">]</span><span class="p">]</span></em><a class="headerlink" href="#ampel.content.T2SubRecord.T2SubRecord.channel" title="Permalink to this definition">¶</a></dt>
+<dd><p>Usually not set but required for “tied” t2 units</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="ampel.content.T2SubRecord.T2SubRecord.error">
+<code class="sig-name descname">error</code><em class="property">: <a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.8)">int</a></em><a class="headerlink" href="#ampel.content.T2SubRecord.T2SubRecord.error" title="Permalink to this definition">¶</a></dt>
+<dd><p>An integer ‘error’ can be returned by t2 units instead of a payload dict.
+This will usually be a member of <a class="reference internal" href="ampel-core.html#ampel.t2.T2RunState.T2RunState" title="ampel.t2.T2RunState.T2RunState"><code class="xref py py-class docutils literal notranslate"><span class="pre">T2RunState</span></code></a>.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="ampel.content.T2SubRecord.T2SubRecord.msg">
+<code class="sig-name descname">msg</code><em class="property">: <a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)">str</a></em><a class="headerlink" href="#ampel.content.T2SubRecord.T2SubRecord.msg" title="Permalink to this definition">¶</a></dt>
+<dd><p>Human-readable explanation of the error reason.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="ampel.content.T2SubRecord.T2SubRecord.jup">
+<code class="sig-name descname">jup</code><em class="property">: <a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.8)">bool</a></em><a class="headerlink" href="#ampel.content.T2SubRecord.T2SubRecord.jup" title="Permalink to this definition">¶</a></dt>
+<dd><p>True if the t2 result contained a <a class="reference internal" href="#ampel.struct.JournalExtra.JournalExtra" title="ampel.struct.JournalExtra.JournalExtra"><code class="xref py py-class docutils literal notranslate"><span class="pre">JournalExtra</span></code></a></p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="ampel.content.T2SubRecord.T2SubRecord.result">
+<code class="sig-name descname">result</code><em class="property">: Dict<span class="p">[</span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)">str</a><span class="p">, </span>Any<span class="p">]</span></em><a class="headerlink" href="#ampel.content.T2SubRecord.T2SubRecord.result" title="Permalink to this definition">¶</a></dt>
+<dd><p>Payload returned by <a class="reference internal" href="#ampel.content.T2SubRecord.T2SubRecord.run" title="ampel.content.T2SubRecord.T2SubRecord.run"><code class="xref py py-meth docutils literal notranslate"><span class="pre">run()</span></code></a>.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="ampel.content.LogRecord.LogRecord">
+<em class="property">class </em><code class="sig-prename descclassname">ampel.content.LogRecord.</code><code class="sig-name descname">LogRecord</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">*</span><span class="n">args</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#ampel.content.LogRecord.LogRecord" title="Permalink to this definition">¶</a></dt>
+<dd><p>A message produced by an Ampel unit during processing.</p>
+<p>This is a dict containing 1 or more of the following items:</p>
+<dl class="py attribute">
+<dt id="ampel.content.LogRecord.LogRecord._id">
+<code class="sig-name descname">_id</code><em class="property">: <a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#bytes" title="(in Python v3.8)">bytes</a></em><a class="headerlink" href="#ampel.content.LogRecord.LogRecord._id" title="Permalink to this definition">¶</a></dt>
+<dd><p>database key</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="ampel.content.LogRecord.LogRecord.flag">
+<code class="sig-name descname">flag</code><em class="property">: <a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.8)">int</a></em><a class="headerlink" href="#ampel.content.LogRecord.LogRecord.flag" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="ampel.content.LogRecord.LogRecord.run">
+<code class="sig-name descname">run</code><em class="property">: Union<span class="p">[</span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.8)">int</a><span class="p">, </span>Sequence<span class="p">[</span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.8)">int</a><span class="p">]</span><span class="p">]</span></em><a class="headerlink" href="#ampel.content.LogRecord.LogRecord.run" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="ampel.content.LogRecord.LogRecord.msg">
+<code class="sig-name descname">msg</code><em class="property">: Optional<span class="p">[</span>Union<span class="p">[</span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)">str</a><span class="p">, </span>Sequence<span class="p">[</span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)">str</a><span class="p">]</span><span class="p">]</span><span class="p">]</span></em><a class="headerlink" href="#ampel.content.LogRecord.LogRecord.msg" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="ampel.content.LogRecord.LogRecord.stock">
+<code class="sig-name descname">stock</code><em class="property">: Optional<span class="p">[</span>Union<span class="p">[</span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.8)">int</a><span class="p">, </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#bytes" title="(in Python v3.8)">bytes</a><span class="p">, </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)">str</a><span class="p">, </span>Sequence<span class="p">[</span>Union<span class="p">[</span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.8)">int</a><span class="p">, </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#bytes" title="(in Python v3.8)">bytes</a><span class="p">, </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)">str</a><span class="p">]</span><span class="p">]</span><span class="p">]</span><span class="p">]</span></em><a class="headerlink" href="#ampel.content.LogRecord.LogRecord.stock" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="ampel.content.LogRecord.LogRecord.channel">
+<code class="sig-name descname">channel</code><em class="property">: Optional<span class="p">[</span>Union<span class="p">[</span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.8)">int</a><span class="p">, </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)">str</a><span class="p">, </span>Sequence<span class="p">[</span>Union<span class="p">[</span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.8)">int</a><span class="p">, </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)">str</a><span class="p">]</span><span class="p">]</span><span class="p">]</span><span class="p">]</span></em><a class="headerlink" href="#ampel.content.LogRecord.LogRecord.channel" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="ampel.content.LogRecord.LogRecord.extra">
+<code class="sig-name descname">extra</code><em class="property">: Optional<span class="p">[</span>Dict<span class="p">[</span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)">str</a><span class="p">, </span>Any<span class="p">]</span><span class="p">]</span></em><a class="headerlink" href="#ampel.content.LogRecord.LogRecord.extra" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="ampel.content.JournalRecord.JournalRecord">
+<em class="property">class </em><code class="sig-prename descclassname">ampel.content.JournalRecord.</code><code class="sig-name descname">JournalRecord</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">*</span><span class="n">args</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#ampel.content.JournalRecord.JournalRecord" title="Permalink to this definition">¶</a></dt>
+<dd><p>A record of activity on a stock.</p>
+<p>This is a dict containing 1 or more of the following items:</p>
+<dl class="py attribute">
+<dt id="ampel.content.JournalRecord.JournalRecord.tier">
+<code class="sig-name descname">tier</code><em class="property">: Literal<span class="p">[</span>0<span class="p">, </span>1<span class="p">, </span>2<span class="p">, </span>3<span class="p">]</span></em><a class="headerlink" href="#ampel.content.JournalRecord.JournalRecord.tier" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="ampel.content.JournalRecord.JournalRecord.ts">
+<code class="sig-name descname">ts</code><em class="property">: Union<span class="p">[</span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.8)">int</a><span class="p">, </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.8)">float</a><span class="p">]</span></em><a class="headerlink" href="#ampel.content.JournalRecord.JournalRecord.ts" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="ampel.content.JournalRecord.JournalRecord.channel">
+<code class="sig-name descname">channel</code><em class="property">: Union<span class="p">[</span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.8)">int</a><span class="p">, </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)">str</a><span class="p">, </span>Sequence<span class="p">[</span>Union<span class="p">[</span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.8)">int</a><span class="p">, </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)">str</a><span class="p">]</span><span class="p">]</span><span class="p">]</span></em><a class="headerlink" href="#ampel.content.JournalRecord.JournalRecord.channel" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="ampel.content.JournalRecord.JournalRecord.process">
+<code class="sig-name descname">process</code><em class="property">: Union<span class="p">[</span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.8)">int</a><span class="p">, </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)">str</a><span class="p">]</span></em><a class="headerlink" href="#ampel.content.JournalRecord.JournalRecord.process" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="ampel.content.JournalRecord.JournalRecord.tag">
+<code class="sig-name descname">tag</code><em class="property">: Optional<span class="p">[</span>Union<span class="p">[</span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.8)">int</a><span class="p">, </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)">str</a><span class="p">, </span>Sequence<span class="p">[</span>Union<span class="p">[</span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.8)">int</a><span class="p">, </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)">str</a><span class="p">]</span><span class="p">]</span><span class="p">]</span><span class="p">]</span></em><a class="headerlink" href="#ampel.content.JournalRecord.JournalRecord.tag" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="ampel.content.JournalRecord.JournalRecord.status">
+<code class="sig-name descname">status</code><em class="property">: Optional<span class="p">[</span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.8)">int</a><span class="p">]</span></em><a class="headerlink" href="#ampel.content.JournalRecord.JournalRecord.status" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="ampel.content.JournalRecord.JournalRecord.unit">
+<code class="sig-name descname">unit</code><em class="property">: Optional<span class="p">[</span>Union<span class="p">[</span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.8)">int</a><span class="p">, </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)">str</a><span class="p">]</span><span class="p">]</span></em><a class="headerlink" href="#ampel.content.JournalRecord.JournalRecord.unit" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="ampel.content.JournalRecord.JournalRecord.doc">
+<code class="sig-name descname">doc</code><em class="property">: Optional<span class="p">[</span>Union<span class="p">[</span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.8)">int</a><span class="p">, </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#bytes" title="(in Python v3.8)">bytes</a><span class="p">]</span><span class="p">]</span></em><a class="headerlink" href="#ampel.content.JournalRecord.JournalRecord.doc" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="ampel.content.JournalRecord.JournalRecord.run">
+<code class="sig-name descname">run</code><em class="property">: Union<span class="p">[</span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.8)">int</a><span class="p">, </span>List<span class="p">[</span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.8)">int</a><span class="p">]</span><span class="p">]</span></em><a class="headerlink" href="#ampel.content.JournalRecord.JournalRecord.run" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="ampel.content.JournalRecord.JournalRecord.extra">
+<code class="sig-name descname">extra</code><em class="property">: Optional<span class="p">[</span>Dict<span class="p">[</span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)">str</a><span class="p">, </span>Any<span class="p">]</span><span class="p">]</span></em><a class="headerlink" href="#ampel.content.JournalRecord.JournalRecord.extra" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="ampel.struct.JournalExtra.JournalExtra">
+<em class="property">class </em><code class="sig-prename descclassname">ampel.struct.JournalExtra.</code><code class="sig-name descname">JournalExtra</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">status</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">tag</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">extra</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#ampel.struct.JournalExtra.JournalExtra" title="Permalink to this definition">¶</a></dt>
+<dd><p>Structure potentialy returned by Ampel units to customize
+the transient journal entry created after a process is run.</p>
+<dl class="py attribute">
+<dt id="ampel.struct.JournalExtra.JournalExtra.tag">
+<code class="sig-name descname">tag</code><a class="headerlink" href="#ampel.struct.JournalExtra.JournalExtra.tag" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="ampel.struct.JournalExtra.JournalExtra.extra">
+<code class="sig-name descname">extra</code><a class="headerlink" href="#ampel.struct.JournalExtra.JournalExtra.extra" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="ampel.struct.JournalExtra.JournalExtra.status">
+<code class="sig-name descname">status</code><a class="headerlink" href="#ampel.struct.JournalExtra.JournalExtra.status" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
 
 <dl class="py class">
 <dt id="ampel.view.SnapView.SnapView">
 <em class="property">class </em><code class="sig-prename descclassname">ampel.view.SnapView.</code><code class="sig-name descname">SnapView</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">id</span></em>, <em class="sig-param"><span class="n">stock</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">t0</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">t1</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">t2</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">log</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">extra</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">freeze</span><span class="o">=</span><span class="default_value">True</span></em><span class="sig-paren">)</span><a class="headerlink" href="#ampel.view.SnapView.SnapView" title="Permalink to this definition">¶</a></dt>
-<dd><p>View of a given ampel object (with unique stock id).
-This class references various instances of objects from
+<dd><p>View of a given ampel object (with unique stock id).</p>
+<p>This class references various instances of objects from
 package ampel.content, originating from different ampel tiers.
-It can also contain external/composite objects embedded in the dict called ‘extra’
-(such as spectra or ampel.view.LightCurve instances for ex.)
+It can also contain external/composite objects embedded in the dict called ‘extra’,
+for example spectra or cutout images.
 The config parameter of a T3 process determines which information are included.
-Typically, instances of this class (or of subclass such as TransientView) are provided to T3 units.</p>
+Instances of this class (or of subclass such as
+<a class="reference internal" href="ampel-photometry.html#ampel.view.TransientView.TransientView" title="ampel.view.TransientView.TransientView"><code class="xref py py-class docutils literal notranslate"><span class="pre">TransientView</span></code></a>) are provided to
+<a class="reference internal" href="#ampel.abstract.AbsT3Unit.AbsT3Unit.add" title="ampel.abstract.AbsT3Unit.AbsT3Unit.add"><code class="xref py py-meth docutils literal notranslate"><span class="pre">AbsT3Unit.add()</span></code></a>.</p>
+<dl class="py attribute">
+<dt id="ampel.view.SnapView.SnapView.stock">
+<code class="sig-name descname">stock</code><em class="property">: Optional<span class="p">[</span><a class="reference internal" href="#ampel.content.StockRecord.StockRecord" title="ampel.content.StockRecord.StockRecord">ampel.content.StockRecord.StockRecord</a><span class="p">]</span></em><a class="headerlink" href="#ampel.view.SnapView.SnapView.stock" title="Permalink to this definition">¶</a></dt>
+<dd><p>Stock record, if loaded</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="ampel.view.SnapView.SnapView.t0">
+<code class="sig-name descname">t0</code><em class="property">: Optional<span class="p">[</span>Sequence<span class="p">[</span><a class="reference internal" href="#ampel.content.DataPoint.DataPoint" title="ampel.content.DataPoint.DataPoint">ampel.content.DataPoint.DataPoint</a><span class="p">]</span><span class="p">]</span></em><a class="headerlink" href="#ampel.view.SnapView.SnapView.t0" title="Permalink to this definition">¶</a></dt>
+<dd><p>Datapoints, if loaded</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="ampel.view.SnapView.SnapView.t1">
+<code class="sig-name descname">t1</code><em class="property">: Optional<span class="p">[</span>Sequence<span class="p">[</span><a class="reference internal" href="#ampel.content.Compound.Compound" title="ampel.content.Compound.Compound">ampel.content.Compound.Compound</a><span class="p">]</span><span class="p">]</span></em><a class="headerlink" href="#ampel.view.SnapView.SnapView.t1" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compounds, if loaded</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="ampel.view.SnapView.SnapView.t2">
+<code class="sig-name descname">t2</code><em class="property">: Optional<span class="p">[</span>Sequence<span class="p">[</span><a class="reference internal" href="#ampel.content.T2Record.T2Record" title="ampel.content.T2Record.T2Record">ampel.content.T2Record.T2Record</a><span class="p">]</span><span class="p">]</span></em><a class="headerlink" href="#ampel.view.SnapView.SnapView.t2" title="Permalink to this definition">¶</a></dt>
+<dd><p>T2 records, if loaded</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="ampel.view.SnapView.SnapView.log">
+<code class="sig-name descname">log</code><em class="property">: Optional<span class="p">[</span>Sequence<span class="p">[</span><a class="reference internal" href="#ampel.content.LogRecord.LogRecord" title="ampel.content.LogRecord.LogRecord">ampel.content.LogRecord.LogRecord</a><span class="p">]</span><span class="p">]</span></em><a class="headerlink" href="#ampel.view.SnapView.SnapView.log" title="Permalink to this definition">¶</a></dt>
+<dd><p>Event logs, if loaded</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="ampel.view.SnapView.SnapView.extra">
+<code class="sig-name descname">extra</code><em class="property">: Optional<span class="p">[</span>Dict<span class="p">[</span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)">str</a><span class="p">, </span>Any<span class="p">]</span><span class="p">]</span></em><a class="headerlink" href="#ampel.view.SnapView.SnapView.extra" title="Permalink to this definition">¶</a></dt>
+<dd><p>Free-form, auxiliary information added by instances of <a class="reference internal" href="ampel-core.html#ampel.t3.complement.AbsT3DataAppender.AbsT3DataAppender" title="ampel.t3.complement.AbsT3DataAppender.AbsT3DataAppender"><code class="xref py py-class docutils literal notranslate"><span class="pre">AbsT3DataAppender</span></code></a></p>
+</dd></dl>
+
 <dl class="py method">
 <dt id="ampel.view.SnapView.SnapView.get_t2_records">
 <code class="sig-name descname">get_t2_records</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">unit_id</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">compound_id</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#ampel.view.SnapView.SnapView.get_t2_records" title="Permalink to this definition">¶</a></dt>
-<dd><dl class="field-list simple">
+<dd><p>Get a subset of T2 records.</p>
+<dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>unit_id</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Union" title="(in Python v3.8)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <code class="docutils literal notranslate"><span class="pre">None</span></code>]) – limits the returned science record(s) to the one with the provided t2 unit id</p></li>
@@ -301,22 +771,24 @@ Typically, instances of this class (or of subclass such as TransientView) are pr
 
 <dl class="py method">
 <dt id="ampel.view.SnapView.SnapView.get_journal_entries">
-<code class="sig-name descname">get_journal_entries</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">tier</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>Literal<span class="p">[</span>0<span class="p">, </span>1<span class="p">, </span>2<span class="p">, </span>3<span class="p">]</span><span class="p">]</span></span> <span class="o">=</span> <span class="default_value">'None'</span></em>, <em class="sig-param"><span class="n">process_name</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)">str</a><span class="p">]</span></span> <span class="o">=</span> <span class="default_value">'None'</span></em>, <em class="sig-param"><span class="n">filter_func</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>Callable<span class="p">[</span><span class="p">[</span>ampel.content.JournalRecord.JournalRecord<span class="p">]</span><span class="p">, </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.8)">bool</a><span class="p">]</span><span class="p">]</span></span> <span class="o">=</span> <span class="default_value">'None'</span></em>, <em class="sig-param"><span class="n">latest</span><span class="p">:</span> <span class="n"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.8)">None</a></span> <span class="o">=</span> <span class="default_value">'...'</span></em><span class="sig-paren">)</span> &#x2192; Optional<span class="p">[</span>Sequence<span class="p">[</span>ampel.content.JournalRecord.JournalRecord<span class="p">]</span><span class="p">]</span><a class="headerlink" href="#ampel.view.SnapView.SnapView.get_journal_entries" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">get_journal_entries</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">tier</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>Literal<span class="p">[</span>0<span class="p">, </span>1<span class="p">, </span>2<span class="p">, </span>3<span class="p">]</span><span class="p">]</span></span> <span class="o">=</span> <span class="default_value">'None'</span></em>, <em class="sig-param"><span class="n">process_name</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)">str</a><span class="p">]</span></span> <span class="o">=</span> <span class="default_value">'None'</span></em>, <em class="sig-param"><span class="n">filter_func</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>Callable<span class="p">[</span><span class="p">[</span><a class="reference internal" href="#ampel.content.JournalRecord.JournalRecord" title="ampel.content.JournalRecord.JournalRecord">ampel.content.JournalRecord.JournalRecord</a><span class="p">]</span><span class="p">, </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.8)">bool</a><span class="p">]</span><span class="p">]</span></span> <span class="o">=</span> <span class="default_value">'None'</span></em>, <em class="sig-param"><span class="n">latest</span><span class="p">:</span> <span class="n"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.8)">None</a></span> <span class="o">=</span> <span class="default_value">'...'</span></em><span class="sig-paren">)</span> &#x2192; Optional<span class="p">[</span>Sequence<span class="p">[</span><a class="reference internal" href="#ampel.content.JournalRecord.JournalRecord" title="ampel.content.JournalRecord.JournalRecord">ampel.content.JournalRecord.JournalRecord</a><span class="p">]</span><span class="p">]</span><a class="headerlink" href="#ampel.view.SnapView.SnapView.get_journal_entries" title="Permalink to this definition">¶</a></dt>
 <dt>
-<code class="sig-name descname">get_journal_entries</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">tier</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>Literal<span class="p">[</span>0<span class="p">, </span>1<span class="p">, </span>2<span class="p">, </span>3<span class="p">]</span><span class="p">]</span></span> <span class="o">=</span> <span class="default_value">'None'</span></em>, <em class="sig-param"><span class="n">process_name</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)">str</a><span class="p">]</span></span> <span class="o">=</span> <span class="default_value">'None'</span></em>, <em class="sig-param"><span class="n">filter_func</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>Callable<span class="p">[</span><span class="p">[</span>ampel.content.JournalRecord.JournalRecord<span class="p">]</span><span class="p">, </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.8)">bool</a><span class="p">]</span><span class="p">]</span></span> <span class="o">=</span> <span class="default_value">'None'</span></em>, <em class="sig-param"><span class="n">latest</span><span class="p">:</span> <span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.8)">bool</a></span> <span class="o">=</span> <span class="default_value">'False'</span></em><span class="sig-paren">)</span> &#x2192; Optional<span class="p">[</span>ampel.content.JournalRecord.JournalRecord<span class="p">]</span></dt>
-<dd><dl class="field-list simple">
+<code class="sig-name descname">get_journal_entries</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">tier</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>Literal<span class="p">[</span>0<span class="p">, </span>1<span class="p">, </span>2<span class="p">, </span>3<span class="p">]</span><span class="p">]</span></span> <span class="o">=</span> <span class="default_value">'None'</span></em>, <em class="sig-param"><span class="n">process_name</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)">str</a><span class="p">]</span></span> <span class="o">=</span> <span class="default_value">'None'</span></em>, <em class="sig-param"><span class="n">filter_func</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>Callable<span class="p">[</span><span class="p">[</span><a class="reference internal" href="#ampel.content.JournalRecord.JournalRecord" title="ampel.content.JournalRecord.JournalRecord">ampel.content.JournalRecord.JournalRecord</a><span class="p">]</span><span class="p">, </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.8)">bool</a><span class="p">]</span><span class="p">]</span></span> <span class="o">=</span> <span class="default_value">'None'</span></em>, <em class="sig-param"><span class="n">latest</span><span class="p">:</span> <span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.8)">bool</a></span> <span class="o">=</span> <span class="default_value">'False'</span></em><span class="sig-paren">)</span> &#x2192; Optional<span class="p">[</span><a class="reference internal" href="#ampel.content.JournalRecord.JournalRecord" title="ampel.content.JournalRecord.JournalRecord">ampel.content.JournalRecord.JournalRecord</a><span class="p">]</span></dt>
+<dd><p>Get a subset of journal entries.</p>
+<dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
+<li><p><strong>tier</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.8)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Literal" title="(in Python v3.8)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Literal</span></code></a>[0, 1, 2, 3]]) – return only journal entries associated with the given tier</p></li>
 <li><p><strong>process_name</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.8)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>]) – return only journal entries associated with a given process name</p></li>
-<li><p><strong>last</strong> – return only the latest entry in the journal (the latest in time)</p></li>
+<li><p><strong>latest</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.8)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a>]) – return only the latest entry in the journal (the latest in time)</p></li>
 </ul>
 </dd>
-</dl>
-<p>Returns journal entries corresponding to a given tier and/or job,
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Union" title="(in Python v3.8)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code></a>[<a class="reference internal" href="#ampel.content.JournalRecord.JournalRecord" title="ampel.content.JournalRecord.JournalRecord"><code class="xref py py-class docutils literal notranslate"><span class="pre">JournalRecord</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Sequence" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code></a>[<a class="reference internal" href="#ampel.content.JournalRecord.JournalRecord" title="ampel.content.JournalRecord.JournalRecord"><code class="xref py py-class docutils literal notranslate"><span class="pre">JournalRecord</span></code></a>], <code class="docutils literal notranslate"><span class="pre">None</span></code>]</p>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>journal entries corresponding to a given tier and/or job,
 sorted by timestamp.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Union" title="(in Python v3.8)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code></a>[<code class="xref py py-class docutils literal notranslate"><span class="pre">JournalRecord</span></code>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Sequence" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code></a>[<code class="xref py py-class docutils literal notranslate"><span class="pre">JournalRecord</span></code>], <code class="docutils literal notranslate"><span class="pre">None</span></code>]</p>
 </dd>
 </dl>
 </dd></dl>
@@ -344,9 +816,117 @@ sorted by timestamp.</p>
 </dd></dl>
 
 <dl class="py class">
-<dt id="ampel.view.TransientView.TransientView">
-<em class="property">class </em><code class="sig-prename descclassname">ampel.view.TransientView.</code><code class="sig-name descname">TransientView</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">id</span></em>, <em class="sig-param"><span class="n">stock</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">t0</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">t1</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">t2</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">log</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">extra</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">freeze</span><span class="o">=</span><span class="default_value">True</span></em><span class="sig-paren">)</span><a class="headerlink" href="#ampel.view.TransientView.TransientView" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dt id="ampel.view.ReadOnlyDict.ReadOnlyDict">
+<em class="property">class </em><code class="sig-prename descclassname">ampel.view.ReadOnlyDict.</code><code class="sig-name descname">ReadOnlyDict</code><a class="headerlink" href="#ampel.view.ReadOnlyDict.ReadOnlyDict" title="Permalink to this definition">¶</a></dt>
+<dd><p>A dict whose items can’t be changed.</p>
+<dl class="py method">
+<dt id="ampel.view.ReadOnlyDict.ReadOnlyDict.pop">
+<code class="sig-name descname">pop</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">*</span><span class="n">args</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#ampel.view.ReadOnlyDict.ReadOnlyDict.pop" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Raises</dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#RuntimeError" title="(in Python v3.8)"><strong>RuntimeError</strong></a> – whenever called</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="ampel.view.ReadOnlyDict.ReadOnlyDict.popitem">
+<code class="sig-name descname">popitem</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">*</span><span class="n">args</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#ampel.view.ReadOnlyDict.ReadOnlyDict.popitem" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Raises</dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#RuntimeError" title="(in Python v3.8)"><strong>RuntimeError</strong></a> – whenever called</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="ampel.view.ReadOnlyDict.ReadOnlyDict.clear">
+<code class="sig-name descname">clear</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">*</span><span class="n">args</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#ampel.view.ReadOnlyDict.ReadOnlyDict.clear" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Raises</dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#RuntimeError" title="(in Python v3.8)"><strong>RuntimeError</strong></a> – whenever called</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="ampel.view.ReadOnlyDict.ReadOnlyDict.update">
+<code class="sig-name descname">update</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">*</span><span class="n">args</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#ampel.view.ReadOnlyDict.ReadOnlyDict.update" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Raises</dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#RuntimeError" title="(in Python v3.8)"><strong>RuntimeError</strong></a> – whenever called</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="ampel.view.ReadOnlyDict.ReadOnlyDict.setdefault">
+<code class="sig-name descname">setdefault</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">*</span><span class="n">args</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#ampel.view.ReadOnlyDict.ReadOnlyDict.setdefault" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Raises</dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#RuntimeError" title="(in Python v3.8)"><strong>RuntimeError</strong></a> – whenever called</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="data-models">
+<h2>Data models<a class="headerlink" href="#data-models" title="Permalink to this headline">¶</a></h2>
+<p>These models are used to parse and validate the configuration of the Ampel system.</p>
+<dl class="py class">
+<dt id="ampel.model.Secret.Secret">
+<em class="property">class </em><code class="sig-prename descclassname">ampel.model.Secret.</code><code class="sig-name descname">Secret</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#ampel.model.Secret.Secret" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Generic" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">typing.Generic</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">ampel.base.AmpelABC.AmpelABC</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">ampel.model.StrictModel.StrictModel</span></code></p>
+<p>A wrapper for a piece of sensitive data, e.g. a password or access token.</p>
+<dl class="py attribute">
+<dt id="ampel.model.Secret.Secret.key">
+<code class="sig-name descname">key</code><em class="property">: <a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)">str</a></em><a class="headerlink" href="#ampel.model.Secret.Secret.key" title="Permalink to this definition">¶</a></dt>
+<dd><p>The name of the secret.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="ampel.model.Secret.Secret.get">
+<code class="sig-name descname">get</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#ampel.model.Secret.Secret.get" title="Permalink to this definition">¶</a></dt>
+<dd><p>Resolve the secret and return its value.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>~T</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="ampel.model.UnitModel.UnitModel">
+<em class="property">class </em><code class="sig-prename descclassname">ampel.model.UnitModel.</code><code class="sig-name descname">UnitModel</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#ampel.model.UnitModel.UnitModel" title="Permalink to this definition">¶</a></dt>
+<dd><p>Specification of a processing unit to instantiate.</p>
+<dl class="py attribute">
+<dt id="ampel.model.UnitModel.UnitModel.unit">
+<code class="sig-name descname">unit</code><em class="property">: Union<span class="p">[</span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)">str</a><span class="p">, </span>Type<span class="p">[</span>ampel.base.AmpelBaseModel.AmpelBaseModel<span class="p">]</span><span class="p">]</span></em><a class="headerlink" href="#ampel.model.UnitModel.UnitModel.unit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Name of registered unit class, or class itself</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="ampel.model.UnitModel.UnitModel.config">
+<code class="sig-name descname">config</code><em class="property">: Optional<span class="p">[</span>Union<span class="p">[</span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.8)">int</a><span class="p">, </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)">str</a><span class="p">, </span>Dict<span class="p">[</span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)">str</a><span class="p">, </span>Any<span class="p">]</span><span class="p">]</span><span class="p">]</span></em><a class="headerlink" href="#ampel.model.UnitModel.UnitModel.config" title="Permalink to this definition">¶</a></dt>
+<dd><ul class="simple">
+<li><p>None: no config (use class defaults)</p></li>
+<li><p>dict: config ‘as is’</p></li>
+<li><p>str: a corresponding alias key in the AmpelConfig must match the provided string</p></li>
+<li><p>int: used internally for T2 units, a corresponding int key (AmpelConfig, base key ‘confid’) must match the provided integer</p></li>
+</ul>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="ampel.model.UnitModel.UnitModel.override">
+<code class="sig-name descname">override</code><em class="property">: Optional<span class="p">[</span>Dict<span class="p">[</span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)">str</a><span class="p">, </span>Any<span class="p">]</span><span class="p">]</span></em><a class="headerlink" href="#ampel.model.UnitModel.UnitModel.override" title="Permalink to this definition">¶</a></dt>
+<dd><p>Values to override in the config</p>
+</dd></dl>
+
+</dd></dl>
 
 </div>
 </div>
@@ -363,7 +943,7 @@ sorted by timestamp.</p>
             </a></p>
   <h4>Previous topic</h4>
   <p class="topless"><a href="index.html"
-                        title="previous chapter">Ampel projects</a></p>
+                        title="previous chapter">API documentation by project</a></p>
   <h4>Next topic</h4>
   <p class="topless"><a href="ampel-core.html"
                         title="next chapter">Ampel-core</a></p>
@@ -391,10 +971,10 @@ sorted by timestamp.</p>
           <a href="ampel-core.html" title="Ampel-core"
              >next</a> |</li>
         <li class="right" >
-          <a href="index.html" title="Ampel projects"
+          <a href="index.html" title="API documentation by project"
              >previous</a> |</li>
         <li class="nav-item nav-item-0"><a href="../index.html">Ampel 0.7.0a0 documentation</a> &#187;</li>
-          <li class="nav-item nav-item-1"><a href="index.html" >Ampel projects</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="index.html" >API documentation by project</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">Ampel-interface</a></li> 
       </ul>
     </div>

@@ -89,22 +89,22 @@ Terminology changes and renamed classes
 ====================================== ============================================
 v0.6 class                             v0.7 (nearest equivalent)
 ====================================== ============================================
-``ampel.base.LightCurve``              ``ampel.view.LightCurve``
-``ampel.base.AmpelAlert``              ``ampel.alert.PhotoAlert``
-``ampel.base.ScienceRecord``           ``ampel.content.T2Record``
-``ampel.base.TransientView``           ``ampel.view.TransientView``
-``ampel.base.PlainPhotoPoint``         ``ampel.content.DataPoint``
-``ampel.base.PlainUpperLimit``         ``ampel.content.DataPoint``
-``ampel.base.flags.PhotoFlags``        None (replaced by tags)
-``ampel.base.flags.TransientFlags``    None (replaced by tags)
-``ampel.base.dataclass.JournalUpdate`` ``ampel.struct.JournalExtra``
-``ampel.base.dataclass.GlobalInfo``    None?
-``ampel.base.abstract.AbsAlertFilter`` ``ampel.abstract.AbsAlertFilter[PhotoAlert]``
-``ampel.base.abstract.AbsT2Unit``      ``ampel.abstract.AbsLightCurveT2Unit``
-``ampel.base.abstract.AbsT3Unit``      ``ampel.abstract.AbsPhotoT3Unit``
+``ampel.base.LightCurve``              :class:`ampel.view.LightCurve <ampel.view.LightCurve.LightCurve>`
+``ampel.base.AmpelAlert``              :class:`ampel.alert.PhotoAlert <ampel.alert.PhotoAlert.PhotoAlert>`
+``ampel.base.ScienceRecord``           :class:`ampel.content.T2Record <ampel.content.T2Record.T2Record>`
+``ampel.base.TransientView``           :class:`ampel.view.TransientView <ampel.view.TransientView.TransientView>`
+``ampel.base.PlainPhotoPoint``         :class:`ampel.content.DataPoint <ampel.content.DataPoint.DataPoint>`
+``ampel.base.PlainUpperLimit``         :class:`ampel.content.DataPoint <ampel.content.DataPoint.DataPoint>`
+``ampel.base.flags.PhotoFlags``        None (replaced by :class:`data_point["tag"] <ampel.content.DataPoint.DataPoint>`)
+``ampel.base.flags.TransientFlags``    None (replaced by :class:`stock_record["tag"] <ampel.content.StockRecord.StockRecord>`)
+``ampel.base.dataclass.JournalUpdate`` :class:`ampel.struct.JournalExtra <ampel.struct.JournalExtra.JournalExtra>`
+``ampel.base.dataclass.GlobalInfo``    None (:class:`AbsT3Unit.context <ampel.abstract.AbsT3Unit.AbsT3Unit>` is populated by instances of :class:`~ampel.t3.context.AbsT3RunContextAppender.AbsT3RunContextAppender`)
+``ampel.base.abstract.AbsAlertFilter`` :class:`ampel.abstract.AbsAlertFilter[PhotoAlert] <ampel.abstract.AbsAlertFilter.AbsAlertFilter>`
+``ampel.base.abstract.AbsT2Unit``      :class:`ampel.abstract.AbsLightCurveT2Unit <ampel.abstract.AbsLightCurveT2Unit.AbsLightCurveT2Unit>`
+``ampel.base.abstract.AbsT3Unit``      :class:`ampel.abstract.AbsPhotoT3Unit <ampel.abstract.AbsPhotoT3Unit.AbsPhotoT3Unit>`
 ====================================== ============================================
 
-- Classes in ``ampel.content`` are declared as ``TypedDict``. At runtime these are ``ReadOnlyDict``, but the annotations in the class definition tell you which keys they have.
+- Classes in ``ampel.content`` are declared as ``TypedDict``. At runtime these are ``ReadOnlyDict``, but the annotations in the class definition tell you which keys they may have.
 
 Channel definitions
 *******************
@@ -175,9 +175,7 @@ A slightly truncated example::
       run:
         unit: DemoT3Unit
 
-Some operations that were previously embedded in T3 units, like filtering
-TransientViews in :py:meth:`AbsT3Unit.add`, now have their own dedicated
-stages. This makes it possible to reuse these stages without writing new code.
+Some operations that were previously embedded in T3 units, like filtering :class:`TransientView <ampel.view.TransientView.TransientView>` in :meth:`AbsT3Unit.add <ampel.abstract.AbsT3Unit.AbsT3Unit.add>`, now have their own dedicated stages. This makes it possible to reuse these stages without writing new code.
 
 Standalone T3 processes
 ***********************
@@ -224,10 +222,10 @@ T0 units
 
 .. _legacy-t0-configuration:
 
-Configuration
-*************
+T0 unit configuration
+*********************
 
-All units in v0.7 use type annotations and ``pydantic`` to define and validate their configuration. This means that if you previously used a nested :py:class:`RunConfig` class to define a configuration, you can move its fields up to the parent class, and access them as attributes from instances. In other words, the following v0.6 filter defintion::
+All units in v0.7 use type annotations and ``pydantic`` to define and validate their configuration. This means that if you previously used a nested :class:`RunConfig` class to define a configuration, you can move its fields up to the parent class, and access them as attributes from instances. In other words, the following v0.6 filter defintion::
   
   from pydantic import BaseModel
   from ampel.base.abstract.AbsAlertFilter import AbsAlertFilter
@@ -274,11 +272,11 @@ shrinks down to::
       def post_init(self):
           ...
 
-You no longer have to define an :py:meth:`__init__`; the default :py:meth:`__init__` will set ``self.min_ndet`` and raise an exception if required fields are not set or set with invalid values. If you need to do any custom setup, however, you can define a :py:meth:`post_init` that will be called within the base class :py:meth:`__init__`. A few other things to note:
+You no longer have to define an :meth:`__init__`; the default :meth:`__init__` will set ``self.min_ndet`` and raise an exception if required fields are not set or set with invalid values. If you need to do any custom setup, however, you can define a :meth:`post_init` that will be called within the base class :meth:`__init__`. A few other things to note:
 
-- All instances of :py:class:`AbsAlertFilter` have a ``self.logger`` property. You do not have to set one up yourself.
-- ``AbsAlertFilter[PhotoAlert]`` indicates that the :py:meth:`apply` method expects a :py:class:`PhotoAlert`. Instances of :py:class:`PhotoAlert` have separate photopoints and upper limits. If you omit the parameter to :py:class:`AbsAlertFilter` in your class definition, your :py:meth:`apply` method will receive the base class, :py:class:`AmpelAlert`, instead. Instances of :py:class:`AmpelAlert` only have one collection of datapoints.
-- The call to :py:meth:`Field` is optional, but makes the field description machine-readable. You can also use this to define jsonschema-style constraints on the field value, for example requiring an integer to be positive, or a list to have a specified number of items. For more information, see the `pydantic docs <https://pydantic-docs.helpmanual.io/usage/schema/#field-customisation>`_.
+- All instances of :class:`~ampel.abstract.AbsAlertFilter.AbsAlertFilter` have a ``self.logger`` property. You do not have to set one up yourself.
+- ``AbsAlertFilter[PhotoAlert]`` indicates that the :meth:`~ampel.abstract.AbsAlertFilter.AbsAlertFilter.apply` method expects a :class:`~ampel.alert.PhotoAlert.PhotAlert`. Instances of :class:`~ampel.alert.PhotoAlert.PhotoAlert` have separate photopoints and upper limits. If you omit the parameter to :class:`~ampel.abstract.AbsAlertFilter.AbsAlertFilter` in your class definition, your :meth:`~ampel.abstract.AbsAlertFilter.AbsAlertFilter.apply` method will receive the base class, :class:`~ampel.alert.AmpelAlert.AmpelAlert`, instead. Instances of :class:`~ampel.alert.AmpelAlert.AmpelAlert` only have one collection of datapoints.
+- The call to :py:meth:`~pydantic.Field` is optional, but makes the field description machine-readable. You can also use this to define jsonschema-style constraints on the field value, for example requiring an integer to be positive, or a list to have a specified number of items. For more information, see the `pydantic docs <https://pydantic-docs.helpmanual.io/usage/schema/#field-customisation>`_.
 - Field names should be lower camel-cased by convention.
 
 Base classes also exist to automate the configuration of e.g. catalog matching services. For example, if you were previously setting up ``catsHTM`` matching
@@ -310,12 +308,12 @@ you can simplify to::
 Filtering
 *********
 
-:py:class:`PhotoAlert` is mostly a drop-in replacement for the v0.6 :py:class:`AmpelAlert`. There are important differences, however:
+:class:`~ampel.alert.PhotoAlert.PhotoAlert` is mostly a drop-in replacement for the v0.6 :py:class:`AmpelAlert`. There are important differences, however:
 
-- :py:meth:`PhotoAlert.get_values` uses native field names instead of the internal aliases from v0.6. Use ``jd`` instead of ``obs_date``, ``magpsf`` instead of ``mag``, etc.
-- The third argument to :py:meth:`PhotoAlert.get_values` is now a string rather than a bool. Where you formerly used ``get_values(..., upper_limits=True)`` to get values from upper limits, use ``get_values(..., data="uls")``. To get both detections and upper limits, use ``get_values(..., data="all")``.
+- :meth:`~ampel.alert.PhotoAlert.PhotoAlert.get_values` uses native field names instead of the internal aliases from v0.6. Use ``jd`` instead of ``obs_date``, ``magpsf`` instead of ``mag``, etc.
+- The third argument to :meth:`~ampel.alert.PhotoAlert.PhotoAlert.get_values` is now a string rather than a bool. Where you formerly used ``get_values(..., upper_limits=True)`` to get values from upper limits, use ``get_values(..., data="uls")``. To get both detections and upper limits, use ``get_values(..., data="all")``.
 
-The return value of :py:meth:`AbsAlertFilter.apply` may now return a :py:class:`bool` or an :py:class:`int`.
+The return value of :meth:`AbsAlertFilter.apply <ampel.abstract.AbsAlertFilter.AbsAlertFilter.apply>` may now return a :class:`bool` or an :class:`int`.
 
 - If you previously returned ``self.on_match_t2_units`` to accept an alert and trigger all configured T2s, return ``True`` instead.
 - If you previously returned ``False`` or ``None`` to reject an alert, you may continue to do so. You may also return an integer "rejection code" between -255 and -1. You can define these codes however you like, and use them to efficiently query the properties of rejected alerts after the fact.
@@ -329,21 +327,21 @@ New base classes
 
 There are now 3 different kinds of T2 unit. If your T2 does something other than a light curve analysis, it may be a better fit for one of the new ones:
 
-- :py:class:`ampel.abstract.AbsLightCurveT2Unit.AbsLightCurveT2Unit` operates on entire light curves, and runs every time a new photopoint or upper limit is added to a transient. This is equivalent to the old :py:class:`AbsT2Unit`, but can be configured to operate on all photopoints, or on detections only.
-- :py:class:`ampel.abstract.AbsPointT2Unit.AbsPointT2Unit` operates on single data points. It can be configured to run on a subset of photopoints, e.g. to run catalog matching on only the first detection.
-- :py:class:`ampel.abstract.AbsStockT2Unit.AbsStockT2Unit` operates on the stock (transient) record itself. This can be used to perform some action when the transient is added to a channel.
+- :class:`~ampel.abstract.AbsLightCurveT2Unit.AbsLightCurveT2Unit` operates on entire light curves, and runs every time a new photopoint or upper limit is added to a transient. This is equivalent to the old :py:class:`AbsT2Unit`, but can be configured to operate on all photopoints, or on detections only.
+- :class:`~ampel.abstract.AbsPointT2Unit.AbsPointT2Unit` operates on single data points. It can be configured to run on a subset of photopoints, e.g. to run catalog matching on only the first detection.
+- :class:`~ampel.abstract.AbsStockT2Unit.AbsStockT2Unit` operates on the stock (transient) record itself. This can be used to perform some action when the transient is added to a channel.
 
 There are also "tied" variants of these that can be used to make one T2 depend on the results of other T2s.
 
-Configuration
-*************
+T2 unit configuration
+*********************
 
 Like T0 units, T2 units take their configuration as fields. See:ref:`legacy-t0-configuration`.
 
 :py:meth:`run`
 **************
 
-T2 units now have a single configuration, so the :py:meth:`run` method no longer takes a ``run_config`` argument. If your :py:meth:`run` method previously looked like this [contrived] example::
+T2 units now have a single configuration, so the :meth:`~ampel.abstract.AbsLightCurveT2Unit.AbsLightCurveT2Unit.run` method no longer takes a ``run_config`` argument. If your :py:meth:`run` method previously looked like this [contrived] example::
   
   def run(self, light_curve, run_config):
       count = len(light_curve.get_values("jd", upper_limits=False))
@@ -364,12 +362,12 @@ The `PEP 484 annotations <https://www.python.org/dev/peps/pep-0484/>`_ in the me
 T3 units
 ========
 
-Configuration
-*************
+T3 unit configuration
+*********************
 
 See :ref:`legacy-t0-configuration`.
 
-If your T3 authenticates with an external service like Slack or DropBox using a secret token, you should *not* check this token into your repository. Slack in particular scans all commits to public GitHub repositories and revokes any of its tokens it finds there. Instead, you can use the special :py:class:`Secret` type hint to indicate that the value should be looked up in a separate secret store. For example, if you previously had::
+If your T3 authenticates with an external service like Slack or DropBox using a secret token, you should *not* check this token into your repository. Slack in particular scans all commits to public GitHub repositories and revokes any of its tokens it finds there. Instead, you can use the special :class:`~ampel.model.Secret.Secret` type hint to indicate that the value should be looked up in a separate secret store. For example, if you previously had::
   
   from pydantic import BaseModel, BaseConfig
   from ampel.base.abstract.AbsT3Unit import AbsT3Unit
@@ -401,10 +399,10 @@ you should have this::
           token = self.slack_token.get()
           ...
 
-Again, all type annotations in method signatures (and the associated imports) are optional, but encouraged. The default value of ``slack_token`` tells Ampel to look up the value under the name "my-slack-token" in its secret store. Your T3 instance will get an object whose :py:meth:`get` method returns the value. This mechanism allows you to specify which token you want by default as a symbolic name rather than a value. The trailing comment instructs mypy_ to not complain about the assignment.
+Again, all type annotations in method signatures (and the associated imports) are optional, but encouraged. The default value of ``slack_token`` tells Ampel to look up the value under the name "my-slack-token" in its secret store. Your T3 instance will be configured with an object whose :meth:`~ampel.model.Secret.Secret.get` method returns the value (of the type indicated in ``[]``, or :class:`str` if unspecified). This mechanism allows you to specify which token you want by default as a symbolic name rather than a value. The trailing comment instructs mypy_ to not complain about the assignment.
 
-:py:meth:`add`
-**************
+:py:meth:`~ampel.abstract.AbsT3Unit.AbsT3Unit.add`
+**************************************************
 
 - return a ``Dict[StockId,JournalExtra]`` instead of a list of ``JournalUpdate``. For example, if you were previously doing something like this::
   
