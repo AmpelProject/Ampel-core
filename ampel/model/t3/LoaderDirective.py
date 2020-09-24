@@ -24,10 +24,14 @@ models = {
 }
 
 class LoaderDirective(StrictModel):
+	"""Specification of documents to load"""
 
+	#: Source collection
 	col: Literal["stock", "t0", "t1", "t2", "log"]
 	model: Optional[Type] # TypedDict
+	#: Mongo match expression to include in the query
 	query_complement: Optional[Dict[str, Any]]
+	# key "link_config" used in DBContentLoader
 	options: Optional[Dict[str, Any]]
 
 	def __init__(self, **kwargs):

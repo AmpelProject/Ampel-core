@@ -1,4 +1,6 @@
 
+.. _legacy-porting-guide:
+
 Porting contrib projects from v0.6
 ----------------------------------
 
@@ -111,9 +113,9 @@ Channel definitions
 
 The easiest way to define a channel is with a YAML file, e.g. conf/ampel-contrib-PROJECTNAME/channel/EXAMPLE_BRIGHT_N_STABLE.yaml. The content is similar to the JSON-based channel definitions in v0.6, but simplified. A few notable differences:
 
-- *templates* define common configurations that don't need to be repeated in every channel definition, and replace much of the boilerplate found in v0.6 channel definitions.
+- *templates* define common configurations that don't need to be repeated in every channel definition, and replace much of the boilerplate found in v0.6 channel definitions. See :class:`~ampel.model.ZTFLegacyChannelTemplate.ZTFLegacyChannelTemplate`.
 - T2 unit configurations can be defined either inline or in the `alias` section of the top-level config. A separate t2_config.json is no longer needed.
-- T3 process definitions embedded in the channel definition can also use templates.
+- T3 process definitions embedded in the channel definition can also use templates. See :class:`~ampel.model.ZTFPeriodicSummaryT3.ZTFPeriodicSummaryT3`.
 
 A slightly truncated example::
   

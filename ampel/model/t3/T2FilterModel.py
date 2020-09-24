@@ -12,5 +12,7 @@ from ampel.model.StrictModel import StrictModel
 
 class T2FilterModel(StrictModel):
 
+	#: name of T2 unit
 	unit: str
+	#: Mongo match expression to apply to most recent result
 	match: Dict[str, Any]

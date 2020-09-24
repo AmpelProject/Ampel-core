@@ -22,6 +22,7 @@ from ampel.type import ChannelId, Tag
 
 
 class FilterModel(StrictModel):
+    #: Filter based on T2 results
     t2: Union[T2FilterModel, AllOf[T2FilterModel], AnyOf[T2FilterModel]]
 
 UnitModelOrString = Union[UnitModel, str]
@@ -30,27 +31,39 @@ UnitModelSequence = Union[UnitModelOrString, Sequence[UnitModelOrString]]
 class PeriodicSummaryT3(AbsProcessTemplate):
     """
     A T3 process that selects stocks modified since its last invocation, and
-    supplies them, unfiltered, to a sequence of AbsT3Units.
+    supplies them, to a sequence of AbsT3Units.
     """
 
+    #: Process name
     name: str
     tier: Literal[3] = 3
     active: bool = True
+    #: one or more `schedule <https://schedule.readthedocs.io/en/stable/>`_
+    #: expressions, e.g: ``every().day.at("15:00")`` or ``every(42).minutes``
+    #: 
+    #: .. note:: all times are are expressed in UTC
     schedule: Union[str, Sequence[str]]
+    #: Channel selection
     channel: Union[
         None, ChannelId, AllOf[ChannelId], AnyOf[ChannelId], OneOf[ChannelId]
     ] = None
     distrib: Optional[str]
     source: Optional[str]
+    #: Stock tag selection
     tag: Optional[
         Dict[
             Literal["with", "without"],
             Union[Tag, Dict, AllOf[Tag], AnyOf[Tag], OneOf[Tag]],
         ]
     ] = None
+    #: Documents to load. If a string, should refer to an entry in the
+    #: ``alias.t3`` config section
     load: Optional[Sequence[Union[str,LoaderDirective]]] = None
+    #: Additional stock filters.
     filter: Optional[FilterModel] = None
+    #: Complement stages
     complement: Optional[UnitModelSequence] = None
+    #: Units to run
     run: UnitModelSequence
 
     def get_process(self, logger: Logger) -> Dict[str, Any]:

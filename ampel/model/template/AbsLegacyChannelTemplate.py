@@ -20,11 +20,20 @@ class AbsLegacyChannelTemplate(AbsChannelTemplate, abstract=True):
 	Abstract class whose purpose is to maintain compatibility with channel
 	definitions created for ampel versions < 0.7.
 	This class must be subclassed.
-	Known subclass: ZTFLegacyChannelTemplate
+	
+	Known subclass: :class:`~ampel.model.ZTFLegacyChannelTemplate.ZTFLegacyChannelTemplate`
 	"""
+	#: How to treat photopoints be treated once a transient has been accepted.
+	#
+	#: - false: apply filter to all photopoints
+	#: - true or "live": bypass filter once a transient has been accepted once
 	auto_complete: Union[bool, str]
+	#: Filter to apply to incoming datapoints
 	t0_filter: UnitModel
+	#: T2 units to trigger when transient is updated
 	t2_compute: List[UnitModel] = []
+	#: T3 processes bound to this channel. These may be use templates, such as
+	#: :class:`~ampel.model.template.PeriodicSummaryT3.PeriodicSummaryT3`.
 	t3_supervise: List[Dict[str, Any]] = []
 
 
@@ -162,8 +171,9 @@ class AbsLegacyChannelTemplate(AbsChannelTemplate, abstract=True):
 
 	def get_t2_units(self, abs_unit: Union[str, List[str]], first_pass_config: FirstPassConfig) -> List[Dict]:
 		"""
+		Example: ``get_t2_units("AbsLightCurveT2Unit")``
+		
 		:returns: t2 units that are subclass of the provided abstract class name.
-		Example: get_t2_units("AbsLightCurveT2Unit")
 		"""
 		if isinstance(abs_unit, str):
 			abs_unit = [abs_unit]
