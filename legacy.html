@@ -50,24 +50,36 @@ project using the current config system can be found in
 <div class="section" id="environment">
 <h2>Environment<a class="headerlink" href="#environment" title="Permalink to this headline">¶</a></h2>
 <p>Ampel v0.7 requires Python &gt;= 3.8. If you already have Python 3.8 on your system, create and activate a virtualenv for Ampel with:</p>
-<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>python3 -m venv ampel-v0.7
-<span class="nb">source</span> ampel-v0.7/bin/activate
+<div class="highlight-shell-session notranslate"><div class="highlight"><pre><span></span><span class="go">python3 -m venv ampel-v0.7</span>
+<span class="go">source ampel-v0.7/bin/activate</span>
 </pre></div>
 </div>
 <p>Otherwise, a good way to get Python 3.8 is with <a class="reference external" href="https://docs.conda.io/en/latest/miniconda.html">miniconda</a>. After installing <code class="docutils literal notranslate"><span class="pre">miniconda</span></code>, create an environment containing Python 3.8 with:</p>
-<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>conda create -y -n ampel-v0.7 <span class="nv">python</span><span class="o">=</span><span class="m">3</span>.8
-conda activate ampel-v0.7
+<div class="highlight-shell-session notranslate"><div class="highlight"><pre><span></span><span class="go">conda create -y -n ampel-v0.7 python=3.8</span>
+<span class="go">conda activate ampel-v0.7</span>
 </pre></div>
 </div>
-<p>Inside your environment, clone the Ampel-contrib-HU project and install its dependencies with:</p>
-<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>git clone https://github.com/AmpelProject/Ampel-contrib-HU.git
-<span class="nb">cd</span> Ampel-contrib-HU
-pip install -r requirements.txt
+<p>To develop and test your contributed plug-in, you will need to install the Ampel Python packages and their dependencies from within your environment. For ZTF data, a basic set of packages is:</p>
+<div class="highlight-shell-session notranslate"><div class="highlight"><pre><span></span><span class="go">pip install \</span>
+<span class="go">-e git+https://github.com/AmpelProject/Ampel-interface.git#egg=ampel-interface \</span>
+<span class="go">-e git+https://github.com/AmpelProject/Ampel-core.git#egg=ampel-core \</span>
+<span class="go">-e git+https://github.com/AmpelProject/Ampel-alerts.git#egg=ampel-alerts \</span>
+<span class="go">-e git+https://github.com/AmpelProject/Ampel-photometry.git#egg=ampel-photometry \</span>
+<span class="go">-e git+https://github.com/AmpelProject/Ampel-ZTF.git#egg=ampel-ztf</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Eventually these should be published to PyPI.</p>
+</div>
+<p>If your project depends on <code class="docutils literal notranslate"><span class="pre">catsHTM</span></code> catalog matching, e.g. via a subclass of <code class="xref py py-class docutils literal notranslate"><span class="pre">DecentFilter</span></code>, you will also need to:</p>
+<div class="highlight-shell-session notranslate"><div class="highlight"><pre><span></span><span class="go">pip install -e git+https://github.com/AmpelProject/Ampel-contrib-HU.git#egg=ampel-contrib-hu</span>
 </pre></div>
 </div>
 <p>You can then install your own project in the environment with:</p>
-<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span><span class="nb">cd</span> ampel-contrib-PROJECTNAME
-pip install -e .
+<div class="highlight-shell-session notranslate"><div class="highlight"><pre><span></span><span class="go">git clone git+https://github.com/SomeOrganization/Ampel-contrib-PROJECTNAME.git</span>
+<span class="go">cd ampel-contrib-PROJECTNAME</span>
+<span class="go">pip install -e .</span>
 </pre></div>
 </div>
 <p>After this, you should be able to run <code class="code docutils literal notranslate"><span class="pre">ampel-config</span> <span class="pre">build</span></code> and see a gigantic blob of YAML being generated.</p>
@@ -102,7 +114,6 @@ you may have. For example:</p>
     <span class="nt">auto_complete</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">live</span>
 <span class="nt">unit</span><span class="p">:</span>
   <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">ampel.contrib.groupname.t0.DecentFilterCopy</span>
-<span class="l l-Scalar l-Scalar-Plain">re</span>
 </pre></div>
 </div>
 <p>The entries in <cite>unit</cite> are module names, i.e. <code class="code docutils literal notranslate"><span class="pre">ampel.contrib.groupname.t0.DecentFilterCopy</span></code> refers to the file <code class="docutils literal notranslate"><span class="pre">ampel/contrib/groupname/t0/DecentFilterCopy.py</span></code>. This file must contain one class, with the same name as the module. For example, when <a class="reference internal" href="projects/ampel-alerts.html#ampel.alert.AlertProcessor.AlertProcessor" title="ampel.alert.AlertProcessor.AlertProcessor"><code class="xref py py-class docutils literal notranslate"><span class="pre">AlertProcessor</span></code></a> requests instantiation of the unit named <code class="docutils literal notranslate"><span class="pre">DecentFilterCopy</span></code>, the entry above will cause Ampel to do the equivalent of <code class="code docutils literal notranslate"><span class="pre">from</span> <span class="pre">ampel.contrib.groupname.t0.DecentFilterCopy</span> <span class="pre">import</span> <span class="pre">DecentFilterCopy</span></code>.</p>
