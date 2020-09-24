@@ -34,7 +34,7 @@ class PeriodicSummaryT3(AbsProcessTemplate):
     supplies them, to a sequence of AbsT3Units.
     """
 
-    #: Process name
+    #: Process name.
     name: str
     tier: Literal[3] = 3
     active: bool = True
@@ -43,13 +43,13 @@ class PeriodicSummaryT3(AbsProcessTemplate):
     #: 
     #: .. note:: all times are are expressed in UTC
     schedule: Union[str, Sequence[str]]
-    #: Channel selection
+    #: Channel selection.
     channel: Union[
         None, ChannelId, AllOf[ChannelId], AnyOf[ChannelId], OneOf[ChannelId]
     ] = None
     distrib: Optional[str]
     source: Optional[str]
-    #: Stock tag selection
+    #: Stock tag selection.
     tag: Optional[
         Dict[
             Literal["with", "without"],
@@ -57,13 +57,13 @@ class PeriodicSummaryT3(AbsProcessTemplate):
         ]
     ] = None
     #: Documents to load. If a string, should refer to an entry in the
-    #: ``alias.t3`` config section
+    #: ``alias.t3`` config section. See :ref:`t3-directive-load`.
     load: Optional[Sequence[Union[str,LoaderDirective]]] = None
     #: Additional stock filters.
     filter: Optional[FilterModel] = None
-    #: Complement stages
+    #: Complement stages. See :ref:`t3-directive-complement`.
     complement: Optional[UnitModelSequence] = None
-    #: Units to run
+    #: Units to run. See :ref:`t3-directive-run-execute`.
     run: UnitModelSequence
 
     def get_process(self, logger: Logger) -> Dict[str, Any]:
