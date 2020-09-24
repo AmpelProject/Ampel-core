@@ -1,0 +1,145 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Ampel-ZTF &#8212; Ampel 0.7.0a0 documentation</title>
+    <link rel="stylesheet" href="../_static/sphinxdoc.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script src="../_static/jquery.js"></script>
+    <script src="../_static/underscore.js"></script>
+    <script src="../_static/doctools.js"></script>
+    <script src="../_static/language_data.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Porting contrib projects from v0.6" href="../legacy.html" />
+    <link rel="prev" title="Ampel-photometry" href="ampel-photometry.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../legacy.html" title="Porting contrib projects from v0.6"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="ampel-photometry.html" title="Ampel-photometry"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">Ampel 0.7.0a0 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="index.html" accesskey="U">API documentation by project</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Ampel-ZTF</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="ampel-ztf">
+<h1>Ampel-ZTF<a class="headerlink" href="#ampel-ztf" title="Permalink to this headline">¶</a></h1>
+<p>Utilities for ZTF alerts issued by IPAC</p>
+<div class="section" id="processing-units">
+<h2>Processing units<a class="headerlink" href="#processing-units" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="templates">
+<h2>Templates<a class="headerlink" href="#templates" title="Permalink to this headline">¶</a></h2>
+<dl class="py class">
+<dt id="ampel.model.ZTFLegacyChannelTemplate.ZTFLegacyChannelTemplate">
+<em class="property">class </em><code class="sig-prename descclassname">ampel.model.ZTFLegacyChannelTemplate.</code><code class="sig-name descname">ZTFLegacyChannelTemplate</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#ampel.model.ZTFLegacyChannelTemplate.ZTFLegacyChannelTemplate" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="ampel-core.html#ampel.model.template.AbsLegacyChannelTemplate.AbsLegacyChannelTemplate" title="ampel.model.template.AbsLegacyChannelTemplate.AbsLegacyChannelTemplate"><code class="xref py py-class docutils literal notranslate"><span class="pre">ampel.model.template.AbsLegacyChannelTemplate.AbsLegacyChannelTemplate</span></code></a></p>
+<p>Channel template for ZTF. Each of the named variants consumes adifferent
+alert streams from IPAC, and produce stocks with a different set of tags:</p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 27%" />
+<col style="width: 27%" />
+<col style="width: 46%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Template</p></th>
+<th class="head"><p>ZTF programids</p></th>
+<th class="head"><p>Tags</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>ztf_uw_private</p></td>
+<td><p>1, 2, 3_public</p></td>
+<td><p>ZTF, ZTF_PUB, ZTF_COLLAB</p></td>
+</tr>
+<tr class="row-odd"><td><p>ztf_uw_public</p></td>
+<td><p>1, 3_public</p></td>
+<td><p>ZTF, ZTF_PUB</p></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="py class">
+<dt id="ampel.model.ZTFPeriodicSummaryT3.ZTFPeriodicSummaryT3">
+<em class="property">class </em><code class="sig-prename descclassname">ampel.model.ZTFPeriodicSummaryT3.</code><code class="sig-name descname">ZTFPeriodicSummaryT3</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#ampel.model.ZTFPeriodicSummaryT3.ZTFPeriodicSummaryT3" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="ampel-core.html#ampel.model.template.PeriodicSummaryT3.PeriodicSummaryT3" title="ampel.model.template.PeriodicSummaryT3.PeriodicSummaryT3"><code class="xref py py-class docutils literal notranslate"><span class="pre">ampel.model.template.PeriodicSummaryT3.PeriodicSummaryT3</span></code></a></p>
+<p>Periodic summary process with sensible defaults for ZTF.</p>
+</dd></dl>
+
+</div>
+</div>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../index.html">
+              <img class="logo" src="../_static/ampel.png" alt="Logo"/>
+            </a></p>
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="ampel-photometry.html"
+                        title="previous chapter">Ampel-photometry</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="../legacy.html"
+                        title="next chapter">Porting contrib projects from v0.6</a></p>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../legacy.html" title="Porting contrib projects from v0.6"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="ampel-photometry.html" title="Ampel-photometry"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">Ampel 0.7.0a0 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="index.html" >API documentation by project</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Ampel-ZTF</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2018, Ampel Project.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 3.2.1.
+    </div>
+  </body>
+</html>

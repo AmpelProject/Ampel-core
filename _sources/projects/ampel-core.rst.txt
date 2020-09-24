@@ -141,6 +141,29 @@ Models
   :members:
   :undoc-members:
 
+.. autoclass:: ampel.model.t3.LoaderDirective.LoaderDirective
+  :members:
+  :exclude-members: dict
+
+.. autoclass:: ampel.model.t3.T2FilterModel.T2FilterModel
+  :members:
+
+Templates
+---------
+
+.. autoclass:: ampel.model.template.AbsLegacyChannelTemplate.AbsLegacyChannelTemplate
+  :members:
+  :exclude-members: craft_t0_process, get_t2_units
+  :show-inheritance:
+
+.. autoclass:: ampel.model.template.PeriodicSummaryT3.FilterModel
+  :members:
+
+.. autoclass:: ampel.model.template.PeriodicSummaryT3.PeriodicSummaryT3
+  :members:
+  :exclude-members: get_channel_tag
+  :show-inheritance:
+
 Enums
 -----
 

@@ -16,7 +16,7 @@
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="Contribute" href="contribute.html" />
-    <link rel="prev" title="Ampel-photometry" href="projects/ampel-photometry.html" /> 
+    <link rel="prev" title="Ampel-ZTF" href="projects/ampel-ztf.html" /> 
   </head><body>
     <div class="related" role="navigation" aria-label="related navigation">
       <h3>Navigation</h3>
@@ -28,7 +28,7 @@
           <a href="contribute.html" title="Contribute"
              accesskey="N">next</a> |</li>
         <li class="right" >
-          <a href="projects/ampel-photometry.html" title="Ampel-photometry"
+          <a href="projects/ampel-ztf.html" title="Ampel-ZTF"
              accesskey="P">previous</a> |</li>
         <li class="nav-item nav-item-0"><a href="index.html">Ampel 0.7.0a0 documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">Porting contrib projects from v0.6</a></li> 
@@ -175,9 +175,9 @@ in the example above can be replaced with a file conf/ampel-contrib-PROJECTNAME/
 <h3>Channel definitions<a class="headerlink" href="#channel-definitions" title="Permalink to this headline">¶</a></h3>
 <p>The easiest way to define a channel is with a YAML file, e.g. conf/ampel-contrib-PROJECTNAME/channel/EXAMPLE_BRIGHT_N_STABLE.yaml. The content is similar to the JSON-based channel definitions in v0.6, but simplified. A few notable differences:</p>
 <ul class="simple">
-<li><p><em>templates</em> define common configurations that don’t need to be repeated in every channel definition, and replace much of the boilerplate found in v0.6 channel definitions.</p></li>
+<li><p><em>templates</em> define common configurations that don’t need to be repeated in every channel definition, and replace much of the boilerplate found in v0.6 channel definitions. See <a class="reference internal" href="projects/ampel-ztf.html#ampel.model.ZTFLegacyChannelTemplate.ZTFLegacyChannelTemplate" title="ampel.model.ZTFLegacyChannelTemplate.ZTFLegacyChannelTemplate"><code class="xref py py-class docutils literal notranslate"><span class="pre">ZTFLegacyChannelTemplate</span></code></a>.</p></li>
 <li><p>T2 unit configurations can be defined either inline or in the <cite>alias</cite> section of the top-level config. A separate t2_config.json is no longer needed.</p></li>
-<li><p>T3 process definitions embedded in the channel definition can also use templates.</p></li>
+<li><p>T3 process definitions embedded in the channel definition can also use templates. See <a class="reference internal" href="projects/ampel-ztf.html#ampel.model.ZTFPeriodicSummaryT3.ZTFPeriodicSummaryT3" title="ampel.model.ZTFPeriodicSummaryT3.ZTFPeriodicSummaryT3"><code class="xref py py-class docutils literal notranslate"><span class="pre">ZTFPeriodicSummaryT3</span></code></a>.</p></li>
 </ul>
 <p>A slightly truncated example:</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">channel</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">EXAMPLE_BRIGHT_N_STABLE</span>
@@ -501,8 +501,8 @@ like this:</p>
               <img class="logo" src="_static/ampel.png" alt="Logo"/>
             </a></p>
   <h4>Previous topic</h4>
-  <p class="topless"><a href="projects/ampel-photometry.html"
-                        title="previous chapter">Ampel-photometry</a></p>
+  <p class="topless"><a href="projects/ampel-ztf.html"
+                        title="previous chapter">Ampel-ZTF</a></p>
   <h4>Next topic</h4>
   <p class="topless"><a href="contribute.html"
                         title="next chapter">Contribute</a></p>
@@ -530,7 +530,7 @@ like this:</p>
           <a href="contribute.html" title="Contribute"
              >next</a> |</li>
         <li class="right" >
-          <a href="projects/ampel-photometry.html" title="Ampel-photometry"
+          <a href="projects/ampel-ztf.html" title="Ampel-ZTF"
              >previous</a> |</li>
         <li class="nav-item nav-item-0"><a href="index.html">Ampel 0.7.0a0 documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">Porting contrib projects from v0.6</a></li> 

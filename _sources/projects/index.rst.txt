@@ -12,3 +12,4 @@ API documentation by project
    ampel-core
    ampel-alerts
    ampel-photometry
+   ampel-ztf

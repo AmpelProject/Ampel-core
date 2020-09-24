@@ -996,6 +996,155 @@ if your time constraint is based on TimeLastRunModel</p>
 
 </dd></dl>
 
+<dl class="py class">
+<dt id="ampel.model.t3.LoaderDirective.LoaderDirective">
+<em class="property">class </em><code class="sig-prename descclassname">ampel.model.t3.LoaderDirective.</code><code class="sig-name descname">LoaderDirective</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#ampel.model.t3.LoaderDirective.LoaderDirective" title="Permalink to this definition">¶</a></dt>
+<dd><p>Specification of documents to load</p>
+<dl class="py attribute">
+<dt id="ampel.model.t3.LoaderDirective.LoaderDirective.col">
+<code class="sig-name descname">col</code><em class="property">: Literal<span class="p">[</span>stock<span class="p">, </span>t0<span class="p">, </span>t1<span class="p">, </span>t2<span class="p">, </span>log<span class="p">]</span></em><a class="headerlink" href="#ampel.model.t3.LoaderDirective.LoaderDirective.col" title="Permalink to this definition">¶</a></dt>
+<dd><p>Source collection</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="ampel.model.t3.LoaderDirective.LoaderDirective.query_complement">
+<code class="sig-name descname">query_complement</code><em class="property">: Optional<span class="p">[</span>Dict<span class="p">[</span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)">str</a><span class="p">, </span>Any<span class="p">]</span><span class="p">]</span></em><a class="headerlink" href="#ampel.model.t3.LoaderDirective.LoaderDirective.query_complement" title="Permalink to this definition">¶</a></dt>
+<dd><p>Mongo match expression to include in the query</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="ampel.model.t3.T2FilterModel.T2FilterModel">
+<em class="property">class </em><code class="sig-prename descclassname">ampel.model.t3.T2FilterModel.</code><code class="sig-name descname">T2FilterModel</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#ampel.model.t3.T2FilterModel.T2FilterModel" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="py attribute">
+<dt id="ampel.model.t3.T2FilterModel.T2FilterModel.unit">
+<code class="sig-name descname">unit</code><em class="property">: <a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)">str</a></em><a class="headerlink" href="#ampel.model.t3.T2FilterModel.T2FilterModel.unit" title="Permalink to this definition">¶</a></dt>
+<dd><p>name of T2 unit</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="ampel.model.t3.T2FilterModel.T2FilterModel.match">
+<code class="sig-name descname">match</code><em class="property">: Dict<span class="p">[</span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)">str</a><span class="p">, </span>Any<span class="p">]</span></em><a class="headerlink" href="#ampel.model.t3.T2FilterModel.T2FilterModel.match" title="Permalink to this definition">¶</a></dt>
+<dd><p>Mongo match expression to apply to most recent result</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="templates">
+<h2>Templates<a class="headerlink" href="#templates" title="Permalink to this headline">¶</a></h2>
+<dl class="py class">
+<dt id="ampel.model.template.AbsLegacyChannelTemplate.AbsLegacyChannelTemplate">
+<em class="property">class </em><code class="sig-prename descclassname">ampel.model.template.AbsLegacyChannelTemplate.</code><code class="sig-name descname">AbsLegacyChannelTemplate</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#ampel.model.template.AbsLegacyChannelTemplate.AbsLegacyChannelTemplate" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">ampel.abstract.AbsChannelTemplate.AbsChannelTemplate</span></code></p>
+<p>Abstract class whose purpose is to maintain compatibility with channel
+definitions created for ampel versions &lt; 0.7.
+This class must be subclassed.</p>
+<p>Known subclass: <a class="reference internal" href="ampel-ztf.html#ampel.model.ZTFLegacyChannelTemplate.ZTFLegacyChannelTemplate" title="ampel.model.ZTFLegacyChannelTemplate.ZTFLegacyChannelTemplate"><code class="xref py py-class docutils literal notranslate"><span class="pre">ZTFLegacyChannelTemplate</span></code></a></p>
+<dl class="py attribute">
+<dt id="ampel.model.template.AbsLegacyChannelTemplate.AbsLegacyChannelTemplate.auto_complete">
+<code class="sig-name descname">auto_complete</code><em class="property">: Union<span class="p">[</span><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.8)">bool</a><span class="p">, </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)">str</a><span class="p">]</span></em><a class="headerlink" href="#ampel.model.template.AbsLegacyChannelTemplate.AbsLegacyChannelTemplate.auto_complete" title="Permalink to this definition">¶</a></dt>
+<dd><ul class="simple">
+<li><p>false: apply filter to all photopoints</p></li>
+<li><p>true or “live”: bypass filter once a transient has been accepted once</p></li>
+</ul>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="ampel.model.template.AbsLegacyChannelTemplate.AbsLegacyChannelTemplate.t0_filter">
+<code class="sig-name descname">t0_filter</code><em class="property">: <a class="reference internal" href="ampel-base.html#ampel.model.UnitModel.UnitModel" title="ampel.model.UnitModel.UnitModel">ampel.model.UnitModel.UnitModel</a></em><a class="headerlink" href="#ampel.model.template.AbsLegacyChannelTemplate.AbsLegacyChannelTemplate.t0_filter" title="Permalink to this definition">¶</a></dt>
+<dd><p>Filter to apply to incoming datapoints</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="ampel.model.template.AbsLegacyChannelTemplate.AbsLegacyChannelTemplate.t2_compute">
+<code class="sig-name descname">t2_compute</code><em class="property">: List<span class="p">[</span><a class="reference internal" href="ampel-base.html#ampel.model.UnitModel.UnitModel" title="ampel.model.UnitModel.UnitModel">ampel.model.UnitModel.UnitModel</a><span class="p">]</span></em><a class="headerlink" href="#ampel.model.template.AbsLegacyChannelTemplate.AbsLegacyChannelTemplate.t2_compute" title="Permalink to this definition">¶</a></dt>
+<dd><p>T2 units to trigger when transient is updated</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="ampel.model.template.AbsLegacyChannelTemplate.AbsLegacyChannelTemplate.t3_supervise">
+<code class="sig-name descname">t3_supervise</code><em class="property">: List<span class="p">[</span>Dict<span class="p">[</span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)">str</a><span class="p">, </span>Any<span class="p">]</span><span class="p">]</span></em><a class="headerlink" href="#ampel.model.template.AbsLegacyChannelTemplate.AbsLegacyChannelTemplate.t3_supervise" title="Permalink to this definition">¶</a></dt>
+<dd><p>T3 processes bound to this channel. These may be use templates, such as
+<a class="reference internal" href="#ampel.model.template.PeriodicSummaryT3.PeriodicSummaryT3" title="ampel.model.template.PeriodicSummaryT3.PeriodicSummaryT3"><code class="xref py py-class docutils literal notranslate"><span class="pre">PeriodicSummaryT3</span></code></a>.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="ampel.model.template.PeriodicSummaryT3.FilterModel">
+<em class="property">class </em><code class="sig-prename descclassname">ampel.model.template.PeriodicSummaryT3.</code><code class="sig-name descname">FilterModel</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#ampel.model.template.PeriodicSummaryT3.FilterModel" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="py attribute">
+<dt id="ampel.model.template.PeriodicSummaryT3.FilterModel.t2">
+<code class="sig-name descname">t2</code><em class="property">: Union<span class="p">[</span><a class="reference internal" href="#ampel.model.t3.T2FilterModel.T2FilterModel" title="ampel.model.t3.T2FilterModel.T2FilterModel">ampel.model.t3.T2FilterModel.T2FilterModel</a><span class="p">, </span><a class="reference internal" href="#ampel.model.operator.AllOf.AllOf" title="ampel.model.operator.AllOf.AllOf">ampel.model.operator.AllOf.AllOf</a><span class="p">[</span>T2FilterModel<span class="p">]</span><span class="p">, </span><a class="reference internal" href="#ampel.model.operator.AnyOf.AnyOf" title="ampel.model.operator.AnyOf.AnyOf">ampel.model.operator.AnyOf.AnyOf</a><span class="p">[</span>T2FilterModel<span class="p">]</span><span class="p">]</span></em><a class="headerlink" href="#ampel.model.template.PeriodicSummaryT3.FilterModel.t2" title="Permalink to this definition">¶</a></dt>
+<dd><p>Filter based on T2 results</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="ampel.model.template.PeriodicSummaryT3.PeriodicSummaryT3">
+<em class="property">class </em><code class="sig-prename descclassname">ampel.model.template.PeriodicSummaryT3.</code><code class="sig-name descname">PeriodicSummaryT3</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#ampel.model.template.PeriodicSummaryT3.PeriodicSummaryT3" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">ampel.abstract.AbsProcessTemplate.AbsProcessTemplate</span></code></p>
+<p>A T3 process that selects stocks modified since its last invocation, and
+supplies them, to a sequence of AbsT3Units.</p>
+<dl class="py attribute">
+<dt id="ampel.model.template.PeriodicSummaryT3.PeriodicSummaryT3.name">
+<code class="sig-name descname">name</code><em class="property">: <a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)">str</a></em><a class="headerlink" href="#ampel.model.template.PeriodicSummaryT3.PeriodicSummaryT3.name" title="Permalink to this definition">¶</a></dt>
+<dd><p>Process name</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="ampel.model.template.PeriodicSummaryT3.PeriodicSummaryT3.schedule">
+<code class="sig-name descname">schedule</code><em class="property">: Union<span class="p">[</span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)">str</a><span class="p">, </span>Sequence<span class="p">[</span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)">str</a><span class="p">]</span><span class="p">]</span></em><a class="headerlink" href="#ampel.model.template.PeriodicSummaryT3.PeriodicSummaryT3.schedule" title="Permalink to this definition">¶</a></dt>
+<dd><p>one or more <a class="reference external" href="https://schedule.readthedocs.io/en/stable/">schedule</a>
+expressions, e.g: <code class="docutils literal notranslate"><span class="pre">every().day.at(&quot;15:00&quot;)</span></code> or <code class="docutils literal notranslate"><span class="pre">every(42).minutes</span></code></p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>all times are are expressed in UTC</p>
+</div>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="ampel.model.template.PeriodicSummaryT3.PeriodicSummaryT3.channel">
+<code class="sig-name descname">channel</code><em class="property">: Union<span class="p">[</span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.8)">None</a><span class="p">, </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.8)">int</a><span class="p">, </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)">str</a><span class="p">, </span><a class="reference internal" href="#ampel.model.operator.AllOf.AllOf" title="ampel.model.operator.AllOf.AllOf">ampel.model.operator.AllOf.AllOf</a><span class="p">[</span>typing.Union<span class="p">[</span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.8)">int</a><span class="p">, </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)">str</a><span class="p">]</span><span class="p">]</span><span class="p">, </span><a class="reference internal" href="#ampel.model.operator.AnyOf.AnyOf" title="ampel.model.operator.AnyOf.AnyOf">ampel.model.operator.AnyOf.AnyOf</a><span class="p">[</span>typing.Union<span class="p">[</span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.8)">int</a><span class="p">, </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)">str</a><span class="p">]</span><span class="p">]</span><span class="p">, </span><a class="reference internal" href="#ampel.model.operator.OneOf.OneOf" title="ampel.model.operator.OneOf.OneOf">ampel.model.operator.OneOf.OneOf</a><span class="p">[</span>typing.Union<span class="p">[</span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.8)">int</a><span class="p">, </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)">str</a><span class="p">]</span><span class="p">]</span><span class="p">]</span></em><a class="headerlink" href="#ampel.model.template.PeriodicSummaryT3.PeriodicSummaryT3.channel" title="Permalink to this definition">¶</a></dt>
+<dd><p>Channel selection</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="ampel.model.template.PeriodicSummaryT3.PeriodicSummaryT3.tag">
+<code class="sig-name descname">tag</code><em class="property">: Optional[Dict[Literal[with, without], Union[int, str, Dict, ampel.model.operator.AllOf.AllOf[typing.Union[int, str]], ampel.model.operator.AnyOf.AnyOf[typing.Union[int, str]], ampel.model.operator.OneOf.OneOf[typing.Union[int, str]]]]]</em><a class="headerlink" href="#ampel.model.template.PeriodicSummaryT3.PeriodicSummaryT3.tag" title="Permalink to this definition">¶</a></dt>
+<dd><p>Stock tag selection</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="ampel.model.template.PeriodicSummaryT3.PeriodicSummaryT3.load">
+<code class="sig-name descname">load</code><em class="property">: Optional<span class="p">[</span>Sequence<span class="p">[</span>Union<span class="p">[</span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)">str</a><span class="p">, </span><a class="reference internal" href="#ampel.model.t3.LoaderDirective.LoaderDirective" title="ampel.model.t3.LoaderDirective.LoaderDirective">ampel.model.t3.LoaderDirective.LoaderDirective</a><span class="p">]</span><span class="p">]</span><span class="p">]</span></em><a class="headerlink" href="#ampel.model.template.PeriodicSummaryT3.PeriodicSummaryT3.load" title="Permalink to this definition">¶</a></dt>
+<dd><p>Documents to load. If a string, should refer to an entry in the
+<code class="docutils literal notranslate"><span class="pre">alias.t3</span></code> config section</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="ampel.model.template.PeriodicSummaryT3.PeriodicSummaryT3.filter">
+<code class="sig-name descname">filter</code><em class="property">: Optional<span class="p">[</span><a class="reference internal" href="#ampel.model.template.PeriodicSummaryT3.FilterModel" title="ampel.model.template.PeriodicSummaryT3.FilterModel">ampel.model.template.PeriodicSummaryT3.FilterModel</a><span class="p">]</span></em><a class="headerlink" href="#ampel.model.template.PeriodicSummaryT3.PeriodicSummaryT3.filter" title="Permalink to this definition">¶</a></dt>
+<dd><p>Additional stock filters.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="ampel.model.template.PeriodicSummaryT3.PeriodicSummaryT3.complement">
+<code class="sig-name descname">complement</code><em class="property">: Optional<span class="p">[</span>Union<span class="p">[</span><a class="reference internal" href="ampel-base.html#ampel.model.UnitModel.UnitModel" title="ampel.model.UnitModel.UnitModel">ampel.model.UnitModel.UnitModel</a><span class="p">, </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)">str</a><span class="p">, </span>Sequence<span class="p">[</span>Union<span class="p">[</span><a class="reference internal" href="ampel-base.html#ampel.model.UnitModel.UnitModel" title="ampel.model.UnitModel.UnitModel">ampel.model.UnitModel.UnitModel</a><span class="p">, </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)">str</a><span class="p">]</span><span class="p">]</span><span class="p">]</span><span class="p">]</span></em><a class="headerlink" href="#ampel.model.template.PeriodicSummaryT3.PeriodicSummaryT3.complement" title="Permalink to this definition">¶</a></dt>
+<dd><p>Complement stages</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="ampel.model.template.PeriodicSummaryT3.PeriodicSummaryT3.run">
+<code class="sig-name descname">run</code><em class="property">: Union<span class="p">[</span><a class="reference internal" href="ampel-base.html#ampel.model.UnitModel.UnitModel" title="ampel.model.UnitModel.UnitModel">ampel.model.UnitModel.UnitModel</a><span class="p">, </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)">str</a><span class="p">, </span>Sequence<span class="p">[</span>Union<span class="p">[</span><a class="reference internal" href="ampel-base.html#ampel.model.UnitModel.UnitModel" title="ampel.model.UnitModel.UnitModel">ampel.model.UnitModel.UnitModel</a><span class="p">, </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)">str</a><span class="p">]</span><span class="p">]</span><span class="p">]</span></em><a class="headerlink" href="#ampel.model.template.PeriodicSummaryT3.PeriodicSummaryT3.run" title="Permalink to this definition">¶</a></dt>
+<dd><p>Units to run</p>
+</dd></dl>
+
+</dd></dl>
+
 </div>
 <div class="section" id="enums">
 <h2>Enums<a class="headerlink" href="#enums" title="Permalink to this headline">¶</a></h2>
