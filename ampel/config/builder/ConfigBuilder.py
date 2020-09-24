@@ -8,13 +8,14 @@
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import importlib, re, json
+from pydantic import ValidationError
 from contextlib import contextmanager
 from math import inf # noqa: required for eval(repr(...)) below
 from typing import Dict, List, Any, Optional, Set, Iterable
 from ampel.util.mappings import get_by_path, set_by_path
 from ampel.util.crypto import aes_recursive_decrypt
 from ampel.abstract.AbsChannelTemplate import AbsChannelTemplate
-from ampel.log.AmpelLogger import AmpelLogger, VERBOSE
+from ampel.log.AmpelLogger import AmpelLogger, VERBOSE, DEBUG, ERROR
 from ampel.config.builder.FirstPassConfig import FirstPassConfig
 from ampel.config.AmpelConfig import AmpelConfig
 from ampel.core.UnitLoader import UnitLoader
@@ -26,7 +27,6 @@ from ampel.config.collector.ProcessConfigCollector import ProcessConfigCollector
 from ampel.config.collector.ChannelConfigCollector import ChannelConfigCollector
 from ampel.config.builder.ProcessMorpher import ProcessMorpher
 from ampel.dev.DictSecretProvider import PotemkinSecretProvider
-
 
 class ConfigBuilder:
 	"""
@@ -40,7 +40,7 @@ class ConfigBuilder:
 
 	def __init__(self, logger: AmpelLogger = None, verbose: bool = False):
 
-		self.logger = AmpelLogger.get_logger(console={'level': 0} if verbose else None) if logger is None else logger
+		self.logger = AmpelLogger.get_logger(console={'level': DEBUG if verbose else ERROR}) if logger is None else logger
 		self.first_pass_config = FirstPassConfig(logger, verbose)
 		self.templates: Dict[str, Any] = {}
 		self.verbose = verbose
@@ -258,42 +258,48 @@ class ConfigBuilder:
 			if tpl := self._get_channel_tpl(chan_dict):
 
 				# Extract channel definition from template instance
-				out['channel'].add(
-					tpl.get_channel(self.logger)
-				)
-
 				try:
-					# Retrieve processes possibly embedded in channel def
-					for p in tpl.get_processes(self.logger, self.first_pass_config):
-
-						if self.verbose:
-							self.logger.log(VERBOSE,
-								f'Morphing channel embedded t{p["tier"]} process: {p["name"]}'
-							)
-
-						try:
-							# Add transformed process to final process collector
-							with unit_model_validator():
-								out['process'][f't{p["tier"]}'].add(
-									self.new_morpher(p) \
-										.scope_aliases(self.first_pass_config) \
-										.apply_template() \
-										.hash_t2_config(out) \
-										.enforce_t3_channel_selection(chan_name) \
-										.get(),
-									p.get('source'),
-									p.get('distrib')
-								)
-
-						except Exception as ee:
-							self.logger.error(f'Unable to morph process: {p["name"]}', exc_info=ee)
-							if not ignore_errors:
-								raise
-
-				except Exception as e:
-					self.logger.error(f'Unable to morph channel "{chan_name}"', exc_info=e)
+					out['channel'].add(
+						tpl.get_channel(self.logger)
+					)
+				except (ValidationError, Excepiont) as ee:
+					if isinstance(ee, ValidationError):
+						self.logger.error(f'Unable to morph channel: {chan_name}')
+						self.logger.error(ee)
+					else:
+						self.logger.error(f'Unable to morph channel: {chan_name}', exc_info=ee)
 					if not ignore_errors:
-						raise
+						raise ee
+
+				# Retrieve processes possibly embedded in channel def
+				for p in tpl.get_processes(self.logger, self.first_pass_config):
+
+					if self.verbose:
+						self.logger.log(VERBOSE,
+							f'Morphing channel embedded t{p["tier"]} process: {p["name"]}'
+						)
+
+					try:
+						# Add transformed process to final process collector
+						with unit_model_validator():
+							out['process'][f't{p["tier"]}'].add(
+								self.new_morpher(p) \
+									.scope_aliases(self.first_pass_config) \
+									.apply_template() \
+									.hash_t2_config(out) \
+									.enforce_t3_channel_selection(chan_name) \
+									.get(),
+								p.get('source'),
+								p.get('distrib')
+							)
+					except (ValidationError, Exception) as ee:
+						if isinstance(ee, ValidationError):
+							self.logger.error(f'Unable to morph embedded process {p["name"]} (from {p["source"]})')
+							self.logger.error(ee)
+						else:
+							self.logger.error(f'Unable to morph embedded process {p["name"]} (from {p["source"]})', exc_info=ee)
+						if not ignore_errors:
+							raise ee
 
 			else:
 

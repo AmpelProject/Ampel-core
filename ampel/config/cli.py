@@ -60,9 +60,11 @@ def transform(args: Namespace) -> None:
 def build(args: Namespace) -> None:
     """Build config file from installed distributions"""
     cb = DistConfigBuilder(verbose=args.verbose)
-    cb.load_distributions()
-
-    config = cb.build_config(ignore_errors=args.ignore_errors)
+    try:
+        cb.load_distributions()
+        config = cb.build_config(ignore_errors=args.ignore_errors)
+    except:
+        return 1
     yaml.dump(
         config, args.output_file if args.output_file else sys.stdout, sort_keys=False
     )
@@ -137,7 +139,7 @@ def main():
     p.add_argument("-o", "--output-file", type=FileType("w"), default=sys.stdout)
 
     args = parser.parse_args()
-    args.func(args)
+    sys.exit(args.func(args))
 
 
 def _to_json(obj):
