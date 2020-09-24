@@ -50,6 +50,7 @@ class UnitModel(StrictModel):
 			from ampel.abstract.AbsProcessorUnit import AbsProcessorUnit
 			from ampel.abstract.ingest.AbsIngester import AbsIngester
 			from ampel.t3.run.AbsT3UnitRunner import AbsT3UnitRunner
+			from ampel.t3.context.AbsT3RunContextAppender import AbsT3RunContextAppender
 
 			unit = cls._unit_loader.get_class_by_name(values['unit'])
 			if issubclass(unit, AbsIngester):
@@ -58,7 +59,15 @@ class UnitModel(StrictModel):
 			elif issubclass(unit, (DataUnit, AdminUnit, AbsProcessorUnit)):
 				# exclude base class fields provided at runtime
 				exclude = {"logger"}
-				for parent in cast(Sequence[Type[AmpelBaseModel]], (DataUnit, AdminUnit, AbsT3UnitRunner)):
+				for parent in cast(
+					Sequence[Type[AmpelBaseModel]],
+					(
+						DataUnit,
+						AdminUnit,
+						AbsT3UnitRunner,
+						AbsT3RunContextAppender,
+					)
+				):
 					if issubclass(unit, parent):
 						exclude.update(parent._annots.keys())
 				fields = {
