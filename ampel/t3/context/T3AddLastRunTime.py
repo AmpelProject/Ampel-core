@@ -37,7 +37,7 @@ class T3AddLastRunTime(AbsT3RunContextAppender):
 
 		if last_run is None:
 			self.logger.warn(f"Event {self.process_name}: last run time unavailable")
-			if self.fall_back:
+			if self.fallback:
 				context[self.key] = (datetime.now() + timedelta(**self.fallback)).timestamp()
 				self.logger.warn(f"Fallback last run time: {context[self.key]}")
 				return
