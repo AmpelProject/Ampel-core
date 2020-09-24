@@ -50,11 +50,14 @@ class PeriodicSummaryT3(AbsProcessTemplate):
     ] = None
     load: Optional[Sequence[Union[str,LoaderDirective]]] = None
     filter: Optional[FilterModel] = None
-    complement: Optional[UnitModelSequence]
+    complement: Optional[UnitModelSequence] = None
     run: UnitModelSequence
 
     def get_process(self, logger: Logger) -> Dict[str, Any]:
         directive: Dict[str, Any] = {
+            "context": [
+                {"unit": "T3AddAlertsNumber"},
+            ],
             "select": {
                 "unit": "T3StockSelector",
                 "config": {
