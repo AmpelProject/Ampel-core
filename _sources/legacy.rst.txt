@@ -8,7 +8,7 @@ Ampel v0.7 introduced a major internal restructuring to apply lessons learned
 from operating v0.6 during the first 1.5 years of ZTF. Here is a summary of the
 changes you need to make to adapt your project from v0.6 to v0.7. An example
 project using the current config system can be found in
-`Ampel-contrib-sample <https://github.com/AmpelProject/Ampel-contrib-sample/tree/03950a37dc4dc74c610df72887bd417239cd58aa>`_.
+`Ampel-contrib-sample`_.
 
 Environment
 ===========
@@ -36,16 +36,20 @@ You can then install your own project in the environment with::
   cd ampel-contrib-PROJECTNAME
   pip install -e .
 
-After this, you should be able to run `ampel-config build` and see a gigantic blob of YAML being generated.
+After this, you should be able to run :code:`ampel-config build` and see a gigantic blob of YAML being generated.
 
-Configuration
-=============
+.. _legacy-config-files:
+
+Defining channels and registering units
+=======================================
 
 .. highlight:: python
 
-All configuration now lives in YAML or JSON files in a directory
-`conf/ampel-contrib-PROJECTNAME` at the top level of your repository. In your
-setup.py, the call to :py:meth:`setuptools.setup` should include::
+All the channel/T3 configuration and unit registration that used to be
+scattered in json files and entrypoints section of setup.py now lives in YAML_
+files in a directory ``conf/ampel-contrib-PROJECTNAME`` (where ``PROJECTNAME`` is the name of your project, e.g. ``ZTFbh`` for ``ampel-contrib-ZTFbh``) at the top level
+of your repository. In your setup.py, the call to :py:meth:`setuptools.setup`
+should include::
   
   package_data={
     'conf': [
@@ -55,9 +59,11 @@ setup.py, the call to :py:meth:`setuptools.setup` should include::
     ]
   }
 
+.. note:: All of the configuration files mentioned here can also be supplied in JSON_ format. We strongly recommend YAML_, however, since it is easier for a human to write and can include comments.
+
 .. highlight:: yaml
 
-`conf/ampel-contrib-PROJECTNAME` should contain at least a top-level configuration file named ampel.yaml (or ampel.json if in JSON format), containining at least the definitions of your channels and any custom units
+``conf/ampel-contrib-PROJECTNAME`` should contain at least a top-level configuration file named ampel.yaml, containining at least the definitions of your channels and any custom units
 you may have. For example::
 
   channel:
@@ -68,6 +74,9 @@ you may have. For example::
       auto_complete: live
   unit:
     - ampel.contrib.groupname.t0.DecentFilterCopy
+  re
+
+The entries in `unit` are module names, i.e. :code:`ampel.contrib.groupname.t0.DecentFilterCopy` refers to the file ``ampel/contrib/groupname/t0/DecentFilterCopy.py``. This file must contain one class, with the same name as the module. For example, when :class:`~ampel.alert.AlertProcessor.AlertProcessor` requests instantiation of the unit named ``DecentFilterCopy``, the entry above will cause Ampel to do the equivalent of :code:`from ampel.contrib.groupname.t0.DecentFilterCopy import DecentFilterCopy`.
 
 Dictionaries can be either embedded directly into the top-level configuration
 file, or in standalone files named after the key. For example, `channel` key
@@ -80,7 +89,61 @@ in the example above can be replaced with a file conf/ampel-contrib-PROJECTNAME/
 
 This can be useful for keeping large configurations neatly organized.
 
-Validate your configuration with `ampel-config build`.
+.. _config-validation:
+
+Validation
+**********
+
+You should use the command :code:`ampel-config build` to build (and validate) an Ampel configuration file from all installed Ampel subprojects, including yours. The following examples use the `Ampel-contrib-sample`_ template project.
+
+You can use :code:`ampel-config build` along with yq_ to verify that your unit is registered:
+
+.. code-block:: console
+  
+  > ampel-config build | yq .unit.base.DecentFilterCopy
+  {
+    "fqn": "ampel.contrib.groupname.t0.DecentFilterCopy",
+    "base": [
+      "AbsAlertFilter"
+    ],
+    "distrib": "ampel-contrib-sample",
+    "file": "conf/ampel-contrib-sample/unit.json"
+  }
+
+This will raise an exception if your channels or T3 processes refer to units
+that are not registered or can't be imported, or if your unit configurations are invalid. For example, if you add some garbage to DecentFilterCopy.py to make it non-importable, you will get:
+
+.. code-block:: console
+  
+  > ampel-config build
+  2020-09-24 15:52:29 AbsForwardConfigCollector:84 ERROR
+   Unit import error: ampel.contrib.groupname.t0.DecentFilterCopy (conf file: conf/ampel-contrib-sample/unit.json from distribution: ampel-contrib-sample)
+    Follow-up error: could not identify routing for ampel.contrib.groupname.t0.DecentFilterCopy
+
+  2020-09-24 15:52:31 FirstPassConfig:97 WARNING
+   ForwardUnitConfigCollector (key: 'unit') has errors
+
+If you change `channel definition <https://github.com/AmpelProject/Ampel-contrib-sample/blob/03950a37dc4dc74c610df72887bd417239cd58aa/conf/ampel-contrib-sample/channel/EXAMPLE_BRIGHT_N_STABLE.yml#L11>`_  to use a unit that is not registered, for example "LALALA_DecentFilterCopy", you will get an error like this:
+
+.. code-block:: console
+  
+  > ampel-config build
+  2020-09-24 15:45:53 ConfigBuilder:297 ERROR
+   Unable to morph embedded process EXAMPLE_BRIGHT_N_STABLE|T0|ztf_uw_public (from conf/ampel-contrib-sample/channel/EXAMPLE_BRIGHT_N_STABLE.yml)
+   1 validation error for ProcessModel
+  processor -> __root__ -> directives -> 0 -> filter -> __root__
+    Ampel unit not found: LALALA_DecentFilterCopy (type=value_error)
+
+If you try to configure it with parameters that are not valid, for example by `setting <https://github.com/AmpelProject/Ampel-contrib-sample/blob/03950a37dc4dc74c610df72887bd417239cd58aa/conf/ampel-contrib-sample/channel/EXAMPLE_BRIGHT_N_STABLE.yml#L13>`_ :code:`t0_filter.config.min_ndet = "fish"` when it `should be an integer <https://github.com/AmpelProject/Ampel-contrib-sample/blob/03950a37dc4dc74c610df72887bd417239cd58aa/ampel/contrib/groupname/t0/DecentFilterCopy.py#L38>`_, you get:
+
+.. code-block:: console
+  
+  > ampel-config build
+  2020-09-24 15:48:05 ConfigBuilder:297 ERROR
+   Unable to morph embedded process EXAMPLE_BRIGHT_N_STABLE|T0|ztf_uw_public (from conf/ampel-contrib-sample/channel/EXAMPLE_BRIGHT_N_STABLE.yml)
+   1 validation error for ProcessModel
+  processor -> __root__ -> directives -> 0 -> filter -> __root__ -> min_ndet
+  value is not a valid integer (type=type_error.integer)
 
 Terminology changes and renamed classes
 ***************************************
@@ -227,6 +290,8 @@ T0 units
 T0 unit configuration
 *********************
 
+T0 units need to be :ref:`registered in your project's config <legacy-config-files>`.
+
 All units in v0.7 use type annotations and ``pydantic`` to define and validate their configuration. This means that if you previously used a nested :class:`RunConfig` class to define a configuration, you can move its fields up to the parent class, and access them as attributes from instances. In other words, the following v0.6 filter defintion::
   
   from pydantic import BaseModel
@@ -324,6 +389,8 @@ The return value of :meth:`AbsAlertFilter.apply <ampel.abstract.AbsAlertFilter.A
 T2 units
 ========
 
+T2 units need to be :ref:`registered in your project's config <legacy-config-files>`.
+
 New base classes
 ****************
 
@@ -363,6 +430,8 @@ The `PEP 484 annotations <https://www.python.org/dev/peps/pep-0484/>`_ in the me
 
 T3 units
 ========
+
+T2 units need to be :ref:`registered in your project's config <legacy-config-files>`.
 
 T3 unit configuration
 *********************
@@ -432,5 +501,8 @@ Again, all type annotations in method signatures (and the associated imports) ar
     )
 
 
-
+.. _Ampel-contrib-sample: <https://github.com/AmpelProject/Ampel-contrib-sample/tree/03950a37dc4dc74c610df72887bd417239cd58aa
 .. _mypy: https://mypy.readthedocs.io/en/stable/
+.. _YAML: https://en.wikipedia.org/wiki/YAML
+.. _JSON: https://en.wikipedia.org/wiki/JSON
+.. _yq: https://mikefarah.gitbook.io/yq/

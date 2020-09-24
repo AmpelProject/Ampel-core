@@ -1092,7 +1092,7 @@ supplies them, to a sequence of AbsT3Units.</p>
 <dl class="py attribute">
 <dt id="ampel.model.template.PeriodicSummaryT3.PeriodicSummaryT3.name">
 <code class="sig-name descname">name</code><em class="property">: <a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)">str</a></em><a class="headerlink" href="#ampel.model.template.PeriodicSummaryT3.PeriodicSummaryT3.name" title="Permalink to this definition">¶</a></dt>
-<dd><p>Process name</p>
+<dd><p>Process name.</p>
 </dd></dl>
 
 <dl class="py attribute">
@@ -1109,20 +1109,20 @@ expressions, e.g: <code class="docutils literal notranslate"><span class="pre">e
 <dl class="py attribute">
 <dt id="ampel.model.template.PeriodicSummaryT3.PeriodicSummaryT3.channel">
 <code class="sig-name descname">channel</code><em class="property">: Union<span class="p">[</span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.8)">None</a><span class="p">, </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.8)">int</a><span class="p">, </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)">str</a><span class="p">, </span><a class="reference internal" href="#ampel.model.operator.AllOf.AllOf" title="ampel.model.operator.AllOf.AllOf">ampel.model.operator.AllOf.AllOf</a><span class="p">[</span>typing.Union<span class="p">[</span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.8)">int</a><span class="p">, </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)">str</a><span class="p">]</span><span class="p">]</span><span class="p">, </span><a class="reference internal" href="#ampel.model.operator.AnyOf.AnyOf" title="ampel.model.operator.AnyOf.AnyOf">ampel.model.operator.AnyOf.AnyOf</a><span class="p">[</span>typing.Union<span class="p">[</span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.8)">int</a><span class="p">, </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)">str</a><span class="p">]</span><span class="p">]</span><span class="p">, </span><a class="reference internal" href="#ampel.model.operator.OneOf.OneOf" title="ampel.model.operator.OneOf.OneOf">ampel.model.operator.OneOf.OneOf</a><span class="p">[</span>typing.Union<span class="p">[</span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.8)">int</a><span class="p">, </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)">str</a><span class="p">]</span><span class="p">]</span><span class="p">]</span></em><a class="headerlink" href="#ampel.model.template.PeriodicSummaryT3.PeriodicSummaryT3.channel" title="Permalink to this definition">¶</a></dt>
-<dd><p>Channel selection</p>
+<dd><p>Channel selection.</p>
 </dd></dl>
 
 <dl class="py attribute">
 <dt id="ampel.model.template.PeriodicSummaryT3.PeriodicSummaryT3.tag">
 <code class="sig-name descname">tag</code><em class="property">: Optional[Dict[Literal[with, without], Union[int, str, Dict, ampel.model.operator.AllOf.AllOf[typing.Union[int, str]], ampel.model.operator.AnyOf.AnyOf[typing.Union[int, str]], ampel.model.operator.OneOf.OneOf[typing.Union[int, str]]]]]</em><a class="headerlink" href="#ampel.model.template.PeriodicSummaryT3.PeriodicSummaryT3.tag" title="Permalink to this definition">¶</a></dt>
-<dd><p>Stock tag selection</p>
+<dd><p>Stock tag selection.</p>
 </dd></dl>
 
 <dl class="py attribute">
 <dt id="ampel.model.template.PeriodicSummaryT3.PeriodicSummaryT3.load">
 <code class="sig-name descname">load</code><em class="property">: Optional<span class="p">[</span>Sequence<span class="p">[</span>Union<span class="p">[</span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)">str</a><span class="p">, </span><a class="reference internal" href="#ampel.model.t3.LoaderDirective.LoaderDirective" title="ampel.model.t3.LoaderDirective.LoaderDirective">ampel.model.t3.LoaderDirective.LoaderDirective</a><span class="p">]</span><span class="p">]</span><span class="p">]</span></em><a class="headerlink" href="#ampel.model.template.PeriodicSummaryT3.PeriodicSummaryT3.load" title="Permalink to this definition">¶</a></dt>
 <dd><p>Documents to load. If a string, should refer to an entry in the
-<code class="docutils literal notranslate"><span class="pre">alias.t3</span></code> config section</p>
+<code class="docutils literal notranslate"><span class="pre">alias.t3</span></code> config section. See <a class="reference internal" href="../structure.html#t3-directive-load"><span class="std std-ref">load</span></a>.</p>
 </dd></dl>
 
 <dl class="py attribute">
@@ -1134,13 +1134,13 @@ expressions, e.g: <code class="docutils literal notranslate"><span class="pre">e
 <dl class="py attribute">
 <dt id="ampel.model.template.PeriodicSummaryT3.PeriodicSummaryT3.complement">
 <code class="sig-name descname">complement</code><em class="property">: Optional<span class="p">[</span>Union<span class="p">[</span><a class="reference internal" href="ampel-base.html#ampel.model.UnitModel.UnitModel" title="ampel.model.UnitModel.UnitModel">ampel.model.UnitModel.UnitModel</a><span class="p">, </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)">str</a><span class="p">, </span>Sequence<span class="p">[</span>Union<span class="p">[</span><a class="reference internal" href="ampel-base.html#ampel.model.UnitModel.UnitModel" title="ampel.model.UnitModel.UnitModel">ampel.model.UnitModel.UnitModel</a><span class="p">, </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)">str</a><span class="p">]</span><span class="p">]</span><span class="p">]</span><span class="p">]</span></em><a class="headerlink" href="#ampel.model.template.PeriodicSummaryT3.PeriodicSummaryT3.complement" title="Permalink to this definition">¶</a></dt>
-<dd><p>Complement stages</p>
+<dd><p>Complement stages. See <a class="reference internal" href="../structure.html#t3-directive-complement"><span class="std std-ref">complement</span></a>.</p>
 </dd></dl>
 
 <dl class="py attribute">
 <dt id="ampel.model.template.PeriodicSummaryT3.PeriodicSummaryT3.run">
 <code class="sig-name descname">run</code><em class="property">: Union<span class="p">[</span><a class="reference internal" href="ampel-base.html#ampel.model.UnitModel.UnitModel" title="ampel.model.UnitModel.UnitModel">ampel.model.UnitModel.UnitModel</a><span class="p">, </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)">str</a><span class="p">, </span>Sequence<span class="p">[</span>Union<span class="p">[</span><a class="reference internal" href="ampel-base.html#ampel.model.UnitModel.UnitModel" title="ampel.model.UnitModel.UnitModel">ampel.model.UnitModel.UnitModel</a><span class="p">, </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)">str</a><span class="p">]</span><span class="p">]</span><span class="p">]</span></em><a class="headerlink" href="#ampel.model.template.PeriodicSummaryT3.PeriodicSummaryT3.run" title="Permalink to this definition">¶</a></dt>
-<dd><p>Units to run</p>
+<dd><p>Units to run. See <a class="reference internal" href="../structure.html#t3-directive-run-execute"><span class="std std-ref">execute</span></a>.</p>
 </dd></dl>
 
 </dd></dl>
@@ -1270,7 +1270,7 @@ expressions, e.g: <code class="docutils literal notranslate"><span class="pre">e
       </ul>
     </div>
     <div class="footer" role="contentinfo">
-        &#169; Copyright 2018, Ampel Project.
+        &#169; Copyright 2018-2020, Ampel Project contributors.
       Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 3.2.1.
     </div>
   </body>
