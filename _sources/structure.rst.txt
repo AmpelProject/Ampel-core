@@ -12,7 +12,7 @@ Ingest (or reject) incoming :class:`DataPoints <ampel.content.DataPoint.DataPoin
 Tier 1: Combine
 ###############
 
-Combine collections of :class:`DataPoints <ampel.content.DataPoint.DataPoint>` into 'states'.
+Creates :class:`Compounds <ampel.content.Compound.Compound>` documents, sometimes referred to as 'states', based on collections of :class:`DataPoints <ampel.content.DataPoint.DataPoint>`.
 
 Tier 2: Compute
 ###############
