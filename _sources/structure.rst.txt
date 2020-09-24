@@ -1,35 +1,28 @@
 Structure
 ---------
 
-Design goals
-============
-
-Be 3% smarter than your average bear.
-
 Tiers
 =====
 
-Tier 0: Filter
-##############
+Tier 0: Add
+###########
 
-Accept or reject incoming :class:`DataPoints <ampel.content.DataPoint.DataPoint>`.
+Ingest (or reject) incoming :class:`DataPoints <ampel.content.DataPoint.DataPoint>`.
 
-Tier 1: Augment
+Tier 1: Combine
 ###############
 
-Augment newly created :class:`DataPoints <ampel.content.DataPoint.DataPoint>`, or create new ones.
-
-.. warning:: This may not be what T1 actually does
+Combine collections of :class:`DataPoints <ampel.content.DataPoint.DataPoint>` into 'states'.
 
 Tier 2: Compute
 ###############
 
 Compute derived quantities from newly added :class:`StockRecords <ampel.content.StockRecord.StockRecord>`, :class:`DataPoints <ampel.content.DataPoint.DataPoint>`, and :class:`Compounds <ampel.content.Compound.Compound>`.
 
-Tier 3: Summarize
-#################
+Tier 3: React
+#############
 
-Produce a summary of objects currently tracked by a set of channels, and perform some action with it.
+Perform action based on collections of Ampel objects.
 
 The default top level implementation provided by ``ampel-core``
 is the class :class:`~ampel.t3.T3Processor.T3Processor`, which is capable of spawning and executing
@@ -46,8 +39,8 @@ The execution typically follows a 5-step process specified by the following fiel
    * :ref:`t3-directive-run-execute`
 
 .. note::
-  within Ampel, a unique ID called 'stock ID' is assigned to all documents
-  associated with a given entity across the four underlying collections.
+  Within Ampel, a unique ID called 'stock ID' is assigned to all documents
+  associated with a given entity across T1, T2 and T3 (and possibly T0 if already known at this point).
 
 .. _t3-directive-context:
 
@@ -64,7 +57,7 @@ Known implementations                    :class:`~ampel.t3.context.T3AddLastRunT
 ======================================== =========================
 
 Allows to generate global information that will be provided to T3 units.
-Note that the information gathered in this step is not associated
+Note that the information gathered in this stage is not associated
 with individual ampel elements (each identified by a unique 'stock ID').
 
 .. _t3-directive-select:
@@ -216,4 +209,3 @@ T3 unit instances are provided both with *views* and
 global information loaded during the previous stages.
 They have also the possibility to customize the journal entry
 created each time the underlying process is run.
-
