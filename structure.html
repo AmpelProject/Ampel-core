@@ -42,31 +42,24 @@
             
   <div class="section" id="structure">
 <h1>Structure<a class="headerlink" href="#structure" title="Permalink to this headline">¶</a></h1>
-<div class="section" id="design-goals">
-<h2>Design goals<a class="headerlink" href="#design-goals" title="Permalink to this headline">¶</a></h2>
-<p>Be 3% smarter than your average bear.</p>
-</div>
 <div class="section" id="tiers">
 <h2>Tiers<a class="headerlink" href="#tiers" title="Permalink to this headline">¶</a></h2>
-<div class="section" id="tier-0-filter">
-<h3>Tier 0: Filter<a class="headerlink" href="#tier-0-filter" title="Permalink to this headline">¶</a></h3>
-<p>Accept or reject incoming <a class="reference internal" href="projects/ampel-base.html#ampel.content.DataPoint.DataPoint" title="ampel.content.DataPoint.DataPoint"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataPoints</span></code></a>.</p>
+<p>Data processing is divided into 4 tiers.</p>
+<div class="section" id="tier-0-add">
+<h3>Tier 0: Add<a class="headerlink" href="#tier-0-add" title="Permalink to this headline">¶</a></h3>
+<p>Ingest (or reject) incoming <a class="reference internal" href="projects/ampel-base.html#ampel.content.DataPoint.DataPoint" title="ampel.content.DataPoint.DataPoint"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataPoints</span></code></a>.</p>
 </div>
-<div class="section" id="tier-1-augment">
-<h3>Tier 1: Augment<a class="headerlink" href="#tier-1-augment" title="Permalink to this headline">¶</a></h3>
-<p>Augment newly created <a class="reference internal" href="projects/ampel-base.html#ampel.content.DataPoint.DataPoint" title="ampel.content.DataPoint.DataPoint"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataPoints</span></code></a>, or create new ones.</p>
-<div class="admonition warning">
-<p class="admonition-title">Warning</p>
-<p>This may not be what T1 actually does</p>
-</div>
+<div class="section" id="tier-1-combine">
+<h3>Tier 1: Combine<a class="headerlink" href="#tier-1-combine" title="Permalink to this headline">¶</a></h3>
+<p>Creates <a class="reference internal" href="projects/ampel-base.html#ampel.content.Compound.Compound" title="ampel.content.Compound.Compound"><code class="xref py py-class docutils literal notranslate"><span class="pre">Compounds</span></code></a> documents, sometimes referred to as ‘states’, based on collections of <a class="reference internal" href="projects/ampel-base.html#ampel.content.DataPoint.DataPoint" title="ampel.content.DataPoint.DataPoint"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataPoints</span></code></a>.</p>
 </div>
 <div class="section" id="tier-2-compute">
 <h3>Tier 2: Compute<a class="headerlink" href="#tier-2-compute" title="Permalink to this headline">¶</a></h3>
 <p>Compute derived quantities from newly added <a class="reference internal" href="projects/ampel-base.html#ampel.content.StockRecord.StockRecord" title="ampel.content.StockRecord.StockRecord"><code class="xref py py-class docutils literal notranslate"><span class="pre">StockRecords</span></code></a>, <a class="reference internal" href="projects/ampel-base.html#ampel.content.DataPoint.DataPoint" title="ampel.content.DataPoint.DataPoint"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataPoints</span></code></a>, and <a class="reference internal" href="projects/ampel-base.html#ampel.content.Compound.Compound" title="ampel.content.Compound.Compound"><code class="xref py py-class docutils literal notranslate"><span class="pre">Compounds</span></code></a>.</p>
 </div>
-<div class="section" id="tier-3-summarize">
-<h3>Tier 3: Summarize<a class="headerlink" href="#tier-3-summarize" title="Permalink to this headline">¶</a></h3>
-<p>Produce a summary of objects currently tracked by a set of channels, and perform some action with it.</p>
+<div class="section" id="tier-3-react">
+<h3>Tier 3: React<a class="headerlink" href="#tier-3-react" title="Permalink to this headline">¶</a></h3>
+<p>Perform action based on collections of Ampel objects.</p>
 <p>The default top level implementation provided by <code class="docutils literal notranslate"><span class="pre">ampel-core</span></code>
 is the class <a class="reference internal" href="projects/ampel-core.html#ampel.t3.T3Processor.T3Processor" title="ampel.t3.T3Processor.T3Processor"><code class="xref py py-class docutils literal notranslate"><span class="pre">T3Processor</span></code></a>, which is capable of spawning and executing
 T3 processes according to the provided configuration.
@@ -88,8 +81,8 @@ The execution typically follows a 5-step process specified by the following fiel
 </ul>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>within Ampel, a unique ID called ‘stock ID’ is assigned to all documents
-associated with a given entity across the four underlying collections.</p>
+<p>Within Ampel, a unique ID called ‘stock ID’ is assigned to all documents
+associated with a given entity across T1, T2 and T3 (and possibly T0 if already known at this point).</p>
 </div>
 <div class="section" id="context">
 <span id="t3-directive-context"></span><h4>context<a class="headerlink" href="#context" title="Permalink to this headline">¶</a></h4>
@@ -117,7 +110,7 @@ associated with a given entity across the four underlying collections.</p>
 </tbody>
 </table>
 <p>Allows to generate global information that will be provided to T3 units.
-Note that the information gathered in this step is not associated
+Note that the information gathered in this stage is not associated
 with individual ampel elements (each identified by a unique ‘stock ID’).</p>
 </div>
 <div class="section" id="select">
@@ -256,7 +249,7 @@ follows a 3-step process governed by the following sections from the configurati
 <p class="admonition-title">Note</p>
 <p>This setting applies only in case the underlying T3 process runs multiple units.</p>
 </div>
-<p>The optional setting ‘filter’ allows to define selection critera for the loaded _AmpelBuffer_ instances.
+<p>The optional setting ‘filter’ allows to define selection critera for the loaded <a class="reference internal" href="projects/ampel-core.html#ampel.core.AmpelBuffer.AmpelBuffer" title="ampel.core.AmpelBuffer.AmpelBuffer"><code class="xref py py-class docutils literal notranslate"><span class="pre">AmpelBuffer</span></code></a> instances.
 Only matching instances are passed to the next stage.</p>
 <p>Example: say you want to select all new entities that were associated with your channel the last 24 hours,
 and post information about them to slack. Furthermore, say your entities come in blue or red and you’d like

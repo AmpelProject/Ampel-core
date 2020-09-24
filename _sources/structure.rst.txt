@@ -4,6 +4,8 @@ Structure
 Tiers
 =====
 
+Data processing is divided into 4 tiers.
+
 Tier 0: Add
 ###########
 
@@ -153,7 +155,8 @@ Known implementations                    :class:`~ampel.t3.run.filter.T3AmpelBuf
 ======================================== =========================
 
 .. note:: This setting applies only in case the underlying T3 process runs multiple units.
-The optional setting 'filter' allows to define selection critera for the loaded _AmpelBuffer_ instances.
+
+The optional setting 'filter' allows to define selection critera for the loaded :class:`~ampel.core.AmpelBuffer.AmpelBuffer` instances.
 Only matching instances are passed to the next stage.
 
 Example: say you want to select all new entities that were associated with your channel the last 24 hours,
