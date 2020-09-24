@@ -13,26 +13,46 @@ project using the current config system can be found in
 Environment
 ===========
 
-.. highlight:: sh
+.. highlight:: console
 
-Ampel v0.7 requires Python >= 3.8. If you already have Python 3.8 on your system, create and activate a virtualenv for Ampel with::
+Ampel v0.7 requires Python >= 3.8. If you already have Python 3.8 on your system, create and activate a virtualenv for Ampel with:
+
+.. code-block:: shell-session
   
   python3 -m venv ampel-v0.7
   source ampel-v0.7/bin/activate
 
-Otherwise, a good way to get Python 3.8 is with `miniconda <https://docs.conda.io/en/latest/miniconda.html>`_. After installing ``miniconda``, create an environment containing Python 3.8 with::
+Otherwise, a good way to get Python 3.8 is with `miniconda <https://docs.conda.io/en/latest/miniconda.html>`_. After installing ``miniconda``, create an environment containing Python 3.8 with:
+
+.. code-block:: shell-session
   
   conda create -y -n ampel-v0.7 python=3.8
   conda activate ampel-v0.7
 
-Inside your environment, clone the Ampel-contrib-HU project and install its dependencies with::
-  
-  git clone https://github.com/AmpelProject/Ampel-contrib-HU.git
-  cd Ampel-contrib-HU
-  pip install -r requirements.txt
+To develop and test your contributed plug-in, you will need to install the Ampel Python packages and their dependencies from within your environment. For ZTF data, a basic set of packages is:
 
-You can then install your own project in the environment with::
+.. code-block:: shell-session
   
+  pip install \
+  -e git+https://github.com/AmpelProject/Ampel-interface.git#egg=ampel-interface \
+  -e git+https://github.com/AmpelProject/Ampel-core.git#egg=ampel-core \
+  -e git+https://github.com/AmpelProject/Ampel-alerts.git#egg=ampel-alerts \
+  -e git+https://github.com/AmpelProject/Ampel-photometry.git#egg=ampel-photometry \
+  -e git+https://github.com/AmpelProject/Ampel-ZTF.git#egg=ampel-ztf
+
+.. note:: Eventually these should be published to PyPI.
+
+If your project depends on ``catsHTM`` catalog matching, e.g. via a subclass of :class:`~ampel.contrib.hu.t0.DecentFilter.DecentFilter`, you will also need to:
+
+.. code-block:: shell-session
+  
+  pip install -e git+https://github.com/AmpelProject/Ampel-contrib-HU.git#egg=ampel-contrib-hu
+
+You can then install your own project in the environment with:
+
+.. code-block:: shell-session
+  
+  git clone git+https://github.com/SomeOrganization/Ampel-contrib-PROJECTNAME.git
   cd ampel-contrib-PROJECTNAME
   pip install -e .
 
@@ -74,7 +94,6 @@ you may have. For example::
       auto_complete: live
   unit:
     - ampel.contrib.groupname.t0.DecentFilterCopy
-  re
 
 The entries in `unit` are module names, i.e. :code:`ampel.contrib.groupname.t0.DecentFilterCopy` refers to the file ``ampel/contrib/groupname/t0/DecentFilterCopy.py``. This file must contain one class, with the same name as the module. For example, when :class:`~ampel.alert.AlertProcessor.AlertProcessor` requests instantiation of the unit named ``DecentFilterCopy``, the entry above will cause Ampel to do the equivalent of :code:`from ampel.contrib.groupname.t0.DecentFilterCopy import DecentFilterCopy`.
 
