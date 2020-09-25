@@ -208,7 +208,7 @@ Known implementations                    :class:`~ampel.t3.run.T3UnitRunner.T3Un
 Last stage during which T3 units are instantiated and :class:`~ampel.core.AmpelBuffer.AmpelBuffer` instances
 converted into *views* (e.g. :class:`~ampel.view.SnapView.SnapView` and subclasses, containing pseudo-immutable structures).
 
-T3 unit instances are provided both with *views* and
-global information loaded during the previous stages.
+T3 unit instances (i.e. instances of :class:`~ampel.abstract.AbsT3Unit.AbsT3Unit`) are provided both with *views* and
+`global information <t3-directive-context>`_ loaded during the previous stages.
 They have also the possibility to customize the journal entry
 created each time the underlying process is run.
