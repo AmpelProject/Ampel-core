@@ -419,7 +419,7 @@ There are now 3 different kinds of T2 unit. If your T2 does something other than
 - :class:`~ampel.abstract.AbsPointT2Unit.AbsPointT2Unit` operates on single data points. It can be configured to run on a subset of photopoints, e.g. to run catalog matching on only the first detection.
 - :class:`~ampel.abstract.AbsStockT2Unit.AbsStockT2Unit` operates on the stock (transient) record itself. This can be used to perform some action when the transient is added to a channel.
 
-There are also "tied" variants of these that can be used to make one T2 depend on the results of other T2s.
+There are also "tied" variants of these, such as :class:`~ampel.abstract.AbsTiedLightCurveT2Unit.AbsTiedLightCurveT2Unit`, that can be used to build a directed acyclic graph of T2s. In other words, these T2s depend on the output of other T2s.
 
 T2 unit configuration
 *********************
