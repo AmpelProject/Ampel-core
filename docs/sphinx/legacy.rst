@@ -50,6 +50,8 @@ If your project depends on ``catsHTM`` catalog matching, e.g. via a subclass of 
   -e git+https://github.com/robertdstein/Ampel-contrib-ZTFbh.git@v0.7#egg=ampel-contrib-ztfbh \
   -e git+https://github.com/AmpelProject/Ampel-contrib-HU.git#egg=ampel-contrib-hu
 
+.. note:: ``ampel-contrib-hu`` and ``ampel-contrib-ztfbh`` have cross-dependencies, so you need them both. These common elements should eventually be moved up into ``ampel-ztf``.
+
 You can then install your own project in the environment with:
 
 .. code-block:: shell-session
