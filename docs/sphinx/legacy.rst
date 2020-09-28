@@ -46,7 +46,9 @@ If your project depends on ``catsHTM`` catalog matching, e.g. via a subclass of 
 
 .. code-block:: shell-session
   
-  pip install -e git+https://github.com/AmpelProject/Ampel-contrib-HU.git#egg=ampel-contrib-hu
+  pip install \
+  -e git+https://github.com/robertdstein/Ampel-contrib-ZTFbh.git@v0.7#egg=ampel-contrib-ztfbh \
+  -e git+https://github.com/AmpelProject/Ampel-contrib-HU.git#egg=ampel-contrib-hu
 
 You can then install your own project in the environment with:
 
