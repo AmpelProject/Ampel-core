@@ -50,16 +50,42 @@
 <dt id="ampel.abstract.AbsLightCurveT2Unit.AbsLightCurveT2Unit">
 <em class="property">class </em><code class="sig-prename descclassname">ampel.abstract.AbsLightCurveT2Unit.</code><code class="sig-name descname">AbsLightCurveT2Unit</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">resource</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#ampel.abstract.AbsLightCurveT2Unit.AbsLightCurveT2Unit" title="Permalink to this definition">¶</a></dt>
 <dd><p>Base class for T2s that operate on light curves.</p>
-<dl class="simple">
-<dt>upper_limits:</dt><dd><ul class="simple">
-<li><p>True: compound id computed using PPs &amp; ULs IDs</p></li>
-<li><p>False: compound id computed using PPs IDs only</p></li>
-</ul>
-</dd>
-</dl>
 <dl class="py method">
 <dt id="ampel.abstract.AbsLightCurveT2Unit.AbsLightCurveT2Unit.run">
 <code class="sig-name descname">run</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">arg</span></em><span class="sig-paren">)</span><a class="headerlink" href="#ampel.abstract.AbsLightCurveT2Unit.AbsLightCurveT2Unit.run" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returned object should contain computed science results to be saved into the DB.
+Notes: dict must have only string keys and values must be bson encodable</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Union" title="(in Python v3.8)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.8)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code></a>], <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Tuple" title="(in Python v3.8)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Tuple</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.8)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code></a>], <a class="reference internal" href="ampel-base.html#ampel.struct.JournalExtra.JournalExtra" title="ampel.struct.JournalExtra.JournalExtra"><code class="xref py py-class docutils literal notranslate"><span class="pre">JournalExtra</span></code></a>]]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="ampel.abstract.AbsLightCurveT2Unit.AbsLightCurveT2Unit.ingest">
+<code class="sig-name descname">ingest</code><em class="property">: ClassVar<span class="p">[</span>Dict<span class="p">[</span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)">str</a><span class="p">, </span>Any<span class="p">]</span><span class="p">]</span></em><em class="property"> = {'upper_limits': True}</em><a class="headerlink" href="#ampel.abstract.AbsLightCurveT2Unit.AbsLightCurveT2Unit.ingest" title="Permalink to this definition">¶</a></dt>
+<dd><p>Light curve compilation settings.
+These are extracted in <code class="xref py py-meth docutils literal notranslate"><span class="pre">AbsT2Ingester.add_ingest_models()</span></code>, combined
+with default settings from other sources, passed to <code class="xref py py-meth docutils literal notranslate"><span class="pre">PhotoT2Compiler.set_ingest_options()</span></code>, and used in <a class="reference internal" href="#ampel.ingest.compile.PhotoT2Compiler.PhotoT2Compiler.compile" title="ampel.ingest.compile.PhotoT2Compiler.PhotoT2Compiler.compile"><code class="xref py py-meth docutils literal notranslate"><span class="pre">PhotoT2Compiler.compile()</span></code></a>.</p>
+<dl class="simple">
+<dt>upper_limits:</dt><dd><ul class="simple">
+<li><p>True: compound id computed using photopoint &amp; upperlimit ids</p></li>
+<li><p>False: compound id computed using photopoint ids only</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="ampel.abstract.AbsTiedLightCurveT2Unit.AbsTiedLightCurveT2Unit">
+<em class="property">class </em><code class="sig-prename descclassname">ampel.abstract.AbsTiedLightCurveT2Unit.</code><code class="sig-name descname">AbsTiedLightCurveT2Unit</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">resource</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#ampel.abstract.AbsTiedLightCurveT2Unit.AbsTiedLightCurveT2Unit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="ampel-base.html#ampel.abstract.AbsTiedCustomStateT2Unit.AbsTiedCustomStateT2Unit" title="ampel.abstract.AbsTiedCustomStateT2Unit.AbsTiedCustomStateT2Unit"><code class="xref py py-class docutils literal notranslate"><span class="pre">ampel.abstract.AbsTiedCustomStateT2Unit.AbsTiedCustomStateT2Unit</span></code></a></p>
+<dl class="py method">
+<dt id="ampel.abstract.AbsTiedLightCurveT2Unit.AbsTiedLightCurveT2Unit.run">
+<code class="sig-name descname">run</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">light_curve</span></em>, <em class="sig-param"><span class="n">t2_records</span></em><span class="sig-paren">)</span><a class="headerlink" href="#ampel.abstract.AbsTiedLightCurveT2Unit.AbsTiedLightCurveT2Unit.run" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returned object should contain computed science results to be saved into the DB.
 Notes: dict must have only string keys and values must be bson encodable</p>
 <dl class="field-list simple">
@@ -434,6 +460,97 @@ sorted by timestamp.</p>
 <dd><dl class="field-list simple">
 <dt class="field-odd">Return type</dt>
 <dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="t1-machinery">
+<h2>T1 machinery<a class="headerlink" href="#t1-machinery" title="Permalink to this headline">¶</a></h2>
+<dl class="py class">
+<dt id="ampel.ingest.compile.PhotoT2Compiler.PhotoT2Compiler">
+<em class="property">class </em><code class="sig-prename descclassname">ampel.ingest.compile.PhotoT2Compiler.</code><code class="sig-name descname">PhotoT2Compiler</code><a class="headerlink" href="#ampel.ingest.compile.PhotoT2Compiler.PhotoT2Compiler" title="Permalink to this definition">¶</a></dt>
+<dd><p>Helper class capable of generating a nested dict that is used as basis to create T2 documents.
+The generated structure is optimized: multiple T2 documents associated with the same compound
+accross different channels are merged into one single T2 document
+that references all corrsponding channels.</p>
+<dl class="py method">
+<dt id="ampel.ingest.compile.PhotoT2Compiler.PhotoT2Compiler.compile">
+<code class="sig-name descname">compile</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">chan_selection</span></em>, <em class="sig-param"><span class="n">compound_blueprint</span></em><span class="sig-paren">)</span><a class="headerlink" href="#ampel.ingest.compile.PhotoT2Compiler.PhotoT2Compiler.compile" title="Permalink to this definition">¶</a></dt>
+<dd><p>TLDR: This function computes and returns a dict structure helpful for creating T2 docs.</p>
+<dl class="simple">
+<dt>This computation is required since:</dt><dd><ul class="simple">
+<li><p>A given alert can be accepted by one filter and be rejected by the other</p></li>
+<li><p>T0 filters can return a customized set of T2 units to be run (group id)</p></li>
+<li><p>An alert loaded by different channels can result in different compounds</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>chan_selection</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.List" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Tuple" title="(in Python v3.8)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Tuple</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Union" title="(in Python v3.8)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>], <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Union" title="(in Python v3.8)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a>]]]) – <dl class="simple">
+<dt>example: <code class="docutils literal notranslate"><span class="pre">{&quot;CHANNEL_SN&quot;:</span> <span class="pre">True,</span> <span class="pre">&quot;CHANNEL_GRB&quot;:</span> <span class="pre">1,</span> <span class="pre">&quot;CHANNEL_BH&quot;:</span> <span class="pre">None}</span></code></dt><dd><ul class="simple">
+<li><p>CHANNEL_SN accepted the alert and requests all associated T2s to be created</p></li>
+<li><p>CHANNEL_GRB accepted the alert and requests only T2s with group ID 1 to be created</p></li>
+<li><p>CHANNEL_BH rejected the alert</p></li>
+</ul>
+</dd>
+</dl>
+</p>
+</dd>
+</dl>
+<p>Loop 1</p>
+<p>Say following T2s are requested by CHAN_SN and CHAN_GRB:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+    <span class="s2">&quot;CHANNEL_SN&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;T2SNCosmo&quot;</span><span class="p">,</span> <span class="s2">&quot;T2PhotoZ&quot;</span><span class="p">},</span>
+    <span class="s2">&quot;CHANNEL_GRB&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;T2GRBFit&quot;</span><span class="p">,</span> <span class="s2">&quot;T2PhotoZ&quot;</span><span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>Loop 1 will create the following dict:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+    <span class="p">(</span><span class="s2">&quot;T2SNCosmo&quot;</span><span class="p">,</span> <span class="mi">123</span><span class="p">,</span> <span class="kc">True</span><span class="p">):</span> <span class="p">{</span><span class="s2">&quot;CHANNEL_SN&quot;</span><span class="p">}</span>
+    <span class="p">(</span><span class="s2">&quot;T2PhotoZ&quot;</span><span class="p">,</span> <span class="mi">123</span><span class="p">,</span> <span class="kc">False</span><span class="p">):</span> <span class="p">{</span><span class="s2">&quot;CHANNEL_SN&quot;</span><span class="p">,</span> <span class="s2">&quot;CHANNEL_GRB&quot;</span><span class="p">}</span>
+    <span class="p">(</span><span class="s2">&quot;T2GRBFit&quot;</span><span class="p">,</span> <span class="mi">123</span><span class="p">,</span> <span class="kc">True</span><span class="p">):</span> <span class="p">{</span><span class="s2">&quot;CHANNEL_GRB&quot;</span><span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>Dict key 1st element: unit id</p></li>
+<li><p>Dict key 2nd element: hashed dict value of the T2’s init config dict (123)</p></li>
+<li><p>Dict key 3rd element: whether upperlimits should be used to compute compound ids</p></li>
+<li><p>Dict value: set of channel ids</p></li>
+</ul>
+<p>Loop 2</p>
+<p>Computes and returns a dict structure used for creating T2 docs.
+This loop replaces the value at depth 2 (bool) of the previously created dict
+by the computed compound ids (bytes) and thereby takes into account that an alert
+loaded by different channels can result in different compounds.</p>
+<p>Let’s consider the example from the Loop 1 again (limited to PHOTO_Z with param 123 only)
+Loop 2 makes sure that CHANNEL_SN &amp; CHANNEL_GRB are associated with the same compound
+(by checking compoundId equality), otherwise different t2 <em>docs</em> should be created. For example:</p>
+<ul>
+<li><p>If compound ids differ between CHANNEL_SN &amp; CHANNEL_GRB, <em>two</em> t2 docs will be created:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+    <span class="p">(</span><span class="s2">&quot;T2PhotoZ&quot;</span><span class="p">,</span> <span class="mi">123</span><span class="p">,</span> <span class="n">a1b2c3d4</span><span class="p">):</span> <span class="p">{</span><span class="s2">&quot;CHANNEL_SN&quot;</span><span class="p">},</span>
+    <span class="p">(</span><span class="s2">&quot;T2PhotoZ&quot;</span><span class="p">,</span> <span class="mi">123</span><span class="p">,</span> <span class="n">d4c3b2a1</span><span class="p">):</span> <span class="p">{</span><span class="s2">&quot;CHANNEL_GRB&quot;</span><span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</li>
+<li><p>If compound ids are equal, <em>one</em> t2 doc will be created:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+    <span class="p">(</span><span class="s2">&quot;T2PhotoZ&quot;</span><span class="p">,</span> <span class="mi">123</span><span class="p">,</span> <span class="n">a1b2c3d4</span><span class="p">):</span> <span class="p">{</span><span class="s2">&quot;CHANNEL_SN&quot;</span><span class="p">,</span> <span class="s2">&quot;CHANNEL_GRB&quot;</span><span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</li>
+</ul>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Tuple" title="(in Python v3.8)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Tuple</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.8)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a>], <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Union" title="(in Python v3.8)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#bytes" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bytes</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Tuple" title="(in Python v3.8)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Tuple</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#bytes" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bytes</span></code></a>, …]]], <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Set" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Set</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Union" title="(in Python v3.8)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>]]]</p>
 </dd>
 </dl>
 </dd></dl>

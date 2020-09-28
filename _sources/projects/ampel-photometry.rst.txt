@@ -11,6 +11,10 @@ Processing units
   
   .. automethod:: run
 
+.. autoclass:: ampel.abstract.AbsTiedLightCurveT2Unit.AbsTiedLightCurveT2Unit
+  :show-inheritance:
+  :members:
+
 .. autoclass:: ampel.abstract.AbsPhotoT3Unit.AbsPhotoT3Unit
   :members:
 
@@ -28,3 +32,9 @@ Data classes
   :inherited-members:
   :undoc-members:
   :show-inheritance:
+
+T1 machinery
+------------
+
+.. autoclass:: ampel.ingest.compile.PhotoT2Compiler.PhotoT2Compiler
+  :members:

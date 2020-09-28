@@ -73,7 +73,9 @@ project using the current config system can be found in
 <p>Eventually these should be published to PyPI.</p>
 </div>
 <p>If your project depends on <code class="docutils literal notranslate"><span class="pre">catsHTM</span></code> catalog matching, e.g. via a subclass of <code class="xref py py-class docutils literal notranslate"><span class="pre">DecentFilter</span></code>, you will also need to:</p>
-<div class="highlight-shell-session notranslate"><div class="highlight"><pre><span></span><span class="go">pip install -e git+https://github.com/AmpelProject/Ampel-contrib-HU.git#egg=ampel-contrib-hu</span>
+<div class="highlight-shell-session notranslate"><div class="highlight"><pre><span></span><span class="go">pip install \</span>
+<span class="go">-e git+https://github.com/robertdstein/Ampel-contrib-ZTFbh.git@v0.7#egg=ampel-contrib-ztfbh \</span>
+<span class="go">-e git+https://github.com/AmpelProject/Ampel-contrib-HU.git#egg=ampel-contrib-hu</span>
 </pre></div>
 </div>
 <p>You can then install your own project in the environment with:</p>
@@ -453,7 +455,7 @@ like this:</p>
 <li><p><a class="reference internal" href="projects/ampel-base.html#ampel.abstract.AbsPointT2Unit.AbsPointT2Unit" title="ampel.abstract.AbsPointT2Unit.AbsPointT2Unit"><code class="xref py py-class docutils literal notranslate"><span class="pre">AbsPointT2Unit</span></code></a> operates on single data points. It can be configured to run on a subset of photopoints, e.g. to run catalog matching on only the first detection.</p></li>
 <li><p><a class="reference internal" href="projects/ampel-base.html#ampel.abstract.AbsStockT2Unit.AbsStockT2Unit" title="ampel.abstract.AbsStockT2Unit.AbsStockT2Unit"><code class="xref py py-class docutils literal notranslate"><span class="pre">AbsStockT2Unit</span></code></a> operates on the stock (transient) record itself. This can be used to perform some action when the transient is added to a channel.</p></li>
 </ul>
-<p>There are also “tied” variants of these that can be used to make one T2 depend on the results of other T2s.</p>
+<p>There are also “tied” variants of these, such as <a class="reference internal" href="projects/ampel-photometry.html#ampel.abstract.AbsTiedLightCurveT2Unit.AbsTiedLightCurveT2Unit" title="ampel.abstract.AbsTiedLightCurveT2Unit.AbsTiedLightCurveT2Unit"><code class="xref py py-class docutils literal notranslate"><span class="pre">AbsTiedLightCurveT2Unit</span></code></a>, that can be used to build a directed acyclic graph of T2s. In other words, these T2s depend on the output of other T2s.</p>
 </div>
 <div class="section" id="t2-unit-configuration">
 <h3>T2 unit configuration<a class="headerlink" href="#t2-unit-configuration" title="Permalink to this headline">¶</a></h3>

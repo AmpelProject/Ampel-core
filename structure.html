@@ -327,8 +327,8 @@ and posts them to “#blue” and the second one sub-selects red entities and po
 </table>
 <p>Last stage during which T3 units are instantiated and <a class="reference internal" href="projects/ampel-core.html#ampel.core.AmpelBuffer.AmpelBuffer" title="ampel.core.AmpelBuffer.AmpelBuffer"><code class="xref py py-class docutils literal notranslate"><span class="pre">AmpelBuffer</span></code></a> instances
 converted into <em>views</em> (e.g. <a class="reference internal" href="projects/ampel-base.html#ampel.view.SnapView.SnapView" title="ampel.view.SnapView.SnapView"><code class="xref py py-class docutils literal notranslate"><span class="pre">SnapView</span></code></a> and subclasses, containing pseudo-immutable structures).</p>
-<p>T3 unit instances are provided both with <em>views</em> and
-global information loaded during the previous stages.
+<p>T3 unit instances (i.e. instances of <a class="reference internal" href="projects/ampel-base.html#ampel.abstract.AbsT3Unit.AbsT3Unit" title="ampel.abstract.AbsT3Unit.AbsT3Unit"><code class="xref py py-class docutils literal notranslate"><span class="pre">AbsT3Unit</span></code></a>) are provided both with <em>views</em> and
+<a class="reference external" href="t3-directive-context">global information</a> loaded during the previous stages.
 They have also the possibility to customize the journal entry
 created each time the underlying process is run.</p>
 </div>

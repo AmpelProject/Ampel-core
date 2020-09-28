@@ -121,6 +121,61 @@ Note: dict must have only string keys</p>
 </dd></dl>
 
 <dl class="py class">
+<dt id="ampel.abstract.AbsTiedStateT2Unit.Dependency">
+<em class="property">class </em><code class="sig-prename descclassname">ampel.abstract.AbsTiedStateT2Unit.</code><code class="sig-name descname">Dependency</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">*</span><span class="n">args</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#ampel.abstract.AbsTiedStateT2Unit.Dependency" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a></p>
+<dl class="py attribute">
+<dt id="ampel.abstract.AbsTiedStateT2Unit.Dependency.unit">
+<code class="sig-name descname">unit</code><em class="property">: <a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)">str</a></em><a class="headerlink" href="#ampel.abstract.AbsTiedStateT2Unit.Dependency.unit" title="Permalink to this definition">¶</a></dt>
+<dd><p>T2 unit</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="ampel.abstract.AbsTiedStateT2Unit.Dependency.config">
+<code class="sig-name descname">config</code><em class="property">: Optional<span class="p">[</span>Dict<span class="p">[</span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)">str</a><span class="p">, </span>Any<span class="p">]</span><span class="p">]</span></em><a class="headerlink" href="#ampel.abstract.AbsTiedStateT2Unit.Dependency.config" title="Permalink to this definition">¶</a></dt>
+<dd><p>Parameters, if any</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="ampel.abstract.AbsTiedCustomStateT2Unit.AbsTiedCustomStateT2Unit">
+<em class="property">class </em><code class="sig-prename descclassname">ampel.abstract.AbsTiedCustomStateT2Unit.</code><code class="sig-name descname">AbsTiedCustomStateT2Unit</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">resource</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#ampel.abstract.AbsTiedCustomStateT2Unit.AbsTiedCustomStateT2Unit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Generic" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">typing.Generic</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">ampel.base.AmpelABC.AmpelABC</span></code>, <a class="reference internal" href="#ampel.base.DataUnit.DataUnit" title="ampel.base.DataUnit.DataUnit"><code class="xref py py-class docutils literal notranslate"><span class="pre">ampel.base.DataUnit.DataUnit</span></code></a></p>
+<p>Generic abstract class for state T2 units that depend on other T2 units.</p>
+<p>Known sub-classes: <a class="reference internal" href="ampel-photometry.html#ampel.abstract.AbsTiedLightCurveT2Unit.AbsTiedLightCurveT2Unit" title="ampel.abstract.AbsTiedLightCurveT2Unit.AbsTiedLightCurveT2Unit"><code class="xref py py-class docutils literal notranslate"><span class="pre">AbsTiedLightCurveT2Unit</span></code></a></p>
+<dl class="py attribute">
+<dt id="ampel.abstract.AbsTiedCustomStateT2Unit.AbsTiedCustomStateT2Unit.dependency">
+<code class="sig-name descname">dependency</code><em class="property">: Optional<span class="p">[</span>Union<span class="p">[</span><a class="reference internal" href="#ampel.abstract.AbsTiedStateT2Unit.Dependency" title="ampel.abstract.AbsTiedStateT2Unit.Dependency">ampel.abstract.AbsTiedStateT2Unit.Dependency</a><span class="p">, </span>Sequence<span class="p">[</span><a class="reference internal" href="#ampel.abstract.AbsTiedStateT2Unit.Dependency" title="ampel.abstract.AbsTiedStateT2Unit.Dependency">ampel.abstract.AbsTiedStateT2Unit.Dependency</a><span class="p">]</span><span class="p">]</span><span class="p">]</span></em><a class="headerlink" href="#ampel.abstract.AbsTiedCustomStateT2Unit.AbsTiedCustomStateT2Unit.dependency" title="Permalink to this definition">¶</a></dt>
+<dd><p>Prerequisite T2s. Their output <a class="reference external" href="ampel.content.T2Record.T2Record">T2Records</a> will be supplied as arguments to <a class="reference internal" href="#ampel.abstract.AbsTiedCustomStateT2Unit.AbsTiedCustomStateT2Unit.run" title="ampel.abstract.AbsTiedCustomStateT2Unit.AbsTiedCustomStateT2Unit.run"><code class="xref py py-meth docutils literal notranslate"><span class="pre">run()</span></code></a>.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="ampel.abstract.AbsTiedCustomStateT2Unit.AbsTiedCustomStateT2Unit.build">
+<em class="property">static </em><code class="sig-name descname">build</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">compound</span></em>, <em class="sig-param"><span class="n">datapoints</span></em><span class="sig-paren">)</span><a class="headerlink" href="#ampel.abstract.AbsTiedCustomStateT2Unit.AbsTiedCustomStateT2Unit.build" title="Permalink to this definition">¶</a></dt>
+<dd><p>Build state type from compound and the datapoints it references</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>~T</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="ampel.abstract.AbsTiedCustomStateT2Unit.AbsTiedCustomStateT2Unit.run">
+<code class="sig-name descname">run</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">arg</span></em>, <em class="sig-param"><span class="n">t2_records</span></em><span class="sig-paren">)</span><a class="headerlink" href="#ampel.abstract.AbsTiedCustomStateT2Unit.AbsTiedCustomStateT2Unit.run" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returned object should contain computed science results to be saved into the DB.
+Notes: dict must have only string keys and values must be bson encodable</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Union" title="(in Python v3.8)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.8)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code></a>], <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Tuple" title="(in Python v3.8)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Tuple</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.8)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code></a>], <a class="reference internal" href="#ampel.struct.JournalExtra.JournalExtra" title="ampel.struct.JournalExtra.JournalExtra"><code class="xref py py-class docutils literal notranslate"><span class="pre">JournalExtra</span></code></a>]]</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
 <dt id="ampel.abstract.AbsT3Unit.AbsT3Unit">
 <em class="property">class </em><code class="sig-prename descclassname">ampel.abstract.AbsT3Unit.</code><code class="sig-name descname">AbsT3Unit</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">resource</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#ampel.abstract.AbsT3Unit.AbsT3Unit" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Generic" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">typing.Generic</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">ampel.base.AmpelABC.AmpelABC</span></code>, <a class="reference internal" href="#ampel.base.DataUnit.DataUnit" title="ampel.base.DataUnit.DataUnit"><code class="xref py py-class docutils literal notranslate"><span class="pre">ampel.base.DataUnit.DataUnit</span></code></a></p>
