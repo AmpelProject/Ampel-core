@@ -122,6 +122,11 @@ class DefaultProcessController(AbsProcessController):
 			await task
 
 
+	def stop(self, name: Optional[str]=None) -> None:
+		"""Stop scheduling new processes."""
+		self.scheduler.clear(tag=name)
+
+
 	def populate_schedule(self):
 		self.scheduler.clear()
 		evaluator = ScheduleEvaluator()
@@ -159,20 +164,25 @@ class DefaultProcessController(AbsProcessController):
 
 
 	async def run_scheduler(self):
-		while True:
-			try:
-				if self.mp_join >= 1 and self._pending_schedules:
-					await asyncio.gather(*self._pending_schedules)
-				if self.mp_join >= 2 and not self.scheduler.jobs:
-					break
-				await asyncio.sleep(1)
-				self.scheduler.run_pending()
-			except asyncio.CancelledError:
-				for t in self._pending_schedules:
-					t.cancel()
-				await asyncio.gather(*self._pending_schedules)
-				assert not self._pending_schedules, "all tasks removed themselves"
-				raise
+		try:
+			while self.scheduler.jobs:
+				try:
+					if self.mp_join >= 1 and self._pending_schedules:
+						await asyncio.gather(*self._pending_schedules)
+					if self.mp_join >= 2 and not self.scheduler.jobs:
+						break
+					await asyncio.sleep(1)
+					self.scheduler.run_pending()
+				except asyncio.CancelledError:
+					for t in self._pending_schedules:
+						t.cancel()
+					raise
+		finally:
+			# We land here when the loop breaks due to a call to stop() or
+			# this coroutine is cancelled. In either case, wait for any
+			# in-flight processes to exit.
+			await asyncio.gather(*self._pending_schedules)
+			assert not self._pending_schedules, "all tasks removed themselves"
 
 
 	def run_sync_process(self, pm: ProcessModel) -> None:

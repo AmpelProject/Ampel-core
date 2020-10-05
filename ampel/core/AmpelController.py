@@ -103,12 +103,13 @@ class AmpelController:
 
 	async def run(self):
 		tasks = [asyncio.create_task(controller.run()) for controller in self.controllers]
+		task = asyncio.gather(*tasks, return_exceptions=True)
 		try:
-			return await asyncio.gather(*tasks, return_exceptions=True)
+			return await task
 		except asyncio.CancelledError:
 			for t in tasks:
 				t.cancel()
-			return await asyncio.gather(*tasks, return_exceptions=True)
+			return await task
 
 	@staticmethod
 	def get_processes(
@@ -175,10 +176,13 @@ class AmpelController:
 
 
 	@classmethod
-	def main(cls):
+	def main(cls, args: Optional[List[str]]=None) -> None:
 		from argparse import ArgumentParser
+		import logging
 		import signal
 		import sys
+
+		logging.basicConfig(level='INFO')
 
 		from ampel.dev.DictSecretProvider import DictSecretProvider
 
@@ -188,25 +192,34 @@ class AmpelController:
 		parser.add_argument('--tier', type=int, choices=(0,1,2,3), default=None)
 		parser.add_argument('--match', type=str, nargs='*', default=None)
 		parser.add_argument('-v', '--verbose', action='count', default=0)
-		args = parser.parse_args()
+		args = parser.parse_args(args)
 
 		mcp = cls(**args.__dict__)
 
-		async def shutdown(signal, task, loop):
+		def handle_signals(task, loop, graceful=True):
+			for s in (signal.SIGHUP, signal.SIGTERM, signal.SIGINT):
+				loop.remove_signal_handler(s)
+				loop.add_signal_handler(
+					s,
+					lambda s=s, task=task, loop=loop, graceful=graceful: asyncio.create_task(shutdown(s, task, loop, graceful))
+				)
+
+		async def shutdown(sig, task, loop, graceful=True):
 			"""Stop root task on signal"""
-			logging.info(f"Received exit signal {signal.name}...")
-			task.cancel()
+			if graceful:
+				logging.info(f"Received exit signal {sig.name}, shutting down gracefully (signal again to terminate immediately)...")
+				for controller in mcp.controllers:
+					controller.stop()
+				handle_signals(task, loop, False)
+			else:
+				logging.info(f"Received exit signal {sig.name}, terminating immediately...")
+				task.cancel()
 			await task
 			loop.stop()
 
 		loop = asyncio.get_event_loop()
 		task = loop.create_task(mcp.run())
-		signals = (signal.SIGHUP, signal.SIGTERM, signal.SIGINT)
-		for s in signals:
-			loop.add_signal_handler(
-				s,
-				lambda s=s: asyncio.create_task(shutdown(s, task, loop))
-			)
+		handle_signals(task, loop)
 
 		for result in loop.run_until_complete(task):
 			if isinstance(result, asyncio.CancelledError):

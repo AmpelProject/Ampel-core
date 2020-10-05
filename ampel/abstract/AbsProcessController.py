@@ -60,3 +60,13 @@ class AbsProcessController(AmpelABC, AmpelBaseModel, abstract=True):
 		"""
 		...
 
+
+	@abstractmethod
+	def stop(self, name: Optional[str]=None) -> None:
+		"""
+		Gracefully stop processes.
+		
+		:param name: name of process to stop. If None, stop all processes.
+		"""
+		...
+

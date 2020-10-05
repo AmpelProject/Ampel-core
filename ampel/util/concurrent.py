@@ -157,6 +157,7 @@ class _Process:
             proc = await asyncio.subprocess.create_subprocess_exec(
                 *self._get_command_line(crx._fd, ctx._fd),
                 pass_fds=sorted(p._fd for p in (crx, ctx)),
+                start_new_session=True,
             )
 
         async with parent_w.open() as tx:
