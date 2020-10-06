@@ -6,6 +6,12 @@ Utilities for ZTF alerts issued by IPAC
 Processing units
 ----------------
 
+.. autoclass:: ampel.ztf.t3.skyportal.SkyPortalPublisher.SkyPortalPublisher
+  :show-inheritance:
+  :members:
+  :inherited-members:
+  :exclude-members: done, validate, get_id
+
 Templates
 ---------
 

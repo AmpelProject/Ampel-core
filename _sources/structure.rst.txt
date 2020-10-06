@@ -1,25 +1,50 @@
 Structure
 ---------
 
+Units
+=====
+
+Nearly all of Ampel's functionality is implemented in `units`. A `unit` is a class that:
+
+- Inherits from :class:`~ampel.base.AmpelBaseModel.AmpelBaseModel`, and uses annotations to declare the allowed types and default values of is instance variables (which are also keyword arguments to its constructor), and
+- Is registered in the `unit` section of the Ampel configuration file.
+
+The configuration of a unit is specified by a :class:`~ampel.model.UnitModel.UnitModel`. When :class:`~ampel.core.UnitLoader.UnitLoader` uses a :class:`~ampel.model.UnitModel.UnitModel` to instantiate a unit, it:
+
+- Looks up the unit class in the Ampel configuration
+- Checks that it is a subclass of the requested type
+- Resolves the configuration if it is an alias, and updates it with the contents of `override`
+- Finally, instantiates the class with the combined configuration dict as keyword arguments.
+
+If any of the unit's fields are of type :class:`~ampel.model.Secret.Secret`, :class:`~ampel.core.UnitLoader.UnitLoader` will take its value from its configured :class:`~ampel.abstract.AbsSecretProvider.AbsSecretProvider`. When running parts of Ampel manually, you will usually provide this as the `secrets` argument to :class:`~ampel.core.AmpelContext.AmpelContext`, for example via :class:`DictSecretProvider.load() <ampel.dev.DictSecretProvider.DictSecretProvider.load>`.
+
 Tiers
 =====
 
 Data processing is divided into 4 tiers.
+
+.. _structure-t0:
 
 Tier 0: Add
 ###########
 
 Ingest (or reject) incoming :class:`DataPoints <ampel.content.DataPoint.DataPoint>`.
 
+.. _structure-t1:
+
 Tier 1: Combine
 ###############
 
 Creates :class:`Compounds <ampel.content.Compound.Compound>` documents, sometimes referred to as 'states', based on collections of :class:`DataPoints <ampel.content.DataPoint.DataPoint>`.
 
+.. _structure-t2:
+
 Tier 2: Compute
 ###############
 
 Compute derived quantities from newly added :class:`StockRecords <ampel.content.StockRecord.StockRecord>`, :class:`DataPoints <ampel.content.DataPoint.DataPoint>`, and :class:`Compounds <ampel.content.Compound.Compound>`.
+
+.. _structure-t3:
 
 Tier 3: React
 #############

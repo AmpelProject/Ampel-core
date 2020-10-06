@@ -102,6 +102,12 @@ Context and configuration
 .. autoclass:: ampel.core.AmpelContext.AmpelContext
   :members:
 
+.. autoclass:: ampel.core.UnitLoader.UnitLoader
+  :members:
+
+.. autoclass:: ampel.dev.DictSecretProvider.DictSecretProvider
+  :members:
+
 Data classes
 ------------
 

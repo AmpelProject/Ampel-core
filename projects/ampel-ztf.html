@@ -46,6 +46,50 @@
 <p>Utilities for ZTF alerts issued by IPAC</p>
 <div class="section" id="processing-units">
 <h2>Processing units<a class="headerlink" href="#processing-units" title="Permalink to this headline">¶</a></h2>
+<dl class="py class">
+<dt id="ampel.ztf.t3.skyportal.SkyPortalPublisher.SkyPortalPublisher">
+<em class="property">class </em><code class="sig-prename descclassname">ampel.ztf.t3.skyportal.SkyPortalPublisher.</code><code class="sig-name descname">SkyPortalPublisher</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">*</span><span class="n">arg</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#ampel.ztf.t3.skyportal.SkyPortalPublisher.SkyPortalPublisher" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">ampel.ztf.t3.skyportal.SkyPortalClient.BaseSkyPortalPublisher</span></code>, <a class="reference internal" href="ampel-photometry.html#ampel.abstract.AbsPhotoT3Unit.AbsPhotoT3Unit" title="ampel.abstract.AbsPhotoT3Unit.AbsPhotoT3Unit"><code class="xref py py-class docutils literal notranslate"><span class="pre">ampel.abstract.AbsPhotoT3Unit.AbsPhotoT3Unit</span></code></a></p>
+<dl class="py method">
+<dt id="ampel.ztf.t3.skyportal.SkyPortalPublisher.SkyPortalPublisher.add">
+<code class="sig-name descname">add</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">tviews</span></em><span class="sig-paren">)</span><a class="headerlink" href="#ampel.ztf.t3.skyportal.SkyPortalPublisher.SkyPortalPublisher.add" title="Permalink to this definition">¶</a></dt>
+<dd><p>Pass each view to <a class="reference internal" href="#ampel.ztf.t3.skyportal.SkyPortalPublisher.SkyPortalPublisher.post_source" title="ampel.ztf.t3.skyportal.SkyPortalPublisher.SkyPortalPublisher.post_source"><code class="xref py py-meth docutils literal notranslate"><span class="pre">post_source()</span></code></a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.8)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Union" title="(in Python v3.8)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#bytes" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bytes</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>], <a class="reference internal" href="ampel-base.html#ampel.struct.JournalExtra.JournalExtra" title="ampel.struct.JournalExtra.JournalExtra"><code class="xref py py-class docutils literal notranslate"><span class="pre">JournalExtra</span></code></a>]]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="ampel.ztf.t3.skyportal.SkyPortalPublisher.SkyPortalPublisher.post_source">
+<code class="sig-name descname">post_source</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">view</span></em>, <em class="sig-param"><span class="n">groups</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#ampel.ztf.t3.skyportal.SkyPortalPublisher.SkyPortalPublisher.post_source" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="simple">
+<dt>Perform the following actions:</dt><dd><ul class="simple">
+<li><p>Save source to the groups specificed by <code class="docutils literal notranslate"><span class="pre">groups</span></code>. <code class="docutils literal notranslate"><span class="pre">ra</span></code>/<code class="docutils literal notranslate"><span class="pre">dec</span></code>
+are taken from the most recent detection; <code class="docutils literal notranslate"><span class="pre">drb</span></code> from the maximum
+over detections.</p></li>
+<li><p>Post photometry using the <code class="docutils literal notranslate"><span class="pre">candid</span></code> of the latest detection.</p></li>
+<li><p>Post a PNG-encoded cutout of the last detection image.</p></li>
+<li><p>Post each T2 result as comment with a JSON-encoded attachment. If
+a comment corresponding to the T2 unit already exists, overwrite it
+with the most recent result.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>view</strong> (<a class="reference internal" href="ampel-photometry.html#ampel.view.TransientView.TransientView" title="ampel.view.TransientView.TransientView"><em>TransientView</em></a>) – Data to post</p></li>
+<li><p><strong>groups</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.8)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.List" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>]]) – Names of the groups to associate with the transient. If None, use
+all groups the token user belongs to.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
 </div>
 <div class="section" id="templates">
 <h2>Templates<a class="headerlink" href="#templates" title="Permalink to this headline">¶</a></h2>

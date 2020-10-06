@@ -45,6 +45,9 @@ Context and configuration
 .. autoclass:: ampel.config.AmpelConfig.AmpelConfig
   :members:
 
+.. autoclass:: ampel.abstract.AbsSecretProvider.AbsSecretProvider
+  :members:
+
 Data classes
 ------------
 
@@ -110,3 +113,5 @@ These models are used to parse and validate the configuration of the Ampel syste
 
 .. autoclass:: ampel.model.UnitModel.UnitModel
   :members:
+
+.. autoclass:: ampel.base.AmpelBaseModel.AmpelBaseModel
