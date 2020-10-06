@@ -176,3 +176,9 @@ Enums
 .. autoclass:: ampel.t2.T2RunState.T2RunState
   :members:
   :undoc-members:
+
+Odds and ends
+-------------
+
+.. autoclass:: ampel.log.AmpelLogger.AmpelLogger
+  :members:

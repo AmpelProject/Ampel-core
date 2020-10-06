@@ -22,11 +22,13 @@ For some classes, the configuration dict includes more items than are specified 
 
   - :attr:`~ampel.base.DataUnit.DataUnit.resource`, a subset of the `resources` section of the Ampel configuration. The keys are specified by entries in the class variable :attr:`~ampel.base.DataUnit.DataUnit.require`. This can be used to specify the URLs of local services like catalog databases. :class:`~ampel.core.UnitLoader.UnitLoader` will raise an exception if no corresponding entry exists in the `resources` section.
   - :attr:`~ampel.base.DataUnit.DataUnit.logger`, an instance of :class:`~ampel.log.AmpelLogger.AmpelLogger`.
+
   All T0, T2, and T3 units are :class:`DataUnits <ampel.base.DataUnit.DataUnit>`.
 
 - Subclasses of :class:`~ampel.core.AdminUnit.AdminUnit` has one additional property:
   
   - :attr:`~ampel.core.AdminUnit.AdminUnit.context`, the complete Ampel configuration, Mongo database connection, etc.
+
   Contributed plugins will not typically provide these.
 
 - All subclasses of :class:`~ampel.base.AmpelBaseModel.AmpelBaseModel` can have :class:`~ampel.model.Secret.Secret` fields:
@@ -34,7 +36,24 @@ For some classes, the configuration dict includes more items than are specified 
   - If any of the unit's fields are of type :class:`~ampel.model.Secret.Secret`, :class:`~ampel.core.UnitLoader.UnitLoader` will look up its value from the configured :class:`~ampel.abstract.AbsSecretProvider.AbsSecretProvider`.
   - Use :class:`~ampel.model.Secret.Secret` fields for sensitive information like passwords or bearer tokens.
   - :class:`~ampel.model.Secret.Secret` fields can have a default value of the form ``{"key": "name_of_secret"}``, specifying the name of the secret to use by default. If there is no default, the unit configuration must specify a value.
-  - When running parts of Ampel manually, you will usually provide the :class:`~ampel.abstract.AbsSecretProvider.AbsSecretProvider` as the `secrets` argument to :class:`~ampel.core.AmpelContext.AmpelContext`, for example via :class:`DictSecretProvider.load() <ampel.dev.DictSecretProvider.DictSecretProvider.load>`.
+  - When running parts of Ampel manually, you will usually provide the :class:`~ampel.abstract.AbsSecretProvider.AbsSecretProvider` as the `secrets` argument to :class:`~ampel.core.AmpelContext.AmpelContext`, for example via :class:`DictSecretProvider.load() <ampel.dev.DictSecretProvider.DictSecretProvider.load>`. For example, using :class:`~ampel.dev.DevAmpelContext.DevAmpelContext` to override some of the configuration parameters from ``config.yml``, and taking secrets from ``secrets.yaml``::
+      
+      from ampel.dev.DevAmpelContext import DevAmpelContext
+      from ampel.dev.DictSecretProvider import DictSecretProvider
+      from ampel.model.UnitModel import UnitModel
+      
+      context = DevAmpelContext.load(
+          'config.yml',
+          secrets=DictSecretProvider.load('secrets.yaml'),
+          db_prefix='AmpelSmokeTest',
+          custom_conf = {
+              'resource.catsHTM': 'tcp://127.0.0.1:27020',
+              'resource.extcats': 'mongodb://localhost:27018',
+              'resource.mongo': 'mongodb://localhost:27019',
+          }
+      )
+      
+      context.loader.secrets.get('name_of_secret')
 
 
 Tiers
