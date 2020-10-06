@@ -6,20 +6,28 @@ Tiers
 
 Data processing is divided into 4 tiers.
 
+.. _structure-t0:
+
 Tier 0: Add
 ###########
 
 Ingest (or reject) incoming :class:`DataPoints <ampel.content.DataPoint.DataPoint>`.
+
+.. _structure-t1:
 
 Tier 1: Combine
 ###############
 
 Creates :class:`Compounds <ampel.content.Compound.Compound>` documents, sometimes referred to as 'states', based on collections of :class:`DataPoints <ampel.content.DataPoint.DataPoint>`.
 
+.. _structure-t2:
+
 Tier 2: Compute
 ###############
 
 Compute derived quantities from newly added :class:`StockRecords <ampel.content.StockRecord.StockRecord>`, :class:`DataPoints <ampel.content.DataPoint.DataPoint>`, and :class:`Compounds <ampel.content.Compound.Compound>`.
+
+.. _structure-t3:
 
 Tier 3: React
 #############
