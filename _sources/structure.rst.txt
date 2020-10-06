@@ -14,9 +14,28 @@ The configuration of a unit is specified by a :class:`~ampel.model.UnitModel.Uni
 - Looks up the unit class in the Ampel configuration
 - Checks that it is a subclass of the requested type
 - Resolves the configuration if it is an alias, and updates it with the contents of `override`
-- Finally, instantiates the class with the combined configuration dict as keyword arguments.
+- Finally, instantiates the class with the entries of the combined configuration dict as keyword arguments.
 
-If any of the unit's fields are of type :class:`~ampel.model.Secret.Secret`, :class:`~ampel.core.UnitLoader.UnitLoader` will take its value from its configured :class:`~ampel.abstract.AbsSecretProvider.AbsSecretProvider`. When running parts of Ampel manually, you will usually provide this as the `secrets` argument to :class:`~ampel.core.AmpelContext.AmpelContext`, for example via :class:`DictSecretProvider.load() <ampel.dev.DictSecretProvider.DictSecretProvider.load>`.
+For some classes, the configuration dict includes more items than are specified directly in the :class:`~ampel.model.UnitModel.UnitModel`:
+
+- Subclasses of :class:`~ampel.base.DataUnit.DataUnit` have the following additional properties:
+
+  - :attr:`~ampel.base.DataUnit.DataUnit.resource`, a subset of the `resources` section of the Ampel configuration. The keys are specified by entries in the class variable :attr:`~ampel.base.DataUnit.DataUnit.require`. This can be used to specify the URLs of local services like catalog databases. :class:`~ampel.core.UnitLoader.UnitLoader` will raise an exception if no corresponding entry exists in the `resources` section.
+  - :attr:`~ampel.base.DataUnit.DataUnit.logger`, an instance of :class:`~ampel.log.AmpelLogger.AmpelLogger`.
+  All T0, T2, and T3 units are :class:`DataUnits <ampel.base.DataUnit.DataUnit>`.
+
+- Subclasses of :class:`~ampel.core.AdminUnit.AdminUnit` has one additional property:
+  
+  - :attr:`~ampel.core.AdminUnit.AdminUnit.context`, the complete Ampel configuration, Mongo database connection, etc.
+  Contributed plugins will not typically provide these.
+
+- All subclasses of :class:`~ampel.base.AmpelBaseModel.AmpelBaseModel` can have :class:`~ampel.model.Secret.Secret` fields:
+
+  - If any of the unit's fields are of type :class:`~ampel.model.Secret.Secret`, :class:`~ampel.core.UnitLoader.UnitLoader` will look up its value from the configured :class:`~ampel.abstract.AbsSecretProvider.AbsSecretProvider`.
+  - Use :class:`~ampel.model.Secret.Secret` fields for sensitive information like passwords or bearer tokens.
+  - :class:`~ampel.model.Secret.Secret` fields can have a default value of the form ``{"key": "name_of_secret"}``, specifying the name of the secret to use by default. If there is no default, the unit configuration must specify a value.
+  - When running parts of Ampel manually, you will usually provide the :class:`~ampel.abstract.AbsSecretProvider.AbsSecretProvider` as the `secrets` argument to :class:`~ampel.core.AmpelContext.AmpelContext`, for example via :class:`DictSecretProvider.load() <ampel.dev.DictSecretProvider.DictSecretProvider.load>`.
+
 
 Tiers
 =====
