@@ -111,7 +111,7 @@ class AbsLegacyChannelTemplate(AbsChannelTemplate, abstract=True):
 					"directives": [{
 						"channel": self.channel,
 						"stock_match": self.auto_complete,
-						"filter": self.t0_filter.dict(skip_defaults=True, by_alias=True),
+						"filter": self.t0_filter.dict(exclude_unset=True, by_alias=True),
 						"t0_add": self._get_dict(t0_ingester),
 						"stock_update": self._get_dict(stock_ingester)
 					}]
@@ -179,7 +179,7 @@ class AbsLegacyChannelTemplate(AbsChannelTemplate, abstract=True):
 			abs_unit = [abs_unit]
 
 		return [
-			el.dict(skip_defaults=True, by_alias=True)
+			el.dict(exclude_unset=True, by_alias=True)
 			for el in self.t2_compute
 			if any(
 				unit in first_pass_config['unit']['base'][el.unit]['base']

@@ -188,7 +188,7 @@ class AmpelDB(AmpelBaseModel):
 
 				try:
 
-					idx_params = idx.dict(skip_defaults=True)
+					idx_params = idx.dict(exclude_unset=True)
 					logger.info(f"  Creating index: {idx_params}")
 
 					if idx_params.get('args'):
@@ -272,7 +272,7 @@ class AmpelDB(AmpelBaseModel):
 
 		try:
 
-			idx_params = index_data.dict(skip_defaults=True)
+			idx_params = index_data.dict(exclude_unset=True)
 			logger.info(f"  Creating index: {idx_params}")
 
 			if idx_params.get('args'):
