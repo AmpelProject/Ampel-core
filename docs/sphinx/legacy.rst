@@ -13,54 +13,7 @@ project using the current config system can be found in
 Environment
 ===========
 
-.. highlight:: console
-
-Ampel v0.7 requires Python >= 3.8. If you already have Python 3.8 on your system, create and activate a virtualenv for Ampel with:
-
-.. code-block:: shell-session
-  
-  python3 -m venv ampel-v0.7
-  source ampel-v0.7/bin/activate
-
-Otherwise, a good way to get Python 3.8 is with `miniconda <https://docs.conda.io/en/latest/miniconda.html>`_. After installing ``miniconda``, create an environment containing Python 3.8 with:
-
-.. code-block:: shell-session
-  
-  conda create -y -n ampel-v0.7 python=3.8
-  conda activate ampel-v0.7
-
-To develop and test your contributed plug-in, you will need to install the Ampel Python packages and their dependencies from within your environment. For ZTF data, a basic set of packages is:
-
-.. code-block:: shell-session
-  
-  pip install \
-  -e git+https://github.com/AmpelProject/Ampel-interface.git#egg=ampel-interface \
-  -e git+https://github.com/AmpelProject/Ampel-core.git#egg=ampel-core \
-  -e git+https://github.com/AmpelProject/Ampel-alerts.git#egg=ampel-alerts \
-  -e git+https://github.com/AmpelProject/Ampel-photometry.git#egg=ampel-photometry \
-  -e git+https://github.com/AmpelProject/Ampel-ZTF.git#egg=ampel-ztf
-
-.. note:: Eventually these should be published to PyPI.
-
-If your project depends on ``catsHTM`` catalog matching, e.g. via a subclass of :class:`~ampel.contrib.hu.t0.DecentFilter.DecentFilter`, you will also need to:
-
-.. code-block:: shell-session
-  
-  pip install \
-  -e git+https://github.com/robertdstein/Ampel-contrib-ZTFbh.git@v0.7#egg=ampel-contrib-ztfbh \
-  -e git+https://github.com/AmpelProject/Ampel-contrib-HU.git#egg=ampel-contrib-hu
-
-.. note:: ``ampel-contrib-hu`` and ``ampel-contrib-ztfbh`` have cross-dependencies, so you need them both. These common elements should eventually be moved up into ``ampel-ztf``.
-
-You can then install your own project in the environment with:
-
-.. code-block:: shell-session
-  
-  git clone git+https://github.com/SomeOrganization/Ampel-contrib-PROJECTNAME.git
-  cd ampel-contrib-PROJECTNAME
-  pip install -e .
-
-After this, you should be able to run :code:`ampel-config build` and see a gigantic blob of YAML being generated.
+See :ref:`installing-environment`.
 
 .. _legacy-config-files:
 
@@ -72,101 +25,7 @@ Defining channels and registering units
 All the channel/T3 configuration and unit registration that used to be
 scattered in json files and entrypoints section of setup.py now lives in YAML_
 files in a directory ``conf/ampel-contrib-PROJECTNAME`` (where ``PROJECTNAME`` is the name of your project, e.g. ``ZTFbh`` for ``ampel-contrib-ZTFbh``) at the top level
-of your repository. In your setup.py, the call to :py:meth:`setuptools.setup`
-should include::
-  
-  package_data={
-    'conf': [
-      '*.json', '**/*.json', '**/**/*.json',
-      '*.yaml', '**/*.yaml', '**/**/*.yaml',
-      '*.yml', '**/*.yml', '**/**/*.yml'
-    ]
-  }
-
-.. note:: All of the configuration files mentioned here can also be supplied in JSON_ format. We strongly recommend YAML_, however, since it is easier for a human to write and can include comments.
-
-.. highlight:: yaml
-
-``conf/ampel-contrib-PROJECTNAME`` should contain at least a top-level configuration file named ampel.yaml, containining at least the definitions of your channels and any custom units
-you may have. For example::
-
-  channel:
-    EXAMPLE_CHANNEL:
-      channel: EXAMPLE_CHANNEL
-      contact: ampel@desy.de
-      active: true
-      auto_complete: live
-  unit:
-    - ampel.contrib.groupname.t0.DecentFilterCopy
-
-The entries in `unit` are module names, i.e. :code:`ampel.contrib.groupname.t0.DecentFilterCopy` refers to the file ``ampel/contrib/groupname/t0/DecentFilterCopy.py``. This file must contain one class, with the same name as the module. For example, when :class:`~ampel.alert.AlertProcessor.AlertProcessor` requests instantiation of the unit named ``DecentFilterCopy``, the entry above will cause Ampel to do the equivalent of :code:`from ampel.contrib.groupname.t0.DecentFilterCopy import DecentFilterCopy`.
-
-Dictionaries can be either embedded directly into the top-level configuration
-file, or in standalone files named after the key. For example, `channel` key
-in the example above can be replaced with a file conf/ampel-contrib-PROJECTNAME/channel/EXAMPLE_CHANNEL.yaml with the contents::
-  
-  channel: EXAMPLE_CHANNEL
-  contact: ampel@desy.de
-  active: true
-  auto_complete: live
-
-This can be useful for keeping large configurations neatly organized.
-
-.. _config-validation:
-
-Validation
-**********
-
-You should use the command :code:`ampel-config build` to build (and validate) an Ampel configuration file from all installed Ampel subprojects, including yours. The following examples use the `Ampel-contrib-sample`_ template project.
-
-You can use :code:`ampel-config build` along with yq_ to verify that your unit is registered:
-
-.. code-block:: console
-  
-  > ampel-config build | yq .unit.base.DecentFilterCopy
-  {
-    "fqn": "ampel.contrib.groupname.t0.DecentFilterCopy",
-    "base": [
-      "AbsAlertFilter"
-    ],
-    "distrib": "ampel-contrib-sample",
-    "file": "conf/ampel-contrib-sample/unit.json"
-  }
-
-This will raise an exception if your channels or T3 processes refer to units
-that are not registered or can't be imported, or if your unit configurations are invalid. For example, if you add some garbage to DecentFilterCopy.py to make it non-importable, you will get:
-
-.. code-block:: console
-  
-  > ampel-config build
-  2020-09-24 15:52:29 AbsForwardConfigCollector:84 ERROR
-   Unit import error: ampel.contrib.groupname.t0.DecentFilterCopy (conf file: conf/ampel-contrib-sample/unit.json from distribution: ampel-contrib-sample)
-    Follow-up error: could not identify routing for ampel.contrib.groupname.t0.DecentFilterCopy
-
-  2020-09-24 15:52:31 FirstPassConfig:97 WARNING
-   ForwardUnitConfigCollector (key: 'unit') has errors
-
-If you change `channel definition <https://github.com/AmpelProject/Ampel-contrib-sample/blob/03950a37dc4dc74c610df72887bd417239cd58aa/conf/ampel-contrib-sample/channel/EXAMPLE_BRIGHT_N_STABLE.yml#L11>`_  to use a unit that is not registered, for example "LALALA_DecentFilterCopy", you will get an error like this:
-
-.. code-block:: console
-  
-  > ampel-config build
-  2020-09-24 15:45:53 ConfigBuilder:297 ERROR
-   Unable to morph embedded process EXAMPLE_BRIGHT_N_STABLE|T0|ztf_uw_public (from conf/ampel-contrib-sample/channel/EXAMPLE_BRIGHT_N_STABLE.yml)
-   1 validation error for ProcessModel
-  processor -> __root__ -> directives -> 0 -> filter -> __root__
-    Ampel unit not found: LALALA_DecentFilterCopy (type=value_error)
-
-If you try to configure it with parameters that are not valid, for example by `setting <https://github.com/AmpelProject/Ampel-contrib-sample/blob/03950a37dc4dc74c610df72887bd417239cd58aa/conf/ampel-contrib-sample/channel/EXAMPLE_BRIGHT_N_STABLE.yml#L13>`_ :code:`t0_filter.config.min_ndet = "fish"` when it `should be an integer <https://github.com/AmpelProject/Ampel-contrib-sample/blob/03950a37dc4dc74c610df72887bd417239cd58aa/ampel/contrib/groupname/t0/DecentFilterCopy.py#L38>`_, you get:
-
-.. code-block:: console
-  
-  > ampel-config build
-  2020-09-24 15:48:05 ConfigBuilder:297 ERROR
-   Unable to morph embedded process EXAMPLE_BRIGHT_N_STABLE|T0|ztf_uw_public (from conf/ampel-contrib-sample/channel/EXAMPLE_BRIGHT_N_STABLE.yml)
-   1 validation error for ProcessModel
-  processor -> __root__ -> directives -> 0 -> filter -> __root__ -> min_ndet
-  value is not a valid integer (type=type_error.integer)
+of your repository. See :ref:`contribute-configuration-channels` for details of the configuration layout, and :ref:`contribute-configuration-validation` for how to check your configuration for correctness.
 
 Terminology changes and renamed classes
 ***************************************
@@ -313,7 +172,7 @@ T0 units
 T0 unit configuration
 *********************
 
-T0 units need to be :ref:`registered in your project's config <legacy-config-files>`.
+T0 units need to be :ref:`registered in your project's config <contribute-configuration-channels>`.
 
 All units in v0.7 use type annotations and ``pydantic`` to define and validate their configuration. This means that if you previously used a nested :class:`RunConfig` class to define a configuration, you can move its fields up to the parent class, and access them as attributes from instances. In other words, the following v0.6 filter defintion::
   
@@ -355,9 +214,9 @@ shrinks down to::
 
   class AwesomeFilter(AbsAlertFilter[PhotoAlert]):
   
-      min_ndet: int = Field(..., description="number of previous detections")
-      min_tspan: float = Field(..., description="minimum duration of alert detection history [days]")
-      max_tspan: float = Field(..., description="maximum duration of alert detection history [days]")
+      min_ndet: int #: number of previous detections
+      min_tspan: float #: minimum duration of alert detection history [days]
+      max_tspan: float #: maximum duration of alert detection history [days]
 
       def post_init(self):
           ...
@@ -366,7 +225,8 @@ You no longer have to define an :meth:`__init__`; the default :meth:`__init__` w
 
 - All instances of :class:`~ampel.abstract.AbsAlertFilter.AbsAlertFilter` have a ``self.logger`` property. You do not have to set one up yourself.
 - ``AbsAlertFilter[PhotoAlert]`` indicates that the :meth:`~ampel.abstract.AbsAlertFilter.AbsAlertFilter.apply` method expects a :class:`~ampel.alert.PhotoAlert.PhotAlert`. Instances of :class:`~ampel.alert.PhotoAlert.PhotoAlert` have separate photopoints and upper limits. If you omit the parameter to :class:`~ampel.abstract.AbsAlertFilter.AbsAlertFilter` in your class definition, your :meth:`~ampel.abstract.AbsAlertFilter.AbsAlertFilter.apply` method will receive the base class, :class:`~ampel.alert.AmpelAlert.AmpelAlert`, instead. Instances of :class:`~ampel.alert.AmpelAlert.AmpelAlert` only have one collection of datapoints.
-- The call to :py:meth:`~pydantic.Field` is optional, but makes the field description machine-readable. You can also use this to define jsonschema-style constraints on the field value, for example requiring an integer to be positive, or a list to have a specified number of items. For more information, see the `pydantic docs <https://pydantic-docs.helpmanual.io/usage/schema/#field-customisation>`_.
+- The annotations are used to build a pydantic model that validates the configuration parameters defined for the instance in e.g. a channel definition. This means that you can use `Field() <https://pydantic-docs.helpmanual.io/usage/schema/#field-customisation>`_ to impose jsonschema-style constraints on the field value, for example requiring an integer to be positive, or a list to have a specified number of items.
+- The ``#:`` comment marker indicates that the following is interface documentation, and should be included in autogenerated docs. Normal comments that start with just ``#`` are ignored.
 - Field names should be lower camel-cased by convention.
 
 Base classes also exist to automate the configuration of e.g. catalog matching services. For example, if you were previously setting up ``catsHTM`` matching
@@ -384,7 +244,7 @@ like this::
           catshtm_uri = base_confg["catsHTM.default"]
           self.catshtm = catshtm_server.get_client(catshtm_uri)
 
-you can simplify to::
+you can inherit from :class:`~ampel.contrib.hu.base.CatsHTMUnit.CatsHTMUnit` and simplify to::
   
   from ampel.alert.PhotoAlert import PhotoAlert
   from ampel.abstract.AbsAlertFilter import AbsAlertFilter
@@ -393,7 +253,7 @@ you can simplify to::
   class GaiaVetoFilter(CatsHTMUnit, AbsAlertFilter[PhotoAlert]):
       ...
 
-:py:class:`ExtCatsUnit` is the equivalent for `extcats <https://github.com/MatteoGiomi/extcats>`.
+:class:`~ampel.contrib.hu.base.ExtCatsUnit.ExtCatsUnit` is the equivalent for `extcats <https://github.com/MatteoGiomi/extcats>`_.
 
 Filtering
 *********
@@ -412,7 +272,7 @@ The return value of :meth:`AbsAlertFilter.apply <ampel.abstract.AbsAlertFilter.A
 T2 units
 ========
 
-T2 units need to be :ref:`registered in your project's config <legacy-config-files>`.
+T2 units need to be :ref:`registered in your project's config <contribute-configuration-channels>`.
 
 New base classes
 ****************
@@ -425,10 +285,12 @@ There are now 3 different kinds of T2 unit. If your T2 does something other than
 
 There are also "tied" variants of these, such as :class:`~ampel.abstract.AbsTiedLightCurveT2Unit.AbsTiedLightCurveT2Unit`, that can be used to build a directed acyclic graph of T2s. In other words, these T2s depend on the output of other T2s.
 
+.. NB: while base classes for tied T2s exist, T2Process does not actually know how to defer dependent T2s until their dependencies have been processed.
+
 T2 unit configuration
 *********************
 
-Like T0 units, T2 units take their configuration as fields. See:ref:`legacy-t0-configuration`.
+Like T0 units, T2 units declare their configurations using annotations. See :ref:`legacy-t0-configuration`.
 
 :py:meth:`run`
 **************
@@ -454,7 +316,7 @@ The `PEP 484 annotations <https://www.python.org/dev/peps/pep-0484/>`_ in the me
 T3 units
 ========
 
-T2 units need to be :ref:`registered in your project's config <legacy-config-files>`.
+T2 units need to be :ref:`registered in your project's config <contribute-configuration-channels>`.
 
 T3 unit configuration
 *********************
@@ -524,7 +386,6 @@ Again, all type annotations in method signatures (and the associated imports) ar
     )
 
 
-.. _Ampel-contrib-sample: <https://github.com/AmpelProject/Ampel-contrib-sample/tree/03950a37dc4dc74c610df72887bd417239cd58aa
 .. _mypy: https://mypy.readthedocs.io/en/stable/
 .. _YAML: https://en.wikipedia.org/wiki/YAML
 .. _JSON: https://en.wikipedia.org/wiki/JSON
