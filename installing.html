@@ -42,58 +42,73 @@
             
   <div class="section" id="installing">
 <h1>Installing<a class="headerlink" href="#installing" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="environment">
+<span id="installing-environment"></span><h2>Environment<a class="headerlink" href="#environment" title="Permalink to this headline">¶</a></h2>
+<p>Ampel requires Python &gt;= 3.8. If you already have Python 3.8 on your system, create and activate a <code class="docutils literal notranslate"><span class="pre">virtualenv</span></code> for Ampel with:</p>
+<div class="highlight-shell-session notranslate"><div class="highlight"><pre><span></span><span class="go">python3 -m venv ampel-v0.7</span>
+<span class="go">source ampel-v0.7/bin/activate</span>
+</pre></div>
+</div>
+<p>Otherwise, a good way to get Python 3.8 is with <a class="reference external" href="https://docs.conda.io/en/latest/miniconda.html">miniconda</a>. After installing <code class="docutils literal notranslate"><span class="pre">miniconda</span></code>, create an environment containing Python 3.8 with:</p>
+<div class="highlight-shell-session notranslate"><div class="highlight"><pre><span></span><span class="go">conda create -y -n ampel-v0.7 python=3.8</span>
+<span class="go">conda activate ampel-v0.7</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="ampel-packages">
+<h2>Ampel packages<a class="headerlink" href="#ampel-packages" title="Permalink to this headline">¶</a></h2>
+<p>To develop and test a contributed plug-in, you will need to install the Ampel Python packages and their dependencies from within your environment. A basic set of packages for working with ZTF alerts is:</p>
+<div class="highlight-shell-session notranslate"><div class="highlight"><pre><span></span><span class="go">pip install \</span>
+<span class="go">-e git+https://github.com/AmpelProject/Ampel-interface.git#egg=ampel-interface \</span>
+<span class="go">-e git+https://github.com/AmpelProject/Ampel-core.git#egg=ampel-core \</span>
+<span class="go">-e git+https://github.com/AmpelProject/Ampel-alerts.git#egg=ampel-alerts \</span>
+<span class="go">-e git+https://github.com/AmpelProject/Ampel-photometry.git#egg=ampel-photometry \</span>
+<span class="go">-e git+https://github.com/AmpelProject/Ampel-ZTF.git#egg=ampel-ztf</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Eventually these should be published to PyPI.</p>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>If you have two-factor authentication enabled on your GitHub account, your won’t be able to use your account password to authenticate with command-line <code class="docutils literal notranslate"><span class="pre">git</span></code>. Instead, create a <a class="reference external" href="https://github.com/settings/tokens/new">personal access token</a> with <code class="docutils literal notranslate"><span class="pre">repo</span></code> scope, and use that as your password. If you had previously stored your account password in a credential helper (e.g. if <code class="docutils literal notranslate"><span class="pre">git</span> <span class="pre">config</span> <span class="pre">--system</span> <span class="pre">--get</span> <span class="pre">credential.helper</span></code> says <code class="docutils literal notranslate"><span class="pre">osxkeychain</span></code>), then you will have to remove the password from that credential helper before <code class="docutils literal notranslate"><span class="pre">git</span></code> will ask you for a new one.</p>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Since Ampel packages are <a class="reference external" href="https://packaging.python.org/guides/packaging-namespace-packages/#creating-a-namespace-package">PEP 420 namespace packages</a>, <code class="docutils literal notranslate"><span class="pre">python</span> <span class="pre">setup.py</span> <span class="pre">install</span></code> will not work. Use <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">.</span></code> instead.</p>
+</div>
+</div>
+<div class="section" id="extra-packages-for-ztf-alerts">
+<h2>Extra packages for ZTF alerts<a class="headerlink" href="#extra-packages-for-ztf-alerts" title="Permalink to this headline">¶</a></h2>
+<p>If you are developing a plugin that depends on <code class="docutils literal notranslate"><span class="pre">catsHTM</span></code> catalog matching, e.g. via a subclass of <code class="xref py py-class docutils literal notranslate"><span class="pre">DecentFilter</span></code>, you will also need to:</p>
+<div class="highlight-shell-session notranslate"><div class="highlight"><pre><span></span><span class="go">pip install \</span>
+<span class="go">-e git+https://github.com/AmpelProject/Ampel-contrib-HU.git#egg=ampel-contrib-hu</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Commonly-used elements of <code class="docutils literal notranslate"><span class="pre">ampel-contrib-hu</span></code> should eventually be moved up into <code class="docutils literal notranslate"><span class="pre">ampel-ztf</span></code>.</p>
+</div>
+</div>
+<div class="section" id="installing-your-own-plug-in">
+<h2>Installing your own plug-in<a class="headerlink" href="#installing-your-own-plug-in" title="Permalink to this headline">¶</a></h2>
+<p>Once you have the environment set up with Ampel core pacakges, you can install your own plugin (see <a class="reference internal" href="contribute.html#contributing"><span class="std std-ref">Contribute</span></a>) in the environment with:</p>
+<div class="highlight-shell-session notranslate"><div class="highlight"><pre><span></span><span class="go">git clone https://github.com/SomeOrganization/Ampel-contrib-PROJECTNAME.git</span>
+<span class="go">cd ampel-contrib-PROJECTNAME</span>
+<span class="go">pip install -e .</span>
+</pre></div>
+</div>
+<p>After this, you should be able to run <code class="code docutils literal notranslate"><span class="pre">ampel-config</span> <span class="pre">build</span></code> and see a gigantic blob of YAML being generated.</p>
+</div>
+<div class="section" id="running-a-full-ampel-instance">
+<h2>Running a full Ampel instance<a class="headerlink" href="#running-a-full-ampel-instance" title="Permalink to this headline">¶</a></h2>
+<p>To run the full Ampel processing chain implemented in the ampel-core project, you will need an instance of MongoDB (&gt;= 4.0). To start one via <code class="docutils literal notranslate"><span class="pre">docker</span></code>:</p>
+<p>This causes <code class="docutils literal notranslate"><span class="pre">docker</span></code> to start <code class="docutils literal notranslate"><span class="pre">mongod</span></code> in a background container named <code class="docutils literal notranslate"><span class="pre">mongo</span></code>, with port 27017 bound to port 27017 on the host. The value printed to the console is the id of the container; you can refer to it either using this hash or the name you provided (<code class="docutils literal notranslate"><span class="pre">mongo</span></code>). You may verify that ports are forwarded to the host correctly with with <code class="docutils literal notranslate"><span class="pre">docker</span> <span class="pre">inspect</span></code>:</p>
 <div class="admonition warning">
 <p class="admonition-title">Warning</p>
-<p>This section is obsolete. See <a class="reference internal" href="legacy.html#legacy-porting-guide"><span class="std std-ref">Porting contrib projects from v0.6</span></a>.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">mongod</span></code> started this way has no access control whatsoever, and should only be used for local development. Always use authenticated, minimially-priviledged users in production.</p>
 </div>
-<p>Ampel is written in Python 3.6, and split into multiple packages (see <a class="reference internal" href="projects/index.html#projects"><span class="std std-ref">API documentation by project</span></a> for a full list). Of these, you should only need ampel-base and an instrument-specific package like ampel-ztf.</p>
-<p>There are a number of ways to install Ampel for local development and testing. We recommend <a class="reference internal" href="#conda-dedicated"><span class="std std-ref">Option 1: Dedicated conda environment</span></a>.</p>
-<div class="section" id="option-1-dedicated-conda-environment">
-<span id="conda-dedicated"></span><h2>Option 1: Dedicated <cite>conda</cite> environment<a class="headerlink" href="#option-1-dedicated-conda-environment" title="Permalink to this headline">¶</a></h2>
-<ol class="arabic simple">
-<li><p><a class="reference external" href="https://conda.io/miniconda.html">Install miniconda</a>.</p></li>
-<li><p>Download the <a class="reference download internal" download="" href="_downloads/cdf3819f0ca23908d4bca1e1b27a0df4/ampel-environment.yml"><code class="xref download docutils literal notranslate"><span class="pre">environment</span> <span class="pre">definition</span> <span class="pre">file</span></code></a>, displayed below. Replace XXX with the Ampel repository password, available upon request. You may also change the name of the environment (ampel-dev by default) if you so wish.</p></li>
-</ol>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">name</span><span class="p">:</span> <span class="n">ampel</span><span class="o">-</span><span class="n">dev</span>
-<span class="n">channels</span><span class="p">:</span>
-  <span class="o">-</span> <span class="n">https</span><span class="p">:</span><span class="o">//</span><span class="n">ampel</span><span class="p">:</span><span class="n">XXX</span><span class="nd">@www</span><span class="o">-</span><span class="n">zeuthen</span><span class="o">.</span><span class="n">desy</span><span class="o">.</span><span class="n">de</span><span class="o">/~</span><span class="n">jvsanten</span><span class="o">/</span><span class="n">ampel</span><span class="o">/</span><span class="n">conda</span>
-  <span class="o">-</span> <span class="n">ampelproject</span>
-  <span class="o">-</span> <span class="n">conda</span><span class="o">-</span><span class="n">forge</span>
-<span class="n">dependencies</span><span class="p">:</span>
-  <span class="o">-</span> <span class="n">ampel</span><span class="o">-</span><span class="n">base</span>
-  <span class="o">-</span> <span class="n">ampel</span><span class="o">-</span><span class="n">core</span>
-  <span class="o">-</span> <span class="n">ampel</span><span class="o">-</span><span class="n">ztf</span>
-  <span class="o">-</span> <span class="n">ampel</span><span class="o">-</span><span class="n">contrib</span><span class="o">-</span><span class="n">hu</span>
-</pre></div>
-</div>
-<ol class="arabic simple" start="3">
-<li><p>Create the environment: <cite>conda env create -f ampel-environment.yml</cite></p></li>
-<li><p>Activate the environment: <cite>source activate ampel-dev</cite>.</p></li>
-</ol>
-<p>If you later add packages (or new dependencies to support your contribution), add them to the environment file and <cite>conda env update -f ampel-environment.yml</cite>.</p>
-<p>To use your contribution with the core Ampel packages, run <cite>pip install -e .</cite> in its source directory. This links your package source into the environment’s search path, making e.g. <cite>ampel.contrib.yourgroup.t2.YourT2Unit</cite> importable.</p>
-</div>
-<div class="section" id="option-2-add-to-existing-conda-environment">
-<h2>Option 2: Add to existing <cite>conda</cite> environment<a class="headerlink" href="#option-2-add-to-existing-conda-environment" title="Permalink to this headline">¶</a></h2>
-<ol class="arabic">
-<li><p>Activate your target conda environment.</p></li>
-<li><p>Add some custom channels to search for packages:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>for channel in conda-forge ampelproject https://ampel:XXX@www-zeuthen.desy.de/~jvsanten/ampel/conda; do
-  conda config --env --add channels $channel
-done
-</pre></div>
-</div>
-</li>
-<li><p>Install Ampel packages, e.g. <cite>conda install ampel-ztf</cite>, and <cite>pip install</cite> your own contributions as described above.</p></li>
-</ol>
-</div>
-<div class="section" id="option-3-custom-python-environment">
-<h2>Option 3: Custom Python environment<a class="headerlink" href="#option-3-custom-python-environment" title="Permalink to this headline">¶</a></h2>
-<p>If you have strong opinions about how your system is set up, you can also install all Ampel components by hand. We recommend, however, that you at least use virtualenv to isolate yourself from your base OS Python install. You will need at least Python 3.6.</p>
-</div>
-<div class="section" id="running-the-full-chain">
-<h2>Running the full chain<a class="headerlink" href="#running-the-full-chain" title="Permalink to this headline">¶</a></h2>
-<p>To run the full Ampel processing chain implemented in the ampel-core project, you will need MongoDB (&gt;= 3.6). It is easily run via Docker, or you may install it locally.</p>
 </div>
 </div>
 

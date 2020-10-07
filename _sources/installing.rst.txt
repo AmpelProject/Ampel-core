@@ -1,51 +1,96 @@
 Installing
 ----------
 
-.. warning:: This section is obsolete. See :ref:`legacy-porting-guide`.
+.. highlight:: console
 
-Ampel is written in Python 3.6, and split into multiple packages (see :ref:`projects` for a full list). Of these, you should only need ampel-base and an instrument-specific package like ampel-ztf.
+.. _installing-environment:
 
-There are a number of ways to install Ampel for local development and testing. We recommend :ref:`conda_dedicated`.
+Environment
+===========
 
-.. _conda_dedicated:
+Ampel requires Python >= 3.8. If you already have Python 3.8 on your system, create and activate a ``virtualenv`` for Ampel with:
 
-Option 1: Dedicated `conda` environment
-=======================================
+.. code-block:: shell-session
+  
+  python3 -m venv ampel-v0.7
+  source ampel-v0.7/bin/activate
 
-1. `Install miniconda <https://conda.io/miniconda.html>`_.
+Otherwise, a good way to get Python 3.8 is with `miniconda <https://docs.conda.io/en/latest/miniconda.html>`_. After installing ``miniconda``, create an environment containing Python 3.8 with:
 
-2. Download the :download:`environment definition file </_static/ampel-environment.yml>`, displayed below. Replace XXX with the Ampel repository password, available upon request. You may also change the name of the environment (ampel-dev by default) if you so wish.
+.. code-block:: shell-session
+  
+  conda create -y -n ampel-v0.7 python=3.8
+  conda activate ampel-v0.7
 
-.. literalinclude:: /_static/ampel-environment.yml
+Ampel packages
+==============
 
-3. Create the environment: `conda env create -f ampel-environment.yml`
+To develop and test a contributed plug-in, you will need to install the Ampel Python packages and their dependencies from within your environment. A basic set of packages for working with ZTF alerts is:
 
-4. Activate the environment: `source activate ampel-dev`.
+.. code-block:: shell-session
+  
+  pip install \
+  -e git+https://github.com/AmpelProject/Ampel-interface.git#egg=ampel-interface \
+  -e git+https://github.com/AmpelProject/Ampel-core.git#egg=ampel-core \
+  -e git+https://github.com/AmpelProject/Ampel-alerts.git#egg=ampel-alerts \
+  -e git+https://github.com/AmpelProject/Ampel-photometry.git#egg=ampel-photometry \
+  -e git+https://github.com/AmpelProject/Ampel-ZTF.git#egg=ampel-ztf
 
-If you later add packages (or new dependencies to support your contribution), add them to the environment file and `conda env update -f ampel-environment.yml`.
+.. note:: Eventually these should be published to PyPI.
 
-To use your contribution with the core Ampel packages, run `pip install -e .` in its source directory. This links your package source into the environment's search path, making e.g. `ampel.contrib.yourgroup.t2.YourT2Unit` importable.
+.. note:: If you have two-factor authentication enabled on your GitHub account, your won't be able to use your account password to authenticate with command-line ``git``. Instead, create a `personal access token <https://github.com/settings/tokens/new>`_ with ``repo`` scope, and use that as your password. If you had previously stored your account password in a credential helper (e.g. if ``git config --system --get credential.helper`` says ``osxkeychain``), then you will have to remove the password from that credential helper before ``git`` will ask you for a new one.
 
-Option 2: Add to existing `conda` environment
-=============================================
+.. note:: Since Ampel packages are `PEP 420 namespace packages <https://packaging.python.org/guides/packaging-namespace-packages/#creating-a-namespace-package>`_, ``python setup.py install`` will not work. Use ``pip install .`` instead.
 
-1. Activate your target conda environment.
+Extra packages for ZTF alerts
+=============================
 
-2. Add some custom channels to search for packages::
-    
-    for channel in conda-forge ampelproject https://ampel:XXX@www-zeuthen.desy.de/~jvsanten/ampel/conda; do
-      conda config --env --add channels $channel
-    done
+If you are developing a plugin that depends on ``catsHTM`` catalog matching, e.g. via a subclass of :class:`~ampel.contrib.hu.t0.DecentFilter.DecentFilter`, you will also need to:
 
-3. Install Ampel packages, e.g. `conda install ampel-ztf`, and `pip install` your own contributions as described above.
+.. code-block:: shell-session
+  
+  pip install \
+  -e git+https://github.com/AmpelProject/Ampel-contrib-HU.git#egg=ampel-contrib-hu
 
-Option 3: Custom Python environment
-===================================
+.. note:: Commonly-used elements of ``ampel-contrib-hu`` should eventually be moved up into ``ampel-ztf``.
 
-If you have strong opinions about how your system is set up, you can also install all Ampel components by hand. We recommend, however, that you at least use virtualenv to isolate yourself from your base OS Python install. You will need at least Python 3.6. 
+Installing your own plug-in
+===========================
 
-Running the full chain
-======================
+Once you have the environment set up with Ampel core pacakges, you can install your own plugin (see :ref:`contributing`) in the environment with:
 
-To run the full Ampel processing chain implemented in the ampel-core project, you will need MongoDB (>= 3.6). It is easily run via Docker, or you may install it locally.
+.. code-block:: shell-session
+  
+  git clone https://github.com/SomeOrganization/Ampel-contrib-PROJECTNAME.git
+  cd ampel-contrib-PROJECTNAME
+  pip install -e .
+
+After this, you should be able to run :code:`ampel-config build` and see a gigantic blob of YAML being generated.
+
+Running a full Ampel instance
+=============================
+
+To run the full Ampel processing chain implemented in the ampel-core project, you will need an instance of MongoDB (>= 4.0). To start one via ``docker``:
+
+.. code-block:
+  
+  > docker run -d --rm -p 27017:27017 --name mongo mongo:bionic
+  9f8724e53d8d4fc44ecf06e5ab5a2f76a1ad773a910ab20c2206cd3669e67496
+
+This causes ``docker`` to start ``mongod`` in a background container named ``mongo``, with port 27017 bound to port 27017 on the host. The value printed to the console is the id of the container; you can refer to it either using this hash or the name you provided (``mongo``). You may verify that ports are forwarded to the host correctly with with ``docker inspect``:
+
+.. code-block:
+  
+  > docker inspect mongo | jq '.[] | .NetworkSettings.Ports'
+  {
+    "27017/tcp": [
+      {
+        "HostIp": "0.0.0.0",
+        "HostPort": "27017"
+      }
+    ]
+  }
+
+.. warning:: The ``mongod`` started this way has no access control whatsoever, and should only be used for local development. Always use authenticated, minimially-priviledged users in production.
+
 

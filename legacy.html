@@ -46,138 +46,17 @@
 from operating v0.6 during the first 1.5 years of ZTF. Here is a summary of the
 changes you need to make to adapt your project from v0.6 to v0.7. An example
 project using the current config system can be found in
-<a class="reference external" href="&lt;https://github.com/AmpelProject/Ampel-contrib-sample/tree/03950a37dc4dc74c610df72887bd417239cd58aa">Ampel-contrib-sample</a>.</p>
+<a href="#id1"><span class="problematic" id="id2">`Ampel-contrib-sample`_</span></a>.</p>
 <div class="section" id="environment">
 <h2>Environment<a class="headerlink" href="#environment" title="Permalink to this headline">¶</a></h2>
-<p>Ampel v0.7 requires Python &gt;= 3.8. If you already have Python 3.8 on your system, create and activate a virtualenv for Ampel with:</p>
-<div class="highlight-shell-session notranslate"><div class="highlight"><pre><span></span><span class="go">python3 -m venv ampel-v0.7</span>
-<span class="go">source ampel-v0.7/bin/activate</span>
-</pre></div>
-</div>
-<p>Otherwise, a good way to get Python 3.8 is with <a class="reference external" href="https://docs.conda.io/en/latest/miniconda.html">miniconda</a>. After installing <code class="docutils literal notranslate"><span class="pre">miniconda</span></code>, create an environment containing Python 3.8 with:</p>
-<div class="highlight-shell-session notranslate"><div class="highlight"><pre><span></span><span class="go">conda create -y -n ampel-v0.7 python=3.8</span>
-<span class="go">conda activate ampel-v0.7</span>
-</pre></div>
-</div>
-<p>To develop and test your contributed plug-in, you will need to install the Ampel Python packages and their dependencies from within your environment. For ZTF data, a basic set of packages is:</p>
-<div class="highlight-shell-session notranslate"><div class="highlight"><pre><span></span><span class="go">pip install \</span>
-<span class="go">-e git+https://github.com/AmpelProject/Ampel-interface.git#egg=ampel-interface \</span>
-<span class="go">-e git+https://github.com/AmpelProject/Ampel-core.git#egg=ampel-core \</span>
-<span class="go">-e git+https://github.com/AmpelProject/Ampel-alerts.git#egg=ampel-alerts \</span>
-<span class="go">-e git+https://github.com/AmpelProject/Ampel-photometry.git#egg=ampel-photometry \</span>
-<span class="go">-e git+https://github.com/AmpelProject/Ampel-ZTF.git#egg=ampel-ztf</span>
-</pre></div>
-</div>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>Eventually these should be published to PyPI.</p>
-</div>
-<p>If your project depends on <code class="docutils literal notranslate"><span class="pre">catsHTM</span></code> catalog matching, e.g. via a subclass of <code class="xref py py-class docutils literal notranslate"><span class="pre">DecentFilter</span></code>, you will also need to:</p>
-<div class="highlight-shell-session notranslate"><div class="highlight"><pre><span></span><span class="go">pip install \</span>
-<span class="go">-e git+https://github.com/robertdstein/Ampel-contrib-ZTFbh.git@v0.7#egg=ampel-contrib-ztfbh \</span>
-<span class="go">-e git+https://github.com/AmpelProject/Ampel-contrib-HU.git#egg=ampel-contrib-hu</span>
-</pre></div>
-</div>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p><code class="docutils literal notranslate"><span class="pre">ampel-contrib-hu</span></code> and <code class="docutils literal notranslate"><span class="pre">ampel-contrib-ztfbh</span></code> have cross-dependencies, so you need them both. These common elements should eventually be moved up into <code class="docutils literal notranslate"><span class="pre">ampel-ztf</span></code>.</p>
-</div>
-<p>You can then install your own project in the environment with:</p>
-<div class="highlight-shell-session notranslate"><div class="highlight"><pre><span></span><span class="go">git clone git+https://github.com/SomeOrganization/Ampel-contrib-PROJECTNAME.git</span>
-<span class="go">cd ampel-contrib-PROJECTNAME</span>
-<span class="go">pip install -e .</span>
-</pre></div>
-</div>
-<p>After this, you should be able to run <code class="code docutils literal notranslate"><span class="pre">ampel-config</span> <span class="pre">build</span></code> and see a gigantic blob of YAML being generated.</p>
+<p>See <a class="reference internal" href="installing.html#installing-environment"><span class="std std-ref">Environment</span></a>.</p>
 </div>
 <div class="section" id="defining-channels-and-registering-units">
 <span id="legacy-config-files"></span><h2>Defining channels and registering units<a class="headerlink" href="#defining-channels-and-registering-units" title="Permalink to this headline">¶</a></h2>
 <p>All the channel/T3 configuration and unit registration that used to be
 scattered in json files and entrypoints section of setup.py now lives in <a class="reference external" href="https://en.wikipedia.org/wiki/YAML">YAML</a>
 files in a directory <code class="docutils literal notranslate"><span class="pre">conf/ampel-contrib-PROJECTNAME</span></code> (where <code class="docutils literal notranslate"><span class="pre">PROJECTNAME</span></code> is the name of your project, e.g. <code class="docutils literal notranslate"><span class="pre">ZTFbh</span></code> for <code class="docutils literal notranslate"><span class="pre">ampel-contrib-ZTFbh</span></code>) at the top level
-of your repository. In your setup.py, the call to <code class="xref py py-meth docutils literal notranslate"><span class="pre">setuptools.setup()</span></code>
-should include:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">package_data</span><span class="o">=</span><span class="p">{</span>
-  <span class="s1">&#39;conf&#39;</span><span class="p">:</span> <span class="p">[</span>
-    <span class="s1">&#39;*.json&#39;</span><span class="p">,</span> <span class="s1">&#39;**/*.json&#39;</span><span class="p">,</span> <span class="s1">&#39;**/**/*.json&#39;</span><span class="p">,</span>
-    <span class="s1">&#39;*.yaml&#39;</span><span class="p">,</span> <span class="s1">&#39;**/*.yaml&#39;</span><span class="p">,</span> <span class="s1">&#39;**/**/*.yaml&#39;</span><span class="p">,</span>
-    <span class="s1">&#39;*.yml&#39;</span><span class="p">,</span> <span class="s1">&#39;**/*.yml&#39;</span><span class="p">,</span> <span class="s1">&#39;**/**/*.yml&#39;</span>
-  <span class="p">]</span>
-<span class="p">}</span>
-</pre></div>
-</div>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>All of the configuration files mentioned here can also be supplied in <a class="reference external" href="https://en.wikipedia.org/wiki/JSON">JSON</a> format. We strongly recommend <a class="reference external" href="https://en.wikipedia.org/wiki/YAML">YAML</a>, however, since it is easier for a human to write and can include comments.</p>
-</div>
-<p><code class="docutils literal notranslate"><span class="pre">conf/ampel-contrib-PROJECTNAME</span></code> should contain at least a top-level configuration file named ampel.yaml, containining at least the definitions of your channels and any custom units
-you may have. For example:</p>
-<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">channel</span><span class="p">:</span>
-  <span class="nt">EXAMPLE_CHANNEL</span><span class="p">:</span>
-    <span class="nt">channel</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">EXAMPLE_CHANNEL</span>
-    <span class="nt">contact</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">ampel@desy.de</span>
-    <span class="nt">active</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">true</span>
-    <span class="nt">auto_complete</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">live</span>
-<span class="nt">unit</span><span class="p">:</span>
-  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">ampel.contrib.groupname.t0.DecentFilterCopy</span>
-</pre></div>
-</div>
-<p>The entries in <cite>unit</cite> are module names, i.e. <code class="code docutils literal notranslate"><span class="pre">ampel.contrib.groupname.t0.DecentFilterCopy</span></code> refers to the file <code class="docutils literal notranslate"><span class="pre">ampel/contrib/groupname/t0/DecentFilterCopy.py</span></code>. This file must contain one class, with the same name as the module. For example, when <a class="reference internal" href="projects/ampel-alerts.html#ampel.alert.AlertProcessor.AlertProcessor" title="ampel.alert.AlertProcessor.AlertProcessor"><code class="xref py py-class docutils literal notranslate"><span class="pre">AlertProcessor</span></code></a> requests instantiation of the unit named <code class="docutils literal notranslate"><span class="pre">DecentFilterCopy</span></code>, the entry above will cause Ampel to do the equivalent of <code class="code docutils literal notranslate"><span class="pre">from</span> <span class="pre">ampel.contrib.groupname.t0.DecentFilterCopy</span> <span class="pre">import</span> <span class="pre">DecentFilterCopy</span></code>.</p>
-<p>Dictionaries can be either embedded directly into the top-level configuration
-file, or in standalone files named after the key. For example, <cite>channel</cite> key
-in the example above can be replaced with a file conf/ampel-contrib-PROJECTNAME/channel/EXAMPLE_CHANNEL.yaml with the contents:</p>
-<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">channel</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">EXAMPLE_CHANNEL</span>
-<span class="nt">contact</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">ampel@desy.de</span>
-<span class="nt">active</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">true</span>
-<span class="nt">auto_complete</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">live</span>
-</pre></div>
-</div>
-<p>This can be useful for keeping large configurations neatly organized.</p>
-<div class="section" id="validation">
-<span id="config-validation"></span><h3>Validation<a class="headerlink" href="#validation" title="Permalink to this headline">¶</a></h3>
-<p>You should use the command <code class="code docutils literal notranslate"><span class="pre">ampel-config</span> <span class="pre">build</span></code> to build (and validate) an Ampel configuration file from all installed Ampel subprojects, including yours. The following examples use the <a class="reference external" href="&lt;https://github.com/AmpelProject/Ampel-contrib-sample/tree/03950a37dc4dc74c610df72887bd417239cd58aa">Ampel-contrib-sample</a> template project.</p>
-<p>You can use <code class="code docutils literal notranslate"><span class="pre">ampel-config</span> <span class="pre">build</span></code> along with <a class="reference external" href="https://mikefarah.gitbook.io/yq/">yq</a> to verify that your unit is registered:</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;</span> ampel-config build <span class="p">|</span> yq .unit.base.DecentFilterCopy
-<span class="go">{</span>
-<span class="go">  &quot;fqn&quot;: &quot;ampel.contrib.groupname.t0.DecentFilterCopy&quot;,</span>
-<span class="go">  &quot;base&quot;: [</span>
-<span class="go">    &quot;AbsAlertFilter&quot;</span>
-<span class="go">  ],</span>
-<span class="go">  &quot;distrib&quot;: &quot;ampel-contrib-sample&quot;,</span>
-<span class="go">  &quot;file&quot;: &quot;conf/ampel-contrib-sample/unit.json&quot;</span>
-<span class="go">}</span>
-</pre></div>
-</div>
-<p>This will raise an exception if your channels or T3 processes refer to units
-that are not registered or can’t be imported, or if your unit configurations are invalid. For example, if you add some garbage to DecentFilterCopy.py to make it non-importable, you will get:</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;</span> ampel-config build
-<span class="go">2020-09-24 15:52:29 AbsForwardConfigCollector:84 ERROR</span>
-<span class="go"> Unit import error: ampel.contrib.groupname.t0.DecentFilterCopy (conf file: conf/ampel-contrib-sample/unit.json from distribution: ampel-contrib-sample)</span>
-<span class="go">  Follow-up error: could not identify routing for ampel.contrib.groupname.t0.DecentFilterCopy</span>
-
-<span class="go">2020-09-24 15:52:31 FirstPassConfig:97 WARNING</span>
-<span class="go"> ForwardUnitConfigCollector (key: &#39;unit&#39;) has errors</span>
-</pre></div>
-</div>
-<p>If you change <a class="reference external" href="https://github.com/AmpelProject/Ampel-contrib-sample/blob/03950a37dc4dc74c610df72887bd417239cd58aa/conf/ampel-contrib-sample/channel/EXAMPLE_BRIGHT_N_STABLE.yml#L11">channel definition</a>  to use a unit that is not registered, for example “LALALA_DecentFilterCopy”, you will get an error like this:</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;</span> ampel-config build
-<span class="go">2020-09-24 15:45:53 ConfigBuilder:297 ERROR</span>
-<span class="go"> Unable to morph embedded process EXAMPLE_BRIGHT_N_STABLE|T0|ztf_uw_public (from conf/ampel-contrib-sample/channel/EXAMPLE_BRIGHT_N_STABLE.yml)</span>
-<span class="go"> 1 validation error for ProcessModel</span>
-<span class="go">processor -&gt; __root__ -&gt; directives -&gt; 0 -&gt; filter -&gt; __root__</span>
-<span class="go">  Ampel unit not found: LALALA_DecentFilterCopy (type=value_error)</span>
-</pre></div>
-</div>
-<p>If you try to configure it with parameters that are not valid, for example by <a class="reference external" href="https://github.com/AmpelProject/Ampel-contrib-sample/blob/03950a37dc4dc74c610df72887bd417239cd58aa/conf/ampel-contrib-sample/channel/EXAMPLE_BRIGHT_N_STABLE.yml#L13">setting</a> <code class="code docutils literal notranslate"><span class="pre">t0_filter.config.min_ndet</span> <span class="pre">=</span> <span class="pre">&quot;fish&quot;</span></code> when it <a class="reference external" href="https://github.com/AmpelProject/Ampel-contrib-sample/blob/03950a37dc4dc74c610df72887bd417239cd58aa/ampel/contrib/groupname/t0/DecentFilterCopy.py#L38">should be an integer</a>, you get:</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;</span> ampel-config build
-<span class="go">2020-09-24 15:48:05 ConfigBuilder:297 ERROR</span>
-<span class="go"> Unable to morph embedded process EXAMPLE_BRIGHT_N_STABLE|T0|ztf_uw_public (from conf/ampel-contrib-sample/channel/EXAMPLE_BRIGHT_N_STABLE.yml)</span>
-<span class="go"> 1 validation error for ProcessModel</span>
-<span class="go">processor -&gt; __root__ -&gt; directives -&gt; 0 -&gt; filter -&gt; __root__ -&gt; min_ndet</span>
-<span class="go">value is not a valid integer (type=type_error.integer)</span>
-</pre></div>
-</div>
-</div>
+of your repository. See <a class="reference internal" href="contribute.html#contribute-configuration-channels"><span class="std std-ref">Defining channels and registering units</span></a> for details of the configuration layout, and <a class="reference internal" href="contribute.html#contribute-configuration-validation"><span class="std std-ref">Validation</span></a> for how to check your configuration for correctness.</p>
 <div class="section" id="terminology-changes-and-renamed-classes">
 <h3>Terminology changes and renamed classes<a class="headerlink" href="#terminology-changes-and-renamed-classes" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
@@ -249,63 +128,63 @@ that are not registered or can’t be imported, or if your unit configurations a
 <li><p>T3 process definitions embedded in the channel definition can also use templates. See <a class="reference internal" href="projects/ampel-ztf.html#ampel.model.ZTFPeriodicSummaryT3.ZTFPeriodicSummaryT3" title="ampel.model.ZTFPeriodicSummaryT3.ZTFPeriodicSummaryT3"><code class="xref py py-class docutils literal notranslate"><span class="pre">ZTFPeriodicSummaryT3</span></code></a>.</p></li>
 </ul>
 <p>A slightly truncated example:</p>
-<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">channel</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">EXAMPLE_BRIGHT_N_STABLE</span>
-<span class="nt">contact</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">ampel@desy.de</span>
-<span class="nt">active</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">true</span>
-<span class="c1"># Auto-complete mode: how to treat photopoints be treated once a transient has</span>
-<span class="c1"># been accepted.</span>
-<span class="c1"># - false: apply filter to all photopoints</span>
-<span class="c1"># - true or &quot;live&quot;: bypass filter once a transient has been accepted once</span>
-<span class="nt">auto_complete</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">live</span>
-<span class="c1"># Channel template: basic settings for which alert stream to listen to, how to</span>
-<span class="c1"># build light curves from alert packets, etc.</span>
-<span class="nt">template</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">ztf_uw_public</span>
-<span class="c1"># T0: which photopoints should be accepted to build light curves for each</span>
-<span class="c1">#     transient?</span>
-<span class="nt">t0_filter</span><span class="p">:</span>
-  <span class="nt">unit</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">DecentFilterCopy</span>
-  <span class="nt">config</span><span class="p">:</span>
-    <span class="nt">min_ndet</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">2</span>
-    <span class="nt">min_tspan</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">0</span>
-    <span class="nt">max_tspan</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">5</span>
-    <span class="l l-Scalar l-Scalar-Plain">...</span>
-<span class="c1"># T2: how should the collected photopoints and light curves be augmented?</span>
-<span class="nt">t2_compute</span><span class="p">:</span>
-  <span class="p p-Indicator">-</span> <span class="nt">unit</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">T2SNCosmo</span>
-    <span class="nt">config</span><span class="p">:</span>
-      <span class="nt">model</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">salt2</span>
-      <span class="nt">upper_limits</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">false</span>
-  <span class="c1"># config can be omitted if the unit has defaults</span>
-  <span class="p p-Indicator">-</span> <span class="nt">unit</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">T2ExamplePolyFit</span>
-  <span class="p p-Indicator">-</span> <span class="nt">unit</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">T2CatalogMatch</span>
-    <span class="c1"># A named configuration, defined in alias/t2. Names that start with &quot;%&quot; are</span>
-    <span class="c1"># global, other names are local to the project</span>
-    <span class="nt">config</span><span class="p">:</span> <span class="s">&#39;%T2CatalogMatch_general&#39;</span>
-<span class="c1"># T3: what should I do with the collected data?</span>
-<span class="nt">t3_supervise</span><span class="p">:</span>
-  <span class="c1"># A minimal T3: select all data for transients modified since last run</span>
-  <span class="c1"># the optional parameters `name`, `load`, `filter`, and `complement` are set</span>
-  <span class="c1"># to sensible defaults.</span>
-  <span class="p p-Indicator">-</span> <span class="nt">template</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">ztf_periodic_summary</span>
-    <span class="nt">schedule</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">every().day.at(&#39;15:00&#39;)</span>
-    <span class="nt">run</span><span class="p">:</span>
-      <span class="nt">unit</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">DemoT3Unit</span>
-  <span class="c1"># More settings: load only transient and T2 records for transients modified</span>
-  <span class="c1"># since last run where `sncosmo` color parameter is &gt; 1</span>
-  <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">set_all_the_things</span>
-    <span class="nt">template</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">ztf_periodic_summary</span>
-    <span class="nt">schedule</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">every(4).hours</span>
-    <span class="nt">load</span><span class="p">:</span>
-      <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">TRANSIENT</span>
-      <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">T2RECORD</span>
-    <span class="nt">filter</span><span class="p">:</span>
-      <span class="nt">t2</span><span class="p">:</span>
-        <span class="nt">unit</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">T2SNCosmo</span>
-        <span class="nt">match</span><span class="p">:</span>
-          <span class="nt">fit_results.c</span><span class="p">:</span>
-            <span class="nt">$gt</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">1</span>
-    <span class="nt">run</span><span class="p">:</span>
-      <span class="nt">unit</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">DemoT3Unit</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span>channel: EXAMPLE_BRIGHT_N_STABLE
+contact: ampel@desy.de
+active: true
+# Auto-complete mode: how to treat photopoints be treated once a transient has
+# been accepted.
+# - false: apply filter to all photopoints
+# - true or &quot;live&quot;: bypass filter once a transient has been accepted once
+auto_complete: live
+# Channel template: basic settings for which alert stream to listen to, how to
+# build light curves from alert packets, etc.
+template: ztf_uw_public
+# T0: which photopoints should be accepted to build light curves for each
+#     transient?
+t0_filter:
+  unit: DecentFilterCopy
+  config:
+    min_ndet: 2
+    min_tspan: 0
+    max_tspan: 5
+    ...
+# T2: how should the collected photopoints and light curves be augmented?
+t2_compute:
+  - unit: T2SNCosmo
+    config:
+      model: salt2
+      upper_limits: false
+  # config can be omitted if the unit has defaults
+  - unit: T2ExamplePolyFit
+  - unit: T2CatalogMatch
+    # A named configuration, defined in alias/t2. Names that start with &quot;%&quot; are
+    # global, other names are local to the project
+    config: &#39;%T2CatalogMatch_general&#39;
+# T3: what should I do with the collected data?
+t3_supervise:
+  # A minimal T3: select all data for transients modified since last run
+  # the optional parameters `name`, `load`, `filter`, and `complement` are set
+  # to sensible defaults.
+  - template: ztf_periodic_summary
+    schedule: every().day.at(&#39;15:00&#39;)
+    run:
+      unit: DemoT3Unit
+  # More settings: load only transient and T2 records for transients modified
+  # since last run where `sncosmo` color parameter is &gt; 1
+  - name: set_all_the_things
+    template: ztf_periodic_summary
+    schedule: every(4).hours
+    load:
+      - TRANSIENT
+      - T2RECORD
+    filter:
+      t2:
+        unit: T2SNCosmo
+        match:
+          fit_results.c:
+            $gt: 1
+    run:
+      unit: DemoT3Unit
 </pre></div>
 </div>
 <p>Some operations that were previously embedded in T3 units, like filtering <a class="reference internal" href="projects/ampel-photometry.html#ampel.view.TransientView.TransientView" title="ampel.view.TransientView.TransientView"><code class="xref py py-class docutils literal notranslate"><span class="pre">TransientView</span></code></a> in <a class="reference internal" href="projects/ampel-base.html#ampel.abstract.AbsT3Unit.AbsT3Unit.add" title="ampel.abstract.AbsT3Unit.AbsT3Unit.add"><code class="xref py py-meth docutils literal notranslate"><span class="pre">AbsT3Unit.add</span></code></a>, now have their own dedicated stages. This makes it possible to reuse these stages without writing new code.</p>
@@ -316,34 +195,34 @@ that are not registered or can’t be imported, or if your unit configurations a
 select only transients associated with that channel. To consume transients from
 multiple channels, you have to define a standalone T3 process. These definitions
 also use templates, however, so can be quite compact:</p>
-<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">TNSCompleteSummary</span>
-<span class="nt">tier</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">3</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">name</span><span class="p">:</span> <span class="n">TNSCompleteSummary</span>
+<span class="n">tier</span><span class="p">:</span> <span class="mi">3</span>
 <span class="c1"># every 60 minutes, consume all transients that were updated since the</span>
 <span class="c1"># previous run in channels HU_GP_10 or HU_GU_59</span>
-<span class="nt">template</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">ztf_periodic_summary</span>
-<span class="nt">schedule</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">every(60).minutes</span>
-<span class="nt">channel</span><span class="p">:</span>
-  <span class="nt">any_of</span><span class="p">:</span>
-    <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">HU_GP_10</span>
-    <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">HU_GP_59</span>
+<span class="n">template</span><span class="p">:</span> <span class="n">ztf_periodic_summary</span>
+<span class="n">schedule</span><span class="p">:</span> <span class="n">every</span><span class="p">(</span><span class="mi">60</span><span class="p">)</span><span class="o">.</span><span class="n">minutes</span>
+<span class="n">channel</span><span class="p">:</span>
+  <span class="n">any_of</span><span class="p">:</span>
+    <span class="o">-</span> <span class="n">HU_GP_10</span>
+    <span class="o">-</span> <span class="n">HU_GP_59</span>
 <span class="c1"># load the stock, t0, and t2 records associated with the transient (and channel)</span>
-<span class="nt">load</span><span class="p">:</span>
-  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">TRANSIENT</span>
-  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">DATAPOINT</span>
-  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">T2RECORD</span>
+<span class="n">load</span><span class="p">:</span>
+  <span class="o">-</span> <span class="n">TRANSIENT</span>
+  <span class="o">-</span> <span class="n">DATAPOINT</span>
+  <span class="o">-</span> <span class="n">T2RECORD</span>
 <span class="c1"># for each selected transient, look up the TNS name</span>
-<span class="nt">complement</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">TNSNames</span>
+<span class="n">complement</span><span class="p">:</span> <span class="n">TNSNames</span>
 <span class="c1"># and pass to TNSTalker</span>
-<span class="nt">run</span><span class="p">:</span>
-  <span class="nt">unit</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">TNSTalker</span>
-  <span class="nt">config</span><span class="p">:</span>
+<span class="n">run</span><span class="p">:</span>
+  <span class="n">unit</span><span class="p">:</span> <span class="n">TNSTalker</span>
+  <span class="n">config</span><span class="p">:</span>
     <span class="c1"># a Secret item, kept separate from the rest of the config</span>
-    <span class="nt">tns_api_key</span><span class="p">:</span>
-      <span class="nt">key</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">tns/jnordin</span>
-    <span class="nt">submit_tns</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">true</span>
-    <span class="nt">sandbox</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">false</span>
-    <span class="nt">max_age</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">30</span>
-    <span class="nt">needed_catalogs</span><span class="p">:</span> <span class="p p-Indicator">[]</span>
+    <span class="n">tns_api_key</span><span class="p">:</span>
+      <span class="n">key</span><span class="p">:</span> <span class="n">tns</span><span class="o">/</span><span class="n">jnordin</span>
+    <span class="n">submit_tns</span><span class="p">:</span> <span class="n">true</span>
+    <span class="n">sandbox</span><span class="p">:</span> <span class="n">false</span>
+    <span class="n">max_age</span><span class="p">:</span> <span class="mi">30</span>
+    <span class="n">needed_catalogs</span><span class="p">:</span> <span class="p">[]</span>
 </pre></div>
 </div>
 </div>
@@ -352,7 +231,7 @@ also use templates, however, so can be quite compact:</p>
 <h2>T0 units<a class="headerlink" href="#t0-units" title="Permalink to this headline">¶</a></h2>
 <div class="section" id="t0-unit-configuration">
 <span id="legacy-t0-configuration"></span><h3>T0 unit configuration<a class="headerlink" href="#t0-unit-configuration" title="Permalink to this headline">¶</a></h3>
-<p>T0 units need to be <a class="reference internal" href="#legacy-config-files"><span class="std std-ref">registered in your project’s config</span></a>.</p>
+<p>T0 units need to be <a class="reference internal" href="contribute.html#contribute-configuration-channels"><span class="std std-ref">registered in your project’s config</span></a>.</p>
 <p>All units in v0.7 use type annotations and <code class="docutils literal notranslate"><span class="pre">pydantic</span></code> to define and validate their configuration. This means that if you previously used a nested <code class="xref py py-class docutils literal notranslate"><span class="pre">RunConfig</span></code> class to define a configuration, you can move its fields up to the parent class, and access them as attributes from instances. In other words, the following v0.6 filter defintion:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">pydantic</span> <span class="kn">import</span> <span class="n">BaseModel</span>
 <span class="kn">from</span> <span class="nn">ampel.base.abstract.AbsAlertFilter</span> <span class="kn">import</span> <span class="n">AbsAlertFilter</span>
@@ -392,9 +271,9 @@ also use templates, however, so can be quite compact:</p>
 
 <span class="k">class</span> <span class="nc">AwesomeFilter</span><span class="p">(</span><span class="n">AbsAlertFilter</span><span class="p">[</span><span class="n">PhotoAlert</span><span class="p">]):</span>
 
-    <span class="n">min_ndet</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="o">...</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">&quot;number of previous detections&quot;</span><span class="p">)</span>
-    <span class="n">min_tspan</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="o">...</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">&quot;minimum duration of alert detection history [days]&quot;</span><span class="p">)</span>
-    <span class="n">max_tspan</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="o">...</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">&quot;maximum duration of alert detection history [days]&quot;</span><span class="p">)</span>
+    <span class="n">min_ndet</span><span class="p">:</span> <span class="nb">int</span> <span class="c1">#: number of previous detections</span>
+    <span class="n">min_tspan</span><span class="p">:</span> <span class="nb">float</span> <span class="c1">#: minimum duration of alert detection history [days]</span>
+    <span class="n">max_tspan</span><span class="p">:</span> <span class="nb">float</span> <span class="c1">#: maximum duration of alert detection history [days]</span>
 
     <span class="k">def</span> <span class="nf">post_init</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="o">...</span>
@@ -404,7 +283,8 @@ also use templates, however, so can be quite compact:</p>
 <ul class="simple">
 <li><p>All instances of <a class="reference internal" href="projects/ampel-base.html#ampel.abstract.AbsAlertFilter.AbsAlertFilter" title="ampel.abstract.AbsAlertFilter.AbsAlertFilter"><code class="xref py py-class docutils literal notranslate"><span class="pre">AbsAlertFilter</span></code></a> have a <code class="docutils literal notranslate"><span class="pre">self.logger</span></code> property. You do not have to set one up yourself.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">AbsAlertFilter[PhotoAlert]</span></code> indicates that the <a class="reference internal" href="projects/ampel-base.html#ampel.abstract.AbsAlertFilter.AbsAlertFilter.apply" title="ampel.abstract.AbsAlertFilter.AbsAlertFilter.apply"><code class="xref py py-meth docutils literal notranslate"><span class="pre">apply()</span></code></a> method expects a <code class="xref py py-class docutils literal notranslate"><span class="pre">PhotAlert</span></code>. Instances of <a class="reference internal" href="projects/ampel-photometry.html#ampel.alert.PhotoAlert.PhotoAlert" title="ampel.alert.PhotoAlert.PhotoAlert"><code class="xref py py-class docutils literal notranslate"><span class="pre">PhotoAlert</span></code></a> have separate photopoints and upper limits. If you omit the parameter to <a class="reference internal" href="projects/ampel-base.html#ampel.abstract.AbsAlertFilter.AbsAlertFilter" title="ampel.abstract.AbsAlertFilter.AbsAlertFilter"><code class="xref py py-class docutils literal notranslate"><span class="pre">AbsAlertFilter</span></code></a> in your class definition, your <a class="reference internal" href="projects/ampel-base.html#ampel.abstract.AbsAlertFilter.AbsAlertFilter.apply" title="ampel.abstract.AbsAlertFilter.AbsAlertFilter.apply"><code class="xref py py-meth docutils literal notranslate"><span class="pre">apply()</span></code></a> method will receive the base class, <a class="reference internal" href="projects/ampel-alerts.html#ampel.alert.AmpelAlert.AmpelAlert" title="ampel.alert.AmpelAlert.AmpelAlert"><code class="xref py py-class docutils literal notranslate"><span class="pre">AmpelAlert</span></code></a>, instead. Instances of <a class="reference internal" href="projects/ampel-alerts.html#ampel.alert.AmpelAlert.AmpelAlert" title="ampel.alert.AmpelAlert.AmpelAlert"><code class="xref py py-class docutils literal notranslate"><span class="pre">AmpelAlert</span></code></a> only have one collection of datapoints.</p></li>
-<li><p>The call to <code class="xref py py-meth docutils literal notranslate"><span class="pre">Field()</span></code> is optional, but makes the field description machine-readable. You can also use this to define jsonschema-style constraints on the field value, for example requiring an integer to be positive, or a list to have a specified number of items. For more information, see the <a class="reference external" href="https://pydantic-docs.helpmanual.io/usage/schema/#field-customisation">pydantic docs</a>.</p></li>
+<li><p>The annotations are used to build a pydantic model that validates the configuration parameters defined for the instance in e.g. a channel definition. This means that you can use <a class="reference external" href="https://pydantic-docs.helpmanual.io/usage/schema/#field-customisation">Field()</a> to impose jsonschema-style constraints on the field value, for example requiring an integer to be positive, or a list to have a specified number of items.</p></li>
+<li><p>The <code class="docutils literal notranslate"><span class="pre">#:</span></code> comment marker indicates that the following is interface documentation, and should be included in autogenerated docs. Normal comments that start with just <code class="docutils literal notranslate"><span class="pre">#</span></code> are ignored.</p></li>
 <li><p>Field names should be lower camel-cased by convention.</p></li>
 </ul>
 <p>Base classes also exist to automate the configuration of e.g. catalog matching services. For example, if you were previously setting up <code class="docutils literal notranslate"><span class="pre">catsHTM</span></code> matching
@@ -422,7 +302,7 @@ like this:</p>
         <span class="bp">self</span><span class="o">.</span><span class="n">catshtm</span> <span class="o">=</span> <span class="n">catshtm_server</span><span class="o">.</span><span class="n">get_client</span><span class="p">(</span><span class="n">catshtm_uri</span><span class="p">)</span>
 </pre></div>
 </div>
-<p>you can simplify to:</p>
+<p>you can inherit from <code class="xref py py-class docutils literal notranslate"><span class="pre">CatsHTMUnit</span></code> and simplify to:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">ampel.alert.PhotoAlert</span> <span class="kn">import</span> <span class="n">PhotoAlert</span>
 <span class="kn">from</span> <span class="nn">ampel.abstract.AbsAlertFilter</span> <span class="kn">import</span> <span class="n">AbsAlertFilter</span>
 <span class="kn">from</span> <span class="nn">ampel.contrib.hu.base.CatsHTMUnit</span> <span class="kn">import</span> <span class="n">CatsHTMUnit</span>
@@ -431,7 +311,7 @@ like this:</p>
     <span class="o">...</span>
 </pre></div>
 </div>
-<p><code class="xref py py-class docutils literal notranslate"><span class="pre">ExtCatsUnit</span></code> is the equivalent for <cite>extcats &lt;https://github.com/MatteoGiomi/extcats&gt;</cite>.</p>
+<p><code class="xref py py-class docutils literal notranslate"><span class="pre">ExtCatsUnit</span></code> is the equivalent for <a class="reference external" href="https://github.com/MatteoGiomi/extcats">extcats</a>.</p>
 </div>
 <div class="section" id="filtering">
 <h3>Filtering<a class="headerlink" href="#filtering" title="Permalink to this headline">¶</a></h3>
@@ -450,7 +330,7 @@ like this:</p>
 </div>
 <div class="section" id="t2-units">
 <h2>T2 units<a class="headerlink" href="#t2-units" title="Permalink to this headline">¶</a></h2>
-<p>T2 units need to be <a class="reference internal" href="#legacy-config-files"><span class="std std-ref">registered in your project’s config</span></a>.</p>
+<p>T2 units need to be <a class="reference internal" href="contribute.html#contribute-configuration-channels"><span class="std std-ref">registered in your project’s config</span></a>.</p>
 <div class="section" id="new-base-classes">
 <h3>New base classes<a class="headerlink" href="#new-base-classes" title="Permalink to this headline">¶</a></h3>
 <p>There are now 3 different kinds of T2 unit. If your T2 does something other than a light curve analysis, it may be a better fit for one of the new ones:</p>
@@ -463,7 +343,7 @@ like this:</p>
 </div>
 <div class="section" id="t2-unit-configuration">
 <h3>T2 unit configuration<a class="headerlink" href="#t2-unit-configuration" title="Permalink to this headline">¶</a></h3>
-<p>Like T0 units, T2 units take their configuration as fields. See:ref:<cite>legacy-t0-configuration</cite>.</p>
+<p>Like T0 units, T2 units declare their configurations using annotations. See <a class="reference internal" href="#legacy-t0-configuration"><span class="std std-ref">T0 unit configuration</span></a>.</p>
 </div>
 <div class="section" id="run">
 <h3><code class="xref py py-meth docutils literal notranslate"><span class="pre">run()</span></code><a class="headerlink" href="#run" title="Permalink to this headline">¶</a></h3>
@@ -488,7 +368,7 @@ like this:</p>
 </div>
 <div class="section" id="t3-units">
 <h2>T3 units<a class="headerlink" href="#t3-units" title="Permalink to this headline">¶</a></h2>
-<p>T2 units need to be <a class="reference internal" href="#legacy-config-files"><span class="std std-ref">registered in your project’s config</span></a>.</p>
+<p>T2 units need to be <a class="reference internal" href="contribute.html#contribute-configuration-channels"><span class="std std-ref">registered in your project’s config</span></a>.</p>
 <div class="section" id="t3-unit-configuration">
 <h3>T3 unit configuration<a class="headerlink" href="#t3-unit-configuration" title="Permalink to this headline">¶</a></h3>
 <p>See <a class="reference internal" href="#legacy-t0-configuration"><span class="std std-ref">T0 unit configuration</span></a>.</p>

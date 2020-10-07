@@ -41,81 +41,128 @@
           <div class="body" role="main">
             
   <div class="section" id="contribute">
-<h1>Contribute<a class="headerlink" href="#contribute" title="Permalink to this headline">¶</a></h1>
-<div class="admonition warning">
-<p class="admonition-title">Warning</p>
-<p>This section is obsolete. See <a class="reference internal" href="legacy.html#legacy-porting-guide"><span class="std std-ref">Porting contrib projects from v0.6</span></a>.</p>
-</div>
-<p>Users can contribute a plugin that provides any combination of the following components:</p>
+<span id="contributing"></span><h1>Contribute<a class="headerlink" href="#contribute" title="Permalink to this headline">¶</a></h1>
+<p>To adapt Ampel to your needs by contributing a plugin that provides any combination of the following components:</p>
 <ol class="arabic simple">
-<li><p>A <em>channel</em>, or set of configurations for existing T0 (filter), T2 (compute), and T3 (reporting) modules.</p></li>
+<li><p>A <em>channel</em>, or set of configurations for existing T0 (filter), T2 (compute), and T3 (react) modules.</p></li>
 <li><p>A T0 module implementation.</p></li>
 <li><p>A T2 module implementation.</p></li>
-<li><p>A T2 configuration.</p></li>
 <li><p>A T3 module implementation.</p></li>
-<li><p>A T3 configuration.</p></li>
-<li><p>T3 jobs.</p></li>
+<li><p>Configuration aliases for use in T0/T2/T3 modules</p></li>
 <li><p>Resource definitions for use in T0/T2/T3 modules</p></li>
 </ol>
 <div class="section" id="repository-layout">
 <h2>Repository layout<a class="headerlink" href="#repository-layout" title="Permalink to this headline">¶</a></h2>
-<p>Each Ampel plugin is kept in a separate <cite>git</cite> repository. These should be named after the institution or working group providing the plugin, e.g. <cite>ampel-contrib-hu</cite> for HU-Berlin, or <cite>ampel-contrib-ztfbh</cite> for the ztfbh working group. Implementation files should follow a similar naming scheme, e.g. the HU T0 module <cite>DecentFilter</cite> is defined in ampel/contrib/hu/t0/DecentFilter.py.</p>
-<p>At the top level of the repository should be a <cite>setup.py</cite> file that <cite>distutils</cite> will use to install the plugin and register its components. Here is an example of a <cite>setup.py</cite> file for a plugin imaginatively called <cite>ampel-contrib-example</cite>:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">distutils.core</span> <span class="kn">import</span> <span class="n">setup</span>
+<p>Each Ampel plugin is kept in a separate <code class="docutils literal notranslate"><span class="pre">git</span></code> repository. These should be named after the institution or working group providing the plugin, e.g. <code class="docutils literal notranslate"><span class="pre">ampel-contrib-hu</span></code> for HU-Berlin, or <code class="docutils literal notranslate"><span class="pre">ampel-contrib-ztfbh</span></code> for the ZTFbh working group. Implementation files should follow a similar naming scheme, e.g. the HU T0 module <code class="docutils literal notranslate"><span class="pre">DecentFilter</span></code> is defined in <code class="docutils literal notranslate"><span class="pre">ampel/contrib/hu/t0/DecentFilter.py</span></code>.</p>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p>The template repository <a class="reference external" href="https://github.com/AmpelProject/Ampel-contrib-sample/tree/03950a37dc4dc74c610df72887bd417239cd58aa">ampel-contrib-sample</a> provides a working example of a plugin.</p>
+</div>
+<p>At the top level of the repository should be a <code class="docutils literal notranslate"><span class="pre">setup.py</span></code> file that <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">-e</span></code> will use to install the plugin and register its components. Here is an example of a <code class="docutils literal notranslate"><span class="pre">setup.py</span></code> file for a plugin imaginatively called <code class="docutils literal notranslate"><span class="pre">ampel-contrib-example</span></code>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">setuptools</span> <span class="kn">import</span> <span class="n">setup</span><span class="p">,</span> <span class="n">find_namespace_packages</span>
 
-<span class="n">setup</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;ampel-contrib-example&#39;</span><span class="p">,</span>
-      <span class="n">version</span><span class="o">=</span><span class="s1">&#39;0.3.0&#39;</span><span class="p">,</span>
-      <span class="n">packages</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;ampel.contrib.example&#39;</span><span class="p">,</span>
-                <span class="s1">&#39;ampel.contrib.example.t0&#39;</span><span class="p">,</span>
-                <span class="s1">&#39;ampel.contrib.example.t2&#39;</span><span class="p">,</span>
-                <span class="s1">&#39;ampel.contrib.example.t3&#39;</span><span class="p">],</span>
-      <span class="n">package_data</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;*.json&#39;</span><span class="p">]},</span>
-      <span class="n">entry_points</span> <span class="o">=</span> <span class="p">{</span>
-          <span class="s1">&#39;ampel.channels&#39;</span> <span class="p">:</span> <span class="p">[</span>
-              <span class="s1">&#39;hu = ampel.contrib.example.channels:load_channels&#39;</span><span class="p">,</span>
-          <span class="p">],</span>
-          <span class="s1">&#39;ampel.pipeline.t0&#39;</span> <span class="p">:</span> <span class="p">[</span>
-              <span class="s1">&#39;AwesomeFilter = ampel.contrib.example.t0.AwesomeFilter:AwesomeFilter&#39;</span><span class="p">,</span>
-          <span class="p">],</span>
-          <span class="s1">&#39;ampel.pipeline.t2.units&#39;</span> <span class="p">:</span> <span class="p">[</span>
-              <span class="s1">&#39;FITTYFIT = ampel.contrib.example.t2.T2FittyFit:T2FittyFit&#39;</span><span class="p">,</span>
-          <span class="p">],</span>
-          <span class="s1">&#39;ampel.pipeline.t2.configs&#39;</span> <span class="p">:</span> <span class="p">[</span>
-              <span class="s1">&#39;hu = ampel.contrib.example.channels:load_t2_run_configs&#39;</span><span class="p">,</span>
-          <span class="p">],</span>
-          <span class="s1">&#39;ampel.pipeline.t3.units&#39;</span> <span class="p">:</span> <span class="p">[</span>
-              <span class="s1">&#39;PrintyPrint = ampel.contrib.example.t3.PrintyPrint:PrintyPrint&#39;</span><span class="p">,</span>
-          <span class="p">],</span>
-          <span class="s1">&#39;ampel.pipeline.t3.configs&#39;</span> <span class="p">:</span> <span class="p">[</span>
-              <span class="s1">&#39;hu = ampel.contrib.example.channels:load_t3_run_configs&#39;</span><span class="p">,</span>
-          <span class="p">],</span>
-          <span class="s1">&#39;ampel.pipeline.t3.jobs&#39;</span> <span class="p">:</span> <span class="p">[</span>
-              <span class="s1">&#39;hu = ampel.contrib.hu.channels:load_t3_jobs&#39;</span><span class="p">,</span>
-          <span class="p">],</span>
-          <span class="s1">&#39;ampel.pipeline.resources&#39;</span> <span class="p">:</span> <span class="p">[</span>
-              <span class="s1">&#39;serviceyservice = ampel.contrib.example.resources:ServiceyServiceURI&#39;</span><span class="p">,</span>
-          <span class="p">]</span>
-      <span class="p">}</span>
+<span class="n">setup</span><span class="p">(</span>
+    <span class="n">name</span><span class="o">=</span><span class="s1">&#39;ampel-contrib-sample&#39;</span><span class="p">,</span>
+    <span class="n">version</span><span class="o">=</span><span class="s1">&#39;0.7.0&#39;</span><span class="p">,</span>
+    <span class="n">packages</span><span class="o">=</span><span class="n">find_namespace_packages</span><span class="p">(),</span>
+    <span class="n">package_data</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s1">&#39;conf&#39;</span><span class="p">:</span> <span class="p">[</span>
+            <span class="s1">&#39;*.json&#39;</span><span class="p">,</span> <span class="s1">&#39;**/*.json&#39;</span><span class="p">,</span> <span class="s1">&#39;**/**/*.json&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;*.yaml&#39;</span><span class="p">,</span> <span class="s1">&#39;**/*.yaml&#39;</span><span class="p">,</span> <span class="s1">&#39;**/**/*.yaml&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;*.yml&#39;</span><span class="p">,</span> <span class="s1">&#39;**/*.yml&#39;</span><span class="p">,</span> <span class="s1">&#39;**/**/*.yml&#39;</span>
+        <span class="p">]</span>
+    <span class="p">}</span>
 <span class="p">)</span>
 </pre></div>
 </div>
-<p>This plugin provides all 8 of the compoents one can provide. The <cite>name</cite> line provides the name of the plugin. This should match the name of the <cite>git</cite> repo. The <cite>version</cite> line lists the version, and should be incremented appropriately when changes are made to the plugin. The <cite>packages</cite> line lists the sub-packages that this plugin provides. The names reflect the paths to directories in the repository containing Python files. The <cite>package_data</cite> line instructs <cite>distutils</cite> to install JSON files it finds in the package directories along with Python files. The <cite>entry_points</cite> line registers each component with the Ampel framework.</p>
-<p>Each of the entry points expects entries of a different type. They are:</p>
-<ul class="simple">
-<li><p><cite>ampel.channels</cite>: Each entry should be a Python callable that returns a dictionary whose keys are channel names (all UPPERCASE by convention) and whose values are channel configurations</p></li>
-<li><p><cite>ampel.pipeline.t0</cite>: Each entry should be a Python class that inherits from <code class="xref py py-class docutils literal notranslate"><span class="pre">ampel.base.abstract.AbsAlertFilter.AbsAlertFilter</span></code></p></li>
-<li><p><cite>ampel.pipeline.t2.units</cite>: Each entry should be a Python class that inherits from <code class="xref py py-class docutils literal notranslate"><span class="pre">ampel.base.abstract.AbsT2Unit.AbsT2Unit</span></code></p></li>
-<li><p><cite>ampel.pipeline.t2.configs</cite>: Each entry should be a Python callable that returns a dictionary that will be passed as the <cite>run_config</cite> argument of <code class="xref py py-class docutils literal notranslate"><span class="pre">ampel.base.abstract.AbsT2Unit.AbsT2Unit</span></code></p></li>
-<li><p><cite>ampel.pipeline.t3.units</cite>: Each entry should be a Python class that inherits from <code class="xref py py-class docutils literal notranslate"><span class="pre">ampel.base.abstract.AbsT3Unit.AbsT3Unit</span></code></p></li>
-<li><p><cite>ampel.pipeline.t3.configs</cite>: Each entry should be a Python callable that returns a dictionary that will be passed as the <cite>run_config</cite> argument of <code class="xref py py-class docutils literal notranslate"><span class="pre">ampel.base.abstract.AbsT3Unit.AbsT3Unit</span></code></p></li>
-<li><p><cite>ampel.pipeline.t3.jobs</cite>: Each entry should be a Python callable that returns a dictionary whose values conform to the schema given in  <code class="xref py py-attr docutils literal notranslate"><span class="pre">ampel.pipeline.t3.T3JobConfig.T3JobConfig.job_schema</span></code></p></li>
-<li><p><cite>ampel.pipeline.resources</cite>: Each entry should be a Python class that inherits from <code class="xref py py-class docutils literal notranslate"><span class="pre">ampel.pipeline.config.resources.ResourceURI</span></code></p></li>
-</ul>
+<p>The <code class="docutils literal notranslate"><span class="pre">name</span></code> line provides the name of the plugin. This should match the name of the <code class="docutils literal notranslate"><span class="pre">git</span></code> repo. The <code class="docutils literal notranslate"><span class="pre">version</span></code> line lists the version, and should be incremented appropriately when changes are made to the plugin. The <code class="docutils literal notranslate"><span class="pre">packages</span></code> line specifieds the sub-packages that this plugin provides, and is generated automatically by <code class="xref py py-meth docutils literal notranslate"><span class="pre">find_namespace_packages()</span></code>. The <code class="docutils literal notranslate"><span class="pre">package_data</span></code> line instructs <code class="xref py py-mod docutils literal notranslate"><span class="pre">setuptools</span></code> to install any YAML or JSON files it finds in the <code class="docutils literal notranslate"><span class="pre">conf</span></code> directory of your repository. More on that in <a class="reference internal" href="#contribute-configuration"><span class="std std-ref">Configuration</span></a>.</p>
+</div>
+<div class="section" id="configuration">
+<span id="contribute-configuration"></span><h2>Configuration<a class="headerlink" href="#configuration" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="defining-channels-and-registering-units">
+<span id="contribute-configuration-channels"></span><h3>Defining channels and registering units<a class="headerlink" href="#defining-channels-and-registering-units" title="Permalink to this headline">¶</a></h3>
+<p><code class="docutils literal notranslate"><span class="pre">conf/ampel-contrib-PROJECTNAME</span></code> should contain at least a top-level configuration file named ampel.yaml, containining at least the definitions of your channels and any custom units
+you may have. For example:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">channel</span><span class="p">:</span>
+  <span class="nt">EXAMPLE_CHANNEL</span><span class="p">:</span>
+    <span class="nt">channel</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">EXAMPLE_CHANNEL</span>
+    <span class="nt">contact</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">ampel@desy.de</span>
+    <span class="nt">active</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">true</span>
+    <span class="nt">auto_complete</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">live</span>
+<span class="nt">unit</span><span class="p">:</span>
+  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">ampel.contrib.groupname.t0.DecentFilterCopy</span>
+</pre></div>
+</div>
+<p>The entries in <cite>unit</cite> are module names, i.e. <code class="code docutils literal notranslate"><span class="pre">ampel.contrib.groupname.t0.DecentFilterCopy</span></code> refers to the file <code class="docutils literal notranslate"><span class="pre">ampel/contrib/groupname/t0/DecentFilterCopy.py</span></code>. This file must contain one class, with the same name as the module. For example, when <a class="reference internal" href="projects/ampel-alerts.html#ampel.alert.AlertProcessor.AlertProcessor" title="ampel.alert.AlertProcessor.AlertProcessor"><code class="xref py py-class docutils literal notranslate"><span class="pre">AlertProcessor</span></code></a> requests instantiation of the unit named <code class="docutils literal notranslate"><span class="pre">DecentFilterCopy</span></code>, the entry above will cause Ampel to do the equivalent of <code class="code docutils literal notranslate"><span class="pre">from</span> <span class="pre">ampel.contrib.groupname.t0.DecentFilterCopy</span> <span class="pre">import</span> <span class="pre">DecentFilterCopy</span></code>.</p>
+<p>Dictionaries can be either embedded directly into the top-level configuration
+file, or in standalone files named after the key. For example, <cite>channel</cite> key
+in the example above can be replaced with a file conf/ampel-contrib-PROJECTNAME/channel/EXAMPLE_CHANNEL.yaml with the contents:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">channel</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">EXAMPLE_CHANNEL</span>
+<span class="nt">contact</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">ampel@desy.de</span>
+<span class="nt">active</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="nt">auto_complete</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">live</span>
+</pre></div>
+</div>
+<p>This can be useful for keeping large configurations neatly organized.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>All of the configuration files mentioned here can also be supplied in <a class="reference external" href="https://en.wikipedia.org/wiki/JSON">JSON</a> format. We strongly recommend <a class="reference external" href="https://en.wikipedia.org/wiki/YAML">YAML</a>, however, since it is easier for a human to write and can include comments.</p>
+</div>
+</div>
+<div class="section" id="validation">
+<span id="contribute-configuration-validation"></span><h3>Validation<a class="headerlink" href="#validation" title="Permalink to this headline">¶</a></h3>
+<p>You should use the command <code class="code docutils literal notranslate"><span class="pre">ampel-config</span> <span class="pre">build</span></code> to build (and validate) an Ampel configuration file from all installed Ampel subprojects, including yours. The following examples use the <a class="reference external" href="https://github.com/AmpelProject/Ampel-contrib-sample/tree/03950a37dc4dc74c610df72887bd417239cd58aa">ampel-contrib-sample</a> template project.</p>
+<p>You can use <code class="code docutils literal notranslate"><span class="pre">ampel-config</span> <span class="pre">build</span></code> along with <a class="reference external" href="https://mikefarah.gitbook.io/yq/">yq</a> to verify that your unit is registered:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;</span> ampel-config build <span class="p">|</span> yq .unit.base.DecentFilterCopy
+<span class="go">{</span>
+<span class="go">  &quot;fqn&quot;: &quot;ampel.contrib.groupname.t0.DecentFilterCopy&quot;,</span>
+<span class="go">  &quot;base&quot;: [</span>
+<span class="go">    &quot;AbsAlertFilter&quot;</span>
+<span class="go">  ],</span>
+<span class="go">  &quot;distrib&quot;: &quot;ampel-contrib-sample&quot;,</span>
+<span class="go">  &quot;file&quot;: &quot;conf/ampel-contrib-sample/unit.json&quot;</span>
+<span class="go">}</span>
+</pre></div>
+</div>
+<p>This will raise an exception if your channels or T3 processes refer to units
+that are not registered or can’t be imported, or if your unit configurations are invalid. For example, if you add some garbage to DecentFilterCopy.py to make it non-importable, you will get:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;</span> ampel-config build
+<span class="go">2020-09-24 15:52:29 AbsForwardConfigCollector:84 ERROR</span>
+<span class="go"> Unit import error: ampel.contrib.groupname.t0.DecentFilterCopy (conf file: conf/ampel-contrib-sample/unit.json from distribution: ampel-contrib-sample)</span>
+<span class="go">  Follow-up error: could not identify routing for ampel.contrib.groupname.t0.DecentFilterCopy</span>
+
+<span class="go">2020-09-24 15:52:31 FirstPassConfig:97 WARNING</span>
+<span class="go"> ForwardUnitConfigCollector (key: &#39;unit&#39;) has errors</span>
+</pre></div>
+</div>
+<p>If you change <a class="reference external" href="https://github.com/AmpelProject/Ampel-contrib-sample/blob/03950a37dc4dc74c610df72887bd417239cd58aa/conf/ampel-contrib-sample/channel/EXAMPLE_BRIGHT_N_STABLE.yml#L11">channel definition</a>  to use a unit that is not registered, for example “LALALA_DecentFilterCopy”, you will get an error like this:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;</span> ampel-config build
+<span class="go">2020-09-24 15:45:53 ConfigBuilder:297 ERROR</span>
+<span class="go"> Unable to morph embedded process EXAMPLE_BRIGHT_N_STABLE|T0|ztf_uw_public (from conf/ampel-contrib-sample/channel/EXAMPLE_BRIGHT_N_STABLE.yml)</span>
+<span class="go"> 1 validation error for ProcessModel</span>
+<span class="go">processor -&gt; __root__ -&gt; directives -&gt; 0 -&gt; filter -&gt; __root__</span>
+<span class="go">  Ampel unit not found: LALALA_DecentFilterCopy (type=value_error)</span>
+</pre></div>
+</div>
+<p>If you try to configure it with parameters that are not valid, for example by <a class="reference external" href="https://github.com/AmpelProject/Ampel-contrib-sample/blob/03950a37dc4dc74c610df72887bd417239cd58aa/conf/ampel-contrib-sample/channel/EXAMPLE_BRIGHT_N_STABLE.yml#L13">setting</a> <code class="code docutils literal notranslate"><span class="pre">t0_filter.config.min_ndet</span> <span class="pre">=</span> <span class="pre">&quot;fish&quot;</span></code> when it <a class="reference external" href="https://github.com/AmpelProject/Ampel-contrib-sample/blob/03950a37dc4dc74c610df72887bd417239cd58aa/ampel/contrib/groupname/t0/DecentFilterCopy.py#L38">should be an integer</a>, you get:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;</span> ampel-config build
+<span class="go">2020-09-24 15:48:05 ConfigBuilder:297 ERROR</span>
+<span class="go"> Unable to morph embedded process EXAMPLE_BRIGHT_N_STABLE|T0|ztf_uw_public (from conf/ampel-contrib-sample/channel/EXAMPLE_BRIGHT_N_STABLE.yml)</span>
+<span class="go"> 1 validation error for ProcessModel</span>
+<span class="go">processor -&gt; __root__ -&gt; directives -&gt; 0 -&gt; filter -&gt; __root__ -&gt; min_ndet</span>
+<span class="go">value is not a valid integer (type=type_error.integer)</span>
+</pre></div>
+</div>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>The following sections are largely obsolete. See <a class="reference internal" href="legacy.html#legacy-porting-guide"><span class="std std-ref">Porting contrib projects from v0.6</span></a> instead.</p>
+</div>
+</div>
 </div>
 <div class="section" id="add-your-own-t2">
 <h2>Add your own T2<a class="headerlink" href="#add-your-own-t2" title="Permalink to this headline">¶</a></h2>
-<p>T2 modules performs science-level operations on the alerts accepted by the filter in the T0 stage. An example would be to make a template fit to the light curve of the transient or to look for more information on the transient in a set of atronomical catalogs.</p>
-<p>The first ingredient is the T2 module itself, defining a subclass of <code class="xref py py-class docutils literal notranslate"><span class="pre">ampel.base.abstract.AbsT2Unit.AbsT2Unit</span></code>. This class has two mandatory methods: <code class="docutils literal notranslate"><span class="pre">run</span></code> and <code class="docutils literal notranslate"><span class="pre">_run_</span></code>. The first is just a wrapper around the second, so <code class="docutils literal notranslate"><span class="pre">_run_</span></code> is where the magic happens. This method requires two arguments:</p>
+<p>T2 modules perform science-level operations on the <a class="reference internal" href="projects/ampel-base.html#ampel.content.StockRecord.StockRecord" title="ampel.content.StockRecord.StockRecord"><code class="xref py py-class docutils literal notranslate"><span class="pre">stocks</span></code></a>, <a class="reference internal" href="projects/ampel-base.html#ampel.content.DataPoint.DataPoint" title="ampel.content.DataPoint.DataPoint"><code class="xref py py-class docutils literal notranslate"><span class="pre">datapoints</span></code></a>, and <a class="reference internal" href="projects/ampel-base.html#ampel.content.Compound.Compound" title="ampel.content.Compound.Compound"><code class="xref py py-class docutils literal notranslate"><span class="pre">compounds</span></code></a> that are created as datapoints are added in the T0 stage. An example would be to make a template fit to the light curve of the transient or to look for more information on the transient in a set of atronomical catalogs.</p>
+<p>The first ingredient is the T2 module itself, defining a subclass of <code class="xref py py-class docutils literal notranslate"><span class="pre">ampel.abstract.AbsT2Unit.AbsT2Unit</span></code>. This class has two mandatory methods: <code class="docutils literal notranslate"><span class="pre">run</span></code> and <code class="docutils literal notranslate"><span class="pre">_run_</span></code>. The first is just a wrapper around the second, so <code class="docutils literal notranslate"><span class="pre">_run_</span></code> is where the magic happens. This method requires two arguments:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">_run_</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">light_curve</span><span class="p">,</span> <span class="n">run_config</span><span class="p">):</span>
 </pre></div>
 </div>
@@ -140,10 +187,10 @@
 </pre></div>
 </div>
 <p>In this example, we use a general purpose <code class="docutils literal notranslate"><span class="pre">CATALOGMATCH</span></code> T2 module to look for transient classification in the SDSS spectroscopic catalog and call this configuration <code class="docutils literal notranslate"><span class="pre">sdss_class</span></code>. This naming of the T2 configurations makes it possible to use the T2 module simply by adding the following <code class="docutils literal notranslate"><span class="pre">t2unit</span></code>:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
-<span class="s2">&quot;t2Unit&quot;</span> <span class="p">:</span> <span class="s2">&quot;CATALOGMATCH&quot;</span><span class="p">,</span>
-<span class="s2">&quot;runConfig&quot;</span><span class="p">:</span> <span class="s2">&quot;sdss_class&quot;</span>
-<span class="p">}</span>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="p p-Indicator">{</span>
+<span class="s">&quot;t2Unit&quot;</span><span class="nt"> </span><span class="p">:</span> <span class="s">&quot;CATALOGMATCH&quot;</span><span class="p p-Indicator">,</span>
+<span class="s">&quot;runConfig&quot;</span><span class="p p-Indicator">:</span> <span class="s">&quot;sdss_class&quot;</span>
+<span class="p p-Indicator">}</span>
 </pre></div>
 </div>
 <p>to the <code class="docutils literal notranslate"><span class="pre">t2Compute</span></code> list of our channel configuration (the <code class="docutils literal notranslate"><span class="pre">channels.json</span></code> configuration file).</p>

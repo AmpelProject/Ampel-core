@@ -1,6 +1,8 @@
 Structure
 ---------
 
+.. _structure-units:
+
 Units
 =====
 
@@ -55,6 +57,7 @@ For some classes, the configuration dict includes more items than are specified 
       
       context.loader.secrets.get('name_of_secret')
 
+.. _structure-tiers:
 
 Tiers
 =====
