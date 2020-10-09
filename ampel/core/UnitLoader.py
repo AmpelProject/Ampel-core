@@ -238,9 +238,9 @@ class UnitLoader:
 		This allows to retrieve the corresponding fully qualified name of the class and to load it.
 
 		:param unit_type:
-		- DataUnit or any sublcass of DataUnit
-		- AdminUnit or any sublcass of AdminUnit
-		- If None, FQN will be retrieved from the auxiliary class conf entries and returned object will have Type[Any]
+			- DataUnit or any sublcass of DataUnit
+			- AdminUnit or any sublcass of AdminUnit
+			- If None, FQN will be retrieved from the auxiliary class conf entries and returned object will have Type[Any]
 
 		:raises: ValueError if unit cannot be found or loaded or if parent class is unrecognized
 		"""
