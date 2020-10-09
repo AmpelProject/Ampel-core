@@ -164,6 +164,11 @@ class AmpelController:
 						logger.error(f"Unable to load invalid process {p}", e)
 					continue
 
+				if not pm.active:
+					if logger:
+						logger.log(VERBOSE, f"Ignoring inactive process {p.name}")
+					continue
+
 				# Controller exclusion
 				if controllers and pm.controller.unit not in controllers:
 					if logger:
