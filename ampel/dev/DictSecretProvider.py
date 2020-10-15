@@ -18,6 +18,9 @@ class SecretWrapper(Secret[T]):
 
     value: T
 
+    def __repr_args__(self):
+        return {**dict(super().__repr_args__()), **{'value': '********'}}.items()
+
     def get(self) -> T:
         return self.value
 
