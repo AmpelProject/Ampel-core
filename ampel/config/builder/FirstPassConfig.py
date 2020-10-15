@@ -69,6 +69,7 @@ class FirstPassConfig(dict):
 			d['alias'][f"t{k}"] = AliasConfigCollector(conf_section='alias', logger=logger, verbose=verbose, tier=k)
 			# Allow processes to be defined in sub-tier entries already (process.t0, process.t1, ...)
 			d['process'][f"t{k}"] = ProcessConfigCollector(conf_section='process', logger=logger, verbose=verbose, tier=k)
+		d['process']["ops"] = ProcessConfigCollector(conf_section='process', logger=logger, verbose=verbose, tier="ops")
 
 		for ut in ('controller', 'admin', 'base', 'core', 'aux'):
 			d['unit'][ut] = UnitConfigCollector(conf_section=f'{ut} unit', logger=logger, verbose=verbose)

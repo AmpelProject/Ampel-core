@@ -20,7 +20,7 @@ class ProcessModel(StrictModel):
 
 	name: str
 	active: bool = True
-	tier: Literal[0, 1, 2, 3]
+	tier: Optional[Literal[0, 1, 2, 3]]
 	schedule: Sequence[str]
 	channel: Optional[ChannelId]
 	distrib: Optional[str]

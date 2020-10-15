@@ -27,7 +27,10 @@ class ProcessConfigCollector(AbsDictConfigCollector):
 		proc_name = arg["name"]
 
 		if 'tier' not in arg:
-			arg['tier'] = int(self.tier[1])
+			if len(self.tier) == 2 and self.tier.startswith('t') and self.tier[1].isdigit():
+				arg['tier'] = int(self.tier[1])
+			else:
+				arg['tier'] = None
 
 		if dist_name:
 			arg['distrib'] = dist_name
@@ -37,7 +40,7 @@ class ProcessConfigCollector(AbsDictConfigCollector):
 
 		if self.verbose:
 			self.logger.log(VERBOSE,
-				f"Adding t{arg['tier']} process: '{proc_name}'" +
+				f"Adding {self.tier} process: '{proc_name}'" +
 				f" from file '{file_name}'" if file_name else ""
 			)
 

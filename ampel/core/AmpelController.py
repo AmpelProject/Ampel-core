@@ -114,7 +114,7 @@ class AmpelController:
 	@staticmethod
 	def get_processes(
 		config: AmpelConfig,
-		tier: Optional[Literal[0, 1, 2, 3]] = None,
+		tier: Optional[Literal[0, 1, 2, 3, "ops"]] = None,
 		match: Optional[Sequence[str]] = None,
 		exclude: Optional[Sequence[str]] = None,
 		controllers: Optional[Sequence[str]] = None,
@@ -139,8 +139,9 @@ class AmpelController:
 		if exclude:
 			rexcl = [re.compile(el) for el in exclude]
 
-		for t in ([tier] if tier is not None else [0, 1, 2, 3]): # type: ignore[list-item]
-			for p in config.get(f'process.t{t}', dict, raise_exc=True).values():
+		for t in ([tier] if tier is not None else [0, 1, 2, 3, "ops"]): # type: ignore[list-item]
+			tier_name = f"t{t}" if isinstance(t, int) else t
+			for p in config.get(f'process.{tier_name}', dict, raise_exc=True).values():
 
 				# Process name inclusion filter
 				if match and not any(rm.match(p['name']) for rm in rmatch):
@@ -191,10 +192,16 @@ class AmpelController:
 
 		from ampel.dev.DictSecretProvider import DictSecretProvider
 
+		def maybe_int(stringy):
+			try:
+				return int(stringy)
+			except:
+				return stringy
+
 		parser = ArgumentParser(add_help=True)
 		parser.add_argument('config_file_path')
 		parser.add_argument('--secrets', type=DictSecretProvider.load, default=None)
-		parser.add_argument('--tier', type=int, choices=(0,1,2,3), default=None)
+		parser.add_argument('--tier', type=maybe_int, choices=(0,1,2,3,"ops"), default=None)
 		parser.add_argument('--match', type=str, nargs='*', default=None)
 		parser.add_argument('-v', '--verbose', action='count', default=0)
 		args = parser.parse_args(args)

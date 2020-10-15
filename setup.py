@@ -47,7 +47,6 @@ setup(
 			'ampel-db = ampel.db.AmpelDB:main',
 			'ampel-followup = ampel.t0.DelayedT0Controller:run',
 			'ampel-statspublisher = ampel.metrics.AmpelStatsPublisher:run',
-			'ampel-exceptionpublisher = ampel.core.AmpelExceptionPublisher:run',
 			'ampel-t2 = ampel.t2.T2Controller:run',
 			'ampel-t3 = ampel.t3.T3Controller:main',
 			'ampel-check-broker = ampel.t0.load.fetcherutils:list_kafka',

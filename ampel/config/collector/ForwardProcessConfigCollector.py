@@ -28,9 +28,11 @@ class ForwardProcessConfigCollector(AbsForwardConfigCollector):
 			)
 			return None
 
+		path = ["process", "ops" if arg["tier"] is None else f"t{arg['tier']}"]
+
 		if self.verbose:
 			self.logger.log(VERBOSE,
-				f"Routing process '{arg['name']}' to 'process.t{arg['tier']}'"
+				f"Routing process '{arg['name']}' to '{'.'.join(path)}'"
 			)
 
-		return ["process", f"t{arg['tier']}"]
+		return path

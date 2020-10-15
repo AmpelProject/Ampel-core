@@ -199,10 +199,12 @@ class ConfigBuilder:
 		)
 
 		# Add (possibly transformed) processes to output config
-		for tier in (0, 1, 2, 3):
+		for tier in (0, 1, 2, 3, "ops"):
+
+			tier_name = tier if tier == "ops" else f"t{tier}"
 
 			if self.verbose:
-				self.logger.log(VERBOSE, f'Checking standalone t{tier} processes')
+				self.logger.log(VERBOSE, f'Checking standalone {tier_name} processes')
 
 			p_collector = ProcessConfigCollector(
 				tier=tier, conf_section='process', # type: ignore[arg-type]
@@ -215,19 +217,19 @@ class ConfigBuilder:
 			#}
 
 			# New empty process collector to gather morphed processes
-			out['process'][f't{tier}'] = p_collector
+			out['process'][tier_name] = p_collector
 
 			# For each process collected before, apply transformations
 			# and add it to our (almost) final process collector.
 			# 'almost' because a gathering of T0 processes may occure later
-			for p in self.first_pass_config['process'][f't{tier}'].values():
+			for p in self.first_pass_config['process'][tier_name].values():
 
 				if skip_default_processes and p["name"] in self._default_processes:
-					self.logger.info(f'Skipping t{tier} default processes: {p["name"]}')
+					self.logger.info(f'Skipping {tier_name} default processes: {p["name"]}')
 					continue
 
 				if self.verbose:
-					self.logger.log(VERBOSE, f'Morphing standalone t{tier} processes: {p["name"]}')
+					self.logger.log(VERBOSE, f'Morphing standalone {tier_name} processes: {p["name"]}')
 					pass
 
 				try:

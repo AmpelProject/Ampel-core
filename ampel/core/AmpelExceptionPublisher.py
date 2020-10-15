@@ -13,7 +13,6 @@
 
 import datetime
 import json
-import logging
 import time
 from typing import Any, Dict, List
 
@@ -21,13 +20,11 @@ from bson import ObjectId
 from slack import WebClient
 from slack.web.slack_response import SlackResponse
 
-from ampel.core.AdminUnit import AdminUnit
+from ampel.abstract.AbsOpsUnit import AbsOpsUnit
 from ampel.model.Secret import Secret
 
-log = logging.getLogger()
 
-
-class AmpelExceptionPublisher(AdminUnit):
+class AmpelExceptionPublisher(AbsOpsUnit):
 
     slack_token: Secret[str] = {"key": "slack/operator"}  # type: ignore[assignment]
     user: str = "AMPEL-live"
@@ -38,7 +35,7 @@ class AmpelExceptionPublisher(AdminUnit):
         super().__init__(**kwargs)
         self.slack = WebClient(self.slack_token.get())
         self.last_timestamp = ObjectId.from_datetime(
-            datetime.datetime.now() - datetime.timedelta(hours=1)
+            datetime.datetime.utcnow() - datetime.timedelta(hours=1)
         )
         self.troubles = self.context.db.get_collection("troubles", "r")
 
@@ -104,7 +101,7 @@ class AmpelExceptionPublisher(AdminUnit):
         }
         return attachment
 
-    def publish(self) -> None:
+    def run(self) -> None:
 
         attachments: List[Dict[str, Any]] = []
         message = {
@@ -134,7 +131,7 @@ class AmpelExceptionPublisher(AdminUnit):
                 time_range = "{} seconds".format(int(dt.seconds))
         except UnboundLocalError:
             if self.dry_run:
-                log.info("No exceptions")
+                self.logger.info("No exceptions")
             return
 
         count = cursor.count()
@@ -148,7 +145,7 @@ class AmpelExceptionPublisher(AdminUnit):
             ] = f"There were {len(attachments)} exceptions in the last {time_range}."
 
         if self.dry_run:
-            log.info(json.dumps(message, indent=1))
+            self.logger.info(json.dumps(message, indent=1))
         else:
             result = self.slack.api_call("chat.postMessage", data=message)
             if isinstance(result, SlackResponse):
@@ -156,61 +153,4 @@ class AmpelExceptionPublisher(AdminUnit):
                     raise RuntimeError(result["error"])
             else:
                 raise TypeError(f"Sync client returned a future {result}")
-        log.info(f"{count} exceptions in the last {time_range}".format(count))
-
-
-def run() -> None:
-    from argparse import ArgumentParser
-
-    import schedule
-
-    from ampel.core import AmpelContext
-    from ampel.dev.DictSecretProvider import DictSecretProvider
-    from ampel.model.UnitModel import UnitModel
-
-    parser = ArgumentParser(add_help=True)
-    parser.add_argument("config_file_path")
-    parser.add_argument("--secrets", type=DictSecretProvider.load, default=None)
-    parser.add_argument(
-        "--interval",
-        type=int,
-        default=10,
-        help="Check for new exceptions every INTERVAL minutes",
-    )
-    parser.add_argument(
-        "--channel",
-        type=str,
-        default="ampel-troubles",
-        help="Publish to this Slack channel",
-    )
-    parser.add_argument(
-        "--user", type=str, default="AMPEL-live", help="Publish to as this username"
-    )
-    parser.add_argument(
-        "--dry-run",
-        action="store_true",
-        default=False,
-        help="Print exceptions rather than publishing to Slack",
-    )
-
-    args = parser.parse_args()
-
-    ctx = AmpelContext.load(args.config_file_path, secrets=args.secrets)
-
-    atp = ctx.loader.new_admin_unit(
-        UnitModel(unit=AmpelExceptionPublisher),
-        ctx,
-        **{k: getattr(args, k) for k in ["channel", "user", "dry_run"]},
-    )
-
-    scheduler = schedule.Scheduler()
-    scheduler.every(args.interval).minutes.do(atp.publish)
-
-    logging.basicConfig()
-    atp.publish()
-    while True:
-        try:
-            scheduler.run_pending()
-            time.sleep(10)
-        except KeyboardInterrupt:
-            break
+        self.logger.info(f"{count} exceptions in the last {time_range}".format(count))

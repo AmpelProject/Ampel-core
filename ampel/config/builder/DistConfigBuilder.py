@@ -202,7 +202,7 @@ class DistConfigBuilder(ConfigBuilder):
 				distrib.get_resource_string(__name__, file_rel_path)
 			)
 
-			for k in ("t0", "t1", "t2", "t3"):
+			for k in ("t0", "t1", "t2", "t3", "ops"):
 				if k in d:
 					self.first_pass_config[root_key][k].add(
 						d[k], file_name=file_rel_path,
