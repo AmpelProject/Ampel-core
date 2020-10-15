@@ -9,7 +9,7 @@
 
 import importlib, re, json
 from pydantic import ValidationError
-from contextlib import contextmanager
+from functools import partial
 from math import inf # noqa: required for eval(repr(...)) below
 from typing import Dict, List, Any, Optional, Set, Iterable
 from ampel.util.mappings import get_by_path, set_by_path
@@ -176,19 +176,14 @@ class ConfigBuilder:
 			for k in FirstPassConfig.conf_keys.keys()
 		}
 
-		unit_loader = UnitLoader(
-			AmpelConfig(self.first_pass_config),
-			secrets=PotemkinSecretProvider(),
+		unit_model_validator = partial(
+			UnitModel.validate_configs,
+			UnitLoader(
+				AmpelConfig(self.first_pass_config),
+				secrets=PotemkinSecretProvider(),
+			)
+			if validate_unit_models else None
 		)
-
-		@contextmanager
-		def unit_model_validator():
-			"Temporarily enable unit model validation"
-			prev = UnitModel._unit_loader
-			if validate_unit_models:
-				UnitModel._unit_loader = unit_loader
-			yield
-			UnitModel._unit_loader = prev
 
 		out['process'] = {}
 

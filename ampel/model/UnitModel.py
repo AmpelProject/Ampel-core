@@ -7,6 +7,7 @@
 # Last Modified Date: 01.08.2020
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
+from contextlib import contextmanager
 from typing import Dict, Optional, Any, Union, Type, Sequence, cast, TYPE_CHECKING
 from pydantic import create_model, root_validator
 from ampel.base.AmpelBaseModel import AmpelBaseModel
@@ -41,6 +42,14 @@ class UnitModel(StrictModel):
 			return self.unit
 		return self.unit.__name__
 
+	@classmethod
+	@contextmanager
+	def validate_configs(cls, unit_loader: "Optional[UnitLoader]"):
+		"""Temporarily enable unit model validataion"""
+		prev = cls._unit_loader
+		cls._unit_loader = unit_loader
+		yield
+		cls._unit_loader = prev
 
 	@root_validator
 	def validate_config(cls, values: Dict[str,Any]) -> Dict[str,Any]:
