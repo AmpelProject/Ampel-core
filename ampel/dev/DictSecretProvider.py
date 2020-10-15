@@ -8,6 +8,7 @@
 # Last Modified By  : Jakob van Santen <jakob.van.santen@desy.de>
 
 from typing import Any, Dict, Type, Tuple, get_args, get_origin, overload
+import subprocess
 import yaml
 
 from ampel.abstract.AbsSecretProvider import AbsSecretProvider
@@ -28,12 +29,27 @@ class SecretWrapper(Secret[T]):
 class DictSecretProvider(AbsSecretProvider):
 
     @classmethod
-    def load(cls, path) -> 'DictSecretProvider':
-        with open(path) as f:
-            return cls(yaml.safe_load(f))
+    def load(cls, path: str) -> 'DictSecretProvider':
+        """
+        Load from a YAML file. If the file was encrypted with sops_, it will
+        be decrypted with ``sops -d``.
 
-    def __init__(self, dictlike: Dict[str, Any]) -> None:
-        self.store: Dict[str, Any] = dict(dictlike)
+        .. _sops: https://github.com/mozilla/sops
+        """
+        with open(path) as f:
+            payload = yaml.safe_load(f)
+        if "sops" in payload:
+            try:
+                payload = yaml.safe_load(subprocess.check_output(['sops', '-d', path]))
+            except Exception as exc:
+                raise RuntimeError(f"Can't read sops-encrypted file {path}") from exc
+        return cls(payload)
+
+    def __init__(self, items: Dict[str, Any]) -> None:
+        """
+        :param items:
+        """
+        self.store: Dict[str, Any] = dict(items)
 
     def get(self, key: str, value_type: Type[T]) -> SecretWrapper[T]:
         try:
