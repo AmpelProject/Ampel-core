@@ -272,6 +272,12 @@ class DefaultProcessController(AbsProcessController):
 		log_profile: str = "default"
 	) -> Any:
 
+		try:
+			import setproctitle
+			setproctitle.setproctitle(f"ampel.process.t{p['tier']}.{p['name']}")
+		except:
+			...
+
 		# Create new context with frozen config
 		context = AmpelContext.new(
 			tier = p['tier'],
