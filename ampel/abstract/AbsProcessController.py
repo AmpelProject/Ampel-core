@@ -70,3 +70,10 @@ class AbsProcessController(AmpelABC, AmpelBaseModel, abstract=True):
 		"""
 		...
 
+	def update(self,
+		config: AmpelConfig,
+		secrets: Optional[AbsSecretProvider],
+		processes: Sequence[ProcessModel],
+	) -> None:
+		"""Change the configuration of the controller."""
+		...

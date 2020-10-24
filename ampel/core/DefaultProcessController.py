@@ -67,18 +67,21 @@ class DefaultProcessController(AbsProcessController):
 		super().__init__(**kwargs)
 		self.scheduler = schedule.Scheduler()
 
+		# one top-level task per ProcessModel
+		# invocations of run_async_process
+		self._pending_schedules: Set[asyncio.Future] = set()
+		# individual process replicas
+		self._processes: Dict[str, Set[asyncio.Task]] = dict()
+
+		self._prepare_isolated_processes()
+
+	def _prepare_isolated_processes(self) -> None:
 		if self.isolate:
 			for p in self.processes:
 				if not p.isolate:
 					p.isolate = True
 
 		isolated_processes = [p for p in self.processes if p.isolate]
-
-		# one top-level task per ProcessModel
-		# invocations of run_async_process
-		self._pending_schedules: Set[asyncio.Future] = set()
-		# individual process replicas
-		self._processes: Dict[str, Set[asyncio.Task]] = dict()
 
 		# Note: no need to freeze config if only isolated processes are to be run since
 		# each isolated process will spawn its own AmpelConfig instance in its own environment
@@ -111,10 +114,20 @@ class DefaultProcessController(AbsProcessController):
 				tier=self.processes[0].tier, config=self.config, secrets=self.secrets,
 			)
 
+	def update(self,
+		config: AmpelConfig,
+		secrets: Optional[AbsSecretProvider],
+		processes: Sequence[ProcessModel]
+	) -> None:
+		self.config = config
+		self.processes = processes
+		self.secrets = secrets
+		self._prepare_isolated_processes()
+		self.populate_schedule(now=False)
 
 	async def run(self) -> None:
 		assert self.processes
-		self.populate_schedule()
+		self.populate_schedule(now=True)
 		try:
 			await (task := asyncio.create_task(self.run_scheduler()))
 		except asyncio.CancelledError:
@@ -127,7 +140,13 @@ class DefaultProcessController(AbsProcessController):
 		self.scheduler.clear(tag=name)
 
 
-	def populate_schedule(self):
+	def populate_schedule(self, now: bool) -> None:
+		"""
+		Prepare task schedule
+		
+		:param now: schedule unanchored tasks (i.e. those with no at_time) now
+			rather than one period from now
+		"""
 		self.scheduler.clear()
 		evaluator = ScheduleEvaluator()
 		every = lambda appointment: evaluator(self.scheduler, appointment)
@@ -142,7 +161,7 @@ class DefaultProcessController(AbsProcessController):
 				)
 				# Pull back the first run if the first wait time is within 10
 				# seconds of the period
-				if abs((job.next_run-datetime.datetime.now()-job.period).total_seconds()) < 10:
+				if now and abs((job.next_run-datetime.datetime.now()-job.period).total_seconds()) < 10:
 					job.next_run -= job.period
 
 
@@ -163,7 +182,7 @@ class DefaultProcessController(AbsProcessController):
 			self.run_sync_process(pm)
 
 
-	async def run_scheduler(self):
+	async def run_scheduler(self) -> None:
 		try:
 			while self.scheduler.jobs:
 				try:
