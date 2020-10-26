@@ -14,7 +14,7 @@
 import datetime
 import json
 import time
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from bson import ObjectId
 from slack import WebClient
@@ -34,9 +34,6 @@ class AmpelExceptionPublisher(AbsOpsUnit):
     def __init__(self, **kwargs) -> None:
         super().__init__(**kwargs)
         self.slack = WebClient(self.slack_token.get())
-        self.last_timestamp = ObjectId.from_datetime(
-            datetime.datetime.utcnow() - datetime.timedelta(hours=1)
-        )
         self.troubles = self.context.db.get_collection("troubles", "r")
 
     def t3_fields(self, doc: Dict[str, Any]) -> List[Dict[str, Any]]:
@@ -101,7 +98,11 @@ class AmpelExceptionPublisher(AbsOpsUnit):
         }
         return attachment
 
-    def run(self) -> None:
+    def run(self, beacon: Optional[Dict[str,Any]]=None) -> Optional[Dict[str,Any]]:
+
+        now = datetime.datetime.utcnow()
+        t0 = beacon["updated"] if beacon else now - datetime.timedelta(hours=1)
+        dt = now-t0
 
         attachments: List[Dict[str, Any]] = []
         message = {
@@ -112,27 +113,19 @@ class AmpelExceptionPublisher(AbsOpsUnit):
         }
 
         projection = ["_id", "exception"]
-        t0 = self.last_timestamp.generation_time
-        cursor = self.troubles.find({"_id": {"$gt": self.last_timestamp}})
+        cursor = self.troubles.find({"_id": {"$gt": ObjectId.from_datetime(t0)}})
         for doc in cursor:
             if len(attachments) < 20:
                 attachments.append(self.format_attachment(doc))
 
-        try:
-            self.last_timestamp = doc["_id"]
-            dt = ObjectId.from_datetime(datetime.datetime.now()).generation_time - t0
-            if dt.days > 3:
-                time_range = "{} days".format(dt.days)
-            elif dt.days > 0 or dt.seconds > 2 * 3600:
-                time_range = "{} hours".format(int(dt.days * 24 + dt.seconds / 3600))
-            elif dt.seconds > 2 * 60:
-                time_range = "{} minutes".format(int(dt.seconds / 60))
-            else:
-                time_range = "{} seconds".format(int(dt.seconds))
-        except UnboundLocalError:
-            if self.dry_run:
-                self.logger.info("No exceptions")
-            return
+        if dt.days > 3:
+            time_range = "{} days".format(dt.days)
+        elif dt.days > 0 or dt.seconds > 2 * 3600:
+            time_range = "{} hours".format(int(dt.days * 24 + dt.seconds / 3600))
+        elif dt.seconds > 2 * 60:
+            time_range = "{} minutes".format(int(dt.seconds / 60))
+        else:
+            time_range = "{} seconds".format(int(dt.seconds))
 
         count = cursor.count()
         if len(attachments) < count:
@@ -146,7 +139,7 @@ class AmpelExceptionPublisher(AbsOpsUnit):
 
         if self.dry_run:
             self.logger.info(json.dumps(message, indent=1))
-        else:
+        elif count:
             result = self.slack.api_call("chat.postMessage", data=message)
             if isinstance(result, SlackResponse):
                 if not result["ok"]:
@@ -154,3 +147,5 @@ class AmpelExceptionPublisher(AbsOpsUnit):
             else:
                 raise TypeError(f"Sync client returned a future {result}")
         self.logger.info(f"{count} exceptions in the last {time_range}".format(count))
+
+        return {"updated": now}

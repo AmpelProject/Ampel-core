@@ -17,18 +17,24 @@ class OpsProcessor(AbsProcessorUnit):
         logger = None
 
         try:
+            beacon_col = self.context.db.get_collection("beacon")
             logger = AmpelLogger.from_profile(
                 self.context,
                 self.log_profile,
                 base_flag=LogRecordFlag.CORE | self.base_log_flag,
                 force_refresh=True,
             )
-            self.context.loader.new_admin_unit(
+            last_beacon = beacon_col.find_one({"_id": self.process_name})
+            beacon = self.context.loader.new_admin_unit(
                 unit_model=self.execute,
                 context=self.context,
                 sub_type=AbsOpsUnit,
                 logger=logger,
-            ).run()
+            ).run(last_beacon)
+            if beacon:
+                last_beacon = beacon_col.update_one(
+                    {"_id": self.process_name}, {"$set": beacon}, upsert=True
+                )
         except Exception as e:
 
             if self.raise_exc:
