@@ -288,6 +288,7 @@ class DefaultProcessController(AbsProcessController):
 			unit_model = pm.processor,
 			context = context,
 			sub_type = AbsProcessorUnit,
+			process_name = pm.name,
 		)
 
 		return processor.run()

@@ -107,7 +107,6 @@ class AbsLegacyChannelTemplate(AbsChannelTemplate, abstract=True):
 				"unit": "AlertProcessor",
 				"config": {
 					"publish_stats": ["graphite", "processDoc"],
-					"process_name": f"{self.channel}|T0|{self.template}",
 					"directives": [{
 						"channel": self.channel,
 						"stock_match": self.auto_complete,

@@ -117,7 +117,7 @@ class PeriodicSummaryT3(AbsProcessTemplate):
             "name": self.name,
             "processor": {
                 "unit": "T3Processor",
-                "config": {"process_name": self.name, "directives": [directive]},
+                "config": {"directives": [directive]},
             },
         }
 

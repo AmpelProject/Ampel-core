@@ -69,15 +69,12 @@ process:
     schedule: every(5).minutes
     processor:
       unit: T2Processor
-      config:
-        process_name: DefaultT2Process
   - name: ExceptionPublisher
     tier: null
     schedule: every(10).minutes
     processor:
       unit: OpsProcessor
       config:
-        process_name: ExceptionPublisher
         execute:
           unit: AmpelExceptionPublisher
           config:

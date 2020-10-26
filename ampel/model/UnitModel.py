@@ -75,10 +75,11 @@ class UnitModel(StrictModel):
 						AdminUnit,
 						AbsT3UnitRunner,
 						AbsT3RunContextAppender,
+						AbsProcessorUnit,
 					)
 				):
 					if issubclass(unit, parent):
-						exclude.update(parent._annots.keys())
+						exclude.update(set(parent._annots.keys()).difference(parent._defaults.keys()))
 				fields = {
 					k: (v, unit._defaults[k] if k in unit._defaults else ...)
 					for k, v in unit._annots.items() if k not in exclude
