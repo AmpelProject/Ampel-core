@@ -8,6 +8,7 @@
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import gc
+import signal
 from time import time
 from typing import Optional, List, Union, Type, Dict, TypedDict, ItemsView, Any, Sequence
 from collections.abc import ItemsView as ColItemsView
@@ -96,6 +97,15 @@ class T2Processor(AbsProcessorUnit):
 		if self.send_beacon:
 			self.create_beacon()
 
+		self._run = True
+		signal.signal(signal.SIGTERM, self.sig_exit)
+		signal.signal(signal.SIGINT, self.sig_exit)
+
+
+	def sig_exit(self, signum: int, frame) -> None:
+		""" Executed when SIGTERM/SIGINT is caught. Stops doc processing in run() """
+		self._run = False
+
 
 	def create_beacon(self) -> None:
 		""" Creates a beacon document if it does not exist yet """
@@ -172,7 +182,8 @@ class T2Processor(AbsProcessorUnit):
 		push_t2_update = self.push_t2_update
 
 		# Process t2 docs until next() returns None (breaks condition below)
-		while True:
+		self._run = True
+		while self._run:
 
 			# get t2 document (status is usually TO_RUN or TO_RUN_PRIO)
 			t2_doc = self.col_t2.find_one_and_update(self.query, update)
