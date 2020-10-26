@@ -1,4 +1,3 @@
-
 from typing import Any
 
 from ampel.abstract.AbsOpsUnit import AbsOpsUnit
@@ -6,6 +5,7 @@ from ampel.model.UnitModel import UnitModel
 from ampel.abstract.AbsProcessorUnit import AbsProcessorUnit
 from ampel.log import AmpelLogger, LogRecordFlag, SHOUT
 from ampel.log.utils import report_exception
+
 
 class OpsProcessor(AbsProcessorUnit):
 
@@ -18,18 +18,17 @@ class OpsProcessor(AbsProcessorUnit):
 
         try:
             logger = AmpelLogger.from_profile(
-                self.context, self.log_profile,
-                base_flag = LogRecordFlag.CORE | self.base_log_flag,
-                force_refresh = True
+                self.context,
+                self.log_profile,
+                base_flag=LogRecordFlag.CORE | self.base_log_flag,
+                force_refresh=True,
             )
-            self.context.loader \
-                .new_admin_unit(
-                    unit_model = self.execute,
-                    context = self.context,
-                    sub_type = AbsOpsUnit,
-                    logger = logger,
-                ) \
-                .run()
+            self.context.loader.new_admin_unit(
+                unit_model=self.execute,
+                context=self.context,
+                sub_type=AbsOpsUnit,
+                logger=logger,
+            ).run()
         except Exception as e:
 
             if self.raise_exc:
@@ -39,8 +38,7 @@ class OpsProcessor(AbsProcessorUnit):
                 logger = AmpelLogger.get_logger()
 
             report_exception(
-                self.context.db, logger, exc=e,
-                info={'process': self.process_name}
+                self.context.db, logger, exc=e, info={"process": self.process_name}
             )
 
         finally:
