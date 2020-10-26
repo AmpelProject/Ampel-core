@@ -213,7 +213,6 @@ class DefaultProcessController(AbsProcessController):
 				unit_model = pm.processor,
 				context = self.context,
 				sub_type = AbsProcessorUnit,
-				log_profile = self.log_profile
 			) \
 			.run()
 
@@ -252,7 +251,6 @@ class DefaultProcessController(AbsProcessController):
 				self.mp_config,
 				self.secrets,
 				pm.dict(),
-				self.log_profile
 			)
 			for _ in range(multiplier)
 		}
@@ -269,7 +267,6 @@ class DefaultProcessController(AbsProcessController):
 		config: Dict[str, Any],
 		secrets: Optional[AbsSecretProvider],
 		p: Dict[str, Any],
-		log_profile: str = "default"
 	) -> Any:
 
 		pm = ProcessModel(**p)
@@ -291,7 +288,6 @@ class DefaultProcessController(AbsProcessController):
 			unit_model = pm.processor,
 			context = context,
 			sub_type = AbsProcessorUnit,
-			log_profile = log_profile
 		)
 
 		return processor.run()
