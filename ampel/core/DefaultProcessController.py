@@ -166,8 +166,12 @@ class DefaultProcessController(AbsProcessController):
 
 
 	def _finalize_task(self, pm: ProcessModel, future: asyncio.Future) -> None:
-		result = future.result()
-		self._pending_schedules.remove(future)
+		try:
+			result = future.result()
+		except asyncio.CancelledError:
+			return
+		finally:
+			self._pending_schedules.remove(future)
 		if self.mp_join >= 2 and not any(bool(r) for r in result):
 			for job in [job for job in self.scheduler.jobs if pm.name in job.tags]:
 				self.scheduler.cancel_job(job)
