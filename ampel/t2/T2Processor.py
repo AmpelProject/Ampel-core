@@ -226,7 +226,7 @@ class T2Processor(AbsProcessorUnit):
 				# T2 units can return a T2RunState integer rather than a dict instance / tuple
 				# for example: T2RunState.EXCEPTION, T2RunState.BAD_CONFIG, ...
 				if isinstance(ret, int):
-					logger.error(f'T2 unit returned int {ret}')
+					logger.info(f'T2 unit returned int {ret}')
 					sub_rec['error'] = ret
 					jrec['status'] = ret
 					push_t2_update(t2_doc, sub_rec, logger, status=ret)
