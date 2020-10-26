@@ -171,6 +171,7 @@ class _Process:
                 )
                 if isinstance(payload, BaseException):
                     raise ret
+                payload += await rx.read()
                 ret = reduction.pickle.loads(payload)
                 if isinstance(ret, BaseException):
                     raise ret
