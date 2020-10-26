@@ -169,6 +169,8 @@ class _Process:
                 exitcode, payload = await asyncio.gather(
                     proc.wait(), rx.read(), return_exceptions=True
                 )
+                if isinstance(payload, BaseException):
+                    raise ret
                 ret = reduction.pickle.loads(payload)
                 if isinstance(ret, BaseException):
                     raise ret
