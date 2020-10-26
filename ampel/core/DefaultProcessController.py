@@ -272,21 +272,23 @@ class DefaultProcessController(AbsProcessController):
 		log_profile: str = "default"
 	) -> Any:
 
+		pm = ProcessModel(**p)
+
 		try:
 			import setproctitle
-			setproctitle.setproctitle(f"ampel.process.t{p['tier']}.{p['name']}")
+			setproctitle.setproctitle(f"ampel.process.t{pm.tier}.{pm.name}")
 		except:
 			...
 
 		# Create new context with frozen config
 		context = AmpelContext.new(
-			tier = p['tier'],
+			tier = pm.tier,
 			config = AmpelConfig(config, freeze=True),
 			secrets = secrets,
 		)
 
 		processor = context.loader.new_admin_unit(
-			unit_model = UnitModel(**p['processor']),
+			unit_model = pm.processor,
 			context = context,
 			sub_type = AbsProcessorUnit,
 			log_profile = log_profile
