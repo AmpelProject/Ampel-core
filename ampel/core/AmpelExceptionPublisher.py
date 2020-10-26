@@ -13,6 +13,7 @@
 
 import datetime
 import json
+import socket
 import time
 from typing import Any, Dict, List, Optional
 
@@ -27,9 +28,10 @@ from ampel.model.Secret import Secret
 class AmpelExceptionPublisher(AbsOpsUnit):
 
     slack_token: Secret[str] = {"key": "slack/operator"}  # type: ignore[assignment]
-    user: str = "AMPEL-live"
+    user: str = f"ampel@{socket.gethostname()}"
     channel: str = "ampel-troubles"
     dry_run: bool = False
+    quiet: bool = True
 
     def __init__(self, **kwargs) -> None:
         super().__init__(**kwargs)
@@ -139,7 +141,7 @@ class AmpelExceptionPublisher(AbsOpsUnit):
 
         if self.dry_run:
             self.logger.info(json.dumps(message, indent=1))
-        elif count:
+        elif count or not self.quiet:
             result = self.slack.api_call("chat.postMessage", data=message)
             if isinstance(result, SlackResponse):
                 if not result["ok"]:
