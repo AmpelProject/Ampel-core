@@ -130,6 +130,17 @@ an AmpelContext instance as constructor parameter</p>
 </dd>
 </dl>
 <dl class="py method">
+<dt id="ampel.t2.T2Processor.T2Processor.sig_exit">
+<code class="sig-name descname">sig_exit</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">signum</span></em>, <em class="sig-param"><span class="n">frame</span></em><span class="sig-paren">)</span><a class="headerlink" href="#ampel.t2.T2Processor.T2Processor.sig_exit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Executed when SIGTERM/SIGINT is caught. Stops doc processing in run()</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">None</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
 <dt id="ampel.t2.T2Processor.T2Processor.create_beacon">
 <code class="sig-name descname">create_beacon</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#ampel.t2.T2Processor.T2Processor.create_beacon" title="Permalink to this definition">¶</a></dt>
 <dd><p>Creates a beacon document if it does not exist yet</p>
@@ -876,7 +887,8 @@ and the kwargs provided to this method (the latter having prevalance)
 <dd><dl class="py method">
 <dt id="ampel.dev.DictSecretProvider.DictSecretProvider.load">
 <em class="property">classmethod </em><code class="sig-name descname">load</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">path</span></em><span class="sig-paren">)</span><a class="headerlink" href="#ampel.dev.DictSecretProvider.DictSecretProvider.load" title="Permalink to this definition">¶</a></dt>
-<dd><p>Load from a YAML file</p>
+<dd><p>Load from a YAML file. If the file was encrypted with <a class="reference external" href="https://github.com/mozilla/sops">sops</a>, it will
+be decrypted with <code class="docutils literal notranslate"><span class="pre">sops</span> <span class="pre">-d</span></code>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type</dt>
 <dd class="field-odd"><p><a class="reference internal" href="#ampel.dev.DictSecretProvider.DictSecretProvider" title="ampel.dev.DictSecretProvider.DictSecretProvider"><code class="xref py py-class docutils literal notranslate"><span class="pre">DictSecretProvider</span></code></a></p>

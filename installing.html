@@ -104,7 +104,22 @@
 <div class="section" id="running-a-full-ampel-instance">
 <h2>Running a full Ampel instance<a class="headerlink" href="#running-a-full-ampel-instance" title="Permalink to this headline">¶</a></h2>
 <p>To run the full Ampel processing chain implemented in the ampel-core project, you will need an instance of MongoDB (&gt;= 4.0). To start one via <code class="docutils literal notranslate"><span class="pre">docker</span></code>:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;</span> docker run -d --rm -p <span class="m">27017</span>:27017 --name mongo mongo:bionic
+<span class="go">9f8724e53d8d4fc44ecf06e5ab5a2f76a1ad773a910ab20c2206cd3669e67496</span>
+</pre></div>
+</div>
 <p>This causes <code class="docutils literal notranslate"><span class="pre">docker</span></code> to start <code class="docutils literal notranslate"><span class="pre">mongod</span></code> in a background container named <code class="docutils literal notranslate"><span class="pre">mongo</span></code>, with port 27017 bound to port 27017 on the host. The value printed to the console is the id of the container; you can refer to it either using this hash or the name you provided (<code class="docutils literal notranslate"><span class="pre">mongo</span></code>). You may verify that ports are forwarded to the host correctly with with <code class="docutils literal notranslate"><span class="pre">docker</span> <span class="pre">inspect</span></code>:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;</span> docker inspect mongo <span class="p">|</span> jq <span class="s1">&#39;.[] | .NetworkSettings.Ports&#39;</span>
+<span class="go">{</span>
+<span class="go">  &quot;27017/tcp&quot;: [</span>
+<span class="go">    {</span>
+<span class="go">      &quot;HostIp&quot;: &quot;0.0.0.0&quot;,</span>
+<span class="go">      &quot;HostPort&quot;: &quot;27017&quot;</span>
+<span class="go">    }</span>
+<span class="go">  ]</span>
+<span class="go">}</span>
+</pre></div>
+</div>
 <div class="admonition warning">
 <p class="admonition-title">Warning</p>
 <p>The <code class="docutils literal notranslate"><span class="pre">mongod</span></code> started this way has no access control whatsoever, and should only be used for local development. Always use authenticated, minimially-priviledged users in production.</p>

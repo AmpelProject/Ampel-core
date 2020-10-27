@@ -72,14 +72,14 @@ Running a full Ampel instance
 
 To run the full Ampel processing chain implemented in the ampel-core project, you will need an instance of MongoDB (>= 4.0). To start one via ``docker``:
 
-.. code-block:
+.. code-block::
   
   > docker run -d --rm -p 27017:27017 --name mongo mongo:bionic
   9f8724e53d8d4fc44ecf06e5ab5a2f76a1ad773a910ab20c2206cd3669e67496
 
 This causes ``docker`` to start ``mongod`` in a background container named ``mongo``, with port 27017 bound to port 27017 on the host. The value printed to the console is the id of the container; you can refer to it either using this hash or the name you provided (``mongo``). You may verify that ports are forwarded to the host correctly with with ``docker inspect``:
 
-.. code-block:
+.. code-block::
   
   > docker inspect mongo | jq '.[] | .NetworkSettings.Ports'
   {
