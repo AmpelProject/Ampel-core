@@ -8,7 +8,7 @@
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import yaml
-from typing import Dict, Optional, Literal, Sequence
+from typing import Dict, Optional, Literal, Sequence, Any
 
 from ampel.base import abstractmethod
 from ampel.base.AmpelABC import AmpelABC
@@ -53,7 +53,7 @@ class AbsProcessController(AmpelABC, AmpelBaseModel, abstract=True):
 
 
 	@abstractmethod
-	async def run(self) -> None:
+	async def run(self) -> Any:
 		"""
 		Run this controller. This coroutine should not return until all its
 		tasks have completed or it receives asyncio.CancelledError.
