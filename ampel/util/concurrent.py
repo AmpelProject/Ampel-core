@@ -20,9 +20,11 @@ import asyncio
 import io
 import itertools
 import os
+import signal
 import sys
 import traceback
 from textwrap import dedent
+from typing import Any
 from functools import wraps
 from multiprocessing import reduction, spawn  # type: ignore
 from multiprocessing.context import set_spawning_popen
@@ -140,7 +142,7 @@ class _Process:
             f"from ampel.util.concurrent import spawn_main; spawn_main({read_fd}, {write_fd})",
         )
 
-    async def launch(self):
+    async def launch(self) -> Any:
         prep_data = spawn.get_preparation_data(self._name)
         fp = io.BytesIO()
         set_spawning_popen(self)
@@ -169,10 +171,15 @@ class _Process:
                 exitcode, payload = await asyncio.gather(
                     proc.wait(), rx.read(), return_exceptions=True
                 )
+                if isinstance(exitcode, BaseException):
+                    raise exitcode
+                elif exitcode < 0:
+                    signame = signal.Signals(-exitcode).name
+                    raise RuntimeError(f"Process {self._name} (pid {proc.pid}) died on {signame}")
                 if isinstance(payload, BaseException):
-                    raise ret
-                payload += await rx.read()
-                ret = reduction.pickle.loads(payload)
+                    raise payload
+                else:
+                    ret = reduction.pickle.loads(payload)
                 if isinstance(ret, BaseException):
                     raise ret
                 else:
