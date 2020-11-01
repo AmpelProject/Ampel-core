@@ -77,5 +77,3 @@ process:
       config:
         execute:
           unit: AmpelExceptionPublisher
-          config:
-            dry_run: true
