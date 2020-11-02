@@ -119,6 +119,8 @@ class AmpelExceptionPublisher(AbsOpsUnit):
         for doc in cursor:
             if len(attachments) < 20:
                 attachments.append(self.format_attachment(doc))
+            else:
+                break
 
         if dt.days > 3:
             time_range = "{} days".format(dt.days)
@@ -141,7 +143,7 @@ class AmpelExceptionPublisher(AbsOpsUnit):
 
         if self.dry_run:
             self.logger.info(json.dumps(message, indent=1))
-        elif count or not self.quiet:
+        elif attachments or not self.quiet:
             result = self.slack.api_call("chat.postMessage", data=message)
             if isinstance(result, SlackResponse):
                 if not result["ok"]:
