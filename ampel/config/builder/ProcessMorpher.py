@@ -16,6 +16,7 @@ from ampel.log.AmpelLogger import AmpelLogger, VERBOSE
 from ampel.model.StrictModel import StrictModel
 from ampel.model.ProcessModel import ProcessModel
 from ampel.model.Secret import Secret
+from ampel.model.UnitModel import UnitModel
 from ampel.base.DataUnit import DataUnit
 from ampel.abstract.AbsPointT2Unit import AbsPointT2Unit
 from ampel.util.mappings import walk_and_process_dict
@@ -180,6 +181,9 @@ class ProcessMorpher:
 
 			if not isinstance(t2, dict):
 				raise ValueError(f'Illegal unit definition: {t2}')
+			else:
+				# Trigger config validation (if enabled in UnitModel)
+				UnitModel(**t2)
 
 			rc = t2.get('config', None)
 			t2_unit_name = t2['unit']
