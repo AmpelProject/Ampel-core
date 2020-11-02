@@ -277,7 +277,7 @@ class DefaultProcessController(AbsProcessController):
 
 		try:
 			import setproctitle
-			setproctitle.setproctitle(f"ampel.process.t{pm.tier}.{pm.name}")
+			setproctitle.setproctitle(f"ampel.t{pm.tier}.{pm.name}")
 		except:
 			...
 
