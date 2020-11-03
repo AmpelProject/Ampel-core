@@ -20,7 +20,7 @@ class QueryTimeModel(StrictModel):
 	after: Optional[Union[int, float]] = Field(None, alias='$gt')
 
 	def __bool__(self) -> bool:
-		return self.before is not None and self.after is not None
+		return self.before is not None or self.after is not None
 
 	def dict(self, **kwargs) -> Dict[str, Any]:
 		"""
