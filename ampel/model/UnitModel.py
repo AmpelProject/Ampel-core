@@ -62,10 +62,7 @@ class UnitModel(StrictModel):
 			from ampel.t3.context.AbsT3RunContextAppender import AbsT3RunContextAppender
 
 			unit = cls._unit_loader.get_class_by_name(values['unit'])
-			if issubclass(unit, AbsIngester):
-				# AbsIngester requires runtime parameters not in the config
-				...
-			elif issubclass(unit, (DataUnit, AdminUnit, AbsProcessorUnit)):
+			if issubclass(unit, (DataUnit, AdminUnit, AbsProcessorUnit, AbsIngester)):
 				# exclude base class fields provided at runtime
 				exclude = {"logger"}
 				for parent in cast(
@@ -76,6 +73,7 @@ class UnitModel(StrictModel):
 						AbsT3UnitRunner,
 						AbsT3RunContextAppender,
 						AbsProcessorUnit,
+						AbsIngester,
 					)
 				):
 					if issubclass(unit, parent):
