@@ -317,7 +317,7 @@ def unflatten_dict(d: Mapping[str,Any], separator: str = '.', unflatten_list: bo
 		target: Dict[str,Any] = out
 
 		for part in parts[:-1]:
-			if part not in d:
+			if part not in target:
 				target[part] = {}
 			target = target[part]
 
