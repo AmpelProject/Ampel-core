@@ -23,6 +23,7 @@ from ampel.model.db.AmpelColModel import AmpelColModel
 from ampel.model.db.AmpelDBModel import AmpelDBModel
 from ampel.model.db.IndexModel import IndexModel
 from ampel.model.db.ShortIndexModel import ShortIndexModel
+from ampel.model.db.MongoClientOptionsModel import MongoClientOptionsModel
 from ampel.model.db.MongoClientRoleModel import MongoClientRoleModel
 
 if TYPE_CHECKING:
@@ -38,6 +39,7 @@ class AmpelDB(AmpelBaseModel):
 	prefix: str = 'Ampel'
 	databases: List[AmpelDBModel]
 	mongo_uri: str
+	mongo_options: MongoClientOptionsModel = MongoClientOptionsModel()
 	secrets: Optional[AbsSecretProvider]
 
 	@staticmethod
@@ -124,10 +126,13 @@ class AmpelDB(AmpelBaseModel):
 	def _get_mongo_db(self, *, role: str, db_name: str) -> Database:
 		if role not in self.mongo_clients:
 			key = f'mongo/{role}'
-			auth = self.secrets.get(key, dict).get() if self.secrets else {}
+			kwargs = {
+				**(self.secrets.get(key, dict).get() if self.secrets else {}),
+				**self.mongo_options.dict()
+			}
 			try:
 				self.mongo_clients[role] = MongoClient(
-					self.mongo_uri, **auth
+					self.mongo_uri, **kwargs
 				)
 			except ConfigurationError as exc:
 				# hint at error source
