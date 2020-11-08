@@ -149,11 +149,7 @@ class AmpelDB(AmpelBaseModel):
 
 		for db_config in self.databases:
 			for col_config in db_config.collections:
-				self.create_collection(
-					db_config.role.dict()['w'],
-					f"{self.prefix}_{db_config.name}",
-					col_config
-				)
+				self.get_collection(col_config.name)
 
 
 	def create_collection(self,

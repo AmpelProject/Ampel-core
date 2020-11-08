@@ -38,6 +38,7 @@ class DevAmpelContext(AmpelContext):
 
 		if purge_db:
 			self.db.drop_all_databases()
+			self.db.init_db()
 
 		if custom_conf or db_prefix:
 			conf = self._get_unprotected_conf()
