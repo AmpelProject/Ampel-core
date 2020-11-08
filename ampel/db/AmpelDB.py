@@ -290,7 +290,7 @@ class AmpelDB(AmpelBaseModel):
 
 	def drop_all_databases(self):
 		for db in self.databases:
-			self._get_mongo_db(role=db.role.w, db_name=db.name).client.drop_database(db.name)
+			self._get_mongo_db(role=db.role.w, db_name=db.name).client.drop_database(f"{self.prefix}_{db.name}")
 		self.mongo_collections.clear()
 
 
