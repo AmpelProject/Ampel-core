@@ -292,6 +292,7 @@ class AmpelDB(AmpelBaseModel):
 		for db in self.databases:
 			self._get_mongo_db(role=db.role.w, db_name=db.name).client.drop_database(f"{self.prefix}_{db.name}")
 		self.mongo_collections.clear()
+		self.mongo_clients.clear()
 
 
 def provision_accounts(ampel_db: AmpelDB, auth: Dict[str,str]={}) -> Dict[str,Any]:

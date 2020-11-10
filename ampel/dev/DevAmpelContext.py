@@ -36,10 +36,6 @@ class DevAmpelContext(AmpelContext):
 		if db_prefix:
 			dict.__setitem__(self.config._config['db'], 'prefix', db_prefix)
 
-		if purge_db:
-			self.db.drop_all_databases()
-			self.db.init_db()
-
 		if custom_conf or db_prefix:
 			conf = self._get_unprotected_conf()
 			for k, v in (custom_conf or {}).items():
@@ -48,6 +44,10 @@ class DevAmpelContext(AmpelContext):
 
 		if not self.loader.secrets:
 			self.loader.secrets = PotemkinSecretProvider()
+
+		if purge_db:
+			self.db.drop_all_databases()
+			self.db.init_db()
 
 
 	def add_config_id(self, arg: Dict[str, Any]) -> int:
