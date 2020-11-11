@@ -144,7 +144,7 @@ class AmpelExceptionPublisher(AbsOpsUnit):
         if self.dry_run:
             self.logger.info(json.dumps(message, indent=1))
         elif attachments or not self.quiet:
-            result = self.slack.api_call("chat.postMessage", data=message)
+            result = self.slack.api_call("chat.postMessage", json=message)
             if isinstance(result, SlackResponse):
                 if not result["ok"]:
                     raise RuntimeError(result["error"])
