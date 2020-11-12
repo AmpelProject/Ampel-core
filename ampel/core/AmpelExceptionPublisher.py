@@ -52,35 +52,32 @@ class AmpelExceptionPublisher(AbsOpsUnit):
         return fields
 
     def format_attachment(self, doc: Dict[str, Any]) -> Dict[str, Any]:
-        fields = [{"title": "Tier", "value": doc["tier"], "short": True}]
+        fields = [
+            {"title": "tier", "value": doc["tier"], "short": True},
+        ]
         more = doc.get("more", {})
+        if "process" in doc:
+            fields.append({"title": "process", "value": doc["process"], "short": True})
+        if "run" in doc:
+            fields.append({"title": "run", "value": doc["run"], "short": True})
         if doc["tier"] == 0:
-            for field in "section", "stock", "run":
+            for field in "section", "stock":
                 fields.append(
                     {"title": field, "value": doc.get(field, None), "short": True}
                 )
-            if "id" in doc.get("alert", {}):
+            if "alert" in doc:
                 fields.append(
-                    {
-                        "title": "alertId",
-                        "value": doc.get("alert", {}).get("id", None),
-                        "short": True,
-                    }
+                    {"title": "alert", "value": doc["alert"], "short": True,}
                 )
         elif doc["tier"] == 2:
             fields.append(
                 {"title": "unit", "value": doc.get("unit", None), "short": True}
-            )
-            fields.append(
-                {"title": "run", "value": doc.get("run", None), "short": True}
             )
             t2Doc = doc.get("t2Doc", None)
             if hasattr(t2Doc, "binary"):
                 fields.append(
                     {"title": "t2Doc", "value": t2Doc.binary.hex(), "short": True}
                 )
-        elif doc["tier"] == 3:
-            fields += self.t3_fields(more if "jobName" in more else doc)
         if "exception" in doc:
             text = "```{}```".format("\n".join(doc["exception"]))
         elif "location" in doc:
@@ -100,11 +97,11 @@ class AmpelExceptionPublisher(AbsOpsUnit):
         }
         return attachment
 
-    def run(self, beacon: Optional[Dict[str,Any]]=None) -> Optional[Dict[str,Any]]:
+    def run(self, beacon: Optional[Dict[str, Any]] = None) -> Optional[Dict[str, Any]]:
 
         now = datetime.datetime.utcnow()
         t0 = beacon["updated"] if beacon else now - datetime.timedelta(hours=1)
-        dt = now-t0
+        dt = now - t0
 
         attachments: List[Dict[str, Any]] = []
         message = {
