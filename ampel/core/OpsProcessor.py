@@ -10,6 +10,7 @@ from ampel.log.utils import report_exception
 class OpsProcessor(AbsProcessorUnit):
 
     execute: UnitModel
+    update_beacon: bool = True
     log_profile: str = "console_verbose"
 
     def run(self) -> Any:
@@ -31,7 +32,7 @@ class OpsProcessor(AbsProcessorUnit):
                 sub_type=AbsOpsUnit,
                 logger=logger,
             ).run(last_beacon)
-            if beacon:
+            if beacon and self.update_beacon:
                 last_beacon = beacon_col.update_one(
                     {"_id": self.process_name}, {"$set": beacon}, upsert=True
                 )
