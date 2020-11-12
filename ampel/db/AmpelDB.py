@@ -330,6 +330,11 @@ def list_accounts(ampel_db: AmpelDB, auth: Dict[str,str]={}) -> Dict[str,Any]:
 	return admin.command("usersInfo")
 
 
+def init_db(ampel_db: AmpelDB, auth: Dict[str,str]={}) -> None:
+	"""Initialize Ampel databases and collections."""
+	ampel_db.init_db()
+
+
 def main() -> None:
 	import os
 	import sys
@@ -393,6 +398,14 @@ def main() -> None:
 	)
 
 	add_command(list_accounts, "list")
+
+	p = add_command(init_db, "init")
+	p.add_argument(
+		'--secrets',
+		type=DictSecretProvider.load,
+		default=None,
+		help="Path to yaml file with auth secrets",
+	)
 
 	args = parser.parse_args()
 	if args.username is not None:
