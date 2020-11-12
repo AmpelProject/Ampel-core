@@ -240,7 +240,10 @@ class T3UnitRunner(AbsT3UnitRunner):
 				raise e
 
 			# Try to insert doc into trouble collection (raises no exception)
-			report_exception(self.context.db, self.logger, exc=e)
+			report_exception(
+				self.context.db, self.logger, exc=e,
+				info={'process': self.process_name},
+			)
 
 		finally:
 			if self.buf_hdlr.buffer:
