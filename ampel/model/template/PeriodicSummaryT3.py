@@ -86,7 +86,7 @@ class PeriodicSummaryT3(AbsProcessTemplate):
                 },
             },
             # FIXME: use T3LatestStateLoader here by default
-            "load": {"unit": "T3SimpleDataLoader"},
+            "load": {"unit": "T3SimpleDataLoader", "config": {}},
             "run": {
                 "unit": "T3UnitRunner",
                 "config": {
@@ -102,7 +102,9 @@ class PeriodicSummaryT3(AbsProcessTemplate):
 
         # Restrict document types to load
         if self.load is not None:
-            directive["load"]["config"] = {"directives": self.load}
+            directive["load"]["config"]["directives"] = self.load
+        if self.channel is not None:
+            directive["load"]["config"]["channel"] = self.channel
 
         if self.complement is not None:
             directive["complement"] = self.get_units(self.complement)
