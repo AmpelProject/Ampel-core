@@ -12,6 +12,7 @@ from pymongo import UpdateOne
 from typing import Tuple, Dict, List, Any, Union, Literal, Optional
 from ampel.type import StockId, ChannelId
 from ampel.abstract.ingest.AbsStockIngester import AbsStockIngester
+from ampel.util.mappings import flatten_dict
 
 
 class StockIngester(AbsStockIngester):
@@ -66,8 +67,8 @@ class StockIngester(AbsStockIngester):
 				{
 					'$addToSet': {'channel': chan_add_to_set},
 					'$setOnInsert': self.get_setOnInsert(stock_id),
-					'$min': {'created': created},
-					'$set': {'modified': modified},
+					'$min': flatten_dict({'created': created}),
+					'$set': flatten_dict({'modified': modified}),
 					'$push': {
 						'journal': {
 							'tier': self.tier,
