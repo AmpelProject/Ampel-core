@@ -46,6 +46,8 @@ class T1DefaultCombiner(Generic[T], AbsT1Unit[T]):
 		gen_comp_sub_entry = self.gen_sub_entry # shortcut
 		if not isinstance(stock_id, str):
 			stock_id_str = str(stock_id)
+		else:
+			stock_id_str = stock_id
 
 		# Main loop through provided channels
 		for chan_name in channel_names:
