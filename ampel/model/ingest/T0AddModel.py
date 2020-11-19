@@ -12,11 +12,11 @@ from typing import List, Optional, Type, Union
 from ampel.model.UnitModel import UnitModel
 from ampel.model.ingest.T1CombineModel import T1CombineModel
 from ampel.model.ingest.T2ComputeModel import T2ComputeModel
-from ampel.abstract.ingest.AbsAlertContentIngester import AbsAlertContentIngester
+from ampel.abstract.ingest.AbsIngester import AbsIngester
 
 class T0AddModel(UnitModel):
 	# Override 'unit' to enable alias
-	unit: Union[str, Type[AbsAlertContentIngester]] = Field(..., alias='ingester')
+	unit: Union[str, Type[AbsIngester]] = Field(..., alias='ingester')
 	# config (datapoint ingester config [from UnitModel])
 	t1_combine: Optional[List[T1CombineModel]]
 	t2_compute: Optional[T2ComputeModel]
