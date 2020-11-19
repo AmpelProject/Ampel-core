@@ -57,7 +57,7 @@ def transform(args: Namespace) -> None:
         args.output_file.write(output_yaml.read())
 
 
-def build(args: Namespace) -> None:
+def build(args: Namespace) -> int:
     """Build config file from installed distributions"""
     cb = DistConfigBuilder(verbose=args.verbose)
     try:
@@ -68,6 +68,7 @@ def build(args: Namespace) -> None:
     yaml.dump(
         config, args.output_file if args.output_file else sys.stdout, sort_keys=False
     )
+    return 0
 
 
 def _load_dict(source: TextIO) -> Dict[str, Any]:
