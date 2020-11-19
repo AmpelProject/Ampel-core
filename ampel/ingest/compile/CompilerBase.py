@@ -46,6 +46,9 @@ class CompilerBase(AmpelABC):
 	def get_ingest_models(self,
 		chan_selection: List[Tuple[ChannelId, Union[bool, int]]]
 	) -> Generator[Tuple[ChannelId, T2IngestModel], None, None]:
+		"""
+		Get T2 configurations corresponding to the given T0 filter results
+		"""
 
 		# loop through all channels,
 		for chan, res in chan_selection:

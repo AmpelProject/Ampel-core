@@ -22,4 +22,17 @@ class AbsStateT2Compiler(Generic[T], CompilerBase, abstract=True):
 		chan_selection: List[Tuple[ChannelId, Union[bool, int]]],
 		compound_blueprint: T
 	) -> Dict[Tuple[str, Optional[int], Union[bytes, Tuple[bytes, ...]]], Set[ChannelId]]:
+		"""
+		Build a set of T2 documents to be created, de-duplicating those that
+		are requested by multiple channels via :func:`add_ingest_model`
+	
+		:param chan_selection: channels to create T2 documents for
+		:param compound_blueprint: compound creation plan
+		:returns:
+		  A dict whose keys are
+		    - T2 unit name
+		    - id of T2 unit configuration
+		    - compound id
+		  and whose values are a set of channel ids
+		"""
 		...
