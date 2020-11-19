@@ -6,8 +6,11 @@ RUN apt-get update && \
 
 ADD .jenkins/run_mypy.sh /bin
 
-ADD .jenkins/Ampel-interface /Ampel-interface
-RUN pip install -r /Ampel-interface/requirements.txt /Ampel-interface
+ADD .jenkins /build/.jenkins
+RUN cd /build && pip install \
+    .jenkins/Ampel-interface
 
-ADD requirements.txt /
-RUN pip install -r /requirements.txt
+ADD setup.py /build/setup.py
+ADD ampel /build/ampel
+RUN cd /build && pip install -e .[testing]
+
