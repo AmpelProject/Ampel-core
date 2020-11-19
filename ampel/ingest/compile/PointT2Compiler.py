@@ -32,7 +32,7 @@ class PointT2Compiler(AbsPointT2Compiler):
 	) -> None:
 
 		s = self.get_slice(options.get('eligible'))
-		k = (channel, model.unit, model.config)
+		k = (channel, model.unit_id, model.config)
 
 		if k in self.slices:
 			# Avoid duplicated slices from bad config
@@ -93,7 +93,7 @@ class PointT2Compiler(AbsPointT2Compiler):
 
 		for chan, ingest_model in self.get_ingest_models(chan_selection):
 
-			t2_id = ingest_model.unit
+			t2_id = ingest_model.unit_id
 			config = ingest_model.config
 
 			for s in self.slices[(chan, t2_id, config)]:

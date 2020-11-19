@@ -37,7 +37,7 @@ class StockT2Compiler(AbsStockT2Compiler):
 
 		for chan, ingest_model in self.get_ingest_models(chan_selection):
 
-			k = (ingest_model.unit, ingest_model.config)
+			k = (ingest_model.unit_id, ingest_model.config)
 			if k in t2s_eff:
 				t2s_eff[k] = {chan}
 			else:
