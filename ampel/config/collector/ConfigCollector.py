@@ -19,7 +19,7 @@ class ConfigCollector(dict):
 		logger: Optional[AmpelLogger] = None,
 		verbose: bool = False,
 		debug: bool = False,
-		tier: Optional[Literal[0, 1, 2, 3]] = None
+		tier: Optional[Literal[0, 1, 2, 3, "ops"]] = None
 	) -> None:
 
 		super().__init__(content if content else {})
