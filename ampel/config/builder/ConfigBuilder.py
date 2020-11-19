@@ -259,10 +259,10 @@ class ConfigBuilder:
 					out['channel'].add(
 						tpl.get_channel(self.logger)
 					)
-				except (ValidationError, Excepiont) as ee:
+				except (ValidationError, Exception) as ee:
 					if isinstance(ee, ValidationError):
 						self.logger.error(f'Unable to morph channel: {chan_name}')
-						self.logger.error(ee)
+						self.logger.error(str(ee))
 					else:
 						self.logger.error(f'Unable to morph channel: {chan_name}', exc_info=ee)
 					if not ignore_errors:
@@ -292,7 +292,7 @@ class ConfigBuilder:
 					except (ValidationError, Exception) as ee:
 						if isinstance(ee, ValidationError):
 							self.logger.error(f'Unable to morph embedded process {p["name"]} (from {p["source"]})')
-							self.logger.error(ee)
+							self.logger.error(str(ee))
 						else:
 							self.logger.error(f'Unable to morph embedded process {p["name"]} (from {p["source"]})', exc_info=ee)
 						if not ignore_errors:
