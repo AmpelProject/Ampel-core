@@ -4,15 +4,26 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 10.03.2020
-# Last Modified Date: 05.06.2020
-# Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
+# Last Modified Date: 19.11.2020
+# Last Modified By  : Jakob van Santen <jakob.van.santen@desy.de>
 
-from typing import Any, Dict, List, Union, Optional
+from typing import Any, Dict, List, Union, Optional, Type
 from ampel.model.StrictModel import StrictModel
+from ampel.abstract.AbsStockT2Unit import AbsStockT2Unit
+from ampel.abstract.AbsPointT2Unit import AbsPointT2Unit
+from ampel.abstract.AbsStateT2Unit import AbsStateT2Unit
+
 
 class T2IngestModel(StrictModel):
 
-	unit: str
+	unit: Union[str, Type[AbsStockT2Unit], Type[AbsPointT2Unit], Type[AbsStateT2Unit]]
 	config: Optional[int]
 	ingest: Optional[Dict[str, Any]]
 	group: Union[int, List[int]] = []
+
+	@property
+	def unit_id(self) -> str:
+		if isinstance(self.unit, str):
+			return self.unit
+		else:
+			return self.unit.__name__

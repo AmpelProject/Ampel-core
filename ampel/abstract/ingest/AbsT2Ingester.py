@@ -4,8 +4,8 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 23.03.2020
-# Last Modified Date: 05.06.2020
-# Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
+# Last Modified Date: 19.11.2020
+# Last Modified By  : Jakob van Santen <jakob.van.santen@desy.de>
 
 import importlib
 from typing import Sequence, Dict, Any, Optional, Union, List, Literal, Set, Tuple
@@ -33,32 +33,41 @@ class AbsT2Ingester(AbsIngester, abstract=True):
 		for im in models:
 
 			T2Class = None
-			unit_name = im.unit
-			t2_info = self.context.config.get(f'unit.base.{unit_name}', dict)
+			if isinstance(im.unit, str):
+				unit_name = im.unit
+				t2_info = self.context.config.get(f'unit.base.{unit_name}', dict)
 
-			if not t2_info:
-				raise ValueError(f'Unknown T2 unit {unit_name}')
+				if not t2_info:
+					raise ValueError(f'Unknown T2 unit {unit_name}')
 
-			# The unit is installed locally
-			if 'fqn' in t2_info:
-				T2Class = self.context.loader.get_class_by_name(
-					name = unit_name, unit_type = DataUnit
-				)
+				# The unit is installed locally
+				if 'fqn' in t2_info:
+					T2Class = self.context.loader.get_class_by_name(
+						name = unit_name, unit_type = DataUnit
+					)
 
-			for el in t2_info['base']:
-				# Pickup first Abstract class in mro()
-				# Note: this strategy might cause pblms
-				if el.startswith("Abs"):
-					try:
-						T2AbsClass = getattr(
-							# import using fully qualified name
-							importlib.import_module(f"ampel.abstract.{el}"), el
-						)
-					except Exception:
-						raise ValueError(f"Unknown abstract class: {el}")
+				for el in t2_info['base']:
+					# Pickup first Abstract class in mro()
+					# Note: this strategy might cause pblms
+					if el.startswith("Abs"):
+						try:
+							T2AbsClass = getattr(
+								# import using fully qualified name
+								importlib.import_module(f"ampel.abstract.{el}"), el
+							)
+						except Exception:
+							raise ValueError(f"Unknown abstract class: {el}")
 
-			if "T2AbsClass" not in locals(): # this should be unlikely to happen
-				raise ValueError(f"No abstract class found for {unit_name}")
+				if "T2AbsClass" not in locals(): # this should be unlikely to happen
+					raise ValueError(f"No abstract class found for {unit_name}")
+			else:
+				T2Class = im.unit
+				for base in T2Class.__mro__:
+					if base.__name__.startswith("Abs"):
+						T2AbsClass = base
+						break
+				else:
+					raise ValueError(f"No abstract class found for {T2Class.__name__}")
 
 			# Ingest options prevalence/priority from low to high:
 			# 1) Default options from ingester (ex: T2PhotoIngester might default upper_limits to False)
