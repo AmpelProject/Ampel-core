@@ -73,9 +73,12 @@ class AbsLegacyChannelTemplate(AbsChannelTemplate, abstract=True):
 		stock_ingester: Union[str, Tuple[str, Dict[str, Any]]],
 		t0_ingester: Union[str, Tuple[str, Dict[str, Any]]],
 		t1_ingester: Optional[Union[str, Tuple[str, Dict[str, Any]]]] = None,
+		t1_standalone_ingester: Optional[Union[str, Tuple[str, Dict[str, Any]]]] = None,
 		t2_state_ingester: Optional[Union[str, Tuple[str, Dict[str, Any]]]] = None,
 		t2_point_ingester: Optional[Union[str, Tuple[str, Dict[str, Any]]]] = None,
-		t2_stock_ingester: Optional[Union[str, Tuple[str, Dict[str, Any]]]] = None
+		t2_stock_ingester: Optional[Union[str, Tuple[str, Dict[str, Any]]]] = None,
+		t2_compute_from_t0: List[UnitModel] = [],
+		t2_compute_from_t1: List[UnitModel] = [],
 	) -> Dict[str, Any]:
 		"""
 		This method needs a reference to a FirstPassConfig dict because
@@ -92,6 +95,8 @@ class AbsLegacyChannelTemplate(AbsChannelTemplate, abstract=True):
 		:param t2_state_ingester: unit_class or (unit_class, config dict)
 		:param t2_point_ingester: unit_class or (unit_class, config dict)
 		:param t2_stock_ingester: unit_class or (unit_class, config dict)
+		:param t2_compute_from_t0: units to schedule on t0_add
+		:param t2_compute_from_t1: units to schedule on t1_combine
 		"""
 
 		ret: Dict[str, Any] = {
@@ -120,7 +125,7 @@ class AbsLegacyChannelTemplate(AbsChannelTemplate, abstract=True):
 
 		directives = ret['processor']['config']['directives'][0]
 
-		if t2_state_units := self.get_t2_units(["AbsStateT2Unit", "AbsCustomStateT2Unit"], first_pass_config):
+		if t2_state_units := self.get_units(t2_compute_from_t0, ["AbsStateT2Unit", "AbsCustomStateT2Unit"], first_pass_config):
 
 			if t1_ingester is None:
 				raise ValueError("Template processing requires parameter 't1_ingester'")
@@ -138,7 +143,29 @@ class AbsLegacyChannelTemplate(AbsChannelTemplate, abstract=True):
 				)
 			]
 
-		if t2_stock_units := self.get_t2_units("AbsStockT2Unit", first_pass_config):
+		if t2_state_units := self.get_units(t2_compute_from_t1, ["AbsStateT2Unit", "AbsCustomStateT2Unit"], first_pass_config):
+
+			if t1_standalone_ingester is None:
+				raise ValueError("Template processing requires parameter 't1_standalone_ingester'")
+
+			if t2_state_ingester is None:
+				raise ValueError("Template processing requires parameter 't2_state_ingester'")
+
+			directives['t1_combine'] = [
+				self._get_dict(
+					t1_standalone_ingester,
+					t2_compute = self._get_dict(
+						t2_state_ingester,
+						units = t2_state_units
+					)
+				)
+			]
+
+		if unsupported_t2_units := self.get_units(t2_compute_from_t1, ["AbsStockT2Unit", "AbsPointT2Unit"], first_pass_config):
+
+			raise NotImplementedError("Stock and Point T2 units can't be scheduled from standalone T1 processes")
+
+		if t2_stock_units := self.get_units(t2_compute_from_t0, "AbsStockT2Unit", first_pass_config):
 
 			if t2_stock_ingester is None:
 				raise ValueError("Template processing requires parameter 't2_stock_ingester'")
@@ -147,7 +174,7 @@ class AbsLegacyChannelTemplate(AbsChannelTemplate, abstract=True):
 				t2_stock_ingester, units = t2_stock_units
 			)
 
-		if t2_point_units := self.get_t2_units("AbsPointT2Unit", first_pass_config):
+		if t2_point_units := self.get_units(t2_compute_from_t0, "AbsPointT2Unit", first_pass_config):
 
 			if t2_point_ingester is None:
 				raise ValueError("Template processing requires parameter 't2_point_ingester'")
@@ -168,7 +195,7 @@ class AbsLegacyChannelTemplate(AbsChannelTemplate, abstract=True):
 		return {"unit": arg, **kwargs}
 
 
-	def get_t2_units(self, abs_unit: Union[str, List[str]], first_pass_config: FirstPassConfig) -> List[Dict]:
+	def get_units(self, units: List[UnitModel], abs_unit: Union[str, List[str]], first_pass_config: FirstPassConfig) -> List[Dict]:
 		"""
 		Example: ``get_t2_units("AbsLightCurveT2Unit")``
 		
@@ -179,7 +206,7 @@ class AbsLegacyChannelTemplate(AbsChannelTemplate, abstract=True):
 
 		return [
 			el.dict(exclude_unset=True, by_alias=True)
-			for el in self.t2_compute
+			for el in units
 			if any(
 				unit in first_pass_config['unit']['base'][el.unit]['base']
 				for unit in abs_unit
