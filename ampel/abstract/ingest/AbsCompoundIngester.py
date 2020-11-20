@@ -8,7 +8,7 @@
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from logging import WARNING
-from typing import Sequence, Generic, List, Tuple, Union
+from typing import Sequence, Generic, List, Tuple, Union, Optional
 from ampel.base import abstractmethod
 from ampel.content.DataPoint import DataPoint
 from ampel.abstract.ingest.AbsIngester import AbsIngester
@@ -27,7 +27,7 @@ class AbsCompoundIngester(Generic[T], AbsIngester, abstract=True):
 		stock_id: StockId,
 		datapoints: Sequence[DataPoint],
 		chan_selection: List[Tuple[ChannelId, Union[bool, int]]]
-	) -> T:
+	) -> Optional[T]:
 		...
 
 
