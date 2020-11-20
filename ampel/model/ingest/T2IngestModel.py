@@ -12,11 +12,11 @@ from ampel.model.StrictModel import StrictModel
 from ampel.abstract.AbsStockT2Unit import AbsStockT2Unit
 from ampel.abstract.AbsPointT2Unit import AbsPointT2Unit
 from ampel.abstract.AbsStateT2Unit import AbsStateT2Unit
-
+from ampel.abstract.AbsCustomStateT2Unit import AbsCustomStateT2Unit
 
 class T2IngestModel(StrictModel):
 
-	unit: Union[str, Type[AbsStockT2Unit], Type[AbsPointT2Unit], Type[AbsStateT2Unit]]
+	unit: Union[str, Type[AbsStockT2Unit], Type[AbsPointT2Unit], Type[AbsStateT2Unit], Type[AbsCustomStateT2Unit]]
 	config: Optional[int]
 	ingest: Optional[Dict[str, Any]]
 	group: Union[int, List[int]] = []
