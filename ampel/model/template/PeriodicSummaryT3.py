@@ -104,7 +104,13 @@ class PeriodicSummaryT3(AbsProcessTemplate):
         if self.load is not None:
             directive["load"]["config"]["directives"] = self.load
         if self.channel is not None:
+            # load only documents that pass channel selection
             directive["load"]["config"]["channel"] = self.channel
+            # project subdocuments (e.g. stock journal) to channel selection
+            directive["run"]["config"]["directives"][0]["project"] = {
+                "unit": "T3ChannelProjector",
+                "config": {"channel": self.channel},
+            }
 
         if self.complement is not None:
             directive["complement"] = self.get_units(self.complement)
