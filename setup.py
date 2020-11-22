@@ -43,6 +43,7 @@ setup(
 		"testing": [
 			"pytest",
 			"pytest-cov",
+			"pytest-asyncio",
 			"mongomock",
 			"coveralls",
 		]
