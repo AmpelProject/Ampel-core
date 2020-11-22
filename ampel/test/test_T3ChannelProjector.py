@@ -5,7 +5,7 @@ import pytest
 
 from ampel.content.StockRecord import StockRecord
 from ampel.core.AmpelBuffer import AmpelBuffer
-from ampel.log.AmpelLogger import AmpelLogger
+from ampel.log.AmpelLogger import AmpelLogger, DEBUG
 from ampel.t3.run.project.T3ChannelProjector import T3ChannelProjector
 
 
@@ -17,7 +17,7 @@ def stock_record():
 
 @pytest.fixture
 def logger():
-    return AmpelLogger.get_logger()
+    return AmpelLogger.get_logger(console={"level": DEBUG})
 
 
 def strip_channel(jentries):
@@ -28,8 +28,8 @@ def test_single_channel(stock_record, logger):
     target = "TDE_RANKING"
     before = AmpelBuffer(id=stock_record["_id"], stock=stock_record)
     all_channels = set(before["stock"]["channel"])
-    assert target in all_channels
-    assert len(all_channels) > 1
+    assert target in all_channels, "target is in test case channel set"
+    assert len(all_channels) > 1, "test case contains channels not in target"
 
     proj = T3ChannelProjector(channel=target, logger=logger)
     after = proj.project([before])[0]
@@ -47,7 +47,49 @@ def test_single_channel(stock_record, logger):
     for jentry, stripped in zip(before["stock"]["journal"], before_no_channel):
         if "channel" in jentry:
             try:
-                after_no_channel.index(stripped), "entry with channel was preserved"
+                after_no_channel.index(
+                    stripped
+                ), "entry with target channel was preserved"
             except ValueError:
                 if target in jentry["channel"]:
                     raise
+
+
+@pytest.mark.parametrize("logic_op", ["all_of", "any_of", "one_of"])
+def test_multi_channel(stock_record, logger, logic_op):
+    target = {"RCF_2020B", "ZTF_SLSN"}
+    before = AmpelBuffer(id=stock_record["_id"], stock=stock_record)
+    all_channels = set(before["stock"]["channel"])
+    assert target.intersection(all_channels), "target is in test case channel set"
+    assert len(all_channels) > len(target), "test case contains channels not in target"
+
+    proj = T3ChannelProjector(channel={logic_op: list(target)}, logger=logger)
+    after = proj.project([before])[0]
+    assert set(after["stock"]["channel"]) == target
+    assert after["stock"]["modified"].keys() == target
+
+    before_no_channel = strip_channel(before["stock"]["journal"])
+    after_no_channel = strip_channel(after["stock"]["journal"])
+
+    # all entries have only the selected channel
+    for jentry in after["stock"]["journal"]:
+        if (channel := jentry.get("channel")) is None:
+            continue
+        if isinstance(channel, (int, str)):
+            assert channel in target
+        else:
+            assert len(channel) > 1
+            assert set(channel).issubset(target)
+
+    for jentry, stripped in zip(before["stock"]["journal"], before_no_channel):
+        if (channel := jentry.get("channel")) is None:
+            continue
+        try:
+            after_no_channel.index(
+                stripped
+            ), "entry with channel in target was preserved"
+        except ValueError:
+            if (isinstance(channel, (int, str)) and channel in target) or set(
+                channel
+            ).issubset(target):
+                raise

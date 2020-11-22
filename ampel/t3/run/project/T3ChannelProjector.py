@@ -4,11 +4,15 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 07.01.2020
-# Last Modified Date: 19.06.2020
-# Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
+# Last Modified Date: 22.11.2020
+# Last Modified By  : Jakob van Santen <jakob.van.santen@desy.de>
 
 from typing import Sequence, Any, Dict, List, Union, Optional
 from ampel.type import ChannelId
+from ampel.model.operator.AllOf import AllOf
+from ampel.model.operator.AnyOf import AnyOf
+from ampel.model.operator.OneOf import OneOf
+from ampel.config.LogicSchemaUtils import LogicSchemaUtils
 from ampel.log import VERBOSE
 from ampel.t3.run.project.T3BaseProjector import T3BaseProjector
 from ampel.aux.ComboDictModifier import ComboDictModifier
@@ -16,7 +20,7 @@ from ampel.aux.ComboDictModifier import ComboDictModifier
 
 class T3ChannelProjector(T3BaseProjector):
 
-	channel: ChannelId
+	channel: Union[ChannelId, AllOf[ChannelId], AnyOf[ChannelId], OneOf[ChannelId]]
 
 	# Whether to cast structures into immutables objects after modification
 	freeze: bool = True
@@ -39,6 +43,7 @@ class T3ChannelProjector(T3BaseProjector):
 		self.verbose = self.logger.verbose
 		if self.verbose:
 			self.logger.log(VERBOSE, f"Setting up channel project for '{self.channel}'")
+		self._channel_set : Set[ChannelId] = LogicSchemaUtils.reduce_to_set(self.channel)
 
 		journal_modifier = ComboDictModifier(
 			logger = self.logger,
@@ -46,9 +51,9 @@ class T3ChannelProjector(T3BaseProjector):
 			freeze = self.freeze,
 			modifications = [
 				# Modified ex: {"HU_RANDOM": 3213143434, "HU_RAPID": 43789574389}
-				ComboDictModifier.KeepOnlyModel(op="keep_only", key="modified", keep=self.channel),
+				ComboDictModifier.KeepOnlyModel(op="keep_only", key="modified", keep=self._channel_set),
 				# Created ex: {"HU_RANDOM": 3213143434, "HU_RAPID": 43789574389}
-				ComboDictModifier.KeepOnlyModel(op="keep_only", key="created", keep=self.channel),
+				ComboDictModifier.KeepOnlyModel(op="keep_only", key="created", keep=self._channel_set),
 				# Added ex: {"msg": "test", "tier":0, "channel": ["HU_RANDOM", "HU_RAPID"]}
 				ComboDictModifier.FuncModifyModel(op="modify", key="journal", func=self.channel_projection),
 				ComboDictModifier.FuncModifyModel(op="modify", key="channel", func=self.overwrite_root_channel)
@@ -61,10 +66,16 @@ class T3ChannelProjector(T3BaseProjector):
 			self.add_func_projector(key, self.channel_projection, first=True) # type: ignore
 
 
-	def overwrite_root_channel(self, v: Union[ChannelId, Sequence[ChannelId]]) -> Optional[ChannelId]:
-		if v == self.channel or self.channel in v: # type: ignore[operator]
-			return self.channel
-		return None
+	def overwrite_root_channel(self, v: Union[ChannelId, Sequence[ChannelId]]) -> Optional[Union[ChannelId, Sequence[ChannelId]]]:
+		if isinstance(v, (str,int)) and v in self._channel_set:
+			return v
+		elif subset := list(self._channel_set.intersection(v)):
+			if len(subset) == 1:
+				return subset[0]
+			else:
+				return subset
+		else:
+			return None
 
 
 	def channel_projection(self, dicts: Sequence[Dict[str, Any]]) -> Sequence[Dict[str, Any]]:
@@ -73,7 +84,7 @@ class T3ChannelProjector(T3BaseProjector):
 		Note: debug ouput handled by super class
 		"""
 
-		chan = self.channel
+		channel_set = self._channel_set
 		setitem = dict.__setitem__
 		ret: List[Dict] = []
 
@@ -83,14 +94,18 @@ class T3ChannelProjector(T3BaseProjector):
 		for el in dicts:
 			if elchan := el.get('channel'):
 				if isinstance(elchan, (str, int)):
-					if chan == elchan:
+					if elchan in channel_set:
 						ret.append(el)
 				else:
-					if chan in elchan:
+					if subset := list(channel_set.intersection(elchan)):
+						channels = (
+							list(subset)
+							if len(subset) > 1 else list(subset)[0]
+						)
 						if self.unalterable:
-							ret.append({**el, 'channel': chan})
+							ret.append({**el, 'channel': channels})
 						else:
-							setitem(el, 'channel', chan)
+							setitem(el, 'channel', channels)
 							ret.append(el)
 
 		return tuple(ret)
