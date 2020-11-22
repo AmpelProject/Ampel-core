@@ -31,7 +31,6 @@ setup(
 		"typing_extensions",
 		"pymongo",
 		"pyyaml",
-		"pytest",
 		"pydantic==1.4",
 		"sjcl",
 		"schedule",
@@ -40,6 +39,14 @@ setup(
 		"aiopipe",
 		"yq",
 	],
+	extras_require = {
+		"testing": [
+			"pytest",
+			"pytest-cov",
+			"mongomock",
+			"coveralls",
+		]
+	},
 	entry_points = {
 		'console_scripts': [
 			'ampel-controller = ampel.core.AmpelController:AmpelController.main',
