@@ -25,5 +25,27 @@ pipeline {
         }
       }
     }
+    stage('test') {
+      agent {
+        dockerfile {
+          filename '.jenkins/Dockerfile.build'
+        }
+      }
+      environment {
+        COVERALLS_REPO_TOKEN = credentials('coveralls-repo-token')
+        PYTHONPATH = '.'
+      }
+      steps {
+        sh 'rm pytest.xml || true'
+        sh 'rm coverage || true'
+        sh 'python setup.py egg_info'
+        sh 'pytest $(find ampel -name test -prune -o -type f -name \'*.py\' -print | xargs -L1 dirname | sort -u | xargs -I_ echo -n "--cov=_ ") --junitxml=pytest.xml'
+      }
+      post {
+        always {
+          junit 'pytest.xml'
+        }
+      }
+    }
   }
 }
