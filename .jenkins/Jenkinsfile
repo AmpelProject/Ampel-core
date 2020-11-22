@@ -32,7 +32,7 @@ pipeline {
         }
       }
       environment {
-        COVERALLS_REPO_TOKEN = credentials('coveralls-repo-token')
+        COVERALLS_REPO_TOKEN = credentials('coveralls-repo-token-ampel-core')
         PYTHONPATH = '.'
       }
       steps {
@@ -44,6 +44,7 @@ pipeline {
       post {
         always {
           junit 'pytest.xml'
+          sh 'coveralls'
         }
       }
     }
