@@ -7,7 +7,7 @@
 # Last Modified Date: 22.11.2020
 # Last Modified By  : Jakob van Santen <jakob.van.santen@desy.de>
 
-from typing import Sequence, Any, Dict, List, Union, Optional
+from typing import Sequence, Any, Dict, List, Union, Optional, Set
 from ampel.type import ChannelId
 from ampel.model.operator.AllOf import AllOf
 from ampel.model.operator.AnyOf import AnyOf
@@ -51,9 +51,9 @@ class T3ChannelProjector(T3BaseProjector):
 			freeze = self.freeze,
 			modifications = [
 				# Modified ex: {"HU_RANDOM": 3213143434, "HU_RAPID": 43789574389}
-				ComboDictModifier.KeepOnlyModel(op="keep_only", key="modified", keep=self._channel_set),
+				ComboDictModifier.KeepOnlyModel(op="keep_only", key="modified", keep=list(self._channel_set)),
 				# Created ex: {"HU_RANDOM": 3213143434, "HU_RAPID": 43789574389}
-				ComboDictModifier.KeepOnlyModel(op="keep_only", key="created", keep=self._channel_set),
+				ComboDictModifier.KeepOnlyModel(op="keep_only", key="created", keep=list(self._channel_set)),
 				# Added ex: {"msg": "test", "tier":0, "channel": ["HU_RANDOM", "HU_RAPID"]}
 				ComboDictModifier.FuncModifyModel(op="modify", key="journal", func=self.channel_projection),
 				ComboDictModifier.FuncModifyModel(op="modify", key="channel", func=self.overwrite_root_channel)
@@ -67,8 +67,11 @@ class T3ChannelProjector(T3BaseProjector):
 
 
 	def overwrite_root_channel(self, v: Union[ChannelId, Sequence[ChannelId]]) -> Optional[Union[ChannelId, Sequence[ChannelId]]]:
-		if isinstance(v, (str,int)) and v in self._channel_set:
-			return v
+		if isinstance(v, (str,int)):
+			if v in self._channel_set:
+				return v
+			else:
+				return None
 		elif subset := list(self._channel_set.intersection(v)):
 			if len(subset) == 1:
 				return subset[0]
