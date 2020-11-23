@@ -28,6 +28,7 @@ setup(
 	},
 	zip_safe=False,
 	install_requires = [
+		"ampel-interface",
 		"typing_extensions",
 		"pymongo",
 		"pyyaml",
@@ -36,7 +37,8 @@ setup(
 		"schedule",
 		"slackclient>=2.7,<3.0",
 		"psutil",
-		"aiopipe",
+		# install from fork, pending https://github.com/kchmck/aiopipe/pull/3
+		"aiopipe @ git+https://github.com/jvansanten/aiopipe@double-close-fds#egg=aiopipe",
 		"yq",
 	],
 	extras_require = {
