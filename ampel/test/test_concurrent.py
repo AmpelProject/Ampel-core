@@ -28,6 +28,13 @@ def return_unpicklable():
 def decorated(arg):
     return arg
 
+@process(timeout=0.1)
+def sleepy(dt, stubborn=False):
+    if stubborn:
+        signal.signal(signal.SIGTERM, lambda stack, n: 0)
+    time.sleep(dt)
+    return dt
+
 @pytest.mark.asyncio
 async def test_launch():
     p = _Process(target=echo, args=(42,))
@@ -61,6 +68,25 @@ async def test_unpicklable_return():
 @pytest.mark.asyncio
 async def test_decorator():
     assert (await decorated(42)) == 42
+
+@pytest.mark.asyncio
+async def test_cancel():
+    task = sleepy(5)
+    await asyncio.sleep(1)
+    task.cancel()
+    with pytest.raises(asyncio.exceptions.CancelledError):
+        await task
+
+@pytest.mark.asyncio
+async def test_kill():
+    task = sleepy(10, stubborn=True)
+    await asyncio.sleep(1)
+    task.cancel()
+    t0 = time.time()
+    with pytest.raises(asyncio.exceptions.CancelledError):
+        await task
+    dt = time.time()-t0
+    assert dt < 1, "task killed before exiting"
 
 @pytest.mark.asyncio
 async def test_multilaunch():

@@ -25,7 +25,7 @@ import sys
 import traceback
 from textwrap import dedent
 from typing import Any
-from functools import wraps
+from functools import wraps, partial
 from multiprocessing import reduction, spawn  # type: ignore
 from multiprocessing.context import set_spawning_popen
 from subprocess import _args_from_interpreter_flags  # type: ignore
@@ -33,7 +33,7 @@ from subprocess import _args_from_interpreter_flags  # type: ignore
 import aiopipe  # type: ignore
 
 
-def process(function):
+def process(function=None, **kwargs):
     """
     Runs the decorated function in a concurrent process. All arguments and
     return values must be pickleable.
@@ -42,7 +42,10 @@ def process(function):
     an event loop. The task will complete when the function returns or raises
     an exception. If the task is cancelled, the process will be terminated.
     """
-    return _process_wrapper(function)
+    if function is None:
+        return partial(_process_wrapper, **kwargs)
+    else:
+        return _process_wrapper(function)
 
 
 class RemoteTraceback(Exception):
@@ -125,10 +128,11 @@ def spawn_main(read_fd, write_fd):
 class _Process:
     _counter = itertools.count(1)
 
-    def __init__(self, target=None, name=None, args=(), kwargs={}):
+    def __init__(self, target=None, name=None, timeout=3.0, args=(), kwargs={}):
         self._target = target
         count = next(self._counter)
         self._name = name if name else f"{count}"
+        self._timeout = timeout
         self._args = tuple(args)
         self._kwargs = dict(kwargs)
 
@@ -189,7 +193,7 @@ class _Process:
             except asyncio.CancelledError:
                 proc.terminate()
                 try:
-                    await asyncio.wait_for(proc.wait(), 3.0)
+                    await asyncio.wait_for(proc.wait(), self._timeout)
                 except asyncio.TimeoutError:
                     proc.kill()
                 await asyncio.gather(proc.wait(), rx.read())
@@ -231,7 +235,7 @@ def _function_lookup(name, module):
         return _registered_functions[(name, module)]
 
 
-def _process_wrapper(function):
+def _process_wrapper(function, timeout=3.0):
     # keep the wrapped function so we can actually call it
     _register_function(function)
 
@@ -239,7 +243,7 @@ def _process_wrapper(function):
     def wrapper(*args, **kwargs):
         target = _trampoline
         args = [function.__qualname__, function.__module__] + list(args)
-        proc = _Process(target=target, args=args, kwargs=kwargs)
+        proc = _Process(target=target, timeout=timeout, args=args, kwargs=kwargs)
         return asyncio.create_task(proc.launch())
 
     return wrapper
