@@ -14,4 +14,4 @@ RUN cd /build && pip install \
 ADD setup.py /build/setup.py
 RUN cd /build && \
     python setup.py egg_info && \
-    pip install `grep -v '^\[' *.egg-info/requires.txt`
+    pip install -r <(grep -v '^\[' *.egg-info/requires.txt)
