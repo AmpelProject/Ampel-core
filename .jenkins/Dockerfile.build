@@ -12,6 +12,6 @@ RUN cd /build && pip install \
 
 # install dependencies, but not the project itself
 ADD setup.py /build/setup.py
-RUN cd /build && \
+RUN bash -c "cd /build && \
     python setup.py egg_info && \
-    pip install -r <(grep -v '^\[' *.egg-info/requires.txt)
+    pip install -r <(grep -v '^\[' *.egg-info/requires.txt)"
