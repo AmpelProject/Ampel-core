@@ -134,7 +134,6 @@ class T3Processor(AbsProcessorUnit):
 						run_id = run_id,
 						process_name = self.process_name,
 						channel = self.channel,
-						raise_exc = self.raise_exc,
 						update_journal = self.update_journal,
 						extra_journal_tag = self.extra_journal_tag,
 						run_context = run_context
@@ -198,16 +197,28 @@ class T3Processor(AbsProcessorUnit):
 						# Loop until cursor/iterator dries out
 						for chunk_ids in chunks(stock_ids, self.chunk_size):
 
-							# Load info from DB
-							tran_data = content_loader.load([sid[id_key] for sid in chunk_ids])
+							# try/catch here to allow some chunks to complete
+							# even if one raises an exception
+							try:
+								# Load info from DB
+								tran_data = content_loader.load([sid[id_key] for sid in chunk_ids])
 
-							# Potentialy add complementary information (spectra, TNS names, ...)
-							if directive.complement:
-								for appender in comps:
-									appender.complement(tran_data)
+								# Potentialy add complementary information (spectra, TNS names, ...)
+								if directive.complement:
+									for appender in comps:
+										appender.complement(tran_data)
 
-							# Run T3 units defined for this process
-							runner.run(list(tran_data))
+								# Run T3 units defined for this process
+								runner.run(list(tran_data))
+							except Exception as e:
+								exc = e
+								if self.raise_exc:
+									raise e
+
+								report_exception(
+									self.context.db, logger, exc=e,
+									info={'process': self.process_name}
+								)
 
 				runner.done()
 

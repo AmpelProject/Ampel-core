@@ -1,0 +1,111 @@
+db:
+  databases:
+  - name: data
+    collections:
+    - name: stock
+      indexes:
+      - index:
+        - field: _id
+        - field: channel
+        args:
+          unique: true
+    - name: t0
+      indexes:
+      - field: stock
+    - name: t1
+      indexes:
+      - field: stock
+    - name: t2
+      indexes:
+      - index:
+        - field: stock
+        - field: channel
+      - field: status
+    role:
+      r: logger
+      w: writer
+  - name: ext
+    collections:
+    - name: counter
+      indexes: null
+    - name: journal
+      indexes: null
+    role:
+      r: logger
+      w: logger
+  - name: var
+    collections:
+    - name: logs
+      indexes:
+      - field: run
+      - field: stock
+        args:
+          sparse: true
+      - field: channel
+        args:
+          sparse: true
+    - name: events
+      indexes: null
+    - name: beacon
+      indexes: null
+    - name: troubles
+      indexes: null
+    role:
+      r: logger
+      w: logger
+  prefix: AmpelTest
+  mongo_options:
+    serverSelectionTimeoutMS: 1
+logging:
+  default:
+    console:
+      std_stream: stdout
+      datefmt: '%Y-%m-%d %H:%M:%S'
+      level: 1024
+      aggregate_interval: 1
+      density: default
+      terminator: '
+
+        '
+      log_sep: '
+
+        '
+      prefix: null
+      provenance: true
+    db:
+      level: 1024
+unit:
+  controller: {}
+  admin:
+    T3SimpleDataLoader:
+      fqn: ampel.t3.load.T3SimpleDataLoader
+      base:
+      - AbsT3Loader
+      distrib: ampel-core
+      file: conf/ampel-core/ampel.yaml
+    T3StockSelector:
+      fqn: ampel.t3.select.T3StockSelector
+      base:
+      - AbsT3Selector
+      distrib: ampel-core
+      file: conf/ampel-core/ampel.yaml
+    T3UnitRunner:
+      fqn: ampel.t3.run.T3UnitRunner
+      base:
+      - AbsT3UnitRunner
+      distrib: ampel-core
+      file: conf/ampel-core/ampel.yaml
+  base: {}
+  core: {}
+  aux: {}
+alias:
+  t0: {}
+  t1: {}
+  t2: {}
+  t3: {}
+resource:
+  mongo: mongodb://localhost:27017
+  ampel-ztf/archive: denada
+  ampel-ztf/kafka:
+    broker: gregor
+    group: samsa

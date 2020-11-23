@@ -23,7 +23,7 @@ class AbsT3UnitRunner(AdminUnit, abstract=True):
 	process_name: str
 	channel: Optional[ChannelId] = None
 
-	raise_exc: bool = False
+	raise_exc: bool = True
 	#: Record the invocation of this evetn in the journal of each selected transient
 	update_journal: bool = True
 	extra_journal_tag: Optional[Union[int, str]] = None
