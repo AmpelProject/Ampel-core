@@ -5,7 +5,7 @@ import time
 import random
 import signal
 
-from ampel.util.concurrent import _Process, RemoteException
+from ampel.util.concurrent import _Process, RemoteException, process
 
 def echo(arg):
     time.sleep(random.uniform(0.0005,0.001))
@@ -23,6 +23,10 @@ class Unpicklable:
 
 def return_unpicklable():
     return Unpicklable()
+
+@process
+def decorated(arg):
+    return arg
 
 @pytest.mark.asyncio
 async def test_launch():
@@ -53,6 +57,10 @@ async def test_unpicklable_return():
     p = _Process(target=return_unpicklable)
     with pytest.raises(NotImplementedError) as excinfo:
         await p.launch()
+
+@pytest.mark.asyncio
+async def test_decorator():
+    assert (await decorated(42)) == 42
 
 @pytest.mark.asyncio
 async def test_multilaunch():
