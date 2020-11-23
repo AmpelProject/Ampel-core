@@ -4,13 +4,13 @@
 		{
 			"name": "logs",
 			"indexes": [
-				{"field": "run"},
+				{"field": "r"},
 				{
-					"field": "stock",
+					"field": "s",
 					"args": {"sparse": true}
 				},
 				{
-					"field": "channel",
+					"field": "c",
 					"args": {"sparse": true}
 				}
 			],
