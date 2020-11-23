@@ -33,7 +33,9 @@ def test_single_channel(stock_record, logger):
 
     proj = T3ChannelProjector(channel=target, logger=logger)
     after = proj.project([before])[0]
-    assert after["stock"]["channel"] == target
+    for field in "tag", "name", "channel":
+        assert not isinstance(after["stock"][field], str), f"stock.{field} must be a set"
+    assert after["stock"]["channel"] == [target]
     assert after["stock"]["modified"] == {target: before["stock"]["modified"][target]}
 
     before_no_channel = strip_channel(before["stock"]["journal"])
@@ -65,6 +67,8 @@ def test_multi_channel(stock_record, logger, logic_op):
 
     proj = T3ChannelProjector(channel={logic_op: list(target)}, logger=logger)
     after = proj.project([before])[0]
+    for field in "tag", "name", "channel":
+        assert not isinstance(after["stock"][field], str), f"stock.{field} must be a set"
     assert set(after["stock"]["channel"]) == target
     assert after["stock"]["modified"].keys() == target
 

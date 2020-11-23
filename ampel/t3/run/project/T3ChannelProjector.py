@@ -66,17 +66,9 @@ class T3ChannelProjector(T3BaseProjector):
 			self.add_func_projector(key, self.channel_projection, first=True) # type: ignore
 
 
-	def overwrite_root_channel(self, v: Union[ChannelId, Sequence[ChannelId]]) -> Optional[Union[ChannelId, Sequence[ChannelId]]]:
-		if isinstance(v, (str,int)):
-			if v in self._channel_set:
-				return v
-			else:
-				return None
-		elif subset := list(self._channel_set.intersection(v)):
-			if len(subset) == 1:
-				return subset[0]
-			else:
-				return subset
+	def overwrite_root_channel(self, v: Sequence[ChannelId]) -> Optional[Sequence[ChannelId]]:
+		if subset := list(self._channel_set.intersection(v)):
+			return subset
 		else:
 			return None
 
