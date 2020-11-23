@@ -3,12 +3,26 @@ import pytest
 import asyncio
 import time
 import random
+import signal
 
-from ampel.util.concurrent import _Process
+from ampel.util.concurrent import _Process, RemoteException
 
 def echo(arg):
     time.sleep(random.uniform(0.0005,0.001))
     return arg
+
+def abort():
+    signal.raise_signal(signal.SIGABRT)
+
+def throw():
+    raise NotImplementedError
+
+class Unpicklable:
+    def __reduce__(self):
+        raise NotImplementedError
+
+def return_unpicklable():
+    return Unpicklable()
 
 @pytest.mark.asyncio
 async def test_launch():
@@ -16,6 +30,29 @@ async def test_launch():
     result = await p.launch()
     assert result == 42
 
+@pytest.mark.asyncio
+async def test_abort():
+    p = _Process(target=abort)
+    with pytest.raises(RuntimeError):
+        await p.launch()
+
+@pytest.mark.asyncio
+async def test_raise():
+    p = _Process(target=throw)
+    with pytest.raises(NotImplementedError):
+        await p.launch()
+
+@pytest.mark.asyncio
+async def test_too_many_arguments():
+    p = _Process(target=throw, args=("borkybork",))
+    with pytest.raises(TypeError):
+        await p.launch()
+
+@pytest.mark.asyncio
+async def test_unpicklable_return():
+    p = _Process(target=return_unpicklable)
+    with pytest.raises(NotImplementedError) as excinfo:
+        await p.launch()
 
 @pytest.mark.asyncio
 async def test_multilaunch():

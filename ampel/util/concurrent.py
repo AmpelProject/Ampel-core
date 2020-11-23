@@ -59,7 +59,7 @@ class RemoteTraceback(Exception):
         return self.traceback
 
 
-class RemoteException(object):
+class RemoteException(BaseException):
     """Pickling wrapper for exceptions in remote process."""
 
     def __init__(self, exception, traceback):
@@ -106,12 +106,14 @@ def spawn_main(read_fd, write_fd):
     try:
         ret = obj()
         exitcode = 0
+        payload = reduction.pickle.dumps(ret)
     except Exception as error:
         error.traceback = traceback.format_exc()
         ret = RemoteException(error, error.traceback)
+        payload = reduction.pickle.dumps(ret)
     try:
         with open(write_fd, "wb") as tx:
-            tx.write(reduction.pickle.dumps(ret))
+            tx.write(payload)
     except:
         print(f"Process {obj._name} (pid {os.getpid()}):", file=sys.stderr)
         traceback.print_exc(file=sys.stderr)
