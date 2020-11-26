@@ -20,9 +20,30 @@ from ampel.core.Schedulable import Schedulable
 from ampel.log.utils import report_exception, report_error, convert_dollars
 from ampel.log.AmpelLogger import AmpelLogger
 from ampel.db.AmpelDB import AmpelDB, intcol
+from ampel.metrics.AmpelMetricsRegistry import AmpelMetricsRegistry
 
 DBOp = Union[UpdateOne, UpdateMany, InsertOne]
 
+# Monitoring counters
+stat_db_ops = AmpelMetricsRegistry.counter(
+	"ops",
+	"Number of bulk operations",
+	subsystem="db",
+	labelnames=("col",)
+)
+stat_db_errors = AmpelMetricsRegistry.counter(
+	"errors",
+	"Number of bulk op errors",
+	subsystem="db",
+	labelnames=("col",)
+)
+stat_db_time = AmpelMetricsRegistry.histogram(
+	"time",
+	"Latency of bulk operations",
+	unit="seconds",
+	subsystem="db",
+	labelnames=("col",)
+)
 
 class DBUpdatesBuffer(Schedulable):
 	"""
@@ -114,17 +135,6 @@ class DBUpdatesBuffer(Schedulable):
 		self._autopush_asap = False
 		self._block_autopush = False
 		self._last_update = time()
-
-		self.metrics: Dict[str, List] = {
-			'dbBulkTimeT0': [],
-			'dbBulkTimeT1': [],
-			'dbBulkTimeT2': [],
-			'dbBulkTimeStock': [],
-			'dbPerOpMeanTimeT0': [],
-			'dbPerOpMeanTimeT1': [],
-			'dbPerOpMeanTimeT2': [],
-			'dbPerOpMeanTimeStock': []
-		}
 
 		if push_interval:
 			self.push_interval = push_interval
@@ -287,103 +297,91 @@ class DBUpdatesBuffer(Schedulable):
 		provided as SON by BulkWriteError (array 'writeErrors' contains SON objects).
 		So we have no other choice than handling with them for now.
 		"""
-
-		try:
-
-			# Update DB
-			start = time()
-			self.stats[col_name] += len(db_ops)
-			db_res = self._cols[col_name].bulk_write(db_ops, ordered=False)
-			time_delta = time() - start
-
-			# Save metrics
-			self.metrics['dbBulkTime' + col_name.title()].append(time_delta)
-			self.metrics['dbPerOpMeanTime' + col_name.title()].append(
-				time_delta / len(db_ops)
-			)
-
-			self.logger.debug(
-				None, extra=self._build_log_extra(
-					col_name, db_ops, db_res.bulk_api_result, extra
-				)
-			)
-
-			return
-
-		except BulkWriteError as bwe:
-
+		
+		with stat_db_time.labels(col_name).time():
 			try:
 
-				dup_key_only = True
+				# Update DB
+				db_res = self._cols[col_name].bulk_write(db_ops, ordered=False)
+				stat_db_ops.labels(col_name).inc(len(db_ops))
 
-				for err_dict in bwe.details.get('writeErrors', []):
-
-					# 'code': 11000, 'errmsg': 'E11000 duplicate key error collection: ...
-					if err_dict.get("code") == 11000:
-
-						self.logger.info(
-							f"Race condition during ingestion in '{col_name}': {err_dict}"
-						)
-
-						# Should no longer raise pymongo.errors.DuplicateKeyError
-						start = time()
-						self._cols[col_name].update_one(
-							err_dict['op']['q'],
-							err_dict['op']['u'],
-							upsert=err_dict['op']['upsert']
-						)
-						time_delta = time() - start
-
-						self.logger.info("Error recovered")
-						self.metrics['dbBulkTime' + col_name.title()].append(time_delta)
-						self.metrics['dbPerOpMeanTime' + col_name.title()].append(
-							time_delta / len(db_ops)
-						)
-
-					else:
-
-						dup_key_only = False
-						self._err_db_ops[col_name].append(err_dict)
-
-						# Try to insert doc into trouble collection (raises no exception)
-						# Possible exception will be logged out to console in any case
-						report_error(
-							self._ampel_db, msg="BulkWriteError entry details",
-							logger=self.logger, info={
-								'run': self.run_id,
-								'err': convert_dollars(err_dict)
-							}
-						)
-
-						################################
-						# TODO: better than this.
-						# - Mark corresponding transients with an error flag (add channel info?)
-						# - Implement something for temp DB connectivity issues ?
-						################################
-
-
-				if dup_key_only:
-					self.logger.debug(
-						f"Race condition(s) recovered: {len(bwe.details.get('writeErrors'))}",
-						extra=self._build_log_extra(col_name, db_ops, bwe.details, extra)
+				self.logger.debug(
+					None, extra=self._build_log_extra(
+						col_name, db_ops, db_res.bulk_api_result, extra
 					)
+				)
 
-					return
+				return
 
-			except Exception as ee:
+			except BulkWriteError as bwe:
+
+				try:
+
+					dup_key_only = True
+
+					for err_dict in bwe.details.get('writeErrors', []):
+
+						stat_db_errors.labels(col_name).inc()
+						# 'code': 11000, 'errmsg': 'E11000 duplicate key error collection: ...
+						if err_dict.get("code") == 11000:
+
+							self.logger.info(
+								f"Race condition during ingestion in '{col_name}': {err_dict}"
+							)
+
+							# Should no longer raise pymongo.errors.DuplicateKeyError
+							
+							self._cols[col_name].update_one(
+								err_dict['op']['q'],
+								err_dict['op']['u'],
+								upsert=err_dict['op']['upsert']
+							)
+							stat_db_ops.labels(col_name).inc()
+
+						else:
+
+							dup_key_only = False
+							self._err_db_ops[col_name].append(err_dict)
+
+							# Try to insert doc into trouble collection (raises no exception)
+							# Possible exception will be logged out to console in any case
+							report_error(
+								self._ampel_db, msg="BulkWriteError entry details",
+								logger=self.logger, info={
+									'run': self.run_id,
+									'err': convert_dollars(err_dict)
+								}
+							)
+
+							################################
+							# TODO: better than this.
+							# - Mark corresponding transients with an error flag (add channel info?)
+							# - Implement something for temp DB connectivity issues ?
+							################################
+
+
+					if dup_key_only:
+						self.logger.debug(
+							f"Race condition(s) recovered: {len(bwe.details.get('writeErrors'))}",
+							extra=self._build_log_extra(col_name, db_ops, bwe.details, extra)
+						)
+
+						return
+
+				except Exception as ee:
+					# Log exc and try to insert doc into trouble collection (raises no exception)
+					report_exception(self._ampel_db, self.logger, exc=ee)
+
+			except Exception as e:
 				# Log exc and try to insert doc into trouble collection (raises no exception)
-				report_exception(self._ampel_db, self.logger, exc=ee)
+				report_exception(self._ampel_db, self.logger, exc=e)
 
-		except Exception as e:
-			# Log exc and try to insert doc into trouble collection (raises no exception)
-			report_exception(self._ampel_db, self.logger, exc=e)
+			print(f"Collection {col_name} update failed")
+			print(db_ops)
 
-		print(f"Collection {col_name} update failed")
-		print(db_ops)
-
-		self._err_db_ops[col_name] += db_ops
-		if self.error_callback:
-			self.error_callback()
+			self._err_db_ops[col_name] += db_ops
+			if self.error_callback:
+				self.error_callback()
 
 
 	def _build_log_extra(self,
