@@ -2,10 +2,12 @@ import asyncio
 import random
 import signal
 import time
+import os
 
 import pytest
 
 from ampel.metrics.AmpelMetricsRegistry import AmpelMetricsRegistry
+from ampel.metrics.prometheus import MmapedDict
 from ampel.util.concurrent import _Process, process
 
 
@@ -133,34 +135,59 @@ async def test_multilaunch():
 @process
 def set_counter(value):
     AmpelMetricsRegistry.counter("countcount", "cookies").inc(value)
+    AmpelMetricsRegistry.histogram("counthist", "cookies").observe(1)
     return value
 
 
 @pytest.fixture
-def enable_multiproc(monkeypatch, tmpdir):
+def prometheus_multiproc_dir(monkeypatch, tmpdir):
     """
     Ensure that Prometheus multiprocessing mode is enabled
     """
     from ampel.metrics.AmpelMetricsRegistry import MultiProcessCollector
+
     monkeypatch.setenv("prometheus_multiproc_dir", str(tmpdir))
     r = AmpelMetricsRegistry.registry()
     try:
         c = MultiProcessCollector(r)
-        yield
+        yield tmpdir
         r.unregister(c)
     except:
         yield
 
-@pytest.mark.asyncio
-async def test_multiprocess_metrics(enable_multiproc):
 
-    sample = lambda: {sample.name: sample.value for metric in AmpelMetricsRegistry.collect() for sample in metric.samples if sample}
+@pytest.mark.asyncio
+async def test_multiprocess_metrics(prometheus_multiproc_dir):
+
+    sample = lambda: {
+        sample.name: sample.value
+        for metric in AmpelMetricsRegistry.collect()
+        for sample in metric.samples
+        if sample
+    }
+    read_mmap = lambda fname: {
+        k: v
+        for k, v, p in MmapedDict.read_all_values_from_file(
+            prometheus_multiproc_dir / fname
+        )
+    }
     before = sample()
 
     value = 1100101
     assert (await set_counter(value)) == value
 
+    assert sorted(os.listdir(prometheus_multiproc_dir)) == [
+        "counter_archive.db",
+        "histogram_archive.db",
+    ], "persistent metrics were consolidated"
+
     after = sample()
     key = "ampel_test_concurrent_countcount_total"
-    print(after)
-    assert after[key] - before.get(key, 0) == value
+    assert after[key] - before.get(key, 0) == value, "counter was incremented"
+
+    hist_before = read_mmap("histogram_archive.db")
+    await set_counter(value)
+    hist_after = read_mmap("histogram_archive.db")
+    assert len(hist_before) == len(hist_after), "mmap files have constant size"
+    for k in hist_before:
+        assert hist_after[k] == hist_before[k] or hist_after[k] == 2 * hist_before[k]

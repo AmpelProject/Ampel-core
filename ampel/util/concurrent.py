@@ -31,7 +31,7 @@ from multiprocessing.context import set_spawning_popen
 from subprocess import _args_from_interpreter_flags  # type: ignore
 
 import aiopipe  # type: ignore
-from prometheus_client.multiprocess import mark_process_dead # type: ignore
+from ampel.metrics.prometheus import prometheus_cleanup_worker
 
 
 def process(function=None, **kwargs):
@@ -202,7 +202,7 @@ class _Process:
                     raise
         finally:
             if "prometheus_multiproc_dir" in os.environ:
-                mark_process_dead(proc.pid)
+                prometheus_cleanup_worker(proc.pid)
 
 
 _registered_functions = {}
