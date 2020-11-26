@@ -31,6 +31,7 @@ from multiprocessing.context import set_spawning_popen
 from subprocess import _args_from_interpreter_flags  # type: ignore
 
 import aiopipe  # type: ignore
+from prometheus_client.multiprocess import mark_process_dead # type: ignore
 
 
 def process(function=None, **kwargs):
@@ -168,36 +169,40 @@ class _Process:
                 start_new_session=True,
             )
 
-        async with parent_w.open() as tx:
-            tx.write(fp.getbuffer())
-            await tx.drain()
+        try:
+            async with parent_w.open() as tx:
+                tx.write(fp.getbuffer())
+                await tx.drain()
 
-        async with parent_r.open() as rx:
-            try:
-                exitcode, payload = await asyncio.gather(
-                    proc.wait(), rx.read(), return_exceptions=True
-                )
-                if isinstance(exitcode, BaseException):
-                    raise exitcode
-                elif exitcode < 0:
-                    signame = signal.Signals(-exitcode).name
-                    raise RuntimeError(f"Process {self._name} (pid {proc.pid}) died on {signame}")
-                if isinstance(payload, BaseException):
-                    raise payload
-                else:
-                    ret = reduction.pickle.loads(payload)
-                if isinstance(ret, BaseException):
-                    raise ret
-                else:
-                    return ret
-            except asyncio.CancelledError:
-                proc.terminate()
+            async with parent_r.open() as rx:
                 try:
-                    await asyncio.wait_for(proc.wait(), self._timeout)
-                except asyncio.TimeoutError:
-                    proc.kill()
-                await asyncio.gather(proc.wait(), rx.read())
-                raise
+                    exitcode, payload = await asyncio.gather(
+                        proc.wait(), rx.read(), return_exceptions=True
+                    )
+                    if isinstance(exitcode, BaseException):
+                        raise exitcode
+                    elif exitcode < 0:
+                        signame = signal.Signals(-exitcode).name
+                        raise RuntimeError(f"Process {self._name} (pid {proc.pid}) died on {signame}")
+                    if isinstance(payload, BaseException):
+                        raise payload
+                    else:
+                        ret = reduction.pickle.loads(payload)
+                    if isinstance(ret, BaseException):
+                        raise ret
+                    else:
+                        return ret
+                except asyncio.CancelledError:
+                    proc.terminate()
+                    try:
+                        await asyncio.wait_for(proc.wait(), self._timeout)
+                    except asyncio.TimeoutError:
+                        proc.kill()
+                    await asyncio.gather(proc.wait(), rx.read())
+                    raise
+        finally:
+            if "prometheus_multiproc_dir" in os.environ:
+                mark_process_dead(proc.pid)
 
 
 _registered_functions = {}

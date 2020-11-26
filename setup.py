@@ -40,6 +40,7 @@ setup(
 		# install from fork, pending https://github.com/kchmck/aiopipe/pull/3
 		"aiopipe @ git+https://github.com/jvansanten/aiopipe@double-close-fds#egg=aiopipe",
 		"yq",
+		"prometheus_client",
 	],
 	extras_require = {
 		"testing": [
