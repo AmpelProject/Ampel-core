@@ -32,7 +32,7 @@
 import os
 import tempfile
 
-from prometheus_client import (  # type: ignore
+from prometheus_client import (
     CollectorRegistry,
     core,
     generate_latest,
