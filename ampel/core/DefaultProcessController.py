@@ -250,14 +250,18 @@ class DefaultProcessController(AbsProcessController):
 		else:
 			raise ValueError(f"Unknown overlap type '{self.mp_overlap}'")
 
-		to_wait = {
-			self.run_mp_process(
+		def launch():
+			counter = self.process_count.labels(pm.tier, pm.name)
+			t = self.run_mp_process(
 				self.mp_config,
 				self.secrets,
 				pm.dict(),
 			)
-			for _ in range(multiplier)
-		}
+			counter.inc()
+			t.add_done_callback(lambda t: counter.dec())
+			return t
+
+		to_wait = {launch() for _ in range(multiplier)}
 		tasks.update(to_wait)
 		try:
 			return await asyncio.gather(*to_wait)

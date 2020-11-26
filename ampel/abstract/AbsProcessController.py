@@ -8,7 +8,7 @@
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import yaml
-from typing import Dict, Optional, Literal, Sequence, Any
+from typing import Dict, Optional, Literal, Sequence, Any, ClassVar
 
 from ampel.base import abstractmethod
 from ampel.base.AmpelABC import AmpelABC
@@ -17,6 +17,7 @@ from ampel.config.AmpelConfig import AmpelConfig
 from ampel.abstract.AbsSecretProvider import AbsSecretProvider
 from ampel.model.ProcessModel import ProcessModel
 from ampel.log.AmpelLogger import AmpelLogger
+from ampel.metrics.AmpelMetricsRegistry import AmpelMetricsRegistry
 
 
 class AbsProcessController(AmpelABC, AmpelBaseModel, abstract=True):
@@ -25,6 +26,13 @@ class AbsProcessController(AmpelABC, AmpelBaseModel, abstract=True):
 	processes: Sequence[ProcessModel]
 	secrets: Optional[AbsSecretProvider] = None
 	log_profile: str = "default"
+
+	process_count: ClassVar[Any] = AmpelMetricsRegistry.gauge(
+		"processes",
+		"Number of concurrent processes",
+		subsystem=None, 
+		labelnames=("tier", "process")
+	)
 
 	@classmethod
 	def new(cls,
