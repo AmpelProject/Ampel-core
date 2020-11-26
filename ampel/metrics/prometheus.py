@@ -25,6 +25,7 @@
 # Modifications for Ampel:
 # - removed Python <= 3.8 compat + dependencies on talisker itself
 # - removed locks (only ever called from one process)
+# - added implicit per-worker labels
 
 # -*- coding: utf-8 -*-
 
@@ -35,9 +36,9 @@ from prometheus_client import (  # type: ignore
     CollectorRegistry,
     core,
     generate_latest,
+    mmap_dict,
     multiprocess,
 )
-from prometheus_client.mmap_dict import mmap_key, MmapedDict
 
 histogram_archive = "histogram_archive.db"
 counter_archive = "counter_archive.db"
@@ -51,6 +52,27 @@ def collect_metrics():
     else:
         registry = core.REGISTRY
     return generate_latest(registry)
+
+
+def prometheus_setup_worker(labels=None):
+    """
+    Monkey-patch mmap_key and ValueClass to add implicit labels. This must be
+    done before any metrics are instantiated.
+    """
+    if labels:
+        from prometheus_client import values
+
+        def mmap_key(metric_name, name, labelnames, labelvalues):
+            return mmap_dict.mmap_key(
+                metric_name,
+                name,
+                tuple(labels.keys()) + labelnames,
+                tuple(labels.values()) + labelvalues,
+            )
+
+        values.mmap_key = mmap_key
+        # synthesize a new ValueClass (captures mmap_key)
+        values.ValueClass = values.get_value_class()
 
 
 def prometheus_cleanup_worker(pid):
@@ -78,7 +100,7 @@ def prometheus_cleanup_worker(pid):
 
     histogram_path = os.path.join(prom_dir, histogram_archive)
     counter_path = os.path.join(prom_dir, counter_archive)
-    archive_paths = _filter_exists([histogram_path, counter_path])
+    archive_paths = [p for p in [histogram_path, counter_path] if os.path.exists(p)]
 
     collect_paths = paths + archive_paths
     collector = multiprocess.MultiProcessCollector(None)
@@ -100,8 +122,8 @@ def prometheus_cleanup_worker(pid):
 
 def write_metrics(metrics, histogram_file, counter_file):
 
-    histograms = MmapedDict(histogram_file)
-    counters = MmapedDict(counter_file)
+    histograms = mmap_dict.MmapedDict(histogram_file)
+    counters = mmap_dict.MmapedDict(counter_file)
 
     try:
         for metric in metrics:
@@ -115,7 +137,7 @@ def write_metrics(metrics, histogram_file, counter_file):
             for sample in metric.samples:
                 # prometheus_client 0.4+ adds extra fields
                 name, labels, value = sample[:3]
-                key = mmap_key(
+                key = mmap_dict.mmap_key(
                     metric.name, name, tuple(labels), tuple(labels.values()),
                 )
                 sink.write_value(key, value)

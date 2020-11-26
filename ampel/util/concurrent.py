@@ -31,7 +31,7 @@ from multiprocessing.context import set_spawning_popen
 from subprocess import _args_from_interpreter_flags  # type: ignore
 
 import aiopipe  # type: ignore
-from ampel.metrics.prometheus import prometheus_cleanup_worker
+from ampel.metrics.prometheus import prometheus_cleanup_worker, prometheus_setup_worker
 
 
 def process(function=None, **kwargs):
@@ -96,11 +96,15 @@ def prepare(data):
     elif "init_main_from_path" in data:
         spawn._fixup_main_from_path(data["init_main_from_path"])
 
+    if "process_name" in data:
+        prometheus_setup_worker({"process": data["process_name"]})
+
 
 def spawn_main(read_fd, write_fd):
     """
     Execute pickled _Process received over pipe
     """
+    
     with open(read_fd, "rb") as rx:
         preparation_data = reduction.pickle.load(rx)
         prepare(preparation_data)
@@ -132,7 +136,16 @@ class _Process:
     def __init__(self, target=None, name=None, timeout=3.0, args=(), kwargs={}):
         self._target = target
         count = next(self._counter)
-        self._name = name if name else f"{count}"
+        # infer the process name from a ProcessModel-like dict
+        if name is None:
+            for arg in args:
+                if isinstance(arg, dict) and "name" in arg:
+                    self._name = arg["name"]
+                    break
+            else:
+                self._name = f"{count}"
+        else:
+            self._name = name
         self._timeout = timeout
         self._args = tuple(args)
         self._kwargs = dict(kwargs)
@@ -151,6 +164,7 @@ class _Process:
 
     async def launch(self) -> Any:
         prep_data = spawn.get_preparation_data(self._name)
+        prep_data["process_name"] = self._name
         fp = io.BytesIO()
         set_spawning_popen(self)
         try:

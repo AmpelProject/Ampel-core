@@ -1,13 +1,13 @@
 import asyncio
+import os
 import random
 import signal
 import time
-import os
 
 import pytest
 
 from ampel.metrics.AmpelMetricsRegistry import AmpelMetricsRegistry
-from ampel.metrics.prometheus import MmapedDict
+from ampel.metrics.prometheus import mmap_dict
 from ampel.util.concurrent import _Process, process
 
 
@@ -133,7 +133,7 @@ async def test_multilaunch():
 
 
 @process
-def set_counter(value):
+def set_counter(value, process=None):
     AmpelMetricsRegistry.counter("countcount", "cookies").inc(value)
     AmpelMetricsRegistry.histogram("counthist", "cookies").observe(1)
     return value
@@ -167,14 +167,14 @@ async def test_multiprocess_metrics(prometheus_multiproc_dir):
     }
     read_mmap = lambda fname: {
         k: v
-        for k, v, p in MmapedDict.read_all_values_from_file(
+        for k, v, p in mmap_dict.MmapedDict.read_all_values_from_file(
             prometheus_multiproc_dir / fname
         )
     }
     before = sample()
 
     value = 1100101
-    assert (await set_counter(value)) == value
+    assert (await set_counter(value, {"name": "0"})) == value
 
     assert sorted(os.listdir(prometheus_multiproc_dir)) == [
         "counter_archive.db",
@@ -186,8 +186,37 @@ async def test_multiprocess_metrics(prometheus_multiproc_dir):
     assert after[key] - before.get(key, 0) == value, "counter was incremented"
 
     hist_before = read_mmap("histogram_archive.db")
-    await set_counter(value)
+    await set_counter(value, {"name": "0"})
     hist_after = read_mmap("histogram_archive.db")
-    assert len(hist_before) == len(hist_after), "mmap files have constant size"
+    assert len(hist_before) == len(
+        hist_after
+    ), "mmap files have constant size (if labels, including the implicit process label, are constant!)"
     for k in hist_before:
         assert hist_after[k] == hist_before[k] or hist_after[k] == 2 * hist_before[k]
+
+
+@pytest.mark.asyncio
+async def test_implicit_labels(prometheus_multiproc_dir):
+    """
+    Implicit labels are added if there is a dict argument with a key "name"
+    """
+
+    get_sample_value = AmpelMetricsRegistry.registry().get_sample_value
+    assert (
+        get_sample_value("ampel_test_concurrent_countcount_total", {"name": "hola"})
+        is None
+    )
+
+    value = 1100101
+    assert (await set_counter(value, {"name": "hola"})) == value
+
+    before = {}
+    for metric in AmpelMetricsRegistry.registry().collect():
+        for sample in metric.samples:
+            key = (sample.name, tuple(sample.labels.items()))
+            before[key] = sample.value
+
+    assert (
+        get_sample_value("ampel_test_concurrent_countcount_total", {"process": "hola"})
+        is not None
+    )
