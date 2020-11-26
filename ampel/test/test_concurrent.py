@@ -134,8 +134,8 @@ async def test_multilaunch():
 
 @process
 def set_counter(value, process=None):
-    AmpelMetricsRegistry.counter("countcount", "cookies").inc(value)
-    AmpelMetricsRegistry.histogram("counthist", "cookies").observe(1)
+    AmpelMetricsRegistry.counter("countcount", "cookies", subsystem="test_concurrent").inc(value)
+    AmpelMetricsRegistry.histogram("counthist", "cookies", subsystem="test_concurrent").observe(1)
     return value
 
 

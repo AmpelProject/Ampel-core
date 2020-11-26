@@ -1,4 +1,3 @@
-import inspect
 import os
 from typing import Optional
 
@@ -22,14 +21,9 @@ class AmpelMetricsRegistry:
     def collect(cls):
         yield from cls.registry().collect()
 
-    @staticmethod
-    def _get_name(level: int = 2) -> str:
-        parts = inspect.getmodule(inspect.stack()[level][0]).__name__.split(".")
-        return "_".join(parts if parts[0] != "ampel" else parts[1:])
-
     @classmethod
     def counter(
-        cls, name, documentation, unit="", labelnames=(), subsystem=None
+        cls, name, documentation, unit="", labelnames=(), subsystem=""
     ) -> Counter:
         return Counter(
             name,
@@ -37,13 +31,13 @@ class AmpelMetricsRegistry:
             unit=unit,
             labelnames=labelnames,
             namespace="ampel",
-            subsystem=subsystem or cls._get_name(2),
+            subsystem=subsystem,
             registry=cls.registry(),
         )
 
     @classmethod
     def gauge(
-        cls, name, documentation, unit="", labelnames=(), subsystem=None
+        cls, name, documentation, unit="", labelnames=(), subsystem=""
     ) -> Gauge:
         return Gauge(
             name,
@@ -51,7 +45,7 @@ class AmpelMetricsRegistry:
             unit=unit,
             labelnames=labelnames,
             namespace="ampel",
-            subsystem=subsystem or cls._get_name(2),
+            subsystem=subsystem,
             registry=cls.registry(),
             multiprocess_mode="livesum",
         )
@@ -63,7 +57,7 @@ class AmpelMetricsRegistry:
         documentation,
         unit="",
         labelnames=(),
-        subsystem=None,
+        subsystem="",
         buckets=Histogram.DEFAULT_BUCKETS,
     ) -> Histogram:
         return Histogram(
@@ -72,7 +66,7 @@ class AmpelMetricsRegistry:
             unit=unit,
             labelnames=labelnames,
             namespace="ampel",
-            subsystem=subsystem or cls._get_name(2),
+            subsystem=subsystem,
             registry=cls.registry(),
             buckets=buckets,
         )
