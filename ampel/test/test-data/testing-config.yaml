@@ -98,6 +98,12 @@ unit:
   base: {}
   core: {}
   aux: {}
+process:
+  t0: {}
+  t1: {}
+  t2: {}
+  t3: {}
+  ops: {}
 alias:
   t0: {}
   t1: {}

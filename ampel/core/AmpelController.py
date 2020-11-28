@@ -9,7 +9,7 @@
 
 import asyncio
 import re
-from typing import Dict, Iterable, List, Literal, Optional, Sequence
+from typing import Dict, Iterable, List, Literal, Optional, Sequence, Union
 
 from ampel.abstract.AbsProcessController import AbsProcessController
 from ampel.abstract.AbsSecretProvider import AbsSecretProvider
@@ -31,7 +31,7 @@ class AmpelController:
 
     def __init__(
         self,
-        config_file_path: str,
+        config_file_path: Union[str, AmpelConfig],
         pwd_file_path: Optional[str] = None,
         pwds: Optional[Iterable[str]] = None,
         secrets: Optional[AbsSecretProvider] = None,
@@ -62,7 +62,10 @@ class AmpelController:
 
         d: Dict[int, List[ProcessModel]] = {}
         self.controllers: List[AbsProcessController] = []
-        config = AmpelConfig.load(config_file_path, pwd_file_path, pwds, freeze=False)
+        if isinstance(config_file_path, str):
+            config = AmpelConfig.load(config_file_path, pwd_file_path, pwds, freeze=False)
+        else:
+            config = config_file_path
         loader = UnitLoader(config, secrets=secrets)
 
         if verbose:
@@ -83,7 +86,7 @@ class AmpelController:
                 verbose=verbose,
             )
         ):
-            if verbose:
+            if logger and verbose:
                 logger.log(
                     VERBOSE,  # type: ignore[union-attr]
                     f"Spawing new {processes[0].controller.unit} with processes: {list(p.name for p in processes)}",
