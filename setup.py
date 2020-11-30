@@ -52,7 +52,7 @@ setup(
 		],
 		"server": [
 			"fastapi",
-			"uvicorn",
+			"uvicorn[standard]",
 		],
 	},
 	entry_points = {
