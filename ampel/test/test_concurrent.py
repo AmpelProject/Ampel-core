@@ -5,6 +5,7 @@ import signal
 import time
 
 import pytest
+from prometheus_client.openmetrics.exposition import generate_latest
 
 from ampel.metrics.AmpelMetricsRegistry import AmpelMetricsRegistry
 from ampel.metrics.prometheus import mmap_dict
@@ -193,6 +194,28 @@ async def test_multiprocess_metrics(prometheus_multiproc_dir):
     ), "mmap files have constant size (if labels, including the implicit process label, are constant!)"
     for k in hist_before:
         assert hist_after[k] == hist_before[k] or hist_after[k] == 2 * hist_before[k]
+
+
+@pytest.mark.asyncio
+async def test_multiprocess_metrics_deduplication(prometheus_multiproc_dir):
+    """
+    Metrics are not duplicated in multiprocess mode
+    """
+
+    def get_help_lines():
+        expo = generate_latest(AmpelMetricsRegistry)
+        helps = []
+        for line in expo.split(b"\n"):
+            if line.startswith(b"# HELP"):
+                helps.append(line.split(b" ")[2])
+        return helps
+
+    await set_counter(42, {"name": "0"})
+    # register metric again in main process
+    AmpelMetricsRegistry.counter("countcount", "cookies", subsystem="test_concurrent")
+
+    helps = get_help_lines()
+    assert len(set(helps)) == len(helps), "no duplicated HELP lines"
 
 
 @pytest.mark.asyncio

@@ -13,13 +13,14 @@ class AmpelMetricsRegistry:
     def registry(cls) -> CollectorRegistry:
         if cls._registry is None:
             cls._registry = CollectorRegistry()
-            if "prometheus_multiproc_dir" in os.environ:
-                MultiProcessCollector(cls._registry)
         return cls._registry
 
     @classmethod
     def collect(cls):
-        yield from cls.registry().collect()
+        if "prometheus_multiproc_dir" in os.environ:
+            yield from MultiProcessCollector(None).collect()
+        else:
+            yield from cls.registry().collect()
 
     @classmethod
     def counter(

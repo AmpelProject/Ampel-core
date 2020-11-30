@@ -135,7 +135,7 @@ app.on_event("shutdown")(task_manager.shutdown)
 async def get_metrics(accept: Optional[str] = Header(None)):
     encoder, content_type = choose_encoder(accept)
     return Response(
-        content=encoder(AmpelMetricsRegistry.registry()), media_type=content_type
+        content=encoder(AmpelMetricsRegistry), media_type=content_type
     )
 
 
