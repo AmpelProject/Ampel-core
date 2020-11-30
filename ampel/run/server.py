@@ -291,7 +291,7 @@ async def stop_process(process: str):
     except KeyError:
         raise HTTPException(status_code=404, detail=f"{process} is not running")
     controller.stop()
-    await task.result()
+    await task
 
 
 @app.post("/process/{process}/kill")
@@ -302,7 +302,7 @@ async def kill_process(process: str):
         raise HTTPException(status_code=404, detail=f"{process} is not running")
     task.cancel()
     try:
-        await task.result()
+        await task
     except asyncio.CancelledError:
         ...
 
