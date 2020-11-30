@@ -36,7 +36,6 @@ setup(
 		"sjcl",
 		"schedule",
 		"slackclient>=2.7,<3.0",
-		"psutil",
 		# install from fork, pending https://github.com/kchmck/aiopipe/pull/3
 		"aiopipe @ git+https://github.com/jvansanten/aiopipe@double-close-fds#egg=aiopipe",
 		"yq",
