@@ -44,6 +44,8 @@ class StockT2Ingester(AbsStockT2Ingester):
 						'stock': stock_id,
 						'unit': t2_unit_id,
 						'config': run_config,
+						'col': 'stock',
+						'link': stock_id,
 					},
 					{
 						# Attributes set if no previous doc exists
