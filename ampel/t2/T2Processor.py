@@ -35,6 +35,7 @@ from ampel.abstract.AbsCustomStateT2Unit import AbsCustomStateT2Unit
 from ampel.model.UnitModel import UnitModel
 from ampel.core.JournalUpdater import JournalUpdater
 from ampel.struct.JournalExtra import JournalExtra
+from ampel.metrics.AmpelMetricsRegistry import AmpelMetricsRegistry
 
 AbsT2s = Union[AbsCustomStateT2Unit, AbsStateT2Unit, AbsStockT2Unit, AbsPointT2Unit]
 
@@ -42,6 +43,20 @@ class T2UnitDependency(TypedDict):
 	unit: Union[int, str]
 	config: int
 
+stat_latency = AmpelMetricsRegistry.histogram(
+	"latency",
+	"Delay between T2 doc creation and processing",
+	subsystem="t2",
+	unit="seconds",
+	labelnames=("unit",),
+)
+
+stat_count = AmpelMetricsRegistry.counter(
+	"docs_processed",
+	"Number of T2 documents processed",
+	subsystem="t2",
+	labelnames=("unit",)
+)
 
 class T2Processor(AbsProcessorUnit):
 	"""
@@ -202,6 +217,9 @@ class T2Processor(AbsProcessorUnit):
 
 			# Used as timestamp and to compute duration below (using before_run)
 			now = time()
+
+			stat_latency.labels(t2_doc["unit"]).observe(now-t2_doc["_id"].generation_time.timestamp())
+			stat_count.labels(t2_doc["unit"]).inc()
 
 			try:
 

@@ -105,7 +105,11 @@ unit:
       fqn: ampel.test.dummy
       base:
       - AbsProcessorUnit
-  base: {}
+  base:
+    CaptainObvious:
+      fqn: ampel.test.dummy
+      base:
+      - AbsStockT2Unit
   core: {}
   aux: {}
 process:

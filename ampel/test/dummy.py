@@ -1,6 +1,7 @@
 import time
 
 from ampel.abstract.AbsProcessorUnit import AbsProcessorUnit
+from ampel.abstract.AbsStockT2Unit import AbsStockT2Unit
 
 
 class Sleepy(AbsProcessorUnit):
@@ -11,3 +12,8 @@ class Sleepy(AbsProcessorUnit):
 
     def run(self):
         time.sleep(1)
+
+
+class CaptainObvious(AbsStockT2Unit):
+    def run(self, stock_record):
+        return {"id": stock_record["_id"]}

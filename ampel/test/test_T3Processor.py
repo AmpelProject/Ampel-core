@@ -1,27 +1,7 @@
-
 import pytest
 
 from ampel.abstract.AbsT3Unit import AbsT3Unit
-from ampel.db.DBUpdatesBuffer import DBUpdatesBuffer
-from ampel.ingest.StockIngester import StockIngester
-from ampel.log.LogsBufferDict import LogsBufferDict
 from ampel.t3.T3Processor import T3Processor
-
-
-
-
-
-@pytest.fixture
-def ingest_stock(dev_context, ampel_logger):
-    run_id = 0
-    updates_buffer = DBUpdatesBuffer(dev_context.db, run_id=run_id, logger=ampel_logger)
-    logd = LogsBufferDict({"logs": [], "extra": {}, "err": False,})
-    ingester = StockIngester(
-        updates_buffer=updates_buffer, logd=logd, run_id=run_id, context=dev_context,
-    )
-    ingester.ingest("stockystock", [("TEST_CHANNEL", True)], jextra={"alert": 123})
-    ingester.updates_buffer.push_updates()
-    assert dev_context.db.get_collection("stock").count_documents({}) == 1
 
 
 class Mutineer(AbsT3Unit):
