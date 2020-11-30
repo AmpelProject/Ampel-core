@@ -95,6 +95,10 @@ unit:
       - AbsT3UnitRunner
       distrib: ampel-core
       file: conf/ampel-core/ampel.yaml
+    Sleepy:
+      fqn: ampel.test.dummy
+      base:
+      - AbsProcessorUnit
   base: {}
   core: {}
   aux: {}

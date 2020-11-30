@@ -1,22 +1,10 @@
 import asyncio
-import time
 from contextlib import asynccontextmanager
 
 import pytest
 
-from ampel.abstract.AbsProcessorUnit import AbsProcessorUnit
 from ampel.core.DefaultProcessController import DefaultProcessController
 from ampel.metrics.AmpelMetricsRegistry import AmpelMetricsRegistry
-
-
-class Sleepy(AbsProcessorUnit):
-    """
-    A processor that does nothing (especially not touching the db, which is not
-    mocked in subprocesses)
-    """
-
-    def run(self):
-        time.sleep(1)
 
 
 @asynccontextmanager
@@ -44,7 +32,7 @@ async def test_process_gauge(dev_context, ampel_logger):
                 "schedule": "every(30).seconds",
                 "tier": 2,
                 "isolate": True,
-                "processor": {"unit": Sleepy},
+                "processor": {"unit": "Sleepy"},
             }
         ],
     )
