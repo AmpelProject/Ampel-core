@@ -20,6 +20,7 @@ from ampel.core.AmpelContext import AmpelContext
 from ampel.core.AmpelController import AmpelController
 from ampel.dev.DictSecretProvider import DictSecretProvider
 from ampel.log.LogRecordFlag import LogRecordFlag
+from ampel.metrics.AmpelMetricsRegistry import AmpelMetricsRegistry
 from ampel.model.ProcessModel import ProcessModel
 from ampel.model.StrictModel import StrictModel
 from ampel.t2.T2RunState import T2RunState
@@ -107,6 +108,19 @@ async def init():
         if "AMPEL_SECRETS" in os.environ
         else None,
         freeze_config=False,
+    )
+
+
+# -------------------------------------
+# Metrics
+# -------------------------------------
+
+
+@app.get("/metrics")
+async def get_metrics(accept: Optional[str] = Header(None)):
+    encoder, content_type = choose_encoder(accept)
+    return Response(
+        content=encoder(AmpelMetricsRegistry.registry()), media_type=content_type
     )
 
 
