@@ -48,7 +48,12 @@ setup(
 			"pytest-asyncio",
 			"mongomock",
 			"coveralls",
-		]
+			"httpx",
+		],
+		"server": [
+			"fastapi",
+			"uvicorn",
+		],
 	},
 	entry_points = {
 		'console_scripts': [
