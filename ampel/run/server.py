@@ -5,13 +5,15 @@ import enum
 import logging
 import operator
 import os
-from functools import reduce
-from typing import Dict, List, Optional, Tuple
 from datetime import datetime
+from functools import reduce
+from typing import Any, cast, Dict, List, Literal, Optional, Tuple
 
 from bson import json_util, ObjectId
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, Header, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import Response
+from prometheus_client.exposition import choose_encoder
 
 from ampel.abstract.AbsProcessController import AbsProcessController
 from ampel.core.AmpelContext import AmpelContext
@@ -19,8 +21,33 @@ from ampel.core.AmpelController import AmpelController
 from ampel.dev.DictSecretProvider import DictSecretProvider
 from ampel.log.LogRecordFlag import LogRecordFlag
 from ampel.model.ProcessModel import ProcessModel
+from ampel.model.StrictModel import StrictModel
 from ampel.t2.T2RunState import T2RunState
 from ampel.util.mappings import build_unsafe_dict_id
+
+
+class ProcessCollection(StrictModel):
+    processes: List[ProcessModel]
+
+
+class ProcessStatus(StrictModel):
+    name: str
+    tier: Literal[0, 1, 2, 3, "ops"]
+    status: Literal["running", "idle"]
+
+
+class ProcessStatusCollection(StrictModel):
+    processes: List[ProcessStatus]
+
+
+class TaskDescription(StrictModel):
+    id: int
+    processes: List[str]
+
+
+class TaskDescriptionCollection(StrictModel):
+    tasks: List[TaskDescription]
+
 
 app = FastAPI()
 origins = [
@@ -37,7 +64,7 @@ app.add_middleware(
 )
 
 log = logging.getLogger("ampel.run.server")
-context: AmpelContext = None
+context: AmpelContext = None  # type: ignore[assignment]
 
 
 class task_manager:
@@ -64,7 +91,7 @@ class task_manager:
             cls.process_name_to_task.pop(name)
 
     @classmethod
-    def get_status(cls, name: str) -> bool:
+    def get_status(cls, name: str) -> Literal["running", "idle"]:
         if name in cls.process_name_to_task:
             return "running"
         else:
@@ -101,17 +128,18 @@ async def get_processes(
     controllers: Optional[List[str]] = Query(
         None, description="include processes with these controllers"
     ),
-) -> List[str]:
+) -> ProcessCollection:
+    assert context
     processes = AmpelController.get_processes(
         context.config,
-        tier=tier,
+        tier=cast(Literal[0, 1, 2, 3], tier),
         match=include,
         exclude=exclude,
         controllers=controllers,
     )
     if name:
         processes = [pm for pm in processes if pm.name in name]
-    return {"processes": processes}
+    return ProcessCollection(processes=processes)
 
 
 @app.get("/processes/status")
@@ -127,15 +155,22 @@ async def get_processes_status(
     controllers: Optional[List[str]] = Query(
         None, description="include processes with these controllers"
     ),
-) -> List[str]:
-    processes = (await get_processes(tier, name, include, exclude, controllers))[
-        "processes"
-    ]
-    return [
-        {"name": pm.name, "tier": pm.tier, "status": task_manager.get_status(pm.name)}
-        for pm in processes
-    ]
-    return {"processes": [pm.name for pm in processes]}
+) -> ProcessStatusCollection:
+    processes = (
+        await get_processes(tier, name, include, exclude, controllers)
+    ).processes
+    return ProcessStatusCollection(
+        processes=[
+            ProcessStatus(
+                **{
+                    "name": pm.name,
+                    "tier": pm.tier,
+                    "status": task_manager.get_status(pm.name),
+                }
+            )
+            for pm in processes
+        ]
+    )
 
 
 def group_processes_by_controller(
@@ -154,7 +189,9 @@ def group_processes_by_controller(
     return groups
 
 
-def create_controllers(processes: List[ProcessModel]) -> List[AbsProcessController]:
+def create_controllers(
+    context: AmpelContext, processes: List[ProcessModel]
+) -> List[AbsProcessController]:
     return [
         context.loader.new(
             process_group[0].controller,
@@ -180,17 +217,18 @@ async def start_processes(
     controllers: Optional[List[str]] = Query(
         None, description="include processes with these controllers"
     ),
-) -> List[str]:
-    processes = (await get_processes(tier, name, include, exclude, controllers))[
-        "processes"
-    ]
-    response = {"controllers": []}
-    for controller in create_controllers(processes):
+) -> TaskDescriptionCollection:
+    assert context
+    processes = await get_processes(tier, name, include, exclude, controllers)
+    tasks = []
+    for controller in create_controllers(context, processes):
         task = task_manager.start_controller(controller)
-        response["controllers"].append(
-            {"task": id(task), "processes": [pm.name for pm in controller.processes]}
+        tasks.append(
+            TaskDescription(
+                id=id(task), processes=[pm.name for pm in controller.processes]
+            )
         )
-    return response
+    return TaskDescriptionCollection(tasks=tasks)
 
 
 @app.get("/process/{process}")
@@ -206,36 +244,31 @@ async def get_process(process: str) -> ProcessModel:
 
 
 @app.post("/process/{process}/start")
-async def start_process(process: str) -> ProcessModel:
-    proc = await get_process(process)
-    assert proc.name not in task_futures
-    controller = context.loader.new(
-        proc.controller,
-        unit_type=AbsProcessController,
-        config=context.config,
-        secrets=context.loader.secrets,
-        processes=[proc],
-    )
-    task = asyncio.create_task(controller.run())
-    task_futures[proc.name] = task
-    task.add_done_callback(lambda t: task_futures.pop(proc.name))
+async def start_process(process: str) -> TaskDescriptionCollection:
+    return await start_processes(name=[process])
 
 
 @app.post("/process/{process}/stop")
-async def stop_process(process: str) -> ProcessModel:
+async def stop_process(process: str):
     try:
-        task_futures[process].cancel()
+        controller, task = task_manager.process_name_to_task[process]
     except KeyError:
         raise HTTPException(status_code=404, detail=f"{process} is not running")
+    controller.stop()
+    await task.result()
 
 
 @app.post("/process/{process}/kill")
-async def kill_process(process: str) -> ProcessModel:
+async def kill_process(process: str):
     try:
-        task_futures[process].cancel()
-        await task_futures[process].result()
+        controller, task = task_manager.process_name_to_task[process]
     except KeyError:
         raise HTTPException(status_code=404, detail=f"{process} is not running")
+    task.cancel()
+    try:
+        await task.result()
+    except asyncio.CancelledError:
+        ...
 
 
 # -------------------------------------
@@ -327,7 +360,7 @@ FIELD_ABBREV = {
 @app.get("/events")
 @app.get("/events/{process}")
 def get_events(process: Optional[str] = None):
-    query = {"run": {"$exists": True}}
+    query: Dict[str, Any] = {"run": {"$exists": True}}
     if process:
         query["process"] = process
     cursor = context.db.get_collection("events").find(query)
@@ -347,13 +380,13 @@ def get_events(process: Optional[str] = None):
 
 
 @app.get("/logs/{run_id}")
-def get_events(
+def get_logs(
     run_id: int,
-    flags: Optional[
+    flags: Optional[  # type: ignore[valid-type]
         List[enum.Enum("LogRecordFlagName", {k: k for k in LogRecordFlag.__members__})]
     ] = Query(None),
 ):
-    query = {"r": run_id}
+    query: Dict[str, Any] = {"r": run_id}
     if flags:
         query["f"] = {
             "$bitsAllSet": reduce(
@@ -387,7 +420,7 @@ def get_troubles(
     after: Optional[datetime] = None,
     before: Optional[datetime] = None,
 ):
-    query = {}
+    query: Dict[str, Any] = {}
     if tier:
         query["tier"] = tier
     if process:
@@ -412,7 +445,7 @@ def get_troubles(
 
 
 if __name__ == "__main__":
-    import uvicorn
+    import uvicorn  # type: ignore
 
     # NB: libuv does not play nice with OS pipes, so concurrent.process will
     # not work with uvloop: https://github.com/MagicStack/uvloop/issues/317
