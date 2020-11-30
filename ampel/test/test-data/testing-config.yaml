@@ -75,7 +75,13 @@ logging:
     db:
       level: 1024
 unit:
-  controller: {}
+  controller:
+    DefaultProcessController:
+      fqn: ampel.core.DefaultProcessController
+      base:
+      - AbsProcessController
+      distrib: ampel-core
+      file: conf/ampel-core/ampel.yaml
   admin:
     T3SimpleDataLoader:
       fqn: ampel.t3.load.T3SimpleDataLoader

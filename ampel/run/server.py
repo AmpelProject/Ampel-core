@@ -98,6 +98,14 @@ class task_manager:
         else:
             return "idle"
 
+    @classmethod
+    async def shutdown(cls) -> None:
+        # FIXME: implement soft shutdown
+        tasks = cls.task_to_process_names.keys()
+        for task in tasks:
+            task.cancel()
+        await asyncio.gather(*tasks, return_exceptions=True)
+
 
 @app.on_event("startup")
 async def init():
@@ -109,6 +117,9 @@ async def init():
         else None,
         freeze_config=False,
     )
+
+
+app.on_event("shutdown")(task_manager.shutdown)
 
 
 # -------------------------------------
@@ -143,7 +154,6 @@ async def get_processes(
         None, description="include processes with these controllers"
     ),
 ) -> ProcessCollection:
-    assert context
     processes = AmpelController.get_processes(
         context.config,
         tier=cast(Literal[0, 1, 2, 3], tier),
@@ -233,7 +243,9 @@ async def start_processes(
     ),
 ) -> TaskDescriptionCollection:
     assert context
-    processes = await get_processes(tier, name, include, exclude, controllers)
+    processes = (
+        await get_processes(tier, name, include, exclude, controllers)
+    ).processes
     tasks = []
     for controller in create_controllers(context, processes):
         task = task_manager.start_controller(controller)
@@ -243,6 +255,16 @@ async def start_processes(
             )
         )
     return TaskDescriptionCollection(tasks=tasks)
+
+
+@app.get("/tasks")
+async def get_tasks() -> TaskDescriptionCollection:
+    return TaskDescriptionCollection(
+        tasks=[
+            TaskDescription(id=id(task), processes=processes)
+            for task, processes in task_manager.task_to_process_names.items()
+        ]
+    )
 
 
 @app.get("/process/{process}")
