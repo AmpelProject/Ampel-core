@@ -109,6 +109,10 @@ class task_manager:
 
 @app.on_event("startup")
 async def init():
+    if type(asyncio.get_event_loop()).__module__ == "uvloop":
+        raise RuntimeError(
+            "uvloop does not work with OS pipes (https://github.com/MagicStack/uvloop/issues/317). start uvicorn with --loop asyncio."
+        )
     global context
     context = AmpelContext.load(
         os.environ.get("AMPEL_CONFIG", "config.yml"),
