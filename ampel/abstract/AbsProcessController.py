@@ -33,6 +33,12 @@ class AbsProcessController(AmpelABC, AmpelBaseModel, abstract=True):
 		subsystem=None, 
 		labelnames=("tier", "process")
 	)
+	process_exceptions: ClassVar[Any] = AmpelMetricsRegistry.counter(
+		"process_exceptions",
+		"Number of unhandled exceptions",
+		subsystem=None, 
+		labelnames=("tier", "process")
+	)
 
 	@classmethod
 	def new(cls,
