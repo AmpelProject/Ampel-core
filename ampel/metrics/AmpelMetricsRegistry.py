@@ -38,7 +38,7 @@ class AmpelMetricsRegistry:
 
     @classmethod
     def gauge(
-        cls, name, documentation, unit="", labelnames=(), subsystem=""
+        cls, name, documentation, unit="", labelnames=(), subsystem="", multiprocess_mode="livesum",
     ) -> Gauge:
         return Gauge(
             name,
@@ -48,7 +48,7 @@ class AmpelMetricsRegistry:
             namespace="ampel",
             subsystem=subsystem,
             registry=cls.registry(),
-            multiprocess_mode="livesum",
+            multiprocess_mode=multiprocess_mode,
         )
 
     @classmethod
