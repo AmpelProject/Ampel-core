@@ -1,9 +1,14 @@
 import asyncio
+from io import StringIO
 
 import pytest
 from httpx import AsyncClient
+from prometheus_client.parser import text_fd_to_metric_families
 
+from ampel.metrics.AmpelDBCollector import AmpelDBCollector
+from ampel.metrics.AmpelMetricsRegistry import AmpelMetricsRegistry
 from ampel.run import server
+from ampel.t2.T2RunState import T2RunState
 
 
 @pytest.fixture
@@ -19,6 +24,33 @@ def test_client(dev_context, monkeypatch):
 async def test_metrics(test_client):
     response = await test_client.get("/metrics")
     assert response.status_code == 200
+
+
+@pytest.fixture
+def db_collector(dev_context):
+    c = AmpelDBCollector(dev_context.db)
+    AmpelMetricsRegistry.register_collector(c)
+    yield
+    AmpelMetricsRegistry.deregister_collector(c)
+
+
+@pytest.mark.asyncio
+async def test_db_metrics(test_client, db_collector, dev_context):
+    async def check_metric(name, value):
+        response = await test_client.get("/metrics")
+        assert response.status_code == 200
+        for metric in text_fd_to_metric_families(StringIO(response.text)):
+            print(type(metric))
+            if metric.name == name:
+                assert len(metric.samples) == 1
+                assert metric.samples[0].value == value
+                break
+        else:
+            raise ValueError(f"metric {name} not collected")
+
+    await check_metric("ampel_t2_docs_queued", 0)
+    dev_context.db.get_collection("t2").insert_one({"state": T2RunState.TO_RUN})
+    await check_metric("ampel_t2_docs_queued", 1)
 
 
 @pytest.mark.asyncio
@@ -60,6 +92,7 @@ async def test_processes_start(test_client):
     finally:
         await server.task_manager.shutdown()
 
+
 @pytest.mark.asyncio
 async def test_process_stop(test_client):
     dict.__setitem__(
@@ -90,4 +123,3 @@ async def test_process_stop(test_client):
         assert not (await test_client.get("/tasks")).json()["tasks"]
     finally:
         await server.task_manager.shutdown()
-

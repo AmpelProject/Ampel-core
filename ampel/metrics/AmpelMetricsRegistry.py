@@ -1,5 +1,5 @@
 import os
-from typing import Optional
+from typing import Any, ClassVar, List, Optional
 
 from prometheus_client import CollectorRegistry, Counter, Gauge, Histogram
 from prometheus_client.multiprocess import MultiProcessCollector
@@ -7,7 +7,8 @@ from prometheus_client.multiprocess import MultiProcessCollector
 
 class AmpelMetricsRegistry:
 
-    _registry: Optional[CollectorRegistry] = None
+    _registry: ClassVar[Optional[CollectorRegistry]] = None
+    _standalone_collectors: ClassVar[List[Any]] = []
 
     @classmethod
     def registry(cls) -> CollectorRegistry:
@@ -21,6 +22,16 @@ class AmpelMetricsRegistry:
             yield from MultiProcessCollector(None).collect()
         else:
             yield from cls.registry().collect()
+        for collector in cls._standalone_collectors:
+            yield from collector.collect()
+
+    @classmethod
+    def register_collector(cls, collector):
+        cls._standalone_collectors.append(collector)
+
+    @classmethod
+    def deregister_collector(cls, collector):
+        cls._standalone_collectors.remove(collector)
 
     @classmethod
     def counter(
@@ -38,7 +49,13 @@ class AmpelMetricsRegistry:
 
     @classmethod
     def gauge(
-        cls, name, documentation, unit="", labelnames=(), subsystem="", multiprocess_mode="livesum",
+        cls,
+        name,
+        documentation,
+        unit="",
+        labelnames=(),
+        subsystem="",
+        multiprocess_mode="livesum",
     ) -> Gauge:
         return Gauge(
             name,
