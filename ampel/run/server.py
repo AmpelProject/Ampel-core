@@ -311,6 +311,18 @@ async def kill_process(process: str):
         ...
 
 
+@app.post("/process/{process}/scale")
+async def scale_process(process: str, multiplier: int = Query(..., gt=0, description="number of replicas")) -> None:
+    try:
+       controller, task = task_manager.process_name_to_task[process]
+    except KeyError:
+        raise HTTPException(status_code=404, detail=f"{process} is not running")
+    if hasattr(controller, "scale"):
+        controller.scale(multiplier=multiplier)
+    else:
+        raise HTTPException(status_code=405, detail=f"{type(controller).__name__} does not scale")
+
+
 # -------------------------------------
 # DB data
 # -------------------------------------
