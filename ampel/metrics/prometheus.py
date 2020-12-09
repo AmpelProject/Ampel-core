@@ -29,6 +29,7 @@
 
 # -*- coding: utf-8 -*-
 
+import glob
 import os
 import tempfile
 
@@ -87,6 +88,9 @@ def prometheus_cleanup_worker(pid):
 
     multiprocess.mark_process_dead(pid)  # this takes care of gauges
     prom_dir = os.environ["prometheus_multiproc_dir"]
+    # also remove max gauges
+    for f in glob.glob(os.path.join(prom_dir, f"gauge_max_{pid}.db")):
+        os.remove(f)
 
     # check at least one worker file exists
     if not (
