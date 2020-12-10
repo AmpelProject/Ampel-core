@@ -41,7 +41,6 @@ async def test_db_metrics(test_client, db_collector, dev_context):
         response = await test_client.get("/metrics")
         assert response.status_code == 200
         for metric in text_fd_to_metric_families(StringIO(response.text)):
-            print(type(metric))
             if metric.name == name:
                 assert len(metric.samples) == 1
                 assert metric.samples[0].value == value
@@ -52,6 +51,15 @@ async def test_db_metrics(test_client, db_collector, dev_context):
     await check_metric("ampel_t2_docs_queued", 0)
     dev_context.db.get_collection("t2").insert_one({"state": T2RunState.TO_RUN})
     await check_metric("ampel_t2_docs_queued", 1)
+
+
+@pytest.mark.asyncio
+async def test_reload(test_client, dev_context, testing_config, monkeypatch):
+    monkeypatch.setenv("AMPEL_CONFIG", str(testing_config))
+    assert server.context is dev_context
+    response = await test_client.post("/config/reload")
+    assert response.status_code == 200
+    assert server.context is not dev_context
 
 
 @pytest.mark.asyncio

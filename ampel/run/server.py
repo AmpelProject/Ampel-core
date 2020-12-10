@@ -16,14 +16,17 @@ from fastapi.responses import Response
 from prometheus_client.exposition import choose_encoder
 
 from ampel.abstract.AbsProcessController import AbsProcessController
+from ampel.config.AmpelConfig import AmpelConfig
 from ampel.core.AmpelContext import AmpelContext
 from ampel.core.AmpelController import AmpelController
+from ampel.core.UnitLoader import UnitLoader
 from ampel.dev.DictSecretProvider import DictSecretProvider
 from ampel.log.LogRecordFlag import LogRecordFlag
-from ampel.metrics.AmpelMetricsRegistry import AmpelMetricsRegistry
 from ampel.metrics.AmpelDBCollector import AmpelDBCollector
+from ampel.metrics.AmpelMetricsRegistry import AmpelMetricsRegistry
 from ampel.model.ProcessModel import ProcessModel
 from ampel.model.StrictModel import StrictModel
+from ampel.model.UnitModel import UnitModel
 from ampel.t2.T2RunState import T2RunState
 from ampel.util.mappings import build_unsafe_dict_id
 
@@ -128,6 +131,46 @@ async def init():
 app.on_event("shutdown")(task_manager.shutdown)
 
 
+@app.post("/config/reload")
+async def reload_config() -> None:
+    # NB: async to prevent this running a thread
+    config_file = os.environ.get("AMPEL_CONFIG", "config.yml")
+    secrets_file = os.environ.get("AMPEL_SECRETS")
+    try:
+        logging.info(f"Reloading config from {config_file}")
+        config = AmpelConfig.load(config_file, freeze=False)
+        loader = UnitLoader(
+            config,
+            secrets=(DictSecretProvider.load(secrets_file) if secrets_file else None),
+        )
+        # Ensure that process models are valid
+        with UnitModel.validate_configs(loader):
+            processes = AmpelController.get_processes(config)
+    except:
+        logging.exception(f"Failed to load {config_file}")
+        return
+    # update controllers that are currently running
+    to_update: Dict[AbsProcessController, List[ProcessModel]] = {}
+    for pm in processes:
+        # this process was already assigned to a controller
+        if (controller := task_manager.process_name_to_task.get(pm.name, (None, None))[0]) :
+            if controller not in to_update:
+                to_update[controller] = []
+            to_update[controller].append(pm)
+    for controller, processes in to_update.items():
+        try:
+            controller.update(config, loader.secrets, processes)
+            logging.info(
+                f"Updated {controller.__class__.__name__} with processes: {[pm.name for pm in processes]} "
+            )
+        except:
+            logging.exception(
+                f"Failed to update {controller.__class__.__name__} with processes: {[pm.name for pm in processes]}"
+            )
+    global context
+    context = AmpelContext.new(config, secrets=loader.secrets)
+
+
 # -------------------------------------
 # Metrics
 # -------------------------------------
@@ -136,9 +179,7 @@ app.on_event("shutdown")(task_manager.shutdown)
 @app.get("/metrics")
 async def get_metrics(accept: Optional[str] = Header(None)):
     encoder, content_type = choose_encoder(accept)
-    return Response(
-        content=encoder(AmpelMetricsRegistry), media_type=content_type
-    )
+    return Response(content=encoder(AmpelMetricsRegistry), media_type=content_type)
 
 
 # -------------------------------------
@@ -314,15 +355,19 @@ async def kill_process(process: str):
 
 
 @app.post("/process/{process}/scale")
-async def scale_process(process: str, multiplier: int = Query(..., gt=0, description="number of replicas")) -> None:
+async def scale_process(
+    process: str, multiplier: int = Query(..., gt=0, description="number of replicas")
+) -> None:
     try:
-       controller, task = task_manager.process_name_to_task[process]
+        controller, task = task_manager.process_name_to_task[process]
     except KeyError:
         raise HTTPException(status_code=404, detail=f"{process} is not running")
     if hasattr(controller, "scale"):
-        controller.scale(multiplier=multiplier)
+        controller.scale(multiplier=multiplier) # type: ignore
     else:
-        raise HTTPException(status_code=405, detail=f"{type(controller).__name__} does not scale")
+        raise HTTPException(
+            status_code=405, detail=f"{type(controller).__name__} does not scale"
+        )
 
 
 # -------------------------------------

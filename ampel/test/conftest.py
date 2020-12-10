@@ -40,10 +40,13 @@ def patch_mongo(monkeypatch):
 
 
 @pytest.fixture
-def dev_context(patch_mongo):
-    config = AmpelConfig.load(
-        Path(__file__).parent / "test-data" / "testing-config.yaml",
-    )
+def testing_config():
+    return Path(__file__).parent / "test-data" / "testing-config.yaml"
+
+
+@pytest.fixture
+def dev_context(patch_mongo, testing_config):
+    config = AmpelConfig.load(testing_config)
     return DevAmpelContext.new(config=config, purge_db=True)
 
 
