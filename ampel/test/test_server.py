@@ -12,12 +12,13 @@ from ampel.t2.T2RunState import T2RunState
 
 
 @pytest.fixture
-def test_client(dev_context, monkeypatch):
+async def test_client(dev_context, monkeypatch):
     monkeypatch.setattr("ampel.run.server.context", dev_context)
     monkeypatch.setattr("ampel.run.server.task_manager.process_name_to_task", {})
     monkeypatch.setattr("ampel.run.server.task_manager.task_to_process_names", {})
 
-    return AsyncClient(app=server.app, base_url="http://test")
+    async with AsyncClient(app=server.app, base_url="http://test") as client:
+        yield client
 
 
 @pytest.mark.asyncio
