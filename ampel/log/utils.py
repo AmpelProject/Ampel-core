@@ -14,7 +14,12 @@ from ampel.db.AmpelDB import AmpelDB
 from ampel.util.general import has_nested_type
 from ampel.log.AmpelLogger import AmpelLogger
 from ampel.log.LogRecordFlag import LogRecordFlag
+from ampel.metrics.AmpelMetricsRegistry import AmpelMetricsRegistry
 
+exception_counter = AmpelMetricsRegistry.counter(
+	"exceptions",
+	"Number of exceptions caught and logged",
+)
 
 # using forward reference for type hinting: "When a type hint contains name that have not
 # been defined yet, that definition may be expressed as string literal, to be resolved later"
@@ -42,6 +47,10 @@ def log_exception(
 				extra=extra
 			)
 			return
+
+	# Increment exception counter. Labels for process name and tier are added
+	# implicitly in multiprocess mode.
+	exception_counter.inc()
 
 	logger.error("-" * 50, extra=extra)
 
@@ -119,6 +128,9 @@ def report_error(
 	This method should not be used to report Exceptions (please use report_exception(...))
 	:raises: Should not raise errors
 	"""
+
+	# Increment exception counter
+	exception_counter.inc()
 
 	# Get filename and line number using inspect
 	import inspect
