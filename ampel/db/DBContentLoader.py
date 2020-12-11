@@ -118,7 +118,7 @@ class DBContentLoader(AdminUnit):
 				} if auto_project else None
 			)
 
-			doc_counter = stat_db_loads.labels(col)
+			doc_counter = stat_db_loads.labels(directive.col)
 
 			if directive.col in ("t1", "log"):
 				count = 0
