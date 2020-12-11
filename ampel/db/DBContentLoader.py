@@ -22,8 +22,17 @@ from ampel.db.query.general import build_general_query
 from ampel.core.AmpelBuffer import AmpelBuffer
 from ampel.util.collections import ampel_iter, to_set
 from ampel.core.AdminUnit import AdminUnit
+from ampel.metrics.AmpelMetricsRegistry import AmpelMetricsRegistry
 
 freeze_codec_options = CodecOptions(document_class=FrozenValuesDict)
+
+# Monitoring counters
+stat_db_loads = AmpelMetricsRegistry.counter(
+	"loads",
+	"Number of documents loaded",
+	subsystem="db",
+	labelnames=("col",)
+)
 
 class DBContentLoader(AdminUnit):
 
@@ -109,18 +118,25 @@ class DBContentLoader(AdminUnit):
 				} if auto_project else None
 			)
 
+			doc_counter = stat_db_loads.labels(col)
+
 			if directive.col in ("t1", "log"):
-				for res in cursor:
+				count = 0
+				for count, res in enumerate(cursor, 1):
 					register[res['stock']][directive.col].append(res) # type: ignore[union-attr]
+				doc_counter.inc(count)
 
 			elif directive.col == "stock":
-				for res in cursor:
+				count = 0
+				for count, res in enumerate(cursor, 1):
 					register[res['_id']]['stock'] = res
+				doc_counter.inc(count)
 
 			# Datapoints are channel-less and can be associated with multiple stocks
 			elif directive.col == "t0":
 
-				for res in cursor:
+				count = 0
+				for count, res in enumerate(cursor, 1):
 
 					# Upper limits can be attached to multiple transients
 					for sid in res['stock']:
@@ -132,6 +148,7 @@ class DBContentLoader(AdminUnit):
 						# Add datapoints to snapdata (no need to recursive_freeze
 						# since dict elements with level > 1 are frozen due to codec_options
 						register[sid]['t0'].append(res) # type: ignore[union-attr]
+				doc_counter.inc(count)
 
 			# Potentialy link config dict used by science records
 			elif directive.col == "t2":
@@ -145,13 +162,15 @@ class DBContentLoader(AdminUnit):
 					if not config_keys:
 						raise ValueError("Cannot load t2 configs")
 
-				for res in cursor:
+				count = 0
+				for count, res in enumerate(cursor, 1):
 
 					if link_config:
 						# link run_config dict
 						res['config'] = res[config_keys[res['config']]] # type: ignore[index]
 
 					register[res['stock']]['t2'].append(res) # type: ignore[union-attr]
+				doc_counter.inc(count)
 
 			else:
 				raise ValueError(
