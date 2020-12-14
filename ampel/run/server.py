@@ -46,7 +46,7 @@ class ProcessStatusCollection(StrictModel):
 
 
 class TaskDescription(StrictModel):
-    id: int
+    id: str
     processes: List[str]
 
 
@@ -73,8 +73,8 @@ context: AmpelContext = None  # type: ignore[assignment]
 
 
 class task_manager:
-    process_name_to_controller_id: Dict[str, int] = {}
-    controller_id_to_task: Dict[int, Tuple[AbsProcessController, asyncio.Task]] = {}
+    process_name_to_controller_id: Dict[str, str] = {}
+    controller_id_to_task: Dict[str, Tuple[AbsProcessController, asyncio.Task]] = {}
     task_to_processes: Dict[asyncio.Task, List[ProcessModel]] = {}
 
     @classmethod
@@ -97,12 +97,12 @@ class task_manager:
         configuration, a new task will be spawned.
         """
         global context
-        groups: Dict[int, List[ProcessModel]] = {}
+        groups: Dict[str, List[ProcessModel]] = {}
         for pm in processes:
             if not pm.active:
                 continue
             controller_id = build_unsafe_dict_id(
-                pm.controller.dict(exclude_none=True), ret=int
+                pm.controller.dict(exclude_none=True), ret=str
             )
             if controller_id in groups:
                 groups[controller_id].append(pm)
@@ -160,7 +160,7 @@ class task_manager:
         Remove the named process from the active set.
         """
         global context
-        to_remove: Dict[int, List[str]] = {}
+        to_remove: Dict[str, List[str]] = {}
         for name in names:
             if (config_id := cls.process_name_to_controller_id.get(name)) is None:
                 continue
@@ -171,8 +171,8 @@ class task_manager:
         expiring = set()
         for config_id, remove_group in to_remove.items():
             controller, task = cls.controller_id_to_task[config_id]
-            keep = []
-            drop = []
+            keep: List[ProcessModel] = []
+            drop: List[ProcessModel] = []
             for pm in cls.task_to_processes[task]:
                 [keep, drop][pm.name in remove_group].append(pm)
             controller.update(context.config, context.loader.secrets, keep)
@@ -238,7 +238,7 @@ app.on_event("shutdown")(task_manager.shutdown)
 
 
 @app.post("/config/reload")
-async def reload_config() -> None:
+async def reload_config() -> TaskDescriptionCollection:
     # NB: async to prevent this running a thread
     config_file = os.environ.get("AMPEL_CONFIG", "config.yml")
     secrets_file = os.environ.get("AMPEL_SECRETS")
@@ -266,6 +266,8 @@ async def reload_config() -> None:
     # update global context
     global context
     context = AmpelContext.new(config, secrets=loader.secrets)
+
+    return await get_tasks()
 
 
 # -------------------------------------
@@ -374,11 +376,12 @@ async def stop_processes(
     controllers: Optional[List[str]] = Query(
         None, description="include processes with these controllers"
     ),
-) -> TaskDescriptionCollection:
+) -> None:
     processes = (
         await get_processes(tier, name, include, exclude, controllers)
     ).processes
-    return await task_manager.remove_processes([pm.name for pm in processes])
+    await task_manager.remove_processes({pm.name for pm in processes})
+    return await get_tasks()
 
 
 @app.get("/tasks")
@@ -419,10 +422,7 @@ async def start_process(process: str) -> TaskDescriptionCollection:
 
 @app.post("/process/{process}/stop")
 async def stop_process(process: str):
-    processes = (
-        await get_processes(tier=None, name=[process], include=None, exclude=None, controllers=None)
-    ).processes
-    return await task_manager.remove_processes([pm.name for pm in processes])
+    await task_manager.remove_processes({process})
 
 
 @app.post("/process/{process}/kill")
