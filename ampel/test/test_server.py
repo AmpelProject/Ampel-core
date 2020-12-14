@@ -14,8 +14,8 @@ from ampel.t2.T2RunState import T2RunState
 @pytest.fixture
 async def test_client(dev_context, monkeypatch):
     monkeypatch.setattr("ampel.run.server.context", dev_context)
-    monkeypatch.setattr("ampel.run.server.task_manager.process_name_to_task", {})
-    monkeypatch.setattr("ampel.run.server.task_manager.task_to_process_names", {})
+    for attr in ("process_name_to_controller_id", "controller_id_to_task", "task_to_processes"):
+        monkeypatch.setattr(f"ampel.run.server.task_manager.{attr}", {})
 
     async with AsyncClient(app=server.app, base_url="http://test") as client:
         yield client
@@ -95,7 +95,7 @@ async def test_processes_start(test_client):
         assert len(tasks) == 1
         assert tasks[0]["processes"] == ["sleepy"]
 
-        assert len(tasks := list(server.task_manager.task_to_process_names.keys())) == 1
+        assert len(tasks := list(server.task_manager.task_to_processes.keys())) == 1
         await asyncio.wait_for(tasks[0], 5)
         assert not (await test_client.get("/tasks")).json()["tasks"]
     finally:
@@ -123,7 +123,7 @@ async def test_process_stop(test_client):
         assert len(tasks) == 1
         assert tasks[0]["processes"] == ["sleepy"]
 
-        assert len(tasks := list(server.task_manager.task_to_process_names.keys())) == 1
+        assert len(tasks := list(server.task_manager.task_to_processes.keys())) == 1
 
         await asyncio.sleep(0.1)
         await test_client.post("/process/sleepy/stop")

@@ -7,7 +7,7 @@ import operator
 import os
 from datetime import datetime
 from functools import reduce
-from typing import Any, cast, Dict, List, Literal, Optional, Tuple
+from typing import Any, cast, Dict, List, Literal, Optional, Set, Tuple
 
 from bson import json_util, ObjectId
 from fastapi import FastAPI, Header, HTTPException, Query
@@ -73,31 +73,137 @@ context: AmpelContext = None  # type: ignore[assignment]
 
 
 class task_manager:
-    process_name_to_task: Dict[str, Tuple[AbsProcessController, asyncio.Task]] = {}
-    task_to_process_names: Dict[asyncio.Task, List[str]] = {}
+    process_name_to_controller_id: Dict[str, int] = {}
+    controller_id_to_task: Dict[int, Tuple[AbsProcessController, asyncio.Task]] = {}
+    task_to_processes: Dict[asyncio.Task, List[ProcessModel]] = {}
 
     @classmethod
-    def start_controller(cls, controller: AbsProcessController) -> asyncio.Task:
-        names = [pm.name for pm in controller.processes]
+    def get_task(cls, name: str):
+        return cls.controller_id_to_task[cls.process_name_to_controller_id[name]][1]
+
+    @classmethod
+    def get_controller(cls, name: str):
+        return cls.controller_id_to_task[cls.process_name_to_controller_id[name]][0]
+
+    @classmethod
+    async def add_processes(
+        cls, processes: List[ProcessModel]
+    ) -> TaskDescriptionCollection:
+        """
+        Add processes to the active set. If a process requests a controller
+        config that was already instantiated, that controller will be updated
+        with the process definition, replacing any definition that may exist
+        under the same name. If the process requests a new controller
+        configuration, a new task will be spawned.
+        """
+        global context
+        groups: Dict[int, List[ProcessModel]] = {}
+        for pm in processes:
+            if not pm.active:
+                continue
+            controller_id = build_unsafe_dict_id(
+                pm.controller.dict(exclude_none=True), ret=int
+            )
+            if controller_id in groups:
+                groups[controller_id].append(pm)
+            else:
+                groups[controller_id] = [pm]
+        for config_id, process_group in groups.items():
+            names = [pm.name for pm in process_group]
+            # update an existing controller
+            if config_id in cls.controller_id_to_task:
+                controller, task = cls.controller_id_to_task[config_id]
+                # add the controller's existing processes to this group
+                for pm in cls.task_to_processes[task]:
+                    if not pm.name in names:
+                        process_group.append(pm)
+                controller.update(context.config, context.loader.secrets, process_group)
+                # update processes for this task
+                cls.task_to_processes[task] = process_group
+                # add updated processes to controller mapping
+                for name in names:
+                    cls.process_name_to_controller_id[name] = config_id
+                log.info(
+                    f"Updated task {id(task)} ({type(controller).__name__} {[pm.name for pm in process_group]})"
+                )
+            # spawn a new controller
+            else:
+                controller = context.loader.new(
+                    process_group[0].controller,
+                    unit_type=AbsProcessController,
+                    config=context.config,
+                    secrets=context.loader.secrets,
+                    processes=process_group,
+                )
+                task = asyncio.create_task(controller.run())
+                task.add_done_callback(cls.finalize_task)
+                cls.task_to_processes[task] = process_group
+                cls.controller_id_to_task[config_id] = (controller, task)
+                for pm in process_group:
+                    cls.process_name_to_controller_id[pm.name] = config_id
+                log.info(
+                    f"Launched task {id(task)} ({type(controller).__name__} {[pm.name for pm in process_group]})"
+                )
+        return TaskDescriptionCollection(
+            tasks=[
+                TaskDescription(
+                    id=config_id,
+                    processes=[pm.name for pm in cls.task_to_processes[task]],
+                )
+                for config_id, (controller, task) in cls.controller_id_to_task.items()
+            ]
+        )
+
+    @classmethod
+    async def remove_processes(cls, names: Set[str]) -> None:
+        """
+        Remove the named process from the active set.
+        """
+        global context
+        to_remove: Dict[int, List[str]] = {}
         for name in names:
-            assert name not in cls.process_name_to_task, "process not currently running"
-        task = asyncio.create_task(controller.run())
-        cls.task_to_process_names[task] = names
-        for name in names:
-            cls.process_name_to_task[name] = (controller, task)
-        task.add_done_callback(cls.finalize_task)
-        log.info(f"Launched task {id(task)} ({type(controller).__name__} {names})")
-        return task
+            if (config_id := cls.process_name_to_controller_id.get(name)) is None:
+                continue
+            if config_id in to_remove:
+                to_remove[config_id].append(name)
+            else:
+                to_remove[config_id] = [name]
+        expiring = set()
+        for config_id, remove_group in to_remove.items():
+            controller, task = cls.controller_id_to_task[config_id]
+            keep = []
+            drop = []
+            for pm in cls.task_to_processes[task]:
+                [keep, drop][pm.name in remove_group].append(pm)
+            controller.update(context.config, context.loader.secrets, keep)
+            if not keep:
+                # controller is empty; wait for it to exit
+                expiring.add(task)
+                log.info(
+                    f"Stopping task {id(task)} ({type(controller).__name__} (empty))"
+                )
+            else:
+                # controller still has assigned processes; clean up others
+                for pm in drop:
+                    cls.process_name_to_controller_id.pop(pm.name)
+                cls.task_to_processes[task] = keep
+                log.info(
+                    f"Removed {[pm.name for pm in drop]} from task {id(task)} ({type(controller).__name__})"
+                )
+        await asyncio.gather(*expiring)
 
     @classmethod
     def finalize_task(cls, task: asyncio.Task) -> None:
-        log.info(f"Task {id(task)} finished ({cls.task_to_process_names[task]})")
-        for name in cls.task_to_process_names.pop(task):
-            cls.process_name_to_task.pop(name)
+        log.info(
+            f"Task {id(task)} finished ({[pm.name for pm in cls.task_to_processes[task]]})"
+        )
+        for pm in cls.task_to_processes.pop(task):
+            config_id = cls.process_name_to_controller_id.pop(pm.name)
+            cls.controller_id_to_task.pop(config_id, None)
 
     @classmethod
     def get_status(cls, name: str) -> Literal["running", "idle"]:
-        if name in cls.process_name_to_task:
+        if name in cls.process_name_to_controller_id:
             return "running"
         else:
             return "idle"
@@ -105,7 +211,7 @@ class task_manager:
     @classmethod
     async def shutdown(cls) -> None:
         # FIXME: implement soft shutdown
-        tasks = cls.task_to_process_names.keys()
+        tasks = cls.task_to_processes.keys()
         for task in tasks:
             task.cancel()
         await asyncio.gather(*tasks, return_exceptions=True)
@@ -149,24 +255,15 @@ async def reload_config() -> None:
     except:
         logging.exception(f"Failed to load {config_file}")
         return
-    # update controllers that are currently running
-    to_update: Dict[AbsProcessController, List[ProcessModel]] = {}
-    for pm in processes:
-        # this process was already assigned to a controller
-        if (controller := task_manager.process_name_to_task.get(pm.name, (None, None))[0]) :
-            if controller not in to_update:
-                to_update[controller] = []
-            to_update[controller].append(pm)
-    for controller, processes in to_update.items():
-        try:
-            controller.update(config, loader.secrets, processes)
-            logging.info(
-                f"Updated {controller.__class__.__name__} with processes: {[pm.name for pm in processes]} "
-            )
-        except:
-            logging.exception(
-                f"Failed to update {controller.__class__.__name__} with processes: {[pm.name for pm in processes]}"
-            )
+
+    # remove processes that are no longer defined or no longer in the active set
+    await task_manager.remove_processes(
+        set(task_manager.process_name_to_controller_id.keys()).difference(
+            [pm.name for pm in processes]
+        )
+    )
+
+    # update global context
     global context
     context = AmpelContext.new(config, secrets=loader.secrets)
 
@@ -244,37 +341,6 @@ async def get_processes_status(
     )
 
 
-def group_processes_by_controller(
-    processes: List[ProcessModel],
-) -> Dict[int, List[ProcessModel]]:
-    groups: Dict[int, List[ProcessModel]] = {}
-    for pm in processes:
-        controller_id = build_unsafe_dict_id(
-            pm.controller.dict(exclude_none=True), ret=int
-        )
-        if controller_id in groups:
-            groups[controller_id].append(pm)
-        else:
-            groups[controller_id] = [pm]
-
-    return groups
-
-
-def create_controllers(
-    context: AmpelContext, processes: List[ProcessModel]
-) -> List[AbsProcessController]:
-    return [
-        context.loader.new(
-            process_group[0].controller,
-            unit_type=AbsProcessController,
-            config=context.config,
-            secrets=context.loader.secrets,
-            processes=process_group,
-        )
-        for process_group in group_processes_by_controller(processes).values()
-    ]
-
-
 @app.post("/processes/start")
 async def start_processes(
     tier: Optional[int] = Query(None, ge=0, le=3, description="tier to include"),
@@ -289,27 +355,44 @@ async def start_processes(
         None, description="include processes with these controllers"
     ),
 ) -> TaskDescriptionCollection:
-    assert context
     processes = (
         await get_processes(tier, name, include, exclude, controllers)
     ).processes
-    tasks = []
-    for controller in create_controllers(context, processes):
-        task = task_manager.start_controller(controller)
-        tasks.append(
-            TaskDescription(
-                id=id(task), processes=[pm.name for pm in controller.processes]
-            )
-        )
-    return TaskDescriptionCollection(tasks=tasks)
+    return await task_manager.add_processes(processes)
+
+
+@app.post("/processes/stop")
+async def stop_processes(
+    tier: Optional[int] = Query(None, ge=0, le=3, description="tier to include"),
+    name: Optional[List[str]] = Query(None),
+    include: Optional[List[str]] = Query(
+        None, description="include processes with names that match"
+    ),
+    exclude: Optional[List[str]] = Query(
+        None, description="exclude processes with names that match"
+    ),
+    controllers: Optional[List[str]] = Query(
+        None, description="include processes with these controllers"
+    ),
+) -> TaskDescriptionCollection:
+    processes = (
+        await get_processes(tier, name, include, exclude, controllers)
+    ).processes
+    return await task_manager.remove_processes([pm.name for pm in processes])
 
 
 @app.get("/tasks")
 async def get_tasks() -> TaskDescriptionCollection:
     return TaskDescriptionCollection(
         tasks=[
-            TaskDescription(id=id(task), processes=processes)
-            for task, processes in task_manager.task_to_process_names.items()
+            TaskDescription(
+                id=config_id,
+                processes=[pm.name for pm in task_manager.task_to_processes[task]],
+            )
+            for config_id, (
+                controller,
+                task,
+            ) in task_manager.controller_id_to_task.items()
         ]
     )
 
@@ -328,23 +411,24 @@ async def get_process(process: str) -> ProcessModel:
 
 @app.post("/process/{process}/start")
 async def start_process(process: str) -> TaskDescriptionCollection:
-    return await start_processes(name=[process])
+    processes = (
+        await get_processes(tier=None, name=[process], include=None, exclude=None, controllers=None)
+    ).processes
+    return await task_manager.add_processes(processes)
 
 
 @app.post("/process/{process}/stop")
 async def stop_process(process: str):
-    try:
-        controller, task = task_manager.process_name_to_task[process]
-    except KeyError:
-        raise HTTPException(status_code=404, detail=f"{process} is not running")
-    controller.stop()
-    await task
+    processes = (
+        await get_processes(tier=None, name=[process], include=None, exclude=None, controllers=None)
+    ).processes
+    return await task_manager.remove_processes([pm.name for pm in processes])
 
 
 @app.post("/process/{process}/kill")
 async def kill_process(process: str):
     try:
-        controller, task = task_manager.process_name_to_task[process]
+        task = task_manager.get_controller(process)
     except KeyError:
         raise HTTPException(status_code=404, detail=f"{process} is not running")
     task.cancel()
@@ -359,11 +443,11 @@ async def scale_process(
     process: str, multiplier: int = Query(..., gt=0, description="number of replicas")
 ) -> None:
     try:
-        controller, task = task_manager.process_name_to_task[process]
+        controller = task_manager.get_controller(process)
     except KeyError:
         raise HTTPException(status_code=404, detail=f"{process} is not running")
     if hasattr(controller, "scale"):
-        controller.scale(multiplier=multiplier) # type: ignore
+        controller.scale(multiplier=multiplier)  # type: ignore
     else:
         raise HTTPException(
             status_code=405, detail=f"{type(controller).__name__} does not scale"
