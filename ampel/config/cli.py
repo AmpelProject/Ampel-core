@@ -25,6 +25,7 @@ import yaml
 
 from ampel.config.AmpelConfig import AmpelConfig
 from ampel.config.builder.DistConfigBuilder import DistConfigBuilder
+from ampel.log.utils import log_exception
 from ampel.core import AmpelContext
 from ampel.dev.DictSecretProvider import (
     DictSecretProvider,
@@ -63,7 +64,8 @@ def build(args: Namespace) -> int:
     try:
         cb.load_distributions()
         config = cb.build_config(ignore_errors=args.ignore_errors)
-    except:
+    except Exception as exc:
+        log_exception(cb.logger, exc)
         return 1
     yaml.dump(
         config, args.output_file if args.output_file else sys.stdout, sort_keys=False
