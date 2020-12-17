@@ -254,7 +254,7 @@ async def reload_config() -> TaskDescriptionCollection:
             processes = AmpelController.get_processes(config)
     except:
         logging.exception(f"Failed to load {config_file}")
-        return
+        raise HTTPException(status_code=500, detail=f"Failed to reload configuration file")
 
     # remove processes that are no longer defined or no longer in the active set
     await task_manager.remove_processes(
