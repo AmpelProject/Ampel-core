@@ -10,7 +10,7 @@
 import gc
 import signal
 from time import time
-from typing import Optional, List, Union, Type, Dict, TypedDict, ItemsView, Any, Sequence
+from typing import Optional, List, Union, Type, Dict, TypedDict, ItemsView, Any, Sequence, Tuple
 from collections.abc import ItemsView as ColItemsView
 
 from ampel.type import T2UnitResult, ChannelId, Tag
@@ -340,7 +340,7 @@ class T2Processor(AbsProcessorUnit):
 
 	def process_t2_doc(self,
 		t2_unit: AbsT2s, t2_doc: T2Record, logger: AmpelLogger,
-	) -> Union[T2UnitResult, ItemsView[ChannelId, T2UnitResult]]:
+	) -> Union[T2UnitResult, ItemsView[Tuple[ChannelId,...], T2UnitResult]]:
 		"""
 		Regarding the possible int return code:
 		usually, if an int is returned, it should be a T2RunState member
