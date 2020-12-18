@@ -334,7 +334,20 @@ def list_accounts(ampel_db: AmpelDB, auth: Dict[str, str] = {}) -> Dict[str, Any
 
 def init_db(ampel_db: AmpelDB, auth: Dict[str, str] = {}) -> None:
 	"""Initialize Ampel databases and collections."""
-	ampel_db.init_db()
+	if auth:
+		print("="*40)
+		print("DANGEROUS THINGS ARE ABOUT TO HAPPEN!")
+		print("="*40)
+		if input(f"Do you really want to reinitialize databases {[ampel_db.prefix+'_'+db.name for db in ampel_db.databases]} on {ampel_db.mongo_uri}? All data will be lost. Type 'yessir' to proceed: ") == "yessir":
+			mc = MongoClient(ampel_db.mongo_uri, **auth)
+			for db in ampel_db.databases:
+				name = f"{ampel_db.prefix}_{db.name}"
+				mc.drop_database(name)
+			ampel_db.init_db()
+		else:
+			print("cancelled")
+	else:
+		ampel_db.init_db()
 
 
 def main() -> None:
