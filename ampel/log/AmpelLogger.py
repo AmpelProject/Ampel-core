@@ -12,7 +12,6 @@ from sys import _getframe
 from os.path import basename
 from typing import Dict, Optional, Union, Any, List, TYPE_CHECKING
 from ampel.type import ChannelId, StockId
-from ampel.abstract.AbsAmpelLogger import AbsAmpelLogger
 from ampel.log.LighterLogRecord import LighterLogRecord
 from ampel.log.LogRecordFlag import LogRecordFlag
 from ampel.log.handlers.LoggingHandlerProtocol import LoggingHandlerProtocol
@@ -31,7 +30,7 @@ DEBUG = LogRecordFlag.DEBUG
 if TYPE_CHECKING:
 	from ampel.core.AmpelContext import AmpelContext
 
-class AmpelLogger(AbsAmpelLogger):
+class AmpelLogger:
 
 	loggers: Dict[Union[int, str], 'AmpelLogger'] = {}
 	_counter: int = 0
@@ -174,42 +173,30 @@ class AmpelLogger(AbsAmpelLogger):
 
 	def error(self, msg: Union[str, Dict[str, Any]], *args,
 		exc_info: Optional[Exception] = None,
-		channel: Optional[Union[ChannelId, List[ChannelId]]] = None,
-		stock: Optional[StockId] = None,
 		extra: Optional[Dict[str, Any]] = None,
-		**kwargs
 	):
-		self.log(ERROR, msg, *args, exc_info=exc_info, channel=channel or self.channel, stock=stock, extra=extra)
+		self.log(ERROR, msg, *args, exc_info=exc_info, extra=extra)
 
 
 	def warn(self, msg: Union[str, Dict[str, Any]], *args,
-		channel: Optional[Union[ChannelId, List[ChannelId]]] = None,
-		stock: Optional[StockId] = None,
 		extra: Optional[Dict[str, Any]] = None,
-		**kwargs
 	):
 		if self.level <= WARNING:
-			self.log(WARNING, msg, *args, channel=channel or self.channel, stock=stock, extra=extra)
+			self.log(WARNING, msg, *args, extra=extra)
 
 
 	def info(self, msg: Optional[Union[str, Dict[str, Any]]], *args,
-		channel: Optional[Union[ChannelId, List[ChannelId]]] = None,
-		stock: Optional[StockId] = None,
 		extra: Optional[Dict[str, Any]] = None,
-		**kwargs
 	) -> None:
 		if self.level <= INFO:
-			self.log(INFO, msg, *args, channel=channel or self.channel, stock=stock, extra=extra)
+			self.log(INFO, msg, *args, extra=extra)
 
 
 	def debug(self, msg: Optional[Union[str, Dict[str, Any]]], *args,
-		channel: Optional[Union[ChannelId, List[ChannelId]]] = None,
-		stock: Optional[StockId] = None,
 		extra: Optional[Dict[str, Any]] = None,
-		**kwargs
 	):
 		if self.level <= DEBUG:
-			self.log(DEBUG, msg, *args, channel=channel or self.channel, stock=stock, extra=extra)
+			self.log(DEBUG, msg, *args, extra=extra)
 
 
 	def handle(self, record: Union[LighterLogRecord, logging.LogRecord]) -> None:
@@ -226,10 +213,7 @@ class AmpelLogger(AbsAmpelLogger):
 	def log(self,
 		lvl: int, msg: Optional[Union[str, Dict[str, Any]]], *args,
 		exc_info: Optional[Union[bool, Exception]] = None,
-		channel: Optional[Union[ChannelId, List[ChannelId]]] = None,
-		stock: Optional[StockId] = None,
 		extra: Optional[Dict[str, Any]] = None,
-		**kwargs
 	):
 
 		if args and isinstance(msg, str):
@@ -245,13 +229,11 @@ class AmpelLogger(AbsAmpelLogger):
 			record.__dict__['lineno'] = frame.f_lineno
 
 		if extra:
+			if (stock := extra.pop("stock", None)) is not None:
+				record.stock = stock
+			if (channel := (extra.pop("channel", None) or self.channel)) is not None:
+				record.channel = channel
 			record.extra = extra
-
-		if stock:
-			record.stock = stock
-
-		if channel or self.channel:
-			record.channel = channel or self.channel
 
 		if exc_info:
 
