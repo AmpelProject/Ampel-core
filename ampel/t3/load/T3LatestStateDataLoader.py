@@ -90,7 +90,7 @@ class T3LatestStateDataLoader(AbsT3Loader):
 				[
 					el['_id'] for el in self.col_t1.aggregate(
 						fast_query(
-							slow_ids.symmetric_difference(set_stock_ids),
+							list(slow_ids.symmetric_difference(set_stock_ids)),
 							channel = chan_logic
 						)
 					)
@@ -136,9 +136,9 @@ class T3LatestStateDataLoader(AbsT3Loader):
 				key = 'link' if directive.col == 't2' else '_id'
 
 				if qd.query_complement:
-					qd.query_complement[key] = {"$in": states}
+					qd.query_complement[key] = {"$in": list(states)}
 				else:
-					qd.query_complement = {key: {"$in": states}}
+					qd.query_complement = {key: {"$in": list(states)}}
 
 				directives.append(qd)
 
