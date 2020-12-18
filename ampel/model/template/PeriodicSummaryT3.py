@@ -85,7 +85,6 @@ class PeriodicSummaryT3(AbsProcessTemplate):
                     "tag": self.tag,
                 },
             },
-            # FIXME: use T3LatestStateLoader here by default
             "load": {"unit": "T3SimpleDataLoader", "config": {}},
             "run": {
                 "unit": "T3UnitRunner",
@@ -104,6 +103,8 @@ class PeriodicSummaryT3(AbsProcessTemplate):
         if self.load is not None:
             directive["load"]["config"]["directives"] = self.load
         if self.channel is not None:
+            # load only the latest compounds
+            directive["load"]["unit"] = "T3LatestStateDataLoader"
             # load only documents that pass channel selection
             directive["load"]["config"]["channel"] = self.channel
             # project subdocuments (e.g. stock journal) to channel selection
