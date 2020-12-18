@@ -12,11 +12,11 @@ from sys import _getframe
 from os.path import basename
 from typing import Dict, Optional, Union, Any, List, TYPE_CHECKING
 from ampel.type import ChannelId, StockId
+from ampel.abstract.AbsAmpelLogger import AbsAmpelLogger
 from ampel.log.LighterLogRecord import LighterLogRecord
 from ampel.log.LogRecordFlag import LogRecordFlag
 from ampel.log.handlers.LoggingHandlerProtocol import LoggingHandlerProtocol
 from ampel.log.handlers.AmpelStreamHandler import AmpelStreamHandler
-from ampel.log.AbsAmpelLogger import AbsAmpelLogger
 
 if TYPE_CHECKING:
 	from ampel.log.handlers.DBLoggingHandler import DBLoggingHandler
