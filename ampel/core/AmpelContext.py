@@ -56,6 +56,12 @@ class AmpelContext:
 
 		secrets = kwargs.pop("secrets", None)
 
+		# try to register aux units globally
+		try:
+			UnitLoader.aux_defs = config.get("unit.aux", ret_type=dict, raise_exc=True)
+		except:
+			print("UnitLoader auxiliary units auto-registration failed")
+
 		return cls(
 			config = config,
 			db = AmpelDB.new(config, secrets),
