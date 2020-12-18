@@ -4,8 +4,8 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 27.09.2018
-# Last Modified Date: 11.06.2020
-# Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
+# Last Modified Date: 18.12.2020
+# Last Modified By  : Jakob van Santen <jakob.van.santen@desy.de>
 
 import logging, sys, traceback
 from sys import _getframe
@@ -16,6 +16,7 @@ from ampel.log.LighterLogRecord import LighterLogRecord
 from ampel.log.LogRecordFlag import LogRecordFlag
 from ampel.log.handlers.LoggingHandlerProtocol import LoggingHandlerProtocol
 from ampel.log.handlers.AmpelStreamHandler import AmpelStreamHandler
+from ampel.log.AbsAmpelLogger import AbsAmpelLogger
 
 if TYPE_CHECKING:
 	from ampel.log.handlers.DBLoggingHandler import DBLoggingHandler
@@ -30,7 +31,7 @@ DEBUG = LogRecordFlag.DEBUG
 if TYPE_CHECKING:
 	from ampel.core.AmpelContext import AmpelContext
 
-class AmpelLogger:
+class AmpelLogger(AbsAmpelLogger):
 
 	loggers: Dict[Union[int, str], 'AmpelLogger'] = {}
 	_counter: int = 0
