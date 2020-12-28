@@ -332,11 +332,7 @@ async def get_processes_status(
     return ProcessStatusCollection(
         processes=[
             ProcessStatus(
-                **{
-                    "name": pm.name,
-                    "tier": pm.tier,
-                    "status": task_manager.get_status(pm.name),
-                }
+                name=pm.name, tier=pm.tier, status=task_manager.get_status(pm.name)
             )
             for pm in processes
         ]
