@@ -9,7 +9,7 @@
 
 from typing import Optional, Dict
 from ampel.log.handlers.RecordBufferingHandler import RecordBufferingHandler
-from ampel.log.handlers.LoggingHandlerProtocol import LoggingHandlerProtocol
+from ampel.protocol.LoggingHandlerProtocol import LoggingHandlerProtocol
 from ampel.type import StockId, ChannelId
 
 

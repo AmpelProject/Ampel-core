@@ -14,7 +14,7 @@ from typing import Dict, Optional, Union, Any, List, TYPE_CHECKING
 from ampel.type import ChannelId, StockId
 from ampel.log.LighterLogRecord import LighterLogRecord
 from ampel.log.LogRecordFlag import LogRecordFlag
-from ampel.log.handlers.LoggingHandlerProtocol import LoggingHandlerProtocol
+from ampel.protocol.LoggingHandlerProtocol import LoggingHandlerProtocol
 from ampel.log.handlers.AmpelStreamHandler import AmpelStreamHandler
 
 if TYPE_CHECKING:
