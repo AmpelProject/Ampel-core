@@ -37,7 +37,7 @@ class ProcessCollection(StrictModel):
 
 class ProcessStatus(StrictModel):
     name: str
-    tier: Literal[0, 1, 2, 3, "ops"]
+    tier: Literal[0, 1, 2, 3, None]
     status: Literal["running", "idle"]
 
 
@@ -372,7 +372,7 @@ async def stop_processes(
     controllers: Optional[List[str]] = Query(
         None, description="include processes with these controllers"
     ),
-) -> None:
+) -> TaskDescriptionCollection:
     processes = (
         await get_processes(tier, name, include, exclude, controllers)
     ).processes
