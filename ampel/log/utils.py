@@ -15,6 +15,7 @@ from ampel.util.general import has_nested_type
 from ampel.log.AmpelLogger import AmpelLogger
 from ampel.log.LogRecordFlag import LogRecordFlag
 from ampel.metrics.AmpelMetricsRegistry import AmpelMetricsRegistry
+from ampel.protocol.LoggerProtocol import LoggerProtocol
 
 exception_counter = AmpelMetricsRegistry.counter(
 	"exceptions",
@@ -25,7 +26,7 @@ exception_counter = AmpelMetricsRegistry.counter(
 # been defined yet, that definition may be expressed as string literal, to be resolved later"
 # (PEP 484). This is to avoid cyclic import errors
 def log_exception(
-	logger: AmpelLogger, exc: Optional[Exception] = None,
+	logger: LoggerProtocol, exc: Optional[Exception] = None,
 	extra: Optional[Dict] = None, last: bool = False, msg: Optional[str] = None
 ) -> None:
 	"""
