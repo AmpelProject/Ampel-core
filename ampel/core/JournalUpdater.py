@@ -82,7 +82,7 @@ class JournalUpdater:
 
 
 	def add_record(self,
-		stock: Union[StockId, List[StockId]],
+		stock: Union[StockId, Sequence[StockId]],
 		jextra: Optional[JournalExtra] = None,
 		doc_id: Optional[ObjectId] = None,
 		unit: Optional[Union[int, str]] = None,
@@ -96,9 +96,9 @@ class JournalUpdater:
 		it also modifies the "modified" field of stock document(s).
 		"""
 
-		if isinstance(stock, list):
+		if isinstance(stock, Sequence):
 			self.journal_updates_count += len(stock)
-			match: Any = {'$in': stock}
+			match: Any = {'$in': list(stock)}
 			Op = UpdateMany
 		else:
 			self.journal_updates_count += 1

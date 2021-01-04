@@ -41,6 +41,7 @@ from ampel.struct.JournalExtra import JournalExtra
 from ampel.metrics.AmpelMetricsRegistry import AmpelMetricsRegistry
 
 if TYPE_CHECKING:
+	from pymongo import ObjectId
 	from ampel.content.StockRecord import StockRecord
 
 AbsT2s = Union[AbsCustomStateT2Unit[T], AbsTiedCustomStateT2Unit[T], AbsStateT2Unit, AbsTiedStateT2Unit, AbsStockT2Unit, AbsPointT2Unit]
@@ -118,7 +119,12 @@ class T2Processor(AbsProcessorUnit):
 		if self.send_beacon:
 			self.create_beacon()
 
+		# t2_instances stores unit instances so that they can be re-used in run()
+		# Key: run config id(unit name + '_' + run_config name), Value: unit instance
+		self.t2_instances: Dict[str, AbsT2s] = {}
+
 		self._run = True
+		self._doc_counter = 0
 		signal.signal(signal.SIGTERM, self.sig_exit)
 		signal.signal(signal.SIGINT, self.sig_exit)
 
@@ -189,18 +195,11 @@ class T2Processor(AbsProcessorUnit):
 			raise_exc = self.raise_exc, extra_tag = self.stock_jtag
 		)
 
-		# we instantiate t2 unit only once per check interval.
-		# t2_instances stores unit instances so that they can be re-used in the loop below
-		# Key: run config id(unit name + '_' + run_config name), Value: unit instance
-		self.t2_instances: Dict[str, AbsT2s] = {}
-
 		# Loop variables
-		counter = 0
+		self._doc_counter = 0
 		update = {'$set': {'status': T2RunState.RUNNING}}
 		doc_limit = self.doc_limit
 		gc_collect = self.gc_collect
-		update_records = self.update_records
-		push_t2_update = self.push_t2_update
 
 		# Process t2 docs until next() returns None (breaks condition below)
 		self._run = True
@@ -215,139 +214,150 @@ class T2Processor(AbsProcessorUnit):
 			elif logger.verbose > 1:
 				logger.debug(f"T2 doc: {t2_doc}")
 
-			counter += 1
-			before_run = time()
-
-			t2_unit = self.get_unit_instance(t2_doc, logger)
-			ret = self.process_t2_doc(t2_unit, t2_doc, logger)
-
-			# Used as timestamp and to compute duration below (using before_run)
-			now = time()
-
-			stat_latency.labels(t2_doc["unit"]).observe(now-t2_doc["_id"].generation_time.timestamp())
-			stat_count.labels(t2_doc["unit"]).inc()
-
-			try:
-
-				# New journal entry for the associated stock document
-				jrec = jupdater.add_record(
-					stock = t2_doc['stock'],
-					doc_id = t2_doc['_id'],
-					unit = t2_doc['unit'],
-					channel = try_reduce(t2_doc['channel'])
-				)
-
-				# New t2 sub-result entry (later appended with additional values)
-				sub_rec: T2SubRecord = {
-					'ts': jrec['ts'],
-					'run': run_id,
-					'duration': round(now - before_run, 3)
-				}
-
-				if v := t2_unit.get_version():
-					sub_rec['version'] = v
-
-				# T2 units can return a T2RunState integer rather than a dict instance / tuple
-				# for example: T2RunState.EXCEPTION, T2RunState.BAD_CONFIG, ...
-				if isinstance(ret, int):
-					logger.info(f'T2 unit returned int {ret}')
-					sub_rec['error'] = ret
-					jrec['status'] = ret
-					push_t2_update(t2_doc, sub_rec, logger, status=ret)
-
-				# Unit returned just a dict result
-				elif isinstance(ret, dict):
-
-					sub_rec['result'] = ret
-					jrec['status'] = 0
-					push_t2_update(t2_doc, sub_rec, logger)
-
-					# Empty dict, should not happen
-					if not ret:
-						logger.warn(
-							"T2 unit return empty content",
-							extra={'t2_doc': t2_doc.pop}
-						)
-
-				# Custom JournalExtra returned by unit
-				elif isinstance(ret, tuple):
-
-					jrec['status'] = 0
-					update_records(sub_rec, jrec, ret[0], ret[1])
-					push_t2_update(t2_doc, sub_rec, logger)
-
-					# Empty dict, should not happen
-					if not ret:
-						logger.warn(
-							"T2 unit return empty content",
-							extra={'t2_doc': t2_doc.pop}
-						)
-
-				# 'tied' t2 unit, can have different results depending on the channel(s) considered
-				elif isinstance(ret, ColItemsView):
-
-					for chans, unit_result in ret:
-
-						sub_rec_copy = sub_rec.copy()
-
-						# Error code returned by unit
-						if isinstance(unit_result, int):
-							sub_rec_copy['error'] = unit_result
-							push_t2_update(t2_doc, sub_rec_copy, logger, status=unit_result)
-
-						# No custom JournalExtra returned by unit
-						elif isinstance(unit_result, dict):
-							jrec_copy = jrec.copy()
-							jrec_copy['status'] = 0
-							sub_rec_copy['channel'] = chans
-							push_t2_update(t2_doc, sub_rec_copy, logger)
-
-						# Custom JournalExtra returned by unit
-						elif isinstance(unit_result, tuple):
-							jrec_copy = jrec.copy()
-							sub_rec_copy['channel'] = chans
-							jrec_copy['channel'] = chans
-							jrec_copy['status'] = 0
-							update_records(sub_rec_copy, jrec_copy, unit_result[0], unit_result[1])
-							push_t2_update(t2_doc, sub_rec_copy, logger)
-
-						else:
-							self._unsupported_result(unit_result, t2_doc, sub_rec, jrec, logger)
-
-				# Unsupported object returned by unit
-				else:
-					self._unsupported_result(ret, t2_doc, sub_rec, jrec, logger)
-
-				# Update stock document
-				jupdater.flush()
-
-			except Exception as e:
-				if self.raise_exc:
-					raise e
-				self._processing_error(
-					logger, t2_rec=t2_doc, sub_rec=sub_rec, jrec=jrec,
-					exception=e, sub_rec_msg='An exception occured'
-				)
+			self.process_t2_doc(t2_doc, logger, jupdater)
 
 			# Check possibly defined doc_limit
-			if doc_limit and counter >= doc_limit:
+			if doc_limit and self._doc_counter >= doc_limit:
 				break
 
 			if gc_collect:
 				gc.collect()
 
 
-		event_doc.update(logger, docs=counter, run=run_id)
+		event_doc.update(logger, docs=self._doc_counter, run=run_id)
 
 		logger.flush()
-		self.t2_instances = {}
-		return counter
+		self.t2_instances.clear()
+		return self._doc_counter
+
+	def process_t2_doc(self,
+		t2_doc: T2Record, logger: AmpelLogger, jupdater: JournalUpdater,
+	) -> T2SubRecord:
+		before_run = time()
+
+		t2_unit = self.get_unit_instance(t2_doc, logger)
+		ret = self.run_t2_unit(t2_unit, t2_doc, logger, jupdater)
+
+		# Used as timestamp and to compute duration below (using before_run)
+		now = time()
+
+		# _id is an ObjectId, but declared as bytes in ampel-interface to avoid
+		# an explicit dependency on pymongo
+		stat_latency.labels(t2_doc["unit"]).observe(
+			now-cast("ObjectId", t2_doc["_id"]).generation_time.timestamp()
+		)
+		stat_count.labels(t2_doc["unit"]).inc()
+		self._doc_counter += 1
+
+		try:
+
+			# New journal entry for the associated stock document
+			jrec = jupdater.add_record(
+				stock = t2_doc['stock'],
+				doc_id = t2_doc['_id'],
+				unit = t2_doc['unit'],
+				channel = try_reduce(t2_doc['channel'])
+			)
+
+			# New t2 sub-result entry (later appended with additional values)
+			sub_rec: T2SubRecord = {
+				'ts': jrec['ts'],
+				'run': jupdater.run_id,
+				'duration': round(now - before_run, 3)
+			}
+
+			if v := t2_unit.get_version():
+				sub_rec['version'] = v
+
+			# T2 units can return a T2RunState integer rather than a dict instance / tuple
+			# for example: T2RunState.EXCEPTION, T2RunState.BAD_CONFIG, ...
+			if isinstance(ret, int):
+				logger.info(f'T2 unit returned int {ret}')
+				sub_rec['error'] = ret
+				jrec['status'] = ret
+				self.push_t2_update(t2_doc, sub_rec, logger, status=ret)
+
+			# Unit returned just a dict result
+			elif isinstance(ret, dict):
+
+				sub_rec['result'] = ret
+				jrec['status'] = 0
+				self.push_t2_update(t2_doc, sub_rec, logger)
+
+				# Empty dict, should not happen
+				if not ret:
+					logger.warn(
+						"T2 unit return empty content",
+						extra={'t2_doc': t2_doc.pop}
+					)
+
+			# Custom JournalExtra returned by unit
+			elif isinstance(ret, tuple):
+
+				jrec['status'] = 0
+				self.update_records(sub_rec, jrec, ret[0], ret[1])
+				self.push_t2_update(t2_doc, sub_rec, logger)
+
+				# Empty dict, should not happen
+				if not ret:
+					logger.warn(
+						"T2 unit return empty content",
+						extra={'t2_doc': t2_doc.pop}
+					)
+
+			# 'tied' t2 unit, can have different results depending on the channel(s) considered
+			elif isinstance(ret, ColItemsView):
+
+				for chans, unit_result in ret:
+
+					sub_rec_copy = sub_rec.copy()
+
+					# Error code returned by unit
+					if isinstance(unit_result, int):
+						sub_rec_copy['error'] = unit_result
+						self.push_t2_update(t2_doc, sub_rec_copy, logger, status=unit_result)
+
+					# No custom JournalExtra returned by unit
+					elif isinstance(unit_result, dict):
+						jrec_copy = jrec.copy()
+						jrec_copy['status'] = 0
+						sub_rec_copy['channel'] = chans
+						self.push_t2_update(t2_doc, sub_rec_copy, logger)
+
+					# Custom JournalExtra returned by unit
+					elif isinstance(unit_result, tuple):
+						jrec_copy = jrec.copy()
+						sub_rec_copy['channel'] = chans
+						jrec_copy['channel'] = chans
+						jrec_copy['status'] = 0
+						self.update_records(sub_rec_copy, jrec_copy, unit_result[0], unit_result[1])
+						self.push_t2_update(t2_doc, sub_rec_copy, logger)
+
+					else:
+						self._unsupported_result(unit_result, t2_doc, sub_rec, jrec, logger)
+
+			# Unsupported object returned by unit
+			else:
+				self._unsupported_result(ret, t2_doc, sub_rec, jrec, logger)
+
+			# Update stock document
+			jupdater.flush()
+
+		except Exception as e:
+			if self.raise_exc:
+				raise e
+			self._processing_error(
+				logger, t2_rec=t2_doc, sub_rec=sub_rec, jrec=jrec,
+				exception=e, sub_rec_msg='An exception occured'
+			)
+
+		return sub_rec
 
 
 	@overload
 	def load_input_docs(self,
 		t2_unit: AbsStateT2Unit,
-		t2_doc: "T2Record", logger: AmpelLogger
+		t2_doc: "T2Record", logger: AmpelLogger, jupdater: JournalUpdater,
 	) -> Union[T2RunState, Tuple["Compound", Sequence["DataPoint"]]]:
 		...
 
@@ -355,7 +365,7 @@ class T2Processor(AbsProcessorUnit):
 	@overload
 	def load_input_docs(self,
 		t2_unit: AbsTiedStateT2Unit,
-		t2_doc: "T2Record", logger: AmpelLogger
+		t2_doc: "T2Record", logger: AmpelLogger, jupdater: JournalUpdater,
 	) -> Union[T2RunState, Tuple["Compound", Sequence["DataPoint"], List["T2Record"]]]:
 		...
 
@@ -363,7 +373,7 @@ class T2Processor(AbsProcessorUnit):
 	@overload
 	def load_input_docs(self,
 		t2_unit: AbsCustomStateT2Unit[T],
-		t2_doc: "T2Record", logger: AmpelLogger
+		t2_doc: "T2Record", logger: AmpelLogger, jupdater: JournalUpdater,
 	) -> Union[T2RunState, T]:
 		...
 
@@ -371,7 +381,7 @@ class T2Processor(AbsProcessorUnit):
 	@overload
 	def load_input_docs(self,
 		t2_unit: AbsTiedCustomStateT2Unit[T],
-		t2_doc: T2Record, logger: AmpelLogger
+		t2_doc: T2Record, logger: AmpelLogger, jupdater: JournalUpdater,
 	) -> Union[T2RunState, Tuple[T, List["T2Record"]]]:
 		...
 
@@ -379,7 +389,7 @@ class T2Processor(AbsProcessorUnit):
 	@overload
 	def load_input_docs(self,
 		t2_unit: AbsStockT2Unit,
-		t2_doc: "T2Record", logger: AmpelLogger
+		t2_doc: "T2Record", logger: AmpelLogger, jupdater: JournalUpdater,
 	) -> Union[T2RunState, "StockRecord"]:
 		...
 
@@ -387,7 +397,7 @@ class T2Processor(AbsProcessorUnit):
 	@overload
 	def load_input_docs(self,
 		t2_unit: AbsPointT2Unit,
-		t2_doc: "T2Record", logger: AmpelLogger
+		t2_doc: "T2Record", logger: AmpelLogger, jupdater: JournalUpdater,
 	) -> Union[T2RunState, "DataPoint"]:
 		...
 
@@ -403,7 +413,8 @@ class T2Processor(AbsProcessorUnit):
 			AbsPointT2Unit
 		],
 		t2_doc: "T2Record",
-		logger: AmpelLogger
+		logger: AmpelLogger,
+		jupdater: JournalUpdater,
 	) -> Union[
 			T2RunState,
 			Union[
@@ -528,8 +539,8 @@ class T2Processor(AbsProcessorUnit):
 			return T2RunState.ERROR
 
 
-	def process_t2_doc(self,
-		t2_unit: AbsT2s, t2_doc: T2Record, logger: AmpelLogger,
+	def run_t2_unit(self,
+		t2_unit: AbsT2s, t2_doc: T2Record, logger: AmpelLogger, jupdater: JournalUpdater,
 	) -> Union[T2UnitResult, ItemsView[Tuple[ChannelId,...], T2UnitResult]]:
 		"""
 		Regarding the possible int return code:
@@ -537,7 +548,7 @@ class T2Processor(AbsProcessorUnit):
 		but let's not be too restrictive here
 		"""
 
-		if isinstance((args := self.load_input_docs(t2_unit, t2_doc, logger)), T2RunState):
+		if isinstance((args := self.load_input_docs(t2_unit, t2_doc, logger, jupdater)), T2RunState):
 			return args
 		else:
 			try:
@@ -563,6 +574,7 @@ class T2Processor(AbsProcessorUnit):
 				)
 
 				return T2RunState.EXCEPTION
+
 
 	def _unsupported_result(self,
 		unit_ret: Any, t2_rec: T2Record, sub_rec: T2SubRecord,
