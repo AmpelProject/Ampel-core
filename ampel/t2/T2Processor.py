@@ -47,7 +47,7 @@ AbsT2s = Union[AbsCustomStateT2Unit[T], AbsTiedCustomStateT2Unit[T], AbsStateT2U
 
 class T2UnitDependency(TypedDict):
 	unit: Union[int, str]
-	config: int
+	config: Optional[int]
 
 stat_latency = AmpelMetricsRegistry.histogram(
 	"latency",
@@ -473,7 +473,7 @@ class T2Processor(AbsProcessorUnit):
 				for dep in ampel_iter(getattr(t2_unit, 'dependency')):
 
 					t2_info = self.context.config.get(
-						f't2.unit.base.{dep["unit"]}', dict
+						f'unit.base.{dep["unit"]}', dict
 					)
 
 					if not t2_info:
@@ -688,6 +688,10 @@ class T2Processor(AbsProcessorUnit):
 					sub_type = AbsStateT2Unit
 				elif "AbsCustomStateT2Unit" in bcs:
 					sub_type = AbsCustomStateT2Unit
+				elif "AbsTiedStateT2Unit" in bcs:
+					sub_type = AbsTiedStateT2Unit
+				elif "AbsTiedCustomStateT2Unit" in bcs:
+					sub_type = AbsTiedCustomStateT2Unit
 				else:
 					raise ValueError(f'Unsupported t2 unit (base classes: {bcs})')
 
@@ -723,7 +727,7 @@ class T2Processor(AbsProcessorUnit):
 
 					# Replace unit class name with saved hashed value
 					if self.optimize and self.optimize > 1:
-						unit_info = self.context.config.get('t2.unit.base.{dep["unit"]}', dict)
+						unit_info = self.context.config.get('unit.base.{dep["unit"]}', dict)
 						if unit_info is None:
 							raise ValueError(f'No info found for tied unit {dep["unit"]}')
 						dep['unit'] = unit_info['hash']
@@ -731,7 +735,8 @@ class T2Processor(AbsProcessorUnit):
 					deps.append(
 						{
 							'unit': dep['unit'],
-							'config': build_unsafe_short_dict_id(dep.get('config'))
+							'config': build_unsafe_short_dict_id(conf)
+								if (conf := dep.get('config')) is not None else conf
 						}
 					)
 

@@ -31,3 +31,15 @@ def test_metrics(dev_context, ingest_stock_t2):
 
     assert stats[("ampel_t2_docs_processed_total", (("unit", "CaptainObvious"),))] == 1
     assert stats[("ampel_t2_latency_seconds_sum", (("unit", "CaptainObvious"),))] > 0
+
+
+def test_tied_t2s(dev_context, ingest_tied_t2):
+    t2 = T2Processor(context=dev_context, raise_exc=True, process_name="t2")
+
+    assert t2.run() == 2
+
+    assert (num_dps := dev_context.db.get_collection("t0").count_documents({}))
+    t2 = dev_context.db.get_collection("t2")
+    assert t2.count_documents({}) == 2
+    assert t2.find_one({"unit": "DummyStateT2Unit"})["body"][0]["result"]["len"] == num_dps
+    assert t2.find_one({"unit": "DummyTiedStateT2Unit"})["body"][0]["result"]["len"] == 2*num_dps

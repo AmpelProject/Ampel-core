@@ -110,6 +110,14 @@ unit:
       fqn: ampel.test.dummy
       base:
       - AbsStockT2Unit
+    DummyTiedStateT2Unit:
+      fqn: ampel.test.dummy
+      base:
+      - AbsTiedStateT2Unit
+    DummyStateT2Unit:
+      fqn: ampel.test.dummy
+      base:
+      - AbsStateT2Unit
   core: {}
   aux: {}
 process:
