@@ -111,11 +111,13 @@ def ingest_tied_t2(dev_context, ampel_logger):
         updates_buffer=updates_buffer, logd=logd, run_id=run_id, context=dev_context,
     )
     # FIXME: should dependent docs be created implicitly?
+    # NB: docs are inserted in reverse order so that t2 execution is forced to
+    # explicitly resolve dependencies
     ingester.add_ingest_models(
         filter_results[0][0],
         [
             T2IngestModel(unit=kind)
-            for kind in ("DummyStateT2Unit", "DummyTiedStateT2Unit")
+            for kind in reversed(("DummyStateT2Unit", "DummyTiedStateT2Unit"))
         ],
     )
     ingester.ingest("stockystock", blueprint, filter_results)

@@ -427,7 +427,8 @@ class T2Processor(AbsProcessorUnit):
 			]
 	]:
 		"""
-		Load inputs required by `t2_unit`.
+		Resolve inputs required by `t2_unit`. If the unit depends on other T2s,
+		they will be executed if required.
 		"""
 
 		# T2 units bound to states requires loading of compound doc and datapoints
@@ -490,21 +491,45 @@ class T2Processor(AbsProcessorUnit):
 					if not t2_info:
 						raise ValueError(f'Unknown T2 unit {dep["unit"]}')
 
+					dep_records: List[T2Record] = []
+
+					query = {
+						'unit': dep['unit'],
+						'config': dep['config'],
+						'stock': t2_doc['stock'],
+						'channel': {'$in': t2_doc['channel']},
+						'link': t2_doc[
+							'stock' if 'AbsStockT2Unit' in t2_info['base'] # type: ignore
+							else 'link'
+						],
+					}
+
+					# run pending dependencies
+					while (dep_t2_doc := self.col_t2.find_one_and_update(
+						{'status': self.run_state, **query},
+						{'$set': {'status': T2RunState.RUNNING}}
+					)) is not None:
+						if not dep_t2_doc.get('body'):
+							dep_t2_doc['body'] = []
+						dep_t2_doc['body'].append(
+							self.process_t2_doc(dep_t2_doc, logger, jupdater)
+						)
+						# suppress channel info
+						dep_t2_doc.pop('channel')
+						dep_records.append(dep_t2_doc)
+
+					# collect completed dependencies
 					for dep_t2_doc in self.col_t2.find(
 						{
-							'unit': dep['unit'],
-							'config': dep['config'],
-							'stock': t2_doc['stock'],
-							'channel': {'$in': t2_doc['channel']},
-							'link': t2_doc[
-								'stock' if 'AbsStockT2Unit' in t2_info['base'] # type: ignore
-								else 'link'
-							]
+							'_id': {'$nin': [doc['_id'] for doc in dep_records]},
+							**query,
 						}
 					):
 						# suppress channel info
 						dep_t2_doc.pop('channel')
-						t2_records.append(dep_t2_doc)
+						dep_records.append(dep_t2_doc)
+
+					t2_records += dep_records
 
 				if isinstance(t2_unit, AbsTiedStateT2Unit):
 					return (compound, datapoints, t2_records)
