@@ -14,6 +14,7 @@ from typing import Optional, List, Union, Type, Dict, TypedDict, ItemsView, Any,
 from collections.abc import ItemsView as ColItemsView
 
 from ampel.type import T2UnitResult, ChannelId, Tag
+from ampel.db.query.utils import match_array
 from ampel.util.collections import try_reduce
 from ampel.util.t1 import get_datapoint_ids
 from ampel.t2.T2RunState import T2RunState
@@ -112,6 +113,7 @@ class T2Processor(AbsProcessorUnit):
 				self.query['unit'] = {'$in': self.t2_units}
 
 		# Shortcut
+		self.col_stock = self._ampel_db.get_collection('stock')
 		self.col_t0 = self._ampel_db.get_collection('t0')
 		self.col_t1 = self._ampel_db.get_collection('t1')
 		self.col_t2 = self._ampel_db.get_collection('t2')
@@ -374,7 +376,7 @@ class T2Processor(AbsProcessorUnit):
 	def load_input_docs(self,
 		t2_unit: AbsCustomStateT2Unit[T],
 		t2_doc: "T2Record", logger: AmpelLogger, jupdater: JournalUpdater,
-	) -> Union[T2RunState, T]:
+	) -> Union[T2RunState, Tuple[T]]:
 		...
 
 
@@ -390,7 +392,7 @@ class T2Processor(AbsProcessorUnit):
 	def load_input_docs(self,
 		t2_unit: AbsStockT2Unit,
 		t2_doc: "T2Record", logger: AmpelLogger, jupdater: JournalUpdater,
-	) -> Union[T2RunState, "StockRecord"]:
+	) -> Union[T2RunState, Tuple["StockRecord"]]:
 		...
 
 
@@ -398,7 +400,7 @@ class T2Processor(AbsProcessorUnit):
 	def load_input_docs(self,
 		t2_unit: AbsPointT2Unit,
 		t2_doc: "T2Record", logger: AmpelLogger, jupdater: JournalUpdater,
-	) -> Union[T2RunState, "DataPoint"]:
+	) -> Union[T2RunState, Tuple["DataPoint"]]:
 		...
 
 
@@ -420,10 +422,10 @@ class T2Processor(AbsProcessorUnit):
 			Union[
 				Tuple["Compound", Sequence["DataPoint"]],
 				Tuple["Compound", Sequence["DataPoint"], List[T2Record]],
-				T,
+				Tuple[T],
 				Tuple[T, List["T2Record"]],
-				"StockRecord",
-				"DataPoint"
+				Tuple["StockRecord"],
+				Tuple["DataPoint"],
 			]
 	]:
 		"""
@@ -496,13 +498,25 @@ class T2Processor(AbsProcessorUnit):
 					query = {
 						'unit': dep['unit'],
 						'config': dep['config'],
-						'stock': t2_doc['stock'],
 						'channel': {'$in': t2_doc['channel']},
-						'link': t2_doc[
-							'stock' if 'AbsStockT2Unit' in t2_info['base'] # type: ignore
-							else 'link'
-						],
 					}
+					if 'AbsStockT2Unit' in t2_info['base']:
+						query['link'] = (
+							t2_doc['stock']
+							if isinstance(t2_doc['stock'], (int, str))
+							else match_array(t2_doc['stock']) # type: ignore[arg-type]
+						)
+						query['col'] = 'stock'
+					elif 'AbsPointT2Unit' in t2_info['base']:
+						query['link'] = match_array(dps_ids)
+						query['col'] = 't0'
+					else:
+						query['link'] = t2_doc['link']
+						query['stock'] = (
+							t2_doc['stock']
+							if isinstance(t2_doc['stock'], (int, str))
+							else match_array(t2_doc['stock']) # type: ignore[arg-type]
+						)
 
 					# run pending dependencies
 					while (dep_t2_doc := self.col_t2.find_one_and_update(
@@ -540,12 +554,22 @@ class T2Processor(AbsProcessorUnit):
 				if isinstance(t2_unit, AbsStateT2Unit):
 					return (compound, datapoints)
 				else: # instance of AbsCustomStateT2Unit
-					return t2_unit.build(compound, datapoints)
+					return (t2_unit.build(compound, datapoints),)
 
 		elif isinstance(t2_unit, (AbsStockT2Unit, AbsPointT2Unit)):
 
-			if doc := next(self.col_t0.find({'_id': t2_doc['link']}), None):
-				return doc
+			if doc := next(
+				(
+					(
+						self.col_t0
+						if isinstance(t2_unit, AbsPointT2Unit)
+						else self.col_stock
+					)
+					.find({'_id': t2_doc['link']})
+				),
+				None
+			):
+				return (doc,)
 
 			report_error(
 				self._ampel_db, msg='Datapoint not found' if isinstance(t2_unit, AbsPointT2Unit)

@@ -8,6 +8,7 @@ from pymongo import InsertOne
 from ampel.config.AmpelConfig import AmpelConfig
 from ampel.db.DBUpdatesBuffer import DBUpdatesBuffer
 from ampel.dev.DevAmpelContext import DevAmpelContext
+from ampel.ingest.PointT2Ingester import PointT2Ingester
 from ampel.ingest.StockIngester import StockIngester
 from ampel.ingest.StockT2Ingester import StockT2Ingester
 from ampel.log.AmpelLogger import AmpelLogger
@@ -78,19 +79,28 @@ def ingest_stock_t2(dev_context, ampel_logger):
     ingester = StockT2Ingester(
         updates_buffer=updates_buffer, logd=logd, run_id=run_id, context=dev_context,
     )
-    ingester.add_ingest_models("TEST_CHANNEL", [T2IngestModel(unit="CaptainObvious")])
+    ingester.add_ingest_models("TEST_CHANNEL", [T2IngestModel(unit="DummyStockT2Unit")])
     ingester.ingest("stockystock", [("TEST_CHANNEL", True)])
     ingester.updates_buffer.push_updates()
     assert dev_context.db.get_collection("t2").count_documents({}) == 1
 
 
-@pytest.fixture
-def ingest_tied_t2(dev_context, ampel_logger):
+@pytest.fixture(params=["DummyStateT2Unit", "DummyPointT2Unit", "DummyStockT2Unit"])
+def ingest_tied_t2(dev_context, ampel_logger, request):
     """Create a T2 document with dependencies"""
+
+    tied_config_id = dev_context.add_config_id(
+        {"dependency": [{"unit": request.param}]}
+    )
+
     run_id = 0
     updates_buffer = DBUpdatesBuffer(dev_context.db, run_id=run_id, logger=ampel_logger)
     logd = LogsBufferDict({"logs": [], "extra": {}, "err": False,})
     filter_results = [("TEST_CHANNEL", True)]
+
+    StockIngester(
+        updates_buffer=updates_buffer, logd=logd, run_id=run_id, context=dev_context,
+    ).ingest("stockystock", filter_results, {})
 
     # mimic a datapoint ingester
     datapoints = [
@@ -107,27 +117,49 @@ def ingest_tied_t2(dev_context, ampel_logger):
     blueprint = comp_ingester.ingest("stockystock", datapoints, filter_results)
 
     # create T2 doc
-    ingester = DummyStateT2Ingester(
+    # FIXME: should dependent docs be created implicitly?
+    state_ingester = DummyStateT2Ingester(
         updates_buffer=updates_buffer, logd=logd, run_id=run_id, context=dev_context,
     )
-    # FIXME: should dependent docs be created implicitly?
-    # NB: docs are inserted in reverse order so that t2 execution is forced to
-    # explicitly resolve dependencies
-    ingester.add_ingest_models(
-        filter_results[0][0],
-        [
-            T2IngestModel(unit=kind)
-            for kind in reversed(("DummyStateT2Unit", "DummyTiedStateT2Unit"))
-        ],
+    point_ingester = PointT2Ingester(
+        updates_buffer=updates_buffer, logd=logd, run_id=run_id, context=dev_context,
     )
-    ingester.ingest("stockystock", blueprint, filter_results)
-    ingester.updates_buffer.push_updates()
+    stock_ingester = StockT2Ingester(
+        updates_buffer=updates_buffer, logd=logd, run_id=run_id, context=dev_context,
+    )
+
+    # NB: ingestion configured in reverse order so that t2 execution is forced
+    # to explicitly resolve dependencies
+
+    state_ingester.add_ingest_models(
+        filter_results[0][0],
+        [T2IngestModel(unit="DummyTiedStateT2Unit", config=tied_config_id,)],
+    )
+
+    if "state" in request.param.lower():
+        state_ingester.add_ingest_models(
+            filter_results[0][0], [T2IngestModel(unit=request.param)]
+        )
+    elif "point" in request.param.lower():
+        point_ingester.add_ingest_models(
+            filter_results[0][0], [T2IngestModel(unit=request.param)]
+        )
+    elif "stock" in request.param.lower():
+        stock_ingester.add_ingest_models(
+            filter_results[0][0], [T2IngestModel(unit=request.param)]
+        )
+
+    state_ingester.ingest("stockystock", blueprint, filter_results)
+    point_ingester.ingest("stockystock", datapoints, filter_results)
+    stock_ingester.ingest("stockystock", filter_results)
+
+    updates_buffer.push_updates()
 
     assert (
-        dev_context.db.get_collection("t2").count_documents(
-            {"unit": "DummyStateT2Unit"}
-        )
-        == 1
+        dev_context.db.get_collection("t2").count_documents({"unit": request.param})
+        == len(datapoints)
+        if "point" in request.param.lower()
+        else 1
     )
     assert (
         dev_context.db.get_collection("t2").count_documents(
@@ -135,3 +167,5 @@ def ingest_tied_t2(dev_context, ampel_logger):
         )
         == 1
     )
+
+    return request

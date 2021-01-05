@@ -6,6 +6,7 @@ from pymongo import UpdateOne
 
 from ampel.abstract.AbsProcessorUnit import AbsProcessorUnit
 from ampel.abstract.AbsStockT2Unit import AbsStockT2Unit
+from ampel.abstract.AbsPointT2Unit import AbsPointT2Unit
 from ampel.abstract.AbsStateT2Unit import AbsStateT2Unit
 from ampel.abstract.AbsTiedStateT2Unit import AbsTiedStateT2Unit
 from ampel.abstract.ingest.AbsCompoundIngester import AbsCompoundIngester
@@ -30,7 +31,7 @@ class Sleepy(AbsProcessorUnit):
         time.sleep(1)
 
 
-class CaptainObvious(AbsStockT2Unit):
+class DummyStockT2Unit(AbsStockT2Unit):
     def run(self, stock_record):
         return {"id": stock_record["_id"]}
 
@@ -173,6 +174,10 @@ class DummyStateT2Ingester(AbsStateT2Ingester):
                 )
             )
 
+class DummyPointT2Unit(AbsPointT2Unit):
+	def run(self, datapoint):
+		return {"thing": datapoint["body"]["thing"]}
+
 
 class DummyStateT2Unit(AbsStateT2Unit):
     def run(self, compound, datapoints):
@@ -183,6 +188,6 @@ class DummyTiedStateT2Unit(AbsTiedStateT2Unit):
     dependency = [{"unit": "DummyStateT2Unit"}]
 
     def run(self, compound, datapoints, t2_records):
-        assert len(t2_records) == 1
+        assert t2_records, "dependencies were found"
         assert len(body := t2_records[0].get("body") or []) == 1
         return {k: v*2 for k,v in body[0]["result"].items()}
