@@ -19,6 +19,25 @@ from ampel.db.query.latest_compound import fast_query, general_query
 
 
 class T3LatestStateDataLoader(AbsT3Loader):
+	"""
+	Load only T1 and T2 documents associated with the latest state of each
+	stock in the selected channels. The latest state is the compound doc with
+	the largest value of ``len`` or ``added``.
+
+	.. note::
+	  
+	  T3LatestStateDataLoader can only load state-bound T2 documents. If you
+	  need point- or stock-bound T2s, use
+	  :py:class:`~ampel.t3.load.T3SimpleDataLoader.T3SimpleDataLoader`.
+
+	.. seealso:
+	  
+	  :py:func:`ampel.db.query.latest_compound.fast_query`
+	    for notes on how compounds are selected from T0
+	  
+	  :py:func:`ampel.db.query.latest_compound.general_query`
+	    for notes on how compounds are selected from other tiers
+	"""
 
 
 	def __init__(self, context: AmpelContext, **kwargs):
