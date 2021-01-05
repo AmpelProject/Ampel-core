@@ -106,7 +106,7 @@ unit:
       base:
       - AbsProcessorUnit
   base:
-    CaptainObvious:
+    DummyStockT2Unit:
       fqn: ampel.test.dummy
       base:
       - AbsStockT2Unit
@@ -118,6 +118,10 @@ unit:
       fqn: ampel.test.dummy
       base:
       - AbsStateT2Unit
+    DummyPointT2Unit:
+      fqn: ampel.test.dummy
+      base:
+      - AbsPointT2Unit
   core: {}
   aux: {}
 process:
@@ -131,6 +135,7 @@ alias:
   t1: {}
   t2: {}
   t3: {}
+confid: {}
 resource:
   mongo: mongodb://localhost:27017
   ampel-ztf/archive: denada
