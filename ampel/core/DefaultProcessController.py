@@ -9,6 +9,7 @@
 
 import asyncio
 import datetime
+import logging
 import schedule
 import traceback
 import sys
@@ -28,6 +29,8 @@ from ampel.config.ScheduleEvaluator import ScheduleEvaluator
 from ampel.model.ProcessModel import ProcessModel
 from ampel.model.UnitModel import UnitModel
 
+
+log = logging.getLogger(__name__)
 
 class DefaultProcessController(AbsProcessController):
 	"""
@@ -170,6 +173,9 @@ class DefaultProcessController(AbsProcessController):
 			result = future.result()
 		except asyncio.CancelledError:
 			return
+		except Exception as exc:
+			AbsProcessController.process_exceptions.labels(pm.tier, pm.name).inc()
+			log.warn(f"{pm.name} failed", exc_info=exc)
 		finally:
 			self._pending_schedules.remove(future)
 		if self.mp_join >= 2 and not any(bool(r) for r in result):
