@@ -5,12 +5,12 @@ import enum
 import logging
 import operator
 import os
-from datetime import datetime
+from datetime import datetime, timedelta
 from functools import reduce
-from typing import Any, cast, Dict, List, Literal, Optional, Set, Tuple
+from typing import Any, cast, Dict, List, Literal, Optional, Set, Tuple, Union
 
 from bson import json_util, ObjectId
-from fastapi import FastAPI, Header, HTTPException, Query
+from fastapi import FastAPI, Header, HTTPException, Query, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response
 from prometheus_client.exposition import choose_encoder
@@ -254,7 +254,9 @@ async def reload_config() -> TaskDescriptionCollection:
             processes = AmpelController.get_processes(config)
     except:
         logging.exception(f"Failed to load {config_file}")
-        raise HTTPException(status_code=500, detail=f"Failed to reload configuration file")
+        raise HTTPException(
+            status_code=500, detail=f"Failed to reload configuration file"
+        )
 
     # remove processes that are no longer defined or no longer in the active set
     await task_manager.remove_processes(
@@ -411,7 +413,9 @@ async def get_process(process: str) -> ProcessModel:
 @app.post("/process/{process}/start")
 async def start_process(process: str) -> TaskDescriptionCollection:
     processes = (
-        await get_processes(tier=None, name=[process], include=None, exclude=None, controllers=None)
+        await get_processes(
+            tier=None, name=[process], include=None, exclude=None, controllers=None
+        )
     ).processes
     return await task_manager.add_processes(processes)
 
@@ -534,15 +538,60 @@ FIELD_ABBREV = {
     "x": "extra",
 }
 
+
+async def query_time(
+    after: Optional[Union[timedelta, datetime]] = Query(None),
+    before: Optional[Union[timedelta, datetime]] = Query(None),
+) -> List[Dict[str, Any]]:
+    andlist = []
+    if after or before:
+        now = datetime.utcnow()
+        if after:
+            andlist.append(
+                {
+                    "_id": {
+                        "$gt": ObjectId.from_datetime(
+                            now - after if isinstance(after, timedelta) else after
+                        )
+                    }
+                }
+            )
+        if before:
+            andlist.append(
+                {
+                    "_id": {
+                        "$lt": ObjectId.from_datetime(
+                            now - before if isinstance(before, timedelta) else before
+                        )
+                    }
+                }
+            )
+    return json_util._json_convert(andlist, json_util.RELAXED_JSON_OPTIONS)
+
+
+async def query_event(
+    process: Optional[str] = Query(None),
+    tier: Optional[int] = Query(None, ge=0, le=3, description="tier to include"),
+    time_constraint: List[Dict[str, Any]] = Depends(query_time),
+) -> Dict[str, Any]:
+    query: Dict[str, Any] = {}
+    if process:
+        query["process"] = process
+    if tier is not None:
+        query["tier"] = tier
+    if time_constraint:
+        query["$and"] = time_constraint
+    return query
+
+
 # NB: handlers that use Mongo are synchronous; FastAPI implicitly runs them
 # in a thread. Could also use Motor for this.
 @app.get("/events")
 @app.get("/events/{process}")
-def get_events(process: Optional[str] = None):
-    query: Dict[str, Any] = {"run": {"$exists": True}}
-    if process:
-        query["process"] = process
-    cursor = context.db.get_collection("events").find(query)
+def get_events(base_query: dict = Depends(query_event)):
+    cursor = context.db.get_collection("events").find(
+        {"run": {"$exists": True}, **base_query}
+    )
     return {
         "events": [
             {
@@ -593,25 +642,8 @@ def get_logs(
 
 
 @app.get("/troubles")
-def get_troubles(
-    tier: Optional[int] = Query(None, ge=0, le=3, description="tier to include"),
-    process: Optional[str] = None,
-    after: Optional[datetime] = None,
-    before: Optional[datetime] = None,
-):
-    query: Dict[str, Any] = {}
-    if tier:
-        query["tier"] = tier
-    if process:
-        query["process"] = process
-    if after or before:
-        andlist = []
-        if after:
-            andlist.append({"_id": {"$gt": ObjectId.from_datetime(after)}})
-        if before:
-            andlist.append({"_id": {"$lt": ObjectId.from_datetime(before)}})
-        query["$and"] = andlist
-    cursor = context.db.get_collection("troubles").find(query)
+def get_troubles(base_query: dict = Depends(query_event)):
+    cursor = context.db.get_collection("troubles").find(base_query)
     return {
         "troubles": [
             {
