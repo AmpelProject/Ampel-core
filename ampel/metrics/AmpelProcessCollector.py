@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import List, Optional
+from typing import List, Optional, Tuple
 
 import psutil
 from prometheus_client.metrics_core import (  # type: ignore
@@ -21,6 +21,18 @@ class AmpelProcessCollector:
     #: Name to use for main process. If None, do not collect process metrics for main process.
     name: Optional[str] = None
 
+    def get_pids(self) -> List[Tuple[Tuple[str, int], Optional[int]]]:
+        """
+        Collect tuples of (labels, pid) for subprocesses, and, optionally, this process
+        """
+        processes: List[Tuple[Tuple[str, int], Optional[int]]] = []
+        for name, replicas in _Process._active.items():
+            for replica, pid in replicas.items():
+                processes.append(((name, replica), pid))
+        if self.name:
+            processes.append(((self.name, 0), None))
+        return processes
+
     def collect(self) -> List[Metric]:
 
         rss = GaugeMetricFamily(
@@ -35,13 +47,7 @@ class AmpelProcessCollector:
         )
 
         try:
-            processes = []
-            for name, replicas in _Process._active.items():
-                for replica, pid in replicas.items():
-                    processes.append(((name, replica), pid))
-            if self.name:
-                processes.append(((self.name, 0), None))
-            for labels, pid in processes:
+            for labels, pid in self.get_pids():
                 try:
                     p = psutil.Process(pid)
                     with p.oneshot():
