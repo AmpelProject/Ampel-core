@@ -40,6 +40,7 @@ setup(
 		"aiopipe @ https://github.com/jvansanten/aiopipe/tarball/double-close-fds",
 		"yq",
 		"prometheus_client",
+		"psutil",
 	],
 	extras_require = {
 		"testing": [
