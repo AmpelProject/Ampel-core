@@ -21,16 +21,16 @@ class AmpelProcessCollector:
     #: Name to use for main process. If None, do not collect process metrics for main process.
     name: Optional[str] = None
 
-    def get_pids(self) -> List[Tuple[Tuple[str, int], Optional[int]]]:
+    def get_pids(self) -> List[Tuple[Tuple[str, str], Optional[int]]]:
         """
         Collect tuples of (labels, pid) for subprocesses, and, optionally, this process
         """
-        processes: List[Tuple[Tuple[str, int], Optional[int]]] = []
+        processes: List[Tuple[Tuple[str, str], Optional[int]]] = []
         for name, replicas in _Process._active.items():
             for replica, pid in replicas.items():
-                processes.append(((name, replica), pid))
+                processes.append(((name, str(replica)), pid))
         if self.name:
-            processes.append(((self.name, 0), None))
+            processes.append(((self.name, "0"), None))
         return processes
 
     def collect(self) -> List[Metric]:
