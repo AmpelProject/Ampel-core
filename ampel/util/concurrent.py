@@ -24,7 +24,7 @@ import signal
 import sys
 import traceback
 from textwrap import dedent
-from typing import Any
+from typing import Any, Dict, Set
 from functools import wraps, partial
 from multiprocessing import reduction, spawn  # type: ignore
 from multiprocessing.context import set_spawning_popen
@@ -132,6 +132,10 @@ def spawn_main(read_fd, write_fd):
 
 class _Process:
     _counter = itertools.count(1)
+    #: PIDs for active processes str -> (pid -> replica), used by AmpelProcessCollector
+    _active: Dict[str,Dict[int,int]] = {}
+    #: Replica ids that can be recycled
+    _expired: Dict[str,Set[int]] = {}
 
     def __init__(self, target=None, name=None, timeout=3.0, args=(), kwargs={}):
         self._target = target
@@ -183,6 +187,17 @@ class _Process:
                 start_new_session=True,
             )
 
+        # Processes labeled with the same name are identified by replica number
+        # for monitoring purposes. Numbers are reused from smallest to largest
+        # in order to keep their cardinality as small as possible, e.g. if
+        # replicas 0,1,3,4 are live, the next number should be 2.
+        if self._name in self._active:
+            replica_idx = expired.pop() if (expired := self._expired.get(self._name, None)) else max(self._active[self._name].keys())+1
+            self._active[self._name][replica_idx] = proc.pid
+        else:
+            replica_idx = 0
+            self._active[self._name] = {replica_idx: proc.pid}
+
         try:
             async with parent_w.open() as tx:
                 tx.write(fp.getbuffer())
@@ -215,6 +230,18 @@ class _Process:
                     await asyncio.gather(proc.wait(), rx.read())
                     raise
         finally:
+            # Clean up replica numbers and pids
+            del self._active[self._name][replica_idx]
+            if not self._active[self._name]:
+                # only process active, reset everything
+                del self._active[self._name]
+                self._expired.pop(self._name, None)
+            else:
+                # at least one other process of the same name; recycle replica
+                if self._name in self._expired:
+                    self._expired[self._name].add(replica_idx)
+                else:
+                    self._expired[self._name] = {replica_idx}
             if "prometheus_multiproc_dir" in os.environ:
                 prometheus_cleanup_worker(proc.pid)
 

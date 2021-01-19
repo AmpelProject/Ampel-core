@@ -2,12 +2,15 @@ import asyncio
 import os
 import random
 import signal
+import socket
 import time
+from contextlib import asynccontextmanager
 
 import pytest
 from prometheus_client.openmetrics.exposition import generate_latest
 
 from ampel.metrics.AmpelMetricsRegistry import AmpelMetricsRegistry
+from ampel.metrics.AmpelProcessCollector import AmpelProcessCollector
 from ampel.metrics.prometheus import mmap_dict
 from ampel.util.concurrent import _Process, process
 
@@ -135,8 +138,12 @@ async def test_multilaunch():
 
 @process
 def set_counter(value, process=None):
-    AmpelMetricsRegistry.counter("countcount", "cookies", subsystem="test_concurrent").inc(value)
-    AmpelMetricsRegistry.histogram("counthist", "cookies", subsystem="test_concurrent").observe(1)
+    AmpelMetricsRegistry.counter(
+        "countcount", "cookies", subsystem="test_concurrent"
+    ).inc(value)
+    AmpelMetricsRegistry.histogram(
+        "counthist", "cookies", subsystem="test_concurrent"
+    ).observe(1)
     return value
 
 
@@ -243,3 +250,84 @@ async def test_implicit_labels(prometheus_multiproc_dir):
         get_sample_value("ampel_test_concurrent_countcount_total", {"process": "hola"})
         is not None
     )
+
+
+@asynccontextmanager
+async def fence(port):
+    """
+    Wait for a connection on a TCP port, yield, then reply
+    """
+    condition = asyncio.Condition()
+    server = None
+
+    async def serve():
+        nonlocal server
+
+        async def connected(reader, writer):
+            async with condition:
+                condition.notify()
+            async with condition:
+                await condition.wait()
+            writer.write(b"hola")
+            await writer.drain()
+            async with condition:
+                condition.notify()
+
+        server = await asyncio.start_server(connected, "127.0.0.1", port)
+        return await server.serve_forever()
+
+    serve = asyncio.create_task(serve())
+
+    async with condition:
+        await condition.wait()
+    yield
+    async with condition:
+        condition.notify()
+    async with condition:
+        await condition.wait()
+    server.close()
+    try:
+        await serve
+    except asyncio.CancelledError:
+        ...
+
+
+def latch(port):
+    """Connect to a port and wait for a reply before exiting"""
+    sock = socket.create_connection(("127.0.0.1", port))
+    sock.send(b"hola")
+    sock.recv(4)
+
+
+@pytest.mark.asyncio
+async def test_process_collector(unused_tcp_port):
+    for metric in AmpelProcessCollector().collect():
+        assert not metric.samples
+
+    for metric in AmpelProcessCollector(name="self").collect():
+        assert len(metric.samples) == 1
+        metric = metric.samples[0]
+        assert metric.labels == {"process": "self", "replica": 0}
+        assert metric.value > 0
+
+    proc = asyncio.create_task(
+        _Process(latch, args=(unused_tcp_port,), name="latch").launch()
+    )
+
+    async with fence(unused_tcp_port):
+        for metric in AmpelProcessCollector().collect():
+            assert len(metric.samples) == 1
+            metric = metric.samples[0]
+            assert metric.labels == {"process": "latch", "replica": 0}
+            assert metric.value > 0
+    await asyncio.wait_for(proc, 3)
+
+
+@pytest.mark.asyncio
+async def test_replica_numbering():
+    launch = lambda: _Process(target=echo, args=(42,), name="echo").launch()
+    assert not _Process._active
+    assert not _Process._expired
+    await launch()
+    assert not _Process._active
+    assert not _Process._expired

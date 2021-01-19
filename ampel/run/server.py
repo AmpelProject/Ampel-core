@@ -23,6 +23,7 @@ from ampel.core.UnitLoader import UnitLoader
 from ampel.dev.DictSecretProvider import DictSecretProvider
 from ampel.log.LogRecordFlag import LogRecordFlag
 from ampel.metrics.AmpelDBCollector import AmpelDBCollector
+from ampel.metrics.AmpelProcessCollector import AmpelProcessCollector
 from ampel.metrics.AmpelMetricsRegistry import AmpelMetricsRegistry
 from ampel.model.ProcessModel import ProcessModel
 from ampel.model.StrictModel import StrictModel
@@ -232,6 +233,7 @@ async def init():
         freeze_config=False,
     )
     AmpelMetricsRegistry.register_collector(AmpelDBCollector(context.db))
+    AmpelMetricsRegistry.register_collector(AmpelProcessCollector(name="server"))
 
 
 app.on_event("shutdown")(task_manager.shutdown)
