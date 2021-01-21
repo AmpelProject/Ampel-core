@@ -69,7 +69,7 @@ stat_count = AmpelMetricsRegistry.counter(
 class T2Processor(AbsProcessorUnit):
 	"""
 	:param t2_units: ids of the t2 units to run. If not specified, any t2 unit will be run
-	:param run_state: only t2 docs with field 'status' matching with provided integer number will be processedf
+	:param run_state: only t2 docs with field 'status' matching with provided integer number will be processed
 	:param doc_limit: max number of t2 docs to process in run loop
 	:param send_beacon: whether to update the beacon collection before run() is executed
 	:param gc_collect: whether to actively perform garbage collection between processing of T2 docs
@@ -445,10 +445,6 @@ class T2Processor(AbsProcessorUnit):
 		):
 
 			datapoints: List[DataPoint] = []
-			# JN: The link entries is a list - links to both coumpounds and t2s?
-			# Old (grabbing last link)
-			#link = t2_doc['link'][0] if isinstance(t2_doc['link'], list) else t2_doc['link']
-			# New (grabbing first link)
 			link = t2_doc['link'][-1] if isinstance(t2_doc['link'], list) else t2_doc['link']
 			compound: Optional[Compound] = next(self.col_t1.find({'_id': link}), None)
 
@@ -501,11 +497,7 @@ class T2Processor(AbsProcessorUnit):
 
 					query = {
 						'unit': dep['unit'],
-						# JN: Had not specified config, so this is set to None
-						# which does not correspond to any entry. 
-						# Commenting out works, but would mean the chained T2
-						# has to verify config.
-#						'config': dep['config'],
+						'config': dep['config'],
 						'channel': {'$in': t2_doc['channel']},
 					}
 					if 'AbsStockT2Unit' in t2_info['base']:
@@ -519,11 +511,11 @@ class T2Processor(AbsProcessorUnit):
 						query['link'] = match_array(dps_ids)
 						query['col'] = 't0'
 					else:
-						# JN: Again need to pick one of the links. Always this one?
-						# Old:
-						# query['link'] = t2_doc['link'][0]
-						# New:
-						query['link'] = t2_doc['link'][-1]
+						query['link'] = (
+							t2_doc['link']
+							if isinstance(t2_doc['link'], (int, str, bytes))
+							else match_array(t2_doc['link']) # type: ignore[arg-type]
+						)
 						query['stock'] = (
 							t2_doc['stock']
 							if isinstance(t2_doc['stock'], (int, str))
@@ -561,13 +553,7 @@ class T2Processor(AbsProcessorUnit):
 				if isinstance(t2_unit, AbsTiedStateT2Unit):
 					return (compound, datapoints, t2_records)
 				else: # instance of AbsTiedCustomStateT2Unit
-					# JN: This does not work as the AbsTiedCustomStateT2Unit does
-					# not have a build method. 
-					#return (t2_unit.build(compound, datapoints), t2_records)
-					# The AbsLightCurveT2Unit class has the method (together with e.g.
-					# upper limit infos), so this works *for my test chain*
-					from ampel.abstract.AbsLightCurveT2Unit import AbsLightCurveT2Unit
-					return (AbsLightCurveT2Unit.build(compound, datapoints), t2_records)
+					return (t2_unit.build(compound, datapoints), t2_records)
 
 
 			else:
