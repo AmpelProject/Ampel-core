@@ -124,7 +124,16 @@ class AbsLegacyChannelTemplate(AbsChannelTemplate, abstract=True):
 
 		directives = ret['processor']['config']['directives'][0]
 
-		if t2_state_units := self.get_units(t2_compute_from_t0, ["AbsStateT2Unit", "AbsCustomStateT2Unit"], first_pass_config):
+		if t2_state_units := self.get_units(
+			t2_compute_from_t0,
+			[
+				"AbsStateT2Unit",
+				"AbsCustomStateT2Unit",
+				"AbsTiedStateT2Unit",
+				"AbsTiedCustomStateT2Unit",
+			],
+			first_pass_config
+		):
 
 			if t1_ingester is None:
 				raise ValueError("Template processing requires parameter 't1_ingester'")
@@ -142,7 +151,16 @@ class AbsLegacyChannelTemplate(AbsChannelTemplate, abstract=True):
 				)
 			]
 
-		if t2_state_units := self.get_units(t2_compute_from_t1, ["AbsStateT2Unit", "AbsCustomStateT2Unit"], first_pass_config):
+		if t2_state_units := self.get_units(
+			t2_compute_from_t1,
+			[
+				"AbsStateT2Unit",
+				"AbsCustomStateT2Unit",
+				"AbsTiedStateT2Unit",
+				"AbsTiedCustomStateT2Unit",
+			],
+			first_pass_config
+		):
 
 			if t1_standalone_ingester is None:
 				raise ValueError("Template processing requires parameter 't1_standalone_ingester'")
