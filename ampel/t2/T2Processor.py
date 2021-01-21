@@ -807,7 +807,7 @@ class T2Processor(AbsProcessorUnit):
 						{
 							'unit': dep['unit'],
 							'config': conf
-								if isinstance(conf := dep.get('config'), (int, None))
+								if isinstance(conf := dep.get('config'), (int, type(None)))
 								else build_unsafe_short_dict_id(conf)
 						}
 					)
