@@ -8,7 +8,7 @@
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import json
-from typing import Dict, Any, Literal
+from typing import Dict, Any, Literal, Optional, TYPE_CHECKING
 from importlib import import_module
 from pydantic import create_model
 from pydantic.main import ModelMetaclass
@@ -22,6 +22,8 @@ from ampel.abstract.AbsPointT2Unit import AbsPointT2Unit
 from ampel.util.mappings import walk_and_process_dict
 from ampel.util.type_analysis import get_subtype
 
+if TYPE_CHECKING:
+	from ampel.config.collector.T02ConfigCollector import T02ConfigCollector
 
 class ProcessMorpher:
 	""" Applies various transformations to process dicts """
@@ -181,69 +183,89 @@ class ProcessMorpher:
 
 			if not isinstance(t2, dict):
 				raise ValueError(f'Illegal unit definition: {t2}')
-			else:
-				# Trigger config validation (if enabled in UnitModel)
-				UnitModel(**t2)
+			elif (conf_hash := self._hash_t2_config_impl(k, t2, out_config)) is not None:
+				t2['config'] = conf_hash
 
-			rc = t2.get('config', None)
-			t2_unit_name = t2['unit']
 
-			if t2_unit_name not in out_config['unit']['base']:
-				raise ValueError(f"Unknown T2 unit: {t2_unit_name}")
+	# TODO: verbose print path ?
+	def _hash_t2_config_impl(self, k: str, t2: Dict, out_config: "T02ConfigCollector") -> Optional[int]:
 
-			if not rc:
-				continue
+		# Trigger config validation (if enabled in UnitModel)
+		UnitModel(**t2)
 
-			# alias
-			if isinstance(rc, str):
-				if rc not in out_config['alias']['t2']:
-					raise ValueError(
-						f'Unknown T2 config alias ({rc}) defined in process {self.process["name"]}'
-					)
-				rc = out_config['alias']['t2'][rc]
+		rc = t2.get('config', None)
+		t2_unit_name = t2['unit']
 
-			if isinstance(rc, dict):
+		if t2_unit_name not in out_config['unit']['base']:
+			raise ValueError(f"Unknown T2 unit: {t2_unit_name}")
 
-				if override := t2.get('override', None):
-					rc = {**rc, **override}
+		if not rc:
+			return None
 
-				if fqn := out_config['unit']['base'][t2_unit_name].get('fqn'):
-
-					T2Unit = getattr(import_module(fqn), fqn.split('.')[-1])
-					excl: Any = DataUnit._annots.keys()
-					if issubclass(T2Unit, AbsPointT2Unit):
-						excl = list(excl) + ["ingest"]
-					model = self._create_model(
-						t2_unit_name,
-						T2Unit._annots,
-						T2Unit._defaults,
-						excl,
-					)
-
-					rc = model(**rc).dict()
-
-				else:
-					self.logger.warn(
-						f"T2 unit {t2_unit_name} not installed locally. "
-						f"Building *unsafe* conf dict hash: "
-						f"changes in unit defaults between releases will go undetected"
-					)
-
-				# out_config['confid'] is an instance of T02ConfigCollector
-				t2['config'] = out_config['confid'].add(rc)
-				continue
-
-			# For internal use only
-			if isinstance(rc, int):
-				if rc in out_config['confid']:
-					continue
+		# alias
+		if isinstance(rc, str):
+			if rc not in out_config['alias']['t2']:
 				raise ValueError(
-					f'Unknown T2 config (int) alias defined in channel {k}:\n {t2}'
+					f'Unknown T2 config alias ({rc}) defined in process {self.process["name"]}'
+				)
+			rc = out_config['alias']['t2'][rc]
+
+		if isinstance(rc, dict):
+
+			if override := t2.get('override', None):
+				rc = {**rc, **override}
+
+			if fqn := out_config['unit']['base'][t2_unit_name].get('fqn'):
+
+				T2Unit = getattr(import_module(fqn), fqn.split('.')[-1])
+				excl: Any = DataUnit._annots.keys()
+				if issubclass(T2Unit, AbsPointT2Unit):
+					excl = list(excl) + ["ingest"]
+				model = self._create_model(
+					t2_unit_name,
+					T2Unit._annots,
+					T2Unit._defaults,
+					excl,
 				)
 
+				rc = model(**rc).dict()
+
+				# Hash dependency configs
+				if (
+					set(
+						out_config['unit']['base'][t2_unit_name].get('base', {})
+					)
+					.intersection(
+						[
+							"AbsTiedStateT2Unit",
+							"AbsTiedCustomStateT2Unit",
+						]
+					)
+				):
+					for dep in rc["dependency"]:
+						if (conf_hash := self._hash_t2_config_impl(k, dep, out_config)) is not None:
+							dep["config"] = conf_hash
+
+			else:
+				self.logger.warn(
+					f"T2 unit {t2_unit_name} not installed locally. "
+					f"Building *unsafe* conf dict hash: "
+					f"changes in unit defaults between releases will go undetected"
+				)
+
+			return out_config['confid'].add(rc)
+
+		# For internal use only
+		if isinstance(rc, int):
+			if rc in out_config['confid']:
+				return rc
 			raise ValueError(
-				f'Invalid T2 config defined in process {self.process["name"]}'
+				f'Unknown T2 config (int) alias defined in channel {k}:\n {t2}'
 			)
+
+		raise ValueError(
+			f'Invalid T2 config defined in process {self.process["name"]}'
+		)
 
 
 	# TODO: verbose print path ?

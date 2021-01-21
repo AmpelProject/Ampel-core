@@ -549,10 +549,12 @@ class T2Processor(AbsProcessorUnit):
 						dep_records.append(dep_t2_doc)
 
 					t2_records += dep_records
+					assert t2_records
 
 				if isinstance(t2_unit, AbsTiedStateT2Unit):
 					return (compound, datapoints, t2_records)
 				else: # instance of AbsTiedCustomStateT2Unit
+					print(t2_unit)
 					return (t2_unit.build(compound, datapoints), t2_records)
 
 
@@ -786,6 +788,8 @@ class T2Processor(AbsProcessorUnit):
 			setattr(unit_instance, '_buf_hdlr', buf_hdlr)
 
 			# Check for possibly defined dependencies
+			# FIXME: the hashing scheme below is not the same as the one
+			# implemented in ProcessMorpher. Remove?
 			if hasattr(unit_instance, 'dependency'):
 
 				deps: List[T2UnitDependency] = []
@@ -802,8 +806,9 @@ class T2Processor(AbsProcessorUnit):
 					deps.append(
 						{
 							'unit': dep['unit'],
-							'config': build_unsafe_short_dict_id(conf)
-								if (conf := dep.get('config')) is not None else conf
+							'config': conf
+								if isinstance(conf := dep.get('config'), (int, None))
+								else build_unsafe_short_dict_id(conf)
 						}
 					)
 
