@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 24.05.2019
-# Last Modified Date: 04.06.2020
+# Last Modified Date: 31.01.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import gc
@@ -290,7 +290,7 @@ class T2Processor(AbsProcessorUnit):
 				if not ret:
 					logger.warn(
 						"T2 unit return empty content",
-						extra={'t2_doc': t2_doc.pop}
+						extra={'t2_doc': t2_doc}
 					)
 
 			# Custom JournalExtra returned by unit
