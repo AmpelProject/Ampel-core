@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 16.06.2018
-# Last Modified Date: 10.05.2020
+# Last Modified Date: 31.01.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import secrets
@@ -35,6 +35,10 @@ from ampel.abstract.AbsSecretProvider import AbsSecretProvider
 intcol = {'t0': 0, 't1': 1, 't2': 2, 'stock': 3}
 
 class AmpelDB(AmpelBaseModel):
+	"""
+	Ampel stores all information in a dedicated DB.
+	This class allows to create or retrieve the underlying database collections.
+	"""
 
 	prefix: str = 'Ampel'
 	databases: List[AmpelDBModel]
@@ -43,11 +47,11 @@ class AmpelDB(AmpelBaseModel):
 	secrets: Optional[AbsSecretProvider]
 
 	@staticmethod
-	def new(config: AmpelConfig, secrets: Optional[AbsSecretProvider]=None) -> 'AmpelDB':
+	def new(config: AmpelConfig, secrets: Optional[AbsSecretProvider] = None) -> 'AmpelDB':
 		""" :raises: ValueError in case a required config entry is missing """
 		return AmpelDB(
-			mongo_uri=config.get('resource.mongo', str, raise_exc=True),
-			secrets=secrets,
+			mongo_uri = config.get('resource.mongo', str, raise_exc=True),
+			secrets = secrets,
 			**config.get('db', dict, raise_exc=True)
 		)
 
@@ -63,7 +67,7 @@ class AmpelDB(AmpelBaseModel):
 		}
 
 		self.mongo_collections: Dict[str, Collection] = {}
-		# map from role to client
+		# map role with client
 		self.mongo_clients: Dict[str, MongoClient] = {}
 
 
@@ -131,9 +135,7 @@ class AmpelDB(AmpelBaseModel):
 				**self.mongo_options.dict()
 			}
 			try:
-				self.mongo_clients[role] = MongoClient(
-					self.mongo_uri, **kwargs
-				)
+				self.mongo_clients[role] = MongoClient(self.mongo_uri, **kwargs)
 			except ConfigurationError as exc:
 				# hint at error source
 				raise ConfigurationError(exc.args[0] + f' (from secret {key})', *exc.args[1:])
@@ -260,7 +262,7 @@ class AmpelDB(AmpelBaseModel):
 				col.drop_index(k)
 
 
-	def __repr__(self) -> str: # type: ignore
+	def __repr__(self) -> str:
 		return "<AmpelDB>"
 
 
@@ -295,7 +297,7 @@ class AmpelDB(AmpelBaseModel):
 		self.mongo_clients.clear()
 
 
-def provision_accounts(ampel_db: AmpelDB, auth: Dict[str,str]={}) -> Dict[str,Any]:
+def provision_accounts(ampel_db: AmpelDB, auth: Dict[str, str] = {}) -> Dict[str, Any]:
 	"""Create accounts required by the given Ampel configuration."""
 	roles = defaultdict(list)
 	for db in ampel_db.databases:
@@ -313,7 +315,7 @@ def provision_accounts(ampel_db: AmpelDB, auth: Dict[str,str]={}) -> Dict[str,An
 	return users
 
 
-def revoke_accounts(ampel_db: AmpelDB, auth: Dict[str,str]={}) -> None:
+def revoke_accounts(ampel_db: AmpelDB, auth: Dict[str, str] = {}) -> None:
 	"""Delete accounts previously created with "provision"."""
 	if ampel_db.secrets is None:
 		raise ValueError("No secrets configured")
@@ -324,13 +326,13 @@ def revoke_accounts(ampel_db: AmpelDB, auth: Dict[str,str]={}) -> None:
 		admin.command("dropUser", username)
 
 
-def list_accounts(ampel_db: AmpelDB, auth: Dict[str,str]={}) -> Dict[str,Any]:
+def list_accounts(ampel_db: AmpelDB, auth: Dict[str, str] = {}) -> Dict[str, Any]:
 	"""List configured accounts and roles."""
 	admin = MongoClient(ampel_db.mongo_uri, **auth).get_database("admin")
 	return admin.command("usersInfo")
 
 
-def init_db(ampel_db: AmpelDB, auth: Dict[str,str]={}) -> None:
+def init_db(ampel_db: AmpelDB, auth: Dict[str, str] = {}) -> None:
 	"""Initialize Ampel databases and collections."""
 	ampel_db.init_db()
 
@@ -349,7 +351,7 @@ def main() -> None:
 	parser = ArgumentParser(description="Manage access to Ampel databases")
 
 	def from_env(key) -> Optional[str]:
-		if fname := os.environ.get(key+'_FILE', None):
+		if fname := os.environ.get(key + '_FILE', None):
 			with open(fname, "r") as f:
 				return f.read().rstrip()
 		else:
@@ -422,4 +424,3 @@ def main() -> None:
 
 	if (ret := args.command(ctx.db, auth)):
 		yaml.dump(ret, sys.stdout, sort_keys=False)
-
