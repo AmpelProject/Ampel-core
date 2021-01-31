@@ -45,11 +45,10 @@ if TYPE_CHECKING:
 	from pymongo import ObjectId
 	from ampel.content.StockRecord import StockRecord
 
-AbsT2s = Union[AbsCustomStateT2Unit[T], AbsTiedCustomStateT2Unit[T], AbsStateT2Unit, AbsTiedStateT2Unit, AbsStockT2Unit, AbsPointT2Unit]
-
-class T2UnitDependency(TypedDict):
-	unit: Union[int, str]
-	config: Optional[int]
+AbsT2s = Union[
+	AbsCustomStateT2Unit[T], AbsTiedCustomStateT2Unit[T],
+	AbsStateT2Unit, AbsTiedStateT2Unit, AbsStockT2Unit, AbsPointT2Unit
+]
 
 stat_latency = AmpelMetricsRegistry.histogram(
 	"latency",
@@ -65,6 +64,10 @@ stat_count = AmpelMetricsRegistry.counter(
 	subsystem="t2",
 	labelnames=("unit",)
 )
+
+class T2UnitDependency(TypedDict):
+	unit: Union[int, str]
+	config: Optional[int]
 
 class T2Processor(AbsProcessorUnit):
 	"""
@@ -246,7 +249,7 @@ class T2Processor(AbsProcessorUnit):
 		# _id is an ObjectId, but declared as bytes in ampel-interface to avoid
 		# an explicit dependency on pymongo
 		stat_latency.labels(t2_doc["unit"]).observe(
-			now-cast("ObjectId", t2_doc["_id"]).generation_time.timestamp()
+			now - cast("ObjectId", t2_doc["_id"]).generation_time.timestamp()
 		)
 		stat_count.labels(t2_doc["unit"]).inc()
 		self._doc_counter += 1
@@ -304,7 +307,7 @@ class T2Processor(AbsProcessorUnit):
 				if not ret:
 					logger.warn(
 						"T2 unit return empty content",
-						extra={'t2_doc': t2_doc.pop}
+						extra={'t2_doc': t2_doc}
 					)
 
 			# 'tied' t2 unit, can have different results depending on the channel(s) considered
@@ -418,15 +421,14 @@ class T2Processor(AbsProcessorUnit):
 		logger: AmpelLogger,
 		jupdater: JournalUpdater,
 	) -> Union[
-			T2RunState,
-			Union[
-				Tuple["Compound", Sequence["DataPoint"]],
-				Tuple["Compound", Sequence["DataPoint"], List[T2Record]],
-				Tuple[T],
-				Tuple[T, List["T2Record"]],
-				Tuple["StockRecord"],
-				Tuple["DataPoint"],
-			]
+		T2RunState, Union[
+			Tuple["Compound", Sequence["DataPoint"]],
+			Tuple["Compound", Sequence["DataPoint"], List[T2Record]],
+			Tuple[T],
+			Tuple[T, List["T2Record"]],
+			Tuple["StockRecord"],
+			Tuple["DataPoint"],
+		]
 	]:
 		"""
 		Resolve inputs required by `t2_unit`. If the unit depends on other T2s,
@@ -590,7 +592,7 @@ class T2Processor(AbsProcessorUnit):
 
 	def run_t2_unit(self,
 		t2_unit: AbsT2s, t2_doc: T2Record, logger: AmpelLogger, jupdater: JournalUpdater,
-	) -> Union[T2UnitResult, ItemsView[Tuple[ChannelId,...], T2UnitResult]]:
+	) -> Union[T2UnitResult, ItemsView[Tuple[ChannelId, ...], T2UnitResult]]:
 		"""
 		Regarding the possible int return code:
 		usually, if an int is returned, it should be a T2RunState member
