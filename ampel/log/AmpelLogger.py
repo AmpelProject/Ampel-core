@@ -74,12 +74,12 @@ class AmpelLogger:
 			if run_id is None:
 				raise ValueError("Parameter 'run_id' is required when log_profile requires db logging handler")
 
-			logger.add_handler(
+			logger.addHandler(
 				DBLoggingHandler(context.db, run_id, **handlers['db'])
 			)
 
 		if "console" in handlers:
-			logger.add_handler(
+			logger.addHandler(
 				AmpelStreamHandler(**handlers['console'])
 			)
 
@@ -124,7 +124,7 @@ class AmpelLogger:
 		self.fname = _getframe().f_code.co_filename
 
 		if console:
-			self.add_handler(
+			self.addHandler(
 				AmpelStreamHandler() if console is True else AmpelStreamHandler(**console) # type: ignore
 			)
 		else:
@@ -143,7 +143,7 @@ class AmpelLogger:
 				self.verbose = 0
 
 
-	def add_handler(self, handler: LoggingHandlerProtocol) -> None:
+	def addHandler(self, handler: LoggingHandlerProtocol) -> None:
 
 		if handler.level < self.level:
 			self.level = handler.level
@@ -157,7 +157,7 @@ class AmpelLogger:
 		self.handlers.append(handler)
 
 
-	def remove_handler(self, handler: LoggingHandlerProtocol) -> None:
+	def removeHandler(self, handler: LoggingHandlerProtocol) -> None:
 		self.handlers.remove(handler)
 		self._auto_level()
 
