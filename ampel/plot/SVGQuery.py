@@ -1,22 +1,19 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/view/plot/SVGQuery.py
+# File              : Ampel-core/ampel/plot/SVGQuery.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 15.06.2019
-# Last Modified Date: 15.06.2019
+# Last Modified Date: 03.02.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 
 class SVGQuery:
-	"""
-	"""
 
 	def __init__(
-		self, col="photo", plot_path='plots', 
-		tran_id=None, plot_tag=None, plot_tags=None
+		self, col="photo", plot_path='plots',
+		stock_id=None, plot_tag=None, plot_tags=None
 	):
-		""" """
 
 		self._query = {}
 		self.tag = None
@@ -24,8 +21,8 @@ class SVGQuery:
 		self.plot_path = plot_path
 		self.col = col
 
-		if tran_id:
-			self.set_tran_id(tran_id)
+		if stock_id:
+			self.set_stock_id(stock_id)
 
 		if plot_tag:
 			self.set_plot_tag(plot_tag)
@@ -35,37 +32,33 @@ class SVGQuery:
 
 
 	def get_query(self):
-		""" """
 		return self._query
 
 
-	def set_tran_id(self, tran_id):
-		""" """
+	def set_stock_id(self, stock_id):
 
-		if isinstance(tran_id, (list, tuple)):
-			self._query['tranId'] = {'$in' :tran_id}
+		if isinstance(stock_id, (list, tuple)):
+			self._query['stockId'] = {'$in': stock_id}
 		else:
-			self._query['tranId'] = tran_id
+			self._query['stockId'] = stock_id
 
 
 	def set_plot_tag(self, tag):
-		""" """
 		self.tag = tag
 		self._query[self.plot_path + ".tags"] = tag
 
 
 	def set_plot_tags(self, tags):
-		""" """
 		self.tags = tags
 		self._query[self.plot_path + ".tags"] = {'$all': tags}
 
 
 	def set_query_parameter(self, name, value, overwrite=False):
-		""" 
+		"""
 		For example:
 		set_query_parameter(
 			"$or", [
-				{'t2Id': 'myFirstT2', 'run_config': 'default'}, 
+				{'t2Id': 'myFirstT2', 'run_config': 'default'},
 				{'t2Id': 'myT2'}
 			]
 		)

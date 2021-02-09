@@ -1,39 +1,35 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/view/plot/SVGUtils.py
+# File              : Ampel-core/ampel/plot/SVGUtils.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 17.05.2019
-# Last Modified Date: 21.05.2019
+# Last Modified Date: 09.02.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-# type: ignore[import]
-
-import zipfile, io
-import matplotlib as plt
+from typing import Optional, List, Any, Dict
+import zipfile, io, base64
 import svgutils as su
-from IPython.display import Image
+import matplotlib as plt
 from cairosvg import svg2png
-import base64
+from IPython.display import Image
+from ampel.protocol.LoggerProtocol import LoggerProtocol
+
 
 class SVGUtils:
-	"""
-	"""
 
 	@staticmethod
 	def mplfig_to_svg_dict(
-		mpl_fig, file_name, title=None, tags=None,
-		compress=True, width=None, height=None, 
-		close=True, logger=None
-	):
+		mpl_fig, file_name: str, title: Optional[str] = None, tags: Optional[List[str]] = None,
+		compress: bool = True, width: Optional[int] = None, height: Optional[int] = None,
+		close: bool = True, logger: LoggerProtocol = None
+	) -> Dict[str, Any]:
 		"""
 		:param mpl_fig: matplotlib figure
-		:param str file_name: filename 
-		:param str title: title 
-		:param List[str] tags: list of plot tags 
-		:param int width: figure width, for example 10 inches
-		:param int height: figure height, for example 10 inches
-		:returns: dict
+		:param tags: list of plot tags
+		:param width: figure width, for example 10 inches
+		:param height: figure height, for example 10 inches
+		:returns: svg dict instance
 		"""
 
 		if logger:
@@ -51,7 +47,7 @@ class SVGUtils:
 		if close:
 			plt.pyplot.close(mpl_fig)
 
-		ret = {'name': file_name}
+		ret: Dict[str, Any] = {'name': file_name}
 
 		if tags:
 			ret['tag'] = tags
@@ -73,7 +69,7 @@ class SVGUtils:
 		)
 
 		zf.writestr(
-			file_name, 
+			file_name,
 			imgdata.getvalue().encode('utf8')
 		)
 
@@ -87,58 +83,56 @@ class SVGUtils:
 
 
 	@staticmethod
-	def load_svg_dict(svg_dict):
+	def decompress_svg_dict(svg_dict: Dict[str, Any]) -> Dict[str, Any]:
 		"""
-		:param dict svg_dict:
-		:returns: dict
+		Modifies input dict by potentionaly decompressing compressed 'svg' value
 		"""
 
 		if not isinstance(svg_dict, dict):
 			raise ValueError("Parameter svg_dict must be an instance of dict")
 
-		if svg_dict['compressed']:
+		if svg_dict.get('compressed'):
 			bio = io.BytesIO()
 			bio.write(svg_dict['svg'])
 			zf = zipfile.ZipFile(bio)
 			file_name = zf.namelist()[0]
 			svg_dict['svg'] = str(zf.read(file_name), "utf8")
-
-		del svg_dict['compressed']
+			del svg_dict['compressed']
 
 		return svg_dict
 
 
 	@staticmethod
-	def rescale(svg, scale=1.0):
-    
+	def rescale(svg: str, scale: float = 1.0) -> str:
+
 		# Get SVGFigure from file
 		original = su.transform.fromstring(svg)
 
 		# Original size is represetnted as string (examle: '600px'); convert to float
 		original_width = float(original.width.split('.')[0])
 		original_height = float(original.height.split('.')[0])
-		
+
 		scaled = su.transform.SVGFigure(
-			original_width * scale, 
+			original_width * scale,
 			original_height * scale
 		)
-		
+
 		# Get the root element
-		svg = original.getroot()
+		svg_st = original.getroot()
 
 		# Scale the root element
-		svg.scale_xy(scale, scale)
+		svg_st.scale_xy(scale, scale)
 
 		# Add scaled svg element to figure
-		scaled.append(svg)
-		
+		scaled.append(svg_st)
+
 		return str(scaled.to_str(), "utf-8")
 		#return scaled.to_str()
 
 
 	@staticmethod
-	def to_png_img(content, dpi=96):
-		""" """
+	def to_png(content: str, dpi: int = 96) -> str:
+
 		return '<img src="data:image/png;base64,' + str(
 			base64.b64encode(
 				Image(
@@ -147,6 +141,6 @@ class SVGUtils:
 						dpi=dpi
 					),
 				).data
-			), 
+			),
 			"utf-8"
 		) + '">'
