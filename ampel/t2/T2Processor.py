@@ -4,50 +4,51 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 24.05.2019
-# Last Modified Date: 31.01.2021
+# Last Modified Date: 10.02.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import gc
 import signal
 from time import time
-from typing import Optional, List, Union, Type, Dict, TypedDict, ItemsView, Any, Sequence, Tuple, cast, overload, TYPE_CHECKING
-from collections.abc import ItemsView as ColItemsView
+from typing import Optional, List, Union, Type, Dict, ItemsView, Any, Sequence, Tuple, cast, overload, TYPE_CHECKING
 
-from ampel.type import T2UnitResult, ChannelId, Tag
+from ampel.type import T2UnitResult, ChannelId, Tag, DataPointId
 from ampel.db.query.utils import match_array
 from ampel.util.collections import try_reduce
 from ampel.util.t1 import get_datapoint_ids
 from ampel.t2.T2RunState import T2RunState
 from ampel.content.DataPoint import DataPoint
 from ampel.content.Compound import Compound
-from ampel.content.T2Record import T2Record
+from ampel.content.T2Record import T2Record, T2Link
 from ampel.content.T2SubRecord import T2SubRecord
 from ampel.content.JournalRecord import JournalRecord
+from ampel.struct.JournalExtra import JournalExtra
+from ampel.struct.T2Dependency import T2Dependency
 from ampel.type import T
 from ampel.log import AmpelLogger, DBEventDoc, LogRecordFlag, VERBOSE
 from ampel.log.utils import report_exception, report_error
 from ampel.log.handlers.DefaultRecordBufferingHandler import DefaultRecordBufferingHandler
-from ampel.util.collections import ampel_iter
 from ampel.util.mappings import build_unsafe_short_dict_id
 from ampel.abstract.AbsProcessorUnit import AbsProcessorUnit
 from ampel.abstract.AbsStockT2Unit import AbsStockT2Unit
 from ampel.abstract.AbsPointT2Unit import AbsPointT2Unit
 from ampel.abstract.AbsStateT2Unit import AbsStateT2Unit
 from ampel.abstract.AbsCustomStateT2Unit import AbsCustomStateT2Unit
+from ampel.abstract.AbsTiedT2Unit import AbsTiedT2Unit
 from ampel.abstract.AbsTiedStateT2Unit import AbsTiedStateT2Unit
 from ampel.abstract.AbsTiedCustomStateT2Unit import AbsTiedCustomStateT2Unit
 from ampel.model.UnitModel import UnitModel
 from ampel.core.JournalUpdater import JournalUpdater
-from ampel.struct.JournalExtra import JournalExtra
+
 from ampel.metrics.AmpelMetricsRegistry import AmpelMetricsRegistry
 
 if TYPE_CHECKING:
 	from pymongo import ObjectId
 	from ampel.content.StockRecord import StockRecord
 
-AbsT2s = Union[
-	AbsCustomStateT2Unit[T], AbsTiedCustomStateT2Unit[T],
-	AbsStateT2Unit, AbsTiedStateT2Unit, AbsStockT2Unit, AbsPointT2Unit
+AbsT2 = Union[
+	AbsStockT2Unit, AbsPointT2Unit, AbsStateT2Unit,
+	AbsTiedStateT2Unit, AbsCustomStateT2Unit[T], AbsTiedCustomStateT2Unit[T],
 ]
 
 stat_latency = AmpelMetricsRegistry.histogram(
@@ -55,19 +56,15 @@ stat_latency = AmpelMetricsRegistry.histogram(
 	"Delay between T2 doc creation and processing",
 	subsystem="t2",
 	unit="seconds",
-	labelnames=("unit",),
+	labelnames=("unit", ),
 )
 
 stat_count = AmpelMetricsRegistry.counter(
 	"docs_processed",
 	"Number of T2 documents processed",
 	subsystem="t2",
-	labelnames=("unit",)
+	labelnames=("unit", )
 )
-
-class T2UnitDependency(TypedDict):
-	unit: Union[int, str]
-	config: Optional[int]
 
 class T2Processor(AbsProcessorUnit):
 	"""
@@ -75,7 +72,7 @@ class T2Processor(AbsProcessorUnit):
 	:param run_state: only t2 docs with field 'status' matching with provided integer number will be processed
 	:param doc_limit: max number of t2 docs to process in run loop
 	:param send_beacon: whether to update the beacon collection before run() is executed
-	:param gc_collect: whether to actively perform garbage collection between processing of T2 docs
+	:param garbage_collect: whether to actively perform garbage collection between processing of T2 docs
 
 	:param log_profile: See AbsProcessorUnit docstring
 	:param db_handler_kwargs: See AbsProcessorUnit docstring
@@ -88,7 +85,8 @@ class T2Processor(AbsProcessorUnit):
 	doc_limit: Optional[int]
 	stock_jtag: Optional[Union[Tag, Sequence[Tag]]]
 	send_beacon: bool = True
-	gc_collect: bool = True
+	garbage_collect: bool = True
+	run_dependent_t2s: bool = False
 
 
 	def __init__(self, **kwargs) -> None:
@@ -126,7 +124,7 @@ class T2Processor(AbsProcessorUnit):
 
 		# t2_instances stores unit instances so that they can be re-used in run()
 		# Key: run config id(unit name + '_' + run_config name), Value: unit instance
-		self.t2_instances: Dict[str, AbsT2s] = {}
+		self.t2_instances: Dict[str, AbsT2] = {}
 
 		self._run = True
 		self._doc_counter = 0
@@ -204,7 +202,7 @@ class T2Processor(AbsProcessorUnit):
 		self._doc_counter = 0
 		update = {'$set': {'status': T2RunState.RUNNING}}
 		doc_limit = self.doc_limit
-		gc_collect = self.gc_collect
+		garbage_collect = self.garbage_collect
 
 		# Process t2 docs until next() returns None (breaks condition below)
 		self._run = True
@@ -225,9 +223,8 @@ class T2Processor(AbsProcessorUnit):
 			if doc_limit and self._doc_counter >= doc_limit:
 				break
 
-			if gc_collect:
+			if garbage_collect:
 				gc.collect()
-
 
 		event_doc.update(logger, docs=self._doc_counter, run=run_id)
 
@@ -235,9 +232,11 @@ class T2Processor(AbsProcessorUnit):
 		self.t2_instances.clear()
 		return self._doc_counter
 
+
 	def process_t2_doc(self,
-		t2_doc: T2Record, logger: AmpelLogger, jupdater: JournalUpdater,
+		t2_doc: T2Record, logger: AmpelLogger, jupdater: JournalUpdater
 	) -> T2SubRecord:
+
 		before_run = time()
 
 		t2_unit = self.get_unit_instance(t2_doc, logger)
@@ -278,7 +277,7 @@ class T2Processor(AbsProcessorUnit):
 			# for example: T2RunState.EXCEPTION, T2RunState.BAD_CONFIG, ...
 			if isinstance(ret, int):
 				logger.info(f'T2 unit returned int {ret}')
-				sub_rec['error'] = ret
+				sub_rec['status'] = ret
 				jrec['status'] = ret
 				self.push_t2_update(t2_doc, sub_rec, logger, status=ret)
 
@@ -310,37 +309,6 @@ class T2Processor(AbsProcessorUnit):
 						extra={'t2_doc': t2_doc}
 					)
 
-			# 'tied' t2 unit, can have different results depending on the channel(s) considered
-			elif isinstance(ret, ColItemsView):
-
-				for chans, unit_result in ret:
-
-					sub_rec_copy = sub_rec.copy()
-
-					# Error code returned by unit
-					if isinstance(unit_result, int):
-						sub_rec_copy['error'] = unit_result
-						self.push_t2_update(t2_doc, sub_rec_copy, logger, status=unit_result)
-
-					# No custom JournalExtra returned by unit
-					elif isinstance(unit_result, dict):
-						jrec_copy = jrec.copy()
-						jrec_copy['status'] = 0
-						sub_rec_copy['channel'] = chans
-						self.push_t2_update(t2_doc, sub_rec_copy, logger)
-
-					# Custom JournalExtra returned by unit
-					elif isinstance(unit_result, tuple):
-						jrec_copy = jrec.copy()
-						sub_rec_copy['channel'] = chans
-						jrec_copy['channel'] = chans
-						jrec_copy['status'] = 0
-						self.update_records(sub_rec_copy, jrec_copy, unit_result[0], unit_result[1])
-						self.push_t2_update(t2_doc, sub_rec_copy, logger)
-
-					else:
-						self._unsupported_result(unit_result, t2_doc, sub_rec, jrec, logger)
-
 			# Unsupported object returned by unit
 			else:
 				self._unsupported_result(ret, t2_doc, sub_rec, jrec, logger)
@@ -362,91 +330,85 @@ class T2Processor(AbsProcessorUnit):
 	@overload
 	def load_input_docs(self,
 		t2_unit: AbsStateT2Unit,
-		t2_doc: "T2Record", logger: AmpelLogger, jupdater: JournalUpdater,
-	) -> Union[T2RunState, Tuple["Compound", Sequence["DataPoint"]]]:
+		t2_doc: T2Record, logger: AmpelLogger, jupdater: JournalUpdater,
+	) -> Optional[Tuple[Compound, Sequence[DataPoint]]]:
 		...
 
 
 	@overload
 	def load_input_docs(self,
 		t2_unit: AbsTiedStateT2Unit,
-		t2_doc: "T2Record", logger: AmpelLogger, jupdater: JournalUpdater,
-	) -> Union[T2RunState, Tuple["Compound", Sequence["DataPoint"], List["T2Record"]]]:
+		t2_doc: T2Record, logger: AmpelLogger, jupdater: JournalUpdater
+	) -> Union[None, T2RunState, Tuple[Compound, Sequence[DataPoint], List[T2Record]]]:
 		...
 
 
 	@overload
 	def load_input_docs(self,
 		t2_unit: AbsCustomStateT2Unit[T],
-		t2_doc: "T2Record", logger: AmpelLogger, jupdater: JournalUpdater,
-	) -> Union[T2RunState, Tuple[T]]:
+		t2_doc: T2Record, logger: AmpelLogger, jupdater: JournalUpdater
+	) -> Optional[Tuple[T]]:
 		...
 
 
 	@overload
 	def load_input_docs(self,
 		t2_unit: AbsTiedCustomStateT2Unit[T],
-		t2_doc: T2Record, logger: AmpelLogger, jupdater: JournalUpdater,
-	) -> Union[T2RunState, Tuple[T, List["T2Record"]]]:
+		t2_doc: T2Record, logger: AmpelLogger, jupdater: JournalUpdater
+	) -> Union[None, T2RunState, Tuple[T, List[T2Record]]]:
 		...
 
 
 	@overload
 	def load_input_docs(self,
 		t2_unit: AbsStockT2Unit,
-		t2_doc: "T2Record", logger: AmpelLogger, jupdater: JournalUpdater,
-	) -> Union[T2RunState, Tuple["StockRecord"]]:
+		t2_doc: T2Record, logger: AmpelLogger, jupdater: JournalUpdater
+	) -> Optional[Tuple["StockRecord"]]:
 		...
 
 
 	@overload
 	def load_input_docs(self,
 		t2_unit: AbsPointT2Unit,
-		t2_doc: "T2Record", logger: AmpelLogger, jupdater: JournalUpdater,
-	) -> Union[T2RunState, Tuple["DataPoint"]]:
+		t2_doc: T2Record, logger: AmpelLogger, jupdater: JournalUpdater
+	) -> Optional[Tuple[DataPoint]]:
 		...
 
 
 	# NB: spell out union arg to ensure a common context for the TypeVar T
 	def load_input_docs(self,
-		t2_unit: Union[
-			AbsCustomStateT2Unit[T],
-			AbsTiedCustomStateT2Unit[T],
-			AbsStateT2Unit,
-			AbsTiedStateT2Unit,
-			AbsStockT2Unit,
-			AbsPointT2Unit
-		],
-		t2_doc: "T2Record",
-		logger: AmpelLogger,
-		jupdater: JournalUpdater,
+		t2_unit: AbsT2, t2_doc: T2Record,
+		logger: AmpelLogger, jupdater: JournalUpdater
 	) -> Union[
-		T2RunState, Union[
-			Tuple["Compound", Sequence["DataPoint"]],
-			Tuple["Compound", Sequence["DataPoint"], List[T2Record]],
-			Tuple[T],
-			Tuple[T, List["T2Record"]],
-			Tuple["StockRecord"],
-			Tuple["DataPoint"],
-		]
+		None, T2RunState,
+		Tuple[DataPoint], # point t2
+		Tuple["StockRecord"], # stock t2
+		Tuple[Compound, Sequence[DataPoint]], # state t2
+		Tuple[T], # custom state t2 (T can be LightCurve for ex)
+		Tuple[T, List[T2Record]], # tied custom state t2
+		Tuple[Compound, Sequence[DataPoint], List[T2Record]], # tied state t2
 	]:
 		"""
-		Resolve inputs required by `t2_unit`. If the unit depends on other T2s,
-		they will be executed if required.
+		Fetches documents required by `t2_unit`.
+		Regarding tied T2s (unit depends on other T2s):
+		- Dependent T2s will be executed if run_dependent_t2s is True.
+		- Note that the ingester ingests point and state t2s before state t2s so that the natural ordering
+		of T2 docs to be processed fits rather well a setup with a single T2processor instance processing all T2s.
+		- For state t2s tied with other state t2s, putting the dependent units first in the AlertProcessor
+		directives will make sure these are ingested first and thus processed first by T2Processor.
 		"""
 
-		# T2 units bound to states requires loading of compound doc and datapoints
+		# State bound T2 units require loading of compound doc and datapoints
 		if isinstance(
-			t2_unit,
-			(
+			t2_unit, (
 				AbsStateT2Unit,
 				AbsCustomStateT2Unit,
 				AbsTiedStateT2Unit,
 				AbsTiedCustomStateT2Unit
 			)
 		):
-
 			datapoints: List[DataPoint] = []
+			# If multiple links are avail, they should be all equivalent
 			link = t2_doc['link'][0] if isinstance(t2_doc['link'], list) else t2_doc['link']
 			compound: Optional[Compound] = next(self.col_t1.find({'_id': link}), None)
 
@@ -456,12 +418,13 @@ class T2Processor(AbsProcessorUnit):
 					self._ampel_db, msg='Compound not found', logger=logger,
 					info={'id': t2_doc['link'], 'doc': t2_doc}
 				)
-				return T2RunState.ERROR
+				return None
 
 			# Datarights: suppress channel info (T3 uses instead a
 			# 'projection' technic that should not be necessary here)
 			compound.pop('channel')
 
+			# Datapoints marked as excluded in the compound won't be included
 			dps_ids = get_datapoint_ids(compound, logger)
 			datapoints = list(self.col_t0.find({'_id': {"$in": dps_ids}}))
 
@@ -470,93 +433,150 @@ class T2Processor(AbsProcessorUnit):
 					self._ampel_db, msg='Datapoints not found', logger=logger,
 					info={'id': compound, 'doc': t2_doc}
 				)
-				return T2RunState.ERROR
+				return None
 
 			elif len(datapoints) != len(dps_ids):
 				for el in set(dps_ids) - {el['_id'] for el in datapoints}:
 					logger.error(f"Datapoint {el} referenced in compound not found")
-				return T2RunState.ERROR
+				return None
 
 			for dp in datapoints:
-				dp.pop('excl', None)
+				dp.pop('excl', None) # Channel based exclusion
 				dp.pop('extra', None)
 				dp.pop('policy', None)
 
-			if isinstance(t2_unit, (AbsTiedStateT2Unit, AbsTiedCustomStateT2Unit)):
+			if isinstance(t2_unit, AbsTiedT2Unit):
 
-				t2_records: List[T2Record] = []
+				queries: List[Dict[str, Any]] = []
+				tied_records: List[T2Record] = []
 
-				for dep in ampel_iter(getattr(t2_unit, 'dependency')):
+				if isinstance(t2_unit, AbsTiedCustomStateT2Unit):
+					# A LightCurve instance for example
+					custom_state = t2_unit.build(compound, datapoints)
 
-					t2_info = self.context.config.get(
-						f'unit.base.{dep["unit"]}', dict
-					)
+				# t2 dependencies customization from config
+				t2_deps: List[T2Dependency] = getattr(t2_unit, 't2_dependency', [])
+				tied_unit_names = t2_unit.get_tied_unit_names()
 
-					if not t2_info:
-						raise ValueError(f'Unknown T2 unit {dep["unit"]}')
-
-					dep_records: List[T2Record] = []
-
-					query = {
-						'unit': dep['unit'],
-						'config': dep['config'],
-						'channel': {'$in': t2_doc['channel']},
-					}
-					if 'AbsStockT2Unit' in t2_info['base']:
-						query['link'] = (
-							t2_doc['stock']
-							if isinstance(t2_doc['stock'], (int, str))
-							else match_array(t2_doc['stock']) # type: ignore[arg-type]
+				# This should not happen with config built by ampel (ConfigBuilder)
+				# but can happen in developers notebook
+				for t2_dep in t2_deps:
+					if t2_dep['unit'] not in tied_unit_names:
+						report_error(
+							self._ampel_db, logger=logger, info={'doc': t2_doc},
+							msg = "Invalid dependency customization " +
+							"(requested tied unit not registered in root class)"
 						)
-						query['col'] = 'stock'
-					elif 'AbsPointT2Unit' in t2_info['base']:
-						query['link'] = match_array(dps_ids)
-						query['col'] = 't0'
-					else:
-						query['link'] = t2_doc['link']
-						query['stock'] = (
-							t2_doc['stock']
-							if isinstance(t2_doc['stock'], (int, str))
-							else match_array(t2_doc['stock']) # type: ignore[arg-type]
+						return None
+
+				# defaults from abstract class
+				for tied_unit_name in t2_unit.get_tied_unit_names():
+
+					# Check one or more dependencies are defined for this t2 unit
+					custom_dependencies = [el for el in t2_deps if el['unit'] == tied_unit_name]
+
+					# No customization avail -> use defaults
+					if not custom_dependencies:
+						queries.append(
+							{
+								'unit': tied_unit_name,
+								'config': None,
+								'channel': {'$in': t2_doc['channel']},
+								'stock': t2_doc['stock'],
+								"link": self.get_default_tied_t2_link(tied_unit_name, t2_doc, dps_ids)
+							}
 						)
 
-					# run pending dependencies
-					while (dep_t2_doc := self.col_t2.find_one_and_update(
-						{'status': self.run_state, **query},
-						{'$set': {'status': T2RunState.RUNNING}}
-					)) is not None:
-						if not dep_t2_doc.get('body'):
-							dep_t2_doc['body'] = []
-						dep_t2_doc['body'].append(
-							self.process_t2_doc(dep_t2_doc, logger, jupdater)
-						)
-						# suppress channel info
-						dep_t2_doc.pop('channel')
-						dep_records.append(dep_t2_doc)
+						if logger.verbose > 1:
+							logger.debug(f"Default T2 dependency query: {queries[-1]}")
 
-					# collect completed dependencies
-					for dep_t2_doc in self.col_t2.find(
-						{
-							'_id': {'$nin': [doc['_id'] for doc in dep_records]},
-							**query,
+						continue
+
+					# Customization means also, that we can request multiple t2 records
+					# of the same t2 unit with different config
+					for custom_dep in custom_dependencies:
+
+						d: Dict[str, Any] = {
+							'unit': tied_unit_name,
+							'config': custom_dep.get('config'), # possibly None
+							'channel': {'$in': t2_doc['channel']},
+							'stock': t2_doc['stock']
 						}
-					):
+
+						if custom_dep.get('link_override'):
+							if isinstance(t2_unit, AbsTiedCustomStateT2Unit):
+								d['link'] = t2_unit.get_link(
+									custom_dep['link_override'], custom_state # type: ignore[arg-type] # mypy inference issue
+								)
+							else:
+								d['link'] = t2_unit.get_link(
+									custom_dep['link_override'], compound, datapoints # type: ignore[arg-type] # mypy inference issue
+								)
+						else:
+							d["link"] = self.get_default_tied_t2_link(tied_unit_name, t2_doc, dps_ids)
+
+						if logger.verbose > 1:
+							logger.debug(f"Customized T2 dependency query: {d}")
+
+						queries.append(d)
+
+				for query in queries:
+
+					if self.run_dependent_t2s:
+
+						idx = len(tied_records)
+
+						# run pending dependencies
+						while (
+							dep_t2_doc := self.col_t2.find_one_and_update(
+								{'status': self.run_state, **query},
+								{'$set': {'status': T2RunState.RUNNING}}
+							)
+						) is not None:
+
+							if not dep_t2_doc.get('body'):
+								dep_t2_doc['body'] = []
+
+							dep_t2_doc['body'].append(
+								self.process_t2_doc(dep_t2_doc, logger, jupdater)
+							)
+
+							# suppress channel info
+							dep_t2_doc.pop('channel')
+							tied_records.append(dep_t2_doc)
+
+						if len(tied_records) > idx:
+							query['_id'] = {'$nin': [doc['_id'] for doc in tied_records[idx:]]}
+
+					# collect dependencies
+					for dep_t2_doc in self.col_t2.find(query):
+
 						# suppress channel info
 						dep_t2_doc.pop('channel')
-						dep_records.append(dep_t2_doc)
 
-					t2_records += dep_records
+						# TODO: check run_state (return MISSING_INFO / PENDING
+						tied_records.append(dep_t2_doc)
+
+				if not self.run_dependent_t2s:
+					for rec in tied_records:
+						if rec['status'] != T2RunState.COMPLETED:
+							if logger.verbose > 1:
+								logger.debug("Dependency not run yet", extra={'t2_id': t2_doc['_id']})
+							return T2RunState.TO_RUN_LATER
 
 				if isinstance(t2_unit, AbsTiedStateT2Unit):
-					return (compound, datapoints, t2_records)
-				else: # instance of AbsTiedCustomStateT2Unit
-					return (t2_unit.build(compound, datapoints), t2_records)
+					return (compound, datapoints, tied_records)
+
+				# instance of AbsTiedCustomStateT2Unit
+				return (custom_state, tied_records)
 
 			else:
+
 				if isinstance(t2_unit, AbsStateT2Unit):
 					return (compound, datapoints)
+
 				else: # instance of AbsCustomStateT2Unit
-					return (t2_unit.build(compound, datapoints),)
+					return (t2_unit.build(compound, datapoints), )
 
 		elif isinstance(t2_unit, (AbsStockT2Unit, AbsPointT2Unit)):
 
@@ -571,14 +591,14 @@ class T2Processor(AbsProcessorUnit):
 				),
 				None
 			):
-				return (doc,)
+				return (doc, )
 
 			report_error(
 				self._ampel_db, msg='Datapoint not found' if isinstance(t2_unit, AbsPointT2Unit)
 				else 'Stock doc not found', logger=logger, info={'doc': t2_doc}
 			)
 
-			return T2RunState.ERROR
+			return None
 
 		else:
 
@@ -587,11 +607,35 @@ class T2Processor(AbsProcessorUnit):
 				logger=logger, info={'doc': t2_doc}
 			)
 
-			return T2RunState.ERROR
+			return None
+
+
+	def get_default_tied_t2_link(self,
+		unit_name: str, t2_doc: T2Record, dps_ids: List[DataPointId]
+	) -> Union[T2Link, Sequence[T2Link], Dict[str, Any]]:
+		"""
+		:raises: ValueError if unit is unknown
+		:returns: link value to match
+		"""
+
+		t2_unit_info = self.context.config.get(
+			f'unit.base.{unit_name}', dict
+		)
+
+		if not t2_unit_info:
+			raise ValueError(f'Unknown T2 unit {unit_name}')
+
+		if 'AbsStockT2Unit' in t2_unit_info['base']:
+			return t2_doc['stock']
+
+		elif 'AbsPointT2Unit' in t2_unit_info['base']:
+			return match_array(dps_ids)
+
+		return t2_doc['link']
 
 
 	def run_t2_unit(self,
-		t2_unit: AbsT2s, t2_doc: T2Record, logger: AmpelLogger, jupdater: JournalUpdater,
+		t2_unit: AbsT2, t2_doc: T2Record, logger: AmpelLogger, jupdater: JournalUpdater,
 	) -> Union[T2UnitResult, ItemsView[Tuple[ChannelId, ...], T2UnitResult]]:
 		"""
 		Regarding the possible int return code:
@@ -599,32 +643,41 @@ class T2Processor(AbsProcessorUnit):
 		but let's not be too restrictive here
 		"""
 
-		if isinstance((args := self.load_input_docs(t2_unit, t2_doc, logger, jupdater)), T2RunState):
+		args = self.load_input_docs(t2_unit, t2_doc, logger, jupdater)
+
+		if args is None:
+			return T2RunState.ERROR
+
+		if isinstance(args, int):
 			return args
-		else:
-			try:
-				ret = t2_unit.run(*args)
 
-				if t2_unit._buf_hdlr.buffer: # type: ignore[union-attr]
-					t2_unit._buf_hdlr.forward( # type: ignore[union-attr]
-						logger, stock=t2_doc['stock'], channel=t2_doc['channel']
-					)
+		try:
 
-				return ret
-			except Exception as e:
-				if self.raise_exc:
-					raise e
-				# Record any uncaught exceptions in troubles collection.
-				report_exception(
-					self._ampel_db, logger, exc=e, info={
-						'_id': t2_doc['_id'],
-						'unit': t2_doc['unit'],
-						'config': t2_doc['config'],
-						'link': t2_doc['link']
-					}
+			ret = t2_unit.run(*args)
+
+			if t2_unit._buf_hdlr.buffer: # type: ignore[union-attr]
+				t2_unit._buf_hdlr.forward( # type: ignore[union-attr]
+					logger, stock=t2_doc['stock'], channel=t2_doc['channel']
 				)
 
-				return T2RunState.EXCEPTION
+			return ret
+
+		except Exception as e:
+
+			if self.raise_exc:
+				raise e
+
+			# Record any uncaught exceptions in troubles collection.
+			report_exception(
+				self._ampel_db, logger, exc=e, info={
+					'_id': t2_doc['_id'],
+					'unit': t2_doc['unit'],
+					'config': t2_doc['config'],
+					'link': t2_doc['link']
+				}
+			)
+
+			return T2RunState.EXCEPTION
 
 
 	def _unsupported_result(self,
@@ -729,7 +782,7 @@ class T2Processor(AbsProcessorUnit):
 		)
 
 
-	def get_unit_instance(self, t2_doc: T2Record, logger: AmpelLogger) -> AbsT2s:
+	def get_unit_instance(self, t2_doc: T2Record, logger: AmpelLogger) -> AbsT2:
 
 		k = f'{t2_doc["unit"]}_{t2_doc["config"]}'
 
@@ -737,16 +790,23 @@ class T2Processor(AbsProcessorUnit):
 		if k not in self.t2_instances:
 
 			if 'col' in t2_doc:
-				if 't0' in t2_doc['col']: # type: ignore[operator]
-					sub_type: Type[AbsT2s] = AbsPointT2Unit
-				elif 'stock' in t2_doc['col']: # type: ignore[operator]
+
+				if 't0' in t2_doc['col']:  # type: ignore[operator] # mypy inference issue
+					sub_type: Type[AbsT2] = AbsPointT2Unit
+				elif 'stock' in t2_doc['col']: # type: ignore[operator] # mypy inference issue
 					sub_type = AbsStockT2Unit
 				else:
 					raise ValueError('Unsupported t2 unit type')
+
 			else:
-				bcs = self.context.config.get(f"unit.base.{t2_doc['unit']}.base", (list, tuple)) # type: ignore
+
+				bcs = self.context.config.get( # type: ignore[call-overload] # improve AmpelConfig overloads
+					f"unit.base.{t2_doc['unit']}.base", (list, tuple)
+				)
+
 				if bcs is None:
 					raise ValueError(f'Unknown t2 unit: {t2_doc["unit"]}')
+
 				if "AbsStateT2Unit" in bcs:
 					sub_type = AbsStateT2Unit
 				elif "AbsCustomStateT2Unit" in bcs:
@@ -780,32 +840,6 @@ class T2Processor(AbsProcessorUnit):
 
 			# Shortcut to avoid unit_instance.logger.handlers[?]
 			setattr(unit_instance, '_buf_hdlr', buf_hdlr)
-
-			# Check for possibly defined dependencies
-			if hasattr(unit_instance, 'dependency'):
-
-				deps: List[T2UnitDependency] = []
-
-				for dep in ampel_iter(getattr(unit_instance, 'dependency')):
-
-					# Replace unit class name with saved hashed value
-					if self.optimize and self.optimize > 1:
-						unit_info = self.context.config.get('unit.base.{dep["unit"]}', dict)
-						if unit_info is None:
-							raise ValueError(f'No info found for tied unit {dep["unit"]}')
-						dep['unit'] = unit_info['hash']
-
-					deps.append(
-						{
-							'unit': dep['unit'],
-							'config': build_unsafe_short_dict_id(conf)
-								if (conf := dep.get('config')) is not None else conf
-						}
-					)
-
-				# "replace" static 'dependency' with instance dependency
-				unit_instance.__setattr__('dependency', deps)
-
-			self.t2_instances[k] = unit_instance # type: ignore
+			self.t2_instances[k] = unit_instance # type: ignore[assignment] # it's fine
 
 		return self.t2_instances[k]
