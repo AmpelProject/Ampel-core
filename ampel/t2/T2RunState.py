@@ -16,16 +16,17 @@ class T2RunState(IntEnum):
 	COMPLETED            = 0
 	TO_RUN               = -1
 	TO_RUN_PRIO          = -2
-	QUEUED               = -3
-	RUNNING              = -4
-	EXPORTED             = -5
-	ERROR                = -6
-	EXCEPTION            = -7
+	TO_RUN_LATER         = -3
+	QUEUED               = -4
+	RUNNING              = -5
+	EXPORTED             = -6
+	ERROR                = -7
+	EXCEPTION            = -8
 
-	TOO_MANY_TRIALS      = -8
+	TOO_MANY_TRIALS      = -9
 
 	# UNKNOWN_* may be caused by a bug of the ingester or purge
-	UNKNOWN_LINK         = -9
-	UNKNOWN_CONFIG       = -10
-	MISSING_DEPENDENCY   = -11
-	MISSING_INFO         = -12
+	UNKNOWN_LINK         = -10
+	UNKNOWN_CONFIG       = -11
+	MISSING_DEPENDENCY   = -12
+	MISSING_INFO         = -13
