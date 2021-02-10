@@ -550,11 +550,8 @@ class T2Processor(AbsProcessorUnit):
 
 					# collect dependencies
 					for dep_t2_doc in self.col_t2.find(query):
-
 						# suppress channel info
 						dep_t2_doc.pop('channel')
-
-						# TODO: check run_state (return MISSING_INFO / PENDING
 						tied_records.append(dep_t2_doc)
 
 				if not self.run_dependent_t2s:
