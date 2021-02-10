@@ -15,5 +15,11 @@ from ampel.abstract.AbsPointT2Unit import AbsPointT2Unit
 
 class DemoPointT2Unit(AbsPointT2Unit):
 
+	test_parameter: int = 1
+
 	def run(self, datapoint: DataPoint) -> T2UnitResult:
-		return {"id": datapoint['_id'], "time": time()}
+		return {
+			"id": datapoint['_id'],
+			"time": time(),
+			"test_parameter": self.test_parameter
+		}
