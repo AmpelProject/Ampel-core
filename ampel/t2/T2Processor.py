@@ -15,6 +15,7 @@ from typing import Optional, List, Union, Type, Dict, ItemsView, Any, Sequence, 
 from ampel.type import T2UnitResult, ChannelId, Tag, DataPointId
 from ampel.db.query.utils import match_array
 from ampel.util.collections import try_reduce
+from ampel.log.utils import convert_dollars
 from ampel.util.t1 import get_datapoint_ids
 from ampel.t2.T2RunState import T2RunState
 from ampel.content.DataPoint import DataPoint
@@ -81,7 +82,11 @@ class T2Processor(AbsProcessorUnit):
 	"""
 
 	t2_units: Optional[List[str]]
-	run_state: T2RunState = T2RunState.TO_RUN
+	run_state: Union[T2RunState, Sequence[T2RunState]] = [
+		T2RunState.TO_RUN,
+		T2RunState.TO_RUN_PRIO,
+		T2RunState.TO_RUN_LATER
+	]
 	doc_limit: Optional[int]
 	stock_jtag: Optional[Union[Tag, Sequence[Tag]]]
 	send_beacon: bool = True
@@ -103,15 +108,22 @@ class T2Processor(AbsProcessorUnit):
 			for k, d in self.context.config.get('t2.unit.base', list): # type: ignore[union-attr]
 				self.hashes[d['hash']] = k
 
+		if isinstance(self.run_state, int):
+			self.status_match: Union[T2RunState, Dict[str, List[T2RunState]]] = self.run_state
+		elif isinstance(self.run_state, list):
+			self.status_match = {"$in": self.run_state}
+		else: # Could be a tuple (pymongo requires list)
+			self.status_match = {"$in": list(self.run_state)}
+
 		# Prepare DB query dict
-		self.query: Dict[str, Any] = {'status': self.run_state}
+		self.query: Dict[str, Any] = {'status': self.status_match}
 
 		# Possibly restrict query to specified t2 units
 		if self.t2_units:
 			if len(self.t2_units) == 1:
 				self.query['unit'] = self.t2_units[0]
 			else:
-				self.query['unit'] = {'$in': self.t2_units}
+				self.query['unit'] = {"$in": self.t2_units}
 
 		# Shortcut
 		self.col_stock = self._ampel_db.get_collection('stock')
@@ -143,7 +155,7 @@ class T2Processor(AbsProcessorUnit):
 		args = {
 			'class': self.__class__.__name__,
 			't2_units': self.t2_units,
-			'run_state': self.run_state,
+			'run_state': self.status_match,
 			'base_log_flag': self.base_log_flag.__int__(),
 			'doc_limit': self.doc_limit
 		}
@@ -159,7 +171,7 @@ class T2Processor(AbsProcessorUnit):
 			{
 				'$setOnInsert': {
 					'class': args.pop('class'),
-					'config': args
+					'config': convert_dollars(args)
 				},
 				'$set': {'timestamp': int(time())}
 			},
@@ -481,7 +493,7 @@ class T2Processor(AbsProcessorUnit):
 							{
 								'unit': tied_unit_name,
 								'config': None,
-								'channel': {'$in': t2_doc['channel']},
+								'channel': {"$in": t2_doc['channel']},
 								'stock': t2_doc['stock'],
 								"link": self.get_default_tied_t2_link(tied_unit_name, t2_doc, dps_ids)
 							}
@@ -499,7 +511,7 @@ class T2Processor(AbsProcessorUnit):
 						d: Dict[str, Any] = {
 							'unit': tied_unit_name,
 							'config': custom_dep.get('config'), # possibly None
-							'channel': {'$in': t2_doc['channel']},
+							'channel': {"$in": t2_doc['channel']},
 							'stock': t2_doc['stock']
 						}
 
@@ -529,7 +541,7 @@ class T2Processor(AbsProcessorUnit):
 						# run pending dependencies
 						while (
 							dep_t2_doc := self.col_t2.find_one_and_update(
-								{'status': self.run_state, **query},
+								{'status': self.status_match, **query},
 								{'$set': {'status': T2RunState.RUNNING}}
 							)
 						) is not None:
