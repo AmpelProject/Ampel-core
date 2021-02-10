@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 10.06.2020
-# Last Modified Date: 07.08.2020
+# Last Modified Date: 10.02.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from typing import Optional, Any, Dict
@@ -51,8 +51,10 @@ class DevAmpelContext(AmpelContext):
 
 
 	def add_config_id(self, arg: Dict[str, Any]) -> int:
-		conf = self._get_unprotected_conf()
 		conf_id = build_unsafe_short_dict_id(arg)
+		if conf_id in self.config.get("confid", dict, raise_exc=True):
+			return conf_id
+		conf = self._get_unprotected_conf()
 		conf["confid"][conf_id] = arg
 		self._set_new_conf(conf)
 		return conf_id
