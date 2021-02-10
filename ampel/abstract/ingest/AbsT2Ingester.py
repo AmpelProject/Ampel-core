@@ -24,7 +24,7 @@ class AbsT2Ingester(AbsIngester, abstract=True):
 	compiler: Union[AbsStateT2Compiler, AbsPointT2Compiler, AbsStockT2Compiler]
 	tags: Optional[List[Union[int, str]]]
 	tier: Literal[0, 1, 3] = 0
-	default_options: Dict = {}
+	default_ingest_config: Dict = {}
 
 
 	def add_ingest_models(self, channel: ChannelId, models: Sequence[T2IngestModel]):
@@ -76,7 +76,7 @@ class AbsT2Ingester(AbsIngester, abstract=True):
 			# 4) Specific options from model config (t2_compute)
 			# (ex: custom T2SNCosmo ticket might request upper_limits nonetheless)
 			ingest_options: Dict[str, Any] = {
-				**self.default_options,
+				**self.default_ingest_config,
 				**getattr(T2AbsClass, 'ingest', {}),
 				**getattr(T2Class, 'ingest', {}),
 				**(im.ingest if im.ingest else {})
