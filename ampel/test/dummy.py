@@ -1,6 +1,15 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+# File              : Ampel-core/ampel/test/dummy.py
+# License           : BSD-3-Clause
+# Author            : jvs
+# Date              : Unspecified
+# Last Modified Date: 11.02.2021
+# Last Modified By  : jvs
+
 import time
 from collections import defaultdict
-from typing import Dict, List, Optional, Sequence, Set, Tuple, Union
+from typing import Dict, List, Optional, Sequence, Set, Tuple, Union, Any
 
 from pymongo import UpdateOne
 
@@ -17,7 +26,9 @@ from ampel.content.DataPoint import DataPoint
 from ampel.ingest.CompoundBluePrint import CompoundBluePrint
 from ampel.ingest.T1DefaultCombiner import T1DefaultCombiner
 from ampel.log.AmpelLogger import AmpelLogger
-from ampel.t2.T2RunState import T2RunState
+from ampel.enum.T2SysRunState import T2SysRunState
+from ampel.content.PhotoCompound import PhotoCompound
+from ampel.content.T2Document import T2Document
 from ampel.type import ChannelId, StockId
 
 
@@ -115,7 +126,7 @@ class DummyStateT2Compiler(AbsStateT2Compiler):
                 optimized_t2s[k + comp_ids] = v
             else:
                 optimized_t2s[k + (comp_ids,)] = v
-        return optimized_t2s
+        return optimized_t2s # TODO: fix mypy warning
 
 
 class DummyStateT2Ingester(AbsStateT2Ingester):
@@ -146,12 +157,12 @@ class DummyStateT2Ingester(AbsStateT2Ingester):
             }
 
             # Attributes set if no previous doc exists
-            set_on_insert: T2Record = {
+            set_on_insert: T2Document = {
                 "stock": stock_id,
                 "tag": self.tags,
                 "unit": t2_id,
                 "config": run_config,
-                "status": T2RunState.TO_RUN.value,
+                "status": T2SysRunState.TO_RUN.value,
             }
 
             jchan, chan_add_to_set = AbsT2Ingester.build_query_parts(chans)
@@ -190,4 +201,4 @@ class DummyTiedStateT2Unit(AbsTiedStateT2Unit):
     def run(self, compound, datapoints, t2_records):
         assert t2_records, "dependencies were found"
         assert len(body := t2_records[0].get("body") or []) == 1
-        return {k: v*2 for k,v in body[0]["result"].items()}
+        return {k: v * 2 for k, v in body[0]["result"].items()}
