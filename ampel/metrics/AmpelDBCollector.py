@@ -1,10 +1,20 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+# File              : Ampel-core/ampel/metrics/AmpelDBCollector.py
+# License           : BSD-3-Clause
+# Author            : jvs
+# Date              : Unspecified
+# Last Modified Date: 11.02.2021
+# Last Modified By  : jvs
+
+
 from dataclasses import dataclass
 from typing import List
 
 from prometheus_client.metrics_core import GaugeMetricFamily, Metric # type: ignore
 
 from ampel.db.AmpelDB import AmpelDB
-from ampel.t2.T2RunState import T2RunState
+from ampel.enum.T2SysRunState import T2SysRunState
 
 
 @dataclass
@@ -25,10 +35,10 @@ class AmpelDBCollector:
                     "ampel_t2_docs_queued",
                     "Number of T2 docs awaiting processing",
                     value=self.db.get_collection("t2").count_documents(
-                        {"status": T2RunState.TO_RUN}
+                        {"status": T2SysRunState.TO_RUN}
                     ),
                 )
             )
-        except:
+        except Exception:
             ...
         return metrics
