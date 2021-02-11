@@ -499,14 +499,24 @@ def stock_summary():
     }
 
 
+def transform_doc(doc: Dict[str, Any], tier: int) -> Dict[str, Any]:
+    doc = json_util._json_convert(doc, json_util.RELAXED_JSON_OPTIONS)
+    if tier == 1:
+        doc["added"] = datetime.fromtimestamp(doc["added"])
+    if tier == 2:
+        for jentry in doc["journal"]:
+            jentry["dt"] = datetime.fromtimestamp(jentry["dt"])
+        doc["status"] = T2RunState(doc["status"]).name
+        for subrecord in doc.get("body", []):
+            subrecord["ts"] = datetime.fromtimestamp(subrecord["ts"])
+    return doc
+
+
 @app.get("/stock/{stock_id}/t{tier}")
 def get_tier_docs(stock_id: int, tier: int = Query(..., ge=0, le=2)):
     cursor = context.db.get_collection(f"t{tier}").find({"stock": stock_id})
     return {
-        "matches": [
-            json_util._json_convert(doc, json_util.RELAXED_JSON_OPTIONS)
-            for doc in cursor
-        ],
+        "matches": [transform_doc(doc, tier) for doc in cursor for doc in cursor],
         "tier": tier,
     }
 
