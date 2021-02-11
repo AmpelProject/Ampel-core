@@ -11,7 +11,7 @@ from typing import Tuple
 from ampel.type import T3AddResult
 from ampel.view.SnapView import SnapView
 from ampel.abstract.AbsT3Unit import AbsT3Unit
-from ampel.struct.JournalExtra import JournalExtra
+from ampel.struct.JournalTweak import JournalTweak
 
 
 class DemoT3Unit(AbsT3Unit):
@@ -21,7 +21,7 @@ class DemoT3Unit(AbsT3Unit):
 		for v in views:
 			print(v.serialize())
 			print("-" * 30)
-		return JournalExtra(tag="DemoTag")
+		return JournalTweak(tag="DemoTag")
 
 
 	def done(self) -> None:
