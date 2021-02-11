@@ -1,3 +1,12 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+# File              : Ampel-core/ampel/test/test_server.py
+# License           : BSD-3-Clause
+# Author            : jvs
+# Date              : Unspecified
+# Last Modified Date: 11.02.2021
+# Last Modified By  : jvs
+
 import asyncio
 from io import StringIO
 
@@ -8,7 +17,7 @@ from prometheus_client.parser import text_fd_to_metric_families
 from ampel.metrics.AmpelDBCollector import AmpelDBCollector
 from ampel.metrics.AmpelMetricsRegistry import AmpelMetricsRegistry
 from ampel.run import server
-from ampel.t2.T2RunState import T2RunState
+from ampel.enum.T2SysRunState import T2SysRunState
 
 
 @pytest.fixture
@@ -49,7 +58,7 @@ async def test_db_metrics(test_client, db_collector, dev_context):
             raise ValueError(f"metric {name} not collected")
 
     await check_metric("ampel_t2_docs_queued", 0)
-    dev_context.db.get_collection("t2").insert_one({"status": T2RunState.TO_RUN})
+    dev_context.db.get_collection("t2").insert_one({"status": T2SysRunState.TO_RUN})
     await check_metric("ampel_t2_docs_queued", 1)
 
 
