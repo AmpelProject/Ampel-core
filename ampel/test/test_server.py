@@ -1,4 +1,5 @@
 import asyncio
+from datetime import datetime
 from io import StringIO
 
 import pytest
@@ -132,3 +133,14 @@ async def test_process_stop(test_client):
         assert not (await test_client.get("/tasks")).json()["tasks"]
     finally:
         await server.task_manager.shutdown()
+
+
+@pytest.mark.asyncio
+async def test_event_query(test_client, mocker):
+    m = mocker.patch("ampel.run.server.context.db")
+    find = m.get_collection().find
+    await test_client.get("/events", params={"after": 7200, "process": "InfantSNSummary"})
+    assert isinstance(query := find.call_args.args[0], dict)
+    assert isinstance(andlist := query['$and'], list)
+    gtime = andlist[0]['_id']['$gt'].generation_time
+    assert 7200 < (datetime.now(gtime.tzinfo) - gtime).total_seconds() < 7230

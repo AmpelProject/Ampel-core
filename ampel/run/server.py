@@ -9,7 +9,7 @@ from datetime import datetime, timedelta
 from functools import reduce
 from typing import Any, cast, Dict, List, Literal, Optional, Set, Tuple, Union
 
-from bson import json_util, ObjectId
+from bson import json_util, tz_util, ObjectId
 from fastapi import FastAPI, Header, HTTPException, Query, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response
@@ -547,7 +547,7 @@ async def query_time(
 ) -> List[Dict[str, Any]]:
     andlist = []
     if after or before:
-        now = datetime.utcnow()
+        now = datetime.now(tz_util.utc)
         if after:
             andlist.append(
                 {
@@ -568,7 +568,7 @@ async def query_time(
                     }
                 }
             )
-    return json_util._json_convert(andlist, json_util.RELAXED_JSON_OPTIONS)
+    return andlist
 
 
 async def query_event(
