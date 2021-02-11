@@ -47,6 +47,7 @@ setup(
 			"pytest",
 			"pytest-cov",
 			"pytest-asyncio",
+			"pytest-mock",
 			"mongomock",
 			"coveralls",
 			"httpx",
