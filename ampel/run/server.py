@@ -463,8 +463,15 @@ async def scale_process(
 
 @app.get("/stock/{stock_id}")
 def get_stock(stock_id: int):
-    doc = context.db.get_collection("stock").find_one({"_id": stock_id})
-    return json_util._json_convert(doc, json_util.RELAXED_JSON_OPTIONS)
+    doc = json_util._json_convert(
+        context.db.get_collection("stock").find_one({"_id": stock_id}),
+        json_util.RELAXED_JSON_OPTIONS,
+    )
+    for k in "created", "modified":
+        doc[k] = {facet: datetime.fromtimestamp(ts) for facet, ts in doc[k].items()}
+    for jentry in doc["journal"]:
+        jentry["ts"] = datetime.fromtimestamp(jentry["ts"])
+    return doc
 
 
 @app.get("/summary/channels")
