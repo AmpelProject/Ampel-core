@@ -28,7 +28,7 @@ from ampel.metrics.AmpelMetricsRegistry import AmpelMetricsRegistry
 from ampel.model.ProcessModel import ProcessModel
 from ampel.model.StrictModel import StrictModel
 from ampel.model.UnitModel import UnitModel
-from ampel.t2.T2RunState import T2RunState
+from ampel.enum.T2SysRunState import T2SysRunState
 from ampel.util.mappings import build_unsafe_dict_id
 
 
@@ -116,7 +116,7 @@ class task_manager:
                 controller, task = cls.controller_id_to_task[config_id]
                 # add the controller's existing processes to this group
                 for pm in cls.task_to_processes[task]:
-                    if not pm.name in names:
+                    if pm.name not in names:
                         process_group.append(pm)
                 controller.update(context.config, context.loader.secrets, process_group)
                 # update processes for this task
@@ -254,10 +254,10 @@ async def reload_config() -> TaskDescriptionCollection:
         # Ensure that process models are valid
         with UnitModel.validate_configs(loader):
             processes = AmpelController.get_processes(config)
-    except:
+    except Exception:
         logging.exception(f"Failed to load {config_file}")
         raise HTTPException(
-            status_code=500, detail=f"Failed to reload configuration file"
+            status_code=500, detail="Failed to reload configuration file"
         )
 
     # remove processes that are no longer defined or no longer in the active set
@@ -405,7 +405,7 @@ async def get_process(process: str) -> ProcessModel:
     for tier in range(4):
         try:
             doc = context.config.get(f"process.t{tier}.{process}", dict, raise_exc=True)
-        except:
+        except Exception:
             continue
         return ProcessModel(**doc)
     else:
@@ -475,7 +475,7 @@ def stock_summary():
                 "$facet": {
                     "channels": [
                         {"$unwind": "$channel"},
-                        {"$group": {"_id": "$channel", "count": {"$sum": 1},}},
+                        {"$group": {"_id": "$channel", "count": {"$sum": 1}}},
                     ],
                     "total": [{"$count": "count"}],
                 }
@@ -518,8 +518,8 @@ def t2_summary():
     )
     summary = {}
     for doc in cursor:
-        status = T2RunState(doc["_id"]["status"]).name
-        if not status in summary:
+        status = T2SysRunState(doc["_id"]["status"]).name
+        if status not in summary:
             summary[status] = {}
         summary[status][doc["_id"]["unit"]] = doc["count"]
     return summary
