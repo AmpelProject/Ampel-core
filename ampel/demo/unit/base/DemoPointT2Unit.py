@@ -19,7 +19,7 @@ class DemoPointT2Unit(AbsPointT2Unit):
 
 	def run(self, datapoint: DataPoint) -> T2UnitResult:
 		return {
-			"id": datapoint['_id'],
+			"datapoint_id": datapoint['_id'],
 			"time": time(),
 			"test_parameter": self.test_parameter
 		}
