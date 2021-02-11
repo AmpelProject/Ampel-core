@@ -23,7 +23,7 @@ from ampel.util.mappings import build_unsafe_dict_id
 from ampel.util.freeze import recursive_freeze
 from ampel.model.StrictModel import StrictModel
 from ampel.model.UnitModel import UnitModel
-from ampel.struct.JournalExtra import JournalExtra
+from ampel.struct.JournalTweak import JournalTweak
 from ampel.abstract.AbsT3Unit import AbsT3Unit
 from ampel.t3.run.AbsT3UnitRunner import AbsT3UnitRunner
 from ampel.t3.run.filter.AbsT3Filter import AbsT3Filter
@@ -212,7 +212,7 @@ class T3UnitRunner(AbsT3UnitRunner):
 							for k, v in ret.items():
 								jupdater.add_record(stock=k, jextra=v, unit=unit_name)
 
-						elif isinstance(ret, JournalExtra):
+						elif isinstance(ret, JournalTweak):
 							jupdater.add_record(
 								stock = [sv.id for sv in views], jextra = ret, unit = unit_name
 							)
