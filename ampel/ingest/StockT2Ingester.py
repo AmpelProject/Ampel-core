@@ -4,14 +4,14 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 23.03.2020
-# Last Modified Date: 30.04.2020
+# Last Modified Date: 11.02.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from time import time
 from pymongo import UpdateOne
 from typing import Union, List, Tuple
 from ampel.type import StockId, ChannelId
-from ampel.t2.T2RunState import T2RunState
+from ampel.enum.T2SysRunState import T2SysRunState
 from ampel.abstract.ingest.AbsT2Ingester import AbsT2Ingester
 from ampel.abstract.ingest.AbsStockT2Ingester import AbsStockT2Ingester
 from ampel.abstract.ingest.AbsStockT2Compiler import AbsStockT2Compiler
@@ -54,7 +54,7 @@ class StockT2Ingester(AbsStockT2Ingester):
 							'tag': self.tags,
 							'unit': t2_unit_id,
 							'config': run_config,
-							'status': T2RunState.TO_RUN.value,
+							'status': T2SysRunState.TO_RUN.value,
 						},
 						# Journal and channel update
 						'$addToSet': {
