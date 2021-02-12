@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 17.05.2019
-# Last Modified Date: 09.02.2021
+# Last Modified Date: 13.02.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from typing import Optional, List, Any, Dict
@@ -21,12 +21,17 @@ class SVGUtils:
 	@staticmethod
 	def mplfig_to_svg_dict(
 		mpl_fig, file_name: str, title: Optional[str] = None, tags: Optional[List[str]] = None,
-		compress: bool = True, width: Optional[int] = None, height: Optional[int] = None,
+		compress: int = 1, width: Optional[int] = None, height: Optional[int] = None,
 		close: bool = True, logger: LoggerProtocol = None
 	) -> Dict[str, Any]:
 		"""
 		:param mpl_fig: matplotlib figure
 		:param tags: list of plot tags
+		:param compress:
+			0: no compression, 'svg' value will be a string
+			1: compress svg, 'svg' value will be compressed bytes (usage: store plots into db)
+			2: compress svg and include uncompressed string into key 'sgv_str'
+			(useful for saving plots into db and additionaly to disk for offline analysis)
 		:param width: figure width, for example 10 inches
 		:param height: figure height, for example 10 inches
 		:returns: svg dict instance
@@ -55,7 +60,7 @@ class SVGUtils:
 		if title:
 			ret['title'] = title
 
-		if not compress:
+		if compress == 0:
 			return {
 				**ret,
 				'compressed': False,
@@ -75,11 +80,17 @@ class SVGUtils:
 
 		zf.close()
 
-		return {
+		d = {
 			**ret,
 			'compressed': True,
 			'svg': outbio.getvalue()
 		}
+
+		if compress == 2:
+			d['svg_str'] = imgdata.getvalue()
+
+		return d
+
 
 
 	@staticmethod
