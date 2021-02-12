@@ -20,7 +20,6 @@ from ampel.model.ingest.T2IngestModel import T2IngestModel
 
 class AbsT2Ingester(AbsIngester, abstract=True):
 
-	run_id: int
 	compiler: Union[AbsStateT2Compiler, AbsPointT2Compiler, AbsStockT2Compiler]
 	tags: Optional[List[Union[int, str]]]
 	tier: Literal[0, 1, 3] = 0
