@@ -85,10 +85,10 @@ class T2Processor(AbsProcessorUnit):
 
 	t2_units: Optional[List[str]]
 	run_state: Union[T2SysRunState, Sequence[T2SysRunState]] = [
-		T2SysRunState.TO_RUN,
-		T2SysRunState.TO_RUN_PRIO,
-		T2SysRunState.UNIT_RUN_AGAIN,
-		T2SysRunState.SYS_RUN_AGAIN
+		T2SysRunState.NEW,
+		T2SysRunState.NEW_PRIO,
+		T2SysRunState.PENDING_DEPENDENCY,
+		T2SysRunState.RERUN_REQUESTED
 	]
 
 	doc_limit: Optional[int]
@@ -225,7 +225,7 @@ class T2Processor(AbsProcessorUnit):
 		self._run = True
 		while self._run:
 
-			# get t2 document (status is usually TO_RUN or TO_RUN_PRIO)
+			# get t2 document (status is usually NEW or NEW_PRIO)
 			t2_doc = self.col_t2.find_one_and_update(self.query, update)
 
 			# Cursor exhausted
@@ -295,7 +295,7 @@ class T2Processor(AbsProcessorUnit):
 				t2_rec['version'] = v
 
 			# T2 units can return a T2RunState integer rather than a dict instance / tuple
-			# for example: T2RunState.ERROR, T2RunState.TO_RUN_AGAIN, ...
+			# for example: T2RunState.ERROR, T2RunState.PENDING_DEPENDENCY, ...
 			if isinstance(ret, int):
 				if ret in T2SysRunState:
 					logger.info(f'T2Processor status: {ret} ({T2SysRunState(ret).name})')
@@ -306,7 +306,7 @@ class T2Processor(AbsProcessorUnit):
 				j_rec['status'] = ret
 
 			# Unit returned just a dict result
-			elif isinstance(ret, dict):
+			elif isinstance(ret, (dict, list)):
 
 				t2_doc['status'] = T2RunState.COMPLETED
 				j_rec['status'] = T2RunState.COMPLETED
@@ -598,7 +598,7 @@ class T2Processor(AbsProcessorUnit):
 						if view.get_payload() is None:
 							if logger.verbose > 1:
 								logger.debug("Dependent T2 unit not run yet", extra={'t2_oid': t2_doc['_id']})
-							return T2SysRunState.SYS_RUN_AGAIN
+							return T2SysRunState.PENDING_DEPENDENCY
 
 				if isinstance(t2_unit, AbsTiedStateT2Unit):
 					return (compound, datapoints, tied_views)
