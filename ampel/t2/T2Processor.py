@@ -319,6 +319,8 @@ class T2Processor(AbsProcessorUnit):
 				t2_rec['result'] = ret.t2_rec_payload
 				t2_rec['status'] = ret.t2_record_status
 				t2_doc['status'] = ret.t2_doc_status
+
+				# This just sets a default as journal status can be customized via j_tweak
 				j_rec['status'] = T2RunState.COMPLETED
 
 				# Custom JournalTweak returned by unit
@@ -344,6 +346,7 @@ class T2Processor(AbsProcessorUnit):
 
 			# Empty payload returned, should not happen
 			if 'result' in t2_rec and not t2_rec['result']:
+				del t2_rec['result']
 				logger.warn(
 					"T2 unit return empty content",
 					extra={'t2_doc': t2_doc}
