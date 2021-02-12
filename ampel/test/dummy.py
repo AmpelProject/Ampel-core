@@ -162,7 +162,7 @@ class DummyStateT2Ingester(AbsStateT2Ingester):
                 "tag": self.tags,
                 "unit": t2_id,
                 "config": run_config,
-                "status": T2SysRunState.TO_RUN.value,
+                "status": T2SysRunState.NEW.value,
             }
 
             jchan, chan_add_to_set = AbsT2Ingester.build_query_parts(chans)

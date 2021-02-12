@@ -35,7 +35,7 @@ class AmpelDBCollector:
                     "ampel_t2_docs_queued",
                     "Number of T2 docs awaiting processing",
                     value=self.db.get_collection("t2").count_documents(
-                        {"status": T2SysRunState.TO_RUN}
+                        {"status": T2SysRunState.NEW}
                     ),
                 )
             )

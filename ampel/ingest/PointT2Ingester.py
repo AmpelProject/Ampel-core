@@ -61,7 +61,7 @@ class PointT2Ingester(AbsPointT2Ingester):
 							'unit': t2_id,
 							'link': link_id,
 							'config': run_config,
-							'status': T2SysRunState.TO_RUN.value,
+							'status': T2SysRunState.NEW.value,
 							'col': 't0'
 						},
 						# Journal and channel update

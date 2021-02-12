@@ -54,7 +54,7 @@ class StockT2Ingester(AbsStockT2Ingester):
 							'tag': self.tags,
 							'unit': t2_unit_id,
 							'config': run_config,
-							'status': T2SysRunState.TO_RUN.value,
+							'status': T2SysRunState.NEW.value,
 						},
 						# Journal and channel update
 						'$addToSet': {

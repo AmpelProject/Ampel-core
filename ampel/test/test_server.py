@@ -58,7 +58,7 @@ async def test_db_metrics(test_client, db_collector, dev_context):
             raise ValueError(f"metric {name} not collected")
 
     await check_metric("ampel_t2_docs_queued", 0)
-    dev_context.db.get_collection("t2").insert_one({"status": T2SysRunState.TO_RUN})
+    dev_context.db.get_collection("t2").insert_one({"status": T2SysRunState.NEW})
     await check_metric("ampel_t2_docs_queued", 1)
 
 
