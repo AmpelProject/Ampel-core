@@ -7,11 +7,12 @@
 # Last Modified Date: 10.02.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-from typing import Optional, Any, Dict
+from typing import Optional, Any, Dict, Union, List
 from ampel.core import AmpelContext, UnitLoader
 from ampel.util.freeze import recursive_unfreeze
 from ampel.config.AmpelConfig import AmpelConfig
 from ampel.db.AmpelDB import AmpelDB
+from ampel.model.ChannelModel import ChannelModel
 from ampel.util.mappings import set_by_path, build_unsafe_short_dict_id
 from ampel.dev.DictSecretProvider import PotemkinSecretProvider
 
@@ -48,6 +49,14 @@ class DevAmpelContext(AmpelContext):
 		if purge_db:
 			self.db.drop_all_databases()
 			self.db.init_db()
+
+
+	def add_channel(self, name: Union[int, str], access: List[str] = []):
+		cm = ChannelModel(channel=name, access=access)
+		conf = self._get_unprotected_conf()
+		for k, v in cm.dict().items():
+			set_by_path(conf, f"channel.{name}.{k}", v)
+		self._set_new_conf(conf)
 
 
 	def add_config_id(self, arg: Dict[str, Any]) -> int:
