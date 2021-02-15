@@ -144,6 +144,7 @@ class AmpelController:
         controllers: Optional[Sequence[str]] = None,
         logger: Optional[AmpelLogger] = None,
         verbose: int = 0,
+        raise_exc: bool = False,
     ) -> List[ProcessModel]:
         """
         Extract processes from the config. Only active processes are returned.
@@ -155,6 +156,7 @@ class AmpelController:
             Only non-matching processes will be returned
         :param logger: if provided, information about ignored/excluded processes will be logged
         :param verbose: 1 -> verbose, 2 -> debug
+        :param raise_exc: if True, raise ValidationError on invalid processes
         """
 
         ret: List[ProcessModel] = []
@@ -191,6 +193,8 @@ class AmpelController:
                     # Set defaults
                     pm = ProcessModel(**p)
                 except Exception as e:
+                    if raise_exc:
+                        raise
                     if logger:
                         logger.error(f"Unable to load invalid process {p}", exc_info=e)
                     continue

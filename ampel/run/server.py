@@ -253,7 +253,7 @@ async def reload_config() -> TaskDescriptionCollection:
         )
         # Ensure that process models are valid
         with UnitModel.validate_configs(loader):
-            processes = AmpelController.get_processes(config)
+            processes = AmpelController.get_processes(config, raise_exc=True)
     except:
         logging.exception(f"Failed to load {config_file}")
         raise HTTPException(
@@ -266,6 +266,9 @@ async def reload_config() -> TaskDescriptionCollection:
             [pm.name for pm in processes]
         )
     )
+
+    # update processes currently in the active set
+    await task_manager.add_processes([pm.name for pm in processes])
 
     # update global context
     global context
