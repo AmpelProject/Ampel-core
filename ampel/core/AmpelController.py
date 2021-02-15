@@ -189,19 +189,19 @@ class AmpelController:
                             )
                     continue
 
+                if not p.get("active", True):
+                    if logger:
+                        logger.log(VERBOSE, f"Ignoring inactive process {p.get('name')}")
+                    continue
+
                 try:
                     # Set defaults
                     pm = ProcessModel(**p)
                 except Exception as e:
-                    if raise_exc:
-                        raise
                     if logger:
                         logger.error(f"Unable to load invalid process {p}", exc_info=e)
-                    continue
-
-                if not pm.active:
-                    if logger:
-                        logger.log(VERBOSE, f"Ignoring inactive process {pm.name}")
+                    if raise_exc:
+                        raise
                     continue
 
                 # Controller exclusion
