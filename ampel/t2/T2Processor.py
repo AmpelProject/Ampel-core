@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 24.05.2019
-# Last Modified Date: 04.06.2020
+# Last Modified Date: 31.01.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import gc
@@ -45,11 +45,10 @@ if TYPE_CHECKING:
 	from pymongo import ObjectId
 	from ampel.content.StockRecord import StockRecord
 
-AbsT2s = Union[AbsCustomStateT2Unit[T], AbsTiedCustomStateT2Unit[T], AbsStateT2Unit, AbsTiedStateT2Unit, AbsStockT2Unit, AbsPointT2Unit]
-
-class T2UnitDependency(TypedDict):
-	unit: Union[int, str]
-	config: Optional[int]
+AbsT2s = Union[
+	AbsCustomStateT2Unit[T], AbsTiedCustomStateT2Unit[T],
+	AbsStateT2Unit, AbsTiedStateT2Unit, AbsStockT2Unit, AbsPointT2Unit
+]
 
 stat_latency = AmpelMetricsRegistry.histogram(
 	"latency",
@@ -65,6 +64,10 @@ stat_count = AmpelMetricsRegistry.counter(
 	subsystem="t2",
 	labelnames=("unit",)
 )
+
+class T2UnitDependency(TypedDict):
+	unit: Union[int, str]
+	config: Optional[int]
 
 class T2Processor(AbsProcessorUnit):
 	"""
@@ -246,7 +249,7 @@ class T2Processor(AbsProcessorUnit):
 		# _id is an ObjectId, but declared as bytes in ampel-interface to avoid
 		# an explicit dependency on pymongo
 		stat_latency.labels(t2_doc["unit"]).observe(
-			now-cast("ObjectId", t2_doc["_id"]).generation_time.timestamp()
+			now - cast("ObjectId", t2_doc["_id"]).generation_time.timestamp()
 		)
 		stat_count.labels(t2_doc["unit"]).inc()
 		self._doc_counter += 1
@@ -290,7 +293,7 @@ class T2Processor(AbsProcessorUnit):
 				if not ret:
 					logger.warn(
 						"T2 unit return empty content",
-						extra={'t2_doc': t2_doc.pop}
+						extra={'t2_doc': t2_doc}
 					)
 
 			# Custom JournalExtra returned by unit
@@ -304,7 +307,7 @@ class T2Processor(AbsProcessorUnit):
 				if not ret:
 					logger.warn(
 						"T2 unit return empty content",
-						extra={'t2_doc': t2_doc.pop}
+						extra={'t2_doc': t2_doc}
 					)
 
 			# 'tied' t2 unit, can have different results depending on the channel(s) considered
@@ -384,7 +387,7 @@ class T2Processor(AbsProcessorUnit):
 	def load_input_docs(self,
 		t2_unit: AbsTiedCustomStateT2Unit[T],
 		t2_doc: T2Record, logger: AmpelLogger, jupdater: JournalUpdater,
-	) -> Union[T2RunState, Tuple[T, List[T2Record]]]:
+	) -> Union[T2RunState, Tuple[T, List["T2Record"]]]:
 		...
 
 
@@ -418,15 +421,14 @@ class T2Processor(AbsProcessorUnit):
 		logger: AmpelLogger,
 		jupdater: JournalUpdater,
 	) -> Union[
-			T2RunState,
-			Union[
-				Tuple["Compound", Sequence["DataPoint"]],
-				Tuple["Compound", Sequence["DataPoint"], List[T2Record]],
-				Tuple[T],
-				Tuple[T, List["T2Record"]],
-				Tuple["StockRecord"],
-				Tuple["DataPoint"],
-			]
+		T2RunState, Union[
+			Tuple["Compound", Sequence["DataPoint"]],
+			Tuple["Compound", Sequence["DataPoint"], List[T2Record]],
+			Tuple[T],
+			Tuple[T, List["T2Record"]],
+			Tuple["StockRecord"],
+			Tuple["DataPoint"],
+		]
 	]:
 		"""
 		Resolve inputs required by `t2_unit`. If the unit depends on other T2s,
@@ -445,7 +447,7 @@ class T2Processor(AbsProcessorUnit):
 		):
 
 			datapoints: List[DataPoint] = []
-			link = t2_doc['link'][-1] if isinstance(t2_doc['link'], list) else t2_doc['link']
+			link = t2_doc['link'][0] if isinstance(t2_doc['link'], list) else t2_doc['link']
 			compound: Optional[Compound] = next(self.col_t1.find({'_id': link}), None)
 
 			# compound doc must exist (None could mean an ingester bug)
@@ -511,17 +513,12 @@ class T2Processor(AbsProcessorUnit):
 						query['link'] = match_array(dps_ids)
 						query['col'] = 't0'
 					else:
-						query['link'] = (
-							t2_doc['link']
-							if isinstance(t2_doc['link'], (int, str, bytes))
-							else match_array(t2_doc['link']) # type: ignore[arg-type]
-						)
+						query['link'] = t2_doc['link']
 						query['stock'] = (
 							t2_doc['stock']
 							if isinstance(t2_doc['stock'], (int, str))
 							else match_array(t2_doc['stock']) # type: ignore[arg-type]
 						)
-
 
 					# run pending dependencies
 					while (dep_t2_doc := self.col_t2.find_one_and_update(
@@ -549,14 +546,11 @@ class T2Processor(AbsProcessorUnit):
 						dep_records.append(dep_t2_doc)
 
 					t2_records += dep_records
-					assert t2_records
 
 				if isinstance(t2_unit, AbsTiedStateT2Unit):
 					return (compound, datapoints, t2_records)
 				else: # instance of AbsTiedCustomStateT2Unit
-					print(t2_unit)
 					return (t2_unit.build(compound, datapoints), t2_records)
-
 
 			else:
 				if isinstance(t2_unit, AbsStateT2Unit):
@@ -598,7 +592,7 @@ class T2Processor(AbsProcessorUnit):
 
 	def run_t2_unit(self,
 		t2_unit: AbsT2s, t2_doc: T2Record, logger: AmpelLogger, jupdater: JournalUpdater,
-	) -> Union[T2UnitResult, ItemsView[Tuple[ChannelId,...], T2UnitResult]]:
+	) -> Union[T2UnitResult, ItemsView[Tuple[ChannelId, ...], T2UnitResult]]:
 		"""
 		Regarding the possible int return code:
 		usually, if an int is returned, it should be a T2RunState member
@@ -788,8 +782,6 @@ class T2Processor(AbsProcessorUnit):
 			setattr(unit_instance, '_buf_hdlr', buf_hdlr)
 
 			# Check for possibly defined dependencies
-			# FIXME: the hashing scheme below is not the same as the one
-			# implemented in ProcessMorpher. Remove?
 			if hasattr(unit_instance, 'dependency'):
 
 				deps: List[T2UnitDependency] = []
@@ -806,9 +798,8 @@ class T2Processor(AbsProcessorUnit):
 					deps.append(
 						{
 							'unit': dep['unit'],
-							'config': conf
-								if isinstance(conf := dep.get('config'), (int, type(None)))
-								else build_unsafe_short_dict_id(conf)
+							'config': build_unsafe_short_dict_id(conf)
+								if (conf := dep.get('config')) is not None else conf
 						}
 					)
 
