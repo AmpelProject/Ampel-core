@@ -9,7 +9,7 @@
 
 import asyncio
 import re
-from typing import Dict, Iterable, List, Literal, Optional, Sequence, Union
+from typing import Dict, Iterable, List, Literal, Optional, Sequence, Union, TYPE_CHECKING
 
 from ampel.abstract.AbsProcessController import AbsProcessController
 from ampel.abstract.AbsSecretProvider import AbsSecretProvider
@@ -20,6 +20,8 @@ from ampel.model.ProcessModel import ProcessModel
 from ampel.model.UnitModel import UnitModel
 from ampel.util.mappings import build_unsafe_dict_id
 
+if TYPE_CHECKING:
+    from ampel.protocol.LoggerProtocol import LoggerProtocol
 
 class AmpelController:
     """
@@ -39,7 +41,7 @@ class AmpelController:
         match: Optional[Sequence[str]] = None,
         exclude: Optional[Sequence[str]] = None,
         controllers: Optional[Sequence[str]] = None,
-        logger: Optional[AmpelLogger] = None,
+        logger: Optional[AmpelLoggerProtocol] = None,
         verbose: int = 0,
         **kwargs,
     ):
@@ -142,7 +144,7 @@ class AmpelController:
         match: Optional[Sequence[str]] = None,
         exclude: Optional[Sequence[str]] = None,
         controllers: Optional[Sequence[str]] = None,
-        logger: Optional[AmpelLogger] = None,
+        logger: Optional[AmpelLoggerProtocol] = None,
         verbose: int = 0,
         raise_exc: bool = False,
     ) -> List[ProcessModel]:
