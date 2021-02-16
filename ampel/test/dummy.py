@@ -201,7 +201,10 @@ class DummyStateT2Unit(AbsStateT2Unit):
 
 class DummyTiedStateT2Unit(AbsTiedStateT2Unit):
 
-    dependency = [{"unit": "DummyStateT2Unit"}]
+    t2_dependency = [{"unit": "DummyStateT2Unit"}]
+
+    def get_tied_unit_names(self):
+        return [c.get("unit") for c in self.t2_dependency]
 
     def run(self, compound, datapoints, t2_records):
         assert t2_records, "dependencies were found"
