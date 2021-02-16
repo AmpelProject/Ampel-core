@@ -8,7 +8,7 @@
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from pydantic import validator
-from typing import List, Dict, Any, Union, Tuple, Optional
+from typing import List, Dict, Any, Union, Tuple, Optional, Generator, Sequence
 from ampel.log.AmpelLogger import AmpelLogger
 from ampel.config.builder.FirstPassConfig import FirstPassConfig
 from ampel.model.UnitModel import UnitModel
@@ -30,7 +30,8 @@ class AbsLegacyChannelTemplate(AbsChannelTemplate, abstract=True):
 	auto_complete: Union[bool, str]
 	#: Filter to apply to incoming datapoints
 	t0_filter: UnitModel
-	#: T2 units to trigger when transient is updated
+	#: T2 units to trigger when transient is updated. Dependencies of tied
+	#: units will be added automatically.
 	t2_compute: List[UnitModel] = []
 	#: T3 processes bound to this channel. These may be use templates, such as
 	#: :class:`~ampel.model.template.PeriodicSummaryT3.PeriodicSummaryT3`.
@@ -124,7 +125,16 @@ class AbsLegacyChannelTemplate(AbsChannelTemplate, abstract=True):
 
 		directives = ret['processor']['config']['directives'][0]
 
-		if t2_state_units := self.get_units(t2_compute_from_t0, ["AbsStateT2Unit", "AbsCustomStateT2Unit"], first_pass_config):
+		if t2_state_units := self.get_units(
+			t2_compute_from_t0,
+			[
+				"AbsStateT2Unit",
+				"AbsCustomStateT2Unit",
+				"AbsTiedStateT2Unit",
+				"AbsTiedCustomStateT2Unit",
+			],
+			first_pass_config
+		):
 
 			if t1_ingester is None:
 				raise ValueError("Template processing requires parameter 't1_ingester'")
@@ -142,7 +152,16 @@ class AbsLegacyChannelTemplate(AbsChannelTemplate, abstract=True):
 				)
 			]
 
-		if t2_state_units := self.get_units(t2_compute_from_t1, ["AbsStateT2Unit", "AbsCustomStateT2Unit"], first_pass_config):
+		if t2_state_units := self.get_units(
+			t2_compute_from_t1,
+			[
+				"AbsStateT2Unit",
+				"AbsCustomStateT2Unit",
+				"AbsTiedStateT2Unit",
+				"AbsTiedCustomStateT2Unit",
+			],
+			first_pass_config
+		):
 
 			if t1_standalone_ingester is None:
 				raise ValueError("Template processing requires parameter 't1_standalone_ingester'")
@@ -203,11 +222,31 @@ class AbsLegacyChannelTemplate(AbsChannelTemplate, abstract=True):
 		if isinstance(abs_unit, str):
 			abs_unit = [abs_unit]
 
-		return [
-			el.dict(exclude_unset=True, by_alias=True)
-			for el in units
-			if any(
-				unit in first_pass_config['unit']['base'][el.unit]['base']
-				for unit in abs_unit
-			)
-		]
+		# Filter and deduplicate units, in case a tied unit dependency is also
+		# configured explicitly.
+		selected_units = []
+		for el in self._collect_units(units):
+			if (
+				any(
+					unit in first_pass_config['unit']['base'][el['unit']]['base']
+					for unit in abs_unit
+				)
+				and el not in selected_units
+			):
+				selected_units.append(el)
+		return selected_units
+
+
+	def _collect_units(self, units: Sequence[Union[UnitModel,Dict[str,Any]]]) -> Generator[Dict[str,Any],None,None]:
+		"""
+		Try to extract configs from dependencies.
+		FIXME: how to deal with point/stock T2 units embedded under state T2 units?
+		"""
+		for unit in units:
+			if isinstance(unit, UnitModel):
+				unit = unit.dict(exclude_unset=True, by_alias=True)
+			if (deps := unit.get("config", {}).get("dependency")):
+				yield from self._collect_units(
+					[deps] if isinstance(deps, dict) else deps
+				)
+			yield unit
