@@ -7,13 +7,14 @@
 # Last Modified Date: 13.02.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-from typing import Optional, List, Any, Dict
+from typing import Optional, List
 import zipfile, io, base64
 import svgutils as su
 import matplotlib as plt
 from cairosvg import svg2png
 from IPython.display import Image
 from ampel.protocol.LoggerProtocol import LoggerProtocol
+from ampel.content.SVGDocument import SVGDocument
 
 
 class SVGUtils:
@@ -23,7 +24,7 @@ class SVGUtils:
 		mpl_fig, file_name: str, title: Optional[str] = None, tags: Optional[List[str]] = None,
 		compress: int = 1, width: Optional[int] = None, height: Optional[int] = None,
 		close: bool = True, logger: LoggerProtocol = None
-	) -> Dict[str, Any]:
+	) -> SVGDocument:
 		"""
 		:param mpl_fig: matplotlib figure
 		:param tags: list of plot tags
@@ -52,7 +53,7 @@ class SVGUtils:
 		if close:
 			plt.pyplot.close(mpl_fig)
 
-		ret: Dict[str, Any] = {'name': file_name}
+		ret: SVGDocument = {'name': file_name}
 
 		if tags:
 			ret['tag'] = tags
@@ -61,11 +62,9 @@ class SVGUtils:
 			ret['title'] = title
 
 		if compress == 0:
-			return {
-				**ret,
-				'compressed': False,
-				'svg': imgdata.getvalue()
-			}
+			ret['compressed'] = False
+			ret['svg'] = imgdata.getvalue()
+			return ret
 
 		outbio = io.BytesIO()
 
@@ -80,21 +79,18 @@ class SVGUtils:
 
 		zf.close()
 
-		d = {
-			**ret,
-			'compressed': True,
-			'svg': outbio.getvalue()
-		}
+		ret['compressed'] = True
+		ret['svg'] = outbio.getvalue()
 
 		if compress == 2:
-			d['svg_str'] = imgdata.getvalue()
+			ret['svg_str'] = imgdata.getvalue()
 
-		return d
+		return ret
 
 
 
 	@staticmethod
-	def decompress_svg_dict(svg_dict: Dict[str, Any]) -> Dict[str, Any]:
+	def decompress_svg_dict(svg_dict: SVGDocument) -> SVGDocument:
 		"""
 		Modifies input dict by potentionaly decompressing compressed 'svg' value
 		"""
@@ -104,7 +100,7 @@ class SVGUtils:
 
 		if svg_dict.get('compressed'):
 			bio = io.BytesIO()
-			bio.write(svg_dict['svg'])
+			bio.write(svg_dict['svg']) # type: ignore
 			zf = zipfile.ZipFile(bio)
 			file_name = zf.namelist()[0]
 			svg_dict['svg'] = str(zf.read(file_name), "utf8")
