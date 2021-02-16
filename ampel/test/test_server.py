@@ -3,6 +3,7 @@ from datetime import datetime
 from io import StringIO
 
 import pytest
+import yaml
 from httpx import AsyncClient
 from prometheus_client.parser import text_fd_to_metric_families
 
@@ -10,12 +11,18 @@ from ampel.metrics.AmpelDBCollector import AmpelDBCollector
 from ampel.metrics.AmpelMetricsRegistry import AmpelMetricsRegistry
 from ampel.run import server
 from ampel.t2.T2RunState import T2RunState
+from ampel.util.freeze import recursive_unfreeze
+from ampel.util.mappings import set_by_path
 
 
 @pytest.fixture
 async def test_client(dev_context, monkeypatch):
     monkeypatch.setattr("ampel.run.server.context", dev_context)
-    for attr in ("process_name_to_controller_id", "controller_id_to_task", "task_to_processes"):
+    for attr in (
+        "process_name_to_controller_id",
+        "controller_id_to_task",
+        "task_to_processes",
+    ):
         monkeypatch.setattr(f"ampel.run.server.task_manager.{attr}", {})
 
     async with AsyncClient(app=server.app, base_url="http://test") as client:
@@ -103,6 +110,83 @@ async def test_processes_start(test_client):
         await server.task_manager.shutdown()
 
 
+@pytest.mark.parametrize(
+    "patches,should_raise",
+    [
+        (None, False),
+        ({"processor.config": {"nonexistant_param": True}}, True),
+        ({"active": False, "processor.config": {"nonexistant_param": True}}, False),
+    ],
+)
+@pytest.fixture
+def config_in_env(monkeypatch, tmp_path, dev_context, patches, should_raise):
+    config = recursive_unfreeze(dev_context.config.get())
+    config["process"]["t3"]["sleepy"] = {
+        "name": "sleepy",
+        "schedule": "every(30).seconds",
+        "tier": 3,
+        "isolate": True,
+        "controller": {
+            "unit": "DefaultProcessController",
+            "config": {"mp_join": 2},
+        },
+        "processor": {"unit": "Sleepy"},
+    }
+    if patches:
+        for k, v in patches.items():
+            set_by_path(config["process"]["t3"]["sleepy"], k, v)
+    with open(tmp_path / "config.yaml", "w") as f:
+        yaml.dump(config, f)
+    monkeypatch.setenv("AMPEL_CONFIG", str(tmp_path / "config.yaml"))
+
+
+@pytest.mark.parametrize(
+    "patches,should_raise",
+    [
+        ({}, False),
+        ({"processor.config": {"nonexistant_param": True}}, True),
+        ({"active": False, "processor.config": {"nonexistant_param": True}}, False),
+    ],
+)
+@pytest.mark.asyncio
+async def test_config_reload(
+    test_client, monkeypatch, tmp_path, dev_context, patches, should_raise, mocker
+):
+
+    config = recursive_unfreeze(dev_context.config.get())
+    config["process"]["t3"]["sleepy"] = {
+        "name": "sleepy",
+        "schedule": "every(30).seconds",
+        "tier": 3,
+        "isolate": True,
+        "controller": {
+            "unit": "DefaultProcessController",
+            "config": {"mp_join": 2},
+        },
+        "processor": {"unit": "Sleepy"},
+    }
+    for k, v in patches.items():
+        set_by_path(config["process"]["t3"]["sleepy"], k, v)
+    with open(tmp_path / "config.yaml", "w") as f:
+        yaml.dump(config, f)
+    monkeypatch.setenv("AMPEL_CONFIG", str(tmp_path / "config.yaml"))
+
+    try:
+        remove = mocker.patch("ampel.run.server.task_manager.remove_processes")
+        add = mocker.patch("ampel.run.server.task_manager.add_processes")
+        response = await test_client.post("/config/reload")
+        if should_raise:
+            assert response.status_code == 500
+        else:
+            response.raise_for_status()
+            assert await remove.called_once()
+            assert len(remove.call_args[0][0]) == 0
+            assert await add.called_once()
+            assert len(add.call_args[0][0]) == (1 if config["process"]["t3"]["sleepy"].get("active", True) else 0)
+    finally:
+        await server.task_manager.shutdown()
+
+
 @pytest.mark.asyncio
 async def test_process_stop(test_client):
     dict.__setitem__(
@@ -139,8 +223,10 @@ async def test_process_stop(test_client):
 async def test_event_query(test_client, mocker):
     m = mocker.patch("ampel.run.server.context.db")
     find = m.get_collection().find
-    await test_client.get("/events", params={"after": 7200, "process": "InfantSNSummary"})
+    await test_client.get(
+        "/events", params={"after": 7200, "process": "InfantSNSummary"}
+    )
     assert isinstance(query := find.call_args.args[0], dict)
-    assert isinstance(andlist := query['$and'], list)
-    gtime = andlist[0]['_id']['$gt'].generation_time
+    assert isinstance(andlist := query["$and"], list)
+    gtime = andlist[0]["_id"]["$gt"].generation_time
     assert 7200 < (datetime.now(gtime.tzinfo) - gtime).total_seconds() < 7230
