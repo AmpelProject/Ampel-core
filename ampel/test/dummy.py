@@ -45,6 +45,7 @@ class DummyStockT2Unit(AbsStockT2Unit):
     def run(self, stock_record):
         return {"id": stock_record["_id"]}
 
+
 # FIXME: these dummy ingesters are copied from ampel-alerts, as there is no
 # default implementation of AbsCompoundIngester or AbsStateT2Ingester
 class DummyCompoundIngester(AbsCompoundIngester):
@@ -118,14 +119,16 @@ class DummyStateT2Compiler(AbsStateT2Compiler):
         for chan, ingest_model in self.get_ingest_models(chan_selection):
             t2s_for_channels[(ingest_model.unit_id, ingest_model.config)].add(chan)
 
-        optimized_t2s = {}
+        optimized_t2s: Dict[
+            Tuple[str, Optional[int], Union[bytes, Tuple[bytes, ...]]], Set[ChannelId]
+        ] = {}
         for k, v in t2s_for_channels.items():
             comp_ids = tuple(compound_blueprint.get_effids_for_chans(v))
             if len(comp_ids) == 1:
-                optimized_t2s[k + comp_ids] = v
+                optimized_t2s[k + (comp_ids[0],)] = v
             else:
                 optimized_t2s[k + (comp_ids,)] = v
-        return optimized_t2s # TODO: fix mypy warning
+        return optimized_t2s
 
 
 class DummyStateT2Ingester(AbsStateT2Ingester):
@@ -158,11 +161,12 @@ class DummyStateT2Ingester(AbsStateT2Ingester):
             # Attributes set if no previous doc exists
             set_on_insert: T2Document = {
                 "stock": stock_id,
-                "tag": self.tags,
                 "unit": t2_id,
                 "config": run_config,
                 "status": T2SysRunState.NEW.value,
             }
+            if self.tags:
+                set_on_insert["tag"] = self.tags
 
             jchan, chan_add_to_set = AbsT2Ingester.build_query_parts(chans)
             add_to_set: Dict[str, Any] = {"channel": chan_add_to_set}
@@ -184,14 +188,16 @@ class DummyStateT2Ingester(AbsStateT2Ingester):
                 )
             )
 
+
 class DummyPointT2Unit(AbsPointT2Unit):
-	def run(self, datapoint):
-		return {"thing": datapoint["body"]["thing"]}
+    def run(self, datapoint):
+        return {"thing": datapoint["body"]["thing"]}
 
 
 class DummyStateT2Unit(AbsStateT2Unit):
     def run(self, compound, datapoints):
         return {"len": len(datapoints)}
+
 
 class DummyTiedStateT2Unit(AbsTiedStateT2Unit):
 
