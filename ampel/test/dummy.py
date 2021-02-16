@@ -28,7 +28,10 @@ from ampel.ingest.T1DefaultCombiner import T1DefaultCombiner
 from ampel.log.AmpelLogger import AmpelLogger
 from ampel.enum.T2SysRunState import T2SysRunState
 from ampel.content.T2Document import T2Document
-from ampel.type import ChannelId, StockId
+from ampel.type import ChannelId, StockId, T2UnitResult
+from ampel.content.DataPoint import DataPoint
+from ampel.content.Compound import Compound
+from ampel.view.T2DocView import T2DocView
 
 
 class Sleepy(AbsProcessorUnit):
@@ -201,12 +204,16 @@ class DummyStateT2Unit(AbsStateT2Unit):
 
 class DummyTiedStateT2Unit(AbsTiedStateT2Unit):
 
-    t2_dependency = [{"unit": "DummyStateT2Unit"}]
+    t2_dependency = [{"unit": "DummyStateT2Unit", "config": None, "link_override": None}]
 
     def get_tied_unit_names(self):
         return [c.get("unit") for c in self.t2_dependency]
 
-    def run(self, compound, datapoints, t2_records):
+    def run(self,
+		compound: Compound,
+		datapoints: Sequence[DataPoint],
+		t2_records: Sequence[T2DocView]
+	) -> T2UnitResult:
         assert t2_records, "dependencies were found"
-        assert len(body := t2_records[0].get("body") or []) == 1
-        return {k: v * 2 for k, v in body[0]["result"].items()}
+        assert len(body := t2_records[0].body or []) == 1
+        return {k: v * 2 for k, v in (t2_records[0].get_payload() or {}).items()}
