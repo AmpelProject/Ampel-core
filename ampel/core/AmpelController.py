@@ -41,7 +41,7 @@ class AmpelController:
         match: Optional[Sequence[str]] = None,
         exclude: Optional[Sequence[str]] = None,
         controllers: Optional[Sequence[str]] = None,
-        logger: Optional[AmpelLoggerProtocol] = None,
+        logger: Optional["LoggerProtocol"] = None,
         verbose: int = 0,
         **kwargs,
     ):
@@ -144,7 +144,7 @@ class AmpelController:
         match: Optional[Sequence[str]] = None,
         exclude: Optional[Sequence[str]] = None,
         controllers: Optional[Sequence[str]] = None,
-        logger: Optional[AmpelLoggerProtocol] = None,
+        logger: Optional["LoggerProtocol"] = None,
         verbose: int = 0,
         raise_exc: bool = False,
     ) -> List[ProcessModel]:

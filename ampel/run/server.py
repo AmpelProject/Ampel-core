@@ -7,7 +7,19 @@ import operator
 import os
 from datetime import datetime, timedelta
 from functools import reduce
-from typing import Any, cast, Dict, List, Literal, Optional, Set, Tuple, Union
+from typing import (
+    Any,
+    cast,
+    Dict,
+    List,
+    Literal,
+    Optional,
+    Set,
+    Tuple,
+    Union,
+    cast,
+    TYPE_CHECKING,
+)
 
 from bson import json_util, tz_util, ObjectId
 from fastapi import FastAPI, Header, HTTPException, Query, Depends
@@ -30,6 +42,9 @@ from ampel.model.StrictModel import StrictModel
 from ampel.model.UnitModel import UnitModel
 from ampel.t2.T2RunState import T2RunState
 from ampel.util.mappings import build_unsafe_dict_id
+
+if TYPE_CHECKING:
+    from ampel.protocol.LoggerProtocol import LoggerProtocol
 
 
 class ProcessCollection(StrictModel):
@@ -253,7 +268,9 @@ async def reload_config() -> TaskDescriptionCollection:
         )
         # Ensure that process models are valid
         with UnitModel.validate_configs(loader):
-            processes = AmpelController.get_processes(config, raise_exc=True, logger=log)
+            processes = AmpelController.get_processes(
+                config, raise_exc=True, logger=cast("LoggerProtocol", log)
+            )
     except:
         logging.exception(f"Failed to load {config_file}")
         raise HTTPException(
@@ -485,7 +502,12 @@ def stock_summary():
                 "$facet": {
                     "channels": [
                         {"$unwind": "$channel"},
-                        {"$group": {"_id": "$channel", "count": {"$sum": 1},}},
+                        {
+                            "$group": {
+                                "_id": "$channel",
+                                "count": {"$sum": 1},
+                            }
+                        },
                     ],
                     "total": [{"$count": "count"}],
                 }
