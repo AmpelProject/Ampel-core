@@ -7,7 +7,7 @@
 # Last Modified Date: 13.02.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-from typing import Optional, List
+from typing import Optional, List, Dict, Any
 import zipfile, io, base64
 import svgutils as su
 import matplotlib as plt
@@ -15,15 +15,18 @@ from cairosvg import svg2png
 from IPython.display import Image
 from ampel.protocol.LoggerProtocol import LoggerProtocol
 from ampel.content.SVGDocument import SVGDocument
+from ampel.model.PlotProperties import PlotProperties
+from matplotlib.figure import Figure
 
 
 class SVGUtils:
+
 
 	@staticmethod
 	def mplfig_to_svg_dict(
 		mpl_fig, file_name: str, title: Optional[str] = None, tags: Optional[List[str]] = None,
 		compress: int = 1, width: Optional[int] = None, height: Optional[int] = None,
-		close: bool = True, logger: LoggerProtocol = None
+		close: bool = True, logger: Optional[LoggerProtocol] = None
 	) -> SVGDocument:
 		"""
 		:param mpl_fig: matplotlib figure
@@ -87,6 +90,27 @@ class SVGUtils:
 
 		return ret
 
+
+	@classmethod
+	def mplfig_to_svg_dict1(
+		cls, mpl_fig: Figure, props: PlotProperties, extra: Optional[Dict[str, Any]] = None,
+		close: bool = True, logger: Optional[LoggerProtocol] = None
+	) -> SVGDocument:
+		"""
+		:param extra: required if file_name of title in PlotProperties use a format string ("such_%s_this")
+		"""
+
+		return cls.mplfig_to_svg_dict(
+			mpl_fig,
+			file_name = props.get_file_name(extra=extra),
+			title = props.get_title(extra=extra),
+			width = props.width,
+			height = props.height,
+			tags = props.tags,
+			compress = props.get_compress(),
+			logger = logger,
+			close = close
+		)
 
 
 	@staticmethod
