@@ -27,7 +27,6 @@ from ampel.ingest.CompoundBluePrint import CompoundBluePrint
 from ampel.ingest.T1DefaultCombiner import T1DefaultCombiner
 from ampel.log.AmpelLogger import AmpelLogger
 from ampel.enum.T2SysRunState import T2SysRunState
-from ampel.content.PhotoCompound import PhotoCompound
 from ampel.content.T2Document import T2Document
 from ampel.type import ChannelId, StockId
 
@@ -86,7 +85,7 @@ class DummyCompoundIngester(AbsCompoundIngester):
 
             comp_dict = blue_print.get_eff_compound(eff_comp_id)
 
-            comp_set_on_ins: PhotoCompound = {
+            comp_set_on_ins = {
                 "_id": eff_comp_id,
                 "stock": stock_id,
                 "tag": list(blue_print.get_comp_tags(eff_comp_id)),
