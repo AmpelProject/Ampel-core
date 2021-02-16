@@ -16,12 +16,11 @@ pipeline {
         }
       }
       steps {
-        sh 'rm mypy.*.xml || true'
-        sh 'run_mypy.sh ampel'
+        sh 'mypy --namespace-packages -p ampel | mypy2junit > mypy.xml'
       }
       post {
         always {
-          junit 'mypy.*.xml'
+          junit 'mypy.xml'
         }
       }
     }
