@@ -7,9 +7,21 @@ import operator
 import os
 from datetime import datetime, timedelta
 from functools import reduce
-from typing import Any, cast, Dict, List, Literal, Optional, Set, Tuple, Union
+from typing import (
+    Any,
+    cast,
+    Dict,
+    List,
+    Literal,
+    Optional,
+    Set,
+    Tuple,
+    Union,
+    cast,
+    TYPE_CHECKING,
+)
 
-from bson import json_util, ObjectId
+from bson import json_util, tz_util, ObjectId
 from fastapi import FastAPI, Header, HTTPException, Query, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response
@@ -30,6 +42,9 @@ from ampel.model.StrictModel import StrictModel
 from ampel.model.UnitModel import UnitModel
 from ampel.enum.T2SysRunState import T2SysRunState
 from ampel.util.mappings import build_unsafe_dict_id
+
+if TYPE_CHECKING:
+    from ampel.protocol.LoggerProtocol import LoggerProtocol
 
 
 class ProcessCollection(StrictModel):
@@ -253,7 +268,9 @@ async def reload_config() -> TaskDescriptionCollection:
         )
         # Ensure that process models are valid
         with loader.validate_unit_models():
-            processes = AmpelController.get_processes(config)
+            processes = AmpelController.get_processes(
+                config, raise_exc=True, logger=cast("LoggerProtocol", log)
+            )
     except Exception:
         logging.exception(f"Failed to load {config_file}")
         raise HTTPException(
@@ -266,6 +283,9 @@ async def reload_config() -> TaskDescriptionCollection:
             [pm.name for pm in processes]
         )
     )
+
+    # update processes currently in the active set
+    await task_manager.add_processes(processes)
 
     # update global context
     global context
@@ -463,8 +483,15 @@ async def scale_process(
 
 @app.get("/stock/{stock_id}")
 def get_stock(stock_id: int):
-    doc = context.db.get_collection("stock").find_one({"_id": stock_id})
-    return json_util._json_convert(doc, json_util.RELAXED_JSON_OPTIONS)
+    doc = json_util._json_convert(
+        context.db.get_collection("stock").find_one({"_id": stock_id}),
+        json_util.RELAXED_JSON_OPTIONS,
+    )
+    for k in "created", "modified":
+        doc[k] = {facet: datetime.fromtimestamp(ts) for facet, ts in doc[k].items()}
+    for jentry in doc["journal"]:
+        jentry["ts"] = datetime.fromtimestamp(jentry["ts"])
+    return doc
 
 
 @app.get("/summary/channels")
@@ -475,7 +502,12 @@ def stock_summary():
                 "$facet": {
                     "channels": [
                         {"$unwind": "$channel"},
-                        {"$group": {"_id": "$channel", "count": {"$sum": 1}}},
+                        {
+                            "$group": {
+                                "_id": "$channel",
+                                "count": {"$sum": 1},
+                            }
+                        },
                     ],
                     "total": [{"$count": "count"}],
                 }
@@ -492,14 +524,24 @@ def stock_summary():
     }
 
 
+def transform_doc(doc: Dict[str, Any], tier: int) -> Dict[str, Any]:
+    doc = json_util._json_convert(doc, json_util.RELAXED_JSON_OPTIONS)
+    if tier == 1:
+        doc["added"] = datetime.fromtimestamp(doc["added"])
+    if tier == 2:
+        for jentry in doc["journal"]:
+            jentry["dt"] = datetime.fromtimestamp(jentry["dt"])
+        doc["status"] = T2SysRunState(doc["status"]).name
+        for subrecord in doc.get("body", []):
+            subrecord["ts"] = datetime.fromtimestamp(subrecord["ts"])
+    return doc
+
+
 @app.get("/stock/{stock_id}/t{tier}")
 def get_tier_docs(stock_id: int, tier: int = Query(..., ge=0, le=2)):
     cursor = context.db.get_collection(f"t{tier}").find({"stock": stock_id})
     return {
-        "matches": [
-            json_util._json_convert(doc, json_util.RELAXED_JSON_OPTIONS)
-            for doc in cursor
-        ],
+        "matches": [transform_doc(doc, tier) for doc in cursor for doc in cursor],
         "tier": tier,
     }
 
@@ -547,7 +589,7 @@ async def query_time(
 ) -> List[Dict[str, Any]]:
     andlist = []
     if after or before:
-        now = datetime.utcnow()
+        now = datetime.now(tz_util.utc)
         if after:
             andlist.append(
                 {
@@ -568,7 +610,7 @@ async def query_time(
                     }
                 }
             )
-    return json_util._json_convert(andlist, json_util.RELAXED_JSON_OPTIONS)
+    return andlist
 
 
 async def query_event(

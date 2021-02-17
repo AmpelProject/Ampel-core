@@ -194,8 +194,11 @@ class T3Processor(AbsProcessorUnit):
 						# Run start
 						###########
 
-						# Loop until cursor/iterator dries out
-						for chunk_ids in chunks(stock_ids, self.chunk_size):
+						# Loop over chunks from the cursor/iterator
+						# NB: we consume the entire stock selection cursor at once using list()
+						# to be robust against cursor timeouts or server restarts during long-
+						# lived T3 processes
+						for chunk_ids in chunks(list(stock_ids), self.chunk_size):
 
 							# try/catch here to allow some chunks to complete
 							# even if one raises an exception

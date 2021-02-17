@@ -129,7 +129,7 @@ class UnitConfigCollector(AbsListConfigCollector):
 		(i.e that we have one class per module)
 		"""
 		# pylint: disable=anomalous-backslash-in-string
-		return re.sub('.*\.', '', fqn) # noqa
+		return re.sub(r'.*\.', '', fqn) # noqa
 
 
 	@staticmethod

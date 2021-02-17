@@ -9,7 +9,7 @@
 
 import asyncio
 import re
-from typing import Dict, Iterable, List, Literal, Optional, Sequence, Union
+from typing import Dict, Iterable, List, Literal, Optional, Sequence, Union, TYPE_CHECKING
 
 from ampel.abstract.AbsProcessController import AbsProcessController
 from ampel.abstract.AbsSecretProvider import AbsSecretProvider
@@ -20,6 +20,8 @@ from ampel.model.ProcessModel import ProcessModel
 from ampel.model.UnitModel import UnitModel
 from ampel.util.mappings import build_unsafe_dict_id
 
+if TYPE_CHECKING:
+    from ampel.protocol.LoggerProtocol import LoggerProtocol
 
 class AmpelController:
     """
@@ -39,7 +41,7 @@ class AmpelController:
         match: Optional[Sequence[str]] = None,
         exclude: Optional[Sequence[str]] = None,
         controllers: Optional[Sequence[str]] = None,
-        logger: Optional[AmpelLogger] = None,
+        logger: Optional["LoggerProtocol"] = None,
         verbose: int = 0,
         **kwargs,
     ):
@@ -142,8 +144,9 @@ class AmpelController:
         match: Optional[Sequence[str]] = None,
         exclude: Optional[Sequence[str]] = None,
         controllers: Optional[Sequence[str]] = None,
-        logger: Optional[AmpelLogger] = None,
+        logger: Optional["LoggerProtocol"] = None,
         verbose: int = 0,
+        raise_exc: bool = False,
     ) -> List[ProcessModel]:
         """
         Extract processes from the config. Only active processes are returned.
@@ -155,6 +158,7 @@ class AmpelController:
             Only non-matching processes will be returned
         :param logger: if provided, information about ignored/excluded processes will be logged
         :param verbose: 1 -> verbose, 2 -> debug
+        :param raise_exc: if True, raise ValidationError on invalid processes
         """
 
         ret: List[ProcessModel] = []
@@ -187,17 +191,19 @@ class AmpelController:
                             )
                     continue
 
+                if not p.get("active", True):
+                    if logger:
+                        logger.log(VERBOSE, f"Ignoring inactive process {p.get('name')}")
+                    continue
+
                 try:
                     # Set defaults
                     pm = ProcessModel(**p)
                 except Exception as e:
                     if logger:
                         logger.error(f"Unable to load invalid process {p}", exc_info=e)
-                    continue
-
-                if not pm.active:
-                    if logger:
-                        logger.log(VERBOSE, f"Ignoring inactive process {pm.name}")
+                    if raise_exc:
+                        raise
                     continue
 
                 # Controller exclusion
