@@ -32,6 +32,7 @@ from ampel.type import ChannelId, StockId, T2UnitResult
 from ampel.content.DataPoint import DataPoint
 from ampel.content.Compound import Compound
 from ampel.view.T2DocView import T2DocView
+from ampel.model.StateT2Dependency import StateT2Dependency
 
 
 class Sleepy(AbsProcessorUnit):
@@ -204,7 +205,7 @@ class DummyStateT2Unit(AbsStateT2Unit):
 
 class DummyTiedStateT2Unit(AbsTiedStateT2Unit):
 
-    t2_dependency = [{"unit": "DummyStateT2Unit", "config": None, "link_override": None}]
+    t2_dependency = [StateT2Dependency(unit="DummyStateT2Unit")]
 
     def get_tied_unit_names(self):
         return [c.get("unit") for c in self.t2_dependency]
