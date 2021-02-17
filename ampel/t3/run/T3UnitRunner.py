@@ -16,7 +16,7 @@ from ampel.log.utils import report_exception
 from ampel.log.handlers.ChanRecordBufHandler import ChanRecordBufHandler
 from ampel.log.handlers.DefaultRecordBufferingHandler import DefaultRecordBufferingHandler
 from ampel.core.AmpelBuffer import AmpelBuffer
-from ampel.core.UnitLoader import UnitLoader
+from ampel.base.AuxUnitRegister import AuxUnitRegister
 from ampel.core.JournalUpdater import JournalUpdater
 from ampel.view.SnapView import SnapView
 from ampel.util.mappings import build_unsafe_dict_id
@@ -95,7 +95,7 @@ class T3UnitRunner(AbsT3UnitRunner):
 				if debug:
 					self.logger.debug(f"Setting up projector {directive.project.unit_name}")
 
-				rb.projector = UnitLoader.new_aux_unit(
+				rb.projector = AuxUnitRegister.new_unit(
 					unit_model = directive.project,
 					sub_type = AbsT3Projector,
 					logger = self.logger
