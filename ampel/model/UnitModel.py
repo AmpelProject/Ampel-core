@@ -7,14 +7,9 @@
 # Last Modified Date: 01.08.2020
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-from contextlib import contextmanager
-from typing import Dict, Optional, Any, Union, Type, Sequence, cast, TYPE_CHECKING
-from pydantic import create_model, root_validator
+from typing import Dict, Optional, Any, Union, Type
 from ampel.base.AmpelBaseModel import AmpelBaseModel
 from ampel.model.StrictModel import StrictModel
-
-if TYPE_CHECKING:
-	from ampel.core.UnitLoader import UnitLoader
 
 
 class UnitModel(StrictModel):
@@ -32,66 +27,8 @@ class UnitModel(StrictModel):
 	#: Values to override in the config
 	override: Optional[Dict[str, Any]]
 
-	# Optional static UnitLoader to validate configs
-	_unit_loader: Optional['UnitLoader'] = None
-
-
 	@property
 	def unit_name(self) -> str:
 		if isinstance(self.unit, str):
 			return self.unit
 		return self.unit.__name__
-
-	@classmethod
-	@contextmanager
-	def validate_configs(cls, unit_loader: "Optional[UnitLoader]"):
-		"""Temporarily enable unit model validataion"""
-		prev = cls._unit_loader
-		cls._unit_loader = unit_loader
-		yield
-		cls._unit_loader = prev
-
-	@root_validator
-	def validate_config(cls, values: Dict[str,Any]) -> Dict[str,Any]:
-		if cls._unit_loader:
-			from ampel.base.DataUnit import DataUnit
-			from ampel.core.AdminUnit import AdminUnit
-			from ampel.abstract.AbsProcessorUnit import AbsProcessorUnit
-			from ampel.abstract.ingest.AbsIngester import AbsIngester
-			from ampel.t3.run.AbsT3UnitRunner import AbsT3UnitRunner
-			from ampel.t3.context.AbsT3RunContextAppender import AbsT3RunContextAppender
-
-			unit = cls._unit_loader.get_class_by_name(values['unit'])
-			if issubclass(unit, (DataUnit, AdminUnit, AbsProcessorUnit, AbsIngester)):
-				# exclude base class fields provided at runtime
-				exclude = {"logger"}
-				for parent in cast(
-					Sequence[Type[AmpelBaseModel]],
-					(
-						DataUnit,
-						AdminUnit,
-						AbsT3UnitRunner,
-						AbsT3RunContextAppender,
-						AbsProcessorUnit,
-						AbsIngester,
-					)
-				):
-					if issubclass(unit, parent):
-						exclude.update(set(parent._annots.keys()).difference(parent._defaults.keys()))
-				fields = {
-					k: (v, unit._defaults[k] if k in unit._defaults else ...)
-					for k, v in unit._annots.items() if k not in exclude
-				} # type: ignore
-				model = create_model(
-					unit.__name__, __config__ = StrictModel.__config__,
-					__base__=None, __module__=None, __validators__=None,
-					**fields
-				)
-				model.validate(
-					cls._unit_loader.get_init_config(
-						values['unit'],
-						values['config'],
-						values['override']
-					)
-				)
-		return values

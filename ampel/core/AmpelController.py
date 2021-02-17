@@ -296,7 +296,7 @@ class AmpelController:
                     ),
                 )
                 # Ensure that process models are valid
-                with UnitModel.validate_configs(loader):
+                with loader.validate_unit_models():
                     groups = AmpelController.group_processes(
                         AmpelController.get_processes(
                             config, tier=args_ns.tier, match=args_ns.match,
