@@ -4,10 +4,11 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 11.12.2019
-# Last Modified Date: 20.06.2020
+# Last Modified Date: 17.02.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-from typing import Dict, Optional, Union, Any, Literal, get_args
+from bson.int64 import Int64
+from typing import Dict, Optional, Union, Any, Literal
 from ampel.type import Tag, ChannelId, StockId, StrictIterable
 from ampel.model.operator.AnyOf import AnyOf
 from ampel.model.operator.AllOf import AllOf
@@ -15,7 +16,7 @@ from ampel.model.operator.OneOf import OneOf
 from ampel.db.query.utils import match_array
 from ampel.db.query.schema import apply_schema, apply_excl_schema
 
-type_stock_id = get_args(StockId) # type: ignore[misc]
+type_stock_id = (int, Int64, bytes, str)
 
 
 def build_general_query(
