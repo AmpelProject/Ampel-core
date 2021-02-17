@@ -206,9 +206,11 @@ class DummyStateT2Unit(AbsStateT2Unit):
 class DummyTiedStateT2Unit(AbsTiedStateT2Unit):
 
     t2_dependency = [StateT2Dependency(unit="DummyStateT2Unit")]
+    _unit = "DummyStateT2Unit"
 
-    def get_tied_unit_names(self):
-        return [c.get("unit") for c in self.t2_dependency]
+    @classmethod
+    def get_tied_unit_names(cls):
+        return [cls._unit]
 
     def run(self,
 		compound: Compound,

@@ -14,6 +14,7 @@ from ampel.ingest.StockT2Ingester import StockT2Ingester
 from ampel.log.AmpelLogger import AmpelLogger
 from ampel.log.LogsBufferDict import LogsBufferDict
 from ampel.model.ingest.T2IngestModel import T2IngestModel
+from ampel.model.StateT2Dependency import StateT2Dependency
 from ampel.test.dummy import DummyCompoundIngester, DummyStateT2Ingester
 
 
@@ -62,9 +63,18 @@ def ampel_logger():
 def ingest_stock(dev_context, ampel_logger):
     run_id = 0
     updates_buffer = DBUpdatesBuffer(dev_context.db, run_id=run_id, logger=ampel_logger)
-    logd = LogsBufferDict({"logs": [], "extra": {}, "err": False,})
+    logd = LogsBufferDict(
+        {
+            "logs": [],
+            "extra": {},
+            "err": False,
+        }
+    )
     ingester = StockIngester(
-        updates_buffer=updates_buffer, logd=logd, run_id=run_id, context=dev_context,
+        updates_buffer=updates_buffer,
+        logd=logd,
+        run_id=run_id,
+        context=dev_context,
     )
     ingester.ingest("stockystock", [("TEST_CHANNEL", True)], jextra={"alert": 123})
     ingester.updates_buffer.push_updates()
@@ -75,9 +85,18 @@ def ingest_stock(dev_context, ampel_logger):
 def ingest_stock_t2(dev_context, ampel_logger):
     run_id = 0
     updates_buffer = DBUpdatesBuffer(dev_context.db, run_id=run_id, logger=ampel_logger)
-    logd = LogsBufferDict({"logs": [], "extra": {}, "err": False,})
+    logd = LogsBufferDict(
+        {
+            "logs": [],
+            "extra": {},
+            "err": False,
+        }
+    )
     ingester = StockT2Ingester(
-        updates_buffer=updates_buffer, logd=logd, run_id=run_id, context=dev_context,
+        updates_buffer=updates_buffer,
+        logd=logd,
+        run_id=run_id,
+        context=dev_context,
     )
     ingester.add_ingest_models("TEST_CHANNEL", [T2IngestModel(unit="DummyStockT2Unit")])
     ingester.ingest("stockystock", [("TEST_CHANNEL", True)])
@@ -86,20 +105,33 @@ def ingest_stock_t2(dev_context, ampel_logger):
 
 
 @pytest.fixture(params=["DummyStateT2Unit", "DummyPointT2Unit", "DummyStockT2Unit"])
-def ingest_tied_t2(dev_context, ampel_logger, request):
+def ingest_tied_t2(dev_context, ampel_logger, request, monkeypatch):
     """Create a T2 document with dependencies"""
 
     tied_config_id = dev_context.add_config_id(
         {"t2_dependency": [{"unit": request.param}]}
     )
+    monkeypatch.setattr(
+        "ampel.test.dummy.DummyTiedStateT2Unit._unit",
+        request.param,
+    )
 
     run_id = 0
     updates_buffer = DBUpdatesBuffer(dev_context.db, run_id=run_id, logger=ampel_logger)
-    logd = LogsBufferDict({"logs": [], "extra": {}, "err": False,})
+    logd = LogsBufferDict(
+        {
+            "logs": [],
+            "extra": {},
+            "err": False,
+        }
+    )
     filter_results = [("TEST_CHANNEL", True)]
 
     StockIngester(
-        updates_buffer=updates_buffer, logd=logd, run_id=run_id, context=dev_context,
+        updates_buffer=updates_buffer,
+        logd=logd,
+        run_id=run_id,
+        context=dev_context,
     ).ingest("stockystock", filter_results, {})
 
     # mimic a datapoint ingester
@@ -111,7 +143,10 @@ def ingest_tied_t2(dev_context, ampel_logger, request):
 
     # create compounds
     comp_ingester = DummyCompoundIngester(
-        updates_buffer=updates_buffer, logd=logd, run_id=run_id, context=dev_context,
+        updates_buffer=updates_buffer,
+        logd=logd,
+        run_id=run_id,
+        context=dev_context,
     )
     comp_ingester.add_channel(filter_results[0][0])
     blueprint = comp_ingester.ingest("stockystock", datapoints, filter_results)
@@ -119,13 +154,22 @@ def ingest_tied_t2(dev_context, ampel_logger, request):
     # create T2 doc
     # FIXME: should dependent docs be created implicitly?
     state_ingester = DummyStateT2Ingester(
-        updates_buffer=updates_buffer, logd=logd, run_id=run_id, context=dev_context,
+        updates_buffer=updates_buffer,
+        logd=logd,
+        run_id=run_id,
+        context=dev_context,
     )
     point_ingester = PointT2Ingester(
-        updates_buffer=updates_buffer, logd=logd, run_id=run_id, context=dev_context,
+        updates_buffer=updates_buffer,
+        logd=logd,
+        run_id=run_id,
+        context=dev_context,
     )
     stock_ingester = StockT2Ingester(
-        updates_buffer=updates_buffer, logd=logd, run_id=run_id, context=dev_context,
+        updates_buffer=updates_buffer,
+        logd=logd,
+        run_id=run_id,
+        context=dev_context,
     )
 
     # NB: ingestion configured in reverse order so that t2 execution is forced
@@ -133,7 +177,12 @@ def ingest_tied_t2(dev_context, ampel_logger, request):
 
     state_ingester.add_ingest_models(
         filter_results[0][0],
-        [T2IngestModel(unit="DummyTiedStateT2Unit", config=tied_config_id,)],
+        [
+            T2IngestModel(
+                unit="DummyTiedStateT2Unit",
+                config=tied_config_id,
+            )
+        ],
     )
 
     if "state" in request.param.lower():
