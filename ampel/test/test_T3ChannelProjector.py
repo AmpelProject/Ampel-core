@@ -10,9 +10,9 @@ from ampel.t3.run.project.T3ChannelProjector import T3ChannelProjector
 
 
 @pytest.fixture
-def stock_record():
+def stock_record() -> StockRecord:
     with open(Path(__file__).parent / "test-data" / "ZTF20abxvcrk.pkl", "rb") as f:
-        return StockRecord(pickle.load(f))
+        return pickle.load(f)
 
 
 @pytest.fixture

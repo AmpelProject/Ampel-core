@@ -8,10 +8,13 @@
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import importlib, re, json
-from pydantic import ValidationError
+from contextlib import nullcontext
 from functools import partial
 from math import inf # noqa: required for eval(repr(...)) below
-from typing import Dict, List, Any, Optional, Set, Iterable
+from typing import ContextManager, Dict, List, Any, Optional, Set, Iterable
+
+from pydantic import ValidationError
+
 from ampel.util.mappings import get_by_path, set_by_path
 from ampel.util.crypto import aes_recursive_decrypt
 from ampel.abstract.AbsChannelTemplate import AbsChannelTemplate
@@ -176,14 +179,17 @@ class ConfigBuilder:
 			for k in FirstPassConfig.conf_keys.keys()
 		}
 
-		unit_model_validator = partial(
-			UnitModel.validate_configs,
+		unit_loader = (
 			UnitLoader(
 				AmpelConfig(self.first_pass_config),
 				secrets=PotemkinSecretProvider(),
-			)
-			if validate_unit_models else None
+			) if validate_unit_models else None
 		)
+		def unit_validation_context() -> ContextManager[None]:
+			if unit_loader:
+				return unit_loader.validate_unit_models()
+			else:
+				return nullcontext()
 
 		out['process'] = {}
 
@@ -228,7 +234,7 @@ class ConfigBuilder:
 					pass
 
 				try:
-					with unit_model_validator():
+					with unit_validation_context():
 						p_collector.add(
 							self.new_morpher(p) \
 								.scope_aliases(self.first_pass_config) \
@@ -278,7 +284,7 @@ class ConfigBuilder:
 
 					try:
 						# Add transformed process to final process collector
-						with unit_model_validator():
+						with unit_validation_context():
 							out['process'][f't{p["tier"]}'].add(
 								self.new_morpher(p) \
 									.scope_aliases(self.first_pass_config) \

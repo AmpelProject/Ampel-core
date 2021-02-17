@@ -90,7 +90,7 @@ def ingest_tied_t2(dev_context, ampel_logger, request):
     """Create a T2 document with dependencies"""
 
     tied_config_id = dev_context.add_config_id(
-        {"dependency": [{"unit": request.param}]}
+        {"t2_dependency": [{"unit": request.param}]}
     )
 
     run_id = 0

@@ -252,7 +252,7 @@ async def reload_config() -> TaskDescriptionCollection:
             secrets=(DictSecretProvider.load(secrets_file) if secrets_file else None),
         )
         # Ensure that process models are valid
-        with UnitModel.validate_configs(loader):
+        with loader.validate_unit_models():
             processes = AmpelController.get_processes(config)
     except Exception:
         logging.exception(f"Failed to load {config_file}")

@@ -35,7 +35,7 @@ def test_metrics(dev_context, ingest_stock_t2):
 
 def test_tied_t2s(dev_context, ingest_tied_t2):
     assert (num_dps := dev_context.db.get_collection("t0").count_documents({}))
-    t2 = T2Processor(context=dev_context, raise_exc=True, process_name="t2")
+    t2 = T2Processor(context=dev_context, raise_exc=True, process_name="t2", run_dependent_t2s=True)
 
     num_docs = t2.run()
     t2 = dev_context.db.get_collection("t2")

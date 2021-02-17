@@ -7,14 +7,16 @@
 # Last Modified Date: 01.08.2020
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
+from contextlib import contextmanager
+from functools import partial
 from importlib import import_module
 from typing import ( # type: ignore[attr-defined]
-	Dict, Type, Any, Union, Optional, ClassVar, TypeVar,
+	Dict, Iterator, Type, Any, Union, Optional, ClassVar, TypeVar, Sequence,
 	Literal, List, _GenericAlias, overload, get_args,
 	get_origin, cast
 )
 
-from pydantic.main import ModelMetaclass
+from pydantic.main import ModelMetaclass, create_model
 
 from ampel.util.collections import ampel_iter
 from ampel.util.freeze import recursive_unfreeze
@@ -24,6 +26,7 @@ from ampel.view.ReadOnlyDict import ReadOnlyDict
 from ampel.base.AmpelBaseModel import AmpelBaseModel
 from ampel.base.DataUnit import DataUnit
 from ampel.core.AmpelContext import AmpelContext
+from ampel.model.StrictModel import StrictModel
 from ampel.model.UnitModel import UnitModel
 from ampel.config.AmpelConfig import AmpelConfig
 from ampel.log.AmpelLogger import AmpelLogger
@@ -194,6 +197,19 @@ class UnitLoader:
 				raise TypeError
 			ret = self.resolve_secrets(self.secrets, unit, annotations, defaults, ret)
 		return ret if ret is not None else {}
+
+
+	@contextmanager
+	def validate_unit_models(self) -> Iterator[None]:
+		"""
+		Enable validation for UnitModel instances
+		"""
+		extra_validator = (False, partial(_validate_unit_model, unit_loader=self))
+		UnitModel.__post_root_validators__.append(extra_validator)
+		try:
+			yield
+		finally:
+			UnitModel.__post_root_validators__.remove(extra_validator)
 
 
 	def get_resources(self, unit_model: UnitModel) -> Dict[str, Any]:
@@ -434,3 +450,50 @@ class UnitLoader:
 		reveal_type(self.new_admin_unit(model, context, sub_type = AbsLightCurveT2Unit))
 		reveal_type(self.new_admin_unit(model, context, sub_type = AbsLightCurveT2Unit, bla=12))
 	"""
+
+
+def _validate_unit_model(cls, values: Dict[str,Any], unit_loader: UnitLoader) -> Dict[str,Any]:
+	"""
+	Verify that a unit configuration is valid in the context of a specific UnitLoader.
+	"""
+	from ampel.base.DataUnit import DataUnit
+	from ampel.core.AdminUnit import AdminUnit
+	from ampel.abstract.AbsProcessorUnit import AbsProcessorUnit
+	from ampel.abstract.ingest.AbsIngester import AbsIngester
+	from ampel.t3.run.AbsT3UnitRunner import AbsT3UnitRunner
+	from ampel.t3.context.AbsT3RunContextAppender import AbsT3RunContextAppender
+
+	unit = unit_loader.get_class_by_name(values['unit'])
+	if issubclass(unit, (DataUnit, AdminUnit, AbsProcessorUnit, AbsIngester)):
+		# exclude base class fields provided at runtime
+		exclude = {"logger"}
+		for parent in cast(
+			Sequence[Type[AmpelBaseModel]],
+			(
+				DataUnit,
+				AdminUnit,
+				AbsT3UnitRunner,
+				AbsT3RunContextAppender,
+				AbsProcessorUnit,
+				AbsIngester,
+			)
+		):
+			if issubclass(unit, parent):
+				exclude.update(set(parent._annots.keys()).difference(parent._defaults.keys()))
+		fields = {
+			k: (v, unit._defaults[k] if k in unit._defaults else ...)
+			for k, v in unit._annots.items() if k not in exclude
+		} # type: ignore
+		model = create_model(
+			unit.__name__, __config__ = StrictModel.__config__,
+			__base__=None, __module__=None, __validators__=None,
+			**fields
+		)
+		model.validate(
+			unit_loader.get_init_config(
+				values['unit'],
+				values['config'],
+				values['override']
+			)
+		)
+	return values
