@@ -30,7 +30,7 @@ from multiprocessing import reduction, spawn  # type: ignore
 from multiprocessing.context import set_spawning_popen
 from subprocess import _args_from_interpreter_flags  # type: ignore
 
-import aiopipe  # type: ignore
+import ampel.vendor.aiopipe as aiopipe  # type: ignore
 from ampel.metrics.prometheus import prometheus_cleanup_worker, prometheus_setup_worker
 
 

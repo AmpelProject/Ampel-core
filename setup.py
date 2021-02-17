@@ -38,8 +38,6 @@ setup(
 		"sjcl",
 		"schedule",
 		"slackclient>=2.7,<3.0",
-		# install from fork, pending https://github.com/kchmck/aiopipe/pull/3
-		"aiopipe @ https://github.com/jvansanten/aiopipe/tarball/double-close-fds",
 		"yq",
 		"prometheus_client",
 		"psutil",
