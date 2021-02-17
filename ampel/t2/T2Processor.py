@@ -26,7 +26,6 @@ from ampel.content.Compound import Compound
 from ampel.content.T2Document import T2Document, T2Link
 from ampel.content.T2Record import T2Record
 from ampel.content.JournalRecord import JournalRecord
-from ampel.struct.T2Dependency import T2Dependency
 from ampel.view.T2DocView import T2DocView, TYPE_POINT_T2, TYPE_STOCK_T2, TYPE_STATE_T2
 from ampel.log import AmpelLogger, DBEventDoc, LogRecordFlag, VERBOSE
 from ampel.log.utils import report_exception, report_error
@@ -40,6 +39,7 @@ from ampel.abstract.AbsCustomStateT2Unit import AbsCustomStateT2Unit
 from ampel.abstract.AbsTiedT2Unit import AbsTiedT2Unit
 from ampel.abstract.AbsTiedStateT2Unit import AbsTiedStateT2Unit
 from ampel.abstract.AbsTiedCustomStateT2Unit import AbsTiedCustomStateT2Unit
+from ampel.model.StateT2Dependency import StateT2Dependency
 from ampel.model.UnitModel import UnitModel
 from ampel.core.JournalUpdater import JournalUpdater
 
@@ -496,13 +496,16 @@ class T2Processor(AbsProcessorUnit):
 					custom_state = t2_unit.build(compound, datapoints)
 
 				# t2 dependencies customization from config
-				t2_deps: List[T2Dependency] = getattr(t2_unit, 't2_dependency', [])
+				t2_deps: List[UnitModel] = getattr(t2_unit, 't2_dependency', [])
 				tied_unit_names = t2_unit.get_tied_unit_names()
 
 				# This should not happen with config built by ampel (ConfigBuilder)
 				# but can happen in developers notebook
 				for t2_dep in t2_deps:
-					if t2_dep['unit'] not in tied_unit_names:
+					if (
+						tied_unit_names is not None
+						and t2_dep.unit not in tied_unit_names
+					):
 						report_error(
 							self._ampel_db, logger=logger, info={'doc': t2_doc},
 							msg = "Invalid dependency customization " +
@@ -511,10 +514,10 @@ class T2Processor(AbsProcessorUnit):
 						return None
 
 				# defaults from abstract class
-				for tied_unit_name in t2_unit.get_tied_unit_names():
+				for tied_unit_name in t2_unit.get_tied_unit_names() or []:
 
 					# Check one or more dependencies are defined for this t2 unit
-					custom_dependencies = [el for el in t2_deps if el['unit'] == tied_unit_name]
+					custom_dependencies = [el for el in t2_deps if el.unit == tied_unit_name]
 
 					# No customization avail -> use defaults
 					if not custom_dependencies:
@@ -539,19 +542,22 @@ class T2Processor(AbsProcessorUnit):
 
 						d: Dict[str, Any] = {
 							'unit': tied_unit_name,
-							'config': custom_dep.get('config'), # possibly None
+							'config': custom_dep.config, # possibly None
 							'channel': {"$in": t2_doc['channel']},
 							'stock': t2_doc['stock']
 						}
 
-						if custom_dep.get('link_override'):
+						if (
+							isinstance(custom_dep, StateT2Dependency)
+							and (link_override := custom_dep.link_override)
+						):
 							if isinstance(t2_unit, AbsTiedCustomStateT2Unit):
 								d['link'] = t2_unit.get_link(
-									custom_dep['link_override'], custom_state # type: ignore[arg-type] # mypy inference issue
+									link_override, custom_state # type: ignore[arg-type] # mypy inference issue
 								)
 							else:
 								d['link'] = t2_unit.get_link(
-									custom_dep['link_override'], compound, datapoints # type: ignore[arg-type] # mypy inference issue
+									link_override, compound, datapoints # type: ignore[arg-type] # mypy inference issue
 								)
 						else:
 							d["link"] = self.get_default_tied_t2_link(tied_unit_name, t2_doc, dps_ids)
