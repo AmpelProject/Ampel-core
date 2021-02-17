@@ -90,10 +90,10 @@ b'HELLO WORLD\\n'
 from asyncio import StreamReader, StreamWriter, StreamReaderProtocol, BaseTransport, \
         get_running_loop, sleep
 from contextlib import contextmanager, asynccontextmanager
-from typing import Tuple, Any, ContextManager, AsyncContextManager
+from typing import Iterator, Tuple, Any, ContextManager, AsyncIterator
 import os
 
-__pdoc__ = {}
+__pdoc__ = {} # type: ignore
 
 def aiopipe() -> Tuple["AioPipeReader", "AioPipeWriter"]:
     """
@@ -152,7 +152,7 @@ class AioPipeStream:
         raise NotImplementedError()
 
     @contextmanager
-    def detach(self) -> ContextManager["AioPipeStream"]:
+    def detach(self) -> Iterator["AioPipeStream"]:
         """
         Detach this end of the pipe from the current process in preparation for use in a
         child process.
@@ -217,7 +217,7 @@ class AioPipeWriter(AioPipeStream):
     The write end of a pipe.
     """
 
-    __pdoc__["AioPipeWriter.__init__"] = None
+    __pdoc__["AioPipeWriter.__init__"] = None # type: ignore
     __pdoc__["AioPipeWriter.open"] = """
         Open the transmit end on the current event loop.
 
@@ -243,14 +243,14 @@ class AioDuplex:
     Represents one end of a duplex pipe.
     """
 
-    __pdoc__["AioDuplex.__init__"] = None
+    __pdoc__["AioDuplex.__init__"] = None # type: ignore
 
     def __init__(self, rx: AioPipeReader, tx: AioPipeWriter):
         self._rx = rx
         self._tx = tx
 
     @contextmanager
-    def detach(self) -> ContextManager["AioDuplex"]:
+    def detach(self) -> Iterator["AioDuplex"]:
         """
         Detach this end of the duplex pipe from the current process in preparation for use
         in a child process.
@@ -266,7 +266,7 @@ class AioDuplex:
             yield self
 
     @asynccontextmanager
-    async def open(self) -> AsyncContextManager[Tuple["StreamReader", "StreamWriter"]]:
+    async def open(self) -> AsyncIterator[Tuple["StreamReader", "StreamWriter"]]:
         """
         Open this end of the duplex pipe on the current event loop.
 
