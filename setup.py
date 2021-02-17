@@ -9,9 +9,11 @@
 
 from setuptools import setup, find_namespace_packages
 
+import version_query
+
 setup(
 	name='ampel-core',
-	version='0.7',
+	version=version_query.predict_version_str(),
 	packages=find_namespace_packages(),
 	package_data = {
 		'': ['*.json', 'py.typed'],
@@ -74,5 +76,6 @@ setup(
 			'graphite = ampel.config.resource.Graphite:Graphite',
 			'slack = ampel.config.resource.SlackToken:SlackToken',
 		]
-	}
+	},
+	python_requires='>=3.8',
 )
