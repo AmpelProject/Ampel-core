@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 24.05.2019
-# Last Modified Date: 10.02.2021
+# Last Modified Date: 17.02.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import gc
@@ -12,8 +12,7 @@ import signal
 from time import time
 from typing import Optional, List, Union, Type, Dict, Any, Sequence, Tuple, cast, overload, TYPE_CHECKING
 
-from ampel.type import T
-from ampel.type import T2UnitResult, Tag, DataPointId
+from ampel.type import T, T2UnitResult, Tag
 from ampel.db.query.utils import match_array
 from ampel.util.collections import try_reduce
 from ampel.log.utils import convert_dollars
@@ -23,11 +22,12 @@ from ampel.enum.T2SysRunState import T2SysRunState
 from ampel.struct.T2BroadUnitResult import T2BroadUnitResult
 from ampel.content.DataPoint import DataPoint
 from ampel.content.Compound import Compound
-from ampel.content.T2Document import T2Document, T2Link
+from ampel.content.T2Document import T2Document
 from ampel.content.T2Record import T2Record
 from ampel.content.JournalRecord import JournalRecord
 from ampel.view.T2DocView import T2DocView, TYPE_POINT_T2, TYPE_STOCK_T2, TYPE_STATE_T2
 from ampel.log import AmpelLogger, DBEventDoc, LogRecordFlag, VERBOSE
+from ampel.base.BadConfig import BadConfig
 from ampel.log.utils import report_exception, report_error
 from ampel.log.handlers.DefaultRecordBufferingHandler import DefaultRecordBufferingHandler
 from ampel.util.mappings import build_unsafe_short_dict_id
@@ -37,10 +37,12 @@ from ampel.abstract.AbsPointT2Unit import AbsPointT2Unit
 from ampel.abstract.AbsStateT2Unit import AbsStateT2Unit
 from ampel.abstract.AbsCustomStateT2Unit import AbsCustomStateT2Unit
 from ampel.abstract.AbsTiedT2Unit import AbsTiedT2Unit
+from ampel.abstract.AbsTiedPointT2Unit import AbsTiedPointT2Unit
 from ampel.abstract.AbsTiedStateT2Unit import AbsTiedStateT2Unit
+from ampel.abstract.AbsTiedStockT2Unit import AbsTiedStockT2Unit
 from ampel.abstract.AbsTiedCustomStateT2Unit import AbsTiedCustomStateT2Unit
-from ampel.model.StateT2Dependency import StateT2Dependency
 from ampel.model.UnitModel import UnitModel
+from ampel.model.StateT2Dependency import StateT2Dependency
 from ampel.core.JournalUpdater import JournalUpdater
 
 from ampel.metrics.AmpelMetricsRegistry import AmpelMetricsRegistry
@@ -50,7 +52,7 @@ if TYPE_CHECKING:
 	from ampel.content.StockRecord import StockRecord
 
 AbsT2 = Union[
-	AbsStockT2Unit, AbsPointT2Unit, AbsStateT2Unit,
+	AbsStockT2Unit, AbsPointT2Unit, AbsStateT2Unit, AbsTiedPointT2Unit,
 	AbsTiedStateT2Unit, AbsCustomStateT2Unit[T], AbsTiedCustomStateT2Unit[T],
 ]
 
@@ -370,6 +372,20 @@ class T2Processor(AbsProcessorUnit):
 
 	@overload
 	def load_input_docs(self,
+		t2_unit: AbsPointT2Unit,
+		t2_doc: T2Document, logger: AmpelLogger, jupdater: JournalUpdater
+	) -> Union[None, T2SysRunState, DataPoint]:
+		...
+
+	@overload
+	def load_input_docs(self,
+		t2_unit: AbsTiedPointT2Unit,
+		t2_doc: T2Document, logger: AmpelLogger, jupdater: JournalUpdater
+	) -> Union[None, T2SysRunState, Tuple[DataPoint, T2DocView]]:
+		...
+
+	@overload
+	def load_input_docs(self,
 		t2_unit: AbsStateT2Unit,
 		t2_doc: T2Document, logger: AmpelLogger, jupdater: JournalUpdater,
 	) -> Optional[Tuple[Compound, Sequence[DataPoint]]]:
@@ -399,7 +415,6 @@ class T2Processor(AbsProcessorUnit):
 	) -> Union[None, T2SysRunState, Tuple[T, List[T2DocView]]]:
 		...
 
-
 	@overload
 	def load_input_docs(self,
 		t2_unit: AbsStockT2Unit,
@@ -408,26 +423,20 @@ class T2Processor(AbsProcessorUnit):
 		...
 
 
-	@overload
-	def load_input_docs(self,
-		t2_unit: AbsPointT2Unit,
-		t2_doc: T2Document, logger: AmpelLogger, jupdater: JournalUpdater
-	) -> Optional[Tuple[DataPoint]]:
-		...
-
-
 	# NB: spell out union arg to ensure a common context for the TypeVar T
 	def load_input_docs(self,
 		t2_unit: AbsT2, t2_doc: T2Document,
 		logger: AmpelLogger, jupdater: JournalUpdater
 	) -> Union[
-		None, T2SysRunState,
-		Tuple[DataPoint], # point t2
-		Tuple["StockRecord"], # stock t2
-		Tuple[Compound, Sequence[DataPoint]], # state t2
-		Tuple[T], # custom state t2 (T can be LightCurve for ex)
-		Tuple[T, List[T2DocView]], # tied custom state t2
+		None,
+		T2SysRunState,                                         # Error / missing dependency
+		DataPoint,                                             # point t2
+		Tuple[DataPoint, T2DocView],                           # tied point t2
+		Tuple["StockRecord"],                                  # stock t2
+		Tuple[Compound, Sequence[DataPoint]],                  # state t2
+		Tuple[T],                                              # custom state t2 (T could be LightCurve)
 		Tuple[Compound, Sequence[DataPoint], List[T2DocView]], # tied state t2
+		Tuple[T, List[T2DocView]],                             # tied custom state t2
 	]:
 		"""
 		Fetches documents required by `t2_unit`.
@@ -489,125 +498,33 @@ class T2Processor(AbsProcessorUnit):
 			if isinstance(t2_unit, AbsTiedT2Unit):
 
 				queries: List[Dict[str, Any]] = []
-				tied_views: List[T2DocView] = []
 
 				if isinstance(t2_unit, AbsTiedCustomStateT2Unit):
 					# A LightCurve instance for example
 					custom_state = t2_unit.build(compound, datapoints)
 
-				# t2 dependencies customization from config
-				t2_deps: List[UnitModel] = getattr(t2_unit, 't2_dependency', [])
-				tied_unit_names = t2_unit.get_tied_unit_names()
+				for tied_model in t2_unit.get_t2_dependencies():
 
-				# This should not happen with config built by ampel (ConfigBuilder)
-				# but can happen in developers notebook
-				for t2_dep in t2_deps:
-					if (
-						tied_unit_names is not None
-						and t2_dep.unit not in tied_unit_names
-					):
-						report_error(
-							self._ampel_db, logger=logger, info={'doc': t2_doc},
-							msg = "Invalid dependency customization " +
-							"(requested tied unit not registered in root class)"
-						)
-						return None
+					d = self.build_tied_t2_query(t2_unit, tied_model, t2_doc)
+					if d['link'] is None:
 
-				# defaults from abstract class
-				for tied_unit_name in t2_unit.get_tied_unit_names() or []:
-
-					# Check one or more dependencies are defined for this t2 unit
-					custom_dependencies = [el for el in t2_deps if el.unit == tied_unit_name]
-
-					# No customization avail -> use defaults
-					if not custom_dependencies:
-						queries.append(
-							{
-								'unit': tied_unit_name,
-								'config': None,
-								'channel': {"$in": t2_doc['channel']},
-								'stock': t2_doc['stock'],
-								"link": self.get_default_tied_t2_link(tied_unit_name, t2_doc, dps_ids)
-							}
-						)
-
-						if logger.verbose > 1:
-							logger.debug(f"Default T2 dependency query: {queries[-1]}")
-
-						continue
-
-					# Customization means also, that we can request multiple t2 records
-					# of the same t2 unit with different config
-					for custom_dep in custom_dependencies:
-
-						d: Dict[str, Any] = {
-							'unit': tied_unit_name,
-							'config': custom_dep.config, # possibly None
-							'channel': {"$in": t2_doc['channel']},
-							'stock': t2_doc['stock']
-						}
-
-						if (
-							isinstance(custom_dep, StateT2Dependency)
-							and (link_override := custom_dep.link_override)
-						):
+						if isinstance(tied_model, StateT2Dependency) and tied_model.link_override:
 							if isinstance(t2_unit, AbsTiedCustomStateT2Unit):
-								d['link'] = t2_unit.get_link(
-									link_override, custom_state # type: ignore[arg-type] # mypy inference issue
-								)
+								d['link'] = t2_unit.get_link(tied_model.link_override, custom_state)
 							else:
-								d['link'] = t2_unit.get_link(
-									link_override, compound, datapoints # type: ignore[arg-type] # mypy inference issue
+								d['link'] = t2_unit.get_link( # type: ignore[union-attr] # mypy forgot the first "if" of this method
+									tied_model.link_override, compound, datapoints
 								)
 						else:
-							d["link"] = self.get_default_tied_t2_link(tied_unit_name, t2_doc, dps_ids)
+							d['link'] = match_array(dps_ids)
 
-						if logger.verbose > 1:
-							logger.debug(f"Customized T2 dependency query: {d}")
+					queries.append(d)
 
-						queries.append(d)
+				tied_views = self.run_tied_queries(queries, t2_doc, jupdater, logger)
 
-				for query in queries:
-
-					if self.run_dependent_t2s:
-
-						processed_ids: List[ObjectId] = []
-
-						# run pending dependencies
-						while (
-							dep_t2_doc := self.col_t2.find_one_and_update(
-								{'status': self.status_match, **query},
-								{'$set': {'status': T2SysRunState.RUNNING}}
-							)
-						) is not None:
-
-							if not dep_t2_doc.get('body'):
-								dep_t2_doc['body'] = []
-
-							dep_t2_doc['body'].append(
-								self.process_t2_doc(dep_t2_doc, logger, jupdater)
-							)
-
-							# suppress channel info
-							dep_t2_doc.pop('channel')
-							tied_views.append(self.view_from_record(dep_t2_doc))
-							processed_ids.append(dep_t2_doc['_id'])
-
-						if len(processed_ids) > 0:
-							query['_id'] = {'$nin': processed_ids}
-
-					# collect dependencies
-					for dep_t2_doc in self.col_t2.find(query):
-						# suppress channel info
-						dep_t2_doc.pop('channel')
-						tied_views.append(self.view_from_record(dep_t2_doc))
-
-				if not self.run_dependent_t2s:
-					for view in tied_views:
-						if view.get_payload() is None:
-							if logger.verbose > 1:
-								logger.debug("Dependent T2 unit not run yet", extra={'t2_oid': t2_doc['_id']})
-							return T2SysRunState.PENDING_DEPENDENCY
+				# Dependency missing
+				if isinstance(tied_views, T2SysRunState):
+					return tied_views
 
 				if isinstance(t2_unit, AbsTiedStateT2Unit):
 					return (compound, datapoints, tied_views)
@@ -623,7 +540,7 @@ class T2Processor(AbsProcessorUnit):
 				else: # instance of AbsCustomStateT2Unit
 					return (t2_unit.build(compound, datapoints), )
 
-		elif isinstance(t2_unit, (AbsStockT2Unit, AbsPointT2Unit)):
+		elif isinstance(t2_unit, (AbsStockT2Unit, AbsPointT2Unit, AbsTiedPointT2Unit)):
 
 			if doc := next(
 				(
@@ -636,10 +553,25 @@ class T2Processor(AbsProcessorUnit):
 				),
 				None
 			):
+				if isinstance(t2_unit, AbsTiedPointT2Unit):
+
+					tied_views = self.run_tied_queries(
+						[
+							self.build_tied_t2_query(t2_unit, tied_model, t2_doc)
+							for tied_model in t2_unit.get_t2_dependencies()
+						],
+						t2_doc, jupdater, logger
+					)
+
+					if isinstance(tied_views, T2SysRunState):
+						return tied_views
+
+					return (doc, tied_views)
+
 				return (doc, )
 
 			report_error(
-				self._ampel_db, msg='Datapoint not found' if isinstance(t2_unit, AbsPointT2Unit)
+				self._ampel_db, msg='Datapoint not found' if isinstance(t2_unit, (AbsTiedPointT2Unit, AbsPointT2Unit))
 				else 'Stock doc not found', logger=logger, info={'doc': t2_doc}
 			)
 
@@ -653,6 +585,60 @@ class T2Processor(AbsProcessorUnit):
 			)
 
 			return None
+
+
+	def run_tied_queries(self,
+		queries: List[Dict[str, Any]],
+		t2_doc: T2Document,
+		jupdater: JournalUpdater,
+		logger: AmpelLogger
+	) -> Union[T2SysRunState, List[T2DocView]]:
+
+		t2_views: List[T2DocView] = []
+
+		for query in queries:
+
+			if self.run_dependent_t2s:
+
+				processed_ids: List[ObjectId] = []
+
+				# run pending dependencies
+				while (
+					dep_t2_doc := self.col_t2.find_one_and_update(
+						{'status': self.status_match, **query},
+						{'$set': {'status': T2SysRunState.RUNNING}}
+					)
+				) is not None:
+
+					if not dep_t2_doc.get('body'):
+						dep_t2_doc['body'] = []
+
+					dep_t2_doc['body'].append(
+						self.process_t2_doc(dep_t2_doc, logger, jupdater)
+					)
+
+					# suppress channel info
+					dep_t2_doc.pop('channel')
+					t2_views.append(self.view_from_record(dep_t2_doc))
+					processed_ids.append(dep_t2_doc['_id'])
+
+				if len(processed_ids) > 0:
+					query['_id'] = {'$nin': processed_ids}
+
+			# collect dependencies
+			for dep_t2_doc in self.col_t2.find(query):
+				# suppress channel info
+				dep_t2_doc.pop('channel')
+				t2_views.append(self.view_from_record(dep_t2_doc))
+
+		if not self.run_dependent_t2s:
+			for view in t2_views:
+				if view.get_payload() is None:
+					if logger.verbose > 1:
+						logger.debug("Dependent T2 unit not run yet", extra={'t2_oid': t2_doc['_id']})
+					return T2SysRunState.PENDING_DEPENDENCY
+
+		return t2_views
 
 
 	def view_from_record(self, doc: T2Document) -> T2DocView:
@@ -685,28 +671,68 @@ class T2Processor(AbsProcessorUnit):
 		)
 
 
-	def get_default_tied_t2_link(self,
-		unit_name: str, t2_doc: T2Document, dps_ids: List[DataPointId]
-	) -> Union[T2Link, Sequence[T2Link], Dict[str, Any]]:
+	def build_tied_t2_query(self,
+		t2_unit: AbsT2, tied_model: UnitModel, t2_doc: T2Document
+	) -> Dict[str, Any]:
 		"""
-		:raises: ValueError if unit is unknown
-		:returns: link value to match
+		This method handles "default" situations.
+		Callers must check returned 'link'.
+		If None (state t2 linked with point t2), further handling is required
+		:raises:
+			- ValueError if functionality is not implemented yet
+			- BadConfig if what's requested is not possible (a point T2 cannot be linked with a state t2)
+
+		:returns: link value to match or None if further handling is required (state t2 linked with point t2)
 		"""
 
 		t2_unit_info = self.context.config.get(
-			f'unit.base.{unit_name}', dict
+			f'unit.base.{tied_model.unit}', dict
 		)
 
 		if not t2_unit_info:
-			raise ValueError(f'Unknown T2 unit {unit_name}')
+			raise ValueError(f'Unknown T2 unit {tied_model.unit}')
 
-		if 'AbsStockT2Unit' in t2_unit_info['base']:
-			return t2_doc['stock']
+		d: Dict[str, Any] = {
+			'unit': tied_model.unit,
+			'config': tied_model.config,
+			'channel': {"$in": t2_doc['channel']},
+			'stock': t2_doc['stock'],
+		}
 
-		elif 'AbsPointT2Unit' in t2_unit_info['base']:
-			return match_array(dps_ids)
+		if isinstance(t2_unit, AbsTiedPointT2Unit):
 
-		return t2_doc['link']
+			if 'AbsPointT2Unit' in t2_unit_info['base']:
+				d['link'] = t2_doc['link']
+
+			elif 'AbsStockT2Unit' in t2_unit_info['base']:
+				raise ValueError('Not implemented yet')
+
+			else: # State T2
+				raise BadConfig('Tied point T2 cannot be linked with state T2s')
+
+		elif isinstance(t2_unit, AbsTiedStockT2Unit):
+
+			if 'AbsPointT2Unit' in t2_unit_info['base']:
+				raise BadConfig('Tied stock T2 cannot be linked with point T2s')
+
+			elif 'AbsStockT2Unit' in t2_unit_info['base']:
+				d['link'] = t2_doc['stock']
+
+			else: # State T2
+				raise BadConfig('Tied stock T2 cannot be linked with state T2s')
+
+		if isinstance(t2_unit, (AbsTiedStateT2Unit, AbsTiedCustomStateT2Unit)):
+
+			if 'AbsPointT2Unit' in t2_unit_info['base']:
+				d['link'] = None # Further checks required (link_override check)
+
+			elif 'AbsStockT2Unit' in t2_unit_info['base']:
+				d['link'] = t2_doc['stock']
+
+			else: # State T2
+				d['link'] = t2_doc['link']
+
+		return d
 
 
 	def run_t2_unit(self,
