@@ -1,5 +1,5 @@
 --index-url https://test.pypi.org/simple/
 --extra-index-url https://pypi.org/simple
 
-ampel-interface>=0.7.1.dev2,<0.7.2
+ampel-interface==0.7.1.dev3
 mypy==0.800
