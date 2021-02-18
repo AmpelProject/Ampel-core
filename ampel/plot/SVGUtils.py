@@ -15,6 +15,7 @@ from cairosvg import svg2png
 from IPython.display import Image
 from ampel.protocol.LoggerProtocol import LoggerProtocol
 from ampel.content.SVGDocument import SVGDocument
+from ampel.log.AmpelLogger import AmpelLogger
 from ampel.model.PlotProperties import PlotProperties
 from matplotlib.figure import Figure
 
@@ -26,7 +27,7 @@ class SVGUtils:
 	def mplfig_to_svg_dict(
 		mpl_fig, file_name: str, title: Optional[str] = None, tags: Optional[List[str]] = None,
 		compress: int = 1, width: Optional[int] = None, height: Optional[int] = None,
-		close: bool = True, logger: Optional[LoggerProtocol] = None
+		close: bool = True, fig_include_title: Optional[bool] = False, logger: Optional[LoggerProtocol] = None
 	) -> SVGDocument:
 		"""
 		:param mpl_fig: matplotlib figure
@@ -48,6 +49,9 @@ class SVGUtils:
 
 		if width is not None and height is not None:
 			mpl_fig.set_size_inches(width, height)
+
+		if title and fig_include_title:
+			mpl_fig.suptitle(title)
 
 		mpl_fig.savefig(
 			imgdata, format='svg', bbox_inches='tight'
@@ -100,10 +104,11 @@ class SVGUtils:
 		:param extra: required if file_name of title in PlotProperties use a format string ("such_%s_this")
 		"""
 
-		return cls.mplfig_to_svg_dict(
+		svg_doc = cls.mplfig_to_svg_dict(
 			mpl_fig,
 			file_name = props.get_file_name(extra=extra),
 			title = props.get_title(extra=extra),
+			fig_include_title = props.fig_include_title,
 			width = props.width,
 			height = props.height,
 			tags = props.tags,
@@ -111,6 +116,19 @@ class SVGUtils:
 			logger = logger,
 			close = close
 		)
+
+		if props.disk_save:
+			file_name = props.get_file_name(extra=extra)
+			if logger and isinstance(logger, AmpelLogger) and logger.verbose > 1:
+				logger.debug("Saving %s/%s" % (props.disk_save, file_name))
+			with open("%s/%s" % (props.disk_save, file_name), "w") as f:
+				f.write(
+					svg_doc.pop("svg_str") # type: ignore
+					if props.get_compress() == 2
+					else svg_doc['svg']
+				)
+
+		return svg_doc
 
 
 	@staticmethod
