@@ -10,9 +10,9 @@ packages = [
 include = [
     'conf/*/*.json',
     'conf/*/*/*.json',
-	'conf/*/*.yaml',
+    'conf/*/*.yaml',
     'conf/*/*/*.yaml',
-	'conf/*/*.yml',
+    'conf/*/*.yml',
     'conf/*/*/*.yml',
 ]
 
