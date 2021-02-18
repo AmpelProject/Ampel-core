@@ -3,6 +3,19 @@ name: ci
 on: [push, pull_request]
 
 jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+    - uses: actions/setup-python@v2
+      with:
+        python-version: 3.8
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade poetry
+        poetry install --extras server
+    - run: poetry run pytest --cov=ampel
   
   mypy:
     runs-on: ubuntu-latest
@@ -14,24 +27,6 @@ jobs:
         python-version: 3.8
     - name: Install dependencies
       run: |
-        python -m pip install --upgrade pip wheel
-        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
-        if [ -f test_requirements.txt ]; then pip install -r test_requirements.txt --no-cache-dir; fi
-    - run: python -m pip install -e .[testing,server]
-    - run: mypy --namespace-packages -p ampel
-  
-  test:
-    runs-on: ubuntu-latest
-
-    steps:
-    - uses: actions/checkout@v2
-    - uses: actions/setup-python@v2
-      with:
-        python-version: 3.8
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip wheel
-        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
-        if [ -f test_requirements.txt ]; then pip install -r test_requirements.txt --no-cache-dir; fi
-    - run: python -m pip install -e .[testing,server]
-    - run: pytest
+        python -m pip install --upgrade poetry
+        poetry install
+    - run: poetry run mypy --namespace-packages -p ampel
