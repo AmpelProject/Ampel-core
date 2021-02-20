@@ -2,8 +2,23 @@
 name = "ampel-core"
 version = "0.7.1-alpha.0"
 description = "Asynchronous and Modular Platform with Execution Layers"
-authors = ["Valery Brinnel"]
+authors = [
+    "Valery Brinnel"
+]
+maintainers = [
+    "Jakob van Santen <jakob.van.santen@desy.de>"
+]
 license = "BSD-3-Clause"
+readme = "README.md"
+homepage = "https://ampelproject.github.io"
+repository = "https://github.com/AmpelProject/Ampel-core"
+documentation = "https://ampelproject.github.io/Ampel-core"
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Science/Research",
+    "Topic :: Scientific/Engineering :: Information Analysis",
+    "Typing :: Typed",
+]
 packages = [
     {include = "ampel"}
 ]
@@ -26,7 +41,7 @@ name = "testpypi"
 url = "https://test.pypi.org/simple"
 
 [tool.poetry.dependencies]
-ampel-interface = {version = "^0.7", allow-prereleases = true, source = "testpypi"}
+ampel-interface = {version = "^0.7.1-alpha.5", allow-prereleases = true, source = "testpypi"}
 python = "^3.8"
 pydantic = "~1.4"
 pymongo = "^3.10"
@@ -55,6 +70,3 @@ server = ["fastapi", "uvicorn"]
 [build-system]
 requires = ["poetry-core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"
-
-[tool.coverage.run]
-relative_files = true
