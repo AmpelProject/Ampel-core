@@ -14,7 +14,7 @@ import matplotlib as plt
 from cairosvg import svg2png
 from IPython.display import Image
 from ampel.protocol.LoggerProtocol import LoggerProtocol
-from ampel.content.SVGDocument import SVGDocument
+from ampel.content.SVGRecord import SVGRecord
 from ampel.log.AmpelLogger import AmpelLogger
 from ampel.model.PlotProperties import PlotProperties
 from matplotlib.figure import Figure
@@ -28,7 +28,7 @@ class SVGUtils:
 		mpl_fig, file_name: str, title: Optional[str] = None, tags: Optional[List[str]] = None,
 		compress: int = 1, width: Optional[int] = None, height: Optional[int] = None,
 		close: bool = True, fig_include_title: Optional[bool] = False, logger: Optional[LoggerProtocol] = None
-	) -> SVGDocument:
+	) -> SVGRecord:
 		"""
 		:param mpl_fig: matplotlib figure
 		:param tags: list of plot tags
@@ -60,7 +60,7 @@ class SVGUtils:
 		if close:
 			plt.pyplot.close(mpl_fig)
 
-		ret: SVGDocument = {'name': file_name}
+		ret: SVGRecord = {'name': file_name}
 
 		if tags:
 			ret['tag'] = tags
@@ -99,7 +99,7 @@ class SVGUtils:
 	def mplfig_to_svg_dict1(
 		cls, mpl_fig: Figure, props: PlotProperties, extra: Optional[Dict[str, Any]] = None,
 		close: bool = True, logger: Optional[LoggerProtocol] = None
-	) -> SVGDocument:
+	) -> SVGRecord:
 		"""
 		:param extra: required if file_name of title in PlotProperties use a format string ("such_%s_this")
 		"""
@@ -132,7 +132,7 @@ class SVGUtils:
 
 
 	@staticmethod
-	def decompress_svg_dict(svg_dict: SVGDocument) -> SVGDocument:
+	def decompress_svg_dict(svg_dict: SVGRecord) -> SVGRecord:
 		"""
 		Modifies input dict by potentionaly decompressing compressed 'svg' value
 		"""
