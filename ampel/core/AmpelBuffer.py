@@ -13,7 +13,7 @@ from ampel.content.StockDocument import StockDocument
 from ampel.content.DataPoint import DataPoint
 from ampel.content.Compound import Compound
 from ampel.content.T2Record import T2Record
-from ampel.content.LogRecord import LogRecord
+from ampel.content.LogDocument import LogDocument
 
 # Please update BufferKey on AmpelBuffer udpates
 # There is currently unfortunately no way of extracting a Literal out of a TypedDict
@@ -31,5 +31,5 @@ class AmpelBuffer(TypedDict, total=False):
 	t0: Optional[List[DataPoint]]
 	t1: Optional[List[Compound]]
 	t2: Optional[List[T2Record]]
-	log: Optional[List[LogRecord]]
+	log: Optional[List[LogDocument]]
 	extra: Optional[Dict[str, Any]]

@@ -10,7 +10,7 @@
 import struct, socket
 from bson import ObjectId
 from typing import List, Dict, Optional, Union, TYPE_CHECKING
-from logging import LogRecord
+from logging import LogDocument
 from pymongo.errors import BulkWriteError
 from ampel.base.AmpelBaseModel import AmpelBaseModel
 from ampel.util.mappings import compare_dict_values
@@ -75,7 +75,7 @@ class DBLoggingHandler(AmpelBaseModel):
 		self.run_id = run_id
 
 		self.log_dicts: List[Dict] = []
-		self.prev_record: Optional[Union[LighterLogRecord, LogRecord]] = None
+		self.prev_record: Optional[Union[LighterLogRecord, LogDocument]] = None
 		self.fields_check = ['extra', 'stock', 'channel']
 		self.warn_lvl = LogFlag.WARNING
 
@@ -87,7 +87,7 @@ class DBLoggingHandler(AmpelBaseModel):
 		self.oid_middle = _machine_bytes() + int(str(self.run_id)[-4:]).to_bytes(2, 'big')
 
 
-	def handle(self, record: Union[LighterLogRecord, LogRecord]) -> None:
+	def handle(self, record: Union[LighterLogRecord, LogDocument]) -> None:
 		""" :raises AmpelLoggingError: on error """
 
 		rd = record.__dict__
@@ -125,7 +125,7 @@ class DBLoggingHandler(AmpelBaseModel):
 					if isinstance(record, LighterLogRecord):
 						new_rec = LighterLogRecord(name=0, msg=None, levelno=0)
 					else:
-						new_rec = LogRecord(name=None, pathname=None, level=None, # type: ignore
+						new_rec = LogDocument(name=None, pathname=None, level=None, # type: ignore
 							lineno=None, exc_info=None, msg=None, args=None) # type: ignore
 					for k, v in record.__dict__.items():
 						new_rec.__dict__[k] = v

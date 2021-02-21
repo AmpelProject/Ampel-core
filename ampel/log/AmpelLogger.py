@@ -199,7 +199,7 @@ class AmpelLogger:
 			self.log(DEBUG, msg, *args, extra=extra)
 
 
-	def handle(self, record: Union[LighterLogRecord, logging.LogRecord]) -> None:
+	def handle(self, record: Union[LighterLogRecord, logging.LogDocument]) -> None:
 		for h in self.handlers:
 			if record.levelno >= h.level:
 				h.handle(record)
