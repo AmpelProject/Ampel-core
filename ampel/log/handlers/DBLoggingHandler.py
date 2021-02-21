@@ -14,7 +14,7 @@ from logging import LogDocument
 from pymongo.errors import BulkWriteError
 from ampel.base.AmpelBaseModel import AmpelBaseModel
 from ampel.util.mappings import compare_dict_values
-from ampel.log.LighterLogRecord import LighterLogRecord
+from ampel.log.LightLogRecord import LightLogRecord
 from ampel.log.AmpelLoggingError import AmpelLoggingError
 from ampel.log.LogFlag import LogFlag
 
@@ -75,7 +75,7 @@ class DBLoggingHandler(AmpelBaseModel):
 		self.run_id = run_id
 
 		self.log_dicts: List[Dict] = []
-		self.prev_record: Optional[Union[LighterLogRecord, LogDocument]] = None
+		self.prev_record: Optional[Union[LightLogRecord, LogDocument]] = None
 		self.fields_check = ['extra', 'stock', 'channel']
 		self.warn_lvl = LogFlag.WARNING
 
@@ -87,7 +87,7 @@ class DBLoggingHandler(AmpelBaseModel):
 		self.oid_middle = _machine_bytes() + int(str(self.run_id)[-4:]).to_bytes(2, 'big')
 
 
-	def handle(self, record: Union[LighterLogRecord, LogDocument]) -> None:
+	def handle(self, record: Union[LightLogRecord, LogDocument]) -> None:
 		""" :raises AmpelLoggingError: on error """
 
 		rd = record.__dict__
@@ -122,8 +122,8 @@ class DBLoggingHandler(AmpelBaseModel):
 
 				# Treat SHOUT msg as INFO msg (and try again to concatenate)
 				if record.levelno == LogFlag.SHOUT: # type: ignore
-					if isinstance(record, LighterLogRecord):
-						new_rec = LighterLogRecord(name=0, msg=None, levelno=0)
+					if isinstance(record, LightLogRecord):
+						new_rec = LightLogRecord(name=0, msg=None, levelno=0)
 					else:
 						new_rec = LogDocument(name=None, pathname=None, level=None, # type: ignore
 							lineno=None, exc_info=None, msg=None, args=None) # type: ignore

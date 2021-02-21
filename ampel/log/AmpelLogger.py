@@ -12,7 +12,7 @@ from sys import _getframe
 from os.path import basename
 from typing import Dict, Optional, Union, Any, List, TYPE_CHECKING
 from ampel.type import ChannelId, StockId
-from ampel.log.LighterLogRecord import LighterLogRecord
+from ampel.log.LightLogRecord import LightLogRecord
 from ampel.log.LogFlag import LogFlag
 from ampel.protocol.LoggingHandlerProtocol import LoggingHandlerProtocol
 from ampel.log.handlers.AmpelStreamHandler import AmpelStreamHandler
@@ -199,7 +199,7 @@ class AmpelLogger:
 			self.log(DEBUG, msg, *args, extra=extra)
 
 
-	def handle(self, record: Union[LighterLogRecord, logging.LogDocument]) -> None:
+	def handle(self, record: Union[LightLogRecord, logging.LogDocument]) -> None:
 		for h in self.handlers:
 			if record.levelno >= h.level:
 				h.handle(record)
@@ -219,7 +219,7 @@ class AmpelLogger:
 		if args and isinstance(msg, str):
 			msg = msg % args
 
-		record = LighterLogRecord(name=self.name, levelno=lvl | self.base_flag, msg=msg)
+		record = LightLogRecord(name=self.name, levelno=lvl | self.base_flag, msg=msg)
 
 		if lvl > WARNING or self.provenance:
 			frame = _getframe(1) # logger.log(...) was called directly
@@ -275,8 +275,8 @@ class AmpelLogger:
 
 
 	@staticmethod
-	def fork_rec(orig: LighterLogRecord, msg: str) -> LighterLogRecord:
-		new_rec = LighterLogRecord(name=0, msg=None, levelno=0)
+	def fork_rec(orig: LightLogRecord, msg: str) -> LightLogRecord:
+		new_rec = LightLogRecord(name=0, msg=None, levelno=0)
 		for k, v in orig.__dict__.items():
 			new_rec.__dict__[k] = v
 		new_rec.msg = msg
