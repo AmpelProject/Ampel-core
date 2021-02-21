@@ -11,14 +11,14 @@ from typing import Any, Dict, Optional
 from ampel.type import ChannelId
 from ampel.base import abstractmethod
 from ampel.core.AdminUnit import AdminUnit
-from ampel.log.LogRecordFlag import LogRecordFlag
+from ampel.log.LogFlag import LogFlag
 
 
 class AbsProcessorUnit(AdminUnit, abstract=True):
 	"""
 	Ampel admin unit featuring methods run (abstract), new_run_id and dedicated attributes
 
-	:param base_log_flag: Any additional LogRecordFlag (default: SCHEDULED_RUN, possible alternative: MANUAL_RUN)
+	:param base_log_flag: Any additional LogFlag (default: SCHEDULED_RUN, possible alternative: MANUAL_RUN)
 	:param log_profile: logger profile key as defined in the ampel conf (ex: 'standard', 'quiet', 'silent')
 	:param db_handler_kwargs: optional override arguments to be passed to the DBLoggingHandler constructor
 	:param raise_exc: whether this class should raise Exceptions rather than catching them (default False)
@@ -29,7 +29,7 @@ class AbsProcessorUnit(AdminUnit, abstract=True):
 
 	raise_exc: bool = False
 	log_profile: str = "default"
-	base_log_flag: LogRecordFlag = LogRecordFlag.SCHEDULED_RUN
+	base_log_flag: LogFlag = LogFlag.SCHEDULED_RUN
 	db_handler_kwargs: Optional[Dict[str, Any]] = None
 
 

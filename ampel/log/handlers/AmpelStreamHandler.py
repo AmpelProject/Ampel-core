@@ -12,7 +12,7 @@ from sys import _getframe
 from os.path import basename
 from time import strftime
 from typing import Literal, Dict, List, Optional
-from ampel.log.LogRecordFlag import LogRecordFlag
+from ampel.log.LogFlag import LogFlag
 from ampel.log.LighterLogRecord import LighterLogRecord
 from ampel.util.mappings import compare_dict_values
 
@@ -60,7 +60,7 @@ class AmpelStreamHandler:
 	def __init__(self,
 		std_stream: Literal['stdout', 'stderr'] = 'stderr',
 		datefmt: str = "%Y-%m-%d %H:%M:%S",
-		level: int = LogRecordFlag.INFO,
+		level: int = LogFlag.INFO,
 		aggregate_interval: float = 1.,
 		density: Literal["default", "compact", "compacter", "headerless"] = "default",
 		terminator: str = '\n',

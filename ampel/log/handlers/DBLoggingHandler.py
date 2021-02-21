@@ -16,7 +16,7 @@ from ampel.base.AmpelBaseModel import AmpelBaseModel
 from ampel.util.mappings import compare_dict_values
 from ampel.log.LighterLogRecord import LighterLogRecord
 from ampel.log.AmpelLoggingError import AmpelLoggingError
-from ampel.log.LogRecordFlag import LogRecordFlag
+from ampel.log.LogFlag import LogFlag
 
 if TYPE_CHECKING:
 	from ampel.db.AmpelDB import AmpelDB
@@ -77,7 +77,7 @@ class DBLoggingHandler(AmpelBaseModel):
 		self.log_dicts: List[Dict] = []
 		self.prev_record: Optional[Union[LighterLogRecord, LogRecord]] = None
 		self.fields_check = ['extra', 'stock', 'channel']
-		self.warn_lvl = LogRecordFlag.WARNING
+		self.warn_lvl = LogFlag.WARNING
 
 		# Get reference to pymongo collection
 		self.col = ampel_db.get_collection(self.col_name)
@@ -121,7 +121,7 @@ class DBLoggingHandler(AmpelBaseModel):
 					self.flush()
 
 				# Treat SHOUT msg as INFO msg (and try again to concatenate)
-				if record.levelno == LogRecordFlag.SHOUT: # type: ignore
+				if record.levelno == LogFlag.SHOUT: # type: ignore
 					if isinstance(record, LighterLogRecord):
 						new_rec = LighterLogRecord(name=0, msg=None, levelno=0)
 					else:
@@ -129,7 +129,7 @@ class DBLoggingHandler(AmpelBaseModel):
 							lineno=None, exc_info=None, msg=None, args=None) # type: ignore
 					for k, v in record.__dict__.items():
 						new_rec.__dict__[k] = v
-					new_rec.levelno = LogRecordFlag.INFO
+					new_rec.levelno = LogFlag.INFO
 					self.handle(new_rec)
 					return
 

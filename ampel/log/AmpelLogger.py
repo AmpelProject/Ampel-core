@@ -13,19 +13,19 @@ from os.path import basename
 from typing import Dict, Optional, Union, Any, List, TYPE_CHECKING
 from ampel.type import ChannelId, StockId
 from ampel.log.LighterLogRecord import LighterLogRecord
-from ampel.log.LogRecordFlag import LogRecordFlag
+from ampel.log.LogFlag import LogFlag
 from ampel.protocol.LoggingHandlerProtocol import LoggingHandlerProtocol
 from ampel.log.handlers.AmpelStreamHandler import AmpelStreamHandler
 
 if TYPE_CHECKING:
 	from ampel.log.handlers.DBLoggingHandler import DBLoggingHandler
 
-ERROR = LogRecordFlag.ERROR
-WARNING = LogRecordFlag.WARNING
-SHOUT = LogRecordFlag.SHOUT
-INFO = LogRecordFlag.INFO
-VERBOSE = LogRecordFlag.VERBOSE
-DEBUG = LogRecordFlag.DEBUG
+ERROR = LogFlag.ERROR
+WARNING = LogFlag.WARNING
+SHOUT = LogFlag.SHOUT
+INFO = LogFlag.INFO
+VERBOSE = LogFlag.VERBOSE
+DEBUG = LogFlag.DEBUG
 
 if TYPE_CHECKING:
 	from ampel.core.AmpelContext import AmpelContext
@@ -94,7 +94,7 @@ class AmpelLogger:
 		if "console" in handlers:
 			if 'level' in handlers['console']:
 				return handlers['console']['level']
-			return LogRecordFlag.INFO.__int__()
+			return LogFlag.INFO.__int__()
 
 		return None
 
@@ -109,7 +109,7 @@ class AmpelLogger:
 
 	def __init__(self,
 		name: Union[int, str] = 0,
-		base_flag: Optional[LogRecordFlag] = None,
+		base_flag: Optional[LogFlag] = None,
 		handlers: Optional[List[LoggingHandlerProtocol]] = None,
 		channel: Optional[Union[ChannelId, List[ChannelId]]] = None,
 		# See AmpelStreamHandler annotations for more details

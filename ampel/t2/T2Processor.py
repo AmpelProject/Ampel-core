@@ -26,7 +26,7 @@ from ampel.content.T2Document import T2Document
 from ampel.content.T2Record import T2Record
 from ampel.content.JournalRecord import JournalRecord
 from ampel.view.T2DocView import T2DocView, TYPE_POINT_T2, TYPE_STOCK_T2, TYPE_STATE_T2
-from ampel.log import AmpelLogger, DBEventDoc, LogRecordFlag, VERBOSE
+from ampel.log import AmpelLogger, DBEventDoc, LogFlag, VERBOSE
 from ampel.base.BadConfig import BadConfig
 from ampel.log.utils import report_exception, report_error
 from ampel.log.handlers.DefaultRecordBufferingHandler import DefaultRecordBufferingHandler
@@ -202,7 +202,7 @@ class T2Processor(AbsProcessorUnit):
 
 		logger = AmpelLogger.from_profile(
 			self.context, self.log_profile, run_id,
-			base_flag = LogRecordFlag.T2 | LogRecordFlag.CORE | self.base_log_flag
+			base_flag = LogFlag.T2 | LogFlag.CORE | self.base_log_flag
 		)
 
 		if self.send_beacon:
@@ -899,7 +899,7 @@ class T2Processor(AbsProcessorUnit):
 			buf_hdlr = DefaultRecordBufferingHandler(level=logger.level)
 			buf_logger = AmpelLogger.get_logger(
 				name = k,
-				base_flag = (getattr(logger, 'base_flag', 0) & ~LogRecordFlag.CORE) | LogRecordFlag.UNIT,
+				base_flag = (getattr(logger, 'base_flag', 0) & ~LogFlag.CORE) | LogFlag.UNIT,
 				console = False,
 				handlers = [buf_hdlr]
 			)

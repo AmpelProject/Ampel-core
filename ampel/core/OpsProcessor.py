@@ -3,7 +3,7 @@ from typing import Any
 from ampel.abstract.AbsOpsUnit import AbsOpsUnit
 from ampel.model.UnitModel import UnitModel
 from ampel.abstract.AbsProcessorUnit import AbsProcessorUnit
-from ampel.log import AmpelLogger, LogRecordFlag, SHOUT
+from ampel.log import AmpelLogger, LogFlag, SHOUT
 from ampel.log.utils import report_exception
 
 
@@ -22,7 +22,7 @@ class OpsProcessor(AbsProcessorUnit):
             logger = AmpelLogger.from_profile(
                 self.context,
                 self.log_profile,
-                base_flag=LogRecordFlag.CORE | self.base_log_flag,
+                base_flag=LogFlag.CORE | self.base_log_flag,
                 force_refresh=True,
             )
             last_beacon = beacon_col.find_one({"_id": self.process_name})

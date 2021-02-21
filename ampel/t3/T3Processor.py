@@ -10,7 +10,7 @@
 from typing import Dict, Any, Sequence, List, Optional, Union
 
 from ampel.abstract.AbsProcessorUnit import AbsProcessorUnit
-from ampel.log import AmpelLogger, LogRecordFlag, DBEventDoc, SHOUT
+from ampel.log import AmpelLogger, LogFlag, DBEventDoc, SHOUT
 from ampel.log.utils import report_exception
 from ampel.model.t3.T3Directive import T3Directive
 from ampel.t3.load.AbsT3Loader import AbsT3Loader
@@ -79,7 +79,7 @@ class T3Processor(AbsProcessorUnit):
 
 			logger = AmpelLogger.from_profile(
 				self.context, self.log_profile, run_id,
-				base_flag = LogRecordFlag.T3 | LogRecordFlag.CORE | self.base_log_flag,
+				base_flag = LogFlag.T3 | LogFlag.CORE | self.base_log_flag,
 				force_refresh = True
 			)
 

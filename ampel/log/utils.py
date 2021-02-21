@@ -13,7 +13,7 @@ from typing import Dict, Optional, Union, Any
 from ampel.db.AmpelDB import AmpelDB
 from ampel.util.general import has_nested_type
 from ampel.log.AmpelLogger import AmpelLogger
-from ampel.log.LogRecordFlag import LogRecordFlag
+from ampel.log.LogFlag import LogFlag
 from ampel.metrics.AmpelMetricsRegistry import AmpelMetricsRegistry
 from ampel.protocol.LoggerProtocol import LoggerProtocol
 
@@ -160,20 +160,20 @@ def report_error(
 
 def get_tier_from_logger(logger: AmpelLogger) -> Optional[int]:
 
-	lb = LogRecordFlag(logger.base_flag)
-	if LogRecordFlag.T0 in lb:
+	lb = LogFlag(logger.base_flag)
+	if LogFlag.T0 in lb:
 		return 0
-	elif LogRecordFlag.T1 in lb:
+	elif LogFlag.T1 in lb:
 		return 1
-	elif LogRecordFlag.T2 in lb:
+	elif LogFlag.T2 in lb:
 		return 2
-	elif LogRecordFlag.T3 in lb:
+	elif LogFlag.T3 in lb:
 		return 3
 
 	return None
 
 
-def get_tier_from_log_flags(flags: Union[int, LogRecordFlag]) -> int:
+def get_tier_from_log_flags(flags: Union[int, LogFlag]) -> int:
 	for i in (1, 2, 4, 8):
 		if i & flags.__int__():
 			return int(log2(i))

@@ -11,7 +11,7 @@ from dataclasses import dataclass, field
 from typing import Dict, Optional, Sequence, List, Type, Tuple, TypeVar, get_args, Union
 from pydantic import validator
 
-from ampel.log import VERBOSE, AmpelLogger, LogRecordFlag
+from ampel.log import VERBOSE, AmpelLogger, LogFlag
 from ampel.log.utils import report_exception
 from ampel.log.handlers.ChanRecordBufHandler import ChanRecordBufHandler
 from ampel.log.handlers.DefaultRecordBufferingHandler import DefaultRecordBufferingHandler
@@ -141,7 +141,7 @@ class T3UnitRunner(AbsT3UnitRunner):
 				unit_instance = self.context.loader.new_base_unit(
 					unit_model=exec_def,
 					logger = AmpelLogger.get_logger(
-						base_flag = (getattr(self.logger, 'base_flag', 0) & ~LogRecordFlag.CORE) | LogRecordFlag.UNIT,
+						base_flag = (getattr(self.logger, 'base_flag', 0) & ~LogFlag.CORE) | LogFlag.UNIT,
 						console = False,
 						handlers = [self.buf_hdlr]
 					),
