@@ -8,7 +8,7 @@
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from typing import Dict, Any, Optional, Type, Literal
-from ampel.content.StockRecord import StockRecord
+from ampel.content.StockDocument import StockDocument
 from ampel.content.DataPoint import DataPoint
 from ampel.content.Compound import Compound
 from ampel.content.T2Record import T2Record
@@ -16,7 +16,7 @@ from ampel.content.LogRecord import LogRecord
 from ampel.model.StrictModel import StrictModel
 
 models = {
-	"stock": StockRecord,
+	"stock": StockDocument,
 	"t0": DataPoint,
 	"t1": Compound,
 	"t2": T2Record,

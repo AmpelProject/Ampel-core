@@ -9,7 +9,7 @@
 
 from typing import Optional, Dict, List, Any, TypedDict, Literal
 from ampel.type import StockId
-from ampel.content.StockRecord import StockRecord
+from ampel.content.StockDocument import StockDocument
 from ampel.content.DataPoint import DataPoint
 from ampel.content.Compound import Compound
 from ampel.content.T2Record import T2Record
@@ -25,9 +25,9 @@ class AmpelBuffer(TypedDict, total=False):
 	
 	This is a dict containing 1 or more of the following items:
 	"""
-	# Could stock be of type List[StockRecord] to enable hybrid/dual transients ?
+	# Could stock be of type List[StockDocument] to enable hybrid/dual transients ?
 	id: StockId
-	stock: Optional[StockRecord]
+	stock: Optional[StockDocument]
 	t0: Optional[List[DataPoint]]
 	t1: Optional[List[Compound]]
 	t2: Optional[List[T2Record]]

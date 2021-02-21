@@ -46,8 +46,8 @@ class Sleepy(AbsProcessorUnit):
 
 
 class DummyStockT2Unit(AbsStockT2Unit):
-    def run(self, stock_record):
-        return {"id": stock_record["_id"]}
+    def run(self, stock_doc):
+        return {"id": stock_doc["_id"]}
 
 
 # FIXME: these dummy ingesters are copied from ampel-alerts, as there is no

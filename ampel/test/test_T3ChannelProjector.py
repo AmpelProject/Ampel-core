@@ -3,14 +3,14 @@ from pathlib import Path
 
 import pytest
 
-from ampel.content.StockRecord import StockRecord
+from ampel.content.StockDocument import StockDocument
 from ampel.core.AmpelBuffer import AmpelBuffer
 from ampel.log.AmpelLogger import AmpelLogger, DEBUG
 from ampel.t3.run.project.T3ChannelProjector import T3ChannelProjector
 
 
 @pytest.fixture
-def stock_record() -> StockRecord:
+def stock_doc() -> StockDocument:
     with open(Path(__file__).parent / "test-data" / "ZTF20abxvcrk.pkl", "rb") as f:
         return pickle.load(f)
 
@@ -24,9 +24,9 @@ def strip_channel(jentries):
     return [{k: v for k, v in jentry.items() if k != "channel"} for jentry in jentries]
 
 
-def test_single_channel(stock_record, logger):
+def test_single_channel(stock_doc, logger):
     target = "TDE_RANKING"
-    before = AmpelBuffer(id=stock_record["_id"], stock=stock_record)
+    before = AmpelBuffer(id=stock_doc["_id"], stock=stock_doc)
     all_channels = set(before["stock"]["channel"])
     assert target in all_channels, "target is in test case channel set"
     assert len(all_channels) > 1, "test case contains channels not in target"
@@ -58,9 +58,9 @@ def test_single_channel(stock_record, logger):
 
 
 @pytest.mark.parametrize("logic_op", ["all_of", "any_of", "one_of"])
-def test_multi_channel(stock_record, logger, logic_op):
+def test_multi_channel(stock_doc, logger, logic_op):
     target = {"RCF_2020B", "ZTF_SLSN"}
-    before = AmpelBuffer(id=stock_record["_id"], stock=stock_record)
+    before = AmpelBuffer(id=stock_doc["_id"], stock=stock_doc)
     all_channels = set(before["stock"]["channel"])
     assert target.intersection(all_channels), "target is in test case channel set"
     assert len(all_channels) > len(target), "test case contains channels not in target"

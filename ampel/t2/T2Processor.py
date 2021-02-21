@@ -49,7 +49,7 @@ from ampel.metrics.AmpelMetricsRegistry import AmpelMetricsRegistry
 
 if TYPE_CHECKING:
 	from pymongo import ObjectId
-	from ampel.content.StockRecord import StockRecord
+	from ampel.content.StockDocument import StockDocument
 
 AbsT2 = Union[
 	AbsStockT2Unit, AbsPointT2Unit, AbsStateT2Unit, AbsTiedPointT2Unit,
@@ -419,7 +419,7 @@ class T2Processor(AbsProcessorUnit):
 	def load_input_docs(self,
 		t2_unit: AbsStockT2Unit,
 		t2_doc: T2Document, logger: AmpelLogger, jupdater: JournalUpdater
-	) -> Optional[Tuple["StockRecord"]]:
+	) -> Optional[Tuple["StockDocument"]]:
 		...
 
 
@@ -432,7 +432,7 @@ class T2Processor(AbsProcessorUnit):
 		T2SysRunState,                                         # Error / missing dependency
 		DataPoint,                                             # point t2
 		Tuple[DataPoint, T2DocView],                           # tied point t2
-		Tuple["StockRecord"],                                  # stock t2
+		Tuple["StockDocument"],                                  # stock t2
 		Tuple[Compound, Sequence[DataPoint]],                  # state t2
 		Tuple[T],                                              # custom state t2 (T could be LightCurve)
 		Tuple[Compound, Sequence[DataPoint], List[T2DocView]], # tied state t2
