@@ -57,6 +57,7 @@ uvicorn = {version = "^0.13.3", optional = true, extras = ["standard"]}
 Sphinx = {version = "^3.5.1", optional = true}
 sphinx-press-theme = {version = "^0.5.1", optional = true}
 sphinx-autodoc-typehints = {version = "^1.11.1", optional = true}
+tomlkit = {version = "^0.7.0"}
 
 [tool.poetry.dev-dependencies]
 pytest = "^6.2.2"
@@ -69,7 +70,7 @@ httpx = "^0.16.1"
 
 [tool.poetry.extras]
 server = ["fastapi", "uvicorn"]
-docs = ["Sphinx", "sphinx-press-theme", "sphinx-autodoc-typehints"]
+docs = ["Sphinx", "sphinx-press-theme", "sphinx-autodoc-typehints", "tomlkit"]
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
