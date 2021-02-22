@@ -25,6 +25,7 @@ jobs:
         [ v"$(poetry version -s)" = "${{steps.tag.outputs.tag}}" ] || (echo "tag does not match version: "${{steps.tag.outputs.tag}}" != version v$(poetry version -s)" && false)
     - run: |
         poetry config repositories.testpypi https://test.pypi.org/legacy/
-        poetry publish -n --build -r testpypi
+        poetry publish -n --build
       env:
         POETRY_PYPI_TOKEN_TESTPYPI: ${{ secrets.PYPI_TEST_API_TOKEN }}
+        POETRY_PYPI_TOKEN_PYPI: ${{ secrets.PYPI_TEST_API_TOKEN }}
