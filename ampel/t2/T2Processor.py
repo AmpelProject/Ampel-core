@@ -20,6 +20,7 @@ from ampel.util.t1 import get_datapoint_ids
 from ampel.enum.T2RunState import T2RunState
 from ampel.enum.T2SysRunState import T2SysRunState
 from ampel.struct.T2BroadUnitResult import T2BroadUnitResult
+from ampel.content.StockRecord import StockRecord
 from ampel.content.DataPoint import DataPoint
 from ampel.content.Compound import Compound
 from ampel.content.T2Document import T2Document
@@ -49,7 +50,6 @@ from ampel.metrics.AmpelMetricsRegistry import AmpelMetricsRegistry
 
 if TYPE_CHECKING:
 	from pymongo import ObjectId
-	from ampel.content.StockRecord import StockRecord
 
 AbsT2 = Union[
 	AbsStockT2Unit, AbsPointT2Unit, AbsStateT2Unit, AbsTiedPointT2Unit,
@@ -678,10 +678,11 @@ class T2Processor(AbsProcessorUnit):
 		This method handles "default" situations.
 		Callers must check returned 'link'.
 		If None (state t2 linked with point t2), further handling is required
+
 		:raises:
 			- ValueError if functionality is not implemented yet
 			- BadConfig if what's requested is not possible (a point T2 cannot be linked with a state t2)
-
+	
 		:returns: link value to match or None if further handling is required (state t2 linked with point t2)
 		"""
 
