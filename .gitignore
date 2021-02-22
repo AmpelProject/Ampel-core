@@ -7,4 +7,6 @@ __pycache__
 .DS_Store
 .mypy_cache
 dist/
+build
+public
 .vscode/
