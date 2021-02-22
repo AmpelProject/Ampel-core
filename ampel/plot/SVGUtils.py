@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 17.05.2019
-# Last Modified Date: 13.02.2021
+# Last Modified Date: 22.02.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from typing import Optional, List, Dict, Any
@@ -149,6 +149,47 @@ class SVGUtils:
 			del svg_dict['compressed']
 
 		return svg_dict
+
+
+	@staticmethod
+	def stack_svg(svg1: str, svg2: str, horizontally: bool = False, separator: bool = True) -> bytes:
+
+		fig1 = su.transform.fromstring(svg1)
+		fig2 = su.transform.fromstring(svg2)
+
+		str_w1, str_h1 = fig1.get_size()
+		str_w2, str_h2 = fig2.get_size()
+
+		w1 = float(str_w1.replace("pt", ""))
+		h1 = float(str_h1.replace("pt", ""))
+		w2 = float(str_w2.replace("pt", ""))
+		h2 = float(str_h2.replace("pt", ""))
+
+		el1 = su.compose.Element(fig1.getroot().root)
+		el2 = su.compose.Element(fig2.getroot().root)
+
+		fig = su.transform.SVGFigure()
+
+		if horizontally:
+			el2.moveto(x=w1, y=0)
+			fig.root.set("height", str_h1 if h1 > h2 else str_h2)
+			fig.root.set("width", str(w1 + w2) + "pt")
+		else:
+			el2.moveto(x=0, y=h1)
+			fig.root.set("height", str(h1 + h2) + "pt")
+			fig.root.set("width", str_w1 if w1 > w2 else str_w2)
+
+		fig.root.set("viewBox", "0 0 %s %s" % (fig.root.get("width"), fig.root.get("height")))
+		fig.append(el1)
+		fig.append(el2)
+
+		if separator:
+			if horizontally:
+				fig.append(su.compose.Line(((w1, 0), (w1, h1 if h1 > h2 else h2))))
+			else:
+				fig.append(su.compose.Line(((0, h1), (w1 if w1 > w2 else w2, h1))))
+
+		return fig.to_str()
 
 
 	@staticmethod
