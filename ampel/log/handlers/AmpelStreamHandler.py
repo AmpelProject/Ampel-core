@@ -12,8 +12,8 @@ from sys import _getframe
 from os.path import basename
 from time import strftime
 from typing import Literal, Dict, List, Optional
-from ampel.log.LogRecordFlag import LogRecordFlag
-from ampel.log.LighterLogRecord import LighterLogRecord
+from ampel.log.LogFlag import LogFlag
+from ampel.log.LightLogRecord import LightLogRecord
 from ampel.util.mappings import compare_dict_values
 
 mappings = {'a': 'alert', 'n': 'new'}
@@ -60,7 +60,7 @@ class AmpelStreamHandler:
 	def __init__(self,
 		std_stream: Literal['stdout', 'stderr'] = 'stderr',
 		datefmt: str = "%Y-%m-%d %H:%M:%S",
-		level: int = LogRecordFlag.INFO,
+		level: int = LogFlag.INFO,
 		aggregate_interval: float = 1.,
 		density: Literal["default", "compact", "compacter", "headerless"] = "default",
 		terminator: str = '\n',
@@ -70,8 +70,8 @@ class AmpelStreamHandler:
 	) -> None:
 
 		self.aggregate_interval = aggregate_interval
-		self.dummy_record = LighterLogRecord(name='dummy', levelno=1<<10, msg=None)
-		self.prev_record: LighterLogRecord = self.dummy_record
+		self.dummy_record = LightLogRecord(name='dummy', levelno=1<<10, msg=None)
+		self.prev_record: LightLogRecord = self.dummy_record
 		self.datefmt = datefmt
 		self.prefix = prefix
 		self.level = level
@@ -92,7 +92,7 @@ class AmpelStreamHandler:
 			self.handle = getattr(self, f"handle_headerless") # type: ignore[assignment]
 
 
-	def handle(self, rec: LighterLogRecord) -> None:
+	def handle(self, rec: LightLogRecord) -> None:
 
 		prev_rec = self.prev_record
 
@@ -107,7 +107,7 @@ class AmpelStreamHandler:
 			self.prev_record = rec
 
 
-	def handle_compacter(self, rec: LighterLogRecord) -> None:
+	def handle_compacter(self, rec: LightLogRecord) -> None:
 
 		prev_rec = self.prev_record
 
@@ -122,7 +122,7 @@ class AmpelStreamHandler:
 			self.prev_record = rec
 
 
-	def handle_headerless(self, rec: LighterLogRecord) -> None:
+	def handle_headerless(self, rec: LightLogRecord) -> None:
 		if rec.msg:
 			self.stream.write(rec.msg)
 		if rec.extra:
@@ -132,7 +132,7 @@ class AmpelStreamHandler:
 		self.stream.write(self.nl)
 
 
-	def format(self, record: LighterLogRecord) -> str:
+	def format(self, record: LightLogRecord) -> str:
 
 		out = strftime(self.datefmt)
 		lvl = record.levelno

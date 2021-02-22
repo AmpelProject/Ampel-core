@@ -33,7 +33,7 @@ from ampel.core.AmpelContext import AmpelContext
 from ampel.core.AmpelController import AmpelController
 from ampel.core.UnitLoader import UnitLoader
 from ampel.dev.DictSecretProvider import DictSecretProvider
-from ampel.log.LogRecordFlag import LogRecordFlag
+from ampel.log.LogFlag import LogFlag
 from ampel.metrics.AmpelDBCollector import AmpelDBCollector
 from ampel.metrics.AmpelProcessCollector import AmpelProcessCollector
 from ampel.metrics.AmpelMetricsRegistry import AmpelMetricsRegistry
@@ -655,14 +655,14 @@ def get_events(base_query: dict = Depends(query_event)):
 def get_logs(
     run_id: int,
     flags: Optional[  # type: ignore[valid-type]
-        List[enum.Enum("LogRecordFlagName", {k: k for k in LogRecordFlag.__members__})]
+        List[enum.Enum("LogFlagName", {k: k for k in LogFlag.__members__})]
     ] = Query(None),
 ):
     query: Dict[str, Any] = {"r": run_id}
     if flags:
         query["f"] = {
             "$bitsAllSet": reduce(
-                operator.or_, [LogRecordFlag.__members__[k.name] for k in flags]
+                operator.or_, [LogFlag.__members__[k.name] for k in flags]
             )
         }
     cursor = context.db.get_collection("logs").find(query, {"r": 0})
@@ -672,7 +672,7 @@ def get_logs(
             {
                 "timestamp": doc["_id"].generation_time,
                 "flags": [
-                    k for k, v in LogRecordFlag.__members__.items() if (v & doc["f"])
+                    k for k, v in LogFlag.__members__.items() if (v & doc["f"])
                 ],
                 **{
                     FIELD_ABBREV.get(k, k): v

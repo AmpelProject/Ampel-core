@@ -20,14 +20,14 @@ from ampel.util.t1 import get_datapoint_ids
 from ampel.enum.T2RunState import T2RunState
 from ampel.enum.T2SysRunState import T2SysRunState
 from ampel.struct.T2BroadUnitResult import T2BroadUnitResult
-from ampel.content.StockRecord import StockRecord
+from ampel.content.StockDocument import StockDocument
 from ampel.content.DataPoint import DataPoint
 from ampel.content.Compound import Compound
 from ampel.content.T2Document import T2Document
 from ampel.content.T2Record import T2Record
 from ampel.content.JournalRecord import JournalRecord
 from ampel.view.T2DocView import T2DocView, TYPE_POINT_T2, TYPE_STOCK_T2, TYPE_STATE_T2
-from ampel.log import AmpelLogger, DBEventDoc, LogRecordFlag, VERBOSE
+from ampel.log import AmpelLogger, DBEventDoc, LogFlag, VERBOSE
 from ampel.base.BadConfig import BadConfig
 from ampel.log.utils import report_exception, report_error
 from ampel.log.handlers.DefaultRecordBufferingHandler import DefaultRecordBufferingHandler
@@ -202,7 +202,7 @@ class T2Processor(AbsProcessorUnit):
 
 		logger = AmpelLogger.from_profile(
 			self.context, self.log_profile, run_id,
-			base_flag = LogRecordFlag.T2 | LogRecordFlag.CORE | self.base_log_flag
+			base_flag = LogFlag.T2 | LogFlag.CORE | self.base_log_flag
 		)
 
 		if self.send_beacon:
@@ -419,7 +419,7 @@ class T2Processor(AbsProcessorUnit):
 	def load_input_docs(self,
 		t2_unit: AbsStockT2Unit,
 		t2_doc: T2Document, logger: AmpelLogger, jupdater: JournalUpdater
-	) -> Optional[Tuple["StockRecord"]]:
+	) -> Optional[Tuple["StockDocument"]]:
 		...
 
 
@@ -432,7 +432,7 @@ class T2Processor(AbsProcessorUnit):
 		T2SysRunState,                                         # Error / missing dependency
 		DataPoint,                                             # point t2
 		Tuple[DataPoint, T2DocView],                           # tied point t2
-		Tuple["StockRecord"],                                  # stock t2
+		Tuple["StockDocument"],                                  # stock t2
 		Tuple[Compound, Sequence[DataPoint]],                  # state t2
 		Tuple[T],                                              # custom state t2 (T could be LightCurve)
 		Tuple[Compound, Sequence[DataPoint], List[T2DocView]], # tied state t2
@@ -900,7 +900,7 @@ class T2Processor(AbsProcessorUnit):
 			buf_hdlr = DefaultRecordBufferingHandler(level=logger.level)
 			buf_logger = AmpelLogger.get_logger(
 				name = k,
-				base_flag = (getattr(logger, 'base_flag', 0) & ~LogRecordFlag.CORE) | LogRecordFlag.UNIT,
+				base_flag = (getattr(logger, 'base_flag', 0) & ~LogFlag.CORE) | LogFlag.UNIT,
 				console = False,
 				handlers = [buf_hdlr]
 			)
