@@ -20,6 +20,7 @@ from ampel.util.t1 import get_datapoint_ids
 from ampel.enum.T2RunState import T2RunState
 from ampel.enum.T2SysRunState import T2SysRunState
 from ampel.struct.T2BroadUnitResult import T2BroadUnitResult
+from ampel.content.StockDocument import StockDocument
 from ampel.content.DataPoint import DataPoint
 from ampel.content.Compound import Compound
 from ampel.content.T2Document import T2Document
@@ -49,7 +50,6 @@ from ampel.metrics.AmpelMetricsRegistry import AmpelMetricsRegistry
 
 if TYPE_CHECKING:
 	from pymongo import ObjectId
-	from ampel.content.StockDocument import StockDocument
 
 AbsT2 = Union[
 	AbsStockT2Unit, AbsPointT2Unit, AbsStateT2Unit, AbsTiedPointT2Unit,
@@ -73,31 +73,32 @@ stat_count = AmpelMetricsRegistry.counter(
 
 class T2Processor(AbsProcessorUnit):
 	"""
-	:param t2_units: ids of the t2 units to run. If not specified, any t2 unit will be run
-	:param run_state: only t2 docs with field 'status' matching with provided integer number will be processed
-	:param doc_limit: max number of t2 docs to process in run loop
-	:param send_beacon: whether to update the beacon collection before run() is executed
-	:param garbage_collect: whether to actively perform garbage collection between processing of T2 docs
-
-	:param log_profile: See AbsProcessorUnit docstring
-	:param db_handler_kwargs: See AbsProcessorUnit docstring
-	:param base_log_flag: See AbsProcessorUnit docstring
-	:param raise_exc: See AbsProcessorUnit docstring (default False)
+	Fill results into pending :class:`T2 documents <ampel.content.T2Document.T2Document>`.
 	"""
 
+	#: ids of the t2 units to run. If not specified, any t2 unit will be run.
 	t2_units: Optional[List[str]]
+	#: process only those :class:`T2 documents <ampel.content.T2Document.T2Document>`
+	#: with the given :attr:`~ampel.content.T2Document.T2Document.status`
 	run_state: Union[T2SysRunState, Sequence[T2SysRunState]] = [
 		T2SysRunState.NEW,
 		T2SysRunState.NEW_PRIO,
 		T2SysRunState.PENDING_DEPENDENCY,
 		T2SysRunState.RERUN_REQUESTED
 	]
-
+	#: max number of t2 docs to process in :func:`run`
 	doc_limit: Optional[int]
+	#: tag(s) to add to the stock :class:`~ampel.content.JournalRecord.JournalRecord`
+	#: every time a :class:`~ampel.content.T2Document.T2Document` is processed
 	stock_jtag: Optional[Union[Tag, Sequence[Tag]]]
+	#: create a "beacon" document indicating the last time T2Processor was run
+	#: in the current configuration
 	send_beacon: bool = True
+	#: explicitly call :func:`gc.collect` after every document
 	garbage_collect: bool = True
+	#: process dependencies of :class:`tied T2 units <ampel.abtract.AbsTiedT2Unit.AbsTiedT2Unit>`
 	run_dependent_t2s: bool = False
+	#: maximum number of processing attempts per document
 	max_try: int = 5
 
 
@@ -375,6 +376,7 @@ class T2Processor(AbsProcessorUnit):
 		t2_unit: AbsPointT2Unit,
 		t2_doc: T2Document, logger: AmpelLogger, jupdater: JournalUpdater
 	) -> Union[None, T2SysRunState, DataPoint]:
+		""
 		...
 
 	@overload
@@ -382,6 +384,7 @@ class T2Processor(AbsProcessorUnit):
 		t2_unit: AbsTiedPointT2Unit,
 		t2_doc: T2Document, logger: AmpelLogger, jupdater: JournalUpdater
 	) -> Union[None, T2SysRunState, Tuple[DataPoint, T2DocView]]:
+		""
 		...
 
 	@overload
@@ -389,6 +392,7 @@ class T2Processor(AbsProcessorUnit):
 		t2_unit: AbsStateT2Unit,
 		t2_doc: T2Document, logger: AmpelLogger, jupdater: JournalUpdater,
 	) -> Optional[Tuple[Compound, Sequence[DataPoint]]]:
+		""
 		...
 
 
@@ -397,6 +401,7 @@ class T2Processor(AbsProcessorUnit):
 		t2_unit: AbsTiedStateT2Unit,
 		t2_doc: T2Document, logger: AmpelLogger, jupdater: JournalUpdater
 	) -> Union[None, T2SysRunState, Tuple[Compound, Sequence[DataPoint], List[T2DocView]]]:
+		""
 		...
 
 
@@ -405,6 +410,7 @@ class T2Processor(AbsProcessorUnit):
 		t2_unit: AbsCustomStateT2Unit[T],
 		t2_doc: T2Document, logger: AmpelLogger, jupdater: JournalUpdater
 	) -> Optional[Tuple[T]]:
+		""
 		...
 
 
@@ -413,6 +419,7 @@ class T2Processor(AbsProcessorUnit):
 		t2_unit: AbsTiedCustomStateT2Unit[T],
 		t2_doc: T2Document, logger: AmpelLogger, jupdater: JournalUpdater
 	) -> Union[None, T2SysRunState, Tuple[T, List[T2DocView]]]:
+		""
 		...
 
 	@overload
@@ -440,12 +447,19 @@ class T2Processor(AbsProcessorUnit):
 	]:
 		"""
 		Fetches documents required by `t2_unit`.
+
+		:param t2_unit: instance to fetch input docs for
+		:param t2_doc: document for which inputs are needed
+		:param logger: logger
+		:param jupdater: journal update service
+
 		Regarding tied T2s (unit depends on other T2s):
+		
 		- Dependent T2s will be executed if run_dependent_t2s is True.
 		- Note that the ingester ingests point and state t2s before state t2s so that the natural ordering
-		of T2 docs to be processed fits rather well a setup with a single T2processor instance processing all T2s.
+		  of T2 docs to be processed fits rather well a setup with a single T2processor instance processing all T2s.
 		- For state t2s tied with other state t2s, putting the dependent units first in the AlertProcessor
-		directives will make sure these are ingested first and thus processed first by T2Processor.
+		  directives will make sure these are ingested first and thus processed first by T2Processor.
 		"""
 
 		# State bound T2 units require loading of compound doc and datapoints
@@ -678,10 +692,11 @@ class T2Processor(AbsProcessorUnit):
 		This method handles "default" situations.
 		Callers must check returned 'link'.
 		If None (state t2 linked with point t2), further handling is required
+
 		:raises:
 			- ValueError if functionality is not implemented yet
 			- BadConfig if what's requested is not possible (a point T2 cannot be linked with a state t2)
-
+	
 		:returns: link value to match or None if further handling is required (state t2 linked with point t2)
 		"""
 

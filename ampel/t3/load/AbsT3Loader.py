@@ -20,16 +20,18 @@ from ampel.db.DBContentLoader import DBContentLoader
 from ampel.model.t3.LoaderDirective import LoaderDirective
 from ampel.log.AmpelLogger import AmpelLogger
 
-
+# Data loaders need access to the ampel db (and hence inherits AdminUnit)
 class AbsT3Loader(AdminUnit, abstract=True):
 	"""
-	Data loaders need access to the ampel db (and hence inherits AdminUnit)
-	Note: 'directives' can contain strings which will be resolved by retrieving
-	the associated alias from the ampel config
+	Base class for loading documents associated with a set of stocks.
 	"""
 
 	logger: AmpelLogger
+	#: Specification of documents to load. If these are supplied as strings,
+	#: they will be resolved by retrieving the corresponding alias from the
+	#: Ampel config.
 	directives: Sequence[LoaderDirective]
+	#: Channels to load documents for
 	channel: Optional[
 		Union[
 			ChannelId,
@@ -41,10 +43,8 @@ class AbsT3Loader(AdminUnit, abstract=True):
 
 
 	def __init__(self, context: AmpelContext, **kwargs) -> None:
-		"""
-		Note: 'directives' in kwargs can contain strings which will be
-		resolved by retrieving the associated alias from the ampel config
-		"""
+		# Note: 'directives' in kwargs can contain strings which will be
+		# resolved by retrieving the associated alias from the ampel config
 		directives: List[Dict] = []
 
 		# Resolve directive aliases
@@ -72,4 +72,5 @@ class AbsT3Loader(AdminUnit, abstract=True):
 	def load(self,
 		stock_ids: Union[StockId, Iterator[StockId], StrictIterable[StockId]]
 	) -> Iterable[AmpelBuffer]:
+		"Load documents for the selected stocks"
 		...

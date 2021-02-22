@@ -17,7 +17,7 @@ Repository layout
 
 Each Ampel plugin is kept in a separate ``git`` repository. These should be named after the institution or working group providing the plugin, e.g. ``ampel-contrib-hu`` for HU-Berlin, or ``ampel-contrib-ztfbh`` for the ZTFbh working group. Implementation files should follow a similar naming scheme, e.g. the HU T0 module ``DecentFilter`` is defined in ``ampel/contrib/hu/t0/DecentFilter.py``.
 
-.. seealso:: The template repository ampel-contrib-sample_ provides a working example of a plugin.
+.. seealso:: The template repository Ampel-contrib-sample_ provides a working example of a plugin.
 
 At the top level of the repository should be a ``setup.py`` file that ``pip install -e`` will use to install the plugin and register its components. Here is an example of a ``setup.py`` file for a plugin imaginatively called ``ampel-contrib-example``::
   
@@ -265,7 +265,7 @@ There are two ways to do this:
 1. Make one of the Ampel operators (@vbrinnel or @jvansanten) a co-owner of your project. We will then take care of integrating your plugin into the build.
 2. Create a special, passwordless ssh key, and communicate it to an operator. Add the public key as a (read-only) deploy key for your repository.
 
-.. _ampel-contrib-sample: https://github.com/AmpelProject/Ampel-contrib-sample/tree/03950a37dc4dc74c610df72887bd417239cd58aa
+.. _Ampel-contrib-sample: https://github.com/AmpelProject/Ampel-contrib-sample/tree/03950a37dc4dc74c610df72887bd417239cd58aa
 .. _mypy: https://mypy.readthedocs.io/en/stable/
 .. _YAML: https://en.wikipedia.org/wiki/YAML
 .. _JSON: https://en.wikipedia.org/wiki/JSON

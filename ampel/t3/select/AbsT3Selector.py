@@ -14,8 +14,12 @@ from ampel.core.AdminUnit import AdminUnit
 
 class AbsT3Selector(AdminUnit, abstract=True):
 
+	#: field used to identify stocks
 	field_name: ClassVar[str] = "_id"
 
 	@abstractmethod
 	def fetch(self) -> Optional[Iterable]:
+		"""
+		Get selected stock ids
+		"""
 		...

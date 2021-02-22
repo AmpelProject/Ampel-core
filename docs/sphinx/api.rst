@@ -21,14 +21,20 @@ Base classes for processing units
 .. autoclass:: ampel.core.AdminUnit.AdminUnit
   :members:
 
+.. autoclass:: ampel.abstract.AbsProcessorUnit.AbsProcessorUnit
+  :members:
+
 Processor units
 ---------------
 
 .. autoclass:: ampel.t2.T2Processor.T2Processor
   :members:
+  :exclude-members: load_input_docs, sig_exit, create_beacon, view_from_record, build_tied_t2_query, run_t2_unit, push_t2_update
+  :show-inheritance:
 
 .. autoclass:: ampel.t3.T3Processor.T3Processor
   :members:
+  :show-inheritance:
 
 T3 machinery
 ------------
@@ -169,13 +175,6 @@ Templates
   :members:
   :exclude-members: get_channel_tag
   :show-inheritance:
-
-Enums
------
-
-.. autoclass:: ampel.t2.T2RunState.T2RunState
-  :members:
-  :undoc-members:
 
 Odds and ends
 -------------

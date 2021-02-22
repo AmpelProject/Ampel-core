@@ -11,14 +11,11 @@
    roadmap
    science
    structure
-   projects/index
+   api
    legacy
    contribute
    testing
    installing
-   people
-   hardware
-   operations/index
 
 
 Indices and tables

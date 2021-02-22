@@ -8,7 +8,7 @@
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from typing import Union, List
-from logging import LogDocument, WARNING
+from logging import LogRecord, WARNING
 from ampel.log.LightLogRecord import LightLogRecord
 
 
@@ -26,7 +26,7 @@ class RecordBufferingHandler:
 	__slots__ = 'buffer', 'level', 'has_error', 'warn_lvl'
 
 	def __init__(self, level: int) -> None:
-		self.buffer: List[Union[LogDocument, LightLogRecord]] = []
+		self.buffer: List[Union[LogRecord, LightLogRecord]] = []
 		self.level = level
 		self.has_error = False
 		self.warn_lvl = WARNING
@@ -38,7 +38,7 @@ class RecordBufferingHandler:
 		self.has_error = False
 
 
-	def handle(self, record: Union[LogDocument, LightLogRecord]) -> None:
+	def handle(self, record: Union[LogRecord, LightLogRecord]) -> None:
 		if record.levelno >= self.level:
 			self.buffer.append(record)
 			if record.levelno > self.warn_lvl:
