@@ -5,14 +5,13 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Indices and tables &#8212; Ampel 0.7.0a0 documentation</title>
-    <link rel="stylesheet" href="_static/sphinxdoc.css" type="text/css" />
+    <title>Indices and tables &#8212; ampel-core 0.7.1-alpha.0 documentation</title>
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="_static/sphinxdoc.css" type="text/css" />
     <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
     <script src="_static/jquery.js"></script>
     <script src="_static/underscore.js"></script>
     <script src="_static/doctools.js"></script>
-    <script src="_static/language_data.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="Motivations" href="motivations.html" /> 
@@ -26,7 +25,7 @@
         <li class="right" >
           <a href="motivations.html" title="Motivations"
              accesskey="N">next</a> |</li>
-        <li class="nav-item nav-item-0"><a href="#">Ampel 0.7.0a0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="#">ampel-core 0.7.1-alpha.0 documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">Indices and tables</a></li> 
       </ul>
     </div>  
@@ -49,16 +48,19 @@
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="structure.html">Structure</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="structure.html#units">Units</a></li>
 <li class="toctree-l2"><a class="reference internal" href="structure.html#tiers">Tiers</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="projects/index.html">API documentation by project</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="projects/ampel-base.html">Ampel-interface</a></li>
-<li class="toctree-l2"><a class="reference internal" href="projects/ampel-core.html">Ampel-core</a></li>
-<li class="toctree-l2"><a class="reference internal" href="projects/ampel-alerts.html">Ampel-alerts</a></li>
-<li class="toctree-l2"><a class="reference internal" href="projects/ampel-photometry.html">Ampel-photometry</a></li>
-<li class="toctree-l2"><a class="reference internal" href="projects/ampel-ztf.html">Ampel-ZTF</a></li>
+<li class="toctree-l1"><a class="reference internal" href="api.html">Ampel-core</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="api.html#processing-units">Processing units</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api.html#base-classes-for-processing-units">Base classes for processing units</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api.html#processor-units">Processor units</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api.html#t3-machinery">T3 machinery</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api.html#context-and-configuration">Context and configuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api.html#data-classes">Data classes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api.html#models">Models</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api.html#templates">Templates</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api.html#odds-and-ends">Odds and ends</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="legacy.html">Porting contrib projects from v0.6</a><ul>
@@ -93,23 +95,6 @@
 <li class="toctree-l2"><a class="reference internal" href="installing.html#extra-packages-for-ztf-alerts">Extra packages for ZTF alerts</a></li>
 <li class="toctree-l2"><a class="reference internal" href="installing.html#installing-your-own-plug-in">Installing your own plug-in</a></li>
 <li class="toctree-l2"><a class="reference internal" href="installing.html#running-a-full-ampel-instance">Running a full Ampel instance</a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="people.html">People involved</a></li>
-<li class="toctree-l1"><a class="reference internal" href="hardware.html">Hardware</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="hardware.html#location">Location</a></li>
-<li class="toctree-l2"><a class="reference internal" href="hardware.html#specs">Specs</a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="operations/index.html">Operations guide</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="operations/docs.html">Updating the documentation on GitHub</a></li>
-<li class="toctree-l2"><a class="reference internal" href="operations/deploy.html">Deploying a new Ampel version</a></li>
-<li class="toctree-l2"><a class="reference internal" href="operations/deploy.html#set-up-github-repos-to-be-pulled-into-the-image">Set up GitHub repos to be pulled into the image</a></li>
-<li class="toctree-l2"><a class="reference internal" href="operations/deploy.html#build-and-tag-the-image">Build and tag the image</a></li>
-<li class="toctree-l2"><a class="reference internal" href="operations/deploy.html#push-image-to-ampel-machines">Push image to Ampel machines</a></li>
-<li class="toctree-l2"><a class="reference internal" href="operations/deploy.html#initialize-writable-ampel-source-directories">Initialize writable Ampel source directories</a></li>
-<li class="toctree-l2"><a class="reference internal" href="operations/archive_schema.html">Updating the archive database schema</a></li>
-<li class="toctree-l2"><a class="reference internal" href="operations/misc.html">Odds and ends</a></li>
 </ul>
 </li>
 </ul>
@@ -159,13 +144,13 @@
         <li class="right" >
           <a href="motivations.html" title="Motivations"
              >next</a> |</li>
-        <li class="nav-item nav-item-0"><a href="#">Ampel 0.7.0a0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="#">ampel-core 0.7.1-alpha.0 documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">Indices and tables</a></li> 
       </ul>
     </div>
     <div class="footer" role="contentinfo">
-        &#169; Copyright 2018-2020, Ampel Project contributors.
-      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 3.2.1.
+        &#169; Copyright 2018-2021, Ampel Project.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 3.5.1.
     </div>
   </body>
 </html>

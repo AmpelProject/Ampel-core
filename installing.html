@@ -5,17 +5,15 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Installing &#8212; Ampel 0.7.0a0 documentation</title>
-    <link rel="stylesheet" href="_static/sphinxdoc.css" type="text/css" />
+    <title>Installing &#8212; ampel-core 0.7.1-alpha.0 documentation</title>
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="_static/sphinxdoc.css" type="text/css" />
     <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
     <script src="_static/jquery.js"></script>
     <script src="_static/underscore.js"></script>
     <script src="_static/doctools.js"></script>
-    <script src="_static/language_data.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="People involved" href="people.html" />
     <link rel="prev" title="Running the automated tests" href="testing.html" /> 
   </head><body>
     <div class="related" role="navigation" aria-label="related navigation">
@@ -25,12 +23,9 @@
           <a href="genindex.html" title="General Index"
              accesskey="I">index</a></li>
         <li class="right" >
-          <a href="people.html" title="People involved"
-             accesskey="N">next</a> |</li>
-        <li class="right" >
           <a href="testing.html" title="Running the automated tests"
              accesskey="P">previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">Ampel 0.7.0a0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="index.html">ampel-core 0.7.1-alpha.0 documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">Installing</a></li> 
       </ul>
     </div>  
@@ -104,12 +99,12 @@
 <div class="section" id="running-a-full-ampel-instance">
 <h2>Running a full Ampel instance<a class="headerlink" href="#running-a-full-ampel-instance" title="Permalink to this headline">¶</a></h2>
 <p>To run the full Ampel processing chain implemented in the ampel-core project, you will need an instance of MongoDB (&gt;= 4.0). To start one via <code class="docutils literal notranslate"><span class="pre">docker</span></code>:</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;</span> docker run -d --rm -p <span class="m">27017</span>:27017 --name mongo mongo:bionic
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">&gt; docker run -d --rm -p 27017:27017 --name mongo mongo:bionic</span>
 <span class="go">9f8724e53d8d4fc44ecf06e5ab5a2f76a1ad773a910ab20c2206cd3669e67496</span>
 </pre></div>
 </div>
 <p>This causes <code class="docutils literal notranslate"><span class="pre">docker</span></code> to start <code class="docutils literal notranslate"><span class="pre">mongod</span></code> in a background container named <code class="docutils literal notranslate"><span class="pre">mongo</span></code>, with port 27017 bound to port 27017 on the host. The value printed to the console is the id of the container; you can refer to it either using this hash or the name you provided (<code class="docutils literal notranslate"><span class="pre">mongo</span></code>). You may verify that ports are forwarded to the host correctly with with <code class="docutils literal notranslate"><span class="pre">docker</span> <span class="pre">inspect</span></code>:</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;</span> docker inspect mongo <span class="p">|</span> jq <span class="s1">&#39;.[] | .NetworkSettings.Ports&#39;</span>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">&gt; docker inspect mongo | jq &#39;.[] | .NetworkSettings.Ports&#39;</span>
 <span class="go">{</span>
 <span class="go">  &quot;27017/tcp&quot;: [</span>
 <span class="go">    {</span>
@@ -140,9 +135,6 @@
   <h4>Previous topic</h4>
   <p class="topless"><a href="testing.html"
                         title="previous chapter">Running the automated tests</a></p>
-  <h4>Next topic</h4>
-  <p class="topless"><a href="people.html"
-                        title="next chapter">People involved</a></p>
 <div id="searchbox" style="display: none" role="search">
   <h3 id="searchlabel">Quick search</h3>
     <div class="searchformwrapper">
@@ -164,18 +156,15 @@
           <a href="genindex.html" title="General Index"
              >index</a></li>
         <li class="right" >
-          <a href="people.html" title="People involved"
-             >next</a> |</li>
-        <li class="right" >
           <a href="testing.html" title="Running the automated tests"
              >previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">Ampel 0.7.0a0 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="index.html">ampel-core 0.7.1-alpha.0 documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">Installing</a></li> 
       </ul>
     </div>
     <div class="footer" role="contentinfo">
-        &#169; Copyright 2018-2020, Ampel Project contributors.
-      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 3.2.1.
+        &#169; Copyright 2018-2021, Ampel Project.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 3.5.1.
     </div>
   </body>
 </html>

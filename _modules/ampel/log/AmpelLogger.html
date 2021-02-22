@@ -1,0 +1,360 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ampel.log.AmpelLogger &#8212; ampel-core 0.7.1-alpha.0 documentation</title>
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/sphinxdoc.css" type="text/css" />
+    <script id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+    <script src="../../../_static/jquery.js"></script>
+    <script src="../../../_static/underscore.js"></script>
+    <script src="../../../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">ampel-core 0.7.1-alpha.0 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../index.html" accesskey="U">Module code</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">ampel.log.AmpelLogger</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for ampel.log.AmpelLogger</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/env python</span>
+<span class="c1"># -*- coding: utf-8 -*-</span>
+<span class="c1"># File              : Ampel-core/ampel/log/AmpelLogger.py</span>
+<span class="c1"># License           : BSD-3-Clause</span>
+<span class="c1"># Author            : vb &lt;vbrinnel@physik.hu-berlin.de&gt;</span>
+<span class="c1"># Date              : 27.09.2018</span>
+<span class="c1"># Last Modified Date: 18.12.2020</span>
+<span class="c1"># Last Modified By  : Jakob van Santen &lt;jakob.van.santen@desy.de&gt;</span>
+
+<span class="kn">import</span> <span class="nn">logging</span><span class="o">,</span> <span class="nn">sys</span><span class="o">,</span> <span class="nn">traceback</span>
+<span class="kn">from</span> <span class="nn">sys</span> <span class="kn">import</span> <span class="n">_getframe</span>
+<span class="kn">from</span> <span class="nn">os.path</span> <span class="kn">import</span> <span class="n">basename</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Union</span><span class="p">,</span> <span class="n">Any</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">TYPE_CHECKING</span>
+<span class="kn">from</span> <span class="nn">ampel.type</span> <span class="kn">import</span> <span class="n">ChannelId</span><span class="p">,</span> <span class="n">StockId</span>
+<span class="kn">from</span> <span class="nn">ampel.log.LightLogRecord</span> <span class="kn">import</span> <span class="n">LightLogRecord</span>
+<span class="kn">from</span> <span class="nn">ampel.log.LogFlag</span> <span class="kn">import</span> <span class="n">LogFlag</span>
+<span class="kn">from</span> <span class="nn">ampel.protocol.LoggingHandlerProtocol</span> <span class="kn">import</span> <span class="n">LoggingHandlerProtocol</span>
+<span class="kn">from</span> <span class="nn">ampel.log.handlers.AmpelStreamHandler</span> <span class="kn">import</span> <span class="n">AmpelStreamHandler</span>
+
+<span class="k">if</span> <span class="n">TYPE_CHECKING</span><span class="p">:</span>
+	<span class="kn">from</span> <span class="nn">ampel.log.handlers.DBLoggingHandler</span> <span class="kn">import</span> <span class="n">DBLoggingHandler</span>
+
+<span class="n">ERROR</span> <span class="o">=</span> <span class="n">LogFlag</span><span class="o">.</span><span class="n">ERROR</span>
+<span class="n">WARNING</span> <span class="o">=</span> <span class="n">LogFlag</span><span class="o">.</span><span class="n">WARNING</span>
+<span class="n">SHOUT</span> <span class="o">=</span> <span class="n">LogFlag</span><span class="o">.</span><span class="n">SHOUT</span>
+<span class="n">INFO</span> <span class="o">=</span> <span class="n">LogFlag</span><span class="o">.</span><span class="n">INFO</span>
+<span class="n">VERBOSE</span> <span class="o">=</span> <span class="n">LogFlag</span><span class="o">.</span><span class="n">VERBOSE</span>
+<span class="n">DEBUG</span> <span class="o">=</span> <span class="n">LogFlag</span><span class="o">.</span><span class="n">DEBUG</span>
+
+<span class="k">if</span> <span class="n">TYPE_CHECKING</span><span class="p">:</span>
+	<span class="kn">from</span> <span class="nn">ampel.core.AmpelContext</span> <span class="kn">import</span> <span class="n">AmpelContext</span>
+
+<div class="viewcode-block" id="AmpelLogger"><a class="viewcode-back" href="../../../api.html#ampel.log.AmpelLogger.AmpelLogger">[docs]</a><span class="k">class</span> <span class="nc">AmpelLogger</span><span class="p">:</span>
+
+	<span class="n">loggers</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">str</span><span class="p">],</span> <span class="s1">&#39;AmpelLogger&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+	<span class="n">_counter</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span>
+	<span class="n">verbose</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span>
+
+
+<div class="viewcode-block" id="AmpelLogger.get_logger"><a class="viewcode-back" href="../../../api.html#ampel.log.AmpelLogger.AmpelLogger.get_logger">[docs]</a>	<span class="nd">@classmethod</span>
+	<span class="k">def</span> <span class="nf">get_logger</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">force_refresh</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;AmpelLogger&#39;</span><span class="p">:</span>
+		<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">		Creates or returns an instance of :obj:`AmpelLogger &lt;ampel.log.AmpelLogger&gt;`</span>
+<span class="sd">		that is registered in static dict &#39;loggers&#39; using the provided name as key.</span>
+<span class="sd">		If a logger with the given name already exists, the existing logger instance is returned.</span>
+<span class="sd">		If name is None, unique (int) name will be generated</span>
+<span class="sd">		:param ``**kwargs``: passed to constructor</span>
+
+<span class="sd">		Typical use:\n</span>
+<span class="sd">		.. sourcecode:: python\n</span>
+<span class="sd">			logger = AmpelLogger.get_logger()</span>
+<span class="sd">		&quot;&quot;&quot;</span>
+
+		<span class="k">if</span> <span class="ow">not</span> <span class="n">name</span><span class="p">:</span>
+			<span class="bp">cls</span><span class="o">.</span><span class="n">_counter</span> <span class="o">+=</span> <span class="mi">1</span>
+			<span class="n">name</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_counter</span>
+
+		<span class="k">if</span> <span class="n">name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">AmpelLogger</span><span class="o">.</span><span class="n">loggers</span> <span class="ow">or</span> <span class="n">force_refresh</span><span class="p">:</span>
+			<span class="n">AmpelLogger</span><span class="o">.</span><span class="n">loggers</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">AmpelLogger</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+		<span class="k">return</span> <span class="n">AmpelLogger</span><span class="o">.</span><span class="n">loggers</span><span class="p">[</span><span class="n">name</span><span class="p">]</span></div>
+
+
+	<span class="nd">@staticmethod</span>
+	<span class="k">def</span> <span class="nf">from_profile</span><span class="p">(</span><span class="n">context</span><span class="p">:</span> <span class="s1">&#39;AmpelContext&#39;</span><span class="p">,</span> <span class="n">profile</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">run_id</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;AmpelLogger&#39;</span><span class="p">:</span>
+
+		<span class="n">handlers</span> <span class="o">=</span> <span class="n">context</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;logging.</span><span class="si">{</span><span class="n">profile</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">,</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">raise_exc</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+		<span class="n">logger</span> <span class="o">=</span> <span class="n">AmpelLogger</span><span class="o">.</span><span class="n">get_logger</span><span class="p">(</span><span class="n">console</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+		<span class="k">if</span> <span class="s2">&quot;db&quot;</span> <span class="ow">in</span> <span class="n">handlers</span><span class="p">:</span>
+			<span class="c1"># avoid circular import</span>
+			<span class="kn">from</span> <span class="nn">ampel.log.handlers.DBLoggingHandler</span> <span class="kn">import</span> <span class="n">DBLoggingHandler</span>
+
+			<span class="k">if</span> <span class="n">run_id</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+				<span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Parameter &#39;run_id&#39; is required when log_profile requires db logging handler&quot;</span><span class="p">)</span>
+
+			<span class="n">logger</span><span class="o">.</span><span class="n">addHandler</span><span class="p">(</span>
+				<span class="n">DBLoggingHandler</span><span class="p">(</span><span class="n">context</span><span class="o">.</span><span class="n">db</span><span class="p">,</span> <span class="n">run_id</span><span class="p">,</span> <span class="o">**</span><span class="n">handlers</span><span class="p">[</span><span class="s1">&#39;db&#39;</span><span class="p">])</span>
+			<span class="p">)</span>
+
+		<span class="k">if</span> <span class="s2">&quot;console&quot;</span> <span class="ow">in</span> <span class="n">handlers</span><span class="p">:</span>
+			<span class="n">logger</span><span class="o">.</span><span class="n">addHandler</span><span class="p">(</span>
+				<span class="n">AmpelStreamHandler</span><span class="p">(</span><span class="o">**</span><span class="n">handlers</span><span class="p">[</span><span class="s1">&#39;console&#39;</span><span class="p">])</span>
+			<span class="p">)</span>
+
+		<span class="k">return</span> <span class="n">logger</span>
+
+
+	<span class="nd">@staticmethod</span>
+	<span class="k">def</span> <span class="nf">get_console_level</span><span class="p">(</span><span class="n">context</span><span class="p">:</span> <span class="s1">&#39;AmpelContext&#39;</span><span class="p">,</span> <span class="n">profile</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]:</span>
+
+		<span class="n">handlers</span> <span class="o">=</span> <span class="n">context</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;logging.</span><span class="si">{</span><span class="n">profile</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">,</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">raise_exc</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+		<span class="k">if</span> <span class="s2">&quot;console&quot;</span> <span class="ow">in</span> <span class="n">handlers</span><span class="p">:</span>
+			<span class="k">if</span> <span class="s1">&#39;level&#39;</span> <span class="ow">in</span> <span class="n">handlers</span><span class="p">[</span><span class="s1">&#39;console&#39;</span><span class="p">]:</span>
+				<span class="k">return</span> <span class="n">handlers</span><span class="p">[</span><span class="s1">&#39;console&#39;</span><span class="p">][</span><span class="s1">&#39;level&#39;</span><span class="p">]</span>
+			<span class="k">return</span> <span class="n">LogFlag</span><span class="o">.</span><span class="n">INFO</span><span class="o">.</span><span class="fm">__int__</span><span class="p">()</span>
+
+		<span class="k">return</span> <span class="kc">None</span>
+
+
+	<span class="nd">@classmethod</span>
+	<span class="k">def</span> <span class="nf">has_verbose_console</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">context</span><span class="p">:</span> <span class="s1">&#39;AmpelContext&#39;</span><span class="p">,</span> <span class="n">profile</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+
+		<span class="k">if</span> <span class="n">lvl</span> <span class="o">:=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">get_console_level</span><span class="p">(</span><span class="n">context</span><span class="p">,</span> <span class="n">profile</span><span class="p">):</span>
+			<span class="k">return</span> <span class="n">lvl</span> <span class="o">&lt;</span> <span class="n">INFO</span>
+		<span class="k">return</span> <span class="kc">False</span>
+
+
+	<span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+		<span class="n">name</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+		<span class="n">base_flag</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">LogFlag</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+		<span class="n">handlers</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="n">LoggingHandlerProtocol</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+		<span class="n">channel</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">ChannelId</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="n">ChannelId</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+		<span class="c1"># See AmpelStreamHandler annotations for more details</span>
+		<span class="n">console</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">bool</span><span class="p">,</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">True</span>
+	<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+
+		<span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">name</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">base_flag</span> <span class="o">=</span> <span class="n">base_flag</span><span class="o">.</span><span class="fm">__int__</span><span class="p">()</span> <span class="k">if</span> <span class="n">base_flag</span> <span class="k">else</span> <span class="mi">0</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">handlers</span> <span class="o">=</span> <span class="n">handlers</span> <span class="ow">or</span> <span class="p">[]</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">channel</span> <span class="o">=</span> <span class="n">channel</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">level</span> <span class="o">=</span> <span class="mi">0</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">fname</span> <span class="o">=</span> <span class="n">_getframe</span><span class="p">()</span><span class="o">.</span><span class="n">f_code</span><span class="o">.</span><span class="n">co_filename</span>
+
+		<span class="k">if</span> <span class="n">console</span><span class="p">:</span>
+			<span class="bp">self</span><span class="o">.</span><span class="n">addHandler</span><span class="p">(</span>
+				<span class="n">AmpelStreamHandler</span><span class="p">()</span> <span class="k">if</span> <span class="n">console</span> <span class="ow">is</span> <span class="kc">True</span> <span class="k">else</span> <span class="n">AmpelStreamHandler</span><span class="p">(</span><span class="o">**</span><span class="n">console</span><span class="p">)</span> <span class="c1"># type: ignore</span>
+			<span class="p">)</span>
+		<span class="k">else</span><span class="p">:</span>
+			<span class="bp">self</span><span class="o">.</span><span class="n">provenance</span> <span class="o">=</span> <span class="kc">False</span>
+
+		<span class="bp">self</span><span class="o">.</span><span class="n">_auto_level</span><span class="p">()</span>
+
+
+	<span class="k">def</span> <span class="nf">_auto_level</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+
+		<span class="bp">self</span><span class="o">.</span><span class="n">level</span> <span class="o">=</span> <span class="nb">min</span><span class="p">([</span><span class="n">h</span><span class="o">.</span><span class="n">level</span> <span class="k">for</span> <span class="n">h</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">handlers</span><span class="p">])</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">handlers</span> <span class="k">else</span> <span class="mi">0</span>
+		<span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">level</span> <span class="o">&lt;</span> <span class="n">INFO</span><span class="p">:</span>
+			<span class="bp">self</span><span class="o">.</span><span class="n">verbose</span> <span class="o">=</span> <span class="mi">2</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">level</span> <span class="o">&lt;</span> <span class="n">VERBOSE</span> <span class="k">else</span> <span class="mi">1</span>
+		<span class="k">else</span><span class="p">:</span>
+			<span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">verbose</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+				<span class="bp">self</span><span class="o">.</span><span class="n">verbose</span> <span class="o">=</span> <span class="mi">0</span>
+
+
+	<span class="k">def</span> <span class="nf">addHandler</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">handler</span><span class="p">:</span> <span class="n">LoggingHandlerProtocol</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+
+		<span class="k">if</span> <span class="n">handler</span><span class="o">.</span><span class="n">level</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">level</span><span class="p">:</span>
+			<span class="bp">self</span><span class="o">.</span><span class="n">level</span> <span class="o">=</span> <span class="n">handler</span><span class="o">.</span><span class="n">level</span>
+
+		<span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">handler</span><span class="p">,</span> <span class="n">AmpelStreamHandler</span><span class="p">)</span> <span class="ow">and</span> <span class="n">handler</span><span class="o">.</span><span class="n">provenance</span><span class="p">:</span>
+			<span class="bp">self</span><span class="o">.</span><span class="n">provenance</span> <span class="o">=</span> <span class="kc">True</span>
+
+		<span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">level</span> <span class="o">&lt;</span> <span class="n">INFO</span><span class="p">:</span>
+			<span class="bp">self</span><span class="o">.</span><span class="n">verbose</span> <span class="o">=</span> <span class="mi">2</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">level</span> <span class="o">&lt;</span> <span class="n">VERBOSE</span> <span class="k">else</span> <span class="mi">1</span>
+
+		<span class="bp">self</span><span class="o">.</span><span class="n">handlers</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">handler</span><span class="p">)</span>
+
+
+	<span class="k">def</span> <span class="nf">removeHandler</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">handler</span><span class="p">:</span> <span class="n">LoggingHandlerProtocol</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">handlers</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">handler</span><span class="p">)</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">_auto_level</span><span class="p">()</span>
+
+
+	<span class="k">def</span> <span class="nf">get_db_logging_handler</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="s1">&#39;DBLoggingHandler&#39;</span><span class="p">]:</span>
+		<span class="c1"># avoid circular import</span>
+		<span class="kn">from</span> <span class="nn">ampel.log.handlers.DBLoggingHandler</span> <span class="kn">import</span> <span class="n">DBLoggingHandler</span>
+		<span class="k">for</span> <span class="n">el</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">handlers</span><span class="p">:</span>
+			<span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">el</span><span class="p">,</span> <span class="n">DBLoggingHandler</span><span class="p">):</span>
+				<span class="k">return</span> <span class="n">el</span>
+		<span class="k">return</span> <span class="kc">None</span>
+
+
+	<span class="k">def</span> <span class="nf">error</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]],</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span>
+		<span class="n">exc_info</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="ne">Exception</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+		<span class="n">extra</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+	<span class="p">):</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">ERROR</span><span class="p">,</span> <span class="n">msg</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="n">exc_info</span><span class="o">=</span><span class="n">exc_info</span><span class="p">,</span> <span class="n">extra</span><span class="o">=</span><span class="n">extra</span><span class="p">)</span>
+
+
+	<span class="k">def</span> <span class="nf">warn</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]],</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span>
+		<span class="n">extra</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+	<span class="p">):</span>
+		<span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">level</span> <span class="o">&lt;=</span> <span class="n">WARNING</span><span class="p">:</span>
+			<span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">WARNING</span><span class="p">,</span> <span class="n">msg</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="n">extra</span><span class="o">=</span><span class="n">extra</span><span class="p">)</span>
+
+
+	<span class="k">def</span> <span class="nf">info</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]],</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span>
+		<span class="n">extra</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+	<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+		<span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">level</span> <span class="o">&lt;=</span> <span class="n">INFO</span><span class="p">:</span>
+			<span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">INFO</span><span class="p">,</span> <span class="n">msg</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="n">extra</span><span class="o">=</span><span class="n">extra</span><span class="p">)</span>
+
+
+	<span class="k">def</span> <span class="nf">debug</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]],</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span>
+		<span class="n">extra</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+	<span class="p">):</span>
+		<span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">level</span> <span class="o">&lt;=</span> <span class="n">DEBUG</span><span class="p">:</span>
+			<span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">DEBUG</span><span class="p">,</span> <span class="n">msg</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="n">extra</span><span class="o">=</span><span class="n">extra</span><span class="p">)</span>
+
+
+	<span class="k">def</span> <span class="nf">handle</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">record</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">LightLogRecord</span><span class="p">,</span> <span class="n">logging</span><span class="o">.</span><span class="n">LogRecord</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+		<span class="k">for</span> <span class="n">h</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">handlers</span><span class="p">:</span>
+			<span class="k">if</span> <span class="n">record</span><span class="o">.</span><span class="n">levelno</span> <span class="o">&gt;=</span> <span class="n">h</span><span class="o">.</span><span class="n">level</span><span class="p">:</span>
+				<span class="n">h</span><span class="o">.</span><span class="n">handle</span><span class="p">(</span><span class="n">record</span><span class="p">)</span>
+
+
+	<span class="k">def</span> <span class="nf">flush</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+		<span class="k">for</span> <span class="n">h</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">handlers</span><span class="p">:</span>
+			<span class="n">h</span><span class="o">.</span><span class="n">flush</span><span class="p">()</span>
+
+
+	<span class="k">def</span> <span class="nf">log</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+		<span class="n">lvl</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">msg</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]],</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span>
+		<span class="n">exc_info</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">bool</span><span class="p">,</span> <span class="ne">Exception</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+		<span class="n">extra</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+	<span class="p">):</span>
+
+		<span class="k">if</span> <span class="n">args</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">msg</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+			<span class="n">msg</span> <span class="o">=</span> <span class="n">msg</span> <span class="o">%</span> <span class="n">args</span>
+
+		<span class="n">record</span> <span class="o">=</span> <span class="n">LightLogRecord</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">levelno</span><span class="o">=</span><span class="n">lvl</span> <span class="o">|</span> <span class="bp">self</span><span class="o">.</span><span class="n">base_flag</span><span class="p">,</span> <span class="n">msg</span><span class="o">=</span><span class="n">msg</span><span class="p">)</span>
+
+		<span class="k">if</span> <span class="n">lvl</span> <span class="o">&gt;</span> <span class="n">WARNING</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">provenance</span><span class="p">:</span>
+			<span class="n">frame</span> <span class="o">=</span> <span class="n">_getframe</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span> <span class="c1"># logger.log(...) was called directly</span>
+			<span class="k">if</span> <span class="n">frame</span><span class="o">.</span><span class="n">f_code</span><span class="o">.</span><span class="n">co_filename</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">fname</span><span class="p">:</span>
+				<span class="n">frame</span> <span class="o">=</span> <span class="n">_getframe</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span> <span class="c1"># logger.info(...), logger.debug(...) was used</span>
+			<span class="n">record</span><span class="o">.</span><span class="vm">__dict__</span><span class="p">[</span><span class="s1">&#39;filename&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">basename</span><span class="p">(</span><span class="n">frame</span><span class="o">.</span><span class="n">f_code</span><span class="o">.</span><span class="n">co_filename</span><span class="p">)</span>
+			<span class="n">record</span><span class="o">.</span><span class="vm">__dict__</span><span class="p">[</span><span class="s1">&#39;lineno&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">frame</span><span class="o">.</span><span class="n">f_lineno</span>
+
+		<span class="k">if</span> <span class="n">extra</span><span class="p">:</span>
+			<span class="k">if</span> <span class="p">(</span><span class="n">stock</span> <span class="o">:=</span> <span class="n">extra</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;stock&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">))</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+				<span class="n">record</span><span class="o">.</span><span class="n">stock</span> <span class="o">=</span> <span class="n">stock</span>
+			<span class="k">if</span> <span class="p">(</span><span class="n">channel</span> <span class="o">:=</span> <span class="p">(</span><span class="n">extra</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;channel&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">channel</span><span class="p">))</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+				<span class="n">record</span><span class="o">.</span><span class="n">channel</span> <span class="o">=</span> <span class="n">channel</span>
+			<span class="n">record</span><span class="o">.</span><span class="n">extra</span> <span class="o">=</span> <span class="n">extra</span>
+
+		<span class="k">if</span> <span class="n">exc_info</span><span class="p">:</span>
+
+			<span class="k">if</span> <span class="n">exc_info</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+				<span class="n">exc_info</span> <span class="o">=</span> <span class="n">sys</span><span class="o">.</span><span class="n">exc_info</span><span class="p">()</span> <span class="c1"># type: ignore</span>
+				<span class="n">lines</span> <span class="o">=</span> <span class="n">traceback</span><span class="o">.</span><span class="n">format_exception</span><span class="p">(</span><span class="o">*</span><span class="n">sys</span><span class="o">.</span><span class="n">exc_info</span><span class="p">())</span>
+			<span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">exc_info</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">):</span>
+				<span class="n">lines</span> <span class="o">=</span> <span class="n">traceback</span><span class="o">.</span><span class="n">format_exception</span><span class="p">(</span><span class="o">*</span><span class="n">sys</span><span class="o">.</span><span class="n">exc_info</span><span class="p">())</span>
+			<span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">exc_info</span><span class="p">,</span> <span class="ne">Exception</span><span class="p">):</span>
+				<span class="n">lines</span> <span class="o">=</span> <span class="n">traceback</span><span class="o">.</span><span class="n">format_exception</span><span class="p">(</span>
+					<span class="n">etype</span><span class="o">=</span><span class="nb">type</span><span class="p">(</span><span class="n">exc_info</span><span class="p">),</span> <span class="n">value</span><span class="o">=</span><span class="n">exc_info</span><span class="p">,</span> <span class="n">tb</span><span class="o">=</span><span class="n">exc_info</span><span class="o">.</span><span class="n">__traceback__</span>
+				<span class="p">)</span>
+			<span class="k">else</span><span class="p">:</span>
+				<span class="n">lines</span> <span class="o">=</span> <span class="p">[]</span>
+
+			<span class="n">erec</span> <span class="o">=</span> <span class="n">AmpelLogger</span><span class="o">.</span><span class="n">fork_rec</span><span class="p">(</span><span class="n">record</span><span class="p">,</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+			<span class="k">for</span> <span class="n">h</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">handlers</span><span class="p">:</span>
+				<span class="n">h</span><span class="o">.</span><span class="n">handle</span><span class="p">(</span><span class="n">erec</span><span class="p">)</span>
+
+			<span class="k">for</span> <span class="n">el</span> <span class="ow">in</span> <span class="n">lines</span><span class="p">:</span>
+				<span class="k">for</span> <span class="n">l</span> <span class="ow">in</span> <span class="n">el</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">):</span>
+					<span class="k">if</span> <span class="ow">not</span> <span class="n">l</span><span class="p">:</span>
+						<span class="k">continue</span>
+					<span class="n">erec</span> <span class="o">=</span> <span class="n">AmpelLogger</span><span class="o">.</span><span class="n">fork_rec</span><span class="p">(</span><span class="n">record</span><span class="p">,</span> <span class="n">l</span><span class="p">)</span>
+					<span class="k">for</span> <span class="n">h</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">handlers</span><span class="p">:</span>
+						<span class="n">h</span><span class="o">.</span><span class="n">handle</span><span class="p">(</span><span class="n">erec</span><span class="p">)</span>
+
+			<span class="k">if</span> <span class="n">record</span><span class="o">.</span><span class="n">msg</span><span class="p">:</span>
+				<span class="n">rec2</span> <span class="o">=</span> <span class="n">AmpelLogger</span><span class="o">.</span><span class="n">fork_rec</span><span class="p">(</span><span class="n">record</span><span class="p">,</span> <span class="s2">&quot;-&quot;</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">record</span><span class="o">.</span><span class="n">msg</span><span class="p">))</span>
+				<span class="k">for</span> <span class="n">h</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">handlers</span><span class="p">:</span>
+					<span class="n">h</span><span class="o">.</span><span class="n">handle</span><span class="p">(</span><span class="n">record</span><span class="p">)</span>
+					<span class="n">h</span><span class="o">.</span><span class="n">handle</span><span class="p">(</span><span class="n">rec2</span><span class="p">)</span>
+
+			<span class="k">return</span>
+
+		<span class="k">for</span> <span class="n">h</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">handlers</span><span class="p">:</span>
+			<span class="k">if</span> <span class="n">record</span><span class="o">.</span><span class="n">levelno</span> <span class="o">&gt;=</span> <span class="n">h</span><span class="o">.</span><span class="n">level</span><span class="p">:</span>
+				<span class="n">h</span><span class="o">.</span><span class="n">handle</span><span class="p">(</span><span class="n">record</span><span class="p">)</span>
+
+
+	<span class="nd">@staticmethod</span>
+	<span class="k">def</span> <span class="nf">fork_rec</span><span class="p">(</span><span class="n">orig</span><span class="p">:</span> <span class="n">LightLogRecord</span><span class="p">,</span> <span class="n">msg</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">LightLogRecord</span><span class="p">:</span>
+		<span class="n">new_rec</span> <span class="o">=</span> <span class="n">LightLogRecord</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">msg</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">levelno</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+		<span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">orig</span><span class="o">.</span><span class="vm">__dict__</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+			<span class="n">new_rec</span><span class="o">.</span><span class="vm">__dict__</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">v</span>
+		<span class="n">new_rec</span><span class="o">.</span><span class="n">msg</span> <span class="o">=</span> <span class="n">msg</span>
+		<span class="k">return</span> <span class="n">new_rec</span></div>
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../../index.html">
+              <img class="logo" src="../../../_static/ampel.png" alt="Logo"/>
+            </a></p>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">ampel-core 0.7.1-alpha.0 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../index.html" >Module code</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">ampel.log.AmpelLogger</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2018-2021, Ampel Project.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 3.5.1.
+    </div>
+  </body>
+</html>
