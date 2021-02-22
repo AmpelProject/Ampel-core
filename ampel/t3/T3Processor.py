@@ -23,23 +23,26 @@ from ampel.util.collections import chunks
 
 class T3Processor(AbsProcessorUnit):
 	"""
-	:param log_profile: See AbsProcessorUnit docstring
-	:param db_handler_kwargs: See AbsProcessorUnit docstring
-	:param base_log_flag: See AbsProcessorUnit docstring
-	:param raise_exc: See AbsProcessorUnit docstring (default False)
-
-	:param update_journal: Record the invocation of this event in the transient journal
+	:param update_journal: Record the invocation of this event in the stock journal
 	:param update_events: Record this event in the events collection
+	:param extra_journal_tag:
+	  tag(s) to add to the :class:`~ampel.content.JournalRecord.JournalRecord`
+	  of each selected stock
 
-	Note: if you want to run an "anonymous" event, please:
+	.. note:: by default, :func:`run` add entries to the journals of selected
+	  stocks, store log records in the database, and records the invocation in
+	  the events collection. To run an "anonymous" event that does not change
+	  the state of the database:
 	
-	- use a log_profile without db logging (profiles are defined under 'logging' in the ampel config)
-	- set update_journal = False (no update to the transient doc)
-	- set update_events = False (no update to the events collection)
-	- set raise_exc = True (troubles collection will not be populated if an exception occurs)
+	  - use a log_profile without db logging (profiles are defined under 'logging' in the ampel config)
+	  - set update_journal = False (no update to the transient doc)
+	  - set update_events = False (no update to the events collection)
+	  - set raise_exc = True (troubles collection will not be populated if an exception occurs)
 	"""
 
+	#: T3 processing sequences
 	directives: Sequence[T3Directive]
+	#: number of stocks to load at once
 	chunk_size: int = 200
 
 

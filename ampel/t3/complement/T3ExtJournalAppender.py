@@ -23,7 +23,10 @@ from ampel.model.operator.FlatAnyOf import FlatAnyOf
 
 
 class T3ExtJournalAppender(AbsT3DataAppender):
-	""" Allows to import journal entries from a 'foreign' database """
+	"""
+	Import journal entries from a 'foreign' database, e.g. one created
+	by a previous version of Ampel.
+	"""
 
 	mongo_resource: str = "resource.ext_mongo"
 	db_name: str = "Ampel_data"

@@ -30,7 +30,7 @@ class T3LatestStateDataLoader(AbsT3Loader):
 	  need point- or stock-bound T2s, use
 	  :py:class:`~ampel.t3.load.T3SimpleDataLoader.T3SimpleDataLoader`.
 
-	.. seealso:
+	.. seealso::
 	  
 	  :py:func:`ampel.db.query.latest_compound.fast_query`
 	    for notes on how compounds are selected from T0

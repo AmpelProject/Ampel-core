@@ -17,23 +17,31 @@ from ampel.core.AdminUnit import AdminUnit
 
 
 class AbsT3UnitRunner(AdminUnit, abstract=True):
+	"""
+	Supply stock views to one or more T3 units.
+	"""
 
 	logger: AmpelLogger
 	run_id: int
 	process_name: str
 	channel: Optional[ChannelId] = None
 
+	#: raise exceptions instead of catching and logging
 	raise_exc: bool = True
-	#: Record the invocation of this evetn in the journal of each selected transient
+	#: Record the invocation of this event in the journal of each selected stock
 	update_journal: bool = True
+	#: tag to add to journal records
 	extra_journal_tag: Optional[Union[int, str]] = None
+	#: contextual information for this run
 	run_context: Optional[Dict[str, Any]] = None
 
 
 	@abstractmethod
 	def run(self, data: Sequence[AmpelBuffer]) -> None:
+		"""Process a chunk of stocks"""
 		...
 
 	@abstractmethod
 	def done(self) -> None:
+		"""Signal that the run has finished"""
 		...

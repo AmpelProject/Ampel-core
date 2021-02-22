@@ -51,8 +51,11 @@ class T3UnitRunner(AbsT3UnitRunner):
 		Internal model used for field 'directives' of T3UnitRunner
 		"""
 
+		#: unit to use for down-selection of stocks
 		filter: Optional[UnitModel]
+		#: unit to use for projection of each stock
 		project: Optional[UnitModel]
+		#: units to use to execute T3s
 		execute: Sequence[UnitModel]
 
 		@validator('execute', pre=True)
@@ -61,7 +64,7 @@ class T3UnitRunner(AbsT3UnitRunner):
 				return [v]
 			return v
 
-
+	#: Processing specification
 	directives: Sequence[RunDirective]
 
 

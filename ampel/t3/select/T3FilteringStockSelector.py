@@ -23,7 +23,8 @@ from ampel.db.query.utils import match_array
 class T3FilteringStockSelector(T3StockSelector):
 	"""
 	Selector subclass that filters stocks based on their latest T2 results.
-	Example::
+	
+	Example configuration::
 		
 		{
 			...
@@ -43,7 +44,6 @@ class T3FilteringStockSelector(T3StockSelector):
 
 	# Override/Implement
 	def fetch(self) -> Optional[Cursor]:
-		""" The returned Iterator is a pymongo Cursor """
 
 		# Execute query on T0 collection to get target stocks
 		if cursor := super().fetch():
