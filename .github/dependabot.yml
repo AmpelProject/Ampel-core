@@ -4,13 +4,13 @@ updates:
     directory: "/"
     schedule:
       interval: "daily"
-    target-branch: "poetry"
+    target-branch: "master"
     labels:
       - "pip dependencies"
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
       interval: "weekly"
-    target-branch: "poetry"
+    target-branch: "master"
     labels:
       - "ci"
