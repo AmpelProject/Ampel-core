@@ -12,7 +12,7 @@ from ampel.log import AmpelLogger, VERBOSE
 from ampel.core.AmpelBuffer import AmpelBuffer, BufferKey
 from ampel.abstract.AbsApplicable import AbsApplicable
 from ampel.model.UnitModel import UnitModel
-from ampel.core.UnitLoader import UnitLoader
+from ampel.base.AuxUnitRegister import AuxUnitRegister
 from ampel.model.StrictModel import StrictModel
 from ampel.t3.run.project.AbsT3Projector import AbsT3Projector
 
@@ -80,7 +80,7 @@ class T3BaseProjector(AbsT3Projector):
 	def add_class_projector(self, cm: ClassModel, first: bool = False) -> None:
 
 		# Instantiate field projector units (auxiliary units)
-		unit = UnitLoader.new_aux_unit(
+		unit = AuxUnitRegister.new_unit(
 			unit_model = cm.model,
 			sub_type = AbsApplicable,
 			logger = self.logger

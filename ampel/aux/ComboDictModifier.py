@@ -9,7 +9,7 @@
 
 from typing import Dict, Sequence, Union, Literal, List, Optional, Callable, Container, Any, Set
 from ampel.abstract.AbsApplicable import AbsApplicable
-from ampel.core.UnitLoader import UnitLoader
+from ampel.base.AuxUnitRegister import AuxUnitRegister
 from ampel.model.StrictModel import StrictModel
 from ampel.log import AmpelLogger, VERBOSE
 from ampel.util.collections import to_set
@@ -151,7 +151,7 @@ class ComboDictModifier(AbsApplicable):
 			elif isinstance(f, (self.ClassModifyModel, self.FuncModifyModel)):
 
 				if isinstance(f, self.ClassModifyModel):
-					unit = UnitLoader.new_aux_unit(
+					unit = AuxUnitRegister.new_unit(
 						class_name = f.unit,
 						sub_type = AbsApplicable,
 						logger = self.logger,

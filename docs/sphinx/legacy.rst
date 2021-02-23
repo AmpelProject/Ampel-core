@@ -10,6 +10,8 @@ changes you need to make to adapt your project from v0.6 to v0.7. An example
 project using the current config system can be found in
 `Ampel-contrib-sample`_.
 
+.. _Ampel-contrib-sample: https://github.com/AmpelProject/Ampel-contrib-sample/tree/03950a37dc4dc74c610df72887bd417239cd58aa
+
 Environment
 ===========
 

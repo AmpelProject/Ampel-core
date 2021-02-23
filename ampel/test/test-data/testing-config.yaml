@@ -101,6 +101,12 @@ unit:
       - AbsT3UnitRunner
       distrib: ampel-core
       file: conf/ampel-core/ampel.yaml
+    T3Processor:
+      fqn: ampel.t3.T3Processor
+      base:
+      - AbsProcessorUnit
+      distrib: ampel-core
+      file: conf/ampel-core/ampel.yaml
     Sleepy:
       fqn: ampel.test.dummy
       base:

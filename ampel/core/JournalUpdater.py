@@ -17,7 +17,7 @@ from ampel.db.AmpelDB import AmpelDB
 from ampel.type import ChannelId, Tag, StockId
 from ampel.log import AmpelLogger, VERBOSE
 from ampel.log.utils import report_exception
-from ampel.struct.JournalExtra import JournalExtra
+from ampel.struct.JournalTweak import JournalTweak
 from ampel.content.JournalRecord import JournalRecord
 
 tag_type = get_args(Tag) # type: ignore[misc]
@@ -83,7 +83,7 @@ class JournalUpdater:
 
 	def add_record(self,
 		stock: Union[StockId, Sequence[StockId]],
-		jextra: Optional[JournalExtra] = None,
+		jextra: Optional[JournalTweak] = None,
 		doc_id: Optional[ObjectId] = None,
 		unit: Optional[Union[int, str]] = None,
 		channel: Optional[Union[ChannelId, Sequence[ChannelId]]] = None,

@@ -11,19 +11,19 @@ from dataclasses import dataclass, field
 from typing import Dict, Optional, Sequence, List, Type, Tuple, TypeVar, get_args, Union
 from pydantic import validator
 
-from ampel.log import VERBOSE, AmpelLogger, LogRecordFlag
+from ampel.log import VERBOSE, AmpelLogger, LogFlag
 from ampel.log.utils import report_exception
 from ampel.log.handlers.ChanRecordBufHandler import ChanRecordBufHandler
 from ampel.log.handlers.DefaultRecordBufferingHandler import DefaultRecordBufferingHandler
 from ampel.core.AmpelBuffer import AmpelBuffer
-from ampel.core.UnitLoader import UnitLoader
+from ampel.base.AuxUnitRegister import AuxUnitRegister
 from ampel.core.JournalUpdater import JournalUpdater
 from ampel.view.SnapView import SnapView
 from ampel.util.mappings import build_unsafe_dict_id
 from ampel.util.freeze import recursive_freeze
 from ampel.model.StrictModel import StrictModel
 from ampel.model.UnitModel import UnitModel
-from ampel.struct.JournalExtra import JournalExtra
+from ampel.struct.JournalTweak import JournalTweak
 from ampel.abstract.AbsT3Unit import AbsT3Unit
 from ampel.t3.run.AbsT3UnitRunner import AbsT3UnitRunner
 from ampel.t3.run.filter.AbsT3Filter import AbsT3Filter
@@ -51,8 +51,11 @@ class T3UnitRunner(AbsT3UnitRunner):
 		Internal model used for field 'directives' of T3UnitRunner
 		"""
 
+		#: unit to use for down-selection of stocks
 		filter: Optional[UnitModel]
+		#: unit to use for projection of each stock
 		project: Optional[UnitModel]
+		#: units to use to execute T3s
 		execute: Sequence[UnitModel]
 
 		@validator('execute', pre=True)
@@ -61,7 +64,7 @@ class T3UnitRunner(AbsT3UnitRunner):
 				return [v]
 			return v
 
-
+	#: Processing specification
 	directives: Sequence[RunDirective]
 
 
@@ -95,7 +98,7 @@ class T3UnitRunner(AbsT3UnitRunner):
 				if debug:
 					self.logger.debug(f"Setting up projector {directive.project.unit_name}")
 
-				rb.projector = UnitLoader.new_aux_unit(
+				rb.projector = AuxUnitRegister.new_unit(
 					unit_model = directive.project,
 					sub_type = AbsT3Projector,
 					logger = self.logger
@@ -141,7 +144,7 @@ class T3UnitRunner(AbsT3UnitRunner):
 				unit_instance = self.context.loader.new_base_unit(
 					unit_model=exec_def,
 					logger = AmpelLogger.get_logger(
-						base_flag = (getattr(self.logger, 'base_flag', 0) & ~LogRecordFlag.CORE) | LogRecordFlag.UNIT,
+						base_flag = (getattr(self.logger, 'base_flag', 0) & ~LogFlag.CORE) | LogFlag.UNIT,
 						console = False,
 						handlers = [self.buf_hdlr]
 					),
@@ -212,7 +215,7 @@ class T3UnitRunner(AbsT3UnitRunner):
 							for k, v in ret.items():
 								jupdater.add_record(stock=k, jextra=v, unit=unit_name)
 
-						elif isinstance(ret, JournalExtra):
+						elif isinstance(ret, JournalTweak):
 							jupdater.add_record(
 								stock = [sv.id for sv in views], jextra = ret, unit = unit_name
 							)

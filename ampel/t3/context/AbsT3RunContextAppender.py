@@ -27,4 +27,7 @@ class AbsT3RunContextAppender(AdminUnit, abstract=True):
 
 	@abstractmethod
 	def update(self, run_context: Dict[str, Any]) -> None:
-		""" Appends key, values to the provided context dict instance """
+		"""
+		:param run_context: run context to fill
+		"""
+		...

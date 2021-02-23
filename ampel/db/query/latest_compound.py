@@ -10,12 +10,13 @@
 import collections
 from bson.int64 import Int64
 from typing import Union, Sequence, Dict, Optional, Any, List
-from ampel.type import StockId, type_stock_id, ChannelId, StrictIterable
+from ampel.type import StockId, ChannelId, StrictIterable
 from ampel.util.collections import check_seq_inner_type
 from ampel.model.operator.AnyOf import AnyOf
 from ampel.model.operator.AllOf import AllOf
 from ampel.model.operator.OneOf import OneOf
 from ampel.db.query.schema import apply_schema
+from ampel.db.query.general import type_stock_id
 
 """
 Lastest by mean of compound 'body' length.

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-core/ampel/logging/LogRecordFlag.py
+# File              : Ampel-core/ampel/logging/LogFlag.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 14.12.2017
@@ -10,7 +10,7 @@
 from enum import IntFlag
 
 # flake8: noqa: E221
-class LogRecordFlag(IntFlag):
+class LogFlag(IntFlag):
 	"""
 	Flag used for each log entry stored in the DB.
 	Value fits in a MongoDB int32.

@@ -10,5 +10,5 @@
 # flake8: noqa: F401
 from .AmpelLogger import AmpelLogger, DEBUG, INFO, VERBOSE, SHOUT, WARNING, ERROR
 from .DBEventDoc import DBEventDoc
-from .LogRecordFlag import LogRecordFlag
+from .LogFlag import LogFlag
 from .handlers.DBLoggingHandler import DBLoggingHandler

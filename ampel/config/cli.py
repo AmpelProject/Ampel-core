@@ -93,14 +93,14 @@ def _validate(config_file: TextIO, secrets: Optional[TextIO] = None) -> None:
             else PotemkinSecretProvider()
         ),
     )
-    UnitModel._unit_loader = ctx.loader
-    for channel in ctx.config.get("channel", Dict[str, Any], raise_exc=True).values():
-        ChannelModel(**{k: v for k, v in channel.items() if not k in {"template"}})
-    for tier in range(3):
-        for process in ctx.config.get(
-            f"process.t{tier}", Dict[str, Any], raise_exc=True
-        ).values():
-            ProcessModel(**process)
+    with ctx.loader.validate_unit_models():
+        for channel in ctx.config.get("channel", Dict[str, Any], raise_exc=True).values():
+            ChannelModel(**{k: v for k, v in channel.items() if not k in {"template"}})
+        for tier in range(3):
+            for process in ctx.config.get(
+                f"process.t{tier}", Dict[str, Any], raise_exc=True
+            ).values():
+                ProcessModel(**process)
 
 
 def validate(args: Namespace) -> None:

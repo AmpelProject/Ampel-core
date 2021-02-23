@@ -131,7 +131,7 @@ class T3AmpelBufferFilter(AbsT3Filter):
 
 				if jfilter:
 					if 'stock' not in abuf:
-						raise ValueError("A StockRecord is required to filter journal entries")
+						raise ValueError("A StockDocument is required to filter journal entries")
 					in_arr = abuf['stock']['journal'] # type: ignore
 				else:
 					in_arr = abuf[fb.data] # type: ignore

@@ -4,29 +4,39 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 17.05.2019
-# Last Modified Date: 09.02.2021
+# Last Modified Date: 13.02.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-from typing import Optional, List, Any, Dict
+from typing import Optional, List, Dict, Any
 import zipfile, io, base64
 import svgutils as su
 import matplotlib as plt
 from cairosvg import svg2png
 from IPython.display import Image
 from ampel.protocol.LoggerProtocol import LoggerProtocol
+from ampel.content.SVGRecord import SVGRecord
+from ampel.log.AmpelLogger import AmpelLogger
+from ampel.model.PlotProperties import PlotProperties
+from matplotlib.figure import Figure
 
 
 class SVGUtils:
 
+
 	@staticmethod
 	def mplfig_to_svg_dict(
 		mpl_fig, file_name: str, title: Optional[str] = None, tags: Optional[List[str]] = None,
-		compress: bool = True, width: Optional[int] = None, height: Optional[int] = None,
-		close: bool = True, logger: LoggerProtocol = None
-	) -> Dict[str, Any]:
+		compress: int = 1, width: Optional[int] = None, height: Optional[int] = None,
+		close: bool = True, fig_include_title: Optional[bool] = False, logger: Optional[LoggerProtocol] = None
+	) -> SVGRecord:
 		"""
 		:param mpl_fig: matplotlib figure
 		:param tags: list of plot tags
+		:param compress:
+			0: no compression, 'svg' value will be a string
+			1: compress svg, 'svg' value will be compressed bytes (usage: store plots into db)
+			2: compress svg and include uncompressed string into key 'sgv_str'
+			(useful for saving plots into db and additionaly to disk for offline analysis)
 		:param width: figure width, for example 10 inches
 		:param height: figure height, for example 10 inches
 		:returns: svg dict instance
@@ -40,6 +50,9 @@ class SVGUtils:
 		if width is not None and height is not None:
 			mpl_fig.set_size_inches(width, height)
 
+		if title and fig_include_title:
+			mpl_fig.suptitle(title)
+
 		mpl_fig.savefig(
 			imgdata, format='svg', bbox_inches='tight'
 		)
@@ -47,7 +60,7 @@ class SVGUtils:
 		if close:
 			plt.pyplot.close(mpl_fig)
 
-		ret: Dict[str, Any] = {'name': file_name}
+		ret: SVGRecord = {'name': file_name}
 
 		if tags:
 			ret['tag'] = tags
@@ -55,12 +68,10 @@ class SVGUtils:
 		if title:
 			ret['title'] = title
 
-		if not compress:
-			return {
-				**ret,
-				'compressed': False,
-				'svg': imgdata.getvalue()
-			}
+		if compress == 0:
+			ret['compressed'] = False
+			ret['svg'] = imgdata.getvalue()
+			return ret
 
 		outbio = io.BytesIO()
 
@@ -75,15 +86,53 @@ class SVGUtils:
 
 		zf.close()
 
-		return {
-			**ret,
-			'compressed': True,
-			'svg': outbio.getvalue()
-		}
+		ret['compressed'] = True
+		ret['svg'] = outbio.getvalue()
+
+		if compress == 2:
+			ret['svg_str'] = imgdata.getvalue()
+
+		return ret
+
+
+	@classmethod
+	def mplfig_to_svg_dict1(
+		cls, mpl_fig: Figure, props: PlotProperties, extra: Optional[Dict[str, Any]] = None,
+		close: bool = True, logger: Optional[LoggerProtocol] = None
+	) -> SVGRecord:
+		"""
+		:param extra: required if file_name of title in PlotProperties use a format string ("such_%s_this")
+		"""
+
+		svg_doc = cls.mplfig_to_svg_dict(
+			mpl_fig,
+			file_name = props.get_file_name(extra=extra),
+			title = props.get_title(extra=extra),
+			fig_include_title = props.fig_include_title,
+			width = props.width,
+			height = props.height,
+			tags = props.tags,
+			compress = props.get_compress(),
+			logger = logger,
+			close = close
+		)
+
+		if props.disk_save:
+			file_name = props.get_file_name(extra=extra)
+			if logger and isinstance(logger, AmpelLogger) and logger.verbose > 1:
+				logger.debug("Saving %s/%s" % (props.disk_save, file_name))
+			with open("%s/%s" % (props.disk_save, file_name), "w") as f:
+				f.write(
+					svg_doc.pop("svg_str") # type: ignore
+					if props.get_compress() == 2
+					else svg_doc['svg']
+				)
+
+		return svg_doc
 
 
 	@staticmethod
-	def decompress_svg_dict(svg_dict: Dict[str, Any]) -> Dict[str, Any]:
+	def decompress_svg_dict(svg_dict: SVGRecord) -> SVGRecord:
 		"""
 		Modifies input dict by potentionaly decompressing compressed 'svg' value
 		"""
@@ -93,7 +142,7 @@ class SVGUtils:
 
 		if svg_dict.get('compressed'):
 			bio = io.BytesIO()
-			bio.write(svg_dict['svg'])
+			bio.write(svg_dict['svg']) # type: ignore
 			zf = zipfile.ZipFile(bio)
 			file_name = zf.namelist()[0]
 			svg_dict['svg'] = str(zf.read(file_name), "utf8")

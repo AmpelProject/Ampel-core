@@ -24,8 +24,9 @@ from ampel.config.LogicSchemaUtils import LogicSchemaUtils
 
 class T3StockSelector(AbsT3Selector):
 	"""
-	Default stock/transient selector used by T3Processor
-	Example::
+	Default stock selector used by T3Processor
+	
+	Example configuration::
 	  
 	  {
 	     "created": {"after": {"use": "$timeDelta", "arguments": {"days": -40}}},
@@ -64,7 +65,6 @@ class T3StockSelector(AbsT3Selector):
 
 	# Override/Implement
 	def fetch(self) -> Optional[Cursor]:
-		""" The returned Iterator is a pymongo Cursor """
 
 		# Build query for matching transients using criteria defined in config
 		match_query = build_stock_query(

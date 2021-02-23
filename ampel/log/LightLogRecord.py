@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-core/ampel/logging/LighterLogRecord.py
+# File              : Ampel-core/ampel/logging/LightLogRecord.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 22.04.2020
@@ -11,14 +11,14 @@ from time import time
 from typing import Union, List, Any, Dict, Optional
 from ampel.type import ChannelId, StockId
 
-class LighterLogRecord:
+class LightLogRecord:
 	"""
 	LogRecord class similar to the one provided by standard 'logging' module but faster.
 
 	In []: %timeit LogRecord(name=12, pathname=None, level=12, lineno=12, exc_info=None, msg=None, args=None)
 	Out[]: 4.7 µs ± 77.9 ns per loop (mean ± std. dev. of 7 runs, 100000 loops each)
 
-	In []: %timeit LighterLogRecord(name=12, levelno=1, msg=None)
+	In []: %timeit LightLogRecord(name=12, levelno=1, msg=None)
 	Out[]: 657 ns ± 6.51 ns per loop (mean ± std. dev. of 7 runs, 1000000 loops each)
 	"""
 

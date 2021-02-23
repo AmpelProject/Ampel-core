@@ -7,9 +7,9 @@
 # Last Modified Date: 06.02.2020
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-import json, yaml, pkg_resources
+import json, yaml, pkg_resources, os
 from pkg_resources import EggInfoDistribution, DistInfoDistribution # type: ignore[attr-defined]
-from typing import Dict, Any, Union, Callable, List, Optional
+from typing import Dict, Any, Union, Callable, List, Optional, Generator
 from ampel.config.builder.ConfigBuilder import ConfigBuilder
 from ampel.log import VERBOSE
 
@@ -48,6 +48,14 @@ class DistConfigBuilder(ConfigBuilder):
 			self.logger.log(VERBOSE, "Done loading distributions")
 
 
+	def walk_pth_file(self, pth: str, conf_dir: str, ext: str) -> Generator[str, None, None]:
+		with open(pth) as f:
+			for root, dirs, files in os.walk(f"{f.read().strip()}/{conf_dir}"):
+				for fname in files:
+					if fname.endswith("."+ext):
+						yield os.path.join(root, fname)
+	
+
 	def load_distrib(self,
 		dist_name: str, conf_dir: str = "conf", ext: str = "json"
 	) -> None:
@@ -67,10 +75,19 @@ class DistConfigBuilder(ConfigBuilder):
 				# 'conf/ampel-ztf.conf,sha256=FZkChNKKpcMPTO4pwyKq4WS8FAbznuR7oL9rtNYS7U0,322',
 				# 'ampel/model/ZTFLegacyChannelTemplate.py,sha256=zVtv4Iry3FloofSazIFc4h8l6hhV-wpIFbX3fOW2njA,2182',
 				# 'ampel/model/__pycache__/ZTFLegacyChannelTemplate.cpython-38.pyc,,',
-				all_conf_files = [
-					el.split(",")[0] for el in distrib.get_metadata_lines('RECORD')
-					if el.startswith(conf_dir) and f".{ext}," in el
-				]
+				if pth := next(
+					(
+						pth for el in distrib.get_metadata_lines('RECORD')
+						if (pth := el.split(",")[0]).endswith(".pth")
+					),
+					None
+				):
+					all_conf_files = list(self.walk_pth_file(pth, conf_dir, ext))
+				else:
+					all_conf_files = [
+						el.split(",")[0] for el in distrib.get_metadata_lines('RECORD')
+						if el.startswith(conf_dir) and f".{ext}," in el
+					]	
 
 			elif isinstance(distrib, EggInfoDistribution):
 				# Example of the ouput of distrib.get_metadata_lines('SOURCES.txt'):
@@ -148,11 +165,15 @@ class DistConfigBuilder(ConfigBuilder):
 				load = json.loads
 			elif file_rel_path.endswith("yml") or file_rel_path.endswith("yaml"):
 				load = yaml.safe_load # type: ignore
+			
+			if os.path.isabs(file_rel_path):
+				with open(file_rel_path) as f:
+					payload = f.read()
+			else:
+				payload = distrib.get_resource_string(__name__, file_rel_path)
 
 			func(
-				load(
-					distrib.get_resource_string(__name__, file_rel_path)
-				),
+				load(payload),
 				file_rel_path,
 				distrib.project_name
 			)

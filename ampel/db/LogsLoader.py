@@ -10,7 +10,7 @@
 from ampel.log.AmpelLogger import AmpelLogger
 from ampel.view.ReadOnlyDict import ReadOnlyDict
 from ampel.db.AmpelDB import AmpelDB
-from ampel.log.LogRecordFlag import LogRecordFlag
+from ampel.log.LogFlag import LogFlag
 
 # TODO: update this class
 class LogsLoader:
@@ -33,7 +33,7 @@ class LogsLoader:
 		:type matcher: LogsMatcher
 		:param bool decompactify:
 		:param bool resolve_flag: \
-			prints 'flag': <LogRecordFlag.SCHEDULED_RUN|CORE|T2|INFO: 8836> \
+			prints 'flag': <LogFlag.SCHEDULED_RUN|CORE|T2|INFO: 8836> \
 			instead of 'flag': 8836
 		:param bool simplify:
 		:param datetime: if not None, datetime of each log entry (extracted from ObjectId) \
@@ -188,7 +188,7 @@ class LogsLoader:
 		if hexify and resolve_flag:
 
 			for el in log_entries:
-				el['flag'] = LogRecordFlag(el['flag'])
+				el['flag'] = LogFlag(el['flag'])
 				if 'comp' in el:
 					el['comp'] = el['comp'].hex()
 
@@ -201,7 +201,7 @@ class LogsLoader:
 
 			if resolve_flag:
 				for el in log_entries:
-					el['flag'] = LogRecordFlag(el['flag'])
+					el['flag'] = LogFlag(el['flag'])
 
 		if self.read_only:
 			return tuple(ReadOnlyDict(el) for el in log_entries)

@@ -33,14 +33,14 @@ from ampel.core.AmpelContext import AmpelContext
 from ampel.core.AmpelController import AmpelController
 from ampel.core.UnitLoader import UnitLoader
 from ampel.dev.DictSecretProvider import DictSecretProvider
-from ampel.log.LogRecordFlag import LogRecordFlag
+from ampel.log.LogFlag import LogFlag
 from ampel.metrics.AmpelDBCollector import AmpelDBCollector
 from ampel.metrics.AmpelProcessCollector import AmpelProcessCollector
 from ampel.metrics.AmpelMetricsRegistry import AmpelMetricsRegistry
 from ampel.model.ProcessModel import ProcessModel
 from ampel.model.StrictModel import StrictModel
 from ampel.model.UnitModel import UnitModel
-from ampel.t2.T2RunState import T2RunState
+from ampel.enum.T2SysRunState import T2SysRunState
 from ampel.util.mappings import build_unsafe_dict_id
 
 if TYPE_CHECKING:
@@ -131,7 +131,7 @@ class task_manager:
                 controller, task = cls.controller_id_to_task[config_id]
                 # add the controller's existing processes to this group
                 for pm in cls.task_to_processes[task]:
-                    if not pm.name in names:
+                    if pm.name not in names:
                         process_group.append(pm)
                 controller.update(context.config, context.loader.secrets, process_group)
                 # update processes for this task
@@ -267,14 +267,14 @@ async def reload_config() -> TaskDescriptionCollection:
             secrets=(DictSecretProvider.load(secrets_file) if secrets_file else None),
         )
         # Ensure that process models are valid
-        with UnitModel.validate_configs(loader):
+        with loader.validate_unit_models():
             processes = AmpelController.get_processes(
                 config, raise_exc=True, logger=cast("LoggerProtocol", log)
             )
-    except:
+    except Exception:
         logging.exception(f"Failed to load {config_file}")
         raise HTTPException(
-            status_code=500, detail=f"Failed to reload configuration file"
+            status_code=500, detail="Failed to reload configuration file"
         )
 
     # remove processes that are no longer defined or no longer in the active set
@@ -425,7 +425,7 @@ async def get_process(process: str) -> ProcessModel:
     for tier in range(4):
         try:
             doc = context.config.get(f"process.t{tier}.{process}", dict, raise_exc=True)
-        except:
+        except Exception:
             continue
         return ProcessModel(**doc)
     else:
@@ -531,7 +531,7 @@ def transform_doc(doc: Dict[str, Any], tier: int) -> Dict[str, Any]:
     if tier == 2:
         for jentry in doc["journal"]:
             jentry["dt"] = datetime.fromtimestamp(jentry["dt"])
-        doc["status"] = T2RunState(doc["status"]).name
+        doc["status"] = T2SysRunState(doc["status"]).name
         for subrecord in doc.get("body", []):
             subrecord["ts"] = datetime.fromtimestamp(subrecord["ts"])
     return doc
@@ -560,8 +560,8 @@ def t2_summary():
     )
     summary = {}
     for doc in cursor:
-        status = T2RunState(doc["_id"]["status"]).name
-        if not status in summary:
+        status = T2SysRunState(doc["_id"]["status"]).name
+        if status not in summary:
             summary[status] = {}
         summary[status][doc["_id"]["unit"]] = doc["count"]
     return summary
@@ -655,14 +655,14 @@ def get_events(base_query: dict = Depends(query_event)):
 def get_logs(
     run_id: int,
     flags: Optional[  # type: ignore[valid-type]
-        List[enum.Enum("LogRecordFlagName", {k: k for k in LogRecordFlag.__members__})]
+        List[enum.Enum("LogFlagName", {k: k for k in LogFlag.__members__})]
     ] = Query(None),
 ):
     query: Dict[str, Any] = {"r": run_id}
     if flags:
         query["f"] = {
             "$bitsAllSet": reduce(
-                operator.or_, [LogRecordFlag.__members__[k.name] for k in flags]
+                operator.or_, [LogFlag.__members__[k.name] for k in flags]
             )
         }
     cursor = context.db.get_collection("logs").find(query, {"r": 0})
@@ -672,7 +672,7 @@ def get_logs(
             {
                 "timestamp": doc["_id"].generation_time,
                 "flags": [
-                    k for k, v in LogRecordFlag.__members__.items() if (v & doc["f"])
+                    k for k, v in LogFlag.__members__.items() if (v & doc["f"])
                 ],
                 **{
                     FIELD_ABBREV.get(k, k): v

@@ -1,6 +1,15 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+# File              : Ampel-core/ampel/test/dummy.py
+# License           : BSD-3-Clause
+# Author            : jvs
+# Date              : Unspecified
+# Last Modified Date: 11.02.2021
+# Last Modified By  : jvs
+
 import time
 from collections import defaultdict
-from typing import Dict, List, Optional, Sequence, Set, Tuple, Union
+from typing import Dict, List, Optional, Sequence, Set, Tuple, Union, Any
 
 from pymongo import UpdateOne
 
@@ -17,8 +26,13 @@ from ampel.content.DataPoint import DataPoint
 from ampel.ingest.CompoundBluePrint import CompoundBluePrint
 from ampel.ingest.T1DefaultCombiner import T1DefaultCombiner
 from ampel.log.AmpelLogger import AmpelLogger
-from ampel.t2.T2RunState import T2RunState
-from ampel.type import ChannelId, StockId
+from ampel.enum.T2SysRunState import T2SysRunState
+from ampel.content.T2Document import T2Document
+from ampel.type import ChannelId, StockId, T2UnitResult
+from ampel.content.DataPoint import DataPoint
+from ampel.content.Compound import Compound
+from ampel.view.T2DocView import T2DocView
+from ampel.model.StateT2Dependency import StateT2Dependency
 
 
 class Sleepy(AbsProcessorUnit):
@@ -32,8 +46,9 @@ class Sleepy(AbsProcessorUnit):
 
 
 class DummyStockT2Unit(AbsStockT2Unit):
-    def run(self, stock_record):
-        return {"id": stock_record["_id"]}
+    def run(self, stock_doc):
+        return {"id": stock_doc["_id"]}
+
 
 # FIXME: these dummy ingesters are copied from ampel-alerts, as there is no
 # default implementation of AbsCompoundIngester or AbsStateT2Ingester
@@ -75,7 +90,7 @@ class DummyCompoundIngester(AbsCompoundIngester):
 
             comp_dict = blue_print.get_eff_compound(eff_comp_id)
 
-            comp_set_on_ins: PhotoCompound = {
+            comp_set_on_ins = {
                 "_id": eff_comp_id,
                 "stock": stock_id,
                 "tag": list(blue_print.get_comp_tags(eff_comp_id)),
@@ -108,11 +123,13 @@ class DummyStateT2Compiler(AbsStateT2Compiler):
         for chan, ingest_model in self.get_ingest_models(chan_selection):
             t2s_for_channels[(ingest_model.unit_id, ingest_model.config)].add(chan)
 
-        optimized_t2s = {}
+        optimized_t2s: Dict[
+            Tuple[str, Optional[int], Union[bytes, Tuple[bytes, ...]]], Set[ChannelId]
+        ] = {}
         for k, v in t2s_for_channels.items():
             comp_ids = tuple(compound_blueprint.get_effids_for_chans(v))
             if len(comp_ids) == 1:
-                optimized_t2s[k + comp_ids] = v
+                optimized_t2s[k + (comp_ids[0],)] = v
             else:
                 optimized_t2s[k + (comp_ids,)] = v
         return optimized_t2s
@@ -146,13 +163,14 @@ class DummyStateT2Ingester(AbsStateT2Ingester):
             }
 
             # Attributes set if no previous doc exists
-            set_on_insert: T2Record = {
+            set_on_insert: T2Document = {
                 "stock": stock_id,
-                "tag": self.tags,
                 "unit": t2_id,
                 "config": run_config,
-                "status": T2RunState.TO_RUN.value,
+                "status": T2SysRunState.NEW.value,
             }
+            if self.tags:
+                set_on_insert["tag"] = self.tags
 
             jchan, chan_add_to_set = AbsT2Ingester.build_query_parts(chans)
             add_to_set: Dict[str, Any] = {"channel": chan_add_to_set}
@@ -174,20 +192,31 @@ class DummyStateT2Ingester(AbsStateT2Ingester):
                 )
             )
 
+
 class DummyPointT2Unit(AbsPointT2Unit):
-	def run(self, datapoint):
-		return {"thing": datapoint["body"]["thing"]}
+    def run(self, datapoint):
+        return {"thing": datapoint["body"]["thing"]}
 
 
 class DummyStateT2Unit(AbsStateT2Unit):
     def run(self, compound, datapoints):
         return {"len": len(datapoints)}
 
+
 class DummyTiedStateT2Unit(AbsTiedStateT2Unit):
 
-    dependency = [{"unit": "DummyStateT2Unit"}]
+    t2_dependency = [StateT2Dependency(unit="DummyStateT2Unit")]
+    _unit = "DummyStateT2Unit"
 
-    def run(self, compound, datapoints, t2_records):
+    @classmethod
+    def get_tied_unit_names(cls):
+        return [cls._unit]
+
+    def run(self,
+		compound: Compound,
+		datapoints: Sequence[DataPoint],
+		t2_records: Sequence[T2DocView]
+	) -> T2UnitResult:
         assert t2_records, "dependencies were found"
-        assert len(body := t2_records[0].get("body") or []) == 1
-        return {k: v*2 for k,v in body[0]["result"].items()}
+        assert len(body := t2_records[0].body or []) == 1
+        return {k: v * 2 for k, v in (t2_records[0].get_payload() or {}).items()}

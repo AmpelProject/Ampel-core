@@ -14,7 +14,7 @@ from ampel.t3.load.AbsT3Loader import AbsT3Loader
 
 
 class T3SimpleDataLoader(AbsT3Loader):
-
+	"""Load all requested documents for the selected stocks"""
 
 	def load(self,
 		stock_ids: Union[StockId, Iterator[StockId], StrictIterable[StockId]]

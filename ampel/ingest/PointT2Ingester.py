@@ -4,14 +4,14 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 23.03.2020
-# Last Modified Date: 30.04.2020
+# Last Modified Date: 11.02.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from time import time
 from pymongo import UpdateOne
 from typing import Sequence, Dict, Optional, Union, Literal, Tuple, List
 from ampel.type import StockId, ChannelId
-from ampel.t2.T2RunState import T2RunState
+from ampel.enum.T2SysRunState import T2SysRunState
 from ampel.content.DataPoint import DataPoint
 from ampel.ingest.compile.PointT2Compiler import PointT2Compiler
 from ampel.abstract.ingest.AbsT2Ingester import AbsT2Ingester
@@ -22,7 +22,7 @@ from ampel.abstract.ingest.AbsPointT2Compiler import AbsPointT2Compiler
 class PointT2Ingester(AbsPointT2Ingester):
 
 	compiler: AbsPointT2Compiler = PointT2Compiler()
-	default_options: Dict[
+	default_ingest_config: Dict[
 		Literal['eligible'],
 		Optional[Union[Literal['first', 'last', 'all'], Tuple[int, int, int]]]
 	] = {"eligible": None} # None means all eligible
@@ -61,7 +61,7 @@ class PointT2Ingester(AbsPointT2Ingester):
 							'unit': t2_id,
 							'link': link_id,
 							'config': run_config,
-							'status': T2RunState.TO_RUN.value,
+							'status': T2SysRunState.NEW.value,
 							'col': 't0'
 						},
 						# Journal and channel update

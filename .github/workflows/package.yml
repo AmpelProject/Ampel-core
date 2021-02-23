@@ -1,0 +1,31 @@
+name: cd
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+
+jobs:
+  pypi:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+    - uses: actions/setup-python@v2
+      with:
+        python-version: 3.8
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade poetry
+    - id: tag
+      uses: dawidd6/action-get-tag@v1.0.0
+    - name: Verify tag matches version
+      run: |
+        [ v"$(poetry version -s)" = "${{steps.tag.outputs.tag}}" ] || (echo "tag does not match version: "${{steps.tag.outputs.tag}}" != version v$(poetry version -s)" && false)
+    - run: |
+        poetry config repositories.testpypi https://test.pypi.org/legacy/
+        poetry publish -n --build
+      env:
+        POETRY_PYPI_TOKEN_TESTPYPI: ${{ secrets.PYPI_TEST_API_TOKEN }}
+        POETRY_PYPI_TOKEN_PYPI: ${{ secrets.PYPI_TEST_API_TOKEN }}

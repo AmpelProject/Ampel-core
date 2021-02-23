@@ -30,7 +30,7 @@ class LogsMatcher:
 		"""
 		The mongodb operator "$bitsAllSet" will be used.
 
-		:param LogRecordFlag arg:
+		:param LogFlag arg:
 		"""
 		self.match['flag'] = {"$bitsAllSet": arg}
 		return self

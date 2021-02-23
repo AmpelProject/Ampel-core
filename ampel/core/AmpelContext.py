@@ -4,12 +4,13 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 18.02.2020
-# Last Modified Date: 18.04.2020
+# Last Modified Date: 17.02.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from dataclasses import dataclass
 from typing import Dict, Any, Optional, Literal, Iterable, TYPE_CHECKING
 from ampel.config.AmpelConfig import AmpelConfig
+from ampel.base.AuxUnitRegister import AuxUnitRegister
 
 # Avoid cyclic import issues
 if TYPE_CHECKING:
@@ -58,8 +59,10 @@ class AmpelContext:
 
 		# try to register aux units globally
 		try:
-			UnitLoader.aux_defs = config.get("unit.aux", ret_type=dict, raise_exc=True)
-		except:
+			AuxUnitRegister.initialize(
+				config.get("unit.aux", ret_type=dict, raise_exc=True)
+			)
+		except Exception:
 			print("UnitLoader auxiliary units auto-registration failed")
 
 		return cls(
@@ -84,7 +87,7 @@ class AmpelContext:
 		Instantiates a new AmpelContext instance.
 
 		:param config:
-			either a local path to an ampel config file (yaml or json) 
+			either a local path to an ampel config file (yaml or json)
 			or directly an AmpelConfig instance.
 		:param pwd_file_path:
 			if provided, the encrypted conf entries possibly contained in the
@@ -114,7 +117,7 @@ class AmpelContext:
 	) -> 'AmpelContext':
 		"""
 		Instantiates a new AmpelContext instance.
-		
+
 		The required underlying ampel configuration (:class:`~ampel.config.AmpelConfig.AmpelConfig`) is built from scratch,
 		meaning all available configurations defined in the various ampel repositories available locally
 		are collected, merged merged together and morphed the info into the final ampel config.

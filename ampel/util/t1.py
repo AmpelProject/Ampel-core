@@ -7,8 +7,9 @@
 # Last Modified Date: 15.08.2020
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
+from bson.int64 import Int64
 from typing import Any, List, Union, Optional, Set, Dict, Sequence, Callable, List
-from ampel.type import ChannelId, StockId, DataPointId, datapoint_id
+from ampel.type import ChannelId, StockId, DataPointId
 from ampel.content.Compound import Compound
 from ampel.log.AmpelLogger import AmpelLogger
 
@@ -27,7 +28,7 @@ def get_datapoint_ids(compound: Compound, logger: Optional[AmpelLogger] = None) 
 					logger.debug("Ignoring excluded datapoint", extra={'id': el['id']})
 				continue
 			dpid = el['id']
-		elif isinstance(el, datapoint_id):
+		elif isinstance(el, (int, Int64)):
 			dpid = el
 		else:
 			raise StopIteration('Invalid compound doc')

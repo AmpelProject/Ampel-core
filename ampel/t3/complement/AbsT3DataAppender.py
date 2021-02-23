@@ -13,11 +13,12 @@ from ampel.base import abstractmethod
 from ampel.core.AmpelBuffer import AmpelBuffer
 from ampel.core.AdminUnit import AdminUnit
 
-
+# Inherits AdminUnit because implementing classes might need access to
+# an AmpelConfig instance (foremost to the contained resource definitions)
 class AbsT3DataAppender(AdminUnit, abstract=True):
 	"""
-	Inherits AdminUnit because implementing classes might need access to
-	an AmpelConfig instance (foremost to the contained resource definitions)
+	Complement :class:`~ampel.core.AmpelBuffer.AmpelBuffer` with information
+	stored outside the Ampel database.
 	"""
 
 	logger: AmpelLogger
