@@ -1452,6 +1452,135 @@ if your time constraint is based on TimeLastRunModel</p>
 
 </dd></dl>
 
+<dl class="py class">
+<dt id="ampel.model.ingest.IngestionDirective.IngestionDirective">
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">ampel.model.ingest.IngestionDirective.</span></code><code class="sig-name descname"><span class="pre">IngestionDirective</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ampel/model/ingest/IngestionDirective.html#IngestionDirective"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ampel.model.ingest.IngestionDirective.IngestionDirective" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="py attribute">
+<dt id="ampel.model.ingest.IngestionDirective.IngestionDirective.channel">
+<code class="sig-name descname"><span class="pre">channel</span></code><em class="property"><span class="pre">:</span> <span class="pre">Union</span><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.9)"><span class="pre">int</span></a><span class="p"><span class="pre">,</span> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.9)"><span class="pre">str</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#ampel.model.ingest.IngestionDirective.IngestionDirective.channel" title="Permalink to this definition">¶</a></dt>
+<dd><p>Channel for which to create documents</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="ampel.model.ingest.IngestionDirective.IngestionDirective.t0_add">
+<code class="sig-name descname"><span class="pre">t0_add</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#ampel.model.ingest.T0AddModel.T0AddModel" title="ampel.model.ingest.T0AddModel.T0AddModel"><span class="pre">ampel.model.ingest.T0AddModel.T0AddModel</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#ampel.model.ingest.IngestionDirective.IngestionDirective.t0_add" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add new <code class="xref py py-class docutils literal notranslate"><span class="pre">datapoints</span></code></p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="ampel.model.ingest.IngestionDirective.IngestionDirective.t1_combine">
+<code class="sig-name descname"><span class="pre">t1_combine</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#ampel.model.ingest.T1CombineModel.T1CombineModel" title="ampel.model.ingest.T1CombineModel.T1CombineModel"><span class="pre">ampel.model.ingest.T1CombineModel.T1CombineModel</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#ampel.model.ingest.IngestionDirective.IngestionDirective.t1_combine" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create <a class="reference external" href="https://ampelproject.github.io/Ampel-interface/api.html#ampel.content.Compound.Compound" title="(in ampel-interface v0.7)"><code class="xref py py-class docutils literal notranslate"><span class="pre">compounds</span></code></a> from
+ingested <code class="xref py py-class docutils literal notranslate"><span class="pre">datapoints</span></code> and the
+<a class="reference external" href="https://ampelproject.github.io/Ampel-interface/api.html#ampel.content.StockDocument.StockDocument" title="(in ampel-interface v0.7)"><code class="xref py py-class docutils literal notranslate"><span class="pre">stock</span></code></a>, e.g. drawing
+from other data streams</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="ampel.model.ingest.IngestionDirective.IngestionDirective.t2_compute">
+<code class="sig-name descname"><span class="pre">t2_compute</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#ampel.model.ingest.T2ComputeModel.T2ComputeModel" title="ampel.model.ingest.T2ComputeModel.T2ComputeModel"><span class="pre">ampel.model.ingest.T2ComputeModel.T2ComputeModel</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#ampel.model.ingest.IngestionDirective.IngestionDirective.t2_compute" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create or update <a class="reference external" href="https://ampelproject.github.io/Ampel-interface/api.html#ampel.content.T2Document.T2Document" title="(in ampel-interface v0.7)"><code class="xref py py-class docutils literal notranslate"><span class="pre">T2</span> <span class="pre">documents</span></code></a> bound to <a class="reference external" href="https://ampelproject.github.io/Ampel-interface/api.html#ampel.content.StockDocument.StockDocument" title="(in ampel-interface v0.7)"><code class="xref py py-class docutils literal notranslate"><span class="pre">stocks</span></code></a></p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="ampel.model.ingest.IngestionDirective.IngestionDirective.stock_update">
+<code class="sig-name descname"><span class="pre">stock_update</span></code><em class="property"><span class="pre">:</span> <span class="pre">Union</span><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://ampelproject.github.io/Ampel-interface/api.html#ampel.model.UnitModel.UnitModel" title="(in ampel-interface v0.7)"><span class="pre">ampel.model.UnitModel.UnitModel</span></a><span class="p"><span class="pre">,</span> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.9)"><span class="pre">str</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#ampel.model.ingest.IngestionDirective.IngestionDirective.stock_update" title="Permalink to this definition">¶</a></dt>
+<dd><p>Update the <a class="reference external" href="https://ampelproject.github.io/Ampel-interface/api.html#ampel.content.StockDocument.StockDocument" title="(in ampel-interface v0.7)"><code class="xref py py-class docutils literal notranslate"><span class="pre">stock</span></code></a></p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="ampel.model.ingest.T0AddModel.T0AddModel">
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">ampel.model.ingest.T0AddModel.</span></code><code class="sig-name descname"><span class="pre">T0AddModel</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ampel/model/ingest/T0AddModel.html#T0AddModel"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ampel.model.ingest.T0AddModel.T0AddModel" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://ampelproject.github.io/Ampel-interface/api.html#ampel.model.UnitModel.UnitModel" title="(in ampel-interface v0.7)"><code class="xref py py-class docutils literal notranslate"><span class="pre">ampel.model.UnitModel.UnitModel</span></code></a></p>
+<dl class="py attribute">
+<dt id="ampel.model.ingest.T0AddModel.T0AddModel.unit">
+<code class="sig-name descname"><span class="pre">unit</span></code><em class="property"><span class="pre">:</span> <span class="pre">Union</span><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.9)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span> </span><span class="pre">Type</span><span class="p"><span class="pre">[</span></span><span class="pre">ampel.abstract.ingest.AbsIngester.AbsIngester</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#ampel.model.ingest.T0AddModel.T0AddModel.unit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add <code class="xref py py-class docutils literal notranslate"><span class="pre">datapoints</span></code> to the database</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="ampel.model.ingest.T0AddModel.T0AddModel.t1_combine">
+<code class="sig-name descname"><span class="pre">t1_combine</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#ampel.model.ingest.T1CombineModel.T1CombineModel" title="ampel.model.ingest.T1CombineModel.T1CombineModel"><span class="pre">ampel.model.ingest.T1CombineModel.T1CombineModel</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#ampel.model.ingest.T0AddModel.T0AddModel.t1_combine" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create <a class="reference external" href="https://ampelproject.github.io/Ampel-interface/api.html#ampel.content.Compound.Compound" title="(in ampel-interface v0.7)"><code class="xref py py-class docutils literal notranslate"><span class="pre">compounds</span></code></a> from ingested <code class="xref py py-class docutils literal notranslate"><span class="pre">datapoints</span></code></p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="ampel.model.ingest.T0AddModel.T0AddModel.t2_compute">
+<code class="sig-name descname"><span class="pre">t2_compute</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#ampel.model.ingest.T2ComputeModel.T2ComputeModel" title="ampel.model.ingest.T2ComputeModel.T2ComputeModel"><span class="pre">ampel.model.ingest.T2ComputeModel.T2ComputeModel</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#ampel.model.ingest.T0AddModel.T0AddModel.t2_compute" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create or update <a class="reference external" href="https://ampelproject.github.io/Ampel-interface/api.html#ampel.content.T2Document.T2Document" title="(in ampel-interface v0.7)"><code class="xref py py-class docutils literal notranslate"><span class="pre">T2</span> <span class="pre">documents</span></code></a> bound to <code class="xref py py-class docutils literal notranslate"><span class="pre">datapoints</span></code></p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="ampel.model.ingest.T1CombineModel.T1CombineModel">
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">ampel.model.ingest.T1CombineModel.</span></code><code class="sig-name descname"><span class="pre">T1CombineModel</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ampel/model/ingest/T1CombineModel.html#T1CombineModel"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ampel.model.ingest.T1CombineModel.T1CombineModel" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://ampelproject.github.io/Ampel-interface/api.html#ampel.model.UnitModel.UnitModel" title="(in ampel-interface v0.7)"><code class="xref py py-class docutils literal notranslate"><span class="pre">ampel.model.UnitModel.UnitModel</span></code></a></p>
+<dl class="py attribute">
+<dt id="ampel.model.ingest.T1CombineModel.T1CombineModel.unit">
+<code class="sig-name descname"><span class="pre">unit</span></code><em class="property"><span class="pre">:</span> <span class="pre">Union</span><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.9)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span> </span><span class="pre">Type</span><span class="p"><span class="pre">[</span></span><span class="pre">ampel.abstract.ingest.AbsCompoundIngester.AbsCompoundIngester</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#ampel.model.ingest.T1CombineModel.T1CombineModel.unit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add <a class="reference external" href="https://ampelproject.github.io/Ampel-interface/api.html#ampel.content.Compound.Compound" title="(in ampel-interface v0.7)"><code class="xref py py-class docutils literal notranslate"><span class="pre">compounds</span></code></a> to the database</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="ampel.model.ingest.T1CombineModel.T1CombineModel.t2_compute">
+<code class="sig-name descname"><span class="pre">t2_compute</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#ampel.model.ingest.T2ComputeModel.T2ComputeModel" title="ampel.model.ingest.T2ComputeModel.T2ComputeModel"><span class="pre">ampel.model.ingest.T2ComputeModel.T2ComputeModel</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#ampel.model.ingest.T1CombineModel.T1CombineModel.t2_compute" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create or update <a class="reference external" href="https://ampelproject.github.io/Ampel-interface/api.html#ampel.content.T2Document.T2Document" title="(in ampel-interface v0.7)"><code class="xref py py-class docutils literal notranslate"><span class="pre">T2</span> <span class="pre">documents</span></code></a> bound to <a class="reference external" href="https://ampelproject.github.io/Ampel-interface/api.html#ampel.content.Compound.Compound" title="(in ampel-interface v0.7)"><code class="xref py py-class docutils literal notranslate"><span class="pre">compounds</span></code></a></p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="ampel.model.ingest.T2ComputeModel.T2ComputeModel">
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">ampel.model.ingest.T2ComputeModel.</span></code><code class="sig-name descname"><span class="pre">T2ComputeModel</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ampel/model/ingest/T2ComputeModel.html#T2ComputeModel"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ampel.model.ingest.T2ComputeModel.T2ComputeModel" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://ampelproject.github.io/Ampel-interface/api.html#ampel.model.UnitModel.UnitModel" title="(in ampel-interface v0.7)"><code class="xref py py-class docutils literal notranslate"><span class="pre">ampel.model.UnitModel.UnitModel</span></code></a></p>
+<dl class="py attribute">
+<dt id="ampel.model.ingest.T2ComputeModel.T2ComputeModel.unit">
+<code class="sig-name descname"><span class="pre">unit</span></code><em class="property"><span class="pre">:</span> <span class="pre">Union</span><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.9)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span> </span><span class="pre">Type</span><span class="p"><span class="pre">[</span></span><span class="pre">ampel.abstract.ingest.AbsT2Ingester.AbsT2Ingester</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#ampel.model.ingest.T2ComputeModel.T2ComputeModel.unit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add <a class="reference external" href="https://ampelproject.github.io/Ampel-interface/api.html#ampel.content.T2Document.T2Document" title="(in ampel-interface v0.7)"><code class="xref py py-class docutils literal notranslate"><span class="pre">T2</span> <span class="pre">documents</span></code></a> to the database</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="ampel.model.ingest.T2ComputeModel.T2ComputeModel.units">
+<code class="sig-name descname"><span class="pre">units</span></code><em class="property"><span class="pre">:</span> <span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#ampel.model.ingest.T2IngestModel.T2IngestModel" title="ampel.model.ingest.T2IngestModel.T2IngestModel"><span class="pre">ampel.model.ingest.T2IngestModel.T2IngestModel</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#ampel.model.ingest.T2ComputeModel.T2ComputeModel.units" title="Permalink to this definition">¶</a></dt>
+<dd><p>Specification of <a class="reference external" href="https://ampelproject.github.io/Ampel-interface/api.html#ampel.content.T2Document.T2Document" title="(in ampel-interface v0.7)"><code class="xref py py-class docutils literal notranslate"><span class="pre">T2</span> <span class="pre">documents</span></code></a> to create</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="ampel.model.ingest.T2IngestModel.T2IngestModel">
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">ampel.model.ingest.T2IngestModel.</span></code><code class="sig-name descname"><span class="pre">T2IngestModel</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ampel/model/ingest/T2IngestModel.html#T2IngestModel"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ampel.model.ingest.T2IngestModel.T2IngestModel" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">ampel.model.StrictModel.StrictModel</span></code></p>
+<dl class="py attribute">
+<dt id="ampel.model.ingest.T2IngestModel.T2IngestModel.unit">
+<code class="sig-name descname"><span class="pre">unit</span></code><em class="property"><span class="pre">:</span> <span class="pre">Union</span><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.9)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span> </span><span class="pre">Type</span><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://ampelproject.github.io/Ampel-interface/api.html#ampel.abstract.AbsStockT2Unit.AbsStockT2Unit" title="(in ampel-interface v0.7)"><span class="pre">ampel.abstract.AbsStockT2Unit.AbsStockT2Unit</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span> </span><span class="pre">Type</span><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://ampelproject.github.io/Ampel-interface/api.html#ampel.abstract.AbsPointT2Unit.AbsPointT2Unit" title="(in ampel-interface v0.7)"><span class="pre">ampel.abstract.AbsPointT2Unit.AbsPointT2Unit</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span> </span><span class="pre">Type</span><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://ampelproject.github.io/Ampel-interface/api.html#ampel.abstract.AbsStateT2Unit.AbsStateT2Unit" title="(in ampel-interface v0.7)"><span class="pre">ampel.abstract.AbsStateT2Unit.AbsStateT2Unit</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span> </span><span class="pre">Type</span><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://ampelproject.github.io/Ampel-interface/api.html#ampel.abstract.AbsCustomStateT2Unit.AbsCustomStateT2Unit" title="(in ampel-interface v0.7)"><span class="pre">ampel.abstract.AbsCustomStateT2Unit.AbsCustomStateT2Unit</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#ampel.model.ingest.T2IngestModel.T2IngestModel.unit" title="Permalink to this definition">¶</a></dt>
+<dd><p>T2 unit to run</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="ampel.model.ingest.T2IngestModel.T2IngestModel.config">
+<code class="sig-name descname"><span class="pre">config</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.9)"><span class="pre">int</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#ampel.model.ingest.T2IngestModel.T2IngestModel.config" title="Permalink to this definition">¶</a></dt>
+<dd><p>T2 unit configuration (hashed)</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="ampel.model.ingest.T2IngestModel.T2IngestModel.ingest">
+<code class="sig-name descname"><span class="pre">ingest</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.9)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#ampel.model.ingest.T2IngestModel.T2IngestModel.ingest" title="Permalink to this definition">¶</a></dt>
+<dd><p>Ingester options</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="ampel.model.ingest.T2IngestModel.T2IngestModel.group">
+<code class="sig-name descname"><span class="pre">group</span></code><em class="property"><span class="pre">:</span> <span class="pre">Union</span><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.9)"><span class="pre">int</span></a><span class="p"><span class="pre">,</span> </span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.9)"><span class="pre">int</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#ampel.model.ingest.T2IngestModel.T2IngestModel.group" title="Permalink to this definition">¶</a></dt>
+<dd><p>Filter result codes that should trigger this T2. If not specified, T2
+documents will be created in response to <em>any</em> passing alert.</p>
+</dd></dl>
+
+</dd></dl>
+
 </div>
 <div class="section" id="templates">
 <h2>Templates<a class="headerlink" href="#templates" title="Permalink to this headline">¶</a></h2>
