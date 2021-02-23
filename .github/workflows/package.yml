@@ -28,4 +28,4 @@ jobs:
         poetry publish -n --build
       env:
         POETRY_PYPI_TOKEN_TESTPYPI: ${{ secrets.PYPI_TEST_API_TOKEN }}
-        POETRY_PYPI_TOKEN_PYPI: ${{ secrets.PYPI_TEST_API_TOKEN }}
+        POETRY_PYPI_TOKEN_PYPI: ${{ secrets.PYPI_API_TOKEN }}
