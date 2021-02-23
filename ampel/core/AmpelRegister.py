@@ -48,7 +48,7 @@ class AmpelRegister(AmpelBaseModel):
 	return code [1 byte] can be reduced from ~90MB to ~50MB using gzip with default settings).
 
 	Properties:
-	----------
+	-----------
 	- Registers can be re-opened and appended
 	- Header content can be accessed or updated independently of the register's content.
 	- Header updates are fast if enough space was reserved for updates in the first place.
@@ -67,66 +67,72 @@ class AmpelRegister(AmpelBaseModel):
 	:param path_base: the base folder path where to create/read register files.
 	:param path_extra: an optional additional folder path (or paths) to be appended to `path_base`.
 	:param full_path: when provided, all path building options will be ignored and a new
-	file handle will be opened using the provided full_path
+	  file handle will be opened using the provided full_path
 	:param file_handle: if you provide a file handle to a register file (parameter file handle),
-	it will be used and all path options will be ignored.
+	  it will be used and all path options will be ignored.
 
 	:param file_cap: registers can be capped, typically based on a maximum number of blocks.
-	When access to a full register is requested, the original file is renamed and a new register is created.
-	During files renames, an index is appended (suffix) to the original file name.
-	The current (newest) register file always comes without index suffix.
-	This index is saved into the current register header.
+	  When access to a full register is requested, the original file is renamed and a new register is created.
+	  During files renames, an index is appended (suffix) to the original file name.
+	  The current (newest) register file always comes without index suffix.
+	  This index is saved into the current register header.
 
-	Example:
-	ampel_register.bin.gz (current - newest)
-	ampel_register.bin.gz.1 (first renamed register - oldest)
-	ampel_register.bin.gz.2
-	ampel_register.bin.gz.3 (second newest)
+	  Example::
+	    
+	    ampel_register.bin.gz (current - newest)
+	    ampel_register.bin.gz.1 (first renamed register - oldest)
+	    ampel_register.bin.gz.2
+	    ampel_register.bin.gz.3 (second newest)
 
-	Note1: file renames occur during the opening procedure of registers, no check is performed during the filling of registers
-	once a register is opened. A register can thus grow beyond the defined limit as long as a process keeps it open.
+	  Note1: file renames occur during the opening procedure of registers, no check is performed during the filling of registers
+	  once a register is opened. A register can thus grow beyond the defined limit as long as a process keeps it open.
 
 
 	Header:
 	-------
 
 	Limitations:
+
 	- The maximum space reservable for the header is 2**24 bytes, i.e ~16MB.
 	- integers cannot exceed 2**63 bits. Should you need to save bigger numbers,
-	please use the methods bindata_to_int, int_to_bindata from module ampel.util.bson
+	  please use the methods bindata_to_int, int_to_bindata from module ampel.util.bson
 
 	:param new_header_size: either None, or an integer or a string (please read the note above).
-	- None or 0: the header block size will equal the header encoded length. Choose this option if
-	the header is not meant to be updated later. Otherwise, updates will only be possible if the header size
-	does not grow (note that there is a margin allowed since header exceeding the limit are automatically
-	compressed using zlib and written to disk if the size condition is then fullfilled).
-	- integer number: the header will be allocated the specified number of bytes (for example 4096).
-	- a string: refers to a 'header margin' and must start with the character '+'.
-	This option can save space in some circumstances. The header space allocated for the header will equal
-	the length of the initial header (including all provided options such as `header_extra`) to which
-	the specified header margin will be added. For example, '+1024' means that 1024 bytes will be
-	allocated additionally to the initial header lengths for future updates. If the initial header length
-	is 100 bytes, then a header block of 1124 bytes will be created.
+	  
+	  - None or 0: the header block size will equal the header encoded length. Choose this option if
+	    the header is not meant to be updated later. Otherwise, updates will only be possible if the header size
+	    does not grow (note that there is a margin allowed since header exceeding the limit are automatically
+	    compressed using zlib and written to disk if the size condition is then fullfilled).
+	  - integer number: the header will be allocated the specified number of bytes (for example 4096).
+	  - a string: refers to a 'header margin' and must start with the character '+'.
+	    This option can save space in some circumstances. The header space allocated for the header will equal
+	    the length of the initial header (including all provided options such as `header_extra`) to which
+	    the specified header margin will be added. For example, '+1024' means that 1024 bytes will be
+	    allocated additionally to the initial header lengths for future updates. If the initial header length
+	    is 100 bytes, then a header block of 1124 bytes will be created.
 
 	:param header_extra: any extra to be included in the header under the key 'extra' (must be bson encodable)
 	:param header_extra_base: any extra to be included in the header at root depth (must be bson encodable)
 	:param header_update_anyway: if no update to the register is made, the default setting is that the
-	header is not updated. This settings forces header updates. For example, you might want
-	to save all run ids into the header whether or not they changed the content of the register.
+	  header is not updated. This settings forces header updates. For example, you might want
+	  to save all run ids into the header whether or not they changed the content of the register.
 
 	:param header_log_accesses: if True, timestamps will be recorded each time the register is opened/closed
-	along with the amount of new blocks appended to the register.
-	Note 1: parameter `new_header_size` must be set when using this value.
-	Note 2: see docstring of paramter `header_update_anyway` that affects the behavior of this parameter.
-	In the following example, `header_log_accesses` is responsible for creating/updating the key 'updated':
-
-    "ts": {
-        "created": 1590506868.3880599,
-        "updated": [
-            [1590506868.3880599, 1590509029.389, 1200],
-            [1590507152.079873, 1590507295.080478, 2300]
-       ]
-	}
+	  along with the amount of new blocks appended to the register.
+	  
+	  Note 1: parameter `new_header_size` must be set when using this value.
+	  Note 2: see docstring of paramter `header_update_anyway` that affects the behavior of this parameter.
+	  
+	  In the following example, `header_log_accesses` is responsible for creating/updating the key 'updated'::
+	    
+        "ts": {
+            "created": 1590506868.3880599,
+            "updated": [
+                [1590506868.3880599, 1590509029.389, 1200],
+                [1590507152.079873, 1590507295.080478, 2300]
+           ]
+	    }
+	
 
 	Errors:
 	-------
@@ -144,19 +150,23 @@ class AmpelRegister(AmpelBaseModel):
 	verbose: int = 0
 	logger: AmpelLogger
 
-	# File path options
+	#: save files in <path_base>/<file>
 	path_base: Optional[str]
-	path_extra: Optional[List[str]] # save files in <path_base>/<path_extra(s)>/<file>
+	#: save files in <path_base>/<path_extra(s)>/<file>
+	path_extra: Optional[List[str]]
+	#: prefix for each file
 	file_prefix: Optional[str]
-	path_full: Optional[str] # Ignore all previous options and use a fixed file path
+	#: ignore all other path options and use this file path
+	path_full: Optional[str]
 
 	file_cap: Optional[Dict[Literal['blocks'], int]]
 
-	# Option to provide an existing file handle
+	#: use existing file handle
 	file_handle: Optional[BinaryIO]
 
-	# Compression options
+	#: compression scheme
 	compression: Optional[Literal['gz', 'bz2', 'xz']] = 'gz'
+	#: compression level
 	compress_level: Optional[int]
 
 	# General header options

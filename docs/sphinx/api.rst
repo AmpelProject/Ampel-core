@@ -181,3 +181,6 @@ Odds and ends
 
 .. autoclass:: ampel.log.AmpelLogger.AmpelLogger
   :members:
+
+.. autoclass:: ampel.core.AmpelRegister.AmpelRegister
+  :members:
