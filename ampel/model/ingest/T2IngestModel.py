@@ -16,9 +16,14 @@ from ampel.abstract.AbsCustomStateT2Unit import AbsCustomStateT2Unit
 
 class T2IngestModel(StrictModel):
 
+	#: T2 unit to run
 	unit: Union[str, Type[AbsStockT2Unit], Type[AbsPointT2Unit], Type[AbsStateT2Unit], Type[AbsCustomStateT2Unit]]
+	#: T2 unit configuration (hashed)
 	config: Optional[int]
+	#: Ingester options
 	ingest: Optional[Dict[str, Any]]
+	#: Filter result codes that should trigger this T2. If not specified, T2
+	#: documents will be created in response to *any* passing alert.
 	group: Union[int, List[int]] = []
 
 	@property

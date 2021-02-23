@@ -19,10 +19,18 @@ from ampel.model.ingest.T2ComputeModel import T2ComputeModel
 
 class IngestionDirective(StrictModel):
 
+	#: Channel for which to create documents
 	channel: ChannelId
+	#: Add new :class:`datapoints <ampel.content.DataPoint.DataPoint>`
 	t0_add: Optional[T0AddModel]
+	#: Create :class:`compounds <ampel.content.Compound.Compound>` from
+	#: ingested :class:`datapoints <ampel.content.DataPoint.DataPoint>` and the
+	#: :class:`stock <ampel.content.StockDocument.StockDocument>`, e.g. drawing
+	#: from other data streams
 	t1_combine: Optional[List[T1CombineModel]]
+	#: Create or update :class:`T2 documents <ampel.content.T2Document.T2Document>` bound to :class:`stocks <ampel.content.StockDocument.StockDocument>`
 	t2_compute: Optional[T2ComputeModel]
+	#: Update the :class:`stock <ampel.content.StockDocument.StockDocument>`
 	stock_update: Union[UnitModel, str]
 
 	@validator('stock_update', pre=True)

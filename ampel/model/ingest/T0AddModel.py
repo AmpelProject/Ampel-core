@@ -16,7 +16,10 @@ from ampel.abstract.ingest.AbsIngester import AbsIngester
 
 class T0AddModel(UnitModel):
 	# Override 'unit' to enable alias
+	#: Add :class:`datapoints <ampel.content.DataPoint.DataPoint>` to the database
 	unit: Union[str, Type[AbsIngester]] = Field(..., alias='ingester')
 	# config (datapoint ingester config [from UnitModel])
+	#: Create :class:`compounds <ampel.content.Compound.Compound>` from ingested :class:`datapoints <ampel.content.DataPoint.DataPoint>`
 	t1_combine: Optional[List[T1CombineModel]]
+	#: Create or update :class:`T2 documents <ampel.content.T2Document.T2Document>` bound to :class:`datapoints <ampel.content.DataPoint.DataPoint>`
 	t2_compute: Optional[T2ComputeModel]

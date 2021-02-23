@@ -15,5 +15,7 @@ from ampel.abstract.ingest.AbsCompoundIngester import AbsCompoundIngester
 
 class T1CombineModel(UnitModel):
 	# Override 'unit' to enable alias
+	#: Add :class:`compounds <ampel.content.Compound.Compound>` to the database
 	unit: Union[str, Type[AbsCompoundIngester]] = Field(..., alias='ingester')
+	#: Create or update :class:`T2 documents <ampel.content.T2Document.T2Document>` bound to :class:`compounds <ampel.content.Compound.Compound>`
 	t2_compute: Optional[T2ComputeModel]

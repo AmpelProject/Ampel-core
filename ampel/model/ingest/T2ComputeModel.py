@@ -16,6 +16,8 @@ from ampel.model.UnitModel import UnitModel
 
 class T2ComputeModel(UnitModel):
 	# Override of 'unit' to enable alias
+	#: Add :class:`T2 documents <ampel.content.T2Document.T2Document>` to the database
 	unit: Union[str, Type[AbsT2Ingester]] = Field(..., alias='ingester')
 	# config (t2 ingester config [from UnitModel])
+	#: Specification of :class:`T2 documents <ampel.content.T2Document.T2Document>` to create
 	units: Sequence[T2IngestModel]
