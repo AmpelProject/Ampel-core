@@ -43,7 +43,7 @@
 <span class="c1"># Last Modified By  : vb &lt;vbrinnel@physik.hu-berlin.de&gt;</span>
 
 <span class="kn">from</span> <span class="nn">pydantic</span> <span class="kn">import</span> <span class="n">validator</span>
-<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">List</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Union</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">Optional</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">List</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Union</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Generator</span><span class="p">,</span> <span class="n">Sequence</span>
 <span class="kn">from</span> <span class="nn">ampel.log.AmpelLogger</span> <span class="kn">import</span> <span class="n">AmpelLogger</span>
 <span class="kn">from</span> <span class="nn">ampel.config.builder.FirstPassConfig</span> <span class="kn">import</span> <span class="n">FirstPassConfig</span>
 <span class="kn">from</span> <span class="nn">ampel.model.UnitModel</span> <span class="kn">import</span> <span class="n">UnitModel</span>
@@ -65,7 +65,8 @@
 	<span class="n">auto_complete</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">bool</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span>
 	<span class="c1">#: Filter to apply to incoming datapoints</span>
 	<span class="n">t0_filter</span><span class="p">:</span> <span class="n">UnitModel</span>
-	<span class="c1">#: T2 units to trigger when transient is updated</span>
+	<span class="c1">#: T2 units to trigger when transient is updated. Dependencies of tied</span>
+	<span class="c1">#: units will be added automatically.</span>
 	<span class="n">t2_compute</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">UnitModel</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
 	<span class="c1">#: T3 processes bound to this channel. These may be use templates, such as</span>
 	<span class="c1">#: :class:`~ampel.model.template.PeriodicSummaryT3.PeriodicSummaryT3`.</span>
@@ -159,7 +160,16 @@
 
 		<span class="n">directives</span> <span class="o">=</span> <span class="n">ret</span><span class="p">[</span><span class="s1">&#39;processor&#39;</span><span class="p">][</span><span class="s1">&#39;config&#39;</span><span class="p">][</span><span class="s1">&#39;directives&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
 
-		<span class="k">if</span> <span class="n">t2_state_units</span> <span class="o">:=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_units</span><span class="p">(</span><span class="n">t2_compute_from_t0</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;AbsStateT2Unit&quot;</span><span class="p">,</span> <span class="s2">&quot;AbsCustomStateT2Unit&quot;</span><span class="p">],</span> <span class="n">first_pass_config</span><span class="p">):</span>
+		<span class="k">if</span> <span class="n">t2_state_units</span> <span class="o">:=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_units</span><span class="p">(</span>
+			<span class="n">t2_compute_from_t0</span><span class="p">,</span>
+			<span class="p">[</span>
+				<span class="s2">&quot;AbsStateT2Unit&quot;</span><span class="p">,</span>
+				<span class="s2">&quot;AbsCustomStateT2Unit&quot;</span><span class="p">,</span>
+				<span class="s2">&quot;AbsTiedStateT2Unit&quot;</span><span class="p">,</span>
+				<span class="s2">&quot;AbsTiedCustomStateT2Unit&quot;</span><span class="p">,</span>
+			<span class="p">],</span>
+			<span class="n">first_pass_config</span>
+		<span class="p">):</span>
 
 			<span class="k">if</span> <span class="n">t1_ingester</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
 				<span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Template processing requires parameter &#39;t1_ingester&#39;&quot;</span><span class="p">)</span>
@@ -177,7 +187,16 @@
 				<span class="p">)</span>
 			<span class="p">]</span>
 
-		<span class="k">if</span> <span class="n">t2_state_units</span> <span class="o">:=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_units</span><span class="p">(</span><span class="n">t2_compute_from_t1</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;AbsStateT2Unit&quot;</span><span class="p">,</span> <span class="s2">&quot;AbsCustomStateT2Unit&quot;</span><span class="p">],</span> <span class="n">first_pass_config</span><span class="p">):</span>
+		<span class="k">if</span> <span class="n">t2_state_units</span> <span class="o">:=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_units</span><span class="p">(</span>
+			<span class="n">t2_compute_from_t1</span><span class="p">,</span>
+			<span class="p">[</span>
+				<span class="s2">&quot;AbsStateT2Unit&quot;</span><span class="p">,</span>
+				<span class="s2">&quot;AbsCustomStateT2Unit&quot;</span><span class="p">,</span>
+				<span class="s2">&quot;AbsTiedStateT2Unit&quot;</span><span class="p">,</span>
+				<span class="s2">&quot;AbsTiedCustomStateT2Unit&quot;</span><span class="p">,</span>
+			<span class="p">],</span>
+			<span class="n">first_pass_config</span>
+		<span class="p">):</span>
 
 			<span class="k">if</span> <span class="n">t1_standalone_ingester</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
 				<span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Template processing requires parameter &#39;t1_standalone_ingester&#39;&quot;</span><span class="p">)</span>
@@ -238,14 +257,34 @@
 		<span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">abs_unit</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
 			<span class="n">abs_unit</span> <span class="o">=</span> <span class="p">[</span><span class="n">abs_unit</span><span class="p">]</span>
 
-		<span class="k">return</span> <span class="p">[</span>
-			<span class="n">el</span><span class="o">.</span><span class="n">dict</span><span class="p">(</span><span class="n">exclude_unset</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">by_alias</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-			<span class="k">for</span> <span class="n">el</span> <span class="ow">in</span> <span class="n">units</span>
-			<span class="k">if</span> <span class="nb">any</span><span class="p">(</span>
-				<span class="n">unit</span> <span class="ow">in</span> <span class="n">first_pass_config</span><span class="p">[</span><span class="s1">&#39;unit&#39;</span><span class="p">][</span><span class="s1">&#39;base&#39;</span><span class="p">][</span><span class="n">el</span><span class="o">.</span><span class="n">unit</span><span class="p">][</span><span class="s1">&#39;base&#39;</span><span class="p">]</span>
-				<span class="k">for</span> <span class="n">unit</span> <span class="ow">in</span> <span class="n">abs_unit</span>
-			<span class="p">)</span>
-		<span class="p">]</span></div></div>
+		<span class="c1"># Filter and deduplicate units, in case a tied unit dependency is also</span>
+		<span class="c1"># configured explicitly.</span>
+		<span class="n">selected_units</span> <span class="o">=</span> <span class="p">[]</span>
+		<span class="k">for</span> <span class="n">el</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_collect_units</span><span class="p">(</span><span class="n">units</span><span class="p">):</span>
+			<span class="k">if</span> <span class="p">(</span>
+				<span class="nb">any</span><span class="p">(</span>
+					<span class="n">unit</span> <span class="ow">in</span> <span class="n">first_pass_config</span><span class="p">[</span><span class="s1">&#39;unit&#39;</span><span class="p">][</span><span class="s1">&#39;base&#39;</span><span class="p">][</span><span class="n">el</span><span class="p">[</span><span class="s1">&#39;unit&#39;</span><span class="p">]][</span><span class="s1">&#39;base&#39;</span><span class="p">]</span>
+					<span class="k">for</span> <span class="n">unit</span> <span class="ow">in</span> <span class="n">abs_unit</span>
+				<span class="p">)</span>
+				<span class="ow">and</span> <span class="n">el</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">selected_units</span>
+			<span class="p">):</span>
+				<span class="n">selected_units</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">el</span><span class="p">)</span>
+		<span class="k">return</span> <span class="n">selected_units</span></div>
+
+
+	<span class="k">def</span> <span class="nf">_collect_units</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">units</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">UnitModel</span><span class="p">,</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span><span class="n">Any</span><span class="p">]]])</span> <span class="o">-&gt;</span> <span class="n">Generator</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span><span class="n">Any</span><span class="p">],</span><span class="kc">None</span><span class="p">,</span><span class="kc">None</span><span class="p">]:</span>
+		<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">		Try to extract configs from dependencies.</span>
+<span class="sd">		FIXME: how to deal with point/stock T2 units embedded under state T2 units?</span>
+<span class="sd">		&quot;&quot;&quot;</span>
+		<span class="k">for</span> <span class="n">unit</span> <span class="ow">in</span> <span class="n">units</span><span class="p">:</span>
+			<span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">unit</span><span class="p">,</span> <span class="n">UnitModel</span><span class="p">):</span>
+				<span class="n">unit</span> <span class="o">=</span> <span class="n">unit</span><span class="o">.</span><span class="n">dict</span><span class="p">(</span><span class="n">exclude_unset</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">by_alias</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+			<span class="k">if</span> <span class="p">(</span><span class="n">deps</span> <span class="o">:=</span> <span class="n">unit</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;config&quot;</span><span class="p">,</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;dependency&quot;</span><span class="p">)):</span>
+				<span class="k">yield from</span> <span class="bp">self</span><span class="o">.</span><span class="n">_collect_units</span><span class="p">(</span>
+					<span class="p">[</span><span class="n">deps</span><span class="p">]</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">deps</span><span class="p">,</span> <span class="nb">dict</span><span class="p">)</span> <span class="k">else</span> <span class="n">deps</span>
+				<span class="p">)</span>
+			<span class="k">yield</span> <span class="n">unit</span></div>
 </pre></div>
 
             <div class="clearer"></div>
