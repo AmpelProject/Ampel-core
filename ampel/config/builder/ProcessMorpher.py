@@ -4,19 +4,20 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 16.10.2019
-# Last Modified Date: 08.05.2020
+# Last Modified Date: 25.02.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import json
 from typing import Dict, Any, Literal, Optional, TYPE_CHECKING
 from importlib import import_module
-from pydantic import create_model
+from pydantic import create_model, ValidationError
 from pydantic.main import ModelMetaclass
 from ampel.log.AmpelLogger import AmpelLogger, VERBOSE
 from ampel.model.StrictModel import StrictModel
 from ampel.model.ProcessModel import ProcessModel
 from ampel.model.Secret import Secret
 from ampel.model.UnitModel import UnitModel
+from ampel.model.StateT2Dependency import StateT2Dependency
 from ampel.base.DataUnit import DataUnit
 from ampel.abstract.AbsPointT2Unit import AbsPointT2Unit
 from ampel.util.mappings import walk_and_process_dict
@@ -151,7 +152,7 @@ class ProcessMorpher:
 		for k in list(fields.keys()):
 			field_type = fields[k][0]
 			if get_subtype(Secret, field_type):
-				field_type = Dict[Literal["key"],str]
+				field_type = Dict[Literal["key"], str]
 				if get_subtype(type(None), field_type):
 					field_type = Optional[field_type]
 				fields[k] = (field_type,) + fields[k][1:]
@@ -191,7 +192,13 @@ class ProcessMorpher:
 	def _hash_t2_config_impl(self, k: str, t2: Dict, out_config: "T02ConfigCollector") -> Optional[int]:
 
 		# Trigger config validation (if enabled in UnitModel)
-		UnitModel(**t2)
+		try:
+			UnitModel(**t2)
+		except ValidationError as e:
+			try:
+				StateT2Dependency(**t2)
+			except ValidationError:
+				raise e
 
 		rc = t2.get('config', None)
 		t2_unit_name = t2['unit']
@@ -242,7 +249,7 @@ class ProcessMorpher:
 						]
 					)
 				):
-					for dep in rc["dependency"]:
+					for dep in rc["t2_dependency"]:
 						if (conf_hash := self._hash_t2_config_impl(k, dep, out_config)) is not None:
 							dep["config"] = conf_hash
 
