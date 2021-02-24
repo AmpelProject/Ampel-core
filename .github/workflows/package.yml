@@ -19,7 +19,7 @@ jobs:
       run: |
         python -m pip install --upgrade poetry
     - id: tag
-      uses: dawidd6/action-get-tag@v1.0.0
+      uses: dawidd6/action-get-tag@v1
     - name: Verify tag matches version
       run: |
         [ v"$(poetry version -s)" = "${{steps.tag.outputs.tag}}" ] || (echo "tag does not match version: "${{steps.tag.outputs.tag}}" != version v$(poetry version -s)" && false)
