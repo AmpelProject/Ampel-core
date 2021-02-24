@@ -17,7 +17,6 @@ from ampel.config.AmpelConfig import AmpelConfig
 from ampel.core.UnitLoader import UnitLoader
 from ampel.log.AmpelLogger import AmpelLogger, DEBUG, VERBOSE
 from ampel.model.ProcessModel import ProcessModel
-from ampel.model.UnitModel import UnitModel
 from ampel.util.mappings import build_unsafe_dict_id
 
 if TYPE_CHECKING:
@@ -62,7 +61,6 @@ class AmpelController:
         :param kwargs: will be forwared to the constructor of ampel process controllers
         """
 
-        d: Dict[int, List[ProcessModel]] = {}
         self.controllers: List[AbsProcessController] = []
         if isinstance(config_file_path, str):
             config = AmpelConfig.load(config_file_path, pwd_file_path, pwds, freeze=False)
@@ -232,7 +230,7 @@ class AmpelController:
         def maybe_int(stringy):
             try:
                 return int(stringy)
-            except:
+            except Exception:
                 return stringy
 
         parser = ArgumentParser(description="""Run Ampel processes""")
@@ -308,7 +306,7 @@ class AmpelController:
                             config, tier=args_ns.tier, match=args_ns.match,
                         )
                     )
-            except:
+            except Exception:
                 logging.exception(f"Failed to load {args_ns.config_file_path}")
                 return
             try:
@@ -324,7 +322,7 @@ class AmpelController:
                     else:
                         raise RuntimeError(f"No match for process group {names}")
                 assert len(matches) == len(mcp.controllers)
-            except:
+            except Exception:
                 logging.exception("Failed to match process groups with current set")
             for controller, processes in matches:
                 try:
@@ -332,7 +330,7 @@ class AmpelController:
                     logging.info(
                         f"Updated {controller.__class__.__name__} with processes: {[pm.name for pm in processes]} "
                     )
-                except:
+                except Exception:
                     logging.exception(
                         f"Failed to update {controller.__class__.__name__} with processes: {[pm.name for pm in processes]}"
                     )
