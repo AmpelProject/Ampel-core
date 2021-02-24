@@ -36,10 +36,6 @@ ampel-controller = 'ampel.core.AmpelController:AmpelController.main'
 ampel-config = 'ampel.config.cli:main'
 ampel-db = 'ampel.db.AmpelDB:main'
 
-[[tool.poetry.source]]
-name = "testpypi"
-url = "https://test.pypi.org/simple"
-
 [tool.poetry.dependencies]
 ampel-interface = {version = "^0.7.1-alpha.7", allow-prereleases = true}
 python = "^3.8"
@@ -57,7 +53,7 @@ uvicorn = {version = "^0.13.3", optional = true, extras = ["standard"]}
 Sphinx = {version = "^3.5.1", optional = true}
 sphinx-press-theme = {version = "^0.5.1", optional = true}
 sphinx-autodoc-typehints = {version = "^1.11.1", optional = true}
-tomlkit = {version = "^0.7.0"}
+tomlkit = {version = "^0.7.0", optional = true}
 
 [tool.poetry.dev-dependencies]
 pytest = "^6.2.2"
@@ -73,5 +69,5 @@ server = ["fastapi", "uvicorn"]
 docs = ["Sphinx", "sphinx-press-theme", "sphinx-autodoc-typehints", "tomlkit"]
 
 [build-system]
-requires = ["poetry-core>=1.0.0"]
+requires = ["poetry-core>=1.0.0", "setuptools>=40.8.0"]
 build-backend = "poetry.core.masonry.api"

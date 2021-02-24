@@ -115,20 +115,26 @@ Our design goals are to find a system where past experience (i.e. existing algor
 
 # Installing Ampel
 
-See `<https://ampelproject.github.io/Ampel-core/installing.html>`_.
+The latest release of `ampel-core` can be installed from PyPI with `pip`, e.g.:
+
+```
+pip install ampel-core
+```
+
+Other projects like `ampel-alerts`, `ampel-ztf`, etc. can also be installed with `pip`.
 
 # Development
 
-`ampel-core` uses [poetry](http://poetry.eustace.io/) for dependency management and packaging. To work with an editable install it's recommended that you setup `poetry` and install `ampel-core` in a virtual environment by doing
+`ampel-core` uses [poetry](http://poetry.eustace.io/) for dependency management and packaging. To work with an editable install it's recommended that you set up `poetry` and install `ampel-core` in a virtual environment by doing
 
 ```console
 poetry install
 ```
 
-Pip does not support editable installs with PEP-517 yet. That means that running `pip install -e .` will fail because `poetry` doesn't use a `setup.py` file. As a workaround, you can use provided [create_setup.py](./create_setup.py) script to generate a temporary `setup.py`. To install `ampel-core` in editable mode without `poetry`, do
+Alternatively, may also use a `setuptools`-style editable install from `setup.py`:
 
 ```console
-pip install poetry
-python create_setup.py
 pip install -e .
 ```
+
+Note that `setup.py` and `requirements.txt` are auto-generated; any changes you commit will be overwritten the next time `pyproject.toml` is updated.
