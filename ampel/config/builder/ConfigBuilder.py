@@ -9,7 +9,6 @@
 
 import importlib, re, json
 from contextlib import nullcontext
-from functools import partial
 from math import inf # noqa: required for eval(repr(...)) below
 from typing import ContextManager, Dict, List, Any, Optional, Set, Iterable
 
@@ -22,7 +21,6 @@ from ampel.log.AmpelLogger import AmpelLogger, VERBOSE, DEBUG, ERROR
 from ampel.config.builder.FirstPassConfig import FirstPassConfig
 from ampel.config.AmpelConfig import AmpelConfig
 from ampel.core.UnitLoader import UnitLoader
-from ampel.model.UnitModel import UnitModel
 from ampel.config.collector.ConfigCollector import ConfigCollector
 from ampel.config.collector.T02ConfigCollector import T02ConfigCollector
 from ampel.model.template.ChannelWithProcsTemplate import ChannelWithProcsTemplate
@@ -147,7 +145,7 @@ class ConfigBuilder:
 
 
 	def build_config(self,
-		ignore_errors: bool = False,
+		ignore_errors: int = 0,
 		validate_unit_models: bool = True,
 		skip_default_processes: bool = False,
 		pwds: Optional[Iterable[str]] = None
@@ -156,10 +154,12 @@ class ConfigBuilder:
 		Pass 2.
 		Builds the final ampel config using previously collected config pieces (contained in self.first_pass_config)
 		This involves a multi-step process where the config is 'morphed' into its final structure.
-		:param ignore_errors: by default, the config building process stops if an error occured. \
-		Set this option to True if you wish a different behavior. \
+		:param ignore_errors: by default, the config building process stops if an error occured.
+			- 0: stop for all errors
+			- 1: ignore errors in first_pass_config only
+			- 2: ignore all errors
 		Note that issues might then later arise with your ampel system.
-		:param pwds: config section 'resource' might contain AES encrypted entries. \
+		:param pwds: config section 'resource' might contain AES encrypted entries.
 		If passwords are provided to this method, thoses entries will be decrypted.
 		:param skip_default_processes: set to True to discard default processes defined by ampel-core.
 		The static variable ConfigBuilder._default_processes references those processes by name.
@@ -168,9 +168,9 @@ class ConfigBuilder:
 		"""
 
 		if self.first_pass_config.has_nested_error():
-			if not ignore_errors:
+			if ignore_errors < 1:
 				raise ValueError(
-					'Error occured while building config, you can use the option ignore_errors=True \n' +
+					'Error occured while building config, you can use the option ignore_errors=1 (or 2)\n' +
 					'to bypass this exception and get the (possibly non-working) config nonetheless'
 				)
 
@@ -185,6 +185,7 @@ class ConfigBuilder:
 				secrets=PotemkinSecretProvider(),
 			) if validate_unit_models else None
 		)
+
 		def unit_validation_context() -> ContextManager[None]:
 			if unit_loader:
 				return unit_loader.validate_unit_models()
@@ -246,8 +247,8 @@ class ConfigBuilder:
 						)
 				except Exception as e:
 					self.logger.error(f'Unable to morph process {p["name"]}', exc_info=e)
-					if not ignore_errors:
-						raise
+					if ignore_errors <= 1:
+						raise e
 
 		# Setup empty channel collector
 		out['channel'] = ChannelConfigCollector(
@@ -271,7 +272,7 @@ class ConfigBuilder:
 						self.logger.error(str(ee))
 					else:
 						self.logger.error(f'Unable to morph channel: {chan_name}', exc_info=ee)
-					if not ignore_errors:
+					if ignore_errors <= 1:
 						raise ee
 
 				# Retrieve processes possibly embedded in channel def
@@ -301,7 +302,7 @@ class ConfigBuilder:
 							self.logger.error(str(ee))
 						else:
 							self.logger.error(f'Unable to morph embedded process {p["name"]} (from {p["source"]})', exc_info=ee)
-						if not ignore_errors:
+						if ignore_errors <= 1:
 							raise ee
 
 			else:
@@ -324,7 +325,7 @@ class ConfigBuilder:
 	@classmethod
 	def _recursive_dictify(cls, item):
 		if isinstance(item, dict):
-			return {k: cls._recursive_dictify(v) for k,v in item.items()}
+			return {k: cls._recursive_dictify(v) for k, v in item.items()}
 		elif isinstance(item, list):
 			return [cls._recursive_dictify(v) for v in item]
 		else:
