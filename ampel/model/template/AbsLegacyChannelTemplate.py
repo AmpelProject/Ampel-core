@@ -7,8 +7,9 @@
 # Last Modified Date: 24.02.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
+from importlib import import_module
 from pydantic import validator
-from typing import List, Dict, Any, Union, Tuple, Optional, Generator, Sequence
+from typing import List, Dict, Any, Union, Tuple, Optional
 from ampel.log.AmpelLogger import AmpelLogger
 from ampel.config.builder.FirstPassConfig import FirstPassConfig
 from ampel.model.UnitModel import UnitModel
@@ -44,6 +45,7 @@ class AbsLegacyChannelTemplate(AbsChannelTemplate, abstract=True):
 			return [v]
 		return v
 
+
 	@validator('auto_complete')
 	def make_auto_stock_match(cls, v):
 		if v is True or v == 'live':
@@ -58,6 +60,7 @@ class AbsLegacyChannelTemplate(AbsChannelTemplate, abstract=True):
 				'update_rej': False,
 				'retro_complete': False
 			}
+
 
 	# Mandatory implementation
 	def get_channel(self, logger: AmpelLogger) -> Dict[str, Any]:
@@ -124,6 +127,12 @@ class AbsLegacyChannelTemplate(AbsChannelTemplate, abstract=True):
 		}
 
 		directives = ret['processor']['config']['directives'][0]
+
+		self.check_tied_units(
+			t2_compute_from_t0,
+			t2_compute_from_t1,
+			first_pass_config
+		)
 
 		if t2_state_units := self.get_units(
 			t2_compute_from_t0,
@@ -212,40 +221,54 @@ class AbsLegacyChannelTemplate(AbsChannelTemplate, abstract=True):
 		return {"unit": arg, **kwargs}
 
 
-	def get_units(self, units: List[UnitModel], abs_unit: Union[str, List[str]], first_pass_config: FirstPassConfig) -> List[Dict]:
+	def check_tied_units(self,
+		t2_compute_from_t0: List[UnitModel],
+		t2_compute_from_t1: List[UnitModel],
+		first_pass_config: FirstPassConfig
+	) -> None:
 		"""
-		Example: ``get_t2_units("AbsLightCurveT2Unit")``
-		
-		:returns: t2 units that are subclass of the provided abstract class name.
+		:raises: ValueError if tied t2 units are present in t2_units but the requred t2 units are not present in t2_compute
 		"""
+		all_units: List[str] = []
+		tied_units: List[str] = []
+		for el in t2_compute_from_t0 + t2_compute_from_t1:
+			all_units.append(el.unit) # type: ignore
+			if "AbsTiedT2Unit" in first_pass_config['unit']['base'][el.unit]['base']:
+				tied_units.append(el.unit) # type: ignore
+			
+		s = set()
+		for tied_unit in tied_units:
+			klass = getattr(
+				import_module(
+					first_pass_config['unit']['base'][tied_unit]['fqn']
+				),
+				tied_unit
+			)
+			s.update(klass.get_tied_unit_names())
+
+		if s.difference(all_units):
+			raise ValueError(
+				f"Following t2 unit(s) must be defined (required by "
+				f"tied units): {list(s.difference(all_units))}"
+			)
+
+
+	def get_units(self,
+		units: List[UnitModel], abs_unit: Union[str, List[str]],
+		first_pass_config: FirstPassConfig
+	) -> List[Dict]:
+		"""
+		:returns: unit defintions (dict) that are subclass of the provided abstract class name.
+		"""
+
 		if isinstance(abs_unit, str):
 			abs_unit = [abs_unit]
 
-		# Filter and deduplicate units, in case a tied unit dependency is also
-		# configured explicitly.
-		selected_units = []
-		for el in self._collect_units(units):
-			if (
-				any(
-					unit in first_pass_config['unit']['base'][el['unit']]['base']
-					for unit in abs_unit
-				)
-				and el not in selected_units
-			):
-				selected_units.append(el)
-		return selected_units
-
-
-	def _collect_units(self, units: Sequence[Union[UnitModel, Dict[str, Any]]]) -> Generator[Dict[str, Any], None, None]:
-		"""
-		Try to extract configs from dependencies.
-		FIXME: how to deal with point/stock T2 units embedded under state T2 units?
-		"""
-		for unit in units:
-			if isinstance(unit, UnitModel):
-				unit = unit.dict(exclude_unset=True, by_alias=True)
-			if (deps := unit.get("config", {}).get("t2_dependency")):
-				yield from self._collect_units(
-					[deps] if isinstance(deps, dict) else deps
-				)
-			yield unit
+		return [
+			el.dict(exclude_unset=True, by_alias=True)
+			for el in units
+			if any(
+				unit in first_pass_config['unit']['base'][el.unit]['base']
+				for unit in abs_unit
+			)
+		]
