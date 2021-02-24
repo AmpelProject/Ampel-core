@@ -529,6 +529,8 @@ class T2Processor(AbsProcessorUnit):
 								d['link'] = t2_unit.get_link( # type: ignore[union-attr] # mypy forgot the first "if" of this method
 									tied_model.link_override, compound, datapoints
 								)
+							if logger.verbose > 1:
+								logger.debug(f"get_link() value: {d['link']}")
 						else:
 							d['link'] = match_array(dps_ids)
 
@@ -638,6 +640,9 @@ class T2Processor(AbsProcessorUnit):
 
 				if len(processed_ids) > 0:
 					query['_id'] = {'$nin': processed_ids}
+
+			if logger.verbose > 1:
+				logger.debug("Running tied t2 query", extra={"query": convert_dollars(query)})
 
 			# collect dependencies
 			for dep_t2_doc in self.col_t2.find(query):
