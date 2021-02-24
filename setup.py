@@ -61,10 +61,10 @@ install_requires = \
  'yq>=2.12.0,<3.0.0']
 
 extras_require = \
-{':extra == "docs"': ['tomlkit>=0.7.0,<0.8.0'],
- 'docs': ['Sphinx>=3.5.1,<4.0.0',
+{'docs': ['Sphinx>=3.5.1,<4.0.0',
           'sphinx-press-theme>=0.5.1,<0.6.0',
-          'sphinx-autodoc-typehints>=1.11.1,<2.0.0'],
+          'sphinx-autodoc-typehints>=1.11.1,<2.0.0',
+          'tomlkit>=0.7.0,<0.8.0'],
  'server': ['fastapi>=0.63.0,<0.64.0', 'uvicorn[standard]>=0.13.3,<0.14.0']}
 
 entry_points = \
