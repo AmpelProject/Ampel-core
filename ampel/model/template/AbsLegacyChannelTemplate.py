@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 16.10.2019
-# Last Modified Date: 10.06.2020
+# Last Modified Date: 24.02.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from pydantic import validator
@@ -179,8 +179,7 @@ class AbsLegacyChannelTemplate(AbsChannelTemplate, abstract=True):
 				)
 			]
 
-		if unsupported_t2_units := self.get_units(t2_compute_from_t1, ["AbsStockT2Unit", "AbsPointT2Unit"], first_pass_config):
-
+		if self.get_units(t2_compute_from_t1, ["AbsStockT2Unit", "AbsPointT2Unit"], first_pass_config):
 			raise NotImplementedError("Stock and Point T2 units can't be scheduled from standalone T1 processes")
 
 		if t2_stock_units := self.get_units(t2_compute_from_t0, "AbsStockT2Unit", first_pass_config):
@@ -237,7 +236,7 @@ class AbsLegacyChannelTemplate(AbsChannelTemplate, abstract=True):
 		return selected_units
 
 
-	def _collect_units(self, units: Sequence[Union[UnitModel,Dict[str,Any]]]) -> Generator[Dict[str,Any],None,None]:
+	def _collect_units(self, units: Sequence[Union[UnitModel, Dict[str, Any]]]) -> Generator[Dict[str, Any], None, None]:
 		"""
 		Try to extract configs from dependencies.
 		FIXME: how to deal with point/stock T2 units embedded under state T2 units?
@@ -245,7 +244,7 @@ class AbsLegacyChannelTemplate(AbsChannelTemplate, abstract=True):
 		for unit in units:
 			if isinstance(unit, UnitModel):
 				unit = unit.dict(exclude_unset=True, by_alias=True)
-			if (deps := unit.get("config", {}).get("dependency")):
+			if (deps := unit.get("config", {}).get("t2_dependency")):
 				yield from self._collect_units(
 					[deps] if isinstance(deps, dict) else deps
 				)
