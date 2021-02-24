@@ -1,7 +1,5 @@
 from typing import Any, Dict, List, TYPE_CHECKING
-
-import pytest
-import yaml
+import pytest, yaml
 
 from ampel.model.template.AbsLegacyChannelTemplate import AbsLegacyChannelTemplate
 
@@ -11,6 +9,7 @@ if TYPE_CHECKING:
     from ampel.model.UnitModel import UnitModel
 
 class LegacyChannelTemplate(AbsLegacyChannelTemplate):
+
     # Mandatory implementation
     def get_processes(
         self, logger: "AmpelLogger", first_pass_config: "FirstPassConfig"
@@ -21,7 +20,7 @@ class LegacyChannelTemplate(AbsLegacyChannelTemplate):
         t0_ingester = "DummyAlertContentIngester"
         t1_ingester = "DummyCompoundIngester"
         t2_compute_from_t0 = self.t2_compute
-        t2_compute_from_t1 : List["UnitModel"] = []
+        t2_compute_from_t1: List["UnitModel"] = []
         ret.insert(
             0,
             self.craft_t0_process(
@@ -62,7 +61,7 @@ def first_pass_config(testing_config):
             [
                 {
                     "unit": "DummyTiedStateT2Unit",
-                    "config": {"dependency": [{"unit": "DummyStateT2Unit"}]},
+                    "config": {"t2_dependency": [{"unit": "DummyStateT2Unit"}]},
                 }
             ],
             ["t0_add", "t1_combine", 0, "t2_compute", "units"],
@@ -81,7 +80,7 @@ def first_pass_config(testing_config):
                 {"unit": "DummyStateT2Unit"},
                 {
                     "unit": "DummyTiedStateT2Unit",
-                    "config": {"dependency": [{"unit": "DummyStateT2Unit"}]},
+                    "config": {"t2_dependency": [{"unit": "DummyStateT2Unit"}]},
                 },
             ],
             ["t0_add", "t1_combine", 0, "t2_compute", "units"],
@@ -92,7 +91,7 @@ def first_pass_config(testing_config):
             [
                 {
                     "unit": "DummyTiedStateT2Unit",
-                    "config": {"dependency": [{"unit": "DummyPointT2Unit"}]},
+                    "config": {"t2_dependency": [{"unit": "DummyPointT2Unit"}]},
                 }
             ],
             ["t0_add", "t2_compute", "units"],
@@ -103,7 +102,7 @@ def first_pass_config(testing_config):
             [
                 {
                     "unit": "DummyTiedStateT2Unit",
-                    "config": {"dependency": [{"unit": "DummyStockT2Unit"}]},
+                    "config": {"t2_dependency": [{"unit": "DummyStockT2Unit"}]},
                 }
             ],
             ["t2_compute", "units"],
