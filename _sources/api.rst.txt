@@ -160,6 +160,26 @@ Models
 .. autoclass:: ampel.model.t3.T2FilterModel.T2FilterModel
   :members:
 
+.. autoclass:: ampel.model.ingest.IngestionDirective.IngestionDirective
+  :members:
+
+.. autoclass:: ampel.model.ingest.T0AddModel.T0AddModel
+  :members:
+  :show-inheritance:
+
+.. autoclass:: ampel.model.ingest.T1CombineModel.T1CombineModel
+  :members:
+  :show-inheritance:
+
+.. autoclass:: ampel.model.ingest.T2ComputeModel.T2ComputeModel
+  :members:
+  :show-inheritance:
+
+.. autoclass:: ampel.model.ingest.T2IngestModel.T2IngestModel
+  :members:
+  :show-inheritance:
+
+
 Templates
 ---------
 
