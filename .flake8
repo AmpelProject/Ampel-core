@@ -1,0 +1,4 @@
+[flake8]
+# note: mypy covers some of the disabled error such as E101
+ignore = D100,D205,D206,D210,D400,D401,W191,W293,W503,W504,E101,E124,E128,E131,E251,E261,E301,E302,E303,E401,E501,E741
+exclude = .git,__pycache__,docs/source/conf.py,old,build,dist
