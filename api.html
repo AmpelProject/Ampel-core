@@ -1622,15 +1622,27 @@ units will be added automatically.</p>
 </dd></dl>
 
 <dl class="py method">
+<dt id="ampel.model.template.AbsLegacyChannelTemplate.AbsLegacyChannelTemplate.check_tied_units">
+<code class="sig-name descname"><span class="pre">check_tied_units</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">t2_compute_from_t0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">t2_compute_from_t1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">first_pass_config</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ampel/model/template/AbsLegacyChannelTemplate.html#AbsLegacyChannelTemplate.check_tied_units"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ampel.model.template.AbsLegacyChannelTemplate.AbsLegacyChannelTemplate.check_tied_units" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Raises</dt>
+<dd class="field-odd"><p>ValueError if tied t2 units are present in t2_units but the requred t2 units are not present in t2_compute</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.9)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
 <dt id="ampel.model.template.AbsLegacyChannelTemplate.AbsLegacyChannelTemplate.get_units">
 <code class="sig-name descname"><span class="pre">get_units</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">units</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">abs_unit</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">first_pass_config</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ampel/model/template/AbsLegacyChannelTemplate.html#AbsLegacyChannelTemplate.get_units"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ampel.model.template.AbsLegacyChannelTemplate.AbsLegacyChannelTemplate.get_units" title="Permalink to this definition">¶</a></dt>
-<dd><p>Example: <code class="docutils literal notranslate"><span class="pre">get_t2_units(&quot;AbsLightCurveT2Unit&quot;)</span></code></p>
-<dl class="field-list simple">
+<dd><dl class="field-list simple">
 <dt class="field-odd">Return type</dt>
 <dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.List" title="(in Python v3.9)"><code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.9)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code></a>]</p>
 </dd>
 <dt class="field-even">Returns</dt>
-<dd class="field-even"><p>t2 units that are subclass of the provided abstract class name.</p>
+<dd class="field-even"><p>unit defintions (dict) that are subclass of the provided abstract class name.</p>
 </dd>
 </dl>
 </dd></dl>
