@@ -5,10 +5,9 @@
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 17.04.2020
 # Last Modified Date: 17.04.2020
-# Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
+# Last Modified By  : jvs
 
-import asyncio
-import re
+import asyncio, re
 from typing import Dict, Iterable, List, Literal, Optional, Sequence, Union, TYPE_CHECKING
 
 from ampel.abstract.AbsProcessController import AbsProcessController
@@ -22,12 +21,14 @@ from ampel.util.mappings import build_unsafe_dict_id
 if TYPE_CHECKING:
     from ampel.protocol.LoggerProtocol import LoggerProtocol
 
+
 class AmpelController:
     """
-    Top-level controller class whose purpose is the spawn "process controllers"
-    (i.e subclasses of AbsProcessController).
-    This can be done scoped at a given tier or generally for all ampel tiers.
-    Processes can be filtered out/included via regular expression matching (the process names).
+    Top-level controller class that spawns "process controllers" (subclasses of AbsProcessController).
+	An ampel config instance or a path to an ampel config is required.
+	The process definitions therein (listed under key 'process') are parsed and
+	used to spawn the corresponding process controllers.
+	The parameters 'tier', 'match', 'exclude' and 'controllers' can be used to sub-select processes.
     """
 
     def __init__(
@@ -106,17 +107,22 @@ class AmpelController:
                 )
             )
 
+
     async def run(self):
+
         tasks = [
-            asyncio.create_task(controller.run()) for controller in self.controllers
+            asyncio.create_task(controller.run())
+			for controller in self.controllers
         ]
         task = asyncio.gather(*tasks, return_exceptions=True)
+
         try:
             return await task
         except asyncio.CancelledError:
             for t in tasks:
                 t.cancel()
             return await task
+
 
     @staticmethod
     def group_processes(processes: List[ProcessModel]) -> List[List[ProcessModel]]:
@@ -134,6 +140,7 @@ class AmpelController:
                 continue
             d[controller_id] = [pm]
         return [v for v in d.values()]
+
 
     @staticmethod
     def get_processes(
@@ -167,7 +174,8 @@ class AmpelController:
         if exclude:
             rexcl = [re.compile(el) for el in exclude]
 
-        for t in [tier] if tier is not None else [0, 1, 2, 3, "ops"]:  # type: ignore[list-item]
+        for t in [tier] if tier is not None else [0, 1, 2, 3, "ops"]:
+
             tier_name = f"t{t}" if isinstance(t, int) else t
             for p in config.get(f"process.{tier_name}", dict, raise_exc=True).values():
 
@@ -217,15 +225,15 @@ class AmpelController:
 
         return ret
 
+
     @classmethod
     def main(cls, args: Optional[List[str]] = None) -> None:
-        import logging
-        import signal
+
+        import logging, signal
         from argparse import ArgumentParser
+        from ampel.dev.DictSecretProvider import DictSecretProvider
 
         logging.basicConfig(level="INFO")
-
-        from ampel.dev.DictSecretProvider import DictSecretProvider
 
         def maybe_int(stringy):
             try:
@@ -290,6 +298,7 @@ class AmpelController:
             loop.stop()
 
         def reload_config() -> None:
+
             try:
                 logging.info(f"Reloading config from {args_ns.config_file_path}")
                 config = AmpelConfig.load(args_ns.config_file_path, freeze=False)
@@ -309,6 +318,7 @@ class AmpelController:
             except Exception:
                 logging.exception(f"Failed to load {args_ns.config_file_path}")
                 return
+
             try:
                 controllers = list(mcp.controllers)
                 matches = []
@@ -324,6 +334,7 @@ class AmpelController:
                 assert len(matches) == len(mcp.controllers)
             except Exception:
                 logging.exception("Failed to match process groups with current set")
+
             for controller, processes in matches:
                 try:
                     controller.update(config, loader.secrets, processes)
