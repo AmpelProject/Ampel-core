@@ -8,9 +8,8 @@
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import importlib, re, json
-from contextlib import nullcontext
 from math import inf # noqa: required for eval(repr(...)) below
-from typing import ContextManager, Dict, List, Any, Optional, Set, Iterable
+from typing import Dict, List, Any, Optional, Set, Iterable
 
 from pydantic import ValidationError
 
@@ -19,15 +18,12 @@ from ampel.util.crypto import aes_recursive_decrypt
 from ampel.abstract.AbsChannelTemplate import AbsChannelTemplate
 from ampel.log.AmpelLogger import AmpelLogger, VERBOSE, DEBUG, ERROR
 from ampel.config.builder.FirstPassConfig import FirstPassConfig
-from ampel.config.AmpelConfig import AmpelConfig
-from ampel.core.UnitLoader import UnitLoader
 from ampel.config.collector.ConfigCollector import ConfigCollector
 from ampel.config.collector.T02ConfigCollector import T02ConfigCollector
 from ampel.model.template.ChannelWithProcsTemplate import ChannelWithProcsTemplate
 from ampel.config.collector.ProcessConfigCollector import ProcessConfigCollector
 from ampel.config.collector.ChannelConfigCollector import ChannelConfigCollector
 from ampel.config.builder.ProcessMorpher import ProcessMorpher
-from ampel.dev.DictSecretProvider import PotemkinSecretProvider
 
 class ConfigBuilder:
 	"""
@@ -146,7 +142,7 @@ class ConfigBuilder:
 
 	def build_config(self,
 		ignore_errors: int = 0,
-		validate_unit_models: bool = True,
+		config_validator: Optional[str] = "ConfigChecker",
 		skip_default_processes: bool = False,
 		pwds: Optional[Iterable[str]] = None
 	) -> Dict[str, Any]:
@@ -179,18 +175,6 @@ class ConfigBuilder:
 			for k in FirstPassConfig.conf_keys.keys()
 		}
 
-		unit_loader = (
-			UnitLoader(
-				AmpelConfig(self.first_pass_config),
-				secrets=PotemkinSecretProvider(),
-			) if validate_unit_models else None
-		)
-
-		def unit_validation_context() -> ContextManager[None]:
-			if unit_loader:
-				return unit_loader.validate_unit_models()
-			else:
-				return nullcontext()
 
 		out['process'] = {}
 
@@ -235,16 +219,15 @@ class ConfigBuilder:
 					pass
 
 				try:
-					with unit_validation_context():
-						p_collector.add(
-							self.new_morpher(p) \
-								.scope_aliases(self.first_pass_config) \
-								.apply_template() \
-								.hash_t2_config(out) \
-								.get(),
-							p.get('source'),
-							p.get('distrib')
-						)
+					p_collector.add(
+						self.new_morpher(p) \
+							.scope_aliases(self.first_pass_config) \
+							.apply_template() \
+							.hash_t2_config(out) \
+							.get(),
+						p.get('source'),
+						p.get('distrib')
+					)
 				except Exception as e:
 					self.logger.error(f'Unable to morph process {p["name"]}', exc_info=e)
 					if ignore_errors <= 1:
@@ -285,17 +268,16 @@ class ConfigBuilder:
 
 					try:
 						# Add transformed process to final process collector
-						with unit_validation_context():
-							out['process'][f't{p["tier"]}'].add(
-								self.new_morpher(p) \
-									.scope_aliases(self.first_pass_config) \
-									.apply_template() \
-									.hash_t2_config(out) \
-									.enforce_t3_channel_selection(chan_name) \
-									.get(),
-								p.get('source'),
-								p.get('distrib')
-							)
+						out['process'][f't{p["tier"]}'].add(
+							self.new_morpher(p) \
+								.scope_aliases(self.first_pass_config) \
+								.apply_template() \
+								.hash_t2_config(out) \
+								.enforce_t3_channel_selection(chan_name) \
+								.get(),
+							p.get('source'),
+							p.get('distrib')
+						)
 					except (ValidationError, Exception) as ee:
 						if isinstance(ee, ValidationError):
 							self.logger.error(f'Unable to morph embedded process {p["name"]} (from {p["source"]})')
@@ -319,7 +301,17 @@ class ConfigBuilder:
 		self.logger.info('Done building config')
 
 		# Casts ConfigCollector instances into real dicts
-		return self._recursive_dictify(out)
+		d = self._recursive_dictify(out)
+
+		if config_validator:
+			from importlib import import_module
+			validator = getattr(
+				import_module("ampel.config.builder." + config_validator),
+				config_validator
+			)(self.logger, self.verbose)
+			return validator.validate(d)
+
+		return d
 
 
 	@classmethod
