@@ -8,23 +8,19 @@
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import json
-from typing import Dict, Any, Literal, Optional, TYPE_CHECKING
+from typing import Dict, Any, Literal, Optional
 from importlib import import_module
-from pydantic import create_model, ValidationError
+from pydantic import create_model
 from pydantic.main import ModelMetaclass
 from ampel.log.AmpelLogger import AmpelLogger, VERBOSE
 from ampel.model.StrictModel import StrictModel
 from ampel.model.ProcessModel import ProcessModel
 from ampel.model.Secret import Secret
-from ampel.model.UnitModel import UnitModel
-from ampel.model.StateT2Dependency import StateT2Dependency
 from ampel.base.DataUnit import DataUnit
 from ampel.abstract.AbsPointT2Unit import AbsPointT2Unit
 from ampel.util.mappings import walk_and_process_dict
 from ampel.util.type_analysis import get_subtype
 
-if TYPE_CHECKING:
-	from ampel.config.collector.T02ConfigCollector import T02ConfigCollector
 
 class ProcessMorpher:
 	""" Applies various transformations to process dicts """
@@ -103,16 +99,24 @@ class ProcessMorpher:
 
 
 	def scope_aliases(self, first_pass_config: Dict) -> 'ProcessMorpher':
+		""" Note: should be called before hash_t2_config """
 
 		if self.process.get('distrib'):
 
-			walk_and_process_dict(
+			if self.verbose:
+				self.logger.debug("Scoping aliases")
+
+			recurse = False
+
+			while walk_and_process_dict(
 				arg = self.process,
 				callback = self._scope_alias_callback,
 				match = ['config'],
 				first_pass_config = first_pass_config
-			)
-
+			):
+				if self.verbose:
+					self.logger.debug("Alias(es) scoped %s" % ("again" if recurse else ""))
+				recurse = True
 		else:
 
 			self.logger.error(
@@ -123,19 +127,202 @@ class ProcessMorpher:
 		return self
 
 
+	def _scope_alias_callback(self, path, k, d, **kwargs) -> bool:
+		"""
+		:returns: true if modification was done
+		"""
+
+		if 'first_pass_config' not in kwargs:
+			raise ValueError('Parameter "first_pass_config" missing in kwargs')
+
+		v = d[k]
+
+		if v and isinstance(v, str):
+
+			# Global alias
+			if v[0] == '%':
+				return False
+
+			# Alias already scoped
+			if "/" in v:
+				return False
+
+			scoped_alias = f'{self.process["distrib"]}/{v}'
+
+			if not any([
+				scoped_alias in kwargs['first_pass_config']['alias'][f't{tier}']
+				for tier in (0, 1, 2, 3)
+			]):
+				raise ValueError(f'Alias "{scoped_alias}" not found')
+
+			# Overwrite
+			d[k] = scoped_alias
+
+			if self.verbose:
+				self.logger.log(VERBOSE, f'Config alias "{v}" renamed into "{scoped_alias}"')
+
+			return True
+
+		return False
+
+
+	def resolve_aliases(self, t2d: Dict[str, Any], aliases: Dict[str, Any], root_path: str):
+		"""
+		Can resolve aliases recursively (necessary for hashing t2 config)
+		"""
+
+		if self.verbose:
+			self.logger.debug("Resolving aliases (required for hash)")
+
+		recurse = False
+
+		while walk_and_process_dict(
+			arg = t2d,
+			callback = self._resolve_alias_callback,
+			match = ['config'],
+			aliases = aliases,
+			root_path = root_path
+		):
+			if self.verbose:
+				self.logger.debug("Alias(es) resolved %s" % ("again" if recurse else ""))
+			recurse = True
+
+
+	def _resolve_alias_callback(self, path, k, d, **kwargs) -> None:
+
+		if not isinstance(d[k], str):
+			return
+
+		aliases = kwargs.get('aliases')
+
+		if not aliases:
+			raise ValueError('Parameter "aliases" missing in kwargs')
+
+		if d[k] not in aliases:
+			raise ValueError(
+				f'Unknown T2 config alias ({d[k]}) defined in process {self.process["name"]}'
+			)
+
+		if self.verbose:
+			self.logger.debug(f"Resolving alias '{d[k]}' in {kwargs.get('root_path')}")
+
+		d[k] = aliases[d[k]]
+
+
 	def hash_t2_config(self, out_config: Dict) -> 'ProcessMorpher':
+		"""
+		Note out_config is required to store the created map entres <confid>: <conf dict>
+		"""
 
 		if self.process['tier'] not in (0, 1):
 			return self
 
+		if self.verbose:
+			self.logger.debug("Looking for t2 config to hash")
+
+		# Example of conf_dicts keys
+		# processor.config.directives.0.t0_add.t1_combine.0.t2_compute.units.0
+ 		# processor.config.directives.0.t0_add.t1_combine.0.t2_compute.units.0.config.t2_dependency.0
+ 		# processor.config.directives.0.t0_add.t2_compute.units.0
+		conf_dicts: Dict[str, Dict[str, Any]] = {}
+
 		walk_and_process_dict(
 			arg = self.process,
-			callback = self._hash_t2_config_callback,
-			match = ['t2_compute'],
-			out_config = out_config
+			callback = self._gather_t2_config_callback,
+			match = ['config'],
+			conf_dicts = conf_dicts
 		)
 
+		# This does the trick of processing nested config first
+		sorted_conf_dicts = {}
+		for k in sorted(conf_dicts, key=len, reverse=True):
+			sorted_conf_dicts[k] = conf_dicts[k]
+
+		for k, d in sorted_conf_dicts.items():
+
+			t2_unit = d["unit"]
+			conf = d["config"]
+
+			if self.verbose:
+				extra = {'process': self.process['name'], 'conf': k + ".config"}
+				self.logger.debug("Hashing T2 config", extra=extra)
+
+			# Replace alias with content
+			if isinstance(conf, str):
+			
+				if conf not in out_config['alias']['t2']:
+					raise ValueError(
+						f'Unknown T2 config alias ({conf}) defined in process {self.process["name"]}'
+					)
+
+				if self.verbose:
+					self.logger.debug(f"Resolving alias '{conf}'", extra=extra)
+
+				conf = out_config['alias']['t2'][conf]
+
+			if isinstance(conf, dict):
+
+				if override := d.get("override"):
+					conf = {**conf, **override}
+
+				if fqn := out_config['unit']['base'][t2_unit].get('fqn'):
+
+					T2Unit = getattr(import_module(fqn), fqn.split('.')[-1])
+					excl: Any = DataUnit._annots.keys()
+
+					if issubclass(T2Unit, AbsPointT2Unit):
+						excl = list(excl) + ["ingest"]
+
+					if self.verbose:
+						self.logger.debug("Creating model", extra=extra)
+
+					# Model creation is required to take default config field values into account
+					model = self._create_model(
+						t2_unit,
+						T2Unit._annots,
+						T2Unit._defaults,
+						excl,
+					)
+
+					conf = model(**conf).dict()
+
+				else:
+
+					self.logger.warn(
+						f"T2 unit {t2_unit} not installed locally. "
+						f"Building *unsafe* conf dict hash: "
+						f"changes in unit defaults between releases will go undetected",
+						extra=extra
+					)
+
+				if self.verbose:
+					self.logger.debug("Computing hash", extra=extra)
+
+				if conf is None:
+					d["config"] = None
+				else:
+					d["config"] = out_config['confid'].add(conf)
+
+			# For internal use only
+			elif isinstance(conf, int):
+				if conf not in out_config['confid']:
+					raise ValueError(
+						f'Unknown T2 config (int) alias defined in channel {k}:\n {t2_unit}'
+					)
+			else:
+				raise ValueError(
+					f'Unknown T2 config defined in channel {k}:\n {t2_unit}'
+				)
+
 		return self
+
+
+	def _gather_t2_config_callback(self, path, k, d, **kwargs) -> None:
+
+		if "t2_compute.units" in path:
+			if self.verbose:
+				self.logger.info("# path: %s.config" % path)
+			kwargs['conf_dicts'][path] = d
 
 
 	@classmethod
@@ -170,134 +357,3 @@ class ProcessMorpher:
 			name, __config__ = StrictModel.__config__,
 			**fields
 		)
-
-
-	# TODO: verbose print path ?
-	def _hash_t2_config_callback(self, path, k, d, **kwargs) -> None:
-
-		out_config = kwargs.get('out_config')
-
-		if not out_config:
-			raise ValueError('Parameter "out_config" missing in kwargs')
-
-		for t2 in d[k]['units']:
-
-			if not isinstance(t2, dict):
-				raise ValueError(f'Illegal unit definition: {t2}')
-			elif (conf_hash := self._hash_t2_config_impl(k, t2, out_config)) is not None:
-				t2['config'] = conf_hash
-
-
-	# TODO: verbose print path ?
-	def _hash_t2_config_impl(self, k: str, t2: Dict, out_config: "T02ConfigCollector") -> Optional[int]:
-
-		# Trigger config validation (if enabled in UnitModel)
-		try:
-			UnitModel(**t2)
-		except ValidationError as e:
-			try:
-				StateT2Dependency(**t2)
-			except ValidationError:
-				raise e
-
-		rc = t2.get('config', None)
-		t2_unit_name = t2['unit']
-
-		if t2_unit_name not in out_config['unit']['base']:
-			raise ValueError(f"Unknown T2 unit: {t2_unit_name}")
-
-		if not rc:
-			return None
-
-		# alias
-		if isinstance(rc, str):
-			if rc not in out_config['alias']['t2']:
-				raise ValueError(
-					f'Unknown T2 config alias ({rc}) defined in process {self.process["name"]}'
-				)
-			rc = out_config['alias']['t2'][rc]
-
-		if isinstance(rc, dict):
-
-			if override := t2.get('override', None):
-				rc = {**rc, **override}
-
-			if fqn := out_config['unit']['base'][t2_unit_name].get('fqn'):
-
-				T2Unit = getattr(import_module(fqn), fqn.split('.')[-1])
-				excl: Any = DataUnit._annots.keys()
-				if issubclass(T2Unit, AbsPointT2Unit):
-					excl = list(excl) + ["ingest"]
-				model = self._create_model(
-					t2_unit_name,
-					T2Unit._annots,
-					T2Unit._defaults,
-					excl,
-				)
-
-				rc = model(**rc).dict()
-
-				# Hash dependency configs
-				if (
-					set(
-						out_config['unit']['base'][t2_unit_name].get('base', {})
-					)
-					.intersection(
-						[
-							"AbsTiedStateT2Unit",
-							"AbsTiedCustomStateT2Unit",
-						]
-					)
-				):
-					for dep in rc["t2_dependency"]:
-						if (conf_hash := self._hash_t2_config_impl(k, dep, out_config)) is not None:
-							dep["config"] = conf_hash
-
-			else:
-				self.logger.warn(
-					f"T2 unit {t2_unit_name} not installed locally. "
-					f"Building *unsafe* conf dict hash: "
-					f"changes in unit defaults between releases will go undetected"
-				)
-
-			return out_config['confid'].add(rc)
-
-		# For internal use only
-		if isinstance(rc, int):
-			if rc in out_config['confid']:
-				return rc
-			raise ValueError(
-				f'Unknown T2 config (int) alias defined in channel {k}:\n {t2}'
-			)
-
-		raise ValueError(
-			f'Invalid T2 config defined in process {self.process["name"]}'
-		)
-
-
-	# TODO: verbose print path ?
-	def _scope_alias_callback(self, path, k, d, **kwargs):
-
-		if 'first_pass_config' not in kwargs:
-			raise ValueError('Parameter "first_pass_config" missing in kwargs')
-
-		v = d[k]
-
-		if v and isinstance(v, str):
-
-			if v[0] == '%':
-				scoped_alias = v[1:]
-			else:
-				scoped_alias = f'{self.process["distrib"]}/{v}'
-
-			if not any([
-				scoped_alias in kwargs['first_pass_config']['alias'][f't{tier}']
-				for tier in (0, 1, 2, 3)
-			]):
-				raise ValueError(f'Alias "{scoped_alias}" not found')
-
-			# Overwrite
-			d[k] = scoped_alias
-
-			if self.verbose:
-				self.logger.log(VERBOSE, f'Alias "{v}" renamed into "{scoped_alias}"')
