@@ -167,7 +167,7 @@ def del_by_path(d: Dict, path: Union[str, Sequence[str]], delimiter: str = '.') 
 def walk_and_process_dict(
 	arg: Union[dict, list], callback: Callable,
 	match: List[str], path: str = None, **kwargs
-) -> None:
+) -> bool:
 	"""
 	callback is called with 4 arguments:
 	1) the path of the possibly nested entry. Ex: 'processor.config.select' or 'processor'
