@@ -308,8 +308,8 @@ class ConfigBuilder:
 			validator = getattr(
 				import_module("ampel.config.builder." + config_validator),
 				config_validator
-			)(self.logger, self.verbose)
-			return validator.validate(d)
+			)(d, self.logger, self.verbose)
+			return validator.validate()
 
 		return d
 
