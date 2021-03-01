@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 16.10.2019
-# Last Modified Date: 25.02.2021
+# Last Modified Date: 01.03.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import json
@@ -168,7 +168,7 @@ class ProcessMorpher:
 
 	def resolve_aliases(self, t2d: Dict[str, Any], aliases: Dict[str, Any], root_path: str):
 		"""
-		Can resolve aliases recursively (necessary for hashing t2 config)
+		Resolves aliases recursively (necessary before hashing t2 config)
 		"""
 
 		if self.verbose:
@@ -189,6 +189,9 @@ class ProcessMorpher:
 
 
 	def _resolve_alias_callback(self, path, k, d, **kwargs) -> None:
+		"""
+		Used by walk_and_process_dict(...) from resolve_aliases(...)
+		"""
 
 		if not isinstance(d[k], str):
 			return
@@ -211,7 +214,14 @@ class ProcessMorpher:
 
 	def hash_t2_config(self, out_config: Dict) -> 'ProcessMorpher':
 		"""
-		Note out_config is required to store the created map entres <confid>: <conf dict>
+		This method modifies the underlying self._process dict structure.
+		The 'config' (dict) value of UnitModel instances is replaced by a hash value (int).
+		Notes:
+		- Applies only to t0 and t1 processes
+		- The config path filter "t2_compute.units" is used
+		- Aliases are resolved (works recursively so that t2_dependency of tied units can use aliases as well)
+		
+		:param out_config: used to store new map entries in the ampel config: {<confid>: {<hash>: <conf dict>}}.
 		"""
 
 		if self.process['tier'] not in (0, 1):
@@ -318,6 +328,9 @@ class ProcessMorpher:
 
 
 	def _gather_t2_config_callback(self, path, k, d, **kwargs) -> None:
+		"""
+		Used by walk_and_process_dict(...) from hash_t2_config(...)
+		"""
 
 		if "t2_compute.units" in path:
 			if self.verbose:
