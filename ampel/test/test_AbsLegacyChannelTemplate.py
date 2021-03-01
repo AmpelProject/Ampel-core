@@ -1,5 +1,6 @@
 from typing import Any, Dict, List, TYPE_CHECKING
 import pytest, yaml
+import contextlib
 
 from ampel.model.template.AbsLegacyChannelTemplate import AbsLegacyChannelTemplate
 
@@ -48,30 +49,33 @@ def first_pass_config(testing_config):
 
 
 @pytest.mark.parametrize(
-    "t2_compute,target,expected",
+    "t2_compute,target,expected,exception",
     [
         # single, statebound T2
         (
             [{"unit": "DummyStateT2Unit"}],
             ["t0_add", "t1_combine", 0, "t2_compute", "units"],
             {"unit": "DummyStateT2Unit"},
+            None
         ),
-        # statebound T2 with explicit statebound dependency
+        # statebound T2 with configured statebound dependency, not requested
         (
             [
                 {
                     "unit": "DummyTiedStateT2Unit",
                     "config": {"t2_dependency": [{"unit": "DummyStateT2Unit"}]},
-                }
+                },
             ],
             ["t0_add", "t1_combine", 0, "t2_compute", "units"],
             {"unit": "DummyStateT2Unit"},
+            ValueError,
         ),
         # statebound T2 with implicit (default) statebound dependency
         pytest.param(
             [{"unit": "DummyTiedStateT2Unit"}],
             ["t0_add", "t1_combine", 0, "t2_compute", "units"],
             {"unit": "DummyStateT2Unit"},
+            None,
             marks=pytest.mark.xfail(reason="default dependencies aren't automatically resolved")
         ),
         # statebound T2 with statebound dependency, also explicitly configured
@@ -85,6 +89,7 @@ def first_pass_config(testing_config):
             ],
             ["t0_add", "t1_combine", 0, "t2_compute", "units"],
             {"unit": "DummyStateT2Unit"},
+            None
         ),
         # statebound T2 with point dependency
         (
@@ -92,10 +97,12 @@ def first_pass_config(testing_config):
                 {
                     "unit": "DummyTiedStateT2Unit",
                     "config": {"t2_dependency": [{"unit": "DummyPointT2Unit"}]},
-                }
+                },
+                {"unit": "DummyPointT2Unit"}
             ],
             ["t0_add", "t2_compute", "units"],
             {"unit": "DummyPointT2Unit"},
+            None,
         ),
         # statebound T2 with stock dependency
         (
@@ -103,25 +110,40 @@ def first_pass_config(testing_config):
                 {
                     "unit": "DummyTiedStateT2Unit",
                     "config": {"t2_dependency": [{"unit": "DummyStockT2Unit"}]},
-                }
+                },
+                {"unit": "DummyStockT2Unit"}
             ],
             ["t2_compute", "units"],
             {"unit": "DummyStockT2Unit"},
+            None,
         ),
     ],
 )
-def test_state_t2_instantiation(t2_compute, target, expected, first_pass_config):
+def test_state_t2_instantiation(t2_compute, target, expected, exception, first_pass_config, monkeypatch):
     """
-    Template creates state T2s (and dependencies)
+    Template creates state T2s and checks for missing dependencies
     """
-    processes = LegacyChannelTemplate(
-        **{
-            "channel": "foo",
-            "auto_complete": False,
-            "t0_filter": {"unit": "DummyFilter"},
-            "t2_compute": t2_compute,
-        }
-    ).get_processes(None, first_pass_config)
+    # _craft_t0_process should raise ValueError if dependencies are missing
+    monkeypatch.setattr(
+        "ampel.test.dummy.DummyTiedStateT2Unit._unit",
+        expected['unit'],
+    )
+    with (
+        pytest.raises(exception)
+        if exception
+        else contextlib.nullcontext()
+    ):
+        processes = LegacyChannelTemplate(
+            **{
+                "channel": "foo",
+                "auto_complete": False,
+                "t0_filter": {"unit": "DummyFilter"},
+                "t2_compute": t2_compute,
+            }
+        ).get_processes(None, first_pass_config)
+    if exception:
+        return
+
     assert processes
     proc = processes[0]
     assert proc["tier"] == 0
@@ -133,7 +155,7 @@ def test_state_t2_instantiation(t2_compute, target, expected, first_pass_config)
             item = item[keys.pop(0)]
         return item
 
-    items = get(directive, target)
+    items = get(directive, list(target))
     assert expected in items
     assert (
         len([i for i in items if expected == i]) == 1

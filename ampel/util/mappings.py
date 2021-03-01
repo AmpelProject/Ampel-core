@@ -7,7 +7,7 @@
 # Last Modified Date: 17.06.2020
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-import json, hashlib, sys
+import json
 from typing import Dict, Any, List, Union, Type, Optional, Sequence, TypeVar, Literal, Callable, Iterable, Mapping, MutableMapping
 from ampel.type import strict_iterable
 from ampel.util.crypto import hash_payload, HT
@@ -167,43 +167,50 @@ def del_by_path(d: Dict, path: Union[str, Sequence[str]], delimiter: str = '.') 
 def walk_and_process_dict(
 	arg: Union[dict, list], callback: Callable,
 	match: List[str], path: str = None, **kwargs
-) -> None:
+) -> bool:
 	"""
 	callback is called with 4 arguments:
 	1) the path of the possibly nested entry. Ex: 'processor.config.select' or 'processor'
 	2) the matching key (from list 'match'). Ex: 'config'
 	3) the matching (sub) dict
 	4) the **kwargs provided to this method
+	and should return True if a modification was performed
 
 	Simplest callback function:
 	def my_callback(path, k, d):
 		print(f'{path} -> {k}: {d}\n')
+		return False
+
+	:returns: True if a modification was performed, False otherwise
 	"""
+
+	ret = False
 
 	if isinstance(arg, list):
 		for i, el in enumerate(arg):
-			walk_and_process_dict(
+			ret = walk_and_process_dict(
 				el, callback, match, f'{path}.{i}' if path else f'{i}', **kwargs
-			)
+			) or ret
 
 	if isinstance(arg, dict):
 
 		for k, v in arg.items():
 
 			if k in match:
-				callback(path, k, arg, **kwargs)
+				ret = callback(path, k, arg, **kwargs) or ret
 
 			if isinstance(v, dict):
-				walk_and_process_dict(
+				ret = walk_and_process_dict(
 					v, callback, match, f'{path}.{k}' if path else f'{k}', **kwargs
-				)
+				) or ret
 
 			if isinstance(v, list):
 				for i, el in enumerate(v):
-					walk_and_process_dict(
-						el, callback, match, f'{path}.{k}' if path else f'{k}', **kwargs
-					)
+					ret = walk_and_process_dict(
+						el, callback, match, f'{path}.{k}.{i}' if path else f'{k}.{i}', **kwargs
+					) or ret
 
+	return ret
 
 def flatten_dict(
 	d: Mapping,
@@ -273,7 +280,7 @@ def flatten_dict(
 					try:
 						# allow int/str mixed up
 						v = sorted(v, key=lambda x: str(x))
-					except:
+					except Exception:
 						pass
 
 					# In []: sorted([{'c': 2}, {'b.f.0': 1, 'b.f.1': 2, 'b.f.2': 3}], key=lambda x: next(iter(x.keys())))
@@ -299,7 +306,7 @@ def flatten_dict(
 		raise ValueError(f"Offending input: {d}") from e
 
 
-def unflatten_dict(d: Mapping[str,Any], separator: str = '.', unflatten_list: bool = False) -> MutableMapping[str,Any]:
+def unflatten_dict(d: Mapping[str, Any], separator: str = '.', unflatten_list: bool = False) -> MutableMapping[str, Any]:
 	"""
 	Example:
 
@@ -309,12 +316,12 @@ def unflatten_dict(d: Mapping[str,Any], separator: str = '.', unflatten_list: bo
 	In []: unflatten_dict({'a.0.b.f.0': 1, 'a.0.b.f.1': 2, 'a.0.b.f.2': 3, 'a.1.c': 2, 'd.e': 1}, unflatten_list=True)
 	Out[]: {'a': [{'b': {'f': [1, 2, 3]}}, {'c': 2}], 'd': {'e': 1}}
 	"""
-	out: Dict[str,Any] = {}
+	out: Dict[str, Any] = {}
 
 	for key, value in d.items():
 
 		parts = key.split(separator)
-		target: Dict[str,Any] = out
+		target: Dict[str, Any] = out
 
 		for part in parts[:-1]:
 			if part not in target:
@@ -366,7 +373,7 @@ def merge_dict(d1: Dict, d2: Dict) -> Dict:
 	}
 
 
-def merge_dicts(items: Sequence[Optional[Dict[T,Any]]]) -> Optional[Dict[T,Any]]:
+def merge_dicts(items: Sequence[Optional[Dict[T, Any]]]) -> Optional[Dict[T, Any]]:
 	"""
 	Merge a sequence of dicts recursively. Elements that are None are skipped.
 	"""

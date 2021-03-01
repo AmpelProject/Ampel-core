@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 16.10.2019
-# Last Modified Date: 18.02.2020
+# Last Modified Date: 25.02.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from typing import Dict, Any, Optional
@@ -38,13 +38,20 @@ class AliasConfigCollector(AbsDictConfigCollector):
 
 		for k, v in arg.items():
 
+			if "/" in k:
+				self.error(
+					f"{self.tier} alias cannot contain '/'."
+					f"Offending key {k}\n"
+					f"{self.distrib_hint(file_name, dist_name)}"
+				)
+				continue
+
 			try:
 
 				key = k
 
 				# Global alias
 				if k and k[0] == "%":
-					key = k[1:]
 					scope = "global"
 					self.global_alias[key] = dist_name
 				else:

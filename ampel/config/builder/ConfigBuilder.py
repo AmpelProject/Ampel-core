@@ -4,14 +4,12 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 03.09.2019
-# Last Modified Date: 12.04.2020
+# Last Modified Date: 01.03.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import importlib, re, json
-from contextlib import nullcontext
-from functools import partial
 from math import inf # noqa: required for eval(repr(...)) below
-from typing import ContextManager, Dict, List, Any, Optional, Set, Iterable
+from typing import Dict, List, Any, Optional, Set, Iterable
 
 from pydantic import ValidationError
 
@@ -20,16 +18,12 @@ from ampel.util.crypto import aes_recursive_decrypt
 from ampel.abstract.AbsChannelTemplate import AbsChannelTemplate
 from ampel.log.AmpelLogger import AmpelLogger, VERBOSE, DEBUG, ERROR
 from ampel.config.builder.FirstPassConfig import FirstPassConfig
-from ampel.config.AmpelConfig import AmpelConfig
-from ampel.core.UnitLoader import UnitLoader
-from ampel.model.UnitModel import UnitModel
 from ampel.config.collector.ConfigCollector import ConfigCollector
 from ampel.config.collector.T02ConfigCollector import T02ConfigCollector
 from ampel.model.template.ChannelWithProcsTemplate import ChannelWithProcsTemplate
 from ampel.config.collector.ProcessConfigCollector import ProcessConfigCollector
 from ampel.config.collector.ChannelConfigCollector import ChannelConfigCollector
 from ampel.config.builder.ProcessMorpher import ProcessMorpher
-from ampel.dev.DictSecretProvider import PotemkinSecretProvider
 
 class ConfigBuilder:
 	"""
@@ -147,8 +141,8 @@ class ConfigBuilder:
 
 
 	def build_config(self,
-		ignore_errors: bool = False,
-		validate_unit_models: bool = True,
+		stop_on_errors: int = 2,
+		config_validator: Optional[str] = "ConfigChecker",
 		skip_default_processes: bool = False,
 		pwds: Optional[Iterable[str]] = None
 	) -> Dict[str, Any]:
@@ -156,21 +150,27 @@ class ConfigBuilder:
 		Pass 2.
 		Builds the final ampel config using previously collected config pieces (contained in self.first_pass_config)
 		This involves a multi-step process where the config is 'morphed' into its final structure.
-		:param ignore_errors: by default, the config building process stops if an error occured. \
-		Set this option to True if you wish a different behavior. \
-		Note that issues might then later arise with your ampel system.
-		:param pwds: config section 'resource' might contain AES encrypted entries. \
+
+		:param stop_on_errors: by default, config building stops and raises an exception if an error occured.
+			- 2: stop on errors
+			- 1: ignore errors in first_pass_config only (will stop on morphing/scoping/template errors)
+			- 0: ignore all errors
+		Note that issues might/will later arise with your ampel system.
+
+		:param pwds: config section 'resource' might contain AES encrypted entries.
 		If passwords are provided to this method, thoses entries will be decrypted.
+
 		:param skip_default_processes: set to True to discard default processes defined by ampel-core.
 		The static variable ConfigBuilder._default_processes references those processes by name.
 		Set skip_default_processes=True if your repositories define their own default T2/T3 processes.
-		:raises: ValueError if self.error is True - this behavior can be disabled using the parameter ignore_errors
+
+		:raises: ValueError if self.error is True - this behavior can be disabled using the parameter stop_on_errors
 		"""
 
 		if self.first_pass_config.has_nested_error():
-			if not ignore_errors:
+			if stop_on_errors > 1:
 				raise ValueError(
-					'Error occured while building config, you can use the option ignore_errors=True \n' +
+					'Error were reported in first pass config, you can use the option stop_on_errors = 1 (or 0)\n' +
 					'to bypass this exception and get the (possibly non-working) config nonetheless'
 				)
 
@@ -178,18 +178,6 @@ class ConfigBuilder:
 			k: self.first_pass_config[k]
 			for k in FirstPassConfig.conf_keys.keys()
 		}
-
-		unit_loader = (
-			UnitLoader(
-				AmpelConfig(self.first_pass_config),
-				secrets=PotemkinSecretProvider(),
-			) if validate_unit_models else None
-		)
-		def unit_validation_context() -> ContextManager[None]:
-			if unit_loader:
-				return unit_loader.validate_unit_models()
-			else:
-				return nullcontext()
 
 		out['process'] = {}
 
@@ -234,20 +222,19 @@ class ConfigBuilder:
 					pass
 
 				try:
-					with unit_validation_context():
-						p_collector.add(
-							self.new_morpher(p) \
-								.scope_aliases(self.first_pass_config) \
-								.apply_template() \
-								.hash_t2_config(out) \
-								.get(),
-							p.get('source'),
-							p.get('distrib')
-						)
+					p_collector.add(
+						self.new_morpher(p) \
+							.scope_aliases(self.first_pass_config) \
+							.apply_template() \
+							.hash_t2_config(out) \
+							.get(),
+						p.get('source'),
+						p.get('distrib')
+					)
 				except Exception as e:
 					self.logger.error(f'Unable to morph process {p["name"]}', exc_info=e)
-					if not ignore_errors:
-						raise
+					if stop_on_errors > 0:
+						raise e
 
 		# Setup empty channel collector
 		out['channel'] = ChannelConfigCollector(
@@ -271,7 +258,7 @@ class ConfigBuilder:
 						self.logger.error(str(ee))
 					else:
 						self.logger.error(f'Unable to morph channel: {chan_name}', exc_info=ee)
-					if not ignore_errors:
+					if stop_on_errors > 0:
 						raise ee
 
 				# Retrieve processes possibly embedded in channel def
@@ -284,24 +271,23 @@ class ConfigBuilder:
 
 					try:
 						# Add transformed process to final process collector
-						with unit_validation_context():
-							out['process'][f't{p["tier"]}'].add(
-								self.new_morpher(p) \
-									.scope_aliases(self.first_pass_config) \
-									.apply_template() \
-									.hash_t2_config(out) \
-									.enforce_t3_channel_selection(chan_name) \
-									.get(),
-								p.get('source'),
-								p.get('distrib')
-							)
+						out['process'][f't{p["tier"]}'].add(
+							self.new_morpher(p) \
+								.scope_aliases(self.first_pass_config) \
+								.apply_template() \
+								.hash_t2_config(out) \
+								.enforce_t3_channel_selection(chan_name) \
+								.get(),
+							p.get('source'),
+							p.get('distrib')
+						)
 					except (ValidationError, Exception) as ee:
 						if isinstance(ee, ValidationError):
 							self.logger.error(f'Unable to morph embedded process {p["name"]} (from {p["source"]})')
 							self.logger.error(str(ee))
 						else:
 							self.logger.error(f'Unable to morph embedded process {p["name"]} (from {p["source"]})', exc_info=ee)
-						if not ignore_errors:
+						if stop_on_errors > 0:
 							raise ee
 
 			else:
@@ -318,13 +304,23 @@ class ConfigBuilder:
 		self.logger.info('Done building config')
 
 		# Casts ConfigCollector instances into real dicts
-		return self._recursive_dictify(out)
+		d = self._recursive_dictify(out)
+
+		if config_validator:
+			from importlib import import_module
+			validator = getattr(
+				import_module("ampel.config.builder." + config_validator),
+				config_validator
+			)(d, self.logger, self.verbose)
+			return validator.validate()
+
+		return d
 
 
 	@classmethod
 	def _recursive_dictify(cls, item):
 		if isinstance(item, dict):
-			return {k: cls._recursive_dictify(v) for k,v in item.items()}
+			return {k: cls._recursive_dictify(v) for k, v in item.items()}
 		elif isinstance(item, list):
 			return [cls._recursive_dictify(v) for v in item]
 		else:
