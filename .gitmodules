@@ -1,3 +1,0 @@
-[submodule "src/ampel/core/test/deploy"]
-	path = ampel/test/deploy
-	url = https://github.com/AmpelProject/Ampel-deploy.git
