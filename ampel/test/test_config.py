@@ -12,7 +12,7 @@ def test_validate_config():
 
     cb = DistConfigBuilder(verbose=False)
     cb.load_distributions()
-    assert cb.build_config(ignore_errors=False)
+    assert cb.build_config(stop_on_errors=False)
 
 
 @pytest.mark.parametrize("doc", [{"bignumber": 1 << 57}, {1: 2}])

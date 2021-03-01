@@ -63,7 +63,7 @@ def build(args: Namespace) -> int:
     cb = DistConfigBuilder(verbose=args.verbose)
     try:
         cb.load_distributions()
-        config = cb.build_config(ignore_errors=args.ignore_errors)
+        config = cb.build_config(stop_on_errors=args.ignore_errors)
     except Exception as exc:
         log_exception(cb.logger, exc)
         return 1
