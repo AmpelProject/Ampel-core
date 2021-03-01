@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 03.09.2019
-# Last Modified Date: 12.04.2020
+# Last Modified Date: 01.03.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import importlib, re, json
@@ -141,7 +141,7 @@ class ConfigBuilder:
 
 
 	def build_config(self,
-		ignore_errors: int = 0,
+		stop_on_errors: int = 2,
 		config_validator: Optional[str] = "ConfigChecker",
 		skip_default_processes: bool = False,
 		pwds: Optional[Iterable[str]] = None
@@ -150,23 +150,27 @@ class ConfigBuilder:
 		Pass 2.
 		Builds the final ampel config using previously collected config pieces (contained in self.first_pass_config)
 		This involves a multi-step process where the config is 'morphed' into its final structure.
-		:param ignore_errors: by default, the config building process stops if an error occured.
-			- 0: stop for all errors
-			- 1: ignore errors in first_pass_config only
-			- 2: ignore all errors
-		Note that issues might then later arise with your ampel system.
+
+		:param stop_on_errors: by default, config building stops and raises an exception if an error occured.
+			- 2: stop on errors
+			- 1: ignore errors in first_pass_config only (will stop on morphing/scoping/template errors)
+			- 0: ignore all errors
+		Note that issues might/will later arise with your ampel system.
+
 		:param pwds: config section 'resource' might contain AES encrypted entries.
 		If passwords are provided to this method, thoses entries will be decrypted.
+
 		:param skip_default_processes: set to True to discard default processes defined by ampel-core.
 		The static variable ConfigBuilder._default_processes references those processes by name.
 		Set skip_default_processes=True if your repositories define their own default T2/T3 processes.
-		:raises: ValueError if self.error is True - this behavior can be disabled using the parameter ignore_errors
+
+		:raises: ValueError if self.error is True - this behavior can be disabled using the parameter stop_on_errors
 		"""
 
 		if self.first_pass_config.has_nested_error():
-			if ignore_errors < 1:
+			if stop_on_errors > 1:
 				raise ValueError(
-					'Error occured while building config, you can use the option ignore_errors=1 (or 2)\n' +
+					'Error were reported in first pass config, you can use the option stop_on_errors = 1 (or 0)\n' +
 					'to bypass this exception and get the (possibly non-working) config nonetheless'
 				)
 
@@ -174,7 +178,6 @@ class ConfigBuilder:
 			k: self.first_pass_config[k]
 			for k in FirstPassConfig.conf_keys.keys()
 		}
-
 
 		out['process'] = {}
 
@@ -230,7 +233,7 @@ class ConfigBuilder:
 					)
 				except Exception as e:
 					self.logger.error(f'Unable to morph process {p["name"]}', exc_info=e)
-					if ignore_errors <= 1:
+					if stop_on_errors > 0:
 						raise e
 
 		# Setup empty channel collector
@@ -255,7 +258,7 @@ class ConfigBuilder:
 						self.logger.error(str(ee))
 					else:
 						self.logger.error(f'Unable to morph channel: {chan_name}', exc_info=ee)
-					if ignore_errors <= 1:
+					if stop_on_errors > 0:
 						raise ee
 
 				# Retrieve processes possibly embedded in channel def
@@ -284,7 +287,7 @@ class ConfigBuilder:
 							self.logger.error(str(ee))
 						else:
 							self.logger.error(f'Unable to morph embedded process {p["name"]} (from {p["source"]})', exc_info=ee)
-						if ignore_errors <= 1:
+						if stop_on_errors > 0:
 							raise ee
 
 			else:
