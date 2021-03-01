@@ -69,17 +69,16 @@ apparently unrelated parts of the codebase.</p>
 <div class="section" id="expected-installation-layout">
 <h2>Expected installation layout<a class="headerlink" href="#expected-installation-layout" title="Permalink to this headline">¶</a></h2>
 <p>Choose a root directory, e.g. on my machine, /Users/jakob/Documents/ZTF/Ampel.
-For simplicity, we will call this <cite>$AMPEL_ROOT</cite> from here on out. Clone Ampel
-and the plugins you choose to use into subdirectories, e.g.:</p>
+For simplicity, we will call this <cite>$AMPEL_ROOT</cite> from here on out. Clone any
+Ampel plugins you choose to use into subdirectories, e.g.:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span>cd $AMPEL_ROOT
-git clone git@github.com:AmpelProject/Ampel.git ampel-core
+
 git clone git@github.com:AmpelProject/ampel-contrib-hu.git ampel-contrib-hu
 git clone git@github.com:robertdstein/Ampel-ZTFbh ampel-contrib-ztfbh
-git clone git@github.com:AmpelProject/Ampel-Neutrino.git ampel-neutrino
 </pre></div>
 </div>
 <p>Now, create a <cite>conda</cite> environment for development, and activate it:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">conda</span> <span class="n">env</span> <span class="n">create</span> <span class="o">--</span><span class="n">file</span> <span class="n">ampel</span><span class="o">-</span><span class="n">core</span><span class="o">/</span><span class="n">deploy</span><span class="o">/</span><span class="n">docker</span><span class="o">-</span><span class="n">images</span><span class="o">/</span><span class="n">devel</span><span class="o">/</span><span class="n">base</span><span class="o">-</span><span class="n">environment</span><span class="o">.</span><span class="n">yml</span> <span class="o">-</span><span class="n">n</span> <span class="n">ampeltest</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">conda</span> <span class="n">env</span> <span class="n">create</span> <span class="o">-</span><span class="n">n</span> <span class="n">ampeltest</span> <span class="n">python</span><span class="o">=</span><span class="mf">3.8</span>
 <span class="o">.</span> <span class="n">activate</span> <span class="n">ampeltest</span>
 </pre></div>
 </div>
@@ -90,12 +89,15 @@ git clone git@github.com:AmpelProject/Ampel-Neutrino.git ampel-neutrino
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p>While you can use whatever Python environment you have lying around,
-creating the enviroment from the provided yml file ensures that it
-matches the one used in production. If you need to add
-more packages, be sure to add them to the environment.yml file as well.</p>
+creating a dedicated virtual enviroment ensures that it is isolated from
+changes you make elsewhere.</p>
 </div>
-<p>Inside your environment, use <cite>pip install -e</cite> to register each component:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>for dir in ampel-co*; do
+<p>Inside your environment, install ampel-core:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pip</span> <span class="n">install</span> <span class="n">ampel</span><span class="o">-</span><span class="n">core</span>
+</pre></div>
+</div>
+<p>and use <cite>pip install -e</cite> to register each plugin:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>for dir in ampel-*; do
   pip install -e $dir
 done
 </pre></div>
