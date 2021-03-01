@@ -43,7 +43,7 @@ class T3ChannelProjector(T3BaseProjector):
 		self.verbose = self.logger.verbose
 		if self.verbose:
 			self.logger.log(VERBOSE, f"Setting up channel project for '{self.channel}'")
-		self._channel_set : Set[ChannelId] = LogicSchemaUtils.reduce_to_set(self.channel)
+		self._channel_set: Set[ChannelId] = LogicSchemaUtils.reduce_to_set(self.channel)
 
 		journal_modifier = ComboDictModifier(
 			logger = self.logger,
