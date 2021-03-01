@@ -48,32 +48,32 @@ class ProcessMorpher:
 
 		if self.process['tier'] == 3:
 
-			for directive in self.process['processor']['config']['directives']:
-				if 'select' in directive:
-					select = directive['select']
-					if select['unit'] not in ('T3StockSelector', 'T3FilteringStockSelector'):
-						raise ValueError(
-							f'Cannot enforce channel selection: '
-							f'unknown stock selection unit {select["unit"]}'
-						)
-				else:
-					select = {'unit': 'T3StockSelector', 'config': {}}
-					directive['select'] = select
-
-				if 'config' not in select:
-					select['config'] = {}
-
-				if self.verbose:
-					action = 'Modifying' if 'channel' in select['config'] else 'Adding'
-					self.logger.log(VERBOSE,
-						f'{action} channel selection criteria ({chan_name}) '
-						f'for process {self.process["name"]}'
+			directive = self.process['processor']['config']['directive']
+			if 'select' in directive:
+				select = directive['select']
+				if select['unit'] not in ('T3StockSelector', 'T3FilteringStockSelector'):
+					raise ValueError(
+						f'Cannot enforce channel selection: '
+						f'unknown stock selection unit {select["unit"]}'
 					)
+			else:
+				select = {'unit': 'T3StockSelector', 'config': {}}
+				directive['select'] = select
 
-				# processes embedded in channel must feature a transient selection.
-				# An exception will be raised if someone embeds an admin t3 proc (without selection)
-				# within a channel (unsupported feature)
-				select['config']['channel'] = chan_name
+			if 'config' not in select:
+				select['config'] = {}
+
+			if self.verbose:
+				action = 'Modifying' if 'channel' in select['config'] else 'Adding'
+				self.logger.log(VERBOSE,
+					f'{action} channel selection criteria ({chan_name}) '
+					f'for process {self.process["name"]}'
+				)
+
+			# processes embedded in channel must feature a transient selection.
+			# An exception will be raised if someone embeds an admin t3 proc (without selection)
+			# within a channel (unsupported feature)
+			select['config']['channel'] = chan_name
 
 		return self
 
