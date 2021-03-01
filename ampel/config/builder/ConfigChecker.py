@@ -143,7 +143,7 @@ class ConfigChecker:
 				model_args = {
 					"unit": self.config['process'][tier][proc]['processor']['unit'],
 					"config": {
-						**self.config['process'][tier][proc]['processor']['config'],
+						**self.config['process'][tier][proc]['processor'].get('config', {}),
 						"process_name": proc
 					}
 				},
@@ -163,7 +163,7 @@ class ConfigChecker:
 
 			unit_models: List[Dict[str, Any]] = []
 			walk_and_process_dict(
-				arg = self.config['process'][tier][proc]['processor']['config'],
+				arg = self.config['process'][tier][proc]['processor'].get('config'),
 				callback = self._gather_unit_models_callback,
 				match = ['config'],
 				unit_models = unit_models
