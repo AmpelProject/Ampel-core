@@ -24,5 +24,5 @@ class T3Directive(StrictModel):
 	load: Optional[UnitModel]
 	#: Add external information to each :class:`~ampel.core.AmpelBuffer.AmpelBuffer`.
 	complement: Optional[Sequence[UnitModel]]
-	#: Execute units on each view
+	#: Execute unit(s) on each view (unit definition for the underlying AbsUnitRunner)
 	run: UnitModel
