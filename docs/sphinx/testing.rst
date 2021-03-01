@@ -32,18 +32,17 @@ Expected installation layout
 ****************************
 
 Choose a root directory, e.g. on my machine, /Users/jakob/Documents/ZTF/Ampel.
-For simplicity, we will call this `$AMPEL_ROOT` from here on out. Clone Ampel
-and the plugins you choose to use into subdirectories, e.g.::
+For simplicity, we will call this `$AMPEL_ROOT` from here on out. Clone any
+Ampel plugins you choose to use into subdirectories, e.g.::
   
   cd $AMPEL_ROOT
-  git clone git@github.com:AmpelProject/Ampel.git ampel-core
+
   git clone git@github.com:AmpelProject/ampel-contrib-hu.git ampel-contrib-hu
   git clone git@github.com:robertdstein/Ampel-ZTFbh ampel-contrib-ztfbh
-  git clone git@github.com:AmpelProject/Ampel-Neutrino.git ampel-neutrino
 
 Now, create a `conda` environment for development, and activate it::
   
-  conda env create --file ampel-core/deploy/docker-images/devel/base-environment.yml -n ampeltest
+  conda env create -n ampeltest python=3.8
   . activate ampeltest
 
 When this is done, you should see a prompt like the following::
@@ -51,13 +50,16 @@ When this is done, you should see a prompt like the following::
   (ampeltest) [jakob@znb34-w:ZTF/Ampel]$
 
 .. note:: While you can use whatever Python environment you have lying around,
-   creating the enviroment from the provided yml file ensures that it
-   matches the one used in production. If you need to add
-   more packages, be sure to add them to the environment.yml file as well.
+   creating a dedicated virtual enviroment ensures that it is isolated from
+   changes you make elsewhere.
 
-Inside your environment, use `pip install -e` to register each component::
+Inside your environment, install ampel-core::
+
+  pip install ampel-core
+
+and use `pip install -e` to register each plugin::
   
-  for dir in ampel-co*; do
+  for dir in ampel-*; do
     pip install -e $dir
   done
 
