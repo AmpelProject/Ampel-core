@@ -4,10 +4,10 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 26.02.2018
-# Last Modified Date: 21.06.2020
+# Last Modified Date: 01.03.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-from typing import Dict, Any, Sequence, List, Optional, Union
+from typing import Dict, Any, List, Optional, Union
 
 from ampel.abstract.AbsProcessorUnit import AbsProcessorUnit
 from ampel.log import AmpelLogger, LogFlag, DBEventDoc, SHOUT
@@ -40,8 +40,8 @@ class T3Processor(AbsProcessorUnit):
 	  - set raise_exc = True (troubles collection will not be populated if an exception occurs)
 	"""
 
-	#: T3 processing sequences
-	directives: Sequence[T3Directive]
+	#: T3 processing schema
+	directive: T3Directive
 	#: number of stocks to load at once
 	chunk_size: int = 200
 
@@ -101,132 +101,130 @@ class T3Processor(AbsProcessorUnit):
 			# Feedback
 			logger.log(SHOUT, f"Running {self.process_name}")
 
-			for directive in self.directives:
+			# run context
+			#############
 
-				# run context
-				#############
+			run_context: Dict[str, Any] = {}
 
-				run_context: Dict[str, Any] = {}
+			if self.context.admin_msg:
+				run_context['admin_msg'] = self.context.admin_msg
 
-				if self.context.admin_msg:
-					run_context['admin_msg'] = self.context.admin_msg
+			if self.directive.context:
 
-				if directive.context:
+				for el in self.directive.context:
+					self.context.loader \
+						.new_admin_unit(
+							unit_model = el,
+							context = self.context,
+							sub_type = AbsT3RunContextAppender,
+							logger = logger,
+							process_name = self.process_name
+						) \
+						.update(run_context)
 
-					for el in directive.context:
+			# Unit runner
+			#############
+
+			# The default runner provided by pyampel-core is T3UnitRunner
+			runner = self.context.loader \
+				.new_admin_unit(
+					unit_model = self.directive.run,
+					context = self.context,
+					sub_type = AbsT3UnitRunner,
+					logger = logger,
+					run_id = run_id,
+					process_name = self.process_name,
+					channel = self.channel,
+					update_journal = self.update_journal,
+					extra_journal_tag = self.extra_journal_tag,
+					run_context = run_context
+				)
+
+			# target selection
+			##################
+
+			if self.directive.select:
+
+				# Spawn and run a new selector instance
+				# stock_ids is an iterable (often a pymongo cursor)
+				selector = self.context.loader.new_admin_unit(
+					unit_model = self.directive.select,
+					context = self.context,
+					sub_type = AbsT3Selector,
+					logger = logger
+				)
+
+				# Usually, id_key is '_id' but it can be 'stock' if the
+				# selection is based on t2 documents for example
+				id_key = selector.field_name
+
+
+				# Content loader
+				################
+
+				if self.directive.load:
+					# Spawn requested content loader
+					content_loader = self.context.loader \
+						.new_admin_unit(
+							unit_model = self.directive.load,
+							context = self.context,
+							sub_type = AbsT3Loader,
+							logger = logger
+						)
+
+
+				# Content complementer
+				######################
+
+				# Spawn potentialy requested snapdata complementers
+				if self.directive.complement:
+					comps: List[AbsT3DataAppender] = [
 						self.context.loader \
 							.new_admin_unit(
-								unit_model = el,
+								unit_model = conf_el,
 								context = self.context,
-								sub_type = AbsT3RunContextAppender,
-								logger = logger,
-								process_name = self.process_name
-							) \
-							.update(run_context)
-
-				# Unit runner
-				#############
-
-				# The default runner provided by pyampel-core is T3UnitRunner
-				runner = self.context.loader \
-					.new_admin_unit(
-						unit_model = directive.run,
-						context = self.context,
-						sub_type = AbsT3UnitRunner,
-						logger = logger,
-						run_id = run_id,
-						process_name = self.process_name,
-						channel = self.channel,
-						update_journal = self.update_journal,
-						extra_journal_tag = self.extra_journal_tag,
-						run_context = run_context
-					)
-
-				# target selection
-				##################
-
-				if directive.select:
-
-					# Spawn and run a new selector instance
-					# stock_ids is an iterable (often a pymongo cursor)
-					selector = self.context.loader.new_admin_unit(
-						unit_model = directive.select,
-						context = self.context,
-						sub_type = AbsT3Selector,
-						logger = logger
-					)
-
-					# Usually, id_key is '_id' but it can be 'stock' if the
-					# selection is based on t2 documents for example
-					id_key = selector.field_name
-
-
-					# Content loader
-					################
-
-					if directive.load:
-						# Spawn requested content loader
-						content_loader = self.context.loader \
-							.new_admin_unit(
-								unit_model = directive.load,
-								context = self.context,
-								sub_type = AbsT3Loader,
+								sub_type = AbsT3DataAppender,
 								logger = logger
 							)
+						for conf_el in self.directive.complement
+					]
 
+				# get pymongo cursor
+				if stock_ids := selector.fetch():
 
-					# Content complementer
-					######################
+					# Run start
+					###########
 
-					# Spawn potentialy requested snapdata complementers
-					if directive.complement:
-						comps: List[AbsT3DataAppender] = [
-							self.context.loader \
-								.new_admin_unit(
-									unit_model = conf_el,
-									context = self.context,
-									sub_type = AbsT3DataAppender,
-									logger = logger
-								)
-							for conf_el in directive.complement
-						]
+					# Loop over chunks from the cursor/iterator
+					# NB: we consume the entire stock selection cursor at once using list()
+					# to be robust against cursor timeouts or server restarts during long-
+					# lived T3 processes
+					for chunk_ids in chunks(list(stock_ids), self.chunk_size):
 
-					# get pymongo cursor
-					if stock_ids := selector.fetch():
+						# try/catch here to allow some chunks to complete
+						# even if one raises an exception
+						try:
+							# Load info from DB
+							tran_data = content_loader.load([sid[id_key] for sid in chunk_ids])
 
-						# Run start
-						###########
+							# Potentialy add complementary information (spectra, TNS names, ...)
+							if self.directive.complement:
+								for appender in comps:
+									appender.complement(tran_data)
 
-						# Loop over chunks from the cursor/iterator
-						# NB: we consume the entire stock selection cursor at once using list()
-						# to be robust against cursor timeouts or server restarts during long-
-						# lived T3 processes
-						for chunk_ids in chunks(list(stock_ids), self.chunk_size):
+							# Run T3 units defined for this process
+							runner.run(list(tran_data))
+						except Exception as e:
+							exc = e
+							if self.raise_exc:
+								raise e
 
-							# try/catch here to allow some chunks to complete
-							# even if one raises an exception
-							try:
-								# Load info from DB
-								tran_data = content_loader.load([sid[id_key] for sid in chunk_ids])
+							report_exception(
+								self.context.db, logger, exc=e,
+								info={'process': self.process_name}
+							)
 
-								# Potentialy add complementary information (spectra, TNS names, ...)
-								if directive.complement:
-									for appender in comps:
-										appender.complement(tran_data)
-
-								# Run T3 units defined for this process
-								runner.run(list(tran_data))
-							except Exception as e:
-								exc = e
-								if self.raise_exc:
-									raise e
-
-								report_exception(
-									self.context.db, logger, exc=e,
-									info={'process': self.process_name}
-								)
-
-				runner.done()
+			runner.done()
 
 		except Exception as e:
 
