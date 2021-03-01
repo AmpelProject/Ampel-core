@@ -21,12 +21,14 @@ from ampel.model.UnitModel import UnitModel
 from ampel.type import ChannelId, Tag
 
 
+UnitModelOrString = Union[UnitModel, str]
+UnitModelSequence = Union[UnitModelOrString, Sequence[UnitModelOrString]]
+
+
 class FilterModel(StrictModel):
     #: Filter based on T2 results
     t2: Union[T2FilterModel, AllOf[T2FilterModel], AnyOf[T2FilterModel]]
 
-UnitModelOrString = Union[UnitModel, str]
-UnitModelSequence = Union[UnitModelOrString, Sequence[UnitModelOrString]]
 
 class PeriodicSummaryT3(AbsProcessTemplate):
     """
@@ -40,7 +42,7 @@ class PeriodicSummaryT3(AbsProcessTemplate):
     active: bool = True
     #: one or more `schedule <https://schedule.readthedocs.io/en/stable/>`_
     #: expressions, e.g: ``every().day.at("15:00")`` or ``every(42).minutes``
-    #: 
+    #:
     #: .. note:: all times are are expressed in UTC
     schedule: Union[str, Sequence[str]]
     #: Channel selection.
@@ -58,7 +60,7 @@ class PeriodicSummaryT3(AbsProcessTemplate):
     ] = None
     #: Documents to load. If a string, should refer to an entry in the
     #: ``alias.t3`` config section. See :ref:`t3-directive-load`.
-    load: Optional[Sequence[Union[str,LoaderDirective]]] = None
+    load: Optional[Sequence[Union[str, LoaderDirective]]] = None
     #: Additional stock filters.
     filter: Optional[FilterModel] = None
     #: Complement stages. See :ref:`t3-directive-complement`.
@@ -67,6 +69,7 @@ class PeriodicSummaryT3(AbsProcessTemplate):
     run: UnitModelSequence
 
     def get_process(self, logger: Logger) -> Dict[str, Any]:
+
         directive: Dict[str, Any] = {
             "context": [
                 {"unit": "T3AddAlertsNumber"},
@@ -124,13 +127,13 @@ class PeriodicSummaryT3(AbsProcessTemplate):
             "name": self.name,
             "processor": {
                 "unit": "T3Processor",
-                "config": {"directives": [directive]},
+                "config": {"directive": directive},
             },
         }
 
         return ret
 
-    def get_units(self, units: UnitModelSequence) -> List[Dict[str,Any]]:
+    def get_units(self, units: UnitModelSequence) -> List[Dict[str, Any]]:
         if isinstance(units, str):
             return [UnitModel(unit=units).dict()]
         elif isinstance(units, UnitModel):
