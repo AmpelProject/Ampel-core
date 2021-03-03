@@ -52,26 +52,9 @@
 </div>
 <div class="section" id="ampel-packages">
 <h2>Ampel packages<a class="headerlink" href="#ampel-packages" title="Permalink to this headline">¶</a></h2>
-<p>To develop and test a contributed plug-in, you will need to install the Ampel Python packages and their dependencies from within your environment. A basic set of packages for working with ZTF alerts is:</p>
-<div class="highlight-shell-session notranslate"><div class="highlight"><pre><span></span><span class="go">pip install \</span>
-<span class="go">-e git+https://github.com/AmpelProject/Ampel-interface.git#egg=ampel-interface \</span>
-<span class="go">-e git+https://github.com/AmpelProject/Ampel-core.git#egg=ampel-core \</span>
-<span class="go">-e git+https://github.com/AmpelProject/Ampel-alerts.git#egg=ampel-alerts \</span>
-<span class="go">-e git+https://github.com/AmpelProject/Ampel-photometry.git#egg=ampel-photometry \</span>
-<span class="go">-e git+https://github.com/AmpelProject/Ampel-ZTF.git#egg=ampel-ztf</span>
+<p>To develop and test a contributed plug-in, you will need to install the Ampel Python packages and their dependencies from within your environment. You can install the packages needed to work with ZTF alerts from PyPI via:</p>
+<div class="highlight-shell-session notranslate"><div class="highlight"><pre><span></span><span class="go">pip install ampel-ztf</span>
 </pre></div>
-</div>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>Eventually these should be published to PyPI.</p>
-</div>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>If you have two-factor authentication enabled on your GitHub account, your won’t be able to use your account password to authenticate with command-line <code class="docutils literal notranslate"><span class="pre">git</span></code>. Instead, create a <a class="reference external" href="https://github.com/settings/tokens/new">personal access token</a> with <code class="docutils literal notranslate"><span class="pre">repo</span></code> scope, and use that as your password. If you had previously stored your account password in a credential helper (e.g. if <code class="docutils literal notranslate"><span class="pre">git</span> <span class="pre">config</span> <span class="pre">--system</span> <span class="pre">--get</span> <span class="pre">credential.helper</span></code> says <code class="docutils literal notranslate"><span class="pre">osxkeychain</span></code>), then you will have to remove the password from that credential helper before <code class="docutils literal notranslate"><span class="pre">git</span></code> will ask you for a new one.</p>
-</div>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>Since Ampel packages are <a class="reference external" href="https://packaging.python.org/guides/packaging-namespace-packages/#creating-a-namespace-package">PEP 420 namespace packages</a>, <code class="docutils literal notranslate"><span class="pre">python</span> <span class="pre">setup.py</span> <span class="pre">install</span></code> will not work. Use <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">.</span></code> instead.</p>
 </div>
 </div>
 <div class="section" id="extra-packages-for-ztf-alerts">
@@ -80,6 +63,14 @@
 <div class="highlight-shell-session notranslate"><div class="highlight"><pre><span></span><span class="go">pip install \</span>
 <span class="go">-e git+https://github.com/AmpelProject/Ampel-contrib-HU.git#egg=ampel-contrib-hu</span>
 </pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>If you have two-factor authentication enabled on your GitHub account, your won’t be able to use your account password to authenticate with command-line <code class="docutils literal notranslate"><span class="pre">git</span></code>. Instead, create a <a class="reference external" href="https://github.com/settings/tokens/new">personal access token</a> with <code class="docutils literal notranslate"><span class="pre">repo</span></code> scope, and use that as your password. If you had previously stored your account password in a credential helper (e.g. if <code class="docutils literal notranslate"><span class="pre">git</span> <span class="pre">config</span> <span class="pre">--system</span> <span class="pre">--get</span> <span class="pre">credential.helper</span></code> says <code class="docutils literal notranslate"><span class="pre">osxkeychain</span></code>), then you will have to remove the password from that credential helper before <code class="docutils literal notranslate"><span class="pre">git</span></code> will ask you for a new one.</p>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Since Ampel packages are <a class="reference external" href="https://packaging.python.org/guides/packaging-namespace-packages/#creating-a-namespace-package">PEP 420 namespace packages</a>, <code class="docutils literal notranslate"><span class="pre">python</span> <span class="pre">setup.py</span> <span class="pre">install</span></code> will not work. Use <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">.</span></code> instead.</p>
 </div>
 <div class="admonition note">
 <p class="admonition-title">Note</p>

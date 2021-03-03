@@ -25,22 +25,11 @@ Otherwise, a good way to get Python 3.8 is with `miniconda <https://docs.conda.i
 Ampel packages
 ==============
 
-To develop and test a contributed plug-in, you will need to install the Ampel Python packages and their dependencies from within your environment. A basic set of packages for working with ZTF alerts is:
+To develop and test a contributed plug-in, you will need to install the Ampel Python packages and their dependencies from within your environment. You can install the packages needed to work with ZTF alerts from PyPI via:
 
 .. code-block:: shell-session
   
-  pip install \
-  -e git+https://github.com/AmpelProject/Ampel-interface.git#egg=ampel-interface \
-  -e git+https://github.com/AmpelProject/Ampel-core.git#egg=ampel-core \
-  -e git+https://github.com/AmpelProject/Ampel-alerts.git#egg=ampel-alerts \
-  -e git+https://github.com/AmpelProject/Ampel-photometry.git#egg=ampel-photometry \
-  -e git+https://github.com/AmpelProject/Ampel-ZTF.git#egg=ampel-ztf
-
-.. note:: Eventually these should be published to PyPI.
-
-.. note:: If you have two-factor authentication enabled on your GitHub account, your won't be able to use your account password to authenticate with command-line ``git``. Instead, create a `personal access token <https://github.com/settings/tokens/new>`_ with ``repo`` scope, and use that as your password. If you had previously stored your account password in a credential helper (e.g. if ``git config --system --get credential.helper`` says ``osxkeychain``), then you will have to remove the password from that credential helper before ``git`` will ask you for a new one.
-
-.. note:: Since Ampel packages are `PEP 420 namespace packages <https://packaging.python.org/guides/packaging-namespace-packages/#creating-a-namespace-package>`_, ``python setup.py install`` will not work. Use ``pip install .`` instead.
+  pip install ampel-ztf
 
 Extra packages for ZTF alerts
 =============================
@@ -51,6 +40,10 @@ If you are developing a plugin that depends on ``catsHTM`` catalog matching, e.g
   
   pip install \
   -e git+https://github.com/AmpelProject/Ampel-contrib-HU.git#egg=ampel-contrib-hu
+
+.. note:: If you have two-factor authentication enabled on your GitHub account, your won't be able to use your account password to authenticate with command-line ``git``. Instead, create a `personal access token <https://github.com/settings/tokens/new>`_ with ``repo`` scope, and use that as your password. If you had previously stored your account password in a credential helper (e.g. if ``git config --system --get credential.helper`` says ``osxkeychain``), then you will have to remove the password from that credential helper before ``git`` will ask you for a new one.
+
+.. note:: Since Ampel packages are `PEP 420 namespace packages <https://packaging.python.org/guides/packaging-namespace-packages/#creating-a-namespace-package>`_, ``python setup.py install`` will not work. Use ``pip install .`` instead.
 
 .. note:: Commonly-used elements of ``ampel-contrib-hu`` should eventually be moved up into ``ampel-ztf``.
 
