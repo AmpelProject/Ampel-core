@@ -55,7 +55,7 @@ class T3StockSelector(AbsT3Selector):
 		if 'tag' in kwargs:
 			kwargs['tag'] = {
 				k: LogicSchemaUtils.to_logical_struct(v, 'tag')
-				for k,v in kwargs['tag'].items()
+				for k, v in kwargs['tag'].items()
 			}
 
 		super().__init__(**kwargs)
