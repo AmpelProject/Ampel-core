@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 06.10.2019
-# Last Modified Date: 01.03.2021
+# Last Modified Date: 04.03.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import schedule as sched
@@ -19,6 +19,7 @@ from ampel.config.ScheduleEvaluator import ScheduleEvaluator
 class ProcessModel(StrictModel):
 
 	name: str
+	version: Union[str, float, int]
 	active: bool = True
 	tier: Optional[Literal[0, 1, 2, 3]]
 	schedule: Sequence[str]
