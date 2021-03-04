@@ -8,10 +8,9 @@
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import importlib, re, json
-from math import inf # noqa: required for eval(repr(...)) below
 from typing import Dict, List, Any, Optional, Set, Iterable, Union
 
-from ampel.util.mappings import get_by_path, set_by_path
+from ampel.util.mappings import get_by_path, set_by_path, dictify
 from ampel.util.crypto import aes_recursive_decrypt
 from ampel.log.utils import log_exception
 from ampel.abstract.AbsChannelTemplate import AbsChannelTemplate
@@ -328,8 +327,8 @@ class ConfigBuilder:
 
 		self.logger.info('Done building config')
 
-		# Casts ConfigCollector instances into real dicts
-		d = self._recursive_dictify(out)
+		# Cast into plain old dicts
+		d = dictify(out)
 
 		if config_validator:
 			from importlib import import_module
@@ -340,16 +339,6 @@ class ConfigBuilder:
 			return validator.validate()
 
 		return d
-
-
-	@classmethod
-	def _recursive_dictify(cls, item):
-		if isinstance(item, dict):
-			return {k: cls._recursive_dictify(v) for k, v in item.items()}
-		elif isinstance(item, list):
-			return [cls._recursive_dictify(v) for v in item]
-		else:
-			return item
 
 
 	def new_morpher(self, process: Dict[str, Any]) -> ProcessMorpher:
