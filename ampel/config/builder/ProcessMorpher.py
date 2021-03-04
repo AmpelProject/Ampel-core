@@ -44,6 +44,20 @@ class ProcessMorpher:
 		return ProcessModel(**self.process).dict()
 
 
+	def generate_version(self, first_pass_config: Dict) -> 'ProcessMorpher':
+		"""
+		Generates a version identifier for the underyling process as required by ProcessModel
+
+		:param first_pass_config: required to get the version identifier of the ampel units used by this process
+		"""
+		
+		# TODO: implement
+		if not self.process.get("version"):
+			self.process['version'] = "undefined"
+
+		return self
+
+
 	def enforce_t3_channel_selection(self, chan_name: str) -> 'ProcessMorpher':
 
 		if self.process['tier'] == 3:
