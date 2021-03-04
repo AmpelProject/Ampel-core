@@ -19,7 +19,7 @@ from ampel.config.ScheduleEvaluator import ScheduleEvaluator
 class ProcessModel(StrictModel):
 
 	name: str
-	version: Union[str, float, int]
+	version: Union[int, float, str]
 	active: bool = True
 	tier: Optional[Literal[0, 1, 2, 3]]
 	schedule: Sequence[str]
