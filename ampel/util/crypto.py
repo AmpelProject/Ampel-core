@@ -8,7 +8,7 @@
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import hashlib, sys, collections
-from typing import Dict, Type, TypeVar, Literal, Union, Any, Optional, List, Iterable
+from typing import Dict, Type, TypeVar, Literal, Union, Any, Optional, Iterable
 from ampel.model.EncryptedDataModel import EncryptedDataModel
 
 HT = TypeVar("HT", bytes, str, int)
