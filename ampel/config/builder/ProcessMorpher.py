@@ -18,7 +18,7 @@ from ampel.model.ProcessModel import ProcessModel
 from ampel.model.Secret import Secret
 from ampel.base.DataUnit import DataUnit
 from ampel.abstract.AbsPointT2Unit import AbsPointT2Unit
-from ampel.util.mappings import walk_and_process_dict
+from ampel.util.mappings import walk_and_process_dict, build_unsafe_short_dict_id, dictify
 from ampel.util.type_analysis import get_subtype
 
 
@@ -53,7 +53,9 @@ class ProcessMorpher:
 		
 		# TODO: implement
 		if not self.process.get("version"):
-			self.process['version'] = "undefined"
+			self.process['version'] = build_unsafe_short_dict_id(
+				dictify(self.process['processor']['config'])
+			)
 
 		return self
 
