@@ -4,15 +4,20 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 16.05.2020
-# Last Modified Date: 31.08.2020
+# Last Modified Date: 04.03.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-import bson
+import bson, sys
+if sys.version_info.minor > 8:
+	from typing import TypedDict
+else:
+	from typing_extensions import TypedDict
+
 from time import time
 from os.path import isdir, isfile
 from pathlib import Path
 from struct import calcsize
-from typing import BinaryIO, Optional, Literal, Dict, Any, List, Union, Tuple, TypedDict
+from typing import BinaryIO, Optional, Literal, Dict, Any, List, Union, Tuple
 
 from ampel.log.AmpelLogger import AmpelLogger, VERBOSE
 from ampel.base.AmpelBaseModel import AmpelBaseModel
@@ -522,7 +527,7 @@ class AmpelRegister(AmpelBaseModel):
 						rescale_header(
 							self._outer_fh.name, new_size = self.header['size'] * 2, remove_old_file = True,
 							header = self.header['payload']
-							)
+						)
 						self._outer_fh = None # type: ignore[assignment]
 
 				elif self.verbose > 1:
