@@ -9,6 +9,7 @@
 
 import json
 from typing import Dict, Any, List, Union, Type, Optional, Sequence, TypeVar, Literal, Callable, Iterable, Mapping, MutableMapping
+from pydantic import BaseModel
 from ampel.type import strict_iterable
 from ampel.util.crypto import hash_payload, HT
 from ampel.model.operator.AnyOf import AnyOf
@@ -371,6 +372,23 @@ def merge_dict(d1: Dict, d2: Dict) -> Dict:
 			for k in k1.intersection(k2)
 		}
 	}
+
+
+def dictify(item):
+	"""
+	Recursively dictifies input
+	"""
+	if isinstance(item, BaseModel):
+		item = item.dict(skip_defaults=False)
+
+	if isinstance(item, dict):
+		# cast potential dict subclasses into plain old dicts
+		return {k: dictify(v) for k, v in item.items()}
+
+	if isinstance(item, list):
+		return [dictify(v) for v in item]
+
+	return item
 
 
 def merge_dicts(items: Sequence[Optional[Dict[T, Any]]]) -> Optional[Dict[T, Any]]:
