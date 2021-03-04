@@ -227,6 +227,7 @@ class ConfigBuilder:
 							.scope_aliases(self.first_pass_config) \
 							.apply_template() \
 							.hash_t2_config(out) \
+							.generate_version(self.first_pass_config) \
 							.get(),
 						p.get('source'),
 						p.get('distrib')
@@ -277,6 +278,7 @@ class ConfigBuilder:
 								.apply_template() \
 								.hash_t2_config(out) \
 								.enforce_t3_channel_selection(chan_name) \
+								.generate_version(self.first_pass_config) \
 								.get(),
 							p.get('source'),
 							p.get('distrib')
