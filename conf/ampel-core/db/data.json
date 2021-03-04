@@ -38,6 +38,12 @@
 				},
 				{"field": "status"}
 			]
+		},
+		{
+			"name": "t3",
+			"indexes": [
+				{"field": "process"}
+			]
 		}
 	],
 	"role":	{
