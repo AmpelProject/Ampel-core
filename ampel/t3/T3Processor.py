@@ -10,7 +10,8 @@
 from typing import Dict, Any, List, Optional, Union
 
 from ampel.abstract.AbsProcessorUnit import AbsProcessorUnit
-from ampel.log import AmpelLogger, LogFlag, DBEventDoc, SHOUT
+from ampel.log import AmpelLogger, LogFlag, SHOUT
+from ampel.core.EventHandler import EventHandler
 from ampel.log.utils import report_exception
 from ampel.model.t3.T3Directive import T3Directive
 from ampel.t3.load.AbsT3Loader import AbsT3Loader
@@ -73,7 +74,7 @@ class T3Processor(AbsProcessorUnit):
 
 	def run(self) -> None:
 
-		event_doc = None
+		event_hdlr = None
 		run_id = self.new_run_id()
 		exc = None
 		logger = None
@@ -93,7 +94,7 @@ class T3Processor(AbsProcessorUnit):
 					raise ValueError("Parameter process_name must be defined")
 
 				# Create event doc
-				event_doc = DBEventDoc(
+				event_hdlr = EventHandler(
 					self.context.db, tier=3, run_id=run_id,
 					process_name=self.process_name,
 				)
@@ -189,17 +190,17 @@ class T3Processor(AbsProcessorUnit):
 						for conf_el in self.directive.complement
 					]
 
-				# get pymongo cursor
-				if stock_ids := selector.fetch():
+				# NB: we consume the entire stock selection cursor at once using list()
+				# to be robust against cursor timeouts or server restarts during long-
+				# lived T3 processes
+				if stock_ids := list(selector.fetch() or []):
 
 					# Run start
 					###########
 
 					# Loop over chunks from the cursor/iterator
-					# NB: we consume the entire stock selection cursor at once using list()
-					# to be robust against cursor timeouts or server restarts during long-
-					# lived T3 processes
-					for chunk_ids in chunks(list(stock_ids), self.chunk_size):
+
+					for chunk_ids in chunks(stock_ids, self.chunk_size):
 
 						# try/catch here to allow some chunks to complete
 						# even if one raises an exception
@@ -223,8 +224,6 @@ class T3Processor(AbsProcessorUnit):
 								self.context.db, logger, exc=e,
 								info={'process': self.process_name}
 							)
-
-			runner.done()
 
 		except Exception as e:
 
@@ -250,5 +249,5 @@ class T3Processor(AbsProcessorUnit):
 			logger.flush()
 
 			# Register the execution of this event into the events col
-			if event_doc:
-				event_doc.update(logger, success=(exc is None))
+			if event_hdlr:
+				event_hdlr.update(logger, success=(exc is None))

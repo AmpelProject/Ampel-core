@@ -27,7 +27,8 @@ from ampel.content.T2Document import T2Document
 from ampel.content.T2Record import T2Record
 from ampel.content.JournalRecord import JournalRecord
 from ampel.view.T2DocView import T2DocView, TYPE_POINT_T2, TYPE_STOCK_T2, TYPE_STATE_T2
-from ampel.log import AmpelLogger, DBEventDoc, LogFlag, VERBOSE
+from ampel.log import AmpelLogger, LogFlag, VERBOSE
+from ampel.core.EventHandler import EventHandler
 from ampel.base.BadConfig import BadConfig
 from ampel.log.utils import report_exception, report_error
 from ampel.log.handlers.DefaultRecordBufferingHandler import DefaultRecordBufferingHandler
@@ -191,7 +192,7 @@ class T2Processor(AbsProcessorUnit):
 		""" :returns: number of t2 docs processed """
 
 		# Add new doc in the 'events' collection
-		event_doc = DBEventDoc(
+		event_hdlr = EventHandler(
 			self._ampel_db, process_name=self.process_name, tier=2
 		)
 
@@ -246,7 +247,7 @@ class T2Processor(AbsProcessorUnit):
 			if garbage_collect:
 				gc.collect()
 
-		event_doc.update(logger, docs=self._doc_counter, run=run_id)
+		event_hdlr.update(logger, docs=self._doc_counter, run=run_id)
 
 		logger.flush()
 		self.t2_instances.clear()
