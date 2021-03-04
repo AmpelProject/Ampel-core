@@ -178,7 +178,7 @@ class T1DefaultCombiner(Generic[T], AbsT1Unit[T]):
 
 		# Channel specific exclusion. dp["excl"] could look like this: ["HU_SN", "HU_GRB"]
 		if "excl" in dp and channel_name in dp['excl']: # type: ignore
-				return {'id': dp['_id'], 'excl': 'Manual'}, {'HAS_EXCLUDED_PPS', 'MANUAL_EXCLUSION'}
+			return {'id': dp['_id'], 'excl': 'Manual'}, {'HAS_EXCLUDED_PPS', 'MANUAL_EXCLUSION'}
 
 		return dp['_id'], None
 
