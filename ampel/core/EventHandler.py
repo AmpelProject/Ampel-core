@@ -1,21 +1,22 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-core/ampel/log/DBEventDoc.py
+# File              : Ampel-core/ampel/core/EventHandler.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 26.09.2018
-# Last Modified Date: 13.06.2020
+# Last Modified Date: 04.03.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from time import time
 from typing import Dict, Any, Optional, Literal, TYPE_CHECKING
+from ampel.content.EventDocument import EventDocument
 from ampel.log.AmpelLogger import AmpelLogger
 from ampel.log.AmpelLoggingError import AmpelLoggingError
 
 if TYPE_CHECKING:
 	from ampel.db.AmpelDB import AmpelDB
 
-class DBEventDoc:
+class EventHandler:
 	""" Handles the creation and publication of event documents into the event database """
 
 	def __init__(self,
@@ -28,7 +29,7 @@ class DBEventDoc:
 
 		self.process_name = process_name
 		self.col = ampel_db.get_collection(col_name)
-		doc: Dict[str, Any] = {'process': process_name, 'tier': tier}
+		doc = EventDocument(process=process_name, tier=tier)
 
 		if run_id:
 			doc['run'] = run_id
