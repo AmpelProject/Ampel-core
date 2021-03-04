@@ -7,7 +7,7 @@
 # Last Modified Date: 06.02.2020
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Union
 from ampel.model.db.AmpelDBModel import AmpelDBModel
 from ampel.config.collector.ConfigCollector import ConfigCollector
 from ampel.config.collector.AbsDictConfigCollector import AbsDictConfigCollector
@@ -18,8 +18,9 @@ class DBConfigCollector(AbsDictConfigCollector):
 
 	def add(self,
 		arg: Dict[str, Any],
-		file_name: Optional[str] = None,
-		dist_name: Optional[str] = None
+		dist_name: str,
+		version: Union[str, float, int],
+		register_file: str
 	) -> None:
 
 		# Allow 'db': {'prefix': 'abc'} in general ampel.conf
@@ -56,6 +57,6 @@ class DBConfigCollector(AbsDictConfigCollector):
 
 			self.error(
 				'Incorrect DB configuration ' +
-				ConfigCollector.distrib_hint(file_name, dist_name),
+				ConfigCollector.distrib_hint(dist_name, register_file),
 				exc_info = e
 			)

@@ -9,12 +9,11 @@
 
 import importlib, re, json
 from math import inf # noqa: required for eval(repr(...)) below
-from typing import Dict, List, Any, Optional, Set, Iterable
-
-from pydantic import ValidationError
+from typing import Dict, List, Any, Optional, Set, Iterable, Union
 
 from ampel.util.mappings import get_by_path, set_by_path
 from ampel.util.crypto import aes_recursive_decrypt
+from ampel.log.utils import log_exception
 from ampel.abstract.AbsChannelTemplate import AbsChannelTemplate
 from ampel.log.AmpelLogger import AmpelLogger, VERBOSE, DEBUG, ERROR
 from ampel.config.builder.FirstPassConfig import FirstPassConfig
@@ -24,6 +23,7 @@ from ampel.model.template.ChannelWithProcsTemplate import ChannelWithProcsTempla
 from ampel.config.collector.ProcessConfigCollector import ProcessConfigCollector
 from ampel.config.collector.ChannelConfigCollector import ChannelConfigCollector
 from ampel.config.builder.ProcessMorpher import ProcessMorpher
+
 
 class ConfigBuilder:
 	"""
@@ -45,12 +45,14 @@ class ConfigBuilder:
 
 
 	def load_ampel_conf(self,
-		d: Dict, file_name: Optional[str] = None,
-		dist_name: Optional[str] = None
+		d: Dict,
+		dist_name: str,
+		version: Union[str, float, int],
+		register_file: str
 	) -> None:
 
 		if self.verbose:
-			self.logger.log(VERBOSE, f"Loading global ampel conf ({file_name}) from repo {dist_name}")
+			self.logger.log(VERBOSE, f"Loading global ampel conf ({register_file}) from repo {dist_name}")
 
 		# "db" "logging" "channel" "unit" "process" "alias" "resource"
 		for k in self.first_pass_config.conf_keys:
@@ -60,7 +62,7 @@ class ConfigBuilder:
 
 			if k in ('unit', 'process', 'alias'):
 				if isinstance(d[k], list):
-					self.first_pass_config[k].add(d[k], file_name=file_name, dist_name=dist_name)
+					self.first_pass_config[k].add(d[k], dist_name, register_file, version)
 				elif isinstance(d[k], dict):
 					# kk = 'processor', 'base', ... for root key "unit"
 					# kk = 't0', 't1', 't2', 't3', ... for root key "process" or "alias"
@@ -68,20 +70,20 @@ class ConfigBuilder:
 						if kk in self.first_pass_config[k]:
 							if self.verbose:
 								self.logger.log(VERBOSE, f"Parsing {k}.{kk}")
-							self.first_pass_config[k][kk].add(v, file_name=file_name, dist_name=dist_name)
+							self.first_pass_config[k][kk].add(v, dist_name, version, register_file)
 						else:
 							self.logger.error(f"Unknown config element: {k}.{kk}")
 
 			else:
-				self.first_pass_config[k].add(d[k], file_name=file_name, dist_name=dist_name)
+				self.first_pass_config[k].add(d[k], dist_name, version, register_file)
 
 		if 'template' in d:
-			self.register_channel_templates(d['template'], file_name, dist_name)
+			self.register_channel_templates(d['template'], dist_name, version, register_file)
 
 
 	'''
 	def load_conf_section(self,
-		section: str, arg: Dict, file_name: Optional[str] = None,
+		section: str, arg: Dict, register_file: Optional[str] = None,
 		dist_name: Optional[str] = None
 	) -> None:
 		"""
@@ -97,7 +99,7 @@ class ConfigBuilder:
 		# ('channel', 'db', 'resource')
 		if section in self.first_pass_config.general_keys:
 			self.first_pass_config[section].add(
-				arg, file_name=file_name, dist_name=dist_name
+				arg, register_file=register_file, dist_name=dist_name
 			)
 			return
 
@@ -106,7 +108,7 @@ class ConfigBuilder:
 			for k in ('t0', 't1', 't2', 't3'):
 				if k in arg:
 					self.first_pass_config[k][section].add(
-						arg[k], file_name=file_name, dist_name=dist_name
+						arg[k], register_file=register_file, dist_name=dist_name
 					)
 
 		raise ValueError(f'Unknown config section: {section}')
@@ -115,8 +117,9 @@ class ConfigBuilder:
 
 	def register_channel_templates(self,
 		chan_templates: Dict[str, str],
-		file_name: Optional[str] = None,
-		dist_name: Optional[str] = None
+		dist_name: str,
+		version: Union[str, float, int],
+		register_file: str
 	) -> None:
 
 		if not isinstance(chan_templates, dict):
@@ -130,7 +133,7 @@ class ConfigBuilder:
 			if self.verbose:
 				self.logger.log(VERBOSE,
 					f'Registering template "{k}" ' +
-					file_name if file_name else '' +
+					register_file if register_file else '' +
 					ConfigCollector.distrib_hint(distrib=dist_name)
 				)
 
@@ -229,8 +232,9 @@ class ConfigBuilder:
 							.hash_t2_config(out) \
 							.generate_version(self.first_pass_config) \
 							.get(),
-						p.get('source'),
-						p.get('distrib')
+						p.get('distrib'),
+						p.get('version'),
+						p.get('source')
 					)
 				except Exception as e:
 					self.logger.error(f'Unable to morph process {p["name"]}', exc_info=e)
@@ -245,25 +249,44 @@ class ConfigBuilder:
 		# Fill it with (possibly transformed) channels
 		for chan_name, chan_dict in self.first_pass_config['channel'].items():
 
+			tpl = None
+
 			# Template processing is required for this particular channel
-			if tpl := self._get_channel_tpl(chan_dict):
+			try:
+				tpl = self._get_channel_tpl(chan_dict)
+			except Exception as ee:
+				log_exception(self.logger, msg=f'Unable to load template ({chan_name})', exc=ee)
+				if stop_on_errors > 0:
+					raise ee
+				continue
+
+			# Template processing is required for this particular channel
+			if tpl:
 
 				# Extract channel definition from template instance
 				try:
 					out['channel'].add(
-						tpl.get_channel(self.logger)
+						tpl.get_channel(self.logger),
+						p.get('distrib'), p.get('version'), p.get('source')
 					)
-				except (ValidationError, Exception) as ee:
-					if isinstance(ee, ValidationError):
-						self.logger.error(f'Unable to morph channel: {chan_name}')
-						self.logger.error(str(ee))
-					else:
-						self.logger.error(f'Unable to morph channel: {chan_name}', exc_info=ee)
+				except Exception as ee:
+					log_exception(self.logger, msg=f'Unable to get channel from template ({chan_name})', exc=ee)
 					if stop_on_errors > 0:
 						raise ee
+					continue
+
+				# Extract process definition from template instance
+				ps = []
+				try:
+					ps = tpl.get_processes(self.logger, self.first_pass_config)
+				except Exception as ee:
+					log_exception(self.logger, msg=f'Unable to get processes from template ({chan_name})', exc=ee)
+					if stop_on_errors > 0:
+						raise ee
+					continue
 
 				# Retrieve processes possibly embedded in channel def
-				for p in tpl.get_processes(self.logger, self.first_pass_config):
+				for p in ps:
 
 					if self.verbose:
 						self.logger.log(VERBOSE,
@@ -280,15 +303,15 @@ class ConfigBuilder:
 								.enforce_t3_channel_selection(chan_name) \
 								.generate_version(self.first_pass_config) \
 								.get(),
-							p.get('source'),
-							p.get('distrib')
+							p.get('distrib'),
+							p.get('version'),
+							p.get('source')
 						)
-					except (ValidationError, Exception) as ee:
-						if isinstance(ee, ValidationError):
-							self.logger.error(f'Unable to morph embedded process {p["name"]} (from {p["source"]})')
-							self.logger.error(str(ee))
-						else:
-							self.logger.error(f'Unable to morph embedded process {p["name"]} (from {p["source"]})', exc_info=ee)
+					except Exception as ee:
+						log_exception(
+							self.logger, exc=ee,
+							msg=f'Unable to morph embedded process {p["name"]} (from {p["source"]})'
+						)
 						if stop_on_errors > 0:
 							raise ee
 

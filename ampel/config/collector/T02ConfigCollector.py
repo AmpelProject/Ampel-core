@@ -8,7 +8,7 @@
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import hashlib, json
-from typing import Dict, Any, Optional, Union, List
+from typing import Dict, Any, Union, List
 from ampel.util.mappings import build_unsafe_short_dict_id
 from ampel.config.collector.AbsDictConfigCollector import AbsDictConfigCollector
 from ampel.log import VERBOSE
@@ -24,8 +24,9 @@ class T02ConfigCollector(AbsDictConfigCollector):
 
 	def add(self,
 		arg: Union[Dict[str, Any], List[str]],
-		file_name: Optional[str] = None,
-		dist_name: Optional[str] = None
+		dist_name: str,
+		version: Union[str, float, int],
+		register_file: str
 	) -> int:
 
 		if not isinstance(arg, dict):

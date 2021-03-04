@@ -325,7 +325,7 @@ class ProcessMorpher:
 				if conf is None:
 					d["config"] = None
 				else:
-					d["config"] = out_config['confid'].add(conf)
+					d["config"] = out_config['confid'].add(conf, None, None, None)
 
 			# For internal use only
 			elif isinstance(conf, int):

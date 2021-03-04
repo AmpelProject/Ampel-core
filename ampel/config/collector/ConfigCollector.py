@@ -42,12 +42,11 @@ class ConfigCollector(dict):
 
 
 	def missing_key(self,
-		what: str, key: str, file_name: Optional[str],
-		dist_name: Optional[str]
+		what: str, key: str, dist_name: str, file_register: Optional[str]
 	) -> None:
 		self.error(
 			f'{what} dict is missing key "{key}" '
-			f'{self.distrib_hint(file_name, dist_name)}'
+			f'{self.distrib_hint(dist_name, file_register)}'
 		)
 
 
@@ -73,8 +72,8 @@ class ConfigCollector(dict):
 		if prev_dist is None:
 			prev_dist = self.get(conf_key, {}).get('distrib', 'unknown')
 
-		prev = self.distrib_hint(prev_file, prev_dist, False)
-		new = self.distrib_hint(new_file, new_dist, False)
+		prev = self.distrib_hint(prev_dist, prev_file, False)
+		new = self.distrib_hint(new_dist, new_file, False)
 
 		self.error(
 			t.substitute(
@@ -88,18 +87,18 @@ class ConfigCollector(dict):
 
 	@staticmethod
 	def distrib_hint(
-		file_name: Optional[str] = None,
 		distrib: Optional[str] = None,
+		file_register: Optional[str] = None,
 		parenthesis: bool = True
 	) -> str:
 		""" Adds distribution name if available """
 
 		ret = ''
 
-		if file_name:
+		if file_register:
 			if parenthesis:
 				ret += '('
-			ret += f'conf file: {file_name}'
+			ret += f'conf file: {file_register}'
 
 		if distrib:
 			if ret:

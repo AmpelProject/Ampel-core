@@ -28,8 +28,9 @@ class ForwardUnitConfigCollector(AbsForwardConfigCollector):
 
 	def get_path(self,
 		arg: Union[Dict[str, Any], str],
-		file_name: Optional[str] = None,
-		dist_name: Optional[str] = None
+		dist_name: str,
+		version: Union[str, float, int],
+		register_file: str,
 	) -> Optional[Sequence[Union[str, int]]]:
 
 		try:
@@ -39,7 +40,7 @@ class ForwardUnitConfigCollector(AbsForwardConfigCollector):
 				try:
 					mro = self.get_trimmed_mro(arg, UnitConfigCollector.get_class_name(arg))
 				except Exception:
-					self.error(f"Unit import error: {arg} " + ConfigCollector.distrib_hint(file_name, dist_name))
+					self.error(f"Unit import error: {arg} " + ConfigCollector.distrib_hint(dist_name, register_file))
 					return None
 
 			elif isinstance(arg, dict):
@@ -52,14 +53,14 @@ class ForwardUnitConfigCollector(AbsForwardConfigCollector):
 					# Note: cannot use shorter "return self.error(...)" because of stubborn mypy
 					self.error(
 						"Unsupported unit definition (dict)" +
-						ConfigCollector.distrib_hint(file_name, dist_name)
+						ConfigCollector.distrib_hint(register_file, dist_name)
 					)
 					return None
 
 			else:
 				self.error(
 					"Unsupported unit config format" +
-					ConfigCollector.distrib_hint(file_name, dist_name)
+					ConfigCollector.distrib_hint(register_file, dist_name)
 				)
 				return None
 
@@ -87,7 +88,7 @@ class ForwardUnitConfigCollector(AbsForwardConfigCollector):
 
 			self.error(
 				f"Error occured while loading unit {class_id} " +
-				ConfigCollector.distrib_hint(file_name, dist_name),
+				ConfigCollector.distrib_hint(register_file, dist_name),
 				exc_info=e
 			)
 

@@ -42,14 +42,15 @@ class AbsForwardConfigCollector(dict, AmpelABC, abstract=True):
 
 	def add(self,
 		arg: Union[Dict[str, Any], List[Any], str],
-		file_name: Optional[str] = None,
-		dist_name: Optional[str] = None
+		dist_name: str,
+		version: Union[str, float, int],
+		register_file: str,
 	) -> None:
 
 
 		for el in [arg] if isinstance(arg, (dict, str)) else arg:
 
-			path_elements = self.get_path(el, file_name, dist_name)
+			path_elements = self.get_path(el, dist_name, version, register_file)
 			if not path_elements:
 				self.error(f' Follow-up error: could not identify routing for {el}')
 				continue
@@ -68,14 +69,15 @@ class AbsForwardConfigCollector(dict, AmpelABC, abstract=True):
 				)
 				return
 
-			d.add(el, file_name, dist_name) # type: ignore
+			d.add(el, dist_name, version, register_file) # type: ignore
 
 
 	@abstractmethod
 	def get_path(self,
 		arg: Union[Dict[str, Any], str],
-		file_name: Optional[str] = None,
-		dist_name: Optional[str] = None
+		dist_name: str,
+		version: Union[str, float, int],
+		register_file: str,
 	) -> Optional[Sequence[Union[int, str]]]:
 		...
 

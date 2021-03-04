@@ -7,7 +7,7 @@
 # Last Modified Date: 25.02.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Union
 from ampel.config.collector.AbsDictConfigCollector import AbsDictConfigCollector
 from ampel.log import VERBOSE
 
@@ -24,15 +24,17 @@ class AliasConfigCollector(AbsDictConfigCollector):
 
 
 	def add(self,
-		arg: Dict[str, Any], file_name: Optional[str] = None,
-		dist_name: Optional[str] = None
+		arg: Dict[str, Any],
+		dist_name: str,
+		version: Union[str, float, int],
+		register_file: str
 	) -> None:
 
 		if not isinstance(arg, dict):
 			self.error(
 				f"{self.tier} alias value must be a dict. "
 				f"Offending value {arg}\n"
-				f"{self.distrib_hint(file_name, dist_name)}"
+				f"{self.distrib_hint(dist_name, register_file)}"
 			)
 			return
 
@@ -42,7 +44,7 @@ class AliasConfigCollector(AbsDictConfigCollector):
 				self.error(
 					f"{self.tier} alias cannot contain '/'."
 					f"Offending key {k}\n"
-					f"{self.distrib_hint(file_name, dist_name)}"
+					f"{self.distrib_hint(dist_name, register_file)}"
 				)
 				continue
 
@@ -71,7 +73,7 @@ class AliasConfigCollector(AbsDictConfigCollector):
 					self.duplicated_entry(
 						conf_key = key,
 						section_detail = f"{self.tier} {scope} alias",
-						new_file = file_name,
+						new_file = register_file,
 						new_dist = dist_name,
 						prev_file = self.get(key).get("conf", "unknown"), # type: ignore
 						prev_dist = dist_name if "/" in key else self.global_alias.get(key, "unknown")
@@ -83,6 +85,6 @@ class AliasConfigCollector(AbsDictConfigCollector):
 			except Exception as e:
 				self.error(
 					f"Error occured while loading {self.tier} alias {key} " +
-					self.distrib_hint(file_name, dist_name),
+					self.distrib_hint(dist_name, register_file),
 					exc_info=e
 				)

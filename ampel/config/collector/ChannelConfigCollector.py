@@ -7,7 +7,7 @@
 # Last Modified Date: 06.02.2020
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Union
 from ampel.util.crypto import b2_short_hash
 from ampel.config.collector.AbsDictConfigCollector import AbsDictConfigCollector
 from ampel.log import VERBOSE
@@ -17,12 +17,13 @@ class ChannelConfigCollector(AbsDictConfigCollector):
 
 	def add(self,
 		arg: Dict[str, Any],
-		file_name: Optional[str] = None,
-		dist_name: Optional[str] = None
+		dist_name: str,
+		version: Union[str, float, int],
+		register_file: str
 	) -> None:
 
 		if 'channel' not in arg:
-			self.missing_key('channel', 'channel', file_name, dist_name)
+			self.missing_key(what='channel', key='channel', dist_name=dist_name, register_file=register_file)
 			return
 
 		try:
@@ -39,16 +40,16 @@ class ChannelConfigCollector(AbsDictConfigCollector):
 					arg['distrib'] = dist_name
 
 			if 'source' in arg:
-				file_name = arg['source']
+				register_file = arg['source']
 			else:
-				if file_name:
-					arg['source'] = file_name
+				if register_file:
+					arg['source'] = register_file
 
 			# Check duplicated channel names
 			if self.get(chan_name):
 				self.duplicated_entry(
 					conf_key = chan_name,
-					new_file = file_name,
+					new_file = register_file,
 					new_dist = dist_name,
 					prev_file = self.get(chan_name).get('conf', 'unknown'), # type: ignore
 					prev_dist = self.get(chan_name).get('distrib', 'unknown') # type: ignore
@@ -69,7 +70,7 @@ class ChannelConfigCollector(AbsDictConfigCollector):
 
 		except Exception as e:
 			self.error(
-				f'Error occured while loading channel config {self.distrib_hint(file_name, dist_name)}. '
+				f'Error occured while loading channel config {self.distrib_hint(dist_name, register_file)}. '
 				f'Offending value: {arg}',
 				exc_info=e
 			)

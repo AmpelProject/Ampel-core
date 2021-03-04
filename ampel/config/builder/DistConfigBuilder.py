@@ -52,7 +52,7 @@ class DistConfigBuilder(ConfigBuilder):
 		with open(pth) as f:
 			for root, dirs, files in os.walk(f"{f.read().strip()}/{conf_dir}"):
 				for fname in files:
-					if fname.endswith("."+ext):
+					if fname.endswith("." + ext):
 						yield os.path.join(root, fname)
 	
 
@@ -87,7 +87,7 @@ class DistConfigBuilder(ConfigBuilder):
 					all_conf_files = [
 						el.split(",")[0] for el in distrib.get_metadata_lines('RECORD')
 						if el.startswith(conf_dir) and f".{ext}," in el
-					]	
+					]
 
 			elif isinstance(distrib, EggInfoDistribution):
 				# Example of the ouput of distrib.get_metadata_lines('SOURCES.txt'):
@@ -174,8 +174,9 @@ class DistConfigBuilder(ConfigBuilder):
 
 			func(
 				load(payload),
-				file_rel_path,
-				distrib.project_name
+				distrib.project_name,
+				distrib.version,
+				file_rel_path
 			)
 
 		except FileNotFoundError:
@@ -226,8 +227,10 @@ class DistConfigBuilder(ConfigBuilder):
 			for k in ("t0", "t1", "t2", "t3", "ops"):
 				if k in d:
 					self.first_pass_config[root_key][k].add(
-						d[k], file_name=file_rel_path,
-						dist_name=distrib.project_name
+						d[k],
+						dist_name = distrib.project_name,
+						version = distrib.version,
+						register_file = file_rel_path,
 					)
 
 		except FileNotFoundError:

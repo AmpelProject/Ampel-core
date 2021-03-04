@@ -4,15 +4,15 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 16.10.2019
-# Last Modified Date: 03.06.2020
+# Last Modified Date: 04.03.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import re, importlib
-from typing import List, Union, Dict, Optional, Any
+from typing import List, Union, Dict, Any
 from ampel.util.collections import ampel_iter
 from ampel.util.crypto import b2_short_hash
 from ampel.model.StrictModel import StrictModel
-from ampel.config.collector.AbsListConfigCollector import AbsListConfigCollector
+from ampel.config.collector.ConfigCollector import ConfigCollector
 from ampel.log import VERBOSE
 
 
@@ -21,12 +21,13 @@ class RemoteUnitDefinition(StrictModel):
 	base: List[str]
 
 
-class UnitConfigCollector(AbsListConfigCollector):
+class UnitConfigCollector(ConfigCollector):
 
 	def add(self,
 		arg: List[Union[Dict[str, str], str]],
-		file_name: Optional[str] = None,
-		dist_name: Optional[str] = None
+		dist_name: str,
+		version: Union[str, float, int],
+		register_file: str
 	) -> None:
 
 		# tolerate list containing only 1 element defined as dict
@@ -40,7 +41,8 @@ class UnitConfigCollector(AbsListConfigCollector):
 						'fqn': el,
 						'base': self.get_mro(el, class_name),
 						'distrib': dist_name,
-						'file': file_name
+						'file': register_file,
+						'version': version
 					}
 
 				elif isinstance(el, dict):
@@ -49,7 +51,7 @@ class UnitConfigCollector(AbsListConfigCollector):
 					except Exception:
 						self.error(
 							'Unsupported unit definition (dict)' +
-							self.distrib_hint(file_name, dist_name)
+							self.distrib_hint(dist_name, register_file)
 						)
 						continue
 
@@ -57,13 +59,14 @@ class UnitConfigCollector(AbsListConfigCollector):
 					entry = {
 						'base': d.base,
 						'distrib': dist_name,
-						'file': file_name
+						'file': register_file,
+						'version': version
 					}
 
 				else:
 					self.error(
 						'Unsupported unit config format' +
-						self.distrib_hint(file_name, dist_name)
+						self.distrib_hint(dist_name, register_file)
 					)
 					continue
 
@@ -71,7 +74,7 @@ class UnitConfigCollector(AbsListConfigCollector):
 					self.duplicated_entry(
 						conf_key = class_name,
 						section_detail = f'{self.tier} {self.conf_section}',
-						new_file = file_name,
+						new_file = register_file,
 						new_dist = dist_name,
 						prev_file = self.get(class_name).get('conf', 'unknown') # type: ignore
 					)
@@ -80,7 +83,7 @@ class UnitConfigCollector(AbsListConfigCollector):
 				if "AmpelBaseModel" not in entry['base']:
 					self.logger.info(
 						f'Unrecognized base class for {self.conf_section} {class_name} ' +
-						self.distrib_hint(file_name, dist_name)
+						self.distrib_hint(dist_name, register_file)
 					)
 					return
 
@@ -116,7 +119,7 @@ class UnitConfigCollector(AbsListConfigCollector):
 
 				self.error(
 					f'Error occured while loading {self.conf_section} {class_name} ' +
-					self.distrib_hint(file_name, dist_name),
+					self.distrib_hint(dist_name, register_file),
 					exc_info=e
 				)
 

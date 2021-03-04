@@ -7,7 +7,7 @@
 # Last Modified Date: 12.06.2020
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Union
 from pydantic import validate_model
 from ampel.config.collector.AbsDictConfigCollector import AbsDictConfigCollector
 from ampel.config.collector.ConfigCollector import ConfigCollector
@@ -20,8 +20,9 @@ class LoggingCollector(AbsDictConfigCollector):
 
 	def add(self,
 		arg: Dict[str, Any],
-		file_name: Optional[str] = None,
-		dist_name: Optional[str] = None
+		dist_name: str,
+		version: Union[str, float, int],
+		register_file: str
 	) -> None:
 
 		# validate model
@@ -39,7 +40,7 @@ class LoggingCollector(AbsDictConfigCollector):
 					except Exception as e:
 						self.error(
 							f"Incorrect console logging configuration for: {config['console']} " +
-							ConfigCollector.distrib_hint(file_name, dist_name) + ": \n" + str(e)
+							ConfigCollector.distrib_hint(dist_name, register_file) + ": \n" + str(e)
 						)
 						continue
 
@@ -51,7 +52,7 @@ class LoggingCollector(AbsDictConfigCollector):
 					except Exception as e:
 						self.error(
 							f"Incorrect db logging configuration for: {config['db']} " +
-							ConfigCollector.distrib_hint(file_name, dist_name) + ": \n" + str(e)
+							ConfigCollector.distrib_hint(dist_name, register_file) + ": \n" + str(e)
 						)
 						continue
 
@@ -64,5 +65,5 @@ class LoggingCollector(AbsDictConfigCollector):
 			print(e)
 			self.error(
 				"Incorrect logging configuration " +
-				ConfigCollector.distrib_hint(file_name, dist_name)
+				ConfigCollector.distrib_hint(dist_name, register_file)
 			)
