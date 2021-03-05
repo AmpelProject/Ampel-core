@@ -58,6 +58,7 @@ install_requires = \
  'schedule>=1.0.0,<2.0.0',
  'sjcl>=0.2.1,<0.3.0',
  'slackclient>=2.7,<3.0',
+ 'svgutils>=0.3.4,<0.4.0',
  'yq>=2.12.0,<3.0.0']
 
 extras_require = \
