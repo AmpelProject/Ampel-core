@@ -1,18 +1,80 @@
 import io
+import subprocess
 from argparse import Namespace
 
 import pytest
 import yaml
+from pydantic import ValidationError
 
+from ampel.abstract.AbsProcessorUnit import AbsProcessorUnit
 from ampel.config.builder.DistConfigBuilder import DistConfigBuilder
+from ampel.config.builder.ConfigChecker import ConfigChecker
+from ampel.config.builder.ConfigValidator import ConfigValidator
+from ampel.core.UnitLoader import UnitLoader
 from ampel.config import cli
 
 
-def test_validate_config():
+def test_build_config():
+    config = yaml.safe_load(
+        io.BytesIO(subprocess.check_output(["ampel-config", "build"]))
+    )
+    assert ConfigValidator(config).validate() == config
 
-    cb = DistConfigBuilder(verbose=False)
-    cb.load_distributions()
-    assert cb.build_config(stop_on_errors=False)
+
+def test_ConfigChecker(testing_config, monkeypatch):
+    """
+    ConfigValidator validates units without calling their __init__ methods
+    """
+    with open(testing_config) as f:
+        config = yaml.safe_load(f)
+    # validates as-is
+    checker = ConfigChecker(config)
+    checker.validate(raise_exc=True)
+
+    # add a processor with side-effects
+    class SideEffect(RuntimeError):
+        ...
+
+    class SideEffectLadenProcessor(AbsProcessorUnit):
+
+        required: int
+
+        def __init__(self, **kwargs):
+            super().__init__(**kwargs)
+            raise SideEffect
+
+        def run(self):
+            ...
+
+    config["process"]["t0"]["BadProcess"] = {
+        "name": "BadProcess",
+        "active": True,
+        "schedule": "super",
+        "processor": {"unit": "SideEffectLadenProcessor", "config": {"required": 1}},
+    }
+    checker = ConfigChecker(config)
+
+    def get_class_by_name(name, *args, **kwargs):
+        if name == "SideEffectLadenProcessor":
+            return SideEffectLadenProcessor
+        else:
+            return UnitLoader.get_class_by_name(checker.loader, name, *args, **kwargs)
+
+    monkeypatch.setattr(checker.loader, "get_class_by_name", get_class_by_name)
+
+    # ConfigChecker attempts to instantiate the unit
+    with pytest.raises(SideEffect):
+        assert checker.validate(raise_exc=True)
+
+    # ConfigValidator just validates the model
+    checker = ConfigValidator(config)
+    monkeypatch.setattr(checker.loader, "get_class_by_name", get_class_by_name)
+    checker.validate(raise_exc=True)
+
+    # ConfigValidator fails if the config does not satisfy the model
+    checker.config["process"]["t0"]["BadProcess"]["processor"]["config"].clear()
+    with pytest.raises(ValidationError):
+        checker.validate()
 
 
 @pytest.mark.parametrize("doc", [{"bignumber": 1 << 57}, {1: 2}])
