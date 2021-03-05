@@ -23,6 +23,7 @@ from typing import Any, Dict, Iterable, Mapping, Optional, TextIO
 
 import yaml
 
+from ampel.base.BadConfig import BadConfig
 from ampel.config.AmpelConfig import AmpelConfig
 from ampel.config.builder.DistConfigBuilder import DistConfigBuilder
 from ampel.log.utils import log_exception
@@ -68,7 +69,9 @@ def build(args: Namespace) -> int:
             config_validator="ConfigValidator",
         )
     except Exception as exc:
-        log_exception(cb.logger, exc)
+        # assume that BadConfig means the error was already logged
+        if not isinstance(exc, BadConfig):
+           log_exception(cb.logger, exc)
         return 1
     yaml.dump(
         config, args.output_file if args.output_file else sys.stdout, sort_keys=False

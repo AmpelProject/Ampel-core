@@ -9,6 +9,8 @@
 
 
 from typing import Any, Dict
+from ampel.base.BadConfig import BadConfig
+from ampel.util.pretty import prettyjson
 from ampel.model.ProcessModel import ProcessModel
 from ampel.config.builder.BaseConfigChecker import BaseConfigChecker
 
@@ -32,6 +34,12 @@ class ConfigValidator(BaseConfigChecker):
 
         with self.loader.validate_unit_models():
             for tier, proc in self.iter_procs(ignore_inactive):
-                ProcessModel(**self.config["process"][tier][proc])
+                config = self.config["process"][tier][proc]
+                try:
+                    ProcessModel(**config)
+                except Exception as exc:
+                    self.logger.debug(f"Invalid process config:\n{prettyjson(config)}")
+                    self.logger.error(f"{tier} process {proc} from distribution {config.get('distrib')} is invalid", exc_info=exc)
+                    raise BadConfig
 
         return self.config
