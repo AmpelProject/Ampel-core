@@ -54,7 +54,10 @@ Sphinx = {version = "^3.5.1", optional = true}
 sphinx-press-theme = {version = "^0.5.1", optional = true}
 sphinx-autodoc-typehints = {version = "^1.11.1", optional = true}
 tomlkit = {version = "^0.7.0", optional = true}
-svgutils = "^0.3.4"
+svgutils = {version = "^0.3.4", optional = true}
+CairoSVG = {version = "^2.5.1", optional = true}
+matplotlib = {version = "^3.3.4", optional = true}
+ipython = {version = "^7.21.0", optional = true}
 
 [tool.poetry.dev-dependencies]
 pytest = "^6.2.2"
@@ -67,6 +70,7 @@ httpx = "^0.17.0"
 
 [tool.poetry.extras]
 server = ["fastapi", "uvicorn"]
+plotting = ["svgutils", "CairoSVG", "matplotlib", "ipython"]
 docs = ["Sphinx", "sphinx-press-theme", "sphinx-autodoc-typehints", "tomlkit"]
 
 [build-system]
