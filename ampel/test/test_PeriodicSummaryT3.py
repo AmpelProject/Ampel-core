@@ -5,7 +5,7 @@ from ampel.config.builder.ConfigValidator import ConfigValidator
 from ampel.model.template.PeriodicSummaryT3 import PeriodicSummaryT3
 
 
-@pytest.mark.parametrize("loader_directives", [None, [{"col": "stock"}], ["%TRANSIENT"]])
+@pytest.mark.parametrize("loader_directives", [None, [{"col": "stock"}], ["TRANSIENT"]])
 def test_validate(core_config, loader_directives, ampel_logger):
     """
     PeriodicSummaryT3 emits a valid process.

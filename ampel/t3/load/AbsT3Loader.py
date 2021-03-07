@@ -50,7 +50,7 @@ class AbsT3Loader(AdminUnit, abstract=True):
 		# Resolve directive aliases
 		for el in kwargs.get('directives', []):
 			if isinstance(el, str):
-				d = context.config.get(f"alias.t3.{el}", dict)
+				d = context.config.get(f"alias.t3.%{el}", dict)
 				if d: # mypy does not yet support type inference using the walrus operator
 					directives.append(d)
 				else:

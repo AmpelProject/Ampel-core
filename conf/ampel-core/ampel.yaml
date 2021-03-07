@@ -54,9 +54,9 @@ alias:
     '%T2':
       col: t2
     '%LOGRECORD':
-      col: logs
+      col: log
     '%LOG':
-      col: logs
+      col: log
 
 resource:
 

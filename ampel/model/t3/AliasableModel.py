@@ -8,8 +8,8 @@ if TYPE_CHECKING:
 
 class AliasableModel(StrictModel):
 	"""
-	A model that can be initialized from an entry in the alias.t3 section of an
-	AmpelConfig
+	A model that can be initialized from a global alias in the alias.t3 section
+	of an AmpelConfig
 	"""
 
 	_config: ClassVar[Optional["AmpelConfig"]] = None
@@ -17,7 +17,7 @@ class AliasableModel(StrictModel):
 	@classmethod
 	def validate(cls: Type["AliasableModel"], value: Any) -> "AliasableModel":
 		if cls._config and isinstance(value, str):
-			d = cls._config.get(f"alias.t3.{value}", dict)
+			d = cls._config.get(f"alias.t3.%{value}", dict)
 			if d:
 				value = d
 			else:
