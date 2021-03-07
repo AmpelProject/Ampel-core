@@ -40,6 +40,6 @@ class ConfigValidator(BaseConfigChecker):
                 except Exception as exc:
                     self.logger.debug(f"Invalid process config:\n{prettyjson(config)}")
                     self.logger.error(f"{tier} process {proc} from distribution {config.get('distrib')} is invalid", exc_info=exc)
-                    raise BadConfig
+                    raise BadConfig from exc
 
         return self.config
