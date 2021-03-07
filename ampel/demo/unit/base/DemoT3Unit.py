@@ -18,10 +18,10 @@ class DemoT3Unit(AbsT3Unit):
 
 
 	def add(self, views: Tuple[SnapView, ...]) -> T3AddResult:
+		self.logger.info("DemoT3Unit output:")
 		for v in views:
-			print(v.serialize())
-			print("-" * 30)
-		return JournalTweak(tag="DemoTag")
+			self.logger.info("id: " + str(v.id))
+		return JournalTweak(tag="DemoT3UnitTag")
 
 
 	def done(self) -> None:
