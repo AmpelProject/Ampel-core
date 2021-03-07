@@ -4,13 +4,12 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 06.01.2020
-# Last Modified Date: 10.06.2020
+# Last Modified Date: 07.03.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-from dataclasses import dataclass, field
 from typing import Dict, Optional, Sequence, List, Type, Tuple, TypeVar, get_args, Union
-from pydantic import validator
 
+from ampel.type import StockId
 from ampel.log import VERBOSE, AmpelLogger, LogFlag
 from ampel.log.utils import report_exception
 from ampel.log.handlers.ChanRecordBufHandler import ChanRecordBufHandler
@@ -19,10 +18,11 @@ from ampel.core.AmpelBuffer import AmpelBuffer
 from ampel.base.AuxUnitRegister import AuxUnitRegister
 from ampel.core.JournalUpdater import JournalUpdater
 from ampel.view.SnapView import SnapView
+from ampel.content.T3Record import T3Record
+from ampel.enum.T3UnitStatus import T3UnitStatus
 from ampel.util.mappings import build_unsafe_dict_id
 from ampel.util.freeze import recursive_freeze
-from ampel.model.StrictModel import StrictModel
-from ampel.model.UnitModel import UnitModel
+from ampel.model.t3.T3RunDirective import T3RunDirective
 from ampel.struct.JournalTweak import JournalTweak
 from ampel.abstract.AbsT3Unit import AbsT3Unit
 from ampel.t3.run.AbsT3UnitRunner import AbsT3UnitRunner
@@ -30,14 +30,20 @@ from ampel.t3.run.filter.AbsT3Filter import AbsT3Filter
 from ampel.t3.run.project.AbsT3Projector import AbsT3Projector
 
 
-@dataclass
 class RunBlock:
 	"""
-	data class used internally by T3UnitRunner
+	Used internally by T3UnitRunner
 	"""
-	filter: Optional[AbsT3Filter] = None
-	projector: Optional[AbsT3Projector] = None
-	units: List[Tuple[AbsT3Unit, Type]] = field(default_factory=list)
+	filter: Optional[AbsT3Filter]
+	projector: Optional[AbsT3Projector]
+	units: List[Tuple[AbsT3Unit, Type]]
+	_stock_ids: Optional[List[StockId]]
+
+	def __init__(self):
+		self.filter = None
+		self.projector = None
+		self.units = []
+		self._stock_ids = None
 
 
 class T3UnitRunner(AbsT3UnitRunner):
@@ -46,26 +52,11 @@ class T3UnitRunner(AbsT3UnitRunner):
 	by :class:`T3Directive.run <ampel.model.t3.T3Directive.T3Directive>`.
 	"""
 
-	class RunDirective(StrictModel):
-		"""
-		Internal model used for field 'directives' of T3UnitRunner
-		"""
-
-		#: unit to use for down-selection of stocks
-		filter: Optional[UnitModel]
-		#: unit to use for projection of each stock
-		project: Optional[UnitModel]
-		#: units to use to execute T3s
-		execute: Sequence[UnitModel]
-
-		@validator('execute', pre=True)
-		def cast_to_sequence_if_need_be(cls, v):
-			if isinstance(v, dict):
-				return [v]
-			return v
-
 	#: Processing specification
-	directives: Sequence[RunDirective]
+	directives: Sequence[T3RunDirective]
+
+	#: whether selected stock ids should be saved into the (potential) t3 documents
+	save_stock_ids: bool = True
 
 
 	def __init__(self, **kwargs) -> None:
@@ -92,6 +83,10 @@ class T3UnitRunner(AbsT3UnitRunner):
 					unit_type = AbsT3Filter,
 					logger = self.logger
 				)
+
+				if self.save_stock_ids:
+					rb._stock_ids = []
+
 
 			if directive.project:
 
@@ -187,6 +182,7 @@ class T3UnitRunner(AbsT3UnitRunner):
 						self.logger.log(VERBOSE, "Applying run-block filter")
 
 					data = run_block.filter.filter(data)
+					run_block._stock_ids.extend([el['id'] for el in data])  # type: ignore[union-attr]
 
 				if run_block.projector:
 
@@ -252,14 +248,43 @@ class T3UnitRunner(AbsT3UnitRunner):
 			if self.buf_hdlr.buffer:
 				self.buf_hdlr.forward(self.logger)
 
-	def done(self) -> None:
+
+	def done(self) -> Optional[Union[T3Record, Sequence[T3Record]]]:
+		"""
+		:returns: optionally returns T3Record dict(s) to be included in the T3Document
+		associated with the current process that will be inserted into the 't3' collection
+		"""
+
 		try:
+
+			ret: List[T3Record] = []
 
 			for run_block in self.run_blocks:
 				for t3_unit, *_ in run_block.units:
-					t3_unit.done()
+
+					if (payload := t3_unit.done()):
+
+						# TODO: implement setting version & config
+						d = T3Record(
+							unit = t3_unit.__class__.__name__,
+							status = T3UnitStatus.OK
+						)
+
+						if self.channel:
+							d['channel'] = self.channel
+
+						if self.save_stock_ids and run_block._stock_ids:
+							d['stock'] = run_block._stock_ids
+
+						if isinstance(payload, dict):
+							d['payload'] = payload
+
+						ret.append(d)
+
 					if self.buf_hdlr.buffer:
 						self.buf_hdlr.forward(self.logger)
+
+			return ret if ret else None
 
 		except Exception as e:
 
@@ -268,7 +293,9 @@ class T3UnitRunner(AbsT3UnitRunner):
 
 			# Try to insert doc into trouble collection (raises no exception)
 			report_exception(self.context.db, self.logger, exc=e)
+			return None
 
 		finally:
+
 			if self.buf_hdlr.buffer:
 				self.buf_hdlr.forward(self.logger)
