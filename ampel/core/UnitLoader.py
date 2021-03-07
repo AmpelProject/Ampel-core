@@ -66,7 +66,8 @@ class UnitLoader:
 			config._config['unit']['controller'],
 			config._config['unit']['base'],
 			config._config['unit']['admin'],
-			config._config["unit"]["core"]
+			config._config["unit"]["core"],
+			config._config["unit"]["aux"],
 		]
 
 		self.aliases: List[Dict] = [
