@@ -4,9 +4,9 @@ from argparse import Namespace
 
 import pytest
 import yaml
-from pydantic import ValidationError
 
 from ampel.abstract.AbsProcessorUnit import AbsProcessorUnit
+from ampel.base.BadConfig import BadConfig
 from ampel.config.builder.DistConfigBuilder import DistConfigBuilder
 from ampel.config.builder.ConfigChecker import ConfigChecker
 from ampel.config.builder.ConfigValidator import ConfigValidator
@@ -73,7 +73,7 @@ def test_ConfigChecker(testing_config, monkeypatch):
 
     # ConfigValidator fails if the config does not satisfy the model
     checker.config["process"]["t0"]["BadProcess"]["processor"]["config"].clear()
-    with pytest.raises(ValidationError):
+    with pytest.raises(BadConfig):
         checker.validate()
 
 
