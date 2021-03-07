@@ -11,6 +11,7 @@ from typing import Sequence, Union, Dict, Any, Optional
 
 from ampel.type import ChannelId
 from ampel.base import abstractmethod
+from ampel.content.T3Record import T3Record
 from ampel.core.AmpelBuffer import AmpelBuffer
 from ampel.log.AmpelLogger import AmpelLogger
 from ampel.core.AdminUnit import AdminUnit
@@ -28,20 +29,23 @@ class AbsT3UnitRunner(AdminUnit, abstract=True):
 
 	#: raise exceptions instead of catching and logging
 	raise_exc: bool = True
+
 	#: Record the invocation of this event in the journal of each selected stock
 	update_journal: bool = True
+
 	#: tag to add to journal records
 	extra_journal_tag: Optional[Union[int, str]] = None
+
 	#: contextual information for this run
 	run_context: Optional[Dict[str, Any]] = None
 
 
 	@abstractmethod
 	def run(self, data: Sequence[AmpelBuffer]) -> None:
-		"""Process a chunk of stocks"""
+		""" Process a chunk of AmpelBuffer instances """
 		...
 
 	@abstractmethod
-	def done(self) -> None:
-		"""Signal that the run has finished"""
+	def done(self) -> Optional[Union[T3Record, Sequence[T3Record]]]:
+		""" Signal that the run has finished """
 		...
