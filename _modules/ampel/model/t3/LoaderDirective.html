@@ -48,7 +48,8 @@
 <span class="kn">from</span> <span class="nn">ampel.content.Compound</span> <span class="kn">import</span> <span class="n">Compound</span>
 <span class="kn">from</span> <span class="nn">ampel.content.T2Document</span> <span class="kn">import</span> <span class="n">T2Document</span>
 <span class="kn">from</span> <span class="nn">ampel.content.LogDocument</span> <span class="kn">import</span> <span class="n">LogDocument</span>
-<span class="kn">from</span> <span class="nn">ampel.model.StrictModel</span> <span class="kn">import</span> <span class="n">StrictModel</span>
+<span class="kn">from</span> <span class="nn">ampel.model.t3.AliasableModel</span> <span class="kn">import</span> <span class="n">AliasableModel</span>
+
 
 <span class="n">models</span> <span class="o">=</span> <span class="p">{</span>
 	<span class="s2">&quot;stock&quot;</span><span class="p">:</span> <span class="n">StockDocument</span><span class="p">,</span>
@@ -58,7 +59,7 @@
 	<span class="s2">&quot;log&quot;</span><span class="p">:</span> <span class="n">LogDocument</span>
 <span class="p">}</span>
 
-<div class="viewcode-block" id="LoaderDirective"><a class="viewcode-back" href="../../../../api.html#ampel.model.t3.LoaderDirective.LoaderDirective">[docs]</a><span class="k">class</span> <span class="nc">LoaderDirective</span><span class="p">(</span><span class="n">StrictModel</span><span class="p">):</span>
+<div class="viewcode-block" id="LoaderDirective"><a class="viewcode-back" href="../../../../api.html#ampel.model.t3.LoaderDirective.LoaderDirective">[docs]</a><span class="k">class</span> <span class="nc">LoaderDirective</span><span class="p">(</span><span class="n">AliasableModel</span><span class="p">):</span>
 	<span class="sd">&quot;&quot;&quot;Specification of documents to load&quot;&quot;&quot;</span>
 
 	<span class="c1">#: Source collection</span>
