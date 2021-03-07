@@ -13,7 +13,8 @@ from ampel.content.DataPoint import DataPoint
 from ampel.content.Compound import Compound
 from ampel.content.T2Document import T2Document
 from ampel.content.LogDocument import LogDocument
-from ampel.model.StrictModel import StrictModel
+from ampel.model.t3.AliasableModel import AliasableModel
+
 
 models = {
 	"stock": StockDocument,
@@ -23,7 +24,7 @@ models = {
 	"log": LogDocument
 }
 
-class LoaderDirective(StrictModel):
+class LoaderDirective(AliasableModel):
 	"""Specification of documents to load"""
 
 	#: Source collection

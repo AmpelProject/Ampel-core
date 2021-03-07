@@ -30,6 +30,7 @@ from ampel.core.AdminUnit import AdminUnit
 from ampel.model.StrictModel import StrictModel
 from ampel.model.UnitModel import UnitModel
 from ampel.model.Secret import Secret
+from ampel.model.t3.AliasableModel import AliasableModel
 from ampel.config.AmpelConfig import AmpelConfig
 from ampel.log.AmpelLogger import AmpelLogger
 from ampel.abstract.AbsSecretProvider import AbsSecretProvider
@@ -200,10 +201,13 @@ class UnitLoader:
 		"""
 		extra_validator = (False, partial(_validate_unit_model, unit_loader=self))
 		UnitModel.__post_root_validators__.append(extra_validator)
+		AliasableModel._config = self.ampel_config
 		try:
 			yield
 		finally:
 			UnitModel.__post_root_validators__.remove(extra_validator)
+			AliasableModel._config = None
+
 
 
 	def get_resources(self, unit_model: UnitModel) -> Dict[str, Any]:
