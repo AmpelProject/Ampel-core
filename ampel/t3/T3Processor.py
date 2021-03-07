@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 26.02.2018
-# Last Modified Date: 01.03.2021
+# Last Modified Date: 07.03.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from typing import Dict, Any, List, Optional, Union
@@ -13,7 +13,9 @@ from ampel.abstract.AbsProcessorUnit import AbsProcessorUnit
 from ampel.log import AmpelLogger, LogFlag, SHOUT
 from ampel.core.EventHandler import EventHandler
 from ampel.log.utils import report_exception
+from ampel.content.T3Document import T3Document
 from ampel.model.t3.T3Directive import T3Directive
+from ampel.enum.T3ProcessorStatus import T3ProcessorStatus
 from ampel.t3.load.AbsT3Loader import AbsT3Loader
 from ampel.t3.run.AbsT3UnitRunner import AbsT3UnitRunner
 from ampel.t3.select.AbsT3Selector import AbsT3Selector
@@ -43,8 +45,12 @@ class T3Processor(AbsProcessorUnit):
 
 	#: T3 processing schema
 	directive: T3Directive
+
 	#: number of stocks to load at once
 	chunk_size: int = 200
+
+	#: whether selected stock ids should be saved into (potential) t3 documents
+	save_stock_ids: bool = True
 
 
 	def __init__(self,
@@ -126,6 +132,8 @@ class T3Processor(AbsProcessorUnit):
 			# Unit runner
 			#############
 
+			chan = self.directive.run.config['channel'] if 'channel' in self.directive.run.config else self.channel # type: ignore
+
 			# The default runner provided by pyampel-core is T3UnitRunner
 			runner = self.context.loader \
 				.new_admin_unit(
@@ -135,7 +143,7 @@ class T3Processor(AbsProcessorUnit):
 					logger = logger,
 					run_id = run_id,
 					process_name = self.process_name,
-					channel = self.channel,
+					channel = chan,
 					update_journal = self.update_journal,
 					extra_journal_tag = self.extra_journal_tag,
 					run_context = run_context
@@ -215,6 +223,7 @@ class T3Processor(AbsProcessorUnit):
 
 							# Run T3 units defined for this process
 							runner.run(list(tran_data))
+
 						except Exception as e:
 							exc = e
 							if self.raise_exc:
@@ -224,6 +233,26 @@ class T3Processor(AbsProcessorUnit):
 								self.context.db, logger, exc=e,
 								info={'process': self.process_name}
 							)
+
+			if (t3_records := runner.done()):
+
+				# TODO: implement something for setting version & config
+				d = T3Document(
+					process = self.process_name,
+					run = run_id,
+					status = T3ProcessorStatus.OK
+				)
+
+				if self.channel:
+					d['channel'] = self.channel
+
+				if self.save_stock_ids:
+					d['stock'] = [el['_id'] for el in stock_ids]
+
+				# Mongo maintains key order
+				d['body'] = [t3_records] if isinstance(t3_records, dict) else t3_records
+
+				self.context.db.get_collection('t3').insert_one(d)
 
 		except Exception as e:
 
