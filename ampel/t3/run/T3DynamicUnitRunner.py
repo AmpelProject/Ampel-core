@@ -21,7 +21,7 @@ from ampel.t3.run.T3UnitRunner import T3UnitRunner
 
 class T3DynamicUnitRunner(AbsT3UnitRunner):
 	"""
-	Unit runner that for each channel found in the elements loaded by the stages:
+	Unit runner that for each channel found in the elements loaded by the previous stages:
 	
 	- spawns a dedicated :class:`~ampel.t3.run.T3UnitRunner.T3UnitRunner` instance configured to filter and project elements wrt this channel
 	- execute the associated T3 units
