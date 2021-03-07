@@ -1,15 +1,16 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-core/ampel/t3/run/T3DynamicUnitRunnner.py
+# File              : Ampel-core/ampel/t3/run/T3DynamicUnitRunner.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 06.01.2020
-# Last Modified Date: 21.06.2020
+# Last Modified Date: 07.03.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-from typing import Dict, Optional, Sequence, Set
+from typing import Dict, Optional, Sequence, Set, Union, List
 from ampel.type import ChannelId
 from ampel.model.UnitModel import UnitModel
+from ampel.content.T3Record import T3Record
 from ampel.base.AmpelBaseModel import AmpelBaseModel
 from ampel.log import AmpelLogger, VERBOSE
 from ampel.core.AmpelBuffer import AmpelBuffer
@@ -157,6 +158,17 @@ class T3DynamicUnitRunner(AbsT3UnitRunner):
 
 			self.runners[chan].run(data)
 
-	def done(self) -> None:
-		for runner in self.runners.values():
-			runner.done()
+
+	def done(self) -> Optional[Union[T3Record, Sequence[T3Record]]]:
+
+		ret: List[T3Record] = []
+
+		for chan, runner in self.runners.items():
+
+			if (payload := runner.done()):
+
+				# TODO: implement setting version & config
+				if isinstance(payload, list): # always true with T3UnitRunner
+					ret.append(payload[0])
+
+		return ret if ret else None
