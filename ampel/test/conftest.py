@@ -6,6 +6,7 @@ import pytest
 from pymongo import InsertOne
 
 from ampel.config.AmpelConfig import AmpelConfig
+from ampel.config.builder.DistConfigBuilder import DistConfigBuilder
 from ampel.db.DBUpdatesBuffer import DBUpdatesBuffer
 from ampel.dev.DevAmpelContext import DevAmpelContext
 from ampel.ingest.PointT2Ingester import PointT2Ingester
@@ -46,6 +47,17 @@ def patch_mongo(monkeypatch):
 @pytest.fixture
 def testing_config():
     return Path(__file__).parent / "test-data" / "testing-config.yaml"
+
+
+@pytest.fixture(scope="session")
+def core_config():
+    """
+    The config distributed with ampel-core
+    """
+    cb = DistConfigBuilder()
+    for ext in "json", "yml", "yaml":
+        cb.load_distrib("ampel-core", "conf", ext)
+    return cb.build_config(config_validator=None)
 
 
 @pytest.fixture

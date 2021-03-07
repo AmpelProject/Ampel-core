@@ -9,8 +9,7 @@
 
 
 import json, os, sys, traceback
-from typing import Dict, Any, Optional, Generator, Tuple, List
-from ampel.log.AmpelLogger import AmpelLogger, DEBUG, ERROR
+from typing import Any, Dict, List
 from ampel.util.pretty import prettyjson
 from ampel.util.mappings import walk_and_process_dict
 from ampel.core.AmpelContext import AmpelContext
@@ -19,29 +18,22 @@ from ampel.model.UnitModel import UnitModel
 from ampel.config.AmpelConfig import AmpelConfig
 from ampel.dev.DictSecretProvider import PotemkinSecretProvider
 from ampel.db.DBUpdatesBuffer import DBUpdatesBuffer
+from ampel.config.builder.BaseConfigChecker import BaseConfigChecker
 
 
-class ConfigChecker:
+class ConfigChecker(BaseConfigChecker):
 	"""
-	Validates a config usually build by ConfigBuilder
+	Validate a config by using it to initialize an AmpelContext, and then
+	instantiating all processors and the units defined in their configurations.
 	"""
 
-	def __init__(self, config: Dict[str, Any], logger: Optional[AmpelLogger] = None, verbose: bool = False):
-
-		self.verbose = verbose
-		self.logger = AmpelLogger.get_logger(
-			console={'level': DEBUG if verbose else ERROR}
-		) if logger is None else logger
+	def __init__(self, *args, **kwargs):
+		super().__init__(*args, **kwargs)
 
 		self.ctx = AmpelContext.new(
-			config = AmpelConfig(config),
+			config = AmpelConfig(self.config),
 			secrets=PotemkinSecretProvider()
 		)
-
-		self.loader = self.ctx.loader
-
-		# Fast deep copy and serialization check
-		self.config = json.loads(json.dumps(config))
 
 
 	def validate(self,
@@ -50,7 +42,7 @@ class ConfigChecker:
 		raise_exc: bool = False
 	) -> Dict[str, Any]:
 		"""
-		:returns config if check passed
+		:returns: config if check passed
 		:raises: BadConfig
 		"""
 
@@ -64,24 +56,6 @@ class ConfigChecker:
 		)
 
 		return self.config
-
-
-	def iter_procs(self,
-		ignore_inactive: bool = False,
-		raise_exc: bool = False
-	) -> Generator[Tuple[str, str], None, None]:
-
-		for tier in ("t0", "t1", "t2", "t3"):
-
-			procs = list(self.config['process'][tier].keys())
-
-			for proc in procs:
-
-				if ignore_inactive and not self.config['process'][tier][proc].get('active', True):
-					self.logger.info("Ignoring inactivated processor model", extra={"process": proc})
-					continue
-
-				yield (tier, proc)
 
 
 	def load_model(self,

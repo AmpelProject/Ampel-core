@@ -102,9 +102,6 @@ class PeriodicSummaryT3(AbsProcessTemplate):
             directive["select"]["unit"] = "T3FilteringStockSelector"
             directive["select"]["config"]["t2_filter"] = self.filter.t2.dict()
 
-        # Restrict document types to load
-        if self.load is not None:
-            directive["load"]["config"]["directives"] = self.load
         if self.channel is not None:
             # load only documents that pass channel selection
             directive["load"]["config"]["channel"] = self.channel
@@ -113,6 +110,12 @@ class PeriodicSummaryT3(AbsProcessTemplate):
                 "unit": "T3ChannelProjector",
                 "config": {"channel": self.channel},
             }
+    
+        # Restrict document types to load
+        if self.load is not None:
+            directive["load"]["config"]["directives"] = [d.dict() if not isinstance(d, str) else d for d in self.load]
+        else:
+            del directive["load"]
 
         if self.complement is not None:
             directive["complement"] = self.get_units(self.complement)

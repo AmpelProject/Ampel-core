@@ -23,6 +23,7 @@ from typing import Any, Dict, Iterable, Mapping, Optional, TextIO
 
 import yaml
 
+from ampel.base.BadConfig import BadConfig
 from ampel.config.AmpelConfig import AmpelConfig
 from ampel.config.builder.DistConfigBuilder import DistConfigBuilder
 from ampel.log.utils import log_exception
@@ -63,9 +64,14 @@ def build(args: Namespace) -> int:
     cb = DistConfigBuilder(verbose=args.verbose)
     try:
         cb.load_distributions()
-        config = cb.build_config(stop_on_errors=args.ignore_errors)
+        config = cb.build_config(
+            stop_on_errors=args.ignore_errors,
+            config_validator="ConfigValidator",
+        )
     except Exception as exc:
-        log_exception(cb.logger, exc)
+        # assume that BadConfig means the error was already logged
+        if not isinstance(exc, BadConfig):
+           log_exception(cb.logger, exc)
         return 1
     yaml.dump(
         config, args.output_file if args.output_file else sys.stdout, sort_keys=False
@@ -94,7 +100,9 @@ def _validate(config_file: TextIO, secrets: Optional[TextIO] = None) -> None:
         ),
     )
     with ctx.loader.validate_unit_models():
-        for channel in ctx.config.get("channel", Dict[str, Any], raise_exc=True).values():
+        for channel in ctx.config.get(
+            "channel", Dict[str, Any], raise_exc=True
+        ).values():
             ChannelModel(**{k: v for k, v in channel.items() if not k in {"template"}})
         for tier in range(3):
             for process in ctx.config.get(
