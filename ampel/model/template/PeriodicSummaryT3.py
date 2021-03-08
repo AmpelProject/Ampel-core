@@ -110,7 +110,7 @@ class PeriodicSummaryT3(AbsProcessTemplate):
     
         # Restrict document types to load
         if self.load is not None:
-            directive["load"]["config"]["directives"] = [d.dict() if not isinstance(d, str) else d for d in self.load]
+            directive["load"]["config"]["directives"] = self.load
         else:
             del directive["load"]
 
@@ -131,7 +131,18 @@ class PeriodicSummaryT3(AbsProcessTemplate):
             },
         }
 
-        return ret
+        return self._to_dict(ret)
+
+    @classmethod
+    def _to_dict(cls, item):
+        if isinstance(item, dict):
+            return {k: cls._to_dict(v) for k, v in item.items()}
+        elif isinstance(item, list):
+            return [cls._to_dict(v) for v in item]
+        elif hasattr(item, "dict"):
+            return cls._to_dict(item.dict())
+        else:
+            return item
 
     def get_units(self, units: UnitModelSequence) -> List[Dict[str,Any]]:
         if isinstance(units, str):
