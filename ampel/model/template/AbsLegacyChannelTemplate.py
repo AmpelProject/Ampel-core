@@ -9,7 +9,7 @@
 
 from importlib import import_module
 from pydantic import validator
-from typing import List, Dict, Any, Union, Tuple, Optional
+from typing import List, Dict, Any, Union, Tuple, Optional, Sequence
 from ampel.log.AmpelLogger import AmpelLogger
 from ampel.config.builder.FirstPassConfig import FirstPassConfig
 from ampel.model.UnitModel import UnitModel
@@ -140,8 +140,7 @@ class AbsLegacyChannelTemplate(AbsChannelTemplate, abstract=True):
 		directives = ret['processor']['config']['directives'][0]
 
 		self.check_tied_units(
-			t2_compute_from_t0,
-			t2_compute_from_t1,
+			t2_compute_from_t0 + t2_compute_from_t1,
 			first_pass_config
 		)
 
@@ -233,8 +232,7 @@ class AbsLegacyChannelTemplate(AbsChannelTemplate, abstract=True):
 
 
 	def check_tied_units(self,
-		t2_compute_from_t0: List[UnitModel],
-		t2_compute_from_t1: List[UnitModel],
+		all_t2_units: List[T2UnitModel],
 		first_pass_config: FirstPassConfig
 	) -> None:
 		"""
@@ -242,7 +240,7 @@ class AbsLegacyChannelTemplate(AbsChannelTemplate, abstract=True):
 		"""
 		all_units: List[str] = []
 		tied_units: List[str] = []
-		for el in t2_compute_from_t0 + t2_compute_from_t1:
+		for el in all_t2_units:
 			all_units.append(el.unit) # type: ignore
 			if "AbsTiedT2Unit" in first_pass_config['unit']['base'][el.unit]['base']:
 				tied_units.append(el.unit) # type: ignore
@@ -265,7 +263,7 @@ class AbsLegacyChannelTemplate(AbsChannelTemplate, abstract=True):
 
 
 	def get_units(self,
-		units: List[UnitModel], abs_unit: Union[str, List[str]],
+		units: Sequence[UnitModel], abs_unit: Union[str, List[str]],
 		first_pass_config: FirstPassConfig
 	) -> List[Dict]:
 		"""
