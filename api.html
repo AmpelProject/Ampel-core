@@ -1609,7 +1609,7 @@ This class must be subclassed.</p>
 
 <dl class="py attribute">
 <dt id="ampel.model.template.AbsLegacyChannelTemplate.AbsLegacyChannelTemplate.t2_compute">
-<code class="sig-name descname"><span class="pre">t2_compute</span></code><em class="property"><span class="pre">:</span> <span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">ampel.model.template.AbsLegacyChannelTemplate.T2UnitModel</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#ampel.model.template.AbsLegacyChannelTemplate.AbsLegacyChannelTemplate.t2_compute" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname"><span class="pre">t2_compute</span></code><em class="property"><span class="pre">:</span> <span class="pre">List</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#ampel.model.template.AbsLegacyChannelTemplate.T2UnitModel" title="ampel.model.template.AbsLegacyChannelTemplate.T2UnitModel"><span class="pre">ampel.model.template.AbsLegacyChannelTemplate.T2UnitModel</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#ampel.model.template.AbsLegacyChannelTemplate.AbsLegacyChannelTemplate.t2_compute" title="Permalink to this definition">¶</a></dt>
 <dd><p>T2 units to trigger when transient is updated. Dependencies of tied
 units will be added automatically.</p>
 </dd></dl>
@@ -1645,6 +1645,26 @@ units will be added automatically.</p>
 <dd class="field-even"><p>unit defintions (dict) that are subclass of the provided abstract class name.</p>
 </dd>
 </dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="ampel.model.template.AbsLegacyChannelTemplate.T2UnitModel">
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">ampel.model.template.AbsLegacyChannelTemplate.</span></code><code class="sig-name descname"><span class="pre">T2UnitModel</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ampel/model/template/AbsLegacyChannelTemplate.html#T2UnitModel"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ampel.model.template.AbsLegacyChannelTemplate.T2UnitModel" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://ampelproject.github.io/Ampel-interface/api.html#ampel.model.UnitModel.UnitModel" title="(in ampel-interface v0.7)"><code class="xref py py-class docutils literal notranslate"><span class="pre">ampel.model.UnitModel.UnitModel</span></code></a></p>
+<p>Precursor that ProcessMorpher can turn into a T2IngestModel</p>
+<dl class="py attribute">
+<dt id="ampel.model.template.AbsLegacyChannelTemplate.T2UnitModel.ingest">
+<code class="sig-name descname"><span class="pre">ingest</span></code><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.9)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#ampel.model.template.AbsLegacyChannelTemplate.T2UnitModel.ingest" title="Permalink to this definition">¶</a></dt>
+<dd><p>Ingester options</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="ampel.model.template.AbsLegacyChannelTemplate.T2UnitModel.group">
+<code class="sig-name descname"><span class="pre">group</span></code><em class="property"><span class="pre">:</span> <span class="pre">Union</span><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.9)"><span class="pre">int</span></a><span class="p"><span class="pre">,</span> </span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.9)"><span class="pre">int</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#ampel.model.template.AbsLegacyChannelTemplate.T2UnitModel.group" title="Permalink to this definition">¶</a></dt>
+<dd><p>Filter result codes that should trigger this T2. If not specified, T2
+documents will be created in response to <em>any</em> passing alert.</p>
 </dd></dl>
 
 </dd></dl>
