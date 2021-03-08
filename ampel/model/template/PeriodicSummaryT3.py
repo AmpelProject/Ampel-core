@@ -26,7 +26,7 @@ class FilterModel(StrictModel):
     t2: Union[T2FilterModel, AllOf[T2FilterModel], AnyOf[T2FilterModel]]
 
 UnitModelOrString = Union[UnitModel, str]
-UnitModelSequence = Union[UnitModelOrString, Sequence[UnitModelOrString]]
+UnitModelSequence = Union[Sequence[UnitModelOrString], UnitModelOrString]
 
 class PeriodicSummaryT3(AbsProcessTemplate):
     """
