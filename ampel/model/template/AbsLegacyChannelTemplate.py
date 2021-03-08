@@ -16,6 +16,17 @@ from ampel.model.UnitModel import UnitModel
 from ampel.abstract.AbsChannelTemplate import AbsChannelTemplate
 
 
+class T2UnitModel(UnitModel):
+	"""
+	Precursor that ProcessMorpher can turn into a T2IngestModel
+	"""
+	#: Ingester options
+	ingest: Optional[Dict[str, Any]]
+	#: Filter result codes that should trigger this T2. If not specified, T2
+	#: documents will be created in response to *any* passing alert.
+	group: Union[int, List[int]] = []
+
+
 class AbsLegacyChannelTemplate(AbsChannelTemplate, abstract=True):
 	"""
 	Abstract class whose purpose is to maintain compatibility with channel
@@ -33,7 +44,7 @@ class AbsLegacyChannelTemplate(AbsChannelTemplate, abstract=True):
 	t0_filter: UnitModel
 	#: T2 units to trigger when transient is updated. Dependencies of tied
 	#: units will be added automatically.
-	t2_compute: List[UnitModel] = []
+	t2_compute: List[T2UnitModel] = []
 	#: T3 processes bound to this channel. These may be use templates, such as
 	#: :class:`~ampel.model.template.PeriodicSummaryT3.PeriodicSummaryT3`.
 	t3_supervise: List[Dict[str, Any]] = []
@@ -81,8 +92,8 @@ class AbsLegacyChannelTemplate(AbsChannelTemplate, abstract=True):
 		t2_state_ingester: Optional[Union[str, Tuple[str, Dict[str, Any]]]] = None,
 		t2_point_ingester: Optional[Union[str, Tuple[str, Dict[str, Any]]]] = None,
 		t2_stock_ingester: Optional[Union[str, Tuple[str, Dict[str, Any]]]] = None,
-		t2_compute_from_t0: List[UnitModel] = [],
-		t2_compute_from_t1: List[UnitModel] = [],
+		t2_compute_from_t0: List[T2UnitModel] = [],
+		t2_compute_from_t1: List[T2UnitModel] = [],
 	) -> Dict[str, Any]:
 		"""
 		This method needs a reference to a FirstPassConfig dict because
