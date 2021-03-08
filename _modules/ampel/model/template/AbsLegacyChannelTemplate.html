@@ -51,6 +51,17 @@
 <span class="kn">from</span> <span class="nn">ampel.abstract.AbsChannelTemplate</span> <span class="kn">import</span> <span class="n">AbsChannelTemplate</span>
 
 
+<span class="k">class</span> <span class="nc">T2UnitModel</span><span class="p">(</span><span class="n">UnitModel</span><span class="p">):</span>
+	<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">	Precursor that ProcessMorpher can turn into a T2IngestModel</span>
+<span class="sd">	&quot;&quot;&quot;</span>
+	<span class="c1">#: Ingester options</span>
+	<span class="n">ingest</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span>
+	<span class="c1">#: Filter result codes that should trigger this T2. If not specified, T2</span>
+	<span class="c1">#: documents will be created in response to *any* passing alert.</span>
+	<span class="n">group</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="p">[]</span>
+
+
 <div class="viewcode-block" id="AbsLegacyChannelTemplate"><a class="viewcode-back" href="../../../../api.html#ampel.model.template.AbsLegacyChannelTemplate.AbsLegacyChannelTemplate">[docs]</a><span class="k">class</span> <span class="nc">AbsLegacyChannelTemplate</span><span class="p">(</span><span class="n">AbsChannelTemplate</span><span class="p">,</span> <span class="n">abstract</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
 	<span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">	Abstract class whose purpose is to maintain compatibility with channel</span>
@@ -68,7 +79,7 @@
 	<span class="n">t0_filter</span><span class="p">:</span> <span class="n">UnitModel</span>
 	<span class="c1">#: T2 units to trigger when transient is updated. Dependencies of tied</span>
 	<span class="c1">#: units will be added automatically.</span>
-	<span class="n">t2_compute</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">UnitModel</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+	<span class="n">t2_compute</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">T2UnitModel</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
 	<span class="c1">#: T3 processes bound to this channel. These may be use templates, such as</span>
 	<span class="c1">#: :class:`~ampel.model.template.PeriodicSummaryT3.PeriodicSummaryT3`.</span>
 	<span class="n">t3_supervise</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="p">[]</span>
@@ -116,8 +127,8 @@
 		<span class="n">t2_state_ingester</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 		<span class="n">t2_point_ingester</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 		<span class="n">t2_stock_ingester</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-		<span class="n">t2_compute_from_t0</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">UnitModel</span><span class="p">]</span> <span class="o">=</span> <span class="p">[],</span>
-		<span class="n">t2_compute_from_t1</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">UnitModel</span><span class="p">]</span> <span class="o">=</span> <span class="p">[],</span>
+		<span class="n">t2_compute_from_t0</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">T2UnitModel</span><span class="p">]</span> <span class="o">=</span> <span class="p">[],</span>
+		<span class="n">t2_compute_from_t1</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">T2UnitModel</span><span class="p">]</span> <span class="o">=</span> <span class="p">[],</span>
 	<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
 		<span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">		This method needs a reference to a FirstPassConfig dict because</span>
