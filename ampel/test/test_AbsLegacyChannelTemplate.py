@@ -2,7 +2,7 @@ from typing import Any, Dict, List, TYPE_CHECKING
 import pytest, yaml
 import contextlib
 
-from ampel.model.template.AbsLegacyChannelTemplate import AbsLegacyChannelTemplate
+from ampel.model.template.AbsLegacyChannelTemplate import AbsLegacyChannelTemplate, T2UnitModel
 
 if TYPE_CHECKING:
     from ampel.log.AmpelLogger import AmpelLogger
@@ -21,7 +21,7 @@ class LegacyChannelTemplate(AbsLegacyChannelTemplate):
         t0_ingester = "DummyAlertContentIngester"
         t1_ingester = "DummyCompoundIngester"
         t2_compute_from_t0 = self.t2_compute
-        t2_compute_from_t1: List["UnitModel"] = []
+        t2_compute_from_t1: List[T2UnitModel] = []
         ret.insert(
             0,
             self.craft_t0_process(
