@@ -30,7 +30,6 @@ packages = \
  'ampel.model.t3',
  'ampel.model.template',
  'ampel.model.time',
- 'ampel.plot',
  'ampel.run',
  'ampel.t2',
  'ampel.t3',
