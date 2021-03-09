@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 24.05.2019
-# Last Modified Date: 17.02.2021
+# Last Modified Date: 09.03.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import gc
@@ -491,7 +491,10 @@ class T2Processor(AbsProcessorUnit):
 
 			# Datapoints marked as excluded in the compound won't be included
 			dps_ids = get_datapoint_ids(compound, logger)
-			datapoints = list(self.col_t0.find({'_id': {"$in": dps_ids}}))
+			datapoints = sorted(
+				self.col_t0.find({'_id': {"$in": dps_ids}}),
+				key = lambda k: k['body']['jd']
+			)
 
 			if not datapoints:
 				report_error(
@@ -795,6 +798,7 @@ class T2Processor(AbsProcessorUnit):
 					'_id': t2_doc['_id'],
 					'unit': t2_doc['unit'],
 					'config': t2_doc['config'],
+					'stock': t2_doc['stock'],
 					'link': t2_doc['link']
 				}
 			)
