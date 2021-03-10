@@ -188,6 +188,10 @@ Templates
   :exclude-members: craft_t0_process, get_t2_units
   :show-inheritance:
 
+.. autoclass:: ampel.model.template.AbsLegacyChannelTemplate.T2UnitModel
+  :members:
+  :show-inheritance:
+
 .. autoclass:: ampel.model.template.PeriodicSummaryT3.FilterModel
   :members:
 

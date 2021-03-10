@@ -18,23 +18,35 @@ from ampel.model.ingest.T2IngestModel import T2IngestModel
 from ampel.model.StateT2Dependency import StateT2Dependency
 from ampel.test.dummy import DummyCompoundIngester, DummyStateT2Ingester
 
+def pytest_addoption(parser):
+    parser.addoption(
+        "--integration",
+        action="store_true",
+        default=False,
+        help="run docker-based integration tests",
+    )
 
 @pytest.fixture(scope="session")
-def mongod():
-    if "MONGO_HOSTNAME" in environ and "MONGO_PORT" in environ:
-        yield "mongodb://{}:{}".format(environ["MONGO_HOSTNAME"], environ["MONGO_PORT"])
-    else:
-        pytest.skip("No Mongo instance configured")
+def mongod(pytestconfig):
+    if "MONGO_PORT" in environ:
+        yield "mongodb://localhost:{}".format(environ["MONGO_PORT"])
+        return
 
-
-@pytest.fixture(scope="session")
-def graphite():
-    if "GRAPHITE_HOSTNAME" in environ and "GRAPHITE_PORT" in environ:
-        yield "graphite://{}:{}".format(
-            environ["GRAPHITE_HOSTNAME"], environ["GRAPHITE_PORT"]
+    if not pytestconfig.getoption("--integration"):
+        raise pytest.skip("integration tests require --integration flag")
+    try:
+        container = subprocess.check_output(
+            "docker", "run", "--rm", "-d", "-P", "mongo:4.4"
         )
-    else:
-        pytest.skip("No Graphite instance configured")
+    except FileNotFoundError:
+        pytest.skip("integration tests require docker")
+    try:
+        port = json.loads(subprocess.check_output("docker", "inspect", container))[0][
+            "NetworkSettings"
+        ]["Ports"]["27017/tcp"][0]["HostPort"]
+        yield f"mongodb://localhost:{port}"
+    finally:
+        subprocess.check_call("docker", "stop", "container")
 
 
 @pytest.fixture
@@ -61,10 +73,19 @@ def core_config():
 
 
 @pytest.fixture
-def dev_context(patch_mongo, testing_config):
+def mock_context(patch_mongo, testing_config):
     config = AmpelConfig.load(testing_config)
     return DevAmpelContext.new(config=config, purge_db=True)
 
+@pytest.fixture
+def integration_context(mongod, testing_config):
+    config = AmpelConfig.load(testing_config)
+    return DevAmpelContext.new(config=config, purge_db=True, custom_conf={"resource.mongo": mongod})
+
+# metafixture as suggested in https://github.com/pytest-dev/pytest/issues/349#issuecomment-189370273
+@pytest.fixture(params=["mock_context", "integration_context"])
+def dev_context(request):
+    yield request.getfixturevalue(request.param)
 
 @pytest.fixture
 def ampel_logger():
