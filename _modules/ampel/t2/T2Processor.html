@@ -335,7 +335,7 @@
 			<span class="c1"># T2 units can return a T2RunState integer rather than a dict instance / tuple</span>
 			<span class="c1"># for example: T2RunState.ERROR, T2RunState.PENDING_DEPENDENCY, ...</span>
 			<span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ret</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>
-				<span class="k">if</span> <span class="n">ret</span> <span class="ow">in</span> <span class="n">T2SysRunState</span><span class="p">:</span>
+				<span class="k">if</span> <span class="n">ret</span> <span class="ow">in</span> <span class="n">T2SysRunState</span><span class="o">.</span><span class="n">__members__</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
 					<span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;T2Processor status: </span><span class="si">{</span><span class="n">ret</span><span class="si">}</span><span class="s1"> (</span><span class="si">{</span><span class="n">T2SysRunState</span><span class="p">(</span><span class="n">ret</span><span class="p">)</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s1">)&#39;</span><span class="p">)</span>
 				<span class="k">else</span><span class="p">:</span>
 					<span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;T2 unit returned int </span><span class="si">{</span><span class="n">ret</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
