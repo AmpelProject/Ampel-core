@@ -301,7 +301,7 @@ class T2Processor(AbsProcessorUnit):
 			# T2 units can return a T2RunState integer rather than a dict instance / tuple
 			# for example: T2RunState.ERROR, T2RunState.PENDING_DEPENDENCY, ...
 			if isinstance(ret, int):
-				if ret in T2SysRunState:
+				if ret in T2SysRunState.__members__.values():
 					logger.info(f'T2Processor status: {ret} ({T2SysRunState(ret).name})')
 				else:
 					logger.info(f'T2 unit returned int {ret}')

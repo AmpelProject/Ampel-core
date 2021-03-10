@@ -9,11 +9,22 @@
 
 from importlib import import_module
 from pydantic import validator
-from typing import List, Dict, Any, Union, Tuple, Optional
+from typing import List, Dict, Any, Union, Tuple, Optional, Sequence
 from ampel.log.AmpelLogger import AmpelLogger
 from ampel.config.builder.FirstPassConfig import FirstPassConfig
 from ampel.model.UnitModel import UnitModel
 from ampel.abstract.AbsChannelTemplate import AbsChannelTemplate
+
+
+class T2UnitModel(UnitModel):
+	"""
+	Precursor that ProcessMorpher can turn into a T2IngestModel
+	"""
+	#: Ingester options
+	ingest: Optional[Dict[str, Any]]
+	#: Filter result codes that should trigger this T2. If not specified, T2
+	#: documents will be created in response to *any* passing alert.
+	group: Union[int, List[int]] = []
 
 
 class AbsLegacyChannelTemplate(AbsChannelTemplate, abstract=True):
@@ -33,7 +44,7 @@ class AbsLegacyChannelTemplate(AbsChannelTemplate, abstract=True):
 	t0_filter: UnitModel
 	#: T2 units to trigger when transient is updated. Dependencies of tied
 	#: units will be added automatically.
-	t2_compute: List[UnitModel] = []
+	t2_compute: List[T2UnitModel] = []
 	#: T3 processes bound to this channel. These may be use templates, such as
 	#: :class:`~ampel.model.template.PeriodicSummaryT3.PeriodicSummaryT3`.
 	t3_supervise: List[Dict[str, Any]] = []
@@ -81,8 +92,8 @@ class AbsLegacyChannelTemplate(AbsChannelTemplate, abstract=True):
 		t2_state_ingester: Optional[Union[str, Tuple[str, Dict[str, Any]]]] = None,
 		t2_point_ingester: Optional[Union[str, Tuple[str, Dict[str, Any]]]] = None,
 		t2_stock_ingester: Optional[Union[str, Tuple[str, Dict[str, Any]]]] = None,
-		t2_compute_from_t0: List[UnitModel] = [],
-		t2_compute_from_t1: List[UnitModel] = [],
+		t2_compute_from_t0: List[T2UnitModel] = [],
+		t2_compute_from_t1: List[T2UnitModel] = [],
 	) -> Dict[str, Any]:
 		"""
 		This method needs a reference to a FirstPassConfig dict because
@@ -129,8 +140,7 @@ class AbsLegacyChannelTemplate(AbsChannelTemplate, abstract=True):
 		directives = ret['processor']['config']['directives'][0]
 
 		self.check_tied_units(
-			t2_compute_from_t0,
-			t2_compute_from_t1,
+			t2_compute_from_t0 + t2_compute_from_t1,
 			first_pass_config
 		)
 
@@ -222,8 +232,7 @@ class AbsLegacyChannelTemplate(AbsChannelTemplate, abstract=True):
 
 
 	def check_tied_units(self,
-		t2_compute_from_t0: List[UnitModel],
-		t2_compute_from_t1: List[UnitModel],
+		all_t2_units: List[T2UnitModel],
 		first_pass_config: FirstPassConfig
 	) -> None:
 		"""
@@ -231,7 +240,7 @@ class AbsLegacyChannelTemplate(AbsChannelTemplate, abstract=True):
 		"""
 		all_units: List[str] = []
 		tied_units: List[str] = []
-		for el in t2_compute_from_t0 + t2_compute_from_t1:
+		for el in all_t2_units:
 			all_units.append(el.unit) # type: ignore
 			if "AbsTiedT2Unit" in first_pass_config['unit']['base'][el.unit]['base']:
 				tied_units.append(el.unit) # type: ignore
@@ -254,7 +263,7 @@ class AbsLegacyChannelTemplate(AbsChannelTemplate, abstract=True):
 
 
 	def get_units(self,
-		units: List[UnitModel], abs_unit: Union[str, List[str]],
+		units: Sequence[UnitModel], abs_unit: Union[str, List[str]],
 		first_pass_config: FirstPassConfig
 	) -> List[Dict]:
 		"""

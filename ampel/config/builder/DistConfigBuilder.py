@@ -222,6 +222,8 @@ class DistConfigBuilder(ConfigBuilder):
 
 			d = load(
 				distrib.get_resource_string(__name__, file_rel_path)
+				if not os.path.isabs(file_rel_path)
+				else file_rel_path
 			)
 
 			for k in ("t0", "t1", "t2", "t3", "ops"):
