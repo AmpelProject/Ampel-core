@@ -8,7 +8,7 @@
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from typing import Iterable
-from ampel.log import AmpelLogger
+from ampel.protocol.LoggerProtocol import LoggerProtocol
 from ampel.base import abstractmethod
 from ampel.core.AmpelBuffer import AmpelBuffer
 from ampel.core.AdminUnit import AdminUnit
@@ -21,7 +21,7 @@ class AbsT3DataAppender(AdminUnit, abstract=True):
 	stored outside the Ampel database.
 	"""
 
-	logger: AmpelLogger
+	logger: LoggerProtocol
 
 	@abstractmethod
 	def complement(self, it: Iterable[AmpelBuffer]) -> None:
