@@ -12,7 +12,7 @@ from ampel.type import StockId
 from ampel.content.StockDocument import StockDocument
 from ampel.content.DataPoint import DataPoint
 from ampel.content.Compound import Compound
-from ampel.content.T2Record import T2Record
+from ampel.content.T2Document import T2Document
 from ampel.content.LogDocument import LogDocument
 
 # Please update BufferKey on AmpelBuffer udpates
@@ -30,6 +30,6 @@ class AmpelBuffer(TypedDict, total=False):
 	stock: Optional[StockDocument]
 	t0: Optional[List[DataPoint]]
 	t1: Optional[List[Compound]]
-	t2: Optional[List[T2Record]]
+	t2: Optional[List[T2Document]]
 	log: Optional[List[LogDocument]]
 	extra: Optional[Dict[str, Any]]
