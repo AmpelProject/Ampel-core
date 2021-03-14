@@ -7,30 +7,21 @@
 # Last Modified Date: 17.04.2020
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-import asyncio
-import datetime
-import logging
-import schedule
-import traceback
-import sys
+import asyncio, datetime, logging, schedule
 from functools import partial
-from typing import Dict, Sequence, Callable, Any, List, Literal, Optional, Set
+from typing import Dict, Sequence, Any, Literal, Optional, Set
 
 from ampel.util import concurrent
-
 from ampel.abstract.AbsProcessorUnit import AbsProcessorUnit
-from ampel.base.AmpelBaseModel import AmpelBaseModel
 from ampel.core.AmpelContext import AmpelContext
-from ampel.core.Schedulable import Schedulable
 from ampel.abstract.AbsProcessController import AbsProcessController
 from ampel.abstract.AbsSecretProvider import AbsSecretProvider
 from ampel.config.AmpelConfig import AmpelConfig
 from ampel.config.ScheduleEvaluator import ScheduleEvaluator
 from ampel.model.ProcessModel import ProcessModel
-from ampel.model.UnitModel import UnitModel
-
 
 log = logging.getLogger(__name__)
+
 
 class DefaultProcessController(AbsProcessController):
 	"""
@@ -138,7 +129,7 @@ class DefaultProcessController(AbsProcessController):
 			await task
 
 
-	def stop(self, name: Optional[str]=None) -> None:
+	def stop(self, name: Optional[str] = None) -> None:
 		"""Stop scheduling new processes."""
 		self.scheduler.clear(tag=name)
 
@@ -156,6 +147,10 @@ class DefaultProcessController(AbsProcessController):
 		for pm in self.processes:
 			for appointment in pm.schedule:
 				if not appointment:
+					continue
+				if appointment == "super":
+					from ampel.log.AmpelLogger import AmpelLogger
+					AmpelLogger.get_logger().error("DefaultProcessController does not handle the schedule value 'super'")
 					continue
 				job = (
 					every(appointment)
@@ -233,7 +228,7 @@ class DefaultProcessController(AbsProcessController):
 		finished
 		"""
 		# gather previously launched processes we might have to wait on
-		if not pm.name in self._processes:
+		if pm.name not in self._processes:
 			tasks = self._processes[pm.name] = set()
 		else:
 			tasks = self._processes[pm.name]
@@ -288,7 +283,7 @@ class DefaultProcessController(AbsProcessController):
 		try:
 			import setproctitle
 			setproctitle.setproctitle(f"ampel.t{pm.tier}.{pm.name}")
-		except:
+		except Exception:
 			...
 
 		# Create new context with frozen config
