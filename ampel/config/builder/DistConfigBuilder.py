@@ -4,13 +4,14 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 09.10.2019
-# Last Modified Date: 06.02.2020
+# Last Modified Date: 14.03.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-import json, yaml, pkg_resources, os
+import json, yaml, pkg_resources, os, re
 from pkg_resources import EggInfoDistribution, DistInfoDistribution # type: ignore[attr-defined]
-from typing import Dict, Any, Union, Callable, List, Optional, Generator
+from typing import Dict, Any, Union, Callable, List, Optional
 from ampel.config.builder.ConfigBuilder import ConfigBuilder
+from ampel.util.distrib import get_dist_names, get_files
 from ampel.log import VERBOSE
 
 
@@ -32,7 +33,7 @@ class DistConfigBuilder(ConfigBuilder):
 		"""
 		for prefix in prefixes:
 
-			for dist_name in self.get_dist_names(prefix):
+			for dist_name in get_dist_names(prefix):
 
 				if self.verbose:
 					self.logger.log(VERBOSE, f"Checking distribution '{dist_name}'")
@@ -48,59 +49,14 @@ class DistConfigBuilder(ConfigBuilder):
 			self.logger.log(VERBOSE, "Done loading distributions")
 
 
-	def walk_pth_file(self, pth: str, conf_dir: str, ext: str) -> Generator[str, None, None]:
-		with open(pth) as f:
-			for root, dirs, files in os.walk(f"{f.read().strip()}/{conf_dir}"):
-				for fname in files:
-					if fname.endswith("." + ext):
-						yield os.path.join(root, fname)
-	
-
-	def load_distrib(self,
-		dist_name: str, conf_dir: str = "conf", ext: str = "json"
-	) -> None:
+	def load_distrib(self, dist_name: str, conf_dir: str = "conf", ext: str = "json") -> None:
 		"""
 		Loads all known conf files of the provided distribution (name)
 		"""
 		try:
 
-			if not conf_dir.endswith("/"):
-				conf_dir += "/"
-
 			distrib = pkg_resources.get_distribution(dist_name)
-
-			# DistInfoDistribution: look for metadata RECORD (in <dist_name>.dist-info)
-			if isinstance(distrib, DistInfoDistribution):
-				# Example of the ouput of distrib.get_metadata_lines('RECORD'):
-				# 'conf/ampel-ztf.conf,sha256=FZkChNKKpcMPTO4pwyKq4WS8FAbznuR7oL9rtNYS7U0,322',
-				# 'ampel/model/ZTFLegacyChannelTemplate.py,sha256=zVtv4Iry3FloofSazIFc4h8l6hhV-wpIFbX3fOW2njA,2182',
-				# 'ampel/model/__pycache__/ZTFLegacyChannelTemplate.cpython-38.pyc,,',
-				if pth := next(
-					(
-						pth for el in distrib.get_metadata_lines('RECORD')
-						if (pth := el.split(",")[0]).endswith(".pth")
-					),
-					None
-				):
-					all_conf_files = list(self.walk_pth_file(pth, conf_dir, ext))
-				else:
-					all_conf_files = [
-						el.split(",")[0] for el in distrib.get_metadata_lines('RECORD')
-						if el.startswith(conf_dir) and f".{ext}," in el
-					]
-
-			elif isinstance(distrib, EggInfoDistribution):
-				# Example of the ouput of distrib.get_metadata_lines('SOURCES.txt'):
-				# 'setup.py',
-				# 'conf/ampel-ztf.json',
-				# 'ampel/model/ZTFLegacyChannelTemplate.py',
-				all_conf_files = [
-					el for el in distrib.get_metadata_lines('SOURCES.txt')
-					if (el.startswith(f"{conf_dir}") and el.endswith(f".{ext}"))
-				]
-
-			else:
-				raise ValueError(f"Unsupported distribution type: '{type(distrib)}'")
+			all_conf_files = get_files(dist_name, conf_dir, re.compile(f".*\.{ext}$")) # noqa
 
 			if all_conf_files and self.verbose:
 				self.logger.log(VERBOSE, f"Following conf files will be parsed: {all_conf_files}")
