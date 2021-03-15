@@ -4,10 +4,9 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 18.02.2020
-# Last Modified Date: 17.02.2021
+# Last Modified Date: 15.03.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-from dataclasses import dataclass
 from typing import Dict, Any, Optional, Literal, Iterable, TYPE_CHECKING
 from ampel.config.AmpelConfig import AmpelConfig
 from ampel.base.AuxUnitRegister import AuxUnitRegister
@@ -18,7 +17,6 @@ if TYPE_CHECKING:
 	from ampel.core.UnitLoader import UnitLoader # noqa
 
 
-@dataclass
 class AmpelContext:
 	"""
 	This class is typically instantiated by Ampel controllers
@@ -33,20 +31,35 @@ class AmpelContext:
 	db: 'AmpelDB'
 	#: Instantiates a unit from a :class:`~ampel.model.UnitModel.UnitModel`.
 	loader: 'UnitLoader' # forward reference to avoid cyclic import issues
-	#: Context is valid for this processing tier only (if None, valid for all).
-	tier: Optional[Literal[0, 1, 2, 3]] = None
 	resource: Optional[Dict[str, Any]] = None
-
 	admin_msg: Optional[str] = None
-	extra: Optional[Dict[str, Any]] = None
+
+
+	def __init__(self,
+		config: AmpelConfig,
+		db: 'AmpelDB',
+		loader: 'UnitLoader',
+		resource: Optional[Dict[str, Any]] = None,
+		admin_msg: Optional[str] = None
+	) -> None:
+
+		self.config = config
+		self.db = db
+		self.loader = loader
+		self.admin_msg = admin_msg
+		self.resource = resource
+		
+		# try to register aux units globally
+		try:
+			AuxUnitRegister.initialize(
+				config.get("unit.aux", ret_type=dict, raise_exc=True)
+			)
+		except Exception:
+			print("UnitLoader auxiliary units auto-registration failed")
 
 
 	@classmethod
-	def new(cls,
-		config: AmpelConfig,
-		tier: Optional[Literal[0, 1, 2, 3]] = None,
-		**kwargs
-	) -> 'AmpelContext':
+	def new(cls, config: AmpelConfig, **kwargs) -> 'AmpelContext':
 
 		if not isinstance(config, AmpelConfig):
 			raise ValueError("Illegal value provided with parameter 'config'")
@@ -57,19 +70,10 @@ class AmpelContext:
 
 		secrets = kwargs.pop("secrets", None)
 
-		# try to register aux units globally
-		try:
-			AuxUnitRegister.initialize(
-				config.get("unit.aux", ret_type=dict, raise_exc=True)
-			)
-		except Exception:
-			print("UnitLoader auxiliary units auto-registration failed")
-
 		return cls(
 			config = config,
 			db = AmpelDB.new(config, secrets),
-			loader = UnitLoader(config=config, tier=tier, secrets=secrets),
-			tier = tier,
+			loader = UnitLoader(config=config, secrets=secrets),
 			**kwargs
 		)
 
@@ -80,7 +84,6 @@ class AmpelContext:
 		pwd_file_path: Optional[str] = None,
 		pwds: Optional[Iterable[str]] = None,
 		freeze_config: bool = True,
-		tier: Optional[Literal[0, 1, 2, 3]] = None,
 		**kwargs
 	) -> 'AmpelContext':
 		"""
@@ -102,7 +105,7 @@ class AmpelContext:
 
 		return cls.new(
 			config = AmpelConfig.load(config_file_path, pwd_file_path, pwds, freeze_config),
-			tier = tier, **kwargs
+			**kwargs
 		)
 
 
@@ -112,7 +115,6 @@ class AmpelContext:
 		pwd_file_path: Optional[str] = None,
 		pwds: Optional[Iterable[str]] = None,
 		freeze_config: bool = True,
-		tier: Optional[Literal[0, 1, 2, 3]] = None,
 		verbose: bool = False,
 	) -> 'AmpelContext':
 		"""
@@ -137,8 +139,7 @@ class AmpelContext:
 			AmpelConfig(
 				cb.build_config(ignore_errors, pwds=pwds),
 				freeze_config
-			),
-			tier=tier
+			)
 		)
 
 
