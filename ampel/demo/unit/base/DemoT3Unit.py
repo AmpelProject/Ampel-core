@@ -25,4 +25,4 @@ class DemoT3Unit(AbsT3Unit):
 
 
 	def done(self) -> None:
-		print("done")
+		self.logger.info("DemoT3Unit: done() called")
