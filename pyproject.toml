@@ -66,7 +66,7 @@ mypy = "^0.812"
 pytest-asyncio = "^0.14.0"
 pytest-mock = "^3.5.1"
 mongomock = "^3.22.1"
-httpx = "^0.17.0"
+httpx = "^0.17.1"
 
 [tool.poetry.extras]
 server = ["fastapi", "uvicorn"]
