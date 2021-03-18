@@ -65,7 +65,7 @@ def build(args: Namespace) -> int:
     try:
         cb.load_distributions()
         config = cb.build_config(
-            stop_on_errors=not args.ignore_errors,
+            stop_on_errors=0 if args.ignore_errors else 2,
             config_validator="ConfigValidator",
         )
     except Exception as exc:
