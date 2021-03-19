@@ -15,6 +15,7 @@ from ampel.model.purge.PurgeModel import PurgeModel
 class ChannelModel(StrictModel):
 
 	channel: Union[int, str]
+	version: Union[int, float, str]
 	purge: PurgeModel = {
 		'content': {'delay': 100, 'format': 'json', 'unify': True},
 		'logs': {'delay': 50, 'format': 'csv'}
