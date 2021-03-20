@@ -265,8 +265,8 @@ class ConfigBuilder:
 				# Extract channel definition from template instance
 				try:
 					out['channel'].add(
-						tpl.get_channel(self.logger),
-						p.get('distrib'), p.get('version'), p.get('source')
+						(c := tpl.get_channel(self.logger)),
+						c.get('distrib'), c.get('version'), c.get('source')
 					)
 				except Exception as ee:
 					log_exception(self.logger, msg=f'Unable to get channel from template ({chan_name})', exc=ee)
@@ -318,7 +318,10 @@ class ConfigBuilder:
 
 				# Raw/Simple/Standard channel definition
 				# (encouraged behavior actually)
-				out['channel'].add(chan_dict)
+				out['channel'].add(
+					chan_dict, chan_dict.get('distrib'),
+					chan_dict.get('version'), chan_dict.get('source')
+				)
 
 
 		# Optionaly decrypt encrypted config entries
