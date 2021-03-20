@@ -7,9 +7,7 @@
 # Last Modified Date: 17.04.2020
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-import yaml
 from typing import Dict, Optional, Literal, Sequence, Any, ClassVar
-
 from ampel.base import abstractmethod
 from ampel.base.AmpelABC import AmpelABC
 from ampel.base.AmpelBaseModel import AmpelBaseModel
@@ -30,13 +28,13 @@ class AbsProcessController(AmpelABC, AmpelBaseModel, abstract=True):
 	process_count: ClassVar[Any] = AmpelMetricsRegistry.gauge(
 		"processes",
 		"Number of concurrent processes",
-		subsystem=None, 
+		subsystem=None,
 		labelnames=("tier", "process")
 	)
 	process_exceptions: ClassVar[Any] = AmpelMetricsRegistry.counter(
 		"process_exceptions",
 		"Number of unhandled exceptions",
-		subsystem=None, 
+		subsystem=None,
 		labelnames=("tier", "process")
 	)
 
@@ -76,7 +74,7 @@ class AbsProcessController(AmpelABC, AmpelBaseModel, abstract=True):
 
 
 	@abstractmethod
-	def stop(self, name: Optional[str]=None) -> None:
+	def stop(self, name: Optional[str] = None) -> None:
 		"""
 		Gracefully stop processes.
 		
