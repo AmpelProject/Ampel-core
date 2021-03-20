@@ -81,7 +81,7 @@ class T3Processor(AbsProcessorUnit):
 	def run(self) -> None:
 
 		event_hdlr = None
-		run_id = self.new_run_id()
+		run_id = self.context.new_run_id()
 		exc = None
 		logger = None
 
