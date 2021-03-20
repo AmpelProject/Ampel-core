@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 18.02.2020
-# Last Modified Date: 15.03.2021
+# Last Modified Date: 18.03.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from typing import Dict, Any, Optional, Literal, Iterable, TYPE_CHECKING
@@ -141,6 +141,21 @@ class AmpelContext:
 				freeze_config
 			)
 		)
+
+
+	def new_run_id(self) -> int:
+		"""
+		Return an identifier that can be used to associate log entries from a
+		single process invocation. This ID is unique and monotonicaly increasing.
+		"""
+		return self.db \
+			.get_collection('counter') \
+			.find_one_and_update(
+				{'_id': 'current_run_id'},
+				{'$inc': {'value': 1}},
+				new=True, upsert=True
+			) \
+			.get('value')
 
 
 	def get_config(self) -> AmpelConfig:
