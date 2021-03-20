@@ -219,4 +219,5 @@ class DummyTiedStateT2Unit(AbsTiedStateT2Unit):
 	) -> T2UnitResult:
         assert t2_records, "dependencies were found"
         assert len(body := t2_records[0].body or []) == 1
-        return {k: v * 2 for k, v in ((payload[-1] if isinstance((payload := t2_records[0].get_payload()), list) else payload) or {}).items()}
+        payload = (p[-1] if isinstance((p := t2_records[0].get_payload()), list) else p)
+        return {k: v * 2 for k, v in (payload or {}).items()}
