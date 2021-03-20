@@ -23,6 +23,7 @@ unit:
     - ampel.t3.run.T3UnitRunner
     - ampel.t3.run.T3ChannelUnitRunner
     - ampel.t3.run.T3DynamicUnitRunner
+    - ampel.demo.DemoProcessor
 
   base:
     - ampel.demo.unit.base.DemoPointT2Unit
