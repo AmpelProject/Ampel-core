@@ -172,6 +172,8 @@ Then, run ``poetry_dev`` in ``ampel-ztf``, which depends on the other four. This
     • Installing ampel-photometry (0.7.1-alpha.1 /afs/ifh.de/group/amanda/scratch/jvsanten/projects/ztf/ampel-installtest2/ampel-photometry)
     • Installing ampel-alerts (0.7.1-alpha.1 /afs/ifh.de/group/amanda/scratch/jvsanten/projects/ztf/ampel-installtest2/ampel-alerts)
 
+.. note:: Ensure that you have *all* the Ampel core packages cloned in sibling directories before this step. If you were missing e.g. ampel-photometry, it would be installed from PyPI, which would also install its dependencies like ampel-core from PyPI.
+
 Finally, install ``ampel-ztf`` itself in develop mode. Since all the dependencies were installed in the previous step, this does nothing but add the ``.pth`` file::
 
   $ poetry install
@@ -180,8 +182,6 @@ Finally, install ``ampel-ztf`` itself in develop mode. Since all the dependencie
   No dependencies to install or update
 
   Installing the current project: ampel-ztf (0.7.1-alpha.9)
-
-.. note:: Ensure that you have *all* the Ampel core packages cloned in sibling directories before this step. If you were missing e.g. ampel-photometry, it would be installed from PyPI, which would also install its dependencies like ampel-core from PyPI.
 
 You can verify that all packages were installed in editable mode like this::
 
@@ -192,7 +192,7 @@ You can verify that all packages were installed in editable mode like this::
   /afs/ifh.de/group/amanda/scratch/jvsanten/software/miniconda3/envs/ampel-installtest/lib/python3.8/site-packages/ampel_photometry.pth
   /afs/ifh.de/group/amanda/scratch/jvsanten/software/miniconda3/envs/ampel-installtest/lib/python3.8/site-packages/ampel_ztf.pth
 
-  .. note:: Before committing any changes to ``pyproject.toml``, run ``poetry_dev version`` to restore the PyPI dependencies. 
+.. note:: Before committing any changes to ``pyproject.toml``, run ``poetry_dev version`` to restore the PyPI dependencies. 
 
 Running a full Ampel instance
 =============================
