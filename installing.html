@@ -185,6 +185,10 @@
 <span class="go">  • Installing ampel-alerts (0.7.1-alpha.1 /afs/ifh.de/group/amanda/scratch/jvsanten/projects/ztf/ampel-installtest2/ampel-alerts)</span>
 </pre></div>
 </div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Ensure that you have <em>all</em> the Ampel core packages cloned in sibling directories before this step. If you were missing e.g. ampel-photometry, it would be installed from PyPI, which would also install its dependencies like ampel-core from PyPI.</p>
+</div>
 <p>Finally, install <code class="docutils literal notranslate"><span class="pre">ampel-ztf</span></code> itself in develop mode. Since all the dependencies were installed in the previous step, this does nothing but add the <code class="docutils literal notranslate"><span class="pre">.pth</span></code> file:</p>
 <div class="highlight-shell-session notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>poetry install
 <span class="go">Installing dependencies from lock file</span>
@@ -194,10 +198,6 @@
 <span class="go">Installing the current project: ampel-ztf (0.7.1-alpha.9)</span>
 </pre></div>
 </div>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>Ensure that you have <em>all</em> the Ampel core packages cloned in sibling directories before this step. If you were missing e.g. ampel-photometry, it would be installed from PyPI, which would also install its dependencies like ampel-core from PyPI.</p>
-</div>
 <p>You can verify that all packages were installed in editable mode like this:</p>
 <div class="highlight-shell-session notranslate"><div class="highlight"><pre><span></span><span class="go">&gt; ls $(python -c &#39;import site; print(site.getsitepackages()[0])&#39;)/ampel_*.pth</span>
 <span class="go">/afs/ifh.de/group/amanda/scratch/jvsanten/software/miniconda3/envs/ampel-installtest/lib/python3.8/site-packages/ampel_alerts.pth</span>
@@ -205,9 +205,11 @@
 <span class="go">/afs/ifh.de/group/amanda/scratch/jvsanten/software/miniconda3/envs/ampel-installtest/lib/python3.8/site-packages/ampel_interface.pth</span>
 <span class="go">/afs/ifh.de/group/amanda/scratch/jvsanten/software/miniconda3/envs/ampel-installtest/lib/python3.8/site-packages/ampel_photometry.pth</span>
 <span class="go">/afs/ifh.de/group/amanda/scratch/jvsanten/software/miniconda3/envs/ampel-installtest/lib/python3.8/site-packages/ampel_ztf.pth</span>
-
-<span class="go">.. note:: Before committing any changes to ``pyproject.toml``, run ``poetry_dev version`` to restore the PyPI dependencies.</span>
 </pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Before committing any changes to <code class="docutils literal notranslate"><span class="pre">pyproject.toml</span></code>, run <code class="docutils literal notranslate"><span class="pre">poetry_dev</span> <span class="pre">version</span></code> to restore the PyPI dependencies.</p>
 </div>
 </div>
 <div class="section" id="running-a-full-ampel-instance">
