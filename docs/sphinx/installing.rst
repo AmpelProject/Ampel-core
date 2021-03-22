@@ -192,6 +192,8 @@ You can verify that all packages were installed in editable mode like this::
   /afs/ifh.de/group/amanda/scratch/jvsanten/software/miniconda3/envs/ampel-installtest/lib/python3.8/site-packages/ampel_photometry.pth
   /afs/ifh.de/group/amanda/scratch/jvsanten/software/miniconda3/envs/ampel-installtest/lib/python3.8/site-packages/ampel_ztf.pth
 
+  .. note:: Before committing any changes to ``pyproject.toml``, run ``poetry_dev version`` to restore the PyPI dependencies. 
+
 Running a full Ampel instance
 =============================
 
