@@ -8,7 +8,7 @@
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from collections.abc import Sequence as sequence, Iterable as iterable, Sized as sized
-from typing import Dict, Any, List, Iterable, Union, Type, Tuple, Set, Sized, Generator
+from typing import Any, List, Iterable, Union, Type, Tuple, Set, Generator
 from itertools import islice
 from ampel.type import strict_iterable
 
@@ -106,7 +106,15 @@ def check_seq_inner_type(
 	check_seq_inner_type((1,2), (int, str)) -> True
 	check_seq_inner_type((1,2,'a'), (int, str)) -> False
 	check_seq_inner_type((1,2,'a'), (int, str), multi_type=True) -> True
+
+	Note:
+	check_seq_inner_type('dsda', str) -> True
+	check_seq_inner_type(23, int) -> False
 	"""
+
+	# Wrong input
+	if not isinstance(seq, sequence) or isinstance(seq, str):
+		return False
 
 	# monotype
 	if not isinstance(types, sequence):
