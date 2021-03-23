@@ -127,12 +127,13 @@ class T3FilteringStockSelector(T3StockSelector):
 			{
 				'$match': match
 			},
-			# find latest result for each stock and unit
+			# find "latest" result for each stock and unit, where "latest" is
+			# the document with the largest _id (creation time)
 			{
 				'$sort': {
 					'stock': 1,
 					'unit': 1,
-					'link': 1
+					'_id': 1
 				}
 			},
 			{'$unwind': '$body'},
