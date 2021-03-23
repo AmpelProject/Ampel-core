@@ -162,12 +162,13 @@
 			<span class="p">{</span>
 				<span class="s1">&#39;$match&#39;</span><span class="p">:</span> <span class="n">match</span>
 			<span class="p">},</span>
-			<span class="c1"># find latest result for each stock and unit</span>
+			<span class="c1"># find &quot;latest&quot; result for each stock and unit, where &quot;latest&quot; is</span>
+			<span class="c1"># the document with the largest _id (creation time)</span>
 			<span class="p">{</span>
 				<span class="s1">&#39;$sort&#39;</span><span class="p">:</span> <span class="p">{</span>
 					<span class="s1">&#39;stock&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
 					<span class="s1">&#39;unit&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
-					<span class="s1">&#39;link&#39;</span><span class="p">:</span> <span class="mi">1</span>
+					<span class="s1">&#39;_id&#39;</span><span class="p">:</span> <span class="mi">1</span>
 				<span class="p">}</span>
 			<span class="p">},</span>
 			<span class="p">{</span><span class="s1">&#39;$unwind&#39;</span><span class="p">:</span> <span class="s1">&#39;$body&#39;</span><span class="p">},</span>
