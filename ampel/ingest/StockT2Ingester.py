@@ -61,7 +61,7 @@ class StockT2Ingester(AbsStockT2Ingester):
 							'channel': chan_add_to_set,
 							'journal': {
 								'tier': self.tier,
-								'dt': now,
+								'ts': now,
 								'channel': jchan
 							}
 						}
