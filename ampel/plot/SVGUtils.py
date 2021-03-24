@@ -7,9 +7,9 @@
 # Last Modified Date: 13.02.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
+import warnings
 from typing import Optional, List, Dict, Any
 import zipfile, io, base64
-import svgutils as su
 import matplotlib as plt
 from cairosvg import svg2png
 from IPython.display import Image
@@ -19,6 +19,14 @@ from ampel.log.AmpelLogger import AmpelLogger
 from ampel.model.PlotProperties import PlotProperties
 from matplotlib.figure import Figure
 
+# catch SyntaxWarning: "is not" with a literal. Did you mean "!="?
+with warnings.catch_warnings():
+	warnings.filterwarnings(
+		action="ignore",
+		category=SyntaxWarning,
+		module=r"svgutils\.transform"
+	)
+	import svgutils as su
 
 class SVGUtils:
 
