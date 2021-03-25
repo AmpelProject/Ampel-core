@@ -7,8 +7,8 @@
 # Last Modified Date: 02.08.2020
 # Last Modified By	: Jakob van Santen <jakob.van.santen@desy.de>
 
-from pymongo.cursor import Cursor
-from typing import Sequence, Dict, List, Any, Union, Optional
+from itertools import islice
+from typing import Sequence, Dict, List, Any, Union, Optional, Generator
 
 from ampel.type import StockId
 from ampel.t3.select.T3StockSelector import T3StockSelector
@@ -41,22 +41,22 @@ class T3FilteringStockSelector(T3StockSelector):
 	"""
 
 	t2_filter: Union[T2FilterModel, AllOf[T2FilterModel], AnyOf[T2FilterModel]]
+	chunk_size: int = 200
 
 	# Override/Implement
-	def fetch(self) -> Optional[Cursor]:
+	def fetch(self) -> Generator[Dict[str,Any], None, None]:
 
 		# Execute query on T0 collection to get target stocks
-		if cursor := super().fetch():
-			stock_ids = [doc['_id'] for doc in cursor]
-		else:
+		if not (cursor := super().fetch()):
 			return None
 
 		# Execute aggregation on T2 collection to get matching subset of stocks
-		cursor = self.context.db.get_collection('t2').aggregate(
-			self._t2_filter_pipeline(stock_ids)
-		)
+		# NB: aggregate in chunks to avoid the 100 MB aggregation memory limit
+		while (stock_ids := [doc['_id'] for doc in islice(cursor, self.chunk_size)]):
+			yield from self.context.db.get_collection('t2').aggregate(
+				self._t2_filter_pipeline(stock_ids),
+			)
 
-		return cursor
 
 
 	def _build_match(self, f: Union[T2FilterModel, AllOf[T2FilterModel], AnyOf[T2FilterModel]]) -> Dict[str,Any]:
