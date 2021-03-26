@@ -52,10 +52,22 @@ class T3FilteringStockSelector(T3StockSelector):
 
 		# Execute aggregation on T2 collection to get matching subset of stocks
 		# NB: aggregate in chunks to avoid the 100 MB aggregation memory limit
+		input_count = 0
+		output_count = 0
 		while (stock_ids := [doc['_id'] for doc in islice(cursor, self.chunk_size)]):
-			yield from self.context.db.get_collection('t2').aggregate(
-				self._t2_filter_pipeline(stock_ids),
-			)
+			count = 0
+			for count, doc in enumerate(
+				self.context.db.get_collection('t2').aggregate(
+					self._t2_filter_pipeline(stock_ids),
+				),
+				1
+			):
+				yield doc
+
+			input_count += len(stock_ids)
+			output_count += count
+
+		self.logger.info(f"{output_count}/{input_count} stocks passed filter criteria")
 
 
 
