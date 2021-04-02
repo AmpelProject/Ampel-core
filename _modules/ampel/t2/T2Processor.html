@@ -39,13 +39,14 @@
 <span class="c1"># License           : BSD-3-Clause</span>
 <span class="c1"># Author            : vb &lt;vbrinnel@physik.hu-berlin.de&gt;</span>
 <span class="c1"># Date              : 24.05.2019</span>
-<span class="c1"># Last Modified Date: 17.02.2021</span>
+<span class="c1"># Last Modified Date: 02.04.2021</span>
 <span class="c1"># Last Modified By  : vb &lt;vbrinnel@physik.hu-berlin.de&gt;</span>
 
 <span class="kn">import</span> <span class="nn">gc</span>
 <span class="kn">import</span> <span class="nn">signal</span>
 <span class="kn">from</span> <span class="nn">time</span> <span class="kn">import</span> <span class="n">time</span>
-<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Union</span><span class="p">,</span> <span class="n">Type</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">cast</span><span class="p">,</span> <span class="n">overload</span><span class="p">,</span> <span class="n">TYPE_CHECKING</span>
+<span class="kn">from</span> <span class="nn">bson</span> <span class="kn">import</span> <span class="n">ObjectId</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Union</span><span class="p">,</span> <span class="n">Type</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">cast</span><span class="p">,</span> <span class="n">overload</span>
 
 <span class="kn">from</span> <span class="nn">ampel.type</span> <span class="kn">import</span> <span class="n">T</span><span class="p">,</span> <span class="n">T2UnitResult</span><span class="p">,</span> <span class="n">Tag</span>
 <span class="kn">from</span> <span class="nn">ampel.db.query.utils</span> <span class="kn">import</span> <span class="n">match_array</span>
@@ -80,11 +81,7 @@
 <span class="kn">from</span> <span class="nn">ampel.model.UnitModel</span> <span class="kn">import</span> <span class="n">UnitModel</span>
 <span class="kn">from</span> <span class="nn">ampel.model.StateT2Dependency</span> <span class="kn">import</span> <span class="n">StateT2Dependency</span>
 <span class="kn">from</span> <span class="nn">ampel.core.JournalUpdater</span> <span class="kn">import</span> <span class="n">JournalUpdater</span>
-
 <span class="kn">from</span> <span class="nn">ampel.metrics.AmpelMetricsRegistry</span> <span class="kn">import</span> <span class="n">AmpelMetricsRegistry</span>
-
-<span class="k">if</span> <span class="n">TYPE_CHECKING</span><span class="p">:</span>
-	<span class="kn">from</span> <span class="nn">pymongo</span> <span class="kn">import</span> <span class="n">ObjectId</span>
 
 <span class="n">AbsT2</span> <span class="o">=</span> <span class="n">Union</span><span class="p">[</span>
 	<span class="n">AbsStockT2Unit</span><span class="p">,</span> <span class="n">AbsPointT2Unit</span><span class="p">,</span> <span class="n">AbsStateT2Unit</span><span class="p">,</span> <span class="n">AbsTiedPointT2Unit</span><span class="p">,</span>
@@ -329,6 +326,7 @@
 				<span class="s1">&#39;duration&#39;</span><span class="p">:</span> <span class="nb">round</span><span class="p">(</span><span class="n">now</span> <span class="o">-</span> <span class="n">before_run</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
 			<span class="p">}</span>
 
+			<span class="n">tag</span> <span class="o">=</span> <span class="kc">None</span>
 			<span class="k">if</span> <span class="n">v</span> <span class="o">:=</span> <span class="n">t2_unit</span><span class="o">.</span><span class="n">get_version</span><span class="p">():</span>
 				<span class="n">t2_rec</span><span class="p">[</span><span class="s1">&#39;version&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">v</span>
 
@@ -339,24 +337,23 @@
 					<span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;T2Processor status: </span><span class="si">{</span><span class="n">ret</span><span class="si">}</span><span class="s1"> (</span><span class="si">{</span><span class="n">T2SysRunState</span><span class="p">(</span><span class="n">ret</span><span class="p">)</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s1">)&#39;</span><span class="p">)</span>
 				<span class="k">else</span><span class="p">:</span>
 					<span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;T2 unit returned int </span><span class="si">{</span><span class="n">ret</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
-				<span class="n">t2_doc</span><span class="p">[</span><span class="s1">&#39;status&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ret</span>
+				<span class="n">doc_status</span> <span class="o">=</span> <span class="n">ret</span>
 				<span class="n">t2_rec</span><span class="p">[</span><span class="s1">&#39;status&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ret</span>
 				<span class="n">j_rec</span><span class="p">[</span><span class="s1">&#39;status&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ret</span>
 
 			<span class="c1"># Unit returned just a dict result</span>
 			<span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ret</span><span class="p">,</span> <span class="p">(</span><span class="nb">dict</span><span class="p">,</span> <span class="nb">list</span><span class="p">)):</span>
-
-				<span class="n">t2_doc</span><span class="p">[</span><span class="s1">&#39;status&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">T2RunState</span><span class="o">.</span><span class="n">COMPLETED</span>
-				<span class="n">j_rec</span><span class="p">[</span><span class="s1">&#39;status&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">T2RunState</span><span class="o">.</span><span class="n">COMPLETED</span>
-				<span class="n">t2_rec</span><span class="p">[</span><span class="s1">&#39;status&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">T2RunState</span><span class="o">.</span><span class="n">COMPLETED</span>
+				<span class="n">doc_status</span> <span class="o">=</span> <span class="n">T2RunState</span><span class="o">.</span><span class="n">COMPLETED</span>
 				<span class="n">t2_rec</span><span class="p">[</span><span class="s1">&#39;result&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ret</span>
+				<span class="n">t2_rec</span><span class="p">[</span><span class="s1">&#39;status&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">T2RunState</span><span class="o">.</span><span class="n">COMPLETED</span>
+				<span class="n">j_rec</span><span class="p">[</span><span class="s1">&#39;status&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">T2RunState</span><span class="o">.</span><span class="n">COMPLETED</span>
 
 			<span class="c1"># Customizations request by T2 unit</span>
 			<span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ret</span><span class="p">,</span> <span class="n">T2BroadUnitResult</span><span class="p">):</span>
-
-				<span class="n">t2_rec</span><span class="p">[</span><span class="s1">&#39;result&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ret</span><span class="o">.</span><span class="n">t2_rec_payload</span>
-				<span class="n">t2_rec</span><span class="p">[</span><span class="s1">&#39;status&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ret</span><span class="o">.</span><span class="n">t2_record_status</span>
-				<span class="n">t2_doc</span><span class="p">[</span><span class="s1">&#39;status&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ret</span><span class="o">.</span><span class="n">t2_doc_status</span>
+				<span class="n">t2_rec</span><span class="p">[</span><span class="s1">&#39;result&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ret</span><span class="o">.</span><span class="n">rec_payload</span>
+				<span class="n">t2_rec</span><span class="p">[</span><span class="s1">&#39;status&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ret</span><span class="o">.</span><span class="n">rec_status</span>
+				<span class="n">doc_status</span> <span class="o">=</span> <span class="n">ret</span><span class="o">.</span><span class="n">doc_status</span>
+				<span class="n">tag</span> <span class="o">=</span> <span class="n">ret</span><span class="o">.</span><span class="n">doc_tag</span>
 
 				<span class="c1"># This just sets a default as journal status can be customized via j_tweak</span>
 				<span class="n">j_rec</span><span class="p">[</span><span class="s1">&#39;status&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">T2RunState</span><span class="o">.</span><span class="n">COMPLETED</span>
@@ -378,7 +375,13 @@
 
 			<span class="c1"># Unsupported object returned by unit</span>
 			<span class="k">else</span><span class="p">:</span>
-				<span class="bp">self</span><span class="o">.</span><span class="n">_unsupported_result</span><span class="p">(</span><span class="n">ret</span><span class="p">,</span> <span class="n">t2_doc</span><span class="p">,</span> <span class="n">t2_rec</span><span class="p">,</span> <span class="n">j_rec</span><span class="p">,</span> <span class="n">logger</span><span class="p">)</span>
+				<span class="n">doc_status</span> <span class="o">=</span> <span class="n">t2_rec</span><span class="p">[</span><span class="s1">&#39;status&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">j_rec</span><span class="p">[</span><span class="s1">&#39;status&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">T2RunState</span><span class="o">.</span><span class="n">ERROR</span>
+				<span class="bp">self</span><span class="o">.</span><span class="n">_processing_error</span><span class="p">(</span>
+					<span class="n">logger</span><span class="p">,</span> <span class="n">t2_doc</span><span class="o">=</span><span class="n">t2_doc</span><span class="p">,</span> <span class="n">t2_rec</span><span class="o">=</span><span class="n">t2_rec</span><span class="p">,</span> <span class="n">j_rec</span><span class="o">=</span><span class="n">j_rec</span><span class="p">,</span>
+					<span class="n">rec_msg</span><span class="o">=</span><span class="s1">&#39;Unit returned invalid content&#39;</span><span class="p">,</span>
+					<span class="n">report_msg</span><span class="o">=</span><span class="s1">&#39;Invalid content returned by T2 unit&#39;</span><span class="p">,</span>
+					<span class="n">extra</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;ret&#39;</span><span class="p">:</span> <span class="n">ret</span><span class="p">}</span>
+				<span class="p">)</span>
 
 			<span class="c1"># TODO: check that unit did not use system reserved status</span>
 
@@ -390,7 +393,10 @@
 					<span class="n">extra</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;t2_doc&#39;</span><span class="p">:</span> <span class="n">t2_doc</span><span class="p">}</span>
 				<span class="p">)</span>
 
-			<span class="bp">self</span><span class="o">.</span><span class="n">push_t2_update</span><span class="p">(</span><span class="n">t2_doc</span><span class="p">,</span> <span class="n">t2_rec</span><span class="p">,</span> <span class="n">logger</span><span class="p">)</span>
+			<span class="bp">self</span><span class="o">.</span><span class="n">push_t2_update</span><span class="p">(</span>
+				<span class="n">t2_doc</span><span class="p">[</span><span class="s1">&#39;_id&#39;</span><span class="p">],</span> <span class="n">t2_rec</span><span class="p">,</span> <span class="n">logger</span><span class="p">,</span>
+				<span class="n">tag</span><span class="o">=</span><span class="n">tag</span><span class="p">,</span> <span class="n">status</span><span class="o">=</span><span class="n">doc_status</span>
+			<span class="p">)</span>
 
 			<span class="c1"># Update stock document</span>
 			<span class="n">jupdater</span><span class="o">.</span><span class="n">flush</span><span class="p">()</span>
@@ -474,7 +480,7 @@
 		<span class="n">T2SysRunState</span><span class="p">,</span>                                         <span class="c1"># Error / missing dependency</span>
 		<span class="n">DataPoint</span><span class="p">,</span>                                             <span class="c1"># point t2</span>
 		<span class="n">Tuple</span><span class="p">[</span><span class="n">DataPoint</span><span class="p">,</span> <span class="n">T2DocView</span><span class="p">],</span>                           <span class="c1"># tied point t2</span>
-		<span class="n">Tuple</span><span class="p">[</span><span class="s2">&quot;StockDocument&quot;</span><span class="p">],</span>                                  <span class="c1"># stock t2</span>
+		<span class="n">Tuple</span><span class="p">[</span><span class="s2">&quot;StockDocument&quot;</span><span class="p">],</span>                                <span class="c1"># stock t2</span>
 		<span class="n">Tuple</span><span class="p">[</span><span class="n">Compound</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">DataPoint</span><span class="p">]],</span>                  <span class="c1"># state t2</span>
 		<span class="n">Tuple</span><span class="p">[</span><span class="n">T</span><span class="p">],</span>                                              <span class="c1"># custom state t2 (T could be LightCurve)</span>
 		<span class="n">Tuple</span><span class="p">[</span><span class="n">Compound</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">DataPoint</span><span class="p">],</span> <span class="n">List</span><span class="p">[</span><span class="n">T2DocView</span><span class="p">]],</span> <span class="c1"># tied state t2</span>
@@ -831,19 +837,6 @@
 			<span class="k">return</span> <span class="n">T2SysRunState</span><span class="o">.</span><span class="n">EXCEPTION</span>
 
 
-	<span class="k">def</span> <span class="nf">_unsupported_result</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
-		<span class="n">unit_ret</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="n">t2_doc</span><span class="p">:</span> <span class="n">T2Document</span><span class="p">,</span> <span class="n">t2_rec</span><span class="p">:</span> <span class="n">T2Record</span><span class="p">,</span>
-		<span class="n">j_rec</span><span class="p">:</span> <span class="n">JournalRecord</span><span class="p">,</span> <span class="n">logger</span><span class="p">:</span> <span class="n">AmpelLogger</span>
-	<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-
-		<span class="bp">self</span><span class="o">.</span><span class="n">_processing_error</span><span class="p">(</span>
-			<span class="n">logger</span><span class="p">,</span> <span class="n">t2_doc</span><span class="o">=</span><span class="n">t2_doc</span><span class="p">,</span> <span class="n">t2_rec</span><span class="o">=</span><span class="n">t2_rec</span><span class="p">,</span> <span class="n">j_rec</span><span class="o">=</span><span class="n">j_rec</span><span class="p">,</span>
-			<span class="n">rec_msg</span><span class="o">=</span><span class="s1">&#39;Unit returned invalid content&#39;</span><span class="p">,</span>
-			<span class="n">report_msg</span><span class="o">=</span><span class="s1">&#39;Invalid T2 unit return code&#39;</span><span class="p">,</span>
-			<span class="n">extra</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;ret&#39;</span><span class="p">:</span> <span class="n">unit_ret</span><span class="p">}</span>
-		<span class="p">)</span>
-
-
 	<span class="k">def</span> <span class="nf">_processing_error</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
 		<span class="n">logger</span><span class="p">:</span> <span class="n">AmpelLogger</span><span class="p">,</span> <span class="n">t2_doc</span><span class="p">:</span> <span class="n">T2Document</span><span class="p">,</span> <span class="n">t2_rec</span><span class="p">:</span> <span class="n">T2Record</span><span class="p">,</span>
 		<span class="n">j_rec</span><span class="p">:</span> <span class="n">JournalRecord</span><span class="p">,</span> <span class="n">rec_msg</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">report_msg</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -867,7 +860,7 @@
 		<span class="n">t2_rec</span><span class="p">[</span><span class="s1">&#39;msg&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">rec_msg</span>
 
 		<span class="bp">self</span><span class="o">.</span><span class="n">push_t2_update</span><span class="p">(</span>
-			<span class="n">t2_doc</span><span class="p">,</span> <span class="n">t2_rec</span><span class="p">,</span> <span class="n">logger</span><span class="p">,</span>
+			<span class="n">t2_doc</span><span class="p">[</span><span class="s1">&#39;_id&#39;</span><span class="p">],</span> <span class="n">t2_rec</span><span class="p">,</span> <span class="n">logger</span><span class="p">,</span>
 			<span class="n">status</span> <span class="o">=</span> <span class="n">T2SysRunState</span><span class="o">.</span><span class="n">EXCEPTION</span> <span class="k">if</span> <span class="n">exception</span> <span class="k">else</span> <span class="n">T2RunState</span><span class="o">.</span><span class="n">ERROR</span>
 		<span class="p">)</span>
 
@@ -891,20 +884,24 @@
 
 
 	<span class="k">def</span> <span class="nf">push_t2_update</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
-		<span class="n">t2_doc</span><span class="p">:</span> <span class="n">T2Document</span><span class="p">,</span> <span class="n">t2_rec</span><span class="p">:</span> <span class="n">T2Record</span><span class="p">,</span> <span class="n">logger</span><span class="p">:</span> <span class="n">AmpelLogger</span><span class="p">,</span>
-		<span class="o">*</span><span class="p">,</span> <span class="n">status</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">T2RunState</span><span class="o">.</span><span class="n">COMPLETED</span>
+		<span class="n">t2_id</span><span class="p">:</span> <span class="n">ObjectId</span><span class="p">,</span> <span class="n">t2_rec</span><span class="p">:</span> <span class="n">T2Record</span><span class="p">,</span> <span class="n">logger</span><span class="p">:</span> <span class="n">AmpelLogger</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span>
+		<span class="n">tag</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">Tag</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="n">Tag</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">status</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">T2RunState</span><span class="o">.</span><span class="n">COMPLETED</span>
 	<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 		<span class="sd">&quot;&quot;&quot; Performs DB updates of the T2 doc and stock journal &quot;&quot;&quot;</span>
 
 		<span class="k">if</span> <span class="n">logger</span><span class="o">.</span><span class="n">verbose</span><span class="p">:</span>
 			<span class="n">logger</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">VERBOSE</span><span class="p">,</span> <span class="s1">&#39;Saving T2 unit result&#39;</span><span class="p">)</span>
 
+		<span class="n">setd</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;status&#39;</span><span class="p">:</span> <span class="n">status</span><span class="p">}</span>
+		<span class="k">if</span> <span class="n">tag</span><span class="p">:</span>
+			<span class="n">setd</span><span class="p">[</span><span class="s1">&#39;$addToSet&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;$each&#39;</span><span class="p">:</span> <span class="n">tag</span><span class="p">}</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">tag</span><span class="p">,</span> <span class="nb">list</span><span class="p">)</span> <span class="k">else</span> <span class="n">tag</span>
+
 		<span class="c1"># Update T2 document</span>
 		<span class="bp">self</span><span class="o">.</span><span class="n">col_t2</span><span class="o">.</span><span class="n">update_one</span><span class="p">(</span>
-			<span class="p">{</span><span class="s1">&#39;_id&#39;</span><span class="p">:</span> <span class="n">t2_doc</span><span class="p">[</span><span class="s1">&#39;_id&#39;</span><span class="p">]},</span>
+			<span class="p">{</span><span class="s1">&#39;_id&#39;</span><span class="p">:</span> <span class="n">t2_id</span><span class="p">},</span>
 			<span class="p">{</span>
 				<span class="s1">&#39;$push&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;body&#39;</span><span class="p">:</span> <span class="n">t2_rec</span><span class="p">},</span>
-				<span class="s1">&#39;$set&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;status&#39;</span><span class="p">:</span> <span class="n">status</span><span class="p">}</span>
+				<span class="s1">&#39;$set&#39;</span><span class="p">:</span> <span class="n">setd</span>
 			<span class="p">}</span>
 		<span class="p">)</span>
 
