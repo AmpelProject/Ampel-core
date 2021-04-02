@@ -179,7 +179,8 @@ class DBContentLoader(AdminUnit):
 
 		# Ensure that T2Documents are ordered by id
 		for buf in register.values():
-			buf["t2"] = sorted(buf["t2"], key=lambda doc: doc["_id"])
+			if (buf_t2 := buf["t2"]) is not None:
+				buf["t2"] = sorted(buf_t2, key=lambda doc: doc["_id"])
 
 		if logger.verbose:
 			s = f"Unique ids: {len(register)}"
