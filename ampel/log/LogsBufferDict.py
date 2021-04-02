@@ -1,13 +1,19 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-core/ampel/logging/LogsBufferDict.py
+# File              : Ampel-core/ampel/log/LogsBufferDict.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 10.03.2020
-# Last Modified Date: 10.03.2020
+# Last Modified Date: 02.04.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-from typing import TypedDict, List, Dict, Any
+import sys
+from typing import List, Dict, Any
+if sys.version_info.minor > 8:
+	from typing import TypedDict
+else:
+	from typing_extensions import TypedDict
+
 
 class LogsBufferDict(TypedDict, total=False):
 	"""
