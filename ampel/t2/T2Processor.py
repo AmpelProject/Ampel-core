@@ -4,13 +4,14 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 24.05.2019
-# Last Modified Date: 17.02.2021
+# Last Modified Date: 02.04.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import gc
 import signal
 from time import time
-from typing import Optional, List, Union, Type, Dict, Any, Sequence, Tuple, cast, overload, TYPE_CHECKING
+from bson import ObjectId
+from typing import Optional, List, Union, Type, Dict, Any, Sequence, Tuple, cast, overload
 
 from ampel.type import T, T2UnitResult, Tag
 from ampel.db.query.utils import match_array
@@ -45,11 +46,7 @@ from ampel.abstract.AbsTiedCustomStateT2Unit import AbsTiedCustomStateT2Unit
 from ampel.model.UnitModel import UnitModel
 from ampel.model.StateT2Dependency import StateT2Dependency
 from ampel.core.JournalUpdater import JournalUpdater
-
 from ampel.metrics.AmpelMetricsRegistry import AmpelMetricsRegistry
-
-if TYPE_CHECKING:
-	from pymongo import ObjectId
 
 AbsT2 = Union[
 	AbsStockT2Unit, AbsPointT2Unit, AbsStateT2Unit, AbsTiedPointT2Unit,
@@ -294,6 +291,7 @@ class T2Processor(AbsProcessorUnit):
 				'duration': round(now - before_run, 3)
 			}
 
+			tag = None
 			if v := t2_unit.get_version():
 				t2_rec['version'] = v
 
@@ -304,24 +302,23 @@ class T2Processor(AbsProcessorUnit):
 					logger.info(f'T2Processor status: {ret} ({T2SysRunState(ret).name})')
 				else:
 					logger.info(f'T2 unit returned int {ret}')
-				t2_doc['status'] = ret
+				doc_status = ret
 				t2_rec['status'] = ret
 				j_rec['status'] = ret
 
 			# Unit returned just a dict result
 			elif isinstance(ret, (dict, list)):
-
-				t2_doc['status'] = T2RunState.COMPLETED
-				j_rec['status'] = T2RunState.COMPLETED
-				t2_rec['status'] = T2RunState.COMPLETED
+				doc_status = T2RunState.COMPLETED
 				t2_rec['result'] = ret
+				t2_rec['status'] = T2RunState.COMPLETED
+				j_rec['status'] = T2RunState.COMPLETED
 
 			# Customizations request by T2 unit
 			elif isinstance(ret, T2BroadUnitResult):
-
-				t2_rec['result'] = ret.t2_rec_payload
-				t2_rec['status'] = ret.t2_record_status
-				t2_doc['status'] = ret.t2_doc_status
+				t2_rec['result'] = ret.rec_payload
+				t2_rec['status'] = ret.rec_status
+				doc_status = ret.doc_status
+				tag = ret.doc_tag
 
 				# This just sets a default as journal status can be customized via j_tweak
 				j_rec['status'] = T2RunState.COMPLETED
@@ -343,7 +340,13 @@ class T2Processor(AbsProcessorUnit):
 
 			# Unsupported object returned by unit
 			else:
-				self._unsupported_result(ret, t2_doc, t2_rec, j_rec, logger)
+				doc_status = t2_rec['status'] = j_rec['status'] = T2RunState.ERROR
+				self._processing_error(
+					logger, t2_doc=t2_doc, t2_rec=t2_rec, j_rec=j_rec,
+					rec_msg='Unit returned invalid content',
+					report_msg='Invalid content returned by T2 unit',
+					extra={'ret': ret}
+				)
 
 			# TODO: check that unit did not use system reserved status
 
@@ -355,7 +358,10 @@ class T2Processor(AbsProcessorUnit):
 					extra={'t2_doc': t2_doc}
 				)
 
-			self.push_t2_update(t2_doc, t2_rec, logger)
+			self.push_t2_update(
+				t2_doc['_id'], t2_rec, logger,
+				tag=tag, status=doc_status
+			)
 
 			# Update stock document
 			jupdater.flush()
@@ -439,7 +445,7 @@ class T2Processor(AbsProcessorUnit):
 		T2SysRunState,                                         # Error / missing dependency
 		DataPoint,                                             # point t2
 		Tuple[DataPoint, T2DocView],                           # tied point t2
-		Tuple["StockDocument"],                                  # stock t2
+		Tuple["StockDocument"],                                # stock t2
 		Tuple[Compound, Sequence[DataPoint]],                  # state t2
 		Tuple[T],                                              # custom state t2 (T could be LightCurve)
 		Tuple[Compound, Sequence[DataPoint], List[T2DocView]], # tied state t2
@@ -796,19 +802,6 @@ class T2Processor(AbsProcessorUnit):
 			return T2SysRunState.EXCEPTION
 
 
-	def _unsupported_result(self,
-		unit_ret: Any, t2_doc: T2Document, t2_rec: T2Record,
-		j_rec: JournalRecord, logger: AmpelLogger
-	) -> None:
-
-		self._processing_error(
-			logger, t2_doc=t2_doc, t2_rec=t2_rec, j_rec=j_rec,
-			rec_msg='Unit returned invalid content',
-			report_msg='Invalid T2 unit return code',
-			extra={'ret': unit_ret}
-		)
-
-
 	def _processing_error(self,
 		logger: AmpelLogger, t2_doc: T2Document, t2_rec: T2Record,
 		j_rec: JournalRecord, rec_msg: str, report_msg: Optional[str] = None,
@@ -832,7 +825,7 @@ class T2Processor(AbsProcessorUnit):
 		t2_rec['msg'] = rec_msg
 
 		self.push_t2_update(
-			t2_doc, t2_rec, logger,
+			t2_doc['_id'], t2_rec, logger,
 			status = T2SysRunState.EXCEPTION if exception else T2RunState.ERROR
 		)
 
@@ -856,20 +849,24 @@ class T2Processor(AbsProcessorUnit):
 
 
 	def push_t2_update(self,
-		t2_doc: T2Document, t2_rec: T2Record, logger: AmpelLogger,
-		*, status: int = T2RunState.COMPLETED
+		t2_id: ObjectId, t2_rec: T2Record, logger: AmpelLogger, *,
+		tag: Optional[Union[Tag, List[Tag]]] = None, status: int = T2RunState.COMPLETED
 	) -> None:
 		""" Performs DB updates of the T2 doc and stock journal """
 
 		if logger.verbose:
 			logger.log(VERBOSE, 'Saving T2 unit result')
 
+		setd: Dict[str, Any] = {'status': status}
+		if tag:
+			setd['$addToSet'] = {'$each': tag} if isinstance(tag, list) else tag
+
 		# Update T2 document
 		self.col_t2.update_one(
-			{'_id': t2_doc['_id']},
+			{'_id': t2_id},
 			{
 				'$push': {'body': t2_rec},
-				'$set': {'status': status}
+				'$set': setd
 			}
 		)
 
