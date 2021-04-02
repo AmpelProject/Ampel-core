@@ -177,6 +177,9 @@ class DBContentLoader(AdminUnit):
 					f"Unrecognized LoaderDirective: {directive.dict()}"
 				)
 
+		# Ensure that T2Documents are ordered by id
+		for buf in register.values():
+			buf["t2"] = sorted(buf["t2"], key=lambda doc: doc["_id"])
 
 		if logger.verbose:
 			s = f"Unique ids: {len(register)}"
