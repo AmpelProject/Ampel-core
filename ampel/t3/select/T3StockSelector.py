@@ -4,22 +4,23 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 06.12.2019
-# Last Modified Date: 20.06.2020
+# Last Modified Date: 03.04.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from pymongo.cursor import Cursor
-from typing import Union, Optional, Dict, Literal
+from typing import Union, Optional, Dict, Literal, Any
 
 from ampel.type import ChannelId, Tag
-from ampel.db.query.stock import build_stock_query
-from ampel.log.AmpelLogger import AmpelLogger, VERBOSE
+from ampel.mongo.query.stock import build_stock_query
+from ampel.util.logicschema import to_logical_dict
 from ampel.log.utils import safe_query_dict
+from ampel.log.AmpelLogger import AmpelLogger, VERBOSE
 from ampel.t3.select.AbsT3Selector import AbsT3Selector
 from ampel.model.operator.AllOf import AllOf
 from ampel.model.operator.AnyOf import AnyOf
 from ampel.model.operator.OneOf import OneOf
 from ampel.model.time.TimeConstraintModel import TimeConstraintModel
-from ampel.config.LogicSchemaUtils import LogicSchemaUtils
+
 
 
 class T3StockSelector(AbsT3Selector):
@@ -37,24 +38,31 @@ class T3StockSelector(AbsT3Selector):
 	"""
 
 	logger: AmpelLogger
+
 	#: Select by creation time
 	created: Optional[TimeConstraintModel] = None
+
 	#: Select by modification time
 	modified: Optional[TimeConstraintModel] = None
+
 	#: Select by channel
 	channel: Optional[Union[ChannelId, AnyOf[ChannelId], AllOf[ChannelId], OneOf[ChannelId]]] = None
+
 	#: Select by tag
 	tag: Optional[Dict[Literal['with', 'without'], Union[Tag, Dict, AllOf[Tag], AnyOf[Tag], OneOf[Tag]]]] = None
+
+	#: Custom selection (ex: {'run': {'$gt': 10}})
+	custom: Optional[Dict[str, Any]] = None
 
 
 	def __init__(self, **kwargs):
 
 		if 'channel' in kwargs:
-			kwargs['channel'] = LogicSchemaUtils.to_logical_struct(kwargs['channel'], 'channel')
+			kwargs['channel'] = to_logical_dict(kwargs['channel'], 'channel')
 
 		if 'tag' in kwargs:
 			kwargs['tag'] = {
-				k: LogicSchemaUtils.to_logical_struct(v, 'tag')
+				k: to_logical_dict(v, 'tag')
 				for k, v in kwargs['tag'].items()
 			}
 
@@ -75,6 +83,9 @@ class T3StockSelector(AbsT3Selector):
 			time_modified = self.modified.get_query_model(db=self.context.db) \
 				if self.modified else None,
 		)
+
+		if self.custom:
+			match_query.update(self.custom)
 
 		if self.logger.verbose:
 			self.logger.log(VERBOSE, "Executing search query", extra=safe_query_dict(match_query))
