@@ -4,18 +4,20 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 09.12.2019
-# Last Modified Date: 16.03.2020
+# Last Modified Date: 03.04.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import collections
-from typing import Iterable, Union, Iterator
+from bson.codec_options import CodecOptions
+from typing import Iterable, Union, Iterator, Optional
+
 from ampel.type import StockId, StrictIterable
 from ampel.t3.load.AbsT3Loader import AbsT3Loader
 from ampel.core.AmpelContext import AmpelContext
 from ampel.core.AmpelBuffer import AmpelBuffer
 from ampel.util.collections import to_set
-from ampel.config.LogicSchemaUtils import LogicSchemaUtils
-from ampel.db.query.latest_compound import fast_query, general_query
+from ampel.mongo.query.latest_compound import fast_query, general_query
+from ampel.db.FrozenValuesDict import FrozenValuesDict
 
 
 class T3LatestStateDataLoader(AbsT3Loader):
@@ -26,9 +28,7 @@ class T3LatestStateDataLoader(AbsT3Loader):
 
 	.. note::
 	  
-	  T3LatestStateDataLoader can only load state-bound T2 documents. If you
-	  need point- or stock-bound T2s, use
-	  :py:class:`~ampel.t3.load.T3SimpleDataLoader.T3SimpleDataLoader`.
+	  T3LatestStateDataLoader only loads state-bound T2 documents.
 
 	.. seealso::
 	  
@@ -38,6 +38,8 @@ class T3LatestStateDataLoader(AbsT3Loader):
 	  :py:func:`ampel.db.query.latest_compound.general_query`
 	    for notes on how compounds are selected from other tiers
 	"""
+
+	codec_options: Optional[CodecOptions] = CodecOptions(document_class=FrozenValuesDict)
 
 
 	def __init__(self, context: AmpelContext, **kwargs):
@@ -88,61 +90,56 @@ class T3LatestStateDataLoader(AbsT3Loader):
 		states = set()
 		set_stock_ids = to_set(stock_ids)
 
-		# Channel/Channels must be provided if state is 'latest'
-		# Get latest state ** for each channel(s) criteria **
-		for chan_logic in LogicSchemaUtils.iter(self.channel):
-
-			# get latest state (fast mode)
-			# Output example:
-			# [
-			# {
-			#   '_id': b']\xe2H\x0f(\xbf\xca\x0b\xd3\xba\xae\x89\x0c\xb2\xd2\xae',
-			#   'stock': 1810101034343026   # (ZTF18aaayyuq)
-			# },
-			# {
-			#   '_id': b'_\xcd\xed\xa5\xe1\x16\x98\x9ai\xf6\xcb\xbd\xe7#FT',
-			#   'stock': 1810101011182029   # (ZTF18aaabikt)
-			# },
-			# ...
-			# ]
-			states.update(
-				[
-					el['_id'] for el in self.col_t1.aggregate(
-						fast_query(
-							list(slow_ids.symmetric_difference(set_stock_ids)),
-							channel = chan_logic
-						)
+		# get latest state (fast mode)
+		# Output example:
+		# [
+		# {
+		#   '_id': b']\xe2H\x0f(\xbf\xca\x0b\xd3\xba\xae\x89\x0c\xb2\xd2\xae',
+		#   'stock': 1810101034343026   # (ZTF18aaayyuq)
+		# },
+		# {
+		#   '_id': b'_\xcd\xed\xa5\xe1\x16\x98\x9ai\xf6\xcb\xbd\xe7#FT',
+		#   'stock': 1810101011182029   # (ZTF18aaabikt)
+		# },
+		# ...
+		# ]
+		states.update(
+			[
+				el['_id'] for el in self.col_t1.aggregate(
+					fast_query(
+						list(slow_ids.symmetric_difference(set_stock_ids)),
+						channel = self.channel
 					)
-				]
+				)
+			]
+		)
+
+		# TODO: check result length ?
+
+		# get latest state (general mode) for the remaining transients
+		for slow_id in slow_ids:
+
+			# get latest state for single transients using general query
+			latest_state = next(
+				self.col_t1.aggregate(
+					general_query(slow_id, project={'$project': {'_id': 1}})
+				),
+				None
 			)
 
-			# TODO: check result length ?
-
-			# get latest state (general mode) for the remaining transients
-			for slow_id in slow_ids:
-
-				# get latest state for single transients using general query
-				latest_state = next(
-					self.col_t1.aggregate(
-						general_query(slow_id, project={'$project': {'_id': 1}})
-					),
-					None
+			# Robustness
+			if latest_state is None:
+				# TODO: add error flag to transient doc ?
+				# TODO: add error flag to event doc
+				# TODO: add doc to Ampel_troubles
+				self.logger.error(
+					f"Could not retrieve latest state for transient {slow_id}"
 				)
+				continue
 
-				# Robustness
-				if latest_state is None:
-					# TODO: add error flag to transient doc ?
-					# TODO: add error flag to event doc
-					# TODO: add doc to Ampel_troubles
-					self.logger.error(
-						f"Could not retrieve latest state for transient {slow_id}"
-					)
-					continue
-
-				states.add(
-					latest_state['_id']
-				)
-
+			states.add(
+				latest_state['_id']
+			)
 
 		# Customize T1 & T2 queries (add state query parameter)
 		directives = []
@@ -170,5 +167,6 @@ class T3LatestStateDataLoader(AbsT3Loader):
 		return self.db_content_loader.load(
 			stock_ids = stock_ids,
 			directives = directives,
-			channel = self.channel
+			channel = self.channel,
+			codec_options = self.codec_options
 		)
