@@ -11,7 +11,7 @@ from typing import List, Tuple, Union
 from ampel.type import StockId, ChannelId
 from ampel.base import abstractmethod
 from ampel.abstract.ingest.AbsT2Ingester import AbsT2Ingester
-from ampel.ingest.CompoundBluePrint import CompoundBluePrint
+from ampel.compile.CompoundBluePrint import CompoundBluePrint
 
 
 class AbsStateT2Ingester(AbsT2Ingester, abstract=True):

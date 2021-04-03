@@ -15,7 +15,7 @@ from ampel.enum.T2SysRunState import T2SysRunState
 from ampel.abstract.ingest.AbsT2Ingester import AbsT2Ingester
 from ampel.abstract.ingest.AbsStockT2Ingester import AbsStockT2Ingester
 from ampel.abstract.ingest.AbsStockT2Compiler import AbsStockT2Compiler
-from ampel.ingest.StockT2Compiler import StockT2Compiler
+from ampel.compile.StockT2Compiler import StockT2Compiler
 
 
 class StockT2Ingester(AbsStockT2Ingester):

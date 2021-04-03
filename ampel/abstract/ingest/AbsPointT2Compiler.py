@@ -10,7 +10,7 @@
 from typing import Dict, Union, Set, Tuple, List, Sequence, Optional
 from ampel.base import abstractmethod
 from ampel.type import DataPointId, ChannelId
-from ampel.ingest.compile.CompilerBase import CompilerBase
+from ampel.compile.CompilerBase import CompilerBase
 from ampel.content.DataPoint import DataPoint
 
 class AbsPointT2Compiler(CompilerBase, abstract=True):

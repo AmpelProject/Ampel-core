@@ -13,7 +13,7 @@ from typing import Sequence, Dict, Optional, Union, Literal, Tuple, List
 from ampel.type import StockId, ChannelId
 from ampel.enum.T2SysRunState import T2SysRunState
 from ampel.content.DataPoint import DataPoint
-from ampel.ingest.PointT2Compiler import PointT2Compiler
+from ampel.compile.PointT2Compiler import PointT2Compiler
 from ampel.abstract.ingest.AbsT2Ingester import AbsT2Ingester
 from ampel.abstract.ingest.AbsPointT2Ingester import AbsPointT2Ingester
 from ampel.abstract.ingest.AbsPointT2Compiler import AbsPointT2Compiler
