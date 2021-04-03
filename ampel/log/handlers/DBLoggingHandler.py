@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 14.12.2017
-# Last Modified Date: 15.06.2020
+# Last Modified Date: 29.03.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import struct, socket
@@ -190,6 +190,10 @@ class DBLoggingHandler(AmpelBaseModel):
 	def check_flush(self) -> None:
 		if len(self.log_dicts) > self.flush_len:
 			self.flush()
+
+
+	def break_aggregation(self) -> None:
+		self.prev_record = None
 
 
 	def flush(self) -> None:
