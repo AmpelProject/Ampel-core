@@ -34,7 +34,7 @@ class AbsProcessorUnit(AdminUnit, abstract=True):
 	#: flag to apply to all log records created
 	base_log_flag: LogFlag = LogFlag.SCHEDULED_RUN
 
-	#: additional kwargs to pass to :class:`~ampel.log.handlers.DBLoggingHandler.DBLoggingHandler`
+	#: additional kwargs to pass to :class:`~ampel.mongo.update.var.DBLoggingHandler.DBLoggingHandler`
 	db_handler_kwargs: Optional[Dict[str, Any]] = None
 
 

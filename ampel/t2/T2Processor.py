@@ -13,7 +13,7 @@ from time import time
 from typing import Optional, List, Union, Type, Dict, Any, Sequence, Tuple, cast, overload, TYPE_CHECKING
 
 from ampel.type import T, T2UnitResult, Tag
-from ampel.db.query.utils import match_array
+from ampel.mongo.utils import match_array
 from ampel.util.collections import try_reduce
 from ampel.log.utils import convert_dollars
 from ampel.util.t1 import get_datapoint_ids

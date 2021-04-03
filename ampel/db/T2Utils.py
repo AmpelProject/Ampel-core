@@ -20,7 +20,7 @@ from ampel.model.operator.OneOf import OneOf
 from ampel.content.T2Document import T2Document
 from ampel.content.JournalRecord import JournalRecord
 from ampel.enum.T2SysRunState import T2SysRunState
-from ampel.db.query.general import build_general_query
+from ampel.mongo.query.general import build_general_query
 from ampel.util.collections import check_seq_inner_type
 
 

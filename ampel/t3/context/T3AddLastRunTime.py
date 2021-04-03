@@ -9,7 +9,7 @@
 
 from typing import Dict, Any, Optional, ClassVar
 from datetime import datetime, timedelta
-from ampel.db.query.events import get_last_run
+from ampel.mongo.query.var.events import get_last_run
 from ampel.t3.context.AbsT3RunContextAppender import AbsT3RunContextAppender
 
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-core/ampel/db/query/schema.py
+# File              : Ampel-core/ampel/mongo/schema.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 11.03.2018
@@ -26,7 +26,7 @@ Schema syntax example:
 	{'any_of': [{'all_of': ["a","b"]}, {'all_of': ["a","c"]}, "d"]}
 
 
-	In [1]: from ampel.db.query.schema import apply_schema, apply_excl_schema
+	In [1]: from ampel.mongo.schema import apply_schema, apply_excl_schema
 	   ...: from ampel.util.pretty import prettyjson
 	   ...: d={'$or': [{'run': 12}, {'run': 231}]}
 	   ...: _=apply_schema(d, 'tag', {'any_of': [{'all_of': ["a","b"]}, "3", "1", "2"]})

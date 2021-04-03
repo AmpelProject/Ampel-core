@@ -8,7 +8,7 @@
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from typing import Dict, Any, ClassVar
-from ampel.db.query.events import build_t0_stats_query
+from ampel.mongo.query.var.events import build_t0_stats_query
 from ampel.t3.context.AbsT3RunContextAppender import AbsT3RunContextAppender
 from ampel.t3.context.T3AddLastRunTime import T3AddLastRunTime
 

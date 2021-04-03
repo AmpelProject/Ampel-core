@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-core/ampel/db/query/latest_compound.py
+# File              : Ampel-core/ampel/mongo/query/latest_compound.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 13.01.2018
@@ -15,8 +15,8 @@ from ampel.util.collections import check_seq_inner_type
 from ampel.model.operator.AnyOf import AnyOf
 from ampel.model.operator.AllOf import AllOf
 from ampel.model.operator.OneOf import OneOf
-from ampel.db.query.schema import apply_schema
-from ampel.db.query.general import type_stock_id
+from ampel.mongo.schema import apply_schema
+from ampel.mongo.query.general import type_stock_id
 
 """
 Lastest by mean of compound 'body' length.
@@ -134,7 +134,6 @@ def general_query(
 			{
 				'_id': b'T6TG\x96\x80\x1d\x86\x9f\x11\xf2G\xe7\xf4\xe0\xc3',
 				'added': 1520796310.496276,
-				'alDocType': 2,
 				'channel': ['HU_SN1'],
 				'lastppdt': 2458158.7708565,
 				'len': 12,

@@ -17,7 +17,7 @@ from ampel.base.AuxUnitRegister import AuxUnitRegister
 from ampel.model.UnitModel import UnitModel
 from ampel.config.AmpelConfig import AmpelConfig
 from ampel.dev.DictSecretProvider import PotemkinSecretProvider
-from ampel.db.DBUpdatesBuffer import DBUpdatesBuffer
+from ampel.mongo.update.DBUpdatesBuffer import DBUpdatesBuffer
 from ampel.config.builder.BaseConfigChecker import BaseConfigChecker
 
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-core/ampel/db/LogsMatcher.py
+# File              : Ampel-core/ampel/mongo/query/var/LogsMatcher.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 29.11.2018
@@ -14,7 +14,7 @@ from bson.objectid import ObjectId
 from ampel.type import ChannelId, StockId
 from ampel.abstract.AbsIdMapper import AbsIdMapper
 from ampel.util.collections import check_seq_inner_type
-from ampel.db.query.schema import apply_schema
+from ampel.mongo.schema import apply_schema
 from ampel.model.operator.AnyOf import AnyOf
 from ampel.model.operator.AllOf import AllOf
 from ampel.model.operator.OneOf import OneOf

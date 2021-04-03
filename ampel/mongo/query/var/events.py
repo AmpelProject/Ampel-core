@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-core/ampel/db/query/events.py
+# File              : Ampel-core/ampel/mongo/query/var/events.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 11.07.2018
@@ -10,7 +10,7 @@
 from bson import ObjectId
 from pymongo.collection import Collection
 from datetime import datetime, timedelta
-from typing import Dict, Optional, List, Literal, Any, Union
+from typing import Dict, Optional, List, Literal, Any, Union, overload
 
 
 def build_query(
@@ -46,11 +46,26 @@ def build_query(
 	return match
 
 
+@overload
+def get_last_run(
+	col: Collection, process_name: str, require_success: bool,
+	gte_time: Optional[Union[dict, float]], timestamp: Literal[True]
+) -> Optional[Union[float]]:
+	...
+
+@overload
+def get_last_run(
+	col: Collection, process_name: str, require_success: bool,
+	gte_time: Optional[Union[dict, float]], timestamp: Literal[False]
+) -> Optional[Union[ObjectId]]:
+	...
+
 def get_last_run(
 	col: Collection, process_name: str,
 	require_success: bool,
-	gte_time: Optional[Union[dict, float]] = None
-) -> Optional[float]:
+	gte_time: Optional[Union[dict, float]] = None,
+	timestamp: bool = True
+) -> Optional[Union[float, ObjectId]]:
 	"""
 	:param gte_time: unix timestamp or timedelta argument
 	"""
@@ -60,9 +75,9 @@ def get_last_run(
 		query['success'] = True
 	if ret := list(col.find(query).sort('_id', -1).limit(2)):
 		if require_success and ret:
-			return ret[0]['_id'].generation_time.timestamp()
+			return ret[0]['_id'].generation_time.timestamp() if timestamp else ret[0]['_id']
 		elif len(ret) > 1:
-			return ret[1]['_id'].generation_time.timestamp()
+			return ret[1]['_id'].generation_time.timestamp() if ret[1]['_id'] else ret[1]['_id']
 	return None
 
 
