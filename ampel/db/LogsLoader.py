@@ -4,64 +4,75 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 29.11.2018
-# Last Modified Date: 15.02.2020
+# Last Modified Date: 16.03.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-from ampel.log.AmpelLogger import AmpelLogger
+from typing import Optional, List, Literal, Dict, Any, Sequence
+from pymongo.collection import Collection
+from ampel.base.AmpelFlexModel import AmpelFlexModel
 from ampel.view.ReadOnlyDict import ReadOnlyDict
-from ampel.db.AmpelDB import AmpelDB
+from ampel.content.LogDocument import LogDocument
 from ampel.log.LogFlag import LogFlag
 
-# TODO: update this class
-class LogsLoader:
+
+class LogsLoader(AmpelFlexModel):
 	"""
+	Abbreviations:
+	s: stock, a: alert, f: flag, r: run, m: msg, c: channel
+
+	:param decompactify:
+	:param resolve_flag: load flag int as LogFlag
+		(repr becomes <LogFlag.SCHEDULED_RUN|CORE|T2|INFO: 8836> instead of 8836)
+	:param bool simplify:
+	:param datetime_ouput: if not None, datetime of each log entry (extracted from ObjectId)
+		will be added to the log content (use param datetime_key to configure whished key).
+		Possible values:
+		- 'string': datetime will be added as string: '2019-03-07T08:32:17.000Z'
+		- 'date': datetime will be added as datetime object: datetime.datetime(2019, 3, 7, 8, 32, 30)
+	:param datetime_key: '_id': garanteed in first position but overrides default _id (don't use remove=["_id"]...)
+		or any string ('date' for example)
+	:param debug: print generated aggregation stages if True
+	:param remove_keys: remove key (possible values: 'c', '_id', 's') during projection stage
 	"""
 
-	def __init__(self, read_only=True, logger=None):
-		"""
-		"""
-		self.logger = AmpelLogger.get_logger() if logger is None else logger
-		self.read_only = read_only
+	decompactify: bool = True
+	simplify: bool = False
+	hexify: bool = True
+	resolve_flag: bool = True
+	read_only: bool = False
+	remove_keys: Optional[List[str]] = ["channel"]
+	datetime_ouput: Literal['string', 'date'] = 'string'
+	datetime_key: str = '_id'
+	verbose: bool = False
+	debug: bool = False
 
 
-	def fetch_main_logs(
-		self, matcher, decompactify=True, simplify=False, hexify=True, resolve_flag=True,
-		remove=["channel"], datetime='string', datetime_key='_id', verbose=False
-	):
+	def fetch_logs(self,
+		col: Collection,
+		match: Optional[Dict[str, Any]] = None,
+		channel: Optional[Dict[str, Any]] = None
+	) -> Sequence[LogDocument]:
 		"""
-		:param matcher: insance of LogsMatcher
-		:type matcher: LogsMatcher
-		:param bool decompactify:
-		:param bool resolve_flag: \
-			prints 'flag': <LogFlag.SCHEDULED_RUN|CORE|T2|INFO: 8836> \
-			instead of 'flag': 8836
-		:param bool simplify:
-		:param datetime: if not None, datetime of each log entry (extracted from ObjectId) \
-			will be added to the log content (use param datetime_key to configure whished key). \
-			Possible values: \
-			'string': datetime will be added as string: '2019-03-07T08:32:17.000Z' \
-			'date': datetime will be added as datetime object: datetime.datetime(2019, 3, 7, 8, 32, 30)
-		:param str datetime_key: \
-			'_id': garanteed in first position but overrides default _id (don't use remove=["_id"]...) \
-			or any string ('date' for example)
-		:param bool verbose: whether to print the generated aggregation stages
-		:param List[str] remove: possible values: 'channel', '_id', 'tranId'
+		:param match: match criteria
+		:param channel: The $unwind aggregagtion pipeline stage requires to re-apply channel match criteria.
+			These are not necessarily fetchable using match.get('channel') since complex match logic can use the $or operator.
+			(No need to use this argument if match['channel'] exists, it is used automatically in this case)
 		"""
 
 		stages = [
 			# Matching criteria (can contain nested dicts in case of complex criteria)
-			{'$match': matcher.get_match_criteria()}
+			{'$match': match or {}}
 		]
 
 		# Extract datetime from objectid and add it as 'date' field
-		if datetime:
+		if self.datetime_ouput:
 			stages.append(
 				{
 					'$addFields': {
-						datetime_key: {
+						self.datetime_key: {
 							"$convert": {
 								'input': {'$toDate': '$_id'},
-								'to': datetime
+								'to': self.datetime_ouput
 							}
 						}
 					}
@@ -70,64 +81,64 @@ class LogsLoader:
 
 		# Unwind, i.e converts
 		#  {'_id': ObjectId('5c80d71154048002ca372208'),
-		#  'flag': 8740,
-		#  'run': 714,
-		#  'channel': 3,
-		#  'msg': ['msg1', 'msg2'],
+		#  'f': 8740,
+		#  'r': 714,
+		#  'c': 3,
+		#  'm': ['msg1', 'msg2'],
 		# Into:
 		#  {'_id': ObjectId('5c80d71154048002ca372208'),
-		#  'flag': 8740,
-		#  'run': 714,
-		#  'channel': 3,
-		#  'msg': 'msg1'},
+		#  'f': 8740,
+		#  'r': 714,
+		#  'c': 3,
+		#  'm': 'msg1'},
 		#  {'_id': ObjectId('5c80d71154048002ca372208'),
-		#  'flag': 8740,
-		#  'run': 714,
-		#  'channel': 3,
-		#  'msg': 'msg2'},
+		#  'f': 8740,
+		#  'r': 714,
+		#  'c': 3,
+		#  'm': 'msg2'},
 		stages.append(
 			{
 				'$unwind': {
-					'path': '$msg',
+					'path': '$m',
 					'preserveNullAndEmptyArrays': True
 				}
 			}
 		)
 
-		if decompactify:
+		if self.decompactify:
 
 			# Converts
 			#  {'_id': ObjectId('5c80d71154048002ca372208'),
-			#  'stock': 1810112413252531,
-			#  'alert': 697252385515010002,
-			#  'flag': 8740,
-			#  'run': 714,
-			#  'msg': {'channel': 3, 'txt': 'test2'},
+			#  's': 1810112413252531,
+			#  'a': 697252385515010002,
+			#  'f': 8740,
+			#  'r': 714,
+			#  'm': {'c': 3, 't': 'test2'},
 			#  'date': datetime.datetime(2019, 3, 7, 8, 32, 17)}
 			# Into:
 			#  {'_id': ObjectId('5c80d71154048002ca372208'),
-			#  'stock': 1810112413252531,
-			#  'alert': 697252385515010002,
-			#  'flag': 8740,
-			#  'run': 714,
-			#  'msg': 'test2',
+			#  's': 1810112413252531,
+			#  'a': 697252385515010002,
+			#  'f': 8740,
+			#  'r': 714,
+			#  'm': 'test2',
 			#  'date': datetime.datetime(2019, 3, 7, 8, 32, 17),
-			#  'channel': 3}
+			#  'c': 3}
 			#######################################################
 
 			# Part 1
 			# a) Copy channel info embedded in compact msg to log entry root level
-			# b) If msg.txt exists, copy it to root level as 'msg'
+			# b) If m.m exists, copy it to root level as 'msg'
 			stages.append(
 				{
 					"$addFields": {
-						"channel": {
-							"$ifNull": ["$channel", "$msg.channel"]
+						"c": {
+							"$ifNull": ["$c", "$m.c"]
 						},
-						"msg": {
+						"m": {
 							"$ifNull": [
-								"$msg.txt",
-								{"$ifNull": ["$msg", "$REMOVE"]}
+								"$m.m",
+								{"$ifNull": ["$m", "$REMOVE"]}
 							]
 						},
 					}
@@ -140,10 +151,10 @@ class LogsLoader:
 			stages.append(
 				{
 					"$addFields": {
-						"msg": {
+						"m": {
 							"$cond": {
-								"if": {"$not": "$msg.channel"},
-								"then": "$msg",
+								"if": {"$not": "$m.c"},
+								"then": "$m",
 								"else": "$REMOVE"
 							}
 						}
@@ -153,57 +164,41 @@ class LogsLoader:
 
 			# re-apply channel filter as $unwind may have included
 			# log entries associated with other channel
-			if hasattr(matcher, 'channel'):
+			if (match and (c := match.get('channel'))) or channel:
 				stages.append(
-					{
-						'$match': {
-							'channel': matcher.channels
-						}
-					}
+					{'$match': {'c': c or channel}}
 				)
 
-		if remove:
+		if self.remove_keys:
 
 			# Projection (last aggregation stage)
-			proj = {'$project': {}}
+			proj: Dict[str, Any] = {'$project': {}}
 
-			for el in remove:
-				proj['$project'][el] = 0
+			for k in self.remove_keys:
+				proj['$project'][k] = 0
 
 			stages.append(proj)
 
-		if verbose:
-			print("Using following aggregation stages:")
-			print(stages)
+		if self.debug:
+			print("Using aggregation: %s" % stages)
 
-		log_entries = tuple(
-			el for el in AmpelDB.get_collection("logs").aggregate(stages)
-		)
+		log_entries: List[LogDocument] = list(col.aggregate(stages))
 
-		if simplify:
+		if self.resolve_flag:
 			for el in log_entries:
-				print("%s %s" % (el['_id'], el['msg']))
-			return
+				el["f"] = LogFlag(el["f"])
 
-		if hexify and resolve_flag:
-
+		if self.simplify:
 			for el in log_entries:
-				el['flag'] = LogFlag(el['flag'])
-				if 'comp' in el:
-					el['comp'] = el['comp'].hex()
+				print("%r %s" % (el["_id"], el['m']))
+			return []
 
-		else:
-
-			if hexify:
-				for el in log_entries:
-					if 'comp' in el:
-						el['comp'] = el['comp'].hex()
-
-			if resolve_flag:
-				for el in log_entries:
-					el['flag'] = LogFlag(el['flag'])
+		# if hexify:
+		#	for el in log_entries:
+		#		if 'e' in el:
+		#			el['e']['comp'] = el['e']['comp'].hex()
 
 		if self.read_only:
-			return tuple(ReadOnlyDict(el) for el in log_entries)
+			return tuple(ReadOnlyDict(el) for el in log_entries) # type: ignore
 
 		return log_entries
