@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-core/ampel/mongo/query/latest_compound.py
+# File              : Ampel-core/ampel/mongo/query/t1.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 13.01.2018
@@ -24,7 +24,7 @@ Validity requirement: compound size should always increase with time.
 Especially: if a compound member is discarded, it should not be deleted
 """
 
-def fast_query(
+def latest_fast_query(
 	stock: Union[StockId, StrictIterable[StockId]],
 	channel: Optional[Union[ChannelId, Dict, AllOf[ChannelId], AnyOf[ChannelId], OneOf[ChannelId]]] = None
 ) -> List[Dict]:
@@ -102,7 +102,7 @@ def fast_query(
 	]
 
 
-def general_query(
+def latest_general_query(
 	single_stock: StockId,
 	project: Optional[Dict[str, Any]] = None,
 	channel: Optional[Union[ChannelId, Dict, AllOf[ChannelId], AnyOf[ChannelId], OneOf[ChannelId]]] = None

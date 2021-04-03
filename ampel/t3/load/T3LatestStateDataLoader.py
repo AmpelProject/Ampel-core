@@ -16,8 +16,8 @@ from ampel.t3.load.AbsT3Loader import AbsT3Loader
 from ampel.core.AmpelContext import AmpelContext
 from ampel.core.AmpelBuffer import AmpelBuffer
 from ampel.util.collections import to_set
-from ampel.mongo.query.latest_compound import fast_query, general_query
-from ampel.db.FrozenValuesDict import FrozenValuesDict
+from ampel.mongo.query.t1 import latest_fast_query, latest_general_query
+from ampel.mongo.view.FrozenValuesDict import FrozenValuesDict
 
 
 class T3LatestStateDataLoader(AbsT3Loader):
@@ -32,10 +32,10 @@ class T3LatestStateDataLoader(AbsT3Loader):
 
 	.. seealso::
 	  
-	  :py:func:`ampel.db.query.latest_compound.fast_query`
+	  :py:func:`ampel.db.query.t1.latest_fast_query`
 	    for notes on how compounds are selected from T0
 	  
-	  :py:func:`ampel.db.query.latest_compound.general_query`
+	  :py:func:`ampel.db.query.t1.latest_general_query`
 	    for notes on how compounds are selected from other tiers
 	"""
 
@@ -106,7 +106,7 @@ class T3LatestStateDataLoader(AbsT3Loader):
 		states.update(
 			[
 				el['_id'] for el in self.col_t1.aggregate(
-					fast_query(
+					latest_fast_query(
 						list(slow_ids.symmetric_difference(set_stock_ids)),
 						channel = self.channel
 					)
@@ -122,7 +122,7 @@ class T3LatestStateDataLoader(AbsT3Loader):
 			# get latest state for single transients using general query
 			latest_state = next(
 				self.col_t1.aggregate(
-					general_query(slow_id, project={'$project': {'_id': 1}})
+					latest_general_query(slow_id, project={'$project': {'_id': 1}})
 				),
 				None
 			)
