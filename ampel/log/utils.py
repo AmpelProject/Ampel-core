@@ -10,7 +10,7 @@
 import sys, traceback
 from math import log2
 from typing import Dict, Optional, Union, Any
-from ampel.db.AmpelDB import AmpelDB
+from ampel.core.AmpelDB import AmpelDB
 from ampel.util.general import has_nested_type
 from ampel.log.AmpelLogger import AmpelLogger
 from ampel.log.LogFlag import LogFlag

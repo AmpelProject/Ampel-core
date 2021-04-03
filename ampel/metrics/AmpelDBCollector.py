@@ -13,7 +13,7 @@ from typing import List
 
 from prometheus_client.metrics_core import GaugeMetricFamily, Metric # type: ignore
 
-from ampel.db.AmpelDB import AmpelDB
+from ampel.core.AmpelDB import AmpelDB
 from ampel.enum.T2SysRunState import T2SysRunState
 
 

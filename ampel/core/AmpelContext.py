@@ -13,7 +13,7 @@ from ampel.base.AuxUnitRegister import AuxUnitRegister
 
 # Avoid cyclic import issues
 if TYPE_CHECKING:
-	from ampel.db.AmpelDB import AmpelDB
+	from ampel.core.AmpelDB import AmpelDB
 	from ampel.core.UnitLoader import UnitLoader # noqa
 
 
@@ -66,7 +66,7 @@ class AmpelContext:
 
 		# Avoid cyclic import issues
 		from ampel.core.UnitLoader import UnitLoader # noqa
-		from ampel.db.AmpelDB import AmpelDB
+		from ampel.core.AmpelDB import AmpelDB
 
 		secrets = kwargs.pop("secrets", None)
 
