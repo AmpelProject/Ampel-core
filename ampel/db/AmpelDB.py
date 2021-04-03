@@ -1,13 +1,14 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-core/ampel/db/AmpelDB.py
+# File              : Ampel-core/ampel/core/AmpelDB.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 16.06.2018
-# Last Modified Date: 31.01.2021
+# Last Modified Date: 03.04.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import secrets
+import collections.abc
 from collections import defaultdict  # type: ignore[attr-defined]
 from typing import Sequence, Dict, List, Any, Union, Optional, TYPE_CHECKING
 
@@ -19,6 +20,11 @@ from pymongo.errors import ConfigurationError
 from ampel.type import ChannelId
 from ampel.config.AmpelConfig import AmpelConfig
 from ampel.base.AmpelBaseModel import AmpelBaseModel
+from ampel.abstract.AbsSecretProvider import AbsSecretProvider
+from ampel.mongo.view.AbsMongoView import AbsMongoView
+from ampel.mongo.view.MongoOneView import MongoOneView
+from ampel.mongo.view.MongoOrView import MongoOrView
+from ampel.mongo.view.MongoAndView import MongoAndView
 from ampel.model.db.AmpelColModel import AmpelColModel
 from ampel.model.db.AmpelDBModel import AmpelDBModel
 from ampel.model.db.IndexModel import IndexModel
@@ -28,9 +34,6 @@ from ampel.model.db.MongoClientRoleModel import MongoClientRoleModel
 
 if TYPE_CHECKING:
 	from ampel.log.AmpelLogger import AmpelLogger
-
-from ampel.abstract.AbsSecretProvider import AbsSecretProvider
-
 
 intcol = {'t0': 0, 't1': 1, 't2': 2, 'stock': 3}
 
@@ -67,8 +70,7 @@ class AmpelDB(AmpelBaseModel):
 		}
 
 		self.mongo_collections: Dict[str, Collection] = {}
-		# map role with client
-		self.mongo_clients: Dict[str, MongoClient] = {}
+		self.mongo_clients: Dict[str, MongoClient] = {} # map role with client
 
 
 	def enable_rejected_collections(self, channel_names: Sequence[ChannelId]) -> None:
@@ -128,6 +130,7 @@ class AmpelDB(AmpelBaseModel):
 
 
 	def _get_mongo_db(self, *, role: str, db_name: str) -> Database:
+
 		if role not in self.mongo_clients:
 			key = f'mongo/{role}'
 			kwargs = {
@@ -213,6 +216,62 @@ class AmpelDB(AmpelBaseModel):
 		return col
 
 
+	def create_one_view(self, channel: ChannelId, logger: Optional['AmpelLogger'] = None) -> None:
+		self.create_view(MongoOneView(channel=channel), str(channel), logger)
+
+
+	def create_or_view(self, channels: Sequence[ChannelId], logger: Optional['AmpelLogger'] = None) -> None:
+		if not isinstance(channels, collections.abc.Sequence) or len(channels) == 1:
+			raise ValueError("Incorrect argument")
+		self.create_view(MongoOrView(channel=channels), "_OR_".join(channels), logger)
+
+
+	def create_and_view(self, channels: Sequence[ChannelId], logger: Optional['AmpelLogger'] = None) -> None:
+		if not isinstance(channels, collections.abc.Sequence) or len(channels) == 1:
+			raise ValueError("Incorrect argument")
+		self.create_view(MongoAndView(channel=channels), "_AND_".join(channels), logger)
+
+
+	def create_view(self,
+		view: AbsMongoView, col_prefix: str, logger: Optional['AmpelLogger'] = None
+	) -> None:
+
+		db = self._get_mongo_db(
+			role="w", db_name=f"{self.prefix}_data"
+		)
+
+		for el in ("stock", "t0", "t1", "t2", "t3"):
+			db.create_collection(
+				f'{col_prefix}_{el}', viewOn=el, pipeline=getattr(view, el)()
+			)
+
+
+	def delete_one_view(self, channel: ChannelId, logger: Optional['AmpelLogger'] = None) -> None:
+		self.delete_view(str(channel), logger)
+
+
+	def delete_or_view(self, channels: Sequence[ChannelId], logger: Optional['AmpelLogger'] = None) -> None:
+		if not isinstance(channels, collections.abc.Sequence) or len(channels) == 1:
+			raise ValueError("Incorrect argument")
+		self.delete_view("_OR_".join(channels), logger)
+
+
+	def delete_and_view(self, channels: Sequence[ChannelId], logger: Optional['AmpelLogger'] = None) -> None:
+		if not isinstance(channels, collections.abc.Sequence) or len(channels) == 1:
+			raise ValueError("Incorrect argument")
+		self.delete_view("_AND_".join(channels), logger)
+
+
+	def delete_view(self, col_prefix: str, logger: Optional['AmpelLogger'] = None) -> Collection:
+
+		db = self._get_mongo_db(
+			role="w", db_name=f"{self.prefix}_data"
+		)
+	
+		for el in ("stock", "t0", "t1", "t2", "t3"):
+			db.drop_collection(f'{col_prefix}_{el}')
+
+
 	def set_col_index(self,
 		role: str, db_name: str, col_config: AmpelColModel,
 		force_overwrite: bool = False, logger: Optional['AmpelLogger'] = None
@@ -266,6 +325,13 @@ class AmpelDB(AmpelBaseModel):
 		return "<AmpelDB>"
 
 
+	def drop_all_databases(self):
+		for db in self.databases:
+			self._get_mongo_db(role=db.role.w, db_name=db.name).client.drop_database(f"{self.prefix}_{db.name}")
+		self.mongo_collections.clear()
+		self.mongo_clients.clear()
+
+
 	@staticmethod
 	def _create_index(
 		col: Collection,
@@ -290,11 +356,6 @@ class AmpelDB(AmpelBaseModel):
 			)
 
 
-	def drop_all_databases(self):
-		for db in self.databases:
-			self._get_mongo_db(role=db.role.w, db_name=db.name).client.drop_database(f"{self.prefix}_{db.name}")
-		self.mongo_collections.clear()
-		self.mongo_clients.clear()
 
 
 def provision_accounts(ampel_db: AmpelDB, auth: Dict[str, str] = {}) -> Dict[str, Any]:
