@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-core/ampel/logging/handlers/AmpelStreamHandler.py
+# File              : Ampel-core/ampel/log/handlers/AmpelStreamHandler.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 17.10.2018
-# Last Modified Date: 10.05.2020
+# Last Modified Date: 29.03.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import sys, time
@@ -179,3 +179,7 @@ class AmpelStreamHandler:
 
 	def flush(self) -> None:
 		self.stream.flush()
+
+
+	def break_aggregation(self) -> None:
+		self.prev_record: LightLogRecord = self.dummy_record
