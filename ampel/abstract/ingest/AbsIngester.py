@@ -8,9 +8,9 @@
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from typing import Dict, Optional, Any
-from ampel.log.LogsBufferDict import LogsBufferDict
-from ampel.db.DBUpdatesBuffer import DBUpdatesBuffer
 from ampel.core.AdminUnit import AdminUnit
+from ampel.log.LogsBufferDict import LogsBufferDict
+from ampel.mongo.update.DBUpdatesBuffer import DBUpdatesBuffer
 
 
 class AbsIngester(AdminUnit, abstract=True):

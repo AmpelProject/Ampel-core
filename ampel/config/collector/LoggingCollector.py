@@ -12,7 +12,7 @@ from pydantic import validate_model
 from ampel.config.collector.AbsDictConfigCollector import AbsDictConfigCollector
 from ampel.config.collector.ConfigCollector import ConfigCollector
 from ampel.log.handlers.AmpelStreamHandler import AmpelStreamHandler
-from ampel.log.handlers.DBLoggingHandler import DBLoggingHandler
+from ampel.mongo.update.var.DBLoggingHandler import DBLoggingHandler
 from ampel.log import VERBOSE
 
 

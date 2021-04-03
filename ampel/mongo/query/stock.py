@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-core/ampel/db/query/stock.py
+# File              : Ampel-core/ampel/mongo/query/stock.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 13.01.2018
@@ -14,8 +14,8 @@ from ampel.model.operator.AnyOf import AnyOf
 from ampel.model.operator.AllOf import AllOf
 from ampel.model.operator.OneOf import OneOf
 from ampel.model.time.QueryTimeModel import QueryTimeModel
-from ampel.config.LogicSchemaUtils import LogicSchemaUtils
-from ampel.db.query.general import build_general_query
+from ampel.util.logicschema import reduce_to_set
+from ampel.mongo.query.general import build_general_query
 
 
 def build_stock_query(
@@ -52,10 +52,7 @@ def build_stock_query(
 
 	if time_created or time_modified:
 
-		chans = LogicSchemaUtils.reduce_to_set(
-			"any" if channel is None else channel
-		)
-
+		chans = reduce_to_set("any" if channel is None else channel)
 		or_list = []
 
 		for chan_name in chans:

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-core/ampel/db/query/t2.py
+# File              : Ampel-core/ampel/mongo/query/t2.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 14.02.2018
@@ -14,8 +14,8 @@ from ampel.model.operator.AnyOf import AnyOf
 from ampel.model.operator.AllOf import AllOf
 from ampel.model.operator.OneOf import OneOf
 from ampel.util.collections import check_seq_inner_type
-from ampel.db.query.utils import match_array
-from ampel.db.query.general import build_general_query
+from ampel.mongo.query.utils import match_array
+from ampel.mongo.query.general import build_general_query
 
 
 def build_stateless_query(

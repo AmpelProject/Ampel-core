@@ -18,7 +18,7 @@ from ampel.protocol.LoggingHandlerProtocol import LoggingHandlerProtocol
 from ampel.log.handlers.AmpelStreamHandler import AmpelStreamHandler
 
 if TYPE_CHECKING:
-	from ampel.log.handlers.DBLoggingHandler import DBLoggingHandler
+	from ampel.mongo.update.var.DBLoggingHandler import DBLoggingHandler
 
 ERROR = LogFlag.ERROR
 WARNING = LogFlag.WARNING
@@ -69,7 +69,7 @@ class AmpelLogger:
 
 		if "db" in handlers:
 			# avoid circular import
-			from ampel.log.handlers.DBLoggingHandler import DBLoggingHandler
+			from ampel.mongo.update.var.DBLoggingHandler import DBLoggingHandler
 
 			if run_id is None:
 				raise ValueError("Parameter 'run_id' is required when log_profile requires db logging handler")
@@ -164,7 +164,7 @@ class AmpelLogger:
 
 	def get_db_logging_handler(self) -> Optional['DBLoggingHandler']:
 		# avoid circular import
-		from ampel.log.handlers.DBLoggingHandler import DBLoggingHandler
+		from ampel.mongo.update.var.DBLoggingHandler import DBLoggingHandler
 		for el in self.handlers:
 			if isinstance(el, DBLoggingHandler):
 				return el

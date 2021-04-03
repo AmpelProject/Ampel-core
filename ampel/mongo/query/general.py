@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-core/ampel/db/query/general.py
+# File              : Ampel-core/ampel/mongo/query/general.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 11.12.2019
@@ -13,8 +13,8 @@ from ampel.type import Tag, ChannelId, StockId, StrictIterable
 from ampel.model.operator.AnyOf import AnyOf
 from ampel.model.operator.AllOf import AllOf
 from ampel.model.operator.OneOf import OneOf
-from ampel.db.query.utils import match_array
-from ampel.db.query.schema import apply_schema, apply_excl_schema
+from ampel.mongo.query.utils import match_array
+from ampel.mongo.schema import apply_schema, apply_excl_schema
 
 type_stock_id = (int, Int64, bytes, str)
 

@@ -1,21 +1,18 @@
+import mongomock, pytest
+from pymongo import InsertOne
 from os import environ
 from pathlib import Path
 
-import mongomock
-import pytest
-from pymongo import InsertOne
-
 from ampel.config.AmpelConfig import AmpelConfig
 from ampel.config.builder.DistConfigBuilder import DistConfigBuilder
-from ampel.db.DBUpdatesBuffer import DBUpdatesBuffer
+from ampel.mongo.update.DBUpdatesBuffer import DBUpdatesBuffer
 from ampel.dev.DevAmpelContext import DevAmpelContext
-from ampel.ingest.PointT2Ingester import PointT2Ingester
-from ampel.ingest.StockIngester import StockIngester
-from ampel.ingest.StockT2Ingester import StockT2Ingester
+from ampel.mongo.update.data.PointT2Ingester import PointT2Ingester
+from ampel.mongo.update.data.StockIngester import StockIngester
+from ampel.mongo.update.data.StockT2Ingester import StockT2Ingester
 from ampel.log.AmpelLogger import AmpelLogger
 from ampel.log.LogsBufferDict import LogsBufferDict
 from ampel.model.ingest.T2IngestModel import T2IngestModel
-from ampel.model.StateT2Dependency import StateT2Dependency
 from ampel.test.dummy import DummyCompoundIngester, DummyStateT2Ingester
 
 def pytest_addoption(parser):

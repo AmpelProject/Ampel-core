@@ -16,8 +16,8 @@ from ampel.model.operator.AllOf import AllOf
 from ampel.model.operator.AnyOf import AnyOf
 from ampel.model.operator.OneOf import OneOf
 from ampel.model.t3.T2FilterModel import T2FilterModel
-from ampel.db.query.general import build_general_query
-from ampel.db.query.utils import match_array
+from ampel.mongo.query.general import build_general_query
+from ampel.mongo.query.utils import match_array
 
 
 class T3FilteringStockSelector(T3StockSelector):

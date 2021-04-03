@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/db/FrozenValuesDict.py
+# File              : Ampel-core/ampel/mongo/view/FrozenValuesDict.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 18.12.2019
