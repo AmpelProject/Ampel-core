@@ -171,6 +171,14 @@ class AmpelLogger:
 		return None
 
 
+	def break_aggregation(self) -> None:
+		for el in self.handlers:
+			try:
+				el.break_aggregation()
+			except Exception:
+				pass
+
+
 	def error(self, msg: Union[str, Dict[str, Any]], *args,
 		exc_info: Optional[Exception] = None,
 		extra: Optional[Dict[str, Any]] = None,
