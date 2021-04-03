@@ -10,7 +10,7 @@
 from typing import Dict, Union, Set, Tuple, List, Optional
 from ampel.base import abstractmethod
 from ampel.type import ChannelId
-from ampel.ingest.compile.CompilerBase import CompilerBase
+from ampel.compile.CompilerBase import CompilerBase
 
 
 class AbsStockT2Compiler(CompilerBase, abstract=True):

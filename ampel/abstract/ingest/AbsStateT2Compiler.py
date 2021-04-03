@@ -10,8 +10,8 @@
 from typing import Dict, Union, Set, Tuple, List, TypeVar, Generic, Optional
 from ampel.base import abstractmethod
 from ampel.type import ChannelId
-from ampel.ingest.compile.CompilerBase import CompilerBase
-from ampel.ingest.CompoundBluePrint import CompoundBluePrint
+from ampel.compile.CompilerBase import CompilerBase
+from ampel.compile.CompoundBluePrint import CompoundBluePrint
 
 T = TypeVar("T", bound=CompoundBluePrint)
 

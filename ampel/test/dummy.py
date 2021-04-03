@@ -23,8 +23,8 @@ from ampel.abstract.ingest.AbsStateT2Compiler import AbsStateT2Compiler
 from ampel.abstract.ingest.AbsStateT2Ingester import AbsStateT2Ingester
 from ampel.abstract.ingest.AbsT2Ingester import AbsT2Ingester
 from ampel.content.DataPoint import DataPoint
-from ampel.ingest.CompoundBluePrint import CompoundBluePrint
-from ampel.ingest.T1DefaultCombiner import T1DefaultCombiner
+from ampel.compile.CompoundBluePrint import CompoundBluePrint
+from ampel.compile.T1DefaultCombiner import T1DefaultCombiner
 from ampel.log.AmpelLogger import AmpelLogger
 from ampel.enum.T2SysRunState import T2SysRunState
 from ampel.content.T2Document import T2Document

@@ -13,7 +13,7 @@ from ampel.base import abstractmethod
 from ampel.content.DataPoint import DataPoint
 from ampel.abstract.ingest.AbsIngester import AbsIngester
 from ampel.type import StockId, TypeVar, ChannelId
-from ampel.ingest.CompoundBluePrint import CompoundBluePrint
+from ampel.compile.CompoundBluePrint import CompoundBluePrint
 from ampel.log.handlers.RecordBufferingHandler import RecordBufferingHandler
 
 T = TypeVar("T", bound=CompoundBluePrint)
