@@ -19,7 +19,7 @@ from ampel.log.AmpelLoggingError import AmpelLoggingError
 from ampel.log.LogFlag import LogFlag
 
 if TYPE_CHECKING:
-	from ampel.db.AmpelDB import AmpelDB
+	from ampel.core.AmpelDB import AmpelDB
 
 
 # http://isthe.com/chongo/tech/comp/fnv/index.html#FNV-1a

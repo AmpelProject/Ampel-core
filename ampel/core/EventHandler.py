@@ -14,7 +14,7 @@ from ampel.log.AmpelLogger import AmpelLogger
 from ampel.log.AmpelLoggingError import AmpelLoggingError
 
 if TYPE_CHECKING:
-	from ampel.db.AmpelDB import AmpelDB
+	from ampel.core.AmpelDB import AmpelDB
 
 class EventHandler:
 	""" Handles the creation and publication of event documents into the event database """

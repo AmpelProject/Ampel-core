@@ -19,7 +19,7 @@ from ampel.type import AmpelMainCol
 from ampel.core.Schedulable import Schedulable
 from ampel.log.utils import report_exception, report_error, convert_dollars
 from ampel.log.AmpelLogger import AmpelLogger
-from ampel.db.AmpelDB import AmpelDB, intcol
+from ampel.core.AmpelDB import AmpelDB, intcol
 from ampel.metrics.AmpelMetricsRegistry import AmpelMetricsRegistry
 
 DBOp = Union[UpdateOne, UpdateMany, InsertOne]

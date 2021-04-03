@@ -13,7 +13,7 @@ from pymongo.errors import BulkWriteError
 from pymongo.operations import UpdateMany, UpdateOne
 from typing import List, Any, Optional, Sequence, Union, Dict, Literal, get_args
 
-from ampel.db.AmpelDB import AmpelDB
+from ampel.core.AmpelDB import AmpelDB
 from ampel.type import ChannelId, Tag, StockId
 from ampel.log import AmpelLogger, VERBOSE
 from ampel.log.utils import report_exception

@@ -9,7 +9,7 @@
 
 import re
 from typing import Sequence, Dict, Any, Optional
-from ampel.db.AmpelDB import AmpelDB
+from ampel.core.AmpelDB import AmpelDB
 from ampel.config.AmpelConfig import AmpelConfig
 from ampel.abstract.AbsCLIOperation import AbsCLIOperation
 from ampel.core.AmpelContext import AmpelContext
