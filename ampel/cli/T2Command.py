@@ -15,7 +15,7 @@ from ampel.core.AmpelContext import AmpelContext
 from ampel.abstract.AbsIdMapper import AbsIdMapper
 from ampel.log.AmpelLogger import AmpelLogger
 from ampel.log.LogFlag import LogFlag
-from ampel.db.T2Utils import T2Utils
+from ampel.t2.T2Utils import T2Utils
 from ampel.util.pretty import prettyjson
 from ampel.content.T2Document import T2Document
 from ampel.cli.utils import maybe_convert_stock
