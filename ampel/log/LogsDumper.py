@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-core/ampel/db/LogsDumper.py
+# File              : Ampel-core/ampel/log/LogsDumper.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 17.03.2021

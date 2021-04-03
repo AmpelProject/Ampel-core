@@ -17,9 +17,9 @@ from ampel.cli.AbsCoreCommand import AbsCoreCommand
 from ampel.cli.AmpelArgumentParser import AmpelArgumentParser
 from ampel.cli.MaybeIntAction import MaybeIntAction
 from ampel.cli.LoadJSONAction import LoadJSONAction
-from ampel.db.LogsLoader import LogsLoader
-from ampel.db.LogsMatcher import LogsMatcher
-from ampel.db.LogsDumper import LogsDumper
+from ampel.mongo.query.var.LogsLoader import LogsLoader
+from ampel.mongo.query.var.LogsMatcher import LogsMatcher
+from ampel.log.LogsDumper import LogsDumper
 
 
 hlp = {
