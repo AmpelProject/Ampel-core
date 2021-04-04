@@ -35,7 +35,7 @@ hlp = {
 	'out': 'Path to file were output will be written (printed to stdout otherwise)',
 	"unit": "Unit id/name",
 	"unit-config": "Unit config (integer number). Use string 'null' to match null",
-	"status": "T2 status (0: COMPLETED, -1: NEW)",
+	"code": "T2 code (0: COMPLETED, -1: NEW)",
 	"link": "T2 document link (hex)",
 	"stock": "Stock(s) associated with t2 doc (OR matched if multi-valued)",
 	'id-mapper': 'Convert stock ids using the provided id mapper (ex: ZTFIdMapper)',
@@ -84,7 +84,7 @@ class T2Command(AbsCoreCommand):
 		builder.add_group('match', 'Optional T2 documents matching criteria')
 		builder.add_arg('match', 'unit', nargs='+', action=MaybeIntAction)
 		builder.add_arg('match', 'unit-config', nargs='+', action=MaybeIntAction)
-		builder.add_arg('match', 'status', nargs='+', action=MaybeIntAction)
+		builder.add_arg('match', 'code', nargs='+', action=MaybeIntAction)
 		builder.add_arg('match', 'link', nargs='+')
 		builder.add_arg('match', 'stock', nargs='+', action=MaybeIntAction)
 		builder.create_logic_args('match', 'run', 'Run id', pos=0, ref='2')
@@ -109,7 +109,7 @@ class T2Command(AbsCoreCommand):
 			p = f"ampel t2 {el} -config ampel_conf.yaml "
 			a = " -out /path/to/file" if el == "save" else ""
 			builder.add_example(el, '-unit T2SNCosmo -db.prefix AmpelTest', prepend=p, append=a)
-			builder.add_example(el, '-channel MY_CHANNEL -status -1', prepend=p, append=a)
+			builder.add_example(el, '-channel MY_CHANNEL -code -1', prepend=p, append=a)
 			builder.add_example(el, '-stock 122621027 122620210 -unit DemoTiedLightCurveT2Unit', prepend=p, append=a)
 
 		builder.add_example('show|save', '-db.prefix AmpelTest -human-times -stock ZTF20aaqubac -resolve-config -id-mapper ZTFIdMapper')
