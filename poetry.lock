@@ -27,7 +27,7 @@ python-versions = "*"
 
 [[package]]
 name = "ampel-interface"
-version = "0.7.1a10"
+version = "0.7.1"
 description = "Base classes for the Ampel analysis platform"
 category = "main"
 optional = false
@@ -1245,8 +1245,8 @@ alabaster = [
     {file = "alabaster-0.7.12.tar.gz", hash = "sha256:a661d72d58e6ea8a57f7a86e37d86716863ee5e92788398526d58b26a4e4dc02"},
 ]
 ampel-interface = [
-    {file = "ampel-interface-0.7.1a10.tar.gz", hash = "sha256:31935b3157187843696a35828bc5a158f5786e2ef4eee028cf00133e69b2ff38"},
-    {file = "ampel_interface-0.7.1a10-py3-none-any.whl", hash = "sha256:ea5d805771ed94fc1f15a2fcab044c6b5bd2dc471d935edb9ba8960113ba1ce5"},
+    {file = "ampel-interface-0.7.1.tar.gz", hash = "sha256:888cbea9992a4e71b7826ef6eb64d26cfbd92504b4c1fbfe8ce37cdec2f08237"},
+    {file = "ampel_interface-0.7.1-py3-none-any.whl", hash = "sha256:e270f52377de65ba514e338138b4643975e57bae40bd3c0f4bece7a88f048833"},
 ]
 appnope = [
     {file = "appnope-0.1.2-py2.py3-none-any.whl", hash = "sha256:93aa393e9d6c54c5cd570ccadd8edad61ea0c4b9ea7a01409020c9aa019eb442"},
