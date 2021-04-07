@@ -5,7 +5,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>ampel.t2.T2Processor &#8212; ampel-core 0.7.1-alpha.11 documentation</title>
+    <title>ampel.t2.T2Processor &#8212; ampel-core 0.7.1-alpha.12 documentation</title>
     <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
     <link rel="stylesheet" href="../../../_static/sphinxdoc.css" type="text/css" />
     <script id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
@@ -21,7 +21,7 @@
         <li class="right" style="margin-right: 10px">
           <a href="../../../genindex.html" title="General Index"
              accesskey="I">index</a></li>
-        <li class="nav-item nav-item-0"><a href="../../../index.html">ampel-core 0.7.1-alpha.11 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">ampel-core 0.7.1-alpha.12 documentation</a> &#187;</li>
           <li class="nav-item nav-item-1"><a href="../../index.html" accesskey="U">Module code</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">ampel.t2.T2Processor</a></li> 
       </ul>
@@ -48,7 +48,9 @@
 <span class="kn">from</span> <span class="nn">bson</span> <span class="kn">import</span> <span class="n">ObjectId</span>
 <span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Union</span><span class="p">,</span> <span class="n">Type</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">cast</span><span class="p">,</span> <span class="n">overload</span>
 
-<span class="kn">from</span> <span class="nn">ampel.type</span> <span class="kn">import</span> <span class="n">T</span><span class="p">,</span> <span class="n">T2UnitResult</span><span class="p">,</span> <span class="n">Tag</span>
+<span class="kn">import</span> <span class="nn">backoff</span>
+
+<span class="kn">from</span> <span class="nn">ampel.type</span> <span class="kn">import</span> <span class="n">DataPointId</span><span class="p">,</span> <span class="n">StockId</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">T2UnitResult</span><span class="p">,</span> <span class="n">Tag</span>
 <span class="kn">from</span> <span class="nn">ampel.db.query.utils</span> <span class="kn">import</span> <span class="n">match_array</span>
 <span class="kn">from</span> <span class="nn">ampel.util.collections</span> <span class="kn">import</span> <span class="n">try_reduce</span>
 <span class="kn">from</span> <span class="nn">ampel.log.utils</span> <span class="kn">import</span> <span class="n">convert_dollars</span>
@@ -515,7 +517,7 @@
 			<span class="n">datapoints</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">DataPoint</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
 			<span class="c1"># If multiple links are avail, they should be all equivalent</span>
 			<span class="n">link</span> <span class="o">=</span> <span class="n">t2_doc</span><span class="p">[</span><span class="s1">&#39;link&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">t2_doc</span><span class="p">[</span><span class="s1">&#39;link&#39;</span><span class="p">],</span> <span class="nb">list</span><span class="p">)</span> <span class="k">else</span> <span class="n">t2_doc</span><span class="p">[</span><span class="s1">&#39;link&#39;</span><span class="p">]</span>
-			<span class="n">compound</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Compound</span><span class="p">]</span> <span class="o">=</span> <span class="nb">next</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">col_t1</span><span class="o">.</span><span class="n">find</span><span class="p">({</span><span class="s1">&#39;_id&#39;</span><span class="p">:</span> <span class="n">link</span><span class="p">}),</span> <span class="kc">None</span><span class="p">)</span>
+			<span class="n">compound</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Compound</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">load_compound</span><span class="p">(</span><span class="n">link</span><span class="p">)</span>
 
 			<span class="c1"># compound doc must exist (None could mean an ingester bug)</span>
 			<span class="k">if</span> <span class="n">compound</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
@@ -531,7 +533,7 @@
 
 			<span class="c1"># Datapoints marked as excluded in the compound won&#39;t be included</span>
 			<span class="n">dps_ids</span> <span class="o">=</span> <span class="n">get_datapoint_ids</span><span class="p">(</span><span class="n">compound</span><span class="p">,</span> <span class="n">logger</span><span class="p">)</span>
-			<span class="n">datapoints</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">col_t0</span><span class="o">.</span><span class="n">find</span><span class="p">({</span><span class="s1">&#39;_id&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;$in&quot;</span><span class="p">:</span> <span class="n">dps_ids</span><span class="p">}}))</span>
+			<span class="n">datapoints</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">load_datapoints</span><span class="p">(</span><span class="n">dps_ids</span><span class="p">)</span>
 
 			<span class="k">if</span> <span class="ow">not</span> <span class="n">datapoints</span><span class="p">:</span>
 				<span class="n">report_error</span><span class="p">(</span>
@@ -597,16 +599,10 @@
 
 		<span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">t2_unit</span><span class="p">,</span> <span class="p">(</span><span class="n">AbsStockT2Unit</span><span class="p">,</span> <span class="n">AbsPointT2Unit</span><span class="p">,</span> <span class="n">AbsTiedPointT2Unit</span><span class="p">)):</span>
 
-			<span class="k">if</span> <span class="n">doc</span> <span class="o">:=</span> <span class="nb">next</span><span class="p">(</span>
-				<span class="p">(</span>
-					<span class="p">(</span>
-						<span class="bp">self</span><span class="o">.</span><span class="n">col_t0</span>
-						<span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">t2_unit</span><span class="p">,</span> <span class="n">AbsPointT2Unit</span><span class="p">)</span>
-						<span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">col_stock</span>
-					<span class="p">)</span>
-					<span class="o">.</span><span class="n">find</span><span class="p">({</span><span class="s1">&#39;_id&#39;</span><span class="p">:</span> <span class="n">t2_doc</span><span class="p">[</span><span class="s1">&#39;link&#39;</span><span class="p">]})</span>
-				<span class="p">),</span>
-				<span class="kc">None</span>
+			<span class="k">if</span> <span class="n">doc</span> <span class="o">:=</span> <span class="p">(</span>
+				<span class="bp">self</span><span class="o">.</span><span class="n">load_datapoint</span><span class="p">(</span><span class="n">t2_doc</span><span class="p">[</span><span class="s1">&#39;link&#39;</span><span class="p">])</span>
+				<span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">t2_unit</span><span class="p">,</span> <span class="n">AbsPointT2Unit</span><span class="p">)</span>
+				<span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">load_stock</span><span class="p">(</span><span class="n">t2_doc</span><span class="p">[</span><span class="s1">&#39;link&#39;</span><span class="p">])</span>
 			<span class="p">):</span>
 				<span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">t2_unit</span><span class="p">,</span> <span class="n">AbsTiedPointT2Unit</span><span class="p">):</span>
 
@@ -640,6 +636,27 @@
 			<span class="p">)</span>
 
 			<span class="k">return</span> <span class="kc">None</span>
+
+
+	<span class="c1"># allow 10 seconds for input documents to become available</span>
+	<span class="nd">@backoff</span><span class="o">.</span><span class="n">on_predicate</span><span class="p">(</span><span class="n">backoff</span><span class="o">.</span><span class="n">expo</span><span class="p">,</span> <span class="n">max_time</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
+	<span class="k">def</span> <span class="nf">load_compound</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">link</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Compound</span><span class="p">]:</span>
+		<span class="k">return</span> <span class="nb">next</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">col_t1</span><span class="o">.</span><span class="n">find</span><span class="p">({</span><span class="s1">&#39;_id&#39;</span><span class="p">:</span> <span class="n">link</span><span class="p">}),</span> <span class="kc">None</span><span class="p">)</span>
+
+
+	<span class="nd">@backoff</span><span class="o">.</span><span class="n">on_predicate</span><span class="p">(</span><span class="n">backoff</span><span class="o">.</span><span class="n">expo</span><span class="p">,</span> <span class="n">max_time</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
+	<span class="k">def</span> <span class="nf">load_datapoints</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dps_ids</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">DataPointId</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">DataPoint</span><span class="p">]:</span>
+		<span class="k">return</span> <span class="n">dps</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">dps</span> <span class="o">:=</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">col_t0</span><span class="o">.</span><span class="n">find</span><span class="p">({</span><span class="s1">&#39;_id&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;$in&quot;</span><span class="p">:</span> <span class="n">dps_ids</span><span class="p">}})))</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">dps_ids</span><span class="p">)</span> <span class="k">else</span> <span class="nb">list</span><span class="p">()</span>
+
+
+	<span class="nd">@backoff</span><span class="o">.</span><span class="n">on_predicate</span><span class="p">(</span><span class="n">backoff</span><span class="o">.</span><span class="n">expo</span><span class="p">,</span> <span class="n">max_time</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
+	<span class="k">def</span> <span class="nf">load_datapoint</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">link</span><span class="p">:</span> <span class="n">DataPointId</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">DataPoint</span><span class="p">]:</span>
+		<span class="k">return</span> <span class="nb">next</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">col_t0</span><span class="o">.</span><span class="n">find</span><span class="p">({</span><span class="s1">&#39;_id&#39;</span><span class="p">:</span> <span class="n">link</span><span class="p">}),</span> <span class="kc">None</span><span class="p">)</span>
+
+
+	<span class="nd">@backoff</span><span class="o">.</span><span class="n">on_predicate</span><span class="p">(</span><span class="n">backoff</span><span class="o">.</span><span class="n">expo</span><span class="p">,</span> <span class="n">max_time</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
+	<span class="k">def</span> <span class="nf">load_stock</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">link</span><span class="p">:</span> <span class="n">StockId</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">StockDocument</span><span class="p">]:</span>
+		<span class="k">return</span> <span class="nb">next</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">col_stock</span><span class="o">.</span><span class="n">find</span><span class="p">({</span><span class="s1">&#39;_id&#39;</span><span class="p">:</span> <span class="n">link</span><span class="p">}),</span> <span class="kc">None</span><span class="p">)</span>
 
 
 	<span class="k">def</span> <span class="nf">run_tied_queries</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
@@ -998,7 +1015,7 @@
         <li class="right" style="margin-right: 10px">
           <a href="../../../genindex.html" title="General Index"
              >index</a></li>
-        <li class="nav-item nav-item-0"><a href="../../../index.html">ampel-core 0.7.1-alpha.11 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">ampel-core 0.7.1-alpha.12 documentation</a> &#187;</li>
           <li class="nav-item nav-item-1"><a href="../../index.html" >Module code</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">ampel.t2.T2Processor</a></li> 
       </ul>
