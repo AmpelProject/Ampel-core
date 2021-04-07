@@ -13,7 +13,9 @@ from time import time
 from bson import ObjectId
 from typing import Optional, List, Union, Type, Dict, Any, Sequence, Tuple, cast, overload
 
-from ampel.type import T, T2UnitResult, Tag
+import backoff
+
+from ampel.type import DataPointId, StockId, T, T2UnitResult, Tag
 from ampel.db.query.utils import match_array
 from ampel.util.collections import try_reduce
 from ampel.log.utils import convert_dollars
@@ -480,7 +482,7 @@ class T2Processor(AbsProcessorUnit):
 			datapoints: List[DataPoint] = []
 			# If multiple links are avail, they should be all equivalent
 			link = t2_doc['link'][0] if isinstance(t2_doc['link'], list) else t2_doc['link']
-			compound: Optional[Compound] = next(self.col_t1.find({'_id': link}), None)
+			compound: Optional[Compound] = self.load_compound(link)
 
 			# compound doc must exist (None could mean an ingester bug)
 			if compound is None:
@@ -496,7 +498,7 @@ class T2Processor(AbsProcessorUnit):
 
 			# Datapoints marked as excluded in the compound won't be included
 			dps_ids = get_datapoint_ids(compound, logger)
-			datapoints = list(self.col_t0.find({'_id': {"$in": dps_ids}}))
+			datapoints = self.load_datapoints(dps_ids)
 
 			if not datapoints:
 				report_error(
@@ -562,16 +564,10 @@ class T2Processor(AbsProcessorUnit):
 
 		elif isinstance(t2_unit, (AbsStockT2Unit, AbsPointT2Unit, AbsTiedPointT2Unit)):
 
-			if doc := next(
-				(
-					(
-						self.col_t0
-						if isinstance(t2_unit, AbsPointT2Unit)
-						else self.col_stock
-					)
-					.find({'_id': t2_doc['link']})
-				),
-				None
+			if doc := (
+				self.load_datapoint(t2_doc['link'])
+				if isinstance(t2_unit, AbsPointT2Unit)
+				else self.load_stock(t2_doc['link'])
 			):
 				if isinstance(t2_unit, AbsTiedPointT2Unit):
 
@@ -605,6 +601,27 @@ class T2Processor(AbsProcessorUnit):
 			)
 
 			return None
+
+
+	# allow 10 seconds for input documents to become available
+	@backoff.on_predicate(backoff.expo, max_time=10)
+	def load_compound(self, link: bytes) -> Optional[Compound]:
+		return next(self.col_t1.find({'_id': link}), None)
+
+
+	@backoff.on_predicate(backoff.expo, max_time=10)
+	def load_datapoints(self, dps_ids: List[DataPointId]) -> List[DataPoint]:
+		return dps if len(dps := list(self.col_t0.find({'_id': {"$in": dps_ids}}))) == len(dps_ids) else list()
+
+
+	@backoff.on_predicate(backoff.expo, max_time=10)
+	def load_datapoint(self, link: DataPointId) -> Optional[DataPoint]:
+		return next(self.col_t0.find({'_id': link}), None)
+
+
+	@backoff.on_predicate(backoff.expo, max_time=10)
+	def load_stock(self, link: StockId) -> Optional[StockDocument]:
+		return next(self.col_stock.find({'_id': link}), None)
 
 
 	def run_tied_queries(self,
