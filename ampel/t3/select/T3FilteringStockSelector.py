@@ -8,16 +8,15 @@
 # Last Modified By	: Jakob van Santen <jakob.van.santen@desy.de>
 
 from pymongo.cursor import Cursor
-from typing import Sequence, Dict, List, Any, Union, Optional
+from typing import Dict, List, Any, Union, Optional
 
 from ampel.type import StockId
 from ampel.t3.select.T3StockSelector import T3StockSelector
 from ampel.model.operator.AllOf import AllOf
 from ampel.model.operator.AnyOf import AnyOf
-from ampel.model.operator.OneOf import OneOf
 from ampel.model.t3.T2FilterModel import T2FilterModel
 from ampel.mongo.query.general import build_general_query
-from ampel.mongo.query.utils import match_array
+from ampel.mongo.utils import match_array
 
 
 class T3FilteringStockSelector(T3StockSelector):
@@ -59,7 +58,7 @@ class T3FilteringStockSelector(T3StockSelector):
 		return cursor
 
 
-	def _build_match(self, f: Union[T2FilterModel, AllOf[T2FilterModel], AnyOf[T2FilterModel]]) -> Dict[str,Any]:
+	def _build_match(self, f: Union[T2FilterModel, AllOf[T2FilterModel], AnyOf[T2FilterModel]]) -> Dict[str, Any]:
 		if isinstance(f, T2FilterModel):
 			return {f"{f.unit}.{k}": v for k, v in f.match.items()}
 		elif isinstance(f, AllOf):
@@ -88,10 +87,10 @@ class T3FilteringStockSelector(T3StockSelector):
 				...
 				'stock': 42,
 				'unit': 'Unit1',
-				'status': 0,
+				'code': 0,
 				'body': [{
 					...
-					'results': {'thing1': 3}
+					'data': {'thing1': 3}
 				}]
 			},
 			{
@@ -99,10 +98,10 @@ class T3FilteringStockSelector(T3StockSelector):
 				...
 				'stock': 42,
 				'unit': 'Unit2',
-				'status': 0,
+				'code': 0,
 				'body': [{
 					...
-					'results': {'thing2': 7}
+					'data': {'thing2': 7}
 				}]
 			}
 		
@@ -117,7 +116,7 @@ class T3FilteringStockSelector(T3StockSelector):
 		# NB: we reuse the general query here to ensure that we only process
 		# T2s associated with the requested channels
 		match = {
-			'status': 0,
+			'code': 0,
 			'unit': match_array(_all_units(self.t2_filter)),
 			**build_general_query(stock_ids, self.channel, self.tag)
 		}
@@ -142,18 +141,18 @@ class T3FilteringStockSelector(T3StockSelector):
 						'stock': '$stock',
 						'unit': '$unit'
 					},
-					'result': {'$last': '$body.result'}
+					'data': {'$last': '$body.data'}
 				}
 			},
-			# nest result under key named for unit, e.g.
-			# {'unit': 'T2Unit', 'result': {'foo': 1}} -> {'T2Unit': {'foo': 1}}
+			# nest data under key named for unit, e.g.
+			# {'unit': 'T2Unit', 'data': {'foo': 1}} -> {'T2Unit': {'foo': 1}}
 			{
 				'$replaceRoot': {
 					'newRoot': {
 						'_id': '$_id',
-						'result': {
+						'data': {
 							'$arrayToObject': [
-								[{'k': '$_id.unit', 'v': '$result'}]
+								[{'k': '$_id.unit', 'v': '$data'}]
 							]
 						}
 					}
@@ -162,14 +161,14 @@ class T3FilteringStockSelector(T3StockSelector):
 			{
 				'$group': {
 					'_id': '$_id.stock',
-					'result': {'$mergeObjects': '$result'}
+					'data': {'$mergeObjects': '$data'}
 				}
 			},
 			# flatten document
-			{'$set': {'result._id': '$_id'}},
+			{'$set': {'data._id': '$_id'}},
 			{
 				'$replaceRoot': {
-					'newRoot': '$result'
+					'newRoot': '$data'
 				}
 			}
 		]
