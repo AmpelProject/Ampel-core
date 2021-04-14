@@ -191,14 +191,15 @@ class task_manager:
             drop: List[ProcessModel] = []
             for pm in cls.task_to_processes[task]:
                 [keep, drop][pm.name in remove_group].append(pm)
-            controller.update(context.config, context.loader.secrets, keep)
             if not keep:
+                controller.stop()
                 # controller is empty; wait for it to exit
                 expiring.add(task)
                 log.info(
                     f"Stopping task {id(task)} ({type(controller).__name__} (empty))"
                 )
             else:
+                controller.update(context.config, context.loader.secrets, keep)
                 # controller still has assigned processes; clean up others
                 for pm in drop:
                     cls.process_name_to_controller_id.pop(pm.name)
