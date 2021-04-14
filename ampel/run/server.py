@@ -227,8 +227,12 @@ class task_manager:
 
     @classmethod
     async def shutdown(cls) -> None:
-        # FIXME: implement soft shutdown
         tasks = cls.task_to_processes.keys()
+        # Allow 10 seconds to stop gracefully
+        for controller, _ in cls.controller_id_to_task.values():
+            controller.stop()
+        await asyncio.wait_for(asyncio.gather(*tasks, return_exceptions=True), 10)
+        # Cancel any tasks that do not exit in time
         for task in tasks:
             task.cancel()
         await asyncio.gather(*tasks, return_exceptions=True)
