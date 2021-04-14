@@ -26,30 +26,30 @@ def processed_t2s(dev_context, ingest_tied_t2):
     if "point" in ingest_tied_t2.param.lower():
         assert num_docs == 1 + num_dps
         assert (
-            t2.find_one({"unit": "DummyPointT2Unit"})["body"][0]["result"]["thing"] == 3
+            t2.find_one({"unit": "DummyPointT2Unit"})["body"][0]['data']["thing"] == 3
         )
         assert (
-            t2.find_one({"unit": "DummyTiedStateT2Unit"})["body"][0]["result"]["thing"]
+            t2.find_one({"unit": "DummyTiedStateT2Unit"})["body"][0]['data']["thing"]
             == 2 * 3
         )
     elif "stock" in ingest_tied_t2.param.lower():
         assert num_docs == 2
         assert (
-            t2.find_one({"unit": "DummyStockT2Unit"})["body"][0]["result"]["id"]
+            t2.find_one({"unit": "DummyStockT2Unit"})["body"][0]['data']["id"]
             == "stockystock"
         )
         assert (
-            t2.find_one({"unit": "DummyTiedStateT2Unit"})["body"][0]["result"]["id"]
+            t2.find_one({"unit": "DummyTiedStateT2Unit"})["body"][0]['data']["id"]
             == 2 * "stockystock"
         )
     else:
         assert num_docs == 2
         assert (
-            t2.find_one({"unit": "DummyStateT2Unit"})["body"][0]["result"]["len"]
+            t2.find_one({"unit": "DummyStateT2Unit"})["body"][0]['data']["len"]
             == num_dps
         )
         assert (
-            t2.find_one({"unit": "DummyTiedStateT2Unit"})["body"][0]["result"]["len"]
+            t2.find_one({"unit": "DummyTiedStateT2Unit"})["body"][0]['data']["len"]
             == 2 * num_dps
         )
 
