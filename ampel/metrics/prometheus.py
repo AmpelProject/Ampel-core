@@ -47,7 +47,7 @@ counter_archive = "counter_archive.db"
 
 def collect_metrics():
 
-    if "prometheus_multiproc_dir" in os.environ:
+    if "PROMETHEUS_MULTIPROC_DIR" in os.environ:
         registry = CollectorRegistry()
         multiprocess.MultiProcessCollector(registry)
     else:

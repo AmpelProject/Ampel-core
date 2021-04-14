@@ -242,7 +242,7 @@ class _Process:
                     self._expired[self._name].add(replica_idx)
                 else:
                     self._expired[self._name] = {replica_idx}
-            if "prometheus_multiproc_dir" in os.environ:
+            if "PROMETHEUS_MULTIPROC_DIR" in os.environ:
                 prometheus_cleanup_worker(proc.pid)
 
 

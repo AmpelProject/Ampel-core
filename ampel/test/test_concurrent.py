@@ -154,7 +154,7 @@ def prometheus_multiproc_dir(monkeypatch, tmpdir):
     """
     from ampel.metrics.AmpelMetricsRegistry import MultiProcessCollector
 
-    monkeypatch.setenv("prometheus_multiproc_dir", str(tmpdir))
+    monkeypatch.setenv("PROMETHEUS_MULTIPROC_DIR", str(tmpdir))
     r = AmpelMetricsRegistry.registry()
     try:
         c = MultiProcessCollector(r)
