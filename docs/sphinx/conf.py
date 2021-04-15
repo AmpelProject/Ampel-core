@@ -40,6 +40,7 @@ extensions = ['sphinx.ext.autodoc',
     'sphinx.ext.githubpages']
 
 typehints_fully_qualified = False
+simplify_optional_unions = False
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
