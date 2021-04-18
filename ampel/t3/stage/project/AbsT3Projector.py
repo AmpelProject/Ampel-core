@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-core/ampel/t3/run/project/AbsT3Projector.py
+# File              : Ampel-core/ampel/t3/stage/project/AbsT3Projector.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 21.01.2020
@@ -9,7 +9,7 @@
 
 from typing import Sequence
 from ampel.base import AmpelBaseModel, AmpelABC, abstractmethod
-from ampel.core.AmpelBuffer import AmpelBuffer
+from ampel.struct.AmpelBuffer import AmpelBuffer
 
 
 class AbsT3Projector(AmpelABC, AmpelBaseModel, abstract=True):
