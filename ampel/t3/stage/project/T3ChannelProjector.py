@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-core/ampel/t3/run/project/T3ChannelProjector.py
+# File              : Ampel-core/ampel/t3/stage/project/T3ChannelProjector.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 07.01.2020
@@ -15,7 +15,7 @@ from ampel.model.operator.AllOf import AllOf
 from ampel.model.operator.AnyOf import AnyOf
 from ampel.model.operator.OneOf import OneOf
 from ampel.aux.ComboDictModifier import ComboDictModifier
-from ampel.t3.run.project.T3BaseProjector import T3BaseProjector
+from ampel.t3.stage.project.T3BaseProjector import T3BaseProjector
 
 
 class T3ChannelProjector(T3BaseProjector):

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-core/ampel/t3/run/project/T3BaseProjector.py
+# File              : Ampel-core/ampel/t3/stage/project/T3BaseProjector.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 07.01.2020
@@ -9,12 +9,12 @@
 
 from typing import Union, Optional, List, Dict, Sequence, Callable, Any, Set
 from ampel.log import AmpelLogger, VERBOSE
-from ampel.core.AmpelBuffer import AmpelBuffer, BufferKey
+from ampel.struct.AmpelBuffer import AmpelBuffer, BufferKey
 from ampel.abstract.AbsApplicable import AbsApplicable
 from ampel.model.UnitModel import UnitModel
 from ampel.base.AuxUnitRegister import AuxUnitRegister
 from ampel.model.StrictModel import StrictModel
-from ampel.t3.run.project.AbsT3Projector import AbsT3Projector
+from ampel.t3.stage.project.AbsT3Projector import AbsT3Projector
 
 
 class T3BaseProjector(AbsT3Projector):
@@ -74,7 +74,7 @@ class T3BaseProjector(AbsT3Projector):
 			elif isinstance(fp, self.FilterOutModel):
 				self.projectors[fp.discard] = None
 
-		self.pass_through_keys: Set[BufferKey] = {"stock", "t0", "t1", "t2", "log", "extra"} - self.projectors.keys()# type: ignore
+		self.pass_through_keys: Set[BufferKey] = {"stock", "t0", "t1", "t2", "logs", "extra"} - self.projectors.keys()# type: ignore
 
 
 	def add_class_projector(self, cm: ClassModel, first: bool = False) -> None:

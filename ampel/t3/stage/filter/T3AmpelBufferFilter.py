@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-core/ampel/t3/run/filter/T3AmpelBufferFilter.py
+# File              : Ampel-core/ampel/t3/stage/filter/T3AmpelBufferFilter.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 14.01.2020
@@ -13,12 +13,12 @@ from ampel.type import ChannelId
 from ampel.model.operator.AnyOf import AnyOf
 from ampel.model.operator.AllOf import AllOf
 from ampel.model.operator.OneOf import OneOf
-from ampel.core.AmpelBuffer import AmpelBuffer, BufferKey
+from ampel.struct.AmpelBuffer import AmpelBuffer, BufferKey
 from ampel.model.UnitModel import UnitModel
 from ampel.model.StrictModel import StrictModel
 from ampel.core.UnitLoader import UnitLoader
 from ampel.log.AmpelLogger import AmpelLogger
-from ampel.t3.run.filter.AbsT3Filter import AbsT3Filter
+from ampel.t3.stage.filter.AbsT3Filter import AbsT3Filter
 from ampel.aux.filter.AbsLogicOperatorFilter import AbsLogicOperatorFilter
 
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-core/ampel/t3/run/filter/AbsT3Filter.py
+# File              : Ampel-core/ampel/t3/stage/filter/AbsT3Filter.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 12.02.2020
@@ -9,7 +9,7 @@
 
 from typing import Sequence
 from ampel.base import AmpelABC, AmpelBaseModel, abstractmethod
-from ampel.core.AmpelBuffer import AmpelBuffer
+from ampel.struct.AmpelBuffer import AmpelBuffer
 
 
 class AbsT3Filter(AmpelBaseModel, AmpelABC, abstract=True):
