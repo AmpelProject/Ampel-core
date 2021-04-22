@@ -1,16 +1,16 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-core/ampel/utils/collections.py
+# File              : Ampel-core/ampel/util/collections.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 07.06.2018
-# Last Modified Date: 16.03.2020
+# Last Modified Date: 17.04.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from collections.abc import Sequence as sequence, Iterable as iterable, Sized as sized
 from typing import Any, List, Iterable, Union, Type, Tuple, Set, Generator
 from itertools import islice
-from ampel.type import strict_iterable
+from ampel.type import strict_iterable, T
 
 
 def ampel_iter(arg: Any) -> Any:
@@ -21,7 +21,7 @@ def ampel_iter(arg: Any) -> Any:
 	return [arg] if isinstance(arg, (type(None), str, int, bytes, bytearray)) else arg
 
 
-def chunks(seq: Iterable, n: int) -> Generator[List, None, None]:
+def chunks(seq: Iterable[T], n: int) -> Generator[List[T], None, None]:
 	"""
 	Yield chunks of length `n` from `seq`
 	"""
