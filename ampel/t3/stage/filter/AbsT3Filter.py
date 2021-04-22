@@ -4,10 +4,10 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 12.02.2020
-# Last Modified Date: 20.06.2020
+# Last Modified Date: 21.04.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-from typing import Sequence
+from typing import Sequence, Iterable
 from ampel.base import AmpelABC, AmpelBaseModel, abstractmethod
 from ampel.struct.AmpelBuffer import AmpelBuffer
 
@@ -15,5 +15,5 @@ from ampel.struct.AmpelBuffer import AmpelBuffer
 class AbsT3Filter(AmpelBaseModel, AmpelABC, abstract=True):
 
 	@abstractmethod
-	def filter(self, abufs: Sequence[AmpelBuffer]) -> Sequence[AmpelBuffer]:
+	def filter(self, abufs: Iterable[AmpelBuffer]) -> Sequence[AmpelBuffer]:
 		...
