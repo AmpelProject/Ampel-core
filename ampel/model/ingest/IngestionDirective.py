@@ -23,7 +23,7 @@ class IngestionDirective(StrictModel):
 	channel: ChannelId
 	#: Add new :class:`datapoints <ampel.content.DataPoint.DataPoint>`
 	t0_add: Optional[T0AddModel]
-	#: Create :class:`compounds <ampel.content.Compound.Compound>` from
+	#: Create :class:`compounds <ampel.content.T1Document.T1Document>` from
 	#: ingested :class:`datapoints <ampel.content.DataPoint.DataPoint>` and the
 	#: :class:`stock <ampel.content.StockDocument.StockDocument>`, e.g. drawing
 	#: from other data streams
