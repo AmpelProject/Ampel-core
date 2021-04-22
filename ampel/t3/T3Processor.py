@@ -4,27 +4,22 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 26.02.2018
-# Last Modified Date: 07.03.2021
+# Last Modified Date: 15.07.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-from typing import Dict, Any, List, Optional, Union
-
-from ampel.abstract.AbsProcessorUnit import AbsProcessorUnit
+from typing import Dict, Any, Optional, Union
+from ampel.abstract.AbsEventUnit import AbsEventUnit
+from ampel.model.UnitModel import UnitModel
+from ampel.log.utils import report_exception
 from ampel.log import AmpelLogger, LogFlag, SHOUT
 from ampel.core.EventHandler import EventHandler
-from ampel.log.utils import report_exception
-from ampel.content.T3Document import T3Document
-from ampel.model.t3.T3Directive import T3Directive
-from ampel.enum.T3DocumentCode import T3DocumentCode
-from ampel.t3.load.AbsT3Loader import AbsT3Loader
-from ampel.t3.run.AbsT3UnitRunner import AbsT3UnitRunner
-from ampel.t3.select.AbsT3Selector import AbsT3Selector
-from ampel.t3.complement.AbsT3DataAppender import AbsT3DataAppender
-from ampel.t3.context.AbsT3RunContextAppender import AbsT3RunContextAppender
-from ampel.util.collections import chunks
+from ampel.core.StockJournalUpdater import StockJournalUpdater
+from ampel.abstract.AbsSessionInfo import AbsSessionInfo
+from ampel.abstract.AbsT3Supplier import AbsT3Supplier
+from ampel.abstract.AbsT3Stager import AbsT3Stager
 
 
-class T3Processor(AbsProcessorUnit):
+class T3Processor(AbsEventUnit):
 	"""
 	:param update_journal: Record the invocation of this event in the stock journal
 	:param update_events: Record this event in the events collection
@@ -43,11 +38,11 @@ class T3Processor(AbsProcessorUnit):
 	  - set raise_exc = True (troubles collection will not be populated if an exception occurs)
 	"""
 
-	#: T3 processing schema
-	directive: T3Directive
+	#: Provides :class:`~ampel.core.AmpelBuffer.AmpelBuffer` generator
+	supply: UnitModel
 
-	#: number of stocks to load at once
-	chunk_size: int = 200
+	#: Execute provided stager unit (which in turns provides views to underlying T3 unit(s))
+	stage: UnitModel
 
 	#: whether selected stock ids should be saved into (potential) t3 documents
 	save_stock_ids: bool = True
@@ -70,213 +65,132 @@ class T3Processor(AbsProcessorUnit):
 		self.update_events = update_events
 		self.extra_journal_tag = extra_journal_tag
 
-		if 'db' not in self.context.config.get(f"logging.{self.log_profile}", dict, raise_exc=True):
-			for el in ("update_journal", "update_events"):
+		if 'db' not in self.context.config.get(f'logging.{self.log_profile}', dict, raise_exc=True):
+			for el in ('update_journal', 'update_events'):
 				if getattr(self, el):
 					raise ValueError(
-						f"{el} cannot be True without a logger associated with a db logging handler"
+						f'{el} cannot be True without a logger associated with a db logging handler'
 					)
 
 
 	def run(self) -> None:
 
 		event_hdlr = None
-		run_id = self.new_run_id()
-		exc = None
-		logger = None
+		run_id = self.context.new_run_id()
+
+		logger = AmpelLogger.from_profile(
+			self.context, self.log_profile, run_id,
+			base_flag = LogFlag.T3 | LogFlag.CORE | self.base_log_flag,
+			force_refresh = True
+		)
+
+		# Admins have the option to run a T3 process silently/anonymously
+		if self.update_events:
+
+			if not self.process_name:
+				raise ValueError('Parameter process_name must be defined')
+
+			# Create event doc
+			event_hdlr = EventHandler(
+				self.context.db, tier=3, run_id=run_id,
+				process_name=self.process_name,
+			)
 
 		try:
 
-			logger = AmpelLogger.from_profile(
-				self.context, self.log_profile, run_id,
-				base_flag = LogFlag.T3 | LogFlag.CORE | self.base_log_flag,
-				force_refresh = True
-			)
-
-			# Admins have the option to to run a T3 process silently/anonymously
-			if self.update_events:
-
-				if not self.process_name:
-					raise ValueError("Parameter process_name must be defined")
-
-				# Create event doc
-				event_hdlr = EventHandler(
-					self.context.db, tier=3, run_id=run_id,
-					process_name=self.process_name,
-				)
-
 			# Feedback
-			logger.log(SHOUT, f"Running {self.process_name}")
+			logger.log(SHOUT, f'Running {self.process_name}')
 
 			# run context
 			#############
 
-			run_context: Dict[str, Any] = {}
+			session_info: Dict[str, Any] = {}
 			if self.context.admin_msg:
-				run_context['admin_msg'] = self.context.admin_msg
+				session_info['admin_msg'] = self.context.admin_msg
 
-			if self.directive.context:
+			if self.session:
 
-				for el in self.directive.context:
+				for el in self.session:
 					self.context.loader \
-						.new_admin_unit(
-							unit_model = el,
+						.new_context_unit(
+							model = el,
 							context = self.context,
-							sub_type = AbsT3RunContextAppender,
+							sub_type = AbsSessionInfo,
 							logger = logger,
-							process_name = self.process_name
+							process_name = self.process_name,
+							_provenance = False
 						) \
-						.update(run_context)
+						.update(session_info)
 
-			# Unit runner
+
+			jupdater = StockJournalUpdater(
+				ampel_db = self.context.db, tier = 3, run_id = run_id,
+				process_name = self.process_name, logger = logger,
+				raise_exc = self.raise_exc, extra_tag = self.extra_journal_tag,
+				update_journal = self.update_journal,
+				update_updated = False
+			)
+
+			# Stager unit
 			#############
 
-			chan = self.directive.run.config['channel'] if 'channel' in self.directive.run.config else self.channel # type: ignore
-
-			# The default runner provided by pyampel-core is T3UnitRunner
-			runner = self.context.loader \
-				.new_admin_unit(
-					unit_model = self.directive.run,
+			# pyampel-core provides 3 stager implementations: T3SimpleStager, T3ProjectingStager, T3DynamicStager
+			stager = self.context.loader \
+				.new_context_unit(
+					model = self.stage,
 					context = self.context,
-					sub_type = AbsT3UnitRunner,
+					sub_type = AbsT3Stager,
 					logger = logger,
-					run_id = run_id,
-					process_name = self.process_name,
-					channel = chan,
-					update_journal = self.update_journal,
-					extra_journal_tag = self.extra_journal_tag,
-					run_context = run_context
+					jupdater = jupdater,
+					channel = self.stage.config['channel'] if self.stage.config.get('channel') else self.channel, # type: ignore
+					session_info = session_info,
+					_provenance = False
 				)
 
-			# target selection
-			##################
+			# Spawn and run a new selector instance
+			# stock_ids is an iterable (often a pymongo cursor)
+			supplier = self.context.loader.new_context_unit(
+				model = self.supply,
+				context = self.context,
+				sub_type = AbsT3Supplier,
+				logger = logger,
+				event_hdlr = event_hdlr,
+				raise_exc = self.raise_exc,
+				process_name = self.process_name,
+				_provenance = False
+			)
 
-			if self.directive.select:
+			if t3_docs := stager.stage(
+				supplier.supply()
+			):
+				for t3d in t3_docs if isinstance(t3_docs, list) else [t3_docs]:
 
-				# Spawn and run a new selector instance
-				# stock_ids is an iterable (often a pymongo cursor)
-				selector = self.context.loader.new_admin_unit(
-					unit_model = self.directive.select,
-					context = self.context,
-					sub_type = AbsT3Selector,
-					logger = logger
-				)
+					# 0: no provenance. -1: args not serializable
+					if self._trace_id not in (0, -1):
+						if 'meta' not in t3d:
+							t3d['meta'] = {}
+						t3d['meta']['traceid'] = {'t3processor': self._trace_id}
 
-				# Usually, id_key is '_id' but it can be 'stock' if the
-				# selection is based on t2 documents for example
-				id_key = selector.field_name
-
-
-				# Content loader
-				################
-
-				if self.directive.load:
-					# Spawn requested content loader
-					content_loader = self.context.loader \
-						.new_admin_unit(
-							unit_model = self.directive.load,
-							context = self.context,
-							sub_type = AbsT3Loader,
-							logger = logger
-						)
-
-
-				# Content complementer
-				######################
-
-				# Spawn potentialy requested snapdata complementers
-				if self.directive.complement:
-					comps: List[AbsT3DataAppender] = [
-						self.context.loader \
-							.new_admin_unit(
-								unit_model = conf_el,
-								context = self.context,
-								sub_type = AbsT3DataAppender,
-								logger = logger,
-								run_context = run_context
-							)
-						for conf_el in self.directive.complement
-					]
-
-				# NB: we consume the entire stock selection cursor at once using list()
-				# to be robust against cursor timeouts or server restarts during long-
-				# lived T3 processes
-				if stock_ids := list(selector.fetch() or []):
-
-					# Run start
-					###########
-
-					# Loop over chunks from the cursor/iterator
-
-					for chunk_ids in chunks(stock_ids, self.chunk_size):
-
-						# try/catch here to allow some chunks to complete
-						# even if one raises an exception
-						try:
-							# Load info from DB
-							tran_data = content_loader.load([sid[id_key] for sid in chunk_ids])
-
-							# Potentialy add complementary information (spectra, TNS names, ...)
-							if self.directive.complement:
-								for appender in comps:
-									appender.complement(tran_data)
-
-							# Run T3 units defined for this process
-							runner.run(list(tran_data))
-
-						except Exception as e:
-							exc = e
-							if self.raise_exc:
-								raise e
-
-							report_exception(
-								self.context.db, logger, exc=e,
-								info={'process': self.process_name}
-							)
-
-			if (t3_records := runner.done()):
-
-				# TODO: implement something for setting version & config
-				d = T3Document(
-					process = self.process_name,
-					run = run_id,
-					code = T3DocumentCode.OK
-				)
-
-				if self.channel:
-					d['channel'] = self.channel
-
-				if self.save_stock_ids:
-					d['stock'] = [el['_id'] for el in stock_ids]
-
-				# Mongo maintains key order
-				d['body'] = [t3_records] if isinstance(t3_records, dict) else t3_records
-
-				self.context.db.get_collection('t3').insert_one(d)
+					self.context.db \
+						.get_collection('t3') \
+						.insert_one(t3d)
 
 		except Exception as e:
 
-			exc = e
+			if event_hdlr:
+				event_hdlr.add_extra(logger, success=False)
+
 			if self.raise_exc:
 				raise e
-
-			if not logger:
-				logger = AmpelLogger.get_logger()
 
 			report_exception(
 				self.context.db, logger, exc=e,
 				info={'process': self.process_name}
 			)
+		# Feedback
+		logger.log(SHOUT, f'Done running {self.process_name}')
+		logger.flush()
 
-		finally:
-
-			if not logger:
-				logger = AmpelLogger.get_logger()
-
-			# Feedback
-			logger.log(SHOUT, f"Done running {self.process_name}")
-			logger.flush()
-
-			# Register the execution of this event into the events col
-			if event_hdlr:
-				event_hdlr.update(logger, success=(exc is None))
+		# Update event document
+		if event_hdlr:
+			event_hdlr.update(logger)
