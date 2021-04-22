@@ -12,8 +12,8 @@ unit:
     - ampel.ingest.PointT2Ingester
     - ampel.t2.T2Processor
     - ampel.t3.T3Processor
-    - ampel.t3.context.T3AddLastRunTime
-    - ampel.t3.context.T3AddAlertsNumber
+    - ampel.t3.session.T3SessionLastRunTime
+    - ampel.t3.session.T3SessionAlertsNumber
     - ampel.t3.select.T3StockSelector
     - ampel.t3.select.T3FilteringStockSelector
     - ampel.t3.load.T3SimpleDataLoader

@@ -18,7 +18,7 @@ from ampel.log.utils import report_exception
 from ampel.log import AmpelLogger, LogFlag, SHOUT
 from ampel.core.EventHandler import EventHandler
 from ampel.core.StockJournalUpdater import StockJournalUpdater
-from ampel.t3.context.AbsT3RunContextAppender import AbsT3RunContextAppender
+from ampel.t3.session.AbsT3SessionInfo import AbsT3SessionInfo
 from ampel.t3.select.AbsT3Selector import AbsT3Selector
 from ampel.t3.load.AbsT3Loader import AbsT3Loader
 from ampel.t3.complement.AbsT3DataAppender import AbsT3DataAppender
@@ -133,7 +133,7 @@ class T3Processor(AbsProcessorUnit):
 						.new_admin_unit(
 							unit_model = el,
 							context = self.context,
-							sub_type = AbsT3RunContextAppender,
+							sub_type = AbsT3SessionInfo,
 							logger = logger,
 							process_name = self.process_name
 						) \
