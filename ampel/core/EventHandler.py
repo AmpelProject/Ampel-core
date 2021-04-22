@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 26.09.2018
-# Last Modified Date: 04.03.2021
+# Last Modified Date: 18.03.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from time import time
@@ -20,7 +20,7 @@ class EventHandler:
 	""" Handles the creation and publication of event documents into the event database """
 
 	def __init__(self,
-		ampel_db: 'AmpelDB', process_name: str, tier: Literal[0, 1, 2, 3],
+		ampel_db: 'AmpelDB', process_name: str, tier: Literal[-1, 0, 1, 2, 3],
 		run_id: Optional[int] = None, col_name: str = "events", extra: Optional[Dict[str, Any]] = None
 	):
 		"""
@@ -35,7 +35,7 @@ class EventHandler:
 			doc['run'] = run_id
 
 		if extra:
-			doc = {**extra, **doc}
+			doc = {**extra, **doc} # type: ignore[misc]
 
 		self.dkeys = doc.keys()
 		self.extra: Optional[Dict[str, Any]] = None
