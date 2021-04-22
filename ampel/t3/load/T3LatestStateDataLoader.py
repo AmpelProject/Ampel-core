@@ -164,7 +164,7 @@ class T3LatestStateDataLoader(AbsT3Loader):
 		self.logger.info("Loading ampel data")
 
 		# Returns AmpelBuffer instances
-		return self.db_content_loader.load(
+		return self.data_loader.load(
 			stock_ids = stock_ids,
 			directives = directives,
 			channel = self.channel,
