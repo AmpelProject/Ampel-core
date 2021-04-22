@@ -8,7 +8,7 @@
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import collections
-from typing import Sequence, Literal, List, Union, get_args
+from typing import Sequence, Literal, List, Union, get_args, Iterable
 from ampel.type import ChannelId
 from ampel.model.operator.AnyOf import AnyOf
 from ampel.model.operator.AllOf import AllOf
@@ -68,7 +68,7 @@ class T3AmpelBufferFilter(AbsT3Filter):
 			)
 
 
-	def filter(self, it: Sequence[AmpelBuffer]) -> Sequence[AmpelBuffer]:
+	def filter(self, it: Iterable[AmpelBuffer]) -> Sequence[AmpelBuffer]:
 
 		debug = self.logger.verbose > 1
 		ret: List[AmpelBuffer]
@@ -114,8 +114,8 @@ class T3AmpelBufferFilter(AbsT3Filter):
 			else:
 				raise ValueError("Unrecognized parameter")
 
-			if debug and len(ret) != len(it):
-				self.logger.debug(f"AmpelBuffer stock channel filter: in: {len(it)}, out: {len(ret)}")
+			# if debug and len(ret) != len(it):
+			#	self.logger.debug(f"AmpelBuffer stock channel filter: in: {len(it)}, out: {len(ret)}")
 
 		else:
 			ret = list(it)
