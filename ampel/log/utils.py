@@ -79,7 +79,9 @@ def log_exception(
 
 def report_exception(
 	ampel_db: AmpelDB, logger: AmpelLogger,
-	exc: Optional[Exception] = None, info: Dict[str, Any] = None
+	exc: Optional[Exception] = None,
+	process: Optional[str] = None,
+	info: Dict[str, Any] = None
 ) -> None:
 	"""
 	:param tier: Ampel tier level (0, 1, 2, 3)
@@ -108,8 +110,11 @@ def report_exception(
 		trouble['run'] = db_logging_handler.run_id
 
 	# Additional info might have been provided (such as alert information)
-	if info is not None:
+	if info:
 		trouble.update(info)
+
+	if process:
+		trouble['process'] = process
 
 	trouble['exception'] = format_exc().replace("\"", "'").split("\n")
 
