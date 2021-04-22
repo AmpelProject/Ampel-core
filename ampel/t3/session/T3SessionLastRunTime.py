@@ -1,19 +1,19 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-core/ampel/t3/context/T3AddLastRunTime.py
+# File              : Ampel-core/ampel/t3/session/T3SessionLastRunTime.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 06.01.2020
-# Last Modified Date: 06.08.2020
+# Last Modified Date: 23.04.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from typing import Dict, Any, Optional, ClassVar
 from datetime import datetime, timedelta
 from ampel.mongo.query.var.events import get_last_run
-from ampel.t3.context.AbsT3RunContextAppender import AbsT3RunContextAppender
+from ampel.t3.session.AbsT3SessionInfo import AbsT3SessionInfo
 
 
-class T3AddLastRunTime(AbsT3RunContextAppender):
+class T3SessionLastRunTime(AbsT3SessionInfo):
 
 	key: ClassVar[str] = "last_run"
 
