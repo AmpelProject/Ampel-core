@@ -4,13 +4,13 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 16.01.2020
-# Last Modified Date: 14.06.2020
+# Last Modified Date: 15.04.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-from typing import Iterable
+from typing import Iterable, Optional, Dict, Any
 from ampel.log import AmpelLogger
 from ampel.base import abstractmethod
-from ampel.core.AmpelBuffer import AmpelBuffer
+from ampel.struct.AmpelBuffer import AmpelBuffer
 from ampel.core.AdminUnit import AdminUnit
 
 # Inherits AdminUnit because implementing classes might need access to
@@ -22,6 +22,8 @@ class AbsT3DataAppender(AdminUnit, abstract=True):
 	"""
 
 	logger: AmpelLogger
+	session_info: Optional[Dict[str, Any]] = None
+	
 
 	@abstractmethod
 	def complement(self, it: Iterable[AmpelBuffer]) -> None:
