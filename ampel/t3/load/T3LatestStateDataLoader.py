@@ -14,7 +14,7 @@ from typing import Iterable, Union, Iterator, Optional
 from ampel.type import StockId, StrictIterable
 from ampel.t3.load.AbsT3Loader import AbsT3Loader
 from ampel.core.AmpelContext import AmpelContext
-from ampel.core.AmpelBuffer import AmpelBuffer
+from ampel.struct.AmpelBuffer import AmpelBuffer
 from ampel.util.collections import to_set
 from ampel.mongo.query.t1 import latest_fast_query, latest_general_query
 from ampel.mongo.view.FrozenValuesDict import FrozenValuesDict

@@ -13,7 +13,7 @@ from ampel.type import Tag, ChannelId, StockId, StrictIterable
 from ampel.model.operator.AnyOf import AnyOf
 from ampel.model.operator.AllOf import AllOf
 from ampel.model.operator.OneOf import OneOf
-from ampel.mongo.query.utils import match_array
+from ampel.mongo.utils import match_array
 from ampel.mongo.schema import apply_schema, apply_excl_schema
 
 type_stock_id = (int, Int64, bytes, str)

@@ -11,7 +11,7 @@ from time import time
 from pymongo import UpdateOne
 from typing import Sequence, Dict, Optional, Union, Literal, Tuple, List
 from ampel.type import StockId, ChannelId
-from ampel.enum.T2SysRunState import T2SysRunState
+from ampel.enum.DocumentCode import DocumentCode
 from ampel.content.DataPoint import DataPoint
 from ampel.compile.PointT2Compiler import PointT2Compiler
 from ampel.abstract.ingest.AbsT2Ingester import AbsT2Ingester
@@ -61,7 +61,7 @@ class PointT2Ingester(AbsPointT2Ingester):
 							'unit': t2_id,
 							'link': link_id,
 							'config': run_config,
-							'status': T2SysRunState.NEW.value,
+							'code': DocumentCode.NEW.value,
 							'col': 't0'
 						},
 						# Journal and channel update

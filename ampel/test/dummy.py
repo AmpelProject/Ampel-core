@@ -13,6 +13,8 @@ from typing import Dict, List, Optional, Sequence, Set, Tuple, Union, Any
 
 from pymongo import UpdateOne
 
+from ampel.type.composed import T2Result
+from ampel.type import ChannelId, StockId
 from ampel.abstract.AbsProcessorUnit import AbsProcessorUnit
 from ampel.abstract.AbsStockT2Unit import AbsStockT2Unit
 from ampel.abstract.AbsPointT2Unit import AbsPointT2Unit
@@ -26,11 +28,10 @@ from ampel.content.DataPoint import DataPoint
 from ampel.compile.CompoundBluePrint import CompoundBluePrint
 from ampel.compile.T1DefaultCombiner import T1DefaultCombiner
 from ampel.log.AmpelLogger import AmpelLogger
-from ampel.enum.T2SysRunState import T2SysRunState
+from ampel.enum.DocumentCode import DocumentCode
 from ampel.content.T2Document import T2Document
-from ampel.type import ChannelId, StockId, T2UnitResult
 from ampel.content.DataPoint import DataPoint
-from ampel.content.Compound import Compound
+from ampel.content.T1Document import T1Document
 from ampel.view.T2DocView import T2DocView
 from ampel.model.StateT2Dependency import StateT2Dependency
 
@@ -167,7 +168,7 @@ class DummyStateT2Ingester(AbsStateT2Ingester):
                 "stock": stock_id,
                 "unit": t2_id,
                 "config": run_config,
-                "status": T2SysRunState.NEW.value,
+                "code": DocumentCode.NEW.value,
             }
             if self.tags:
                 set_on_insert["tag"] = self.tags
@@ -213,10 +214,10 @@ class DummyTiedStateT2Unit(AbsTiedStateT2Unit):
         return [cls._unit]
 
     def run(self,
-		compound: Compound,
+		compound: T1Document,
 		datapoints: Sequence[DataPoint],
 		t2_records: Sequence[T2DocView]
-	) -> T2UnitResult:
+	) -> Union[T2Result, Tuple[T2Result, JournalTweak]]:
         assert t2_records, "dependencies were found"
         assert len(body := t2_records[0].body or []) == 1
-        return {k: v * 2 for k, v in (t2_records[0].get_payload() or {}).items()}
+        return {k: v * 2 for k, v in (t2_records[0].get_data() or {}).items()}

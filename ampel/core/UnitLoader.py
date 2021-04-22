@@ -421,7 +421,7 @@ def _validate_unit_model(cls, values: Dict[str, Any], unit_loader: UnitLoader) -
 	from ampel.core.AdminUnit import AdminUnit
 	from ampel.abstract.AbsProcessorUnit import AbsProcessorUnit
 	from ampel.abstract.ingest.AbsIngester import AbsIngester
-	from ampel.t3.run.AbsT3UnitRunner import AbsT3UnitRunner
+	from ampel.t3.stage.AbsT3Stager import AbsT3Stager
 	from ampel.t3.context.AbsT3RunContextAppender import AbsT3RunContextAppender
 
 	unit = unit_loader.get_class_by_name(values['unit'])
@@ -430,14 +430,7 @@ def _validate_unit_model(cls, values: Dict[str, Any], unit_loader: UnitLoader) -
 		exclude = {"logger"}
 		for parent in cast(
 			Sequence[Type[AmpelBaseModel]],
-			(
-				DataUnit,
-				AdminUnit,
-				AbsT3UnitRunner,
-				AbsT3RunContextAppender,
-				AbsProcessorUnit,
-				AbsIngester,
-			)
+			(DataUnit, AdminUnit, AbsT3Stager, AbsT3RunContextAppender, AbsProcessorUnit, AbsIngester)
 		):
 			if issubclass(unit, parent):
 				exclude.update(set(parent._annots.keys()).difference(parent._defaults.keys()))

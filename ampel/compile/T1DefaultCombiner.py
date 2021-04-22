@@ -10,7 +10,7 @@
 import hashlib, json
 from typing import Sequence, List, Union, Generic, TypeVar, Tuple, Optional, Set, Iterable
 from ampel.content.DataPoint import DataPoint
-from ampel.content.Compound import CompoundElement
+from ampel.content.T1Record import T1Record
 from ampel.compile.CompoundBluePrint import CompoundBluePrint
 from ampel.type import StockId, ChannelId, DataPointId
 from ampel.abstract.AbsT1Unit import AbsT1Unit
@@ -56,8 +56,8 @@ class T1DefaultCombiner(Generic[T], AbsT1Unit[T]):
 			#######################################
 
 			# Effective compound contains only non-excluded datapoints
-			eff_comp: List[Union[DataPointId, CompoundElement]] = []
-			strict_comp: List[Union[DataPointId, CompoundElement]] = []
+			eff_comp: List[Union[DataPointId, T1Record]] = []
+			strict_comp: List[Union[DataPointId, T1Record]] = []
 			eff_hash_payload: List[str] = [stock_id_str]
 			strict_hash_payload = stock_id_str
 			tags: Set[Union[int, str]] = set()
@@ -170,7 +170,7 @@ class T1DefaultCombiner(Generic[T], AbsT1Unit[T]):
 
 	def gen_sub_entry(self,
 		dp: DataPoint, channel_name: ChannelId
-	) -> Tuple[Union[DataPointId, CompoundElement], Optional[Set[Union[int, str]]]]:
+	) -> Tuple[Union[DataPointId, T1Record], Optional[Set[Union[int, str]]]]:
 		"""
 		Method can be overriden by subclasses.
 		Known overriding class: ZiCompoundBuilder (distrib ampel-ZTF)
@@ -185,7 +185,7 @@ class T1DefaultCombiner(Generic[T], AbsT1Unit[T]):
 
 	def combine_extra(self,
 		blue_print: T, chan_name: ChannelId, eff_id: bytes,
-		eff_comp: List[Union[DataPointId, CompoundElement]],
+		eff_comp: List[Union[DataPointId, T1Record]],
 		eff_hash_payload: List[str]
 	) -> None:
 		"""

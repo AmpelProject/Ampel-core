@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 17.06.2020
-# Last Modified Date: 17.06.2020
+# Last Modified Date: 15.04.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from pymongo import MongoClient
@@ -14,12 +14,11 @@ from ampel.base.AmpelBaseModel import AmpelBaseModel
 from ampel.aux.filter.SimpleDictArrayFilter import SimpleDictArrayFilter
 from ampel.content.JournalRecord import JournalRecord
 from ampel.core.AmpelContext import AmpelContext
-from ampel.core.AmpelBuffer import AmpelBuffer
+from ampel.struct.AmpelBuffer import AmpelBuffer
 from ampel.t3.complement.AbsT3DataAppender import AbsT3DataAppender
 from ampel.model.aux.FilterCriterion import FilterCriterion
 from ampel.model.operator.AllOf import AllOf
 from ampel.model.operator.FlatAnyOf import FlatAnyOf
-#from ampel.abstract.AbsApplicable import AbsApplicable
 
 
 class T3ExtJournalAppender(AbsT3DataAppender):

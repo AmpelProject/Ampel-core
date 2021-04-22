@@ -19,7 +19,7 @@ from prometheus_client.parser import text_fd_to_metric_families
 from ampel.metrics.AmpelDBCollector import AmpelDBCollector
 from ampel.metrics.AmpelMetricsRegistry import AmpelMetricsRegistry
 from ampel.run import server
-from ampel.enum.T2SysRunState import T2SysRunState
+from ampel.enum.DocumentCode import DocumentCode
 from ampel.util.freeze import recursive_unfreeze
 from ampel.util.mappings import set_by_path
 
@@ -66,7 +66,7 @@ async def test_db_metrics(test_client, db_collector, dev_context):
             raise ValueError(f"metric {name} not collected")
 
     await check_metric("ampel_t2_docs_queued", 0)
-    dev_context.db.get_collection("t2").insert_one({"status": T2SysRunState.NEW})
+    dev_context.db.get_collection("t2").insert_one({"status": DocumentCode.NEW})
     await check_metric("ampel_t2_docs_queued", 1)
 
 

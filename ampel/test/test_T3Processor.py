@@ -8,7 +8,7 @@ class Mutineer(AbsT3Unit):
     raise_on_add: bool = False
     raise_on_done: bool = False
 
-    def add(self, views):
+    def process(self, views):
         if self.raise_on_add:
             raise ValueError
 

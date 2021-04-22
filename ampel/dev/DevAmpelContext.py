@@ -8,11 +8,12 @@
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from typing import Optional, Any, Dict, Union, List
-from ampel.core import AmpelContext, UnitLoader
-from ampel.util.freeze import recursive_unfreeze
-from ampel.config.AmpelConfig import AmpelConfig
 from ampel.core.AmpelDB import AmpelDB
+from ampel.core.UnitLoader import UnitLoader
+from ampel.core.AmpelContext import AmpelContext
+from ampel.config.AmpelConfig import AmpelConfig
 from ampel.model.ChannelModel import ChannelModel
+from ampel.util.freeze import recursive_unfreeze
 from ampel.util.mappings import set_by_path, build_unsafe_short_dict_id
 from ampel.dev.DictSecretProvider import PotemkinSecretProvider
 

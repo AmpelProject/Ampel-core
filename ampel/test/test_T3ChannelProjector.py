@@ -4,7 +4,7 @@ from pathlib import Path
 import pytest
 
 from ampel.content.StockDocument import StockDocument
-from ampel.core.AmpelBuffer import AmpelBuffer
+from ampel.struct.AmpelBuffer import AmpelBuffer
 from ampel.log.AmpelLogger import AmpelLogger, DEBUG
 from ampel.t3.run.project.T3ChannelProjector import T3ChannelProjector
 

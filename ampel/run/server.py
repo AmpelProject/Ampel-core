@@ -40,7 +40,7 @@ from ampel.metrics.AmpelMetricsRegistry import AmpelMetricsRegistry
 from ampel.model.ProcessModel import ProcessModel
 from ampel.model.StrictModel import StrictModel
 from ampel.model.UnitModel import UnitModel
-from ampel.enum.T2SysRunState import T2SysRunState
+from ampel.enum.DocumentCode import DocumentCode
 from ampel.util.mappings import build_unsafe_dict_id
 
 if TYPE_CHECKING:
@@ -531,7 +531,7 @@ def transform_doc(doc: Dict[str, Any], tier: int) -> Dict[str, Any]:
     if tier == 2:
         for jentry in doc["journal"]:
             jentry["dt"] = datetime.fromtimestamp(jentry["dt"])
-        doc["status"] = T2SysRunState(doc["status"]).name
+        doc["code"] = DocumentCode(doc["code"]).name
         for subrecord in doc.get("body", []):
             subrecord["ts"] = datetime.fromtimestamp(subrecord["ts"])
     return doc
@@ -552,7 +552,7 @@ def t2_summary():
         [
             {
                 "$group": {
-                    "_id": {"status": "$status", "unit": "$unit"},
+                    "_id": {"code": "$code", "unit": "$unit"},
                     "count": {"$sum": 1},
                 }
             }
@@ -560,10 +560,10 @@ def t2_summary():
     )
     summary = {}
     for doc in cursor:
-        status = T2SysRunState(doc["_id"]["status"]).name
-        if status not in summary:
-            summary[status] = {}
-        summary[status][doc["_id"]["unit"]] = doc["count"]
+        code = DocumentCode(doc["_id"]["code"]).name
+        if code not in summary:
+            summary[code] = {}
+        summary[code][doc["_id"]["unit"]] = doc["count"]
     return summary
 
 

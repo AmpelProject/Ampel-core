@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 26.12.2019
-# Last Modified Date: 31.05.2020
+# Last Modified Date: 21.04.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from typing import Union, Iterable, Sequence, Optional, Dict, List, Iterator
@@ -12,7 +12,7 @@ from typing import Union, Iterable, Sequence, Optional, Dict, List, Iterator
 from ampel.base import abstractmethod, AmpelBaseModel
 from ampel.type import StockId, ChannelId, StrictIterable
 from ampel.core.AdminUnit import AdminUnit, AmpelContext
-from ampel.core.AmpelBuffer import AmpelBuffer
+from ampel.struct.AmpelBuffer import AmpelBuffer
 from ampel.model.operator.AllOf import AllOf
 from ampel.model.operator.AnyOf import AnyOf
 from ampel.model.operator.OneOf import OneOf
@@ -66,14 +66,12 @@ class AbsT3Loader(AdminUnit, abstract=True):
 		# No need to save context as instance variable
 		AmpelBaseModel.__init__(self, **kwargs)
 
-		self.db_content_loader = DataLoader(
-			context=context, logger=self.logger
-		)
+		self.data_loader = DataLoader(context)
 
 
 	@abstractmethod
 	def load(self,
 		stock_ids: Union[StockId, Iterator[StockId], StrictIterable[StockId]]
 	) -> Iterable[AmpelBuffer]:
-		"Load documents for the selected stocks"
+		""" Load documents (collection Ampel_data) for the selected stocks """
 		...

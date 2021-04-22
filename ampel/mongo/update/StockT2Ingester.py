@@ -11,7 +11,7 @@ from time import time
 from pymongo import UpdateOne
 from typing import Union, List, Tuple
 from ampel.type import StockId, ChannelId
-from ampel.enum.T2SysRunState import T2SysRunState
+from ampel.enum.DocumentCode import DocumentCode
 from ampel.abstract.ingest.AbsT2Ingester import AbsT2Ingester
 from ampel.abstract.ingest.AbsStockT2Ingester import AbsStockT2Ingester
 from ampel.abstract.ingest.AbsStockT2Compiler import AbsStockT2Compiler
@@ -54,7 +54,7 @@ class StockT2Ingester(AbsStockT2Ingester):
 							'tag': self.tags,
 							'unit': t2_unit_id,
 							'config': run_config,
-							'status': T2SysRunState.NEW.value,
+							'code': DocumentCode.NEW.value,
 						},
 						# Journal and channel update
 						'$addToSet': {

@@ -13,9 +13,8 @@ from multiprocessing.pool import ThreadPool
 from pymongo.errors import BulkWriteError
 from pymongo.collection import Collection
 from pymongo import UpdateOne, InsertOne, UpdateMany
-from typing import Dict, List, Any, Union, Callable, Optional, Iterable
+from typing import Dict, List, Any, Union, Callable, Optional, Iterable, Literal
 
-from ampel.type import AmpelMainCol
 from ampel.core.Schedulable import Schedulable
 from ampel.log.utils import report_exception, report_error, convert_dollars
 from ampel.log.AmpelLogger import AmpelLogger
@@ -23,6 +22,7 @@ from ampel.core.AmpelDB import AmpelDB, intcol
 from ampel.metrics.AmpelMetricsRegistry import AmpelMetricsRegistry
 
 DBOp = Union[UpdateOne, UpdateMany, InsertOne]
+AmpelMainCol = Literal['stock', 't0', 't1', 't2', 't3']
 
 # Monitoring counters
 stat_db_ops = AmpelMetricsRegistry.counter(

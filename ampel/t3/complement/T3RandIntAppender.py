@@ -9,7 +9,7 @@
 
 from random import randint
 from typing import Iterable
-from ampel.core.AmpelBuffer import AmpelBuffer
+from ampel.struct.AmpelBuffer import AmpelBuffer
 from ampel.t3.complement.AbsT3DataAppender import AbsT3DataAppender
 
 
