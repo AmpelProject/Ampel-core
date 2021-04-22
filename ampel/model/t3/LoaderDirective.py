@@ -32,7 +32,7 @@ class LoaderDirective(AliasableModel):
 	model: Optional[Type] # TypedDict
 	#: Mongo match expression to include in the query
 	query_complement: Optional[Dict[str, Any]]
-	# key "resolve_config" used in DBContentLoader
+	# key "resolve_config" used in DataLoader
 	options: Optional[Dict[str, Any]]
 
 	def __init__(self, **kwargs):
