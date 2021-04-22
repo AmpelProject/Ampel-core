@@ -7,7 +7,7 @@
 # Last Modified Date: 10.04.2020
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-from typing import Dict, Type, Literal, Union
+from typing import Type
 from ampel.type import strict_iterable, StrictIterable
 
 
