@@ -16,7 +16,7 @@ from ampel.core.AmpelBuffer import AmpelBuffer
 from ampel.model.operator.AllOf import AllOf
 from ampel.model.operator.AnyOf import AnyOf
 from ampel.model.operator.OneOf import OneOf
-from ampel.db.DBContentLoader import DBContentLoader
+from ampel.core.DataLoader import DataLoader
 from ampel.model.t3.LoaderDirective import LoaderDirective
 from ampel.log.AmpelLogger import AmpelLogger
 
@@ -27,10 +27,12 @@ class AbsT3Loader(AdminUnit, abstract=True):
 	"""
 
 	logger: AmpelLogger
+
 	#: Specification of documents to load. If these are supplied as strings,
 	#: they will be resolved by retrieving the corresponding alias from the
 	#: Ampel config.
 	directives: Sequence[LoaderDirective]
+
 	#: Channels to load documents for
 	channel: Optional[
 		Union[
@@ -43,6 +45,7 @@ class AbsT3Loader(AdminUnit, abstract=True):
 
 
 	def __init__(self, context: AmpelContext, **kwargs) -> None:
+
 		# Note: 'directives' in kwargs can contain strings which will be
 		# resolved by retrieving the associated alias from the ampel config
 		directives: List[Dict] = []
@@ -63,7 +66,7 @@ class AbsT3Loader(AdminUnit, abstract=True):
 		# No need to save context as instance variable
 		AmpelBaseModel.__init__(self, **kwargs)
 
-		self.db_content_loader = DBContentLoader(
+		self.db_content_loader = DataLoader(
 			context=context, logger=self.logger
 		)
 

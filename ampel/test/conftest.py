@@ -7,9 +7,9 @@ from ampel.config.AmpelConfig import AmpelConfig
 from ampel.config.builder.DistConfigBuilder import DistConfigBuilder
 from ampel.mongo.update.DBUpdatesBuffer import DBUpdatesBuffer
 from ampel.dev.DevAmpelContext import DevAmpelContext
-from ampel.mongo.update.data.PointT2Ingester import PointT2Ingester
-from ampel.mongo.update.data.StockIngester import StockIngester
-from ampel.mongo.update.data.StockT2Ingester import StockT2Ingester
+from ampel.mongo.update.PointT2Ingester import PointT2Ingester
+from ampel.mongo.update.StockIngester import StockIngester
+from ampel.mongo.update.StockT2Ingester import StockT2Ingester
 from ampel.log.AmpelLogger import AmpelLogger
 from ampel.log.LogsBufferDict import LogsBufferDict
 from ampel.model.ingest.T2IngestModel import T2IngestModel
@@ -48,8 +48,8 @@ def mongod(pytestconfig):
 
 @pytest.fixture
 def patch_mongo(monkeypatch):
-    monkeypatch.setattr("ampel.db.AmpelDB.MongoClient", mongomock.MongoClient)
-    # ignore codec_options in DBContentLoader
+    monkeypatch.setattr("ampel.core.AmpelDB.MongoClient", mongomock.MongoClient)
+    # ignore codec_options in DataLoader
     monkeypatch.setattr("mongomock.codec_options.is_supported", lambda *args: None)
 
 
