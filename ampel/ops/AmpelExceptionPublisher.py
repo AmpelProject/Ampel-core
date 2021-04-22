@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/common/AmpelExceptionPublisher.py
+# File              : Ampel-core/ampel/ops/AmpelExceptionPublisher.py
 # License           : BSD-3-Clause
 # Author            : Jakob van Santen <jakob.van.santen@desy.de>
 # Date              : 03.09.2018
@@ -11,16 +11,11 @@
 # AssertionError: Cannot find component 'Deque' for 'typing.Deque'
 # type: ignore
 
-import datetime
-import json
-import socket
-import time
-from typing import Any, Dict, List, Optional
-
+import datetime, json, socket
 from bson import ObjectId
 from slack import WebClient
 from slack.web.slack_response import SlackResponse
-
+from typing import Any, Dict, List, Optional
 from ampel.abstract.AbsOpsUnit import AbsOpsUnit
 from ampel.model.Secret import Secret
 
@@ -55,7 +50,6 @@ class AmpelExceptionPublisher(AbsOpsUnit):
         fields = [
             {"title": "tier", "value": doc["tier"], "short": True},
         ]
-        more = doc.get("more", {})
         if "process" in doc:
             fields.append({"title": "process", "value": doc["process"], "short": True})
         if "run" in doc:
@@ -67,7 +61,7 @@ class AmpelExceptionPublisher(AbsOpsUnit):
                 )
             if "alert" in doc:
                 fields.append(
-                    {"title": "alert", "value": doc["alert"], "short": True,}
+                    {"title": "alert", "value": doc["alert"], "short": True}
                 )
         elif doc["tier"] == 2:
             fields.append(
@@ -111,7 +105,6 @@ class AmpelExceptionPublisher(AbsOpsUnit):
             "as_user": False,
         }
 
-        projection = ["_id", "exception"]
         cursor = self.troubles.find({"_id": {"$gt": ObjectId.from_datetime(t0)}})
         for doc in cursor:
             if len(attachments) < 20:
