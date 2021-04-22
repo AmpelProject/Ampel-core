@@ -235,7 +235,12 @@ def safe_query_dict(
 	extra = {'match': convert_dollars(match)}
 
 	if update:
-		extra['update'] = convert_dollars(update)
+		extra = {
+			'match': convert_dollars(match),
+			'update': convert_dollars(update)
+		}
+	else:
+		extra = convert_dollars(match)
 
 	return {dict_key: extra} if dict_key else extra
 
