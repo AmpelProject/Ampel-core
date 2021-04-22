@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-core/ampel/core/JournalUpdater.py
+# File              : Ampel-core/ampel/core/StockJournalUpdater.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 15.10.2018
-# Last Modified Date: 08.06.2020
+# Last Modified Date: 19.04.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from time import time
@@ -23,13 +23,14 @@ from ampel.content.JournalRecord import JournalRecord
 tag_type = get_args(Tag) # type: ignore[misc]
 chan_type = get_args(ChannelId) # type: ignore[misc]
 
-class JournalUpdater:
+class StockJournalUpdater:
 
 	def __init__(self,
-		ampel_db: AmpelDB, tier: Literal[0, 1, 2, 3], run_id: int,
+		ampel_db: AmpelDB, tier: Literal[-1, 0, 1, 2, 3], run_id: int,
 		process_name: str, logger: AmpelLogger, raise_exc: bool = False,
-		update_journal: bool = True,
-		extra_tag: Optional[Union[Tag, Sequence[Tag]]] = None
+		update_modified: bool = True, update_journal: bool = True,
+		extra_tag: Optional[Union[Tag, Sequence[Tag]]] = None,
+		auto_flush: int = 0
 	) -> None:
 		"""
 		:param raise_exc: raise exception rather than populating 'troubles' collection
@@ -41,6 +42,8 @@ class JournalUpdater:
 		self.tier = tier
 		self.raise_exc = raise_exc
 		self.update_journal = update_journal
+		self.update_modified = update_modified
+		self.auto_flush = auto_flush
 		self.process_name = process_name
 		self.extra_tag = extra_tag
 		self.logger = logger
@@ -83,7 +86,7 @@ class JournalUpdater:
 
 	def add_record(self,
 		stock: Union[StockId, Sequence[StockId]],
-		jextra: Optional[JournalTweak] = None,
+		jtweak: Optional[JournalTweak] = None,
 		doc_id: Optional[ObjectId] = None,
 		unit: Optional[Union[int, str]] = None,
 		channel: Optional[Union[ChannelId, Sequence[ChannelId]]] = None,
@@ -107,37 +110,39 @@ class JournalUpdater:
 
 		jrec = self.new_record(unit, channel, doc_id, now)
 
-		if jextra:
+		if jtweak:
 
-			if jextra.tag:
-				self.include_tags(jrec, jextra.tag)
+			if jtweak.tag:
+				self.include_tags(jrec, jtweak.tag)
 
-			if jextra.extra:
-				jrec['extra'] = jextra.extra
+			if jtweak.extra:
+				jrec['extra'] = jtweak.extra
 
-			if jextra.status and jextra.status > 0:
-				jrec['status'] = jextra.status
+			if jtweak.code and jtweak.code > 0:
+				jrec['code'] = jtweak.code
 
-		if channel:
-			if isinstance(channel, chan_type):
-				maxd = {f'modified.{channel}': jrec['ts']}
-			else:
-				maxd = {
-					f'modified.{chan}': jrec['ts']
-					for chan in channel # type: ignore[union-attr]
-				}
-		else:
-			maxd = {}
+		upd = {'$push': {'journal': jrec}}
 
-		maxd['modified.any'] = jrec['ts']
+		if self.update_modified:
+
+			upd['$max'] = {'modified.any': jrec['ts']}
+
+			if channel:
+				if isinstance(channel, chan_type):
+					upd['$max'][f'modified.{channel}'] = jrec['ts']
+				else:
+					upd['$max'].update({
+						f'modified.{chan}': jrec['ts']
+						for chan in channel # type: ignore[union-attr]
+					})
 
 		if self.update_journal:
 			self.journal_updates.append(
-				Op(
-					{'_id': match},
-					{'$push': {'journal': jrec}, '$max': maxd}
-				)
+				Op({'_id': match}, upd)
 			)
+
+			if self.auto_flush and len(self.journal_updates) > self.auto_flush:
+				self.flush()
 
 		return jrec
 
@@ -211,4 +216,3 @@ class JournalUpdater:
 			# journal record contains no tag
 			else:
 				jrec['tag'] = tag
-
