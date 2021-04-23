@@ -20,21 +20,25 @@ unit:
     - ampel.t3.load.T3LatestStateDataLoader
     - ampel.t3.complement.T3RandIntAppender
     - ampel.t3.complement.T3ExtJournalAppender
-    - ampel.t3.run.T3UnitRunner
-    - ampel.t3.run.T3ChannelUnitRunner
-    - ampel.t3.run.T3DynamicUnitRunner
+    - ampel.t3.complement.T3LogsAppender
+    - ampel.t3.stage.T3SimpleStager
+    - ampel.t3.stage.T3ProjectingStager
+    - ampel.t3.stage.T3ChannelStager
+    - ampel.t3.stage.T3AdaptativeStager
+    - ampel.t3.stage.T3CollaborativeStager
+    - ampel.t3.stage.T3DistributiveStager
     - ampel.demo.DemoProcessor
 
   base:
-    - ampel.demo.unit.base.DemoPointT2Unit
-    - ampel.demo.unit.base.DemoFirstPointT2Unit
-    - ampel.demo.unit.base.DemoT3Unit
+    - ampel.demo.DemoPointT2Unit
+    - ampel.demo.DemoFirstPointT2Unit
+    - ampel.demo.DemoT3Unit
 
   aux:
     - ampel.aux.filter.SimpleDictArrayFilter
     - ampel.aux.filter.FlatDictArrayFilter
-    - ampel.t3.run.project.T3ChannelProjector
-    - ampel.t3.run.filter.T3AmpelBufferFilter
+    - ampel.t3.stage.project.T3ChannelProjector
+    - ampel.t3.stage.filter.T3AmpelBufferFilter
 
 alias:
   t3:
@@ -50,9 +54,15 @@ alias:
       col: t1
     '%T1':
       col: t1
-    '%T2RECORD':
+    '%T2DOC':
       col: t2
+    '%T2DOC_WITH_CONF':
+      col: t2
+      options:
+        resolve_config: true
     '%T2':
+      col: t2
+    '%T2RECORD':
       col: t2
     '%LOGRECORD':
       col: log
