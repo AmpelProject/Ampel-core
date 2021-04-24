@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-core/ampel/abstract/ingest/AbsDataPointIngester.py
+# File              : Ampel-core/ampel/abstract/ingest/AbsT0Ingester.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 10.03.2020
@@ -16,7 +16,7 @@ from ampel.type import StockId, TypeVar
 T = TypeVar("T", bound=DataPoint)
 
 
-class AbsDataPointIngester(Generic[T], AbsIngester, abstract=True):
+class AbsT0Ingester(Generic[T], AbsIngester, abstract=True):
 	""" No known implementing class as of May 2020 """
 
 
