@@ -9,13 +9,13 @@
 
 from typing import Sequence, Any, Dict, List, Union, Optional, Set
 from ampel.type import ChannelId
+from ampel.log import VERBOSE
+from ampel.util.logicschema import reduce_to_set
 from ampel.model.operator.AllOf import AllOf
 from ampel.model.operator.AnyOf import AnyOf
 from ampel.model.operator.OneOf import OneOf
-from ampel.config.LogicSchemaUtils import LogicSchemaUtils
-from ampel.log import VERBOSE
-from ampel.t3.run.project.T3BaseProjector import T3BaseProjector
 from ampel.aux.ComboDictModifier import ComboDictModifier
+from ampel.t3.run.project.T3BaseProjector import T3BaseProjector
 
 
 class T3ChannelProjector(T3BaseProjector):
@@ -43,7 +43,7 @@ class T3ChannelProjector(T3BaseProjector):
 		self.verbose = self.logger.verbose
 		if self.verbose:
 			self.logger.log(VERBOSE, f"Setting up channel project for '{self.channel}'")
-		self._channel_set: Set[ChannelId] = LogicSchemaUtils.reduce_to_set(self.channel)
+		self._channel_set: Set[ChannelId] = reduce_to_set(self.channel)
 
 		journal_modifier = ComboDictModifier(
 			logger = self.logger,
@@ -62,7 +62,7 @@ class T3ChannelProjector(T3BaseProjector):
 
 		self.add_func_projector("stock", journal_modifier.apply, first=True)
 
-		for key in ("t1", "t2", "log"):
+		for key in ("t1", "t2"):
 			self.add_func_projector(key, self.channel_projection, first=True) # type: ignore
 
 

@@ -11,7 +11,7 @@ from typing import List, Tuple, Union
 from ampel.type import StockId, ChannelId
 from ampel.base import abstractmethod
 from ampel.abstract.ingest.AbsT2Ingester import AbsT2Ingester
-from ampel.compile.CompoundBluePrint import CompoundBluePrint
+from ampel.compile.T1Compiler import T1Compiler
 
 
 class AbsStateT2Ingester(AbsT2Ingester, abstract=True):
@@ -20,7 +20,7 @@ class AbsStateT2Ingester(AbsT2Ingester, abstract=True):
 	@abstractmethod
 	def ingest(self,
 		stock_id: StockId,
-		comp_blueprint: CompoundBluePrint,
+		comp_blueprint: T1Compiler,
 		chan_selection: List[Tuple[ChannelId, Union[bool, int]]]
 	) -> None:
 		...

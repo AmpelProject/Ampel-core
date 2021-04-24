@@ -12,7 +12,7 @@ from typing import Iterable, Union, Iterator, Optional
 from ampel.type import StockId, StrictIterable
 from ampel.struct.AmpelBuffer import AmpelBuffer
 from ampel.t3.load.AbsT3Loader import AbsT3Loader
-from ampel.db.FrozenValuesDict import FrozenValuesDict
+from ampel.mongo.view.FrozenValuesDict import FrozenValuesDict
 
 
 class T3SimpleDataLoader(AbsT3Loader):

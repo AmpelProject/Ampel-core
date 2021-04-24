@@ -11,9 +11,9 @@ from typing import Dict, Union, Set, Tuple, List, TypeVar, Generic, Optional
 from ampel.base import abstractmethod
 from ampel.type import ChannelId
 from ampel.compile.CompilerBase import CompilerBase
-from ampel.compile.CompoundBluePrint import CompoundBluePrint
+from ampel.compile.T1Compiler import T1Compiler
 
-T = TypeVar("T", bound=CompoundBluePrint)
+T = TypeVar("T", bound=T1Compiler)
 
 class AbsStateT2Compiler(Generic[T], CompilerBase, abstract=True):
 

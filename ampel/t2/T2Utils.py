@@ -19,7 +19,7 @@ from ampel.model.operator.AllOf import AllOf
 from ampel.model.operator.OneOf import OneOf
 from ampel.content.T2Document import T2Document
 from ampel.content.JournalRecord import JournalRecord
-from ampel.enum.T2SysRunState import T2SysRunState
+from ampel.enum.DocumentCode import DocumentCode
 from ampel.mongo.query.general import build_general_query
 from ampel.util.collections import check_seq_inner_type
 
@@ -52,7 +52,7 @@ class T2Utils:
 			jrec['extra'] = {'cli': True}
 
 		update: Dict[str, Any] = {
-			"$set": {"status": T2SysRunState.NEW},
+			"$set": {"code": DocumentCode.NEW},
 			"$push": {"journal": jrec}
 		}
 
@@ -73,7 +73,7 @@ class T2Utils:
 	def match_t2s(self,
 		unit: Optional[Union[UnitId, StrictIterable[UnitId]]] = None,
 		config: Optional[Union[str, int]] = None,
-		status: Optional[Union[int, Sequence[int]]] = None,
+		code: Optional[Union[int, Sequence[int]]] = None,
 		link: Optional[Union[str, Sequence[str]]] = None,
 		stock: Optional[Union[StockId, StrictIterable[StockId]]] = None,
 		channel: Optional[Union[ChannelId, Dict, AllOf[ChannelId], AnyOf[ChannelId], OneOf[ChannelId]]] = None,
@@ -113,8 +113,8 @@ class T2Utils:
 		if custom:
 			match.update(custom)
 
-		if status is not None:
-			match['status'] = status
+		if code is not None:
+			match['code'] = code
 
 		if kwargs.get('debug'):
 			self.logger.debug("Using following matching criteria: %s" % match)

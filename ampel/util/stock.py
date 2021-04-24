@@ -9,8 +9,8 @@
 
 from pymongo import MongoClient
 from pymongo.collection import Collection
-from multiprocessing import Pool, Semaphore, shared_memory
-from typing import Any, List, Union, Optional, Set, Dict, Sequence, Callable
+from multiprocessing import Pool
+from typing import Union, Optional, Set, Dict, Sequence
 from ampel.type import ChannelId, StockId
 
 

@@ -10,7 +10,7 @@
 from typing import Dict, Any, Optional, Type, Literal
 from ampel.content.StockDocument import StockDocument
 from ampel.content.DataPoint import DataPoint
-from ampel.content.Compound import Compound
+from ampel.content.T1Document import T1Document
 from ampel.content.T2Document import T2Document
 from ampel.content.T3Document import T3Document
 from ampel.model.t3.AliasableModel import AliasableModel
@@ -19,7 +19,7 @@ from ampel.model.t3.AliasableModel import AliasableModel
 models = {
 	"stock": StockDocument,
 	"t0": DataPoint,
-	"t1": Compound,
+	"t1": T1Document,
 	"t2": T2Document,
 	"t3": T3Document
 }

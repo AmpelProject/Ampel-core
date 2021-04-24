@@ -11,11 +11,11 @@ from pydantic import Field
 from typing import Optional, Type, Union
 from ampel.model.UnitModel import UnitModel
 from ampel.model.ingest.T2ComputeModel import T2ComputeModel
-from ampel.abstract.ingest.AbsCompoundIngester import AbsCompoundIngester
+from ampel.abstract.ingest.AbsT1Ingester import AbsT1Ingester
 
 class T1CombineModel(UnitModel):
 	# Override 'unit' to enable alias
 	#: Add :class:`compounds <ampel.content.T1Document.T1Document>` to the database
-	unit: Union[str, Type[AbsCompoundIngester]] = Field(..., alias='ingester')
+	unit: Union[str, Type[AbsT1Ingester]] = Field(..., alias='ingester')
 	#: Create or update :class:`T2 documents <ampel.content.T2Document.T2Document>` bound to :class:`compounds <ampel.content.T1Document.T1Document>`
 	t2_compute: Optional[T2ComputeModel]

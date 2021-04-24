@@ -15,7 +15,7 @@ from ampel.core.EventHandler import EventHandler
 from ampel.log.utils import report_exception
 from ampel.content.T3Document import T3Document
 from ampel.model.t3.T3Directive import T3Directive
-from ampel.enum.T3ProcessorStatus import T3ProcessorStatus
+from ampel.enum.T3DocumentCode import T3DocumentCode
 from ampel.t3.load.AbsT3Loader import AbsT3Loader
 from ampel.t3.run.AbsT3UnitRunner import AbsT3UnitRunner
 from ampel.t3.select.AbsT3Selector import AbsT3Selector
@@ -112,7 +112,6 @@ class T3Processor(AbsProcessorUnit):
 			#############
 
 			run_context: Dict[str, Any] = {}
-
 			if self.context.admin_msg:
 				run_context['admin_msg'] = self.context.admin_msg
 
@@ -193,7 +192,8 @@ class T3Processor(AbsProcessorUnit):
 								unit_model = conf_el,
 								context = self.context,
 								sub_type = AbsT3DataAppender,
-								logger = logger
+								logger = logger,
+								run_context = run_context
 							)
 						for conf_el in self.directive.complement
 					]
@@ -240,7 +240,7 @@ class T3Processor(AbsProcessorUnit):
 				d = T3Document(
 					process = self.process_name,
 					run = run_id,
-					status = T3ProcessorStatus.OK
+					code = T3DocumentCode.OK
 				)
 
 				if self.channel:
