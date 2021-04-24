@@ -30,7 +30,7 @@ from ampel.content.T2Document import T2Document
 from ampel.content.T2Record import T2Record
 from ampel.content.JournalRecord import JournalRecord
 from ampel.view.T2DocView import T2DocView, TYPE_POINT_T2, TYPE_STOCK_T2, TYPE_STATE_T2
-from ampel.log import AmpelLogger, LogFlag, VERBOSE
+from ampel.log import AmpelLogger, LogFlag, VERBOSE, DEBUG
 from ampel.core.EventHandler import EventHandler
 from ampel.base.BadConfig import BadConfig
 from ampel.log.utils import report_exception, report_error
@@ -810,6 +810,8 @@ class T2Processor(AbsProcessorUnit):
 
 		if logger.verbose:
 			logger.log(VERBOSE, 'Saving T2 unit result')
+			if logger.verbose > 1:
+				logger.log(DEBUG, None, extra={"record": t2_rec})
 
 		setd: Dict[str, Any] = {'code': code}
 		if tag:
