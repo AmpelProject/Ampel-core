@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-core/ampel/abstract/ingest/AbsCompoundIngester.py
+# File              : Ampel-core/ampel/abstract/ingest/AbsT1Ingester.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 10.03.2020
@@ -13,13 +13,13 @@ from ampel.base import abstractmethod
 from ampel.content.DataPoint import DataPoint
 from ampel.abstract.ingest.AbsIngester import AbsIngester
 from ampel.type import StockId, TypeVar, ChannelId
-from ampel.compile.CompoundBluePrint import CompoundBluePrint
+from ampel.compile.T1Compiler import T1Compiler
 from ampel.log.handlers.RecordBufferingHandler import RecordBufferingHandler
 
-T = TypeVar("T", bound=CompoundBluePrint)
+T = TypeVar("T", bound=T1Compiler)
 
 
-class AbsCompoundIngester(Generic[T], AbsIngester, abstract=True):
+class AbsT1Ingester(Generic[T], AbsIngester, abstract=True):
 
 
 	@abstractmethod
