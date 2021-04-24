@@ -8,8 +8,8 @@
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from bson.int64 import Int64
-from typing import Any, List, Union, Optional, Set, Dict, Sequence, Callable, List
-from ampel.type import ChannelId, StockId, DataPointId
+from typing import List, Optional
+from ampel.type import DataPointId
 from ampel.content.T1Document import T1Document
 from ampel.log.AmpelLogger import AmpelLogger
 
