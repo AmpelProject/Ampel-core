@@ -23,9 +23,21 @@ jobs:
     - name: Verify tag matches version
       run: |
         [ v"$(poetry version -s)" = "${{steps.tag.outputs.tag}}" ] || (echo "tag does not match version: "${{steps.tag.outputs.tag}}" != version v$(poetry version -s)" && false)
-    - run: |
+    - name: Publish to PyPI
+      run: |
         poetry config repositories.testpypi https://test.pypi.org/legacy/
         poetry publish -n --build
       env:
         POETRY_PYPI_TOKEN_TESTPYPI: ${{ secrets.PYPI_TEST_API_TOKEN }}
         POETRY_PYPI_TOKEN_PYPI: ${{ secrets.PYPI_API_TOKEN }}
+    - name: Create Release
+      id: create_release
+      uses: actions/create-release@v1
+      if: ${{ !contains(steps.tag.outputs.tag, "alpha") }}
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ steps.tag.outputs.tag }}
+        release_name: Release ${{ steps.tag.outputs.tag }}
+        draft: false
+        prerelease: ${{ contains(steps.tag.outputs.tag, "alpha") }}
