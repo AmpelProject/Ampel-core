@@ -7,10 +7,15 @@
 # Last Modified Date: 08.11.2020
 # Last Modified By  : Jakob van Santen <jakob.van.santen@desy.de>
 
-from typing import Optional
 from ampel.model.StrictModel import StrictModel
 
 class MongoClientOptionsModel(StrictModel):
-	socketTimeoutMS: Optional[int]
-	connectTimeoutMS: Optional[int]
-	serverSelectionTimeoutMS: Optional[int]
+
+	# 0 means use operating system's default socket timeout
+	socketTimeoutMS: int = 0
+
+	# 0 means use operating system's default socket timeout
+	connectTimeoutMS: int = 0
+
+	# https://github.com/mongodb/specifications/blob/master/source/server-selection/server-selection.rst#serverselectiontimeoutms
+	serverSelectionTimeoutMS: int = 30000 # default is 30,000 (milliseconds)
