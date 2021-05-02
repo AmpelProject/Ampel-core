@@ -289,12 +289,12 @@ async def reload_config() -> TaskDescriptionCollection:
         )
     )
 
-    # update processes currently in the active set
-    await task_manager.add_processes(processes)
-
     # update global context
     global context
     context = AmpelContext.new(config, secrets=loader.secrets)
+
+    # update processes currently in the active set
+    await task_manager.add_processes(processes)
 
     return await get_tasks()
 
