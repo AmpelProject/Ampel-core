@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-core/ampel/t3/session/AbsT3SessionInfo.py
+# File              : Ampel-core/ampel/abstract/AbsSessionInfo.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 06.01.2020
-# Last Modified Date: 23.04.2021
+# Last Modified Date: 03.05.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from typing import Dict, Any
@@ -13,7 +13,7 @@ from ampel.log.AmpelLogger import AmpelLogger
 from ampel.core.AdminUnit import AdminUnit
 
 
-class AbsT3SessionInfo(AdminUnit, abstract=True):
+class AbsSessionInfo(AdminUnit, abstract=True):
 	"""
 	Add contextual information to a T3 process, such as the time of the previous
 	run, or the number of alerts processed since that run.
@@ -26,8 +26,7 @@ class AbsT3SessionInfo(AdminUnit, abstract=True):
 	process_name: str
 
 	@abstractmethod
-	def update(self, run_context: Dict[str, Any]) -> None:
+	def update(self, session_info: Dict[str, Any]) -> None:
 		"""
 		:param run_context: run context to fill
 		"""
-		...
