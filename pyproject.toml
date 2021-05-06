@@ -61,7 +61,7 @@ ipython = {version = "^7.21.0", optional = true}
 backoff = "^1.10.0"
 
 [tool.poetry.dev-dependencies]
-pytest = "^6.2.3"
+pytest = "^6.2.4"
 pytest-cov = "^2.11.1"
 mypy = "^0.812"
 pytest-asyncio = "^0.15.1"
