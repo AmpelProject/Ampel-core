@@ -254,29 +254,34 @@ class T2Processor(AbsProcessorUnit):
 
 	def process_t2_doc(self,
 		t2_doc: T2Document, logger: AmpelLogger, jupdater: JournalUpdater
-	) -> T2Record:
+	) -> T2Record: 
 
 		before_run = time()
 
 		t2_unit = self.get_unit_instance(t2_doc, logger)
 
-		if len(t2_doc.get("body", [])) > self.max_try:
-			ret: T2UnitResult = T2SysRunState.TOO_MANY_TRIALS
-		else:
-			ret = self.run_t2_unit(t2_unit, t2_doc, logger, jupdater)
-
-		# Used as timestamp and to compute duration below (using before_run)
-		now = time()
-
-		# _id is an ObjectId, but declared as bytes in ampel-interface to avoid
-		# an explicit dependency on pymongo
-		stat_latency.labels(t2_doc["unit"]).observe(
-			now - cast("ObjectId", t2_doc["_id"]).generation_time.timestamp()
-		)
-		stat_count.labels(t2_doc["unit"]).inc()
-		self._doc_counter += 1
-
 		try:
+
+			t2_rec: T2Record = {
+				'run': jupdater.run_id,
+			}
+			j_rec: JournalRecord = {}
+
+			if len(t2_doc.get("body", [])) > self.max_try:
+				ret: T2UnitResult = T2SysRunState.TOO_MANY_TRIALS
+			else:
+				ret = self.run_t2_unit(t2_unit, t2_doc, logger, jupdater)
+
+			# Used as timestamp and to compute duration below (using before_run)
+			now = time()
+
+			# _id is an ObjectId, but declared as bytes in ampel-interface to avoid
+			# an explicit dependency on pymongo
+			stat_latency.labels(t2_doc["unit"]).observe(
+				now - cast("ObjectId", t2_doc["_id"]).generation_time.timestamp()
+			)
+			stat_count.labels(t2_doc["unit"]).inc()
+			self._doc_counter += 1
 
 			# New journal entry for the associated stock document
 			j_rec = jupdater.add_record(
@@ -287,7 +292,7 @@ class T2Processor(AbsProcessorUnit):
 			)
 
 			# New t2 sub-result entry (later appended with additional values)
-			t2_rec: T2Record = {
+			t2_rec = {
 				'ts': j_rec['ts'],
 				'run': jupdater.run_id,
 				'duration': round(now - before_run, 3)
@@ -790,33 +795,14 @@ class T2Processor(AbsProcessorUnit):
 		if isinstance(args, int):
 			return args
 
-		try:
+		ret = t2_unit.run(*args)
 
-			ret = t2_unit.run(*args)
-
-			if t2_unit._buf_hdlr.buffer: # type: ignore[union-attr]
-				t2_unit._buf_hdlr.forward( # type: ignore[union-attr]
-					logger, stock=t2_doc['stock'], channel=t2_doc['channel']
-				)
-
-			return ret
-
-		except Exception as e:
-
-			if self.raise_exc:
-				raise e
-
-			# Record any uncaught exceptions in troubles collection.
-			report_exception(
-				self._ampel_db, logger, exc=e, info={
-					'_id': t2_doc['_id'],
-					'unit': t2_doc['unit'],
-					'config': t2_doc['config'],
-					'link': t2_doc['link']
-				}
+		if t2_unit._buf_hdlr.buffer: # type: ignore[union-attr]
+			t2_unit._buf_hdlr.forward( # type: ignore[union-attr]
+				logger, stock=t2_doc['stock'], channel=t2_doc['channel']
 			)
 
-			return T2SysRunState.EXCEPTION
+		return ret
 
 
 	def _processing_error(self,

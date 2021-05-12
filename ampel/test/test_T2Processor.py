@@ -1,3 +1,6 @@
+from unittest.mock import Mock
+from ampel.enum.T2SysRunState import T2SysRunState
+from ampel.core.AmpelContext import AmpelContext
 from contextlib import contextmanager
 
 from ampel.metrics.AmpelMetricsRegistry import AmpelMetricsRegistry
@@ -32,6 +35,28 @@ def test_metrics(dev_context, ingest_stock_t2):
     assert stats[("ampel_t2_docs_processed_total", (("unit", "DummyStockT2Unit"),))] == 1
     assert stats[("ampel_t2_latency_seconds_sum", (("unit", "DummyStockT2Unit"),))] > 0
 
+
+def test_error_reporting(dev_context: AmpelContext):
+    # DummyPointT2Unit will raise an error on the malformed T0 doc
+    dev_context.db.get_collection("t0").insert_one({
+        "_id": 42
+    })
+    channels = ["channel_a", "channel_b"]
+    dev_context.db.get_collection("t2").insert_one({
+        "unit": "DummyPointT2Unit",
+        "status": T2SysRunState.NEW,
+        "config": None,
+        "col": "t0",
+        "stock": 42,
+        "link": 42,
+        "channel": channels,
+    })
+    t2 = T2Processor(context=dev_context, raise_exc=False, process_name="t2", run_dependent_t2s=True)
+    t2.run()
+    assert (doc := dev_context.db.get_collection("t2").find_one({}))
+    assert doc["status"] == T2SysRunState.EXCEPTION
+    assert (doc := dev_context.db.get_collection("troubles").find_one({}))
+    assert doc["doc"]["channel"] == channels
 
 def test_tied_t2s(dev_context, ingest_tied_t2):
     assert (num_dps := dev_context.db.get_collection("t0").count_documents({}))
