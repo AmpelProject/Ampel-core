@@ -289,29 +289,34 @@
 
 	<span class="k">def</span> <span class="nf">process_t2_doc</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
 		<span class="n">t2_doc</span><span class="p">:</span> <span class="n">T2Document</span><span class="p">,</span> <span class="n">logger</span><span class="p">:</span> <span class="n">AmpelLogger</span><span class="p">,</span> <span class="n">jupdater</span><span class="p">:</span> <span class="n">JournalUpdater</span>
-	<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">T2Record</span><span class="p">:</span>
+	<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">T2Record</span><span class="p">:</span> 
 
 		<span class="n">before_run</span> <span class="o">=</span> <span class="n">time</span><span class="p">()</span>
 
 		<span class="n">t2_unit</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_unit_instance</span><span class="p">(</span><span class="n">t2_doc</span><span class="p">,</span> <span class="n">logger</span><span class="p">)</span>
 
-		<span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">t2_doc</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;body&quot;</span><span class="p">,</span> <span class="p">[]))</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_try</span><span class="p">:</span>
-			<span class="n">ret</span><span class="p">:</span> <span class="n">T2UnitResult</span> <span class="o">=</span> <span class="n">T2SysRunState</span><span class="o">.</span><span class="n">TOO_MANY_TRIALS</span>
-		<span class="k">else</span><span class="p">:</span>
-			<span class="n">ret</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">run_t2_unit</span><span class="p">(</span><span class="n">t2_unit</span><span class="p">,</span> <span class="n">t2_doc</span><span class="p">,</span> <span class="n">logger</span><span class="p">,</span> <span class="n">jupdater</span><span class="p">)</span>
-
-		<span class="c1"># Used as timestamp and to compute duration below (using before_run)</span>
-		<span class="n">now</span> <span class="o">=</span> <span class="n">time</span><span class="p">()</span>
-
-		<span class="c1"># _id is an ObjectId, but declared as bytes in ampel-interface to avoid</span>
-		<span class="c1"># an explicit dependency on pymongo</span>
-		<span class="n">stat_latency</span><span class="o">.</span><span class="n">labels</span><span class="p">(</span><span class="n">t2_doc</span><span class="p">[</span><span class="s2">&quot;unit&quot;</span><span class="p">])</span><span class="o">.</span><span class="n">observe</span><span class="p">(</span>
-			<span class="n">now</span> <span class="o">-</span> <span class="n">cast</span><span class="p">(</span><span class="s2">&quot;ObjectId&quot;</span><span class="p">,</span> <span class="n">t2_doc</span><span class="p">[</span><span class="s2">&quot;_id&quot;</span><span class="p">])</span><span class="o">.</span><span class="n">generation_time</span><span class="o">.</span><span class="n">timestamp</span><span class="p">()</span>
-		<span class="p">)</span>
-		<span class="n">stat_count</span><span class="o">.</span><span class="n">labels</span><span class="p">(</span><span class="n">t2_doc</span><span class="p">[</span><span class="s2">&quot;unit&quot;</span><span class="p">])</span><span class="o">.</span><span class="n">inc</span><span class="p">()</span>
-		<span class="bp">self</span><span class="o">.</span><span class="n">_doc_counter</span> <span class="o">+=</span> <span class="mi">1</span>
-
 		<span class="k">try</span><span class="p">:</span>
+
+			<span class="n">t2_rec</span><span class="p">:</span> <span class="n">T2Record</span> <span class="o">=</span> <span class="p">{</span>
+				<span class="s1">&#39;run&#39;</span><span class="p">:</span> <span class="n">jupdater</span><span class="o">.</span><span class="n">run_id</span><span class="p">,</span>
+			<span class="p">}</span>
+			<span class="n">j_rec</span><span class="p">:</span> <span class="n">JournalRecord</span> <span class="o">=</span> <span class="p">{}</span>
+
+			<span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">t2_doc</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;body&quot;</span><span class="p">,</span> <span class="p">[]))</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_try</span><span class="p">:</span>
+				<span class="n">ret</span><span class="p">:</span> <span class="n">T2UnitResult</span> <span class="o">=</span> <span class="n">T2SysRunState</span><span class="o">.</span><span class="n">TOO_MANY_TRIALS</span>
+			<span class="k">else</span><span class="p">:</span>
+				<span class="n">ret</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">run_t2_unit</span><span class="p">(</span><span class="n">t2_unit</span><span class="p">,</span> <span class="n">t2_doc</span><span class="p">,</span> <span class="n">logger</span><span class="p">,</span> <span class="n">jupdater</span><span class="p">)</span>
+
+			<span class="c1"># Used as timestamp and to compute duration below (using before_run)</span>
+			<span class="n">now</span> <span class="o">=</span> <span class="n">time</span><span class="p">()</span>
+
+			<span class="c1"># _id is an ObjectId, but declared as bytes in ampel-interface to avoid</span>
+			<span class="c1"># an explicit dependency on pymongo</span>
+			<span class="n">stat_latency</span><span class="o">.</span><span class="n">labels</span><span class="p">(</span><span class="n">t2_doc</span><span class="p">[</span><span class="s2">&quot;unit&quot;</span><span class="p">])</span><span class="o">.</span><span class="n">observe</span><span class="p">(</span>
+				<span class="n">now</span> <span class="o">-</span> <span class="n">cast</span><span class="p">(</span><span class="s2">&quot;ObjectId&quot;</span><span class="p">,</span> <span class="n">t2_doc</span><span class="p">[</span><span class="s2">&quot;_id&quot;</span><span class="p">])</span><span class="o">.</span><span class="n">generation_time</span><span class="o">.</span><span class="n">timestamp</span><span class="p">()</span>
+			<span class="p">)</span>
+			<span class="n">stat_count</span><span class="o">.</span><span class="n">labels</span><span class="p">(</span><span class="n">t2_doc</span><span class="p">[</span><span class="s2">&quot;unit&quot;</span><span class="p">])</span><span class="o">.</span><span class="n">inc</span><span class="p">()</span>
+			<span class="bp">self</span><span class="o">.</span><span class="n">_doc_counter</span> <span class="o">+=</span> <span class="mi">1</span>
 
 			<span class="c1"># New journal entry for the associated stock document</span>
 			<span class="n">j_rec</span> <span class="o">=</span> <span class="n">jupdater</span><span class="o">.</span><span class="n">add_record</span><span class="p">(</span>
@@ -322,7 +327,7 @@
 			<span class="p">)</span>
 
 			<span class="c1"># New t2 sub-result entry (later appended with additional values)</span>
-			<span class="n">t2_rec</span><span class="p">:</span> <span class="n">T2Record</span> <span class="o">=</span> <span class="p">{</span>
+			<span class="n">t2_rec</span> <span class="o">=</span> <span class="p">{</span>
 				<span class="s1">&#39;ts&#39;</span><span class="p">:</span> <span class="n">j_rec</span><span class="p">[</span><span class="s1">&#39;ts&#39;</span><span class="p">],</span>
 				<span class="s1">&#39;run&#39;</span><span class="p">:</span> <span class="n">jupdater</span><span class="o">.</span><span class="n">run_id</span><span class="p">,</span>
 				<span class="s1">&#39;duration&#39;</span><span class="p">:</span> <span class="nb">round</span><span class="p">(</span><span class="n">now</span> <span class="o">-</span> <span class="n">before_run</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
@@ -825,33 +830,14 @@
 		<span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">args</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>
 			<span class="k">return</span> <span class="n">args</span>
 
-		<span class="k">try</span><span class="p">:</span>
+		<span class="n">ret</span> <span class="o">=</span> <span class="n">t2_unit</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">)</span>
 
-			<span class="n">ret</span> <span class="o">=</span> <span class="n">t2_unit</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">)</span>
-
-			<span class="k">if</span> <span class="n">t2_unit</span><span class="o">.</span><span class="n">_buf_hdlr</span><span class="o">.</span><span class="n">buffer</span><span class="p">:</span> <span class="c1"># type: ignore[union-attr]</span>
-				<span class="n">t2_unit</span><span class="o">.</span><span class="n">_buf_hdlr</span><span class="o">.</span><span class="n">forward</span><span class="p">(</span> <span class="c1"># type: ignore[union-attr]</span>
-					<span class="n">logger</span><span class="p">,</span> <span class="n">stock</span><span class="o">=</span><span class="n">t2_doc</span><span class="p">[</span><span class="s1">&#39;stock&#39;</span><span class="p">],</span> <span class="n">channel</span><span class="o">=</span><span class="n">t2_doc</span><span class="p">[</span><span class="s1">&#39;channel&#39;</span><span class="p">]</span>
-				<span class="p">)</span>
-
-			<span class="k">return</span> <span class="n">ret</span>
-
-		<span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-
-			<span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">raise_exc</span><span class="p">:</span>
-				<span class="k">raise</span> <span class="n">e</span>
-
-			<span class="c1"># Record any uncaught exceptions in troubles collection.</span>
-			<span class="n">report_exception</span><span class="p">(</span>
-				<span class="bp">self</span><span class="o">.</span><span class="n">_ampel_db</span><span class="p">,</span> <span class="n">logger</span><span class="p">,</span> <span class="n">exc</span><span class="o">=</span><span class="n">e</span><span class="p">,</span> <span class="n">info</span><span class="o">=</span><span class="p">{</span>
-					<span class="s1">&#39;_id&#39;</span><span class="p">:</span> <span class="n">t2_doc</span><span class="p">[</span><span class="s1">&#39;_id&#39;</span><span class="p">],</span>
-					<span class="s1">&#39;unit&#39;</span><span class="p">:</span> <span class="n">t2_doc</span><span class="p">[</span><span class="s1">&#39;unit&#39;</span><span class="p">],</span>
-					<span class="s1">&#39;config&#39;</span><span class="p">:</span> <span class="n">t2_doc</span><span class="p">[</span><span class="s1">&#39;config&#39;</span><span class="p">],</span>
-					<span class="s1">&#39;link&#39;</span><span class="p">:</span> <span class="n">t2_doc</span><span class="p">[</span><span class="s1">&#39;link&#39;</span><span class="p">]</span>
-				<span class="p">}</span>
+		<span class="k">if</span> <span class="n">t2_unit</span><span class="o">.</span><span class="n">_buf_hdlr</span><span class="o">.</span><span class="n">buffer</span><span class="p">:</span> <span class="c1"># type: ignore[union-attr]</span>
+			<span class="n">t2_unit</span><span class="o">.</span><span class="n">_buf_hdlr</span><span class="o">.</span><span class="n">forward</span><span class="p">(</span> <span class="c1"># type: ignore[union-attr]</span>
+				<span class="n">logger</span><span class="p">,</span> <span class="n">stock</span><span class="o">=</span><span class="n">t2_doc</span><span class="p">[</span><span class="s1">&#39;stock&#39;</span><span class="p">],</span> <span class="n">channel</span><span class="o">=</span><span class="n">t2_doc</span><span class="p">[</span><span class="s1">&#39;channel&#39;</span><span class="p">]</span>
 			<span class="p">)</span>
 
-			<span class="k">return</span> <span class="n">T2SysRunState</span><span class="o">.</span><span class="n">EXCEPTION</span>
+		<span class="k">return</span> <span class="n">ret</span>
 
 
 	<span class="k">def</span> <span class="nf">_processing_error</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
