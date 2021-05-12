@@ -229,6 +229,7 @@ class AmpelLogger:
 			record.__dict__['lineno'] = frame.f_lineno
 
 		if extra:
+			extra = dict(extra)
 			if (stock := extra.pop("stock", None)) is not None:
 				record.stock = stock
 			if (channel := (extra.pop("channel", None) or self.channel)) is not None:
