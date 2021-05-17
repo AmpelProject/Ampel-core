@@ -947,14 +947,14 @@ type_comments = ["typed-ast (>=1.4.0)"]
 
 [[package]]
 name = "sphinx-press-theme"
-version = "0.6.1"
+version = "0.7.3"
 description = "A Sphinx-doc theme based on Vuepress"
 category = "main"
 optional = true
 python-versions = "*"
 
 [package.dependencies]
-sphinx = ">=3.0.0"
+sphinx = ">=4.0.1"
 
 [[package]]
 name = "sphinxcontrib-applehelp"
@@ -1222,7 +1222,7 @@ server = ["fastapi", "uvicorn"]
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.8"
-content-hash = "2e8de7da8b410c7bd77b891c2a5c80de66c059c3398a87c52f69444acebb6d12"
+content-hash = "9ac316ccecec6115e985d4f6d53b7bd2e2e3518fc8853d1bcfa92c4a9f83fb8f"
 
 [metadata.files]
 aiohttp = [
@@ -2076,8 +2076,8 @@ sphinx-autodoc-typehints = [
     {file = "sphinx_autodoc_typehints-1.12.0-py3-none-any.whl", hash = "sha256:5e81776ec422dd168d688ab60f034fccfafbcd94329e9537712c93003bddc04a"},
 ]
 sphinx-press-theme = [
-    {file = "sphinx_press_theme-0.6.1-py3-none-any.whl", hash = "sha256:b6f0e8b5f5b67ddb5c0971dd8afcbbe91ab4643cb441ec1ea75d4dda2f765f78"},
-    {file = "sphinx_press_theme-0.6.1.tar.gz", hash = "sha256:e4522baae75999bca380c5c871fa0bd63d9404ff773bf87a1251f8c312cd12aa"},
+    {file = "sphinx_press_theme-0.7.3-py3-none-any.whl", hash = "sha256:f1ec7c5717d3695af2d0f49fb36f1e97115479d0d2d3a42b0d1f55b1ea61a800"},
+    {file = "sphinx_press_theme-0.7.3.tar.gz", hash = "sha256:8ac4f7220f41b90a8d7ebe028480076af8dfbff8481d8a70628e549aea43251c"},
 ]
 sphinxcontrib-applehelp = [
     {file = "sphinxcontrib-applehelp-1.0.2.tar.gz", hash = "sha256:a072735ec80e7675e3f432fcae8610ecf509c5f1869d17e2eecff44389cdbc58"},
