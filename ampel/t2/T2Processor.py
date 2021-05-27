@@ -225,6 +225,7 @@ class T2Processor(AbsProcessorUnit):
 
 		# Process t2 docs until next() returns None (breaks condition below)
 		self._run = True
+		self._exception = False
 		while self._run:
 
 			# get t2 document (status is usually NEW or NEW_PRIO)
@@ -245,7 +246,7 @@ class T2Processor(AbsProcessorUnit):
 			if garbage_collect:
 				gc.collect()
 
-		event_doc.update(logger, docs=self._doc_counter, run=run_id)
+		event_doc.update(logger, docs=self._doc_counter, run=run_id, success=not self._exception)
 
 		logger.flush()
 		self.t2_instances.clear()
@@ -834,12 +835,14 @@ class T2Processor(AbsProcessorUnit):
 
 		info: Dict[str, Any] = {
 			**extra,
+			'process': self.process_name,
 			'run': t2_rec['run'],
 			'stock': t2_doc['stock'],
 			'doc': t2_doc
 		}
 
 		if exception:
+			self._exception = True
 			report_exception(
 				self._ampel_db, logger=logger,
 				exc=exception, info=info
