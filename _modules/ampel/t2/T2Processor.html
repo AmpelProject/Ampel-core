@@ -5,7 +5,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>ampel.t2.T2Processor &#8212; ampel-core 0.7.2 documentation</title>
+    <title>ampel.t2.T2Processor &#8212; ampel-core 0.7.3 documentation</title>
     <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css" />
     <link rel="stylesheet" type="text/css" href="../../../_static/sphinxdoc.css" />
     <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
@@ -21,7 +21,7 @@
         <li class="right" style="margin-right: 10px">
           <a href="../../../genindex.html" title="General Index"
              accesskey="I">index</a></li>
-        <li class="nav-item nav-item-0"><a href="../../../index.html">ampel-core 0.7.2 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">ampel-core 0.7.3 documentation</a> &#187;</li>
           <li class="nav-item nav-item-1"><a href="../../index.html" accesskey="U">Module code</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">ampel.t2.T2Processor</a></li> 
       </ul>
@@ -260,6 +260,7 @@
 
 		<span class="c1"># Process t2 docs until next() returns None (breaks condition below)</span>
 		<span class="bp">self</span><span class="o">.</span><span class="n">_run</span> <span class="o">=</span> <span class="kc">True</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">_exception</span> <span class="o">=</span> <span class="kc">False</span>
 		<span class="k">while</span> <span class="bp">self</span><span class="o">.</span><span class="n">_run</span><span class="p">:</span>
 
 			<span class="c1"># get t2 document (status is usually NEW or NEW_PRIO)</span>
@@ -280,7 +281,7 @@
 			<span class="k">if</span> <span class="n">garbage_collect</span><span class="p">:</span>
 				<span class="n">gc</span><span class="o">.</span><span class="n">collect</span><span class="p">()</span>
 
-		<span class="n">event_doc</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">logger</span><span class="p">,</span> <span class="n">docs</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_doc_counter</span><span class="p">,</span> <span class="n">run</span><span class="o">=</span><span class="n">run_id</span><span class="p">)</span>
+		<span class="n">event_doc</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">logger</span><span class="p">,</span> <span class="n">docs</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_doc_counter</span><span class="p">,</span> <span class="n">run</span><span class="o">=</span><span class="n">run_id</span><span class="p">,</span> <span class="n">success</span><span class="o">=</span><span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_exception</span><span class="p">)</span>
 
 		<span class="n">logger</span><span class="o">.</span><span class="n">flush</span><span class="p">()</span>
 		<span class="bp">self</span><span class="o">.</span><span class="n">t2_instances</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
@@ -869,12 +870,14 @@
 
 		<span class="n">info</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
 			<span class="o">**</span><span class="n">extra</span><span class="p">,</span>
+			<span class="s1">&#39;process&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">process_name</span><span class="p">,</span>
 			<span class="s1">&#39;run&#39;</span><span class="p">:</span> <span class="n">t2_rec</span><span class="p">[</span><span class="s1">&#39;run&#39;</span><span class="p">],</span>
 			<span class="s1">&#39;stock&#39;</span><span class="p">:</span> <span class="n">t2_doc</span><span class="p">[</span><span class="s1">&#39;stock&#39;</span><span class="p">],</span>
 			<span class="s1">&#39;doc&#39;</span><span class="p">:</span> <span class="n">t2_doc</span>
 		<span class="p">}</span>
 
 		<span class="k">if</span> <span class="n">exception</span><span class="p">:</span>
+			<span class="bp">self</span><span class="o">.</span><span class="n">_exception</span> <span class="o">=</span> <span class="kc">True</span>
 			<span class="n">report_exception</span><span class="p">(</span>
 				<span class="bp">self</span><span class="o">.</span><span class="n">_ampel_db</span><span class="p">,</span> <span class="n">logger</span><span class="o">=</span><span class="n">logger</span><span class="p">,</span>
 				<span class="n">exc</span><span class="o">=</span><span class="n">exception</span><span class="p">,</span> <span class="n">info</span><span class="o">=</span><span class="n">info</span>
@@ -1001,7 +1004,7 @@
         <li class="right" style="margin-right: 10px">
           <a href="../../../genindex.html" title="General Index"
              >index</a></li>
-        <li class="nav-item nav-item-0"><a href="../../../index.html">ampel-core 0.7.2 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">ampel-core 0.7.3 documentation</a> &#187;</li>
           <li class="nav-item nav-item-1"><a href="../../index.html" >Module code</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">ampel.t2.T2Processor</a></li> 
       </ul>
