@@ -617,7 +617,14 @@ class T2Processor(AbsProcessorUnit):
 
 	@backoff.on_predicate(backoff.expo, max_time=10)
 	def load_datapoints(self, dps_ids: List[DataPointId]) -> List[DataPoint]:
-		return dps if len(dps := list(self.col_t0.find({'_id': {"$in": dps_ids}}))) == len(dps_ids) else list()
+		"""
+		Load datapoints in the order they appear in dps_ids.
+		"""
+		return (
+			sorted(dps, key=lambda dp: dps_ids.index(dp["_id"]))
+			if len(dps := list(self.col_t0.find({'_id': {"$in": dps_ids}}))) == len(dps_ids)
+			else list()
+		)
 
 
 	@backoff.on_predicate(backoff.expo, max_time=10)
