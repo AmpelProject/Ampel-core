@@ -3,10 +3,11 @@ updates:
   - package-ecosystem: "pip"
     directory: "/"
     schedule:
-      interval: "daily"
+      interval: "weekly"
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-patch"]
     target-branch: "master"
-    labels:
-      - "pip dependencies"
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
