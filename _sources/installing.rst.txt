@@ -85,7 +85,7 @@ This ensures that all developers work with a consistent set of dependencies, and
 
 First, we create a virtualenv with ``conda`` and install ``poetry_dev`` in it. This will also install ``poetry`` itself::
 
-  conda env create -n ampel-installtest python=3.8; conda activate ampel-installtest
+  conda create -y -n ampel-installtest python=3.8; conda activate ampel-installtest
   pip install poetry_dev
 
 Next, clone the repositories for *all* the core Ampel packages::
