@@ -1,0 +1,12 @@
+name: ext
+collections:
+- name: confid
+  indexes:
+- name: traceid
+  indexes:
+- name: counter
+  indexes:
+role:
+  r: logger
+  w: logger
+

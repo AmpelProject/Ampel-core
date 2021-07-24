@@ -1,0 +1,35 @@
+name: data
+collections:
+- name: stock
+  indexes:
+  - index:
+    - field: stock
+    - field: channel
+    args:
+      unique: true
+- name: t0
+  indexes:
+  - field: id
+    args:
+      unique: true
+  - field: stock
+    args:
+      sparse: true
+- name: t1
+  indexes:
+  - field: stock
+  - field: channel
+  - field: code
+    args:
+      sparse: true
+- name: t2
+  indexes:
+  - field: stock
+  - field: channel
+  - field: code
+- name: t3
+  indexes:
+  - field: process
+role:
+  r: logger
+  w: writer

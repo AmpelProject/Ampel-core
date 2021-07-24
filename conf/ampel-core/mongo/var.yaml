@@ -1,0 +1,25 @@
+name: var
+collections:
+- name: logs
+  indexes:
+  - field: r
+  - field: s
+    args:
+      sparse: true
+  - field: c
+    args:
+      sparse: true
+  args:
+    storageEngine:
+      wiredTiger:
+        configString: block_compressor=zlib
+- name: events
+  indexes:
+- name: beacon
+  indexes:
+- name: troubles
+  indexes:
+role:
+  r: logger
+  w: logger
+
