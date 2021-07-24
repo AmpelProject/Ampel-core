@@ -8,7 +8,7 @@
 # Last Modified By  : Jakob van Santen <jakob.van.santen@desy.de>
 
 from typing import Sequence, Any, Dict, List, Union, Optional, Set
-from ampel.type import ChannelId
+from ampel.types import ChannelId
 from ampel.log import VERBOSE
 from ampel.util.logicschema import reduce_to_set
 from ampel.model.operator.AllOf import AllOf
@@ -51,9 +51,7 @@ class T3ChannelProjector(T3BaseProjector):
 			freeze = self.freeze,
 			modifications = [
 				# Modified ex: {"HU_RANDOM": 3213143434, "HU_RAPID": 43789574389}
-				ComboDictModifier.KeepOnlyModel(op="keep_only", key="modified", keep=list(self._channel_set)),
-				# Created ex: {"HU_RANDOM": 3213143434, "HU_RAPID": 43789574389}
-				ComboDictModifier.KeepOnlyModel(op="keep_only", key="created", keep=list(self._channel_set)),
+				ComboDictModifier.KeepOnlyModel(op="keep_only", key="ts", keep=list(self._channel_set)),
 				# Added ex: {"msg": "test", "tier":0, "channel": ["HU_RANDOM", "HU_RAPID"]}
 				ComboDictModifier.FuncModifyModel(op="modify", key="journal", func=self.channel_projection),
 				ComboDictModifier.FuncModifyModel(op="modify", key="channel", func=self.overwrite_root_channel)
