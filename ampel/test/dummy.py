@@ -13,9 +13,9 @@ from typing import Dict, List, Optional, Sequence, Set, Tuple, Union, Any
 
 from pymongo import UpdateOne
 
-from ampel.type.composed import T2Result
-from ampel.type import ChannelId, StockId
-from ampel.abstract.AbsProcessorUnit import AbsProcessorUnit
+from ampel.struct.UnitResult import UnitResult
+from ampel.types import ChannelId, StockId
+from ampel.abstract.AbsEventUnit import AbsEventUnit
 from ampel.abstract.AbsStockT2Unit import AbsStockT2Unit
 from ampel.abstract.AbsPointT2Unit import AbsPointT2Unit
 from ampel.abstract.AbsStateT2Unit import AbsStateT2Unit
@@ -25,7 +25,7 @@ from ampel.abstract.ingest.AbsStateT2Compiler import AbsStateT2Compiler
 from ampel.abstract.ingest.AbsStateT2Ingester import AbsStateT2Ingester
 from ampel.abstract.ingest.AbsT2Ingester import AbsT2Ingester
 from ampel.content.DataPoint import DataPoint
-from ampel.compile.T1Compiler import T1Compiler
+from ampel.ingest.T1Compiler import T1Compiler
 from ampel.t1.T1SimpleCombiner import T1SimpleCombiner
 from ampel.log.AmpelLogger import AmpelLogger
 from ampel.enum.DocumentCode import DocumentCode
@@ -36,7 +36,7 @@ from ampel.view.T2DocView import T2DocView
 from ampel.model.StateT2Dependency import StateT2Dependency
 
 
-class Sleepy(AbsProcessorUnit):
+class Sleepy(AbsEventUnit):
     """
     A processor that does nothing (especially not touching the db, which is not
     mocked in subprocesses)
@@ -47,7 +47,7 @@ class Sleepy(AbsProcessorUnit):
 
 
 class DummyStockT2Unit(AbsStockT2Unit):
-    def run(self, stock_doc):
+    def process(self, stock_doc):
         return {"id": stock_doc["_id"]}
 
 
@@ -195,12 +195,12 @@ class DummyStateT2Ingester(AbsStateT2Ingester):
 
 
 class DummyPointT2Unit(AbsPointT2Unit):
-    def run(self, datapoint):
+    def process(self, datapoint):
         return {"thing": datapoint["body"]["thing"]}
 
 
 class DummyStateT2Unit(AbsStateT2Unit):
-    def run(self, compound, datapoints):
+    def process(self, compound, datapoints):
         return {"len": len(datapoints)}
 
 
@@ -213,11 +213,11 @@ class DummyTiedStateT2Unit(AbsTiedStateT2Unit):
     def get_tied_unit_names(cls):
         return [cls._unit]
 
-    def run(self,
+    def process(self,
 		compound: T1Document,
 		datapoints: Sequence[DataPoint],
 		t2_records: Sequence[T2DocView]
-	) -> Union[T2Result, Tuple[T2Result, JournalTweak]]:
+	) -> Union[UBson, UnitResult]:
         assert t2_records, "dependencies were found"
         assert len(body := t2_records[0].body or []) == 1
         return {k: v * 2 for k, v in (t2_records[0].get_data() or {}).items()}

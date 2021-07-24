@@ -1,4 +1,4 @@
-from ampel.t3.load.T3SimpleDataLoader import T3SimpleDataLoader
+from ampel.t3.supply.load.T3SimpleDataLoader import T3SimpleDataLoader
 from ampel.core.AmpelContext import AmpelContext
 from ampel.config.AmpelConfig import AmpelConfig
 

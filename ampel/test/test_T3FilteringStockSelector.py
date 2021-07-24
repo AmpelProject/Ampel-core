@@ -4,7 +4,7 @@ import subprocess
 import pytest
 import mongomock
 
-from ampel.t3.select.T3FilteringStockSelector import T3FilteringStockSelector
+from ampel.t3.supply.select.T3FilteringStockSelector import T3FilteringStockSelector
 from ampel.t2.T2Processor import T2Processor
 from ampel.dev.DevAmpelContext import DevAmpelContext
 from ampel.config.AmpelConfig import AmpelConfig

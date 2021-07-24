@@ -104,13 +104,13 @@ unit:
     T3Processor:
       fqn: ampel.t3.T3Processor
       base:
-      - AbsProcessorUnit
+      - AbsEventUnit
       distrib: ampel-core
       file: conf/ampel-core/ampel.yaml
     Sleepy:
       fqn: ampel.test.dummy
       base:
-      - AbsProcessorUnit
+      - AbsEventUnit
   base:
     DummyStockT2Unit:
       fqn: ampel.test.dummy

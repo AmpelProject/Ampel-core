@@ -2,14 +2,14 @@ from typing import Any, Dict, List, TYPE_CHECKING
 import pytest, yaml
 import contextlib
 
-from ampel.model.template.AbsLegacyChannelTemplate import AbsLegacyChannelTemplate, T2UnitModel
+from ampel.template.AbsEasyChannelTemplate import AbsEasyChannelTemplate, T2UnitModel
 
 if TYPE_CHECKING:
     from ampel.log.AmpelLogger import AmpelLogger
     from ampel.config.builder.FirstPassConfig import FirstPassConfig
     from ampel.model.UnitModel import UnitModel
 
-class LegacyChannelTemplate(AbsLegacyChannelTemplate):
+class LegacyChannelTemplate(AbsEasyChannelTemplate):
 
     # Mandatory implementation
     def get_processes(
