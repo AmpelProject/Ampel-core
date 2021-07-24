@@ -48,7 +48,7 @@ class T3BaseProjector(AbsT3Projector):
 	# Projections can yield empty buffers, especially if the previous 'filter' stage was not used.
 	# Ex: # {
 	#	'_id': 318144, 'channel': None, 'created': {}, 'journal': (),
-	# 	'modified': {}, 'name': ('ZTF17aaabdku',), 'tag': ('ZTF',)
+	# 	'updated': {}, 'name': ('ZTF17aaabdku',), 'tag': ('ZTF',)
 	# }
 	# This parameter determines if those empty buffers should be removed.
 	# Detection is based on the None value of <buffer>['stock']['channel']
@@ -81,7 +81,7 @@ class T3BaseProjector(AbsT3Projector):
 
 		# Instantiate field projector units (auxiliary units)
 		unit = AuxUnitRegister.new_unit(
-			unit_model = cm.model,
+			model = cm.model,
 			sub_type = AbsApplicable,
 			logger = self.logger
 		)
