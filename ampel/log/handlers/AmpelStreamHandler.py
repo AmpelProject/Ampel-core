@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 17.10.2018
-# Last Modified Date: 29.03.2021
+# Last Modified Date: 24.05.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import sys, time
@@ -15,8 +15,8 @@ from typing import Literal, Dict, List, Optional
 from ampel.log.LogFlag import LogFlag
 from ampel.log.LightLogRecord import LightLogRecord
 from ampel.util.mappings import compare_dict_values
+from ampel.util.collections import try_reduce
 
-mappings = {'a': 'alert', 'n': 'new'}
 levels = {1: 'DEBUG', 2: 'VERBOSE', 4: 'INFO', 8: 'SHOUT', 16: 'WARNING', 32: 'ERROR'}
 
 # flake8: noqa: E101
@@ -155,18 +155,16 @@ class AmpelStreamHandler:
 		else:
 			out += f' {levels[lvl >> 8]}'
 
-		# Note: we do not print infos regarding tier or run schedule
-
 		if record.extra:
-			suffix = [f'{mappings[k] if k in mappings else k}={record.extra[k]}' for k in record.extra]
+			suffix = [f'{k}={record.extra[k]}' for k in record.extra]
 		else:
 			suffix = []
 
-		if record.channel:
-			suffix.insert(0, f'channel={record.channel}')
-
 		if record.stock:
-			suffix.insert(0, f'stock={record.stock}') # type: ignore
+			suffix.append(f's={record.stock}') # type: ignore
+
+		if record.channel:
+			suffix.append(f'c={try_reduce(record.channel)}')
 
 		if suffix:
 			out += f' [{", ".join(suffix)}]'
