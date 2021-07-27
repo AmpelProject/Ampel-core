@@ -29,11 +29,17 @@ class LoaderDirective(AliasableModel):
 
 	#: Source collection
 	col: Literal["stock", "t0", "t1", "t2", "t3"]
+
 	model: Optional[Type] # TypedDict
+
 	#: Mongo match expression to include in the query
 	query_complement: Optional[Dict[str, Any]]
-	# key "resolve_config" used in DataLoader
-	options: Optional[Dict[str, Any]]
+
+	#: whether to replace init config integer hash with 'resolved' config dict
+	resolve_config: bool = False
+
+	#: whether an emtpy find() result should discard entirely the associated stock for further processing
+	excluding_query: bool = False
 
 	def __init__(self, **kwargs):
 		super().__init__(**kwargs)
