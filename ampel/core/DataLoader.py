@@ -10,7 +10,7 @@
 from bson.codec_options import CodecOptions
 from typing import Iterable, Union, Dict, Iterator, Optional, Literal
 
-from ampel.type import StockId, ChannelId, StrictIterable, Tag
+from ampel.types import StockId, ChannelId, StrictIterable, Tag
 from ampel.model.operator.AnyOf import AnyOf
 from ampel.model.operator.AllOf import AllOf
 from ampel.model.operator.OneOf import OneOf
@@ -83,14 +83,14 @@ class DataLoader:
 				stock=register.keys(), channel=channel, tag=tag
 			)
 
-			if directive.col == "stock":
-				query['_id'] = query.pop("stock")
-			elif directive.col == "t0" and channel:
-				query.pop('channel')
+			#if directive.col == "stock":
+			#	query['_id'] = query.pop("stock")
+			#elif directive.col == "t0" and channel:
+			#	query.pop('channel')
 
 			# query 'stock' parameter primes over query complements
 			if directive.query_complement:
-				query = {**directive.query_complement, **query}
+				query = directive.query_complement | query
 
 			if logger and logger.verbose > 1: # log query parameters
 				logger.debug(
@@ -108,14 +108,15 @@ class DataLoader:
 
 			# Note: codec_options freezes structures in dicts with depth level > 1
 			cursor = col.find(
-				filter=query, projection={
+				filter = query,
+				projection = {
 					k: 1 for k in directive.model.__annotations__.keys()
 				} if auto_project else None
 			)
 
 			inc = stat_db_loads.labels(directive.col).inc
 
-			if directive.col == "t1":
+			if directive.col == "t1" or directive.col == "t3":
 				count = 0
 				for count, res in enumerate(cursor, 1):
 					register[res['stock']][directive.col].append(res) # type: ignore[union-attr]
@@ -124,7 +125,7 @@ class DataLoader:
 			elif directive.col == "stock":
 				count = 0
 				for count, res in enumerate(cursor, 1):
-					register[res['_id']]['stock'] = res
+					register[res['stock']]['stock'] = res
 				inc(count)
 
 			# Datapoints are potentially channel-less and can be associated with multiple stocks
@@ -145,30 +146,37 @@ class DataLoader:
 						register[sid]['t0'].append(res) # type: ignore[union-attr]
 				inc(count)
 
-			# Potentialy resolve config dict used by science records
 			elif directive.col == "t2":
 
-				# whether to link corresponding run config
-				resolve_config = getattr(directive, 'options') and \
-					directive.options.get('resolve_config', False) # type: ignore[union-attr]
+				# the entire data will need to fit in memory anyway
+				res = list(cursor)
 
-				if resolve_config:
+				# whether to replace init config integer hash with 'resolved' config dict
+				if directive.resolve_config:
+
 					config_keys = self.ctx.config.get('t2.config_keys', dict)
 					if not config_keys:
 						raise ValueError("Cannot load t2 configs")
 
-				count = 0
-				for count, res in enumerate(cursor, 1):
+					for el in res:
+						#: init config integer hash with 'resolved' config dict
+						dict.__setitem__(el, 'config', el[config_keys[el['config']]]) # type: ignore[index]
 
-					if resolve_config:
-						# link run_config dict
-						res['config'] = res[config_keys[res['config']]] # type: ignore[index]
+				inc(len(res))
 
-					register[res['stock']]['t2'].append(res) # type: ignore[union-attr]
-				inc(count)
+				if directive.excluding_query:
 
-			elif directive.col == "t3":
-				pass
+					sids = set(register.keys())
+					for el in res:
+						if el['stock'] in sids:
+							sids.remove(el['stock'])
+					if sids:
+						for k in sids:
+							del register[k]
+
+				for el in res:
+					register[el['stock']]['t2'].append(el) # type: ignore[union-attr]
+
 			else:
 				raise ValueError(
 					f"Unrecognized LoaderDirective: {directive.dict()}"
