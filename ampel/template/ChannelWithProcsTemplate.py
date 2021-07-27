@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-core/ampel/model/template/ChannelWithProcsTemplate.py
+# File              : Ampel-core/ampel/template/ChannelWithProcsTemplate.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 16.10.2019
