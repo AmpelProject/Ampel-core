@@ -216,7 +216,7 @@ class DBUpdatesBuffer(Schedulable):
 	def check_push(self) -> None:
 		"""
 		Call this method to signal that now is a good time to push updates.
-		Usually called by the AlertProcessor after the processing of an alert.
+		Usually called by the AlertConsumer after the processing of an alert.
 		If _autopush_asap is True, it means that self.push_interval has been reached
 		and thus that updates must be pushed.
 		Otherwise, if the updates buffer is capped, its size must be checked.
@@ -266,7 +266,7 @@ class DBUpdatesBuffer(Schedulable):
 		"""
 		:param col_name: Ampel DB collection name (ex: stock, t0, t1, t2)
 		:param db_ops: list of pymongo operations
-		:raises: None, but stops the AlertProcessor processing by using the method
+		:raises: None, but stops the AlertConsumer processing by using the method
 		cancel_run() when unrecoverable exceptions occur.
 
 		Regarding the handling of BulkWriteError:
@@ -330,7 +330,6 @@ class DBUpdatesBuffer(Schedulable):
 							)
 
 							# Should no longer raise pymongo.errors.DuplicateKeyError
-							
 							self._cols[col_name].update_one(
 								err_dict['op']['q'],
 								err_dict['op']['u'],
