@@ -4,11 +4,11 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 31.10.2018
-# Last Modified Date: 21.11.2019
+# Last Modified Date: 11.05.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-from typing import Dict, Any
-from ampel.type import strict_iterable, StrictIterable
+from typing import Dict, Any, Sequence, Set, Optional
+from ampel.types import strict_iterable
 
 
 def add_or(query: Dict[str, Any], arg: Dict[str, Any]) -> None:
@@ -25,12 +25,12 @@ def add_or(query: Dict[str, Any], arg: Dict[str, Any]) -> None:
 		query['$or'] = arg
 
 
-def match_array(arg: StrictIterable[Any]):
+def maybe_match_array(arg: Sequence[Any]):
 	"""
-	match_array(['ab']) -> returns 'ab'
-	match_array({'ab'}) -> returns 'ab'
-	match_array(['a', 'b']) -> returns {$in: ['a', 'b']}
-	match_array({'a', 'b'}) -> returns {$in: ['a', 'b']}
+	maybe_match_array(['ab']) -> returns 'ab'
+	maybe_match_array({'ab'}) -> returns 'ab'
+	maybe_match_array(['a', 'b']) -> returns {$in: ['a', 'b']}
+	maybe_match_array({'a', 'b'}) -> returns {$in: ['a', 'b']}
 	"""
 
 	if not isinstance(arg, strict_iterable):
@@ -46,3 +46,31 @@ def match_array(arg: StrictIterable[Any]):
 
 	# Otherwise cast to list
 	return {'$in': list(arg)}
+
+
+def maybe_use_each(arg: Sequence[Any]) -> Any:
+	if len(arg) == 1:
+		return next(iter(arg))
+	return {'$each': arg}
+
+
+def get_ids(col: Any, *, filter_stage: Optional[dict] = None) -> Set[Any]:
+	"""
+	Note1: timeit perf of find vs aggregate for cols with 10 / 700 elements:
+	[el['_id'] for el in col.find()] -> 518 µs / 6.1 ms
+	list(col.aggregate([{"$project": ..}, {"$group": ..}])) -> 536 µs / 1.72 ms
+
+	Pagination will be required (using $sort, $skip, $limit) if the returned doc exceeds 16MB
+	"""
+
+	agg = [
+		{"$project": {"_id": "$_id"}},
+		{"$group": {"_id": None, "ids": {"$push": "$$ROOT._id"}}}
+ 	]
+
+	if filter_stage:
+		agg.insert(0, filter_stage)
+
+	if res := next(col.aggregate(agg), None):
+		return set(res['ids'])
+	return set()
