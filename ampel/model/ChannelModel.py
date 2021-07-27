@@ -10,6 +10,7 @@
 from typing import Union, List, Optional, Dict, Any
 from ampel.model.StrictModel import StrictModel
 from ampel.model.purge.PurgeModel import PurgeModel
+#from ampel.model.ViewModel import ViewModel
 
 
 class ChannelModel(StrictModel):
@@ -20,6 +21,7 @@ class ChannelModel(StrictModel):
 		'content': {'delay': 100, 'format': 'json', 'unify': True},
 		'logs': {'delay': 50, 'format': 'csv'}
 	} # type: ignore[assignment]
+	# view: str = "MongoChannelView"
 	active: bool = True
 	hash: Optional[int]
 	distrib: Optional[str]
