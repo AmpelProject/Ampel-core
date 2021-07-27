@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 16.10.2019
-# Last Modified Date: 20.03.2020
+# Last Modified Date: 18.06.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import json
@@ -19,7 +19,6 @@ from ampel.config.collector.AliasConfigCollector import AliasConfigCollector
 from ampel.config.collector.ProcessConfigCollector import ProcessConfigCollector
 from ampel.config.collector.ChannelConfigCollector import ChannelConfigCollector
 from ampel.config.collector.ResourceConfigCollector import ResourceConfigCollector
-from ampel.config.collector.ForwardUnitConfigCollector import ForwardUnitConfigCollector
 from ampel.config.collector.ForwardProcessConfigCollector import ForwardProcessConfigCollector
 
 tiers: Tuple[Literal[0, 1, 2, 3], ...] = (0, 1, 2, 3)
@@ -30,10 +29,10 @@ class FirstPassConfig(dict):
 	"""
 
 	conf_keys: Dict[str, Optional[Type[ConfigCollector]]] = {
-		"db": DBConfigCollector,
+		"mongo": DBConfigCollector,
 		"logging": LoggingCollector,
 		"channel": ChannelConfigCollector,
-		"unit": None,
+		"unit": UnitConfigCollector,
 		"process": None,
 		"alias": None,
 		"resource": ResourceConfigCollector,
@@ -50,13 +49,6 @@ class FirstPassConfig(dict):
 
 		d['pwd'] = []
 
-		# Allow units to be defined in root key rather than in admin, base, etc... sub-entries
-		d['unit'] = ForwardUnitConfigCollector(
-			root_config=self, conf_section="unit", # type: ignore
-			target_collector_type=UnitConfigCollector,
-			logger=logger, verbose=verbose,
-		)
-
 		# Allow process to be defined in root key
 		d['process'] = ForwardProcessConfigCollector(
 			root_config=self, conf_section="process", # type: ignore
@@ -66,13 +58,22 @@ class FirstPassConfig(dict):
 
 		d['alias'] = {}
 		for k in tiers:
-			d['alias'][f"t{k}"] = AliasConfigCollector(conf_section='alias', logger=logger, verbose=verbose, tier=k)
-			# Allow processes to be defined in sub-tier entries already (process.t0, process.t1, ...)
-			d['process'][f"t{k}"] = ProcessConfigCollector(conf_section='process', logger=logger, verbose=verbose, tier=k)
-		d['process']["ops"] = ProcessConfigCollector(conf_section='process', logger=logger, verbose=verbose, tier="ops")
 
-		for ut in ('controller', 'admin', 'base', 'core', 'aux'):
-			d['unit'][ut] = UnitConfigCollector(conf_section=f'{ut} unit', logger=logger, verbose=verbose)
+			d['alias'][f"t{k}"] = AliasConfigCollector(
+				conf_section='alias', logger=logger,
+				verbose=verbose, tier=k
+			)
+
+			# Allow processes to be defined in sub-tier entries already (process.t0, process.t1, ...)
+			d['process'][f"t{k}"] = ProcessConfigCollector(
+				conf_section='process', logger=logger,
+				verbose=verbose, tier=k
+			)
+
+		d['process']["ops"] = ProcessConfigCollector(
+			conf_section='process', logger=logger,
+			verbose=verbose, tier="ops"
+		)
 
 		super().__init__(d)
 

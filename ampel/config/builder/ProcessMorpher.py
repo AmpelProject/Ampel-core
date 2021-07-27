@@ -4,22 +4,17 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 16.10.2019
-# Last Modified Date: 07.03.2021
+# Last Modified Date: 30.05.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import json
-from typing import Dict, Any, Literal, Optional
+from typing import Dict, Any
 from importlib import import_module
-from pydantic import create_model
-from pydantic.main import ModelMetaclass
 from ampel.log.AmpelLogger import AmpelLogger, VERBOSE
-from ampel.model.StrictModel import StrictModel
 from ampel.model.ProcessModel import ProcessModel
-from ampel.model.Secret import Secret
-from ampel.base.DataUnit import DataUnit
-from ampel.abstract.AbsPointT2Unit import AbsPointT2Unit
-from ampel.util.mappings import walk_and_process_dict, build_unsafe_short_dict_id, dictify
-from ampel.util.type_analysis import get_subtype
+from ampel.util.mappings import walk_and_process_dict, dictify
+from ampel.util.hash import build_unsafe_dict_id
+from ampel.base.AmpelBaseModel import AmpelBaseModel
 
 
 class ProcessMorpher:
@@ -53,7 +48,7 @@ class ProcessMorpher:
 		
 		# TODO: implement
 		if not self.process.get("version"):
-			self.process['version'] = build_unsafe_short_dict_id(
+			self.process['version'] = build_unsafe_dict_id(
 				dictify(self.process['processor']['config'])
 			)
 
@@ -64,7 +59,7 @@ class ProcessMorpher:
 
 		if self.process['tier'] == 3:
 
-			directive = self.process['processor']['config']['directive']
+			directive = self.process['processor']['config']['supply']
 			if 'select' in directive:
 				select = directive['select']
 				if select['unit'] not in ('T3StockSelector', 'T3FilteringStockSelector'):
@@ -94,7 +89,7 @@ class ProcessMorpher:
 		return self
 
 
-	def apply_template(self) -> 'ProcessMorpher':
+	def apply_template(self, first_pass_config: Dict) -> 'ProcessMorpher':
 		""" Applies template possibly associated with process """
 
 		# The process embedded in channel def requires templating itself
@@ -109,7 +104,7 @@ class ProcessMorpher:
 
 			self.process = self.templates[
 				self.process['template']
-			](**self.process).get_process(self.logger)
+			](**self.process).get_process(first_pass_config, self.logger)
 
 		return self
 
@@ -247,27 +242,28 @@ class ProcessMorpher:
 			self.logger.debug("Looking for t2 config to hash")
 
 		# Example of conf_dicts keys
-		# processor.config.directives.0.t0_add.t1_combine.0.t2_compute.units.0
- 		# processor.config.directives.0.t0_add.t1_combine.0.t2_compute.units.0.config.t2_dependency.0
- 		# processor.config.directives.0.t0_add.t2_compute.units.0
+		# processor.config.directives.0.combine.0.state_t2.0
+ 		# processor.config.directives.0.combine.0.state_t2.0.config.t2_dependency.0
+ 		# processor.config.directives.0.point_t2.0
 		conf_dicts: Dict[str, Dict[str, Any]] = {}
 
 		walk_and_process_dict(
 			arg = self.process,
 			callback = self._gather_t2_config_callback,
-			match = ['config'],
+			match = ['point_t2', 'stock_t2', 'state_t2'],
 			conf_dicts = conf_dicts
 		)
 
 		# This does the trick of processing nested config first
-		sorted_conf_dicts = {}
-		for k in sorted(conf_dicts, key=len, reverse=True):
-			sorted_conf_dicts[k] = conf_dicts[k]
+		sorted_conf_dicts = {
+			k: conf_dicts[k]
+			for k in sorted(conf_dicts, key=len, reverse=True)
+		}
 
 		for k, d in sorted_conf_dicts.items():
 
 			t2_unit = d["unit"]
-			conf = d["config"]
+			conf = d.get("config", {})
 
 			if self.verbose:
 				extra = {'process': self.process['name'], 'conf': k + ".config"}
@@ -291,26 +287,11 @@ class ProcessMorpher:
 				if override := d.get("override"):
 					conf = {**conf, **override}
 
-				if fqn := out_config['unit']['base'][t2_unit].get('fqn'):
+				if fqn := out_config['unit'][t2_unit].get('fqn'):
 
 					T2Unit = getattr(import_module(fqn), fqn.split('.')[-1])
-					excl: Any = DataUnit._annots.keys()
-
-					if issubclass(T2Unit, AbsPointT2Unit):
-						excl = list(excl) + ["ingest"]
-
-					if self.verbose:
-						self.logger.debug("Creating model", extra=extra)
-
-					# Model creation is required to take default config field values into account
-					model = self._create_model(
-						t2_unit,
-						T2Unit._annots,
-						T2Unit._defaults,
-						excl,
-					)
-
-					conf = model(**conf).dict()
+					T2Unit.__init__ = AmpelBaseModel.__init__
+					conf = T2Unit(**conf).__dict__
 
 				else:
 
@@ -333,11 +314,11 @@ class ProcessMorpher:
 			elif isinstance(conf, int):
 				if conf not in out_config['confid']:
 					raise ValueError(
-						f'Unknown T2 config (int) alias defined in channel {k}:\n {t2_unit}'
+						f'Unknown T2 config (int) alias defined by {k}:\n {t2_unit}'
 					)
 			else:
 				raise ValueError(
-					f'Unknown T2 config defined in channel {k}:\n {t2_unit}'
+					f'Unknown T2 config defined by {k}:\n {t2_unit}'
 				)
 
 		return self
@@ -348,47 +329,12 @@ class ProcessMorpher:
 		Used by walk_and_process_dict(...) from hash_t2_config(...)
 		"""
 
-		if "t2_compute.units" in path:
-			if self.verbose:
-				self.logger.info("# path: %s.config" % path)
-			kwargs['conf_dicts'][path] = d
+		if self.verbose:
+			self.logger.info(f"# path: {path}.{k}")
 
-
-	@classmethod
-	def _create_model(cls, name, annotations, defaults, exclude):
-		"""
-		Build a pydantic model from annotations and defaults, replacing Secret
-		fields with their dict representations
-		"""
-		fields = {
-			k: (v, defaults[k] if k in defaults else ...)
-			for k, v in annotations.items() if k not in exclude
-		} # type: ignore
-		# special case for Secret fields
-		for k in list(fields.keys()):
-			field_type = fields[k][0]
-			if get_subtype(Secret, field_type):
-				field_type = Dict[Literal["key"], str]
-				if get_subtype(type(None), field_type):
-					field_type = Optional[field_type]
-				fields[k] = (field_type,) + fields[k][1:]
-			elif type(field_type) is ModelMetaclass:
-				# Create __field_defaults__ (no longer generated by pydantic)
-				field_type.__field_defaults__ = {
-					k: field_type.__fields__[k].get_default()
-					for k in field_type.__fields__
-					if field_type.__fields__[k].get_default()
-				}
-				fields[k] = (
-					cls._create_model(
-						field_type.__name__,
-						field_type.__annotations__,
-						field_type.__field_defaults__,
-						set()
-					),
-					field_type.__field_defaults__
-				)
-		return create_model(
-			name, __config__ = StrictModel.__config__,
-			**fields
-		)
+		if d[k]:
+			for i, el in enumerate(d[k]):
+				if self.verbose:
+					self.logger.info(f"# path: {path}.{k}.{i}")
+					self.logger.info(el)
+				kwargs['conf_dicts'][f"{path}.{k}.{i}"] = el

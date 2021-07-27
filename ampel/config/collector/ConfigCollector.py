@@ -22,7 +22,7 @@ class ConfigCollector(dict):
 		tier: Optional[Literal[0, 1, 2, 3, "ops"]] = None
 	) -> None:
 
-		super().__init__(content if content else {})
+		super().__init__(**content if content else {})
 		self.verbose = verbose
 		self.has_error = False
 		self.conf_section = conf_section

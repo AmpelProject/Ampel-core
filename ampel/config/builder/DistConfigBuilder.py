@@ -59,19 +59,21 @@ class DistConfigBuilder(ConfigBuilder):
 			all_conf_files = get_files(dist_name, conf_dir, re.compile(f".*\.{ext}$")) # noqa
 
 			if all_conf_files and self.verbose:
-				self.logger.log(VERBOSE, f"Following conf files will be parsed: {all_conf_files}")
+				self.logger.log(VERBOSE, "Following conf files will be parsed:")
+				for el in all_conf_files:
+					self.logger.log(VERBOSE, el)
 
 			if ampel_conf := self.get_conf_file(all_conf_files, f"ampel.{ext}"):
 				self.load_conf_using_func(distrib, ampel_conf, self.load_ampel_conf) # type: ignore
 
-			# Channel, db (and template) can be defined by multiple files
+			# Channel, mongo (and template) can be defined by multiple files
 			# in a directory named after the corresponding config section name
-			for key in ("channel", "db", "process"):
+			for key in ("channel", "mongo", "process"):
 				if specialized_conf_files := self.get_conf_files(all_conf_files, f"/{key}/"):
 					for f in specialized_conf_files:
 						self.load_conf_using_func(distrib, f, self.first_pass_config[key].add)
 
-			# ("channel", "db", "resource")
+			# ("channel", "mongo", "resource")
 			for key in self.first_pass_config.conf_keys.keys():
 				if key == "alias":
 					continue

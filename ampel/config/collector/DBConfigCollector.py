@@ -8,7 +8,7 @@
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from typing import Dict, Any, Union
-from ampel.model.db.AmpelDBModel import AmpelDBModel
+from ampel.mongo.model.AmpelDBModel import AmpelDBModel
 from ampel.config.collector.ConfigCollector import ConfigCollector
 from ampel.config.collector.AbsDictConfigCollector import AbsDictConfigCollector
 from ampel.log import VERBOSE
@@ -23,13 +23,18 @@ class DBConfigCollector(AbsDictConfigCollector):
 		register_file: str
 	) -> None:
 
-		# Allow 'db': {'prefix': 'abc'} in general ampel.conf
+		# Allow 'mongo': {'prefix': ...} in general ampel.conf
 		if len(arg) == 1 and 'prefix' in arg:
 			self.__setitem__('prefix', arg['prefix'])
 			return
 
+		# Allow 'mongo': {'ingest': ...} in general ampel.conf
+		if len(arg) == 1 and 'ingest' in arg:
+			self.__setitem__('ingest', arg['ingest'])
+			return
+
 		# At this point, arg usually contains content of files
-		# contained in pyampel-core/conf/ampel-core/db/*
+		# contained in pyampel-core/conf/ampel-core/mongo/*
 
 		dbs = self.get('databases')
 

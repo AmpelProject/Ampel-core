@@ -4,13 +4,12 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 16.10.2019
-# Last Modified Date: 04.03.2021
+# Last Modified Date: 18.06.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-import re, importlib
-from typing import List, Union, Dict, Any
+import sys, re, importlib, subprocess, traceback
+from typing import List, Union, Dict, Any, Optional
 from ampel.util.collections import ampel_iter
-from ampel.util.crypto import b2_short_hash
 from ampel.model.StrictModel import StrictModel
 from ampel.config.collector.ConfigCollector import ConfigCollector
 from ampel.log import VERBOSE
@@ -23,12 +22,23 @@ class RemoteUnitDefinition(StrictModel):
 
 class UnitConfigCollector(ConfigCollector):
 
+
+	def __init__(self, **kwargs) -> None:
+		super().__init__(**kwargs)
+		self.err_fqns = []
+
+
 	def add(self,
 		arg: List[Union[Dict[str, str], str]],
 		dist_name: str,
 		version: Union[str, float, int],
 		register_file: str
 	) -> None:
+
+
+		# Cosmetic
+		agg_int = self.logger.handlers[0].aggregate_interval
+		self.logger.handlers[0].aggregate_interval = 1000
 
 		# tolerate list containing only 1 element defined as dict
 		for el in ampel_iter(arg):
@@ -37,13 +47,25 @@ class UnitConfigCollector(ConfigCollector):
 
 				if isinstance(el, str):
 					class_name = self.get_class_name(el)
+					if not (mro := self.get_mro(el, class_name)):
+						self.logger.break_aggregation()
+						continue
 					entry: Dict[str, Any] = {
 						'fqn': el,
-						'base': self.get_mro(el, class_name),
+						'base': mro,
 						'distrib': dist_name,
 						'file': register_file,
 						'version': version
 					}
+
+					if env := eval(
+						subprocess.run(
+							[sys.executable, '-m', 'ampel.config.builder.get_env', el],
+							stdout=subprocess.PIPE
+						).stdout.decode("utf-8")
+					):
+						entry['env'] = env
+
 
 				elif isinstance(el, dict):
 					try:
@@ -85,26 +107,12 @@ class UnitConfigCollector(ConfigCollector):
 						f'Unrecognized base class for {self.conf_section} {class_name} ' +
 						self.distrib_hint(dist_name, register_file)
 					)
-					return
+					continue
 
-				if self.conf_section == "admin unit":
-					if "AdminUnit" not in entry['base']:
-						raise ValueError(f"AdminUnit missing for admin unit {entry}")
-					entry['base'].remove("AdminUnit")
+				entry['base'].remove("AmpelBaseModel")
+				if "AmpelABC" in entry["base"]:
+					entry['base'].remove("AmpelABC")
 
-				elif self.conf_section == "base unit":
-
-					# Hash class name of T2 units
-					for el in entry['base']:
-						if 'T2Unit' in el:
-							entry['hash'] = b2_short_hash(class_name)
-							break
-
-					if "DataUnit" not in entry['base']:
-						raise ValueError(f"DataUnit missing for base unit {entry}")
-					entry['base'].remove("DataUnit")
-
-				entry['base'] = entry['base'][:-2]
 				if self.verbose:
 					self.logger.log(VERBOSE,
 						f'Adding {self.conf_section}: {class_name}'
@@ -123,6 +131,8 @@ class UnitConfigCollector(ConfigCollector):
 					exc_info=e
 				)
 
+		self.logger.handlers[0].aggregate_interval = agg_int
+
 
 	@staticmethod
 	def get_class_name(fqn: str) -> str:
@@ -131,26 +141,38 @@ class UnitConfigCollector(ConfigCollector):
 		Note: we here assume the ampel convention that module name equals class name
 		(i.e that we have one class per module)
 		"""
-		# pylint: disable=anomalous-backslash-in-string
 		return re.sub(r'.*\.', '', fqn) # noqa
 
 
-	@staticmethod
-	def get_mro(module_fqn: str, class_name: str) -> List[str]:
+	def get_mro(self, module_fqn: str, class_name: str) -> Optional[List[str]]:
 		"""
 		:param module_fqn: fully qualified name of module
 		:param class_name: declared class name in the module specified by "module_fqn"
 		:returns: the method resolution order (except for the first and last members
 		that is of no use for our purpose) of the specified class
 		"""
-		UnitClass = getattr(
-			# import using fully qualified name
-			importlib.import_module(module_fqn),
-			class_name
-		)
+
+		try:
+			UnitClass = getattr(
+				# import using fully qualified name
+				importlib.import_module(module_fqn),
+				class_name
+			)
+		except Exception:
+
+			self.err_fqns.append(module_fqn)
+			# Suppress superfluous traceback entries
+			print("", file=sys.stderr)
+			print("Cannot import " + module_fqn, file=sys.stderr)
+			print("-" * (len(module_fqn) + 14), file=sys.stderr)
+			for el in traceback.format_exc().splitlines():
+				if "_bootstrap" not in el and "in import_module" not in el:
+					print(el, file=sys.stderr)
+
+			return None
 
 		return [
-			UnitConfigCollector.get_class_name(el.__name__)
-			for el in UnitClass.__mro__[1:-1]
+			el.__name__
+			for el in UnitClass.__mro__[:-1]
 			if 'ampel' in el.__module__
 		]
