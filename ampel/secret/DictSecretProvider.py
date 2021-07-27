@@ -1,77 +1,58 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-core/ampel/dev/DictSecretProvider.py
+# File              : Ampel-core/ampel/secret/DictAbsSecretProvider.py
 # License           : BSD-3-Clause
 # Author            : Jakob van Santen <jakob.van.santen@desy.de>
 # Date              : 14.08.2020
-# Last Modified Date: 14.08.2020
-# Last Modified By  : Jakob van Santen <jakob.van.santen@desy.de>
+# Last Modified Date: 21.06.2021
+# Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-from typing import Any, Dict, Type, Tuple, get_args, get_origin, overload
-import subprocess
-import yaml
-
+import subprocess, yaml
+from typing import Any, Dict
 from ampel.abstract.AbsSecretProvider import AbsSecretProvider
-from ampel.model.Secret import Secret, T
-
-
-class SecretWrapper(Secret[T]):
-
-    value: T
-
-    def __repr_args__(self):
-        return {**dict(super().__repr_args__()), **{'value': '********'}}.items()
-
-    def get(self) -> T:
-        return self.value
+from ampel.abstract.Secret import Secret
+from ampel.secret.NamedSecret import NamedSecret
 
 
 class DictSecretProvider(AbsSecretProvider):
 
-    @classmethod
-    def load(cls, path: str) -> 'DictSecretProvider':
-        """
-        Load from a YAML file. If the file was encrypted with sops_, it will
-        be decrypted with ``sops -d``.
+	@classmethod
+	def load(cls, path: str) -> 'DictSecretProvider':
+		"""
+		Load from a YAML file. If the file was encrypted with sops_, it will
+		be decrypted with ``sops -d``.
 
-        .. _sops: https://github.com/mozilla/sops
-        """
-        with open(path) as f:
-            payload = yaml.safe_load(f)
-        if "sops" in payload:
-            try:
-                payload = yaml.safe_load(subprocess.check_output(['sops', '-d', path]))
-            except Exception as exc:
-                raise RuntimeError(f"Can't read sops-encrypted file {path}") from exc
-        return cls(payload)
+		.. _sops: https://github.com/mozilla/sops
+		"""
+		with open(path) as f:
+			payload = yaml.safe_load(f)
 
-    def __init__(self, items: Dict[str, Any]) -> None:
-        """
-        :param items:
-        """
-        self.store: Dict[str, Any] = dict(items)
+		if "sops" in payload:
+			try:
+				payload = yaml.safe_load(
+					subprocess.check_output(['sops', '-d', path])
+				)
+			except Exception as exc:
+				raise RuntimeError(f"Can't read sops-encrypted file {path}") from exc
 
-    def get(self, key: str, value_type: Type[T]) -> SecretWrapper[T]:
-        try:
-            value = self.store[key]
-        except KeyError:
-            raise KeyError(f"Unknown secret '{key}'")
-        if origin := get_origin(value_type):
-            value_type = origin
-        if not isinstance(value, value_type): # type: ignore[arg-type]
-            raise ValueError(
-                f"Retrieved value has not the expected type.\n"
-                f"Expected: {value_type}\n"
-                f"Found: {type(value)}"
-            )
-        return SecretWrapper(key=key, value=value)
+		return cls(payload)
 
 
-class PotemkinSecretProvider(AbsSecretProvider):
+	def __init__(self, items: Dict[str, Any]) -> None:
+		""" """
+		self.store: Dict[str, Any] = dict(items)
 
-    def get(self, key: str, value_type: Type[T]) -> SecretWrapper[T]:
-        if get_origin(value_type) is tuple:
-            value = tuple(t() for t in get_args(value_type))
-        else:
-            value = value_type() # type: ignore[assignment]
-        return SecretWrapper(key=key, value=value) # type: ignore[arg-type]
+
+	def tell(self, arg: Secret) -> bool:
+		"""
+		Potentially update an initialized Secret instance with
+		the actual sensitive information associable with it.
+		:returns: True if the Secret was told/resolved or False
+		if the provided Secret is unknown to this secret provider
+		"""
+
+		if isinstance(arg, NamedSecret) and arg.label in self.store:
+			arg.set(self.store[arg.label])
+			return True
+
+		return False
