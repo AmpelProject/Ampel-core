@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-core/ampel/t3/complement/AbsT3DataAppender.py
+# File              : Ampel-core/ampel/abstract/AbsBufferComplement.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 16.01.2020
@@ -9,13 +9,15 @@
 
 from typing import Iterable, Optional, Dict, Any
 from ampel.log import AmpelLogger
-from ampel.base import abstractmethod
+from ampel.base.AmpelABC import AmpelABC
+from ampel.base.decorator import abstractmethod
 from ampel.struct.AmpelBuffer import AmpelBuffer
-from ampel.core.AdminUnit import AdminUnit
+from ampel.core.ContextUnit import ContextUnit
 
-# Inherits AdminUnit because implementing classes might need access to
+
+# Inherits ContextUnit because implementing classes might need access to
 # an AmpelConfig instance (foremost to the contained resource definitions)
-class AbsT3DataAppender(AdminUnit, abstract=True):
+class AbsBufferComplement(AmpelABC, ContextUnit, abstract=True):
 	"""
 	Complement :class:`~ampel.core.AmpelBuffer.AmpelBuffer` with information
 	stored outside the Ampel database.
