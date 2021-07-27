@@ -2,12 +2,12 @@ from typing import Any
 
 from ampel.abstract.AbsOpsUnit import AbsOpsUnit
 from ampel.model.UnitModel import UnitModel
-from ampel.abstract.AbsProcessorUnit import AbsProcessorUnit
+from ampel.abstract.AbsEventUnit import AbsEventUnit
 from ampel.log import AmpelLogger, LogFlag, SHOUT
 from ampel.log.utils import report_exception
 
 
-class OpsProcessor(AbsProcessorUnit):
+class OpsProcessor(AbsEventUnit):
 
     execute: UnitModel
     update_beacon: bool = True
@@ -26,8 +26,8 @@ class OpsProcessor(AbsProcessorUnit):
                 force_refresh=True,
             )
             last_beacon = beacon_col.find_one({"_id": self.process_name})
-            beacon = self.context.loader.new_admin_unit(
-                unit_model=self.execute,
+            beacon = self.context.loader.new_context_unit(
+                model=self.execute,
                 context=self.context,
                 sub_type=AbsOpsUnit,
                 logger=logger,
