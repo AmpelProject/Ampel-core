@@ -32,7 +32,7 @@ from ampel.config.AmpelConfig import AmpelConfig
 from ampel.core.AmpelContext import AmpelContext
 from ampel.core.AmpelController import AmpelController
 from ampel.core.UnitLoader import UnitLoader
-from ampel.dev.DictSecretProvider import DictSecretProvider
+from ampel.secret.DictSecretProvider import DictSecretProvider
 from ampel.log.LogFlag import LogFlag
 from ampel.metrics.AmpelDBCollector import AmpelDBCollector
 from ampel.metrics.AmpelProcessCollector import AmpelProcessCollector
@@ -41,7 +41,7 @@ from ampel.model.ProcessModel import ProcessModel
 from ampel.model.StrictModel import StrictModel
 from ampel.model.UnitModel import UnitModel
 from ampel.enum.DocumentCode import DocumentCode
-from ampel.util.mappings import build_unsafe_dict_id
+from ampel.util.hash import build_unsafe_dict_id
 
 if TYPE_CHECKING:
     from ampel.protocol.LoggerProtocol import LoggerProtocol
@@ -487,7 +487,7 @@ def get_stock(stock_id: int):
         context.db.get_collection("stock").find_one({"_id": stock_id}),
         json_util.RELAXED_JSON_OPTIONS,
     )
-    for k in "created", "modified":
+    for k in "created", "updated":
         doc[k] = {facet: datetime.fromtimestamp(ts) for facet, ts in doc[k].items()}
     for jentry in doc["journal"]:
         jentry["ts"] = datetime.fromtimestamp(jentry["ts"])
