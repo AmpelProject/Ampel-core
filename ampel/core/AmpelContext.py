@@ -7,9 +7,11 @@
 # Last Modified Date: 18.03.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-from typing import Dict, Any, Optional, Literal, Iterable, TYPE_CHECKING
+from typing import Dict, Any, Optional, Literal, Iterable, Union, TYPE_CHECKING
 from ampel.config.AmpelConfig import AmpelConfig
 from ampel.base.AuxUnitRegister import AuxUnitRegister
+from ampel.secret.AmpelVault import AmpelVault
+from ampel.secret.AESecretProvider import AESecretProvider
 
 # Avoid cyclic import issues
 if TYPE_CHECKING:
@@ -27,11 +29,17 @@ class AmpelContext:
 
 	#: System configuration
 	config: AmpelConfig
+
 	#: Database client
 	db: 'AmpelDB'
+
 	#: Instantiates a unit from a :class:`~ampel.model.UnitModel.UnitModel`.
 	loader: 'UnitLoader' # forward reference to avoid cyclic import issues
+
+	vault: Optional[AmpelVault]
+
 	resource: Optional[Dict[str, Any]] = None
+
 	admin_msg: Optional[str] = None
 
 
@@ -52,35 +60,18 @@ class AmpelContext:
 		# try to register aux units globally
 		try:
 			AuxUnitRegister.initialize(
-				config.get("unit.aux", ret_type=dict, raise_exc=True)
+				{
+					k: v for k, v in config.get("unit", ret_type=dict, raise_exc=True).items()
+					if 'ContextUnit' not in v['base'] and 'LogicalUnit' not in v['base']
+				}
 			)
 		except Exception:
 			print("UnitLoader auxiliary units auto-registration failed")
 
 
 	@classmethod
-	def new(cls, config: AmpelConfig, **kwargs) -> 'AmpelContext':
-
-		if not isinstance(config, AmpelConfig):
-			raise ValueError("Illegal value provided with parameter 'config'")
-
-		# Avoid cyclic import issues
-		from ampel.core.UnitLoader import UnitLoader # noqa
-		from ampel.core.AmpelDB import AmpelDB
-
-		secrets = kwargs.pop("secrets", None)
-
-		return cls(
-			config = config,
-			db = AmpelDB.new(config, secrets),
-			loader = UnitLoader(config=config, secrets=secrets),
-			**kwargs
-		)
-
-
-	@classmethod
 	def load(cls,
-		config_file_path: str,
+		config: Union[str, Dict],
 		pwd_file_path: Optional[str] = None,
 		pwds: Optional[Iterable[str]] = None,
 		freeze_config: bool = True,
@@ -89,13 +80,10 @@ class AmpelContext:
 		"""
 		Instantiates a new AmpelContext instance.
 
-		:param config:
-			either a local path to an ampel config file (yaml or json)
-			or directly an AmpelConfig instance.
-		:param pwd_file_path:
-			if provided, the encrypted conf entries possibly contained in the
-			ampel config instance will be decrypted using the provided password file.
-			The password file must define one password per line.
+		:param config: local path to an ampel config file (yaml or json) or loaded config as dict
+		:param pwd_file_path: path to a text file containing one password per line.
+		The underlying AmpelVault will be initialized with an AESecretProvider configured with these pwds.
+		:param pwds: Same as 'pwd_file_path' except a list of passwords is provided directly via this parameter.
 		:param freeze_config:
 			whether to convert the elements contained of ampel config
 			into immutable structures (:class:`dict` ->
@@ -103,8 +91,29 @@ class AmpelContext:
 			Parameter does only apply if the config is loaded by this method, i.e if parameter 'config' is a str.
 		"""
 
-		return cls.new(
-			config = AmpelConfig.load(config_file_path, pwd_file_path, pwds, freeze_config),
+		# Avoid cyclic import issues
+		from ampel.core.UnitLoader import UnitLoader # noqa
+		from ampel.core.AmpelDB import AmpelDB
+
+		alconf = AmpelConfig.load(config) if isinstance(config, str) else config
+		vault = kwargs.pop("vault", AmpelVault([]))
+
+		if pwds:
+			vault.providers.append(
+				AESecretProvider(pwds)
+			)
+		elif pwd_file_path:
+			with open(pwd_file_path, "r") as f:
+				vault.providers.append(
+					AESecretProvider([l.strip() for l in f.readlines()])
+				)
+
+		db = AmpelDB.new(alconf, vault)
+
+		return cls(
+			config = alconf,
+			db = db,
+			loader = UnitLoader(config=alconf, db=db, vault=vault),
 			**kwargs
 		)
 
