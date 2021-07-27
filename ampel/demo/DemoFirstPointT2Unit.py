@@ -4,20 +4,20 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 25.03.2020
-# Last Modified Date: 14.06.2020
+# Last Modified Date: 30.05.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from time import time
-from typing import Dict, Union, Tuple
-from ampel.type.composed import T2Result
+from typing import Union
+from ampel.types import UBson
+from ampel.struct.UnitResult import UnitResult
 from ampel.content.DataPoint import DataPoint
-from ampel.struct.JournalTweak import JournalTweak
 from ampel.abstract.AbsPointT2Unit import AbsPointT2Unit
 
 
 class DemoFirstPointT2Unit(AbsPointT2Unit):
 
-	ingest: Dict = {'eligible': 'first'}
+	ingest = {'filter': 'PPSFilter', 'sort': 'jd', 'select': 'first'}
 
-	def run(self, datapoint: DataPoint) -> Union[T2Result, Tuple[T2Result, JournalTweak]]:
+	def process(self, datapoint: DataPoint) -> Union[UBson, UnitResult]:
 		return {"time": time()}

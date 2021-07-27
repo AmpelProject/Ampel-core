@@ -7,13 +7,13 @@
 # Last Modified Date: 19.03.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-from ampel.abstract.AbsProcessorUnit import AbsProcessorUnit
+from ampel.abstract.AbsEventUnit import AbsEventUnit
 from ampel.model.UnitModel import UnitModel
 from ampel.log import AmpelLogger
 from ampel.abstract.AbsT3Unit import AbsT3Unit
 
 
-class DemoProcessor(AbsProcessorUnit):
+class DemoProcessor(AbsEventUnit):
 
 	parameter_a: int
 	parameter_b: int = 200
@@ -29,7 +29,7 @@ class DemoProcessor(AbsProcessorUnit):
 		logger = AmpelLogger.get_logger()
 
 		# Feedback
-		logger.info("Method run() is being executed")
+		logger.info("Executing run()")
 
 		# Processor units have access to the associated process id
 		logger.info(f"Requested by process {self.process_name}")
@@ -46,11 +46,10 @@ class DemoProcessor(AbsProcessorUnit):
 		loader = ctx.loader
 
 		# With which base units can be instantiated
-		unit = loader.new_base_unit(
-			unit_model = UnitModel(unit = "DemoT3Unit"),
+		unit = loader.new_logical_unit(
+			model = UnitModel(unit = "DemoT3Unit"),
 			logger = logger,
 			sub_type = AbsT3Unit
 		)
 
-		# With which base units can be instantiated
-		unit.done()
+		print(unit)
