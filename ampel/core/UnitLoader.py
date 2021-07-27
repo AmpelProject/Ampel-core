@@ -4,54 +4,54 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 07.10.2019
-# Last Modified Date: 07.03.2021
+# Last Modified Date: 21.06.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-from contextlib import contextmanager
-from functools import partial
+import sys
 from importlib import import_module
-from typing import (
-	Dict, Iterator, Type, Any, Union, Optional, TypeVar, Sequence,
-	Literal, List, overload, get_args, get_origin, cast
-)
-
-from pydantic.main import ModelMetaclass, create_model
-from ampel.type import check_class
+from functools import partial
+from pathlib import Path
+from hashlib import blake2b
+from contextlib import contextmanager
+from typing import Dict, Iterator, Type, Any, Union, Optional, \
+	TypeVar, Sequence, List, overload, cast
+from pydantic.main import create_model
+from ampel.types import check_class
 from ampel.util.collections import ampel_iter
 from ampel.util.freeze import recursive_unfreeze
 from ampel.util.mappings import merge_dicts
-from ampel.util.type_analysis import get_subtype
 from ampel.view.ReadOnlyDict import ReadOnlyDict
 from ampel.base.AmpelBaseModel import AmpelBaseModel
 from ampel.base.AuxUnitRegister import AuxUnitRegister
-from ampel.base.DataUnit import DataUnit
+from ampel.base.LogicalUnit import LogicalUnit
 from ampel.core.AmpelContext import AmpelContext
-from ampel.core.AdminUnit import AdminUnit
+from ampel.core.ContextUnit import ContextUnit
+from ampel.core.AmpelDB import AmpelDB
 from ampel.model.StrictModel import StrictModel
 from ampel.model.UnitModel import UnitModel
-from ampel.model.Secret import Secret
+from ampel.abstract.Secret import Secret
+from ampel.secret.AmpelVault import AmpelVault
 from ampel.model.t3.AliasableModel import AliasableModel
 from ampel.config.AmpelConfig import AmpelConfig
 from ampel.log.AmpelLogger import AmpelLogger
-from ampel.abstract.AbsSecretProvider import AbsSecretProvider
+from ampel.util.hash import build_unsafe_dict_id
+from ampel.util.mappings import dictify
 
 T = TypeVar('T', bound=AmpelBaseModel)
-BT = TypeVar('BT', bound=DataUnit)
-PT = TypeVar('PT', bound=AdminUnit)
+LT = TypeVar('LT', bound=LogicalUnit)
+CT = TypeVar('CT', bound=ContextUnit)
+pyv = f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}"
 
 
 class UnitLoader:
 
 	def __init__(self,
 		config: AmpelConfig,
-		tier: Optional[Literal[0, 1, 2, 3]] = None,
-		secrets: Optional[AbsSecretProvider] = None,
-		) -> None:
+		db: AmpelDB,
+		provenance: bool = True,
+		vault: Optional[AmpelVault] = None
+	) -> None:
 		"""
-		For optimization purposes, try to set the parameter tier.
-		For example, a T2 controller should spawn an UnitLoader
-		using UnitLoader(ampel_config, 2).
-
 		:raises: ValueError in case bad arguments are provided
 		"""
 
@@ -61,20 +61,227 @@ class UnitLoader:
 				f"AmpelConfig (provided: {type(config)})"
 			)
 
-		self.ampel_config = config
-		self.unit_defs: List[Dict] = [
-			config._config['unit']['controller'],
-			config._config['unit']['base'],
-			config._config['unit']['admin'],
-			config._config["unit"]["core"],
-			config._config["unit"]["aux"],
-		]
+		self.db = db
+		self.vault = vault
+		self.config = config
+		self.provenance = provenance
+		self.unit_defs: Dict = config._config['unit']
+		self.aliases: List[Dict] = [config._config['alias'][f"t{el}"] for el in (0, 3, 1, 2)]
+		self._dyn_register: Optional[Dict[str, Type[LogicalUnit]]] = None # potentially updated by DevAmpelContext
 
-		self.aliases: List[Dict] = [
-			config._config['alias'][f"t{el}"] for el in (0, 3, 1, 2)
-		]
 
-		self.secrets = secrets
+
+	@overload
+	def new_logical_unit(self,
+		model: UnitModel, logger: AmpelLogger, *, sub_type: Type[LT], **kwargs
+	) -> LT:
+		...
+	@overload
+	def new_logical_unit(self,
+		model: UnitModel, logger: AmpelLogger, *, sub_type: None = ..., **kwargs
+	) -> LogicalUnit:
+		...
+	def new_logical_unit(self,
+		model: UnitModel,
+		logger: AmpelLogger, *,
+		sub_type: Optional[Type[LT]] = None,
+		**kwargs
+	) -> Union[LT, LogicalUnit]:
+		"""
+		Logical units require logger and resource as init parameters, additionaly to the potentialy
+		defined custom parameters which will be provided as a union of the model config
+		and the kwargs provided to this method (the latter having prevalance)
+		:raises: ValueError is the unit defined in the model is unknown
+		"""
+		return self.new(
+			model,
+			unit_type = sub_type or LogicalUnit,
+			logger = logger,
+			resource = self.get_resources(model),
+			**kwargs
+		)
+
+
+	@overload
+	def new_context_unit(self,
+		model: UnitModel, context: AmpelContext, *, sub_type: Type[CT], **kwargs
+	) -> CT:
+		...
+	@overload
+	def new_context_unit(self,
+		model: UnitModel, context: AmpelContext, *, sub_type: None = ..., **kwargs
+	) -> ContextUnit:
+		...
+	def new_context_unit(self,
+		model: UnitModel,
+		context: AmpelContext, *,
+		sub_type: Optional[Type[CT]] = None,
+		**kwargs
+	) -> Union[CT, ContextUnit]:
+		"""
+		Context units require an AmpelContext instance as init parameters, additionaly to
+		potentialy defined dedicated custom parameters.
+		:raises: ValueError is the unit defined in the model is unknown
+		"""
+		return self.new(
+			model, unit_type=sub_type or ContextUnit, context=context, **kwargs
+		)
+
+
+	@overload
+	def new(self, model: UnitModel, *, unit_type: Type[T], **kwargs) -> T:
+		...
+	@overload
+	def new(self, model: UnitModel, *, unit_type: None = ..., **kwargs) -> AmpelBaseModel:
+		...
+	def new(self,
+		model: UnitModel, *,
+		unit_type: Optional[Type[T]] = None,
+		**kwargs
+	) -> Union[AmpelBaseModel, T]:
+		"""
+		Instantiate new object based on provided model and kwargs.
+		:param 'unit_type': performs isinstance check and raise error on mismatch. Enables mypy/other static checks.
+		:returns: unit instance, trace id (0 if not computable)
+		"""
+
+		if not isinstance(model, UnitModel):
+			raise ValueError(f"Unexpected model: '{type(model)}'")
+
+		provenance = kwargs.pop('_provenance', self.provenance)
+
+		Klass = self.get_class_by_name(model.unit, unit_type) # type: ignore
+		if unit_type:
+			check_class(Klass, unit_type)
+
+		init_config = self.get_init_config(model.config, model.override)
+		unit = Klass(**(init_config | kwargs | (model.secrets or {})))
+		trace_id = 0
+
+		# potentially sync trace_ids with DB (Ampel_ext)
+		if provenance and '_trace_content' in unit.__dict__:
+
+			trace_dict = {
+				'py': pyv,
+				'unit': model.unit,
+				'digest': self.get_digest(Klass),
+				'version': self.config.get(f"unit.{model.unit}.version", str, raise_exc=True)
+			}
+
+			if c := unit.__dict__.get("_trace_content"):
+				trace_dict['config'] = dictify(c)
+
+			if env := self.config.get(f"unit.{model.unit}.env", dict):
+				trace_dict['env'] = env
+
+			try:
+
+				# Note: we could implement a hash collision detection mechanism here
+				trace_id = build_unsafe_dict_id(trace_dict, ret=int)
+
+				# Save trace id to external collection
+				if trace_id not in self.db.trace_ids:
+					trace_dict['_id'] = trace_id
+					self.db.add_trace_id(trace_id, trace_dict)
+
+			# Non-serializable content
+			except Exception:
+				trace_id = -1
+				# raise e
+
+		unit._trace_id = trace_id
+
+		# Resolve secrets
+		for k, v in unit.__dict__.items():
+			if isinstance(v, Secret):
+				if not self.vault.resolve_secret(v):
+					raise ValueError(f"Secret {k} not found")
+				
+		if hasattr(unit, "post_init"):
+			unit.post_init()
+
+		return unit
+
+
+	@staticmethod
+	def get_digest(Klass: Type) -> str:
+
+		try:
+			return blake2b(
+				Path(sys.modules[Klass.__module__].__file__).read_bytes()
+			).hexdigest()[:7]
+		except Exception:
+			return "unspecified"
+
+
+	@overload
+	def get_class_by_name(self, name: str, unit_type: Type[T]) -> Type[T]:
+		...
+	@overload
+	def get_class_by_name(self, name: str, unit_type: None = ...) -> Type:
+		...
+	def get_class_by_name(self, name: str, unit_type: Optional[Type[T]] = None) -> Union[Type, Type[T]]:
+		"""
+		Matches the parameter 'name' with the unit definitions defined in the ampel_config.
+		This allows to retrieve the corresponding fully qualified name of the class and to load it.
+
+		:param unit_type:
+			- LogicalUnit or any sublcass of LogicalUnit
+			- ContextUnit or any sublcass of ContextUnit
+			- If None (auxiliary class), returned object will have Type[Any]
+
+		:raises: ValueError if unit cannot be found or loaded or if parent class is unrecognized
+		"""
+		if name in AuxUnitRegister._defs:
+			return AuxUnitRegister.get_aux_class(name, sub_type=unit_type)
+
+		if self._dyn_register and name in self._dyn_register:
+			return self._dyn_register[name]
+
+		if name in self.unit_defs:
+			fqn = self.unit_defs[name]['fqn']
+		else:
+			raise ValueError(f"Ampel unit not found: {name}")
+
+		# Note: importlib.import_module caches internally imported modules
+		return getattr(import_module(fqn), name)
+
+
+	def get_init_config(self,
+		config: Optional[Union[int, str, Dict[str, Any]]] = None,
+		override: Optional[Dict[str, Any]] = None,
+		kwargs: Optional[Dict[str, Any]] = None,
+		unfreeze: bool = True
+	) -> Dict[str, Any]:
+		""" :raises: ValueError if config alias is not found """
+
+		ret: Optional[Dict[str, Any]] = {}
+
+		if isinstance(config, (dict, str)):
+			ret = self.resolve_aliases(config)
+
+		elif isinstance(config, int):
+
+			try:
+				d = self.config.get_conf_id(config)
+			# confid not found (obsolete or dynamically generated by isolated process)
+			except Exception as e:
+				l = list(self.db.col_conf_ids.find({"_id": config}))
+				if len(l) == 0:
+					raise e
+				del l[0]['_id']
+				d = l[0]
+				
+			ret = recursive_unfreeze(d) if unfreeze and isinstance(d, ReadOnlyDict) else d
+
+			# save un-registered (in ampel conf but not in db) confid to external collection for posterity
+			if self.provenance and config not in self.db.conf_ids:
+				self.db.add_conf_id(config, ret)
+
+		if ret is None and config is not None:
+			raise ValueError(f"Config alias {config} not found")
+
+		return merge_dicts([ret, override, kwargs]) or {}
 
 
 	def resolve_aliases(self, value):
@@ -93,121 +300,29 @@ class UnitLoader:
 		else:
 			return value
 
-	@classmethod
-	def resolve_secrets(
-		cls,
-		secrets: Optional[AbsSecretProvider],
-		unit: Union[Type[AmpelBaseModel], ModelMetaclass],
-		annotations: Dict[str, Any],
-		defaults: Dict[str, Any],
-		init_config: Dict[str, Any]
-	) -> Dict[str, Any]:
+
+	def get_resources(self, model: UnitModel) -> Dict[str, Any]:
 		"""
-		Recursively walk annotations, resolving any Secret fields that are found
+		Resources are defined using the static variable 'require' in ampel units
+		-> example: catsHTM.default
 		"""
-		for field, typ in annotations.items():
-			# Secret, or Union containing Secret
-			if secret_field := get_subtype(Secret, typ):
-				if field in init_config:
-					value = init_config[field]
-				elif field in defaults:
-					value = defaults[field]
-				else:
-					raise KeyError(f"{unit.__qualname__}.{field} needs a value")
 
-				# skip if optional or preconfigured
-				if value is None and get_subtype(type(None), typ) or isinstance(value, Secret):
-					continue
-				elif not secrets:
-					raise RuntimeError(f"{unit.__qualname__}.{field} needs a secret provider")
-				elif not (isinstance(value, dict) and "key" in value):
-					raise ValueError(f"{unit.__qualname__}.{field}" + " should be configured with a dict of the form {\"key\": \"secret-name\"}")
-				target_type = getattr(secret_field, '__args__', [str])[0]
-				init_config[field] = secrets.get(value["key"], target_type)
+		resources: Dict[str, Any] = {}
+		Klass = self.get_class_by_name(model.unit)
 
-			# other model, possibly containing Secret fields
-			elif type(typ) is ModelMetaclass:
-				value = {}
-				if field in init_config:
-					value = init_config[field]
-				elif field in defaults:
-					value = defaults[field]
-				# Create __field_defaults__ (no longer generated by pydantic)
-				field_defaults = {
-					k: typ.__fields__[k].get_default()
-					for k in typ.__fields__
-					if typ.__fields__[k].get_default()
-				}
-				init_config[field] = cls.resolve_secrets(secrets, typ, typ.__annotations__, field_defaults, value)
+		# Load possibly required global resources
+		for k in ampel_iter(getattr(Klass, 'require', [])):
 
-			# Union, possibly containing other models
-			elif get_origin(typ) is Union:
-				value = {}
-				if field in init_config:
-					value = init_config[field]
-				elif field in defaults:
-					value = defaults[field]
-				# skip if optional
-				if value is None and type(None) in get_args(typ):
-					continue
-				for subtyp in get_args(typ):
-					if type(subtyp) is ModelMetaclass:
-						# configure for first model that satisfied by the initial value
-						if isinstance(value, subtyp):
-							break
-						elif isinstance(value, dict):
-							# Create __field_defaults__ (no longer generated by pydantic)
-							field_defaults = {
-								k: subtyp.__fields__[k].get_default()
-								for k in subtyp.__fields__
-								if subtyp.__fields__[k].get_default()
-							}
-							if set(value.keys()).union(field_defaults) == set(subtyp.__fields__.keys()):
-								init_config[field] = cls.resolve_secrets(
-									secrets, subtyp, subtyp.__annotations__, field_defaults, value
-								)
-								break
-		return init_config
+			if k is None:
+				continue
 
+			# Global resource example: extcat
+			if (resource := self.config.get(f'resource.{k}')) is None:
+				raise ValueError(f"Global resource not available: {k}")
 
-	def get_init_config(self,
-		unit: Union[str, Type[AmpelBaseModel]],
-		config: Optional[Union[int, str, Dict[str, Any]]] = None,
-		override: Optional[Dict[str, Any]] = None,
-		kwargs: Optional[Dict[str, Any]] = None,
-		resolve_secrets = True,
-	) -> Dict[str, Any]:
-		""" :raises: ValueError is model type is not recognized """
+			resources[k] = resource
 
-		ret: Optional[Dict[str, Any]] = {}
-
-		if isinstance(config, (dict, str)):
-			ret = self.resolve_aliases(config)
-
-		elif isinstance(config, int):
-			if isinstance(
-				confid := self.ampel_config.get(f"confid.{config}", dict, raise_exc=True),
-				ReadOnlyDict
-			):
-				ret = recursive_unfreeze(confid)
-			else:
-				ret = confid
-
-		if ret is None and config is not None:
-			raise ValueError(f"Config alias {config} not found")
-
-		ret = merge_dicts([ret, override, kwargs])
-		if resolve_secrets and ret is not None:
-			if isinstance(unit, str):
-				unit = self.get_class_by_name(unit)
-			if isinstance(unit, ModelMetaclass):
-				annotations, defaults = unit.__annotations__, unit.__field_defaults__
-			elif issubclass(unit, AmpelBaseModel):
-				annotations, defaults = unit._annots, unit._defaults
-			else:
-				raise TypeError
-			ret = self.resolve_secrets(self.secrets, unit, annotations, defaults, ret)
-		return ret if ret is not None else {}
+		return resources
 
 
 	@contextmanager
@@ -217,7 +332,7 @@ class UnitLoader:
 		"""
 		extra_validator = (False, partial(_validate_unit_model, unit_loader=self))
 		UnitModel.__post_root_validators__.append(extra_validator)
-		AliasableModel._config = self.ampel_config
+		AliasableModel._config = self.config
 		try:
 			yield
 		finally:
@@ -225,157 +340,13 @@ class UnitLoader:
 			AliasableModel._config = None
 
 
-
-	def get_resources(self, unit_model: UnitModel) -> Dict[str, Any]:
-		"""
-		Resources are defined using the static variable 'require' in ampel units
-		-> example: catsHTM.default
-		"""
-
-		resources: Dict[str, Any] = {}
-
-		if isinstance(unit_model.unit, str):
-			unit_model.unit = self.get_class_by_name(unit_model.unit)
-
-		# Load possibly required global resources
-		for k in ampel_iter(getattr(unit_model.unit, 'require', [])):
-
-			if k is None:
-				continue
-
-			# Global resource example: extcat
-			if (resource := self.ampel_config.get(f'resource.{k}')) is None:
-				raise ValueError(f"Global resource not available: {k}")
-
-			resources[k] = resource
-
-		return resources
-
-
-	@overload
-	def get_class_by_name(self, name: str, unit_type: Type[T]) -> Type[T]:
-		...
-	@overload
-	def get_class_by_name(self, name: str, unit_type: None = ...) -> Type[AmpelBaseModel]:
-		...
-	def get_class_by_name(self, name: str, unit_type: Optional[Type[T]] = None) -> Union[Type[T], Type[AmpelBaseModel]]:
-		"""
-		Matches the parameter 'name' with the unit definitions defined in the ampel_config.
-		This allows to retrieve the corresponding fully qualified name of the class and to load it.
-
-		:param unit_type:
-			- DataUnit or any sublcass of DataUnit
-			- AdminUnit or any sublcass of AdminUnit
-			- If None, FQN will be retrieved from the auxiliary class conf entries and returned object will have Type[Any]
-
-		:raises: ValueError if unit cannot be found or loaded or if parent class is unrecognized
-		"""
-
-		if name in AuxUnitRegister._defs:
-			return AuxUnitRegister.get_aux_class(name, sub_type=unit_type)
-
-		# Loop through list of class definition dicts
-		fqn = None
-		for udefs in self.unit_defs:
-			if name in udefs:
-				fqn = udefs[name]['fqn']
-				break
-
-		if fqn is None:
-			raise ValueError(f"Ampel unit not found: {name}")
-
-		# Note: importlib.import_module caches internally imported modules
-		return getattr(import_module(fqn), name)
-
-
-	@overload
-	def new(self, unit_model: UnitModel, *, unit_type: Type[T], **kwargs) -> T:
-		...
-	@overload
-	def new(self, unit_model: UnitModel, *, unit_type: None = ..., **kwargs) -> AmpelBaseModel:
-		...
-	def new(self, unit_model: UnitModel, *, unit_type: Optional[Type[T]] = None, **kwargs) -> Union[T, AmpelBaseModel]:
-		"""
-		Instantiate new object based on provided model and kwargs.
-		:param 'unit_type': performs isinstance check and raise error on mismatch. Enables mypy/other static checks.
-		"""
-
-		if not isinstance(unit_model, UnitModel):
-			raise ValueError(f"Unexpected model: '{type(unit_model)}'")
-
-		if isinstance(unit_model.unit, str):
-			unit_model.unit = self.get_class_by_name(unit_model.unit, unit_type)
-
-		if unit_type:
-			check_class(unit_model.unit, unit_type)
-
-		init_args = self.get_init_config(
-			unit_model.unit,
-			unit_model.config,
-			unit_model.override,
-			kwargs
-		)
-
-		return unit_model.unit(**init_args) # type: ignore[call-arg]
-
-
-	@overload
-	def new_base_unit(self, unit_model: UnitModel, logger: AmpelLogger, *, sub_type: Type[BT], **kwargs) -> BT:
-		...
-	@overload
-	def new_base_unit(self, unit_model: UnitModel, logger: AmpelLogger, *, sub_type: None = ..., **kwargs) -> DataUnit:
-		...
-	def new_base_unit(self,
-		unit_model: UnitModel, logger: AmpelLogger, *, sub_type: Optional[Type[BT]] = None, **kwargs
-	) -> Union[BT, DataUnit]:
-		"""
-		Base units require logger and resource as init parameters, additionaly to the potentialy
-		defined custom parameters which will be provided as a union of the model config
-		and the kwargs provided to this method (the latter having prevalance)
-		:raises: ValueError is the unit defined in the model is unknown
-		"""
-
-		if sub_type is None or not issubclass(get_origin(sub_type) or sub_type, DataUnit):
-			sub_type = cast(Type[BT], DataUnit) # remove cast when mypy gets smarter
-
-		return self.new(
-			unit_model, unit_type=sub_type, logger=logger, resource=self.get_resources(unit_model),
-			**kwargs
-		)
-
-
-	@overload
-	def new_admin_unit(self, unit_model: UnitModel, context: AmpelContext, *, sub_type: Type[PT], **kwargs) -> PT:
-		...
-	@overload
-	def new_admin_unit(self, unit_model: UnitModel, context: AmpelContext, *, sub_type: None = ..., **kwargs) -> AdminUnit:
-		...
-	def new_admin_unit(self,
-		unit_model: UnitModel, context: AmpelContext, *, sub_type: Optional[Type[PT]] = None, **kwargs
-	) -> Union[AdminUnit, PT]:
-		"""
-		Processor units require a context as init parameters, additionaly to the potentialy
-		defined custom parameters which will be provided as a union of the model config
-		and the kwargs provided to this method (the latter having prevalance)
-		:raises: ValueError is the unit defined in the model is unknown
-		"""
-
-		if sub_type is None or not issubclass(get_origin(sub_type) or sub_type, AdminUnit):
-			sub_type = cast(Type[PT], AdminUnit) # remove cast when mypy gets smarter
-
-		return self.new(
-			unit_model, unit_type=sub_type, context=context,
-			**kwargs
-		)
-
 	"""
 	def internal_mypy_tests_uncomment_only_in_your_editor(self,
-		model: UnitModel, context: AmpelContext, logger: AmpelLogger, sub_type: Optional[Type[PT]] = None, **kwargs
+		model: UnitModel, context: AmpelContext, logger: AmpelLogger, sub_type: Optional[Type[CT]] = None, **kwargs
 	) -> None:
 
 		# Interal: uncomment to check if mypy works adequately
-
-		from ampel.abstract.AbsProcessorUnit import AbsProcessorUnit
+		from ampel.abstract.AbsEventUnit import AbsEventUnit
 		from ampel.abstract.AbsLightCurveT2Unit import AbsLightCurveT2Unit
 
 		reveal_type(self.new(model))
@@ -383,49 +354,48 @@ class UnitLoader:
 		reveal_type(self.new(model, unit_type = None))
 		reveal_type(self.new(model, unit_type=AbsLightCurveT2Unit))
 		reveal_type(self.new(model, unit_type=AbsLightCurveT2Unit, bla=12))
-		reveal_type(self.new(model, unit_type=AbsProcessorUnit))
-		reveal_type(self.new(model, unit_type=AbsProcessorUnit, bla=12))
+		reveal_type(self.new(model, unit_type=AbsEventUnit))
+		reveal_type(self.new(model, unit_type=AbsEventUnit, bla=12))
 
-		reveal_type(self.new_base_unit(model, logger))
-		reveal_type(self.new_base_unit(model, logger, bla=12))
-		reveal_type(self.new_base_unit(model, logger, sub_type = None))
-		reveal_type(self.new_base_unit(model, logger, sub_type=AbsLightCurveT2Unit))
-		reveal_type(self.new_base_unit(model, logger, sub_type = AbsLightCurveT2Unit, bla=12))
-
-		# Next two lines *should* fail
-		reveal_type(self.new_base_unit(model, logger, sub_type=AbsProcessorUnit))
-		reveal_type(self.new_base_unit(model, logger, sub_type = AbsProcessorUnit, bla=12))
-
-		reveal_type(self.new_admin_unit(model, context))
-		reveal_type(self.new_admin_unit(model, context, bla=12))
-		reveal_type(self.new_admin_unit(model, context, sub_type = None))
-		reveal_type(self.new_admin_unit(model, context, sub_type = AbsProcessorUnit))
-		reveal_type(self.new_admin_unit(model, context, sub_type = AbsProcessorUnit, bla=12))
+		reveal_type(self.new_logical_unit(model, logger))
+		reveal_type(self.new_logical_unit(model, logger, bla=12))
+		reveal_type(self.new_logical_unit(model, logger, sub_type = None))
+		reveal_type(self.new_logical_unit(model, logger, sub_type=AbsLightCurveT2Unit))
+		reveal_type(self.new_logical_unit(model, logger, sub_type = AbsLightCurveT2Unit, bla=12))
 
 		# Next two lines *should* fail
-		reveal_type(self.new_admin_unit(model, context, sub_type = AbsLightCurveT2Unit))
-		reveal_type(self.new_admin_unit(model, context, sub_type = AbsLightCurveT2Unit, bla=12))
+		reveal_type(self.new_logical_unit(model, logger, sub_type=AbsEventUnit))
+		reveal_type(self.new_logical_unit(model, logger, sub_type = AbsEventUnit, bla=12))
+
+		reveal_type(self.new_context_unit(model, context))
+		reveal_type(self.new_context_unit(model, context, bla=12))
+		reveal_type(self.new_context_unit(model, context, sub_type = None))
+		reveal_type(self.new_context_unit(model, context, sub_type = AbsEventUnit))
+		reveal_type(self.new_context_unit(model, context, sub_type = AbsEventUnit, bla=12))
+
+		# Next two lines *should* fail
+		reveal_type(self.new_context_unit(model, context, sub_type = AbsLightCurveT2Unit))
+		reveal_type(self.new_context_unit(model, context, sub_type = AbsLightCurveT2Unit, bla=12))
 	"""
-
 
 def _validate_unit_model(cls, values: Dict[str, Any], unit_loader: UnitLoader) -> Dict[str, Any]:
 	"""
 	Verify that a unit configuration is valid in the context of a specific UnitLoader.
 	"""
-	from ampel.base.DataUnit import DataUnit
-	from ampel.core.AdminUnit import AdminUnit
-	from ampel.abstract.AbsProcessorUnit import AbsProcessorUnit
-	from ampel.abstract.ingest.AbsIngester import AbsIngester
-	from ampel.t3.stage.AbsT3Stager import AbsT3Stager
-	from ampel.t3.session.AbsT3SessionInfo import AbsT3SessionInfo
+	from ampel.base.LogicalUnit import LogicalUnit
+	from ampel.core.ContextUnit import ContextUnit
+	from ampel.abstract.AbsEventUnit import AbsEventUnit
+	from ampel.abstract.AbsDocIngester import AbsDocIngester
+	from ampel.abstract.AbsT3Stager import AbsT3Stager
+	from ampel.abstract.AbsSessionInfo import AbsSessionInfo
 
 	unit = unit_loader.get_class_by_name(values['unit'])
-	if issubclass(unit, (DataUnit, AdminUnit, AbsProcessorUnit, AbsIngester)):
+	if issubclass(unit, (LogicalUnit, ContextUnit, AbsEventUnit, AbsDocIngester)):
 		# exclude base class fields provided at runtime
 		exclude = {"logger"}
 		for parent in cast(
 			Sequence[Type[AmpelBaseModel]],
-			(DataUnit, AdminUnit, AbsT3Stager, AbsT3SessionInfo, AbsProcessorUnit, AbsIngester)
+			(LogicalUnit, ContextUnit, AbsT3Stager, AbsSessionInfo, AbsEventUnit, AbsDocIngester)
 		):
 			if issubclass(unit, parent):
 				exclude.update(set(parent._annots.keys()).difference(parent._defaults.keys()))
@@ -433,16 +403,14 @@ def _validate_unit_model(cls, values: Dict[str, Any], unit_loader: UnitLoader) -
 			k: (v, unit._defaults[k] if k in unit._defaults else ...)
 			for k, v in unit._annots.items() if k not in exclude
 		} # type: ignore
-		model = create_model(
+		model: Any = create_model(
 			unit.__name__, __config__ = StrictModel.__config__,
-			__base__=None, __module__=None, __validators__=None,
+			__base__=None, __module__=None, __validators__=None, # type: ignore
 			**fields
 		)
 		model.validate(
 			unit_loader.get_init_config(
-				values['unit'],
-				values['config'],
-				values['override']
+				values['config'], values['override'], values['unit']
 			)
 		)
 	return values
