@@ -12,7 +12,7 @@ from functools import partial
 from typing import Dict, Sequence, Any, Literal, Optional, Set
 
 from ampel.util import concurrent
-from ampel.abstract.AbsProcessorUnit import AbsProcessorUnit
+from ampel.abstract.AbsEventUnit import AbsEventUnit
 from ampel.core.AmpelContext import AmpelContext
 from ampel.abstract.AbsProcessController import AbsProcessController
 from ampel.abstract.AbsSecretProvider import AbsSecretProvider
@@ -36,6 +36,7 @@ class DefaultProcessController(AbsProcessController):
 	mp_overlap: Literal['terminate', 'wait', 'ignore', 'skip'] = 'skip'
 	mp_join: int = 0
 
+
 	def __init__(self, **kwargs) -> None:
 		"""
 		:param isolate: global isolate override (applies to all processes regardless of \
@@ -58,6 +59,7 @@ class DefaultProcessController(AbsProcessController):
 		If set to 1, scheduled mp processes will be joined.
 		If set to 2, additionaly, the scheduling will be stopped if the processes returns 0/None
 		"""
+
 		super().__init__(**kwargs)
 		self.scheduler = schedule.Scheduler()
 
@@ -69,7 +71,9 @@ class DefaultProcessController(AbsProcessController):
 
 		self._prepare_isolated_processes()
 
+
 	def _prepare_isolated_processes(self) -> None:
+
 		if self.isolate:
 			for p in self.processes:
 				if not p.isolate:
@@ -108,6 +112,7 @@ class DefaultProcessController(AbsProcessController):
 				tier=self.processes[0].tier, config=self.config, secrets=self.secrets,
 			)
 
+
 	def update(self,
 		config: AmpelConfig,
 		secrets: Optional[AbsSecretProvider],
@@ -119,7 +124,9 @@ class DefaultProcessController(AbsProcessController):
 		self._prepare_isolated_processes()
 		self.populate_schedule(now=False)
 
+
 	async def run(self) -> None:
+
 		assert self.processes
 		self.populate_schedule(now=True)
 		try:
@@ -164,6 +171,7 @@ class DefaultProcessController(AbsProcessController):
 
 
 	def _finalize_task(self, pm: ProcessModel, future: asyncio.Future) -> None:
+
 		try:
 			result = future.result()
 		except asyncio.CancelledError:
@@ -179,6 +187,7 @@ class DefaultProcessController(AbsProcessController):
 
 
 	def run_process(self, pm: ProcessModel) -> None:
+
 		if pm.isolate:
 			task = asyncio.ensure_future(self.run_async_process(pm))
 			self._pending_schedules.add(task)
@@ -188,6 +197,7 @@ class DefaultProcessController(AbsProcessController):
 
 
 	async def run_scheduler(self) -> None:
+
 		try:
 			while self.scheduler.jobs:
 				try:
@@ -214,10 +224,10 @@ class DefaultProcessController(AbsProcessController):
 
 		assert pm.multiplier == 1
 		self.context.loader \
-			.new_admin_unit(
-				unit_model = pm.processor,
+			.new_context_unit(
+				model = pm.processor,
 				context = self.context,
-				sub_type = AbsProcessorUnit,
+				sub_type = AbsEventUnit,
 			) \
 			.run()
 
@@ -293,10 +303,10 @@ class DefaultProcessController(AbsProcessController):
 			secrets = secrets,
 		)
 
-		processor = context.loader.new_admin_unit(
-			unit_model = pm.processor,
+		processor = context.loader.new_context_unit(
+			model = pm.processor,
 			context = context,
-			sub_type = AbsProcessorUnit,
+			sub_type = AbsEventUnit,
 			process_name = pm.name,
 		)
 
