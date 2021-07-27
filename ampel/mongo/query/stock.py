@@ -9,7 +9,7 @@
 
 from typing import Dict, Optional, Union, Any, Literal
 
-from ampel.type import Tag
+from ampel.types import Tag
 from ampel.model.operator.AnyOf import AnyOf
 from ampel.model.operator.AllOf import AllOf
 from ampel.model.operator.OneOf import OneOf
@@ -22,7 +22,7 @@ def build_stock_query(
 	channel: Optional[Union[int, str, Dict, AllOf, AnyOf, OneOf]] = None,
 	tag: Optional[Dict[Literal['with', 'without'], Union[Tag, Dict, AllOf[Tag], AnyOf[Tag], OneOf[Tag]]]] = None,
 	time_created: Optional[QueryTimeModel] = None,
-	time_modified: Optional[QueryTimeModel] = None
+	time_updated: Optional[QueryTimeModel] = None
 ) -> Dict[str, Any]:
 	"""
 	:param channel: string (one channel only) or a dict schema \
@@ -39,7 +39,7 @@ def build_stock_query(
 		match against the (channel dependant) transient document creation timestamp \
 		(embedded in the transient journal)
 
-	:param time_modified: \
+	:param time_updated: \
 		match against the (channel dependant) transient document modification timestamp \
 		(embedded in the transient journal)
 
@@ -50,7 +50,7 @@ def build_stock_query(
 
 	query = build_general_query(channel=channel, tag=tag)
 
-	if time_created or time_modified:
+	if time_created or time_updated:
 
 		chans = reduce_to_set("any" if channel is None else channel)
 		or_list = []
@@ -61,12 +61,12 @@ def build_stock_query(
 
 			if time_created:
 				and_list.append({
-					f'created.{chan_name}': time_created.dict()
+					f'ts.{chan_name}.tied': time_created.dict()
 				})
 
-			if time_modified:
+			if time_updated:
 				and_list.append({
-					f'modified.{chan_name}': time_modified.dict()
+					f'ts.{chan_name}.upd': time_updated.dict()
 				})
 
 			or_list.append({'$and': and_list})
