@@ -4,13 +4,13 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 07.06.2018
-# Last Modified Date: 17.04.2021
+# Last Modified Date: 23.05.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from collections.abc import Sequence as sequence, Iterable as iterable, Sized as sized
 from typing import Any, List, Iterable, Union, Type, Tuple, Set, Generator
 from itertools import islice
-from ampel.type import strict_iterable, T
+from ampel.types import strict_iterable, StrictIterable, T
 
 
 def ampel_iter(arg: Any) -> Any:
@@ -43,7 +43,7 @@ def try_reduce(arg: Any) -> Any:
 	try_reduce({'ab'}) -> returns 'ab'
 	try_reduce('ab') -> returns 'ab'
 	try_reduce(['a', 'b']) -> returns ['a', 'b']
-	try_reduce(['a', 'b']) -> returns {'a', 'b'}
+	try_reduce({'a', 'b'}) -> returns {'a', 'b'}
 	try_reduce(dict(a=1).keys()) -> returns 'a'
 	try_reduce(dict(a=1, b=1).keys()) -> returns dict_keys(['a', 'b'])
 	"""
@@ -127,3 +127,31 @@ def check_seq_inner_type(
 	return any(
 		tuple(check_seq_inner_type(seq, _type) for _type in types)
 	)
+
+
+def has_nested_type(obj: StrictIterable, target_type: Type, strict: bool = True) -> bool:
+	"""
+	:param obj: object instance (dict/list/set/tuple)
+	:param target_type: example: ReadOnlyDict/list
+	:param strict: must be an instance of the provided type (subclass instances would be rejected)
+	"""
+
+	if strict:
+		# pylint: disable=unidiomatic-typecheck
+		if type(obj) is target_type:
+			return True
+	else:
+		if isinstance(obj, target_type):
+			return True
+
+	if isinstance(obj, dict):
+		for el in obj.values():
+			if has_nested_type(el, target_type):
+				return True
+
+	elif isinstance(obj, strict_iterable):
+		for el in obj:
+			if has_nested_type(el, target_type):
+				return True
+
+	return False

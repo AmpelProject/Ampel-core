@@ -15,15 +15,7 @@ Unlike pebble (or concurrent.futures.ProcessPoolExecutor), no extra Python
 threads are needed to manage the process lifecycle.
 """
 
-
-import asyncio
-import io
-import itertools
-import os
-import signal
-import sys
-import traceback
-from textwrap import dedent
+import asyncio, io, itertools, os, signal, sys, traceback
 from typing import Any, Dict, Set
 from functools import wraps, partial
 from multiprocessing import reduction, spawn  # type: ignore
@@ -122,7 +114,7 @@ def spawn_main(read_fd, write_fd):
     try:
         with open(write_fd, "wb") as tx:
             tx.write(payload)
-    except:
+    except Exception:
         print(f"Process {obj._name} (pid {os.getpid()}):", file=sys.stderr)
         traceback.print_exc(file=sys.stderr)
         exitcode = 1
@@ -133,9 +125,9 @@ def spawn_main(read_fd, write_fd):
 class _Process:
     _counter = itertools.count(1)
     #: PIDs for active processes str -> (pid -> replica), used by AmpelProcessCollector
-    _active: Dict[str,Dict[int,int]] = {}
+    _active: Dict[str, Dict[int, int]] = {}
     #: Replica ids that can be recycled
-    _expired: Dict[str,Set[int]] = {}
+    _expired: Dict[str, Set[int]] = {}
 
     def __init__(self, target=None, name=None, timeout=3.0, args=(), kwargs={}):
         self._target = target

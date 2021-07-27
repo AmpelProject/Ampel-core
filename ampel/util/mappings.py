@@ -7,95 +7,10 @@
 # Last Modified Date: 17.06.2020
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-import json
-from typing import Dict, Any, List, Union, Type, Optional, Sequence, TypeVar, Literal, Callable, Iterable, Mapping, MutableMapping
+from typing import Dict, Any, List, Union, Optional, Sequence, \
+	Callable, Iterable, Mapping, MutableMapping
 from pydantic import BaseModel
-from ampel.type import strict_iterable
-from ampel.util.crypto import hash_payload, HT
-from ampel.model.operator.AnyOf import AnyOf
-from ampel.model.operator.AllOf import AllOf
-from ampel.model.operator.OneOf import OneOf
-from ampel.util.collections import check_seq_inner_type
-from ampel.util.crypto import b2_short_hash
-
-T = TypeVar('T')
-
-def build_unsafe_short_dict_id(dict_arg: Optional[Dict]) -> int:
-	"""
-	Note: no collision occured applying blake2 using 7bytes digests on the word list
-	https://github.com/dwyl/english-words/blob/master/words.txt
-	containing 466544 english words
-	:returns: 7bytes int (MongoDB supports only *signed* 64-bit integers)
-
-	example:
-	In []: build_unsafe_short_dict_id({'a': 1})
-	Out[]: 18043533495046284
-
-	In []: build_unsafe_short_dict_id({'b': 2, 'a': 1, 'c': {'b': 3, 'a': [4, 'r', 1]}})
-	Out[]: 53310293724158701
-
-	In []: build_unsafe_short_dict_id({'a': 1, 'b': 2, 'c': {'a': [4, 1, 'r'], 'b': 3}})
-	Out[]: 53310293724158701
-	"""
-	return build_unsafe_dict_id(dict_arg, int, 'blake2b', digest_size=7)
-
-
-def build_unsafe_dict_id(
-	dict_arg: Optional[Dict],
-	ret: Type[HT] = bytes, # type: ignore[assignment]
-	alg: Literal['sha512', 'sha1', 'blake2b'] = 'sha512',
-	sort_keys: bool = True,
-	flatten_list_members: bool = True,
-	sort_lists: bool = True,
-	flatten_lists: bool = True,
-	**kwargs
-) -> HT:
-	"""
-	:param dict_arg: can be nested, can be None
-	:param ret: return type, can be bytes, str (hex digest) or int
-	:param alg: hash algorithm (default is sha512)
-	:param sort_keys: see `flatten_dict` docstring
-	:param flatten_list_members: see `flatten_dict` docstring
-	:param sort_lists: see `flatten_dict` docstring
-	:param flatten_lists: see `flatten_dict` docstring
-	:param kwargs: will be forwarded to hashlib hash function
-
-	example:
-	In []: build_unsafe_dict_id({'a': 1, 'b': 2, 'c': {'a': ['r', 1, 4], 'b': 3}}, ret=str)
-	Out[]: 'b5acfa0d427fe1ef682895217c94400178b5700997a9547fe5bebf33b73d8157332c2bb1bd0e370
-	0c8c232fd55f4993b1b34132420afc14a05e2414df3037519'
-
-	In []: build_unsafe_dict_id({'b': 2, 'a': 1, 'c': {'b': 3, 'a': [4, 'r', 1]}}, ret=str)
-	Out[]: 'b5acfa0d427fe1ef682895217c94400178b5700997a9547fe5bebf33b73d8157332c2bb1bd0e370
-	0c8c232fd55f4993b1b34132420afc14a05e2414df3037519'
-
-	In []: build_unsafe_dict_id({'a': 1, 'b': 2, 'c': {'b': 3, 'a': [1, 5]}}, ret=str)
-	Out[]: '1f8e8c35e9641a6f8cb5a1136b712cf1b735577645db6e1ee373ea7dd08266b63a8b23fde0
-	615c6916205cfdf928e42cd79171581c211eb77bed967d65563b2f'
-
-	In []: build_unsafe_dict_id({'a': 1, 'b': 2, 'c': {'b': 3, 'a': [1, 4]}}, ret=int, alg='sha1')
-	Out[]: 967659017817567346241766354309619194352380159869
-
-	In []: build_unsafe_dict_id({'a': 1, 'b': 2}, ret=int, alg='blake2b', digest_size=7)
-	Out[]: 32414584742937293
-	"""
-
-	if dict_arg is None:
-		dict_arg = {}
-
-	return hash_payload(
-		bytes(
-			json.dumps(
-				flatten_dict(
-					dict_arg, '.', sort_keys, flatten_list_members,
-					sort_lists, flatten_lists
-				),
-				indent=None, separators=(',', ':')
-			),
-			"utf8"
-		),
-		ret, alg, **kwargs
-	)
+from ampel.types import strict_iterable, T
 
 
 def get_by_path(
@@ -167,7 +82,7 @@ def del_by_path(d: Dict, path: Union[str, Sequence[str]], delimiter: str = '.') 
 
 def walk_and_process_dict(
 	arg: Union[dict, list], callback: Callable,
-	match: List[str], path: str = None, **kwargs
+	match: Optional[List[str]] = None, path: str = None, **kwargs
 ) -> bool:
 	"""
 	callback is called with 4 arguments:
@@ -197,7 +112,7 @@ def walk_and_process_dict(
 
 		for k, v in arg.items():
 
-			if k in match:
+			if not match or k in match:
 				ret = callback(path, k, arg, **kwargs) or ret
 
 			if isinstance(v, dict):
@@ -212,6 +127,7 @@ def walk_and_process_dict(
 					) or ret
 
 	return ret
+
 
 def flatten_dict(
 	d: Mapping,
@@ -261,7 +177,6 @@ def flatten_dict(
 			v = d[k]
 
 			if isinstance(v, dict):
-
 				for kk, vv in flatten_dict(
 					v, separator, sort_keys, flatten_list_members, flatten_lists, sort_lists
 				).items():
@@ -456,76 +371,3 @@ def get_nested_attr(obj, path):
 		return obj
 	except AttributeError:
 		return None
-
-
-def hash_logic_schema(
-	arg: Optional[Union[str, dict, AllOf, AnyOf, OneOf]]
-) -> Union[int, dict]:
-	"""
-	Converts dict schema containing str representation of tags into
-	a dict schema containing hashed values (int64).
-
-	:param arg: schema dict. \
-	See :obj:`QueryMatchSchema <ampel.query.QueryMatchSchema>` \
-	docstring for more details
-
-	examples:
-	In []: hash_logic_schema('aa')
-	Out[]: 24517795197330556
-
-	In []: hash_logic_schema({'allOf': ['aa', 'bb', 12]})
-	Out[]: {'allOf': [24517795197330556, 14271023143587293, 12]}
-
-	In []: hash_logic_schema({'anyOf': ['aa', 'bb', 12]})
-	Out[]: {'anyOf': [24517795197330556, 14271023143587293, 12]}
-
-	In []: hash_logic_schema({'anyOf': [{'allOf': ['aa', 'bb', 100]}, 'cc']})
-	Out[]: {'anyOf': [{'allOf': [24517795197330556, 14271023143587293, 100]}, 59944183417054336]}
-
-	:returns: new schema dict where tag elements are integers
-	"""
-
-	out: Dict[str, Any] = {}
-
-	if isinstance(arg, str):
-		return b2_short_hash(arg)
-
-	if isinstance(arg, (AllOf, AnyOf, OneOf)):
-		arg = arg.dict()
-
-	if isinstance(arg, dict):
-
-		if 'anyOf' in arg:
-			if check_seq_inner_type(arg['anyOf'], str):
-				out['anyOf'] = _hash_elements(arg['anyOf'])
-			else:
-				out['anyOf'] = []
-				for el in arg['anyOf']:
-					if isinstance(el, str):
-						out['anyOf'].append(b2_short_hash(el))
-					elif isinstance(el, dict):
-						if 'allOf' not in el:
-							raise ValueError('Unsupported format (1)')
-						out['anyOf'].append(
-							{'allOf': _hash_elements(el['allOf'])}
-						)
-					else:
-						out['anyOf'].append(el)
-
-		elif 'allOf' in arg:
-			out['allOf'] = _hash_elements(arg['allOf'])
-
-		elif 'oneOf' in arg:
-			out['oneOf'] = _hash_elements(arg['oneOf'])
-	else:
-		raise ValueError(f'Unsupported argument type: "{type(arg)}"')
-
-	return out
-
-
-def _hash_elements(seq: Sequence) -> List:
-
-	return [
-		b2_short_hash(el) if isinstance(el, str) else el
-		for el in seq
-	]

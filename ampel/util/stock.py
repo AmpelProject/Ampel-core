@@ -11,7 +11,7 @@ from pymongo import MongoClient
 from pymongo.collection import Collection
 from multiprocessing import Pool
 from typing import Union, Optional, Set, Dict, Sequence
-from ampel.type import ChannelId, StockId
+from ampel.types import ChannelId, StockId
 
 
 def get_ids_using_find(
