@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 15.10.2018
-# Last Modified Date: 19.04.2021
+# Last Modified Date: 22.07.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from time import time
@@ -14,10 +14,10 @@ from pymongo.operations import UpdateMany, UpdateOne
 from typing import List, Any, Optional, Sequence, Union, Dict, Literal, get_args
 
 from ampel.core.AmpelDB import AmpelDB
-from ampel.type import ChannelId, Tag, StockId
+from ampel.types import ChannelId, Tag, StockId
 from ampel.log import AmpelLogger, VERBOSE
 from ampel.log.utils import report_exception
-from ampel.struct.JournalTweak import JournalTweak
+from ampel.struct.JournalAttributes import JournalAttributes
 from ampel.content.JournalRecord import JournalRecord
 
 tag_type = get_args(Tag) # type: ignore[misc]
@@ -28,7 +28,7 @@ class StockJournalUpdater:
 	def __init__(self,
 		ampel_db: AmpelDB, tier: Literal[-1, 0, 1, 2, 3], run_id: int,
 		process_name: str, logger: AmpelLogger, raise_exc: bool = False,
-		update_modified: bool = True, update_journal: bool = True,
+		update_updated: bool = True, update_journal: bool = True,
 		extra_tag: Optional[Union[Tag, Sequence[Tag]]] = None,
 		auto_flush: int = 0
 	) -> None:
@@ -42,7 +42,7 @@ class StockJournalUpdater:
 		self.tier = tier
 		self.raise_exc = raise_exc
 		self.update_journal = update_journal
-		self.update_modified = update_modified
+		self.update_updated = update_updated
 		self.auto_flush = auto_flush
 		self.process_name = process_name
 		self.extra_tag = extra_tag
@@ -86,7 +86,8 @@ class StockJournalUpdater:
 
 	def add_record(self,
 		stock: Union[StockId, Sequence[StockId]],
-		jtweak: Optional[JournalTweak] = None,
+		jattrs: Optional[JournalAttributes] = None,
+		trace_id: Optional[Dict[str, int]] = None,
 		doc_id: Optional[ObjectId] = None,
 		unit: Optional[Union[int, str]] = None,
 		channel: Optional[Union[ChannelId, Sequence[ChannelId]]] = None,
@@ -96,7 +97,7 @@ class StockJournalUpdater:
 		:returns: the JournalRecord dict instance associated with the stock document(s) update
 		is returned by this method so that customization can be made if necessary.
 		Note that the associated update operation does more than just adding a journal record,
-		it also modifies the "modified" field of stock document(s).
+		it also modifies the "updated" field of stock document(s).
 		"""
 
 		if isinstance(stock, Sequence):
@@ -110,35 +111,39 @@ class StockJournalUpdater:
 
 		jrec = self.new_record(unit, channel, doc_id, now)
 
-		if jtweak:
+		if jattrs:
 
-			if jtweak.tag:
-				self.include_tags(jrec, jtweak.tag)
+			if jattrs.tag:
+				self.include_tags(jrec, jattrs.tag)
 
-			if jtweak.extra:
-				jrec['extra'] = jtweak.extra
+			if jattrs.extra:
+				jrec['extra'] = jattrs.extra
 
-			if jtweak.code and jtweak.code > 0:
-				jrec['code'] = jtweak.code
+			if jattrs.code and jattrs.code > 0:
+				jrec['code'] = jattrs.code
+
+		if trace_id:
+			jrec['traceid'] = trace_id
 
 		upd = {'$push': {'journal': jrec}}
 
-		if self.update_modified:
+		if self.update_updated:
 
-			upd['$max'] = {'modified.any': jrec['ts']}
+			upd['$max'] = {'ts.any.upd': jrec['ts']}
 
 			if channel:
 				if isinstance(channel, chan_type):
-					upd['$max'][f'modified.{channel}'] = jrec['ts']
+					upd['$max'][f'ts.{channel}.upd'] = jrec['ts']
 				else:
 					upd['$max'].update({
-						f'modified.{chan}': jrec['ts']
+						f'ts.{chan}.upd': jrec['ts']
 						for chan in channel # type: ignore[union-attr]
 					})
 
 		if self.update_journal:
+
 			self.journal_updates.append(
-				Op({'_id': match}, upd)
+				Op({'stock': match}, upd)
 			)
 
 			if self.auto_flush and len(self.journal_updates) > self.auto_flush:
