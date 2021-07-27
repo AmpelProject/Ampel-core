@@ -19,14 +19,17 @@ package_data = {
 
 install_requires = [
 	'PyYAML>=5.4.1,<6.0.0',
-	'prometheus-client>=0.9.0,<0.10.0',
+	'prometheus-client>=0.9.0,<=0.10.1',
 	'psutil>=5.8.0,<6.0.0',
 	'pydantic>=1.8,<2',
 	'pymongo>=3.10,<4.0',
 	'schedule>=1.0.0,<2.0.0',
 	'sjcl>=0.2.1,<0.3.0',
 	'slackclient>=2.7,<3.0',
-	'yq>=2.12.0,<3.0.0'
+	'yq>=2.12.0,<3.0.0',
+	'xxhash',
+	'ujson',
+	'appdirs'
 ]
 
 extras_require = {
@@ -53,12 +56,12 @@ entry_points = {
 	'cli': [
 		'job Run provided job file = ampel.cli.JobCommand',
 		'run Run selected process(es) from config = ampel.cli.RunCommand',
-		'log Select, format, view or save logs. Tail mode availabe = ampel.cli.LogCommand',
+		'log Select, format and either view or save logs. Tail mode availabe = ampel.cli.LogCommand',
 		'view Select, load and save fresh "ampel views" = ampel.cli.ViewCommand',
 		'db Initialize, dump, delete specific databases or collections = ampel.cli.DBCommand',
 		'config Build or update config. Fetch or append config elements = ampel.cli.ConfigCommand',
-		'start Run ampel continuously, processes are scheduled according to config = ampel.cli.StartCommand',
-		't2 Match and reset or view raw t2 documents = ampel.cli.T2Command',
+		'start Run ampel continuously. Processes are scheduled according to config = ampel.cli.StartCommand',
+		't2 Match and either reset or view raw t2 documents = ampel.cli.T2Command',
 		'buffer Match and view or save ampel buffers = ampel.cli.BufferCommand'
 	]
 }
