@@ -7,7 +7,7 @@
 # Last Modified Date: 05.05.2020
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-from typing import Optional, Dict
+from typing import Optional, Dict, Any
 from ampel.log.handlers.RecordBufferingHandler import RecordBufferingHandler
 from ampel.protocol.LoggingHandlerProtocol import LoggingHandlerProtocol
 from ampel.types import StockId, ChannelId
@@ -17,6 +17,14 @@ class DefaultRecordBufferingHandler(RecordBufferingHandler):
 	"""
 	MemoryHandler-like class that can grown infinitely and features a convenience method called 'forward'
 	"""
+
+	__slots__ = '_extra',
+
+
+	def __init__(self, level: int, extra: Optional[Dict[str, Any]] = None) -> None:
+		super().__init__(level)
+		self._extra = extra or {}
+
 
 	def forward(self,
 		target: LoggingHandlerProtocol,
@@ -41,10 +49,16 @@ class DefaultRecordBufferingHandler(RecordBufferingHandler):
 				rec.stock = stock # type: ignore[union-attr]
 
 			if extra:
-				if 'extra' in rec.__dict__:
-					rec.extra = {**rec.extra, **extra} # type: ignore
+				if 'extra' in rec.__dict__ and rec['extra']:
+					rec.extra |= extra
 				else:
 					rec.extra = extra # type: ignore
+
+			if self._extra:
+				if rec.extra:
+					rec.extra |= self._extra
+				else:
+					rec.extra = self._extra
 
 			target.handle(rec) # type: ignore
 
