@@ -10,10 +10,12 @@
 from typing import Optional, Any, Dict, Union, List, Type
 from importlib import import_module
 from ampel.base.LogicalUnit import LogicalUnit
+from ampel.core.ContextUnit import ContextUnit
 from ampel.core.AmpelDB import AmpelDB
 from ampel.core.UnitLoader import UnitLoader
 from ampel.core.AmpelContext import AmpelContext
 from ampel.config.AmpelConfig import AmpelConfig
+from ampel.model.UnitModel import UnitModel
 from ampel.model.ChannelModel import ChannelModel
 from ampel.log.AmpelLogger import AmpelLogger
 from ampel.util.freeze import recursive_unfreeze
@@ -60,22 +62,29 @@ class DevAmpelContext(AmpelContext):
 		self._set_new_conf(conf)
 
 
-	def register_unit(self, Klass: Type[LogicalUnit]):
+	def register_units(self, *Classes: Type[LogicalUnit]) -> None:
+		for Class in Classes:
+			self.register_unit(Class)
+
+
+	def register_unit(self, Class: Type[LogicalUnit]) -> None:
+
 		dict.__setitem__(
 			self.config._config['unit'],
-			Klass.__name__,
+			Class.__name__,
 			{
-				'fqn': Klass.__module__,
-				'base': [el.__name__ for el in Klass.__mro__[:-1] if 'ampel' in el.__module__],
+				'fqn': Class.__module__,
+				'base': [el.__name__ for el in Class.__mro__[:-1] if 'ampel' in el.__module__],
 				'distrib': 'unspecified',
 				'file': 'unspecified',
 				'version': 'unspecified'
 			}
 		)
+
 		if self.loader._dyn_register is None:
 			self.loader._dyn_register = {}
 
-		self.loader._dyn_register[Klass.__name__] = Klass
+		self.loader._dyn_register[Class.__name__] = Class
 
 
 	def gen_config_id(self, unit: str, arg: Dict[str, Any], logger: Optional[AmpelLogger] = None) -> int:
@@ -83,7 +92,10 @@ class DevAmpelContext(AmpelContext):
 		if logger is None:
 			logger = AmpelLogger.get_logger()
 
-		if fqn := self.config._config['unit'][unit].get('fqn'):
+		if self.loader._dyn_register and unit in self.loader._dyn_register:
+			Unit = self.loader._dyn_register[unit]
+			arg = dictify(Unit(**arg, logger=logger)._trace_content)
+		elif fqn := self.config._config['unit'][unit].get('fqn'):
 			Unit = getattr(import_module(fqn), fqn.split('.')[-1])
 			arg = dictify(Unit(**arg, logger=logger)._trace_content)
 		else:
@@ -97,6 +109,7 @@ class DevAmpelContext(AmpelContext):
 		if conf_id not in self.config._config["confid"]:
 			# Works with ReadOnlyDict
 			dict.__setitem__(self.config._config["confid"], conf_id, arg)
+			(logger or AmpelLogger.get_logger()).info(f"New conf id generated: {conf_id} for {arg}")
 
 		if conf_id not in self.db.conf_ids:
 			self.db.add_conf_id(conf_id, arg)
@@ -155,7 +168,6 @@ class DevAmpelContext(AmpelContext):
 				logger.debug("Computing hash")
 
 			confid = self.gen_config_id(t2_unit, conf, logger)
-			logger.info(f"New conf id generated: {confid} for {conf}")
 			d['config'] = confid
 
 		return config
@@ -166,3 +178,14 @@ class DevAmpelContext(AmpelContext):
 		if d[k]:
 			for i, el in enumerate(d[k]):
 				kwargs['conf_dicts'][f"{path}.{k}.{i}"] = el
+
+
+	def new_context_unit(self, unit: str, **kwargs) -> ContextUnit:
+		"""
+		Convenience method (for notebooks mainly).
+		Limitation: config of underlying unit cannot contain/define field 'unit'
+		"""
+		return self.loader.new_context_unit(
+			context = self,
+			model = UnitModel(unit = unit, config = kwargs)
+		)
