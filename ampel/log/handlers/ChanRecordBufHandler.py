@@ -7,7 +7,7 @@
 # Last Modified Date: 05.05.2020
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-from typing import Union, Optional, Dict
+from typing import Union, Optional, Dict, Any
 from ampel.log.handlers.RecordBufferingHandler import RecordBufferingHandler
 from ampel.protocol.LoggingHandlerProtocol import LoggingHandlerProtocol
 from ampel.types import StockId, ChannelId
@@ -26,11 +26,12 @@ class ChanRecordBufHandler(RecordBufferingHandler):
 	(that save the information into a binary formatted file for instance)
 	"""
 
-	__slots__ = '_channel',
+	__slots__ = '_channel', '_extra'
 
-	def __init__(self, level: int, channel: ChannelId) -> None:
+	def __init__(self, level: int, channel: ChannelId, extra: Optional[Dict[str, Any]] = None) -> None:
 		super().__init__(level)
 		self._channel = channel
+		self._extra = extra
 
 
 	def forward(self,
@@ -54,9 +55,15 @@ class ChanRecordBufHandler(RecordBufferingHandler):
 
 				if extra:
 					if 'extra' in rec.__dict__:
-						rec.extra = {**rec.extra, **extra} # type: ignore
+						rec.extra |= extra
 					else:
 						rec.extra = extra # type: ignore
+
+				if self._extra:
+					if rec.extra:
+						rec.extra |= self._extra
+					else:
+						rec.extra = self._extra
 
 				target.handle(rec) # type: ignore
 
