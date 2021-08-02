@@ -33,7 +33,7 @@ from ampel.mongo.model.ShortIndexModel import ShortIndexModel
 from ampel.mongo.model.MongoClientOptionsModel import MongoClientOptionsModel
 from ampel.mongo.model.MongoClientRoleModel import MongoClientRoleModel
 
-intcol = {'t0': 0, 't1': 1, 't2': 2, 'stock': 3}
+intcol = {'t0': 0, 't1': 1, 't2': 2, 't3': 3, 'stock': 4}
 
 class AmpelDB(AmpelBaseModel):
 	"""
