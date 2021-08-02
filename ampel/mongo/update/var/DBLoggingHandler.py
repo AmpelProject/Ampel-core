@@ -14,9 +14,12 @@ from logging import LogRecord
 from pymongo.errors import BulkWriteError
 from ampel.base.AmpelBaseModel import AmpelBaseModel
 from ampel.util.mappings import compare_dict_values
+from ampel.util.collections import try_reduce
+from ampel.log.AmpelLogger import AmpelLogger
 from ampel.log.LightLogRecord import LightLogRecord
 from ampel.log.AmpelLoggingError import AmpelLoggingError
 from ampel.log.LogFlag import LogFlag
+from ampel.log.utils import log_exception, report_exception
 
 if TYPE_CHECKING:
 	from ampel.core.AmpelDB import AmpelDB
@@ -141,45 +144,69 @@ class DBLoggingHandler(AmpelBaseModel):
 
 				if 'extra' in rd:
 					if self.expand_extra:
+						for k in ('_id', 'r', 'f'):
+							if k in rd['extra']:
+								del rd['extra'][k]
 						ldict = {
-							**rd['extra'],
 							'_id': ObjectId(oid=oid),
-							'f': record.levelno,
 							'r': self.run_id,
+							'f': record.levelno,
+							**rd['extra']
 						}
 					else:
 						ldict = {
 							'_id': ObjectId(oid=oid),
-							'f': record.levelno,
 							'r': self.run_id,
+							'f': record.levelno,
 							'x': rd['extra']
 						}
 				else:
 					ldict = {
 						'_id': ObjectId(oid=oid),
-						'f': record.levelno,
 						'r': self.run_id,
+						'f': record.levelno
 					}
-
-				if record.msg:
-					ldict['m'] = record.msg
-
-				if 'channel' in rd:
-					ldict['c'] = rd['channel']
 
 				if 'stock' in rd:
 					ldict['s'] = rd['stock']
+
+				if 'channel' in rd:
+					ldict['c'] = try_reduce(rd['channel'])
 
 				if record.levelno > self.warn_lvl:
 					ldict['file'] = record.filename
 					ldict['line'] = record.lineno
 
+				if record.msg:
+					ldict['m'] = record.msg
+
 				self.log_dicts.append(ldict)
 				self.prev_record = record
 
 		except Exception as e:
-			from ampel.log.LoggingErrorReporter import LoggingErrorReporter
-			LoggingErrorReporter.report(self, e)
+
+			logger = AmpelLogger.get_logger()
+
+			# Print log stack using std logging
+			log_exception(logger, e, msg="Exception:")
+
+			try:
+				# This will fail as well if we have DB connectivity issues
+				report_exception(self._ampel_db, logger, e)
+			except Exception as ee:
+				log_exception(
+					logger, ee, last=True,
+					msg="Could not update troubles collection as well (DB offline?)"
+				)
+
+			logger.error("DB log flushing error, un-flushed (json) logs below.")
+			logger.error("*" * 52)
+
+			from ampel.util.pretty import prettyjson
+			for d in self.log_dicts:
+				logger.error(prettyjson(d))
+			logger.error("#" * 52)
+
 			raise AmpelLoggingError from None
 
 
