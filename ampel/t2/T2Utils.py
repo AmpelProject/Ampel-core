@@ -11,7 +11,7 @@ from datetime import datetime
 from pymongo.collection import Collection
 from typing import Optional, Any, Iterable, Union, Dict, Literal, Sequence, get_args
 
-from ampel.type import UnitId, Tag, StrictIterable, ChannelId, StockId
+from ampel.types import UnitId, Tag, StrictIterable, ChannelId, StockId
 from ampel.abstract.AbsIdMapper import AbsIdMapper
 from ampel.log.AmpelLogger import AmpelLogger
 from ampel.model.operator.AnyOf import AnyOf

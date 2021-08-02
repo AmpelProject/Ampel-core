@@ -13,7 +13,7 @@ from typing import Any, Dict, Generator, Optional, Tuple
 from ampel.log.AmpelLogger import AmpelLogger, DEBUG, ERROR
 from ampel.config.AmpelConfig import AmpelConfig
 from ampel.core.UnitLoader import UnitLoader
-from ampel.dev.DictSecretProvider import PotemkinSecretProvider
+from ampel.secret.DictSecretProvider import PotemkinSecretProvider
 
 
 class BaseConfigChecker:

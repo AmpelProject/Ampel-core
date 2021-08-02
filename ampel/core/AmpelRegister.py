@@ -7,21 +7,16 @@
 # Last Modified Date: 04.03.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-import bson, sys
-if sys.version_info.minor > 8:
-	from typing import TypedDict
-else:
-	from typing_extensions import TypedDict
-
+import bson
 from time import time
 from os.path import isdir, isfile
 from pathlib import Path
 from struct import calcsize
-from typing import BinaryIO, Optional, Literal, Dict, Any, List, Union, Tuple
+from typing import BinaryIO, Optional, Literal, Dict, Any, List, Union, Tuple, TypedDict
 
 from ampel.log.AmpelLogger import AmpelLogger, VERBOSE
 from ampel.base.AmpelBaseModel import AmpelBaseModel
-from ampel.util.mappings import build_unsafe_dict_id
+from ampel.util.hash import build_unsafe_dict_id
 from ampel.util.register import read_header, write_header, \
 	get_inner_file_handle, get_outer_file_handle, rescale_header
 

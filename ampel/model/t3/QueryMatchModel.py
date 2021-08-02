@@ -9,7 +9,7 @@
 
 from typing import Any
 from pydantic import validator
-from ampel.type import strict_iterable
+from ampel.types import strict_iterable
 from ampel.util.collections import check_seq_inner_type
 from ampel.util.docstringutils import gendocstring
 from ampel.model.StrictModel import StrictModel

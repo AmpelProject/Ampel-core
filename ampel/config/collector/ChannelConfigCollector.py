@@ -8,7 +8,7 @@
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from typing import Dict, Any, Union
-from ampel.util.crypto import b2_short_hash
+from ampel.util.hash import hash_payload
 from ampel.config.collector.AbsDictConfigCollector import AbsDictConfigCollector
 from ampel.log import VERBOSE
 
@@ -57,7 +57,7 @@ class ChannelConfigCollector(AbsDictConfigCollector):
 				return
 
 			if not ('NO_HASH' in chan_dict.get('policy', []) or isinstance(chan_name, int)):
-				chan_dict['hash'] = b2_short_hash(chan_name)
+				chan_dict['hash'] = hash_payload(chan_name)
 				for k, v in self.items():
 					if chan_dict['hash'] == v.get('hash'):
 						raise ValueError(

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-core/ampel/t3/load/T3LatestStateDataLoader.py
+# File              : Ampel-core/ampel/t3/supply/load/T3LatestStateDataLoader.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 09.12.2019
@@ -11,8 +11,8 @@ import collections
 from bson.codec_options import CodecOptions
 from typing import Iterable, Union, Iterator, Optional
 
-from ampel.type import StockId, StrictIterable
-from ampel.t3.load.AbsT3Loader import AbsT3Loader
+from ampel.types import StockId, StrictIterable
+from ampel.abstract.AbsT3Loader import AbsT3Loader
 from ampel.core.AmpelContext import AmpelContext
 from ampel.struct.AmpelBuffer import AmpelBuffer
 from ampel.util.collections import to_set

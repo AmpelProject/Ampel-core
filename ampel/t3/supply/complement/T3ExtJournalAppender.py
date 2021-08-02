@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-core/ampel/t3/complement/T3ExtJournalAppender.py
+# File              : Ampel-core/ampel/t3/supply/complement/T3ExtJournalAppender.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 17.06.2020
@@ -9,19 +9,19 @@
 
 from pymongo import MongoClient
 from typing import Iterable, Optional, Union, List
-from ampel.type import StockId
+from ampel.types import StockId
 from ampel.base.AmpelBaseModel import AmpelBaseModel
 from ampel.aux.filter.SimpleDictArrayFilter import SimpleDictArrayFilter
 from ampel.content.JournalRecord import JournalRecord
 from ampel.core.AmpelContext import AmpelContext
 from ampel.struct.AmpelBuffer import AmpelBuffer
-from ampel.t3.complement.AbsT3DataAppender import AbsT3DataAppender
+from ampel.abstract.AbsBufferComplement import AbsBufferComplement
 from ampel.model.aux.FilterCriterion import FilterCriterion
 from ampel.model.operator.AllOf import AllOf
 from ampel.model.operator.FlatAnyOf import FlatAnyOf
 
 
-class T3ExtJournalAppender(AbsT3DataAppender):
+class T3ExtJournalAppender(AbsBufferComplement):
 	"""
 	Import journal entries from a 'foreign' database, e.g. one created
 	by a previous version of Ampel.

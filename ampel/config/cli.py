@@ -17,7 +17,8 @@ from ampel.config.AmpelConfig import AmpelConfig
 from ampel.config.builder.DistConfigBuilder import DistConfigBuilder
 from ampel.log.utils import log_exception
 from ampel.core import AmpelContext
-from ampel.dev.DictSecretProvider import DictSecretProvider, PotemkinSecretProvider
+from ampel.secret.DictSecretProvider import DictSecretProvider
+from ampel.secret.PotemkinSecretProvider import PotemkinSecretProvider
 
 
 def transform(args: Namespace) -> None:

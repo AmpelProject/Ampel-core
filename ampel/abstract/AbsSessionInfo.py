@@ -8,17 +8,18 @@
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from typing import Dict, Any
-from ampel.base import abstractmethod
+from ampel.core.ContextUnit import ContextUnit
+from ampel.base.AmpelABC import AmpelABC
+from ampel.base.decorator import abstractmethod
 from ampel.log.AmpelLogger import AmpelLogger
-from ampel.core.AdminUnit import AdminUnit
 
 
-class AbsSessionInfo(AdminUnit, abstract=True):
+class AbsSessionInfo(AmpelABC, ContextUnit, abstract=True):
 	"""
 	Add contextual information to a T3 process, such as the time of the previous
 	run, or the number of alerts processed since that run.
 	
-	Inherits from AdminUnit because subclasses might need access to
+	Inherits from ContextUnit because subclasses might need access to
 	the AmpelConfig (foremost to the contained resource definitions)
 	"""
 

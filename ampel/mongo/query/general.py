@@ -9,11 +9,11 @@
 
 from bson.int64 import Int64
 from typing import Dict, Optional, Union, Any, Literal
-from ampel.type import Tag, ChannelId, StockId, StrictIterable
+from ampel.types import Tag, ChannelId, StockId, StrictIterable
 from ampel.model.operator.AnyOf import AnyOf
 from ampel.model.operator.AllOf import AllOf
 from ampel.model.operator.OneOf import OneOf
-from ampel.mongo.utils import match_array
+from ampel.mongo.utils import maybe_match_array
 from ampel.mongo.schema import apply_schema, apply_excl_schema
 
 type_stock_id = (int, Int64, bytes, str)
@@ -37,7 +37,7 @@ def build_general_query(
 
 	if stock:
 		query['stock'] = stock if isinstance(stock, type_stock_id) \
-			else match_array(stock) # type: ignore[arg-type]
+			else maybe_match_array(stock) # type: ignore[arg-type]
 
 	if channel:
 		apply_schema(query, 'channel', channel)

@@ -8,8 +8,8 @@
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from typing import Sequence
-from ampel.model.db.AmpelColModel import AmpelColModel
-from ampel.model.db.MongoClientRoleModel import MongoClientRoleModel
+from ampel.mongo.model.AmpelColModel import AmpelColModel
+from ampel.mongo.model.MongoClientRoleModel import MongoClientRoleModel
 from ampel.model.StrictModel import StrictModel
 
 class AmpelDBModel(StrictModel):

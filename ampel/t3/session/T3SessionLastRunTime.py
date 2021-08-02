@@ -10,10 +10,10 @@
 from typing import Dict, Any, Optional, ClassVar
 from datetime import datetime, timedelta
 from ampel.mongo.query.var.events import get_last_run
-from ampel.t3.session.AbsT3SessionInfo import AbsT3SessionInfo
+from ampel.abstract.AbsSessionInfo import AbsSessionInfo
 
 
-class T3SessionLastRunTime(AbsT3SessionInfo):
+class T3SessionLastRunTime(AbsSessionInfo):
 
 	key: ClassVar[str] = "last_run"
 

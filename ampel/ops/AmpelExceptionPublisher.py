@@ -17,7 +17,7 @@ from slack import WebClient
 from slack.web.slack_response import SlackResponse
 from typing import Any, Dict, List, Optional
 from ampel.abstract.AbsOpsUnit import AbsOpsUnit
-from ampel.model.Secret import Secret
+from ampel.abstract.Secret import Secret
 
 
 class AmpelExceptionPublisher(AbsOpsUnit):

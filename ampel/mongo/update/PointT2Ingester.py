@@ -10,13 +10,13 @@
 from time import time
 from pymongo import UpdateOne
 from typing import Sequence, Dict, Optional, Union, Literal, Tuple, List
-from ampel.type import StockId, ChannelId
+from ampel.types import StockId, ChannelId
 from ampel.enum.DocumentCode import DocumentCode
 from ampel.content.DataPoint import DataPoint
-from ampel.compile.PointT2Compiler import PointT2Compiler
+from ampel.ingest.PointT2Compiler import PointT2Compiler
 from ampel.abstract.ingest.AbsT2Ingester import AbsT2Ingester
 from ampel.abstract.ingest.AbsPointT2Ingester import AbsPointT2Ingester
-from ampel.abstract.ingest.AbsPointT2Compiler import AbsPointT2Compiler
+from ampel.abstract.compile.AbsPointT2Compiler import AbsPointT2Compiler
 
 
 class PointT2Ingester(AbsPointT2Ingester):

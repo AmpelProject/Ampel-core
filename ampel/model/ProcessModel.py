@@ -11,7 +11,7 @@ import schedule as sched
 from pydantic import validator
 from typing import Sequence, Optional, Literal, Union
 from ampel.model.StrictModel import StrictModel
-from ampel.type import ChannelId
+from ampel.types import ChannelId
 from ampel.model.UnitModel import UnitModel
 from ampel.config.ScheduleEvaluator import ScheduleEvaluator
 

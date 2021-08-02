@@ -10,7 +10,7 @@
 import collections
 from bson.int64 import Int64
 from typing import Union, Sequence, Dict, Optional, Any, List
-from ampel.type import StockId, ChannelId, StrictIterable
+from ampel.types import StockId, ChannelId, StrictIterable
 from ampel.util.collections import check_seq_inner_type
 from ampel.model.operator.AnyOf import AnyOf
 from ampel.model.operator.AllOf import AllOf

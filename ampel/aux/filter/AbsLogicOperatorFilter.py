@@ -8,8 +8,8 @@
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from typing import Union, Generic, List, Sequence, Any
-from ampel.type import T
-from ampel.base import abstractmethod
+from ampel.types import T
+from ampel.base.decorator import abstractmethod
 from ampel.model.operator.AllOf import AllOf
 from ampel.model.operator.FlatAnyOf import FlatAnyOf
 from ampel.model.aux.FilterCriterion import FilterCriterion

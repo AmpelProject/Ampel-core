@@ -9,7 +9,7 @@
 
 from typing import Optional, Dict, Any
 from ampel.model.StrictModel import StrictModel
-from ampel.model.db.FieldModel import FieldModel
+from ampel.mongo.model.FieldModel import FieldModel
 
 class ShortIndexModel(StrictModel):
 

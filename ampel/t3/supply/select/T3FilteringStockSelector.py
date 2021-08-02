@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File				: Ampel-core/ampel/t3/select/T3FilteringStockSelector.py
+# File				: Ampel-core/ampel/t3/supply/select/T3FilteringStockSelector.py
 # License			: BSD-3-Clause
 # Author			: Jakob van Santen <jakob.van.santen@desy.de>
 # Date				: 02.08.2020
@@ -10,13 +10,13 @@
 from pymongo.cursor import Cursor
 from typing import Dict, List, Any, Union, Optional
 
-from ampel.type import StockId
-from ampel.t3.select.T3StockSelector import T3StockSelector
+from ampel.types import StockId
+from ampel.t3.supply.select.T3StockSelector import T3StockSelector
 from ampel.model.operator.AllOf import AllOf
 from ampel.model.operator.AnyOf import AnyOf
 from ampel.model.t3.T2FilterModel import T2FilterModel
 from ampel.mongo.query.general import build_general_query
-from ampel.mongo.utils import match_array
+from ampel.mongo.utils import maybe_match_array
 
 
 class T3FilteringStockSelector(T3StockSelector):
@@ -117,7 +117,7 @@ class T3FilteringStockSelector(T3StockSelector):
 		# T2s associated with the requested channels
 		match = {
 			'code': 0,
-			'unit': match_array(_all_units(self.t2_filter)),
+			'unit': maybe_match_array(_all_units(self.t2_filter)),
 			**build_general_query(stock_ids, self.channel, self.tag)
 		}
 

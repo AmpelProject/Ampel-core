@@ -11,7 +11,7 @@ from logging import Logger, Handler
 from typing import Union, Optional, Dict
 from ampel.log.handlers.RecordBufferingHandler import RecordBufferingHandler
 from ampel.protocol.LoggingHandlerProtocol import LoggingHandlerProtocol
-from ampel.type import StockId, ChannelId
+from ampel.types import StockId, ChannelId
 
 
 class EnclosedChanRecordBufHandler(RecordBufferingHandler):
@@ -40,7 +40,7 @@ class EnclosedChanRecordBufHandler(RecordBufferingHandler):
 			if rec.levelno >= target.level:
 
 				if rec.msg:
-					rec.msg = {'t': rec.msg, 'c': self._channel}
+					rec.msg = {'c': self._channel, 't': rec.msg}
 				else:
 					rec.msg = self._empty_msg
 

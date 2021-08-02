@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-core/ampel/t3/complement/T3RandIntAppender.py
+# File              : Ampel-core/ampel/t3/supply/complement/T3RandIntAppender.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 17.06.2020
@@ -10,12 +10,12 @@
 from random import randint
 from typing import Iterable
 from ampel.struct.AmpelBuffer import AmpelBuffer
-from ampel.t3.complement.AbsT3DataAppender import AbsT3DataAppender
+from ampel.abstract.AbsBufferComplement import AbsBufferComplement
 
 
-class T3RandIntAppender(AbsT3DataAppender):
+class T3RandIntAppender(AbsBufferComplement):
 	"""
-	Subclass of AdminUnit because implementing classes might need access to
+	Subclass of ContextUnit because implementing classes might need access to
 	the AmpelConfig (foremost to the contained resource definitions)
 	"""
 

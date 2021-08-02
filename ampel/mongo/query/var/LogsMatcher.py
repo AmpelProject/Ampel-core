@@ -11,7 +11,7 @@ import collections.abc
 from typing import Dict, Any, Union, Sequence, Optional, get_args
 from datetime import datetime
 from bson.objectid import ObjectId
-from ampel.type import ChannelId, StockId
+from ampel.types import ChannelId, StockId
 from ampel.abstract.AbsIdMapper import AbsIdMapper
 from ampel.util.collections import check_seq_inner_type
 from ampel.mongo.schema import apply_schema

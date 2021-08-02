@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-core/ampel/t3/complement/T3LogsAppender.py
+# File              : Ampel-core/ampel/t3/supply/complement/T3LogsAppender.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 29.03.2021
@@ -15,10 +15,10 @@ from ampel.core.AmpelContext import AmpelContext
 from ampel.base.AmpelBaseModel import AmpelBaseModel
 from ampel.mongo.query.var.LogsLoader import LogsLoader
 from ampel.log.utils import safe_query_dict
-from ampel.t3.complement.AbsT3DataAppender import AbsT3DataAppender
+from ampel.abstract.AbsBufferComplement import AbsBufferComplement
 
 
-class T3LogsAppender(AbsT3DataAppender):
+class T3LogsAppender(AbsBufferComplement):
 
 	use_last_run: bool = True
 	logs_loader_conf: Dict[str, Any] = {}

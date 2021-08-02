@@ -9,7 +9,7 @@
 
 from typing import List, Union, Optional, Sequence, Dict, Any, Type
 import ampel.config.builder.FirstPassConfig as fpc # avoid circular import issue
-from ampel.base import abstractmethod
+from ampel.base.decorator import abstractmethod
 from ampel.base.AmpelABC import AmpelABC
 from ampel.log.AmpelLogger import AmpelLogger, VERBOSE
 

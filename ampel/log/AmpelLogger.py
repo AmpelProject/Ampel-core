@@ -11,7 +11,7 @@ import logging, sys, traceback
 from sys import _getframe
 from os.path import basename
 from typing import Dict, Optional, Union, Any, List, TYPE_CHECKING
-from ampel.type import ChannelId
+from ampel.types import ChannelId
 from ampel.log.LightLogRecord import LightLogRecord
 from ampel.log.LogFlag import LogFlag
 from ampel.protocol.LoggingHandlerProtocol import LoggingHandlerProtocol

@@ -18,7 +18,7 @@ from ampel.model.UnitModel import UnitModel
 from ampel.model.StrictModel import StrictModel
 from ampel.core.UnitLoader import UnitLoader
 from ampel.log.AmpelLogger import AmpelLogger
-from ampel.t3.stage.filter.AbsT3Filter import AbsT3Filter
+from ampel.abstract.AbsT3Filter import AbsT3Filter
 from ampel.aux.filter.AbsLogicOperatorFilter import AbsLogicOperatorFilter
 
 

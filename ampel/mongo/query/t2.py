@@ -9,12 +9,12 @@
 
 from bson.binary import Binary
 from typing import Union, Dict, Any, Optional, List
-from ampel.type import StockId, ChannelId, StrictIterable, strict_iterable
+from ampel.types import StockId, ChannelId, StrictIterable, strict_iterable
 from ampel.model.operator.AnyOf import AnyOf
 from ampel.model.operator.AllOf import AllOf
 from ampel.model.operator.OneOf import OneOf
 from ampel.util.collections import check_seq_inner_type
-from ampel.mongo.query.utils import match_array
+from ampel.mongo.query.utils import maybe_match_array
 from ampel.mongo.query.general import build_general_query
 
 
@@ -41,7 +41,7 @@ def build_stateless_query(
 	query = build_general_query(stock=stock, channel=channel)
 
 	if t2_subsel:
-		query['unit'] = t2_subsel if isinstance(t2_subsel, (str,int)) else match_array(t2_subsel)
+		query['unit'] = t2_subsel if isinstance(t2_subsel, (str,int)) else maybe_match_array(t2_subsel)
 
 	return query
 
@@ -66,7 +66,7 @@ def build_statebound_t2_query(
 	query['link'] = get_compound_match(states)
 
 	if t2_subsel:
-		query['unit'] = t2_subsel if isinstance(t2_subsel, (str,int)) else match_array(t2_subsel)
+		query['unit'] = t2_subsel if isinstance(t2_subsel, (str,int)) else maybe_match_array(t2_subsel)
 
 	return query
 

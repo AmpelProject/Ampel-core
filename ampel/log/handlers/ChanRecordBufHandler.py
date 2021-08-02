@@ -10,7 +10,7 @@
 from typing import Union, Optional, Dict
 from ampel.log.handlers.RecordBufferingHandler import RecordBufferingHandler
 from ampel.protocol.LoggingHandlerProtocol import LoggingHandlerProtocol
-from ampel.type import StockId, ChannelId
+from ampel.types import StockId, ChannelId
 
 
 class ChanRecordBufHandler(RecordBufferingHandler):

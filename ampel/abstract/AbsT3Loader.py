@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-core/ampel/t3/load/AbsT3Loader.py
+# File              : Ampel-core/ampel/abstract/AbsT3Loader.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 26.12.2019
@@ -8,10 +8,10 @@
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from typing import Union, Iterable, Sequence, Optional, Dict, List, Iterator
-
-from ampel.base import abstractmethod, AmpelBaseModel
-from ampel.type import StockId, ChannelId, StrictIterable
-from ampel.core.AdminUnit import AdminUnit, AmpelContext
+from ampel.types import StockId, ChannelId, StrictIterable
+from ampel.base.decorator import abstractmethod
+from ampel.base.AmpelABC import AmpelABC
+from ampel.core.ContextUnit import ContextUnit, AmpelContext
 from ampel.struct.AmpelBuffer import AmpelBuffer
 from ampel.model.operator.AllOf import AllOf
 from ampel.model.operator.AnyOf import AnyOf
@@ -20,8 +20,9 @@ from ampel.core.DataLoader import DataLoader
 from ampel.model.t3.LoaderDirective import LoaderDirective
 from ampel.log.AmpelLogger import AmpelLogger
 
-# Data loaders need access to the ampel db (and hence inherits AdminUnit)
-class AbsT3Loader(AdminUnit, abstract=True):
+
+# Data loaders need access to the ampel db (and hence inherits ContextUnit)
+class AbsT3Loader(AmpelABC, ContextUnit, abstract=True):
 	"""
 	Base class for loading documents associated with a set of stocks.
 	"""
@@ -64,7 +65,7 @@ class AbsT3Loader(AdminUnit, abstract=True):
 		kwargs['directives'] = tuple(directives)
 
 		# No need to save context as instance variable
-		AmpelBaseModel.__init__(self, **kwargs)
+		super().__init__(context=context, **kwargs)
 
 		self.data_loader = DataLoader(context)
 

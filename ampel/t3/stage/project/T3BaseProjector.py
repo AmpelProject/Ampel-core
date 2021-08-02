@@ -14,7 +14,7 @@ from ampel.abstract.AbsApplicable import AbsApplicable
 from ampel.model.UnitModel import UnitModel
 from ampel.base.AuxUnitRegister import AuxUnitRegister
 from ampel.model.StrictModel import StrictModel
-from ampel.t3.stage.project.AbsT3Projector import AbsT3Projector
+from ampel.abstract.AbsT3Projector import AbsT3Projector
 
 
 class T3BaseProjector(AbsT3Projector):

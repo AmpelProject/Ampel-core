@@ -8,10 +8,9 @@
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from typing import List, Optional, Dict, Union
-from ampel.model.db.IndexModel import IndexModel
-from ampel.model.db.ShortIndexModel import ShortIndexModel
+from ampel.mongo.model.IndexModel import IndexModel
+from ampel.mongo.model.ShortIndexModel import ShortIndexModel
 from ampel.model.StrictModel import StrictModel
-
 
 class AmpelColModel(StrictModel):
 	name: str

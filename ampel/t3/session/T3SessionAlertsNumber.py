@@ -9,11 +9,11 @@
 
 from typing import Dict, Any, ClassVar
 from ampel.mongo.query.var.events import build_t0_stats_query
-from ampel.t3.session.AbsT3SessionInfo import AbsT3SessionInfo
+from ampel.abstract.AbsSessionInfo import AbsSessionInfo
 from ampel.t3.session.T3SessionLastRunTime import T3SessionLastRunTime
 
 
-class T3SessionAlertsNumber(AbsT3SessionInfo):
+class T3SessionAlertsNumber(AbsSessionInfo):
 
 	key: ClassVar[str] = "processed_alerts"
 

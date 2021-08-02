@@ -4,42 +4,40 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 16.06.2018
-# Last Modified Date: 03.04.2021
+# Last Modified Date: 18.05.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import secrets
 import collections.abc
 from collections import defaultdict  # type: ignore[attr-defined]
-from typing import Sequence, Dict, List, Any, Union, Optional, TYPE_CHECKING
-
 from pymongo import MongoClient
 from pymongo.database import Database
 from pymongo.collection import Collection
-from pymongo.errors import ConfigurationError
+from pymongo.errors import ConfigurationError, DuplicateKeyError
+from typing import Sequence, Dict, List, Any, Union, Optional, Set
 
-from ampel.type import ChannelId
+from ampel.types import ChannelId
+from ampel.mongo.utils import get_ids
+from ampel.log.AmpelLogger import AmpelLogger
 from ampel.config.AmpelConfig import AmpelConfig
 from ampel.base.AmpelBaseModel import AmpelBaseModel
-from ampel.abstract.AbsSecretProvider import AbsSecretProvider
+from ampel.secret.AmpelVault import AmpelVault
 from ampel.mongo.view.AbsMongoView import AbsMongoView
 from ampel.mongo.view.MongoOneView import MongoOneView
 from ampel.mongo.view.MongoOrView import MongoOrView
 from ampel.mongo.view.MongoAndView import MongoAndView
-from ampel.model.db.AmpelColModel import AmpelColModel
-from ampel.model.db.AmpelDBModel import AmpelDBModel
-from ampel.model.db.IndexModel import IndexModel
-from ampel.model.db.ShortIndexModel import ShortIndexModel
-from ampel.model.db.MongoClientOptionsModel import MongoClientOptionsModel
-from ampel.model.db.MongoClientRoleModel import MongoClientRoleModel
-
-if TYPE_CHECKING:
-	from ampel.log.AmpelLogger import AmpelLogger
+from ampel.mongo.model.AmpelColModel import AmpelColModel
+from ampel.mongo.model.AmpelDBModel import AmpelDBModel
+from ampel.mongo.model.IndexModel import IndexModel
+from ampel.mongo.model.ShortIndexModel import ShortIndexModel
+from ampel.mongo.model.MongoClientOptionsModel import MongoClientOptionsModel
+from ampel.mongo.model.MongoClientRoleModel import MongoClientRoleModel
 
 intcol = {'t0': 0, 't1': 1, 't2': 2, 'stock': 3}
 
 class AmpelDB(AmpelBaseModel):
 	"""
-	Ampel stores all information in a dedicated DB.
+	Ampel stores information in a dedicated DB.
 	This class allows to create or retrieve the underlying database collections.
 	"""
 
@@ -47,19 +45,23 @@ class AmpelDB(AmpelBaseModel):
 	databases: List[AmpelDBModel]
 	mongo_uri: str
 	mongo_options: MongoClientOptionsModel = MongoClientOptionsModel()
-	secrets: Optional[AbsSecretProvider]
+	vault: Optional[AmpelVault]
+
 
 	@staticmethod
-	def new(config: AmpelConfig, secrets: Optional[AbsSecretProvider] = None) -> 'AmpelDB':
+	def new(config: AmpelConfig, vault: Optional[AmpelVault] = None) -> 'AmpelDB':
 		""" :raises: ValueError in case a required config entry is missing """
 		return AmpelDB(
 			mongo_uri = config.get('resource.mongo', str, raise_exc=True),
-			secrets = secrets,
-			**config.get('db', dict, raise_exc=True)
+			vault = vault,
+			**config.get('mongo', dict, raise_exc=True)
 		)
 
 
 	def __init__(self, **kwargs) -> None:
+
+		if 'ingest' in kwargs:
+			kwargs.pop('ingest')
 
 		super().__init__(**kwargs) # type: ignore[call-arg]
 
@@ -71,6 +73,11 @@ class AmpelDB(AmpelBaseModel):
 
 		self.mongo_collections: Dict[str, Collection] = {}
 		self.mongo_clients: Dict[str, MongoClient] = {} # map role with client
+
+		self.col_trace_ids = self.get_collection('traceid')
+		self.col_conf_ids = self.get_collection('confid')
+		self.trace_ids: Set[int] = get_ids(self.col_trace_ids)
+		self.conf_ids: Set[int] = get_ids(self.col_conf_ids)
 
 
 	def enable_rejected_collections(self, channel_names: Sequence[ChannelId]) -> None:
@@ -132,11 +139,12 @@ class AmpelDB(AmpelBaseModel):
 	def _get_mongo_db(self, *, role: str, db_name: str) -> Database:
 
 		if role not in self.mongo_clients:
+
+			kwargs = self.mongo_options.dict()
 			key = f'mongo/{role}'
-			kwargs = {
-				**(self.secrets.get(key, dict).get() if self.secrets else {}),
-				**self.mongo_options.dict()
-			}
+			if self.vault and (ns := self.vault.get_named_secret(key)):
+				kwargs |= ns.get()
+
 			try:
 				self.mongo_clients[role] = MongoClient(self.mongo_uri, **kwargs)
 			except ConfigurationError as exc:
@@ -161,10 +169,14 @@ class AmpelDB(AmpelBaseModel):
 			for col_config in db_config.collections:
 				self.get_collection(col_config.name)
 
+		self.col_trace_ids = self.get_collection('traceid')
+		self.col_conf_ids = self.get_collection('confid')
+
 
 	def create_collection(self,
 		role: str, db_name: str,
-		col_config: AmpelColModel, logger: Optional['AmpelLogger'] = None
+		col_config: AmpelColModel,
+		logger: Optional['AmpelLogger'] = None
 	) -> Collection:
 		"""
 		:param resource_name: name of the AmpelConfig resource (resource.mongo) to be fed to MongoClient()
@@ -217,19 +229,25 @@ class AmpelDB(AmpelBaseModel):
 
 
 	def create_one_view(self, channel: ChannelId, logger: Optional['AmpelLogger'] = None) -> None:
-		self.create_view(MongoOneView(channel=channel), str(channel), logger)
+		self.create_view(
+			MongoOneView(channel=channel), str(channel), logger
+		)
 
 
 	def create_or_view(self, channels: Sequence[ChannelId], logger: Optional['AmpelLogger'] = None) -> None:
 		if not isinstance(channels, collections.abc.Sequence) or len(channels) == 1:
 			raise ValueError("Incorrect argument")
-		self.create_view(MongoOrView(channel=channels), "_OR_".join(channels), logger)
+		self.create_view(
+			MongoOrView(channel=channels), "_OR_".join(channels), logger
+		)
 
 
 	def create_and_view(self, channels: Sequence[ChannelId], logger: Optional['AmpelLogger'] = None) -> None:
 		if not isinstance(channels, collections.abc.Sequence) or len(channels) == 1:
 			raise ValueError("Incorrect argument")
-		self.create_view(MongoAndView(channel=channels), "_AND_".join(channels), logger)
+		self.create_view(
+			MongoAndView(channel=channels), "_AND_".join(channels), logger
+		)
 
 
 	def create_view(self,
@@ -330,6 +348,38 @@ class AmpelDB(AmpelBaseModel):
 			self._get_mongo_db(role=db.role.w, db_name=db.name).client.drop_database(f"{self.prefix}_{db.name}")
 		self.mongo_collections.clear()
 		self.mongo_clients.clear()
+		self.col_trace_ids = None
+		self.col_conf_ids = None
+		self.trace_ids = set()
+		self.conf_ids = set()
+
+
+	def add_trace_id(self, trace_id: int, arg: Dict[str, Any]) -> None:
+
+		# Save trace id to external collection
+		if trace_id not in self.trace_ids:
+
+			# Using try insert except on purpose because update_one/upsert does not maintain dict key order
+			try:
+				self.col_trace_ids.insert_one({'_id': trace_id} | arg)
+			except DuplicateKeyError:
+				pass
+
+		self.trace_ids.add(trace_id)
+
+
+	def add_conf_id(self, conf_id: int, arg: Dict[str, Any]) -> None:
+
+		# Save conf id to external collection
+		if conf_id not in self.conf_ids:
+
+			# Using try insert except on purpose because update_one/upsert does not maintain dict key order
+			try:
+				self.col_conf_ids.insert_one({'_id': conf_id} | arg)
+			except DuplicateKeyError:
+				pass
+
+		self.conf_ids.add(conf_id)
 
 
 	@staticmethod
@@ -356,8 +406,6 @@ class AmpelDB(AmpelBaseModel):
 			)
 
 
-
-
 def provision_accounts(ampel_db: AmpelDB, auth: Dict[str, str] = {}) -> Dict[str, Any]:
 	"""Create accounts required by the given Ampel configuration."""
 	roles = defaultdict(list)
@@ -378,12 +426,12 @@ def provision_accounts(ampel_db: AmpelDB, auth: Dict[str, str] = {}) -> Dict[str
 
 def revoke_accounts(ampel_db: AmpelDB, auth: Dict[str, str] = {}) -> None:
 	"""Delete accounts previously created with "provision"."""
-	if ampel_db.secrets is None:
-		raise ValueError("No secrets configured")
+	if ampel_db.vault is None:
+		raise ValueError("No secrets vault configured")
 	admin = MongoClient(ampel_db.mongo_uri, **auth).get_database("admin")
 	roles = {role for db in ampel_db.databases for role in db.role.dict().values()}
 	for role in roles:
-		username = ampel_db.secrets.get(f"mongo/{role}", dict).get()["username"]
+		username = ampel_db.vault.get_named_secret(f"mongo/{role}").get()["username"]
 		admin.command("dropUser", username)
 
 
@@ -420,7 +468,7 @@ def main() -> None:
 	import yaml
 
 	from ampel.core import AmpelContext
-	from ampel.dev.DictSecretProvider import DictSecretProvider
+	from ampel.secret.DictSecretProvider import DictSecretProvider
 
 	parser = ArgumentParser(description="Manage access to Ampel databases")
 
