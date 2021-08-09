@@ -9,6 +9,7 @@
 
 from typing import Optional, Any, Dict, Union, List, Type
 from importlib import import_module
+from ampel.base.AuxUnitRegister import AuxUnitRegister
 from ampel.base.LogicalUnit import LogicalUnit
 from ampel.core.ContextUnit import ContextUnit
 from ampel.core.AmpelDB import AmpelDB
@@ -81,10 +82,15 @@ class DevAmpelContext(AmpelContext):
 			}
 		)
 
-		if self.loader._dyn_register is None:
-			self.loader._dyn_register = {}
+		if issubclass(Class, (LogicalUnit, ContextUnit)):
 
-		self.loader._dyn_register[Class.__name__] = Class
+			if self.loader._dyn_register is None:
+				self.loader._dyn_register = {}
+
+			self.loader._dyn_register[Class.__name__] = Class
+
+		else:
+			AuxUnitRegister._dyn[Class.__name__] = Class
 
 
 	def gen_config_id(self, unit: str, arg: Dict[str, Any], logger: Optional[AmpelLogger] = None) -> int:
