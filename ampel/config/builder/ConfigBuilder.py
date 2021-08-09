@@ -148,6 +148,7 @@ class ConfigBuilder:
 		stop_on_errors: int = 2,
 		config_validator: Optional[str] = "ConfigChecker",
 		skip_default_processes: bool = False,
+		json_serializable: bool = True,
 		pwds: Optional[Iterable[str]] = None,
 		save: Union[bool, str, None] = None,
 		sign: int = 6,
@@ -165,6 +166,8 @@ class ConfigBuilder:
 
 		:param pwds: config section 'resource' might contain AES encrypted entries.
 		If passwords are provided to this method, thoses entries will be decrypted.
+
+		:param json_serializable: if True, stringify int keys in section 'confid' and potential int channel names.
 
 		:param skip_default_processes: set to True to discard default processes defined by ampel-core.
 		The static variable ConfigBuilder._default_processes references those processes by name.
@@ -354,7 +357,8 @@ class ConfigBuilder:
 				else:
 					d[k] = secret.get()
 
-
+	
+		# Register templates in config (might be used by the 'ampel job' CLI)
 		out['template'] = {k: v.__module__ for k, v in self.templates.items()}
 		self.logger.info('Done building config')
 
@@ -363,6 +367,7 @@ class ConfigBuilder:
 			self.logger.info('Erroneous units (import failed):')
 			for el in out['unit'].err_fqns:
 				self.logger.info(el)
+
 		if morph_errors:
 			self.logger.info('Erroneous process definitions (morphing failed):')
 			for el in morph_errors:
@@ -387,7 +392,16 @@ class ConfigBuilder:
 				del u[k]
 		d['unit'] |= u # Aux units
 
+		# Convert int keys to str (ensures JSON compatibility)
+		if json_serializable:
+
+			for k in [el for el in out['channel'].keys() if isinstance(el, str) and el.isdigit()]:
+				out['channel'][str(k)] = out['channel'].pop(k)
+			for k in list(out['confid'].keys()):
+				out['confid'][str(k)] = out['confid'].pop(k)
+
 		if config_validator:
+
 			from importlib import import_module
 			validator = getattr(
 				import_module("ampel.config.builder." + config_validator),
