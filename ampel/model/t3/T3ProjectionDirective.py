@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-core/ampel/model/t3/T3RunDirective.py
+# File              : Ampel-core/ampel/model/t3/T3ProjectionDirective.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 02.03.2021
@@ -14,7 +14,7 @@ from ampel.model.UnitModel import UnitModel
 from ampel.model.StrictModel import StrictModel
 
 
-class T3RunDirective(StrictModel):
+class T3ProjectionDirective(StrictModel):
 	"""
 	Internal model used for field 'directives' of T3UnitRunner
 	"""
