@@ -11,14 +11,14 @@ import logging, sys, traceback
 from sys import _getframe
 from os.path import basename
 from typing import Dict, Optional, Union, Any, List, TYPE_CHECKING
-from ampel.type import ChannelId, StockId
+from ampel.types import ChannelId
 from ampel.log.LightLogRecord import LightLogRecord
 from ampel.log.LogFlag import LogFlag
 from ampel.protocol.LoggingHandlerProtocol import LoggingHandlerProtocol
 from ampel.log.handlers.AmpelStreamHandler import AmpelStreamHandler
 
 if TYPE_CHECKING:
-	from ampel.log.handlers.DBLoggingHandler import DBLoggingHandler
+	from ampel.mongo.update.var.DBLoggingHandler import DBLoggingHandler
 
 ERROR = LogFlag.ERROR
 WARNING = LogFlag.WARNING
@@ -69,7 +69,7 @@ class AmpelLogger:
 
 		if "db" in handlers:
 			# avoid circular import
-			from ampel.log.handlers.DBLoggingHandler import DBLoggingHandler
+			from ampel.mongo.update.var.DBLoggingHandler import DBLoggingHandler
 
 			if run_id is None:
 				raise ValueError("Parameter 'run_id' is required when log_profile requires db logging handler")
@@ -164,11 +164,19 @@ class AmpelLogger:
 
 	def get_db_logging_handler(self) -> Optional['DBLoggingHandler']:
 		# avoid circular import
-		from ampel.log.handlers.DBLoggingHandler import DBLoggingHandler
+		from ampel.mongo.update.var.DBLoggingHandler import DBLoggingHandler
 		for el in self.handlers:
 			if isinstance(el, DBLoggingHandler):
 				return el
 		return None
+
+
+	def break_aggregation(self) -> None:
+		for el in self.handlers:
+			try:
+				el.break_aggregation()
+			except Exception:
+				pass
 
 
 	def error(self, msg: Union[str, Dict[str, Any]], *args,

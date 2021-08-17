@@ -36,12 +36,16 @@ Properties:
 Known class making use of this module: `ampel.core.AmpelRegister.AmpelRegister` and sub-classes
 """
 
-import bson, json
+import bson, json, sys
 from errno import ENOENT
 from struct import iter_unpack, calcsize
 from os import path, strerror
 from zlib import compress, decompress
-from typing import BinaryIO, Optional, Dict, Any, List, Union, Tuple, TypedDict, Generator, Callable
+if sys.version_info.minor > 8:
+	from typing import TypedDict
+else:
+	from typing_extensions import TypedDict
+from typing import BinaryIO, Optional, Dict, Any, List, Union, Tuple, Generator, Callable
 from ampel.log.AmpelLogger import AmpelLogger, VERBOSE
 
 ampel_magic_bytes = bytes([97, 109, 112, 101, 108])

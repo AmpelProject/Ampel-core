@@ -7,14 +7,14 @@
 # Last Modified Date: 27.10.2019
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-from logging import Logger
 from typing import Dict, Any
-from ampel.base import abstractmethod
+from ampel.log.AmpelLogger import AmpelLogger
+from ampel.base.decorator import abstractmethod
 from ampel.config.builder.AbsConfigTemplate import AbsConfigTemplate
 
 
 class AbsProcessTemplate(AbsConfigTemplate, abstract=True):
 
 	@abstractmethod
-	def get_process(self, logger: Logger) -> Dict[str, Any]:
+	def get_process(self, config: Dict[str, Any], logger: AmpelLogger) -> Dict[str, Any]:
 		...

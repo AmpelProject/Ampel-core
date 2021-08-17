@@ -10,30 +10,36 @@
 from typing import Dict, Any, Optional, Type, Literal
 from ampel.content.StockDocument import StockDocument
 from ampel.content.DataPoint import DataPoint
-from ampel.content.Compound import Compound
+from ampel.content.T1Document import T1Document
 from ampel.content.T2Document import T2Document
-from ampel.content.LogDocument import LogDocument
+from ampel.content.T3Document import T3Document
 from ampel.model.t3.AliasableModel import AliasableModel
 
 
 models = {
 	"stock": StockDocument,
 	"t0": DataPoint,
-	"t1": Compound,
+	"t1": T1Document,
 	"t2": T2Document,
-	"log": LogDocument
+	"t3": T3Document
 }
 
 class LoaderDirective(AliasableModel):
 	"""Specification of documents to load"""
 
 	#: Source collection
-	col: Literal["stock", "t0", "t1", "t2", "log"]
+	col: Literal["stock", "t0", "t1", "t2", "t3"]
+
 	model: Optional[Type] # TypedDict
+
 	#: Mongo match expression to include in the query
 	query_complement: Optional[Dict[str, Any]]
-	# key "link_config" used in DBContentLoader
-	options: Optional[Dict[str, Any]]
+
+	#: whether to replace init config integer hash with 'resolved' config dict
+	resolve_config: bool = False
+
+	#: whether an emtpy find() result should discard entirely the associated stock for further processing
+	excluding_query: bool = False
 
 	def __init__(self, **kwargs):
 		super().__init__(**kwargs)

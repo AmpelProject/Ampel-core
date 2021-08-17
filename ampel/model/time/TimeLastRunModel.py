@@ -10,8 +10,8 @@
 from typing import Union, Dict, Optional, Literal
 from datetime import datetime, timedelta
 from ampel.model.StrictModel import StrictModel
-from ampel.db.query.events import get_last_run
-from ampel.db.AmpelDB import AmpelDB
+from ampel.mongo.query.var.events import get_last_run
+from ampel.core.AmpelDB import AmpelDB
 
 
 class TimeLastRunModel(StrictModel):

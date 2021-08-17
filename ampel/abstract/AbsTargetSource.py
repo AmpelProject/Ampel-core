@@ -7,7 +7,9 @@
 # Last Modified Date: 15.09.2018
 # Last Modified By  : jvs
 
-from ampel.base import abstractmethod, AmpelABC
+from ampel.base.AmpelABC import AmpelABC
+from ampel.base.decorator import abstractmethod
+
 
 class AbsTargetSource(AmpelABC, abstract=True):
 	""" Provides target fields for follow-up searches """

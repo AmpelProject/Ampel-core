@@ -13,29 +13,30 @@ from typing import Dict, List, Optional, Sequence, Set, Tuple, Union, Any
 
 from pymongo import UpdateOne
 
-from ampel.abstract.AbsProcessorUnit import AbsProcessorUnit
+from ampel.struct.UnitResult import UnitResult
+from ampel.types import ChannelId, StockId
+from ampel.abstract.AbsEventUnit import AbsEventUnit
 from ampel.abstract.AbsStockT2Unit import AbsStockT2Unit
 from ampel.abstract.AbsPointT2Unit import AbsPointT2Unit
 from ampel.abstract.AbsStateT2Unit import AbsStateT2Unit
 from ampel.abstract.AbsTiedStateT2Unit import AbsTiedStateT2Unit
-from ampel.abstract.ingest.AbsCompoundIngester import AbsCompoundIngester
+from ampel.abstract.ingest.AbsT1Ingester import AbsT1Ingester
 from ampel.abstract.ingest.AbsStateT2Compiler import AbsStateT2Compiler
 from ampel.abstract.ingest.AbsStateT2Ingester import AbsStateT2Ingester
 from ampel.abstract.ingest.AbsT2Ingester import AbsT2Ingester
 from ampel.content.DataPoint import DataPoint
-from ampel.ingest.CompoundBluePrint import CompoundBluePrint
-from ampel.ingest.T1DefaultCombiner import T1DefaultCombiner
+from ampel.ingest.T1Compiler import T1Compiler
+from ampel.t1.T1SimpleCombiner import T1SimpleCombiner
 from ampel.log.AmpelLogger import AmpelLogger
-from ampel.enum.T2SysRunState import T2SysRunState
+from ampel.enum.DocumentCode import DocumentCode
 from ampel.content.T2Document import T2Document
-from ampel.type import ChannelId, StockId, T2UnitResult
 from ampel.content.DataPoint import DataPoint
-from ampel.content.Compound import Compound
+from ampel.content.T1Document import T1Document
 from ampel.view.T2DocView import T2DocView
 from ampel.model.StateT2Dependency import StateT2Dependency
 
 
-class Sleepy(AbsProcessorUnit):
+class Sleepy(AbsEventUnit):
     """
     A processor that does nothing (especially not touching the db, which is not
     mocked in subprocesses)
@@ -46,19 +47,19 @@ class Sleepy(AbsProcessorUnit):
 
 
 class DummyStockT2Unit(AbsStockT2Unit):
-    def run(self, stock_doc):
+    def process(self, stock_doc):
         return {"id": stock_doc["_id"]}
 
 
 # FIXME: these dummy ingesters are copied from ampel-alerts, as there is no
-# default implementation of AbsCompoundIngester or AbsStateT2Ingester
-class DummyCompoundIngester(AbsCompoundIngester):
-    """simplified PhotoCompoundIngester for testing"""
+# default implementation of AbsT1Ingester or AbsStateT2Ingester
+class DummyCompoundIngester(AbsT1Ingester):
+    """simplified PhotoT1Ingester for testing"""
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.channels: Set[ChannelId] = set()
-        self.engine = T1DefaultCombiner(logger=AmpelLogger.get_logger(console=False))
+        self.engine = T1SimpleCombiner(logger=AmpelLogger.get_logger(console=False))
 
     def add_channel(self, channel: ChannelId) -> None:
         self.channels.add(channel)
@@ -68,7 +69,7 @@ class DummyCompoundIngester(AbsCompoundIngester):
         stock_id: StockId,
         datapoints: Sequence[DataPoint],
         chan_selection: List[Tuple[ChannelId, Union[bool, int]]],
-    ) -> Optional[CompoundBluePrint]:
+    ) -> Optional[T1Compiler]:
         chans = [k for k, v in chan_selection if k in self.channels]
 
         if not (blue_print := self.engine.combine(stock_id, datapoints, chans)):
@@ -93,7 +94,7 @@ class DummyCompoundIngester(AbsCompoundIngester):
             comp_set_on_ins = {
                 "_id": eff_comp_id,
                 "stock": stock_id,
-                "tag": list(blue_print.get_comp_tags(eff_comp_id)),
+                "tag": list(blue_print.get_doc_tags(eff_comp_id)),
                 "tier": 0,
                 "added": time.time(),
                 "len": len(comp_dict),
@@ -115,7 +116,7 @@ class DummyStateT2Compiler(AbsStateT2Compiler):
     def compile(
         self,
         chan_selection: List[Tuple[ChannelId, Union[bool, int]]],
-        compound_blueprint: CompoundBluePrint,
+        compound_blueprint: T1Compiler,
     ) -> Dict[
         Tuple[str, Optional[int], Union[bytes, Tuple[bytes, ...]]], Set[ChannelId]
     ]:
@@ -136,12 +137,12 @@ class DummyStateT2Compiler(AbsStateT2Compiler):
 
 
 class DummyStateT2Ingester(AbsStateT2Ingester):
-    compiler: AbsStateT2Compiler[CompoundBluePrint] = DummyStateT2Compiler()
+    compiler: AbsStateT2Compiler[T1Compiler] = DummyStateT2Compiler()
 
     def ingest(
         self,
         stock_id: StockId,
-        comp_bp: CompoundBluePrint,
+        comp_bp: T1Compiler,
         chan_selection: List[Tuple[ChannelId, Union[bool, int]]],
     ) -> None:
         """
@@ -167,7 +168,7 @@ class DummyStateT2Ingester(AbsStateT2Ingester):
                 "stock": stock_id,
                 "unit": t2_id,
                 "config": run_config,
-                "status": T2SysRunState.NEW.value,
+                "code": DocumentCode.NEW.value,
             }
             if self.tags:
                 set_on_insert["tag"] = self.tags
@@ -194,12 +195,12 @@ class DummyStateT2Ingester(AbsStateT2Ingester):
 
 
 class DummyPointT2Unit(AbsPointT2Unit):
-    def run(self, datapoint):
+    def process(self, datapoint):
         return {"thing": datapoint["body"]["thing"]}
 
 
 class DummyStateT2Unit(AbsStateT2Unit):
-    def run(self, compound, datapoints):
+    def process(self, compound, datapoints):
         return {"len": len(datapoints)}
 
 
@@ -212,12 +213,11 @@ class DummyTiedStateT2Unit(AbsTiedStateT2Unit):
     def get_tied_unit_names(cls):
         return [cls._unit]
 
-    def run(self,
-		compound: Compound,
+    def process(self,
+		compound: T1Document,
 		datapoints: Sequence[DataPoint],
-		t2_records: Sequence[T2DocView]
-	) -> T2UnitResult:
-        assert t2_records, "dependencies were found"
-        assert len(body := t2_records[0].body or []) == 1
-        payload = (p[-1] if isinstance((p := t2_records[0].get_payload()), list) else p) # type: ignore[index]
-        return {k: v * 2 for k, v in (payload or {}).items()}
+		t2views: Sequence[T2DocView]
+	) -> Union[UBson, UnitResult]:
+        assert t2views, "dependencies were found"
+        assert len(body := t2views[0].body or []) == 1
+        return {k: v * 2 for k, v in (t2views[0].get_data() or {}).items()}

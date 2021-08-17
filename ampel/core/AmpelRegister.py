@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 16.05.2020
-# Last Modified Date: 31.08.2020
+# Last Modified Date: 04.03.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import bson
@@ -16,7 +16,7 @@ from typing import BinaryIO, Optional, Literal, Dict, Any, List, Union, Tuple, T
 
 from ampel.log.AmpelLogger import AmpelLogger, VERBOSE
 from ampel.base.AmpelBaseModel import AmpelBaseModel
-from ampel.util.mappings import build_unsafe_dict_id
+from ampel.util.hash import build_unsafe_dict_id
 from ampel.util.register import read_header, write_header, \
 	get_inner_file_handle, get_outer_file_handle, rescale_header
 
@@ -522,7 +522,7 @@ class AmpelRegister(AmpelBaseModel):
 						rescale_header(
 							self._outer_fh.name, new_size = self.header['size'] * 2, remove_old_file = True,
 							header = self.header['payload']
-							)
+						)
 						self._outer_fh = None # type: ignore[assignment]
 
 				elif self.verbose > 1:

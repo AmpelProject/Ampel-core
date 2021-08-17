@@ -8,8 +8,9 @@
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from typing import Any
-from ampel.base import abstractmethod, AmpelBaseModel
 from ampel.base.AmpelABC import AmpelABC
+from ampel.base.decorator import abstractmethod
+from ampel.base.AmpelBaseModel import AmpelBaseModel
 
 class AbsApplicable(AmpelABC, AmpelBaseModel, abstract=True):
 

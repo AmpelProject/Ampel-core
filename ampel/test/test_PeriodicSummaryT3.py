@@ -2,7 +2,7 @@ import copy
 
 import pytest
 from ampel.config.builder.ConfigValidator import ConfigValidator
-from ampel.model.template.PeriodicSummaryT3 import PeriodicSummaryT3
+from ampel.template.PeriodicSummaryT3 import PeriodicSummaryT3
 
 
 @pytest.mark.parametrize("loader_directives", [None, [{"col": "stock"}], ["TRANSIENT"]])

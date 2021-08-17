@@ -1,39 +1,58 @@
-db:
-  prefix: AmpelTest
+mongo:
+  ingest:
+    stock: MongoStockIngester
+    t0: MongoT0Ingester
+    t1: MongoT1Ingester
+    t2: MongoT2Ingester
+    t3: MongoT3Ingester
 
 unit:
 
-  controller:
-    - ampel.core.DefaultProcessController
+# Controller units
+- ampel.core.DefaultProcessController
 
-  admin:
-    - ampel.core.AmpelExceptionPublisher
-    - ampel.core.OpsProcessor
-    - ampel.ingest.PointT2Ingester
-    - ampel.t2.T2Processor
-    - ampel.t3.T3Processor
-    - ampel.t3.context.T3AddLastRunTime
-    - ampel.t3.context.T3AddAlertsNumber
-    - ampel.t3.select.T3StockSelector
-    - ampel.t3.select.T3FilteringStockSelector
-    - ampel.t3.load.T3SimpleDataLoader
-    - ampel.t3.load.T3LatestStateDataLoader
-    - ampel.t3.complement.T3RandIntAppender
-    - ampel.t3.complement.T3ExtJournalAppender
-    - ampel.t3.run.T3UnitRunner
-    - ampel.t3.run.T3ChannelUnitRunner
-    - ampel.t3.run.T3DynamicUnitRunner
+# Context units
+- ampel.ops.AmpelExceptionPublisher
+- ampel.ops.OpsProcessor
+- ampel.t2.T2Worker
+- ampel.t3.T3Processor
+- ampel.t3.session.T3SessionLastRunTime
+- ampel.t3.session.T3SessionAlertsNumber
+- ampel.t3.supply.T3DefaultSupplier
+- ampel.t3.supply.SimpleT2BasedSupplier
+- ampel.t3.supply.select.T3StockSelector
+- ampel.t3.supply.select.T3FilteringStockSelector
+- ampel.t3.supply.load.T3SimpleDataLoader
+- ampel.t3.supply.load.T3LatestStateDataLoader
+- ampel.t3.supply.complement.T3RandIntAppender
+- ampel.t3.supply.complement.T3ExtJournalAppender
+- ampel.t3.supply.complement.T3LogsAppender
+- ampel.t3.stage.T3SimpleStager
+- ampel.t3.stage.T3ProjectingStager
+- ampel.t3.stage.T3ChannelStager
+- ampel.t3.stage.T3AdaptativeStager
+- ampel.t3.stage.T3CollaborativeStager
+- ampel.t3.stage.T3DistributiveStager
+- ampel.cli.T3BufferTextExporter
+- ampel.cli.T3BufferBinaryExporter
+- ampel.demo.DemoProcessor
 
-  base:
-    - ampel.demo.unit.base.DemoPointT2Unit
-    - ampel.demo.unit.base.DemoFirstPointT2Unit
-    - ampel.demo.unit.base.DemoT3Unit
+# Logical units
+- ampel.demo.DemoPointT2Unit
+- ampel.demo.DemoFirstPointT2Unit
+- ampel.demo.DemoT3Unit
+- ampel.dev.NoShaper
 
-  aux:
-    - ampel.aux.filter.SimpleDictArrayFilter
-    - ampel.aux.filter.FlatDictArrayFilter
-    - ampel.t3.run.project.T3ChannelProjector
-    - ampel.t3.run.filter.T3AmpelBufferFilter
+# Aux units
+- ampel.aux.filter.SimpleDictArrayFilter
+- ampel.aux.filter.FlatDictArrayFilter
+- ampel.t3.stage.project.T3ChannelProjector
+- ampel.t3.stage.filter.T3AmpelBufferFilter
+- ampel.mongo.update.MongoStockIngester
+- ampel.mongo.update.MongoT0Ingester
+- ampel.mongo.update.MongoT1Ingester
+- ampel.mongo.update.MongoT2Ingester
+- ampel.mongo.update.MongoT3Ingester
 
 alias:
   t3:
@@ -49,14 +68,18 @@ alias:
       col: t1
     '%T1':
       col: t1
-    '%T2RECORD':
+    '%T2DOC':
       col: t2
+    '%T2DOC_WITH_CONF':
+      col: t2
+      options:
+        resolve_config: true
     '%T2':
       col: t2
-    '%LOGRECORD':
-      col: log
-    '%LOG':
-      col: log
+    '%T2RECORD':
+      col: t2
+    '%T3DOC':
+      col: t3
 
 resource:
 
@@ -64,11 +87,13 @@ resource:
   '%extcats': mongodb://localhost:27017
 
 process:
+
   - name: DefaultT2Process
     tier: 2
     schedule: every(5).minutes
     processor:
-      unit: T2Processor
+      unit: T2Worker
+
   - name: ExceptionPublisher
     tier: null
     schedule: every(10).minutes

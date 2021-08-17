@@ -32,7 +32,7 @@ from ampel.config.AmpelConfig import AmpelConfig
 from ampel.core.AmpelContext import AmpelContext
 from ampel.core.AmpelController import AmpelController
 from ampel.core.UnitLoader import UnitLoader
-from ampel.dev.DictSecretProvider import DictSecretProvider
+from ampel.secret.DictSecretProvider import DictSecretProvider
 from ampel.log.LogFlag import LogFlag
 from ampel.metrics.AmpelDBCollector import AmpelDBCollector
 from ampel.metrics.AmpelProcessCollector import AmpelProcessCollector
@@ -40,8 +40,8 @@ from ampel.metrics.AmpelMetricsRegistry import AmpelMetricsRegistry
 from ampel.model.ProcessModel import ProcessModel
 from ampel.model.StrictModel import StrictModel
 from ampel.model.UnitModel import UnitModel
-from ampel.enum.T2SysRunState import T2SysRunState
-from ampel.util.mappings import build_unsafe_dict_id
+from ampel.enum.DocumentCode import DocumentCode
+from ampel.util.hash import build_unsafe_dict_id
 
 if TYPE_CHECKING:
     from ampel.protocol.LoggerProtocol import LoggerProtocol
@@ -492,7 +492,7 @@ def get_stock(stock_id: int):
         context.db.get_collection("stock").find_one({"_id": stock_id}),
         json_util.RELAXED_JSON_OPTIONS,
     )
-    for k in "created", "modified":
+    for k in "created", "updated":
         doc[k] = {facet: datetime.fromtimestamp(ts) for facet, ts in doc[k].items()}
     for jentry in doc["journal"]:
         jentry["ts"] = datetime.fromtimestamp(jentry["ts"])
@@ -536,7 +536,7 @@ def transform_doc(doc: Dict[str, Any], tier: int) -> Dict[str, Any]:
     if tier == 2:
         for jentry in doc["journal"]:
             jentry["dt"] = datetime.fromtimestamp(jentry["dt"])
-        doc["status"] = T2SysRunState(doc["status"]).name
+        doc["code"] = DocumentCode(doc["code"]).name
         for subrecord in doc.get("body", []):
             subrecord["ts"] = datetime.fromtimestamp(subrecord["ts"])
     return doc
@@ -557,7 +557,7 @@ def t2_summary():
         [
             {
                 "$group": {
-                    "_id": {"status": "$status", "unit": "$unit"},
+                    "_id": {"code": "$code", "unit": "$unit"},
                     "count": {"$sum": 1},
                 }
             }
@@ -565,10 +565,10 @@ def t2_summary():
     )
     summary = {}
     for doc in cursor:
-        status = T2SysRunState(doc["_id"]["status"]).name
-        if status not in summary:
-            summary[status] = {}
-        summary[status][doc["_id"]["unit"]] = doc["count"]
+        code = DocumentCode(doc["_id"]["code"]).name
+        if code not in summary:
+            summary[code] = {}
+        summary[code][doc["_id"]["unit"]] = doc["count"]
     return summary
 
 

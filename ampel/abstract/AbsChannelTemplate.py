@@ -8,7 +8,7 @@
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from typing import List, Dict, Any
-from ampel.base import abstractmethod
+from ampel.base.decorator import abstractmethod
 from ampel.log.AmpelLogger import AmpelLogger
 from ampel.model.ChannelModel import ChannelModel
 from ampel.config.builder.FirstPassConfig import FirstPassConfig

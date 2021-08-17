@@ -16,8 +16,8 @@ from ampel.core.AmpelContext import AmpelContext
 from ampel.base.AuxUnitRegister import AuxUnitRegister
 from ampel.model.UnitModel import UnitModel
 from ampel.config.AmpelConfig import AmpelConfig
-from ampel.dev.DictSecretProvider import PotemkinSecretProvider
-from ampel.db.DBUpdatesBuffer import DBUpdatesBuffer
+from ampel.secret.DictSecretProvider import PotemkinSecretProvider
+from ampel.mongo.update.DBUpdatesBuffer import DBUpdatesBuffer
 from ampel.config.builder.BaseConfigChecker import BaseConfigChecker
 
 
@@ -73,7 +73,7 @@ class ConfigChecker(BaseConfigChecker):
 			# block potential "Offending value..." print from AmpelBaseModel
 			# since we pretty print the input values in case of errors
 			sys.stdout = open(os.devnull, 'w')
-			unit_model = UnitModel(**model_args)
+			model = UnitModel(**model_args)
 			load_callable(unit_model, **load_args)
 	
 		except Exception as e:
@@ -112,7 +112,7 @@ class ConfigChecker(BaseConfigChecker):
 
 			if self.load_model(
 				tier = tier, proc = proc,
-				load_callable = self.loader.new_admin_unit,
+				load_callable = self.loader.new_context_unit,
 				load_args = {"context": self.ctx},
 				model_args = {
 					"unit": self.config['process'][tier][proc]['processor']['unit'],
@@ -163,7 +163,7 @@ class ConfigChecker(BaseConfigChecker):
 							# Deactivated for now, too complicated
 							self.load_model(
 								tier = tier, proc = proc,
-								load_callable = self.loader.new_admin_unit,
+								load_callable = self.loader.new_context_unit,
 								load_args = {"context": self.ctx},
 								model_args = self._customize_admin_models(um),
 								raise_exc = raise_exc,
@@ -172,7 +172,7 @@ class ConfigChecker(BaseConfigChecker):
 						elif um['model']['unit'] in self.config["unit"]["base"]:
 							self.load_model(
 								tier = tier, proc = proc,
-								load_callable = self.loader.new_base_unit,
+								load_callable = self.loader.new_logical_unit,
 								load_args = {"logger": self.logger},
 								model_args = um["model"],
 								raise_exc = raise_exc,
@@ -202,7 +202,7 @@ class ConfigChecker(BaseConfigChecker):
 			if k in ["units", "t2_compute", "t1_combine", "t3_supervize"]:
 				model.pop(k)
 
-		if "AbsIngester" in self.config["unit"]["admin"][unit_name]["base"]:
+		if "AbsDocIngester" in self.config["unit"]["admin"][unit_name]["base"]:
 			model["config"].update({
 				"run_id": 1, "logd": {"logs": [], "extra": {}, "err": False},
 				"updates_buffer": DBUpdatesBuffer(self.ctx.db, run_id=1, logger=self.logger)

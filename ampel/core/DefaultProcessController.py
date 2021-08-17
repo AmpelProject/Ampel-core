@@ -7,30 +7,21 @@
 # Last Modified Date: 17.04.2020
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-import asyncio
-import datetime
-import logging
-import schedule
-import traceback
-import sys
+import asyncio, datetime, logging, schedule
 from functools import partial
-from typing import Dict, Sequence, Callable, Any, List, Literal, Optional, Set
+from typing import Dict, Sequence, Any, Literal, Optional, Set
 
 from ampel.util import concurrent
-
-from ampel.abstract.AbsProcessorUnit import AbsProcessorUnit
-from ampel.base.AmpelBaseModel import AmpelBaseModel
+from ampel.abstract.AbsEventUnit import AbsEventUnit
 from ampel.core.AmpelContext import AmpelContext
-from ampel.core.Schedulable import Schedulable
 from ampel.abstract.AbsProcessController import AbsProcessController
 from ampel.abstract.AbsSecretProvider import AbsSecretProvider
 from ampel.config.AmpelConfig import AmpelConfig
 from ampel.config.ScheduleEvaluator import ScheduleEvaluator
 from ampel.model.ProcessModel import ProcessModel
-from ampel.model.UnitModel import UnitModel
-
 
 log = logging.getLogger(__name__)
+
 
 class DefaultProcessController(AbsProcessController):
 	"""
@@ -44,6 +35,7 @@ class DefaultProcessController(AbsProcessController):
 	isolate: bool = False
 	mp_overlap: Literal['terminate', 'wait', 'ignore', 'skip'] = 'skip'
 	mp_join: int = 0
+
 
 	def __init__(self, **kwargs) -> None:
 		"""
@@ -67,6 +59,7 @@ class DefaultProcessController(AbsProcessController):
 		If set to 1, scheduled mp processes will be joined.
 		If set to 2, additionaly, the scheduling will be stopped if the processes returns 0/None
 		"""
+
 		super().__init__(**kwargs)
 		self.scheduler = schedule.Scheduler()
 
@@ -78,7 +71,9 @@ class DefaultProcessController(AbsProcessController):
 
 		self._prepare_isolated_processes()
 
+
 	def _prepare_isolated_processes(self) -> None:
+
 		if self.isolate:
 			for p in self.processes:
 				if not p.isolate:
@@ -117,6 +112,7 @@ class DefaultProcessController(AbsProcessController):
 				tier=self.processes[0].tier, config=self.config, secrets=self.secrets,
 			)
 
+
 	def update(self,
 		config: AmpelConfig,
 		secrets: Optional[AbsSecretProvider],
@@ -128,7 +124,9 @@ class DefaultProcessController(AbsProcessController):
 		self._prepare_isolated_processes()
 		self.populate_schedule(now=False)
 
+
 	async def run(self) -> None:
+
 		assert self.processes
 		self.populate_schedule(now=True)
 		try:
@@ -138,7 +136,7 @@ class DefaultProcessController(AbsProcessController):
 			await task
 
 
-	def stop(self, name: Optional[str]=None) -> None:
+	def stop(self, name: Optional[str] = None) -> None:
 		"""Stop scheduling new processes."""
 		self.scheduler.clear(tag=name)
 
@@ -157,6 +155,10 @@ class DefaultProcessController(AbsProcessController):
 			for appointment in pm.schedule:
 				if not appointment:
 					continue
+				if appointment == "super":
+					from ampel.log.AmpelLogger import AmpelLogger
+					AmpelLogger.get_logger().error("DefaultProcessController does not handle the schedule value 'super'")
+					continue
 				job = (
 					every(appointment)
 					.do(self.run_process, pm=pm)
@@ -169,6 +171,7 @@ class DefaultProcessController(AbsProcessController):
 
 
 	def _finalize_task(self, pm: ProcessModel, future: asyncio.Future) -> None:
+
 		try:
 			result = future.result()
 		except asyncio.CancelledError:
@@ -184,6 +187,7 @@ class DefaultProcessController(AbsProcessController):
 
 
 	def run_process(self, pm: ProcessModel) -> None:
+
 		if pm.isolate:
 			task = asyncio.ensure_future(self.run_async_process(pm))
 			self._pending_schedules.add(task)
@@ -193,6 +197,7 @@ class DefaultProcessController(AbsProcessController):
 
 
 	async def run_scheduler(self) -> None:
+
 		try:
 			while self.scheduler.jobs:
 				try:
@@ -219,10 +224,10 @@ class DefaultProcessController(AbsProcessController):
 
 		assert pm.multiplier == 1
 		self.context.loader \
-			.new_admin_unit(
-				unit_model = pm.processor,
+			.new_context_unit(
+				model = pm.processor,
 				context = self.context,
-				sub_type = AbsProcessorUnit,
+				sub_type = AbsEventUnit,
 			) \
 			.run()
 
@@ -233,7 +238,7 @@ class DefaultProcessController(AbsProcessController):
 		finished
 		"""
 		# gather previously launched processes we might have to wait on
-		if not pm.name in self._processes:
+		if pm.name not in self._processes:
 			tasks = self._processes[pm.name] = set()
 		else:
 			tasks = self._processes[pm.name]
@@ -288,7 +293,7 @@ class DefaultProcessController(AbsProcessController):
 		try:
 			import setproctitle
 			setproctitle.setproctitle(f"ampel.t{pm.tier}.{pm.name}")
-		except:
+		except Exception:
 			...
 
 		# Create new context with frozen config
@@ -298,10 +303,10 @@ class DefaultProcessController(AbsProcessController):
 			secrets = secrets,
 		)
 
-		processor = context.loader.new_admin_unit(
-			unit_model = pm.processor,
+		processor = context.loader.new_context_unit(
+			model = pm.processor,
 			context = context,
-			sub_type = AbsProcessorUnit,
+			sub_type = AbsEventUnit,
 			process_name = pm.name,
 		)
 

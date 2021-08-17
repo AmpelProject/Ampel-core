@@ -1,6 +1,12 @@
 name: ci
 
-on: [push, pull_request]
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
 
 jobs:
   test:
@@ -30,4 +36,3 @@ jobs:
         python -m pip install --upgrade poetry
         poetry install --extras server
     - run: poetry run mypy --namespace-packages -p ampel
-

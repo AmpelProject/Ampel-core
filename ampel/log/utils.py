@@ -10,8 +10,8 @@
 import sys, traceback
 from math import log2
 from typing import Dict, Optional, Union, Any
-from ampel.db.AmpelDB import AmpelDB
-from ampel.util.general import has_nested_type
+from ampel.core.AmpelDB import AmpelDB
+from ampel.util.collections import has_nested_type
 from ampel.log.AmpelLogger import AmpelLogger
 from ampel.log.LogFlag import LogFlag
 from ampel.metrics.AmpelMetricsRegistry import AmpelMetricsRegistry
@@ -22,9 +22,6 @@ exception_counter = AmpelMetricsRegistry.counter(
 	"Number of exceptions caught and logged",
 )
 
-# using forward reference for type hinting: "When a type hint contains name that have not
-# been defined yet, that definition may be expressed as string literal, to be resolved later"
-# (PEP 484). This is to avoid cyclic import errors
 def log_exception(
 	logger: LoggerProtocol, exc: Optional[Exception] = None,
 	extra: Optional[Dict] = None, last: bool = False, msg: Optional[str] = None
@@ -78,15 +75,16 @@ def log_exception(
 
 
 def report_exception(
-	ampel_db: AmpelDB, logger: AmpelLogger,
-	exc: Optional[Exception] = None, info: Dict[str, Any] = None
+	ampel_db: AmpelDB,
+	logger: AmpelLogger,
+	exc: Optional[Exception] = None,
+	process: Optional[str] = None,
+	info: Dict[str, Any] = None
 ) -> None:
 	"""
 	:param tier: Ampel tier level (0, 1, 2, 3)
 	:param logger: logger instance (logging module). \
 	propagate_log() will be used to print details about the exception
-	:param run_id: If provided, the run id associated with the current job \
-	will be saved into the reported dict instance.
 	:param info: optional dict instance whose values will be included \
 	in the document inserted into Ampel_troubles
 	"""
@@ -108,8 +106,11 @@ def report_exception(
 		trouble['run'] = db_logging_handler.run_id
 
 	# Additional info might have been provided (such as alert information)
-	if info is not None:
+	if info:
 		trouble.update(info)
+
+	if process:
+		trouble['process'] = process
 
 	trouble['exception'] = format_exc().replace("\"", "'").split("\n")
 
@@ -118,7 +119,8 @@ def report_exception(
 
 
 def report_error(
-	ampel_db: AmpelDB, msg: str, logger: AmpelLogger,
+	ampel_db: AmpelDB, logger: AmpelLogger,
+	msg: Optional[str] = None,
 	info: Optional[Dict[str, Any]] = None
 ) -> None:
 	"""
@@ -138,10 +140,12 @@ def report_error(
 	frame, filename, line_number, function_name, lines, index = inspect.stack()[1]
 
 	trouble: Dict[str, Union[None, int, str]] = {
-		'msg': msg,
 		'tier': get_tier_from_logger(logger),
 		'location': '%s:%s' % (filename, line_number),
 	}
+
+	if msg:
+		trouble['msg'] = msg
 
 	# Additional info might have been provided (such as alert information)
 	if info is not None:
@@ -230,7 +234,12 @@ def safe_query_dict(
 	extra = {'match': convert_dollars(match)}
 
 	if update:
-		extra['update'] = convert_dollars(update)
+		extra = {
+			'match': convert_dollars(match),
+			'update': convert_dollars(update)
+		}
+	else:
+		extra = convert_dollars(match)
 
 	return {dict_key: extra} if dict_key else extra
 
@@ -245,7 +254,6 @@ def convert_dollars(arg: Dict[str, Any]) -> Dict[str, Any]:
 	Nested dict shallow copies are performed.
 	"""
 
-
 	if isinstance(arg, dict):
 
 		pblm_keys = [key for key in arg.keys() if "$" in key or "." in key]
@@ -253,7 +261,8 @@ def convert_dollars(arg: Dict[str, Any]) -> Dict[str, Any]:
 			arg = arg.copy() # shallow copy
 			for key in pblm_keys:
 				if "$" in key:
-					arg[key.replace("$", "\uFF04")] = arg.pop(key)
+					v = arg.pop(key)
+					arg[(key := key.replace("$", "\uFF04"))] = v
 				if "." in key:
 					arg[key.replace(".", "\u2219")] = arg.pop(key)
 

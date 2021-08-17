@@ -4,7 +4,7 @@ from pathlib import Path
 import pytest
 
 from ampel.content.StockDocument import StockDocument
-from ampel.core.AmpelBuffer import AmpelBuffer
+from ampel.struct.AmpelBuffer import AmpelBuffer
 from ampel.log.AmpelLogger import AmpelLogger, DEBUG
 from ampel.t3.run.project.T3ChannelProjector import T3ChannelProjector
 
@@ -36,7 +36,7 @@ def test_single_channel(stock_doc, logger):
     for field in "tag", "name", "channel":
         assert not isinstance(after["stock"][field], str), f"stock.{field} must be a set"
     assert after["stock"]["channel"] == [target]
-    assert after["stock"]["modified"] == {target: before["stock"]["modified"][target]}
+    assert after["stock"]["updated"] == {target: before["stock"]["updated"][target]}
 
     before_no_channel = strip_channel(before["stock"]["journal"])
     after_no_channel = strip_channel(after["stock"]["journal"])
@@ -70,7 +70,7 @@ def test_multi_channel(stock_doc, logger, logic_op):
     for field in "tag", "name", "channel":
         assert not isinstance(after["stock"][field], str), f"stock.{field} must be a set"
     assert set(after["stock"]["channel"]) == target
-    assert after["stock"]["modified"].keys() == target
+    assert after["stock"]["updated"].keys() == target
 
     before_no_channel = strip_channel(before["stock"]["journal"])
     after_no_channel = strip_channel(after["stock"]["journal"])

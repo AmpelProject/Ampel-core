@@ -5,7 +5,7 @@ from argparse import Namespace
 import pytest
 import yaml
 
-from ampel.abstract.AbsProcessorUnit import AbsProcessorUnit
+from ampel.abstract.AbsEventUnit import AbsEventUnit
 from ampel.base.BadConfig import BadConfig
 from ampel.config.builder.DistConfigBuilder import DistConfigBuilder
 from ampel.config.builder.ConfigChecker import ConfigChecker
@@ -35,7 +35,7 @@ def test_ConfigChecker(testing_config, monkeypatch):
     class SideEffect(RuntimeError):
         ...
 
-    class SideEffectLadenProcessor(AbsProcessorUnit):
+    class SideEffectLadenProcessor(AbsEventUnit):
 
         required: int
 

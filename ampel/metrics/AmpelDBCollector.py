@@ -13,8 +13,8 @@ from typing import List
 
 from prometheus_client.metrics_core import GaugeMetricFamily, Metric # type: ignore
 
-from ampel.db.AmpelDB import AmpelDB
-from ampel.enum.T2SysRunState import T2SysRunState
+from ampel.core.AmpelDB import AmpelDB
+from ampel.enum.DocumentCode import DocumentCode
 
 
 @dataclass
@@ -35,7 +35,7 @@ class AmpelDBCollector:
                     "ampel_t2_docs_queued",
                     "Number of T2 docs awaiting processing",
                     value=self.db.get_collection("t2").count_documents(
-                        {"status": T2SysRunState.NEW}
+                        {"code": DocumentCode.NEW}
                     ),
                 )
             )
