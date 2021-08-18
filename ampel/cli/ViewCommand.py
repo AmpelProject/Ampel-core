@@ -130,28 +130,6 @@ class ViewCommand(AbsStockCommand, AbsLoadCommand):
 					config=conf
 				)
 			)
-
-			directive = T3Directive(
-				select = self.build_select_model(args),
-				load = self.build_load_model(args),
-				run = UnitModel(
-					unit="T3UnitRunner",
-					config = {
-						"directives": [
-							{
-								'project': {
-									"unit": "T3ChannelProjector",
-									"config": {"channel": args['channel']}
-								},
-								"execute": {
-									"unit": "T3ViewExporter",
-									"config": {"channel": args['channel']}
-								}
-							}
-						]
-					}
-				)
-			)
 		)
 
 		t3p.run()
