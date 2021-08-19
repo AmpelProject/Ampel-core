@@ -63,7 +63,7 @@ class T3ExtJournalAppender(AbsBufferComplement):
 
 			if 'stock' in albuf and isinstance(albuf['stock'], dict):
 
-				if entries := self.get_ext_journal(albuf['stock']['_id']):
+				if entries := self.get_ext_journal(albuf['stock']['stock']):
 
 					entries.extend(albuf['stock']['journal'])
 

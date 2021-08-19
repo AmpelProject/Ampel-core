@@ -32,7 +32,8 @@ class T3SessionLastRunTime(AbsSessionInfo):
 			self.context.db.get_collection('events'),
 			require_success = True,
 			process_name = self.process_name,
-			gte_time = self.lookup_range
+			gte_time = self.lookup_range,
+			timestamp = True,
 		)
 
 		if last_run is None:

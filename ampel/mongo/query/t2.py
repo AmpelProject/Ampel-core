@@ -14,7 +14,7 @@ from ampel.model.operator.AnyOf import AnyOf
 from ampel.model.operator.AllOf import AllOf
 from ampel.model.operator.OneOf import OneOf
 from ampel.util.collections import check_seq_inner_type
-from ampel.mongo.query.utils import maybe_match_array
+from ampel.mongo.utils import maybe_match_array
 from ampel.mongo.query.general import build_general_query
 
 

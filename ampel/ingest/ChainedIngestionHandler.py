@@ -35,7 +35,6 @@ from ampel.content.T2Document import T2Document
 from ampel.content.StockDocument import StockDocument
 from ampel.content.DataPoint import DataPoint
 from ampel.mongo.update.DBUpdatesBuffer import DBUpdatesBuffer
-from ampel.alert.AlertConsumerMetrics import stat_time
 from ampel.ingest.T0Compiler import T0Compiler
 from ampel.ingest.T2Compiler import T2Compiler
 from ampel.ingest.StockCompiler import StockCompiler
@@ -429,7 +428,7 @@ class ChainedIngestionHandler:
 
 		ib = T2Block()
 		ib.unit = im.unit
-		ib.config = im.config
+		ib.config = im.config # type: ignore[assignment]
 
 		# Save confid to external collection for posterity
 		if isinstance(im.config, int):
@@ -489,7 +488,6 @@ class ChainedIngestionHandler:
 			)
 
 
-	@stat_time.labels("ingest").time()
 	def ingest(self,
 		dps: List[DataPoint],
 		filter_results: List[Tuple[int, Union[bool, int]]],

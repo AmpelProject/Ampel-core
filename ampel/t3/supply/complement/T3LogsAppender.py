@@ -44,11 +44,10 @@ class T3LogsAppender(AbsBufferComplement):
 		self.query['s'] = {'$in': [el['id'] for el in it]}
 		logs = list(self.log_loader.fetch_logs(self.col, self.query))
 
-		if self.logger.verbose > 1:
-			self.logger.debug(
-				f"Log query returned {len(logs)} result(s)",
-				extra=safe_query_dict(self.query)
-			)
+		self.logger.debug(
+			f"Log query returned {len(logs)} result(s)",
+			extra=safe_query_dict(self.query)
+		)
 
 		if not logs:
 			return

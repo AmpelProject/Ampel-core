@@ -7,7 +7,7 @@
 # Last Modified Date: 18.06.2020
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-from typing import Union, Optional, List, Dict, Sequence, Callable, Any, Set
+from typing import Iterable, Union, Optional, List, Dict, Sequence, Callable, Any, Set
 from ampel.log import AmpelLogger, VERBOSE
 from ampel.struct.AmpelBuffer import AmpelBuffer, BufferKey
 from ampel.abstract.AbsApplicable import AbsApplicable
@@ -127,7 +127,7 @@ class T3BaseProjector(AbsT3Projector):
 			self.projectors[key] = [func]
 
 
-	def project(self, ampel_buffer: Sequence[AmpelBuffer]) -> Sequence[AmpelBuffer]:
+	def project(self, ampel_buffer: Iterable[AmpelBuffer]) -> Sequence[AmpelBuffer]:
 
 		# micro optimization
 		projectors = self.projectors

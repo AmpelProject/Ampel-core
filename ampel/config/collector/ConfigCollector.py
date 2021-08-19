@@ -42,11 +42,11 @@ class ConfigCollector(dict):
 
 
 	def missing_key(self,
-		what: str, key: str, dist_name: str, file_register: Optional[str]
+		what: str, key: str, dist_name: str, register_file: Optional[str]
 	) -> None:
 		self.error(
 			f'{what} dict is missing key "{key}" '
-			f'{self.distrib_hint(dist_name, file_register)}'
+			f'{self.distrib_hint(dist_name, register_file)}'
 		)
 
 

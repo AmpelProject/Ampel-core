@@ -125,7 +125,7 @@ class StockJournalUpdater:
 		if trace_id:
 			jrec['traceid'] = trace_id
 
-		upd = {'$push': {'journal': jrec}}
+		upd: dict[str,Any] = {'$push': {'journal': jrec}}
 
 		if self.update_updated:
 

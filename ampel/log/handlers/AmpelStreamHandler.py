@@ -180,4 +180,4 @@ class AmpelStreamHandler:
 
 
 	def break_aggregation(self) -> None:
-		self.prev_record: LightLogRecord = self.dummy_record
+		self.prev_record = self.dummy_record

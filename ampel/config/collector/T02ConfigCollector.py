@@ -23,7 +23,7 @@ class T02ConfigCollector(AbsDictConfigCollector):
 	"""
 
 	def add(self,
-		arg: Union[Dict[str, Any], List[str]],
+		arg: Dict[str, Any],
 		dist_name: str,
 		version: Union[str, float, int],
 		register_file: str

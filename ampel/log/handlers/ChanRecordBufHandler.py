@@ -54,16 +54,16 @@ class ChanRecordBufHandler(RecordBufferingHandler):
 					rec.stock = stock # type: ignore[union-attr]
 
 				if extra:
-					if 'extra' in rec.__dict__:
-						rec.extra |= extra
+					if hasattr(rec, 'extra') and rec.extra: # type: ignore[union-attr]
+						rec.extra |= extra # type: ignore[union-attr]
 					else:
-						rec.extra = extra # type: ignore
+						rec.extra = extra # type: ignore[union-attr]
 
 				if self._extra:
-					if rec.extra:
-						rec.extra |= self._extra
+					if hasattr(rec, 'extra') and rec.extra: # type: ignore[union-attr]
+						rec.extra |= self._extra # type: ignore[union-attr]
 					else:
-						rec.extra = self._extra
+						rec.extra = self._extra # type: ignore[union-attr]
 
 				target.handle(rec) # type: ignore
 

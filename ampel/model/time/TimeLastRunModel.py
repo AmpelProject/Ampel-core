@@ -38,12 +38,13 @@ class TimeLastRunModel(StrictModel):
 		# First query the last 10 days
 		res = get_last_run(
 			col, model.process_name, model.require_success,
-			gte_time=(datetime.today() - timedelta(days=10)).timestamp()
+			gte_time=(datetime.today() - timedelta(days=10)).timestamp(),
+			timestamp = True,
 		)
 
 		# If nothing is found, try querying the entire collection (days_back=None)
 		if res is None:
-			res = get_last_run(col, model.process_name, model.require_success)
+			res = get_last_run(col, model.process_name, model.require_success, gte_time=None, timestamp=True)
 			if not res:
 				return None
 

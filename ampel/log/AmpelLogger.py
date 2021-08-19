@@ -14,7 +14,7 @@ from typing import Dict, Optional, Union, Any, List, TYPE_CHECKING
 from ampel.types import ChannelId
 from ampel.log.LightLogRecord import LightLogRecord
 from ampel.log.LogFlag import LogFlag
-from ampel.protocol.LoggingHandlerProtocol import LoggingHandlerProtocol
+from ampel.protocol.LoggingHandlerProtocol import LoggingHandlerProtocol, AggregatingLoggingHandlerProtocol
 from ampel.log.handlers.AmpelStreamHandler import AmpelStreamHandler
 
 if TYPE_CHECKING:
@@ -110,7 +110,7 @@ class AmpelLogger:
 	def __init__(self,
 		name: Union[int, str] = 0,
 		base_flag: Optional[LogFlag] = None,
-		handlers: Optional[List[LoggingHandlerProtocol]] = None,
+		handlers: Optional[List[Union[LoggingHandlerProtocol, AggregatingLoggingHandlerProtocol]]] = None,
 		channel: Optional[Union[ChannelId, List[ChannelId]]] = None,
 		# See AmpelStreamHandler annotations for more details
 		console: Optional[Union[bool, Dict[str, Any]]] = True
@@ -173,10 +173,8 @@ class AmpelLogger:
 
 	def break_aggregation(self) -> None:
 		for el in self.handlers:
-			try:
+			if isinstance(el, AggregatingLoggingHandlerProtocol):
 				el.break_aggregation()
-			except Exception:
-				pass
 
 
 	def error(self, msg: Union[str, Dict[str, Any]], *args,

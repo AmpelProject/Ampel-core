@@ -7,7 +7,7 @@
 # Last Modified Date: 24.05.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-from typing import Union
+from typing import Any, Union
 from pymongo import UpdateOne
 from ampel.abstract.AbsDocIngester import AbsDocIngester
 from ampel.content.StockDocument import StockDocument
@@ -19,7 +19,7 @@ class MongoStockIngester(AbsDocIngester[StockDocument]):
 
 	def ingest(self, doc: StockDocument, now: Union[int, float]) -> None:
 
-		set_on_insert = {'ts.any.tied': now}
+		set_on_insert: dict[str,Any] = {'ts.any.tied': now}
 		add_to_set = {'channel': maybe_use_each(doc['channel'])}
 
 		if 'name' in doc:
@@ -28,11 +28,8 @@ class MongoStockIngester(AbsDocIngester[StockDocument]):
 		if 'tag' in doc:
 			add_to_set['tag'] = maybe_use_each(doc['tag'])
 
-		if isinstance(doc['journal'], dict):
-			doc['journal']['channel'] = try_reduce(doc['journal']['channel'])
-		else:
-			for el in doc['journal']:
-				el['channel'] = try_reduce(el['channel'])
+		for el in doc['journal']:
+			el['channel'] = try_reduce(el['channel'])
 
 		upd = {
 			'$addToSet': add_to_set,

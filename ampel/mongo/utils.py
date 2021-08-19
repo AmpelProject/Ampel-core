@@ -8,7 +8,7 @@
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from typing import Dict, Any, Sequence, Set, Optional
-from ampel.types import strict_iterable
+from ampel.types import StrictIterable, strict_iterable
 
 
 def add_or(query: Dict[str, Any], arg: Dict[str, Any]) -> None:
@@ -25,7 +25,7 @@ def add_or(query: Dict[str, Any], arg: Dict[str, Any]) -> None:
 		query['$or'] = arg
 
 
-def maybe_match_array(arg: Sequence[Any]):
+def maybe_match_array(arg: StrictIterable):
 	"""
 	maybe_match_array(['ab']) -> returns 'ab'
 	maybe_match_array({'ab'}) -> returns 'ab'

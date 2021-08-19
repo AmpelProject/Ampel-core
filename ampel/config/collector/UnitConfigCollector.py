@@ -9,6 +9,8 @@
 
 import sys, re, importlib, subprocess, traceback
 from typing import List, Union, Dict, Any, Optional
+
+from ampel.protocol.LoggingHandlerProtocol import AggregatingLoggingHandlerProtocol
 from ampel.util.collections import ampel_iter
 from ampel.model.StrictModel import StrictModel
 from ampel.config.collector.ConfigCollector import ConfigCollector
@@ -25,7 +27,7 @@ class UnitConfigCollector(ConfigCollector):
 
 	def __init__(self, **kwargs) -> None:
 		super().__init__(**kwargs)
-		self.err_fqns = []
+		self.err_fqns: list[str] = []
 
 
 	def add(self,
@@ -37,8 +39,9 @@ class UnitConfigCollector(ConfigCollector):
 
 
 		# Cosmetic
-		agg_int = self.logger.handlers[0].aggregate_interval
-		self.logger.handlers[0].aggregate_interval = 1000
+		if isinstance(self.logger.handlers[0], AggregatingLoggingHandlerProtocol):
+			agg_int = self.logger.handlers[0].aggregate_interval
+			self.logger.handlers[0].aggregate_interval = 1000
 
 		# tolerate list containing only 1 element defined as dict
 		for el in ampel_iter(arg):
@@ -131,7 +134,8 @@ class UnitConfigCollector(ConfigCollector):
 					exc_info=e
 				)
 
-		self.logger.handlers[0].aggregate_interval = agg_int
+		if isinstance(self.logger.handlers[0], AggregatingLoggingHandlerProtocol):
+			self.logger.handlers[0].aggregate_interval = agg_int
 
 
 	@staticmethod

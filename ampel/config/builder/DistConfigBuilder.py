@@ -109,7 +109,7 @@ class DistConfigBuilder(ConfigBuilder):
 	def load_conf_using_func(self,
 		distrib: Union[EggInfoDistribution, DistInfoDistribution],
 		file_rel_path: str,
-		func: Callable[[Dict[str, Any], str, str], None]
+		func: Callable[[Dict[str, Any], str, str, str], None]
 	) -> None:
 
 		try:

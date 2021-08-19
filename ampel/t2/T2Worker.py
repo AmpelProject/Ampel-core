@@ -221,7 +221,7 @@ class T2Worker(AbsWorker[T2Document]):
 			# 'projection' procedure that should not be necessary here)
 			t1_doc.pop('channel')
 
-			t1_dps_ids = t1_doc['dps']
+			t1_dps_ids = list(t1_doc['dps'])
 			dps = sorted(
 				self.col_t0.find({'id': {'$in': t1_dps_ids}}),
 				key = lambda k: k['body']['jd']

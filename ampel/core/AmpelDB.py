@@ -238,7 +238,7 @@ class AmpelDB(AmpelBaseModel):
 		if not isinstance(channels, collections.abc.Sequence) or len(channels) == 1:
 			raise ValueError("Incorrect argument")
 		self.create_view(
-			MongoOrView(channel=channels), "_OR_".join(channels), logger
+			MongoOrView(channel=channels), "_OR_".join(map(str,channels)), logger
 		)
 
 
@@ -246,7 +246,7 @@ class AmpelDB(AmpelBaseModel):
 		if not isinstance(channels, collections.abc.Sequence) or len(channels) == 1:
 			raise ValueError("Incorrect argument")
 		self.create_view(
-			MongoAndView(channel=channels), "_AND_".join(channels), logger
+			MongoAndView(channel=channels), "_AND_".join(map(str,channels)), logger
 		)
 
 
@@ -271,13 +271,13 @@ class AmpelDB(AmpelBaseModel):
 	def delete_or_view(self, channels: Sequence[ChannelId], logger: Optional['AmpelLogger'] = None) -> None:
 		if not isinstance(channels, collections.abc.Sequence) or len(channels) == 1:
 			raise ValueError("Incorrect argument")
-		self.delete_view("_OR_".join(channels), logger)
+		self.delete_view("_OR_".join(map(str,channels)), logger)
 
 
 	def delete_and_view(self, channels: Sequence[ChannelId], logger: Optional['AmpelLogger'] = None) -> None:
 		if not isinstance(channels, collections.abc.Sequence) or len(channels) == 1:
 			raise ValueError("Incorrect argument")
-		self.delete_view("_AND_".join(channels), logger)
+		self.delete_view("_AND_".join(map(str,channels)), logger)
 
 
 	def delete_view(self, col_prefix: str, logger: Optional['AmpelLogger'] = None) -> Collection:
@@ -431,8 +431,10 @@ def revoke_accounts(ampel_db: AmpelDB, auth: Dict[str, str] = {}) -> None:
 	admin = MongoClient(ampel_db.mongo_uri, **auth).get_database("admin")
 	roles = {role for db in ampel_db.databases for role in db.role.dict().values()}
 	for role in roles:
-		username = ampel_db.vault.get_named_secret(f"mongo/{role}").get()["username"]
-		admin.command("dropUser", username)
+		if secret := ampel_db.vault.get_named_secret(f"mongo/{role}"):
+			admin.command("dropUser", secret.get()["username"])
+		else:
+			raise ValueError(f"Unknown role '{role}'")
 
 
 def list_accounts(ampel_db: AmpelDB, auth: Dict[str, str] = {}) -> Dict[str, Any]:
@@ -467,7 +469,7 @@ def main() -> None:
 
 	import yaml
 
-	from ampel.core import AmpelContext
+	from ampel.core.AmpelContext import AmpelContext
 	from ampel.secret.DictSecretProvider import DictSecretProvider
 
 	parser = ArgumentParser(description="Manage access to Ampel databases")
