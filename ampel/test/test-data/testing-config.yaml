@@ -1,34 +1,18 @@
-db:
+mongo:
+  ingest:
+    stock: MongoStockIngester
+    t0: MongoT0Ingester
+    t1: MongoT1Ingester
+    t2: MongoT2Ingester
+    t3: MongoT3Ingester
   databases:
-  - name: data
-    collections:
-    - name: stock
-      indexes:
-      - index:
-        - field: _id
-        - field: channel
-        args:
-          unique: true
-    - name: t0
-      indexes:
-      - field: stock
-    - name: t1
-      indexes:
-      - field: stock
-    - name: t2
-      indexes:
-      - index:
-        - field: stock
-        - field: channel
-      - field: status
-    role:
-      r: logger
-      w: writer
   - name: ext
     collections:
-    - name: counter
+    - name: confid
       indexes: null
-    - name: journal
+    - name: traceid
+      indexes: null
+    - name: counter
       indexes: null
     role:
       r: logger
@@ -37,11 +21,11 @@ db:
     collections:
     - name: logs
       indexes:
-      - field: run
-      - field: stock
+      - field: r
+      - field: s
         args:
           sparse: true
-      - field: channel
+      - field: c
         args:
           sparse: true
     - name: events
@@ -53,16 +37,51 @@ db:
     role:
       r: logger
       w: logger
+  - name: data
+    collections:
+    - name: stock
+      indexes:
+      - index:
+        - field: stock
+        - field: channel
+        args:
+          unique: true
+    - name: t0
+      indexes:
+      - field: id
+        args:
+          unique: true
+      - field: stock
+        args:
+          sparse: true
+    - name: t1
+      indexes:
+      - field: stock
+      - field: channel
+      - field: code
+        args:
+          sparse: true
+    - name: t2
+      indexes:
+      - field: stock
+      - field: channel
+      - field: code
+    - name: t3
+      indexes:
+      - field: process
+    role:
+      r: logger
+      w: writer
   prefix: AmpelTest
   mongo_options:
-    serverSelectionTimeoutMS: 1
+    serverSelectionTimeoutMS: 100
 logging:
   default:
     console:
       std_stream: stdout
       datefmt: '%Y-%m-%d %H:%M:%S'
       level: 1024
-      aggregate_interval: 1
+      aggregate_interval: 1.0
       density: default
       terminator: '
 
@@ -74,63 +93,431 @@ logging:
       provenance: true
     db:
       level: 1024
+  compact:
+    console:
+      level: 1024
+      density: compact
+      log_sep: ''
+    db:
+      level: 1024
+  headerless:
+    console:
+      level: 1024
+      density: headerless
+    db:
+      level: 1024
+  prod:
+    console:
+      std_stream: stderr
+      level: 2048
+    db:
+      level: 1024
+  verbose:
+    console:
+      std_stream: stdout
+      level: 512
+    db:
+      level: 512
+  debug:
+    console:
+      std_stream: stdout
+      level: 256
+    db:
+      level: 256
+  silent: {}
+  console_quiet:
+    console:
+      level: 2048
+  console_info:
+    console:
+      level: 1024
+  console_verbose:
+    console:
+      level: 512
+  console_debug:
+    console:
+      level: 256
+channel:
+  TEST_CHANNEL:
+    channel: TEST_CHANNEL
+    version: 0
+    purge:
+      content:
+        delay: 100
+        format: json
+        unify: true
+        compress: true
+      logs:
+        delay: 50
+        format: csv
+        compress: true
+        header: false
+    active: true
+    hash: null
+    distrib: null
+    source: null
+    contact: null
+    access: []
+    members: null
+    policy: []
 unit:
-  controller:
-    DefaultProcessController:
-      fqn: ampel.core.DefaultProcessController
-      base:
-      - AbsProcessController
-      distrib: ampel-core
-      file: conf/ampel-core/ampel.yaml
-  admin:
-    T3SimpleDataLoader:
-      fqn: ampel.t3.load.T3SimpleDataLoader
-      base:
-      - AbsT3Loader
-      distrib: ampel-core
-      file: conf/ampel-core/ampel.yaml
-    T3StockSelector:
-      fqn: ampel.t3.select.T3StockSelector
-      base:
-      - AbsT3Selector
-      distrib: ampel-core
-      file: conf/ampel-core/ampel.yaml
-    T3UnitRunner:
-      fqn: ampel.t3.run.T3UnitRunner
-      base:
-      - AbsT3UnitRunner
-      distrib: ampel-core
-      file: conf/ampel-core/ampel.yaml
-    T3Processor:
-      fqn: ampel.t3.T3Processor
-      base:
-      - AbsEventUnit
-      distrib: ampel-core
-      file: conf/ampel-core/ampel.yaml
-    Sleepy:
-      fqn: ampel.test.dummy
-      base:
-      - AbsEventUnit
-  base:
-    DummyStockT2Unit:
-      fqn: ampel.test.dummy
-      base:
-      - AbsStockT2Unit
-    DummyTiedStateT2Unit:
-      fqn: ampel.test.dummy
-      base:
-      - AbsTiedStateT2Unit
-      - AbsTiedT2Unit
-    DummyStateT2Unit:
-      fqn: ampel.test.dummy
-      base:
-      - AbsStateT2Unit
-    DummyPointT2Unit:
-      fqn: ampel.test.dummy
-      base:
-      - AbsPointT2Unit
-  core: {}
-  aux: {}
+  DefaultProcessController:
+    fqn: ampel.core.DefaultProcessController
+    base:
+    - DefaultProcessController
+    - AbsProcessController
+    distrib: ampel-core
+    file: /Users/jakob/Documents/ZTF/Ampel-v0.8/Ampel-core/conf/ampel-core/ampel.yaml
+    version: 0.8.0a1
+  DemoProcessor:
+    fqn: ampel.demo.DemoProcessor
+    base:
+    - DemoProcessor
+    - AbsEventUnit
+    - ContextUnit
+    distrib: ampel-core
+    file: /Users/jakob/Documents/ZTF/Ampel-v0.8/Ampel-core/conf/ampel-core/ampel.yaml
+    version: 0.8.0a1
+  OpsProcessor:
+    fqn: ampel.ops.OpsProcessor
+    base:
+    - OpsProcessor
+    - AbsEventUnit
+    - ContextUnit
+    distrib: ampel-core
+    file: /Users/jakob/Documents/ZTF/Ampel-v0.8/Ampel-core/conf/ampel-core/ampel.yaml
+    version: 0.8.0a1
+  T2Worker:
+    fqn: ampel.t2.T2Worker
+    base:
+    - T2Worker
+    - AbsWorker
+    - AbsEventUnit
+    - ContextUnit
+    distrib: ampel-core
+    file: /Users/jakob/Documents/ZTF/Ampel-v0.8/Ampel-core/conf/ampel-core/ampel.yaml
+    version: 0.8.0a1
+  T3Processor:
+    fqn: ampel.t3.T3Processor
+    base:
+    - T3Processor
+    - AbsEventUnit
+    - ContextUnit
+    distrib: ampel-core
+    file: /Users/jakob/Documents/ZTF/Ampel-v0.8/Ampel-core/conf/ampel-core/ampel.yaml
+    version: 0.8.0a1
+  AmpelExceptionPublisher:
+    fqn: ampel.ops.AmpelExceptionPublisher
+    base:
+    - AmpelExceptionPublisher
+    - AbsOpsUnit
+    - ContextUnit
+    distrib: ampel-core
+    file: /Users/jakob/Documents/ZTF/Ampel-v0.8/Ampel-core/conf/ampel-core/ampel.yaml
+    version: 0.8.0a1
+    env:
+      idna: '3.2'
+  SimpleT2BasedSupplier:
+    fqn: ampel.t3.supply.SimpleT2BasedSupplier
+    base:
+    - SimpleT2BasedSupplier
+    - AbsT3Supplier
+    - ContextUnit
+    distrib: ampel-core
+    file: /Users/jakob/Documents/ZTF/Ampel-v0.8/Ampel-core/conf/ampel-core/ampel.yaml
+    version: 0.8.0a1
+  T3AdaptativeStager:
+    fqn: ampel.t3.stage.T3AdaptativeStager
+    base:
+    - T3AdaptativeStager
+    - T3BaseStager
+    - AbsT3Stager
+    - ContextUnit
+    distrib: ampel-core
+    file: /Users/jakob/Documents/ZTF/Ampel-v0.8/Ampel-core/conf/ampel-core/ampel.yaml
+    version: 0.8.0a1
+  T3BufferBinaryExporter:
+    fqn: ampel.cli.T3BufferBinaryExporter
+    base:
+    - T3BufferBinaryExporter
+    - AbsT3Stager
+    - ContextUnit
+    distrib: ampel-core
+    file: /Users/jakob/Documents/ZTF/Ampel-v0.8/Ampel-core/conf/ampel-core/ampel.yaml
+    version: 0.8.0a1
+  T3BufferTextExporter:
+    fqn: ampel.cli.T3BufferTextExporter
+    base:
+    - T3BufferTextExporter
+    - AbsT3Stager
+    - ContextUnit
+    distrib: ampel-core
+    file: /Users/jakob/Documents/ZTF/Ampel-v0.8/Ampel-core/conf/ampel-core/ampel.yaml
+    version: 0.8.0a1
+  T3ChannelStager:
+    fqn: ampel.t3.stage.T3ChannelStager
+    base:
+    - T3ChannelStager
+    - AbsT3Stager
+    - ContextUnit
+    distrib: ampel-core
+    file: /Users/jakob/Documents/ZTF/Ampel-v0.8/Ampel-core/conf/ampel-core/ampel.yaml
+    version: 0.8.0a1
+  T3CollaborativeStager:
+    fqn: ampel.t3.stage.T3CollaborativeStager
+    base:
+    - T3CollaborativeStager
+    - T3BaseStager
+    - AbsT3Stager
+    - ContextUnit
+    distrib: ampel-core
+    file: /Users/jakob/Documents/ZTF/Ampel-v0.8/Ampel-core/conf/ampel-core/ampel.yaml
+    version: 0.8.0a1
+  T3DefaultSupplier:
+    fqn: ampel.t3.supply.T3DefaultSupplier
+    base:
+    - T3DefaultSupplier
+    - AbsT3Supplier
+    - ContextUnit
+    distrib: ampel-core
+    file: /Users/jakob/Documents/ZTF/Ampel-v0.8/Ampel-core/conf/ampel-core/ampel.yaml
+    version: 0.8.0a1
+  T3DistributiveStager:
+    fqn: ampel.t3.stage.T3DistributiveStager
+    base:
+    - T3DistributiveStager
+    - T3BaseStager
+    - AbsT3Stager
+    - ContextUnit
+    distrib: ampel-core
+    file: /Users/jakob/Documents/ZTF/Ampel-v0.8/Ampel-core/conf/ampel-core/ampel.yaml
+    version: 0.8.0a1
+  T3ExtJournalAppender:
+    fqn: ampel.t3.supply.complement.T3ExtJournalAppender
+    base:
+    - T3ExtJournalAppender
+    - AbsBufferComplement
+    - ContextUnit
+    distrib: ampel-core
+    file: /Users/jakob/Documents/ZTF/Ampel-v0.8/Ampel-core/conf/ampel-core/ampel.yaml
+    version: 0.8.0a1
+  T3FilteringStockSelector:
+    fqn: ampel.t3.supply.select.T3FilteringStockSelector
+    base:
+    - T3FilteringStockSelector
+    - T3StockSelector
+    - AbsT3Selector
+    - ContextUnit
+    distrib: ampel-core
+    file: /Users/jakob/Documents/ZTF/Ampel-v0.8/Ampel-core/conf/ampel-core/ampel.yaml
+    version: 0.8.0a1
+  T3LatestStateDataLoader:
+    fqn: ampel.t3.supply.load.T3LatestStateDataLoader
+    base:
+    - T3LatestStateDataLoader
+    - AbsT3Loader
+    - ContextUnit
+    distrib: ampel-core
+    file: /Users/jakob/Documents/ZTF/Ampel-v0.8/Ampel-core/conf/ampel-core/ampel.yaml
+    version: 0.8.0a1
+  T3LogsAppender:
+    fqn: ampel.t3.supply.complement.T3LogsAppender
+    base:
+    - T3LogsAppender
+    - AbsBufferComplement
+    - ContextUnit
+    distrib: ampel-core
+    file: /Users/jakob/Documents/ZTF/Ampel-v0.8/Ampel-core/conf/ampel-core/ampel.yaml
+    version: 0.8.0a1
+  T3ProjectingStager:
+    fqn: ampel.t3.stage.T3ProjectingStager
+    base:
+    - T3ProjectingStager
+    - T3BaseStager
+    - AbsT3Stager
+    - ContextUnit
+    distrib: ampel-core
+    file: /Users/jakob/Documents/ZTF/Ampel-v0.8/Ampel-core/conf/ampel-core/ampel.yaml
+    version: 0.8.0a1
+  T3RandIntAppender:
+    fqn: ampel.t3.supply.complement.T3RandIntAppender
+    base:
+    - T3RandIntAppender
+    - AbsBufferComplement
+    - ContextUnit
+    distrib: ampel-core
+    file: /Users/jakob/Documents/ZTF/Ampel-v0.8/Ampel-core/conf/ampel-core/ampel.yaml
+    version: 0.8.0a1
+  T3SessionAlertsNumber:
+    fqn: ampel.t3.session.T3SessionAlertsNumber
+    base:
+    - T3SessionAlertsNumber
+    - AbsSessionInfo
+    - ContextUnit
+    distrib: ampel-core
+    file: /Users/jakob/Documents/ZTF/Ampel-v0.8/Ampel-core/conf/ampel-core/ampel.yaml
+    version: 0.8.0a1
+  T3SessionLastRunTime:
+    fqn: ampel.t3.session.T3SessionLastRunTime
+    base:
+    - T3SessionLastRunTime
+    - AbsSessionInfo
+    - ContextUnit
+    distrib: ampel-core
+    file: /Users/jakob/Documents/ZTF/Ampel-v0.8/Ampel-core/conf/ampel-core/ampel.yaml
+    version: 0.8.0a1
+  T3SimpleDataLoader:
+    fqn: ampel.t3.supply.load.T3SimpleDataLoader
+    base:
+    - T3SimpleDataLoader
+    - AbsT3Loader
+    - ContextUnit
+    distrib: ampel-core
+    file: /Users/jakob/Documents/ZTF/Ampel-v0.8/Ampel-core/conf/ampel-core/ampel.yaml
+    version: 0.8.0a1
+  T3SimpleStager:
+    fqn: ampel.t3.stage.T3SimpleStager
+    base:
+    - T3SimpleStager
+    - T3BaseStager
+    - AbsT3Stager
+    - ContextUnit
+    distrib: ampel-core
+    file: /Users/jakob/Documents/ZTF/Ampel-v0.8/Ampel-core/conf/ampel-core/ampel.yaml
+    version: 0.8.0a1
+  T3StockSelector:
+    fqn: ampel.t3.supply.select.T3StockSelector
+    base:
+    - T3StockSelector
+    - AbsT3Selector
+    - ContextUnit
+    distrib: ampel-core
+    file: /Users/jakob/Documents/ZTF/Ampel-v0.8/Ampel-core/conf/ampel-core/ampel.yaml
+    version: 0.8.0a1
+  DemoFirstPointT2Unit:
+    fqn: ampel.demo.DemoFirstPointT2Unit
+    base:
+    - DemoFirstPointT2Unit
+    - AbsPointT2Unit
+    - LogicalUnit
+    distrib: ampel-core
+    file: /Users/jakob/Documents/ZTF/Ampel-v0.8/Ampel-core/conf/ampel-core/ampel.yaml
+    version: 0.8.0a1
+  DemoPointT2Unit:
+    fqn: ampel.demo.DemoPointT2Unit
+    base:
+    - DemoPointT2Unit
+    - AbsPointT2Unit
+    - LogicalUnit
+    distrib: ampel-core
+    file: /Users/jakob/Documents/ZTF/Ampel-v0.8/Ampel-core/conf/ampel-core/ampel.yaml
+    version: 0.8.0a1
+  DemoT3Unit:
+    fqn: ampel.demo.DemoT3Unit
+    base:
+    - DemoT3Unit
+    - AbsT3Unit
+    - LogicalUnit
+    distrib: ampel-core
+    file: /Users/jakob/Documents/ZTF/Ampel-v0.8/Ampel-core/conf/ampel-core/ampel.yaml
+    version: 0.8.0a1
+  NoShaper:
+    fqn: ampel.dev.NoShaper
+    base:
+    - NoShaper
+    - AbsT0Unit
+    - LogicalUnit
+    distrib: ampel-core
+    file: /Users/jakob/Documents/ZTF/Ampel-v0.8/Ampel-core/conf/ampel-core/ampel.yaml
+    version: 0.8.0a1
+  T1SimpleCombiner:
+    fqn: ampel.t1.T1SimpleCombiner
+    base:
+    - T1SimpleCombiner
+    - AbsT1CombineUnit
+    - LogicalUnit
+    distrib: ampel-core
+    file: /Users/jakob/Documents/ZTF/Ampel-v0.8/Ampel-core/conf/ampel-core/ampel.yaml
+    version: 0.8.0a1
+  SimpleDictArrayFilter:
+    fqn: ampel.aux.filter.SimpleDictArrayFilter
+    base:
+    - SimpleDictArrayFilter
+    - AbsLogicOperatorFilter
+    - AbsApplicable
+    distrib: ampel-core
+    file: /Users/jakob/Documents/ZTF/Ampel-v0.8/Ampel-core/conf/ampel-core/ampel.yaml
+    version: 0.8.0a1
+  FlatDictArrayFilter:
+    fqn: ampel.aux.filter.FlatDictArrayFilter
+    base:
+    - FlatDictArrayFilter
+    - AbsLogicOperatorFilter
+    - AbsApplicable
+    distrib: ampel-core
+    file: /Users/jakob/Documents/ZTF/Ampel-v0.8/Ampel-core/conf/ampel-core/ampel.yaml
+    version: 0.8.0a1
+  T3ChannelProjector:
+    fqn: ampel.t3.stage.project.T3ChannelProjector
+    base:
+    - T3ChannelProjector
+    - T3BaseProjector
+    - AbsT3Projector
+    distrib: ampel-core
+    file: /Users/jakob/Documents/ZTF/Ampel-v0.8/Ampel-core/conf/ampel-core/ampel.yaml
+    version: 0.8.0a1
+  T3AmpelBufferFilter:
+    fqn: ampel.t3.stage.filter.T3AmpelBufferFilter
+    base:
+    - T3AmpelBufferFilter
+    - AbsT3Filter
+    distrib: ampel-core
+    file: /Users/jakob/Documents/ZTF/Ampel-v0.8/Ampel-core/conf/ampel-core/ampel.yaml
+    version: 0.8.0a1
+  MongoStockIngester:
+    fqn: ampel.mongo.update.MongoStockIngester
+    base:
+    - MongoStockIngester
+    - AbsDocIngester
+    distrib: ampel-core
+    file: /Users/jakob/Documents/ZTF/Ampel-v0.8/Ampel-core/conf/ampel-core/ampel.yaml
+    version: 0.8.0a1
+  MongoT0Ingester:
+    fqn: ampel.mongo.update.MongoT0Ingester
+    base:
+    - MongoT0Ingester
+    - AbsDocIngester
+    distrib: ampel-core
+    file: /Users/jakob/Documents/ZTF/Ampel-v0.8/Ampel-core/conf/ampel-core/ampel.yaml
+    version: 0.8.0a1
+  MongoT1Ingester:
+    fqn: ampel.mongo.update.MongoT1Ingester
+    base:
+    - MongoT1Ingester
+    - AbsDocIngester
+    distrib: ampel-core
+    file: /Users/jakob/Documents/ZTF/Ampel-v0.8/Ampel-core/conf/ampel-core/ampel.yaml
+    version: 0.8.0a1
+  MongoT2Ingester:
+    fqn: ampel.mongo.update.MongoT2Ingester
+    base:
+    - MongoT2Ingester
+    - AbsDocIngester
+    distrib: ampel-core
+    file: /Users/jakob/Documents/ZTF/Ampel-v0.8/Ampel-core/conf/ampel-core/ampel.yaml
+    version: 0.8.0a1
+  MongoT3Ingester:
+    fqn: ampel.mongo.update.MongoT3Ingester
+    base:
+    - MongoT3Ingester
+    - AbsDocIngester
+    distrib: ampel-core
+    file: /Users/jakob/Documents/ZTF/Ampel-v0.8/Ampel-core/conf/ampel-core/ampel.yaml
+    version: 0.8.0a1
+  Sleepy:
+    fqn: ampel.test.dummy
+    version: 0.8.0a1
+    # base: []
 process:
   t0: {}
   t1: {}
