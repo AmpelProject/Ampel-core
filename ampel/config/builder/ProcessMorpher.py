@@ -49,7 +49,7 @@ class ProcessMorpher:
 		# TODO: implement
 		if not self.process.get("version"):
 			self.process['version'] = build_unsafe_dict_id(
-				dictify(self.process['processor']['config'])
+				dictify(self.process['processor'].get("config", {}))
 			)
 
 		return self
