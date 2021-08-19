@@ -15,10 +15,12 @@ from ampel.util import concurrent
 from ampel.abstract.AbsEventUnit import AbsEventUnit
 from ampel.core.AmpelContext import AmpelContext
 from ampel.abstract.AbsProcessController import AbsProcessController
-from ampel.abstract.AbsSecretProvider import AbsSecretProvider
+from ampel.secret.AmpelVault import AmpelVault
 from ampel.config.AmpelConfig import AmpelConfig
 from ampel.config.ScheduleEvaluator import ScheduleEvaluator
 from ampel.model.ProcessModel import ProcessModel
+from ampel.core.AmpelDB import AmpelDB
+from ampel.core.UnitLoader import UnitLoader
 
 log = logging.getLogger(__name__)
 
@@ -108,19 +110,20 @@ class DefaultProcessController(AbsProcessController):
 		# to immutable types (func does nothing if config is already frozen)
 		if len(isolated_processes) != len(self.processes):
 			self.config.freeze()
-			self.context = AmpelContext.new(
-				tier=self.processes[0].tier, config=self.config, secrets=self.secrets,
+			db = AmpelDB.new(self.config, self.vault)
+			self.context = AmpelContext(
+				self.config, db=db, loader=UnitLoader(self.config, db=db, vault=self.vault),
 			)
 
 
 	def update(self,
 		config: AmpelConfig,
-		secrets: Optional[AbsSecretProvider],
+		vault: Optional[AmpelVault],
 		processes: Sequence[ProcessModel]
 	) -> None:
 		self.config = config
 		self.processes = processes
-		self.secrets = secrets
+		self.vault = vault
 		self._prepare_isolated_processes()
 		self.populate_schedule(now=False)
 
@@ -265,7 +268,7 @@ class DefaultProcessController(AbsProcessController):
 			counter = self.process_count.labels(pm.tier, pm.name)
 			t = self.run_mp_process(
 				self.mp_config,
-				self.secrets,
+				self.vault,
 				pm.dict(),
 			)
 			counter.inc()
@@ -284,7 +287,7 @@ class DefaultProcessController(AbsProcessController):
 	@concurrent.process
 	def run_mp_process(
 		config: Dict[str, Any],
-		secrets: Optional[AbsSecretProvider],
+		vault: Optional[AmpelVault],
 		p: Dict[str, Any],
 	) -> Any:
 
@@ -297,10 +300,11 @@ class DefaultProcessController(AbsProcessController):
 			...
 
 		# Create new context with frozen config
-		context = AmpelContext.new(
-			tier = pm.tier,
-			config = AmpelConfig(config, freeze=True),
-			secrets = secrets,
+		context = AmpelContext.load(
+			config,
+			tier=pm.tier,
+			vault=vault,
+			freeze_config=True
 		)
 
 		processor = context.loader.new_context_unit(

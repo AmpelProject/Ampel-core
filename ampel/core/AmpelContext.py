@@ -95,7 +95,7 @@ class AmpelContext:
 		from ampel.core.UnitLoader import UnitLoader # noqa
 		from ampel.core.AmpelDB import AmpelDB
 
-		alconf = AmpelConfig.load(config) if isinstance(config, str) else config
+		alconf = AmpelConfig.load(config) if isinstance(config, str) else AmpelConfig(config)
 		vault = kwargs.pop("vault", AmpelVault([]))
 
 		if pwds:
@@ -144,11 +144,11 @@ class AmpelContext:
 		cb = DistConfigBuilder(verbose=verbose)
 		cb.load_distributions()
 
-		return cls.new(
-			AmpelConfig(
-				cb.build_config(ignore_errors, pwds=pwds),
-				freeze_config
-			)
+		return cls.load(
+			cb.build_config(ignore_errors, pwds=pwds),
+			pwd_file_path=pwd_file_path,
+			pwds=pwds,
+			freeze_config=freeze_config,
 		)
 
 

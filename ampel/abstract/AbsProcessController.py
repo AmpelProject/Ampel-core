@@ -12,7 +12,7 @@ from ampel.base.decorator import abstractmethod
 from ampel.base.AmpelABC import AmpelABC
 from ampel.base.AmpelBaseModel import AmpelBaseModel
 from ampel.config.AmpelConfig import AmpelConfig
-from ampel.abstract.AbsSecretProvider import AbsSecretProvider
+from ampel.secret.AmpelVault import AmpelVault
 from ampel.model.ProcessModel import ProcessModel
 from ampel.log.AmpelLogger import AmpelLogger
 from ampel.metrics.AmpelMetricsRegistry import AmpelMetricsRegistry
@@ -22,7 +22,7 @@ class AbsProcessController(AmpelABC, AmpelBaseModel, abstract=True):
 
 	config: AmpelConfig
 	processes: Sequence[ProcessModel]
-	secrets: Optional[AbsSecretProvider] = None
+	vault: Optional[AmpelVault] = None
 	log_profile: str = "default"
 
 	process_count: ClassVar[Any] = AmpelMetricsRegistry.gauge(
@@ -52,7 +52,7 @@ class AbsProcessController(AmpelABC, AmpelBaseModel, abstract=True):
 		if config_file_path:
 			context = AmpelContext.load(config_file_path)
 		else:
-			context = AmpelContext.build(tier=tier, freeze_config=False)
+			context = AmpelContext.build(freeze_config=False)
 
 		# Avoid circular imports
 		from ampel.core.AmpelController import AmpelController
@@ -84,7 +84,7 @@ class AbsProcessController(AmpelABC, AmpelBaseModel, abstract=True):
 
 	def update(self,
 		config: AmpelConfig,
-		secrets: Optional[AbsSecretProvider],
+		vault: Optional[AmpelVault],
 		processes: Sequence[ProcessModel],
 	) -> None:
 		"""Change the configuration of the controller."""

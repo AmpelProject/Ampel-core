@@ -9,15 +9,17 @@
 
 from typing import Type, get_args, get_origin
 from ampel.abstract.AbsSecretProvider import AbsSecretProvider
-from ampel.abstract.Secret import T
+from ampel.abstract.Secret import Secret
 from ampel.secret.NamedSecret import NamedSecret
 
 
-class PotemkinSecretProvider(SecretProvider):
+class PotemkinSecretProvider(AbsSecretProvider):
 
-    def tell(self, alias: str, value_type: Type[T]) -> NamedSecret[T]:
+    def tell(self, arg: Secret, value_type: Type) -> bool:
+
         if get_origin(value_type) is tuple:
             value = tuple(t() for t in get_args(value_type))
         else:
             value = value_type() # type: ignore[assignment]
-        return NamedSecret(key=alias, value=value) # type: ignore[arg-type]
+        arg.set(value)
+        return True

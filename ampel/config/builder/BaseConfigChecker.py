@@ -10,10 +10,12 @@
 
 import json
 from typing import Any, Dict, Generator, Optional, Tuple
+
 from ampel.log.AmpelLogger import AmpelLogger, DEBUG, ERROR
 from ampel.config.AmpelConfig import AmpelConfig
 from ampel.core.UnitLoader import UnitLoader
-from ampel.secret.DictSecretProvider import PotemkinSecretProvider
+from ampel.secret.AmpelVault import AmpelVault
+from ampel.secret.PotemkinSecretProvider import PotemkinSecretProvider
 
 
 class BaseConfigChecker:
@@ -28,7 +30,12 @@ class BaseConfigChecker:
 			console={'level': DEBUG if verbose else ERROR}
 		) if logger is None else logger
 
-		self.loader = UnitLoader(AmpelConfig(config), secrets=PotemkinSecretProvider())
+		self.loader = UnitLoader(
+			AmpelConfig(config),
+			db=None,
+			provenance=False,
+			vault=AmpelVault([PotemkinSecretProvider()])
+		)
 
 		# Fast deep copy and serialization check
 		self.config = json.loads(json.dumps(config))

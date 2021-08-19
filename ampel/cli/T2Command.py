@@ -124,7 +124,7 @@ class T2Command(AbsCoreCommand):
 		if sub_op is None:
 			raise ValueError("A sub-operation (show, save, reset, soft-reset) needs to be specified")
 
-		ctx = self.get_context(args, unknown_args)
+		ctx = self.get_context(args, unknown_args, ContextClass=AmpelContext)
 		logger = AmpelLogger.from_profile(
 			ctx, 'console_debug' if args['debug'] else 'console_info',
 			base_flag=LogFlag.MANUAL_RUN
@@ -194,12 +194,11 @@ class T2Command(AbsCoreCommand):
 			doc['config'] = ctx.config._config['confid'].get(doc['config'])
 
 		if human_times:
-			for el in doc['journal']:
+			for el in doc['meta']:
 				if 'ts' in el:
 					el['ts'] = datetime.utcfromtimestamp(el['ts']).isoformat() # type: ignore
 
 		if id_mapper:
-			doc['stock'] = id_mapper.to_ext_id(doc['stock'])
+			doc['stock'] = id_mapper.to_ext_id(doc['stock']) # type: ignore[arg-type]
 
-		doc['_id'] = str(doc['_id'])
 		return doc

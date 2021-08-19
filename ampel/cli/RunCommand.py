@@ -7,6 +7,7 @@
 # Last Modified Date: 23.03.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
+from ampel.core.AmpelContext import AmpelContext
 from argparse import ArgumentParser
 from typing import List, Optional, Sequence, Dict, Any, Union
 from ampel.cli.AbsCoreCommand import AbsCoreCommand
@@ -59,7 +60,7 @@ class RunCommand(AbsCoreCommand):
 	# Mandatory implementation
 	def run(self, args: Dict[str, Any], unknown_args: Sequence[str], sub_op: Optional[str] = None) -> None:
 
-		ctx = self.get_context(args, unknown_args)
+		ctx = self.get_context(args, unknown_args, ContextClass=AmpelContext)
 
 		pms: List[ProcessModel] = [
 			pm for el in args['process']

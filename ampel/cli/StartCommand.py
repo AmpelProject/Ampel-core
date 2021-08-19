@@ -16,6 +16,8 @@ from ampel.cli.MaybeIntAction import MaybeIntAction
 from ampel.cli.AmpelArgumentParser import AmpelArgumentParser
 from ampel.log.AmpelLogger import AmpelLogger
 from ampel.log.LogFlag import LogFlag
+from ampel.secret.AmpelVault import AmpelVault
+from ampel.config.AmpelConfig import AmpelConfig
 
 
 # Help parameter descriptions
@@ -62,7 +64,7 @@ class ScheduleCommand(AbsCLIOperation):
 		self.args = args
 		self.unknown_args = unknown_args
 		logger = AmpelLogger.get_logger(base_flag=LogFlag.MANUAL_RUN)
-		config = load_config(args['config'], unknown_args, AmpelLogger.get_logger())
+		config = AmpelConfig.load(args['config'])
 
 		if (secrets_file := args['secrets']):
 			from ampel.secret.DictSecretProvider import DictSecretProvider
@@ -70,7 +72,7 @@ class ScheduleCommand(AbsCLIOperation):
 
 		self.el_capitan = AmpelController(
 			config_arg = config,
-			secrets = secrets if args['secrets'] else None,
+			vault = AmpelVault(providers=[secrets]) if args['secrets'] else None,
 			tier = args['tier'] if args['tier'] else None,
 			match = args['process'],
 			exclude = args['exclude'] if args['exclude'] else None,
@@ -133,7 +135,7 @@ class ScheduleCommand(AbsCLIOperation):
 		try:
 
 			logging.info(f"Reloading config from {self.args['config']}")
-			config = load_config(self.args['config'], self.unknown_args)
+			config = AmpelConfig.load(self.args['config'])
 
 			secrets = None
 			if self.args['secrets']:
@@ -145,7 +147,12 @@ class ScheduleCommand(AbsCLIOperation):
 				pyctx: Any = contextlib.nullcontext
 			else:
 				from ampel.core.UnitLoader import UnitLoader
-				loader = UnitLoader(config, secrets=secrets)
+				loader = UnitLoader(
+					config,
+					db=None,
+					provenance=False,
+					vault=AmpelVault(providers=[secrets]) if secrets else None
+				)
 				pyctx = loader.validate_unit_models
 
 			with pyctx():
@@ -179,7 +186,7 @@ class ScheduleCommand(AbsCLIOperation):
 
 		for controller, processes in matches:
 			try:
-				controller.update(config, loader.secrets, processes)
+				controller.update(config, loader.vault, processes)
 				logging.info(
 					f"Updated {controller.__class__.__name__} with processes: {[pm.name for pm in processes]} "
 				)

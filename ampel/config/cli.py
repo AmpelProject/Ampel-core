@@ -16,7 +16,8 @@ from ampel.base.BadConfig import BadConfig
 from ampel.config.AmpelConfig import AmpelConfig
 from ampel.config.builder.DistConfigBuilder import DistConfigBuilder
 from ampel.log.utils import log_exception
-from ampel.core import AmpelContext
+from ampel.core.AmpelContext import AmpelContext
+from ampel.secret.AmpelVault import AmpelVault
 from ampel.secret.DictSecretProvider import DictSecretProvider
 from ampel.secret.PotemkinSecretProvider import PotemkinSecretProvider
 
@@ -77,13 +78,13 @@ def _validate(config_file: TextIO, secrets: Optional[TextIO] = None) -> None:
     from ampel.model.ChannelModel import ChannelModel
     from ampel.model.ProcessModel import ProcessModel
 
-    ctx = AmpelContext.new(
-        AmpelConfig.new(_load_dict(config_file)),
-        secrets=(
+    ctx = AmpelContext.load(
+        _load_dict(config_file),
+        secrets=AmpelVault(providers=[(
             DictSecretProvider(_load_dict(secrets))
             if secrets is not None
             else PotemkinSecretProvider()
-        ),
+        )]),
     )
     with ctx.loader.validate_unit_models():
         for channel in ctx.config.get(

@@ -33,13 +33,14 @@ from ampel.core.AmpelContext import AmpelContext
 from ampel.core.AmpelController import AmpelController
 from ampel.core.UnitLoader import UnitLoader
 from ampel.secret.DictSecretProvider import DictSecretProvider
+from ampel.secret.AmpelVault import AmpelVault
 from ampel.log.LogFlag import LogFlag
 from ampel.metrics.AmpelDBCollector import AmpelDBCollector
 from ampel.metrics.AmpelProcessCollector import AmpelProcessCollector
 from ampel.metrics.AmpelMetricsRegistry import AmpelMetricsRegistry
 from ampel.model.ProcessModel import ProcessModel
 from ampel.model.StrictModel import StrictModel
-from ampel.model.UnitModel import UnitModel
+from ampel.core.AmpelDB import AmpelDB
 from ampel.enum.DocumentCode import DocumentCode
 from ampel.util.hash import build_unsafe_dict_id
 
@@ -133,7 +134,7 @@ class task_manager:
                 for pm in cls.task_to_processes[task]:
                     if pm.name not in names:
                         process_group.append(pm)
-                controller.update(context.config, context.loader.secrets, process_group)
+                controller.update(context.config, context.loader.vault, process_group)
                 # update processes for this task
                 cls.task_to_processes[task] = process_group
                 # add updated processes to controller mapping
@@ -148,7 +149,7 @@ class task_manager:
                     process_group[0].controller,
                     unit_type=AbsProcessController,
                     config=context.config,
-                    secrets=context.loader.secrets,
+                    vault=context.loader.vault,
                     processes=process_group,
                 )
                 task = asyncio.create_task(controller.run())
@@ -199,7 +200,7 @@ class task_manager:
                     f"Stopping task {id(task)} ({type(controller).__name__} (empty))"
                 )
             else:
-                controller.update(context.config, context.loader.secrets, keep)
+                controller.update(context.config, context.loader.vault, keep)
                 # controller still has assigned processes; clean up others
                 for pm in drop:
                     cls.process_name_to_controller_id.pop(pm.name)
@@ -247,7 +248,7 @@ async def init():
     global context
     context = AmpelContext.load(
         os.environ.get("AMPEL_CONFIG", "config.yml"),
-        secrets=DictSecretProvider.load(os.environ["AMPEL_SECRETS"])
+        vault=AmpelVault(providers=[DictSecretProvider.load(os.environ["AMPEL_SECRETS"])])
         if "AMPEL_SECRETS" in os.environ
         else None,
         freeze_config=False,
@@ -267,10 +268,9 @@ async def reload_config() -> TaskDescriptionCollection:
     try:
         logging.info(f"Reloading config from {config_file}")
         config = AmpelConfig.load(config_file, freeze=False)
-        loader = UnitLoader(
-            config,
-            secrets=(DictSecretProvider.load(secrets_file) if secrets_file else None),
-        )
+        vault = AmpelVault(providers=[DictSecretProvider.load(secrets_file)]) if secrets_file else None
+        db = AmpelDB.new(config, vault)
+        loader = UnitLoader(config, db=db, vault=vault)
         # Ensure that process models are valid
         with loader.validate_unit_models():
             processes = AmpelController.get_processes(
@@ -291,7 +291,7 @@ async def reload_config() -> TaskDescriptionCollection:
 
     # update global context
     global context
-    context = AmpelContext.new(config, secrets=loader.secrets)
+    context = AmpelContext(config, db, loader)
 
     # update processes currently in the active set
     await task_manager.add_processes(processes)

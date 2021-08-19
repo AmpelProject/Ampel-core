@@ -11,12 +11,12 @@ import asyncio, re
 from typing import Dict, Iterable, List, Literal, Optional, Sequence, Union, TYPE_CHECKING
 
 from ampel.abstract.AbsProcessController import AbsProcessController
-from ampel.abstract.AbsSecretProvider import AbsSecretProvider
+from ampel.secret.AmpelVault import AmpelVault
 from ampel.config.AmpelConfig import AmpelConfig
 from ampel.core.UnitLoader import UnitLoader
 from ampel.log.AmpelLogger import AmpelLogger, DEBUG, VERBOSE
-from ampel.model.ProcessModel import ProcessModel
 from ampel.util.hash import build_unsafe_dict_id
+from ampel.model.ProcessModel import ProcessModel
 
 if TYPE_CHECKING:
 	from ampel.protocol.LoggerProtocol import LoggerProtocol
@@ -34,9 +34,7 @@ class AmpelController:
 	def __init__(
 		self,
 		config_arg: Union[str, AmpelConfig],
-		pwd_file_path: Optional[str] = None,
-		pwds: Optional[Iterable[str]] = None,
-		secrets: Optional[AbsSecretProvider] = None,
+		vault: Optional[AmpelVault] = None,
 		tier: Optional[Literal[0, 1, 2, 3]] = None,
 		match: Optional[Sequence[str]] = None,
 		exclude: Optional[Sequence[str]] = None,
@@ -64,10 +62,10 @@ class AmpelController:
 
 		self.controllers: List[AbsProcessController] = []
 		if isinstance(config_arg, str):
-			config = AmpelConfig.load(config_arg, pwd_file_path, pwds, freeze=False)
+			config = AmpelConfig.load(config_arg, freeze=False)
 		else:
 			config = config_arg
-		loader = UnitLoader(config, secrets=secrets)
+		loader = UnitLoader(config, db=None, provenance=False, vault=vault)
 
 		if verbose:
 			if not logger:
@@ -94,7 +92,7 @@ class AmpelController:
 				)
 			controller_kwargs = {
 				"config": config,
-				"secrets": loader.secrets,
+				"vault": vault,
 				"processes": processes,
 				**kwargs,
 			}
@@ -304,9 +302,11 @@ class AmpelController:
 				config = AmpelConfig.load(args_ns.config_arg, freeze=False)
 				loader = UnitLoader(
 					config,
-					secrets=(
-						DictSecretProvider.load(secrets_file) if secrets_file else None
-					),
+					db=None,
+					provenance=False,
+					vault=AmpelVault(
+						providers=[DictSecretProvider.load(secrets_file)] 
+					) if secrets_file else None,
 				)
 				# Ensure that process models are valid
 				with loader.validate_unit_models():
@@ -337,7 +337,7 @@ class AmpelController:
 
 			for controller, processes in matches:
 				try:
-					controller.update(config, loader.secrets, processes)
+					controller.update(config, loader.vault, processes)
 					logging.info(
 						f"Updated {controller.__class__.__name__} with processes: {[pm.name for pm in processes]} "
 					)

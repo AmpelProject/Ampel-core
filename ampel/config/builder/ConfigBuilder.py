@@ -340,18 +340,18 @@ class ConfigBuilder:
 
 			self.logger.info('Resolving AES secrets')
 			sp = AESecretProvider(pwds)
-			enc_confs = []
+			enc_confs: list[tuple[dict,str,AESecret,str]] = []
 			walk_and_process_dict(
 				arg = out,
 				callback = self._gather_aes_config_callback,
 				enc_confs = enc_confs
 			)
 
-			for el in enc_confs:
-				self.logger.info(f"Resolving {el[3]}")
-				d = el[0]
-				k = el[1]
-				secret = el[2]
+			for tup in enc_confs:
+				self.logger.info(f"Resolving {tup[3]}")
+				d = tup[0]
+				k = tup[1]
+				secret = tup[2]
 				if not sp.tell(secret):
 					self.logger.info(" -> Secret not resolvable with specified password(s)")
 				else:
@@ -366,12 +366,12 @@ class ConfigBuilder:
 		if out['unit'].err_fqns:
 			self.logger.info('Erroneous units (import failed):')
 			for el in out['unit'].err_fqns:
-				self.logger.info(el)
+				self.logger.info(el) # type: ignore[arg-type]
 
 		if morph_errors:
 			self.logger.info('Erroneous process definitions (morphing failed):')
 			for el in morph_errors:
-				self.logger.info(el)
+				self.logger.info(el) # type: ignore[arg-type]
 		
 		# Cast into plain old dicts
 		d = {
@@ -412,7 +412,7 @@ class ConfigBuilder:
 		if save:
 
 			import pathlib, yaml # type: ignore
-			path = pathlib.Path('ampel_conf.yaml' if save is True else save)
+			path = pathlib.Path(save if isinstance(save, str) else 'ampel_conf.yaml')
 			with open(path, 'w') as file:
 				yaml.dump(d, file, sort_keys=False)
 

@@ -15,8 +15,8 @@ from ampel.util.mappings import walk_and_process_dict
 from ampel.core.AmpelContext import AmpelContext
 from ampel.base.AuxUnitRegister import AuxUnitRegister
 from ampel.model.UnitModel import UnitModel
-from ampel.config.AmpelConfig import AmpelConfig
-from ampel.secret.DictSecretProvider import PotemkinSecretProvider
+from ampel.secret.AmpelVault import AmpelVault
+from ampel.secret.PotemkinSecretProvider import PotemkinSecretProvider
 from ampel.mongo.update.DBUpdatesBuffer import DBUpdatesBuffer
 from ampel.config.builder.BaseConfigChecker import BaseConfigChecker
 
@@ -30,9 +30,9 @@ class ConfigChecker(BaseConfigChecker):
 	def __init__(self, *args, **kwargs):
 		super().__init__(*args, **kwargs)
 
-		self.ctx = AmpelContext.new(
-			config = AmpelConfig(self.config),
-			secrets=PotemkinSecretProvider()
+		self.ctx = AmpelContext.load(
+			self.config,
+			vault=AmpelVault(providers=[PotemkinSecretProvider()]),
 		)
 
 
@@ -73,8 +73,7 @@ class ConfigChecker(BaseConfigChecker):
 			# block potential "Offending value..." print from AmpelBaseModel
 			# since we pretty print the input values in case of errors
 			sys.stdout = open(os.devnull, 'w')
-			model = UnitModel(**model_args)
-			load_callable(unit_model, **load_args)
+			load_callable(**(model_args | load_args))
 	
 		except Exception as e:
 
