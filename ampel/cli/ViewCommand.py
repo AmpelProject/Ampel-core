@@ -7,6 +7,7 @@
 # Last Modified Date: 24.03.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
+import sys
 from argparse import ArgumentParser
 from typing import Sequence, Dict, Any, Optional, Union
 from ampel.log.AmpelLogger import AmpelLogger
@@ -18,9 +19,9 @@ from ampel.cli.AbsLoadCommand import AbsLoadCommand
 from ampel.cli.AmpelArgumentParser import AmpelArgumentParser
 from ampel.base.AuxUnitRegister import AuxUnitRegister
 from ampel.model.UnitModel import UnitModel
-from ampel.model.t3.T3Directive import T3Directive
 from ampel.t3.T3Processor import T3Processor
-from ampel.t3.run.project.AbsT3Projector import AbsT3Projector
+from ampel.core.AmpelContext import AmpelContext
+from ampel.model.t3.T3ProjectionDirective import T3ProjectionDirective
 
 
 hlp = {
@@ -89,7 +90,7 @@ class ViewCommand(AbsStockCommand, AbsLoadCommand):
 	# Mandatory implementation
 	def run(self, args: Dict[str, Any], unknown_args: Sequence[str], sub_op: Optional[str] = None) -> None:
 
-		ctx = self.get_context(args, unknown_args)
+		ctx = self.get_context(args, unknown_args, ContextClass=AmpelContext)
 		maybe_convert_stock(args)
 
 		if sub_op == "save":
@@ -98,12 +99,6 @@ class ViewCommand(AbsStockCommand, AbsLoadCommand):
 		logger = AmpelLogger.from_profile(
 			ctx, 'console_debug' if args['debug'] else 'console_info',
 			base_flag=LogFlag.MANUAL_RUN
-		)
-
-		projector = AuxUnitRegister.new_unit(
-			unit_model = UnitModel(unit="T3ChannelProjector", config={"channel": args['channel']}),
-			sub_type = AbsT3Projector,
-			logger = logger
 		)
 
 		conf = {
@@ -121,14 +116,32 @@ class ViewCommand(AbsStockCommand, AbsLoadCommand):
 			update_journal = False,
 			update_events = False,
 			channel = args['channel'],
-			directive = T3Directive(
-				select = self.build_select_model(args),
-				load = self.build_load_model(args),
-				run = UnitModel(
-					unit="T3BufferBinaryExporter" if args.get('binary') \
-						else "T3BufferTextExporter",
-					config=conf
-				)
+			supply = UnitModel(
+				unit="T3DefaultSupplier",
+				config={
+					"select": self.build_select_model(args),
+					"load": self.build_load_model(args),
+				},
+			),
+			stage = UnitModel(
+				unit="T3ProjectingStager",
+				config={
+					"directives": [
+						T3ProjectionDirective(
+							project=UnitModel(
+								unit="T3ChannelProjector",
+								config={"channel": args['channel']}
+							),
+							execute=[
+								UnitModel(
+									unit="T3BufferBinaryExporter" if args.get('binary') \
+									else "T3BufferTextExporter",
+									config=conf
+								)
+							],
+						),
+					],
+				},
 			)
 		)
 
