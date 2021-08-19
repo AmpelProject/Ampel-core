@@ -9,7 +9,7 @@
 
 from time import time
 from bson import ObjectId
-from typing import Optional, List, Union, Dict, Any, Sequence, Tuple
+from typing import Optional, List, Union, Dict, Any, Sequence, Tuple, ClassVar, Literal
 
 from ampel.types import T, UBson, ubson
 from ampel.struct.UnitResult import UnitResult
@@ -66,13 +66,7 @@ class T2Worker(AbsWorker[T2Document]):
 	]
 
 	run_dependent_t2s: bool = True
-
-
-	def __init__(self, **kwargs) -> None:
-
-		kwargs['tier'] = 2
-		super().__init__(**kwargs)
-	
+	tier: ClassVar[Literal[2]] = 2
 
 	def process_doc(self,
 		doc: T2Document,

@@ -420,7 +420,7 @@ def _validate_unit_model(cls, values: Dict[str, Any], unit_loader: UnitLoader) -
 		)
 		model.validate(
 			unit_loader.get_init_config(
-				values['config'], values['override'], values['unit']
+				values['config'], values['override']
 			)
 		)
 	return values

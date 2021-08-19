@@ -9,7 +9,7 @@
 
 import gc, signal
 from time import time
-from typing import Optional, Tuple, List, Union, Dict, Any, Sequence, TypeVar, Generic, Literal
+from typing import ClassVar, Optional, Tuple, List, Union, Dict, Any, Sequence, TypeVar, Generic, Literal
 
 from ampel.types import UBson, Tag
 from ampel.base.decorator import abstractmethod
@@ -62,7 +62,7 @@ class AbsWorker(Generic[T], AbsEventUnit, abstract=True):
 	#: maximum number of processing attempts per document
 	max_try: int = 5
 
-	tier: Literal[1, 2]
+	tier: ClassVar[Literal[1, 2]]
 
 	#: For later
 	database: str = "mongo"
