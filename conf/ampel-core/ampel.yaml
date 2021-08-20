@@ -38,6 +38,7 @@ unit:
 - ampel.demo.DemoProcessor
 
 # Logical units
+- ampel.t1.T1SimpleCombiner
 - ampel.demo.DemoPointT2Unit
 - ampel.demo.DemoFirstPointT2Unit
 - ampel.demo.DemoT3Unit
@@ -72,8 +73,7 @@ alias:
       col: t2
     '%T2DOC_WITH_CONF':
       col: t2
-      options:
-        resolve_config: true
+      resolve_config: true
     '%T2':
       col: t2
     '%T2RECORD':

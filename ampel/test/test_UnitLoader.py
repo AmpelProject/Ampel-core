@@ -112,46 +112,51 @@ def test_validator_patching():
     Model(name="fred")
 
 
-def test_unit_validation(dev_context):
+def test_unit_validation(dev_context: DevAmpelContext):
+    class Dummy(LogicalUnit):
+        param: int = 42
+
+    dev_context.register_unit(Dummy)
 
     with dev_context.loader.validate_unit_models():
         # simple, one-level validation
-        UnitModel(unit="Sleepy")
+        UnitModel(unit="Dummy")
+        UnitModel(unit="Dummy", config={"param": 37})
         with pytest.raises(ValidationError):
-            UnitModel(unit="Sleepy", config={"nonexistant_param": True})
+            UnitModel(unit="Dummy", config={"param": "fish"})
+        with pytest.raises(ValidationError):
+            UnitModel(unit="Dummy", config={"nonexistant_param": True})
+
+        t3_config: dict[str, Any] = {
+            "supply": {
+                "unit": "T3DefaultSupplier",
+                "config": {
+                    "process_name": "yarrr",
+                    "select": {
+                        "unit": "T3StockSelector",
+                    },
+                    "load": {
+                        "unit": "T3SimpleDataLoader",
+                        "config": {
+                            "directives": [
+                                {"col": "stock"},
+                            ]
+                        },
+                    },
+                },
+            },
+            "stage": {
+                "unit": "T3SimpleStager",
+                "config": {
+                    "raise_exc": True,
+                    "execute": [],
+                },
+            },
+        }
 
         # recursive validation
-        UnitModel(
-            **{
-                "unit": "T3Processor",
-                "config": {
-                    "directives": [
-                        {
-                            "load": {
-                                "unit": "T3SimpleDataLoader",
-                                "config": {"directives": []},
-                            },
-                            "run": {
-                                "unit": "T3UnitRunner",
-                                "config": {"directives": []},
-                            },
-                        }
-                    ]
-                },
-            }
-        )
+        UnitModel(unit="T3Processor", config=t3_config)
 
         with pytest.raises(ValidationError):
-            UnitModel(
-                **{
-                    "unit": "T3Processor",
-                    "config": {
-                        "directives": [
-                            {
-                                "load": {"unit": "NotActuallyAUnit"},
-                                "run": {"unit": "T3UnitRunner"},
-                            }
-                        ]
-                    },
-                }
-            )
+            t3_config["supply"]["config"]["select"]["unit"] = "NotActuallyAUnit"
+            UnitModel(unit="T3Processor", config=t3_config)

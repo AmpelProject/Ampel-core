@@ -32,6 +32,7 @@ async def test_process_gauge(dev_context, ampel_logger):
                 "schedule": "every(30).seconds",
                 "tier": 2,
                 "isolate": True,
+                "version": 0,
                 "processor": {"unit": "Sleepy"},
             }
         ],

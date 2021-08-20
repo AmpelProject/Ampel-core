@@ -48,6 +48,7 @@ def test_ConfigChecker(testing_config, monkeypatch):
 
     config["process"]["t0"]["BadProcess"] = {
         "name": "BadProcess",
+        "version": 0,
         "active": True,
         "schedule": "super",
         "processor": {"unit": "SideEffectLadenProcessor", "config": {"required": 1}},

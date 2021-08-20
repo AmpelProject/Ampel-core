@@ -5,7 +5,7 @@ import pytest
 import mongomock
 
 from ampel.t3.supply.select.T3FilteringStockSelector import T3FilteringStockSelector
-from ampel.t2.T2Processor import T2Processor
+from ampel.t2.T2Worker import T2Worker
 from ampel.dev.DevAmpelContext import DevAmpelContext
 from ampel.config.AmpelConfig import AmpelConfig
 
@@ -15,7 +15,7 @@ from ampel.config.AmpelConfig import AmpelConfig
 @pytest.fixture
 def processed_t2s(dev_context, ingest_tied_t2):
     assert (num_dps := dev_context.db.get_collection("t0").count_documents({}))
-    t2 = T2Processor(
+    t2 = T2Worker(
         context=dev_context, raise_exc=True, process_name="t2", run_dependent_t2s=True
     )
 
@@ -26,30 +26,30 @@ def processed_t2s(dev_context, ingest_tied_t2):
     if "point" in ingest_tied_t2.param.lower():
         assert num_docs == 1 + num_dps
         assert (
-            t2.find_one({"unit": "DummyPointT2Unit"})["body"][0]['data']["thing"] == 3
+            next(t2.find({"unit": "DummyPointT2Unit"}).sort([("link", -1)]))["body"][0]["thing"] == 3
         )
         assert (
-            t2.find_one({"unit": "DummyTiedStateT2Unit"})["body"][0]['data']["thing"]
+            t2.find_one({"unit": "DummyTiedStateT2Unit"})["body"][0]["thing"]
             == 2 * 3
         )
     elif "stock" in ingest_tied_t2.param.lower():
         assert num_docs == 2
         assert (
-            t2.find_one({"unit": "DummyStockT2Unit"})["body"][0]['data']["id"]
+            t2.find_one({"unit": "DummyStockT2Unit"})["body"][0]["id"]
             == "stockystock"
         )
         assert (
-            t2.find_one({"unit": "DummyTiedStateT2Unit"})["body"][0]['data']["id"]
+            t2.find_one({"unit": "DummyTiedStateT2Unit"})["body"][0]["id"]
             == 2 * "stockystock"
         )
     else:
         assert num_docs == 2
         assert (
-            t2.find_one({"unit": "DummyStateT2Unit"})["body"][0]['data']["len"]
+            t2.find_one({"unit": "DummyStateT2Unit"})["body"][0]["len"]
             == num_dps
         )
         assert (
-            t2.find_one({"unit": "DummyTiedStateT2Unit"})["body"][0]['data']["len"]
+            t2.find_one({"unit": "DummyTiedStateT2Unit"})["body"][0]["len"]
             == 2 * num_dps
         )
 
@@ -68,4 +68,4 @@ def test_filter(dev_context, processed_t2s, ampel_logger):
     )
 
     assert len(ids := list(selector.fetch())) == 1
-    assert ids[0] == {"_id": "stockystock"}
+    assert ids[0] == {"stock": "stockystock"}

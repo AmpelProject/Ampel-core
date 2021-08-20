@@ -66,7 +66,7 @@ async def test_db_metrics(test_client, db_collector, dev_context):
             raise ValueError(f"metric {name} not collected")
 
     await check_metric("ampel_t2_docs_queued", 0)
-    dev_context.db.get_collection("t2").insert_one({"status": DocumentCode.NEW})
+    dev_context.db.get_collection("t2").insert_one({"code": DocumentCode.NEW})
     await check_metric("ampel_t2_docs_queued", 1)
 
 
@@ -94,6 +94,7 @@ async def test_processes_start(test_client):
         "sleepy",
         {
             "name": "sleepy",
+            "version": 0,
             "schedule": "every(30).seconds",
             "tier": 2,
             "isolate": True,
@@ -167,6 +168,7 @@ async def test_config_reload(
         "name": "sleepy",
         "schedule": "every(30).seconds",
         "tier": 3,
+        "version": 0,
         "isolate": True,
         "controller": {
             "unit": "DefaultProcessController",
@@ -204,6 +206,7 @@ async def test_process_stop(test_client):
         {
             "name": "sleepy",
             "schedule": "every(30).seconds",
+            "version": 0,
             "tier": 2,
             "isolate": True,
             "processor": {"unit": "Sleepy"},
