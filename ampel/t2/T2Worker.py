@@ -362,7 +362,6 @@ class T2Worker(AbsWorker[T2Document]):
 					body, code = self.process_doc(dep_t2_doc, jupdater, logger)
 					dep_t2_doc['body'].append(body)
 					dep_t2_doc['meta'].append({'code': code, 'tier': 2})
-					print(dep_t2_doc)
 
 					# suppress channel info
 					dep_t2_doc.pop('channel')
