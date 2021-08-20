@@ -456,6 +456,7 @@ class ChainedIngestionHandler:
 				if 'select' in ingest_opts else None
 		else:
 			ib.filter = None
+			ib.sort = None
 			ib.slc = None
 
 		if im.group:
