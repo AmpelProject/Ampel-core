@@ -142,7 +142,7 @@ class AmpelDB(AmpelBaseModel):
 
 			kwargs = self.mongo_options.dict()
 			key = f'mongo/{role}'
-			if self.vault and (ns := self.vault.get_named_secret(key)):
+			if self.vault and (ns := self.vault.get_named_secret(key, dict)):
 				kwargs |= ns.get()
 
 			try:
@@ -431,7 +431,7 @@ def revoke_accounts(ampel_db: AmpelDB, auth: Dict[str, str] = {}) -> None:
 	admin = MongoClient(ampel_db.mongo_uri, **auth).get_database("admin")
 	roles = {role for db in ampel_db.databases for role in db.role.dict().values()}
 	for role in roles:
-		if secret := ampel_db.vault.get_named_secret(f"mongo/{role}"):
+		if secret := ampel_db.vault.get_named_secret(f"mongo/{role}", dict):
 			admin.command("dropUser", secret.get()["username"])
 		else:
 			raise ValueError(f"Unknown role '{role}'")

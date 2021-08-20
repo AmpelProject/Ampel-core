@@ -14,7 +14,7 @@ from pathlib import Path
 from hashlib import blake2b
 from contextlib import contextmanager
 from typing import Dict, Iterator, Type, Any, Union, Optional, \
-	TypeVar, Sequence, List, overload, cast
+	TypeVar, Sequence, List, overload, cast, get_args
 from pydantic.main import create_model
 from ampel.types import check_class
 from ampel.util.collections import ampel_iter
@@ -199,10 +199,11 @@ class UnitLoader:
 		# Resolve secrets
 		for k, v in unit.__dict__.items():
 			if isinstance(v, Secret):
+				ValueType = args[0] if (args := get_args(type(unit).__annotations__[k])) else object
 				if not self.vault:
 					raise ValueError("No vault configured")
-				if not self.vault.resolve_secret(v):
-					raise ValueError(f"Secret {k} not found")
+				if not self.vault.resolve_secret(v, ValueType):
+					raise ValueError(f"Secret[{ValueType.__name__}] {k} not found")
 				
 		if hasattr(unit, "post_init"):
 			unit.post_init() # type: ignore[union-attr]

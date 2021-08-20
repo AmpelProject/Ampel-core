@@ -8,7 +8,7 @@
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from sjcl import SJCL
-from typing import Union, Iterable
+from typing import Type, Union, Iterable
 from ampel.abstract.AbsSecretProvider import AbsSecretProvider
 from ampel.secret.AESecret import AESecret
 from ampel.abstract.Secret import Secret
@@ -21,13 +21,16 @@ class AESecretProvider(AbsSecretProvider):
 		self.pwds = [pwds] if isinstance(pwds, str) else pwds
 
 
-	def tell(self, arg: Secret) -> bool:
+	def tell(self, arg: Secret, ValueType: Type) -> bool:
 		"""
 		Potentially update an initialized Secret instance with
 		the actual sensitive information associable with it.
 		:returns: True if the Secret was told/resolved or
 		False if the provided Secret is unknown to this secret provider
 		"""
+
+		if not issubclass(str, ValueType):
+			return False
 
 		if isinstance(arg, AESecret):
 			for pwd in self.pwds:

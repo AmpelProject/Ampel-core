@@ -1,3 +1,7 @@
+from typing import Any
+from ampel.base.LogicalUnit import LogicalUnit
+from ampel.secret.NamedSecret import NamedSecret
+from ampel.dev.DevAmpelContext import DevAmpelContext
 import pytest
 
 from pydantic import create_model, ValidationError
@@ -6,6 +10,7 @@ from ampel.model.StrictModel import StrictModel
 from ampel.abstract.Secret import Secret
 from ampel.core.UnitLoader import UnitLoader
 from ampel.secret.DictSecretProvider import DictSecretProvider
+from ampel.secret.AmpelVault import AmpelVault
 from ampel.model.UnitModel import UnitModel
 
 
@@ -29,21 +34,41 @@ def resolve_secrets_args(expected_type, key):
 @pytest.mark.parametrize(
     "expected_type,key", [(dict, "dict"), (str, "str"), (tuple, "tuple")]
 )
-def test_resolve_secrets_correct_type(secrets, expected_type, key):
-    assert (
-        UnitLoader.resolve_secrets(secrets, *resolve_secrets_args(expected_type, key))[
-            "seekrit"
-        ].get()
-        == secrets.store[key]
+def test_resolve_secrets_correct_type(
+    dev_context: DevAmpelContext,
+    secrets: DictSecretProvider,
+    monkeypatch,
+    expected_type,
+    key,
+    ampel_logger,
+):
+    class Modelo(LogicalUnit):
+        seekrit: NamedSecret[expected_type] = NamedSecret(label=key)  # type: ignore[valid-type]
+
+    dev_context.register_unit(Modelo)
+    monkeypatch.setattr(dev_context.loader, "vault", AmpelVault(providers=[secrets]))
+
+    unit = dev_context.loader.new(
+        UnitModel(unit="Modelo"), logger=ampel_logger, unit_type=Modelo
     )
+    assert unit.seekrit.get() == secrets.store[key]
 
 
 @pytest.mark.parametrize(
     "expected_type,key", [(dict, "str"), (str, "tuple"), (tuple, "dict")]
 )
-def test_resolve_secrets_wrong_type(secrets, expected_type, key):
+def test_resolve_secrets_wrong_type(
+    secrets, dev_context: DevAmpelContext, monkeypatch, expected_type, key, ampel_logger
+):
+    class Modelo(LogicalUnit):
+        seekrit: NamedSecret[expected_type] = NamedSecret(label=key)  # type: ignore[valid-type]
+
+    dev_context.register_unit(Modelo)
+    monkeypatch.setattr(dev_context.loader, "vault", AmpelVault(providers=[secrets]))
     with pytest.raises(ValueError):
-        UnitLoader.resolve_secrets(secrets, *resolve_secrets_args(expected_type, key))
+        unit = dev_context.loader.new(
+            UnitModel(unit="Modelo"), logger=ampel_logger, unit_type=Modelo
+        )
 
 
 def test_validator_patching():

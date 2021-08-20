@@ -352,7 +352,7 @@ class ConfigBuilder:
 				d = tup[0]
 				k = tup[1]
 				secret = tup[2]
-				if not sp.tell(secret):
+				if not sp.tell(secret, str):
 					self.logger.info(" -> Secret not resolvable with specified password(s)")
 				else:
 					d[k] = secret.get()

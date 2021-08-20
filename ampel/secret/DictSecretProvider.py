@@ -8,7 +8,7 @@
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import subprocess, yaml
-from typing import Any, Dict
+from typing import Any, Dict, Type
 from ampel.abstract.AbsSecretProvider import AbsSecretProvider
 from ampel.abstract.Secret import Secret
 from ampel.secret.NamedSecret import NamedSecret
@@ -43,7 +43,7 @@ class DictSecretProvider(AbsSecretProvider):
 		self.store: Dict[str, Any] = dict(items)
 
 
-	def tell(self, arg: Secret) -> bool:
+	def tell(self, arg: Secret, ValueType: Type) -> bool:
 		"""
 		Potentially update an initialized Secret instance with
 		the actual sensitive information associable with it.
@@ -52,7 +52,8 @@ class DictSecretProvider(AbsSecretProvider):
 		"""
 
 		if isinstance(arg, NamedSecret) and arg.label in self.store:
-			arg.set(self.store[arg.label])
-			return True
+			if isinstance(value := self.store[arg.label], ValueType):
+				arg.set(value)
+				return True
 
 		return False
