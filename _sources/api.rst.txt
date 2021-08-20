@@ -18,10 +18,10 @@ Processing units
 Base classes for processing units
 ---------------------------------
 
-.. autoclass:: ampel.core.AdminUnit.AdminUnit
+.. autoclass:: ampel.core.ContextUnit.ContextUnit
   :members:
 
-.. autoclass:: ampel.abstract.AbsProcessorUnit.AbsProcessorUnit
+.. autoclass:: ampel.abstract.AbsEventUnit.AbsEventUnit
   :members:
 
 Processor units
@@ -160,7 +160,7 @@ Models
 .. autoclass:: ampel.model.t3.T2FilterModel.T2FilterModel
   :members:
 
-.. autoclass:: ampel.model.ingest.IngestionDirective.IngestionDirective
+.. autoclass:: ampel.model.ingest.IngestDirective.IngestDirective
   :members:
 
 .. autoclass:: ampel.model.ingest.T0AddModel.T0AddModel
