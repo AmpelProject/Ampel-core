@@ -27,7 +27,7 @@ class ChannelModel(StrictModel):
 	distrib: Optional[str]
 	source: Optional[str]
 	contact: Optional[str]
-	access: Optional[List[str]]
+	access: List[str] = []
 	#: Identities allowed to access data associated with this channel
 	members: Optional[List[str]]
 	policy: List[str] = []
