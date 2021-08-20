@@ -27,7 +27,7 @@ class EnclosedChanRecordBufHandler(RecordBufferingHandler):
 
 	def forward(self,
 		target: Union[Logger, Handler, LoggingHandlerProtocol],
-		stock: Optional[StockId],
+		stock: Optional[StockId] = None,
 		extra: Optional[Dict] = None,
 		clear: bool = True
 	) -> None:
