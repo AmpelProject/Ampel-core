@@ -177,6 +177,9 @@ class DefaultProcessController(AbsProcessController):
 
 		try:
 			result = future.result()
+			if self.mp_join >= 2 and not any(bool(r) for r in result):
+				for job in [job for job in self.scheduler.jobs if pm.name in job.tags]:
+					self.scheduler.cancel_job(job)
 		except asyncio.CancelledError:
 			return
 		except Exception as exc:
@@ -184,9 +187,6 @@ class DefaultProcessController(AbsProcessController):
 			log.warn(f"{pm.name} failed", exc_info=exc)
 		finally:
 			self._pending_schedules.remove(future)
-		if self.mp_join >= 2 and not any(bool(r) for r in result):
-			for job in [job for job in self.scheduler.jobs if pm.name in job.tags]:
-				self.scheduler.cancel_job(job)
 
 
 	def run_process(self, pm: ProcessModel) -> None:
@@ -302,7 +302,6 @@ class DefaultProcessController(AbsProcessController):
 		# Create new context with frozen config
 		context = AmpelContext.load(
 			config,
-			tier=pm.tier,
 			vault=vault,
 			freeze_config=True
 		)
