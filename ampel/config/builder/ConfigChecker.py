@@ -114,11 +114,13 @@ class ConfigChecker(BaseConfigChecker):
 				load_callable = self.loader.new_context_unit,
 				load_args = {"context": self.ctx},
 				model_args = {
-					"unit": self.config['process'][tier][proc]['processor']['unit'],
-					"config": {
-						**self.config['process'][tier][proc]['processor'].get('config', {}),
-						"process_name": proc
-					}
+					"model": UnitModel( 
+						unit=self.config['process'][tier][proc]['processor']['unit'],
+						config={
+							**self.config['process'][tier][proc]['processor'].get('config', {}),
+							"process_name": proc
+						}
+					),
 				},
 				raise_exc = raise_exc,
 				ignore_ressource_not_avail = ignore_ressource_not_avail,
