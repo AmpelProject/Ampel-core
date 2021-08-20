@@ -218,7 +218,7 @@ class T2Worker(AbsWorker[T2Document]):
 			t1_dps_ids = list(t1_doc['dps'])
 			dps = sorted(
 				self.col_t0.find({'id': {'$in': t1_dps_ids}}),
-				key = lambda k: k['body']['jd']
+				key = lambda dp: t1_dps_ids.index(dp['id'])
 			)
 
 			# Should never happen (only in case of ingestion bug)
@@ -530,7 +530,8 @@ class T2Worker(AbsWorker[T2Document]):
 					'unit': t2_doc['unit'],
 					'config': t2_doc['config'],
 					'stock': t2_doc['stock'],
-					'link': t2_doc['link']
+					'link': t2_doc['link'],
+					'channel': t2_doc['channel'],
 				}
 			)
 
