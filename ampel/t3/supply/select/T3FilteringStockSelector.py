@@ -53,7 +53,7 @@ class T3FilteringStockSelector(T3StockSelector):
 		# NB: aggregate in chunks to avoid the 100 MB aggregation memory limit
 		input_count = 0
 		output_count = 0
-		while (stock_ids := [doc['_id'] for doc in islice(cursor, self.chunk_size)]):
+		while (stock_ids := [doc['stock'] for doc in islice(cursor, self.chunk_size)]):
 			count = 0
 			for count, doc in enumerate(
 				self.context.db.get_collection('t2').aggregate(
@@ -84,7 +84,7 @@ class T3FilteringStockSelector(T3StockSelector):
 	def _t2_filter_pipeline(self, stock_ids: List[StockId]) -> List[Dict]:
 		return self._t2_merge_pipeline(stock_ids) + [
 			{'$match': self._build_match(self.t2_filter)},
-			{'$project': {'_id': 1}}
+			{'$replaceRoot': {'newRoot': {'stock': '$_id'}}}
 		]
 
 
@@ -154,7 +154,7 @@ class T3FilteringStockSelector(T3StockSelector):
 						'stock': '$stock',
 						'unit': '$unit'
 					},
-					'data': {'$last': '$body.data'}
+					'data': {'$last': '$body'}
 				}
 			},
 			# nest data under key named for unit, e.g.
