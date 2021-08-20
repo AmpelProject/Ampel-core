@@ -62,7 +62,7 @@ class AmpelContext:
 			AuxUnitRegister.initialize(
 				{
 					k: v for k, v in config.get("unit", ret_type=dict, raise_exc=True).items()
-					if 'ContextUnit' not in v['base'] and 'LogicalUnit' not in v['base']
+					if 'ContextUnit' not in v.get('base', []) and 'LogicalUnit' not in v.get('base', [])
 				}
 			)
 		except Exception:
