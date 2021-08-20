@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "ampel-core"
-version = "0.8.0-alpha.1"
+version = "0.8.0-alpha.0"
 description = "Asynchronous and Modular Platform with Execution Layers"
 authors = [
     "Valery Brinnel"
@@ -37,8 +37,8 @@ ampel-config = 'ampel.config.cli:main'
 ampel-db = 'ampel.db.AmpelDB:main'
 
 [tool.poetry.dependencies]
-ampel-interface = {version = "^0.8.0"}
-python = "^3.9"
+ampel-interface = {version = "0.8.0-alpha.0"}
+python = ">=3.9,<3.10"
 pydantic = "^1.8.1"
 pymongo = "^3.10"
 PyYAML = "^5.4.1"
@@ -54,6 +54,8 @@ Sphinx = {version = ">=3.5.1,<5.0.0", optional = true}
 sphinx-press-theme = {version = ">=0.5.1,<0.8.0", optional = true}
 sphinx-autodoc-typehints = {version = "^1.11.1", optional = true}
 tomlkit = {version = "^0.7.0", optional = true}
+xxhash = "^2.0.2"
+ujson = "^4.1.0"
 
 [tool.poetry.dev-dependencies]
 pytest = "^6.2.4"
