@@ -43,6 +43,8 @@ class PeriodicSummaryT3(AbsProcessTemplate):
 
     active: bool = True
 
+    version: int
+
     #: one or more `schedule <https://schedule.readthedocs.io/en/stable/>`_
     #: expressions, e.g: ``every().day.at("15:00")`` or ``every(42).minutes``
     #:
@@ -88,6 +90,7 @@ class PeriodicSummaryT3(AbsProcessTemplate):
             "supply": {
                 "unit": "T3DefaultSupplier",
                 "config": {
+                    "process_name": self.name,
                     "select": {
                         "unit": "T3StockSelector",
                         "config": {
@@ -102,16 +105,28 @@ class PeriodicSummaryT3(AbsProcessTemplate):
                             "tag": self.tag,
                         },
                     },
-                    "load": {"unit": "T3SimpleDataLoader", "config": {}},
+                    "load": {
+                        "unit": "T3SimpleDataLoader",
+                        "config": {
+                            "directives": [{"col": col} for col in ("stock", "t0", "t1", "t2", "t3")]
+                        }
+                    },
                 }
             },
             "stage": {
-                "unit": "T3ChannelStager",
+                "unit": "T3ProjectingStager",
                 "config": {
-                    "channel": self.channel,
-                    "execute": self.get_units(self.run)
+                    "directives": [
+                        {
+                            "project": {
+                                "unit": "T3ChannelProjector", 
+                                "config": {"channel": self.channel}
+                            },
+                            "execute": self.get_units(self.run),
+                        }
+                    ]
                 },
-            },
+            }
         }
 
         # Restrict stock selection according to T2 values
@@ -129,8 +144,6 @@ class PeriodicSummaryT3(AbsProcessTemplate):
         # Restrict document types to load
         if self.load:
             directive["supply"]["config"]["load"]["config"]["directives"] = self.load
-        else:
-            del directive["supply"]["config"]["load"]
 
         if self.complement:
             directive["supply"]["config"]["complement"] = self.get_units(self.complement)
@@ -143,6 +156,7 @@ class PeriodicSummaryT3(AbsProcessTemplate):
             "source": self.source,
             "channel": self.get_channel_tag(),
             "name": self.name,
+            "version": self.version,
             "processor": {
                 "unit": "T3Processor",
                 "config": directive,
