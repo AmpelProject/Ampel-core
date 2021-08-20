@@ -193,4 +193,5 @@ class T3Processor(AbsEventUnit):
 
 		# Update event document
 		if event_hdlr:
+			event_hdlr.add_extra(logger, success=True)
 			event_hdlr.update(logger)
