@@ -7,6 +7,7 @@
 # Last Modified Date: 18.05.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
+from functools import cached_property
 import secrets
 import collections.abc
 from collections import defaultdict  # type: ignore[attr-defined]
@@ -74,11 +75,21 @@ class AmpelDB(AmpelBaseModel):
 		self.mongo_collections: Dict[str, Collection] = {}
 		self.mongo_clients: Dict[str, MongoClient] = {} # map role with client
 
-		self.col_trace_ids = self.get_collection('traceid')
-		self.col_conf_ids = self.get_collection('confid')
-		self.trace_ids: Set[int] = get_ids(self.col_trace_ids)
-		self.conf_ids: Set[int] = get_ids(self.col_conf_ids)
+	@cached_property
+	def col_trace_ids(self) -> Collection:
+		return self.get_collection('traceid')
+	
+	@cached_property
+	def col_conf_ids(self) -> Collection:
+		return self.get_collection('confid')
 
+	@cached_property
+	def trace_ids(self) -> Set[int]:
+		return get_ids(self.col_trace_ids)
+	
+	@cached_property
+	def conf_ids(self) -> Set[int]:
+		return get_ids(self.col_conf_ids) 
 
 	def enable_rejected_collections(self, channel_names: Sequence[ChannelId]) -> None:
 		"""
@@ -169,8 +180,8 @@ class AmpelDB(AmpelBaseModel):
 			for col_config in db_config.collections:
 				self.get_collection(col_config.name)
 
-		self.col_trace_ids = self.get_collection('traceid')
-		self.col_conf_ids = self.get_collection('confid')
+		self.get_collection('traceid')
+		self.get_collection('confid')
 
 
 	def create_collection(self,
@@ -348,10 +359,12 @@ class AmpelDB(AmpelBaseModel):
 			self._get_mongo_db(role=db.role.w, db_name=db.name).client.drop_database(f"{self.prefix}_{db.name}")
 		self.mongo_collections.clear()
 		self.mongo_clients.clear()
-		self.col_trace_ids = None
-		self.col_conf_ids = None
-		self.trace_ids = set()
-		self.conf_ids = set()
+		# deleting the attribute resets cached_property
+		for attr in ("col_trace_ids", "col_conf_ids", "trace_ids", "conf_ids"):
+			try:
+				delattr(self, attr)
+			except AttributeError:
+				pass
 
 
 	def add_trace_id(self, trace_id: int, arg: Dict[str, Any]) -> None:
