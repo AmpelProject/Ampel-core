@@ -46,7 +46,7 @@ extras_require = {
 	],
 	'server': [
 		'fastapi>=0.63.0,<0.64.0',
-		'uvicorn[standard]>=0.13.3,<0.14.0'
+		'uvicorn[standard]>=0.13.3,<0.16.0'
 	]
 }
 
