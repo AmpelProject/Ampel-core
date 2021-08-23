@@ -36,7 +36,7 @@ class T1SimpleRetroCombiner(AbsT1CombineUnit):
 		while dps := self._prev_det_seq(dps): # type: ignore[assignment]
 			prev_det_sequences.append(dps)
 
-		return [T1CombineResult(dps=el) for el in prev_det_sequences]
+		return [T1CombineResult(dps=el) for el in reversed(prev_det_sequences)]
 
 
 	def _prev_det_seq(self, datapoints: List[DataPointId]) -> Optional[List[DataPointId]]:
@@ -45,5 +45,5 @@ class T1SimpleRetroCombiner(AbsT1CombineUnit):
 		"""
 
 		if len(datapoints) > 1:
-			return datapoints[1:]
+			return datapoints[:-1]
 		return None
