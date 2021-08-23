@@ -160,6 +160,28 @@ channel:
     access: []
     members: null
     policy: []
+  LONG_CHANNEL:
+    channel: LONG_CHANNEL
+    version: 0
+    purge:
+      content:
+        delay: 100
+        format: json
+        unify: true
+        compress: true
+      logs:
+        delay: 50
+        format: csv
+        compress: true
+        header: false
+    active: true
+    hash: null
+    distrib: null
+    source: null
+    contact: null
+    access: []
+    members: null
+    policy: []
 unit:
   DefaultProcessController:
     fqn: ampel.core.DefaultProcessController
@@ -439,6 +461,15 @@ unit:
     distrib: ampel-core
     file: /Users/jakob/Documents/ZTF/Ampel-v0.8/Ampel-core/conf/ampel-core/ampel.yaml
     version: 0.8.0a1
+  T1SimpleRetroCombiner:
+    fqn: ampel.t1.T1SimpleRetroCombiner
+    base:
+    - T1SimpleRetroCombiner
+    - AbsT1CombineUnit
+    - LogicalUnit
+    distrib: ampel-core
+    file: /Users/jakob/Documents/ZTF/Ampel-v0.8/ampel-core/conf/ampel-core/ampel.yaml
+    version: 0.8.0a0
   SimpleDictArrayFilter:
     fqn: ampel.aux.filter.SimpleDictArrayFilter
     base:
