@@ -8,6 +8,7 @@
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from typing import Dict, List, Set, Union, Tuple, Any
+from ampel.content.MetaRecord import MetaRecord
 from ampel.types import ChannelId, DataPointId
 from ampel.content.DataPoint import DataPoint
 from ampel.abstract.AbsDocIngester import AbsDocIngester
@@ -22,7 +23,7 @@ class T0Compiler(AbsCompiler):
 
 	def __init__(self, **kwargs) -> None:
 		super().__init__(**kwargs)
-		self.register: Dict[int, Tuple[Set[ChannelId], List[DataPoint]]] = {}
+		self.register: Dict[int, List[Tuple[Set[ChannelId], List[DataPoint]]]] = {}
 
 
 	# Override
@@ -32,10 +33,13 @@ class T0Compiler(AbsCompiler):
 		trace_id: int
 	) -> None:
 
-		if trace_id in self.register:
-			self.register[trace_id][0].add(channel)
-		else:
-			self.register[trace_id] = {channel}, dps
+		if trace_id not in self.register:
+			self.register[trace_id] = []
+		for chans, dps_to_ingest in self.register[trace_id]:
+			if dps == dps_to_ingest:
+				chans.add(channel)
+				return
+		self.register[trace_id].append(({channel}, dps))
 
 
 	# Override
@@ -45,39 +49,51 @@ class T0Compiler(AbsCompiler):
 		"""
 
 		x: Dict[DataPointId, DataPoint] = {}
-		for trace_id, (chans, dps) in self.register.items():
+		for trace_id, channel_sets in self.register.items():
 
-			for dp in dps:
+			for chans, dps in channel_sets:
 
-				if self._tag and 'tag' not in dp:
-					dp['tag'] = self._tag
+				for dp in dps:
 
-				if self.origin and 'origin' not in dp:
-					dp['origin'] = self.origin
+					if self._tag and 'tag' not in dp:
+						dp['tag'] = self._tag
 
-				meta: Dict[str, Any] = {
-					'run': self.run_id,
-					'ts': now,
-					'channel': try_reduce(list(chans)),
-					'traceid': {'shaper': trace_id}
-				}
+					if self.origin and 'origin' not in dp:
+						dp['origin'] = self.origin
 
-				if 'meta' in dp:
-					dp['meta'].append(meta) # type: ignore[attr-defined]
-				else:
-					dp['meta'] = [meta] # type: ignore[list-item]
+					meta: MetaRecord = {
+						'run': self.run_id,
+						'ts': now,
+						'channel': try_reduce(list(chans)),
+						'traceid': {'shaper': trace_id}
+					}
 
-				if 'channel' in dp:
-					if isinstance(dp['channel'], list):
-						dp['channel'] = chans | set(dp['channel']) # type: ignore[typeddict-item]
-
+					if 'meta' in dp:
+						dp['meta'].append(meta) # type: ignore[attr-defined]
 					else:
-						dp['channel'] |= chans # type: ignore[operator]
-				else:
-					dp['channel'] = chans # type: ignore[typeddict-item]
+						dp['meta'] = [meta] # type: ignore[list-item]
 
-				if dp['id'] not in x:
-					x[dp['id']] = dp
+					if 'channel' in dp:
+						if isinstance(dp['channel'], list):
+							dp['channel'] = chans | set(dp['channel']) # type: ignore[typeddict-item]
+
+						else:
+							dp['channel'] |= chans # type: ignore[operator]
+					else:
+						dp['channel'] = chans # type: ignore[typeddict-item]
+
+					if dp['id'] not in x:
+						# add a new point
+						x[dp['id']] = dp
+					else:
+						# update channel set and metadata
+						prev = x[dp['id']]
+						prev['channel'] |= dp['channel'] # type: ignore[operator]
+						if isinstance(pchan := (meta := prev['meta'][-1])['channel'], list):
+							prev_chans = set(pchan)
+						else:
+							prev_chans = {pchan}
+						meta['channel'] = try_reduce(list(prev_chans | chans))
 
 		for dp in x.values():
 			dp['channel'] = list(dp['channel'])
