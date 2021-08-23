@@ -95,7 +95,7 @@ class AmpelContext:
 		from ampel.core.UnitLoader import UnitLoader # noqa
 		from ampel.core.AmpelDB import AmpelDB
 
-		alconf = AmpelConfig.load(config) if isinstance(config, str) else AmpelConfig(config)
+		alconf = AmpelConfig(config) if isinstance(config, dict) else AmpelConfig.load(config)
 		vault = kwargs.pop("vault", AmpelVault([]))
 
 		if pwds:
