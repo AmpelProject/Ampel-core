@@ -70,6 +70,9 @@ class DummyPointT2Unit(AbsPointT2Unit):
 
 
 class DummyStateT2Unit(AbsStateT2Unit):
+
+    foo: int = 42
+
     def process(self, compound, datapoints):
         return {"len": len(datapoints)}
 
@@ -77,11 +80,6 @@ class DummyStateT2Unit(AbsStateT2Unit):
 class DummyTiedStateT2Unit(AbsTiedStateT2Unit):
 
     t2_dependency = [StateT2Dependency(unit="DummyStateT2Unit")]
-    _unit = "DummyStateT2Unit"
-
-    @classmethod
-    def get_tied_unit_names(cls):
-        return [cls._unit]
 
     def process(
         self,

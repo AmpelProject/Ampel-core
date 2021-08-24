@@ -8,61 +8,53 @@
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from importlib import import_module
-from typing import List, Dict, Any, Union, Sequence, Optional
+from functools import cache
+from typing import List, Dict, Any, Type, Union, Sequence, Optional
+from ampel.abstract.AbsTiedT2Unit import AbsTiedT2Unit
 from ampel.model.UnitModel import UnitModel
 from ampel.model.ingest.T2Compute import T2Compute
 from ampel.config.builder.FirstPassConfig import FirstPassConfig
 
 
-class T2UnitModel(T2Compute):
-	config: Optional[Union[int, str, Dict[str, Any]]] # type: ignore
-
-
 def check_tied_units(
-		all_t2_units: List[T2UnitModel],
-		first_pass_config: FirstPassConfig
+		all_t2_units: List[T2Compute],
+		first_pass_config: Union[FirstPassConfig, dict[str,Any]]
 	) -> None:
 		"""
 		:raises: ValueError if tied t2 units are present in t2_units but the requred t2 units are not present in t2_compute
 		"""
-		tied_units: List[T2UnitModel] = []
+		tied_units: List[T2Compute] = []
 		for el in all_t2_units:
 			if "AbsTiedT2Unit" in first_pass_config['unit'][el.unit]['base']:
-				tied_units.append(el) # type: ignore
-			
-		s = set()
-		for tied_unit in tied_units:
-			klass = getattr(
-				import_module(
-					first_pass_config['unit'][tied_unit.unit]['fqn']
-				),
-				str(tied_unit.unit)
-			)
-			s.update(klass.get_tied_unit_names())
-
-		if missing_deps := s.difference({u.unit for u in all_t2_units}):
-			raise ValueError(
-				f"Following t2 unit(s) must be defined (required by "
-				f"tied units): {list(missing_deps)}"
-			)
+				tied_units.append(el)
 		
-		def as_unitmodel(t2_unit_model: T2UnitModel) -> UnitModel:
+		def as_unitmodel(t2_unit_model: T2Compute) -> UnitModel:
 			return UnitModel(**{k: v for k,v in t2_unit_model.dict().items() if k in UnitModel.__fields__})
+		
+		@cache
+		def get_default_dependencies(unit: str) -> list[dict[str,Any]]:
+			klass: Type[AbsTiedT2Unit] = getattr(
+				import_module(
+					first_pass_config['unit'][unit]['fqn']
+				),
+				unit
+			)
+			return [dep.dict() for dep in klass.t2_dependency]
 
 		for tied_unit in tied_units:
-			if (
-				isinstance(tied_unit.config, dict)
-				and (t2_deps := (tied_unit.config.get("t2_dependency") or []))
-			):
-				for t2_dep in t2_deps:
-					dependency_config = UnitModel(unit=t2_dep["unit"], config=t2_dep.get("config"))
-					candidates = [as_unitmodel(unit) for unit in all_t2_units if unit.unit == dependency_config.unit]
-					if not any((c == dependency_config for c in candidates)):
-						raise ValueError(
-							f"Unit {tied_unit.unit} depends on unit {dependency_config.dict()}, "
-							f"which was not configured. Possible matches are: "
-							f"{[c.dict() for c in candidates]}"
-						)
+			t2_deps = (
+				(tied_unit.config if isinstance(tied_unit.config, dict) else {}) | \
+				(tied_unit.override or {})
+			).get("t2_dependency") or get_default_dependencies(tied_unit.unit)
+			for t2_dep in t2_deps:
+				dependency_config = UnitModel(unit=t2_dep["unit"], config=t2_dep.get("config"), override=t2_dep.get("override"))
+				candidates = [as_unitmodel(unit) for unit in all_t2_units if unit.unit == dependency_config.unit]
+				if not any((c == dependency_config for c in candidates)):
+					raise ValueError(
+						f"Unit {tied_unit.unit} depends on unit {dependency_config.dict()}, "
+						f"which was not configured. Possible matches are: "
+						f"{[c.dict() for c in candidates]}"
+					)
 
 def filter_units(
 	units: Sequence[UnitModel],

@@ -79,7 +79,7 @@ def patch_mongo(monkeypatch):
     monkeypatch.setattr("mongomock.codec_options.is_supported", lambda *args: None)
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def testing_config():
     return Path(__file__).parent / "test-data" / "testing-config.yaml"
 
@@ -166,7 +166,7 @@ def ingest_stock_t2(dev_context: DevAmpelContext, ampel_logger):
 
 
 @pytest.fixture(params=["DummyStateT2Unit", "DummyPointT2Unit", "DummyStockT2Unit"])
-def ingest_tied_t2(dev_context: DevAmpelContext, ampel_logger, request, monkeypatch):
+def ingest_tied_t2(dev_context: DevAmpelContext, ampel_logger, request):
     """Create a T2 document with dependencies"""
 
     for unit in (
@@ -182,10 +182,6 @@ def ingest_tied_t2(dev_context: DevAmpelContext, ampel_logger, request, monkeypa
         unit="DummyTiedStateT2Unit",
         arg={"t2_dependency": [{"unit": dependency}]},
         logger=ampel_logger,
-    )
-    monkeypatch.setattr(
-        "ampel.test.dummy.DummyTiedStateT2Unit._unit",
-        dependency,
     )
 
     run_id = 0

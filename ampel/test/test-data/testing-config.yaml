@@ -549,6 +549,35 @@ unit:
     fqn: ampel.test.dummy
     version: 0.8.0a1
     # base: []
+  DummyStateT2Unit:
+    fqn: ampel.test.dummy
+    version: 0.8.0a1
+    base:
+      - DummyStateT2Unit
+      - AbsStateT2Unit
+      - LogicalUnit
+  DummyPointT2Unit:
+    fqn: ampel.test.dummy
+    version: 0.8.0a1
+    base:
+      - DummyPointT2Unit
+      - AbsPointT2Unit
+      - LogicalUnit
+  DummyStockT2Unit:
+    fqn: ampel.test.dummy
+    version: 0.8.0a1
+    base:
+      - DummyStockT2Unit
+      - AbsStockT2Unit
+      - LogicalUnit
+  DummyTiedStateT2Unit:
+    fqn: ampel.test.dummy
+    version: 0.8.0a1
+    base:
+      - DummyTiedStateT2Unit
+      - AbsTiedStateT2Unit
+      - AbsTiedT2Unit
+      - LogicalUnit
 process:
   t0: {}
   t1: {}
