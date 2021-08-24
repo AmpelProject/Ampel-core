@@ -72,7 +72,7 @@ def filter_units(
 		el.dict(exclude_unset=True, by_alias=True)
 		for el in units
 		if any(
-			unit in config['unit'][el.unit]['base']
+			unit in config['unit'][el.unit].get("base", [])
 			for unit in abs_unit
 		)
 	]
