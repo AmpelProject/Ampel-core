@@ -294,7 +294,7 @@ def dictify(item):
 	Recursively dictifies input
 	"""
 	if isinstance(item, BaseModel):
-		item = item.dict(skip_defaults=False)
+		item = item.dict(exclude_unset=False)
 
 	if isinstance(item, dict):
 		# cast potential dict subclasses into plain old dicts

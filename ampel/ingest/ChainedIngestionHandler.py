@@ -251,7 +251,7 @@ class ChainedIngestionHandler:
 			muxb.combine = None
 			muxb.point_t2 = None
 
-			i = build_unsafe_dict_id(directive.mux.dict(skip_defaults=False))
+			i = build_unsafe_dict_id(directive.mux.dict(exclude_unset=False))
 			if i in self._mux_cache:
 				muxer = self._mux_cache[i]
 			else:
@@ -336,7 +336,7 @@ class ChainedIngestionHandler:
 		t1b.compute.config = None
 
 		# Cache t1 combine units
-		i = build_unsafe_dict_id(t1_combine.dict(skip_defaults=False))
+		i = build_unsafe_dict_id(t1_combine.dict(exclude_unset=False))
 		if i in self._t1_combine_units_cache:
 			t1_unit = self._t1_combine_units_cache[i]
 		else:
@@ -389,7 +389,7 @@ class ChainedIngestionHandler:
 			if isinstance(t1_combine, T1CombineComputeNow):
 
 				# Cache t1 compute units
-				i = build_unsafe_dict_id(t1_combine.compute.dict(skip_defaults=False))
+				i = build_unsafe_dict_id(t1_combine.compute.dict(exclude_unset=False))
 				if i in self._t1_compute_units_cache:
 					t1_compute_unit = self._t1_compute_units_cache[i]
 				else:
