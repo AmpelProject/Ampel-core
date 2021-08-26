@@ -75,6 +75,7 @@ class AmpelContext:
 		pwd_file_path: Optional[str] = None,
 		pwds: Optional[Iterable[str]] = None,
 		freeze_config: bool = True,
+		vault: Optional[AmpelVault] = None,
 		**kwargs
 	) -> 'AmpelContext':
 		"""
@@ -96,7 +97,8 @@ class AmpelContext:
 		from ampel.core.AmpelDB import AmpelDB
 
 		alconf = AmpelConfig(config) if isinstance(config, dict) else AmpelConfig.load(config)
-		vault = kwargs.pop("vault", AmpelVault([]))
+		if vault is None:
+			vault = AmpelVault([])
 
 		if pwds:
 			vault.providers.append(
