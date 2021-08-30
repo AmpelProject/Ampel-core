@@ -64,7 +64,7 @@ mypy = "^0.910"
 pytest-asyncio = "^0.15.1"
 pytest-mock = "^3.6.1"
 mongomock = "^3.23.0"
-httpx = "^0.18.1"
+httpx = "^0.19.0"
 types-setuptools = "^57.0.0"
 types-PyYAML = "^5.4.3"
 
