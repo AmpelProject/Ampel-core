@@ -105,16 +105,16 @@ class UnitConfigCollector(ConfigCollector):
 					)
 					continue
 
-				if "AmpelBaseModel" not in entry['base']:
+				if "AmpelBaseModel" not in entry['base'] and "StrictModel" not in entry['base']:
 					self.logger.info(
 						f'Unrecognized base class for {self.conf_section} {class_name} ' +
 						self.distrib_hint(dist_name, register_file)
 					)
 					continue
 
-				entry['base'].remove("AmpelBaseModel")
-				if "AmpelABC" in entry["base"]:
-					entry['base'].remove("AmpelABC")
+				for base in "AmpelABC", "AmpelBaseModel", "StrictModel":
+					if base in entry["base"]:
+						entry["base"].remove(base)
 
 				if self.verbose:
 					self.logger.log(VERBOSE,
