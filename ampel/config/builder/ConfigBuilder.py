@@ -340,7 +340,7 @@ class ConfigBuilder:
 
 			self.logger.info('Resolving AES secrets')
 			sp = AESecretProvider(pwds)
-			enc_confs: list[tuple[dict,str,AESecret,str]] = []
+			enc_confs: list[tuple[dict, str, AESecret, str]] = []
 			walk_and_process_dict(
 				arg = out,
 				callback = self._gather_aes_config_callback,
