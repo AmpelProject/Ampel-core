@@ -4,27 +4,14 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 17.07.2021
-# Last Modified Date: 17.07.2021
+# Last Modified Date: 31.08.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-import yaml, os, signal, sys
-from multiprocessing import Queue, Process
-from pydantic import BaseModel
 from argparse import ArgumentParser
-from importlib import import_module
-from typing import List, Sequence, Dict, Any, Optional, Union
-from ampel.abstract.AbsEventUnit import AbsEventUnit
-from ampel.abstract.AbsProcessorTemplate import AbsProcessorTemplate
-from ampel.model.UnitModel import UnitModel
-from ampel.dev.DevAmpelContext import DevAmpelContext
-from ampel.log.LogFlag import LogFlag
-from ampel.util.freeze import recursive_freeze
-from ampel.util.mappings import get_by_path
+from typing import Sequence, Dict, Any, Optional, Union
 from ampel.cli.AbsCoreCommand import AbsCoreCommand
 from ampel.cli.AmpelArgumentParser import AmpelArgumentParser
 from ampel.cli.ArgParserBuilder import ArgParserBuilder
-from ampel.log.AmpelLogger import AmpelLogger
-from ampel.config.AmpelConfig import AmpelConfig
 from ampel.config.builder.DistConfigBuilder import DistConfigBuilder
 
 
@@ -76,10 +63,11 @@ class ConfigCommand(AbsCoreCommand):
 
 		builder.add_arg("build.optional", "sign", action="store_true")
 		builder.add_arg("show.optional", "pretty", action="store_true")
-		builder.add_arg("build.optional", "stop_on_errors", default=2)
+		builder.add_arg("build.optional", "stop-on-errors", default=2)
 
 		# Example
 		builder.add_example("build", "-out ampel_conf.yaml")
+		builder.add_example("build", "-out ampel_conf.yaml -sign -verbose")
 		builder.add_example("show", "-pretty")
 
 		self.parsers.update(
