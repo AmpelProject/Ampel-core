@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 26.09.2018
-# Last Modified Date: 18.03.2021
+# Last Modified Date: 31.08.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from time import time
@@ -42,15 +42,14 @@ class EventHandler:
 		self.ins_id = self.col.insert_one(doc).inserted_id
 
 
-	def add_extra(self, logger: AmpelLogger, **extra) -> None:
+	def add_extra(self, overwrite: bool = False, **extra) -> None:
 
 		if self.extra is None:
 			self.extra = extra
 			return
 
 		for k, v in extra.items():
-			if k in self.extra:
-				logger.error(f"Cannot overwrite already existing event value for key {k}")
+			if k in self.extra and not overwrite:
 				continue
 			self.extra[k] = v
 

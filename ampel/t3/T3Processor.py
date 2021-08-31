@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 26.02.2018
-# Last Modified Date: 15.07.2021
+# Last Modified Date: 31.08.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from typing import Dict, Any, Optional, Union
@@ -178,7 +178,7 @@ class T3Processor(AbsEventUnit):
 		except Exception as e:
 
 			if event_hdlr:
-				event_hdlr.add_extra(logger, success=False)
+				event_hdlr.add_extra(overwrite=True, success=False)
 
 			if self.raise_exc:
 				raise e
@@ -193,5 +193,5 @@ class T3Processor(AbsEventUnit):
 
 		# Update event document
 		if event_hdlr:
-			event_hdlr.add_extra(logger, success=True)
+			event_hdlr.add_extra(success=True)
 			event_hdlr.update(logger)

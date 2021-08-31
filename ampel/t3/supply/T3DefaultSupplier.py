@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 14.07.2021
-# Last Modified Date: 15.07.2021
+# Last Modified Date: 31.08.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from typing import List, Optional, Sequence, Generator
@@ -123,7 +123,7 @@ class T3DefaultSupplier(AbsT3Supplier):
 			except Exception as e:
 
 				if self.event_hdlr:
-					self.event_hdlr.add_extra(self.logger, success=False)
+					self.event_hdlr.add_extra(overwrite=True, success=False)
 
 				if self.raise_exc:
 					raise e
