@@ -57,8 +57,8 @@ def get_files(dist_name: str, lookup_dir: Optional[str] = None, pattern: Optiona
 			return list(walk_pth_file(pth, lookup_dir, pattern))
 		else:
 			return [
-				el.split(",")[0] for el in distrib.get_metadata_lines('RECORD')
-				if _check_match(el, lookup_dir, pattern)
+				fname for el in distrib.get_metadata_lines('RECORD')
+				if _check_match((fname := el.split(",")[0]), lookup_dir, pattern)
 			]
 
 	elif isinstance(distrib, EggInfoDistribution):
