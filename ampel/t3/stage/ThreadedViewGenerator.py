@@ -9,7 +9,7 @@
 
 from multiprocessing import JoinableQueue
 from typing import Generator
-from ampel.abstract.AbsT3Unit import T
+from ampel.abstract.AbsT3Unit import T, T3Send
 from ampel.struct.JournalAttributes import JournalAttributes
 from ampel.core.StockUpdater import StockUpdater
 from ampel.t3.stage.BaseViewGenerator import BaseViewGenerator
@@ -25,7 +25,7 @@ class ThreadedViewGenerator(BaseViewGenerator[T]):
 		self.queue: "JoinableQueue[T]" = queue
 
 
-	def __iter__(self) -> Generator[T, JournalAttributes, None]:
+	def __iter__(self) -> Generator[T, T3Send, None]:
 		for view in iter(self.queue.get, None):
 			self.stocks.append(view.id)
 			yield view

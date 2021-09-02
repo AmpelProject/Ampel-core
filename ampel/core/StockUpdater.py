@@ -8,6 +8,8 @@
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from time import time
+from ampel.mongo.utils import maybe_use_each
+from ampel.struct.StockAttributes import StockAttributes
 from bson import ObjectId
 from pymongo.errors import BulkWriteError
 from pymongo.operations import UpdateMany, UpdateOne
@@ -87,6 +89,8 @@ class StockUpdater:
 	def add_journal_record(self,
 		stock: Union[StockId, Sequence[StockId]],
 		jattrs: Optional[JournalAttributes] = None,
+		tag: Optional[Union[Tag, Sequence[Tag]]] = None,
+		name: Optional[Union[str, Sequence[str]]] = None,
 		trace_id: Optional[Dict[str, int]] = None,
 		doc_id: Optional[ObjectId] = None,
 		unit: Optional[Union[int, str]] = None,
@@ -100,7 +104,7 @@ class StockUpdater:
 		it also modifies the "updated" field of stock document(s).
 		"""
 
-		if isinstance(stock, Sequence):
+		if not isinstance(stock, (str, int)):
 			self.journal_updates_count += len(stock)
 			match: Any = {'$in': list(stock)}
 			Op = UpdateMany
@@ -126,6 +130,13 @@ class StockUpdater:
 			jrec['traceid'] = trace_id
 
 		upd: dict[str, Any] = {'$push': {'journal': jrec}}
+
+		if tag or name:
+
+			upd['$addToSet'] = (
+				({'tag': tag if isinstance(tag, (str, int)) else maybe_use_each(tag)} if tag else {}) |
+				({'name': name if isinstance(name, str) else maybe_use_each(name)} if name else {})
+			)
 
 		if self.bump_updated:
 

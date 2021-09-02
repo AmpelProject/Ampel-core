@@ -13,7 +13,7 @@ from ampel.struct.JournalAttributes import JournalAttributes
 from ampel.util.freeze import recursive_freeze
 from ampel.struct.AmpelBuffer import AmpelBuffer
 from ampel.core.StockUpdater import StockUpdater
-from ampel.t3.stage.BaseViewGenerator import BaseViewGenerator, T
+from ampel.t3.stage.BaseViewGenerator import BaseViewGenerator, T, T3Send
 
 
 class SimpleViewGenerator(BaseViewGenerator[T]):
@@ -23,7 +23,7 @@ class SimpleViewGenerator(BaseViewGenerator[T]):
 		self.buffers = buffers
 		self.View = unit._View
 
-	def __iter__(self) -> Generator[T, JournalAttributes, None]:
+	def __iter__(self) -> Generator[T, T3Send, None]:
 		View = self.View
 		l = self.stocks
 		for ab in self.buffers:

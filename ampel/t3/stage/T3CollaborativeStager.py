@@ -16,7 +16,7 @@ from ampel.abstract.AbsT3Unit import AbsT3Unit, T
 from ampel.util.freeze import recursive_freeze
 from ampel.struct.AmpelBuffer import AmpelBuffer
 from ampel.t3.stage.T3BaseStager import T3BaseStager
-from ampel.t3.stage.BaseViewGenerator import BaseViewGenerator
+from ampel.t3.stage.BaseViewGenerator import BaseViewGenerator, T3Send
 from ampel.struct.JournalAttributes import JournalAttributes
 from ampel.core.StockUpdater import StockUpdater
 
@@ -27,7 +27,7 @@ class SimpleGenerator(BaseViewGenerator[T]):
 		super().__init__(unit_name = unit.__class__.__name__, stock_updr = stock_updr)
 		self.views = views
 
-	def __iter__(self) -> Generator[T, JournalAttributes, None]:
+	def __iter__(self) -> Generator[T, T3Send, None]:
 		l = self.stocks
 		for v in self.views:
 			l.append(v.id)
