@@ -43,8 +43,6 @@ class PeriodicSummaryT3(AbsProcessTemplate):
 
     active: bool = True
 
-    version: int
-
     #: one or more `schedule <https://schedule.readthedocs.io/en/stable/>`_
     #: expressions, e.g: ``every().day.at("15:00")`` or ``every(42).minutes``
     #:
@@ -156,7 +154,6 @@ class PeriodicSummaryT3(AbsProcessTemplate):
             "source": self.source,
             "channel": self.get_channel_tag(),
             "name": self.name,
-            "version": self.version,
             "processor": {
                 "unit": "T3Processor",
                 "config": directive,

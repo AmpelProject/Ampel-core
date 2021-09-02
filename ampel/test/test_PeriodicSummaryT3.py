@@ -15,14 +15,13 @@ def test_validate(core_config, loader_directives, ampel_logger):
         PeriodicSummaryT3(
             **{
                 "name": "foo",
-                "version": 0,
                 "schedule": "every().day.at('15:00')",
                 "channel": "FOO",
                 "load": loader_directives,
                 "run": {"unit": "DemoT3Unit"},
             }
         )
-        .get_process(config, ampel_logger)
+        .get_process(config, ampel_logger) | {"version": 0}
     )
     # remove T3AddAlertsNumber, which lives in ampel-alerts
     del config["process"]["t3"]["foo"]["processor"]["config"]["session"]
@@ -34,14 +33,13 @@ def test_single_element_run_sequence(core_config, ampel_logger):
         PeriodicSummaryT3(
             **{
                 "name": "foo",
-                "version": 0,
                 "schedule": "every().day.at('15:00')",
                 "channel": {"any_of": ["HU_GP_10", "HU_GP_59"]},
                 "load": ["TRANSIENT", "DATAPOINT", "T2RECORD"],
                 "run": [{"unit": "DemoT3Unit", "config": {}}],
             }
         )
-        .get_process(config, ampel_logger)
+        .get_process(config, ampel_logger)  | {"version": 0}
     )
     # remove T3AddAlertsNumber, which lives in ampel-alerts
     del config["process"]["t3"]["foo"]["processor"]["config"]["session"]
