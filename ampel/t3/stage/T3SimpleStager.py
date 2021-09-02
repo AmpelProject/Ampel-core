@@ -42,7 +42,7 @@ class T3SimpleStager(T3BaseStager):
 		if len(self.units) == 1:
 			return self.supply(
 				self.units[0],
-				SimpleViewGenerator(self.units[0], data, self.jupdater)
+				SimpleViewGenerator(self.units[0], data, self.stock_updr)
 			)
 
 		return self.multi_supply(self.units, data)

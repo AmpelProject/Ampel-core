@@ -173,7 +173,7 @@ class T3BaseStager(AbsT3Stager, abstract=True):
 			queues[t3_unit] = JoinableQueue()
 			generators.append(
 				ThreadedViewGenerator(
-					t3_unit.__class__.__name__, queues[t3_unit], self.jupdater
+					t3_unit.__class__.__name__, queues[t3_unit], self.stock_updr
 				)
 			)
 			async_results.append(
@@ -233,7 +233,7 @@ class T3BaseStager(AbsT3Stager, abstract=True):
 		# Try to insert doc into trouble collection (raises no exception)
 		report_exception(
 			self.context.db, self.logger, exc=e,
-			process=self.jupdater.process_name
+			process=self.stock_updr.process_name
 		)
 
 
@@ -246,7 +246,7 @@ class T3BaseStager(AbsT3Stager, abstract=True):
 
 		if isinstance(res, UnitResult):
 			if res.journal:
-				self.jupdater.add_record(
+				self.stock_updr.add_journal_record(
 					stock = stocks, # used to match stock docs
 					jattrs = res.journal,
 					unit = t3_unit.__class__.__name__
@@ -267,8 +267,8 @@ class T3BaseStager(AbsT3Stager, abstract=True):
 				t3_unit.logger.handlers[0].forward(self.logger, extra=extra) # type: ignore[attr-defined]
 				self.logger.break_aggregation()
 
-			if self.jupdater.update_journal:
-				self.jupdater.flush()
+			if self.stock_updr.update_journal:
+				self.stock_updr.flush()
 
 
 	def craft_t3_doc(self,

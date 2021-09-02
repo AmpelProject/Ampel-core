@@ -18,13 +18,13 @@ from ampel.struct.AmpelBuffer import AmpelBuffer
 from ampel.t3.stage.T3BaseStager import T3BaseStager
 from ampel.t3.stage.BaseViewGenerator import BaseViewGenerator
 from ampel.struct.JournalAttributes import JournalAttributes
-from ampel.core.StockJournalUpdater import StockJournalUpdater
+from ampel.core.StockUpdater import StockUpdater
 
 
 class SimpleGenerator(BaseViewGenerator[T]):
 
-	def __init__(self, unit: AbsT3Unit, views: Iterable[T], jupdater: StockJournalUpdater) -> None:
-		super().__init__(unit_name = unit.__class__.__name__, jupdater = jupdater)
+	def __init__(self, unit: AbsT3Unit, views: Iterable[T], stock_updr: StockUpdater) -> None:
+		super().__init__(unit_name = unit.__class__.__name__, stock_updr = stock_updr)
 		self.views = views
 
 	def __iter__(self) -> Generator[T, JournalAttributes, None]:
@@ -69,7 +69,7 @@ class T3CollaborativeStager(T3BaseStager):
 
 		res: List[T3Document] = []
 		for t3_unit, views in self.get_views(data).items():
-			gen = SimpleGenerator(t3_unit, views, self.jupdater)
+			gen = SimpleGenerator(t3_unit, views, self.stock_updr)
 			t3_unit.session_info.update(self.session_info) # type: ignore[union-attr]
 			ts = time()
 			if (ret := t3_unit.process(gen)):

@@ -36,7 +36,7 @@ from ampel.abstract.AbsTiedCustomStateT2Unit import AbsTiedCustomStateT2Unit, U
 from ampel.abstract.AbsWorker import AbsWorker, register_stats
 from ampel.model.UnitModel import UnitModel
 from ampel.model.StateT2Dependency import StateT2Dependency
-from ampel.core.StockJournalUpdater import StockJournalUpdater
+from ampel.core.StockUpdater import StockUpdater
 
 AbsT2 = Union[
 	AbsStockT2Unit, AbsPointT2Unit, AbsStateT2Unit, AbsTiedPointT2Unit,
@@ -70,7 +70,7 @@ class T2Worker(AbsWorker[T2Document]):
 
 	def process_doc(self,
 		doc: T2Document,
-		jupdr: StockJournalUpdater,
+		stock_updr: StockUpdater,
 		logger: AmpelLogger
 	) -> Tuple[UBson, int]:
 
@@ -82,7 +82,7 @@ class T2Worker(AbsWorker[T2Document]):
 			raise ValueError(f"Unsupported unit: {doc['unit']}")
 
 		if len(doc.get('body', [])) <= self.max_try:
-			ret = self.run_t2_unit(t2_unit, doc, logger, jupdr)
+			ret = self.run_t2_unit(t2_unit, doc, logger, stock_updr)
 		else:
 			ret = UnitResult(code=DocumentCode.TOO_MANY_TRIALS)
 
@@ -100,7 +100,7 @@ class T2Worker(AbsWorker[T2Document]):
 		try:
 
 			# New (channel-less) journal entry for the associated stock document
-			jrec = jupdr.add_record(
+			jrec = stock_updr.add_journal_record(
 				stock = doc['stock'],
 				doc_id = doc['_id'], # type: ignore
 				trace_id = {'t2worker': self._trace_id, 't2unit': t2_unit._trace_id},
@@ -108,7 +108,7 @@ class T2Worker(AbsWorker[T2Document]):
 			)
 
 			# New t2 sub-result entry (later appended with additional values)
-			meta = self.gen_meta(jupdr.run_id, t2_unit._trace_id, round(now - before_run, 3))
+			meta = self.gen_meta(stock_updr.run_id, t2_unit._trace_id, round(now - before_run, 3))
 
 			# Unit requested customizations
 			if isinstance(ret, UnitResult):
@@ -145,7 +145,7 @@ class T2Worker(AbsWorker[T2Document]):
 			)
 
 			# Update stock document
-			jupdr.flush()
+			stock_updr.flush()
 
 		except Exception as e:
 
@@ -154,7 +154,7 @@ class T2Worker(AbsWorker[T2Document]):
 
 			self._processing_error(
 				logger, doc, None, jrec, exception=e, msg='An exception occured',
-				meta = self.gen_meta(jupdr.run_id, t2_unit._trace_id, round(now - before_run, 3))
+				meta = self.gen_meta(stock_updr.run_id, t2_unit._trace_id, round(now - before_run, 3))
 			)
 
 		return body, code
@@ -162,7 +162,7 @@ class T2Worker(AbsWorker[T2Document]):
 
 	# NB: spell out union arg to ensure a common context for the TypeVar T
 	def load_input_docs(self,
-		t2_unit: AbsT2, t2_doc: T2Document, logger: AmpelLogger, jupdater: StockJournalUpdater
+		t2_unit: AbsT2, t2_doc: T2Document, logger: AmpelLogger, stock_updr: StockUpdater
 	) -> Union[
 		None,
 		UnitResult,                                                # Error / missing dependency
@@ -180,7 +180,7 @@ class T2Worker(AbsWorker[T2Document]):
 		:param t2_unit: instance to fetch input docs for
 		:param t2_doc: document for which inputs are needed
 		:param logger: logger
-		:param jupdater: journal update service
+		:param stock_updr: journal update service
 
 		Regarding tied T2s (unit depends on other T2s):
 		
@@ -265,7 +265,7 @@ class T2Worker(AbsWorker[T2Document]):
 
 					queries.append(d)
 
-				qres = self.run_tied_queries(queries, t2_doc, jupdater, logger)
+				qres = self.run_tied_queries(queries, t2_doc, stock_updr, logger)
 
 				# Dependency missing
 				if isinstance(qres, UnitResult):
@@ -305,7 +305,7 @@ class T2Worker(AbsWorker[T2Document]):
 							self.build_tied_t2_query(t2_unit, tied_model, t2_doc)
 							for tied_model in t2_unit.t2_dependency
 						],
-						t2_doc, jupdater, logger
+						t2_doc, stock_updr, logger
 					)
 
 					if isinstance(qres, UnitResult):
@@ -333,7 +333,7 @@ class T2Worker(AbsWorker[T2Document]):
 	def run_tied_queries(self,
 		queries: List[Dict[str, Any]],
 		t2_doc: T2Document,
-		jupdater: StockJournalUpdater,
+		stock_updr: StockUpdater,
 		logger: AmpelLogger
 	) -> Union[UnitResult, List[T2DocView]]:
 
@@ -359,7 +359,7 @@ class T2Worker(AbsWorker[T2Document]):
 					if not dep_t2_doc.get('body'):
 						dep_t2_doc['body'] = []
 
-					body, code = self.process_doc(dep_t2_doc, jupdater, logger)
+					body, code = self.process_doc(dep_t2_doc, stock_updr, logger)
 					dep_t2_doc['body'].append(body)
 					dep_t2_doc['meta'].append({'code': code, 'tier': 2})
 
@@ -491,7 +491,7 @@ class T2Worker(AbsWorker[T2Document]):
 
 
 	def run_t2_unit(self,
-		t2_unit: AbsT2, t2_doc: T2Document, logger: AmpelLogger, jupdater: StockJournalUpdater,
+		t2_unit: AbsT2, t2_doc: T2Document, logger: AmpelLogger, stock_updr: StockUpdater,
 	) -> Union[UBson, UnitResult]:
 		"""
 		Regarding the possible int return code:
@@ -499,7 +499,7 @@ class T2Worker(AbsWorker[T2Document]):
 		but let's not be too restrictive here
 		"""
 
-		args: Any = self.load_input_docs(t2_unit, t2_doc, logger, jupdater)
+		args: Any = self.load_input_docs(t2_unit, t2_doc, logger, stock_updr)
 		if args is None:
 			return UnitResult(code=DocumentCode.ERROR)
 

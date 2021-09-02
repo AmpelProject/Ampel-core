@@ -115,7 +115,7 @@ class T3ProjectingStager(T3BaseStager):
 					SimpleViewGenerator(
 						self.run_blocks[0].units[0],
 						self.projected_buffer_generator(self.run_blocks[0], data),
-						self.jupdater
+						self.stock_updr
 					)
 				)
 			else:

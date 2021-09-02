@@ -13,7 +13,7 @@ from ampel.model.UnitModel import UnitModel
 from ampel.log.utils import report_exception
 from ampel.log import AmpelLogger, LogFlag, SHOUT
 from ampel.core.EventHandler import EventHandler
-from ampel.core.StockJournalUpdater import StockJournalUpdater
+from ampel.core.StockUpdater import StockUpdater
 from ampel.abstract.AbsSessionInfo import AbsSessionInfo
 from ampel.abstract.AbsT3Supplier import AbsT3Supplier
 from ampel.abstract.AbsT3Stager import AbsT3Stager
@@ -123,7 +123,7 @@ class T3Processor(AbsEventUnit):
 						.update(session_info)
 
 
-			jupdater = StockJournalUpdater(
+			stock_updr = StockUpdater(
 				ampel_db = self.context.db, tier = 3, run_id = run_id,
 				process_name = self.process_name, logger = logger,
 				raise_exc = self.raise_exc, extra_tag = self.extra_journal_tag,
@@ -141,7 +141,7 @@ class T3Processor(AbsEventUnit):
 					context = self.context,
 					sub_type = AbsT3Stager,
 					logger = logger,
-					jupdater = jupdater,
+					stock_updr = stock_updr,
 					channel = self.stage.config['channel'] if self.stage.config.get('channel') else self.channel, # type: ignore
 					session_info = session_info,
 					_provenance = False

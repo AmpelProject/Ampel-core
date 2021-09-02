@@ -14,7 +14,7 @@ from ampel.base.AmpelABC import AmpelABC
 from ampel.base.decorator import abstractmethod
 from ampel.content.T3Document import T3Document
 from ampel.core.ContextUnit import ContextUnit
-from ampel.core.StockJournalUpdater import StockJournalUpdater
+from ampel.core.StockUpdater import StockUpdater
 from ampel.struct.AmpelBuffer import AmpelBuffer
 from ampel.log.AmpelLogger import AmpelLogger
 
@@ -25,7 +25,7 @@ class AbsT3Stager(AmpelABC, ContextUnit, abstract=True):
 	"""
 
 	logger: AmpelLogger
-	jupdater: StockJournalUpdater
+	stock_updr: StockUpdater
 
 	channel: Optional[ChannelId] = None
 

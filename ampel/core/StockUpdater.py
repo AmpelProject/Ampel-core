@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-core/ampel/core/StockJournalUpdater.py
+# File              : Ampel-core/ampel/core/StockUpdater.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 15.10.2018
-# Last Modified Date: 22.07.2021
+# Last Modified Date: 02.09.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from time import time
@@ -23,7 +23,7 @@ from ampel.content.JournalRecord import JournalRecord
 tag_type = get_args(Tag) # type: ignore[misc]
 chan_type = get_args(ChannelId) # type: ignore[misc]
 
-class StockJournalUpdater:
+class StockUpdater:
 
 	def __init__(self,
 		ampel_db: AmpelDB, tier: Literal[-1, 0, 1, 2, 3], run_id: int,
@@ -55,7 +55,7 @@ class StockJournalUpdater:
 		self.journal_updates_count = 0
 
 
-	def new_record(self,
+	def new_journal_record(self,
 		unit: Optional[Union[int, str]] = None,
 		channels: Optional[Union[ChannelId, Sequence[ChannelId]]] = None,
 		doc_id: Optional[ObjectId] = None,
@@ -84,7 +84,7 @@ class StockJournalUpdater:
 		return ret
 
 
-	def add_record(self,
+	def add_journal_record(self,
 		stock: Union[StockId, Sequence[StockId]],
 		jattrs: Optional[JournalAttributes] = None,
 		trace_id: Optional[Dict[str, int]] = None,
@@ -109,12 +109,12 @@ class StockJournalUpdater:
 			match = stock
 			Op = UpdateOne
 
-		jrec = self.new_record(unit, channel, doc_id, now)
+		jrec = self.new_journal_record(unit, channel, doc_id, now)
 
 		if jattrs:
 
 			if jattrs.tag:
-				self.include_tags(jrec, jattrs.tag)
+				self.include_jtags(jrec, jattrs.tag)
 
 			if jattrs.extra:
 				jrec['extra'] = jattrs.extra
@@ -125,7 +125,7 @@ class StockJournalUpdater:
 		if trace_id:
 			jrec['traceid'] = trace_id
 
-		upd: dict[str,Any] = {'$push': {'journal': jrec}}
+		upd: dict[str, Any] = {'$push': {'journal': jrec}}
 
 		if self.update_updated:
 
@@ -194,7 +194,7 @@ class StockJournalUpdater:
 
 
 	@staticmethod
-	def include_tags(jrec: JournalRecord, tag: Union[Tag, Sequence[Tag]]):
+	def include_jtags(jrec: JournalRecord, tag: Union[Tag, Sequence[Tag]]):
 		""" Modifies the input JournalRecord dict """
 
 		if tag:

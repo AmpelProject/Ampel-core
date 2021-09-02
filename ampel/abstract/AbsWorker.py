@@ -27,7 +27,7 @@ from ampel.log.handlers.DefaultRecordBufferingHandler import DefaultRecordBuffer
 from ampel.util.hash import build_unsafe_dict_id
 from ampel.abstract.AbsEventUnit import AbsEventUnit
 from ampel.model.UnitModel import UnitModel
-from ampel.core.StockJournalUpdater import StockJournalUpdater
+from ampel.core.StockUpdater import StockUpdater
 from ampel.metrics.AmpelMetricsRegistry import AmpelMetricsRegistry, Histogram, Counter
 
 T = TypeVar("T", T1Document, T2Document)
@@ -102,7 +102,7 @@ class AbsWorker(Generic[T], AbsEventUnit, abstract=True):
 
 	@abstractmethod
 	def process_doc(self,
-		doc: T, jupdr: StockJournalUpdater, logger: AmpelLogger
+		doc: T, stock_updr: StockUpdater, logger: AmpelLogger
 	) -> Any:
 		...
 
@@ -132,7 +132,7 @@ class AbsWorker(Generic[T], AbsEventUnit, abstract=True):
 				{'$set': {'timestamp': int(time())}}
 			)
 
-		jupdr = StockJournalUpdater(
+		stock_updr = StockUpdater(
 			ampel_db = self.context.db, tier = self.tier, run_id = run_id,
 			process_name = self.process_name, logger = logger,
 			raise_exc = self.raise_exc, extra_tag = self.stock_jtag
@@ -157,7 +157,7 @@ class AbsWorker(Generic[T], AbsEventUnit, abstract=True):
 			elif logger.verbose > 1:
 				logger.debug(f'T{self.tier} doc to process: {doc}')
 
-			self.process_doc(doc, jupdr, logger)
+			self.process_doc(doc, stock_updr, logger)
 
 			# Check possibly defined doc_limit
 			if doc_limit and self._doc_counter >= doc_limit:

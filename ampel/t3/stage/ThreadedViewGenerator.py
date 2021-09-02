@@ -11,7 +11,7 @@ from multiprocessing import JoinableQueue
 from typing import Generator
 from ampel.abstract.AbsT3Unit import T
 from ampel.struct.JournalAttributes import JournalAttributes
-from ampel.core.StockJournalUpdater import StockJournalUpdater
+from ampel.core.StockUpdater import StockUpdater
 from ampel.t3.stage.BaseViewGenerator import BaseViewGenerator
 
 
@@ -20,8 +20,8 @@ class ThreadedViewGenerator(BaseViewGenerator[T]):
 	Does not craft views but loads them from internal JoinableQueue and yields them
 	"""
 
-	def __init__(self, unit_name: str, queue: "JoinableQueue[T]", jupdater: StockJournalUpdater) -> None:
-		super().__init__(unit_name = unit_name, jupdater = jupdater)
+	def __init__(self, unit_name: str, queue: "JoinableQueue[T]", stock_updr: StockUpdater) -> None:
+		super().__init__(unit_name = unit_name, stock_updr = stock_updr)
 		self.queue: "JoinableQueue[T]" = queue
 
 
