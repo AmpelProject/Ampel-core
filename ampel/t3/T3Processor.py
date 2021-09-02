@@ -128,7 +128,7 @@ class T3Processor(AbsEventUnit):
 				process_name = self.process_name, logger = logger,
 				raise_exc = self.raise_exc, extra_tag = self.extra_journal_tag,
 				update_journal = self.update_journal,
-				update_updated = False
+				bump_updated = False
 			)
 
 			# Stager unit

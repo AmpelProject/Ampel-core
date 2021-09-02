@@ -28,7 +28,7 @@ class StockUpdater:
 	def __init__(self,
 		ampel_db: AmpelDB, tier: Literal[-1, 0, 1, 2, 3], run_id: int,
 		process_name: str, logger: AmpelLogger, raise_exc: bool = False,
-		update_updated: bool = True, update_journal: bool = True,
+		bump_updated: bool = True, update_journal: bool = True,
 		extra_tag: Optional[Union[Tag, Sequence[Tag]]] = None,
 		auto_flush: int = 0
 	) -> None:
@@ -42,7 +42,7 @@ class StockUpdater:
 		self.tier = tier
 		self.raise_exc = raise_exc
 		self.update_journal = update_journal
-		self.update_updated = update_updated
+		self.bump_updated = bump_updated
 		self.auto_flush = auto_flush
 		self.process_name = process_name
 		self.extra_tag = extra_tag
@@ -127,7 +127,7 @@ class StockUpdater:
 
 		upd: dict[str, Any] = {'$push': {'journal': jrec}}
 
-		if self.update_updated:
+		if self.bump_updated:
 
 			upd['$max'] = {'ts.any.upd': jrec['ts']}
 
