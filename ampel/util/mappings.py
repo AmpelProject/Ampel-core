@@ -279,13 +279,9 @@ def _unflatten_lists(d: Dict) -> Dict:
 def merge_dict(d1: Dict, d2: Dict) -> Dict:
 	k1 = set(d1.keys())
 	k2 = set(d2.keys())
-	return {
-		**{k: d1[k] for k in k1.difference(k2)},
-		**{k: d2[k] for k in k2.difference(k1)},
-		**{
-			k: merge_dict(d1[k], d2[k]) if isinstance(d1[k], dict) else d2[k]
-			for k in k1.intersection(k2)
-		}
+	return {k: d1[k] for k in k1.difference(k2)} | {k: d2[k] for k in k2.difference(k1)} | {
+		k: merge_dict(d1[k], d2[k]) if isinstance(d1[k], dict) else d2[k]
+		for k in k1.intersection(k2)
 	}
 
 
