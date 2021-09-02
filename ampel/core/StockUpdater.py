@@ -4,12 +4,10 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 15.10.2018
-# Last Modified Date: 02.09.2021
+# Last Modified Date: 03.09.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from time import time
-from ampel.mongo.utils import maybe_use_each
-from ampel.struct.StockAttributes import StockAttributes
 from bson import ObjectId
 from pymongo.errors import BulkWriteError
 from pymongo.operations import UpdateMany, UpdateOne
@@ -24,6 +22,7 @@ from ampel.content.JournalRecord import JournalRecord
 
 tag_type = get_args(Tag) # type: ignore[misc]
 chan_type = get_args(ChannelId) # type: ignore[misc]
+
 
 class StockUpdater:
 
@@ -53,8 +52,9 @@ class StockUpdater:
 
 
 	def reset(self) -> None:
-		self.journal_updates: List[Any] = []
-		self.journal_updates_count = 0
+		self._updates: List[Union[UpdateOne, UpdateMany]] = []
+		self._one_updates: Dict[StockId, UpdateOne] = {}
+		self._multi_updates: Dict[StockId, List[UpdateMany]] = {}
 
 
 	def new_journal_record(self,
@@ -89,8 +89,6 @@ class StockUpdater:
 	def add_journal_record(self,
 		stock: Union[StockId, Sequence[StockId]],
 		jattrs: Optional[JournalAttributes] = None,
-		tag: Optional[Union[Tag, Sequence[Tag]]] = None,
-		name: Optional[Union[str, Sequence[str]]] = None,
 		trace_id: Optional[Dict[str, int]] = None,
 		doc_id: Optional[ObjectId] = None,
 		unit: Optional[Union[int, str]] = None,
@@ -100,18 +98,10 @@ class StockUpdater:
 		"""
 		:returns: the JournalRecord dict instance associated with the stock document(s) update
 		is returned by this method so that customization can be made if necessary.
+		Note that these customizations must be made before additional operations such as add_tag.
 		Note that the associated update operation does more than just adding a journal record,
 		it also modifies the "updated" field of stock document(s).
 		"""
-
-		if not isinstance(stock, (str, int)):
-			self.journal_updates_count += len(stock)
-			match: Any = {'$in': list(stock)}
-			Op = UpdateMany
-		else:
-			self.journal_updates_count += 1
-			match = stock
-			Op = UpdateOne
 
 		jrec = self.new_journal_record(unit, channel, doc_id, now)
 
@@ -131,13 +121,6 @@ class StockUpdater:
 
 		upd: dict[str, Any] = {'$push': {'journal': jrec}}
 
-		if tag or name:
-
-			upd['$addToSet'] = (
-				({'tag': tag if isinstance(tag, (str, int)) else maybe_use_each(tag)} if tag else {}) |
-				({'name': name if isinstance(name, str) else maybe_use_each(name)} if name else {})
-			)
-
 		if self.bump_updated:
 
 			upd['$max'] = {'ts.any.upd': jrec['ts']}
@@ -153,22 +136,133 @@ class StockUpdater:
 
 		if self.update_journal:
 
-			self.journal_updates.append(
-				Op({'stock': match}, upd)
-			)
-
-			if self.auto_flush and len(self.journal_updates) > self.auto_flush:
-				self.flush()
+			# Current strategy:
+			# - case: UpdateMany + UpdateMany: do nothing or put differently: submit the two ops as is
+			# - case: UpdateOne + UpdateMany: update op UpdateOne and no longer match target stock in UpdateMany
+			# - case: UpdateOne + UpdateOne: merge updates
+			if isinstance(stock, Sequence):
+				self._add_many_update(list(stock), upd)
+			else:
+				self._add_one_update(stock, upd)
 
 		return jrec
 
 
+	def add_name(self, stock: StockId, name: Union[str, List[str]]) -> None:
+		self._add_one_update(
+			stock,
+			{'$addToSet': {'name': name if isinstance(name, str) else {'$each': name}}}
+		)
+
+
+	def add_tag(self,
+		stock: Union[StockId, Sequence[StockId]],
+		tag: Union[Tag, Sequence[Tag]]
+	) -> None:
+
+		upd = {'$addToSet': {'tag': tag if isinstance(tag, tag_type) else {'$each': tag}}}
+
+		if isinstance(stock, (int, bytes, str)): # StockId
+			self._add_one_update(stock, upd)
+		else: # Sequence[StockId]
+			self._add_many_update(stock, upd)
+
+
+	def _add_one_update(self, stock: StockId, upd: Dict[str, Any]) -> None:
+
+		uo = UpdateOne({'stock': stock}, upd)
+
+		if stock in self._multi_updates:
+			for um in self._multi_updates.pop(stock):
+				um._filter['stock']['$in'].remove(stock)
+				self._merge_updates(uo, um._doc)
+
+		if stock in self._one_updates:
+			self._merge_updates(self._one_updates[stock], upd)
+		else:
+			self._one_updates[stock] = uo
+			self._updates.append(uo)
+
+			if self.auto_flush and len(self._updates) > self.auto_flush:
+				self.flush()
+
+
+	def _add_many_update(self, stocks: List[StockId], upd: Dict[str, Any]) -> None:
+
+		um = UpdateMany({'stock': {'$in': stocks}}, upd)
+
+		for s in iter(stocks):
+			if s in self._one_updates:
+				self._merge_updates(self._one_updates[s], upd)
+				stocks.remove(s)
+
+		if stocks:
+
+			for s in stocks:
+				if s in self._multi_updates:
+					self._multi_updates[s].append(um)
+				else:
+					self._multi_updates[s] = [um]
+
+			self._updates.append(um)
+			if self.auto_flush and len(self._updates) > self.auto_flush:
+				self.flush()
+
+
+	def _merge_updates(self, op: UpdateOne, d: Dict) -> None:
+		"""
+		modifies provided UpdateOne structure
+		:raises: ValueError in case update structures are not conform ex: {'$addToSet': {'name': {'a': 1}}}
+		"""
+
+		opd = op._doc
+
+		if '$max' in d:
+			if '$max' in opd:
+				for k in d['$max']:
+					opd['$max'][k] = max(opd['$max'][k], d['$max'][k])
+			else:
+				opd['$max'] = d['$max']
+
+		if '$set' in d:
+			if '$set' in opd:
+				for k in d['$set']:
+					# Second update prevails as would occur if there was two ops
+					opd['$set'][k] = d['$set'][k]
+			else:
+				opd['$set'] = d['$set']
+
+
+		for mop in ('$push', '$addToSet'):
+			if mop in d:
+				if mop in opd:
+					for k in d[mop]:
+						if k in opd[mop]:
+							if isinstance(opd[mop][k], str):
+								opd[mop][k] = {'$each': [opd[mop][k]]}
+							elif not(isinstance(opd[mop][k], dict) and '$each' in opd[mop][k]):
+								raise ValueError(f"Invalid opd[{mop}][{k}] value: {opd[mop][k]} ('$each' missing)")
+							if isinstance(d[mop][k], str):
+								opd[mop][k]['$each'].append(d[mop][k])
+							elif isinstance(d[mop][k], dict) and '$each' in d[mop][k]:
+								opd[mop][k]['$each'].append(d[mop][k]['$each'])
+							else:
+								raise ValueError(f"Invalid d[{mop}][{k}] value: {d[mop][k]} ('$each' missing)")
+						else:
+							opd[mop][k] = d[mop][k]
+				else:
+					opd[mop] = d[mop]
+
+		for k in d.keys() - ['$set', '$max', '$push', '$addToSet']:
+			opd[k] = d[k]
+
+
 	def flush(self) -> None:
 
-		if not self.journal_updates:
+		if not self._updates:
 			return
 
-		jupds = self.journal_updates
+		jupds = self._updates
 		self.reset()
 
 		try:
@@ -194,7 +288,7 @@ class StockUpdater:
 			info: Dict[str, Any] = {
 				'process': self.process_name,
 				'msg': 'Exception in flush()',
-				'journalUpdateCount': self.journal_updates_count
+				'journalUpdateCount': len(jupds)
 			}
 
 			if isinstance(e, BulkWriteError):
