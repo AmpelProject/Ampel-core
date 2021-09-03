@@ -14,7 +14,7 @@ from ampel.base.AmpelABC import AmpelABC
 from ampel.base.decorator import abstractmethod
 from ampel.content.T3Document import T3Document
 from ampel.core.ContextUnit import ContextUnit
-from ampel.core.StockUpdater import StockUpdater
+from ampel.mongo.update.MongoStockUpdater import MongoStockUpdater
 from ampel.struct.AmpelBuffer import AmpelBuffer
 from ampel.log.AmpelLogger import AmpelLogger
 
@@ -25,7 +25,7 @@ class AbsT3Stager(AmpelABC, ContextUnit, abstract=True):
 	"""
 
 	logger: AmpelLogger
-	stock_updr: StockUpdater
+	stock_updr: MongoStockUpdater
 
 	channel: Optional[ChannelId] = None
 

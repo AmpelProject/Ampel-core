@@ -36,7 +36,7 @@ from ampel.abstract.AbsTiedCustomStateT2Unit import AbsTiedCustomStateT2Unit, U
 from ampel.abstract.AbsWorker import AbsWorker, register_stats
 from ampel.model.UnitModel import UnitModel
 from ampel.model.StateT2Dependency import StateT2Dependency
-from ampel.core.StockUpdater import StockUpdater
+from ampel.mongo.update.MongoStockUpdater import MongoStockUpdater
 
 AbsT2 = Union[
 	AbsStockT2Unit, AbsPointT2Unit, AbsStateT2Unit, AbsTiedPointT2Unit,
@@ -70,7 +70,7 @@ class T2Worker(AbsWorker[T2Document]):
 
 	def process_doc(self,
 		doc: T2Document,
-		stock_updr: StockUpdater,
+		stock_updr: MongoStockUpdater,
 		logger: AmpelLogger
 	) -> Tuple[UBson, int]:
 
@@ -162,7 +162,7 @@ class T2Worker(AbsWorker[T2Document]):
 
 	# NB: spell out union arg to ensure a common context for the TypeVar T
 	def load_input_docs(self,
-		t2_unit: AbsT2, t2_doc: T2Document, logger: AmpelLogger, stock_updr: StockUpdater
+		t2_unit: AbsT2, t2_doc: T2Document, logger: AmpelLogger, stock_updr: MongoStockUpdater
 	) -> Union[
 		None,
 		UnitResult,                                                # Error / missing dependency
@@ -333,7 +333,7 @@ class T2Worker(AbsWorker[T2Document]):
 	def run_tied_queries(self,
 		queries: List[Dict[str, Any]],
 		t2_doc: T2Document,
-		stock_updr: StockUpdater,
+		stock_updr: MongoStockUpdater,
 		logger: AmpelLogger
 	) -> Union[UnitResult, List[T2DocView]]:
 
@@ -491,7 +491,7 @@ class T2Worker(AbsWorker[T2Document]):
 
 
 	def run_t2_unit(self,
-		t2_unit: AbsT2, t2_doc: T2Document, logger: AmpelLogger, stock_updr: StockUpdater,
+		t2_unit: AbsT2, t2_doc: T2Document, logger: AmpelLogger, stock_updr: MongoStockUpdater,
 	) -> Union[UBson, UnitResult]:
 		"""
 		Regarding the possible int return code:

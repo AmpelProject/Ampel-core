@@ -27,7 +27,7 @@ from ampel.log.handlers.DefaultRecordBufferingHandler import DefaultRecordBuffer
 from ampel.util.hash import build_unsafe_dict_id
 from ampel.abstract.AbsEventUnit import AbsEventUnit
 from ampel.model.UnitModel import UnitModel
-from ampel.core.StockUpdater import StockUpdater
+from ampel.mongo.update.MongoStockUpdater import MongoStockUpdater
 from ampel.metrics.AmpelMetricsRegistry import AmpelMetricsRegistry, Histogram, Counter
 
 T = TypeVar("T", T1Document, T2Document)
@@ -102,7 +102,7 @@ class AbsWorker(Generic[T], AbsEventUnit, abstract=True):
 
 	@abstractmethod
 	def process_doc(self,
-		doc: T, stock_updr: StockUpdater, logger: AmpelLogger
+		doc: T, stock_updr: MongoStockUpdater, logger: AmpelLogger
 	) -> Any:
 		...
 
@@ -132,7 +132,7 @@ class AbsWorker(Generic[T], AbsEventUnit, abstract=True):
 				{'$set': {'timestamp': int(time())}}
 			)
 
-		stock_updr = StockUpdater(
+		stock_updr = MongoStockUpdater(
 			ampel_db = self.context.db, tier = self.tier, run_id = run_id,
 			process_name = self.process_name, logger = logger,
 			raise_exc = self.raise_exc, extra_tag = self.stock_jtag

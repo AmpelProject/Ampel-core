@@ -13,7 +13,7 @@ from ampel.model.UnitModel import UnitModel
 from ampel.log.utils import report_exception
 from ampel.log import AmpelLogger, LogFlag, SHOUT
 from ampel.core.EventHandler import EventHandler
-from ampel.core.StockUpdater import StockUpdater
+from ampel.mongo.update.MongoStockUpdater import MongoStockUpdater
 from ampel.abstract.AbsSessionInfo import AbsSessionInfo
 from ampel.abstract.AbsT3Supplier import AbsT3Supplier
 from ampel.abstract.AbsT3Stager import AbsT3Stager
@@ -123,7 +123,7 @@ class T3Processor(AbsEventUnit):
 						.update(session_info)
 
 
-			stock_updr = StockUpdater(
+			stock_updr = MongoStockUpdater(
 				ampel_db = self.context.db, tier = 3, run_id = run_id,
 				process_name = self.process_name, logger = logger,
 				raise_exc = self.raise_exc, extra_tag = self.extra_journal_tag,

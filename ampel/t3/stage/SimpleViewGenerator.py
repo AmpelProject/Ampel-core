@@ -12,13 +12,13 @@ from ampel.abstract.AbsT3Unit import AbsT3Unit
 from ampel.struct.JournalAttributes import JournalAttributes
 from ampel.util.freeze import recursive_freeze
 from ampel.struct.AmpelBuffer import AmpelBuffer
-from ampel.core.StockUpdater import StockUpdater
+from ampel.mongo.update.MongoStockUpdater import MongoStockUpdater
 from ampel.t3.stage.BaseViewGenerator import BaseViewGenerator, T, T3Send
 
 
 class SimpleViewGenerator(BaseViewGenerator[T]):
 
-	def __init__(self, unit: AbsT3Unit, buffers: Iterable[AmpelBuffer], stock_updr: StockUpdater) -> None:
+	def __init__(self, unit: AbsT3Unit, buffers: Iterable[AmpelBuffer], stock_updr: MongoStockUpdater) -> None:
 		super().__init__(unit_name = unit.__class__.__name__, stock_updr = stock_updr)
 		self.buffers = buffers
 		self.View = unit._View

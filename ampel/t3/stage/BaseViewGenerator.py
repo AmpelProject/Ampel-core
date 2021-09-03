@@ -14,14 +14,14 @@ from ampel.view.SnapView import SnapView
 from ampel.abstract.T3Send import T3Send
 from ampel.struct.JournalAttributes import JournalAttributes
 from ampel.struct.StockAttributes import StockAttributes
-from ampel.core.StockUpdater import StockUpdater
+from ampel.mongo.update.MongoStockUpdater import MongoStockUpdater
 
 T = TypeVar("T", bound=SnapView)
 
 class BaseViewGenerator(Generator[T, T3Send, None]):
 	""" Meant to be subclassed """
 
-	def __init__(self, unit_name: str, stock_updr: StockUpdater) -> None:
+	def __init__(self, unit_name: str, stock_updr: MongoStockUpdater) -> None:
 		self.unit_name = unit_name
 		self.stock_updr = stock_updr
 		self.stocks: List[StockId] = []

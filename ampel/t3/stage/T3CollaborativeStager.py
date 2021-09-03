@@ -18,12 +18,12 @@ from ampel.struct.AmpelBuffer import AmpelBuffer
 from ampel.t3.stage.T3BaseStager import T3BaseStager
 from ampel.t3.stage.BaseViewGenerator import BaseViewGenerator, T3Send
 from ampel.struct.JournalAttributes import JournalAttributes
-from ampel.core.StockUpdater import StockUpdater
+from ampel.mongo.update.MongoStockUpdater import MongoStockUpdater
 
 
 class SimpleGenerator(BaseViewGenerator[T]):
 
-	def __init__(self, unit: AbsT3Unit, views: Iterable[T], stock_updr: StockUpdater) -> None:
+	def __init__(self, unit: AbsT3Unit, views: Iterable[T], stock_updr: MongoStockUpdater) -> None:
 		super().__init__(unit_name = unit.__class__.__name__, stock_updr = stock_updr)
 		self.views = views
 
