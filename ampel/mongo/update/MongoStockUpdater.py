@@ -176,7 +176,7 @@ class MongoStockUpdater:
 		if isinstance(stock, (int, bytes, str)): # StockId
 			self._add_one_update(stock, upd)
 		else: # Sequence[StockId]
-			self._add_many_update(stock, upd)
+			self._add_many_update(stock if isinstance(stock, list) else list(stock), upd)
 
 
 	def _add_one_update(self, stock: StockId, upd: Dict[str, Any]) -> None:
