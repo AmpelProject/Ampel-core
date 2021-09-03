@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-core/ampel/core/StockUpdater.py
+# File              : Ampel-core/ampel/mongo/update/MongoStockUpdater.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 15.10.2018
@@ -17,14 +17,16 @@ from ampel.core.AmpelDB import AmpelDB
 from ampel.types import ChannelId, Tag, StockId
 from ampel.log import AmpelLogger, VERBOSE
 from ampel.log.utils import report_exception
+from ampel.mongo.utils import maybe_use_each
 from ampel.struct.JournalAttributes import JournalAttributes
 from ampel.content.JournalRecord import JournalRecord
+
 
 tag_type = get_args(Tag) # type: ignore[misc]
 chan_type = get_args(ChannelId) # type: ignore[misc]
 
 
-class StockUpdater:
+class MongoStockUpdater:
 
 	def __init__(self,
 		ampel_db: AmpelDB, tier: Literal[-1, 0, 1, 2, 3], run_id: int,
@@ -89,6 +91,8 @@ class StockUpdater:
 	def add_journal_record(self,
 		stock: Union[StockId, Sequence[StockId]],
 		jattrs: Optional[JournalAttributes] = None,
+		tag: Optional[Union[Tag, Sequence[Tag]]] = None,
+		name: Optional[Union[str, Sequence[str]]] = None,
 		trace_id: Optional[Dict[str, int]] = None,
 		doc_id: Optional[ObjectId] = None,
 		unit: Optional[Union[int, str]] = None,
@@ -120,6 +124,13 @@ class StockUpdater:
 			jrec['traceid'] = trace_id
 
 		upd: dict[str, Any] = {'$push': {'journal': jrec}}
+
+		if tag or name:
+
+			upd['$addToSet'] = (
+				({'tag': tag if isinstance(tag, (str, int)) else maybe_use_each(tag)} if tag else {}) |
+				({'name': name if isinstance(name, str) else maybe_use_each(name)} if name else {})
+			)
 
 		if self.bump_updated:
 
