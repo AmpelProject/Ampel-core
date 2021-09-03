@@ -151,7 +151,7 @@ class MongoStockUpdater:
 			# - case: UpdateMany + UpdateMany: do nothing or put differently: submit the two ops as is
 			# - case: UpdateOne + UpdateMany: update op UpdateOne and no longer match target stock in UpdateMany
 			# - case: UpdateOne + UpdateOne: merge updates
-			if isinstance(stock, Sequence):
+			if not isinstance(stock, (int, str)):
 				self._add_many_update(list(stock), upd)
 			else:
 				self._add_one_update(stock, upd)
@@ -159,7 +159,7 @@ class MongoStockUpdater:
 		return jrec
 
 
-	def add_name(self, stock: StockId, name: Union[str, List[str]]) -> None:
+	def add_name(self, stock: StockId, name: Union[str, Sequence[str]]) -> None:
 		self._add_one_update(
 			stock,
 			{'$addToSet': {'name': name if isinstance(name, str) else {'$each': name}}}

@@ -39,7 +39,11 @@ class BaseViewGenerator(Generator[T, T3Send, None]):
 		else:
 			tag, name = None, None
 			jattrs = element
-		self.stock_updr.add_journal_record(stock=stock_id, jattrs=jattrs, tag=tag, name=name, unit=self.unit_name)
+		if tag:
+			self.stock_updr.add_tag(stock_id, tag)
+		if name:
+			self.stock_updr.add_name(stock_id, name)
+		self.stock_updr.add_journal_record(stock=stock_id, jattrs=jattrs, unit=self.unit_name)
 
 	def throw(self, type=None, value=None, traceback=None):
 		raise StopIteration
