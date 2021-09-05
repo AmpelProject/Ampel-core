@@ -18,6 +18,7 @@ from ampel.types import ChannelId, Tag, StockId
 from ampel.log import AmpelLogger, VERBOSE
 from ampel.log.utils import report_exception
 from ampel.mongo.utils import maybe_use_each
+from ampel.enum.JournalActionCode import JournalActionCode
 from ampel.struct.JournalAttributes import JournalAttributes
 from ampel.content.JournalRecord import JournalRecord
 
@@ -62,6 +63,7 @@ class MongoStockUpdater:
 	def new_journal_record(self,
 		unit: Optional[Union[int, str]] = None,
 		channels: Optional[Union[ChannelId, Sequence[ChannelId]]] = None,
+		action_code: Optional[JournalActionCode] = None,
 		doc_id: Optional[ObjectId] = None,
 		now: Optional[Union[int, float]] = None
 	) -> JournalRecord:
@@ -70,7 +72,8 @@ class MongoStockUpdater:
 			'tier': self.tier,
 			'ts': now if now else int(time()),
 			'process': self.process_name,
-			'run': self.run_id
+			'run': self.run_id,
+			'action': action_code or JournalActionCode(0)
 		}
 
 		if channels:
@@ -94,6 +97,7 @@ class MongoStockUpdater:
 		tag: Optional[Union[Tag, Sequence[Tag]]] = None,
 		name: Optional[Union[str, Sequence[str]]] = None,
 		trace_id: Optional[Dict[str, int]] = None,
+		action_code: Optional[JournalActionCode] = None,
 		doc_id: Optional[ObjectId] = None,
 		unit: Optional[Union[int, str]] = None,
 		channel: Optional[Union[ChannelId, Sequence[ChannelId]]] = None,
@@ -107,7 +111,7 @@ class MongoStockUpdater:
 		it also modifies the "updated" field of stock document(s).
 		"""
 
-		jrec = self.new_journal_record(unit, channel, doc_id, now)
+		jrec = self.new_journal_record(unit, channel, action_code, doc_id, now)
 
 		if jattrs:
 
