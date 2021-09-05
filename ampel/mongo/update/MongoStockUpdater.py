@@ -249,16 +249,14 @@ class MongoStockUpdater:
 				if mop in opd:
 					for k in d[mop]:
 						if k in opd[mop]:
-							if isinstance(opd[mop][k], str):
+							if isinstance(opd[mop][k], str) or (isinstance(opd[mop][k], dict) and '$each' not in opd[mop][k]):
 								opd[mop][k] = {'$each': [opd[mop][k]]}
-							elif not(isinstance(opd[mop][k], dict) and '$each' in opd[mop][k]):
-								raise ValueError(f"Invalid opd[{mop}][{k}] value: {opd[mop][k]} ('$each' missing)")
 							if isinstance(d[mop][k], str):
 								opd[mop][k]['$each'].append(d[mop][k])
-							elif isinstance(d[mop][k], dict) and '$each' in d[mop][k]:
-								opd[mop][k]['$each'].append(d[mop][k]['$each'])
+							elif isinstance(d[mop][k], dict):
+								opd[mop][k]['$each'].append(d[mop][k]['$each'] if '$each' in d[mop][k] else d[mop][k])
 							else:
-								raise ValueError(f"Invalid d[{mop}][{k}] value: {d[mop][k]} ('$each' missing)")
+								raise ValueError(f"Unrecognized d[{mop}][{k}] value: {d[mop][k]}")
 						else:
 							opd[mop][k] = d[mop][k]
 				else:
