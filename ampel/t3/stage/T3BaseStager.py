@@ -26,6 +26,7 @@ from ampel.content.T3Document import T3Document
 from ampel.struct.AmpelBuffer import AmpelBuffer
 from ampel.struct.UnitResult import UnitResult
 from ampel.enum.DocumentCode import DocumentCode
+from ampel.enum.JournalActionCode import JournalActionCode
 from ampel.t3.stage.BaseViewGenerator import BaseViewGenerator
 from ampel.t3.stage.ThreadedViewGenerator import ThreadedViewGenerator
 from ampel.util.mappings import dictify
@@ -249,7 +250,8 @@ class T3BaseStager(AbsT3Stager, abstract=True):
 				self.stock_updr.add_journal_record(
 					stock = stocks, # used to match stock docs
 					jattrs = res.journal,
-					unit = t3_unit.__class__.__name__
+					unit = t3_unit.__class__.__name__,
+					action_code = JournalActionCode.T3_ADD_DOC
 				)
 			if res.body is not None or res.code is not None:
 				return self.craft_t3_doc(t3_unit, res, ts, stocks)
