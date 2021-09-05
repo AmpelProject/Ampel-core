@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 24.05.2019
-# Last Modified Date: 09.08.2021
+# Last Modified Date: 05.09.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from time import time
@@ -16,6 +16,8 @@ from ampel.struct.UnitResult import UnitResult
 from ampel.mongo.utils import maybe_match_array
 from ampel.log.utils import convert_dollars
 from ampel.enum.DocumentCode import DocumentCode
+from ampel.enum.MetaActionCode import MetaActionCode
+from ampel.enum.JournalActionCode import JournalActionCode
 from ampel.content.StockDocument import StockDocument
 from ampel.content.DataPoint import DataPoint
 from ampel.content.T1Document import T1Document
@@ -115,9 +117,13 @@ class T2Worker(AbsWorker[T2Document]):
 
 				if ret.body:
 					body = ret.body
+					meta['action'] |= MetaActionCode.ADD_BODY
+					jrec['action'] |= JournalActionCode.T2_ADD_BODY
 
 				if ret.code:
 					code = ret.code
+					meta['action'] |= MetaActionCode.SET_CODE
+					jrec['action'] |= JournalActionCode.T2_SET_CODE
 
 				# TODO: check that unit did not use system reserved code
 				if code != 0 and code in DocumentCode.__members__.values():
@@ -125,16 +131,20 @@ class T2Worker(AbsWorker[T2Document]):
 
 				if ret.journal:
 					jrec.update(ret.journal) # type: ignore
+					meta['action'] |= MetaActionCode.EXTRA_JOURNAL
+					jrec['action'] |= JournalActionCode.T2_EXTRA_JOURNAL
 
 			# Unit returned bson-like content
 			elif isinstance(ret, ubson):
 				body = ret
+				meta['action'] |= MetaActionCode.ADD_BODY
+				jrec['action'] |= JournalActionCode.T2_ADD_BODY
 
 			# Unsupported object returned by unit
 			else:
 				code = DocumentCode.ERROR
 				self._processing_error(
-					logger, doc, None, jrec, meta, extra={'ret': ret},
+					logger, doc, None, meta, extra={'ret': ret},
 					msg='Invalid content returned by T2 unit'
 				)
 
@@ -153,7 +163,7 @@ class T2Worker(AbsWorker[T2Document]):
 				raise e
 
 			self._processing_error(
-				logger, doc, None, jrec, exception=e, msg='An exception occured',
+				logger, doc, None, exception=e, msg='An exception occured',
 				meta = self.gen_meta(stock_updr.run_id, t2_unit._trace_id, round(now - before_run, 3))
 			)
 
@@ -348,7 +358,7 @@ class T2Worker(AbsWorker[T2Document]):
 				# run pending dependencies
 				while (
 					dep_t2_doc := self.col.find_one_and_update(
-						{'code': maybe_match_array(self.code_match), **query}, # type: ignore[arg-type]
+						{'code': maybe_match_array(self.code_match)} | query, # type: ignore[arg-type]
 						{'$set': {'code': DocumentCode.RUNNING}}
 					)
 				):

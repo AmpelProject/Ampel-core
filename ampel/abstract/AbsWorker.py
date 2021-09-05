@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 28.05.2021
-# Last Modified Date: 24.07.2021
+# Last Modified Date: 05.09.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import gc, signal
@@ -17,9 +17,9 @@ from ampel.base.LogicalUnit import LogicalUnit
 from ampel.mongo.utils import maybe_match_array
 from ampel.log.utils import convert_dollars
 from ampel.enum.DocumentCode import DocumentCode
+from ampel.enum.MetaActionCode import MetaActionCode
 from ampel.content.T1Document import T1Document
 from ampel.content.T2Document import T2Document
-from ampel.content.JournalRecord import JournalRecord
 from ampel.log import AmpelLogger, LogFlag, VERBOSE, DEBUG
 from ampel.core.EventHandler import EventHandler
 from ampel.log.utils import report_exception, report_error
@@ -174,7 +174,7 @@ class AbsWorker(Generic[T], AbsEventUnit, abstract=True):
 
 
 	def _processing_error(self,
-		logger: AmpelLogger, doc: T, body: UBson, j_rec: JournalRecord,
+		logger: AmpelLogger, doc: T, body: UBson,
 		meta: Dict[str, Any], msg: Optional[str] = None,
 		extra: Optional[Dict[str, Any]] = None, exception: Optional[Exception] = None
 	) -> None:
@@ -242,6 +242,7 @@ class AbsWorker(Generic[T], AbsEventUnit, abstract=True):
 			'ts': int(time()),
 			'tier': self.tier,
 			'code': None,
+			'action': MetaActionCode(0),
 			'duration': duration,
 			'traceid': {
 				f't{self.tier}worker': self._trace_id,
