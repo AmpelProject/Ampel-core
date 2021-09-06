@@ -259,6 +259,10 @@ class ConfigBuilder:
 		# Fill it with (possibly transformed) channels
 		for chan_name, chan_dict in self.first_pass_config['channel'].items():
 
+			if not chan_dict.get('active', False):
+				self.logger.info(f'Ignoring deactivated channel: {chan_name}')
+				continue
+
 			tpl = None
 
 			# Template processing is required for this particular channel
