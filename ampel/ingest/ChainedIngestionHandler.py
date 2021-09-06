@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 01.05.2020
-# Last Modified Date: 22.06.2021
+# Last Modified Date: 06.09.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from time import time
@@ -19,6 +19,8 @@ from ampel.abstract.AbsT1CombineUnit import AbsT1CombineUnit
 from ampel.abstract.AbsT1RetroCombineUnit import AbsT1RetroCombineUnit
 from ampel.model.UnitModel import UnitModel
 from ampel.enum.DocumentCode import DocumentCode
+from ampel.enum.MetaActionCode import MetaActionCode
+from ampel.enum.JournalActionCode import JournalActionCode
 from ampel.model.ingest.CompilerOptions import CompilerOptions
 from ampel.model.ingest.T1Combine import T1Combine
 from ampel.model.ingest.T1CombineCompute import T1CombineCompute
@@ -522,10 +524,13 @@ class ChainedIngestionHandler:
 		for i, fres in filter_results:
 
 			# Add alert and shaper version info to stock journal entry
+			jentry: Dict[str, Any] = {
+				'action': JournalActionCode.STOCK_ADD_CHANNEL,
+				'traceid': self.base_trace_id | {'shaper': self.shaper_trace_id}
+			}
+
 			if extra:
-				jentry: Dict[str, Any] = {**extra, 'traceid': self.base_trace_id | {'shaper': self.shaper_trace_id}}
-			else:
-				jentry = {'traceid': {'shaper': self.shaper_trace_id}}
+				jentry = extra | jentry
 
 			if i > 0: # Known stock (for the current channel)
 				ib = ibs[i][0]
@@ -560,8 +565,10 @@ class ChainedIngestionHandler:
 
 					# TODO: make this addition optional (a stock with a million dps would create pblms)
 					jentry['upsert'] = [el['id'] for el in dps_insert]
+					jentry['action'] |= JournalActionCode.T0_ADD_CHANNEL
 
 					if mux.point_t2:
+						jentry['action'] |= JournalActionCode.T2_ADD_CHANNEL
 						self.ingest_point_t2s(dps_insert, fres, stock_id, ib.channel, mux.point_t2)
 
 				# Muxed T1 and associated T2 ingestions
@@ -697,10 +704,14 @@ class ChainedIngestionHandler:
 			for tres in lres:
 
 				body = None
+				meta: Dict[str, Any] = {
+					'action': MetaActionCode.ADD_CHANNEL,
+					'traceid': self.base_trace_id | {'combiner': t1b.trace_id}
+				}
 
-				meta: Dict[str, Any] = {'traceid': self.base_trace_id | {'combiner': t1b.trace_id}}
 				if 'muxer' in jentry['traceid']:
 					meta['traceid']['muxer'] = jentry['traceid']['muxer']
+
 				if 'alert' in jentry:
 					meta['alert'] = jentry['alert']
 
@@ -708,8 +719,12 @@ class ChainedIngestionHandler:
 					t1_dps = tres.dps
 					if tres.meta:
 						meta |= tres.meta
+						meta['action'] |= MetaActionCode.EXTRA_META
+						jentry['action'] |= MetaActionCode.T1_EXTRA_META
 					if tres.code:
 						code = tres.code
+						meta['action'] |= MetaActionCode.SET_CODE
+						jentry['action'] |= MetaActionCode.T1_SET_CODE
 					else:
 						code = DocumentCode.OK
 				else:
@@ -734,6 +749,7 @@ class ChainedIngestionHandler:
 				if t1b.compute.unit:
 
 					je['traceid']['t1_compute'] = t1b.compute.trace_id
+					meta['action'] |= MetaActionCode.ADD_BODY
 
 					# Potentially load previous results from "t1 compute" cache
 					k = t1b.compute.unit, tuple(t1_dps)
@@ -751,14 +767,20 @@ class ChainedIngestionHandler:
 						body = t1_res[0].body
 						if t1_res[0].journal:
 							je |= t1_res[0].journal.dict()
+							meta['action'] |= MetaActionCode.EXTRA_JOURNAL
+							je['action'] |= MetaActionCode.T1_EXTRA_JOURNAL
 						if t1_res[0].code:
 							code = t1_res[0].code
+							meta['action'] |= MetaActionCode.SET_CODE
+							je['action'] |= MetaActionCode.T1_SET_CODE
 						else:
 							code = DocumentCode.NEW
 					else:
 						body = t1_res[0]
 						code = DocumentCode.NEW
 
+
+				je['action'] |= JournalActionCode.T1_ADD_CHANNEL
 
 				# Note: we ignore potential stock from T1 result here
 				link = self.t1_compiler.add(
@@ -776,6 +798,7 @@ class ChainedIngestionHandler:
 
 				if t1b.state_t2:
 
+					jentry['action'] |= JournalActionCode.T2_ADD_CHANNEL
 					for t2b in t1b.state_t2:
 
 						# Skip unmatched group
@@ -788,6 +811,7 @@ class ChainedIngestionHandler:
 
 				if t1b.point_t2:
 				
+					jentry['action'] |= JournalActionCode.T2_ADD_CHANNEL
 					self.ingest_point_t2s(
 						[el for el in dps if el['id'] in t1_dps],
 						fres, stock_id, t1b.channel, t1b.point_t2
