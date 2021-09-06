@@ -6,7 +6,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
 
-    <title>Ampel-core &#8212; ampel-core 0.8.0-alpha.6 documentation</title>
+    <title>Ampel-core &#8212; ampel-core 0.8.0-alpha.7 documentation</title>
     <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
     <link rel="stylesheet" type="text/css" href="_static/sphinxdoc.css" />
     <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
@@ -30,7 +30,7 @@
         <li class="right" >
           <a href="structure.html" title="Structure"
              accesskey="P">previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">ampel-core 0.8.0-alpha.6 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="index.html">ampel-core 0.8.0-alpha.7 documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">Ampel-core</a></li> 
       </ul>
     </div>  
@@ -127,6 +127,53 @@ Set provenance to False to ignore trace ids generation error which will be raise
 </section>
 <section id="processor-units">
 <h2>Processor units<a class="headerlink" href="#processor-units" title="Permalink to this headline">¶</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="ampel.t3.T3Processor.T3Processor">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">ampel.t3.T3Processor.</span></span><span class="sig-name descname"><span class="pre">T3Processor</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">update_journal</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">update_events</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">extra_journal_tag</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ampel/t3/T3Processor.html#T3Processor"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ampel.t3.T3Processor.T3Processor" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#ampel.abstract.AbsEventUnit.AbsEventUnit" title="ampel.abstract.AbsEventUnit.AbsEventUnit"><code class="xref py py-class docutils literal notranslate"><span class="pre">ampel.abstract.AbsEventUnit.AbsEventUnit</span></code></a></p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>update_journal</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.9)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a>) – Record the invocation of this event in the stock journal</p></li>
+<li><p><strong>update_events</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.9)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a>) – Record this event in the events collection</p></li>
+<li><p><strong>extra_journal_tag</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.9)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Union" title="(in Python v3.9)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.9)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.9)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>]]) – tag(s) to add to the <a class="reference external" href="https://ampelproject.github.io/Ampel-interface/api.html#ampel.content.JournalRecord.JournalRecord" title="(in ampel-interface v0.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">JournalRecord</span></code></a>
+of each selected stock</p></li>
+</ul>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>by default, <code class="xref py py-func docutils literal notranslate"><span class="pre">run()</span></code> add entries to the journals of selected
+stocks, store log records in the database, and records the invocation in
+the events collection. To run an “anonymous” event that does not change
+the state of the database:</p>
+<ul class="simple">
+<li><p>use a log_profile without db logging (profiles are defined under ‘logging’ in the ampel config)</p></li>
+<li><p>set update_journal = False (no update to the transient doc)</p></li>
+<li><p>set update_events = False (no update to the events collection)</p></li>
+<li><p>set raise_exc = True (troubles collection will not be populated if an exception occurs)</p></li>
+</ul>
+</div>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ampel.t3.T3Processor.T3Processor.supply">
+<span class="sig-name descname"><span class="pre">supply</span></span><em class="property"><span class="pre">:</span> <a class="reference external" href="https://ampelproject.github.io/Ampel-interface/api.html#ampel.model.UnitModel.UnitModel" title="(in ampel-interface v0.8)"><span class="pre">ampel.model.UnitModel.UnitModel</span></a></em><a class="headerlink" href="#ampel.t3.T3Processor.T3Processor.supply" title="Permalink to this definition">¶</a></dt>
+<dd><p>Provides <code class="xref py py-class docutils literal notranslate"><span class="pre">AmpelBuffer</span></code> generator</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ampel.t3.T3Processor.T3Processor.stage">
+<span class="sig-name descname"><span class="pre">stage</span></span><em class="property"><span class="pre">:</span> <a class="reference external" href="https://ampelproject.github.io/Ampel-interface/api.html#ampel.model.UnitModel.UnitModel" title="(in ampel-interface v0.8)"><span class="pre">ampel.model.UnitModel.UnitModel</span></a></em><a class="headerlink" href="#ampel.t3.T3Processor.T3Processor.stage" title="Permalink to this definition">¶</a></dt>
+<dd><p>Execute provided stager unit (which in turns provides views to underlying T3 unit(s))</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ampel.t3.T3Processor.T3Processor.save_stock_ids">
+<span class="sig-name descname"><span class="pre">save_stock_ids</span></span><em class="property"><span class="pre">:</span> <a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.9)"><span class="pre">bool</span></a></em><em class="property"> <span class="pre">=</span> <span class="pre">True</span></em><a class="headerlink" href="#ampel.t3.T3Processor.T3Processor.save_stock_ids" title="Permalink to this definition">¶</a></dt>
+<dd><p>whether selected stock ids should be saved into (potential) t3 documents</p>
+</dd></dl>
+
+</dd></dl>
+
 </section>
 <section id="t3-machinery">
 <h2>T3 machinery<a class="headerlink" href="#t3-machinery" title="Permalink to this headline">¶</a></h2>
@@ -1034,7 +1081,7 @@ Ex: BaseAlertRegister adds the current run id</p>
         <li class="right" >
           <a href="structure.html" title="Structure"
              >previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">ampel-core 0.8.0-alpha.6 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="index.html">ampel-core 0.8.0-alpha.7 documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">Ampel-core</a></li> 
       </ul>
     </div>
