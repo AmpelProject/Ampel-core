@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 01.01.2018
-# Last Modified Date: 14.06.2021
+# Last Modified Date: 06.09.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import xxhash
@@ -13,6 +13,7 @@ from struct import pack
 from typing import Optional, Dict, List, Union, Tuple, Set, Any
 from ampel.types import ChannelId, DataPointId, StockId, UnitId, UBson
 from ampel.content.T1Document import T1Document
+from ampel.enum.MetaActionCode import MetaActionCode
 from ampel.abstract.AbsDocIngester import AbsDocIngester
 from ampel.abstract.AbsCompiler import AbsCompiler
 from ampel.util.collections import try_reduce
@@ -157,7 +158,12 @@ class T1Compiler(AbsCompiler):
 					'ts': now,
 					'tier': self.tier,
 					'channel': try_reduce(list(v2)),
+					'action': MetaActionCode.ADD_CHANNEL
 				}
+
+				if self._tag:
+					entry['action'] |= MetaActionCode.ADD_TAG
+					entry['tag'] = try_reduce(self._tag)
 
 				if x := decode(k2):
 					entry |= x
