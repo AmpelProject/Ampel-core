@@ -1,16 +1,17 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-core/ampel/compile/T2Compiler.py
+# File              : Ampel-core/ampel/ingest/T2Compiler.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 01.01.2018
-# Last Modified Date: 12.05.2021
+# Last Modified Date: 06.09.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from ujson import encode, decode
 from typing import Optional, Dict, Union, Tuple, Set, Any
 from ampel.types import ChannelId, UnitId, T2Link, StockId
 from ampel.content.T2Document import T2Document
+from ampel.enum.MetaActionCode import MetaActionCode
 from ampel.abstract.AbsDocIngester import AbsDocIngester
 from ampel.abstract.AbsCompiler import AbsCompiler
 from ampel.util.collections import try_reduce
@@ -88,8 +89,13 @@ class T2Compiler(AbsCompiler):
 					'run': self.run_id,
 					'ts': now,
 					'tier': self.tier,
-					'channel': try_reduce(list(v2))
+					'channel': try_reduce(list(v2)),
+					'action': MetaActionCode.ADD_CHANNEL
 				}
+
+				if self._tag:
+					entry['action'] |= MetaActionCode.ADD_TAG
+					entry['tag'] = try_reduce(self._tag)
 
 				if k2 and (x := decode(k2)):
 					entry |= x
