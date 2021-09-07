@@ -14,12 +14,12 @@ from slack import WebClient
 from slack.web.slack_response import SlackResponse
 from typing import Any, Dict, List, Optional
 from ampel.abstract.AbsOpsUnit import AbsOpsUnit
-from ampel.abstract.Secret import Secret
+from ampel.secret.NamedSecret import NamedSecret
 
 
 class AmpelExceptionPublisher(AbsOpsUnit):
 
-    slack_token: Secret[str] = {"key": "slack/operator"}  # type: ignore[assignment]
+    slack_token: NamedSecret[str] = NamedSecret(label="slack/operator")
     user: str = f"ampel@{socket.gethostname()}"
     channel: str = "ampel-troubles"
     dry_run: bool = False

@@ -71,6 +71,41 @@ def test_resolve_secrets_wrong_type(
         )
 
 
+def test_resolve_secret_from_config(
+    secrets, dev_context: DevAmpelContext, monkeypatch, ampel_logger
+):
+    monkeypatch.setattr(dev_context.loader, "vault", AmpelVault(providers=[secrets]))
+
+    class NiceAndConcrete(LogicalUnit):
+        seekrit: NamedSecret[dict]
+
+    dev_context.register_unit(NiceAndConcrete)
+    # unit with concrete secret field can be instantiated
+    dev_context.loader.new(
+        UnitModel(unit="NiceAndConcrete", config={"seekrit": {"label": "dict"}}),
+        logger=ampel_logger,
+        unit_type=NiceAndConcrete,
+    )
+
+    # and also validated without instantiating
+    with dev_context.loader.validate_unit_models():
+        UnitModel(unit="NiceAndConcrete", config={"seekrit": {"label": "dict"}})
+        with pytest.raises(ValidationError):
+            UnitModel(unit="NiceAndConcrete")
+
+    # unit with abstract secret field cannot be instantiated
+    class BadAndAbstract(LogicalUnit):
+        seekrit: Secret[dict]
+
+    dev_context.register_unit(BadAndAbstract)
+    with pytest.raises(ValidationError):
+        dev_context.loader.new(
+            UnitModel(unit="BadAndAbstract", config={"seekrit": {"label": "dict"}}),
+            logger=ampel_logger,
+            unit_type=BadAndAbstract,
+        )
+
+
 def test_validator_patching():
     """
     Model validation can be monkeypatched in a context manager (tripwire for
