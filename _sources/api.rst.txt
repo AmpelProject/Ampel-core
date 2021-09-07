@@ -7,11 +7,11 @@ The actual implementation of the Ampel framework
 Processing units
 ----------------
 
-.. autoclass:: ampel.t3.context.T3AddLastRunTime.T3AddLastRunTime
+.. autoclass:: ampel.t3.session.T3SessionLastRunTime.T3SessionLastRunTime
   :members:
   :show-inheritance:
 
-.. autoclass:: ampel.t3.context.T3AddAlertsNumber.T3AddAlertsNumber
+.. autoclass:: ampel.t3.session.T3SessionAlertsNumber.T3SessionAlertsNumber
   :members:
   :show-inheritance:
 

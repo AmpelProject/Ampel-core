@@ -6,7 +6,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
 
-    <title>Ampel-core &#8212; ampel-core 0.8.0-alpha.7 documentation</title>
+    <title>Ampel-core &#8212; ampel-core 0.8.0-alpha.8 documentation</title>
     <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
     <link rel="stylesheet" type="text/css" href="_static/sphinxdoc.css" />
     <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
@@ -30,7 +30,7 @@
         <li class="right" >
           <a href="structure.html" title="Structure"
              accesskey="P">previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">ampel-core 0.8.0-alpha.7 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="index.html">ampel-core 0.8.0-alpha.8 documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">Ampel-core</a></li> 
       </ul>
     </div>  
@@ -45,6 +45,52 @@
 <p>The actual implementation of the Ampel framework</p>
 <section id="processing-units">
 <h2>Processing units<a class="headerlink" href="#processing-units" title="Permalink to this headline">¶</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="ampel.t3.session.T3SessionLastRunTime.T3SessionLastRunTime">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">ampel.t3.session.T3SessionLastRunTime.</span></span><span class="sig-name descname"><span class="pre">T3SessionLastRunTime</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">context</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ampel/t3/session/T3SessionLastRunTime.html#T3SessionLastRunTime"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ampel.t3.session.T3SessionLastRunTime.T3SessionLastRunTime" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">ampel.abstract.AbsSessionInfo.AbsSessionInfo</span></code></p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ampel.t3.session.T3SessionLastRunTime.T3SessionLastRunTime.lookup_range">
+<span class="sig-name descname"><span class="pre">lookup_range</span></span><em class="property"><span class="pre">:</span> <span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.9)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.9)"><span class="pre">int</span></a><span class="p"><span class="pre">]</span></span></em><em class="property"> <span class="pre">=</span> <span class="pre">{'days':</span> <span class="pre">-7}</span></em><a class="headerlink" href="#ampel.t3.session.T3SessionLastRunTime.T3SessionLastRunTime.lookup_range" title="Permalink to this definition">¶</a></dt>
+<dd><p>timedelta to search for previous run</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ampel.t3.session.T3SessionLastRunTime.T3SessionLastRunTime.fallback">
+<span class="sig-name descname"><span class="pre">fallback</span></span><em class="property"><span class="pre">:</span> <span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.9)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.9)"><span class="pre">int</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></em><em class="property"> <span class="pre">=</span> <span class="pre">None</span></em><a class="headerlink" href="#ampel.t3.session.T3SessionLastRunTime.T3SessionLastRunTime.fallback" title="Permalink to this definition">¶</a></dt>
+<dd><p>timedelta to use if no previous run found</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ampel.t3.session.T3SessionLastRunTime.T3SessionLastRunTime.update">
+<span class="sig-name descname"><span class="pre">update</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">context</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ampel/t3/session/T3SessionLastRunTime.html#T3SessionLastRunTime.update"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ampel.t3.session.T3SessionLastRunTime.T3SessionLastRunTime.update" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add last run time (UNIX epoch) as “last_run”.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.9)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="ampel.t3.session.T3SessionAlertsNumber.T3SessionAlertsNumber">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">ampel.t3.session.T3SessionAlertsNumber.</span></span><span class="sig-name descname"><span class="pre">T3SessionAlertsNumber</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">context</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ampel/t3/session/T3SessionAlertsNumber.html#T3SessionAlertsNumber"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ampel.t3.session.T3SessionAlertsNumber.T3SessionAlertsNumber" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">ampel.abstract.AbsSessionInfo.AbsSessionInfo</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="ampel.t3.session.T3SessionAlertsNumber.T3SessionAlertsNumber.update">
+<span class="sig-name descname"><span class="pre">update</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">run_context</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ampel/t3/session/T3SessionAlertsNumber.html#T3SessionAlertsNumber.update"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ampel.t3.session.T3SessionAlertsNumber.T3SessionAlertsNumber.update" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add number of alerts processed since last run of this event as “processed_alerts”</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.9)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
 </section>
 <section id="base-classes-for-processing-units">
 <h2>Base classes for processing units<a class="headerlink" href="#base-classes-for-processing-units" title="Permalink to this headline">¶</a></h2>
@@ -1081,7 +1127,7 @@ Ex: BaseAlertRegister adds the current run id</p>
         <li class="right" >
           <a href="structure.html" title="Structure"
              >previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">ampel-core 0.8.0-alpha.7 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="index.html">ampel-core 0.8.0-alpha.8 documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">Ampel-core</a></li> 
       </ul>
     </div>
