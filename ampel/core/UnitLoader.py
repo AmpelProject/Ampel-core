@@ -203,7 +203,7 @@ class UnitLoader:
 				if not self.vault:
 					raise ValueError("No vault configured")
 				if not self.vault.resolve_secret(v, ValueType):
-					raise ValueError(f"Secret[{ValueType.__name__}] {k} not found")
+					raise ValueError(f"Secret[{getattr(ValueType, '__name__', '<untyped>')}] {k} not found")
 				
 		if hasattr(unit, "post_init"):
 			unit.post_init() # type: ignore[union-attr]
