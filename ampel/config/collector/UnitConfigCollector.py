@@ -25,7 +25,8 @@ class RemoteUnitDefinition(StrictModel):
 class UnitConfigCollector(ConfigCollector):
 
 
-	def __init__(self, **kwargs) -> None:
+	def __init__(self, get_env: bool = True, **kwargs) -> None:
+		self.get_env = get_env
 		super().__init__(**kwargs)
 		self.err_fqns: list[str] = []
 
@@ -61,12 +62,12 @@ class UnitConfigCollector(ConfigCollector):
 						'version': version
 					}
 
-					if env := eval(
+					if self.get_env and (env := eval(
 						subprocess.run(
 							[sys.executable, '-m', 'ampel.config.builder.get_env', el],
 							stdout=subprocess.PIPE
 						).stdout.decode("utf-8")
-					):
+					)):
 						entry['env'] = env
 
 

@@ -49,7 +49,7 @@ def transform(args: Namespace) -> None:
 
 def build(args: Namespace) -> int:
     """Build config file from installed distributions"""
-    cb = DistConfigBuilder(verbose=args.verbose)
+    cb = DistConfigBuilder(verbose=args.verbose, get_env=args.get_env)
     try:
         cb.load_distributions()
         config = cb.build_config(
@@ -119,6 +119,9 @@ def main():
     p = add_command(build)
     p.add_argument("-v", "--verbose", default=False, action="store_true")
     p.add_argument("--ignore-errors", default=False, action="store_true")
+    p.add_argument("--no-get-env", dest="get_env", default=True, action="store_false",
+        help="Skip Python dependency detection when gathering units."
+    )
     p.add_argument("-o", "--output-file", type=FileType("w"))
 
     p = add_command(validate)

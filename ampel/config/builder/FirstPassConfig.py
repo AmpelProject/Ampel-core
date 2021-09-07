@@ -32,13 +32,13 @@ class FirstPassConfig(dict):
 		"mongo": DBConfigCollector,
 		"logging": LoggingCollector,
 		"channel": ChannelConfigCollector,
-		"unit": UnitConfigCollector,
+		"unit": None,
 		"process": None,
 		"alias": None,
 		"resource": ResourceConfigCollector,
 	}
 
-	def __init__(self, logger: AmpelLogger = None, verbose: bool = False) -> None:
+	def __init__(self, logger: AmpelLogger = None, verbose: bool = False, get_env: bool = True) -> None:
 
 		self.logger = AmpelLogger.get_logger() if logger is None else logger
 
@@ -48,6 +48,8 @@ class FirstPassConfig(dict):
 		}
 
 		d['pwd'] = []
+
+		d['unit'] = UnitConfigCollector(conf_section="unit", logger=logger, verbose=verbose, get_env=get_env)
 
 		# Allow process to be defined in root key
 		d['process'] = ForwardProcessConfigCollector(

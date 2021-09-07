@@ -35,12 +35,12 @@ class ConfigBuilder:
 
 	_default_processes = ["DefaultT2Process", "DefaultPurge"]
 
-	def __init__(self, logger: AmpelLogger = None, verbose: bool = False):
+	def __init__(self, logger: AmpelLogger = None, verbose: bool = False, get_env: bool = True):
 
 		self.logger = AmpelLogger.get_logger(
 			console={'level': DEBUG if verbose else ERROR}
 		) if logger is None else logger
-		self.first_pass_config = FirstPassConfig(self.logger, verbose)
+		self.first_pass_config = FirstPassConfig(self.logger, verbose, get_env=get_env)
 		self.templates: Dict[str, Any] = {}
 		self.verbose = verbose
 		self.error = False
