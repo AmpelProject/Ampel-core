@@ -83,7 +83,7 @@ class PeriodicSummaryT3(AbsProcessTemplate):
 
         directive: Dict[str, Any] = {
             "session": [
-                {"unit": "T3AddAlertsNumber"},
+                {"unit": "T3SessionAlertsNumber"},
             ],
             "supply": {
                 "unit": "T3DefaultSupplier",

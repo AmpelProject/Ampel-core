@@ -23,8 +23,6 @@ def test_validate(core_config, loader_directives, ampel_logger):
         )
         .get_process(config, ampel_logger) | {"version": 0}
     )
-    # remove T3AddAlertsNumber, which lives in ampel-alerts
-    del config["process"]["t3"]["foo"]["processor"]["config"]["session"]
     assert ConfigValidator(config).validate() == config
 
 def test_single_element_run_sequence(core_config, ampel_logger):
@@ -41,7 +39,5 @@ def test_single_element_run_sequence(core_config, ampel_logger):
         )
         .get_process(config, ampel_logger)  | {"version": 0}
     )
-    # remove T3AddAlertsNumber, which lives in ampel-alerts
-    del config["process"]["t3"]["foo"]["processor"]["config"]["session"]
     assert ConfigValidator(config).validate() == config
     assert config["process"]["t3"]["foo"]["channel"] is None
