@@ -720,11 +720,11 @@ class ChainedIngestionHandler:
 					if tres.meta:
 						meta |= tres.meta
 						meta['action'] |= MetaActionCode.EXTRA_META
-						jentry['action'] |= MetaActionCode.T1_EXTRA_META
+						jentry['action'] |= JournalActionCode.T1_EXTRA_META
 					if tres.code:
 						code = tres.code
 						meta['action'] |= MetaActionCode.SET_CODE
-						jentry['action'] |= MetaActionCode.T1_SET_CODE
+						jentry['action'] |= JournalActionCode.T1_SET_CODE
 					else:
 						code = DocumentCode.OK
 				else:
@@ -768,11 +768,11 @@ class ChainedIngestionHandler:
 						if t1_res[0].journal:
 							je |= t1_res[0].journal.dict()
 							meta['action'] |= MetaActionCode.EXTRA_JOURNAL
-							je['action'] |= MetaActionCode.T1_EXTRA_JOURNAL
+							je['action'] |= JournalActionCode.T1_EXTRA_JOURNAL
 						if t1_res[0].code:
 							code = t1_res[0].code
 							meta['action'] |= MetaActionCode.SET_CODE
-							je['action'] |= MetaActionCode.T1_SET_CODE
+							je['action'] |= JournalActionCode.T1_SET_CODE
 						else:
 							code = DocumentCode.NEW
 					else:
