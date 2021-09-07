@@ -1,14 +1,14 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-core/ampel/secret/DictAbsSecretProvider.py
+# File              : Ampel-core/ampel/secret/DictSecretProvider.py
 # License           : BSD-3-Clause
 # Author            : Jakob van Santen <jakob.van.santen@desy.de>
 # Date              : 14.08.2020
-# Last Modified Date: 21.06.2021
+# Last Modified Date: 07.09.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import subprocess, yaml
-from typing import Any, Dict, Type
+from typing import Any, Dict, Type, get_args, _GenericAlias # type: ignore[attr-defined]
 from ampel.abstract.AbsSecretProvider import AbsSecretProvider
 from ampel.abstract.Secret import Secret
 from ampel.secret.NamedSecret import NamedSecret
@@ -52,6 +52,10 @@ class DictSecretProvider(AbsSecretProvider):
 		"""
 
 		if isinstance(arg, NamedSecret) and arg.label in self.store:
+
+			if isinstance(ValueType, _GenericAlias):
+				ValueType = get_args(ValueType) # type: ignore[assignment]
+
 			if isinstance(value := self.store[arg.label], ValueType):
 				arg.set(value)
 				return True
