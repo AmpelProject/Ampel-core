@@ -10,7 +10,7 @@
 from ampel.base.AmpelBaseModel import AmpelBaseModel
 from ampel.core.AmpelContext import AmpelContext
 from ampel.log.AmpelLogger import AmpelLogger
-from ampel.abstract.Secret import Secret
+from ampel.secret.Secret import Secret
 from ampel.util.mappings import dictify
 
 

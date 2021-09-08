@@ -7,7 +7,7 @@ import pytest
 from pydantic import create_model, ValidationError
 
 from ampel.model.StrictModel import StrictModel
-from ampel.abstract.Secret import Secret
+from ampel.secret.Secret import Secret
 from ampel.core.UnitLoader import UnitLoader
 from ampel.secret.DictSecretProvider import DictSecretProvider
 from ampel.secret.AmpelVault import AmpelVault

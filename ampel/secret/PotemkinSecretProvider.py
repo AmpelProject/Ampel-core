@@ -9,7 +9,7 @@
 
 from typing import Type, get_args, get_origin
 from ampel.abstract.AbsSecretProvider import AbsSecretProvider
-from ampel.abstract.Secret import Secret
+from ampel.secret.Secret import Secret
 from ampel.secret.NamedSecret import NamedSecret
 
 

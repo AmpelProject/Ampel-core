@@ -10,7 +10,7 @@
 import subprocess, yaml
 from typing import Any, Dict, Type, get_args, _GenericAlias # type: ignore[attr-defined]
 from ampel.abstract.AbsSecretProvider import AbsSecretProvider
-from ampel.abstract.Secret import Secret
+from ampel.secret.Secret import Secret
 from ampel.secret.NamedSecret import NamedSecret
 
 

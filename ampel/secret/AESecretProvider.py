@@ -11,7 +11,7 @@ from sjcl import SJCL
 from typing import Type, Union, Iterable
 from ampel.abstract.AbsSecretProvider import AbsSecretProvider
 from ampel.secret.AESecret import AESecret
-from ampel.abstract.Secret import Secret
+from ampel.secret.Secret import Secret
 
 
 class AESecretProvider(AbsSecretProvider):

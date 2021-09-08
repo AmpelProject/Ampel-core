@@ -29,7 +29,7 @@ from ampel.core.ContextUnit import ContextUnit
 from ampel.core.AmpelDB import AmpelDB
 from ampel.model.StrictModel import StrictModel
 from ampel.model.UnitModel import UnitModel
-from ampel.abstract.Secret import Secret
+from ampel.secret.Secret import Secret
 from ampel.secret.AmpelVault import AmpelVault
 from ampel.model.t3.AliasableModel import AliasableModel
 from ampel.config.AmpelConfig import AmpelConfig
