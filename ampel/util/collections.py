@@ -76,7 +76,7 @@ def to_set(arg) -> Set:
 	return set(arg) if isinstance(arg, strict_iterable) else {arg}
 
 
-def to_list(cls, arg: Union[int, str, bytes, bytearray, List, Iterable]) -> List:
+def to_list(arg: Union[int, str, bytes, bytearray, List, Iterable]) -> List:
 	"""
 	raises ValueError is arg is not int, str, bytes, bytearray, list, or Iterable
 	"""
