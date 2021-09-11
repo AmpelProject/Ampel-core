@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 28.05.2021
-# Last Modified Date: 05.09.2021
+# Last Modified Date: 11.09.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import gc, signal
@@ -25,9 +25,11 @@ from ampel.core.EventHandler import EventHandler
 from ampel.log.utils import report_exception, report_error
 from ampel.log.handlers.DefaultRecordBufferingHandler import DefaultRecordBufferingHandler
 from ampel.util.hash import build_unsafe_dict_id
+from ampel.util.collections import to_list, try_reduce
 from ampel.abstract.AbsEventUnit import AbsEventUnit
 from ampel.model.UnitModel import UnitModel
 from ampel.mongo.update.MongoStockUpdater import MongoStockUpdater
+from ampel.mongo.utils import maybe_use_each
 from ampel.metrics.AmpelMetricsRegistry import AmpelMetricsRegistry, Histogram, Counter
 
 T = TypeVar("T", T1Document, T2Document)
@@ -210,11 +212,20 @@ class AbsWorker(Generic[T], AbsEventUnit, abstract=True):
 
 
 	def commit_update(self,
-		match: Dict[str, Any], meta: Dict[str, Any], logger: AmpelLogger, *,
+		match: Dict[str, Any],
+		meta: Dict[str, Any],
+		logger: AmpelLogger, *,
 		payload_op: Literal['$push', '$set'] = '$push',
-		body: UBson = None, code: int = 0
+		body: UBson = None,
+		tag: Union[Tag, Sequence[Tag]] = None,
+		code: int = 0
 	) -> None:
-		""" Insert/upsert tier docs into DB """
+		"""
+		Insert/upsert tier docs into DB
+		Note regarding tags:
+		They are 'public' attributes (that is: not channel bound) and as such, they are visible by any projection
+		and can be used for any db queries
+		"""
 
 		if logger.verbose:
 			logger.log(VERBOSE, f'Saving T{self.tier} unit result')
@@ -228,6 +239,18 @@ class AbsWorker(Generic[T], AbsEventUnit, abstract=True):
 			'$set': {'code': code},
 			'$push': {'meta': meta}
 		}
+
+		if tag:
+
+			if 'tag' in meta and meta['tag']:
+				meta['tag'] = to_list(meta['tag']) + to_list(tag)
+			else:
+				meta['tag'] = try_reduce(tag)
+
+			upd['$addToSet'] = {
+				'tag': meta['tag'] if isinstance(meta['tag'], (int, str))
+					else maybe_use_each(meta['tag'])
+			}
 
 		if body is not None:
 			upd[payload_op]['body'] = body
