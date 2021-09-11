@@ -13,8 +13,6 @@ from typing import Optional, List, Union, Dict, Any, Sequence, Tuple, ClassVar, 
 
 from ampel.types import T, UBson, ubson
 from ampel.struct.UnitResult import UnitResult
-from ampel.mongo.utils import maybe_match_array
-from ampel.log.utils import convert_dollars
 from ampel.enum.DocumentCode import DocumentCode
 from ampel.enum.MetaActionCode import MetaActionCode
 from ampel.enum.JournalActionCode import JournalActionCode
@@ -22,9 +20,9 @@ from ampel.content.StockDocument import StockDocument
 from ampel.content.DataPoint import DataPoint
 from ampel.content.T1Document import T1Document
 from ampel.content.T2Document import T2Document
-from ampel.view.T2DocView import T2DocView, TYPE_POINT_T2, TYPE_STOCK_T2, TYPE_STATE_T2
-from ampel.log import AmpelLogger
 from ampel.base.BadConfig import BadConfig
+from ampel.log import AmpelLogger
+from ampel.log.utils import convert_dollars
 from ampel.log.utils import report_exception, report_error
 from ampel.abstract.AbsStockT2Unit import AbsStockT2Unit
 from ampel.abstract.AbsPointT2Unit import AbsPointT2Unit
@@ -38,7 +36,9 @@ from ampel.abstract.AbsTiedCustomStateT2Unit import AbsTiedCustomStateT2Unit, U
 from ampel.abstract.AbsWorker import AbsWorker, register_stats
 from ampel.model.UnitModel import UnitModel
 from ampel.model.StateT2Dependency import StateT2Dependency
+from ampel.mongo.utils import maybe_match_array
 from ampel.mongo.update.MongoStockUpdater import MongoStockUpdater
+from ampel.view.T2DocView import T2DocView, TYPE_POINT_T2, TYPE_STOCK_T2, TYPE_STATE_T2
 
 AbsT2 = Union[
 	AbsStockT2Unit, AbsPointT2Unit, AbsStateT2Unit, AbsTiedPointT2Unit,
@@ -97,6 +97,7 @@ class T2Worker(AbsWorker[T2Document]):
 		stat_count.labels(doc['unit']).inc()
 		self._doc_counter += 1
 		body = None
+		tag = None
 		code = 0
 
 		try:
@@ -119,6 +120,11 @@ class T2Worker(AbsWorker[T2Document]):
 					body = ret.body
 					meta['action'] |= MetaActionCode.ADD_BODY
 					jrec['action'] |= JournalActionCode.T2_ADD_BODY
+
+				if ret.tag:
+					tag = ret.tag
+					meta['action'] |= MetaActionCode.ADD_TAG
+					jrec['action'] |= JournalActionCode.T2_ADD_TAG
 
 				if ret.code:
 					code = ret.code
@@ -151,7 +157,7 @@ class T2Worker(AbsWorker[T2Document]):
 			meta['code'] = code
 			self.commit_update(
 				{'_id': doc['_id']}, # type: ignore[typeddict-item]
-				meta, logger, body=body, code=code
+				meta, logger, body=body, tag=tag, code=code
 			)
 
 			# Update stock document
