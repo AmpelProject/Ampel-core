@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 10.03.2020
-# Last Modified Date: 11.05.2021
+# Last Modified Date: 12.09.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from typing import Any, Dict, List, Union, Optional, Generic
@@ -14,14 +14,8 @@ from ampel.model.UnitModel import UnitModel
 
 class T2Compute(UnitModel[T], Generic[T]):
 
-	##: T2 unit to run
-	#unit: str
-
-	#: T2 unit configuration (hashed)
-	#config: Optional[int]
-
 	#: Ingester options
-	ingest: Optional[Dict[str, Any]]
+	ingest: Optional[Union[str, Dict[str, Any]]]
 
 	#: Filter result codes that should trigger this T2. If not specified, T2
 	#: documents will be created in response to any passing alert.
