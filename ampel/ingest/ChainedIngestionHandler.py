@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 01.05.2020
-# Last Modified Date: 06.09.2021
+# Last Modified Date: 12.09.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from time import time
@@ -421,12 +421,21 @@ class ChainedIngestionHandler:
 				'eligible', {}
 			)
 
-		# TODO: check comment (examples might be outdated)
 		# Ingest options prevalence/priority:
-		# 1) Static class member 'eligible' (ex: T2CatMatch might define: {'eligible': {'select': 'first'}})
-		# 2) Specific ingest config might define: {'ingest': {'select': 'all'}}
+		# 1) Static class member 'eligible' (for example, T2CatMatch might define:
+		#    {'eligible': {"filter": "PPSFilter", "sort": "jd", "select": "first"}})
+		# 2) Specific unit configuration 'ingest' (field defined in T2Compute) might define:
+		#    {'ingest': {"sort": "jd", "select": "first"}}
 		if im.ingest:
-			ingest_opts.update(im.ingest)
+
+			if isinstance(im.ingest, str):
+				if im.ingest not in self.context.config._config['alias']['t2']:
+					raise ValueError(f"Ingest alias {im.ingest} not found")
+				ingest_opts.update(
+					self.context.config._config['alias']['t2'][im.ingest]
+				)
+			else:
+				ingest_opts.update(im.ingest)
 
 		ib = T2Block()
 		ib.unit = im.unit
