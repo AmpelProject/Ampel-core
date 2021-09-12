@@ -29,6 +29,7 @@ from ampel.model.ingest.T2Compute import T2Compute
 from ampel.model.ingest.IngestDirective import IngestDirective
 from ampel.model.ingest.DualIngestDirective import DualIngestDirective
 from ampel.model.ingest.IngestBody import IngestBody
+from ampel.model.ingest.IngestConfigOptions import IngestConfigOptions
 from ampel.core.AmpelContext import AmpelContext
 from ampel.base.LogicalUnit import LogicalUnit
 from ampel.base.AuxUnitRegister import AuxUnitRegister
@@ -421,11 +422,14 @@ class ChainedIngestionHandler:
 				'eligible', {}
 			)
 
-		# Ingest options prevalence/priority:
+		# Ingest options build up (dict.update operation is used):
 		# 1) Static class member 'eligible' (for example, T2CatMatch might define:
 		#    {'eligible': {"filter": "PPSFilter", "sort": "jd", "select": "first"}})
 		# 2) Specific unit configuration 'ingest' (field defined in T2Compute) might define:
-		#    {'ingest': {"sort": "jd", "select": "first"}}
+		#    {'ingest': {"filter": None}}
+		# In which case the first datapoint of the list sorted base of field 'jd' will be selected
+		# Note: that an explicit None is required as ingest options are not hard overridden (dict.update)
+
 		if im.ingest:
 
 			if isinstance(im.ingest, str):
@@ -449,22 +453,25 @@ class ChainedIngestionHandler:
 		# Only for point t2 units (which can customize the ingestion)
 		if ingest_opts:
 
-			ib.filter = AuxUnitRegister.new_unit(
-				UnitModel(unit=ingest_opts['filter']),
-				sub_type=AbsApplicable
-			) if 'filter' in ingest_opts else None
+			iopts = IngestConfigOptions(**ingest_opts)
 
-			if 'sort' in ingest_opts:
-				if ingest_opts['sort'] == 'id':
+			ib.filter = AuxUnitRegister.new_unit(
+				UnitModel(unit=iopts.filter),
+				sub_type=AbsApplicable
+			) if iopts.filter else None
+
+			if iopts.sort:
+				if iopts.sort == 'id':
 					f = lambda k: k['id']
 				else:
-					f = lambda k: k['body'][ingest_opts['sort']]
+					f = lambda k: k['body'][iopts.sort]
 				ib.sort = lambda l: sorted(l, key=f)
 			else:
 				ib.sort = None
 
-			ib.slc = self._get_slice(ingest_opts['select']) \
-				if 'select' in ingest_opts else None
+
+			ib.slc = self._get_slice(iopts.select) if iopts.select is not None else None
+
 		else:
 			ib.filter = None
 			ib.sort = None
@@ -479,7 +486,12 @@ class ChainedIngestionHandler:
 
 
 	def _get_slice(self,
-		arg: Optional[Union[Literal['first'], Literal['last'], Tuple[int, int, int]]]
+		arg: Union[
+			None,
+			Literal['first'],
+			Literal['last'],
+			Tuple[Optional[int], Optional[int], Optional[int]]
+		]
 	) -> slice:
 		"""
 		:raises: ValueError if parameter 'arg' is invalid
@@ -492,7 +504,7 @@ class ChainedIngestionHandler:
 			return slice(1)
 		elif arg == "last":
 			return slice(-1, -2, -1)
-		elif isinstance(arg, list) and len(arg) == 3:
+		elif isinstance(arg, (list, tuple)) and len(arg) == 3:
 			return slice(*arg)
 		else:
 			raise ValueError(
