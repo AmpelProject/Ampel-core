@@ -39,7 +39,7 @@ install_requires = [
 
 extras_require = {
 	'docs': [
-		'Sphinx>=3.5.1,<4.0.0',
+		'Sphinx>=3.5.1,<5.0.0',
 		'sphinx-press-theme>=0.5.1,<0.6.0',
 		'sphinx-autodoc-typehints>=1.11.1,<2.0.0',
 		'tomlkit>=0.7.0,<0.8.0'
