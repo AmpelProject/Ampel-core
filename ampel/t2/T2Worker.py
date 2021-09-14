@@ -38,7 +38,7 @@ from ampel.model.UnitModel import UnitModel
 from ampel.model.StateT2Dependency import StateT2Dependency
 from ampel.mongo.utils import maybe_match_array
 from ampel.mongo.update.MongoStockUpdater import MongoStockUpdater
-from ampel.view.T2DocView import T2DocView, TYPE_POINT_T2, TYPE_STOCK_T2, TYPE_STATE_T2
+from ampel.view.T2DocView import T2DocView
 
 AbsT2 = Union[
 	AbsStockT2Unit, AbsPointT2Unit, AbsStateT2Unit, AbsTiedPointT2Unit,
@@ -381,7 +381,7 @@ class T2Worker(AbsWorker[T2Document]):
 
 					# suppress channel info
 					dep_t2_doc.pop('channel')
-					t2_views.append(self.view_from_doc(dep_t2_doc))
+					t2_views.append(T2DocView.of(dep_t2_doc, self.context.config))
 					processed_ids.append(dep_t2_doc['_id'])
 
 				if len(processed_ids) > 0:
@@ -394,10 +394,10 @@ class T2Worker(AbsWorker[T2Document]):
 			for dep_t2_doc in self.col.find(query):
 				# suppress channel info
 				dep_t2_doc.pop('channel')
-				t2_views.append(self.view_from_doc(dep_t2_doc))
+				t2_views.append(T2DocView.of(dep_t2_doc, self.context.config))
 
 			for view in t2_views:
-				if view.get_data() is None:
+				if view.get_payload() is None:
 					if logger.verbose > 1:
 						logger.debug(
 							'Dependent T2 unit not run yet',
@@ -409,36 +409,6 @@ class T2Worker(AbsWorker[T2Document]):
 			return UnitResult(code=DocumentCode.T2_MISSING_DEPENDENCY)
 
 		return t2_views
-
-
-	def view_from_doc(self, doc: T2Document) -> T2DocView:
-		"""
-		We might want to move this method elsewhere in the future
-		"""
-
-		t2_unit_info = self.context.config.get(f'unit.{doc["unit"]}', dict)
-		if not t2_unit_info:
-			raise ValueError(f'Unknown T2 unit {doc["unit"]}')
-
-		if 'AbsStockT2Unit' in t2_unit_info['base']:
-			t2_type: int = TYPE_STOCK_T2
-		elif 'AbsPointT2Unit' in t2_unit_info['base']:
-			t2_type = TYPE_POINT_T2
-		else: # quick n dirty
-			t2_type = TYPE_STATE_T2
-
-		return T2DocView(
-			stock = doc['stock'],
-			unit = doc['unit'],
-			t2_type = t2_type,
-			link = doc['link'],
-			code = doc['code'],
-			meta = doc['meta'],
-			body = doc.get('body'),
-			created = doc['_id'].generation_time.timestamp(), # type: ignore
-			config = self.context.config.get(f'confid.{doc["config"]}', dict) \
-				if doc['config'] else None
-		)
 
 
 	def build_tied_t2_query(self,
