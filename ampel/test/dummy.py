@@ -89,6 +89,6 @@ class DummyTiedStateT2Unit(AbsTiedStateT2Unit):
     ) -> Union[UBson, UnitResult]:
         assert t2views, "dependencies were found"
         assert len(body := t2views[-1].body or []) == 1
-        data = t2views[-1].get_data() or {}
+        data = t2views[-1].get_payload() or {}
         assert isinstance(data, dict)
         return {k: v * 2 for k, v in data.items()}
