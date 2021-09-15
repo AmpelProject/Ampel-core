@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 15.03.2021
-# Last Modified Date: 15.07.2021
+# Last Modified Date: 15.09.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import yaml, os, signal, sys
@@ -23,6 +23,12 @@ from ampel.util.freeze import recursive_freeze
 from ampel.util.mappings import get_by_path
 from ampel.cli.AbsCoreCommand import AbsCoreCommand
 from ampel.cli.AmpelArgumentParser import AmpelArgumentParser
+
+try:
+	import matplotlib as mpl
+	mpl.use('Agg')
+except Exception:
+	pass
 
 
 class TaskUnitModel(UnitModel):
