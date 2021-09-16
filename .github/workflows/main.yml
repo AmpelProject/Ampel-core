@@ -23,7 +23,7 @@ jobs:
     - name: Install dependencies (with all extras)
       run: |
         python -m pip install --upgrade poetry
-        poetry install $(cat pyproject.toml | awk '/^\s*$/{f=0};f{printf(" -E %s",$1)};/\[tool\.poetry\.extras\]/{f=1}')
+        poetry install $(cat pyproject.toml | awk '/^\s*$/{f=0};f{if ($1!="docs") printf(" -E %s",$1)};/\[tool\.poetry\.extras\]/{f=1}')
     - run: poetry run pytest --cov=ampel
   
   mypy:
@@ -37,7 +37,7 @@ jobs:
     - name: Install dependencies (with all extras)
       run: |
         python -m pip install --upgrade poetry
-        poetry install $(cat pyproject.toml | awk '/^\s*$/{f=0};f{printf(" -E %s",$1)};/\[tool\.poetry\.extras\]/{f=1}')
+        poetry install $(cat pyproject.toml | awk '/^\s*$/{f=0};f{if ($1!="docs") printf(" -E %s",$1)};/\[tool\.poetry\.extras\]/{f=1}')
     - run: poetry run mypy --namespace-packages -p ampel
   
   pypi:
