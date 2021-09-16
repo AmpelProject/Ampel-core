@@ -1,0 +1,3 @@
+{
+  "extends": ["github>AmpelProject/renovate-config"]
+}
