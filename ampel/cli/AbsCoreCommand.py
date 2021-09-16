@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 18.03.2021
-# Last Modified Date: 15.07.2021
+# Last Modified Date: 16.09.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import re
@@ -17,6 +17,8 @@ from ampel.core.UnitLoader import UnitLoader
 from ampel.log.AmpelLogger import AmpelLogger
 from ampel.util.mappings import set_by_path
 from ampel.util.freeze import recursive_freeze
+from ampel.model.operator.AllOf import AllOf
+from ampel.model.operator.AnyOf import AnyOf
 
 custom_conf_patter = re.compile(r"^--[\w-]*(?:\.[\w-]+)*.*$")
 
@@ -92,6 +94,23 @@ class AbsCoreCommand(AbsCLIOperation, abstract=True):
 			loader = UnitLoader(config, db=db, vault=vault),
 			**kwargs
 		)
+
+
+	def convert_logical_args(self, name: str, args: Dict[str, Any]) -> None:
+
+		for k in (f"with_{name}", f"with_{name}s_and", f"with_{name}s_or"):
+			if args.get(k):
+				if name not in args:
+					args[name] = {}
+				args[name]['with'] = args[k]
+				break
+
+		for k in (f"without_{name}", f"without_{name}s_and", f"without_{name}s_or"):
+			if args.get(k):
+				if name not in args:
+					args[name] = {}
+				args[name]['without'] = args[k]
+				break
 
 
 def _maybe_int(stringy):
