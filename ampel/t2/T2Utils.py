@@ -1,15 +1,15 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-core/ampel/db/T2Utils.py
+# File              : Ampel-core/ampel/t2/T2Utils.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 10.03.2021
-# Last Modified Date: 23.03.2021
+# Last Modified Date: 16.09.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from datetime import datetime
 from pymongo.collection import Collection
-from typing import Optional, Any, Iterable, Union, Dict, Literal, Sequence, get_args
+from typing import Optional, Any, Iterable, Union, Dict, Literal, Sequence
 
 from ampel.types import UnitId, Tag, StrictIterable, ChannelId, StockId
 from ampel.abstract.AbsIdMapper import AbsIdMapper
@@ -94,7 +94,12 @@ class T2Utils:
 		match = build_general_query(stock=stock, channel=channel, tag=tag)
 
 		if unit:
-			match['unit'] = unit if isinstance(unit, get_args(UnitId)) else {'$in': unit}
+			if isinstance(unit, (int, str)):
+				match['unit'] = unit
+			elif isinstance(unit, (tuple, list)):
+				match['unit'] = unit[0] if len(unit) == 1 else {'$in': unit}
+			else:
+				raise ValueError(f"Unrecognized 'unit' argument type: {type(unit)}")
 
 		if config:
 			if isinstance(config, str) and config == "null":
