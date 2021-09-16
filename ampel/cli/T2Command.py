@@ -79,6 +79,7 @@ class T2Command(AbsCoreCommand):
 		builder.add_arg('optional', 'secrets', default=None)
 		builder.add_arg('optional', 'id-mapper')
 		builder.add_arg('optional', 'debug', action='count', default=0, help='Debug')
+		builder.add_arg('optional', 'dry-run', action='store_true')
 
 		# Optional match criteria
 		builder.add_group('match', 'Optional T2 documents matching criteria')
@@ -89,8 +90,8 @@ class T2Command(AbsCoreCommand):
 		builder.add_arg('match', 'stock', nargs='+', action=MaybeIntAction)
 		builder.create_logic_args('match', 'run', 'Run id', pos=0, ref='2')
 		builder.create_logic_args('match', 'channel', 'Channel', ref='2')
-		builder.create_logic_args('match', 'with-tag', 'Tag', ref='2')
-		builder.create_logic_args('match', 'without-tag', 'Tag', excl=True, ref='2')
+		builder.create_logic_args('match', 'with-tag', 'Tag', ref='2', json=False)
+		builder.create_logic_args('match', 'without-tag', 'Tag', excl=True, ref='2', json=False)
 		builder.add_arg('match', 'custom-match', metavar='#', action=LoadJSONAction)
 
 		builder.add_group('show|save.format', 'Optional format parameters')
@@ -136,13 +137,23 @@ class T2Command(AbsCoreCommand):
 		col = ctx.db.get_collection('t2', mode='r')
 
 		maybe_convert_stock(args)
+		self.convert_logical_args('tag', args)
 
 		# args['id_mapper'] is used for matching whereas id_mapper is potentially discarded for printing
 		id_mapper = None if args['no_resolve_stock'] else args['id_mapper']
 
 		if sub_op == 'show':
 
-			c = t2_utils.get_t2s(col=col, **args)
+			m = t2_utils.match_t2s(**args)
+			if args.get('dry_run'):
+				logger.info(
+					f"Query: {m}\n"
+					f"Number of matched documents: {col.find(m).count()}\n"
+					f"Exiting (dry-run)"
+				)
+				return
+			else:
+				c = col.find(m)
 
 			if args['resolve_config'] or args['human_times'] or id_mapper:
 				resolve_config = args['resolve_config']
@@ -156,6 +167,10 @@ class T2Command(AbsCoreCommand):
 		elif sub_op == 'save':
 
 			c = t2_utils.get_t2s(col=col, **args)
+			if args.get('dry_run'):
+				logger.info("Exiting (dry-run)")
+				return
+
 			resolve_config = args['resolve_config']
 			human_times = args['human_times']
 			with open(args['out'], 'w') as f:
