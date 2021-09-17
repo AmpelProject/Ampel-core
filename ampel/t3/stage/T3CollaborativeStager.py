@@ -17,7 +17,6 @@ from ampel.util.freeze import recursive_freeze
 from ampel.struct.AmpelBuffer import AmpelBuffer
 from ampel.t3.stage.T3BaseStager import T3BaseStager
 from ampel.t3.stage.BaseViewGenerator import BaseViewGenerator, T3Send
-from ampel.struct.JournalAttributes import JournalAttributes
 from ampel.mongo.update.MongoStockUpdater import MongoStockUpdater
 
 
