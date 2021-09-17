@@ -39,26 +39,102 @@ jobs:
         python -m pip install --upgrade poetry
         poetry install $(cat pyproject.toml | awk '/^\s*$/{f=0};f{if ($1!="docs") printf(" -E %s",$1)};/\[tool\.poetry\.extras\]/{f=1}')
     - run: poetry run mypy --namespace-packages -p ampel
-  
-  pypi:
-    runs-on: ubuntu-latest
-    needs: [test, mypy]
-    if: ${{ github.event_name == 'push' && contains(github.ref, '/tags/v') }}
 
+  check_version:
+    name: Tag version bump
+    runs-on: ubuntu-latest
+    # run only on pushes, not PRs
+    if: ${{ github.event_name == 'push' && github.base_ref == null }}
+    needs: [test, mypy]
+    outputs:
+      should_publish: ${{ steps.check.outputs.result }} 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/setup-node@v2
+      with:
+        node-version: 14
+    - run: npm install toml@3.0.0
+    - name: Ensure tag for version bump
+      id: check
+      uses: actions/github-script@v4
+      with:
+        script: |
+          const toml = require('toml')
+          async function getVersion(ref) {
+            try {
+              response = await github.repos.getContent({
+                repo: context.repo.repo,
+                owner: context.repo.owner,
+                path: 'pyproject.toml',
+                ref: ref
+              });
+              return toml.parse(Buffer.from(response.data.content, 'base64').toString())
+                .tool
+                .poetry
+                .version;
+            } catch (exc) {
+              if (exc instanceof RequestError && exc.status == 404) {
+                return null;
+              } else {
+                throw exc;
+              }
+            }
+          }
+          after = await getVersion(context.payload.after);
+          ref = `refs/tags/v${after}`
+          is_main = context.payload.ref === `refs/heads/${context.payload.repository.default_branch}`
+
+          // a tag matching the version was just pushed
+          let release = context.payload.ref == ref;
+          if (release) {
+            console.log(`Tag v${after} pushed (${context.sha})`);
+          }
+          // the version on the default branch changed; create a tag
+          if (!release && is_main) {
+            before = await getVersion(context.payload.before);
+            if (before !== after) {
+              console.log(`Version bumped: ${before} -> ${after}`);
+              try {
+                await github.git.createRef({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  ref,
+                  sha: context.sha
+                });
+                console.log(`Tag v${after} created (${context.sha})`);
+                release = true;
+              } catch (exc) {
+                // tag already existed
+                if (exc instanceof RequestError && exc.status == 422) {
+                  console.log(`Skipping publish (tag v${after} already exists)`);
+                  release = false;
+                } else {
+                  throw exc;
+                }
+              }
+            } else {
+              console.log(`Skipping publish (version is still ${before})`);
+            }
+          } else if (!is_main) {
+            console.log(`Skipping publish (push to ${context.payload.ref} != refs/heads/${context.payload.repository.default_branch})`);
+          }
+          return release;
+
+  pypi:
+    name: Publish to PyPI
+    runs-on: ubuntu-latest
+    needs: [check_version]
+    # NB: outputs are always strings; explicitly parse to get a boolean
+    if: ${{ fromJSON(needs.check_version.outputs.should_publish) }}
+    
+    steps:
     - uses: actions/setup-python@v2
       with:
         python-version: 3.9
-    - name: Install dependencies
+    - name: Install poetry
       run: |
         python -m pip install --upgrade poetry
-    - id: tag
-      uses: dawidd6/action-get-tag@v1.0.0
-    - name: Verify tag matches version
+    - name: Publish
       run: |
-        [ v"$(poetry version -s)" = "${{steps.tag.outputs.tag}}" ] || (echo "tag does not match version: "${{steps.tag.outputs.tag}}" != version v$(poetry version -s)" && false)
-    - run: |
         poetry config repositories.testpypi https://test.pypi.org/legacy/
         poetry publish -n --build
       env:
