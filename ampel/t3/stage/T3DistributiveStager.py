@@ -4,12 +4,12 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 22.04.2021
-# Last Modified Date: 23.07.2021
+# Last Modified Date: 18.09.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from time import time
-from typing import Optional, List, Generator, Union
 from itertools import cycle
+from typing import Optional, Generator
 from multiprocessing.pool import ThreadPool
 from ampel.struct.AmpelBuffer import AmpelBuffer
 from ampel.content.T3Document import T3Document
@@ -49,7 +49,7 @@ class T3DistributiveStager(T3BaseStager):
 		]
 
 
-	def stage(self, data: Generator[AmpelBuffer, None, None]) -> Optional[Union[T3Document, List[T3Document]]]:
+	def stage(self, data: Generator[AmpelBuffer, None, None]) -> Optional[Generator[T3Document, None, None]]:
 
 		try:
 
@@ -74,7 +74,6 @@ class T3DistributiveStager(T3BaseStager):
 				for q in qs:
 					q.put(None) # type: ignore[arg-type]
 
-				ret: List[T3Document] = []
 				for i, (async_res, generator, t3_unit) in enumerate(zip(async_results, generators, self.t3_units)):
 
 					# potential T3Record to be included in the T3Document
@@ -82,14 +81,10 @@ class T3DistributiveStager(T3BaseStager):
 						if (d := self.handle_t3_result(t3_unit, t3_unit_result, generator.stocks, ts)):
 							if self.save_stock_ids:
 								d['stock'] = generator.stocks
-							ret.append(d)
+							yield d
 
 					self.flush(t3_unit, extra={'thread': i} if self.log_extra else None)
-
-				return ret
 
 		except Exception as e:
 			self.flush(self.t3_units)
 			self.handle_error(e)
-
-		return None

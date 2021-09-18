@@ -4,10 +4,10 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 21.06.2020
-# Last Modified Date: 28.06.2021
+# Last Modified Date: 18.09.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-from typing import Sequence, Generator, Optional, List, Union
+from typing import Optional, Sequence, Generator
 from ampel.types import ChannelId
 from ampel.struct.AmpelBuffer import AmpelBuffer
 from ampel.core.AmpelContext import AmpelContext
@@ -56,5 +56,5 @@ class T3ChannelStager(AbsT3Stager):
 		)
 
 
-	def stage(self, data: Generator[AmpelBuffer, None, None]) -> Optional[Union[T3Document, List[T3Document]]]:
+	def stage(self, data: Generator[AmpelBuffer, None, None]) -> Optional[Generator[T3Document, None, None]]:
 		return self._stager.stage(data)

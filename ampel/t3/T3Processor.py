@@ -160,10 +160,12 @@ class T3Processor(AbsEventUnit):
 				_provenance = False
 			)
 
-			if t3_docs := stager.stage(
-				supplier.supply()
-			):
-				for t3d in t3_docs if isinstance(t3_docs, list) else [t3_docs]:
+			if (t3_docs_gen := stager.stage(supplier.supply())) is not None:
+
+				for t3d in t3_docs_gen:
+
+					if t3d is None:
+						continue
 
 					# 0: no provenance. -1: args not serializable
 					if self._trace_id not in (0, -1):

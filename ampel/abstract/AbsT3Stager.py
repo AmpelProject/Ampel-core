@@ -4,10 +4,10 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 04.01.2020
-# Last Modified Date: 18.04.2021
+# Last Modified Date: 18.09.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-from typing import Union, List, Dict, Any, Optional, Generator
+from typing import Dict, Any, Optional, Generator
 
 from ampel.types import ChannelId
 from ampel.base.AmpelABC import AmpelABC
@@ -44,5 +44,5 @@ class AbsT3Stager(AmpelABC, ContextUnit, abstract=True):
 
 
 	@abstractmethod
-	def stage(self, data: Generator[AmpelBuffer, None, None]) -> Optional[Union[T3Document, List[T3Document]]]:
+	def stage(self, data: Generator[AmpelBuffer, None, None]) -> Optional[Generator[T3Document, None, None]]:
 		""" Process a chunk of AmpelBuffer instances """

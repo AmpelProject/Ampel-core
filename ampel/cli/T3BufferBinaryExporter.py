@@ -4,12 +4,12 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 25.03.2021
-# Last Modified Date: 22.04.2021
+# Last Modified Date: 18.09.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from bson import encode
 from io import BufferedWriter
-from typing import Optional, Union, BinaryIO, Generator, List
+from typing import Optional, Union, BinaryIO, Generator
 
 from ampel.abstract.AbsT3Stager import AbsT3Stager
 from ampel.struct.AmpelBuffer import AmpelBuffer
@@ -30,7 +30,7 @@ class T3BufferBinaryExporter(AbsT3Stager):
 	id_mapper: Optional[AbsIdMapper] = None
 	
 
-	def stage(self, data: Generator[AmpelBuffer, None, None]) -> Optional[Union[T3Document, List[T3Document]]]:
+	def stage(self, data: Generator[AmpelBuffer, None, None]) -> Optional[Generator[T3Document, None, None]]:
 
 		# Shortcuts
 		fd = self.fd
@@ -49,12 +49,4 @@ class T3BufferBinaryExporter(AbsT3Stager):
 			fd.flush()
 			fd.close()
 
-		return None
-
-	# Mandatory
-	def get_tags(self):
-		return None
-
-	# Mandatory
-	def get_codes(self):
 		return None

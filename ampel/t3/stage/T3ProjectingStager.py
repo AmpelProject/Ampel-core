@@ -106,7 +106,7 @@ class T3ProjectingStager(T3BaseStager):
 			self.run_blocks.append(rb)
 
 
-	def stage(self, data: Generator[AmpelBuffer, None, None]) -> Optional[Union[T3Document, List[T3Document]]]:
+	def stage(self, data: Generator[AmpelBuffer, None, None]) -> Optional[Generator[T3Document, None, None]]:
 
 		if len(self.run_blocks) == 1:
 			if len(self.run_blocks[0].units) == 1:
@@ -131,8 +131,6 @@ class T3ProjectingStager(T3BaseStager):
 			return self.multi_bla(data)
 			#for gen in tee(data, len(self.run_blocks)):
 			# pass
-
-		return None
 
 
 	def projected_buffer_generator(self,
@@ -173,7 +171,7 @@ class T3ProjectingStager(T3BaseStager):
 
 
 
-	def multi_bla(self, gen: Generator[AmpelBuffer, None, None]) -> Optional[List[T3Document]]:
+	def multi_bla(self, gen: Generator[AmpelBuffer, None, None]) -> Generator[T3Document, None, None]:
 		"""
 		Handles multi run-blocks, that is multi projection/filters using the same input data
 		"""
@@ -237,24 +235,19 @@ class T3ProjectingStager(T3BaseStager):
 					for q in queues.values():
 						q.put(None) # type: ignore[arg-type]
 
-					ret: List[T3Document] = []
 					for async_res, generator, t3_unit in zip(async_results, generators, all_units):
 
 						# potential T3Record to be included in the T3Document
 						if (t3_unit_result := async_res.get()):
 							if (z := self.handle_t3_result(t3_unit, t3_unit_result, generator.stocks, ts)):
-								ret.append(z)
+								yield z
 
 				for i, rb in enumerate(self.run_blocks):
 					self.flush(rb.units, extra={'directive': i})
 
-				return ret
-
 		except Exception as e:
 			self.flush(all_units)
 			self.handle_error(e)
-
-		return None
 
 
 	def craft_t3_doc(self,

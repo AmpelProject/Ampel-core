@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 17.04.2021
-# Last Modified Date: 23.04.2021
+# Last Modified Date: 18.09.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from time import time
@@ -68,7 +68,7 @@ class T3BaseStager(AbsT3Stager, abstract=True):
 		)
 
 
-	def supply(self, t3_unit: AbsT3Unit, view_generator: BaseViewGenerator[T]) -> Optional[T3Document]:
+	def supply(self, t3_unit: AbsT3Unit, view_generator: BaseViewGenerator[T]) -> Generator[T3Document, None, None]:
 		"""
 		Supplies T3 unit with provided generator of views and handle the result
 		"""
@@ -79,22 +79,19 @@ class T3BaseStager(AbsT3Stager, abstract=True):
 
 			# potential T3Document to be included in the T3Document
 			if (ret := t3_unit.process(view_generator)) or self.save_stock_ids:
-				return self.handle_t3_result(t3_unit, ret, view_generator.get_stock_ids(), ts)
-
-			return None
+				if x := self.handle_t3_result(t3_unit, ret, view_generator.get_stock_ids(), ts):
+					yield x
 
 		except Exception as e:
 			self.handle_error(e)
 		finally:
 			self.flush(t3_unit)
 
-		return None
-
 
 	def multi_supply(self,
 		t3_units: List[AbsT3Unit],
 		buf_gen: Generator[AmpelBuffer, None, None]
-	) -> Optional[List[T3Document]]:
+	) -> Generator[T3Document, None, None]:
 		"""
 		Supplies T3 units with provided views crafted using the provided buffer generator and handle t3 results.
 		Note: code in here is not optimized for compactness but for execution speed
@@ -134,13 +131,12 @@ class T3BaseStager(AbsT3Stager, abstract=True):
 						q.put(None) # type: ignore[arg-type]
 
 					# Collect potential unit results
-					ret: List[T3Document] = []
 					for async_res, generator, t3_unit in zip(async_results, generators, t3_units):
 
 						# potential T3Document to be included in the T3Document
 						if (t3_unit_result := async_res.get()):
 							if (x := self.handle_t3_result(t3_unit, t3_unit_result, generator.stocks, ts)):
-								ret.append(x)
+								yield x
 
 				except RuntimeError as e:
 					if "StopIteration" in str(e):
@@ -148,13 +144,10 @@ class T3BaseStager(AbsT3Stager, abstract=True):
 					raise e
 
 			self.flush(t3_units)
-			return ret
 
 		except Exception as e:
 			self.flush(t3_units)
 			self.handle_error(e)
-
-		return None
 
 
 	def create_threaded_generators(self, pool: ThreadPool, t3_units: List[AbsT3Unit]) -> Tuple[

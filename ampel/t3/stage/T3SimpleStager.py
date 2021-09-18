@@ -4,10 +4,10 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 18.04.2021
-# Last Modified Date: 22.04.2021
+# Last Modified Date: 18.09.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-from typing import Sequence, List, Generator, Optional, Union
+from typing import Optional, Sequence, List, Generator
 from ampel.struct.AmpelBuffer import AmpelBuffer
 from ampel.model.UnitModel import UnitModel
 from ampel.content.T3Document import T3Document
@@ -37,7 +37,7 @@ class T3SimpleStager(T3BaseStager):
 			self.units.append(self.get_unit(exec_def))
 
 
-	def stage(self, data: Generator[AmpelBuffer, None, None]) -> Optional[Union[T3Document, List[T3Document]]]:
+	def stage(self, data: Generator[AmpelBuffer, None, None]) -> Optional[Generator[T3Document, None, None]]:
 
 		if len(self.units) == 1:
 			return self.supply(

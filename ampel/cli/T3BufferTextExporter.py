@@ -4,14 +4,14 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 25.03.2021
-# Last Modified Date: 22.04.2021
+# Last Modified Date: 18.09.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from json import dumps
 from io import TextIOWrapper
 from itertools import islice
 from datetime import datetime
-from typing import Optional, Union, TextIO, Generator, List
+from typing import Optional, Union, TextIO, Generator
 
 from ampel.abstract.AbsT3Stager import AbsT3Stager
 from ampel.abstract.AbsIdMapper import AbsIdMapper
@@ -42,7 +42,7 @@ class T3BufferTextExporter(AbsT3Stager):
 	getch: bool = False
 	
 
-	def stage(self, gen: Generator[AmpelBuffer, None, None]) -> Optional[Union[T3Document, List[T3Document]]]:
+	def stage(self, gen: Generator[AmpelBuffer, None, None]) -> Optional[Generator[T3Document, None, None]]:
 
 		func = prettyjson if self.pretty else dumps
 
@@ -138,11 +138,3 @@ class T3BufferTextExporter(AbsT3Stager):
 			traceback.print_exc()
 			print(ab)
 			sys.exit("Exception occured")
-
-	# Mandatory
-	def get_tags(self):
-		return None
-
-	# Mandatory
-	def get_codes(self):
-		return None

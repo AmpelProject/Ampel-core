@@ -4,11 +4,11 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 22.04.2021
-# Last Modified Date: 23.04.2021
+# Last Modified Date: 18.09.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from time import time
-from typing import Union, List, Dict, Optional, Generator, Sequence, Set, Type, Iterable, Any
+from typing import List, Dict, Generator, Sequence, Set, Type, Iterable, Any
 from ampel.view.SnapView import SnapView
 from ampel.model.UnitModel import UnitModel
 from ampel.content.T3Document import T3Document
@@ -63,10 +63,9 @@ class T3CollaborativeStager(T3BaseStager):
 		]
 
 
-	def stage(self, data: Generator[AmpelBuffer, None, None]) -> Optional[Union[T3Document, List[T3Document]]]:
+	def stage(self, data: Generator[AmpelBuffer, None, None]) -> Generator[T3Document, None, None]:
 		""" Process AmpelBuffer instances """
 
-		res: List[T3Document] = []
 		for t3_unit, views in self.get_views(data).items():
 			gen = SimpleGenerator(t3_unit, views, self.stock_updr)
 			t3_unit.session_info.update(self.session_info) # type: ignore[union-attr]
@@ -80,8 +79,7 @@ class T3CollaborativeStager(T3BaseStager):
 							self.session_info[clsname].append(x['body'])
 					else:
 						self.session_info[clsname] = x['body']
-					res.append(x)
-		return res
+					yield x
 
 
 	def get_views(self, gen: Generator[AmpelBuffer, None, None]) -> Dict[AbsT3Unit, List[SnapView]]:

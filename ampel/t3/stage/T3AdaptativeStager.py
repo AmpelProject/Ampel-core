@@ -11,7 +11,7 @@ from time import time
 from itertools import islice
 from multiprocessing import JoinableQueue
 from multiprocessing.pool import ThreadPool, AsyncResult
-from typing import Dict, Optional, Sequence, Set, List, Generator, Union
+from typing import Dict, Optional, Sequence, Set, List, Generator
 from ampel.types import ChannelId
 from ampel.model.UnitModel import UnitModel
 from ampel.content.T3Document import T3Document
@@ -96,7 +96,7 @@ class T3AdaptativeStager(T3BaseStager):
 		self.async_results: List[AsyncResult] = []
 
 
-	def stage(self, gen: Generator[AmpelBuffer, None, None]) -> Optional[Union[T3Document, List[T3Document]]]:
+	def stage(self, gen: Generator[AmpelBuffer, None, None]) -> Optional[Generator[T3Document, None, None]]:
 
 		ts = time()
 		with ThreadPool(processes=self.nthread) as pool:
@@ -176,19 +176,14 @@ class T3AdaptativeStager(T3BaseStager):
 			for q in self.queues.values():
 				q.put(None) # type: ignore[arg-type]
 
-			ret: List[T3Document] = []
 			for async_res, generator, t3_unit in zip(self.async_results, self.generators, list(self.queues.keys())):
 
 				# potential T3Record to be included in the T3Document
 				if (t3_unit_result := async_res.get()):
 					if (z := self.handle_t3_result(t3_unit, t3_unit_result, generator.stocks, ts)):
-						ret.append(z)
+						yield z
 
 				self.flush(t3_unit)
-
-			return ret
-
-		return None
 
 
 	def filter_channels(self, channels: Set[ChannelId]) -> Set[ChannelId]:
