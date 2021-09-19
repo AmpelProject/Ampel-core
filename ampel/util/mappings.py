@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 07.06.2018
-# Last Modified Date: 17.06.2020
+# Last Modified Date: 19.09.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from typing import Dict, Any, List, Union, Optional, Sequence, \
@@ -290,7 +290,7 @@ def dictify(item):
 	Recursively dictifies input
 	"""
 	if isinstance(item, BaseModel):
-		item = item.dict(exclude_unset=False)
+		return item.dict(exclude_unset=False)
 
 	if isinstance(item, dict):
 		# cast potential dict subclasses into plain old dicts
