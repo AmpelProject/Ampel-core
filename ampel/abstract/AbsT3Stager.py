@@ -42,6 +42,9 @@ class AbsT3Stager(AmpelABC, ContextUnit, abstract=True):
 	#: since there is no real read-only struct in python
 	paranoia: bool = True
 
+	#: If true, value of 'config' (T3Document) should be the config dict rather than its hash
+	resolve_config: bool = False
+
 
 	@abstractmethod
 	def stage(self, data: Generator[AmpelBuffer, None, None]) -> Optional[Generator[T3Document, None, None]]:

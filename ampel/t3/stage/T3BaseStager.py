@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 17.04.2021
-# Last Modified Date: 18.09.2021
+# Last Modified Date: 19.09.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from time import time
@@ -273,10 +273,15 @@ class T3BaseStager(AbsT3Stager, abstract=True):
 		stocks: Optional[List[StockId]] = None
 	) -> T3Document:
 
-		unit_name = t3_unit.__class__.__name__
-		confid = build_unsafe_dict_id(tcd := dictify(t3_unit._trace_content))
-		self.context.db.add_conf_id(confid, tcd)
-		t3d: T3Document = {'unit': unit_name, 'config': confid}
+		t3d: T3Document = {'unit': t3_unit.__class__.__name__}
+		conf = dictify(t3_unit._trace_content)
+
+		if self.resolve_config:
+			t3d['config'] = conf
+		else:
+			confid = build_unsafe_dict_id(conf)
+			self.context.db.add_conf_id(confid, conf)
+			t3d['config'] = confid
 
 		if self.channel:
 			t3d['channel'] = self.channel
