@@ -167,11 +167,11 @@ class T3Processor(AbsEventUnit):
 					if t3d is None:
 						continue
 
-					# 0: no provenance. -1: args not serializable
-					if self._trace_id not in (0, -1):
-						if 'meta' not in t3d:
-							t3d['meta'] = {}
-						t3d['meta']['traceid'] = {'t3processor': self._trace_id}
+					if 'meta' not in t3d:
+						t3d['meta'] = {}
+
+					# Note: null = no provenance, 0 = args not serializable
+					t3d['meta']['traceid'] = {'t3processor': self._trace_id}
 
 					self.context.db \
 						.get_collection('t3') \
