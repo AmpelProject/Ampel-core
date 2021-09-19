@@ -39,14 +39,14 @@
 <span class="c1"># License           : BSD-3-Clause</span>
 <span class="c1"># Author            : vb &lt;vbrinnel@physik.hu-berlin.de&gt;</span>
 <span class="c1"># Date              : 07.10.2019</span>
-<span class="c1"># Last Modified Date: 18.06.2021</span>
+<span class="c1"># Last Modified Date: 19.09.2021</span>
 <span class="c1"># Last Modified By  : vb &lt;vbrinnel@physik.hu-berlin.de&gt;</span>
 
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Optional</span>
 <span class="kn">from</span> <span class="nn">ampel.base.AmpelBaseModel</span> <span class="kn">import</span> <span class="n">AmpelBaseModel</span>
 <span class="kn">from</span> <span class="nn">ampel.core.AmpelContext</span> <span class="kn">import</span> <span class="n">AmpelContext</span>
 <span class="kn">from</span> <span class="nn">ampel.log.AmpelLogger</span> <span class="kn">import</span> <span class="n">AmpelLogger</span>
 <span class="kn">from</span> <span class="nn">ampel.secret.Secret</span> <span class="kn">import</span> <span class="n">Secret</span>
-<span class="kn">from</span> <span class="nn">ampel.util.mappings</span> <span class="kn">import</span> <span class="n">dictify</span>
 
 
 <div class="viewcode-block" id="ContextUnit"><a class="viewcode-back" href="../../../api.html#ampel.core.ContextUnit.ContextUnit">[docs]</a><span class="k">class</span> <span class="nc">ContextUnit</span><span class="p">(</span><span class="n">AmpelBaseModel</span><span class="p">):</span>
@@ -55,10 +55,10 @@
 <span class="sd">	&quot;&quot;&quot;</span>
 
 	<span class="c1">#: Private variable potentially set by UnitLoader for provenance purposes. Either:</span>
-	<span class="c1">#: * 0 if provanance flag is False</span>
-	<span class="c1">#: * -1 in case model content is not serializable</span>
+	<span class="c1">#: * None if provanance flag is False</span>
+	<span class="c1">#: * 0 in case model content is not serializable</span>
 	<span class="c1">#: * any other signed int value</span>
-	<span class="n">_trace_id</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span>
+	<span class="n">_trace_id</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
 
 	<span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">context</span><span class="p">:</span> <span class="n">AmpelContext</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 
@@ -67,10 +67,11 @@
 
 		<span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 
+		<span class="n">d</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__dict__</span>
 		<span class="bp">self</span><span class="o">.</span><span class="n">_trace_content</span> <span class="o">=</span> <span class="p">{</span>
-			<span class="n">k</span><span class="p">:</span> <span class="n">dictify</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
-			<span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__dict__</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
-			<span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="p">(</span><span class="n">Secret</span><span class="p">,</span> <span class="n">AmpelContext</span><span class="p">,</span> <span class="n">AmpelLogger</span><span class="p">))</span>
+			<span class="n">k</span><span class="p">:</span> <span class="n">d</span><span class="p">[</span><span class="n">k</span><span class="p">]</span>
+			<span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">d</span><span class="p">)</span>
+			<span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">d</span><span class="p">[</span><span class="n">k</span><span class="p">],</span> <span class="p">(</span><span class="n">Secret</span><span class="p">,</span> <span class="n">AmpelContext</span><span class="p">,</span> <span class="n">AmpelLogger</span><span class="p">))</span>
 		<span class="p">}</span>
 
 		<span class="bp">self</span><span class="o">.</span><span class="n">context</span> <span class="o">=</span> <span class="n">context</span></div>

@@ -202,11 +202,11 @@
 					<span class="k">if</span> <span class="n">t3d</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
 						<span class="k">continue</span>
 
-					<span class="c1"># 0: no provenance. -1: args not serializable</span>
-					<span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_trace_id</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">):</span>
-						<span class="k">if</span> <span class="s1">&#39;meta&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">t3d</span><span class="p">:</span>
-							<span class="n">t3d</span><span class="p">[</span><span class="s1">&#39;meta&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
-						<span class="n">t3d</span><span class="p">[</span><span class="s1">&#39;meta&#39;</span><span class="p">][</span><span class="s1">&#39;traceid&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;t3processor&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_trace_id</span><span class="p">}</span>
+					<span class="k">if</span> <span class="s1">&#39;meta&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">t3d</span><span class="p">:</span>
+						<span class="n">t3d</span><span class="p">[</span><span class="s1">&#39;meta&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+
+					<span class="c1"># Note: null = no provenance, 0 = args not serializable</span>
+					<span class="n">t3d</span><span class="p">[</span><span class="s1">&#39;meta&#39;</span><span class="p">][</span><span class="s1">&#39;traceid&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;t3processor&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_trace_id</span><span class="p">}</span>
 
 					<span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="o">.</span><span class="n">db</span> \
 						<span class="o">.</span><span class="n">get_collection</span><span class="p">(</span><span class="s1">&#39;t3&#39;</span><span class="p">)</span> \
