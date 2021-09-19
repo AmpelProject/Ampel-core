@@ -159,7 +159,7 @@ class UnitLoader:
 
 		init_config = self.get_init_config(model.config, model.override)
 		unit = Klass(**(init_config | kwargs | (model.secrets or {})))
-		trace_id = 0
+		trace_id = None
 
 		# potentially sync trace_ids with DB (Ampel_ext)
 		if provenance and '_trace_content' in unit.__dict__:
@@ -191,7 +191,7 @@ class UnitLoader:
 
 			# Non-serializable content
 			except Exception:
-				trace_id = -1
+				trace_id = 0
 				# raise e
 
 		unit._trace_id = trace_id # type: ignore[union-attr]
