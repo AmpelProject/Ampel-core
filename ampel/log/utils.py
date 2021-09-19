@@ -4,11 +4,12 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 30.09.2018
-# Last Modified Date: 13.06.2020
+# Last Modified Date: 19.09.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import sys, traceback
 from math import log2
+from datetime import datetime
 from typing import Dict, Optional, Union, Any
 from ampel.core.AmpelDB import AmpelDB
 from ampel.util.collections import has_nested_type
@@ -99,7 +100,10 @@ def report_exception(
 	# Feedback
 	log_exception(logger, exc, info)
 
-	trouble: Dict[str, Any] = {'tier': get_tier_from_logger(logger)}
+	trouble: Dict[str, Any] = {
+		'datetime': datetime.now().strftime('%d/%m/%Y %H:%M:%S'),
+		'tier': get_tier_from_logger(logger)
+	}
 
 	# Logger with db_logging_handler must have a run id
 	if db_logging_handler := logger.get_db_logging_handler():
@@ -140,6 +144,7 @@ def report_error(
 	frame, filename, line_number, function_name, lines, index = inspect.stack()[1]
 
 	trouble: Dict[str, Union[None, int, str]] = {
+		'datetime': datetime.now().strftime('%d/%m/%Y %H:%M:%S'),
 		'tier': get_tier_from_logger(logger),
 		'location': '%s:%s' % (filename, line_number),
 	}
