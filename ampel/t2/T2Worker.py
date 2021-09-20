@@ -103,10 +103,14 @@ class T2Worker(AbsWorker[T2Document]):
 		try:
 
 			# New (channel-less) journal entry for the associated stock document
+			trace_id = (
+				({'t2worker': self._trace_id} if self._trace_id is not None else {})
+				| ({'t2unit': t2_unit._trace_id} if t2_unit._trace_id is not None else {})
+			)
 			jrec = stock_updr.add_journal_record(
 				stock = doc['stock'],
 				doc_id = doc['_id'], # type: ignore
-				trace_id = {'t2worker': self._trace_id, 't2unit': t2_unit._trace_id},
+				trace_id = trace_id or None,
 				unit = doc['unit']
 			)
 
