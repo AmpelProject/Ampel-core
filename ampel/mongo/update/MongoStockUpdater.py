@@ -96,7 +96,7 @@ class MongoStockUpdater:
 		jattrs: Optional[JournalAttributes] = None,
 		tag: Optional[Union[Tag, Sequence[Tag]]] = None,
 		name: Optional[Union[str, Sequence[str]]] = None,
-		trace_id: Optional[Dict[str, int]] = None,
+		trace_id: Optional[Dict[str, Optional[int]]] = None,
 		action_code: Optional[JournalActionCode] = None,
 		doc_id: Optional[ObjectId] = None,
 		unit: Optional[Union[int, str]] = None,

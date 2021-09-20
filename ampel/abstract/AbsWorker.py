@@ -259,7 +259,7 @@ class AbsWorker(Generic[T], AbsEventUnit, abstract=True):
 		self.col.update_one(match, upd)
 
 
-	def gen_meta(self, run_id: int, unit_trace_id: int, duration: Union[int, float]) -> Dict[str, Any]:
+	def gen_meta(self, run_id: int, unit_trace_id: Optional[int], duration: Union[int, float]) -> Dict[str, Any]:
 		return {
 			'run': run_id,
 			'ts': int(time()),
