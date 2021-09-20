@@ -65,13 +65,13 @@ class T1ComputeBlock:
 	unit: Optional[AbsT1ComputeUnit]
 	unit_name: Optional[UnitId]
 	config: Optional[int]
-	trace_id: int
+	trace_id: Optional[int]
 
 
 class T1CombineBlock:
 	__slots__ = 'unit', 'trace_id', 'compute', 'channel', 'group', 'state_t2', 'point_t2'
 	unit: Union[AbsT1CombineUnit, AbsT1RetroCombineUnit]
-	trace_id: int
+	trace_id: Optional[int]
 	compute: T1ComputeBlock
 	channel: ChannelId
 	group: Optional[List[int]]
@@ -83,7 +83,7 @@ class T0MuxBlock:
 	__slots__ = 'unit', 'config', 'trace_id', 'combine', 'point_t2'
 	unit: AbsT0Muxer
 	config: Optional[int]
-	trace_id: int
+	trace_id: Optional[int]
 	combine: Optional[List[T1CombineBlock]]  # mux.combine
 	point_t2: Optional[List[T2Block]] # mux.insert.point_t2
 
@@ -121,7 +121,7 @@ class ChainedIngestionHandler:
 		directives: Sequence[Union[IngestDirective, DualIngestDirective]],
 		updates_buffer: DBUpdatesBuffer,
 		run_id: int,
-		trace_id: Dict[str, int],
+		trace_id: Dict[str, Optional[int]],
 		tier: Literal[-1, 0, 1, 2, 3],
 		compiler_opts: CompilerOptions,
 		logger: AmpelLogger,

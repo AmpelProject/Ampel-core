@@ -7,7 +7,7 @@
 # Last Modified Date: 11.05.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-from typing import Dict, List, Set, Union, Tuple, Any
+from typing import Dict, List, Optional, Set, Union, Tuple, Any
 from ampel.content.MetaRecord import MetaRecord
 from ampel.types import ChannelId, DataPointId
 from ampel.content.DataPoint import DataPoint
@@ -23,14 +23,14 @@ class T0Compiler(AbsCompiler):
 
 	def __init__(self, **kwargs) -> None:
 		super().__init__(**kwargs)
-		self.register: Dict[int, List[Tuple[Set[ChannelId], List[DataPoint]]]] = {}
+		self.register: Dict[Optional[int], List[Tuple[Set[ChannelId], List[DataPoint]]]] = {}
 
 
 	# Override
 	def add(self, # type: ignore[override]
 		dps: List[DataPoint],
 		channel: ChannelId,
-		trace_id: int
+		trace_id: Optional[int]
 	) -> None:
 
 		if trace_id not in self.register:
