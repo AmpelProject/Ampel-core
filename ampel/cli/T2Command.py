@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 16.03.2021
-# Last Modified Date: 23.03.2021
+# Last Modified Date: 22.09.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from datetime import datetime
@@ -34,6 +34,7 @@ hlp = {
 	"secrets": "Path to a YAML secrets store in sops format",
 	'out': 'Path to file were output will be written (printed to stdout otherwise)',
 	"unit": "Unit id/name",
+	"limit": "Limit number of returned documents",
 	"unit-config": "Unit config (integer number). Use string 'null' to match null",
 	"code": "T2 code (0: COMPLETED, -1: NEW)",
 	"link": "T2 document link (hex)",
@@ -80,6 +81,7 @@ class T2Command(AbsCoreCommand):
 		builder.add_arg('optional', 'id-mapper')
 		builder.add_arg('optional', 'debug', action='count', default=0, help='Debug')
 		builder.add_arg('optional', 'dry-run', action='store_true')
+		builder.add_arg('optional', 'limit', action='store_true')
 
 		# Optional match criteria
 		builder.add_group('match', 'Optional T2 documents matching criteria')
@@ -145,15 +147,17 @@ class T2Command(AbsCoreCommand):
 		if sub_op == 'show':
 
 			m = t2_utils.match_t2s(**args)
+			limit = args.get('limit', False)
 			if args.get('dry_run'):
+				c = col.find(m).count().limit(limit) if limit else col.find(m).count()
 				logger.info(
 					f"Query: {m}\n"
-					f"Number of matched documents: {col.find(m).count()}\n"
+					f"Number of matched documents: {c}\n"
 					f"Exiting (dry-run)"
 				)
 				return
 			else:
-				c = col.find(m)
+				c = col.find(m).limit(limit) if limit else col.find(m)
 
 			if args['resolve_config'] or args['human_times'] or id_mapper:
 				resolve_config = args['resolve_config']
