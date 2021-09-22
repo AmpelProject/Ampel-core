@@ -17,8 +17,6 @@ from ampel.core.UnitLoader import UnitLoader
 from ampel.log.AmpelLogger import AmpelLogger
 from ampel.util.mappings import set_by_path
 from ampel.util.freeze import recursive_freeze
-from ampel.model.operator.AllOf import AllOf
-from ampel.model.operator.AnyOf import AnyOf
 
 custom_conf_patter = re.compile(r"^--[\w-]*(?:\.[\w-]+)*.*$")
 

@@ -13,7 +13,6 @@ from typing import Any, Dict, Iterable, Mapping, Optional, TextIO
 from argparse import ArgumentParser, ArgumentTypeError, FileType, Namespace
 
 from ampel.base.BadConfig import BadConfig
-from ampel.config.AmpelConfig import AmpelConfig
 from ampel.config.builder.DistConfigBuilder import DistConfigBuilder
 from ampel.log.utils import log_exception
 from ampel.core.AmpelContext import AmpelContext
