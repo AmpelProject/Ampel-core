@@ -137,7 +137,11 @@ class T2Worker(AbsWorker[T2Document]):
 
 				# TODO: check that unit did not use system reserved code
 				if code != 0 and code in DocumentCode.__members__.values():
-					logger.info(f'T2 unit {t2_unit.__class__.__name__} returned document code: {code} ({DocumentCode(code).name})')
+					logger.info(
+						f'T2 unit {t2_unit.__class__.__name__} returned document '
+						f'code: {code} ({DocumentCode(code).name})',
+						extra={'unit': doc['unit'], 'stock': doc['stock']}
+					)
 
 				if ret.journal:
 					jrec.update(ret.journal) # type: ignore
@@ -251,7 +255,10 @@ class T2Worker(AbsWorker[T2Document]):
 
 			if len(dps) != len(t1_dps_ids):
 				for el in (set(t1_dps_ids) - {el['id'] for el in dps}):
-					logger.error(f'Datapoint {el} referenced in compound not found')
+					logger.error(
+						f'Datapoint {el} referenced in compound not found',
+						extra={'unit': t2_doc['unit'], 'stock': t2_doc['stock']}
+					)
 				return None
 
 			for dp in dps:
@@ -279,7 +286,10 @@ class T2Worker(AbsWorker[T2Document]):
 									tied_model.link_override, t1_doc, dps
 								)
 							if logger.verbose > 1:
-								logger.debug(f"get_link() value: {d['link']}")
+								logger.debug(
+									f"get_link() value: {d['link']}",
+									extra={'unit': t2_doc['unit'], 'stock': t2_doc['stock']}
+								)
 						else:
 							d['link'] = maybe_match_array(t1_dps_ids)
 
@@ -373,8 +383,11 @@ class T2Worker(AbsWorker[T2Document]):
 					)
 				):
 
-					#if logger.verbose > 1:
-					logger.debug('Processing tied t2 docs', extra={'unit': dep_t2_doc['unit']})
+					if logger.verbose > 1:
+						logger.debug(
+							'Processing tied t2 docs',
+							extra={'unit': dep_t2_doc['unit'], 'stock': dep_t2_doc['stock']}
+						)
 
 					if not dep_t2_doc.get('body'):
 						dep_t2_doc['body'] = []
@@ -392,7 +405,14 @@ class T2Worker(AbsWorker[T2Document]):
 					query['_id'] = {'$nin': processed_ids}
 
 			if logger.verbose > 1:
-				logger.debug('Running tied t2 query', extra={'query': convert_dollars(query)})
+				logger.debug(
+					'Running tied t2 query',
+					extra={
+						'unit': dep_t2_doc['unit'],
+						'stock': dep_t2_doc['stock'],
+						'query': convert_dollars(query)
+					}
+				)
 
 			# collect dependencies
 			for dep_t2_doc in self.col.find(query):
@@ -405,7 +425,11 @@ class T2Worker(AbsWorker[T2Document]):
 					if logger.verbose > 1:
 						logger.debug(
 							'Dependent T2 unit not run yet',
-							extra={'t2_oid': t2_doc['_id']} # type: ignore
+							extra={
+								'unit': dep_t2_doc['unit'],
+								'stock': dep_t2_doc['stock'],
+								't2_oid': t2_doc['_id'] # type: ignore[typeddict-item] # implicit mongodb dependency here
+							}
 						)
 					return UnitResult(code=DocumentCode.T2_PENDING_DEPENDENCY)
 
@@ -502,7 +526,7 @@ class T2Worker(AbsWorker[T2Document]):
 
 			if t2_unit._buf_hdlr.buffer: # type: ignore[union-attr]
 				t2_unit._buf_hdlr.forward( # type: ignore[union-attr]
-					logger, stock=t2_doc['stock'], channel=t2_doc['channel']
+					logger, stock=t2_doc['stock']
 				)
 
 			return ret
