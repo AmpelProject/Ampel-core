@@ -408,8 +408,8 @@ class T2Worker(AbsWorker[T2Document]):
 				logger.debug(
 					'Running tied t2 query',
 					extra={
-						'unit': dep_t2_doc['unit'],
-						'stock': dep_t2_doc['stock'],
+						'unit': t2_doc['unit'],
+						'stock': t2_doc['stock'],
 						'query': convert_dollars(query)
 					}
 				)
