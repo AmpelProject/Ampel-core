@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 01.05.2020
-# Last Modified Date: 12.09.2021
+# Last Modified Date: 28.09.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from time import time
@@ -29,7 +29,7 @@ from ampel.model.ingest.T2Compute import T2Compute
 from ampel.model.ingest.IngestDirective import IngestDirective
 from ampel.model.ingest.DualIngestDirective import DualIngestDirective
 from ampel.model.ingest.IngestBody import IngestBody
-from ampel.model.ingest.IngestConfigOptions import IngestConfigOptions
+from ampel.model.DPSelection import DPSelection
 from ampel.core.AmpelContext import AmpelContext
 from ampel.base.LogicalUnit import LogicalUnit
 from ampel.base.AuxUnitRegister import AuxUnitRegister
@@ -419,12 +419,12 @@ class ChainedIngestionHandler:
 		if 'fqn' in t2_info:
 			ingest_opts = getattr(
 				self.context.loader.get_class_by_name(name=im.unit, unit_type=LogicalUnit),
-				'eligible', {}
-			)
+				'eligible', DPSelection()
+			).dict()
 
 		# Ingest options build up (dict.update operation is used):
 		# 1) Static class member 'eligible' (for example, T2CatMatch might define:
-		#    {'eligible': {"filter": "PPSFilter", "sort": "jd", "select": "first"}})
+		#    eligible: ClassVar[DPSelection] = DPSelection(filter="PPSFilter", sort="jd", select="first")
 		# 2) Specific unit configuration 'ingest' (field defined in T2Compute) might define:
 		#    {'ingest': {"filter": None}}
 		# In which case the first datapoint of the list sorted base of field 'jd' will be selected
@@ -438,8 +438,8 @@ class ChainedIngestionHandler:
 				ingest_opts.update(
 					self.context.config._config['alias']['t2'][im.ingest]
 				)
-			else:
-				ingest_opts.update(im.ingest)
+			else: # StrictModel
+				ingest_opts.update(im.ingest.dict())
 
 		ib = T2Block()
 		ib.unit = im.unit
@@ -453,24 +453,23 @@ class ChainedIngestionHandler:
 		# Only for point t2 units (which can customize the ingestion)
 		if ingest_opts:
 
-			iopts = IngestConfigOptions(**ingest_opts)
+			dp_sel = DPSelection(**ingest_opts)
 
 			ib.filter = AuxUnitRegister.new_unit(
-				UnitModel(unit=iopts.filter),
+				UnitModel(unit=dp_sel.filter),
 				sub_type=AbsApplicable
-			) if iopts.filter else None
+			) if dp_sel.filter else None
 
-			if iopts.sort:
-				if iopts.sort == 'id':
+			if dp_sel.sort:
+				if dp_sel.sort == 'id':
 					f = lambda k: k['id']
 				else:
-					f = lambda k: k['body'][iopts.sort]
+					f = lambda k: k['body'][dp_sel.sort]
 				ib.sort = lambda l: sorted(l, key=f)
 			else:
 				ib.sort = None
 
-
-			ib.slc = self._get_slice(iopts.select) if iopts.select is not None else None
+			ib.slc = self._get_slice(dp_sel.select) if dp_sel.select is not None else None
 
 		else:
 			ib.filter = None
