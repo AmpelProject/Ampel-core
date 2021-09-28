@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 24.05.2019
-# Last Modified Date: 05.09.2021
+# Last Modified Date: 28.09.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from time import time
@@ -60,7 +60,7 @@ class T2Worker(AbsWorker[T2Document]):
 
 	#: process only those :class:`T2 documents <ampel.content.T2Document.T2Document>`
 	#: with the given :attr:`~ampel.content.T2Document.T2Document.code`
-	codes: Union[DocumentCode, Sequence[DocumentCode]] = [
+	code_match: Union[DocumentCode, Sequence[DocumentCode]] = [
 		DocumentCode.NEW,
 		DocumentCode.RERUN_REQUESTED,
 		DocumentCode.T2_NEW_PRIO,
@@ -240,6 +240,8 @@ class T2Worker(AbsWorker[T2Document]):
 			t1_doc.pop('channel')
 
 			t1_dps_ids = list(t1_doc['dps'])
+
+			# Sort DPS from DB in the same order than referenced by 'dps' from t1 doc
 			dps = sorted(
 				self.col_t0.find({'id': {'$in': t1_dps_ids}}),
 				key = lambda dp: t1_dps_ids.index(dp['id'])
@@ -279,15 +281,26 @@ class T2Worker(AbsWorker[T2Document]):
 					if d['link'] is None:
 
 						if isinstance(tied_model, StateT2Dependency) and tied_model.link_override:
-							if isinstance(t2_unit, AbsTiedCustomStateT2Unit):
-								d['link'] = t2_unit.get_link(tied_model.link_override, custom_state)
-							else:
-								d['link'] = t2_unit.get_link( # type: ignore[union-attr] # mypy forgot the first 'if' of this method
-									tied_model.link_override, t1_doc, dps
-								)
+
+							filtr, sort, slc = tied_model.link_override.tools()
+							l = dps
+
+							if filtr:
+								l = filtr.apply(l)
+
+							# Sort (ex: by body.jd)
+							if sort:
+								l = sort(l)
+
+							# Slice (ex: first datapoint)
+							if slc:
+								l = l[slc]
+
+							d['link'] = maybe_match_array([el['id'] for el in l])
+
 							if logger.verbose > 1:
 								logger.debug(
-									f"get_link() value: {d['link']}",
+									f"link_override resulting matching criteria: {d['link']}",
 									extra={'unit': t2_doc['unit'], 'stock': t2_doc['stock']}
 								)
 						else:
@@ -378,7 +391,10 @@ class T2Worker(AbsWorker[T2Document]):
 				# run pending dependencies
 				while (
 					dep_t2_doc := self.col.find_one_and_update(
-						{'code': maybe_match_array(self.code_match)} | query, # type: ignore[arg-type]
+						{
+							'code': self.code_match if isinstance(self.code_match, DocumentCode)
+							else maybe_match_array(self.code_match) # type: ignore[arg-type]
+						} | query,
 						{'$set': {'code': DocumentCode.RUNNING}}
 					)
 				):
