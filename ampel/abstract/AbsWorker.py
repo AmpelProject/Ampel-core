@@ -77,7 +77,10 @@ class AbsWorker(Generic[T], AbsEventUnit, abstract=True):
 		self._loader = self.context.loader
 
 		# Prepare DB query dict
-		self.query: Dict[str, Any] = {'code': maybe_match_array(self.code_match)} # type: ignore[arg-type]
+		self.query: Dict[str, Any] = {
+			'code': self.code_match if isinstance(self.code_match, DocumentCode)
+			else maybe_match_array(self.code_match) # type: ignore[arg-type]
+		}
 
 		# Possibly restrict query to specified t2 units
 		if self.unit_ids:
