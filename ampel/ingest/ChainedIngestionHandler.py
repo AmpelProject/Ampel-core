@@ -48,7 +48,6 @@ from ampel.log import AmpelLogger
 from ampel.log.LogFlag import LogFlag
 from ampel.log.handlers.DefaultRecordBufferingHandler import DefaultRecordBufferingHandler
 from ampel.util.hash import build_unsafe_dict_id
-from ampel.util.collections import get_slice
 
 
 class T2Block:
