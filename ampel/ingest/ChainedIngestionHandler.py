@@ -48,6 +48,7 @@ from ampel.log import AmpelLogger
 from ampel.log.LogFlag import LogFlag
 from ampel.log.handlers.DefaultRecordBufferingHandler import DefaultRecordBufferingHandler
 from ampel.util.hash import build_unsafe_dict_id
+from ampel.util.collections import get_slice
 
 
 class T2Block:
@@ -452,29 +453,9 @@ class ChainedIngestionHandler:
 
 		# Only for point t2 units (which can customize the ingestion)
 		if ingest_opts:
-
-			dp_sel = DPSelection(**ingest_opts)
-
-			ib.filter = AuxUnitRegister.new_unit(
-				UnitModel(unit=dp_sel.filter),
-				sub_type=AbsApplicable
-			) if dp_sel.filter else None
-
-			if dp_sel.sort:
-				if dp_sel.sort == 'id':
-					f = lambda k: k['id']
-				else:
-					f = lambda k: k['body'][dp_sel.sort]
-				ib.sort = lambda l: sorted(l, key=f)
-			else:
-				ib.sort = None
-
-			ib.slc = self._get_slice(dp_sel.select) if dp_sel.select is not None else None
-
+			ib.filter, ib.sort, ib.slc = DPSelection(**ingest_opts).tools()
 		else:
-			ib.filter = None
-			ib.sort = None
-			ib.slc = None
+			ib.filter = ib.sort = ib.slc = None
 
 		if im.group:
 			ib.group = [im.group] if isinstance(im.group, int) else im.group
@@ -482,33 +463,6 @@ class ChainedIngestionHandler:
 			ib.group = None
 
 		return ib
-
-
-	def _get_slice(self,
-		arg: Union[
-			None,
-			Literal['first'],
-			Literal['last'],
-			Tuple[Optional[int], Optional[int], Optional[int]]
-		]
-	) -> slice:
-		"""
-		:raises: ValueError if parameter 'arg' is invalid
-		"""
-		if arg is None:
-			return slice(None)
-		elif arg == "all":
-			return slice(None)
-		elif arg == "first":
-			return slice(1)
-		elif arg == "last":
-			return slice(-1, -2, -1)
-		elif isinstance(arg, (list, tuple)) and len(arg) == 3:
-			return slice(*arg)
-		else:
-			raise ValueError(
-				f"Unsupported value provided as slice parameter : {arg}"
-			)
 
 
 	def ingest(self,
