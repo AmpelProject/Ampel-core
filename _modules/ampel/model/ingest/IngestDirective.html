@@ -5,7 +5,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>ampel.model.time.TimeStringModel &#8212; ampel-core 0.8.0-alpha.11 documentation</title>
+    <title>ampel.model.ingest.IngestDirective &#8212; ampel-core 0.8.0-alpha.11 documentation</title>
     <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css" />
     <link rel="stylesheet" type="text/css" href="../../../../_static/sphinxdoc.css" />
     <script data-url_root="../../../../" id="documentation_options" src="../../../../_static/documentation_options.js"></script>
@@ -23,7 +23,7 @@
              accesskey="I">index</a></li>
         <li class="nav-item nav-item-0"><a href="../../../../index.html">ampel-core 0.8.0-alpha.11 documentation</a> &#187;</li>
           <li class="nav-item nav-item-1"><a href="../../../index.html" accesskey="U">Module code</a> &#187;</li>
-        <li class="nav-item nav-item-this"><a href="">ampel.model.time.TimeStringModel</a></li> 
+        <li class="nav-item nav-item-this"><a href="">ampel.model.ingest.IngestDirective</a></li> 
       </ul>
     </div>  
 
@@ -32,32 +32,48 @@
         <div class="bodywrapper">
           <div class="body" role="main">
             
-  <h1>Source code for ampel.model.time.TimeStringModel</h1><div class="highlight"><pre>
+  <h1>Source code for ampel.model.ingest.IngestDirective</h1><div class="highlight"><pre>
 <span></span><span class="ch">#!/usr/bin/env python</span>
 <span class="c1"># -*- coding: utf-8 -*-</span>
-<span class="c1"># File              : Ampel-core/ampel/model/time/TimeStringModel.py</span>
+<span class="c1"># File              : Ampel-core/ampel/model/ingest/IngestDirective.py</span>
 <span class="c1"># License           : BSD-3-Clause</span>
 <span class="c1"># Author            : vb &lt;vbrinnel@physik.hu-berlin.de&gt;</span>
-<span class="c1"># Date              : 29.09.2018</span>
-<span class="c1"># Last Modified Date: 06.06.2020</span>
+<span class="c1"># Date              : 20.05.2021</span>
+<span class="c1"># Last Modified Date: 20.05.2021</span>
 <span class="c1"># Last Modified By  : vb &lt;vbrinnel@physik.hu-berlin.de&gt;</span>
 
-<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Literal</span>
-<span class="kn">from</span> <span class="nn">datetime</span> <span class="kn">import</span> <span class="n">datetime</span>
-<span class="kn">from</span> <span class="nn">pydantic</span> <span class="kn">import</span> <span class="n">BaseModel</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Optional</span>
+<span class="kn">from</span> <span class="nn">ampel.types</span> <span class="kn">import</span> <span class="n">ChannelId</span>
+<span class="kn">from</span> <span class="nn">ampel.model.StrictModel</span> <span class="kn">import</span> <span class="n">StrictModel</span>
+<span class="kn">from</span> <span class="nn">ampel.model.ingest.IngestBody</span> <span class="kn">import</span> <span class="n">IngestBody</span>
+<span class="kn">from</span> <span class="nn">ampel.model.ingest.FilterModel</span> <span class="kn">import</span> <span class="n">FilterModel</span>
 
 
-<div class="viewcode-block" id="TimeStringModel"><a class="viewcode-back" href="../../../../api.html#ampel.model.time.TimeStringModel.TimeStringModel">[docs]</a><span class="k">class</span> <span class="nc">TimeStringModel</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+<div class="viewcode-block" id="IngestDirective"><a class="viewcode-back" href="../../../../api.html#ampel.model.ingest.IngestDirective.IngestDirective">[docs]</a><span class="k">class</span> <span class="nc">IngestDirective</span><span class="p">(</span><span class="n">StrictModel</span><span class="p">):</span>
+	<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    channel</span>
+<span class="sd">    filter</span>
+<span class="sd">    ingest</span>
+<span class="sd">      stock_t2</span>
+<span class="sd">      point_t2        &lt;- based on input dps list</span>
+<span class="sd">      combine         &lt;- same</span>
+<span class="sd">        state_t2      &lt;- based on dps list returned by combine</span>
+<span class="sd">        point_t2      &lt;- same</span>
+<span class="sd">      mux             &lt;- based on input dps list</span>
+<span class="sd">        insert</span>
+<span class="sd">          point_t2    &lt;- based on &lt;datapoints insert&gt; result from muxer (first list)</span>
+<span class="sd">        combine</span>
+<span class="sd">          state_t2    &lt;- based on &lt;datapoints combine&gt; result from muxer (second list)</span>
+<span class="sd">          point_t2    &lt;- same</span>
+<span class="sd">	&quot;&quot;&quot;</span>
 
-	<span class="n">match_type</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s1">&#39;time_string&#39;</span><span class="p">]</span>
-	<span class="n">dateTimeStr</span><span class="p">:</span> <span class="nb">str</span>
-	<span class="n">dateTimeFormat</span><span class="p">:</span> <span class="nb">str</span>
+	<span class="c1">#: Channel for which to create documents</span>
+	<span class="n">channel</span><span class="p">:</span> <span class="n">ChannelId</span>
 
-<div class="viewcode-block" id="TimeStringModel.get_timestamp"><a class="viewcode-back" href="../../../../api.html#ampel.model.time.TimeStringModel.TimeStringModel.get_timestamp">[docs]</a>	<span class="k">def</span> <span class="nf">get_timestamp</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+	<span class="c1">#: Potientially filter input datapoints</span>
+	<span class="nb">filter</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">FilterModel</span><span class="p">]</span>
 
-		<span class="k">return</span> <span class="n">datetime</span> \
-			<span class="o">.</span><span class="n">strptime</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dateTimeStr</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">dateTimeFormat</span><span class="p">)</span> \
-			<span class="o">.</span><span class="n">timestamp</span><span class="p">()</span></div></div>
+	<span class="n">ingest</span><span class="p">:</span> <span class="n">IngestBody</span> <span class="o">=</span> <span class="n">IngestBody</span><span class="p">()</span></div>
 </pre></div>
 
             <div class="clearer"></div>
@@ -91,7 +107,7 @@
              >index</a></li>
         <li class="nav-item nav-item-0"><a href="../../../../index.html">ampel-core 0.8.0-alpha.11 documentation</a> &#187;</li>
           <li class="nav-item nav-item-1"><a href="../../../index.html" >Module code</a> &#187;</li>
-        <li class="nav-item nav-item-this"><a href="">ampel.model.time.TimeStringModel</a></li> 
+        <li class="nav-item nav-item-this"><a href="">ampel.model.ingest.IngestDirective</a></li> 
       </ul>
     </div>
     <div class="footer" role="contentinfo">
