@@ -952,7 +952,7 @@ server = ["fastapi", "uvicorn"]
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.9,<3.10"
-content-hash = "a91de078be947028f4f94c2f3a9486d7145b8e90474043e86f31bd6b9fd377de"
+content-hash = "41f81c94abebdd619926acce56aa6a4acb1477095a8e611e770d345f8cd5101c"
 
 [metadata.files]
 aiohttp = [
