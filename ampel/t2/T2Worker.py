@@ -127,7 +127,7 @@ class T2Worker(AbsWorker[T2Document]):
 
 				if ret.tag:
 					tag = ret.tag
-					meta['action'] |= MetaActionCode.ADD_TAG
+					meta['action'] |= MetaActionCode.ADD_UNIT_TAG
 					jrec['action'] |= JournalActionCode.T2_ADD_TAG
 
 				if ret.code:
