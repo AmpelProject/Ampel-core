@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 01.01.2018
-# Last Modified Date: 06.09.2021
+# Last Modified Date: 02.10.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import xxhash
@@ -162,7 +162,7 @@ class T1Compiler(AbsCompiler):
 				}
 
 				if self._tag:
-					entry['action'] |= MetaActionCode.ADD_TAG
+					entry['action'] |= MetaActionCode.ADD_INGEST_TAG
 					entry['tag'] = try_reduce(self._tag)
 
 				if x := decode(k2):
