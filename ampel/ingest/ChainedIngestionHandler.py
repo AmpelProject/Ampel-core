@@ -9,7 +9,7 @@
 
 from time import time
 from typing import Literal, Sequence, List, Dict, Union, Tuple, Optional, Any, Set, Callable
-from ampel.types import StockId, ChannelId, UnitId, DataPointId, UBson
+from ampel.types import StockId, ChannelId, UnitId, DataPointId, UBson, Tag
 from ampel.abstract.AbsT0Muxer import AbsT0Muxer
 from ampel.abstract.AbsDocIngester import AbsDocIngester
 from ampel.abstract.AbsApplicable import AbsApplicable
@@ -468,6 +468,7 @@ class ChainedIngestionHandler:
 		dps: List[DataPoint],
 		filter_results: List[Tuple[int, Union[bool, int]]],
 		stock_id = 0,
+		tag: Optional[Union[Tag, List[Tag]]] = None,
 		extra: Optional[Dict[str, Any]] = None,
 	) -> None:
 		"""
@@ -542,11 +543,14 @@ class ChainedIngestionHandler:
 
 					if mux.point_t2:
 						jentry['action'] |= JournalActionCode.T2_ADD_CHANNEL
-						self.ingest_point_t2s(dps_insert, fres, stock_id, ib.channel, mux.point_t2)
+						self.ingest_point_t2s(dps_insert, fres, stock_id, ib.channel, mux.point_t2, tag)
 
 				# Muxed T1 and associated T2 ingestions
 				if dps_combine and mux.combine:
-					self.ingest_t12(dps_combine, fres, stock_id, jentry, mux.combine, t1_comb_cache, t1_comp_cache)
+					self.ingest_t12(
+						dps_combine, fres, stock_id, jentry, mux.combine,
+						t1_comb_cache, t1_comp_cache, tag
+					)
 
 			else:
 				self.t0_compiler.add(dps, ib.channel, self.shaper_trace_id)
@@ -557,13 +561,14 @@ class ChainedIngestionHandler:
 				
 			# Non-muxed point T2s
 			if ib.point_t2:
-				self.ingest_point_t2s(dps, fres, stock_id, ib.channel, ib.point_t2)
+				self.ingest_point_t2s(dps, fres, stock_id, ib.channel, ib.point_t2, tag)
 
 			# Stock T2s
 			if ib.stock_t2:
 				for t2b in ib.stock_t2:
 					self.stock_t2_compiler.add(
-						t2b.unit, t2b.config, stock_id, stock_id, ib.channel, {'traceid': self.base_trace_id}
+						t2b.unit, t2b.config, stock_id, stock_id, ib.channel,
+						self.base_trace_id, tag
 					)
 
 			# Flush potential unit logs
@@ -583,7 +588,7 @@ class ChainedIngestionHandler:
 					)
 
 			if not self.stock_compiler.register:
-				self.stock_compiler.add(stock_id, ib.channel, journal=jentry) # type: ignore[arg-type]
+				self.stock_compiler.add(stock_id, ib.channel, journal=jentry, tag=tag) # type: ignore[arg-type]
 
 		# Commit
 		########
@@ -608,8 +613,11 @@ class ChainedIngestionHandler:
 
 
 	def ingest_point_t2s(self,
-		dps: List[DataPoint], fres: Union[bool, int],
-		stock_id: StockId, channel: ChannelId, state_t2: List[T2Block]
+		dps: List[DataPoint],
+		fres: Union[bool, int],
+		stock_id: StockId,
+		channel: ChannelId, state_t2: List[T2Block],
+		tag: Optional[Union[Tag, List[Tag]]] = None
 	) -> None:
 
 		for t2b in state_t2:
@@ -632,18 +640,21 @@ class ChainedIngestionHandler:
 			if isinstance(f, list):
 				for el in f:
 					self.point_t2_compiler.add(
-						t2b.unit, t2b.config, stock_id, el['id'], channel, {'traceid': self.base_trace_id}
+						t2b.unit, t2b.config, stock_id, el['id'], channel,
+						self.base_trace_id, tag
 					)
 			else:
 				self.point_t2_compiler.add(
-					t2b.unit, t2b.config, stock_id, f['id'], channel, {'traceid': self.base_trace_id}
+					t2b.unit, t2b.config, stock_id, f['id'], channel,
+					self.base_trace_id, tag
 				)
 
 
 	def ingest_t12(self,
 		dps: List[DataPoint], fres: Union[bool, int], stock_id: StockId,
 		jentry: Dict[str, Any], t1bs: List[T1CombineBlock],
-		t1_comb_cache: T1CombineCache, t1_comp_cache: T1ComputeCache
+		t1_comb_cache: T1CombineCache, t1_comp_cache: T1ComputeCache,
+		tag: Optional[Union[Tag, List[Tag]]] = None
 	) -> None:
 
 		tdps = tuple(el['id'] for el in dps)
@@ -715,7 +726,7 @@ class ChainedIngestionHandler:
 					self.logger.info(f"No datapoints returned by t1 unit ({t1b.channel})")
 					if stock_id:
 						je['combine_empty'] = True
-						self.stock_compiler.add(stock_id, t1b.channel, journal=je) # type: ignore[arg-type]
+						self.stock_compiler.add(stock_id, t1b.channel, journal=je, tag=tag) # type: ignore[arg-type]
 					continue
 
 				# On the fly t1 computation requested
@@ -767,7 +778,7 @@ class ChainedIngestionHandler:
 
 				je['link'] = link
 
-				self.stock_compiler.add(stock_id, t1b.channel, journal=je) # type: ignore[arg-type]
+				self.stock_compiler.add(stock_id, t1b.channel, journal=je, tag=tag) # type: ignore[arg-type]
 
 				if t1b.state_t2:
 
@@ -779,7 +790,8 @@ class ChainedIngestionHandler:
 							continue
 
 						self.state_t2_compiler.add(
-							t2b.unit, t2b.config, stock_id, link, t1b.channel, {'traceid': meta['traceid']}
+							t2b.unit, t2b.config, stock_id, link, t1b.channel,
+							meta['traceid'], tag
 						)
 
 				if t1b.point_t2:
@@ -787,5 +799,5 @@ class ChainedIngestionHandler:
 					jentry['action'] |= JournalActionCode.T2_ADD_CHANNEL
 					self.ingest_point_t2s(
 						[el for el in dps if el['id'] in t1_dps],
-						fres, stock_id, t1b.channel, t1b.point_t2
+						fres, stock_id, t1b.channel, t1b.point_t2, tag
 					)
