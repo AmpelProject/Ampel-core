@@ -4,10 +4,10 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 14.12.2017
-# Last Modified Date: 24.05.2021
+# Last Modified Date: 09.10.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-from typing import Any, Union
+from typing import Any
 from pymongo import UpdateOne
 from ampel.abstract.AbsDocIngester import AbsDocIngester
 from ampel.content.StockDocument import StockDocument
@@ -17,9 +17,10 @@ from ampel.util.collections import try_reduce
 
 class MongoStockIngester(AbsDocIngester[StockDocument]):
 
-	def ingest(self, doc: StockDocument, now: Union[int, float]) -> None:
+	def ingest(self, doc: StockDocument) -> None:
 
-		set_on_insert: dict[str,Any] = {'ts.any.tied': now}
+		now = doc['journal'][-1]['ts']
+		set_on_insert: dict[str, Any] = {'ts.any.tied': now}
 		add_to_set = {'channel': maybe_use_each(doc['channel'])}
 
 		if 'name' in doc:
