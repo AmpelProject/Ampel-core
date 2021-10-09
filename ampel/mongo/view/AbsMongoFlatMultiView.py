@@ -4,10 +4,10 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 26.03.2021
-# Last Modified Date: 28.03.2021
+# Last Modified Date: 06.10.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-from typing import List, Any, Dict, Sequence
+from typing import List, Any, Dict, Sequence, Union
 from ampel.types import ChannelId
 from ampel.base.decorator import abstractmethod
 from ampel.mongo.view.AbsMongoView import AbsMongoView
@@ -39,7 +39,7 @@ class AbsMongoFlatMultiView(AbsMongoView, abstract=True):
 					'name': 1,
 					'body': 1,
 					'channel': {'$setIntersection': [self.channel, '$channel']},
-					'journal': self.morph_seq('journal'),
+					'journal': self.morph_journal('journal'),
 					'ts': {chan: f'$ts.{chan}' for chan in self.channel},
 				}
 			}
@@ -52,7 +52,7 @@ class AbsMongoFlatMultiView(AbsMongoView, abstract=True):
 			{
 				'$set': {
 					'channel': self.get_channel_intersection(),
-					'meta': self.morph_seq("meta")
+					'meta': self.conform_meta()
 				}
 			}
 		]
@@ -70,7 +70,7 @@ class AbsMongoFlatMultiView(AbsMongoView, abstract=True):
 			{
 				'$set': {
 					'channel': self.get_channel_intersection(),
-					'meta': self.morph_seq("meta")
+					'meta': self.conform_meta()
 				}
 			}
 		]
@@ -83,7 +83,7 @@ class AbsMongoFlatMultiView(AbsMongoView, abstract=True):
 			{
 				'$set': {
 					'channel': self.get_channel_intersection(),
-					'meta': self.morph_seq("meta")
+					'meta': self.conform_meta()
 				}
 			}
 		]
@@ -96,13 +96,13 @@ class AbsMongoFlatMultiView(AbsMongoView, abstract=True):
 			{
 				'$set': {
 					'channel': self.get_channel_intersection(),
-					'meta': self.morph_seq("meta")
+					'meta': self.conform_meta()
 				}
 			}
 		]
 
 
-	def morph_seq(self, arg: str) -> Dict[str, Any]:
+	def morph_journal(self, arg: str) -> Dict[str, Any]:
 		"""
 		If channel is an array, reduce its value to the intersection between
 		the defined channels and the requested one (should work with AND or OR channel projections).
@@ -166,12 +166,54 @@ class AbsMongoFlatMultiView(AbsMongoView, abstract=True):
 		}
 
 
-	def get_channel_intersection(self) -> Any:
+	def get_meta_cases(self, arg: str) -> List[Dict[str, Any]]:
+		"""
+		Note that this method is used by MongoOrView but also by MongoAndView
+		because it does not make sense to require an "AND" connection for the
+		channel field of meta records, the AND logical connection is used solely
+		for the root 'channel' field of the ampel documents
+		"""
+		
+		return [
+			{
+				'case': {
+					'$or': [
+						{'$eq': [f"{arg}.channel", chan]}
+						for chan in self.channel
+					]
+				},
+				'then': arg
+			},
+			{
+				'case': {
+					'$and': [
+						{'$isArray': f"{arg}.channel"},
+						{
+							'$or': [
+								{'$in': [chan, f"{arg}.channel"]}
+								for chan in self.channel
+							]
+						}
+					]
+				},
+				'then': {
+					"$mergeObjects": [
+						f"{arg}",
+						{
+							"channel": self.get_channel_intersection(f"{arg}.channel")
+						}
+					]
+				}
+			}
+		]
+
+
+	def get_channel_intersection(self, arg: str = '$channel') -> Any:
 
 		return {
 			'$let': {
 				'vars': {
-					'intersect': {'$setIntersection': [self.channel, '$channel']},
+					'intersect': {'$setIntersection': [self.channel, arg]},
 				},
 				'in': {
 					'$cond': {

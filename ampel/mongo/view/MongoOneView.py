@@ -4,10 +4,10 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 26.03.2021
-# Last Modified Date: 21.07.2021
+# Last Modified Date: 07.10.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-from typing import List, Any, Dict
+from typing import List, Any, Dict, Optional, Union
 from ampel.types import ChannelId
 from ampel.mongo.view.AbsMongoView import AbsMongoView
 
@@ -23,7 +23,7 @@ class MongoOneView(AbsMongoView):
 			{
 				'$addFields': {
 					'ts': f"$ts.{self.channel}",
-					'journal': self.filter_seq('journal')
+					'journal': self.filter_journal('journal')
 				}
 			},
 			{'$project': {'channel': 0, 'journal.channel': 0}},
@@ -34,8 +34,8 @@ class MongoOneView(AbsMongoView):
 		if self.t0_has_chan:
 			return [
 				{'$match': {'channel': self.channel}},
-				{'$addFields': {'meta': self.filter_seq('meta')}},
-				{'$project': {'channel': 0, 'meta.channel': 0}}
+				{'$addFields': {'meta': self.conform_meta()}},
+				{'$project': {'channel': 0, 'meta.activity.channel': 0}}
 			]
 		return []
 
@@ -43,8 +43,8 @@ class MongoOneView(AbsMongoView):
 
 		return [
 			{'$match': {'channel': self.channel}},
-			{'$addFields': {'meta': self.filter_seq('meta')}},
-			{'$project': {'channel': 0, 'meta.channel': 0}}
+			{'$addFields': {'meta': self.conform_meta()}},
+			{'$project': {'channel': 0, 'meta.activity.channel': 0}}
 		]
 
 
@@ -52,8 +52,8 @@ class MongoOneView(AbsMongoView):
 
 		return [
 			{'$match': {'channel': self.channel}},
-			{'$addFields': {'meta': self.filter_seq('meta')}},
-			{'$project': {'channel': 0, 'meta.channel': 0}},
+			{'$addFields': {'meta': self.conform_meta()}},
+			{'$project': {'channel': 0, 'meta.activity.channel': 0}}
 		]
 
 
@@ -61,28 +61,44 @@ class MongoOneView(AbsMongoView):
 
 		return [
 			{'$match': {'channel': self.channel}},
-			{'$addFields': {'meta': self.filter_seq('meta')}},
-			{'$project': {'channel': 0, 'meta.channel': 0}}
+			{'$addFields': {'meta': self.conform_meta()}},
+			{'$project': {'channel': 0, 'meta.activity.channel': 0}}
 		]
 
 
-	def filter_seq(self, arg: str) -> Dict[str, Any]:
+	def filter_journal(self, arg: str) -> Dict[str, Any]:
 
 		return {
 			'$filter': {
 				'input': f"${arg}",
-				'as': arg,
+				'as': "out",
 				'cond': {
 					'$or': [
-						{"$not": [f"$${arg}.channel"]},
-						{'$eq': [f"$${arg}.channel", self.channel]},
+						{"$not": ["$$out.channel"]},
+						{'$eq': ["$$out.channel", self.channel]},
 						{
 							'$and': [
-								{'$isArray': f"$${arg}.channel"},
-								{'$in': [self.channel, f"$${arg}.channel"]}
+								{'$isArray': "$$out.channel"},
+								{'$in': [self.channel, "$$out.channel"]}
 							]
 						}
 					]
 				}
 			}
 		}
+
+
+	def get_meta_cases(self, arg: str) -> List[Dict[str, Any]]:
+
+		return [
+			{'case': {'$eq': [self.channel, f"{arg}.channel"]}, 'then': arg},
+			{
+				'case': {
+					'$and': [
+						{'$isArray': f"{arg}.channel"},
+						{'$in': [self.channel, f"{arg}.channel"]}
+					]			
+				},
+				'then': arg
+			}					
+		]
