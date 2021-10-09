@@ -119,6 +119,6 @@ class StockCompiler(AbsCompiler):
 					for entry, chans in v['journal'].values()
 				]
 
-			ingester.ingest(d, now)
+			ingester.ingest(d)
 
 		self.register.clear()
