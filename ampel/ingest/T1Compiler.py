@@ -4,24 +4,22 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 01.01.2018
-# Last Modified Date: 02.10.2021
+# Last Modified Date: 08.10.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import xxhash
-from ujson import encode, decode
 from struct import pack
-from typing import Optional, Dict, List, Union, Tuple, Set, Any
+from typing import Optional, Dict, List, Union, Tuple, Set, Any, FrozenSet
 from ampel.types import ChannelId, DataPointId, StockId, UnitId, UBson
 from ampel.content.T1Document import T1Document
-from ampel.enum.MetaActionCode import MetaActionCode
+from ampel.content.MetaActivity import MetaActivity
 from ampel.abstract.AbsDocIngester import AbsDocIngester
-from ampel.abstract.AbsCompiler import AbsCompiler
-from ampel.util.collections import try_reduce
+from ampel.abstract.AbsCompiler import AbsCompiler, ActivityRegister
 
 
 class T1Compiler(AbsCompiler):
 	"""
-	Helps build a minimal set of :class:`compounds <ampel.content.T1Document.T1Document>`
+	Helps build a minimal set of :class:`T1Document <ampel.content.T1Document.T1Document>`
 	that represent a collection of :class:`datapoints <ampel.content.DataPoint.DataPoint>`,
 	as viewed through a set of channels.
 
@@ -54,18 +52,23 @@ class T1Compiler(AbsCompiler):
 		# Internal structure used for compiling documents
 		self.t1s: Dict[
 			Tuple[
-				Optional[UnitId],
-				Optional[int], # config
-				StockId,
-				Tuple[DataPointId, ...] # tuple(dps)
+				Optional[UnitId],       # unit
+				Optional[int],          # config
+				StockId,                # stock
+				Tuple[DataPointId, ...] # tuple(dps) [will be hashed into link]
 			],
 			Tuple[
-				int, # link
-				Set[ChannelId],
-				# dict[serialized(meta)|None, {channels}]
-				Dict[Optional[str], Set[ChannelId]],
-				UBson, # body
-				Optional[int] # code
+				int, 	                # link
+				Set[ChannelId],         # channels (doc)
+				UBson,                  # body
+				Optional[int],          # code
+				Dict[
+					FrozenSet[Tuple[str, Any]], # key: traceid
+					Tuple[
+						ActivityRegister,
+						Dict[str, Any]  # meta extra
+					]
+				],
 			]
 		] = {}
 
@@ -73,15 +76,16 @@ class T1Compiler(AbsCompiler):
 	def add(self, # type: ignore[override]
 		dps: List[DataPointId],
 		channel: ChannelId,
+		traceid: Dict[str, Any],
 		stock: StockId = 0,
-		meta: Optional[Dict[str, Any]] = None,
+		activity: Optional[Union[MetaActivity, List[MetaActivity]]] = None,
+		meta_extra: Optional[Dict[str, Any]] = None,
 		unit: Optional[UnitId] = None,
 		config: Optional[int] = None,
 		body: UBson = None,
 		code: Optional[int] = None
 	) -> int:
 		"""
-		:param meta: contains excl dps and traceid -> hash(AbsT1CombineUnit + config + versions)
 		:param unit: potential AbsT1ComputeUnit subclass to be associated with this doc
 		:param config: config of the AbsT1ComputeUnit subclass associated with this doc
 		"""
@@ -95,18 +99,26 @@ class T1Compiler(AbsCompiler):
 			dps = sorted(dps)
 
 		k = (unit, config, stock, tuple(dps))
-		k2 = encode(meta, sort_keys=True) if meta else None
-		d = self.t1s.get(k)
+		tid = frozenset(traceid.items())
 
-		if d:
-			d[1].add(channel)
+		# a: (link, {channels}, body, code, dict[traceid, (ActivityRegister, meta extra)])
+		# a: ( 0  ,     1     ,  2  ,  3  ,                   4                        )])
+		if a := self.t1s.get(k):
 
-			# Gather potential similar meta data (exclusion, combine trace id):
-			# {run: 12, ts: ..., combine: <traceId>, excl: [1232, 3232], channel: [C1, C2, C3]}
-			if k2 in d[2]:
-				d[2][k2].add(channel)
+			a[1].add(channel)
+
+			# One meta record will be created for each unique trace id
+			# (the present compiler could be used by multiple handlers configured differently)
+			# activity can contain channel-based dps exclusions (excl: [1232, 3232])
+			if tid in a[4]:
+
+				# (activity register, meta_extra)
+				b = a[4][tid]
+
+				# update internal register
+				self.register_meta_info(b[0], b[1], channel, activity, meta_extra)
 			else:
-				d[2][k2] = {channel}
+				a[4][tid] = self.new_meta_info(channel, activity, meta_extra)
 
 		else:
 
@@ -119,15 +131,19 @@ class T1Compiler(AbsCompiler):
 			if self.hash_size < 0 and i & (1 << (-self.hash_size-1)):
 				i -= 2**-self.hash_size
 
-			d = self.t1s[k] = (i, {channel}, {k2: {channel}}, body, code)
+			a = self.t1s[k] = (
+				i, {channel}, body, code,
+				{tid: self.new_meta_info(channel, activity, meta_extra)}
+			)
 
-		return d[0]
+		return a[0]
 
 
 	def commit(self, ingester: AbsDocIngester[T1Document], now: Union[int, float]) -> None:
 
-		# t1: tuple[unit, config, stock, dps],
-		# t2: tuple[link, {channels}, dict[(trace_id, excl), {channels}]]
+		# t1: (unit, config, stock, dps)
+		# t2: (link, {channels}, body, code, dict[traceid, (ActivityRegister, meta extra)])
+		# t2: ( 0  ,     1     ,  2  ,  3  ,                   4                        )])
 		for t1, t2 in self.t1s.items():
 
 			# Note: mongodb maintains key order
@@ -147,35 +163,17 @@ class T1Compiler(AbsCompiler):
 			d['channel'] = list(t2[1])
 			d['dps'] = list(t1[3])
 
-			if self._tag:
-				d['tag'] = self._tag # type: ignore[arg-type]
+			d['meta'], tags = self.build_meta(t2[4], now)
 
-			d['meta'] = []
-			for k2, v2 in t2[2].items():
+			if tags:
+				d['tag'] = tags
 
-				entry = {
-					'run': self.run_id,
-					'ts': now,
-					'tier': self.tier,
-					'channel': try_reduce(list(v2)),
-					'action': MetaActionCode.ADD_CHANNEL
-				}
+			if t2[2]:
+				d['body'] = [t2[2]]
 
-				if self._tag:
-					entry['action'] |= MetaActionCode.ADD_INGEST_TAG
-					entry['tag'] = try_reduce(self._tag)
+			if t2[3] is not None:
+				d['code'] = t2[3]
 
-				if x := decode(k2):
-					entry |= x
-
-				d['meta'].append(entry) # type: ignore[attr-defined]
-
-			if t2[3]:
-				d['body'] = [t2[3]]
-
-			if t2[4] is not None:
-				d['code'] = t2[4]
-
-			ingester.ingest(d, now)
+			ingester.ingest(d)
 
 		self.t1s.clear()
