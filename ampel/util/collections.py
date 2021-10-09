@@ -8,7 +8,7 @@
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from collections.abc import Sequence as sequence, Iterable as iterable, Sized as sized
-from typing import Any, List, Iterable, Union, Type, Tuple, Set, Generator
+from typing import Any, List, Iterable, Union, Type, Tuple, Set, Generator, Literal, overload
 from itertools import islice
 from ampel.types import strict_iterable, StrictIterable, T
 
@@ -54,6 +54,58 @@ def try_reduce(arg: Any) -> Any:
 		return next(iter(arg)) # type: ignore
 
 	return arg
+
+
+@overload
+def merge_to_list(
+	arg1: Union[str, int, List[Union[str, int]], Set[Union[str, int]]],
+	arg2: Union[str, int, List[Union[str, int]], Set[Union[str, int]]],
+	reduce: Literal[True]
+) -> Union[str, int, List[Union[str, int]], Set[Union[str, int]]]:
+	...
+
+@overload
+def merge_to_list(
+	arg1: Union[str, int, List[Union[str, int]], Set[Union[str, int]]],
+	arg2: Union[str, int, List[Union[str, int]], Set[Union[str, int]]],
+	reduce: Literal[False]
+) -> Union[List[Union[str, int]], Set[Union[str, int]]]:
+	...
+
+def merge_to_list(
+	arg1: Union[str, int, List[Union[str, int]], Set[Union[str, int]]],
+	arg2: Union[str, int, List[Union[str, int]], Set[Union[str, int]]],
+	reduce: bool = True
+) -> Union[str, int, List[Union[str, int]], Set[Union[str, int]]]:
+	""" Returns a merged list unless arg1 and arg2 have the same scalar value """
+
+	if isinstance(arg1, (str, int)):
+		if isinstance(arg2, (str, int)):
+			if arg2 != arg1:
+				return [arg1, arg2]
+			return arg1 if reduce else [arg1]
+		else:
+			if arg1 in arg2:
+				return arg2 if isinstance(arg2, list) else list(arg2)
+			l = list(arg2)
+			l.append(arg1)
+			return l
+
+	# arg1 is a list/set
+	else:
+		if isinstance(arg2, (int, str)):
+			if arg2 in arg1:
+				return arg1 if isinstance(arg1, list) else list(arg1)
+			l = list(arg1)
+			l.append(arg2)
+			return l
+	
+		# arg1 and arg2 are list/set
+		else:
+			return list(
+				arg1 if isinstance(arg1, set) else set(arg1) |
+				arg2 if isinstance(arg2, set) else set(arg2)
+			)
 
 
 def to_set(arg) -> Set:
