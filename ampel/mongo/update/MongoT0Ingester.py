@@ -4,20 +4,20 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 23.05.2021
-# Last Modified Date: 23.05.2021
+# Last Modified Date: 09.10.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from pymongo import UpdateOne
-from typing import Dict, Any, Union
+from typing import Dict, Any
 from ampel.mongo.utils import maybe_use_each
 from ampel.content.DataPoint import DataPoint
 from ampel.abstract.AbsDocIngester import AbsDocIngester
 
 
 class MongoT0Ingester(AbsDocIngester[DataPoint]):
-	""" This class inserts `DataPoint` into the t0 collection.  """
+	""" Inserts `DataPoint` into the t0 collection  """
 
-	def ingest(self, doc: DataPoint, now: Union[int, float]) -> None:
+	def ingest(self, doc: DataPoint) -> None:
 
 		match: Dict[str, Any] = {'id': doc['id']}
 		upd: Dict[str, Any] = {
