@@ -4,11 +4,11 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 14.12.2017
-# Last Modified Date: 23.05.2021
+# Last Modified Date: 08.10.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from pymongo import UpdateOne
-from typing import Dict, Any, Union
+from typing import Dict, Any
 from ampel.enum.DocumentCode import DocumentCode
 from ampel.content.T2Document import T2Document
 from ampel.mongo.utils import maybe_use_each
@@ -17,10 +17,11 @@ from ampel.abstract.AbsDocIngester import AbsDocIngester
 
 class MongoT2Ingester(AbsDocIngester[T2Document]):
 
-	def ingest(self, doc: T2Document, now: Union[int, float]) -> None:
+	def ingest(self, doc: T2Document) -> None:
 
 		# Note: mongodb $setOnInsert does not retain key order
 		set_on_insert: Dict[str, Any] = {'code': DocumentCode.NEW.value}
+		add_to_set: Dict[str, Any] = {'channel': maybe_use_each(doc['channel'])}
 
 		match = {
 			'stock': doc['stock'],
@@ -32,11 +33,11 @@ class MongoT2Ingester(AbsDocIngester[T2Document]):
 		if 'origin' in doc:
 			match['origin'] = doc['origin']
 
-		if 'tag' in doc:
-			set_on_insert['tag'] = doc['tag']
-
 		if 'col' in doc:
 			set_on_insert['col'] = doc['col']
+
+		if 'tag' in doc:
+			add_to_set['tag'] = maybe_use_each(doc['tag'])
 
 		# Append update operation to bulk list
 		self.updates_buffer.add_t2_update(
@@ -44,7 +45,7 @@ class MongoT2Ingester(AbsDocIngester[T2Document]):
 				match,
 				{
 					'$setOnInsert': set_on_insert,
-					'$addToSet': {'channel': maybe_use_each(doc['channel'])},
+					'$addToSet': add_to_set,
 					'$push': {'meta': maybe_use_each(doc['meta'])} # meta must be set by compiler
 				},
 				upsert=True
