@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 16.06.2018
-# Last Modified Date: 18.05.2021
+# Last Modified Date: 06.10.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from functools import cached_property
@@ -75,6 +75,7 @@ class AmpelDB(AmpelBaseModel):
 		self.mongo_collections: Dict[str, Collection] = {}
 		self.mongo_clients: Dict[str, MongoClient] = {} # map role with client
 
+
 	@cached_property
 	def col_trace_ids(self) -> Collection:
 		return self.get_collection('traceid')
@@ -89,7 +90,8 @@ class AmpelDB(AmpelBaseModel):
 	
 	@cached_property
 	def conf_ids(self) -> Set[int]:
-		return get_ids(self.col_conf_ids) 
+		return get_ids(self.col_conf_ids)
+
 
 	def enable_rejected_collections(self, channel_names: Sequence[ChannelId]) -> None:
 		"""
@@ -132,10 +134,7 @@ class AmpelDB(AmpelBaseModel):
 
 		db_config = self._get_db_config(col_name)
 		role = db_config.role.dict()[mode]
-
-		db = self._get_mongo_db(
-			role=role, db_name=f"{self.prefix}_{db_config.name}"
-		)
+		db = self._get_mongo_db(role=role, db_name=f"{self.prefix}_{db_config.name}")
 
 		if 'w' in mode and col_name not in db.list_collection_names():
 			self.mongo_collections[col_name][mode] = self.create_collection(
@@ -205,9 +204,7 @@ class AmpelDB(AmpelBaseModel):
 
 		# Create collection with custom args
 		if col_config.args:
-			col = db.create_collection(
-				col_config.name, **col_config.args
-			)
+			col = db.create_collection(col_config.name, **col_config.args)
 		else:
 			col = db.create_collection(col_config.name)
 
@@ -239,40 +236,77 @@ class AmpelDB(AmpelBaseModel):
 		return col
 
 
-	def create_one_view(self, channel: ChannelId, logger: Optional['AmpelLogger'] = None) -> None:
+	def create_one_view(self,
+		channel: ChannelId,
+		logger: Optional['AmpelLogger'] = None,
+		force: bool = False
+	) -> None:
 		self.create_view(
-			MongoOneView(channel=channel), str(channel), logger
+			MongoOneView(channel=channel), str(channel),
+			logger, force
 		)
 
 
-	def create_or_view(self, channels: Sequence[ChannelId], logger: Optional['AmpelLogger'] = None) -> None:
+	def create_or_view(self,
+		channels: Sequence[ChannelId],
+		logger: Optional['AmpelLogger'] = None,
+		force: bool = False
+	) -> None:
+
 		if not isinstance(channels, collections.abc.Sequence) or len(channels) == 1:
 			raise ValueError("Incorrect argument")
+
 		self.create_view(
-			MongoOrView(channel=channels), "_OR_".join(map(str,channels)), logger
+			MongoOrView(channel=channels),
+			"_OR_".join(map(str, channels)),
+			logger, force
 		)
 
 
-	def create_and_view(self, channels: Sequence[ChannelId], logger: Optional['AmpelLogger'] = None) -> None:
+	def create_and_view(self,
+		channels: Sequence[ChannelId],
+		logger: Optional['AmpelLogger'] = None,
+		force: bool = False
+	) -> None:
+
 		if not isinstance(channels, collections.abc.Sequence) or len(channels) == 1:
 			raise ValueError("Incorrect argument")
+
 		self.create_view(
-			MongoAndView(channel=channels), "_AND_".join(map(str,channels)), logger
+			MongoAndView(channel=channels),
+			"_AND_".join(map(str, channels)),
+			logger, force
 		)
 
 
 	def create_view(self,
-		view: AbsMongoView, col_prefix: str, logger: Optional['AmpelLogger'] = None
+		view: AbsMongoView,
+		col_prefix: str,
+		logger: Optional['AmpelLogger'] = None,
+		force: bool = False
 	) -> None:
 
-		db = self._get_mongo_db(
-			role="w", db_name=f"{self.prefix}_data"
-		)
+		db = self._get_mongo_db(role="w", db_name=f"{self.prefix}_data")
+		if force:
+			col_names = db.list_collection_names()
 
 		for el in ("stock", "t0", "t1", "t2", "t3"):
-			db.create_collection(
-				f'{col_prefix}_{el}', viewOn=el, pipeline=getattr(view, el)()
-			)
+
+			agg = getattr(view, el)()
+
+			if force and f'{col_prefix}_{el}' in col_names:
+				if logger:
+					logger.info(f"Discarding previous view {col_prefix}_{el}")
+				db.drop_collection(f"{col_prefix}_{el}")
+
+			if logger and logger.verbose > 1:
+				from ampel.util.pretty import prettyjson
+				logger.info(f"Collection {el} aggregation pipeline:")
+				for line in prettyjson(agg).split("\n"):
+					logger.info(line)
+				logger.info("-"*80)
+
+			db.create_collection(f'{col_prefix}_{el}', viewOn=el, pipeline=agg)
 
 
 	def delete_one_view(self, channel: ChannelId, logger: Optional['AmpelLogger'] = None) -> None:
@@ -282,21 +316,18 @@ class AmpelDB(AmpelBaseModel):
 	def delete_or_view(self, channels: Sequence[ChannelId], logger: Optional['AmpelLogger'] = None) -> None:
 		if not isinstance(channels, collections.abc.Sequence) or len(channels) == 1:
 			raise ValueError("Incorrect argument")
-		self.delete_view("_OR_".join(map(str,channels)), logger)
+		self.delete_view("_OR_".join(map(str, channels)), logger)
 
 
 	def delete_and_view(self, channels: Sequence[ChannelId], logger: Optional['AmpelLogger'] = None) -> None:
 		if not isinstance(channels, collections.abc.Sequence) or len(channels) == 1:
 			raise ValueError("Incorrect argument")
-		self.delete_view("_AND_".join(map(str,channels)), logger)
+		self.delete_view("_AND_".join(map(str, channels)), logger)
 
 
 	def delete_view(self, col_prefix: str, logger: Optional['AmpelLogger'] = None) -> Collection:
 
-		db = self._get_mongo_db(
-			role="w", db_name=f"{self.prefix}_data"
-		)
-	
+		db = self._get_mongo_db(role="w", db_name=f"{self.prefix}_data")
 		for el in ("stock", "t0", "t1", "t2", "t3"):
 			db.drop_collection(f'{col_prefix}_{el}')
 
