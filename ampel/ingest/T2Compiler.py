@@ -4,35 +4,39 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 01.01.2018
-# Last Modified Date: 06.09.2021
+# Last Modified Date: 08.10.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-from ujson import encode, decode
-from typing import Optional, Dict, Union, Tuple, Set, Any
+from typing import Optional, Dict, Union, Tuple, Set, Any, List, FrozenSet
 from ampel.types import ChannelId, UnitId, T2Link, StockId
 from ampel.content.T2Document import T2Document
-from ampel.enum.MetaActionCode import MetaActionCode
+from ampel.content.MetaActivity import MetaActivity
 from ampel.abstract.AbsDocIngester import AbsDocIngester
-from ampel.abstract.AbsCompiler import AbsCompiler
-from ampel.util.collections import try_reduce
+from ampel.abstract.AbsCompiler import AbsCompiler, ActivityRegister
 
 
 class T2Compiler(AbsCompiler):
 	"""
-	Helps build a minimal set of :class:`compounds <ampel.content.T2Document.T2Document>`
+	Helps build a minimal set of :class:`T2Document <ampel.content.T2Document.T2Document>`
 	Multiple T2 documents associated with the same stock record accross different channels
 	are merged into one single T2 document that references all corresponding channels.
 	"""
 
 	def __init__(self, col: Optional[str] = None, **kwargs) -> None:
+
 		super().__init__(**kwargs)
+		self.col = col
 		self.t2s: Dict[
 			# key: (unit name, unit config, link, stock)
 			Tuple[UnitId, Optional[int], T2Link, StockId],
-			# tuple[channels, dict[serialized(meta)|None, {channels}]]
-			Tuple[Set[ChannelId], Dict[Optional[str], Set[ChannelId]]]
+			Tuple[
+				Set[ChannelId], # channels (doc)
+				Dict[
+					FrozenSet[Tuple[str, Any]], # key: traceid
+					Tuple[ActivityRegister, Dict[str, Any]] # activity register, meta_extra
+				]
+			]
 		] = {}
-		self.col = col
 
 
 	def add(self, # type: ignore[override]
@@ -41,25 +45,38 @@ class T2Compiler(AbsCompiler):
 		stock: StockId,
 		link: T2Link,
 		channel: ChannelId,
-		meta: Optional[Dict[str, Any]] = None
+		traceid: Dict[str, Any],
+		activity: Optional[Union[MetaActivity, List[MetaActivity]]] = None,
+		meta_extra: Optional[Dict[str, Any]] = None
 	) -> None:
+		"""
+		:param tag: tag(s) to be added to T2Document. A corresponding dedicated channel-less
+		meta entry will be created (with actin MetaActionCode.ADD_INGEST_TAG and/or ADD_OTHER_TAG)
+		"""
 
-		# unprocessed T1 documents requiring processing have stock equals zero
-		if stock == 0:
-			return
-
+		# Doc id
 		k = (unit, config, link, stock)
-		k2 = encode(meta, sort_keys=True) if meta else None
-		
-		d = self.t2s.get(k)
-		if d:
-			d[0].add(channel)
-			if k2 in d[1]:
-				d[1][k2].add(channel)
+		tid = frozenset(traceid.items())
+
+		# a: tuple({channels}, dict[traceid, (activity register, meta_extra)])
+		if a := self.t2s.get(k):
+
+			a[0].add(channel) # set of all channels
+
+			# One meta record will be created for each unique trace id
+			# (the present compiler could be used by multiple handlers configured differently)
+			if tid in a[1]:
+
+				# (activity register, meta_extra)
+				b = a[1][tid]
+
+				# update internal register
+				self.register_meta_info(b[0], b[1], channel, activity, meta_extra)
+
 			else:
-				d[1][k2] = {channel}
+				a[1][tid] = self.new_meta_info(channel, activity, meta_extra)
 		else:
-			self.t2s[k] = {channel}, {k2: {channel}}
+			self.t2s[k] = {channel}, {tid: self.new_meta_info(channel, activity, meta_extra)}
 
 
 	def commit(self, ingester: AbsDocIngester[T2Document], now: Union[int, float]) -> None:
@@ -78,30 +95,11 @@ class T2Compiler(AbsCompiler):
 				d['origin'] = self.origin
 
 			d['channel'] = list(v[0])
+			d['meta'], tags = self.build_meta(v[1], now)
 
-			if self._tag:
-				d['tag'] = self._tag
+			if tags:
+				d['tag'] = tags
 
-			d['meta'] = []
-			for k2, v2 in v[1].items():
-
-				entry = {
-					'run': self.run_id,
-					'ts': now,
-					'tier': self.tier,
-					'channel': try_reduce(list(v2)),
-					'action': MetaActionCode.ADD_CHANNEL
-				}
-
-				if self._tag:
-					entry['action'] |= MetaActionCode.ADD_TAG
-					entry['tag'] = try_reduce(self._tag)
-
-				if k2 and (x := decode(k2)):
-					entry |= x
-
-				d['meta'].append(entry) # type: ignore[attr-defined]
-
-			ingester.ingest(d, now)
+			ingester.ingest(d)
 
 		self.t2s.clear()
