@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 31.10.2018
-# Last Modified Date: 11.05.2021
+# Last Modified Date: 09.10.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from typing import Dict, Any, Sequence, Set, Optional
@@ -49,6 +49,8 @@ def maybe_match_array(arg: StrictIterable):
 
 
 def maybe_use_each(arg: Sequence[Any]) -> Any:
+	if isinstance(arg, dict):
+		return arg
 	if len(arg) == 1:
 		return next(iter(arg))
 	return {'$each': arg}
