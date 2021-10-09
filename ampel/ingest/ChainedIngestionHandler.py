@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 01.05.2020
-# Last Modified Date: 28.09.2021
+# Last Modified Date: 09.10.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from time import time
@@ -37,6 +37,7 @@ from ampel.content.T1Document import T1Document
 from ampel.content.T2Document import T2Document
 from ampel.content.StockDocument import StockDocument
 from ampel.content.DataPoint import DataPoint
+from ampel.content.MetaActivity import MetaActivity
 from ampel.mongo.update.DBUpdatesBuffer import DBUpdatesBuffer
 from ampel.ingest.T0Compiler import T0Compiler
 from ampel.ingest.T2Compiler import T2Compiler
@@ -127,11 +128,17 @@ class ChainedIngestionHandler:
 		logger: AmpelLogger,
 		database: str = "mongo",
 		origin: Optional[int] = None,
-		int_time: bool = True
+		int_time: bool = True,
+		include_extra_meta: int = 2
 	):
 		"""
 		:param trace_id: base trace if of root caller (such as AlertConsumer or T1Generator)
 		:param int_time: timestamp accuracy for journal/meta (otherwise float)
+		:param include_extra_meta: example for extra: {'alert': 231273612673162}.
+		- 0: do not include provided extra meta data into the generated meta entries
+		- 1: include provided extra meta data in all generated meta entries of all docs except point t2 docs
+		- 2: include provided extra meta data in all generated meta entries of all docs
+		Note: granularity might increase in the future
 		"""
 
 		self.updates_buffer = updates_buffer
@@ -139,6 +146,7 @@ class ChainedIngestionHandler:
 		self.context = context
 		self.run_id = run_id
 		self.int_time = int_time
+		self.include_extra_meta = include_extra_meta
 		self.base_trace_id = trace_id
 
 		self.iblocks: List[Tuple[IngestBlock, IngestBlock]] = []
@@ -479,13 +487,14 @@ class ChainedIngestionHandler:
 
 		self.updates_buffer._block_autopush = True
 		ingest_start = time()
-		now = int(time()) if self.int_time else time()
 
 		# process *modifies* dict instances loaded by fastavro
 		dps = self.shaper.process(dps, stock_id)
 
 		if not dps: # Not sure if this can happen
 			return
+
+		add_other_tag: Optional[MetaActivity] = {'action': MetaActionCode.ADD_OTHER_TAG, 'tag': tag} if tag else None
 
 		# Set of chans (last parameter) is used for logging
 		mux_cache: Dict[AbsT0Muxer, Tuple[Optional[List[DataPoint]], Optional[List[DataPoint]], Set[ChannelId]]] = {}
@@ -535,7 +544,7 @@ class ChainedIngestionHandler:
 
 				if dps_insert:
 
-					self.t0_compiler.add(dps_insert, ib.channel, self.shaper_trace_id)
+					self.t0_compiler.add(dps_insert, ib.channel, self.shaper_trace_id, extra)
 
 					# TODO: make this addition optional (a stock with a million dps would create pblms)
 					jentry['upsert'] = [el['id'] for el in dps_insert]
@@ -543,13 +552,17 @@ class ChainedIngestionHandler:
 
 					if mux.point_t2:
 						jentry['action'] |= JournalActionCode.T2_ADD_CHANNEL
-						self.ingest_point_t2s(dps_insert, fres, stock_id, ib.channel, mux.point_t2, tag)
+						self.ingest_point_t2s(
+							dps_insert, fres, stock_id, ib.channel, mux.point_t2, add_other_tag,
+							extra if self.include_extra_meta > 1 else None
+						)
 
 				# Muxed T1 and associated T2 ingestions
 				if dps_combine and mux.combine:
 					self.ingest_t12(
 						dps_combine, fres, stock_id, jentry, mux.combine,
-						t1_comb_cache, t1_comp_cache, tag
+						t1_comb_cache, t1_comp_cache, add_other_tag,
+						extra if self.include_extra_meta else None
 					)
 
 			else:
@@ -557,18 +570,25 @@ class ChainedIngestionHandler:
 
 			# Non-muxed T1 and associated T2 ingestions
 			if ib.combine:
-				self.ingest_t12(dps, fres, stock_id, jentry, ib.combine, t1_comb_cache, t1_comp_cache)
+				self.ingest_t12(
+					dps, fres, stock_id, jentry, ib.combine, t1_comb_cache, t1_comp_cache,
+					add_other_tag, meta_extra = extra if self.include_extra_meta else None
+				)
 				
 			# Non-muxed point T2s
 			if ib.point_t2:
-				self.ingest_point_t2s(dps, fres, stock_id, ib.channel, ib.point_t2, tag)
+				self.ingest_point_t2s(
+					dps, fres, stock_id, ib.channel, ib.point_t2, add_other_tag,
+					extra if self.include_extra_meta > 1 else None
+				)
 
 			# Stock T2s
 			if ib.stock_t2:
 				for t2b in ib.stock_t2:
 					self.stock_t2_compiler.add(
-						t2b.unit, t2b.config, stock_id, stock_id, ib.channel,
-						self.base_trace_id, tag
+						t2b.unit, t2b.config, stock_id, stock_id,
+						ib.channel, self.base_trace_id, add_other_tag,
+						extra if self.include_extra_meta else None
 					)
 
 			# Flush potential unit logs
@@ -588,10 +608,14 @@ class ChainedIngestionHandler:
 					)
 
 			if not self.stock_compiler.register:
-				self.stock_compiler.add(stock_id, ib.channel, journal=jentry, tag=tag) # type: ignore[arg-type]
+				self.stock_compiler.add(
+					stock_id, ib.channel, journal = jentry, # type: ignore[arg-type]
+					tag = add_other_tag['tag'] if add_other_tag else None # type: ignore[arg-type]
+				)
 
 		# Commit
 		########
+		now = int(time()) if self.int_time else time()
 
 		self.t0_compiler.commit(self.t0_ingester, now)
 
@@ -616,8 +640,10 @@ class ChainedIngestionHandler:
 		dps: List[DataPoint],
 		fres: Union[bool, int],
 		stock_id: StockId,
-		channel: ChannelId, state_t2: List[T2Block],
-		tag: Optional[Union[Tag, List[Tag]]] = None
+		channel: ChannelId,
+		state_t2: List[T2Block],
+		add_other_tag: Optional[MetaActivity] = None,
+		meta_extra: Optional[Dict[str, Any]] = None
 	) -> None:
 
 		for t2b in state_t2:
@@ -641,12 +667,12 @@ class ChainedIngestionHandler:
 				for el in f:
 					self.point_t2_compiler.add(
 						t2b.unit, t2b.config, stock_id, el['id'], channel,
-						self.base_trace_id, tag
+						self.base_trace_id, add_other_tag, meta_extra
 					)
 			else:
 				self.point_t2_compiler.add(
 					t2b.unit, t2b.config, stock_id, f['id'], channel,
-					self.base_trace_id, tag
+					self.base_trace_id, add_other_tag, meta_extra
 				)
 
 
@@ -654,7 +680,8 @@ class ChainedIngestionHandler:
 		dps: List[DataPoint], fres: Union[bool, int], stock_id: StockId,
 		jentry: Dict[str, Any], t1bs: List[T1CombineBlock],
 		t1_comb_cache: T1CombineCache, t1_comp_cache: T1ComputeCache,
-		tag: Optional[Union[Tag, List[Tag]]] = None
+		add_other_tag: Optional[MetaActivity] = None,
+		meta_extra: Optional[Dict[str, Any]] = None,
 	) -> None:
 
 		tdps = tuple(el['id'] for el in dps)
@@ -688,27 +715,27 @@ class ChainedIngestionHandler:
 			for tres in lres:
 
 				body = None
-				meta: Dict[str, Any] = {
-					'action': MetaActionCode.ADD_CHANNEL,
-					'traceid': self.base_trace_id | {'combiner': t1b.trace_id}
-				}
+				tid: Dict[str, Any] = self.base_trace_id | {'combiner': t1b.trace_id}
 
 				if 'muxer' in jentry['traceid']:
-					meta['traceid']['muxer'] = jentry['traceid']['muxer']
+					tid['muxer'] = jentry['traceid']['muxer']
 
-				if 'alert' in jentry:
-					meta['alert'] = jentry['alert']
+				mx = meta_extra.copy() if meta_extra else {}
+				mad: Optional[MetaActivity] = None
 
 				if isinstance(tres, T1CombineResult):
 					t1_dps = tres.dps
 					if tres.meta:
-						meta |= tres.meta
-						meta['action'] |= MetaActionCode.EXTRA_META
+						mx |= tres.meta
 						jentry['action'] |= JournalActionCode.T1_EXTRA_META
+						mad = {'action': MetaActionCode.EXTRA_META, 'channel': t1b.channel}
 					if tres.code:
 						code = tres.code
-						meta['action'] |= MetaActionCode.SET_CODE
 						jentry['action'] |= JournalActionCode.T1_SET_CODE
+						if mad:
+							mad['action'] |= MetaActionCode.SET_CODE
+						else:
+							mad = {'action': MetaActionCode.SET_CODE, 'channel': t1b.channel}
 					else:
 						code = DocumentCode.OK
 				else:
@@ -716,7 +743,11 @@ class ChainedIngestionHandler:
 					code = DocumentCode.OK
 
 				if excl := [el['id'] for el in dps if el['id'] not in t1_dps]:
-					meta['excl'] = excl
+					if mad:
+						mad['action'] |= MetaActionCode.ADD_T1_EXCL
+						mad['excl'] = excl # type: ignore[typeddict-item]
+					else:
+						mad = {'action': MetaActionCode.ADD_T1_EXCL, 'channel': t1b.channel, 'excl': excl} # type: ignore
 
 				je = jentry.copy()
 				je['traceid'] = jentry['traceid'].copy()
@@ -726,14 +757,20 @@ class ChainedIngestionHandler:
 					self.logger.info(f"No datapoints returned by t1 unit ({t1b.channel})")
 					if stock_id:
 						je['combine_empty'] = True
-						self.stock_compiler.add(stock_id, t1b.channel, journal=je, tag=tag) # type: ignore[arg-type]
+						self.stock_compiler.add(
+							stock_id, t1b.channel, journal = je, # type: ignore[arg-type]
+							tag = add_other_tag['tag'] if add_other_tag else None # type: ignore[arg-type]
+						)
 					continue
 
 				# On the fly t1 computation requested
 				if t1b.compute.unit:
 
 					je['traceid']['t1_compute'] = t1b.compute.trace_id
-					meta['action'] |= MetaActionCode.ADD_BODY
+					if mad:
+						mad['action'] |= MetaActionCode.ADD_BODY
+					else:
+						mad = {'action': MetaActionCode.ADD_BODY, 'channel': t1b.channel}
 
 					# Potentially load previous results from "t1 compute" cache
 					k = t1b.compute.unit, tuple(t1_dps)
@@ -751,25 +788,36 @@ class ChainedIngestionHandler:
 						body = t1_res[0].body
 						if t1_res[0].journal:
 							je |= t1_res[0].journal.dict()
-							meta['action'] |= MetaActionCode.EXTRA_JOURNAL
 							je['action'] |= JournalActionCode.T1_EXTRA_JOURNAL
+							if mad:
+								mad['action'] |= MetaActionCode.EXTRA_JOURNAL
+							else:
+								mad = {'action': MetaActionCode.EXTRA_JOURNAL, 'channel': t1b.channel}
 						if t1_res[0].code:
 							code = t1_res[0].code
-							meta['action'] |= MetaActionCode.SET_CODE
 							je['action'] |= JournalActionCode.T1_SET_CODE
+							if mad:
+								if mad['action'] & MetaActionCode.SET_CODE:
+									mx['t1_compute_code_override'] = True
+								mad['action'] |= MetaActionCode.SET_CODE
+							else:
+								mad = {'action': MetaActionCode.SET_CODE, 'channel': t1b.channel}
 						else:
 							code = DocumentCode.NEW
 					else:
 						body = t1_res[0]
 						code = DocumentCode.NEW
 
-
 				je['action'] |= JournalActionCode.T1_ADD_CHANNEL
 
 				# Note: we ignore potential stock from T1 result here
 				link = self.t1_compiler.add(
-					t1_dps, t1b.channel, stock_id,
-					meta = meta,
+					t1_dps,
+					t1b.channel,
+					tid,
+					stock_id,
+					meta_extra = mx,
+					activity = mad,
 					unit = t1b.compute.unit_name,
 					config = t1b.compute.config,
 					body = body,
@@ -778,7 +826,10 @@ class ChainedIngestionHandler:
 
 				je['link'] = link
 
-				self.stock_compiler.add(stock_id, t1b.channel, journal=je, tag=tag) # type: ignore[arg-type]
+				self.stock_compiler.add(
+					stock_id, t1b.channel, journal = je, # type: ignore[arg-type]
+					tag = add_other_tag['tag'] if add_other_tag else None # type: ignore[arg-type]
+				)
 
 				if t1b.state_t2:
 
@@ -790,8 +841,14 @@ class ChainedIngestionHandler:
 							continue
 
 						self.state_t2_compiler.add(
-							t2b.unit, t2b.config, stock_id, link, t1b.channel,
-							meta['traceid'], tag
+							t2b.unit,
+							t2b.config,
+							stock_id,
+							link,
+							t1b.channel,
+							tid,
+							add_other_tag,
+							meta_extra if self.include_extra_meta else None
 						)
 
 				if t1b.point_t2:
@@ -799,5 +856,6 @@ class ChainedIngestionHandler:
 					jentry['action'] |= JournalActionCode.T2_ADD_CHANNEL
 					self.ingest_point_t2s(
 						[el for el in dps if el['id'] in t1_dps],
-						fres, stock_id, t1b.channel, t1b.point_t2, tag
+						fres, stock_id, t1b.channel, t1b.point_t2, add_other_tag,
+						meta_extra if self.include_extra_meta > 1 else None
 					)
