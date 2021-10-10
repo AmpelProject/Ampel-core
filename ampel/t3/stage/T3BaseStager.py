@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 17.04.2021
-# Last Modified Date: 19.09.2021
+# Last Modified Date: 10.10.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from time import time
@@ -23,9 +23,11 @@ from ampel.log.handlers.DefaultRecordBufferingHandler import DefaultRecordBuffer
 from ampel.abstract.AbsT3Stager import AbsT3Stager
 from ampel.view.SnapView import SnapView
 from ampel.content.T3Document import T3Document
+from ampel.content.MetaRecord import MetaRecord
 from ampel.struct.AmpelBuffer import AmpelBuffer
 from ampel.struct.UnitResult import UnitResult
 from ampel.enum.DocumentCode import DocumentCode
+from ampel.enum.MetaActionCode import MetaActionCode
 from ampel.enum.JournalActionCode import JournalActionCode
 from ampel.t3.stage.BaseViewGenerator import BaseViewGenerator
 from ampel.t3.stage.ThreadedViewGenerator import ThreadedViewGenerator
@@ -275,6 +277,8 @@ class T3BaseStager(AbsT3Stager, abstract=True):
 
 		t3d: T3Document = {'unit': t3_unit.__class__.__name__}
 		conf = dictify(t3_unit._trace_content)
+		actact = MetaActionCode(0)
+		meta: MetaRecord = {'duration': time() - ts}
 
 		if self.resolve_config:
 			t3d['config'] = conf
@@ -285,21 +289,32 @@ class T3BaseStager(AbsT3Stager, abstract=True):
 
 		if self.channel:
 			t3d['channel'] = self.channel
-
-		t3d['code'] = DocumentCode.OK
-		t3d['meta'] = {'duration': time() - ts}
+			actact |= MetaActionCode.ADD_CHANNEL
 
 		if self.save_stock_ids and stocks:
 			t3d['stock'] = stocks
 
+		t3d['code'] = DocumentCode.OK
+		t3d['meta'] = meta # note: mongodb maintains key order
+
 		if isinstance(res, UnitResult):
 			if res.code:
 				t3d['code'] = res.code
+				actact |= MetaActionCode.SET_UNIT_CODE
+			else:
+				actact |= MetaActionCode.SET_CODE
+
 			if res.body:
 				t3d['body'] = res.body
+				actact |= MetaActionCode.ADD_BODY
 
 		# bson
 		elif isinstance(res, ubson):
 			t3d['body'] = res
+			actact |= (MetaActionCode.ADD_BODY | MetaActionCode.SET_CODE)
 
+		else:
+			actact |= MetaActionCode.SET_CODE
+
+		meta['activity'] = [{'action': actact}]
 		return t3d
