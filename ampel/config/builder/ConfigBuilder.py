@@ -4,10 +4,11 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 03.09.2019
-# Last Modified Date: 06.07.2021
+# Last Modified Date: 10.10.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-import importlib, re, json, datetime, getpass
+import re, json, yaml, datetime, getpass, importlib, sys, subprocess
+from multiprocessing import Pool
 from typing import Dict, List, Any, Optional, Set, Iterable, Union
 
 from ampel.util.mappings import get_by_path, set_by_path, dictify, walk_and_process_dict
@@ -82,40 +83,6 @@ class ConfigBuilder:
 			self.register_channel_templates(d['template'], dist_name, version, register_file)
 
 
-	'''
-	def load_conf_section(self,
-		section: str, arg: Dict, register_file: Optional[str] = None,
-		dist_name: Optional[str] = None
-	) -> None:
-		"""
-		Depending on the value of parameter 'section', a structure may be expected for dict 'arg'.
-		1) tier-less sections: 'channel', 'mongo', 'resource'
-		-> no structure imposed
-		2) tier-dependent sub-sections: 'controller', 'processor', 'unit', 'alias', 'process'
-		-> arg must have the following JSON structure:
-		{'t0': { ... }, 't1': { ... }, ...}
-		whereby the t0, t1, t2 and t3 keys are optional (at least one is required though)
-		"""
-
-		# ('channel', 'mongo', 'resource')
-		if section in self.first_pass_config.general_keys:
-			self.first_pass_config[section].add(
-				arg, register_file=register_file, dist_name=dist_name
-			)
-			return
-
-		# ('controller', 'processor', 'unit', 'alias', 'process')
-		if section in self.first_pass_config.tier_keys:
-			for k in ('t0', 't1', 't2', 't3'):
-				if k in arg:
-					self.first_pass_config[k][section].add(
-						arg[k], register_file=register_file, dist_name=dist_name
-					)
-
-		raise ValueError(f'Unknown config section: {section}')
-	'''
-
-
 	def register_channel_templates(self,
 		chan_templates: Dict[str, str],
 		dist_name: str,
@@ -150,6 +117,7 @@ class ConfigBuilder:
 		skip_default_processes: bool = False,
 		json_serializable: bool = True,
 		pwds: Optional[Iterable[str]] = None,
+		get_unit_env: bool = True,
 		save: Union[bool, str, None] = None,
 		sign: int = 6,
 	) -> Dict[str, Any]:
@@ -163,6 +131,8 @@ class ConfigBuilder:
 			- 1: ignore errors in first_pass_config only (will stop on morphing/scoping/template errors)
 			- 0: ignore all errors
 		Note that issues might/will later arise with your ampel system.
+
+		:param get_unit_env: whether to get a full list of dependencies for each ampel unit (for trace ids)
 
 		:param pwds: config section 'resource' might contain AES encrypted entries.
 		If passwords are provided to this method, thoses entries will be decrypted.
@@ -191,6 +161,16 @@ class ConfigBuilder:
 		}
 
 		out['process'] = {}
+
+		if self.verbose:
+			self.logger.log(VERBOSE, 'Getting unit dependencies')
+
+		if get_unit_env:
+			with Pool() as p:
+				for res in p.imap(get_unit_dependencies, [el['fqn'] for el in out['unit'].values()]):
+					if self.verbose:
+						self.logger.log(VERBOSE, f'{res[0]} dependencies: {res[1] or None}')
+					out['unit'][res[0]]['env'] = res[1] or None
 
 		# Add t2 init config collector (in which both hashed values of t2 run configs
 		# and t2 init config will be added)
@@ -415,7 +395,7 @@ class ConfigBuilder:
 
 		if save:
 
-			import pathlib, yaml # type: ignore
+			import pathlib # type: ignore
 			path = pathlib.Path(save if isinstance(save, str) else 'ampel_conf.yaml')
 			with open(path, 'w') as file:
 				yaml.dump(d, file, sort_keys=False)
@@ -538,3 +518,13 @@ class ConfigBuilder:
 				return
 			# dict, key, secret, string path (debug)
 			kwargs['enc_confs'].append((d, k, secret, f"{path}.{k}"))
+
+
+def get_unit_dependencies(fqn: str) -> Dict:
+
+	return fqn.split(".")[-1], eval(
+		subprocess.run(
+			[sys.executable, '-m', 'ampel.config.builder.get_env', fqn],
+			stdout=subprocess.PIPE
+		).stdout.decode("utf-8")
+	)
