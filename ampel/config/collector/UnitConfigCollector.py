@@ -4,10 +4,10 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 16.10.2019
-# Last Modified Date: 18.06.2021
+# Last Modified Date: 10.10.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-import sys, re, importlib, subprocess, traceback
+import sys, re, importlib, traceback
 from typing import List, Union, Dict, Any, Optional
 
 from ampel.protocol.LoggingHandlerProtocol import AggregatingLoggingHandlerProtocol
@@ -61,15 +61,6 @@ class UnitConfigCollector(ConfigCollector):
 						'file': register_file,
 						'version': version
 					}
-
-					if self.get_env and (env := eval(
-						subprocess.run(
-							[sys.executable, '-m', 'ampel.config.builder.get_env', el],
-							stdout=subprocess.PIPE
-						).stdout.decode("utf-8")
-					)):
-						entry['env'] = env
-
 
 				elif isinstance(el, dict):
 					try:
