@@ -7,7 +7,7 @@
 # Last Modified Date: 10.10.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-import re, json, yaml, datetime, getpass, importlib, sys, subprocess
+import os, sys, re, json, yaml, datetime, getpass, importlib, subprocess
 from multiprocessing import Pool
 from typing import Dict, List, Any, Optional, Set, Iterable, Union
 
@@ -117,6 +117,7 @@ class ConfigBuilder:
 		skip_default_processes: bool = False,
 		json_serializable: bool = True,
 		pwds: Optional[Iterable[str]] = None,
+		ext_resource: Optional[str] = None,
 		get_unit_env: bool = True,
 		save: Union[bool, str, None] = None,
 		sign: int = 6,
@@ -137,6 +138,13 @@ class ConfigBuilder:
 		:param pwds: config section 'resource' might contain AES encrypted entries.
 		If passwords are provided to this method, thoses entries will be decrypted.
 
+		:param ext_resource: path to resource config file (yaml) to be integrated into the final ampel config.
+		The file must not contain the key "resource:", only content (ex: "mongo: mongodb://localhost:27050")
+		Note that resources defined externally (by this config file) will prevale over resources (with the same keys)
+		gathered from the repositories. "Secrets" can be used, they will be resolved during config building
+		if AES keys are provided with the parameter 'pwds', otherwise, they will be decrypted at run time just as with
+		regular resource.
+
 		:param json_serializable: if True, stringify int keys in section 'confid' and potential int channel names.
 
 		:param skip_default_processes: set to True to discard default processes defined by ampel-core.
@@ -154,6 +162,10 @@ class ConfigBuilder:
 					'Error were reported in first pass config, you can use the option stop_on_errors = 1 (or 0)\n' +
 					'to bypass this exception and get the (possibly non-working) config nonetheless'
 				)
+
+		if ext_resource and not os.path.exists(ext_resource):
+			self.logger.error(f"External resource file not found: '{ext_resource}'")
+			return
 
 		out = {
 			k: self.first_pass_config[k]
@@ -319,6 +331,12 @@ class ConfigBuilder:
 					chan_dict.get('version'), chan_dict.get('source')
 				)
 
+		if ext_resource:
+			with open(ext_resource, "r") as f:
+				out['resource'].update(
+					yaml.safe_load(f)
+				)
+
 		# Optionaly decrypt aes encrypted config entries
 		if pwds:
 
@@ -401,12 +419,11 @@ class ConfigBuilder:
 				yaml.dump(d, file, sort_keys=False)
 
 			if sign:
-				import hashlib, pathlib
+				import hashlib
 				h = hashlib.blake2b(path.read_bytes()).hexdigest()[:sign]
 				path = path.rename(path.with_stem(f"{path.stem}_{h}"))
 
 			self.logger.log(VERBOSE, f'Config file saved as {path}')
-
 
 		return d
 
