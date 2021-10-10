@@ -114,25 +114,34 @@ class T2Worker(AbsWorker[T2Document]):
 				unit = doc['unit']
 			)
 
-			# New t2 sub-result entry (later appended with additional values)
-			meta = self.gen_meta(stock_updr.run_id, t2_unit._trace_id, round(now - before_run, 3))
+			# New meta entry (code appended later)
+			meta = self.gen_meta(
+				stock_updr.run_id,
+				t2_unit._trace_id,
+				round(now - before_run, 3),
+				MetaActionCode.BUMP_STOCK_UPD
+			)
+
+			# The channel-less activity of this t2 worker
+			activity = meta['activity'][0]
 
 			# Unit requested customizations
 			if isinstance(ret, UnitResult):
 
 				if ret.body:
 					body = ret.body
-					meta['action'] |= MetaActionCode.ADD_BODY
+					activity['action'] |= MetaActionCode.ADD_BODY
 					jrec['action'] |= JournalActionCode.T2_ADD_BODY
 
 				if ret.tag:
 					tag = ret.tag
-					meta['action'] |= MetaActionCode.ADD_UNIT_TAG
+					activity['action'] |= MetaActionCode.ADD_UNIT_TAG
+					activity['tag'] = ret.tag
 					jrec['action'] |= JournalActionCode.T2_ADD_TAG
 
 				if ret.code:
 					code = ret.code
-					meta['action'] |= MetaActionCode.SET_CODE
+					activity['action'] |= MetaActionCode.SET_UNIT_CODE
 					jrec['action'] |= JournalActionCode.T2_SET_CODE
 
 				# TODO: check that unit did not use system reserved code
@@ -145,13 +154,13 @@ class T2Worker(AbsWorker[T2Document]):
 
 				if ret.journal:
 					jrec.update(ret.journal) # type: ignore
-					meta['action'] |= MetaActionCode.EXTRA_JOURNAL
+					activity['action'] |= MetaActionCode.EXTRA_JOURNAL
 					jrec['action'] |= JournalActionCode.T2_EXTRA_JOURNAL
 
 			# Unit returned bson-like content
 			elif isinstance(ret, ubson):
 				body = ret
-				meta['action'] |= MetaActionCode.ADD_BODY
+				activity['action'] |= MetaActionCode.ADD_BODY
 				jrec['action'] |= JournalActionCode.T2_ADD_BODY
 
 			# Unsupported object returned by unit
