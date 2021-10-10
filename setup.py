@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : Unspecified
-# Last Modified Date: 17.08.2021
+# Last Modified Date: 10.10.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from setuptools import setup, find_namespace_packages
@@ -73,13 +73,13 @@ entry_points = {
 
 setup(
     name = 'ampel-core',
-    version = '0.8.0',
+    version = '0.8.1.alpha-1',
     description = 'Asynchronous and Modular Platform with Execution Layers',
     author = 'Valery Brinnel',
     maintainer = 'Jakob van Santen',
     maintainer_email = 'jakob.van.santen@desy.de',
     url = 'https://ampelproject.github.io',
-    zip_safe=False,
+    zip_safe = False,
     packages = find_namespace_packages(),
     package_data = package_data,
     install_requires = install_requires,

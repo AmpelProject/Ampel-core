@@ -1,13 +1,9 @@
 [tool.poetry]
 name = "ampel-core"
-version = "0.8.0-alpha.11"
+version = "0.8.1-alpha.1"
 description = "Asynchronous and Modular Platform with Execution Layers"
-authors = [
-    "Valery Brinnel"
-]
-maintainers = [
-    "Jakob van Santen <jakob.van.santen@desy.de>"
-]
+authors = ["Valery Brinnel"]
+maintainers = ["Jakob van Santen <jakob.van.santen@desy.de>"]
 license = "BSD-3-Clause"
 readme = "README.md"
 homepage = "https://ampelproject.github.io"
@@ -19,9 +15,7 @@ classifiers = [
     "Topic :: Scientific/Engineering :: Information Analysis",
     "Typing :: Typed",
 ]
-packages = [
-    {include = "ampel"}
-]
+packages = [{include = "ampel"}]
 include = [
     'conf/*/*.json',
     'conf/*/*/*.json',
@@ -37,7 +31,7 @@ ampel-config = 'ampel.config.cli:main'
 ampel-db = 'ampel.db.AmpelDB:main'
 
 [tool.poetry.dependencies]
-ampel-interface = {version = "^0.8.0-alpha.12"}
+ampel-interface = {version = "^0.8.1-alpha.1"}
 python = ">=3.9,<3.10"
 pydantic = "^1.8.1"
 pymongo = "^3.10"
