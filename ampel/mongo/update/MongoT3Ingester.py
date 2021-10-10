@@ -17,5 +17,5 @@ from ampel.abstract.AbsDocIngester import AbsDocIngester
 
 class MongoT3Ingester(AbsDocIngester[T3Document]):
 
-	def ingest(self, doc: T3Document, now: Union[int, float]) -> None:
-		pass
+	def ingest(self, doc: T3Document) -> None:
+		raise NotImplementedError("Soon...")
