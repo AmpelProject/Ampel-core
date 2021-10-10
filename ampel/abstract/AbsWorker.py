@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 28.05.2021
-# Last Modified Date: 11.09.2021
+# Last Modified Date: 10.10.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import gc, signal
@@ -17,20 +17,21 @@ from ampel.base.LogicalUnit import LogicalUnit
 from ampel.mongo.utils import maybe_match_array
 from ampel.log.utils import convert_dollars
 from ampel.enum.DocumentCode import DocumentCode
-from ampel.enum.MetaActionCode import MetaActionCode
+from ampel.content.MetaRecord import MetaRecord
 from ampel.content.T1Document import T1Document
 from ampel.content.T2Document import T2Document
+from ampel.enum.MetaActionCode import MetaActionCode
 from ampel.log import AmpelLogger, LogFlag, VERBOSE, DEBUG
 from ampel.core.EventHandler import EventHandler
 from ampel.log.utils import report_exception, report_error
 from ampel.log.handlers.DefaultRecordBufferingHandler import DefaultRecordBufferingHandler
 from ampel.util.hash import build_unsafe_dict_id
-from ampel.util.collections import to_list, try_reduce
 from ampel.abstract.AbsEventUnit import AbsEventUnit
 from ampel.model.UnitModel import UnitModel
 from ampel.mongo.update.MongoStockUpdater import MongoStockUpdater
 from ampel.mongo.utils import maybe_use_each
 from ampel.metrics.AmpelMetricsRegistry import AmpelMetricsRegistry, Histogram, Counter
+from ampel.util.collections import merge_to_list
 
 T = TypeVar("T", T1Document, T2Document)
 
@@ -52,7 +53,11 @@ class AbsWorker(Generic[T], AbsEventUnit, abstract=True):
 
 	#: tag(s) to add to the stock :class:`~ampel.content.JournalRecord.JournalRecord`
 	#: every time a document is processed
-	stock_jtag: Optional[Union[Tag, Sequence[Tag]]]
+	jtag: Optional[Union[Tag, Sequence[Tag]]]
+
+	#: tag(s) to add to the stock :class:`~ampel.content.MetaRecord.MetaRecord`
+	#: every time a document is processed
+	mtag: Optional[Union[Tag, Sequence[Tag]]]
 
 	#: create a 'beacon' document indicating the last time T2Processor was run
 	#: in the current configuration
@@ -140,7 +145,7 @@ class AbsWorker(Generic[T], AbsEventUnit, abstract=True):
 		stock_updr = MongoStockUpdater(
 			ampel_db = self.context.db, tier = self.tier, run_id = run_id,
 			process_name = self.process_name, logger = logger,
-			raise_exc = self.raise_exc, extra_tag = self.stock_jtag
+			raise_exc = self.raise_exc, extra_tag = self.jtag
 		)
 
 		# Loop variables
@@ -180,7 +185,7 @@ class AbsWorker(Generic[T], AbsEventUnit, abstract=True):
 
 	def _processing_error(self,
 		logger: AmpelLogger, doc: T, body: UBson,
-		meta: Dict[str, Any], msg: Optional[str] = None,
+		meta: MetaRecord, msg: Optional[str] = None,
 		extra: Optional[Dict[str, Any]] = None, exception: Optional[Exception] = None
 	) -> None:
 		"""
@@ -197,17 +202,25 @@ class AbsWorker(Generic[T], AbsEventUnit, abstract=True):
 		:param msg: added to meta entry if provided
 		"""
 
-		self.commit_update(
-			{'_id': doc['_id']}, # type: ignore
-			meta | {
-				'code': DocumentCode.EXCEPTION if exception else DocumentCode.ERROR,
-				'msg': msg
-			},
-			logger
-		)
+		if (
+			not meta['activity'] or
+			(len(meta['activity']) == 1 and meta['activity'][0]['action'] == 0)
+		):
+			meta['activity'] = []
+
+		if not [el for el in meta['activity'] if (el['action'] & MetaActionCode.SET_CODE)]:
+			meta['activity'].append( # type: ignore[attr-defined]
+				{'action': MetaActionCode.SET_CODE}
+			)
+
+		if 'extra' not in meta:
+			meta['extra'] = {}
+
+		meta['extra']['msg'] = msg
+
+		self.commit_update({'_id': doc['_id']}, meta, logger) # type: ignore[typeddict-item]
 
 		info: Dict[str, Any] = (extra or {}) | meta | {'stock': doc['stock'], 'doc': doc}
-
 		if exception:
 			report_exception(self._ampel_db, logger=logger, exc=exception, info=info)
 		else:
@@ -216,7 +229,7 @@ class AbsWorker(Generic[T], AbsEventUnit, abstract=True):
 
 	def commit_update(self,
 		match: Dict[str, Any],
-		meta: Dict[str, Any],
+		meta: MetaRecord,
 		logger: AmpelLogger, *,
 		payload_op: Literal['$push', '$set'] = '$push',
 		body: UBson = None,
@@ -224,10 +237,7 @@ class AbsWorker(Generic[T], AbsEventUnit, abstract=True):
 		code: int = 0
 	) -> None:
 		"""
-		Insert/upsert tier docs into DB
-		Note regarding tags:
-		They are 'public' attributes (that is: not channel bound) and as such, they are visible by any projection
-		and can be used for any db queries
+		Insert/upsert tier docs into DB.
 		"""
 
 		if logger.verbose:
@@ -243,16 +253,23 @@ class AbsWorker(Generic[T], AbsEventUnit, abstract=True):
 			'$push': {'meta': meta}
 		}
 
-		if tag:
+		if self.mtag:
 
-			if 'tag' in meta and meta['tag']:
-				meta['tag'] = to_list(meta['tag']) + to_list(tag)
+			tag = merge_to_list(self.mtag, tag) if tag else self.mtag # type: ignore
+			activities = meta['activity']
+
+			# T2 unit added a tag, make the distinction clear by adding a dedicated activity
+			if [el for el in activities if 'tag' in el]:
+				activities.append( # type: ignore[attr-defined]
+					{'action': MetaActionCode.ADD_WORKER_TAG, 'tag': self.mtag}
+				)
 			else:
-				meta['tag'] = try_reduce(tag)
+				activities[0]['action'] |= MetaActionCode.ADD_WORKER_TAG
+				activities[0]['tag'] = self.mtag
 
+		if tag:
 			upd['$addToSet'] = {
-				'tag': meta['tag'] if isinstance(meta['tag'], (int, str))
-					else maybe_use_each(meta['tag'])
+				'tag': tag if isinstance(tag, (int, str)) else maybe_use_each(tag)
 			}
 
 		if body is not None:
@@ -262,14 +279,19 @@ class AbsWorker(Generic[T], AbsEventUnit, abstract=True):
 		self.col.update_one(match, upd)
 
 
-	def gen_meta(self, run_id: int, unit_trace_id: Optional[int], duration: Union[int, float]) -> Dict[str, Any]:
+	def gen_meta(self,
+		run_id: int,
+		unit_trace_id: Optional[int],
+		duration: Union[int, float],
+		action_code: MetaActionCode = MetaActionCode(0)
+	) -> MetaRecord:
 		return {
 			'run': run_id,
 			'ts': int(time()),
 			'tier': self.tier,
-			'code': None,
-			'action': MetaActionCode(0),
+			'code': None, # type: ignore[typeddict-item]
 			'duration': duration,
+			'activity': [{'action': action_code}],
 			'traceid': {
 				f't{self.tier}worker': self._trace_id,
 				f't{self.tier}unit': unit_trace_id
