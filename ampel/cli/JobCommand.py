@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 15.03.2021
-# Last Modified Date: 15.09.2021
+# Last Modified Date: 10.10.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import yaml, os, signal, sys
@@ -65,27 +65,26 @@ class JobCommand(AbsCoreCommand):
 			return self.parser
 
 		parser = AmpelArgumentParser("job")
-
-		# Help
 		parser.set_help_descr({
+			"debug": "Debug",
+			#"verbose": "increases verbosity",
 			"config": "path to an ampel config file (yaml/json)",
 			"schema": "path to YAML job file",
 			"secrets": "path to a YAML secrets store in sops format",
-			#"verbose": "increases verbosity",
-			"debug": "Debug"
+			"keep-db": "Do not reset databases even if so requested by job file"
 		})
 
 		# Required
 		parser.add_arg("config", "required", type=str)
 		parser.add_arg("schema", "required")
 		parser.add_arg("debug", "optional", action="store_true")
+		parser.add_arg("keep-db", "optional", action="store_true")
 
 		# Optional
 		parser.add_arg("secrets", type=str)
 
 		# Example
 		parser.add_example("job -config ampel_conf.yaml -schema job_file.yaml")
-
 		return parser
 
 
@@ -112,12 +111,16 @@ class JobCommand(AbsCoreCommand):
 				# TODO: check job repo requirements
 				pass
 
+			if (purge_db := get_by_path(job, 'mongo.reset') or False) and args['keep_db']:
+				logger.info("Keeping existing databases ('-keep-db')")
+				purge_db = False
+
 			# DevAmpelContext hashes automatically confid from potential IngestDirectives
 			ctx = self.get_context(
 				args, unknown_args, logger,
 				freeze_config = False,
 				ContextClass = DevAmpelContext,
-				purge_db = get_by_path(job, 'mongo.reset') or False,
+				purge_db = purge_db,
 				db_prefix = get_by_path(job, 'mongo.prefix')
 			)
 
