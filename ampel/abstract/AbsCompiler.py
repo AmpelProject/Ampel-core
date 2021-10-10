@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 07.05.2021
-# Last Modified Date: 08.10.2021
+# Last Modified Date: 10.10.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from typing import Optional, Literal, Sequence, Union, Dict, FrozenSet, Tuple, Set, Any, List
@@ -37,9 +37,11 @@ class AbsCompiler(AmpelABC, AmpelBaseModel, abstract=True):
 
 
 	def __init__(self, **kwargs) -> None:
+
 		super().__init__(**kwargs)
 		self._tag = None
-		self._ingest_tag_activity = None
+		self._ingest_tag_activity: Optional[MetaActivity] = None
+
 		if self.tag:
 			self._ingest_tag_activity = {'action': MetaActionCode.ADD_INGEST_TAG}
 			if isinstance(self.tag, (str, int)):
@@ -68,18 +70,12 @@ class AbsCompiler(AmpelABC, AmpelBaseModel, abstract=True):
 		meta_extra: Optional[Dict[str, Any]] = None
 	) -> None:
 		"""
-		We could support the type List[Tuple[str, any]] for the parameter activity
+		Note: We could support the type List[Tuple[str, any]] for the parameter activity
 		as the dict form is actually superfluous (frozenset(dict.items()) is used in the end)
 		but the performance gain is negligible (~80ns) and it complicates static typing
 		"""
 
-		# "Add chan" activity 'key' (used in activity dict below)
-		add_chan = frozenset([('action', MetaActionCode.ADD_CHANNEL)])
-
-		if z := ar.get(add_chan):
-			z.add(channel)
-		else:
-			ar[add_chan] = {channel}
+		add_chan_registered = False
 
 		if activity:
 
@@ -87,6 +83,9 @@ class AbsCompiler(AmpelABC, AmpelBaseModel, abstract=True):
 
 				# Channel-bound activity
 				if 'channel' in el:
+
+					if el['action'] & MetaActionCode.ADD_CHANNEL:
+						add_chan_registered = True
 
 					# Strip out 'channel' from activity
 					# (to be able to merge similar activities accross channels)
@@ -128,6 +127,18 @@ class AbsCompiler(AmpelABC, AmpelBaseModel, abstract=True):
 						# (dict key contains activity content, value is None as in channel-less)
 						ar[x] = None
 
+		if not add_chan_registered:
+
+			# "Add chan" activity 'key' (used in activity dict below)
+			add_chan = frozenset(
+				[('action', MetaActionCode.ADD_CHANNEL | MetaActionCode.BUMP_STOCK_UPD)]
+			)
+
+			if z := ar.get(add_chan):
+				z.add(channel)
+			else:
+				ar[add_chan] = {channel}
+
 		if meta_extra:
 			# No collision detection implemented yet
 			extra_register.update(meta_extra)
@@ -139,16 +150,25 @@ class AbsCompiler(AmpelABC, AmpelBaseModel, abstract=True):
 		meta_extra: Optional[Dict[str, Any]] = None
 	) -> Tuple[ActivityRegister, Dict[str, Any]]: # activity register, meta_extra
 
-		# New activity register
-		ar: ActivityRegister = {frozenset([('action', MetaActionCode.ADD_CHANNEL)]): {channel}}
+		ar: ActivityRegister = {}
+		add_chan_registered = False
 
 		if activity:
 			for el in [activity] if isinstance(activity, dict) else activity:
 				if 'channel' in el: # Channel-bound activity
+					if el['action'] & MetaActionCode.ADD_CHANNEL:
+						add_chan_registered = True
 					k: FrozenSet[Tuple[str, Any]] = frozenset([y for y in el.items() if y[0] != 'channel'])
 					ar[k] = {el['channel']} if isinstance(el['channel'], (int, str)) else set(el['channel'])
 				else: # Channel-less activity
 					ar[frozenset(el.items())] = None
+
+		if not add_chan_registered:
+			ar[
+				frozenset(
+					[('action', MetaActionCode.ADD_CHANNEL | MetaActionCode.BUMP_STOCK_UPD)]
+				)
+			] = {channel}
 
 		return ar, meta_extra.copy() if meta_extra else {}
 
