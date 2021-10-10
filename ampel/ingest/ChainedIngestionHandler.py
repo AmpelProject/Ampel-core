@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 01.05.2020
-# Last Modified Date: 09.10.2021
+# Last Modified Date: 10.10.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from time import time
@@ -205,16 +205,6 @@ class ChainedIngestionHandler:
 				self._new_ingest_blocks(directive, updates_buffer, logger)
 			)
 
-		"""
-		if logger.verbose:
-			logger.log(VERBOSE,
-				f"Ingesters: datapoint: 1, stock: 1, "
-				f"t1: {len(self.state_t2_ingesters)}, "
-				f"t2_state: {sum(len(v) for v in self.state_t2_ingesters.values())}, "
-				f"t2_point: {len(self.point_t2_ingesters)}, "
-				f"t2_stock: {len(self.stock_t2_ingesters)}"
-			)
-		"""
 
 	def _new_ingest_blocks(self,
 		directive: Union[IngestDirective, DualIngestDirective],
@@ -508,7 +498,7 @@ class ChainedIngestionHandler:
 
 			# Add alert and shaper version info to stock journal entry
 			jentry: Dict[str, Any] = {
-				'action': JournalActionCode.STOCK_ADD_CHANNEL,
+				'action': JournalActionCode.STOCK_ADD_CHANNEL | JournalActionCode.STOCK_BUMP_UPD,
 				'traceid': self.base_trace_id | {'shaper': self.shaper_trace_id}
 			}
 
@@ -721,33 +711,36 @@ class ChainedIngestionHandler:
 					tid['muxer'] = jentry['traceid']['muxer']
 
 				mx = meta_extra.copy() if meta_extra else {}
-				mad: Optional[MetaActivity] = None
+				macts: List[MetaActivity] = [
+					{
+						'action': MetaActionCode.ADD_CHANNEL | MetaActionCode.BUMP_STOCK_UPD,
+						'channel': t1b.channel
+					}
+				]
 
 				if isinstance(tres, T1CombineResult):
 					t1_dps = tres.dps
 					if tres.meta:
 						mx |= tres.meta
 						jentry['action'] |= JournalActionCode.T1_EXTRA_META
-						mad = {'action': MetaActionCode.EXTRA_META, 'channel': t1b.channel}
+						macts[0]['action'] |= MetaActionCode.EXTRA_META
 					if tres.code:
 						code = tres.code
 						jentry['action'] |= JournalActionCode.T1_SET_CODE
-						if mad:
-							mad['action'] |= MetaActionCode.SET_CODE
-						else:
-							mad = {'action': MetaActionCode.SET_CODE, 'channel': t1b.channel}
+						macts[0]['action'] |= MetaActionCode.SET_UNIT_CODE
+						if t1b.compute.unit:
+							macts[0]['code'] = code
 					else:
 						code = DocumentCode.OK
+						macts[0]['action'] |= MetaActionCode.SET_CODE
 				else:
 					t1_dps = tres
 					code = DocumentCode.OK
+					macts[0]['action'] |= MetaActionCode.SET_CODE
 
 				if excl := [el['id'] for el in dps if el['id'] not in t1_dps]:
-					if mad:
-						mad['action'] |= MetaActionCode.ADD_T1_EXCL
-						mad['excl'] = excl # type: ignore[typeddict-item]
-					else:
-						mad = {'action': MetaActionCode.ADD_T1_EXCL, 'channel': t1b.channel, 'excl': excl} # type: ignore
+					macts[0]['action'] |= MetaActionCode.ADD_T1_EXCL
+					macts[0]['excl'] = excl
 
 				je = jentry.copy()
 				je['traceid'] = jentry['traceid'].copy()
@@ -767,10 +760,7 @@ class ChainedIngestionHandler:
 				if t1b.compute.unit:
 
 					je['traceid']['t1_compute'] = t1b.compute.trace_id
-					if mad:
-						mad['action'] |= MetaActionCode.ADD_BODY
-					else:
-						mad = {'action': MetaActionCode.ADD_BODY, 'channel': t1b.channel}
+					macts.append({'action': MetaActionCode.ADD_BODY})
 
 					# Potentially load previous results from "t1 compute" cache
 					k = t1b.compute.unit, tuple(t1_dps)
@@ -789,26 +779,21 @@ class ChainedIngestionHandler:
 						if t1_res[0].journal:
 							je |= t1_res[0].journal.dict()
 							je['action'] |= JournalActionCode.T1_EXTRA_JOURNAL
-							if mad:
-								mad['action'] |= MetaActionCode.EXTRA_JOURNAL
-							else:
-								mad = {'action': MetaActionCode.EXTRA_JOURNAL, 'channel': t1b.channel}
+							macts[1]['action'] |= MetaActionCode.EXTRA_JOURNAL
 						if t1_res[0].code:
 							code = t1_res[0].code
 							je['action'] |= JournalActionCode.T1_SET_CODE
-							if mad:
-								if mad['action'] & MetaActionCode.SET_CODE:
-									mx['t1_compute_code_override'] = True
-								mad['action'] |= MetaActionCode.SET_CODE
-							else:
-								mad = {'action': MetaActionCode.SET_CODE, 'channel': t1b.channel}
+							macts[1]['action'] |= MetaActionCode.SET_UNIT_CODE
 						else:
 							code = DocumentCode.NEW
+							macts[1]['action'] |= MetaActionCode.SET_CODE
 					else:
 						body = t1_res[0]
 						code = DocumentCode.NEW
+						macts[1]['action'] |= MetaActionCode.SET_CODE
 
 				je['action'] |= JournalActionCode.T1_ADD_CHANNEL
+				mx['code'] = code
 
 				# Note: we ignore potential stock from T1 result here
 				link = self.t1_compiler.add(
@@ -817,7 +802,7 @@ class ChainedIngestionHandler:
 					tid,
 					stock_id,
 					meta_extra = mx,
-					activity = mad,
+					activity = macts,
 					unit = t1b.compute.unit_name,
 					config = t1b.compute.config,
 					body = body,
