@@ -4,11 +4,12 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 17.07.2021
-# Last Modified Date: 31.08.2021
+# Last Modified Date: 10.10.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from argparse import ArgumentParser
 from typing import Sequence, Dict, Any, Optional, Union
+from ampel.log.AmpelLogger import AmpelLogger
 from ampel.cli.AbsCoreCommand import AbsCoreCommand
 from ampel.cli.AmpelArgumentParser import AmpelArgumentParser
 from ampel.cli.ArgParserBuilder import ArgParserBuilder
@@ -25,7 +26,8 @@ hlp = {
 		'- 2: stop on errors\n' +
 		'- 1: ignore errors in first_pass_config only (will stop on morphing/scoping/template errors)\n' +
 		'- 0: ignore all errors',
-	'verbose': 'verbose'
+	'verbose': 'verbose',
+	'ext-resource': 'path to resource config file (yaml) to be integrated into the final ampel config'
 }
 
 
@@ -62,13 +64,14 @@ class ConfigCommand(AbsCoreCommand):
 		builder.add_arg("optional", "log-profile", default="default")
 
 		builder.add_arg("build.optional", "sign", action="store_true")
+		builder.add_arg("build.optional", "ext-resource")
 		builder.add_arg("show.optional", "pretty", action="store_true")
 		builder.add_arg("build.optional", "stop-on-errors", default=2)
 
 		# Example
 		builder.add_example("build", "-out ampel_conf.yaml")
 		builder.add_example("build", "-out ampel_conf.yaml -sign -verbose")
-		builder.add_example("show", "-pretty")
+		builder.add_example("show", "-pretty -process -tier 0 -channel CHAN1")
 
 		self.parsers.update(
 			builder.get()
@@ -81,15 +84,24 @@ class ConfigCommand(AbsCoreCommand):
 	# Mandatory implementation
 	def run(self, args: Dict[str, Any], unknown_args: Sequence[str], sub_op: Optional[str] = None) -> None:
 
-		cb = DistConfigBuilder(
-			verbose = args.get('verbose', False)
-		)
+		if sub_op == 'build':
 
-		cb.load_distributions()
+			if not (verbose := args.get('verbose', False)):
+				AmpelLogger.get_logger().info(
+					"Building config, this might take a while... [use -verbose for details]"
+				)
 
-		cb.build_config(
-			stop_on_errors = 0,
-			skip_default_processes=True,
-			config_validator = None,
-			save = args['out']
-		)
+			cb = DistConfigBuilder(verbose=verbose)
+
+			cb.load_distributions()
+
+			cb.build_config(
+				stop_on_errors = 0,
+				skip_default_processes=True,
+				config_validator = None,
+				save = args['out'],
+				ext_resource = args['ext_resource']
+			)
+
+		else:
+			raise NotImplementedError("Not implemented yet")
