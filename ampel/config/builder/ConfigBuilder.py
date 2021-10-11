@@ -164,8 +164,7 @@ class ConfigBuilder:
 				)
 
 		if ext_resource and not os.path.exists(ext_resource):
-			self.logger.error(f"External resource file not found: '{ext_resource}'")
-			return
+			raise ValueError(f"External resource file not found: '{ext_resource}'")
 
 		out = {
 			k: self.first_pass_config[k]
@@ -178,8 +177,8 @@ class ConfigBuilder:
 			self.logger.log(VERBOSE, 'Getting unit dependencies')
 
 		if get_unit_env:
-			with Pool() as p:
-				for res in p.imap(get_unit_dependencies, [el['fqn'] for el in out['unit'].values()]):
+			with Pool() as pool:
+				for res in pool.imap(get_unit_dependencies, [el['fqn'] for el in out['unit'].values()]):
 					if self.verbose:
 						self.logger.log(VERBOSE, f'{res[0]} dependencies: {res[1] or None}')
 					out['unit'][res[0]]['env'] = res[1] or None
