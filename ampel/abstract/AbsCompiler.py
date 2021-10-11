@@ -144,6 +144,17 @@ class AbsCompiler(AmpelABC, AmpelBaseModel, abstract=True):
 			extra_register.update(meta_extra)
 
 
+	@staticmethod
+	def _metactivity_key(activity: MetaActivity, skip_keys: Optional[set[str]]=None) -> FrozenSet[tuple[str, Any]]:
+		return frozenset(
+			(
+				k,
+				tuple(v) if isinstance(v, list) else v
+			) for k,v in activity.items()
+			if skip_keys is None or k not in skip_keys
+		)
+
+
 	def new_meta_info(self,
 		channel: ChannelId,
 		activity: Optional[Union[MetaActivity, List[MetaActivity]]] = None,
@@ -160,10 +171,9 @@ class AbsCompiler(AmpelABC, AmpelBaseModel, abstract=True):
 				if 'channel' in el: # Channel-bound activity
 					if el['action'] & MetaActionCode.ADD_CHANNEL:
 						add_chan_registered = True
-					k: FrozenSet[Tuple[str, Any]] = frozenset([y for y in el.items() if y[0] != 'channel'])
-					ar[k] = {el['channel']} if isinstance(el['channel'], (int, str)) else set(el['channel'])
+					ar[self._metactivity_key(el, {'channel'})] = {el['channel']} if isinstance(el['channel'], (int, str)) else set(el['channel'])
 				else: # Channel-less activity
-					ar[frozenset(el.items())] = None
+					ar[self._metactivity_key(el)] = None
 
 		if not add_chan_registered:
 			ar[
