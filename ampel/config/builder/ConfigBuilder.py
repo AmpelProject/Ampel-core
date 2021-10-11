@@ -536,7 +536,7 @@ class ConfigBuilder:
 			kwargs['enc_confs'].append((d, k, secret, f"{path}.{k}"))
 
 
-def get_unit_dependencies(fqn: str) -> Dict:
+def get_unit_dependencies(fqn: str) -> tuple[str, dict]:
 
 	return fqn.split(".")[-1], eval(
 		subprocess.run(
