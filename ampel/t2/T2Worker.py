@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 24.05.2019
-# Last Modified Date: 28.09.2021
+# Last Modified Date: 11.10.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from time import time
@@ -83,7 +83,7 @@ class T2Worker(AbsWorker[T2Document]):
 		if not isinstance(t2_unit, abs_t2):
 			raise ValueError(f"Unsupported unit: {doc['unit']}")
 
-		if len(doc.get('body', [])) <= self.max_try:
+		if len([el for el in doc['meta'] if el['tier'] == 2]) <= self.max_try:
 			ret = self.run_t2_unit(t2_unit, doc, logger, stock_updr)
 		else:
 			ret = UnitResult(code=DocumentCode.TOO_MANY_TRIALS)
