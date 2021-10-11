@@ -194,7 +194,7 @@ class JobCommand(AbsCoreCommand):
 				elif i != 0:
 					self.print_chapter(f"Task #{i}", logger)
 
-				if i not in args['with_task']:
+				if args['with_task'] and i not in args['with_task']:
 					logger.info(f"Skipping task #{i} as requested")
 					continue
 
