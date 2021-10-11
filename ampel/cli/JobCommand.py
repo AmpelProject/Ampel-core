@@ -22,6 +22,7 @@ from ampel.log.LogFlag import LogFlag
 from ampel.util.freeze import recursive_freeze
 from ampel.util.mappings import get_by_path
 from ampel.cli.AbsCoreCommand import AbsCoreCommand
+from ampel.cli.MaybeIntAction import MaybeIntAction
 from ampel.cli.AmpelArgumentParser import AmpelArgumentParser
 
 try:
@@ -71,12 +72,14 @@ class JobCommand(AbsCoreCommand):
 			"config": "path to an ampel config file (yaml/json)",
 			"schema": "path to YAML job file",
 			"secrets": "path to a YAML secrets store in sops format",
-			"keep-db": "Do not reset databases even if so requested by job file"
+			"keep-db": "Do not reset databases even if so requested by job file",
+			"with-task": "Only perform the task with provide indexes (which starts at 0)",
 		})
 
 		# Required
 		parser.add_arg("config", "required", type=str)
 		parser.add_arg("schema", "required")
+		parser.add_arg("with-task", "optional", action=MaybeIntAction, nargs='+')
 		parser.add_arg("debug", "optional", action="store_true")
 		parser.add_arg("keep-db", "optional", action="store_true")
 
@@ -100,6 +103,9 @@ class JobCommand(AbsCoreCommand):
 		tds: List[Dict[str, Any]] = []
 		signal.signal(signal.SIGINT, signal_handler)
 		signal.signal(signal.SIGTERM, signal_handler)
+
+		if isinstance(args['with_task'], int):
+			args['with_task'] = [args['with_task']]
 
 		with open(args['schema'], "r") as f:
 
@@ -187,6 +193,10 @@ class JobCommand(AbsCoreCommand):
 					del task_dict['title']
 				elif i != 0:
 					self.print_chapter(f"Task #{i}", logger)
+
+				if i not in args['with_task']:
+					logger.info(f"Skipping task #{i} as requested")
+					continue
 
 				multiplier = task_dict.pop('multiplier')
 				process_name = f"{job['name']}#Task#{i}"
