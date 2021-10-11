@@ -156,7 +156,7 @@ def ingest_stock_t2(dev_context: DevAmpelContext, ampel_logger):
         stock=stock_id,
         link=stock_id,
         channel="TEST_CHANNEL",
-        meta=None,
+        traceid={},
     )
     compiler.commit(ingester, datetime.datetime.now().timestamp())
     ingester.updates_buffer.push_updates()
