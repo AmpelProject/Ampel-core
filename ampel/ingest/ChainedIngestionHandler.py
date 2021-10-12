@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 01.05.2020
-# Last Modified Date: 10.10.2021
+# Last Modified Date: 12.10.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from time import time
@@ -612,14 +612,14 @@ class ChainedIngestionHandler:
 		if self.t1_compiler.t1s:
 			self.t1_compiler.commit(self.t1_ingester, now)
 
-		if self.state_t2_compiler.t2s:
-			self.state_t2_compiler.commit(self.t2_ingester, now)
-
 		if self.stock_t2_compiler.t2s:
 			self.stock_t2_compiler.commit(self.t2_ingester, now)
 
 		if self.point_t2_compiler.t2s:
 			self.point_t2_compiler.commit(self.t2_ingester, now)
+
+		if self.state_t2_compiler.t2s:
+			self.state_t2_compiler.commit(self.t2_ingester, now)
 
 		self.stock_compiler.commit(self.stock_ingester, now)
 		self.ingest_stats.append(time() - ingest_start)
