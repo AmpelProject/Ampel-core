@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 17.07.2021
-# Last Modified Date: 10.10.2021
+# Last Modified Date: 12.10.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from argparse import ArgumentParser
@@ -61,7 +61,6 @@ class ConfigCommand(AbsCoreCommand):
 		# Optional args
 		builder.add_arg("optional", "secrets", default=None)
 		builder.add_arg('optional', 'verbose', action="store_true")
-		builder.add_arg("optional", "log-profile", default="default")
 
 		builder.add_arg("build.optional", "sign", action="store_true")
 		builder.add_arg("build.optional", "ext-resource")
