@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 15.03.2021
-# Last Modified Date: 10.10.2021
+# Last Modified Date: 12.10.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import yaml, os, signal, sys
@@ -73,6 +73,7 @@ class JobCommand(AbsCoreCommand):
 			"schema": "path to YAML job file",
 			"secrets": "path to a YAML secrets store in sops format",
 			"keep-db": "Do not reset databases even if so requested by job file",
+			"reset-db": "Reset databases even if not requested by job file",
 			"with-task": "Only perform the task with provide indexes (which starts at 0)",
 		})
 
@@ -82,12 +83,14 @@ class JobCommand(AbsCoreCommand):
 		parser.add_arg("with-task", "optional", action=MaybeIntAction, nargs='+')
 		parser.add_arg("debug", "optional", action="store_true")
 		parser.add_arg("keep-db", "optional", action="store_true")
+		parser.add_arg("reset-db", "optional", action="store_true")
 
 		# Optional
 		parser.add_arg("secrets", type=str)
 
 		# Example
-		parser.add_example("job -config ampel_conf.yaml -schema job_file.yaml")
+		parser.add_example("job -config ampel_conf.yaml schema job_file.yaml")
+		parser.add_example("job -config ampel_conf.yaml -schema job_file.yaml -keep-db -with-task 2")
 		return parser
 
 
@@ -117,9 +120,16 @@ class JobCommand(AbsCoreCommand):
 				# TODO: check job repo requirements
 				pass
 
-			if (purge_db := get_by_path(job, 'mongo.reset') or False) and args['keep_db']:
+			purge_db = get_by_path(job, 'mongo.reset') or args['reset_db']
+
+			if purge_db and args['keep_db']:
 				logger.info("Keeping existing databases ('-keep-db')")
 				purge_db = False
+
+			if args['with_task'] and sum(args['with_task']) > 0 and purge_db and not args['reset_db']:
+				logger.info("Ampel job file requires db reset but with-task argument was provided")
+				logger.info("Please add argument -reset-db to confirm you are absolutely sure...")
+				return
 
 			# DevAmpelContext hashes automatically confid from potential IngestDirectives
 			ctx = self.get_context(
