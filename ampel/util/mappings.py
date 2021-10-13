@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 07.06.2018
-# Last Modified Date: 19.09.2021
+# Last Modified Date: 13.10.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from typing import Dict, Any, List, Union, Optional, Sequence, \
@@ -222,7 +222,12 @@ def flatten_dict(
 		raise ValueError(f"Offending input: {d}") from e
 
 
-def unflatten_dict(d: Mapping[str, Any], separator: str = '.', unflatten_list: bool = False) -> MutableMapping[str, Any]:
+def unflatten_dict(
+	d: Mapping[str, Any],
+	separator: str = '.',
+	unflatten_list: bool = False,
+	sort: bool = False
+) -> MutableMapping[str, Any]:
 	"""
 	Example:
 
@@ -234,7 +239,7 @@ def unflatten_dict(d: Mapping[str, Any], separator: str = '.', unflatten_list: b
 	"""
 	out: Dict[str, Any] = {}
 
-	for key, value in d.items():
+	for key in sorted(d.keys()) if sort else d:
 
 		parts = key.split(separator)
 		target: Dict[str, Any] = out
@@ -244,7 +249,7 @@ def unflatten_dict(d: Mapping[str, Any], separator: str = '.', unflatten_list: b
 				target[part] = {}
 			target = target[part]
 
-		target[parts[-1]] = value
+		target[parts[-1]] = d[key]
 
 	if unflatten_list:
 		return _unflatten_lists(out)
