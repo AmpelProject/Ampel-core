@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 07.10.2019
-# Last Modified Date: 21.06.2021
+# Last Modified Date: 13.10.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import sys
@@ -176,7 +176,9 @@ class UnitLoader:
 			if c := unit.__dict__.get("_trace_content"):
 				trace_dict['config'] = dictify(c)
 
-			if env := self.config.get(f"unit.{model.unit}.env", dict):
+			if env := self.config.get(f"unit.{model.unit}.env"):
+				if not isinstance(env, dict):
+					raise ValueError("Retrieved environment is not a dict")
 				trace_dict['env'] = env
 
 			try:
