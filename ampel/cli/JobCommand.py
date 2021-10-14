@@ -72,15 +72,18 @@ class JobCommand(AbsCoreCommand):
 			"config": "path to an ampel config file (yaml/json)",
 			"schema": "path to YAML job file",
 			"secrets": "path to a YAML secrets store in sops format",
-			"keep-db": "Do not reset databases even if so requested by job file",
-			"reset-db": "Reset databases even if not requested by job file",
-			"with-task": "Only perform the task with provide indexes (which starts at 0)",
+			"keep-db": "do not reset databases even if so requested by job file",
+			"reset-db": "reset databases even if not requested by job file",
+			"interactive": "you'll be asked for each task whether it should be run or skipped\n" + \
+				"and if applicable if the db should be reset",
+			"with-task": "only perform the task with provide indexes (which starts at 0)",
 		})
 
 		# Required
 		parser.add_arg("config", "required", type=str)
 		parser.add_arg("schema", "required")
 		parser.add_arg("with-task", "optional", action=MaybeIntAction, nargs='+')
+		parser.add_arg("interactive", "optional", action="store_true")
 		parser.add_arg("debug", "optional", action="store_true")
 		parser.add_arg("keep-db", "optional", action="store_true")
 		parser.add_arg("reset-db", "optional", action="store_true")
@@ -116,6 +119,11 @@ class JobCommand(AbsCoreCommand):
 			if "name" not in job:
 				raise ValueError("Job name required")
 
+			s = f"Running job {job['name']}"
+			logger.info(s)
+
+			print(" " + "-"*len(s) + "\n")
+
 			if "requirements" in job:
 				# TODO: check job repo requirements
 				pass
@@ -131,6 +139,22 @@ class JobCommand(AbsCoreCommand):
 				logger.info("Please add argument -reset-db to confirm you are absolutely sure...")
 				return
 
+			if args['interactive']:
+
+				from ampel.util.getch import yes_no
+
+				try:
+					if purge_db:
+						purge_db = yes_no("Delete existing databases")
+
+					args['with_task'] = []
+					for i, td in enumerate(job['task']):
+						s = f" [{td['title']}]" if td['title'] else ""
+						if yes_no(f"Process task #{i}" + s):
+							args['with_task'].append(i)
+				except KeyboardInterrupt:
+					sys.exit()
+	
 			# DevAmpelContext hashes automatically confid from potential IngestDirectives
 			ctx = self.get_context(
 				args, unknown_args, logger,
@@ -204,7 +228,7 @@ class JobCommand(AbsCoreCommand):
 				elif i != 0:
 					self.print_chapter(f"Task #{i}", logger)
 
-				if args['with_task'] and i not in args['with_task']:
+				if args['with_task'] is not None and i not in args['with_task']:
 					logger.info(f"Skipping task #{i} as requested")
 					continue
 
