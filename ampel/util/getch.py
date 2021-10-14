@@ -4,50 +4,28 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 24.06.2021
-# Last Modified Date: 24.06.2021
+# Last Modified Date: 14.10.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
+import sys
 
-class _Getch:
-	"""
-	Gets a single character from standard input.
-	Inspired by https://stackoverflow.com/questions/510357/how-to-read-a-single-character-from-the-user
-	"""
-	def __init__(self, impl) -> None:
-		self.impl = impl
+def yes_no(question: str) -> bool:
 
-	def __call__(self) -> bool:
-		char = self.impl()
-		# CTRL-C or q or ESC
-		if char == '\x03' or char == 'q' or ord(char) == 27:
-			return True
-		elif char == '\x04':
-			raise EOFError
+	try:
+		while True:
+			c = input(f"{question} ? [y/n]: ").lower()
+			if c in ("y", "yes", "no", "n"):
+				break
+			sys.stdout.write('\x1b[1A')
+			sys.stdout.write('\x1b[2K')
+	except KeyboardInterrupt as e:
+		print('\nAbording...\n\n')
+		raise e
+
+	if c == 'y' or c == 'yes':
+		return True
+
+	if c == 'n' or c == 'no':
 		return False
 
-
-class _GetchUnix:
-
-	def __call__(self):
-		fd = sys.stdin.fileno()
-		old_settings = termios.tcgetattr(fd)
-		try:
-			tty.setraw(sys.stdin.fileno())
-			ch = sys.stdin.read(1)
-		finally:
-			termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
-		return ch
-
-
-class _GetchWindows:
-
-	def __call__(self):
-		return msvcrt.getch()
-
-
-try:
-	import msvcrt
-	getch = _Getch(_GetchWindows())
-except ImportError:
-	import sys, tty, termios
-	getch = _Getch(_GetchUnix())
+	raise ValueError(f"Unsupported response (expected y or n): {c}")
