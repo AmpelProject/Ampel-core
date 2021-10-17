@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 15.03.2021
-# Last Modified Date: 12.10.2021
+# Last Modified Date: 17.10.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import yaml, os, signal, sys
@@ -107,8 +107,6 @@ class JobCommand(AbsCoreCommand):
 			return
 
 		tds: List[Dict[str, Any]] = []
-		signal.signal(signal.SIGINT, signal_handler)
-		signal.signal(signal.SIGTERM, signal_handler)
 
 		if isinstance(args['with_task'], int):
 			args['with_task'] = [args['with_task']]
@@ -216,14 +214,17 @@ class JobCommand(AbsCoreCommand):
 				else:
 					tds.append(TaskUnitModel(**p).dict())
 
-				logger.info(f"Adding job task with {tds[-1]['multiplier']}x multiplier at position {i}")
+				logger.info(f"Registering job task#{i} with {tds[-1]['multiplier']}x multiplier")
 
 			ctx.config._config = recursive_freeze(config_dict)
 
 			for i, task_dict in enumerate(tds):
 
+				process_name = f"{job['name']}#Task#{i}"
+
 				if 'title' in task_dict:
 					self.print_chapter(task_dict['title'] if task_dict.get('title') else f"Task #{i}", logger)
+					process_name += f" [{task_dict['title']}]"
 					del task_dict['title']
 				elif i != 0:
 					self.print_chapter(f"Task #{i}", logger)
@@ -233,28 +234,34 @@ class JobCommand(AbsCoreCommand):
 					continue
 
 				multiplier = task_dict.pop('multiplier')
-				process_name = f"{job['name']}#Task#{i}"
 
 				if multiplier > 1:
 
 					ps = []
 					qs = []
 
-					for i in range(multiplier):
-						q: Queue = Queue()
-						p = Process(
-							target = run_mp_process,
-							args = (q, config_dict, task_dict, process_name)
-						)
-						p.deamon = True
-						p.start()
-						ps.append(p)
-						qs.append(q)
+					signal.signal(signal.SIGINT, signal_handler)
+					signal.signal(signal.SIGTERM, signal_handler)
 
-					for i in range(multiplier):
-						ps[i].join()
-						if (m := qs[i].get()):
-							logger.info(f"{task_dict['unit']}#{i} return value: {m}")
+					try:
+						for i in range(multiplier):
+							q: Queue = Queue()
+							p = Process(
+								target = run_mp_process,
+								args = (q, config_dict, task_dict, process_name)
+							)
+							p.deamon = True
+							p.start()
+							ps.append(p)
+							qs.append(q)
+
+						for i in range(multiplier):
+							ps[i].join()
+							if (m := qs[i].get()):
+								logger.info(f"{task_dict['unit']}#{i} return value: {m}")
+					except KeyboardInterrupt:
+						sys.exit(1)
+
 				else:
 
 					proc = ctx.loader.new_context_unit(
@@ -308,5 +315,8 @@ def run_mp_process(
 
 
 def signal_handler(sig, frame):
-	print('Ctrl+C pressed')
-	sys.exit(0)
+	#import traceback
+	print('Interrupt detected')
+	#print("Stack frames:")
+	#traceback.print_stack(frame)
+	raise KeyboardInterrupt()
