@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 26.02.2018
-# Last Modified Date: 31.08.2021
+# Last Modified Date: 17.10.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from typing import Dict, Any, Optional, Union
@@ -144,6 +144,7 @@ class T3Processor(AbsEventUnit):
 					stock_updr = stock_updr,
 					channel = self.stage.config['channel'] if self.stage.config.get('channel') else self.channel, # type: ignore
 					session_info = session_info,
+					process_name = self.process_name,
 					_provenance = False
 				)
 
