@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 17.04.2021
-# Last Modified Date: 10.10.2021
+# Last Modified Date: 17.10.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from time import time
@@ -275,7 +275,10 @@ class T3BaseStager(AbsT3Stager, abstract=True):
 		stocks: Optional[List[StockId]] = None
 	) -> T3Document:
 
-		t3d: T3Document = {'unit': t3_unit.__class__.__name__}
+		t3d: T3Document = {
+			'process': self.process_name,
+			'unit': t3_unit.__class__.__name__
+		}
 		conf = dictify(t3_unit._trace_content)
 		actact = MetaActionCode(0)
 		meta: MetaRecord = {'duration': time() - ts}
