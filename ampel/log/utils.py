@@ -59,9 +59,7 @@ def log_exception(
 	if last:
 		exc.__context__ = None
 
-	for el in traceback.format_exception(
-		etype=type(exc), value=exc, tb=exc.__traceback__
-	):
+	for el in traceback.format_exception(type(exc), exc, exc.__traceback__):
 		for ell in el.split('\n'):
 			if len(ell) > 0:
 				logger.error(ell, extra=extra)
