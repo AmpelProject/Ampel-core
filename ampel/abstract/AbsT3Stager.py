@@ -29,6 +29,9 @@ class AbsT3Stager(AmpelABC, ContextUnit, abstract=True):
 
 	channel: Optional[ChannelId] = None
 
+	#: name of the associated process
+	process_name: str
+
 	#: raise exceptions instead of catching and logging
 	raise_exc: bool = True
 
