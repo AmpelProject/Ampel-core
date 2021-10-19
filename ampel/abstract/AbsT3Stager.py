@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 04.01.2020
-# Last Modified Date: 18.09.2021
+# Last Modified Date: 19.10.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from typing import Dict, Any, Optional, Generator
@@ -45,8 +45,17 @@ class AbsT3Stager(AmpelABC, ContextUnit, abstract=True):
 	#: since there is no real read-only struct in python
 	paranoia: bool = True
 
-	#: If true, value of 'config' (T3Document) should be the config dict rather than its hash
+	#: If true, value of T3Document.config will be the config dict rather than its hash
 	resolve_config: bool = False
+
+	#: If true, value of T3Document._id will be [process_name] [time_stamp]
+	human_id: bool = False
+
+	#: If true, a value will be set for T3Document.datetime
+	human_timestamp: bool = False
+
+	#: Used if human_timestamp is true
+	human_timestamp_format: str = "%Y-%m-%d %H:%M:%S.%f"
 
 
 	@abstractmethod
