@@ -281,7 +281,11 @@ class T3BaseStager(AbsT3Stager, abstract=True):
 		now = datetime.now()
 
 		if self.human_id:
-			t3d['_id'] = "%s [%s]" % (self.process_name, now.strftime(self.human_timestamp_format))
+			t3d['_id'] = "%s [%s] [%s]" % (
+				self.process_name,
+				t3_unit.__class__.__name__,
+				now.strftime(self.human_timestamp_format)
+			)
 
 		if self.human_timestamp:
 			t3d['datetime'] = now.strftime(self.human_timestamp_format)
