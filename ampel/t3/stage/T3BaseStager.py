@@ -4,11 +4,12 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 17.04.2021
-# Last Modified Date: 17.10.2021
+# Last Modified Date: 19.10.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from time import time
 from itertools import islice
+from datetime import datetime
 from multiprocessing import JoinableQueue
 from multiprocessing.pool import ThreadPool, AsyncResult
 from typing import Union, Optional, Tuple, Type, List, Iterable, Dict, Generator, Any
@@ -275,13 +276,21 @@ class T3BaseStager(AbsT3Stager, abstract=True):
 		stocks: Optional[List[StockId]] = None
 	) -> T3Document:
 
-		t3d: T3Document = {
-			'process': self.process_name,
-			'unit': t3_unit.__class__.__name__
-		}
-		conf = dictify(t3_unit._trace_content)
+		t3d: T3Document = {'process': self.process_name}
 		actact = MetaActionCode(0)
-		meta: MetaRecord = {'duration': time() - ts}
+		now = datetime.now()
+
+		if self.human_id:
+			t3d['_id'] = "%s [%s]" % (self.process_name, now.strftime(self.human_timestamp_format))
+
+		if self.human_timestamp:
+			t3d['datetime'] = now.strftime(self.human_timestamp_format)
+
+		t3d['unit'] = t3_unit.__class__.__name__
+		t3d['code'] = actact
+
+		conf = dictify(t3_unit._trace_content)
+		meta: MetaRecord = {'ts': int(now.timestamp()), 'duration': time() - ts}
 
 		if self.resolve_config:
 			t3d['config'] = conf
