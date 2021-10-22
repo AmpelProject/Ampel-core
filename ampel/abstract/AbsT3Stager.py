@@ -7,9 +7,9 @@
 # Last Modified Date: 19.10.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-from typing import Dict, Any, Optional, Generator
+from typing import Dict, Any, Optional, Generator, Literal, Union, Sequence
 
-from ampel.types import ChannelId
+from ampel.types import ChannelId, Tag
 from ampel.base.AmpelABC import AmpelABC
 from ampel.base.decorator import abstractmethod
 from ampel.content.T3Document import T3Document
@@ -48,8 +48,15 @@ class AbsT3Stager(AmpelABC, ContextUnit, abstract=True):
 	#: If true, value of T3Document.config will be the config dict rather than its hash
 	resolve_config: bool = False
 
-	#: If true, value of T3Document._id will be [process_name] [time_stamp]
-	human_id: bool = False
+	#: Tag(s) to be added to t3 documents if applicable (if t3 unit returns something)
+	tag: Optional[Union[Tag, Sequence[Tag]]]
+
+	#: If true, value of T3Document._id will be built using the 'elements' listed below.
+	#: Note that 'tag' from unit results (UnitResult.tag) if defined, will be merged
+	#: with potential stager tag(s). Note also that time is always appended.
+	#: ex: {_id: [DipoleJob#Task#2] [T3CosmoDipole] [2021-10-20 10:38:48.889624]}
+	#: ex: {_id: [T3CosmoDipole] [TAG_UNION2] [2021-10-20 10:42:41.123263]}
+	human_id: Optional[list[Literal['process', 'unit', 'tag', 'config', 'run']]]
 
 	#: If true, a value will be set for T3Document.datetime
 	human_timestamp: bool = False
