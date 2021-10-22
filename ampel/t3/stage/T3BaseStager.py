@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 17.04.2021
-# Last Modified Date: 19.10.2021
+# Last Modified Date: 20.10.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from time import time
@@ -33,6 +33,7 @@ from ampel.enum.JournalActionCode import JournalActionCode
 from ampel.t3.stage.BaseViewGenerator import BaseViewGenerator
 from ampel.t3.stage.ThreadedViewGenerator import ThreadedViewGenerator
 from ampel.util.mappings import dictify
+from ampel.util.collections import merge_to_list
 from ampel.util.freeze import recursive_freeze
 from ampel.util.hash import build_unsafe_dict_id
 
@@ -280,13 +281,6 @@ class T3BaseStager(AbsT3Stager, abstract=True):
 		actact = MetaActionCode(0)
 		now = datetime.now()
 
-		if self.human_id:
-			t3d['_id'] = "%s [%s] [%s]" % (
-				self.process_name,
-				t3_unit.__class__.__name__,
-				now.strftime(self.human_timestamp_format)
-			)
-
 		if self.human_timestamp:
 			t3d['datetime'] = now.strftime(self.human_timestamp_format)
 
@@ -314,23 +308,51 @@ class T3BaseStager(AbsT3Stager, abstract=True):
 		t3d['meta'] = meta # note: mongodb maintains key order
 
 		if isinstance(res, UnitResult):
+
 			if res.code:
 				t3d['code'] = res.code
 				actact |= MetaActionCode.SET_UNIT_CODE
 			else:
 				actact |= MetaActionCode.SET_CODE
 
+			if res.tag:
+				if self.tag:
+					t3d['tag'] = merge_to_list(self.tag, res.tag) # type: ignore
+				else:
+					t3d['tag'] = res.tag
+
 			if res.body:
 				t3d['body'] = res.body
 				actact |= MetaActionCode.ADD_BODY
 
-		# bson
-		elif isinstance(res, ubson):
-			t3d['body'] = res
-			actact |= (MetaActionCode.ADD_BODY | MetaActionCode.SET_CODE)
-
 		else:
-			actact |= MetaActionCode.SET_CODE
+
+			if self.tag:
+				t3d['tag'] = self.tag
+
+			# bson
+			if isinstance(res, ubson):
+				t3d['body'] = res
+				actact |= (MetaActionCode.ADD_BODY | MetaActionCode.SET_CODE)
+
+			else:
+				actact |= MetaActionCode.SET_CODE
 
 		meta['activity'] = [{'action': actact}]
+
+		if self.human_id:
+			ids = []
+			if 'process' in self.human_id:
+				ids.append("[%s]" % self.process_name)
+			if 'unit' in self.human_id:
+				ids.append("[%s]" % t3_unit.__class__.__name__)
+			if 'tag' in self.human_id and 'tag' in t3d:
+				ids.append("[%s]" % (t3d['tag'] if isinstance(t3d['tag'], (int, str)) else " ".join(t3d['tag']))) # type: ignore[arg-type]
+			if 'config' in self.human_id:
+				ids.append("[%s]" % build_unsafe_dict_id(conf))
+			if 'run' in self.human_id:
+				ids.append("[%s]" % self.stock_updr.run_id) # not great
+			ids.append(now.strftime(self.human_timestamp_format))
+			t3d['_id'] = " ".join(ids)
+
 		return t3d
