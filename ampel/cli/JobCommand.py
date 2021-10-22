@@ -224,7 +224,7 @@ class JobCommand(AbsCoreCommand):
 
 				if 'title' in task_dict:
 					self.print_chapter(task_dict['title'] if task_dict.get('title') else f"Task #{i}", logger)
-					process_name += f" [{task_dict['title']}]"
+					#process_name += f" [{task_dict['title']}]"
 					del task_dict['title']
 				elif i != 0:
 					self.print_chapter(f"Task #{i}", logger)
