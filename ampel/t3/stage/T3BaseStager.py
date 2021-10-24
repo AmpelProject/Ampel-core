@@ -320,6 +320,8 @@ class T3BaseStager(AbsT3Stager, abstract=True):
 					t3d['tag'] = merge_to_list(self.tag, res.tag) # type: ignore
 				else:
 					t3d['tag'] = res.tag
+			elif self.tag:
+				t3d['tag'] = self.tag
 
 			if res.body:
 				t3d['body'] = res.body
