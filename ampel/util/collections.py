@@ -103,8 +103,8 @@ def merge_to_list(
 		# arg1 and arg2 are list/set
 		else:
 			return list(
-				arg1 if isinstance(arg1, set) else set(arg1) |
-				arg2 if isinstance(arg2, set) else set(arg2)
+				(arg1 if isinstance(arg1, set) else set(arg1)) |
+				(arg2 if isinstance(arg2, set) else set(arg2))
 			)
 
 
