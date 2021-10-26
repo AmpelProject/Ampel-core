@@ -18,7 +18,7 @@ from ampel.log.LogFlag import LogFlag
 from ampel.t2.T2Utils import T2Utils
 from ampel.util.pretty import prettyjson
 from ampel.content.T2Document import T2Document
-from ampel.cli.utils import maybe_convert_stock
+from ampel.cli.utils import maybe_load_idmapper
 from ampel.cli.AbsCoreCommand import AbsCoreCommand
 from ampel.cli.ArgParserBuilder import ArgParserBuilder
 from ampel.cli.MaybeIntAction import MaybeIntAction
@@ -138,7 +138,7 @@ class T2Command(AbsCoreCommand):
 		t2_utils = T2Utils(logger)
 		col = ctx.db.get_collection('t2', mode='r')
 
-		maybe_convert_stock(args)
+		maybe_load_idmapper(args)
 		self.convert_logical_args('tag', args)
 
 		# args['id_mapper'] is used for matching whereas id_mapper is potentially discarded for printing

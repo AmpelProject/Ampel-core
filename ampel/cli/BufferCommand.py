@@ -12,7 +12,7 @@ from argparse import ArgumentParser
 from typing import Sequence, Dict, Any, Optional, Union
 from ampel.log.LogFlag import LogFlag
 from ampel.core.AmpelContext import AmpelContext
-from ampel.cli.utils import maybe_convert_stock
+from ampel.cli.utils import maybe_load_idmapper
 from ampel.cli.ArgParserBuilder import ArgParserBuilder
 from ampel.cli.AbsStockCommand import AbsStockCommand
 from ampel.cli.AbsLoadCommand import AbsLoadCommand
@@ -91,7 +91,7 @@ class BufferCommand(AbsStockCommand, AbsLoadCommand):
 	def run(self, args: Dict[str, Any], unknown_args: Sequence[str], sub_op: Optional[str] = None) -> None:
 
 		ctx: AmpelContext = self.get_context(args, unknown_args)
-		maybe_convert_stock(args)
+		maybe_load_idmapper(args)
 
 		conf = {
 			'fd': open(args["out"], "wb" if args.get('binary') else 'w') \

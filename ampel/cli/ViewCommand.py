@@ -12,7 +12,7 @@ from argparse import ArgumentParser
 from typing import Sequence, Dict, Any, Optional, Union
 from ampel.log.AmpelLogger import AmpelLogger
 from ampel.log.LogFlag import LogFlag
-from ampel.cli.utils import maybe_convert_stock
+from ampel.cli.utils import maybe_load_idmapper
 from ampel.cli.ArgParserBuilder import ArgParserBuilder
 from ampel.cli.AbsStockCommand import AbsStockCommand
 from ampel.cli.AbsLoadCommand import AbsLoadCommand
@@ -91,7 +91,7 @@ class ViewCommand(AbsStockCommand, AbsLoadCommand):
 	def run(self, args: Dict[str, Any], unknown_args: Sequence[str], sub_op: Optional[str] = None) -> None:
 
 		ctx = self.get_context(args, unknown_args, ContextClass=AmpelContext)
-		maybe_convert_stock(args)
+		maybe_load_idmapper(args)
 
 		if sub_op == "save":
 			args["out"] = open(args["out"], "wb" if args.get('binary') else 'w')

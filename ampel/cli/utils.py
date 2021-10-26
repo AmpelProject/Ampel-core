@@ -13,7 +13,7 @@ from ampel.base.AuxUnitRegister import AuxUnitRegister
 from ampel.util.collections import check_seq_inner_type
 
 
-def maybe_convert_stock(args: Dict[str, Any]) -> None:
+def maybe_load_idmapper(args: Dict[str, Any]) -> None:
 	"""
 	Replaces the string id defined in args['id_mapper'] with an instance of the requested id mapper.
 	Replaces potential string stock ids with their ampel ids.
