@@ -8,9 +8,10 @@
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import re
-from typing import Sequence, Dict, Any, Optional, TypeVar, Type
+from typing import Sequence, Dict, Any, Optional, TypeVar, Type, Iterator, Tuple
 from ampel.core.AmpelDB import AmpelDB
 from ampel.config.AmpelConfig import AmpelConfig
+from ampel.secret.AmpelVault import AmpelVault
 from ampel.abstract.AbsCLIOperation import AbsCLIOperation
 from ampel.core.AmpelContext import AmpelContext
 from ampel.core.UnitLoader import UnitLoader
@@ -24,10 +25,9 @@ T = TypeVar("T", bound = AmpelContext)
 
 class AbsCoreCommand(AbsCLIOperation, abstract=True):
 
-
 	def load_config(self,
 		config_path: str,
-		customizations: Sequence[str],
+		unknown_args: Sequence[str],
 		logger: Optional[AmpelLogger] = None,
 		freeze: bool = True
 	) -> AmpelConfig:
@@ -36,6 +36,22 @@ class AbsCoreCommand(AbsCLIOperation, abstract=True):
 
 		if logger is None:
 			logger = AmpelLogger.get_logger()
+
+		for k, v in self.get_custom_args(unknown_args):
+			if ampel_conf.get(".".join(k.split(".")[:-1])) is None:
+				logger.info(f"Cannot set ampel config parameter '{k}' (parent key does not exist)")
+				continue
+
+			logger.info(f"Setting config parameter '{k}' value to: {v}")
+			set_by_path(ampel_conf._config, k, v)
+
+		if freeze:
+			ampel_conf._config = recursive_freeze(ampel_conf._config)
+
+		return ampel_conf
+
+
+	def get_custom_args(self, customizations: Sequence[str]) -> Iterator[Tuple[str, Any]]:
 
 		it = iter(customizations)
 		for el in it:
@@ -49,19 +65,33 @@ class AbsCoreCommand(AbsCLIOperation, abstract=True):
 					try:
 						v = _maybe_int(next(it))
 					except StopIteration:
-						return ampel_conf # TODO: say something ?
+						break
+				yield k, v
 
-				if ampel_conf.get(".".join(k.split(".")[:-1])) is None:
-					logger.info(f"Cannot set ampel config parameter '{k}' (parent key does not exist)")
-					continue
 
-				logger.info(f"Setting config parameter '{k}' value to: {v}")
-				set_by_path(ampel_conf._config, k, v)
+	def get_vault(self, args: Dict[str, Any]) -> Optional[AmpelVault]:
+		vault = None
+		if args.get('vault'):
+			from ampel.secret.DictSecretProvider import DictSecretProvider
+			vault = AmpelVault(
+				[DictSecretProvider.load(args['secrets'])]
+			)
+		return vault
 
-		if freeze:
-			ampel_conf._config = recursive_freeze(ampel_conf._config)
 
-		return ampel_conf
+	def get_db(self,
+		config: AmpelConfig,
+		vault: Optional[AmpelVault] = None,
+		require_existing_db: bool = True
+	) -> AmpelDB:
+
+		try:
+			return AmpelDB.new(config, vault, require_existing_db)
+		except Exception as e:
+			if "Databases with prefix" in str(e):
+				s = "Databases with prefix " + config.get('mongo.prefix', str, raise_exc=True) + " do not exist"
+				raise SystemExit("\n" + "="*len(s) + "\n" + s + "\n" + "="*len(s) + "\n")
+			raise e
 
 
 	def get_context(self,
@@ -81,20 +111,8 @@ class AbsCoreCommand(AbsCLIOperation, abstract=True):
 			args['config'], unknown_args, logger, freeze = freeze_config
 		)
 
-		vault = None
-		if args.get('vault'):
-			from ampel.secret.AmpelVault import AmpelVault
-			from ampel.secret.DictSecretProvider import DictSecretProvider
-			vault = AmpelVault([DictSecretProvider.load(args['secrets'])])
-
-		try:
-			db = AmpelDB.new(config, vault, require_existing_db)
-		except Exception as e:
-			if "Databases with prefix" in str(e):
-				s = "Databases with prefix " + config.get('mongo.prefix', str, raise_exc=True) + " do not exist"
-				raise SystemExit("\n" + "="*len(s) + "\n" + s + "\n" + "="*len(s) + "\n")
-			raise e
-
+		vault = self.get_vault(args)
+		db = self.get_db(config, vault, require_existing_db)
 		return ContextClass(
 			config = config,
 			db = db,
