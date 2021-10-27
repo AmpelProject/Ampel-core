@@ -91,7 +91,7 @@ class AbsCoreCommand(AbsCLIOperation, abstract=True):
 			db = AmpelDB.new(config, vault, require_existing_db)
 		except Exception as e:
 			if "Databases with prefix" in str(e):
-				s = "Databases with prefix " + config.get('mongo.prefix') + " do not exist"
+				s = "Databases with prefix " + config.get('mongo.prefix', str, raise_exc=True) + " do not exist"
 				raise SystemExit("\n" + "="*len(s) + "\n" + s + "\n" + "="*len(s) + "\n")
 			raise e
 
