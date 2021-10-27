@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 24.06.2021
-# Last Modified Date: 14.10.2021
+# Last Modified Date: 27.10.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import sys
@@ -29,3 +29,11 @@ def yes_no(question: str) -> bool:
 		return False
 
 	raise ValueError(f"Unsupported response (expected y or n): {c}")
+
+
+def getch() -> bool:
+	try:
+		input()
+	except KeyboardInterrupt:
+		return True
+	return False
