@@ -47,14 +47,16 @@ class AmpelDB(AmpelBaseModel):
 	mongo_uri: str
 	mongo_options: MongoClientOptionsModel = MongoClientOptionsModel()
 	vault: Optional[AmpelVault]
+	require_exists: bool = False
 
 
 	@staticmethod
-	def new(config: AmpelConfig, vault: Optional[AmpelVault] = None) -> 'AmpelDB':
+	def new(config: AmpelConfig, vault: Optional[AmpelVault] = None, require_exists: bool = False) -> 'AmpelDB':
 		""" :raises: ValueError in case a required config entry is missing """
 		return AmpelDB(
 			mongo_uri = config.get('resource.mongo', str, raise_exc=True),
 			vault = vault,
+			require_exists = require_exists,
 			**config.get('mongo', dict, raise_exc=True)
 		)
 
@@ -74,6 +76,9 @@ class AmpelDB(AmpelBaseModel):
 
 		self.mongo_collections: Dict[str, Collection] = {}
 		self.mongo_clients: Dict[str, MongoClient] = {} # map role with client
+
+		if self.require_exists and not self._get_mongo_db(role="w", db_name=self.prefix + "_data").list_collection_names():
+			raise ValueError(f"Databases with prefix {self.prefix} do not exist")
 
 
 	@cached_property
