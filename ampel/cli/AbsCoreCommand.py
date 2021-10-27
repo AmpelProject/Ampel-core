@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 18.03.2021
-# Last Modified Date: 16.09.2021
+# Last Modified Date: 27.10.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import re
@@ -70,13 +70,15 @@ class AbsCoreCommand(AbsCLIOperation, abstract=True):
 		logger: Optional[AmpelLogger] = None,
 		freeze_config: bool = True,
 		ContextClass: Type[T] = AmpelContext, # type: ignore[assignment]
+		require_existing_db: bool = True,
 		**kwargs
 	) -> T:
 
+		if logger is None:
+			logger = AmpelLogger.get_logger()
+
 		config = self.load_config(
-			args['config'], unknown_args,
-			logger or AmpelLogger.get_logger(),
-			freeze = freeze_config
+			args['config'], unknown_args, logger, freeze = freeze_config
 		)
 
 		vault = None
@@ -85,7 +87,14 @@ class AbsCoreCommand(AbsCLIOperation, abstract=True):
 			from ampel.secret.DictSecretProvider import DictSecretProvider
 			vault = AmpelVault([DictSecretProvider.load(args['secrets'])])
 
-		db = AmpelDB.new(config, vault)
+		try:
+			db = AmpelDB.new(config, vault, require_existing_db)
+		except Exception as e:
+			if "Databases with prefix" in str(e):
+				s = "Databases with prefix " + config.get('mongo.prefix') + " do not exist"
+				raise SystemExit("\n" + "="*len(s) + "\n" + s + "\n" + "="*len(s) + "\n")
+			raise e
+
 		return ContextClass(
 			config = config,
 			db = db,
