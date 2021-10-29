@@ -311,7 +311,12 @@ def run_mp_process(
 		)
 
 	except Exception as e:
-		queue.put(e)
+		import traceback
+		se = str(e)
+		queue.put(
+			"\n" + "#"*len(se) + "\n" + str(e) + "\n" + "#"*len(se) + "\n" +
+			''.join(traceback.format_exception(type(e), e, e.__traceback__))
+		)
 
 
 def signal_handler(sig, frame):
