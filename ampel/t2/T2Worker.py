@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 24.05.2019
-# Last Modified Date: 11.10.2021
+# Last Modified Date: 29.10.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from time import time
@@ -93,7 +93,8 @@ class T2Worker(AbsWorker[T2Document]):
 
 		# _id is an ObjectId, but declared as bytes in ampel-interface to avoid
 		# an explicit dependency on pymongo
-		stat_latency.labels(doc['unit']).observe(now - doc['meta'][0]['ts'])
+		if doc['meta']: # robustify against manual changes of the db
+			stat_latency.labels(doc['unit']).observe(now - doc['meta'][0]['ts'])
 		stat_count.labels(doc['unit']).inc()
 		self._doc_counter += 1
 		body = None
