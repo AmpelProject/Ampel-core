@@ -8,6 +8,7 @@
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import yaml, os, signal, sys
+from time import time
 from multiprocessing import Queue, Process
 from pydantic import BaseModel
 from argparse import ArgumentParser
@@ -100,6 +101,7 @@ class JobCommand(AbsCoreCommand):
 	# Mandatory implementation
 	def run(self, args: Dict[str, Any], unknown_args: Sequence[str], sub_op: Optional[str] = None) -> None:
 
+		start_time = time()
 		logger = AmpelLogger.get_logger(base_flag=LogFlag.MANUAL_RUN)
 
 		if not os.path.exists(args['schema']):
@@ -274,7 +276,8 @@ class JobCommand(AbsCoreCommand):
 					x = proc.run()
 					logger.info(f"{task_dict['unit']} return value: {x}")
 
-		logger.info("Job processing done")
+		dm = divmod(time() - start_time, 60)
+		logger.info("Job processing done. Time required: %s minutes %s seconds\n" % (round(dm[0]), round(dm[1])))
 
 
 	def print_chapter(self, msg: str, logger: AmpelLogger) -> None:
