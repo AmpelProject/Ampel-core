@@ -59,12 +59,7 @@ class AmpelContext:
 		
 		# try to register aux units globally
 		try:
-			AuxUnitRegister.initialize(
-				{
-					k: v for k, v in config.get("unit", ret_type=dict, raise_exc=True).items()
-					if 'ContextUnit' not in v.get('base', []) and 'LogicalUnit' not in v.get('base', [])
-				}
-			)
+			AuxUnitRegister.initialize(config)
 		except Exception:
 			print("UnitLoader auxiliary units auto-registration failed")
 
