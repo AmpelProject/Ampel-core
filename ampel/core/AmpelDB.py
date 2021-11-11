@@ -47,17 +47,23 @@ class AmpelDB(AmpelBaseModel):
 	mongo_uri: str
 	mongo_options: MongoClientOptionsModel = MongoClientOptionsModel()
 	vault: Optional[AmpelVault]
-	one_db: bool = False
 	require_exists: bool = False
+	one_db: bool = False
 
 
-	@staticmethod
-	def new(config: AmpelConfig, vault: Optional[AmpelVault] = None, require_exists: bool = False) -> 'AmpelDB':
+	@classmethod
+	def new(cls,
+		config: AmpelConfig,
+		vault: Optional[AmpelVault] = None,
+		require_exists: bool = False,
+		one_db: bool = False
+	) -> 'AmpelDB':
 		""" :raises: ValueError in case a required config entry is missing """
-		return AmpelDB(
+		return cls(
 			mongo_uri = config.get('resource.mongo', str, raise_exc=True),
 			vault = vault,
 			require_exists = require_exists,
+			one_db = one_db,
 			**config.get('mongo', dict, raise_exc=True)
 		)
 
@@ -79,7 +85,7 @@ class AmpelDB(AmpelBaseModel):
 		self.mongo_clients: Dict[str, MongoClient] = {} # map role with client
 
 		if self.require_exists and not self._get_pymongo_db("data", role="w").list_collection_names():
-			raise ValueError(f"Databases with prefix {self.prefix} do not exist")
+			raise ValueError(f"Database(s) with prefix {self.prefix} do not exist")
 
 
 	@cached_property
@@ -157,10 +163,6 @@ class AmpelDB(AmpelBaseModel):
 		"""
 		:param db_name: without prefix
 		"""
-
-		if "AmpelTest" in db_name:
-			import traceback
-			traceback.print_stack()
 
 		if role not in self.mongo_clients:
 
