@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 10.06.2020
-# Last Modified Date: 22.07.2021
+# Last Modified Date: 11.11.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from typing import Optional, Any, Dict, Union, List, Type
@@ -131,7 +131,7 @@ class DevAmpelContext(AmpelContext):
 
 	def _set_new_conf(self, conf: Dict[str, Any]) -> None:
 		self.config = AmpelConfig(conf, True)
-		self.db = AmpelDB.new(self.config, self.loader.vault)
+		self.db = AmpelDB.new(self.config, self.loader.vault, self.db.require_exists, self.db.one_db)
 		self.loader = UnitLoader(self.config, db=self.db, vault=self.loader.vault)
 
 
