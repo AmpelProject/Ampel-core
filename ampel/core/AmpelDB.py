@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 16.06.2018
-# Last Modified Date: 06.10.2021
+# Last Modified Date: 11.11.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from functools import cached_property
@@ -47,6 +47,7 @@ class AmpelDB(AmpelBaseModel):
 	mongo_uri: str
 	mongo_options: MongoClientOptionsModel = MongoClientOptionsModel()
 	vault: Optional[AmpelVault]
+	one_db: bool = False
 	require_exists: bool = False
 
 
@@ -71,13 +72,13 @@ class AmpelDB(AmpelBaseModel):
 		self.col_config: Dict[str, AmpelColModel] = {
 			col.name: col
 			for db_config in self.databases
-				for col in db_config.collections
+			for col in db_config.collections
 		}
 
 		self.mongo_collections: Dict[str, Collection] = {}
 		self.mongo_clients: Dict[str, MongoClient] = {} # map role with client
 
-		if self.require_exists and not self._get_mongo_db(role="w", db_name=self.prefix + "_data").list_collection_names():
+		if self.require_exists and not self._get_pymongo_db("data", role="w").list_collection_names():
 			raise ValueError(f"Databases with prefix {self.prefix} do not exist")
 
 
@@ -108,8 +109,9 @@ class AmpelDB(AmpelBaseModel):
 			name = 'rej',
 			collections = [
 				AmpelColModel(
-					name=chan_name if isinstance(chan_name, str) else str(chan_name)
-				) for chan_name in channel_names
+					name = chan_name if isinstance(chan_name, str) else str(chan_name)
+				)
+				for chan_name in channel_names
 			],
 			role = MongoClientRoleModel(r='logger', w='logger')
 		)
@@ -139,11 +141,11 @@ class AmpelDB(AmpelBaseModel):
 
 		db_config = self._get_db_config(col_name)
 		role = db_config.role.dict()[mode]
-		db = self._get_mongo_db(role=role, db_name=f"{self.prefix}_{db_config.name}")
+		db = self._get_pymongo_db(db_config.name, role=role)
 
 		if 'w' in mode and col_name not in db.list_collection_names():
-			self.mongo_collections[col_name][mode] = self.create_collection(
-				role, db.name, self.col_config[col_name]
+			self.mongo_collections[col_name][mode] = self.create_ampel_collection(
+				self.col_config[col_name], db_config.name, role
 			)
 		else:
 			self.mongo_collections[col_name][mode] = db.get_collection(col_name)
@@ -151,7 +153,14 @@ class AmpelDB(AmpelBaseModel):
 		return self.mongo_collections[col_name][mode]
 
 
-	def _get_mongo_db(self, *, role: str, db_name: str) -> Database:
+	def _get_pymongo_db(self, db_name: str, *, role: str) -> Database:
+		"""
+		:param db_name: without prefix
+		"""
+
+		if "AmpelTest" in db_name:
+			import traceback
+			traceback.print_stack()
 
 		if role not in self.mongo_clients:
 
@@ -166,7 +175,9 @@ class AmpelDB(AmpelBaseModel):
 				# hint at error source
 				raise ConfigurationError(exc.args[0] + f' (from secret {key})', *exc.args[1:])
 
-		return self.mongo_clients[role].get_database(db_name)
+		return self.mongo_clients[role].get_database(
+			f"{self.prefix}_{db_name}" if (db_name and not self.one_db) else self.prefix
+		)
 
 
 	def _get_db_config(self, col_name: str) -> AmpelDBModel:
@@ -188,9 +199,10 @@ class AmpelDB(AmpelBaseModel):
 		self.get_collection('confid')
 
 
-	def create_collection(self,
-		role: str, db_name: str,
+	def create_ampel_collection(self,
 		col_config: AmpelColModel,
+		db_name: str,
+		role: str,
 		logger: Optional['AmpelLogger'] = None
 	) -> Collection:
 		"""
@@ -199,46 +211,85 @@ class AmpelDB(AmpelBaseModel):
 		:param col_name: name of the collection to be created
 		"""
 
+		db = self._get_pymongo_db(db_name, role=role)
+
 		if logger is None:
 			# Avoid cyclic import error
 			from ampel.log.AmpelLogger import AmpelLogger
 			logger = AmpelLogger.get_logger()
-			logger.info(f"Creating {db_name} -> {col_config.name}")
+			logger.info(f"Creating {db.name} -> {col_config.name}")
 
-		db = self._get_mongo_db(role=role, db_name=db_name)
+		col = db.create_collection(col_config.name, **col_config.args)
 
-		# Create collection with custom args
-		if col_config.args:
+		"""
+		if col_config.name not in db.list_collection_names():
+			# Create collection with custom args
 			col = db.create_collection(col_config.name, **col_config.args)
 		else:
-			col = db.create_collection(col_config.name)
+			col = db.get_collection(col_config.name)
+		"""
 
 		if col_config.indexes:
-
 			for idx in col_config.indexes:
-
-				try:
-
-					idx_params = idx.dict(exclude_unset=True)
-					logger.info(f"  Creating index: {idx_params}")
-
-					if idx_params.get('args'):
-						col.create_index(
-							idx_params['index'], **idx_params['args']
-						)
-					else:
-						col.create_index(
-							idx_params['index']
-						)
-
-				except Exception as e:
-					logger.error(
-						f"Index creation failed for '{col_config.name}' "
-						f"(db: '{db_name}', args: {idx_params})",
-						exc_info=e
-					)
-
+				self._create_index(col, idx, logger)
+	
 		return col
+
+
+	def set_col_index(self,
+		col: Collection,
+		config: AmpelColModel,
+		logger: 'AmpelLogger',
+		force_overwrite: bool = False
+	) -> None:
+		"""
+		:param force_overwrite: delete index if it already exists.
+		This can be useful if you want to change index options (for example: sparse=True/False)
+		"""
+
+		if not config.indexes:
+			logger.info(f"No index data configured for collection {config.name}")
+			return
+
+		col_index_info = col.index_information()
+		flat_indexes = []
+
+		for idx in config.indexes:
+
+			idx_id = idx.get_id()
+			flat_indexes.append(idx_id)
+
+			if idx_id in col_index_info:
+				if force_overwrite:
+					logger.info(f"  Deleting existing index: {idx_id}")
+					col.drop_index(idx_id)
+				else:
+					logger.info(f"  Skipping already existing index: {idx_id}")
+					continue
+
+			self._create_index(col, idx, logger)
+
+		for k in col_index_info:
+			if k not in flat_indexes and k != "_id_":
+				logger.info(f"  Removing index {k}")
+				col.drop_index(k)
+
+
+	def _create_index(self,
+		col: Collection,
+		index_data: Union[IndexModel, ShortIndexModel],
+		logger: 'AmpelLogger'
+	) -> None:
+
+		try:
+			idx_params = index_data.dict(exclude_unset=True)
+			logger.info(f"  Creating index: {idx_params}")
+			col.create_index(idx_params['index'], **idx_params.get('args', {}))
+		except Exception as e:
+			logger.error(
+				f"Index creation failed for '{col.name}' (args: {idx_params})",
+				exc_info=e
+			)
 
 
 	def create_one_view(self,
@@ -291,7 +342,7 @@ class AmpelDB(AmpelBaseModel):
 		force: bool = False
 	) -> None:
 
-		db = self._get_mongo_db(role="w", db_name=f"{self.prefix}_data")
+		db = self._get_pymongo_db("data", role="w")
 		if force:
 			col_names = db.list_collection_names()
 
@@ -330,60 +381,11 @@ class AmpelDB(AmpelBaseModel):
 		self.delete_view("_AND_".join(map(str, channels)), logger)
 
 
-	def delete_view(self, col_prefix: str, logger: Optional['AmpelLogger'] = None) -> Collection:
+	def delete_view(self, view_prefix: str, logger: Optional['AmpelLogger'] = None) -> Collection:
 
-		db = self._get_mongo_db(role="w", db_name=f"{self.prefix}_data")
+		db = self._get_pymongo_db("data", role="w")
 		for el in ("stock", "t0", "t1", "t2", "t3"):
-			db.drop_collection(f'{col_prefix}_{el}')
-
-
-	def set_col_index(self,
-		role: str, db_name: str, col_config: AmpelColModel,
-		force_overwrite: bool = False, logger: Optional['AmpelLogger'] = None
-	) -> None:
-		"""
-		:param force_overwrite: delete index if it already exists.
-		This can be useful if you want to change index options (for example: sparse=True/False)
-		"""
-
-		if not logger:
-			# Avoid cyclic import error
-			from ampel.log.AmpelLogger import AmpelLogger
-			logger = AmpelLogger.get_logger()
-
-		if not col_config.indexes:
-			logger.info(f"No index data configured for collection {col_config.name}")
-			return
-
-		db = self._get_mongo_db(role=role, db_name=db_name)
-
-		if col_config.name not in db.list_collection_names():
-			self.create_collection(role, db_name, col_config)
-			return
-
-		col = self.get_collection(col_config.name)
-		col_index_info = col.index_information()
-		flat_indexes = []
-
-		for idx in col_config.indexes:
-
-			idx_id = idx.get_id()
-			flat_indexes.append(idx_id)
-
-			if idx_id in col_index_info:
-				if force_overwrite:
-					logger.info(f"  Deleting existing index: {idx_id}")
-					col.drop_index(idx_id)
-				else:
-					logger.info(f"  Skipping already existing index: {idx_id}")
-					continue
-
-			self._create_index(col, idx, logger)
-
-		for k in col_index_info:
-			if k not in flat_indexes and k != "_id_":
-				logger.info(f"  Removing index {k}")
-				col.drop_index(k)
+			db.drop_collection(f'{view_prefix}_{el}')
 
 
 	def __repr__(self) -> str:
@@ -392,7 +394,8 @@ class AmpelDB(AmpelBaseModel):
 
 	def drop_all_databases(self):
 		for db in self.databases:
-			self._get_mongo_db(role=db.role.w, db_name=db.name).client.drop_database(f"{self.prefix}_{db.name}")
+			pym_db = self._get_pymongo_db(db.name, role=db.role.w)
+			pym_db.client.drop_database(pym_db.name)
 		self.mongo_collections.clear()
 		self.mongo_clients.clear()
 		# deleting the attribute resets cached_property
@@ -429,30 +432,6 @@ class AmpelDB(AmpelBaseModel):
 				pass
 
 		self.conf_ids.add(conf_id)
-
-
-	@staticmethod
-	def _create_index(
-		col: Collection,
-		index_data: Union[IndexModel, ShortIndexModel],
-		logger: 'AmpelLogger'
-	) -> None:
-
-		try:
-
-			idx_params = index_data.dict(exclude_unset=True)
-			logger.info(f"  Creating index: {idx_params}")
-
-			if idx_params.get('args'):
-				col.create_index(idx_params['index'], **idx_params['args'])
-			else:
-				col.create_index(idx_params['index'])
-
-		except Exception as e:
-			logger.error(
-				f"Index creation failed for '{col.name}' (args: {idx_params})",
-				exc_info=e
-			)
 
 
 def provision_accounts(ampel_db: AmpelDB, auth: Dict[str, str] = {}) -> Dict[str, Any]:
