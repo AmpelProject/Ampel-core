@@ -122,7 +122,7 @@ class JobCommand(AbsCoreCommand):
 			s = f"Running job {job['name']}"
 			logger.info(s)
 
-			print(" " + "-"*len(s) + "\n")
+			print(" " + "-"*len(s))
 
 			if "requirements" in job:
 				# TODO: check job repo requirements
@@ -161,7 +161,9 @@ class JobCommand(AbsCoreCommand):
 				freeze_config = False,
 				ContextClass = DevAmpelContext,
 				purge_db = purge_db,
-				db_prefix = get_by_path(job, 'mongo.prefix')
+				db_prefix = get_by_path(job, 'mongo.prefix'),
+				require_existing_db = False,
+				one_db = True
 			)
 
 			config_dict = ctx.config._config
