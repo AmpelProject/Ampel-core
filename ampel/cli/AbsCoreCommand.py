@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 18.03.2021
-# Last Modified Date: 27.10.2021
+# Last Modified Date: 11.11.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import re
@@ -82,11 +82,17 @@ class AbsCoreCommand(AbsCLIOperation, abstract=True):
 	def get_db(self,
 		config: AmpelConfig,
 		vault: Optional[AmpelVault] = None,
-		require_existing_db: bool = True
+		require_existing_db: bool = True,
+		one_db: bool = False
 	) -> AmpelDB:
 
 		try:
-			return AmpelDB.new(config, vault, require_existing_db)
+			return AmpelDB.new(
+				config,
+				vault,
+				require_exists = require_existing_db,
+				one_db = one_db
+			)
 		except Exception as e:
 			if "Databases with prefix" in str(e):
 				s = "Databases with prefix " + config.get('mongo.prefix', str, raise_exc=True) + " do not exist"
@@ -101,6 +107,7 @@ class AbsCoreCommand(AbsCLIOperation, abstract=True):
 		freeze_config: bool = True,
 		ContextClass: Type[T] = AmpelContext, # type: ignore[assignment]
 		require_existing_db: bool = True,
+		one_db: bool = False,
 		**kwargs
 	) -> T:
 
@@ -112,7 +119,7 @@ class AbsCoreCommand(AbsCLIOperation, abstract=True):
 		)
 
 		vault = self.get_vault(args)
-		db = self.get_db(config, vault, require_existing_db)
+		db = self.get_db(config, vault, require_existing_db, one_db)
 		return ContextClass(
 			config = config,
 			db = db,
