@@ -1,3 +1,4 @@
+from collections import defaultdict
 import pytest
 
 from ampel.content.DataPoint import DataPoint
@@ -127,6 +128,26 @@ def test_minimal_directive(dev_context: DevAmpelContext, datapoints: list[DataPo
         col = dev_context.db.get_collection(f"t{tier}")
         assert col.count_documents({}) == (len(datapoints) if tier == 0 else 0)
 
+def check_unit_counts(docs, num_states, num_points):
+    assert len(docs) == 1 + num_states + num_points
+    by_unit = defaultdict(list)
+    for doc in docs:
+        by_unit[doc["unit"]].append(doc)
+    assert len(by_unit["DummyStateT2Unit"]) == num_states
+    assert len(by_unit["DummyStockT2Unit"]) == 1
+    assert len(by_unit["DummyPointT2Unit"]) == num_points
+    for doc in docs:
+        assert doc["stock"] == "stockystock"
+        if doc["unit"] == "DummyStateT2Unit":
+            assert isinstance(doc["link"], int)
+        elif doc["unit"] == "DummyStockT2Unit":
+            assert doc["link"] == "stockystock"
+            assert doc["col"] == "stock"
+        elif doc["unit"] == "DummyPointT2Unit":
+            assert isinstance(doc["link"], int)
+            assert doc["col"] == "t0"
+
+
 
 def test_single_source_directive(
     dev_context, single_source_directive: IngestDirective, datapoints
@@ -156,21 +177,7 @@ def test_single_source_directive(
 
     assert t1.count_documents({}) == num_states if retro else 1
 
-    assert len(docs := list(t2.find({}))) == 1 + num_states + num_points
-    for i in range(0, num_states):
-        assert docs[i]["stock"] == "stockystock"
-        assert docs[i]["unit"] == "DummyStateT2Unit"
-        assert isinstance(docs[i]["link"], int)
-    for i in range(num_states, num_states + 1):
-        assert docs[i]["stock"] == "stockystock"
-        assert docs[i]["unit"] == "DummyStockT2Unit"
-        assert docs[i]["link"] == "stockystock"
-        assert docs[i]["col"] == "stock"
-    for i in range(num_states + 1, num_states + 1 + num_points):
-        assert docs[i]["stock"] == "stockystock"
-        assert docs[i]["unit"] == "DummyPointT2Unit"
-        assert isinstance(docs[i]["link"], int)
-        assert docs[i]["col"] == "t0"
+    check_unit_counts(list(t2.find({})), num_states, num_points)
 
 
 def test_multiplex_directive(
@@ -198,21 +205,7 @@ def test_multiplex_directive(
 
     assert t1.count_documents({}) == num_states if retro else 1
 
-    assert len(docs := list(t2.find({}))) == 1 + num_states + num_points
-    for i in range(0, num_states):
-        assert docs[i]["stock"] == "stockystock"
-        assert docs[i]["unit"] == "DummyStateT2Unit"
-        assert isinstance(docs[i]["link"], int)
-    for i in range(num_states, num_states + 1):
-        assert docs[i]["stock"] == "stockystock"
-        assert docs[i]["unit"] == "DummyStockT2Unit"
-        assert docs[i]["link"] == "stockystock"
-        assert docs[i]["col"] == "stock"
-    for i in range(num_states + 1, num_states + 1 + num_points):
-        assert docs[i]["stock"] == "stockystock"
-        assert docs[i]["unit"] == "DummyPointT2Unit"
-        assert isinstance(docs[i]["link"], int)
-        assert docs[i]["col"] == "t0"
+    check_unit_counts(list(t2.find({})), num_states, num_points)
 
 
 def test_multiplex_dispatch(
