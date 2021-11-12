@@ -55,7 +55,7 @@ def test_error_reporting(dev_context: DevAmpelContext):
         "link": 42,
         "channel": channels,
         "meta": [
-            {"ts": 0}
+            {"ts": 0, "tier": 2}
         ]
     }
     dev_context.db.get_collection("t2").insert_one(doc)
