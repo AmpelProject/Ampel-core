@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 10.06.2020
-# Last Modified Date: 11.11.2021
+# Last Modified Date: 16.11.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from typing import Optional, Any, Dict, Union, List, Type
@@ -20,8 +20,9 @@ from ampel.model.UnitModel import UnitModel
 from ampel.model.ChannelModel import ChannelModel
 from ampel.log.AmpelLogger import AmpelLogger
 from ampel.util.freeze import recursive_unfreeze
-from ampel.util.mappings import set_by_path, walk_and_process_dict, dictify
 from ampel.util.hash import build_unsafe_dict_id
+from ampel.util.mappings import set_by_path, dictify
+from ampel.util.recursion import walk_and_process_dict
 
 
 class DevAmpelContext(AmpelContext):

@@ -4,15 +4,16 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 16.10.2019
-# Last Modified Date: 30.05.2021
+# Last Modified Date: 16.11.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import json
-from typing import Dict, Any
+from typing import Any
 from importlib import import_module
 from ampel.log.AmpelLogger import AmpelLogger, VERBOSE
 from ampel.model.ProcessModel import ProcessModel
-from ampel.util.mappings import walk_and_process_dict, dictify
+from ampel.util.recursion import walk_and_process_dict
+from ampel.util.mappings import dictify
 from ampel.util.hash import build_unsafe_dict_id
 from ampel.base.AmpelBaseModel import AmpelBaseModel
 
@@ -21,8 +22,8 @@ class ProcessMorpher:
 	""" Applies various transformations to process dicts """
 
 	def __init__(self,
-		process: Dict[str, Any],
-		templates: Dict[str, Any],
+		process: dict[str, Any],
+		templates: dict[str, Any],
 		logger: AmpelLogger,
 		verbose: bool = False,
 		deep_copy: bool = False
@@ -34,12 +35,12 @@ class ProcessMorpher:
 		self.verbose = verbose
 
 
-	def get(self) -> Dict[str, Any]:
+	def get(self) -> dict[str, Any]:
 		""" :raises: Error if the morphed process does not comply with ProcessModel """
 		return ProcessModel(**self.process).dict()
 
 
-	def generate_version(self, first_pass_config: Dict) -> 'ProcessMorpher':
+	def generate_version(self, first_pass_config: dict) -> 'ProcessMorpher':
 		"""
 		Generates a version identifier for the underyling process as required by ProcessModel
 
@@ -89,7 +90,7 @@ class ProcessMorpher:
 		return self
 
 
-	def apply_template(self, first_pass_config: Dict) -> 'ProcessMorpher':
+	def apply_template(self, first_pass_config: dict) -> 'ProcessMorpher':
 		""" Applies template possibly associated with process """
 
 		# The process embedded in channel def requires templating itself
@@ -109,7 +110,7 @@ class ProcessMorpher:
 		return self
 
 
-	def scope_aliases(self, first_pass_config: Dict) -> 'ProcessMorpher':
+	def scope_aliases(self, first_pass_config: dict) -> 'ProcessMorpher':
 		""" Note: should be called before hash_t2_config """
 
 		if self.process.get('distrib'):
@@ -177,7 +178,7 @@ class ProcessMorpher:
 		return False
 
 
-	def resolve_aliases(self, t2d: Dict[str, Any], aliases: Dict[str, Any], root_path: str):
+	def resolve_aliases(self, t2d: dict[str, Any], aliases: dict[str, Any], root_path: str):
 		"""
 		Resolves aliases recursively (necessary before hashing t2 config)
 		"""
@@ -223,7 +224,7 @@ class ProcessMorpher:
 		d[k] = aliases[d[k]]
 
 
-	def hash_t2_config(self, out_config: Dict) -> 'ProcessMorpher':
+	def hash_t2_config(self, out_config: dict) -> 'ProcessMorpher':
 		"""
 		This method modifies the underlying self._process dict structure.
 		The 'config' (dict) value of UnitModel instances is replaced by a hash value (int).
@@ -245,7 +246,7 @@ class ProcessMorpher:
 		# processor.config.directives.0.combine.0.state_t2.0
  		# processor.config.directives.0.combine.0.state_t2.0.config.t2_dependency.0
  		# processor.config.directives.0.point_t2.0
-		conf_dicts: Dict[str, Dict[str, Any]] = {}
+		conf_dicts: dict[str, dict[str, Any]] = {}
 
 		walk_and_process_dict(
 			arg = self.process,

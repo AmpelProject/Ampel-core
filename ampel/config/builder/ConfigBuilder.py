@@ -4,14 +4,13 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 03.09.2019
-# Last Modified Date: 10.10.2021
+# Last Modified Date: 16.11.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import os, sys, re, json, yaml, datetime, getpass, importlib, subprocess
 from multiprocessing import Pool
 from typing import Dict, List, Any, Optional, Set, Iterable, Union
 
-from ampel.util.mappings import get_by_path, set_by_path, dictify, walk_and_process_dict
 from ampel.log.utils import log_exception
 from ampel.abstract.AbsChannelTemplate import AbsChannelTemplate
 from ampel.log.AmpelLogger import AmpelLogger, VERBOSE, DEBUG, ERROR
@@ -24,6 +23,8 @@ from ampel.config.collector.ChannelConfigCollector import ChannelConfigCollector
 from ampel.config.builder.ProcessMorpher import ProcessMorpher
 from ampel.secret.AESecret import AESecret
 from ampel.secret.AESecretProvider import AESecretProvider
+from ampel.util.recursion import walk_and_process_dict
+from ampel.util.mappings import get_by_path, set_by_path, dictify
 
 
 class ConfigBuilder:

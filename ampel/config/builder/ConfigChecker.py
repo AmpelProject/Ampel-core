@@ -4,14 +4,14 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 03.09.2019
-# Last Modified Date: 26.02.2021
+# Last Modified Date: 16.11.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 
 import json, os, sys, traceback
 from typing import Any, Dict, List
 from ampel.util.pretty import prettyjson
-from ampel.util.mappings import walk_and_process_dict
+from ampel.util.recursion import walk_and_process_dict
 from ampel.core.AmpelContext import AmpelContext
 from ampel.base.AuxUnitRegister import AuxUnitRegister
 from ampel.model.UnitModel import UnitModel
@@ -114,7 +114,7 @@ class ConfigChecker(BaseConfigChecker):
 				load_callable = self.loader.new_context_unit,
 				load_args = {"context": self.ctx},
 				model_args = {
-					"model": UnitModel( 
+					"model": UnitModel(
 						unit=self.config['process'][tier][proc]['processor']['unit'],
 						config={
 							**self.config['process'][tier][proc]['processor'].get('config', {}),
