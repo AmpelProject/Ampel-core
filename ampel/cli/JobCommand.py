@@ -224,7 +224,7 @@ class JobCommand(AbsCoreCommand):
 
 			for i, task_dict in enumerate(tds):
 
-				process_name = f"{job['name']}#Task#{i}"
+				process_name = f"{job['name']}#{i}"
 
 				if 'title' in task_dict:
 					self.print_chapter(task_dict['title'] if task_dict.get('title') else f"Task #{i}", logger)
