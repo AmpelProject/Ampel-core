@@ -7,7 +7,7 @@
 # Last Modified Date: 15.07.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-from typing import Generator, Dict, Any
+from typing import Generator, Dict, Any, Optional
 from ampel.abstract.AbsT3Supplier import AbsT3Supplier
 from ampel.struct.AmpelBuffer import AmpelBuffer
 from ampel.log.utils import safe_query_dict
@@ -16,6 +16,9 @@ from ampel.log.utils import safe_query_dict
 class SimpleT2BasedSupplier(AbsT3Supplier):
 
 	query: Dict[str, Any]
+
+	#: minimum # of t2 docs per stock (useful in combination with $or queries)
+	min_docs: Optional[int]
 
 	def supply(self) -> Generator[AmpelBuffer, None, None]:
 
@@ -40,5 +43,11 @@ class SimpleT2BasedSupplier(AbsT3Supplier):
 					t2 = [el]
 				)
 
-		for ab in d.values():
-			yield ab
+		if (md := self.min_docs):
+			for ab in d.values():
+				if ab['t2'] is None or len(ab['t2']) < md:
+					continue
+				yield ab
+		else:
+			for ab in d.values():
+				yield ab
