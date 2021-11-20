@@ -4,11 +4,12 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 30.09.2018
-# Last Modified Date: 19.09.2021
+# Last Modified Date: 11.11.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import sys, traceback
 from math import log2
+from bson import ObjectId
 from datetime import datetime
 from typing import Dict, Optional, Union, Any
 from ampel.core.AmpelDB import AmpelDB
@@ -99,6 +100,7 @@ def report_exception(
 	log_exception(logger, exc, info)
 
 	trouble: Dict[str, Any] = {
+		'_id': ObjectId(),
 		'datetime': datetime.now().strftime('%d/%m/%Y %H:%M:%S'),
 		'tier': get_tier_from_logger(logger)
 	}
@@ -142,6 +144,7 @@ def report_error(
 	frame, filename, line_number, function_name, lines, index = inspect.stack()[1]
 
 	trouble: Dict[str, Union[None, int, str]] = {
+		'_id': ObjectId(),
 		'datetime': datetime.now().strftime('%d/%m/%Y %H:%M:%S'),
 		'tier': get_tier_from_logger(logger),
 		'location': '%s:%s' % (filename, line_number),
