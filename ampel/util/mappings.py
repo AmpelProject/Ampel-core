@@ -4,17 +4,16 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 07.06.2018
-# Last Modified Date: 13.10.2021
+# Last Modified Date: 16.11.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-from typing import Dict, Any, List, Union, Optional, Sequence, \
-	Callable, Iterable, Mapping, MutableMapping
+from typing import Any, List, Union, Optional, Sequence, Iterable, Mapping, MutableMapping
 from pydantic import BaseModel
 from ampel.types import strict_iterable, T
 
 
 def get_by_path(
-	mapping: Dict, path: Union[str, Sequence[str]], delimiter: str = '.'
+	mapping: dict, path: Union[str, Sequence[str]], delimiter: str = '.'
 ) -> Optional[Any]:
 	"""
 	Get an item from a nested mapping by path, e.g.
@@ -41,7 +40,7 @@ def get_by_path(
 
 
 def set_by_path(
-	d: Dict, path: Union[str, Sequence[str]], val: Any,
+	d: dict, path: Union[str, Sequence[str]], val: Any,
 	delimiter: str = '.', create: bool = True
 ) -> bool:
 	"""
@@ -64,7 +63,7 @@ def set_by_path(
 	return True
 
 
-def del_by_path(d: Dict, path: Union[str, Sequence[str]], delimiter: str = '.') -> bool:
+def del_by_path(d: dict, path: Union[str, Sequence[str]], delimiter: str = '.') -> bool:
 	""" :returns: False if the key was successfully deleted, True otherwise """
 
 	if isinstance(path, str):
@@ -78,55 +77,6 @@ def del_by_path(d: Dict, path: Union[str, Sequence[str]], delimiter: str = '.') 
 			return False
 		d = d[k]
 	return True
-
-
-def walk_and_process_dict(
-	arg: Union[dict, list], callback: Callable,
-	match: Optional[List[str]] = None, path: str = None, **kwargs
-) -> bool:
-	"""
-	callback is called with 4 arguments:
-	1) the path of the possibly nested entry. Ex: 'processor.config.select' or 'processor'
-	2) the matching key (from list 'match'). Ex: 'config'
-	3) the matching (sub) dict
-	4) the **kwargs provided to this method
-	and should return True if a modification was performed
-
-	Simplest callback function:
-	def my_callback(path, k, d):
-		print(f'{path} -> {k}: {d}\n')
-		return False
-
-	:returns: True if a modification was performed, False otherwise
-	"""
-
-	ret = False
-
-	if isinstance(arg, list):
-		for i, el in enumerate(arg):
-			ret = walk_and_process_dict(
-				el, callback, match, f'{path}.{i}' if path else f'{i}', **kwargs
-			) or ret
-
-	if isinstance(arg, dict):
-
-		for k, v in arg.items():
-
-			if not match or k in match:
-				ret = callback(path, k, arg, **kwargs) or ret
-
-			if isinstance(v, dict):
-				ret = walk_and_process_dict(
-					v, callback, match, f'{path}.{k}' if path else f'{k}', **kwargs
-				) or ret
-
-			if isinstance(v, list):
-				for i, el in enumerate(v):
-					ret = walk_and_process_dict(
-						el, callback, match, f'{path}.{k}.{i}' if path else f'{k}.{i}', **kwargs
-					) or ret
-
-	return ret
 
 
 def flatten_dict(
@@ -237,12 +187,12 @@ def unflatten_dict(
 	In []: unflatten_dict({'a.0.b.f.0': 1, 'a.0.b.f.1': 2, 'a.0.b.f.2': 3, 'a.1.c': 2, 'd.e': 1}, unflatten_list=True)
 	Out[]: {'a': [{'b': {'f': [1, 2, 3]}}, {'c': 2}], 'd': {'e': 1}}
 	"""
-	out: Dict[str, Any] = {}
+	out: dict[str, Any] = {}
 
 	for key in sorted(d.keys()) if sort else d:
 
 		parts = key.split(separator)
-		target: Dict[str, Any] = out
+		target: dict[str, Any] = out
 
 		for part in parts[:-1]:
 			if part not in target:
@@ -257,7 +207,7 @@ def unflatten_dict(
 	return out
 
 
-def _unflatten_lists(d: Dict) -> Dict:
+def _unflatten_lists(d: dict) -> dict:
 	"""
 	Note: modifies dict
 
@@ -281,7 +231,7 @@ def _unflatten_lists(d: Dict) -> Dict:
 	return d
 
 
-def merge_dict(d1: Dict, d2: Dict) -> Dict:
+def merge_dict(d1: dict, d2: dict) -> dict:
 	k1 = set(d1.keys())
 	k2 = set(d2.keys())
 	return {k: d1[k] for k in k1.difference(k2)} | {k: d2[k] for k in k2.difference(k1)} | {
@@ -307,7 +257,7 @@ def dictify(item):
 	return item
 
 
-def merge_dicts(items: Sequence[Optional[Dict[T, Any]]]) -> Optional[Dict[T, Any]]:
+def merge_dicts(items: Sequence[Optional[dict[T, Any]]]) -> Optional[dict[T, Any]]:
 	"""
 	Merge a sequence of dicts recursively. Elements that are None are skipped.
 	"""
@@ -320,7 +270,7 @@ def merge_dicts(items: Sequence[Optional[Dict[T, Any]]]) -> Optional[Dict[T, Any
 	return left
 
 
-def compare_dict_values(d1: Dict, d2: Dict, keys: Iterable[str]) -> bool:
+def compare_dict_values(d1: dict, d2: dict, keys: Iterable[str]) -> bool:
 	"""
 	:returns: true if the values of dict one and two are equal for all keys requested
 	Note: dict keys absent in both dicts mean that both dicts are equals wrt the dict key.
