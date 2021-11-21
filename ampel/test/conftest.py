@@ -1,4 +1,3 @@
-from typing import Any, List
 from ampel.content.DataPoint import DataPoint
 from ampel.content.JournalRecord import JournalRecord
 import mongomock, pytest
@@ -186,7 +185,7 @@ def ingest_tied_t2(dev_context: DevAmpelContext, ampel_logger, request):
 
     run_id = 0
     channel = "TEST_CHANNEL"
-    now = datetime.datetime.now()
+    #now = datetime.datetime.now()
     updates_buffer = DBUpdatesBuffer(dev_context.db, run_id=run_id, logger=ampel_logger)
 
     if "stock" in dependency.lower():
@@ -226,7 +225,7 @@ def ingest_tied_t2(dev_context: DevAmpelContext, ampel_logger, request):
         {"id": i, "stock": "stockystock", "body": {"thing": i + 1}} for i in range(3)
     ]
 
-    hander.ingest(datapoints, [(0, True)], stock_id="stockystock", extra={"alert": 123})
+    hander.ingest(datapoints, [(0, True)], stock_id="stockystock", jm_extra={"alert": 123})
 
     # stock_ingester = MongoStockIngester(
     #     updates_buffer=updates_buffer,
