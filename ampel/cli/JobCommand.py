@@ -301,7 +301,7 @@ def run_mp_process(
 	try:
 
 		# Create new context with serialized config
-		context = DevAmpelContext.load(config)
+		context = DevAmpelContext.load(config, one_db=True)
 
 		processor = context.loader.new_context_unit(
 			model = UnitModel(**tast_unit_model),
