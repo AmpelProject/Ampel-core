@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 01.01.2018
-# Last Modified Date: 08.10.2021
+# Last Modified Date: 21.11.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from typing import Optional, Dict, Union, Tuple, Set, Any, List, FrozenSet
@@ -79,7 +79,7 @@ class T2Compiler(AbsCompiler):
 			self.t2s[k] = {channel}, {tid: self.new_meta_info(channel, activity, meta_extra)}
 
 
-	def commit(self, ingester: AbsDocIngester[T2Document], now: Union[int, float]) -> None:
+	def commit(self, ingester: AbsDocIngester[T2Document], now: Union[int, float], **kwargs) -> None:
 
 		for k, v in self.t2s.items():
 

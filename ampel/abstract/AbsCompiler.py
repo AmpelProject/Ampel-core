@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 07.05.2021
-# Last Modified Date: 10.10.2021
+# Last Modified Date: 21.11.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from typing import Optional, Literal, Sequence, Union, Dict, FrozenSet, Tuple, Set, Any, List
@@ -58,7 +58,7 @@ class AbsCompiler(AmpelABC, AmpelBaseModel, abstract=True):
 
 
 	@abstractmethod
-	def commit(self, ingester: AbsDocIngester, now: Union[int, float]) -> None:
+	def commit(self, ingester: AbsDocIngester, now: Union[int, float], **kwargs) -> None:
 		...
 
 
@@ -145,12 +145,12 @@ class AbsCompiler(AmpelABC, AmpelBaseModel, abstract=True):
 
 
 	@staticmethod
-	def _metactivity_key(activity: MetaActivity, skip_keys: Optional[set[str]]=None) -> FrozenSet[tuple[str, Any]]:
+	def _metactivity_key(activity: MetaActivity, skip_keys: Optional[set[str]] = None) -> FrozenSet[tuple[str, Any]]:
 		return frozenset(
 			(
 				k,
 				tuple(v) if isinstance(v, list) else v
-			) for k,v in activity.items()
+			) for k, v in activity.items()
 			if skip_keys is None or k not in skip_keys
 		)
 
@@ -171,7 +171,10 @@ class AbsCompiler(AmpelABC, AmpelBaseModel, abstract=True):
 				if 'channel' in el: # Channel-bound activity
 					if el['action'] & MetaActionCode.ADD_CHANNEL:
 						add_chan_registered = True
-					ar[self._metactivity_key(el, {'channel'})] = {el['channel']} if isinstance(el['channel'], (int, str)) else set(el['channel'])
+					ar[self._metactivity_key(el, {'channel'})] = (
+						{el['channel']} if isinstance(el['channel'], (int, str))
+						else set(el['channel'])
+					)
 				else: # Channel-less activity
 					ar[self._metactivity_key(el)] = None
 

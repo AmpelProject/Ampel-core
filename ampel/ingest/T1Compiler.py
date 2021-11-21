@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 01.01.2018
-# Last Modified Date: 08.10.2021
+# Last Modified Date: 21.11.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import xxhash
@@ -139,7 +139,7 @@ class T1Compiler(AbsCompiler):
 		return a[0]
 
 
-	def commit(self, ingester: AbsDocIngester[T1Document], now: Union[int, float]) -> None:
+	def commit(self, ingester: AbsDocIngester[T1Document], now: Union[int, float], **kwargs) -> None:
 
 		# t1: (unit, config, stock, dps)
 		# t2: (link, {channels}, body, code, dict[traceid, (ActivityRegister, meta extra)])

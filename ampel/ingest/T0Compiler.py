@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 11.05.2021
-# Last Modified Date: 11.05.2021
+# Last Modified Date: 21.11.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from typing import Dict, List, Optional, Set, Union, Tuple, Any
@@ -55,7 +55,7 @@ class T0Compiler(AbsCompiler):
 
 
 	# Override
-	def commit(self, ingester: AbsDocIngester[DataPoint], now: Union[int, float]) -> None:
+	def commit(self, ingester: AbsDocIngester[DataPoint], now: Union[int, float], **kwargs) -> None:
 		"""
 		Note that we let the ingester handle 'ts' and 'updated' values
 		"""
