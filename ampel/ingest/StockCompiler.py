@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 05.05.2021
-# Last Modified Date: 23.05.2021
+# Last Modified Date: 21.11.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from ujson import encode
@@ -41,18 +41,14 @@ class StockCompiler(AbsCompiler):
 		stock: StockId,
 		channel: ChannelId,
 		journal: Optional[JournalRecord] = None,
-		tag: Optional[Union[Tag, List[Tag]]] = None,
-		extra: Optional[Dict[str, Any]] = None
+		tag: Optional[Union[Tag, List[Tag]]] = None
 	) -> None:
 
 		if stock in self.register:
 			d = self.register[stock]
 			d['channel'].add(channel)
 		else:
-			d = self.register[stock] = {
-				'stock': stock,
-				'channel': {channel}
-			}
+			d = self.register[stock] = {'stock': stock, 'channel': {channel}}
 			if self._id_mapper:
 				d['name'] = [self._id_mapper.to_ext_id(d['stock'])]
 
@@ -76,17 +72,15 @@ class StockCompiler(AbsCompiler):
 			else:
 				d['tag'].update(tag)
 
-		if extra:
-			if 'extra' in d:
-				d['extra'].update(extra)
-			else:
-				d['extra'] = extra
-
 
 	# Override
-	def commit(self, ingester: AbsDocIngester[StockDocument], now: Union[int, float]) -> None:
+	def commit(self,
+		ingester: AbsDocIngester[StockDocument],
+		now: Union[int, float],
+		**kwargs
+	) -> None:
 		"""
-		Note that we let the ingester handle 'ts' and 'updated' values
+		Note that we let the ingester handle 'tied' and 'upd' time values
 		"""
 
 		for k, v in self.register.items():
@@ -106,6 +100,9 @@ class StockCompiler(AbsCompiler):
 
 			if 'name' in v:
 				d['name'] = v['name']
+
+			if kwargs.get('body'):
+				d['body'] = kwargs['body']
 
 			if self.origin:
 				d['origin'] = self.origin
