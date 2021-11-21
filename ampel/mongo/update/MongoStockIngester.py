@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 14.12.2017
-# Last Modified Date: 09.10.2021
+# Last Modified Date: 21.11.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from typing import Any
@@ -41,6 +41,12 @@ class MongoStockIngester(AbsDocIngester[StockDocument]):
 
 		if set_on_insert:
 			upd['$setOnInsert'] = set_on_insert
+
+		# It should be decided later whether we want to define StockDocument.body
+		# as an array and use $push here instead of the (potentially dangerous because
+		# associated with data erasure) $set operation
+		if 'body' in doc:
+			upd['$set'] = {'body': doc['body']}
 
 		# Insert/Update stock document into stock collection
 		self.updates_buffer.add_stock_update(
