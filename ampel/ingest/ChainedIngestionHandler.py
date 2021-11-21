@@ -467,13 +467,14 @@ class ChainedIngestionHandler:
 		filter_results: List[Tuple[int, Union[bool, int]]],
 		stock_id = 0,
 		tag: Optional[Union[Tag, List[Tag]]] = None,
-		extra: Optional[Dict[str, Any]] = None,
+		jm_extra: Optional[Dict[str, Any]] = None,
 		stock_body: Optional[Dict[str, Any]] = None
 	) -> None:
 		"""
 		Create database documents.
 		:param filter_results: the value returned from
 		  :func:`~ampel.abstract.AbsAlertFilter.AbsAlertFilter.process` if alert was accepted
+		:param jm_extra: extra info to be added to journal or meta enties. Ex: {'alert_id': 123}
 		"""
 
 		self.updates_buffer._block_autopush = True
@@ -503,8 +504,8 @@ class ChainedIngestionHandler:
 				'traceid': self.base_trace_id | {'shaper': self.shaper_trace_id}
 			}
 
-			if extra:
-				jentry = extra | jentry
+			if jm_extra:
+				jentry = jm_extra | jentry
 
 			if i > 0: # Known stock (for the current channel)
 				ib = ibs[i][0]
@@ -535,7 +536,7 @@ class ChainedIngestionHandler:
 
 				if dps_insert:
 
-					self.t0_compiler.add(dps_insert, ib.channel, self.shaper_trace_id, extra)
+					self.t0_compiler.add(dps_insert, ib.channel, self.shaper_trace_id, jm_extra)
 
 					# TODO: make this addition optional (a stock with a million dps would create pblms)
 					jentry['upsert'] = [el['id'] for el in dps_insert]
@@ -545,7 +546,7 @@ class ChainedIngestionHandler:
 						jentry['action'] |= JournalActionCode.T2_ADD_CHANNEL
 						self.ingest_point_t2s(
 							dps_insert, fres, stock_id, ib.channel, mux.point_t2, add_other_tag,
-							extra if self.include_extra_meta > 1 else None
+							jm_extra if self.include_extra_meta > 1 else None
 						)
 
 				# Muxed T1 and associated T2 ingestions
@@ -553,7 +554,7 @@ class ChainedIngestionHandler:
 					self.ingest_t12(
 						dps_combine, fres, stock_id, jentry, mux.combine,
 						t1_comb_cache, t1_comp_cache, add_other_tag,
-						extra if self.include_extra_meta else None
+						jm_extra if self.include_extra_meta else None
 					)
 
 			else:
@@ -563,14 +564,14 @@ class ChainedIngestionHandler:
 			if ib.combine:
 				self.ingest_t12(
 					dps, fres, stock_id, jentry, ib.combine, t1_comb_cache, t1_comp_cache,
-					add_other_tag, meta_extra = extra if self.include_extra_meta else None
+					add_other_tag, meta_extra = jm_extra if self.include_extra_meta else None
 				)
 				
 			# Non-muxed point T2s
 			if ib.point_t2:
 				self.ingest_point_t2s(
 					dps, fres, stock_id, ib.channel, ib.point_t2, add_other_tag,
-					extra if self.include_extra_meta > 1 else None
+					jm_extra if self.include_extra_meta > 1 else None
 				)
 
 			# Stock T2s
@@ -579,7 +580,7 @@ class ChainedIngestionHandler:
 					self.stock_t2_compiler.add(
 						t2b.unit, t2b.config, stock_id, stock_id,
 						ib.channel, self.base_trace_id, add_other_tag,
-						extra if self.include_extra_meta else None
+						jm_extra if self.include_extra_meta else None
 					)
 
 			# Flush potential unit logs
@@ -589,13 +590,13 @@ class ChainedIngestionHandler:
 			for muxer, (_, _, chans) in mux_cache.items():
 				if muxer._buf_hdlr.buffer: # type: ignore[attr-defined]
 					muxer._buf_hdlr.forward( # type: ignore[attr-defined]
-						logger, stock=stock_id, channel=list(chans), extra = extra
+						logger, stock=stock_id, channel=list(chans), extra = jm_extra
 					)
 
 			for (t1_unit, _), (_, chans) in t1_comb_cache.items():
 				if t1_unit._buf_hdlr.buffer: # type: ignore[union-attr]
 					t1_unit._buf_hdlr.forward( # type: ignore[union-attr]
-						logger, stock=stock_id, channel=list(chans), extra = extra
+						logger, stock=stock_id, channel=list(chans), extra = jm_extra
 					)
 
 			if not self.stock_compiler.register:
