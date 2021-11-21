@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 18.02.2020
-# Last Modified Date: 18.03.2021
+# Last Modified Date: 21.11.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from typing import Dict, Any, Optional, Literal, Iterable, Union, TYPE_CHECKING
@@ -71,6 +71,7 @@ class AmpelContext:
 		pwds: Optional[Iterable[str]] = None,
 		freeze_config: bool = True,
 		vault: Optional[AmpelVault] = None,
+		one_db: bool = False,
 		**kwargs
 	) -> 'AmpelContext':
 		"""
@@ -105,7 +106,7 @@ class AmpelContext:
 					AESecretProvider([l.strip() for l in f.readlines()])
 				)
 
-		db = AmpelDB.new(alconf, vault)
+		db = AmpelDB.new(alconf, vault, one_db=one_db)
 
 		return cls(
 			config = alconf,
