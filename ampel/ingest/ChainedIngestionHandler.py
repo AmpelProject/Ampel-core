@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 01.05.2020
-# Last Modified Date: 21.11.2021
+# Last Modified Date: 24.11.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from time import time
@@ -463,7 +463,7 @@ class ChainedIngestionHandler:
 
 
 	def ingest(self,
-		dps: List[DataPoint],
+		alert_dps: Sequence[dict[str, Any]],
 		filter_results: List[Tuple[int, Union[bool, int]]],
 		stock_id = 0,
 		tag: Optional[Union[Tag, List[Tag]]] = None,
@@ -481,7 +481,7 @@ class ChainedIngestionHandler:
 		ingest_start = time()
 
 		# process *modifies* dict instances loaded by fastavro
-		dps = self.shaper.process(dps, stock_id)
+		dps: List[DataPoint] = self.shaper.process(alert_dps, stock_id)
 
 		if not dps: # Not sure if this can happen
 			return
