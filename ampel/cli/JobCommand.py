@@ -239,6 +239,10 @@ class JobCommand(AbsCoreCommand):
 
 				multiplier = task_dict.pop('multiplier')
 
+				# Beacons have no real use in jobs (unlike prod)
+				if task_dict['unit'] == 'T2Worker' and 'send_beacon' not in task_dict['config']:
+					task_dict['config']['send_beacon'] = False
+
 				if multiplier > 1:
 
 					ps = []
