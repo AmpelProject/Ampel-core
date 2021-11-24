@@ -1,4 +1,5 @@
 from collections import defaultdict
+from typing import Any
 import pytest
 
 from ampel.content.DataPoint import DataPoint
@@ -103,7 +104,7 @@ def datapoints() -> list[DataPoint]:
     return [{"id": i, "stock": "stockystock"} for i in range(3)]
 
 
-def test_minimal_directive(dev_context: DevAmpelContext, datapoints: list[DataPoint]):
+def test_minimal_directive(dev_context: DevAmpelContext, datapoints: list[dict[str, Any]]):
     """
     Minimal directive creates stock + t0 docs
     """
@@ -237,7 +238,6 @@ def test_multiplex_dispatch(
 
     t0 = dev_context.db.get_collection("t0")
     t1 = dev_context.db.get_collection("t1")
-    t2 = dev_context.db.get_collection("t2")
 
     assert t0.count_documents({"channel": "TEST_CHANNEL"}) == len(
         datapoints
@@ -279,8 +279,6 @@ def test_multiplex_elision(
     handler.updates_buffer.push_updates()
 
     t0 = dev_context.db.get_collection("t0")
-    t1 = dev_context.db.get_collection("t1")
-    t2 = dev_context.db.get_collection("t2")
 
     assert t0.count_documents({"channel": "TEST_CHANNEL"}) == len(
         datapoints

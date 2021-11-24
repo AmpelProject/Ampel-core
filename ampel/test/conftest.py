@@ -1,9 +1,9 @@
-from ampel.content.DataPoint import DataPoint
 from ampel.content.JournalRecord import JournalRecord
 import mongomock, pytest
 import pymongo
 from os import environ
 from pathlib import Path, PosixPath
+from typing import Any
 import subprocess
 import json
 import datetime
@@ -221,7 +221,7 @@ def ingest_tied_t2(dev_context: DevAmpelContext, ampel_logger, request):
         directives=[IngestDirective(channel=channel, ingest=body)],
     )
 
-    datapoints: list[DataPoint] = [
+    datapoints: list[dict[str, Any]] = [
         {"id": i, "stock": "stockystock", "body": {"thing": i + 1}} for i in range(3)
     ]
 
