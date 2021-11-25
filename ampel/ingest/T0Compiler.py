@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 11.05.2021
-# Last Modified Date: 21.11.2021
+# Last Modified Date: 25.11.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from typing import Dict, List, Optional, Set, Union, Tuple, Any
@@ -15,6 +15,7 @@ from ampel.abstract.AbsDocIngester import AbsDocIngester
 from ampel.util.collections import try_reduce
 from ampel.abstract.AbsCompiler import AbsCompiler
 from ampel.enum.MetaActionCode import MetaActionCode
+from ampel.util.tag import merge_tags
 
 
 class T0Compiler(AbsCompiler):
@@ -66,7 +67,7 @@ class T0Compiler(AbsCompiler):
 			meta: MetaRecord = {'ts': now, 'run': self.run_id}
 
 			if extra:
-				meta.update(extra) # type: ignore
+				meta.update(extra) # type: ignore[typeddict-item]
 
 			meta['activity'] = [
 				{
@@ -77,14 +78,17 @@ class T0Compiler(AbsCompiler):
 			meta['traceid'] = {'shaper': trace_id}
 
 			if self._tag:
-				dp['tag'] = self._tag
+				dp['tag'] = merge_tags(self._tag, dp.get('tag'))
 				meta['activity'].append(self._ingest_tag_activity) # type: ignore
 
 			if self.origin and 'origin' not in dp:
 				dp['origin'] = self.origin
 
-			dp['channel'] = lchans # type: ignore[typeddict-item]
-			dp['meta'] = [meta] # type: ignore[typeddict-item]
+			dp['channel'] = lchans
+			if 'meta' in dp and isinstance(dp['meta'], list):
+				dp['meta'].append(meta)
+			else:
+				dp['meta'] = [meta]
 
 			ingester.ingest(dp)
 
