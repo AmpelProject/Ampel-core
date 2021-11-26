@@ -1,5 +1,9 @@
 from collections import defaultdict
 from typing import Any
+from ampel.content.MetaActivity import MetaActivity
+from ampel.content.MetaRecord import MetaRecord
+from ampel.core.AmpelContext import AmpelContext
+from ampel.enum.MetaActionCode import MetaActionCode
 import pytest
 
 from ampel.content.DataPoint import DataPoint
@@ -64,7 +68,7 @@ def multiplex_directive(
         ingest=IngestBody(
             stock_t2=[T2Compute(unit="DummyStockT2Unit")],
             mux=MuxModel(
-                unit="DummyMuxer", # type: ignore[arg-type]
+                unit="DummyMuxer",  # type: ignore[arg-type]
                 insert={"point_t2": [T2Compute(unit="DummyPointT2Unit")]},
                 combine=[
                     T1Combine(
@@ -88,7 +92,7 @@ def get_handler(context: DevAmpelContext, directives) -> ChainedIngestionHandler
         tier=0,
         trace_id={},
         run_id=0,
-        compiler_opts=CompilerOptions(),
+        compiler_opts=CompilerOptions(t0={"tag": ["TAGGERT"]}),
         updates_buffer=updates_buffer,
         directives=directives,
     )
@@ -104,7 +108,9 @@ def datapoints() -> list[DataPoint]:
     return [{"id": i, "stock": "stockystock"} for i in range(3)]
 
 
-def test_minimal_directive(dev_context: DevAmpelContext, datapoints: list[dict[str, Any]]):
+def test_minimal_directive(
+    dev_context: DevAmpelContext, datapoints: list[dict[str, Any]]
+):
     """
     Minimal directive creates stock + t0 docs
     """
@@ -129,6 +135,7 @@ def test_minimal_directive(dev_context: DevAmpelContext, datapoints: list[dict[s
         col = dev_context.db.get_collection(f"t{tier}")
         assert col.count_documents({}) == (len(datapoints) if tier == 0 else 0)
 
+
 def check_unit_counts(docs, num_states, num_points):
     assert len(docs) == 1 + num_states + num_points
     by_unit = defaultdict(list)
@@ -147,7 +154,6 @@ def check_unit_counts(docs, num_states, num_points):
         elif doc["unit"] == "DummyPointT2Unit":
             assert isinstance(doc["link"], int)
             assert doc["col"] == "t0"
-
 
 
 def test_single_source_directive(
@@ -286,3 +292,35 @@ def test_multiplex_elision(
     assert (
         t0.count_documents({"channel": "LONG_CHANNEL"}) == 0
     ), "multiplexed channel contains additional datapoints"
+
+
+def test_t0_compiler(
+    dev_context: DevAmpelContext,
+    single_source_directive: IngestDirective,
+    datapoints: list[DataPoint],
+):
+    """T0Compiler preserves tags and meta entries"""
+    handler = get_handler(dev_context, [single_source_directive])
+    ts = 3.14159
+    meta_record: MetaRecord = {
+        "activity": [
+            {
+                "code": MetaActionCode.ADD_INGEST_TAG,
+            }
+        ],
+        "ts": ts,
+        "extra": {"thing": "floop"},
+    }
+    tags = ["SOME_TAG", "SOME_OTHER_TAG"]
+
+    datapoints[0]["meta"] = [meta_record]
+    datapoints[0]["tag"] = tags
+    handler.t0_compiler.add(datapoints, "SOME_CHANNEL", trace_id=0)
+    handler.t0_compiler.commit(handler.t0_ingester, ts)
+    handler.updates_buffer.push_updates(force=True)
+
+    doc = dev_context.db.get_collection("t0").find_one({"id": datapoints[0]["id"]})
+    assert set(tags).intersection(doc["tag"]), "initial datapoint tags set"
+    assert set(doc["tag"]).difference(tags), "compiler adds its own tags"
+    assert len(doc["meta"]) > 1, "initial datapoint meta set"
+    assert meta_record in doc["meta"], "compiler adds its own meta entries"
