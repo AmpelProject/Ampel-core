@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 17.04.2021
-# Last Modified Date: 20.10.2021
+# Last Modified Date: 26.11.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from time import time
@@ -346,6 +346,8 @@ class T3BaseStager(AbsT3Stager, abstract=True):
 			ids = []
 			if 'process' in self.human_id:
 				ids.append("[%s]" % self.process_name)
+			if 'taskindex' in self.human_id:
+				ids.append("[#%s]" % self.process_name.split("#")[-1])
 			if 'unit' in self.human_id:
 				ids.append("[%s]" % t3_unit.__class__.__name__)
 			if 'tag' in self.human_id and 'tag' in t3d:

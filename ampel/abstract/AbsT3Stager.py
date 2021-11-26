@@ -56,7 +56,7 @@ class AbsT3Stager(AmpelABC, ContextUnit, abstract=True):
 	#: with potential stager tag(s). Note also that time is always appended.
 	#: ex: {_id: [DipoleJob#Task#2] [T3CosmoDipole] [2021-10-20 10:38:48.889624]}
 	#: ex: {_id: [T3CosmoDipole] [TAG_UNION2] [2021-10-20 10:42:41.123263]}
-	human_id: Optional[list[Literal['process', 'unit', 'tag', 'config', 'run']]]
+	human_id: Optional[list[Literal['process', 'taskindex', 'unit', 'tag', 'config', 'run']]]
 
 	#: If true, a value will be set for T3Document.datetime
 	human_timestamp: bool = False
