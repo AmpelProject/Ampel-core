@@ -55,21 +55,23 @@ class T3BaseStager(AbsT3Stager, abstract=True):
 		self.logger.log(VERBOSE, f"session_info unit {self.session_info}")
 
 		c = self.channel or chan
+		buf_hdlr = ChanRecordBufHandler(self.logger.level, c, {'unit': um.unit}) if c \
+			else DefaultRecordBufferingHandler(self.logger.level, {'unit': um.unit})
 
 		# Spawn unit instance
-		return self.context.loader.new_logical_unit(
+		t3_unit = self.context.loader.new_logical_unit(
 			model = um,
 			logger = AmpelLogger.get_logger(
 				base_flag = (getattr(self.logger, 'base_flag', 0) & ~LogFlag.CORE) | LogFlag.UNIT,
-				console = False,
-				handlers = [
-					ChanRecordBufHandler(self.logger.level, c, {'unit': um.unit}) \
-					if c else DefaultRecordBufferingHandler(self.logger.level, {'unit': um.unit})
-				]
+				console = len(self.logger.handlers) == 1, # to be improved later
+				handlers = [buf_hdlr]
 			),
 			sub_type = AbsT3Unit,
 			session_info = self.session_info
 		)
+
+		setattr(t3_unit, '_buf_hdlr', buf_hdlr) # Shortcut
+		return t3_unit
 
 
 	def supply(self, t3_unit: AbsT3Unit, view_generator: BaseViewGenerator[T]) -> Generator[T3Document, None, None]:
@@ -81,6 +83,8 @@ class T3BaseStager(AbsT3Stager, abstract=True):
 
 		try:
 
+			self.logger.info("Running T3unit", extra={'unit': t3_unit.__class__.__name__})
+			
 			# potential T3Document to be included in the T3Document
 			if (ret := t3_unit.process(view_generator)) or self.save_stock_ids:
 				if x := self.handle_t3_result(t3_unit, ret, view_generator.get_stock_ids(), ts):
@@ -171,11 +175,16 @@ class T3BaseStager(AbsT3Stager, abstract=True):
 			queues[t3_unit] = JoinableQueue()
 			generators.append(
 				ThreadedViewGenerator(
-					t3_unit.__class__.__name__, queues[t3_unit], self.stock_updr
+					t3_unit.__class__.__name__,
+					queues[t3_unit],
+					self.stock_updr
 				)
 			)
 			async_results.append(
-				pool.apply_async(t3_unit.process, args=(generators[-1], ))
+				pool.apply_async(
+					t3_unit.process,
+					args=(generators[-1], )
+				)
 			)
 
 		return queues, generators, async_results
@@ -241,6 +250,10 @@ class T3BaseStager(AbsT3Stager, abstract=True):
 		stocks: List[StockId],
 		ts: float
 	) -> Optional[T3Document]:
+
+		# Let's consider logs as a result product
+		if t3_unit._buf_hdlr.buffer: # type: ignore[attr-defined]
+			t3_unit._buf_hdlr.forward(self.logger) # type: ignore[attr-defined]
 
 		if isinstance(res, UnitResult):
 			if res.journal:
