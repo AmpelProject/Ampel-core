@@ -4,13 +4,12 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 20.04.2021
-# Last Modified Date: 20.04.2021
+# Last Modified Date: 26.11.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from multiprocessing import JoinableQueue
 from typing import Generator
 from ampel.abstract.AbsT3Unit import T, T3Send
-from ampel.struct.JournalAttributes import JournalAttributes
 from ampel.mongo.update.MongoStockUpdater import MongoStockUpdater
 from ampel.t3.stage.BaseViewGenerator import BaseViewGenerator
 
