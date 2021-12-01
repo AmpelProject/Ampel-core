@@ -176,26 +176,32 @@ class ChainedIngestionHandler:
 
 		# Create ingesters
 		dbconf = self.context.config.get(f'{database}.ingest', dict, raise_exc=True)
+		def get_ingester_model(key: str) -> UnitModel:
+			model = dbconf[key]
+			if isinstance(model, str):
+				return UnitModel(unit=model)
+			else:
+				return UnitModel(**model)
 		self.t0_ingester = AuxUnitRegister.new_unit(
-			model = UnitModel(unit=dbconf['t0']),
+			model = get_ingester_model('t0'),
 			sub_type = AbsDocIngester[DataPoint],
 			updates_buffer = updates_buffer
 		)
 
 		self.t1_ingester = AuxUnitRegister.new_unit(
-			model = UnitModel(unit=dbconf['t1']),
+			model = get_ingester_model('t1'),
 			sub_type = AbsDocIngester[T1Document],
 			updates_buffer = updates_buffer
 		)
 
 		self.t2_ingester = AuxUnitRegister.new_unit(
-			model = UnitModel(unit=dbconf['t2']),
+			model = get_ingester_model('t2'),
 			sub_type = AbsDocIngester[T2Document],
 			updates_buffer = updates_buffer
 		)
 
 		self.stock_ingester = AuxUnitRegister.new_unit(
-			model = UnitModel(unit=dbconf['stock']),
+			model = get_ingester_model('stock'),
 			sub_type = AbsDocIngester[StockDocument],
 			updates_buffer = updates_buffer
 		)
