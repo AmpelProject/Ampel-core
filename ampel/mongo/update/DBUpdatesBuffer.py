@@ -90,7 +90,8 @@ class DBUpdatesBuffer(Schedulable):
 		log_doc_ids: Optional[Iterable[int]] = None,
 		push_interval: Optional[float] = 3.,
 		max_size: Optional[int] = None,
-		threads: Optional[int] = None
+		threads: Optional[int] = None,
+		raise_exc: bool = False,
 	):
 		"""
 		:param error_callback: callback method to be called on errors
@@ -148,6 +149,8 @@ class DBUpdatesBuffer(Schedulable):
 			self.push_interval = inf
 
 		self.thread_pool = ThreadPool(threads) if threads else None
+
+		self.raise_exc = raise_exc
 
 
 	def _new_buffer(self) -> None:
@@ -358,6 +361,8 @@ class DBUpdatesBuffer(Schedulable):
 							# - Implement something for temp DB connectivity issues ?
 							################################
 
+							if self.raise_exc:
+								raise
 
 					if dup_key_only:
 						self.logger.debug(
@@ -368,10 +373,14 @@ class DBUpdatesBuffer(Schedulable):
 						return
 
 				except Exception as ee:
+					if self.raise_exc:
+						raise
 					# Log exc and try to insert doc into trouble collection (raises no exception)
 					report_exception(self._ampel_db, self.logger, exc=ee)
 
 			except Exception as e:
+				if self.raise_exc:
+					raise
 				# Log exc and try to insert doc into trouble collection (raises no exception)
 				report_exception(self._ampel_db, self.logger, exc=e)
 
