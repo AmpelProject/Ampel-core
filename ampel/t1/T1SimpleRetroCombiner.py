@@ -7,7 +7,7 @@
 # Last Modified Date: 23.07.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-from typing import Iterable, List, Optional
+from typing import Generator, Iterable, List, Optional
 from ampel.content.DataPoint import DataPoint
 from ampel.types import DataPointId
 from ampel.struct.T1CombineResult import T1CombineResult
@@ -28,22 +28,19 @@ class T1SimpleRetroCombiner(AbsT1CombineUnit):
 
 		chan = self.channel
 		dps = [
-			dp['id'] for dp in datapoints
+			dp for dp in datapoints
 			if not("excl" in dp and chan in dp['excl'])
 		]
 
-		prev_det_sequences = [dps]
-		while dps := self._prev_det_seq(dps): # type: ignore[assignment]
-			prev_det_sequences.append(dps)
+		return [T1CombineResult(dps=el) for el in reversed(list(self.generate_retro_sequences(dps)))]
 
-		return [T1CombineResult(dps=el) for el in reversed(prev_det_sequences)]
-
-
-	def _prev_det_seq(self, datapoints: List[DataPointId]) -> Optional[List[DataPointId]]:
+	def generate_retro_sequences(self, datapoints: List[DataPoint]) -> Generator[List[DataPointId], None, None]:
 		"""
-		Overridable by sub-classes (ex: T1PhotoRetroCombiner)
+		Generate substates by iteratively removing the last element. This may
+		be overridden by subclasses, e.g. to use only certain datapionts to
+		delimit states.
 		"""
+		while datapoints:
+			yield [dp["id"] for dp in datapoints]
+			datapoints = datapoints[:-1]
 
-		if len(datapoints) > 1:
-			return datapoints[:-1]
-		return None
