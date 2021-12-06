@@ -301,12 +301,11 @@ def test_multiplex_elision(
 
 
 def test_t0_meta_append(
-    dev_context: DevAmpelContext,
-    single_source_directive: IngestDirective,
+    mock_context: DevAmpelContext,
     datapoints: list[DataPoint],
 ):
     """T0Compiler preserves tags and meta entries"""
-    handler = get_handler(dev_context, [single_source_directive])
+    handler = get_handler(mock_context, [IngestDirective(channel="TEST_CHANNEL")])
     ts = 3.14159
     meta_record: MetaRecord = {
         "activity": [
@@ -325,7 +324,7 @@ def test_t0_meta_append(
     handler.t0_compiler.commit(handler.t0_ingester, ts)
     handler.updates_buffer.push_updates(force=True)
 
-    doc = dev_context.db.get_collection("t0").find_one({"id": datapoints[0]["id"]})
+    doc = mock_context.db.get_collection("t0").find_one({"id": datapoints[0]["id"]})
     assert doc["channel"] == ["SOME_CHANNEL"]
     assert set(tags).intersection(doc["tag"]), "initial datapoint tags set"
     assert set(doc["tag"]).difference(tags), "compiler adds its own tags"
