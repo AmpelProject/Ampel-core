@@ -39,7 +39,7 @@ python-versions = "*"
 
 [[package]]
 name = "ampel-interface"
-version = "0.8.1a10"
+version = "0.8.1a11"
 description = "Base classes for the Ampel analysis platform"
 category = "main"
 optional = false
@@ -47,7 +47,6 @@ python-versions = ">=3.9,<4.0"
 
 [package.dependencies]
 pydantic = ">=1.8.1,<2.0.0"
-pymongo = ">=4.0,<5.0"
 PyYAML = ">=5.4.1,<6.0.0"
 
 [package.extras]
@@ -979,7 +978,7 @@ server = ["fastapi", "uvicorn"]
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.9,<3.10"
-content-hash = "065e4a6fa990e8873a4a38372c6cbd64c1bc80eb627d9eb52006672557a31c2f"
+content-hash = "5d45051d70d7f0e405477e8ab42ead81cc37691d45495431ef2e4d8c8d539f15"
 
 [metadata.files]
 aiohttp = [
@@ -1065,8 +1064,8 @@ alabaster = [
     {file = "alabaster-0.7.12.tar.gz", hash = "sha256:a661d72d58e6ea8a57f7a86e37d86716863ee5e92788398526d58b26a4e4dc02"},
 ]
 ampel-interface = [
-    {file = "ampel-interface-0.8.1a10.tar.gz", hash = "sha256:49de4117f945c45bf8b2a8ffabccaa726e7eb918d4012677ef0d243abc33567f"},
-    {file = "ampel_interface-0.8.1a10-py3-none-any.whl", hash = "sha256:aba065c2afbc5e38d218d531a644c86598acbb3a74b7b86392c7e4adce9357ee"},
+    {file = "ampel-interface-0.8.1a11.tar.gz", hash = "sha256:854d7a593da1e58f821432f1db62997084214cd3af0cef69465062240b651ff5"},
+    {file = "ampel_interface-0.8.1a11-py3-none-any.whl", hash = "sha256:6a210f9c949620c19da1c3b2cc52ab5418ecd41c4b086cfc466b6381518c9701"},
 ]
 anyio = [
     {file = "anyio-3.4.0-py3-none-any.whl", hash = "sha256:2855a9423524abcdd652d942f8932fda1735210f77a6b392eafd9ff34d3fe020"},
