@@ -15,7 +15,6 @@ from ampel.abstract.AbsDocIngester import AbsDocIngester
 from ampel.util.collections import try_reduce
 from ampel.abstract.AbsCompiler import AbsCompiler
 from ampel.enum.MetaActionCode import MetaActionCode
-from ampel.util.tag import merge_tags
 
 
 class T0Compiler(AbsCompiler):
@@ -77,8 +76,8 @@ class T0Compiler(AbsCompiler):
 			]
 			meta['traceid'] = {'shaper': trace_id}
 
-			if self._tag:
-				dp['tag'] = merge_tags(self._tag, dp.get('tag'))
+			if self._tag or dp.get('tag'):
+				dp['tag'] = [*(self._tag or []), *(dp.get('tag') or [])]
 				meta['activity'].append(self._ingest_tag_activity) # type: ignore
 
 			if self.origin and 'origin' not in dp:

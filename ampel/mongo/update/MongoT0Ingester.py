@@ -17,6 +17,9 @@ from ampel.abstract.AbsDocIngester import AbsDocIngester
 class MongoT0Ingester(AbsDocIngester[DataPoint]):
 	""" Inserts `DataPoint` into the t0 collection  """
 
+	#: raise DuplicateKeyError on attempts to upsert the same id with different bodies
+	check_id_collision: bool = True
+
 	def ingest(self, doc: DataPoint) -> None:
 
 		match: Dict[str, Any] = {'id': doc['id']}
@@ -31,6 +34,8 @@ class MongoT0Ingester(AbsDocIngester[DataPoint]):
 
 		if 'body' in doc:
 			upd['$setOnInsert'] = {'body': doc['body']}
+			if self.check_id_collision:
+				match['body'] = doc['body']
 
 		if 'origin' in doc:
 			match['origin'] = doc['origin']

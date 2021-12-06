@@ -470,6 +470,14 @@ unit:
     distrib: ampel-core
     file: /Users/jakob/Documents/ZTF/Ampel-v0.8/ampel-core/conf/ampel-core/ampel.yaml
     version: 0.8.0a0
+  SimpleTagFilter:
+    fqn: ampel.aux.SimpleTagFilter
+    base:
+    - SimpleTagFilter
+    - AbsApplicable
+    distrib: ampel-core
+    file: /Users/jakob/Documents/ZTF/Ampel-v0.8/ampel-core/conf/ampel-core/ampel.yaml
+    version: 0.8.1a8
   SimpleDictArrayFilter:
     fqn: ampel.aux.filter.SimpleDictArrayFilter
     base:

@@ -1,10 +1,14 @@
 from collections import defaultdict
-from typing import Any
-from ampel.content.MetaActivity import MetaActivity
+import contextlib
+from typing import Any, Generator
+from ampel.config.AmpelConfig import AmpelConfig
 from ampel.content.MetaRecord import MetaRecord
-from ampel.core.AmpelContext import AmpelContext
 from ampel.enum.MetaActionCode import MetaActionCode
+from ampel.util.freeze import recursive_unfreeze
+from ampel.view.ReadOnlyDict import ReadOnlyDict
+from pymongo.errors import DuplicateKeyError
 import pytest
+import mongomock
 
 from ampel.content.DataPoint import DataPoint
 from ampel.dev.DevAmpelContext import DevAmpelContext
@@ -84,7 +88,9 @@ def multiplex_directive(
 def get_handler(context: DevAmpelContext, directives) -> ChainedIngestionHandler:
     run_id = 0
     logger = AmpelLogger.get_logger(console={"level": DEBUG})
-    updates_buffer = DBUpdatesBuffer(context.db, run_id=run_id, logger=logger)
+    updates_buffer = DBUpdatesBuffer(
+        context.db, run_id=run_id, logger=logger, raise_exc=True
+    )
     return ChainedIngestionHandler(
         context=context,
         logger=logger,
@@ -105,7 +111,7 @@ def test_no_directive(dev_context):
 
 @pytest.fixture
 def datapoints() -> list[DataPoint]:
-    return [{"id": i, "stock": "stockystock"} for i in range(3)]
+    return [{"id": i, "stock": "stockystock", "body": {"thing": i}} for i in range(3)]
 
 
 def test_minimal_directive(
@@ -294,13 +300,12 @@ def test_multiplex_elision(
     ), "multiplexed channel contains additional datapoints"
 
 
-def test_t0_compiler(
-    dev_context: DevAmpelContext,
-    single_source_directive: IngestDirective,
+def test_t0_meta_append(
+    mock_context: DevAmpelContext,
     datapoints: list[DataPoint],
 ):
     """T0Compiler preserves tags and meta entries"""
-    handler = get_handler(dev_context, [single_source_directive])
+    handler = get_handler(mock_context, [IngestDirective(channel="TEST_CHANNEL")])
     ts = 3.14159
     meta_record: MetaRecord = {
         "activity": [
@@ -319,8 +324,48 @@ def test_t0_compiler(
     handler.t0_compiler.commit(handler.t0_ingester, ts)
     handler.updates_buffer.push_updates(force=True)
 
-    doc = dev_context.db.get_collection("t0").find_one({"id": datapoints[0]["id"]})
+    doc = mock_context.db.get_collection("t0").find_one({"id": datapoints[0]["id"]})
+    assert doc["channel"] == ["SOME_CHANNEL"]
     assert set(tags).intersection(doc["tag"]), "initial datapoint tags set"
     assert set(doc["tag"]).difference(tags), "compiler adds its own tags"
     assert len(doc["meta"]) > 1, "initial datapoint meta set"
     assert meta_record in doc["meta"], "compiler adds its own meta entries"
+
+
+@contextlib.contextmanager
+def unfreeze_config(context: DevAmpelContext) -> Generator[dict, None, None]:
+    config = context.config
+    writable_config = recursive_unfreeze(config.get()) # type: ignore[arg-type]
+    context.config = AmpelConfig(writable_config, freeze=False)
+    yield writable_config
+    context.config = config
+
+
+def test_duplicate_t0_id(
+    integration_context: DevAmpelContext,
+    datapoints: list[DataPoint],
+):
+    def run():
+        handler = get_handler(integration_context, [IngestDirective(channel="TEST_CHANNEL")])
+        handler.t0_compiler.add(datapoints, "SOME_CHANNEL", trace_id=0)
+        handler.t0_compiler.commit(handler.t0_ingester, 0)
+        handler.updates_buffer.push_updates(force=True)
+
+    # populate documents
+    run()
+
+    # fake an id collision by changing the body of an existing document without
+    # updating its id. when the consumer runs again below, this should cause the
+    # update operation to fail to match the body, and attempt to insert a duplicate
+    # id
+    datapoints[0]["body"]["broken"] = "boom"
+    with pytest.raises(DuplicateKeyError):
+        run()
+
+    # with id check disabled, no exception is raised
+    with unfreeze_config(integration_context) as config:
+        config["mongo"]["ingest"]["t0"] = {
+            "unit": "MongoT0Ingester",
+            "config": {"check_id_collision": False},
+        }
+        run()

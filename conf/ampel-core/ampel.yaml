@@ -47,6 +47,7 @@ unit:
 - ampel.dev.NoShaper
 
 # Aux units
+- ampel.aux.SimpleTagFilter
 - ampel.aux.filter.SimpleDictArrayFilter
 - ampel.aux.filter.FlatDictArrayFilter
 - ampel.t3.stage.project.T3ChannelProjector
