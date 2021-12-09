@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-core/ampel/db/DataLoader.py
+# File              : Ampel-core/ampel/core/DataLoader.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 13.01.2018
-# Last Modified Date: 25.03.2021
+# Last Modified Date: 02.12.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from bson.codec_options import CodecOptions
@@ -72,8 +72,7 @@ class DataLoader:
 				stock = None if "stock" in col_set else None,
 				t0 = [] if "t0" in col_set else None,
 				t1 = [] if "t1" in col_set else None,
-				t2 = [] if "t2" in col_set else None,
-				t3 = [] if "t3" in col_set else None
+				t2 = [] if "t2" in col_set else None
 			) for stock_id in ampel_iter(stock_ids)
 		}
 
@@ -116,7 +115,7 @@ class DataLoader:
 
 			inc = stat_db_loads.labels(directive.col).inc
 
-			if directive.col == "t1" or directive.col == "t3":
+			if directive.col == "t1":
 				count = 0
 				for count, res in enumerate(cursor, 1):
 					register[res['stock']][directive.col].append(res) # type: ignore[union-attr]

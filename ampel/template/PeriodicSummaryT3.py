@@ -33,7 +33,7 @@ class FilterModel(StrictModel):
 class PeriodicSummaryT3(AbsProcessTemplate):
     """
     A T3 process that selects stocks updated since its last invocation, and
-    supplies them, to a sequence of AbsT3Units.
+    supplies them, to a sequence of AbsSnapT3Units.
     """
 
     #: Process name.
@@ -106,7 +106,7 @@ class PeriodicSummaryT3(AbsProcessTemplate):
                     "load": {
                         "unit": "T3SimpleDataLoader",
                         "config": {
-                            "directives": [{"col": col} for col in ("stock", "t0", "t1", "t2", "t3")]
+                            "directives": [{"col": col} for col in ("stock", "t0", "t1", "t2")]
                         }
                     },
                 }

@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 09.12.2019
-# Last Modified Date: 18.06.2020
+# Last Modified Date: 02.12.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from typing import Dict, Any, Optional, Type, Literal
@@ -12,7 +12,6 @@ from ampel.content.StockDocument import StockDocument
 from ampel.content.DataPoint import DataPoint
 from ampel.content.T1Document import T1Document
 from ampel.content.T2Document import T2Document
-from ampel.content.T3Document import T3Document
 from ampel.model.t3.AliasableModel import AliasableModel
 
 
@@ -21,14 +20,13 @@ models = {
 	"t0": DataPoint,
 	"t1": T1Document,
 	"t2": T2Document,
-	"t3": T3Document
 }
 
 class LoaderDirective(AliasableModel):
 	"""Specification of documents to load"""
 
 	#: Source collection
-	col: Literal["stock", "t0", "t1", "t2", "t3"]
+	col: Literal["stock", "t0", "t1", "t2"]
 
 	model: Optional[Type] # TypedDict
 
