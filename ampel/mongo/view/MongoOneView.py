@@ -7,7 +7,7 @@
 # Last Modified Date: 07.10.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-from typing import List, Any, Dict, Optional, Union
+from typing import List, Any, Dict
 from ampel.types import ChannelId
 from ampel.mongo.view.AbsMongoView import AbsMongoView
 
@@ -97,8 +97,8 @@ class MongoOneView(AbsMongoView):
 					'$and': [
 						{'$isArray': f"{arg}.channel"},
 						{'$in': [self.channel, f"{arg}.channel"]}
-					]			
+					]
 				},
 				'then': arg
-			}					
+			}
 		]
