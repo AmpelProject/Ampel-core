@@ -10,7 +10,7 @@
 from ampel.abstract.AbsEventUnit import AbsEventUnit
 from ampel.model.UnitModel import UnitModel
 from ampel.log import AmpelLogger
-from ampel.abstract.AbsT3Unit import AbsT3Unit
+from ampel.abstract.AbsT3StageUnit import AbsT3StageUnit
 
 
 class DemoProcessor(AbsEventUnit):
@@ -49,7 +49,7 @@ class DemoProcessor(AbsEventUnit):
 		unit = loader.new_logical_unit(
 			model = UnitModel(unit = "DemoT3Unit"),
 			logger = logger,
-			sub_type = AbsT3Unit
+			sub_type = AbsT3StageUnit
 		)
 
 		print(unit)
