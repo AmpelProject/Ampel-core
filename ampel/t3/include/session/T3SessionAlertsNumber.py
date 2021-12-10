@@ -1,16 +1,16 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-core/ampel/t3/supply/session/T3SessionAlertsNumber.py
+# File              : Ampel-core/ampel/t3/include/session/T3SessionAlertsNumber.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 06.01.2020
-# Last Modified Date: 06.12.2021
+# Last Modified Date: 09.12.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from typing import ClassVar
 from ampel.mongo.query.var.events import build_t0_stats_query
 from ampel.abstract.AbsT3Supplier import AbsT3Supplier
-from ampel.t3.supply.session.T3SessionLastRunTime import T3SessionLastRunTime
+from ampel.t3.include.session.T3SessionLastRunTime import T3SessionLastRunTime
 
 
 class T3SessionAlertsNumber(AbsT3Supplier[dict]):
