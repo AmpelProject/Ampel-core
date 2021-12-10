@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 28.05.2021
-# Last Modified Date: 10.10.2021
+# Last Modified Date: 09.12.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import gc, signal
@@ -31,7 +31,7 @@ from ampel.model.UnitModel import UnitModel
 from ampel.mongo.update.MongoStockUpdater import MongoStockUpdater
 from ampel.mongo.utils import maybe_use_each
 from ampel.metrics.AmpelMetricsRegistry import AmpelMetricsRegistry, Histogram, Counter
-from ampel.util.collections import merge_to_list
+from ampel.util.tag import merge_tags
 
 T = TypeVar("T", T1Document, T2Document)
 
@@ -218,7 +218,7 @@ class AbsWorker(Generic[T], AbsEventUnit, abstract=True):
 
 		meta['extra']['msg'] = msg
 
-		self.commit_update({'_id': doc['_id']}, meta, logger) # type: ignore[typeddict-item]
+		self.commit_update({'_id': doc['_id']}, meta, logger, code=DocumentCode.EXCEPTION) # type: ignore[typeddict-item]
 
 		info: Dict[str, Any] = (extra or {}) | meta | {'stock': doc['stock'], 'doc': doc}
 		if exception:
@@ -255,7 +255,7 @@ class AbsWorker(Generic[T], AbsEventUnit, abstract=True):
 
 		if self.mtag:
 
-			tag = merge_to_list(self.mtag, tag) if tag else self.mtag # type: ignore
+			tag = merge_tags(self.mtag, tag) if tag else self.mtag # type: ignore
 			activities = meta['activity']
 
 			# T2 unit added a tag, make the distinction clear by adding a dedicated activity
