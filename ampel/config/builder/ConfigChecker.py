@@ -209,7 +209,10 @@ class ConfigChecker(BaseConfigChecker):
 				"updates_buffer": DBUpdatesBuffer(self.ctx.db, run_id=1, logger=self.logger)
 			})
 
-		elif "AbsT3UnitRunner" in self.config["unit"]["admin"][unit_name]["base"]:
+		elif (
+			"AbsT3Stager" in self.config["unit"]["admin"][unit_name]["base"] or
+			"AbsT3Supplier" in self.config["unit"]["admin"][unit_name]["base"]
+		):
 			model["config"].update({"process_name": "test", "run_id": 1, "logger": self.logger})
 
 		elif "AbsT3Selector" in self.config["unit"]["admin"][unit_name]["base"]:
