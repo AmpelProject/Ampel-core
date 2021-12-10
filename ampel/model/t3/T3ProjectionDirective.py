@@ -25,7 +25,7 @@ class T3ProjectionDirective(StrictModel):
 	#: AbsT3Projector sub unit capable of discarding selected ampel buffer attributes/fields
 	project: Optional[UnitModel]
 
-	#: t3 units (AbsT3Unit) to execute
+	#: t3 units (AbsT3StageUnit) to execute
 	execute: Sequence[UnitModel]
 
 	@validator('execute', pre=True)
