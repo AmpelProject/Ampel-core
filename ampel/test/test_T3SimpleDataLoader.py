@@ -1,6 +1,5 @@
 from ampel.t3.supply.load.T3SimpleDataLoader import T3SimpleDataLoader
 from ampel.core.AmpelContext import AmpelContext
-from ampel.config.AmpelConfig import AmpelConfig
 
 
 def test_instantiate(core_config, patch_mongo, ampel_logger):

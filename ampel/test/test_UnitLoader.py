@@ -8,7 +8,6 @@ from pydantic import create_model, ValidationError
 
 from ampel.model.StrictModel import StrictModel
 from ampel.secret.Secret import Secret
-from ampel.core.UnitLoader import UnitLoader
 from ampel.secret.DictSecretProvider import DictSecretProvider
 from ampel.secret.AmpelVault import AmpelVault
 from ampel.model.UnitModel import UnitModel
@@ -66,7 +65,7 @@ def test_resolve_secrets_wrong_type(
     dev_context.register_unit(Modelo)
     monkeypatch.setattr(dev_context.loader, "vault", AmpelVault(providers=[secrets]))
     with pytest.raises(ValueError):
-        unit = dev_context.loader.new(
+        dev_context.loader.new(
             UnitModel(unit="Modelo"), logger=ampel_logger, unit_type=Modelo
         )
 
@@ -163,35 +162,34 @@ def test_unit_validation(dev_context: DevAmpelContext):
             UnitModel(unit="Dummy", config={"nonexistant_param": True})
 
         t3_config: dict[str, Any] = {
-            "supply": {
-                "unit": "T3DefaultSupplier",
-                "config": {
-                    "process_name": "yarrr",
-                    "select": {
-                        "unit": "T3StockSelector",
-                    },
-                    "load": {
-                        "unit": "T3SimpleDataLoader",
-                        "config": {
-                            "directives": [
-                                {"col": "stock"},
-                            ]
-                        },
-                    },
+            "react": {
+                "supply": {
+                    "unit": "T3DefaultBufferSupplier",
+                    "config": {
+                        "process_name": "yarrr",
+                        "select": {"unit": "T3StockSelector"},
+                        "load": {
+                            "unit": "T3SimpleDataLoader",
+                            "config": {
+                                "directives": [{"col": "stock"}]
+                            }
+                        }
+                    }
                 },
-            },
-            "stage": {
-                "unit": "T3SimpleStager",
-                "config": {
-                    "raise_exc": True,
-                    "execute": [],
-                },
-            },
+                "stage": {
+                    "unit": "T3SimpleStager",
+                    "config": {
+                        "process_name": "yarrr",
+                        "raise_exc": True,
+                        "execute": [],
+                    }
+                }
+            }
         }
 
         # recursive validation
         UnitModel(unit="T3Processor", config=t3_config)
 
         with pytest.raises(ValidationError):
-            t3_config["supply"]["config"]["select"]["unit"] = "NotActuallyAUnit"
+            t3_config["react"]["supply"]["config"]["select"]["unit"] = "NotActuallyAUnit"
             UnitModel(unit="T3Processor", config=t3_config)

@@ -37,7 +37,7 @@ def test_single_element_run_sequence(core_config, ampel_logger):
                 "run": [{"unit": "DemoT3Unit", "config": {}}],
             }
         )
-        .get_process(config, ampel_logger)  | {"version": 0}
+        .get_process(config, ampel_logger) | {"version": 0}
     )
     assert ConfigValidator(config).validate() == config
     assert config["process"]["t3"]["foo"]["channel"] is None

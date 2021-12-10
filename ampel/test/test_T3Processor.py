@@ -1,18 +1,28 @@
-from typing import Generator
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+# File              : Ampel-core/ampel/test/test_T3Processor.py
+# License           : BSD-3-Clause
+# Author            : jvs
+# Date              : Unspecified
+# Last Modified Date: 10.12.2021
+# Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
+
+from typing import Generator, Optional
 from ampel.dev.DevAmpelContext import DevAmpelContext
 from ampel.struct.JournalAttributes import JournalAttributes
 from ampel.struct.StockAttributes import StockAttributes
 from ampel.view.SnapView import SnapView
+from ampel.view.T3Store import T3Store
 import pytest
 
-from ampel.abstract.AbsT3Unit import AbsT3Unit, T3Send
+from ampel.abstract.AbsT3StageUnit import AbsT3StageUnit, T3Send
 from ampel.t3.T3Processor import T3Processor
 
 
-class Mutineer(AbsT3Unit):
+class Mutineer(AbsT3StageUnit):
     raise_on_process: bool = False
 
-    def process(self, views):
+    def process(self, views, t3s=None):
         if self.raise_on_process:
             raise ValueError
 
@@ -21,30 +31,32 @@ def mutineer_process(config={}):
 
     return {
         "process_name": "yarrr",
-        "supply": {
-            "unit": "T3DefaultSupplier",
-            "config": {
-                "process_name": "yarrr",
-                "select": {
-                    "unit": "T3StockSelector",
-                },
-                "load": {
-                    "unit": "T3SimpleDataLoader",
-                    "config": {
-                        "directives": [
-                            {"col": "stock"},
-                        ]
+        "react": {
+            "supply": {
+                "unit": "T3DefaultBufferSupplier",
+                "config": {
+                    "process_name": "yarrr",
+                    "select": {
+                        "unit": "T3StockSelector",
                     },
-                },
+                    "load": {
+                        "unit": "T3SimpleDataLoader",
+                        "config": {
+                            "directives": [
+                                {"col": "stock"},
+                            ]
+                        }
+                    }
+                }
             },
-        },
-        "stage": {
-            "unit": "T3SimpleStager",
-            "config": {
-                "raise_exc": True,
-                "execute": [{"unit": "Mutineer", "config": config}],
-            },
-        },
+            "stage": {
+                "unit": "T3SimpleStager",
+                "config": {
+                    "raise_exc": True,
+                    "execute": [{"unit": "Mutineer", "config": config}],
+                }
+            }
+        }
     }
 
 
@@ -53,7 +65,7 @@ def mutineer_process(config={}):
     [
         ({}, True),
         ({"raise_on_process": True}, False),
-    ],
+    ]
 )
 def test_unit_raises_error(
     dev_context: DevAmpelContext, ingest_stock, config, expect_success
@@ -70,10 +82,10 @@ def test_unit_raises_error(
 
 def test_view_generator(dev_context: DevAmpelContext, ingest_stock):
 
-    class SendySend(AbsT3Unit):
+    class SendySend(AbsT3StageUnit):
         raise_on_process: bool = False
 
-        def process(self, gen: Generator[SnapView, T3Send, None]):
+        def process(self, gen: Generator[SnapView, T3Send, None], t3s: Optional[T3Store] = None):
             for view in gen:
                 gen.send(
                     (
@@ -93,30 +105,32 @@ def test_view_generator(dev_context: DevAmpelContext, ingest_stock):
         raise_exc=True,
         update_journal=True,
         process_name="t3",
-        supply={
-            "unit": "T3DefaultSupplier",
-            "config": {
-                "process_name": "yarrr",
-                "select": {
-                    "unit": "T3StockSelector",
-                },
-                "load": {
-                    "unit": "T3SimpleDataLoader",
-                    "config": {
-                        "directives": [
-                            {"col": "stock"},
-                        ]
+        react = {
+            "supply": {
+                "unit": "T3DefaultBufferSupplier",
+                "config": {
+                    "process_name": "yarrr",
+                    "select": {
+                        "unit": "T3StockSelector",
                     },
-                },
+                    "load": {
+                        "unit": "T3SimpleDataLoader",
+                        "config": {
+                            "directives": [
+                                {"col": "stock"},
+                            ]
+                        }
+                    }
+                }
             },
-        },
-        stage={
-            "unit": "T3SimpleStager",
-            "config": {
-                "raise_exc": True,
-                "execute": [{"unit": "SendySend"}],
-            },
-        },
+            "stage": {
+                "unit": "T3SimpleStager",
+                "config": {
+                    "raise_exc": True,
+                    "execute": [{"unit": "SendySend"}]
+                }
+            }
+        }
     )
     t3.run()
 
