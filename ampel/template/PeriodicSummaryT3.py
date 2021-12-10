@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : Jakob van Santen <jakob.van.santen@desy.de>
 # Date              : 10.08.2020
-# Last Modified Date: 16.07.2021
+# Last Modified Date: 10.12.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from typing import Any, Dict, Literal, Optional, Sequence, Union, List
@@ -33,7 +33,7 @@ class FilterModel(StrictModel):
 class PeriodicSummaryT3(AbsProcessTemplate):
     """
     A T3 process that selects stocks updated since its last invocation, and
-    supplies them, to a sequence of AbsSnapT3Units.
+    supplies them, to a sequence of AbsT3StageUnits.
     """
 
     #: Process name.
@@ -81,70 +81,74 @@ class PeriodicSummaryT3(AbsProcessTemplate):
 
     def get_process(self, config: Dict[str, Any], logger: AmpelLogger) -> Dict[str, Any]:
 
-        directive: Dict[str, Any] = {
-            "session": [
-                {"unit": "T3SessionAlertsNumber"},
-            ],
-            "supply": {
-                "unit": "T3DefaultSupplier",
-                "config": {
-                    "process_name": self.name,
-                    "select": {
-                        "unit": "T3StockSelector",
-                        "config": {
-                            "updated": {
-                                "after": {
-                                    "match_type": "time_last_run",
-                                    "process_name": self.name,
+        d: Dict[str, Any] = {
+            "include": {
+                "session": [
+                    {"unit": "T3SessionAlertsNumber", "config": {"process_name": self.name}},
+                ]
+            },
+            "act": {
+                "supply": {
+                    "unit": "T3DefaultBufferSupplier",
+                    "config": {
+                        "process_name": self.name,
+                        "select": {
+                            "unit": "T3StockSelector",
+                            "config": {
+                                "updated": {
+                                    "after": {
+                                        "match_type": "time_last_run",
+                                        "process_name": self.name,
+                                    },
+                                    "before": {"match_type": "time_delta"},
                                 },
-                                "before": {"match_type": "time_delta"},
+                                "channel": self.channel,
+                                "tag": self.tag,
                             },
-                            "channel": self.channel,
-                            "tag": self.tag,
                         },
-                    },
-                    "load": {
-                        "unit": "T3SimpleDataLoader",
-                        "config": {
-                            "directives": [{"col": col} for col in ("stock", "t0", "t1", "t2")]
-                        }
+                        "load": {
+                            "unit": "T3SimpleDataLoader",
+                            "config": {
+                                "directives": [{"col": col} for col in ("stock", "t0", "t1", "t2")]
+                            }
+                        },
+                    }
+                },
+                "stage": {
+                    "unit": "T3ProjectingStager",
+                    "config": {
+                        "directives": [
+                            {
+                                "project": {
+                                    "unit": "T3ChannelProjector",
+                                    "config": {"channel": self.channel}
+                                },
+                                "execute": self.get_units(self.run),
+                            }
+                        ]
                     },
                 }
-            },
-            "stage": {
-                "unit": "T3ProjectingStager",
-                "config": {
-                    "directives": [
-                        {
-                            "project": {
-                                "unit": "T3ChannelProjector", 
-                                "config": {"channel": self.channel}
-                            },
-                            "execute": self.get_units(self.run),
-                        }
-                    ]
-                },
             }
         }
 
         # Restrict stock selection according to T2 values
         if self.filter:
-            directive["supply"]["config"]["select"]["unit"] = "T3FilteringStockSelector"
-            directive["supply"]["config"]["select"]["config"]["t2_filter"] = self.filter.t2.dict()
+            d["act"]["supply"]["config"]["select"]["unit"] = "T3FilteringStockSelector"
+            d["act"]["supply"]["config"]["select"]["config"]["t2_filter"] = self.filter.t2.dict()
 
         if self.channel is None:
-            directive["stage"]["unit"] = "T3SimpleStager"
-            del directive["stage"]["config"]["channel"]
+            d["act"]["stage"]["unit"] = "T3SimpleStager"
+            del d["act"]["stage"]["config"]["channel"]
         else:
             # load only documents that pass channel selection
-            directive["supply"]["config"]["load"]["config"]["channel"] = self.channel
+            d["act"]["supply"]["config"]["load"]["config"]["channel"] = self.channel
    
         # Restrict document types to load
         if self.load:
-            directive["supply"]["config"]["load"]["config"]["directives"] = self.load
+            d["act"]["supply"]["config"]["load"]["config"]["directives"] = self.load
 
         if self.complement:
-            directive["supply"]["config"]["complement"] = self.get_units(self.complement)
+            d["act"]["supply"]["config"]["complement"] = self.get_units(self.complement)
 
         ret: Dict[str, Any] = {
             "tier": self.tier,
@@ -156,7 +160,7 @@ class PeriodicSummaryT3(AbsProcessTemplate):
             "name": self.name,
             "processor": {
                 "unit": "T3Processor",
-                "config": directive,
+                "config": d,
             },
         }
 
