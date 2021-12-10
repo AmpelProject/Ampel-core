@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 07.10.2019
-# Last Modified Date: 13.10.2021
+# Last Modified Date: 08.12.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import sys
@@ -400,7 +400,6 @@ def _validate_unit_model(cls, values: Dict[str, Any], unit_loader: UnitLoader) -
 	from ampel.abstract.AbsEventUnit import AbsEventUnit
 	from ampel.abstract.AbsDocIngester import AbsDocIngester
 	from ampel.abstract.AbsT3Stager import AbsT3Stager
-	from ampel.abstract.AbsSessionInfo import AbsSessionInfo
 
 	unit = unit_loader.get_class_by_name(values['unit'])
 	if issubclass(unit, (LogicalUnit, ContextUnit, AbsEventUnit, AbsDocIngester)):
@@ -408,7 +407,7 @@ def _validate_unit_model(cls, values: Dict[str, Any], unit_loader: UnitLoader) -
 		exclude = {"logger"}
 		for parent in cast(
 			Sequence[Type[AmpelBaseModel]],
-			(LogicalUnit, ContextUnit, AbsT3Stager, AbsSessionInfo, AbsEventUnit, AbsDocIngester)
+			(LogicalUnit, ContextUnit, AbsT3Stager, AbsEventUnit, AbsDocIngester)
 		):
 			if issubclass(unit, parent):
 				exclude.update(set(parent._annots.keys()).difference(parent._defaults.keys()))
