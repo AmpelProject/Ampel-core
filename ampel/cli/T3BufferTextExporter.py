@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 25.03.2021
-# Last Modified Date: 18.09.2021
+# Last Modified Date: 10.12.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from json import dumps
@@ -13,6 +13,8 @@ from itertools import islice
 from datetime import datetime
 from typing import Optional, Union, TextIO, Generator
 
+from ampel.view.T3Store import T3Store
+from ampel.log.AmpelLogger import AmpelLogger
 from ampel.abstract.AbsT3Stager import AbsT3Stager
 from ampel.abstract.AbsIdMapper import AbsIdMapper
 from ampel.struct.AmpelBuffer import AmpelBuffer
@@ -40,10 +42,14 @@ class T3BufferTextExporter(AbsT3Stager):
 	human_times: bool = True
 	chunk_size: int = 200
 	getch: bool = False
-	
 
-	def stage(self, gen: Generator[AmpelBuffer, None, None]) -> Optional[Generator[T3Document, None, None]]:
 
+	def stage(self,
+		gen: Generator[AmpelBuffer, None, None],
+		t3s: T3Store
+	) -> Optional[Generator[T3Document, None, None]]:
+
+		logger = AmpelLogger.get_logger()
 		func = prettyjson if self.pretty else dumps
 
 		# Shortcuts
@@ -71,13 +77,13 @@ class T3BufferTextExporter(AbsT3Stager):
 					if human_times:
 						convert_timestamps(el)
 					if verbose:
-						self.logger.info(f"Writing content (id: {el['id']})") # type: ignore
+						logger.info(f"Writing content (id: {el['id']})") # type: ignore
 					fd.write(func(el)) # type: ignore
 					first = False
 
 				if self.getch and fgetch():
 					fd.write('\n]\n')
-					self.logger.info("Abording")
+					logger.info("Abording")
 					return None
 
 				for el in data:
@@ -88,12 +94,12 @@ class T3BufferTextExporter(AbsT3Stager):
 					if human_times:
 						convert_timestamps(el)
 					if verbose:
-						self.logger.info(f"Writing content (id: {el['id']})") # type: ignore
+						logger.info(f"Writing content (id: {el['id']})") # type: ignore
 					fd.write(func(el)) # type: ignore
 
 					if self.getch and fgetch():
 						fd.write('\n]\n')
-						self.logger.info("Abording")
+						logger.info("Abording")
 						return None
 
 			fd.write('\n]\n')
