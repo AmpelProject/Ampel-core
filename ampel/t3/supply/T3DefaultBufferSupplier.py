@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-core/ampel/t3/supply/T3DefaultSupplier.py
+# File              : Ampel-core/ampel/t3/supply/T3DefaultBufferSupplier.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 14.07.2021
@@ -18,7 +18,7 @@ from ampel.model.UnitModel import UnitModel
 from ampel.log.utils import report_exception
 
 
-class T3DefaultSupplier(AbsT3Supplier):
+class T3DefaultBufferSupplier(AbsT3Supplier[Generator[AmpelBuffer, None, None]]):
 	"""
 	Default T3 supplier that:
 	- matches stock ids based on the stock collection (section 'select'),
