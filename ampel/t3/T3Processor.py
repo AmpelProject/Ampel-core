@@ -4,19 +4,57 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 26.02.2018
-# Last Modified Date: 17.10.2021
+# Last Modified Date: 10.12.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-from typing import Dict, Any, Optional, Union
+from time import time
+from pydantic import BaseModel
+from typing import Any, Optional, Union, Sequence, Type
+from ampel.types import ChannelId
 from ampel.abstract.AbsEventUnit import AbsEventUnit
+from ampel.abstract.AbsT3ControlUnit import AbsT3ControlUnit
+from ampel.abstract.AbsT3PlainUnit import AbsT3PlainUnit
+from ampel.t3.T3Writer import T3Writer
+from ampel.view.T3Store import T3Store
+from ampel.view.T3DocView import T3DocView
 from ampel.model.UnitModel import UnitModel
-from ampel.log.utils import report_exception
-from ampel.log import AmpelLogger, LogFlag, SHOUT
+from ampel.core.UnitLoader import UnitLoader, LT
 from ampel.core.EventHandler import EventHandler
 from ampel.mongo.update.MongoStockUpdater import MongoStockUpdater
-from ampel.abstract.AbsSessionInfo import AbsSessionInfo
 from ampel.abstract.AbsT3Supplier import AbsT3Supplier
 from ampel.abstract.AbsT3Stager import AbsT3Stager
+from ampel.log.utils import report_exception
+from ampel.log import AmpelLogger, LogFlag, SHOUT, VERBOSE
+from ampel.log.handlers.ChanRecordBufHandler import ChanRecordBufHandler
+from ampel.log.handlers.DefaultRecordBufferingHandler import DefaultRecordBufferingHandler
+
+
+class IncludeModel(BaseModel):
+	"""
+	:param session: models for AbsT3Supplier[dict] instances which populates the 'session' field of T3Store
+	Examples of session information are:
+	- Date and time the current process was last run
+	- Number of alerts processed since then
+	"""
+
+	#: Provides Iterable[T3Document]
+	docs: Optional[UnitModel]
+
+	#: Provides session information. Unit(s) must be a subclass of AbsT3Supplier
+	session: Union[None, UnitModel, Sequence[UnitModel]]
+
+
+class ReactModel(BaseModel):
+
+	#: Unit must be a subclass of AbsT3Supplier
+	supply: UnitModel
+
+	#: Unit must be a subclass of AbsT3Stager
+	stage: UnitModel
+
+
+class T3Executor(T3Writer):
+	execute: Union[Sequence[UnitModel], UnitModel]
 
 
 class T3Processor(AbsEventUnit):
@@ -38,14 +76,11 @@ class T3Processor(AbsEventUnit):
 	  - set raise_exc = True (troubles collection will not be populated if an exception occurs)
 	"""
 
-	#: Provides :class:`~ampel.core.AmpelBuffer.AmpelBuffer` generator
-	supply: UnitModel
+	include: Optional[IncludeModel]
 
-	#: Execute provided stager unit (which in turns provides views to underlying T3 unit(s))
-	stage: UnitModel
+	react: Optional[ReactModel]
 
-	#: whether selected stock ids should be saved into (potential) t3 documents
-	save_stock_ids: bool = True
+	act: Optional[Any]
 
 
 	def __init__(self,
@@ -57,7 +92,16 @@ class T3Processor(AbsEventUnit):
 		"""
 		Note that update_journal, update_event and extra_journal_tag are admin run options and
 		should be set only on command line. They are thus not defined as part of the underlying model.
+		Please see class docstring for more info.
 		"""
+
+		self.react_first = True
+		for k in kwargs.keys():
+			if k == "react":
+				break
+			if k == "act":
+				self.react_first = False
+				break
 
 		super().__init__(**kwargs)
 
@@ -101,27 +145,29 @@ class T3Processor(AbsEventUnit):
 			# Feedback
 			logger.log(SHOUT, f'Running {self.process_name}')
 
-			# run context
-			#############
+			loader = self.context.loader
+			t3s = T3Store()
 
-			session_info: Dict[str, Any] = {}
-			if self.context.admin_msg:
-				session_info['admin_msg'] = self.context.admin_msg
+			if self.include:
 
-			if self.session:
+				if self.include.docs:
+					pass
 
-				for el in self.session:
-					self.context.loader \
-						.new_context_unit(
+				if (x := self.include.session):
+					sdict: dict[str, Any] = {}
+					for el in [x] if isinstance(x, UnitModel) else x:
+						rd = loader.new_context_unit(
 							model = el,
 							context = self.context,
-							sub_type = AbsSessionInfo,
+							sub_type = AbsT3Supplier,
 							logger = logger,
 							process_name = self.process_name,
-							_provenance = False
-						) \
-						.update(session_info)
-
+							#_provenance = False
+						).supply()
+						if rd:
+							sdict |= rd
+					if sdict:
+						t3s.add_session_info(sdict)
 
 			stock_updr = MongoStockUpdater(
 				ampel_db = self.context.db, tier = 3, run_id = run_id,
@@ -131,52 +177,57 @@ class T3Processor(AbsEventUnit):
 				bump_updated = False
 			)
 
-			# Stager unit
-			#############
+			if self.react_first and self.react:
+				self._react(t3s, stock_updr, event_hdlr, logger)
 
-			# pyampel-core provides 3 stager implementations: T3SimpleStager, T3ProjectingStager, T3DynamicStager
-			stager = self.context.loader \
-				.new_context_unit(
-					model = self.stage,
+			if self.act:
+
+				t3e = T3Executor(
 					context = self.context,
-					sub_type = AbsT3Stager,
 					logger = logger,
 					stock_updr = stock_updr,
-					channel = self.stage.config['channel'] if self.stage.config.get('channel') else self.channel, # type: ignore
-					session_info = session_info,
 					process_name = self.process_name,
-					_provenance = False
+					**self.act
 				)
 
-			# Spawn and run a new selector instance
-			# stock_ids is an iterable (often a pymongo cursor)
-			supplier = self.context.loader.new_context_unit(
-				model = self.supply,
-				context = self.context,
-				sub_type = AbsT3Supplier,
-				logger = logger,
-				event_hdlr = event_hdlr,
-				raise_exc = self.raise_exc,
-				process_name = self.process_name,
-				_provenance = False
-			)
+				t3_units: list[Union[AbsT3ControlUnit, AbsT3PlainUnit]] = []
 
-			if (t3_docs_gen := stager.stage(supplier.supply())) is not None:
+				for um in [t3e.execute] if isinstance(t3e.execute, UnitModel) else t3e.execute:
+					if "ContextUnit" in self.context.config.get(f"unit.{um.unit}.base", tuple, raise_exc=True): # type: ignore
+						t3_units.append(
+							loader.new_context_unit(
+								model = um,
+								context = self.context,
+								sub_type = AbsT3ControlUnit,
+								logger = logger
+							)
+						)
+					else:
+						t3_units.append(
+							self.spawn_logical_unit(
+								um,
+								unit_type = AbsT3PlainUnit,
+								loader = loader,
+								logger = logger,
+								chan = self.channel
+							)
+						)
+				
+				for t3_unit in t3_units:
 
-				for t3d in t3_docs_gen:
+					logger.info("Running unit", extra={'unit': t3_unit.__class__.__name__})
+						
+					# potential T3Document to be included in the T3Document
+					if (ret := t3_unit.process(t3s)):
+						if doc := t3e.handle_t3_result(t3_unit, ret, None, time()):
+							t3s.add_view(T3DocView.of(doc, self.context.config))
+							doc['meta']['traceid'] = {'t3processor': self._trace_id}
+							self.context.db.get_collection('t3').insert_one(doc)
 
-					if t3d is None:
-						continue
+					t3e.flush(t3_unit)
 
-					if 'meta' not in t3d:
-						t3d['meta'] = {}
-
-					# Note: null = no provenance, 0 = args not serializable
-					t3d['meta']['traceid'] = {'t3processor': self._trace_id}
-
-					self.context.db \
-						.get_collection('t3') \
-						.insert_one(t3d)
+			if self.react and not self.react_first:
+				self._react(t3s, stock_updr, event_hdlr, logger)
 
 		except Exception as e:
 
@@ -198,3 +249,97 @@ class T3Processor(AbsEventUnit):
 		if event_hdlr:
 			event_hdlr.add_extra(success=True)
 			event_hdlr.update(logger)
+
+
+	def _react(self,
+		t3s: T3Store,
+		stock_updr: MongoStockUpdater,
+		event_hdlr: Optional[EventHandler],
+		logger: AmpelLogger
+	) -> None:
+		
+		if not self.react:
+			return
+
+		# Spawn and run a new selector instance
+		# stock_ids is an iterable (often a pymongo cursor)
+		supplier = self.context.loader.new_context_unit(
+			model = self.react.supply,
+			context = self.context,
+			sub_type = AbsT3Supplier,
+			logger = logger,
+			event_hdlr = event_hdlr,
+			raise_exc = self.raise_exc,
+			process_name = self.process_name,
+			#_provenance = False
+		)
+
+		# Stager unit
+		#############
+
+		stager = self.context.loader.new_context_unit(
+			model = self.react.stage,
+			context = self.context,
+			sub_type = AbsT3Stager,
+			logger = logger,
+			stock_updr = stock_updr,
+			event_hdlr = event_hdlr,
+			channel = (
+				self.react.stage.config['channel'] # type: ignore
+				if self.react.stage.config and self.react.stage.config.get('channel') # type: ignore[union-attr]
+				else self.channel
+			),
+			raise_exc = self.raise_exc,
+			process_name = self.process_name,
+			#_provenance = False
+		)
+
+		if (t3_docs_gen := stager.stage(supplier.supply(), t3s)) is not None:
+
+			for t3d in t3_docs_gen:
+
+				if t3d is None:
+					continue
+
+				if 'meta' not in t3d:
+					raise ValueError("Invalid T3Document, please check the associated stager unit")
+
+				# Note: null = no provenance, 0 = args not serializable
+				t3d['meta']['traceid'] = {'t3processor': self._trace_id}
+
+				self.context.db.get_collection('t3').insert_one(t3d)
+				if getattr(stager, 'propagate'):
+					t3s.add_view(
+						T3DocView.of(t3d, self.context.config)
+					)
+
+
+	@classmethod
+	def spawn_logical_unit(cls,
+		um: UnitModel,
+		unit_type: Type[LT],
+		loader: UnitLoader,
+		logger: AmpelLogger,
+		chan: Optional[ChannelId] = None
+	) -> LT:
+		""" Returns T3 unit instance """
+
+		if logger.verbose:
+			logger.log(VERBOSE, f"Instantiating unit {um.unit}")
+
+		buf_hdlr = ChanRecordBufHandler(logger.level, chan, {'unit': um.unit}) if chan \
+			else DefaultRecordBufferingHandler(logger.level, {'unit': um.unit})
+
+		# Spawn unit instance
+		t3_unit = loader.new_logical_unit(
+			model = um,
+			logger = AmpelLogger.get_logger(
+				base_flag = (getattr(logger, 'base_flag', 0) & ~LogFlag.CORE) | LogFlag.UNIT,
+				console = len(logger.handlers) == 1, # to be improved later
+				handlers = [buf_hdlr]
+			),
+			sub_type = unit_type
+		)
+
+		setattr(t3_unit, '_buf_hdlr', buf_hdlr) # Shortcut
+		return t3_unit
