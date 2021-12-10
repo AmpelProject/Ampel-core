@@ -16,9 +16,9 @@ unit:
 - ampel.ops.OpsProcessor
 - ampel.t2.T2Worker
 - ampel.t3.T3Processor
-- ampel.t3.session.T3SessionLastRunTime
-- ampel.t3.session.T3SessionAlertsNumber
-- ampel.t3.supply.T3DefaultSupplier
+- ampel.t3.include.session.T3SessionLastRunTime
+- ampel.t3.include.session.T3SessionAlertsNumber
+- ampel.t3.supply.T3DefaultBufferSupplier
 - ampel.t3.supply.SimpleT2BasedSupplier
 - ampel.t3.supply.select.T3StockSelector
 - ampel.t3.supply.select.T3FilteringStockSelector
@@ -31,7 +31,7 @@ unit:
 - ampel.t3.stage.T3ProjectingStager
 - ampel.t3.stage.T3ChannelStager
 - ampel.t3.stage.T3AdaptativeStager
-- ampel.t3.stage.T3CollaborativeStager
+- ampel.t3.stage.T3SequentialStager
 - ampel.t3.stage.T3DistributiveStager
 - ampel.cli.T3BufferTextExporter
 - ampel.cli.T3BufferBinaryExporter
@@ -81,8 +81,6 @@ alias:
       col: t2
     '%T2RECORD':
       col: t2
-    '%T3DOC':
-      col: t3
 
 resource:
 
