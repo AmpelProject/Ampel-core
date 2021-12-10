@@ -39,7 +39,7 @@
 <span class="c1"># License           : BSD-3-Clause</span>
 <span class="c1"># Author            : vb &lt;vbrinnel@physik.hu-berlin.de&gt;</span>
 <span class="c1"># Date              : 09.12.2019</span>
-<span class="c1"># Last Modified Date: 18.06.2020</span>
+<span class="c1"># Last Modified Date: 02.12.2021</span>
 <span class="c1"># Last Modified By  : vb &lt;vbrinnel@physik.hu-berlin.de&gt;</span>
 
 <span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Type</span><span class="p">,</span> <span class="n">Literal</span>
@@ -47,7 +47,6 @@
 <span class="kn">from</span> <span class="nn">ampel.content.DataPoint</span> <span class="kn">import</span> <span class="n">DataPoint</span>
 <span class="kn">from</span> <span class="nn">ampel.content.T1Document</span> <span class="kn">import</span> <span class="n">T1Document</span>
 <span class="kn">from</span> <span class="nn">ampel.content.T2Document</span> <span class="kn">import</span> <span class="n">T2Document</span>
-<span class="kn">from</span> <span class="nn">ampel.content.T3Document</span> <span class="kn">import</span> <span class="n">T3Document</span>
 <span class="kn">from</span> <span class="nn">ampel.model.t3.AliasableModel</span> <span class="kn">import</span> <span class="n">AliasableModel</span>
 
 
@@ -56,14 +55,13 @@
 	<span class="s2">&quot;t0&quot;</span><span class="p">:</span> <span class="n">DataPoint</span><span class="p">,</span>
 	<span class="s2">&quot;t1&quot;</span><span class="p">:</span> <span class="n">T1Document</span><span class="p">,</span>
 	<span class="s2">&quot;t2&quot;</span><span class="p">:</span> <span class="n">T2Document</span><span class="p">,</span>
-	<span class="s2">&quot;t3&quot;</span><span class="p">:</span> <span class="n">T3Document</span>
 <span class="p">}</span>
 
 <div class="viewcode-block" id="LoaderDirective"><a class="viewcode-back" href="../../../../api.html#ampel.model.t3.LoaderDirective.LoaderDirective">[docs]</a><span class="k">class</span> <span class="nc">LoaderDirective</span><span class="p">(</span><span class="n">AliasableModel</span><span class="p">):</span>
 	<span class="sd">&quot;&quot;&quot;Specification of documents to load&quot;&quot;&quot;</span>
 
 	<span class="c1">#: Source collection</span>
-	<span class="n">col</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;stock&quot;</span><span class="p">,</span> <span class="s2">&quot;t0&quot;</span><span class="p">,</span> <span class="s2">&quot;t1&quot;</span><span class="p">,</span> <span class="s2">&quot;t2&quot;</span><span class="p">,</span> <span class="s2">&quot;t3&quot;</span><span class="p">]</span>
+	<span class="n">col</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;stock&quot;</span><span class="p">,</span> <span class="s2">&quot;t0&quot;</span><span class="p">,</span> <span class="s2">&quot;t1&quot;</span><span class="p">,</span> <span class="s2">&quot;t2&quot;</span><span class="p">]</span>
 
 	<span class="n">model</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Type</span><span class="p">]</span> <span class="c1"># TypedDict</span>
 
@@ -127,7 +125,7 @@
     </div>
     <div class="footer" role="contentinfo">
         &#169; Copyright 2018-2021, Ampel Project.
-      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 4.3.0.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 4.3.1.
     </div>
   </body>
 </html>
