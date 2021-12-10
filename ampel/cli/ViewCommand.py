@@ -117,7 +117,7 @@ class ViewCommand(AbsStockCommand, AbsLoadCommand):
 			update_events = False,
 			channel = args['channel'],
 			supply = UnitModel(
-				unit="T3DefaultSupplier",
+				unit="T3DefaultBufferSupplier",
 				config={
 					"select": self.build_select_model(args),
 					"load": self.build_load_model(args),
