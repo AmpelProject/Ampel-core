@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 06.01.2020
-# Last Modified Date: 23.04.2021
+# Last Modified Date: 09.12.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from time import time
@@ -12,22 +12,24 @@ from itertools import islice
 from multiprocessing import JoinableQueue
 from multiprocessing.pool import ThreadPool, AsyncResult
 from typing import Dict, Optional, Sequence, Set, List, Generator
+
 from ampel.types import ChannelId
+from ampel.view.T3Store import T3Store
+from ampel.view.SnapView import SnapView
 from ampel.model.UnitModel import UnitModel
 from ampel.content.T3Document import T3Document
-from ampel.abstract.AbsT3Unit import AbsT3Unit
-from ampel.log import AmpelLogger, VERBOSE
+from ampel.log import VERBOSE
 from ampel.struct.AmpelBuffer import AmpelBuffer
 from ampel.base.AuxUnitRegister import AuxUnitRegister
-from ampel.view.SnapView import SnapView
-from ampel.t3.stage.T3ProjectingStager import RunBlock
+from ampel.abstract.AbsT3StageUnit import AbsT3StageUnit
 from ampel.abstract.AbsT3Filter import AbsT3Filter
 from ampel.abstract.AbsT3Projector import AbsT3Projector
-from ampel.t3.stage.T3BaseStager import T3BaseStager
+from ampel.t3.stage.T3ThreadedStager import T3ThreadedStager
+from ampel.t3.stage.T3ProjectingStager import RunBlock
 from ampel.t3.stage.ThreadedViewGenerator import ThreadedViewGenerator
 
 
-class T3AdaptativeStager(T3BaseStager):
+class T3AdaptativeStager(T3ThreadedStager):
 	"""
 	Unit stager that for each channel found in the elements loaded by the previous stages:
 	
@@ -54,7 +56,6 @@ class T3AdaptativeStager(T3BaseStager):
 	- Object 3 to be posted to slack channel #D
 	"""
 
-	logger: AmpelLogger
 	execute: Sequence[UnitModel]
 	white_list: Optional[Set[str]] = None
 	black_list: Optional[Set[str]] = None
@@ -62,9 +63,6 @@ class T3AdaptativeStager(T3BaseStager):
 	remove_empty: bool = True
 	unalterable: bool = True
 	freeze: bool = False
-
-	#: whether selected stock ids should be saved into the (potential) t3 documents
-	save_stock_ids: bool = True
 
 	nthread: int = 4
 
@@ -91,12 +89,15 @@ class T3AdaptativeStager(T3BaseStager):
 		if self.black_list and self.white_list:
 			raise ValueError("Can't have both black and white lists")
 
-		self.queues: Dict[AbsT3Unit, JoinableQueue[SnapView]] = {}
+		self.queues: Dict[AbsT3StageUnit, JoinableQueue[SnapView]] = {}
 		self.generators: List[ThreadedViewGenerator] = []
 		self.async_results: List[AsyncResult] = []
 
 
-	def stage(self, gen: Generator[AmpelBuffer, None, None]) -> Optional[Generator[T3Document, None, None]]:
+	def stage(self,
+		gen: Generator[AmpelBuffer, None, None],
+		t3s: T3Store
+	) -> Optional[Generator[T3Document, None, None]]:
 
 		ts = time()
 		with ThreadPool(processes=self.nthread) as pool:
@@ -122,7 +123,7 @@ class T3AdaptativeStager(T3BaseStager):
 						rb.units = [self.get_unit(um, chan=chan) for um in self.execute]
 
 						# Create and start T3 units "process(...)" threads (generator will block)
-						qs, gs, rs = self.create_threaded_generators(pool, rb.units)
+						qs, gs, rs = self.create_threaded_generators(pool, rb.units, t3s)
 
 						self.queues.update(qs)
 						self.generators.extend(gs)

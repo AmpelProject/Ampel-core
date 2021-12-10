@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 06.01.2020
-# Last Modified Date: 28.06.2021
+# Last Modified Date: 10.12.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from time import time
@@ -13,18 +13,20 @@ from itertools import islice
 from multiprocessing import JoinableQueue
 from multiprocessing.pool import ThreadPool
 
-from ampel.types import StockId, UBson
 from ampel.log import VERBOSE
-from ampel.struct.AmpelBuffer import AmpelBuffer
-from ampel.base.AuxUnitRegister import AuxUnitRegister
-from ampel.content.T3Document import T3Document
+from ampel.types import StockId, UBson
+from ampel.t3.T3Writer import AbsT3s
+from ampel.view.T3Store import T3Store
 from ampel.struct.UnitResult import UnitResult
-from ampel.model.t3.T3ProjectionDirective import T3ProjectionDirective
-from ampel.abstract.AbsT3Unit import AbsT3Unit
-from ampel.t3.stage.T3BaseStager import T3BaseStager
+from ampel.struct.AmpelBuffer import AmpelBuffer
+from ampel.content.T3Document import T3Document
+from ampel.abstract.AbsT3StageUnit import AbsT3StageUnit
 from ampel.abstract.AbsT3Filter import AbsT3Filter
 from ampel.abstract.AbsT3Projector import AbsT3Projector
+from ampel.base.AuxUnitRegister import AuxUnitRegister
+from ampel.t3.stage.T3ThreadedStager import T3ThreadedStager
 from ampel.t3.stage.SimpleViewGenerator import SimpleViewGenerator
+from ampel.model.t3.T3ProjectionDirective import T3ProjectionDirective
 
 
 class RunBlock:
@@ -33,7 +35,7 @@ class RunBlock:
 	"""
 	filter: Optional[AbsT3Filter]
 	projector: Optional[AbsT3Projector]
-	units: List[AbsT3Unit]
+	units: List[AbsT3StageUnit]
 	stock_ids: Optional[List[StockId]]
 	qdict: Dict[Type, List[JoinableQueue]]
 
@@ -46,7 +48,7 @@ class RunBlock:
 		self.qvals = None
 
 
-class T3ProjectingStager(T3BaseStager):
+class T3ProjectingStager(T3ThreadedStager):
 	"""
 	Default implementation handling the instructions defined
 	by :class:`T3Directive.run <ampel.model.t3.T3Directive.T3Directive>`.
@@ -54,9 +56,6 @@ class T3ProjectingStager(T3BaseStager):
 
 	#: Processing specification
 	directives: Sequence[T3ProjectionDirective]
-
-	#: whether selected stock ids should be saved into the (potential) t3 documents
-	save_stock_ids: bool = True
 
 
 	def __init__(self, **kwargs) -> None:
@@ -106,29 +105,34 @@ class T3ProjectingStager(T3BaseStager):
 			self.run_blocks.append(rb)
 
 
-	def stage(self, data: Generator[AmpelBuffer, None, None]) -> Optional[Generator[T3Document, None, None]]:
+	def stage(self,
+		gen: Generator[AmpelBuffer, None, None],
+		t3s: T3Store
+	) -> Optional[Generator[T3Document, None, None]]:
 
 		if len(self.run_blocks) == 1:
 			if len(self.run_blocks[0].units) == 1:
-				return self.supply(
+				return self.proceed(
 					self.run_blocks[0].units[0],
 					SimpleViewGenerator(
 						self.run_blocks[0].units[0],
-						self.projected_buffer_generator(self.run_blocks[0], data),
+						self.projected_buffer_generator(self.run_blocks[0], gen),
 						self.stock_updr
-					)
+					),
+					t3s
 				)
 			else:
-				return self.multi_supply(
+				return self.proceed_threaded(
 					self.run_blocks[0].units,
-					self.projected_buffer_generator(self.run_blocks[0], data)
+					self.projected_buffer_generator(self.run_blocks[0], gen),
+					t3s
 				)
 		else:
 
 			if self.chunk_size <= 0:
 				raise ValueError("Chunking is required when multiple filter/projection blocks are defined")
 
-			return self.multi_bla(data)
+			return self.multi_bla(gen, t3s)
 			#for gen in tee(data, len(self.run_blocks)):
 			# pass
 
@@ -170,8 +174,10 @@ class T3ProjectingStager(T3BaseStager):
 			raise e
 
 
-
-	def multi_bla(self, gen: Generator[AmpelBuffer, None, None]) -> Generator[T3Document, None, None]:
+	def multi_bla(self,
+		gen: Generator[AmpelBuffer, None, None],
+		t3s: T3Store
+	) -> Generator[T3Document, None, None]:
 		"""
 		Handles multi run-blocks, that is multi projection/filters using the same input data
 		"""
@@ -186,7 +192,7 @@ class T3ProjectingStager(T3BaseStager):
 			with ThreadPool(processes=len(all_units)) as pool:
 
 				# Create queues and generators for all instanciated t3 units
-				queues, generators, async_results = self.create_threaded_generators(pool, all_units)
+				queues, generators, async_results = self.create_threaded_generators(pool, all_units, t3s)
 
 				# Add helper values to run_blocks
 				for rb in self.run_blocks:
@@ -251,7 +257,7 @@ class T3ProjectingStager(T3BaseStager):
 
 
 	def craft_t3_doc(self,
-		t3_unit: AbsT3Unit,
+		t3_unit: AbsT3s,
 		res: Union[None, UBson, UnitResult],
 		ts: float,
 		stocks: Optional[List[StockId]] = None

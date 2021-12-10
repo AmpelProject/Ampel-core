@@ -4,21 +4,22 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 22.04.2021
-# Last Modified Date: 18.09.2021
+# Last Modified Date: 09.12.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from time import time
 from itertools import cycle
 from typing import Optional, Generator
 from multiprocessing.pool import ThreadPool
+
+from ampel.view.T3Store import T3Store
+from ampel.model.UnitModel import UnitModel
 from ampel.struct.AmpelBuffer import AmpelBuffer
 from ampel.content.T3Document import T3Document
-from ampel.t3.stage.T3BaseStager import T3BaseStager
-from ampel.util.freeze import recursive_freeze
-from ampel.model.UnitModel import UnitModel
+from ampel.t3.stage.T3ThreadedStager import T3ThreadedStager
 
 
-class T3DistributiveStager(T3BaseStager):
+class T3DistributiveStager(T3ThreadedStager):
 	"""
 	Allows to execute a given unit multiple times in different parallel threads (with the same config).
 	Each unit processes a subset of the initial ampel buffer stream.
@@ -29,15 +30,12 @@ class T3DistributiveStager(T3BaseStager):
 	Note that no performance gain will be obtained if the processing is CPU limited.
 	"""
 
-	#: t3 units (AbsT3Unit) to execute
+	#: t3 units (AbsT3StageUnit) to execute
 	execute: UnitModel
 	nthread: int = 4
 
 	#: whether to add the thread index into log 'extra' for verbose purposes
 	log_extra: bool = False
-
-	#: whether selected stock ids should be saved into the (potential) t3 documents
-	save_stock_ids: bool = False
 
 
 	def __init__(self, **kwargs) -> None:
@@ -49,7 +47,10 @@ class T3DistributiveStager(T3BaseStager):
 		]
 
 
-	def stage(self, data: Generator[AmpelBuffer, None, None]) -> Optional[Generator[T3Document, None, None]]:
+	def stage(self,
+		gen: Generator[AmpelBuffer, None, None],
+		t3s: T3Store
+	) -> Optional[Generator[T3Document, None, None]]:
 
 		try:
 
@@ -57,14 +58,14 @@ class T3DistributiveStager(T3BaseStager):
 			with ThreadPool(processes=self.nthread) as pool:
 
 				# Create queues and generators for all instanciated t3 units
-				queues, generators, async_results = self.create_threaded_generators(pool, self.t3_units)
+				queues, generators, async_results = self.create_threaded_generators(pool, self.t3_units, t3s)
 				View = self.t3_units[0]._View
 				qs = queues.values()
 				iqs = cycle(qs)
 
 				try:
-					for ab in data:
-						next(iqs).put(View(**recursive_freeze(ab)))
+					for ab in gen:
+						next(iqs).put(View.of(ab, self.context.config, freeze=True))
 				except RuntimeError as e:
 					if "StopIteration" in str(e):
 						return None

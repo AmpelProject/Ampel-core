@@ -3,90 +3,56 @@
 # File              : Ampel-core/ampel/t3/stage/T3BaseStager.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
-# Date              : 17.04.2021
-# Last Modified Date: 26.11.2021
+# Date              : 08.12.2021
+# Last Modified Date: 10.12.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from time import time
-from itertools import islice
-from datetime import datetime
-from multiprocessing import JoinableQueue
-from multiprocessing.pool import ThreadPool, AsyncResult
-from typing import Union, Optional, Tuple, Type, List, Iterable, Dict, Generator, Any
+from typing import Optional, Generator
 
-from ampel.types import StockId, ChannelId, UBson, ubson
-from ampel.log.utils import report_exception
+from ampel.types import ChannelId
+from ampel.view.T3Store import T3Store
 from ampel.model.UnitModel import UnitModel
-from ampel.abstract.AbsT3Unit import AbsT3Unit, T
-from ampel.log import VERBOSE, AmpelLogger, LogFlag
-from ampel.log.handlers.ChanRecordBufHandler import ChanRecordBufHandler
-from ampel.log.handlers.DefaultRecordBufferingHandler import DefaultRecordBufferingHandler
-from ampel.abstract.AbsT3Stager import AbsT3Stager
-from ampel.view.SnapView import SnapView
+from ampel.t3.T3Writer import T3Writer
+from ampel.t3.T3Processor import T3Processor
 from ampel.content.T3Document import T3Document
-from ampel.content.MetaRecord import MetaRecord
-from ampel.struct.AmpelBuffer import AmpelBuffer
-from ampel.struct.UnitResult import UnitResult
-from ampel.enum.DocumentCode import DocumentCode
-from ampel.enum.MetaActionCode import MetaActionCode
-from ampel.enum.JournalActionCode import JournalActionCode
+from ampel.abstract.AbsT3Stager import AbsT3Stager
+from ampel.abstract.AbsT3StageUnit import AbsT3StageUnit, T
 from ampel.t3.stage.BaseViewGenerator import BaseViewGenerator
-from ampel.t3.stage.ThreadedViewGenerator import ThreadedViewGenerator
-from ampel.util.mappings import dictify
-from ampel.util.collections import merge_to_list
-from ampel.util.freeze import recursive_freeze
-from ampel.util.hash import build_unsafe_dict_id
 
 
-class T3BaseStager(AbsT3Stager, abstract=True):
+class T3BaseStager(AbsT3Stager, T3Writer, abstract=True):
 	"""
-	Supply stock views to one or more T3 units.
+	Base class for several stagers provided by ampel.
+	This class does not implement the method stage(...) required by AbsT3Stager,
+	it is up to the subclass to do it according to requirements.
 	"""
 
-	save_stock_ids: bool = False
-
-	def get_unit(self, um: UnitModel, chan: Optional[ChannelId] = None) -> AbsT3Unit:
-		"""
-		Returns T3 unit instance and associated view (parametrized via generic type)
-		"""
-
-		if self.logger.verbose:
-			self.logger.log(VERBOSE, f"Instantiating unit {um.unit}")
-		self.logger.log(VERBOSE, f"session_info unit {self.session_info}")
-
-		c = self.channel or chan
-		buf_hdlr = ChanRecordBufHandler(self.logger.level, c, {'unit': um.unit}) if c \
-			else DefaultRecordBufferingHandler(self.logger.level, {'unit': um.unit})
-
-		# Spawn unit instance
-		t3_unit = self.context.loader.new_logical_unit(
-			model = um,
-			logger = AmpelLogger.get_logger(
-				base_flag = (getattr(self.logger, 'base_flag', 0) & ~LogFlag.CORE) | LogFlag.UNIT,
-				console = len(self.logger.handlers) == 1, # to be improved later
-				handlers = [buf_hdlr]
-			),
-			sub_type = AbsT3Unit,
-			session_info = self.session_info
+	def get_unit(self, unit_model: UnitModel, chan: Optional[ChannelId] = None) -> AbsT3StageUnit:
+		return T3Processor.spawn_logical_unit(
+			unit_model,
+			unit_type = AbsT3StageUnit,
+			loader = self.context.loader,
+			logger = self.logger,
+			chan = self.channel or chan
 		)
 
-		setattr(t3_unit, '_buf_hdlr', buf_hdlr) # Shortcut
-		return t3_unit
 
-
-	def supply(self, t3_unit: AbsT3Unit, view_generator: BaseViewGenerator[T]) -> Generator[T3Document, None, None]:
+	def proceed(self,
+		t3_unit: AbsT3StageUnit,
+		view_generator: BaseViewGenerator[T],
+		t3s: Optional[T3Store] = None
+	) -> Generator[T3Document, None, None]:
 		"""
-		Supplies T3 unit with provided generator of views and handle the result
+		Executes the method 'process' of t3 unit with provided views generator and t3 store,
+		handle potential t3 unit result
 		"""
 
 		ts = time()
 
 		try:
-
 			self.logger.info("Running T3unit", extra={'unit': t3_unit.__class__.__name__})
-			
-			# potential T3Document to be included in the T3Document
-			if (ret := t3_unit.process(view_generator)) or self.save_stock_ids:
+			if (ret := t3_unit.process(view_generator, t3s)) or self.save_stock_ids:
 				if x := self.handle_t3_result(t3_unit, ret, view_generator.get_stock_ids(), ts):
 					yield x
 
@@ -94,282 +60,3 @@ class T3BaseStager(AbsT3Stager, abstract=True):
 			self.handle_error(e)
 		finally:
 			self.flush(t3_unit)
-
-
-	def multi_supply(self,
-		t3_units: List[AbsT3Unit],
-		buf_gen: Generator[AmpelBuffer, None, None]
-	) -> Generator[T3Document, None, None]:
-		"""
-		Supplies T3 units with provided views crafted using the provided buffer generator and handle t3 results.
-		Note: code in here is not optimized for compactness but for execution speed
-		"""
-
-		ts = time()
-
-		try:
-
-			# Create and start T3 units "process(...)" threads (generator will block)
-			with ThreadPool(processes=len(t3_units)) as pool:
-
-				queues, generators, async_results = self.create_threaded_generators(pool, t3_units)
-
-				# Optimize by potentially grouping units associated with the same view type
-				qdict: Dict[Type, List[JoinableQueue]] = {}
-				for unit in t3_units:
-					if unit.__class__._View not in qdict:
-						qdict[unit.__class__._View] = []
-					qdict[unit.__class__._View].append(queues[unit])
-
-				# Potentially chunk (and join) to ensure that t3 units process views at a similar pace
-				qv = queues.values()
-
-				try:
-				
-					while (buffers := list(islice(buf_gen, self.chunk_size)) if self.chunk_size else buf_gen):
-
-						self.put_views(buffers, qdict)
-
-						# Join view queues before possibly processing next chunk
-						for q in qv:
-							q.join()
-
-					# Send sentinel to threaded view generators
-					for q in qv:
-						q.put(None) # type: ignore[arg-type]
-
-					# Collect potential unit results
-					for async_res, generator, t3_unit in zip(async_results, generators, t3_units):
-
-						# potential T3Document to be included in the T3Document
-						if (t3_unit_result := async_res.get()):
-							if (x := self.handle_t3_result(t3_unit, t3_unit_result, generator.stocks, ts)):
-								yield x
-
-				except RuntimeError as e:
-					if "StopIteration" in str(e):
-						return None
-					raise e
-
-			self.flush(t3_units)
-
-		except Exception as e:
-			self.flush(t3_units)
-			self.handle_error(e)
-
-
-	def create_threaded_generators(self, pool: ThreadPool, t3_units: List[AbsT3Unit]) -> Tuple[
-		Dict[AbsT3Unit, "JoinableQueue[SnapView]"],
-		List[ThreadedViewGenerator],
-		List[AsyncResult]
-	]:
-		"""
-		Create and start T3 units "process(...)" threads (generator will block)
-		"""
-
-		queues: Dict[AbsT3Unit, JoinableQueue[SnapView]] = {}
-		generators: List[ThreadedViewGenerator] = []
-		async_results: List[AsyncResult] = []
-
-		for t3_unit in t3_units:
-			queues[t3_unit] = JoinableQueue()
-			generators.append(
-				ThreadedViewGenerator(
-					t3_unit.__class__.__name__,
-					queues[t3_unit],
-					self.stock_updr
-				)
-			)
-			async_results.append(
-				pool.apply_async(
-					t3_unit.process,
-					args=(generators[-1], )
-				)
-			)
-
-		return queues, generators, async_results
-
-
-	def put_views(self, buffers: Iterable[AmpelBuffer], qdict: Dict[Type, List[JoinableQueue]]) -> None:
-		"""
-		Note: code in here is not optimized for compactness but for execution speed
-		"""
-
-		# Simple case: all t3 units are associated with the same type of view
-		if len(qdict) == 1:
-
-			View = next(iter(qdict.keys()))
-			qs = next(iter(qdict.values()))
-
-			# In paranoia mode, we create a new view from the same buffer for each t3 unit
-			if self.paranoia:
-				for ab in buffers:
-					for q in qs:
-						q.put(View(**recursive_freeze(ab)))
-			else:
-				for ab in buffers:
-					v = View(**recursive_freeze(ab))
-					for q in qs:
-						q.put(v)
-
-		# t3 units are associated with different type of view
-		else:
-
-			# Paranoia or say two units == two view types (non-optimizable)
-			itms = qdict.items()
-			if self.paranoia or all(len(x) == 1 for x in qdict.values()):
-				for ab in buffers:
-					for View, qs in itms:
-						for q in qs:
-							q.put(View(**recursive_freeze(ab)))
-
-			# Optimize by potentially grouping units associated with the same view type
-			else:
-				for ab in buffers:
-					for View, qs in itms:
-						view = View(**recursive_freeze(ab))
-						for q in qs:
-							q.put(view)
-
-
-	def handle_error(self, e: Exception) -> None:
-
-		if self.raise_exc:
-			raise e
-
-		# Try to insert doc into trouble collection (raises no exception)
-		report_exception(
-			self.context.db, self.logger, exc=e,
-			process=self.stock_updr.process_name
-		)
-
-
-	def handle_t3_result(self,
-		t3_unit: AbsT3Unit,
-		res: Union[UBson, UnitResult],
-		stocks: List[StockId],
-		ts: float
-	) -> Optional[T3Document]:
-
-		# Let's consider logs as a result product
-		if t3_unit._buf_hdlr.buffer: # type: ignore[attr-defined]
-			t3_unit._buf_hdlr.forward(self.logger) # type: ignore[attr-defined]
-
-		if isinstance(res, UnitResult):
-			if res.journal:
-				self.stock_updr.add_journal_record(
-					stock = stocks, # used to match stock docs
-					jattrs = res.journal,
-					unit = t3_unit.__class__.__name__,
-					action_code = JournalActionCode.T3_ADD_DOC
-				)
-			if res.body is not None or res.code is not None:
-				return self.craft_t3_doc(t3_unit, res, ts, stocks)
-		elif res is not None or (res is None and self.save_stock_ids and stocks):
-			return self.craft_t3_doc(t3_unit, res, ts, stocks)
-
-		return None
-
-
-	def flush(self, arg: Union[AbsT3Unit, Iterable[AbsT3Unit]], extra: Optional[Dict[str, Any]] = None) -> None:
-
-		for t3_unit in [arg] if isinstance(arg, AbsT3Unit) else arg:
-
-			if t3_unit.logger.handlers[0].buffer: # type: ignore[attr-defined]
-				t3_unit.logger.handlers[0].forward(self.logger, extra=extra) # type: ignore[attr-defined]
-				self.logger.break_aggregation()
-
-			if self.stock_updr.update_journal:
-				self.stock_updr.flush()
-
-
-	def craft_t3_doc(self,
-		t3_unit: AbsT3Unit,
-		res: Union[None, UBson, UnitResult],
-		ts: float,
-		stocks: Optional[List[StockId]] = None
-	) -> T3Document:
-
-		t3d: T3Document = {'process': self.process_name}
-		actact = MetaActionCode(0)
-		now = datetime.now()
-
-		if self.human_timestamp:
-			t3d['datetime'] = now.strftime(self.human_timestamp_format)
-
-		t3d['unit'] = t3_unit.__class__.__name__
-		t3d['code'] = actact
-
-		conf = dictify(t3_unit._trace_content)
-		meta: MetaRecord = {'ts': int(now.timestamp()), 'duration': time() - ts}
-
-		if self.resolve_config:
-			t3d['config'] = conf
-		else:
-			confid = build_unsafe_dict_id(conf)
-			self.context.db.add_conf_id(confid, conf)
-			t3d['config'] = confid
-
-		if self.channel:
-			t3d['channel'] = self.channel
-			actact |= MetaActionCode.ADD_CHANNEL
-
-		if self.save_stock_ids and stocks:
-			t3d['stock'] = stocks
-
-		t3d['code'] = DocumentCode.OK
-		t3d['meta'] = meta # note: mongodb maintains key order
-
-		if isinstance(res, UnitResult):
-
-			if res.code:
-				t3d['code'] = res.code
-				actact |= MetaActionCode.SET_UNIT_CODE
-			else:
-				actact |= MetaActionCode.SET_CODE
-
-			if res.tag:
-				if self.tag:
-					t3d['tag'] = merge_to_list(self.tag, res.tag) # type: ignore
-				else:
-					t3d['tag'] = res.tag
-			elif self.tag:
-				t3d['tag'] = self.tag
-
-			if res.body:
-				t3d['body'] = res.body
-				actact |= MetaActionCode.ADD_BODY
-
-		else:
-
-			if self.tag:
-				t3d['tag'] = self.tag
-
-			# bson
-			if isinstance(res, ubson):
-				t3d['body'] = res
-				actact |= (MetaActionCode.ADD_BODY | MetaActionCode.SET_CODE)
-
-			else:
-				actact |= MetaActionCode.SET_CODE
-
-		meta['activity'] = [{'action': actact}]
-
-		if self.human_id:
-			ids = []
-			if 'process' in self.human_id:
-				ids.append("[%s]" % self.process_name)
-			if 'taskindex' in self.human_id:
-				ids.append("[#%s]" % self.process_name.split("#")[-1])
-			if 'unit' in self.human_id:
-				ids.append("[%s]" % t3_unit.__class__.__name__)
-			if 'tag' in self.human_id and 'tag' in t3d:
-				ids.append("[%s]" % (t3d['tag'] if isinstance(t3d['tag'], (int, str)) else " ".join(t3d['tag']))) # type: ignore[arg-type]
-			if 'config' in self.human_id:
-				ids.append("[%s]" % build_unsafe_dict_id(conf))
-			if 'run' in self.human_id:
-				ids.append("[%s]" % self.stock_updr.run_id) # not great
-			ids.append(now.strftime(self.human_timestamp_format))
-			t3d['_id'] = " ".join(ids)
-
-		return t3d
