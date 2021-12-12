@@ -15,11 +15,11 @@ from ampel.view.SnapView import SnapView
 from ampel.view.T3Store import T3Store
 import pytest
 
-from ampel.abstract.AbsT3StageUnit import AbsT3StageUnit, T3Send
+from ampel.abstract.AbsT3ReviewUnit import AbsT3ReviewUnit, T3Send
 from ampel.t3.T3Processor import T3Processor
 
 
-class Mutineer(AbsT3StageUnit):
+class Mutineer(AbsT3ReviewUnit):
     raise_on_process: bool = False
 
     def process(self, views, t3s=None):
@@ -82,7 +82,7 @@ def test_unit_raises_error(
 
 def test_view_generator(dev_context: DevAmpelContext, ingest_stock):
 
-    class SendySend(AbsT3StageUnit):
+    class SendySend(AbsT3ReviewUnit):
         raise_on_process: bool = False
 
         def process(self, gen: Generator[SnapView, T3Send, None], t3s: Optional[T3Store] = None):

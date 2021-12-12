@@ -12,7 +12,7 @@ from typing import Optional, Sequence, List, Generator, Union
 from ampel.view.T3Store import T3Store
 from ampel.model.UnitModel import UnitModel
 from ampel.content.T3Document import T3Document
-from ampel.abstract.AbsT3StageUnit import AbsT3StageUnit
+from ampel.abstract.AbsT3ReviewUnit import AbsT3ReviewUnit
 from ampel.struct.AmpelBuffer import AmpelBuffer
 from ampel.t3.stage.T3ThreadedStager import T3ThreadedStager
 from ampel.t3.stage.SimpleViewGenerator import SimpleViewGenerator
@@ -24,13 +24,13 @@ class T3SimpleStager(T3ThreadedStager):
 	Otherwise, use T3ProjectingStager.
 	"""
 
-	#: t3 units (AbsT3StageUnit) to execute
+	#: t3 units (AbsT3ReviewUnit) to execute
 	execute: Union[Sequence[UnitModel], UnitModel]
 
 	def __init__(self, **kwargs) -> None:
 
 		super().__init__(**kwargs)
-		self.units: List[AbsT3StageUnit] = []
+		self.units: List[AbsT3ReviewUnit] = []
 
 		if self.logger.verbose > 1:
 			self.logger.debug("Setting up T3SimpleStager")

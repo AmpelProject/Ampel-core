@@ -21,7 +21,7 @@ from ampel.content.T3Document import T3Document
 from ampel.log import VERBOSE
 from ampel.struct.AmpelBuffer import AmpelBuffer
 from ampel.base.AuxUnitRegister import AuxUnitRegister
-from ampel.abstract.AbsT3StageUnit import AbsT3StageUnit
+from ampel.abstract.AbsT3ReviewUnit import AbsT3ReviewUnit
 from ampel.abstract.AbsT3Filter import AbsT3Filter
 from ampel.abstract.AbsT3Projector import AbsT3Projector
 from ampel.t3.stage.T3ThreadedStager import T3ThreadedStager
@@ -89,7 +89,7 @@ class T3AdaptativeStager(T3ThreadedStager):
 		if self.black_list and self.white_list:
 			raise ValueError("Can't have both black and white lists")
 
-		self.queues: Dict[AbsT3StageUnit, JoinableQueue[SnapView]] = {}
+		self.queues: Dict[AbsT3ReviewUnit, JoinableQueue[SnapView]] = {}
 		self.generators: List[ThreadedViewGenerator] = []
 		self.async_results: List[AsyncResult] = []
 

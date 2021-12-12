@@ -8,7 +8,7 @@
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from typing import Iterable, Generator
-from ampel.abstract.AbsT3StageUnit import AbsT3StageUnit
+from ampel.abstract.AbsT3ReviewUnit import AbsT3ReviewUnit
 from ampel.struct.AmpelBuffer import AmpelBuffer
 from ampel.mongo.update.MongoStockUpdater import MongoStockUpdater
 from ampel.t3.stage.BaseViewGenerator import BaseViewGenerator, T, T3Send
@@ -16,7 +16,7 @@ from ampel.t3.stage.BaseViewGenerator import BaseViewGenerator, T, T3Send
 
 class SimpleViewGenerator(BaseViewGenerator[T]):
 
-	def __init__(self, unit: AbsT3StageUnit, buffers: Iterable[AmpelBuffer], stock_updr: MongoStockUpdater) -> None:
+	def __init__(self, unit: AbsT3ReviewUnit, buffers: Iterable[AmpelBuffer], stock_updr: MongoStockUpdater) -> None:
 		super().__init__(unit_name = unit.__class__.__name__, stock_updr = stock_updr)
 		self.buffers = buffers
 		self.View = unit._View

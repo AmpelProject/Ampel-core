@@ -14,7 +14,7 @@ from ampel.view.T3DocView import T3DocView
 from ampel.view.SnapView import SnapView
 from ampel.model.UnitModel import UnitModel
 from ampel.content.T3Document import T3Document
-from ampel.abstract.AbsT3StageUnit import AbsT3StageUnit, T
+from ampel.abstract.AbsT3ReviewUnit import AbsT3ReviewUnit, T
 from ampel.struct.AmpelBuffer import AmpelBuffer
 from ampel.t3.stage.BaseViewGenerator import BaseViewGenerator, T3Send
 from ampel.t3.stage.T3BaseStager import T3BaseStager
@@ -25,7 +25,7 @@ from ampel.util.mappings import dictify
 
 class SimpleGenerator(BaseViewGenerator[T]):
 
-	def __init__(self, unit: AbsT3StageUnit, views: Iterable[T], stock_updr: MongoStockUpdater) -> None:
+	def __init__(self, unit: AbsT3ReviewUnit, views: Iterable[T], stock_updr: MongoStockUpdater) -> None:
 		super().__init__(unit_name = unit.__class__.__name__, stock_updr = stock_updr)
 		self.views = views
 
@@ -60,15 +60,15 @@ class T3SequentialStager(T3BaseStager):
 
 	propagate: bool = True
 
-	#: t3 units (AbsT3StageUnit) to execute
+	#: t3 units (AbsT3ReviewUnit) to execute
 	execute: Sequence[Union[UnitModel, SkippableUnitModel]]
 
 
 	def __init__(self, **kwargs) -> None:
 
 		super().__init__(**kwargs)
-		self.units: list[AbsT3StageUnit] = []
-		self.restorable_units: set[AbsT3StageUnit] = set()
+		self.units: list[AbsT3ReviewUnit] = []
+		self.restorable_units: set[AbsT3ReviewUnit] = set()
 
 		if self.logger.verbose > 1:
 			self.logger.debug("Setting up T3CollaborativeStager")
@@ -131,7 +131,7 @@ class T3SequentialStager(T3BaseStager):
 					yield x
 
 
-	def get_views(self, gen: Generator[AmpelBuffer, None, None]) -> dict[AbsT3StageUnit, list[SnapView]]:
+	def get_views(self, gen: Generator[AmpelBuffer, None, None]) -> dict[AbsT3ReviewUnit, list[SnapView]]:
 
 		Views: set[Type[SnapView]] = {u._View for u in self.units}
 		conf = self.context.config
@@ -158,7 +158,7 @@ class T3SequentialStager(T3BaseStager):
 
 			else:
 
-				optd: dict[Type[SnapView], list[AbsT3StageUnit]] = {}
+				optd: dict[Type[SnapView], list[AbsT3ReviewUnit]] = {}
 				for unit in self.units:
 					if unit._View not in optd:
 						optd[unit._View] = []
@@ -172,7 +172,7 @@ class T3SequentialStager(T3BaseStager):
 				return d
 
 
-	def get_cached_t3_view(self, t3_unit: AbsT3StageUnit) -> Optional[T3DocView]:
+	def get_cached_t3_view(self, t3_unit: AbsT3ReviewUnit) -> Optional[T3DocView]:
 
 		col = self.context.db.get_collection('t3')
 		h = build_unsafe_dict_id(dictify(t3_unit._trace_content), ret=int)

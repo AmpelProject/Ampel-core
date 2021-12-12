@@ -13,7 +13,7 @@ from multiprocessing import JoinableQueue
 from multiprocessing.pool import ThreadPool, AsyncResult
 from typing import Optional, Type, Iterable, Generator
 
-from ampel.abstract.AbsT3StageUnit import AbsT3StageUnit
+from ampel.abstract.AbsT3ReviewUnit import AbsT3ReviewUnit
 from ampel.view.SnapView import SnapView
 from ampel.view.T3Store import T3Store
 from ampel.content.T3Document import T3Document
@@ -44,7 +44,7 @@ class T3ThreadedStager(T3BaseStager, abstract=True):
 
 
 	def proceed_threaded(self,
-		t3_units: list[AbsT3StageUnit],
+		t3_units: list[AbsT3ReviewUnit],
 		buf_gen: Generator[AmpelBuffer, None, None],
 		t3s: Optional[T3Store] = None
 	) -> Generator[T3Document, None, None]:
@@ -109,10 +109,10 @@ class T3ThreadedStager(T3BaseStager, abstract=True):
 
 	def create_threaded_generators(self,
 		pool: ThreadPool,
-		t3_units: list[AbsT3StageUnit],
+		t3_units: list[AbsT3ReviewUnit],
 		t3s: Optional[T3Store] = None
 	) -> tuple[
-		dict[AbsT3StageUnit, "JoinableQueue[SnapView]"],
+		dict[AbsT3ReviewUnit, "JoinableQueue[SnapView]"],
 		list[ThreadedViewGenerator],
 		list[AsyncResult]
 	]:
@@ -120,7 +120,7 @@ class T3ThreadedStager(T3BaseStager, abstract=True):
 		Create and start T3 units "process(...)" threads (generator will block)
 		"""
 
-		queues: dict[AbsT3StageUnit, JoinableQueue[SnapView]] = {}
+		queues: dict[AbsT3ReviewUnit, JoinableQueue[SnapView]] = {}
 		generators: list[ThreadedViewGenerator] = []
 		async_results: list[AsyncResult] = []
 

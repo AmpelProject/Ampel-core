@@ -30,7 +30,7 @@ class T3DistributiveStager(T3ThreadedStager):
 	Note that no performance gain will be obtained if the processing is CPU limited.
 	"""
 
-	#: t3 units (AbsT3StageUnit) to execute
+	#: t3 units (AbsT3ReviewUnit) to execute
 	execute: UnitModel
 	nthread: int = 4
 

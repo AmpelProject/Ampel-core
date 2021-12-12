@@ -33,7 +33,7 @@ class FilterModel(StrictModel):
 class PeriodicSummaryT3(AbsProcessTemplate):
     """
     A T3 process that selects stocks updated since its last invocation, and
-    supplies them, to a sequence of AbsT3StageUnits.
+    supplies them, to a sequence of AbsT3ReviewUnits.
     """
 
     #: Process name.

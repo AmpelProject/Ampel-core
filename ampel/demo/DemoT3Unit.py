@@ -9,14 +9,14 @@
 
 from typing import Union, Generator, Optional
 from ampel.types import UBson, T3Send
-from ampel.abstract.AbsT3StageUnit import AbsT3StageUnit
+from ampel.abstract.AbsT3ReviewUnit import AbsT3ReviewUnit
 from ampel.struct.JournalAttributes import JournalAttributes
 from ampel.struct.UnitResult import UnitResult
 from ampel.view.SnapView import SnapView
 from ampel.view.T3Store import T3Store
 
 
-class DemoT3Unit(AbsT3StageUnit[SnapView]):
+class DemoT3Unit(AbsT3ReviewUnit[SnapView]):
 
 	parameter: int = 10
 
