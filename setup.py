@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : Unspecified
-# Last Modified Date: 10.10.2021
+# Last Modified Date: 15.12.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from setuptools import setup, find_namespace_packages
@@ -32,7 +32,6 @@ install_requires = [
 	'sjcl>=0.2.1,<0.3.0',
 	'slackclient>=2.7,<3.0',
 	'yq>=2.12.0,<3.0.0',
-	'xxhash',
 	'ujson',
 	'appdirs'
 ]
@@ -73,7 +72,7 @@ entry_points = {
 
 setup(
     name = 'ampel-core',
-    version = '0.8.2.alpha-1',
+    version = '0.8.2.alpha-3',
     description = 'Asynchronous and Modular Platform with Execution Layers',
     author = 'Valery Brinnel',
     maintainer = 'Jakob van Santen',
