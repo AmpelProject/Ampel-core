@@ -39,15 +39,14 @@
 <span class="c1"># License           : BSD-3-Clause</span>
 <span class="c1"># Author            : vb &lt;vbrinnel@physik.hu-berlin.de&gt;</span>
 <span class="c1"># Date              : 04.02.2020</span>
-<span class="c1"># Last Modified Date: 14.07.2021</span>
+<span class="c1"># Last Modified Date: 12.12.2021</span>
 <span class="c1"># Last Modified By  : vb &lt;vbrinnel@physik.hu-berlin.de&gt;</span>
 
-<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Sequence</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">Optional</span>
 <span class="kn">from</span> <span class="nn">ampel.types</span> <span class="kn">import</span> <span class="n">ChannelId</span>
 <span class="kn">from</span> <span class="nn">ampel.base.AmpelABC</span> <span class="kn">import</span> <span class="n">AmpelABC</span>
 <span class="kn">from</span> <span class="nn">ampel.base.decorator</span> <span class="kn">import</span> <span class="n">abstractmethod</span>
 <span class="kn">from</span> <span class="nn">ampel.core.ContextUnit</span> <span class="kn">import</span> <span class="n">ContextUnit</span>
-<span class="kn">from</span> <span class="nn">ampel.model.UnitModel</span> <span class="kn">import</span> <span class="n">UnitModel</span>
 <span class="kn">from</span> <span class="nn">ampel.log.LogFlag</span> <span class="kn">import</span> <span class="n">LogFlag</span>
 
 
@@ -94,9 +93,6 @@
 	<span class="c1">#: and thus the generation of &quot;trace ids&quot;.</span>
 	<span class="c1">#: Set provenance to False to ignore trace ids generation error which will be raised otherwise.</span>
 	<span class="n">provenance</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>
-
-	<span class="c1">#: Provides contextual informations to this run (fills session_info)</span>
-	<span class="n">session</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="n">UnitModel</span><span class="p">]]</span>
 
 
 	<span class="nd">@abstractmethod</span><span class="p">(</span><span class="n">var_args</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>

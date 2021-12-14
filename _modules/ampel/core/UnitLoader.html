@@ -39,7 +39,7 @@
 <span class="c1"># License           : BSD-3-Clause</span>
 <span class="c1"># Author            : vb &lt;vbrinnel@physik.hu-berlin.de&gt;</span>
 <span class="c1"># Date              : 07.10.2019</span>
-<span class="c1"># Last Modified Date: 08.12.2021</span>
+<span class="c1"># Last Modified Date: 13.12.2021</span>
 <span class="c1"># Last Modified By  : vb &lt;vbrinnel@physik.hu-berlin.de&gt;</span>
 
 <span class="kn">import</span> <span class="nn">sys</span>
@@ -48,10 +48,10 @@
 <span class="kn">from</span> <span class="nn">pathlib</span> <span class="kn">import</span> <span class="n">Path</span>
 <span class="kn">from</span> <span class="nn">hashlib</span> <span class="kn">import</span> <span class="n">blake2b</span>
 <span class="kn">from</span> <span class="nn">contextlib</span> <span class="kn">import</span> <span class="n">contextmanager</span>
-<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">Iterator</span><span class="p">,</span> <span class="n">Type</span><span class="p">,</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Union</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> \
-	<span class="n">TypeVar</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">overload</span><span class="p">,</span> <span class="n">cast</span><span class="p">,</span> <span class="n">get_args</span>
 <span class="kn">from</span> <span class="nn">pydantic.main</span> <span class="kn">import</span> <span class="n">create_model</span>
-<span class="kn">from</span> <span class="nn">ampel.types</span> <span class="kn">import</span> <span class="n">check_class</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Iterator</span><span class="p">,</span> <span class="n">Type</span><span class="p">,</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Union</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">TypeVar</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">,</span> <span class="n">overload</span><span class="p">,</span> <span class="n">cast</span><span class="p">,</span> <span class="n">get_args</span>
+
+<span class="kn">from</span> <span class="nn">ampel.types</span> <span class="kn">import</span> <span class="n">ChannelId</span><span class="p">,</span> <span class="n">check_class</span>
 <span class="kn">from</span> <span class="nn">ampel.util.collections</span> <span class="kn">import</span> <span class="n">ampel_iter</span>
 <span class="kn">from</span> <span class="nn">ampel.util.freeze</span> <span class="kn">import</span> <span class="n">recursive_unfreeze</span>
 <span class="kn">from</span> <span class="nn">ampel.util.mappings</span> <span class="kn">import</span> <span class="n">merge_dicts</span>
@@ -68,7 +68,9 @@
 <span class="kn">from</span> <span class="nn">ampel.secret.AmpelVault</span> <span class="kn">import</span> <span class="n">AmpelVault</span>
 <span class="kn">from</span> <span class="nn">ampel.model.t3.AliasableModel</span> <span class="kn">import</span> <span class="n">AliasableModel</span>
 <span class="kn">from</span> <span class="nn">ampel.config.AmpelConfig</span> <span class="kn">import</span> <span class="n">AmpelConfig</span>
-<span class="kn">from</span> <span class="nn">ampel.log.AmpelLogger</span> <span class="kn">import</span> <span class="n">AmpelLogger</span>
+<span class="kn">from</span> <span class="nn">ampel.log.AmpelLogger</span> <span class="kn">import</span> <span class="n">AmpelLogger</span><span class="p">,</span> <span class="n">LogFlag</span><span class="p">,</span> <span class="n">VERBOSE</span>
+<span class="kn">from</span> <span class="nn">ampel.log.handlers.ChanRecordBufHandler</span> <span class="kn">import</span> <span class="n">ChanRecordBufHandler</span>
+<span class="kn">from</span> <span class="nn">ampel.log.handlers.DefaultRecordBufferingHandler</span> <span class="kn">import</span> <span class="n">DefaultRecordBufferingHandler</span>
 <span class="kn">from</span> <span class="nn">ampel.util.hash</span> <span class="kn">import</span> <span class="n">build_unsafe_dict_id</span>
 <span class="kn">from</span> <span class="nn">ampel.util.mappings</span> <span class="kn">import</span> <span class="n">dictify</span>
 
@@ -103,10 +105,9 @@
 		<span class="bp">self</span><span class="o">.</span><span class="n">vault</span> <span class="o">=</span> <span class="n">vault</span>
 		<span class="bp">self</span><span class="o">.</span><span class="n">config</span> <span class="o">=</span> <span class="n">config</span>
 		<span class="bp">self</span><span class="o">.</span><span class="n">provenance</span> <span class="o">=</span> <span class="n">provenance</span>
-		<span class="bp">self</span><span class="o">.</span><span class="n">unit_defs</span><span class="p">:</span> <span class="n">Dict</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">_config</span><span class="p">[</span><span class="s1">&#39;unit&#39;</span><span class="p">]</span>
-		<span class="bp">self</span><span class="o">.</span><span class="n">aliases</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">config</span><span class="o">.</span><span class="n">_config</span><span class="p">[</span><span class="s1">&#39;alias&#39;</span><span class="p">][</span><span class="sa">f</span><span class="s2">&quot;t</span><span class="si">{</span><span class="n">el</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">]</span> <span class="k">for</span> <span class="n">el</span> <span class="ow">in</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">)]</span>
-		<span class="bp">self</span><span class="o">.</span><span class="n">_dyn_register</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Type</span><span class="p">[</span><span class="n">LogicalUnit</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span> <span class="c1"># potentially updated by DevAmpelContext</span>
-
+		<span class="bp">self</span><span class="o">.</span><span class="n">unit_defs</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">_config</span><span class="p">[</span><span class="s1">&#39;unit&#39;</span><span class="p">]</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">aliases</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">config</span><span class="o">.</span><span class="n">_config</span><span class="p">[</span><span class="s1">&#39;alias&#39;</span><span class="p">][</span><span class="sa">f</span><span class="s2">&quot;t</span><span class="si">{</span><span class="n">el</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">]</span> <span class="k">for</span> <span class="n">el</span> <span class="ow">in</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">)]</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">_dyn_register</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Type</span><span class="p">[</span><span class="n">LogicalUnit</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span> <span class="c1"># potentially updated by DevAmpelContext</span>
 
 
 	<span class="nd">@overload</span>
@@ -138,6 +139,35 @@
 			<span class="n">resource</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_resources</span><span class="p">(</span><span class="n">model</span><span class="p">),</span>
 			<span class="o">**</span><span class="n">kwargs</span>
 		<span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="UnitLoader.new_safe_logical_unit"><a class="viewcode-back" href="../../../api.html#ampel.core.UnitLoader.UnitLoader.new_safe_logical_unit">[docs]</a>	<span class="k">def</span> <span class="nf">new_safe_logical_unit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+		<span class="n">um</span><span class="p">:</span> <span class="n">UnitModel</span><span class="p">,</span>
+		<span class="n">unit_type</span><span class="p">:</span> <span class="n">Type</span><span class="p">[</span><span class="n">LT</span><span class="p">],</span>
+		<span class="n">logger</span><span class="p">:</span> <span class="n">AmpelLogger</span><span class="p">,</span>
+		<span class="n">_chan</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">ChannelId</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+	<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">LT</span><span class="p">:</span>
+		<span class="sd">&quot;&quot;&quot; Returns a logical unit with dedicated logger containing no db handler &quot;&quot;&quot;</span>
+
+		<span class="k">if</span> <span class="n">logger</span><span class="o">.</span><span class="n">verbose</span><span class="p">:</span>
+			<span class="n">logger</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">VERBOSE</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;Instantiating unit </span><span class="si">{</span><span class="n">um</span><span class="o">.</span><span class="n">unit</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+		<span class="n">buf_hdlr</span> <span class="o">=</span> <span class="n">ChanRecordBufHandler</span><span class="p">(</span><span class="n">logger</span><span class="o">.</span><span class="n">level</span><span class="p">,</span> <span class="n">_chan</span><span class="p">,</span> <span class="p">{</span><span class="s1">&#39;unit&#39;</span><span class="p">:</span> <span class="n">um</span><span class="o">.</span><span class="n">unit</span><span class="p">})</span> <span class="k">if</span> <span class="n">_chan</span> \
+			<span class="k">else</span> <span class="n">DefaultRecordBufferingHandler</span><span class="p">(</span><span class="n">logger</span><span class="o">.</span><span class="n">level</span><span class="p">,</span> <span class="p">{</span><span class="s1">&#39;unit&#39;</span><span class="p">:</span> <span class="n">um</span><span class="o">.</span><span class="n">unit</span><span class="p">})</span>
+
+		<span class="c1"># Spawn unit instance</span>
+		<span class="n">unit</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">new_logical_unit</span><span class="p">(</span>
+			<span class="n">model</span> <span class="o">=</span> <span class="n">um</span><span class="p">,</span>
+			<span class="n">logger</span> <span class="o">=</span> <span class="n">AmpelLogger</span><span class="o">.</span><span class="n">get_logger</span><span class="p">(</span>
+				<span class="n">base_flag</span> <span class="o">=</span> <span class="p">(</span><span class="nb">getattr</span><span class="p">(</span><span class="n">logger</span><span class="p">,</span> <span class="s1">&#39;base_flag&#39;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span> <span class="o">&amp;</span> <span class="o">~</span><span class="n">LogFlag</span><span class="o">.</span><span class="n">CORE</span><span class="p">)</span> <span class="o">|</span> <span class="n">LogFlag</span><span class="o">.</span><span class="n">UNIT</span><span class="p">,</span>
+				<span class="n">console</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">logger</span><span class="o">.</span><span class="n">handlers</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">,</span> <span class="c1"># to be improved later</span>
+				<span class="n">handlers</span> <span class="o">=</span> <span class="p">[</span><span class="n">buf_hdlr</span><span class="p">]</span>
+			<span class="p">),</span>
+			<span class="n">sub_type</span> <span class="o">=</span> <span class="n">unit_type</span>
+		<span class="p">)</span>
+
+		<span class="nb">setattr</span><span class="p">(</span><span class="n">unit</span><span class="p">,</span> <span class="s1">&#39;_buf_hdlr&#39;</span><span class="p">,</span> <span class="n">buf_hdlr</span><span class="p">)</span> <span class="c1"># Shortcut</span>
+		<span class="k">return</span> <span class="n">unit</span></div>
 
 
 	<span class="nd">@overload</span>
@@ -293,14 +323,14 @@
 
 
 <div class="viewcode-block" id="UnitLoader.get_init_config"><a class="viewcode-back" href="../../../api.html#ampel.core.UnitLoader.UnitLoader.get_init_config">[docs]</a>	<span class="k">def</span> <span class="nf">get_init_config</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
-		<span class="n">config</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-		<span class="n">override</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-		<span class="n">kwargs</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+		<span class="n">config</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+		<span class="n">override</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+		<span class="n">kwargs</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 		<span class="n">unfreeze</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>
-	<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+	<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
 		<span class="sd">&quot;&quot;&quot; :raises: ValueError if config alias is not found &quot;&quot;&quot;</span>
 
-		<span class="n">ret</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="p">{}</span>
+		<span class="n">ret</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="p">{}</span>
 
 		<span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="p">(</span><span class="nb">dict</span><span class="p">,</span> <span class="nb">str</span><span class="p">)):</span>
 			<span class="n">ret</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">resolve_aliases</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
@@ -349,13 +379,13 @@
 			<span class="k">return</span> <span class="n">value</span></div>
 
 
-<div class="viewcode-block" id="UnitLoader.get_resources"><a class="viewcode-back" href="../../../api.html#ampel.core.UnitLoader.UnitLoader.get_resources">[docs]</a>	<span class="k">def</span> <span class="nf">get_resources</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model</span><span class="p">:</span> <span class="n">UnitModel</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<div class="viewcode-block" id="UnitLoader.get_resources"><a class="viewcode-back" href="../../../api.html#ampel.core.UnitLoader.UnitLoader.get_resources">[docs]</a>	<span class="k">def</span> <span class="nf">get_resources</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model</span><span class="p">:</span> <span class="n">UnitModel</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
 		<span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">		Resources are defined using the static variable &#39;require&#39; in ampel units</span>
 <span class="sd">		-&gt; example: catsHTM.default</span>
 <span class="sd">		&quot;&quot;&quot;</span>
 
-		<span class="n">resources</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+		<span class="n">resources</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
 		<span class="n">Klass</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_class_by_name</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">unit</span><span class="p">)</span>
 
 		<span class="c1"># Load possibly required global resources</span>
@@ -426,7 +456,7 @@
 <span class="sd">		reveal_type(self.new_context_unit(model, context, sub_type = AbsLightCurveT2Unit, bla=12))</span>
 <span class="sd">	&quot;&quot;&quot;</span></div>
 
-<span class="k">def</span> <span class="nf">_validate_unit_model</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">values</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span> <span class="n">unit_loader</span><span class="p">:</span> <span class="n">UnitLoader</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="k">def</span> <span class="nf">_validate_unit_model</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">values</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span> <span class="n">unit_loader</span><span class="p">:</span> <span class="n">UnitLoader</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
 	<span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">	Verify that a unit configuration is valid in the context of a specific UnitLoader.</span>
 <span class="sd">	&quot;&quot;&quot;</span>
