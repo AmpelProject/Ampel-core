@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 14.07.2021
-# Last Modified Date: 31.08.2021
+# Last Modified Date: 13.12.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from typing import List, Optional, Sequence, Generator
@@ -15,7 +15,7 @@ from ampel.abstract.AbsBufferComplement import AbsBufferComplement
 from ampel.util.collections import chunks as chunks_func
 from ampel.struct.AmpelBuffer import AmpelBuffer
 from ampel.model.UnitModel import UnitModel
-from ampel.log.utils import report_exception
+from ampel.view.T3Store import T3Store
 
 
 class T3DefaultBufferSupplier(AbsT3Supplier[Generator[AmpelBuffer, None, None]]):
@@ -87,7 +87,7 @@ class T3DefaultBufferSupplier(AbsT3Supplier[Generator[AmpelBuffer, None, None]])
 			self.complementers = None
 
 
-	def supply(self) -> Generator[AmpelBuffer, None, None]:
+	def supply(self, t3s: T3Store) -> Generator[AmpelBuffer, None, None]:
 
 		# NB: we consume the entire cursor at once using list() to be robust
 		# against cursor timeouts or server restarts during long lived T3 processes
@@ -115,20 +115,10 @@ class T3DefaultBufferSupplier(AbsT3Supplier[Generator[AmpelBuffer, None, None]])
 				# Potentialy add complementary information (spectra, TNS names, ...)
 				if self.complementers:
 					for appender in self.complementers:
-						appender.complement(tran_data)
+						appender.complement(tran_data, t3s)
 
 				for ampel_buffer in tran_data:
 					yield ampel_buffer
 
 			except Exception as e:
-
-				if self.event_hdlr:
-					self.event_hdlr.add_extra(overwrite=True, success=False)
-
-				if self.raise_exc:
-					raise e
-
-				report_exception(
-					self.context.db, self.logger, exc=e,
-					info={'process': self.process_name}
-				)
+				self.event_hdlr.handle_error(e, self.logger)
