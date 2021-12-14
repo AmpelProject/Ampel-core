@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 16.03.2021
-# Last Modified Date: 22.09.2021
+# Last Modified Date: 13.12.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from datetime import datetime
@@ -199,7 +199,7 @@ class T2Command(AbsCoreCommand):
 
 			if changed > 0:
 				# Add new doc in the 'events' collection
-				EventHandler(ctx.db, process_name='CLI', run_id=run_id, tier=-1)
+				EventHandler('CLI', ctx.db, run_id=run_id, tier=-1)
 
 
 	def morph_ret(self,
