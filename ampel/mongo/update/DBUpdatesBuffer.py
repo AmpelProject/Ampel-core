@@ -91,7 +91,7 @@ class DBUpdatesBuffer(Schedulable):
 		push_interval: Optional[float] = 3.,
 		max_size: Optional[int] = None,
 		threads: Optional[int] = None,
-		raise_exc: bool = False,
+		raise_exc: bool = False
 	):
 		"""
 		:param error_callback: callback method to be called on errors
@@ -331,6 +331,7 @@ class DBUpdatesBuffer(Schedulable):
 							self.logger.info(
 								f"Race condition during ingestion in '{col_name}': {err_dict}"
 							)
+							self.logger.flush()
 
 							# Should no longer raise pymongo.errors.DuplicateKeyError
 							self._cols[col_name].update_one(
@@ -384,7 +385,7 @@ class DBUpdatesBuffer(Schedulable):
 				# Log exc and try to insert doc into trouble collection (raises no exception)
 				report_exception(self._ampel_db, self.logger, exc=e)
 
-			print(f"Collection {col_name} update failed")
+			print(f"Update of {col_name} collection has failed")
 			print(db_ops)
 
 			self._err_db_ops[col_name] += db_ops
