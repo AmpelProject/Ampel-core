@@ -11,6 +11,7 @@ from typing import ClassVar
 from ampel.mongo.query.var.events import build_t0_stats_query
 from ampel.abstract.AbsT3Supplier import AbsT3Supplier
 from ampel.t3.include.session.T3SessionLastRunTime import T3SessionLastRunTime
+from ampel.view.T3Store import T3Store
 
 
 class T3SessionAlertsNumber(AbsT3Supplier[dict]):
@@ -19,14 +20,14 @@ class T3SessionAlertsNumber(AbsT3Supplier[dict]):
 	key: ClassVar[str] = "processed_alerts"
 
 
-	def supply(self) -> dict:
+	def supply(self, t3s: T3Store) -> dict:
 		""" Returns number of alerts processed since last run of this event as "processed_alerts" """
 
 		d = T3SessionLastRunTime(
-			context=self.context,
-			logger=self.logger,
-			process_name=self.process_name
-		).supply()
+			context = self.context,
+			logger = self.logger,
+			event_hdlr = self.event_hdlr
+		).supply(t3s)
 
 		if not d[T3SessionLastRunTime.key]:
 			self.logger.info(

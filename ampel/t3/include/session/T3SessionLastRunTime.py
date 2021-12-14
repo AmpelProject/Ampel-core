@@ -11,6 +11,7 @@ from typing import Dict, Optional, ClassVar
 from datetime import datetime, timedelta
 from ampel.mongo.query.var.events import get_last_run
 from ampel.abstract.AbsT3Supplier import AbsT3Supplier
+from ampel.view.T3Store import T3Store
 
 
 class T3SessionLastRunTime(AbsT3Supplier[dict]):
@@ -24,19 +25,19 @@ class T3SessionLastRunTime(AbsT3Supplier[dict]):
 	fallback: Optional[Dict[str, int]] = None  # ex: {'days': -90}
 
 
-	def supply(self) -> dict:
+	def supply(self, t3s: T3Store) -> dict:
 		"""Add last run time (UNIX epoch) as "last_run". """
 
 		last_run = get_last_run(
 			self.context.db.get_collection('events'),
 			require_success = True,
-			process_name = self.process_name,
+			process_name = self.event_hdlr.process_name,
 			gte_time = self.lookup_range,
 			timestamp = True,
 		)
 
 		if last_run is None:
-			self.logger.warn(f"Event {self.process_name}: last run time unavailable")
+			self.logger.warn(f"Event {self.event_hdlr.process_name}: last run time unavailable")
 			if self.fallback:
 				t = (datetime.now() + timedelta(**self.fallback)).timestamp()
 				self.logger.warn(f"Fallback last run time: {t}")
