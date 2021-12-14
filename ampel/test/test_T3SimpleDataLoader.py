@@ -10,7 +10,9 @@ def test_instantiate(core_config, patch_mongo, ampel_logger):
     aliases = ctx.config.get("alias.t3", dict)
     assert len(
         directives := T3SimpleDataLoader(
-            ctx, logger=ampel_logger, directives=[k[1:] for k in aliases.keys()]
+            context=ctx,
+            logger=ampel_logger,
+            directives=[k[1:] for k in aliases.keys()]
         ).directives
     ) == len(aliases)
     for d, value in zip(directives, aliases.values()):

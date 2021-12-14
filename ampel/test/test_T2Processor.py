@@ -1,8 +1,6 @@
 from ampel.content.T2Document import T2Document
 from ampel.dev.DevAmpelContext import DevAmpelContext
-from unittest.mock import Mock
 from ampel.enum.DocumentCode import DocumentCode
-from ampel.core.AmpelContext import AmpelContext
 from contextlib import contextmanager
 
 from ampel.metrics.AmpelMetricsRegistry import AmpelMetricsRegistry

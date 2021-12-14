@@ -5,10 +5,8 @@ from ampel.config.AmpelConfig import AmpelConfig
 from ampel.content.MetaRecord import MetaRecord
 from ampel.enum.MetaActionCode import MetaActionCode
 from ampel.util.freeze import recursive_unfreeze
-from ampel.view.ReadOnlyDict import ReadOnlyDict
 from pymongo.errors import DuplicateKeyError
 import pytest
-import mongomock
 
 from ampel.content.DataPoint import DataPoint
 from ampel.dev.DevAmpelContext import DevAmpelContext
@@ -37,9 +35,8 @@ from ampel.test.dummy import (
 
 @pytest.fixture
 def dummy_units(dev_context: DevAmpelContext):
-
     for unit in (DummyStockT2Unit, DummyPointT2Unit, DummyStateT2Unit, DummyMuxer):
-        dev_context.register_unit(unit)
+        dev_context.register_unit(unit) # type: ignore
 
 
 @pytest.fixture(params=["T1SimpleCombiner", "T1SimpleRetroCombiner"])

@@ -30,33 +30,28 @@ class Mutineer(AbsT3ReviewUnit):
 def mutineer_process(config={}):
 
     return {
-        "process_name": "yarrr",
-        "react": {
-            "supply": {
-                "unit": "T3DefaultBufferSupplier",
-                "config": {
-                    "process_name": "yarrr",
-                    "select": {
-                        "unit": "T3StockSelector",
-                    },
-                    "load": {
-                        "unit": "T3SimpleDataLoader",
-                        "config": {
-                            "directives": [
-                                {"col": "stock"},
-                            ]
+        "execute": [
+            {
+                "supply": {
+                    "unit": "T3DefaultBufferSupplier",
+                    "config": {
+                        "select": {"unit": "T3StockSelector"},
+                        "load": {
+                            "unit": "T3SimpleDataLoader",
+                            "config": {
+                                "directives": [{"col": "stock"}]
+                            }
                         }
                     }
-                }
-            },
-            "stage": {
-                "unit": "T3SimpleStager",
-                "config": {
-                    "raise_exc": True,
-                    "execute": [{"unit": "Mutineer", "config": config}],
+                },
+                "stage": {
+                    "unit": "T3SimpleStager",
+                    "config": {
+                        "execute": [{"unit": "Mutineer", "config": config}]
+                    }
                 }
             }
-        }
+        ]
     }
 
 
@@ -72,7 +67,7 @@ def test_unit_raises_error(
 ):
     """Run is marked failed if units raise an exception"""
     dev_context.register_unit(Mutineer)
-    t3 = T3Processor(context=dev_context, raise_exc=False, **mutineer_process(config))
+    t3 = T3Processor(context=dev_context, process_name="test", raise_exc=False, **mutineer_process(config))
     t3.run()
     assert dev_context.db.get_collection("events").count_documents({}) == 1
     event = dev_context.db.get_collection("events").find_one({})
@@ -105,32 +100,28 @@ def test_view_generator(dev_context: DevAmpelContext, ingest_stock):
         raise_exc=True,
         update_journal=True,
         process_name="t3",
-        react = {
-            "supply": {
-                "unit": "T3DefaultBufferSupplier",
-                "config": {
-                    "process_name": "yarrr",
-                    "select": {
-                        "unit": "T3StockSelector",
-                    },
-                    "load": {
-                        "unit": "T3SimpleDataLoader",
-                        "config": {
-                            "directives": [
-                                {"col": "stock"},
-                            ]
+        execute = [
+            {
+                "supply": {
+                    "unit": "T3DefaultBufferSupplier",
+                    "config": {
+                        "select": {"unit": "T3StockSelector"},
+                        "load": {
+                            "unit": "T3SimpleDataLoader",
+                            "config": {
+                                "directives": [{"col": "stock"}]
+                            }
                         }
                     }
-                }
-            },
-            "stage": {
-                "unit": "T3SimpleStager",
-                "config": {
-                    "raise_exc": True,
-                    "execute": [{"unit": "SendySend"}]
+                },
+                "stage": {
+                    "unit": "T3SimpleStager",
+                    "config": {
+                        "execute": [{"unit": "SendySend"}]
+                    }
                 }
             }
-        }
+        ]
     )
     t3.run()
 
