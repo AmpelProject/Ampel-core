@@ -13,7 +13,6 @@ from typing import Iterable, Union, Iterator, Optional
 
 from ampel.types import StockId, StrictIterable
 from ampel.abstract.AbsT3Loader import AbsT3Loader
-from ampel.core.AmpelContext import AmpelContext
 from ampel.struct.AmpelBuffer import AmpelBuffer
 from ampel.util.collections import to_set
 from ampel.mongo.query.t1 import latest_fast_query, latest_general_query
@@ -42,11 +41,11 @@ class T3LatestStateDataLoader(AbsT3Loader):
 	codec_options: Optional[CodecOptions] = CodecOptions(document_class=FrozenValuesDict)
 
 
-	def __init__(self, context: AmpelContext, **kwargs):
+	def __init__(self, **kwargs):
 
-		super().__init__(context, **kwargs)
+		super().__init__(**kwargs)
 
-		self.col_t1 = context.db.get_collection("t1")
+		self.col_t1 = self.context.db.get_collection("t1")
 
 		for directive in self.directives:
 
