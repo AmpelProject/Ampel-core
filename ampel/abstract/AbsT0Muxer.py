@@ -4,11 +4,11 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 10.05.2021
-# Last Modified Date: 22.06.2021
+# Last Modified Date: 13.12.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from typing import List, Tuple, Optional
-from ampel.types import StockId
+from ampel.types import Traceless, StockId
 from ampel.base.AmpelABC import AmpelABC
 from ampel.base.decorator import abstractmethod
 from ampel.core.ContextUnit import ContextUnit
@@ -23,12 +23,8 @@ class AbsT0Muxer(AmpelABC, ContextUnit, abstract=True):
 	Unlike t1 combiner, subclass of this unit can fetch and add additional points (possibly from different instruments)
 	"""
 
-	# Exclude non-serializable parameters from underlying model by including them as ctor arg
-	def __init__(self, logger: AmpelLogger, updates_buffer: DBUpdatesBuffer, **kwargs):
-		super().__init__(**kwargs)
-		self.logger = logger
-		self.updates_buffer = updates_buffer
-
+	logger: Traceless[AmpelLogger]
+	updates_buffer: Traceless[DBUpdatesBuffer]
 
 	@abstractmethod
 	def process(self,
