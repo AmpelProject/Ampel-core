@@ -4,15 +4,14 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 04.02.2020
-# Last Modified Date: 14.07.2021
+# Last Modified Date: 12.12.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-from typing import Any, Dict, Optional, Sequence
+from typing import Any, Dict, Optional
 from ampel.types import ChannelId
 from ampel.base.AmpelABC import AmpelABC
 from ampel.base.decorator import abstractmethod
 from ampel.core.ContextUnit import ContextUnit
-from ampel.model.UnitModel import UnitModel
 from ampel.log.LogFlag import LogFlag
 
 
@@ -59,9 +58,6 @@ class AbsEventUnit(AmpelABC, ContextUnit, abstract=True):
 	#: and thus the generation of "trace ids".
 	#: Set provenance to False to ignore trace ids generation error which will be raised otherwise.
 	provenance: bool = True
-
-	#: Provides contextual informations to this run (fills session_info)
-	session: Optional[Sequence[UnitModel]]
 
 
 	@abstractmethod(var_args=True)
