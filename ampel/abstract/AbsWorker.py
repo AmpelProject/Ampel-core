@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 28.05.2021
-# Last Modified Date: 09.12.2021
+# Last Modified Date: 14.12.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import gc, signal
@@ -122,7 +122,8 @@ class AbsWorker(Generic[T], AbsEventUnit, abstract=True):
 
 		# Add new doc in the 'events' collection
 		event_hdlr = EventHandler(
-			self._ampel_db, process_name=self.process_name, tier=2
+			self.process_name, self._ampel_db,
+			tier=2, raise_exc = self.raise_exc
 		)
 
 		# Avoid 'burning' a run_id for nothing (at the cost of a request)
