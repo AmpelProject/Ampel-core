@@ -4,11 +4,11 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 23.05.2021
-# Last Modified Date: 09.10.2021
+# Last Modified Date: 14.12.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from pymongo import UpdateOne
-from typing import Dict, Any
+from typing import Dict, Any, Literal
 from ampel.mongo.utils import maybe_use_each
 from ampel.content.DataPoint import DataPoint
 from ampel.abstract.AbsDocIngester import AbsDocIngester
@@ -17,8 +17,10 @@ from ampel.abstract.AbsDocIngester import AbsDocIngester
 class MongoT0Ingester(AbsDocIngester[DataPoint]):
 	""" Inserts `DataPoint` into the t0 collection  """
 
-	#: raise DuplicateKeyError on attempts to upsert the same id with different bodies
-	check_id_collision: bool = True
+	#: If 1 or 2: raise DuplicateKeyError on attempts to upsert the same id with different bodies
+	#: 1: partial check is performed (compatible with potential muxer projection)
+	#: 2: strict check is performed
+	extended_match: Literal[0, 1, 2] = 0
 
 	def ingest(self, doc: DataPoint) -> None:
 
@@ -34,8 +36,12 @@ class MongoT0Ingester(AbsDocIngester[DataPoint]):
 
 		if 'body' in doc:
 			upd['$setOnInsert'] = {'body': doc['body']}
-			if self.check_id_collision:
-				match['body'] = doc['body']
+			if self.extended_match:
+				if self.extended_match == 2:
+					match['body'] = doc['body']
+				else:
+					for k, v in doc['body'].items():
+						match['body.' + k] = v
 
 		if 'origin' in doc:
 			match['origin'] = doc['origin']
