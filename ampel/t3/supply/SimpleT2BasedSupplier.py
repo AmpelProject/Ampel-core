@@ -11,6 +11,7 @@ from typing import Generator, Dict, Any, Optional
 from ampel.abstract.AbsT3Supplier import AbsT3Supplier
 from ampel.struct.AmpelBuffer import AmpelBuffer
 from ampel.log.utils import safe_query_dict
+from ampel.view.T3Store import T3Store
 
 
 class SimpleT2BasedSupplier(AbsT3Supplier):
@@ -20,7 +21,7 @@ class SimpleT2BasedSupplier(AbsT3Supplier):
 	#: minimum # of t2 docs per stock (useful in combination with $or queries)
 	min_docs: Optional[int]
 
-	def supply(self) -> Generator[AmpelBuffer, None, None]:
+	def supply(self, t3s: T3Store) -> Generator[AmpelBuffer, None, None]:
 
 		if self.logger.verbose > 1: # log query parameters
 			self.logger.debug(
