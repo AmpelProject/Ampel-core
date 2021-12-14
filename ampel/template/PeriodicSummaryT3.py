@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : Jakob van Santen <jakob.van.santen@desy.de>
 # Date              : 10.08.2020
-# Last Modified Date: 10.12.2021
+# Last Modified Date: 14.12.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from typing import Any, Dict, Literal, Optional, Sequence, Union, List
@@ -84,71 +84,69 @@ class PeriodicSummaryT3(AbsProcessTemplate):
         d: Dict[str, Any] = {
             "include": {
                 "session": [
-                    {"unit": "T3SessionAlertsNumber", "config": {"process_name": self.name}},
+                    {"unit": "T3SessionAlertsNumber"}
                 ]
             },
-            "act": {
-                "supply": {
-                    "unit": "T3DefaultBufferSupplier",
-                    "config": {
-                        "process_name": self.name,
-                        "select": {
-                            "unit": "T3StockSelector",
-                            "config": {
-                                "updated": {
-                                    "after": {
-                                        "match_type": "time_last_run",
-                                        "process_name": self.name,
+            "execute": [
+                {
+                    "supply": {
+                        "unit": "T3DefaultBufferSupplier",
+                        "config": {
+                            "select": {
+                                "unit": "T3StockSelector",
+                                "config": {
+                                    "updated": {
+                                        "after": {"match_type": "time_last_run"},
+                                        "before": {"match_type": "time_delta"},
                                     },
-                                    "before": {"match_type": "time_delta"},
+                                    "channel": self.channel,
+                                    "tag": self.tag,
                                 },
-                                "channel": self.channel,
-                                "tag": self.tag,
                             },
-                        },
-                        "load": {
-                            "unit": "T3SimpleDataLoader",
-                            "config": {
-                                "directives": [{"col": col} for col in ("stock", "t0", "t1", "t2")]
-                            }
-                        },
-                    }
-                },
-                "stage": {
-                    "unit": "T3ProjectingStager",
-                    "config": {
-                        "directives": [
-                            {
-                                "project": {
-                                    "unit": "T3ChannelProjector",
-                                    "config": {"channel": self.channel}
-                                },
-                                "execute": self.get_units(self.run),
-                            }
-                        ]
+                            "load": {
+                                "unit": "T3SimpleDataLoader",
+                                "config": {
+                                    "directives": [{"col": col} for col in ("stock", "t0", "t1", "t2")]
+                                }
+                            },
+                        }
                     },
+                    "stage": {
+                        "unit": "T3ProjectingStager",
+                        "config": {
+                            "directives": [
+                                {
+                                    "project": {
+                                        "unit": "T3ChannelProjector",
+                                        "config": {"channel": self.channel}
+                                    },
+                                    "execute": self.get_units(self.run),
+                                }
+                            ]
+                        }
+                    }
                 }
-            }
+            ]
         }
 
         # Restrict stock selection according to T2 values
         if self.filter:
-            d["act"]["supply"]["config"]["select"]["unit"] = "T3FilteringStockSelector"
-            d["act"]["supply"]["config"]["select"]["config"]["t2_filter"] = self.filter.t2.dict()
+            d["execute"][0]["supply"]["config"]["select"]["unit"] = "T3FilteringStockSelector"
+            d["execute"][0]["supply"]["config"]["select"]["config"]["t2_filter"] = self.filter.t2.dict()
 
         if self.channel is None:
-            d["act"]["stage"]["unit"] = "T3SimpleStager"
-            del d["act"]["stage"]["config"]["channel"]
+            d["execute"][0]["stage"]["unit"] = "T3SimpleStager"
+            del d["execute"][0]["stage"]["config"]["channel"]
         else:
             # load only documents that pass channel selection
-            d["act"]["supply"]["config"]["load"]["config"]["channel"] = self.channel
+            d["execute"][0]["supply"]["config"]["load"]["config"]["channel"] = self.channel
    
         # Restrict document types to load
         if self.load:
-            d["act"]["supply"]["config"]["load"]["config"]["directives"] = self.load
+            d["execute"][0]["supply"]["config"]["load"]["config"]["directives"] = self.load
 
         if self.complement:
-            d["act"]["supply"]["config"]["complement"] = self.get_units(self.complement)
+            d["execute"][0]["supply"]["config"]["complement"] = self.get_units(self.complement)
 
         ret: Dict[str, Any] = {
             "tier": self.tier,
