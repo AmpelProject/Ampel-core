@@ -8,6 +8,7 @@
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from typing import Optional, Generator
+from ampel.types import Traceless
 from ampel.view.T3Store import T3Store
 from ampel.base.AmpelABC import AmpelABC
 from ampel.base.decorator import abstractmethod
@@ -22,12 +23,7 @@ class AbsT3ControlUnit(AmpelABC, ContextUnit, abstract=True):
 	T3Store instance as argument in process() method
 	"""
 
-	def __init__(self, logger: AmpelLogger, **kwargs) -> None:
-
-		super().__init__(**kwargs)
-
-		# Non-serializable / not part of model / not validated; arguments
-		self.logger = logger
+	logger: Traceless[AmpelLogger]
 
 
 	@abstractmethod
