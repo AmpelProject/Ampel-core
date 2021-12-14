@@ -4,11 +4,12 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 15.07.2021
-# Last Modified Date: 06.12.2021
+# Last Modified Date: 13.12.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-from typing import Optional, Generic
-from ampel.types import T
+from typing import Generic
+from ampel.types import Traceless, T
+from ampel.view.T3Store import T3Store
 from ampel.base.AmpelABC import AmpelABC
 from ampel.base.decorator import abstractmethod
 from ampel.log.AmpelLogger import AmpelLogger
@@ -21,26 +22,9 @@ class AbsT3Supplier(Generic[T], AmpelABC, ContextUnit, abstract=True):
 	Abstract class for T3 suppliers
 	"""
 
-	#: raise exceptions instead of catching and logging
-	raise_exc: bool = True
-
-	#: name of the associated process
-	process_name: str
-
-
-	def __init__(self,
-		logger: AmpelLogger,
-		event_hdlr: Optional[EventHandler] = None,
-		**kwargs
-	) -> None:
-
-		super().__init__(**kwargs)
-
-		# Non-serializable / not part of model / not validated; arguments
-		self.logger = logger
-		self.event_hdlr = event_hdlr
-
+	logger: Traceless[AmpelLogger]
+	event_hdlr: Traceless[EventHandler]
 
 	@abstractmethod
-	def supply(self) -> T:
+	def supply(self, t3s: T3Store) -> T:
 		...
