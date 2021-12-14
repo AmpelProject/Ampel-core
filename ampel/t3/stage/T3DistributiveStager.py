@@ -79,7 +79,7 @@ class T3DistributiveStager(T3ThreadedStager):
 
 					# potential T3Record to be included in the T3Document
 					if (t3_unit_result := async_res.get()):
-						if (d := self.handle_t3_result(t3_unit, t3_unit_result, generator.stocks, ts)):
+						if (d := self.handle_t3_result(t3_unit, t3_unit_result, t3s, generator.stocks, ts)):
 							if self.save_stock_ids:
 								d['stock'] = generator.stocks
 							yield d
@@ -88,4 +88,4 @@ class T3DistributiveStager(T3ThreadedStager):
 
 		except Exception as e:
 			self.flush(self.t3_units)
-			self.handle_error(e)
+			self.event_hdlr.handle_error(e, self.logger)

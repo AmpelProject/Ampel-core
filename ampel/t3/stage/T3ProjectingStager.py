@@ -15,7 +15,7 @@ from multiprocessing.pool import ThreadPool
 
 from ampel.log import VERBOSE
 from ampel.types import StockId, UBson
-from ampel.t3.T3Crafter import AbsT3s
+from ampel.t3.T3DocBuilder import AbsT3s
 from ampel.view.T3Store import T3Store
 from ampel.struct.UnitResult import UnitResult
 from ampel.struct.AmpelBuffer import AmpelBuffer
@@ -245,7 +245,7 @@ class T3ProjectingStager(T3ThreadedStager):
 
 						# potential T3Record to be included in the T3Document
 						if (t3_unit_result := async_res.get()):
-							if (z := self.handle_t3_result(t3_unit, t3_unit_result, generator.stocks, ts)):
+							if (z := self.handle_t3_result(t3_unit, t3_unit_result, t3s, generator.stocks, ts)):
 								yield z
 
 				for i, rb in enumerate(self.run_blocks):
@@ -253,17 +253,18 @@ class T3ProjectingStager(T3ThreadedStager):
 
 		except Exception as e:
 			self.flush(all_units)
-			self.handle_error(e)
+			self.event_hdlr.handle_error(e, self.logger)
 
 
 	def craft_t3_doc(self,
 		t3_unit: AbsT3s,
 		res: Union[None, UBson, UnitResult],
+		t3s: T3Store,
 		ts: float,
 		stocks: Optional[List[StockId]] = None
 	) -> T3Document:
 
-		t3_doc = super().craft_t3_doc(t3_unit, res, ts, stocks)
+		t3_doc = super().craft_t3_doc(t3_unit, res, t3s, ts, stocks)
 		if self.save_stock_ids:
 			rb = next(filter(lambda rb: t3_unit in rb.units, self.run_blocks))
 			if rb.stock_ids:

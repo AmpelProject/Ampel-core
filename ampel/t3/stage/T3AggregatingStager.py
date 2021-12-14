@@ -12,7 +12,7 @@ from pydantic import BaseModel
 from typing import Union, Sequence, Generator, Optional, Any
 
 from ampel.types import UBson
-from ampel.t3.T3Writer import T3Writer
+from ampel.t3.T3DocBuilder import T3DocBuilder
 from ampel.view.T3Store import T3Store
 from ampel.abstract.AbsT3Stager import AbsT3Stager
 from ampel.struct.AmpelBuffer import AmpelBuffer
@@ -28,7 +28,7 @@ class TargetModel(BaseModel):
 	field: Union[str, Sequence[str]]
 
 
-class T3AggregatingStager(AbsT3Stager, T3Writer):
+class T3AggregatingStager(AbsT3Stager, T3DocBuilder):
 
 	# Override
 	paranoia: Optional[bool] = None # type: ignore
@@ -89,13 +89,13 @@ class T3AggregatingStager(AbsT3Stager, T3Writer):
 								t2d[sid].update(ret)
 
 		if t0 and not t1 and not t2:
-			return self._craft(t0d, 't0')
+			return self._craft(t0d, 't0', t3s)
 
 		if t1 and not t0 and not t2:
-			return self._craft(t1d, 't1')
+			return self._craft(t1d, 't1', t3s)
 
 		if t2 and not t1 and not t0:
-			return self._craft(t2d, 't2')
+			return self._craft(t2d, 't2', t3s)
 
 		out: dict[str, Any] = {}
 
@@ -106,13 +106,14 @@ class T3AggregatingStager(AbsT3Stager, T3Writer):
 		if t2:
 			self._upd(out, t2d, 't2')
 
-		return self._craft(out, '')
+		return self._craft(out, '', t3s)
 
 
-	def _craft(self, d: dict[str, Any], s: str) -> Generator[T3Document, None, None]:
+	def _craft(self, d: dict[str, Any], s: str, t3s: T3Store) -> Generator[T3Document, None, None]:
 		yield self.craft_t3_doc(
 			self, # type: ignore
 			{k: {s: v} for k, v in d.items()} if self.split_tiers else d,
+			t3s,
 			time(),
 			[int(el) for el in d.keys()]
 		)

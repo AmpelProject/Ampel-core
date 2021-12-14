@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 17.04.2021
-# Last Modified Date: 09.12.2021
+# Last Modified Date: 14.12.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from time import time
@@ -46,7 +46,7 @@ class T3ThreadedStager(T3BaseStager, abstract=True):
 	def proceed_threaded(self,
 		t3_units: list[AbsT3ReviewUnit],
 		buf_gen: Generator[AmpelBuffer, None, None],
-		t3s: Optional[T3Store] = None
+		t3s: T3Store
 	) -> Generator[T3Document, None, None]:
 		"""
 		Execute the method 'process' of t3 units with views crafted using the provided buffer generator and t3 store,
@@ -92,7 +92,7 @@ class T3ThreadedStager(T3BaseStager, abstract=True):
 
 						# potential T3Document to be included in the T3Document
 						if (t3_unit_result := async_res.get()):
-							if (x := self.handle_t3_result(t3_unit, t3_unit_result, generator.stocks, ts)):
+							if (x := self.handle_t3_result(t3_unit, t3_unit_result, t3s, generator.stocks, ts)):
 								yield x
 
 				except RuntimeError as e:
@@ -104,7 +104,7 @@ class T3ThreadedStager(T3BaseStager, abstract=True):
 
 		except Exception as e:
 			self.flush(t3_units)
-			self.handle_error(e)
+			self.event_hdlr.handle_error(e, self.logger)
 
 
 	def create_threaded_generators(self,

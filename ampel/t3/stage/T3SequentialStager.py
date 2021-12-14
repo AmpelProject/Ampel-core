@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 22.04.2021
-# Last Modified Date: 09.12.2021
+# Last Modified Date: 14.12.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from time import time
@@ -123,7 +123,7 @@ class T3SequentialStager(T3BaseStager):
 			ts = time()
 
 			if (ret := t3_unit.process(sg, t3s)):
-				if (x := self.handle_t3_result(t3_unit, ret, sg.stocks, ts)):
+				if (x := self.handle_t3_result(t3_unit, ret, t3s, sg.stocks, ts)):
 					if self.propagate:
 						t3s.add_view(
 							T3DocView.of(x, self.context.config)

@@ -181,7 +181,7 @@ class T3AdaptativeStager(T3ThreadedStager):
 
 				# potential T3Record to be included in the T3Document
 				if (t3_unit_result := async_res.get()):
-					if (z := self.handle_t3_result(t3_unit, t3_unit_result, generator.stocks, ts)):
+					if (z := self.handle_t3_result(t3_unit, t3_unit_result, t3s, generator.stocks, ts)):
 						yield z
 
 				self.flush(t3_unit)
