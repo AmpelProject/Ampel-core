@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 07.10.2019
-# Last Modified Date: 08.12.2021
+# Last Modified Date: 13.12.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import sys
@@ -13,10 +13,10 @@ from functools import partial
 from pathlib import Path
 from hashlib import blake2b
 from contextlib import contextmanager
-from typing import Dict, Iterator, Type, Any, Union, Optional, \
-	TypeVar, Sequence, List, overload, cast, get_args
 from pydantic.main import create_model
-from ampel.types import check_class
+from typing import Iterator, Type, Any, Union, Optional, TypeVar, Sequence, overload, cast, get_args
+
+from ampel.types import ChannelId, check_class
 from ampel.util.collections import ampel_iter
 from ampel.util.freeze import recursive_unfreeze
 from ampel.util.mappings import merge_dicts
@@ -33,7 +33,9 @@ from ampel.secret.Secret import Secret
 from ampel.secret.AmpelVault import AmpelVault
 from ampel.model.t3.AliasableModel import AliasableModel
 from ampel.config.AmpelConfig import AmpelConfig
-from ampel.log.AmpelLogger import AmpelLogger
+from ampel.log.AmpelLogger import AmpelLogger, LogFlag, VERBOSE
+from ampel.log.handlers.ChanRecordBufHandler import ChanRecordBufHandler
+from ampel.log.handlers.DefaultRecordBufferingHandler import DefaultRecordBufferingHandler
 from ampel.util.hash import build_unsafe_dict_id
 from ampel.util.mappings import dictify
 
@@ -68,10 +70,9 @@ class UnitLoader:
 		self.vault = vault
 		self.config = config
 		self.provenance = provenance
-		self.unit_defs: Dict = config._config['unit']
-		self.aliases: List[Dict] = [config._config['alias'][f"t{el}"] for el in (0, 3, 1, 2)]
-		self._dyn_register: Optional[Dict[str, Type[LogicalUnit]]] = None # potentially updated by DevAmpelContext
-
+		self.unit_defs: dict = config._config['unit']
+		self.aliases: list[dict] = [config._config['alias'][f"t{el}"] for el in (0, 3, 1, 2)]
+		self._dyn_register: Optional[dict[str, Type[LogicalUnit]]] = None # potentially updated by DevAmpelContext
 
 
 	@overload
@@ -103,6 +104,35 @@ class UnitLoader:
 			resource = self.get_resources(model),
 			**kwargs
 		)
+
+
+	def new_safe_logical_unit(self,
+		um: UnitModel,
+		unit_type: Type[LT],
+		logger: AmpelLogger,
+		_chan: Optional[ChannelId] = None
+	) -> LT:
+		""" Returns a logical unit with dedicated logger containing no db handler """
+
+		if logger.verbose:
+			logger.log(VERBOSE, f"Instantiating unit {um.unit}")
+
+		buf_hdlr = ChanRecordBufHandler(logger.level, _chan, {'unit': um.unit}) if _chan \
+			else DefaultRecordBufferingHandler(logger.level, {'unit': um.unit})
+
+		# Spawn unit instance
+		unit = self.new_logical_unit(
+			model = um,
+			logger = AmpelLogger.get_logger(
+				base_flag = (getattr(logger, 'base_flag', 0) & ~LogFlag.CORE) | LogFlag.UNIT,
+				console = len(logger.handlers) == 1, # to be improved later
+				handlers = [buf_hdlr]
+			),
+			sub_type = unit_type
+		)
+
+		setattr(unit, '_buf_hdlr', buf_hdlr) # Shortcut
+		return unit
 
 
 	@overload
@@ -258,14 +288,14 @@ class UnitLoader:
 
 
 	def get_init_config(self,
-		config: Optional[Union[int, str, Dict[str, Any]]] = None,
-		override: Optional[Dict[str, Any]] = None,
-		kwargs: Optional[Dict[str, Any]] = None,
+		config: Optional[Union[int, str, dict[str, Any]]] = None,
+		override: Optional[dict[str, Any]] = None,
+		kwargs: Optional[dict[str, Any]] = None,
 		unfreeze: bool = True
-	) -> Dict[str, Any]:
+	) -> dict[str, Any]:
 		""" :raises: ValueError if config alias is not found """
 
-		ret: Optional[Dict[str, Any]] = {}
+		ret: Optional[dict[str, Any]] = {}
 
 		if isinstance(config, (dict, str)):
 			ret = self.resolve_aliases(config)
@@ -314,13 +344,13 @@ class UnitLoader:
 			return value
 
 
-	def get_resources(self, model: UnitModel) -> Dict[str, Any]:
+	def get_resources(self, model: UnitModel) -> dict[str, Any]:
 		"""
 		Resources are defined using the static variable 'require' in ampel units
 		-> example: catsHTM.default
 		"""
 
-		resources: Dict[str, Any] = {}
+		resources: dict[str, Any] = {}
 		Klass = self.get_class_by_name(model.unit)
 
 		# Load possibly required global resources
@@ -391,7 +421,7 @@ class UnitLoader:
 		reveal_type(self.new_context_unit(model, context, sub_type = AbsLightCurveT2Unit, bla=12))
 	"""
 
-def _validate_unit_model(cls, values: Dict[str, Any], unit_loader: UnitLoader) -> Dict[str, Any]:
+def _validate_unit_model(cls, values: dict[str, Any], unit_loader: UnitLoader) -> dict[str, Any]:
 	"""
 	Verify that a unit configuration is valid in the context of a specific UnitLoader.
 	"""
