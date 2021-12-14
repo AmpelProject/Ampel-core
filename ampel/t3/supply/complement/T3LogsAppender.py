@@ -4,15 +4,14 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 29.03.2021
-# Last Modified Date: 15.04.2021
+# Last Modified Date: 13.12.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from datetime import datetime
 from bson.objectid import ObjectId
-from typing import Iterable, Dict, Any
+from typing import Iterable, Any
+from ampel.view.T3Store import T3Store
 from ampel.struct.AmpelBuffer import AmpelBuffer
-from ampel.core.AmpelContext import AmpelContext
-from ampel.base.AmpelBaseModel import AmpelBaseModel
 from ampel.mongo.query.var.LogsLoader import LogsLoader
 from ampel.log.utils import safe_query_dict
 from ampel.abstract.AbsBufferComplement import AbsBufferComplement
@@ -21,32 +20,34 @@ from ampel.abstract.AbsBufferComplement import AbsBufferComplement
 class T3LogsAppender(AbsBufferComplement):
 
 	use_last_run: bool = True
-	logs_loader_conf: Dict[str, Any] = {}
+	logs_loader_conf: dict[str, Any] = {}
 
-	def __init__(self, context: AmpelContext, **kwargs) -> None:
-
-		AmpelBaseModel.__init__(self, **kwargs)
+	def __init__(self, **kwargs) -> None:
+		super.__init__(**kwargs)
 		self.log_loader = LogsLoader(**self.logs_loader_conf, read_only=True)
-		self.query = {}
-		self.col = context.db.get_collection('logs')
-		if self.session_info and self.use_last_run and self.session_info.get('last_run'):
-			self.query['_id'] = {
+		self.col = self.context.db.get_collection('logs')
+
+
+	def complement(self, it: Iterable[AmpelBuffer], t3s: T3Store) -> None:
+
+		query = {'s': {'$in': [el['id'] for el in it]}}
+
+		if t3s.session and self.use_last_run and t3s.session.get('last_run'):
+			query['_id'] = {
 				'$gte': ObjectId.from_datetime(
 					datetime.utcfromtimestamp(
-						self.session_info['last_run']
+						t3s.session['last_run']
 					)
 				)
 			}
 
-
-	def complement(self, it: Iterable[AmpelBuffer]) -> None:
-
-		self.query['s'] = {'$in': [el['id'] for el in it]}
-		logs = list(self.log_loader.fetch_logs(self.col, self.query))
+		logs = list(
+			self.log_loader.fetch_logs(self.col, query)
+		)
 
 		self.logger.debug(
 			f"Log query returned {len(logs)} result(s)",
-			extra=safe_query_dict(self.query)
+			extra=safe_query_dict(query)
 		)
 
 		if not logs:

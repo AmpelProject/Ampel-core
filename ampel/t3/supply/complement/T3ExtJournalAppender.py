@@ -4,21 +4,20 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 17.06.2020
-# Last Modified Date: 15.04.2021
+# Last Modified Date: 14.12.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from pymongo import MongoClient
 from typing import Iterable, Optional, Union, List
 from ampel.types import StockId
-from ampel.base.AmpelBaseModel import AmpelBaseModel
 from ampel.aux.filter.SimpleDictArrayFilter import SimpleDictArrayFilter
 from ampel.content.JournalRecord import JournalRecord
-from ampel.core.AmpelContext import AmpelContext
 from ampel.struct.AmpelBuffer import AmpelBuffer
 from ampel.abstract.AbsBufferComplement import AbsBufferComplement
 from ampel.model.aux.FilterCriterion import FilterCriterion
 from ampel.model.operator.AllOf import AllOf
 from ampel.model.operator.FlatAnyOf import FlatAnyOf
+from ampel.view.T3Store import T3Store
 
 
 class T3ExtJournalAppender(AbsBufferComplement):
@@ -36,14 +35,14 @@ class T3ExtJournalAppender(AbsBufferComplement):
 	] = None
 
 
-	def __init__(self, context: AmpelContext, **kwargs) -> None:
+	def __init__(self, **kwargs) -> None:
 
-		AmpelBaseModel.__init__(self, **kwargs)
+		super.__init__(**kwargs)
 
 		if self.filter_config:
 			self.journal_filter: SimpleDictArrayFilter[JournalRecord] = SimpleDictArrayFilter(filters=self.filter_config)
 
-		self.col = MongoClient(context.config.get(f'resource.{self.mongo_resource}')) \
+		self.col = MongoClient(self.context.config.get(f'resource.{self.mongo_resource}')) \
 			.get_database(self.db_name)\
 			.get_collection("stock")
 
@@ -57,7 +56,7 @@ class T3ExtJournalAppender(AbsBufferComplement):
 		return None
 
 
-	def complement(self, it: Iterable[AmpelBuffer]) -> None:
+	def complement(self, it: Iterable[AmpelBuffer], t3s: T3Store) -> None:
 
 		for albuf in it:
 

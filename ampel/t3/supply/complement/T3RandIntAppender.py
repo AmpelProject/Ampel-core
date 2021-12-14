@@ -4,11 +4,12 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 17.06.2020
-# Last Modified Date: 17.06.2020
+# Last Modified Date: 14.12.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from random import randint
 from typing import Iterable
+from ampel.view.T3Store import T3Store
 from ampel.struct.AmpelBuffer import AmpelBuffer
 from ampel.abstract.AbsBufferComplement import AbsBufferComplement
 
@@ -22,7 +23,7 @@ class T3RandIntAppender(AbsBufferComplement):
 	int_from: int = 0
 	int_to: int = 100
 
-	def complement(self, it: Iterable[AmpelBuffer]) -> None:
+	def complement(self, it: Iterable[AmpelBuffer], t3s: T3Store) -> None:
 
 		for b in it:
 
