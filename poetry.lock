@@ -39,15 +39,16 @@ python-versions = "*"
 
 [[package]]
 name = "ampel-interface"
-version = "0.8.2a1"
+version = "0.8.2a3"
 description = "Base classes for the Ampel analysis platform"
 category = "main"
 optional = false
 python-versions = ">=3.9,<4.0"
 
 [package.dependencies]
-pydantic = ">=1.8.1,<2.0.0"
+pydantic = ">=1.8.2,<2.0.0"
 PyYAML = ">=5.4.1,<6.0.0"
+xxhash = ">=2.0.2,<3.0.0"
 
 [package.extras]
 docs = ["Sphinx (>=4.0.0,<5.0.0)", "sphinx-autodoc-typehints (>=1.11.1,<2.0.0)", "tomlkit (>=0.7.0,<0.8.0)"]
@@ -815,11 +816,11 @@ python-versions = ">=2.6, !=3.0.*, !=3.1.*, !=3.2.*"
 
 [[package]]
 name = "tomli"
-version = "1.2.2"
+version = "2.0.0"
 description = "A lil' TOML parser"
 category = "dev"
 optional = false
-python-versions = ">=3.6"
+python-versions = ">=3.7"
 
 [[package]]
 name = "tomlkit"
@@ -978,7 +979,7 @@ server = ["fastapi", "uvicorn"]
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.9,<3.10"
-content-hash = "1eba881ed4e374308e69ba6485c127289ba92d1b9528183ce05d5eedacfe6b48"
+content-hash = "b60b7b637882f3217222d366b492588ab0b5de649d6ec7ae47a81f68613791c4"
 
 [metadata.files]
 aiohttp = [
@@ -1064,8 +1065,8 @@ alabaster = [
     {file = "alabaster-0.7.12.tar.gz", hash = "sha256:a661d72d58e6ea8a57f7a86e37d86716863ee5e92788398526d58b26a4e4dc02"},
 ]
 ampel-interface = [
-    {file = "ampel-interface-0.8.2a1.tar.gz", hash = "sha256:4552a0d489da70b4f29441d8d2eaf4c3ca6385fb864ac2df1b3b01a3f2e3a7dd"},
-    {file = "ampel_interface-0.8.2a1-py3-none-any.whl", hash = "sha256:e8aeeb685d57da129ef72144fde7c71c1cc8f125aafed574dc7216bb94f2f89a"},
+    {file = "ampel-interface-0.8.2a3.tar.gz", hash = "sha256:8d350673d2820088ba2580b82e2aac1d0287f1d50e6b34387f2d41a194fa0348"},
+    {file = "ampel_interface-0.8.2a3-py3-none-any.whl", hash = "sha256:4fd5ffbdad91dad4124d8ffe1f44137f46a6e57ad2dd82620e34290d3c42ce1b"},
 ]
 anyio = [
     {file = "anyio-3.4.0-py3-none-any.whl", hash = "sha256:2855a9423524abcdd652d942f8932fda1735210f77a6b392eafd9ff34d3fe020"},
@@ -1794,8 +1795,8 @@ toml = [
     {file = "toml-0.10.2.tar.gz", hash = "sha256:b3bda1d108d5dd99f4a20d24d9c348e91c4db7ab1b749200bded2f839ccbe68f"},
 ]
 tomli = [
-    {file = "tomli-1.2.2-py3-none-any.whl", hash = "sha256:f04066f68f5554911363063a30b108d2b5a5b1a010aa8b6132af78489fe3aade"},
-    {file = "tomli-1.2.2.tar.gz", hash = "sha256:c6ce0015eb38820eaf32b5db832dbc26deb3dd427bd5f6556cf0acac2c214fee"},
+    {file = "tomli-2.0.0-py3-none-any.whl", hash = "sha256:b5bde28da1fed24b9bd1d4d2b8cba62300bfb4ec9a6187a957e8ddb9434c5224"},
+    {file = "tomli-2.0.0.tar.gz", hash = "sha256:c292c34f58502a1eb2bbb9f5bbc9a5ebc37bee10ffb8c2d6bbdfa8eb13cc14e1"},
 ]
 tomlkit = [
     {file = "tomlkit-0.7.2-py2.py3-none-any.whl", hash = "sha256:173ad840fa5d2aac140528ca1933c29791b79a374a0861a80347f42ec9328117"},

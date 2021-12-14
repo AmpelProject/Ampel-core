@@ -43,7 +43,7 @@ ampel = 'ampel.cli.main:main'
 'buffer Match and view or save ampel buffers' = 'ampel.cli.BufferCommand'
 
 [tool.poetry.dependencies]
-ampel-interface = {version = "^0.8.2-alpha.1"}
+ampel-interface = {version = "^0.8.2-alpha.3"}
 python = ">=3.9,<3.10"
 pydantic = "^1.8.1"
 pymongo = "^4.0"
@@ -60,7 +60,6 @@ Sphinx = {version = ">=3.5.1,<5.0.0", optional = true}
 sphinx-press-theme = {version = ">=0.5.1,<0.9.0", optional = true}
 sphinx-autodoc-typehints = {version = "^1.11.1", optional = true}
 tomlkit = {version = "^0.7.0", optional = true}
-xxhash = "^2.0.2"
 ujson = "^4.0.0"
 
 [tool.poetry.dev-dependencies]
