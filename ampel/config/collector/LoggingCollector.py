@@ -47,7 +47,7 @@ class LoggingCollector(AbsDictConfigCollector):
 				if "db" in config:
 					try:
 						if DBLoggingHandler._model is None:
-							DBLoggingHandler._create_model()
+							DBLoggingHandler._model = DBLoggingHandler._create_model()
 						validate_model(DBLoggingHandler._model, config['db'])
 					except Exception as e:
 						self.error(
