@@ -187,8 +187,6 @@ def test_unit_validation(dev_context: DevAmpelContext):
         # recursive validation
         UnitModel(unit="T3Processor", config=t3_config)
 
-        """
         with pytest.raises(ValidationError):
             t3_config["execute"][0]["supply"]["config"]["select"]["unit"] = "NotActuallyAUnit"
             UnitModel(unit="T3Processor", config=t3_config)
-        """

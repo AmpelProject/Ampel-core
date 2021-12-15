@@ -4,7 +4,6 @@ import pytest
 from ampel.config.builder.ConfigValidator import ConfigValidator
 from ampel.template.PeriodicSummaryT3 import PeriodicSummaryT3
 
-'''
 @pytest.mark.parametrize("loader_directives", [None, [{"col": "stock"}], ["TRANSIENT"]])
 def test_validate(core_config, loader_directives, ampel_logger):
     """
@@ -43,4 +42,3 @@ def test_single_element_run_sequence(core_config, ampel_logger):
     )
     assert ConfigValidator(config).validate() == config
     assert config["process"]["t3"]["foo"]["channel"] is None
-'''

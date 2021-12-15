@@ -37,6 +37,18 @@ class IncludeModel(BaseModel):
 	session: Union[None, Sequence[UnitModel], UnitModel]
 
 
+class T3ReviewDirective(BaseModel):
+	"""
+	Internal model used to configure T3ReviewUnitExecutor
+	"""
+
+	#: Unit must be a subclass of AbsT3Supplier
+	supply: UnitModel
+
+	#: Unit must be a subclass of AbsT3Stager
+	stage: UnitModel
+
+
 class T3Processor(AbsEventUnit):
 	"""
 	:param update_journal: Record the invocation of this event in the stock journal
@@ -58,7 +70,7 @@ class T3Processor(AbsEventUnit):
 
 	include: Optional[IncludeModel]
 
-	execute: Sequence[dict[str, Any]] # to be improved later
+	execute: Sequence[Union[UnitModel,T3ReviewDirective]]
 
 
 	def __init__(self,
@@ -151,14 +163,14 @@ class T3Processor(AbsEventUnit):
 				bump_updated = False
 			)
 
-			for i, d in enumerate(self.execute):
+			for i, model in enumerate(self.execute):
 
-				if 'unit' in d:
+				if isinstance(model, UnitModel):
 
 					# Native AbsT3ControlUnit
-					if "ContextUnit" in self.context.config.get(f"unit.{d['unit']}.base", tuple, raise_exc=True): # type: ignore
+					if "ContextUnit" in self.context.config.get(f"unit.{model.unit}.base", tuple, raise_exc=True): # type: ignore
 						t3_unit = loader.new_context_unit(
-							model = UnitModel(unit=d['unit'], config=d['config']),
+							model = model,
 							context = self.context,
 							sub_type = AbsT3ControlUnit,
 							logger = logger
@@ -168,8 +180,8 @@ class T3Processor(AbsEventUnit):
 					else:
 						# Dedicated T3ControlUnit
 						t3_unit = T3PlainUnitExecutor(
-							unit = d['unit'],
-							config = d['config'],
+							unit = model.unit,
+							config = model.config,
 							context = self.context,
 							logger = logger,
 							event_hdlr = event_hdlr,
@@ -186,7 +198,8 @@ class T3Processor(AbsEventUnit):
 						event_hdlr = event_hdlr,
 						stock_updr = stock_updr,
 						channel = self.channel,
-						**d
+						supply = model.supply,
+						stage = model.stage,
 					)
 
 				logger.info(f"Processing run block {i}", extra={'unit': t3_unit.__class__.__name__})

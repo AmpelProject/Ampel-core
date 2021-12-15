@@ -36,6 +36,7 @@ from ampel.config.AmpelConfig import AmpelConfig
 from ampel.log.AmpelLogger import AmpelLogger, LogFlag, VERBOSE
 from ampel.log.handlers.ChanRecordBufHandler import ChanRecordBufHandler
 from ampel.log.handlers.DefaultRecordBufferingHandler import DefaultRecordBufferingHandler
+from ampel.t3.T3DocBuilder import T3DocBuilder
 from ampel.util.hash import build_unsafe_dict_id
 from ampel.util.mappings import dictify
 
@@ -430,14 +431,24 @@ def _validate_unit_model(cls, values: dict[str, Any], unit_loader: UnitLoader) -
 	from ampel.abstract.AbsEventUnit import AbsEventUnit
 	from ampel.abstract.AbsDocIngester import AbsDocIngester
 	from ampel.abstract.AbsT3Stager import AbsT3Stager
+	from ampel.abstract.AbsT3Supplier import AbsT3Supplier
 
 	unit = unit_loader.get_class_by_name(values['unit'])
-	if issubclass(unit, (LogicalUnit, ContextUnit, AbsEventUnit, AbsDocIngester)):
+	units_with_runtime_config = (
+		LogicalUnit,
+		ContextUnit,
+		AbsEventUnit,
+		AbsDocIngester,
+		AbsT3Stager,
+		AbsT3Supplier,
+		T3DocBuilder,
+	)
+	if issubclass(unit, units_with_runtime_config):
 		# exclude base class fields provided at runtime
 		exclude = {"logger"}
 		for parent in cast(
 			Sequence[Type[AmpelBaseModel]],
-			(LogicalUnit, ContextUnit, AbsT3Stager, AbsEventUnit, AbsDocIngester)
+			units_with_runtime_config
 		):
 			if issubclass(unit, parent):
 				exclude.update(set(parent._annots.keys()).difference(parent._defaults.keys()))

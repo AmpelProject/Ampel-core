@@ -96,8 +96,13 @@ class PeriodicSummaryT3(AbsProcessTemplate):
                                 "unit": "T3StockSelector",
                                 "config": {
                                     "updated": {
-                                        "after": {"match_type": "time_last_run"},
-                                        "before": {"match_type": "time_delta"},
+                                        "after": {
+                                            "match_type": "time_last_run",
+                                            "process_name": self.name,
+                                        },
+                                        "before": {
+                                            "match_type": "time_delta",
+                                        },
                                     },
                                     "channel": self.channel,
                                     "tag": self.tag,
