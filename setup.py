@@ -23,11 +23,11 @@ package_data = {
 }
 
 install_requires = [
-	'PyYAML>=5.4.1,<6.0.0',
+	'PyYAML>=5.4.1,<7.0.0',
 	'prometheus-client>=0.9.0,<=0.10.1',
 	'psutil>=5.8.0,<6.0.0',
 	'pydantic>=1.8,<2',
-	'pymongo>=3.10,<4.0',
+	'pymongo>=3.10,<5.0',
 	'schedule>=1.0.0,<2.0.0',
 	'sjcl>=0.2.1,<0.3.0',
 	'slackclient>=2.7,<3.0',
