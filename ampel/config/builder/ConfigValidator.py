@@ -1,14 +1,13 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-core/ampel/config/builder/ConfigChecker.py
+# File              : Ampel-core/ampel/config/builder/ConfigValidator.py
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 03.09.2019
-# Last Modified Date: 26.02.2021
+# Last Modified Date: 15.12.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-
-from typing import Any, Dict
+from typing import Any
 from ampel.base.BadConfig import BadConfig
 from ampel.util.pretty import prettyjson
 from ampel.model.ProcessModel import ProcessModel
@@ -21,20 +20,22 @@ class ConfigValidator(BaseConfigChecker):
     units defined in their configurations. No unit constructors are called.
     """
 
-    def validate(
-        self,
+    def validate(self,
         ignore_inactive: bool = False,
         ignore_ressource_not_avail: bool = True,
         raise_exc: bool = True,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         :returns: config if check passed
         :raises: BadConfig
         """
 
         with self.loader.validate_unit_models():
+
             for tier, proc in self.iter_procs(ignore_inactive):
                 config = self.config["process"][tier][proc]
+                Processor = self.loader.get_class_by_name(config["processor"]['unit'])
+                Processor._defaults['process_name'] = "ConfigValidator"
                 try:
                     ProcessModel(**config)
                 except Exception as exc:
