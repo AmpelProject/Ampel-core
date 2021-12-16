@@ -4,10 +4,11 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 07.01.2020
-# Last Modified Date: 18.06.2020
+# Last Modified Date: 15.12.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from typing import Iterable, Union, Optional, List, Dict, Sequence, Callable, Any, Set
+from ampel.types import Traceless
 from ampel.log import AmpelLogger, VERBOSE
 from ampel.struct.AmpelBuffer import AmpelBuffer, BufferKey
 from ampel.abstract.AbsApplicable import AbsApplicable
@@ -43,7 +44,7 @@ class T3BaseProjector(AbsT3Projector):
 		discard: BufferKey
 
 
-	logger: AmpelLogger
+	logger: Traceless[AmpelLogger]
 
 	# Projections can yield empty buffers, especially if the previous 'filter' stage was not used.
 	# Ex: # {
