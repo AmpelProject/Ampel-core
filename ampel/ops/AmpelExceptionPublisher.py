@@ -102,8 +102,8 @@ class AmpelExceptionPublisher(AbsOpsUnit):
             "as_user": False,
         }
 
-        cursor = self.troubles.find({"_id": {"$gt": ObjectId.from_datetime(t0)}})
-        for doc in cursor:
+        docs = list(self.troubles.find({"_id": {"$gt": ObjectId.from_datetime(t0)}}))
+        for doc in docs:
             if len(attachments) < 20:
                 attachments.append(self.format_attachment(doc))
             else:
@@ -118,7 +118,7 @@ class AmpelExceptionPublisher(AbsOpsUnit):
         else:
             time_range = "{} seconds".format(int(dt.seconds))
 
-        count = cursor.count()
+        count = len(docs)
         if len(attachments) < count:
             message[
                 "text"

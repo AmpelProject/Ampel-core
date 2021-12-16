@@ -127,7 +127,7 @@ class AbsWorker(Generic[T], AbsEventUnit, abstract=True):
 		)
 
 		# Avoid 'burning' a run_id for nothing (at the cost of a request)
-		if pre_check and self.col.find(self.query).count() == 0:
+		if pre_check and self.col.count_documents(self.query) == 0:
 			return 0
 
 		run_id = self.context.new_run_id()

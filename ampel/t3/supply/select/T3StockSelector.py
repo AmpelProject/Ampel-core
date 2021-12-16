@@ -99,10 +99,4 @@ class T3StockSelector(AbsT3Selector):
 			.get_collection('stock') \
 			.find(match_query, {'stock': 1})
 
-		# Count results
-		if cursor.count() == 0:
-			self.logger.info("No transient matches the given criteria")
-			return None
-
-		self.logger.info(f"{cursor.count()} transients match search criteria")
 		return cursor

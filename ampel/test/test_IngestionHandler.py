@@ -356,13 +356,13 @@ def test_duplicate_t0_id(
     # update operation to fail to match the body, and attempt to insert a duplicate
     # id
     datapoints[0]["body"]["broken"] = "boom"
-    with pytest.raises(DuplicateKeyError):
-        run()
-
-    # with id check disabled, no exception is raised
     with unfreeze_config(integration_context) as config:
         config["mongo"]["ingest"]["t0"] = {
             "unit": "MongoT0Ingester",
-            "config": {"check_id_collision": False},
+            "config": {"extended_match": 2},
         }
-        run()
+        with pytest.raises(DuplicateKeyError):
+            run()
+
+    # with id check disabled, no exception is raised
+    run()
