@@ -13,8 +13,7 @@ from functools import partial
 from pathlib import Path
 from hashlib import blake2b
 from contextlib import contextmanager
-from pydantic.main import create_model
-from typing import Iterator, Type, Any, Union, Optional, TypeVar, Sequence, overload, cast, get_args
+from typing import Iterator, Type, Any, Union, Optional, TypeVar, overload, get_args
 
 from ampel.types import ChannelId, check_class
 from ampel.util.collections import ampel_iter
@@ -27,7 +26,6 @@ from ampel.base.LogicalUnit import LogicalUnit
 from ampel.core.AmpelContext import AmpelContext
 from ampel.core.ContextUnit import ContextUnit
 from ampel.core.AmpelDB import AmpelDB
-from ampel.model.StrictModel import StrictModel
 from ampel.model.UnitModel import UnitModel
 from ampel.secret.Secret import Secret
 from ampel.secret.AmpelVault import AmpelVault
@@ -36,7 +34,6 @@ from ampel.config.AmpelConfig import AmpelConfig
 from ampel.log.AmpelLogger import AmpelLogger, LogFlag, VERBOSE
 from ampel.log.handlers.ChanRecordBufHandler import ChanRecordBufHandler
 from ampel.log.handlers.DefaultRecordBufferingHandler import DefaultRecordBufferingHandler
-from ampel.t3.T3DocBuilder import T3DocBuilder
 from ampel.util.hash import build_unsafe_dict_id
 from ampel.util.mappings import dictify
 
@@ -423,47 +420,11 @@ class UnitLoader:
 	"""
 
 def _validate_unit_model(cls, values: dict[str, Any], unit_loader: UnitLoader) -> dict[str, Any]:
-	"""
-	Verify that a unit configuration is valid in the context of a specific UnitLoader.
-	"""
-	from ampel.base.LogicalUnit import LogicalUnit
-	from ampel.core.ContextUnit import ContextUnit
-	from ampel.abstract.AbsEventUnit import AbsEventUnit
-	from ampel.abstract.AbsDocIngester import AbsDocIngester
-	from ampel.abstract.AbsT3Stager import AbsT3Stager
-	from ampel.abstract.AbsT3Supplier import AbsT3Supplier
-
+	""" Verify that a unit configuration is valid in the context of a specific UnitLoader.  """
+	from ampel.abstract.AbsProcessController import AbsProcessController
 	unit = unit_loader.get_class_by_name(values['unit'])
-	units_with_runtime_config = (
-		LogicalUnit,
-		ContextUnit,
-		AbsEventUnit,
-		AbsDocIngester,
-		AbsT3Stager,
-		AbsT3Supplier,
-		T3DocBuilder,
-	)
-	if issubclass(unit, units_with_runtime_config):
-		# exclude base class fields provided at runtime
-		exclude = {"logger"}
-		for parent in cast(
-			Sequence[Type[AmpelBaseModel]],
-			units_with_runtime_config
-		):
-			if issubclass(unit, parent):
-				exclude.update(set(parent._annots.keys()).difference(parent._defaults.keys()))
-		fields = {
-			k: (v, unit._defaults[k] if k in unit._defaults else ...)
-			for k, v in unit._annots.items() if k not in exclude
-		} # type: ignore
-		model: Any = create_model(
-			unit.__name__, __config__ = StrictModel.__config__,
-			__base__=None, __module__=None, __validators__=None, # type: ignore
-			**fields
-		)
-		model.validate(
-			unit_loader.get_init_config(
-				values['config'], values['override']
-			)
+	if issubclass(unit, AmpelBaseModel) and not issubclass(unit, AbsProcessController):
+		return unit.validate(
+			unit_loader.get_init_config(values['config'], values['override'])
 		)
 	return values
