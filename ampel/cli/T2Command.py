@@ -149,7 +149,9 @@ class T2Command(AbsCoreCommand):
 			m = t2_utils.match_t2s(**args)
 			limit = args.get('limit', False)
 			if args.get('dry_run'):
-				c = col.find(m).count().limit(limit) if limit else col.find(m).count()
+				c = col.count_documents(m)
+				if limit:
+					c = min(limit, c)
 				logger.info(
 					f"Query: {m}\n"
 					f"Number of matched documents: {c}\n"
