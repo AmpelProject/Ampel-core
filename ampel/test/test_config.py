@@ -1,13 +1,8 @@
-import io
-import subprocess
+import io, pytest, yaml, subprocess
 from argparse import Namespace
-
-import pytest
-import yaml
 
 from ampel.abstract.AbsEventUnit import AbsEventUnit
 from ampel.base.BadConfig import BadConfig
-from ampel.config.builder.DistConfigBuilder import DistConfigBuilder
 from ampel.config.builder.ConfigChecker import ConfigChecker
 from ampel.config.builder.ConfigValidator import ConfigValidator
 from ampel.core.UnitLoader import UnitLoader

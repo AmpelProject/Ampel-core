@@ -8,10 +8,10 @@
 # Last Modified By  : jvs
 
 import time
-from typing import Dict, List, Optional, Sequence, Set, Tuple, Union, Any
+from typing import List, Optional, Sequence, Tuple, Union
 
 from ampel.struct.UnitResult import UnitResult
-from ampel.types import ChannelId, StockId, UBson
+from ampel.types import StockId, UBson
 from ampel.abstract.AbsEventUnit import AbsEventUnit
 from ampel.abstract.AbsStockT2Unit import AbsStockT2Unit
 from ampel.abstract.AbsPointT2Unit import AbsPointT2Unit
@@ -23,7 +23,6 @@ from ampel.content.T1Document import T1Document
 from ampel.view.T2DocView import T2DocView
 from ampel.model.StateT2Dependency import StateT2Dependency
 from ampel.abstract.AbsT0Muxer import AbsT0Muxer
-from ampel.types import UBson
 
 
 class Sleepy(AbsEventUnit):
@@ -31,6 +30,8 @@ class Sleepy(AbsEventUnit):
     A processor that does nothing (especially not touching the db, which is not
     mocked in subprocesses)
     """
+
+    process_name: str = "ZZZzzzz"
 
     def run(self):
         time.sleep(1)
@@ -88,7 +89,7 @@ class DummyTiedStateT2Unit(AbsTiedStateT2Unit):
         t2views: Sequence[T2DocView],
     ) -> Union[UBson, UnitResult]:
         assert t2views, "dependencies were found"
-        assert len(body := t2views[-1].body or []) == 1
+        assert len(t2views[-1].body or []) == 1
         data = t2views[-1].get_payload() or {}
         assert isinstance(data, dict)
         return {k: v * 2 for k, v in data.items()}

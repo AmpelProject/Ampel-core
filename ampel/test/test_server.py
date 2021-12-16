@@ -7,12 +7,9 @@
 # Last Modified Date: 11.02.2021
 # Last Modified By  : jvs
 
-import asyncio
+import asyncio, pytest, yaml
 from datetime import datetime
 from io import StringIO
-
-import pytest
-import yaml
 from httpx import AsyncClient
 from prometheus_client.parser import text_fd_to_metric_families
 
