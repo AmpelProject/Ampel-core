@@ -47,7 +47,7 @@ class DemoProcessor(AbsEventUnit):
 
 		# With which base units can be instantiated
 		unit = loader.new_logical_unit(
-			model = UnitModel(unit = "DemoT3Unit"),
+			model = UnitModel(unit = "DemoReviewT3Unit"),
 			logger = logger,
 			sub_type = AbsT3ReviewUnit
 		)

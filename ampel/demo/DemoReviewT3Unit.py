@@ -16,7 +16,7 @@ from ampel.view.SnapView import SnapView
 from ampel.view.T3Store import T3Store
 
 
-class DemoT3Unit(AbsT3ReviewUnit[SnapView]):
+class DemoReviewT3Unit(AbsT3ReviewUnit[SnapView]):
 
 	parameter: int = 10
 
@@ -25,7 +25,7 @@ class DemoT3Unit(AbsT3ReviewUnit[SnapView]):
 		t3s: T3Store
 	) -> Union[UBson, UnitResult]:
 
-		self.logger.info(f"DemoT3Unit output (parameter={self.parameter}):")
+		self.logger.info(f"DemoReviewT3Unit output (parameter={self.parameter}):")
 
 		for v in gen:
 
@@ -39,5 +39,5 @@ class DemoT3Unit(AbsT3ReviewUnit[SnapView]):
 		return UnitResult(
 			body = {'param': 'value'},
 			code = 10,
-			journal = JournalAttributes(tag="DemoT3UnitTag")
+			journal = JournalAttributes(tag="DemoReviewT3UnitTag")
 		)
