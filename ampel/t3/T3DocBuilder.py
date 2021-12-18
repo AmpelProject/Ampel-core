@@ -4,17 +4,18 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 08.12.2021
-# Last Modified Date: 13.12.2021
+# Last Modified Date: 18.12.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from time import time
 from datetime import datetime
-from typing import Union, Optional, Iterable, Any, Sequence, Literal
+from typing import Union, Optional, Iterable, Any
 
-from ampel.types import Traceless, StockId, ChannelId, Tag, UBson, ubson
+from ampel.types import Traceless, StockId, UBson, ubson
 from ampel.abstract.AbsT3ReviewUnit import AbsT3ReviewUnit
 from ampel.abstract.AbsT3PlainUnit import AbsT3PlainUnit
 from ampel.abstract.AbsT3ControlUnit import AbsT3ControlUnit
+from ampel.model.t3.T3DocBuilderModel import T3DocBuilderModel
 from ampel.log.AmpelLogger import AmpelLogger
 from ampel.core.ContextUnit import ContextUnit
 from ampel.core.EventHandler import EventHandler
@@ -33,41 +34,28 @@ from ampel.util.hash import build_unsafe_dict_id
 AbsT3s = Union[AbsT3ControlUnit, AbsT3ReviewUnit, AbsT3PlainUnit]
 
 
-class T3DocBuilder(ContextUnit):
+class T3DocBuilder(T3DocBuilderModel, ContextUnit):
 	"""
 	Provides methods for handling UnitResult and generating a T3Document out of it
 	"""
 
 	logger: Traceless[AmpelLogger]
 	event_hdlr: Traceless[EventHandler]
-	stock_updr: Traceless[MongoStockUpdater]
 
-	channel: Optional[ChannelId]
 
-	#: Whether t3 result should be added to t3 store once available
-	propagate: bool = True
-
-	#: Note that if True, a T3 document will be created even if a t3 unit returns None
-	save_stock_ids: bool = False
-
-	#: If true, value of T3Document.config will be the config dict rather than its hash
-	resolve_config: bool = False
-
-	#: Tag(s) to be added to t3 documents if applicable (if t3 unit returns something)
-	tag: Optional[Union[Tag, Sequence[Tag]]]
-
-	#: If true, value of T3Document._id will be built using the 'elements' listed below.
-	#: Note that 'tag' from unit results (UnitResult.tag) if defined, will be merged
-	#: with potential stager tag(s). Note also that time is always appended.
-	#: ex: {_id: [DipoleJob#Task#2] [T3CosmoDipole] [2021-10-20 10:38:48.889624]}
-	#: ex: {_id: [T3CosmoDipole] [TAG_UNION2] [2021-10-20 10:42:41.123263]}
-	human_id: Optional[list[Literal['process', 'taskindex', 'unit', 'tag', 'config', 'run']]]
-
-	#: If true, a value will be set for T3Document.datetime
-	human_timestamp: bool = False
-
-	#: Used if human_timestamp is true
-	human_timestamp_format: str = "%Y-%m-%d %H:%M:%S.%f"
+	def __init__(self, **kwargs) -> None:
+		super().__init__(**kwargs)
+		self.stock_updr = MongoStockUpdater(
+			ampel_db = self.context.db,
+			tier = 3,
+			run_id = self.event_hdlr.run_id,
+			process_name = self.event_hdlr.process_name,
+			logger = self.logger,
+			raise_exc = self.event_hdlr.raise_exc,
+			extra_tag = self.extra_journal_tag,
+			update_journal = self.update_journal,
+			bump_updated = False
+		)
 
 
 	def handle_t3_result(self,
