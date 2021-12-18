@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 26.09.2018
-# Last Modified Date: 13.12.2021
+# Last Modified Date: 17.12.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from time import time
@@ -29,7 +29,7 @@ class EventHandler:
 		process_name: str,
 		ampel_db: 'AmpelDB',
 		tier: Literal[-1, 0, 1, 2, 3],
-		run_id: Optional[int] = None,
+		run_id: int,
 		col_name: str = "events",
 		extra: Optional[dict[str, Any]] = None,
 		raise_exc = False,
@@ -43,6 +43,7 @@ class EventHandler:
 		self.db = ampel_db
 		self.raise_exc = raise_exc
 		self.dry_run = dry_run
+		self.run_id = run_id
 		doc = EventDocument(process=process_name, tier=tier)
 
 		if run_id:
@@ -60,6 +61,10 @@ class EventHandler:
 		else:
 			self.col = ampel_db.get_collection(col_name)
 			self.ins_id = self.col.insert_one(doc).inserted_id
+
+
+	def get_run_id(self) -> int:
+		return self.run_id
 
 
 	def add_extra(self, overwrite: bool = False, **extra) -> None:
