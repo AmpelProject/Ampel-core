@@ -4,11 +4,10 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 03.03.2020
-# Last Modified Date: 12.06.2020
+# Last Modified Date: 18.12.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from typing import Dict, Any, Union
-from pydantic import validate_model
 from ampel.config.collector.AbsDictConfigCollector import AbsDictConfigCollector
 from ampel.config.collector.ConfigCollector import ConfigCollector
 from ampel.log.handlers.AmpelStreamHandler import AmpelStreamHandler
