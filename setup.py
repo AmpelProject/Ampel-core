@@ -72,7 +72,7 @@ entry_points = {
 
 setup(
     name = 'ampel-core',
-    version = '0.8.2.alpha-3',
+    version = '0.8.2.alpha-5',
     description = 'Asynchronous and Modular Platform with Execution Layers',
     author = 'Valery Brinnel',
     maintainer = 'Jakob van Santen',
