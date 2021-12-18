@@ -8,7 +8,7 @@
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from typing import Any, Dict, Optional
-from ampel.types import ChannelId
+from ampel.types import ChannelId, OneOrMany
 from ampel.base.AmpelABC import AmpelABC
 from ampel.base.decorator import abstractmethod
 from ampel.core.ContextUnit import ContextUnit
@@ -38,9 +38,10 @@ class AbsEventUnit(AmpelABC, ContextUnit, abstract=True):
 	process_name: str
 
 	#: channels associated with the process
-	channel: Optional[ChannelId] = None
+	channel: Optional[OneOrMany[ChannelId]] = None
 
 	#: raise exceptions instead of catching and logging
+	#: if True, troubles collection will not be populated if an exception occurs
 	raise_exc: bool = False
 
 	#: logging configuration to use, from the logging section of the Ampel config
