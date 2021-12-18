@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 06.01.2020
-# Last Modified Date: 09.12.2021
+# Last Modified Date: 17.12.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from typing import ClassVar
@@ -31,7 +31,8 @@ class T3SessionAlertsNumber(AbsT3Supplier[dict]):
 
 		if not d[T3SessionLastRunTime.key]:
 			self.logger.info(
-				"Last run time not available, cannot count number of alerts"
+				"Last run time not available, cannot determine " +
+				"how many alerts were processed since then"
 			)
 			d[self.key] = None
 			return d
