@@ -1,15 +1,7 @@
-import logging
-import subprocess
-
-import pytest
-import mongomock
+import pytest, mongomock
 
 from ampel.t3.supply.select.T3FilteringStockSelector import T3FilteringStockSelector
 from ampel.t2.T2Worker import T2Worker
-from ampel.dev.DevAmpelContext import DevAmpelContext
-from ampel.config.AmpelConfig import AmpelConfig
-
-
 
 
 @pytest.fixture

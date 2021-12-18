@@ -228,6 +228,22 @@ unit:
     distrib: ampel-core
     file: /Users/jakob/Documents/ZTF/Ampel-v0.8/Ampel-core/conf/ampel-core/ampel.yaml
     version: 0.8.0a1
+  T3ReviewUnitExecutor:
+    fqn: ampel.t3.T3ReviewUnitExecutor
+    base:
+    - AbsT3ControlUnit
+    - ContextUnit
+    distrib: ampel-core
+    file: Ampel-core/conf/ampel-core/ampel.yaml
+    version: 0.8.25
+  T3PlainUnitExecutor:
+    fqn: ampel.t3.T3PlainUnitExecutor
+    base:
+    - AbsT3ControlUnit
+    - ContextUnit
+    distrib: ampel-core
+    file: Ampel-core/conf/ampel-core/ampel.yaml
+    version: 0.8.25
   AmpelExceptionPublisher:
     fqn: ampel.ops.AmpelExceptionPublisher
     base:

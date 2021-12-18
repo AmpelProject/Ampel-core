@@ -32,22 +32,25 @@ def mutineer_process(config={}):
     return {
         "execute": [
             {
-                "supply": {
-                    "unit": "T3DefaultBufferSupplier",
-                    "config": {
-                        "select": {"unit": "T3StockSelector"},
-                        "load": {
-                            "unit": "T3SimpleDataLoader",
-                            "config": {
-                                "directives": [{"col": "stock"}]
+                "unit": "T3ReviewUnitExecutor",
+                "config": {
+                    "supply": {
+                        "unit": "T3DefaultBufferSupplier",
+                        "config": {
+                            "select": {"unit": "T3StockSelector"},
+                            "load": {
+                                "unit": "T3SimpleDataLoader",
+                                "config": {
+                                    "directives": [{"col": "stock"}]
+                                }
                             }
                         }
-                    }
-                },
-                "stage": {
-                    "unit": "T3SimpleStager",
-                    "config": {
-                        "execute": [{"unit": "Mutineer", "config": config}]
+                    },
+                    "stage": {
+                        "unit": "T3SimpleStager",
+                        "config": {
+                            "execute": [{"unit": "Mutineer", "config": config}]
+                        }
                     }
                 }
             }
@@ -98,26 +101,28 @@ def test_view_generator(dev_context: DevAmpelContext, ingest_stock):
     t3 = T3Processor(
         context=dev_context,
         raise_exc=True,
-        update_journal=True,
         process_name="t3",
         execute = [
             {
-                "supply": {
-                    "unit": "T3DefaultBufferSupplier",
-                    "config": {
-                        "select": {"unit": "T3StockSelector"},
-                        "load": {
-                            "unit": "T3SimpleDataLoader",
-                            "config": {
-                                "directives": [{"col": "stock"}]
+                "unit": "T3ReviewUnitExecutor",
+                "config": {
+                    "supply": {
+                        "unit": "T3DefaultBufferSupplier",
+                        "config": {
+                            "select": {"unit": "T3StockSelector"},
+                            "load": {
+                                "unit": "T3SimpleDataLoader",
+                                "config": {
+                                    "directives": [{"col": "stock"}]
+                                }
                             }
                         }
-                    }
-                },
-                "stage": {
-                    "unit": "T3SimpleStager",
-                    "config": {
-                        "execute": [{"unit": "SendySend"}]
+                    },
+                    "stage": {
+                        "unit": "T3SimpleStager",
+                        "config": {
+                            "execute": [{"unit": "SendySend"}]
+                        }
                     }
                 }
             }

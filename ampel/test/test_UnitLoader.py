@@ -162,23 +162,27 @@ def test_unit_validation(dev_context: DevAmpelContext):
             UnitModel(unit="Dummy", config={"nonexistant_param": True})
 
         t3_config: dict[str, Any] = {
+            "process_name": "test",
             "execute": [
                 {
-                    "supply": {
-                        "unit": "T3DefaultBufferSupplier",
-                        "config": {
-                            "select": {"unit": "T3StockSelector"},
-                            "load": {
-                                "unit": "T3SimpleDataLoader",
-                                "config": {
-                                    "directives": [{"col": "stock"}]
+                    "unit": "T3ReviewUnitExecutor",
+                    "config": {
+                        "supply": {
+                            "unit": "T3DefaultBufferSupplier",
+                            "config": {
+                                "select": {"unit": "T3StockSelector"},
+                                "load": {
+                                    "unit": "T3SimpleDataLoader",
+                                    "config": {
+                                        "directives": [{"col": "stock"}]
+                                    }
                                 }
                             }
+                        },
+                        "stage": {
+                            "unit": "T3SimpleStager",
+                            "config": {"execute": []}
                         }
-                    },
-                    "stage": {
-                        "unit": "T3SimpleStager",
-                        "config": {"execute": []}
                     }
                 }
             ]
@@ -188,5 +192,5 @@ def test_unit_validation(dev_context: DevAmpelContext):
         UnitModel(unit="T3Processor", config=t3_config)
 
         with pytest.raises(ValidationError):
-            t3_config["execute"][0]["supply"]["config"]["select"]["unit"] = "NotActuallyAUnit"
+            t3_config["execute"][0]["config"]["supply"]["config"]["select"]["unit"] = "NotActuallyAUnit"
             UnitModel(unit="T3Processor", config=t3_config)
