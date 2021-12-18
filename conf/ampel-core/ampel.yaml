@@ -16,6 +16,8 @@ unit:
 - ampel.ops.OpsProcessor
 - ampel.t2.T2Worker
 - ampel.t3.T3Processor
+- ampel.t3.T3PlainUnitExecutor
+- ampel.t3.T3ReviewUnitExecutor
 - ampel.t3.include.session.T3SessionLastRunTime
 - ampel.t3.include.session.T3SessionAlertsNumber
 - ampel.t3.supply.T3DefaultBufferSupplier
@@ -43,7 +45,8 @@ unit:
 - ampel.t1.T1SimpleRetroCombiner
 - ampel.demo.DemoPointT2Unit
 - ampel.demo.DemoFirstPointT2Unit
-- ampel.demo.DemoT3Unit
+- ampel.demo.DemoReviewT3Unit
+- ampel.demo.DemoPlainT3Unit
 - ampel.dev.NoShaper
 
 # Aux units
