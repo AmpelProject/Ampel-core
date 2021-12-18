@@ -7,7 +7,7 @@
 # Last Modified Date: 14.12.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-from typing import Optional, Generator
+from typing import Optional, Generator, Annotated
 from ampel.types import Traceless
 from ampel.view.T3Store import T3Store
 from ampel.abstract.AbsT3ControlUnit import AbsT3ControlUnit
@@ -24,15 +24,16 @@ class T3ReviewUnitExecutor(AbsT3ControlUnit, T3DocBuilder):
 	logger: Traceless[AmpelLogger]
 
 	#: Unit must be a subclass of AbsT3Supplier
-	supply: UnitModel
+	supply: Annotated[UnitModel, AbsT3Supplier]
 
 	#: Unit must be a subclass of AbsT3Stager
-	stage: UnitModel
+	stage: Annotated[UnitModel, AbsT3Stager]
 
 
 	def process(self, t3s: T3Store) -> Optional[Generator[T3Document, None, None]]:
 
 		try:
+
 			supplier = self.context.loader.new_context_unit(
 				model = self.supply,
 				context = self.context,
@@ -49,7 +50,6 @@ class T3ReviewUnitExecutor(AbsT3ControlUnit, T3DocBuilder):
 				context = self.context,
 				sub_type = AbsT3Stager,
 				logger = self.logger,
-				stock_updr = self.stock_updr,
 				event_hdlr = self.event_hdlr,
 				channel = (
 					self.stage.config['channel'] # type: ignore
