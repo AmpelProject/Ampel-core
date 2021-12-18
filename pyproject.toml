@@ -43,11 +43,12 @@ ampel = 'ampel.cli.main:main'
 'buffer Match and view or save ampel buffers' = 'ampel.cli.BufferCommand'
 
 [tool.poetry.dependencies]
-ampel-interface = {version = "^0.8.2-alpha.4"}
+ampel-interface = {version = "^0.8.2-alpha.5"}
 python = ">=3.9,<3.10"
 pydantic = "^1.8.1"
 pymongo = "^4.0"
 PyYAML = ">=5.4,<7.0"
+xxhash = "^2.0.2"
 sjcl = "^0.2.1"
 schedule = "^1.0.0"
 yq = "^2.12.0"
