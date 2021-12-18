@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 08.12.2021
-# Last Modified Date: 14.12.2021
+# Last Modified Date: 19.12.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from time import time
@@ -26,6 +26,10 @@ class T3BaseStager(AbsT3Stager, T3DocBuilder, abstract=True):
 	This class does not implement the method stage(...) required by AbsT3Stager,
 	it is up to the subclass to do it according to requirements.
 	"""
+
+	# Require single channel for now (T3DocBuilder allows multi-channel)
+	channel: Optional[ChannelId] = None
+
 
 	def get_unit(self, unit_model: UnitModel, chan: Optional[ChannelId] = None) -> AbsT3ReviewUnit:
 		return self.context.loader.new_safe_logical_unit(
