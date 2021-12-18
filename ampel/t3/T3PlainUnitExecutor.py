@@ -4,12 +4,13 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 12.12.2021
-# Last Modified Date: 17.12.2021
+# Last Modified Date: 19.12.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from time import time
 from typing import Optional, Annotated, Generator
 
+from ampel.types import ChannelId
 from ampel.view.T3Store import T3Store
 from ampel.abstract.AbsT3ControlUnit import AbsT3ControlUnit
 from ampel.abstract.AbsT3PlainUnit import AbsT3PlainUnit
@@ -19,6 +20,9 @@ from ampel.model.UnitModel import UnitModel
 
 
 class T3PlainUnitExecutor(AbsT3ControlUnit, T3DocBuilder):
+
+	# Require single channel for now (super classes allow multi-channel)
+	channel: Optional[ChannelId] = None
 
 	target: Annotated[UnitModel, AbsT3PlainUnit]
 

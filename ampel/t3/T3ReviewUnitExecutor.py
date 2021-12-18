@@ -8,7 +8,7 @@
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from typing import Optional, Generator, Annotated
-from ampel.types import Traceless
+from ampel.types import Traceless, ChannelId
 from ampel.view.T3Store import T3Store
 from ampel.abstract.AbsT3ControlUnit import AbsT3ControlUnit
 from ampel.t3.T3DocBuilder import T3DocBuilder
@@ -22,6 +22,9 @@ from ampel.log.AmpelLogger import AmpelLogger
 class T3ReviewUnitExecutor(AbsT3ControlUnit, T3DocBuilder):
 
 	logger: Traceless[AmpelLogger]
+
+	# Require single channel for now (super classes allow multi-channel)
+	channel: Optional[ChannelId] = None
 
 	#: Unit must be a subclass of AbsT3Supplier
 	supply: Annotated[UnitModel, AbsT3Supplier]
