@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 17.12.2021
-# Last Modified Date: 18.12.2021
+# Last Modified Date: 20.12.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from typing import Optional, Literal
@@ -28,6 +28,7 @@ class T3DocBuilderModel(AmpelBaseModel):
 	#: Whether t3 result should be added to t3 store once available
 	propagate: bool = True
 
+	#: Applies only for underlying T3ReviewUnits.
 	#: Note that if True, a T3 document will be created even if a t3 unit returns None
 	save_stock_ids: bool = False
 
