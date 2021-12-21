@@ -33,6 +33,7 @@ unit:
 - ampel.t3.stage.T3ProjectingStager
 - ampel.t3.stage.T3ChannelStager
 - ampel.t3.stage.T3AdaptativeStager
+- ampel.t3.stage.T3AggregatingStager
 - ampel.t3.stage.T3SequentialStager
 - ampel.t3.stage.T3DistributiveStager
 - ampel.cli.T3BufferTextExporter
@@ -106,3 +107,6 @@ process:
       config:
         execute:
           unit: AmpelExceptionPublisher
+
+template:
+  compact_t3: ampel.template.TPLCompactT3
