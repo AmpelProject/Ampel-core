@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 16.07.2021
-# Last Modified Date: 18.12.2021
+# Last Modified Date: 20.12.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from typing import Any, Optional, Type
@@ -108,14 +108,21 @@ class TPLCompactT3(T3DocBuilderModel, AbsProcessorTemplate):
 				)
 				continue
 
-			if 'unit' in el and el['unit'] in units:
+			if 'unit' in el:
+				
+				if el['unit'] not in units:
+					raise ValueError(f"Unknown unit: {el['unit']}")
 
 				if "AbsT3PlainUnit" in units[el['unit']]['base']:
 					out.append(
 						{
 							'unit': 'T3PlainUnitExecutor',
 							'config': self._merge_confs(el, T3DocBuilderModel) | {
-								'target': {'unit': el['unit'], 'config': el['config']}
+								#'target': {'unit': el['unit'], 'config': el['config']}
+								'target': {
+									k: el[k] for k in el
+									if k not in T3DocBuilderModel._annots
+								}
 							}
 						}
 					)
