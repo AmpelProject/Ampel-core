@@ -8,7 +8,7 @@
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from time import time
-from typing import Union, Generator, Sequence, Type, Iterable, Optional
+from typing import Generator, Sequence, Type, Iterable, Optional
 from ampel.view.T3Store import T3Store
 from ampel.view.T3DocView import T3DocView
 from ampel.view.SnapView import SnapView
@@ -19,8 +19,6 @@ from ampel.struct.AmpelBuffer import AmpelBuffer
 from ampel.t3.stage.BaseViewGenerator import BaseViewGenerator, T3Send
 from ampel.t3.stage.T3BaseStager import T3BaseStager
 from ampel.mongo.update.MongoStockUpdater import MongoStockUpdater
-from ampel.util.hash import build_unsafe_dict_id
-from ampel.util.mappings import dictify
 
 
 class SimpleGenerator(BaseViewGenerator[T]):
@@ -34,15 +32,6 @@ class SimpleGenerator(BaseViewGenerator[T]):
 		for v in self.views:
 			l.append(v.id)
 			yield v
-
-
-class SkippableUnitModel(UnitModel):
-	"""
-	Whether unit result from DB should be used if avail.
-	If compatible cached result is found,
-	computation of the underlying T3 unit will be skipped
-	"""
-	cache: bool = False
 
 
 class T3SequentialStager(T3BaseStager):
@@ -61,34 +50,20 @@ class T3SequentialStager(T3BaseStager):
 	propagate: bool = True
 
 	#: t3 units (AbsT3ReviewUnit) to execute
-	execute: Sequence[Union[UnitModel, SkippableUnitModel]]
+	execute: Sequence[UnitModel]
 
 
 	def __init__(self, **kwargs) -> None:
 
 		super().__init__(**kwargs)
-		self.units: list[AbsT3ReviewUnit] = []
-		self.restorable_units: set[AbsT3ReviewUnit] = set()
 
 		if self.logger.verbose > 1:
-			self.logger.debug("Setting up T3CollaborativeStager")
+			self.logger.debug(f"Setting up {self.__class__.__name__}")
 
-		for model in self.execute:
-
-			if isinstance(model, SkippableUnitModel):
-				t3_unit = self.get_unit(
-					UnitModel(unit=model.unit, config=model.config),
-					self.channel
-				)
-				if model.cache:
-					self.restorable_units.add(t3_unit)
-			else:
-				t3_unit = self.get_unit(model, self.channel)
-
-			self.units.append(t3_unit)
-
-		if self.restorable_units and self.propagate is False:
-			raise ValueError("Restorable unit can only used in combination with propagate=True")
+		self.units = [
+			self.get_unit(model, self.channel)
+			for model in self.execute
+		]
 
 
 	def stage(self,
@@ -97,27 +72,6 @@ class T3SequentialStager(T3BaseStager):
 	) -> Optional[Generator[T3Document, None, None]]:
 
 		for t3_unit, views in self.get_views(gen).items():
-
-			if t3_unit in self.restorable_units:
-
-				# Look up in views loaded by t3 supplier
-				t3v = t3s.get_view(
-					unit = t3_unit.__class__.__name__,
-					config = t3_unit._trace_content
-				)
-
-				if t3v and (not t3v.stock or len(set(sv.id for sv in views) - set(t3v.stock)) == 0):
-					self.logger.info(f"Omitting {t3_unit.__class__.__name__} run: results available in t3 store")
-					continue
-
-				# Try to fetch doc from DB (note that requiring t3 supplier to look for t3 docs while using
-				# "cache: True" at the same time in SkippableUnitModel will result in the db being queried twice
-				# -> try to use one or the other (alternative: remove cache feature and define a dedicated process template)
-				t3v = self.get_cached_t3_view(t3_unit)
-				if t3v and (not t3v.stock or len(set(sv.id for sv in views) - set(t3v.stock)) == 0):
-					t3s.add_view(t3v)
-					self.logger.info(f"Omitting {t3_unit.__class__.__name__} run: results fetched from DB")
-					continue
 
 			sg = SimpleGenerator(t3_unit, views, self.stock_updr)
 			ts = time()
@@ -170,19 +124,3 @@ class T3SequentialStager(T3BaseStager):
 					for unit in units:
 						d[unit] = vs
 				return d
-
-
-	def get_cached_t3_view(self, t3_unit: AbsT3ReviewUnit) -> Optional[T3DocView]:
-
-		col = self.context.db.get_collection('t3')
-		h = build_unsafe_dict_id(dictify(t3_unit._trace_content), ret=int)
-
-		if self.resolve_config:
-			for el in col.find({'unit': t3_unit.__class__.__name__}):
-				if el['confid'] == h:
-					return T3DocView.of(el, self.context.config)
-		else:
-			if (d := next(iter(col.find({'unit': t3_unit.__class__.__name__, 'confid': h})), None)):
-				return T3DocView.of(d, self.context.config)
-
-		return None
