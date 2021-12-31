@@ -111,9 +111,7 @@ def datapoints() -> list[DataPoint]:
     return [{"id": i, "stock": "stockystock", "body": {"thing": i}} for i in range(3)]
 
 
-def test_minimal_directive(
-    dev_context: DevAmpelContext, datapoints: list[dict[str, Any]]
-):
+def test_minimal_directive(dev_context: DevAmpelContext, datapoints: list[dict[str, Any]]):
     """
     Minimal directive creates stock + t0 docs
     """
