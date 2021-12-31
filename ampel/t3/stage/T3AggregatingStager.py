@@ -8,7 +8,7 @@
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from time import time
-from pydantic import BaseModel
+from ampel.base.AmpelBaseModel import AmpelBaseModel
 from typing import Union, Sequence, Generator, Optional, Any
 
 from ampel.types import UBson
@@ -21,7 +21,7 @@ from ampel.content.MetaRecord import MetaRecord
 from ampel.util.mappings import get_by_json_path
 
 
-class TargetModel(BaseModel):
+class TargetModel(AmpelBaseModel):
 	unit: Optional[str]
 	config: Union[None, int, str]
 	code: Optional[int]

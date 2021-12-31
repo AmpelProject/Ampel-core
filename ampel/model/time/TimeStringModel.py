@@ -9,10 +9,10 @@
 
 from typing import Literal
 from datetime import datetime
-from pydantic import BaseModel
+from ampel.base.AmpelBaseModel import AmpelBaseModel
 
 
-class TimeStringModel(BaseModel):
+class TimeStringModel(AmpelBaseModel):
 
 	match_type: Literal['time_string']
 	dateTimeStr: str

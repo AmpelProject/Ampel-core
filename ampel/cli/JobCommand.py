@@ -10,7 +10,7 @@
 import yaml, os, signal, sys
 from time import time
 from multiprocessing import Queue, Process
-from pydantic import BaseModel
+from ampel.base.AmpelBaseModel import AmpelBaseModel
 from argparse import ArgumentParser
 from importlib import import_module
 from typing import List, Sequence, Dict, Any, Optional, Union
@@ -38,7 +38,7 @@ class TaskUnitModel(UnitModel):
 	multiplier: int = 1
 
 
-class TemplateUnitModel(BaseModel):
+class TemplateUnitModel(AmpelBaseModel):
 	title: Optional[str]
 	template: str
 	config: Dict[str, Any]

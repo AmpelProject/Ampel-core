@@ -7,13 +7,13 @@
 # Last Modified Date:  17.12.2021
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from pydantic import BaseModel
-from typing import Optional, Union
+from typing import Optional
 from ampel.types import OneOrMany
 from ampel.model.UnitModel import UnitModel
+from ampel.base.AmpelBaseModel import AmpelBaseModel
 
 
-class T3IncludeDirective(BaseModel):
+class T3IncludeDirective(AmpelBaseModel):
 	"""
 	:param session: models for AbsT3Supplier[dict] instances which populates the 'session' field of T3Store
 	Examples of session information are:
@@ -22,7 +22,7 @@ class T3IncludeDirective(BaseModel):
 	"""
 
 	#: Provides Iterable[T3Document]
-	docs: Optional[UnitModel]
+	docs: Optional[UnitModel] = None
 
 	#: Provides session information. Unit(s) must be a subclass of AbsT3Supplier
-	session: Union[None, OneOrMany[UnitModel]]
+	session: Optional[OneOrMany[UnitModel]] = None

@@ -8,10 +8,10 @@
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from typing import Literal
-from pydantic import BaseModel
+from ampel.base.AmpelBaseModel import AmpelBaseModel
 
 
-class UnixTimeModel(BaseModel):
+class UnixTimeModel(AmpelBaseModel):
 
 	match_type: Literal['unix_time']
 	value: int
