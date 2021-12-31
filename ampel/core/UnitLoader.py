@@ -9,7 +9,6 @@
 
 import sys
 from importlib import import_module
-from functools import partial
 from pathlib import Path
 from hashlib import blake2b
 from contextlib import contextmanager
@@ -229,7 +228,8 @@ class UnitLoader:
 		# Resolve secrets
 		for k, v in unit.__dict__.items():
 			if isinstance(v, Secret):
-				ValueType = args[0] if (args := get_args(type(unit).__annotations__[k])) else object
+				#ValueType = args[0] if (args := get_args(type(unit).__annotations__[k])) else object
+				ValueType = args[0] if (args := get_args(unit._annots[k])) else object
 				if not self.vault:
 					raise ValueError("No vault configured")
 				if not self.vault.resolve_secret(v, ValueType):
@@ -368,16 +368,21 @@ class UnitLoader:
 
 	@contextmanager
 	def validate_unit_models(self) -> Iterator[None]:
-		"""
-		Enable validation for UnitModel instances
-		"""
-		extra_validator = (False, partial(_validate_unit_model, unit_loader=self))
-		UnitModel.__post_root_validators__.append(extra_validator)
+		""" Enable validation for UnitModel instances """
+		from ampel.abstract.AbsProcessController import AbsProcessController
+
+		def validating_init(slf, **kwargs):
+			super(UnitModel, slf).__init__(**kwargs)
+			unit = self.get_class_by_name(slf.unit)
+			if issubclass(unit, AmpelBaseModel) and not issubclass(unit, AbsProcessController):
+				return unit.validate(self.get_init_config(slf.config, slf.override))
+		legit_init = UnitModel.__init__
+		UnitModel.__init__ = validating_init
 		AliasableModel._config = self.config
 		try:
 			yield
 		finally:
-			UnitModel.__post_root_validators__.remove(extra_validator)
+			UnitModel.__init__ = legit_init
 			AliasableModel._config = None
 
 
@@ -418,13 +423,3 @@ class UnitLoader:
 		reveal_type(self.new_context_unit(model, context, sub_type = AbsLightCurveT2Unit))
 		reveal_type(self.new_context_unit(model, context, sub_type = AbsLightCurveT2Unit, bla=12))
 	"""
-
-def _validate_unit_model(cls, values: dict[str, Any], unit_loader: UnitLoader) -> dict[str, Any]:
-	""" Verify that a unit configuration is valid in the context of a specific UnitLoader.  """
-	from ampel.abstract.AbsProcessController import AbsProcessController
-	unit = unit_loader.get_class_by_name(values['unit'])
-	if issubclass(unit, AmpelBaseModel) and not issubclass(unit, AbsProcessController):
-		return unit.validate(
-			unit_loader.get_init_config(values['config'], values['override'])
-		)
-	return values
