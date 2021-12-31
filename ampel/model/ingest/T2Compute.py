@@ -7,7 +7,7 @@
 # Last Modified Date: 28.09.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-from typing import List, Union, Optional, Generic
+from typing import Union, Optional, Generic, Sequence
 from ampel.types import T
 from ampel.model.UnitModel import UnitModel
 from ampel.model.DPSelection import DPSelection
@@ -15,8 +15,8 @@ from ampel.model.DPSelection import DPSelection
 class T2Compute(UnitModel[T], Generic[T]):
 
 	#: Ingester options
-	ingest: Optional[Union[str, DPSelection]]
+	ingest: Optional[Union[str, DPSelection]] = None
 
 	#: Filter result codes that should trigger this T2. If not specified, T2
 	#: documents will be created in response to any passing alert.
-	group: Union[int, List[int]] = []
+	group: Union[int, Sequence[int]] = []

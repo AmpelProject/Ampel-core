@@ -7,7 +7,7 @@
 # Last Modified Date: 27.05.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-from typing import Optional, Union, List, Sequence
+from typing import Optional, Union, Sequence
 from ampel.model.UnitModel import UnitModel
 from ampel.model.ingest.T2Compute import T2Compute
 
@@ -18,7 +18,7 @@ class T1Combine(UnitModel):
 
 	#: Filter result codes that should trigger this T1.
 	#: If not specified, T1 documents will be created in response to any passing alert.
-	group: Optional[Union[int, List[int]]]
+	group: Optional[Union[int, Sequence[int]]] = None
 
 	#: Create or update :class:`T2 documents <ampel.content.T2Document.T2Document>`
 	#: bound to :class:`compounds <ampel.content.T1Document.T1Document>`
@@ -27,4 +27,4 @@ class T1Combine(UnitModel):
 	#: Create or update :class:`T2 documents <ampel.content.T2Document.T2Document>`
 	#: bound to :class:`datapoints <ampel.content.DataPoint.DataPoint>`
 	#: based on the t1 combine unit result
-	point_t2: Optional[Sequence[T2Compute]]
+	point_t2: Optional[Sequence[T2Compute]] = None

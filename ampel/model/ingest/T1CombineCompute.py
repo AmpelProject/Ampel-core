@@ -7,7 +7,7 @@
 # Last Modified Date: 27.05.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-from typing import Optional, Union, List
+from typing import Optional, Union, Sequence
 from ampel.model.UnitModel import UnitModel
 
 class T1CombineCompute(UnitModel):
@@ -17,7 +17,7 @@ class T1CombineCompute(UnitModel):
 
 	#: Filter result codes that should trigger this T1.
 	#: If not specified, T1 documents will be created in response to any passing alert.
-	group: Optional[Union[int, List[int]]]
+	group: Optional[Union[int, Sequence[int]]] = None
 
 	#: T1 compute unit
 	compute: UnitModel
