@@ -74,10 +74,8 @@ class T3SequentialStager(T3BaseStager):
 		for t3_unit, views in self.get_views(gen).items():
 
 			sg = SimpleGenerator(t3_unit, views, self.stock_updr)
-			ts = time()
-
 			if (ret := t3_unit.process(sg, t3s)):
-				if (x := self.handle_t3_result(t3_unit, ret, t3s, sg.stocks, ts)):
+				if (x := self.handle_t3_result(t3_unit, ret, t3s, sg.stocks, time())):
 					if self.propagate:
 						t3s.add_view(
 							T3DocView.of(x, self.context.config)
