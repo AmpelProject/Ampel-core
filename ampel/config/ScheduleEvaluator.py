@@ -18,7 +18,7 @@ class ScheduleEvaluator(ast.NodeVisitor):
 	- `every().monday`
 	- `every().wednesday.at('13:15')`
 	
-	Allows literal numbers, strings, calling member functions of schedule.Scheduler 
+	Allows literal numbers, strings, calling member functions of schedule.Scheduler
 	"""
 	def __call__(self, scheduler, line):
 		self._scheduler = scheduler
