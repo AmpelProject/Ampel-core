@@ -7,13 +7,13 @@
 # Last Modified Date: 18.06.2020
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-from typing import Union, List, Optional, Dict, Any
-from ampel.model.StrictModel import StrictModel
+from typing import Union, Optional, Any, Sequence
+from ampel.base.AmpelBaseModel import AmpelBaseModel
 from ampel.model.purge.PurgeModel import PurgeModel
 #from ampel.model.ViewModel import ViewModel
 
 
-class ChannelModel(StrictModel):
+class ChannelModel(AmpelBaseModel):
 
 	channel: Union[int, str]
 	version: Union[int, float, str]
@@ -27,13 +27,13 @@ class ChannelModel(StrictModel):
 	distrib: Optional[str]
 	source: Optional[str]
 	contact: Optional[str]
-	access: List[str] = []
+	access: Sequence[str] = []
 	#: Identities allowed to access data associated with this channel
-	members: Optional[List[str]]
-	policy: List[str] = []
+	members: Optional[Sequence[str]]
+	policy: Sequence[str] = []
 
 
-	def dict(self, **kwargs) -> Dict[str, Any]:
+	def dict(self, **kwargs) -> dict[str, Any]:
 		if 'exclude_defaults' not in kwargs:
 			kwargs['exclude_defaults'] = False
 		return super().dict(**kwargs)

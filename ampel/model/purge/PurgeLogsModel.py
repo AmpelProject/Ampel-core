@@ -8,10 +8,10 @@
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from typing import Literal
-from ampel.model.StrictModel import StrictModel
+from ampel.base.AmpelBaseModel import AmpelBaseModel
 
 
-class PurgeLogsModel(StrictModel):
+class PurgeLogsModel(AmpelBaseModel):
 	"""
 	:param delay: time of inactivity in days after which logs will be purged
 	:param format: output format exported by ampel.

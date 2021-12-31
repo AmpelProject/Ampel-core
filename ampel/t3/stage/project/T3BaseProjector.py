@@ -14,7 +14,7 @@ from ampel.struct.AmpelBuffer import AmpelBuffer, BufferKey
 from ampel.abstract.AbsApplicable import AbsApplicable
 from ampel.model.UnitModel import UnitModel
 from ampel.base.AuxUnitRegister import AuxUnitRegister
-from ampel.model.StrictModel import StrictModel
+from ampel.base.AmpelBaseModel import AmpelBaseModel
 from ampel.abstract.AbsT3Projector import AbsT3Projector
 
 
@@ -32,15 +32,15 @@ class T3BaseProjector(AbsT3Projector):
 	  will contain the all the names of the corresponding AmpelBuffer)
 	"""
 
-	class ClassModel(StrictModel):
+	class ClassModel(AmpelBaseModel):
 		key: BufferKey
 		model: UnitModel
 
-	class FuncModel(StrictModel):
+	class FuncModel(AmpelBaseModel):
 		key: BufferKey
 		func: Callable[[Any], Any]
 
-	class FilterOutModel(StrictModel):
+	class FilterOutModel(AmpelBaseModel):
 		discard: BufferKey
 
 

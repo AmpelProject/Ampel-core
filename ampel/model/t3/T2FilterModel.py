@@ -8,9 +8,9 @@
 # Last Modified By  : Jakob van Santen <jakob.van.santen@desy.de>
 
 from typing import Any, Dict
-from ampel.model.StrictModel import StrictModel
+from ampel.base.AmpelBaseModel import AmpelBaseModel
 
-class T2FilterModel(StrictModel):
+class T2FilterModel(AmpelBaseModel):
 
 	#: name of T2 unit
 	unit: str

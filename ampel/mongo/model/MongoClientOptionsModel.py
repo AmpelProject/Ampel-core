@@ -7,9 +7,9 @@
 # Last Modified Date: 08.11.2020
 # Last Modified By  : Jakob van Santen <jakob.van.santen@desy.de>
 
-from ampel.model.StrictModel import StrictModel
+from ampel.base.AmpelBaseModel import AmpelBaseModel
 
-class MongoClientOptionsModel(StrictModel):
+class MongoClientOptionsModel(AmpelBaseModel):
 
 	# 0 means use operating system's default socket timeout
 	socketTimeoutMS: int = 0

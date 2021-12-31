@@ -442,7 +442,7 @@ class ChainedIngestionHandler:
 				ingest_opts.update(
 					self.context.config._config['alias']['t2'][im.ingest]
 				)
-			else: # StrictModel
+			else: # AmpelBaseModel
 				ingest_opts.update(im.ingest.dict())
 
 		ib = T2Block()

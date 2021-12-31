@@ -15,7 +15,7 @@ from ampel.model.operator.AllOf import AllOf
 from ampel.model.operator.OneOf import OneOf
 from ampel.struct.AmpelBuffer import AmpelBuffer, BufferKey
 from ampel.model.UnitModel import UnitModel
-from ampel.model.StrictModel import StrictModel
+from ampel.base.AmpelBaseModel import AmpelBaseModel
 from ampel.core.UnitLoader import UnitLoader
 from ampel.log.AmpelLogger import AmpelLogger
 from ampel.abstract.AbsT3Filter import AbsT3Filter
@@ -25,21 +25,21 @@ from ampel.aux.filter.AbsLogicOperatorFilter import AbsLogicOperatorFilter
 channel_id = get_args(ChannelId) # type: ignore[misc]
 
 
-class FilterBlock(StrictModel):
+class FilterBlock(AmpelBaseModel):
 
 	data: Union[BufferKey, Literal['journal']]
 	filter: AbsLogicOperatorFilter
 	include: bool = True
 
 	def __init__(self, **kwargs):
-		StrictModel.__init__(self, **kwargs)
+		AmpelBaseModel.__init__(self, **kwargs)
 		typ = "include" if self.include else "exclude"
 		self.descr = f"{self.filter.__class__.__name__}[target={self.data}, on_match={typ}]"
 
 
 class T3AmpelBufferFilter(AbsT3Filter):
 
-	class FilterModel(StrictModel):
+	class FilterModel(AmpelBaseModel):
 		data: Union[BufferKey, Literal['journal']]
 		filter: UnitModel
 		on_match: Literal['include', 'exclude'] = 'include'

@@ -39,7 +39,7 @@ from ampel.metrics.AmpelDBCollector import AmpelDBCollector
 from ampel.metrics.AmpelProcessCollector import AmpelProcessCollector
 from ampel.metrics.AmpelMetricsRegistry import AmpelMetricsRegistry
 from ampel.model.ProcessModel import ProcessModel
-from ampel.model.StrictModel import StrictModel
+from ampel.base.AmpelBaseModel import AmpelBaseModel
 from ampel.core.AmpelDB import AmpelDB
 from ampel.enum.DocumentCode import DocumentCode
 from ampel.util.hash import build_unsafe_dict_id
@@ -48,26 +48,26 @@ if TYPE_CHECKING:
     from ampel.protocol.LoggerProtocol import LoggerProtocol
 
 
-class ProcessCollection(StrictModel):
+class ProcessCollection(AmpelBaseModel):
     processes: List[ProcessModel]
 
 
-class ProcessStatus(StrictModel):
+class ProcessStatus(AmpelBaseModel):
     name: str
     tier: Literal[0, 1, 2, 3, None]
     status: Literal["running", "idle"]
 
 
-class ProcessStatusCollection(StrictModel):
+class ProcessStatusCollection(AmpelBaseModel):
     processes: List[ProcessStatus]
 
 
-class TaskDescription(StrictModel):
+class TaskDescription(AmpelBaseModel):
     id: str
     processes: List[str]
 
 
-class TaskDescriptionCollection(StrictModel):
+class TaskDescriptionCollection(AmpelBaseModel):
     tasks: List[TaskDescription]
 
 

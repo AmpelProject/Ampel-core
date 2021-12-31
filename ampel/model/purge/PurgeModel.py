@@ -7,11 +7,11 @@
 # Last Modified Date: 18.06.2020
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-from ampel.model.StrictModel import StrictModel
+from ampel.base.AmpelBaseModel import AmpelBaseModel
 from ampel.model.purge.PurgeContentModel import PurgeContentModel
 from ampel.model.purge.PurgeLogsModel import PurgeLogsModel
 
 
-class PurgeModel(StrictModel):
+class PurgeModel(AmpelBaseModel):
 	content: PurgeContentModel
 	logs: PurgeLogsModel

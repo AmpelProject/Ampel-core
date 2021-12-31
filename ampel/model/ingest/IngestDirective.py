@@ -9,12 +9,12 @@
 
 from typing import Optional
 from ampel.types import ChannelId
-from ampel.model.StrictModel import StrictModel
 from ampel.model.ingest.IngestBody import IngestBody
 from ampel.model.ingest.FilterModel import FilterModel
+from ampel.base.AmpelBaseModel import AmpelBaseModel
 
 
-class IngestDirective(StrictModel):
+class IngestDirective(AmpelBaseModel):
 	"""
     channel
     filter

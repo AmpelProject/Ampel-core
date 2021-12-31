@@ -7,9 +7,9 @@
 # Last Modified Date: 13.04.2020
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-from ampel.model.StrictModel import StrictModel
+from ampel.base.AmpelBaseModel import AmpelBaseModel
 
-class FieldModel(StrictModel):
+class FieldModel(AmpelBaseModel):
 
 	field: str
 	direction: int = 1

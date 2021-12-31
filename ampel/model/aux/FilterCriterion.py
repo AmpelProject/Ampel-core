@@ -10,7 +10,7 @@
 import collections, operator
 from pydantic import validator
 from typing import Dict, Any, Callable, Type, Optional
-from ampel.model.StrictModel import StrictModel
+from ampel.base.AmpelBaseModel import AmpelBaseModel
 
 ops: Dict[str, Callable[[str, Any], bool]] = {
 	'>': operator.gt,
@@ -24,7 +24,7 @@ ops: Dict[str, Callable[[str, Any], bool]] = {
 	'is not': operator.is_not
 }
 
-class FilterCriterion(StrictModel):
+class FilterCriterion(AmpelBaseModel):
 
 	attribute: Optional[str] = None
 	type: Optional[Type] = None

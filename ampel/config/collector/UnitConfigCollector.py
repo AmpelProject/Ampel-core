@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 16.10.2019
-# Last Modified Date: 10.10.2021
+# Last Modified Date: 31.12.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import sys, re, importlib, traceback
@@ -12,12 +12,12 @@ from typing import List, Union, Dict, Any, Optional
 
 from ampel.protocol.LoggingHandlerProtocol import AggregatingLoggingHandlerProtocol
 from ampel.util.collections import ampel_iter
-from ampel.model.StrictModel import StrictModel
+from ampel.base.AmpelBaseModel import AmpelBaseModel
 from ampel.config.collector.ConfigCollector import ConfigCollector
 from ampel.log import VERBOSE
 
 
-class RemoteUnitDefinition(StrictModel):
+class RemoteUnitDefinition(AmpelBaseModel):
 	class_name: str
 	base: List[str]
 
@@ -97,14 +97,14 @@ class UnitConfigCollector(ConfigCollector):
 					)
 					continue
 
-				if "AmpelBaseModel" not in entry['base'] and "StrictModel" not in entry['base']:
+				if "AmpelBaseModel" not in entry['base']:
 					self.logger.info(
 						f'Unrecognized base class for {self.conf_section} {class_name} ' +
 						self.distrib_hint(dist_name, register_file)
 					)
 					continue
 
-				for base in "AmpelABC", "AmpelBaseModel", "StrictModel":
+				for base in ("AmpelABC", "AmpelBaseModel"):
 					if base in entry["base"]:
 						entry["base"].remove(base)
 

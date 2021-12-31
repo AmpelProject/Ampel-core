@@ -7,22 +7,21 @@
 # Last Modified Date: 06.06.2020
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-from pydantic import Field
-from typing import Union, Optional, Dict, Any
-from ampel.model.StrictModel import StrictModel
+from typing import Union, Optional, Any
+from ampel.base.AmpelBaseModel import AmpelBaseModel
 
 
-class QueryTimeModel(StrictModel):
+class QueryTimeModel(AmpelBaseModel):
 	"""
 	Standardized parameter for the class QueryMatchStock
 	"""
-	before: Optional[Union[int, float]] = Field(None, alias='$lt')
-	after: Optional[Union[int, float]] = Field(None, alias='$gt')
+	before: Optional[Union[int, float]] = None
+	after: Optional[Union[int, float]] = None
 
 	def __bool__(self) -> bool:
 		return self.before is not None or self.after is not None
 
-	def dict(self, **kwargs) -> Dict[str, Any]:
+	def dict(self, **kwargs) -> dict[str, Any]:
 		"""
 		Example:
 		{
@@ -30,6 +29,7 @@ class QueryTimeModel(StrictModel):
 			'$lt': 1575966106.003819
 		}
 		"""
-		return super().dict(
-			**{**kwargs, "by_alias": True, "exclude_none": True} # type: ignore
-		)
+		d = super().dict()
+		d['$lt'] = d.pop('before')
+		d['$gt'] = d.pop('after')
+		return {k: v for k, v in d.items() if v is not None}

@@ -7,16 +7,17 @@
 # Last Modified Date: 16.04.2020
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-from typing import Optional, Dict, Any
-from ampel.model.StrictModel import StrictModel
+from typing import Optional, Any
+from ampel.base.AmpelBaseModel import AmpelBaseModel
 from ampel.mongo.model.FieldModel import FieldModel
 
-class ShortIndexModel(StrictModel):
+
+class ShortIndexModel(AmpelBaseModel):
 
 	field: str
-	args: Optional[Dict]
+	args: Optional[dict] = None
 
-	def dict(self, **kwargs) -> Dict[str, Any]:
+	def dict(self, **kwargs) -> dict[str, Any]:
 		if self.args:
 			return {
 				"index": [(self.field, 1)],

@@ -10,7 +10,7 @@
 from typing import Dict, Sequence, Union, Literal, List, Optional, Callable, Container, Any, Set
 from ampel.abstract.AbsApplicable import AbsApplicable
 from ampel.base.AuxUnitRegister import AuxUnitRegister
-from ampel.model.StrictModel import StrictModel
+from ampel.base.AmpelBaseModel import AmpelBaseModel
 from ampel.log import AmpelLogger, VERBOSE
 from ampel.util.collections import to_set
 from ampel.view.ReadOnlyDict import ReadOnlyDict
@@ -21,7 +21,7 @@ class ComboDictModifier(AbsApplicable):
 	Note: cannot make different modifications of the same ast at different depth
 	"""
 
-	class DeleteModel(StrictModel):
+	class DeleteModel(AmpelBaseModel):
 		"""
 		ex: for a given dict instance *d*, the model:
 			{'op': 'delete', 'key': ['a', 'b.c']}
@@ -35,10 +35,10 @@ class ComboDictModifier(AbsApplicable):
 		def __init__(self, **kwargs):
 			if 'key' in kwargs and isinstance(kwargs['key'], str):
 				kwargs['key'] = [kwargs['key']]
-			StrictModel.__init__(self, **kwargs)
+			AmpelBaseModel.__init__(self, **kwargs)
 
 
-	class KeepOnlyModel(StrictModel):
+	class KeepOnlyModel(AmpelBaseModel):
 		"""
 		ex: for a given dict instance *d*, the model:
 		{'op': 'keep_only', 'key': 'a.b', 'keep': ['y', 'z']}
@@ -49,7 +49,7 @@ class ComboDictModifier(AbsApplicable):
 		keep: Union[int, str, Sequence[Union[int, str]]]
 
 
-	class ClassModifyModel(StrictModel):
+	class ClassModifyModel(AmpelBaseModel):
 		"""
 		ex: for a given dict instance *d*, the model:
 			{'op': 'modify', 'key': 'a.b', 'unit': 'SetIntersector', config: {'value': [1, 2]}}
@@ -62,7 +62,7 @@ class ComboDictModifier(AbsApplicable):
 		config: Dict[str, Any]
 
 
-	class FuncModifyModel(StrictModel):
+	class FuncModifyModel(AmpelBaseModel):
 		op: Literal['modify']
 		key: str
 		func: Callable[[Any], Any]

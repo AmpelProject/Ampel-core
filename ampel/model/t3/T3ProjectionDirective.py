@@ -11,10 +11,10 @@
 from typing import Optional, Sequence
 from pydantic import validator
 from ampel.model.UnitModel import UnitModel
-from ampel.model.StrictModel import StrictModel
+from ampel.base.AmpelBaseModel import AmpelBaseModel
 
 
-class T3ProjectionDirective(StrictModel):
+class T3ProjectionDirective(AmpelBaseModel):
 	"""
 	Internal model used for field 'directives' of T3UnitRunner
 	"""

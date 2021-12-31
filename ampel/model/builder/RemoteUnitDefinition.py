@@ -8,9 +8,9 @@
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from typing import List
-from ampel.model.StrictModel import StrictModel
+from ampel.base.AmpelBaseModel import AmpelBaseModel
 
-class RemoteUnitDefinition(StrictModel):
+class RemoteUnitDefinition(AmpelBaseModel):
 
 	class_name: str
 	base: List['str']

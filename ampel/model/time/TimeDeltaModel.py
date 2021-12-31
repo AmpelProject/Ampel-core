@@ -9,10 +9,10 @@
 
 from typing import Literal
 from datetime import datetime, timedelta
-from ampel.model.StrictModel import StrictModel
+from ampel.base.AmpelBaseModel import AmpelBaseModel
 
 
-class TimeDeltaModel(StrictModel):
+class TimeDeltaModel(AmpelBaseModel):
 
 	match_type: Literal['time_delta']
 	days: int = 0

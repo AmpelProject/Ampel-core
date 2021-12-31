@@ -7,18 +7,18 @@
 # Last Modified Date: 31.07.2020
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-from typing import Union, Dict, Optional, Literal
+from typing import Optional, Literal
 from datetime import datetime, timedelta
-from ampel.model.StrictModel import StrictModel
+from ampel.base.AmpelBaseModel import AmpelBaseModel
 from ampel.mongo.query.var.events import get_last_run
 from ampel.core.AmpelDB import AmpelDB
 
 
-class TimeLastRunModel(StrictModel):
+class TimeLastRunModel(AmpelBaseModel):
 
 	match_type: Literal['time_last_run']
 	process_name: str
-	fallback: Union[None, Dict] = {'days': -1}
+	fallback: Optional[dict] = {'days': -1}
 	require_success: bool = True
 
 

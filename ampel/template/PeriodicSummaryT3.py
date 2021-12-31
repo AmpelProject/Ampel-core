@@ -13,7 +13,7 @@ from ampel.types import ChannelId, Tag
 from ampel.model.operator.AllOf import AllOf
 from ampel.model.operator.AnyOf import AnyOf
 from ampel.model.operator.OneOf import OneOf
-from ampel.model.StrictModel import StrictModel
+from ampel.base.AmpelBaseModel import AmpelBaseModel
 from ampel.model.t3.LoaderDirective import LoaderDirective
 from ampel.model.t3.T2FilterModel import T2FilterModel
 from ampel.model.UnitModel import UnitModel
@@ -25,7 +25,7 @@ UnitModelOrString = Union[UnitModel, str]
 UnitModelSequence = Union[Sequence[UnitModelOrString], UnitModelOrString]
 
 
-class FilterModel(StrictModel):
+class FilterModel(AmpelBaseModel):
     #: Filter based on T2 results
     t2: Union[T2FilterModel, AllOf[T2FilterModel], AnyOf[T2FilterModel]]
 

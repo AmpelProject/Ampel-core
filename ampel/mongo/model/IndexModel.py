@@ -7,14 +7,14 @@
 # Last Modified Date: 13.04.2020
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-from typing import List, Optional, Dict
-from ampel.model.StrictModel import StrictModel
+from typing import Optional, Sequence
+from ampel.base.AmpelBaseModel import AmpelBaseModel
 from ampel.mongo.model.FieldModel import FieldModel
 
-class IndexModel(StrictModel):
+class IndexModel(AmpelBaseModel):
 
-	index: List[FieldModel]
-	args: Optional[Dict]
+	index: Sequence[FieldModel]
+	args: Optional[dict]
 
 	def get_id(self) -> str:
 		"""

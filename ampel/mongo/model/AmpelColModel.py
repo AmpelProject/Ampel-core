@@ -7,12 +7,12 @@
 # Last Modified Date: 11.11.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-from typing import List, Optional, Union
+from typing import Optional, Union, Sequence
 from ampel.mongo.model.IndexModel import IndexModel
 from ampel.mongo.model.ShortIndexModel import ShortIndexModel
-from ampel.model.StrictModel import StrictModel
+from ampel.base.AmpelBaseModel import AmpelBaseModel
 
-class AmpelColModel(StrictModel):
+class AmpelColModel(AmpelBaseModel):
 	name: str
-	indexes: Optional[List[Union[ShortIndexModel, IndexModel]]]
+	indexes: Optional[Sequence[Union[ShortIndexModel, IndexModel]]] = None
 	args: dict = {}
