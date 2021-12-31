@@ -12,6 +12,7 @@ from typing import Any, Optional, Annotated
 
 from ampel.types import OneOrMany
 from ampel.abstract.AbsEventUnit import AbsEventUnit
+from ampel.abstract.AbsT3Supplier import AbsT3Supplier
 from ampel.abstract.AbsT3ControlUnit import AbsT3ControlUnit
 from ampel.abstract.AbsProcessorTemplate import AbsProcessorTemplate
 from ampel.view.T3Store import T3Store
@@ -19,7 +20,6 @@ from ampel.view.T3DocView import T3DocView
 from ampel.model.UnitModel import UnitModel
 from ampel.model.t3.T3IncludeDirective import T3IncludeDirective
 from ampel.core.EventHandler import EventHandler
-from ampel.abstract.AbsT3Supplier import AbsT3Supplier
 from ampel.log import AmpelLogger, LogFlag, SHOUT
 
 
@@ -53,7 +53,7 @@ class T3Processor(AbsEventUnit):
 			if ctx is None:
 				raise ValueError("Context required")
 
-			if kwargs['template'] not in ctx.config._config['template']:
+			if tpl_name not in ctx.config._config.get('template', []):
 				raise ValueError(f"Unknown process template: {tpl_name}")
 
 			fqn = ctx.config._config['template'][tpl_name]
@@ -62,8 +62,15 @@ class T3Processor(AbsEventUnit):
 			if not issubclass(Tpl, AbsProcessorTemplate):
 				raise ValueError(f"Unexpected template type: {Tpl}")
 
-			tpl = Tpl(**kwargs)
-			kwargs = tpl.get_model(ctx.config._config, kwargs).dict()
+			tpl = Tpl(
+				**{
+					k: v for k, v in kwargs.items()
+					if k not in AbsEventUnit._annots
+				}
+			)
+			kwargs.update(
+				tpl.get_model(ctx.config._config, kwargs).dict()['config']
+			)
 			kwargs['context'] = ctx
 
 		super().__init__(**kwargs)
