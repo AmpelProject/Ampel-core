@@ -9,7 +9,8 @@
 
 import logging, signal, asyncio
 from argparse import ArgumentParser
-from typing import Sequence, Dict, Any, Optional, Union
+from typing import Any, Optional, Union
+from collections.abc import Sequence
 from ampel.abstract.AbsCLIOperation import AbsCLIOperation
 from ampel.core.AmpelController import AmpelController
 from ampel.cli.MaybeIntAction import MaybeIntAction
@@ -59,7 +60,7 @@ class ScheduleCommand(AbsCLIOperation):
 
 
 	# Mandatory implementation
-	def run(self, args: Dict[str, Any], unknown_args: Sequence[str], sub_op: Optional[str] = None) -> None:
+	def run(self, args: dict[str, Any], unknown_args: Sequence[str], sub_op: Optional[str] = None) -> None:
 
 		self.args = args
 		self.unknown_args = unknown_args

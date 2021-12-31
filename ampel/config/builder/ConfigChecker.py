@@ -9,7 +9,7 @@
 
 
 import json, os, sys, traceback
-from typing import Any, Dict, List
+from typing import Any
 from ampel.util.pretty import prettyjson
 from ampel.util.recursion import walk_and_process_dict
 from ampel.core.AmpelContext import AmpelContext
@@ -40,7 +40,7 @@ class ConfigChecker(BaseConfigChecker):
 		ignore_inactive: bool = False,
 		ignore_ressource_not_avail: bool = True,
 		raise_exc: bool = False
-	) -> Dict[str, Any]:
+	) -> dict[str, Any]:
 		"""
 		:returns: config if check passed
 		:raises: BadConfig
@@ -60,9 +60,9 @@ class ConfigChecker(BaseConfigChecker):
 
 	def load_model(self,
 		tier: str, proc: str, load_callable: Any,
-		model_args: Dict[str, Any], raise_exc: bool = False,
+		model_args: dict[str, Any], raise_exc: bool = False,
 		ignore_ressource_not_avail: bool = False,
-		load_args: Dict[str, Any] = {}
+		load_args: dict[str, Any] = {}
 	) -> bool:
 		"""
 		:param proc: super process name
@@ -136,7 +136,7 @@ class ConfigChecker(BaseConfigChecker):
 
 		for tier, proc in self.iter_procs(ignore_inactive):
 
-			unit_models: List[Dict[str, Any]] = []
+			unit_models: list[dict[str, Any]] = []
 			walk_and_process_dict(
 				arg = self.config['process'][tier][proc]['processor'].get('config'),
 				callback = self._gather_unit_models_callback,
@@ -191,7 +191,7 @@ class ConfigChecker(BaseConfigChecker):
 					self._log_exc(e, proc)
 
 
-	def _customize_admin_models(self, um: Dict[str, Any]) -> Dict[str, Any]:
+	def _customize_admin_models(self, um: dict[str, Any]) -> dict[str, Any]:
 
 		model = json.loads(json.dumps(um['model']))
 		unit_name = model['unit']
@@ -221,7 +221,7 @@ class ConfigChecker(BaseConfigChecker):
 		return model
 
 
-	def _customize_aux_models(self, um: Dict[str, Any]) -> Dict[str, Any]:
+	def _customize_aux_models(self, um: dict[str, Any]) -> dict[str, Any]:
 
 		model = um['model']
 		unit = model['unit']

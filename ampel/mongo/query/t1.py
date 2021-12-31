@@ -9,7 +9,8 @@
 
 import collections
 from bson.int64 import Int64
-from typing import Union, Sequence, Dict, Optional, Any, List
+from typing import Union, Optional, Any
+from collections.abc import Sequence
 from ampel.types import StockId, ChannelId, StrictIterable
 from ampel.util.collections import check_seq_inner_type
 from ampel.model.operator.AnyOf import AnyOf
@@ -26,8 +27,8 @@ Especially: if a compound member is discarded, it should not be deleted
 
 def latest_fast_query(
 	stock: Union[StockId, StrictIterable[StockId]],
-	channel: Optional[Union[ChannelId, Dict, AllOf[ChannelId], AnyOf[ChannelId], OneOf[ChannelId]]] = None
-) -> List[Dict]:
+	channel: Optional[Union[ChannelId, dict, AllOf[ChannelId], AnyOf[ChannelId], OneOf[ChannelId]]] = None
+) -> list[dict]:
 	"""
 	| **Must be used on transients whose compounds were solely created by T0** (i.e with no T3 compounds)
 	| Should perform faster than general_query.
@@ -104,9 +105,9 @@ def latest_fast_query(
 
 def latest_general_query(
 	single_stock: StockId,
-	project: Optional[Dict[str, Any]] = None,
-	channel: Optional[Union[ChannelId, Dict, AllOf[ChannelId], AnyOf[ChannelId], OneOf[ChannelId]]] = None
-) -> List[Dict[str, Any]]:
+	project: Optional[dict[str, Any]] = None,
+	channel: Optional[Union[ChannelId, dict, AllOf[ChannelId], AnyOf[ChannelId], OneOf[ChannelId]]] = None
+) -> list[dict[str, Any]]:
 	"""
 	| Should work with any ampel transients.
 	| A detailed explanation of each step of the aggregation \
@@ -174,7 +175,7 @@ def latest_general_query(
 	if channel is not None:
 		apply_schema(query, 'channel', channel)
 
-	ret: List[Dict[str, Any]] = [
+	ret: list[dict[str, Any]] = [
 		{
 			'$match': query
 		},

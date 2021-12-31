@@ -7,7 +7,7 @@
 # Last Modified Date:  10.10.2021
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from typing import Dict, Any, Literal
+from typing import Any, Literal
 from ampel.base.AmpelABC import AmpelABC
 from ampel.base.decorator import abstractmethod
 from ampel.base.AmpelBaseModel import AmpelBaseModel
@@ -22,9 +22,9 @@ class AbsDocUpdater(AmpelABC, AmpelBaseModel, abstract=True):
 	@abstractmethod
 	def update(self,
 		tier: Literal[0, 1, 2],
-		match: Dict[str, Any],
-		let: Dict[str, Any],
-		push: Dict[str, Any],
-		add_to_set: Dict[str, Any]
+		match: dict[str, Any],
+		let: dict[str, Any],
+		push: dict[str, Any],
+		add_to_set: dict[str, Any]
 	) -> None:
 		...

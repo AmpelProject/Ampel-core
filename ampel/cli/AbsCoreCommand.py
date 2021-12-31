@@ -8,7 +8,8 @@
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 import re
-from typing import Sequence, Dict, Any, Optional, TypeVar, Type, Iterator, Tuple
+from typing import Any, Optional, TypeVar, Tuple
+from collections.abc import Sequence, Iterator
 from ampel.core.AmpelDB import AmpelDB
 from ampel.config.AmpelConfig import AmpelConfig
 from ampel.secret.AmpelVault import AmpelVault
@@ -51,7 +52,7 @@ class AbsCoreCommand(AbsCLIOperation, abstract=True):
 		return ampel_conf
 
 
-	def get_custom_args(self, customizations: Sequence[str]) -> Iterator[Tuple[str, Any]]:
+	def get_custom_args(self, customizations: Sequence[str]) -> Iterator[tuple[str, Any]]:
 
 		it = iter(customizations)
 		for el in it:
@@ -69,7 +70,7 @@ class AbsCoreCommand(AbsCLIOperation, abstract=True):
 				yield k, v
 
 
-	def get_vault(self, args: Dict[str, Any]) -> Optional[AmpelVault]:
+	def get_vault(self, args: dict[str, Any]) -> Optional[AmpelVault]:
 		vault = None
 		if args.get('vault'):
 			from ampel.secret.DictSecretProvider import DictSecretProvider
@@ -101,11 +102,11 @@ class AbsCoreCommand(AbsCLIOperation, abstract=True):
 
 
 	def get_context(self,
-		args: Dict[str, Any],
+		args: dict[str, Any],
 		unknown_args: Sequence[str],
 		logger: Optional[AmpelLogger] = None,
 		freeze_config: bool = True,
-		ContextClass: Type[T] = AmpelContext, # type: ignore[assignment]
+		ContextClass: type[T] = AmpelContext, # type: ignore[assignment]
 		require_existing_db: bool = True,
 		one_db: bool = False,
 		**kwargs
@@ -128,7 +129,7 @@ class AbsCoreCommand(AbsCLIOperation, abstract=True):
 		)
 
 
-	def convert_logical_args(self, name: str, args: Dict[str, Any]) -> None:
+	def convert_logical_args(self, name: str, args: dict[str, Any]) -> None:
 
 		for k in (f"with_{name}", f"with_{name}s_and", f"with_{name}s_or"):
 			if args.get(k):

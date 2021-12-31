@@ -7,7 +7,7 @@
 # Last Modified Date:  05.05.2020
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from typing import Union, Optional, Dict, Any
+from typing import Union, Optional, Any
 from ampel.log.handlers.RecordBufferingHandler import RecordBufferingHandler
 from ampel.protocol.LoggingHandlerProtocol import LoggingHandlerProtocol
 from ampel.types import StockId, ChannelId
@@ -28,7 +28,7 @@ class ChanRecordBufHandler(RecordBufferingHandler):
 
 	__slots__ = '_channel', '_extra'
 
-	def __init__(self, level: int, channel: ChannelId, extra: Optional[Dict[str, Any]] = None) -> None:
+	def __init__(self, level: int, channel: ChannelId, extra: Optional[dict[str, Any]] = None) -> None:
 		super().__init__(level)
 		self._channel = channel
 		self._extra = extra
@@ -37,7 +37,7 @@ class ChanRecordBufHandler(RecordBufferingHandler):
 	def forward(self,
 		target: Union[LoggingHandlerProtocol],
 		stock: Optional[StockId] = None,
-		extra: Optional[Dict] = None,
+		extra: Optional[dict] = None,
 		clear: bool = True
 	) -> None:
 		"""

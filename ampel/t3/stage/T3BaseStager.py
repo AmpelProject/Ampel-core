@@ -8,7 +8,8 @@
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from time import time
-from typing import Optional, Generator
+from typing import Optional
+from collections.abc import Generator
 
 from ampel.types import ChannelId
 from ampel.view.T3Store import T3Store

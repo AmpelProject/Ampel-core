@@ -12,7 +12,7 @@ from time import time
 from os.path import isdir, isfile
 from pathlib import Path
 from struct import calcsize
-from typing import BinaryIO, Optional, Literal, Dict, Any, List, Union, Tuple, TypedDict
+from typing import BinaryIO, Optional, Literal, Any, Union, TypedDict
 
 from ampel.log.AmpelLogger import AmpelLogger, VERBOSE
 from ampel.base.AmpelBaseModel import AmpelBaseModel
@@ -24,7 +24,7 @@ from ampel.util.register import read_header, write_header, \
 class HeaderInfo(TypedDict):
 	size: int
 	len: int
-	payload: Dict[str, Any]
+	payload: dict[str, Any]
 
 
 class AmpelRegister(AmpelBaseModel):
@@ -153,13 +153,13 @@ class AmpelRegister(AmpelBaseModel):
 	#: save files in <path_base>/<file>
 	path_base: Optional[str]
 	#: save files in <path_base>/<path_extra(s)>/<file>
-	path_extra: Optional[List[str]]
+	path_extra: Optional[list[str]]
 	#: prefix for each file
 	file_prefix: Optional[str]
 	#: ignore all other path options and use this file path
 	path_full: Optional[str]
 
-	file_cap: Optional[Dict[Literal['blocks'], int]]
+	file_cap: Optional[dict[Literal['blocks'], int]]
 
 	#: use existing file handle
 	file_handle: Optional[BinaryIO]
@@ -174,15 +174,15 @@ class AmpelRegister(AmpelBaseModel):
 
 	header_log_accesses: bool = False
 	header_count_blocks: bool = True
-	header_extra: Optional[Dict[str, Any]]
-	header_extra_base: Optional[Dict[str, Any]]
+	header_extra: Optional[dict[str, Any]]
+	header_extra_base: Optional[dict[str, Any]]
 	header_update_anyway: bool = False
 
 	# New header options
 	header_creation_size: Optional[int]
 
 	# Which header key to check if file already exists
-	on_exist_check: Optional[List[Union[str, Tuple[str, str]]]] = ['struct']
+	on_exist_check: Optional[list[Union[str, tuple[str, str]]]] = ['struct']
 	on_exist_strict_check: bool = False
 
 	def __init__(self, autoload: bool = True, **kwargs) -> None:
@@ -262,7 +262,7 @@ class AmpelRegister(AmpelBaseModel):
 		self.header_sig = build_unsafe_dict_id(self.header['payload'])
 
 
-	def check_rename(self, header: Dict[str, Any]) -> bool:
+	def check_rename(self, header: dict[str, Any]) -> bool:
 		""" override if needed """
 
 		if not self.file_cap:
@@ -283,7 +283,7 @@ class AmpelRegister(AmpelBaseModel):
 		return False
 
 
-	def rename_file(self, fh: BinaryIO, header: Dict[str, Any]) -> BinaryIO:
+	def rename_file(self, fh: BinaryIO, header: dict[str, Any]) -> BinaryIO:
 
 		fh.close()
 		self.file_index = header.get('findex', 0) + 1
@@ -340,7 +340,7 @@ class AmpelRegister(AmpelBaseModel):
 		])
 
 
-	def check_header(self, header: Dict[str, Any]) -> None:
+	def check_header(self, header: dict[str, Any]) -> None:
 		"""
 		:raises: ValueError is raised on mismatch between this instance value
 		and the header value for the provided key
@@ -370,7 +370,7 @@ class AmpelRegister(AmpelBaseModel):
 
 
 	def register_file_access(self,
-		header: Optional[Dict[str, Any]] = None,
+		header: Optional[dict[str, Any]] = None,
 		use_this_time: Optional[float] = None,
 		new_blocks: Optional[int] = None,
 	) -> None:
@@ -402,7 +402,7 @@ class AmpelRegister(AmpelBaseModel):
 		"""
 
 		now = time()
-		hdr: Dict[str, Any] = {
+		hdr: dict[str, Any] = {
 			'struct': self.struct,
 			'ts': {'created': now}
 		}

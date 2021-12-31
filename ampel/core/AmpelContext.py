@@ -7,7 +7,8 @@
 # Last Modified Date:  21.11.2021
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from typing import Dict, Any, Optional, Literal, Iterable, Union, TYPE_CHECKING
+from typing import Any, Optional, Literal, Union, TYPE_CHECKING
+from collections.abc import Iterable
 from ampel.config.AmpelConfig import AmpelConfig
 from ampel.base.AuxUnitRegister import AuxUnitRegister
 from ampel.secret.AmpelVault import AmpelVault
@@ -38,7 +39,7 @@ class AmpelContext:
 
 	vault: Optional[AmpelVault]
 
-	resource: Optional[Dict[str, Any]] = None
+	resource: Optional[dict[str, Any]] = None
 
 	admin_msg: Optional[str] = None
 
@@ -47,7 +48,7 @@ class AmpelContext:
 		config: AmpelConfig,
 		db: 'AmpelDB',
 		loader: 'UnitLoader',
-		resource: Optional[Dict[str, Any]] = None,
+		resource: Optional[dict[str, Any]] = None,
 		admin_msg: Optional[str] = None
 	) -> None:
 
@@ -66,7 +67,7 @@ class AmpelContext:
 
 	@classmethod
 	def load(cls,
-		config: Union[str, Dict],
+		config: Union[str, dict],
 		pwd_file_path: Optional[str] = None,
 		pwds: Optional[Iterable[str]] = None,
 		freeze_config: bool = True,

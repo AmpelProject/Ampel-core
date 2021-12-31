@@ -10,7 +10,7 @@
 from bson import ObjectId
 from pymongo.collection import Collection
 from datetime import datetime, timedelta
-from typing import Dict, Optional, List, Literal, Any, Union, overload
+from typing import Optional, Literal, Any, Union, overload
 
 
 def build_query(
@@ -18,14 +18,14 @@ def build_query(
 	process_name: Optional[str] = None,
 	lte_time: Optional[Union[dict, int, float]] = None,
 	gte_time: Optional[Union[dict, int, float]] = None
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
 	"""
 	:param gte_time: unix timestamp or timedelta argument
 	:param lte_time: unix timestamp or timedelta argument
 	:returns: list of dict to be used as aggregation pipeline query parameters
 	"""
 
-	match: Dict[str, Any] = {}
+	match: dict[str, Any] = {}
 
 	if gte_time:
 		match['_id'] = {
@@ -84,7 +84,7 @@ def get_last_run(
 def build_t0_stats_query(
 	gte_time: Optional[Union[dict, int, float]] = None,
 	lte_time: Optional[Union[dict, int, float]] = None
-) -> List[Dict]:
+) -> list[dict]:
 	"""
 	:param gte_time: unix timestamp or timedelta argument
 	:param lte_time: unix timestamp or timedelta argument

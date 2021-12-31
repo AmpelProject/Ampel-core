@@ -8,7 +8,7 @@
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from pymongo import UpdateOne
-from typing import Dict, Any
+from typing import Any
 from ampel.enum.DocumentCode import DocumentCode
 from ampel.content.T2Document import T2Document
 from ampel.mongo.utils import maybe_use_each
@@ -20,8 +20,8 @@ class MongoT2Ingester(AbsDocIngester[T2Document]):
 	def ingest(self, doc: T2Document) -> None:
 
 		# Note: mongodb $setOnInsert does not retain key order
-		set_on_insert: Dict[str, Any] = {'code': DocumentCode.NEW.value}
-		add_to_set: Dict[str, Any] = {'channel': maybe_use_each(doc['channel'])}
+		set_on_insert: dict[str, Any] = {'code': DocumentCode.NEW.value}
+		add_to_set: dict[str, Any] = {'channel': maybe_use_each(doc['channel'])}
 
 		match = {
 			'stock': doc['stock'],

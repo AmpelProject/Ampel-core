@@ -9,10 +9,11 @@
 
 import collections, operator
 from pydantic import validator
-from typing import Dict, Any, Callable, Type, Optional
+from typing import Any, Optional
+from collections.abc import Callable
 from ampel.base.AmpelBaseModel import AmpelBaseModel
 
-ops: Dict[str, Callable[[str, Any], bool]] = {
+ops: dict[str, Callable[[str, Any], bool]] = {
 	'>': operator.gt,
 	'<': operator.lt,
 	'>=': operator.ge,
@@ -27,7 +28,7 @@ ops: Dict[str, Callable[[str, Any], bool]] = {
 class FilterCriterion(AmpelBaseModel):
 
 	attribute: Optional[str] = None
-	type: Optional[Type] = None
+	type: Optional[type] = None
 	operator: Callable
 	value: Any
 

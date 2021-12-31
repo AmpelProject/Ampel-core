@@ -7,7 +7,8 @@
 # Last Modified Date:  13.12.2021
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from typing import List, Optional, Sequence, Generator
+from typing import Optional
+from collections.abc import Generator, Sequence
 from ampel.abstract.AbsT3Supplier import AbsT3Supplier
 from ampel.abstract.AbsT3Selector import AbsT3Selector
 from ampel.abstract.AbsT3Loader import AbsT3Loader
@@ -73,7 +74,7 @@ class T3DefaultBufferSupplier(AbsT3Supplier[Generator[AmpelBuffer, None, None]])
 		if self.complement:
 
 			# Spawn requested snapdata complementers
-			self.complementers: Optional[List[AbsBufferComplement]] = [
+			self.complementers: Optional[list[AbsBufferComplement]] = [
 				self.context.loader \
 					.new_context_unit(
 						model = conf_el,

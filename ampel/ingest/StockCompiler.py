@@ -8,7 +8,7 @@
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from ujson import encode
-from typing import Optional, Dict, List, Union, Any
+from typing import Optional, Union, Any
 from ampel.types import ChannelId, Tag, StockId
 from ampel.content.StockDocument import StockDocument
 from ampel.content.JournalRecord import JournalRecord
@@ -30,7 +30,7 @@ class StockCompiler(AbsCompiler):
 
 	def __init__(self, **kwargs) -> None:
 		super().__init__(**kwargs)
-		self.register: Dict[StockId, Dict[str, Any]] = {}
+		self.register: dict[StockId, dict[str, Any]] = {}
 		self._id_mapper = AuxUnitRegister.get_aux_class(
 			self.id_mapper, sub_type=AbsIdMapper
 		) if self.id_mapper else None
@@ -41,7 +41,7 @@ class StockCompiler(AbsCompiler):
 		stock: StockId,
 		channel: ChannelId,
 		journal: Optional[JournalRecord] = None,
-		tag: Optional[Union[Tag, List[Tag]]] = None
+		tag: Optional[Union[Tag, list[Tag]]] = None
 	) -> None:
 
 		if stock in self.register:

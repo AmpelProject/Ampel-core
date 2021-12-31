@@ -9,7 +9,8 @@
 
 from datetime import datetime
 from argparse import ArgumentParser
-from typing import Sequence, Dict, Any, Optional, Union
+from typing import Any, Optional, Union
+from collections.abc import Sequence
 from ampel.core.EventHandler import EventHandler
 from ampel.core.AmpelContext import AmpelContext
 from ampel.abstract.AbsIdMapper import AbsIdMapper
@@ -122,7 +123,7 @@ class T2Command(AbsCoreCommand):
 
 
 	# Mandatory implementation
-	def run(self, args: Dict[str, Any], unknown_args: Sequence[str], sub_op: Optional[str] = None) -> None:
+	def run(self, args: dict[str, Any], unknown_args: Sequence[str], sub_op: Optional[str] = None) -> None:
 
 		if sub_op is None:
 			raise ValueError("A sub-operation (show, save, reset, soft-reset) needs to be specified")

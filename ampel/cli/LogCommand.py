@@ -8,7 +8,8 @@
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from argparse import ArgumentParser
-from typing import Sequence, Dict, Any, Optional, Union
+from typing import Any, Optional, Union
+from collections.abc import Sequence
 from ampel.abstract.AbsIdMapper import AbsIdMapper
 from ampel.base.AuxUnitRegister import AuxUnitRegister
 from ampel.core.AmpelContext import AmpelContext
@@ -152,10 +153,10 @@ class LogCommand(AbsCoreCommand):
 
 
 	# Mandatory implementation
-	def run(self, args: Dict[str, Any], unknown_args: Sequence[str], sub_op: Optional[str] = None) -> None:
+	def run(self, args: dict[str, Any], unknown_args: Sequence[str], sub_op: Optional[str] = None) -> None:
 
 		ctx: AmpelContext = self.get_context(args, unknown_args)
-		self.flag_strings: Dict = {}
+		self.flag_strings: dict = {}
 
 		if (args['custom_key'] and not args['custom_value']) or (args['custom_value'] and not args['custom_key']):
 			raise ValueError('Both parameter "--custom-key" and "--custom-value" must be used when either one is requested')

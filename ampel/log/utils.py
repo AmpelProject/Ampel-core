@@ -11,7 +11,7 @@ import sys, traceback
 from math import log2
 from bson import ObjectId
 from datetime import datetime
-from typing import Dict, Optional, Union, Any
+from typing import Optional, Union, Any
 from ampel.core.AmpelDB import AmpelDB
 from ampel.util.collections import has_nested_type
 from ampel.log.AmpelLogger import AmpelLogger
@@ -26,7 +26,7 @@ exception_counter = AmpelMetricsRegistry.counter(
 
 def log_exception(
 	logger: LoggerProtocol, exc: Optional[Exception] = None,
-	extra: Optional[Dict] = None, last: bool = False, msg: Optional[str] = None
+	extra: Optional[dict] = None, last: bool = False, msg: Optional[str] = None
 ) -> None:
 	"""
 	:param last: whether to print only the last exception in the stack
@@ -79,7 +79,7 @@ def report_exception(
 	logger: AmpelLogger,
 	exc: Optional[Exception] = None,
 	process: Optional[str] = None,
-	info: Dict[str, Any] = None
+	info: dict[str, Any] = None
 ) -> None:
 	"""
 	:param tier: Ampel tier level (0, 1, 2, 3)
@@ -99,7 +99,7 @@ def report_exception(
 	# Feedback
 	log_exception(logger, exc, info)
 
-	trouble: Dict[str, Any] = {
+	trouble: dict[str, Any] = {
 		'_id': ObjectId(),
 		'datetime': datetime.now().strftime('%d/%m/%Y %H:%M:%S'),
 		'tier': get_tier_from_logger(logger)
@@ -125,7 +125,7 @@ def report_exception(
 def report_error(
 	ampel_db: AmpelDB, logger: AmpelLogger,
 	msg: Optional[str] = None,
-	info: Optional[Dict[str, Any]] = None
+	info: Optional[dict[str, Any]] = None
 ) -> None:
 	"""
 	This method is used to report bad states or errors which are grave enough
@@ -143,7 +143,7 @@ def report_error(
 	import inspect
 	frame, filename, line_number, function_name, lines, index = inspect.stack()[1]
 
-	trouble: Dict[str, Union[None, int, str]] = {
+	trouble: dict[str, Union[None, int, str]] = {
 		'_id': ObjectId(),
 		'datetime': datetime.now().strftime('%d/%m/%Y %H:%M:%S'),
 		'tier': get_tier_from_logger(logger),
@@ -191,7 +191,7 @@ def get_tier_from_log_flags(flags: Union[int, LogFlag]) -> int:
 
 
 def insert_trouble(
-	trouble: Dict[str, Any], ampel_db: AmpelDB, logger: AmpelLogger
+	trouble: dict[str, Any], ampel_db: AmpelDB, logger: AmpelLogger
 ) -> None:
 
 	# Populate troubles collection
@@ -215,10 +215,10 @@ def insert_trouble(
 
 
 def safe_query_dict(
-	match: Dict[str, Any],
-	update: Optional[Dict[str, Any]] = None,
+	match: dict[str, Any],
+	update: Optional[dict[str, Any]] = None,
 	dict_key: Optional[str] = 'query'
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
 	u"""
 	| Builds a dict that can be passed as "extra" parameter to instances of AmpelLogger.
 	| Returned dict has the following structure:
@@ -250,7 +250,7 @@ def safe_query_dict(
 	return {dict_key: extra} if dict_key else extra
 
 
-def convert_dollars(arg: Dict[str, Any]) -> Dict[str, Any]:
+def convert_dollars(arg: dict[str, Any]) -> dict[str, Any]:
 	"""
 	MongoDB does not allow documents containing dollars in 'top level key' \
 	(raises InvalidDocument). In order to log DB queries commands, we substitute \

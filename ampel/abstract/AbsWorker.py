@@ -9,7 +9,8 @@
 
 import gc, signal
 from time import time
-from typing import ClassVar, Optional, Tuple, List, Union, Dict, Any, Sequence, TypeVar, Generic, Literal
+from typing import ClassVar, Optional, Union, Any, TypeVar, Generic, Literal
+from collections.abc import Sequence
 
 from ampel.types import UBson, Tag
 from ampel.base.decorator import abstractmethod
@@ -43,7 +44,7 @@ class AbsWorker(Generic[T], AbsEventUnit, abstract=True):
 	"""
 
 	#: ids of the units to run. If not specified, any t1/t2 unit will be run.
-	unit_ids: Optional[List[str]]
+	unit_ids: Optional[list[str]]
 
 	#: process only with the given code
 	code_match: Union[DocumentCode, Sequence[DocumentCode]] = [DocumentCode.NEW, DocumentCode.RERUN_REQUESTED]
@@ -82,7 +83,7 @@ class AbsWorker(Generic[T], AbsEventUnit, abstract=True):
 		self._loader = self.context.loader
 
 		# Prepare DB query dict
-		self.query: Dict[str, Any] = {
+		self.query: dict[str, Any] = {
 			'code': self.code_match if isinstance(self.code_match, DocumentCode)
 			else maybe_match_array(self.code_match) # type: ignore[arg-type]
 		}
@@ -107,7 +108,7 @@ class AbsWorker(Generic[T], AbsEventUnit, abstract=True):
 
 		# _instances stores unit instances so that they can be re-used in run()
 		# Key: set(unit name + config), value: unit instance
-		self._instances: Dict[str, Any] = {}
+		self._instances: dict[str, Any] = {}
 
 
 	@abstractmethod
@@ -187,7 +188,7 @@ class AbsWorker(Generic[T], AbsEventUnit, abstract=True):
 	def _processing_error(self,
 		logger: AmpelLogger, doc: T, body: UBson,
 		meta: MetaRecord, msg: Optional[str] = None,
-		extra: Optional[Dict[str, Any]] = None, exception: Optional[Exception] = None
+		extra: Optional[dict[str, Any]] = None, exception: Optional[Exception] = None
 	) -> None:
 		"""
 		- Updates the t1/t2 document by appending a meta entry and
@@ -221,7 +222,7 @@ class AbsWorker(Generic[T], AbsEventUnit, abstract=True):
 
 		self.commit_update({'_id': doc['_id']}, meta, logger, code=DocumentCode.EXCEPTION) # type: ignore[typeddict-item]
 
-		info: Dict[str, Any] = (extra or {}) | meta | {'stock': doc['stock'], 'doc': doc}
+		info: dict[str, Any] = (extra or {}) | meta | {'stock': doc['stock'], 'doc': doc}
 		if exception:
 			report_exception(self._ampel_db, logger=logger, exc=exception, info=info)
 		else:
@@ -229,7 +230,7 @@ class AbsWorker(Generic[T], AbsEventUnit, abstract=True):
 
 
 	def commit_update(self,
-		match: Dict[str, Any],
+		match: dict[str, Any],
 		meta: MetaRecord,
 		logger: AmpelLogger, *,
 		payload_op: Literal['$push', '$set'] = '$push',
@@ -249,7 +250,7 @@ class AbsWorker(Generic[T], AbsEventUnit, abstract=True):
 				else:
 					logger.log(DEBUG, None, extra={"body": body})
 
-		upd: Dict[str, Any] = {
+		upd: dict[str, Any] = {
 			'$set': {'code': code},
 			'$push': {'meta': meta}
 		}
@@ -367,7 +368,7 @@ class AbsWorker(Generic[T], AbsEventUnit, abstract=True):
 		return self._instances[k]
 
 
-def register_stats(tier: int) -> Tuple[Histogram, Counter]:
+def register_stats(tier: int) -> tuple[Histogram, Counter]:
 
 	hist = AmpelMetricsRegistry.histogram(
 		'latency',

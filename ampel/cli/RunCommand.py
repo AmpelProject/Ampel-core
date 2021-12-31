@@ -9,7 +9,8 @@
 
 from ampel.core.AmpelContext import AmpelContext
 from argparse import ArgumentParser
-from typing import List, Optional, Sequence, Dict, Any, Union
+from typing import Optional, Any, Union
+from collections.abc import Sequence
 from ampel.cli.AbsCoreCommand import AbsCoreCommand
 from ampel.cli.AmpelArgumentParser import AmpelArgumentParser
 from ampel.config.AmpelConfig import AmpelConfig
@@ -58,11 +59,11 @@ class RunCommand(AbsCoreCommand):
 
 
 	# Mandatory implementation
-	def run(self, args: Dict[str, Any], unknown_args: Sequence[str], sub_op: Optional[str] = None) -> None:
+	def run(self, args: dict[str, Any], unknown_args: Sequence[str], sub_op: Optional[str] = None) -> None:
 
 		ctx = self.get_context(args, unknown_args, ContextClass=AmpelContext)
 
-		pms: List[ProcessModel] = [
+		pms: list[ProcessModel] = [
 			pm for el in args['process']
 			if (pm := get_process(ctx.config, el))
 		]

@@ -9,7 +9,8 @@
 
 from time import time
 from ampel.base.AmpelBaseModel import AmpelBaseModel
-from typing import Union, Sequence, Generator, Optional, Any
+from typing import Union, Optional, Any
+from collections.abc import Generator, Sequence
 
 from ampel.types import UBson
 from ampel.t3.T3DocBuilder import T3DocBuilder

@@ -8,7 +8,8 @@
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from time import time
-from typing import Optional, Sequence, List, Generator, Union, Dict, Type, Iterable
+from typing import Optional, Union
+from collections.abc import Generator, Iterable, Sequence
 from itertools import islice
 from multiprocessing import JoinableQueue
 from multiprocessing.pool import ThreadPool
@@ -35,9 +36,9 @@ class RunBlock:
 	"""
 	filter: Optional[AbsT3Filter]
 	projector: Optional[AbsT3Projector]
-	units: List[AbsT3ReviewUnit]
-	stock_ids: Optional[List[StockId]]
-	qdict: Dict[Type, List[JoinableQueue]]
+	units: list[AbsT3ReviewUnit]
+	stock_ids: Optional[list[StockId]]
+	qdict: dict[type, list[JoinableQueue]]
 
 	def __init__(self):
 		self.filter = None
@@ -61,7 +62,7 @@ class T3ProjectingStager(T3ThreadedStager):
 	def __init__(self, **kwargs) -> None:
 
 		super().__init__(**kwargs)
-		self.run_blocks: List[RunBlock] = []
+		self.run_blocks: list[RunBlock] = []
 		debug = self.logger.verbose > 1
 
 		if debug:
@@ -261,7 +262,7 @@ class T3ProjectingStager(T3ThreadedStager):
 		res: Union[None, UBson, UnitResult],
 		t3s: T3Store,
 		ts: float,
-		stocks: Optional[List[StockId]] = None
+		stocks: Optional[list[StockId]] = None
 	) -> T3Document:
 
 		t3_doc = super().craft_t3_doc(t3_unit, res, t3s, ts, stocks)

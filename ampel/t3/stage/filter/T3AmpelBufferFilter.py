@@ -8,7 +8,8 @@
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 import collections
-from typing import Sequence, Literal, List, Union, get_args, Iterable
+from typing import Literal, Union, get_args
+from collections.abc import Sequence, Iterable
 from ampel.types import ChannelId
 from ampel.model.operator.AnyOf import AnyOf
 from ampel.model.operator.AllOf import AllOf
@@ -55,7 +56,7 @@ class T3AmpelBufferFilter(AbsT3Filter):
 			kwargs['filters'] = [kwargs['filters']]
 
 		super().__init__(**kwargs)
-		self.filter_blocks: List[FilterBlock] = []
+		self.filter_blocks: list[FilterBlock] = []
 
 		for f in self.filters:
 
@@ -71,7 +72,7 @@ class T3AmpelBufferFilter(AbsT3Filter):
 	def filter(self, it: Iterable[AmpelBuffer]) -> Sequence[AmpelBuffer]:
 
 		debug = self.logger.verbose > 1
-		ret: List[AmpelBuffer]
+		ret: list[AmpelBuffer]
 
 		if self.channel:
 

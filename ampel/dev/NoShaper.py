@@ -7,7 +7,8 @@
 # Last Modified Date:  05.08.2021
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from typing import Dict, List, Any, Iterable, Optional
+from typing import Any, Optional
+from collections.abc import Iterable
 from ampel.types import StockId
 from ampel.abstract.AbsT0Unit import AbsT0Unit
 from ampel.content.DataPoint import DataPoint
@@ -20,5 +21,5 @@ class NoShaper(AbsT0Unit):
 	logger: Optional[AmpelLogger] # type: ignore[assignment]
 
 	# Mandatory implementation
-	def process(self, arg: Iterable[Dict[str, Any]], stock: StockId) -> List[DataPoint]: # type: ignore[override]
+	def process(self, arg: Iterable[dict[str, Any]], stock: StockId) -> list[DataPoint]: # type: ignore[override]
 		return arg # type: ignore

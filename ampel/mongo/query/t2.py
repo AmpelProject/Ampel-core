@@ -8,21 +8,20 @@
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from bson.binary import Binary
-from typing import Union, Dict, Any, Optional, List
+from typing import Union, Any, Optional
 from ampel.types import StockId, ChannelId, StrictIterable, strict_iterable
 from ampel.model.operator.AnyOf import AnyOf
 from ampel.model.operator.AllOf import AllOf
 from ampel.model.operator.OneOf import OneOf
-from ampel.util.collections import check_seq_inner_type
 from ampel.mongo.utils import maybe_match_array
 from ampel.mongo.query.general import build_general_query
 
 
 def build_stateless_query(
 	stock: Optional[Union[StockId, StrictIterable[StockId]]] = None,
-	channel: Optional[Union[ChannelId, Dict, AllOf[ChannelId], AnyOf[ChannelId], OneOf[ChannelId]]] = None,
+	channel: Optional[Union[ChannelId, dict, AllOf[ChannelId], AnyOf[ChannelId], OneOf[ChannelId]]] = None,
 	t2_subsel: Union[int, str, StrictIterable[Union[int, str]]] = None
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
 	"""
 	| Builds a pymongo query dict aiming at loading transient t2 or compounds docs \
 	| Stateless query: all avail compounds and t2docs (although possibly \
@@ -41,23 +40,24 @@ def build_stateless_query(
 	query = build_general_query(stock=stock, channel=channel)
 
 	if t2_subsel:
-		query['unit'] = t2_subsel if isinstance(t2_subsel, (str,int)) else maybe_match_array(t2_subsel)
+		query['unit'] = t2_subsel if isinstance(t2_subsel, (str, int)) \
+			else maybe_match_array(t2_subsel)
 
 	return query
 
 
 def build_statebound_t1_query(
 	states: Union[str, bytes, Binary, StrictIterable[Union[str, bytes, Binary]]],
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
 	return {'_id': get_compound_match(states)}
 
 
 def build_statebound_t2_query(
 	stock: Optional[Union[StockId, StrictIterable[StockId]]],
 	states: Union[str, bytes, Binary, StrictIterable[Union[str, bytes, Binary]]],
-	channel: Optional[Union[ChannelId, Dict, AllOf[ChannelId], AnyOf[ChannelId], OneOf[ChannelId]]] = None,
+	channel: Optional[Union[ChannelId, dict, AllOf[ChannelId], AnyOf[ChannelId], OneOf[ChannelId]]] = None,
 	t2_subsel: Union[int, str, StrictIterable[Union[int, str]]] = None
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
 	"""
 	See :func:`build_stateless_query <build_stateless_query>` docstring
 	"""
@@ -66,7 +66,8 @@ def build_statebound_t2_query(
 	query['link'] = get_compound_match(states)
 
 	if t2_subsel:
-		query['unit'] = t2_subsel if isinstance(t2_subsel, (str,int)) else maybe_match_array(t2_subsel)
+		query['unit'] = t2_subsel if isinstance(t2_subsel, (str, int)) \
+			else maybe_match_array(t2_subsel)
 
 	return query
 
@@ -90,7 +91,7 @@ def _to_binary(st: Union[str, bytes, Binary]) -> Binary:
 
 def get_compound_match(
 	states: Union[str, bytes, Binary, StrictIterable[Union[str, bytes, Binary]]],
-) -> Union[Binary, Dict[str, List[Binary]]]:
+) -> Union[Binary, dict[str, list[Binary]]]:
 	"""
 	:raises ValueError: if provided states parameter is invalid
 	"""

@@ -7,7 +7,7 @@
 # Last Modified Date:  09.10.2021
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from typing import Dict, Optional, Any, Generic
+from typing import Optional, Any, Generic
 from ampel.types import T
 from ampel.base.AmpelABC import AmpelABC
 from ampel.base.decorator import abstractmethod
@@ -23,5 +23,5 @@ class AbsDocIngester(Generic[T], AmpelABC, AmpelBaseModel, abstract=True):
 	def ingest(self, doc: T) -> None:
 		...
 
-	def get_stats(self, reset: bool = True) -> Optional[Dict[str, Any]]:
+	def get_stats(self, reset: bool = True) -> Optional[dict[str, Any]]:
 		return None

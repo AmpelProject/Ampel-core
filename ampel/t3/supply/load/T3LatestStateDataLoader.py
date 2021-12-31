@@ -9,7 +9,8 @@
 
 import collections
 from bson.codec_options import CodecOptions
-from typing import Iterable, Union, Iterator, Optional
+from typing import Union, Optional
+from collections.abc import Iterable, Iterator
 
 from ampel.types import StockId, StrictIterable
 from ampel.abstract.AbsT3Loader import AbsT3Loader

@@ -7,13 +7,13 @@
 # Last Modified Date:  24.03.2021
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from typing import Dict, Any
+from typing import Any
 from ampel.abstract.AbsIdMapper import AbsIdMapper
 from ampel.base.AuxUnitRegister import AuxUnitRegister
 from ampel.util.collections import check_seq_inner_type
 
 
-def maybe_load_idmapper(args: Dict[str, Any]) -> None:
+def maybe_load_idmapper(args: dict[str, Any]) -> None:
 	"""
 	Replaces the string id defined in args['id_mapper'] with an instance of the requested id mapper.
 	Replaces potential string stock ids with their ampel ids.

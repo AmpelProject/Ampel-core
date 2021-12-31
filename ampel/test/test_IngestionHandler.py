@@ -1,6 +1,7 @@
 from collections import defaultdict
 import contextlib
-from typing import Any, Generator
+from typing import Any
+from collections.abc import Generator
 from ampel.config.AmpelConfig import AmpelConfig
 from ampel.content.MetaRecord import MetaRecord
 from ampel.enum.MetaActionCode import MetaActionCode

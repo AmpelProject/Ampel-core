@@ -13,4 +13,4 @@ from ampel.base.AmpelBaseModel import AmpelBaseModel
 class RemoteUnitDefinition(AmpelBaseModel):
 
 	class_name: str
-	base: List['str']
+	base: list['str']

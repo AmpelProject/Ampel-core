@@ -9,7 +9,8 @@
 
 import os, sys, re, json, yaml, datetime, getpass, importlib, subprocess
 from multiprocessing import Pool
-from typing import Dict, List, Any, Optional, Set, Iterable, Union
+from typing import Any, Optional, Union
+from collections.abc import Iterable
 
 from ampel.log.utils import log_exception
 from ampel.abstract.AbsChannelTemplate import AbsChannelTemplate
@@ -43,13 +44,13 @@ class ConfigBuilder:
 			console={'level': DEBUG if verbose else ERROR}
 		) if logger is None else logger
 		self.first_pass_config = FirstPassConfig(self.logger, verbose, get_env=get_env)
-		self.templates: Dict[str, Any] = {}
+		self.templates: dict[str, Any] = {}
 		self.verbose = verbose
 		self.error = False
 
 
 	def load_ampel_conf(self,
-		d: Dict,
+		d: dict,
 		dist_name: str,
 		version: Union[str, float, int],
 		register_file: str
@@ -85,7 +86,7 @@ class ConfigBuilder:
 
 
 	def register_channel_templates(self,
-		chan_templates: Dict[str, str],
+		chan_templates: dict[str, str],
 		dist_name: str,
 		version: Union[str, float, int],
 		register_file: str
@@ -122,7 +123,7 @@ class ConfigBuilder:
 		get_unit_env: bool = True,
 		save: Union[bool, str, None] = None,
 		sign: int = 6,
-	) -> Dict[str, Any]:
+	) -> dict[str, Any]:
 		"""
 		Pass 2.
 		Builds the final ampel config using previously collected config pieces (contained in self.first_pass_config)
@@ -428,7 +429,7 @@ class ConfigBuilder:
 		return d
 
 
-	def new_morpher(self, process: Dict[str, Any]) -> ProcessMorpher:
+	def new_morpher(self, process: dict[str, Any]) -> ProcessMorpher:
 		"""
 		Returns an instance of ProcessMorpher using the provided
 		process dict and the internal logger and templates
@@ -438,7 +439,7 @@ class ConfigBuilder:
 		)
 
 
-	def _get_channel_tpl(self, chan_dict: Dict[str, Any]) -> Optional[AbsChannelTemplate]:
+	def _get_channel_tpl(self, chan_dict: dict[str, Any]) -> Optional[AbsChannelTemplate]:
 		"""
 		Internal method used to check if a template (and which one)
 		should be applied to a given channel dict.
@@ -466,7 +467,7 @@ class ConfigBuilder:
 
 	def gather_processes(self,
 		config: FirstPassConfig, tier: int, match: str, collect: str
-	) -> Optional[Dict]:
+	) -> Optional[dict]:
 		"""
 		:param channel_names:
 		- None: all the available channels from the ampel config will be loaded
@@ -474,7 +475,7 @@ class ConfigBuilder:
 		- List of strings: channels with the provided ids will be loaded
 		"""
 
-		processes: List[Dict] = [
+		processes: list[dict] = [
 			el for el in config[f't{tier}']['process'].values()
 			if re.match(match, el.get('name'))
 		]
@@ -483,8 +484,8 @@ class ConfigBuilder:
 			return None
 
 		init_configs = []
-		dist_names: Set[str] = set()
-		out_proc: Optional[Dict] = None
+		dist_names: set[str] = set()
+		out_proc: Optional[dict] = None
 
 		for p in processes:
 

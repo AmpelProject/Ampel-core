@@ -7,7 +7,8 @@
 # Last Modified Date:  18.06.2020
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from typing import Union, Generic, List, Sequence, Any
+from typing import Union, Generic, Any
+from collections.abc import Sequence
 from ampel.types import T
 from ampel.base.decorator import abstractmethod
 from ampel.model.operator.AllOf import AllOf
@@ -26,10 +27,10 @@ class AbsLogicOperatorFilter(Generic[T], AbsApplicable, abstract=True):
 
 	@staticmethod
 	@abstractmethod
-	def _apply_filter(args: Sequence[T], f: FilterCriterion) -> List[T]:
+	def _apply_filter(args: Sequence[T], f: FilterCriterion) -> list[T]:
 		...
 
-	def apply(self, args: Sequence[T]) -> List[T]:
+	def apply(self, args: Sequence[T]) -> list[T]:
 
 		if isinstance(self.filters, FilterCriterion):
 			return self._apply_filter(args, self.filters)

@@ -8,7 +8,8 @@
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from bson.codec_options import CodecOptions
-from typing import Iterable, Union, Iterator, Optional
+from typing import Union, Optional
+from collections.abc import Iterable, Iterator
 from ampel.types import StockId, StrictIterable
 from ampel.struct.AmpelBuffer import AmpelBuffer
 from ampel.abstract.AbsT3Loader import AbsT3Loader

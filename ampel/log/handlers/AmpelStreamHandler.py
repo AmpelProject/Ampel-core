@@ -11,7 +11,7 @@ import sys, time
 from sys import _getframe
 from os.path import basename
 from time import strftime
-from typing import Literal, Dict, List, Optional
+from typing import Literal, Optional
 from ampel.log.LogFlag import LogFlag
 from ampel.log.LightLogRecord import LightLogRecord
 from ampel.util.mappings import compare_dict_values

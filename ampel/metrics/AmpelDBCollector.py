@@ -26,7 +26,7 @@ class AmpelDBCollector:
 
     db: AmpelDB
 
-    def collect(self) -> List[Metric]:
+    def collect(self) -> list[Metric]:
 
         metrics = []
         try:

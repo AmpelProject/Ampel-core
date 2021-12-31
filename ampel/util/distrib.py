@@ -8,14 +8,15 @@
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 import os, re
-from typing import Generator, List, Optional
+from typing import Optional
+from collections.abc import Generator
 from pkg_resources import ( # type: ignore[attr-defined]
 	get_distribution, AvailableDistributions,
 	EggInfoDistribution, DistInfoDistribution
 )
 
 
-def get_dist_names(distrib_prefix: str = "ampel-") -> List[str]:
+def get_dist_names(distrib_prefix: str = "ampel-") -> list[str]:
 	"""
 	Get all installed distributions whose names start with the provided prefix
 	"""
@@ -31,7 +32,7 @@ def get_dist_names(distrib_prefix: str = "ampel-") -> List[str]:
 	return ret
 
 
-def get_files(dist_name: str, lookup_dir: Optional[str] = None, pattern: Optional[re.Pattern] = None) -> List[str]:
+def get_files(dist_name: str, lookup_dir: Optional[str] = None, pattern: Optional[re.Pattern] = None) -> list[str]:
 	"""
 	Loads all known conf files of the provided distribution (name)
 	"""

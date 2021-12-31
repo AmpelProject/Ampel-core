@@ -7,7 +7,8 @@
 # Last Modified Date:  02.03.2020
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from typing import List, Union, Optional, Sequence, Dict, Any, Type
+from typing import Union, Optional, Any, Type
+from collections.abc import Sequence
 import ampel.config.builder.FirstPassConfig as fpc # avoid circular import issue
 from ampel.base.decorator import abstractmethod
 from ampel.base.AmpelABC import AmpelABC
@@ -21,7 +22,7 @@ class AbsForwardConfigCollector(dict, AmpelABC, abstract=True):
 		# Forward reference type hint to avoid cyclic import issues
 		root_config: 'fpc.FirstPassConfig',
 		conf_section: str,
-		target_collector_type: Type,
+		target_collector_type: type,
 		logger: Optional[AmpelLogger] = None,
 		verbose: bool = False,
 	) -> None:
@@ -41,7 +42,7 @@ class AbsForwardConfigCollector(dict, AmpelABC, abstract=True):
 
 
 	def add(self,
-		arg: Union[Dict[str, Any], List[Any], str],
+		arg: Union[dict[str, Any], list[Any], str],
 		dist_name: str,
 		version: Union[str, float, int],
 		register_file: str,
@@ -74,7 +75,7 @@ class AbsForwardConfigCollector(dict, AmpelABC, abstract=True):
 
 	@abstractmethod
 	def get_path(self,
-		arg: Union[Dict[str, Any], str],
+		arg: Union[dict[str, Any], str],
 		dist_name: str,
 		version: Union[str, float, int],
 		register_file: str,

@@ -7,7 +7,7 @@
 # Last Modified Date:  29.03.2021
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from typing import Dict, Any, Optional
+from typing import Any, Optional
 from bson.codec_options import CodecOptions
 from ampel.cli.ArgParserBuilder import ArgParserBuilder
 from ampel.cli.AbsCoreCommand import AbsCoreCommand
@@ -28,7 +28,7 @@ class AbsLoadCommand(AbsCoreCommand, abstract=True):
 	"""
 
 	@staticmethod
-	def get_load_args_help() -> Dict[str, str]:
+	def get_load_args_help() -> dict[str, str]:
 		return {
 			'latest': 'Include only latest state (*)',
 			'no-stock': 'Exclude stock document from view',
@@ -51,7 +51,7 @@ class AbsLoadCommand(AbsCoreCommand, abstract=True):
 		builder.add_all_note("Latest state means... [adequate description in a few words]")
 
 
-	def build_load_model(self, args: Dict[str, Any], codec_options: Optional[CodecOptions] = None) -> UnitModel:
+	def build_load_model(self, args: dict[str, Any], codec_options: Optional[CodecOptions] = None) -> UnitModel:
 		return UnitModel(
 			unit = "T3LatestStateDataLoader" if args.get("latest") else "T3SimpleDataLoader",
 			config = {

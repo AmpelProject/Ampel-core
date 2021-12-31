@@ -8,7 +8,7 @@
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 import hashlib, json
-from typing import Dict, Any, Union, List
+from typing import Any, Union
 from ampel.util.hash import build_unsafe_dict_id
 from ampel.util.mappings import dictify
 from ampel.config.collector.AbsDictConfigCollector import AbsDictConfigCollector
@@ -23,7 +23,7 @@ class T02ConfigCollector(AbsDictConfigCollector):
 	"""
 
 	def add(self,
-		arg: Dict[str, Any],
+		arg: dict[str, Any],
 		dist_name: str,
 		version: Union[str, float, int],
 		register_file: str

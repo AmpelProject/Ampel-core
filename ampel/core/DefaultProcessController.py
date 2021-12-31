@@ -9,7 +9,8 @@
 
 import asyncio, datetime, logging, schedule
 from functools import partial
-from typing import Dict, Sequence, Any, Literal, Optional, Set
+from typing import Any, Literal, Optional
+from collections.abc import Sequence
 
 from ampel.util import concurrent
 from ampel.abstract.AbsEventUnit import AbsEventUnit
@@ -67,9 +68,9 @@ class DefaultProcessController(AbsProcessController):
 
 		# one top-level task per ProcessModel
 		# invocations of run_async_process
-		self._pending_schedules: Set[asyncio.Future] = set()
+		self._pending_schedules: set[asyncio.Future] = set()
 		# individual process replicas
-		self._processes: Dict[str, Set[asyncio.Task]] = dict()
+		self._processes: dict[str, set[asyncio.Task]] = dict()
 
 		self._prepare_isolated_processes()
 
@@ -286,9 +287,9 @@ class DefaultProcessController(AbsProcessController):
 	@staticmethod
 	@concurrent.process
 	def run_mp_process(
-		config: Dict[str, Any],
+		config: dict[str, Any],
 		vault: Optional[AmpelVault],
-		p: Dict[str, Any],
+		p: dict[str, Any],
 	) -> Any:
 
 		pm = ProcessModel(**p)

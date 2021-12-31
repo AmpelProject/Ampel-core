@@ -9,7 +9,8 @@
 
 from time import time
 from bson import ObjectId
-from typing import Optional, List, Union, Dict, Any, Sequence, Tuple, ClassVar, Literal
+from typing import Optional, Union, Any, ClassVar, Literal
+from collections.abc import Sequence
 
 from ampel.types import T, UBson, ubson
 from ampel.struct.UnitResult import UnitResult
@@ -74,7 +75,7 @@ class T2Worker(AbsWorker[T2Document]):
 		doc: T2Document,
 		stock_updr: MongoStockUpdater,
 		logger: AmpelLogger
-	) -> Tuple[UBson, int]:
+	) -> tuple[UBson, int]:
 
 		before_run = time()
 
@@ -201,12 +202,12 @@ class T2Worker(AbsWorker[T2Document]):
 		None,
 		UnitResult,                                                # Error / missing dependency
 		DataPoint,                                               # point t2
-		Tuple[DataPoint, T2DocView],                             # tied point t2
-		Tuple[StockDocument],                                    # stock t2
-		Tuple[T1Document, Sequence[DataPoint]],                  # state t2
-		Tuple[T],                                                # custom state t2 (T could be LightCurve)
-		Tuple[T1Document, Sequence[DataPoint], List[T2DocView]], # tied state t2
-		Tuple[T, List[T2DocView]],                               # tied custom state t2
+		tuple[DataPoint, T2DocView],                             # tied point t2
+		tuple[StockDocument],                                    # stock t2
+		tuple[T1Document, Sequence[DataPoint]],                  # state t2
+		tuple[T],                                                # custom state t2 (T could be LightCurve)
+		tuple[T1Document, Sequence[DataPoint], list[T2DocView]], # tied state t2
+		tuple[T, list[T2DocView]],                               # tied custom state t2
 	]:
 		"""
 		Fetches documents required by `t2_unit`.
@@ -234,7 +235,7 @@ class T2Worker(AbsWorker[T2Document]):
 				AbsTiedCustomStateT2Unit
 			)
 		):
-			dps: List[DataPoint] = []
+			dps: list[DataPoint] = []
 			t1_doc: Optional[T1Document] = next(self.col_t1.find({'link': t2_doc['link']}), None)
 
 			# compound doc must exist (None could mean an ingester bug)
@@ -279,7 +280,7 @@ class T2Worker(AbsWorker[T2Document]):
 
 			if isinstance(t2_unit, AbsTiedT2Unit):
 
-				queries: List[Dict[str, Any]] = []
+				queries: list[dict[str, Any]] = []
 
 				if isinstance(t2_unit, AbsTiedCustomStateT2Unit):
 					# A LightCurve instance for example
@@ -384,19 +385,19 @@ class T2Worker(AbsWorker[T2Document]):
 
 
 	def run_tied_queries(self,
-		queries: List[Dict[str, Any]],
+		queries: list[dict[str, Any]],
 		t2_doc: T2Document,
 		stock_updr: MongoStockUpdater,
 		logger: AmpelLogger
-	) -> Union[UnitResult, List[T2DocView]]:
+	) -> Union[UnitResult, list[T2DocView]]:
 
-		t2_views: List[T2DocView] = []
+		t2_views: list[T2DocView] = []
 
 		for query in queries:
 
 			if self.run_dependent_t2s:
 
-				processed_ids: List[ObjectId] = []
+				processed_ids: list[ObjectId] = []
 
 				# run pending dependencies
 				while (
@@ -467,7 +468,7 @@ class T2Worker(AbsWorker[T2Document]):
 
 	def build_tied_t2_query(self,
 		t2_unit: AbsT2, tied_model: UnitModel, t2_doc: T2Document
-	) -> Dict[str, Any]:
+	) -> dict[str, Any]:
 		"""
 		This method handles 'default' situations.
 		Callers must check returned 'link'.
@@ -487,7 +488,7 @@ class T2Worker(AbsWorker[T2Document]):
 		if not t2_unit_info:
 			raise ValueError(f'Unknown T2 unit {tied_model.unit}')
 
-		d: Dict[str, Any] = {
+		d: dict[str, Any] = {
 			'unit': tied_model.unit,
 			'config': tied_model.config,
 			'channel': {'$in': t2_doc['channel']},

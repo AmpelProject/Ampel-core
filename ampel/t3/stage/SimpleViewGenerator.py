@@ -7,7 +7,8 @@
 # Last Modified Date:  09.12.2021
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from typing import Iterable, Generator
+from typing import Iterable
+from collections.abc import Generator
 from ampel.abstract.AbsT3ReviewUnit import AbsT3ReviewUnit
 from ampel.struct.AmpelBuffer import AmpelBuffer
 from ampel.mongo.update.MongoStockUpdater import MongoStockUpdater

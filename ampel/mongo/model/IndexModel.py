@@ -7,7 +7,8 @@
 # Last Modified Date:  13.04.2020
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from typing import Optional, Sequence
+from typing import Optional
+from collections.abc import Sequence
 from ampel.base.AmpelBaseModel import AmpelBaseModel
 from ampel.mongo.model.FieldModel import FieldModel
 

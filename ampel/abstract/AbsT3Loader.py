@@ -7,7 +7,8 @@
 # Last Modified Date:  13.12.2021
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from typing import Union, Iterable, Sequence, Optional, Dict, List, Iterator
+from typing import Union, Optional
+from collections.abc import Iterator, Iterable, Sequence
 from ampel.types import Traceless, StockId, ChannelId, StrictIterable
 from ampel.base.decorator import abstractmethod
 from ampel.base.AmpelABC import AmpelABC
@@ -49,7 +50,7 @@ class AbsT3Loader(AmpelABC, ContextUnit, abstract=True):
 
 		# Note: 'directives' in kwargs can contain strings which will be
 		# resolved by retrieving the associated alias from the ampel config
-		directives: List[Dict] = []
+		directives: list[dict] = []
 
 		# Resolve directive aliases
 		for el in kwargs.get('directives', []):

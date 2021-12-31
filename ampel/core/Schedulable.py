@@ -10,7 +10,8 @@
 import logging, threading, signal
 from logging import Logger
 from schedule import Scheduler
-from typing import Callable, Optional
+from typing import Optional
+from collections.abc import Callable
 from contextlib import contextmanager
 
 

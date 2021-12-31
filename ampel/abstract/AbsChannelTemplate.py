@@ -7,7 +7,7 @@
 # Last Modified Date:  07.04.2020
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from typing import List, Dict, Any
+from typing import Any
 from ampel.base.decorator import abstractmethod
 from ampel.log.AmpelLogger import AmpelLogger
 from ampel.model.ChannelModel import ChannelModel
@@ -19,14 +19,14 @@ class AbsChannelTemplate(AbsConfigTemplate, ChannelModel, abstract=True):
 
 
 	@abstractmethod
-	def get_channel(self, logger: AmpelLogger) -> Dict[str, Any]:
+	def get_channel(self, logger: AmpelLogger) -> dict[str, Any]:
 		...
 
 	@abstractmethod
-	def get_processes(self, logger: AmpelLogger, first_pass_config: FirstPassConfig) -> List[Dict[str, Any]]:
+	def get_processes(self, logger: AmpelLogger, first_pass_config: FirstPassConfig) -> list[dict[str, Any]]:
 		...
 
-	def transfer_channel_parameters(self, process: Dict[str, Any]) -> Dict[str, Any]:
+	def transfer_channel_parameters(self, process: dict[str, Any]) -> dict[str, Any]:
 		"""
 		Adds channel defined information to the provided process:
 		'active, 'distrib', 'source' and 'channel'

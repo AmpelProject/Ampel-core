@@ -49,7 +49,7 @@ if TYPE_CHECKING:
 
 
 class ProcessCollection(AmpelBaseModel):
-    processes: List[ProcessModel]
+    processes: list[ProcessModel]
 
 
 class ProcessStatus(AmpelBaseModel):
@@ -59,16 +59,16 @@ class ProcessStatus(AmpelBaseModel):
 
 
 class ProcessStatusCollection(AmpelBaseModel):
-    processes: List[ProcessStatus]
+    processes: list[ProcessStatus]
 
 
 class TaskDescription(AmpelBaseModel):
     id: str
-    processes: List[str]
+    processes: list[str]
 
 
 class TaskDescriptionCollection(AmpelBaseModel):
-    tasks: List[TaskDescription]
+    tasks: list[TaskDescription]
 
 
 app = FastAPI()
@@ -90,9 +90,9 @@ context: AmpelContext = None  # type: ignore[assignment]
 
 
 class task_manager:
-    process_name_to_controller_id: Dict[str, str] = {}
-    controller_id_to_task: Dict[str, Tuple[AbsProcessController, asyncio.Task]] = {}
-    task_to_processes: Dict[asyncio.Task, List[ProcessModel]] = {}
+    process_name_to_controller_id: dict[str, str] = {}
+    controller_id_to_task: dict[str, tuple[AbsProcessController, asyncio.Task]] = {}
+    task_to_processes: dict[asyncio.Task, list[ProcessModel]] = {}
 
     @classmethod
     def get_task(cls, name: str):
@@ -104,7 +104,7 @@ class task_manager:
 
     @classmethod
     async def add_processes(
-        cls, processes: List[ProcessModel]
+        cls, processes: list[ProcessModel]
     ) -> TaskDescriptionCollection:
         """
         Add processes to the active set. If a process requests a controller
@@ -114,7 +114,7 @@ class task_manager:
         configuration, a new task will be spawned.
         """
         global context
-        groups: Dict[str, List[ProcessModel]] = {}
+        groups: dict[str, list[ProcessModel]] = {}
         for pm in processes:
             if not pm.active:
                 continue
@@ -172,12 +172,12 @@ class task_manager:
         )
 
     @classmethod
-    async def remove_processes(cls, names: Set[str]) -> None:
+    async def remove_processes(cls, names: set[str]) -> None:
         """
         Remove the named process from the active set.
         """
         global context
-        to_remove: Dict[str, List[str]] = {}
+        to_remove: dict[str, list[str]] = {}
         for name in names:
             if (config_id := cls.process_name_to_controller_id.get(name)) is None:
                 continue
@@ -188,8 +188,8 @@ class task_manager:
         expiring = set()
         for config_id, remove_group in to_remove.items():
             controller, task = cls.controller_id_to_task[config_id]
-            keep: List[ProcessModel] = []
-            drop: List[ProcessModel] = []
+            keep: list[ProcessModel] = []
+            drop: list[ProcessModel] = []
             for pm in cls.task_to_processes[task]:
                 [keep, drop][pm.name in remove_group].append(pm)
             if not keep:
@@ -318,14 +318,14 @@ async def get_metrics(accept: Optional[str] = Header(None)):
 @app.get("/processes")
 async def get_processes(
     tier: Optional[int] = Query(None, ge=0, le=3, description="tier to include"),
-    name: Optional[List[str]] = Query(None),
-    include: Optional[List[str]] = Query(
+    name: Optional[list[str]] = Query(None),
+    include: Optional[list[str]] = Query(
         None, description="include processes with names that match"
     ),
-    exclude: Optional[List[str]] = Query(
+    exclude: Optional[list[str]] = Query(
         None, description="exclude processes with names that match"
     ),
-    controllers: Optional[List[str]] = Query(
+    controllers: Optional[list[str]] = Query(
         None, description="include processes with these controllers"
     ),
 ) -> ProcessCollection:
@@ -344,14 +344,14 @@ async def get_processes(
 @app.get("/processes/status")
 async def get_processes_status(
     tier: Optional[int] = Query(None, ge=0, le=3, description="tier to include"),
-    name: Optional[List[str]] = Query(None),
-    include: Optional[List[str]] = Query(
+    name: Optional[list[str]] = Query(None),
+    include: Optional[list[str]] = Query(
         None, description="include processes with names that match"
     ),
-    exclude: Optional[List[str]] = Query(
+    exclude: Optional[list[str]] = Query(
         None, description="exclude processes with names that match"
     ),
-    controllers: Optional[List[str]] = Query(
+    controllers: Optional[list[str]] = Query(
         None, description="include processes with these controllers"
     ),
 ) -> ProcessStatusCollection:
@@ -371,14 +371,14 @@ async def get_processes_status(
 @app.post("/processes/start")
 async def start_processes(
     tier: Optional[int] = Query(None, ge=0, le=3, description="tier to include"),
-    name: Optional[List[str]] = Query(None),
-    include: Optional[List[str]] = Query(
+    name: Optional[list[str]] = Query(None),
+    include: Optional[list[str]] = Query(
         None, description="include processes with names that match"
     ),
-    exclude: Optional[List[str]] = Query(
+    exclude: Optional[list[str]] = Query(
         None, description="exclude processes with names that match"
     ),
-    controllers: Optional[List[str]] = Query(
+    controllers: Optional[list[str]] = Query(
         None, description="include processes with these controllers"
     ),
 ) -> TaskDescriptionCollection:
@@ -391,14 +391,14 @@ async def start_processes(
 @app.post("/processes/stop")
 async def stop_processes(
     tier: Optional[int] = Query(None, ge=0, le=3, description="tier to include"),
-    name: Optional[List[str]] = Query(None),
-    include: Optional[List[str]] = Query(
+    name: Optional[list[str]] = Query(None),
+    include: Optional[list[str]] = Query(
         None, description="include processes with names that match"
     ),
-    exclude: Optional[List[str]] = Query(
+    exclude: Optional[list[str]] = Query(
         None, description="exclude processes with names that match"
     ),
-    controllers: Optional[List[str]] = Query(
+    controllers: Optional[list[str]] = Query(
         None, description="include processes with these controllers"
     ),
 ) -> TaskDescriptionCollection:
@@ -529,7 +529,7 @@ def stock_summary():
     }
 
 
-def transform_doc(doc: Dict[str, Any], tier: int) -> Dict[str, Any]:
+def transform_doc(doc: dict[str, Any], tier: int) -> dict[str, Any]:
     doc = json_util._json_convert(doc, json_util.RELAXED_JSON_OPTIONS)
     if tier == 1:
         doc["added"] = datetime.fromtimestamp(doc["added"])
@@ -591,7 +591,7 @@ FIELD_ABBREV = {
 async def query_time(
     after: Optional[Union[timedelta, datetime]] = Query(None),
     before: Optional[Union[timedelta, datetime]] = Query(None),
-) -> List[Dict[str, Any]]:
+) -> list[dict[str, Any]]:
     andlist = []
     if after or before:
         now = datetime.now(tz_util.utc)
@@ -621,9 +621,9 @@ async def query_time(
 async def query_event(
     process: Optional[str] = Query(None),
     tier: Optional[int] = Query(None, ge=0, le=3, description="tier to include"),
-    time_constraint: List[Dict[str, Any]] = Depends(query_time),
-) -> Dict[str, Any]:
-    query: Dict[str, Any] = {}
+    time_constraint: list[dict[str, Any]] = Depends(query_time),
+) -> dict[str, Any]:
+    query: dict[str, Any] = {}
     if process:
         query["process"] = process
     if tier is not None:
@@ -660,10 +660,10 @@ def get_events(base_query: dict = Depends(query_event)):
 def get_logs(
     run_id: int,
     flags: Optional[  # type: ignore[valid-type]
-        List[enum.Enum("LogFlagName", {k: k for k in LogFlag.__members__})]
+        list[enum.Enum("LogFlagName", {k: k for k in LogFlag.__members__})]
     ] = Query(None),
 ):
-    query: Dict[str, Any] = {"r": run_id}
+    query: dict[str, Any] = {"r": run_id}
     if flags:
         query["f"] = {
             "$bitsAllSet": reduce(

@@ -7,7 +7,7 @@
 # Last Modified Date:  19.03.2021
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from typing import Dict, Any, Union
+from typing import Any, Union
 from ampel.util.hash import hash_payload
 from ampel.config.collector.AbsDictConfigCollector import AbsDictConfigCollector
 from ampel.log import VERBOSE
@@ -16,7 +16,7 @@ from ampel.log import VERBOSE
 class ChannelConfigCollector(AbsDictConfigCollector):
 
 	def add(self,
-		chan_dict: Dict[str, Any],
+		chan_dict: dict[str, Any],
 		dist_name: str,
 		version: Union[str, float, int],
 		register_file: str

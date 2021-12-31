@@ -10,7 +10,8 @@
 from pymongo import MongoClient
 from pymongo.collection import Collection
 from multiprocessing import Pool
-from typing import Union, Optional, Set, Dict, Sequence
+from typing import Union, Optional
+from collections.abc import Sequence
 from ampel.types import ChannelId, StockId
 
 
@@ -18,7 +19,7 @@ def get_ids_using_find(
 	col: Collection,
 	channel: Union[ChannelId, Sequence[ChannelId]],
 	batch_size=1000000
-) -> Dict[ChannelId, Set[StockId]]:
+) -> dict[ChannelId, set[StockId]]:
 
 	if isinstance(channel, (int, str)):
 		return {
@@ -37,7 +38,7 @@ def get_ids_using_parallel_find(
 	mongo_uri: Optional[str] = None,
 	db_name='Ampel_data', col_name='stock', *,
 	pool_size=None, batch_size=1000000
-) -> Dict[ChannelId, Set[StockId]]:
+) -> dict[ChannelId, set[StockId]]:
 
 	if isinstance(channel, (int, str)):
 		return get_ids_using_find(
@@ -49,7 +50,7 @@ def get_ids_using_parallel_find(
 
 	pool = Pool(processes=pool_size)
 
-	ret: Dict[ChannelId, Set[StockId]] = {k: set() for k in channel}
+	ret: dict[ChannelId, set[StockId]] = {k: set() for k in channel}
 
 	results = [
 		pool.apply_async(
@@ -71,7 +72,7 @@ def find_ids_worker(
 	channel: Union[ChannelId, Sequence[ChannelId]],
 	mongo_uri: Optional[str] = None, db_name='Ampel_data',
 	col_name='stock', batch_size=1000000
-) -> Set[StockId]:
+) -> set[StockId]:
 
 	mc = MongoClient(mongo_uri)
 	db = mc.get_database(db_name)

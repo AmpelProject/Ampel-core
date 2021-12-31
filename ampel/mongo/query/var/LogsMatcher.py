@@ -8,7 +8,8 @@
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 import collections.abc
-from typing import Dict, Any, Union, Sequence, Optional, get_args
+from typing import Any, Union, Optional, get_args
+from collections.abc import Sequence
 from datetime import datetime
 from bson.objectid import ObjectId
 from ampel.types import ChannelId, StockId
@@ -29,8 +30,8 @@ class LogsMatcher:
 		before: Optional[str] = None,
 		channel: Optional[Union[ChannelId, Sequence[ChannelId]]] = None,
 		stock: Optional[Union[StockId, Sequence[StockId]]] = None,
-		run: Optional[Union[int, Sequence[int], Dict[str, Any]]] = None,
-		custom: Optional[Dict[str, Any]] = None,
+		run: Optional[Union[int, Sequence[int], dict[str, Any]]] = None,
+		custom: Optional[dict[str, Any]] = None,
 		id_mapper: Optional[AbsIdMapper] = None,
 		flag: int = None,
 		**kwargs # ignored, added for cli convenience
@@ -69,11 +70,11 @@ class LogsMatcher:
 
 
 	def __init__(self):
-		self.match: Dict[str, Any] = {}
+		self.match: dict[str, Any] = {}
 		self.id_mapper = None
 
 
-	def get_match_criteria(self) -> Dict[str, Any]:
+	def get_match_criteria(self) -> dict[str, Any]:
 		return self.match
 
 
@@ -127,7 +128,7 @@ class LogsMatcher:
 		return self
 
 
-	def set_run(self, run_id: Union[int, Sequence[int], Dict[str, Any]]) -> 'LogsMatcher':
+	def set_run(self, run_id: Union[int, Sequence[int], dict[str, Any]]) -> 'LogsMatcher':
 		self.match['r'] = run_id if isinstance(run_id, (int, dict)) else {'$in': run_id}
 		return self
 

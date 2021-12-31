@@ -10,7 +10,7 @@
 import logging, sys, traceback
 from sys import _getframe
 from os.path import basename
-from typing import Dict, Optional, Union, Any, List, TYPE_CHECKING
+from typing import Optional, Union, Any, TYPE_CHECKING
 from ampel.types import ChannelId
 from ampel.log.LightLogRecord import LightLogRecord
 from ampel.log.LogFlag import LogFlag
@@ -32,7 +32,7 @@ if TYPE_CHECKING:
 
 class AmpelLogger:
 
-	loggers: Dict[Union[int, str], 'AmpelLogger'] = {}
+	loggers: dict[Union[int, str], 'AmpelLogger'] = {}
 	_counter: int = 0
 	verbose: int = 0
 
@@ -110,10 +110,10 @@ class AmpelLogger:
 	def __init__(self,
 		name: Union[int, str] = 0,
 		base_flag: Optional[LogFlag] = None,
-		handlers: Optional[List[Union[LoggingHandlerProtocol, AggregatingLoggingHandlerProtocol]]] = None,
-		channel: Optional[Union[ChannelId, List[ChannelId]]] = None,
+		handlers: Optional[list[Union[LoggingHandlerProtocol, AggregatingLoggingHandlerProtocol]]] = None,
+		channel: Optional[Union[ChannelId, list[ChannelId]]] = None,
 		# See AmpelStreamHandler annotations for more details
-		console: Optional[Union[bool, Dict[str, Any]]] = True
+		console: Optional[Union[bool, dict[str, Any]]] = True
 	) -> None:
 
 		self.name = name
@@ -177,29 +177,29 @@ class AmpelLogger:
 				el.break_aggregation()
 
 
-	def error(self, msg: Union[str, Dict[str, Any]], *args,
+	def error(self, msg: Union[str, dict[str, Any]], *args,
 		exc_info: Optional[Exception] = None,
-		extra: Optional[Dict[str, Any]] = None,
+		extra: Optional[dict[str, Any]] = None,
 	):
 		self.log(ERROR, msg, *args, exc_info=exc_info, extra=extra)
 
 
-	def warn(self, msg: Union[str, Dict[str, Any]], *args,
-		extra: Optional[Dict[str, Any]] = None,
+	def warn(self, msg: Union[str, dict[str, Any]], *args,
+		extra: Optional[dict[str, Any]] = None,
 	):
 		if self.level <= WARNING:
 			self.log(WARNING, msg, *args, extra=extra)
 
 
-	def info(self, msg: Optional[Union[str, Dict[str, Any]]], *args,
-		extra: Optional[Dict[str, Any]] = None,
+	def info(self, msg: Optional[Union[str, dict[str, Any]]], *args,
+		extra: Optional[dict[str, Any]] = None,
 	) -> None:
 		if self.level <= INFO:
 			self.log(INFO, msg, *args, extra=extra)
 
 
-	def debug(self, msg: Optional[Union[str, Dict[str, Any]]], *args,
-		extra: Optional[Dict[str, Any]] = None,
+	def debug(self, msg: Optional[Union[str, dict[str, Any]]], *args,
+		extra: Optional[dict[str, Any]] = None,
 	):
 		if self.level <= DEBUG:
 			self.log(DEBUG, msg, *args, extra=extra)
@@ -217,9 +217,9 @@ class AmpelLogger:
 
 
 	def log(self,
-		lvl: int, msg: Optional[Union[str, Dict[str, Any]]], *args,
+		lvl: int, msg: Optional[Union[str, dict[str, Any]]], *args,
 		exc_info: Optional[Union[bool, Exception]] = None,
-		extra: Optional[Dict[str, Any]] = None,
+		extra: Optional[dict[str, Any]] = None,
 	):
 
 		if args and isinstance(msg, str):

@@ -8,7 +8,8 @@
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from time import time
-from typing import Generator, Sequence, Type, Iterable, Optional
+from typing import Optional
+from collections.abc import Generator, Iterable, Sequence
 from ampel.view.T3Store import T3Store
 from ampel.view.T3DocView import T3DocView
 from ampel.view.SnapView import SnapView
@@ -85,7 +86,7 @@ class T3SequentialStager(T3BaseStager):
 
 	def get_views(self, gen: Generator[AmpelBuffer, None, None]) -> dict[AbsT3ReviewUnit, list[SnapView]]:
 
-		Views: set[Type[SnapView]] = {u._View for u in self.units}
+		Views: set[type[SnapView]] = {u._View for u in self.units}
 		conf = self.context.config
 
 		if len(Views) == 1:
@@ -110,7 +111,7 @@ class T3SequentialStager(T3BaseStager):
 
 			else:
 
-				optd: dict[Type[SnapView], list[AbsT3ReviewUnit]] = {}
+				optd: dict[type[SnapView], list[AbsT3ReviewUnit]] = {}
 				for unit in self.units:
 					if unit._View not in optd:
 						optd[unit._View] = []

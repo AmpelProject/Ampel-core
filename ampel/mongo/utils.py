@@ -7,11 +7,12 @@
 # Last Modified Date:  09.10.2021
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from typing import Dict, Any, Sequence, Set, Optional
+from typing import Any, Optional
+from collections.abc import Sequence
 from ampel.types import StrictIterable, strict_iterable
 
 
-def add_or(query: Dict[str, Any], arg: Dict[str, Any]) -> None:
+def add_or(query: dict[str, Any], arg: dict[str, Any]) -> None:
 
 	if '$or' in query:
 		if '$and' in query:
@@ -56,7 +57,7 @@ def maybe_use_each(arg: Sequence[Any]) -> Any:
 	return {'$each': arg}
 
 
-def get_ids(col: Any, *, filter_stage: Optional[dict] = None) -> Set[Any]:
+def get_ids(col: Any, *, filter_stage: Optional[dict] = None) -> set[Any]:
 	"""
 	Note1: timeit perf of find vs aggregate for cols with 10 / 700 elements:
 	[el['_id'] for el in col.find()] -> 518 µs / 6.1 ms

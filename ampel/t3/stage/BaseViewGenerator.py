@@ -7,7 +7,8 @@
 # Last Modified Date:  05.09.2021
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from typing import List, Generator, TypeVar, Union
+from typing import TypeVar, Union
+from collections.abc import Generator
 from ampel.types import StockId, T3Send
 from ampel.view.SnapView import SnapView
 from ampel.struct.JournalAttributes import JournalAttributes
@@ -22,7 +23,7 @@ class BaseViewGenerator(Generator[T, T3Send, None]):
 	def __init__(self, unit_name: str, stock_updr: MongoStockUpdater) -> None:
 		self.unit_name = unit_name
 		self.stock_updr = stock_updr
-		self.stocks: List[StockId] = []
+		self.stocks: list[StockId] = []
 
 	def send(self, jt: T3Send):
 

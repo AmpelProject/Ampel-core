@@ -8,7 +8,8 @@
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from time import time
-from typing import Literal, Sequence, List, Dict, Union, Tuple, Optional, Any, Set, Callable
+from typing import Literal, Union, Optional, Any
+from collections.abc import Callable, Sequence
 from ampel.types import StockId, ChannelId, UnitId, DataPointId, UBson, Tag
 from ampel.abstract.AbsT0Muxer import AbsT0Muxer
 from ampel.abstract.AbsDocIngester import AbsDocIngester
@@ -58,7 +59,7 @@ class T2Block:
 	filter: Optional[AbsApplicable]
 	sort: Optional[Callable]
 	slc: Optional[slice]
-	group: Optional[List[int]]
+	group: Optional[list[int]]
 
 
 class T1ComputeBlock:
@@ -75,9 +76,9 @@ class T1CombineBlock:
 	trace_id: Optional[int]
 	compute: T1ComputeBlock
 	channel: ChannelId
-	group: Optional[List[int]]
-	state_t2: Optional[List[T2Block]]
-	point_t2: Optional[List[T2Block]]
+	group: Optional[list[int]]
+	state_t2: Optional[list[T2Block]]
+	point_t2: Optional[list[T2Block]]
 
 
 class T0MuxBlock:
@@ -85,27 +86,27 @@ class T0MuxBlock:
 	unit: AbsT0Muxer
 	config: Optional[int]
 	trace_id: Optional[int]
-	combine: Optional[List[T1CombineBlock]]  # mux.combine
-	point_t2: Optional[List[T2Block]] # mux.insert.point_t2
+	combine: Optional[list[T1CombineBlock]]  # mux.combine
+	point_t2: Optional[list[T2Block]] # mux.insert.point_t2
 
 
 class IngestBlock:
 	__slots__ = 'channel', 'mux', 'combine', 'combine', 'point_t2', 'stock_t2'
 	channel: ChannelId
 	mux: Optional[T0MuxBlock]
-	combine: Optional[List[T1CombineBlock]] # combine blocks
-	point_t2: Optional[List[T2Block]] # point t2
-	stock_t2: Optional[List[T2Block]] # stock t2
+	combine: Optional[list[T1CombineBlock]] # combine blocks
+	point_t2: Optional[list[T2Block]] # point t2
+	stock_t2: Optional[list[T2Block]] # stock t2
 
 
-T1CombineCache = Dict[
-	Tuple[Union[AbsT1CombineUnit, AbsT1RetroCombineUnit], Tuple[DataPointId, ...]],
-	Tuple[List[Union[List[DataPointId], T1CombineResult]], Set[ChannelId]]
+T1CombineCache = dict[
+	tuple[Union[AbsT1CombineUnit, AbsT1RetroCombineUnit], tuple[DataPointId, ...]],
+	tuple[list[Union[list[DataPointId], T1CombineResult]], set[ChannelId]]
 ]
 
-T1ComputeCache = Dict[
-	Tuple[AbsT1ComputeUnit, Tuple[DataPointId, ...]],
-	Union[Tuple[Union[UBson, UnitResult], StockId]]
+T1ComputeCache = dict[
+	tuple[AbsT1ComputeUnit, tuple[DataPointId, ...]],
+	Union[tuple[Union[UBson, UnitResult], StockId]]
 ]
 
 
@@ -122,7 +123,7 @@ class ChainedIngestionHandler:
 		directives: Sequence[Union[IngestDirective, DualIngestDirective]],
 		updates_buffer: DBUpdatesBuffer,
 		run_id: int,
-		trace_id: Dict[str, Optional[int]],
+		trace_id: dict[str, Optional[int]],
 		tier: Literal[-1, 0, 1, 2, 3],
 		compiler_opts: CompilerOptions,
 		logger: AmpelLogger,
@@ -149,11 +150,11 @@ class ChainedIngestionHandler:
 		self.include_extra_meta = include_extra_meta
 		self.base_trace_id = trace_id
 
-		self.iblocks: List[Tuple[IngestBlock, IngestBlock]] = []
-		self.ingest_stats: List[float] = []
-		self._mux_cache: Dict[int, AbsT0Muxer] = {}
-		self._t1_combine_units_cache: Dict[int, Union[AbsT1CombineUnit, AbsT1RetroCombineUnit]] = {}
-		self._t1_compute_units_cache: Dict[int, AbsT1ComputeUnit] = {}
+		self.iblocks: list[tuple[IngestBlock, IngestBlock]] = []
+		self.ingest_stats: list[float] = []
+		self._mux_cache: dict[int, AbsT0Muxer] = {}
+		self._t1_combine_units_cache: dict[int, Union[AbsT1CombineUnit, AbsT1RetroCombineUnit]] = {}
+		self._t1_compute_units_cache: dict[int, AbsT1ComputeUnit] = {}
 
 		if not directives:
 			raise ValueError("Need at least 1 directive")
@@ -164,7 +165,7 @@ class ChainedIngestionHandler:
 		self.shaper_trace_id = self.shaper._trace_id
 
 		# Base compiler parameters
-		bopts: Dict[str, Any] = {"origin": origin, "tier": tier, "run_id": run_id}
+		bopts: dict[str, Any] = {"origin": origin, "tier": tier, "run_id": run_id}
 
 		# Create compilers
 		self.t0_compiler = T0Compiler(**(compiler_opts.t0 | bopts))
@@ -216,7 +217,7 @@ class ChainedIngestionHandler:
 		directive: Union[IngestDirective, DualIngestDirective],
 		updates_buffer: DBUpdatesBuffer,
 		logger: AmpelLogger
-	) -> Tuple[IngestBlock, IngestBlock]:
+	) -> tuple[IngestBlock, IngestBlock]:
 
 		if isinstance(directive, DualIngestDirective):
 			known_ib = self._new_ingest_block(
@@ -415,7 +416,7 @@ class ChainedIngestionHandler:
 
 	def _gen_t2_block(self, im: T2Compute) -> T2Block:
 
-		ingest_opts: Dict[str, Any] = {}
+		ingest_opts: dict[str, Any] = {}
 		if not (t2_info := self.context.config.get(f'unit.{im.unit}', dict)):
 			raise ValueError(f'Unknown T2 unit {im.unit}')
 
@@ -470,11 +471,11 @@ class ChainedIngestionHandler:
 
 	def ingest(self,
 		alert_dps: Sequence[dict[str, Any]],
-		filter_results: List[Tuple[int, Union[bool, int]]],
+		filter_results: list[tuple[int, Union[bool, int]]],
 		stock_id = 0,
-		tag: Optional[Union[Tag, List[Tag]]] = None,
-		jm_extra: Optional[Dict[str, Any]] = None,
-		stock_body: Optional[Dict[str, Any]] = None
+		tag: Optional[Union[Tag, list[Tag]]] = None,
+		jm_extra: Optional[dict[str, Any]] = None,
+		stock_body: Optional[dict[str, Any]] = None
 	) -> None:
 		"""
 		Create database documents.
@@ -487,7 +488,7 @@ class ChainedIngestionHandler:
 		ingest_start = time()
 
 		# process *modifies* dict instances loaded by fastavro
-		dps: List[DataPoint] = self.shaper.process(alert_dps, stock_id)
+		dps: list[DataPoint] = self.shaper.process(alert_dps, stock_id)
 
 		if not dps: # Not sure if this can happen
 			return
@@ -495,7 +496,7 @@ class ChainedIngestionHandler:
 		add_other_tag: Optional[MetaActivity] = {'action': MetaActionCode.ADD_OTHER_TAG, 'tag': tag} if tag else None
 
 		# Set of chans (last parameter) is used for logging
-		mux_cache: Dict[AbsT0Muxer, Tuple[Optional[List[DataPoint]], Optional[List[DataPoint]], Set[ChannelId]]] = {}
+		mux_cache: dict[AbsT0Muxer, tuple[Optional[list[DataPoint]], Optional[list[DataPoint]], set[ChannelId]]] = {}
 		t1_comb_cache: T1CombineCache = {}
 		t1_comp_cache: T1ComputeCache = {}
 
@@ -505,7 +506,7 @@ class ChainedIngestionHandler:
 		for i, fres in filter_results:
 
 			# Add alert and shaper version info to stock journal entry
-			jentry: Dict[str, Any] = {
+			jentry: dict[str, Any] = {
 				'action': JournalActionCode.STOCK_ADD_CHANNEL | JournalActionCode.STOCK_BUMP_UPD,
 				'traceid': self.base_trace_id | {'shaper': self.shaper_trace_id}
 			}
@@ -635,13 +636,13 @@ class ChainedIngestionHandler:
 
 
 	def ingest_point_t2s(self,
-		dps: List[DataPoint],
+		dps: list[DataPoint],
 		fres: Union[bool, int],
 		stock_id: StockId,
 		channel: ChannelId,
-		state_t2: List[T2Block],
+		state_t2: list[T2Block],
 		add_other_tag: Optional[MetaActivity] = None,
-		meta_extra: Optional[Dict[str, Any]] = None
+		meta_extra: Optional[dict[str, Any]] = None
 	) -> None:
 
 		for t2b in state_t2:
@@ -675,11 +676,11 @@ class ChainedIngestionHandler:
 
 
 	def ingest_t12(self,
-		dps: List[DataPoint], fres: Union[bool, int], stock_id: StockId,
-		jentry: Dict[str, Any], t1bs: List[T1CombineBlock],
+		dps: list[DataPoint], fres: Union[bool, int], stock_id: StockId,
+		jentry: dict[str, Any], t1bs: list[T1CombineBlock],
 		t1_comb_cache: T1CombineCache, t1_comp_cache: T1ComputeCache,
 		add_other_tag: Optional[MetaActivity] = None,
-		meta_extra: Optional[Dict[str, Any]] = None,
+		meta_extra: Optional[dict[str, Any]] = None,
 	) -> None:
 
 		tdps = tuple(el['id'] for el in dps)
@@ -702,10 +703,10 @@ class ChainedIngestionHandler:
 				elif isinstance(comb_res, list):
 					if len(comb_res) == 0:
 						lres = []
-					elif isinstance(comb_res[0], DataPointId): # case List[DataPointId]
+					elif isinstance(comb_res[0], DataPointId): # case list[DataPointId]
 						lres = [comb_res] # type: ignore[list-item]
 					else:
-						# case List[List[DataPointId]], List[T1CombineResult]
+						# case list[list[DataPointId]], list[T1CombineResult]
 						lres = comb_res # type: ignore[assignment]
 				t1_comb_cache[(t1b.unit, tdps)] = lres, {t1b.channel}
 
@@ -713,13 +714,13 @@ class ChainedIngestionHandler:
 			for tres in lres:
 
 				body = None
-				tid: Dict[str, Any] = self.base_trace_id | {'combiner': t1b.trace_id}
+				tid: dict[str, Any] = self.base_trace_id | {'combiner': t1b.trace_id}
 
 				if 'muxer' in jentry['traceid']:
 					tid['muxer'] = jentry['traceid']['muxer']
 
 				mx = meta_extra.copy() if meta_extra else {}
-				macts: List[MetaActivity] = [
+				macts: list[MetaActivity] = [
 					{
 						'action': MetaActionCode.ADD_CHANNEL | MetaActionCode.BUMP_STOCK_UPD,
 						'channel': t1b.channel

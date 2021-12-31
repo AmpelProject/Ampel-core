@@ -7,7 +7,8 @@
 # Last Modified Date:  18.06.2020
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from typing import Union, Optional, Any, Sequence
+from typing import Union, Optional, Any
+from collections.abc import Sequence
 from ampel.base.AmpelBaseModel import AmpelBaseModel
 from ampel.model.purge.PurgeModel import PurgeModel
 #from ampel.model.ViewModel import ViewModel

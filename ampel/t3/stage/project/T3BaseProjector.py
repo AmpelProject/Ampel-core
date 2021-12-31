@@ -7,7 +7,8 @@
 # Last Modified Date:  15.12.2021
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from typing import Iterable, Union, Optional, List, Dict, Sequence, Callable, Any, Set
+from typing import Union, Optional, Any
+from collections.abc import Callable, Iterable, Sequence
 from ampel.types import Traceless
 from ampel.log import AmpelLogger, VERBOSE
 from ampel.struct.AmpelBuffer import AmpelBuffer, BufferKey
@@ -57,7 +58,7 @@ class T3BaseProjector(AbsT3Projector):
 	remove_empty: bool = True
 
 	# Modify/delete dict keys/values
-	field_projectors: List[Union[ClassModel, FuncModel]] = []
+	field_projectors: list[Union[ClassModel, FuncModel]] = []
 
 
 	def __init__(self, **kwargs) -> None:
@@ -65,7 +66,7 @@ class T3BaseProjector(AbsT3Projector):
 		super().__init__(**kwargs)
 
 		# List matchers
-		self.projectors: Dict[BufferKey, Optional[List[Callable[[Any], Any]]]] = {}
+		self.projectors: dict[BufferKey, Optional[list[Callable[[Any], Any]]]] = {}
 
 		for fp in self.field_projectors:
 			if isinstance(fp, self.ClassModel):
@@ -75,7 +76,7 @@ class T3BaseProjector(AbsT3Projector):
 			elif isinstance(fp, self.FilterOutModel):
 				self.projectors[fp.discard] = None
 
-		self.pass_through_keys: Set[BufferKey] = {"stock", "t0", "t1", "t2", "logs", "extra"} - self.projectors.keys()# type: ignore
+		self.pass_through_keys: set[BufferKey] = {"stock", "t0", "t1", "t2", "logs", "extra"} - self.projectors.keys()# type: ignore
 
 
 	def add_class_projector(self, cm: ClassModel, first: bool = False) -> None:
@@ -134,7 +135,7 @@ class T3BaseProjector(AbsT3Projector):
 		projectors = self.projectors
 		pass_through_keys = self.pass_through_keys
 
-		ret: List[AmpelBuffer] = []
+		ret: list[AmpelBuffer] = []
 
 		for abuf in ampel_buffer:
 

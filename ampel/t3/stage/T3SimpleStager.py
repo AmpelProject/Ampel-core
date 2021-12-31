@@ -7,7 +7,8 @@
 # Last Modified Date:  17.12.2021
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from typing import Optional, List, Generator
+from typing import Optional
+from collections.abc import Generator
 
 from ampel.types import OneOrMany, Annotated
 from ampel.view.T3Store import T3Store
@@ -31,7 +32,7 @@ class T3SimpleStager(T3ThreadedStager):
 	def __init__(self, **kwargs) -> None:
 
 		super().__init__(**kwargs)
-		self.units: List[AbsT3ReviewUnit] = []
+		self.units: list[AbsT3ReviewUnit] = []
 
 		if self.logger.verbose > 1:
 			self.logger.debug("Setting up T3SimpleStager")

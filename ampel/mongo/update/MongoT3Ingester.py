@@ -8,7 +8,7 @@
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from pymongo import UpdateOne
-from typing import Dict, Any, Union
+from typing import Any, Union
 from ampel.enum.DocumentCode import DocumentCode
 from ampel.content.T3Document import T3Document
 from ampel.mongo.utils import maybe_use_each

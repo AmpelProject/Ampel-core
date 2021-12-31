@@ -7,7 +7,7 @@
 # Last Modified Date:  Unspecified
 # Last Modified By:    jvs
 
-from typing import Dict, Any, Optional
+from typing import Any, Optional
 from ampel.base.AmpelABC import AmpelABC
 from ampel.base.decorator import abstractmethod
 from ampel.core.ContextUnit import ContextUnit
@@ -23,7 +23,7 @@ class AbsOpsUnit(AmpelABC, ContextUnit, abstract=True):
     logger: AmpelLogger
 
     @abstractmethod
-    def run(self, beacon: Optional[Dict[str, Any]] = None) -> Optional[Dict[str, Any]]:
+    def run(self, beacon: Optional[dict[str, Any]] = None) -> Optional[dict[str, Any]]:
         """
         :param beacon: the result of the previous run
         :returns:

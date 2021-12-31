@@ -8,7 +8,7 @@
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 import json
-from typing import Optional, Dict, Any, Type, Tuple, Literal
+from typing import Optional, Any, Literal
 from ampel.log.AmpelLogger import AmpelLogger
 
 from ampel.config.collector.ConfigCollector import ConfigCollector
@@ -21,14 +21,14 @@ from ampel.config.collector.ChannelConfigCollector import ChannelConfigCollector
 from ampel.config.collector.ResourceConfigCollector import ResourceConfigCollector
 from ampel.config.collector.ForwardProcessConfigCollector import ForwardProcessConfigCollector
 
-tiers: Tuple[Literal[0, 1, 2, 3], ...] = (0, 1, 2, 3)
+tiers: tuple[Literal[0, 1, 2, 3], ...] = (0, 1, 2, 3)
 
 class FirstPassConfig(dict):
 	"""
 	Class used to aggregate config pieces into a central configuration dict for ampel.
 	"""
 
-	conf_keys: Dict[str, Optional[Type[ConfigCollector]]] = {
+	conf_keys: dict[str, Optional[type[ConfigCollector]]] = {
 		"mongo": DBConfigCollector,
 		"logging": LoggingCollector,
 		"channel": ChannelConfigCollector,
@@ -42,7 +42,7 @@ class FirstPassConfig(dict):
 
 		self.logger = AmpelLogger.get_logger() if logger is None else logger
 
-		d: Dict[str, Any] = {
+		d: dict[str, Any] = {
 			k: Klass(conf_section=k, logger=logger, verbose=verbose)
 			for k, Klass in self.conf_keys.items() if Klass
 		}
@@ -80,7 +80,7 @@ class FirstPassConfig(dict):
 		super().__init__(d)
 
 
-	def unset_errors(self, d: Optional[Dict] = None) -> None:
+	def unset_errors(self, d: Optional[dict] = None) -> None:
 		""" """
 		for v in d.values() if d is not None else self.values():
 			if isinstance(v, dict):

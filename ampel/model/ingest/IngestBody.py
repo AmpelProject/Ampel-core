@@ -7,7 +7,8 @@
 # Last Modified Date:  27.05.2021
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from typing import Optional, Sequence, Union
+from typing import Optional, Union
+from collections.abc import Sequence
 from ampel.base.AmpelBaseModel import AmpelBaseModel
 from ampel.model.ingest.MuxModel import MuxModel
 from ampel.model.ingest.T1Combine import T1Combine

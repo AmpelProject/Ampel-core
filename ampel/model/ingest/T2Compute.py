@@ -7,7 +7,8 @@
 # Last Modified Date:  28.09.2021
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from typing import Union, Optional, Generic, Sequence
+from typing import Union, Optional, Generic
+from collections.abc import Sequence
 from ampel.types import T
 from ampel.model.UnitModel import UnitModel
 from ampel.model.DPSelection import DPSelection

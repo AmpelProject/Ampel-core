@@ -12,7 +12,8 @@ from importlib import import_module
 from pathlib import Path
 from hashlib import blake2b
 from contextlib import contextmanager
-from typing import Iterator, Type, Any, Union, Optional, TypeVar, overload, get_args
+from typing import Any, Union, Optional, TypeVar, overload, get_args
+from collections.abc import Iterator
 
 from ampel.types import ChannelId, check_class
 from ampel.util.collections import ampel_iter
@@ -69,12 +70,12 @@ class UnitLoader:
 		self.provenance = provenance
 		self.unit_defs: dict = config._config['unit']
 		self.aliases: list[dict] = [config._config['alias'][f"t{el}"] for el in (0, 3, 1, 2)]
-		self._dyn_register: Optional[dict[str, Type[LogicalUnit]]] = None # potentially updated by DevAmpelContext
+		self._dyn_register: Optional[dict[str, type[LogicalUnit]]] = None # potentially updated by DevAmpelContext
 
 
 	@overload
 	def new_logical_unit(self,
-		model: UnitModel, logger: AmpelLogger, *, sub_type: Type[LT], **kwargs
+		model: UnitModel, logger: AmpelLogger, *, sub_type: type[LT], **kwargs
 	) -> LT:
 		...
 	@overload
@@ -85,7 +86,7 @@ class UnitLoader:
 	def new_logical_unit(self,
 		model: UnitModel,
 		logger: AmpelLogger, *,
-		sub_type: Optional[Type[LT]] = None,
+		sub_type: Optional[type[LT]] = None,
 		**kwargs
 	) -> Union[LT, LogicalUnit]:
 		"""
@@ -105,7 +106,7 @@ class UnitLoader:
 
 	def new_safe_logical_unit(self,
 		um: UnitModel,
-		unit_type: Type[LT],
+		unit_type: type[LT],
 		logger: AmpelLogger,
 		_chan: Optional[ChannelId] = None
 	) -> LT:
@@ -134,7 +135,7 @@ class UnitLoader:
 
 	@overload
 	def new_context_unit(self,
-		model: UnitModel, context: AmpelContext, *, sub_type: Type[CT], **kwargs
+		model: UnitModel, context: AmpelContext, *, sub_type: type[CT], **kwargs
 	) -> CT:
 		...
 	@overload
@@ -145,7 +146,7 @@ class UnitLoader:
 	def new_context_unit(self,
 		model: UnitModel,
 		context: AmpelContext, *,
-		sub_type: Optional[Type[CT]] = None,
+		sub_type: Optional[type[CT]] = None,
 		**kwargs
 	) -> Union[CT, ContextUnit]:
 		"""
@@ -159,14 +160,14 @@ class UnitLoader:
 
 
 	@overload
-	def new(self, model: UnitModel, *, unit_type: Type[T], **kwargs) -> T:
+	def new(self, model: UnitModel, *, unit_type: type[T], **kwargs) -> T:
 		...
 	@overload
 	def new(self, model: UnitModel, *, unit_type: None = ..., **kwargs) -> AmpelBaseModel:
 		...
 	def new(self,
 		model: UnitModel, *,
-		unit_type: Optional[Type[T]] = None,
+		unit_type: Optional[type[T]] = None,
 		**kwargs
 	) -> Union[AmpelBaseModel, T]:
 		"""
@@ -242,7 +243,7 @@ class UnitLoader:
 
 
 	@staticmethod
-	def get_digest(Klass: Type) -> str:
+	def get_digest(Klass: type) -> str:
 
 		try:
 			return blake2b(
@@ -253,12 +254,12 @@ class UnitLoader:
 
 
 	@overload
-	def get_class_by_name(self, name: str, unit_type: Type[T]) -> Type[T]:
+	def get_class_by_name(self, name: str, unit_type: type[T]) -> type[T]:
 		...
 	@overload
-	def get_class_by_name(self, name: str, unit_type: None = ...) -> Type:
+	def get_class_by_name(self, name: str, unit_type: None = ...) -> type:
 		...
-	def get_class_by_name(self, name: str, unit_type: Optional[Type[T]] = None) -> Union[Type, Type[T]]:
+	def get_class_by_name(self, name: str, unit_type: Optional[type[T]] = None) -> Union[type, type[T]]:
 		"""
 		Matches the parameter 'name' with the unit definitions defined in the ampel_config.
 		This allows to retrieve the corresponding fully qualified name of the class and to load it.
@@ -266,7 +267,7 @@ class UnitLoader:
 		:param unit_type:
 			- LogicalUnit or any sublcass of LogicalUnit
 			- ContextUnit or any sublcass of ContextUnit
-			- If None (auxiliary class), returned object will have Type[Any]
+			- If None (auxiliary class), returned object will have type[Any]
 
 		:raises: ValueError if unit cannot be found or loaded or if parent class is unrecognized
 		"""
@@ -388,7 +389,7 @@ class UnitLoader:
 
 	"""
 	def internal_mypy_tests_uncomment_only_in_your_editor(self,
-		model: UnitModel, context: AmpelContext, logger: AmpelLogger, sub_type: Optional[Type[CT]] = None, **kwargs
+		model: UnitModel, context: AmpelContext, logger: AmpelLogger, sub_type: Optional[type[CT]] = None, **kwargs
 	) -> None:
 
 		# Interal: uncomment to check if mypy works adequately

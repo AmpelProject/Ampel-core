@@ -8,7 +8,8 @@
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from argparse import ArgumentParser
-from typing import Sequence, Dict, Any, Optional, Union
+from typing import Any, Optional, Union
+from collections.abc import Sequence
 from ampel.log.AmpelLogger import AmpelLogger
 from ampel.cli.AbsCoreCommand import AbsCoreCommand
 from ampel.cli.AmpelArgumentParser import AmpelArgumentParser
@@ -81,7 +82,7 @@ class ConfigCommand(AbsCoreCommand):
 
 
 	# Mandatory implementation
-	def run(self, args: Dict[str, Any], unknown_args: Sequence[str], sub_op: Optional[str] = None) -> None:
+	def run(self, args: dict[str, Any], unknown_args: Sequence[str], sub_op: Optional[str] = None) -> None:
 
 		if sub_op == 'build':
 

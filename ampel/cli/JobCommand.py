@@ -13,7 +13,8 @@ from multiprocessing import Queue, Process
 from ampel.base.AmpelBaseModel import AmpelBaseModel
 from argparse import ArgumentParser
 from importlib import import_module
-from typing import List, Sequence, Dict, Any, Optional, Union
+from typing import Any, Optional, Union
+from collections.abc import Sequence
 from ampel.abstract.AbsEventUnit import AbsEventUnit
 from ampel.abstract.AbsProcessorTemplate import AbsProcessorTemplate
 from ampel.model.UnitModel import UnitModel
@@ -41,7 +42,7 @@ class TaskUnitModel(UnitModel):
 class TemplateUnitModel(AmpelBaseModel):
 	title: Optional[str]
 	template: str
-	config: Dict[str, Any]
+	config: dict[str, Any]
 	multiplier: int = 1
 
 
@@ -99,7 +100,7 @@ class JobCommand(AbsCoreCommand):
 
 
 	# Mandatory implementation
-	def run(self, args: Dict[str, Any], unknown_args: Sequence[str], sub_op: Optional[str] = None) -> None:
+	def run(self, args: dict[str, Any], unknown_args: Sequence[str], sub_op: Optional[str] = None) -> None:
 
 		start_time = time()
 		logger = AmpelLogger.get_logger(base_flag=LogFlag.MANUAL_RUN)
@@ -108,7 +109,7 @@ class JobCommand(AbsCoreCommand):
 			logger.error(f"Job file not found: '{args['schema']}'")
 			return
 
-		tds: List[Dict[str, Any]] = []
+		tds: list[dict[str, Any]] = []
 
 		if isinstance(args['with_task'], int):
 			args['with_task'] = [args['with_task']]
@@ -296,8 +297,8 @@ class JobCommand(AbsCoreCommand):
 
 def run_mp_process(
 	queue: Queue,
-	config: Dict[str, Any],
-	tast_unit_model: Dict[str, Any],
+	config: dict[str, Any],
+	tast_unit_model: dict[str, Any],
 	process_name: str,
 	log_profile: str = "default"
 ) -> None:

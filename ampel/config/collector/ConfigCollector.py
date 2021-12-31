@@ -7,7 +7,7 @@
 # Last Modified Date:  03.03.2020
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from typing import Dict, Any, Optional, Literal
+from typing import Any, Optional, Literal
 from ampel.log.AmpelLogger import AmpelLogger
 
 
@@ -15,7 +15,7 @@ class ConfigCollector(dict):
 
 	def __init__(self,
 		conf_section: str,
-		content: Optional[Dict] = None,
+		content: Optional[dict] = None,
 		logger: Optional[AmpelLogger] = None,
 		verbose: bool = False,
 		debug: bool = False,

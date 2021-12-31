@@ -8,7 +8,8 @@
 # Last Modified By:    jvs
 
 import time
-from typing import List, Optional, Sequence, Tuple, Union
+from typing import Optional, Union
+from collections.abc import Sequence
 
 from ampel.struct.UnitResult import UnitResult
 from ampel.types import StockId, UBson
@@ -43,10 +44,10 @@ class DummyMuxer(AbsT0Muxer):
     points_to_insert: int = 5
 
     def process(
-        self, dps: List[DataPoint], stock_id: Optional[StockId] = None
-    ) -> Tuple[Optional[List[DataPoint]], Optional[List[DataPoint]]]:
+        self, dps: list[DataPoint], stock_id: Optional[StockId] = None
+    ) -> tuple[Optional[list[DataPoint]], Optional[list[DataPoint]]]:
         """
-        :returns: Tuple[datapoints to insert, datapoints to combine]
+        :returns: tuple[datapoints to insert, datapoints to combine]
             <datapoints to insert> will be provided to a T0 ingester
             <datapoints to combine> will potentially be provided to an underlying T1 combiner
         """

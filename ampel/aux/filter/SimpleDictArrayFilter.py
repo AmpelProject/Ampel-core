@@ -7,7 +7,8 @@
 # Last Modified Date:  18.06.2020
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from typing import Mapping, Sequence, List, TypeVar
+from typing import TypeVar
+from collections.abc import Mapping, Sequence
 from ampel.model.aux.FilterCriterion import FilterCriterion
 from ampel.aux.filter.AbsLogicOperatorFilter import AbsLogicOperatorFilter
 
@@ -38,7 +39,7 @@ class SimpleDictArrayFilter(AbsLogicOperatorFilter[T]):
 	"""
 
 	@staticmethod
-	def _apply_filter(dicts: Sequence[T], f: FilterCriterion) -> List[T]:
+	def _apply_filter(dicts: Sequence[T], f: FilterCriterion) -> list[T]:
 
 		attr_name = f.attribute
 		if f.type:

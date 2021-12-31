@@ -8,7 +8,7 @@
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from pymongo.cursor import Cursor
-from typing import Union, Optional, Dict, Literal, Any
+from typing import Union, Optional, Literal, Any
 
 from ampel.types import ChannelId, Tag
 from ampel.mongo.query.stock import build_stock_query
@@ -43,18 +43,18 @@ class T3StockSelector(AbsT3Selector):
 	updated: Optional[TimeConstraintModel] = None
 
 	#: Select by channel
-	channel: Optional[Union[ChannelId, AnyOf[ChannelId], AllOf[ChannelId], OneOf[ChannelId]]] = None
+	channel: Union[None, ChannelId, AnyOf[ChannelId], AllOf[ChannelId], OneOf[ChannelId]] = None
 
 	#: Select by tag
 	tag: Optional[
-		Dict[
+		dict[
 			Literal['with', 'without'],
-			Union[Tag, Dict, AllOf[Tag], AnyOf[Tag], OneOf[Tag]]
+			Union[Tag, AllOf[Tag], AnyOf[Tag], OneOf[Tag], dict]
 		]
 	] = None
 
 	#: Custom selection (ex: {'run': {'$gt': 10}})
-	custom: Optional[Dict[str, Any]] = None
+	custom: Optional[dict[str, Any]] = None
 
 
 	def __init__(self, logger: AmpelLogger, **kwargs):

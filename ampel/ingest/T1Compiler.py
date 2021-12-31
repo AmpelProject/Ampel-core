@@ -9,7 +9,7 @@
 
 import xxhash
 from struct import pack
-from typing import Optional, Dict, List, Union, Tuple, Set, Any, FrozenSet
+from typing import Optional, Union, Any, FrozenSet
 from ampel.types import ChannelId, DataPointId, StockId, UnitId, UBson
 from ampel.content.T1Document import T1Document
 from ampel.content.MetaActivity import MetaActivity
@@ -50,23 +50,23 @@ class T1Compiler(AbsCompiler):
 		self.hasher = getattr(xxhash, f'xxh{abs(self.hash_size)}_intdigest')
 
 		# Internal structure used for compiling documents
-		self.t1s: Dict[
-			Tuple[
+		self.t1s: dict[
+			tuple[
 				Optional[UnitId],       # unit
 				Optional[int],          # config
 				StockId,                # stock
-				Tuple[DataPointId, ...] # tuple(dps) [will be hashed into link]
+				tuple[DataPointId, ...] # tuple(dps) [will be hashed into link]
 			],
-			Tuple[
+			tuple[
 				int, 	                # link
-				Set[ChannelId],         # channels (doc)
+				set[ChannelId],         # channels (doc)
 				UBson,                  # body
 				Optional[int],          # code
-				Dict[
-					FrozenSet[Tuple[str, Any]], # key: traceid
-					Tuple[
+				dict[
+					Frozenset[tuple[str, Any]], # key: traceid
+					tuple[
 						ActivityRegister,
-						Dict[str, Any]  # meta extra
+						dict[str, Any]  # meta extra
 					]
 				],
 			]
@@ -74,12 +74,12 @@ class T1Compiler(AbsCompiler):
 
 
 	def add(self, # type: ignore[override]
-		dps: List[DataPointId],
+		dps: list[DataPointId],
 		channel: ChannelId,
-		traceid: Dict[str, Any],
+		traceid: dict[str, Any],
 		stock: StockId = 0,
-		activity: Optional[Union[MetaActivity, List[MetaActivity]]] = None,
-		meta_extra: Optional[Dict[str, Any]] = None,
+		activity: Optional[Union[MetaActivity, list[MetaActivity]]] = None,
+		meta_extra: Optional[dict[str, Any]] = None,
 		unit: Optional[UnitId] = None,
 		config: Optional[int] = None,
 		body: UBson = None,

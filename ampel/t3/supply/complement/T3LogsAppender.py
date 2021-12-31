@@ -9,7 +9,8 @@
 
 from datetime import datetime
 from bson.objectid import ObjectId
-from typing import Iterable, Any
+from typing import Any
+from collections.abc import Iterable
 from ampel.view.T3Store import T3Store
 from ampel.struct.AmpelBuffer import AmpelBuffer
 from ampel.mongo.query.var.LogsLoader import LogsLoader

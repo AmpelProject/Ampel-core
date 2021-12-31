@@ -7,7 +7,8 @@
 # Last Modified Date:  27.05.2021
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from typing import Optional, Union, Sequence
+from typing import Optional, Union
+from collections.abc import Sequence
 from ampel.model.UnitModel import UnitModel
 
 class T1CombineCompute(UnitModel):

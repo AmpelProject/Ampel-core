@@ -7,7 +7,7 @@
 # Last Modified Date:  02.08.2020
 # Last Modified By:    Jakob van Santen <jakob.van.santen@desy.de>
 
-from typing import Any, Dict
+from typing import Any
 from ampel.base.AmpelBaseModel import AmpelBaseModel
 
 class T2FilterModel(AmpelBaseModel):
@@ -15,4 +15,4 @@ class T2FilterModel(AmpelBaseModel):
 	#: name of T2 unit
 	unit: str
 	#: Mongo match expression to apply to most recent result
-	match: Dict[str, Any]
+	match: dict[str, Any]

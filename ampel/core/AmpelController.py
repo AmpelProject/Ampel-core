@@ -8,7 +8,8 @@
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 import asyncio, re
-from typing import Dict, Iterable, List, Literal, Optional, Sequence, Union, TYPE_CHECKING
+from typing import Literal, Optional, Union, TYPE_CHECKING
+from collections.abc import Iterable, Sequence
 
 from ampel.abstract.AbsProcessController import AbsProcessController
 from ampel.secret.AmpelVault import AmpelVault
@@ -60,7 +61,7 @@ class AmpelController:
 		:param kwargs: will be forwared to the constructor of ampel process controllers
 		"""
 
-		self.controllers: List[AbsProcessController] = []
+		self.controllers: list[AbsProcessController] = []
 		if isinstance(config_arg, str):
 			config = AmpelConfig.load(config_arg, freeze=False)
 		else:
@@ -123,11 +124,11 @@ class AmpelController:
 
 
 	@staticmethod
-	def group_processes(processes: List[ProcessModel]) -> List[List[ProcessModel]]:
+	def group_processes(processes: list[ProcessModel]) -> list[list[ProcessModel]]:
 		"""
 		Group processes by controller
 		"""
-		d: Dict[int, List[ProcessModel]] = {}
+		d: dict[int, list[ProcessModel]] = {}
 		for pm in processes:
 			controller_id = build_unsafe_dict_id(
 				pm.controller.dict(exclude_none=True), ret=int
@@ -150,7 +151,7 @@ class AmpelController:
 		logger: Optional["LoggerProtocol"] = None,
 		verbose: int = 0,
 		raise_exc: bool = False,
-	) -> List[ProcessModel]:
+	) -> list[ProcessModel]:
 		"""
 		Extract processes from the config. Only active processes are returned.
 
@@ -164,7 +165,7 @@ class AmpelController:
 		:param raise_exc: if True, raise ValidationError on invalid processes
 		"""
 
-		ret: List[ProcessModel] = []
+		ret: list[ProcessModel] = []
 
 		if match:
 			rmatch = [re.compile(el) for el in match]  # Compile regexes
@@ -225,7 +226,7 @@ class AmpelController:
 
 
 	@classmethod
-	def main(cls, args: Optional[List[str]] = None) -> None:
+	def main(cls, args: Optional[list[str]] = None) -> None:
 
 		import logging, signal
 		from argparse import ArgumentParser

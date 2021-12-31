@@ -11,7 +11,8 @@ from json import dumps
 from io import TextIOWrapper
 from itertools import islice
 from datetime import datetime
-from typing import Optional, Union, TextIO, Generator
+from typing import Optional, Union, TextIO
+from collections.abc import Generator
 
 from ampel.view.T3Store import T3Store
 from ampel.log.AmpelLogger import AmpelLogger

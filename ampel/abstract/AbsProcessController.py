@@ -7,7 +7,8 @@
 # Last Modified Date:  17.04.2020
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from typing import Dict, Optional, Literal, Sequence, Any, ClassVar
+from typing import Optional, Literal, Any, ClassVar
+from collections.abc import Sequence
 from ampel.base.decorator import abstractmethod
 from ampel.base.AmpelABC import AmpelABC
 from ampel.base.AmpelBaseModel import AmpelBaseModel
@@ -44,7 +45,7 @@ class AbsProcessController(AmpelABC, AmpelBaseModel, abstract=True):
 		config_file_path: str,
 		match: Optional[Sequence[str]] = None,
 		exclude: Optional[Sequence[str]] = None,
-		override: Optional[Dict] = None,
+		override: Optional[dict] = None,
 		log_profile: str = "default",
 		**kwargs
 	):

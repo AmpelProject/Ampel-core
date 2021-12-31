@@ -9,7 +9,8 @@
 
 from time import time
 from datetime import datetime
-from typing import Union, Optional, Iterable, Any
+from typing import Union, Optional, Any
+from collections.abc import Iterable
 
 from ampel.types import Traceless, StockId, UBson, ubson
 from ampel.abstract.AbsT3ReviewUnit import AbsT3ReviewUnit

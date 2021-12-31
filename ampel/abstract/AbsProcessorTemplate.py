@@ -7,7 +7,7 @@
 # Last Modified Date:  16.07.2021
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from typing import Dict, Any
+from typing import Any
 from ampel.log.AmpelLogger import AmpelLogger
 from ampel.base.decorator import abstractmethod
 from ampel.model.UnitModel import UnitModel
@@ -17,5 +17,5 @@ from ampel.config.builder.AbsConfigTemplate import AbsConfigTemplate
 class AbsProcessorTemplate(AbsConfigTemplate, abstract=True):
 
 	@abstractmethod
-	def get_model(self, config: Dict[str, Any], logger: AmpelLogger) -> UnitModel:
+	def get_model(self, config: dict[str, Any], logger: AmpelLogger) -> UnitModel:
 		...

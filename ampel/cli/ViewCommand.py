@@ -9,7 +9,8 @@
 
 import sys
 from argparse import ArgumentParser
-from typing import Sequence, Dict, Any, Optional, Union
+from typing import Any, Optional, Union
+from collections.abc import Sequence
 from ampel.log.AmpelLogger import AmpelLogger
 from ampel.log.LogFlag import LogFlag
 from ampel.cli.utils import maybe_load_idmapper
@@ -88,7 +89,7 @@ class ViewCommand(AbsStockCommand, AbsLoadCommand):
 
 
 	# Mandatory implementation
-	def run(self, args: Dict[str, Any], unknown_args: Sequence[str], sub_op: Optional[str] = None) -> None:
+	def run(self, args: dict[str, Any], unknown_args: Sequence[str], sub_op: Optional[str] = None) -> None:
 
 		ctx = self.get_context(args, unknown_args, ContextClass=AmpelContext)
 		maybe_load_idmapper(args)

@@ -7,7 +7,7 @@
 # Last Modified Date:  20.06.2021
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from typing import Type, get_args, get_origin
+from typing import get_args, get_origin
 from ampel.abstract.AbsSecretProvider import AbsSecretProvider
 from ampel.secret.Secret import Secret
 from ampel.secret.NamedSecret import NamedSecret
@@ -15,7 +15,7 @@ from ampel.secret.NamedSecret import NamedSecret
 
 class PotemkinSecretProvider(AbsSecretProvider):
 
-    def tell(self, arg: Secret, value_type: Type) -> bool:
+    def tell(self, arg: Secret, value_type: type) -> bool:
 
         if get_origin(value_type) is tuple:
             value = tuple(t() for t in get_args(value_type))

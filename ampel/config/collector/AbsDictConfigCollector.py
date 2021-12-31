@@ -7,7 +7,7 @@
 # Last Modified Date:  03.03.2020
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from typing import Any, Union, Dict, Optional
+from typing import Any, Union, Optional
 from ampel.base.AmpelABC import AmpelABC
 from ampel.base.decorator import abstractmethod
 from ampel.config.collector.ConfigCollector import ConfigCollector
@@ -17,7 +17,7 @@ class AbsDictConfigCollector(ConfigCollector, AmpelABC, abstract=True):
 
 	@abstractmethod
 	def add(self,
-		arg: Dict[str, Any],
+		arg: dict[str, Any],
 		dist_name: str,
 		version: Union[str, float, int],
 		register_file: str

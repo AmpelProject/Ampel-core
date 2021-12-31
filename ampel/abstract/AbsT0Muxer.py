@@ -7,7 +7,7 @@
 # Last Modified Date:  13.12.2021
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from typing import List, Tuple, Optional
+from typing import Optional
 from ampel.types import Traceless, StockId
 from ampel.base.AmpelABC import AmpelABC
 from ampel.base.decorator import abstractmethod
@@ -28,9 +28,9 @@ class AbsT0Muxer(AmpelABC, ContextUnit, abstract=True):
 
 	@abstractmethod
 	def process(self,
-		dps: List[DataPoint],
+		dps: list[DataPoint],
 		stock_id: Optional[StockId] = None
-	) -> Tuple[Optional[List[DataPoint]], Optional[List[DataPoint]]]:
+	) -> tuple[Optional[list[DataPoint]], Optional[list[DataPoint]]]:
 		"""
 		Potentially:
 		- Append datapoints to the datapoints provided as argument (the source can be the AmpelDB or external source(s))
@@ -43,7 +43,7 @@ class AbsT0Muxer(AmpelABC, ContextUnit, abstract=True):
 		3) ingest
 		4) t1 combine
 
-		:returns: Tuple[datapoints to insert, datapoints to combine]
+		:returns: tuple[datapoints to insert, datapoints to combine]
 		<datapoints to insert> will be provided to a T0 ingester
 		<datapoints to combine> will potentially be provided to an underlying T1 combiner
 

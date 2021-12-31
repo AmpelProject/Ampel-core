@@ -9,7 +9,8 @@
 
 import json, subprocess, sys, yaml
 from io import StringIO
-from typing import Any, Dict, Iterable, Mapping, Optional, TextIO
+from typing import Any, Optional, TextIO
+from collections.abc import Mapping, Iterable
 from argparse import ArgumentParser, ArgumentTypeError, FileType, Namespace
 
 from ampel.base.BadConfig import BadConfig
@@ -66,7 +67,7 @@ def build(args: Namespace) -> int:
     return 0
 
 
-def _load_dict(source: TextIO) -> Dict[str, Any]:
+def _load_dict(source: TextIO) -> dict[str, Any]:
     if isinstance((payload := yaml.safe_load(source)), dict):
         return payload
     else:
@@ -87,12 +88,12 @@ def _validate(config_file: TextIO, secrets: Optional[TextIO] = None) -> None:
     )
     with ctx.loader.validate_unit_models():
         for channel in ctx.config.get(
-            "channel", Dict[str, Any], raise_exc=True
+            "channel", dict[str, Any], raise_exc=True
         ).values():
             ChannelModel(**{k: v for k, v in channel.items() if k not in {"template"}})
         for tier in range(3):
             for process in ctx.config.get(
-                f"process.t{tier}", Dict[str, Any], raise_exc=True
+                f"process.t{tier}", dict[str, Any], raise_exc=True
             ).values():
                 ProcessModel(**process)
 

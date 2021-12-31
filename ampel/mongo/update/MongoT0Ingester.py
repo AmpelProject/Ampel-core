@@ -8,7 +8,7 @@
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from pymongo import UpdateOne
-from typing import Dict, Any, Literal
+from typing import Any, Literal
 from ampel.mongo.utils import maybe_use_each
 from ampel.content.DataPoint import DataPoint
 from ampel.abstract.AbsDocIngester import AbsDocIngester
@@ -24,8 +24,8 @@ class MongoT0Ingester(AbsDocIngester[DataPoint]):
 
 	def ingest(self, doc: DataPoint) -> None:
 
-		match: Dict[str, Any] = {'id': doc['id']}
-		upd: Dict[str, Any] = {
+		match: dict[str, Any] = {'id': doc['id']}
+		upd: dict[str, Any] = {
 			'$addToSet': {
 				'channel': maybe_use_each(doc['channel'])
 			},

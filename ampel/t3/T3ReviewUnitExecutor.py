@@ -7,7 +7,8 @@
 # Last Modified Date:  14.12.2021
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from typing import Optional, Generator, Annotated
+from typing import Optional, Annotated
+from collections.abc import Generator
 from ampel.types import Traceless, ChannelId
 from ampel.view.T3Store import T3Store
 from ampel.abstract.AbsT3ControlUnit import AbsT3ControlUnit

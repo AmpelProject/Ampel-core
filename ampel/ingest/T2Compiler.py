@@ -7,7 +7,7 @@
 # Last Modified Date:  21.11.2021
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from typing import Optional, Dict, Union, Tuple, Set, Any, List, FrozenSet
+from typing import Optional, Union, Any, FrozenSet
 from ampel.types import ChannelId, UnitId, T2Link, StockId
 from ampel.content.T2Document import T2Document
 from ampel.content.MetaActivity import MetaActivity
@@ -26,14 +26,14 @@ class T2Compiler(AbsCompiler):
 
 		super().__init__(**kwargs)
 		self.col = col
-		self.t2s: Dict[
+		self.t2s: dict[
 			# key: (unit name, unit config, link, stock)
-			Tuple[UnitId, Optional[int], T2Link, StockId],
-			Tuple[
-				Set[ChannelId], # channels (doc)
-				Dict[
-					FrozenSet[Tuple[str, Any]], # key: traceid
-					Tuple[ActivityRegister, Dict[str, Any]] # activity register, meta_extra
+			tuple[UnitId, Optional[int], T2Link, StockId],
+			tuple[
+				set[ChannelId], # channels (doc)
+				dict[
+					Frozenset[tuple[str, Any]], # key: traceid
+					tuple[ActivityRegister, dict[str, Any]] # activity register, meta_extra
 				]
 			]
 		] = {}
@@ -45,9 +45,9 @@ class T2Compiler(AbsCompiler):
 		stock: StockId,
 		link: T2Link,
 		channel: ChannelId,
-		traceid: Dict[str, Any],
-		activity: Optional[Union[MetaActivity, List[MetaActivity]]] = None,
-		meta_extra: Optional[Dict[str, Any]] = None
+		traceid: dict[str, Any],
+		activity: Optional[Union[MetaActivity, list[MetaActivity]]] = None,
+		meta_extra: Optional[dict[str, Any]] = None
 	) -> None:
 		"""
 		:param tag: tag(s) to be added to T2Document. A corresponding dedicated channel-less

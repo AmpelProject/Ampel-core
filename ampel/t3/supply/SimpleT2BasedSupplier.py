@@ -7,7 +7,8 @@
 # Last Modified Date:  15.07.2021
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from typing import Generator, Dict, Any, Optional
+from typing import Any, Optional
+from collections.abc import Generator
 from ampel.abstract.AbsT3Supplier import AbsT3Supplier
 from ampel.struct.AmpelBuffer import AmpelBuffer
 from ampel.log.utils import safe_query_dict
@@ -16,7 +17,7 @@ from ampel.view.T3Store import T3Store
 
 class SimpleT2BasedSupplier(AbsT3Supplier):
 
-	query: Dict[str, Any]
+	query: dict[str, Any]
 
 	#: minimum # of t2 docs per stock (useful in combination with $or queries)
 	min_docs: Optional[int]
@@ -34,7 +35,7 @@ class SimpleT2BasedSupplier(AbsT3Supplier):
 		# Retrieve pymongo cursor
 		col = self.context.db.get_collection("t2")
 
-		d: Dict[int, AmpelBuffer] = {}
+		d: dict[int, AmpelBuffer] = {}
 		for el in col.find(self.query):
 			if el['stock'] in d:
 				d[el['stock']]['t2'].append(el) # type: ignore

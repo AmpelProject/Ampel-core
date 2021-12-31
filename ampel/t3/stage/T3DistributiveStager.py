@@ -9,7 +9,8 @@
 
 from time import time
 from itertools import cycle
-from typing import Optional, Generator
+from typing import Optional
+from collections.abc import Generator
 from multiprocessing.pool import ThreadPool
 
 from ampel.view.T3Store import T3Store

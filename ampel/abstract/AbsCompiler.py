@@ -7,7 +7,8 @@
 # Last Modified Date:  21.11.2021
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from typing import Optional, Literal, Sequence, Union, Dict, FrozenSet, Tuple, Set, Any, List
+from typing import Optional, Literal, Union, Any
+from collections.abc import Sequence
 from ampel.types import Tag, ChannelId
 from ampel.base.AmpelABC import AmpelABC
 from ampel.base.decorator import abstractmethod
@@ -19,11 +20,11 @@ from ampel.enum.MetaActionCode import MetaActionCode
 
 
 # Type alias
-ActivityRegister = Dict[
-	FrozenSet[Tuple[str, Any]], # activity stripped out of channel
+ActivityRegister = dict[
+	frozenset[tuple[str, Any]], # activity stripped out of channel
 	Union[
 		None, # activity is not channel-bound
-		Set[ChannelId] # will be added to MetaActivity during commit
+		set[ChannelId] # will be added to MetaActivity during commit
 	]
 ]
 
@@ -64,13 +65,13 @@ class AbsCompiler(AmpelABC, AmpelBaseModel, abstract=True):
 
 	def register_meta_info(self,
 		ar: ActivityRegister,
-		extra_register: Dict[str, Any], # meta_extra
+		extra_register: dict[str, Any], # meta_extra
 		channel: ChannelId,
-		activity: Optional[Union[MetaActivity, List[MetaActivity]]] = None,
-		meta_extra: Optional[Dict[str, Any]] = None
+		activity: Optional[Union[MetaActivity, list[MetaActivity]]] = None,
+		meta_extra: Optional[dict[str, Any]] = None
 	) -> None:
 		"""
-		Note: We could support the type List[Tuple[str, any]] for the parameter activity
+		Note: We could support the type list[tuple[str, any]] for the parameter activity
 		as the dict form is actually superfluous (frozenset(dict.items()) is used in the end)
 		but the performance gain is negligible (~80ns) and it complicates static typing
 		"""
@@ -145,7 +146,7 @@ class AbsCompiler(AmpelABC, AmpelBaseModel, abstract=True):
 
 
 	@staticmethod
-	def _metactivity_key(activity: MetaActivity, skip_keys: Optional[set[str]] = None) -> FrozenSet[tuple[str, Any]]:
+	def _metactivity_key(activity: MetaActivity, skip_keys: Optional[set[str]] = None) -> frozenset[tuple[str, Any]]:
 		return frozenset(
 			(
 				k,
@@ -157,9 +158,9 @@ class AbsCompiler(AmpelABC, AmpelBaseModel, abstract=True):
 
 	def new_meta_info(self,
 		channel: ChannelId,
-		activity: Optional[Union[MetaActivity, List[MetaActivity]]] = None,
-		meta_extra: Optional[Dict[str, Any]] = None
-	) -> Tuple[ActivityRegister, Dict[str, Any]]: # activity register, meta_extra
+		activity: Optional[Union[MetaActivity, list[MetaActivity]]] = None,
+		meta_extra: Optional[dict[str, Any]] = None
+	) -> tuple[ActivityRegister, dict[str, Any]]: # activity register, meta_extra
 
 		ar: ActivityRegister = {}
 		add_chan_registered = False
@@ -189,14 +190,14 @@ class AbsCompiler(AmpelABC, AmpelBaseModel, abstract=True):
 
 
 	def build_meta(self,
-		d: Dict[
-			FrozenSet[Tuple[str, Any]], # key: traceid
-			Tuple[ActivityRegister, Dict[str, Any]] # activity register, meta_extra
+		d: dict[
+			frozenset[tuple[str, Any]], # key: traceid
+			tuple[ActivityRegister, dict[str, Any]] # activity register, meta_extra
 		],
 		now: Union[int, float]
-	) -> Tuple[List[MetaRecord], List[Tag]]:
+	) -> tuple[list[MetaRecord], list[Tag]]:
 
-		recs: List[MetaRecord] = []
+		recs: list[MetaRecord] = []
 		tags = set(self._tag) if self._tag else set()
 
 		# v[1]: dict[traceid, (activity register, meta_extra)]

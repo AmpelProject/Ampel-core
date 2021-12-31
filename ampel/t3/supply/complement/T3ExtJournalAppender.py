@@ -8,7 +8,8 @@
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from pymongo import MongoClient
-from typing import Iterable, Optional, Union, List
+from typing import Optional, Union
+from collections.abc import Iterable
 from ampel.types import StockId
 from ampel.aux.filter.SimpleDictArrayFilter import SimpleDictArrayFilter
 from ampel.content.JournalRecord import JournalRecord
@@ -47,7 +48,7 @@ class T3ExtJournalAppender(AbsBufferComplement):
 			.get_collection("stock")
 
 
-	def get_ext_journal(self, stock_id: StockId) -> Optional[List[JournalRecord]]:
+	def get_ext_journal(self, stock_id: StockId) -> Optional[list[JournalRecord]]:
 
 		if ext_stock := next(self.col.find({'_id': stock_id}), None):
 			if self.journal_filter:

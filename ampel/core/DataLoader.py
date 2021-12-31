@@ -8,7 +8,8 @@
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from bson.codec_options import CodecOptions
-from typing import Iterable, Union, Dict, Iterator, Optional, Literal
+from typing import Union, Optional, Literal
+from collections.abc import Iterable, Iterator
 
 from ampel.types import StockId, ChannelId, StrictIterable, Tag
 from ampel.model.operator.AnyOf import AnyOf
@@ -39,7 +40,7 @@ class DataLoader:
 		stock_ids: Union[StockId, Iterator[StockId], StrictIterable[StockId]],
 		directives: Iterable[LoaderDirective],
 		channel: Union[None, ChannelId, AllOf[ChannelId], AnyOf[ChannelId], OneOf[ChannelId]] = None,
-		tag: Optional[Dict[Literal['with', 'without'], Union[Tag, Dict, AllOf[Tag], AnyOf[Tag], OneOf[Tag]]]] = None,
+		tag: Optional[dict[Literal['with', 'without'], Union[Tag, dict, AllOf[Tag], AnyOf[Tag], OneOf[Tag]]]] = None,
 		auto_project: bool = True,
 		codec_options: CodecOptions = CodecOptions(document_class=FrozenValuesDict),
 		logger: Optional[AmpelLogger] = None
@@ -66,7 +67,7 @@ class DataLoader:
 
 		# Note: the following operation will consume
 		# stock_ids if it is an Iterator/Cursor
-		register: Dict[StockId, AmpelBuffer] = {
+		register: dict[StockId, AmpelBuffer] = {
 			stock_id: AmpelBuffer(
 				id = stock_id,
 				stock = None if "stock" in col_set else None,

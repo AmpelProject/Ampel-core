@@ -11,7 +11,8 @@ from time import time
 from bson import ObjectId
 from pymongo.errors import BulkWriteError
 from pymongo.operations import UpdateMany, UpdateOne
-from typing import List, Any, Optional, Sequence, Union, Dict, Literal, get_args
+from typing import Any, Optional, Union, Literal, get_args
+from collections.abc import Sequence
 
 from ampel.core.AmpelDB import AmpelDB
 from ampel.types import ChannelId, Tag, StockId
@@ -55,9 +56,9 @@ class MongoStockUpdater:
 
 
 	def reset(self) -> None:
-		self._updates: List[Union[UpdateOne, UpdateMany]] = []
-		self._one_updates: Dict[StockId, UpdateOne] = {}
-		self._multi_updates: Dict[StockId, List[UpdateMany]] = {}
+		self._updates: list[Union[UpdateOne, UpdateMany]] = []
+		self._one_updates: dict[StockId, UpdateOne] = {}
+		self._multi_updates: dict[StockId, list[UpdateMany]] = {}
 
 
 	def new_journal_record(self,
@@ -96,7 +97,7 @@ class MongoStockUpdater:
 		jattrs: Optional[JournalAttributes] = None,
 		tag: Optional[Union[Tag, Sequence[Tag]]] = None,
 		name: Optional[Union[str, Sequence[str]]] = None,
-		trace_id: Optional[Dict[str, int]] = None,
+		trace_id: Optional[dict[str, int]] = None,
 		action_code: Optional[JournalActionCode] = None,
 		doc_id: Optional[ObjectId] = None,
 		unit: Optional[Union[int, str]] = None,
@@ -183,7 +184,7 @@ class MongoStockUpdater:
 			self._add_many_update(stock if isinstance(stock, list) else list(stock), upd)
 
 
-	def _add_one_update(self, stock: StockId, upd: Dict[str, Any]) -> None:
+	def _add_one_update(self, stock: StockId, upd: dict[str, Any]) -> None:
 
 		uo = UpdateOne({'stock': stock}, upd)
 
@@ -202,7 +203,7 @@ class MongoStockUpdater:
 				self.flush()
 
 
-	def _add_many_update(self, stocks: List[StockId], upd: Dict[str, Any]) -> None:
+	def _add_many_update(self, stocks: list[StockId], upd: dict[str, Any]) -> None:
 
 		um = UpdateMany({'stock': {'$in': stocks}}, upd)
 
@@ -224,7 +225,7 @@ class MongoStockUpdater:
 				self.flush()
 
 
-	def _merge_updates(self, op: UpdateOne, d: Dict) -> None:
+	def _merge_updates(self, op: UpdateOne, d: dict) -> None:
 		"""
 		modifies provided UpdateOne structure
 		:raises: ValueError in case update structures are not conform ex: {'$addToSet': {'name': {'a': 1}}}
@@ -298,7 +299,7 @@ class MongoStockUpdater:
 					raise ValueError(f"Journal update error: {e.details}")
 				raise ValueError("Journal update error")
 
-			info: Dict[str, Any] = {
+			info: dict[str, Any] = {
 				'process': self.process_name,
 				'msg': 'Exception in flush()',
 				'journalUpdateCount': len(jupds)

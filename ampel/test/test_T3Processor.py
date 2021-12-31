@@ -7,7 +7,8 @@
 # Last Modified Date:  10.12.2021
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from typing import Generator, Optional
+from typing import Optional
+from collections.abc import Generator
 from ampel.dev.DevAmpelContext import DevAmpelContext
 from ampel.struct.JournalAttributes import JournalAttributes
 from ampel.struct.StockAttributes import StockAttributes

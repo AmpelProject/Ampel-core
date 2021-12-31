@@ -8,7 +8,8 @@
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 import schedule as sched
-from typing import Sequence, Optional, Literal, Union
+from typing import Optional, Literal, Union
+from collections.abc import Sequence
 from ampel.base.AmpelBaseModel import AmpelBaseModel
 from ampel.types import ChannelId
 from ampel.model.UnitModel import UnitModel

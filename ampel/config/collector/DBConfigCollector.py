@@ -7,7 +7,7 @@
 # Last Modified Date:  06.02.2020
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from typing import Dict, Any, Union
+from typing import Any, Union
 from ampel.mongo.model.AmpelDBModel import AmpelDBModel
 from ampel.config.collector.ConfigCollector import ConfigCollector
 from ampel.config.collector.AbsDictConfigCollector import AbsDictConfigCollector
@@ -17,7 +17,7 @@ from ampel.log import VERBOSE
 class DBConfigCollector(AbsDictConfigCollector):
 
 	def add(self,
-		arg: Dict[str, Any],
+		arg: dict[str, Any],
 		dist_name: str,
 		version: Union[str, float, int],
 		register_file: str

@@ -1,4 +1,4 @@
-from typing import List, Tuple, Optional
+from typing import Optional
 from ampel.types import DataPointId, StockId
 from ampel.content.DataPoint import DataPoint
 
@@ -24,8 +24,8 @@ class ChainedT0Muxer(AbsT0Muxer):
         ]
 
     def process(
-        self, dps: List[DataPoint], stock_id: Optional[StockId] = None
-    ) -> Tuple[Optional[List[DataPoint]], Optional[List[DataPoint]]]:
+        self, dps: list[DataPoint], stock_id: Optional[StockId] = None
+    ) -> tuple[Optional[list[DataPoint]], Optional[list[DataPoint]]]:
         """
         :returns: (to_insert,to_combine), where to_insert is the union of the insertable points
           returned by each muxer, and to_combine is the final datapoint sequence

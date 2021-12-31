@@ -8,7 +8,7 @@
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 import sys, re, importlib, traceback
-from typing import List, Union, Dict, Any, Optional
+from typing import Union, Any, Optional
 
 from ampel.protocol.LoggingHandlerProtocol import AggregatingLoggingHandlerProtocol
 from ampel.util.collections import ampel_iter
@@ -19,7 +19,7 @@ from ampel.log import VERBOSE
 
 class RemoteUnitDefinition(AmpelBaseModel):
 	class_name: str
-	base: List[str]
+	base: list[str]
 
 
 class UnitConfigCollector(ConfigCollector):
@@ -32,7 +32,7 @@ class UnitConfigCollector(ConfigCollector):
 
 
 	def add(self,
-		arg: List[Union[Dict[str, str], str]],
+		arg: list[Union[dict[str, str], str]],
 		dist_name: str,
 		version: Union[str, float, int],
 		register_file: str
@@ -54,7 +54,7 @@ class UnitConfigCollector(ConfigCollector):
 					if not (mro := self.get_mro(el, class_name)):
 						self.logger.break_aggregation()
 						continue
-					entry: Dict[str, Any] = {
+					entry: dict[str, Any] = {
 						'fqn': el,
 						'base': mro,
 						'distrib': dist_name,
@@ -140,7 +140,7 @@ class UnitConfigCollector(ConfigCollector):
 		return re.sub(r'.*\.', '', fqn) # noqa
 
 
-	def get_mro(self, module_fqn: str, class_name: str) -> Optional[List[str]]:
+	def get_mro(self, module_fqn: str, class_name: str) -> Optional[list[str]]:
 		"""
 		:param module_fqn: fully qualified name of module
 		:param class_name: declared class name in the module specified by "module_fqn"

@@ -74,7 +74,7 @@ class TPLCompactT3(T3DocBuilderModel, AbsProcessorTemplate):
 	execute: OneOrMany[dict[str, Any]]
 
 
-	def _merge_confs(self, d: dict[str, Any], Klass: Type[AmpelBaseModel]) -> dict[str, Any]:
+	def _merge_confs(self, d: dict[str, Any], Klass: type[AmpelBaseModel]) -> dict[str, Any]:
 
 		conf = {
 			k: getattr(self, k)

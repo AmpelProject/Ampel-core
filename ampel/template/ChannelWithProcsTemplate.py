@@ -8,7 +8,7 @@
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from ampel.log.AmpelLogger import AmpelLogger
-from typing import List, Dict, Any
+from typing import Any
 from ampel.config.builder.FirstPassConfig import FirstPassConfig
 from ampel.abstract.AbsChannelTemplate import AbsChannelTemplate
 
@@ -16,11 +16,11 @@ from ampel.abstract.AbsChannelTemplate import AbsChannelTemplate
 class ChannelWithProcsTemplate(AbsChannelTemplate):
 	""" Convenience class allowing channel definitions to include processes.  """
 
-	# Note: not using List[ProcessModel] on purpose since embedded processes
+	# Note: not using list[ProcessModel] on purpose since embedded processes
 	# might need template processing as well
-	process: List[Dict[str, Any]]
+	process: list[dict[str, Any]]
 
-	def get_channel(self, logger: AmpelLogger) -> Dict[str, Any]:
+	def get_channel(self, logger: AmpelLogger) -> dict[str, Any]:
 
 		d = self.dict(by_alias=True)
 		del d["process"]
@@ -29,7 +29,7 @@ class ChannelWithProcsTemplate(AbsChannelTemplate):
 		return d
 
 
-	def get_processes(self, logger: AmpelLogger, first_pass_config: FirstPassConfig) -> List[Dict[str, Any]]:
+	def get_processes(self, logger: AmpelLogger, first_pass_config: FirstPassConfig) -> list[dict[str, Any]]:
 
 		# Note: not enforcing channel selection for t3 processes
 		# as these could require template processing first

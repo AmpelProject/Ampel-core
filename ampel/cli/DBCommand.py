@@ -7,7 +7,8 @@
 # Last Modified Date:  06.10.2021
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from typing import Optional, Sequence, Dict, Any, Union
+from typing import Optional, Any, Union
+from collections.abc import Sequence
 from argparse import ArgumentParser # type: ignore[import]
 from ampel.core.AmpelDB import AmpelDB
 from ampel.core.AmpelContext import AmpelContext
@@ -88,7 +89,7 @@ class DBCommand(AbsCoreCommand):
 
 
 	# Mandatory implementation
-	def run(self, args: Dict[str, Any], unknown_args: Sequence[str], sub_op: Optional[str] = None) -> None:
+	def run(self, args: dict[str, Any], unknown_args: Sequence[str], sub_op: Optional[str] = None) -> None:
 
 		if sub_op == "delete":  # cosmetic mainly
 			AmpelDB.create_collection = (lambda x: None) # type: ignore

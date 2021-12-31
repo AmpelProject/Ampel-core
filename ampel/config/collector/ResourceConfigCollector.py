@@ -7,7 +7,7 @@
 # Last Modified Date:  22.04.2020
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from typing import Dict, Any, Optional, Union
+from typing import Any, Optional, Union
 from ampel.log.AmpelLogger import AmpelLogger, VERBOSE
 from ampel.config.collector.AbsDictConfigCollector import AbsDictConfigCollector
 
@@ -15,18 +15,18 @@ from ampel.config.collector.AbsDictConfigCollector import AbsDictConfigCollector
 class ResourceConfigCollector(AbsDictConfigCollector):
 
 	def __init__(self,
-		conf_section: str, content: Optional[Dict] = None,
+		conf_section: str, content: Optional[dict] = None,
 		logger: Optional[AmpelLogger] = None, verbose: bool = False
 	):
 		super().__init__(conf_section, content, logger, verbose)
 
 		# Used to temporarily save distribution/source conf information of aliases
 		# (usefuly in case of conflicts)
-		self.tmp_resource: Dict[str, Any] = {}
+		self.tmp_resource: dict[str, Any] = {}
 
 
 	def add(self,
-		arg: Dict[str, Any],
+		arg: dict[str, Any],
 		dist_name: str,
 		version: Union[str, float, int],
 		register_file: str

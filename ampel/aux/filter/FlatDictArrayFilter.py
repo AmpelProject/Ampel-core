@@ -7,7 +7,8 @@
 # Last Modified Date:  18.06.2020
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from typing import Mapping, MutableMapping, Sequence, List
+from typing import MutableMapping
+from collections.abc import Mapping, Sequence
 from ampel.util.mappings import flatten_dict, unflatten_dict
 from ampel.model.aux.FilterCriterion import FilterCriterion
 from ampel.aux.filter.AbsLogicOperatorFilter import AbsLogicOperatorFilter
@@ -22,7 +23,7 @@ class FlatDictArrayFilter(AbsLogicOperatorFilter[MutableMapping]):
 	"""
 
 	@staticmethod
-	def _apply_filter(dicts: Sequence[Mapping], f: FilterCriterion) -> List[MutableMapping]:
+	def _apply_filter(dicts: Sequence[Mapping], f: FilterCriterion) -> list[MutableMapping]:
 		return [
 			unflatten_dict(ell)
 			for ell in SimpleDictArrayFilter._apply_filter([flatten_dict(el) for el in dicts], f)

@@ -8,7 +8,7 @@
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from time import time
-from typing import Union, List, Any, Dict, Optional
+from typing import Union, Any, Optional
 from ampel.types import ChannelId, StockId
 
 class LightLogRecord:
@@ -24,15 +24,15 @@ class LightLogRecord:
 
 	name: Union[int, str]
 	levelno: int
-	msg: Optional[Union[str, Dict[str, Any]]]
-	channel: Optional[Union[ChannelId, List[ChannelId]]]
+	msg: Optional[Union[str, dict[str, Any]]]
+	channel: Optional[Union[ChannelId, list[ChannelId]]]
 	stock: Optional[StockId]
-	extra: Optional[Dict[str, Any]]
+	extra: Optional[dict[str, Any]]
 
 	def __init__(self,
 		name: Union[int, str],
 		levelno: int,
-		msg: Optional[Union[str, Dict[str, Any]]] = None
+		msg: Optional[Union[str, dict[str, Any]]] = None
 	) -> None:
 
 		d = self.__dict__

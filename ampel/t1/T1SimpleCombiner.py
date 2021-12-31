@@ -7,7 +7,7 @@
 # Last Modified Date:  14.06.2021
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from typing import Iterable, List
+from typing import Iterable
 from ampel.content.DataPoint import DataPoint
 from ampel.types import DataPointId
 from ampel.abstract.AbsT1CombineUnit import AbsT1CombineUnit
@@ -15,7 +15,7 @@ from ampel.abstract.AbsT1CombineUnit import AbsT1CombineUnit
 
 class T1SimpleCombiner(AbsT1CombineUnit):
 
-	def combine(self, datapoints: Iterable[DataPoint]) -> List[DataPointId]:
+	def combine(self, datapoints: Iterable[DataPoint]) -> list[DataPointId]:
 		"""
 		:param datapoints: dict instances representing datapoints
 		"""

@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 16.06.2018
-# Last Modified Date: 11.11.2021
+# Last Modified Date: 28.12.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from functools import cached_property
@@ -15,7 +15,8 @@ from pymongo import MongoClient
 from pymongo.database import Database
 from pymongo.collection import Collection
 from pymongo.errors import ConfigurationError, DuplicateKeyError
-from typing import Sequence, Dict, List, Any, Union, Optional, Set
+from typing import Any, Union, Optional
+from collections.abc import Sequence
 
 from ampel.types import ChannelId
 from ampel.mongo.utils import get_ids
@@ -43,7 +44,7 @@ class AmpelDB(AmpelBaseModel):
 	"""
 
 	prefix: str = 'Ampel'
-	databases: List[AmpelDBModel]
+	databases: Sequence[AmpelDBModel]
 	mongo_uri: str
 	mongo_options: MongoClientOptionsModel = MongoClientOptionsModel()
 	vault: Optional[AmpelVault]
@@ -75,14 +76,14 @@ class AmpelDB(AmpelBaseModel):
 
 		super().__init__(**kwargs) # type: ignore[call-arg]
 
-		self.col_config: Dict[str, AmpelColModel] = {
+		self.col_config: dict[str, AmpelColModel] = {
 			col.name: col
 			for db_config in self.databases
 			for col in db_config.collections
 		}
 
-		self.mongo_collections: Dict[str, Collection] = {}
-		self.mongo_clients: Dict[str, MongoClient] = {} # map role with client
+		self.mongo_collections: dict[str, Collection] = {}
+		self.mongo_clients: dict[str, MongoClient] = {} # map role with client
 
 		if self.require_exists and not self._get_pymongo_db("data", role="w").list_collection_names():
 			raise ValueError(f"Database(s) with prefix {self.prefix} do not exist")
@@ -97,11 +98,11 @@ class AmpelDB(AmpelBaseModel):
 		return self.get_collection('confid')
 
 	@cached_property
-	def trace_ids(self) -> Set[int]:
+	def trace_ids(self) -> set[int]:
 		return get_ids(self.col_trace_ids)
 	
 	@cached_property
-	def conf_ids(self) -> Set[int]:
+	def conf_ids(self) -> set[int]:
 		return get_ids(self.col_conf_ids)
 
 
@@ -408,7 +409,7 @@ class AmpelDB(AmpelBaseModel):
 				pass
 
 
-	def add_trace_id(self, trace_id: int, arg: Dict[str, Any]) -> None:
+	def add_trace_id(self, trace_id: int, arg: dict[str, Any]) -> None:
 
 		# Save trace id to external collection
 		if trace_id not in self.trace_ids:
@@ -422,7 +423,7 @@ class AmpelDB(AmpelBaseModel):
 		self.trace_ids.add(trace_id)
 
 
-	def add_conf_id(self, conf_id: int, arg: Dict[str, Any]) -> None:
+	def add_conf_id(self, conf_id: int, arg: dict[str, Any]) -> None:
 
 		# Save conf id to external collection
 		if conf_id not in self.conf_ids:
@@ -436,7 +437,7 @@ class AmpelDB(AmpelBaseModel):
 		self.conf_ids.add(conf_id)
 
 
-def provision_accounts(ampel_db: AmpelDB, auth: Dict[str, str] = {}) -> Dict[str, Any]:
+def provision_accounts(ampel_db: AmpelDB, auth: dict[str, str] = {}) -> dict[str, Any]:
 	"""Create accounts required by the given Ampel configuration."""
 	roles = defaultdict(list)
 	for db in ampel_db.databases:
@@ -454,7 +455,7 @@ def provision_accounts(ampel_db: AmpelDB, auth: Dict[str, str] = {}) -> Dict[str
 	return users
 
 
-def revoke_accounts(ampel_db: AmpelDB, auth: Dict[str, str] = {}) -> None:
+def revoke_accounts(ampel_db: AmpelDB, auth: dict[str, str] = {}) -> None:
 	"""Delete accounts previously created with "provision"."""
 	if ampel_db.vault is None:
 		raise ValueError("No secrets vault configured")
@@ -467,13 +468,13 @@ def revoke_accounts(ampel_db: AmpelDB, auth: Dict[str, str] = {}) -> None:
 			raise ValueError(f"Unknown role '{role}'")
 
 
-def list_accounts(ampel_db: AmpelDB, auth: Dict[str, str] = {}) -> Dict[str, Any]:
+def list_accounts(ampel_db: AmpelDB, auth: dict[str, str] = {}) -> dict[str, Any]:
 	"""List configured accounts and roles."""
 	admin = MongoClient(ampel_db.mongo_uri, **auth).get_database("admin")
 	return admin.command("usersInfo")
 
 
-def init_db(ampel_db: AmpelDB, auth: Dict[str, str] = {}) -> None:
+def init_db(ampel_db: AmpelDB, auth: dict[str, str] = {}) -> None:
 	"""Initialize Ampel databases and collections."""
 	if auth:
 		print("="*40)

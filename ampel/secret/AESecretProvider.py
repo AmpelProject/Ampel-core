@@ -8,7 +8,8 @@
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from sjcl import SJCL
-from typing import Type, Union, Iterable
+from typing import Union
+from collections.abc import Iterable
 from ampel.abstract.AbsSecretProvider import AbsSecretProvider
 from ampel.secret.AESecret import AESecret
 from ampel.secret.Secret import Secret
@@ -21,7 +22,7 @@ class AESecretProvider(AbsSecretProvider):
 		self.pwds = [pwds] if isinstance(pwds, str) else pwds
 
 
-	def tell(self, arg: Secret, ValueType: Type) -> bool:
+	def tell(self, arg: Secret, ValueType: type) -> bool:
 		"""
 		Potentially update an initialized Secret instance with
 		the actual sensitive information associable with it.

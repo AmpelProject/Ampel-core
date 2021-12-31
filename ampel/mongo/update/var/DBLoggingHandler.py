@@ -9,7 +9,7 @@
 
 import struct, socket
 from bson import ObjectId
-from typing import List, Dict, Optional, Union, TYPE_CHECKING
+from typing import Optional, Union, TYPE_CHECKING
 from logging import LogRecord
 from pymongo.errors import BulkWriteError
 from ampel.base.AmpelBaseModel import AmpelBaseModel
@@ -77,7 +77,7 @@ class DBLoggingHandler(AmpelBaseModel):
 		self._ampel_db = ampel_db
 		self.run_id = run_id
 
-		self.log_dicts: List[Dict] = []
+		self.log_dicts: list[dict] = []
 		self.prev_record: Optional[Union[LightLogRecord, LogRecord]] = None
 		self.fields_check = ['extra', 'stock', 'channel']
 		self.warn_lvl = LogFlag.WARNING

@@ -9,7 +9,8 @@
 
 from importlib import import_module
 from functools import cache
-from typing import Any, Type, Union, Sequence
+from typing import Any, Union
+from collections.abc import Sequence
 from ampel.abstract.AbsTiedT2Unit import AbsTiedT2Unit
 from ampel.model.UnitModel import UnitModel
 from ampel.model.ingest.T2Compute import T2Compute
@@ -33,7 +34,7 @@ def check_tied_units(
 		
 	@cache
 	def get_default_dependencies(unit: str) -> list[dict[str, Any]]:
-		klass: Type[AbsTiedT2Unit] = getattr(
+		klass: type[AbsTiedT2Unit] = getattr(
 			import_module(
 				first_pass_config['unit'][unit]['fqn']
 			),

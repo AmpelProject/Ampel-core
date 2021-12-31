@@ -7,7 +7,8 @@
 # Last Modified Date: 14.12.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-from typing import Any, Dict, Literal, Optional, Sequence, Union, List
+from typing import Any, Literal, Optional, Union
+from collections.abc import Sequence
 
 from ampel.types import ChannelId, Tag
 from ampel.model.operator.AllOf import AllOf
@@ -60,9 +61,9 @@ class PeriodicSummaryT3(AbsProcessTemplate):
 
     #: Stock tag selection.
     tag: Optional[
-        Dict[
+        dict[
             Literal["with", "without"],
-            Union[Tag, Dict, AllOf[Tag], AnyOf[Tag], OneOf[Tag]],
+            Union[Tag, dict, AllOf[Tag], AnyOf[Tag], OneOf[Tag]],
         ]
     ] = None
 
@@ -79,9 +80,9 @@ class PeriodicSummaryT3(AbsProcessTemplate):
     #: Units to run. See :ref:`t3-directive-run-execute`.
     run: UnitModelSequence
 
-    def get_process(self, config: Dict[str, Any], logger: AmpelLogger) -> Dict[str, Any]:
+    def get_process(self, config: dict[str, Any], logger: AmpelLogger) -> dict[str, Any]:
 
-        d: Dict[str, Any] = {
+        d: dict[str, Any] = {
             "include": {
                 "session": [
                     {"unit": "T3SessionAlertsNumber"}
@@ -154,7 +155,7 @@ class PeriodicSummaryT3(AbsProcessTemplate):
         if self.complement:
             d["execute"][0]["config"]["supply"]["config"]["complement"] = self.get_units(self.complement)
 
-        ret: Dict[str, Any] = {
+        ret: dict[str, Any] = {
             "tier": self.tier,
             "schedule": self.schedule,
             "active": self.active,
@@ -183,7 +184,7 @@ class PeriodicSummaryT3(AbsProcessTemplate):
         else:
             return item
 
-    def get_units(self, units: UnitModelSequence) -> List[Dict[str, Any]]:
+    def get_units(self, units: UnitModelSequence) -> list[dict[str, Any]]:
         if isinstance(units, str):
             return [UnitModel(unit=units).dict()]
         elif isinstance(units, UnitModel):

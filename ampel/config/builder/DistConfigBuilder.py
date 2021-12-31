@@ -9,7 +9,8 @@
 
 import json, yaml, pkg_resources, os, re
 from pkg_resources import EggInfoDistribution, DistInfoDistribution # type: ignore[attr-defined]
-from typing import Dict, Any, Union, Callable, List, Optional
+from typing import Any, Union, Optional
+from collections.abc import Callable
 from ampel.config.builder.ConfigBuilder import ConfigBuilder
 from ampel.util.distrib import get_dist_names, get_files
 from ampel.log import VERBOSE
@@ -22,9 +23,9 @@ class DistConfigBuilder(ConfigBuilder):
 	"""
 
 	def load_distributions(self,
-		prefixes: List[str] = ["pyampel-", "ampel-"],
-		conf_dirs: List[str] = ["conf"],
-		exts: List[str] = ["json", "yaml", "yml"]
+		prefixes: list[str] = ["pyampel-", "ampel-"],
+		conf_dirs: list[str] = ["conf"],
+		exts: list[str] = ["json", "yaml", "yml"]
 	) -> None:
 		"""
 		:param prefixes: loads all known conf files from all distributions with name starting with prefixes
@@ -109,7 +110,7 @@ class DistConfigBuilder(ConfigBuilder):
 	def load_conf_using_func(self,
 		distrib: Union[EggInfoDistribution, DistInfoDistribution],
 		file_rel_path: str,
-		func: Callable[[Dict[str, Any], str, str, str], None]
+		func: Callable[[dict[str, Any], str, str, str], None]
 	) -> None:
 
 		try:
@@ -209,7 +210,7 @@ class DistConfigBuilder(ConfigBuilder):
 
 
 	@staticmethod
-	def get_dist_names(distrib_prefix: str = "ampel-") -> List[str]:
+	def get_dist_names(distrib_prefix: str = "ampel-") -> list[str]:
 		"""
 		Get all installed distributions whose names start with the provided prefix
 		"""
@@ -220,7 +221,7 @@ class DistConfigBuilder(ConfigBuilder):
 
 
 	@staticmethod
-	def get_conf_file(files: List[str], key: str) -> Optional[str]:
+	def get_conf_file(files: list[str], key: str) -> Optional[str]:
 		"""
 		Extract the first entry who matches the provided 'key' from the provided list
 		Note: this method purposely modifies the input list (removes matched element)
@@ -233,7 +234,7 @@ class DistConfigBuilder(ConfigBuilder):
 
 
 	@staticmethod
-	def get_conf_files(files: List[str], key: str) -> List[str]:
+	def get_conf_files(files: list[str], key: str) -> list[str]:
 		"""
 		Extract all entries who matches the provided 'key' from the provided list
 		Note: this method purposely modifies the input list (removes matched elements)

@@ -45,7 +45,8 @@ if sys.version_info.minor > 8:
 	from typing import TypedDict
 else:
 	from typing_extensions import TypedDict
-from typing import BinaryIO, Optional, Dict, Any, List, Union, Tuple, Generator, Callable
+from typing import BinaryIO, Optional, Any, Union
+from collections.abc import Callable, Generator
 from ampel.log.AmpelLogger import AmpelLogger, VERBOSE
 
 ampel_magic_bytes = bytes([97, 109, 112, 101, 108])
@@ -54,12 +55,12 @@ ampel_magic_bytes = bytes([97, 109, 112, 101, 108])
 class HeaderInfo(TypedDict):
 	size: int     # max 16 MB
 	len: int      # <= size
-	payload: Dict[str, Any]
+	payload: dict[str, Any]
 
 
 def get_outer_file_handle(
 	file_path: str, write: bool = False, logger: Optional[AmpelLogger] = None,
-) -> Tuple[Optional[HeaderInfo], BinaryIO]:
+) -> tuple[Optional[HeaderInfo], BinaryIO]:
 	"""
 	If file exists, offset file handle along with decoded header dict is returned.
 	Otherwise, an untouched file handle is returned (wihtout offset)  without header info.
@@ -116,12 +117,12 @@ def get_inner_file_handle(
 	return fh
 
 
-def get_header_size(file_path: str) -> Optional[Tuple[int, int]]:
+def get_header_size(file_path: str) -> Optional[tuple[int, int]]:
 	with open(file_path, 'rb') as f:
 		return _get_header_size(f.read(11))
 
 
-def _get_header_size(b_header_info: bytes) -> Optional[Tuple[int, int]]:
+def _get_header_size(b_header_info: bytes) -> Optional[tuple[int, int]]:
 	"""
 	:returns: (header_size, header_len) if the header signature indicates
 	an ampel register file (bytes([97, 109, 112, 101, 108])), None otherwise
@@ -151,7 +152,7 @@ def _get_header_size(b_header_info: bytes) -> Optional[Tuple[int, int]]:
 	return header_size, header_len
 
 
-def get_header_content(file_path: str, verbose: bool = True) -> Optional[Dict[str, Any]]:
+def get_header_content(file_path: str, verbose: bool = True) -> Optional[dict[str, Any]]:
 	""" :returns: header's content as dict """
 
 	logger = AmpelLogger.get_logger() if verbose else None
@@ -195,7 +196,7 @@ def read_header(
 	return HeaderInfo(size=header_size, len=header_len, payload=header)
 
 
-def decode_header(b: bytes, length: int) -> Dict[str, Any]:
+def decode_header(b: bytes, length: int) -> dict[str, Any]:
 	""" Strip padding, possibly decompress and bson decode header """
 
 	hdr = b[:length]
@@ -207,7 +208,7 @@ def decode_header(b: bytes, length: int) -> Dict[str, Any]:
 	return bson.decode(bytes(hdr))
 
 
-def open_file_and_write_header(file_path: str, header: Dict[str, Any], verbose: bool = False) -> None:
+def open_file_and_write_header(file_path: str, header: dict[str, Any], verbose: bool = False) -> None:
 
 	logger = AmpelLogger.get_logger() if verbose else None
 	with open(file_path, "r+b") as f:
@@ -218,7 +219,7 @@ def open_file_and_write_header(file_path: str, header: Dict[str, Any], verbose: 
 
 
 def write_header(
-	file_handle: BinaryIO, header: Union[Dict[str, Any], bytes], hsize: int,
+	file_handle: BinaryIO, header: Union[dict[str, Any], bytes], hsize: int,
 	logger: Optional[AmpelLogger] = None, flush: bool = True
 ) -> None:
 	""" Writes (potentialy padded and compressed) file header """
@@ -268,7 +269,7 @@ def write_header(
 
 def rescale_header(
 	file_path: str, new_size: int, remove_old_file: bool = False,
-	header: Optional[Dict[str, Any]] = None
+	header: Optional[dict[str, Any]] = None
 ) -> None:
 
 	from mmap import mmap, ACCESS_WRITE
@@ -317,7 +318,7 @@ def rescale_header(
 
 def _quick_load(
 	f: Union[BinaryIO, str], logger: Optional[AmpelLogger] = None
-) -> Tuple[Optional[HeaderInfo], BinaryIO, Optional[BinaryIO]]:
+) -> tuple[Optional[HeaderInfo], BinaryIO, Optional[BinaryIO]]:
 	""" :raise: FileNotFoundError if provided file path (str) does not exist """
 
 	if isinstance(f, str):
@@ -334,12 +335,12 @@ def _quick_load(
 
 def reg_iter(
 	f: Union[BinaryIO, str], read_multiplier: int = 100000, verbose: bool = True
-) -> Generator[Tuple[int, ...], None, None]:
+) -> Generator[tuple[int, ...], None, None]:
 	"""
 	Iterates through unpacked blocks of a register
 	:param f: file path (str) or file handle (which will not be closed)
 	:param read_multiplier: (<struct size> * `read_multiplier`) bytes will be read at once iteratively from the provided file handle
-	:returns: yields Tuple[<elements defined in struct>] ex: Tuple[<alert id>, <filter return code>]
+	:returns: yields tuple[<elements defined in struct>] ex: tuple[<alert id>, <filter return code>]
 	"""
 
 	logger = AmpelLogger.get_logger() if verbose else None
@@ -365,13 +366,13 @@ def reg_iter(
 def find(
 	f: Union[BinaryIO, str],
 	offset: int,
-	match_int: Optional[Union[int, List[int]]] = None,
+	match_int: Optional[Union[int, list[int]]] = None,
 	int_bytes_len: Optional[int] = None,
-	match_bytes: Optional[Union[bytes, List[bytes]]] = None,
+	match_bytes: Optional[Union[bytes, list[bytes]]] = None,
 	header_hint: Optional[str] = None,
 	header_hint_callback: Optional[Callable] = None,
 	read_multiplier: int = 100000, verbose: bool = True
-) -> Optional[List[Tuple[int, ...]]]:
+) -> Optional[list[tuple[int, ...]]]:
 	"""
 	:param f: file path (str) or file handle (which will be closed)
 	:param read_multiplier: (<struct size> * `read_multiplier`) bytes will be read at once iteratively from the provided file handle
@@ -466,7 +467,7 @@ def find(
 
 def find_one(
 	f: BinaryIO, read_len: int, block_len: int, offset: int, match_bytes: bytes
-) -> List[bytes]:
+) -> list[bytes]:
 	"""
 	:param f: file handle
 	:param read_len: number of bytes read at once iteratively from the provided file handle
@@ -488,8 +489,8 @@ def find_one(
 
 
 def find_many(
-	f: BinaryIO, read_len: int, block_len: int, offset: int, match_bytes: List[bytes],
-) -> List[bytes]:
+	f: BinaryIO, read_len: int, block_len: int, offset: int, match_bytes: list[bytes],
+) -> list[bytes]:
 	"""
 	:param f: file handle
 	:param read_len: number of bytes read at once iteratively from the provided file handle
@@ -511,7 +512,7 @@ def find_many(
 	return ret
 
 
-def convert_to_bytes(arg: Union[int, List[int]], bytes_len: int) -> Union[bytes, List[bytes]]:
+def convert_to_bytes(arg: Union[int, list[int]], bytes_len: int) -> Union[bytes, list[bytes]]:
 	if isinstance(arg, int):
 		return int.to_bytes(arg, bytes_len, 'little')
 	return [int.to_bytes(el, bytes_len, 'little') for el in arg]

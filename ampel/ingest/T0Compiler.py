@@ -7,7 +7,7 @@
 # Last Modified Date:  25.11.2021
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from typing import Dict, List, Optional, Set, Union, Tuple, Any
+from typing import Optional, Union, Any
 from ampel.content.MetaRecord import MetaRecord
 from ampel.types import ChannelId, DataPointId
 from ampel.content.DataPoint import DataPoint
@@ -26,23 +26,23 @@ class T0Compiler(AbsCompiler):
 		super().__init__(**kwargs)
 
 		# We assume only the usage of only one shaper (that is only one tracid)
-		self.register: Dict[
+		self.register: dict[
 			DataPointId,
-			Tuple[
+			tuple[
 				DataPoint,
-				Set[ChannelId],
+				set[ChannelId],
 				Optional[int],           # trace id
-				Optional[Dict[str, Any]] # meta extra
+				Optional[dict[str, Any]] # meta extra
 			]
 		] = {}
 
 
 	# Override
 	def add(self, # type: ignore[override]
-		dps: List[DataPoint],
+		dps: list[DataPoint],
 		channel: ChannelId,
 		trace_id: Optional[int],
-		extra: Optional[Dict[str, Any]] = None
+		extra: Optional[dict[str, Any]] = None
 	) -> None:
 
 		r = self.register
