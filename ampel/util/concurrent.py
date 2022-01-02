@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-core/ampel/util/concurrent.py
-# License           : BSD-3-Clause
-# Author            : Jakob van Santen <jakob.van.santen@desy.de>
-# Date              : 07.08.2020
-# Last Modified Date: 07.08.2020
-# Last Modified By  : Jakob van Santen <jakob.van.santen@desy.de>
+# File:                Ampel-core/ampel/util/concurrent.py
+# License:             BSD-3-Clause
+# Author:              Jakob van Santen <jakob.van.santen@desy.de>
+# Date:                07.08.2020
+# Last Modified Date:  07.08.2020
+# Last Modified By:    Jakob van Santen <jakob.van.santen@desy.de>
 
 """
 Simple decorator for running a function in subprocess with asyncio, adapted

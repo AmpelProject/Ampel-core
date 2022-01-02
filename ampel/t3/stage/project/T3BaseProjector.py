@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-core/ampel/t3/stage/project/T3BaseProjector.py
-# License           : BSD-3-Clause
-# Author            : vb <vbrinnel@physik.hu-berlin.de>
-# Date              : 07.01.2020
-# Last Modified Date: 15.12.2021
-# Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
+# File:                Ampel-core/ampel/t3/stage/project/T3BaseProjector.py
+# License:             BSD-3-Clause
+# Author:              valery brinnel <firstname.lastname@gmail.com>
+# Date:                07.01.2020
+# Last Modified Date:  15.12.2021
+# Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from typing import Iterable, Union, Optional, List, Dict, Sequence, Callable, Any, Set
 from ampel.types import Traceless

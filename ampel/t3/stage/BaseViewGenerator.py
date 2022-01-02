@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-core/ampel/t3/stage/BaseViewGenerator.py
-# License           : BSD-3-Clause
-# Author            : vb <vbrinnel@physik.hu-berlin.de>
-# Date              : 20.04.2021
-# Last Modified Date: 05.09.2021
-# Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
+# File:                Ampel-core/ampel/t3/stage/BaseViewGenerator.py
+# License:             BSD-3-Clause
+# Author:              valery brinnel <firstname.lastname@gmail.com>
+# Date:                20.04.2021
+# Last Modified Date:  05.09.2021
+# Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from typing import List, Generator, TypeVar, Union
 from ampel.types import StockId, T3Send

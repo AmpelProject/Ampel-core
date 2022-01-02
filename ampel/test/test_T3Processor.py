@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-core/ampel/test/test_T3Processor.py
-# License           : BSD-3-Clause
-# Author            : jvs
-# Date              : Unspecified
-# Last Modified Date: 10.12.2021
-# Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
+# File:                Ampel-core/ampel/test/test_T3Processor.py
+# License:             BSD-3-Clause
+# Author:              jvs
+# Date:                Unspecified
+# Last Modified Date:  10.12.2021
+# Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from typing import Generator, Optional
 from ampel.dev.DevAmpelContext import DevAmpelContext

@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-core/ampel/dev/NoShaper.py
-# License           : BSD-3-Clause
-# Author            : vb <vbrinnel@physik.hu-berlin.de>
-# Date              : 05.08.2021
-# Last Modified Date: 05.08.2021
-# Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
+# File:                Ampel-core/ampel/dev/NoShaper.py
+# License:             BSD-3-Clause
+# Author:              valery brinnel <firstname.lastname@gmail.com>
+# Date:                05.08.2021
+# Last Modified Date:  05.08.2021
+# Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from typing import Dict, List, Any, Iterable, Optional
 from ampel.types import StockId

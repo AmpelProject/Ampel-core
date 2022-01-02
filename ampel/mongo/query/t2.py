@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-core/ampel/mongo/query/t2.py
-# License           : BSD-3-Clause
-# Author            : vb <vbrinnel@physik.hu-berlin.de>
-# Date              : 14.02.2018
-# Last Modified Date: 27.12.2019
-# Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
+# File:                Ampel-core/ampel/mongo/query/t2.py
+# License:             BSD-3-Clause
+# Author:              valery brinnel <firstname.lastname@gmail.com>
+# Date:                14.02.2018
+# Last Modified Date:  27.12.2019
+# Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from bson.binary import Binary
 from typing import Union, Dict, Any, Optional, List

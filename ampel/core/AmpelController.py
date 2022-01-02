@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-core/ampel/core/AmpelController.py
-# License           : BSD-3-Clause
-# Author            : vb <vbrinnel@physik.hu-berlin.de>
-# Date              : 17.04.2020
-# Last Modified Date: 14.03.2021
-# Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
+# File:                Ampel-core/ampel/core/AmpelController.py
+# License:             BSD-3-Clause
+# Author:              valery brinnel <firstname.lastname@gmail.com>
+# Date:                17.04.2020
+# Last Modified Date:  14.03.2021
+# Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 import asyncio, re
 from typing import Dict, Iterable, List, Literal, Optional, Sequence, Union, TYPE_CHECKING

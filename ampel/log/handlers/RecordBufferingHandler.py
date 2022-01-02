@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-core/ampel/logging/handlers/RecordBufferingHandler.py
-# License           : BSD-3-Clause
-# Author            : vb <vbrinnel@physik.hu-berlin.de>
-# Date              : 25.09.2018
-# Last Modified Date: 09.05.2020
-# Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
+# File:                Ampel-core/ampel/logging/handlers/RecordBufferingHandler.py
+# License:             BSD-3-Clause
+# Author:              valery brinnel <firstname.lastname@gmail.com>
+# Date:                25.09.2018
+# Last Modified Date:  09.05.2020
+# Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from typing import Union, List
 from logging import LogRecord, WARNING

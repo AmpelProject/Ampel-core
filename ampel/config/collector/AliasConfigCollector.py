@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-core/ampel/config/collector/AliasConfigCollector.py
-# License           : BSD-3-Clause
-# Author            : vb <vbrinnel@physik.hu-berlin.de>
-# Date              : 16.10.2019
-# Last Modified Date: 25.02.2021
-# Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
+# File:                Ampel-core/ampel/config/collector/AliasConfigCollector.py
+# License:             BSD-3-Clause
+# Author:              valery brinnel <firstname.lastname@gmail.com>
+# Date:                16.10.2019
+# Last Modified Date:  25.02.2021
+# Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from typing import Dict, Any, Union
 from ampel.config.collector.AbsDictConfigCollector import AbsDictConfigCollector

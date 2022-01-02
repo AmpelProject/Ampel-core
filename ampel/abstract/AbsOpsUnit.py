@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-core/ampel/abstract/AbsOpsUnit.py
-# License           : BSD-3-Clause
-# Author            : jvs
-# Date              : Unspecified
-# Last Modified Date: Unspecified
-# Last Modified By  : jvs
+# File:                Ampel-core/ampel/abstract/AbsOpsUnit.py
+# License:             BSD-3-Clause
+# Author:              jvs
+# Date:                Unspecified
+# Last Modified Date:  Unspecified
+# Last Modified By:    jvs
 
 from typing import Dict, Any, Optional
 from ampel.base.AmpelABC import AmpelABC

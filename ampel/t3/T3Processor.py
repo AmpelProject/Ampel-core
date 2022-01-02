@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-core/ampel/t3/T3Processor.py
-# License           : BSD-3-Clause
-# Author            : vb <vbrinnel@physik.hu-berlin.de>
-# Date              : 26.02.2018
-# Last Modified Date: 17.12.2021
-# Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
+# File:                Ampel-core/ampel/t3/T3Processor.py
+# License:             BSD-3-Clause
+# Author:              valery brinnel <firstname.lastname@gmail.com>
+# Date:                26.02.2018
+# Last Modified Date:  17.12.2021
+# Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from importlib import import_module
 from typing import Any, Optional, Annotated

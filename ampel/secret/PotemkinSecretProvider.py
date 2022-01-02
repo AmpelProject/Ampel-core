@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-core/ampel/secret/PotemkinSecretProvider.py
-# License           : BSD-3-Clause
-# Author            : Jakob van Santen <jakob.van.santen@desy.de>
-# Date              : 14.08.2020
-# Last Modified Date: 20.06.2021
-# Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
+# File:                Ampel-core/ampel/secret/PotemkinSecretProvider.py
+# License:             BSD-3-Clause
+# Author:              Jakob van Santen <jakob.van.santen@desy.de>
+# Date:                14.08.2020
+# Last Modified Date:  20.06.2021
+# Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from typing import Type, get_args, get_origin
 from ampel.abstract.AbsSecretProvider import AbsSecretProvider

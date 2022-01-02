@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-core/ampel/t3/stage/project/T3ChannelProjector.py
-# License           : BSD-3-Clause
-# Author            : vb <vbrinnel@physik.hu-berlin.de>
-# Date              : 07.01.2020
-# Last Modified Date: 22.11.2020
-# Last Modified By  : Jakob van Santen <jakob.van.santen@desy.de>
+# File:                Ampel-core/ampel/t3/stage/project/T3ChannelProjector.py
+# License:             BSD-3-Clause
+# Author:              valery brinnel <firstname.lastname@gmail.com>
+# Date:                07.01.2020
+# Last Modified Date:  22.11.2020
+# Last Modified By:    Jakob van Santen <jakob.van.santen@desy.de>
 
 from typing import Sequence, Any, Dict, List, Union, Optional, Set
 from ampel.types import ChannelId

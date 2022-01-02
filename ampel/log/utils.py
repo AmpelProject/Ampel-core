@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-core/ampel/log/utils.py
-# License           : BSD-3-Clause
-# Author            : vb <vbrinnel@physik.hu-berlin.de>
-# Date              : 30.09.2018
-# Last Modified Date: 11.11.2021
-# Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
+# File:                Ampel-core/ampel/log/utils.py
+# License:             BSD-3-Clause
+# Author:              valery brinnel <firstname.lastname@gmail.com>
+# Date:                30.09.2018
+# Last Modified Date:  11.11.2021
+# Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 import sys, traceback
 from math import log2

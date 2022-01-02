@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-core/ampel/t3/stage/T3ProjectingStager.py
-# License           : BSD-3-Clause
-# Author            : vb <vbrinnel@physik.hu-berlin.de>
-# Date              : 06.01.2020
-# Last Modified Date: 10.12.2021
-# Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
+# File:                Ampel-core/ampel/t3/stage/T3ProjectingStager.py
+# License:             BSD-3-Clause
+# Author:              valery brinnel <firstname.lastname@gmail.com>
+# Date:                06.01.2020
+# Last Modified Date:  10.12.2021
+# Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from time import time
 from typing import Optional, Sequence, List, Generator, Union, Dict, Type, Iterable

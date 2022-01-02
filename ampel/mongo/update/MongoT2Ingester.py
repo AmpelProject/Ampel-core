@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-core/ampel/mongo/update/MongoT2Ingester.py
-# License           : BSD-3-Clause
-# Author            : vb <vbrinnel@physik.hu-berlin.de>
-# Date              : 14.12.2017
-# Last Modified Date: 08.10.2021
-# Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
+# File:                Ampel-core/ampel/mongo/update/MongoT2Ingester.py
+# License:             BSD-3-Clause
+# Author:              valery brinnel <firstname.lastname@gmail.com>
+# Date:                14.12.2017
+# Last Modified Date:  08.10.2021
+# Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from pymongo import UpdateOne
 from typing import Dict, Any

@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-core/ampel/ingest/T0Compiler.py
-# License           : BSD-3-Clause
-# Author            : vb <vbrinnel@physik.hu-berlin.de>
-# Date              : 11.05.2021
-# Last Modified Date: 25.11.2021
-# Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
+# File:                Ampel-core/ampel/ingest/T0Compiler.py
+# License:             BSD-3-Clause
+# Author:              valery brinnel <firstname.lastname@gmail.com>
+# Date:                11.05.2021
+# Last Modified Date:  25.11.2021
+# Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from typing import Dict, List, Optional, Set, Union, Tuple, Any
 from ampel.content.MetaRecord import MetaRecord

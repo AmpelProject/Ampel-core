@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-core/ampel/model/t3/AliasableModel.py
-# License           : BSD-3-Clause
-# Author            : jvs
-# Date              : Unspecified
-# Last Modified Date: Unspecified
-# Last Modified By  : jvs
+# File:                Ampel-core/ampel/model/t3/AliasableModel.py
+# License:             BSD-3-Clause
+# Author:              jvs
+# Date:                Unspecified
+# Last Modified Date:  Unspecified
+# Last Modified By:    jvs
 
 from typing import Any, Optional, ClassVar, TYPE_CHECKING
 from ampel.base.AmpelBaseModel import AmpelBaseModel

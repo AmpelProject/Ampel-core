@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-core/ampel/t3/stage/T3SimpleStager.py
-# License           : BSD-3-Clause
-# Author            : vb <vbrinnel@physik.hu-berlin.de>
-# Date              : 18.04.2021
-# Last Modified Date: 17.12.2021
-# Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
+# File:                Ampel-core/ampel/t3/stage/T3SimpleStager.py
+# License:             BSD-3-Clause
+# Author:              valery brinnel <firstname.lastname@gmail.com>
+# Date:                18.04.2021
+# Last Modified Date:  17.12.2021
+# Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from typing import Optional, List, Generator
 

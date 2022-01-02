@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-core/ampel/test/dummy.py
-# License           : BSD-3-Clause
-# Author            : jvs
-# Date              : Unspecified
-# Last Modified Date: 11.02.2021
-# Last Modified By  : jvs
+# File:                Ampel-core/ampel/test/dummy.py
+# License:             BSD-3-Clause
+# Author:              jvs
+# Date:                Unspecified
+# Last Modified Date:  11.02.2021
+# Last Modified By:    jvs
 
 import time
 from typing import List, Optional, Sequence, Tuple, Union

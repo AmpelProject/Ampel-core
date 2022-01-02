@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-core/ampel/util/collections.py
-# License           : BSD-3-Clause
-# Author            : vb <vbrinnel@physik.hu-berlin.de>
-# Date              : 07.06.2018
-# Last Modified Date: 09.12.2021
-# Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
+# File:                Ampel-core/ampel/util/collections.py
+# License:             BSD-3-Clause
+# Author:              valery brinnel <firstname.lastname@gmail.com>
+# Date:                07.06.2018
+# Last Modified Date:  09.12.2021
+# Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from itertools import islice
 from collections.abc import Sequence as sequence, Iterable as iterable, Sized as sized

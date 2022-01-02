@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-core/ampel/demo/DemoReviewT3Unit.py
-# License           : BSD-3-Clause
-# Author            : vb <vbrinnel@physik.hu-berlin.de>
-# Date              : 09.06.2020
-# Last Modified Date: 17.12.2021
-# Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
+# File:                Ampel-core/ampel/demo/DemoReviewT3Unit.py
+# License:             BSD-3-Clause
+# Author:              valery brinnel <firstname.lastname@gmail.com>
+# Date:                09.06.2020
+# Last Modified Date:  17.12.2021
+# Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from typing import Union, Generator
 from ampel.types import UBson, T3Send

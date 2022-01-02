@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-core/ampel/cli/StartCommand.py
-# License           : BSD-3-Clause
-# Author            : jvs, vb
-# Date              : 13.03.2021
-# Last Modified Date: 23.03.2021
-# Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
+# File:                Ampel-core/ampel/cli/StartCommand.py
+# License:             BSD-3-Clause
+# Author:              jvs, vb
+# Date:                13.03.2021
+# Last Modified Date:  23.03.2021
+# Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 import logging, signal, asyncio
 from argparse import ArgumentParser

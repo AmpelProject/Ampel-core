@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-core/ampel/log/AmpelLogger.py
-# License           : BSD-3-Clause
-# Author            : vb <vbrinnel@physik.hu-berlin.de>
-# Date              : 27.09.2018
-# Last Modified Date: 18.12.2020
-# Last Modified By  : Jakob van Santen <jakob.van.santen@desy.de>
+# File:                Ampel-core/ampel/log/AmpelLogger.py
+# License:             BSD-3-Clause
+# Author:              valery brinnel <firstname.lastname@gmail.com>
+# Date:                27.09.2018
+# Last Modified Date:  18.12.2020
+# Last Modified By:    Jakob van Santen <jakob.van.santen@desy.de>
 
 import logging, sys, traceback
 from sys import _getframe

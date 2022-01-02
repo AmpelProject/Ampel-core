@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-core/ampel/abstract/AbsWorker.py
-# License           : BSD-3-Clause
-# Author            : vb <vbrinnel@physik.hu-berlin.de>
-# Date              : 28.05.2021
-# Last Modified Date: 14.12.2021
-# Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
+# File:                Ampel-core/ampel/abstract/AbsWorker.py
+# License:             BSD-3-Clause
+# Author:              valery brinnel <firstname.lastname@gmail.com>
+# Date:                28.05.2021
+# Last Modified Date:  14.12.2021
+# Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 import gc, signal
 from time import time

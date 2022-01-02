@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-core/ampel/ops/AmpelExceptionPublisher.py
-# License           : BSD-3-Clause
-# Author            : Jakob van Santen <jakob.van.santen@desy.de>
-# Date              : 03.09.2018
-# Last Modified Date: 27.08.2020
-# Last Modified By  : Jakob van Santen <jakob.van.santen@desy.de>
+# File:                Ampel-core/ampel/ops/AmpelExceptionPublisher.py
+# License:             BSD-3-Clause
+# Author:              Jakob van Santen <jakob.van.santen@desy.de>
+# Date:                03.09.2018
+# Last Modified Date:  27.08.2020
+# Last Modified By:    Jakob van Santen <jakob.van.santen@desy.de>
 
 
 import datetime, json, socket

@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-core/ampel/t3/supply/select/T3StockSelector.py
-# License           : BSD-3-Clause
-# Author            : vb <vbrinnel@physik.hu-berlin.de>
-# Date              : 06.12.2019
-# Last Modified Date: 03.04.2021
-# Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
+# File:                Ampel-core/ampel/t3/supply/select/T3StockSelector.py
+# License:             BSD-3-Clause
+# Author:              valery brinnel <firstname.lastname@gmail.com>
+# Date:                06.12.2019
+# Last Modified Date:  03.04.2021
+# Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from pymongo.cursor import Cursor
 from typing import Union, Optional, Dict, Literal, Any

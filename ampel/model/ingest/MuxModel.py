@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-core/ampel/model/ingest/MuxModel.py
-# License           : BSD-3-Clause
-# Author            : vb <vbrinnel@physik.hu-berlin.de>
-# Date              : 20.05.2021
-# Last Modified Date: 27.05.2021
-# Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
+# File:                Ampel-core/ampel/model/ingest/MuxModel.py
+# License:             BSD-3-Clause
+# Author:              valery brinnel <firstname.lastname@gmail.com>
+# Date:                20.05.2021
+# Last Modified Date:  27.05.2021
+# Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from typing import Optional, Sequence, Literal, Dict, Union
 from ampel.model.UnitModel import UnitModel

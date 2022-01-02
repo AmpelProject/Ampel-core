@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-core/ampel/abstract/AbsChannelTemplate.py
-# License           : BSD-3-Clause
-# Author            : vb <vbrinnel@physik.hu-berlin.de>
-# Date              : 27.10.2019
-# Last Modified Date: 07.04.2020
-# Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
+# File:                Ampel-core/ampel/abstract/AbsChannelTemplate.py
+# License:             BSD-3-Clause
+# Author:              valery brinnel <firstname.lastname@gmail.com>
+# Date:                27.10.2019
+# Last Modified Date:  07.04.2020
+# Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from typing import List, Dict, Any
 from ampel.base.decorator import abstractmethod

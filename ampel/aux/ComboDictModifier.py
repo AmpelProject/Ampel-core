@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-core/ampel/aux/ComboDictModifier.py
-# License           : BSD-3-Clause
-# Author            : vb <vbrinnel@physik.hu-berlin.de>
-# Date              : 21.02.2020
-# Last Modified Date: 21.06.2020
-# Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
+# File:                Ampel-core/ampel/aux/ComboDictModifier.py
+# License:             BSD-3-Clause
+# Author:              valery brinnel <firstname.lastname@gmail.com>
+# Date:                21.02.2020
+# Last Modified Date:  21.06.2020
+# Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from typing import Dict, Sequence, Union, Literal, List, Optional, Callable, Container, Any, Set
 from ampel.abstract.AbsApplicable import AbsApplicable

@@ -4,7 +4,7 @@
 # License			: BSD-3-Clause
 # Author			: Jakob van Santen <jakob.van.santen@desy.de>
 # Date				: 02.08.2020
-# Last Modified Date: 02.08.2020
+# Last Modified Date:  02.08.2020
 # Last Modified By	: Jakob van Santen <jakob.van.santen@desy.de>
 
 from itertools import islice
