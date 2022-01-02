@@ -7,7 +7,7 @@
 # Last Modified Date:  17.04.2020
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from typing import Optional, Literal, Any, ClassVar
+from typing import Literal, Any, ClassVar
 from collections.abc import Sequence
 from ampel.base.decorator import abstractmethod
 from ampel.base.AmpelABC import AmpelABC
@@ -23,7 +23,7 @@ class AbsProcessController(AmpelABC, AmpelBaseModel, abstract=True):
 
 	config: AmpelConfig
 	processes: Sequence[ProcessModel]
-	vault: Optional[AmpelVault] = None
+	vault: None | AmpelVault = None
 	log_profile: str = "default"
 
 	process_count: ClassVar[Any] = AmpelMetricsRegistry.gauge(
@@ -43,9 +43,9 @@ class AbsProcessController(AmpelABC, AmpelBaseModel, abstract=True):
 	def new(cls,
 		tier: Literal[0, 1, 2, 3],
 		config_file_path: str,
-		match: Optional[Sequence[str]] = None,
-		exclude: Optional[Sequence[str]] = None,
-		override: Optional[dict] = None,
+		match: None | Sequence[str] = None,
+		exclude: None | Sequence[str] = None,
+		override: None | dict = None,
 		log_profile: str = "default",
 		**kwargs
 	):
@@ -75,7 +75,7 @@ class AbsProcessController(AmpelABC, AmpelBaseModel, abstract=True):
 
 
 	@abstractmethod
-	def stop(self, name: Optional[str] = None) -> None:
+	def stop(self, name: None | str = None) -> None:
 		"""
 		Gracefully stop processes.
 		
@@ -85,7 +85,7 @@ class AbsProcessController(AmpelABC, AmpelBaseModel, abstract=True):
 
 	def update(self,
 		config: AmpelConfig,
-		vault: Optional[AmpelVault],
+		vault: None | AmpelVault,
 		processes: Sequence[ProcessModel],
 	) -> None:
 		"""Change the configuration of the controller."""

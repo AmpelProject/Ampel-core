@@ -9,7 +9,7 @@
 
 import xxhash
 from struct import pack
-from typing import Optional, Union, Any, FrozenSet
+from typing import Any
 from ampel.types import ChannelId, DataPointId, StockId, UnitId, UBson
 from ampel.content.T1Document import T1Document
 from ampel.content.MetaActivity import MetaActivity
@@ -52,8 +52,8 @@ class T1Compiler(AbsCompiler):
 		# Internal structure used for compiling documents
 		self.t1s: dict[
 			tuple[
-				Optional[UnitId],       # unit
-				Optional[int],          # config
+				None | UnitId,          # unit
+				None | int,             # config
 				StockId,                # stock
 				tuple[DataPointId, ...] # tuple(dps) [will be hashed into link]
 			],
@@ -61,9 +61,9 @@ class T1Compiler(AbsCompiler):
 				int, 	                # link
 				set[ChannelId],         # channels (doc)
 				UBson,                  # body
-				Optional[int],          # code
+				None | int,             # code
 				dict[
-					Frozenset[tuple[str, Any]], # key: traceid
+					frozenset[tuple[str, Any]], # key: traceid
 					tuple[
 						ActivityRegister,
 						dict[str, Any]  # meta extra
@@ -78,12 +78,12 @@ class T1Compiler(AbsCompiler):
 		channel: ChannelId,
 		traceid: dict[str, Any],
 		stock: StockId = 0,
-		activity: Optional[Union[MetaActivity, list[MetaActivity]]] = None,
-		meta_extra: Optional[dict[str, Any]] = None,
-		unit: Optional[UnitId] = None,
-		config: Optional[int] = None,
+		activity: None | MetaActivity | list[MetaActivity] = None,
+		meta_extra: None | dict[str, Any] = None,
+		unit: None | UnitId = None,
+		config: None | int = None,
 		body: UBson = None,
-		code: Optional[int] = None
+		code: None | int = None
 	) -> int:
 		"""
 		:param unit: potential AbsT1ComputeUnit subclass to be associated with this doc
@@ -139,7 +139,7 @@ class T1Compiler(AbsCompiler):
 		return a[0]
 
 
-	def commit(self, ingester: AbsDocIngester[T1Document], now: Union[int, float], **kwargs) -> None:
+	def commit(self, ingester: AbsDocIngester[T1Document], now: int | float, **kwargs) -> None:
 
 		# t1: (unit, config, stock, dps)
 		# t2: (link, {channels}, body, code, dict[traceid, (ActivityRegister, meta extra)])

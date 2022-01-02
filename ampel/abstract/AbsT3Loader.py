@@ -7,7 +7,6 @@
 # Last Modified Date:  13.12.2021
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from typing import Union, Optional
 from collections.abc import Iterator, Iterable, Sequence
 from ampel.types import Traceless, StockId, ChannelId, StrictIterable
 from ampel.base.decorator import abstractmethod
@@ -36,14 +35,7 @@ class AbsT3Loader(AmpelABC, ContextUnit, abstract=True):
 	directives: Sequence[LoaderDirective]
 
 	#: Channels to load documents for
-	channel: Optional[
-		Union[
-			ChannelId,
-			AnyOf[ChannelId],
-			AllOf[ChannelId],
-			OneOf[ChannelId]
-		]
-	]
+	channel: None | ChannelId | AnyOf[ChannelId] | AllOf[ChannelId] | OneOf[ChannelId]
 
 
 	def __init__(self, **kwargs) -> None:
@@ -73,7 +65,7 @@ class AbsT3Loader(AmpelABC, ContextUnit, abstract=True):
 
 	@abstractmethod
 	def load(self,
-		stock_ids: Union[StockId, Iterator[StockId], StrictIterable[StockId]]
+		stock_ids: StockId | Iterator[StockId] | StrictIterable[StockId]
 	) -> Iterable[AmpelBuffer]:
 		""" Load documents (collection Ampel_data) for the selected stocks """
 		...

@@ -7,7 +7,6 @@
 # Last Modified Date:  13.04.2020
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from typing import Optional
 from collections.abc import Sequence
 from ampel.base.AmpelBaseModel import AmpelBaseModel
 from ampel.mongo.model.FieldModel import FieldModel
@@ -15,7 +14,7 @@ from ampel.mongo.model.FieldModel import FieldModel
 class IndexModel(AmpelBaseModel):
 
 	index: Sequence[FieldModel]
-	args: Optional[dict]
+	args: None | dict
 
 	def get_id(self) -> str:
 		"""

@@ -8,7 +8,7 @@
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from time import time
-from typing import Optional, Annotated
+from typing import Annotated
 from collections.abc import Generator
 
 from ampel.types import ChannelId
@@ -16,6 +16,7 @@ from ampel.view.T3Store import T3Store
 from ampel.view.T3DocView import T3DocView
 from ampel.abstract.AbsT3ControlUnit import AbsT3ControlUnit
 from ampel.abstract.AbsT3PlainUnit import AbsT3PlainUnit
+from ampel.base.AmpelBaseModel import AmpelBaseModel
 from ampel.t3.T3DocBuilder import T3DocBuilder
 from ampel.content.T3Document import T3Document
 from ampel.model.UnitModel import UnitModel
@@ -32,17 +33,17 @@ class SkippableUnitModel(UnitModel):
 
 	Potentialy save hash of dependent unit result (body) in meta record (extra.unit#confid).
 	"""
-	cache: Optional[UnitModel] = None
+	cache: None | UnitModel = None
 
 
 class T3PlainUnitExecutor(AbsT3ControlUnit, T3DocBuilder):
 
 	# Require single channel for now (super classes allow multi-channel)
-	channel: Optional[ChannelId] = None
+	channel: None | ChannelId = None
 
 	target: Annotated[SkippableUnitModel, AbsT3PlainUnit]
 
-	def process(self, t3s: T3Store) -> Optional[Generator[T3Document, None, None]]:
+	def process(self, t3s: T3Store) -> None | Generator[T3Document, None, None]:
 
 		t3_unit = self.context.loader.new_safe_logical_unit(
 			UnitModel(unit=self.target.unit, config=self.target.config),
@@ -97,11 +98,9 @@ class T3PlainUnitExecutor(AbsT3ControlUnit, T3DocBuilder):
 
 		if self.target.cache:
 			if isinstance(self.target.cache.config, dict):
-				vc = self.context.loader.get_class_by_name(
-					self.target.cache.unit
-				).validate(
-					self.target.cache.config
-				)
+				vc = self.context \
+					.loader.get_class_by_name(self.target.cache.unit, unit_type=AmpelBaseModel) \
+					.validate(self.target.cache.config)
 
 				return build_unsafe_dict_id(dictify(vc))
 			elif isinstance(self.target.cache.config, int):

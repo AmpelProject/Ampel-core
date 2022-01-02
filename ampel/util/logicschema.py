@@ -16,7 +16,7 @@ from ampel.model.operator.OneOf import OneOf
 from ampel.util.collections import check_seq_inner_type
 
 
-def to_logical_dict(v, field_name: Union[int, str, dict[str, Any]]) -> dict[str, Any]:
+def to_logical_dict(v, field_name: int | str | dict[str, Any]) -> dict[str, Any]:
 	"""
 	Converts str/int into {'any_of': int/str}.
 	Checks structure in case dict is provided
@@ -149,7 +149,7 @@ def reduce_to_set(
 	arg: Union[
 		T,
 		# unsure if mypy understands unions of dicts with different key literals actually
-		dict[Union[Literal['all_of'], Literal['one_of']], Sequence[T]],
+		dict[Union[Literal['all_of', 'one_of']], Sequence[T]],
 		dict[Literal['any_of'], Union[Sequence[T], dict[Literal['all_of'], Sequence[T]]]],
 		AllOf[T], AnyOf[T], OneOf[T]
 	],

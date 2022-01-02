@@ -7,7 +7,7 @@
 # Last Modified Date:  12.12.2021
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from typing import Any, Optional
+from typing import Any
 from ampel.types import ChannelId, OneOrMany
 from ampel.base.AmpelABC import AmpelABC
 from ampel.base.decorator import abstractmethod
@@ -38,7 +38,7 @@ class AbsEventUnit(AmpelABC, ContextUnit, abstract=True):
 	process_name: str
 
 	#: channels associated with the process
-	channel: Optional[OneOrMany[ChannelId]] = None
+	channel: None | OneOrMany[ChannelId] = None
 
 	#: raise exceptions instead of catching and logging
 	#: if True, troubles collection will not be populated if an exception occurs
@@ -51,7 +51,7 @@ class AbsEventUnit(AmpelABC, ContextUnit, abstract=True):
 	base_log_flag: LogFlag = LogFlag.SCHEDULED_RUN
 
 	#: optional additional kwargs to pass to :class:`~ampel.mongo.update.var.DBLoggingHandler.DBLoggingHandler`
-	db_handler_kwargs: Optional[dict[str, Any]] = None
+	db_handler_kwargs: None | dict[str, Any] = None
 
 	#: Some subclasses allow for non-serializable input parameter out of convenience (jupyter notebooks).
 	#: For example, an AlertSupplier instance can be passed as argument of an AlertConsumer.

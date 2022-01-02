@@ -8,7 +8,7 @@
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from ujson import encode
-from typing import Optional, Union, Any
+from typing import Any
 from ampel.types import ChannelId, Tag, StockId
 from ampel.content.StockDocument import StockDocument
 from ampel.content.JournalRecord import JournalRecord
@@ -25,7 +25,7 @@ class StockCompiler(AbsCompiler):
 	support generic typed dict (#3863) and higher kind typevars (#548)
 	"""
 
-	id_mapper: Optional[str]
+	id_mapper: None | str
 
 
 	def __init__(self, **kwargs) -> None:
@@ -40,8 +40,8 @@ class StockCompiler(AbsCompiler):
 	def add(self, # type: ignore[override]
 		stock: StockId,
 		channel: ChannelId,
-		journal: Optional[JournalRecord] = None,
-		tag: Optional[Union[Tag, list[Tag]]] = None
+		journal: None | JournalRecord = None,
+		tag: None | Tag | list[Tag] = None
 	) -> None:
 
 		if stock in self.register:
@@ -76,7 +76,7 @@ class StockCompiler(AbsCompiler):
 	# Override
 	def commit(self,
 		ingester: AbsDocIngester[StockDocument],
-		now: Union[int, float],
+		now: int | float,
 		**kwargs
 	) -> None:
 		"""

@@ -8,7 +8,6 @@
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from time import time
-from typing import Optional, Union
 from collections.abc import Generator, Iterable, Sequence
 from itertools import islice
 from multiprocessing import JoinableQueue
@@ -34,10 +33,10 @@ class RunBlock:
 	"""
 	Used internally by T3UnitRunner
 	"""
-	filter: Optional[AbsT3Filter]
-	projector: Optional[AbsT3Projector]
+	filter: None | AbsT3Filter
+	projector: None | AbsT3Projector
 	units: list[AbsT3ReviewUnit]
-	stock_ids: Optional[list[StockId]]
+	stock_ids: None | list[StockId]
 	qdict: dict[type, list[JoinableQueue]]
 
 	def __init__(self):
@@ -109,7 +108,7 @@ class T3ProjectingStager(T3ThreadedStager):
 	def stage(self,
 		gen: Generator[AmpelBuffer, None, None],
 		t3s: T3Store
-	) -> Optional[Generator[T3Document, None, None]]:
+	) -> None | Generator[T3Document, None, None]:
 
 		if len(self.run_blocks) == 1:
 			if len(self.run_blocks[0].units) == 1:
@@ -259,10 +258,10 @@ class T3ProjectingStager(T3ThreadedStager):
 
 	def craft_t3_doc(self,
 		t3_unit: AbsT3s,
-		res: Union[None, UBson, UnitResult],
+		res: None | UBson | UnitResult,
 		t3s: T3Store,
 		ts: float,
-		stocks: Optional[list[StockId]] = None
+		stocks: None | list[StockId] = None
 	) -> T3Document:
 
 		t3_doc = super().craft_t3_doc(t3_unit, res, t3s, ts, stocks)

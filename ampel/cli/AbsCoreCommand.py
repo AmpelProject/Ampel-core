@@ -8,7 +8,7 @@
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 import re
-from typing import Any, Optional, TypeVar, Tuple
+from typing import Any, TypeVar, Tuple
 from collections.abc import Sequence, Iterator
 from ampel.core.AmpelDB import AmpelDB
 from ampel.config.AmpelConfig import AmpelConfig
@@ -29,7 +29,7 @@ class AbsCoreCommand(AbsCLIOperation, abstract=True):
 	def load_config(self,
 		config_path: str,
 		unknown_args: Sequence[str],
-		logger: Optional[AmpelLogger] = None,
+		logger: None | AmpelLogger = None,
 		freeze: bool = True
 	) -> AmpelConfig:
 
@@ -70,7 +70,7 @@ class AbsCoreCommand(AbsCLIOperation, abstract=True):
 				yield k, v
 
 
-	def get_vault(self, args: dict[str, Any]) -> Optional[AmpelVault]:
+	def get_vault(self, args: dict[str, Any]) -> None | AmpelVault:
 		vault = None
 		if args.get('vault'):
 			from ampel.secret.DictSecretProvider import DictSecretProvider
@@ -82,7 +82,7 @@ class AbsCoreCommand(AbsCLIOperation, abstract=True):
 
 	def get_db(self,
 		config: AmpelConfig,
-		vault: Optional[AmpelVault] = None,
+		vault: None | AmpelVault = None,
 		require_existing_db: bool = True,
 		one_db: bool = False
 	) -> AmpelDB:
@@ -104,7 +104,7 @@ class AbsCoreCommand(AbsCLIOperation, abstract=True):
 	def get_context(self,
 		args: dict[str, Any],
 		unknown_args: Sequence[str],
-		logger: Optional[AmpelLogger] = None,
+		logger: None | AmpelLogger = None,
 		freeze_config: bool = True,
 		ContextClass: type[T] = AmpelContext, # type: ignore[assignment]
 		require_existing_db: bool = True,

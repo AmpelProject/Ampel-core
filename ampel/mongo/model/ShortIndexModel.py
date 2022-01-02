@@ -7,7 +7,7 @@
 # Last Modified Date:  16.04.2020
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from typing import Optional, Any
+from typing import Any
 from ampel.base.AmpelBaseModel import AmpelBaseModel
 from ampel.mongo.model.FieldModel import FieldModel
 
@@ -15,7 +15,7 @@ from ampel.mongo.model.FieldModel import FieldModel
 class ShortIndexModel(AmpelBaseModel):
 
 	field: str
-	args: Optional[dict] = None
+	args: None | dict = None
 
 	def dict(self, **kwargs) -> dict[str, Any]:
 		if self.args:

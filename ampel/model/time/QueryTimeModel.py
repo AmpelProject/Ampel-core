@@ -7,7 +7,7 @@
 # Last Modified Date:  06.06.2020
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from typing import Union, Optional, Any
+from typing import Any
 from ampel.base.AmpelBaseModel import AmpelBaseModel
 
 
@@ -15,8 +15,8 @@ class QueryTimeModel(AmpelBaseModel):
 	"""
 	Standardized parameter for the class QueryMatchStock
 	"""
-	before: Optional[Union[int, float]] = None
-	after: Optional[Union[int, float]] = None
+	before: None | int | float = None
+	after: None | int | float = None
 
 	def __bool__(self) -> bool:
 		return self.before is not None or self.after is not None

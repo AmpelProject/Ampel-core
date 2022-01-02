@@ -7,7 +7,7 @@
 # Last Modified Date:  18.06.2020
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from typing import Union, Generic, Any
+from typing import Generic, Any
 from collections.abc import Sequence
 from ampel.types import T
 from ampel.base.decorator import abstractmethod
@@ -19,11 +19,7 @@ from ampel.abstract.AbsApplicable import AbsApplicable
 
 class AbsLogicOperatorFilter(Generic[T], AbsApplicable, abstract=True):
 
-	filters: Union[
-		FilterCriterion,
-		FlatAnyOf[FilterCriterion],
-		AllOf[FilterCriterion]
-	]
+	filters: FilterCriterion | FlatAnyOf[FilterCriterion] | AllOf[FilterCriterion]
 
 	@staticmethod
 	@abstractmethod

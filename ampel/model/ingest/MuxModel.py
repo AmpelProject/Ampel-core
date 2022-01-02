@@ -7,7 +7,7 @@
 # Last Modified Date:  27.05.2021
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from typing import Optional, Literal, Union
+from typing import Literal
 from collections.abc import Sequence
 from ampel.model.UnitModel import UnitModel
 from ampel.model.ingest.T1Combine import T1Combine
@@ -29,8 +29,8 @@ class MuxModel(UnitModel):
 
 	#: Create :class:`compounds <ampel.content.T1Document.T1Document>`
 	#: from :class:`datapoints <ampel.content.DataPoint.DataPoint>`
-	combine: Optional[Sequence[Union[T1Combine, T1CombineCompute, T1CombineComputeNow]]] = None
+	combine: None | Sequence[T1Combine | T1CombineCompute | T1CombineComputeNow] = None
 
 	#: Create or update :class:`T2 documents <ampel.content.T2Document.T2Document>`
 	#: bound to :class:`datapoints <ampel.content.DataPoint.DataPoint>` based on muxer "insert" result
-	insert: Optional[dict[Literal['point_t2'], Sequence[T2Compute]]] = None
+	insert: None | dict[Literal['point_t2'], Sequence[T2Compute]] = None

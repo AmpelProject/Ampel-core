@@ -9,10 +9,9 @@
 
 import gc, signal
 from time import time
-from typing import ClassVar, Optional, Union, Any, TypeVar, Generic, Literal
-from collections.abc import Sequence
+from typing import ClassVar, Any, TypeVar, Generic, Literal
 
-from ampel.types import UBson, Tag
+from ampel.types import OneOrMany, JDict, UBson, Tag
 from ampel.base.decorator import abstractmethod
 from ampel.base.LogicalUnit import LogicalUnit
 from ampel.mongo.utils import maybe_match_array
@@ -44,21 +43,21 @@ class AbsWorker(Generic[T], AbsEventUnit, abstract=True):
 	"""
 
 	#: ids of the units to run. If not specified, any t1/t2 unit will be run.
-	unit_ids: Optional[list[str]]
+	unit_ids: None | list[str]
 
 	#: process only with the given code
-	code_match: Union[DocumentCode, Sequence[DocumentCode]] = [DocumentCode.NEW, DocumentCode.RERUN_REQUESTED]
+	code_match: OneOrMany[DocumentCode] = [DocumentCode.NEW, DocumentCode.RERUN_REQUESTED]
 
 	#: max number of docs to process in :func:`run`
-	doc_limit: Optional[int]
+	doc_limit: None | int
 
 	#: tag(s) to add to the stock :class:`~ampel.content.JournalRecord.JournalRecord`
 	#: every time a document is processed
-	jtag: Optional[Union[Tag, Sequence[Tag]]]
+	jtag: None | OneOrMany[Tag]
 
 	#: tag(s) to add to the stock :class:`~ampel.content.MetaRecord.MetaRecord`
 	#: every time a document is processed
-	mtag: Optional[Union[Tag, Sequence[Tag]]]
+	mtag: None | OneOrMany[Tag]
 
 	#: create a 'beacon' document indicating the last time T2Processor was run
 	#: in the current configuration
@@ -83,9 +82,9 @@ class AbsWorker(Generic[T], AbsEventUnit, abstract=True):
 		self._loader = self.context.loader
 
 		# Prepare DB query dict
-		self.query: dict[str, Any] = {
+		self.query: JDict = {
 			'code': self.code_match if isinstance(self.code_match, DocumentCode)
-			else maybe_match_array(self.code_match) # type: ignore[arg-type]
+				else maybe_match_array(self.code_match) # type: ignore[arg-type]
 		}
 
 		# Possibly restrict query to specified t2 units
@@ -108,7 +107,7 @@ class AbsWorker(Generic[T], AbsEventUnit, abstract=True):
 
 		# _instances stores unit instances so that they can be re-used in run()
 		# Key: set(unit name + config), value: unit instance
-		self._instances: dict[str, Any] = {}
+		self._instances: JDict = {}
 
 
 	@abstractmethod
@@ -187,8 +186,8 @@ class AbsWorker(Generic[T], AbsEventUnit, abstract=True):
 
 	def _processing_error(self,
 		logger: AmpelLogger, doc: T, body: UBson,
-		meta: MetaRecord, msg: Optional[str] = None,
-		extra: Optional[dict[str, Any]] = None, exception: Optional[Exception] = None
+		meta: MetaRecord, msg: None | str = None,
+		extra: None | JDict = None, exception: None | Exception = None
 	) -> None:
 		"""
 		- Updates the t1/t2 document by appending a meta entry and
@@ -222,7 +221,7 @@ class AbsWorker(Generic[T], AbsEventUnit, abstract=True):
 
 		self.commit_update({'_id': doc['_id']}, meta, logger, code=DocumentCode.EXCEPTION) # type: ignore[typeddict-item]
 
-		info: dict[str, Any] = (extra or {}) | meta | {'stock': doc['stock'], 'doc': doc}
+		info: JDict = (extra or {}) | meta | {'stock': doc['stock'], 'doc': doc}
 		if exception:
 			report_exception(self._ampel_db, logger=logger, exc=exception, info=info)
 		else:
@@ -230,12 +229,12 @@ class AbsWorker(Generic[T], AbsEventUnit, abstract=True):
 
 
 	def commit_update(self,
-		match: dict[str, Any],
+		match: JDict,
 		meta: MetaRecord,
 		logger: AmpelLogger, *,
 		payload_op: Literal['$push', '$set'] = '$push',
 		body: UBson = None,
-		tag: Union[Tag, Sequence[Tag]] = None,
+		tag: None | OneOrMany[Tag] = None,
 		code: int = 0
 	) -> None:
 		"""
@@ -250,7 +249,7 @@ class AbsWorker(Generic[T], AbsEventUnit, abstract=True):
 				else:
 					logger.log(DEBUG, None, extra={"body": body})
 
-		upd: dict[str, Any] = {
+		upd: JDict = {
 			'$set': {'code': code},
 			'$push': {'meta': meta}
 		}
@@ -283,8 +282,8 @@ class AbsWorker(Generic[T], AbsEventUnit, abstract=True):
 
 	def gen_meta(self,
 		run_id: int,
-		unit_trace_id: Optional[int],
-		duration: Union[int, float],
+		unit_trace_id: None | int,
+		duration: int | float,
 		action_code: MetaActionCode = MetaActionCode(0)
 	) -> MetaRecord:
 		return {
@@ -337,7 +336,7 @@ class AbsWorker(Generic[T], AbsEventUnit, abstract=True):
 
 
 	def get_unit_instance(self,
-		doc: Union[T1Document, T2Document],
+		doc: T1Document | T2Document,
 		logger: AmpelLogger
 	) -> LogicalUnit:
 

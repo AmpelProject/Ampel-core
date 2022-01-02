@@ -7,7 +7,6 @@
 # Last Modified Date:  13.12.2021
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from typing import Optional
 from ampel.types import Traceless, StockId
 from ampel.base.AmpelABC import AmpelABC
 from ampel.base.decorator import abstractmethod
@@ -29,8 +28,8 @@ class AbsT0Muxer(AmpelABC, ContextUnit, abstract=True):
 	@abstractmethod
 	def process(self,
 		dps: list[DataPoint],
-		stock_id: Optional[StockId] = None
-	) -> tuple[Optional[list[DataPoint]], Optional[list[DataPoint]]]:
+		stock_id: None | StockId = None
+	) -> tuple[None | list[DataPoint], None | list[DataPoint]]:
 		"""
 		Potentially:
 		- Append datapoints to the datapoints provided as argument (the source can be the AmpelDB or external source(s))

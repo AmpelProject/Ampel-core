@@ -7,7 +7,7 @@
 # Last Modified Date:  20.06.2020
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from typing import Optional, Union, Any, Literal
+from typing import Any, Literal
 
 from ampel.types import Tag
 from ampel.model.operator.AnyOf import AnyOf
@@ -19,10 +19,10 @@ from ampel.mongo.query.general import build_general_query
 
 
 def build_stock_query(
-	channel: Optional[Union[int, str, dict, AllOf, AnyOf, OneOf]] = None,
-	tag: Optional[dict[Literal['with', 'without'], Union[Tag, dict, AllOf[Tag], AnyOf[Tag], OneOf[Tag]]]] = None,
-	time_created: Optional[QueryTimeModel] = None,
-	time_updated: Optional[QueryTimeModel] = None
+	channel: None | int | str | dict | AllOf | AnyOf | OneOf = None,
+	tag: None | dict[Literal['with', 'without'], Tag | dict | AllOf[Tag] | AnyOf[Tag] | OneOf[Tag]] = None,
+	time_created: None | QueryTimeModel = None,
+	time_updated: None | QueryTimeModel = None
 ) -> dict[str, Any]:
 	"""
 	:param channel: string (one channel only) or a dict schema \

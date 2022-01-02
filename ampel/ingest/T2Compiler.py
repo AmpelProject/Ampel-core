@@ -7,7 +7,7 @@
 # Last Modified Date:  21.11.2021
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from typing import Optional, Union, Any, FrozenSet
+from typing import Any
 from ampel.types import ChannelId, UnitId, T2Link, StockId
 from ampel.content.T2Document import T2Document
 from ampel.content.MetaActivity import MetaActivity
@@ -22,17 +22,17 @@ class T2Compiler(AbsCompiler):
 	are merged into one single T2 document that references all corresponding channels.
 	"""
 
-	def __init__(self, col: Optional[str] = None, **kwargs) -> None:
+	def __init__(self, col: None | str = None, **kwargs) -> None:
 
 		super().__init__(**kwargs)
 		self.col = col
 		self.t2s: dict[
 			# key: (unit name, unit config, link, stock)
-			tuple[UnitId, Optional[int], T2Link, StockId],
+			tuple[UnitId, None | int, T2Link, StockId],
 			tuple[
 				set[ChannelId], # channels (doc)
 				dict[
-					Frozenset[tuple[str, Any]], # key: traceid
+					frozenset[tuple[str, Any]], # key: traceid
 					tuple[ActivityRegister, dict[str, Any]] # activity register, meta_extra
 				]
 			]
@@ -41,13 +41,13 @@ class T2Compiler(AbsCompiler):
 
 	def add(self, # type: ignore[override]
 		unit: UnitId,
-		config: Optional[int],
+		config: None | int,
 		stock: StockId,
 		link: T2Link,
 		channel: ChannelId,
 		traceid: dict[str, Any],
-		activity: Optional[Union[MetaActivity, list[MetaActivity]]] = None,
-		meta_extra: Optional[dict[str, Any]] = None
+		activity: None | MetaActivity | list[MetaActivity] = None,
+		meta_extra: None | dict[str, Any] = None
 	) -> None:
 		"""
 		:param tag: tag(s) to be added to T2Document. A corresponding dedicated channel-less
@@ -79,7 +79,7 @@ class T2Compiler(AbsCompiler):
 			self.t2s[k] = {channel}, {tid: self.new_meta_info(channel, activity, meta_extra)}
 
 
-	def commit(self, ingester: AbsDocIngester[T2Document], now: Union[int, float], **kwargs) -> None:
+	def commit(self, ingester: AbsDocIngester[T2Document], now: int | float, **kwargs) -> None:
 
 		for k, v in self.t2s.items():
 

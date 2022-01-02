@@ -7,7 +7,7 @@
 # Last Modified Date:  20.12.2021
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from typing import Any, Optional, Type
+from typing import Any, Type
 from ampel.types import OneOrMany
 from ampel.util.pretty import prettyjson
 from ampel.log.AmpelLogger import AmpelLogger
@@ -70,7 +70,7 @@ class TPLCompactT3(T3DocBuilderModel, AbsProcessorTemplate):
 	(unless dedicated overrides are defined within specific run blocks)
 	"""
 
-	include: Optional[T3IncludeDirective]
+	include: None | T3IncludeDirective
 	execute: OneOrMany[dict[str, Any]]
 
 

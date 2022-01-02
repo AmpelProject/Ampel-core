@@ -20,7 +20,7 @@ class DemoPointT2Unit(AbsPointT2Unit):
 
 	test_parameter: int = 1
 
-	def process(self, datapoint: DataPoint) -> Union[UBson, UnitResult]:
+	def process(self, datapoint: DataPoint) -> UBson | UnitResult:
 
 		ret = {
 			"datapoint_id": datapoint['id'],

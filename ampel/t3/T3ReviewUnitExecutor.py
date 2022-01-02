@@ -7,7 +7,7 @@
 # Last Modified Date:  14.12.2021
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from typing import Optional, Annotated
+from typing import Annotated
 from collections.abc import Generator
 from ampel.types import Traceless, ChannelId
 from ampel.view.T3Store import T3Store
@@ -26,7 +26,7 @@ class T3ReviewUnitExecutor(AbsT3ControlUnit, T3DocBuilder):
 	logger: Traceless[AmpelLogger]
 
 	# Require single channel for now (super classes allow multi-channel)
-	channel: Optional[ChannelId] = None
+	channel: None | ChannelId = None
 
 	#: Unit must be a subclass of AbsT3Supplier
 	supply: Annotated[UnitModel, AbsT3Supplier]
@@ -35,7 +35,7 @@ class T3ReviewUnitExecutor(AbsT3ControlUnit, T3DocBuilder):
 	stage: Annotated[UnitModel, AbsT3Stager]
 
 
-	def process(self, t3s: T3Store) -> Optional[Generator[T3Document, None, None]]:
+	def process(self, t3s: T3Store) -> None | Generator[T3Document, None, None]:
 
 		try:
 

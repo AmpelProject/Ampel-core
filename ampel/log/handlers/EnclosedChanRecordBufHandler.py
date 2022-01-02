@@ -8,7 +8,6 @@
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from logging import Logger, Handler
-from typing import Union, Optional
 from ampel.log.handlers.RecordBufferingHandler import RecordBufferingHandler
 from ampel.protocol.LoggingHandlerProtocol import LoggingHandlerProtocol
 from ampel.types import StockId, ChannelId
@@ -26,9 +25,9 @@ class EnclosedChanRecordBufHandler(RecordBufferingHandler):
 
 
 	def forward(self,
-		target: Union[Logger, Handler, LoggingHandlerProtocol],
-		stock: Optional[StockId] = None,
-		extra: Optional[dict] = None,
+		target: Logger | Handler | LoggingHandlerProtocol,
+		stock: None | StockId = None,
+		extra: None | dict = None,
 		clear: bool = True
 	) -> None:
 		"""

@@ -7,7 +7,7 @@
 # Last Modified Date:  06.10.2021
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from typing import Any, Union
+from typing import Any
 from collections.abc import Sequence
 from ampel.types import ChannelId
 from ampel.base.decorator import abstractmethod

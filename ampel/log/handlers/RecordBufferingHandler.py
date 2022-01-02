@@ -26,7 +26,7 @@ class RecordBufferingHandler:
 	__slots__ = 'buffer', 'level', 'has_error', 'warn_lvl'
 
 	def __init__(self, level: int) -> None:
-		self.buffer: list[Union[LogRecord, LightLogRecord]] = []
+		self.buffer: list[LogRecord | LightLogRecord] = []
 		self.level = level
 		self.has_error = False
 		self.warn_lvl = WARNING
@@ -38,7 +38,7 @@ class RecordBufferingHandler:
 		self.has_error = False
 
 
-	def handle(self, record: Union[LogRecord, LightLogRecord]) -> None:
+	def handle(self, record: LogRecord | LightLogRecord) -> None:
 		if record.levelno >= self.level:
 			self.buffer.append(record)
 			if record.levelno > self.warn_lvl:

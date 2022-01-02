@@ -7,7 +7,7 @@
 # Last Modified Date:  03.03.2020
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from typing import Any, Optional, Literal
+from typing import Any, Literal
 from ampel.log.AmpelLogger import AmpelLogger
 
 
@@ -15,11 +15,11 @@ class ConfigCollector(dict):
 
 	def __init__(self,
 		conf_section: str,
-		content: Optional[dict] = None,
-		logger: Optional[AmpelLogger] = None,
+		content: None | dict = None,
+		logger: None | AmpelLogger = None,
 		verbose: bool = False,
 		debug: bool = False,
-		tier: Optional[Literal[0, 1, 2, 3, "ops"]] = None
+		tier: None | Literal[0, 1, 2, 3, "ops"] = None
 	) -> None:
 
 		super().__init__(**content if content else {})
@@ -36,13 +36,13 @@ class ConfigCollector(dict):
 			)
 
 
-	def error(self, msg: str, exc_info: Optional[Any] = None) -> None:
+	def error(self, msg: str, exc_info: None | Any = None) -> None:
 		self.logger.error(msg, exc_info=exc_info)
 		self.has_error = True
 
 
 	def missing_key(self,
-		what: str, key: str, dist_name: str, register_file: Optional[str]
+		what: str, key: str, dist_name: str, register_file: None | str
 	) -> None:
 		self.error(
 			f'{what} dict is missing key "{key}" '
@@ -52,11 +52,11 @@ class ConfigCollector(dict):
 
 	def duplicated_entry(self,
 		conf_key: str,
-		prev_file: Optional[str] = None,
-		prev_dist: Optional[str] = None,
-		new_file: Optional[str] = None,
-		new_dist: Optional[str] = None,
-		section_detail: Optional[str] = None
+		prev_file: None | str = None,
+		prev_dist: None | str = None,
+		new_file: None | str = None,
+		new_dist: None | str = None,
+		section_detail: None | str = None
 	) -> None:
 
 		from string import Template
@@ -87,8 +87,8 @@ class ConfigCollector(dict):
 
 	@staticmethod
 	def distrib_hint(
-		distrib: Optional[str] = None,
-		file_register: Optional[str] = None,
+		distrib: None | str = None,
+		file_register: None | str = None,
 		parenthesis: bool = True
 	) -> str:
 		""" Adds distribution name if available """

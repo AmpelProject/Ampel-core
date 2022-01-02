@@ -7,7 +7,7 @@
 # Last Modified Date:  22.04.2020
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from typing import Any, Optional, Union
+from typing import Any
 from ampel.log.AmpelLogger import AmpelLogger, VERBOSE
 from ampel.config.collector.AbsDictConfigCollector import AbsDictConfigCollector
 
@@ -15,8 +15,8 @@ from ampel.config.collector.AbsDictConfigCollector import AbsDictConfigCollector
 class ResourceConfigCollector(AbsDictConfigCollector):
 
 	def __init__(self,
-		conf_section: str, content: Optional[dict] = None,
-		logger: Optional[AmpelLogger] = None, verbose: bool = False
+		conf_section: str, content: None | dict = None,
+		logger: None | AmpelLogger = None, verbose: bool = False
 	):
 		super().__init__(conf_section, content, logger, verbose)
 
@@ -28,7 +28,7 @@ class ResourceConfigCollector(AbsDictConfigCollector):
 	def add(self,
 		arg: dict[str, Any],
 		dist_name: str,
-		version: Union[str, float, int],
+		version: str | float | int,
 		register_file: str
 	) -> None:
 		""" """

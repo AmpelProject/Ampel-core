@@ -7,7 +7,7 @@
 # Last Modified Date:  25.02.2021
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from typing import Any, Union
+from typing import Any
 from ampel.config.collector.AbsDictConfigCollector import AbsDictConfigCollector
 from ampel.log import VERBOSE
 
@@ -26,7 +26,7 @@ class AliasConfigCollector(AbsDictConfigCollector):
 	def add(self,
 		arg: dict[str, Any],
 		dist_name: str,
-		version: Union[str, float, int],
+		version: str | float | int,
 		register_file: str
 	) -> None:
 

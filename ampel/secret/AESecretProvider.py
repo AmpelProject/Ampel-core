@@ -17,7 +17,7 @@ from ampel.secret.Secret import Secret
 
 class AESecretProvider(AbsSecretProvider):
 
-	def __init__(self, pwds: Union[str, Iterable[str]]):
+	def __init__(self, pwds: str | Iterable[str]):
 		self.sjcl = SJCL()
 		self.pwds = [pwds] if isinstance(pwds, str) else pwds
 

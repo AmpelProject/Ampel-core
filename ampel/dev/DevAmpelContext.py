@@ -7,7 +7,7 @@
 # Last Modified Date:  16.11.2021
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from typing import Optional, Any, Union, Type
+from typing import Any, Type
 from importlib import import_module
 from ampel.base.AuxUnitRegister import AuxUnitRegister
 from ampel.base.LogicalUnit import LogicalUnit
@@ -29,8 +29,8 @@ class DevAmpelContext(AmpelContext):
 
 
 	def __init__(self,
-		db_prefix: Optional[str] = None, purge_db: bool = False,
-		custom_conf: Optional[dict[str, Any]] = None, **kwargs
+		db_prefix: None | str = None, purge_db: bool = False,
+		custom_conf: None | dict[str, Any] = None, **kwargs
 	) -> None:
 		"""
 		:db_prefix: customizes the db prefix name
@@ -56,7 +56,7 @@ class DevAmpelContext(AmpelContext):
 			self.db.init_db()
 
 
-	def add_channel(self, name: Union[int, str], access: list[str] = []):
+	def add_channel(self, name: int | str, access: list[str] = []):
 		cm = ChannelModel(channel=name, access=access, version=0)
 		conf = self._get_unprotected_conf()
 		for k, v in cm.dict().items():
@@ -94,7 +94,7 @@ class DevAmpelContext(AmpelContext):
 			AuxUnitRegister._dyn[Class.__name__] = Class
 
 
-	def gen_config_id(self, unit: str, arg: dict[str, Any], logger: Optional[AmpelLogger] = None) -> int:
+	def gen_config_id(self, unit: str, arg: dict[str, Any], logger: None | AmpelLogger = None) -> int:
 
 		if logger is None:
 			logger = AmpelLogger.get_logger()

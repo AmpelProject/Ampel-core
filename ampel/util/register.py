@@ -45,7 +45,7 @@ if sys.version_info.minor > 8:
 	from typing import TypedDict
 else:
 	from typing_extensions import TypedDict
-from typing import BinaryIO, Optional, Any, Union
+from typing import BinaryIO, Any
 from collections.abc import Callable, Generator
 from ampel.log.AmpelLogger import AmpelLogger, VERBOSE
 
@@ -59,8 +59,8 @@ class HeaderInfo(TypedDict):
 
 
 def get_outer_file_handle(
-	file_path: str, write: bool = False, logger: Optional[AmpelLogger] = None,
-) -> tuple[Optional[HeaderInfo], BinaryIO]:
+	file_path: str, write: bool = False, logger: None | AmpelLogger = None,
+) -> tuple[None | HeaderInfo, BinaryIO]:
 	"""
 	If file exists, offset file handle along with decoded header dict is returned.
 	Otherwise, an untouched file handle is returned (wihtout offset)  without header info.
@@ -86,7 +86,7 @@ def get_outer_file_handle(
 
 
 def get_inner_file_handle(
-	fh: Union[str, BinaryIO], write: bool = False, logger: Optional[AmpelLogger] = None
+	fh: str | BinaryIO, write: bool = False, logger: None | AmpelLogger = None
 ) -> BinaryIO:
 	""" override if needed """
 
@@ -107,7 +107,7 @@ def get_inner_file_handle(
 	elif fh.name.endswith('bz2'):
 		from bz2 import BZ2File
 		if logger: logger.log(VERBOSE, f"New BZ2File from {fh.name} (mode {mode})") # noqa: E701
-		return BZ2File(fh, mode=mode) # type: ignore[return-value]
+		return BZ2File(fh, mode=mode) # type: ignore[call-overload]
 
 	elif fh.name.endswith('xz'):
 		from lzma import LZMAFile
@@ -117,12 +117,12 @@ def get_inner_file_handle(
 	return fh
 
 
-def get_header_size(file_path: str) -> Optional[tuple[int, int]]:
+def get_header_size(file_path: str) -> None | tuple[int, int]:
 	with open(file_path, 'rb') as f:
 		return _get_header_size(f.read(11))
 
 
-def _get_header_size(b_header_info: bytes) -> Optional[tuple[int, int]]:
+def _get_header_size(b_header_info: bytes) -> None | tuple[int, int]:
 	"""
 	:returns: (header_size, header_len) if the header signature indicates
 	an ampel register file (bytes([97, 109, 112, 101, 108])), None otherwise
@@ -152,7 +152,7 @@ def _get_header_size(b_header_info: bytes) -> Optional[tuple[int, int]]:
 	return header_size, header_len
 
 
-def get_header_content(file_path: str, verbose: bool = True) -> Optional[dict[str, Any]]:
+def get_header_content(file_path: str, verbose: bool = True) -> None | dict[str, Any]:
 	""" :returns: header's content as dict """
 
 	logger = AmpelLogger.get_logger() if verbose else None
@@ -163,8 +163,8 @@ def get_header_content(file_path: str, verbose: bool = True) -> Optional[dict[st
 
 
 def read_header(
-	file_handle: BinaryIO, logger: Optional[AmpelLogger] = None
-) -> Optional[HeaderInfo]:
+	file_handle: BinaryIO, logger: None | AmpelLogger = None
+) -> None | HeaderInfo:
 	"""
 	Reads and loads header using provided file handle
 	:returns: a HeaderInfo typed dict if the provided file is a non-empty ampel register file
@@ -219,8 +219,8 @@ def open_file_and_write_header(file_path: str, header: dict[str, Any], verbose: 
 
 
 def write_header(
-	file_handle: BinaryIO, header: Union[dict[str, Any], bytes], hsize: int,
-	logger: Optional[AmpelLogger] = None, flush: bool = True
+	file_handle: BinaryIO, header: dict[str, Any] | bytes, hsize: int,
+	logger: None | AmpelLogger = None, flush: bool = True
 ) -> None:
 	""" Writes (potentialy padded and compressed) file header """
 
@@ -269,7 +269,7 @@ def write_header(
 
 def rescale_header(
 	file_path: str, new_size: int, remove_old_file: bool = False,
-	header: Optional[dict[str, Any]] = None
+	header: None | dict[str, Any] = None
 ) -> None:
 
 	from mmap import mmap, ACCESS_WRITE
@@ -317,8 +317,8 @@ def rescale_header(
 
 
 def _quick_load(
-	f: Union[BinaryIO, str], logger: Optional[AmpelLogger] = None
-) -> tuple[Optional[HeaderInfo], BinaryIO, Optional[BinaryIO]]:
+	f: BinaryIO | str, logger: None | AmpelLogger = None
+) -> tuple[None | HeaderInfo, BinaryIO, None | BinaryIO]:
 	""" :raise: FileNotFoundError if provided file path (str) does not exist """
 
 	if isinstance(f, str):
@@ -334,7 +334,7 @@ def _quick_load(
 
 
 def reg_iter(
-	f: Union[BinaryIO, str], read_multiplier: int = 100000, verbose: bool = True
+	f: BinaryIO | str, read_multiplier: int = 100000, verbose: bool = True
 ) -> Generator[tuple[int, ...], None, None]:
 	"""
 	Iterates through unpacked blocks of a register
@@ -364,15 +364,15 @@ def reg_iter(
 
 
 def find(
-	f: Union[BinaryIO, str],
+	f: BinaryIO | str,
 	offset: int,
-	match_int: Optional[Union[int, list[int]]] = None,
-	int_bytes_len: Optional[int] = None,
-	match_bytes: Optional[Union[bytes, list[bytes]]] = None,
-	header_hint: Optional[str] = None,
-	header_hint_callback: Optional[Callable] = None,
+	match_int: None | int | list[int] = None,
+	int_bytes_len: None | int = None,
+	match_bytes: None | bytes | list[bytes] = None,
+	header_hint: None | str = None,
+	header_hint_callback: None | Callable = None,
 	read_multiplier: int = 100000, verbose: bool = True
-) -> Optional[list[tuple[int, ...]]]:
+) -> None | list[tuple[int, ...]]:
 	"""
 	:param f: file path (str) or file handle (which will be closed)
 	:param read_multiplier: (<struct size> * `read_multiplier`) bytes will be read at once iteratively from the provided file handle
@@ -512,7 +512,7 @@ def find_many(
 	return ret
 
 
-def convert_to_bytes(arg: Union[int, list[int]], bytes_len: int) -> Union[bytes, list[bytes]]:
+def convert_to_bytes(arg: int | list[int], bytes_len: int) -> bytes | list[bytes]:
 	if isinstance(arg, int):
 		return int.to_bytes(arg, bytes_len, 'little')
 	return [int.to_bytes(el, bytes_len, 'little') for el in arg]

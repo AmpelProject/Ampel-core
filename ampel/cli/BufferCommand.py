@@ -9,7 +9,7 @@
 
 import sys
 from argparse import ArgumentParser
-from typing import Any, Optional, Union
+from typing import Any
 from collections.abc import Sequence
 from ampel.log.LogFlag import LogFlag
 from ampel.core.AmpelContext import AmpelContext
@@ -42,7 +42,7 @@ class BufferCommand(AbsStockCommand, AbsLoadCommand):
 		self.parsers = {}
 
 	# Mandatory implementation
-	def get_parser(self, sub_op: Optional[str] = None) -> Union[ArgumentParser, AmpelArgumentParser]:
+	def get_parser(self, sub_op: None | str = None) -> ArgumentParser | AmpelArgumentParser:
 
 		if sub_op in self.parsers:
 			return self.parsers[sub_op]
@@ -89,7 +89,7 @@ class BufferCommand(AbsStockCommand, AbsLoadCommand):
 
 
 	# Mandatory implementation
-	def run(self, args: dict[str, Any], unknown_args: Sequence[str], sub_op: Optional[str] = None) -> None:
+	def run(self, args: dict[str, Any], unknown_args: Sequence[str], sub_op: None | str = None) -> None:
 
 		ctx: AmpelContext = self.get_context(args, unknown_args)
 		maybe_load_idmapper(args)

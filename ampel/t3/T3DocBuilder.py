@@ -9,7 +9,7 @@
 
 from time import time
 from datetime import datetime
-from typing import Union, Optional, Any
+from typing import Any
 from collections.abc import Iterable
 
 from ampel.types import Traceless, StockId, UBson, ubson
@@ -32,7 +32,7 @@ from ampel.util.mappings import dictify
 from ampel.util.tag import merge_tags
 from ampel.util.hash import build_unsafe_dict_id
 
-AbsT3s = Union[AbsT3ControlUnit, AbsT3ReviewUnit, AbsT3PlainUnit]
+AbsT3s = AbsT3ControlUnit | AbsT3ReviewUnit | AbsT3PlainUnit
 
 
 class T3DocBuilder(T3DocBuilderModel, ContextUnit):
@@ -61,11 +61,11 @@ class T3DocBuilder(T3DocBuilderModel, ContextUnit):
 
 	def handle_t3_result(self,
 		t3_unit: AbsT3s,
-		res: Union[UBson, UnitResult],
+		res: UBson | UnitResult,
 		t3s: T3Store,
-		stocks: Optional[list[StockId]],
+		stocks: None | list[StockId],
 		ts: float
-	) -> Optional[T3Document]:
+	) -> None | T3Document:
 
 		# Let's consider logs as a result product
 		if (buf_hdlr := getattr(t3_unit, '_buf_hdlr')) and buf_hdlr.buffer:
@@ -89,10 +89,10 @@ class T3DocBuilder(T3DocBuilderModel, ContextUnit):
 
 	def craft_t3_doc(self,
 		t3_unit: AbsT3s,
-		res: Union[None, UBson, UnitResult],
+		res: None | UBson | UnitResult,
 		t3s: T3Store,
 		ts: float,
-		stocks: Optional[list[StockId]] = None
+		stocks: None | list[StockId] = None
 	) -> T3Document:
 
 		t3d: T3Document = {'process': self.event_hdlr.process_name}
@@ -188,7 +188,7 @@ class T3DocBuilder(T3DocBuilderModel, ContextUnit):
 		return t3d
 
 
-	def flush(self, arg: Union[AbsT3s, Iterable[AbsT3s]], extra: Optional[dict[str, Any]] = None) -> None:
+	def flush(self, arg: AbsT3s | Iterable[AbsT3s], extra: None | dict[str, Any] = None) -> None:
 
 		for t3_unit in [arg] if isinstance(arg, (AbsT3ControlUnit, AbsT3ReviewUnit, AbsT3PlainUnit)) else arg:
 

@@ -8,7 +8,7 @@
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from pymongo import MongoClient
-from typing import Optional, Union
+from typing import Optional
 from collections.abc import Iterable
 from ampel.types import StockId
 from ampel.aux.filter.SimpleDictArrayFilter import SimpleDictArrayFilter
@@ -31,9 +31,7 @@ class T3ExtJournalAppender(AbsBufferComplement):
 	db_name: str = "Ampel_data"
 	sort: bool = True
 	reverse: bool = True
-	filter_config: Optional[
-		Union[FilterCriterion, FlatAnyOf[FilterCriterion], AllOf[FilterCriterion]]
-	] = None
+	filter_config: None | FilterCriterion | FlatAnyOf[FilterCriterion] | AllOf[FilterCriterion] = None
 
 
 	def __init__(self, **kwargs) -> None:
@@ -48,7 +46,7 @@ class T3ExtJournalAppender(AbsBufferComplement):
 			.get_collection("stock")
 
 
-	def get_ext_journal(self, stock_id: StockId) -> Optional[list[JournalRecord]]:
+	def get_ext_journal(self, stock_id: StockId) -> None | list[JournalRecord]:
 
 		if ext_stock := next(self.col.find({'_id': stock_id}), None):
 			if self.journal_filter:

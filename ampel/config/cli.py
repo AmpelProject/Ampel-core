@@ -9,7 +9,7 @@
 
 import json, subprocess, sys, yaml
 from io import StringIO
-from typing import Any, Optional, TextIO
+from typing import Any, TextIO
 from collections.abc import Mapping, Iterable
 from argparse import ArgumentParser, ArgumentTypeError, FileType, Namespace
 
@@ -74,7 +74,7 @@ def _load_dict(source: TextIO) -> dict[str, Any]:
         raise TypeError("buf does not deserialize to a dict")
 
 
-def _validate(config_file: TextIO, secrets: Optional[TextIO] = None) -> None:
+def _validate(config_file: TextIO, secrets: None | TextIO = None) -> None:
     from ampel.model.ChannelModel import ChannelModel
     from ampel.model.ProcessModel import ProcessModel
 

@@ -305,7 +305,7 @@ async def reload_config() -> TaskDescriptionCollection:
 
 
 @app.get("/metrics")
-async def get_metrics(accept: Optional[str] = Header(None)):
+async def get_metrics(accept: None | str = Header(None)):
     encoder, content_type = choose_encoder(accept)
     return Response(content=encoder(AmpelMetricsRegistry), media_type=content_type)
 
@@ -317,15 +317,15 @@ async def get_metrics(accept: Optional[str] = Header(None)):
 
 @app.get("/processes")
 async def get_processes(
-    tier: Optional[int] = Query(None, ge=0, le=3, description="tier to include"),
-    name: Optional[list[str]] = Query(None),
-    include: Optional[list[str]] = Query(
+    tier: None | int = Query(None, ge=0, le=3, description="tier to include"),
+    name: None | list[str] = Query(None),
+    include: None | list[str] = Query(
         None, description="include processes with names that match"
     ),
-    exclude: Optional[list[str]] = Query(
+    exclude: None | list[str] = Query(
         None, description="exclude processes with names that match"
     ),
-    controllers: Optional[list[str]] = Query(
+    controllers: None | list[str] = Query(
         None, description="include processes with these controllers"
     ),
 ) -> ProcessCollection:
@@ -343,15 +343,15 @@ async def get_processes(
 
 @app.get("/processes/status")
 async def get_processes_status(
-    tier: Optional[int] = Query(None, ge=0, le=3, description="tier to include"),
-    name: Optional[list[str]] = Query(None),
-    include: Optional[list[str]] = Query(
+    tier: None | int = Query(None, ge=0, le=3, description="tier to include"),
+    name: None | list[str] = Query(None),
+    include: None | list[str] = Query(
         None, description="include processes with names that match"
     ),
-    exclude: Optional[list[str]] = Query(
+    exclude: None | list[str] = Query(
         None, description="exclude processes with names that match"
     ),
-    controllers: Optional[list[str]] = Query(
+    controllers: None | list[str] = Query(
         None, description="include processes with these controllers"
     ),
 ) -> ProcessStatusCollection:
@@ -370,15 +370,15 @@ async def get_processes_status(
 
 @app.post("/processes/start")
 async def start_processes(
-    tier: Optional[int] = Query(None, ge=0, le=3, description="tier to include"),
-    name: Optional[list[str]] = Query(None),
-    include: Optional[list[str]] = Query(
+    tier: None | int = Query(None, ge=0, le=3, description="tier to include"),
+    name: None | list[str] = Query(None),
+    include: None | list[str] = Query(
         None, description="include processes with names that match"
     ),
-    exclude: Optional[list[str]] = Query(
+    exclude: None | list[str] = Query(
         None, description="exclude processes with names that match"
     ),
-    controllers: Optional[list[str]] = Query(
+    controllers: None | list[str] = Query(
         None, description="include processes with these controllers"
     ),
 ) -> TaskDescriptionCollection:
@@ -390,15 +390,15 @@ async def start_processes(
 
 @app.post("/processes/stop")
 async def stop_processes(
-    tier: Optional[int] = Query(None, ge=0, le=3, description="tier to include"),
-    name: Optional[list[str]] = Query(None),
-    include: Optional[list[str]] = Query(
+    tier: None | int = Query(None, ge=0, le=3, description="tier to include"),
+    name: None | list[str] = Query(None),
+    include: None | list[str] = Query(
         None, description="include processes with names that match"
     ),
-    exclude: Optional[list[str]] = Query(
+    exclude: None | list[str] = Query(
         None, description="exclude processes with names that match"
     ),
-    controllers: Optional[list[str]] = Query(
+    controllers: None | list[str] = Query(
         None, description="include processes with these controllers"
     ),
 ) -> TaskDescriptionCollection:
@@ -589,8 +589,8 @@ FIELD_ABBREV = {
 
 
 async def query_time(
-    after: Optional[Union[timedelta, datetime]] = Query(None),
-    before: Optional[Union[timedelta, datetime]] = Query(None),
+    after: None | timedelta | datetime = Query(None),
+    before: None | timedelta | datetime = Query(None),
 ) -> list[dict[str, Any]]:
     andlist = []
     if after or before:
@@ -619,8 +619,8 @@ async def query_time(
 
 
 async def query_event(
-    process: Optional[str] = Query(None),
-    tier: Optional[int] = Query(None, ge=0, le=3, description="tier to include"),
+    process: None | str = Query(None),
+    tier: None | int = Query(None, ge=0, le=3, description="tier to include"),
     time_constraint: list[dict[str, Any]] = Depends(query_time),
 ) -> dict[str, Any]:
     query: dict[str, Any] = {}
@@ -659,9 +659,7 @@ def get_events(base_query: dict = Depends(query_event)):
 @app.get("/logs/{run_id}")
 def get_logs(
     run_id: int,
-    flags: Optional[  # type: ignore[valid-type]
-        list[enum.Enum("LogFlagName", {k: k for k in LogFlag.__members__})]
-    ] = Query(None),
+    flags: None | list[enum.Enum("LogFlagName", {k: k for k in LogFlag.__members__})] = Query(None), # type: ignore[valid-type]
 ):
     query: dict[str, Any] = {"r": run_id}
     if flags:

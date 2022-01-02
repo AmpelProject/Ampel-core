@@ -9,7 +9,7 @@
 
 from datetime import datetime
 from argparse import ArgumentParser
-from typing import Any, Optional, Union
+from typing import Any
 from collections.abc import Sequence
 from ampel.core.EventHandler import EventHandler
 from ampel.core.AmpelContext import AmpelContext
@@ -53,7 +53,7 @@ class T2Command(AbsCoreCommand):
 		self.parsers = {}
 
 	# Mandatory implementation
-	def get_parser(self, sub_op: Optional[str] = None) -> Union[ArgumentParser, AmpelArgumentParser]:
+	def get_parser(self, sub_op: None | str = None) -> ArgumentParser | AmpelArgumentParser:
 
 		if sub_op in self.parsers:
 			return self.parsers[sub_op]
@@ -123,7 +123,7 @@ class T2Command(AbsCoreCommand):
 
 
 	# Mandatory implementation
-	def run(self, args: dict[str, Any], unknown_args: Sequence[str], sub_op: Optional[str] = None) -> None:
+	def run(self, args: dict[str, Any], unknown_args: Sequence[str], sub_op: None | str = None) -> None:
 
 		if sub_op is None:
 			raise ValueError("A sub-operation (show, save, reset, soft-reset) needs to be specified")
@@ -209,7 +209,7 @@ class T2Command(AbsCoreCommand):
 		ctx: AmpelContext, doc: T2Document,
 		resolve_config: bool = False,
 		human_times: bool = False,
-		id_mapper: Optional[AbsIdMapper] = None
+		id_mapper: None | AbsIdMapper = None
 	) -> T2Document:
 
 		if resolve_config and doc['config']:

@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Optional, Tuple
+from typing import Tuple
 
 import psutil
 from prometheus_client.metrics_core import (  # type: ignore
@@ -19,13 +19,13 @@ class AmpelProcessCollector:
     """
 
     #: Name to use for main process. If None, do not collect process metrics for main process.
-    name: Optional[str] = None
+    name: None | str = None
 
-    def get_pids(self) -> list[tuple[tuple[str, str], Optional[int]]]:
+    def get_pids(self) -> list[tuple[tuple[str, str], None | int]]:
         """
         Collect tuples of (labels, pid) for subprocesses, and, optionally, this process
         """
-        processes: list[tuple[tuple[str, str], Optional[int]]] = []
+        processes: list[tuple[tuple[str, str], None | int]] = []
         for name, replicas in _Process._active.items():
             for replica, pid in replicas.items():
                 processes.append(((name, str(replica)), pid))

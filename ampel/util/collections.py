@@ -9,7 +9,7 @@
 
 from itertools import islice
 from collections.abc import Sequence as sequence, Iterable as iterable, Sized as sized
-from typing import Any, Union
+from typing import Any
 from collections.abc import Generator, Iterable
 
 from ampel.types import strict_iterable, StrictIterable, T
@@ -78,7 +78,7 @@ def to_set(arg) -> set:
 	return set(arg) if isinstance(arg, strict_iterable) else {arg}
 
 
-def to_list(arg: Union[int, str, bytes, bytearray, list, Iterable]) -> list:
+def to_list(arg: int | str | bytes | bytearray | list | Iterable) -> list:
 	"""
 	raises ValueError is arg is not int, str, bytes, bytearray, list, or Iterable
 	"""
@@ -93,7 +93,7 @@ def to_list(arg: Union[int, str, bytes, bytearray, list, Iterable]) -> list:
 
 
 def check_seq_inner_type(
-	seq, types: Union[type, tuple[type, ...]], multi_type: bool = False
+	seq, types: type | tuple[type, ...], multi_type: bool = False
 ) -> bool:
 	"""
 	check type of all elements contained in a sequence.

@@ -9,7 +9,7 @@
 
 import collections
 from bson.int64 import Int64
-from typing import Union, Optional, Any
+from typing import Any
 from collections.abc import Sequence
 from ampel.types import StockId, ChannelId, StrictIterable
 from ampel.util.collections import check_seq_inner_type
@@ -26,8 +26,8 @@ Especially: if a compound member is discarded, it should not be deleted
 """
 
 def latest_fast_query(
-	stock: Union[StockId, StrictIterable[StockId]],
-	channel: Optional[Union[ChannelId, dict, AllOf[ChannelId], AnyOf[ChannelId], OneOf[ChannelId]]] = None
+	stock: StockId | StrictIterable[StockId],
+	channel: None | ChannelId | dict | AllOf[ChannelId] | AnyOf[ChannelId] | OneOf[ChannelId] = None
 ) -> list[dict]:
 	"""
 	| **Must be used on transients whose compounds were solely created by T0** (i.e with no T3 compounds)
@@ -105,8 +105,8 @@ def latest_fast_query(
 
 def latest_general_query(
 	single_stock: StockId,
-	project: Optional[dict[str, Any]] = None,
-	channel: Optional[Union[ChannelId, dict, AllOf[ChannelId], AnyOf[ChannelId], OneOf[ChannelId]]] = None
+	project: None | dict[str, Any] = None,
+	channel: None | ChannelId | dict | AllOf[ChannelId] | AnyOf[ChannelId] | OneOf[ChannelId] = None
 ) -> list[dict[str, Any]]:
 	"""
 	| Should work with any ampel transients.
@@ -164,7 +164,7 @@ def latest_general_query(
 	"""
 
 	# Robustness
-	if isinstance(single_stock, collections.Sequence) or \
+	if isinstance(single_stock, collections.abc.Sequence) or \
 		not isinstance(single_stock, (int, Int64, str)):
 		raise ValueError(
 			"Type of single_stock must be a string or an int (multi single_stock queries not supported)"

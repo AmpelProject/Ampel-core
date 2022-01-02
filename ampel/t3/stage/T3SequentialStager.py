@@ -8,7 +8,6 @@
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from time import time
-from typing import Optional
 from collections.abc import Generator, Iterable, Sequence
 from ampel.view.T3Store import T3Store
 from ampel.view.T3DocView import T3DocView
@@ -70,7 +69,7 @@ class T3SequentialStager(T3BaseStager):
 	def stage(self,
 		gen: Generator[AmpelBuffer, None, None],
 		t3s: T3Store
-	) -> Optional[Generator[T3Document, None, None]]:
+	) -> None | Generator[T3Document, None, None]:
 
 		for t3_unit, views in self.get_views(gen).items():
 

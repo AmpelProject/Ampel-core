@@ -7,7 +7,6 @@
 # Last Modified Date:  13.12.2021
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from typing import Optional
 from collections.abc import Generator, Sequence
 from ampel.abstract.AbsT3Supplier import AbsT3Supplier
 from ampel.abstract.AbsT3Selector import AbsT3Selector
@@ -34,7 +33,7 @@ class T3DefaultBufferSupplier(AbsT3Supplier[Generator[AmpelBuffer, None, None]])
 	load: UnitModel
 
 	#: Add external information to each :class:`~ampel.core.AmpelBuffer.AmpelBuffer`.
-	complement: Optional[Sequence[UnitModel]]
+	complement: None | Sequence[UnitModel]
 
 	#: number of stocks to load at once. Set to 0 to disable chunking
 	chunk_size: int = 1000
@@ -74,7 +73,7 @@ class T3DefaultBufferSupplier(AbsT3Supplier[Generator[AmpelBuffer, None, None]])
 		if self.complement:
 
 			# Spawn requested snapdata complementers
-			self.complementers: Optional[list[AbsBufferComplement]] = [
+			self.complementers: None | list[AbsBufferComplement] = [
 				self.context.loader \
 					.new_context_unit(
 						model = conf_el,

@@ -11,7 +11,6 @@ from time import time
 from itertools import islice
 from multiprocessing import JoinableQueue
 from multiprocessing.pool import ThreadPool, AsyncResult
-from typing import Optional
 from collections.abc import Generator, Sequence
 
 from ampel.types import ChannelId
@@ -58,8 +57,8 @@ class T3AdaptativeStager(T3ThreadedStager):
 	"""
 
 	execute: Sequence[UnitModel]
-	white_list: Optional[set[str]] = None
-	black_list: Optional[set[str]] = None
+	white_list: None | set[str] = None
+	black_list: None | set[str] = None
 
 	remove_empty: bool = True
 	unalterable: bool = True
@@ -98,7 +97,7 @@ class T3AdaptativeStager(T3ThreadedStager):
 	def stage(self,
 		gen: Generator[AmpelBuffer, None, None],
 		t3s: T3Store
-	) -> Optional[Generator[T3Document, None, None]]:
+	) -> None | Generator[T3Document, None, None]:
 
 		ts = time()
 		with ThreadPool(processes=self.nthread) as pool:

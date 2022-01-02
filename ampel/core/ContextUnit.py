@@ -7,7 +7,6 @@
 # Last Modified Date:  13.12.2021
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from typing import Optional
 from ampel.types import Traceless, TRACELESS
 from ampel.base.AmpelBaseModel import AmpelBaseModel
 from ampel.core.AmpelContext import AmpelContext
@@ -27,7 +26,7 @@ class ContextUnit(AmpelBaseModel):
 	#: * None if provanance flag is False
 	#: * 0 in case model content is not serializable
 	#: * any other signed int value
-	_trace_id: Optional[int] = None
+	_trace_id: None | int = None
 
 
 	def __init__(self, **kwargs) -> None:

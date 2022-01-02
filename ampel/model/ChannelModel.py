@@ -7,7 +7,7 @@
 # Last Modified Date:  18.06.2020
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from typing import Union, Optional, Any
+from typing import Any
 from collections.abc import Sequence
 from ampel.base.AmpelBaseModel import AmpelBaseModel
 from ampel.model.purge.PurgeModel import PurgeModel
@@ -16,21 +16,21 @@ from ampel.model.purge.PurgeModel import PurgeModel
 
 class ChannelModel(AmpelBaseModel):
 
-	channel: Union[int, str]
-	version: Union[int, float, str]
+	channel: int | str
+	version: int | float | str
 	purge: PurgeModel = {
 		'content': {'delay': 100, 'format': 'json', 'unify': True},
 		'logs': {'delay': 50, 'format': 'csv'}
 	} # type: ignore[assignment]
 	# view: str = "MongoChannelView"
 	active: bool = True
-	hash: Optional[int]
-	distrib: Optional[str]
-	source: Optional[str]
-	contact: Optional[str]
+	hash: None | int
+	distrib: None | str
+	source: None | str
+	contact: None | str
 	access: Sequence[str] = []
 	#: Identities allowed to access data associated with this channel
-	members: Optional[Sequence[str]]
+	members: None | Sequence[str]
 	policy: Sequence[str] = []
 
 

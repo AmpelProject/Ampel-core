@@ -8,7 +8,6 @@
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 
-from typing import Optional
 from collections.abc import Sequence
 from pydantic import validator
 from ampel.model.UnitModel import UnitModel
@@ -21,10 +20,10 @@ class T3ProjectionDirective(AmpelBaseModel):
 	"""
 
 	#: AbsT3Filter sub unit to use for down-selection of ampel buffers
-	filter: Optional[UnitModel]
+	filter: None | UnitModel
 
 	#: AbsT3Projector sub unit capable of discarding selected ampel buffer attributes/fields
-	project: Optional[UnitModel]
+	project: None | UnitModel
 
 	#: t3 units (AbsT3ReviewUnit) to execute
 	execute: Sequence[UnitModel]

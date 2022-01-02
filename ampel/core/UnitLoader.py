@@ -12,7 +12,7 @@ from importlib import import_module
 from pathlib import Path
 from hashlib import blake2b
 from contextlib import contextmanager
-from typing import Any, Union, Optional, TypeVar, overload, get_args
+from typing import Any, TypeVar, overload, get_args
 from collections.abc import Iterator
 
 from ampel.types import ChannelId, check_class
@@ -47,9 +47,9 @@ class UnitLoader:
 
 	def __init__(self,
 		config: AmpelConfig,
-		db: Optional[AmpelDB],
+		db: None | AmpelDB,
 		provenance: bool = True,
-		vault: Optional[AmpelVault] = None
+		vault: None | AmpelVault = None
 	) -> None:
 		"""
 		:raises: ValueError in case bad arguments are provided
@@ -70,7 +70,7 @@ class UnitLoader:
 		self.provenance = provenance
 		self.unit_defs: dict = config._config['unit']
 		self.aliases: list[dict] = [config._config['alias'][f"t{el}"] for el in (0, 3, 1, 2)]
-		self._dyn_register: Optional[dict[str, type[LogicalUnit]]] = None # potentially updated by DevAmpelContext
+		self._dyn_register: None | dict[str, type[LogicalUnit]] = None # potentially updated by DevAmpelContext
 
 
 	@overload
@@ -86,9 +86,9 @@ class UnitLoader:
 	def new_logical_unit(self,
 		model: UnitModel,
 		logger: AmpelLogger, *,
-		sub_type: Optional[type[LT]] = None,
+		sub_type: None | type[LT] = None,
 		**kwargs
-	) -> Union[LT, LogicalUnit]:
+	) -> LT | LogicalUnit:
 		"""
 		Logical units require logger and resource as init parameters, additionaly to the potentialy
 		defined custom parameters which will be provided as a union of the model config
@@ -108,7 +108,7 @@ class UnitLoader:
 		um: UnitModel,
 		unit_type: type[LT],
 		logger: AmpelLogger,
-		_chan: Optional[ChannelId] = None
+		_chan: None | ChannelId = None
 	) -> LT:
 		""" Returns a logical unit with dedicated logger containing no db handler """
 
@@ -146,9 +146,9 @@ class UnitLoader:
 	def new_context_unit(self,
 		model: UnitModel,
 		context: AmpelContext, *,
-		sub_type: Optional[type[CT]] = None,
+		sub_type: None | type[CT] = None,
 		**kwargs
-	) -> Union[CT, ContextUnit]:
+	) -> CT | ContextUnit:
 		"""
 		Context units require an AmpelContext instance as init parameters, additionaly to
 		potentialy defined dedicated custom parameters.
@@ -167,9 +167,9 @@ class UnitLoader:
 		...
 	def new(self,
 		model: UnitModel, *,
-		unit_type: Optional[type[T]] = None,
+		unit_type: None | type[T] = None,
 		**kwargs
-	) -> Union[AmpelBaseModel, T]:
+	) -> AmpelBaseModel | T:
 		"""
 		Instantiate new object based on provided model and kwargs.
 		:param 'unit_type': performs isinstance check and raise error on mismatch. Enables mypy/other static checks.
@@ -245,10 +245,15 @@ class UnitLoader:
 	@staticmethod
 	def get_digest(Klass: type) -> str:
 
+		if Klass.__module__ not in sys.modules:
+			raise ValueError(f"Module {Klass.__module__} not loaded")
+
+		fpath = sys.modules[Klass.__module__].__file__
+		if fpath is None:
+			raise ValueError(f"File not found: {sys.modules[Klass.__module__].__file__}")
+
 		try:
-			return blake2b(
-				Path(sys.modules[Klass.__module__].__file__).read_bytes()
-			).hexdigest()[:7]
+			return blake2b(Path(fpath).read_bytes()).hexdigest()[:7]
 		except Exception:
 			return "unspecified"
 
@@ -259,7 +264,7 @@ class UnitLoader:
 	@overload
 	def get_class_by_name(self, name: str, unit_type: None = ...) -> type:
 		...
-	def get_class_by_name(self, name: str, unit_type: Optional[type[T]] = None) -> Union[type, type[T]]:
+	def get_class_by_name(self, name: str, unit_type: None | type[T] = None) -> type | type[T]:
 		"""
 		Matches the parameter 'name' with the unit definitions defined in the ampel_config.
 		This allows to retrieve the corresponding fully qualified name of the class and to load it.
@@ -287,14 +292,14 @@ class UnitLoader:
 
 
 	def get_init_config(self,
-		config: Optional[Union[int, str, dict[str, Any]]] = None,
-		override: Optional[dict[str, Any]] = None,
-		kwargs: Optional[dict[str, Any]] = None,
+		config: None | int | str | dict[str, Any] = None,
+		override: None | dict[str, Any] = None,
+		kwargs: None | dict[str, Any] = None,
 		unfreeze: bool = True
 	) -> dict[str, Any]:
 		""" :raises: ValueError if config alias is not found """
 
-		ret: Optional[dict[str, Any]] = {}
+		ret: None | dict[str, Any] = {}
 
 		if isinstance(config, (dict, str)):
 			ret = self.resolve_aliases(config)
@@ -378,18 +383,18 @@ class UnitLoader:
 			if issubclass(unit, AmpelBaseModel) and not issubclass(unit, AbsProcessController):
 				return unit.validate(self.get_init_config(slf.config, slf.override))
 		legit_init = UnitModel.__init__
-		UnitModel.__init__ = validating_init
+		UnitModel.__init__ = validating_init # type: ignore
 		AliasableModel._config = self.config
 		try:
 			yield
 		finally:
-			UnitModel.__init__ = legit_init
+			UnitModel.__init__ = legit_init # type: ignore
 			AliasableModel._config = None
 
 
 	"""
 	def internal_mypy_tests_uncomment_only_in_your_editor(self,
-		model: UnitModel, context: AmpelContext, logger: AmpelLogger, sub_type: Optional[type[CT]] = None, **kwargs
+		model: UnitModel, context: AmpelContext, logger: AmpelLogger, sub_type: None | type[CT] = None, **kwargs
 	) -> None:
 
 		# Interal: uncomment to check if mypy works adequately

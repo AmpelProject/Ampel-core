@@ -7,7 +7,7 @@
 # Last Modified Date:  05.09.2021
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from typing import TypeVar, Union
+from typing import TypeVar
 from collections.abc import Generator
 from ampel.types import StockId, T3Send
 from ampel.view.SnapView import SnapView
@@ -29,7 +29,7 @@ class BaseViewGenerator(Generator[T, T3Send, None]):
 
 		if isinstance(jt, tuple):
 			stock_id = jt[0]
-			element: Union[JournalAttributes, StockAttributes] = jt[1]
+			element: JournalAttributes | StockAttributes = jt[1]
 		else:
 			stock_id, element = self.stocks[-1], jt
 

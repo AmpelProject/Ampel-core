@@ -9,7 +9,7 @@
 
 import json, yaml, pkg_resources, os, re
 from pkg_resources import EggInfoDistribution, DistInfoDistribution # type: ignore[attr-defined]
-from typing import Any, Union, Optional
+from typing import Any
 from collections.abc import Callable
 from ampel.config.builder.ConfigBuilder import ConfigBuilder
 from ampel.util.distrib import get_dist_names, get_files
@@ -108,7 +108,7 @@ class DistConfigBuilder(ConfigBuilder):
 
 
 	def load_conf_using_func(self,
-		distrib: Union[EggInfoDistribution, DistInfoDistribution],
+		distrib: EggInfoDistribution | DistInfoDistribution,
 		file_rel_path: str,
 		func: Callable[[dict[str, Any], str, str, str], None]
 	) -> None:
@@ -153,7 +153,7 @@ class DistConfigBuilder(ConfigBuilder):
 
 
 	def load_tier_config_file(self,
-		distrib: Union[EggInfoDistribution, DistInfoDistribution],
+		distrib: EggInfoDistribution | DistInfoDistribution,
 		file_rel_path: str,
 		root_key: str
 	) -> None:
@@ -221,7 +221,7 @@ class DistConfigBuilder(ConfigBuilder):
 
 
 	@staticmethod
-	def get_conf_file(files: list[str], key: str) -> Optional[str]:
+	def get_conf_file(files: list[str], key: str) -> None | str:
 		"""
 		Extract the first entry who matches the provided 'key' from the provided list
 		Note: this method purposely modifies the input list (removes matched element)

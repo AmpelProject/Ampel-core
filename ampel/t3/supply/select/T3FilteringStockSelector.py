@@ -8,7 +8,7 @@
 # Last Modified By	: Jakob van Santen <jakob.van.santen@desy.de>
 
 from itertools import islice
-from typing import Any, Union, Optional
+from typing import Any
 from collections.abc import Sequence, Generator
 
 from ampel.types import StockId
@@ -40,7 +40,7 @@ class T3FilteringStockSelector(T3StockSelector):
 		}
 	"""
 
-	t2_filter: Union[T2FilterModel, AllOf[T2FilterModel], AnyOf[T2FilterModel]]
+	t2_filter: T2FilterModel | AllOf[T2FilterModel] | AnyOf[T2FilterModel]
 	chunk_size: int = 200
 
 	# Override/Implement
@@ -71,7 +71,7 @@ class T3FilteringStockSelector(T3StockSelector):
 
 
 
-	def _build_match(self, f: Union[T2FilterModel, AllOf[T2FilterModel], AnyOf[T2FilterModel]]) -> dict[str, Any]:
+	def _build_match(self, f: T2FilterModel | AllOf[T2FilterModel] | AnyOf[T2FilterModel]) -> dict[str, Any]:
 		if isinstance(f, T2FilterModel):
 			return {f"{f.unit}.{k}": v for k, v in f.match.items()}
 		elif isinstance(f, AllOf):
@@ -187,7 +187,7 @@ class T3FilteringStockSelector(T3StockSelector):
 			}
 		]
 
-def _all_units(filters: Union[T2FilterModel, AllOf[T2FilterModel], AnyOf[T2FilterModel]]) -> list[str]:
+def _all_units(filters: T2FilterModel | AllOf[T2FilterModel] | AnyOf[T2FilterModel]) -> list[str]:
 	"""
 	Get the set of all units involved in the selection
 	"""

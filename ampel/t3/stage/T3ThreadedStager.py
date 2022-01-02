@@ -11,7 +11,6 @@ from time import time
 from itertools import islice
 from multiprocessing import JoinableQueue
 from multiprocessing.pool import ThreadPool, AsyncResult
-from typing import Optional
 from collections.abc import Generator, Iterable
 
 from ampel.abstract.AbsT3ReviewUnit import AbsT3ReviewUnit
@@ -111,7 +110,7 @@ class T3ThreadedStager(T3BaseStager, abstract=True):
 	def create_threaded_generators(self,
 		pool: ThreadPool,
 		t3_units: list[AbsT3ReviewUnit],
-		t3s: Optional[T3Store] = None
+		t3s: None | T3Store = None
 	) -> tuple[
 		dict[AbsT3ReviewUnit, "JoinableQueue[SnapView]"],
 		list[ThreadedViewGenerator],
@@ -144,7 +143,7 @@ class T3ThreadedStager(T3BaseStager, abstract=True):
 		return queues, generators, async_results
 
 
-	def put_views(self, buffers: Iterable[AmpelBuffer], qdict: dict[type, list[JoinableQueue]]) -> None:
+	def put_views(self, buffers: Iterable[AmpelBuffer], qdict: dict[type[SnapView], list[JoinableQueue]]) -> None:
 		"""
 		Note: code in here is not optimized for compactness but for execution speed
 		"""

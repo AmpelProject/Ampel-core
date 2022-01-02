@@ -7,7 +7,7 @@
 # Last Modified Date:  31.07.2020
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from typing import Optional, Literal
+from typing import Literal
 from datetime import datetime, timedelta
 from ampel.base.AmpelBaseModel import AmpelBaseModel
 from ampel.mongo.query.var.events import get_last_run
@@ -18,11 +18,11 @@ class TimeLastRunModel(AmpelBaseModel):
 
 	match_type: Literal['time_last_run']
 	process_name: str
-	fallback: Optional[dict] = {'days': -1}
+	fallback: None | dict = {'days': -1}
 	require_success: bool = True
 
 
-	def get_timestamp(self, **kwargs) -> Optional[float]:
+	def get_timestamp(self, **kwargs) -> None | float:
 		if ts := self._query_events_col(kwargs['db'], self):
 			return ts
 		if self.fallback:
@@ -31,7 +31,7 @@ class TimeLastRunModel(AmpelBaseModel):
 
 
 	@staticmethod
-	def _query_events_col(ampel_db: AmpelDB, model: 'TimeLastRunModel') -> Optional[float]:
+	def _query_events_col(ampel_db: AmpelDB, model: 'TimeLastRunModel') -> None | float:
 
 		col = ampel_db.get_collection('events')
 

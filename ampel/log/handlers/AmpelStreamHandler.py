@@ -11,7 +11,7 @@ import sys, time
 from sys import _getframe
 from os.path import basename
 from time import strftime
-from typing import Literal, Optional
+from typing import Literal
 from ampel.log.LogFlag import LogFlag
 from ampel.log.LightLogRecord import LightLogRecord
 from ampel.util.mappings import compare_dict_values
@@ -65,7 +65,7 @@ class AmpelStreamHandler:
 		density: Literal["default", "compact", "compacter", "headerless"] = "default",
 		terminator: str = '\n',
 		log_sep: str = '\n', # separator between aggregated log entries
-		prefix: Optional[str] = None,
+		prefix: None | str = None,
 		provenance: bool = True
 	) -> None:
 

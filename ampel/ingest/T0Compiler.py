@@ -7,7 +7,7 @@
 # Last Modified Date:  25.11.2021
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from typing import Optional, Union, Any
+from typing import Any
 from ampel.content.MetaRecord import MetaRecord
 from ampel.types import ChannelId, DataPointId
 from ampel.content.DataPoint import DataPoint
@@ -31,8 +31,8 @@ class T0Compiler(AbsCompiler):
 			tuple[
 				DataPoint,
 				set[ChannelId],
-				Optional[int],           # trace id
-				Optional[dict[str, Any]] # meta extra
+				None | int,           # trace id
+				None | dict[str, Any] # meta extra
 			]
 		] = {}
 
@@ -41,8 +41,8 @@ class T0Compiler(AbsCompiler):
 	def add(self, # type: ignore[override]
 		dps: list[DataPoint],
 		channel: ChannelId,
-		trace_id: Optional[int],
-		extra: Optional[dict[str, Any]] = None
+		trace_id: None | int,
+		extra: None | dict[str, Any] = None
 	) -> None:
 
 		r = self.register
@@ -55,7 +55,7 @@ class T0Compiler(AbsCompiler):
 
 
 	# Override
-	def commit(self, ingester: AbsDocIngester[DataPoint], now: Union[int, float], **kwargs) -> None:
+	def commit(self, ingester: AbsDocIngester[DataPoint], now: int | float, **kwargs) -> None:
 		"""
 		Note that we let the ingester handle 'ts' and 'updated' values
 		"""

@@ -9,7 +9,7 @@
 
 from datetime import datetime
 from pymongo.collection import Collection
-from typing import Optional, Any, Union, Literal
+from typing import Any, Literal
 from collections.abc import Iterable, Sequence
 
 from ampel.types import UnitId, Tag, StrictIterable, ChannelId, StockId
@@ -72,15 +72,15 @@ class T2Utils:
 
 
 	def match_t2s(self,
-		unit: Optional[Union[UnitId, StrictIterable[UnitId]]] = None,
-		config: Optional[Union[str, int]] = None,
-		code: Optional[Union[int, Sequence[int]]] = None,
-		link: Optional[Union[str, Sequence[str]]] = None,
-		stock: Optional[Union[StockId, StrictIterable[StockId]]] = None,
-		channel: Optional[Union[ChannelId, dict, AllOf[ChannelId], AnyOf[ChannelId], OneOf[ChannelId]]] = None,
-		tag: Optional[dict[Literal['with', 'without'], Union[Tag, dict, AllOf[Tag], AnyOf[Tag], OneOf[Tag]]]] = None,
-		custom: Optional[dict[str, Any]] = None,
-		id_mapper: Optional[AbsIdMapper] = None,
+		unit: None | UnitId | StrictIterable[UnitId] = None,
+		config: None | str | int = None,
+		code: None | int | Sequence[int] = None,
+		link: None | str | Sequence[str] = None,
+		stock: None | StockId | StrictIterable[StockId] = None,
+		channel: None | ChannelId | dict | AllOf[ChannelId] | AnyOf[ChannelId] | OneOf[ChannelId] = None,
+		tag: None | dict[Literal['with', 'without'], Tag | dict | AllOf[Tag] | AnyOf[Tag] | OneOf[Tag]] = None,
+		custom: None | dict[str, Any] = None,
+		id_mapper: None | AbsIdMapper = None,
 		**kwargs
 	) -> dict[str, Any]:
 		"""

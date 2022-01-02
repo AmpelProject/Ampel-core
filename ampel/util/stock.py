@@ -10,14 +10,13 @@
 from pymongo import MongoClient
 from pymongo.collection import Collection
 from multiprocessing import Pool
-from typing import Union, Optional
 from collections.abc import Sequence
 from ampel.types import ChannelId, StockId
 
 
 def get_ids_using_find(
 	col: Collection,
-	channel: Union[ChannelId, Sequence[ChannelId]],
+	channel: ChannelId | Sequence[ChannelId],
 	batch_size=1000000
 ) -> dict[ChannelId, set[StockId]]:
 
@@ -34,8 +33,8 @@ def get_ids_using_find(
 
 
 def get_ids_using_parallel_find(
-	channel: Union[ChannelId, Sequence[ChannelId]],
-	mongo_uri: Optional[str] = None,
+	channel: ChannelId | Sequence[ChannelId],
+	mongo_uri: None | str = None,
 	db_name='Ampel_data', col_name='stock', *,
 	pool_size=None, batch_size=1000000
 ) -> dict[ChannelId, set[StockId]]:
@@ -69,8 +68,8 @@ def get_ids_using_parallel_find(
 
 
 def find_ids_worker(
-	channel: Union[ChannelId, Sequence[ChannelId]],
-	mongo_uri: Optional[str] = None, db_name='Ampel_data',
+	channel: ChannelId | Sequence[ChannelId],
+	mongo_uri: None | str = None, db_name='Ampel_data',
 	col_name='stock', batch_size=1000000
 ) -> set[StockId]:
 

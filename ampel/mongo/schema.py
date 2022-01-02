@@ -7,7 +7,7 @@
 # Last Modified Date:  26.03.2021
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from typing import Union, Type
+from typing import Type
 from ampel.util.collections import check_seq_inner_type
 from ampel.model.operator.AnyOf import AnyOf
 from ampel.model.operator.AllOf import AllOf
@@ -58,7 +58,7 @@ Schema syntax example:
 
 def apply_schema(
 	query: dict, field_name: str,
-	arg: Union[int, str, dict, AllOf, AnyOf, OneOf]
+	arg: int | str | dict | AllOf | AnyOf | OneOf
 ) -> dict:
 	"""
 	Warning: The method changes keys and values in the input dict parameter "query"
@@ -112,7 +112,7 @@ def apply_schema(
 		# Case 2: nesting below any_of
 		else:
 
-			QueryValue = Union[int, str, dict[str, list[Union[int, str]]]]
+			QueryValue = int | str | dict[str, list[int | str]]
 			QueryList = list[dict[str, QueryValue]]
 			or_list: QueryList = []
 			optimize_potentially: QueryList = []
@@ -200,7 +200,7 @@ def apply_schema(
 
 def apply_excl_schema(
 	query: dict, field_name: str,
-	arg: Union[int, str, dict, AllOf, AnyOf, OneOf]
+	arg: int | str | dict | AllOf | AnyOf | OneOf
 ) -> dict:
 	"""
 	Warning: The method changes keys and values in the input dict parameter "query"
@@ -258,7 +258,7 @@ def apply_excl_schema(
 
 		else:
 
-			QueryValue = Union[int, str, dict[str, Union[int, str]]]
+			QueryValue = int | str | dict[str, int | str]
 			QueryList = list[dict[str, QueryValue]]
 			and_list: QueryList = []
 			optimize_potentially: QueryList = []

@@ -7,7 +7,6 @@
 # Last Modified Date:  23.07.2021
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from typing import Optional
 from collections.abc import Generator, Iterable
 from ampel.content.DataPoint import DataPoint
 from ampel.types import DataPointId

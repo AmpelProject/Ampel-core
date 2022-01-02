@@ -8,7 +8,7 @@
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 import collections
-from typing import Literal, Union, get_args
+from typing import Literal, get_args
 from collections.abc import Sequence, Iterable
 from ampel.types import ChannelId
 from ampel.model.operator.AnyOf import AnyOf
@@ -28,7 +28,7 @@ channel_id = get_args(ChannelId) # type: ignore[misc]
 
 class FilterBlock(AmpelBaseModel):
 
-	data: Union[BufferKey, Literal['journal']]
+	data: BufferKey | Literal['journal']
 	filter: AbsLogicOperatorFilter
 	include: bool = True
 
@@ -41,13 +41,13 @@ class FilterBlock(AmpelBaseModel):
 class T3AmpelBufferFilter(AbsT3Filter):
 
 	class FilterModel(AmpelBaseModel):
-		data: Union[BufferKey, Literal['journal']]
+		data: BufferKey | Literal['journal']
 		filter: UnitModel
 		on_match: Literal['include', 'exclude'] = 'include'
 
 	logger: AmpelLogger
 	filters: Sequence[FilterModel] = []
-	channel: Union[None, ChannelId, AllOf[ChannelId], AnyOf[ChannelId], OneOf[ChannelId]] = None
+	channel: None | ChannelId | AllOf[ChannelId] | AnyOf[ChannelId] | OneOf[ChannelId] = None
 
 	def __init__(self, **kwargs):
 

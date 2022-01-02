@@ -9,7 +9,7 @@
 
 from ampel.core.AmpelContext import AmpelContext
 from argparse import ArgumentParser
-from typing import Optional, Any, Union
+from typing import Any
 from collections.abc import Sequence
 from ampel.cli.AbsCoreCommand import AbsCoreCommand
 from ampel.cli.AmpelArgumentParser import AmpelArgumentParser
@@ -25,7 +25,7 @@ class RunCommand(AbsCoreCommand):
 		self.parser = None
 
 	# Mandatory implementation
-	def get_parser(self, sub_op: Optional[str] = None) -> Union[ArgumentParser, AmpelArgumentParser]:
+	def get_parser(self, sub_op: None | str = None) -> ArgumentParser | AmpelArgumentParser:
 
 		if self.parser:
 			return self.parser
@@ -59,7 +59,7 @@ class RunCommand(AbsCoreCommand):
 
 
 	# Mandatory implementation
-	def run(self, args: dict[str, Any], unknown_args: Sequence[str], sub_op: Optional[str] = None) -> None:
+	def run(self, args: dict[str, Any], unknown_args: Sequence[str], sub_op: None | str = None) -> None:
 
 		ctx = self.get_context(args, unknown_args, ContextClass=AmpelContext)
 
@@ -91,7 +91,7 @@ class RunCommand(AbsCoreCommand):
 
 
 # Also used by JobCommand
-def get_process(config: AmpelConfig, name: str) -> Optional[ProcessModel]:
+def get_process(config: AmpelConfig, name: str) -> None | ProcessModel:
 	for k in ("t0", "t1", "t2", "t3"):
 		if (p := config.get(f"process.{k}.{name}", dict)):
 			return ProcessModel(**p)

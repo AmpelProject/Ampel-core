@@ -9,7 +9,7 @@
 
 import asyncio, datetime, logging, schedule
 from functools import partial
-from typing import Any, Literal, Optional
+from typing import Any, Literal
 from collections.abc import Sequence
 
 from ampel.util import concurrent
@@ -119,7 +119,7 @@ class DefaultProcessController(AbsProcessController):
 
 	def update(self,
 		config: AmpelConfig,
-		vault: Optional[AmpelVault],
+		vault: None | AmpelVault,
 		processes: Sequence[ProcessModel]
 	) -> None:
 		self.config = config
@@ -140,7 +140,7 @@ class DefaultProcessController(AbsProcessController):
 			await task
 
 
-	def stop(self, name: Optional[str] = None) -> None:
+	def stop(self, name: None | str = None) -> None:
 		"""Stop scheduling new processes."""
 		self.scheduler.clear(tag=name)
 
@@ -288,7 +288,7 @@ class DefaultProcessController(AbsProcessController):
 	@concurrent.process
 	def run_mp_process(
 		config: dict[str, Any],
-		vault: Optional[AmpelVault],
+		vault: None | AmpelVault,
 		p: dict[str, Any],
 	) -> Any:
 

@@ -7,7 +7,7 @@
 # Last Modified Date:  09.10.2021
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from typing import Any, Optional
+from typing import Any
 from collections.abc import Sequence
 from ampel.types import StrictIterable, strict_iterable
 
@@ -57,7 +57,7 @@ def maybe_use_each(arg: Sequence[Any]) -> Any:
 	return {'$each': arg}
 
 
-def get_ids(col: Any, *, filter_stage: Optional[dict] = None) -> set[Any]:
+def get_ids(col: Any, *, filter_stage: None | dict = None) -> set[Any]:
 	"""
 	Note1: timeit perf of find vs aggregate for cols with 10 / 700 elements:
 	[el['_id'] for el in col.find()] -> 518 µs / 6.1 ms

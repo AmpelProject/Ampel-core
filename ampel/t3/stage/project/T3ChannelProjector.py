@@ -7,7 +7,7 @@
 # Last Modified Date:  22.11.2020
 # Last Modified By:    Jakob van Santen <jakob.van.santen@desy.de>
 
-from typing import Any, Union, Optional
+from typing import Any
 from collections.abc import Sequence
 from ampel.types import ChannelId
 from ampel.log import VERBOSE
@@ -21,7 +21,7 @@ from ampel.t3.stage.project.T3BaseProjector import T3BaseProjector
 
 class T3ChannelProjector(T3BaseProjector):
 
-	channel: Union[ChannelId, AllOf[ChannelId], AnyOf[ChannelId], OneOf[ChannelId]]
+	channel: ChannelId | AllOf[ChannelId] | AnyOf[ChannelId] | OneOf[ChannelId]
 
 	# Whether to cast structures into immutables objects after modification
 	freeze: bool = True
@@ -65,7 +65,7 @@ class T3ChannelProjector(T3BaseProjector):
 			self.add_func_projector(key, self.channel_projection, first=True) # type: ignore
 
 
-	def overwrite_root_channel(self, v: Sequence[ChannelId]) -> Optional[Sequence[ChannelId]]:
+	def overwrite_root_channel(self, v: Sequence[ChannelId]) -> None | Sequence[ChannelId]:
 		if subset := list(self._channel_set.intersection(v)):
 			return subset
 		else:

@@ -7,7 +7,7 @@
 # Last Modified Date:  04.03.2021
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from typing import Union, Optional, Any
+from typing import Any
 from collections.abc import Sequence
 from ampel.config.collector.ConfigCollector import ConfigCollector
 from ampel.config.collector.AbsForwardConfigCollector import AbsForwardConfigCollector
@@ -19,9 +19,9 @@ class ForwardProcessConfigCollector(AbsForwardConfigCollector):
 	def get_path(self, # type: ignore
 		arg: dict[str, Any],
 		dist_name: str,
-		version: Union[str, float, int],
+		version: str | float | int,
 		register_file: str,
-	) -> Optional[Sequence[Union[int, str]]]:
+	) -> None | Sequence[int | str]:
 
 		if not isinstance(arg, dict) or 'tier' not in arg:
 			self.error(

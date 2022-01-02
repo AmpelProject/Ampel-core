@@ -7,7 +7,6 @@
 # Last Modified Date:  10.12.2021
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from typing import Optional
 from collections.abc import Generator
 
 from ampel.view.T3Store import T3Store
@@ -33,5 +32,5 @@ class AbsT3Stager(AmpelABC, ContextUnit, abstract=True):
 	def stage(self,
 		data: Generator[AmpelBuffer, None, None],
 		t3s: T3Store
-	) -> Optional[Generator[T3Document, None, None]]:
+	) -> None | Generator[T3Document, None, None]:
 		""" Process a chunk of AmpelBuffer instances """

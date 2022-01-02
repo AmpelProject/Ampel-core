@@ -7,7 +7,6 @@
 # Last Modified Date:  27.05.2021
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from typing import Optional, Union
 from collections.abc import Sequence
 from ampel.base.AmpelBaseModel import AmpelBaseModel
 from ampel.model.ingest.MuxModel import MuxModel
@@ -34,17 +33,17 @@ class IngestBody(AmpelBaseModel):
 
 	#: Create or update :class:`T2 documents <ampel.content.T2Document.T2Document>`
 	#: bound to :class:`stocks <ampel.content.StockDocument.StockDocument>`
-	stock_t2: Optional[Sequence[T2Compute]] = None
+	stock_t2: None | Sequence[T2Compute] = None
 
 	#: Create or update :class:`T2 documents <ampel.content.T2Document.T2Document>`
 	#: bound to :class:`datapoints <ampel.content.DataPoint.DataPoint>`
 	#: based on alert content
-	point_t2: Optional[Sequence[T2Compute]] = None
+	point_t2: None | Sequence[T2Compute] = None
 
 	#: Create :class:`compounds <ampel.content.T1Document.T1Document>` from
 	#: combined :class:`datapoints <ampel.content.DataPoint.DataPoint>` and the
 	#: associated :class:`T2 documents <ampel.content.T2Document.T2Document>`
-	combine: Optional[Sequence[Union[T1Combine, T1CombineCompute, T1CombineComputeNow]]] = None
+	combine: None | Sequence[T1Combine | T1CombineCompute | T1CombineComputeNow] = None
 
 	#: Include additional material (such as datapoints from the DB)
-	mux: Optional[MuxModel] = None
+	mux: None | MuxModel = None

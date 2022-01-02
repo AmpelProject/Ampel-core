@@ -7,7 +7,7 @@
 # Last Modified Date:  17.02.2020
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from typing import ClassVar, Optional
+from typing import ClassVar
 from collections.abc import Iterable
 from ampel.base.AmpelABC import AmpelABC
 from ampel.base.decorator import abstractmethod
@@ -20,5 +20,5 @@ class AbsT3Selector(AmpelABC, ContextUnit, abstract=True):
 	field_name: ClassVar[str] = "stock"
 
 	@abstractmethod
-	def fetch(self) -> Optional[Iterable]:
+	def fetch(self) -> None | Iterable:
 		""" Get selected stock ids """

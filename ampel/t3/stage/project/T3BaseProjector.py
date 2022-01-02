@@ -7,7 +7,7 @@
 # Last Modified Date:  15.12.2021
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from typing import Union, Optional, Any
+from typing import Any
 from collections.abc import Callable, Iterable, Sequence
 from ampel.types import Traceless
 from ampel.log import AmpelLogger, VERBOSE
@@ -58,7 +58,7 @@ class T3BaseProjector(AbsT3Projector):
 	remove_empty: bool = True
 
 	# Modify/delete dict keys/values
-	field_projectors: list[Union[ClassModel, FuncModel]] = []
+	field_projectors: list[ClassModel | FuncModel] = []
 
 
 	def __init__(self, **kwargs) -> None:
@@ -66,7 +66,7 @@ class T3BaseProjector(AbsT3Projector):
 		super().__init__(**kwargs)
 
 		# List matchers
-		self.projectors: dict[BufferKey, Optional[list[Callable[[Any], Any]]]] = {}
+		self.projectors: dict[BufferKey, None | list[Callable[[Any], Any]]] = {}
 
 		for fp in self.field_projectors:
 			if isinstance(fp, self.ClassModel):

@@ -9,7 +9,7 @@
 
 from importlib import import_module
 from functools import cache
-from typing import Any, Union
+from typing import Any
 from collections.abc import Sequence
 from ampel.abstract.AbsTiedT2Unit import AbsTiedT2Unit
 from ampel.model.UnitModel import UnitModel
@@ -19,7 +19,7 @@ from ampel.config.builder.FirstPassConfig import FirstPassConfig
 
 def check_tied_units(
 	all_t2_units: list[T2Compute],
-	first_pass_config: Union[FirstPassConfig, dict[str, Any]]
+	first_pass_config: FirstPassConfig | dict[str, Any]
 ) -> None:
 	"""
 	:raises: ValueError if tied t2 units are present in t2_units but the requred t2 units are not present in t2_compute
@@ -48,7 +48,11 @@ def check_tied_units(
 			(tied_unit.override or {})
 		).get("t2_dependency") or get_default_dependencies(tied_unit.unit)
 		for t2_dep in t2_deps:
-			dependency_config = UnitModel(unit=t2_dep["unit"], config=t2_dep.get("config"), override=t2_dep.get("override"))
+			dependency_config: UnitModel[str] = UnitModel(
+				unit=t2_dep["unit"],
+				config=t2_dep.get("config"),
+				override=t2_dep.get("override")
+			)
 			candidates = [as_unitmodel(unit) for unit in all_t2_units if unit.unit == dependency_config.unit]
 			if not any((c.dict() == dependency_config.dict() for c in candidates)):
 				raise ValueError(
@@ -59,8 +63,8 @@ def check_tied_units(
 
 def filter_units(
 	units: Sequence[UnitModel],
-	abs_unit: Union[str, list[str]],
-	config: Union[FirstPassConfig, dict[str, Any]]
+	abs_unit: str | list[str],
+	config: FirstPassConfig | dict[str, Any]
 ) -> list[dict]:
 	"""
 	:returns: unit defintions (dict) that are subclass of the provided abstract class name.
@@ -79,5 +83,5 @@ def filter_units(
 	]
 
 
-def resolve_shortcut(unit: Union[str, dict[str, Any]]) -> dict[str, Any]:
+def resolve_shortcut(unit: str | dict[str, Any]) -> dict[str, Any]:
 	return unit if isinstance(unit, dict) else {'unit': unit}

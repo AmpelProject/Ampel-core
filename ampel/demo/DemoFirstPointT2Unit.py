@@ -19,5 +19,5 @@ class DemoFirstPointT2Unit(AbsPointT2Unit):
 
 	ingest = {'filter': 'PPSFilter', 'sort': 'jd', 'select': 'first'}
 
-	def process(self, datapoint: DataPoint) -> Union[UBson, UnitResult]:
+	def process(self, datapoint: DataPoint) -> UBson | UnitResult:
 		return {"time": time()}

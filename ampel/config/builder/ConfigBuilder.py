@@ -9,7 +9,7 @@
 
 import os, sys, re, json, yaml, datetime, getpass, importlib, subprocess
 from multiprocessing import Pool
-from typing import Any, Optional, Union
+from typing import Any
 from collections.abc import Iterable
 
 from ampel.log.utils import log_exception
@@ -52,7 +52,7 @@ class ConfigBuilder:
 	def load_ampel_conf(self,
 		d: dict,
 		dist_name: str,
-		version: Union[str, float, int],
+		version: str | float | int,
 		register_file: str
 	) -> None:
 
@@ -88,7 +88,7 @@ class ConfigBuilder:
 	def register_channel_templates(self,
 		chan_templates: dict[str, str],
 		dist_name: str,
-		version: Union[str, float, int],
+		version: str | float | int,
 		register_file: str
 	) -> None:
 
@@ -115,13 +115,13 @@ class ConfigBuilder:
 
 	def build_config(self,
 		stop_on_errors: int = 2,
-		config_validator: Optional[str] = "ConfigChecker",
+		config_validator: None | str = "ConfigChecker",
 		skip_default_processes: bool = False,
 		json_serializable: bool = True,
-		pwds: Optional[Iterable[str]] = None,
-		ext_resource: Optional[str] = None,
+		pwds: None | Iterable[str] = None,
+		ext_resource: None | str = None,
 		get_unit_env: bool = True,
-		save: Union[bool, str, None] = None,
+		save: bool | str | None = None,
 		sign: int = 6,
 	) -> dict[str, Any]:
 		"""
@@ -439,7 +439,7 @@ class ConfigBuilder:
 		)
 
 
-	def _get_channel_tpl(self, chan_dict: dict[str, Any]) -> Optional[AbsChannelTemplate]:
+	def _get_channel_tpl(self, chan_dict: dict[str, Any]) -> None | AbsChannelTemplate:
 		"""
 		Internal method used to check if a template (and which one)
 		should be applied to a given channel dict.
@@ -467,7 +467,7 @@ class ConfigBuilder:
 
 	def gather_processes(self,
 		config: FirstPassConfig, tier: int, match: str, collect: str
-	) -> Optional[dict]:
+	) -> None | dict:
 		"""
 		:param channel_names:
 		- None: all the available channels from the ampel config will be loaded
@@ -485,7 +485,7 @@ class ConfigBuilder:
 
 		init_configs = []
 		dist_names: set[str] = set()
-		out_proc: Optional[dict] = None
+		out_proc: None | dict = None
 
 		for p in processes:
 

@@ -8,7 +8,7 @@
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 import sys, json
-from typing import Optional, IO
+from typing import IO
 from collections.abc import Sequence
 from ampel.abstract.AbsIdMapper import AbsIdMapper
 from ampel.log.LogFlag import LogFlag
@@ -21,11 +21,11 @@ from ampel.util.pretty import prettyjson
 class LogsDumper(AmpelFlexModel):
 	""" later """
 
-	out: Optional[str] = None
-	to_json: Optional[bool] = False
-	to_pretty_json: Optional[bool] = False
-	date_format: Optional[str] = None
-	id_mapper: Optional[AbsIdMapper] = None
+	out: None | str = None
+	to_json: None | bool = False
+	to_pretty_json: None | bool = False
+	date_format: None | str = None
+	id_mapper: None | AbsIdMapper = None
 	datetime_key: str = '_id'
 	resolve_flag: bool = True
 	main_separator: str = ' '

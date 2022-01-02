@@ -8,7 +8,6 @@
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from bson.codec_options import CodecOptions
-from typing import Union, Optional
 from collections.abc import Iterable, Iterator
 from ampel.types import StockId, StrictIterable
 from ampel.struct.AmpelBuffer import AmpelBuffer
@@ -19,10 +18,10 @@ from ampel.mongo.view.FrozenValuesDict import FrozenValuesDict
 class T3SimpleDataLoader(AbsT3Loader):
 	"""Load all requested documents for the selected stocks"""
 
-	codec_options: Optional[CodecOptions] = CodecOptions(document_class=FrozenValuesDict)
+	codec_options: None | CodecOptions = CodecOptions(document_class=FrozenValuesDict)
 
 	def load(self,
-		stock_ids: Union[StockId, Iterator[StockId], StrictIterable[StockId]]
+		stock_ids: StockId | Iterator[StockId] | StrictIterable[StockId]
 	) -> Iterable[AmpelBuffer]:
 
 		return self.data_loader.load(

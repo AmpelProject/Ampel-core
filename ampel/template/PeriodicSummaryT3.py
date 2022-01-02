@@ -7,7 +7,7 @@
 # Last Modified Date: 14.12.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-from typing import Any, Literal, Optional, Union
+from typing import Any, Literal
 from collections.abc import Sequence
 
 from ampel.types import ChannelId, Tag
@@ -22,13 +22,13 @@ from ampel.log.AmpelLogger import AmpelLogger
 from ampel.abstract.AbsProcessTemplate import AbsProcessTemplate
 
 
-UnitModelOrString = Union[UnitModel, str]
-UnitModelSequence = Union[Sequence[UnitModelOrString], UnitModelOrString]
+UnitModelOrString = UnitModel | str
+UnitModelSequence = Sequence[UnitModelOrString] | UnitModelOrString
 
 
 class FilterModel(AmpelBaseModel):
     #: Filter based on T2 results
-    t2: Union[T2FilterModel, AllOf[T2FilterModel], AnyOf[T2FilterModel]]
+    t2: T2FilterModel | AllOf[T2FilterModel] | AnyOf[T2FilterModel]
 
 
 class PeriodicSummaryT3(AbsProcessTemplate):
@@ -48,34 +48,27 @@ class PeriodicSummaryT3(AbsProcessTemplate):
     #: expressions, e.g: ``every().day.at("15:00")`` or ``every(42).minutes``
     #:
     #: .. note:: all times are are expressed in UTC
-    schedule: Union[str, Sequence[str]]
+    schedule: str | Sequence[str]
 
     #: Channel selection.
-    channel: Union[
-        None, ChannelId, AllOf[ChannelId], AnyOf[ChannelId], OneOf[ChannelId]
-    ] = None
+    channel: None | ChannelId | AllOf[ChannelId] | AnyOf[ChannelId] | OneOf[ChannelId] = None
 
-    distrib: Optional[str]
+    distrib: None | str
 
-    source: Optional[str]
+    source: None | str
 
     #: Stock tag selection.
-    tag: Optional[
-        dict[
-            Literal["with", "without"],
-            Union[Tag, dict, AllOf[Tag], AnyOf[Tag], OneOf[Tag]],
-        ]
-    ] = None
+    tag: None | dict[Literal["with", "without"], Tag | dict | AllOf[Tag] | AnyOf[Tag] | OneOf[Tag]] = None
 
     #: Documents to load. If a string, should refer to an entry in the
     #: ``alias.t3`` config section. See :ref:`t3-directive-load`.
-    load: Optional[Sequence[Union[str, LoaderDirective]]] = None
+    load: None | Sequence[str | LoaderDirective] = None
 
     #: Additional stock filters.
-    filter: Optional[FilterModel] = None
+    filter: None | FilterModel = None
 
     #: Complement stages. See :ref:`t3-directive-complement`.
-    complement: Optional[UnitModelSequence] = None
+    complement: None | UnitModelSequence = None
 
     #: Units to run. See :ref:`t3-directive-run-execute`.
     run: UnitModelSequence
@@ -198,7 +191,7 @@ class PeriodicSummaryT3(AbsProcessTemplate):
         else:
             return self.schedule
 
-    def get_channel_tag(self) -> Union[None, str, int]:
+    def get_channel_tag(self) -> None | str | int:
         """
         Get channel if single channel, otherwise None
         """

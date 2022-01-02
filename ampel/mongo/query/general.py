@@ -8,7 +8,7 @@
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from bson.int64 import Int64
-from typing import Optional, Union, Any, Literal
+from typing import Any, Literal
 from ampel.types import Tag, ChannelId, StockId, StrictIterable
 from ampel.model.operator.AnyOf import AnyOf
 from ampel.model.operator.AllOf import AllOf
@@ -20,9 +20,9 @@ type_stock_id = (int, Int64, bytes, str)
 
 
 def build_general_query(
-	stock: Optional[Union[StockId, StrictIterable[StockId]]] = None,
-	channel: Optional[Union[ChannelId, dict, AllOf[ChannelId], AnyOf[ChannelId], OneOf[ChannelId]]] = None,
-	tag: Optional[dict[Literal['with', 'without'], Union[Tag, dict, AllOf[Tag], AnyOf[Tag], OneOf[Tag]]]] = None
+	stock: None | StockId | StrictIterable[StockId] = None,
+	channel: None | ChannelId | dict | AllOf[ChannelId] | AnyOf[ChannelId] | OneOf[ChannelId] = None,
+	tag: None | dict[Literal['with', 'without'], Tag | dict | AllOf[Tag] | AnyOf[Tag] | OneOf[Tag]] = None
 ) -> dict[str, Any]:
 	"""
 	Builds a query usable with the ampel "stock", "t0" (with channel=None), "t1" and "t2" collections

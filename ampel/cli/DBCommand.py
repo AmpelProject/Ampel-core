@@ -7,7 +7,7 @@
 # Last Modified Date:  06.10.2021
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from typing import Optional, Any, Union
+from typing import Any
 from collections.abc import Sequence
 from argparse import ArgumentParser # type: ignore[import]
 from ampel.core.AmpelDB import AmpelDB
@@ -39,7 +39,7 @@ class DBCommand(AbsCoreCommand):
 		self.parsers = {}
 
 	# Mandatory implementation
-	def get_parser(self, sub_op: Optional[str] = None) -> Union[ArgumentParser, AmpelArgumentParser]:
+	def get_parser(self, sub_op: None | str = None) -> ArgumentParser | AmpelArgumentParser:
 
 		if sub_op in self.parsers:
 			return self.parsers[sub_op]
@@ -89,7 +89,7 @@ class DBCommand(AbsCoreCommand):
 
 
 	# Mandatory implementation
-	def run(self, args: dict[str, Any], unknown_args: Sequence[str], sub_op: Optional[str] = None) -> None:
+	def run(self, args: dict[str, Any], unknown_args: Sequence[str], sub_op: None | str = None) -> None:
 
 		if sub_op == "delete":  # cosmetic mainly
 			AmpelDB.create_collection = (lambda x: None) # type: ignore

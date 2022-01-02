@@ -7,7 +7,6 @@
 # Last Modified Date:  18.12.2021
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from typing import Optional
 from ampel.base.AmpelABC import AmpelABC
 from ampel.base.AmpelBaseModel import AmpelBaseModel
 
@@ -15,4 +14,4 @@ from ampel.base.AmpelBaseModel import AmpelBaseModel
 class AbsConfigTemplate(AmpelABC, AmpelBaseModel, abstract=True):
 	""" Known direct subclasses: AbsProcessTemplate, AbsChannelTemplate """
 
-	template: Optional[str]
+	template: None | str

@@ -9,7 +9,6 @@
 
 from time import time
 from itertools import cycle
-from typing import Optional
 from collections.abc import Generator
 from multiprocessing.pool import ThreadPool
 
@@ -51,7 +50,7 @@ class T3DistributiveStager(T3ThreadedStager):
 	def stage(self,
 		gen: Generator[AmpelBuffer, None, None],
 		t3s: T3Store
-	) -> Optional[Generator[T3Document, None, None]]:
+	) -> None | Generator[T3Document, None, None]:
 
 		try:
 

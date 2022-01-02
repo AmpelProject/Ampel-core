@@ -13,7 +13,7 @@ from multiprocessing import Queue, Process
 from ampel.base.AmpelBaseModel import AmpelBaseModel
 from argparse import ArgumentParser
 from importlib import import_module
-from typing import Any, Optional, Union
+from typing import Any
 from collections.abc import Sequence
 from ampel.abstract.AbsEventUnit import AbsEventUnit
 from ampel.abstract.AbsProcessorTemplate import AbsProcessorTemplate
@@ -35,12 +35,12 @@ except Exception:
 
 
 class TaskUnitModel(UnitModel):
-	title: Optional[str]
+	title: None | str
 	multiplier: int = 1
 
 
 class TemplateUnitModel(AmpelBaseModel):
-	title: Optional[str]
+	title: None | str
 	template: str
 	config: dict[str, Any]
 	multiplier: int = 1
@@ -62,7 +62,7 @@ class JobCommand(AbsCoreCommand):
 		self.parser = None
 
 	# Mandatory implementation
-	def get_parser(self, sub_op: Optional[str] = None) -> Union[ArgumentParser, AmpelArgumentParser]:
+	def get_parser(self, sub_op: None | str = None) -> ArgumentParser | AmpelArgumentParser:
 
 		if self.parser:
 			return self.parser
@@ -100,7 +100,7 @@ class JobCommand(AbsCoreCommand):
 
 
 	# Mandatory implementation
-	def run(self, args: dict[str, Any], unknown_args: Sequence[str], sub_op: Optional[str] = None) -> None:
+	def run(self, args: dict[str, Any], unknown_args: Sequence[str], sub_op: None | str = None) -> None:
 
 		start_time = time()
 		logger = AmpelLogger.get_logger(base_flag=LogFlag.MANUAL_RUN)

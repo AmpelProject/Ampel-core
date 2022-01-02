@@ -8,7 +8,7 @@
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from importlib import import_module
-from typing import Any, Optional, Annotated
+from typing import Any, Annotated
 
 from ampel.types import OneOrMany
 from ampel.abstract.AbsEventUnit import AbsEventUnit
@@ -40,8 +40,8 @@ class T3Processor(AbsEventUnit):
 	  - set raise_exc = True (troubles collection will not be populated if an exception occurs)
 	"""
 
-	template: Optional[str] = None
-	include: Optional[T3IncludeDirective]
+	template: None | str = None
+	include: None | T3IncludeDirective
 	execute: OneOrMany[Annotated[UnitModel, AbsT3ControlUnit]]
 
 

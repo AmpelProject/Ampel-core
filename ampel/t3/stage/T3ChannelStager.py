@@ -7,7 +7,6 @@
 # Last Modified Date:  10.12.2021
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from typing import Optional
 from collections.abc import Generator, Sequence
 from ampel.types import ChannelId
 from ampel.view.T3Store import T3Store
@@ -61,5 +60,5 @@ class T3ChannelStager(AbsT3Stager):
 	def stage(self,
 		gen: Generator[AmpelBuffer, None, None],
 		t3s: T3Store
-	) -> Optional[Generator[T3Document, None, None]]:
+	) -> None | Generator[T3Document, None, None]:
 		return self._stager.stage(gen, t3s)

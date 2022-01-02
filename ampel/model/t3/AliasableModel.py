@@ -7,7 +7,7 @@
 # Last Modified Date:  Unspecified
 # Last Modified By:    jvs
 
-from typing import Any, Optional, ClassVar, TYPE_CHECKING
+from typing import Any, ClassVar, TYPE_CHECKING
 from ampel.base.AmpelBaseModel import AmpelBaseModel
 
 if TYPE_CHECKING:
@@ -20,7 +20,7 @@ class AliasableModel(AmpelBaseModel):
 	of an AmpelConfig
 	"""
 
-	_config: ClassVar[Optional["AmpelConfig"]] = None
+	_config: ClassVar['None | AmpelConfig'] = None
 
 	@classmethod
 	def validate(cls, value: Any, _omit_traceless: bool = True) -> "AliasableModel":

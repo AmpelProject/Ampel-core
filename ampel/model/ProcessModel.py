@@ -8,7 +8,7 @@
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 import schedule as sched
-from typing import Optional, Literal, Union
+from typing import Literal
 from collections.abc import Sequence
 from ampel.base.AmpelBaseModel import AmpelBaseModel
 from ampel.types import ChannelId
@@ -19,16 +19,16 @@ from ampel.config.ScheduleEvaluator import ScheduleEvaluator
 class ProcessModel(AmpelBaseModel):
 
 	name: str
-	version: Union[int, float, str]
+	version: int | float | str
 	active: bool = True
-	tier: Optional[Literal[0, 1, 2, 3]]
+	tier: None | Literal[0, 1, 2, 3]
 	schedule: Sequence[str]
-	channel: Optional[Union[ChannelId, Sequence[ChannelId]]]
-	distrib: Optional[str]
-	source: Optional[str]
+	channel: None | ChannelId | Sequence[ChannelId]
+	distrib: None | str
+	source: None | str
 	isolate: bool = True
 	multiplier: int = 1
-	log: Optional[str]
+	log: None | str
 	controller: UnitModel = UnitModel(unit='DefaultProcessController')
 	processor: UnitModel
 

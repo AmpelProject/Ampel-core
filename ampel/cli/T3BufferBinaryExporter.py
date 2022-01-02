@@ -9,7 +9,7 @@
 
 from bson import encode
 from io import BufferedWriter
-from typing import Optional, Union, BinaryIO
+from typing import BinaryIO
 from collections.abc import Generator
 
 from ampel.view.T3Store import T3Store
@@ -25,18 +25,18 @@ class T3BufferBinaryExporter(AbsT3Stager):
 	Exports AmpelBuffer instances as JSON (with base64 encoded bytes values) into file
 	"""
 
-	fd: Union[BufferedWriter, BinaryIO]
+	fd: BufferedWriter | BinaryIO
 	raise_exc: bool = True
 	update_journal: bool = False
 	close_fd: bool = True
 	verbose: bool = True
-	id_mapper: Optional[AbsIdMapper] = None
+	id_mapper: None | AbsIdMapper = None
 
 
 	def stage(self,
 		gen: Generator[AmpelBuffer, None, None],
 		t3s: T3Store
-	) -> Optional[Generator[T3Document, None, None]]:
+	) -> None | Generator[T3Document, None, None]:
 
 		logger = AmpelLogger.get_logger()
 

@@ -8,7 +8,7 @@
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 import sys, re, importlib, traceback
-from typing import Union, Any, Optional
+from typing import Any
 
 from ampel.protocol.LoggingHandlerProtocol import AggregatingLoggingHandlerProtocol
 from ampel.util.collections import ampel_iter
@@ -32,9 +32,9 @@ class UnitConfigCollector(ConfigCollector):
 
 
 	def add(self,
-		arg: list[Union[dict[str, str], str]],
+		arg: list[dict[str, str] | str],
 		dist_name: str,
-		version: Union[str, float, int],
+		version: str | float | int,
 		register_file: str
 	) -> None:
 
@@ -140,7 +140,7 @@ class UnitConfigCollector(ConfigCollector):
 		return re.sub(r'.*\.', '', fqn) # noqa
 
 
-	def get_mro(self, module_fqn: str, class_name: str) -> Optional[list[str]]:
+	def get_mro(self, module_fqn: str, class_name: str) -> None | list[str]:
 		"""
 		:param module_fqn: fully qualified name of module
 		:param class_name: declared class name in the module specified by "module_fqn"

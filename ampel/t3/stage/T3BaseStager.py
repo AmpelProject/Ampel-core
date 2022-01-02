@@ -8,7 +8,6 @@
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from time import time
-from typing import Optional
 from collections.abc import Generator
 
 from ampel.types import ChannelId
@@ -29,10 +28,10 @@ class T3BaseStager(AbsT3Stager, T3DocBuilder, abstract=True):
 	"""
 
 	# Require single channel for now (T3DocBuilder allows multi-channel)
-	channel: Optional[ChannelId] = None
+	channel: None | ChannelId = None
 
 
-	def get_unit(self, unit_model: UnitModel, chan: Optional[ChannelId] = None) -> AbsT3ReviewUnit:
+	def get_unit(self, unit_model: UnitModel, chan: None | ChannelId = None) -> AbsT3ReviewUnit:
 		return self.context.loader.new_safe_logical_unit(
 			unit_model,
 			unit_type = AbsT3ReviewUnit,

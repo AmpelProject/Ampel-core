@@ -24,7 +24,7 @@ class DemoReviewT3Unit(AbsT3ReviewUnit[SnapView]):
 	def process(self,
 		gen: Generator[SnapView, T3Send, None],
 		t3s: T3Store
-	) -> Union[UBson, UnitResult]:
+	) -> UBson | UnitResult:
 
 		self.logger.info(f"DemoReviewT3Unit output (parameter={self.parameter}):")
 

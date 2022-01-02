@@ -8,7 +8,6 @@
 # Last Modified By:    jvs
 
 import time
-from typing import Optional, Union
 from collections.abc import Sequence
 
 from ampel.struct.UnitResult import UnitResult
@@ -44,8 +43,8 @@ class DummyMuxer(AbsT0Muxer):
     points_to_insert: int = 5
 
     def process(
-        self, dps: list[DataPoint], stock_id: Optional[StockId] = None
-    ) -> tuple[Optional[list[DataPoint]], Optional[list[DataPoint]]]:
+        self, dps: list[DataPoint], stock_id: None | StockId = None
+    ) -> tuple[None | list[DataPoint], None | list[DataPoint]]:
         """
         :returns: tuple[datapoints to insert, datapoints to combine]
             <datapoints to insert> will be provided to a T0 ingester
@@ -81,14 +80,14 @@ class DummyStateT2Unit(AbsStateT2Unit):
 
 class DummyTiedStateT2Unit(AbsTiedStateT2Unit):
 
-    t2_dependency = [StateT2Dependency(unit="DummyStateT2Unit")]
+    t2_dependency = [StateT2Dependency(unit="DummyStateT2Unit")] # type: ignore[var-annotated]
 
     def process(
         self,
         compound: T1Document,
         datapoints: Sequence[DataPoint],
         t2views: Sequence[T2DocView],
-    ) -> Union[UBson, UnitResult]:
+    ) -> UBson | UnitResult:
         assert t2views, "dependencies were found"
         assert len(t2views[-1].body or []) == 1
         data = t2views[-1].get_payload() or {}

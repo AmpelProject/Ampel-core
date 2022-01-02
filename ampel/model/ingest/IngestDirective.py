@@ -7,7 +7,6 @@
 # Last Modified Date:  20.05.2021
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from typing import Optional
 from ampel.types import ChannelId
 from ampel.model.ingest.IngestBody import IngestBody
 from ampel.model.ingest.FilterModel import FilterModel
@@ -36,6 +35,6 @@ class IngestDirective(AmpelBaseModel):
 	channel: ChannelId
 
 	#: Potientially filter input datapoints
-	filter: Optional[FilterModel]
+	filter: None | FilterModel
 
 	ingest: IngestBody = IngestBody()

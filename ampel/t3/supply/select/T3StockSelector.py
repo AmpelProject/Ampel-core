@@ -8,7 +8,7 @@
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from pymongo.cursor import Cursor
-from typing import Union, Optional, Literal, Any
+from typing import Literal, Any
 
 from ampel.types import ChannelId, Tag
 from ampel.mongo.query.stock import build_stock_query
@@ -37,24 +37,19 @@ class T3StockSelector(AbsT3Selector):
 	"""
 
 	#: Select by creation time
-	created: Optional[TimeConstraintModel] = None
+	created: None | TimeConstraintModel = None
 
 	#: Select by modification time
-	updated: Optional[TimeConstraintModel] = None
+	updated: None | TimeConstraintModel = None
 
 	#: Select by channel
-	channel: Union[None, ChannelId, AnyOf[ChannelId], AllOf[ChannelId], OneOf[ChannelId]] = None
+	channel: None | ChannelId | AnyOf[ChannelId] | AllOf[ChannelId] | OneOf[ChannelId] = None
 
 	#: Select by tag
-	tag: Optional[
-		dict[
-			Literal['with', 'without'],
-			Union[Tag, AllOf[Tag], AnyOf[Tag], OneOf[Tag], dict]
-		]
-	] = None
+	tag: None | dict[Literal['with', 'without'], Tag | AllOf[Tag] | AnyOf[Tag] | OneOf[Tag] | dict] = None
 
 	#: Custom selection (ex: {'run': {'$gt': 10}})
-	custom: Optional[dict[str, Any]] = None
+	custom: None | dict[str, Any] = None
 
 
 	def __init__(self, logger: AmpelLogger, **kwargs):
@@ -76,7 +71,7 @@ class T3StockSelector(AbsT3Selector):
 
 
 	# Override/Implement
-	def fetch(self) -> Optional[Cursor]:
+	def fetch(self) -> None | Cursor:
 
 		# Build query for matching transients using criteria defined in config
 		match_query = build_stock_query(

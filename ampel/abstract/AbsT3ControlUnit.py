@@ -7,7 +7,6 @@
 # Last Modified Date:  17.12.2021
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from typing import Optional
 from collections.abc import Generator
 from ampel.types import Traceless, OneOrMany, ChannelId
 from ampel.view.T3Store import T3Store
@@ -28,11 +27,11 @@ class AbsT3ControlUnit(AmpelABC, ContextUnit, abstract=True):
 
 	logger: Traceless[AmpelLogger]
 	event_hdlr: Traceless[EventHandler]
-	channel: Optional[OneOrMany[ChannelId]] = None
+	channel: None | OneOrMany[ChannelId] = None
 
 
 	@abstractmethod
-	def process(self, t3s: T3Store) -> Optional[Generator[T3Document, None, None]]:
+	def process(self, t3s: T3Store) -> None | Generator[T3Document, None, None]:
 		"""
 		The content of the t3 store is dependent on:
 		- the configuration of the 'include' option of the underlying t3 process

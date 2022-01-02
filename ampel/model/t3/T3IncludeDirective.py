@@ -7,7 +7,6 @@
 # Last Modified Date:  17.12.2021
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from typing import Optional
 from ampel.types import OneOrMany
 from ampel.model.UnitModel import UnitModel
 from ampel.base.AmpelBaseModel import AmpelBaseModel
@@ -22,7 +21,7 @@ class T3IncludeDirective(AmpelBaseModel):
 	"""
 
 	#: Provides Iterable[T3Document]
-	docs: Optional[UnitModel] = None
+	docs: None | UnitModel = None
 
 	#: Provides session information. Unit(s) must be a subclass of AbsT3Supplier
-	session: Optional[OneOrMany[UnitModel]] = None
+	session: None | OneOrMany[UnitModel] = None

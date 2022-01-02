@@ -7,7 +7,6 @@
 # Last Modified Date:  06.06.2020
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from typing import Union, Optional
 from ampel.model.time.TimeDeltaModel import TimeDeltaModel
 from ampel.model.time.TimeLastRunModel import TimeLastRunModel
 from ampel.model.time.TimeStringModel import TimeStringModel
@@ -50,22 +49,11 @@ class TimeConstraintModel(AmpelBaseModel):
 	  )
 	"""
 
-	before: Optional[
-		Union[
-			TimeDeltaModel, TimeLastRunModel,
-			TimeStringModel, UnixTimeModel
-		]
-	] = None
-
-	after: Optional[
-		Union[
-			TimeDeltaModel, TimeLastRunModel,
-			TimeStringModel, UnixTimeModel
-		]
-	] = None
+	before: None | TimeDeltaModel | TimeLastRunModel | TimeStringModel | UnixTimeModel = None
+	after: None | TimeDeltaModel | TimeLastRunModel | TimeStringModel | UnixTimeModel = None
 
 
-	def get_query_model(self, **kwargs) -> Optional[QueryTimeModel]:
+	def get_query_model(self, **kwargs) -> None | QueryTimeModel:
 		"""
 		Call this method with db=<instance of AmpelDB>
 		if your time constraint is based on TimeLastRunModel

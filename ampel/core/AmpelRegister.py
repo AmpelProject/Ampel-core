@@ -12,7 +12,7 @@ from time import time
 from os.path import isdir, isfile
 from pathlib import Path
 from struct import calcsize
-from typing import BinaryIO, Optional, Literal, Any, Union, TypedDict
+from typing import BinaryIO, Literal, Any, TypedDict
 
 from ampel.log.AmpelLogger import AmpelLogger, VERBOSE
 from ampel.base.AmpelBaseModel import AmpelBaseModel
@@ -151,38 +151,38 @@ class AmpelRegister(AmpelBaseModel):
 	logger: AmpelLogger
 
 	#: save files in <path_base>/<file>
-	path_base: Optional[str]
+	path_base: None | str
 	#: save files in <path_base>/<path_extra(s)>/<file>
-	path_extra: Optional[list[str]]
+	path_extra: None | list[str]
 	#: prefix for each file
-	file_prefix: Optional[str]
+	file_prefix: None | str
 	#: ignore all other path options and use this file path
-	path_full: Optional[str]
+	path_full: None | str
 
-	file_cap: Optional[dict[Literal['blocks'], int]]
+	file_cap: None | dict[Literal['blocks'], int]
 
 	#: use existing file handle
-	file_handle: Optional[BinaryIO]
+	file_handle: None | BinaryIO
 
 	#: compression scheme
-	compression: Optional[Literal['gz', 'bz2', 'xz']] = 'gz'
+	compression: None | Literal['gz', 'bz2', 'xz'] = 'gz'
 	#: compression level
-	compress_level: Optional[int]
+	compress_level: None | int
 
 	# General header options
-	new_header_size: Optional[Union[int, str]]
+	new_header_size: None | int | str
 
 	header_log_accesses: bool = False
 	header_count_blocks: bool = True
-	header_extra: Optional[dict[str, Any]]
-	header_extra_base: Optional[dict[str, Any]]
+	header_extra: None | dict[str, Any]
+	header_extra_base: None | dict[str, Any]
 	header_update_anyway: bool = False
 
 	# New header options
-	header_creation_size: Optional[int]
+	header_creation_size: None | int
 
 	# Which header key to check if file already exists
-	on_exist_check: Optional[list[Union[str, tuple[str, str]]]] = ['struct']
+	on_exist_check: None | list[str | tuple[str, str]] = ['struct']
 	on_exist_strict_check: bool = False
 
 	def __init__(self, autoload: bool = True, **kwargs) -> None:
@@ -370,9 +370,9 @@ class AmpelRegister(AmpelBaseModel):
 
 
 	def register_file_access(self,
-		header: Optional[dict[str, Any]] = None,
-		use_this_time: Optional[float] = None,
-		new_blocks: Optional[int] = None,
+		header: None | dict[str, Any] = None,
+		use_this_time: None | float = None,
+		new_blocks: None | int = None,
 	) -> None:
 		"""
 		:param header: use provided header rather than self.header['payload']

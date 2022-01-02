@@ -248,9 +248,7 @@ class ConfigChecker(BaseConfigChecker):
 
 	def _log_exc(self, e: Exception, proc: str) -> None:
 		self.logger.error("=" * 80, extra={"process": proc})
-		for el in traceback.format_exception(
-			etype=type(e), value=e, tb=e.__traceback__
-		):
+		for el in traceback.format_exception(type(e), e, e.__traceback__):
 			for ell in el.split('\n'):
 				if len(ell) > 0:
 					self.logger.error(ell, extra={"process": proc})

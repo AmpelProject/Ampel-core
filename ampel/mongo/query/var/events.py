@@ -10,14 +10,14 @@
 from bson import ObjectId
 from pymongo.collection import Collection
 from datetime import datetime, timedelta
-from typing import Optional, Literal, Any, Union, overload
+from typing import Literal, Any, overload
 
 
 def build_query(
 	tier: Literal[0, 1, 2, 3] = 0,
-	process_name: Optional[str] = None,
-	lte_time: Optional[Union[dict, int, float]] = None,
-	gte_time: Optional[Union[dict, int, float]] = None
+	process_name: None | str = None,
+	lte_time: None | dict | int | float = None,
+	gte_time: None | dict | int | float = None
 ) -> dict[str, Any]:
 	"""
 	:param gte_time: unix timestamp or timedelta argument
@@ -49,23 +49,23 @@ def build_query(
 @overload
 def get_last_run(
 	col: Collection, process_name: str, require_success: bool,
-	gte_time: Optional[Union[dict, float]], timestamp: Literal[True]
-) -> Optional[Union[float]]:
+	gte_time: None | dict | float, timestamp: Literal[True]
+) -> None | float:
 	...
 
 @overload
 def get_last_run(
 	col: Collection, process_name: str, require_success: bool,
-	gte_time: Optional[Union[dict, float]], timestamp: Literal[False]
-) -> Optional[Union[ObjectId]]:
+	gte_time: None | dict | float, timestamp: Literal[False]
+) -> None | ObjectId:
 	...
 
 def get_last_run(
 	col: Collection, process_name: str,
 	require_success: bool,
-	gte_time: Optional[Union[dict, float]] = None,
+	gte_time: None | dict | float = None,
 	timestamp: bool = True
-) -> Optional[Union[float, ObjectId]]:
+) -> None | float | ObjectId:
 	"""
 	:param gte_time: unix timestamp or timedelta argument
 	"""
@@ -82,8 +82,8 @@ def get_last_run(
 
 
 def build_t0_stats_query(
-	gte_time: Optional[Union[dict, int, float]] = None,
-	lte_time: Optional[Union[dict, int, float]] = None
+	gte_time: None | dict | int | float = None,
+	lte_time: None | dict | int | float = None
 ) -> list[dict]:
 	"""
 	:param gte_time: unix timestamp or timedelta argument
@@ -106,7 +106,7 @@ def build_t0_stats_query(
 	]
 
 
-def _get_datetime(t: Union[int, float, dict]) -> datetime:
+def _get_datetime(t: int | float | dict) -> datetime:
 	if isinstance(t, (int, float)):
 		return datetime.fromtimestamp(t)
 	elif isinstance(t, dict):

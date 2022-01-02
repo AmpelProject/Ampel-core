@@ -9,7 +9,7 @@
 
 from time import time
 from bson import ObjectId
-from typing import Optional, Union, Any, ClassVar, Literal
+from typing import Union, Any, ClassVar, Literal
 from collections.abc import Sequence
 
 from ampel.types import T, UBson, ubson
@@ -61,7 +61,7 @@ class T2Worker(AbsWorker[T2Document]):
 
 	#: process only those :class:`T2 documents <ampel.content.T2Document.T2Document>`
 	#: with the given :attr:`~ampel.content.T2Document.T2Document.code`
-	code_match: Union[DocumentCode, Sequence[DocumentCode]] = [
+	code_match: DocumentCode | Sequence[DocumentCode] = [
 		DocumentCode.NEW,
 		DocumentCode.RERUN_REQUESTED,
 		DocumentCode.T2_NEW_PRIO,
@@ -207,7 +207,7 @@ class T2Worker(AbsWorker[T2Document]):
 		tuple[T1Document, Sequence[DataPoint]],                  # state t2
 		tuple[T],                                                # custom state t2 (T could be LightCurve)
 		tuple[T1Document, Sequence[DataPoint], list[T2DocView]], # tied state t2
-		tuple[T, list[T2DocView]],                               # tied custom state t2
+		tuple[T, list[T2DocView]]                                # tied custom state t2
 	]:
 		"""
 		Fetches documents required by `t2_unit`.
@@ -236,7 +236,7 @@ class T2Worker(AbsWorker[T2Document]):
 			)
 		):
 			dps: list[DataPoint] = []
-			t1_doc: Optional[T1Document] = next(self.col_t1.find({'link': t2_doc['link']}), None)
+			t1_doc: None | T1Document = next(self.col_t1.find({'link': t2_doc['link']}), None)
 
 			# compound doc must exist (None could mean an ingester bug)
 			if t1_doc is None:
@@ -389,7 +389,7 @@ class T2Worker(AbsWorker[T2Document]):
 		t2_doc: T2Document,
 		stock_updr: MongoStockUpdater,
 		logger: AmpelLogger
-	) -> Union[UnitResult, list[T2DocView]]:
+	) -> UnitResult | list[T2DocView]:
 
 		t2_views: list[T2DocView] = []
 
@@ -533,7 +533,7 @@ class T2Worker(AbsWorker[T2Document]):
 
 	def run_t2_unit(self,
 		t2_unit: AbsT2, t2_doc: T2Document, logger: AmpelLogger, stock_updr: MongoStockUpdater,
-	) -> Union[UBson, UnitResult]:
+	) -> UBson | UnitResult:
 		"""
 		Regarding the possible int return code:
 		usually, if an int is returned, it should be a DocumentCode member

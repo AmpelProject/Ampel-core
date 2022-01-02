@@ -7,7 +7,7 @@
 # Last Modified Date:  21.05.2021
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from typing import Optional, Literal
+from typing import Literal
 from ampel.types import ChannelId
 from ampel.model.ingest.IngestBody import IngestBody
 from ampel.model.ingest.FilterModel import FilterModel
@@ -49,6 +49,6 @@ class DualIngestDirective(AmpelBaseModel):
 	channel: ChannelId
 
 	#: Potientially filter input datapoints
-	filter: Optional[FilterModel] = None
+	filter: None | FilterModel = None
 
 	ingest: dict[Literal['new', 'known'], IngestBody]

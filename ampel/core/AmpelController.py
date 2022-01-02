@@ -8,7 +8,7 @@
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 import asyncio, re
-from typing import Literal, Optional, Union, TYPE_CHECKING
+from typing import Literal, TYPE_CHECKING
 from collections.abc import Iterable, Sequence
 
 from ampel.abstract.AbsProcessController import AbsProcessController
@@ -34,13 +34,13 @@ class AmpelController:
 
 	def __init__(
 		self,
-		config_arg: Union[str, AmpelConfig],
-		vault: Optional[AmpelVault] = None,
-		tier: Optional[Literal[0, 1, 2, 3]] = None,
-		match: Optional[Sequence[str]] = None,
-		exclude: Optional[Sequence[str]] = None,
-		controllers: Optional[Sequence[str]] = None,
-		logger: Optional["LoggerProtocol"] = None,
+		config_arg: str | AmpelConfig,
+		vault: None | AmpelVault = None,
+		tier: None | Literal[0, 1, 2, 3] = None,
+		match: None | Sequence[str] = None,
+		exclude: None | Sequence[str] = None,
+		controllers: None | Sequence[str] = None,
+		logger: 'None | LoggerProtocol' = None,
 		verbose: int = 0,
 		**kwargs,
 	):
@@ -144,11 +144,11 @@ class AmpelController:
 	@staticmethod
 	def get_processes(
 		config: AmpelConfig,
-		tier: Optional[Literal[0, 1, 2, 3, "ops"]] = None,
-		match: Optional[Sequence[str]] = None,
-		exclude: Optional[Sequence[str]] = None,
-		controllers: Optional[Sequence[str]] = None,
-		logger: Optional["LoggerProtocol"] = None,
+		tier: None | Literal[0, 1, 2, 3, "ops"] = None,
+		match: None | Sequence[str] = None,
+		exclude: None | Sequence[str] = None,
+		controllers: None | Sequence[str] = None,
+		logger: 'None | LoggerProtocol' = None,
 		verbose: int = 0,
 		raise_exc: bool = False,
 	) -> list[ProcessModel]:
@@ -226,7 +226,7 @@ class AmpelController:
 
 
 	@classmethod
-	def main(cls, args: Optional[list[str]] = None) -> None:
+	def main(cls, args: None | list[str] = None) -> None:
 
 		import logging, signal
 		from argparse import ArgumentParser

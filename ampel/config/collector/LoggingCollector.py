@@ -7,7 +7,7 @@
 # Last Modified Date:  18.12.2021
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from typing import Any, Union
+from typing import Any
 from ampel.config.collector.AbsDictConfigCollector import AbsDictConfigCollector
 from ampel.config.collector.ConfigCollector import ConfigCollector
 from ampel.log.handlers.AmpelStreamHandler import AmpelStreamHandler
@@ -20,7 +20,7 @@ class LoggingCollector(AbsDictConfigCollector):
 	def add(self,
 		arg: dict[str, Any],
 		dist_name: str,
-		version: Union[str, float, int],
+		version: str | float | int,
 		register_file: str
 	) -> None:
 

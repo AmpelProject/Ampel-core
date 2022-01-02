@@ -9,7 +9,7 @@
 
 from time import time
 from ampel.base.AmpelBaseModel import AmpelBaseModel
-from typing import Union, Optional, Any
+from typing import Any
 from collections.abc import Generator, Sequence
 
 from ampel.types import UBson
@@ -23,28 +23,28 @@ from ampel.util.mappings import get_by_json_path
 
 
 class TargetModel(AmpelBaseModel):
-	unit: Optional[str]
-	config: Union[None, int, str]
-	code: Optional[int]
-	field: Union[str, Sequence[str]]
+	unit: None | str
+	config: None | int | str
+	code: None | int
+	field: str | Sequence[str]
 
 
 class T3AggregatingStager(AbsT3Stager, T3DocBuilder):
 
 	# Override
-	paranoia: Optional[bool] = None # type: ignore
+	paranoia: None | bool = None # type: ignore
 	save_stock_ids: bool = True
 
 	split_tiers: bool = False
-	t0: Union[None, TargetModel, Sequence[TargetModel]]
-	t1: Union[None, TargetModel, Sequence[TargetModel]]
-	t2: Union[None, TargetModel, Sequence[TargetModel]]
+	t0: None | TargetModel | Sequence[TargetModel]
+	t1: None | TargetModel | Sequence[TargetModel]
+	t2: None | TargetModel | Sequence[TargetModel]
 
 
 	def stage(self,
 		gen: Generator[AmpelBuffer, None, None],
 		t3s: T3Store
-	) -> Optional[Generator[T3Document, None, None]]:
+	) -> None | Generator[T3Document, None, None]:
 
 		t0 = [self.t0] if isinstance(self.t0, TargetModel) else self.t0
 		t1 = [self.t1] if isinstance(self.t1, TargetModel) else self.t1
@@ -134,10 +134,10 @@ class T3AggregatingStager(AbsT3Stager, T3DocBuilder):
 
 
 	def get_t2_payload(self,
-		body: Optional[Sequence[UBson]],
+		body: None | Sequence[UBson],
 		meta: Sequence[MetaRecord],
-		code: Optional[int] = None
-	) -> Optional[dict[str, Any]]:
+		code: None | int = None
+	) -> None | dict[str, Any]:
 		"""
 		:returns: the content of the last array element of body associated with a meta code >= 0 or equals code arg.
 		"""

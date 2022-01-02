@@ -12,7 +12,7 @@ import datetime, json, socket
 from bson import ObjectId
 from slack import WebClient
 from slack.web.slack_response import SlackResponse
-from typing import Any, Optional
+from typing import Any
 from ampel.abstract.AbsOpsUnit import AbsOpsUnit
 from ampel.secret.NamedSecret import NamedSecret
 
@@ -88,7 +88,7 @@ class AmpelExceptionPublisher(AbsOpsUnit):
         }
         return attachment
 
-    def run(self, beacon: Optional[dict[str, Any]] = None) -> Optional[dict[str, Any]]:
+    def run(self, beacon: None | dict[str, Any] = None) -> None | dict[str, Any]:
 
         now = datetime.datetime.utcnow()
         t0 = beacon["updated"] if beacon else now - datetime.timedelta(hours=1)

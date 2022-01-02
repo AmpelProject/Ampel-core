@@ -1,5 +1,5 @@
 import os
-from typing import Any, ClassVar, Optional
+from typing import Any, ClassVar
 
 from prometheus_client import CollectorRegistry, Counter, Gauge, Histogram
 from prometheus_client.multiprocess import MultiProcessCollector
@@ -7,7 +7,7 @@ from prometheus_client.multiprocess import MultiProcessCollector
 
 class AmpelMetricsRegistry:
 
-    _registry: ClassVar[Optional[CollectorRegistry]] = None
+    _registry: ClassVar[None | CollectorRegistry] = None
     _standalone_collectors: ClassVar[list[Any]] = []
 
     @classmethod

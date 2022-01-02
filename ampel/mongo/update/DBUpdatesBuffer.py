@@ -13,7 +13,7 @@ from multiprocessing.pool import ThreadPool
 from pymongo.errors import BulkWriteError
 from pymongo.collection import Collection
 from pymongo import UpdateOne, InsertOne, UpdateMany
-from typing import Any, Union, Optional, Literal
+from typing import Any, Literal, Union
 from collections.abc import Callable, Iterable
 
 from ampel.core.Schedulable import Schedulable
@@ -84,14 +84,14 @@ class DBUpdatesBuffer(Schedulable):
 
 	def __init__(self,
 		ampel_db: AmpelDB,
-		run_id: Union[int, list[int]],
+		run_id: int | list[int],
 		logger: AmpelLogger,
-		error_callback: Optional[Callable[[], None]] = None,
+		error_callback: None | Callable[[], None] = None,
 		catch_signals: bool = True,
-		log_doc_ids: Optional[Iterable[int]] = None,
-		push_interval: Optional[float] = 3.,
-		max_size: Optional[int] = None,
-		threads: Optional[int] = None,
+		log_doc_ids: None | Iterable[int] = None,
+		push_interval: None | float = 3.,
+		max_size: None | int = None,
+		threads: None | int = None,
 		raise_exc: bool = False
 	):
 		"""
@@ -266,7 +266,7 @@ class DBUpdatesBuffer(Schedulable):
 					self.call_bulk_write(col_name, db_ops[col_name])
 
 
-	def call_bulk_write(self, col_name: AmpelMainCol, db_ops: list, *, extra: Optional[dict] = None) -> None:
+	def call_bulk_write(self, col_name: AmpelMainCol, db_ops: list, *, extra: None | dict = None) -> None:
 		"""
 		:param col_name: Ampel DB collection name (ex: stock, t0, t1, t2)
 		:param db_ops: list of pymongo operations
@@ -397,7 +397,7 @@ class DBUpdatesBuffer(Schedulable):
 	def _build_log_extra(self,
 		col_name: str, ops: list[DBOp],
 		bulk_api_result: dict[str, Any],
-		extra: Optional[dict[str, Any]] = None
+		extra: None | dict[str, Any] = None
 	) -> dict[str, Any]:
 
 		ret = {

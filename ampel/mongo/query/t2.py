@@ -8,7 +8,7 @@
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from bson.binary import Binary
-from typing import Union, Any, Optional
+from typing import Any
 from ampel.types import StockId, ChannelId, StrictIterable, strict_iterable
 from ampel.model.operator.AnyOf import AnyOf
 from ampel.model.operator.AllOf import AllOf
@@ -18,9 +18,9 @@ from ampel.mongo.query.general import build_general_query
 
 
 def build_stateless_query(
-	stock: Optional[Union[StockId, StrictIterable[StockId]]] = None,
-	channel: Optional[Union[ChannelId, dict, AllOf[ChannelId], AnyOf[ChannelId], OneOf[ChannelId]]] = None,
-	t2_subsel: Union[int, str, StrictIterable[Union[int, str]]] = None
+	stock: None | StockId | StrictIterable[StockId] = None,
+	channel: None | ChannelId | dict | AllOf[ChannelId] | AnyOf[ChannelId] | OneOf[ChannelId] = None,
+	t2_subsel: None | int | str | StrictIterable[int | str] = None
 ) -> dict[str, Any]:
 	"""
 	| Builds a pymongo query dict aiming at loading transient t2 or compounds docs \
@@ -47,16 +47,16 @@ def build_stateless_query(
 
 
 def build_statebound_t1_query(
-	states: Union[str, bytes, Binary, StrictIterable[Union[str, bytes, Binary]]],
+	states: str | bytes | Binary | StrictIterable[str | bytes | Binary],
 ) -> dict[str, Any]:
 	return {'_id': get_compound_match(states)}
 
 
 def build_statebound_t2_query(
-	stock: Optional[Union[StockId, StrictIterable[StockId]]],
-	states: Union[str, bytes, Binary, StrictIterable[Union[str, bytes, Binary]]],
-	channel: Optional[Union[ChannelId, dict, AllOf[ChannelId], AnyOf[ChannelId], OneOf[ChannelId]]] = None,
-	t2_subsel: Union[int, str, StrictIterable[Union[int, str]]] = None
+	stock: None | StockId | StrictIterable[StockId],
+	states: str | bytes | Binary | StrictIterable[str | bytes | Binary],
+	channel: None | ChannelId | dict | AllOf[ChannelId] | AnyOf[ChannelId] | OneOf[ChannelId] = None,
+	t2_subsel: None | int | str | StrictIterable[int | str] = None
 ) -> dict[str, Any]:
 	"""
 	See :func:`build_stateless_query <build_stateless_query>` docstring
@@ -71,7 +71,7 @@ def build_statebound_t2_query(
 
 	return query
 
-def _to_binary(st: Union[str, bytes, Binary]) -> Binary:
+def _to_binary(st: str | bytes | Binary) -> Binary:
 	if isinstance(st, str):
 		if len(st) == 32:
 			return Binary(bytes.fromhex(st), 0)
@@ -90,8 +90,8 @@ def _to_binary(st: Union[str, bytes, Binary]) -> Binary:
 
 
 def get_compound_match(
-	states: Union[str, bytes, Binary, StrictIterable[Union[str, bytes, Binary]]],
-) -> Union[Binary, dict[str, list[Binary]]]:
+	states: str | bytes | Binary | StrictIterable[str | bytes | Binary],
+) -> Binary | dict[str, list[Binary]]:
 	"""
 	:raises ValueError: if provided states parameter is invalid
 	"""

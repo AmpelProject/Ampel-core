@@ -8,7 +8,6 @@
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 import os, re
-from typing import Optional
 from collections.abc import Generator
 from pkg_resources import ( # type: ignore[attr-defined]
 	get_distribution, AvailableDistributions,
@@ -32,7 +31,7 @@ def get_dist_names(distrib_prefix: str = "ampel-") -> list[str]:
 	return ret
 
 
-def get_files(dist_name: str, lookup_dir: Optional[str] = None, pattern: Optional[re.Pattern] = None) -> list[str]:
+def get_files(dist_name: str, lookup_dir: None | str = None, pattern: None | re.Pattern = None) -> list[str]:
 	"""
 	Loads all known conf files of the provided distribution (name)
 	"""
@@ -76,7 +75,7 @@ def get_files(dist_name: str, lookup_dir: Optional[str] = None, pattern: Optiona
 		raise ValueError(f"Unsupported distribution type: '{type(distrib)}'")
 
 
-def _check_match(arg: str, lookup_dir: Optional[str], pattern: Optional[re.Pattern]) -> bool:
+def _check_match(arg: str, lookup_dir: None | str, pattern: None | re.Pattern) -> bool:
 	if lookup_dir and not arg.startswith(lookup_dir):
 		return False
 	if pattern and not pattern.match(arg):
@@ -84,7 +83,7 @@ def _check_match(arg: str, lookup_dir: Optional[str], pattern: Optional[re.Patte
 	return True
 
 
-def walk_pth_file(pth: str, lookup_dir: Optional[str] = None, pattern: Optional[re.Pattern] = None) -> Generator[str, None, None]:
+def walk_pth_file(pth: str, lookup_dir: None | str = None, pattern: None | re.Pattern = None) -> Generator[str, None, None]:
 	with open(pth) as f:
 		for root, dirs, files in os.walk(f"{f.read().strip()}/{lookup_dir}" if lookup_dir else f"{f.read().strip()}"):
 			for fname in files:

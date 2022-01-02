@@ -24,7 +24,7 @@ class DemoPlainT3Unit(AbsT3PlainUnit):
 		self.logger.info("post_init was called")
 
 
-	def process(self, t3s: T3Store) -> Union[UBson, UnitResult]:
+	def process(self, t3s: T3Store) -> UBson | UnitResult:
 
 		self.logger.info("Running DemoPlainT3Unit")
 

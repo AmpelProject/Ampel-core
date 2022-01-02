@@ -8,7 +8,7 @@
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 import json
-from typing import Optional, Any, Literal
+from typing import Any, Literal
 from ampel.log.AmpelLogger import AmpelLogger
 
 from ampel.config.collector.ConfigCollector import ConfigCollector
@@ -28,7 +28,7 @@ class FirstPassConfig(dict):
 	Class used to aggregate config pieces into a central configuration dict for ampel.
 	"""
 
-	conf_keys: dict[str, Optional[type[ConfigCollector]]] = {
+	conf_keys: dict[str, None | type[ConfigCollector]] = {
 		"mongo": DBConfigCollector,
 		"logging": LoggingCollector,
 		"channel": ChannelConfigCollector,
@@ -80,7 +80,7 @@ class FirstPassConfig(dict):
 		super().__init__(d)
 
 
-	def unset_errors(self, d: Optional[dict] = None) -> None:
+	def unset_errors(self, d: None | dict = None) -> None:
 		""" """
 		for v in d.values() if d is not None else self.values():
 			if isinstance(v, dict):

@@ -9,7 +9,7 @@
 
 import logging, signal, asyncio
 from argparse import ArgumentParser
-from typing import Any, Optional, Union
+from typing import Any
 from collections.abc import Sequence
 from ampel.abstract.AbsCLIOperation import AbsCLIOperation
 from ampel.core.AmpelController import AmpelController
@@ -38,7 +38,7 @@ class ScheduleCommand(AbsCLIOperation):
 	"""
 
 	# Mandatory implementation
-	def get_parser(self, sub_op: Optional[str] = None) -> Union[ArgumentParser, AmpelArgumentParser]:
+	def get_parser(self, sub_op: None | str = None) -> ArgumentParser | AmpelArgumentParser:
 
 		parser = AmpelArgumentParser()
 		# Arguments description
@@ -60,7 +60,7 @@ class ScheduleCommand(AbsCLIOperation):
 
 
 	# Mandatory implementation
-	def run(self, args: dict[str, Any], unknown_args: Sequence[str], sub_op: Optional[str] = None) -> None:
+	def run(self, args: dict[str, Any], unknown_args: Sequence[str], sub_op: None | str = None) -> None:
 
 		self.args = args
 		self.unknown_args = unknown_args

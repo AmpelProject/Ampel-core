@@ -15,7 +15,7 @@ from pymongo import MongoClient
 from pymongo.database import Database
 from pymongo.collection import Collection
 from pymongo.errors import ConfigurationError, DuplicateKeyError
-from typing import Any, Union, Optional
+from typing import Any
 from collections.abc import Sequence
 
 from ampel.types import ChannelId
@@ -47,7 +47,7 @@ class AmpelDB(AmpelBaseModel):
 	databases: Sequence[AmpelDBModel]
 	mongo_uri: str
 	mongo_options: MongoClientOptionsModel = MongoClientOptionsModel()
-	vault: Optional[AmpelVault]
+	vault: None | AmpelVault
 	require_exists: bool = False
 	one_db: bool = False
 
@@ -55,7 +55,7 @@ class AmpelDB(AmpelBaseModel):
 	@classmethod
 	def new(cls,
 		config: AmpelConfig,
-		vault: Optional[AmpelVault] = None,
+		vault: None | AmpelVault = None,
 		require_exists: bool = False,
 		one_db: bool = False
 	) -> 'AmpelDB':
@@ -123,13 +123,13 @@ class AmpelDB(AmpelBaseModel):
 			role = MongoClientRoleModel(r='logger', w='logger')
 		)
 
-		self.databases.append(db_config)
+		self.databases = list(self.databases) + [db_config]
 
 		for col in db_config.collections:
 			self.col_config[col.name] = col
 
 
-	def get_collection(self, col_name: Union[int, str], mode: str = 'w') -> Collection:
+	def get_collection(self, col_name: int | str, mode: str = 'w') -> Collection:
 		"""
 		:param mode: required permission level, either 'r' for read-only or 'rw' for read-write
 		If a collection does not exist, it will be created and the proper mongoDB indexes will be set.
@@ -206,7 +206,7 @@ class AmpelDB(AmpelBaseModel):
 		col_config: AmpelColModel,
 		db_name: str,
 		role: str,
-		logger: Optional['AmpelLogger'] = None
+		logger: 'None | AmpelLogger' = None
 	) -> Collection:
 		"""
 		:param resource_name: name of the AmpelConfig resource (resource.mongo) to be fed to MongoClient()
@@ -280,7 +280,7 @@ class AmpelDB(AmpelBaseModel):
 
 	def _create_index(self,
 		col: Collection,
-		index_data: Union[IndexModel, ShortIndexModel],
+		index_data: IndexModel | ShortIndexModel,
 		logger: 'AmpelLogger'
 	) -> None:
 
@@ -297,7 +297,7 @@ class AmpelDB(AmpelBaseModel):
 
 	def create_one_view(self,
 		channel: ChannelId,
-		logger: Optional['AmpelLogger'] = None,
+		logger: 'None | AmpelLogger' = None,
 		force: bool = False
 	) -> None:
 		self.create_view(
@@ -308,7 +308,7 @@ class AmpelDB(AmpelBaseModel):
 
 	def create_or_view(self,
 		channels: Sequence[ChannelId],
-		logger: Optional['AmpelLogger'] = None,
+		logger: 'None | AmpelLogger' = None,
 		force: bool = False
 	) -> None:
 
@@ -324,7 +324,7 @@ class AmpelDB(AmpelBaseModel):
 
 	def create_and_view(self,
 		channels: Sequence[ChannelId],
-		logger: Optional['AmpelLogger'] = None,
+		logger: 'None | AmpelLogger' = None,
 		force: bool = False
 	) -> None:
 
@@ -341,7 +341,7 @@ class AmpelDB(AmpelBaseModel):
 	def create_view(self,
 		view: AbsMongoView,
 		col_prefix: str,
-		logger: Optional['AmpelLogger'] = None,
+		logger: 'None | AmpelLogger' = None,
 		force: bool = False
 	) -> None:
 
@@ -368,23 +368,23 @@ class AmpelDB(AmpelBaseModel):
 			db.create_collection(f'{col_prefix}_{el}', viewOn=el, pipeline=agg)
 
 
-	def delete_one_view(self, channel: ChannelId, logger: Optional['AmpelLogger'] = None) -> None:
+	def delete_one_view(self, channel: ChannelId, logger: 'None | AmpelLogger' = None) -> None:
 		self.delete_view(str(channel), logger)
 
 
-	def delete_or_view(self, channels: Sequence[ChannelId], logger: Optional['AmpelLogger'] = None) -> None:
+	def delete_or_view(self, channels: Sequence[ChannelId], logger: 'None | AmpelLogger' = None) -> None:
 		if not isinstance(channels, collections.abc.Sequence) or len(channels) == 1:
 			raise ValueError("Incorrect argument")
 		self.delete_view("_OR_".join(map(str, channels)), logger)
 
 
-	def delete_and_view(self, channels: Sequence[ChannelId], logger: Optional['AmpelLogger'] = None) -> None:
+	def delete_and_view(self, channels: Sequence[ChannelId], logger: 'None | AmpelLogger' = None) -> None:
 		if not isinstance(channels, collections.abc.Sequence) or len(channels) == 1:
 			raise ValueError("Incorrect argument")
 		self.delete_view("_AND_".join(map(str, channels)), logger)
 
 
-	def delete_view(self, view_prefix: str, logger: Optional['AmpelLogger'] = None) -> Collection:
+	def delete_view(self, view_prefix: str, logger: 'None | AmpelLogger' = None) -> Collection:
 
 		db = self._get_pymongo_db("data", role="w")
 		for el in ("stock", "t0", "t1", "t2", "t3"):
@@ -505,7 +505,7 @@ def main() -> None:
 
 	parser = ArgumentParser(description="Manage access to Ampel databases")
 
-	def from_env(key) -> Optional[str]:
+	def from_env(key) -> None | str:
 		if fname := os.environ.get(key + '_FILE', None):
 			with open(fname, "r") as f:
 				return f.read().rstrip()

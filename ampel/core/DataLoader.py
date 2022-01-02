@@ -8,7 +8,7 @@
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from bson.codec_options import CodecOptions
-from typing import Union, Optional, Literal
+from typing import Literal
 from collections.abc import Iterable, Iterator
 
 from ampel.types import StockId, ChannelId, StrictIterable, Tag
@@ -37,13 +37,13 @@ class DataLoader:
 		self.ctx = ctx
 
 	def load(self,
-		stock_ids: Union[StockId, Iterator[StockId], StrictIterable[StockId]],
+		stock_ids: StockId | Iterator[StockId] | StrictIterable[StockId],
 		directives: Iterable[LoaderDirective],
-		channel: Union[None, ChannelId, AllOf[ChannelId], AnyOf[ChannelId], OneOf[ChannelId]] = None,
-		tag: Optional[dict[Literal['with', 'without'], Union[Tag, dict, AllOf[Tag], AnyOf[Tag], OneOf[Tag]]]] = None,
+		channel: None | ChannelId | AllOf[ChannelId] | AnyOf[ChannelId] | OneOf[ChannelId] = None,
+		tag: None | dict[Literal['with', 'without'], Tag | dict | AllOf[Tag] | AnyOf[Tag] | OneOf[Tag]] = None,
 		auto_project: bool = True,
 		codec_options: CodecOptions = CodecOptions(document_class=FrozenValuesDict),
-		logger: Optional[AmpelLogger] = None
+		logger: None | AmpelLogger = None
 	) -> Iterable[AmpelBuffer]:
 		"""
 		:param directives: see LoaderDirective docstrings for more information.  Notes:

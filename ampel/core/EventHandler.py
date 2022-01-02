@@ -9,7 +9,7 @@
 
 from time import time
 from bson import ObjectId
-from typing import Any, Optional, Literal, TYPE_CHECKING
+from typing import Any, Literal, TYPE_CHECKING
 from ampel.content.EventDocument import EventDocument
 from ampel.log.AmpelLogger import AmpelLogger
 from ampel.log.AmpelLoggingError import AmpelLoggingError
@@ -31,7 +31,7 @@ class EventHandler:
 		tier: Literal[-1, 0, 1, 2, 3],
 		run_id: int,
 		col_name: str = "events",
-		extra: Optional[dict[str, Any]] = None,
+		extra: None | dict[str, Any] = None,
 		raise_exc = False,
 		dry_run: bool = False
 	):
@@ -53,7 +53,7 @@ class EventHandler:
 			doc |= extra # type: ignore[assignment]
 
 		self.dkeys = doc.keys()
-		self.extra: Optional[dict[str, Any]] = None
+		self.extra: None | dict[str, Any] = None
 
 		if dry_run:
 			self.col = None

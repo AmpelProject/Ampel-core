@@ -7,7 +7,7 @@
 # Last Modified Date:  21.11.2021
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from typing import Optional, Literal, Union, Any
+from typing import Literal, Any
 from collections.abc import Sequence
 from ampel.types import Tag, ChannelId
 from ampel.base.AmpelABC import AmpelABC
@@ -19,29 +19,28 @@ from ampel.content.MetaActivity import MetaActivity
 from ampel.enum.MetaActionCode import MetaActionCode
 
 
-# Type alias
+# Alias
 ActivityRegister = dict[
-	frozenset[tuple[str, Any]], # activity stripped out of channel
-	Union[
-		None, # activity is not channel-bound
-		set[ChannelId] # will be added to MetaActivity during commit
-	]
+    # activity stripped out of channel
+	frozenset[tuple[str, Any]],
+    # None: activity is not channel-bound, set[ChannelId]: will be added to MetaActivity during commit
+	None | set[ChannelId]
 ]
 
 
 class AbsCompiler(AmpelABC, AmpelBaseModel, abstract=True):
 
-	origin: Optional[int] = None
+	origin: None | int = None
 	tier: Literal[-1, 0, 1, 2, 3]
 	run_id: int
-	tag: Optional[Union[Tag, Sequence[Tag]]]
+	tag: None | Tag | Sequence[Tag]
 
 
 	def __init__(self, **kwargs) -> None:
 
 		super().__init__(**kwargs)
 		self._tag = None
-		self._ingest_tag_activity: Optional[MetaActivity] = None
+		self._ingest_tag_activity: None | MetaActivity = None
 
 		if self.tag:
 			self._ingest_tag_activity = {'action': MetaActionCode.ADD_INGEST_TAG}
@@ -59,7 +58,7 @@ class AbsCompiler(AmpelABC, AmpelBaseModel, abstract=True):
 
 
 	@abstractmethod
-	def commit(self, ingester: AbsDocIngester, now: Union[int, float], **kwargs) -> None:
+	def commit(self, ingester: AbsDocIngester, now: int | float, **kwargs) -> None:
 		...
 
 
@@ -67,8 +66,8 @@ class AbsCompiler(AmpelABC, AmpelBaseModel, abstract=True):
 		ar: ActivityRegister,
 		extra_register: dict[str, Any], # meta_extra
 		channel: ChannelId,
-		activity: Optional[Union[MetaActivity, list[MetaActivity]]] = None,
-		meta_extra: Optional[dict[str, Any]] = None
+		activity: None | MetaActivity | list[MetaActivity] = None,
+		meta_extra: None | dict[str, Any] = None
 	) -> None:
 		"""
 		Note: We could support the type list[tuple[str, any]] for the parameter activity
@@ -146,7 +145,7 @@ class AbsCompiler(AmpelABC, AmpelBaseModel, abstract=True):
 
 
 	@staticmethod
-	def _metactivity_key(activity: MetaActivity, skip_keys: Optional[set[str]] = None) -> frozenset[tuple[str, Any]]:
+	def _metactivity_key(activity: MetaActivity, skip_keys: None | set[str] = None) -> frozenset[tuple[str, Any]]:
 		return frozenset(
 			(
 				k,
@@ -158,8 +157,8 @@ class AbsCompiler(AmpelABC, AmpelBaseModel, abstract=True):
 
 	def new_meta_info(self,
 		channel: ChannelId,
-		activity: Optional[Union[MetaActivity, list[MetaActivity]]] = None,
-		meta_extra: Optional[dict[str, Any]] = None
+		activity: None | MetaActivity | list[MetaActivity] = None,
+		meta_extra: None | dict[str, Any] = None
 	) -> tuple[ActivityRegister, dict[str, Any]]: # activity register, meta_extra
 
 		ar: ActivityRegister = {}
@@ -194,7 +193,7 @@ class AbsCompiler(AmpelABC, AmpelBaseModel, abstract=True):
 			frozenset[tuple[str, Any]], # key: traceid
 			tuple[ActivityRegister, dict[str, Any]] # activity register, meta_extra
 		],
-		now: Union[int, float]
+		now: int | float
 	) -> tuple[list[MetaRecord], list[Tag]]:
 
 		recs: list[MetaRecord] = []

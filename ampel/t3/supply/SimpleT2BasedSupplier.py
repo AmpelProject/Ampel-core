@@ -7,7 +7,7 @@
 # Last Modified Date:  15.07.2021
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from typing import Any, Optional
+from typing import Any
 from collections.abc import Generator
 from ampel.abstract.AbsT3Supplier import AbsT3Supplier
 from ampel.struct.AmpelBuffer import AmpelBuffer
@@ -20,7 +20,7 @@ class SimpleT2BasedSupplier(AbsT3Supplier):
 	query: dict[str, Any]
 
 	#: minimum # of t2 docs per stock (useful in combination with $or queries)
-	min_docs: Optional[int]
+	min_docs: None | int
 
 	def supply(self, t3s: T3Store) -> Generator[AmpelBuffer, None, None]:
 

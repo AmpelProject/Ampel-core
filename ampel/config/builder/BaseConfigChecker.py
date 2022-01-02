@@ -9,7 +9,7 @@
 
 
 import json
-from typing import Any, Optional, Tuple
+from typing import Any, Tuple
 from collections.abc import Generator
 
 from ampel.log.AmpelLogger import AmpelLogger, DEBUG, ERROR
@@ -24,7 +24,7 @@ class BaseConfigChecker:
 	Validates a config usually build by ConfigBuilder
 	"""
 
-	def __init__(self, config: dict[str, Any], logger: Optional[AmpelLogger] = None, verbose: bool = False):
+	def __init__(self, config: dict[str, Any], logger: None | AmpelLogger = None, verbose: bool = False):
 
 		self.verbose = verbose
 		self.logger = AmpelLogger.get_logger(

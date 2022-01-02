@@ -7,7 +7,6 @@
 # Last Modified Date:  27.05.2021
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from typing import Optional, Union
 from collections.abc import Sequence
 from ampel.model.UnitModel import UnitModel
 
@@ -18,7 +17,7 @@ class T1CombineCompute(UnitModel):
 
 	#: Filter result codes that should trigger this T1.
 	#: If not specified, T1 documents will be created in response to any passing alert.
-	group: Optional[Union[int, Sequence[int]]] = None
+	group: None | int | Sequence[int] = None
 
 	#: T1 compute unit
 	compute: UnitModel

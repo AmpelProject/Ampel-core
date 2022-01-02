@@ -7,7 +7,7 @@
 # Last Modified Date:  21.06.2020
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from typing import Union, Literal, Optional, Any
+from typing import Literal, Any
 from collections.abc import Container, Callable, Sequence
 from ampel.abstract.AbsApplicable import AbsApplicable
 from ampel.base.AuxUnitRegister import AuxUnitRegister
@@ -46,8 +46,8 @@ class ComboDictModifier(AbsApplicable):
 		will keep only the keys 'y' and 'z' of d['a']['b']
 		"""
 		op: Literal['keep_only']
-		key: Optional[str]
-		keep: Union[int, str, Sequence[Union[int, str]]]
+		key: None | str
+		keep: int |  str | Sequence[int | str]
 
 
 	class ClassModifyModel(AmpelBaseModel):
@@ -70,7 +70,7 @@ class ComboDictModifier(AbsApplicable):
 
 
 	logger: AmpelLogger
-	modifications: Sequence[Union[DeleteModel, KeepOnlyModel, ClassModifyModel, FuncModifyModel]]
+	modifications: Sequence[DeleteModel | KeepOnlyModel | ClassModifyModel | FuncModifyModel]
 
 	# Whether fields can be directly altered/modified or not
 	# If not, new dict instances must be created to modify existing dicts
@@ -102,8 +102,6 @@ class ComboDictModifier(AbsApplicable):
 		self._depth1_ko: dict[str, Container[str]] = {}
 
 		# Mypy does not yet support recursive types
-		# RecursiveModType = dict[str, Union[Callable[[dict], dict], "RecursiveModType"]]
-		# RecursiveDelType = dict[str, Union[dict[str, "RecursiveDelType"]]]
 
 		self._nested_dels: dict[str, Any] = {}
 		self._nested_ko: dict[str, Any] = {}
@@ -303,7 +301,7 @@ class ComboDictModifier(AbsApplicable):
 	# =====================================
 
 	# Delete nested dict elements of any depth
-	def apply_delete(self, d: dict, deletions: Optional[dict] = None) -> dict:
+	def apply_delete(self, d: dict, deletions: None | dict = None) -> dict:
 		"""
 		Method apply_delete:
 		:param deletions: if None, self._nested_dels is used (set by constructor)
@@ -332,7 +330,7 @@ class ComboDictModifier(AbsApplicable):
 
 
 	# Delete nested dict elements of any depth
-	def apply_modify(self, d: dict, modifications: Optional[dict] = None) -> dict:
+	def apply_modify(self, d: dict, modifications: None | dict = None) -> dict:
 		"""
 		Method apply_modify:
 		:param modifications: if None, self._nested_mods is used (set by constructor)
@@ -357,7 +355,7 @@ class ComboDictModifier(AbsApplicable):
 	# Keep only dict elements of any depth
 	######################################
 
-	def apply_keep_only(self, d: dict, nested_map: Optional[dict] = None) -> dict:
+	def apply_keep_only(self, d: dict, nested_map: None | dict = None) -> dict:
 		"""
 		Method apply_keep_only:
 		:param nested_map: if None, self._nested_ko is used (set by constructor)
@@ -378,7 +376,7 @@ class ComboDictModifier(AbsApplicable):
 		return ReadOnlyDict(d) if self.freeze else d
 
 
-	def apply(self, d: dict) -> Optional[dict]:
+	def apply(self, d: dict) -> None | dict:
 		""" Modifies provided dict according to configured operations """
 		try:
 			for op in self.ops:

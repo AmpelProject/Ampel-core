@@ -7,7 +7,6 @@
 # Last Modified Date:  17.12.2021
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from typing import Optional
 from collections.abc import Generator
 
 from ampel.types import OneOrMany, Annotated
@@ -44,7 +43,7 @@ class T3SimpleStager(T3ThreadedStager):
 	def stage(self,
 		gen: Generator[AmpelBuffer, None, None],
 		t3s: T3Store
-	) -> Optional[Generator[T3Document, None, None]]:
+	) -> None | Generator[T3Document, None, None]:
 
 		if len(self.units) == 1:
 			return self.proceed(

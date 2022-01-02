@@ -7,7 +7,6 @@
 # Last Modified Date:  10.12.2021
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from typing import Optional
 from collections.abc import Generator
 from ampel.dev.DevAmpelContext import DevAmpelContext
 from ampel.struct.JournalAttributes import JournalAttributes
@@ -84,7 +83,7 @@ def test_view_generator(dev_context: DevAmpelContext, ingest_stock):
     class SendySend(AbsT3ReviewUnit):
         raise_on_process: bool = False
 
-        def process(self, gen: Generator[SnapView, T3Send, None], t3s: Optional[T3Store] = None):
+        def process(self, gen: Generator[SnapView, T3Send, None], t3s: None | T3Store = None):
             for view in gen:
                 gen.send(
                     (

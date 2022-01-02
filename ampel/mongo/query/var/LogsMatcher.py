@@ -8,7 +8,7 @@
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 import collections.abc
-from typing import Any, Union, Optional, get_args
+from typing import Any, get_args
 from collections.abc import Sequence
 from datetime import datetime
 from bson.objectid import ObjectId
@@ -26,13 +26,13 @@ class LogsMatcher:
 
 	@classmethod
 	def new(cls,
-		after: Optional[str] = None,
-		before: Optional[str] = None,
-		channel: Optional[Union[ChannelId, Sequence[ChannelId]]] = None,
-		stock: Optional[Union[StockId, Sequence[StockId]]] = None,
-		run: Optional[Union[int, Sequence[int], dict[str, Any]]] = None,
-		custom: Optional[dict[str, Any]] = None,
-		id_mapper: Optional[AbsIdMapper] = None,
+		after: None | str = None,
+		before: None | str = None,
+		channel: None | ChannelId | Sequence[ChannelId] = None,
+		stock: None | StockId | Sequence[StockId] = None,
+		run: None | int | Sequence[int] = None,
+		custom: None | dict[str, Any] = None,
+		id_mapper: None | AbsIdMapper = None,
 		flag: int = None,
 		**kwargs # ignored, added for cli convenience
 	) -> "LogsMatcher":
@@ -89,7 +89,7 @@ class LogsMatcher:
 
 
 	def set_channel(self,
-		channel: Union[ChannelId, Sequence[ChannelId], AllOf[ChannelId], AnyOf[ChannelId], OneOf[ChannelId]],
+		channel: ChannelId | Sequence[ChannelId] | AllOf[ChannelId] | AnyOf[ChannelId] | OneOf[ChannelId],
 		compact_logs: bool = True
 	) -> 'LogsMatcher':
 
@@ -113,7 +113,7 @@ class LogsMatcher:
 
 
 	def set_stock(self,
-		stock_id: Union[StockId, Sequence[StockId]]
+		stock_id: StockId | Sequence[StockId]
 	) -> 'LogsMatcher':
 		if (
 			self.id_mapper and (
@@ -128,8 +128,8 @@ class LogsMatcher:
 		return self
 
 
-	def set_run(self, run_id: Union[int, Sequence[int], dict[str, Any]]) -> 'LogsMatcher':
-		self.match['r'] = run_id if isinstance(run_id, (int, dict)) else {'$in': run_id}
+	def set_run(self, run_id: int | Sequence[int]) -> 'LogsMatcher':
+		self.match['r'] = run_id if isinstance(run_id, int) else {'$in': run_id}
 		return self
 
 
@@ -141,7 +141,7 @@ class LogsMatcher:
 		return self
 
 
-	def set_after(self, dt: Union[datetime, str]) -> 'LogsMatcher':
+	def set_after(self, dt: datetime | str) -> 'LogsMatcher':
 		"""
 		Note: time operation is greater than / *equals*
 		:param dt: either datetime object or string (datetime.fromisoformat is used)
@@ -149,7 +149,7 @@ class LogsMatcher:
 		return self._set_time_constraint(dt, '$gte')
 
 
-	def set_before(self, dt: Union[datetime, str]) -> 'LogsMatcher':
+	def set_before(self, dt: datetime | str) -> 'LogsMatcher':
 		"""
 		Note: time operation is before than / *equals*
 		:param dt: either datetime object or string (datetime.fromisoformat is used)
@@ -157,7 +157,7 @@ class LogsMatcher:
 		return self._set_time_constraint(dt, '$lte')
 
 
-	def _set_time_constraint(self, dt: Union[datetime, str], op: str) -> 'LogsMatcher':
+	def _set_time_constraint(self, dt: datetime | str, op: str) -> 'LogsMatcher':
 		"""
 		Note: time operation is greater than / *equals*
 		:param dt: either datetime object or string (datetime.fromisoformat is used)

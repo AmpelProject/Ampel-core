@@ -7,7 +7,7 @@
 # Last Modified Date:  25.03.2021
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from typing import Any, Optional, Union, Literal
+from typing import Any, Literal
 from ampel.cli.ArgParserBuilder import ArgParserBuilder
 from ampel.cli.MaybeIntAction import MaybeIntAction
 from ampel.cli.LoadJSONAction import LoadJSONAction
@@ -90,9 +90,9 @@ class AbsStockCommand(AbsCoreCommand, abstract=True):
 		builder.add_arg('match', "custom-match", metavar="#", action=LoadJSONAction)
 
 
-	def get_tag(self, args: dict[str, Any]) -> Optional[dict[Union[Literal['with'], Literal['without']], dict]]:
+	def get_tag(self, args: dict[str, Any]) -> None | dict[Literal['with', 'without'], dict]:
 
-		tag: Optional[dict[Union[Literal['with'], Literal['without']], dict]] = None
+		tag: None | dict[Literal['with', 'without'], dict] = None
 		if args.get('with_tag'):
 			tag = {'with': args['with_tag']}
 		if args.get('without_tag'):

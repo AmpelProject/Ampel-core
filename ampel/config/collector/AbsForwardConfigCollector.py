@@ -7,7 +7,7 @@
 # Last Modified Date:  02.03.2020
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from typing import Union, Optional, Any, Type
+from typing import Any, Type
 from collections.abc import Sequence
 import ampel.config.builder.FirstPassConfig as fpc # avoid circular import issue
 from ampel.base.decorator import abstractmethod
@@ -23,7 +23,7 @@ class AbsForwardConfigCollector(dict, AmpelABC, abstract=True):
 		root_config: 'fpc.FirstPassConfig',
 		conf_section: str,
 		target_collector_type: type,
-		logger: Optional[AmpelLogger] = None,
+		logger: None | AmpelLogger = None,
 		verbose: bool = False,
 	) -> None:
 
@@ -42,9 +42,9 @@ class AbsForwardConfigCollector(dict, AmpelABC, abstract=True):
 
 
 	def add(self,
-		arg: Union[dict[str, Any], list[Any], str],
+		arg: dict[str, Any] | list[Any] | str,
 		dist_name: str,
-		version: Union[str, float, int],
+		version: str | float | int,
 		register_file: str,
 	) -> None:
 
@@ -75,14 +75,14 @@ class AbsForwardConfigCollector(dict, AmpelABC, abstract=True):
 
 	@abstractmethod
 	def get_path(self,
-		arg: Union[dict[str, Any], str],
+		arg: dict[str, Any] | str,
 		dist_name: str,
-		version: Union[str, float, int],
+		version: str | float | int,
 		register_file: str,
-	) -> Optional[Sequence[Union[int, str]]]:
+	) -> None | Sequence[int | str]:
 		...
 
 
-	def error(self, msg: str, exc_info: Optional[Any] = None) -> None:
+	def error(self, msg: str, exc_info: None | Any = None) -> None:
 		self.logger.error(msg, exc_info=exc_info)
 		self.has_error = True

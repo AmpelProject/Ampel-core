@@ -7,7 +7,7 @@
 # Last Modified Date:  16.03.2021
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from typing import Optional, Literal, Any
+from typing import Literal, Any
 from collections.abc import Sequence
 from pymongo.collection import Collection
 from ampel.base.AmpelFlexModel import AmpelFlexModel
@@ -41,7 +41,7 @@ class LogsLoader(AmpelFlexModel):
 	hexify: bool = True
 	resolve_flag: bool = True
 	read_only: bool = False
-	remove_keys: Optional[list[str]] = ["channel"]
+	remove_keys: None | list[str] = ["channel"]
 	datetime_ouput: Literal['string', 'date'] = 'string'
 	datetime_key: str = '_id'
 	verbose: bool = False
@@ -50,8 +50,8 @@ class LogsLoader(AmpelFlexModel):
 
 	def fetch_logs(self,
 		col: Collection,
-		match: Optional[dict[str, Any]] = None,
-		channel: Optional[dict[str, Any]] = None
+		match: None | dict[str, Any] = None,
+		channel: None | dict[str, Any] = None
 	) -> Sequence[LogDocument]:
 		"""
 		:param match: match criteria
