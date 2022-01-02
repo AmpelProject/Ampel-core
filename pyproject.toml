@@ -43,7 +43,7 @@ ampel = 'ampel.cli.main:main'
 'buffer Match and view or save ampel buffers' = 'ampel.cli.BufferCommand'
 
 [tool.poetry.dependencies]
-ampel-interface = {version = "^0.8.2-alpha.6"}
+ampel-interface = {version = "^0.8.3-alpha.1"}
 python = ">=3.10,<3.11"
 pymongo = "^4.0"
 PyYAML = ">=5.4,<7.0"
@@ -65,7 +65,7 @@ ujson = "^4.0.0"
 [tool.poetry.dev-dependencies]
 pytest = "^6.2.5"
 pytest-cov = "^3.0.0"
-mypy = "^0.910"
+mypy = "^0.930"
 pytest-asyncio = "^0.15.1"
 pytest-mock = "^3.6.1"
 mongomock = "^3.23.0"
