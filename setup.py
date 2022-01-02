@@ -24,7 +24,7 @@ package_data = {
 
 install_requires = [
 	'PyYAML>=5.4.1,<7.0.0',
-	'prometheus-client>=0.9.0,<=0.10.1',
+	'prometheus-client>=0.9.0,<=0.12',
 	'psutil>=5.8.0,<6.0.0',
 	'pydantic>=1.8,<2',
 	'pymongo>=3.10,<5.0',
@@ -84,5 +84,5 @@ setup(
     install_requires = install_requires,
     extras_require = extras_require,
     entry_points = entry_points,
-    python_requires = '>=3.9,<4.0'
+    python_requires = '>=3.10,<4.0'
 )
