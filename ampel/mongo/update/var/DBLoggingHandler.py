@@ -57,7 +57,7 @@ class DBLoggingHandler(AmpelBaseModel):
 
 	level: int
 	col_name: str = "logs"
-	aggregate_interval: float = 1
+	aggregate_interval: float = 1.
 	expand_extra: bool = True
 	flush_len: int = 1000
 	auto_flush: bool = False
