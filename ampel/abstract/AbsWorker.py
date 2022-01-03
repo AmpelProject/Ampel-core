@@ -46,7 +46,7 @@ class AbsWorker(Generic[T], AbsEventUnit, abstract=True):
 	unit_ids: None | list[str]
 
 	#: process only with the given code
-	code_match: OneOrMany[DocumentCode] = [DocumentCode.NEW, DocumentCode.RERUN_REQUESTED]
+	code_match: OneOrMany[int] = [DocumentCode.NEW, DocumentCode.RERUN_REQUESTED]
 
 	#: max number of docs to process in :func:`run`
 	doc_limit: None | int
@@ -177,7 +177,7 @@ class AbsWorker(Generic[T], AbsEventUnit, abstract=True):
 			if garbage_collect:
 				gc.collect()
 
-		event_hdlr.update(logger, docs=self._doc_counter, run=run_id)
+		event_hdlr.update(logger, _overwrite=True, docs=self._doc_counter, run=run_id)
 
 		logger.flush()
 		self._instances.clear()

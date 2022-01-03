@@ -12,7 +12,7 @@ from bson import ObjectId
 from typing import Union, Any, ClassVar, Literal
 from collections.abc import Sequence
 
-from ampel.types import T, UBson, ubson
+from ampel.types import T, OneOrMany, UBson, ubson
 from ampel.struct.UnitResult import UnitResult
 from ampel.enum.DocumentCode import DocumentCode
 from ampel.enum.MetaActionCode import MetaActionCode
@@ -61,7 +61,7 @@ class T2Worker(AbsWorker[T2Document]):
 
 	#: process only those :class:`T2 documents <ampel.content.T2Document.T2Document>`
 	#: with the given :attr:`~ampel.content.T2Document.T2Document.code`
-	code_match: DocumentCode | Sequence[DocumentCode] = [
+	code_match: OneOrMany[int] = [
 		DocumentCode.NEW,
 		DocumentCode.RERUN_REQUESTED,
 		DocumentCode.T2_NEW_PRIO,
