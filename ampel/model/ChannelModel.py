@@ -18,10 +18,10 @@ class ChannelModel(AmpelBaseModel):
 
 	channel: int | str
 	version: int | float | str
-	purge: PurgeModel = {
-		'content': {'delay': 100, 'format': 'json', 'unify': True},
-		'logs': {'delay': 50, 'format': 'csv'}
-	} # type: ignore[assignment]
+	purge: PurgeModel = PurgeModel(
+		content={'delay': 100, 'format': 'json', 'unify': True},
+		logs={'delay': 50, 'format': 'csv'}
+	)
 	# view: str = "MongoChannelView"
 	active: bool = True
 	hash: None | int
@@ -32,9 +32,3 @@ class ChannelModel(AmpelBaseModel):
 	#: Identities allowed to access data associated with this channel
 	members: None | Sequence[str]
 	policy: Sequence[str] = []
-
-
-	def dict(self, **kwargs) -> dict[str, Any]:
-		if 'exclude_defaults' not in kwargs:
-			kwargs['exclude_defaults'] = False
-		return super().dict(**kwargs)

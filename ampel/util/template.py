@@ -74,7 +74,7 @@ def filter_units(
 		abs_unit = [abs_unit]
 
 	return [
-		el.dict(exclude_unset=True, by_alias=True)
+		el.dict(exclude_unset=True)
 		for el in units
 		if any(
 			unit in config['unit'][el.unit].get("base", [])

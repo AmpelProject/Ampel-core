@@ -119,7 +119,7 @@ class task_manager:
             if not pm.active:
                 continue
             controller_id = build_unsafe_dict_id(
-                pm.controller.dict(exclude_none=True), ret=str
+                pm.controller.dict(exclude_unset=True), ret=str
             )
             if controller_id in groups:
                 groups[controller_id].append(pm)
