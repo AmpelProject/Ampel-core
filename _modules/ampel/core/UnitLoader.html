@@ -280,15 +280,10 @@
 	<span class="nd">@staticmethod</span>
 	<span class="k">def</span> <span class="nf">get_digest</span><span class="p">(</span><span class="n">Klass</span><span class="p">:</span> <span class="nb">type</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 
-		<span class="k">if</span> <span class="n">Klass</span><span class="o">.</span><span class="vm">__module__</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">sys</span><span class="o">.</span><span class="n">modules</span><span class="p">:</span>
-			<span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Module </span><span class="si">{</span><span class="n">Klass</span><span class="o">.</span><span class="vm">__module__</span><span class="si">}</span><span class="s2"> not loaded&quot;</span><span class="p">)</span>
-
-		<span class="n">fpath</span> <span class="o">=</span> <span class="n">sys</span><span class="o">.</span><span class="n">modules</span><span class="p">[</span><span class="n">Klass</span><span class="o">.</span><span class="vm">__module__</span><span class="p">]</span><span class="o">.</span><span class="vm">__file__</span>
-		<span class="k">if</span> <span class="n">fpath</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-			<span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;File not found: </span><span class="si">{</span><span class="n">sys</span><span class="o">.</span><span class="n">modules</span><span class="p">[</span><span class="n">Klass</span><span class="o">.</span><span class="vm">__module__</span><span class="p">]</span><span class="o">.</span><span class="vm">__file__</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-
 		<span class="k">try</span><span class="p">:</span>
-			<span class="k">return</span> <span class="n">blake2b</span><span class="p">(</span><span class="n">Path</span><span class="p">(</span><span class="n">fpath</span><span class="p">)</span><span class="o">.</span><span class="n">read_bytes</span><span class="p">())</span><span class="o">.</span><span class="n">hexdigest</span><span class="p">()[:</span><span class="mi">7</span><span class="p">]</span>
+			<span class="k">return</span> <span class="n">blake2b</span><span class="p">(</span>
+				<span class="n">Path</span><span class="p">(</span><span class="n">sys</span><span class="o">.</span><span class="n">modules</span><span class="p">[</span><span class="n">Klass</span><span class="o">.</span><span class="vm">__module__</span><span class="p">]</span><span class="o">.</span><span class="vm">__file__</span><span class="p">)</span><span class="o">.</span><span class="n">read_bytes</span><span class="p">()</span> <span class="c1"># type: ignore</span>
+			<span class="p">)</span><span class="o">.</span><span class="n">hexdigest</span><span class="p">()[:</span><span class="mi">7</span><span class="p">]</span>
 		<span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
 			<span class="k">return</span> <span class="s2">&quot;unspecified&quot;</span>
 
