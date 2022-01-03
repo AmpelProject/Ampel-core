@@ -131,7 +131,7 @@ class AmpelController:
 		d: dict[int, list[ProcessModel]] = {}
 		for pm in processes:
 			controller_id = build_unsafe_dict_id(
-				pm.controller.dict(exclude_none=True), ret=int
+				pm.controller.dict(exclude_unset=True), ret=int
 			)
 			if controller_id in d:
 				# Gather process (might raise error in case of invalid process)

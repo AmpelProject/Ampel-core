@@ -11,6 +11,7 @@ from ampel.log.AmpelLogger import AmpelLogger
 from typing import Any
 from ampel.config.builder.FirstPassConfig import FirstPassConfig
 from ampel.abstract.AbsChannelTemplate import AbsChannelTemplate
+from ampel.model.ChannelModel import ChannelModel
 
 
 class ChannelWithProcsTemplate(AbsChannelTemplate):
@@ -21,13 +22,7 @@ class ChannelWithProcsTemplate(AbsChannelTemplate):
 	process: list[dict[str, Any]]
 
 	def get_channel(self, logger: AmpelLogger) -> dict[str, Any]:
-
-		d = self.dict(by_alias=True)
-		del d["process"]
-		if 'template' in d:
-			del d['template']
-		return d
-
+		return self.dict(include=ChannelModel._aks)
 
 	def get_processes(self, logger: AmpelLogger, first_pass_config: FirstPassConfig) -> list[dict[str, Any]]:
 

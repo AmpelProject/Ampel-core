@@ -17,7 +17,7 @@ class ShortIndexModel(AmpelBaseModel):
 	field: str
 	args: None | dict = None
 
-	def dict(self, **kwargs) -> dict[str, Any]:
+	def dict(self, include: None | set[str] = None, exclude: None | set[str] = None, exclude_defaults: bool = False, exclude_unset: bool = False) -> dict[str, Any]:
 		if self.args:
 			return {
 				"index": [(self.field, 1)],
