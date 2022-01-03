@@ -35,6 +35,6 @@ class IngestDirective(AmpelBaseModel):
 	channel: ChannelId
 
 	#: Potientially filter input datapoints
-	filter: None | FilterModel
+	filter: None | FilterModel = None
 
 	ingest: IngestBody = IngestBody()
