@@ -33,15 +33,4 @@ class ContextUnit(AmpelBaseModel):
 
 		super().__init__(**kwargs)
 
-		d = self.__dict__
-		excl = {
-			k for k, v in self._annots.items()
-			if type(v) is ttf and v.__metadata__[0] == TRACELESS
-		}
-
-		self._trace_content = {
-			k: d[k]
-			for k in sorted(d)
-			if k not in excl and
-			not isinstance(d[k], Secret)
-		}
+		self._trace_content = dict(sorted(self.dict(exclude_unset=False, exclude_defaults=False).items()))

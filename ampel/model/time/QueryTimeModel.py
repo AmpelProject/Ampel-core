@@ -21,15 +21,8 @@ class QueryTimeModel(AmpelBaseModel):
 	def __bool__(self) -> bool:
 		return self.before is not None or self.after is not None
 
-	def dict(self, **kwargs) -> dict[str, Any]:
-		"""
-		Example:
-		{
-			'$gt': 1575000000.003819,
-			'$lt': 1575966106.003819
-		}
-		"""
-		d = super().dict()
+	def dict(self, include: None | set[str] = None, exclude: None | set[str] = None, exclude_defaults: bool = False, exclude_unset: bool = False) -> dict[str, Any]:
+		d = super().dict(include=include, exclude=exclude, exclude_defaults=exclude_defaults, exclude_unset=exclude_unset)
 		d['$lt'] = d.pop('before')
 		d['$gt'] = d.pop('after')
 		return {k: v for k, v in d.items() if v is not None}
