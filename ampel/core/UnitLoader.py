@@ -245,15 +245,10 @@ class UnitLoader:
 	@staticmethod
 	def get_digest(Klass: type) -> str:
 
-		if Klass.__module__ not in sys.modules:
-			raise ValueError(f"Module {Klass.__module__} not loaded")
-
-		fpath = sys.modules[Klass.__module__].__file__
-		if fpath is None:
-			raise ValueError(f"File not found: {sys.modules[Klass.__module__].__file__}")
-
 		try:
-			return blake2b(Path(fpath).read_bytes()).hexdigest()[:7]
+			return blake2b(
+				Path(sys.modules[Klass.__module__].__file__).read_bytes() # type: ignore
+			).hexdigest()[:7]
 		except Exception:
 			return "unspecified"
 
