@@ -92,25 +92,25 @@ class EventHandler:
 		)
 
 
-	def update(self, logger: AmpelLogger, save_duration: bool = True, **kwargs) -> None:
+	def update(self, logger: AmpelLogger, _save_duration: bool = True, _overwrite: bool = False, **kwargs) -> None:
 		""" :raises: AmpelLoggingError """
 
 		upd: dict[str, Any] = {}
 
 		if self.extra:
 			for k, v in self.extra.items():
-				if k in self.dkeys:
+				if k in self.dkeys and not _overwrite:
 					logger.error(f"Cannot overwrite already existing event value for key {k}")
 					continue
 				upd[k] = v
 
 		for k, v in kwargs.items():
-			if k in self.dkeys:
+			if k in self.dkeys and not _overwrite:
 				logger.error(f"Cannot overwrite already existing event value for key {k}")
 				continue
 			upd[k] = v
 
-		if save_duration:
+		if _save_duration:
 			upd['duration'] = round(time() - self.ins_id.generation_time.timestamp(), 3)
 		elif not upd:
 			return
