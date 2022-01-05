@@ -18,10 +18,10 @@ class ChannelModel(AmpelBaseModel):
 
 	channel: int | str
 	version: int | float | str
-	purge: PurgeModel = PurgeModel(
-		content={'delay': 100, 'format': 'json', 'unify': True},
-		logs={'delay': 50, 'format': 'csv'}
-	)
+	#purge: PurgeModel = PurgeModel(
+	#	content={'delay': 100, 'format': 'json', 'unify': True},
+	#	logs={'delay': 50, 'format': 'csv'}
+	#)
 	# view: str = "MongoChannelView"
 	active: bool = True
 	hash: None | int
