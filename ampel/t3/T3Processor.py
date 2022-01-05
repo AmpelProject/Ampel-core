@@ -42,7 +42,7 @@ class T3Processor(AbsEventUnit):
 
 	template: None | str = None
 	include: None | T3IncludeDirective
-	execute: OneOrMany[Annotated[UnitModel, AbsT3ControlUnit]]
+	execute: Annotated[OneOrMany[UnitModel], AbsT3ControlUnit]
 
 
 	def __init__(self, **kwargs) -> None:
