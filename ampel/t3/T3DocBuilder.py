@@ -9,7 +9,7 @@
 
 from time import time
 from datetime import datetime
-from typing import Any
+from typing import Any, Union
 from collections.abc import Iterable
 
 from ampel.types import Traceless, StockId, UBson, ubson
@@ -32,10 +32,10 @@ from ampel.util.mappings import dictify
 from ampel.util.tag import merge_tags
 from ampel.util.hash import build_unsafe_dict_id
 
-AbsT3s = AbsT3ControlUnit | AbsT3ReviewUnit | AbsT3PlainUnit
+AbsT3s = Union[AbsT3ControlUnit, AbsT3ReviewUnit, AbsT3PlainUnit]
 
 
-class T3DocBuilder(T3DocBuilderModel, ContextUnit):
+class T3DocBuilder(ContextUnit, T3DocBuilderModel):
 	"""
 	Provides methods for handling UnitResult and generating a T3Document out of it
 	"""
