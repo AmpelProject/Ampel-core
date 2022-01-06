@@ -5,6 +5,7 @@ on:
     branches:
       - master
       - renovate/*
+      - dev/*
     tags:
       - v*
   pull_request:
