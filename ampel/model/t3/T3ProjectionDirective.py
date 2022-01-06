@@ -9,7 +9,6 @@
 
 
 from collections.abc import Sequence
-from pydantic import validator
 from ampel.model.UnitModel import UnitModel
 from ampel.base.AmpelBaseModel import AmpelBaseModel
 
@@ -28,8 +27,7 @@ class T3ProjectionDirective(AmpelBaseModel):
 	#: t3 units (AbsT3ReviewUnit) to execute
 	execute: Sequence[UnitModel]
 
-	@validator('execute', pre=True)
-	def cast_to_sequence_if_need_be(cls, v):
-		if isinstance(v, dict):
-			return [v]
-		return v
+	def __init__(self, **kwargs):
+		if isinstance(v := kwargs.get("execute"), (dict, UnitModel)):
+			kwargs["execute"] = [v]
+		super().__init__(**kwargs)

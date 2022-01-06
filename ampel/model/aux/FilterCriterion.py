@@ -8,7 +8,6 @@
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 import collections, operator
-from pydantic import validator
 from typing import Any, Type
 from collections.abc import Callable
 from ampel.base.AmpelBaseModel import AmpelBaseModel
@@ -32,16 +31,13 @@ class FilterCriterion(AmpelBaseModel):
 	operator: Callable
 	value: Any
 
-	@validator('type', pre=True)
-	def load_type(cls, v):
-		if isinstance(v, str):
-			return getattr(collections.abc, v)
-		return v
+	def __init__(self, **kwargs):
+		if isinstance(type_kw := kwargs.get("type"), str):
+			kwargs["type"] = getattr(collections.abc, type_kw)
+		
+		if isinstance(operator_kw := kwargs.get("operator"), str):
+			if operator_kw not in ops:
+				raise ValueError(f"Unknown operator: {operator_kw}")
+			kwargs["operator"] = ops[operator_kw]
 
-	@validator('operator', pre=True)
-	def load_operator(cls, v):
-		if isinstance(v, str):
-			if v not in ops:
-				raise ValueError(f"Unknown operator: {v}")
-			return ops[v]
-		return v
+		super().__init__(**kwargs)

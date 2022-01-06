@@ -8,7 +8,6 @@
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from typing import Any
-from pydantic import validator
 from ampel.types import strict_iterable
 from ampel.util.collections import check_seq_inner_type
 from ampel.util.docstringutils import gendocstring
@@ -67,9 +66,11 @@ class QueryMatchModel(AmpelBaseModel):
 	field: str
 	logic: Any
 
+	def __init__(self, **kwargs):
+		kwargs["logic"] = self.check_format(kwargs.get("logic"))
+		super().__init__(**kwargs)
 
-	@validator('logic', whole=True, pre=True)
-	def check_format(cls, v, values, **kwargs):
+	def check_format(self, v: Any) -> dict[str, Any]:
 
 		#print("--------------------------------")
 		#print("QueryMatchModel: v: %s" % str(v))
