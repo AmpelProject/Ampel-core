@@ -286,16 +286,12 @@ class ProcessMorpher:
 			if isinstance(conf, dict):
 
 				if override := d.get("override"):
-					conf = {**conf, **override}
+					conf |= override
 
 				if fqn := out_config['unit'][t2_unit].get('fqn'):
-
 					T2Unit = getattr(import_module(fqn), fqn.split('.')[-1])
-					T2Unit.__init__ = AmpelBaseModel.__init__
-					conf = T2Unit(**conf).__dict__
-
+					conf = T2Unit.validate(conf) # dictify ?
 				else:
-
 					self.logger.warn(
 						f"T2 unit {t2_unit} not installed locally. "
 						f"Building *unsafe* conf dict hash: "
