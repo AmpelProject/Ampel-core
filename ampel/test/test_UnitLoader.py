@@ -78,7 +78,7 @@ def test_resolve_secret_from_config(secrets, dev_context: DevAmpelContext, monke
     # and also validated without instantiating
     with dev_context.loader.validate_unit_models():
         UnitModel(unit="NiceAndConcrete", config={"seekrit": {"label": "dict"}})
-        with pytest.raises(ValueError):
+        with pytest.raises(TypeError):
             UnitModel(unit="NiceAndConcrete")
 
     # unit with abstract secret field cannot be instantiated
@@ -106,7 +106,7 @@ def test_unit_validation(dev_context: DevAmpelContext):
         UnitModel(unit="Dummy", config={"param": 37})
         with pytest.raises(TypeError):
             UnitModel(unit="Dummy", config={"param": "fish"})
-        with pytest.raises(ValueError):
+        with pytest.raises(TypeError):
             UnitModel(unit="Dummy", config={"nonexistant_param": True})
 
         t3_config: dict[str, Any] = {
@@ -139,7 +139,7 @@ def test_unit_validation(dev_context: DevAmpelContext):
         # recursive validation
         UnitModel(unit="T3Processor", config=t3_config)
 
-        #with pytest.raises(ValueError):
+        #with pytest.raises(TypeError):
         #    t3_config["execute"][0]["config"]["supply"]["config"]["select"]["unit"] = "NotActuallyAUnit"
         #    UnitModel(unit="T3Processor", config=t3_config)
         #t3_config["execute"][0]["config"]["supply"]["config"]["select"]["unit"] = "NotActuallyAUnit"
