@@ -15,7 +15,7 @@ from ampel.model.ProcessModel import ProcessModel
 from ampel.util.recursion import walk_and_process_dict
 from ampel.util.mappings import dictify
 from ampel.util.hash import build_unsafe_dict_id
-from ampel.base.AmpelBaseModel import AmpelBaseModel
+from ampel.base.LogicalUnit import LogicalUnit
 
 
 class ProcessMorpher:
@@ -290,9 +290,8 @@ class ProcessMorpher:
 
 				if fqn := out_config['unit'][t2_unit].get('fqn'):
 
-					T2Unit = getattr(import_module(fqn), fqn.split('.')[-1])
-					T2Unit.__init__ = AmpelBaseModel.__init__
-					conf = T2Unit(**conf).__dict__
+					T2Unit: LogicalUnit = getattr(import_module(fqn), fqn.split('.')[-1])
+					conf = T2Unit.validate(conf)
 
 				else:
 
