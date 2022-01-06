@@ -8,6 +8,7 @@
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import json, yaml, pkg_resources, os, re
+from functools import partial
 from pkg_resources import EggInfoDistribution, DistInfoDistribution # type: ignore[attr-defined]
 from typing import Dict, Any, Union, Callable, List, Optional
 from ampel.config.builder.ConfigBuilder import ConfigBuilder
@@ -83,7 +84,7 @@ class DistConfigBuilder(ConfigBuilder):
 			# ("controller", "processor", "unit", "alias", "process")
 			for unit_type in ("alias", "process"):
 				if tier_conf_file := self.get_conf_file(all_conf_files, f"{unit_type}.{ext}"):
-					self.load_tier_config_file(distrib, tier_conf_file, unit_type) # type: ignore
+					self.load_conf_using_func(distrib, tier_conf_file, partial(self.register_tier_conf, unit_type))
 
 			# Try to load templates from folder template (defined by 'Ampel-ZTF' for ex.)
 			if template_conf_files := self.get_conf_files(all_conf_files, "/template/"):
@@ -104,6 +105,24 @@ class DistConfigBuilder(ConfigBuilder):
 				f"Error occured while loading configuration files from the distribution '{dist_name}'",
 				exc_info=e
 			)
+
+
+	def register_tier_conf(self,
+		root_key: str,
+		d: dict[str,Any],
+		dist_name: str,
+		version: str,
+		file_rel_path: str,
+	):
+		for k in ("t0", "t1", "t2", "t3", "ops"):
+			if k in d:
+				self.first_pass_config[root_key][k].add(
+					d[k],
+					dist_name = dist_name,
+					version = version,
+					register_file = file_rel_path,
+				)
+
 
 
 	def load_conf_using_func(self,
@@ -147,63 +166,6 @@ class DistConfigBuilder(ConfigBuilder):
 			self.error = True
 			self.logger.error(
 				f"Error occured loading '{file_rel_path}' from distribution '{distrib.project_name}'",
-				exc_info=e
-			)
-
-
-	def load_tier_config_file(self,
-		distrib: Union[EggInfoDistribution, DistInfoDistribution],
-		file_rel_path: str,
-		root_key: str
-	) -> None:
-		"""
-		Files loaded by this method must have the following JSON structure:
-		{
-			"t0": { ... },
-			"t1": { ... },
-			...
-		}
-		whereby the t0, t1, t2 and t3 keys are optional (at least one is required though)
-		"""
-
-		try:
-
-			if self.verbose:
-				self.logger.log(VERBOSE,
-					f"Loading {file_rel_path} from distribution '{distrib.project_name}'"
-				)
-
-			if file_rel_path.endswith("json"):
-				load = json.loads
-			elif file_rel_path.endswith("yml") or file_rel_path.endswith("yaml"):
-				load = yaml.safe_load # type: ignore
-
-			d = load(
-				distrib.get_resource_string(__name__, file_rel_path)
-				if not os.path.isabs(file_rel_path)
-				else file_rel_path
-			)
-
-			for k in ("t0", "t1", "t2", "t3", "ops"):
-				if k in d:
-					self.first_pass_config[root_key][k].add(
-						d[k],
-						dist_name = distrib.project_name,
-						version = distrib.version,
-						register_file = file_rel_path,
-					)
-
-		except FileNotFoundError:
-			self.error = True
-			self.logger.error(
-				f"File '{file_rel_path}' not found in distribution '{distrib.project_name}'"
-			)
-
-		except Exception as e:
-			self.error = True
-			self.logger.error(
-				f"Error occured loading '{file_rel_path}' "
-				f"from distribution '{distrib.project_name}')",
 				exc_info=e
 			)
 
