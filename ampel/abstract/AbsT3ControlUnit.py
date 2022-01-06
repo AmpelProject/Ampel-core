@@ -18,7 +18,7 @@ from ampel.content.T3Document import T3Document
 from ampel.log.AmpelLogger import AmpelLogger
 
 
-class AbsT3ControlUnit(AmpelABC, ContextUnit, abstract=True):
+class AbsT3ControlUnit(ContextUnit, AmpelABC, abstract=True):
 	"""
 	Abstract class for control T3 units, which like AbsT3PlainUnit but
 	unlike AbsT3ReviewUnit, receive just a T3Store instance via
