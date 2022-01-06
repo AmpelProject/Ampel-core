@@ -10,7 +10,7 @@
 from typing import Any, Literal, Union
 from collections.abc import Sequence
 
-from ampel.types import ChannelId, Tag
+from ampel.types import OneOrMany, ChannelId, Tag
 from ampel.model.operator.AllOf import AllOf
 from ampel.model.operator.AnyOf import AnyOf
 from ampel.model.operator.OneOf import OneOf
@@ -20,10 +20,6 @@ from ampel.model.t3.T2FilterModel import T2FilterModel
 from ampel.model.UnitModel import UnitModel
 from ampel.log.AmpelLogger import AmpelLogger
 from ampel.abstract.AbsProcessTemplate import AbsProcessTemplate
-
-
-UnitModelOrString = Union[UnitModel, str]
-UnitModelSequence = Sequence[UnitModelOrString] | UnitModelOrString
 
 
 class FilterModel(AmpelBaseModel):
@@ -48,7 +44,7 @@ class PeriodicSummaryT3(AbsProcessTemplate):
     #: expressions, e.g: ``every().day.at("15:00")`` or ``every(42).minutes``
     #:
     #: .. note:: all times are are expressed in UTC
-    schedule: str | Sequence[str]
+    schedule: OneOrMany[str]
 
     #: Channel selection.
     channel: None | ChannelId | AllOf[ChannelId] | AnyOf[ChannelId] | OneOf[ChannelId] = None
@@ -68,10 +64,10 @@ class PeriodicSummaryT3(AbsProcessTemplate):
     filter: None | FilterModel = None
 
     #: Complement stages. See :ref:`t3-directive-complement`.
-    complement: None | UnitModelSequence = None
+    complement: None | OneOrMany[str | UnitModel] = None
 
     #: Units to run. See :ref:`t3-directive-run-execute`.
-    run: UnitModelSequence
+    run: OneOrMany[str | UnitModel]
 
     def get_process(self, config: dict[str, Any], logger: AmpelLogger) -> dict[str, Any]:
 
@@ -159,7 +155,7 @@ class PeriodicSummaryT3(AbsProcessTemplate):
             "processor": {
                 "unit": "T3Processor",
                 "config": d,
-            },
+            }
         }
 
         return self._to_dict(ret)
@@ -174,22 +170,19 @@ class PeriodicSummaryT3(AbsProcessTemplate):
             return [cls._to_dict(v) for v in item]
         elif hasattr(item, "dict"):
             return cls._to_dict(item.dict())
-        else:
-            return item
+        return item
 
-    def get_units(self, units: UnitModelSequence) -> list[dict[str, Any]]:
+    def get_units(self, units: OneOrMany[str | UnitModel]) -> list[dict[str, Any]]:
         if isinstance(units, str):
             return [UnitModel(unit=units).dict()]
         elif isinstance(units, UnitModel):
             return [units.dict()]
-        else:
-            return [self.get_units(u)[0] for u in units]
+        return [self.get_units(u)[0] for u in units]
 
     def get_schedule(self) -> Sequence[str]:
         if isinstance(self.schedule, str):
             return [self.schedule]
-        else:
-            return self.schedule
+        return self.schedule
 
     def get_channel_tag(self) -> None | str | int:
         """
@@ -197,5 +190,4 @@ class PeriodicSummaryT3(AbsProcessTemplate):
         """
         if isinstance(self.channel, str) or isinstance(self.channel, int):
             return self.channel
-        else:
-            return None
+        return None
