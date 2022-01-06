@@ -11,7 +11,7 @@ from collections.abc import Sequence
 from ampel.model.UnitModel import UnitModel
 from ampel.model.ingest.T2Compute import T2Compute
 
-class T1CombineComputeNow(UnitModel):
+class T1CombineComputeNow(UnitModel[str]):
 	"""
 	Combine datapoints into a t1 document requiring computation by a AbsT1ComputeUnit,
 	which is run on the fly. Then, create associated t2 documents

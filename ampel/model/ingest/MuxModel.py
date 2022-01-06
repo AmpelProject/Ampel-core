@@ -16,7 +16,7 @@ from ampel.model.ingest.T1CombineComputeNow import T1CombineComputeNow
 from ampel.model.ingest.T2Compute import T2Compute
 
 
-class MuxModel(UnitModel):
+class MuxModel(UnitModel[str]):
 	"""
 	unit
 	model

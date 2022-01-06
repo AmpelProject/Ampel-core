@@ -9,11 +9,10 @@
 
 from typing import Generic
 from collections.abc import Sequence
-from ampel.types import T
 from ampel.model.UnitModel import UnitModel
 from ampel.model.DPSelection import DPSelection
 
-class T2Compute(UnitModel[T], Generic[T]):
+class T2Compute(UnitModel[str]):
 
 	#: Ingester options
 	ingest: None | str | DPSelection = None
