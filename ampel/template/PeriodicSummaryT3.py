@@ -7,7 +7,7 @@
 # Last Modified Date: 14.12.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
-from typing import Any, Literal
+from typing import Any, Literal, Union
 from collections.abc import Sequence
 
 from ampel.types import ChannelId, Tag
@@ -22,7 +22,7 @@ from ampel.log.AmpelLogger import AmpelLogger
 from ampel.abstract.AbsProcessTemplate import AbsProcessTemplate
 
 
-UnitModelOrString = UnitModel | str
+UnitModelOrString = Union[UnitModel, str]
 UnitModelSequence = Sequence[UnitModelOrString] | UnitModelOrString
 
 
