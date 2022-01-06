@@ -23,11 +23,11 @@ class AliasableModel(AmpelBaseModel):
 	_config: ClassVar['None | AmpelConfig'] = None
 
 	@classmethod
-	def validate(cls, value: Any, _omit_traceless: bool = True) -> "AliasableModel":
+	def validate(cls, value: Any) -> "AliasableModel":
 		if cls._config and isinstance(value, str):
 			d = cls._config.get(f"alias.t3.%{value}", dict)
 			if d:
 				value = d
 			else:
 				raise ValueError(f"{cls.__name__} alias '{value}' not found in Ampel config")
-		return super().validate(value, _omit_traceless)
+		return super().validate(value)
