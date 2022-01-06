@@ -11,15 +11,15 @@ from typing import Any, Type
 from ampel.types import OneOrMany
 from ampel.util.pretty import prettyjson
 from ampel.log.AmpelLogger import AmpelLogger
+from ampel.base.AmpelUnit import AmpelUnit
 from ampel.model.UnitModel import UnitModel
-from ampel.base.AmpelBaseModel import AmpelBaseModel
 from ampel.t3.T3ReviewUnitExecutor import T3ReviewUnitExecutor
 from ampel.model.t3.T3IncludeDirective import T3IncludeDirective
 from ampel.model.t3.T3DocBuilderModel import T3DocBuilderModel
 from ampel.abstract.AbsProcessorTemplate import AbsProcessorTemplate
 
 
-class TPLCompactT3(T3DocBuilderModel, AbsProcessorTemplate):
+class TPLCompactT3(AbsProcessorTemplate, T3DocBuilderModel):
 	"""
 	Enables compact run blocks such as:
 
@@ -74,7 +74,7 @@ class TPLCompactT3(T3DocBuilderModel, AbsProcessorTemplate):
 	execute: OneOrMany[dict[str, Any]]
 
 
-	def _merge_confs(self, d: dict[str, Any], Klass: type[AmpelBaseModel]) -> dict[str, Any]:
+	def _merge_confs(self, d: dict[str, Any], Klass: type[AmpelUnit]) -> dict[str, Any]:
 
 		conf = {
 			k: getattr(self, k)
@@ -91,7 +91,7 @@ class TPLCompactT3(T3DocBuilderModel, AbsProcessorTemplate):
 
 
 	# Mandatory override
-	def get_model(self, config: dict[str, Any], logger: AmpelLogger) -> UnitModel:
+	def get_model(self, config: dict[str, Any], logger: AmpelLogger) -> UnitModel[str]:
 
 
 		out: list[dict] = []
