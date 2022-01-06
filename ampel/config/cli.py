@@ -48,12 +48,13 @@ def transform(args: Namespace) -> None:
 
 def build(args: Namespace) -> int:
     """Build config file from installed distributions"""
-    cb = DistConfigBuilder(verbose=args.verbose, get_env=args.get_env)
+    cb = DistConfigBuilder(verbose=args.verbose)
     try:
         cb.load_distributions()
         config = cb.build_config(
             stop_on_errors=0 if args.ignore_errors else 2,
             config_validator="ConfigValidator",
+            get_unit_env=args.get_env,
         )
     except Exception as exc:
         # assume that BadConfig means the error was already logged

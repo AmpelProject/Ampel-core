@@ -38,7 +38,7 @@ class FirstPassConfig(dict):
 		"resource": ResourceConfigCollector,
 	}
 
-	def __init__(self, logger: AmpelLogger = None, verbose: bool = False, get_env: bool = True) -> None:
+	def __init__(self, logger: AmpelLogger = None, verbose: bool = False) -> None:
 
 		self.logger = AmpelLogger.get_logger() if logger is None else logger
 
@@ -49,7 +49,7 @@ class FirstPassConfig(dict):
 
 		d['pwd'] = []
 
-		d['unit'] = UnitConfigCollector(conf_section="unit", logger=logger, verbose=verbose, get_env=get_env)
+		d['unit'] = UnitConfigCollector(conf_section="unit", logger=logger, verbose=verbose)
 
 		# Allow process to be defined in root key
 		d['process'] = ForwardProcessConfigCollector(

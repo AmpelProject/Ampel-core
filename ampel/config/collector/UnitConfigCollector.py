@@ -25,8 +25,7 @@ class RemoteUnitDefinition(StrictModel):
 class UnitConfigCollector(ConfigCollector):
 
 
-	def __init__(self, get_env: bool = True, **kwargs) -> None:
-		self.get_env = get_env
+	def __init__(self, **kwargs) -> None:
 		super().__init__(**kwargs)
 		self.err_fqns: list[str] = []
 
