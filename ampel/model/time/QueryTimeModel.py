@@ -12,17 +12,16 @@ from ampel.base.AmpelBaseModel import AmpelBaseModel
 
 
 class QueryTimeModel(AmpelBaseModel):
-	"""
-	Standardized parameter for the class QueryMatchStock
-	"""
+	""" Standardized parameter for class QueryMatchStock """
+
 	before: None | int | float = None
 	after: None | int | float = None
 
 	def __bool__(self) -> bool:
 		return self.before is not None or self.after is not None
 
-	def dict(self, include: None | set[str] = None, exclude: None | set[str] = None, exclude_defaults: bool = False, exclude_unset: bool = False) -> dict[str, Any]:
-		d = super().dict(include=include, exclude=exclude, exclude_defaults=exclude_defaults, exclude_unset=exclude_unset)
+	def dict(self, **kwargs) -> dict[str, Any]:
+		d = super().dict(**kwargs)
 		d['$lt'] = d.pop('before')
 		d['$gt'] = d.pop('after')
 		return {k: v for k, v in d.items() if v is not None}
