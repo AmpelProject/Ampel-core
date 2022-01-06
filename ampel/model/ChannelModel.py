@@ -8,19 +8,19 @@
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from typing import Union, List, Optional, Dict, Any
-from ampel.model.StrictModel import StrictModel
+from ampel.base.AmpelBaseModel import AmpelBaseModel
 from ampel.model.purge.PurgeModel import PurgeModel
 #from ampel.model.ViewModel import ViewModel
 
 
-class ChannelModel(StrictModel):
+class ChannelModel(AmpelBaseModel):
 
 	channel: Union[int, str]
 	version: Union[int, float, str]
-	purge: PurgeModel = {
-		'content': {'delay': 100, 'format': 'json', 'unify': True},
-		'logs': {'delay': 50, 'format': 'csv'}
-	} # type: ignore[assignment]
+	purge: PurgeModel = PurgeModel(
+		content={'delay': 100, 'format': 'json', 'unify': True}, # type: ignore[arg-type]
+		logs={'delay': 50, 'format': 'csv'} # type: ignore[arg-type]
+	) 
 	# view: str = "MongoChannelView"
 	active: bool = True
 	hash: Optional[int]
@@ -32,8 +32,3 @@ class ChannelModel(StrictModel):
 	members: Optional[List[str]]
 	policy: List[str] = []
 
-
-	def dict(self, **kwargs) -> Dict[str, Any]:
-		if 'exclude_defaults' not in kwargs:
-			kwargs['exclude_defaults'] = False
-		return super().dict(**kwargs)

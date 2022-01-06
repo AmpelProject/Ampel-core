@@ -18,9 +18,10 @@ from ampel.config.builder.AbsConfigTemplate import AbsConfigTemplate
 class AbsChannelTemplate(AbsConfigTemplate, ChannelModel, abstract=True):
 
 
-	@abstractmethod
 	def get_channel(self, logger: AmpelLogger) -> Dict[str, Any]:
-		...
+		if not ChannelModel._model:
+			ChannelModel._model = ChannelModel._create_model()
+		return {k: v for k,v in self.__dict__.items() if k in ChannelModel._aks}
 
 	@abstractmethod
 	def get_processes(self, logger: AmpelLogger, first_pass_config: FirstPassConfig) -> List[Dict[str, Any]]:
