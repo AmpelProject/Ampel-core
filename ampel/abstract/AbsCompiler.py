@@ -8,11 +8,10 @@
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from typing import Literal, Any
-from collections.abc import Sequence
-from ampel.types import Tag, ChannelId
+from ampel.types import OneOrMany, Tag, ChannelId
 from ampel.base.AmpelABC import AmpelABC
 from ampel.base.decorator import abstractmethod
-from ampel.base.AmpelBaseModel import AmpelBaseModel
+from ampel.base.AmpelUnit import AmpelUnit
 from ampel.abstract.AbsDocIngester import AbsDocIngester
 from ampel.content.MetaRecord import MetaRecord
 from ampel.content.MetaActivity import MetaActivity
@@ -28,13 +27,12 @@ ActivityRegister = dict[
 ]
 
 
-class AbsCompiler(AmpelABC, AmpelBaseModel, abstract=True):
+class AbsCompiler(AmpelUnit, AmpelABC, abstract=True):
 
 	origin: None | int = None
 	tier: Literal[-1, 0, 1, 2, 3]
 	run_id: int
-	tag: None | Tag | Sequence[Tag]
-
+	tag: None | OneOrMany[Tag]
 
 	def __init__(self, **kwargs) -> None:
 
