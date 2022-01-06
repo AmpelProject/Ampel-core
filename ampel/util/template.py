@@ -11,6 +11,7 @@ from importlib import import_module
 from functools import cache
 from typing import Any
 from collections.abc import Sequence
+from ampel.types import JDict
 from ampel.abstract.AbsTiedT2Unit import AbsTiedT2Unit
 from ampel.model.UnitModel import UnitModel
 from ampel.model.ingest.T2Compute import T2Compute
@@ -19,7 +20,7 @@ from ampel.config.builder.FirstPassConfig import FirstPassConfig
 
 def check_tied_units(
 	all_t2_units: list[T2Compute],
-	first_pass_config: FirstPassConfig | dict[str, Any]
+	first_pass_config: FirstPassConfig | JDict
 ) -> None:
 	"""
 	:raises: ValueError if tied t2 units are present in t2_units but the requred t2 units are not present in t2_compute
@@ -30,10 +31,10 @@ def check_tied_units(
 			tied_units.append(el)
 		
 	def as_unitmodel(t2_unit_model: T2Compute) -> UnitModel:
-		return UnitModel(**{k: v for k, v in t2_unit_model.dict().items() if k in UnitModel._annots})
+		return UnitModel(**{k: v for k, v in t2_unit_model.dict().items() if k in UnitModel.get_model_keys()})
 		
 	@cache
-	def get_default_dependencies(unit: str) -> list[dict[str, Any]]:
+	def get_default_dependencies(unit: str) -> list[JDict]:
 		klass: type[AbsTiedT2Unit] = getattr(
 			import_module(
 				first_pass_config['unit'][unit]['fqn']
@@ -64,8 +65,8 @@ def check_tied_units(
 def filter_units(
 	units: Sequence[UnitModel],
 	abs_unit: str | list[str],
-	config: FirstPassConfig | dict[str, Any]
-) -> list[dict]:
+	config: FirstPassConfig | JDict
+) -> list[JDict]:
 	"""
 	:returns: unit defintions (dict) that are subclass of the provided abstract class name.
 	"""
@@ -83,5 +84,5 @@ def filter_units(
 	]
 
 
-def resolve_shortcut(unit: str | dict[str, Any]) -> dict[str, Any]:
+def resolve_shortcut(unit: str | JDict) -> JDict:
 	return unit if isinstance(unit, dict) else {'unit': unit}
