@@ -22,21 +22,18 @@ class T2Compiler(AbsCompiler):
 	are merged into one single T2 document that references all corresponding channels.
 	"""
 
-	def __init__(self, col: None | str = None, **kwargs) -> None:
-
-		super().__init__(**kwargs)
-		self.col = col
-		self.t2s: dict[
-			# key: (unit name, unit config, link, stock)
-			tuple[UnitId, None | int, T2Link, StockId],
-			tuple[
-				set[ChannelId], # channels (doc)
-				dict[
-					frozenset[tuple[str, Any]], # key: traceid
-					tuple[ActivityRegister, dict[str, Any]] # activity register, meta_extra
-				]
+	col: None | str = None
+	t2s: dict[
+		# key: (unit name, unit config, link, stock)
+		tuple[UnitId, None | int, T2Link, StockId],
+		tuple[
+			set[ChannelId], # channels (doc)
+			dict[
+				frozenset[tuple[str, Any]], # key: traceid
+				tuple[ActivityRegister, dict[str, Any]] # activity register, meta_extra
 			]
-		] = {}
+		]
+	] = {}
 
 
 	def add(self, # type: ignore[override]
