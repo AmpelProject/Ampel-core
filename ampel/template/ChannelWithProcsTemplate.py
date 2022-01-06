@@ -4,7 +4,7 @@
 # License:             BSD-3-Clause
 # Author:              valery brinnel <firstname.lastname@gmail.com>
 # Date:                16.10.2019
-# Last Modified Date:  14.04.2020
+# Last Modified Date:  05.01.2022
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from ampel.log.AmpelLogger import AmpelLogger
@@ -22,7 +22,7 @@ class ChannelWithProcsTemplate(AbsChannelTemplate):
 	process: list[dict[str, Any]]
 
 	def get_channel(self, logger: AmpelLogger) -> dict[str, Any]:
-		return self.dict(include=ChannelModel._aks)
+		return self.dict(include=ChannelModel.get_model_keys())
 
 	def get_processes(self, logger: AmpelLogger, first_pass_config: FirstPassConfig) -> list[dict[str, Any]]:
 

@@ -6,7 +6,7 @@ from ampel.model.ChannelModel import ChannelModel
 
 class ChannelTemplate(AbsChannelTemplate):
     def get_channel(self, logger: AmpelLogger) -> dict[str, Any]:
-        return self.dict(include=ChannelModel._aks)
+        return self.dict(include=ChannelModel.get_model_keys())
     def get_processes(self, logger: AmpelLogger, first_pass_config: FirstPassConfig) -> list[dict[str, Any]]:
         return []
     
