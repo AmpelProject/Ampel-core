@@ -11,7 +11,7 @@ from typing import Any
 from ampel.base.BadConfig import BadConfig
 from ampel.util.pretty import prettyjson
 from ampel.model.ProcessModel import ProcessModel
-from ampel.base.AmpelBaseModel import AmpelBaseModel
+from ampel.base.AmpelUnit import AmpelUnit
 from ampel.config.builder.BaseConfigChecker import BaseConfigChecker
 
 
@@ -35,7 +35,7 @@ class ConfigValidator(BaseConfigChecker):
 
             for tier, proc in self.iter_procs(ignore_inactive):
                 config = self.config["process"][tier][proc]
-                Processor = self.loader.get_class_by_name(config["processor"]['unit'], unit_type=AmpelBaseModel)
+                Processor = self.loader.get_class_by_name(config["processor"]['unit'], unit_type=AmpelUnit)
                 Processor._defaults['process_name'] = "ConfigValidator"
                 try:
                     ProcessModel(**config)

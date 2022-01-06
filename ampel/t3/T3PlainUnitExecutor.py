@@ -16,7 +16,7 @@ from ampel.view.T3Store import T3Store
 from ampel.view.T3DocView import T3DocView
 from ampel.abstract.AbsT3ControlUnit import AbsT3ControlUnit
 from ampel.abstract.AbsT3PlainUnit import AbsT3PlainUnit
-from ampel.base.AmpelBaseModel import AmpelBaseModel
+from ampel.base.AmpelUnit import AmpelUnit
 from ampel.t3.T3DocBuilder import T3DocBuilder
 from ampel.content.T3Document import T3Document
 from ampel.model.UnitModel import UnitModel
@@ -99,7 +99,7 @@ class T3PlainUnitExecutor(AbsT3ControlUnit, T3DocBuilder):
 		if self.target.cache:
 			if isinstance(self.target.cache.config, dict):
 				vc = self.context \
-					.loader.get_class_by_name(self.target.cache.unit, unit_type=AmpelBaseModel) \
+					.loader.get_class_by_name(self.target.cache.unit, unit_type=AmpelUnit) \
 					.validate(self.target.cache.config)
 
 				return build_unsafe_dict_id(dictify(vc))

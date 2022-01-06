@@ -15,7 +15,7 @@ from struct import calcsize
 from typing import BinaryIO, Literal, Any, TypedDict
 
 from ampel.log.AmpelLogger import AmpelLogger, VERBOSE
-from ampel.base.AmpelBaseModel import AmpelBaseModel
+from ampel.base.AmpelUnit import AmpelUnit
 from ampel.util.hash import build_unsafe_dict_id
 from ampel.util.register import read_header, write_header, \
 	get_inner_file_handle, get_outer_file_handle, rescale_header
@@ -27,7 +27,7 @@ class HeaderInfo(TypedDict):
 	payload: dict[str, Any]
 
 
-class AmpelRegister(AmpelBaseModel):
+class AmpelRegister(AmpelUnit):
 	""" # noqa: E101
 
 	General notes:

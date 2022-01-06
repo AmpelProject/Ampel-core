@@ -22,7 +22,7 @@ from ampel.types import ChannelId
 from ampel.mongo.utils import get_ids
 from ampel.log.AmpelLogger import AmpelLogger
 from ampel.config.AmpelConfig import AmpelConfig
-from ampel.base.AmpelBaseModel import AmpelBaseModel
+from ampel.base.AmpelUnit import AmpelUnit
 from ampel.secret.AmpelVault import AmpelVault
 from ampel.mongo.view.AbsMongoView import AbsMongoView
 from ampel.mongo.view.MongoOneView import MongoOneView
@@ -37,7 +37,7 @@ from ampel.mongo.model.MongoClientRoleModel import MongoClientRoleModel
 
 intcol = {'t0': 0, 't1': 1, 't2': 2, 't3': 3, 'stock': 4}
 
-class AmpelDB(AmpelBaseModel):
+class AmpelDB(AmpelUnit):
 	"""
 	Ampel stores information in a dedicated DB.
 	This class allows to create or retrieve the underlying database collections.

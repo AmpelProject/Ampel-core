@@ -11,7 +11,7 @@ from typing import Literal, Any, ClassVar
 from collections.abc import Sequence
 from ampel.base.decorator import abstractmethod
 from ampel.base.AmpelABC import AmpelABC
-from ampel.base.AmpelBaseModel import AmpelBaseModel
+from ampel.base.AmpelUnit import AmpelUnit
 from ampel.config.AmpelConfig import AmpelConfig
 from ampel.secret.AmpelVault import AmpelVault
 from ampel.model.ProcessModel import ProcessModel
@@ -19,7 +19,7 @@ from ampel.log.AmpelLogger import AmpelLogger
 from ampel.metrics.AmpelMetricsRegistry import AmpelMetricsRegistry
 
 
-class AbsProcessController(AmpelABC, AmpelBaseModel, abstract=True):
+class AbsProcessController(AmpelABC, AmpelUnit, abstract=True):
 
 	config: AmpelConfig
 	processes: Sequence[ProcessModel]

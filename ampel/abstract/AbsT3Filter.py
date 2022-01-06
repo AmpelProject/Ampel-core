@@ -10,11 +10,11 @@
 from collections.abc import Iterable, Sequence
 from ampel.base.AmpelABC import AmpelABC
 from ampel.base.decorator import abstractmethod
-from ampel.base.AmpelBaseModel import AmpelBaseModel
+from ampel.base.AmpelUnit import AmpelUnit
 from ampel.struct.AmpelBuffer import AmpelBuffer
 
 
-class AbsT3Filter(AmpelBaseModel, AmpelABC, abstract=True):
+class AbsT3Filter(AmpelUnit, AmpelABC, abstract=True):
 
 	@abstractmethod
 	def filter(self, abufs: Iterable[AmpelBuffer]) -> Sequence[AmpelBuffer]:

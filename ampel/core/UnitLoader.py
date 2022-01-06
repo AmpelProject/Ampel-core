@@ -20,7 +20,7 @@ from ampel.util.collections import ampel_iter
 from ampel.util.freeze import recursive_unfreeze
 from ampel.util.mappings import merge_dicts
 from ampel.view.ReadOnlyDict import ReadOnlyDict
-from ampel.base.AmpelBaseModel import AmpelBaseModel
+from ampel.base.AmpelUnit import AmpelUnit
 from ampel.base.AuxUnitRegister import AuxUnitRegister
 from ampel.base.LogicalUnit import LogicalUnit
 from ampel.core.AmpelContext import AmpelContext
@@ -37,7 +37,7 @@ from ampel.log.handlers.DefaultRecordBufferingHandler import DefaultRecordBuffer
 from ampel.util.hash import build_unsafe_dict_id
 from ampel.util.mappings import dictify
 
-T = TypeVar('T', bound=AmpelBaseModel)
+T = TypeVar('T', bound=AmpelUnit)
 LT = TypeVar('LT', bound=LogicalUnit)
 CT = TypeVar('CT', bound=ContextUnit)
 pyv = f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}"
@@ -163,13 +163,13 @@ class UnitLoader:
 	def new(self, model: UnitModel, *, unit_type: type[T], **kwargs) -> T:
 		...
 	@overload
-	def new(self, model: UnitModel, *, unit_type: None = ..., **kwargs) -> AmpelBaseModel:
+	def new(self, model: UnitModel, *, unit_type: None = ..., **kwargs) -> AmpelUnit:
 		...
 	def new(self,
 		model: UnitModel, *,
 		unit_type: None | type[T] = None,
 		**kwargs
-	) -> AmpelBaseModel | T:
+	) -> AmpelUnit | T:
 		"""
 		Instantiate new object based on provided model and kwargs.
 		:param 'unit_type': performs isinstance check and raise error on mismatch. Enables mypy/other static checks.
@@ -375,7 +375,7 @@ class UnitLoader:
 		def validating_init(slf, **kwargs):
 			super(UnitModel, slf).__init__(**kwargs)
 			unit = self.get_class_by_name(slf.unit)
-			if issubclass(unit, AmpelBaseModel) and not issubclass(unit, AbsProcessController):
+			if issubclass(unit, AmpelUnit) and not issubclass(unit, AbsProcessController):
 				return unit.validate(self.get_init_config(slf.config, slf.override))
 		legit_init = UnitModel.__init__
 		UnitModel.__init__ = validating_init # type: ignore

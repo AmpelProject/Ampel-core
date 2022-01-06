@@ -12,7 +12,7 @@ from bson import ObjectId
 from typing import TYPE_CHECKING
 from logging import LogRecord
 from pymongo.errors import BulkWriteError
-from ampel.base.AmpelBaseModel import AmpelBaseModel
+from ampel.base.AmpelUnit import AmpelUnit
 from ampel.util.mappings import compare_dict_values
 from ampel.util.collections import try_reduce
 from ampel.log.AmpelLogger import AmpelLogger
@@ -50,7 +50,7 @@ def _machine_bytes():
 	return struct.pack("<I", _fnv_1a_24(socket.gethostname().encode()))[:3]
 
 
-class DBLoggingHandler(AmpelBaseModel):
+class DBLoggingHandler(AmpelUnit):
 	""" Saves log events into mongo database """
 
 	__slots__ = "prev_record", "fields_check", "log_dicts", "oid_middle", "warn_lvl"
@@ -73,7 +73,7 @@ class DBLoggingHandler(AmpelBaseModel):
 		:param flush_len: How many log documents should be kept in memory before attempting a database bulk_write operation.
 		"""
 
-		AmpelBaseModel.__init__(self, **kwargs)
+		super().__init__(**kwargs)
 		self._ampel_db = ampel_db
 		self.run_id = run_id
 

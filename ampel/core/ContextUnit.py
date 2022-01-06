@@ -8,14 +8,12 @@
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from ampel.types import Traceless, TRACELESS
-from ampel.base.AmpelBaseModel import AmpelBaseModel
+from ampel.base.AmpelUnit import AmpelUnit
 from ampel.core.AmpelContext import AmpelContext
 from ampel.secret.Secret import Secret
 
-ttf = type(Traceless)
 
-
-class ContextUnit(AmpelBaseModel):
+class ContextUnit(AmpelUnit):
 	"""
 	Base class for units requiring a reference to an AmpelContext instance
 	"""
