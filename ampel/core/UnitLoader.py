@@ -158,18 +158,13 @@ class UnitLoader:
 			model, unit_type=sub_type or ContextUnit, context=context, **kwargs
 		)
 
-
 	@overload
 	def new(self, model: UnitModel, *, unit_type: type[T], **kwargs) -> T:
 		...
 	@overload
 	def new(self, model: UnitModel, *, unit_type: None = ..., **kwargs) -> AmpelUnit:
 		...
-	def new(self,
-		model: UnitModel, *,
-		unit_type: None | type[T] = None,
-		**kwargs
-	) -> AmpelUnit | T:
+	def new(self, model: UnitModel, *, unit_type: None | type[T] = None, **kwargs) -> AmpelUnit | T:
 		"""
 		Instantiate new object based on provided model and kwargs.
 		:param 'unit_type': performs isinstance check and raise error on mismatch. Enables mypy/other static checks.
@@ -187,44 +182,6 @@ class UnitLoader:
 
 		init_config = self.get_init_config(model.config, model.override)
 		unit = Klass(**(init_config | kwargs | (model.secrets or {})))
-		trace_id = None
-
-		# potentially sync trace_ids with DB (Ampel_ext)
-		if provenance and '_trace_content' in unit.__dict__:
-
-			assert self.db
-
-			trace_dict = {
-				'py': pyv,
-				'unit': model.unit,
-				'digest': self.get_digest(Klass),
-				'version': self.config.get(f"unit.{model.unit}.version", str, raise_exc=True)
-			}
-
-			if c := unit.__dict__.get("_trace_content"):
-				trace_dict['config'] = dictify(c)
-
-			if env := self.config.get(f"unit.{model.unit}.env"):
-				if not isinstance(env, dict):
-					raise ValueError("Retrieved environment is not a dict")
-				trace_dict['env'] = env
-
-			try:
-
-				# Note: we could implement a hash collision detection mechanism here
-				trace_id = build_unsafe_dict_id(trace_dict, ret=int)
-
-				# Save trace id to external collection
-				if trace_id not in self.db.trace_ids:
-					trace_dict['_id'] = trace_id
-					self.db.add_trace_id(trace_id, trace_dict)
-
-			# Non-serializable content
-			except Exception:
-				trace_id = 0
-				# raise e
-
-		unit._trace_id = trace_id # type: ignore[union-attr]
 
 		# Resolve secrets
 		for k, v in unit.__dict__.items():
@@ -236,8 +193,49 @@ class UnitLoader:
 				if not self.vault.resolve_secret(v, ValueType):
 					raise ValueError(f"Secret[{getattr(ValueType, '__name__', '<untyped>')}] {k} not found")
 				
-		if hasattr(unit, "post_init"):
-			unit.post_init() # type: ignore[union-attr]
+		if isinstance(unit, (LogicalUnit, ContextUnit)):
+
+			trace_id = None
+
+			# potentially sync trace_ids with DB (Ampel_ext)
+			if provenance and '_trace_content' in unit.__dict__:
+
+				assert self.db
+
+				trace_dict = {
+					'py': pyv,
+					'unit': model.unit,
+					'digest': self.get_digest(Klass),
+					'version': self.config.get(f"unit.{model.unit}.version", str, raise_exc=True)
+				}
+
+				if c := unit.__dict__.get("_trace_content"):
+					trace_dict['config'] = dictify(c)
+
+				if env := self.config.get(f"unit.{model.unit}.env"):
+					if not isinstance(env, dict):
+						raise ValueError("Retrieved environment is not a dict")
+					trace_dict['env'] = env
+
+				try:
+
+					# Note: we could implement a hash collision detection mechanism here
+					trace_id = build_unsafe_dict_id(trace_dict, ret=int)
+
+					# Save trace id to external collection
+					if trace_id not in self.db.trace_ids:
+						trace_dict['_id'] = trace_id
+						self.db.add_trace_id(trace_id, trace_dict)
+
+				# Non-serializable content
+				except Exception:
+					trace_id = 0
+					# raise e
+
+			unit._trace_id = trace_id # type: ignore[union-attr]
+
+			if hasattr(unit, "post_init"):
+				unit.post_init() # type: ignore[union-attr]
 
 		return unit
 
@@ -257,9 +255,9 @@ class UnitLoader:
 	def get_class_by_name(self, name: str, unit_type: type[T]) -> type[T]:
 		...
 	@overload
-	def get_class_by_name(self, name: str, unit_type: None = ...) -> type:
+	def get_class_by_name(self, name: str, unit_type: None = ...) -> type[AmpelUnit]:
 		...
-	def get_class_by_name(self, name: str, unit_type: None | type[T] = None) -> type | type[T]:
+	def get_class_by_name(self, name: str, unit_type: None | type[T] = None) -> type[T | AmpelUnit]:
 		"""
 		Matches the parameter 'name' with the unit definitions defined in the ampel_config.
 		This allows to retrieve the corresponding fully qualified name of the class and to load it.
@@ -374,9 +372,9 @@ class UnitLoader:
 
 		def validating_init(slf, **kwargs):
 			super(UnitModel, slf).__init__(**kwargs)
-			unit = self.get_class_by_name(slf.unit)
-			if issubclass(unit, AmpelUnit) and not issubclass(unit, AbsProcessController):
-				return unit.validate(self.get_init_config(slf.config, slf.override))
+			Unit = self.get_class_by_name(slf.unit)
+			if issubclass(Unit, AmpelUnit) and not issubclass(Unit, AbsProcessController):
+				Unit.validate(self.get_init_config(slf.config, slf.override))
 		legit_init = UnitModel.__init__
 		UnitModel.__init__ = validating_init # type: ignore
 		AliasableModel._config = self.config
