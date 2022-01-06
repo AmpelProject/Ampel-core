@@ -170,9 +170,7 @@ class LogCommand(AbsCoreCommand):
 			)()
 
 		matcher = LogsMatcher.new(**args)
-		loader = LogsLoader(
-			**{**args, 'datetime_ouput': 'date' if args['date_format'] else 'string'}
-		)
+		loader = LogsLoader(**(args | {'datetime_ouput': 'date' if args['date_format'] else 'string'})) # type: ignore[arg-type]
 
 		if args['no_resolve_stock']:
 			args['id_mapper'] = None
