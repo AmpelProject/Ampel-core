@@ -175,16 +175,15 @@ class DistConfigBuilder(ConfigBuilder):
 				)
 
 			if file_rel_path.endswith("json"):
-				load = json.load
+				load = json.loads
 			elif file_rel_path.endswith("yml") or file_rel_path.endswith("yaml"):
 				load = yaml.safe_load # type: ignore
 
-			with open(
+			d = load(
 				distrib.get_resource_string(__name__, file_rel_path)
 				if not os.path.isabs(file_rel_path)
 				else file_rel_path
-			) as f:
-				d = load(f)
+			)
 
 			for k in ("t0", "t1", "t2", "t3", "ops"):
 				if k in d:
