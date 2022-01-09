@@ -11,7 +11,7 @@ from typing import Literal
 from ampel.model.UnitModel import UnitModel
 
 
-class FilterModel(UnitModel):
+class FilterModel(UnitModel[str]):
 
 	#: How to store rejection records
 	reject: None | dict[Literal['log', 'register'], UnitModel] = None
