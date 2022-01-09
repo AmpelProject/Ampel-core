@@ -4,7 +4,7 @@
 # License:             BSD-3-Clause
 # Author:              valery brinnel <firstname.lastname@gmail.com>
 # Date:                18.02.2020
-# Last Modified Date:  21.11.2021
+# Last Modified Date:  09.01.2022
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from typing import Any, Literal, TYPE_CHECKING
@@ -28,29 +28,18 @@ class AmpelContext:
 	of handling multiple AmpelConfig/AmpelDB instances
 	"""
 
-	#: System configuration
-	config: AmpelConfig
-
-	#: Database client
-	db: 'AmpelDB'
-
-	#: Instantiates a unit from a :class:`~ampel.model.UnitModel.UnitModel`.
-	loader: 'UnitLoader' # forward reference to avoid cyclic import issues
-
-	vault: None | AmpelVault
-
-	resource: None | dict[str, Any] = None
-
-	admin_msg: None | str = None
-
-
 	def __init__(self,
 		config: AmpelConfig,
 		db: 'AmpelDB',
-		loader: 'UnitLoader',
+		loader: 'UnitLoader', # forward reference to avoid cyclic import issues
 		resource: None | dict[str, Any] = None,
 		admin_msg: None | str = None
 	) -> None:
+		"""
+		:param config: system configuration
+		:param db: database client
+		:param loader: instantiates unit from :class:`~ampel.model.UnitModel.UnitModel`
+		"""
 
 		self.config = config
 		self.db = db
