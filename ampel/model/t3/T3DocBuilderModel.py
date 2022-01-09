@@ -9,10 +9,10 @@
 
 from typing import Literal
 from ampel.types import Tag, ChannelId, OneOrMany
-from ampel.base.AmpelUnit import AmpelUnit
+from ampel.base.AmpelBaseModel import AmpelBaseModel
 
 
-class T3DocBuilderModel(AmpelUnit):
+class T3DocBuilderModel(AmpelBaseModel):
 	"""
 	Provides methods for handling UnitResult and generating a T3Document out of it
 	"""
