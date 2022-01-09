@@ -11,11 +11,11 @@ from typing import Sequence
 from collections.abc import Iterable
 from ampel.base.AmpelABC import AmpelABC
 from ampel.base.decorator import abstractmethod
-from ampel.base.AmpelBaseModel import AmpelBaseModel
+from ampel.base.AmpelUnit import AmpelUnit
 from ampel.struct.AmpelBuffer import AmpelBuffer
 
 
-class AbsT3Projector(AmpelABC, AmpelBaseModel, abstract=True):
+class AbsT3Projector(AmpelABC, AmpelUnit, abstract=True):
 
 	@abstractmethod
 	def project(self, seq: Iterable[AmpelBuffer]) -> Sequence[AmpelBuffer]:
