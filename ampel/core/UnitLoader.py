@@ -35,7 +35,6 @@ from ampel.log.AmpelLogger import AmpelLogger, LogFlag, VERBOSE
 from ampel.log.handlers.ChanRecordBufHandler import ChanRecordBufHandler
 from ampel.log.handlers.DefaultRecordBufferingHandler import DefaultRecordBufferingHandler
 from ampel.util.hash import build_unsafe_dict_id
-from ampel.util.mappings import dictify
 
 T = TypeVar('T', bound=AmpelUnit)
 LT = TypeVar('LT', bound=LogicalUnit)
@@ -198,7 +197,7 @@ class UnitLoader:
 			trace_id = None
 
 			# potentially sync trace_ids with DB (Ampel_ext)
-			if provenance and '_trace_content' in unit.__dict__:
+			if provenance:
 
 				assert self.db
 
@@ -209,8 +208,8 @@ class UnitLoader:
 					'version': self.config.get(f"unit.{model.unit}.version", str, raise_exc=True)
 				}
 
-				if c := unit.__dict__.get("_trace_content"):
-					trace_dict['config'] = dictify(c)
+				if c := unit._get_trace_content():
+					trace_dict['config'] = c
 
 				if env := self.config.get(f"unit.{model.unit}.env"):
 					if not isinstance(env, dict):

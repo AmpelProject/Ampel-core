@@ -45,6 +45,7 @@ class T3DocBuilder(ContextUnit, T3DocBuilderModel):
 
 
 	def __init__(self, **kwargs) -> None:
+
 		super().__init__(**kwargs)
 		self.stock_updr = MongoStockUpdater(
 			ampel_db = self.context.db,
@@ -105,7 +106,7 @@ class T3DocBuilder(ContextUnit, T3DocBuilderModel):
 		t3d['unit'] = t3_unit.__class__.__name__
 		t3d['code'] = actact
 
-		conf = dictify(t3_unit._trace_content)
+		conf = t3_unit._get_trace_content()
 		meta: MetaRecord = {'ts': int(now.timestamp()), 'duration': time() - ts}
 
 		confid = build_unsafe_dict_id(conf)

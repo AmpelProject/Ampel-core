@@ -62,7 +62,7 @@ class T3PlainUnitExecutor(AbsT3ControlUnit, T3DocBuilder):
 					cursor = col.find(
 						{
 							'unit': self.target.unit,
-							'confid': build_unsafe_dict_id(dictify(t3_unit._trace_content)),
+							'confid': build_unsafe_dict_id(t3_unit._get_trace_content()),
 							f'meta.extra.{self.target.cache.unit}#{h}': build_unsafe_dict_id(
 								walk_and_encode(dictify(body), destructive=False)
 							)

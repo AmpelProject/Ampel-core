@@ -4,10 +4,10 @@
 # License:             BSD-3-Clause
 # Author:              valery brinnel <firstname.lastname@gmail.com>
 # Date:                10.06.2020
-# Last Modified Date:  16.11.2021
+# Last Modified Date:  09.01.2022
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from typing import Any, Type
+from typing import Any
 from importlib import import_module
 from ampel.base.AuxUnitRegister import AuxUnitRegister
 from ampel.base.LogicalUnit import LogicalUnit
@@ -21,7 +21,7 @@ from ampel.model.ChannelModel import ChannelModel
 from ampel.log.AmpelLogger import AmpelLogger
 from ampel.util.freeze import recursive_unfreeze
 from ampel.util.hash import build_unsafe_dict_id
-from ampel.util.mappings import set_by_path, dictify
+from ampel.util.mappings import set_by_path
 from ampel.util.recursion import walk_and_process_dict
 
 
@@ -101,10 +101,10 @@ class DevAmpelContext(AmpelContext):
 
 		if self.loader._dyn_register and unit in self.loader._dyn_register:
 			Unit = self.loader._dyn_register[unit]
-			arg = dictify(Unit(**arg, logger=logger)._trace_content)
+			arg = Unit(**arg, logger=logger)._get_trace_content()
 		elif fqn := self.config._config['unit'][unit].get('fqn'):
 			Unit = getattr(import_module(fqn), fqn.split('.')[-1])
-			arg = dictify(Unit(**arg, logger=logger)._trace_content)
+			arg = Unit(**arg, logger=logger)._get_trace_content()
 		else:
 			logger.warn(
 				f"Unit {unit} not installed locally. Building *unsafe* conf dict hash: "
