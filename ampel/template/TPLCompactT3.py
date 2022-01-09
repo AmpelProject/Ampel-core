@@ -4,16 +4,14 @@
 # License:             BSD-3-Clause
 # Author:              valery brinnel <firstname.lastname@gmail.com>
 # Date:                16.07.2021
-# Last Modified Date:  20.12.2021
+# Last Modified Date:  08.01.2022
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from typing import Any, Type
+from typing import Any
 from ampel.types import OneOrMany
 from ampel.util.pretty import prettyjson
 from ampel.log.AmpelLogger import AmpelLogger
-from ampel.base.AmpelUnit import AmpelUnit
 from ampel.model.UnitModel import UnitModel
-from ampel.t3.T3ReviewUnitExecutor import T3ReviewUnitExecutor
 from ampel.model.t3.T3IncludeDirective import T3IncludeDirective
 from ampel.model.t3.T3DocBuilderModel import T3DocBuilderModel
 from ampel.abstract.AbsProcessorTemplate import AbsProcessorTemplate
@@ -73,21 +71,10 @@ class TPLCompactT3(AbsProcessorTemplate, T3DocBuilderModel):
 	include: None | T3IncludeDirective
 	execute: OneOrMany[dict[str, Any]]
 
-
-	def _merge_confs(self, d: dict[str, Any], Klass: type[AmpelUnit]) -> dict[str, Any]:
-
-		conf = {
-			k: getattr(self, k)
-			for k in Klass._annots
-			if hasattr(self, k) and not (k in self._defaults and getattr(self, k) == self._defaults[k])
-		}
-
-		for k in d:
-			if k in Klass._annots:
-				conf[k] = d[k]
-
-		return conf
-
+	def _merge_confs(self, d: dict[str, Any]) -> dict[str, Any]:
+		bmks = T3DocBuilderModel.get_model_keys()
+		return {k: v for k, v in self.dict(exclude_defaults=True).items() if k in bmks} | \
+			{k: v for k, v in d.items() if k in bmks}
 
 
 	# Mandatory override
@@ -103,7 +90,7 @@ class TPLCompactT3(AbsProcessorTemplate, T3DocBuilderModel):
 				out.append(
 					{
 						'unit': "T3ReviewUnitExecutor",
-						'config': self._merge_confs(el, T3ReviewUnitExecutor)
+						'config': self._merge_confs(el) | {'supply': el['supply'], 'stage': el['stage']}
 					}
 				)
 				continue
@@ -117,12 +104,8 @@ class TPLCompactT3(AbsProcessorTemplate, T3DocBuilderModel):
 					out.append(
 						{
 							'unit': 'T3PlainUnitExecutor',
-							'config': self._merge_confs(el, T3DocBuilderModel) | {
-								#'target': {'unit': el['unit'], 'config': el['config']}
-								'target': {
-									k: el[k] for k in el
-									if k not in T3DocBuilderModel._annots
-								}
+							'config': self._merge_confs(el) | {
+								'target': {'unit': el['unit'], 'config': el['config']}
 							}
 						}
 					)
