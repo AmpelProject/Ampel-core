@@ -56,7 +56,7 @@ class T3ReviewUnitExecutor(AbsT3ControlUnit, T3DocBuilder):
 			if "T3DocBuilder" in self.context.config._config['unit'][self.stage.unit]['base']:
 				kwargs = {
 					k: getattr(self, k)
-					for k in T3DocBuilderModel._annots
+					for k in T3DocBuilderModel.get_model_keys()
 					if hasattr(self, k) and not (k in self._defaults and getattr(self, k) == self._defaults[k])
 				}
 			else:
