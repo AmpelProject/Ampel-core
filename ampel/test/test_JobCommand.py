@@ -70,4 +70,5 @@ def test_secrets(testing_config, vault: Path, schema: Path, mocker: MockerFixtur
     ].loader.vault
     assert loader_vault is not None
     secret = loader_vault.get_named_secret("foo")
+    assert secret is not None
     assert secret.get() == "bar"
