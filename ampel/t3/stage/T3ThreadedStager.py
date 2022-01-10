@@ -158,7 +158,7 @@ class T3ThreadedStager(T3BaseStager, abstract=True):
 			vo = View.of
 
 			# In paranoia mode, we create a new view from the same buffer for each t3 unit
-			if self.paranoia:
+			if self.paranoia_level:
 				for ab in buffers:
 					for q in qs:
 						q.put(vo(ab, conf))
@@ -173,7 +173,7 @@ class T3ThreadedStager(T3BaseStager, abstract=True):
 
 			# Paranoia or say two units == two view types (non-optimizable)
 			itms = qdict.items()
-			if self.paranoia or all(len(x) == 1 for x in qdict.values()):
+			if self.paranoia_level or all(len(x) == 1 for x in qdict.values()):
 				for ab in buffers:
 					for View, qs in itms:
 						vo = View.of

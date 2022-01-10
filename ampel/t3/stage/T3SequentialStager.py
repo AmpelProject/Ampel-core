@@ -90,7 +90,7 @@ class T3SequentialStager(T3BaseStager):
 
 		if len(Views) == 1:
 			View = next(iter(Views))
-			if self.paranoia:
+			if self.paranoia_level:
 				buffers = list(gen)
 				return {
 					unit: [View.of(ab, conf) for ab in buffers]
@@ -102,7 +102,7 @@ class T3SequentialStager(T3BaseStager):
 		else:
 
 			buffers = list(gen)
-			if self.paranoia:
+			if self.paranoia_level:
 				return {
 					unit: [View.of(ab, conf) for ab in buffers]
 					for unit, View in (lambda x: [(u, u._View) for u in x])(self.units)

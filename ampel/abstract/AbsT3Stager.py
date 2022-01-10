@@ -17,15 +17,15 @@ from ampel.content.T3Document import T3Document
 from ampel.core.ContextUnit import ContextUnit
 
 
-class AbsT3Stager(AmpelABC, ContextUnit, abstract=True):
+class AbsT3Stager(ContextUnit, AmpelABC, abstract=True):
 	""" Supply stock views to one or more T3 units.  """
 
 	#: number of buffers to process at once. Set to 0 to disable chunking
 	chunk_size: int = 1000
 
-	#: Cast ampel buffers into views for each t3 unit (meaning possibly redundantly)
+	#: If > 0, cast ampel buffers into views for each t3 unit (meaning possibly redundantly)
 	#: since there is no real read-only struct in python
-	paranoia: bool = True
+	paranoia_level: int = 0
 
 
 	@abstractmethod
