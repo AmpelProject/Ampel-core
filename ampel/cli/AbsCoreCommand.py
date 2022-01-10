@@ -71,7 +71,7 @@ class AbsCoreCommand(AbsCLIOperation, abstract=True):
 
 	def get_vault(self, args: Dict[str, Any]) -> Optional[AmpelVault]:
 		vault = None
-		if args.get('vault'):
+		if args.get('secrets'):
 			from ampel.secret.DictSecretProvider import DictSecretProvider
 			vault = AmpelVault(
 				[DictSecretProvider.load(args['secrets'])]
