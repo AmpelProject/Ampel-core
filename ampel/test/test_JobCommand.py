@@ -25,9 +25,9 @@ def argv_context(args: list[str]):
 def run(args: list[str]) -> Optional[int]:
     try:
         with argv_context(args):
-            return main()
+            main()
+        return None
     except SystemExit as exit:
-        print("exitus")
         return exit.code
 
 
@@ -65,9 +65,9 @@ def test_secrets(testing_config, vault: Path, schema: Path, mocker: MockerFixtur
         == None
     )
     assert new_context_unit.call_count == 1
-    vault: Optional[AmpelVault] = new_context_unit.call_args.kwargs[
+    loader_vault: Optional[AmpelVault] = new_context_unit.call_args.kwargs[
         "context"
     ].loader.vault
-    assert vault is not None
-    secret = vault.get_named_secret("foo")
+    assert loader_vault is not None
+    secret = loader_vault.get_named_secret("foo")
     assert secret.get() == "bar"
