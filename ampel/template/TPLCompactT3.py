@@ -4,7 +4,7 @@
 # License:             BSD-3-Clause
 # Author:              valery brinnel <firstname.lastname@gmail.com>
 # Date:                16.07.2021
-# Last Modified Date:  08.01.2022
+# Last Modified Date:  11.01.2022
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from typing import Any
@@ -80,7 +80,6 @@ class TPLCompactT3(AbsProcessorTemplate, T3DocBuilderModel):
 	# Mandatory override
 	def get_model(self, config: dict[str, Any], logger: AmpelLogger) -> UnitModel[str]:
 
-
 		out: list[dict] = []
 		units = config['unit']
 
@@ -105,7 +104,9 @@ class TPLCompactT3(AbsProcessorTemplate, T3DocBuilderModel):
 						{
 							'unit': 'T3PlainUnitExecutor',
 							'config': self._merge_confs(el) | {
-								'target': {'unit': el['unit'], 'config': el['config']}
+								# Enable non-standard UnitModel fields (ex: T3SkippableUnitModel.cache)
+								# 'target': {'unit': el['unit'], 'config': el['config']}
+								'target': {k: v for k, v in el.items() if k not in T3DocBuilderModel.get_model_keys()}
 							}
 						}
 					)
