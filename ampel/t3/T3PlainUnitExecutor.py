@@ -59,16 +59,15 @@ class T3PlainUnitExecutor(AbsT3ControlUnit, T3DocBuilder):
 
 			if view := t3s.get_view(unit=self.target.cache.unit, config=h):
 				if (body := view.get_body()) and isinstance(body, dict):
-					cursor = col.find(
-						{
-							'unit': self.target.unit,
-							'confid': build_unsafe_dict_id(t3_unit._get_trace_content()),
-							f'meta.extra.{self.target.cache.unit}#{h}': build_unsafe_dict_id(
-								walk_and_encode(dictify(body), destructive=False)
-							)
-						}
-					)
-					if (d := next(iter(cursor), None)):
+					matchd = {
+						'unit': self.target.unit,
+						'confid': build_unsafe_dict_id(t3_unit._get_trace_content()),
+						f'meta.extra.{self.target.cache.unit}#{h}': build_unsafe_dict_id(
+							walk_and_encode(dictify(body), destructive=False)
+						)
+					}
+					if (d := next(iter(col.find(matchd)), None)):
+						self.logger.info("Using cached result", extra=matchd)
 						t3s.add_view(
 							T3DocView.of(d, self.context.config)
 						)
