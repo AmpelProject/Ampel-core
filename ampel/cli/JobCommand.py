@@ -78,13 +78,13 @@ class JobCommand(AbsCoreCommand):
 			"reset-db": "reset databases even if not requested by job file",
 			"interactive": "you'll be asked for each task whether it should be run or skipped\n" + \
 				"and if applicable if the db should be reset",
-			"with-task": "only perform the task with provide indexes (which starts at 0)",
+			"task": "only execute task(s) with provided index(es) [starting with 0]. Value 'last' is supported",
 		})
 
 		# Required
 		parser.add_arg("config", "required", type=str)
 		parser.add_arg("schema", "required")
-		parser.add_arg("with-task", "optional", action=MaybeIntAction, nargs='+')
+		parser.add_arg("task", "optional", action=MaybeIntAction, nargs='+')
 		parser.add_arg("interactive", "optional", action="store_true")
 		parser.add_arg("debug", "optional", action="store_true")
 		parser.add_arg("keep-db", "optional", action="store_true")
@@ -95,7 +95,7 @@ class JobCommand(AbsCoreCommand):
 
 		# Example
 		parser.add_example("job -config ampel_conf.yaml schema job_file.yaml")
-		parser.add_example("job -config ampel_conf.yaml -schema job_file.yaml -keep-db -with-task 2")
+		parser.add_example("job -config ampel_conf.yaml -schema job_file.yaml -keep-db -task last")
 		return parser
 
 
@@ -111,8 +111,8 @@ class JobCommand(AbsCoreCommand):
 
 		tds: list[dict[str, Any]] = []
 
-		if isinstance(args['with_task'], int):
-			args['with_task'] = [args['with_task']]
+		if isinstance(args['task'], (int, str)):
+			args['task'] = [args['task']]
 
 		with open(args['schema'], "r") as f:
 
@@ -135,10 +135,14 @@ class JobCommand(AbsCoreCommand):
 				logger.info("Keeping existing databases ('-keep-db')")
 				purge_db = False
 
-			if args['with_task'] and sum(args['with_task']) > 0 and purge_db and not args['reset_db']:
-				logger.info("Ampel job file requires db reset but with-task argument was provided")
-				logger.info("Please add argument -reset-db to confirm you are absolutely sure...")
-				return
+			if args['task']:
+				if 'last' in args['task']:
+					args['task'].remove('last')
+					args['task'].append(len(job['task']) - 1)
+				if sum(args['task']) > 0 and purge_db and not args['reset_db']:
+					logger.info("Ampel job file requires db reset but argument 'task' was provided")
+					logger.info("Please add argument -reset-db to confirm you are absolutely sure...")
+					return
 
 			if args['interactive']:
 
@@ -148,11 +152,11 @@ class JobCommand(AbsCoreCommand):
 					if purge_db:
 						purge_db = yes_no("Delete existing databases")
 
-					args['with_task'] = []
+					args['task'] = []
 					for i, td in enumerate(job['task']):
 						s = f" [{td['title']}]" if td['title'] else ""
 						if yes_no(f"Process task #{i}" + s):
-							args['with_task'].append(i)
+							args['task'].append(i)
 				except KeyboardInterrupt:
 					sys.exit()
 	
@@ -234,7 +238,7 @@ class JobCommand(AbsCoreCommand):
 				elif i != 0:
 					self.print_chapter(f"Task #{i}", logger)
 
-				if args['with_task'] is not None and i not in args['with_task']:
+				if args['task'] is not None and i not in args['task']:
 					logger.info(f"Skipping task #{i} as requested")
 					continue
 
