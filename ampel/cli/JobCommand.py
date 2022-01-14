@@ -4,7 +4,7 @@
 # License:             BSD-3-Clause
 # Author:              valery brinnel <firstname.lastname@gmail.com>
 # Date:                15.03.2021
-# Last Modified Date:  17.10.2021
+# Last Modified Date:  14.01.2022
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 import yaml, os, signal, sys
@@ -48,14 +48,14 @@ class TemplateUnitModel(AmpelBaseModel):
 
 class JobCommand(AbsCoreCommand):
 	"""
-	Processes job definitions (yaml files).
+	Processes ampel "jobs" (yaml files).
 	A job:
-	- can be seen as a sharable analysis shema
-	- contains defintions of processor unit and config to be run sequentially
-	- should contain everything that is required to run the underlying processor definitions,
-	  that is: channels or aliases definitions as well as custom resources potentially required by processors.
-	- requires access to an ampel config file since the database, unit or resource definitions
-	  contained in the config are necessary to run the job.
+	- is a sharable analysis shema
+	- contains configurations of processor units to be run sequentially
+	- should also contain everything required to run the underlying processors, that is:
+	  channels or aliases definitions and custom resources potentially required by processors.
+	- requires access to an ampel config file since the database, unit and resource definitions
+	  defined therein are necessary (might be improved in the future)
 	"""
 
 	def __init__(self):
@@ -77,7 +77,7 @@ class JobCommand(AbsCoreCommand):
 			"keep-db": "do not reset databases even if so requested by job file",
 			"reset-db": "reset databases even if not requested by job file",
 			"interactive": "you'll be asked for each task whether it should be run or skipped\n" + \
-				"and if applicable if the db should be reset",
+				"and - if applicable - if the db should be reset",
 			"task": "only execute task(s) with provided index(es) [starting with 0]. Value 'last' is supported",
 		})
 
