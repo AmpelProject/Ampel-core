@@ -4,7 +4,7 @@
 # License:             BSD-3-Clause
 # Author:              valery brinnel <firstname.lastname@gmail.com>
 # Date:                08.12.2021
-# Last Modified Date:  10.12.2021
+# Last Modified Date:  14.01.2022
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from time import time
@@ -12,7 +12,7 @@ from ampel.base.AmpelBaseModel import AmpelBaseModel
 from typing import Any
 from collections.abc import Generator, Sequence
 
-from ampel.types import UBson
+from ampel.types import UBson, OneOrMany
 from ampel.t3.T3DocBuilder import T3DocBuilder
 from ampel.view.T3Store import T3Store
 from ampel.abstract.AbsT3Stager import AbsT3Stager
@@ -26,7 +26,7 @@ class TargetModel(AmpelBaseModel):
 	unit: None | str
 	config: None | int | str
 	code: None | int
-	field: str | Sequence[str]
+	field: OneOrMany[str]
 
 
 class T3AggregatingStager(AbsT3Stager, T3DocBuilder):
@@ -36,9 +36,9 @@ class T3AggregatingStager(AbsT3Stager, T3DocBuilder):
 	save_stock_ids: bool = True
 
 	split_tiers: bool = False
-	t0: None | TargetModel | Sequence[TargetModel]
-	t1: None | TargetModel | Sequence[TargetModel]
-	t2: None | TargetModel | Sequence[TargetModel]
+	t0: None | OneOrMany[TargetModel]
+	t1: None | OneOrMany[TargetModel]
+	t2: None | OneOrMany[TargetModel]
 
 
 	def stage(self,
