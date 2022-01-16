@@ -4,7 +4,7 @@
 # License:             BSD-3-Clause
 # Author:              valery brinnel <firstname.lastname@gmail.com>
 # Date:                08.12.2021
-# Last Modified Date:  14.01.2022
+# Last Modified Date:  16.01.2022
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from time import time
@@ -30,12 +30,70 @@ class TargetModel(AmpelBaseModel):
 
 
 class T3AggregatingStager(AbsT3Stager, T3DocBuilder):
+	"""
+	Example:
+
+	unit: T3AggregatingStager
+	config:
+	  t2:
+	  - unit: T2NedTap
+	    field: "data[0].*"
+	  - unit: T2NedSNCosmo
+	  field:
+	  - "data[0].fit_results"
+	  - "data[0].covariance"
+
+	will create a new t3 doc in the DB, whose body will contain the aggregated results.
+	The doc could look like below (note that ampel ids were stringified to comply with BSON requirements):
+
+	{
+	  ...
+	  'body': {
+	    "33876" : {
+	       "prefname" : "WISEA J235434.02+154441.8",
+	       "pretype" : "G",
+	       "ra" : 358.6417460104,
+	       "dec" : 15.7449859573,
+	       ...
+	       "fit_results" : {
+	         "z" : 0.07458627,
+	         "t0" : 2459226.42052562,
+	         "x0" : 0.000359877303537212,
+	         ...
+	       },
+	       "covariance": [
+	         [0.525561894902874, 5.08414469979e-06, 0.103650196867142, -0.0141356930137254],
+	         ...
+	       ],
+	       ...
+	   },
+	   "496964" : {
+	     "prefname" : "WISEA J114639.05+421201.3",
+	     "pretype" : "G",
+	     "ra" : 176.6627824999,
+	     "dec" : 42.2004549186,
+	     ...
+	     "fit_results" : {
+	       "z" : 0.0512447,
+	       "t0" : 2459227.16179618,
+	       "x0" : 0.000925982418211906,
+	       ...
+	     },
+	     "covariance" : [
+	       [0.0427179910190306, 7.18629916088547e-07, 0.000100038844775205, -0.000266005925059596],
+	       ...
+	     ],
+	     ...
+	  }
+	...
+	"""
 
 	# Override
-	paranoia: None | bool = None # type: ignore
 	save_stock_ids: bool = True
 
+	#: Only applies to doc output
 	split_tiers: bool = False
+
 	t0: None | OneOrMany[TargetModel]
 	t1: None | OneOrMany[TargetModel]
 	t2: None | OneOrMany[TargetModel]
