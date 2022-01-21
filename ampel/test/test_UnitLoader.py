@@ -11,6 +11,8 @@ from ampel.secret.Secret import Secret
 from ampel.secret.DictSecretProvider import DictSecretProvider
 from ampel.secret.AmpelVault import AmpelVault
 from ampel.model.UnitModel import UnitModel
+from ampel.abstract.AbsOpsUnit import AbsOpsUnit
+from ampel.core.ContextUnit import ContextUnit
 
 
 @pytest.fixture
@@ -70,6 +72,29 @@ def test_resolve_secrets_wrong_type(
         )
 
 
+def test_resolve_secret_from_superclass(
+    secrets: DictSecretProvider, dev_context: DevAmpelContext, monkeypatch, ampel_logger
+):
+    """Secrets are resolved with multiple inheritance"""
+    class Base(ContextUnit):
+        seekrit: NamedSecret[dict]
+
+    class Derived(AbsOpsUnit, Base):
+        def run(self, beacon):
+            ...
+    assert "seekrit" not in Derived.__annotations__, "multiply-inherited AmpelBaseModels are missing annotations"
+
+    dev_context.register_unit(Derived) # type: ignore[arg-type]
+    monkeypatch.setattr(dev_context.loader, "vault", AmpelVault(providers=[secrets]))
+    unit = dev_context.loader.new(
+        UnitModel(unit="Derived", config={"seekrit": {"label": "dict"}}),
+        logger=ampel_logger,
+        context=dev_context,
+        unit_type=Derived,
+    )
+    assert unit.seekrit.get() == secrets.store.get("dict")
+
+
 def test_resolve_secret_from_config(
     secrets, dev_context: DevAmpelContext, monkeypatch, ampel_logger
 ):
@@ -83,7 +108,7 @@ def test_resolve_secret_from_config(
     dev_context.loader.new(
         UnitModel(unit="NiceAndConcrete", config={"seekrit": {"label": "dict"}}),
         logger=ampel_logger,
-        unit_type=NiceAndConcrete
+        unit_type=NiceAndConcrete,
     )
 
     # and also validated without instantiating
@@ -101,7 +126,7 @@ def test_resolve_secret_from_config(
         dev_context.loader.new(
             UnitModel(unit="BadAndAbstract", config={"seekrit": {"label": "dict"}}),
             logger=ampel_logger,
-            unit_type=BadAndAbstract
+            unit_type=BadAndAbstract,
         )
 
 
@@ -173,24 +198,21 @@ def test_unit_validation(dev_context: DevAmpelContext):
                                 "select": {"unit": "T3StockSelector"},
                                 "load": {
                                     "unit": "T3SimpleDataLoader",
-                                    "config": {
-                                        "directives": [{"col": "stock"}]
-                                    }
-                                }
-                            }
+                                    "config": {"directives": [{"col": "stock"}]},
+                                },
+                            },
                         },
-                        "stage": {
-                            "unit": "T3SimpleStager",
-                            "config": {"execute": []}
-                        }
-                    }
+                        "stage": {"unit": "T3SimpleStager", "config": {"execute": []}},
+                    },
                 }
-            ]
+            ],
         }
 
         # recursive validation
         UnitModel(unit="T3Processor", config=t3_config)
 
         with pytest.raises(ValidationError):
-            t3_config["execute"][0]["config"]["supply"]["config"]["select"]["unit"] = "NotActuallyAUnit"
+            t3_config["execute"][0]["config"]["supply"]["config"]["select"][
+                "unit"
+            ] = "NotActuallyAUnit"
             UnitModel(unit="T3Processor", config=t3_config)

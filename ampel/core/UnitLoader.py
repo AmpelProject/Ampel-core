@@ -229,7 +229,7 @@ class UnitLoader:
 		# Resolve secrets
 		for k, v in unit.__dict__.items():
 			if isinstance(v, Secret):
-				ValueType = args[0] if (args := get_args(type(unit).__annotations__[k])) else object
+				ValueType = args[0] if (args := get_args(type(unit)._annots[k])) else object
 				if not self.vault:
 					raise ValueError("No vault configured")
 				if not self.vault.resolve_secret(v, ValueType):
