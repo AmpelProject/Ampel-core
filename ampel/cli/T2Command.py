@@ -127,7 +127,7 @@ class T2Command(AbsCoreCommand):
 		if sub_op is None:
 			raise ValueError("A sub-operation (show, save, reset, soft-reset) needs to be specified")
 
-		ctx = self.get_context(args, unknown_args, ContextClass=AmpelContext)
+		ctx = self.get_context(args, unknown_args, ContextClass=AmpelContext, one_db=True)
 		logger = AmpelLogger.from_profile(
 			ctx, 'console_debug' if args['debug'] else 'console_info',
 			base_flag=LogFlag.MANUAL_RUN
@@ -142,7 +142,7 @@ class T2Command(AbsCoreCommand):
 		self.convert_logical_args('tag', args)
 
 		# args['id_mapper'] is used for matching whereas id_mapper is potentially discarded for printing
-		id_mapper = None if args['no_resolve_stock'] else args['id_mapper']
+		id_mapper = None if args.get('no_resolve_stock', False) else args['id_mapper']
 
 		if sub_op == 'show':
 
