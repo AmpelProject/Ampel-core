@@ -4,7 +4,7 @@
 # License:             BSD-3-Clause
 # Author:              valery brinnel <firstname.lastname@gmail.com>
 # Date:                16.10.2019
-# Last Modified Date:  31.12.2021
+# Last Modified Date:  26.01.2022
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 import sys, re, importlib, traceback
@@ -97,7 +97,7 @@ class UnitConfigCollector(ConfigCollector):
 					)
 					continue
 
-				if "AmpelUnit" not in entry['base']:
+				if "AmpelUnit" not in entry['base'] and "AmpelBaseModel" not in entry['base']:
 					self.logger.info(
 						f'Unrecognized base class for {self.conf_section} {class_name} ' +
 						self.distrib_hint(dist_name, register_file)
