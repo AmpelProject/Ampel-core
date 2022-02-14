@@ -67,13 +67,63 @@ async def test_db_metrics(test_client, db_collector, dev_context):
     await check_metric("ampel_t2_docs_queued", 1)
 
 
+@pytest.mark.parametrize(
+    "section,proc",
+    [
+        (
+            "t2",
+            {
+                "name": "DefaultT2Process",
+                "version": 0,
+                "active": True,
+                "tier": 2,
+                "schedule": ["every(5).minutes"],
+                "processor": {
+                    "unit": "T2Worker",
+                    "config": {"doc_limit": 5000, "log_profile": "prod"},
+                },
+            },
+        ),
+        (
+            "ops",
+            {
+                "name": "ExceptionPublisher",
+                "version": 0,
+                "active": True,
+                "tier": None,
+                "schedule": ["every(10).minutes"],
+                "processor": {
+                    "unit": "OpsProcessor",
+                    "config": {"execute": {"unit": "AmpelExceptionPublisher"}},
+                },
+            },
+        ),
+    ],
+)
 @pytest.mark.asyncio
-async def test_reload(test_client, dev_context, testing_config, monkeypatch):
-    monkeypatch.setenv("AMPEL_CONFIG", str(testing_config))
+async def test_reload(
+    test_client,
+    dev_context,
+    testing_config,
+    monkeypatch,
+    tmp_path,
+    mocker,
+    section,
+    proc,
+):
+    config = yaml.safe_load(testing_config.open())
+    config["process"][section][proc["name"]] = proc
+    with open(tmp_path / "config.yml", "w") as f:
+        yaml.dump(config, f)
+    monkeypatch.setenv("AMPEL_CONFIG", str(tmp_path / "config.yml"))
+    add_processes = mocker.patch("ampel.run.server.task_manager.add_processes")
     assert server.context is dev_context
     response = await test_client.post("/config/reload")
     assert response.status_code == 200
     assert server.context is not dev_context
+    procs = add_processes.call_args.args[0]
+    assert len(procs) == 1
+    assert procs[0].processor.unit == proc["processor"]["unit"]
 
 
 @pytest.mark.asyncio
@@ -190,7 +240,9 @@ async def test_config_reload(
             assert await remove.called_once()
             assert len(remove.call_args[0][0]) == 0
             assert await add.called_once()
-            assert len(add.call_args[0][0]) == (1 if config["process"]["t3"]["sleepy"].get("active", True) else 0)
+            assert len(add.call_args[0][0]) == (
+                1 if config["process"]["t3"]["sleepy"].get("active", True) else 0
+            )
     finally:
         await server.task_manager.shutdown()
 
