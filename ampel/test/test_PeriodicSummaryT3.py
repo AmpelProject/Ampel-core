@@ -1,9 +1,7 @@
 import copy, pytest
 from ampel.config.builder.ConfigValidator import ConfigValidator
 from ampel.template.PeriodicSummaryT3 import PeriodicSummaryT3
-from ampel.abstract.AbsEventUnit import AbsEventUnit
 
-AbsEventUnit._defaults['process_name'] = "foo"
 
 @pytest.mark.parametrize("loader_directives", [None, [{"col": "stock"}], ["TRANSIENT"]])
 def test_validate(core_config, loader_directives, ampel_logger):

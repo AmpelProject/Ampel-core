@@ -187,7 +187,6 @@ def test_unit_validation(dev_context: DevAmpelContext):
             UnitModel(unit="Dummy", config={"nonexistant_param": True})
 
         t3_config: dict[str, Any] = {
-            "process_name": "test",
             "execute": [
                 {
                     "unit": "T3ReviewUnitExecutor",
