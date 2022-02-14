@@ -424,7 +424,7 @@ def _validate_unit_model(cls, values: dict[str, Any], unit_loader: UnitLoader) -
 	from ampel.abstract.AbsProcessController import AbsProcessController
 	unit = unit_loader.get_class_by_name(values['unit'])
 	if issubclass(unit, AmpelBaseModel) and not issubclass(unit, AbsProcessController):
-		return unit.validate(
+		unit.validate(
 			unit_loader.get_init_config(values['config'], values['override'])
 		)
 	return values
