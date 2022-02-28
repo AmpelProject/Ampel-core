@@ -3,6 +3,7 @@ from contextlib import contextmanager
 from os import path
 from pathlib import Path
 from typing import Optional
+from ampel.config.AmpelConfig import AmpelConfig
 
 import pytest
 import yaml
@@ -72,3 +73,33 @@ def test_secrets(testing_config, vault: Path, schema: Path, mocker: MockerFixtur
     secret = loader_vault.get_named_secret("foo")
     assert secret is not None
     assert secret.get() == "bar"
+
+
+def test_resources_from_env(
+    testing_config,
+    vault: Path,
+    schema: Path,
+    mocker: MockerFixture,
+    monkeypatch: pytest.MonkeyPatch,
+):
+    new_context_unit = mocker.patch("ampel.core.UnitLoader.UnitLoader.new_context_unit")
+    monkeypatch.setenv("AMPEL_CONFIG_resource.mongo", "flerp")
+    monkeypatch.setenv("AMPEL_CONFIG_resource.herp", "37")
+    assert (
+        run(
+            [
+                "ampel",
+                "job",
+                "--config",
+                str(testing_config),
+                "--secrets",
+                str(vault),
+                "--schema",
+                str(schema),
+            ]
+        )
+        == None
+    )
+    config: AmpelConfig = new_context_unit.call_args.kwargs["context"].config
+    assert config.get("resource.mongo") == "flerp"
+    assert config.get("resource.herp") == 37

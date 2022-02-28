@@ -7,6 +7,7 @@
 # Last Modified Date: 11.11.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
+import os
 import re
 from typing import Sequence, Dict, Any, Optional, TypeVar, Type, Iterator, Tuple
 from ampel.core.AmpelDB import AmpelDB
@@ -29,13 +30,22 @@ class AbsCoreCommand(AbsCLIOperation, abstract=True):
 		config_path: str,
 		unknown_args: Sequence[str],
 		logger: Optional[AmpelLogger] = None,
-		freeze: bool = True
+		freeze: bool = True,
+		env_var_prefix: Optional[str] = "AMPEL_CONFIG_",
 	) -> AmpelConfig:
 
 		ampel_conf = AmpelConfig.load(config_path, freeze=False)
 
 		if logger is None:
 			logger = AmpelLogger.get_logger()
+
+		if env_var_prefix is not None:
+			for var, value in os.environ.items():
+				if var.startswith(env_var_prefix):
+					k = var[len(env_var_prefix):]
+					v = _maybe_int(value)
+					logger.info(f"Setting config parameter '{k}' from environment")
+					set_by_path(ampel_conf._config, k, v)
 
 		for k, v in self.get_custom_args(unknown_args):
 			if ampel_conf.get(".".join(k.split(".")[:-1])) is None:
