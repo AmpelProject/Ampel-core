@@ -4,8 +4,8 @@
 # License:             BSD-3-Clause
 # Author:              valery brinnel <firstname.lastname@gmail.com>
 # Date:                29.03.2021
-# Last Modified Date:  13.12.2021
-# Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
+# Last Modified Date:  28.02.2022
+# Last Modified By:    Marcus Fenner <mf@physik.hu-berlin.de>
 
 from datetime import datetime
 from bson.objectid import ObjectId
@@ -24,7 +24,7 @@ class T3LogsAppender(AbsBufferComplement):
 	logs_loader_conf: dict[str, Any] = {}
 
 	def __init__(self, **kwargs) -> None:
-		super.__init__(**kwargs)
+		super().__init__(**kwargs)
 		self.log_loader = LogsLoader(**self.logs_loader_conf, read_only=True)
 		self.col = self.context.db.get_collection('logs')
 
