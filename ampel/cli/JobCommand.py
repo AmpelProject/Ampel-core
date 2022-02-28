@@ -105,8 +105,7 @@ class JobCommand(AbsCoreCommand):
 		logger = AmpelLogger.get_logger(base_flag=LogFlag.MANUAL_RUN)
 
 		if not os.path.exists(args['schema']):
-			logger.error(f"Job file not found: '{args['schema']}'")
-			return
+			raise FileNotFoundError(f"Job file not found: '{args['schema']}'")
 
 		tds: List[Dict[str, Any]] = []
 
@@ -238,6 +237,7 @@ class JobCommand(AbsCoreCommand):
 					continue
 
 				multiplier = task_dict.pop('multiplier')
+				task_dict['override'] = (task_dict.pop('override') or {}) | {'raise_exc': True}
 
 				# Beacons have no real use in jobs (unlike prod)
 				if task_dict['unit'] == 'T2Worker' and 'send_beacon' not in task_dict['config']:
