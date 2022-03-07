@@ -22,7 +22,7 @@ jobs:
           - 27017:27017
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
     - uses: actions/setup-python@v3
       with:
         python-version: '3.10'
@@ -38,7 +38,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
     - uses: actions/setup-python@v3
       with:
         python-version: '3.10'
@@ -135,7 +135,7 @@ jobs:
     if: ${{ fromJSON(needs.check_version.outputs.should_publish) }}
     
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
     - uses: actions/setup-python@v3
       with:
         python-version: '3.10'
