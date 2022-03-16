@@ -3,6 +3,7 @@ from contextlib import contextmanager
 from os import path
 from pathlib import Path
 from typing import Optional
+from ampel.cli.JobCommand import JobCommand
 from ampel.config.AmpelConfig import AmpelConfig
 
 import pytest
@@ -41,6 +42,25 @@ def dump(payload, tmpdir, name):
 @pytest.fixture
 def vault(tmpdir):
     return dump({"foo": "bar"}, tmpdir, "secrets.yml")
+
+
+@pytest.fixture
+def secrets():
+    return {
+        "str": "str",
+        "key.with.bunch.of.dots": "nesty",
+        "dict": {"user": "none", "password": 1.5},
+        "list": [1, 2, 3.5, "flerp"],
+    }
+
+
+@pytest.fixture
+def dir_secret_store(tmpdir, secrets):
+    parent_dir = Path(tmpdir) / "secrets"
+    parent_dir.mkdir()
+    for k, v in secrets.items():
+        dump(v, parent_dir, k)
+    return parent_dir
 
 
 @pytest.fixture
@@ -103,3 +123,12 @@ def test_resources_from_env(
     config: AmpelConfig = new_context_unit.call_args.kwargs["context"].config
     assert config.get("resource.mongo") == "flerp"
     assert config.get("resource.herp") == 37
+
+
+def test_dir_secrets(dir_secret_store, secrets):
+    cli_op = JobCommand()
+    vault = cli_op.get_vault({"secrets": dir_secret_store})
+    for k, v in secrets.items():
+        assert vault.get_named_secret(k).get() == v
+    
+    assert vault.get_named_secret("nonesuch") is None, "missing secrets skipped cleanly"

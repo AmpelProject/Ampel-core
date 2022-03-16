@@ -10,6 +10,7 @@
 import os
 import re
 from typing import Sequence, Dict, Any, Optional, TypeVar, Type, Iterator, Tuple
+from ampel.abstract.AbsSecretProvider import AbsSecretProvider
 from ampel.core.AmpelDB import AmpelDB
 from ampel.config.AmpelConfig import AmpelConfig
 from ampel.secret.AmpelVault import AmpelVault
@@ -83,9 +84,12 @@ class AbsCoreCommand(AbsCLIOperation, abstract=True):
 		vault = None
 		if args.get('secrets'):
 			from ampel.secret.DictSecretProvider import DictSecretProvider
-			vault = AmpelVault(
-				[DictSecretProvider.load(args['secrets'])]
-			)
+			from ampel.secret.DirSecretProvider import DirSecretProvider
+			if os.path.isdir(args['secrets']):
+				provider: AbsSecretProvider = DirSecretProvider(args['secrets'])
+			else:
+				provider = DictSecretProvider.load(args['secrets'])
+			vault = AmpelVault([provider])
 		return vault
 
 
