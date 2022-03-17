@@ -95,7 +95,7 @@ class ProcessCommand(AbsCoreCommand):
         # load custom aliases if provided
         if args["alias"]:
             with open(args["alias"]) as f:
-                for k, v in yaml.safe_load(args["alias"]).items():
+                for k, v in yaml.safe_load(f).items():
                     if k not in ("t0", "t1", "t2", "t3"):
                         raise ValueError(f"Unrecognized alias: {k}")
                     if "alias" not in config_dict:
