@@ -236,9 +236,9 @@ class JobCommand(AbsCoreCommand):
 						q: Queue = Queue()
 						p = Process(
 							target = run_mp_process,
-							args = (q, config_dict, task_dict, process_name)
+							args = (q, config_dict, task_dict, process_name),
+							daemon = True,
 						)
-						p.deamon = True
 						p.start()
 						ps.append(p)
 						qs.append(q)
