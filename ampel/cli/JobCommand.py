@@ -166,7 +166,7 @@ class JobCommand(AbsCoreCommand):
 				logger.info(f"Registering job alias '{kk}'")
 				if k not in config_dict['alias']:
 					dict.__setitem__(config_dict['alias'], k, {})
-				dict.__setitem__(config_dict['alias'][k], kk, c)
+				dict.__setitem__(config_dict['alias'][k], kk, vv)
 
 		for i, model in enumerate(job.task):
 
