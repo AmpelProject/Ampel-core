@@ -517,7 +517,7 @@ class T2Worker(AbsWorker[T2Document]):
 				d['link'] = t2_doc['link']
 
 			elif 'AbsStockT2Unit' in t2_unit_info['base']:
-				raise ValueError('Not implemented yet')
+				d['link'] = t2_doc['stock']
 
 			else: # State T2
 				raise BadConfig('Tied point T2 cannot be linked with state T2s')
