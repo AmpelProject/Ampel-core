@@ -17,7 +17,8 @@ class ChainedT0Muxer(AbsT0Muxer):
 
         self._muxers = [
             self.context.loader.new_context_unit(
-                model=model, logger=self.logger, sub_type=AbsT0Muxer
+                model=model, logger=self.logger, sub_type=AbsT0Muxer, context=self.context,
+                updates_buffer=self.updates_buffer
             )
             for model in self.muxers
         ]
