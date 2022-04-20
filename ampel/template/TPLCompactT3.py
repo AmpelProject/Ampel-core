@@ -27,7 +27,7 @@ class TPLCompactT3(AbsProcessorTemplate, T3DocBuilderModel):
 	- supply: ...
 	  stage: ...
 
-	- unit: T3LuminosityDistance
+	- unit: T3DistanceModulus
 	  config:
 	    redshifts: [0.015, 0.035, 0.045, 0.06, 0.1]
 
@@ -50,7 +50,7 @@ class TPLCompactT3(AbsProcessorTemplate, T3DocBuilderModel):
 	    resolve_config: True
 	    human_id: [unit, tag]
 	    target:
-	      unit: T3LuminosityDistance
+	      unit: T3DistanceModulus
 	      config:
 	        redshifts: [0.015, 0.035, 0.045, 0.06, 0.1]
 
