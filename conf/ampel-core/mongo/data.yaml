@@ -30,6 +30,7 @@ collections:
 - name: t3
   indexes:
   - field: process
+  - field: meta.ts
 role:
   r: logger
   w: writer
