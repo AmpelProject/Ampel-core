@@ -8,6 +8,7 @@
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from argparse import ArgumentParser
+from time import time
 from typing import Any
 from collections.abc import Sequence
 from ampel.log.AmpelLogger import AmpelLogger
@@ -91,16 +92,20 @@ class ConfigCommand(AbsCoreCommand):
 					"Building config, this might take a while... [use -verbose for details]"
 				)
 
+			start_time = time()
 			cb = DistConfigBuilder(verbose=verbose)
-
 			cb.load_distributions()
-
 			cb.build_config(
 				stop_on_errors = 0,
 				skip_default_processes=True,
 				config_validator = None,
 				save = args['out'],
 				ext_resource = args['ext_resource']
+			)
+
+			dm = divmod(time() - start_time, 60)
+			AmpelLogger.get_logger().info(
+				"Done building config. Time required: %s minutes %s seconds\n" % (round(dm[0]), round(dm[1]))
 			)
 
 		else:
