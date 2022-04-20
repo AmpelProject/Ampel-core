@@ -49,7 +49,10 @@ class FirstPassConfig(dict):
 
 		d['pwd'] = []
 
-		d['unit'] = UnitConfigCollector(conf_section="unit", logger=logger, verbose=verbose, get_env=get_env)
+		d['unit'] = UnitConfigCollector(
+			conf_section="unit", logger=logger,
+			verbose=verbose, get_env=get_env
+		)
 
 		# Allow process to be defined in root key
 		d['process'] = ForwardProcessConfigCollector(
