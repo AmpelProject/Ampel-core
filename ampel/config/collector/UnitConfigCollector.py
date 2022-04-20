@@ -4,13 +4,15 @@
 # License:             BSD-3-Clause
 # Author:              valery brinnel <firstname.lastname@gmail.com>
 # Date:                16.10.2019
-# Last Modified Date:  26.01.2022
+# Last Modified Date:  20.04.2022
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-import sys, re, importlib, traceback
+import sys, re, importlib, traceback, pkg_resources
+from os.path import join, basename, sep, relpath
 from typing import Any
 
 from ampel.protocol.LoggingHandlerProtocol import AggregatingLoggingHandlerProtocol
+from ampel.log.handlers.AmpelStreamHandler import AmpelStreamHandler
 from ampel.util.collections import ampel_iter
 from ampel.base.AmpelBaseModel import AmpelBaseModel
 from ampel.config.collector.ConfigCollector import ConfigCollector
@@ -38,9 +40,8 @@ class UnitConfigCollector(ConfigCollector):
 		register_file: str
 	) -> None:
 
-
 		# Cosmetic
-		if isinstance(self.logger.handlers[0], AggregatingLoggingHandlerProtocol):
+		if isinstance(self.logger.handlers[0], (AggregatingLoggingHandlerProtocol, AmpelStreamHandler)):
 			agg_int = self.logger.handlers[0].aggregate_interval
 			self.logger.handlers[0].aggregate_interval = 1000
 
@@ -50,17 +51,41 @@ class UnitConfigCollector(ConfigCollector):
 			try:
 
 				if isinstance(el, str):
-					class_name = self.get_class_name(el)
-					if not (mro := self.get_mro(el, class_name)):
-						self.logger.break_aggregation()
+
+					# Package definition (ex: ampel.ztf.t3)
+					# Auto-load units in defined package
+					if el.split('.')[-1][0].islower():
+
+						try:
+							distrib = pkg_resources.get_distribution(dist_name)
+							sources = distrib.get_resource_string(
+								__name__, join(basename(distrib.egg_info), "SOURCES.txt")
+							).decode('utf8')
+
+							for line in sources.split('\n'):
+								if sep in relpath(line, start=el.replace(".", sep)):
+									continue
+								self.add(
+									line.replace(sep, ".").replace(".py", ""),
+									dist_name, version, register_file
+								)
+						except Exception:
+							self.logger.info(f'Units auto-registration has failed for package {el}')
 						continue
-					entry: dict[str, Any] = {
-						'fqn': el,
-						'base': mro,
-						'distrib': dist_name,
-						'file': register_file,
-						'version': version
-					}
+
+					# Standart unit definition (ex: ampel.t3.stage.T3AggregatingStager)
+					else:
+						class_name = self.get_class_name(el)
+						if not (mro := self.get_mro(el, class_name)):
+							self.logger.break_aggregation()
+							continue
+						entry: dict[str, Any] = {
+							'fqn': el,
+							'base': mro,
+							'distrib': dist_name,
+							'file': register_file,
+							'version': version
+						}
 
 				elif isinstance(el, dict):
 					try:
