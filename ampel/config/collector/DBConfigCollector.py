@@ -4,7 +4,7 @@
 # License:             BSD-3-Clause
 # Author:              valery brinnel <firstname.lastname@gmail.com>
 # Date:                16.10.2019
-# Last Modified Date:  06.02.2020
+# Last Modified Date:  20.04.2022
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from typing import Any
@@ -56,7 +56,23 @@ class DBConfigCollector(AbsDictConfigCollector):
 			if self.verbose:
 				self.logger.log(VERBOSE, f'Configuration of DB collection "{m.name}" is valid')
 
-			dbs.append(arg)
+			if m.name not in [db['name'] for db in dbs]:
+				dbs.append(arg)
+			else:
+				for db in dbs:
+					if db['name'] == m.name:
+						if db['role'] != m.role:
+							raise ValueError(
+								f"Incompatible database configurations for {m.name} (role mismatch)"
+							)
+						common_cols = {col['name'] for col in db['collections']} & {col.name for col in m.collections}
+						if common_cols:
+							raise ValueError(
+								f"Incompatible database configurations for {m.name} (collection already defined)"
+							)
+						for col_def in arg['collections']:
+							db['collections'].append(col_def)
+						break
 
 		except Exception as e:
 
