@@ -13,7 +13,7 @@ from typing import Any
 from collections.abc import Callable
 from ampel.config.builder.ConfigBuilder import ConfigBuilder
 from ampel.util.distrib import get_dist_names, get_files
-from ampel.log import VERBOSE
+from ampel.log import VERBOSE, SHOUT
 
 
 class DistConfigBuilder(ConfigBuilder):
@@ -34,10 +34,17 @@ class DistConfigBuilder(ConfigBuilder):
 		"""
 		for prefix in prefixes:
 
-			for dist_name in get_dist_names(prefix):
+			dist_names = get_dist_names(prefix)
 
-				if self.verbose:
-					self.logger.log(VERBOSE, f"Checking distribution '{dist_name}'")
+			if dist_names:
+				self.logger.log(SHOUT, f"Detected ampel components: '{dist_names}'")
+
+			for dist_name in dist_names:
+
+				self.logger.break_aggregation()
+				s = f"Checking distribution '{dist_name}'"
+				self.logger.log(VERBOSE, s)
+				self.logger.log(VERBOSE, "="*len(s))
 
 				for conf_dir in conf_dirs:
 					for ext in exts:
