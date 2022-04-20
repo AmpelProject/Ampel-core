@@ -4,8 +4,8 @@
 # License:             BSD-3-Clause
 # Author:              valery brinnel <firstname.lastname@gmail.com>
 # Date:                17.06.2020
-# Last Modified Date:  14.12.2021
-# Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
+# Last Modified Date:  28.02.2022
+# Last Modified By:    Marcus Fenner <mf@physik.hu-berlin.de>
 
 from pymongo import MongoClient
 from typing import Optional
@@ -36,7 +36,7 @@ class T3ExtJournalAppender(AbsBufferComplement):
 
 	def __init__(self, **kwargs) -> None:
 
-		super.__init__(**kwargs)
+		super().__init__(**kwargs)
 
 		if self.filter_config:
 			self.journal_filter: SimpleDictArrayFilter[JournalRecord] = SimpleDictArrayFilter(filters=self.filter_config)
