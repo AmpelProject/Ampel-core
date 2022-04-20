@@ -4,18 +4,20 @@
 # License:             BSD-3-Clause
 # Author:              valery brinnel <firstname.lastname@gmail.com>
 # Date:                08.12.2021
-# Last Modified Date:  18.12.2021
+# Last Modified Date:  20.04.2022
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from time import time
 from datetime import datetime
 from typing import Any, Union
+from importlib import import_module
 from collections.abc import Iterable
 
 from ampel.types import Traceless, StockId, UBson, ubson
 from ampel.abstract.AbsT3ReviewUnit import AbsT3ReviewUnit
 from ampel.abstract.AbsT3PlainUnit import AbsT3PlainUnit
 from ampel.abstract.AbsT3ControlUnit import AbsT3ControlUnit
+from ampel.abstract.AbsT3UnitResultAdapter import AbsT3UnitResultAdapter
 from ampel.model.t3.T3DocBuilderModel import T3DocBuilderModel
 from ampel.log.AmpelLogger import AmpelLogger
 from ampel.core.ContextUnit import ContextUnit
@@ -47,6 +49,7 @@ class T3DocBuilder(ContextUnit, T3DocBuilderModel):
 	def __init__(self, **kwargs) -> None:
 
 		super().__init__(**kwargs)
+		self.adapters: dict[str, AbsT3UnitResultAdapter] = {}
 		self.stock_updr = MongoStockUpdater(
 			ampel_db = self.context.db,
 			tier = 3,
@@ -151,6 +154,15 @@ class T3DocBuilder(ContextUnit, T3DocBuilderModel):
 				t3d['tag'] = self.tag
 
 			if res.body:
+
+				if res.adapter:
+					if res.adapter not in self.adapters:
+						self.adapters[res.adapter] = getattr(
+							import_module(f"ampel.t3.adapter.{res.adapter}"),
+							res.adapter
+						)(context = self.context)
+					res = self.adapters[res.adapter].handle(res, t3s)
+
 				t3d['body'] = res.body
 				actact |= MetaActionCode.ADD_BODY
 
