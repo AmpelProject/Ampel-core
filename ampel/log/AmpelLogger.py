@@ -4,7 +4,7 @@
 # License:             BSD-3-Clause
 # Author:              valery brinnel <firstname.lastname@gmail.com>
 # Date:                27.09.2018
-# Last Modified Date:  18.12.2020
+# Last Modified Date:  20.04.2022
 # Last Modified By:    Jakob van Santen <jakob.van.santen@desy.de>
 
 import logging, sys, traceback
@@ -173,7 +173,7 @@ class AmpelLogger:
 
 	def break_aggregation(self) -> None:
 		for el in self.handlers:
-			if isinstance(el, AggregatingLoggingHandlerProtocol):
+			if isinstance(el, (AggregatingLoggingHandlerProtocol, AmpelStreamHandler)):
 				el.break_aggregation()
 
 
