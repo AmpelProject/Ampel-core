@@ -104,5 +104,7 @@ class T3PlainUnitExecutor(AbsT3ControlUnit, T3DocBuilder):
 				return build_unsafe_dict_id(dictify(vc))
 			elif isinstance(self.target.cache.config, int):
 				return self.target.cache.config
+			else:
+				print(type(self.target.cache.config))
 
 		raise ValueError("Bad config")
