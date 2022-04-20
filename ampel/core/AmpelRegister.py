@@ -167,7 +167,7 @@ class AmpelRegister(AmpelUnit):
 	#: compression scheme
 	compression: None | Literal['gz', 'bz2', 'xz'] = 'gz'
 	#: compression level
-	compress_level: None | int
+	compression_level: None | int
 
 	# General header options
 	new_header_size: None | int | str
