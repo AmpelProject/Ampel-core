@@ -4,7 +4,7 @@
 # License:             BSD-3-Clause
 # Author:              valery brinnel <firstname.lastname@gmail.com>
 # Date:                28.05.2021
-# Last Modified Date:  14.12.2021
+# Last Modified Date:  21.04.2022
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 import gc, signal
@@ -71,6 +71,10 @@ class AbsWorker(Generic[T], AbsEventUnit, abstract=True):
 
 	tier: ClassVar[Literal[1, 2]]
 
+	#: Minimum age of documents to be matched
+	#: {'$expr': {'$lt': [{'$last': '$meta.ts'}, now - min_doc_age]}}
+	min_doc_age: None | float
+
 	#: For later
 	database: str = "mongo"
 
@@ -90,6 +94,11 @@ class AbsWorker(Generic[T], AbsEventUnit, abstract=True):
 		# Possibly restrict query to specified t2 units
 		if self.unit_ids:
 			self.query['unit'] = maybe_match_array(self.unit_ids)
+
+		if self.min_doc_age:
+			self.query['$expr'] = {
+				'$lt': [{'$last': '$meta.ts'}, time() - self.min_doc_age]
+			}
 
 		# Shortcut
 		self.col_stock = self._ampel_db.get_collection('stock')
