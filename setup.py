@@ -4,7 +4,7 @@
 # License:             BSD-3-Clause
 # Author:              valery brinnel <firstname.lastname@gmail.com>
 # Date:                Unspecified
-# Last Modified Date:  09.01.2022
+# Last Modified Date:  21.04.2022
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from setuptools import setup, find_namespace_packages
@@ -72,7 +72,7 @@ entry_points = {
 
 setup(
     name = 'ampel-core',
-    version = '0.8.3.alpha-7',
+    version = '0.8.3.alpha-8',
     description = 'Asynchronous and Modular Platform with Execution Layers',
     author = 'Valery Brinnel',
     maintainer = 'Jakob van Santen',
