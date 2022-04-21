@@ -4,7 +4,7 @@
 # License:             BSD-3-Clause
 # Author:              valery brinnel <firstname.lastname@gmail.com>
 # Date:                16.03.2021
-# Last Modified Date:  13.12.2021
+# Last Modified Date:  21.04.2022
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from datetime import datetime
@@ -150,17 +150,17 @@ class T2Command(AbsCoreCommand):
 			m = t2_utils.match_t2s(**args)
 			limit = args.get('limit', False)
 			if args.get('dry_run'):
-				c = col.count_documents(m)
+				count = col.count_documents(m)
 				if limit:
-					c = min(limit, c)
+					count = min(limit, count)
 				logger.info(
 					f"Query: {m}\n"
-					f"Number of matched documents: {c}\n"
+					f"Number of matched documents: {count}\n"
 					f"Exiting (dry-run)"
 				)
 				return
-			else:
-				c = col.find(m).limit(limit) if limit else col.find(m)
+
+			c = col.find(m).limit(limit) if limit else col.find(m)
 
 			if args['resolve_config'] or args['human_times'] or id_mapper:
 				resolve_config = args['resolve_config']
