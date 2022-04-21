@@ -71,7 +71,7 @@ class AbsWorker(Generic[T], AbsEventUnit, abstract=True):
 
 	tier: ClassVar[Literal[1, 2]]
 
-	#: Minimum age of documents to be matched
+	#: Minimum age of documents to be matched (in seconds)
 	#: {'$expr': {'$lt': [{'$last': '$meta.ts'}, now - min_doc_age]}}
 	min_doc_age: None | float
 
