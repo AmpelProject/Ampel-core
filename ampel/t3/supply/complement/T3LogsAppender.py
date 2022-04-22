@@ -31,7 +31,7 @@ class T3LogsAppender(AbsBufferComplement):
 
 	def complement(self, it: Iterable[AmpelBuffer], t3s: T3Store) -> None:
 
-		query = {'s': {'$in': [el['id'] for el in it]}}
+		query: dict[str, Any] = {'s': {'$in': [el['id'] for el in it]}}
 
 		if t3s.session and self.use_last_run and t3s.session.get('last_run'):
 			query['_id'] = {

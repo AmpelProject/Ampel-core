@@ -44,7 +44,7 @@ class T3FilteringStockSelector(T3StockSelector):
 	chunk_size: int = 200
 
 	# Override/Implement
-	def fetch(self) -> Generator[dict[str,Any], None, None]:
+	def fetch(self) -> Generator[dict[str, Any], None, None]: # type: ignore[override]
 
 		# Execute query on T0 collection to get target stocks
 		if not (cursor := super().fetch()):

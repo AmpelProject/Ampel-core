@@ -74,6 +74,7 @@ def test_unit_raises_error(
     t3.run()
     assert dev_context.db.get_collection("events").count_documents({}) == 1
     event = dev_context.db.get_collection("events").find_one({})
+    assert event
     assert event["run"] == 1
     assert event["success"] == expect_success
 
@@ -131,6 +132,7 @@ def test_view_generator(dev_context: DevAmpelContext, ingest_stock):
     t3.run()
 
     stock = dev_context.db.get_collection("stock").find_one()
+    assert stock
     assert "TAGGYTAG" in stock["tag"]
     assert "floopsy" in stock["name"]
     assert len(entries := [jentry for jentry in stock["journal"] if jentry["tier"] == 3]) == 1

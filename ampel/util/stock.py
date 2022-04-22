@@ -11,12 +11,12 @@ from pymongo import MongoClient
 from pymongo.collection import Collection
 from multiprocessing import Pool
 from collections.abc import Sequence
-from ampel.types import ChannelId, StockId
+from ampel.types import ChannelId, StockId, OneOrMany
 
 
 def get_ids_using_find(
 	col: Collection,
-	channel: ChannelId | Sequence[ChannelId],
+	channel: OneOrMany[ChannelId],
 	batch_size=1000000
 ) -> dict[ChannelId, set[StockId]]:
 
@@ -33,10 +33,12 @@ def get_ids_using_find(
 
 
 def get_ids_using_parallel_find(
-	channel: ChannelId | Sequence[ChannelId],
+	channel: OneOrMany[ChannelId],
 	mongo_uri: None | str = None,
-	db_name='Ampel_data', col_name='stock', *,
-	pool_size=None, batch_size=1000000
+	db_name: str = 'Ampel_data',
+	col_name: str = 'stock', *,
+	pool_size: None | int = None,
+	batch_size: int = 1000000
 ) -> dict[ChannelId, set[StockId]]:
 
 	if isinstance(channel, (int, str)):
@@ -68,16 +70,18 @@ def get_ids_using_parallel_find(
 
 
 def find_ids_worker(
-	channel: ChannelId | Sequence[ChannelId],
-	mongo_uri: None | str = None, db_name='Ampel_data',
-	col_name='stock', batch_size=1000000
+	channel: OneOrMany[ChannelId],
+	mongo_uri: None | str = None,
+	db_name: str = 'Ampel_data',
+	col_name: str = 'stock',
+	batch_size: int = 1000000
 ) -> set[StockId]:
 
-	mc = MongoClient(mongo_uri)
-	db = mc.get_database(db_name)
-
-	return {
-		el['_id'] for el in db.get_collection(col_name) \
-			.find({'channel': channel}, {'_id': 1}) \
+	return { # type: ignore[var-annotated]
+		el['_id']
+		for el in MongoClient(mongo_uri)
+			.get_database(db_name)
+			.get_collection(col_name)
+			.find({'channel': channel}, {'_id': 1})
 			.batch_size(batch_size)
 	}

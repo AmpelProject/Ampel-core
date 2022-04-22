@@ -56,10 +56,10 @@ def test_error_reporting(dev_context: DevAmpelContext):
             {"ts": 0, "tier": 2}
         ]
     }
-    dev_context.db.get_collection("t2").insert_one(doc)
+    dev_context.db.get_collection("t2").insert_one(doc) # type: ignore[arg-type]
     t2 = T2Worker(context=dev_context, raise_exc=False, process_name="t2", run_dependent_t2s=True)
     assert t2.run() == 1
-    assert (doc := dev_context.db.get_collection("t2").find_one({}))
+    assert (doc := dev_context.db.get_collection("t2").find_one({})) # type: ignore[assignment]
     assert doc["code"] == DocumentCode.EXCEPTION
     assert (trouble := dev_context.db.get_collection("troubles").find_one({}))
     assert trouble["channel"] == channels

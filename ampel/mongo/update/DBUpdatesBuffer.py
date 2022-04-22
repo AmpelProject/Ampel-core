@@ -4,7 +4,7 @@
 # License:             BSD-3-Clause
 # Author:              valery brinnel <firstname.lastname@gmail.com>
 # Date:                31.10.2018
-# Last Modified Date:  01.05.2020
+# Last Modified Date:  22.04.2022
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from time import time
@@ -13,7 +13,7 @@ from multiprocessing.pool import ThreadPool
 from pymongo.errors import BulkWriteError
 from pymongo.collection import Collection
 from pymongo import UpdateOne, InsertOne, UpdateMany
-from typing import Any, Literal, Union
+from typing import Any, Literal, Union, Mapping
 from collections.abc import Callable, Iterable
 
 from ampel.core.Schedulable import Schedulable
@@ -368,7 +368,7 @@ class DBUpdatesBuffer(Schedulable):
 
 					if dup_key_only:
 						self.logger.debug(
-							f"Race condition(s) recovered: {len(bwe.details.get('writeErrors'))}",
+							f"Race condition(s) recovered: {len(bwe.details.get('writeErrors', []))}",
 							extra=self._build_log_extra(col_name, db_ops, bwe.details, extra)
 						)
 
@@ -395,8 +395,9 @@ class DBUpdatesBuffer(Schedulable):
 
 
 	def _build_log_extra(self,
-		col_name: str, ops: list[DBOp],
-		bulk_api_result: dict[str, Any],
+		col_name: str,
+		ops: list[DBOp],
+		bulk_api_result: Mapping[str, Any],
 		extra: None | dict[str, Any] = None
 	) -> dict[str, Any]:
 
@@ -408,14 +409,15 @@ class DBUpdatesBuffer(Schedulable):
 		}
 
 		if self.log_doc_ids and ret['col'] in self.log_doc_ids:
+			op_filter = op._filter # type: ignore[name-defined]
 			if ret['col'] != 2:
-				ret['docs'] = [op._filter['_id'] for op in ops]
+				ret['docs'] = [op_filter['_id'] for op in ops]
 			else:
 				ret['docs'] = [
 					{
-						'unit': op._filter['unit'],
-						'config': op._filter['config'],
-						'link': op._filter['link']
+						'unit': op_filter['unit'],
+						'config': op_filter['config'],
+						'link': op_filter['link']
 					}
 					for op in ops
 				]

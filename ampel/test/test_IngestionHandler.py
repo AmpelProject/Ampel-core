@@ -321,6 +321,7 @@ def test_t0_meta_append(
     handler.updates_buffer.push_updates(force=True)
 
     doc = mock_context.db.get_collection("t0").find_one({"id": datapoints[0]["id"]})
+    assert doc is not None
     assert doc["channel"] == ["SOME_CHANNEL"]
     assert set(tags).intersection(doc["tag"]), "initial datapoint tags set"
     assert set(doc["tag"]).difference(tags), "compiler adds its own tags"

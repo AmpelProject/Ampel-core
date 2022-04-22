@@ -157,7 +157,7 @@ class T3Processor(AbsEventUnit):
 						if 'meta' not in t3d:
 							raise ValueError("Invalid T3Document")
 						t3d['meta']['traceid'] = {'t3processor': self._trace_id}
-						self.context.db.get_collection('t3').insert_one(t3d)
+						self.context.db.get_collection('t3').insert_one(t3d) # type: ignore[arg-type]
 
 
 		except Exception as e:

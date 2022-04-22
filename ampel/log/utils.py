@@ -149,7 +149,7 @@ def report_error(
 	import inspect
 	frame, filename, line_number, function_name, lines, index = inspect.stack()[1]
 
-	trouble: dict[str, None | int | str] = {
+	trouble: dict[str, None | int | str | ObjectId] = {
 		'_id': ObjectId(),
 		'datetime': datetime.now().strftime('%d/%m/%Y %H:%M:%S'),
 		'tier': get_tier_from_logger(logger),

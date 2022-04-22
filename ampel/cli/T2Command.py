@@ -173,7 +173,7 @@ class T2Command(AbsCoreCommand):
 
 		elif sub_op == 'save':
 
-			c = t2_utils.get_t2s(col=col, **args)
+			cc = t2_utils.get_t2s(col=col, **args)
 			if args.get('dry_run'):
 				logger.info("Exiting (dry-run)")
 				return
@@ -182,7 +182,7 @@ class T2Command(AbsCoreCommand):
 			human_times = args['human_times']
 			with open(args['out'], 'w') as f:
 				f.write("[\n")
-				for el in c:
+				for el in cc:
 					f.write(
 						prettyjson(
 							self.morph_ret(ctx, el, resolve_config, human_times, id_mapper)

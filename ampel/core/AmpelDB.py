@@ -82,7 +82,7 @@ class AmpelDB(AmpelUnit):
 			for col in db_config.collections
 		}
 
-		self.mongo_collections: dict[str, Collection] = {}
+		self.mongo_collections: dict[str, dict[str, Collection]] = {}
 		self.mongo_clients: dict[str, MongoClient] = {} # map role with client
 
 		if self.require_exists and not self._get_pymongo_db("data", role="w").list_collection_names():
@@ -384,7 +384,7 @@ class AmpelDB(AmpelUnit):
 		self.delete_view("_AND_".join(map(str, channels)), logger)
 
 
-	def delete_view(self, view_prefix: str, logger: 'None | AmpelLogger' = None) -> Collection:
+	def delete_view(self, view_prefix: str, logger: 'None | AmpelLogger' = None) -> None:
 
 		db = self._get_pymongo_db("data", role="w")
 		for el in ("stock", "t0", "t1", "t2", "t3"):
@@ -437,7 +437,7 @@ class AmpelDB(AmpelUnit):
 		self.conf_ids.add(conf_id)
 
 
-def provision_accounts(ampel_db: AmpelDB, auth: dict[str, str] = {}) -> dict[str, Any]:
+def provision_accounts(ampel_db: AmpelDB, auth: dict[str, Any] = {}) -> dict[str, Any]:
 	"""Create accounts required by the given Ampel configuration."""
 	roles = defaultdict(list)
 	for db in ampel_db.databases:
@@ -445,7 +445,7 @@ def provision_accounts(ampel_db: AmpelDB, auth: dict[str, str] = {}) -> dict[str
 		roles[db.role.r].append({"db": name, "role": "read"})
 		roles[db.role.w].append({"db": name, "role": "readWrite"})
 	users = dict()
-	admin = MongoClient(ampel_db.mongo_uri, **auth).get_database("admin")
+	admin: Database = MongoClient(ampel_db.mongo_uri, **auth).get_database("admin")
 	tag = secrets.token_hex(8)
 	for name, all_roles in roles.items():
 		username = f"{name}-{tag}"
@@ -455,11 +455,11 @@ def provision_accounts(ampel_db: AmpelDB, auth: dict[str, str] = {}) -> dict[str
 	return users
 
 
-def revoke_accounts(ampel_db: AmpelDB, auth: dict[str, str] = {}) -> None:
+def revoke_accounts(ampel_db: AmpelDB, auth: dict[str, Any] = {}) -> None:
 	"""Delete accounts previously created with "provision"."""
 	if ampel_db.vault is None:
 		raise ValueError("No secrets vault configured")
-	admin = MongoClient(ampel_db.mongo_uri, **auth).get_database("admin")
+	admin: Database = MongoClient(ampel_db.mongo_uri, **auth).get_database("admin")
 	roles = {role for db in ampel_db.databases for role in db.role.dict().values()}
 	for role in roles:
 		if secret := ampel_db.vault.get_named_secret(f"mongo/{role}", dict):
@@ -468,20 +468,21 @@ def revoke_accounts(ampel_db: AmpelDB, auth: dict[str, str] = {}) -> None:
 			raise ValueError(f"Unknown role '{role}'")
 
 
-def list_accounts(ampel_db: AmpelDB, auth: dict[str, str] = {}) -> dict[str, Any]:
+def list_accounts(ampel_db: AmpelDB, auth: dict[str, Any] = {}) -> dict[str, Any]:
 	"""List configured accounts and roles."""
-	admin = MongoClient(ampel_db.mongo_uri, **auth).get_database("admin")
-	return admin.command("usersInfo")
+	return MongoClient(ampel_db.mongo_uri, **auth) \
+		.get_database("admin") \
+		.command("usersInfo")
 
 
-def init_db(ampel_db: AmpelDB, auth: dict[str, str] = {}) -> None:
+def init_db(ampel_db: AmpelDB, auth: dict[str, Any] = {}) -> None:
 	"""Initialize Ampel databases and collections."""
 	if auth:
 		print("="*40)
 		print("DANGEROUS THINGS ARE ABOUT TO HAPPEN!")
 		print("="*40)
 		if input(f"Do you really want to reinitialize databases {[ampel_db.prefix+'_'+db.name for db in ampel_db.databases]} on {ampel_db.mongo_uri}? All data will be lost. Type 'yessir' to proceed: ") == "yessir":
-			mc = MongoClient(ampel_db.mongo_uri, **auth)
+			mc: MongoClient = MongoClient(ampel_db.mongo_uri, **auth)
 			for db in ampel_db.databases:
 				name = f"{ampel_db.prefix}_{db.name}"
 				mc.drop_database(name)

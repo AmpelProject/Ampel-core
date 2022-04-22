@@ -8,6 +8,7 @@
 # Last Modified By:    Marcus Fenner <mf@physik.hu-berlin.de>
 
 from pymongo import MongoClient
+from pymongo.collection import Collection
 from typing import Optional
 from collections.abc import Iterable
 from ampel.types import StockId
@@ -41,7 +42,12 @@ class T3ExtJournalAppender(AbsBufferComplement):
 		if self.filter_config:
 			self.journal_filter: SimpleDictArrayFilter[JournalRecord] = SimpleDictArrayFilter(filters=self.filter_config)
 
-		self.col = MongoClient(self.context.config.get(f'resource.{self.mongo_resource}')) \
+		self.col: Collection = MongoClient(
+			**self.context.config.get(
+				f'resource.{self.mongo_resource}',
+				dict, raise_exc=True
+			)
+		) \
 			.get_database(self.db_name)\
 			.get_collection("stock")
 

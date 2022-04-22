@@ -60,7 +60,7 @@ class EventHandler:
 			self.ins_id = ObjectId()
 		else:
 			self.col = ampel_db.get_collection(col_name)
-			self.ins_id = self.col.insert_one(doc).inserted_id
+			self.ins_id = self.col.insert_one(doc).inserted_id # type: ignore[arg-type]
 
 
 	def get_run_id(self) -> int:

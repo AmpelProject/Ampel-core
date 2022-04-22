@@ -4,7 +4,7 @@
 # License:             BSD-3-Clause
 # Author:              valery brinnel <firstname.lastname@gmail.com>
 # Date:                13.01.2018
-# Last Modified Date:  02.12.2021
+# Last Modified Date:  22.04.2022
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from bson.codec_options import CodecOptions
@@ -42,7 +42,7 @@ class DataLoader:
 		channel: None | ChannelId | AllOf[ChannelId] | AnyOf[ChannelId] | OneOf[ChannelId] = None,
 		tag: None | dict[Literal['with', 'without'], Tag | dict | AllOf[Tag] | AnyOf[Tag] | OneOf[Tag]] = None,
 		auto_project: bool = True,
-		codec_options: CodecOptions = CodecOptions(document_class=FrozenValuesDict),
+		codec_options: None | CodecOptions = CodecOptions(document_class=FrozenValuesDict),
 		logger: None | AmpelLogger = None
 	) -> Iterable[AmpelBuffer]:
 		"""
@@ -184,9 +184,9 @@ class DataLoader:
 
 		if logger and logger.verbose:
 			s = f"Unique ids: {len(register)}"
-			for col in (col_set - set(["stock"])):
-				s += f", {col}: "
-				s += str(sum([1 for k in register for el in register[k][col]])) # type: ignore
+			for col_name in (col_set - set(["stock"])):
+				s += f", {col_name}: "
+				s += str(sum([1 for k in register for el in register[k][col_name]])) # type: ignore[union-attr]
 			logger.info(s)
 
 		return register.values()
