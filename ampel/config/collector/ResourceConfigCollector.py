@@ -14,11 +14,9 @@ from ampel.config.collector.AbsDictConfigCollector import AbsDictConfigCollector
 
 class ResourceConfigCollector(AbsDictConfigCollector):
 
-	def __init__(self,
-		conf_section: str, content: None | dict = None,
-		logger: None | AmpelLogger = None, verbose: bool = False
-	):
-		super().__init__(conf_section, content, logger, verbose)
+	def __init__(self, **kwargs):
+
+		super().__init__(**kwargs)
 
 		# Used to temporarily save distribution/source conf information of aliases
 		# (usefuly in case of conflicts)
@@ -84,5 +82,5 @@ class ResourceConfigCollector(AbsDictConfigCollector):
 				self.error(
 					f"Error occured while loading resource {k} " +
 					self.distrib_hint(dist_name, register_file),
-					exc_info=e
+					exc_info = e
 				)
