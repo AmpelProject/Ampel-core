@@ -13,6 +13,7 @@ from ampel.config.AmpelConfig import AmpelConfig
 from ampel.base.AuxUnitRegister import AuxUnitRegister
 from ampel.secret.AmpelVault import AmpelVault
 from ampel.secret.AESecretProvider import AESecretProvider
+from ampel.config.builder.DisplayOptions import DisplayOptions
 
 # Avoid cyclic import issues
 if TYPE_CHECKING:
@@ -129,7 +130,7 @@ class AmpelContext:
 
 		# Import here to avoid cyclic import error
 		from ampel.config.builder.DistConfigBuilder import DistConfigBuilder
-		cb = DistConfigBuilder(verbose=verbose)
+		cb = DistConfigBuilder(options=DisplayOptions(verbose=verbose))
 		cb.load_distributions()
 
 		return cls.load(

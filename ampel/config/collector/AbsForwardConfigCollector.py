@@ -13,6 +13,7 @@ import ampel.config.builder.FirstPassConfig as fpc # avoid circular import issue
 from ampel.base.decorator import abstractmethod
 from ampel.base.AmpelABC import AmpelABC
 from ampel.log.AmpelLogger import AmpelLogger, VERBOSE
+from ampel.config.builder.DisplayOptions import DisplayOptions
 
 
 class AbsForwardConfigCollector(dict, AmpelABC, abstract=True):
@@ -22,19 +23,19 @@ class AbsForwardConfigCollector(dict, AmpelABC, abstract=True):
 		# Forward reference type hint to avoid cyclic import issues
 		root_config: 'fpc.FirstPassConfig',
 		conf_section: str,
+		options: DisplayOptions,
 		target_collector_type: type,
-		logger: None | AmpelLogger = None,
-		verbose: bool = False,
+		logger: None | AmpelLogger = None
 	) -> None:
 
 		self.has_error = False
-		self.verbose = verbose
+		self.verbose = options.verbose
 		self.root_config = root_config
 		self.conf_section = conf_section
 		self.target_collector_type = target_collector_type
 		self.logger = AmpelLogger.get_logger() if logger is None else logger
 
-		if verbose:
+		if self.verbose:
 			self.logger.log(VERBOSE,
 				f'Creating {self.__class__.__name__} collector '
 				f'for config section "{conf_section}"'

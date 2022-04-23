@@ -14,6 +14,7 @@ from collections.abc import Mapping, Iterable
 from argparse import ArgumentParser, ArgumentTypeError, FileType, Namespace
 
 from ampel.base.BadConfig import BadConfig
+from ampel.config.builder.DisplayOptions import DisplayOptions
 from ampel.config.builder.DistConfigBuilder import DistConfigBuilder
 from ampel.log.utils import log_exception
 from ampel.core.AmpelContext import AmpelContext
@@ -49,12 +50,15 @@ def transform(args: Namespace) -> None:
 
 def build(args: Namespace) -> int:
     """Build config file from installed distributions"""
-    cb = DistConfigBuilder(verbose=args.verbose, get_env=args.get_env)
+    cb = DistConfigBuilder(
+        DisplayOptions(verbose = args.verbose)
+    )
     try:
         cb.load_distributions()
         config = cb.build_config(
-            stop_on_errors=0 if args.ignore_errors else 2,
-            config_validator="ConfigValidator",
+            stop_on_errors = 0 if args.ignore_errors else 2,
+            config_validator = "ConfigValidator",
+			get_unit_env = args.get_env
         )
     except Exception as exc:
         # assume that BadConfig means the error was already logged

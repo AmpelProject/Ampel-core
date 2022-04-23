@@ -4,7 +4,7 @@
 # License:             BSD-3-Clause
 # Author:              valery brinnel <firstname.lastname@gmail.com>
 # Date:                03.09.2019
-# Last Modified Date:  16.11.2021
+# Last Modified Date:  23.04.2022
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 import os, sys, re, json, yaml, datetime, getpass, importlib, subprocess
@@ -15,6 +15,7 @@ from collections.abc import Iterable
 from ampel.log.utils import log_exception
 from ampel.abstract.AbsChannelTemplate import AbsChannelTemplate
 from ampel.log.AmpelLogger import AmpelLogger, VERBOSE, DEBUG, ERROR
+from ampel.config.builder.DisplayOptions import DisplayOptions
 from ampel.config.builder.FirstPassConfig import FirstPassConfig
 from ampel.config.collector.ConfigCollector import ConfigCollector
 from ampel.config.collector.T02ConfigCollector import T02ConfigCollector
@@ -38,14 +39,16 @@ class ConfigBuilder:
 
 	_default_processes = ["DefaultT2Process", "DefaultPurge"]
 
-	def __init__(self, logger: AmpelLogger = None, verbose: bool = False, get_env: bool = True):
+	def __init__(self, options: DisplayOptions, logger: AmpelLogger = None) -> None:
 
 		self.logger = AmpelLogger.get_logger(
-			console={'level': DEBUG if verbose else ERROR}
+			console={'level': DEBUG if options.verbose else ERROR}
 		) if logger is None else logger
-		self.first_pass_config = FirstPassConfig(self.logger, verbose, get_env=get_env)
+
+		self.first_pass_config = FirstPassConfig(options, self.logger)
 		self.templates: dict[str, Any] = {}
-		self.verbose = verbose
+		self.verbose = options.verbose
+		self.options = options
 		self.error = False
 
 
@@ -187,9 +190,7 @@ class ConfigBuilder:
 
 		# Add t2 init config collector (in which both hashed values of t2 run configs
 		# and t2 init config will be added)
-		out['confid'] = T02ConfigCollector(
-			conf_section='confid', logger=self.logger, verbose=self.verbose
-		)
+		out['confid'] = T02ConfigCollector('confid', self.options, logger=self.logger)
 
 		# Add (possibly transformed) processes to output config
 		for tier in (0, 1, 2, 3, "ops"):
@@ -200,8 +201,7 @@ class ConfigBuilder:
 				self.logger.log(VERBOSE, f'Checking standalone {tier_name} processes')
 
 			p_collector = ProcessConfigCollector(
-				tier=tier, conf_section='process', # type: ignore[arg-type]
-				logger=self.logger, verbose=self.verbose
+				'process', self.options, tier=tier, logger=self.logger # type: ignore[arg-type]
 			)
 
 			#out['process'][f't{tier}'] = {
@@ -243,10 +243,7 @@ class ConfigBuilder:
 						raise e
 
 		# Setup empty channel collector
-		out['channel'] = ChannelConfigCollector(
-			conf_section='channel', logger=self.logger, verbose=self.verbose
-		)
-
+		out['channel'] = ChannelConfigCollector('channel', self.options, logger=self.logger)
 		morph_errors = []
 
 		# Fill it with (possibly transformed) channels
@@ -367,11 +364,13 @@ class ConfigBuilder:
 
 		# Error Summary
 		if out['unit'].err_fqns:
+			self.logger.break_aggregation()
 			self.logger.info('Erroneous units (import failed):')
 			for el in out['unit'].err_fqns:
-				self.logger.info(el) # type: ignore[arg-type]
+				self.logger.info(f"{el[0]} - [{el[1].__class__.__name__}] {el[1]}")
 
 		if morph_errors:
+			self.logger.break_aggregation()
 			self.logger.info('Erroneous process definitions (morphing failed):')
 			for el in morph_errors:
 				self.logger.info(el) # type: ignore[arg-type]
@@ -424,7 +423,9 @@ class ConfigBuilder:
 				h = hashlib.blake2b(path.read_bytes()).hexdigest()[:sign]
 				path = path.rename(path.with_stem(f"{path.stem}_{h}"))
 
-			self.logger.log(VERBOSE, f'Config file saved as {path}')
+			self.logger.break_aggregation()
+			with open(path, "r") as file:
+				self.logger.info(f'Config file saved as {path} [{len(file.readlines())} lines]')
 
 		return d
 
