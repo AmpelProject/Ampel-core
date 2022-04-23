@@ -4,19 +4,19 @@
 # License:             BSD-3-Clause
 # Author:              valery brinnel <firstname.lastname@gmail.com>
 # Date:                17.07.2021
-# Last Modified Date:  12.10.2021
+# Last Modified Date:  23.04.2022
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from argparse import ArgumentParser
 from time import time
 from typing import Any
 from collections.abc import Sequence
-from ampel.log.AmpelLogger import AmpelLogger
+from ampel.log.AmpelLogger import AmpelLogger, DEBUG, INFO
 from ampel.cli.AbsCoreCommand import AbsCoreCommand
 from ampel.cli.AmpelArgumentParser import AmpelArgumentParser
 from ampel.cli.ArgParserBuilder import ArgParserBuilder
 from ampel.config.builder.DistConfigBuilder import DistConfigBuilder
-
+from ampel.config.builder.DisplayOptions import DisplayOptions
 
 hlp = {
 	'config': 'Path to an ampel config file (yaml/json)',
@@ -29,13 +29,15 @@ hlp = {
 		'- 1: ignore errors in first_pass_config only (will stop on morphing/scoping/template errors)\n' +
 		'- 0: ignore all errors',
 	'verbose': 'verbose',
-	'ext-resource': 'path to resource config file (yaml) to be integrated into the final ampel config'
+	'ext-resource': 'path to resource config file (yaml) to be integrated into the final ampel config',
+	'hide-module-not-found-errors': 'Hide corresponding exceptions stack',
+	'hide-stderr': 'Hide stderr messages arising during imports (from healpix for ex.)',
+	'no-provenance': 'Do not retrieve and save unit module dependencies'
 }
 
 
 class ConfigCommand(AbsCoreCommand):
-	"""
-	"""
+
 
 	def __init__(self):
 		self.parsers = {}
@@ -64,8 +66,11 @@ class ConfigCommand(AbsCoreCommand):
 		builder.add_arg("optional", "secrets", default=None)
 		builder.add_arg('optional', 'verbose', action="store_true")
 
-		builder.add_arg("build.optional", "sign", action="store_true")
+		builder.add_arg("build.optional", "sign", type=int, default=0)
 		builder.add_arg("build.optional", "ext-resource")
+		builder.add_arg("build.optional", "hide-module-not-found-errors", action="store_true")
+		builder.add_arg("build.optional", "hide-stderr", action="store_true")
+		builder.add_arg("build.optional", "no-provenance", action="store_true")
 		builder.add_arg("show.optional", "pretty", action="store_true")
 		builder.add_arg("build.optional", "stop-on-errors", default=2)
 
@@ -87,26 +92,39 @@ class ConfigCommand(AbsCoreCommand):
 
 		if sub_op == 'build':
 
-			if not (verbose := args.get('verbose', False)):
-				AmpelLogger.get_logger().info(
-					"Building config, this might take a while... [use -verbose for details]"
-				)
+			logger = AmpelLogger.get_logger(
+				console={'level': DEBUG if args.get('verbose', False) else INFO}
+			)
+			logger.info("Building config [use -verbose for more details]")
 
 			start_time = time()
-			cb = DistConfigBuilder(verbose=verbose)
+			cb = DistConfigBuilder(
+				options = DisplayOptions(
+					verbose = args['verbose'],
+					hide_stderr = args['hide_stderr'],
+					hide_module_not_found_errors = args['hide_module_not_found_errors']
+				),
+				logger = logger
+			)
+
 			cb.load_distributions()
 			cb.build_config(
 				stop_on_errors = 0,
 				skip_default_processes=True,
 				config_validator = None,
 				save = args['out'],
-				ext_resource = args['ext_resource']
+				ext_resource = args['ext_resource'],
+				sign = args['sign'],
+				get_unit_env = not args['no_provenance'],
 			)
 
 			dm = divmod(time() - start_time, 60)
-			AmpelLogger.get_logger().info(
-				"Done building config. Time required: %s minutes %s seconds\n" % (round(dm[0]), round(dm[1]))
+			logger.info(
+				"Total time required: %s minutes %s seconds\n" %
+				(round(dm[0]), round(dm[1]))
 			)
 
-		else:
-			raise NotImplementedError("Not implemented yet")
+			logger.flush()
+			return
+
+		raise NotImplementedError("Not implemented yet")
