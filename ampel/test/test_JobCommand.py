@@ -1,11 +1,7 @@
-import sys
+import sys, pytest, yaml
 from contextlib import contextmanager
-from os import path
 from pathlib import Path
 from typing import Optional
-
-import pytest
-import yaml
 from pytest_mock import MockerFixture
 
 from ampel.cli.main import main
