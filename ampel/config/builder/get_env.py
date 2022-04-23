@@ -1,3 +1,12 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+# File:                Ampel-core/ampel/config/builder/get_env.py
+# License:             BSD-3-Clause
+# Author:              valery brinnel <firstname.lastname@gmail.com>
+# Date:                Undefined
+# Last Modified Date:  23.04.2022
+# Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
+
 import sys, importlib
 from pip._internal.operations import freeze
 
@@ -6,8 +15,8 @@ if __name__ == "__main__":
 	exceptions = {
 
 		# Irrevelant
-		"typing-extensions", "prometheus-client",
-		"certifi", "six",
+		"typing-extensions", "typing_extensions",
+		"prometheus-client", "certifi", "six",
 
 		# Global (added for each unit)
 		"pydantic", "pymongo", "ujson", "xxhash"
