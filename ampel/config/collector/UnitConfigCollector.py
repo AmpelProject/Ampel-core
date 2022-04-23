@@ -4,16 +4,18 @@
 # License:             BSD-3-Clause
 # Author:              valery brinnel <firstname.lastname@gmail.com>
 # Date:                16.10.2019
-# Last Modified Date:  20.04.2022
+# Last Modified Date:  23.04.2022
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-import sys, re, importlib, traceback, pkg_resources
-from os.path import join, basename, sep, relpath
+import os, sys, re, importlib, traceback
 from typing import Any
+from os.path import sep
+from contextlib import contextmanager
 
 from ampel.protocol.LoggingHandlerProtocol import AggregatingLoggingHandlerProtocol
 from ampel.log.handlers.AmpelStreamHandler import AmpelStreamHandler
 from ampel.util.collections import ampel_iter
+from ampel.util.distrib import get_files
 from ampel.base.AmpelBaseModel import AmpelBaseModel
 from ampel.config.collector.ConfigCollector import ConfigCollector
 from ampel.log import VERBOSE
@@ -27,10 +29,9 @@ class RemoteUnitDefinition(AmpelBaseModel):
 class UnitConfigCollector(ConfigCollector):
 
 
-	def __init__(self, get_env: bool = True, **kwargs) -> None:
-		self.get_env = get_env
+	def __init__(self, **kwargs) -> None:
 		super().__init__(**kwargs)
-		self.err_fqns: list[str] = []
+		self.err_fqns: list[tuple[str, Exception]] = []
 
 
 	def add(self,
@@ -55,18 +56,13 @@ class UnitConfigCollector(ConfigCollector):
 					# Package definition (ex: ampel.ztf.t3)
 					# Auto-load units in defined package
 					if el.split('.')[-1][0].islower():
-
+						package_path = el.replace(".", sep)
 						try:
-							distrib = pkg_resources.get_distribution(dist_name)
-							sources = distrib.get_resource_string(
-								__name__, join(basename(distrib.egg_info), "SOURCES.txt")
-							).decode('utf8')
-
-							for line in sources.split('\n'):
-								if sep in relpath(line, start=el.replace(".", sep)):
+							for fpath in get_files(dist_name, lookup_dir=package_path):
+								if sep in fpath.replace(package_path + sep, ""):
 									continue
 								self.add(
-									line.replace(sep, ".").replace(".py", ""),
+									[fpath.replace(sep, ".").replace(".py", "")],
 									dist_name, version, register_file
 								)
 						except Exception:
@@ -133,7 +129,7 @@ class UnitConfigCollector(ConfigCollector):
 					if base in entry["base"]:
 						entry["base"].remove(base)
 
-				if self.verbose:
+				if self.options.verbose:
 					self.logger.log(VERBOSE,
 						f'Adding {self.conf_section}: {class_name}'
 					)
@@ -174,14 +170,20 @@ class UnitConfigCollector(ConfigCollector):
 		"""
 
 		try:
-			UnitClass = getattr(
-				# import using fully qualified name
-				importlib.import_module(module_fqn),
-				class_name
-			)
-		except Exception:
+			# contextlib.redirect_stderr does not work with C-loaded backends (ex: annoying healpix warnings)
+			with stderr_redirected(self.options.hide_stderr):
+				UnitClass = getattr(
+					# import using fully qualified name
+					importlib.import_module(module_fqn),
+					class_name
+				)
+		except Exception as e:
 
-			self.err_fqns.append(module_fqn)
+			self.err_fqns.append((module_fqn, e))
+
+			if self.options.hide_module_not_found_errors and isinstance(e, ModuleNotFoundError):
+				return None
+
 			# Suppress superfluous traceback entries
 			print("", file=sys.stderr)
 			print("Cannot import " + module_fqn, file=sys.stderr)
@@ -197,3 +199,40 @@ class UnitConfigCollector(ConfigCollector):
 			for el in UnitClass.__mro__[:-1]
 			if 'ampel' in el.__module__
 		]
+
+
+# contextlib.redirect_stderr does not work with C-loaded backends (ex: annoying healpix warnings)
+# Code below is borrowed from:
+# https://stackoverflow.com/questions/4675728/redirect-stdout-to-a-file-in-python/22434262#22434262
+def fileno(file_or_fd):
+	fd = getattr(file_or_fd, 'fileno', lambda: file_or_fd)()
+	if not isinstance(fd, int):
+		raise ValueError("Expected a file (`.fileno()`) or a file descriptor")
+	return fd
+
+
+@contextmanager
+def stderr_redirected(activated: bool = False):
+
+	if not activated:
+		yield
+		return
+
+	stderr = sys.stderr
+	stderr_fd = fileno(stderr)
+	# copy stderr_fd before it is overwritten
+	# NOTE: `copied` is inheritable on Windows when duplicating a standard stream
+	with os.fdopen(os.dup(stderr_fd), 'wb') as copied:
+		stderr.flush()  # flush library buffers that dup2 knows nothing about
+		try:
+			os.dup2(fileno(os.devnull), stderr_fd)  # $ exec >&os.devnull
+		except ValueError:  # filename
+			with open(os.devnull, 'wb') as to_file:
+				os.dup2(to_file.fileno(), stderr_fd)  # $ exec > os.devnull
+		try:
+			yield stderr # allow code to be run with the redirected stderr
+		finally:
+			# restore stderr to its previous value
+			# NOTE: dup2 makes stderr_fd inheritable unconditionally
+			stderr.flush()
+			os.dup2(copied.fileno(), stderr_fd)  # $ exec >&copied
