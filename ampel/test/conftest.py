@@ -9,6 +9,7 @@ import json
 import datetime
 
 from ampel.config.builder.DistConfigBuilder import DistConfigBuilder
+from ampel.config.builder.DisplayOptions import DisplayOptions
 from ampel.mongo.update.DBUpdatesBuffer import DBUpdatesBuffer
 from ampel.dev.DevAmpelContext import DevAmpelContext
 
@@ -88,10 +89,10 @@ def core_config():
     """
     The config distributed with ampel-core
     """
-    cb = DistConfigBuilder()
+    cb = DistConfigBuilder(options=DisplayOptions())
     for ext in "json", "yml", "yaml":
         cb.load_distrib("ampel-core", "conf", ext)
-    return cb.build_config(config_validator=None)
+    return cb.build_config(config_validator=None, get_unit_env=False)
 
 
 @pytest.fixture
