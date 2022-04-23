@@ -23,30 +23,13 @@ package_data = {
 }
 
 install_requires = [
-	'PyYAML>=5.4.1,<7.0.0',
-	'prometheus-client>=0.9.0,<=0.12',
-	'psutil>=5.8.0,<6.0.0',
-	'pydantic>=1.8,<2',
-	'pymongo>=3.10,<5.0',
-	'schedule>=1.0.0,<2.0.0',
-	'sjcl>=0.2.1,<0.3.0',
-	'slackclient>=2.7,<3.0',
-	'yq>=2.12.0,<3.0.0',
-	'ujson',
-	'appdirs'
+	'PyYAML', 'prometheus-client', 'psutil', 'pydantic>=1.8', 'pymongo',
+	'schedule', 'sjcl', 'slackclient', 'yq', 'ujson', 'appdirs'
 ]
 
 extras_require = {
-	'docs': [
-		'Sphinx>=3.5.1,<4.0.0',
-		'sphinx-press-theme>=0.5.1,<0.6.0',
-		'sphinx-autodoc-typehints>=1.11.1,<2.0.0',
-		'tomlkit>=0.7.0,<0.8.0'
-	],
-	'server': [
-		'fastapi>=0.63.0,<0.64.0',
-		'uvicorn[standard]>=0.13.3,<0.16.0'
-	]
+	'docs': ['Sphinx', 'sphinx-press-theme', 'sphinx-autodoc-typehints', 'tomlkit'],
+	'server': ['fastapi', 'uvicorn[standard]']
 }
 
 entry_points = {
