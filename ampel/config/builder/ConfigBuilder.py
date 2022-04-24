@@ -4,7 +4,7 @@
 # License:             BSD-3-Clause
 # Author:              valery brinnel <firstname.lastname@gmail.com>
 # Date:                03.09.2019
-# Last Modified Date:  23.04.2022
+# Last Modified Date:  24.04.2022
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 import os, sys, re, json, yaml, datetime, getpass, importlib, subprocess
@@ -182,11 +182,21 @@ class ConfigBuilder:
 			self.logger.log(VERBOSE, 'Getting unit dependencies')
 
 		if get_unit_env:
+
+			all_deps: dict[str, str | float] = {}
+			env = os.environ.get('CONDA_DEFAULT_ENV')
+			out['environment'] = {f'conda_{env}' if env else 'default': all_deps}
+
 			with Pool() as pool:
-				for res in pool.imap(get_unit_dependencies, [el['fqn'] for el in out['unit'].values()]):
+				for res in pool.starmap(
+					get_unit_dependencies,
+					[(el['fqn'], env) for el in out['unit'].values()]
+				):
 					if self.verbose:
 						self.logger.log(VERBOSE, f'{res[0]} dependencies: {res[1] or None}')
-					out['unit'][res[0]]['env'] = res[1] or None
+					if res[1]:
+						out['unit'][res[0]]['dependencies'] = list(res[1].keys())
+						all_deps.update(res[1])
 
 		# Add t2 init config collector (in which both hashed values of t2 run configs
 		# and t2 init config will be added)
@@ -539,11 +549,23 @@ class ConfigBuilder:
 			kwargs['enc_confs'].append((d, k, secret, f"{path}.{k}"))
 
 
-def get_unit_dependencies(fqn: str) -> tuple[str, dict]:
+def get_unit_dependencies(fqn: str, env: None | str) -> tuple[str, dict]:
 
-	return fqn.split(".")[-1], eval(
-		subprocess.run(
+	if env:
+		ret = subprocess.run(
+			f"""eval "$(conda shell.bash hook)"
+				conda activate {env}
+				python3 -m 'ampel.config.builder.get_env' {fqn}
+			""",
+			stdout = subprocess.PIPE,
+			shell = True,
+			check = True
+		)
+	else:
+		ret = subprocess.run(
 			[sys.executable, '-m', 'ampel.config.builder.get_env', fqn],
-			stdout=subprocess.PIPE
-		).stdout.decode("utf-8")
-	)
+			stdout = subprocess.PIPE,
+			check = True
+		)
+
+	return fqn.split(".")[-1], eval(ret.stdout.decode("utf-8"))
