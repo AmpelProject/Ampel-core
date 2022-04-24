@@ -7,7 +7,7 @@
 # Last Modified Date:  13.12.2021
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-import sys
+import os, sys
 from importlib import import_module
 from pathlib import Path
 from hashlib import blake2b
@@ -40,7 +40,7 @@ T = TypeVar('T', bound=AmpelUnit)
 LT = TypeVar('LT', bound=LogicalUnit)
 CT = TypeVar('CT', bound=ContextUnit)
 pyv = f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}"
-
+env = ('conda_' + os.environ["CONDA_DEFAULT_ENV"]) if 'CONDA_DEFAULT_ENV' in os.environ else 'default'
 
 class UnitLoader:
 
@@ -211,10 +211,11 @@ class UnitLoader:
 				if c := unit._get_trace_content():
 					trace_dict['config'] = c
 
-				if env := self.config.get(f"unit.{model.unit}.env"):
-					if not isinstance(env, dict):
-						raise ValueError("Retrieved environment is not a dict")
-					trace_dict['env'] = env
+				if deps := self.config.get(f"unit.{model.unit}.dependencies"):
+					if not isinstance(deps, (list, tuple)):
+						raise ValueError(f"Retrieved environment is not a list/tuple: {type(deps)}")
+					envd = self.config.get(f"environment.{env}", dict, raise_exc=True)
+					trace_dict['env'] = {k: envd[k] for k in deps}
 
 				try:
 
