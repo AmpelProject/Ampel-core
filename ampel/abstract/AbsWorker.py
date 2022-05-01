@@ -171,7 +171,7 @@ class AbsWorker(Generic[T], AbsEventUnit, abstract=True):
 			# get t1/t2 document (code is usually NEW or NEW_PRIO)
 			doc = self.col.find_one_and_update(self.query, update)
 
-			# Cursor exhausted
+			# No match
 			if doc is None:
 				break
 			elif logger.verbose > 1:
