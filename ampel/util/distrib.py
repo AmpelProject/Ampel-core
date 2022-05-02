@@ -54,7 +54,7 @@ def get_files(dist_name: str, lookup_dir: Optional[str] = None, pattern: Optiona
 			),
 			None
 		):
-			return list(walk_pth_file(pth, lookup_dir, pattern))
+			return list(walk_pth_file(pth if os.path.isfile(pth) else distrib.get_resource_filename(__name__, pth), lookup_dir, pattern))
 		else:
 			return [
 				fname for el in distrib.get_metadata_lines('RECORD')
