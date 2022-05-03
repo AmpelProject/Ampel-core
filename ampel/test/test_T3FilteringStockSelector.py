@@ -5,14 +5,14 @@ from ampel.t2.T2Worker import T2Worker
 
 
 @pytest.fixture
-def processed_t2s(dev_context, ingest_tied_t2):
-    assert (num_dps := dev_context.db.get_collection("t0").count_documents({}))
+def processed_t2s(integration_context, ingest_tied_t2):
+    assert (num_dps := integration_context.db.get_collection("t0").count_documents({}))
     t2 = T2Worker(
-        context=dev_context, raise_exc=True, process_name="t2", run_dependent_t2s=True
+        context=integration_context, raise_exc=True, process_name="t2", run_dependent_t2s=True
     )
 
     num_docs = t2.run()
-    t2 = dev_context.db.get_collection("t2")
+    t2 = integration_context.db.get_collection("t2")
     assert t2.count_documents({}) == num_docs
 
     if "point" in ingest_tied_t2.param.lower():
@@ -48,13 +48,13 @@ def processed_t2s(dev_context, ingest_tied_t2):
     return ingest_tied_t2.param
 
 
-def test_filter(dev_context, processed_t2s, ampel_logger):
-    if isinstance(dev_context.db.get_collection("t2").database.client, mongomock.MongoClient):
+def test_filter(integration_context, processed_t2s, ampel_logger):
+    if isinstance(integration_context.db.get_collection("t2").database.client, mongomock.MongoClient):
         pytest.skip("T3FilteringStockSelector does not work with mongomock")
     if processed_t2s != "DummyStateT2Unit":
         pytest.skip("Only deal with a single unit for now")
     selector = T3FilteringStockSelector(
-        context=dev_context,
+        context=integration_context,
         logger=ampel_logger,
         t2_filter={"unit": processed_t2s, "match": {"len": {"$gt": 1}}},
     )
