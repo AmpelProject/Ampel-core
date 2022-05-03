@@ -8,6 +8,7 @@
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import gc
+import random
 import signal
 from time import time
 from bson import ObjectId
@@ -47,6 +48,7 @@ from ampel.abstract.AbsTiedStockT2Unit import AbsTiedStockT2Unit
 from ampel.abstract.AbsTiedCustomStateT2Unit import AbsTiedCustomStateT2Unit
 from ampel.model.UnitModel import UnitModel
 from ampel.model.StateT2Dependency import StateT2Dependency
+from ampel.model.StrictModel import StrictModel
 from ampel.core.JournalUpdater import JournalUpdater
 from ampel.metrics.AmpelMetricsRegistry import AmpelMetricsRegistry
 
@@ -69,6 +71,11 @@ stat_count = AmpelMetricsRegistry.counter(
 	subsystem="t2",
 	labelnames=("unit", )
 )
+
+class BackoffConfig(StrictModel):
+	base: float = 2
+	factor: float = 1
+	jitter: bool = True
 
 class T2Processor(AbsProcessorUnit):
 	"""
@@ -99,7 +106,8 @@ class T2Processor(AbsProcessorUnit):
 	run_dependent_t2s: bool = False
 	#: maximum number of processing attempts per document
 	max_try: int = 5
-
+	#: Add an exponentially increasing delay on PENDING_DEPENDENCY
+	backoff_on_retry: Optional[BackoffConfig] = BackoffConfig()
 
 	def __init__(self, **kwargs) -> None:
 
@@ -194,7 +202,10 @@ class T2Processor(AbsProcessorUnit):
 			self._ampel_db, process_name=self.process_name, tier=2
 		)
 
-		# Avoid 'burning' a run_id for nothing (at the cost of a request)
+		# Exclude documents with a retry time in the future
+		self.query['$expr'] = {'$not': {'$lt': [time(), {'$last': '$body.retry_after'}]}}
+
+		# Avoid 'burning' a run_id for nothing (at the cost of a request)		
 		if pre_check and self.col_t2.find(self.query).count() == 0:
 			return 0
 
@@ -268,7 +279,7 @@ class T2Processor(AbsProcessorUnit):
 			}
 			j_rec: JournalRecord = {}
 
-			if len(t2_doc.get("body", [])) > self.max_try:
+			if (trials := len(t2_doc.get("body", []))) > self.max_try:
 				ret: T2UnitResult = T2SysRunState.TOO_MANY_TRIALS
 			else:
 				ret = self.run_t2_unit(t2_unit, t2_doc, logger, jupdater)
@@ -313,6 +324,14 @@ class T2Processor(AbsProcessorUnit):
 				doc_status = ret
 				t2_rec['status'] = ret
 				j_rec['status'] = ret
+				# set retry time for missing dependencies, similar to
+				# https://github.com/litl/backoff
+				if self.backoff_on_retry and ret == T2SysRunState.PENDING_DEPENDENCY:
+					delay = self.backoff_on_retry.factor * (self.backoff_on_retry.base ** trials)
+					if self.backoff_on_retry.jitter:
+						delay = random.uniform(0, delay)
+					t2_rec['retry_after'] = t2_rec['ts'] + int(delay + 0.5) # type: ignore[misc]
+
 
 			# Unit returned just a dict result
 			elif isinstance(ret, (dict, list)):
@@ -681,12 +700,11 @@ class T2Processor(AbsProcessorUnit):
 				dep_t2_doc.pop('channel')
 				t2_views.append(self.view_from_record(dep_t2_doc))
 
-		if not self.run_dependent_t2s:
-			for view in t2_views:
-				if view.get_payload() is None:
-					if logger.verbose > 1:
-						logger.debug("Dependent T2 unit not run yet", extra={'t2_oid': t2_doc['_id']})
-					return T2SysRunState.PENDING_DEPENDENCY
+		for view in t2_views:
+			if view.get_payload() is None:
+				if logger.verbose > 1:
+					logger.debug("Dependent T2 unit not run yet", extra={'t2_oid': t2_doc['_id']})
+				return T2SysRunState.PENDING_DEPENDENCY
 
 		return t2_views
 

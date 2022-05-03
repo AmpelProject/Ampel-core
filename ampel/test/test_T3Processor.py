@@ -46,11 +46,11 @@ def mutineer_process(config={}):
     "config,expect_success",
     [({}, True), ({"raise_on_done": True}, False), ({"raise_on_add": True}, False),],
 )
-def test_unit_raises_error(dev_context, ingest_stock, config, expect_success):
+def test_unit_raises_error(integration_context, ingest_stock, config, expect_success):
     """Run is marked failed if units raise an exception"""
-    t3 = T3Processor(context=dev_context, raise_exc=False, **mutineer_process(config))
+    t3 = T3Processor(context=integration_context, raise_exc=False, **mutineer_process(config))
     t3.run()
-    assert dev_context.db.get_collection("events").count_documents({}) == 1
-    event = dev_context.db.get_collection("events").find_one({})
+    assert integration_context.db.get_collection("events").count_documents({}) == 1
+    event = integration_context.db.get_collection("events").find_one({})
     assert event["run"] == 1
     assert event["success"] == expect_success
