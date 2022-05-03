@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "ampel-core"
-version = "0.8.2-alpha.13"
+version = "0.8.2-alpha.14"
 description = "Asynchronous and Modular Platform with Execution Layers"
 authors = ["Valery Brinnel"]
 maintainers = ["Jakob van Santen <jakob.van.santen@desy.de>"]
@@ -44,7 +44,7 @@ ampel = 'ampel.cli.main:main'
 'buffer_Match_and_view_or_save_ampel_buffers' = 'ampel.cli.BufferCommand'
 
 [tool.poetry.dependencies]
-ampel-interface = {version = ">=0.8.2-alpha.7,<0.8.3"}
+ampel-interface = {version = ">=0.8.2-alpha.9,<0.8.3"}
 python = ">=3.9,<3.10"
 pydantic = ">=1.8.1,<1.9"
 pymongo = "^4.0"

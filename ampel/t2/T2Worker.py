@@ -7,6 +7,7 @@
 # Last Modified Date: 29.10.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
+import random
 from time import time
 from bson import ObjectId
 from typing import Optional, List, Union, Dict, Any, Sequence, Tuple, ClassVar, Literal
@@ -34,6 +35,7 @@ from ampel.abstract.AbsTiedStateT2Unit import AbsTiedStateT2Unit
 from ampel.abstract.AbsTiedStockT2Unit import AbsTiedStockT2Unit
 from ampel.abstract.AbsTiedCustomStateT2Unit import AbsTiedCustomStateT2Unit, U
 from ampel.abstract.AbsWorker import AbsWorker, register_stats
+from ampel.model.StrictModel import StrictModel
 from ampel.model.UnitModel import UnitModel
 from ampel.model.StateT2Dependency import StateT2Dependency
 from ampel.mongo.utils import maybe_match_array
@@ -51,6 +53,11 @@ abs_t2 = (
 )
 
 stat_latency, stat_count = register_stats(tier=2)
+
+class BackoffConfig(StrictModel):
+	base: float = 2
+	factor: float = 1
+	jitter: bool = True
 
 
 class T2Worker(AbsWorker[T2Document]):
@@ -70,6 +77,9 @@ class T2Worker(AbsWorker[T2Document]):
 	run_dependent_t2s: bool = True
 	tier: ClassVar[Literal[2]] = 2
 
+	#: Add an exponentially increasing delay on T2_PENDING_DEPENDENCY
+	backoff_on_retry: Optional[BackoffConfig] = BackoffConfig()
+
 	def process_doc(self,
 		doc: T2Document,
 		stock_updr: MongoStockUpdater,
@@ -83,7 +93,7 @@ class T2Worker(AbsWorker[T2Document]):
 		if not isinstance(t2_unit, abs_t2):
 			raise ValueError(f"Unsupported unit: {doc['unit']}")
 
-		if len([el for el in doc['meta'] if el['tier'] == 2]) <= self.max_try:
+		if (trials := len([el for el in doc['meta'] if el['tier'] == 2])) <= self.max_try:
 			ret = self.run_t2_unit(t2_unit, doc, logger, stock_updr)
 		else:
 			ret = UnitResult(code=DocumentCode.TOO_MANY_TRIALS)
@@ -144,6 +154,13 @@ class T2Worker(AbsWorker[T2Document]):
 					code = ret.code
 					activity['action'] |= MetaActionCode.SET_UNIT_CODE
 					jrec['action'] |= JournalActionCode.T2_SET_CODE
+					# set retry time for missing dependencies, similar to
+					# https://github.com/litl/backoff
+					if self.backoff_on_retry and ret.code == DocumentCode.T2_PENDING_DEPENDENCY:
+						delay = self.backoff_on_retry.factor * (self.backoff_on_retry.base ** trials)
+						if self.backoff_on_retry.jitter:
+							delay = random.uniform(0, delay)
+						meta['retry_after'] = meta['ts'] + int(delay + 0.5)
 
 				# TODO: check that unit did not use system reserved code
 				if code != 0 and code in DocumentCode.__members__.values():

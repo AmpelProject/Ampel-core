@@ -126,6 +126,9 @@ class AbsWorker(Generic[T], AbsEventUnit, abstract=True):
 			run_id = -1, raise_exc = self.raise_exc
 		)
 
+		# Exclude documents with a retry time in the future
+		self.query['$expr'] = {'$not': {'$lt': [time(), {'$last': '$meta.retry_after'}]}}
+
 		# Avoid 'burning' a run_id for nothing (at the cost of a request)
 		if pre_check and self.col.count_documents(self.query) == 0:
 			return 0
