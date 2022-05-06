@@ -25,7 +25,7 @@ from ampel.util.mappings import get_by_path
 from ampel.cli.AbsCoreCommand import AbsCoreCommand
 from ampel.cli.MaybeIntAction import MaybeIntAction
 from ampel.cli.AmpelArgumentParser import AmpelArgumentParser
-from ampel.model.job.JobModel import JobModel, TemplateUnitModel
+from ampel.model.job.JobModel import JobModel, ChannelModel, TemplateUnitModel
 
 try:
 	import matplotlib as mpl
@@ -155,8 +155,9 @@ class JobCommand(AbsCoreCommand):
 
 		# Add channel(s)
 		for c in job.channel:
-			logger.info(f"Registering job channel '{c['name']}'")
-			dict.__setitem__(config_dict['channel'], c['name'], c)
+			chan = ChannelModel(**c)
+			logger.info(f"Registering job channel '{chan.channel}'")
+			dict.__setitem__(config_dict['channel'], chan.channel, c)
 
 		# Add aliase(s)
 		for k, v in job.alias.items():
