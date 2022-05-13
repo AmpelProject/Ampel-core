@@ -208,7 +208,7 @@ class _Process:
                     if isinstance(payload, BaseException):
                         raise payload
                     else:
-                        ret = reduction.pickle.loads(payload)
+                        ret = reduction.pickle.loads(payload) # type: ignore
                     if isinstance(ret, BaseException):
                         raise ret
                     else:
