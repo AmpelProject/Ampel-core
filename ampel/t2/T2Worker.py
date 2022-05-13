@@ -4,11 +4,12 @@
 # License:             BSD-3-Clause
 # Author:              valery brinnel <firstname.lastname@gmail.com>
 # Date:                24.05.2019
-# Last Modified Date:  29.10.2021
+# Last Modified Date:  13.05.2022
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from time import time
 from bson import ObjectId
+from importlib import import_module
 from typing import Union, Any, ClassVar, Literal
 from collections.abc import Sequence
 
@@ -130,6 +131,14 @@ class T2Worker(AbsWorker[T2Document]):
 			# Unit requested customizations
 			if isinstance(ret, UnitResult):
 
+				if ret.adapter:
+					if ret.adapter not in self._adapters:
+						self._adapters[ret.adapter] = getattr(
+							import_module(f"ampel.core.adapter.{ret.adapter}"),
+							ret.adapter
+						)(context = self.context)
+					ret = self._adapters[ret.adapter].handle(ret)
+
 				if ret.body:
 					body = ret.body
 					activity['action'] |= MetaActionCode.ADD_BODY
@@ -200,7 +209,7 @@ class T2Worker(AbsWorker[T2Document]):
 		t2_unit: AbsT2, t2_doc: T2Document, logger: AmpelLogger, stock_updr: MongoStockUpdater
 	) -> Union[
 		None,
-		UnitResult,                                                # Error / missing dependency
+		UnitResult,                                              # Error / missing dependency
 		DataPoint,                                               # point t2
 		tuple[DataPoint, T2DocView],                             # tied point t2
 		tuple[StockDocument],                                    # stock t2
@@ -571,7 +580,7 @@ class T2Worker(AbsWorker[T2Document]):
 					'config': t2_doc['config'],
 					'stock': t2_doc['stock'],
 					'link': t2_doc['link'],
-					'channel': t2_doc['channel'],
+					'channel': t2_doc['channel']
 				}
 			)
 

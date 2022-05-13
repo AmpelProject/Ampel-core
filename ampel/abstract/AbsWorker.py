@@ -4,7 +4,7 @@
 # License:             BSD-3-Clause
 # Author:              valery brinnel <firstname.lastname@gmail.com>
 # Date:                28.05.2021
-# Last Modified Date:  21.04.2022
+# Last Modified Date:  13.05.2022
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 import gc, signal
@@ -27,6 +27,7 @@ from ampel.log.utils import report_exception, report_error
 from ampel.log.handlers.DefaultRecordBufferingHandler import DefaultRecordBufferingHandler
 from ampel.util.hash import build_unsafe_dict_id
 from ampel.abstract.AbsEventUnit import AbsEventUnit
+from ampel.abstract.AbsUnitResultAdapter import AbsUnitResultAdapter
 from ampel.model.UnitModel import UnitModel
 from ampel.mongo.update.MongoStockUpdater import MongoStockUpdater
 from ampel.mongo.utils import maybe_use_each
@@ -117,6 +118,9 @@ class AbsWorker(Generic[T], AbsEventUnit, abstract=True):
 		# _instances stores unit instances so that they can be re-used in run()
 		# Key: set(unit name + config), value: unit instance
 		self._instances: JDict = {}
+
+		self._adapters: dict[str, AbsUnitResultAdapter] = {}
+
 
 
 	@abstractmethod
