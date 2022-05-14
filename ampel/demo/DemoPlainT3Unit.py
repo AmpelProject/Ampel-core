@@ -7,7 +7,6 @@
 # Last Modified Date:  17.12.2021
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from typing import Union
 from ampel.types import UBson
 from ampel.struct.UnitResult import UnitResult
 from ampel.view.T3Store import T3Store

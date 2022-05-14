@@ -18,7 +18,6 @@ from ampel.cli.ArgParserBuilder import ArgParserBuilder
 from ampel.cli.AbsStockCommand import AbsStockCommand
 from ampel.cli.AbsLoadCommand import AbsLoadCommand
 from ampel.cli.AmpelArgumentParser import AmpelArgumentParser
-from ampel.base.AuxUnitRegister import AuxUnitRegister
 from ampel.model.UnitModel import UnitModel
 from ampel.t3.T3Processor import T3Processor
 from ampel.core.AmpelContext import AmpelContext
