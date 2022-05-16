@@ -4,9 +4,8 @@
 <html>
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
-
-    <title>Structure &#8212; ampel-core 0.8.3-alpha.11 documentation</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Structure &#8212; ampel-core 0.7.5 documentation</title>
     <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
     <link rel="stylesheet" type="text/css" href="_static/sphinxdoc.css" />
     <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
@@ -30,7 +29,7 @@
         <li class="right" >
           <a href="science.html" title="Sample science cases"
              accesskey="P">previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">ampel-core 0.8.3-alpha.11 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="index.html">ampel-core 0.7.5 documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">Structure</a></li> 
       </ul>
     </div>  
@@ -40,30 +39,30 @@
         <div class="bodywrapper">
           <div class="body" role="main">
             
-  <section id="structure">
+  <div class="section" id="structure">
 <h1>Structure<a class="headerlink" href="#structure" title="Permalink to this headline">¶</a></h1>
-<section id="tiers">
+<div class="section" id="tiers">
 <h2>Tiers<a class="headerlink" href="#tiers" title="Permalink to this headline">¶</a></h2>
 <p>Data processing is divided into 4 tiers.</p>
-<section id="tier-0-add">
+<div class="section" id="tier-0-add">
 <span id="structure-t0"></span><h3>Tier 0: Add<a class="headerlink" href="#tier-0-add" title="Permalink to this headline">¶</a></h3>
 <p>Ingest (or reject) incoming <code class="xref py py-class docutils literal notranslate"><span class="pre">DataPoints</span></code>.</p>
-</section>
-<section id="tier-1-combine">
+</div>
+<div class="section" id="tier-1-combine">
 <span id="structure-t1"></span><h3>Tier 1: Combine<a class="headerlink" href="#tier-1-combine" title="Permalink to this headline">¶</a></h3>
 <p>Creates <code class="xref py py-class docutils literal notranslate"><span class="pre">Compounds</span></code> documents, sometimes referred to as ‘states’, based on collections of <code class="xref py py-class docutils literal notranslate"><span class="pre">DataPoints</span></code>.</p>
-</section>
-<section id="tier-2-compute">
+</div>
+<div class="section" id="tier-2-compute">
 <span id="structure-t2"></span><h3>Tier 2: Compute<a class="headerlink" href="#tier-2-compute" title="Permalink to this headline">¶</a></h3>
 <p>Compute derived quantities from newly added <code class="xref py py-class docutils literal notranslate"><span class="pre">StockRecords</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">DataPoints</span></code>, and <code class="xref py py-class docutils literal notranslate"><span class="pre">Compounds</span></code>.</p>
-</section>
-<section id="tier-3-react">
+</div>
+<div class="section" id="tier-3-react">
 <span id="structure-t3"></span><h3>Tier 3: React<a class="headerlink" href="#tier-3-react" title="Permalink to this headline">¶</a></h3>
 <p>Perform action based on collections of Ampel objects.</p>
 <p>The default top level implementation provided by <code class="docutils literal notranslate"><span class="pre">ampel-core</span></code>
 is the class <a class="reference internal" href="api.html#ampel.t3.T3Processor.T3Processor" title="ampel.t3.T3Processor.T3Processor"><code class="xref py py-class docutils literal notranslate"><span class="pre">T3Processor</span></code></a>, which is capable of spawning and executing
 T3 processes according to the provided configuration.
-The execution typically follows a 5-step process specified by the following fields of <code class="xref py py-class docutils literal notranslate"><span class="pre">T3Directive</span></code>:</p>
+The execution typically follows a 5-step process specified by the following fields of <a class="reference internal" href="api.html#ampel.model.t3.T3Directive.T3Directive" title="ampel.model.t3.T3Directive.T3Directive"><code class="xref py py-class docutils literal notranslate"><span class="pre">T3Directive</span></code></a>:</p>
 <ul class="simple">
 <li><p><a class="reference internal" href="#t3-directive-context"><span class="std std-ref">context</span></a></p></li>
 <li><p><a class="reference internal" href="#t3-directive-select"><span class="std std-ref">select</span></a></p></li>
@@ -84,7 +83,7 @@ The execution typically follows a 5-step process specified by the following fiel
 <p>Within Ampel, a unique ID called ‘stock ID’ is assigned to all documents
 associated with a given entity across T1, T2 and T3 (and possibly T0 if already known at this point).</p>
 </div>
-<section id="context">
+<div class="section" id="context">
 <span id="t3-directive-context"></span><h4>context<a class="headerlink" href="#context" title="Permalink to this headline">¶</a></h4>
 <table class="docutils align-default">
 <colgroup>
@@ -101,19 +100,19 @@ associated with a given entity across T1, T2 and T3 (and possibly T0 if already 
 <td><p><code class="xref py py-mod docutils literal notranslate"><span class="pre">ampel.t3.context</span></code></p></td>
 </tr>
 <tr class="row-odd"><td><p>Governing abstract class</p></td>
-<td><p><code class="xref py py-class docutils literal notranslate"><span class="pre">AbsT3RunContextAppender</span></code></p></td>
+<td><p><a class="reference internal" href="api.html#ampel.t3.context.AbsT3RunContextAppender.AbsT3RunContextAppender" title="ampel.t3.context.AbsT3RunContextAppender.AbsT3RunContextAppender"><code class="xref py py-class docutils literal notranslate"><span class="pre">AbsT3RunContextAppender</span></code></a></p></td>
 </tr>
 <tr class="row-even"><td><p>Known implementations</p></td>
-<td><p><code class="xref py py-class docutils literal notranslate"><span class="pre">T3AddLastRunTime</span></code>,
-<code class="xref py py-class docutils literal notranslate"><span class="pre">T3AddAlertsNumber</span></code></p></td>
+<td><p><a class="reference internal" href="api.html#ampel.t3.context.T3AddLastRunTime.T3AddLastRunTime" title="ampel.t3.context.T3AddLastRunTime.T3AddLastRunTime"><code class="xref py py-class docutils literal notranslate"><span class="pre">T3AddLastRunTime</span></code></a>,
+<a class="reference internal" href="api.html#ampel.t3.context.T3AddAlertsNumber.T3AddAlertsNumber" title="ampel.t3.context.T3AddAlertsNumber.T3AddAlertsNumber"><code class="xref py py-class docutils literal notranslate"><span class="pre">T3AddAlertsNumber</span></code></a></p></td>
 </tr>
 </tbody>
 </table>
 <p>Allows to generate global information that will be provided to T3 units.
 Note that the information gathered in this stage is not associated
 with individual ampel elements (each identified by a unique ‘stock ID’).</p>
-</section>
-<section id="select">
+</div>
+<div class="section" id="select">
 <span id="t3-directive-select"></span><h4>select<a class="headerlink" href="#select" title="Permalink to this headline">¶</a></h4>
 <table class="docutils align-default">
 <colgroup>
@@ -130,22 +129,22 @@ with individual ampel elements (each identified by a unique ‘stock ID’).</p>
 <td><p><code class="xref py py-mod docutils literal notranslate"><span class="pre">ampel.t3.select</span></code></p></td>
 </tr>
 <tr class="row-odd"><td><p>Governing abstract class</p></td>
-<td><p><code class="xref py py-class docutils literal notranslate"><span class="pre">AbsT3Selector</span></code></p></td>
+<td><p><a class="reference internal" href="api.html#ampel.t3.select.AbsT3Selector.AbsT3Selector" title="ampel.t3.select.AbsT3Selector.AbsT3Selector"><code class="xref py py-class docutils literal notranslate"><span class="pre">AbsT3Selector</span></code></a></p></td>
 </tr>
 <tr class="row-even"><td><p>Known implementations</p></td>
-<td><p><code class="xref py py-class docutils literal notranslate"><span class="pre">T3StockSelector</span></code>,
-<code class="xref py py-class docutils literal notranslate"><span class="pre">T3FilteringStockSelector</span></code></p></td>
+<td><p><a class="reference internal" href="api.html#ampel.t3.select.T3StockSelector.T3StockSelector" title="ampel.t3.select.T3StockSelector.T3StockSelector"><code class="xref py py-class docutils literal notranslate"><span class="pre">T3StockSelector</span></code></a>,
+<a class="reference internal" href="api.html#ampel.t3.select.T3FilteringStockSelector.T3FilteringStockSelector" title="ampel.t3.select.T3FilteringStockSelector.T3FilteringStockSelector"><code class="xref py py-class docutils literal notranslate"><span class="pre">T3FilteringStockSelector</span></code></a></p></td>
 </tr>
 </tbody>
 </table>
 <p>Allows to select which elements should be provided to T3 units.
-The default implementation <code class="xref py py-class docutils literal notranslate"><span class="pre">T3StockSelector</span></code> selects stock IDs based on
+The default implementation <a class="reference internal" href="api.html#ampel.t3.select.T3StockSelector.T3StockSelector" title="ampel.t3.select.T3StockSelector.T3StockSelector"><code class="xref py py-class docutils literal notranslate"><span class="pre">T3StockSelector</span></code></a> selects stock IDs based on
 criteria targeting the internal collection ‘stock’.
 Note that other implementations are possible, in particular implementations
 based on the information from the internal collection ‘t2’.
 The returned sequence of stock IDs is passed to the next stage.</p>
-</section>
-<section id="load">
+</div>
+<div class="section" id="load">
 <span id="t3-directive-load"></span><h4>load<a class="headerlink" href="#load" title="Permalink to this headline">¶</a></h4>
 <table class="docutils align-default">
 <colgroup>
@@ -162,19 +161,19 @@ The returned sequence of stock IDs is passed to the next stage.</p>
 <td><p><code class="xref py py-mod docutils literal notranslate"><span class="pre">ampel.t3.load</span></code></p></td>
 </tr>
 <tr class="row-odd"><td><p>Governing abstract class</p></td>
-<td><p><code class="xref py py-class docutils literal notranslate"><span class="pre">AbsT3Loader</span></code></p></td>
+<td><p><a class="reference internal" href="api.html#ampel.t3.load.AbsT3Loader.AbsT3Loader" title="ampel.t3.load.AbsT3Loader.AbsT3Loader"><code class="xref py py-class docutils literal notranslate"><span class="pre">AbsT3Loader</span></code></a></p></td>
 </tr>
 <tr class="row-even"><td><p>Known implementations</p></td>
-<td><p><code class="xref py py-class docutils literal notranslate"><span class="pre">T3SimpleDataLoader</span></code>,
-<code class="xref py py-class docutils literal notranslate"><span class="pre">T3LatestStateDataLoader</span></code></p></td>
+<td><p><a class="reference internal" href="api.html#ampel.t3.load.T3SimpleDataLoader.T3SimpleDataLoader" title="ampel.t3.load.T3SimpleDataLoader.T3SimpleDataLoader"><code class="xref py py-class docutils literal notranslate"><span class="pre">T3SimpleDataLoader</span></code></a>,
+<a class="reference internal" href="api.html#ampel.t3.load.T3LatestStateDataLoader.T3LatestStateDataLoader" title="ampel.t3.load.T3LatestStateDataLoader.T3LatestStateDataLoader"><code class="xref py py-class docutils literal notranslate"><span class="pre">T3LatestStateDataLoader</span></code></a></p></td>
 </tr>
 </tbody>
 </table>
 <p>Regulates which documents to load for each ampel ID selected by the previous stage.
-The loaded documents are then included into <code class="xref py py-class docutils literal notranslate"><span class="pre">AmpelBuffer</span></code> instances which are passed to the next stages.
+The loaded documents are then included into <a class="reference internal" href="api.html#ampel.core.AmpelBuffer.AmpelBuffer" title="ampel.core.AmpelBuffer.AmpelBuffer"><code class="xref py py-class docutils literal notranslate"><span class="pre">AmpelBuffer</span></code></a> instances which are passed to the next stages.
 Note that all current implementations rely internally on the backend class <code class="xref py py-class docutils literal notranslate"><span class="pre">DBContentLoader</span></code>.</p>
-</section>
-<section id="complement">
+</div>
+<div class="section" id="complement">
 <span id="t3-directive-complement"></span><h4>complement<a class="headerlink" href="#complement" title="Permalink to this headline">¶</a></h4>
 <table class="docutils align-default">
 <colgroup>
@@ -191,37 +190,37 @@ Note that all current implementations rely internally on the backend class <code
 <td><p><code class="xref py py-mod docutils literal notranslate"><span class="pre">ampel.t3.complement</span></code></p></td>
 </tr>
 <tr class="row-odd"><td><p>Governing abstract class</p></td>
-<td><p><code class="xref py py-class docutils literal notranslate"><span class="pre">AbsT3DataAppender</span></code></p></td>
+<td><p><a class="reference internal" href="api.html#ampel.t3.complement.AbsT3DataAppender.AbsT3DataAppender" title="ampel.t3.complement.AbsT3DataAppender.AbsT3DataAppender"><code class="xref py py-class docutils literal notranslate"><span class="pre">AbsT3DataAppender</span></code></a></p></td>
 </tr>
 <tr class="row-even"><td><p>Known implementations</p></td>
-<td><p><code class="xref py py-class docutils literal notranslate"><span class="pre">T3ExtJournalAppender</span></code>,
+<td><p><a class="reference internal" href="api.html#ampel.t3.complement.T3ExtJournalAppender.T3ExtJournalAppender" title="ampel.t3.complement.T3ExtJournalAppender.T3ExtJournalAppender"><code class="xref py py-class docutils literal notranslate"><span class="pre">T3ExtJournalAppender</span></code></a>,
 <code class="xref py py-class docutils literal notranslate"><span class="pre">SEDMSpectrumAppender</span></code>,
 <code class="xref py py-class docutils literal notranslate"><span class="pre">TNSNames</span></code>,
 <code class="xref py py-class docutils literal notranslate"><span class="pre">ZTFCutoutImages</span></code></p></td>
 </tr>
 </tbody>
 </table>
-<p>Allows to include additional information to the loaded <code class="xref py py-class docutils literal notranslate"><span class="pre">AmpelBuffer</span></code> instances.
-Most implementations are expected to update <code class="xref py py-class docutils literal notranslate"><span class="pre">AmpelBuffer.extra</span></code>
+<p>Allows to include additional information to the loaded <a class="reference internal" href="api.html#ampel.core.AmpelBuffer.AmpelBuffer" title="ampel.core.AmpelBuffer.AmpelBuffer"><code class="xref py py-class docutils literal notranslate"><span class="pre">AmpelBuffer</span></code></a> instances.
+Most implementations are expected to update <a class="reference internal" href="api.html#ampel.core.AmpelBuffer.AmpelBuffer" title="ampel.core.AmpelBuffer.AmpelBuffer"><code class="xref py py-class docutils literal notranslate"><span class="pre">AmpelBuffer.extra</span></code></a>
 which was specifically added for this purpose.
-Other implementations, such as <code class="xref py py-class docutils literal notranslate"><span class="pre">T3ExtJournalAppender</span></code> update the content
+Other implementations, such as <a class="reference internal" href="api.html#ampel.t3.complement.T3ExtJournalAppender.T3ExtJournalAppender" title="ampel.t3.complement.T3ExtJournalAppender.T3ExtJournalAppender"><code class="xref py py-class docutils literal notranslate"><span class="pre">T3ExtJournalAppender</span></code></a> update the content
 of the AMPEL core documents themselve.
 Since the information only lives in the process memory
 (not saved into the DB, only included into the <em>views</em>),
 there is no hard limitation wrt to data type / serialization property / size</p>
-</section>
-<section id="run">
+</div>
+<div class="section" id="run">
 <span id="t3-directive-run"></span><h4>run<a class="headerlink" href="#run" title="Permalink to this headline">¶</a></h4>
 <p>The last stage executes t3 units according the provided configuration
 and using the various information loaded from previous stages.</p>
-<p>The default implementation <code class="xref py py-class docutils literal notranslate"><span class="pre">T3UnitRunner</span></code> provided by <code class="docutils literal notranslate"><span class="pre">ampel-core</span></code>
+<p>The default implementation <a class="reference internal" href="api.html#ampel.t3.run.T3UnitRunner.T3UnitRunner" title="ampel.t3.run.T3UnitRunner.T3UnitRunner"><code class="xref py py-class docutils literal notranslate"><span class="pre">T3UnitRunner</span></code></a> provided by <code class="docutils literal notranslate"><span class="pre">ampel-core</span></code>
 follows a 3-step process governed by the following sections from the configuration:</p>
 <ul class="simple">
 <li><p>filter</p></li>
 <li><p>project</p></li>
 <li><p>execute</p></li>
 </ul>
-<section id="filter">
+<div class="section" id="filter">
 <span id="t3-directive-run-filter"></span><h5>filter<a class="headerlink" href="#filter" title="Permalink to this headline">¶</a></h5>
 <table class="docutils align-default">
 <colgroup>
@@ -238,10 +237,10 @@ follows a 3-step process governed by the following sections from the configurati
 <td><p><code class="xref py py-mod docutils literal notranslate"><span class="pre">ampel.t3.run.filter</span></code></p></td>
 </tr>
 <tr class="row-odd"><td><p>Governing abstract class</p></td>
-<td><p><code class="xref py py-class docutils literal notranslate"><span class="pre">AbsT3Filter</span></code></p></td>
+<td><p><a class="reference internal" href="api.html#ampel.t3.run.filter.AbsT3Filter.AbsT3Filter" title="ampel.t3.run.filter.AbsT3Filter.AbsT3Filter"><code class="xref py py-class docutils literal notranslate"><span class="pre">AbsT3Filter</span></code></a></p></td>
 </tr>
 <tr class="row-even"><td><p>Known implementations</p></td>
-<td><p><code class="xref py py-class docutils literal notranslate"><span class="pre">T3AmpelBufferFilter</span></code></p></td>
+<td><p><a class="reference internal" href="api.html#ampel.t3.run.filter.T3AmpelBufferFilter.T3AmpelBufferFilter" title="ampel.t3.run.filter.T3AmpelBufferFilter.T3AmpelBufferFilter"><code class="xref py py-class docutils literal notranslate"><span class="pre">T3AmpelBufferFilter</span></code></a></p></td>
 </tr>
 </tbody>
 </table>
@@ -249,7 +248,7 @@ follows a 3-step process governed by the following sections from the configurati
 <p class="admonition-title">Note</p>
 <p>This setting applies only in case the underlying T3 process runs multiple units.</p>
 </div>
-<p>The optional setting ‘filter’ allows to define selection critera for the loaded <code class="xref py py-class docutils literal notranslate"><span class="pre">AmpelBuffer</span></code> instances.
+<p>The optional setting ‘filter’ allows to define selection critera for the loaded <a class="reference internal" href="api.html#ampel.core.AmpelBuffer.AmpelBuffer" title="ampel.core.AmpelBuffer.AmpelBuffer"><code class="xref py py-class docutils literal notranslate"><span class="pre">AmpelBuffer</span></code></a> instances.
 Only matching instances are passed to the next stage.</p>
 <p>Example: say you want to select all new entities that were associated with your channel the last 24 hours,
 and post information about them to slack. Furthermore, say your entities come in blue or red and you’d like
@@ -259,8 +258,8 @@ which will then be scheduled seperately. You do not need the setting <a class="r
 2) Or you can create a single process selecting both red and blue entities and define two “run blocks”
 under the top-level setting <a class="reference internal" href="#t3-directive-run"><span class="std std-ref">run</span></a>. The first run-block sub-selects blue entities
 and posts them to “#blue” and the second one sub-selects red entities and posts then to “#red”.</p>
-</section>
-<section id="project">
+</div>
+<div class="section" id="project">
 <span id="t3-directive-run-project"></span><h5>project<a class="headerlink" href="#project" title="Permalink to this headline">¶</a></h5>
 <table class="docutils align-default">
 <colgroup>
@@ -277,11 +276,11 @@ and posts them to “#blue” and the second one sub-selects red entities and po
 <td><p><code class="xref py py-mod docutils literal notranslate"><span class="pre">ampel.t3.run.project</span></code></p></td>
 </tr>
 <tr class="row-odd"><td><p>Governing abstract class</p></td>
-<td><p><code class="xref py py-class docutils literal notranslate"><span class="pre">AbsT3Projector</span></code></p></td>
+<td><p><a class="reference internal" href="api.html#ampel.t3.run.project.AbsT3Projector.AbsT3Projector" title="ampel.t3.run.project.AbsT3Projector.AbsT3Projector"><code class="xref py py-class docutils literal notranslate"><span class="pre">AbsT3Projector</span></code></a></p></td>
 </tr>
 <tr class="row-even"><td><p>Known implementations</p></td>
-<td><p><code class="xref py py-class docutils literal notranslate"><span class="pre">T3BaseProjector</span></code>,
-<code class="xref py py-class docutils literal notranslate"><span class="pre">T3ChannelProjector</span></code></p></td>
+<td><p><a class="reference internal" href="api.html#ampel.t3.run.project.T3BaseProjector.T3BaseProjector" title="ampel.t3.run.project.T3BaseProjector.T3BaseProjector"><code class="xref py py-class docutils literal notranslate"><span class="pre">T3BaseProjector</span></code></a>,
+<a class="reference internal" href="api.html#ampel.t3.run.project.T3ChannelProjector.T3ChannelProjector" title="ampel.t3.run.project.T3ChannelProjector.T3ChannelProjector"><code class="xref py py-class docutils literal notranslate"><span class="pre">T3ChannelProjector</span></code></a></p></td>
 </tr>
 </tbody>
 </table>
@@ -299,8 +298,8 @@ and posts them to “#blue” and the second one sub-selects red entities and po
 <p class="admonition-title">Note</p>
 <p>the template associated with channel definitions usually automatically configure this stage</p>
 </div>
-</section>
-<section id="execute">
+</div>
+<div class="section" id="execute">
 <span id="t3-directive-run-execute"></span><h5>execute<a class="headerlink" href="#execute" title="Permalink to this headline">¶</a></h5>
 <table class="docutils align-default">
 <colgroup>
@@ -317,25 +316,25 @@ and posts them to “#blue” and the second one sub-selects red entities and po
 <td><p><code class="xref py py-mod docutils literal notranslate"><span class="pre">ampel.t3.run</span></code></p></td>
 </tr>
 <tr class="row-odd"><td><p>Governing abstract class</p></td>
-<td><p><code class="xref py py-class docutils literal notranslate"><span class="pre">AbsT3UnitRunner</span></code></p></td>
+<td><p><a class="reference internal" href="api.html#ampel.t3.run.AbsT3UnitRunner.AbsT3UnitRunner" title="ampel.t3.run.AbsT3UnitRunner.AbsT3UnitRunner"><code class="xref py py-class docutils literal notranslate"><span class="pre">AbsT3UnitRunner</span></code></a></p></td>
 </tr>
 <tr class="row-even"><td><p>Known implementations</p></td>
-<td><p><code class="xref py py-class docutils literal notranslate"><span class="pre">T3UnitRunner</span></code>,
-<code class="xref py py-class docutils literal notranslate"><span class="pre">T3DynamicUnitRunner</span></code></p></td>
+<td><p><a class="reference internal" href="api.html#ampel.t3.run.T3UnitRunner.T3UnitRunner" title="ampel.t3.run.T3UnitRunner.T3UnitRunner"><code class="xref py py-class docutils literal notranslate"><span class="pre">T3UnitRunner</span></code></a>,
+<a class="reference internal" href="api.html#ampel.t3.run.T3DynamicUnitRunner.T3DynamicUnitRunner" title="ampel.t3.run.T3DynamicUnitRunner.T3DynamicUnitRunner"><code class="xref py py-class docutils literal notranslate"><span class="pre">T3DynamicUnitRunner</span></code></a></p></td>
 </tr>
 </tbody>
 </table>
-<p>Last stage during which T3 units are instantiated and <code class="xref py py-class docutils literal notranslate"><span class="pre">AmpelBuffer</span></code> instances
+<p>Last stage during which T3 units are instantiated and <a class="reference internal" href="api.html#ampel.core.AmpelBuffer.AmpelBuffer" title="ampel.core.AmpelBuffer.AmpelBuffer"><code class="xref py py-class docutils literal notranslate"><span class="pre">AmpelBuffer</span></code></a> instances
 converted into <em>views</em> (e.g. <a class="reference external" href="https://ampelproject.github.io/Ampel-interface/api.html#ampel.view.SnapView.SnapView" title="(in ampel-interface v0.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">SnapView</span></code></a> and subclasses, containing pseudo-immutable structures).</p>
 <p>T3 unit instances (i.e. instances of <code class="xref py py-class docutils literal notranslate"><span class="pre">AbsT3Unit</span></code>) are provided both with <em>views</em> and
 <a class="reference external" href="t3-directive-context">global information</a> loaded during the previous stages.
 They have also the possibility to customize the journal entry
 created each time the underlying process is run.</p>
-</section>
-</section>
-</section>
-</section>
-</section>
+</div>
+</div>
+</div>
+</div>
+</div>
 
 
             <div class="clearer"></div>
@@ -347,21 +346,17 @@ created each time the underlying process is run.</p>
             <p class="logo"><a href="index.html">
               <img class="logo" src="_static/ampel.png" alt="Logo"/>
             </a></p>
-  <div>
-    <h4>Previous topic</h4>
-    <p class="topless"><a href="science.html"
-                          title="previous chapter">Sample science cases</a></p>
-  </div>
-  <div>
-    <h4>Next topic</h4>
-    <p class="topless"><a href="api.html"
-                          title="next chapter">Ampel-core</a></p>
-  </div>
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="science.html"
+                        title="previous chapter">Sample science cases</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="api.html"
+                        title="next chapter">Ampel-core</a></p>
 <div id="searchbox" style="display: none" role="search">
   <h3 id="searchlabel">Quick search</h3>
     <div class="searchformwrapper">
     <form class="search" action="search.html" method="get">
-      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="text" name="q" aria-labelledby="searchlabel" />
       <input type="submit" value="Go" />
     </form>
     </div>
@@ -383,13 +378,13 @@ created each time the underlying process is run.</p>
         <li class="right" >
           <a href="science.html" title="Sample science cases"
              >previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">ampel-core 0.8.3-alpha.11 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="index.html">ampel-core 0.7.5 documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">Structure</a></li> 
       </ul>
     </div>
     <div class="footer" role="contentinfo">
         &#169; Copyright 2018-2021, Ampel Project.
-      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 4.5.0.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 4.0.2.
     </div>
   </body>
 </html>

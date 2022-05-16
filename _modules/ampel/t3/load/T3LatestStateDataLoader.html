@@ -1,0 +1,251 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ampel.t3.load.T3LatestStateDataLoader &#8212; ampel-core 0.7.5 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/sphinxdoc.css" />
+    <script data-url_root="../../../../" id="documentation_options" src="../../../../_static/documentation_options.js"></script>
+    <script src="../../../../_static/jquery.js"></script>
+    <script src="../../../../_static/underscore.js"></script>
+    <script src="../../../../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="nav-item nav-item-0"><a href="../../../../index.html">ampel-core 0.7.5 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../../index.html" accesskey="U">Module code</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">ampel.t3.load.T3LatestStateDataLoader</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for ampel.t3.load.T3LatestStateDataLoader</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/env python</span>
+<span class="c1"># -*- coding: utf-8 -*-</span>
+<span class="c1"># File              : Ampel-core/ampel/t3/load/T3LatestStateDataLoader.py</span>
+<span class="c1"># License           : BSD-3-Clause</span>
+<span class="c1"># Author            : vb &lt;vbrinnel@physik.hu-berlin.de&gt;</span>
+<span class="c1"># Date              : 09.12.2019</span>
+<span class="c1"># Last Modified Date: 16.03.2020</span>
+<span class="c1"># Last Modified By  : vb &lt;vbrinnel@physik.hu-berlin.de&gt;</span>
+
+<span class="kn">import</span> <span class="nn">collections</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Iterable</span><span class="p">,</span> <span class="n">Union</span><span class="p">,</span> <span class="n">Iterator</span>
+<span class="kn">from</span> <span class="nn">ampel.type</span> <span class="kn">import</span> <span class="n">StockId</span><span class="p">,</span> <span class="n">StrictIterable</span>
+<span class="kn">from</span> <span class="nn">ampel.t3.load.AbsT3Loader</span> <span class="kn">import</span> <span class="n">AbsT3Loader</span>
+<span class="kn">from</span> <span class="nn">ampel.core.AmpelContext</span> <span class="kn">import</span> <span class="n">AmpelContext</span>
+<span class="kn">from</span> <span class="nn">ampel.core.AmpelBuffer</span> <span class="kn">import</span> <span class="n">AmpelBuffer</span>
+<span class="kn">from</span> <span class="nn">ampel.util.collections</span> <span class="kn">import</span> <span class="n">to_set</span>
+<span class="kn">from</span> <span class="nn">ampel.config.LogicSchemaUtils</span> <span class="kn">import</span> <span class="n">LogicSchemaUtils</span>
+<span class="kn">from</span> <span class="nn">ampel.db.query.latest_compound</span> <span class="kn">import</span> <span class="n">fast_query</span><span class="p">,</span> <span class="n">general_query</span>
+
+
+<div class="viewcode-block" id="T3LatestStateDataLoader"><a class="viewcode-back" href="../../../../api.html#ampel.t3.load.T3LatestStateDataLoader.T3LatestStateDataLoader">[docs]</a><span class="k">class</span> <span class="nc">T3LatestStateDataLoader</span><span class="p">(</span><span class="n">AbsT3Loader</span><span class="p">):</span>
+	<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">	Load only T1 and T2 documents associated with the latest state of each</span>
+<span class="sd">	stock in the selected channels. The latest state is the compound doc with</span>
+<span class="sd">	the largest value of ``len`` or ``added``.</span>
+
+<span class="sd">	.. note::</span>
+<span class="sd">	  </span>
+<span class="sd">	  T3LatestStateDataLoader can only load state-bound T2 documents. If you</span>
+<span class="sd">	  need point- or stock-bound T2s, use</span>
+<span class="sd">	  :py:class:`~ampel.t3.load.T3SimpleDataLoader.T3SimpleDataLoader`.</span>
+
+<span class="sd">	.. seealso::</span>
+<span class="sd">	  </span>
+<span class="sd">	  :py:func:`ampel.db.query.latest_compound.fast_query`</span>
+<span class="sd">	    for notes on how compounds are selected from T0</span>
+<span class="sd">	  </span>
+<span class="sd">	  :py:func:`ampel.db.query.latest_compound.general_query`</span>
+<span class="sd">	    for notes on how compounds are selected from other tiers</span>
+<span class="sd">	&quot;&quot;&quot;</span>
+
+
+	<span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">context</span><span class="p">:</span> <span class="n">AmpelContext</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+
+		<span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">context</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+		<span class="bp">self</span><span class="o">.</span><span class="n">col_t1</span> <span class="o">=</span> <span class="n">context</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">get_collection</span><span class="p">(</span><span class="s2">&quot;t1&quot;</span><span class="p">)</span>
+
+		<span class="k">for</span> <span class="n">directive</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">directives</span><span class="p">:</span>
+
+			<span class="k">if</span> <span class="n">directive</span><span class="o">.</span><span class="n">col</span> <span class="o">==</span> <span class="s2">&quot;t1&quot;</span><span class="p">:</span>
+				<span class="k">if</span> <span class="n">directive</span><span class="o">.</span><span class="n">query_complement</span> <span class="ow">and</span> <span class="s1">&#39;_id&#39;</span> <span class="ow">in</span> <span class="n">directive</span><span class="o">.</span><span class="n">query_complement</span><span class="p">:</span>
+					<span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;query complement parameter &#39;_id&#39; cannot be used on t1 collection&quot;</span><span class="p">)</span>
+
+			<span class="k">if</span> <span class="n">directive</span><span class="o">.</span><span class="n">col</span> <span class="o">==</span> <span class="s2">&quot;t2&quot;</span><span class="p">:</span>
+				<span class="k">if</span> <span class="n">directive</span><span class="o">.</span><span class="n">query_complement</span> <span class="ow">and</span> <span class="s1">&#39;link&#39;</span> <span class="ow">in</span> <span class="n">directive</span><span class="o">.</span><span class="n">query_complement</span><span class="p">:</span>
+					<span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;query complement parameter &#39;link&#39; cannot be used on t2 collection&quot;</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="T3LatestStateDataLoader.load"><a class="viewcode-back" href="../../../../api.html#ampel.t3.load.T3LatestStateDataLoader.T3LatestStateDataLoader.load">[docs]</a>	<span class="k">def</span> <span class="nf">load</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+		<span class="n">stock_ids</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">StockId</span><span class="p">,</span> <span class="n">Iterator</span><span class="p">[</span><span class="n">StockId</span><span class="p">],</span> <span class="n">StrictIterable</span><span class="p">[</span><span class="n">StockId</span><span class="p">]]</span>
+	<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">AmpelBuffer</span><span class="p">]:</span>
+		<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">		Warning: if stock_ids is an Iterator, it will be fully consumed</span>
+<span class="sd">		&quot;&quot;&quot;</span>
+
+		<span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">stock_ids</span><span class="p">,</span> <span class="n">collections</span><span class="o">.</span><span class="n">abc</span><span class="o">.</span><span class="n">Iterator</span><span class="p">):</span>
+			<span class="n">stock_ids</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">stock_ids</span><span class="p">)</span>
+
+		<span class="c1"># self.logger.info(f&quot;Loading {len(stock_ids)} transients&quot;)</span>
+		<span class="n">states</span> <span class="o">=</span> <span class="kc">None</span>
+
+		<span class="c1"># determine latest compId of each transient</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Determining latest state&quot;</span><span class="p">)</span>
+
+		<span class="c1"># ids for which the fast query cannot be used (results cast into set)</span>
+		<span class="n">slow_ids</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span>
+			<span class="n">el</span><span class="p">[</span><span class="s1">&#39;stock&#39;</span><span class="p">]</span> <span class="k">for</span> <span class="n">el</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">col_t1</span><span class="o">.</span><span class="n">find</span><span class="p">(</span>
+				<span class="p">{</span>
+					<span class="s1">&#39;stock&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;$in&#39;</span><span class="p">:</span> <span class="n">stock_ids</span><span class="p">},</span>
+					<span class="s1">&#39;tier&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;$ne&#39;</span><span class="p">:</span> <span class="mi">0</span><span class="p">}</span>
+				<span class="p">},</span>
+				<span class="p">{</span><span class="s1">&#39;_id&#39;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="s1">&#39;stock&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">}</span>
+			<span class="p">)</span>
+		<span class="p">)</span>
+
+		<span class="c1"># set of transient states (see comment below for an example)</span>
+		<span class="n">states</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+		<span class="n">set_stock_ids</span> <span class="o">=</span> <span class="n">to_set</span><span class="p">(</span><span class="n">stock_ids</span><span class="p">)</span>
+
+		<span class="c1"># Channel/Channels must be provided if state is &#39;latest&#39;</span>
+		<span class="c1"># Get latest state ** for each channel(s) criteria **</span>
+		<span class="k">for</span> <span class="n">chan_logic</span> <span class="ow">in</span> <span class="n">LogicSchemaUtils</span><span class="o">.</span><span class="n">iter</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">channel</span><span class="p">):</span>
+
+			<span class="c1"># get latest state (fast mode)</span>
+			<span class="c1"># Output example:</span>
+			<span class="c1"># [</span>
+			<span class="c1"># {</span>
+			<span class="c1">#   &#39;_id&#39;: b&#39;]\xe2H\x0f(\xbf\xca\x0b\xd3\xba\xae\x89\x0c\xb2\xd2\xae&#39;,</span>
+			<span class="c1">#   &#39;stock&#39;: 1810101034343026   # (ZTF18aaayyuq)</span>
+			<span class="c1"># },</span>
+			<span class="c1"># {</span>
+			<span class="c1">#   &#39;_id&#39;: b&#39;_\xcd\xed\xa5\xe1\x16\x98\x9ai\xf6\xcb\xbd\xe7#FT&#39;,</span>
+			<span class="c1">#   &#39;stock&#39;: 1810101011182029   # (ZTF18aaabikt)</span>
+			<span class="c1"># },</span>
+			<span class="c1"># ...</span>
+			<span class="c1"># ]</span>
+			<span class="n">states</span><span class="o">.</span><span class="n">update</span><span class="p">(</span>
+				<span class="p">[</span>
+					<span class="n">el</span><span class="p">[</span><span class="s1">&#39;_id&#39;</span><span class="p">]</span> <span class="k">for</span> <span class="n">el</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">col_t1</span><span class="o">.</span><span class="n">aggregate</span><span class="p">(</span>
+						<span class="n">fast_query</span><span class="p">(</span>
+							<span class="nb">list</span><span class="p">(</span><span class="n">slow_ids</span><span class="o">.</span><span class="n">symmetric_difference</span><span class="p">(</span><span class="n">set_stock_ids</span><span class="p">)),</span>
+							<span class="n">channel</span> <span class="o">=</span> <span class="n">chan_logic</span>
+						<span class="p">)</span>
+					<span class="p">)</span>
+				<span class="p">]</span>
+			<span class="p">)</span>
+
+			<span class="c1"># TODO: check result length ?</span>
+
+			<span class="c1"># get latest state (general mode) for the remaining transients</span>
+			<span class="k">for</span> <span class="n">slow_id</span> <span class="ow">in</span> <span class="n">slow_ids</span><span class="p">:</span>
+
+				<span class="c1"># get latest state for single transients using general query</span>
+				<span class="n">latest_state</span> <span class="o">=</span> <span class="nb">next</span><span class="p">(</span>
+					<span class="bp">self</span><span class="o">.</span><span class="n">col_t1</span><span class="o">.</span><span class="n">aggregate</span><span class="p">(</span>
+						<span class="n">general_query</span><span class="p">(</span><span class="n">slow_id</span><span class="p">,</span> <span class="n">project</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;$project&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;_id&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">}})</span>
+					<span class="p">),</span>
+					<span class="kc">None</span>
+				<span class="p">)</span>
+
+				<span class="c1"># Robustness</span>
+				<span class="k">if</span> <span class="n">latest_state</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+					<span class="c1"># TODO: add error flag to transient doc ?</span>
+					<span class="c1"># TODO: add error flag to event doc</span>
+					<span class="c1"># TODO: add doc to Ampel_troubles</span>
+					<span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span>
+						<span class="sa">f</span><span class="s2">&quot;Could not retrieve latest state for transient </span><span class="si">{</span><span class="n">slow_id</span><span class="si">}</span><span class="s2">&quot;</span>
+					<span class="p">)</span>
+					<span class="k">continue</span>
+
+				<span class="n">states</span><span class="o">.</span><span class="n">add</span><span class="p">(</span>
+					<span class="n">latest_state</span><span class="p">[</span><span class="s1">&#39;_id&#39;</span><span class="p">]</span>
+				<span class="p">)</span>
+
+
+		<span class="c1"># Customize T1 &amp; T2 queries (add state query parameter)</span>
+		<span class="n">directives</span> <span class="o">=</span> <span class="p">[]</span>
+
+		<span class="k">for</span> <span class="n">directive</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">directives</span><span class="p">:</span>
+
+			<span class="k">if</span> <span class="n">directive</span><span class="o">.</span><span class="n">col</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">&quot;t1&quot;</span><span class="p">,</span> <span class="s2">&quot;t2&quot;</span><span class="p">):</span>
+
+				<span class="n">qd</span> <span class="o">=</span> <span class="n">directive</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">deep</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+				<span class="n">key</span> <span class="o">=</span> <span class="s1">&#39;link&#39;</span> <span class="k">if</span> <span class="n">directive</span><span class="o">.</span><span class="n">col</span> <span class="o">==</span> <span class="s1">&#39;t2&#39;</span> <span class="k">else</span> <span class="s1">&#39;_id&#39;</span>
+
+				<span class="k">if</span> <span class="n">qd</span><span class="o">.</span><span class="n">query_complement</span><span class="p">:</span>
+					<span class="n">qd</span><span class="o">.</span><span class="n">query_complement</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;$in&quot;</span><span class="p">:</span> <span class="nb">list</span><span class="p">(</span><span class="n">states</span><span class="p">)}</span>
+				<span class="k">else</span><span class="p">:</span>
+					<span class="n">qd</span><span class="o">.</span><span class="n">query_complement</span> <span class="o">=</span> <span class="p">{</span><span class="n">key</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;$in&quot;</span><span class="p">:</span> <span class="nb">list</span><span class="p">(</span><span class="n">states</span><span class="p">)}}</span>
+
+				<span class="n">directives</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">qd</span><span class="p">)</span>
+
+			<span class="k">else</span><span class="p">:</span>
+				<span class="n">directives</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">directive</span><span class="p">)</span>
+
+		<span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Loading ampel data&quot;</span><span class="p">)</span>
+
+		<span class="c1"># Returns AmpelBuffer instances</span>
+		<span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">db_content_loader</span><span class="o">.</span><span class="n">load</span><span class="p">(</span>
+			<span class="n">stock_ids</span> <span class="o">=</span> <span class="n">stock_ids</span><span class="p">,</span>
+			<span class="n">directives</span> <span class="o">=</span> <span class="n">directives</span><span class="p">,</span>
+			<span class="n">channel</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">channel</span>
+		<span class="p">)</span></div></div>
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../../../index.html">
+              <img class="logo" src="../../../../_static/ampel.png" alt="Logo"/>
+            </a></p>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="nav-item nav-item-0"><a href="../../../../index.html">ampel-core 0.7.5 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../../index.html" >Module code</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">ampel.t3.load.T3LatestStateDataLoader</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2018-2021, Ampel Project.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 4.0.2.
+    </div>
+  </body>
+</html>

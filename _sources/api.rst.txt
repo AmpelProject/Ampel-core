@@ -7,21 +7,21 @@ The actual implementation of the Ampel framework
 Processing units
 ----------------
 
-.. autoclass:: ampel.t3.session.T3SessionLastRunTime.T3SessionLastRunTime
+.. autoclass:: ampel.t3.context.T3AddLastRunTime.T3AddLastRunTime
   :members:
   :show-inheritance:
 
-.. autoclass:: ampel.t3.session.T3SessionAlertsNumber.T3SessionAlertsNumber
+.. autoclass:: ampel.t3.context.T3AddAlertsNumber.T3AddAlertsNumber
   :members:
   :show-inheritance:
 
 Base classes for processing units
 ---------------------------------
 
-.. autoclass:: ampel.core.ContextUnit.ContextUnit
+.. autoclass:: ampel.core.AdminUnit.AdminUnit
   :members:
 
-.. autoclass:: ampel.abstract.AbsEventUnit.AbsEventUnit
+.. autoclass:: ampel.abstract.AbsProcessorUnit.AbsProcessorUnit
   :members:
 
 Processor units
@@ -160,7 +160,7 @@ Models
 .. autoclass:: ampel.model.t3.T2FilterModel.T2FilterModel
   :members:
 
-.. autoclass:: ampel.model.ingest.IngestDirective.IngestDirective
+.. autoclass:: ampel.model.ingest.IngestionDirective.IngestionDirective
   :members:
 
 .. autoclass:: ampel.model.ingest.T0AddModel.T0AddModel

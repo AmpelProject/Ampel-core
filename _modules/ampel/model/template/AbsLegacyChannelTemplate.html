@@ -1,0 +1,376 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ampel.model.template.AbsLegacyChannelTemplate &#8212; ampel-core 0.7.5 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/sphinxdoc.css" />
+    <script data-url_root="../../../../" id="documentation_options" src="../../../../_static/documentation_options.js"></script>
+    <script src="../../../../_static/jquery.js"></script>
+    <script src="../../../../_static/underscore.js"></script>
+    <script src="../../../../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="nav-item nav-item-0"><a href="../../../../index.html">ampel-core 0.7.5 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../../index.html" accesskey="U">Module code</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">ampel.model.template.AbsLegacyChannelTemplate</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for ampel.model.template.AbsLegacyChannelTemplate</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/env python</span>
+<span class="c1"># -*- coding: utf-8 -*-</span>
+<span class="c1"># File              : Ampel-core/ampel/model/template/AbsLegacyChannelTemplate.py</span>
+<span class="c1"># License           : BSD-3-Clause</span>
+<span class="c1"># Author            : vb &lt;vbrinnel@physik.hu-berlin.de&gt;</span>
+<span class="c1"># Date              : 16.10.2019</span>
+<span class="c1"># Last Modified Date: 24.02.2021</span>
+<span class="c1"># Last Modified By  : vb &lt;vbrinnel@physik.hu-berlin.de&gt;</span>
+
+<span class="kn">from</span> <span class="nn">importlib</span> <span class="kn">import</span> <span class="n">import_module</span>
+<span class="kn">from</span> <span class="nn">pydantic</span> <span class="kn">import</span> <span class="n">validator</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">List</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Union</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Sequence</span>
+<span class="kn">from</span> <span class="nn">ampel.log.AmpelLogger</span> <span class="kn">import</span> <span class="n">AmpelLogger</span>
+<span class="kn">from</span> <span class="nn">ampel.config.builder.FirstPassConfig</span> <span class="kn">import</span> <span class="n">FirstPassConfig</span>
+<span class="kn">from</span> <span class="nn">ampel.model.UnitModel</span> <span class="kn">import</span> <span class="n">UnitModel</span>
+<span class="kn">from</span> <span class="nn">ampel.abstract.AbsChannelTemplate</span> <span class="kn">import</span> <span class="n">AbsChannelTemplate</span>
+
+
+<div class="viewcode-block" id="T2UnitModel"><a class="viewcode-back" href="../../../../api.html#ampel.model.template.AbsLegacyChannelTemplate.T2UnitModel">[docs]</a><span class="k">class</span> <span class="nc">T2UnitModel</span><span class="p">(</span><span class="n">UnitModel</span><span class="p">):</span>
+	<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">	Precursor that ProcessMorpher can turn into a T2IngestModel</span>
+<span class="sd">	&quot;&quot;&quot;</span>
+	<span class="c1">#: Ingester options</span>
+	<span class="n">ingest</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span>
+	<span class="c1">#: Filter result codes that should trigger this T2. If not specified, T2</span>
+	<span class="c1">#: documents will be created in response to *any* passing alert.</span>
+	<span class="n">group</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="p">[]</span></div>
+
+
+<div class="viewcode-block" id="AbsLegacyChannelTemplate"><a class="viewcode-back" href="../../../../api.html#ampel.model.template.AbsLegacyChannelTemplate.AbsLegacyChannelTemplate">[docs]</a><span class="k">class</span> <span class="nc">AbsLegacyChannelTemplate</span><span class="p">(</span><span class="n">AbsChannelTemplate</span><span class="p">,</span> <span class="n">abstract</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+	<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">	Abstract class whose purpose is to maintain compatibility with channel</span>
+<span class="sd">	definitions created for ampel versions &lt; 0.7.</span>
+<span class="sd">	This class must be subclassed.</span>
+<span class="sd">	</span>
+<span class="sd">	Known subclass: :class:`~ampel.model.ZTFLegacyChannelTemplate.ZTFLegacyChannelTemplate`</span>
+<span class="sd">	&quot;&quot;&quot;</span>
+	<span class="c1">#: How to treat photopoints be treated once a transient has been accepted.</span>
+	<span class="c1">#</span>
+	<span class="c1">#: - false: apply filter to all photopoints</span>
+	<span class="c1">#: - true or &quot;live&quot;: bypass filter once a transient has been accepted once</span>
+	<span class="n">auto_complete</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">bool</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span>
+	<span class="c1">#: Filter to apply to incoming datapoints</span>
+	<span class="n">t0_filter</span><span class="p">:</span> <span class="n">UnitModel</span>
+	<span class="c1">#: T2 units to trigger when transient is updated. Dependencies of tied</span>
+	<span class="c1">#: units will be added automatically.</span>
+	<span class="n">t2_compute</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">T2UnitModel</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+	<span class="c1">#: T3 processes bound to this channel. These may be use templates, such as</span>
+	<span class="c1">#: :class:`~ampel.model.template.PeriodicSummaryT3.PeriodicSummaryT3`.</span>
+	<span class="n">t3_supervise</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="p">[]</span>
+
+
+	<span class="nd">@validator</span><span class="p">(</span><span class="s1">&#39;t3_supervise&#39;</span><span class="p">,</span> <span class="s1">&#39;t2_compute&#39;</span><span class="p">,</span> <span class="n">pre</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">each_item</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+	<span class="k">def</span> <span class="nf">cast_to_list_if_required</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">v</span><span class="p">):</span>
+		<span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+			<span class="k">return</span> <span class="p">[</span><span class="n">v</span><span class="p">]</span>
+		<span class="k">return</span> <span class="n">v</span>
+
+
+	<span class="nd">@validator</span><span class="p">(</span><span class="s1">&#39;auto_complete&#39;</span><span class="p">)</span>
+	<span class="k">def</span> <span class="nf">make_auto_stock_match</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">v</span><span class="p">):</span>
+		<span class="k">if</span> <span class="n">v</span> <span class="ow">is</span> <span class="kc">True</span> <span class="ow">or</span> <span class="n">v</span> <span class="o">==</span> <span class="s1">&#39;live&#39;</span><span class="p">:</span>
+			<span class="k">return</span> <span class="p">{</span>
+				<span class="s1">&#39;filter&#39;</span><span class="p">:</span> <span class="s1">&#39;bypass&#39;</span><span class="p">,</span>
+				<span class="s1">&#39;update_rej&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+				<span class="s1">&#39;retro_complete&#39;</span><span class="p">:</span> <span class="kc">True</span>
+			<span class="p">}</span>
+		<span class="k">else</span><span class="p">:</span>
+			<span class="k">return</span> <span class="p">{</span>
+				<span class="s1">&#39;filter&#39;</span><span class="p">:</span> <span class="s1">&#39;overrule&#39;</span><span class="p">,</span>
+				<span class="s1">&#39;update_rej&#39;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+				<span class="s1">&#39;retro_complete&#39;</span><span class="p">:</span> <span class="kc">False</span>
+			<span class="p">}</span>
+
+
+	<span class="c1"># Mandatory implementation</span>
+	<span class="k">def</span> <span class="nf">get_channel</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">logger</span><span class="p">:</span> <span class="n">AmpelLogger</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+		<span class="n">d</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dict</span><span class="p">(</span><span class="n">by_alias</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+		<span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">&quot;auto_complete&quot;</span><span class="p">,</span> <span class="s2">&quot;t0_filter&quot;</span><span class="p">,</span> <span class="s2">&quot;t2_compute&quot;</span><span class="p">,</span> <span class="s2">&quot;t3_supervise&quot;</span><span class="p">):</span>
+			<span class="k">if</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">d</span><span class="p">:</span>
+				<span class="k">del</span> <span class="n">d</span><span class="p">[</span><span class="n">k</span><span class="p">]</span>
+		<span class="k">return</span> <span class="n">d</span>
+
+
+	<span class="k">def</span> <span class="nf">craft_t0_process</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+		<span class="n">first_pass_config</span><span class="p">:</span> <span class="n">FirstPassConfig</span><span class="p">,</span>
+		<span class="n">controller</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span>
+		<span class="n">stock_ingester</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]],</span>
+		<span class="n">t0_ingester</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]],</span>
+		<span class="n">t1_ingester</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+		<span class="n">t1_standalone_ingester</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+		<span class="n">t2_state_ingester</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+		<span class="n">t2_point_ingester</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+		<span class="n">t2_stock_ingester</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+		<span class="n">t2_compute_from_t0</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">T2UnitModel</span><span class="p">]</span> <span class="o">=</span> <span class="p">[],</span>
+		<span class="n">t2_compute_from_t1</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">T2UnitModel</span><span class="p">]</span> <span class="o">=</span> <span class="p">[],</span>
+	<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+		<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">		This method needs a reference to a FirstPassConfig dict because</span>
+<span class="sd">		config information might be needed during the template transforming process.</span>
+<span class="sd">		For example, legacy channel templates (such as ZTFLegacyChannelTemplate)</span>
+<span class="sd">		allow users to reference any kind of t2 units under the root config section &#39;t2_compute&#39;.</span>
+<span class="sd">		The AlertProcessor however, requires different configuration paths for &quot;state T2s&quot; and &quot;point T2s&quot;.</span>
+<span class="sd">		The underlying templates will thus have to sort T2s based on their respective abstract classes,</span>
+<span class="sd">		and for this, the ampel configuration is required.</span>
+
+<span class="sd">		:param stock_ingester: unit_class or (unit_class, config dict)</span>
+<span class="sd">		:param t0_ingester: unit_class or (unit_class, config dict)</span>
+<span class="sd">		:param t1_ingester: unit_class or (unit_class, config dict)</span>
+<span class="sd">		:param t2_state_ingester: unit_class or (unit_class, config dict)</span>
+<span class="sd">		:param t2_point_ingester: unit_class or (unit_class, config dict)</span>
+<span class="sd">		:param t2_stock_ingester: unit_class or (unit_class, config dict)</span>
+<span class="sd">		:param t2_compute_from_t0: units to schedule on t0_add</span>
+<span class="sd">		:param t2_compute_from_t1: units to schedule on t1_combine</span>
+<span class="sd">		&quot;&quot;&quot;</span>
+
+		<span class="n">ret</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+			<span class="s2">&quot;tier&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+			<span class="s2">&quot;schedule&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;super&quot;</span><span class="p">],</span>
+			<span class="s2">&quot;active&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">active</span><span class="p">,</span>
+			<span class="s2">&quot;distrib&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">distrib</span><span class="p">,</span>
+			<span class="s2">&quot;source&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">source</span><span class="p">,</span>
+			<span class="s2">&quot;channel&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">channel</span><span class="p">,</span>
+			<span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">channel</span><span class="si">}</span><span class="s2">|T0|</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">template</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+			<span class="s2">&quot;controller&quot;</span><span class="p">:</span> <span class="n">controller</span><span class="p">,</span>
+			<span class="s2">&quot;processor&quot;</span><span class="p">:</span> <span class="p">{</span>
+				<span class="s2">&quot;unit&quot;</span><span class="p">:</span> <span class="s2">&quot;AlertProcessor&quot;</span><span class="p">,</span>
+				<span class="s2">&quot;config&quot;</span><span class="p">:</span> <span class="p">{</span>
+					<span class="s2">&quot;directives&quot;</span><span class="p">:</span> <span class="p">[{</span>
+						<span class="s2">&quot;channel&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">channel</span><span class="p">,</span>
+						<span class="s2">&quot;stock_match&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">auto_complete</span><span class="p">,</span>
+						<span class="s2">&quot;filter&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">t0_filter</span><span class="o">.</span><span class="n">dict</span><span class="p">(</span><span class="n">exclude_unset</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">by_alias</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span>
+						<span class="s2">&quot;t0_add&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_dict</span><span class="p">(</span><span class="n">t0_ingester</span><span class="p">),</span>
+						<span class="s2">&quot;stock_update&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_dict</span><span class="p">(</span><span class="n">stock_ingester</span><span class="p">)</span>
+					<span class="p">}]</span>
+				<span class="p">}</span>
+			<span class="p">}</span>
+		<span class="p">}</span>
+
+		<span class="n">directives</span> <span class="o">=</span> <span class="n">ret</span><span class="p">[</span><span class="s1">&#39;processor&#39;</span><span class="p">][</span><span class="s1">&#39;config&#39;</span><span class="p">][</span><span class="s1">&#39;directives&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+
+		<span class="bp">self</span><span class="o">.</span><span class="n">check_tied_units</span><span class="p">(</span>
+			<span class="n">t2_compute_from_t0</span> <span class="o">+</span> <span class="n">t2_compute_from_t1</span><span class="p">,</span>
+			<span class="n">first_pass_config</span>
+		<span class="p">)</span>
+
+		<span class="k">if</span> <span class="n">t2_state_units</span> <span class="o">:=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_units</span><span class="p">(</span>
+			<span class="n">t2_compute_from_t0</span><span class="p">,</span>
+			<span class="p">[</span>
+				<span class="s2">&quot;AbsStateT2Unit&quot;</span><span class="p">,</span>
+				<span class="s2">&quot;AbsCustomStateT2Unit&quot;</span><span class="p">,</span>
+				<span class="s2">&quot;AbsTiedStateT2Unit&quot;</span><span class="p">,</span>
+				<span class="s2">&quot;AbsTiedCustomStateT2Unit&quot;</span><span class="p">,</span>
+			<span class="p">],</span>
+			<span class="n">first_pass_config</span>
+		<span class="p">):</span>
+
+			<span class="k">if</span> <span class="n">t1_ingester</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+				<span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Template processing requires parameter &#39;t1_ingester&#39;&quot;</span><span class="p">)</span>
+
+			<span class="k">if</span> <span class="n">t2_state_ingester</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+				<span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Template processing requires parameter &#39;t2_state_ingester&#39;&quot;</span><span class="p">)</span>
+
+			<span class="n">directives</span><span class="p">[</span><span class="s1">&#39;t0_add&#39;</span><span class="p">][</span><span class="s1">&#39;t1_combine&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span>
+				<span class="bp">self</span><span class="o">.</span><span class="n">_get_dict</span><span class="p">(</span>
+					<span class="n">t1_ingester</span><span class="p">,</span>
+					<span class="n">t2_compute</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_dict</span><span class="p">(</span>
+						<span class="n">t2_state_ingester</span><span class="p">,</span>
+						<span class="n">units</span> <span class="o">=</span> <span class="n">t2_state_units</span>
+					<span class="p">)</span>
+				<span class="p">)</span>
+			<span class="p">]</span>
+
+		<span class="k">if</span> <span class="n">t2_state_units</span> <span class="o">:=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_units</span><span class="p">(</span>
+			<span class="n">t2_compute_from_t1</span><span class="p">,</span>
+			<span class="p">[</span>
+				<span class="s2">&quot;AbsStateT2Unit&quot;</span><span class="p">,</span>
+				<span class="s2">&quot;AbsCustomStateT2Unit&quot;</span><span class="p">,</span>
+				<span class="s2">&quot;AbsTiedStateT2Unit&quot;</span><span class="p">,</span>
+				<span class="s2">&quot;AbsTiedCustomStateT2Unit&quot;</span><span class="p">,</span>
+			<span class="p">],</span>
+			<span class="n">first_pass_config</span>
+		<span class="p">):</span>
+
+			<span class="k">if</span> <span class="n">t1_standalone_ingester</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+				<span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Template processing requires parameter &#39;t1_standalone_ingester&#39;&quot;</span><span class="p">)</span>
+
+			<span class="k">if</span> <span class="n">t2_state_ingester</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+				<span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Template processing requires parameter &#39;t2_state_ingester&#39;&quot;</span><span class="p">)</span>
+
+			<span class="n">directives</span><span class="p">[</span><span class="s1">&#39;t1_combine&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span>
+				<span class="bp">self</span><span class="o">.</span><span class="n">_get_dict</span><span class="p">(</span>
+					<span class="n">t1_standalone_ingester</span><span class="p">,</span>
+					<span class="n">t2_compute</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_dict</span><span class="p">(</span>
+						<span class="n">t2_state_ingester</span><span class="p">,</span>
+						<span class="n">units</span> <span class="o">=</span> <span class="n">t2_state_units</span>
+					<span class="p">)</span>
+				<span class="p">)</span>
+			<span class="p">]</span>
+
+		<span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_units</span><span class="p">(</span><span class="n">t2_compute_from_t1</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;AbsStockT2Unit&quot;</span><span class="p">,</span> <span class="s2">&quot;AbsPointT2Unit&quot;</span><span class="p">],</span> <span class="n">first_pass_config</span><span class="p">):</span>
+			<span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s2">&quot;Stock and Point T2 units can&#39;t be scheduled from standalone T1 processes&quot;</span><span class="p">)</span>
+
+		<span class="k">if</span> <span class="n">t2_stock_units</span> <span class="o">:=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_units</span><span class="p">(</span><span class="n">t2_compute_from_t0</span><span class="p">,</span> <span class="s2">&quot;AbsStockT2Unit&quot;</span><span class="p">,</span> <span class="n">first_pass_config</span><span class="p">):</span>
+
+			<span class="k">if</span> <span class="n">t2_stock_ingester</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+				<span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Template processing requires parameter &#39;t2_stock_ingester&#39;&quot;</span><span class="p">)</span>
+
+			<span class="n">directives</span><span class="p">[</span><span class="s1">&#39;t2_compute&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_dict</span><span class="p">(</span>
+				<span class="n">t2_stock_ingester</span><span class="p">,</span> <span class="n">units</span> <span class="o">=</span> <span class="n">t2_stock_units</span>
+			<span class="p">)</span>
+
+		<span class="k">if</span> <span class="n">t2_point_units</span> <span class="o">:=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_units</span><span class="p">(</span><span class="n">t2_compute_from_t0</span><span class="p">,</span> <span class="s2">&quot;AbsPointT2Unit&quot;</span><span class="p">,</span> <span class="n">first_pass_config</span><span class="p">):</span>
+
+			<span class="k">if</span> <span class="n">t2_point_ingester</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+				<span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Template processing requires parameter &#39;t2_point_ingester&#39;&quot;</span><span class="p">)</span>
+
+			<span class="n">directives</span><span class="p">[</span><span class="s1">&#39;t0_add&#39;</span><span class="p">][</span><span class="s1">&#39;t2_compute&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_dict</span><span class="p">(</span>
+				<span class="n">t2_point_ingester</span><span class="p">,</span> <span class="n">units</span> <span class="o">=</span> <span class="n">t2_point_units</span>
+			<span class="p">)</span>
+
+		<span class="k">return</span> <span class="n">ret</span>
+
+
+	<span class="k">def</span> <span class="nf">_get_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">arg</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]],</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+		<span class="sd">&quot;&quot;&quot; internal use &quot;&quot;&quot;</span>
+		<span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">arg</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">):</span>
+			<span class="k">if</span> <span class="n">arg</span><span class="p">[</span><span class="mi">1</span><span class="p">]:</span>
+				<span class="k">return</span> <span class="p">{</span><span class="s2">&quot;unit&quot;</span><span class="p">:</span> <span class="n">arg</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="s2">&quot;config&quot;</span><span class="p">:</span> <span class="n">arg</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">}</span>
+			<span class="k">return</span> <span class="p">{</span><span class="s2">&quot;unit&quot;</span><span class="p">:</span> <span class="n">arg</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">}</span>
+		<span class="k">return</span> <span class="p">{</span><span class="s2">&quot;unit&quot;</span><span class="p">:</span> <span class="n">arg</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">}</span>
+
+
+<div class="viewcode-block" id="AbsLegacyChannelTemplate.check_tied_units"><a class="viewcode-back" href="../../../../api.html#ampel.model.template.AbsLegacyChannelTemplate.AbsLegacyChannelTemplate.check_tied_units">[docs]</a>	<span class="k">def</span> <span class="nf">check_tied_units</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+		<span class="n">all_t2_units</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">T2UnitModel</span><span class="p">],</span>
+		<span class="n">first_pass_config</span><span class="p">:</span> <span class="n">FirstPassConfig</span>
+	<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+		<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">		:raises: ValueError if tied t2 units are present in t2_units but the requred t2 units are not present in t2_compute</span>
+<span class="sd">		&quot;&quot;&quot;</span>
+		<span class="n">tied_units</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">T2UnitModel</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+		<span class="k">for</span> <span class="n">el</span> <span class="ow">in</span> <span class="n">all_t2_units</span><span class="p">:</span>
+			<span class="k">if</span> <span class="s2">&quot;AbsTiedT2Unit&quot;</span> <span class="ow">in</span> <span class="n">first_pass_config</span><span class="p">[</span><span class="s1">&#39;unit&#39;</span><span class="p">][</span><span class="s1">&#39;base&#39;</span><span class="p">][</span><span class="n">el</span><span class="o">.</span><span class="n">unit_name</span><span class="p">][</span><span class="s1">&#39;base&#39;</span><span class="p">]:</span>
+				<span class="n">tied_units</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">el</span><span class="p">)</span> <span class="c1"># type: ignore</span>
+			
+		<span class="n">s</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+		<span class="k">for</span> <span class="n">tied_unit</span> <span class="ow">in</span> <span class="n">tied_units</span><span class="p">:</span>
+			<span class="n">klass</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span>
+				<span class="n">import_module</span><span class="p">(</span>
+					<span class="n">first_pass_config</span><span class="p">[</span><span class="s1">&#39;unit&#39;</span><span class="p">][</span><span class="s1">&#39;base&#39;</span><span class="p">][</span><span class="n">tied_unit</span><span class="o">.</span><span class="n">unit_name</span><span class="p">][</span><span class="s1">&#39;fqn&#39;</span><span class="p">]</span>
+				<span class="p">),</span>
+				<span class="n">tied_unit</span><span class="o">.</span><span class="n">unit_name</span>
+			<span class="p">)</span>
+			<span class="n">s</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">klass</span><span class="o">.</span><span class="n">get_tied_unit_names</span><span class="p">())</span>
+
+		<span class="k">if</span> <span class="n">missing_deps</span> <span class="o">:=</span> <span class="n">s</span><span class="o">.</span><span class="n">difference</span><span class="p">({</span><span class="n">u</span><span class="o">.</span><span class="n">unit</span> <span class="k">for</span> <span class="n">u</span> <span class="ow">in</span> <span class="n">all_t2_units</span><span class="p">}):</span>
+			<span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+				<span class="sa">f</span><span class="s2">&quot;Following t2 unit(s) must be defined (required by &quot;</span>
+				<span class="sa">f</span><span class="s2">&quot;tied units): </span><span class="si">{</span><span class="nb">list</span><span class="p">(</span><span class="n">missing_deps</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
+			<span class="p">)</span>
+		
+		<span class="k">def</span> <span class="nf">as_unitmodel</span><span class="p">(</span><span class="n">t2_unit_model</span><span class="p">:</span> <span class="n">T2UnitModel</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">UnitModel</span><span class="p">:</span>
+			<span class="k">return</span> <span class="n">UnitModel</span><span class="p">(</span><span class="o">**</span><span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="n">v</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span><span class="n">v</span> <span class="ow">in</span> <span class="n">t2_unit_model</span><span class="o">.</span><span class="n">dict</span><span class="p">()</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">UnitModel</span><span class="o">.</span><span class="n">__fields__</span><span class="p">})</span>
+
+		<span class="k">for</span> <span class="n">tied_unit</span> <span class="ow">in</span> <span class="n">tied_units</span><span class="p">:</span>
+			<span class="k">if</span> <span class="p">(</span>
+				<span class="nb">isinstance</span><span class="p">(</span><span class="n">tied_unit</span><span class="o">.</span><span class="n">config</span><span class="p">,</span> <span class="nb">dict</span><span class="p">)</span>
+				<span class="ow">and</span> <span class="p">(</span><span class="n">t2_deps</span> <span class="o">:=</span> <span class="p">(</span><span class="n">tied_unit</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;t2_dependency&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="p">[]))</span>
+			<span class="p">):</span>
+				<span class="k">for</span> <span class="n">t2_dep</span> <span class="ow">in</span> <span class="n">t2_deps</span><span class="p">:</span>
+					<span class="n">dependency_config</span> <span class="o">=</span> <span class="n">UnitModel</span><span class="p">(</span><span class="n">unit</span><span class="o">=</span><span class="n">t2_dep</span><span class="p">[</span><span class="s2">&quot;unit&quot;</span><span class="p">],</span> <span class="n">config</span><span class="o">=</span><span class="n">t2_dep</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;config&quot;</span><span class="p">))</span>
+					<span class="n">candidates</span> <span class="o">=</span> <span class="p">[</span><span class="n">as_unitmodel</span><span class="p">(</span><span class="n">unit</span><span class="p">)</span> <span class="k">for</span> <span class="n">unit</span> <span class="ow">in</span> <span class="n">all_t2_units</span> <span class="k">if</span> <span class="n">unit</span><span class="o">.</span><span class="n">unit_name</span> <span class="o">==</span> <span class="n">dependency_config</span><span class="o">.</span><span class="n">unit_name</span><span class="p">]</span>
+					<span class="k">if</span> <span class="ow">not</span> <span class="nb">any</span><span class="p">((</span><span class="n">c</span> <span class="o">==</span> <span class="n">dependency_config</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">candidates</span><span class="p">)):</span>
+						<span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+							<span class="sa">f</span><span class="s2">&quot;Unit </span><span class="si">{</span><span class="n">tied_unit</span><span class="o">.</span><span class="n">unit_name</span><span class="si">}</span><span class="s2"> depends on unit </span><span class="si">{</span><span class="n">dependency_config</span><span class="o">.</span><span class="n">dict</span><span class="p">()</span><span class="si">}</span><span class="s2">, &quot;</span>
+							<span class="sa">f</span><span class="s2">&quot;which was not configured. Possible matches are: &quot;</span>
+							<span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="p">[</span><span class="n">c</span><span class="o">.</span><span class="n">dict</span><span class="p">()</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">candidates</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span>
+						<span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="AbsLegacyChannelTemplate.get_units"><a class="viewcode-back" href="../../../../api.html#ampel.model.template.AbsLegacyChannelTemplate.AbsLegacyChannelTemplate.get_units">[docs]</a>	<span class="k">def</span> <span class="nf">get_units</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+		<span class="n">units</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">UnitModel</span><span class="p">],</span> <span class="n">abs_unit</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]],</span>
+		<span class="n">first_pass_config</span><span class="p">:</span> <span class="n">FirstPassConfig</span>
+	<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">]:</span>
+		<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">		:returns: unit defintions (dict) that are subclass of the provided abstract class name.</span>
+<span class="sd">		&quot;&quot;&quot;</span>
+
+		<span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">abs_unit</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+			<span class="n">abs_unit</span> <span class="o">=</span> <span class="p">[</span><span class="n">abs_unit</span><span class="p">]</span>
+
+		<span class="k">return</span> <span class="p">[</span>
+			<span class="n">el</span><span class="o">.</span><span class="n">dict</span><span class="p">(</span><span class="n">exclude_unset</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">by_alias</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+			<span class="k">for</span> <span class="n">el</span> <span class="ow">in</span> <span class="n">units</span>
+			<span class="k">if</span> <span class="nb">any</span><span class="p">(</span>
+				<span class="n">unit</span> <span class="ow">in</span> <span class="n">first_pass_config</span><span class="p">[</span><span class="s1">&#39;unit&#39;</span><span class="p">][</span><span class="s1">&#39;base&#39;</span><span class="p">][</span><span class="n">el</span><span class="o">.</span><span class="n">unit</span><span class="p">][</span><span class="s1">&#39;base&#39;</span><span class="p">]</span>
+				<span class="k">for</span> <span class="n">unit</span> <span class="ow">in</span> <span class="n">abs_unit</span>
+			<span class="p">)</span>
+		<span class="p">]</span></div></div>
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../../../index.html">
+              <img class="logo" src="../../../../_static/ampel.png" alt="Logo"/>
+            </a></p>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="nav-item nav-item-0"><a href="../../../../index.html">ampel-core 0.7.5 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../../index.html" >Module code</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">ampel.model.template.AbsLegacyChannelTemplate</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2018-2021, Ampel Project.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 4.0.2.
+    </div>
+  </body>
+</html>

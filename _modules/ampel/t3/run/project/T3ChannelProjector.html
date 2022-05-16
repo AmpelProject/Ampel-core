@@ -1,0 +1,183 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ampel.t3.run.project.T3ChannelProjector &#8212; ampel-core 0.7.5 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../../../../_static/sphinxdoc.css" />
+    <script data-url_root="../../../../../" id="documentation_options" src="../../../../../_static/documentation_options.js"></script>
+    <script src="../../../../../_static/jquery.js"></script>
+    <script src="../../../../../_static/underscore.js"></script>
+    <script src="../../../../../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../search.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="nav-item nav-item-0"><a href="../../../../../index.html">ampel-core 0.7.5 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../../../index.html" accesskey="U">Module code</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">ampel.t3.run.project.T3ChannelProjector</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for ampel.t3.run.project.T3ChannelProjector</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/env python</span>
+<span class="c1"># -*- coding: utf-8 -*-</span>
+<span class="c1"># File              : Ampel-core/ampel/t3/run/project/T3ChannelProjector.py</span>
+<span class="c1"># License           : BSD-3-Clause</span>
+<span class="c1"># Author            : vb &lt;vbrinnel@physik.hu-berlin.de&gt;</span>
+<span class="c1"># Date              : 07.01.2020</span>
+<span class="c1"># Last Modified Date: 22.11.2020</span>
+<span class="c1"># Last Modified By  : Jakob van Santen &lt;jakob.van.santen@desy.de&gt;</span>
+
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Sequence</span><span class="p">,</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Union</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Set</span>
+<span class="kn">from</span> <span class="nn">ampel.type</span> <span class="kn">import</span> <span class="n">ChannelId</span>
+<span class="kn">from</span> <span class="nn">ampel.model.operator.AllOf</span> <span class="kn">import</span> <span class="n">AllOf</span>
+<span class="kn">from</span> <span class="nn">ampel.model.operator.AnyOf</span> <span class="kn">import</span> <span class="n">AnyOf</span>
+<span class="kn">from</span> <span class="nn">ampel.model.operator.OneOf</span> <span class="kn">import</span> <span class="n">OneOf</span>
+<span class="kn">from</span> <span class="nn">ampel.config.LogicSchemaUtils</span> <span class="kn">import</span> <span class="n">LogicSchemaUtils</span>
+<span class="kn">from</span> <span class="nn">ampel.log</span> <span class="kn">import</span> <span class="n">VERBOSE</span>
+<span class="kn">from</span> <span class="nn">ampel.t3.run.project.T3BaseProjector</span> <span class="kn">import</span> <span class="n">T3BaseProjector</span>
+<span class="kn">from</span> <span class="nn">ampel.aux.ComboDictModifier</span> <span class="kn">import</span> <span class="n">ComboDictModifier</span>
+
+
+<div class="viewcode-block" id="T3ChannelProjector"><a class="viewcode-back" href="../../../../../api.html#ampel.t3.run.project.T3ChannelProjector.T3ChannelProjector">[docs]</a><span class="k">class</span> <span class="nc">T3ChannelProjector</span><span class="p">(</span><span class="n">T3BaseProjector</span><span class="p">):</span>
+
+	<span class="n">channel</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">ChannelId</span><span class="p">,</span> <span class="n">AllOf</span><span class="p">[</span><span class="n">ChannelId</span><span class="p">],</span> <span class="n">AnyOf</span><span class="p">[</span><span class="n">ChannelId</span><span class="p">],</span> <span class="n">OneOf</span><span class="p">[</span><span class="n">ChannelId</span><span class="p">]]</span>
+
+	<span class="c1"># Whether to cast structures into immutables objects after modification</span>
+	<span class="n">freeze</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>
+
+	<span class="c1"># Whether fields from input ampel_buffer can be directly altered/modified</span>
+	<span class="c1"># This is the case if the parent T3UnitRunner contains only one run block</span>
+	<span class="c1"># If this is not the case, new dict instances must be created to modify existing dicts</span>
+	<span class="n">unalterable</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>
+
+
+	<span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+		<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">		:param channel: the channel id of the channel for which projections should be performed</span>
+<span class="sd">		:param unalterable: see ComboDictModifier docstring</span>
+<span class="sd">		:param freeze: see ComboDictModifier docstring</span>
+<span class="sd">		&quot;&quot;&quot;</span>
+
+		<span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+		<span class="bp">self</span><span class="o">.</span><span class="n">verbose</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">verbose</span>
+		<span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">verbose</span><span class="p">:</span>
+			<span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">VERBOSE</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;Setting up channel project for &#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">channel</span><span class="si">}</span><span class="s2">&#39;&quot;</span><span class="p">)</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">_channel_set</span><span class="p">:</span> <span class="n">Set</span><span class="p">[</span><span class="n">ChannelId</span><span class="p">]</span> <span class="o">=</span> <span class="n">LogicSchemaUtils</span><span class="o">.</span><span class="n">reduce_to_set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">channel</span><span class="p">)</span>
+
+		<span class="n">journal_modifier</span> <span class="o">=</span> <span class="n">ComboDictModifier</span><span class="p">(</span>
+			<span class="n">logger</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="p">,</span>
+			<span class="n">unalterable</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">unalterable</span><span class="p">,</span>
+			<span class="n">freeze</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">freeze</span><span class="p">,</span>
+			<span class="n">modifications</span> <span class="o">=</span> <span class="p">[</span>
+				<span class="c1"># Modified ex: {&quot;HU_RANDOM&quot;: 3213143434, &quot;HU_RAPID&quot;: 43789574389}</span>
+				<span class="n">ComboDictModifier</span><span class="o">.</span><span class="n">KeepOnlyModel</span><span class="p">(</span><span class="n">op</span><span class="o">=</span><span class="s2">&quot;keep_only&quot;</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="s2">&quot;modified&quot;</span><span class="p">,</span> <span class="n">keep</span><span class="o">=</span><span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_channel_set</span><span class="p">)),</span>
+				<span class="c1"># Created ex: {&quot;HU_RANDOM&quot;: 3213143434, &quot;HU_RAPID&quot;: 43789574389}</span>
+				<span class="n">ComboDictModifier</span><span class="o">.</span><span class="n">KeepOnlyModel</span><span class="p">(</span><span class="n">op</span><span class="o">=</span><span class="s2">&quot;keep_only&quot;</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="s2">&quot;created&quot;</span><span class="p">,</span> <span class="n">keep</span><span class="o">=</span><span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_channel_set</span><span class="p">)),</span>
+				<span class="c1"># Added ex: {&quot;msg&quot;: &quot;test&quot;, &quot;tier&quot;:0, &quot;channel&quot;: [&quot;HU_RANDOM&quot;, &quot;HU_RAPID&quot;]}</span>
+				<span class="n">ComboDictModifier</span><span class="o">.</span><span class="n">FuncModifyModel</span><span class="p">(</span><span class="n">op</span><span class="o">=</span><span class="s2">&quot;modify&quot;</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="s2">&quot;journal&quot;</span><span class="p">,</span> <span class="n">func</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">channel_projection</span><span class="p">),</span>
+				<span class="n">ComboDictModifier</span><span class="o">.</span><span class="n">FuncModifyModel</span><span class="p">(</span><span class="n">op</span><span class="o">=</span><span class="s2">&quot;modify&quot;</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="s2">&quot;channel&quot;</span><span class="p">,</span> <span class="n">func</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">overwrite_root_channel</span><span class="p">)</span>
+			<span class="p">]</span>
+		<span class="p">)</span>
+
+		<span class="bp">self</span><span class="o">.</span><span class="n">add_func_projector</span><span class="p">(</span><span class="s2">&quot;stock&quot;</span><span class="p">,</span> <span class="n">journal_modifier</span><span class="o">.</span><span class="n">apply</span><span class="p">,</span> <span class="n">first</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+		<span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">&quot;t1&quot;</span><span class="p">,</span> <span class="s2">&quot;t2&quot;</span><span class="p">,</span> <span class="s2">&quot;log&quot;</span><span class="p">):</span>
+			<span class="bp">self</span><span class="o">.</span><span class="n">add_func_projector</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">channel_projection</span><span class="p">,</span> <span class="n">first</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span> <span class="c1"># type: ignore</span>
+
+
+	<span class="k">def</span> <span class="nf">overwrite_root_channel</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">v</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">ChannelId</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="n">ChannelId</span><span class="p">]]:</span>
+		<span class="k">if</span> <span class="n">subset</span> <span class="o">:=</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_channel_set</span><span class="o">.</span><span class="n">intersection</span><span class="p">(</span><span class="n">v</span><span class="p">)):</span>
+			<span class="k">return</span> <span class="n">subset</span>
+		<span class="k">else</span><span class="p">:</span>
+			<span class="k">return</span> <span class="kc">None</span>
+
+
+<div class="viewcode-block" id="T3ChannelProjector.channel_projection"><a class="viewcode-back" href="../../../../../api.html#ampel.t3.run.project.T3ChannelProjector.T3ChannelProjector.channel_projection">[docs]</a>	<span class="k">def</span> <span class="nf">channel_projection</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dicts</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]])</span> <span class="o">-&gt;</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]:</span>
+		<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">		Filters out dict entries not associated with configured channel</span>
+<span class="sd">		Note: debug ouput handled by super class</span>
+<span class="sd">		&quot;&quot;&quot;</span>
+
+		<span class="n">channel_set</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_channel_set</span>
+		<span class="n">setitem</span> <span class="o">=</span> <span class="nb">dict</span><span class="o">.</span><span class="fm">__setitem__</span>
+		<span class="n">ret</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+
+		<span class="k">if</span> <span class="ow">not</span> <span class="n">dicts</span><span class="p">:</span>
+			<span class="k">return</span> <span class="p">[]</span>
+
+		<span class="k">for</span> <span class="n">el</span> <span class="ow">in</span> <span class="n">dicts</span><span class="p">:</span>
+			<span class="k">if</span> <span class="n">elchan</span> <span class="o">:=</span> <span class="n">el</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;channel&#39;</span><span class="p">):</span>
+				<span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">elchan</span><span class="p">,</span> <span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">)):</span>
+					<span class="k">if</span> <span class="n">elchan</span> <span class="ow">in</span> <span class="n">channel_set</span><span class="p">:</span>
+						<span class="n">ret</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">el</span><span class="p">)</span>
+				<span class="k">else</span><span class="p">:</span>
+					<span class="k">if</span> <span class="n">subset</span> <span class="o">:=</span> <span class="nb">list</span><span class="p">(</span><span class="n">channel_set</span><span class="o">.</span><span class="n">intersection</span><span class="p">(</span><span class="n">elchan</span><span class="p">)):</span>
+						<span class="n">channels</span> <span class="o">=</span> <span class="p">(</span>
+							<span class="nb">list</span><span class="p">(</span><span class="n">subset</span><span class="p">)</span>
+							<span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">subset</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span> <span class="k">else</span> <span class="nb">list</span><span class="p">(</span><span class="n">subset</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+						<span class="p">)</span>
+						<span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">unalterable</span><span class="p">:</span>
+							<span class="n">ret</span><span class="o">.</span><span class="n">append</span><span class="p">({</span><span class="o">**</span><span class="n">el</span><span class="p">,</span> <span class="s1">&#39;channel&#39;</span><span class="p">:</span> <span class="n">channels</span><span class="p">})</span>
+						<span class="k">else</span><span class="p">:</span>
+							<span class="n">setitem</span><span class="p">(</span><span class="n">el</span><span class="p">,</span> <span class="s1">&#39;channel&#39;</span><span class="p">,</span> <span class="n">channels</span><span class="p">)</span>
+							<span class="n">ret</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">el</span><span class="p">)</span>
+
+		<span class="k">return</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">ret</span><span class="p">)</span></div></div>
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../../../../index.html">
+              <img class="logo" src="../../../../../_static/ampel.png" alt="Logo"/>
+            </a></p>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="nav-item nav-item-0"><a href="../../../../../index.html">ampel-core 0.7.5 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../../../index.html" >Module code</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">ampel.t3.run.project.T3ChannelProjector</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2018-2021, Ampel Project.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 4.0.2.
+    </div>
+  </body>
+</html>

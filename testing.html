@@ -4,9 +4,8 @@
 <html>
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
-
-    <title>Running the automated tests &#8212; ampel-core 0.8.3-alpha.11 documentation</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Running the automated tests &#8212; ampel-core 0.7.5 documentation</title>
     <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
     <link rel="stylesheet" type="text/css" href="_static/sphinxdoc.css" />
     <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
@@ -30,7 +29,7 @@
         <li class="right" >
           <a href="contribute.html" title="Contribute"
              accesskey="P">previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">ampel-core 0.8.3-alpha.11 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="index.html">ampel-core 0.7.5 documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">Running the automated tests</a></li> 
       </ul>
     </div>  
@@ -40,11 +39,11 @@
         <div class="bodywrapper">
           <div class="body" role="main">
             
-  <section id="running-the-automated-tests">
+  <div class="section" id="running-the-automated-tests">
 <span id="testing"></span><h1>Running the automated tests<a class="headerlink" href="#running-the-automated-tests" title="Permalink to this headline">¶</a></h1>
 <p>Ampel ships with a suite of automated tests. You should run these before
 pushing new code to GitHub.</p>
-<section id="why-test">
+<div class="section" id="why-test">
 <h2>Why test?<a class="headerlink" href="#why-test" title="Permalink to this headline">¶</a></h2>
 <blockquote>
 <div><dl class="simple">
@@ -66,8 +65,8 @@ is supposed to work (unit tests) and how they are supposed to work together
 automated and self-contained, they can be run often, without detailed knowledge
 of the entire project. This makes it harder for changes to accidentally break
 apparently unrelated parts of the codebase.</p>
-</section>
-<section id="expected-installation-layout">
+</div>
+<div class="section" id="expected-installation-layout">
 <h2>Expected installation layout<a class="headerlink" href="#expected-installation-layout" title="Permalink to this headline">¶</a></h2>
 <p>Choose a root directory, e.g. on my machine, /Users/jakob/Documents/ZTF/Ampel.
 For simplicity, we will call this <cite>$AMPEL_ROOT</cite> from here on out. Clone any
@@ -106,8 +105,8 @@ done
 <p>Next, <a class="reference external" href="https://docs.docker.com/get-started/">install and start Docker</a>. The
 tests use Docker to provide single-use instances of the databases that Ampel
 interacts with.</p>
-</section>
-<section id="running-the-tests">
+</div>
+<div class="section" id="running-the-tests">
 <h2>Running the tests<a class="headerlink" href="#running-the-tests" title="Permalink to this headline">¶</a></h2>
 <p>From <cite>$AMPEL_ROOT</cite>, <cite>pytest</cite> will discover and run all tests in the
 subdirectories named ‘<em>test</em>’. You’ll get a report of the tests as they run, e.g.:</p>
@@ -129,8 +128,8 @@ ampel-core/test/test_t3_controller.py x.....                                    
 </pre></div>
 </div>
 <p>Failures will produce a detailed traceback of exactly which assertion failed.</p>
-</section>
-<section id="test-coverage">
+</div>
+<div class="section" id="test-coverage">
 <h2>Test coverage<a class="headerlink" href="#test-coverage" title="Permalink to this headline">¶</a></h2>
 <p>Tests can only help pinpoint errors if they actually run the code in question.
 Unless you were thorough enough to write your tests before the actual code they
@@ -144,14 +143,14 @@ coverage report, pass some extra options to <cite>pytest</cite>, e.g.:</p>
 <p>This will open a web page with a listing of all the modules <cite>ampel</cite> that were
 imported along with the fraction of lines that were executing during the test.
 Examining this listing will help you find places to put new tests.</p>
-</section>
-<section id="writing-good-tests">
+</div>
+<div class="section" id="writing-good-tests">
 <h2>Writing (good) tests<a class="headerlink" href="#writing-good-tests" title="Permalink to this headline">¶</a></h2>
 <p>Any Python file named ‘test/test_*.py’ will be searched for functions starting
 with <cite>test_</cite>. Use <cite>assert</cite> to document your assumptions about function return
 values and shared state.</p>
-</section>
-</section>
+</div>
+</div>
 
 
             <div class="clearer"></div>
@@ -163,21 +162,17 @@ values and shared state.</p>
             <p class="logo"><a href="index.html">
               <img class="logo" src="_static/ampel.png" alt="Logo"/>
             </a></p>
-  <div>
-    <h4>Previous topic</h4>
-    <p class="topless"><a href="contribute.html"
-                          title="previous chapter">Contribute</a></p>
-  </div>
-  <div>
-    <h4>Next topic</h4>
-    <p class="topless"><a href="installing.html"
-                          title="next chapter">Installing</a></p>
-  </div>
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="contribute.html"
+                        title="previous chapter">Contribute</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="installing.html"
+                        title="next chapter">Installing</a></p>
 <div id="searchbox" style="display: none" role="search">
   <h3 id="searchlabel">Quick search</h3>
     <div class="searchformwrapper">
     <form class="search" action="search.html" method="get">
-      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="text" name="q" aria-labelledby="searchlabel" />
       <input type="submit" value="Go" />
     </form>
     </div>
@@ -199,13 +194,13 @@ values and shared state.</p>
         <li class="right" >
           <a href="contribute.html" title="Contribute"
              >previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">ampel-core 0.8.3-alpha.11 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="index.html">ampel-core 0.7.5 documentation</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">Running the automated tests</a></li> 
       </ul>
     </div>
     <div class="footer" role="contentinfo">
         &#169; Copyright 2018-2021, Ampel Project.
-      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 4.5.0.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 4.0.2.
     </div>
   </body>
 </html>

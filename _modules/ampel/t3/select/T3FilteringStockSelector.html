@@ -1,0 +1,279 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ampel.t3.select.T3FilteringStockSelector &#8212; ampel-core 0.7.5 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/sphinxdoc.css" />
+    <script data-url_root="../../../../" id="documentation_options" src="../../../../_static/documentation_options.js"></script>
+    <script src="../../../../_static/jquery.js"></script>
+    <script src="../../../../_static/underscore.js"></script>
+    <script src="../../../../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="nav-item nav-item-0"><a href="../../../../index.html">ampel-core 0.7.5 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../../index.html" accesskey="U">Module code</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">ampel.t3.select.T3FilteringStockSelector</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for ampel.t3.select.T3FilteringStockSelector</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/env python</span>
+<span class="c1"># -*- coding: utf-8 -*-</span>
+<span class="c1"># File				: Ampel-core/ampel/t3/select/T3FilteringStockSelector.py</span>
+<span class="c1"># License			: BSD-3-Clause</span>
+<span class="c1"># Author			: Jakob van Santen &lt;jakob.van.santen@desy.de&gt;</span>
+<span class="c1"># Date				: 02.08.2020</span>
+<span class="c1"># Last Modified Date: 02.08.2020</span>
+<span class="c1"># Last Modified By	: Jakob van Santen &lt;jakob.van.santen@desy.de&gt;</span>
+
+<span class="kn">from</span> <span class="nn">itertools</span> <span class="kn">import</span> <span class="n">islice</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Sequence</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Union</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Generator</span>
+
+<span class="kn">from</span> <span class="nn">ampel.type</span> <span class="kn">import</span> <span class="n">StockId</span>
+<span class="kn">from</span> <span class="nn">ampel.t3.select.T3StockSelector</span> <span class="kn">import</span> <span class="n">T3StockSelector</span>
+<span class="kn">from</span> <span class="nn">ampel.model.operator.AllOf</span> <span class="kn">import</span> <span class="n">AllOf</span>
+<span class="kn">from</span> <span class="nn">ampel.model.operator.AnyOf</span> <span class="kn">import</span> <span class="n">AnyOf</span>
+<span class="kn">from</span> <span class="nn">ampel.model.operator.OneOf</span> <span class="kn">import</span> <span class="n">OneOf</span>
+<span class="kn">from</span> <span class="nn">ampel.model.t3.T2FilterModel</span> <span class="kn">import</span> <span class="n">T2FilterModel</span>
+<span class="kn">from</span> <span class="nn">ampel.db.query.general</span> <span class="kn">import</span> <span class="n">build_general_query</span>
+<span class="kn">from</span> <span class="nn">ampel.db.query.utils</span> <span class="kn">import</span> <span class="n">match_array</span>
+
+
+<div class="viewcode-block" id="T3FilteringStockSelector"><a class="viewcode-back" href="../../../../api.html#ampel.t3.select.T3FilteringStockSelector.T3FilteringStockSelector">[docs]</a><span class="k">class</span> <span class="nc">T3FilteringStockSelector</span><span class="p">(</span><span class="n">T3StockSelector</span><span class="p">):</span>
+	<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">	Selector subclass that filters stocks based on their latest T2 results.</span>
+<span class="sd">	</span>
+<span class="sd">	Example configuration::</span>
+<span class="sd">		</span>
+<span class="sd">		{</span>
+<span class="sd">			...</span>
+<span class="sd">			&quot;t2_filter&quot;: [</span>
+<span class="sd">				{</span>
+<span class="sd">					&quot;unit&quot;: &quot;T2SNCosmo&quot;,</span>
+<span class="sd">					&quot;match&quot;: {</span>
+<span class="sd">						&quot;fit_acceptable&quot;: True,</span>
+<span class="sd">						&quot;fit_results.c&quot;: {&quot;$gt&quot;: 1},</span>
+<span class="sd">					},</span>
+<span class="sd">				}</span>
+<span class="sd">			]</span>
+<span class="sd">		}</span>
+<span class="sd">	&quot;&quot;&quot;</span>
+
+	<span class="n">t2_filter</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">T2FilterModel</span><span class="p">,</span> <span class="n">AllOf</span><span class="p">[</span><span class="n">T2FilterModel</span><span class="p">],</span> <span class="n">AnyOf</span><span class="p">[</span><span class="n">T2FilterModel</span><span class="p">]]</span>
+	<span class="n">chunk_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">200</span>
+
+	<span class="c1"># Override/Implement</span>
+<div class="viewcode-block" id="T3FilteringStockSelector.fetch"><a class="viewcode-back" href="../../../../api.html#ampel.t3.select.T3FilteringStockSelector.T3FilteringStockSelector.fetch">[docs]</a>	<span class="k">def</span> <span class="nf">fetch</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Generator</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span><span class="n">Any</span><span class="p">],</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">]:</span>
+
+		<span class="c1"># Execute query on T0 collection to get target stocks</span>
+		<span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="n">cursor</span> <span class="o">:=</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">fetch</span><span class="p">()):</span>
+			<span class="k">return</span> <span class="kc">None</span>
+
+		<span class="c1"># Execute aggregation on T2 collection to get matching subset of stocks</span>
+		<span class="c1"># NB: aggregate in chunks to avoid the 100 MB aggregation memory limit</span>
+		<span class="n">input_count</span> <span class="o">=</span> <span class="mi">0</span>
+		<span class="n">output_count</span> <span class="o">=</span> <span class="mi">0</span>
+		<span class="k">while</span> <span class="p">(</span><span class="n">stock_ids</span> <span class="o">:=</span> <span class="p">[</span><span class="n">doc</span><span class="p">[</span><span class="s1">&#39;_id&#39;</span><span class="p">]</span> <span class="k">for</span> <span class="n">doc</span> <span class="ow">in</span> <span class="n">islice</span><span class="p">(</span><span class="n">cursor</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">chunk_size</span><span class="p">)]):</span>
+			<span class="n">count</span> <span class="o">=</span> <span class="mi">0</span>
+			<span class="k">for</span> <span class="n">count</span><span class="p">,</span> <span class="n">doc</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span>
+				<span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">get_collection</span><span class="p">(</span><span class="s1">&#39;t2&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">aggregate</span><span class="p">(</span>
+					<span class="bp">self</span><span class="o">.</span><span class="n">_t2_filter_pipeline</span><span class="p">(</span><span class="n">stock_ids</span><span class="p">),</span>
+				<span class="p">),</span>
+				<span class="mi">1</span>
+			<span class="p">):</span>
+				<span class="k">yield</span> <span class="n">doc</span>
+
+			<span class="n">input_count</span> <span class="o">+=</span> <span class="nb">len</span><span class="p">(</span><span class="n">stock_ids</span><span class="p">)</span>
+			<span class="n">output_count</span> <span class="o">+=</span> <span class="n">count</span>
+
+		<span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">output_count</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">input_count</span><span class="si">}</span><span class="s2"> stocks passed filter criteria&quot;</span><span class="p">)</span></div>
+
+
+
+	<span class="k">def</span> <span class="nf">_build_match</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">f</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">T2FilterModel</span><span class="p">,</span> <span class="n">AllOf</span><span class="p">[</span><span class="n">T2FilterModel</span><span class="p">],</span> <span class="n">AnyOf</span><span class="p">[</span><span class="n">T2FilterModel</span><span class="p">]])</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span><span class="n">Any</span><span class="p">]:</span>
+		<span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">T2FilterModel</span><span class="p">):</span>
+			<span class="k">return</span> <span class="p">{</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">f</span><span class="o">.</span><span class="n">unit</span><span class="si">}</span><span class="s2">.</span><span class="si">{</span><span class="n">k</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">:</span> <span class="n">v</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">f</span><span class="o">.</span><span class="n">match</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
+		<span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">AllOf</span><span class="p">):</span>
+			<span class="k">return</span> <span class="p">{</span><span class="s1">&#39;$and&#39;</span><span class="p">:</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_build_match</span><span class="p">(</span><span class="n">el</span><span class="p">)</span> <span class="k">for</span> <span class="n">el</span> <span class="ow">in</span> <span class="n">f</span><span class="o">.</span><span class="n">all_of</span><span class="p">]}</span>
+		<span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">AnyOf</span><span class="p">):</span>
+			<span class="k">return</span> <span class="p">{</span><span class="s1">&#39;$or&#39;</span><span class="p">:</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_build_match</span><span class="p">(</span><span class="n">el</span><span class="p">)</span> <span class="k">for</span> <span class="n">el</span> <span class="ow">in</span> <span class="n">f</span><span class="o">.</span><span class="n">any_of</span><span class="p">]}</span>
+		<span class="k">else</span><span class="p">:</span>
+			<span class="k">raise</span> <span class="ne">TypeError</span><span class="p">()</span>
+
+
+	<span class="k">def</span> <span class="nf">_t2_filter_pipeline</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">stock_ids</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">StockId</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">]:</span>
+		<span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_t2_merge_pipeline</span><span class="p">(</span><span class="n">stock_ids</span><span class="p">)</span> <span class="o">+</span> <span class="p">[</span>
+			<span class="p">{</span><span class="s1">&#39;$match&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_build_match</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">t2_filter</span><span class="p">)},</span>
+			<span class="p">{</span><span class="s1">&#39;$project&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;_id&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">}}</span>
+		<span class="p">]</span>
+
+
+	<span class="k">def</span> <span class="nf">_t2_merge_pipeline</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">stock_ids</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">StockId</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]:</span>
+		<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">		Create a pipeline for the T2 collection that yields docs whose _id is</span>
+<span class="sd">		the stock id and whose remaining fields are the latest result for each</span>
+<span class="sd">		T2. For example, given the following T2 docs::</span>
+<span class="sd">			</span>
+<span class="sd">			{</span>
+<span class="sd">				&#39;_id&#39;: 1,</span>
+<span class="sd">				...</span>
+<span class="sd">				&#39;stock&#39;: 42,</span>
+<span class="sd">				&#39;unit&#39;: &#39;Unit1&#39;,</span>
+<span class="sd">				&#39;status&#39;: 0,</span>
+<span class="sd">				&#39;body&#39;: [{</span>
+<span class="sd">					...</span>
+<span class="sd">					&#39;results&#39;: {&#39;thing1&#39;: 3}</span>
+<span class="sd">				}]</span>
+<span class="sd">			},</span>
+<span class="sd">			{</span>
+<span class="sd">				&#39;_id&#39;: 2,</span>
+<span class="sd">				...</span>
+<span class="sd">				&#39;stock&#39;: 42,</span>
+<span class="sd">				&#39;unit&#39;: &#39;Unit2&#39;,</span>
+<span class="sd">				&#39;status&#39;: 0,</span>
+<span class="sd">				&#39;body&#39;: [{</span>
+<span class="sd">					...</span>
+<span class="sd">					&#39;results&#39;: {&#39;thing2&#39;: 7}</span>
+<span class="sd">				}]</span>
+<span class="sd">			}</span>
+<span class="sd">		</span>
+<span class="sd">		the pipeline yields a single doc of the form::</span>
+<span class="sd">			</span>
+<span class="sd">			{</span>
+<span class="sd">				&#39;_id&#39;: 42,</span>
+<span class="sd">				&#39;Unit1&#39;: {&#39;thing1&#39;: 3},</span>
+<span class="sd">				&#39;Unit2&#39;: {&#39;thing2&#39;: 7}</span>
+<span class="sd">			}</span>
+<span class="sd">		&quot;&quot;&quot;</span>
+		<span class="c1"># NB: we reuse the general query here to ensure that we only process</span>
+		<span class="c1"># T2s associated with the requested channels</span>
+		<span class="n">match</span> <span class="o">=</span> <span class="p">{</span>
+			<span class="s1">&#39;status&#39;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+			<span class="s1">&#39;unit&#39;</span><span class="p">:</span> <span class="n">match_array</span><span class="p">(</span><span class="n">_all_units</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">t2_filter</span><span class="p">)),</span>
+			<span class="o">**</span><span class="n">build_general_query</span><span class="p">(</span><span class="n">stock_ids</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">channel</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">tag</span><span class="p">)</span>
+		<span class="p">}</span>
+
+		<span class="k">return</span> <span class="p">[</span>
+			<span class="c1"># select t2 docs for target stocks</span>
+			<span class="p">{</span>
+				<span class="s1">&#39;$match&#39;</span><span class="p">:</span> <span class="n">match</span>
+			<span class="p">},</span>
+			<span class="c1"># find &quot;latest&quot; result for each stock and unit, where &quot;latest&quot; is</span>
+			<span class="c1"># the document with the largest _id (creation time)</span>
+			<span class="p">{</span>
+				<span class="s1">&#39;$sort&#39;</span><span class="p">:</span> <span class="p">{</span>
+					<span class="s1">&#39;stock&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+					<span class="s1">&#39;unit&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+					<span class="s1">&#39;_id&#39;</span><span class="p">:</span> <span class="mi">1</span>
+				<span class="p">}</span>
+			<span class="p">},</span>
+			<span class="p">{</span><span class="s1">&#39;$unwind&#39;</span><span class="p">:</span> <span class="s1">&#39;$body&#39;</span><span class="p">},</span>
+			<span class="p">{</span>
+				<span class="s1">&#39;$group&#39;</span><span class="p">:</span> <span class="p">{</span>
+					<span class="s1">&#39;_id&#39;</span><span class="p">:</span> <span class="p">{</span>
+						<span class="s1">&#39;stock&#39;</span><span class="p">:</span> <span class="s1">&#39;$stock&#39;</span><span class="p">,</span>
+						<span class="s1">&#39;unit&#39;</span><span class="p">:</span> <span class="s1">&#39;$unit&#39;</span>
+					<span class="p">},</span>
+					<span class="s1">&#39;result&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;$last&#39;</span><span class="p">:</span> <span class="s1">&#39;$body.result&#39;</span><span class="p">}</span>
+				<span class="p">}</span>
+			<span class="p">},</span>
+			<span class="c1"># nest result under key named for unit, e.g.</span>
+			<span class="c1"># {&#39;unit&#39;: &#39;T2Unit&#39;, &#39;result&#39;: {&#39;foo&#39;: 1}} -&gt; {&#39;T2Unit&#39;: {&#39;foo&#39;: 1}}</span>
+			<span class="p">{</span>
+				<span class="s1">&#39;$replaceRoot&#39;</span><span class="p">:</span> <span class="p">{</span>
+					<span class="s1">&#39;newRoot&#39;</span><span class="p">:</span> <span class="p">{</span>
+						<span class="s1">&#39;_id&#39;</span><span class="p">:</span> <span class="s1">&#39;$_id&#39;</span><span class="p">,</span>
+						<span class="s1">&#39;result&#39;</span><span class="p">:</span> <span class="p">{</span>
+							<span class="s1">&#39;$arrayToObject&#39;</span><span class="p">:</span> <span class="p">[</span>
+								<span class="p">[{</span><span class="s1">&#39;k&#39;</span><span class="p">:</span> <span class="s1">&#39;$_id.unit&#39;</span><span class="p">,</span> <span class="s1">&#39;v&#39;</span><span class="p">:</span> <span class="s1">&#39;$result&#39;</span><span class="p">}]</span>
+							<span class="p">]</span>
+						<span class="p">}</span>
+					<span class="p">}</span>
+				<span class="p">}</span>
+			<span class="p">},</span>
+			<span class="p">{</span>
+				<span class="s1">&#39;$group&#39;</span><span class="p">:</span> <span class="p">{</span>
+					<span class="s1">&#39;_id&#39;</span><span class="p">:</span> <span class="s1">&#39;$_id.stock&#39;</span><span class="p">,</span>
+					<span class="s1">&#39;result&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;$mergeObjects&#39;</span><span class="p">:</span> <span class="s1">&#39;$result&#39;</span><span class="p">}</span>
+				<span class="p">}</span>
+			<span class="p">},</span>
+			<span class="c1"># flatten document</span>
+			<span class="p">{</span><span class="s1">&#39;$set&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;result._id&#39;</span><span class="p">:</span> <span class="s1">&#39;$_id&#39;</span><span class="p">}},</span>
+			<span class="p">{</span>
+				<span class="s1">&#39;$replaceRoot&#39;</span><span class="p">:</span> <span class="p">{</span>
+					<span class="s1">&#39;newRoot&#39;</span><span class="p">:</span> <span class="s1">&#39;$result&#39;</span>
+				<span class="p">}</span>
+			<span class="p">}</span>
+		<span class="p">]</span></div>
+
+<span class="k">def</span> <span class="nf">_all_units</span><span class="p">(</span><span class="n">filters</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">T2FilterModel</span><span class="p">,</span> <span class="n">AllOf</span><span class="p">[</span><span class="n">T2FilterModel</span><span class="p">],</span> <span class="n">AnyOf</span><span class="p">[</span><span class="n">T2FilterModel</span><span class="p">]])</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+	<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">	Get the set of all units involved in the selection</span>
+<span class="sd">	&quot;&quot;&quot;</span>
+	<span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">filters</span><span class="p">,</span> <span class="n">T2FilterModel</span><span class="p">):</span>
+		<span class="k">return</span> <span class="p">[</span><span class="n">filters</span><span class="o">.</span><span class="n">unit</span><span class="p">]</span>
+	<span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">filters</span><span class="p">,</span> <span class="n">AllOf</span><span class="p">):</span>
+		<span class="k">return</span> <span class="nb">list</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">f</span><span class="o">.</span><span class="n">unit</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">filters</span><span class="o">.</span><span class="n">all_of</span><span class="p">))</span>
+	<span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">filters</span><span class="p">,</span> <span class="n">AnyOf</span><span class="p">):</span>
+		<span class="c1"># NB: AnyOf may contain AllOf</span>
+		<span class="k">return</span> <span class="nb">list</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="nb">sum</span><span class="p">((</span><span class="n">_all_units</span><span class="p">(</span><span class="n">f</span><span class="p">)</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">filters</span><span class="o">.</span><span class="n">any_of</span><span class="p">),</span> <span class="p">[])))</span>
+	<span class="k">else</span><span class="p">:</span>
+		<span class="k">raise</span> <span class="ne">TypeError</span><span class="p">()</span>
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../../../index.html">
+              <img class="logo" src="../../../../_static/ampel.png" alt="Logo"/>
+            </a></p>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="nav-item nav-item-0"><a href="../../../../index.html">ampel-core 0.7.5 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../../index.html" >Module code</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">ampel.t3.select.T3FilteringStockSelector</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2018-2021, Ampel Project.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 4.0.2.
+    </div>
+  </body>
+</html>
