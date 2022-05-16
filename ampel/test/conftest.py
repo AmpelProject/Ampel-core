@@ -1,9 +1,11 @@
+import json
+import subprocess
 from os import environ
 from pathlib import Path
 
 import mongomock
 import pytest
-from pymongo import InsertOne
+from pymongo import InsertOne, MongoClient
 
 from ampel.config.AmpelConfig import AmpelConfig
 from ampel.config.builder.DistConfigBuilder import DistConfigBuilder
@@ -36,17 +38,19 @@ def mongod(pytestconfig):
         raise pytest.skip("integration tests require --integration flag")
     try:
         container = subprocess.check_output(
-            "docker", "run", "--rm", "-d", "-P", "mongo:4.4"
-        )
+            ["docker", "run", "--rm", "-d", "-P", "mongo:4.4"]
+        ).decode().strip()
     except FileNotFoundError:
         pytest.skip("integration tests require docker")
     try:
-        port = json.loads(subprocess.check_output("docker", "inspect", container))[0][
+        port = json.loads(subprocess.check_output(["docker", "inspect", container]))[0][
             "NetworkSettings"
         ]["Ports"]["27017/tcp"][0]["HostPort"]
+        # wait for startup
+        list(MongoClient(port=int(port)).list_databases())
         yield f"mongodb://localhost:{port}"
     finally:
-        subprocess.check_call("docker", "stop", "container")
+        subprocess.check_call(["docker", "stop", container])
 
 
 @pytest.fixture
