@@ -6,6 +6,12 @@ jobs:
   test:
     runs-on: ubuntu-latest
 
+    services:
+      mongo:
+        image: mongo:4.4
+        ports:
+          - 27017:27017
+
     steps:
     - uses: actions/checkout@v2
     - uses: actions/setup-python@v2
@@ -16,6 +22,8 @@ jobs:
         python -m pip install --upgrade poetry
         poetry install --extras server
     - run: poetry run pytest --cov=ampel
+      env:
+        MONGO_PORT: ${{ job.services.mongo.ports[27017] }}
   
   mypy:
     runs-on: ubuntu-latest
