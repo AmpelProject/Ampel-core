@@ -20,6 +20,9 @@ from ampel.model.ingest.T2IngestModel import T2IngestModel
 from ampel.model.StateT2Dependency import StateT2Dependency
 from ampel.test.dummy import DummyCompoundIngester, DummyStateT2Ingester
 
+from ampel.content.DataPoint import DataPoint
+from typing import List, Tuple, Union
+
 def pytest_addoption(parser):
     parser.addoption(
         "--integration",
@@ -162,7 +165,7 @@ def ingest_tied_t2(integration_context: DevAmpelContext, ampel_logger, monkeypat
             "err": False,
         }
     )
-    filter_results = [("TEST_CHANNEL", True)]
+    filter_results: List[Tuple[Union[int, str], Union[bool, int]]] = [("TEST_CHANNEL", True)]
 
     StockIngester(
         updates_buffer=updates_buffer,
@@ -172,7 +175,7 @@ def ingest_tied_t2(integration_context: DevAmpelContext, ampel_logger, monkeypat
     ).ingest("stockystock", filter_results, {})
 
     # mimic a datapoint ingester
-    datapoints = [
+    datapoints: List[DataPoint] = [
         {"_id": i, "stock": "stockystock", "body": {"thing": i + 1}} for i in range(3)
     ]
     for dp in datapoints:
@@ -187,6 +190,7 @@ def ingest_tied_t2(integration_context: DevAmpelContext, ampel_logger, monkeypat
     )
     comp_ingester.add_channel(filter_results[0][0])
     blueprint = comp_ingester.ingest("stockystock", datapoints, filter_results)
+    assert blueprint is not None
 
     # create T2 doc
     # FIXME: should dependent docs be created implicitly?
