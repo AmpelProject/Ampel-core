@@ -4,7 +4,7 @@
 # License:             BSD-3-Clause
 # Author:              valery brinnel <firstname.lastname@gmail.com>
 # Date:                24.05.2019
-# Last Modified Date:  13.05.2022
+# Last Modified Date:  17.05.2022
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from time import time
@@ -276,6 +276,8 @@ class T2Worker(AbsWorker[T2Document]):
 				return None
 
 			if len(dps) != len(t1_dps_ids):
+				logger.error(f"Length of dps array from t1 doc: {len(t1_dps_ids)}")
+				logger.error(f"Length of dps loaded from db: {len(dps)}")
 				for el in (set(t1_dps_ids) - {el['id'] for el in dps}):
 					logger.error(
 						f'Datapoint {el} referenced in compound not found',
@@ -551,7 +553,8 @@ class T2Worker(AbsWorker[T2Document]):
 
 		args: Any = self.load_input_docs(t2_unit, t2_doc, logger, stock_updr)
 		if args is None:
-			return UnitResult(code=DocumentCode.ERROR)
+			logger.error("Unable to load information required to run t2 unit")
+			return UnitResult(code=DocumentCode.INTERNAL_ERROR)
 
 		if isinstance(args, UnitResult):
 			return args
