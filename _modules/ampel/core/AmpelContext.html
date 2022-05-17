@@ -5,7 +5,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>ampel.core.AmpelContext &#8212; ampel-core 0.7.5 documentation</title>
+    <title>ampel.core.AmpelContext &#8212; ampel-core 0.8.3-alpha.11 documentation</title>
     <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css" />
     <link rel="stylesheet" type="text/css" href="../../../_static/sphinxdoc.css" />
     <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
@@ -21,7 +21,7 @@
         <li class="right" style="margin-right: 10px">
           <a href="../../../genindex.html" title="General Index"
              accesskey="I">index</a></li>
-        <li class="nav-item nav-item-0"><a href="../../../index.html">ampel-core 0.7.5 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">ampel-core 0.8.3-alpha.11 documentation</a> &#187;</li>
           <li class="nav-item nav-item-1"><a href="../../index.html" accesskey="U">Module code</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">ampel.core.AmpelContext</a></li> 
       </ul>
@@ -35,26 +35,28 @@
   <h1>Source code for ampel.core.AmpelContext</h1><div class="highlight"><pre>
 <span></span><span class="ch">#!/usr/bin/env python</span>
 <span class="c1"># -*- coding: utf-8 -*-</span>
-<span class="c1"># File              : Ampel-core/ampel/core/AmpelContext.py</span>
-<span class="c1"># License           : BSD-3-Clause</span>
-<span class="c1"># Author            : vb &lt;vbrinnel@physik.hu-berlin.de&gt;</span>
-<span class="c1"># Date              : 18.02.2020</span>
-<span class="c1"># Last Modified Date: 17.02.2021</span>
-<span class="c1"># Last Modified By  : vb &lt;vbrinnel@physik.hu-berlin.de&gt;</span>
+<span class="c1"># File:                Ampel-core/ampel/core/AmpelContext.py</span>
+<span class="c1"># License:             BSD-3-Clause</span>
+<span class="c1"># Author:              valery brinnel &lt;firstname.lastname@gmail.com&gt;</span>
+<span class="c1"># Date:                18.02.2020</span>
+<span class="c1"># Last Modified Date:  09.01.2022</span>
+<span class="c1"># Last Modified By:    valery brinnel &lt;firstname.lastname@gmail.com&gt;</span>
 
-<span class="kn">from</span> <span class="nn">dataclasses</span> <span class="kn">import</span> <span class="n">dataclass</span>
-<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Literal</span><span class="p">,</span> <span class="n">Iterable</span><span class="p">,</span> <span class="n">TYPE_CHECKING</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Literal</span><span class="p">,</span> <span class="n">TYPE_CHECKING</span>
+<span class="kn">from</span> <span class="nn">collections.abc</span> <span class="kn">import</span> <span class="n">Iterable</span>
 <span class="kn">from</span> <span class="nn">ampel.config.AmpelConfig</span> <span class="kn">import</span> <span class="n">AmpelConfig</span>
 <span class="kn">from</span> <span class="nn">ampel.base.AuxUnitRegister</span> <span class="kn">import</span> <span class="n">AuxUnitRegister</span>
+<span class="kn">from</span> <span class="nn">ampel.secret.AmpelVault</span> <span class="kn">import</span> <span class="n">AmpelVault</span>
+<span class="kn">from</span> <span class="nn">ampel.secret.AESecretProvider</span> <span class="kn">import</span> <span class="n">AESecretProvider</span>
+<span class="kn">from</span> <span class="nn">ampel.config.builder.DisplayOptions</span> <span class="kn">import</span> <span class="n">DisplayOptions</span>
 
 <span class="c1"># Avoid cyclic import issues</span>
 <span class="k">if</span> <span class="n">TYPE_CHECKING</span><span class="p">:</span>
-	<span class="kn">from</span> <span class="nn">ampel.db.AmpelDB</span> <span class="kn">import</span> <span class="n">AmpelDB</span>
+	<span class="kn">from</span> <span class="nn">ampel.core.AmpelDB</span> <span class="kn">import</span> <span class="n">AmpelDB</span>
 	<span class="kn">from</span> <span class="nn">ampel.core.UnitLoader</span> <span class="kn">import</span> <span class="n">UnitLoader</span> <span class="c1"># noqa</span>
 
 
-<div class="viewcode-block" id="AmpelContext"><a class="viewcode-back" href="../../../api.html#ampel.core.AmpelContext.AmpelContext">[docs]</a><span class="nd">@dataclass</span>
-<span class="k">class</span> <span class="nc">AmpelContext</span><span class="p">:</span>
+<div class="viewcode-block" id="AmpelContext"><a class="viewcode-back" href="../../../api.html#ampel.core.AmpelContext.AmpelContext">[docs]</a><span class="k">class</span> <span class="nc">AmpelContext</span><span class="p">:</span>
 	<span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">	This class is typically instantiated by Ampel controllers</span>
 <span class="sd">	and provided to &quot;processor unit&quot; instances.</span>
@@ -62,72 +64,49 @@
 <span class="sd">	of handling multiple AmpelConfig/AmpelDB instances</span>
 <span class="sd">	&quot;&quot;&quot;</span>
 
-	<span class="c1">#: System configuration</span>
-	<span class="n">config</span><span class="p">:</span> <span class="n">AmpelConfig</span>
-	<span class="c1">#: Database client</span>
-	<span class="n">db</span><span class="p">:</span> <span class="s1">&#39;AmpelDB&#39;</span>
-	<span class="c1">#: Instantiates a unit from a :class:`~ampel.model.UnitModel.UnitModel`.</span>
-	<span class="n">loader</span><span class="p">:</span> <span class="s1">&#39;UnitLoader&#39;</span> <span class="c1"># forward reference to avoid cyclic import issues</span>
-	<span class="c1">#: Context is valid for this processing tier only (if None, valid for all).</span>
-	<span class="n">tier</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Literal</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span>
-	<span class="n">resource</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span>
-
-	<span class="n">admin_msg</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
-	<span class="n">extra</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span>
-
-
-	<span class="nd">@classmethod</span>
-	<span class="k">def</span> <span class="nf">new</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span>
+	<span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
 		<span class="n">config</span><span class="p">:</span> <span class="n">AmpelConfig</span><span class="p">,</span>
-		<span class="n">tier</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Literal</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-		<span class="o">**</span><span class="n">kwargs</span>
-	<span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;AmpelContext&#39;</span><span class="p">:</span>
+		<span class="n">db</span><span class="p">:</span> <span class="s1">&#39;AmpelDB&#39;</span><span class="p">,</span>
+		<span class="n">loader</span><span class="p">:</span> <span class="s1">&#39;UnitLoader&#39;</span><span class="p">,</span> <span class="c1"># forward reference to avoid cyclic import issues</span>
+		<span class="n">resource</span><span class="p">:</span> <span class="kc">None</span> <span class="o">|</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+		<span class="n">admin_msg</span><span class="p">:</span> <span class="kc">None</span> <span class="o">|</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span>
+	<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+		<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">		:param config: system configuration</span>
+<span class="sd">		:param db: database client</span>
+<span class="sd">		:param loader: instantiates unit from :class:`~ampel.model.UnitModel.UnitModel`</span>
+<span class="sd">		&quot;&quot;&quot;</span>
 
-		<span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="n">AmpelConfig</span><span class="p">):</span>
-			<span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Illegal value provided with parameter &#39;config&#39;&quot;</span><span class="p">)</span>
-
-		<span class="c1"># Avoid cyclic import issues</span>
-		<span class="kn">from</span> <span class="nn">ampel.core.UnitLoader</span> <span class="kn">import</span> <span class="n">UnitLoader</span> <span class="c1"># noqa</span>
-		<span class="kn">from</span> <span class="nn">ampel.db.AmpelDB</span> <span class="kn">import</span> <span class="n">AmpelDB</span>
-
-		<span class="n">secrets</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;secrets&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
-
+		<span class="bp">self</span><span class="o">.</span><span class="n">config</span> <span class="o">=</span> <span class="n">config</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">db</span> <span class="o">=</span> <span class="n">db</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">loader</span> <span class="o">=</span> <span class="n">loader</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">admin_msg</span> <span class="o">=</span> <span class="n">admin_msg</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">resource</span> <span class="o">=</span> <span class="n">resource</span>
+		
 		<span class="c1"># try to register aux units globally</span>
 		<span class="k">try</span><span class="p">:</span>
-			<span class="n">AuxUnitRegister</span><span class="o">.</span><span class="n">initialize</span><span class="p">(</span>
-				<span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;unit.aux&quot;</span><span class="p">,</span> <span class="n">ret_type</span><span class="o">=</span><span class="nb">dict</span><span class="p">,</span> <span class="n">raise_exc</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-			<span class="p">)</span>
+			<span class="n">AuxUnitRegister</span><span class="o">.</span><span class="n">initialize</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
 		<span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
 			<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;UnitLoader auxiliary units auto-registration failed&quot;</span><span class="p">)</span>
-
-		<span class="k">return</span> <span class="bp">cls</span><span class="p">(</span>
-			<span class="n">config</span> <span class="o">=</span> <span class="n">config</span><span class="p">,</span>
-			<span class="n">db</span> <span class="o">=</span> <span class="n">AmpelDB</span><span class="o">.</span><span class="n">new</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="n">secrets</span><span class="p">),</span>
-			<span class="n">loader</span> <span class="o">=</span> <span class="n">UnitLoader</span><span class="p">(</span><span class="n">config</span><span class="o">=</span><span class="n">config</span><span class="p">,</span> <span class="n">tier</span><span class="o">=</span><span class="n">tier</span><span class="p">,</span> <span class="n">secrets</span><span class="o">=</span><span class="n">secrets</span><span class="p">),</span>
-			<span class="n">tier</span> <span class="o">=</span> <span class="n">tier</span><span class="p">,</span>
-			<span class="o">**</span><span class="n">kwargs</span>
-		<span class="p">)</span>
 
 
 <div class="viewcode-block" id="AmpelContext.load"><a class="viewcode-back" href="../../../api.html#ampel.core.AmpelContext.AmpelContext.load">[docs]</a>	<span class="nd">@classmethod</span>
 	<span class="k">def</span> <span class="nf">load</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span>
-		<span class="n">config_file_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
-		<span class="n">pwd_file_path</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-		<span class="n">pwds</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Iterable</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+		<span class="n">config</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">dict</span><span class="p">,</span>
+		<span class="n">pwd_file_path</span><span class="p">:</span> <span class="kc">None</span> <span class="o">|</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+		<span class="n">pwds</span><span class="p">:</span> <span class="kc">None</span> <span class="o">|</span> <span class="n">Iterable</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 		<span class="n">freeze_config</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
-		<span class="n">tier</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Literal</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+		<span class="n">vault</span><span class="p">:</span> <span class="kc">None</span> <span class="o">|</span> <span class="n">AmpelVault</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+		<span class="n">one_db</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
 		<span class="o">**</span><span class="n">kwargs</span>
 	<span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;AmpelContext&#39;</span><span class="p">:</span>
 		<span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">		Instantiates a new AmpelContext instance.</span>
 
-<span class="sd">		:param config:</span>
-<span class="sd">			either a local path to an ampel config file (yaml or json)</span>
-<span class="sd">			or directly an AmpelConfig instance.</span>
-<span class="sd">		:param pwd_file_path:</span>
-<span class="sd">			if provided, the encrypted conf entries possibly contained in the</span>
-<span class="sd">			ampel config instance will be decrypted using the provided password file.</span>
-<span class="sd">			The password file must define one password per line.</span>
+<span class="sd">		:param config: local path to an ampel config file (yaml or json) or loaded config as dict</span>
+<span class="sd">		:param pwd_file_path: path to a text file containing one password per line.</span>
+<span class="sd">		The underlying AmpelVault will be initialized with an AESecretProvider configured with these pwds.</span>
+<span class="sd">		:param pwds: Same as &#39;pwd_file_path&#39; except a list of passwords is provided directly via this parameter.</span>
 <span class="sd">		:param freeze_config:</span>
 <span class="sd">			whether to convert the elements contained of ampel config</span>
 <span class="sd">			into immutable structures (:class:`dict` -&gt;</span>
@@ -135,19 +114,40 @@
 <span class="sd">			Parameter does only apply if the config is loaded by this method, i.e if parameter &#39;config&#39; is a str.</span>
 <span class="sd">		&quot;&quot;&quot;</span>
 
-		<span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">new</span><span class="p">(</span>
-			<span class="n">config</span> <span class="o">=</span> <span class="n">AmpelConfig</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">config_file_path</span><span class="p">,</span> <span class="n">pwd_file_path</span><span class="p">,</span> <span class="n">pwds</span><span class="p">,</span> <span class="n">freeze_config</span><span class="p">),</span>
-			<span class="n">tier</span> <span class="o">=</span> <span class="n">tier</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
+		<span class="c1"># Avoid cyclic import issues</span>
+		<span class="kn">from</span> <span class="nn">ampel.core.UnitLoader</span> <span class="kn">import</span> <span class="n">UnitLoader</span> <span class="c1"># noqa</span>
+		<span class="kn">from</span> <span class="nn">ampel.core.AmpelDB</span> <span class="kn">import</span> <span class="n">AmpelDB</span>
+
+		<span class="n">alconf</span> <span class="o">=</span> <span class="n">AmpelConfig</span><span class="p">(</span><span class="n">config</span><span class="p">)</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="nb">dict</span><span class="p">)</span> <span class="k">else</span> <span class="n">AmpelConfig</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
+		<span class="k">if</span> <span class="n">vault</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+			<span class="n">vault</span> <span class="o">=</span> <span class="n">AmpelVault</span><span class="p">([])</span>
+
+		<span class="k">if</span> <span class="n">pwds</span><span class="p">:</span>
+			<span class="n">vault</span><span class="o">.</span><span class="n">providers</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+				<span class="n">AESecretProvider</span><span class="p">(</span><span class="n">pwds</span><span class="p">)</span>
+			<span class="p">)</span>
+		<span class="k">elif</span> <span class="n">pwd_file_path</span><span class="p">:</span>
+			<span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">pwd_file_path</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+				<span class="n">vault</span><span class="o">.</span><span class="n">providers</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+					<span class="n">AESecretProvider</span><span class="p">([</span><span class="n">l</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="k">for</span> <span class="n">l</span> <span class="ow">in</span> <span class="n">f</span><span class="o">.</span><span class="n">readlines</span><span class="p">()])</span>
+				<span class="p">)</span>
+
+		<span class="n">db</span> <span class="o">=</span> <span class="n">AmpelDB</span><span class="o">.</span><span class="n">new</span><span class="p">(</span><span class="n">alconf</span><span class="p">,</span> <span class="n">vault</span><span class="p">,</span> <span class="n">one_db</span><span class="o">=</span><span class="n">one_db</span><span class="p">)</span>
+
+		<span class="k">return</span> <span class="bp">cls</span><span class="p">(</span>
+			<span class="n">config</span> <span class="o">=</span> <span class="n">alconf</span><span class="p">,</span>
+			<span class="n">db</span> <span class="o">=</span> <span class="n">db</span><span class="p">,</span>
+			<span class="n">loader</span> <span class="o">=</span> <span class="n">UnitLoader</span><span class="p">(</span><span class="n">config</span><span class="o">=</span><span class="n">alconf</span><span class="p">,</span> <span class="n">db</span><span class="o">=</span><span class="n">db</span><span class="p">,</span> <span class="n">vault</span><span class="o">=</span><span class="n">vault</span><span class="p">),</span>
+			<span class="o">**</span><span class="n">kwargs</span>
 		<span class="p">)</span></div>
 
 
 <div class="viewcode-block" id="AmpelContext.build"><a class="viewcode-back" href="../../../api.html#ampel.core.AmpelContext.AmpelContext.build">[docs]</a>	<span class="nd">@classmethod</span>
 	<span class="k">def</span> <span class="nf">build</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span>
 		<span class="n">ignore_errors</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
-		<span class="n">pwd_file_path</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-		<span class="n">pwds</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Iterable</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+		<span class="n">pwd_file_path</span><span class="p">:</span> <span class="kc">None</span> <span class="o">|</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+		<span class="n">pwds</span><span class="p">:</span> <span class="kc">None</span> <span class="o">|</span> <span class="n">Iterable</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 		<span class="n">freeze_config</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
-		<span class="n">tier</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Literal</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 		<span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
 	<span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;AmpelContext&#39;</span><span class="p">:</span>
 		<span class="sd">&quot;&quot;&quot;</span>
@@ -165,16 +165,30 @@
 
 		<span class="c1"># Import here to avoid cyclic import error</span>
 		<span class="kn">from</span> <span class="nn">ampel.config.builder.DistConfigBuilder</span> <span class="kn">import</span> <span class="n">DistConfigBuilder</span>
-		<span class="n">cb</span> <span class="o">=</span> <span class="n">DistConfigBuilder</span><span class="p">(</span><span class="n">verbose</span><span class="o">=</span><span class="n">verbose</span><span class="p">)</span>
+		<span class="n">cb</span> <span class="o">=</span> <span class="n">DistConfigBuilder</span><span class="p">(</span><span class="n">options</span><span class="o">=</span><span class="n">DisplayOptions</span><span class="p">(</span><span class="n">verbose</span><span class="o">=</span><span class="n">verbose</span><span class="p">))</span>
 		<span class="n">cb</span><span class="o">.</span><span class="n">load_distributions</span><span class="p">()</span>
 
-		<span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">new</span><span class="p">(</span>
-			<span class="n">AmpelConfig</span><span class="p">(</span>
-				<span class="n">cb</span><span class="o">.</span><span class="n">build_config</span><span class="p">(</span><span class="n">ignore_errors</span><span class="p">,</span> <span class="n">pwds</span><span class="o">=</span><span class="n">pwds</span><span class="p">),</span>
-				<span class="n">freeze_config</span>
-			<span class="p">),</span>
-			<span class="n">tier</span><span class="o">=</span><span class="n">tier</span>
+		<span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">load</span><span class="p">(</span>
+			<span class="n">cb</span><span class="o">.</span><span class="n">build_config</span><span class="p">(</span><span class="n">ignore_errors</span><span class="p">,</span> <span class="n">pwds</span><span class="o">=</span><span class="n">pwds</span><span class="p">),</span>
+			<span class="n">pwd_file_path</span><span class="o">=</span><span class="n">pwd_file_path</span><span class="p">,</span>
+			<span class="n">pwds</span><span class="o">=</span><span class="n">pwds</span><span class="p">,</span>
+			<span class="n">freeze_config</span><span class="o">=</span><span class="n">freeze_config</span><span class="p">,</span>
 		<span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="AmpelContext.new_run_id"><a class="viewcode-back" href="../../../api.html#ampel.core.AmpelContext.AmpelContext.new_run_id">[docs]</a>	<span class="k">def</span> <span class="nf">new_run_id</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+		<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">		Return an identifier that can be used to associate log entries from a</span>
+<span class="sd">		single process invocation. This ID is unique and monotonicaly increasing.</span>
+<span class="sd">		&quot;&quot;&quot;</span>
+		<span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span> \
+			<span class="o">.</span><span class="n">get_collection</span><span class="p">(</span><span class="s1">&#39;counter&#39;</span><span class="p">)</span> \
+			<span class="o">.</span><span class="n">find_one_and_update</span><span class="p">(</span>
+				<span class="p">{</span><span class="s1">&#39;_id&#39;</span><span class="p">:</span> <span class="s1">&#39;current_run_id&#39;</span><span class="p">},</span>
+				<span class="p">{</span><span class="s1">&#39;$inc&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;value&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">}},</span>
+				<span class="n">new</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">upsert</span><span class="o">=</span><span class="kc">True</span>
+			<span class="p">)</span> \
+			<span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;value&#39;</span><span class="p">)</span></div>
 
 
 <div class="viewcode-block" id="AmpelContext.get_config"><a class="viewcode-back" href="../../../api.html#ampel.core.AmpelContext.AmpelContext.get_config">[docs]</a>	<span class="k">def</span> <span class="nf">get_config</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AmpelConfig</span><span class="p">:</span>
@@ -191,20 +205,32 @@
 		<span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span></div>
 
 
+	<span class="k">def</span> <span class="nf">resolve_conf_id</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">conf_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span> <span class="o">|</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+		<span class="k">try</span><span class="p">:</span>
+			<span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">get_conf_id</span><span class="p">(</span><span class="n">conf_id</span><span class="p">)</span>
+		<span class="c1"># confid not found (obsolete or dynamically generated by process)</span>
+		<span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+			<span class="n">l</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">col_conf_ids</span><span class="o">.</span><span class="n">find</span><span class="p">({</span><span class="s2">&quot;_id&quot;</span><span class="p">:</span> <span class="n">conf_id</span><span class="p">}))</span>
+			<span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">l</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+				<span class="k">return</span> <span class="kc">None</span>
+			<span class="k">del</span> <span class="n">l</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s1">&#39;_id&#39;</span><span class="p">]</span>
+			<span class="k">return</span> <span class="n">l</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+
 	<span class="k">def</span> <span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 		<span class="k">return</span> <span class="s2">&quot;&lt;AmpelContext&gt;&quot;</span>
 
 
-<div class="viewcode-block" id="AmpelContext.deactivate_processes"><a class="viewcode-back" href="../../../api.html#ampel.core.AmpelContext.AmpelContext.deactivate_processes">[docs]</a>	<span class="k">def</span> <span class="nf">deactivate_processes</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+	<span class="k">def</span> <span class="nf">deactivate_processes</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 		<span class="sd">&quot;&quot;&quot; &quot;&quot;&quot;</span>
 		<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">4</span><span class="p">):</span>
 			<span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;process.t</span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">,</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">raise_exc</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
-				<span class="n">p</span><span class="p">[</span><span class="s1">&#39;active&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span></div>
+				<span class="n">p</span><span class="p">[</span><span class="s1">&#39;active&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span>
 
 
 <div class="viewcode-block" id="AmpelContext.activate_process"><a class="viewcode-back" href="../../../api.html#ampel.core.AmpelContext.AmpelContext.activate_process">[docs]</a>	<span class="k">def</span> <span class="nf">activate_process</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
 		<span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
-		<span class="n">tier</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Literal</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span>
+		<span class="n">tier</span><span class="p">:</span> <span class="kc">None</span> <span class="o">|</span> <span class="n">Literal</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
 	<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 		<span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">		:returns: False if process was deactivated, True if not found</span>
@@ -231,7 +257,7 @@
   <h3 id="searchlabel">Quick search</h3>
     <div class="searchformwrapper">
     <form class="search" action="../../../search.html" method="get">
-      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
       <input type="submit" value="Go" />
     </form>
     </div>
@@ -247,14 +273,14 @@
         <li class="right" style="margin-right: 10px">
           <a href="../../../genindex.html" title="General Index"
              >index</a></li>
-        <li class="nav-item nav-item-0"><a href="../../../index.html">ampel-core 0.7.5 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">ampel-core 0.8.3-alpha.11 documentation</a> &#187;</li>
           <li class="nav-item nav-item-1"><a href="../../index.html" >Module code</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">ampel.core.AmpelContext</a></li> 
       </ul>
     </div>
     <div class="footer" role="contentinfo">
         &#169; Copyright 2018-2021, Ampel Project.
-      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 4.0.2.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 4.5.0.
     </div>
   </body>
 </html>
