@@ -39,7 +39,7 @@ python-versions = "*"
 
 [[package]]
 name = "ampel-interface"
-version = "0.8.3a10"
+version = "0.8.3a11"
 description = "Base classes for the Ampel analysis platform"
 category = "main"
 optional = false
@@ -84,7 +84,7 @@ test = ["coverage", "flake8", "pexpect", "wheel"]
 
 [[package]]
 name = "asgiref"
-version = "3.5.1"
+version = "3.5.2"
 description = "ASGI specs, helper code, and adapters"
 category = "main"
 optional = true
@@ -982,7 +982,7 @@ server = ["fastapi", "uvicorn"]
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.10,<3.11"
-content-hash = "2ab2d7128a9be2ec6c30db7322731a7273c29298f6f3390700dac2d1f04363dd"
+content-hash = "ad125858e46d4f793cbb1852a52876c2a4f9a6c1c3541d51baaa953a908543ac"
 
 [metadata.files]
 aiohttp = [
@@ -1068,8 +1068,8 @@ alabaster = [
     {file = "alabaster-0.7.12.tar.gz", hash = "sha256:a661d72d58e6ea8a57f7a86e37d86716863ee5e92788398526d58b26a4e4dc02"},
 ]
 ampel-interface = [
-    {file = "ampel-interface-0.8.3a10.tar.gz", hash = "sha256:ae6700c654f9ac80200b3db6252382b5ef7d4328b8b1b57d4886b61326f63e26"},
-    {file = "ampel_interface-0.8.3a10-py3-none-any.whl", hash = "sha256:5bea2d2471ad5bdb255beff9e2df2a68caa9a7217ad23f2908cfc1f46b23e4a1"},
+    {file = "ampel-interface-0.8.3a11.tar.gz", hash = "sha256:6499b557463f1cc58b61f3278fb29e55d8f68c73c535a5d8e7bcb496fcad0e3e"},
+    {file = "ampel_interface-0.8.3a11-py3-none-any.whl", hash = "sha256:e6b411a34ce8658a12cb9133d28440416208b010b3f3a605079d121562b474c2"},
 ]
 anyio = [
     {file = "anyio-3.6.1-py3-none-any.whl", hash = "sha256:cb29b9c70620506a9a8f87a309591713446953302d7d995344d0d7c6c0c9a7be"},
@@ -1080,8 +1080,8 @@ argcomplete = [
     {file = "argcomplete-2.0.0.tar.gz", hash = "sha256:6372ad78c89d662035101418ae253668445b391755cfe94ea52f1b9d22425b20"},
 ]
 asgiref = [
-    {file = "asgiref-3.5.1-py3-none-any.whl", hash = "sha256:45a429524fba18aba9d512498b19d220c4d628e75b40cf5c627524dbaebc5cc1"},
-    {file = "asgiref-3.5.1.tar.gz", hash = "sha256:fddeea3c53fa99d0cdb613c3941cc6e52d822491fc2753fba25768fb5bf4e865"},
+    {file = "asgiref-3.5.2-py3-none-any.whl", hash = "sha256:1d2880b792ae8757289136f1db2b7b99100ce959b2aa57fd69dab783d05afac4"},
+    {file = "asgiref-3.5.2.tar.gz", hash = "sha256:4a29362a6acebe09bf1d6640db38c1dc3d9217c68e6f9f6204d72667fc19a424"},
 ]
 async-timeout = [
     {file = "async-timeout-4.0.2.tar.gz", hash = "sha256:2163e1640ddb52b7a8c80d0a67a08587e5d245cc9c553a74a847056bc2976b15"},
