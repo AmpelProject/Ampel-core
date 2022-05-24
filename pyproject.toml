@@ -46,6 +46,7 @@ ampel = 'ampel.cli.main:main'
 ampel-interface = {version = "^0.8.3-alpha.11"}
 python = ">=3.10,<3.11"
 pymongo = "^4.0"
+pydantic = "1.9.0"
 sjcl = "^0.2.1"
 schedule = "^1.0.0"
 yq = "^2.12.0"
