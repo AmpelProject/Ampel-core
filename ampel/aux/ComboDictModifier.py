@@ -47,7 +47,7 @@ class ComboDictModifier(AbsApplicable):
 		"""
 		op: Literal['keep_only']
 		key: None | str
-		keep: int |  str | Sequence[int | str]
+		keep: int | str | Sequence[int | str]
 
 
 	class ClassModifyModel(AmpelBaseModel):
