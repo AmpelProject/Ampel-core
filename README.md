@@ -12,7 +12,7 @@ The framework requires analysis and reaction logic to be broken down in adequate
 AMPEL is general enough to be applicable in various fields,
 it was originaly developped to solve challenges in the context of experimental astrophysics.
 
-AMPEL is written in Python 3.9 and its codebase is fully typed.
+AMPEL is written in Python 3.10 and its codebase is fully typed.
  
 
 # Architecture
@@ -22,7 +22,7 @@ AMPEL is made of four execution layers (tiers) that replace a traditional pipeli
 <img align="left" src="https://desycloud.desy.de/index.php/s/fz2mnsH4MGEKwfD/preview"/>
 
 The tiers are independently scheduled and the information exchange between tiers occurs via a dedicated database.
-The execution layer architecture along with the database structure allow for simple parallelization.
+The execution layer architecture along with the database structure allows for simple parallelization.
 
 ## Units
 Each tier is modular and executes so-called "units".
