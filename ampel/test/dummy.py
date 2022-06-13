@@ -8,7 +8,7 @@
 # Last Modified By  : jvs
 
 import time
-from typing import List, Optional, Sequence, Tuple, Union
+from typing import List, Optional, Sequence, Tuple, Union, Any
 
 from ampel.struct.UnitResult import UnitResult
 from ampel.types import StockId, UBson
@@ -23,6 +23,7 @@ from ampel.content.T1Document import T1Document
 from ampel.view.T2DocView import T2DocView
 from ampel.model.StateT2Dependency import StateT2Dependency
 from ampel.abstract.AbsT0Muxer import AbsT0Muxer
+from ampel.model.ingest.CompilerOptions import CompilerOptions
 
 
 class Sleepy(AbsEventUnit):
@@ -93,3 +94,12 @@ class DummyTiedStateT2Unit(AbsTiedStateT2Unit):
         data = t2views[-1].get_payload() or {}
         assert isinstance(data, dict)
         return {k: v * 2 for k, v in data.items()}
+
+
+class DummyCompilerOptions(CompilerOptions):
+    stock: dict[str, Any] = {"id_mapper": "ZTFIdMapper", "tag": "ZTF"}
+    t0: dict[str, Any] = {"tag": "ZTF"}
+    t1: dict[str, Any] = {"tag": "ZTF"}
+    state_t2: dict[str, Any] = {"tag": "ZTF"}
+    point_t2: dict[str, Any] = {"tag": "ZTF"}
+    stock_t2: dict[str, Any] = {"tag": "ZTF"}

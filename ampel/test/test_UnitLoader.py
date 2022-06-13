@@ -1,5 +1,6 @@
-from typing import Any
+from typing import Any, Optional
 from ampel.base.LogicalUnit import LogicalUnit
+from ampel.model.ingest.CompilerOptions import CompilerOptions
 from ampel.secret.NamedSecret import NamedSecret
 from ampel.dev.DevAmpelContext import DevAmpelContext
 import pytest
@@ -13,6 +14,7 @@ from ampel.secret.AmpelVault import AmpelVault
 from ampel.model.UnitModel import UnitModel
 from ampel.abstract.AbsOpsUnit import AbsOpsUnit
 from ampel.core.ContextUnit import ContextUnit
+from ampel.abstract.AbsEventUnit import AbsEventUnit
 
 
 @pytest.fixture
@@ -76,15 +78,19 @@ def test_resolve_secret_from_superclass(
     secrets: DictSecretProvider, dev_context: DevAmpelContext, monkeypatch, ampel_logger
 ):
     """Secrets are resolved with multiple inheritance"""
+
     class Base(ContextUnit):
         seekrit: NamedSecret[dict]
 
     class Derived(AbsOpsUnit, Base):
         def run(self, beacon):
             ...
-    assert "seekrit" not in Derived.__annotations__, "multiply-inherited AmpelBaseModels are missing annotations"
 
-    dev_context.register_unit(Derived) # type: ignore[arg-type]
+    assert (
+        "seekrit" not in Derived.__annotations__
+    ), "multiply-inherited AmpelBaseModels are missing annotations"
+
+    dev_context.register_unit(Derived)  # type: ignore[arg-type]
     monkeypatch.setattr(dev_context.loader, "vault", AmpelVault(providers=[secrets]))
     unit = dev_context.loader.new(
         UnitModel(unit="Derived", config={"seekrit": {"label": "dict"}}),
@@ -215,3 +221,18 @@ def test_unit_validation(dev_context: DevAmpelContext):
                 "unit"
             ] = "NotActuallyAUnit"
             UnitModel(unit="T3Processor", config=t3_config)
+
+
+def test_compiler_options_validation(mock_context: DevAmpelContext):
+    """AuxAliasableUnit can be intialized from a string"""
+
+    class Dummy(LogicalUnit):
+        compiler_options: Optional[CompilerOptions]
+
+    mock_context.register_unit(Dummy)
+
+    with mock_context.loader.validate_unit_models():
+        UnitModel(unit="Dummy")
+        UnitModel(unit="Dummy", config={"compiler_options": "DummyCompilerOptions"})
+        with pytest.raises(ValueError):
+            UnitModel(unit="Dummy", config={"compiler_options": "foo"})

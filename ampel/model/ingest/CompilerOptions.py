@@ -8,11 +8,11 @@
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from typing import Dict, Any
-from ampel.model.StrictModel import StrictModel
+from ampel.model.aux.AuxAliasableModel import AuxAliasableModel
 
 empty: Dict[str, Any] = {}
 
-class CompilerOptions(StrictModel):
+class CompilerOptions(AuxAliasableModel):
 	"""
 	Will be merged with the options set by say IngestionHandlers (these will have priority).
 	Allows for example to set default tags for given documents or to define a custom AbsIdMapper

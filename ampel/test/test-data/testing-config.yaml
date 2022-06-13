@@ -602,6 +602,12 @@ unit:
       - AbsTiedStateT2Unit
       - AbsTiedT2Unit
       - LogicalUnit
+  DummyCompilerOptions:
+    fqn: ampel.test.dummy
+    version: 0.8.0a1
+    base:
+      - DummyCompilerOptions
+      - CompilerOptions
 process:
   t0: {}
   t1: {}
