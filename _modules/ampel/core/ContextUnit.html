@@ -5,7 +5,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>ampel.core.ContextUnit &#8212; ampel-core 0.8.2-alpha.15 documentation</title>
+    <title>ampel.core.ContextUnit &#8212; ampel-core 0.8.3-alpha.11 documentation</title>
     <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css" />
     <link rel="stylesheet" type="text/css" href="../../../_static/sphinxdoc.css" />
     <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
@@ -21,7 +21,7 @@
         <li class="right" style="margin-right: 10px">
           <a href="../../../genindex.html" title="General Index"
              accesskey="I">index</a></li>
-        <li class="nav-item nav-item-0"><a href="../../../index.html">ampel-core 0.8.2-alpha.15 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">ampel-core 0.8.3-alpha.11 documentation</a> &#187;</li>
           <li class="nav-item nav-item-1"><a href="../../index.html" accesskey="U">Module code</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">ampel.core.ContextUnit</a></li> 
       </ul>
@@ -35,23 +35,19 @@
   <h1>Source code for ampel.core.ContextUnit</h1><div class="highlight"><pre>
 <span></span><span class="ch">#!/usr/bin/env python</span>
 <span class="c1"># -*- coding: utf-8 -*-</span>
-<span class="c1"># File              : Ampel-core/ampel/core/ContextUnit.py</span>
-<span class="c1"># License           : BSD-3-Clause</span>
-<span class="c1"># Author            : vb &lt;vbrinnel@physik.hu-berlin.de&gt;</span>
-<span class="c1"># Date              : 07.10.2019</span>
-<span class="c1"># Last Modified Date: 13.12.2021</span>
-<span class="c1"># Last Modified By  : vb &lt;vbrinnel@physik.hu-berlin.de&gt;</span>
+<span class="c1"># File:                Ampel-core/ampel/core/ContextUnit.py</span>
+<span class="c1"># License:             BSD-3-Clause</span>
+<span class="c1"># Author:              valery brinnel &lt;firstname.lastname@gmail.com&gt;</span>
+<span class="c1"># Date:                07.10.2019</span>
+<span class="c1"># Last Modified Date:  09.01.2022</span>
+<span class="c1"># Last Modified By:    valery brinnel &lt;firstname.lastname@gmail.com&gt;</span>
 
-<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Optional</span>
-<span class="kn">from</span> <span class="nn">ampel.types</span> <span class="kn">import</span> <span class="n">Traceless</span><span class="p">,</span> <span class="n">TRACELESS</span>
-<span class="kn">from</span> <span class="nn">ampel.base.AmpelBaseModel</span> <span class="kn">import</span> <span class="n">AmpelBaseModel</span>
+<span class="kn">from</span> <span class="nn">ampel.types</span> <span class="kn">import</span> <span class="n">Traceless</span>
+<span class="kn">from</span> <span class="nn">ampel.base.AmpelUnit</span> <span class="kn">import</span> <span class="n">AmpelUnit</span>
 <span class="kn">from</span> <span class="nn">ampel.core.AmpelContext</span> <span class="kn">import</span> <span class="n">AmpelContext</span>
-<span class="kn">from</span> <span class="nn">ampel.secret.Secret</span> <span class="kn">import</span> <span class="n">Secret</span>
-
-<span class="n">ttf</span> <span class="o">=</span> <span class="nb">type</span><span class="p">(</span><span class="n">Traceless</span><span class="p">)</span>
 
 
-<div class="viewcode-block" id="ContextUnit"><a class="viewcode-back" href="../../../api.html#ampel.core.ContextUnit.ContextUnit">[docs]</a><span class="k">class</span> <span class="nc">ContextUnit</span><span class="p">(</span><span class="n">AmpelBaseModel</span><span class="p">):</span>
+<div class="viewcode-block" id="ContextUnit"><a class="viewcode-back" href="../../../api.html#ampel.core.ContextUnit.ContextUnit">[docs]</a><span class="k">class</span> <span class="nc">ContextUnit</span><span class="p">(</span><span class="n">AmpelUnit</span><span class="p">):</span>
 	<span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">	Base class for units requiring a reference to an AmpelContext instance</span>
 <span class="sd">	&quot;&quot;&quot;</span>
@@ -62,25 +58,7 @@
 	<span class="c1">#: * None if provanance flag is False</span>
 	<span class="c1">#: * 0 in case model content is not serializable</span>
 	<span class="c1">#: * any other signed int value</span>
-	<span class="n">_trace_id</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
-
-
-	<span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-
-		<span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
-
-		<span class="n">d</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__dict__</span>
-		<span class="n">excl</span> <span class="o">=</span> <span class="p">{</span>
-			<span class="n">k</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_annots</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
-			<span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="ow">is</span> <span class="n">ttf</span> <span class="ow">and</span> <span class="n">v</span><span class="o">.</span><span class="n">__metadata__</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="n">TRACELESS</span>
-		<span class="p">}</span>
-
-		<span class="bp">self</span><span class="o">.</span><span class="n">_trace_content</span> <span class="o">=</span> <span class="p">{</span>
-			<span class="n">k</span><span class="p">:</span> <span class="n">d</span><span class="p">[</span><span class="n">k</span><span class="p">]</span>
-			<span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">d</span><span class="p">)</span>
-			<span class="k">if</span> <span class="n">k</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">excl</span> <span class="ow">and</span>
-			<span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">d</span><span class="p">[</span><span class="n">k</span><span class="p">],</span> <span class="n">Secret</span><span class="p">)</span>
-		<span class="p">}</span></div>
+	<span class="n">_trace_id</span><span class="p">:</span> <span class="kc">None</span> <span class="o">|</span> <span class="nb">int</span> <span class="o">=</span> <span class="kc">None</span></div>
 </pre></div>
 
             <div class="clearer"></div>
@@ -112,14 +90,14 @@
         <li class="right" style="margin-right: 10px">
           <a href="../../../genindex.html" title="General Index"
              >index</a></li>
-        <li class="nav-item nav-item-0"><a href="../../../index.html">ampel-core 0.8.2-alpha.15 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">ampel-core 0.8.3-alpha.11 documentation</a> &#187;</li>
           <li class="nav-item nav-item-1"><a href="../../index.html" >Module code</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">ampel.core.ContextUnit</a></li> 
       </ul>
     </div>
     <div class="footer" role="contentinfo">
         &#169; Copyright 2018-2021, Ampel Project.
-      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 4.3.2.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 4.5.0.
     </div>
   </body>
 </html>
