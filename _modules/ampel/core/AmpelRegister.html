@@ -5,7 +5,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>ampel.core.AmpelRegister &#8212; ampel-core 0.8.2-alpha.16 documentation</title>
+    <title>ampel.core.AmpelRegister &#8212; ampel-core 0.8.3-alpha.11 documentation</title>
     <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css" />
     <link rel="stylesheet" type="text/css" href="../../../_static/sphinxdoc.css" />
     <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
@@ -21,7 +21,7 @@
         <li class="right" style="margin-right: 10px">
           <a href="../../../genindex.html" title="General Index"
              accesskey="I">index</a></li>
-        <li class="nav-item nav-item-0"><a href="../../../index.html">ampel-core 0.8.2-alpha.16 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">ampel-core 0.8.3-alpha.11 documentation</a> &#187;</li>
           <li class="nav-item nav-item-1"><a href="../../index.html" accesskey="U">Module code</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">ampel.core.AmpelRegister</a></li> 
       </ul>
@@ -35,22 +35,22 @@
   <h1>Source code for ampel.core.AmpelRegister</h1><div class="highlight"><pre>
 <span></span><span class="ch">#!/usr/bin/env python</span>
 <span class="c1"># -*- coding: utf-8 -*-</span>
-<span class="c1"># File              : Ampel-core/ampel/core/AmpelRegister.py</span>
-<span class="c1"># License           : BSD-3-Clause</span>
-<span class="c1"># Author            : vb &lt;vbrinnel@physik.hu-berlin.de&gt;</span>
-<span class="c1"># Date              : 16.05.2020</span>
-<span class="c1"># Last Modified Date: 04.03.2021</span>
-<span class="c1"># Last Modified By  : vb &lt;vbrinnel@physik.hu-berlin.de&gt;</span>
+<span class="c1"># File:                Ampel-core/ampel/core/AmpelRegister.py</span>
+<span class="c1"># License:             BSD-3-Clause</span>
+<span class="c1"># Author:              valery brinnel &lt;firstname.lastname@gmail.com&gt;</span>
+<span class="c1"># Date:                16.05.2020</span>
+<span class="c1"># Last Modified Date:  04.03.2021</span>
+<span class="c1"># Last Modified By:    valery brinnel &lt;firstname.lastname@gmail.com&gt;</span>
 
 <span class="kn">import</span> <span class="nn">bson</span>
 <span class="kn">from</span> <span class="nn">time</span> <span class="kn">import</span> <span class="n">time</span>
 <span class="kn">from</span> <span class="nn">os.path</span> <span class="kn">import</span> <span class="n">isdir</span><span class="p">,</span> <span class="n">isfile</span>
 <span class="kn">from</span> <span class="nn">pathlib</span> <span class="kn">import</span> <span class="n">Path</span>
 <span class="kn">from</span> <span class="nn">struct</span> <span class="kn">import</span> <span class="n">calcsize</span>
-<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">BinaryIO</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Literal</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">Any</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Union</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">TypedDict</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">BinaryIO</span><span class="p">,</span> <span class="n">Literal</span><span class="p">,</span> <span class="n">Any</span><span class="p">,</span> <span class="n">TypedDict</span>
 
 <span class="kn">from</span> <span class="nn">ampel.log.AmpelLogger</span> <span class="kn">import</span> <span class="n">AmpelLogger</span><span class="p">,</span> <span class="n">VERBOSE</span>
-<span class="kn">from</span> <span class="nn">ampel.base.AmpelBaseModel</span> <span class="kn">import</span> <span class="n">AmpelBaseModel</span>
+<span class="kn">from</span> <span class="nn">ampel.base.AmpelUnit</span> <span class="kn">import</span> <span class="n">AmpelUnit</span>
 <span class="kn">from</span> <span class="nn">ampel.util.hash</span> <span class="kn">import</span> <span class="n">build_unsafe_dict_id</span>
 <span class="kn">from</span> <span class="nn">ampel.util.register</span> <span class="kn">import</span> <span class="n">read_header</span><span class="p">,</span> <span class="n">write_header</span><span class="p">,</span> \
 	<span class="n">get_inner_file_handle</span><span class="p">,</span> <span class="n">get_outer_file_handle</span><span class="p">,</span> <span class="n">rescale_header</span>
@@ -59,10 +59,10 @@
 <span class="k">class</span> <span class="nc">HeaderInfo</span><span class="p">(</span><span class="n">TypedDict</span><span class="p">):</span>
 	<span class="n">size</span><span class="p">:</span> <span class="nb">int</span>
 	<span class="nb">len</span><span class="p">:</span> <span class="nb">int</span>
-	<span class="n">payload</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span>
+	<span class="n">payload</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span>
 
 
-<div class="viewcode-block" id="AmpelRegister"><a class="viewcode-back" href="../../../api.html#ampel.core.AmpelRegister.AmpelRegister">[docs]</a><span class="k">class</span> <span class="nc">AmpelRegister</span><span class="p">(</span><span class="n">AmpelBaseModel</span><span class="p">):</span>
+<div class="viewcode-block" id="AmpelRegister"><a class="viewcode-back" href="../../../api.html#ampel.core.AmpelRegister.AmpelRegister">[docs]</a><span class="k">class</span> <span class="nc">AmpelRegister</span><span class="p">(</span><span class="n">AmpelUnit</span><span class="p">):</span>
 	<span class="sd">&quot;&quot;&quot; # noqa: E101</span>
 
 <span class="sd">	General notes:</span>
@@ -186,38 +186,38 @@
 	<span class="n">logger</span><span class="p">:</span> <span class="n">AmpelLogger</span>
 
 	<span class="c1">#: save files in &lt;path_base&gt;/&lt;file&gt;</span>
-	<span class="n">path_base</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>
+	<span class="n">path_base</span><span class="p">:</span> <span class="kc">None</span> <span class="o">|</span> <span class="nb">str</span>
 	<span class="c1">#: save files in &lt;path_base&gt;/&lt;path_extra(s)&gt;/&lt;file&gt;</span>
-	<span class="n">path_extra</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span>
+	<span class="n">path_extra</span><span class="p">:</span> <span class="kc">None</span> <span class="o">|</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>
 	<span class="c1">#: prefix for each file</span>
-	<span class="n">file_prefix</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>
+	<span class="n">file_prefix</span><span class="p">:</span> <span class="kc">None</span> <span class="o">|</span> <span class="nb">str</span>
 	<span class="c1">#: ignore all other path options and use this file path</span>
-	<span class="n">path_full</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>
+	<span class="n">path_full</span><span class="p">:</span> <span class="kc">None</span> <span class="o">|</span> <span class="nb">str</span>
 
-	<span class="n">file_cap</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="n">Literal</span><span class="p">[</span><span class="s1">&#39;blocks&#39;</span><span class="p">],</span> <span class="nb">int</span><span class="p">]]</span>
+	<span class="n">file_cap</span><span class="p">:</span> <span class="kc">None</span> <span class="o">|</span> <span class="nb">dict</span><span class="p">[</span><span class="n">Literal</span><span class="p">[</span><span class="s1">&#39;blocks&#39;</span><span class="p">],</span> <span class="nb">int</span><span class="p">]</span>
 
 	<span class="c1">#: use existing file handle</span>
-	<span class="n">file_handle</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">BinaryIO</span><span class="p">]</span>
+	<span class="n">file_handle</span><span class="p">:</span> <span class="kc">None</span> <span class="o">|</span> <span class="n">BinaryIO</span>
 
 	<span class="c1">#: compression scheme</span>
-	<span class="n">compression</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Literal</span><span class="p">[</span><span class="s1">&#39;gz&#39;</span><span class="p">,</span> <span class="s1">&#39;bz2&#39;</span><span class="p">,</span> <span class="s1">&#39;xz&#39;</span><span class="p">]]</span> <span class="o">=</span> <span class="s1">&#39;gz&#39;</span>
+	<span class="n">compression</span><span class="p">:</span> <span class="kc">None</span> <span class="o">|</span> <span class="n">Literal</span><span class="p">[</span><span class="s1">&#39;gz&#39;</span><span class="p">,</span> <span class="s1">&#39;bz2&#39;</span><span class="p">,</span> <span class="s1">&#39;xz&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;gz&#39;</span>
 	<span class="c1">#: compression level</span>
-	<span class="n">compress_level</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span>
+	<span class="n">compression_level</span><span class="p">:</span> <span class="kc">None</span> <span class="o">|</span> <span class="nb">int</span>
 
 	<span class="c1"># General header options</span>
-	<span class="n">new_header_size</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">str</span><span class="p">]]</span>
+	<span class="n">new_header_size</span><span class="p">:</span> <span class="kc">None</span> <span class="o">|</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">str</span>
 
 	<span class="n">header_log_accesses</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
 	<span class="n">header_count_blocks</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>
-	<span class="n">header_extra</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span>
-	<span class="n">header_extra_base</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span>
+	<span class="n">header_extra</span><span class="p">:</span> <span class="kc">None</span> <span class="o">|</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span>
+	<span class="n">header_extra_base</span><span class="p">:</span> <span class="kc">None</span> <span class="o">|</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span>
 	<span class="n">header_update_anyway</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
 
 	<span class="c1"># New header options</span>
-	<span class="n">header_creation_size</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span>
+	<span class="n">header_creation_size</span><span class="p">:</span> <span class="kc">None</span> <span class="o">|</span> <span class="nb">int</span>
 
 	<span class="c1"># Which header key to check if file already exists</span>
-	<span class="n">on_exist_check</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]]]]</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;struct&#39;</span><span class="p">]</span>
+	<span class="n">on_exist_check</span><span class="p">:</span> <span class="kc">None</span> <span class="o">|</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span> <span class="o">|</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;struct&#39;</span><span class="p">]</span>
 	<span class="n">on_exist_strict_check</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
 
 	<span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">autoload</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
@@ -297,7 +297,7 @@
 		<span class="bp">self</span><span class="o">.</span><span class="n">header_sig</span> <span class="o">=</span> <span class="n">build_unsafe_dict_id</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">header</span><span class="p">[</span><span class="s1">&#39;payload&#39;</span><span class="p">])</span>
 
 
-<div class="viewcode-block" id="AmpelRegister.check_rename"><a class="viewcode-back" href="../../../api.html#ampel.core.AmpelRegister.AmpelRegister.check_rename">[docs]</a>	<span class="k">def</span> <span class="nf">check_rename</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">header</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<div class="viewcode-block" id="AmpelRegister.check_rename"><a class="viewcode-back" href="../../../api.html#ampel.core.AmpelRegister.AmpelRegister.check_rename">[docs]</a>	<span class="k">def</span> <span class="nf">check_rename</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">header</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 		<span class="sd">&quot;&quot;&quot; override if needed &quot;&quot;&quot;</span>
 
 		<span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">file_cap</span><span class="p">:</span>
@@ -318,7 +318,7 @@
 		<span class="k">return</span> <span class="kc">False</span></div>
 
 
-	<span class="k">def</span> <span class="nf">rename_file</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fh</span><span class="p">:</span> <span class="n">BinaryIO</span><span class="p">,</span> <span class="n">header</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">BinaryIO</span><span class="p">:</span>
+	<span class="k">def</span> <span class="nf">rename_file</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fh</span><span class="p">:</span> <span class="n">BinaryIO</span><span class="p">,</span> <span class="n">header</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">BinaryIO</span><span class="p">:</span>
 
 		<span class="n">fh</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
 		<span class="bp">self</span><span class="o">.</span><span class="n">file_index</span> <span class="o">=</span> <span class="n">header</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;findex&#39;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span>
@@ -375,7 +375,7 @@
 		<span class="p">])</span></div>
 
 
-<div class="viewcode-block" id="AmpelRegister.check_header"><a class="viewcode-back" href="../../../api.html#ampel.core.AmpelRegister.AmpelRegister.check_header">[docs]</a>	<span class="k">def</span> <span class="nf">check_header</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">header</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<div class="viewcode-block" id="AmpelRegister.check_header"><a class="viewcode-back" href="../../../api.html#ampel.core.AmpelRegister.AmpelRegister.check_header">[docs]</a>	<span class="k">def</span> <span class="nf">check_header</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">header</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 		<span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">		:raises: ValueError is raised on mismatch between this instance value</span>
 <span class="sd">		and the header value for the provided key</span>
@@ -405,9 +405,9 @@
 
 
 <div class="viewcode-block" id="AmpelRegister.register_file_access"><a class="viewcode-back" href="../../../api.html#ampel.core.AmpelRegister.AmpelRegister.register_file_access">[docs]</a>	<span class="k">def</span> <span class="nf">register_file_access</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
-		<span class="n">header</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-		<span class="n">use_this_time</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-		<span class="n">new_blocks</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+		<span class="n">header</span><span class="p">:</span> <span class="kc">None</span> <span class="o">|</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+		<span class="n">use_this_time</span><span class="p">:</span> <span class="kc">None</span> <span class="o">|</span> <span class="nb">float</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+		<span class="n">new_blocks</span><span class="p">:</span> <span class="kc">None</span> <span class="o">|</span> <span class="nb">int</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 	<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 		<span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">		:param header: use provided header rather than self.header[&#39;payload&#39;]</span>
@@ -437,7 +437,7 @@
 <span class="sd">		&quot;&quot;&quot;</span>
 
 		<span class="n">now</span> <span class="o">=</span> <span class="n">time</span><span class="p">()</span>
-		<span class="n">hdr</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+		<span class="n">hdr</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
 			<span class="s1">&#39;struct&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">struct</span><span class="p">,</span>
 			<span class="s1">&#39;ts&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;created&#39;</span><span class="p">:</span> <span class="n">now</span><span class="p">}</span>
 		<span class="p">}</span>
@@ -607,14 +607,14 @@
         <li class="right" style="margin-right: 10px">
           <a href="../../../genindex.html" title="General Index"
              >index</a></li>
-        <li class="nav-item nav-item-0"><a href="../../../index.html">ampel-core 0.8.2-alpha.16 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">ampel-core 0.8.3-alpha.11 documentation</a> &#187;</li>
           <li class="nav-item nav-item-1"><a href="../../index.html" >Module code</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">ampel.core.AmpelRegister</a></li> 
       </ul>
     </div>
     <div class="footer" role="contentinfo">
         &#169; Copyright 2018-2021, Ampel Project.
-      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 4.3.2.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 4.5.0.
     </div>
   </body>
 </html>
