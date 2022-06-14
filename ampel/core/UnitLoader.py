@@ -28,6 +28,7 @@ from ampel.core.ContextUnit import ContextUnit
 from ampel.core.AmpelDB import AmpelDB
 from ampel.model.UnitModel import UnitModel
 from ampel.secret.Secret import Secret
+from ampel.secret.NamedSecret import NamedSecret
 from ampel.secret.AmpelVault import AmpelVault
 from ampel.model.t3.AliasableModel import AliasableModel
 from ampel.config.AmpelConfig import AmpelConfig
@@ -233,8 +234,11 @@ class UnitLoader:
 				if not self.vault:
 					raise ValueError("No vault configured")
 				if not self.vault.resolve_secret(v, ValueType):
-					raise ValueError(f"Secret[{getattr(ValueType, '__name__', '<untyped>')}] {k} not found")
-				
+					if isinstance(v, NamedSecret):
+						raise ValueError(f"Secret[{getattr(ValueType, '__name__', '<untyped>')}] '{v.label}' not found for {type(unit).__name__}.{k}")
+					else:
+						raise ValueError(f"Secret[{getattr(ValueType, '__name__', '<untyped>')}] not found for {type(unit).__name__}.{k}")
+
 		if hasattr(unit, "post_init"):
 			unit.post_init() # type: ignore[union-attr]
 
