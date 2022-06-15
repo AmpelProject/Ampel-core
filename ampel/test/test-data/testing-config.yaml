@@ -608,6 +608,16 @@ unit:
     base:
       - DummyCompilerOptions
       - CompilerOptions
+  DummyInputUnit:
+    fqn: ampel.test.dummy
+    version: 0.8.0a1
+    base:
+      - AbsEventUnit
+  DummyOutputUnit:
+    fqn: ampel.test.dummy
+    version: 0.8.0a1
+    base:
+      - AbsEventUnit
 process:
   t0: {}
   t1: {}

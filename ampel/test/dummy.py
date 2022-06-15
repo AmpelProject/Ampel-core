@@ -7,6 +7,7 @@
 # Last Modified Date: 11.02.2021
 # Last Modified By  : jvs
 
+import pathlib
 import time
 from typing import List, Optional, Sequence, Tuple, Union, Any
 
@@ -103,3 +104,20 @@ class DummyCompilerOptions(CompilerOptions):
     state_t2: dict[str, Any] = {"tag": "ZTF"}
     point_t2: dict[str, Any] = {"tag": "ZTF"}
     stock_t2: dict[str, Any] = {"tag": "ZTF"}
+
+
+class DummyOutputUnit(AbsEventUnit):
+
+    value: str
+    path: pathlib.Path
+
+    def run(self):
+        self.path.write_text(self.value)
+
+class DummyInputUnit(AbsEventUnit):
+
+    value: str
+    expected_value: str
+
+    def run(self):
+        assert self.value == self.expected_value

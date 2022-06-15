@@ -9,16 +9,40 @@ from pydantic import BaseModel, validator
 from ampel.util.recursion import walk_and_process_dict
 
 
+class OutputParameterSource(BaseModel):
+    default: Optional[str]
+    path: str
+
+
+class OutputParameter(BaseModel):
+    name: str
+    value_from: OutputParameterSource
+
+
+class TaskOutputs(BaseModel):
+    parameters: list[OutputParameter] = []
+
+
 class TaskUnitModel(UnitModel):
-    title: Optional[str]
+    title: str = ""
     multiplier: int = 1
+    outputs: TaskOutputs = TaskOutputs()
+
+    @validator("title", pre=True)
+    def populate_title(cls, v, values):
+        return v or values["unit"]
 
 
 class TemplateUnitModel(BaseModel):
-    title: Optional[str]
+    title: str = ""
     template: str
     config: dict[str, Any]
     multiplier: int = 1
+    outputs: TaskOutputs = TaskOutputs()
+
+    @validator("title", pre=True)
+    def populate_title(cls, v, values):
+        return v or values["template"]
 
 
 class MongoOpts(BaseModel):
@@ -50,8 +74,7 @@ class JobModel(BaseModel):
         ChannelModel(**v)
         return v
 
-    @classmethod
-    def _resolve_parameters(cls, path, k, d, **kwargs):
+    def _resolve_expressions_callback(self, path, k, d, **kwargs):
         for k, v in d.items():
             if isinstance(v, str):
                 chunks = []
@@ -61,7 +84,7 @@ class JobModel(BaseModel):
                         chunks.append(v[pos : match.span()[0]])
                     chunks.append(
                         ExpressionParser.evaluate(
-                            match.groups(1)[0].strip(), kwargs.get("parameters", {})
+                            match.groups(1)[0].strip(), kwargs.get("context", {})
                         )
                     )
                     pos = match.span()[1]
@@ -69,10 +92,44 @@ class JobModel(BaseModel):
                     chunks.append(v[pos : len(v)])
                 d[k] = "".join(chunks)
 
-    @validator("task", pre=True)
-    def resolve_parameters(cls, v, values):
-        parameters = {param.name: param.value for param in values.get("parameters", [])}
+    def resolve_expressions(self, task_dict: dict) -> dict:
+        """
+        Resolve any expressions of the form {{ expr }} found in string values of
+        the target dict
+
+        Supported expressions:
+
+        - job parameters, e.g. {{ job.parameters.param }} resolves to the
+          job-level parameter "param"
+        - task outputs, e.g. {{ task.step-0.outputs.parameters.token }} resolves
+          to the contents of the output file declared as "token" by the task
+          named "step-0"
+        """
+        def _read_output(spec: OutputParameterSource) -> Optional[str]:
+            try:
+                with open(spec.path) as f:
+                    return f.read()
+            except FileNotFoundError:
+                return spec.default
+
+        context = {
+            "job": {
+                "parameters": {param.name: param.value for param in self.parameters}
+            },
+            "task": {
+                task.title: {
+                    "outputs": {
+                        "parameters": {
+                            spec.name: value
+                            for spec in task.outputs.parameters
+                            if (value := _read_output(spec.value_from)) is not None
+                        }
+                    }
+                }
+                for task in self.task
+            },
+        }
         walk_and_process_dict(
-            v, callback=cls._resolve_parameters, parameters=parameters
+            task_dict, callback=self._resolve_expressions_callback, context=context
         )
-        return v
+        return task_dict

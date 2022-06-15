@@ -33,7 +33,7 @@ def run(args: list[str]) -> Optional[int]:
         return exit.code
 
 
-def dump(payload, tmpdir, name):
+def dump(payload, tmpdir, name) -> Path:
     f = Path(tmpdir) / name
     yaml.dump(payload, f.open("w"))
     return f
@@ -130,5 +130,59 @@ def test_dir_secrets(dir_secret_store, secrets):
     vault = cli_op.get_vault({"secrets": dir_secret_store})
     for k, v in secrets.items():
         assert vault.get_named_secret(k).get() == v
-    
+
     assert vault.get_named_secret("nonesuch") is None, "missing secrets skipped cleanly"
+
+
+def test_parameter_interpolation(
+    testing_config,
+    vault: Path,
+    tmpdir,
+):
+
+    value = "flerpyherp"
+
+    path = tmpdir / "token"
+
+    schema = dump(
+        {
+            "name": "job",
+            "parameters": [{"name": "expected_value", "value": value}],
+            "task": [
+                {
+                    "unit": "DummyOutputUnit",
+                    "config": {"value": value, "path": str(path)},
+                    "outputs": {
+                        "parameters": [
+                            {"name": "token", "value_from": {"path": str(path)}}
+                        ]
+                    },
+                },
+                {
+                    "unit": "DummyInputUnit",
+                    "config": {
+                        "value": "{{ task.DummyOutputUnit.outputs.parameters.token }}",
+                        "expected_value": "{{ job.parameters.expected_value }}",
+                    },
+                },
+            ],
+        },
+        tmpdir,
+        "schema.yml",
+    )
+
+    assert (
+        run(
+            [
+                "ampel",
+                "job",
+                "--config",
+                str(testing_config),
+                "--secrets",
+                str(vault),
+                "--schema",
+                str(schema),
+            ]
+        )
+        == None
+    )

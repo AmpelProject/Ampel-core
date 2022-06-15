@@ -196,7 +196,7 @@ class JobCommand(AbsCoreCommand):
 				tds.append(morphed_um)
 
 			else:
-				tds.append(model.dict())
+				tds.append(model.dict(exclude={"outputs"}))
 
 			logger.info(f"Registering job task#{i} with {tds[-1]['multiplier']}x multiplier")
 
@@ -254,7 +254,7 @@ class JobCommand(AbsCoreCommand):
 			else:
 
 				proc = ctx.loader.new_context_unit(
-					model = UnitModel(**task_dict),
+					model = UnitModel(**job.resolve_expressions(task_dict)),
 					context = ctx,
 					process_name = process_name,
 					sub_type = AbsEventUnit,
