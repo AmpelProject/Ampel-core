@@ -8,7 +8,7 @@
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from bson.codec_options import CodecOptions
-from typing import Iterable, Union, Iterator, Optional
+from typing import Iterable, Union, Iterator, Optional, ClassVar
 from ampel.types import StockId, StrictIterable
 from ampel.struct.AmpelBuffer import AmpelBuffer
 from ampel.abstract.AbsT3Loader import AbsT3Loader
@@ -18,7 +18,7 @@ from ampel.mongo.view.FrozenValuesDict import FrozenValuesDict
 class T3SimpleDataLoader(AbsT3Loader):
 	"""Load all requested documents for the selected stocks"""
 
-	codec_options: Optional[CodecOptions] = CodecOptions(document_class=FrozenValuesDict)
+	codec_options: ClassVar[Optional[CodecOptions]] = CodecOptions(document_class=FrozenValuesDict)
 
 	def load(self,
 		stock_ids: Union[StockId, Iterator[StockId], StrictIterable[StockId]]
