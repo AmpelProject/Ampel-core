@@ -1,5 +1,5 @@
 import ast
-from typing import Optional
+from typing import Callable, Optional
 
 
 class ExpressionParser(ast.NodeVisitor):
@@ -15,7 +15,7 @@ class ExpressionParser(ast.NodeVisitor):
 
     def __init__(self, context: dict):
         self._context = context
-        self._value : Optional[str] = None
+        self._value: Optional[str] = None
 
     def visit_Attribute(self, node: ast.Attribute) -> None:
         path = [node.attr]
@@ -33,3 +33,25 @@ class ExpressionParser(ast.NodeVisitor):
                 return
         if isinstance(context, str):
             self._value = context
+
+
+class ExpressionTransformer(ast.NodeVisitor):
+    """Translate top-level names"""
+
+    def __init__(self, name_mapping: Callable[[str], str]):
+        self._name_mapping = name_mapping
+        self._output = ""
+
+    def visit_Name(self, node: ast.Name):
+        super().generic_visit(node)
+        self._output += self._name_mapping(node.id)
+
+    def visit_Attribute(self, node: ast.Attribute):
+        super().generic_visit(node)
+        self._output += "." + node.attr
+
+    @classmethod
+    def transform(cls, expression: str, name_mapping: dict[str, str]):
+        self = cls(name_mapping)
+        self.visit(ast.parse(expression, mode="eval"))
+        return self._output

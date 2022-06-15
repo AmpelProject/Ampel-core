@@ -3,7 +3,7 @@ import pathlib
 import secrets
 
 from ampel.model.job.JobModel import JobModel
-from ampel.model.job.ExpressionParser import ExpressionParser
+from ampel.model.job.ExpressionParser import ExpressionParser, ExpressionTransformer
 
 
 def test_resolve_parameters():
@@ -65,3 +65,26 @@ def test_evaluate_expression():
         )
         == "foo"
     )
+
+
+def test_transform_expression():
+    replacements = {"job": "workflow"}
+    def name_mapping(name: str) -> str:
+        print(name)
+        return replacements.get(name, name)
+    assert (
+        ExpressionTransformer.transform("job.parameters.job", name_mapping=name_mapping)
+        == "workflow.parameters.job"
+    )
+
+    def transform(expression: str) -> str:
+        return (
+            "{{ "
+            + ExpressionTransformer.transform(expression, name_mapping=name_mapping)
+            + " }}"
+        )
+
+    assert JobModel.transform_expressions(
+        {"foo": {"bar": ["baz", "flim{{ job.parameters.job }}bim"]}},
+        transformation=transform,
+    ) == {"foo": {"bar": ["baz", "flim{{ workflow.parameters.job }}bim"]}}

@@ -1,9 +1,10 @@
 import re
+from functools import partial
 
 from ampel.model.ChannelModel import ChannelModel
 from ampel.model.UnitModel import UnitModel
 from ampel.model.job.ExpressionParser import ExpressionParser
-from typing import Optional, Any, Union, Literal
+from typing import Callable, Optional, Any, Union, Literal
 
 from pydantic import BaseModel, validator
 from ampel.util.recursion import walk_and_process_dict
@@ -74,23 +75,41 @@ class JobModel(BaseModel):
         ChannelModel(**v)
         return v
 
-    def _resolve_expressions_callback(self, path, k, d, **kwargs):
+    @classmethod
+    def _transform_item(cls, v: str, transform: Callable[[str], str]) -> str:
+        chunks = []
+        pos = 0
+        for match in re.finditer(r"\{\{(.*)\}\}", v):
+            if match.span()[0] > pos:
+                chunks.append(v[pos : match.span()[0]])
+            chunks.append(transform(match.groups(1)[0].strip()))
+            pos = match.span()[1]
+        if pos < len(v):
+            chunks.append(v[pos : len(v)])
+        return "".join(chunks)
+
+    @classmethod
+    def _transform_expressions_callback(cls, path, k, d, **kwargs):
         for k, v in d.items():
             if isinstance(v, str):
-                chunks = []
-                pos = 0
-                for match in re.finditer(r"\{\{(.*)\}\}", v):
-                    if match.span()[0] > pos:
-                        chunks.append(v[pos : match.span()[0]])
-                    chunks.append(
-                        ExpressionParser.evaluate(
-                            match.groups(1)[0].strip(), kwargs.get("context", {})
-                        )
-                    )
-                    pos = match.span()[1]
-                if pos < len(v):
-                    chunks.append(v[pos : len(v)])
-                d[k] = "".join(chunks)
+                d[k] = cls._transform_item(v, kwargs["transform"])
+            elif isinstance(v, list):
+                d[k] = [cls._transform_item(vv, kwargs["transform"]) for vv in v]
+
+    @classmethod
+    def transform_expressions(
+        cls, task_dict: dict, transformation: Callable[[str], str]
+    ) -> dict:
+        """
+        Replace any expressions of the form {{ expr }} with the result of
+        transformation(expr)
+        """
+        walk_and_process_dict(
+            task_dict,
+            callback=cls._transform_expressions_callback,
+            transform=transformation,
+        )
+        return task_dict
 
     def resolve_expressions(self, task_dict: dict) -> dict:
         """
@@ -105,6 +124,7 @@ class JobModel(BaseModel):
           to the contents of the output file declared as "token" by the task
           named "step-0"
         """
+
         def _read_output(spec: OutputParameterSource) -> Optional[str]:
             try:
                 with open(spec.path) as f:
@@ -129,7 +149,7 @@ class JobModel(BaseModel):
                 for task in self.task
             },
         }
-        walk_and_process_dict(
-            task_dict, callback=self._resolve_expressions_callback, context=context
+        return self.transform_expressions(
+            task_dict,
+            transformation=partial(ExpressionParser.evaluate, context=context),
         )
-        return task_dict
