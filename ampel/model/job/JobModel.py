@@ -1,13 +1,13 @@
-from pathlib import Path
 import re
 from functools import partial
+from pathlib import Path
+from typing import Any, Callable, Literal, Optional, Union
+
+from pydantic import BaseModel, HttpUrl, validator
 
 from ampel.model.ChannelModel import ChannelModel
-from ampel.model.UnitModel import UnitModel
 from ampel.model.job.ExpressionParser import ExpressionParser
-from typing import Callable, Optional, Any, Union, Literal
-
-from pydantic import BaseModel, validator, HttpUrl
+from ampel.model.UnitModel import UnitModel
 from ampel.util.recursion import walk_and_process_dict
 
 
@@ -47,14 +47,20 @@ class InputArtifact(BaseModel):
             return None
 
 
+class InputParameter(BaseModel):
+    name: str
+    value: str
+
+
 class TaskInputs(BaseModel):
+    parameters: list[InputParameter] = []
     artifacts: list[InputArtifact] = []
 
 
 class TaskUnitModel(UnitModel):
     title: str = ""
     multiplier: int = 1
-    inputs: TaskOutputs = TaskInputs()
+    inputs: TaskInputs = TaskInputs()
     outputs: TaskOutputs = TaskOutputs()
 
     @validator("title", pre=True)
@@ -123,7 +129,12 @@ class JobModel(BaseModel):
             if isinstance(v, str):
                 d[k] = cls._transform_item(v, kwargs["transform"])
             elif isinstance(v, list):
-                d[k] = [cls._transform_item(vv, kwargs["transform"]) for vv in v]
+                d[k] = [
+                    cls._transform_item(vv, kwargs["transform"])
+                    if isinstance(vv, str)
+                    else vv
+                    for vv in v
+                ]
 
     @classmethod
     def transform_expressions(
