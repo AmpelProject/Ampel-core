@@ -21,7 +21,9 @@ def test_resolve_parameters():
             ],
         }
     )
-    job.resolve_expressions(job.task[0].dict())["config"]["param"] == "foo-biz-bar"
+    job.resolve_expressions(job.task[0].dict(), job.task[0])["config"][
+        "param"
+    ] == "foo-biz-bar"
 
 
 def test_resolve_task_outputs(tmp_path: pathlib.Path):
@@ -47,7 +49,7 @@ def test_resolve_task_outputs(tmp_path: pathlib.Path):
             ],
         }
     )
-    job.resolve_expressions(job.task[1].dict())["config"]["token"] == token
+    job.resolve_expressions(job.task[1].dict(), job.task[1])["config"]["token"] == token
 
 
 def test_evaluate_expression():

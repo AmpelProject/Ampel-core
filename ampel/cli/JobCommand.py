@@ -14,6 +14,7 @@ from pydantic import BaseModel
 from argparse import ArgumentParser
 from importlib import import_module
 from typing import List, Sequence, Dict, Any, Optional, Union
+from urllib.request import urlretrieve
 from ampel.abstract.AbsEventUnit import AbsEventUnit
 from ampel.abstract.AbsProcessorTemplate import AbsProcessorTemplate
 from ampel.model.UnitModel import UnitModel
@@ -224,6 +225,13 @@ class JobCommand(AbsCoreCommand):
 			if task_dict['unit'] == 'T2Worker' and 'send_beacon' not in task_dict['config']:
 				task_dict['config']['send_beacon'] = False
 
+			for artifact in job.task[i].inputs.artifacts:
+				if artifact.path.exists():
+					logger.info(f"Artifact {artifact.name} exists at {artifact.path}")
+				else:
+					logger.info(f"Fetching artifact {artifact.name} from {artifact.http.url} to {artifact.path}")
+					urlretrieve(artifact.http.url, artifact.path)
+
 			if multiplier > 1:
 
 				ps = []
@@ -254,7 +262,7 @@ class JobCommand(AbsCoreCommand):
 			else:
 
 				proc = ctx.loader.new_context_unit(
-					model = UnitModel(**job.resolve_expressions(task_dict)),
+					model = UnitModel(**job.resolve_expressions(task_dict, job.task[i])),
 					context = ctx,
 					process_name = process_name,
 					sub_type = AbsEventUnit,

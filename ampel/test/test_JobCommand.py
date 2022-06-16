@@ -1,16 +1,17 @@
+import base64
 import sys
 from contextlib import contextmanager
 from os import path
 from pathlib import Path
 from typing import Optional
-from ampel.cli.JobCommand import JobCommand
-from ampel.config.AmpelConfig import AmpelConfig
 
 import pytest
 import yaml
 from pytest_mock import MockerFixture
 
+from ampel.cli.JobCommand import JobCommand
 from ampel.cli.main import main
+from ampel.config.AmpelConfig import AmpelConfig
 from ampel.secret.AmpelVault import AmpelVault
 
 
@@ -163,6 +164,65 @@ def test_parameter_interpolation(
                     "config": {
                         "value": "{{ task.DummyOutputUnit.outputs.parameters.token }}",
                         "expected_value": "{{ job.parameters.expected_value }}",
+                    },
+                },
+            ],
+        },
+        tmpdir,
+        "schema.yml",
+    )
+
+    assert (
+        run(
+            [
+                "ampel",
+                "job",
+                "--config",
+                str(testing_config),
+                "--secrets",
+                str(vault),
+                "--schema",
+                str(schema),
+            ]
+        )
+        == None
+    )
+
+
+def test_input_artifacts(
+    testing_config,
+    vault: Path,
+    tmpdir,
+):
+
+    value = "flerpyherb"
+
+    path = tmpdir / "token"
+
+    schema = dump(
+        {
+            "name": "job",
+            "parameters": [{"name": "expected_value", "value": value}],
+            "task": [
+                {
+                    "unit": "DummyInputUnit",
+                    "config": {
+                        "value": "{{ inputs.parameters.token }}",
+                        "expected_value": "{{ job.parameters.expected_value }}",
+                    },
+                    "inputs": {
+                        "parameters": [
+                            {"name": "token", "value": "{{ inputs.artifacts.token }}"}
+                        ],
+                        "artifacts": [
+                            {
+                                "name": "token",
+                                "path": str(path),
+                                "http": {
+                                    "url": f"http://httpbin.org/base64/{base64.b64encode(value.encode()).decode()}"
+                                },
+                            }
+                        ],
                     },
                 },
             ],

@@ -33,4 +33,6 @@ class ExpressionParser(ast.NodeVisitor):
                 return
         if isinstance(context, str):
             self._value = context
+        elif hasattr(context, "value"):
+            self._value = context.value()
 
