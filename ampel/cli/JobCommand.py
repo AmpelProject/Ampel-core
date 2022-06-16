@@ -230,6 +230,7 @@ class JobCommand(AbsCoreCommand):
 					logger.info(f"Artifact {artifact.name} exists at {artifact.path}")
 				else:
 					logger.info(f"Fetching artifact {artifact.name} from {artifact.http.url} to {artifact.path}")
+					os.makedirs(artifact.path.parent, exist_ok=True)
 					urlretrieve(artifact.http.url, artifact.path)
 
 			if multiplier > 1:
