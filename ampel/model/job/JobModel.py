@@ -1,3 +1,4 @@
+from pathlib import Path
 import re
 from functools import partial
 
@@ -6,27 +7,54 @@ from ampel.model.UnitModel import UnitModel
 from ampel.model.job.ExpressionParser import ExpressionParser
 from typing import Callable, Optional, Any, Union, Literal
 
-from pydantic import BaseModel, validator
+from pydantic import BaseModel, validator, HttpUrl
 from ampel.util.recursion import walk_and_process_dict
 
 
 class OutputParameterSource(BaseModel):
     default: Optional[str]
-    path: str
+    path: Path
 
 
 class OutputParameter(BaseModel):
     name: str
     value_from: OutputParameterSource
 
+    def value(self) -> Optional[str]:
+        try:
+            return self.value_from.path.read_text()
+        except FileNotFoundError:
+            return self.value_from.default
+
 
 class TaskOutputs(BaseModel):
     parameters: list[OutputParameter] = []
 
 
+class InputArtifactHttpSource(BaseModel):
+    url: HttpUrl
+
+
+class InputArtifact(BaseModel):
+    name: str
+    path: Path
+    http: InputArtifactHttpSource
+
+    def value(self) -> Optional[str]:
+        try:
+            return self.path.read_text()
+        except FileNotFoundError:
+            return None
+
+
+class TaskInputs(BaseModel):
+    artifacts: list[InputArtifact] = []
+
+
 class TaskUnitModel(UnitModel):
     title: str = ""
     multiplier: int = 1
+    inputs: TaskOutputs = TaskInputs()
     outputs: TaskOutputs = TaskOutputs()
 
     @validator("title", pre=True)
@@ -39,6 +67,7 @@ class TemplateUnitModel(BaseModel):
     template: str
     config: dict[str, Any]
     multiplier: int = 1
+    inputs: TaskInputs = TaskInputs()
     outputs: TaskOutputs = TaskOutputs()
 
     @validator("title", pre=True)
@@ -111,7 +140,7 @@ class JobModel(BaseModel):
         )
         return task_dict
 
-    def resolve_expressions(self, task_dict: dict) -> dict:
+    def resolve_expressions(self, target: dict, task: Union[TaskUnitModel,TemplateUnitModel]) -> dict:
         """
         Resolve any expressions of the form {{ expr }} found in string values of
         the target dict
@@ -125,13 +154,6 @@ class JobModel(BaseModel):
           named "step-0"
         """
 
-        def _read_output(spec: OutputParameterSource) -> Optional[str]:
-            try:
-                with open(spec.path) as f:
-                    return f.read()
-            except FileNotFoundError:
-                return spec.default
-
         context = {
             "job": {
                 "parameters": {param.name: param.value for param in self.parameters}
@@ -140,16 +162,19 @@ class JobModel(BaseModel):
                 task.title: {
                     "outputs": {
                         "parameters": {
-                            spec.name: value
+                            spec.name: spec
                             for spec in task.outputs.parameters
-                            if (value := _read_output(spec.value_from)) is not None
                         }
                     }
                 }
                 for task in self.task
             },
+            "inputs": {
+                "parameters": {param.name: param.value for param in task.inputs.parameters},
+                "artifacts": {spec.name: spec for spec in task.inputs.artifacts},
+            }
         }
         return self.transform_expressions(
-            task_dict,
+            target,
             transformation=partial(ExpressionParser.evaluate, context=context),
         )

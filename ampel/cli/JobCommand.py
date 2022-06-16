@@ -196,7 +196,7 @@ class JobCommand(AbsCoreCommand):
 				tds.append(morphed_um)
 
 			else:
-				tds.append(model.dict(exclude={"outputs"}))
+				tds.append(model.dict(exclude={"inputs", "outputs"}))
 
 			logger.info(f"Registering job task#{i} with {tds[-1]['multiplier']}x multiplier")
 
