@@ -117,7 +117,7 @@ class JobModel(BaseModel):
         for match in re.finditer(r"\{\{(.*)\}\}", v):
             if match.span()[0] > pos:
                 chunks.append(v[pos : match.span()[0]])
-            chunks.append(transform(match.groups(1)[0].strip()))
+            chunks.append(transform(match.groups()[0].strip()))
             pos = match.span()[1]
         if pos < len(v):
             chunks.append(v[pos : len(v)])

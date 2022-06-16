@@ -26,7 +26,7 @@ def test_resolve_parameters():
     ] == "foo-biz-bar"
 
 
-def test_resolve_task_outputs(tmp_path: pathlib.Path):
+def test_resolve_task_outputs(tmp_path):
     token_path = tmp_path / "token"
     token_path.write_text(token := secrets.token_hex())
     job = JobModel(

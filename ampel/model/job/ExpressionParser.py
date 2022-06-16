@@ -1,5 +1,5 @@
 import ast
-from typing import Callable, Optional
+from typing import Any, Optional
 
 
 class ExpressionParser(ast.NodeVisitor):
@@ -25,7 +25,7 @@ class ExpressionParser(ast.NodeVisitor):
             parent = parent.value
         if isinstance(parent, ast.Name):
             path.insert(0, parent.id)
-        context = self._context
+        context: Any = self._context
         while path:
             try:
                 context = context[path.pop(0)]
