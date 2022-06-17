@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "ampel-core"
-version = "0.8.2-alpha.18"
+version = "0.8.2-alpha.19"
 description = "Asynchronous and Modular Platform with Execution Layers"
 authors = ["Valery Brinnel"]
 maintainers = ["Jakob van Santen <jakob.van.santen@desy.de>"]

@@ -7,6 +7,9 @@
 # Last Modified Date: 17.10.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
+import tarfile
+import tempfile
+import ujson
 import yaml, os, signal, sys
 from time import time
 from multiprocessing import Queue, Process
@@ -26,7 +29,7 @@ from ampel.util.mappings import get_by_path
 from ampel.cli.AbsCoreCommand import AbsCoreCommand
 from ampel.cli.MaybeIntAction import MaybeIntAction
 from ampel.cli.AmpelArgumentParser import AmpelArgumentParser
-from ampel.model.job.JobModel import InputArtifact, JobModel, ChannelModel, TemplateUnitModel
+from ampel.model.job.JobModel import InputArtifact, JobModel, ChannelModel, TaskUnitModel, TemplateUnitModel
 
 try:
 	import matplotlib as mpl
@@ -87,6 +90,27 @@ class JobCommand(AbsCoreCommand):
 		parser.add_example("job -config ampel_conf.yaml -schema job_file.yaml -keep-db -with-task 2")
 		return parser
 
+	def _fetch_inputs(self, job: JobModel, task: Union[TaskUnitModel, TemplateUnitModel], logger: AmpelLogger):
+		"""
+		Ensure that input artifacts exist
+		"""
+		for artifact in task.inputs.artifacts:
+			resolved_artifact = InputArtifact(**job.resolve_expressions(ujson.loads(artifact.json()), task))
+			if resolved_artifact.path.exists():
+				logger.info(f"Artifact {resolved_artifact.name} exists at {resolved_artifact.path}")
+			else:
+				logger.info(f"Fetching artifact {resolved_artifact.name} from {resolved_artifact.http.url} to {resolved_artifact.path}")
+				os.makedirs(resolved_artifact.path.parent, exist_ok=True)
+				with tempfile.NamedTemporaryFile(delete=False) as tf:
+					urlretrieve(resolved_artifact.http.url, tf.name)
+					try:
+						with tarfile.open(tf.name) as archive:
+							logger.info(f"{resolved_artifact.name} is a tarball; extracting")
+							os.makedirs(resolved_artifact.path)
+							archive.extractall(resolved_artifact.path)
+						os.unlink(tf.name)
+					except tarfile.ReadError:
+						os.rename(tf.name, resolved_artifact.path)
 
 	# Mandatory implementation
 	def run(self, args: Dict[str, Any], unknown_args: Sequence[str], sub_op: Optional[str] = None) -> None:
@@ -225,14 +249,7 @@ class JobCommand(AbsCoreCommand):
 			if task_dict['unit'] == 'T2Worker' and 'send_beacon' not in task_dict['config']:
 				task_dict['config']['send_beacon'] = False
 
-			for artifact in job.task[i].inputs.artifacts:
-				resolved_artifact = InputArtifact(**job.resolve_expressions(artifact.dict(), job.task[i]))
-				if resolved_artifact.path.exists():
-					logger.info(f"Artifact {resolved_artifact.name} exists at {resolved_artifact.path}")
-				else:
-					logger.info(f"Fetching artifact {resolved_artifact.name} from {resolved_artifact.http.url} to {resolved_artifact.path}")
-					os.makedirs(resolved_artifact.path.parent, exist_ok=True)
-					urlretrieve(resolved_artifact.http.url, artifact.path)
+			self._fetch_inputs(job, job.task[i], logger)
 
 			if multiplier > 1:
 
