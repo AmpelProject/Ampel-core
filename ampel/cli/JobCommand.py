@@ -26,7 +26,7 @@ from ampel.util.mappings import get_by_path
 from ampel.cli.AbsCoreCommand import AbsCoreCommand
 from ampel.cli.MaybeIntAction import MaybeIntAction
 from ampel.cli.AmpelArgumentParser import AmpelArgumentParser
-from ampel.model.job.JobModel import JobModel, ChannelModel, TemplateUnitModel
+from ampel.model.job.JobModel import InputArtifact, JobModel, ChannelModel, TemplateUnitModel
 
 try:
 	import matplotlib as mpl
@@ -226,12 +226,13 @@ class JobCommand(AbsCoreCommand):
 				task_dict['config']['send_beacon'] = False
 
 			for artifact in job.task[i].inputs.artifacts:
-				if artifact.path.exists():
-					logger.info(f"Artifact {artifact.name} exists at {artifact.path}")
+				resolved_artifact = InputArtifact(**job.resolve_expressions(artifact.dict(), job.task[i]))
+				if resolved_artifact.path.exists():
+					logger.info(f"Artifact {resolved_artifact.name} exists at {resolved_artifact.path}")
 				else:
-					logger.info(f"Fetching artifact {artifact.name} from {artifact.http.url} to {artifact.path}")
-					os.makedirs(artifact.path.parent, exist_ok=True)
-					urlretrieve(artifact.http.url, artifact.path)
+					logger.info(f"Fetching artifact {resolved_artifact.name} from {resolved_artifact.http.url} to {resolved_artifact.path}")
+					os.makedirs(resolved_artifact.path.parent, exist_ok=True)
+					urlretrieve(resolved_artifact.http.url, artifact.path)
 
 			if multiplier > 1:
 

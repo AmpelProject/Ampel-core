@@ -202,7 +202,16 @@ def test_input_artifacts(
     schema = dump(
         {
             "name": "job",
-            "parameters": [{"name": "expected_value", "value": value}],
+            "parameters": [
+                {
+                    "name": "expected_value",
+                    "value": value,
+                },
+                {
+                    "name": "url",
+                    "value": f"https://httpbin.org/base64/{base64.b64encode(value.encode()).decode()}",
+                },
+            ],
             "task": [
                 {
                     "unit": "DummyInputUnit",
@@ -218,9 +227,7 @@ def test_input_artifacts(
                             {
                                 "name": "token",
                                 "path": str(path),
-                                "http": {
-                                    "url": f"http://httpbin.org/base64/{base64.b64encode(value.encode()).decode()}"
-                                },
+                                "http": {"url": "{{ job.parameters.url }}"},
                             }
                         ],
                     },

@@ -3,7 +3,7 @@ from functools import partial
 from pathlib import Path
 from typing import Any, Callable, Literal, Optional, Union
 
-from pydantic import BaseModel, HttpUrl, validator
+from pydantic import BaseModel, validator
 
 from ampel.model.ChannelModel import ChannelModel
 from ampel.model.job.ExpressionParser import ExpressionParser
@@ -32,7 +32,7 @@ class TaskOutputs(BaseModel):
 
 
 class InputArtifactHttpSource(BaseModel):
-    url: HttpUrl
+    url: str
 
 
 class InputArtifact(BaseModel):
