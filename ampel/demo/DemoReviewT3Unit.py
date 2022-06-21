@@ -7,7 +7,6 @@
 # Last Modified Date:  17.12.2021
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from typing import Union
 from collections.abc import Generator
 from ampel.types import UBson, T3Send
 from ampel.abstract.AbsT3ReviewUnit import AbsT3ReviewUnit
