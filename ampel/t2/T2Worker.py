@@ -245,7 +245,11 @@ class T2Worker(AbsWorker[T2Document]):
 			)
 		):
 			dps: list[DataPoint] = []
-			t1_doc: None | T1Document = next(self.col_t1.find({'link': t2_doc['link']}), None)
+			t1_doc: None | T1Document = next(
+				self.col_t1.find(
+					{'stock': t2_doc['stock'], 'link': t2_doc['link']}
+				), None
+			)
 
 			# compound doc must exist (None could mean an ingester bug)
 			if t1_doc is None:
