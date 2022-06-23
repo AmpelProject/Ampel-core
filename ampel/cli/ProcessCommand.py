@@ -38,7 +38,7 @@ class ProcessCommand(AbsCoreCommand):
         parser.set_help_descr(
             {
                 "debug": "Debug",
-                # "verbose": "increases verbosity",
+                "log-profile": "logging profile to use",
                 "config": "path to an ampel config file (yaml/json)",
                 "schema": "path to YAML job file",
                 "name": "process name",
@@ -56,6 +56,7 @@ class ProcessCommand(AbsCoreCommand):
         parser.add_arg("db", "required", type=str)
         parser.add_arg("channel")
         parser.add_arg("alias")
+        parser.add_arg("log-profile", default="prod")
 
         # Optional
         parser.add_arg("secrets", type=str)
@@ -140,6 +141,7 @@ class ProcessCommand(AbsCoreCommand):
             process_name=args["name"],
             sub_type=AbsEventUnit,
             base_log_flag=LogFlag.MANUAL_RUN,
+            log_profile=args["log-profile"],
         )
         x = proc.run()
         logger.info(f"{unit_model.unit} return value: {x}")
