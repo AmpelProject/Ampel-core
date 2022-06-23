@@ -141,7 +141,7 @@ class ProcessCommand(AbsCoreCommand):
             process_name=args["name"],
             sub_type=AbsEventUnit,
             base_log_flag=LogFlag.MANUAL_RUN,
-            log_profile=args["log-profile"],
+            log_profile=args["log_profile"],
         )
         x = proc.run()
         logger.info(f"{unit_model.unit} return value: {x}")
