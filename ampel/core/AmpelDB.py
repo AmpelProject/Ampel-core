@@ -14,7 +14,7 @@ from collections import defaultdict  # type: ignore[attr-defined]
 from pymongo import MongoClient
 from pymongo.database import Database
 from pymongo.collection import Collection
-from pymongo.errors import ConfigurationError, DuplicateKeyError
+from pymongo.errors import ConfigurationError, DuplicateKeyError, OperationFailure, CollectionInvalid
 from typing import Sequence, Dict, List, Any, Union, Optional, Set
 
 from ampel.types import ChannelId
@@ -150,11 +150,18 @@ class AmpelDB(AmpelBaseModel):
 		db = self._get_pymongo_db(db_config.name, role=role)
 
 		if 'w' in mode and col_name not in db.list_collection_names():
-			self.mongo_collections[col_name][mode] = self.create_ampel_collection(
-				self.col_config[col_name], db_config.name, role
-			)
-		else:
-			self.mongo_collections[col_name][mode] = db.get_collection(col_name)
+			try:
+				self.create_ampel_collection(
+					self.col_config[col_name], db_config.name, role
+				)
+			except CollectionInvalid:
+				# raised when collection was created concurrently
+				...
+			except OperationFailure as exc:
+				# also raised when collection was created concurrently
+				if exc.code != 48: # NamespaceExists
+					raise
+		self.mongo_collections[col_name][mode] = db.get_collection(col_name)
 
 		return self.mongo_collections[col_name][mode]
 
