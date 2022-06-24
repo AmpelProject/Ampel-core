@@ -1,4 +1,5 @@
 import ast
+from pathlib import Path
 from typing import Any, Optional
 
 
@@ -9,30 +10,30 @@ class ExpressionParser(ast.NodeVisitor):
         tree = ast.parse(expression, mode="eval")
         self = cls(context)
         self.visit(tree)
-        if self._value is None:
-            raise ValueError(f"unable to resolve {expression}")
-        return self._value
+        if isinstance(self._value, str):
+            return self._value
+        elif isinstance(self._value, Path):
+            return self._value.read_text()
+        raise ValueError(f"unable to resolve {expression}")
 
     def __init__(self, context: dict):
         self._context = context
-        self._value: Optional[str] = None
+        self._value: Any = None
+    
+    def visit_Name(self, node: ast.Name) -> None:
+        self.generic_visit(node)
+        self._value = self._context.get(node.id)
 
     def visit_Attribute(self, node: ast.Attribute) -> None:
-        path = [node.attr]
-        parent = node.value
-        while isinstance(parent, ast.Attribute):
-            path.insert(0, parent.attr)
-            parent = parent.value
-        if isinstance(parent, ast.Name):
-            path.insert(0, parent.id)
-        context: Any = self._context
-        while path:
-            try:
-                context = context[path.pop(0)]
-            except KeyError:
-                return
-        if isinstance(context, str):
-            self._value = context
-        elif hasattr(context, "value"):
-            self._value = context.value()
+        self.generic_visit(node)
+        if isinstance(self._value, dict):
+            self._value = self._value.get(node.attr)
+    
+    def visit_Subscript(self, node: ast.Subscript) -> Any:
+        self.generic_visit(node)
+        if isinstance(self._value, dict):
+            self._value = self._value.get(node.value)
+        elif isinstance(self._value, list) and isinstance(node, ast.Num):
+            self._value = self._value[node.value]
+
 

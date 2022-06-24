@@ -13,7 +13,10 @@ def test_resolve_parameters():
             "task": [
                 {
                     "unit": "flerp",
-                    "config": {"param": "foo{{ job.parameters.param }}bar"},
+                    "config": {
+                        "param": "foo{{ job.parameters.param }}bar",
+                        "item": "{{ item }}",
+                    },
                 }
             ],
             "parameters": [
@@ -21,9 +24,10 @@ def test_resolve_parameters():
             ],
         }
     )
-    job.resolve_expressions(job.task[0].dict(), job.task[0])["config"][
-        "param"
-    ] == "foo-biz-bar"
+    assert job.resolve_expressions(job.task[0].dict(), job.task[0], item="scalar_item")["config"] == {
+        "param": "foo-biz-bar",
+        "item": "scalar_item",
+    }
 
 
 def test_resolve_task_outputs(tmp_path):
@@ -64,6 +68,12 @@ def test_evaluate_expression():
     assert (
         ExpressionParser.evaluate(
             "job.parameters.param", {"job": {"parameters": {"param": "foo"}}}
+        )
+        == "foo"
+    )
+    assert (
+        ExpressionParser.evaluate(
+            "item", {"item": "foo"}
         )
         == "foo"
     )

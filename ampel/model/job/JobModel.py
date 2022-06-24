@@ -151,7 +151,12 @@ class JobModel(BaseModel):
         )
         return task_dict
 
-    def resolve_expressions(self, target: dict, task: Union[TaskUnitModel,TemplateUnitModel]) -> dict:
+    def resolve_expressions(
+        self,
+        target: dict,
+        task: Union[TaskUnitModel, TemplateUnitModel],
+        item: Union[None, str, dict, list] = None,
+    ) -> dict:
         """
         Resolve any expressions of the form {{ expr }} found in string values of
         the target dict
@@ -163,6 +168,8 @@ class JobModel(BaseModel):
         - task outputs, e.g. {{ task.step-0.outputs.parameters.token }} resolves
           to the contents of the output file declared as "token" by the task
           named "step-0"
+        - iteration items, e.g. {{ item }} for a string-valued item or {{
+          item.name }} for dict-valued
         """
 
         context = {
@@ -173,7 +180,7 @@ class JobModel(BaseModel):
                 task.title: {
                     "outputs": {
                         "parameters": {
-                            spec.name: spec
+                            spec.name: spec.value_from.path
                             for spec in task.outputs.parameters
                         }
                     }
@@ -181,9 +188,12 @@ class JobModel(BaseModel):
                 for task in self.task
             },
             "inputs": {
-                "parameters": {param.name: param.value for param in task.inputs.parameters},
-                "artifacts": {spec.name: spec for spec in task.inputs.artifacts},
-            }
+                "parameters": {
+                    param.name: param.value for param in task.inputs.parameters
+                },
+                "artifacts": {spec.name: spec.path for spec in task.inputs.artifacts},
+            },
+            "item": item,
         }
         return self.transform_expressions(
             target,
