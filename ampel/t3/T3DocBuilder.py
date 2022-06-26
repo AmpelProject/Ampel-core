@@ -99,7 +99,7 @@ class T3DocBuilder(ContextUnit, T3DocBuilderModel):
 		stocks: None | list[StockId] = None
 	) -> T3Document:
 
-		t3d: T3Document = {'process': self.event_hdlr.process_name}
+		t3d: T3Document = {'process': self.event_hdlr.process_name} # type: ignore[typeddict-item]
 		actact = MetaActionCode(0)
 		now = datetime.now()
 

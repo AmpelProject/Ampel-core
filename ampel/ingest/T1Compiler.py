@@ -147,13 +147,13 @@ class T1Compiler(AbsCompiler):
 		for t1, t2 in self.t1s.items():
 
 			# Note: mongodb maintains key order
-			d: T1Document = {'link': t2[0]}
+			d: T1Document = {'link': t2[0]} # type: ignore[typeddict-item]
 
 			if t1[0]:
-				d['unit'] = t1[0] # type: ignore[typeddict-item]
+				d['unit'] = t1[0]
 
 			if t1[1]:
-				d['config'] = t1[1] # type: ignore[typeddict-item]
+				d['config'] = t1[1]
 
 			d['stock'] = t1[2]
 

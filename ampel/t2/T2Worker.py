@@ -261,7 +261,7 @@ class T2Worker(AbsWorker[T2Document]):
 
 			# Datarights: suppress channel info (T3 uses instead a
 			# 'projection' procedure that should not be necessary here)
-			t1_doc.pop('channel')
+			t1_doc.pop('channel') # type: ignore[misc]
 
 			t1_dps_ids = list(t1_doc['dps'])
 

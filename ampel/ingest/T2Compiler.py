@@ -81,7 +81,7 @@ class T2Compiler(AbsCompiler):
 		for k, v in self.t2s.items():
 
 			# Note: mongodb maintains key order
-			d: T2Document = {'unit': k[0], 'config': k[1], 'link': k[2]}
+			d: T2Document = {'unit': k[0], 'config': k[1], 'link': k[2]} # type: ignore[typeddict-item]
 
 			if self.col:
 				d['col'] = self.col

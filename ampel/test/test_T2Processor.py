@@ -54,7 +54,8 @@ def test_error_reporting(dev_context: DevAmpelContext):
         "channel": channels,
         "meta": [
             {"ts": 0, "tier": 2}
-        ]
+        ],
+        "body": []
     }
     dev_context.db.get_collection("t2").insert_one(doc) # type: ignore[arg-type]
     t2 = T2Worker(context=dev_context, raise_exc=False, process_name="t2", run_dependent_t2s=True)

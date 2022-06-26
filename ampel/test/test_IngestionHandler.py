@@ -109,7 +109,10 @@ def test_no_directive(dev_context):
 
 @pytest.fixture
 def datapoints() -> list[DataPoint]:
-    return [{"id": i, "stock": "stockystock", "body": {"thing": i}} for i in range(3)]
+    return [
+        {"id": i, "stock": "stockystock", "body": {"thing": i}} # type: ignore[typeddict-item]
+        for i in range(3)
+    ]
 
 
 def test_minimal_directive(dev_context: DevAmpelContext, datapoints: list[dict[str, Any]]):

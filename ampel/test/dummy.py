@@ -52,7 +52,7 @@ class DummyMuxer(AbsT0Muxer):
         """
 
         new_dps: list[DataPoint] = [
-            {"id": i, "stock": stock_id or 0}
+            {"id": i, "stock": stock_id or 0} # type: ignore[typeddict-item]
             for i in range(dps[-1]["id"] + 1, dps[-1]["id"] + 1 + self.points_to_insert)
         ]
         assert self.points_to_insert == 5
