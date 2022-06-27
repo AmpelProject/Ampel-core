@@ -135,7 +135,7 @@ class LogCommand(AbsCoreCommand):
 			a = " -out /path/to/file.txt" if el == "save" else ""
 			builder.add_example(el, "-run-json '{\"$gt\": 12}'", ref="§", prepend=p, append=a)
 			builder.add_example(el, '-stock 85628462', prepend=p, append=a)
-			builder.add_example(el, '-run 8 -db.prefix AmpelTest', prepend=p, append=a)
+			builder.add_example(el, '-run 8 -mongo.prefix AmpelTest', prepend=p, append=a)
 			if el != "tail":
 				builder.add_example(el, '-after 2020-11-03T12:12:00', prepend=p, append=a)
 			builder.add_example(el, '-stock ZTF17aaatbxz ZTF20aaquaxr -id-mapper ZTFIdMapper', prepend=p, append=a)
