@@ -219,7 +219,7 @@ class JobCommand(AbsCoreCommand):
 				tpl = Tpl(**model.config)
 				morphed_um = tpl \
 					.get_model(ctx.config._config, model.dict()) \
-					.dict() | {'title': model.title, 'multiplier': model.multiplier}
+					.dict()
 
 				if args.get('debug'):
 					from ampel.util.pretty import prettyjson
@@ -257,7 +257,7 @@ class JobCommand(AbsCoreCommand):
 			if task_dict['unit'] == 'T2Worker' and 'send_beacon' not in task_dict['config']:
 				task_dict['config']['send_beacon'] = False
 
-			if job.task[i].expand_with:
+			if (expand_with := job.task[i].expand_with) is not None:
 
 				ps = []
 				qs = []
@@ -266,7 +266,7 @@ class JobCommand(AbsCoreCommand):
 				signal.signal(signal.SIGTERM, signal_handler)
 
 				try:
-					for item in job.task[i].expand_with:
+					for item in expand_with:
 
 						self._fetch_inputs(job, job.task[i], item, logger)
 
