@@ -24,10 +24,57 @@ def test_resolve_parameters():
             ],
         }
     )
-    assert job.resolve_expressions(job.task[0].dict(), job.task[0], item="scalar_item")["config"] == {
+    assert job.resolve_expressions(job.task[0].dict(), job.task[0], item="scalar_item")[
+        "config"
+    ] == {
         "param": "foo-biz-bar",
         "item": "scalar_item",
     }
+
+
+@pytest.mark.parametrize(
+    ["expand_with", "result"],
+    [
+        ({"items": ["flim", 0, {}]}, ["flim", 0, {}]),
+        ({"sequence": {"count": 1}}, ["0"]),
+        ({"sequence": {"start": 1, "end": 3}}, ["1", "2"]),
+    ],
+)
+def test_expand_with_items(expand_with, result):
+    job = JobModel(
+        **{
+            "name": "job",
+            "task": [
+                {
+                    "unit": "flerp",
+                    "config": {
+                        "item": "{{ item }}",
+                    },
+                    "expand_with": expand_with,
+                }
+            ],
+        }
+    )
+    assert list(job.task[0].expand_with) == result
+
+
+def test_multiplier_maps_to_expand():
+    """
+    multiplier keyword can be used as a synonym for expand_with
+    """
+    job = JobModel(
+        **{
+            "name": "job",
+            "task": [
+                {
+                    "unit": "flerp",
+                    "config": None,
+                    "multiplier": 2,
+                }
+            ],
+        }
+    )
+    assert list(job.task[0].expand_with) == ["0", "1"]
 
 
 def test_resolve_task_outputs(tmp_path):
@@ -71,9 +118,4 @@ def test_evaluate_expression():
         )
         == "foo"
     )
-    assert (
-        ExpressionParser.evaluate(
-            "item", {"item": "foo"}
-        )
-        == "foo"
-    )
+    assert ExpressionParser.evaluate("item", {"item": "foo"}) == "foo"

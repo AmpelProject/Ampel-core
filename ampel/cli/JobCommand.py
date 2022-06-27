@@ -7,6 +7,7 @@
 # Last Modified Date: 17.10.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
+from multiprocessing.pool import AsyncResult
 import tarfile
 import tempfile
 import ujson
@@ -81,6 +82,7 @@ class JobCommand(AbsCoreCommand):
 		parser.add_arg("debug", "optional", action="store_true")
 		parser.add_arg("keep-db", "optional", action="store_true")
 		parser.add_arg("reset-db", "optional", action="store_true")
+		parser.add_arg("max-parallel-tasks", "optional", type=int, default=os.cpu_count())
 
 		# Optional
 		parser.add_arg("secrets", type=str)
@@ -90,12 +92,18 @@ class JobCommand(AbsCoreCommand):
 		parser.add_example("job -config ampel_conf.yaml -schema job_file.yaml -keep-db -with-task 2")
 		return parser
 
-	def _fetch_inputs(self, job: JobModel, task: Union[TaskUnitModel, TemplateUnitModel], logger: AmpelLogger):
+	def _fetch_inputs(
+		self,
+		job: JobModel,
+		task: Union[TaskUnitModel, TemplateUnitModel],
+		item: Union[None, str, dict, list],
+		logger: AmpelLogger,
+	):
 		"""
 		Ensure that input artifacts exist
 		"""
 		for artifact in task.inputs.artifacts:
-			resolved_artifact = InputArtifact(**job.resolve_expressions(ujson.loads(artifact.json()), task))
+			resolved_artifact = InputArtifact(**job.resolve_expressions(ujson.loads(artifact.json()), task, item))
 			if resolved_artifact.path.exists():
 				logger.info(f"Artifact {resolved_artifact.name} exists at {resolved_artifact.path}")
 			else:
@@ -111,6 +119,7 @@ class JobCommand(AbsCoreCommand):
 						os.unlink(tf.name)
 					except tarfile.ReadError:
 						os.rename(tf.name, resolved_artifact.path)
+
 
 	# Mandatory implementation
 	def run(self, args: Dict[str, Any], unknown_args: Sequence[str], sub_op: Optional[str] = None) -> None:
@@ -221,9 +230,9 @@ class JobCommand(AbsCoreCommand):
 				tds.append(morphed_um)
 
 			else:
-				tds.append(model.dict(exclude={"inputs", "outputs"}))
+				tds.append(model.dict(exclude={"inputs", "outputs", "expand_with"}))
 
-			logger.info(f"Registering job task#{i} with {tds[-1]['multiplier']}x multiplier")
+			logger.info(f"Registering job task#{i} with {len(list(model.expand_with)) if model.expand_with else 1}x multiplier")
 
 		ctx.config._config = recursive_freeze(config_dict)
 
@@ -242,16 +251,13 @@ class JobCommand(AbsCoreCommand):
 				logger.info(f"Skipping task #{i} as requested")
 				continue
 
-			multiplier = task_dict.pop('multiplier')
 			task_dict['override'] = (task_dict.pop('override') or {}) | {'raise_exc': True}
 
 			# Beacons have no real use in jobs (unlike prod)
 			if task_dict['unit'] == 'T2Worker' and 'send_beacon' not in task_dict['config']:
 				task_dict['config']['send_beacon'] = False
 
-			self._fetch_inputs(job, job.task[i], logger)
-
-			if multiplier > 1:
+			if job.task[i].expand_with:
 
 				ps = []
 				qs = []
@@ -260,25 +266,39 @@ class JobCommand(AbsCoreCommand):
 				signal.signal(signal.SIGTERM, signal_handler)
 
 				try:
-					for i in range(multiplier):
+					for item in job.task[i].expand_with:
+
+						self._fetch_inputs(job, job.task[i], item, logger)
+
 						q: Queue = Queue()
 						p = Process(
 							target = run_mp_process,
-							args = (q, config_dict, task_dict, process_name),
+							args = (
+								q,
+								config_dict,
+								job.resolve_expressions(
+									task_dict,
+									job.task[i],
+									item
+								),
+								process_name,
+							),
 							daemon = True,
 						)
 						p.start()
 						ps.append(p)
 						qs.append(q)
-
-					for i in range(multiplier):
-						ps[i].join()
-						if (m := qs[i].get()):
+					
+					for i, (p, q) in enumerate(zip(ps, qs)):
+						p.join()
+						if (m := q.get()):
 							logger.info(f"{task_dict['unit']}#{i} return value: {m}")
 				except KeyboardInterrupt:
 					sys.exit(1)
-
+			
 			else:
+				
+				self._fetch_inputs(job, job.task[i], None, logger)
 
 				proc = ctx.loader.new_context_unit(
 					model = UnitModel(**job.resolve_expressions(task_dict, job.task[i])),

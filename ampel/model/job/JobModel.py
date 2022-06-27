@@ -3,7 +3,7 @@ from functools import partial
 from pathlib import Path
 from typing import Any, Callable, Literal, Optional, Union
 
-from pydantic import BaseModel, validator
+from pydantic import BaseModel, validator, root_validator
 
 from ampel.model.ChannelModel import ChannelModel
 from ampel.model.job.ExpressionParser import ExpressionParser
@@ -57,28 +57,80 @@ class TaskInputs(BaseModel):
     artifacts: list[InputArtifact] = []
 
 
+class ExpandWithItems(BaseModel):
+    items: list
+
+    def __iter__(self):
+        return iter(self.items)
+
+
+class BaseSequence(BaseModel):
+    start: int = 0
+    format: str = "%i"
+
+
+class SequenceWithEnd(BaseSequence):
+    end: int
+
+    def items(self):
+        yield from range(self.start, self.end)
+
+
+class SequenceWithCount(BaseSequence):
+    count: int
+
+    def items(self):
+        yield from range(self.start, self.start+self.count)
+
+
+class ExpandWithSequence(BaseModel):
+    sequence: Union[SequenceWithCount, SequenceWithEnd]
+
+    def items(self):
+        for i in self.sequence.items():
+            yield self.sequence.format % i
+    
+    def __iter__(self):
+        return self.items()
+
+
+ExpandWith = Union[None, ExpandWithItems, ExpandWithSequence]
+
+
+def _parse_multiplier(cls, values):
+    if not isinstance(multiplier := values.pop("multiplier", 1), int):
+        raise TypeError("multiplier must be an int")
+    if multiplier > 1:
+        assert "expand_with" not in values, "multiplier and expand_with may not be used together"
+        values |= {"expand_with": {"sequence": {"count": multiplier}}}
+    return values
+
+
 class TaskUnitModel(UnitModel):
     title: str = ""
-    multiplier: int = 1
     inputs: TaskInputs = TaskInputs()
     outputs: TaskOutputs = TaskOutputs()
+    expand_with: ExpandWith = None
 
     @validator("title", pre=True)
     def populate_title(cls, v, values):
         return v or values["unit"]
 
+    parse_multiplier = root_validator(_parse_multiplier, pre=True, allow_reuse=True)
 
 class TemplateUnitModel(BaseModel):
     title: str = ""
     template: str
     config: dict[str, Any]
-    multiplier: int = 1
     inputs: TaskInputs = TaskInputs()
     outputs: TaskOutputs = TaskOutputs()
+    expand_with: ExpandWith = None
 
     @validator("title", pre=True)
     def populate_title(cls, v, values):
         return v or values["template"]
+
+    parse_multiplier = root_validator(_parse_multiplier, pre=True, allow_reuse=True)
 
 
 class MongoOpts(BaseModel):

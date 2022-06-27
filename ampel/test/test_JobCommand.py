@@ -189,6 +189,51 @@ def test_parameter_interpolation(
     )
 
 
+def test_expand_with(
+    testing_config,
+    vault: Path,
+    tmpdir,
+):
+
+    values = ["1", "2", "3"]
+    paths = [tmpdir / f"token{i}" for i in values]
+
+    schema = dump(
+        {
+            "name": "job",
+            "task": [
+                {
+                    "unit": "DummyOutputUnit",
+                    "config": {"value": "{{ item.value }}", "path": "{{ item.path }}"},
+                    "expand_with": {
+                        "items": [
+                            {"value": v, "path": str(p)} for v, p in zip(values, paths)
+                        ]
+                    },
+                }
+            ],
+        },
+        tmpdir,
+        "schema.yml",
+    )
+
+    assert (
+        run(
+            [
+                "ampel",
+                "job",
+                "--config",
+                str(testing_config),
+                "--secrets",
+                str(vault),
+                "--schema",
+                str(schema),
+            ]
+        )
+        == None
+    )
+
+
 def test_input_artifacts(
     testing_config,
     vault: Path,
