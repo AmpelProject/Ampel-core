@@ -97,7 +97,7 @@ class ExpandWithSequence(BaseModel):
 ExpandWith = Union[None, ExpandWithItems, ExpandWithSequence]
 
 
-def _parse_multiplier(cls, values):
+def _parse_multiplier(values: dict[str,Any]) -> dict:
     if not isinstance(multiplier := values.pop("multiplier", 1), int):
         raise TypeError("multiplier must be an int")
     if multiplier > 1:
@@ -116,7 +116,9 @@ class TaskUnitModel(UnitModel):
     def populate_title(cls, v, values):
         return v or values["unit"]
 
-    parse_multiplier = root_validator(_parse_multiplier, pre=True, allow_reuse=True)
+    @root_validator(pre=True)
+    def parse_multiplier(cls, values):
+        return _parse_multiplier(values)
 
 class TemplateUnitModel(BaseModel):
     title: str = ""
@@ -130,8 +132,9 @@ class TemplateUnitModel(BaseModel):
     def populate_title(cls, v, values):
         return v or values["template"]
 
-    parse_multiplier = root_validator(_parse_multiplier, pre=True, allow_reuse=True)
-
+    @root_validator(pre=True)
+    def parse_multiplier(cls, values):
+        return _parse_multiplier(values)
 
 class MongoOpts(BaseModel):
     reset: bool = False
