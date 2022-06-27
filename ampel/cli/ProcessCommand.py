@@ -1,4 +1,6 @@
 
+import signal
+import traceback
 from argparse import ArgumentParser
 from time import time
 from typing import Any, Optional, Sequence, Union
@@ -15,6 +17,8 @@ from ampel.model.ChannelModel import ChannelModel
 from ampel.model.UnitModel import UnitModel
 from ampel.util.freeze import recursive_freeze
 
+def _handle_traceback(signal, frame):
+    print(traceback.print_stack(frame))
 
 class ProcessCommand(AbsCoreCommand):
     """
@@ -37,7 +41,7 @@ class ProcessCommand(AbsCoreCommand):
         parser = AmpelArgumentParser("process")
         parser.set_help_descr(
             {
-                "debug": "Debug",
+                "debug": "enable traceback printing",
                 "log-profile": "logging profile to use",
                 "config": "path to an ampel config file (yaml/json)",
                 "schema": "path to YAML job file",
@@ -57,6 +61,7 @@ class ProcessCommand(AbsCoreCommand):
         parser.add_arg("channel")
         parser.add_arg("alias")
         parser.add_arg("log-profile", default="prod")
+        parser.add_arg("debug", default=False)
 
         # Optional
         parser.add_arg("secrets", type=str)
@@ -118,6 +123,9 @@ class ProcessCommand(AbsCoreCommand):
         unknown_args: Sequence[str],
         sub_op: Optional[str] = None,
     ) -> None:
+
+        if args["debug"]:
+            signal.signal(signal.SIGUSR1, _handle_traceback)
 
         start_time = time()
         logger = AmpelLogger.get_logger(base_flag=LogFlag.MANUAL_RUN)
