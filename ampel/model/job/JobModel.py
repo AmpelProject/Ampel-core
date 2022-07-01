@@ -66,7 +66,7 @@ class ExpandWithItems(BaseModel):
 
 class BaseSequence(BaseModel):
     start: int = 0
-    format: str = "%i"
+    format: str = "%d"
 
 
 class SequenceWithEnd(BaseSequence):
