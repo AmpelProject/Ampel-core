@@ -169,7 +169,7 @@ class JobModel(BaseModel):
     def _transform_item(cls, v: str, transform: Callable[[str], str]) -> str:
         chunks = []
         pos = 0
-        for match in re.finditer(r"\{\{(.*)\}\}", v):
+        for match in re.finditer(r"\{\{(.*?)\}\}", v):
             if match.span()[0] > pos:
                 chunks.append(v[pos : match.span()[0]])
             chunks.append(transform(match.groups()[0].strip()))
