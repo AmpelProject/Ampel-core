@@ -52,6 +52,18 @@ class InputArtifact(BaseModel):
         except FileNotFoundError:
             return None
 
+    @staticmethod
+    def _check_expression(expression: str):
+        """For compatibility with Argo, forbid use of {{ item }} in artifact specs"""
+        if expression == "item":
+            raise ValueError("artifact fields cannot reference {{ item }}")
+        return expression
+
+    @root_validator
+    def check_for_item(cls, values):
+        JobModel.transform_expressions(values, cls._check_expression)
+        return values
+
 
 class InputParameter(BaseModel):
     name: str
@@ -86,7 +98,7 @@ class SequenceWithCount(BaseSequence):
     count: int
 
     def items(self):
-        yield from range(self.start, self.start+self.count)
+        yield from range(self.start, self.start + self.count)
 
 
 class ExpandWithSequence(BaseModel):
@@ -95,7 +107,7 @@ class ExpandWithSequence(BaseModel):
     def items(self):
         for i in self.sequence.items():
             yield self.sequence.format % i
-    
+
     def __iter__(self):
         return self.items()
 
@@ -103,11 +115,13 @@ class ExpandWithSequence(BaseModel):
 ExpandWith = Union[None, ExpandWithItems, ExpandWithSequence]
 
 
-def _parse_multiplier(values: dict[str,Any]) -> dict:
+def _parse_multiplier(values: dict[str, Any]) -> dict:
     if not isinstance(multiplier := values.pop("multiplier", 1), int):
         raise TypeError("multiplier must be an int")
     if multiplier > 1:
-        assert "expand_with" not in values, "multiplier and expand_with may not be used together"
+        assert (
+            "expand_with" not in values
+        ), "multiplier and expand_with may not be used together"
         values |= {"expand_with": {"sequence": {"count": multiplier}}}
     return values
 
@@ -126,6 +140,7 @@ class TaskUnitModel(UnitModel):
     def parse_multiplier(cls, values):
         return _parse_multiplier(values)
 
+
 class TemplateUnitModel(BaseModel):
     title: str = ""
     template: str
@@ -141,6 +156,7 @@ class TemplateUnitModel(BaseModel):
     @root_validator(pre=True)
     def parse_multiplier(cls, values):
         return _parse_multiplier(values)
+
 
 class MongoOpts(BaseModel):
     reset: bool = False
