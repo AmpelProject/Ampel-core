@@ -8,8 +8,9 @@
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 import re, html
+from math import isinf
 
-# https://stackoverflow.com/a/56497521/104668
+# copied from https://stackoverflow.com/a/56497521/104668
 def prettyjson(obj, indent=2, maxlinelength=80):
 	"""Renders JSON content with indentation and line splits/concatenations to fit maxlinelength.
 	Only dicts, lists and basic types are supported"""
@@ -140,15 +141,16 @@ def getsubitems(obj, itemkey, islast, maxlinelength, level):
 
 
 def basictype2str(obj):
-	if isinstance(obj, str):
-		strobj = "\"" + str(obj) + "\""
+	if (
+		isinstance(obj, str) or
+		obj.__class__.__name__ == "ObjectId" or
+		(isinstance(obj, float) and isinf(obj))
+	):
+		return "\"" + str(obj) + "\""
 	elif isinstance(obj, bool):
-		strobj = {True: "true", False: "false"}[obj]
-	elif obj.__class__.__name__ == "ObjectId":
-		strobj = "\"" + str(obj) + "\""
+		return "true" if obj else "false"
 	else:
-		strobj = str(obj)
-	return strobj
+		return str(obj)
 
 
 def indentitems(items, indent, level):
