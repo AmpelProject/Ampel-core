@@ -1,11 +1,18 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+# File:                Ampel-core/ampel/util/pretty.py
+# License:             BSD-3-Clause
+# Author:              valery brinnel <firstname.lastname@gmail.com>
+# Date:                Unspecified
+# Last Modified Date:  07.07.2022
+# Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
+
 import re, html
 
 # https://stackoverflow.com/a/56497521/104668
-
 def prettyjson(obj, indent=2, maxlinelength=80):
 	"""Renders JSON content with indentation and line splits/concatenations to fit maxlinelength.
 	Only dicts, lists and basic types are supported"""
-
 	items, _ = getsubitems(obj, itemkey="", islast=True, maxlinelength=maxlinelength, level=0)
 	return indentitems(items, indent, level=0)
 
@@ -137,6 +144,8 @@ def basictype2str(obj):
 		strobj = "\"" + str(obj) + "\""
 	elif isinstance(obj, bool):
 		strobj = {True: "true", False: "false"}[obj]
+	elif obj.__class__.__name__ == "ObjectId":
+		strobj = "\"" + str(obj) + "\""
 	else:
 		strobj = str(obj)
 	return strobj
@@ -158,15 +167,10 @@ def indentitems(items, indent, level):
 				res += indentstr + item + "\n"
 	return res
 
-
 # End of prettyjson
 ###################
 
-
-
 # Notebook goodies
-##################
-
 def set_bold(s: str, match: str):
 
 	from IPython.display import HTML # type: ignore[import]
