@@ -11,7 +11,7 @@ import sys, traceback
 from math import log2
 from bson import ObjectId
 from datetime import datetime
-from typing import Any, overload
+from typing import overload
 
 from ampel.types import JDict
 from ampel.core.AmpelDB import AmpelDB
