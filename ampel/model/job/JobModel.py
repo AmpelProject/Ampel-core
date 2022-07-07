@@ -27,8 +27,14 @@ class OutputParameter(BaseModel):
             return self.value_from.default
 
 
+class OutputArtifact(BaseModel):
+    name: str
+    path: str
+
+
 class TaskOutputs(BaseModel):
     parameters: list[OutputParameter] = []
+    artifacts: list[OutputArtifact] = []
 
 
 class InputArtifactHttpSource(BaseModel):
