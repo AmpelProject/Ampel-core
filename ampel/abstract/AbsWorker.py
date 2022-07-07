@@ -92,10 +92,10 @@ class AbsWorker(Generic[T], AbsEventUnit, abstract=True):
 			self.query['unit'] = maybe_match_array(self.unit_ids)
 
 		# Shortcut
-		self.col_stock = self._ampel_db.get_collection('stock')
-		self.col_t0 = self._ampel_db.get_collection('t0')
-		self.col_t1 = self._ampel_db.get_collection('t1')
-		self.col = self._ampel_db.get_collection(f't{self.tier}')
+		self.col_stock = self._ampel_db.get_collection('stock', mode='r')
+		self.col_t0 = self._ampel_db.get_collection('t0', mode='r')
+		self.col_t1 = self._ampel_db.get_collection('t1', mode='r')
+		self.col = self._ampel_db.get_collection(f't{self.tier}', mode='w')
 
 		if self.send_beacon:
 			self.create_beacon()
