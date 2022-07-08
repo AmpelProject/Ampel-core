@@ -4,9 +4,10 @@
 # License:             BSD-3-Clause
 # Author:              valery brinnel <firstname.lastname@gmail.com>
 # Date:                16.03.2021
-# Last Modified Date:  21.04.2022
+# Last Modified Date:  08.07.2022
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
+from json import dumps
 from datetime import datetime
 from argparse import ArgumentParser
 from typing import Any
@@ -18,6 +19,7 @@ from ampel.log.AmpelLogger import AmpelLogger
 from ampel.log.LogFlag import LogFlag
 from ampel.t2.T2Utils import T2Utils
 from ampel.util.pretty import prettyjson
+from ampel.util.serialize import walk_and_encode
 from ampel.content.T2Document import T2Document
 from ampel.cli.utils import maybe_load_idmapper
 from ampel.cli.AbsCoreCommand import AbsCoreCommand
@@ -44,7 +46,8 @@ hlp = {
 	"custom-match": "Custom mongodb match as JSON string (ex: {\"body.result.mychi2\": {\"$gt\": 1.0}})",
 	'no-resolve-stock': 'Keep stock as int when matching using id-mapper',
 	"resolve-config": "Translate 'config' field from int back to dict",
-	"human-times": "Translate timestamps to human-readable strings"
+	"human-times": "Translate timestamps to human-readable strings",
+	"pretty-json": "Prettify JSON output"
 }
 
 class T2Command(AbsCoreCommand):
@@ -83,6 +86,7 @@ class T2Command(AbsCoreCommand):
 		builder.add_arg('optional', 'debug', action='count', default=0, help='Debug')
 		builder.add_arg('optional', 'dry-run', action='store_true')
 		builder.add_arg('optional', 'limit', action='store_true')
+		builder.add_arg('optional', 'pretty-json', action='store_true')
 
 		# Optional match criteria
 		builder.add_group('match', 'Optional T2 documents matching criteria')
@@ -144,6 +148,7 @@ class T2Command(AbsCoreCommand):
 
 		# args['id_mapper'] is used for matching whereas id_mapper is potentially discarded for printing
 		id_mapper = None if args['no_resolve_stock'] else args['id_mapper']
+		jsondump: Any = prettyjson if args['pretty_json'] else lambda x: dumps(walk_and_encode(x)) # type: ignore
 
 		if sub_op == 'show':
 
@@ -167,9 +172,9 @@ class T2Command(AbsCoreCommand):
 				human_times = args['human_times']
 				for el in c:
 					self.morph_ret(ctx, el, resolve_config, human_times, id_mapper)
-					print(prettyjson(el))
+					print(jsondump(el))
 			else:
-				print(prettyjson(list(c)))
+				print(jsondump(list(c)))
 
 		elif sub_op == 'save':
 
@@ -180,15 +185,29 @@ class T2Command(AbsCoreCommand):
 
 			resolve_config = args['resolve_config']
 			human_times = args['human_times']
+
 			with open(args['out'], 'w') as f:
-				f.write("[\n")
-				for el in cc:
-					f.write(
-						prettyjson(
-							self.morph_ret(ctx, el, resolve_config, human_times, id_mapper)
-						) + ",\n"
+
+				if not cc:
+					f.write("[]")
+					return
+
+				f.write(
+					"[\n" + jsondump(
+						self.morph_ret( # type: ignore[operator]
+							ctx, cc[0], resolve_config, human_times, id_mapper # type: ignore[index]
+						)
 					)
-				f.write("]\n")
+				)
+
+				for el in cc[1:]: # type: ignore[index]
+					f.write(
+						",\n" +
+						jsondump(
+							self.morph_ret(ctx, el, resolve_config, human_times, id_mapper)
+						)
+					)
+				f.write("\n]")
 
 		# reset or soft-reset below
 		elif sub_op.endswith('reset'):
