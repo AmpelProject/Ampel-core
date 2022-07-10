@@ -4,7 +4,7 @@
 # License:             BSD-3-Clause
 # Author:              valery brinnel <firstname.lastname@gmail.com>
 # Date:                15.03.2021
-# Last Modified Date:  14.01.2022
+# Last Modified Date:  10.07.2022
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 import yaml, os, signal, sys
@@ -26,12 +26,6 @@ from ampel.util.mappings import get_by_path
 from ampel.cli.AbsCoreCommand import AbsCoreCommand
 from ampel.cli.MaybeIntAction import MaybeIntAction
 from ampel.cli.AmpelArgumentParser import AmpelArgumentParser
-
-try:
-	import matplotlib as mpl
-	mpl.use('Agg')
-except Exception:
-	pass
 
 
 class TaskUnitModel(UnitModel):
@@ -76,6 +70,7 @@ class JobCommand(AbsCoreCommand):
 			"secrets": "path to a YAML secrets store in sops format",
 			"keep-db": "do not reset databases even if so requested by job file",
 			"reset-db": "reset databases even if not requested by job file",
+			"no-agg": "enables display of matplotlib plots via plt.show() for debugging",
 			"interactive": "you'll be asked for each task whether it should be run or skipped\n" + \
 				"and - if applicable - if the db should be reset",
 			"task": "only execute task(s) with provided index(es) [starting with 0]. Value 'last' is supported",
@@ -89,6 +84,7 @@ class JobCommand(AbsCoreCommand):
 		parser.add_arg("debug", "optional", action="store_true")
 		parser.add_arg("keep-db", "optional", action="store_true")
 		parser.add_arg("reset-db", "optional", action="store_true")
+		parser.add_arg("no-agg", "optional", action="store_true")
 
 		# Optional
 		parser.add_arg("secrets", type=str)
@@ -109,7 +105,12 @@ class JobCommand(AbsCoreCommand):
 			logger.error(f"Job file not found: '{args['schema']}'")
 			return
 
-		tds: list[dict[str, Any]] = []
+		if not args['no_agg']:
+			try:
+				import matplotlib as mpl
+				mpl.use('Agg')
+			except Exception:
+				pass
 
 		if isinstance(args['task'], (int, str)):
 			args['task'] = [args['task']]
@@ -190,6 +191,7 @@ class JobCommand(AbsCoreCommand):
 						dict.__setitem__(config_dict['alias'], k, {})
 					dict.__setitem__(config_dict['alias'][k], kk, c)
 
+			tds: list[dict[str, Any]] = []
 			for i, p in enumerate(job['task']):
 
 				if not isinstance(p, dict):
