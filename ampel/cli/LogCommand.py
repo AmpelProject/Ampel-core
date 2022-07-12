@@ -4,7 +4,7 @@
 # License:             BSD-3-Clause
 # Author:              valery brinnel <firstname.lastname@gmail.com>
 # Date:                15.03.2021
-# Last Modified Date:  27.06.2022
+# Last Modified Date:  12.07.2022
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from argparse import ArgumentParser
@@ -80,7 +80,7 @@ class LogCommand(AbsCoreCommand):
 		builder.notation_add_example_references()
 
 		# Required
-		builder.add_arg('required', 'config', type=str)
+		builder.add_arg('optional', 'config', type=str)
 		builder.add_arg('save.required', 'out', type=str)
 
 		# Optional

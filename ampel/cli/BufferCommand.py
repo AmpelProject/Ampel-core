@@ -4,7 +4,7 @@
 # License:             BSD-3-Clause
 # Author:              valery brinnel <firstname.lastname@gmail.com>
 # Date:                25.03.2021
-# Last Modified Date:  17.07.2021
+# Last Modified Date:  12.07.2022
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 import sys
@@ -59,7 +59,7 @@ class BufferCommand(AbsStockCommand, AbsLoadCommand):
 		builder.add_parsers(sub_ops, hlp)
 
 		# Required args
-		builder.add_arg("required", "config", type=str)
+		builder.add_arg("optional", "config", type=str)
 		builder.add_arg("save.required", "out", default=True)
 
 		# Optional args

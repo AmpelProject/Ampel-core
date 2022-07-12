@@ -78,7 +78,7 @@ class JobCommand(AbsCoreCommand):
 		})
 
 		# Required
-		parser.add_arg("config", "required", type=str)
+		parser.add_arg("config", "optional", type=str)
 		parser.add_arg("schema", "required")
 		parser.add_arg("task", "optional", action=MaybeIntAction, nargs='+')
 		parser.add_arg("interactive", "optional", action="store_true")

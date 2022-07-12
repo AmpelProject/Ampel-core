@@ -41,7 +41,7 @@ class RunCommand(AbsCoreCommand):
 		})
 
 		# Required
-		parser.add_arg("config", "required", type=str)
+		parser.add_arg("config", "optional", type=str)
 		parser.add_arg("process", "required", nargs="+", default=None)
 
 		# Optional

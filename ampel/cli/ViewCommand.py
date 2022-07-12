@@ -61,7 +61,7 @@ class ViewCommand(AbsStockCommand, AbsLoadCommand):
 		builder.add_parsers(sub_ops, hlp)
 
 		# Required args
-		builder.add_arg("required", "config", type=str)
+		builder.add_arg("optional", "config", type=str)
 		builder.add_arg("save.required", "out", default=True)
 
 		# Optional args

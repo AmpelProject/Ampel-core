@@ -4,7 +4,7 @@
 # License:             BSD-3-Clause
 # Author:              valery brinnel <firstname.lastname@gmail.com>
 # Date:                14.03.2021
-# Last Modified Date:  06.10.2021
+# Last Modified Date:  12.07.2022
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from typing import Any
@@ -56,7 +56,7 @@ class DBCommand(AbsCoreCommand):
 		builder.notation_add_example_references()
 
 		# Required
-		builder.add_arg("required", "config")
+		builder.add_arg("optional", "config")
 		builder.add_arg("import.required", "in")
 		builder.add_arg("export.required", "out")
 

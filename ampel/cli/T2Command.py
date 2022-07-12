@@ -4,7 +4,7 @@
 # License:             BSD-3-Clause
 # Author:              valery brinnel <firstname.lastname@gmail.com>
 # Date:                16.03.2021
-# Last Modified Date:  08.07.2022
+# Last Modified Date:  12.07.2022
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from json import dumps
@@ -77,7 +77,7 @@ class T2Command(AbsCoreCommand):
 		builder.notation_add_example_references()
 
 		# Required
-		builder.add_arg('required', 'config')
+		builder.add_arg('optional', 'config')
 		builder.add_arg('save.required', 'out')
 
 		# Optional general

@@ -45,7 +45,7 @@ class ScheduleCommand(AbsCLIOperation):
 		parser.set_help_descr(h)
 
 		# Required
-		parser.add_arg("config", "required", type=str)
+		parser.add_arg("config", "optional", type=str)
 		parser.add_arg("process", "required", type=str, nargs="*", default=None)
 
 		# Optional
