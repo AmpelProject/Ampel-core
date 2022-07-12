@@ -299,7 +299,8 @@ class AbsWorker(Generic[T], AbsEventUnit, abstract=True):
 		duration: int | float,
 		action_code: MetaActionCode = MetaActionCode(0)
 	) -> MetaRecord:
-		return {
+
+		d: MetaRecord = {
 			'run': run_id,
 			'ts': int(time()),
 			'tier': self.tier,
@@ -311,6 +312,11 @@ class AbsWorker(Generic[T], AbsEventUnit, abstract=True):
 				f't{self.tier}unit': unit_trace_id
 			}
 		}
+
+		if self.job_sig:
+			d['jobid'] = self.job_sig
+
+		return d
 
 
 	def sig_exit(self, signum: int, frame) -> None:
