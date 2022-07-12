@@ -4,7 +4,7 @@
 # License:             BSD-3-Clause
 # Author:              valery brinnel <firstname.lastname@gmail.com>
 # Date:                08.12.2021
-# Last Modified Date:  13.05.2022
+# Last Modified Date:  12.07.2022
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from time import time
@@ -110,7 +110,11 @@ class T3DocBuilder(ContextUnit, T3DocBuilderModel):
 		t3d['code'] = actact
 
 		conf = t3_unit._get_trace_content()
-		meta: MetaRecord = {'ts': int(now.timestamp()), 'duration': time() - ts}
+		meta: MetaRecord = {
+			'run': self.event_hdlr.run_id,
+			'ts': int(now.timestamp()),
+			'duration': time() - ts
+		}
 
 		confid = build_unsafe_dict_id(conf)
 		self.context.db.add_conf_id(confid, conf)
