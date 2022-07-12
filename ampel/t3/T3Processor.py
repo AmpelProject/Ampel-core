@@ -4,7 +4,7 @@
 # License:             BSD-3-Clause
 # Author:              valery brinnel <firstname.lastname@gmail.com>
 # Date:                26.02.2018
-# Last Modified Date:  17.12.2021
+# Last Modified Date:  12.07.2022
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from importlib import import_module
@@ -95,8 +95,10 @@ class T3Processor(AbsEventUnit):
 
 		# Create event doc
 		event_hdlr = EventHandler(
-			self.process_name, self.context.db, tier=3, run_id=run_id,
-			raise_exc=self.raise_exc, dry_run=not self.update_events
+			self.process_name, self.context.db, tier = 3,
+			run_id = run_id, job_sig = self.job_sig,
+			raise_exc = self.raise_exc,
+			dry_run = not self.update_events
 		)
 
 		try:
@@ -157,6 +159,8 @@ class T3Processor(AbsEventUnit):
 						if 'meta' not in t3d:
 							raise ValueError("Invalid T3Document")
 						t3d['meta']['traceid'] = {'t3processor': self._trace_id}
+						if self.job_sig:
+							t3d['meta']['jobid'] = self.job_sig
 						self.context.db.get_collection('t3').insert_one(t3d) # type: ignore[arg-type]
 
 
