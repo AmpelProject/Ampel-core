@@ -35,7 +35,6 @@ extras_require = {
 entry_points = {
 	'console_scripts': [
 		'ampel = ampel.cli.main:main',
-		'ampel-config = ampel.config.cli:main',
 		'ampel-controller = '
 		'ampel.core.AmpelController:AmpelController.main',
 		'ampel-db = ampel.core.AmpelDB:main'
