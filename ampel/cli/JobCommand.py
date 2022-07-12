@@ -4,7 +4,7 @@
 # License:             BSD-3-Clause
 # Author:              valery brinnel <firstname.lastname@gmail.com>
 # Date:                15.03.2021
-# Last Modified Date:  10.07.2022
+# Last Modified Date:  12.07.2022
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 import yaml, os, signal, sys
@@ -23,6 +23,7 @@ from ampel.log.AmpelLogger import AmpelLogger
 from ampel.log.LogFlag import LogFlag
 from ampel.util.freeze import recursive_freeze
 from ampel.util.mappings import get_by_path
+from ampel.util.hash import build_unsafe_dict_id
 from ampel.cli.AbsCoreCommand import AbsCoreCommand
 from ampel.cli.MaybeIntAction import MaybeIntAction
 from ampel.cli.AmpelArgumentParser import AmpelArgumentParser
@@ -118,6 +119,7 @@ class JobCommand(AbsCoreCommand):
 		with open(args['schema'], "r") as f:
 
 			job = yaml.safe_load(f)
+			job_sig = build_unsafe_dict_id(job, size=-32)
 			s = f"Running job file {args['schema']}"
 
 			logger.info(s)
@@ -228,8 +230,9 @@ class JobCommand(AbsCoreCommand):
 
 			for i, task_dict in enumerate(tds):
 
-				process_name = job['name'] if 'name' in job else \
+				pname_base = job['name'] if 'name' in job else \
 					args['schema'].replace(".yaml", "").replace(".yml", "")
+				process_name = f"{pname_base}#{i}"
 
 				if 'title' in task_dict:
 					self.print_chapter(task_dict['title'] if task_dict.get('title') else f"Task #{i}", logger)
@@ -280,6 +283,7 @@ class JobCommand(AbsCoreCommand):
 						model = UnitModel(**task_dict),
 						context = ctx,
 						process_name = process_name,
+						job_sig = job_sig,
 						sub_type = AbsEventUnit,
 						base_log_flag = LogFlag.MANUAL_RUN
 					)
@@ -303,6 +307,7 @@ def run_mp_process(
 	config: dict[str, Any],
 	tast_unit_model: dict[str, Any],
 	process_name: str,
+	job_sig: None | int = None,
 	log_profile: str = "default"
 ) -> None:
 
@@ -316,7 +321,8 @@ def run_mp_process(
 			context = context,
 			sub_type = AbsEventUnit,
 			log_profile = log_profile,
-			process_name = process_name
+			process_name = process_name,
+			job_sig = job_sig
 		)
 
 		queue.put(
