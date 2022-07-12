@@ -37,6 +37,9 @@ class AbsEventUnit(AmpelABC, ContextUnit, abstract=True):
 	#: name of the associated process
 	process_name: str
 
+	#: hash of potentially underlying job schema
+	job_sig: None | int = None
+
 	#: channels associated with the process
 	channel: None | OneOrMany[ChannelId] = None
 
