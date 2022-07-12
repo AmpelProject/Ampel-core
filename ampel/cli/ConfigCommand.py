@@ -4,13 +4,16 @@
 # License:             BSD-3-Clause
 # Author:              valery brinnel <firstname.lastname@gmail.com>
 # Date:                17.07.2021
-# Last Modified Date:  23.04.2022
+# Last Modified Date:  12.07.2022
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from argparse import ArgumentParser
+import os, shutil
 from time import time
 from typing import Any
+from appdirs import user_data_dir # type: ignore[import]
+from argparse import ArgumentParser
 from collections.abc import Sequence
+
 from ampel.log.AmpelLogger import AmpelLogger, DEBUG, INFO
 from ampel.cli.AbsCoreCommand import AbsCoreCommand
 from ampel.cli.AmpelArgumentParser import AmpelArgumentParser
@@ -19,7 +22,12 @@ from ampel.config.builder.DistConfigBuilder import DistConfigBuilder
 from ampel.config.builder.DisplayOptions import DisplayOptions
 
 hlp = {
-	'config': 'Path to an ampel config file (yaml/json)',
+	"build": "Generates a new ampel config based on information" +
+		"\n from the currently installed ampel repositories",
+	"show": "Not implemented yet",
+	"install": "Sets a specified ampel config as the default one in current system (conda envs supported).\n" +
+		" As a consequence, the option '-config' of other CLI operations becomes optional",
+	'file': 'Path to an ampel config file (yaml/json)',
 	# Optional
 	'secrets': 'Path to a YAML secrets store in sops format',
 	'out': 'Path to file where config will be saved (printed to stdout otherwise)',
@@ -49,7 +57,7 @@ class ConfigCommand(AbsCoreCommand):
 		if sub_op in self.parsers:
 			return self.parsers[sub_op]
 
-		sub_ops = ['build', 'show']
+		sub_ops = ['build', 'show', 'install']
 
 		if sub_op is None or sub_op not in sub_ops:
 			return AmpelArgumentParser.build_choice_help(
@@ -63,8 +71,8 @@ class ConfigCommand(AbsCoreCommand):
 		builder.add_arg("build.required", "out")
 
 		# Optional args
-		builder.add_arg("optional", "secrets", default=None)
-		builder.add_arg('optional', 'verbose', action="store_true")
+		builder.add_arg("build.optional", "secrets", default=None)
+		builder.add_arg('build|show.optional', 'verbose', action="store_true")
 
 		builder.add_arg("build.optional", "sign", type=int, default=0)
 		builder.add_arg("build.optional", "ext-resource")
@@ -73,11 +81,13 @@ class ConfigCommand(AbsCoreCommand):
 		builder.add_arg("build.optional", "no-provenance", action="store_true")
 		builder.add_arg("show.optional", "pretty", action="store_true")
 		builder.add_arg("build.optional", "stop-on-errors", default=2)
+		builder.add_arg("install.required", "file", type=str)
 
 		# Example
 		builder.add_example("build", "-out ampel_conf.yaml")
 		builder.add_example("build", "-out ampel_conf.yaml -sign -verbose")
 		builder.add_example("show", "-pretty -process -tier 0 -channel CHAN1")
+		builder.add_example("install", "-file ampel_conf.yml")
 
 		self.parsers.update(
 			builder.get()
@@ -90,11 +100,12 @@ class ConfigCommand(AbsCoreCommand):
 	# Mandatory implementation
 	def run(self, args: dict[str, Any], unknown_args: Sequence[str], sub_op: None | str = None) -> None:
 
+		logger = AmpelLogger.get_logger(
+			console={'level': DEBUG if args.get('verbose', False) else INFO}
+		)
+
 		if sub_op == 'build':
 
-			logger = AmpelLogger.get_logger(
-				console={'level': DEBUG if args.get('verbose', False) else INFO}
-			)
 			logger.info("Building config [use -verbose for more details]")
 
 			start_time = time()
@@ -125,6 +136,30 @@ class ConfigCommand(AbsCoreCommand):
 			)
 
 			logger.flush()
+			return
+
+		if sub_op == 'install':
+
+			if not os.path.exists(args['file']):
+				raise ValueError(f"File {args['file']} does not exist")
+
+			app_path = user_data_dir("ampel")
+			if not os.path.exists(app_path):
+				os.makedirs(app_path)
+
+			app_path = os.path.join(app_path, "conf")
+			if not os.path.exists(app_path):
+				os.makedirs(app_path)
+
+			env = os.environ.get('CONDA_DEFAULT_ENV')
+			if env:
+				app_path = os.path.join(app_path, env)
+				if not os.path.exists(app_path):
+					os.makedirs(app_path)
+
+			std_conf = os.path.join(app_path, "conf.yml")
+			shutil.copy(args['file'], std_conf)
+			logger.info(f"{args['file']} successfully set as standard config ({std_conf})")
 			return
 
 		raise NotImplementedError("Not implemented yet")
