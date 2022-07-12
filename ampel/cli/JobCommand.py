@@ -118,12 +118,9 @@ class JobCommand(AbsCoreCommand):
 		with open(args['schema'], "r") as f:
 
 			job = yaml.safe_load(f)
-			if "name" not in job:
-				raise ValueError("Job name required")
+			s = f"Running job file {args['schema']}"
 
-			s = f"Running job {job['name']}"
 			logger.info(s)
-
 			print(" " + "-"*len(s))
 
 			if "requirements" in job:
@@ -231,11 +228,11 @@ class JobCommand(AbsCoreCommand):
 
 			for i, task_dict in enumerate(tds):
 
-				process_name = f"{job['name']}#{i}"
+				process_name = job['name'] if 'name' in job else \
+					args['schema'].replace(".yaml", "").replace(".yml", "")
 
 				if 'title' in task_dict:
 					self.print_chapter(task_dict['title'] if task_dict.get('title') else f"Task #{i}", logger)
-					#process_name += f" [{task_dict['title']}]"
 					del task_dict['title']
 				elif i != 0:
 					self.print_chapter(f"Task #{i}", logger)
