@@ -4,11 +4,13 @@
 # License:             BSD-3-Clause
 # Author:              valery brinnel <firstname.lastname@gmail.com>
 # Date:                18.03.2021
-# Last Modified Date:  11.11.2021
+# Last Modified Date:  12.07.2022
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-import re
-from typing import Any, TypeVar, Tuple
+import re, os, sys
+from contextlib import contextmanager
+from appdirs import user_data_dir # type: ignore[import]
+from typing import Any, TypeVar
 from collections.abc import Sequence, Iterator
 from ampel.core.AmpelDB import AmpelDB
 from ampel.config.AmpelConfig import AmpelConfig
@@ -26,14 +28,27 @@ T = TypeVar("T", bound = AmpelContext)
 
 class AbsCoreCommand(AbsCLIOperation, abstract=True):
 
+
 	def load_config(self,
-		config_path: str,
+		config_path: None | str,
 		unknown_args: Sequence[str],
 		logger: None | AmpelLogger = None,
 		freeze: bool = True
 	) -> AmpelConfig:
 
-		ampel_conf = AmpelConfig.load(config_path, freeze=False)
+		if not config_path:
+			env = os.environ.get('CONDA_DEFAULT_ENV')
+			std_conf = os.path.join(
+				user_data_dir("ampel"), "conf", *(env, "conf.yml") if env else "conf.yml"
+			)
+			if os.path.exists(std_conf):
+				ampel_conf = AmpelConfig.load(std_conf, freeze=False)
+			else:
+				with disable_exception_traceback():
+					print("")
+					raise ValueError("No default ampel config found -> argument -config required\n")
+		else:
+			ampel_conf = AmpelConfig.load(config_path, freeze=False)
 
 		if logger is None:
 			logger = AmpelLogger.get_logger()
@@ -151,3 +166,11 @@ def _maybe_int(stringy):
 		return int(stringy)
 	except Exception:
 		return stringy
+
+
+@contextmanager
+def disable_exception_traceback():
+	default_value = getattr(sys, "tracebacklimit", 1000)
+	sys.tracebacklimit = 0
+	yield
+	sys.tracebacklimit = default_value
