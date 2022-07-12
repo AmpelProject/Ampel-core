@@ -23,7 +23,7 @@ package_data = {
 }
 
 install_requires = [
-	'PyYAML', 'prometheus-client', 'psutil', 'pydantic>=1.8', 'pymongo',
+	'PyYAML', 'prometheus-client', 'psutil', 'pydantic>=1.9', 'pymongo',
 	'schedule', 'sjcl', 'slackclient', 'yq', 'ujson', 'appdirs'
 ]
 
@@ -46,7 +46,7 @@ entry_points = {
 		'log Select, format and either view or save logs. Tail mode availabe = ampel.cli.LogCommand',
 		'view Select, load and save fresh "ampel views" = ampel.cli.ViewCommand',
 		'db Initialize, dump, delete specific databases or collections = ampel.cli.DBCommand',
-		'config Build or update config. Fetch or append config elements = ampel.cli.ConfigCommand',
+		'config Build, show or install config = ampel.cli.ConfigCommand',
 		'start Run ampel continuously. Processes are scheduled according to config = ampel.cli.StartCommand',
 		't2 Match and either reset or view raw t2 documents = ampel.cli.T2Command',
 		'buffer Match and view or save ampel buffers = ampel.cli.BufferCommand'
