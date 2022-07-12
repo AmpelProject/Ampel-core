@@ -4,7 +4,7 @@
 # License:             BSD-3-Clause
 # Author:              valery brinnel <firstname.lastname@gmail.com>
 # Date:                26.09.2018
-# Last Modified Date:  17.12.2021
+# Last Modified Date:  12.07.2022
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from time import time
@@ -31,6 +31,7 @@ class EventHandler:
 		tier: Literal[-1, 0, 1, 2, 3],
 		run_id: int,
 		col_name: str = "events",
+		job_sig: None | int = None,
 		extra: None | dict[str, Any] = None,
 		raise_exc = False,
 		dry_run: bool = False
@@ -48,6 +49,9 @@ class EventHandler:
 
 		if run_id:
 			doc['run'] = run_id
+
+		if job_sig:
+			doc['jobid'] = job_sig
 
 		if extra:
 			doc |= extra # type: ignore[assignment]
