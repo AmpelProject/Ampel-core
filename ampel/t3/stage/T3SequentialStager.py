@@ -4,7 +4,7 @@
 # License:             BSD-3-Clause
 # Author:              valery brinnel <firstname.lastname@gmail.com>
 # Date:                22.04.2021
-# Last Modified Date:  14.12.2021
+# Last Modified Date:  13.07.2022
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from time import time
@@ -74,8 +74,9 @@ class T3SequentialStager(T3BaseStager):
 		for t3_unit, views in self.get_views(gen).items():
 
 			sg = SimpleGenerator(t3_unit, views, self.stock_updr)
+			ts = time()
 			if (ret := t3_unit.process(sg, t3s)):
-				if (x := self.handle_t3_result(t3_unit, ret, t3s, sg.stocks, time())):
+				if (x := self.handle_t3_result(t3_unit, ret, t3s, sg.stocks, ts)):
 					if self.propagate:
 						t3s.add_view(
 							T3DocView.of(x, self.context.config)
