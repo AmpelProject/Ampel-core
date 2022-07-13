@@ -473,9 +473,10 @@ class T2Worker(AbsWorker[T2Document]):
 						logger.debug(
 							'Dependent T2 unit not run yet',
 							extra={
-								'unit': dep_t2_doc['unit'],
-								'stock': dep_t2_doc['stock'],
-								't2_oid': t2_doc['_id'] # type: ignore[typeddict-item] # implicit mongodb dependency here
+								'unit': view.unit,
+								'stock': view.stock,
+								'link': view.link,
+								't2_type': view.t2_type,
 							}
 						)
 					return UnitResult(code=DocumentCode.T2_PENDING_DEPENDENCY)
