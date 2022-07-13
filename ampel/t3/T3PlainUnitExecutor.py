@@ -4,7 +4,7 @@
 # License:             BSD-3-Clause
 # Author:              valery brinnel <firstname.lastname@gmail.com>
 # Date:                12.12.2021
-# Last Modified Date:  19.12.2021
+# Last Modified Date:  13.07.2022
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from time import time
@@ -74,10 +74,11 @@ class T3PlainUnitExecutor(AbsT3ControlUnit, T3DocBuilder):
 						return None
 
 		self.logger.info("Running T3unit", extra={'unit': self.target.unit})
+		ts = time()
 		ret = t3_unit.process(t3s)
 		self.flush(t3_unit)
 
-		if ret and (x := self.handle_t3_result(t3_unit, ret, t3s, None, time())):
+		if ret and (x := self.handle_t3_result(t3_unit, ret, t3s, None, ts)):
 
 			if self.target.cache and isinstance(x['body'], dict):
 
