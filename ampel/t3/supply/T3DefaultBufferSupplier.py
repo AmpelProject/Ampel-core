@@ -93,7 +93,7 @@ class T3DefaultBufferSupplier(AbsT3Supplier[Generator[AmpelBuffer, None, None]])
 		# against cursor timeouts or server restarts during long lived T3 processes
 		stock_ids = list(self.selector.fetch() or [])
 		if not stock_ids:
-			raise StopIteration
+			return
 
 		# Usually, id_key is '_id' but it can be 'stock' if the
 		# selection is based on t2 documents for example

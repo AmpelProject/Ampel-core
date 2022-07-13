@@ -136,3 +136,43 @@ def test_view_generator(integration_context: DevAmpelContext, ingest_stock):
     assert len(entries := [jentry for jentry in stock["journal"] if jentry["tier"] == 3]) == 1
     jentry = entries[0]
     assert jentry["extra"] == {"foo": "bar"}
+
+def test_empty_generator(integration_context: DevAmpelContext, ingest_stock):
+    """
+    Empty selection returns cleanly, rather than raising
+    """ 
+    t3 = T3Processor(
+        context=integration_context,
+        raise_exc=True,
+        process_name="t3",
+        execute = [
+            {
+                "unit": "T3ReviewUnitExecutor",
+                "config": {
+                    "supply": {
+                        "unit": "T3DefaultBufferSupplier",
+                        "config": {
+                            "select": {
+                                "unit": "T3StockSelector",
+                                # ensure that no stocks will be selected
+                                "config": {"channel": "nonesuch"}
+                            },
+                            "load": {
+                                "unit": "T3SimpleDataLoader",
+                                "config": {
+                                    "directives": [{"col": "stock"}],
+                                }
+                            }
+                        }
+                    },
+                    "stage": {
+                        "unit": "T3SimpleStager",
+                        "config": {
+                            "execute": [{"unit": "DemoReviewT3Unit"}]
+                        }
+                    }
+                }
+            }
+        ]
+    )
+    t3.run()
