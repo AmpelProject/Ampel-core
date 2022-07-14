@@ -1,7 +1,7 @@
 [tool.poetry]
 name = "ampel-core"
-version = "0.8.3-alpha.14"
-description = "Asynchronous and Modular Platform with Execution Layers"
+version = "0.8.3-alpha.15"
+description = "Alice in Modular Provenance-Enabled Land"
 authors = ["Valery Brinnel"]
 maintainers = ["Jakob van Santen <jakob.van.santen@desy.de>"]
 license = "BSD-3-Clause"
