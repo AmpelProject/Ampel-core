@@ -135,7 +135,7 @@ class JobCommand(AbsCoreCommand):
 			if k.startswith("_"):
 				del job[k]
 
-		job_sig = build_unsafe_dict_id(job, size=-32)
+		job_sig = build_unsafe_dict_id(job, size=-64)
 		if len(args['schema']) > 1:
 			logger.info(f"Running job using composed schema: {', '.join(args['schema'])}")
 		else:
