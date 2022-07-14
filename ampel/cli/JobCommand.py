@@ -7,7 +7,7 @@
 # Last Modified Date:  12.07.2022
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-import yaml, os, signal, sys
+import yaml, io, os, signal, sys
 from time import time
 from multiprocessing import Queue, Process
 from ampel.base.AmpelBaseModel import AmpelBaseModel
@@ -79,7 +79,7 @@ class JobCommand(AbsCoreCommand):
 
 		# Required
 		parser.add_arg("config", "optional", type=str)
-		parser.add_arg("schema", "required")
+		parser.add_arg("schema", "required", nargs='+')
 		parser.add_arg("task", "optional", action=MaybeIntAction, nargs='+')
 		parser.add_arg("interactive", "optional", action="store_true")
 		parser.add_arg("debug", "optional", action="store_true")
@@ -102,10 +102,6 @@ class JobCommand(AbsCoreCommand):
 		start_time = time()
 		logger = AmpelLogger.get_logger(base_flag=LogFlag.MANUAL_RUN)
 
-		if not os.path.exists(args['schema']):
-			logger.error(f"Job file not found: '{args['schema']}'")
-			return
-
 		if not args['no_agg']:
 			try:
 				import matplotlib as mpl
@@ -116,179 +112,188 @@ class JobCommand(AbsCoreCommand):
 		if isinstance(args['task'], (int, str)):
 			args['task'] = [args['task']]
 
-		with open(args['schema'], "r") as f:
+		lines = io.StringIO()
+		for i, job_fname in enumerate(args['schema']):
+			if not os.path.exists(job_fname):
+				logger.error(f"Job file not found: '{job_fname}'")
+				return
+			with open(job_fname, "r") as f:
+				lines.write("\n".join(f.readlines()))
+			args['schema'][i] = os.path.basename(args['schema'][i]) \
+				.replace(".yaml", "") \
+				.replace(".yml", "")
 
-			job = yaml.safe_load(f)
-			job_sig = build_unsafe_dict_id(job, size=-32)
-			s = f"Running job file {args['schema']}"
+		lines.seek(0)
+		job = yaml.safe_load(lines)
+		job_sig = build_unsafe_dict_id(job, size=-32)
+		if len(args['schema']) > 1:
+			logger.info(f"Running job using composed schema: {', '.join(args['schema'])}")
+		else:
+			logger.info(f"Running job using schema {args['schema'][0]}")
 
-			logger.info(s)
-			print(" " + "-"*len(s))
+		if "requirements" in job:
+			# TODO: check job repo requirements
+			pass
 
-			if "requirements" in job:
-				# TODO: check job repo requirements
-				pass
+		purge_db = get_by_path(job, 'mongo.reset') or args['reset_db']
 
-			purge_db = get_by_path(job, 'mongo.reset') or args['reset_db']
+		if purge_db and args['keep_db']:
+			logger.info("Keeping existing databases ('-keep-db')")
+			purge_db = False
 
-			if purge_db and args['keep_db']:
-				logger.info("Keeping existing databases ('-keep-db')")
-				purge_db = False
+		if args['task']:
+			if 'last' in args['task']:
+				args['task'].remove('last')
+				args['task'].append(len(job['task']) - 1)
+			if sum(args['task']) > 0 and purge_db and not args['reset_db']:
+				logger.info("Ampel job file requires db reset but argument 'task' was provided")
+				logger.info("Please add argument -reset-db to confirm you are absolutely sure...")
+				return
 
-			if args['task']:
-				if 'last' in args['task']:
-					args['task'].remove('last')
-					args['task'].append(len(job['task']) - 1)
-				if sum(args['task']) > 0 and purge_db and not args['reset_db']:
-					logger.info("Ampel job file requires db reset but argument 'task' was provided")
-					logger.info("Please add argument -reset-db to confirm you are absolutely sure...")
-					return
+		if args['interactive']:
 
-			if args['interactive']:
+			from ampel.util.getch import yes_no
 
-				from ampel.util.getch import yes_no
+			try:
+				if purge_db:
+					purge_db = yes_no("Delete existing databases")
+
+				args['task'] = []
+				for i, td in enumerate(job['task']):
+					s = f" [{td['title']}]" if td['title'] else ""
+					if yes_no(f"Process task #{i}" + s):
+						args['task'].append(i)
+			except KeyboardInterrupt:
+				sys.exit()
+
+		# DevAmpelContext hashes automatically confid from potential IngestDirectives
+		ctx = self.get_context(
+			args, unknown_args, logger,
+			freeze_config = False,
+			ContextClass = DevAmpelContext,
+			purge_db = purge_db,
+			db_prefix = get_by_path(job, 'mongo.prefix'),
+			require_existing_db = False,
+			one_db = True
+		)
+
+		config_dict = ctx.config._config
+
+		# Add channel(s)
+		for c in job.get("channel", []):
+			logger.info(f"Registering job channel '{c['name']}'")
+			dict.__setitem__(config_dict['channel'], c['name'], c)
+
+		# Add aliase(s)
+		for k, v in job.get("alias", {}).items():
+			if k not in ("t0", "t1", "t2", "t3"):
+				raise ValueError(f"Unrecognized alias: {k}")
+			if 'alias' not in config_dict:
+				dict.__setitem__(config_dict, 'alias', {})
+			for kk, vv in v.items():
+				logger.info(f"Registering job alias '{kk}'")
+				if k not in config_dict['alias']:
+					dict.__setitem__(config_dict['alias'], k, {})
+				dict.__setitem__(config_dict['alias'][k], kk, c)
+
+		tds: list[dict[str, Any]] = []
+		for i, p in enumerate(job['task']):
+
+			if not isinstance(p, dict):
+				raise ValueError("Unsupported task definition (must be dict)")
+
+			if 'template' in p:
+
+				model = TemplateUnitModel(**p)
+				if model.template not in ctx.config._config['template']:
+					raise ValueError(f"Unknown process template: {model.template}")
+
+				fqn = ctx.config._config['template'][model.template]
+				class_name = fqn.split(".")[-1]
+				Tpl = getattr(import_module(fqn), class_name)
+				if not issubclass(Tpl, AbsProcessorTemplate):
+					raise ValueError(f"Unexpected template type: {Tpl}")
+
+				tpl = Tpl(**model.config)
+				morphed_um = tpl \
+					.get_model(ctx.config._config, model.dict()) \
+					.dict() | {'title': model.title, 'multiplier': model.multiplier}
+
+				if args.get('debug'):
+					from ampel.util.pretty import prettyjson
+					logger.info("Task model morphed by template:")
+					for el in prettyjson(morphed_um, indent=4).split('\n'):
+						logger.info(el)
+
+				tds.append(morphed_um)
+
+			else:
+				tds.append(TaskUnitModel(**p).dict())
+
+			logger.info(f"Registering job task#{i} with {tds[-1]['multiplier']}x multiplier")
+
+		ctx.config._config = recursive_freeze(config_dict)
+
+		for i, task_dict in enumerate(tds):
+
+			pname_base = job['name'] if 'name' in job else "|".join(args['schema'])
+			process_name = f"{pname_base}#{i}"
+
+			if 'title' in task_dict:
+				self.print_chapter(task_dict['title'] if task_dict.get('title') else f"Task #{i}", logger)
+				del task_dict['title']
+			elif i != 0:
+				self.print_chapter(f"Task #{i}", logger)
+
+			if args['task'] is not None and i not in args['task']:
+				logger.info(f"Skipping task #{i} as requested")
+				continue
+
+			multiplier = task_dict.pop('multiplier')
+
+			# Beacons have no real use in jobs (unlike prod)
+			if task_dict['unit'] == 'T2Worker' and 'send_beacon' not in task_dict['config']:
+				task_dict['config']['send_beacon'] = False
+
+			if multiplier > 1:
+
+				ps = []
+				qs = []
+
+				signal.signal(signal.SIGINT, signal_handler)
+				signal.signal(signal.SIGTERM, signal_handler)
 
 				try:
-					if purge_db:
-						purge_db = yes_no("Delete existing databases")
+					for i in range(multiplier):
+						q: Queue = Queue()
+						p = Process(
+							target = run_mp_process,
+							args = (q, config_dict, task_dict, process_name)
+						)
+						p.deamon = True
+						p.start()
+						ps.append(p)
+						qs.append(q)
 
-					args['task'] = []
-					for i, td in enumerate(job['task']):
-						s = f" [{td['title']}]" if td['title'] else ""
-						if yes_no(f"Process task #{i}" + s):
-							args['task'].append(i)
+					for i in range(multiplier):
+						ps[i].join()
+						if (m := qs[i].get()):
+							logger.info(f"{task_dict['unit']}#{i} return value: {m}")
 				except KeyboardInterrupt:
-					sys.exit()
-	
-			# DevAmpelContext hashes automatically confid from potential IngestDirectives
-			ctx = self.get_context(
-				args, unknown_args, logger,
-				freeze_config = False,
-				ContextClass = DevAmpelContext,
-				purge_db = purge_db,
-				db_prefix = get_by_path(job, 'mongo.prefix'),
-				require_existing_db = False,
-				one_db = True
-			)
+					sys.exit(1)
 
-			config_dict = ctx.config._config
+			else:
 
-			# Add channel(s)
-			for c in job.get("channel", []):
-				logger.info(f"Registering job channel '{c['name']}'")
-				dict.__setitem__(config_dict['channel'], c['name'], c)
-
-			# Add aliase(s)
-			for k, v in job.get("alias", {}).items():
-				if k not in ("t0", "t1", "t2", "t3"):
-					raise ValueError(f"Unrecognized alias: {k}")
-				if 'alias' not in config_dict:
-					dict.__setitem__(config_dict, 'alias', {})
-				for kk, vv in v.items():
-					logger.info(f"Registering job alias '{kk}'")
-					if k not in config_dict['alias']:
-						dict.__setitem__(config_dict['alias'], k, {})
-					dict.__setitem__(config_dict['alias'][k], kk, c)
-
-			tds: list[dict[str, Any]] = []
-			for i, p in enumerate(job['task']):
-
-				if not isinstance(p, dict):
-					raise ValueError("Unsupported task definition (must be dict)")
-
-				if 'template' in p:
-
-					model = TemplateUnitModel(**p)
-					if model.template not in ctx.config._config['template']:
-						raise ValueError(f"Unknown process template: {model.template}")
-
-					fqn = ctx.config._config['template'][model.template]
-					class_name = fqn.split(".")[-1]
-					Tpl = getattr(import_module(fqn), class_name)
-					if not issubclass(Tpl, AbsProcessorTemplate):
-						raise ValueError(f"Unexpected template type: {Tpl}")
-
-					tpl = Tpl(**model.config)
-					morphed_um = tpl \
-						.get_model(ctx.config._config, model.dict()) \
-						.dict() | {'title': model.title, 'multiplier': model.multiplier}
-
-					if args.get('debug'):
-						from ampel.util.pretty import prettyjson
-						logger.info("Task model morphed by template:")
-						for el in prettyjson(morphed_um, indent=4).split('\n'):
-							logger.info(el)
-
-					tds.append(morphed_um)
-
-				else:
-					tds.append(TaskUnitModel(**p).dict())
-
-				logger.info(f"Registering job task#{i} with {tds[-1]['multiplier']}x multiplier")
-
-			ctx.config._config = recursive_freeze(config_dict)
-
-			for i, task_dict in enumerate(tds):
-
-				pname_base = job['name'] if 'name' in job else \
-					args['schema'].replace(".yaml", "").replace(".yml", "")
-				process_name = f"{pname_base}#{i}"
-
-				if 'title' in task_dict:
-					self.print_chapter(task_dict['title'] if task_dict.get('title') else f"Task #{i}", logger)
-					del task_dict['title']
-				elif i != 0:
-					self.print_chapter(f"Task #{i}", logger)
-
-				if args['task'] is not None and i not in args['task']:
-					logger.info(f"Skipping task #{i} as requested")
-					continue
-
-				multiplier = task_dict.pop('multiplier')
-
-				# Beacons have no real use in jobs (unlike prod)
-				if task_dict['unit'] == 'T2Worker' and 'send_beacon' not in task_dict['config']:
-					task_dict['config']['send_beacon'] = False
-
-				if multiplier > 1:
-
-					ps = []
-					qs = []
-
-					signal.signal(signal.SIGINT, signal_handler)
-					signal.signal(signal.SIGTERM, signal_handler)
-
-					try:
-						for i in range(multiplier):
-							q: Queue = Queue()
-							p = Process(
-								target = run_mp_process,
-								args = (q, config_dict, task_dict, process_name)
-							)
-							p.deamon = True
-							p.start()
-							ps.append(p)
-							qs.append(q)
-
-						for i in range(multiplier):
-							ps[i].join()
-							if (m := qs[i].get()):
-								logger.info(f"{task_dict['unit']}#{i} return value: {m}")
-					except KeyboardInterrupt:
-						sys.exit(1)
-
-				else:
-
-					proc = ctx.loader.new_context_unit(
-						model = UnitModel(**task_dict),
-						context = ctx,
-						process_name = process_name,
-						job_sig = job_sig,
-						sub_type = AbsEventUnit,
-						base_log_flag = LogFlag.MANUAL_RUN
-					)
-					x = proc.run()
-					logger.info(f"{task_dict['unit']} return value: {x}")
+				proc = ctx.loader.new_context_unit(
+					model = UnitModel(**task_dict),
+					context = ctx,
+					process_name = process_name,
+					job_sig = job_sig,
+					sub_type = AbsEventUnit,
+					base_log_flag = LogFlag.MANUAL_RUN
+				)
+				x = proc.run()
+				logger.info(f"{task_dict['unit']} return value: {x}")
 
 		dm = divmod(time() - start_time, 60)
 		logger.info("Job processing done. Time required: %s minutes %s seconds\n" % (round(dm[0]), round(dm[1])))
