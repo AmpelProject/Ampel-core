@@ -4,7 +4,7 @@
 # License:             BSD-3-Clause
 # Author:              valery brinnel <firstname.lastname@gmail.com>
 # Date:                15.03.2021
-# Last Modified Date:  12.07.2022
+# Last Modified Date:  14.07.2022
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 import yaml, io, os, signal, sys
@@ -75,6 +75,7 @@ class JobCommand(AbsCoreCommand):
 			"interactive": "you'll be asked for each task whether it should be run or skipped\n" + \
 				"and - if applicable - if the db should be reset",
 			"task": "only execute task(s) with provided index(es) [starting with 0]. Value 'last' is supported",
+			"show-plots": "show plots created by job (required Ampel-plot-cli)"
 		})
 
 		# Required
@@ -86,6 +87,7 @@ class JobCommand(AbsCoreCommand):
 		parser.add_arg("keep-db", "optional", action="store_true")
 		parser.add_arg("reset-db", "optional", action="store_true")
 		parser.add_arg("no-agg", "optional", action="store_true")
+		parser.add_arg("show-plots", "optional", action="store_true")
 
 		# Optional
 		parser.add_arg("secrets", type=str)
@@ -112,34 +114,14 @@ class JobCommand(AbsCoreCommand):
 		if isinstance(args['task'], (int, str)):
 			args['task'] = [args['task']]
 
-		lines = io.StringIO()
-		for i, job_fname in enumerate(args['schema']):
-
-			if not os.path.exists(job_fname):
-				logger.error(f"Job file not found: '{job_fname}'")
-				return
-
-			with open(job_fname, "r") as f:
-				lines.write("\n".join(f.readlines()))
-
-			args['schema'][i] = os.path.basename(args['schema'][i]) \
-				.replace(".yaml", "") \
-				.replace(".yml", "")
-
-		lines.seek(0)
-		job = yaml.safe_load(lines)
-
-		for k in list(job.keys()):
-			# job keys starting with _ are used by own convention for yaml anchors
-			# and thus need not be included in the loaded job structure
-			if k.startswith("_"):
-				del job[k]
-
-		job_sig = build_unsafe_dict_id(job, size=-64)
+		job, job_sig = self.get_job_schema(args['schema'], logger)
+		schema_descr = "|".join(
+			[os.path.basename(sf) for sf in args['schema']]
+		).replace(".yaml", "").replace(".yml", "")
 		if len(args['schema']) > 1:
-			logger.info(f"Running job using composed schema: {', '.join(args['schema'])}")
+			logger.info(f"Running job using composed schema: {schema_descr}")
 		else:
-			logger.info(f"Running job using schema {args['schema'][0]}")
+			logger.info(f"Running job using schema {schema_descr}")
 
 		if "requirements" in job:
 			# TODO: check job repo requirements
@@ -252,7 +234,7 @@ class JobCommand(AbsCoreCommand):
 
 		for i, task_dict in enumerate(tds):
 
-			pname_base = job['name'] if 'name' in job else "|".join(args['schema'])
+			pname_base = job['name'] if 'name' in job else schema_descr
 			process_name = f"{pname_base}#{i}"
 
 			if 'title' in task_dict:
@@ -314,6 +296,17 @@ class JobCommand(AbsCoreCommand):
 		dm = divmod(time() - start_time, 60)
 		logger.info("Job processing done. Time required: %s minutes %s seconds\n" % (round(dm[0]), round(dm[1])))
 
+		if args.get("show_plots"):
+			import subprocess
+			cmd = [
+				'ampel', 'plot', 'show', '-stack', '100', '-png', '150',
+				'-t2', '-t3', '-base-path', 'body.plot', # to be improved later
+				'-job', *args['schema']
+			]
+			print("-" * 40)
+			print(f"Executing command: {' '.join(cmd)}")
+			print(subprocess.run(cmd, check=True, capture_output=True, text=True).stdout)
+
 
 	def print_chapter(self, msg: str, logger: AmpelLogger) -> None:
 		logger.info(" ")
@@ -321,6 +314,30 @@ class JobCommand(AbsCoreCommand):
 		logger.info("‖ " + msg + " ‖") # type: ignore
 		logger.info("=" * space)
 		logger.info(" ")
+
+
+	@classmethod
+	def get_job_schema(cls, schema_files: list[str], logger: AmpelLogger) -> tuple[dict, int]:
+
+		lines = io.StringIO()
+		for i, job_fname in enumerate(schema_files):
+
+			if not os.path.exists(job_fname):
+				raise ValueError(f"Job file not found: '{job_fname}'")
+
+			with open(job_fname, "r") as f:
+				lines.write("\n".join(f.readlines()))
+
+		lines.seek(0)
+		job = yaml.safe_load(lines)
+
+		for k in list(job.keys()):
+			# job keys starting with _ are used by own convention for yaml anchors
+			# and thus need not be included in the loaded job structure
+			if k.startswith("_"):
+				del job[k]
+
+		return job, build_unsafe_dict_id(job, size=-64)
 
 
 def run_mp_process(
