@@ -12,6 +12,8 @@ mongo:
       indexes: null
     - name: traceid
       indexes: null
+    - name: jobid
+      indexes: null
     - name: counter
       indexes: null
     role:
