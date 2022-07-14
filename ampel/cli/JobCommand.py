@@ -128,6 +128,13 @@ class JobCommand(AbsCoreCommand):
 
 		lines.seek(0)
 		job = yaml.safe_load(lines)
+
+		for k in list(job.keys()):
+			# job keys starting with _ are used by own convention for yaml anchors
+			# and thus need not be included in the loaded job structure
+			if k.startswith("_"):
+				del job[k]
+
 		job_sig = build_unsafe_dict_id(job, size=-32)
 		if len(args['schema']) > 1:
 			logger.info(f"Running job using composed schema: {', '.join(args['schema'])}")
