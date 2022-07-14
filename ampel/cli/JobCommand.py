@@ -75,7 +75,7 @@ class JobCommand(AbsCoreCommand):
 			"interactive": "you'll be asked for each task whether it should be run or skipped\n" + \
 				"and - if applicable - if the db should be reset",
 			"task": "only execute task(s) with provided index(es) [starting with 0]. Value 'last' is supported",
-			"show-plots": "show plots created by job (required Ampel-plot-cli)"
+			"show-plots": "show plots created by job (requires ampel-plot-cli)"
 		})
 
 		# Required
