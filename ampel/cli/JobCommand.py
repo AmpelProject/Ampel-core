@@ -114,11 +114,14 @@ class JobCommand(AbsCoreCommand):
 
 		lines = io.StringIO()
 		for i, job_fname in enumerate(args['schema']):
+
 			if not os.path.exists(job_fname):
 				logger.error(f"Job file not found: '{job_fname}'")
 				return
+
 			with open(job_fname, "r") as f:
 				lines.write("\n".join(f.readlines()))
+
 			args['schema'][i] = os.path.basename(args['schema'][i]) \
 				.replace(".yaml", "") \
 				.replace(".yml", "")
@@ -233,6 +236,12 @@ class JobCommand(AbsCoreCommand):
 			logger.info(f"Registering job task#{i} with {tds[-1]['multiplier']}x multiplier")
 
 		ctx.config._config = recursive_freeze(config_dict)
+		logger.info("Saving job schema")
+		ctx.db.get_collection("jobid").update_one(
+			{'_id': job_sig},
+			{'$setOnInsert': job},
+			upsert=True
+		)
 
 		for i, task_dict in enumerate(tds):
 
