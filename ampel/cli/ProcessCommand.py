@@ -61,7 +61,7 @@ class ProcessCommand(AbsCoreCommand):
         parser.add_arg("channel")
         parser.add_arg("alias")
         parser.add_arg("log-profile", default="prod")
-        parser.add_arg("debug", default=False)
+        parser.add_arg("debug", default=False, action="store_true")
 
         # Optional
         parser.add_arg("secrets", type=str)
@@ -159,3 +159,7 @@ class ProcessCommand(AbsCoreCommand):
             "Task processing done. Time required: %s minutes %s seconds\n"
             % (round(dm[0]), round(dm[1]))
         )
+        logger.flush()
+        # signal.signal(signal.SIGALRM, _handle_traceback)
+        # signal.alarm(1)
+        print("ProcessCommand.run() done; returning")
