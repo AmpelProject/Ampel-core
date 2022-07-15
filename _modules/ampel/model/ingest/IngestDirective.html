@@ -5,7 +5,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>ampel.model.ingest.IngestDirective &#8212; ampel-core 0.8.3-alpha.17 documentation</title>
+    <title>ampel.model.ingest.IngestDirective &#8212; ampel-core 0.8.2-alpha.27 documentation</title>
     <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css" />
     <link rel="stylesheet" type="text/css" href="../../../../_static/sphinxdoc.css" />
     <script data-url_root="../../../../" id="documentation_options" src="../../../../_static/documentation_options.js"></script>
@@ -21,7 +21,7 @@
         <li class="right" style="margin-right: 10px">
           <a href="../../../../genindex.html" title="General Index"
              accesskey="I">index</a></li>
-        <li class="nav-item nav-item-0"><a href="../../../../index.html">ampel-core 0.8.3-alpha.17 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="../../../../index.html">ampel-core 0.8.2-alpha.27 documentation</a> &#187;</li>
           <li class="nav-item nav-item-1"><a href="../../../index.html" accesskey="U">Module code</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">ampel.model.ingest.IngestDirective</a></li> 
       </ul>
@@ -35,20 +35,21 @@
   <h1>Source code for ampel.model.ingest.IngestDirective</h1><div class="highlight"><pre>
 <span></span><span class="ch">#!/usr/bin/env python</span>
 <span class="c1"># -*- coding: utf-8 -*-</span>
-<span class="c1"># File:                Ampel-core/ampel/model/ingest/IngestDirective.py</span>
-<span class="c1"># License:             BSD-3-Clause</span>
-<span class="c1"># Author:              valery brinnel &lt;firstname.lastname@gmail.com&gt;</span>
-<span class="c1"># Date:                20.05.2021</span>
-<span class="c1"># Last Modified Date:  20.05.2021</span>
-<span class="c1"># Last Modified By:    valery brinnel &lt;firstname.lastname@gmail.com&gt;</span>
+<span class="c1"># File              : Ampel-core/ampel/model/ingest/IngestDirective.py</span>
+<span class="c1"># License           : BSD-3-Clause</span>
+<span class="c1"># Author            : vb &lt;vbrinnel@physik.hu-berlin.de&gt;</span>
+<span class="c1"># Date              : 20.05.2021</span>
+<span class="c1"># Last Modified Date: 20.05.2021</span>
+<span class="c1"># Last Modified By  : vb &lt;vbrinnel@physik.hu-berlin.de&gt;</span>
 
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Optional</span>
 <span class="kn">from</span> <span class="nn">ampel.types</span> <span class="kn">import</span> <span class="n">ChannelId</span>
+<span class="kn">from</span> <span class="nn">ampel.model.StrictModel</span> <span class="kn">import</span> <span class="n">StrictModel</span>
 <span class="kn">from</span> <span class="nn">ampel.model.ingest.IngestBody</span> <span class="kn">import</span> <span class="n">IngestBody</span>
 <span class="kn">from</span> <span class="nn">ampel.model.ingest.FilterModel</span> <span class="kn">import</span> <span class="n">FilterModel</span>
-<span class="kn">from</span> <span class="nn">ampel.base.AmpelBaseModel</span> <span class="kn">import</span> <span class="n">AmpelBaseModel</span>
 
 
-<div class="viewcode-block" id="IngestDirective"><a class="viewcode-back" href="../../../../api.html#ampel.model.ingest.IngestDirective.IngestDirective">[docs]</a><span class="k">class</span> <span class="nc">IngestDirective</span><span class="p">(</span><span class="n">AmpelBaseModel</span><span class="p">):</span>
+<div class="viewcode-block" id="IngestDirective"><a class="viewcode-back" href="../../../../api.html#ampel.model.ingest.IngestDirective.IngestDirective">[docs]</a><span class="k">class</span> <span class="nc">IngestDirective</span><span class="p">(</span><span class="n">StrictModel</span><span class="p">):</span>
 	<span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    channel</span>
 <span class="sd">    filter</span>
@@ -70,7 +71,7 @@
 	<span class="n">channel</span><span class="p">:</span> <span class="n">ChannelId</span>
 
 	<span class="c1">#: Potientially filter input datapoints</span>
-	<span class="nb">filter</span><span class="p">:</span> <span class="kc">None</span> <span class="o">|</span> <span class="n">FilterModel</span> <span class="o">=</span> <span class="kc">None</span>
+	<span class="nb">filter</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">FilterModel</span><span class="p">]</span>
 
 	<span class="n">ingest</span><span class="p">:</span> <span class="n">IngestBody</span> <span class="o">=</span> <span class="n">IngestBody</span><span class="p">()</span></div>
 </pre></div>
@@ -104,14 +105,14 @@
         <li class="right" style="margin-right: 10px">
           <a href="../../../../genindex.html" title="General Index"
              >index</a></li>
-        <li class="nav-item nav-item-0"><a href="../../../../index.html">ampel-core 0.8.3-alpha.17 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="../../../../index.html">ampel-core 0.8.2-alpha.27 documentation</a> &#187;</li>
           <li class="nav-item nav-item-1"><a href="../../../index.html" >Module code</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">ampel.model.ingest.IngestDirective</a></li> 
       </ul>
     </div>
     <div class="footer" role="contentinfo">
         &#169; Copyright 2018-2021, Ampel Project.
-      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 4.5.0.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 4.3.2.
     </div>
   </body>
 </html>
