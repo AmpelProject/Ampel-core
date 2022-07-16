@@ -4,11 +4,12 @@
 # License:             BSD-3-Clause
 # Author:              valery brinnel <firstname.lastname@gmail.com>
 # Date:                Unspecified
-# Last Modified Date:  07.07.2022
+# Last Modified Date:  16.07.2022
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-import re, html
+import sys, re, html
 from math import isinf
+from contextlib import contextmanager
 
 # copied from https://stackoverflow.com/a/56497521/104668
 def prettyjson(obj, indent=2, maxlinelength=80):
@@ -184,3 +185,16 @@ def set_bold(s: str, match: str):
 		else:
 			out.append(html.escape(el))
 	return HTML("<pre style='font-size: 13px'>" + "<br/>".join(out) + "</pre>")
+
+
+@contextmanager
+def out_stack():
+	"""
+	with out_stack():
+		raise ValueError("Clean and concise")
+	"""
+	default_value = getattr(sys, "tracebacklimit", 1000)
+	sys.tracebacklimit = 0
+	print(" ")
+	yield
+	sys.tracebacklimit = default_value

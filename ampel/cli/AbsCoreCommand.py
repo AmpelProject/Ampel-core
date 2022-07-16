@@ -7,8 +7,7 @@
 # Last Modified Date:  12.07.2022
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-import re, os, sys
-from contextlib import contextmanager
+import re, os
 from appdirs import user_data_dir # type: ignore[import]
 from typing import Any, TypeVar
 from collections.abc import Sequence, Iterator
@@ -21,6 +20,7 @@ from ampel.core.UnitLoader import UnitLoader
 from ampel.log.AmpelLogger import AmpelLogger
 from ampel.util.mappings import set_by_path
 from ampel.util.freeze import recursive_freeze
+from ampel.util.pretty import out_stack
 
 custom_conf_patter = re.compile(r"^--[\w-]*(?:\.[\w-]+)*.*$")
 
@@ -44,8 +44,7 @@ class AbsCoreCommand(AbsCLIOperation, abstract=True):
 			if os.path.exists(std_conf):
 				ampel_conf = AmpelConfig.load(std_conf, freeze=False)
 			else:
-				with disable_exception_traceback():
-					print("")
+				with out_stack():
 					raise ValueError("No default ampel config found -> argument -config required\n")
 		else:
 			ampel_conf = AmpelConfig.load(config_path, freeze=False)
@@ -166,11 +165,3 @@ def _maybe_int(stringy):
 		return int(stringy)
 	except Exception:
 		return stringy
-
-
-@contextmanager
-def disable_exception_traceback():
-	default_value = getattr(sys, "tracebacklimit", 1000)
-	sys.tracebacklimit = 0
-	yield
-	sys.tracebacklimit = default_value
