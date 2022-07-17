@@ -73,7 +73,7 @@ class T3PlainUnitExecutor(AbsT3ControlUnit, T3DocBuilder):
 						)
 						return None
 
-		self.logger.info("Running T3unit", extra={'unit': self.target.unit})
+		self.logger.info("Running T3 unit", extra={'unit': self.target.unit})
 		ts = time()
 		ret = t3_unit.process(t3s)
 		self.flush(t3_unit)

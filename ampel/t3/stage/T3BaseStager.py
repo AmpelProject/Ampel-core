@@ -53,7 +53,7 @@ class T3BaseStager(AbsT3Stager, T3DocBuilder, abstract=True):
 		ts = time()
 
 		try:
-			self.logger.info("Running T3unit", extra={'unit': t3_unit.__class__.__name__})
+			self.logger.info("Running T3 unit", extra={'unit': t3_unit.__class__.__name__})
 			if (ret := t3_unit.process(view_generator, t3s)) or self.save_stock_ids:
 				if x := self.handle_t3_result(t3_unit, ret, t3s, view_generator.get_stock_ids(), ts):
 					yield x
