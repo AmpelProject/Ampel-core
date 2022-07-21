@@ -76,6 +76,7 @@ class T3ReviewUnitExecutor(AbsT3ControlUnit, T3DocBuilder):
 				**kwargs
 			)
 
+			self.logger.info("Running stager", extra={'unit': self.stage.unit})
 			return stager.stage(supplier.supply(t3s), t3s)
 
 		except Exception as e:
