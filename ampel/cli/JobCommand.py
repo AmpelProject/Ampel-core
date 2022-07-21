@@ -55,6 +55,12 @@ class JobCommand(AbsCoreCommand):
 
 	def __init__(self):
 		self.parser = None
+		try:
+			import sys, IPython
+			sys.breakpointhook = IPython.embed
+		except Exception:
+			pass
+
 
 	# Mandatory implementation
 	def get_parser(self, sub_op: None | str = None) -> ArgumentParser | AmpelArgumentParser:
