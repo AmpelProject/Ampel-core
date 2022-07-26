@@ -39,7 +39,7 @@ def test_ConfigChecker(testing_config, monkeypatch):
             super().__init__(**kwargs)
             raise SideEffect
 
-        def run(self):
+        def proceed(self, event_hdlr):
             ...
 
     config["process"]["t0"]["BadProcess"] = {

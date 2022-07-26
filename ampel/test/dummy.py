@@ -33,7 +33,7 @@ class Sleepy(AbsEventUnit):
 
     process_name: str = "ZZZzzzz"
 
-    def run(self):
+    def proceed(self, event_hdlr):
         time.sleep(1)
 
 

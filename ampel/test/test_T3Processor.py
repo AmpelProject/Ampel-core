@@ -4,13 +4,14 @@
 # License:             BSD-3-Clause
 # Author:              jvs
 # Date:                Unspecified
-# Last Modified Date:  10.12.2021
+# Last Modified Date:  25.07.2022
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from collections.abc import Generator
 from ampel.dev.DevAmpelContext import DevAmpelContext
 from ampel.struct.JournalAttributes import JournalAttributes
 from ampel.struct.StockAttributes import StockAttributes
+from ampel.enum.EventCode import EventCode
 from ampel.view.SnapView import SnapView
 from ampel.view.T3Store import T3Store
 import pytest
@@ -76,7 +77,7 @@ def test_unit_raises_error(
     event = dev_context.db.get_collection("events").find_one({})
     assert event
     assert event["run"] == 1
-    assert event["success"] == expect_success
+    assert event["code"] == EventCode.OK.value if expect_success else EventCode.EXCEPTION
 
 
 def test_view_generator(dev_context: DevAmpelContext, ingest_stock):
