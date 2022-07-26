@@ -4,7 +4,7 @@
 # License:             BSD-3-Clause
 # Author:              valery brinnel <firstname.lastname@gmail.com>
 # Date:                28.05.2021
-# Last Modified Date:  13.05.2022
+# Last Modified Date:  25.07.2022
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 import gc, signal
@@ -21,6 +21,7 @@ from ampel.content.MetaRecord import MetaRecord
 from ampel.content.T1Document import T1Document
 from ampel.content.T2Document import T2Document
 from ampel.enum.MetaActionCode import MetaActionCode
+from ampel.enum.EventCode import EventCode
 from ampel.log import AmpelLogger, LogFlag, VERBOSE, DEBUG
 from ampel.core.EventHandler import EventHandler
 from ampel.log.utils import report_exception, report_error
@@ -79,6 +80,9 @@ class AbsWorker(Generic[T], AbsEventUnit, abstract=True):
 	#: For later
 	database: str = "mongo"
 
+	#: Avoid 'burning' a run_id for nothing at the cost of a request
+	pre_check: bool = True
+
 
 	def __init__(self, **kwargs) -> None:
 
@@ -130,20 +134,19 @@ class AbsWorker(Generic[T], AbsEventUnit, abstract=True):
 		...
 
 
-	def run(self, pre_check: bool = True) -> int:
+	def prepare(self, event_hdlr: EventHandler) -> None | EventCode:
+		""" :returns: number of t2 docs processed """
+		event_hdlr.set_tier(2)
+		if self.pre_check and self.col.count_documents(self.query) == 0:
+			return EventCode.PRE_CHECK_EXIT
+		return None
+
+
+	def proceed(self, event_hdlr: EventHandler) -> int:
 		""" :returns: number of t2 docs processed """
 
-		# Add new doc in the 'events' collection
-		event_hdlr = EventHandler(
-			self.process_name, self._ampel_db, tier=2,
-			run_id = -1, raise_exc = self.raise_exc
-		)
-
-		# Avoid 'burning' a run_id for nothing (at the cost of a request)
-		if pre_check and self.col.count_documents(self.query) == 0:
-			return 0
-
-		run_id = self.context.new_run_id()
+		event_hdlr.set_tier(self.tier)
+		run_id = event_hdlr.get_run_id()
 
 		logger = AmpelLogger.from_profile(
 			self.context, self.log_profile, run_id,
@@ -190,10 +193,10 @@ class AbsWorker(Generic[T], AbsEventUnit, abstract=True):
 			if garbage_collect:
 				gc.collect()
 
-		event_hdlr.update(logger, _overwrite=True, docs=self._doc_counter, run=run_id)
-
+		event_hdlr.add_extra(docs=self._doc_counter)
 		logger.flush()
 		self._instances.clear()
+
 		return self._doc_counter
 
 
