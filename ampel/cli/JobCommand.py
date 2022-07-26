@@ -4,10 +4,10 @@
 # License:             BSD-3-Clause
 # Author:              valery brinnel <firstname.lastname@gmail.com>
 # Date:                15.03.2021
-# Last Modified Date:  14.07.2022
+# Last Modified Date:  26.07.2022
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-import yaml, io, os, signal, sys
+import yaml, io, os, signal, sys, subprocess
 from time import time
 from multiprocessing import Queue, Process
 from ampel.base.AmpelBaseModel import AmpelBaseModel
@@ -18,6 +18,7 @@ from collections.abc import Sequence
 from ampel.abstract.AbsEventUnit import AbsEventUnit
 from ampel.abstract.AbsProcessorTemplate import AbsProcessorTemplate
 from ampel.model.UnitModel import UnitModel
+from ampel.core.EventHandler import EventHandler
 from ampel.dev.DevAmpelContext import DevAmpelContext
 from ampel.log.AmpelLogger import AmpelLogger
 from ampel.log.LogFlag import LogFlag
@@ -73,7 +74,7 @@ class JobCommand(AbsCoreCommand):
 			"debug": "Debug",
 			#"verbose": "increases verbosity",
 			"config": "path to an ampel config file (yaml/json)",
-			"schema": "path to YAML job file",
+			"schema": "path to YAML job file (multiple files will be aggregated)",
 			"secrets": "path to a YAML secrets store in sops format",
 			"keep-db": "do not reset databases even if so requested by job file",
 			"reset-db": "reset databases even if not requested by job file",
@@ -99,8 +100,9 @@ class JobCommand(AbsCoreCommand):
 		parser.add_arg("secrets", type=str)
 
 		# Example
-		parser.add_example("job -config ampel_conf.yaml schema job_file.yaml")
-		parser.add_example("job -config ampel_conf.yaml -schema job_file.yaml -keep-db -task last")
+		parser.add_example("job schema job_file.yaml")
+		parser.add_example("job -schema job_file.yaml -keep-db -task last")
+		parser.add_example("job -schema job_part1.yaml job_part2.yaml -show-plots (requires ampel-plot)")
 		return parser
 
 
@@ -238,6 +240,7 @@ class JobCommand(AbsCoreCommand):
 			upsert=True
 		)
 
+		run_ids = []
 		for i, task_dict in enumerate(tds):
 
 			pname_base = job['name'] if 'name' in job else schema_descr
@@ -268,21 +271,23 @@ class JobCommand(AbsCoreCommand):
 				signal.signal(signal.SIGTERM, signal_handler)
 
 				try:
-					for i in range(multiplier):
+					for _ in range(multiplier):
 						q: Queue = Queue()
 						p = Process(
 							target = run_mp_process,
-							args = (q, config_dict, task_dict, process_name)
+							args = (q, config_dict, task_dict, process_name, job_sig, i)
 						)
 						p.deamon = True
 						p.start()
 						ps.append(p)
 						qs.append(q)
 
-					for i in range(multiplier):
-						ps[i].join()
-						if (m := qs[i].get()):
-							logger.info(f"{task_dict['unit']}#{i} return value: {m}")
+					for j in range(multiplier):
+						ps[j].join()
+						run_id, ps_ret = qs[j].get()
+						run_ids.append(run_id)
+						if ps_ret:
+							logger.info(f"{task_dict['unit']}#{j} return value: {ps_ret}")
 				except KeyboardInterrupt:
 					sys.exit(1)
 
@@ -296,22 +301,39 @@ class JobCommand(AbsCoreCommand):
 					sub_type = AbsEventUnit,
 					base_log_flag = LogFlag.MANUAL_RUN
 				)
-				x = proc.run()
+
+				event_hdlr = EventHandler(
+					proc.process_name,
+					ctx.get_database(),
+					raise_exc = proc.raise_exc,
+					job_sig = job_sig,
+					extra = {'task': i}
+				)
+
+				x = proc.run(event_hdlr)
+				if event_hdlr.run_id:
+					run_ids.append(event_hdlr.run_id)
+
 				logger.info(f"{task_dict['unit']} return value: {x}")
 
 		dm = divmod(time() - start_time, 60)
-		logger.info("Job processing done. Time required: %s minutes %s seconds\n" % (round(dm[0]), round(dm[1])))
+		logger.info(
+			"Job processing done. Time required: %s minutes %s seconds\n" %
+			(round(dm[0]), round(dm[1]))
+		)
 
 		if args.get("show_plots"):
-			import subprocess
+
 			cmd = [
 				'ampel', 'plot', 'show', '-stack', '100', '-png', '150',
 				'-t2', '-t3', '-base-path', 'body.plot', # to be improved later
-				'-job', *args['schema']
+				'-job', *args['schema'], '-run-id', *[str(el) for el in run_ids]
 			]
 			print("-" * 40)
 			print(f"Executing command: {' '.join(cmd)}")
-			print(subprocess.run(cmd, check=True, capture_output=True, text=True).stdout)
+			r = subprocess.run(cmd, check=True, capture_output=True, text=True)
+			print(r.stdout)
+			print(r.stderr)
 
 
 	def print_chapter(self, msg: str, logger: AmpelLogger) -> None:
@@ -352,6 +374,7 @@ def run_mp_process(
 	tast_unit_model: dict[str, Any],
 	process_name: str,
 	job_sig: None | int = None,
+	task_nbr: None | int = None,
 	log_profile: str = "default"
 ) -> None:
 
@@ -370,7 +393,15 @@ def run_mp_process(
 		)
 
 		queue.put(
-			processor.run()
+			processor.run(
+				EventHandler(
+					processor.process_name,
+					context.get_database(),
+					raise_exc = processor.raise_exc,
+					job_sig = job_sig,
+					extra = {'task': task_nbr}
+				)
+			)
 		)
 
 	except Exception as e:
