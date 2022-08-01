@@ -4,12 +4,14 @@
 # License:             BSD-3-Clause
 # Author:              valery brinnel <firstname.lastname@gmail.com>
 # Date:                14.03.2021
-# Last Modified Date:  19.03.2021
+# Last Modified Date:  01.08.2022
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
+from typing import Any
 from ampel.abstract.AbsEventUnit import AbsEventUnit
 from ampel.model.UnitModel import UnitModel
 from ampel.log import AmpelLogger
+from ampel.core.EventHandler import EventHandler
 from ampel.abstract.AbsT3ReviewUnit import AbsT3ReviewUnit
 
 
@@ -18,7 +20,7 @@ class DemoProcessor(AbsEventUnit):
 	parameter_a: int
 	parameter_b: int = 200
 
-	def run(self) -> None:
+	def proceed(self, event_hdlr: EventHandler) -> Any:
 
 		from random import randint
 		import time
