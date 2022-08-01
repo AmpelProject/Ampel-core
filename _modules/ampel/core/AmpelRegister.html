@@ -1,0 +1,620 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ampel.core.AmpelRegister &#8212; ampel-core 0.8.3-alpha.18 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/sphinxdoc.css" />
+    <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+    <script src="../../../_static/jquery.js"></script>
+    <script src="../../../_static/underscore.js"></script>
+    <script src="../../../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">ampel-core 0.8.3-alpha.18 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../index.html" accesskey="U">Module code</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">ampel.core.AmpelRegister</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for ampel.core.AmpelRegister</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/env python</span>
+<span class="c1"># -*- coding: utf-8 -*-</span>
+<span class="c1"># File:                Ampel-core/ampel/core/AmpelRegister.py</span>
+<span class="c1"># License:             BSD-3-Clause</span>
+<span class="c1"># Author:              valery brinnel &lt;firstname.lastname@gmail.com&gt;</span>
+<span class="c1"># Date:                16.05.2020</span>
+<span class="c1"># Last Modified Date:  04.03.2021</span>
+<span class="c1"># Last Modified By:    valery brinnel &lt;firstname.lastname@gmail.com&gt;</span>
+
+<span class="kn">import</span> <span class="nn">bson</span>
+<span class="kn">from</span> <span class="nn">time</span> <span class="kn">import</span> <span class="n">time</span>
+<span class="kn">from</span> <span class="nn">os.path</span> <span class="kn">import</span> <span class="n">isdir</span><span class="p">,</span> <span class="n">isfile</span>
+<span class="kn">from</span> <span class="nn">pathlib</span> <span class="kn">import</span> <span class="n">Path</span>
+<span class="kn">from</span> <span class="nn">struct</span> <span class="kn">import</span> <span class="n">calcsize</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">BinaryIO</span><span class="p">,</span> <span class="n">Literal</span><span class="p">,</span> <span class="n">Any</span><span class="p">,</span> <span class="n">TypedDict</span>
+
+<span class="kn">from</span> <span class="nn">ampel.log.AmpelLogger</span> <span class="kn">import</span> <span class="n">AmpelLogger</span><span class="p">,</span> <span class="n">VERBOSE</span>
+<span class="kn">from</span> <span class="nn">ampel.base.AmpelUnit</span> <span class="kn">import</span> <span class="n">AmpelUnit</span>
+<span class="kn">from</span> <span class="nn">ampel.util.hash</span> <span class="kn">import</span> <span class="n">build_unsafe_dict_id</span>
+<span class="kn">from</span> <span class="nn">ampel.util.register</span> <span class="kn">import</span> <span class="n">read_header</span><span class="p">,</span> <span class="n">write_header</span><span class="p">,</span> \
+	<span class="n">get_inner_file_handle</span><span class="p">,</span> <span class="n">get_outer_file_handle</span><span class="p">,</span> <span class="n">rescale_header</span>
+
+
+<span class="k">class</span> <span class="nc">HeaderInfo</span><span class="p">(</span><span class="n">TypedDict</span><span class="p">):</span>
+	<span class="n">size</span><span class="p">:</span> <span class="nb">int</span>
+	<span class="nb">len</span><span class="p">:</span> <span class="nb">int</span>
+	<span class="n">payload</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span>
+
+
+<div class="viewcode-block" id="AmpelRegister"><a class="viewcode-back" href="../../../api.html#ampel.core.AmpelRegister.AmpelRegister">[docs]</a><span class="k">class</span> <span class="nc">AmpelRegister</span><span class="p">(</span><span class="n">AmpelUnit</span><span class="p">):</span>
+	<span class="sd">&quot;&quot;&quot; # noqa: E101</span>
+
+<span class="sd">	General notes:</span>
+<span class="sd">	--------------</span>
+
+<span class="sd">	An ampel register file is made of three parts: signature, header and content</span>
+
+<span class="sd">	1) The file signature is encoded in the first 11 bytes.</span>
+<span class="sd">	The signature contains the header&#39;s length and size (3 bytes each)</span>
+
+<span class="sd">	2) A BSON encoded dict is saved in the next x bytes, refered to as the file&#39;s header.</span>
+<span class="sd">	The header can be updated independently of the register&#39;s content.</span>
+<span class="sd">	The size of the header is customizable during file creation.</span>
+
+<span class="sd">	3) The register&#39;s content is usually a compressed structure (zip, bzip or xz)</span>
+<span class="sd">	which stores information in binary format. Compression can be turned off if so whished.</span>
+<span class="sd">	(The size of a register containing 10 millions alert ids [8 bytes] and filter</span>
+<span class="sd">	return code [1 byte] can be reduced from ~90MB to ~50MB using gzip with default settings).</span>
+
+<span class="sd">	Properties:</span>
+<span class="sd">	-----------</span>
+<span class="sd">	- Registers can be re-opened and appended</span>
+<span class="sd">	- Header content can be accessed or updated independently of the register&#39;s content.</span>
+<span class="sd">	- Header updates are fast if enough space was reserved for updates in the first place.</span>
+<span class="sd">	- Header size can be increased afterwards at the cost of having to rewrite the entire file once.</span>
+<span class="sd">	  This happens automatically when needed.</span>
+<span class="sd">	- Logging read and write access to the register content into the register header is supported</span>
+<span class="sd">	- Registers can be capped (based on max content length or max number of run ids).</span>
+<span class="sd">	  Once the limit is reached, the full register is renamed and a new one is created.</span>
+
+<span class="sd">	Note: the module ampel.util.register contains tools to manually change ampel registers, such as:</span>
+<span class="sd">	`get_header_content`, `open_file_and_write_header` and `rescale_header`</span>
+
+<span class="sd">	Target file:</span>
+<span class="sd">	------------</span>
+
+<span class="sd">	:param path_base: the base folder path where to create/read register files.</span>
+<span class="sd">	:param path_extra: an optional additional folder path (or paths) to be appended to `path_base`.</span>
+<span class="sd">	:param full_path: when provided, all path building options will be ignored and a new</span>
+<span class="sd">	  file handle will be opened using the provided full_path</span>
+<span class="sd">	:param file_handle: if you provide a file handle to a register file (parameter file handle),</span>
+<span class="sd">	  it will be used and all path options will be ignored.</span>
+
+<span class="sd">	:param file_cap: registers can be capped, typically based on a maximum number of blocks.</span>
+<span class="sd">	  When access to a full register is requested, the original file is renamed and a new register is created.</span>
+<span class="sd">	  During files renames, an index is appended (suffix) to the original file name.</span>
+<span class="sd">	  The current (newest) register file always comes without index suffix.</span>
+<span class="sd">	  This index is saved into the current register header.</span>
+
+<span class="sd">	  Example::</span>
+<span class="sd">	    </span>
+<span class="sd">	    ampel_register.bin.gz (current - newest)</span>
+<span class="sd">	    ampel_register.bin.gz.1 (first renamed register - oldest)</span>
+<span class="sd">	    ampel_register.bin.gz.2</span>
+<span class="sd">	    ampel_register.bin.gz.3 (second newest)</span>
+
+<span class="sd">	  Note1: file renames occur during the opening procedure of registers, no check is performed during the filling of registers</span>
+<span class="sd">	  once a register is opened. A register can thus grow beyond the defined limit as long as a process keeps it open.</span>
+
+
+<span class="sd">	Header:</span>
+<span class="sd">	-------</span>
+
+<span class="sd">	Limitations:</span>
+
+<span class="sd">	- The maximum space reservable for the header is 2**24 bytes, i.e ~16MB.</span>
+<span class="sd">	- integers cannot exceed 2**63 bits. Should you need to save bigger numbers,</span>
+<span class="sd">	  please use the methods bindata_to_int, int_to_bindata from module ampel.util.bson</span>
+
+<span class="sd">	:param new_header_size: either None, or an integer or a string (please read the note above).</span>
+<span class="sd">	  </span>
+<span class="sd">	  - None or 0: the header block size will equal the header encoded length. Choose this option if</span>
+<span class="sd">	    the header is not meant to be updated later. Otherwise, updates will only be possible if the header size</span>
+<span class="sd">	    does not grow (note that there is a margin allowed since header exceeding the limit are automatically</span>
+<span class="sd">	    compressed using zlib and written to disk if the size condition is then fullfilled).</span>
+<span class="sd">	  - integer number: the header will be allocated the specified number of bytes (for example 4096).</span>
+<span class="sd">	  - a string: refers to a &#39;header margin&#39; and must start with the character &#39;+&#39;.</span>
+<span class="sd">	    This option can save space in some circumstances. The header space allocated for the header will equal</span>
+<span class="sd">	    the length of the initial header (including all provided options such as `header_extra`) to which</span>
+<span class="sd">	    the specified header margin will be added. For example, &#39;+1024&#39; means that 1024 bytes will be</span>
+<span class="sd">	    allocated additionally to the initial header lengths for future updates. If the initial header length</span>
+<span class="sd">	    is 100 bytes, then a header block of 1124 bytes will be created.</span>
+
+<span class="sd">	:param header_extra: any extra to be included in the header under the key &#39;extra&#39; (must be bson encodable)</span>
+<span class="sd">	:param header_extra_base: any extra to be included in the header at root depth (must be bson encodable)</span>
+<span class="sd">	:param header_update_anyway: if no update to the register is made, the default setting is that the</span>
+<span class="sd">	  header is not updated. This settings forces header updates. For example, you might want</span>
+<span class="sd">	  to save all run ids into the header whether or not they changed the content of the register.</span>
+
+<span class="sd">	:param header_log_accesses: if True, timestamps will be recorded each time the register is opened/closed</span>
+<span class="sd">	  along with the amount of new blocks appended to the register.</span>
+<span class="sd">	  </span>
+<span class="sd">	  Note 1: parameter `new_header_size` must be set when using this value.</span>
+<span class="sd">	  Note 2: see docstring of paramter `header_update_anyway` that affects the behavior of this parameter.</span>
+<span class="sd">	  </span>
+<span class="sd">	  In the following example, `header_log_accesses` is responsible for creating/updating the key &#39;updated&#39;::</span>
+<span class="sd">	    </span>
+<span class="sd">        &quot;ts&quot;: {</span>
+<span class="sd">            &quot;created&quot;: 1590506868.3880599,</span>
+<span class="sd">            &quot;updated&quot;: [</span>
+<span class="sd">                [1590506868.3880599, 1590509029.389, 1200],</span>
+<span class="sd">                [1590507152.079873, 1590507295.080478, 2300]</span>
+<span class="sd">           ]</span>
+<span class="sd">	    }</span>
+<span class="sd">	</span>
+
+<span class="sd">	Errors:</span>
+<span class="sd">	-------</span>
+
+<span class="sd">	:raises: ValueError, FileNotFoundError</span>
+<span class="sd">	- if neither `file_handle`, `full_path`, `path_base` exist.</span>
+<span class="sd">	- if read access to a non-existing file is requested</span>
+<span class="sd">	- if the target file is not a register file (existing empty files are ok)</span>
+<span class="sd">	- if the &#39;struct&#39; parameter of sub-class of this class differs with the values registered</span>
+<span class="sd">	  in the file&#39;s header (this behavior can be deactivated from parameter `on_exist_check`)</span>
+<span class="sd">	- during file renames (in case capped registers are used) if the target file already exists</span>
+<span class="sd">	&quot;&quot;&quot;</span>
+
+	<span class="n">struct</span><span class="p">:</span> <span class="nb">str</span>
+	<span class="n">verbose</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span>
+	<span class="n">logger</span><span class="p">:</span> <span class="n">AmpelLogger</span>
+
+	<span class="c1">#: save files in &lt;path_base&gt;/&lt;file&gt;</span>
+	<span class="n">path_base</span><span class="p">:</span> <span class="kc">None</span> <span class="o">|</span> <span class="nb">str</span>
+	<span class="c1">#: save files in &lt;path_base&gt;/&lt;path_extra(s)&gt;/&lt;file&gt;</span>
+	<span class="n">path_extra</span><span class="p">:</span> <span class="kc">None</span> <span class="o">|</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>
+	<span class="c1">#: prefix for each file</span>
+	<span class="n">file_prefix</span><span class="p">:</span> <span class="kc">None</span> <span class="o">|</span> <span class="nb">str</span>
+	<span class="c1">#: ignore all other path options and use this file path</span>
+	<span class="n">path_full</span><span class="p">:</span> <span class="kc">None</span> <span class="o">|</span> <span class="nb">str</span>
+
+	<span class="n">file_cap</span><span class="p">:</span> <span class="kc">None</span> <span class="o">|</span> <span class="nb">dict</span><span class="p">[</span><span class="n">Literal</span><span class="p">[</span><span class="s1">&#39;blocks&#39;</span><span class="p">],</span> <span class="nb">int</span><span class="p">]</span>
+
+	<span class="c1">#: use existing file handle</span>
+	<span class="n">file_handle</span><span class="p">:</span> <span class="kc">None</span> <span class="o">|</span> <span class="n">BinaryIO</span>
+
+	<span class="c1">#: compression scheme</span>
+	<span class="n">compression</span><span class="p">:</span> <span class="kc">None</span> <span class="o">|</span> <span class="n">Literal</span><span class="p">[</span><span class="s1">&#39;gz&#39;</span><span class="p">,</span> <span class="s1">&#39;bz2&#39;</span><span class="p">,</span> <span class="s1">&#39;xz&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;gz&#39;</span>
+	<span class="c1">#: compression level</span>
+	<span class="n">compression_level</span><span class="p">:</span> <span class="kc">None</span> <span class="o">|</span> <span class="nb">int</span>
+
+	<span class="c1"># General header options</span>
+	<span class="n">new_header_size</span><span class="p">:</span> <span class="kc">None</span> <span class="o">|</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">str</span>
+
+	<span class="n">header_log_accesses</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+	<span class="n">header_count_blocks</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>
+	<span class="n">header_extra</span><span class="p">:</span> <span class="kc">None</span> <span class="o">|</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span>
+	<span class="n">header_extra_base</span><span class="p">:</span> <span class="kc">None</span> <span class="o">|</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span>
+	<span class="n">header_update_anyway</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+
+	<span class="c1"># New header options</span>
+	<span class="n">header_creation_size</span><span class="p">:</span> <span class="kc">None</span> <span class="o">|</span> <span class="nb">int</span>
+
+	<span class="c1"># Which header key to check if file already exists</span>
+	<span class="n">on_exist_check</span><span class="p">:</span> <span class="kc">None</span> <span class="o">|</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span> <span class="o">|</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;struct&#39;</span><span class="p">]</span>
+	<span class="n">on_exist_strict_check</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+
+	<span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">autoload</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+		<span class="sd">&quot;&quot;&quot; See class docstring &quot;&quot;&quot;</span>
+
+		<span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+		<span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s1">&#39;struct&#39;</span><span class="p">):</span>
+			<span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Sub-classes of AmpelRegister must define static field &#39;struct&#39;&quot;</span><span class="p">)</span>
+
+		<span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">header_log_accesses</span> <span class="ow">and</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">new_header_size</span><span class="p">:</span>
+			<span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Parameter &#39;new_header_size&#39; is required when using &#39;header_log_accesses&#39;&quot;</span><span class="p">)</span>
+
+		<span class="k">if</span> <span class="n">autoload</span><span class="p">:</span>
+			<span class="bp">self</span><span class="o">.</span><span class="n">load</span><span class="p">()</span>
+
+
+	<span class="k">def</span> <span class="nf">load</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+
+		<span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">file_handle</span><span class="p">:</span>
+			<span class="n">hinfo</span> <span class="o">=</span> <span class="n">read_header</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">file_handle</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">logger</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">verbose</span> <span class="o">&gt;</span> <span class="mi">1</span> <span class="k">else</span> <span class="kc">None</span><span class="p">)</span>
+			<span class="bp">self</span><span class="o">.</span><span class="n">_outer_fh</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">file_handle</span>
+		<span class="k">else</span><span class="p">:</span>
+			<span class="n">f_path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_file_path</span><span class="p">()</span>
+			<span class="n">hinfo</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_outer_fh</span> <span class="o">=</span> <span class="n">get_outer_file_handle</span><span class="p">(</span>
+				<span class="n">f_path</span><span class="p">,</span> <span class="n">write</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">logger</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">logger</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">verbose</span> <span class="o">&gt;</span> <span class="mi">1</span> <span class="k">else</span> <span class="kc">None</span>
+			<span class="p">)</span>
+
+			<span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_outer_fh</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+				<span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">f_path</span><span class="si">}</span><span class="s2">: cannot get file handle&quot;</span><span class="p">)</span>
+
+		<span class="c1"># File exists (and is not empty)</span>
+		<span class="k">if</span> <span class="n">hinfo</span><span class="p">:</span>
+
+			<span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">verbose</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+				<span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Header loaded&quot;</span><span class="p">,</span> <span class="n">extra</span><span class="o">=</span><span class="n">hinfo</span><span class="p">[</span><span class="s1">&#39;payload&#39;</span><span class="p">])</span>
+
+			<span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">on_exist_check</span><span class="p">:</span>
+				<span class="bp">self</span><span class="o">.</span><span class="n">check_header</span><span class="p">(</span><span class="n">hinfo</span><span class="p">[</span><span class="s1">&#39;payload&#39;</span><span class="p">])</span>
+
+			<span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">file_cap</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">check_rename</span><span class="p">(</span><span class="n">hinfo</span><span class="p">[</span><span class="s1">&#39;payload&#39;</span><span class="p">]):</span>
+				<span class="bp">self</span><span class="o">.</span><span class="n">_outer_fh</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">rename_file</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_outer_fh</span><span class="p">,</span> <span class="n">hinfo</span><span class="p">[</span><span class="s1">&#39;payload&#39;</span><span class="p">])</span>
+				<span class="n">hinfo</span> <span class="o">=</span> <span class="kc">None</span>
+
+			<span class="k">else</span><span class="p">:</span>
+				<span class="bp">self</span><span class="o">.</span><span class="n">header</span> <span class="o">=</span> <span class="n">hinfo</span>
+
+				<span class="c1"># Update file access</span>
+				<span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">header_log_accesses</span><span class="p">:</span>
+					<span class="bp">self</span><span class="o">.</span><span class="n">register_file_access</span><span class="p">()</span>
+
+				<span class="c1"># Hook for sub-classes</span>
+				<span class="bp">self</span><span class="o">.</span><span class="n">onload_update_header</span><span class="p">()</span>
+
+
+		<span class="k">if</span> <span class="n">hinfo</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+
+			<span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">verbose</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+				<span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Generating new header&quot;</span><span class="p">)</span>
+
+			<span class="n">header_bytes</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">gen_new_header</span><span class="p">()</span>
+			<span class="n">write_header</span><span class="p">(</span>
+				<span class="bp">self</span><span class="o">.</span><span class="n">_outer_fh</span><span class="p">,</span> <span class="n">header</span><span class="o">=</span><span class="n">header_bytes</span><span class="p">,</span> <span class="n">hsize</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">header</span><span class="p">[</span><span class="s1">&#39;size&#39;</span><span class="p">],</span>
+				<span class="n">logger</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">logger</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">verbose</span> <span class="k">else</span> <span class="kc">None</span>
+			<span class="p">)</span>
+
+		<span class="bp">self</span><span class="o">.</span><span class="n">_inner_fh</span> <span class="o">=</span> <span class="n">get_inner_file_handle</span><span class="p">(</span>
+			<span class="bp">self</span><span class="o">.</span><span class="n">_outer_fh</span><span class="p">,</span> <span class="n">write</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+			<span class="n">logger</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">logger</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">verbose</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="k">else</span> <span class="kc">None</span>
+		<span class="p">)</span>
+
+		<span class="c1"># Non-compressed file returns the EOF position when opened in mode &#39;ab&#39;</span>
+		<span class="c1"># compressed file return 0</span>
+		<span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">compression</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+			<span class="bp">self</span><span class="o">.</span><span class="n">_ftell</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_inner_fh</span><span class="o">.</span><span class="n">tell</span><span class="p">()</span>
+
+		<span class="bp">self</span><span class="o">.</span><span class="n">header_sig</span> <span class="o">=</span> <span class="n">build_unsafe_dict_id</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">header</span><span class="p">[</span><span class="s1">&#39;payload&#39;</span><span class="p">])</span>
+
+
+<div class="viewcode-block" id="AmpelRegister.check_rename"><a class="viewcode-back" href="../../../api.html#ampel.core.AmpelRegister.AmpelRegister.check_rename">[docs]</a>	<span class="k">def</span> <span class="nf">check_rename</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">header</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+		<span class="sd">&quot;&quot;&quot; override if needed &quot;&quot;&quot;</span>
+
+		<span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">file_cap</span><span class="p">:</span>
+			<span class="k">return</span> <span class="kc">False</span>
+
+		<span class="k">if</span> <span class="s1">&#39;blocks&#39;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">file_cap</span><span class="p">:</span>
+
+			<span class="k">if</span> <span class="n">header</span><span class="p">[</span><span class="s1">&#39;blocks&#39;</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">file_cap</span><span class="p">[</span><span class="s1">&#39;blocks&#39;</span><span class="p">]:</span>
+				<span class="k">return</span> <span class="kc">True</span>
+
+			<span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">verbose</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+				<span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;File rotation trigger not reached&quot;</span><span class="p">)</span>
+
+			<span class="k">return</span> <span class="kc">False</span>
+
+		<span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Unknown &#39;file_cap&#39; value: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">file_cap</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+		<span class="k">return</span> <span class="kc">False</span></div>
+
+
+	<span class="k">def</span> <span class="nf">rename_file</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fh</span><span class="p">:</span> <span class="n">BinaryIO</span><span class="p">,</span> <span class="n">header</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">BinaryIO</span><span class="p">:</span>
+
+		<span class="n">fh</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">file_index</span> <span class="o">=</span> <span class="n">header</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;findex&#39;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span>
+
+		<span class="kn">from</span> <span class="nn">os</span> <span class="kn">import</span> <span class="n">rename</span>
+		<span class="n">target_file_path</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">fh</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">.</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">file_index</span><span class="si">}</span><span class="s2">&quot;</span>
+
+		<span class="c1"># we might handle this rather than raising an error in the future</span>
+		<span class="k">if</span> <span class="n">isfile</span><span class="p">(</span><span class="n">target_file_path</span><span class="p">):</span>
+			<span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;File rotation failure: </span><span class="si">{</span><span class="n">target_file_path</span><span class="si">}</span><span class="s2"> already exists&quot;</span><span class="p">)</span>
+
+		<span class="n">rename</span><span class="p">(</span><span class="n">fh</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">target_file_path</span><span class="p">)</span>
+
+		<span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">verbose</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+			<span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Current register renamed into </span><span class="si">{</span><span class="n">target_file_path</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+		<span class="k">return</span> <span class="n">get_outer_file_handle</span><span class="p">(</span>
+			<span class="n">fh</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">write</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">logger</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">logger</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">verbose</span> <span class="o">&gt;</span> <span class="mi">1</span> <span class="k">else</span> <span class="kc">None</span>
+		<span class="p">)[</span><span class="mi">1</span><span class="p">]</span>
+
+
+<div class="viewcode-block" id="AmpelRegister.onload_update_header"><a class="viewcode-back" href="../../../api.html#ampel.core.AmpelRegister.AmpelRegister.onload_update_header">[docs]</a>	<span class="k">def</span> <span class="nf">onload_update_header</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+		<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">		Override if you need to update the header of an existing register.</span>
+<span class="sd">		Ex: BaseAlertRegister adds the current run id</span>
+<span class="sd">		&quot;&quot;&quot;</span>
+		<span class="k">pass</span></div>
+
+
+<div class="viewcode-block" id="AmpelRegister.get_file_path"><a class="viewcode-back" href="../../../api.html#ampel.core.AmpelRegister.AmpelRegister.get_file_path">[docs]</a>	<span class="k">def</span> <span class="nf">get_file_path</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+		<span class="sd">&quot;&quot;&quot; :raise: errors if sub-directories cannot be created &quot;&quot;&quot;</span>
+
+		<span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">path_full</span><span class="p">:</span>
+			<span class="n">outdir</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">path_full</span>
+		<span class="k">else</span><span class="p">:</span>
+			<span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">path_base</span><span class="p">:</span>
+				<span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Parameter path_base is not set&quot;</span><span class="p">)</span>
+
+			<span class="n">outdir</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">path_base</span>
+			<span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">path_extra</span><span class="p">:</span>
+				<span class="n">outdir</span> <span class="o">+=</span> <span class="s1">&#39;/&#39;</span> <span class="o">+</span> <span class="s1">&#39;/&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">path_extra</span><span class="p">)</span>
+
+		<span class="k">if</span> <span class="ow">not</span> <span class="n">isdir</span><span class="p">(</span><span class="n">outdir</span><span class="p">):</span>
+			<span class="n">Path</span><span class="p">(</span><span class="n">outdir</span><span class="p">)</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">parents</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+		<span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">outdir</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">get_file_name</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span></div>
+
+
+<div class="viewcode-block" id="AmpelRegister.get_file_name"><a class="viewcode-back" href="../../../api.html#ampel.core.AmpelRegister.AmpelRegister.get_file_name">[docs]</a>	<span class="k">def</span> <span class="nf">get_file_name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+		<span class="sd">&quot;&quot;&quot; override if needed &quot;&quot;&quot;</span>
+		<span class="k">return</span> <span class="s1">&#39;.&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span>
+			<span class="bp">self</span><span class="o">.</span><span class="n">file_prefix</span> <span class="ow">or</span> <span class="s1">&#39;ampel_register&#39;</span><span class="p">,</span>
+			<span class="sa">f</span><span class="s1">&#39;bin.</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">compression</span><span class="si">}</span><span class="s1">&#39;</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">compression</span> <span class="k">else</span> <span class="s1">&#39;bin&#39;</span>
+		<span class="p">])</span></div>
+
+
+<div class="viewcode-block" id="AmpelRegister.check_header"><a class="viewcode-back" href="../../../api.html#ampel.core.AmpelRegister.AmpelRegister.check_header">[docs]</a>	<span class="k">def</span> <span class="nf">check_header</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">header</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+		<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">		:raises: ValueError is raised on mismatch between this instance value</span>
+<span class="sd">		and the header value for the provided key</span>
+<span class="sd">		&quot;&quot;&quot;</span>
+
+		<span class="k">for</span> <span class="n">el</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">on_exist_check</span><span class="p">:</span> <span class="c1"># type: ignore[union-attr]</span>
+
+			<span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">el</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">):</span>
+				<span class="n">self_key</span> <span class="o">=</span> <span class="n">el</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+				<span class="n">hdr_key</span> <span class="o">=</span> <span class="n">el</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+			<span class="k">else</span><span class="p">:</span>
+				<span class="n">self_key</span> <span class="o">=</span> <span class="n">hdr_key</span> <span class="o">=</span> <span class="n">el</span>
+
+			<span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">self_key</span><span class="p">):</span>
+				<span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Variable </span><span class="si">{</span><span class="n">self_key</span><span class="si">}</span><span class="s2"> is missing, check your config&quot;</span><span class="p">)</span>
+
+			<span class="k">if</span> <span class="n">hdr_key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">header</span><span class="p">:</span>
+				<span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">on_exist_strict_check</span><span class="p">:</span>
+					<span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Attribute </span><span class="si">{</span><span class="n">hdr_key</span><span class="si">}</span><span class="s2"> missing in header&quot;</span><span class="p">)</span>
+				<span class="k">continue</span>
+
+			<span class="k">if</span> <span class="n">header</span><span class="p">[</span><span class="n">hdr_key</span><span class="p">]</span> <span class="o">!=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">self_key</span><span class="p">):</span>
+				<span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+					<span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">get_file_path</span><span class="p">()</span><span class="si">}</span><span class="s2">: &#39;</span><span class="si">{</span><span class="n">self_key</span><span class="si">}</span><span class="s2">&#39; mismatch: [</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">] &quot;</span>
+					<span class="sa">f</span><span class="s2">&quot;&#39;</span><span class="si">{</span><span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">self_key</span><span class="p">)</span><span class="si">}</span><span class="s2">&#39; != &#39;</span><span class="si">{</span><span class="n">header</span><span class="p">[</span><span class="n">hdr_key</span><span class="p">]</span><span class="si">}</span><span class="s2">&#39; [File header]&quot;</span>
+				<span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="AmpelRegister.register_file_access"><a class="viewcode-back" href="../../../api.html#ampel.core.AmpelRegister.AmpelRegister.register_file_access">[docs]</a>	<span class="k">def</span> <span class="nf">register_file_access</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+		<span class="n">header</span><span class="p">:</span> <span class="kc">None</span> <span class="o">|</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+		<span class="n">use_this_time</span><span class="p">:</span> <span class="kc">None</span> <span class="o">|</span> <span class="nb">float</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+		<span class="n">new_blocks</span><span class="p">:</span> <span class="kc">None</span> <span class="o">|</span> <span class="nb">int</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+	<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+		<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">		:param header: use provided header rather than self.header[&#39;payload&#39;]</span>
+<span class="sd">		:param use_this_time: use provided time rather than time.time()</span>
+<span class="sd">		:param new_blocks: None (default) when register is opened, 0 or an integer when register is closed</span>
+<span class="sd">		&quot;&quot;&quot;</span>
+		<span class="n">hdr</span> <span class="o">=</span> <span class="n">header</span> <span class="k">if</span> <span class="n">header</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">header</span><span class="p">[</span><span class="s1">&#39;payload&#39;</span><span class="p">]</span>
+		<span class="n">now</span> <span class="o">=</span> <span class="n">use_this_time</span> <span class="k">if</span> <span class="n">use_this_time</span> <span class="k">else</span> <span class="n">time</span><span class="p">()</span>
+
+		<span class="c1"># File opened</span>
+		<span class="k">if</span> <span class="n">new_blocks</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+			<span class="k">if</span> <span class="s1">&#39;updated&#39;</span> <span class="ow">in</span> <span class="n">hdr</span><span class="p">[</span><span class="s1">&#39;ts&#39;</span><span class="p">]:</span>
+				<span class="n">hdr</span><span class="p">[</span><span class="s1">&#39;ts&#39;</span><span class="p">][</span><span class="s1">&#39;updated&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">([</span><span class="n">now</span><span class="p">,</span> <span class="mf">0.</span><span class="p">,</span> <span class="mi">0</span><span class="p">])</span>
+			<span class="k">else</span><span class="p">:</span> <span class="c1"># new file</span>
+				<span class="n">hdr</span><span class="p">[</span><span class="s1">&#39;ts&#39;</span><span class="p">][</span><span class="s1">&#39;updated&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[[</span><span class="n">now</span><span class="p">,</span> <span class="mf">0.</span><span class="p">,</span> <span class="mi">0</span><span class="p">]]</span>
+			<span class="k">return</span>
+
+		<span class="n">l</span> <span class="o">=</span> <span class="n">hdr</span><span class="p">[</span><span class="s1">&#39;ts&#39;</span><span class="p">][</span><span class="s1">&#39;updated&#39;</span><span class="p">][</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+		<span class="n">l</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">now</span>
+		<span class="n">l</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">=</span> <span class="n">new_blocks</span></div>
+
+<div class="viewcode-block" id="AmpelRegister.gen_new_header"><a class="viewcode-back" href="../../../api.html#ampel.core.AmpelRegister.AmpelRegister.gen_new_header">[docs]</a>	<span class="k">def</span> <span class="nf">gen_new_header</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bytes</span><span class="p">:</span>
+		<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">		Creates a new header and create instance variable self.header to reference it.</span>
+<span class="sd">		:returns: bson encoded bytes representing the generated header</span>
+<span class="sd">		:raises: ValueError if the generated header size exceeds user-provided bound parameters</span>
+<span class="sd">		&quot;&quot;&quot;</span>
+
+		<span class="n">now</span> <span class="o">=</span> <span class="n">time</span><span class="p">()</span>
+		<span class="n">hdr</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+			<span class="s1">&#39;struct&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">struct</span><span class="p">,</span>
+			<span class="s1">&#39;ts&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;created&#39;</span><span class="p">:</span> <span class="n">now</span><span class="p">}</span>
+		<span class="p">}</span>
+
+		<span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">header_log_accesses</span><span class="p">:</span>
+			<span class="bp">self</span><span class="o">.</span><span class="n">register_file_access</span><span class="p">(</span><span class="n">header</span><span class="o">=</span><span class="n">hdr</span><span class="p">,</span> <span class="n">use_this_time</span><span class="o">=</span><span class="n">now</span><span class="p">)</span>
+
+		<span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">header_count_blocks</span><span class="p">:</span>
+			<span class="n">hdr</span><span class="p">[</span><span class="s1">&#39;blocks&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+
+		<span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">header_extra</span><span class="p">:</span>
+			<span class="n">hdr</span><span class="p">[</span><span class="s1">&#39;extra&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">header_extra</span>
+
+		<span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">header_extra_base</span><span class="p">:</span>
+			<span class="n">hdr</span> <span class="o">=</span> <span class="p">{</span><span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">header_extra_base</span><span class="p">,</span> <span class="o">**</span><span class="n">hdr</span><span class="p">}</span>
+
+		<span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s1">&#39;file_index&#39;</span><span class="p">):</span>
+			<span class="n">hdr</span><span class="p">[</span><span class="s1">&#39;findex&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">file_index</span>
+		<span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">file_cap</span><span class="p">:</span>
+			<span class="n">hdr</span><span class="p">[</span><span class="s1">&#39;findex&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+
+		<span class="n">hdr_bytes</span> <span class="o">=</span> <span class="n">bson</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="n">hdr</span><span class="p">)</span>
+		<span class="n">hlen</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">hdr_bytes</span><span class="p">)</span>
+
+		<span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">new_header_size</span><span class="p">:</span>
+			<span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">new_header_size</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>
+				<span class="n">hsize</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">new_header_size</span>
+			<span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">new_header_size</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+				<span class="n">hsize</span> <span class="o">=</span> <span class="n">hlen</span> <span class="o">+</span> <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">new_header_size</span><span class="p">[</span><span class="mi">1</span><span class="p">:])</span>
+			<span class="k">else</span><span class="p">:</span>
+				<span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Parameter new_header_size is invalid&quot;</span><span class="p">)</span>
+		<span class="k">else</span><span class="p">:</span>
+			<span class="n">hsize</span> <span class="o">=</span> <span class="n">hlen</span>
+
+		<span class="k">if</span> <span class="n">hlen</span> <span class="o">&gt;</span> <span class="n">hsize</span><span class="p">:</span>
+			<span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+				<span class="sa">f</span><span class="s2">&quot;Header too long (</span><span class="si">{</span><span class="n">hlen</span><span class="si">}</span><span class="s2"> &gt; hsize), please check the &quot;</span>
+				<span class="sa">f</span><span class="s2">&quot;parameters impacting new header sizes&quot;</span>
+			<span class="p">)</span>
+
+		<span class="bp">self</span><span class="o">.</span><span class="n">header</span> <span class="o">=</span> <span class="n">HeaderInfo</span><span class="p">(</span><span class="n">size</span><span class="o">=</span><span class="n">hsize</span><span class="p">,</span> <span class="nb">len</span><span class="o">=</span><span class="n">hlen</span><span class="p">,</span> <span class="n">payload</span><span class="o">=</span><span class="n">hdr</span><span class="p">)</span>
+		<span class="k">return</span> <span class="n">hdr_bytes</span></div>
+
+
+	<span class="k">def</span> <span class="fm">__del__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+		<span class="sd">&quot;&quot;&quot; method called when class is destroyed &quot;&quot;&quot;</span>
+		<span class="k">if</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s1">&#39;_outer_fh&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">):</span>
+			<span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">verbose</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+				<span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Destroying ampel register instance&quot;</span><span class="p">)</span>
+			<span class="bp">self</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+
+
+<div class="viewcode-block" id="AmpelRegister.close"><a class="viewcode-back" href="../../../api.html#ampel.core.AmpelRegister.AmpelRegister.close">[docs]</a>	<span class="k">def</span> <span class="nf">close</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">close_outer_fh</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">update_header</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">):</span>
+		<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">		:param close_outer_fh: whether principal file handle should be closed</span>
+<span class="sd">		:param update_header: possible overidde of default settings</span>
+<span class="sd">		(aimed for admins working with command line)</span>
+<span class="sd">		&quot;&quot;&quot;</span>
+
+		<span class="n">file_updated</span> <span class="o">=</span> <span class="mi">0</span>
+
+		<span class="c1"># Important: zip file handle should be closed before header is updated</span>
+		<span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s1">&#39;_inner_fh&#39;</span><span class="p">):</span>
+
+			<span class="bp">self</span><span class="o">.</span><span class="n">_inner_fh</span><span class="o">.</span><span class="n">flush</span><span class="p">()</span>
+			<span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">compression</span><span class="p">:</span>
+				<span class="n">file_updated</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_inner_fh</span><span class="o">.</span><span class="n">tell</span><span class="p">()</span>
+			<span class="k">else</span><span class="p">:</span>
+				<span class="n">file_updated</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_inner_fh</span><span class="o">.</span><span class="n">tell</span><span class="p">()</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ftell</span>
+
+			<span class="c1"># When no compression is used, inner_fh is the outer_fh</span>
+			<span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_inner_fh</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_outer_fh</span><span class="p">:</span>
+				<span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">verbose</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+					<span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Closing inner file&quot;</span><span class="p">)</span>
+				<span class="bp">self</span><span class="o">.</span><span class="n">_inner_fh</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+
+			<span class="bp">self</span><span class="o">.</span><span class="n">_inner_fh</span> <span class="o">=</span> <span class="kc">None</span> <span class="c1"># type: ignore</span>
+
+		<span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_outer_fh</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">_outer_fh</span><span class="o">.</span><span class="n">closed</span><span class="p">:</span>
+			<span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;File handle already closed&quot;</span><span class="p">)</span>
+			<span class="k">return</span>
+		<span class="k">else</span><span class="p">:</span>
+			<span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">verbose</span><span class="p">:</span>
+				<span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">VERBOSE</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;Closing </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">get_file_path</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+		<span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s1">&#39;header&#39;</span><span class="p">)</span> <span class="ow">and</span> <span class="n">update_header</span><span class="p">:</span>
+
+			<span class="k">if</span> <span class="n">file_updated</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">header_update_anyway</span><span class="p">:</span>
+
+				<span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">header_count_blocks</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">header_log_accesses</span><span class="p">:</span>
+
+					<span class="n">new_blocks</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">file_updated</span> <span class="o">/</span> <span class="n">calcsize</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">struct</span><span class="p">))</span>
+
+					<span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">header_count_blocks</span><span class="p">:</span>
+						<span class="bp">self</span><span class="o">.</span><span class="n">header</span><span class="p">[</span><span class="s1">&#39;payload&#39;</span><span class="p">][</span><span class="s1">&#39;blocks&#39;</span><span class="p">]</span> <span class="o">+=</span> <span class="n">new_blocks</span>
+
+					<span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">header_log_accesses</span><span class="p">:</span>
+						<span class="bp">self</span><span class="o">.</span><span class="n">register_file_access</span><span class="p">(</span><span class="n">new_blocks</span><span class="o">=</span><span class="n">new_blocks</span><span class="p">)</span>
+
+				<span class="k">if</span> <span class="p">(</span>
+					<span class="bp">self</span><span class="o">.</span><span class="n">header_log_accesses</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">header_count_blocks</span> <span class="ow">or</span>
+					<span class="n">build_unsafe_dict_id</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">header</span><span class="p">[</span><span class="s1">&#39;payload&#39;</span><span class="p">])</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">header_sig</span>
+				<span class="p">):</span>
+
+					<span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">verbose</span><span class="p">:</span>
+						<span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">VERBOSE</span><span class="p">,</span> <span class="s2">&quot;Header has changed, triggering update&quot;</span><span class="p">)</span>
+
+					<span class="k">try</span><span class="p">:</span>
+						<span class="n">write_header</span><span class="p">(</span>
+							<span class="bp">self</span><span class="o">.</span><span class="n">_outer_fh</span><span class="p">,</span> <span class="n">header</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">header</span><span class="p">[</span><span class="s1">&#39;payload&#39;</span><span class="p">],</span> <span class="n">hsize</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">header</span><span class="p">[</span><span class="s1">&#39;size&#39;</span><span class="p">],</span>
+							<span class="n">flush</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">logger</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">logger</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">verbose</span> <span class="k">else</span> <span class="kc">None</span>
+						<span class="p">)</span>
+					<span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+						<span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;Header still too long, rescaling it&quot;</span><span class="p">)</span>
+						<span class="bp">self</span><span class="o">.</span><span class="n">_outer_fh</span><span class="o">.</span><span class="n">flush</span><span class="p">()</span>
+						<span class="bp">self</span><span class="o">.</span><span class="n">_outer_fh</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+						<span class="n">rescale_header</span><span class="p">(</span>
+							<span class="bp">self</span><span class="o">.</span><span class="n">_outer_fh</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">new_size</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">header</span><span class="p">[</span><span class="s1">&#39;size&#39;</span><span class="p">]</span> <span class="o">*</span> <span class="mi">2</span><span class="p">,</span> <span class="n">remove_old_file</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+							<span class="n">header</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">header</span><span class="p">[</span><span class="s1">&#39;payload&#39;</span><span class="p">]</span>
+						<span class="p">)</span>
+						<span class="bp">self</span><span class="o">.</span><span class="n">_outer_fh</span> <span class="o">=</span> <span class="kc">None</span> <span class="c1"># type: ignore[assignment]</span>
+
+				<span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">verbose</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+					<span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Header was not updated&quot;</span><span class="p">)</span>
+
+			<span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">verbose</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+				<span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;File was not updated, skipping potential header updates&quot;</span><span class="p">)</span>
+
+		<span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">verbose</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+			<span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Header update is disabled&quot;</span><span class="p">)</span>
+
+		<span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_outer_fh</span><span class="p">:</span>
+			<span class="bp">self</span><span class="o">.</span><span class="n">_outer_fh</span><span class="o">.</span><span class="n">flush</span><span class="p">()</span>
+
+		<span class="k">if</span> <span class="n">close_outer_fh</span><span class="p">:</span>
+			<span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_outer_fh</span><span class="p">:</span>
+				<span class="bp">self</span><span class="o">.</span><span class="n">_outer_fh</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+			<span class="bp">self</span><span class="o">.</span><span class="n">_outer_fh</span> <span class="o">=</span> <span class="kc">None</span> <span class="c1"># type: ignore[assignment]</span></div></div>
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../../index.html">
+              <img class="logo" src="../../../_static/ampel.png" alt="Logo"/>
+            </a></p>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">ampel-core 0.8.3-alpha.18 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../index.html" >Module code</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">ampel.core.AmpelRegister</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2018-2021, Ampel Project.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 4.5.0.
+    </div>
+  </body>
+</html>

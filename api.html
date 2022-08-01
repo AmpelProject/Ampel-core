@@ -54,9 +54,98 @@
 <dd><p>Base class for units requiring a reference to an AmpelContext instance</p>
 </dd></dl>
 
+<dl class="py class">
+<dt class="sig sig-object py" id="ampel.abstract.AbsEventUnit.AbsEventUnit">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">ampel.abstract.AbsEventUnit.</span></span><span class="sig-name descname"><span class="pre">AbsEventUnit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ampel/abstract/AbsEventUnit.html#AbsEventUnit"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ampel.abstract.AbsEventUnit.AbsEventUnit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Base class for units orchestrating an ampel event.
+Ampel processes (from the ampel config) are the most common events.
+They define specifications of an event using a standardized model/schema:
+which subclass of this abstract class is to be run by a given controller
+at (a) given time(s) using a specific configuration.</p>
+<p>An ampel event must be registered and traceable and thus generates:
+- a new run-id
+- a new event document (in the event collection)
+- possibly Log entries (less is better)
+- new trace ids if not registered previously</p>
+<p>Subclassses of this class typically modify tier documents
+whereby the changes originate from results of logical unit(s)
+instantiated by this class.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ampel.abstract.AbsEventUnit.AbsEventUnit.process_name">
+<span class="sig-name descname"><span class="pre">process_name</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a></em><a class="headerlink" href="#ampel.abstract.AbsEventUnit.AbsEventUnit.process_name" title="Permalink to this definition">¶</a></dt>
+<dd><p>name of the associated process</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ampel.abstract.AbsEventUnit.AbsEventUnit.job_sig">
+<span class="sig-name descname"><span class="pre">job_sig</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.10)"><span class="pre">int</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#ampel.abstract.AbsEventUnit.AbsEventUnit.job_sig" title="Permalink to this definition">¶</a></dt>
+<dd><p>hash of potentially underlying job schema</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ampel.abstract.AbsEventUnit.AbsEventUnit.channel">
+<span class="sig-name descname"><span class="pre">channel</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Sequence" title="(in Python v3.10)"><span class="pre">collections.abc.Sequence</span></a><span class="p"><span class="pre">[</span></span><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.10)"><span class="pre">int</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.10)"><span class="pre">int</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="p"><span class="pre">]</span></span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#ampel.abstract.AbsEventUnit.AbsEventUnit.channel" title="Permalink to this definition">¶</a></dt>
+<dd><p>channels associated with the process</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ampel.abstract.AbsEventUnit.AbsEventUnit.raise_exc">
+<span class="sig-name descname"><span class="pre">raise_exc</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.10)"><span class="pre">bool</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">False</span></em><a class="headerlink" href="#ampel.abstract.AbsEventUnit.AbsEventUnit.raise_exc" title="Permalink to this definition">¶</a></dt>
+<dd><p>raise exceptions instead of catching and logging
+if True, troubles collection will not be populated if an exception occurs</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ampel.abstract.AbsEventUnit.AbsEventUnit.log_profile">
+<span class="sig-name descname"><span class="pre">log_profile</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'default'</span></em><a class="headerlink" href="#ampel.abstract.AbsEventUnit.AbsEventUnit.log_profile" title="Permalink to this definition">¶</a></dt>
+<dd><p>logging configuration to use, from the logging section of the Ampel config</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ampel.abstract.AbsEventUnit.AbsEventUnit.base_log_flag">
+<span class="sig-name descname"><span class="pre">base_log_flag</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">ampel.log.LogFlag.LogFlag</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">16</span></em><a class="headerlink" href="#ampel.abstract.AbsEventUnit.AbsEventUnit.base_log_flag" title="Permalink to this definition">¶</a></dt>
+<dd><p>flag to apply to all log records created</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ampel.abstract.AbsEventUnit.AbsEventUnit.db_handler_kwargs">
+<span class="sig-name descname"><span class="pre">db_handler_kwargs</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.10)"><span class="pre">dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.10)"><span class="pre">Any</span></a><span class="p"><span class="pre">]</span></span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#ampel.abstract.AbsEventUnit.AbsEventUnit.db_handler_kwargs" title="Permalink to this definition">¶</a></dt>
+<dd><p>optional additional kwargs to pass to <code class="xref py py-class docutils literal notranslate"><span class="pre">DBLoggingHandler</span></code></p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ampel.abstract.AbsEventUnit.AbsEventUnit.provenance">
+<span class="sig-name descname"><span class="pre">provenance</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.10)"><span class="pre">bool</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">True</span></em><a class="headerlink" href="#ampel.abstract.AbsEventUnit.AbsEventUnit.provenance" title="Permalink to this definition">¶</a></dt>
+<dd><p>Some subclasses allow for non-serializable input parameter out of convenience (jupyter notebooks).
+For example, an AlertSupplier instance can be passed as argument of an AlertConsumer.
+Unless a custom serialization is implemented, this disables the hashing of input parameters
+and thus the generation of “trace ids”.
+Set provenance to False to ignore trace ids generation error which will be raised otherwise.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ampel.abstract.AbsEventUnit.AbsEventUnit.prepare">
+<span class="sig-name descname"><span class="pre">prepare</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">event_hdlr</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ampel/abstract/AbsEventUnit.html#AbsEventUnit.prepare"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ampel.abstract.AbsEventUnit.AbsEventUnit.prepare" title="Permalink to this definition">¶</a></dt>
+<dd><p>Gives units the opportunity to cancel the subsequent call to the proceed() method
+by returning EventCode.PRE_CHECK_EXIT (which avoids ‘burning’ a run id)</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">EventCode</span></code>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
 </section>
 <section id="processor-units">
 <h2>Processor units<a class="headerlink" href="#processor-units" title="Permalink to this headline">¶</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="ampel.t3.T3Processor.T3Processor">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">ampel.t3.T3Processor.</span></span><span class="sig-name descname"><span class="pre">T3Processor</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ampel/t3/T3Processor.html#T3Processor"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ampel.t3.T3Processor.T3Processor" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#ampel.abstract.AbsEventUnit.AbsEventUnit" title="ampel.abstract.AbsEventUnit.AbsEventUnit"><code class="xref py py-class docutils literal notranslate"><span class="pre">ampel.abstract.AbsEventUnit.AbsEventUnit</span></code></a></p>
+</dd></dl>
+
 </section>
 <section id="t3-machinery">
 <h2>T3 machinery<a class="headerlink" href="#t3-machinery" title="Permalink to this headline">¶</a></h2>
@@ -170,6 +259,131 @@ single process invocation. This ID is unique and monotonicaly increasing.</p>
 
 </dd></dl>
 
+<dl class="py class">
+<dt class="sig sig-object py" id="ampel.core.UnitLoader.UnitLoader">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">ampel.core.UnitLoader.</span></span><span class="sig-name descname"><span class="pre">UnitLoader</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">db</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">provenance</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">vault</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ampel/core/UnitLoader.html#UnitLoader"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ampel.core.UnitLoader.UnitLoader" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="py method">
+<dt class="sig sig-object py" id="ampel.core.UnitLoader.UnitLoader.new_logical_unit">
+<span class="sig-name descname"><span class="pre">new_logical_unit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://ampelproject.github.io/Ampel-interface/api.html#ampel.model.UnitModel.UnitModel" title="(in ampel-interface v0.8)"><span class="pre">ampel.model.UnitModel.UnitModel</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">logger</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#ampel.log.AmpelLogger.AmpelLogger" title="ampel.log.AmpelLogger.AmpelLogger"><span class="pre">ampel.log.AmpelLogger.AmpelLogger</span></a></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sub_type</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#type" title="(in Python v3.10)"><span class="pre">type</span></a><span class="p"><span class="pre">[</span></span><span class="pre">LT</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">ampel.core.UnitLoader.LT</span></span></span><a class="reference internal" href="_modules/ampel/core/UnitLoader.html#UnitLoader.new_logical_unit"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ampel.core.UnitLoader.UnitLoader.new_logical_unit" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">new_logical_unit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://ampelproject.github.io/Ampel-interface/api.html#ampel.model.UnitModel.UnitModel" title="(in ampel-interface v0.8)"><span class="pre">ampel.model.UnitModel.UnitModel</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">logger</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#ampel.log.AmpelLogger.AmpelLogger" title="ampel.log.AmpelLogger.AmpelLogger"><span class="pre">ampel.log.AmpelLogger.AmpelLogger</span></a></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sub_type</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://ampelproject.github.io/Ampel-interface/api.html#ampel.base.LogicalUnit.LogicalUnit" title="(in ampel-interface v0.8)"><span class="pre">ampel.base.LogicalUnit.LogicalUnit</span></a></span></span></dt>
+<dd><p>Logical units require logger and resource as init parameters, additionaly to the potentialy
+defined custom parameters which will be provided as a union of the model config
+and the kwargs provided to this method (the latter having prevalance)
+:raises: ValueError is the unit defined in the model is unknown</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Union" title="(in Python v3.10)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.TypeVar" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">TypeVar</span></code></a>(<code class="docutils literal notranslate"><span class="pre">LT</span></code>, bound= <a class="reference external" href="https://ampelproject.github.io/Ampel-interface/api.html#ampel.base.LogicalUnit.LogicalUnit" title="(in ampel-interface v0.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">LogicalUnit</span></code></a>), <a class="reference external" href="https://ampelproject.github.io/Ampel-interface/api.html#ampel.base.LogicalUnit.LogicalUnit" title="(in ampel-interface v0.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">LogicalUnit</span></code></a>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ampel.core.UnitLoader.UnitLoader.new_safe_logical_unit">
+<span class="sig-name descname"><span class="pre">new_safe_logical_unit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">um</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">unit_type</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logger</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">_chan</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ampel/core/UnitLoader.html#UnitLoader.new_safe_logical_unit"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ampel.core.UnitLoader.UnitLoader.new_safe_logical_unit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a logical unit with dedicated logger containing no db handler</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.TypeVar" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">TypeVar</span></code></a>(<code class="docutils literal notranslate"><span class="pre">LT</span></code>, bound= <a class="reference external" href="https://ampelproject.github.io/Ampel-interface/api.html#ampel.base.LogicalUnit.LogicalUnit" title="(in ampel-interface v0.8)"><code class="xref py py-class docutils literal notranslate"><span class="pre">LogicalUnit</span></code></a>)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ampel.core.UnitLoader.UnitLoader.new_context_unit">
+<span class="sig-name descname"><span class="pre">new_context_unit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://ampelproject.github.io/Ampel-interface/api.html#ampel.model.UnitModel.UnitModel" title="(in ampel-interface v0.8)"><span class="pre">ampel.model.UnitModel.UnitModel</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">context</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#ampel.core.AmpelContext.AmpelContext" title="ampel.core.AmpelContext.AmpelContext"><span class="pre">ampel.core.AmpelContext.AmpelContext</span></a></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sub_type</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#type" title="(in Python v3.10)"><span class="pre">type</span></a><span class="p"><span class="pre">[</span></span><span class="pre">CT</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">ampel.core.UnitLoader.CT</span></span></span><a class="reference internal" href="_modules/ampel/core/UnitLoader.html#UnitLoader.new_context_unit"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ampel.core.UnitLoader.UnitLoader.new_context_unit" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">new_context_unit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://ampelproject.github.io/Ampel-interface/api.html#ampel.model.UnitModel.UnitModel" title="(in ampel-interface v0.8)"><span class="pre">ampel.model.UnitModel.UnitModel</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">context</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#ampel.core.AmpelContext.AmpelContext" title="ampel.core.AmpelContext.AmpelContext"><span class="pre">ampel.core.AmpelContext.AmpelContext</span></a></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sub_type</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#ampel.core.ContextUnit.ContextUnit" title="ampel.core.ContextUnit.ContextUnit"><span class="pre">ampel.core.ContextUnit.ContextUnit</span></a></span></span></dt>
+<dd><p>Context units require an AmpelContext instance as init parameters, additionaly to
+potentialy defined dedicated custom parameters.
+:raises: ValueError is the unit defined in the model is unknown</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Union" title="(in Python v3.10)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.TypeVar" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">TypeVar</span></code></a>(<code class="docutils literal notranslate"><span class="pre">CT</span></code>, bound= <a class="reference internal" href="#ampel.core.ContextUnit.ContextUnit" title="ampel.core.ContextUnit.ContextUnit"><code class="xref py py-class docutils literal notranslate"><span class="pre">ContextUnit</span></code></a>), <a class="reference internal" href="#ampel.core.ContextUnit.ContextUnit" title="ampel.core.ContextUnit.ContextUnit"><code class="xref py py-class docutils literal notranslate"><span class="pre">ContextUnit</span></code></a>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ampel.core.UnitLoader.UnitLoader.new">
+<span class="sig-name descname"><span class="pre">new</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://ampelproject.github.io/Ampel-interface/api.html#ampel.model.UnitModel.UnitModel" title="(in ampel-interface v0.8)"><span class="pre">ampel.model.UnitModel.UnitModel</span></a></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">unit_type</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#type" title="(in Python v3.10)"><span class="pre">type</span></a><span class="p"><span class="pre">[</span></span><span class="pre">T</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">ampel.core.UnitLoader.T</span></span></span><a class="reference internal" href="_modules/ampel/core/UnitLoader.html#UnitLoader.new"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ampel.core.UnitLoader.UnitLoader.new" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">new</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://ampelproject.github.io/Ampel-interface/api.html#ampel.model.UnitModel.UnitModel" title="(in ampel-interface v0.8)"><span class="pre">ampel.model.UnitModel.UnitModel</span></a></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">unit_type</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">ampel.base.AmpelUnit.AmpelUnit</span></span></span></dt>
+<dd><p>Instantiate new object based on provided model and kwargs.
+:param ‘unit_type’: performs isinstance check and raise error on mismatch. Enables mypy/other static checks.
+:rtype: <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Union" title="(in Python v3.10)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code></a>[<code class="xref py py-class docutils literal notranslate"><span class="pre">AmpelUnit</span></code>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.TypeVar" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">TypeVar</span></code></a>(<code class="docutils literal notranslate"><span class="pre">T</span></code>, bound= <code class="xref py py-class docutils literal notranslate"><span class="pre">AmpelUnit</span></code>)]
+:returns: unit instance, trace id (0 if not computable)</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ampel.core.UnitLoader.UnitLoader.get_class_by_name">
+<span class="sig-name descname"><span class="pre">get_class_by_name</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">unit_type</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#type" title="(in Python v3.10)"><span class="pre">type</span></a><span class="p"><span class="pre">[</span></span><span class="pre">T</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/functions.html#type" title="(in Python v3.10)"><span class="pre">type</span></a><span class="p"><span class="pre">[</span></span><span class="pre">T</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/ampel/core/UnitLoader.html#UnitLoader.get_class_by_name"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ampel.core.UnitLoader.UnitLoader.get_class_by_name" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">get_class_by_name</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">unit_type</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/functions.html#type" title="(in Python v3.10)"><span class="pre">type</span></a><span class="p"><span class="pre">[</span></span><span class="pre">ampel.base.AmpelUnit.AmpelUnit</span><span class="p"><span class="pre">]</span></span></span></span></dt>
+<dd><p>Matches the parameter ‘name’ with the unit definitions defined in the ampel_config.
+This allows to retrieve the corresponding fully qualified name of the class and to load it.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>unit_type</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.10)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/functions.html#type" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">type</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.TypeVar" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">TypeVar</span></code></a>(<code class="docutils literal notranslate"><span class="pre">T</span></code>, bound= <code class="xref py py-class docutils literal notranslate"><span class="pre">AmpelUnit</span></code>)]]) – <ul class="simple">
+<li><p>LogicalUnit or any sublcass of LogicalUnit</p></li>
+<li><p>ContextUnit or any sublcass of ContextUnit</p></li>
+<li><p>If None (auxiliary class), returned object will have type[Any]</p></li>
+</ul>
+</p>
+</dd>
+<dt class="field-even">Raises</dt>
+<dd class="field-even"><p>ValueError if unit cannot be found or loaded or if parent class is unrecognized</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/functions.html#type" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">type</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Union" title="(in Python v3.10)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.TypeVar" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">TypeVar</span></code></a>(<code class="docutils literal notranslate"><span class="pre">T</span></code>, bound= <code class="xref py py-class docutils literal notranslate"><span class="pre">AmpelUnit</span></code>), <code class="xref py py-class docutils literal notranslate"><span class="pre">AmpelUnit</span></code>]]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ampel.core.UnitLoader.UnitLoader.get_init_config">
+<span class="sig-name descname"><span class="pre">get_init_config</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">override</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kwargs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">unfreeze</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ampel/core/UnitLoader.html#UnitLoader.get_init_config"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ampel.core.UnitLoader.UnitLoader.get_init_config" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Raises</dt>
+<dd class="field-odd"><p>ValueError if config alias is not found</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.10)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code></a>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ampel.core.UnitLoader.UnitLoader.resolve_aliases">
+<span class="sig-name descname"><span class="pre">resolve_aliases</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ampel/core/UnitLoader.html#UnitLoader.resolve_aliases"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ampel.core.UnitLoader.UnitLoader.resolve_aliases" title="Permalink to this definition">¶</a></dt>
+<dd><p>Recursively resolve aliases from config</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ampel.core.UnitLoader.UnitLoader.get_resources">
+<span class="sig-name descname"><span class="pre">get_resources</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ampel/core/UnitLoader.html#UnitLoader.get_resources"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ampel.core.UnitLoader.UnitLoader.get_resources" title="Permalink to this definition">¶</a></dt>
+<dd><p>Resources are defined using the static variable ‘require’ in ampel units
+-&gt; example: catsHTM.default</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.10)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code></a>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ampel.core.UnitLoader.UnitLoader.validate_unit_models">
+<span class="sig-name descname"><span class="pre">validate_unit_models</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ampel/core/UnitLoader.html#UnitLoader.validate_unit_models"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ampel.core.UnitLoader.UnitLoader.validate_unit_models" title="Permalink to this definition">¶</a></dt>
+<dd><p>Enable validation for UnitModel instances</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Iterator" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Iterator</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.10)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
 </section>
 <section id="data-classes">
 <h2>Data classes<a class="headerlink" href="#data-classes" title="Permalink to this headline">¶</a></h2>
@@ -253,7 +467,7 @@ single process invocation. This ID is unique and monotonicaly increasing.</p>
 if your time constraint is based on TimeLastRunModel</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.10)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a> | <code class="xref py py-class docutils literal notranslate"><span class="pre">QueryTimeModel</span></code></p>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">QueryTimeModel</span></code>]</p>
 </dd>
 </dl>
 </dd></dl>
@@ -343,7 +557,7 @@ if your time constraint is based on TimeLastRunModel</p>
 <span class="sig-name descname"><span class="pre">get_timestamp</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ampel/model/time/TimeLastRunModel.html#TimeLastRunModel.get_timestamp"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ampel.model.time.TimeLastRunModel.TimeLastRunModel.get_timestamp" title="Permalink to this definition">¶</a></dt>
 <dd><dl class="field-list simple">
 <dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.10)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a> | <a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a></p>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Optional</span></code>[<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>]</p>
 </dd>
 </dl>
 </dd></dl>
@@ -517,6 +731,272 @@ If name is None, unique (int) name will be generated
 <dd class="field-odd"><p><a class="reference internal" href="#ampel.log.AmpelLogger.AmpelLogger" title="ampel.log.AmpelLogger.AmpelLogger"><code class="xref py py-class docutils literal notranslate"><span class="pre">AmpelLogger</span></code></a></p>
 </dd>
 </dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="ampel.core.AmpelRegister.AmpelRegister">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">ampel.core.AmpelRegister.</span></span><span class="sig-name descname"><span class="pre">AmpelRegister</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">autoload</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ampel/core/AmpelRegister.html#AmpelRegister"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ampel.core.AmpelRegister.AmpelRegister" title="Permalink to this definition">¶</a></dt>
+<dd><p># noqa: E101</p>
+<p>An ampel register file is made of three parts: signature, header and content</p>
+<p>1) The file signature is encoded in the first 11 bytes.
+The signature contains the header’s length and size (3 bytes each)</p>
+<p>2) A BSON encoded dict is saved in the next x bytes, refered to as the file’s header.
+The header can be updated independently of the register’s content.
+The size of the header is customizable during file creation.</p>
+<p>3) The register’s content is usually a compressed structure (zip, bzip or xz)
+which stores information in binary format. Compression can be turned off if so whished.
+(The size of a register containing 10 millions alert ids [8 bytes] and filter
+return code [1 byte] can be reduced from ~90MB to ~50MB using gzip with default settings).</p>
+<ul class="simple">
+<li><p>Registers can be re-opened and appended</p></li>
+<li><p>Header content can be accessed or updated independently of the register’s content.</p></li>
+<li><p>Header updates are fast if enough space was reserved for updates in the first place.</p></li>
+<li><p>Header size can be increased afterwards at the cost of having to rewrite the entire file once.
+This happens automatically when needed.</p></li>
+<li><p>Logging read and write access to the register content into the register header is supported</p></li>
+<li><p>Registers can be capped (based on max content length or max number of run ids).
+Once the limit is reached, the full register is renamed and a new one is created.</p></li>
+</ul>
+<p>Note: the module ampel.util.register contains tools to manually change ampel registers, such as:
+<cite>get_header_content</cite>, <cite>open_file_and_write_header</cite> and <cite>rescale_header</cite></p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>path_base</strong> – the base folder path where to create/read register files.</p></li>
+<li><p><strong>path_extra</strong> – an optional additional folder path (or paths) to be appended to <cite>path_base</cite>.</p></li>
+<li><p><strong>full_path</strong> – when provided, all path building options will be ignored and a new
+file handle will be opened using the provided full_path</p></li>
+<li><p><strong>file_handle</strong> – if you provide a file handle to a register file (parameter file handle),
+it will be used and all path options will be ignored.</p></li>
+<li><p><strong>file_cap</strong> – <p>registers can be capped, typically based on a maximum number of blocks.
+When access to a full register is requested, the original file is renamed and a new register is created.
+During files renames, an index is appended (suffix) to the original file name.
+The current (newest) register file always comes without index suffix.
+This index is saved into the current register header.</p>
+<p>Example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ampel_register</span><span class="o">.</span><span class="n">bin</span><span class="o">.</span><span class="n">gz</span> <span class="p">(</span><span class="n">current</span> <span class="o">-</span> <span class="n">newest</span><span class="p">)</span>
+<span class="n">ampel_register</span><span class="o">.</span><span class="n">bin</span><span class="o">.</span><span class="n">gz</span><span class="mf">.1</span> <span class="p">(</span><span class="n">first</span> <span class="n">renamed</span> <span class="n">register</span> <span class="o">-</span> <span class="n">oldest</span><span class="p">)</span>
+<span class="n">ampel_register</span><span class="o">.</span><span class="n">bin</span><span class="o">.</span><span class="n">gz</span><span class="mf">.2</span>
+<span class="n">ampel_register</span><span class="o">.</span><span class="n">bin</span><span class="o">.</span><span class="n">gz</span><span class="mf">.3</span> <span class="p">(</span><span class="n">second</span> <span class="n">newest</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Note1: file renames occur during the opening procedure of registers, no check is performed during the filling of registers
+once a register is opened. A register can thus grow beyond the defined limit as long as a process keeps it open.</p>
+</p></li>
+</ul>
+</dd>
+</dl>
+<p>Limitations:</p>
+<ul class="simple">
+<li><p>The maximum space reservable for the header is 2**24 bytes, i.e ~16MB.</p></li>
+<li><p>integers cannot exceed 2**63 bits. Should you need to save bigger numbers,
+please use the methods bindata_to_int, int_to_bindata from module ampel.util.bson</p></li>
+</ul>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>new_header_size</strong> – <p>either None, or an integer or a string (please read the note above).</p>
+<ul>
+<li><p>None or 0: the header block size will equal the header encoded length. Choose this option if
+the header is not meant to be updated later. Otherwise, updates will only be possible if the header size
+does not grow (note that there is a margin allowed since header exceeding the limit are automatically
+compressed using zlib and written to disk if the size condition is then fullfilled).</p></li>
+<li><p>integer number: the header will be allocated the specified number of bytes (for example 4096).</p></li>
+<li><p>a string: refers to a ‘header margin’ and must start with the character ‘+’.
+This option can save space in some circumstances. The header space allocated for the header will equal
+the length of the initial header (including all provided options such as <cite>header_extra</cite>) to which
+the specified header margin will be added. For example, ‘+1024’ means that 1024 bytes will be
+allocated additionally to the initial header lengths for future updates. If the initial header length
+is 100 bytes, then a header block of 1124 bytes will be created.</p></li>
+</ul>
+</p></li>
+<li><p><strong>header_extra</strong> – any extra to be included in the header under the key ‘extra’ (must be bson encodable)</p></li>
+<li><p><strong>header_extra_base</strong> – any extra to be included in the header at root depth (must be bson encodable)</p></li>
+<li><p><strong>header_update_anyway</strong> – if no update to the register is made, the default setting is that the
+header is not updated. This settings forces header updates. For example, you might want
+to save all run ids into the header whether or not they changed the content of the register.</p></li>
+<li><p><strong>header_log_accesses</strong> – <p>if True, timestamps will be recorded each time the register is opened/closed
+along with the amount of new blocks appended to the register.</p>
+<p>Note 1: parameter <cite>new_header_size</cite> must be set when using this value.
+Note 2: see docstring of paramter <cite>header_update_anyway</cite> that affects the behavior of this parameter.</p>
+<p>In the following example, <cite>header_log_accesses</cite> is responsible for creating/updating the key ‘updated’:</p>
+</p></li>
+</ul>
+</dd>
+</dl>
+<dl>
+<dt>“ts”: {</dt><dd><blockquote>
+<div><p>“created”: 1590506868.3880599,
+“updated”: [</p>
+<blockquote>
+<div><p>[1590506868.3880599, 1590509029.389, 1200],
+[1590507152.079873, 1590507295.080478, 2300]</p>
+</div></blockquote>
+</div></blockquote>
+<dl class="simple">
+<dt>]</dt><dd><p>}</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Raises</dt>
+<dd class="field-odd"><p>ValueError, FileNotFoundError</p>
+</dd>
+</dl>
+<ul class="simple">
+<li><p>if neither <cite>file_handle</cite>, <cite>full_path</cite>, <cite>path_base</cite> exist.</p></li>
+<li><p>if read access to a non-existing file is requested</p></li>
+<li><p>if the target file is not a register file (existing empty files are ok)</p></li>
+<li><p>if the ‘struct’ parameter of sub-class of this class differs with the values registered
+in the file’s header (this behavior can be deactivated from parameter <cite>on_exist_check</cite>)</p></li>
+<li><p>during file renames (in case capped registers are used) if the target file already exists</p></li>
+</ul>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ampel.core.AmpelRegister.AmpelRegister.path_base">
+<span class="sig-name descname"><span class="pre">path_base</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a></em><a class="headerlink" href="#ampel.core.AmpelRegister.AmpelRegister.path_base" title="Permalink to this definition">¶</a></dt>
+<dd><p>save files in &lt;path_base&gt;/&lt;file&gt;</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ampel.core.AmpelRegister.AmpelRegister.path_extra">
+<span class="sig-name descname"><span class="pre">path_extra</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.10)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#ampel.core.AmpelRegister.AmpelRegister.path_extra" title="Permalink to this definition">¶</a></dt>
+<dd><p>save files in &lt;path_base&gt;/&lt;path_extra(s)&gt;/&lt;file&gt;</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ampel.core.AmpelRegister.AmpelRegister.file_prefix">
+<span class="sig-name descname"><span class="pre">file_prefix</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a></em><a class="headerlink" href="#ampel.core.AmpelRegister.AmpelRegister.file_prefix" title="Permalink to this definition">¶</a></dt>
+<dd><p>prefix for each file</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ampel.core.AmpelRegister.AmpelRegister.path_full">
+<span class="sig-name descname"><span class="pre">path_full</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a></em><a class="headerlink" href="#ampel.core.AmpelRegister.AmpelRegister.path_full" title="Permalink to this definition">¶</a></dt>
+<dd><p>ignore all other path options and use this file path</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ampel.core.AmpelRegister.AmpelRegister.file_handle">
+<span class="sig-name descname"><span class="pre">file_handle</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">BinaryIO</span></em><a class="headerlink" href="#ampel.core.AmpelRegister.AmpelRegister.file_handle" title="Permalink to this definition">¶</a></dt>
+<dd><p>use existing file handle</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ampel.core.AmpelRegister.AmpelRegister.compression">
+<span class="sig-name descname"><span class="pre">compression</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Literal</span><span class="p"><span class="pre">[</span></span><span class="s"><span class="pre">'gz'</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="s"><span class="pre">'bz2'</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="s"><span class="pre">'xz'</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'gz'</span></em><a class="headerlink" href="#ampel.core.AmpelRegister.AmpelRegister.compression" title="Permalink to this definition">¶</a></dt>
+<dd><p>compression scheme</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="ampel.core.AmpelRegister.AmpelRegister.compression_level">
+<span class="sig-name descname"><span class="pre">compression_level</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.10)"><span class="pre">int</span></a></em><a class="headerlink" href="#ampel.core.AmpelRegister.AmpelRegister.compression_level" title="Permalink to this definition">¶</a></dt>
+<dd><p>compression level</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ampel.core.AmpelRegister.AmpelRegister.check_rename">
+<span class="sig-name descname"><span class="pre">check_rename</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">header</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ampel/core/AmpelRegister.html#AmpelRegister.check_rename"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ampel.core.AmpelRegister.AmpelRegister.check_rename" title="Permalink to this definition">¶</a></dt>
+<dd><p>override if needed</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ampel.core.AmpelRegister.AmpelRegister.onload_update_header">
+<span class="sig-name descname"><span class="pre">onload_update_header</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ampel/core/AmpelRegister.html#AmpelRegister.onload_update_header"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ampel.core.AmpelRegister.AmpelRegister.onload_update_header" title="Permalink to this definition">¶</a></dt>
+<dd><p>Override if you need to update the header of an existing register.
+Ex: BaseAlertRegister adds the current run id</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.10)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ampel.core.AmpelRegister.AmpelRegister.get_file_path">
+<span class="sig-name descname"><span class="pre">get_file_path</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ampel/core/AmpelRegister.html#AmpelRegister.get_file_path"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ampel.core.AmpelRegister.AmpelRegister.get_file_path" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Raise</dt>
+<dd class="field-odd"><p>errors if sub-directories cannot be created</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ampel.core.AmpelRegister.AmpelRegister.get_file_name">
+<span class="sig-name descname"><span class="pre">get_file_name</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ampel/core/AmpelRegister.html#AmpelRegister.get_file_name"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ampel.core.AmpelRegister.AmpelRegister.get_file_name" title="Permalink to this definition">¶</a></dt>
+<dd><p>override if needed</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ampel.core.AmpelRegister.AmpelRegister.check_header">
+<span class="sig-name descname"><span class="pre">check_header</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">header</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ampel/core/AmpelRegister.html#AmpelRegister.check_header"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ampel.core.AmpelRegister.AmpelRegister.check_header" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Raises</dt>
+<dd class="field-odd"><p>ValueError is raised on mismatch between this instance value</p>
+</dd>
+</dl>
+<p>and the header value for the provided key</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.10)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ampel.core.AmpelRegister.AmpelRegister.register_file_access">
+<span class="sig-name descname"><span class="pre">register_file_access</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">header</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_this_time</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">new_blocks</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ampel/core/AmpelRegister.html#AmpelRegister.register_file_access"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ampel.core.AmpelRegister.AmpelRegister.register_file_access" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>header</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.10)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.10)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code></a>]]) – use provided header rather than self.header[‘payload’]</p></li>
+<li><p><strong>use_this_time</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.10)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>]) – use provided time rather than time.time()</p></li>
+<li><p><strong>new_blocks</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.10)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a>]) – None (default) when register is opened, 0 or an integer when register is closed</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.10)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ampel.core.AmpelRegister.AmpelRegister.gen_new_header">
+<span class="sig-name descname"><span class="pre">gen_new_header</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/ampel/core/AmpelRegister.html#AmpelRegister.gen_new_header"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ampel.core.AmpelRegister.AmpelRegister.gen_new_header" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates a new header and create instance variable self.header to reference it.
+:rtype: <a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#bytes" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bytes</span></code></a>
+:returns: bson encoded bytes representing the generated header
+:raises: ValueError if the generated header size exceeds user-provided bound parameters</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ampel.core.AmpelRegister.AmpelRegister.close">
+<span class="sig-name descname"><span class="pre">close</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">close_outer_fh</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">update_header</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ampel/core/AmpelRegister.html#AmpelRegister.close"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ampel.core.AmpelRegister.AmpelRegister.close" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>close_outer_fh</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a>) – whether principal file handle should be closed</p></li>
+<li><p><strong>update_header</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.10)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a>) – possible overidde of default settings</p></li>
+</ul>
+</dd>
+</dl>
+<p>(aimed for admins working with command line)</p>
 </dd></dl>
 
 </dd></dl>
