@@ -26,6 +26,7 @@ def add_or(query: dict[str, Any], arg: dict[str, Any]) -> None:
 		query['$or'] = arg
 
 
+# Rework function names later
 def maybe_match_array(arg: StrictIterable):
 	"""
 	maybe_match_array(['ab']) -> returns 'ab'
@@ -47,6 +48,14 @@ def maybe_match_array(arg: StrictIterable):
 
 	# Otherwise cast to list
 	return {'$in': list(arg)}
+
+
+def match_one_or_many(arg: Any) -> Any:
+
+	if isinstance(arg, (int, float, str)):
+		return arg
+
+	return maybe_match_array(arg)
 
 
 def maybe_use_each(arg: Sequence[Any]) -> Any:
