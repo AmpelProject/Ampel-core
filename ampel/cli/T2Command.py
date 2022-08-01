@@ -221,7 +221,7 @@ class T2Command(AbsCoreCommand):
 
 			if changed > 0:
 				# Add new doc in the 'events' collection
-				EventHandler('CLI', ctx.db, run_id=run_id, tier=-1)
+				EventHandler('CLI', ctx.db).register(run_id=run_id, tier=-1)
 
 
 	def morph_ret(self,
