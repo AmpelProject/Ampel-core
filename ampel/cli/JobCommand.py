@@ -80,8 +80,9 @@ class JobCommand(AbsCoreCommand):
 			"reset-db": "reset databases even if not requested by job file",
 			"no-agg": "enables display of matplotlib plots via plt.show() for debugging",
 			"interactive": "you'll be asked for each task whether it should be run or skipped\n" + \
-				"and - if applicable - if the db should be reset",
-			"task": "only execute task(s) with provided index(es) [starting with 0]. Value 'last' is supported",
+				"and - if applicable - if the db should be reset. Option -task will be ignored.",
+			"task": "only execute task(s) with provided index(es) [starting with 0].\n" +
+					"Value 'last' is supported. Ignored if -interactive is used",
 			"show-plots": "show plots created by job (requires ampel-plot-cli)"
 		})
 
@@ -122,7 +123,7 @@ class JobCommand(AbsCoreCommand):
 		if isinstance(args['task'], (int, str)):
 			args['task'] = [args['task']]
 
-		job, job_sig = self.get_job_schema(args['schema'], logger)
+		job, _ = self.get_job_schema(args['schema'], logger, compute_sig=False)
 		schema_descr = "|".join(
 			[os.path.basename(sf) for sf in args['schema']]
 		).replace(".yaml", "").replace(".yml", "")
@@ -141,15 +142,6 @@ class JobCommand(AbsCoreCommand):
 			logger.info("Keeping existing databases ('-keep-db')")
 			purge_db = False
 
-		if args['task']:
-			if 'last' in args['task']:
-				args['task'].remove('last')
-				args['task'].append(len(job['task']) - 1)
-			if sum(args['task']) > 0 and purge_db and not args['reset_db']:
-				logger.info("Ampel job file requires db reset but argument 'task' was provided")
-				logger.info("Please add argument -reset-db to confirm you are absolutely sure...")
-				return
-
 		if args['interactive']:
 
 			from ampel.util.getch import yes_no
@@ -165,6 +157,17 @@ class JobCommand(AbsCoreCommand):
 						args['task'].append(i)
 			except KeyboardInterrupt:
 				sys.exit()
+
+		if args['task']:
+
+			if 'last' in args['task']:
+				args['task'].remove('last')
+				args['task'].append(len(job['task']) - 1)
+
+			if sum(args['task']) > 0 and not args['interactive'] and purge_db and not args['reset_db']:
+				logger.info("Ampel job file requires db reset but argument 'task' was provided")
+				logger.info("Please add argument -reset-db to confirm you are absolutely sure...")
+				return
 
 		# DevAmpelContext hashes automatically confid from potential IngestDirectives
 		ctx = self.get_context(
@@ -199,6 +202,10 @@ class JobCommand(AbsCoreCommand):
 		tds: list[dict[str, Any]] = []
 		for i, p in enumerate(job['task']):
 
+			if args['task'] and i not in args['task']:
+				logger.info(f"Skipping task(s) #{i} as requested")
+				continue
+
 			if not isinstance(p, dict):
 				raise ValueError("Unsupported task definition (must be dict)")
 
@@ -230,10 +237,19 @@ class JobCommand(AbsCoreCommand):
 			else:
 				tds.append(TaskUnitModel(**p).dict())
 
+			tds[-1]['_idx'] = i
 			logger.info(f"Registering job task#{i} with {tds[-1]['multiplier']}x multiplier")
 
+
+		# Ensure that job content saved in DB reflects options set dynamically
+		if args['task']:
+			for idx in sorted(args['task'], reverse=True):
+				del job['task'][idx]
+
 		ctx.config._config = recursive_freeze(config_dict)
+
 		logger.info("Saving job schema")
+		job_sig = build_unsafe_dict_id(job, size=-64)
 		ctx.db.get_collection("jobid").update_one(
 			{'_id': job_sig},
 			{'$setOnInsert': job},
@@ -241,20 +257,18 @@ class JobCommand(AbsCoreCommand):
 		)
 
 		run_ids = []
+		process_name = job['name'] if 'name' in job else schema_descr
+
 		for i, task_dict in enumerate(tds):
 
-			pname_base = job['name'] if 'name' in job else schema_descr
-			process_name = f"{pname_base}#{i}"
+			job_idx = task_dict.pop('_idx')
+			idx = i if i == job_idx else f"{i} (#{job_idx} in original job)"
 
 			if 'title' in task_dict:
-				self.print_chapter(task_dict['title'] if task_dict.get('title') else f"Task #{i}", logger)
+				self.print_chapter(task_dict['title'] if task_dict.get('title') else f"Task #{idx}", logger)
 				del task_dict['title']
 			elif i != 0:
-				self.print_chapter(f"Task #{i}", logger)
-
-			if args['task'] is not None and i not in args['task']:
-				logger.info(f"Skipping task #{i} as requested")
-				continue
+				self.print_chapter(f"Task #{idx}", logger)
 
 			multiplier = task_dict.pop('multiplier')
 
@@ -327,8 +341,12 @@ class JobCommand(AbsCoreCommand):
 			cmd = [
 				'ampel', 'plot', 'show', '-stack', '100', '-png', '150',
 				'-t2', '-t3', '-base-path', 'body.plot', # to be improved later
-				'-job', *args['schema'], '-run-id', *[str(el) for el in run_ids]
+				'-one-db', '-db', job['mongo']['prefix'],
+				'-job-id', f"\"{job_sig}\"", '-run-id', *[str(el) for el in run_ids],
 			]
+			if args.get('debug'):
+				cmd.append('-debug')
+
 			print("-" * 40)
 			print(f"Executing command: {' '.join(cmd)}")
 			r = subprocess.run(cmd, check=True, capture_output=True, text=True)
@@ -345,7 +363,11 @@ class JobCommand(AbsCoreCommand):
 
 
 	@classmethod
-	def get_job_schema(cls, schema_files: list[str], logger: AmpelLogger) -> tuple[dict, int]:
+	def get_job_schema(cls,
+		schema_files: list[str],
+		logger: AmpelLogger,
+		compute_sig: bool = True
+	) -> tuple[dict, int]:
 
 		lines = io.StringIO()
 		for i, job_fname in enumerate(schema_files):
@@ -365,7 +387,7 @@ class JobCommand(AbsCoreCommand):
 			if k.startswith("_"):
 				del job[k]
 
-		return job, build_unsafe_dict_id(job, size=-64)
+		return job, build_unsafe_dict_id(job, size=-64) if compute_sig else 0
 
 
 def run_mp_process(
