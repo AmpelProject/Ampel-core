@@ -80,7 +80,7 @@ class DummyStateT2Unit(AbsStateT2Unit):
 
 class DummyTiedStateT2Unit(AbsTiedStateT2Unit):
 
-    t2_dependency = [StateT2Dependency(unit="DummyStateT2Unit")] # type: ignore[var-annotated]
+    t2_dependency = [StateT2Dependency(unit="DummyStateT2Unit")] # type: ignore
 
     def process(
         self,
