@@ -4,7 +4,7 @@
 # License:             BSD-3-Clause
 # Author:              valery brinnel <firstname.lastname@gmail.com>
 # Date:                08.12.2021
-# Last Modified Date:  12.07.2022
+# Last Modified Date:  01.08.2022
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from time import time
@@ -53,7 +53,7 @@ class T3DocBuilder(ContextUnit, T3DocBuilderModel):
 		self.stock_updr = MongoStockUpdater(
 			ampel_db = self.context.db,
 			tier = 3,
-			run_id = self.event_hdlr.run_id,
+			run_id = self.event_hdlr.get_run_id(),
 			process_name = self.event_hdlr.process_name,
 			logger = self.logger,
 			raise_exc = self.event_hdlr.raise_exc,
@@ -111,7 +111,7 @@ class T3DocBuilder(ContextUnit, T3DocBuilderModel):
 
 		conf = t3_unit._get_trace_content()
 		meta: MetaRecord = {
-			'run': self.event_hdlr.run_id,
+			'run': self.event_hdlr.get_run_id(),
 			'ts': int(now.timestamp()),
 			'duration': time() - ts
 		}
