@@ -51,9 +51,9 @@ class EventHandler:
 
 	def register(self,
 		run_id: None | int = None,
-		tier: None | Literal[0, 1, 2, 3] = None,
+		tier: None | Literal[-1, 0, 1, 2, 3] = None,
 		task_nbr: None | int = None,
-		code: EventCode = EventCode.RUNNING,
+		code: EventCode = EventCode.RUNNING
 	) -> None:
 
 		doc = {'process': self.process_name} | self.extra
