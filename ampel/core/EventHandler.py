@@ -29,7 +29,7 @@ class EventHandler:
 		process_name: str,
 		ampel_db: 'AmpelDB',
 		tier: Literal[-1, 0, 1, 2, 3],
-		run_id: int,
+		run_id: Optional[int],
 		col_name: str = "events",
 		extra: Optional[dict[str, Any]] = None,
 		raise_exc = False,
@@ -46,7 +46,7 @@ class EventHandler:
 		self.run_id = run_id
 		doc = EventDocument(process=process_name, tier=tier)
 
-		if run_id:
+		if run_id is not None:
 			doc['run'] = run_id
 
 		if extra:

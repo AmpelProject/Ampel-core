@@ -123,14 +123,14 @@ class AbsWorker(Generic[T], AbsEventUnit, abstract=True):
 		# Add new doc in the 'events' collection
 		event_hdlr = EventHandler(
 			self.process_name, self._ampel_db, tier=2,
-			run_id = -1, raise_exc = self.raise_exc
+			run_id = None, raise_exc = self.raise_exc
 		)
 
 		# Exclude documents with a retry time in the future
 		self.query['$expr'] = {'$not': {'$lt': [time(), {'$last': '$meta.retry_after'}]}}
 
 		# Avoid 'burning' a run_id for nothing (at the cost of a request)
-		if pre_check and self.col.count_documents(self.query) == 0:
+		if pre_check and self.col.find_one(self.query, {"_id": 1}) is None:
 			return 0
 
 		run_id = self.context.new_run_id()
