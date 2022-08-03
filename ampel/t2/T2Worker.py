@@ -196,7 +196,8 @@ class T2Worker(AbsWorker[T2Document]):
 			)
 
 			# Update stock document
-			stock_updr.flush()
+			if len(stock_updr._updates) >= self.updates_buffer_size:
+				stock_updr.flush()
 
 		except Exception as e:
 

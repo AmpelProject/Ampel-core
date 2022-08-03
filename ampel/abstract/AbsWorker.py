@@ -11,6 +11,8 @@ import gc, signal
 from time import time
 from typing import ClassVar, Optional, Tuple, List, Union, Dict, Any, Sequence, TypeVar, Generic, Literal
 
+from pymongo.write_concern import WriteConcern
+
 from ampel.types import UBson, Tag
 from ampel.base.decorator import abstractmethod
 from ampel.base.LogicalUnit import LogicalUnit
@@ -74,6 +76,12 @@ class AbsWorker(Generic[T], AbsEventUnit, abstract=True):
 	#: For later
 	database: str = "mongo"
 
+	#: wait for majority acknowledgement of document updates. this introduces
+	#: significant extra latency for replicated mongo clusters.
+	wait_for_durable_write: bool = True
+
+	#: minimum number of stock document updates to commit at once
+	updates_buffer_size: int = 500
 
 	def __init__(self, **kwargs) -> None:
 
@@ -96,6 +104,13 @@ class AbsWorker(Generic[T], AbsEventUnit, abstract=True):
 		self.col_t0 = self._ampel_db.get_collection('t0', mode='r')
 		self.col_t1 = self._ampel_db.get_collection('t1', mode='r')
 		self.col = self._ampel_db.get_collection(f't{self.tier}', mode='w')
+		if not self.wait_for_durable_write:
+			# Only wait for the primary to acknowledge (in-memory) write, rather
+			# than a majority of replica set members to acknowledge write to
+			# their journals. This has much lower latency, but can result in doc
+			# updates being lost if the primary goes down before the write can
+			# be replicated, but if this happens the doc can simply be rerun.
+			self.col = self.col.with_options(write_concern=WriteConcern(w=1, j=False))
 
 		if self.send_beacon:
 			self.create_beacon()
@@ -179,6 +194,7 @@ class AbsWorker(Generic[T], AbsEventUnit, abstract=True):
 
 			if garbage_collect:
 				gc.collect()
+		stock_updr.flush()
 
 		event_hdlr.update(logger, docs=self._doc_counter, run=run_id)
 
