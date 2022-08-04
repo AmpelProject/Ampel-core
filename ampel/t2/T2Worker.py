@@ -287,7 +287,7 @@ class T2Worker(AbsWorker[T2Document]):
 				)
 				return None
 
-			if len(dps) != len(t1_dps_ids):
+			if len(dps) != len(set(t1_dps_ids)):
 				for el in (set(t1_dps_ids) - {el['id'] for el in dps}):
 					logger.error(
 						f'Datapoint {el} referenced in compound not found',
