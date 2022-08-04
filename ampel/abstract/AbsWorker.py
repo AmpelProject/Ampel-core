@@ -138,7 +138,7 @@ class AbsWorker(Generic[T], AbsEventUnit, abstract=True):
 		# Add new doc in the 'events' collection
 		event_hdlr = EventHandler(
 			self.process_name, self._ampel_db, tier=2,
-			run_id = None, raise_exc = self.raise_exc
+			run_id = -1, raise_exc = self.raise_exc
 		)
 
 		# Avoid 'burning' a run_id for nothing (at the cost of a request)
