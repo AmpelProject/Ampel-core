@@ -141,9 +141,6 @@ class AbsWorker(Generic[T], AbsEventUnit, abstract=True):
 			run_id = None, raise_exc = self.raise_exc
 		)
 
-		# Exclude documents with a retry time in the future
-		self.query['$expr'] = {'$not': {'$lt': [time(), {'$last': '$meta.retry_after'}]}}
-
 		# Avoid 'burning' a run_id for nothing (at the cost of a request)
 		if pre_check and self.col.find_one(self.query, {"_id": 1}) is None:
 			return 0
@@ -177,8 +174,12 @@ class AbsWorker(Generic[T], AbsEventUnit, abstract=True):
 		self._run = True
 		while self._run:
 
-			# get t1/t2 document (code is usually NEW or NEW_PRIO)
-			doc = self.col.find_one_and_update(self.query, update)
+			# get t1/t2 document (code is usually NEW or NEW_PRIO), excluding
+			# docs with retry times in the future
+			doc = self.col.find_one_and_update(
+				self.query | {'$expr': {'$not': {'$lt': [time(), {'$last': '$meta.retry_after'}]}}},
+				update
+			)
 
 			# Cursor exhausted
 			if doc is None:
