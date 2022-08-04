@@ -4,7 +4,7 @@
 # License:             BSD-3-Clause
 # Author:              valery brinnel <firstname.lastname@gmail.com>
 # Date:                28.05.2021
-# Last Modified Date:  25.07.2022
+# Last Modified Date:  04.08.2022
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 import gc, signal
@@ -44,31 +44,33 @@ class AbsWorker(Generic[T], AbsEventUnit, abstract=True):
 	or :class:`T1 documents <ampel.content.T1Document.T1Document>`
 	"""
 
-	#: ids of the units to run. If not specified, any t1/t2 unit will be run.
+	#: Ids of the units to run. If not specified, any t1/t2 unit will be run.
 	unit_ids: None | list[str]
 
-	#: process only with the given code
+	#: Process only with the given code
 	code_match: OneOrMany[int] = [DocumentCode.NEW, DocumentCode.RERUN_REQUESTED]
 
-	#: max number of docs to process in :func:`run`
+	#: Max number of docs to process in :func:`run`
 	doc_limit: None | int
 
-	#: tag(s) to add to the stock :class:`~ampel.content.JournalRecord.JournalRecord`
+	#: Tag(s) to add to the stock :class:`~ampel.content.JournalRecord.JournalRecord`
 	#: every time a document is processed
 	jtag: None | OneOrMany[Tag]
 
-	#: tag(s) to add to the stock :class:`~ampel.content.MetaRecord.MetaRecord`
+	#: Tag(s) to add to the stock :class:`~ampel.content.MetaRecord.MetaRecord`
 	#: every time a document is processed
 	mtag: None | OneOrMany[Tag]
 
-	#: create a 'beacon' document indicating the last time T2Processor was run
+	#: Create a 'beacon' document indicating the last time T2Processor was run
 	#: in the current configuration
 	send_beacon: bool = True
 
-	#: explicitly call :func:`gc.collect` after every document
-	garbage_collect: bool = True
+	#: Explicitly call :func:`gc.collect` after the processing of each t1/t2 document.
+	#: Turn this on if units do not clean up resources adequately,
+	#: but beware of the performance impact.
+	garbage_collect: bool = False
 
-	#: maximum number of processing attempts per document
+	#: Maximum number of processing attempts per document
 	max_try: int = 5
 
 	tier: ClassVar[Literal[1, 2]]
@@ -77,8 +79,8 @@ class AbsWorker(Generic[T], AbsEventUnit, abstract=True):
 	#: {'$expr': {'$lt': [{'$last': '$meta.ts'}, now - min_doc_age]}}
 	min_doc_age: None | float
 
-	#: For later
-	database: str = "mongo"
+	#: One day, we might support different DBs
+	# database: str = "mongo"
 
 	#: Avoid 'burning' a run_id for nothing at the cost of a request
 	pre_check: bool = True
