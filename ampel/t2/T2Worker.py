@@ -288,11 +288,14 @@ class T2Worker(AbsWorker[T2Document]):
 				return None
 
 			if len(dps) != len(set(t1_dps_ids)):
-				for el in (set(t1_dps_ids) - {el['id'] for el in dps}):
-					logger.error(
-						f'Datapoint {el} referenced in compound not found',
-						extra={'unit': t2_doc['unit'], 'stock': t2_doc['stock']}
-					)
+				missing = sorted(
+					set(t1_dps_ids) - {el['id'] for el in dps},
+					key = t1_dps_ids.index
+				)
+				report_error(
+					self._ampel_db, msg='Some datapoints not found',
+					logger=logger, info={'t1': t1_doc, 't2': t2_doc, 'missing': missing}
+				)
 				return None
 
 			for dp in dps:
