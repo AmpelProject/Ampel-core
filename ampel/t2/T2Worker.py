@@ -75,6 +75,10 @@ class T2Worker(AbsWorker[T2Document]):
 		DocumentCode.T2_PENDING_DEPENDENCY
 	]
 
+	#: Process dependencies of each T2 doc if they are not already marked OK.
+	#: You likely want to disable this when running multiple workers against a
+	#: replicated database in order to reduce the chance that concurrent
+	#: updates interfere with the retry mechanism.
 	run_dependent_t2s: bool = True
 	tier: ClassVar[Literal[2]] = 2
 
