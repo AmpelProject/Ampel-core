@@ -125,6 +125,7 @@ class T2Worker(AbsWorker[T2Document]):
 			)
 			jrec = stock_updr.add_journal_record(
 				stock = doc['stock'],
+				channel = doc['channel'],
 				doc_id = doc['_id'], # type: ignore
 				trace_id = trace_id or None,
 				unit = doc['unit']

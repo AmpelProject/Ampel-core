@@ -235,7 +235,10 @@ class MongoStockUpdater:
 		if '$max' in d:
 			if '$max' in opd:
 				for k in d['$max']:
-					opd['$max'][k] = max(opd['$max'][k], d['$max'][k])
+					if k in opd['$max']:
+						opd['$max'][k] = max(opd['$max'][k], d['$max'][k])
+					else:
+						opd['$max'][k] = d['$max'][k]
 			else:
 				opd['$max'] = d['$max']
 
