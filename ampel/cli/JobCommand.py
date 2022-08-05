@@ -4,10 +4,10 @@
 # License:             BSD-3-Clause
 # Author:              valery brinnel <firstname.lastname@gmail.com>
 # Date:                15.03.2021
-# Last Modified Date:  26.07.2022
+# Last Modified Date:  05.08.2022
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-import yaml, io, os, signal, sys, subprocess
+import yaml, io, os, signal, sys, subprocess, platform
 from time import time
 from multiprocessing import Queue, Process
 from ampel.base.AmpelBaseModel import AmpelBaseModel
@@ -25,7 +25,7 @@ from ampel.log.LogFlag import LogFlag
 from ampel.util.freeze import recursive_freeze
 from ampel.util.mappings import get_by_path
 from ampel.util.hash import build_unsafe_dict_id
-from ampel.cli.AbsCoreCommand import AbsCoreCommand
+from ampel.cli.AbsCoreCommand import AbsCoreCommand, _maybe_int
 from ampel.cli.MaybeIntAction import MaybeIntAction
 from ampel.cli.AmpelArgumentParser import AmpelArgumentParser
 
@@ -135,6 +135,21 @@ class JobCommand(AbsCoreCommand):
 		if "requirements" in job:
 			# TODO: check job repo requirements
 			pass
+
+		# Check or set env variable(s)
+		if "env" in job:
+			psys = platform.system().lower()
+			for psys in ('any', platform.system().lower()):
+				if psys in job['env']:
+					if 'check' in job['env'][psys]:
+						for k, v in job['env'][psys]['check'].items():
+							if k not in os.environ or (v and v != _maybe_int(os.environ[k])):
+								logger.info(f"Environment variable {k}={v} required")
+								return
+					if 'set' in job['env'][psys]:
+						for k, v in job['env'][psys]['set'].items():
+							logger.info(f"Setting local environment variable {k}={v}")
+							os.environ[k] = str(v)
 
 		purge_db = get_by_path(job, 'mongo.reset') or args['reset_db']
 
