@@ -8,6 +8,7 @@
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import gc, signal
+from math import ceil
 from time import time
 from typing import ClassVar, Optional, Tuple, List, Union, Dict, Any, Sequence, TypeVar, Generic, Literal
 
@@ -177,7 +178,7 @@ class AbsWorker(Generic[T], AbsEventUnit, abstract=True):
 			# get t1/t2 document (code is usually NEW or NEW_PRIO), excluding
 			# docs with retry times in the future
 			doc = self.col.find_one_and_update(
-				self.query | {'$expr': {'$not': {'$lt': [time(), {'$last': '$meta.retry_after'}]}}},
+				self.query | {'$expr': {'$not': {'$lte': [ceil(time()), {'$last': '$meta.retry_after'}]}}},
 				update
 			)
 

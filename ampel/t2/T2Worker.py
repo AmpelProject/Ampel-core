@@ -8,6 +8,7 @@
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 import random
+from math import ceil
 from time import time
 from bson import ObjectId
 from typing import Optional, List, Union, Dict, Any, Sequence, Tuple, ClassVar, Literal
@@ -160,7 +161,7 @@ class T2Worker(AbsWorker[T2Document]):
 						delay = self.backoff_on_retry.factor * (self.backoff_on_retry.base ** trials)
 						if self.backoff_on_retry.jitter:
 							delay = random.uniform(0, delay)
-						meta['retry_after'] = meta['ts'] + int(delay + 0.5)
+						meta['retry_after'] = meta['ts'] + ceil(delay)
 
 				# TODO: check that unit did not use system reserved code
 				if code != 0 and code in DocumentCode.__members__.values():
