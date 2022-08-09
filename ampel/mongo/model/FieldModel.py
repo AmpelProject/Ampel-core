@@ -1,15 +1,15 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-core/ampel/model/db/FieldModel.py
-# License           : BSD-3-Clause
-# Author            : vb <vbrinnel@physik.hu-berlin.de>
-# Date              : 19.10.2019
-# Last Modified Date: 13.04.2020
-# Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
+# File:                Ampel-core/ampel/model/db/FieldModel.py
+# License:             BSD-3-Clause
+# Author:              valery brinnel <firstname.lastname@gmail.com>
+# Date:                19.10.2019
+# Last Modified Date:  13.04.2020
+# Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from ampel.model.StrictModel import StrictModel
+from ampel.base.AmpelBaseModel import AmpelBaseModel
 
-class FieldModel(StrictModel):
+class FieldModel(AmpelBaseModel):
 
 	field: str
 	direction: int = 1

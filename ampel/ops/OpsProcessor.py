@@ -3,6 +3,7 @@ from typing import Any
 from ampel.abstract.AbsOpsUnit import AbsOpsUnit
 from ampel.model.UnitModel import UnitModel
 from ampel.abstract.AbsEventUnit import AbsEventUnit
+from ampel.core.EventHandler import EventHandler
 from ampel.log import AmpelLogger, LogFlag, SHOUT
 from ampel.log.utils import report_exception
 
@@ -13,7 +14,7 @@ class OpsProcessor(AbsEventUnit):
     update_beacon: bool = True
     log_profile: str = "console_verbose"
 
-    def run(self) -> Any:
+    def proceed(self, event_hdlr: EventHandler) -> Any:
 
         logger = None
 

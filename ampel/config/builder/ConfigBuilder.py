@@ -1,19 +1,21 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-core/ampel/config/builder/ConfigBuilder.py
-# License           : BSD-3-Clause
-# Author            : vb <vbrinnel@physik.hu-berlin.de>
-# Date              : 03.09.2019
-# Last Modified Date: 16.11.2021
-# Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
+# File:                Ampel-core/ampel/config/builder/ConfigBuilder.py
+# License:             BSD-3-Clause
+# Author:              valery brinnel <firstname.lastname@gmail.com>
+# Date:                03.09.2019
+# Last Modified Date:  24.04.2022
+# Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 import os, sys, re, json, yaml, datetime, getpass, importlib, subprocess
 from multiprocessing import Pool
-from typing import Dict, List, Any, Optional, Set, Iterable, Union
+from typing import Any
+from collections.abc import Iterable
 
 from ampel.log.utils import log_exception
 from ampel.abstract.AbsChannelTemplate import AbsChannelTemplate
 from ampel.log.AmpelLogger import AmpelLogger, VERBOSE, DEBUG, ERROR
+from ampel.config.builder.DisplayOptions import DisplayOptions
 from ampel.config.builder.FirstPassConfig import FirstPassConfig
 from ampel.config.collector.ConfigCollector import ConfigCollector
 from ampel.config.collector.T02ConfigCollector import T02ConfigCollector
@@ -37,21 +39,23 @@ class ConfigBuilder:
 
 	_default_processes = ["DefaultT2Process", "DefaultPurge"]
 
-	def __init__(self, logger: AmpelLogger = None, verbose: bool = False):
+	def __init__(self, options: DisplayOptions, logger: AmpelLogger = None) -> None:
 
 		self.logger = AmpelLogger.get_logger(
-			console={'level': DEBUG if verbose else ERROR}
+			console={'level': DEBUG if options.verbose else ERROR}
 		) if logger is None else logger
-		self.first_pass_config = FirstPassConfig(self.logger, verbose)
-		self.templates: Dict[str, Any] = {}
-		self.verbose = verbose
+
+		self.first_pass_config = FirstPassConfig(options, self.logger)
+		self.templates: dict[str, Any] = {}
+		self.verbose = options.verbose
+		self.options = options
 		self.error = False
 
 
 	def load_ampel_conf(self,
-		d: Dict,
+		d: dict,
 		dist_name: str,
-		version: Union[str, float, int],
+		version: str | float | int,
 		register_file: str
 	) -> None:
 
@@ -85,9 +89,9 @@ class ConfigBuilder:
 
 
 	def register_channel_templates(self,
-		chan_templates: Dict[str, str],
+		chan_templates: dict[str, str],
 		dist_name: str,
-		version: Union[str, float, int],
+		version: str | float | int,
 		register_file: str
 	) -> None:
 
@@ -114,15 +118,15 @@ class ConfigBuilder:
 
 	def build_config(self,
 		stop_on_errors: int = 2,
-		config_validator: Optional[str] = "ConfigChecker",
+		config_validator: None | str = "ConfigChecker",
 		skip_default_processes: bool = False,
 		json_serializable: bool = True,
-		pwds: Optional[Iterable[str]] = None,
-		ext_resource: Optional[str] = None,
+		pwds: None | Iterable[str] = None,
+		ext_resource: None | str = None,
 		get_unit_env: bool = True,
-		save: Union[bool, str, None] = None,
+		save: bool | str | None = None,
 		sign: int = 6,
-	) -> Dict[str, Any]:
+	) -> dict[str, Any]:
 		"""
 		Pass 2.
 		Builds the final ampel config using previously collected config pieces (contained in self.first_pass_config)
@@ -178,17 +182,25 @@ class ConfigBuilder:
 			self.logger.log(VERBOSE, 'Getting unit dependencies')
 
 		if get_unit_env:
+
+			all_deps: dict[str, str | float] = {}
+			env = os.environ.get('CONDA_DEFAULT_ENV')
+			out['environment'] = {f'conda_{env}' if env else 'default': all_deps}
+
 			with Pool() as pool:
-				for res in pool.imap(get_unit_dependencies, [el['fqn'] for el in out['unit'].values()]):
+				for res in pool.starmap(
+					get_unit_dependencies,
+					[(el['fqn'], env) for el in out['unit'].values()]
+				):
 					if self.verbose:
 						self.logger.log(VERBOSE, f'{res[0]} dependencies: {res[1] or None}')
-					out['unit'][res[0]]['env'] = res[1] or None
+					if res[1]:
+						out['unit'][res[0]]['dependencies'] = list(res[1].keys())
+						all_deps.update(res[1])
 
 		# Add t2 init config collector (in which both hashed values of t2 run configs
 		# and t2 init config will be added)
-		out['confid'] = T02ConfigCollector(
-			conf_section='confid', logger=self.logger, verbose=self.verbose
-		)
+		out['confid'] = T02ConfigCollector('confid', self.options, logger=self.logger)
 
 		# Add (possibly transformed) processes to output config
 		for tier in (0, 1, 2, 3, "ops"):
@@ -199,8 +211,7 @@ class ConfigBuilder:
 				self.logger.log(VERBOSE, f'Checking standalone {tier_name} processes')
 
 			p_collector = ProcessConfigCollector(
-				tier=tier, conf_section='process', # type: ignore[arg-type]
-				logger=self.logger, verbose=self.verbose
+				'process', self.options, tier=tier, logger=self.logger # type: ignore[arg-type]
 			)
 
 			#out['process'][f't{tier}'] = {
@@ -242,10 +253,7 @@ class ConfigBuilder:
 						raise e
 
 		# Setup empty channel collector
-		out['channel'] = ChannelConfigCollector(
-			conf_section='channel', logger=self.logger, verbose=self.verbose
-		)
-
+		out['channel'] = ChannelConfigCollector('channel', self.options, logger=self.logger)
 		morph_errors = []
 
 		# Fill it with (possibly transformed) channels
@@ -366,11 +374,13 @@ class ConfigBuilder:
 
 		# Error Summary
 		if out['unit'].err_fqns:
+			self.logger.break_aggregation()
 			self.logger.info('Erroneous units (import failed):')
 			for el in out['unit'].err_fqns:
-				self.logger.info(el) # type: ignore[arg-type]
+				self.logger.info(f"{el[0]} - [{el[1].__class__.__name__}] {el[1]}")
 
 		if morph_errors:
+			self.logger.break_aggregation()
 			self.logger.info('Erroneous process definitions (morphing failed):')
 			for el in morph_errors:
 				self.logger.info(el) # type: ignore[arg-type]
@@ -423,12 +433,14 @@ class ConfigBuilder:
 				h = hashlib.blake2b(path.read_bytes()).hexdigest()[:sign]
 				path = path.rename(path.with_stem(f"{path.stem}_{h}"))
 
-			self.logger.log(VERBOSE, f'Config file saved as {path}')
+			self.logger.break_aggregation()
+			with open(path, "r") as file:
+				self.logger.info(f'Config file saved as {path} [{len(file.readlines())} lines]')
 
 		return d
 
 
-	def new_morpher(self, process: Dict[str, Any]) -> ProcessMorpher:
+	def new_morpher(self, process: dict[str, Any]) -> ProcessMorpher:
 		"""
 		Returns an instance of ProcessMorpher using the provided
 		process dict and the internal logger and templates
@@ -438,7 +450,7 @@ class ConfigBuilder:
 		)
 
 
-	def _get_channel_tpl(self, chan_dict: Dict[str, Any]) -> Optional[AbsChannelTemplate]:
+	def _get_channel_tpl(self, chan_dict: dict[str, Any]) -> None | AbsChannelTemplate:
 		"""
 		Internal method used to check if a template (and which one)
 		should be applied to a given channel dict.
@@ -466,7 +478,7 @@ class ConfigBuilder:
 
 	def gather_processes(self,
 		config: FirstPassConfig, tier: int, match: str, collect: str
-	) -> Optional[Dict]:
+	) -> None | dict:
 		"""
 		:param channel_names:
 		- None: all the available channels from the ampel config will be loaded
@@ -474,7 +486,7 @@ class ConfigBuilder:
 		- List of strings: channels with the provided ids will be loaded
 		"""
 
-		processes: List[Dict] = [
+		processes: list[dict] = [
 			el for el in config[f't{tier}']['process'].values()
 			if re.match(match, el.get('name'))
 		]
@@ -483,8 +495,8 @@ class ConfigBuilder:
 			return None
 
 		init_configs = []
-		dist_names: Set[str] = set()
-		out_proc: Optional[Dict] = None
+		dist_names: set[str] = set()
+		out_proc: None | dict = None
 
 		for p in processes:
 
@@ -537,11 +549,23 @@ class ConfigBuilder:
 			kwargs['enc_confs'].append((d, k, secret, f"{path}.{k}"))
 
 
-def get_unit_dependencies(fqn: str) -> tuple[str, dict]:
+def get_unit_dependencies(fqn: str, env: None | str) -> tuple[str, dict]:
 
-	return fqn.split(".")[-1], eval(
-		subprocess.run(
+	if env:
+		ret = subprocess.run(
+			f"""eval "$(conda shell.bash hook)"
+				conda activate {env}
+				python3 -m 'ampel.config.builder.get_env' {fqn}
+			""",
+			stdout = subprocess.PIPE,
+			shell = True,
+			check = True
+		)
+	else:
+		ret = subprocess.run(
 			[sys.executable, '-m', 'ampel.config.builder.get_env', fqn],
-			stdout=subprocess.PIPE
-		).stdout.decode("utf-8")
-	)
+			stdout = subprocess.PIPE,
+			check = True
+		)
+
+	return fqn.split(".")[-1], eval(ret.stdout.decode("utf-8"))

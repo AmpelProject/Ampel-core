@@ -1,13 +1,13 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-core/ampel/abstract/AbsT3ControlUnit.py
-# License           : BSD-3-Clause
-# Author            : vb <vbrinnel@physik.hu-berlin.de>
-# Date              : 08.12.2021
-# Last Modified Date: 17.12.2021
-# Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
+# File:                Ampel-core/ampel/abstract/AbsT3ControlUnit.py
+# License:             BSD-3-Clause
+# Author:              valery brinnel <firstname.lastname@gmail.com>
+# Date:                08.12.2021
+# Last Modified Date:  17.12.2021
+# Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from typing import Optional, Generator
+from collections.abc import Generator
 from ampel.types import Traceless, OneOrMany, ChannelId
 from ampel.view.T3Store import T3Store
 from ampel.base.AmpelABC import AmpelABC
@@ -18,7 +18,7 @@ from ampel.content.T3Document import T3Document
 from ampel.log.AmpelLogger import AmpelLogger
 
 
-class AbsT3ControlUnit(AmpelABC, ContextUnit, abstract=True):
+class AbsT3ControlUnit(ContextUnit, AmpelABC, abstract=True):
 	"""
 	Abstract class for control T3 units, which like AbsT3PlainUnit but
 	unlike AbsT3ReviewUnit, receive just a T3Store instance via
@@ -27,11 +27,11 @@ class AbsT3ControlUnit(AmpelABC, ContextUnit, abstract=True):
 
 	logger: Traceless[AmpelLogger]
 	event_hdlr: Traceless[EventHandler]
-	channel: Optional[OneOrMany[ChannelId]] = None
+	channel: None | OneOrMany[ChannelId] = None
 
 
 	@abstractmethod
-	def process(self, t3s: T3Store) -> Optional[Generator[T3Document, None, None]]:
+	def process(self, t3s: T3Store) -> None | Generator[T3Document, None, None]:
 		"""
 		The content of the t3 store is dependent on:
 		- the configuration of the 'include' option of the underlying t3 process

@@ -1,16 +1,17 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-core/ampel/config/builder/FirstPassConfig.py
-# License           : BSD-3-Clause
-# Author            : vb <vbrinnel@physik.hu-berlin.de>
-# Date              : 16.10.2019
-# Last Modified Date: 18.06.2021
-# Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
+# File:                Ampel-core/ampel/config/builder/FirstPassConfig.py
+# License:             BSD-3-Clause
+# Author:              valery brinnel <firstname.lastname@gmail.com>
+# Date:                16.10.2019
+# Last Modified Date:  18.06.2021
+# Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 import json
-from typing import Optional, Dict, Any, Type, Tuple, Literal
+from typing import Any, Literal
 from ampel.log.AmpelLogger import AmpelLogger
 
+from ampel.config.builder.DisplayOptions import DisplayOptions
 from ampel.config.collector.ConfigCollector import ConfigCollector
 from ampel.config.collector.LoggingCollector import LoggingCollector
 from ampel.config.collector.DBConfigCollector import DBConfigCollector
@@ -21,14 +22,14 @@ from ampel.config.collector.ChannelConfigCollector import ChannelConfigCollector
 from ampel.config.collector.ResourceConfigCollector import ResourceConfigCollector
 from ampel.config.collector.ForwardProcessConfigCollector import ForwardProcessConfigCollector
 
-tiers: Tuple[Literal[0, 1, 2, 3], ...] = (0, 1, 2, 3)
+tiers: tuple[Literal[0, 1, 2, 3], ...] = (0, 1, 2, 3)
 
 class FirstPassConfig(dict):
 	"""
 	Class used to aggregate config pieces into a central configuration dict for ampel.
 	"""
 
-	conf_keys: Dict[str, Optional[Type[ConfigCollector]]] = {
+	conf_keys: dict[str, None | type[ConfigCollector]] = {
 		"mongo": DBConfigCollector,
 		"logging": LoggingCollector,
 		"channel": ChannelConfigCollector,
@@ -38,49 +39,47 @@ class FirstPassConfig(dict):
 		"resource": ResourceConfigCollector,
 	}
 
-	def __init__(self, logger: AmpelLogger = None, verbose: bool = False) -> None:
+	def __init__(self, options: DisplayOptions, logger: AmpelLogger = None) -> None:
 
 		self.logger = AmpelLogger.get_logger() if logger is None else logger
 
-		d: Dict[str, Any] = {
-			k: Klass(conf_section=k, logger=logger, verbose=verbose)
+		d: dict[str, Any] = {
+			k: Klass(conf_section=k, options=options, logger=logger)
 			for k, Klass in self.conf_keys.items() if Klass
 		}
 
 		d['pwd'] = []
-
-		d['unit'] = UnitConfigCollector(conf_section="unit", logger=logger, verbose=verbose)
+		d['unit'] = UnitConfigCollector(
+			conf_section="unit", options=options, logger=logger
+		)
 
 		# Allow process to be defined in root key
 		d['process'] = ForwardProcessConfigCollector(
 			root_config=self, conf_section="process", # type: ignore
 			target_collector_type=ProcessConfigCollector,
-			logger=logger, verbose=verbose
+			logger=logger, options=options
 		)
 
 		d['alias'] = {}
 		for k in tiers:
 
 			d['alias'][f"t{k}"] = AliasConfigCollector(
-				conf_section='alias', logger=logger,
-				verbose=verbose, tier=k
+				conf_section='alias', options=options, logger=logger, tier=k
 			)
 
 			# Allow processes to be defined in sub-tier entries already (process.t0, process.t1, ...)
 			d['process'][f"t{k}"] = ProcessConfigCollector(
-				conf_section='process', logger=logger,
-				verbose=verbose, tier=k
+				conf_section='process', options=options, logger=logger, tier=k
 			)
 
 		d['process']["ops"] = ProcessConfigCollector(
-			conf_section='process', logger=logger,
-			verbose=verbose, tier="ops"
+			conf_section='process', options=options, logger=logger, tier="ops"
 		)
 
 		super().__init__(d)
 
 
-	def unset_errors(self, d: Optional[Dict] = None) -> None:
+	def unset_errors(self, d: None | dict = None) -> None:
 		""" """
 		for v in d.values() if d is not None else self.values():
 			if isinstance(v, dict):

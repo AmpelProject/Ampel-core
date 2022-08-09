@@ -1,35 +1,33 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-core/ampel/model/t3/T3ProjectionDirective.py
-# License           : BSD-3-Clause
-# Author            : vb <vbrinnel@physik.hu-berlin.de>
-# Date              : 02.03.2021
-# Last Modified Date: 02.03.2021
-# Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
+# File:                Ampel-core/ampel/model/t3/T3ProjectionDirective.py
+# License:             BSD-3-Clause
+# Author:              valery brinnel <firstname.lastname@gmail.com>
+# Date:                02.03.2021
+# Last Modified Date:  02.03.2021
+# Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 
-from typing import Optional, Sequence
-from pydantic import validator
+from collections.abc import Sequence
 from ampel.model.UnitModel import UnitModel
-from ampel.model.StrictModel import StrictModel
+from ampel.base.AmpelBaseModel import AmpelBaseModel
 
 
-class T3ProjectionDirective(StrictModel):
+class T3ProjectionDirective(AmpelBaseModel):
 	"""
 	Internal model used for field 'directives' of T3UnitRunner
 	"""
 
 	#: AbsT3Filter sub unit to use for down-selection of ampel buffers
-	filter: Optional[UnitModel]
+	filter: None | UnitModel
 
 	#: AbsT3Projector sub unit capable of discarding selected ampel buffer attributes/fields
-	project: Optional[UnitModel]
+	project: None | UnitModel
 
 	#: t3 units (AbsT3ReviewUnit) to execute
 	execute: Sequence[UnitModel]
 
-	@validator('execute', pre=True)
-	def cast_to_sequence_if_need_be(cls, v):
-		if isinstance(v, dict):
-			return [v]
-		return v
+	def __init__(self, **kwargs):
+		if isinstance(v := kwargs.get("execute"), (dict, UnitModel)):
+			kwargs["execute"] = [v]
+		super().__init__(**kwargs)

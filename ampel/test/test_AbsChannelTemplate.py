@@ -16,5 +16,5 @@ def test_AbsChannelTemplate(ampel_logger):
         version = 0,
     )
     channel = template.get_channel(logger=ampel_logger)
-    assert ChannelModel(**channel).__dict__ == channel
+    assert ChannelModel(**channel).dict() == channel
     

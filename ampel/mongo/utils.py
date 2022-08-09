@@ -1,17 +1,18 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-core/ampel/mongo/utils.py
-# License           : BSD-3-Clause
-# Author            : vb <vbrinnel@physik.hu-berlin.de>
-# Date              : 31.10.2018
-# Last Modified Date: 09.10.2021
-# Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
+# File:                Ampel-core/ampel/mongo/utils.py
+# License:             BSD-3-Clause
+# Author:              valery brinnel <firstname.lastname@gmail.com>
+# Date:                31.10.2018
+# Last Modified Date:  09.10.2021
+# Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from typing import Dict, Any, Sequence, Set, Optional
+from typing import Any
+from collections.abc import Sequence
 from ampel.types import StrictIterable, strict_iterable
 
 
-def add_or(query: Dict[str, Any], arg: Dict[str, Any]) -> None:
+def add_or(query: dict[str, Any], arg: dict[str, Any]) -> None:
 
 	if '$or' in query:
 		if '$and' in query:
@@ -25,6 +26,7 @@ def add_or(query: Dict[str, Any], arg: Dict[str, Any]) -> None:
 		query['$or'] = arg
 
 
+# Rework function names later
 def maybe_match_array(arg: StrictIterable):
 	"""
 	maybe_match_array(['ab']) -> returns 'ab'
@@ -48,6 +50,14 @@ def maybe_match_array(arg: StrictIterable):
 	return {'$in': list(arg)}
 
 
+def match_one_or_many(arg: Any) -> Any:
+
+	if isinstance(arg, (int, float, str)):
+		return arg
+
+	return maybe_match_array(arg)
+
+
 def maybe_use_each(arg: Sequence[Any]) -> Any:
 	if isinstance(arg, dict):
 		return arg
@@ -56,7 +66,7 @@ def maybe_use_each(arg: Sequence[Any]) -> Any:
 	return {'$each': arg}
 
 
-def get_ids(col: Any, *, filter_stage: Optional[dict] = None) -> Set[Any]:
+def get_ids(col: Any, *, filter_stage: None | dict = None) -> set[Any]:
 	"""
 	Note1: timeit perf of find vs aggregate for cols with 10 / 700 elements:
 	[el['_id'] for el in col.find()] -> 518 µs / 6.1 ms

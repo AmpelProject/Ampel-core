@@ -1,17 +1,17 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-core/ampel/log/handlers/AmpelStreamHandler.py
-# License           : BSD-3-Clause
-# Author            : vb <vbrinnel@physik.hu-berlin.de>
-# Date              : 17.10.2018
-# Last Modified Date: 24.05.2021
-# Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
+# File:                Ampel-core/ampel/log/handlers/AmpelStreamHandler.py
+# License:             BSD-3-Clause
+# Author:              valery brinnel <firstname.lastname@gmail.com>
+# Date:                17.10.2018
+# Last Modified Date:  24.05.2021
+# Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 import sys, time
 from sys import _getframe
 from os.path import basename
 from time import strftime
-from typing import Literal, Dict, List, Optional
+from typing import Literal
 from ampel.log.LogFlag import LogFlag
 from ampel.log.LightLogRecord import LightLogRecord
 from ampel.util.mappings import compare_dict_values
@@ -65,7 +65,7 @@ class AmpelStreamHandler:
 		density: Literal["default", "compact", "compacter", "headerless"] = "default",
 		terminator: str = '\n',
 		log_sep: str = '\n', # separator between aggregated log entries
-		prefix: Optional[str] = None,
+		prefix: None | str = None,
 		provenance: bool = True
 	) -> None:
 

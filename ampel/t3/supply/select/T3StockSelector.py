@@ -1,14 +1,14 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-core/ampel/t3/supply/select/T3StockSelector.py
-# License           : BSD-3-Clause
-# Author            : vb <vbrinnel@physik.hu-berlin.de>
-# Date              : 06.12.2019
-# Last Modified Date: 03.04.2021
-# Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
+# File:                Ampel-core/ampel/t3/supply/select/T3StockSelector.py
+# License:             BSD-3-Clause
+# Author:              valery brinnel <firstname.lastname@gmail.com>
+# Date:                06.12.2019
+# Last Modified Date:  03.04.2021
+# Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from pymongo.cursor import Cursor
-from typing import Union, Optional, Dict, Literal, Any
+from typing import Literal, Any
 
 from ampel.types import ChannelId, Tag
 from ampel.mongo.query.stock import build_stock_query
@@ -37,24 +37,19 @@ class T3StockSelector(AbsT3Selector):
 	"""
 
 	#: Select by creation time
-	created: Optional[TimeConstraintModel] = None
+	created: None | TimeConstraintModel = None
 
 	#: Select by modification time
-	updated: Optional[TimeConstraintModel] = None
+	updated: None | TimeConstraintModel = None
 
 	#: Select by channel
-	channel: Optional[Union[ChannelId, AnyOf[ChannelId], AllOf[ChannelId], OneOf[ChannelId]]] = None
+	channel: None | ChannelId | AnyOf[ChannelId] | AllOf[ChannelId] | OneOf[ChannelId] = None
 
 	#: Select by tag
-	tag: Optional[
-		Dict[
-			Literal['with', 'without'],
-			Union[Tag, Dict, AllOf[Tag], AnyOf[Tag], OneOf[Tag]]
-		]
-	] = None
+	tag: None | dict[Literal['with', 'without'], Tag | AllOf[Tag] | AnyOf[Tag] | OneOf[Tag] | dict] = None
 
 	#: Custom selection (ex: {'run': {'$gt': 10}})
-	custom: Optional[Dict[str, Any]] = None
+	custom: None | dict[str, Any] = None
 
 
 	def __init__(self, logger: AmpelLogger, **kwargs):
@@ -76,7 +71,7 @@ class T3StockSelector(AbsT3Selector):
 
 
 	# Override/Implement
-	def fetch(self) -> Optional[Cursor]:
+	def fetch(self) -> None | Cursor:
 
 		# Build query for matching transients using criteria defined in config
 		match_query = build_stock_query(

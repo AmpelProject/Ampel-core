@@ -1,22 +1,18 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-core/ampel/core/ContextUnit.py
-# License           : BSD-3-Clause
-# Author            : vb <vbrinnel@physik.hu-berlin.de>
-# Date              : 07.10.2019
-# Last Modified Date: 13.12.2021
-# Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
+# File:                Ampel-core/ampel/core/ContextUnit.py
+# License:             BSD-3-Clause
+# Author:              valery brinnel <firstname.lastname@gmail.com>
+# Date:                07.10.2019
+# Last Modified Date:  09.01.2022
+# Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from typing import Optional
-from ampel.types import Traceless, TRACELESS
-from ampel.base.AmpelBaseModel import AmpelBaseModel
+from ampel.types import Traceless
+from ampel.base.AmpelUnit import AmpelUnit
 from ampel.core.AmpelContext import AmpelContext
-from ampel.secret.Secret import Secret
-
-ttf = type(Traceless)
 
 
-class ContextUnit(AmpelBaseModel):
+class ContextUnit(AmpelUnit):
 	"""
 	Base class for units requiring a reference to an AmpelContext instance
 	"""
@@ -27,22 +23,4 @@ class ContextUnit(AmpelBaseModel):
 	#: * None if provanance flag is False
 	#: * 0 in case model content is not serializable
 	#: * any other signed int value
-	_trace_id: Optional[int] = None
-
-
-	def __init__(self, **kwargs) -> None:
-
-		super().__init__(**kwargs)
-
-		d = self.__dict__
-		excl = {
-			k for k, v in self._annots.items()
-			if type(v) is ttf and v.__metadata__[0] == TRACELESS
-		}
-
-		self._trace_content = {
-			k: d[k]
-			for k in sorted(d)
-			if k not in excl and
-			not isinstance(d[k], Secret)
-		}
+	_trace_id: None | int = None

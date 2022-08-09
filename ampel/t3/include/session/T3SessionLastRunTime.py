@@ -1,13 +1,13 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-core/ampel/t3/include/session/T3SessionLastRunTime.py
-# License           : BSD-3-Clause
-# Author            : vb <vbrinnel@physik.hu-berlin.de>
-# Date              : 06.01.2020
-# Last Modified Date: 09.12.2021
-# Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
+# File:                Ampel-core/ampel/t3/include/session/T3SessionLastRunTime.py
+# License:             BSD-3-Clause
+# Author:              valery brinnel <firstname.lastname@gmail.com>
+# Date:                06.01.2020
+# Last Modified Date:  09.12.2021
+# Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from typing import Dict, Optional, ClassVar
+from typing import ClassVar
 from datetime import datetime, timedelta
 from ampel.mongo.query.var.events import get_last_run
 from ampel.abstract.AbsT3Supplier import AbsT3Supplier
@@ -19,10 +19,10 @@ class T3SessionLastRunTime(AbsT3Supplier[dict]):
 	key: ClassVar[str] = "last_run"
 
 	#: timedelta to search for previous run
-	lookup_range: Dict[str, int] = {'days': -7}
+	lookup_range: dict[str, int] = {'days': -7}
 
 	#: timedelta to use if no previous run found
-	fallback: Optional[Dict[str, int]] = None  # ex: {'days': -90}
+	fallback: None | dict[str, int] = None  # ex: {'days': -90}
 
 
 	def supply(self, t3s: T3Store) -> dict:

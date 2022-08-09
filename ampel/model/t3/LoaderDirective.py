@@ -1,13 +1,13 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-core/ampel/model/t3/LoaderDirective.py
-# License           : BSD-3-Clause
-# Author            : vb <vbrinnel@physik.hu-berlin.de>
-# Date              : 09.12.2019
-# Last Modified Date: 02.12.2021
-# Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
+# File:                Ampel-core/ampel/model/t3/LoaderDirective.py
+# License:             BSD-3-Clause
+# Author:              valery brinnel <firstname.lastname@gmail.com>
+# Date:                09.12.2019
+# Last Modified Date:  02.12.2021
+# Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from typing import Dict, Any, Optional, Type, Literal
+from typing import Any, Literal
 from ampel.content.StockDocument import StockDocument
 from ampel.content.DataPoint import DataPoint
 from ampel.content.T1Document import T1Document
@@ -28,10 +28,10 @@ class LoaderDirective(AliasableModel):
 	#: Source collection
 	col: Literal["stock", "t0", "t1", "t2"]
 
-	model: Optional[Type] # TypedDict
+	model: None | type # TypedDict
 
 	#: Mongo match expression to include in the query
-	query_complement: Optional[Dict[str, Any]]
+	query_complement: None | dict[str, Any]
 
 	#: whether to replace init config integer hash with 'resolved' config dict
 	resolve_config: bool = False

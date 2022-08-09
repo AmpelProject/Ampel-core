@@ -8,11 +8,11 @@
 # Last Modified By  : jvs
 
 from typing import Any, Type
-from ampel.model.StrictModel import StrictModel
+from ampel.base.AmpelBaseModel import AmpelBaseModel
 from ampel.base.AuxUnitRegister import AuxUnitRegister
 
 
-class AuxAliasableModel(StrictModel):
+class AuxAliasableModel(AmpelBaseModel):
 	"""
 	A model that can be initialized from the name of an aux unit
 	"""

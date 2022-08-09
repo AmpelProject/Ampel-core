@@ -1,18 +1,18 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-core/ampel/mongo/update/var/DBLoggingHandler.py
-# License           : BSD-3-Clause
-# Author            : vb <vbrinnel@physik.hu-berlin.de>
-# Date              : 14.12.2017
-# Last Modified Date: 29.03.2021
-# Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
+# File:                Ampel-core/ampel/mongo/update/var/DBLoggingHandler.py
+# License:             BSD-3-Clause
+# Author:              valery brinnel <firstname.lastname@gmail.com>
+# Date:                14.12.2017
+# Last Modified Date:  29.03.2021
+# Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 import struct, socket
 from bson import ObjectId
-from typing import List, Dict, Optional, Union, TYPE_CHECKING
+from typing import TYPE_CHECKING
 from logging import LogRecord
 from pymongo.errors import BulkWriteError
-from ampel.base.AmpelBaseModel import AmpelBaseModel
+from ampel.base.AmpelUnit import AmpelUnit
 from ampel.util.mappings import compare_dict_values
 from ampel.util.collections import try_reduce
 from ampel.log.AmpelLogger import AmpelLogger
@@ -50,14 +50,14 @@ def _machine_bytes():
 	return struct.pack("<I", _fnv_1a_24(socket.gethostname().encode()))[:3]
 
 
-class DBLoggingHandler(AmpelBaseModel):
+class DBLoggingHandler(AmpelUnit):
 	""" Saves log events into mongo database """
 
 	__slots__ = "prev_record", "fields_check", "log_dicts", "oid_middle", "warn_lvl"
 
 	level: int
 	col_name: str = "logs"
-	aggregate_interval: float = 1
+	aggregate_interval: float = 1.
 	expand_extra: bool = True
 	flush_len: int = 1000
 	auto_flush: bool = False
@@ -73,12 +73,12 @@ class DBLoggingHandler(AmpelBaseModel):
 		:param flush_len: How many log documents should be kept in memory before attempting a database bulk_write operation.
 		"""
 
-		AmpelBaseModel.__init__(self, **kwargs)
+		super().__init__(**kwargs)
 		self._ampel_db = ampel_db
 		self.run_id = run_id
 
-		self.log_dicts: List[Dict] = []
-		self.prev_record: Optional[Union[LightLogRecord, LogRecord]] = None
+		self.log_dicts: list[dict] = []
+		self.prev_record: None | LightLogRecord | LogRecord = None
 		self.fields_check = ['extra', 'stock', 'channel']
 		self.warn_lvl = LogFlag.WARNING
 
@@ -90,7 +90,7 @@ class DBLoggingHandler(AmpelBaseModel):
 		self.oid_middle = _machine_bytes() + int(str(self.run_id)[-4:]).to_bytes(2, 'big')
 
 
-	def handle(self, record: Union[LightLogRecord, LogRecord]) -> None:
+	def handle(self, record: LightLogRecord | LogRecord) -> None:
 		""" :raises AmpelLoggingError: on error """
 
 		rd = record.__dict__

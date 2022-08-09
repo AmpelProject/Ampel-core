@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-core/ampel/metrics/AmpelDBCollector.py
-# License           : BSD-3-Clause
-# Author            : jvs
-# Date              : Unspecified
-# Last Modified Date: 11.02.2021
-# Last Modified By  : jvs
+# File:                Ampel-core/ampel/metrics/AmpelDBCollector.py
+# License:             BSD-3-Clause
+# Author:              jvs
+# Date:                Unspecified
+# Last Modified Date:  11.02.2021
+# Last Modified By:    jvs
 
 
 from dataclasses import dataclass
@@ -26,7 +26,7 @@ class AmpelDBCollector:
 
     db: AmpelDB
 
-    def collect(self) -> List[Metric]:
+    def collect(self) -> list[Metric]:
 
         metrics = []
         try:

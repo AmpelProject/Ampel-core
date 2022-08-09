@@ -1,19 +1,21 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-core/ampel/t2/T2Worker.py
-# License           : BSD-3-Clause
-# Author            : vb <vbrinnel@physik.hu-berlin.de>
-# Date              : 24.05.2019
-# Last Modified Date: 29.10.2021
-# Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
+# File:                Ampel-core/ampel/t2/T2Worker.py
+# License:             BSD-3-Clause
+# Author:              valery brinnel <firstname.lastname@gmail.com>
+# Date:                24.05.2019
+# Last Modified Date:  17.05.2022
+# Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 import random
 from math import ceil
 from time import time
 from bson import ObjectId
-from typing import Optional, List, Union, Dict, Any, Sequence, Tuple, ClassVar, Literal
+from importlib import import_module
+from typing import Union, Any, ClassVar, Literal
+from collections.abc import Sequence
 
-from ampel.types import T, UBson, ubson
+from ampel.types import T, OneOrMany, UBson, ubson
 from ampel.struct.UnitResult import UnitResult
 from ampel.enum.DocumentCode import DocumentCode
 from ampel.enum.MetaActionCode import MetaActionCode
@@ -36,7 +38,7 @@ from ampel.abstract.AbsTiedStateT2Unit import AbsTiedStateT2Unit
 from ampel.abstract.AbsTiedStockT2Unit import AbsTiedStockT2Unit
 from ampel.abstract.AbsTiedCustomStateT2Unit import AbsTiedCustomStateT2Unit, U
 from ampel.abstract.AbsWorker import AbsWorker, register_stats
-from ampel.model.StrictModel import StrictModel
+from ampel.base.AmpelBaseModel import AmpelBaseModel
 from ampel.model.UnitModel import UnitModel
 from ampel.model.StateT2Dependency import StateT2Dependency
 from ampel.mongo.utils import maybe_match_array
@@ -55,7 +57,7 @@ abs_t2 = (
 
 stat_latency, stat_count = register_stats(tier=2)
 
-class BackoffConfig(StrictModel):
+class BackoffConfig(AmpelBaseModel):
 	base: float = 2
 	factor: float = 1
 	jitter: bool = True
@@ -68,7 +70,7 @@ class T2Worker(AbsWorker[T2Document]):
 
 	#: process only those :class:`T2 documents <ampel.content.T2Document.T2Document>`
 	#: with the given :attr:`~ampel.content.T2Document.T2Document.code`
-	code_match: Union[DocumentCode, Sequence[DocumentCode]] = [
+	code_match: OneOrMany[int] = [
 		DocumentCode.NEW,
 		DocumentCode.RERUN_REQUESTED,
 		DocumentCode.T2_NEW_PRIO,
@@ -83,13 +85,13 @@ class T2Worker(AbsWorker[T2Document]):
 	tier: ClassVar[Literal[2]] = 2
 
 	#: Add an exponentially increasing delay on T2_PENDING_DEPENDENCY
-	backoff_on_retry: Optional[BackoffConfig] = BackoffConfig()
+	backoff_on_retry: None | BackoffConfig = BackoffConfig()
 
 	def process_doc(self,
 		doc: T2Document,
 		stock_updr: MongoStockUpdater,
 		logger: AmpelLogger
-	) -> Tuple[UBson, int]:
+	) -> tuple[UBson, int]:
 
 		before_run = time()
 
@@ -144,6 +146,14 @@ class T2Worker(AbsWorker[T2Document]):
 
 			# Unit requested customizations
 			if isinstance(ret, UnitResult):
+
+				if ret.adapter:
+					if ret.adapter not in self._adapters:
+						self._adapters[ret.adapter] = getattr(
+							import_module(f"ampel.core.adapter.{ret.adapter}"),
+							ret.adapter
+						)(context = self.context)
+					ret = self._adapters[ret.adapter].handle(ret)
 
 				if ret.body:
 					body = ret.body
@@ -223,14 +233,14 @@ class T2Worker(AbsWorker[T2Document]):
 		t2_unit: AbsT2, t2_doc: T2Document, logger: AmpelLogger, stock_updr: MongoStockUpdater
 	) -> Union[
 		None,
-		UnitResult,                                                # Error / missing dependency
+		UnitResult,                                              # Error / missing dependency
 		DataPoint,                                               # point t2
-		Tuple[DataPoint, T2DocView],                             # tied point t2
-		Tuple[StockDocument],                                    # stock t2
-		Tuple[T1Document, Sequence[DataPoint]],                  # state t2
-		Tuple[T],                                                # custom state t2 (T could be LightCurve)
-		Tuple[T1Document, Sequence[DataPoint], List[T2DocView]], # tied state t2
-		Tuple[T, List[T2DocView]],                               # tied custom state t2
+		tuple[DataPoint, T2DocView],                             # tied point t2
+		tuple[StockDocument],                                    # stock t2
+		tuple[T1Document, Sequence[DataPoint]],                  # state t2
+		tuple[T],                                                # custom state t2 (T could be LightCurve)
+		tuple[T1Document, Sequence[DataPoint], list[T2DocView]], # tied state t2
+		tuple[T, list[T2DocView]]                                # tied custom state t2
 	]:
 		"""
 		Fetches documents required by `t2_unit`.
@@ -259,7 +269,7 @@ class T2Worker(AbsWorker[T2Document]):
 			)
 		):
 			dps: list[DataPoint] = []
-			t1_doc: Optional[T1Document] = next(
+			t1_doc: None | T1Document = next(
 				self.col_t1.find(
 					{'stock': t2_doc['stock'], 'link': t2_doc['link']}
 				), None
@@ -275,7 +285,7 @@ class T2Worker(AbsWorker[T2Document]):
 
 			# Datarights: suppress channel info (T3 uses instead a
 			# 'projection' procedure that should not be necessary here)
-			t1_doc.pop('channel')
+			t1_doc.pop('channel') # type: ignore[misc]
 
 			t1_dps_ids = list(t1_doc['dps'])
 
@@ -310,7 +320,7 @@ class T2Worker(AbsWorker[T2Document]):
 
 			if isinstance(t2_unit, AbsTiedT2Unit):
 
-				queries: List[Dict[str, Any]] = []
+				queries: list[dict[str, Any]] = []
 
 				if isinstance(t2_unit, AbsTiedCustomStateT2Unit):
 					# A LightCurve instance for example
@@ -415,19 +425,19 @@ class T2Worker(AbsWorker[T2Document]):
 
 
 	def run_tied_queries(self,
-		queries: List[Dict[str, Any]],
+		queries: list[dict[str, Any]],
 		t2_doc: T2Document,
 		stock_updr: MongoStockUpdater,
 		logger: AmpelLogger
-	) -> Union[UnitResult, List[T2DocView]]:
+	) -> UnitResult | list[T2DocView]:
 
-		t2_views: List[T2DocView] = []
+		t2_views: list[T2DocView] = []
 
 		for query in queries:
 
 			if self.run_dependent_t2s:
 
-				processed_ids: List[ObjectId] = []
+				processed_ids: list[ObjectId] = []
 
 				# run pending dependencies
 				while (
@@ -499,7 +509,7 @@ class T2Worker(AbsWorker[T2Document]):
 
 	def build_tied_t2_query(self,
 		t2_unit: AbsT2, tied_model: UnitModel, t2_doc: T2Document
-	) -> Dict[str, Any]:
+	) -> dict[str, Any]:
 		"""
 		This method handles 'default' situations.
 		Callers must check returned 'link'.
@@ -519,7 +529,7 @@ class T2Worker(AbsWorker[T2Document]):
 		if not t2_unit_info:
 			raise ValueError(f'Unknown T2 unit {tied_model.unit}')
 
-		d: Dict[str, Any] = {
+		d: dict[str, Any] = {
 			'unit': tied_model.unit,
 			'config': tied_model.config,
 			'channel': {'$in': t2_doc['channel']},
@@ -564,7 +574,7 @@ class T2Worker(AbsWorker[T2Document]):
 
 	def run_t2_unit(self,
 		t2_unit: AbsT2, t2_doc: T2Document, logger: AmpelLogger, stock_updr: MongoStockUpdater,
-	) -> Union[UBson, UnitResult]:
+	) -> UBson | UnitResult:
 		"""
 		Regarding the possible int return code:
 		usually, if an int is returned, it should be a DocumentCode member
@@ -573,7 +583,8 @@ class T2Worker(AbsWorker[T2Document]):
 
 		args: Any = self.load_input_docs(t2_unit, t2_doc, logger, stock_updr)
 		if args is None:
-			return UnitResult(code=DocumentCode.ERROR)
+			logger.error("Unable to load information required to run t2 unit")
+			return UnitResult(code=DocumentCode.INTERNAL_ERROR)
 
 		if isinstance(args, UnitResult):
 			return args
@@ -602,7 +613,7 @@ class T2Worker(AbsWorker[T2Document]):
 					'config': t2_doc['config'],
 					'stock': t2_doc['stock'],
 					'link': t2_doc['link'],
-					'channel': t2_doc['channel'],
+					'channel': t2_doc['channel']
 				}
 			)
 

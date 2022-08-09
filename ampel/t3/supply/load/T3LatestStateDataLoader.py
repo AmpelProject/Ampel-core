@@ -1,15 +1,15 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-core/ampel/t3/supply/load/T3LatestStateDataLoader.py
-# License           : BSD-3-Clause
-# Author            : vb <vbrinnel@physik.hu-berlin.de>
-# Date              : 09.12.2019
-# Last Modified Date: 03.04.2021
-# Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
+# File:                Ampel-core/ampel/t3/supply/load/T3LatestStateDataLoader.py
+# License:             BSD-3-Clause
+# Author:              valery brinnel <firstname.lastname@gmail.com>
+# Date:                09.12.2019
+# Last Modified Date:  03.04.2021
+# Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-import collections
+import collections, ujson
 from bson.codec_options import CodecOptions
-from typing import Iterable, Union, Iterator, Optional
+from collections.abc import Iterable, Iterator
 
 from ampel.types import StockId, StrictIterable
 from ampel.abstract.AbsT3Loader import AbsT3Loader
@@ -38,7 +38,7 @@ class T3LatestStateDataLoader(AbsT3Loader):
 	    for notes on how compounds are selected from other tiers
 	"""
 
-	codec_options: Optional[CodecOptions] = CodecOptions(document_class=FrozenValuesDict)
+	codec_options: None | CodecOptions = CodecOptions(document_class=FrozenValuesDict)
 
 
 	def __init__(self, **kwargs):
@@ -59,7 +59,7 @@ class T3LatestStateDataLoader(AbsT3Loader):
 
 
 	def load(self,
-		stock_ids: Union[StockId, Iterator[StockId], StrictIterable[StockId]]
+		stock_ids: StockId | Iterator[StockId] | StrictIterable[StockId]
 	) -> Iterable[AmpelBuffer]:
 		"""
 		Warning: if stock_ids is an Iterator, it will be fully consumed
@@ -147,7 +147,7 @@ class T3LatestStateDataLoader(AbsT3Loader):
 
 			if directive.col in ("t1", "t2"):
 
-				qd = directive.copy(deep=True)
+				qd = ujson.loads(ujson.dumps(directive.dict()))
 				key = 'link' if directive.col == 't2' else '_id'
 
 				if qd.query_complement:

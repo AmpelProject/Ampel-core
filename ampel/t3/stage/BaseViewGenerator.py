@@ -1,13 +1,14 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-core/ampel/t3/stage/BaseViewGenerator.py
-# License           : BSD-3-Clause
-# Author            : vb <vbrinnel@physik.hu-berlin.de>
-# Date              : 20.04.2021
-# Last Modified Date: 05.09.2021
-# Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
+# File:                Ampel-core/ampel/t3/stage/BaseViewGenerator.py
+# License:             BSD-3-Clause
+# Author:              valery brinnel <firstname.lastname@gmail.com>
+# Date:                20.04.2021
+# Last Modified Date:  05.09.2021
+# Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from typing import List, Generator, TypeVar, Union
+from typing import TypeVar
+from collections.abc import Generator
 from ampel.types import StockId, T3Send
 from ampel.view.SnapView import SnapView
 from ampel.struct.JournalAttributes import JournalAttributes
@@ -22,13 +23,13 @@ class BaseViewGenerator(Generator[T, T3Send, None]):
 	def __init__(self, unit_name: str, stock_updr: MongoStockUpdater) -> None:
 		self.unit_name = unit_name
 		self.stock_updr = stock_updr
-		self.stocks: List[StockId] = []
+		self.stocks: list[StockId] = []
 
 	def send(self, jt: T3Send):
 
 		if isinstance(jt, tuple):
 			stock_id = jt[0]
-			element: Union[JournalAttributes, StockAttributes] = jt[1]
+			element: JournalAttributes | StockAttributes = jt[1]
 		else:
 			stock_id, element = self.stocks[-1], jt
 

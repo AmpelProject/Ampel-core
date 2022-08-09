@@ -1,18 +1,20 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-core/ampel/config/cli.py
-# License           : BSD-3-Clause
-# Author            : Jakob van Santen <jakob.van.santen@desy.de>
-# Date              : 26.08.2020
-# Last Modified Date: 26.08.2020
-# Last Modified By  : Jakob van Santen <jakob.van.santen@desy.de>
+# File:                Ampel-core/ampel/config/cli.py
+# License:             BSD-3-Clause
+# Author:              Jakob van Santen <jakob.van.santen@desy.de>
+# Date:                26.08.2020
+# Last Modified Date:  26.08.2020
+# Last Modified By:    Jakob van Santen <jakob.van.santen@desy.de>
 
 import json, subprocess, sys, yaml
 from io import StringIO
-from typing import Any, Dict, Iterable, Mapping, Optional, TextIO
+from typing import Any, TextIO
+from collections.abc import Mapping, Iterable
 from argparse import ArgumentParser, ArgumentTypeError, FileType, Namespace
 
 from ampel.base.BadConfig import BadConfig
+from ampel.config.builder.DisplayOptions import DisplayOptions
 from ampel.config.builder.DistConfigBuilder import DistConfigBuilder
 from ampel.log.utils import log_exception
 from ampel.core.AmpelContext import AmpelContext
@@ -48,13 +50,15 @@ def transform(args: Namespace) -> None:
 
 def build(args: Namespace) -> int:
     """Build config file from installed distributions"""
-    cb = DistConfigBuilder(verbose=args.verbose)
+    cb = DistConfigBuilder(
+        DisplayOptions(verbose = args.verbose)
+    )
     try:
         cb.load_distributions()
         config = cb.build_config(
-            stop_on_errors=0 if args.ignore_errors else 2,
-            config_validator="ConfigValidator",
-            get_unit_env=args.get_env,
+            stop_on_errors = 0 if args.ignore_errors else 2,
+            config_validator = "ConfigValidator",
+			get_unit_env = args.get_env
         )
     except Exception as exc:
         # assume that BadConfig means the error was already logged
@@ -67,14 +71,14 @@ def build(args: Namespace) -> int:
     return 0
 
 
-def _load_dict(source: TextIO) -> Dict[str, Any]:
+def _load_dict(source: TextIO) -> dict[str, Any]:
     if isinstance((payload := yaml.safe_load(source)), dict):
         return payload
     else:
         raise TypeError("buf does not deserialize to a dict")
 
 
-def _validate(config_file: TextIO, secrets: Optional[TextIO] = None) -> None:
+def _validate(config_file: TextIO, secrets: None | TextIO = None) -> None:
     from ampel.model.ChannelModel import ChannelModel
     from ampel.model.ProcessModel import ProcessModel
 
@@ -88,12 +92,12 @@ def _validate(config_file: TextIO, secrets: Optional[TextIO] = None) -> None:
     )
     with ctx.loader.validate_unit_models():
         for channel in ctx.config.get(
-            "channel", Dict[str, Any], raise_exc=True
+            "channel", dict[str, Any], raise_exc=True
         ).values():
             ChannelModel(**{k: v for k, v in channel.items() if k not in {"template"}})
         for tier in range(3):
             for process in ctx.config.get(
-                f"process.t{tier}", Dict[str, Any], raise_exc=True
+                f"process.t{tier}", dict[str, Any], raise_exc=True
             ).values():
                 ProcessModel(**process)
 

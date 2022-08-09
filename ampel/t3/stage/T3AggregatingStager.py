@@ -1,17 +1,18 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-core/ampel/t3/stage/T3AggregatingStager.py
-# License           : BSD-3-Clause
-# Author            : vb <vbrinnel@physik.hu-berlin.de>
-# Date              : 08.12.2021
-# Last Modified Date: 10.12.2021
-# Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
+# File:                Ampel-core/ampel/t3/stage/T3AggregatingStager.py
+# License:             BSD-3-Clause
+# Author:              valery brinnel <firstname.lastname@gmail.com>
+# Date:                08.12.2021
+# Last Modified Date:  16.01.2022
+# Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from time import time
-from pydantic import BaseModel
-from typing import Union, Sequence, Generator, Optional, Any
+from ampel.base.AmpelBaseModel import AmpelBaseModel
+from typing import Any
+from collections.abc import Generator, Sequence
 
-from ampel.types import UBson
+from ampel.types import UBson, OneOrMany
 from ampel.t3.T3DocBuilder import T3DocBuilder
 from ampel.view.T3Store import T3Store
 from ampel.abstract.AbsT3Stager import AbsT3Stager
@@ -21,29 +22,87 @@ from ampel.content.MetaRecord import MetaRecord
 from ampel.util.mappings import get_by_json_path
 
 
-class TargetModel(BaseModel):
-	unit: Optional[str]
-	config: Union[None, int, str]
-	code: Optional[int]
-	field: Union[str, Sequence[str]]
+class TargetModel(AmpelBaseModel):
+	unit: None | str
+	config: None | int | str
+	code: None | int
+	field: OneOrMany[str]
 
 
 class T3AggregatingStager(AbsT3Stager, T3DocBuilder):
+	"""
+	Example:
+
+	unit: T3AggregatingStager
+	config:
+	  t2:
+	  - unit: T2NedTap
+	    field: "data[0].*"
+	  - unit: T2NedSNCosmo
+	  field:
+	  - "data[0].fit_results"
+	  - "data[0].covariance"
+
+	will create a new t3 doc in the DB, whose body will contain the aggregated results.
+	The doc could look like below (note that ampel ids were stringified to comply with BSON requirements):
+
+	{
+	  ...
+	  'body': {
+	    "33876" : {
+	       "prefname" : "WISEA J235434.02+154441.8",
+	       "pretype" : "G",
+	       "ra" : 358.6417460104,
+	       "dec" : 15.7449859573,
+	       ...
+	       "fit_results" : {
+	         "z" : 0.07458627,
+	         "t0" : 2459226.42052562,
+	         "x0" : 0.000359877303537212,
+	         ...
+	       },
+	       "covariance": [
+	         [0.525561894902874, 5.08414469979e-06, 0.103650196867142, -0.0141356930137254],
+	         ...
+	       ],
+	       ...
+	   },
+	   "496964" : {
+	     "prefname" : "WISEA J114639.05+421201.3",
+	     "pretype" : "G",
+	     "ra" : 176.6627824999,
+	     "dec" : 42.2004549186,
+	     ...
+	     "fit_results" : {
+	       "z" : 0.0512447,
+	       "t0" : 2459227.16179618,
+	       "x0" : 0.000925982418211906,
+	       ...
+	     },
+	     "covariance" : [
+	       [0.0427179910190306, 7.18629916088547e-07, 0.000100038844775205, -0.000266005925059596],
+	       ...
+	     ],
+	     ...
+	  }
+	...
+	"""
 
 	# Override
-	paranoia: Optional[bool] = None # type: ignore
 	save_stock_ids: bool = True
 
+	#: Only applies to doc output
 	split_tiers: bool = False
-	t0: Union[None, TargetModel, Sequence[TargetModel]]
-	t1: Union[None, TargetModel, Sequence[TargetModel]]
-	t2: Union[None, TargetModel, Sequence[TargetModel]]
+
+	t0: None | OneOrMany[TargetModel]
+	t1: None | OneOrMany[TargetModel]
+	t2: None | OneOrMany[TargetModel]
 
 
 	def stage(self,
 		gen: Generator[AmpelBuffer, None, None],
 		t3s: T3Store
-	) -> Optional[Generator[T3Document, None, None]]:
+	) -> None | Generator[T3Document, None, None]:
 
 		t0 = [self.t0] if isinstance(self.t0, TargetModel) else self.t0
 		t1 = [self.t1] if isinstance(self.t1, TargetModel) else self.t1
@@ -133,10 +192,10 @@ class T3AggregatingStager(AbsT3Stager, T3DocBuilder):
 
 
 	def get_t2_payload(self,
-		body: Optional[Sequence[UBson]],
+		body: None | Sequence[UBson],
 		meta: Sequence[MetaRecord],
-		code: Optional[int] = None
-	) -> Optional[dict[str, Any]]:
+		code: None | int = None
+	) -> None | dict[str, Any]:
 		"""
 		:returns: the content of the last array element of body associated with a meta code >= 0 or equals code arg.
 		"""

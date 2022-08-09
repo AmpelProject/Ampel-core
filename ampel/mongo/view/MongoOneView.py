@@ -1,13 +1,13 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-core/ampel/mongo/view/MongoOneView.py
-# License           : BSD-3-Clause
-# Author            : vb <vbrinnel@physik.hu-berlin.de>
-# Date              : 26.03.2021
-# Last Modified Date: 07.10.2021
-# Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
+# File:                Ampel-core/ampel/mongo/view/MongoOneView.py
+# License:             BSD-3-Clause
+# Author:              valery brinnel <firstname.lastname@gmail.com>
+# Date:                26.03.2021
+# Last Modified Date:  07.10.2021
+# Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from typing import List, Any, Dict
+from typing import Any
 from ampel.types import ChannelId
 from ampel.mongo.view.AbsMongoView import AbsMongoView
 
@@ -16,7 +16,7 @@ class MongoOneView(AbsMongoView):
 	channel: ChannelId
 	t0_has_chan: bool = True
 
-	def stock(self) -> List[Dict[str, Any]]:
+	def stock(self) -> list[dict[str, Any]]:
 
 		return [
 			{'$match': {'channel': self.channel}},
@@ -30,7 +30,7 @@ class MongoOneView(AbsMongoView):
 		]
 
 
-	def t0(self) -> List[Dict[str, Any]]:
+	def t0(self) -> list[dict[str, Any]]:
 		if self.t0_has_chan:
 			return [
 				{'$match': {'channel': self.channel}},
@@ -39,7 +39,7 @@ class MongoOneView(AbsMongoView):
 			]
 		return []
 
-	def t1(self) -> List[Dict[str, Any]]:
+	def t1(self) -> list[dict[str, Any]]:
 
 		return [
 			{'$match': {'channel': self.channel}},
@@ -48,7 +48,7 @@ class MongoOneView(AbsMongoView):
 		]
 
 
-	def t2(self) -> List[Dict[str, Any]]:
+	def t2(self) -> list[dict[str, Any]]:
 
 		return [
 			{'$match': {'channel': self.channel}},
@@ -57,7 +57,7 @@ class MongoOneView(AbsMongoView):
 		]
 
 
-	def t3(self) -> List[Dict[str, Any]]:
+	def t3(self) -> list[dict[str, Any]]:
 
 		return [
 			{'$match': {'channel': self.channel}},
@@ -66,7 +66,7 @@ class MongoOneView(AbsMongoView):
 		]
 
 
-	def filter_journal(self, arg: str) -> Dict[str, Any]:
+	def filter_journal(self, arg: str) -> dict[str, Any]:
 
 		return {
 			'$filter': {
@@ -88,7 +88,7 @@ class MongoOneView(AbsMongoView):
 		}
 
 
-	def get_meta_cases(self, arg: str) -> List[Dict[str, Any]]:
+	def get_meta_cases(self, arg: str) -> list[dict[str, Any]]:
 
 		return [
 			{'case': {'$eq': [self.channel, f"{arg}.channel"]}, 'then': arg},

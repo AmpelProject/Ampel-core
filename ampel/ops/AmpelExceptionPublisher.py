@@ -1,18 +1,18 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-core/ampel/ops/AmpelExceptionPublisher.py
-# License           : BSD-3-Clause
-# Author            : Jakob van Santen <jakob.van.santen@desy.de>
-# Date              : 03.09.2018
-# Last Modified Date: 27.08.2020
-# Last Modified By  : Jakob van Santen <jakob.van.santen@desy.de>
+# File:                Ampel-core/ampel/ops/AmpelExceptionPublisher.py
+# License:             BSD-3-Clause
+# Author:              Jakob van Santen <jakob.van.santen@desy.de>
+# Date:                03.09.2018
+# Last Modified Date:  27.08.2020
+# Last Modified By:    Jakob van Santen <jakob.van.santen@desy.de>
 
 
 import datetime, json, socket
 from bson import ObjectId
 from slack import WebClient
 from slack.web.slack_response import SlackResponse
-from typing import Any, Dict, List, Optional
+from typing import Any
 from ampel.abstract.AbsOpsUnit import AbsOpsUnit
 from ampel.secret.NamedSecret import NamedSecret
 
@@ -30,7 +30,7 @@ class AmpelExceptionPublisher(AbsOpsUnit):
         self.slack = WebClient(self.slack_token.get())
         self.troubles = self.context.db.get_collection("troubles", "r")
 
-    def t3_fields(self, doc: Dict[str, Any]) -> List[Dict[str, Any]]:
+    def t3_fields(self, doc: dict[str, Any]) -> list[dict[str, Any]]:
         fields = []
         if "job" in doc:
             fields.append(
@@ -43,7 +43,7 @@ class AmpelExceptionPublisher(AbsOpsUnit):
         fields.append({"title": "Run", "value": doc.get("run", None), "short": True})
         return fields
 
-    def format_attachment(self, doc: Dict[str, Any]) -> Dict[str, Any]:
+    def format_attachment(self, doc: dict[str, Any]) -> dict[str, Any]:
         fields = [
             {"title": "tier", "value": doc["tier"], "short": True},
         ]
@@ -88,13 +88,13 @@ class AmpelExceptionPublisher(AbsOpsUnit):
         }
         return attachment
 
-    def run(self, beacon: Optional[Dict[str, Any]] = None) -> Optional[Dict[str, Any]]:
+    def run(self, beacon: None | dict[str, Any] = None) -> None | dict[str, Any]:
 
         now = datetime.datetime.utcnow()
         t0 = beacon["updated"] if beacon else now - datetime.timedelta(hours=1)
         dt = now - t0
 
-        attachments: List[Dict[str, Any]] = []
+        attachments: list[dict[str, Any]] = []
         message = {
             "attachments": attachments,
             "channel": "#" + self.channel,

@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/logging/LoggingErrorReporter.py
-# License           : BSD-3-Clause
-# Author            : vb <vbrinnel@physik.hu-berlin.de>
-# Date              : 29.09.2018
-# Last Modified Date: 18.01.2019
-# Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
+# File:                ampel/logging/LoggingErrorReporter.py
+# License:             BSD-3-Clause
+# Author:              valery brinnel <firstname.lastname@gmail.com>
+# Date:                29.09.2018
+# Last Modified Date:  18.01.2019
+# Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from ampel.log.AmpelLogger import AmpelLogger
 from ampel.log.utils import log_exception, report_exception

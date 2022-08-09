@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-core/ampel/test/test_server.py
-# License           : BSD-3-Clause
-# Author            : jvs
-# Date              : Unspecified
-# Last Modified Date: 11.02.2021
-# Last Modified By  : jvs
+# File:                Ampel-core/ampel/test/test_server.py
+# License:             BSD-3-Clause
+# Author:              jvs
+# Date:                Unspecified
+# Last Modified Date:  11.02.2021
+# Last Modified By:    jvs
 
 import asyncio, pytest, yaml
 from datetime import datetime

@@ -1,16 +1,16 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-core/ampel/core/Schedulable.py
-# License           : BSD-3-Clause
-# Author            : vb <vbrinnel@physik.hu-berlin.de>
-# Date              : 26.05.2018
-# Last Modified Date: 19.04.2020
-# Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
+# File:                Ampel-core/ampel/core/Schedulable.py
+# License:             BSD-3-Clause
+# Author:              valery brinnel <firstname.lastname@gmail.com>
+# Date:                26.05.2018
+# Last Modified Date:  19.04.2020
+# Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 import logging, threading, signal
 from logging import Logger
 from schedule import Scheduler
-from typing import Callable, Optional
+from collections.abc import Callable
 from contextlib import contextmanager
 
 
@@ -24,9 +24,9 @@ class Schedulable:
 	"""
 
 	def __init__(self,
-		start_callback: Optional[Callable] = None,
-		stop_callback: Optional[Callable] = None,
-		catch_signals: Optional[bool] = True
+		start_callback: None | Callable = None,
+		stop_callback: None | Callable = None,
+		catch_signals: None | bool = True
 	) -> None:
 		"""
 		:param start_callback: method to be executed before starting the run_scheduler thread.
@@ -56,7 +56,7 @@ class Schedulable:
 
 
 	@contextmanager
-	def run_in_thread(self, logger: Optional[Logger] = None):
+	def run_in_thread(self, logger: None | Logger = None):
 		"""
 		Runs 'run_scheduler' in its own thread using contextmanager.
 		The methods start() and stop() are used under the hood.
@@ -69,7 +69,7 @@ class Schedulable:
 			self.stop()
 
 
-	def start(self, logger: Optional[Logger] = None) -> None:
+	def start(self, logger: None | Logger = None) -> None:
 		"""
 		Executes method 'run_scheduler()' in its own thread.
 		If start_callback was provided as argument in constructor,
@@ -108,7 +108,7 @@ class Schedulable:
 		self._event.set() # Sets event flag to true
 
 
-	def run_scheduler(self, logger: Optional[Logger] = None) -> None:
+	def run_scheduler(self, logger: None | Logger = None) -> None:
 		"""
 		Runs scheduler main loop.
 		See https://schedule.readthedocs.io

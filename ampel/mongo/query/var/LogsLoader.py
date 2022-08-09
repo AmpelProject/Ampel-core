@@ -1,13 +1,14 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-core/ampel/mongo/query/var/LogsLoader.py
-# License           : BSD-3-Clause
-# Author            : vb <vbrinnel@physik.hu-berlin.de>
-# Date              : 29.11.2018
-# Last Modified Date: 16.03.2021
-# Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
+# File:                Ampel-core/ampel/mongo/query/var/LogsLoader.py
+# License:             BSD-3-Clause
+# Author:              valery brinnel <firstname.lastname@gmail.com>
+# Date:                29.11.2018
+# Last Modified Date:  16.03.2021
+# Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from typing import Optional, List, Literal, Dict, Any, Sequence
+from typing import Literal, Any
+from collections.abc import Sequence
 from pymongo.collection import Collection
 from ampel.base.AmpelFlexModel import AmpelFlexModel
 from ampel.view.ReadOnlyDict import ReadOnlyDict
@@ -40,7 +41,7 @@ class LogsLoader(AmpelFlexModel):
 	hexify: bool = True
 	resolve_flag: bool = True
 	read_only: bool = False
-	remove_keys: Optional[List[str]] = ["channel"]
+	remove_keys: None | list[str] = ["channel"]
 	datetime_ouput: Literal['string', 'date'] = 'string'
 	datetime_key: str = '_id'
 	verbose: bool = False
@@ -49,8 +50,8 @@ class LogsLoader(AmpelFlexModel):
 
 	def fetch_logs(self,
 		col: Collection,
-		match: Optional[Dict[str, Any]] = None,
-		channel: Optional[Dict[str, Any]] = None
+		match: None | dict[str, Any] = None,
+		channel: None | dict[str, Any] = None
 	) -> Sequence[LogDocument]:
 		"""
 		:param match: match criteria
@@ -172,7 +173,7 @@ class LogsLoader(AmpelFlexModel):
 		if self.remove_keys:
 
 			# Projection (last aggregation stage)
-			proj: Dict[str, Any] = {'$project': {}}
+			proj: dict[str, Any] = {'$project': {}}
 
 			for k in self.remove_keys:
 				proj['$project'][k] = 0
@@ -182,7 +183,7 @@ class LogsLoader(AmpelFlexModel):
 		if self.debug:
 			print("Using aggregation: %s" % stages)
 
-		log_entries: List[LogDocument] = list(col.aggregate(stages))
+		log_entries: list[LogDocument] = list(col.aggregate(stages))
 
 		if self.resolve_flag:
 			for el in log_entries:

@@ -58,14 +58,15 @@ def test_error_reporting(integration_context: DevAmpelContext):
         "stock": 42,
         "link": 42,
         "channel": channels,
-        "meta": [{"ts": 0, "tier": 2}],
+        "meta": [
+            {"ts": 0, "tier": 2}
+        ],
+        "body": []
     }
-    integration_context.db.get_collection("t2").insert_one(doc)
-    t2 = T2Worker(
-        context=integration_context, raise_exc=False, process_name="t2", run_dependent_t2s=True
-    )
+    integration_context.db.get_collection("t2").insert_one(doc) # type: ignore[arg-type]
+    t2 = T2Worker(context=integration_context, raise_exc=False, process_name="t2", run_dependent_t2s=True)
     assert t2.run() == 1
-    assert (doc := integration_context.db.get_collection("t2").find_one({}))
+    assert (doc := integration_context.db.get_collection("t2").find_one({})) # type: ignore[assignment]
     assert doc["code"] == DocumentCode.EXCEPTION
     assert (trouble := integration_context.db.get_collection("troubles").find_one({}))
     assert trouble["channel"] == channels
@@ -156,6 +157,7 @@ def test_slow_dependency(
         col.count_documents({"code": DocumentCode.T2_PENDING_DEPENDENCY}) == 1
     ), "exactly 1 dependent doc marked as pending"
     dependent_doc = col.find_one({"code": DocumentCode.T2_PENDING_DEPENDENCY})
+    assert dependent_doc is not None
     meta = dependent_doc["meta"][-1]
     assert t2.backoff_on_retry is not None
     assert meta["retry_after"] == meta["ts"] + t2.backoff_on_retry.factor
@@ -168,8 +170,9 @@ def test_slow_dependency(
         )
     ) is not None:
         assert t2.run() == 1, "new doc run"
+        assert (db_doc := col.find_one({"_id": doc["_id"]})) is not None, "doc found"
         assert (
-            col.find_one({"_id": doc["_id"]})["code"] == DocumentCode.OK
+            db_doc["code"] == DocumentCode.OK
         ), "new doc finished"
 
     assert t2.run() == 0, "no docs to run; dependent still pending"
@@ -179,4 +182,5 @@ def test_slow_dependency(
 
     assert t2.run() == 1
     assert ptime.called
-    assert col.find_one({"_id": dependent_doc["_id"]})["code"] == DocumentCode.OK
+    assert (db_doc := col.find_one({"_id": dependent_doc["_id"]})) is not None, "dependent doc found"
+    assert db_doc["code"] == DocumentCode.OK

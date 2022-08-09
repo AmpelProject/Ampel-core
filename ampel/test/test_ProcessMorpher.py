@@ -1,7 +1,15 @@
-import pytest
-import yaml
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+# File:                Ampel-core/ampel/test/test_ProcessMorpher.py
+# License:             BSD-3-Clause
+# Author:              jvs
+# Date:                Unspecified
+# Last Modified Date:  23.04.2022
+# Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
+import pytest, yaml
 from ampel.config.builder.ProcessMorpher import ProcessMorpher
+from ampel.config.builder.DisplayOptions import DisplayOptions
 from ampel.config.collector.T02ConfigCollector import T02ConfigCollector
 
 
@@ -14,7 +22,9 @@ def first_pass_config(testing_config):
 @pytest.fixture
 def config_collector(first_pass_config, ampel_logger):
     first_pass_config["confid"] = T02ConfigCollector(
-        conf_section="confid", logger=ampel_logger
+        conf_section = "confid",
+		options = DisplayOptions(),
+		logger = ampel_logger
     )
     return first_pass_config
 

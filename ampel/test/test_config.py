@@ -1,4 +1,4 @@
-import io, pytest, yaml, subprocess
+import io, pytest, yaml, subprocess, tempfile, os
 from argparse import Namespace
 
 from ampel.abstract.AbsEventUnit import AbsEventUnit
@@ -10,9 +10,10 @@ from ampel.config import cli
 
 
 def test_build_config():
-    config = yaml.safe_load(
-        io.BytesIO(subprocess.check_output(["ampel-config", "build"]))
-    )
+    tmp_file = os.path.join(tempfile.mkdtemp(), 'ampel_conf.yml')
+    io.BytesIO(subprocess.check_output(["ampel", "config", "build", "-out", tmp_file]))
+    with open(tmp_file, "r") as f:
+        config = yaml.safe_load(f)
     assert ConfigValidator(config).validate() == config
 
 
@@ -38,7 +39,7 @@ def test_ConfigChecker(testing_config, monkeypatch):
             super().__init__(**kwargs)
             raise SideEffect
 
-        def run(self):
+        def proceed(self, event_hdlr):
             ...
 
     config["process"]["t0"]["BadProcess"] = {

@@ -1,18 +1,18 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : ampel/model/builder/BuilderAliasModel.py
-# License           : BSD-3-Clause
-# Author            : vb <vbrinnel@physik.hu-berlin.de>
-# Date              : 09.10.2019
-# Last Modified Date: 11.10.2019
-# Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
+# File:                ampel/model/builder/BuilderAliasModel.py
+# License:             BSD-3-Clause
+# Author:              valery brinnel <firstname.lastname@gmail.com>
+# Date:                09.10.2019
+# Last Modified Date:  11.10.2019
+# Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from typing import Dict, Any, Optional
-from ampel.model.StrictModel import StrictModel
+from typing import Any
+from ampel.base.AmpelBaseModel import AmpelBaseModel
 
-class BuilderAliasModel(StrictModel):
+class BuilderAliasModel(AmpelBaseModel):
 
-	t0: Optional[Dict[str, Any]]
-	t1: Optional[Dict[str, Any]]
-	t2: Optional[Dict[str, Any]]
-	t3: Optional[Dict[str, Any]]
+	t0: None | dict[str, Any]
+	t1: None | dict[str, Any]
+	t2: None | dict[str, Any]
+	t3: None | dict[str, Any]

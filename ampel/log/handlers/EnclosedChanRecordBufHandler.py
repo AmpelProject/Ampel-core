@@ -1,14 +1,13 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-core/ampel/logging/handlers/EnclosedChanRecordBufHandler.py
-# License           : BSD-3-Clause
-# Author            : vb <vbrinnel@physik.hu-berlin.de>
-# Date              : 01.05.2020
-# Last Modified Date: 09.05.2020
-# Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
+# File:                Ampel-core/ampel/logging/handlers/EnclosedChanRecordBufHandler.py
+# License:             BSD-3-Clause
+# Author:              valery brinnel <firstname.lastname@gmail.com>
+# Date:                01.05.2020
+# Last Modified Date:  09.05.2020
+# Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from logging import Logger, Handler
-from typing import Union, Optional, Dict
 from ampel.log.handlers.RecordBufferingHandler import RecordBufferingHandler
 from ampel.protocol.LoggingHandlerProtocol import LoggingHandlerProtocol
 from ampel.types import StockId, ChannelId
@@ -26,9 +25,9 @@ class EnclosedChanRecordBufHandler(RecordBufferingHandler):
 
 
 	def forward(self,
-		target: Union[Logger, Handler, LoggingHandlerProtocol],
-		stock: Optional[StockId] = None,
-		extra: Optional[Dict] = None,
+		target: Logger | Handler | LoggingHandlerProtocol,
+		stock: None | StockId = None,
+		extra: None | dict = None,
 		clear: bool = True
 	) -> None:
 		"""

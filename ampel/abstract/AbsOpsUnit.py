@@ -1,13 +1,13 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-core/ampel/abstract/AbsOpsUnit.py
-# License           : BSD-3-Clause
-# Author            : jvs
-# Date              : Unspecified
-# Last Modified Date: Unspecified
-# Last Modified By  : jvs
+# File:                Ampel-core/ampel/abstract/AbsOpsUnit.py
+# License:             BSD-3-Clause
+# Author:              jvs
+# Date:                Unspecified
+# Last Modified Date:  Unspecified
+# Last Modified By:    jvs
 
-from typing import Dict, Any, Optional
+from typing import Any
 from ampel.base.AmpelABC import AmpelABC
 from ampel.base.decorator import abstractmethod
 from ampel.core.ContextUnit import ContextUnit
@@ -23,7 +23,7 @@ class AbsOpsUnit(AmpelABC, ContextUnit, abstract=True):
     logger: Traceless[AmpelLogger]
 
     @abstractmethod
-    def run(self, beacon: Optional[Dict[str, Any]] = None) -> Optional[Dict[str, Any]]:
+    def run(self, beacon: None | dict[str, Any] = None) -> None | dict[str, Any]:
         """
         :param beacon: the result of the previous run
         :returns:

@@ -1,15 +1,16 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-core/ampel/cli/StartCommand.py
-# License           : BSD-3-Clause
-# Author            : jvs, vb
-# Date              : 13.03.2021
-# Last Modified Date: 23.03.2021
-# Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
+# File:                Ampel-core/ampel/cli/StartCommand.py
+# License:             BSD-3-Clause
+# Author:              jvs, vb
+# Date:                13.03.2021
+# Last Modified Date:  23.03.2021
+# Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 import logging, signal, asyncio
 from argparse import ArgumentParser
-from typing import Sequence, Dict, Any, Optional, Union
+from typing import Any
+from collections.abc import Sequence
 from ampel.abstract.AbsCLIOperation import AbsCLIOperation
 from ampel.core.AmpelController import AmpelController
 from ampel.cli.MaybeIntAction import MaybeIntAction
@@ -37,14 +38,14 @@ class ScheduleCommand(AbsCLIOperation):
 	"""
 
 	# Mandatory implementation
-	def get_parser(self, sub_op: Optional[str] = None) -> Union[ArgumentParser, AmpelArgumentParser]:
+	def get_parser(self, sub_op: None | str = None) -> ArgumentParser | AmpelArgumentParser:
 
 		parser = AmpelArgumentParser()
 		# Arguments description
 		parser.set_help_descr(h)
 
 		# Required
-		parser.add_arg("config", "required", type=str)
+		parser.add_arg("config", "optional", type=str)
 		parser.add_arg("process", "required", type=str, nargs="*", default=None)
 
 		# Optional
@@ -59,7 +60,7 @@ class ScheduleCommand(AbsCLIOperation):
 
 
 	# Mandatory implementation
-	def run(self, args: Dict[str, Any], unknown_args: Sequence[str], sub_op: Optional[str] = None) -> None:
+	def run(self, args: dict[str, Any], unknown_args: Sequence[str], sub_op: None | str = None) -> None:
 
 		self.args = args
 		self.unknown_args = unknown_args

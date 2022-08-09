@@ -1,14 +1,14 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-core/ampel/t3/stage/T3SequentialStager.py
-# License           : BSD-3-Clause
-# Author            : vb <vbrinnel@physik.hu-berlin.de>
-# Date              : 22.04.2021
-# Last Modified Date: 14.12.2021
-# Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
+# File:                Ampel-core/ampel/t3/stage/T3SequentialStager.py
+# License:             BSD-3-Clause
+# Author:              valery brinnel <firstname.lastname@gmail.com>
+# Date:                22.04.2021
+# Last Modified Date:  13.07.2022
+# Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from time import time
-from typing import Generator, Sequence, Type, Iterable, Optional
+from collections.abc import Generator, Iterable, Sequence
 from ampel.view.T3Store import T3Store
 from ampel.view.T3DocView import T3DocView
 from ampel.view.SnapView import SnapView
@@ -69,13 +69,12 @@ class T3SequentialStager(T3BaseStager):
 	def stage(self,
 		gen: Generator[AmpelBuffer, None, None],
 		t3s: T3Store
-	) -> Optional[Generator[T3Document, None, None]]:
+	) -> None | Generator[T3Document, None, None]:
 
 		for t3_unit, views in self.get_views(gen).items():
 
 			sg = SimpleGenerator(t3_unit, views, self.stock_updr)
 			ts = time()
-
 			if (ret := t3_unit.process(sg, t3s)):
 				if (x := self.handle_t3_result(t3_unit, ret, t3s, sg.stocks, ts)):
 					if self.propagate:
@@ -87,12 +86,12 @@ class T3SequentialStager(T3BaseStager):
 
 	def get_views(self, gen: Generator[AmpelBuffer, None, None]) -> dict[AbsT3ReviewUnit, list[SnapView]]:
 
-		Views: set[Type[SnapView]] = {u._View for u in self.units}
+		Views: set[type[SnapView]] = {u._View for u in self.units}
 		conf = self.context.config
 
 		if len(Views) == 1:
 			View = next(iter(Views))
-			if self.paranoia:
+			if self.paranoia_level:
 				buffers = list(gen)
 				return {
 					unit: [View.of(ab, conf) for ab in buffers]
@@ -104,7 +103,7 @@ class T3SequentialStager(T3BaseStager):
 		else:
 
 			buffers = list(gen)
-			if self.paranoia:
+			if self.paranoia_level:
 				return {
 					unit: [View.of(ab, conf) for ab in buffers]
 					for unit, View in (lambda x: [(u, u._View) for u in x])(self.units)
@@ -112,7 +111,7 @@ class T3SequentialStager(T3BaseStager):
 
 			else:
 
-				optd: dict[Type[SnapView], list[AbsT3ReviewUnit]] = {}
+				optd: dict[type[SnapView], list[AbsT3ReviewUnit]] = {}
 				for unit in self.units:
 					if unit._View not in optd:
 						optd[unit._View] = []

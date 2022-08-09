@@ -1,61 +1,63 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-core/ampel/cli/JobCommand.py
-# License           : BSD-3-Clause
-# Author            : vb <vbrinnel@physik.hu-berlin.de>
-# Date              : 15.03.2021
-# Last Modified Date: 17.10.2021
-# Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
+# File:                Ampel-core/ampel/cli/JobCommand.py
+# License:             BSD-3-Clause
+# Author:              valery brinnel <firstname.lastname@gmail.com>
+# Date:                15.03.2021
+# Last Modified Date:  05.08.2022
+# Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from multiprocessing.pool import AsyncResult
 import tarfile
 import tempfile
 import ujson
-import yaml, os, signal, sys
+import yaml, io, os, signal, sys, subprocess, platform
 from time import time
 from multiprocessing import Queue, Process
-from pydantic import BaseModel
+from ampel.base.AmpelBaseModel import AmpelBaseModel
 from argparse import ArgumentParser
 from importlib import import_module
-from typing import List, Sequence, Dict, Any, Optional, Union
+from typing import Any
+from collections.abc import Sequence
 from urllib.request import urlretrieve
 from ampel.abstract.AbsEventUnit import AbsEventUnit
 from ampel.abstract.AbsProcessorTemplate import AbsProcessorTemplate
 from ampel.model.UnitModel import UnitModel
+from ampel.core.EventHandler import EventHandler
 from ampel.dev.DevAmpelContext import DevAmpelContext
 from ampel.log.AmpelLogger import AmpelLogger
 from ampel.log.LogFlag import LogFlag
 from ampel.util.freeze import recursive_freeze
 from ampel.util.mappings import get_by_path
-from ampel.cli.AbsCoreCommand import AbsCoreCommand
+from ampel.util.hash import build_unsafe_dict_id
+from ampel.cli.AbsCoreCommand import AbsCoreCommand, _maybe_int
 from ampel.cli.MaybeIntAction import MaybeIntAction
 from ampel.cli.AmpelArgumentParser import AmpelArgumentParser
 from ampel.model.job.JobModel import InputArtifact, JobModel, ChannelModel, TaskUnitModel, TemplateUnitModel
 
-try:
-	import matplotlib as mpl
-	mpl.use('Agg')
-except Exception:
-	pass
-
 
 class JobCommand(AbsCoreCommand):
 	"""
-	Processes job definitions (yaml files).
+	Processes ampel "jobs" (yaml files).
 	A job:
-	- can be seen as a sharable analysis shema
-	- contains defintions of processor unit and config to be run sequentially
-	- should contain everything that is required to run the underlying processor definitions,
-	  that is: channels or aliases definitions as well as custom resources potentially required by processors.
-	- requires access to an ampel config file since the database, unit or resource definitions
-	  contained in the config are necessary to run the job.
+	- is a sharable analysis shema
+	- contains configurations of processor units to be run sequentially
+	- should also contain everything required to run the underlying processors, that is:
+	  channels or aliases definitions and custom resources potentially required by processors.
+	- requires access to an ampel config file since the database, unit and resource definitions
+	  defined therein are necessary (might be improved in the future)
 	"""
 
 	def __init__(self):
 		self.parser = None
+		try:
+			import sys, IPython
+			sys.breakpointhook = IPython.embed
+		except Exception:
+			pass
+
 
 	# Mandatory implementation
-	def get_parser(self, sub_op: Optional[str] = None) -> Union[ArgumentParser, AmpelArgumentParser]:
+	def get_parser(self, sub_op: None | str = None) -> ArgumentParser | AmpelArgumentParser:
 
 		if self.parser:
 			return self.parser
@@ -65,38 +67,44 @@ class JobCommand(AbsCoreCommand):
 			"debug": "Debug",
 			#"verbose": "increases verbosity",
 			"config": "path to an ampel config file (yaml/json)",
-			"schema": "path to YAML job file",
+			"schema": "path to YAML job file (multiple files will be aggregated)",
 			"secrets": "path to a YAML secrets store in sops format",
 			"keep-db": "do not reset databases even if so requested by job file",
 			"reset-db": "reset databases even if not requested by job file",
+			"no-agg": "enables display of matplotlib plots via plt.show() for debugging",
 			"interactive": "you'll be asked for each task whether it should be run or skipped\n" + \
-				"and if applicable if the db should be reset",
-			"with-task": "only perform the task with provide indexes (which starts at 0)",
+				"and - if applicable - if the db should be reset. Option -task will be ignored.",
+			"task": "only execute task(s) with provided index(es) [starting with 0].\n" +
+					"Value 'last' is supported. Ignored if -interactive is used",
+			"show-plots": "show plots created by job (requires ampel-plot-cli)"
 		})
 
 		# Required
-		parser.add_arg("config", "required", type=str)
-		parser.add_arg("schema", "required")
-		parser.add_arg("with-task", "optional", action=MaybeIntAction, nargs='+')
+		parser.add_arg("config", "optional", type=str)
+		parser.add_arg("schema", "required", nargs='+')
+		parser.add_arg("task", "optional", action=MaybeIntAction, nargs='+')
 		parser.add_arg("interactive", "optional", action="store_true")
 		parser.add_arg("debug", "optional", action="store_true")
 		parser.add_arg("keep-db", "optional", action="store_true")
 		parser.add_arg("reset-db", "optional", action="store_true")
 		parser.add_arg("max-parallel-tasks", "optional", type=int, default=os.cpu_count())
+		parser.add_arg("no-agg", "optional", action="store_true")
+		parser.add_arg("show-plots", "optional", action="store_true")
 
 		# Optional
 		parser.add_arg("secrets", type=str)
 
 		# Example
-		parser.add_example("job -config ampel_conf.yaml schema job_file.yaml")
-		parser.add_example("job -config ampel_conf.yaml -schema job_file.yaml -keep-db -with-task 2")
+		parser.add_example("job schema job_file.yaml")
+		parser.add_example("job -schema job_file.yaml -keep-db -task last")
+		parser.add_example("job -schema job_part1.yaml job_part2.yaml -show-plots (requires ampel-plot)")
 		return parser
 
 	def _fetch_inputs(
 		self,
 		job: JobModel,
-		task: Union[TaskUnitModel, TemplateUnitModel],
-		item: Union[None, str, dict, list],
+		task: TaskUnitModel | TemplateUnitModel,
+		item: None | str | dict | list,
 		logger: AmpelLogger,
 	):
 		"""
@@ -120,23 +128,108 @@ class JobCommand(AbsCoreCommand):
 					except tarfile.ReadError:
 						os.rename(tf.name, resolved_artifact.path)
 
+	@staticmethod
+	def _patch_config(config_dict: dict[str,Any], job: JobModel, logger: AmpelLogger):
+		# Add channel(s)
+		for c in job.channel:
+			chan = ChannelModel(**c)
+			logger.info(f"Registering job channel '{chan.channel}'")
+			dict.__setitem__(config_dict['channel'], chan.channel, c)
+
+		# Add aliase(s)
+		for k, v in job.alias.items():
+			if 'alias' not in config_dict:
+				dict.__setitem__(config_dict, 'alias', {})
+			for kk, vv in v.items():
+				logger.info(f"Registering job alias '{kk}'")
+				if k not in config_dict['alias']:
+					dict.__setitem__(config_dict['alias'], k, {})
+				dict.__setitem__(config_dict['alias'][k], kk, vv)
 
 	# Mandatory implementation
-	def run(self, args: Dict[str, Any], unknown_args: Sequence[str], sub_op: Optional[str] = None) -> None:
+	def run(self, args: dict[str, Any], unknown_args: Sequence[str], sub_op: None | str = None) -> None:
 
 		start_time = time()
 		logger = AmpelLogger.get_logger(base_flag=LogFlag.MANUAL_RUN)
 
-		if not os.path.exists(args['schema']):
-			raise FileNotFoundError(f"Job file not found: '{args['schema']}'")
+		if not args['no_agg']:
+			try:
+				import matplotlib as mpl
+				mpl.use('Agg')
+			except Exception:
+				pass
 
-		tds: List[Dict[str, Any]] = []
+		if isinstance(args['task'], (int, str)):
+			args['task'] = [args['task']]
 
-		if isinstance(args['with_task'], int):
-			args['with_task'] = [args['with_task']]
+		job, _ = self.get_job_schema(args['schema'], logger, compute_sig=False)
+		schema_descr = "|".join(
+			[os.path.basename(sf) for sf in args['schema']]
+		).replace(".yaml", "").replace(".yml", "")
+		if len(args['schema']) > 1:
+			logger.info(f"Running job using composed schema: {schema_descr}")
+		else:
+			logger.info(f"Running job using schema {schema_descr}")
 
-		with open(args['schema'], "r") as f:
-			job = JobModel(**yaml.safe_load(f))
+		if job.requirements:
+			# TODO: check job repo requirements
+			pass
+
+		# Check or set env variable(s)
+		psys = platform.system().lower()
+		for psys in ('any', platform.system().lower()):
+			if psys in job.env:
+				for k, v in job.env[psys].check.items():
+					if k not in os.environ or (v and v != _maybe_int(os.environ[k])):
+						logger.info(f"Environment variable {k}={v} required")
+						return					
+				for k, v in job.env[psys].set.items():
+					logger.info(f"Setting local environment variable {k}={v}")
+					os.environ[k] = str(v)
+
+		purge_db = job.mongo.reset or args['reset_db']
+
+		if purge_db and args['keep_db']:
+			logger.info("Keeping existing databases ('-keep-db')")
+			purge_db = False
+
+		if args['interactive']:
+
+			from ampel.util.getch import yes_no
+
+			try:
+				if purge_db:
+					purge_db = yes_no("Delete existing databases")
+
+				args['task'] = []
+				for i, td in enumerate(job.task):
+					s = f" [{td.title}]" if td.title else ""
+					if yes_no(f"Process task #{i}" + s):
+						args['task'].append(i)
+			except KeyboardInterrupt:
+				sys.exit()
+
+		if args['task']:
+
+			if 'last' in args['task']:
+				args['task'].remove('last')
+				args['task'].append(len(job.task) - 1)
+
+			if sum(args['task']) > 0 and not args['interactive'] and purge_db and not args['reset_db']:
+				logger.info("Ampel job file requires db reset but argument 'task' was provided")
+				logger.info("Please add argument -reset-db to confirm you are absolutely sure...")
+				return
+
+		# DevAmpelContext hashes automatically confid from potential IngestDirectives
+		ctx = self.get_context(
+			args, unknown_args, logger,
+			freeze_config = False,
+			ContextClass = DevAmpelContext,
+			purge_db = purge_db,
+			db_prefix = job.mongo.prefix,
+			require_existing_db = False,
+			one_db = True
+		)
 
 		s = f"Running job {job.name}"
 		logger.info(s)
@@ -153,7 +246,7 @@ class JobCommand(AbsCoreCommand):
 			logger.info("Keeping existing databases ('-keep-db')")
 			purge_db = False
 
-		if args['with_task'] and sum(args['with_task']) > 0 and purge_db and not args['reset_db']:
+		if args['task'] and sum(args['task']) > 0 and purge_db and not args['reset_db']:
 			logger.info("Ampel job file requires db reset but with-task argument was provided")
 			logger.info("Please add argument -reset-db to confirm you are absolutely sure...")
 			return
@@ -187,21 +280,26 @@ class JobCommand(AbsCoreCommand):
 
 		config_dict = ctx.config._config
 
-		# Add channel(s)
-		for c in job.channel:
-			chan = ChannelModel(**c)
-			logger.info(f"Registering job channel '{chan.channel}'")
-			dict.__setitem__(config_dict['channel'], chan.channel, c)
+		self._patch_config(config_dict, job, logger)
+		
+		# Ensure that job content saved in DB reflects options set dynamically
+		if args['task']:
+			for idx in sorted(args['task'], reverse=True):
+				del job.task[idx]
 
-		# Add aliase(s)
-		for k, v in job.alias.items():
-			if 'alias' not in config_dict:
-				dict.__setitem__(config_dict, 'alias', {})
-			for kk, vv in v.items():
-				logger.info(f"Registering job alias '{kk}'")
-				if k not in config_dict['alias']:
-					dict.__setitem__(config_dict['alias'], k, {})
-				dict.__setitem__(config_dict['alias'][k], kk, vv)
+		ctx.config._config = recursive_freeze(config_dict)
+
+		logger.info("Saving job schema")
+		job_sig = build_unsafe_dict_id(job.dict(), size=-64)
+		ctx.db.get_collection("jobid").update_one(
+			{'_id': job_sig},
+			{'$setOnInsert': job},
+			upsert=True
+		)
+
+		run_ids = []
+		tds: list[dict[str, Any]] = []
+		process_name = job.name or schema_descr
 
 		for i, model in enumerate(job.task):
 
@@ -247,7 +345,7 @@ class JobCommand(AbsCoreCommand):
 			elif i != 0:
 				self.print_chapter(f"Task #{i}", logger)
 
-			if args['with_task'] is not None and i not in args['with_task']:
+			if args['task'] is not None and i not in args['task']:
 				logger.info(f"Skipping task #{i} as requested")
 				continue
 
@@ -304,14 +402,46 @@ class JobCommand(AbsCoreCommand):
 					model = UnitModel(**job.resolve_expressions(task_dict, job.task[i])),
 					context = ctx,
 					process_name = process_name,
+					job_sig = job_sig,
 					sub_type = AbsEventUnit,
 					base_log_flag = LogFlag.MANUAL_RUN
 				)
-				x = proc.run()
+
+				event_hdlr = EventHandler(
+					proc.process_name,
+					ctx.get_database(),
+					raise_exc = proc.raise_exc,
+					job_sig = job_sig,
+					extra = {'task': i}
+				)
+
+				x = proc.run(event_hdlr)
+				if event_hdlr.run_id:
+					run_ids.append(event_hdlr.run_id)
 				logger.info(f"{task_dict['unit']} return value: {x}")
 
 		dm = divmod(time() - start_time, 60)
-		logger.info("Job processing done. Time required: %s minutes %s seconds\n" % (round(dm[0]), round(dm[1])))
+		logger.info(
+			"Job processing done. Time required: %s minutes %s seconds\n" %
+			(round(dm[0]), round(dm[1]))
+		)
+
+		if args.get("show_plots"):
+
+			cmd = [
+				'ampel', 'plot', 'show', '-stack', '100', '-png', '150',
+				'-t2', '-t3', '-base-path', 'body.plot', # to be improved later
+				'-one-db', '-db', job.mongo.prefix,
+				'-job-id', f"\"{job_sig}\"", '-run-id', *[str(el) for el in run_ids],
+			]
+			if args.get('debug'):
+				cmd.append('-debug')
+
+			print("-" * 40)
+			print(f"Executing command: {' '.join(cmd)}")
+			r = subprocess.run(cmd, check=True, capture_output=True, text=True)
+			print(r.stdout)
+			print(r.stderr)
 
 
 	def print_chapter(self, msg: str, logger: AmpelLogger) -> None:
@@ -322,11 +452,41 @@ class JobCommand(AbsCoreCommand):
 		logger.info(" ")
 
 
+	@classmethod
+	def get_job_schema(cls,
+		schema_files: list[str],
+		logger: AmpelLogger,
+		compute_sig: bool = True
+	) -> tuple[JobModel, int]:
+
+		lines = io.StringIO()
+		for i, job_fname in enumerate(schema_files):
+
+			if not os.path.exists(job_fname):
+				raise FileNotFoundError(f"Job file not found: '{job_fname}'")
+
+			with open(job_fname, "r") as f:
+				lines.write("\n".join(f.readlines()))
+
+		lines.seek(0)
+		job = yaml.safe_load(lines)
+
+		for k in list(job.keys()):
+			# job keys starting with _ are used by own convention for yaml anchors
+			# and thus need not be included in the loaded job structure
+			if k.startswith("_"):
+				del job[k]
+
+		return JobModel(**job), build_unsafe_dict_id(job, size=-64) if compute_sig else 0
+
+
 def run_mp_process(
 	queue: Queue,
-	config: Dict[str, Any],
-	tast_unit_model: Dict[str, Any],
+	config: dict[str, Any],
+	tast_unit_model: dict[str, Any],
 	process_name: str,
+	job_sig: None | int = None,
+	task_nbr: None | int = None,
 	log_profile: str = "default"
 ) -> None:
 
@@ -340,11 +500,20 @@ def run_mp_process(
 			context = context,
 			sub_type = AbsEventUnit,
 			log_profile = log_profile,
-			process_name = process_name
+			process_name = process_name,
+			job_sig = job_sig
 		)
 
 		queue.put(
-			processor.run()
+			processor.run(
+				EventHandler(
+					processor.process_name,
+					context.get_database(),
+					raise_exc = processor.raise_exc,
+					job_sig = job_sig,
+					extra = {'task': task_nbr}
+				)
+			)
 		)
 
 	except Exception as e:

@@ -1,16 +1,17 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-core/ampel/abstract/AbsProcessController.py
-# License           : BSD-3-Clause
-# Author            : vb <vbrinnel@physik.hu-berlin.de>
-# Date              : 06.04.2020
-# Last Modified Date: 17.04.2020
-# Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
+# File:                Ampel-core/ampel/abstract/AbsProcessController.py
+# License:             BSD-3-Clause
+# Author:              valery brinnel <firstname.lastname@gmail.com>
+# Date:                06.04.2020
+# Last Modified Date:  17.04.2020
+# Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from typing import Dict, Optional, Literal, Sequence, Any, ClassVar
+from typing import Literal, Any, ClassVar
+from collections.abc import Sequence
 from ampel.base.decorator import abstractmethod
 from ampel.base.AmpelABC import AmpelABC
-from ampel.base.AmpelBaseModel import AmpelBaseModel
+from ampel.base.AmpelUnit import AmpelUnit
 from ampel.config.AmpelConfig import AmpelConfig
 from ampel.secret.AmpelVault import AmpelVault
 from ampel.model.ProcessModel import ProcessModel
@@ -18,11 +19,11 @@ from ampel.log.AmpelLogger import AmpelLogger
 from ampel.metrics.AmpelMetricsRegistry import AmpelMetricsRegistry
 
 
-class AbsProcessController(AmpelABC, AmpelBaseModel, abstract=True):
+class AbsProcessController(AmpelABC, AmpelUnit, abstract=True):
 
 	config: AmpelConfig
 	processes: Sequence[ProcessModel]
-	vault: Optional[AmpelVault] = None
+	vault: None | AmpelVault = None
 	log_profile: str = "default"
 
 	process_count: ClassVar[Any] = AmpelMetricsRegistry.gauge(
@@ -42,9 +43,9 @@ class AbsProcessController(AmpelABC, AmpelBaseModel, abstract=True):
 	def new(cls,
 		tier: Literal[0, 1, 2, 3],
 		config_file_path: str,
-		match: Optional[Sequence[str]] = None,
-		exclude: Optional[Sequence[str]] = None,
-		override: Optional[Dict] = None,
+		match: None | Sequence[str] = None,
+		exclude: None | Sequence[str] = None,
+		override: None | dict = None,
 		log_profile: str = "default",
 		**kwargs
 	):
@@ -74,7 +75,7 @@ class AbsProcessController(AmpelABC, AmpelBaseModel, abstract=True):
 
 
 	@abstractmethod
-	def stop(self, name: Optional[str] = None) -> None:
+	def stop(self, name: None | str = None) -> None:
 		"""
 		Gracefully stop processes.
 		
@@ -84,7 +85,7 @@ class AbsProcessController(AmpelABC, AmpelBaseModel, abstract=True):
 
 	def update(self,
 		config: AmpelConfig,
-		vault: Optional[AmpelVault],
+		vault: None | AmpelVault,
 		processes: Sequence[ProcessModel],
 	) -> None:
 		"""Change the configuration of the controller."""

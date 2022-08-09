@@ -1,17 +1,18 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-core/ampel/mongo/update/MongoStockUpdater.py
-# License           : BSD-3-Clause
-# Author            : vb <vbrinnel@physik.hu-berlin.de>
-# Date              : 15.10.2018
-# Last Modified Date: 03.09.2021
-# Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
+# File:                Ampel-core/ampel/mongo/update/MongoStockUpdater.py
+# License:             BSD-3-Clause
+# Author:              valery brinnel <firstname.lastname@gmail.com>
+# Date:                15.10.2018
+# Last Modified Date:  03.09.2021
+# Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from time import time
 from bson import ObjectId
 from pymongo.errors import BulkWriteError
 from pymongo.operations import UpdateMany, UpdateOne
-from typing import List, Any, Optional, Sequence, Union, Dict, Literal, get_args
+from typing import Any, Literal, get_args
+from collections.abc import Sequence
 
 from ampel.core.AmpelDB import AmpelDB
 from ampel.types import ChannelId, Tag, StockId
@@ -33,7 +34,7 @@ class MongoStockUpdater:
 		ampel_db: AmpelDB, tier: Literal[-1, 0, 1, 2, 3], run_id: int,
 		process_name: str, logger: AmpelLogger, raise_exc: bool = False,
 		bump_updated: bool = True, update_journal: bool = True,
-		extra_tag: Optional[Union[Tag, Sequence[Tag]]] = None,
+		extra_tag: None | Tag | Sequence[Tag] = None,
 		auto_flush: int = 0
 	) -> None:
 		"""
@@ -55,17 +56,17 @@ class MongoStockUpdater:
 
 
 	def reset(self) -> None:
-		self._updates: List[Union[UpdateOne, UpdateMany]] = []
-		self._one_updates: Dict[StockId, UpdateOne] = {}
-		self._multi_updates: Dict[StockId, List[UpdateMany]] = {}
+		self._updates: list[UpdateOne | UpdateMany] = []
+		self._one_updates: dict[StockId, UpdateOne] = {}
+		self._multi_updates: dict[StockId, list[UpdateMany]] = {}
 
 
 	def new_journal_record(self,
-		unit: Optional[Union[int, str]] = None,
-		channels: Optional[Union[ChannelId, Sequence[ChannelId]]] = None,
-		action_code: Optional[JournalActionCode] = None,
-		doc_id: Optional[ObjectId] = None,
-		now: Optional[Union[int, float]] = None
+		unit: None | int | str = None,
+		channels: None | ChannelId | Sequence[ChannelId] = None,
+		action_code: None | JournalActionCode = None,
+		doc_id: None | ObjectId = None,
+		now: None | int | float = None
 	) -> JournalRecord:
 
 		ret: JournalRecord = {
@@ -92,16 +93,16 @@ class MongoStockUpdater:
 
 
 	def add_journal_record(self,
-		stock: Union[StockId, Sequence[StockId]],
-		jattrs: Optional[JournalAttributes] = None,
-		tag: Optional[Union[Tag, Sequence[Tag]]] = None,
-		name: Optional[Union[str, Sequence[str]]] = None,
-		trace_id: Optional[Dict[str, int]] = None,
-		action_code: Optional[JournalActionCode] = None,
-		doc_id: Optional[ObjectId] = None,
-		unit: Optional[Union[int, str]] = None,
-		channel: Optional[Union[ChannelId, Sequence[ChannelId]]] = None,
-		now: Optional[Union[int, float]] = None
+		stock: StockId | Sequence[StockId],
+		jattrs: None | JournalAttributes = None,
+		tag: None | Tag | Sequence[Tag] = None,
+		name: None | str | Sequence[str] = None,
+		trace_id: None | dict[str, int] = None,
+		action_code: None | JournalActionCode = None,
+		doc_id: None | ObjectId = None,
+		unit: None | int | str = None,
+		channel: None | ChannelId | Sequence[ChannelId] = None,
+		now: None | int | float = None
 	) -> JournalRecord:
 		"""
 		:returns: the JournalRecord dict instance associated with the stock document(s) update
@@ -163,7 +164,7 @@ class MongoStockUpdater:
 		return jrec
 
 
-	def add_name(self, stock: StockId, name: Union[str, Sequence[str]]) -> None:
+	def add_name(self, stock: StockId, name: str | Sequence[str]) -> None:
 		self._add_one_update(
 			stock,
 			{'$addToSet': {'name': name if isinstance(name, str) else {'$each': name}}}
@@ -171,8 +172,8 @@ class MongoStockUpdater:
 
 
 	def add_tag(self,
-		stock: Union[StockId, Sequence[StockId]],
-		tag: Union[Tag, Sequence[Tag]]
+		stock: StockId | Sequence[StockId],
+		tag: Tag | Sequence[Tag]
 	) -> None:
 
 		upd = {'$addToSet': {'tag': tag if isinstance(tag, tag_type) else {'$each': tag}}}
@@ -183,7 +184,7 @@ class MongoStockUpdater:
 			self._add_many_update(stock if isinstance(stock, list) else list(stock), upd)
 
 
-	def _add_one_update(self, stock: StockId, upd: Dict[str, Any]) -> None:
+	def _add_one_update(self, stock: StockId, upd: dict[str, Any]) -> None:
 
 		uo = UpdateOne({'stock': stock}, upd)
 
@@ -202,7 +203,7 @@ class MongoStockUpdater:
 				self.flush()
 
 
-	def _add_many_update(self, stocks: List[StockId], upd: Dict[str, Any]) -> None:
+	def _add_many_update(self, stocks: list[StockId], upd: dict[str, Any]) -> None:
 
 		um = UpdateMany({'stock': {'$in': stocks}}, upd)
 
@@ -224,7 +225,7 @@ class MongoStockUpdater:
 				self.flush()
 
 
-	def _merge_updates(self, op: UpdateOne, d: Dict) -> None:
+	def _merge_updates(self, op: UpdateOne, d: dict) -> None:
 		"""
 		modifies provided UpdateOne structure
 		:raises: ValueError in case update structures are not conform ex: {'$addToSet': {'name': {'a': 1}}}
@@ -301,7 +302,7 @@ class MongoStockUpdater:
 					raise ValueError(f"Journal update error: {e.details}")
 				raise ValueError("Journal update error")
 
-			info: Dict[str, Any] = {
+			info: dict[str, Any] = {
 				'process': self.process_name,
 				'msg': 'Exception in flush()',
 				'journalUpdateCount': len(jupds)
@@ -315,7 +316,7 @@ class MongoStockUpdater:
 
 
 	@staticmethod
-	def include_jtags(jrec: JournalRecord, tag: Union[Tag, Sequence[Tag]]):
+	def include_jtags(jrec: JournalRecord, tag: Tag | Sequence[Tag]):
 		""" Modifies the input JournalRecord dict """
 
 		if tag:

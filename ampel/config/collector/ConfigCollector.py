@@ -1,48 +1,49 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-core/ampel/config/collector/AbsConfigCollector.py
-# License           : BSD-3-Clause
-# Author            : vb <vbrinnel@physik.hu-berlin.de>
-# Date              : 16.10.2019
-# Last Modified Date: 03.03.2020
-# Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
+# File:                Ampel-core/ampel/config/collector/AbsConfigCollector.py
+# License:             BSD-3-Clause
+# Author:              valery brinnel <firstname.lastname@gmail.com>
+# Date:                16.10.2019
+# Last Modified Date:  03.03.2020
+# Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from typing import Dict, Any, Optional, Literal
+from typing import Any, Literal
 from ampel.log.AmpelLogger import AmpelLogger
+from ampel.config.builder.DisplayOptions import DisplayOptions
 
 
 class ConfigCollector(dict):
 
 	def __init__(self,
 		conf_section: str,
-		content: Optional[Dict] = None,
-		logger: Optional[AmpelLogger] = None,
-		verbose: bool = False,
-		debug: bool = False,
-		tier: Optional[Literal[0, 1, 2, 3, "ops"]] = None
+		options: DisplayOptions,
+		content: None | dict = None,
+		logger: None | AmpelLogger = None,
+		tier: None | Literal[0, 1, 2, 3, "ops"] = None
 	) -> None:
 
 		super().__init__(**content if content else {})
-		self.verbose = verbose
+		self.options = options
+		self.verbose = options.verbose
 		self.has_error = False
 		self.conf_section = conf_section
 		self.logger = AmpelLogger.get_logger() if logger is None else logger
 		self.tier = f'T{tier}' if tier is not None else 'general'
 
-		if debug:
+		if options.debug:
 			self.logger.info(
 				f'Creating {self.__class__.__name__} collector '
 				f'for T{self.tier} config section {conf_section}'
 			)
 
 
-	def error(self, msg: str, exc_info: Optional[Any] = None) -> None:
+	def error(self, msg: str, exc_info: None | Any = None) -> None:
 		self.logger.error(msg, exc_info=exc_info)
 		self.has_error = True
 
 
 	def missing_key(self,
-		what: str, key: str, dist_name: str, register_file: Optional[str]
+		what: str, key: str, dist_name: str, register_file: None | str
 	) -> None:
 		self.error(
 			f'{what} dict is missing key "{key}" '
@@ -52,11 +53,11 @@ class ConfigCollector(dict):
 
 	def duplicated_entry(self,
 		conf_key: str,
-		prev_file: Optional[str] = None,
-		prev_dist: Optional[str] = None,
-		new_file: Optional[str] = None,
-		new_dist: Optional[str] = None,
-		section_detail: Optional[str] = None
+		prev_file: None | str = None,
+		prev_dist: None | str = None,
+		new_file: None | str = None,
+		new_dist: None | str = None,
+		section_detail: None | str = None
 	) -> None:
 
 		from string import Template
@@ -87,8 +88,8 @@ class ConfigCollector(dict):
 
 	@staticmethod
 	def distrib_hint(
-		distrib: Optional[str] = None,
-		file_register: Optional[str] = None,
+		distrib: None | str = None,
+		file_register: None | str = None,
 		parenthesis: bool = True
 	) -> str:
 		""" Adds distribution name if available """

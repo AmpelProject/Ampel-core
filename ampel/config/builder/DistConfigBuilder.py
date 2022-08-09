@@ -1,19 +1,20 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-core/ampel/config/builder/DistConfigBuilder.py
-# License           : BSD-3-Clause
-# Author            : vb <vbrinnel@physik.hu-berlin.de>
-# Date              : 09.10.2019
-# Last Modified Date: 14.03.2021
-# Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
+# File:                Ampel-core/ampel/config/builder/DistConfigBuilder.py
+# License:             BSD-3-Clause
+# Author:              valery brinnel <firstname.lastname@gmail.com>
+# Date:                09.10.2019
+# Last Modified Date:  14.03.2021
+# Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 import json, yaml, pkg_resources, os, re
 from functools import partial
 from pkg_resources import EggInfoDistribution, DistInfoDistribution # type: ignore[attr-defined]
-from typing import Dict, Any, Union, Callable, List, Optional
+from typing import Any
+from collections.abc import Callable
 from ampel.config.builder.ConfigBuilder import ConfigBuilder
 from ampel.util.distrib import get_dist_names, get_files
-from ampel.log import VERBOSE
+from ampel.log import VERBOSE, SHOUT
 
 
 class DistConfigBuilder(ConfigBuilder):
@@ -23,9 +24,9 @@ class DistConfigBuilder(ConfigBuilder):
 	"""
 
 	def load_distributions(self,
-		prefixes: List[str] = ["pyampel-", "ampel-"],
-		conf_dirs: List[str] = ["conf"],
-		exts: List[str] = ["json", "yaml", "yml"]
+		prefixes: list[str] = ["pyampel-", "ampel-"],
+		conf_dirs: list[str] = ["conf"],
+		exts: list[str] = ["json", "yaml", "yml"]
 	) -> None:
 		"""
 		:param prefixes: loads all known conf files from all distributions with name starting with prefixes
@@ -34,10 +35,17 @@ class DistConfigBuilder(ConfigBuilder):
 		"""
 		for prefix in prefixes:
 
-			for dist_name in get_dist_names(prefix):
+			dist_names = get_dist_names(prefix)
 
-				if self.verbose:
-					self.logger.log(VERBOSE, f"Checking distribution '{dist_name}'")
+			if dist_names:
+				self.logger.log(SHOUT, f"Detected ampel components: '{dist_names}'")
+
+			for dist_name in dist_names:
+
+				self.logger.break_aggregation()
+				s = f"Checking distribution '{dist_name}'"
+				self.logger.log(VERBOSE, s)
+				self.logger.log(VERBOSE, "="*len(s))
 
 				for conf_dir in conf_dirs:
 					for ext in exts:
@@ -126,9 +134,9 @@ class DistConfigBuilder(ConfigBuilder):
 
 
 	def load_conf_using_func(self,
-		distrib: Union[EggInfoDistribution, DistInfoDistribution],
+		distrib: EggInfoDistribution | DistInfoDistribution,
 		file_rel_path: str,
-		func: Callable[[Dict[str, Any], str, str, str], None]
+		func: Callable[[dict[str, Any], str, str, str], None]
 	) -> None:
 
 		try:
@@ -170,8 +178,65 @@ class DistConfigBuilder(ConfigBuilder):
 			)
 
 
+	def load_tier_config_file(self,
+		distrib: EggInfoDistribution | DistInfoDistribution,
+		file_rel_path: str,
+		root_key: str
+	) -> None:
+		"""
+		Files loaded by this method must have the following JSON structure:
+		{
+			"t0": { ... },
+			"t1": { ... },
+			...
+		}
+		whereby the t0, t1, t2 and t3 keys are optional (at least one is required though)
+		"""
+
+		try:
+
+			if self.verbose:
+				self.logger.log(VERBOSE,
+					f"Loading {file_rel_path} from distribution '{distrib.project_name}'"
+				)
+
+			if file_rel_path.endswith("json"):
+				load = json.loads
+			elif file_rel_path.endswith("yml") or file_rel_path.endswith("yaml"):
+				load = yaml.safe_load # type: ignore
+
+			d = load(
+				distrib.get_resource_string(__name__, file_rel_path)
+				if not os.path.isabs(file_rel_path)
+				else file_rel_path
+			)
+
+			for k in ("t0", "t1", "t2", "t3", "ops"):
+				if k in d:
+					self.first_pass_config[root_key][k].add(
+						d[k],
+						dist_name = distrib.project_name,
+						version = distrib.version,
+						register_file = file_rel_path,
+					)
+
+		except FileNotFoundError:
+			self.error = True
+			self.logger.error(
+				f"File '{file_rel_path}' not found in distribution '{distrib.project_name}'"
+			)
+
+		except Exception as e:
+			self.error = True
+			self.logger.error(
+				f"Error occured loading '{file_rel_path}' "
+				f"from distribution '{distrib.project_name}')",
+				exc_info=e
+			)
+
+
 	@staticmethod
-	def get_dist_names(distrib_prefix: str = "ampel-") -> List[str]:
+	def get_dist_names(distrib_prefix: str = "ampel-") -> list[str]:
 		"""
 		Get all installed distributions whose names start with the provided prefix
 		"""
@@ -182,7 +247,7 @@ class DistConfigBuilder(ConfigBuilder):
 
 
 	@staticmethod
-	def get_conf_file(files: List[str], key: str) -> Optional[str]:
+	def get_conf_file(files: list[str], key: str) -> None | str:
 		"""
 		Extract the first entry who matches the provided 'key' from the provided list
 		Note: this method purposely modifies the input list (removes matched element)
@@ -195,7 +260,7 @@ class DistConfigBuilder(ConfigBuilder):
 
 
 	@staticmethod
-	def get_conf_files(files: List[str], key: str) -> List[str]:
+	def get_conf_files(files: list[str], key: str) -> list[str]:
 		"""
 		Extract all entries who matches the provided 'key' from the provided list
 		Note: this method purposely modifies the input list (removes matched elements)

@@ -1,15 +1,16 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-core/ampel/util/collections.py
-# License           : BSD-3-Clause
-# Author            : vb <vbrinnel@physik.hu-berlin.de>
-# Date              : 07.06.2018
-# Last Modified Date: 09.12.2021
-# Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
+# File:                Ampel-core/ampel/util/collections.py
+# License:             BSD-3-Clause
+# Author:              valery brinnel <firstname.lastname@gmail.com>
+# Date:                07.06.2018
+# Last Modified Date:  09.12.2021
+# Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from itertools import islice
 from collections.abc import Sequence as sequence, Iterable as iterable, Sized as sized
-from typing import Any, List, Iterable, Union, Type, Tuple, Set, Generator
+from typing import Any
+from collections.abc import Generator, Iterable
 
 from ampel.types import strict_iterable, StrictIterable, T
 
@@ -22,7 +23,7 @@ def ampel_iter(arg: Any) -> Any:
 	return [arg] if isinstance(arg, (type(None), str, int, bytes, bytearray)) else arg
 
 
-def chunks(seq: Iterable[T], n: int) -> Generator[List[T], None, None]:
+def chunks(seq: Iterable[T], n: int) -> Generator[list[T], None, None]:
 	"""
 	Yield chunks of length `n` from `seq`
 	"""
@@ -57,7 +58,7 @@ def try_reduce(arg: Any) -> Any:
 	return arg
 
 
-def to_set(arg) -> Set:
+def to_set(arg) -> set:
 	"""
 	Reminder of python questionable logic:
 	In []: set('abc')
@@ -77,7 +78,7 @@ def to_set(arg) -> Set:
 	return set(arg) if isinstance(arg, strict_iterable) else {arg}
 
 
-def to_list(arg: Union[int, str, bytes, bytearray, List, Iterable]) -> List:
+def to_list(arg: int | str | bytes | bytearray | list | Iterable) -> list:
 	"""
 	raises ValueError is arg is not int, str, bytes, bytearray, list, or Iterable
 	"""
@@ -92,7 +93,7 @@ def to_list(arg: Union[int, str, bytes, bytearray, List, Iterable]) -> List:
 
 
 def check_seq_inner_type(
-	seq, types: Union[Type, Tuple[Type, ...]], multi_type: bool = False
+	seq, types: type | tuple[type, ...], multi_type: bool = False
 ) -> bool:
 	"""
 	check type of all elements contained in a sequence.
@@ -130,7 +131,7 @@ def check_seq_inner_type(
 	)
 
 
-def has_nested_type(obj: StrictIterable, target_type: Type, strict: bool = True) -> bool:
+def has_nested_type(obj: StrictIterable, target_type: type, strict: bool = True) -> bool:
 	"""
 	:param obj: object instance (dict/list/set/tuple)
 	:param target_type: example: ReadOnlyDict/list

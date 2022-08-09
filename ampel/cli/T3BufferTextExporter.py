@@ -1,17 +1,18 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-core/ampel/cli/T3BufferTextExporter.py
-# License           : BSD-3-Clause
-# Author            : vb <vbrinnel@physik.hu-berlin.de>
-# Date              : 25.03.2021
-# Last Modified Date: 10.12.2021
-# Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
+# File:                Ampel-core/ampel/cli/T3BufferTextExporter.py
+# License:             BSD-3-Clause
+# Author:              valery brinnel <firstname.lastname@gmail.com>
+# Date:                25.03.2021
+# Last Modified Date:  10.12.2021
+# Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from json import dumps
 from io import TextIOWrapper
 from itertools import islice
 from datetime import datetime
-from typing import Optional, Union, TextIO, Generator
+from typing import TextIO
+from collections.abc import Generator
 
 from ampel.view.T3Store import T3Store
 from ampel.log.AmpelLogger import AmpelLogger
@@ -32,13 +33,13 @@ class T3BufferTextExporter(AbsT3Stager):
 	Exports AmpelBuffer instances as BSON into file
 	"""
 
-	fd: Union[TextIOWrapper, TextIO]
+	fd: TextIOWrapper | TextIO
 	raise_exc: bool = True
 	close_fd: bool = True
 	update_journal: bool = False
 	verbose: bool = True
 	pretty: bool = False
-	id_mapper: Optional[AbsIdMapper] = None
+	id_mapper: None | AbsIdMapper = None
 	human_times: bool = True
 	chunk_size: int = 200
 	getch: bool = False
@@ -47,7 +48,7 @@ class T3BufferTextExporter(AbsT3Stager):
 	def stage(self,
 		gen: Generator[AmpelBuffer, None, None],
 		t3s: T3Store
-	) -> Optional[Generator[T3Document, None, None]]:
+	) -> None | Generator[T3Document, None, None]:
 
 		logger = AmpelLogger.get_logger()
 		func = prettyjson if self.pretty else dumps

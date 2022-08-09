@@ -1,14 +1,14 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-core/ampel/mongo/query/general.py
-# License           : BSD-3-Clause
-# Author            : vb <vbrinnel@physik.hu-berlin.de>
-# Date              : 11.12.2019
-# Last Modified Date: 17.02.2021
-# Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
+# File:                Ampel-core/ampel/mongo/query/general.py
+# License:             BSD-3-Clause
+# Author:              valery brinnel <firstname.lastname@gmail.com>
+# Date:                11.12.2019
+# Last Modified Date:  17.02.2021
+# Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from bson.int64 import Int64
-from typing import Dict, Optional, Union, Any, Literal
+from typing import Any, Literal
 from ampel.types import Tag, ChannelId, StockId, StrictIterable
 from ampel.model.operator.AnyOf import AnyOf
 from ampel.model.operator.AllOf import AllOf
@@ -20,10 +20,10 @@ type_stock_id = (int, Int64, bytes, str)
 
 
 def build_general_query(
-	stock: Optional[Union[StockId, StrictIterable[StockId]]] = None,
-	channel: Optional[Union[ChannelId, Dict, AllOf[ChannelId], AnyOf[ChannelId], OneOf[ChannelId]]] = None,
-	tag: Optional[Dict[Literal['with', 'without'], Union[Tag, Dict, AllOf[Tag], AnyOf[Tag], OneOf[Tag]]]] = None
-) -> Dict[str, Any]:
+	stock: None | StockId | StrictIterable[StockId] = None,
+	channel: None | ChannelId | dict | AllOf[ChannelId] | AnyOf[ChannelId] | OneOf[ChannelId] = None,
+	tag: None | dict[Literal['with', 'without'], Tag | dict | AllOf[Tag] | AnyOf[Tag] | OneOf[Tag]] = None
+) -> dict[str, Any]:
 	"""
 	Builds a query usable with the ampel "stock", "t0" (with channel=None), "t1" and "t2" collections
 	:param stock: matching multiple ids with a single query is possible

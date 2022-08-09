@@ -1,13 +1,13 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-core/ampel/ingest/T2Compiler.py
-# License           : BSD-3-Clause
-# Author            : vb <vbrinnel@physik.hu-berlin.de>
-# Date              : 01.01.2018
-# Last Modified Date: 21.11.2021
-# Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
+# File:                Ampel-core/ampel/ingest/T2Compiler.py
+# License:             BSD-3-Clause
+# Author:              valery brinnel <firstname.lastname@gmail.com>
+# Date:                01.01.2018
+# Last Modified Date:  21.11.2021
+# Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from typing import Optional, Dict, Union, Tuple, Set, Any, List, FrozenSet
+from typing import Any
 from ampel.types import ChannelId, UnitId, T2Link, StockId
 from ampel.content.T2Document import T2Document
 from ampel.content.MetaActivity import MetaActivity
@@ -22,32 +22,29 @@ class T2Compiler(AbsCompiler):
 	are merged into one single T2 document that references all corresponding channels.
 	"""
 
-	def __init__(self, col: Optional[str] = None, **kwargs) -> None:
-
-		super().__init__(**kwargs)
-		self.col = col
-		self.t2s: Dict[
-			# key: (unit name, unit config, link, stock)
-			Tuple[UnitId, Optional[int], T2Link, StockId],
-			Tuple[
-				Set[ChannelId], # channels (doc)
-				Dict[
-					FrozenSet[Tuple[str, Any]], # key: traceid
-					Tuple[ActivityRegister, Dict[str, Any]] # activity register, meta_extra
-				]
+	col: None | str = None
+	t2s: dict[
+		# key: (unit name, unit config, link, stock)
+		tuple[UnitId, None | int, T2Link, StockId],
+		tuple[
+			set[ChannelId], # channels (doc)
+			dict[
+				frozenset[tuple[str, Any]], # key: traceid
+				tuple[ActivityRegister, dict[str, Any]] # activity register, meta_extra
 			]
-		] = {}
+		]
+	] = {}
 
 
 	def add(self, # type: ignore[override]
 		unit: UnitId,
-		config: Optional[int],
+		config: None | int,
 		stock: StockId,
 		link: T2Link,
 		channel: ChannelId,
-		traceid: Dict[str, Any],
-		activity: Optional[Union[MetaActivity, List[MetaActivity]]] = None,
-		meta_extra: Optional[Dict[str, Any]] = None
+		traceid: dict[str, Any],
+		activity: None | MetaActivity | list[MetaActivity] = None,
+		meta_extra: None | dict[str, Any] = None
 	) -> None:
 		"""
 		:param tag: tag(s) to be added to T2Document. A corresponding dedicated channel-less
@@ -79,12 +76,12 @@ class T2Compiler(AbsCompiler):
 			self.t2s[k] = {channel}, {tid: self.new_meta_info(channel, activity, meta_extra)}
 
 
-	def commit(self, ingester: AbsDocIngester[T2Document], now: Union[int, float], **kwargs) -> None:
+	def commit(self, ingester: AbsDocIngester[T2Document], now: int | float, **kwargs) -> None:
 
 		for k, v in self.t2s.items():
 
 			# Note: mongodb maintains key order
-			d: T2Document = {'unit': k[0], 'config': k[1], 'link': k[2]}
+			d: T2Document = {'unit': k[0], 'config': k[1], 'link': k[2]} # type: ignore[typeddict-item]
 
 			if self.col:
 				d['col'] = self.col

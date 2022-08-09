@@ -1,20 +1,21 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-core/ampel/t3/stage/project/T3BaseProjector.py
-# License           : BSD-3-Clause
-# Author            : vb <vbrinnel@physik.hu-berlin.de>
-# Date              : 07.01.2020
-# Last Modified Date: 15.12.2021
-# Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
+# File:                Ampel-core/ampel/t3/stage/project/T3BaseProjector.py
+# License:             BSD-3-Clause
+# Author:              valery brinnel <firstname.lastname@gmail.com>
+# Date:                07.01.2020
+# Last Modified Date:  15.12.2021
+# Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from typing import Iterable, Union, Optional, List, Dict, Sequence, Callable, Any, Set
+from typing import Any
+from collections.abc import Callable, Iterable, Sequence
 from ampel.types import Traceless
 from ampel.log import AmpelLogger, VERBOSE
 from ampel.struct.AmpelBuffer import AmpelBuffer, BufferKey
 from ampel.abstract.AbsApplicable import AbsApplicable
 from ampel.model.UnitModel import UnitModel
 from ampel.base.AuxUnitRegister import AuxUnitRegister
-from ampel.model.StrictModel import StrictModel
+from ampel.base.AmpelBaseModel import AmpelBaseModel
 from ampel.abstract.AbsT3Projector import AbsT3Projector
 
 
@@ -32,15 +33,15 @@ class T3BaseProjector(AbsT3Projector):
 	  will contain the all the names of the corresponding AmpelBuffer)
 	"""
 
-	class ClassModel(StrictModel):
+	class ClassModel(AmpelBaseModel):
 		key: BufferKey
 		model: UnitModel
 
-	class FuncModel(StrictModel):
+	class FuncModel(AmpelBaseModel):
 		key: BufferKey
 		func: Callable[[Any], Any]
 
-	class FilterOutModel(StrictModel):
+	class FilterOutModel(AmpelBaseModel):
 		discard: BufferKey
 
 
@@ -57,7 +58,7 @@ class T3BaseProjector(AbsT3Projector):
 	remove_empty: bool = True
 
 	# Modify/delete dict keys/values
-	field_projectors: List[Union[ClassModel, FuncModel]] = []
+	field_projectors: list[ClassModel | FuncModel] = []
 
 
 	def __init__(self, **kwargs) -> None:
@@ -65,7 +66,7 @@ class T3BaseProjector(AbsT3Projector):
 		super().__init__(**kwargs)
 
 		# List matchers
-		self.projectors: Dict[BufferKey, Optional[List[Callable[[Any], Any]]]] = {}
+		self.projectors: dict[BufferKey, None | list[Callable[[Any], Any]]] = {}
 
 		for fp in self.field_projectors:
 			if isinstance(fp, self.ClassModel):
@@ -75,7 +76,7 @@ class T3BaseProjector(AbsT3Projector):
 			elif isinstance(fp, self.FilterOutModel):
 				self.projectors[fp.discard] = None
 
-		self.pass_through_keys: Set[BufferKey] = {"stock", "t0", "t1", "t2", "logs", "extra"} - self.projectors.keys()# type: ignore
+		self.pass_through_keys: set[BufferKey] = {"stock", "t0", "t1", "t2", "logs", "extra"} - self.projectors.keys()# type: ignore
 
 
 	def add_class_projector(self, cm: ClassModel, first: bool = False) -> None:
@@ -134,7 +135,7 @@ class T3BaseProjector(AbsT3Projector):
 		projectors = self.projectors
 		pass_through_keys = self.pass_through_keys
 
-		ret: List[AmpelBuffer] = []
+		ret: list[AmpelBuffer] = []
 
 		for abuf in ampel_buffer:
 

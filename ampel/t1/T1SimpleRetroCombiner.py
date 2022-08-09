@@ -1,13 +1,13 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-core/ampel/t1/T1SimpleRetroCombiner.py
-# License           : BSD-3-Clause
-# Author            : vb <vbrinnel@physik.hu-berlin.de>
-# Date              : 25.05.2021
-# Last Modified Date: 23.07.2021
-# Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
+# File:                Ampel-core/ampel/t1/T1SimpleRetroCombiner.py
+# License:             BSD-3-Clause
+# Author:              valery brinnel <firstname.lastname@gmail.com>
+# Date:                25.05.2021
+# Last Modified Date:  23.07.2021
+# Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from typing import Generator, Iterable, List, Optional
+from collections.abc import Generator, Iterable
 from ampel.content.DataPoint import DataPoint
 from ampel.types import DataPointId
 from ampel.struct.T1CombineResult import T1CombineResult
@@ -21,7 +21,7 @@ class T1SimpleRetroCombiner(AbsT1CombineUnit):
 	[[7, 6, 5], [6, 5], [5]]
 	"""
 
-	def combine(self, datapoints: Iterable[DataPoint]) -> List[T1CombineResult]: # type: ignore[override]
+	def combine(self, datapoints: Iterable[DataPoint]) -> list[T1CombineResult]: # type: ignore[override]
 		"""
 		:param datapoints: dict instances representing datapoints
 		"""
@@ -34,7 +34,7 @@ class T1SimpleRetroCombiner(AbsT1CombineUnit):
 
 		return [T1CombineResult(dps=el) for el in reversed(list(self.generate_retro_sequences(dps)))]
 
-	def generate_retro_sequences(self, datapoints: List[DataPoint]) -> Generator[List[DataPointId], None, None]:
+	def generate_retro_sequences(self, datapoints: list[DataPoint]) -> Generator[list[DataPointId], None, None]:
 		"""
 		Generate substates by iteratively removing the last element. This may
 		be overridden by subclasses, e.g. to use only certain datapionts to

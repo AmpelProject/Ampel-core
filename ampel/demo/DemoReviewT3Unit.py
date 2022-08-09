@@ -1,13 +1,13 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-core/ampel/demo/DemoReviewT3Unit.py
-# License           : BSD-3-Clause
-# Author            : vb <vbrinnel@physik.hu-berlin.de>
-# Date              : 09.06.2020
-# Last Modified Date: 17.12.2021
-# Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
+# File:                Ampel-core/ampel/demo/DemoReviewT3Unit.py
+# License:             BSD-3-Clause
+# Author:              valery brinnel <firstname.lastname@gmail.com>
+# Date:                09.06.2020
+# Last Modified Date:  17.12.2021
+# Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from typing import Union, Generator
+from collections.abc import Generator
 from ampel.types import UBson, T3Send
 from ampel.abstract.AbsT3ReviewUnit import AbsT3ReviewUnit
 from ampel.struct.JournalAttributes import JournalAttributes
@@ -23,7 +23,7 @@ class DemoReviewT3Unit(AbsT3ReviewUnit[SnapView]):
 	def process(self,
 		gen: Generator[SnapView, T3Send, None],
 		t3s: T3Store
-	) -> Union[UBson, UnitResult]:
+	) -> UBson | UnitResult:
 
 		self.logger.info(f"DemoReviewT3Unit output (parameter={self.parameter}):")
 

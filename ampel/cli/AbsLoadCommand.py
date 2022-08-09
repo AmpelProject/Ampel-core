@@ -1,13 +1,13 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-core/ampel/cli/AbsLoadCommand.py
-# License           : BSD-3-Clause
-# Author            : vb <vbrinnel@physik.hu-berlin.de>
-# Date              : 25.03.2021
-# Last Modified Date: 29.03.2021
-# Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
+# File:                Ampel-core/ampel/cli/AbsLoadCommand.py
+# License:             BSD-3-Clause
+# Author:              valery brinnel <firstname.lastname@gmail.com>
+# Date:                25.03.2021
+# Last Modified Date:  29.03.2021
+# Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from typing import Dict, Any, Optional
+from typing import Any
 from bson.codec_options import CodecOptions
 from ampel.cli.ArgParserBuilder import ArgParserBuilder
 from ampel.cli.AbsCoreCommand import AbsCoreCommand
@@ -28,7 +28,7 @@ class AbsLoadCommand(AbsCoreCommand, abstract=True):
 	"""
 
 	@staticmethod
-	def get_load_args_help() -> Dict[str, str]:
+	def get_load_args_help() -> dict[str, str]:
 		return {
 			'latest': 'Include only latest state (*)',
 			'no-stock': 'Exclude stock document from view',
@@ -51,7 +51,7 @@ class AbsLoadCommand(AbsCoreCommand, abstract=True):
 		builder.add_all_note("Latest state means... [adequate description in a few words]")
 
 
-	def build_load_model(self, args: Dict[str, Any], codec_options: Optional[CodecOptions] = None) -> UnitModel:
+	def build_load_model(self, args: dict[str, Any], codec_options: None | CodecOptions = None) -> UnitModel:
 		return UnitModel(
 			unit = "T3LatestStateDataLoader" if args.get("latest") else "T3SimpleDataLoader",
 			config = {

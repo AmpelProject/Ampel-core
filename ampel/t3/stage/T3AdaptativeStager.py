@@ -1,17 +1,17 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-core/ampel/t3/stage/T3AdaptativeStager.py
-# License           : BSD-3-Clause
-# Author            : vb <vbrinnel@physik.hu-berlin.de>
-# Date              : 06.01.2020
-# Last Modified Date: 09.12.2021
-# Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
+# File:                Ampel-core/ampel/t3/stage/T3AdaptativeStager.py
+# License:             BSD-3-Clause
+# Author:              valery brinnel <firstname.lastname@gmail.com>
+# Date:                06.01.2020
+# Last Modified Date:  09.12.2021
+# Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from time import time
 from itertools import islice
 from multiprocessing import JoinableQueue
 from multiprocessing.pool import ThreadPool, AsyncResult
-from typing import Dict, Optional, Sequence, Set, List, Generator
+from collections.abc import Generator, Sequence
 
 from ampel.types import ChannelId
 from ampel.view.T3Store import T3Store
@@ -57,8 +57,8 @@ class T3AdaptativeStager(T3ThreadedStager):
 	"""
 
 	execute: Sequence[UnitModel]
-	white_list: Optional[Set[str]] = None
-	black_list: Optional[Set[str]] = None
+	white_list: None | set[str] = None
+	black_list: None | set[str] = None
 
 	remove_empty: bool = True
 	unalterable: bool = True
@@ -81,23 +81,23 @@ class T3AdaptativeStager(T3ThreadedStager):
 		"""
 
 		super().__init__(**kwargs)
-		self.run_blocks: Dict[ChannelId, RunBlock] = {}
+		self.run_blocks: dict[ChannelId, RunBlock] = {}
 
 		if self.logger.verbose > 1 and (self.white_list or self.black_list):
-			self.warned: Set[ChannelId] = set()
+			self.warned: set[ChannelId] = set()
 
 		if self.black_list and self.white_list:
 			raise ValueError("Can't have both black and white lists")
 
-		self.queues: Dict[AbsT3ReviewUnit, JoinableQueue[SnapView]] = {}
-		self.generators: List[ThreadedViewGenerator] = []
-		self.async_results: List[AsyncResult] = []
+		self.queues: dict[AbsT3ReviewUnit, JoinableQueue[SnapView]] = {}
+		self.generators: list[ThreadedViewGenerator] = []
+		self.async_results: list[AsyncResult] = []
 
 
 	def stage(self,
 		gen: Generator[AmpelBuffer, None, None],
 		t3s: T3Store
-	) -> Optional[Generator[T3Document, None, None]]:
+	) -> None | Generator[T3Document, None, None]:
 
 		ts = time()
 		with ThreadPool(processes=self.nthread) as pool:
@@ -187,7 +187,7 @@ class T3AdaptativeStager(T3ThreadedStager):
 				self.flush(t3_unit)
 
 
-	def filter_channels(self, channels: Set[ChannelId]) -> Set[ChannelId]:
+	def filter_channels(self, channels: set[ChannelId]) -> set[ChannelId]:
 
 		if self.white_list:
 			if self.logger.verbose > 1:

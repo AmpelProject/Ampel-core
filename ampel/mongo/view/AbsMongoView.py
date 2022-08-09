@@ -1,13 +1,13 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-core/ampel/mongo/view/MongoChannelView.py
-# License           : BSD-3-Clause
-# Author            : vb <vbrinnel@physik.hu-berlin.de>
-# Date              : 26.03.2021
-# Last Modified Date: 26.03.2021
-# Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
+# File:                Ampel-core/ampel/mongo/view/MongoChannelView.py
+# License:             BSD-3-Clause
+# Author:              valery brinnel <firstname.lastname@gmail.com>
+# Date:                26.03.2021
+# Last Modified Date:  26.03.2021
+# Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from typing import List, Any, Dict
+from typing import Any
 from ampel.base.AmpelABC import AmpelABC
 from ampel.base.decorator import abstractmethod
 from ampel.base.AmpelBaseModel import AmpelBaseModel
@@ -16,30 +16,30 @@ from ampel.base.AmpelBaseModel import AmpelBaseModel
 class AbsMongoView(AmpelABC, AmpelBaseModel, abstract=True):
 
 	@abstractmethod
-	def stock(self) -> List[Dict[str, Any]]:
+	def stock(self) -> list[dict[str, Any]]:
 		...
 
 	@abstractmethod
-	def t0(self) -> List[Dict[str, Any]]:
+	def t0(self) -> list[dict[str, Any]]:
 		...
 
 	@abstractmethod
-	def t1(self) -> List[Dict[str, Any]]:
+	def t1(self) -> list[dict[str, Any]]:
 		...
 
 	@abstractmethod
-	def t2(self) -> List[Dict[str, Any]]:
+	def t2(self) -> list[dict[str, Any]]:
 		...
 
 	@abstractmethod
-	def t3(self) -> List[Dict[str, Any]]:
+	def t3(self) -> list[dict[str, Any]]:
 		...
 
 	@abstractmethod
-	def get_meta_cases(self, arg: str) -> List[Dict[str, Any]]:
+	def get_meta_cases(self, arg: str) -> list[dict[str, Any]]:
 		...
 
-	def conform_meta(self) -> Dict[str, Any]:
+	def conform_meta(self) -> dict[str, Any]:
 		""" To be overriden if need be """
 
 		return {

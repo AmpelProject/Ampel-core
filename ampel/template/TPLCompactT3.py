@@ -1,25 +1,23 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-core/ampel/template/TPLCompactT3.py
-# License           : BSD-3-Clause
-# Author            : vb <vbrinnel@physik.hu-berlin.de>
-# Date              : 16.07.2021
-# Last Modified Date: 20.12.2021
-# Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
+# File:                Ampel-core/ampel/template/TPLCompactT3.py
+# License:             BSD-3-Clause
+# Author:              valery brinnel <firstname.lastname@gmail.com>
+# Date:                16.07.2021
+# Last Modified Date:  11.01.2022
+# Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from typing import Any, Optional, Type
+from typing import Any
 from ampel.types import OneOrMany
 from ampel.util.pretty import prettyjson
 from ampel.log.AmpelLogger import AmpelLogger
 from ampel.model.UnitModel import UnitModel
-from ampel.base.AmpelBaseModel import AmpelBaseModel
-from ampel.t3.T3ReviewUnitExecutor import T3ReviewUnitExecutor
 from ampel.model.t3.T3IncludeDirective import T3IncludeDirective
 from ampel.model.t3.T3DocBuilderModel import T3DocBuilderModel
 from ampel.abstract.AbsProcessorTemplate import AbsProcessorTemplate
 
 
-class TPLCompactT3(T3DocBuilderModel, AbsProcessorTemplate):
+class TPLCompactT3(AbsProcessorTemplate, T3DocBuilderModel):
 	"""
 	Enables compact run blocks such as:
 
@@ -29,7 +27,7 @@ class TPLCompactT3(T3DocBuilderModel, AbsProcessorTemplate):
 	- supply: ...
 	  stage: ...
 
-	- unit: T3LuminosityDistance
+	- unit: T3DistanceModulus
 	  config:
 	    redshifts: [0.015, 0.035, 0.045, 0.06, 0.1]
 
@@ -52,7 +50,7 @@ class TPLCompactT3(T3DocBuilderModel, AbsProcessorTemplate):
 	    resolve_config: True
 	    human_id: [unit, tag]
 	    target:
-	      unit: T3LuminosityDistance
+	      unit: T3DistanceModulus
 	      config:
 	        redshifts: [0.015, 0.035, 0.045, 0.06, 0.1]
 
@@ -70,29 +68,17 @@ class TPLCompactT3(T3DocBuilderModel, AbsProcessorTemplate):
 	(unless dedicated overrides are defined within specific run blocks)
 	"""
 
-	include: Optional[T3IncludeDirective]
+	include: None | T3IncludeDirective
 	execute: OneOrMany[dict[str, Any]]
 
-
-	def _merge_confs(self, d: dict[str, Any], Klass: Type[AmpelBaseModel]) -> dict[str, Any]:
-
-		conf = {
-			k: getattr(self, k)
-			for k in Klass._annots
-			if hasattr(self, k) and not (k in self._defaults and getattr(self, k) == self._defaults[k])
-		}
-
-		for k in d:
-			if k in Klass._annots:
-				conf[k] = d[k]
-
-		return conf
-
+	def _merge_confs(self, d: dict[str, Any]) -> dict[str, Any]:
+		bmks = T3DocBuilderModel.get_model_keys()
+		return {k: v for k, v in self.dict(exclude_defaults=True).items() if k in bmks} | \
+			{k: v for k, v in d.items() if k in bmks}
 
 
 	# Mandatory override
-	def get_model(self, config: dict[str, Any], logger: AmpelLogger) -> UnitModel:
-
+	def get_model(self, config: dict[str, Any], logger: AmpelLogger) -> UnitModel[str]:
 
 		out: list[dict] = []
 		units = config['unit']
@@ -103,7 +89,7 @@ class TPLCompactT3(T3DocBuilderModel, AbsProcessorTemplate):
 				out.append(
 					{
 						'unit': "T3ReviewUnitExecutor",
-						'config': self._merge_confs(el, T3ReviewUnitExecutor)
+						'config': self._merge_confs(el) | {'supply': el['supply'], 'stage': el['stage']}
 					}
 				)
 				continue
@@ -117,12 +103,10 @@ class TPLCompactT3(T3DocBuilderModel, AbsProcessorTemplate):
 					out.append(
 						{
 							'unit': 'T3PlainUnitExecutor',
-							'config': self._merge_confs(el, T3DocBuilderModel) | {
-								#'target': {'unit': el['unit'], 'config': el['config']}
-								'target': {
-									k: el[k] for k in el
-									if k not in T3DocBuilderModel._annots
-								}
+							'config': self._merge_confs(el) | {
+								# Enable non-standard UnitModel fields (ex: T3SkippableUnitModel.cache)
+								# 'target': {'unit': el['unit'], 'config': el['config']}
+								'target': {k: v for k, v in el.items() if k not in T3DocBuilderModel.get_model_keys()}
 							}
 						}
 					)

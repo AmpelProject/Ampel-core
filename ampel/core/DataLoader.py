@@ -1,14 +1,15 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-core/ampel/core/DataLoader.py
-# License           : BSD-3-Clause
-# Author            : vb <vbrinnel@physik.hu-berlin.de>
-# Date              : 13.01.2018
-# Last Modified Date: 02.12.2021
-# Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
+# File:                Ampel-core/ampel/core/DataLoader.py
+# License:             BSD-3-Clause
+# Author:              valery brinnel <firstname.lastname@gmail.com>
+# Date:                13.01.2018
+# Last Modified Date:  22.04.2022
+# Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from bson.codec_options import CodecOptions
-from typing import Iterable, Union, Dict, Iterator, Optional, Literal
+from typing import Literal
+from collections.abc import Iterable, Iterator
 
 from ampel.types import StockId, ChannelId, StrictIterable, Tag
 from ampel.model.operator.AnyOf import AnyOf
@@ -36,13 +37,13 @@ class DataLoader:
 		self.ctx = ctx
 
 	def load(self,
-		stock_ids: Union[StockId, Iterator[StockId], StrictIterable[StockId]],
+		stock_ids: StockId | Iterator[StockId] | StrictIterable[StockId],
 		directives: Iterable[LoaderDirective],
-		channel: Union[None, ChannelId, AllOf[ChannelId], AnyOf[ChannelId], OneOf[ChannelId]] = None,
-		tag: Optional[Dict[Literal['with', 'without'], Union[Tag, Dict, AllOf[Tag], AnyOf[Tag], OneOf[Tag]]]] = None,
+		channel: None | ChannelId | AllOf[ChannelId] | AnyOf[ChannelId] | OneOf[ChannelId] = None,
+		tag: None | dict[Literal['with', 'without'], Tag | dict | AllOf[Tag] | AnyOf[Tag] | OneOf[Tag]] = None,
 		auto_project: bool = True,
-		codec_options: CodecOptions = CodecOptions(document_class=FrozenValuesDict),
-		logger: Optional[AmpelLogger] = None
+		codec_options: None | CodecOptions = CodecOptions(document_class=FrozenValuesDict),
+		logger: None | AmpelLogger = None
 	) -> Iterable[AmpelBuffer]:
 		"""
 		:param directives: see LoaderDirective docstrings for more information.  Notes:
@@ -66,7 +67,7 @@ class DataLoader:
 
 		# Note: the following operation will consume
 		# stock_ids if it is an Iterator/Cursor
-		register: Dict[StockId, AmpelBuffer] = {
+		register: dict[StockId, AmpelBuffer] = {
 			stock_id: AmpelBuffer(
 				id = stock_id,
 				stock = None if "stock" in col_set else None,
@@ -183,9 +184,9 @@ class DataLoader:
 
 		if logger and logger.verbose:
 			s = f"Unique ids: {len(register)}"
-			for col in (col_set - set(["stock"])):
-				s += f", {col}: "
-				s += str(sum([1 for k in register for el in register[k][col]])) # type: ignore
+			for col_name in (col_set - set(["stock"])):
+				s += f", {col_name}: "
+				s += str(sum([1 for k in register for el in register[k][col_name]])) # type: ignore
 			logger.info(s)
 
 		return register.values()

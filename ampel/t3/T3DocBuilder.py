@@ -1,20 +1,23 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-core/ampel/t3/T3DocBuilder.py
-# License           : BSD-3-Clause
-# Author            : vb <vbrinnel@physik.hu-berlin.de>
-# Date              : 08.12.2021
-# Last Modified Date: 18.12.2021
-# Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
+# File:                Ampel-core/ampel/t3/T3DocBuilder.py
+# License:             BSD-3-Clause
+# Author:              valery brinnel <firstname.lastname@gmail.com>
+# Date:                08.12.2021
+# Last Modified Date:  01.08.2022
+# Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from time import time
 from datetime import datetime
-from typing import Union, Optional, Iterable, Any
+from typing import Any, Union
+from importlib import import_module
+from collections.abc import Iterable
 
 from ampel.types import Traceless, StockId, UBson, ubson
 from ampel.abstract.AbsT3ReviewUnit import AbsT3ReviewUnit
 from ampel.abstract.AbsT3PlainUnit import AbsT3PlainUnit
 from ampel.abstract.AbsT3ControlUnit import AbsT3ControlUnit
+from ampel.abstract.AbsUnitResultAdapter import AbsUnitResultAdapter
 from ampel.model.t3.T3DocBuilderModel import T3DocBuilderModel
 from ampel.log.AmpelLogger import AmpelLogger
 from ampel.core.ContextUnit import ContextUnit
@@ -34,7 +37,7 @@ from ampel.util.hash import build_unsafe_dict_id
 AbsT3s = Union[AbsT3ControlUnit, AbsT3ReviewUnit, AbsT3PlainUnit]
 
 
-class T3DocBuilder(T3DocBuilderModel, ContextUnit):
+class T3DocBuilder(ContextUnit, T3DocBuilderModel):
 	"""
 	Provides methods for handling UnitResult and generating a T3Document out of it
 	"""
@@ -44,11 +47,13 @@ class T3DocBuilder(T3DocBuilderModel, ContextUnit):
 
 
 	def __init__(self, **kwargs) -> None:
+
 		super().__init__(**kwargs)
+		self.adapters: dict[str, AbsUnitResultAdapter] = {}
 		self.stock_updr = MongoStockUpdater(
 			ampel_db = self.context.db,
 			tier = 3,
-			run_id = self.event_hdlr.run_id,
+			run_id = self.event_hdlr.get_run_id(),
 			process_name = self.event_hdlr.process_name,
 			logger = self.logger,
 			raise_exc = self.event_hdlr.raise_exc,
@@ -60,11 +65,11 @@ class T3DocBuilder(T3DocBuilderModel, ContextUnit):
 
 	def handle_t3_result(self,
 		t3_unit: AbsT3s,
-		res: Union[UBson, UnitResult],
+		res: UBson | UnitResult,
 		t3s: T3Store,
-		stocks: Optional[list[StockId]],
+		stocks: None | list[StockId],
 		ts: float
-	) -> Optional[T3Document]:
+	) -> None | T3Document:
 
 		# Let's consider logs as a result product
 		if (buf_hdlr := getattr(t3_unit, '_buf_hdlr')) and buf_hdlr.buffer:
@@ -88,13 +93,13 @@ class T3DocBuilder(T3DocBuilderModel, ContextUnit):
 
 	def craft_t3_doc(self,
 		t3_unit: AbsT3s,
-		res: Union[None, UBson, UnitResult],
+		res: None | UBson | UnitResult,
 		t3s: T3Store,
 		ts: float,
-		stocks: Optional[list[StockId]] = None
+		stocks: None | list[StockId] = None
 	) -> T3Document:
 
-		t3d: T3Document = {'process': self.event_hdlr.process_name}
+		t3d: T3Document = {'process': self.event_hdlr.process_name} # type: ignore[typeddict-item]
 		actact = MetaActionCode(0)
 		now = datetime.now()
 
@@ -104,8 +109,12 @@ class T3DocBuilder(T3DocBuilderModel, ContextUnit):
 		t3d['unit'] = t3_unit.__class__.__name__
 		t3d['code'] = actact
 
-		conf = dictify(t3_unit._trace_content)
-		meta: MetaRecord = {'ts': int(now.timestamp()), 'duration': time() - ts}
+		conf = t3_unit._get_trace_content()
+		meta: MetaRecord = {
+			'run': self.event_hdlr.get_run_id(),
+			'ts': int(now.timestamp()),
+			'duration': time() - ts
+		}
 
 		confid = build_unsafe_dict_id(conf)
 		self.context.db.add_conf_id(confid, conf)
@@ -149,6 +158,15 @@ class T3DocBuilder(T3DocBuilderModel, ContextUnit):
 				t3d['tag'] = self.tag
 
 			if res.body:
+
+				if res.adapter:
+					if res.adapter not in self.adapters:
+						self.adapters[res.adapter] = getattr(
+							import_module(f"ampel.core.adapter.{res.adapter}"),
+							res.adapter
+						)(context = self.context)
+					res = self.adapters[res.adapter].handle(res)
+
 				t3d['body'] = res.body
 				actact |= MetaActionCode.ADD_BODY
 
@@ -187,7 +205,7 @@ class T3DocBuilder(T3DocBuilderModel, ContextUnit):
 		return t3d
 
 
-	def flush(self, arg: Union[AbsT3s, Iterable[AbsT3s]], extra: Optional[dict[str, Any]] = None) -> None:
+	def flush(self, arg: AbsT3s | Iterable[AbsT3s], extra: None | dict[str, Any] = None) -> None:
 
 		for t3_unit in [arg] if isinstance(arg, (AbsT3ControlUnit, AbsT3ReviewUnit, AbsT3PlainUnit)) else arg:
 

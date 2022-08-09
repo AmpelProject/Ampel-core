@@ -1,14 +1,14 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-core/ampel/t3/stage/T3ProjectingStager.py
-# License           : BSD-3-Clause
-# Author            : vb <vbrinnel@physik.hu-berlin.de>
-# Date              : 06.01.2020
-# Last Modified Date: 10.12.2021
-# Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
+# File:                Ampel-core/ampel/t3/stage/T3ProjectingStager.py
+# License:             BSD-3-Clause
+# Author:              valery brinnel <firstname.lastname@gmail.com>
+# Date:                06.01.2020
+# Last Modified Date:  10.12.2021
+# Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from time import time
-from typing import Optional, Sequence, List, Generator, Union, Dict, Type, Iterable
+from collections.abc import Generator, Iterable, Sequence
 from itertools import islice
 from multiprocessing import JoinableQueue
 from multiprocessing.pool import ThreadPool
@@ -33,11 +33,11 @@ class RunBlock:
 	"""
 	Used internally by T3UnitRunner
 	"""
-	filter: Optional[AbsT3Filter]
-	projector: Optional[AbsT3Projector]
-	units: List[AbsT3ReviewUnit]
-	stock_ids: Optional[List[StockId]]
-	qdict: Dict[Type, List[JoinableQueue]]
+	filter: None | AbsT3Filter
+	projector: None | AbsT3Projector
+	units: list[AbsT3ReviewUnit]
+	stock_ids: None | list[StockId]
+	qdict: dict[type, list[JoinableQueue]]
 
 	def __init__(self):
 		self.filter = None
@@ -61,7 +61,7 @@ class T3ProjectingStager(T3ThreadedStager):
 	def __init__(self, **kwargs) -> None:
 
 		super().__init__(**kwargs)
-		self.run_blocks: List[RunBlock] = []
+		self.run_blocks: list[RunBlock] = []
 		debug = self.logger.verbose > 1
 
 		if debug:
@@ -108,7 +108,7 @@ class T3ProjectingStager(T3ThreadedStager):
 	def stage(self,
 		gen: Generator[AmpelBuffer, None, None],
 		t3s: T3Store
-	) -> Optional[Generator[T3Document, None, None]]:
+	) -> None | Generator[T3Document, None, None]:
 
 		if len(self.run_blocks) == 1:
 			if len(self.run_blocks[0].units) == 1:
@@ -258,10 +258,10 @@ class T3ProjectingStager(T3ThreadedStager):
 
 	def craft_t3_doc(self,
 		t3_unit: AbsT3s,
-		res: Union[None, UBson, UnitResult],
+		res: None | UBson | UnitResult,
 		t3s: T3Store,
 		ts: float,
-		stocks: Optional[List[StockId]] = None
+		stocks: None | list[StockId] = None
 	) -> T3Document:
 
 		t3_doc = super().craft_t3_doc(t3_unit, res, t3s, ts, stocks)

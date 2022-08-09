@@ -1,22 +1,23 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-core/ampel/model/db/ShortIndexModel.py
-# License           : BSD-3-Clause
-# Author            : vb <vbrinnel@physik.hu-berlin.de>
-# Date              : 16.04.2020
-# Last Modified Date: 16.04.2020
-# Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
+# File:                Ampel-core/ampel/model/db/ShortIndexModel.py
+# License:             BSD-3-Clause
+# Author:              valery brinnel <firstname.lastname@gmail.com>
+# Date:                16.04.2020
+# Last Modified Date:  16.04.2020
+# Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from typing import Optional, Dict, Any
-from ampel.model.StrictModel import StrictModel
+from typing import Any
+from ampel.base.AmpelBaseModel import AmpelBaseModel
 from ampel.mongo.model.FieldModel import FieldModel
 
-class ShortIndexModel(StrictModel):
+
+class ShortIndexModel(AmpelBaseModel):
 
 	field: str
-	args: Optional[Dict]
+	args: None | dict = None
 
-	def dict(self, **kwargs) -> Dict[str, Any]:
+	def dict(self, **kwargs) -> dict[str, Any]:
 		if self.args:
 			return {
 				"index": [(self.field, 1)],

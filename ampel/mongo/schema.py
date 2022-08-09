@@ -1,13 +1,13 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-core/ampel/mongo/schema.py
-# License           : BSD-3-Clause
-# Author            : vb <vbrinnel@physik.hu-berlin.de>
-# Date              : 11.03.2018
-# Last Modified Date: 26.03.2021
-# Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
+# File:                Ampel-core/ampel/mongo/schema.py
+# License:             BSD-3-Clause
+# Author:              valery brinnel <firstname.lastname@gmail.com>
+# Date:                11.03.2018
+# Last Modified Date:  26.03.2021
+# Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from typing import Union, Tuple, Dict, List, Type
+from typing import Type
 from ampel.util.collections import check_seq_inner_type
 from ampel.model.operator.AnyOf import AnyOf
 from ampel.model.operator.AllOf import AllOf
@@ -58,8 +58,8 @@ Schema syntax example:
 
 def apply_schema(
 	query: dict, field_name: str,
-	arg: Union[int, str, dict, AllOf, AnyOf, OneOf]
-) -> Dict:
+	arg: int | str | dict | AllOf | AnyOf | OneOf
+) -> dict:
 	"""
 	Warning: The method changes keys and values in the input dict parameter "query"
 
@@ -112,8 +112,8 @@ def apply_schema(
 		# Case 2: nesting below any_of
 		else:
 
-			QueryValue = Union[int, str, Dict[str, List[Union[int, str]]]]
-			QueryList = List[Dict[str, QueryValue]]
+			QueryValue = int | str | dict[str, list[int | str]]
+			QueryList = list[dict[str, QueryValue]]
 			or_list: QueryList = []
 			optimize_potentially: QueryList = []
 
@@ -200,8 +200,8 @@ def apply_schema(
 
 def apply_excl_schema(
 	query: dict, field_name: str,
-	arg: Union[int, str, dict, AllOf, AnyOf, OneOf]
-) -> Dict:
+	arg: int | str | dict | AllOf | AnyOf | OneOf
+) -> dict:
 	"""
 	Warning: The method changes keys and values in the input dict parameter "query"
 	Parameters: see docstring of apply_schema
@@ -258,8 +258,8 @@ def apply_excl_schema(
 
 		else:
 
-			QueryValue = Union[int, str, Dict[str, Union[int, str]]]
-			QueryList = List[Dict[str, QueryValue]]
+			QueryValue = int | str | dict[str, int | str]
+			QueryList = list[dict[str, QueryValue]]
 			and_list: QueryList = []
 			optimize_potentially: QueryList = []
 
@@ -337,7 +337,7 @@ def apply_excl_schema(
 	return query
 
 
-def _check_all_of(el, in_type: Tuple[Type, ...]) -> None:
+def _check_all_of(el, in_type: tuple[type, ...]) -> None:
 	""" :raises: ValueError """
 
 	if 'all_of' not in el:

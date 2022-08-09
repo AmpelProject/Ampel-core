@@ -1,13 +1,13 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-core/ampel/abstract/AbsT3Loader.py
-# License           : BSD-3-Clause
-# Author            : vb <vbrinnel@physik.hu-berlin.de>
-# Date              : 26.12.2019
-# Last Modified Date: 13.12.2021
-# Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
+# File:                Ampel-core/ampel/abstract/AbsT3Loader.py
+# License:             BSD-3-Clause
+# Author:              valery brinnel <firstname.lastname@gmail.com>
+# Date:                26.12.2019
+# Last Modified Date:  13.12.2021
+# Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from typing import Union, Iterable, Sequence, Optional, Dict, List, Iterator
+from collections.abc import Iterator, Iterable, Sequence
 from ampel.types import Traceless, StockId, ChannelId, StrictIterable
 from ampel.base.decorator import abstractmethod
 from ampel.base.AmpelABC import AmpelABC
@@ -35,21 +35,14 @@ class AbsT3Loader(AmpelABC, ContextUnit, abstract=True):
 	directives: Sequence[LoaderDirective]
 
 	#: Channels to load documents for
-	channel: Optional[
-		Union[
-			ChannelId,
-			AnyOf[ChannelId],
-			AllOf[ChannelId],
-			OneOf[ChannelId]
-		]
-	]
+	channel: None | ChannelId | AnyOf[ChannelId] | AllOf[ChannelId] | OneOf[ChannelId]
 
 
 	def __init__(self, **kwargs) -> None:
 
 		# Note: 'directives' in kwargs can contain strings which will be
 		# resolved by retrieving the associated alias from the ampel config
-		directives: List[Dict] = []
+		directives: list[dict] = []
 
 		# Resolve directive aliases
 		for el in kwargs.get('directives', []):
@@ -72,7 +65,7 @@ class AbsT3Loader(AmpelABC, ContextUnit, abstract=True):
 
 	@abstractmethod
 	def load(self,
-		stock_ids: Union[StockId, Iterator[StockId], StrictIterable[StockId]]
+		stock_ids: StockId | Iterator[StockId] | StrictIterable[StockId]
 	) -> Iterable[AmpelBuffer]:
 		""" Load documents (collection Ampel_data) for the selected stocks """
 		...

@@ -1,13 +1,13 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-core/ampel/t3/stage/T3SimpleStager.py
-# License           : BSD-3-Clause
-# Author            : vb <vbrinnel@physik.hu-berlin.de>
-# Date              : 18.04.2021
-# Last Modified Date: 17.12.2021
-# Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
+# File:                Ampel-core/ampel/t3/stage/T3SimpleStager.py
+# License:             BSD-3-Clause
+# Author:              valery brinnel <firstname.lastname@gmail.com>
+# Date:                18.04.2021
+# Last Modified Date:  17.12.2021
+# Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from typing import Optional, List, Generator
+from collections.abc import Generator
 
 from ampel.types import OneOrMany, Annotated
 from ampel.view.T3Store import T3Store
@@ -31,7 +31,7 @@ class T3SimpleStager(T3ThreadedStager):
 	def __init__(self, **kwargs) -> None:
 
 		super().__init__(**kwargs)
-		self.units: List[AbsT3ReviewUnit] = []
+		self.units: list[AbsT3ReviewUnit] = []
 
 		if self.logger.verbose > 1:
 			self.logger.debug("Setting up T3SimpleStager")
@@ -43,7 +43,7 @@ class T3SimpleStager(T3ThreadedStager):
 	def stage(self,
 		gen: Generator[AmpelBuffer, None, None],
 		t3s: T3Store
-	) -> Optional[Generator[T3Document, None, None]]:
+	) -> None | Generator[T3Document, None, None]:
 
 		if len(self.units) == 1:
 			return self.proceed(

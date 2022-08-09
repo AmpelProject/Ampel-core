@@ -1,14 +1,14 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-core/ampel/ingest/StockCompiler.py
-# License           : BSD-3-Clause
-# Author            : vb <vbrinnel@physik.hu-berlin.de>
-# Date              : 05.05.2021
-# Last Modified Date: 21.11.2021
-# Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
+# File:                Ampel-core/ampel/ingest/StockCompiler.py
+# License:             BSD-3-Clause
+# Author:              valery brinnel <firstname.lastname@gmail.com>
+# Date:                05.05.2021
+# Last Modified Date:  21.11.2021
+# Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from ujson import encode
-from typing import Optional, Dict, List, Union, Any
+from typing import Any
 from ampel.types import ChannelId, Tag, StockId
 from ampel.content.StockDocument import StockDocument
 from ampel.content.JournalRecord import JournalRecord
@@ -25,12 +25,12 @@ class StockCompiler(AbsCompiler):
 	support generic typed dict (#3863) and higher kind typevars (#548)
 	"""
 
-	id_mapper: Optional[str]
+	id_mapper: None | str
 
 
 	def __init__(self, **kwargs) -> None:
 		super().__init__(**kwargs)
-		self.register: Dict[StockId, Dict[str, Any]] = {}
+		self.register: dict[StockId, dict[str, Any]] = {}
 		self._id_mapper = AuxUnitRegister.get_aux_class(
 			self.id_mapper, sub_type=AbsIdMapper
 		) if self.id_mapper else None
@@ -40,8 +40,8 @@ class StockCompiler(AbsCompiler):
 	def add(self, # type: ignore[override]
 		stock: StockId,
 		channel: ChannelId,
-		journal: Optional[JournalRecord] = None,
-		tag: Optional[Union[Tag, List[Tag]]] = None
+		journal: None | JournalRecord = None,
+		tag: None | Tag | list[Tag] = None
 	) -> None:
 
 		if stock in self.register:
@@ -76,7 +76,7 @@ class StockCompiler(AbsCompiler):
 	# Override
 	def commit(self,
 		ingester: AbsDocIngester[StockDocument],
-		now: Union[int, float],
+		now: int | float,
 		**kwargs
 	) -> None:
 		"""

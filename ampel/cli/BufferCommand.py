@@ -1,15 +1,16 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-core/ampel/cli/BufferCommand.py
-# License           : BSD-3-Clause
-# Author            : vb <vbrinnel@physik.hu-berlin.de>
-# Date              : 25.03.2021
-# Last Modified Date: 17.07.2021
-# Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
+# File:                Ampel-core/ampel/cli/BufferCommand.py
+# License:             BSD-3-Clause
+# Author:              valery brinnel <firstname.lastname@gmail.com>
+# Date:                25.03.2021
+# Last Modified Date:  12.07.2022
+# Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 import sys
 from argparse import ArgumentParser
-from typing import Sequence, Dict, Any, Optional, Union
+from typing import Any
+from collections.abc import Sequence
 from ampel.log.LogFlag import LogFlag
 from ampel.core.AmpelContext import AmpelContext
 from ampel.cli.utils import maybe_load_idmapper
@@ -41,7 +42,7 @@ class BufferCommand(AbsStockCommand, AbsLoadCommand):
 		self.parsers = {}
 
 	# Mandatory implementation
-	def get_parser(self, sub_op: Optional[str] = None) -> Union[ArgumentParser, AmpelArgumentParser]:
+	def get_parser(self, sub_op: None | str = None) -> ArgumentParser | AmpelArgumentParser:
 
 		if sub_op in self.parsers:
 			return self.parsers[sub_op]
@@ -58,7 +59,7 @@ class BufferCommand(AbsStockCommand, AbsLoadCommand):
 		builder.add_parsers(sub_ops, hlp)
 
 		# Required args
-		builder.add_arg("required", "config", type=str)
+		builder.add_arg("optional", "config", type=str)
 		builder.add_arg("save.required", "out", default=True)
 
 		# Optional args
@@ -88,7 +89,7 @@ class BufferCommand(AbsStockCommand, AbsLoadCommand):
 
 
 	# Mandatory implementation
-	def run(self, args: Dict[str, Any], unknown_args: Sequence[str], sub_op: Optional[str] = None) -> None:
+	def run(self, args: dict[str, Any], unknown_args: Sequence[str], sub_op: None | str = None) -> None:
 
 		ctx: AmpelContext = self.get_context(args, unknown_args)
 		maybe_load_idmapper(args)

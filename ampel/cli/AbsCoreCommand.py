@@ -1,25 +1,27 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-core/ampel/cli/AbsCoreCommand.py
-# License           : BSD-3-Clause
-# Author            : vb <vbrinnel@physik.hu-berlin.de>
-# Date              : 18.03.2021
-# Last Modified Date: 11.11.2021
-# Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
+# File:                Ampel-core/ampel/cli/AbsCoreCommand.py
+# License:             BSD-3-Clause
+# Author:              valery brinnel <firstname.lastname@gmail.com>
+# Date:                18.03.2021
+# Last Modified Date:  12.07.2022
+# Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-import os
-import re
-from typing import Sequence, Dict, Any, Optional, TypeVar, Type, Iterator, Tuple
-from ampel.abstract.AbsSecretProvider import AbsSecretProvider
+import re, os
+from appdirs import user_data_dir # type: ignore[import]
+from typing import Any, TypeVar
+from collections.abc import Sequence, Iterator
 from ampel.core.AmpelDB import AmpelDB
 from ampel.config.AmpelConfig import AmpelConfig
 from ampel.secret.AmpelVault import AmpelVault
 from ampel.abstract.AbsCLIOperation import AbsCLIOperation
+from ampel.abstract.AbsSecretProvider import AbsSecretProvider
 from ampel.core.AmpelContext import AmpelContext
 from ampel.core.UnitLoader import UnitLoader
 from ampel.log.AmpelLogger import AmpelLogger
 from ampel.util.mappings import set_by_path
 from ampel.util.freeze import recursive_freeze
+from ampel.util.pretty import out_stack
 
 custom_conf_patter = re.compile(r"^--[\w-]*(?:\.[\w-]+)*.*$")
 
@@ -27,15 +29,27 @@ T = TypeVar("T", bound = AmpelContext)
 
 class AbsCoreCommand(AbsCLIOperation, abstract=True):
 
+
 	def load_config(self,
-		config_path: str,
+		config_path: None | str,
 		unknown_args: Sequence[str],
-		logger: Optional[AmpelLogger] = None,
+		logger: None | AmpelLogger = None,
 		freeze: bool = True,
-		env_var_prefix: Optional[str] = "AMPEL_CONFIG_",
+		env_var_prefix: None | str = "AMPEL_CONFIG_",
 	) -> AmpelConfig:
 
-		ampel_conf = AmpelConfig.load(config_path, freeze=False)
+		if not config_path:
+			env = os.environ.get('CONDA_DEFAULT_ENV')
+			std_conf = os.path.join(
+				user_data_dir("ampel"), "conf", *(env, "conf.yml") if env else "conf.yml"
+			)
+			if os.path.exists(std_conf):
+				ampel_conf = AmpelConfig.load(std_conf, freeze=False)
+			else:
+				with out_stack():
+					raise ValueError("No default ampel config found -> argument -config required\n")
+		else:
+			ampel_conf = AmpelConfig.load(config_path, freeze=False)
 
 		if logger is None:
 			logger = AmpelLogger.get_logger()
@@ -62,7 +76,7 @@ class AbsCoreCommand(AbsCLIOperation, abstract=True):
 		return ampel_conf
 
 
-	def get_custom_args(self, customizations: Sequence[str]) -> Iterator[Tuple[str, Any]]:
+	def get_custom_args(self, customizations: Sequence[str]) -> Iterator[tuple[str, Any]]:
 
 		it = iter(customizations)
 		for el in it:
@@ -80,7 +94,7 @@ class AbsCoreCommand(AbsCLIOperation, abstract=True):
 				yield k, v
 
 
-	def get_vault(self, args: Dict[str, Any]) -> Optional[AmpelVault]:
+	def get_vault(self, args: dict[str, Any]) -> None | AmpelVault:
 		vault = None
 		if args.get('secrets'):
 			from ampel.secret.DictSecretProvider import DictSecretProvider
@@ -95,7 +109,7 @@ class AbsCoreCommand(AbsCLIOperation, abstract=True):
 
 	def get_db(self,
 		config: AmpelConfig,
-		vault: Optional[AmpelVault] = None,
+		vault: None | AmpelVault = None,
 		require_existing_db: bool = True,
 		one_db: bool = False
 	) -> AmpelDB:
@@ -115,11 +129,11 @@ class AbsCoreCommand(AbsCLIOperation, abstract=True):
 
 
 	def get_context(self,
-		args: Dict[str, Any],
+		args: dict[str, Any],
 		unknown_args: Sequence[str],
-		logger: Optional[AmpelLogger] = None,
+		logger: None | AmpelLogger = None,
 		freeze_config: bool = True,
-		ContextClass: Type[T] = AmpelContext, # type: ignore[assignment]
+		ContextClass: type[T] = AmpelContext, # type: ignore[assignment]
 		require_existing_db: bool = True,
 		one_db: bool = False,
 		**kwargs
@@ -142,7 +156,7 @@ class AbsCoreCommand(AbsCLIOperation, abstract=True):
 		)
 
 
-	def convert_logical_args(self, name: str, args: Dict[str, Any]) -> None:
+	def convert_logical_args(self, name: str, args: dict[str, Any]) -> None:
 
 		for k in (f"with_{name}", f"with_{name}s_and", f"with_{name}s_or"):
 			if args.get(k):

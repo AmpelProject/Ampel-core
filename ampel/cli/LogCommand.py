@@ -1,14 +1,15 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-core/ampel/cli/LogCommand.py
-# License           : BSD-3-Clause
-# Author            : vb <vbrinnel@physik.hu-berlin.de>
-# Date              : 15.03.2021
-# Last Modified Date: 23.03.2021
-# Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
+# File:                Ampel-core/ampel/cli/LogCommand.py
+# License:             BSD-3-Clause
+# Author:              valery brinnel <firstname.lastname@gmail.com>
+# Date:                15.03.2021
+# Last Modified Date:  12.07.2022
+# Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from argparse import ArgumentParser
-from typing import Sequence, Dict, Any, Optional, Union
+from typing import Any
+from collections.abc import Sequence
 from ampel.abstract.AbsIdMapper import AbsIdMapper
 from ampel.base.AuxUnitRegister import AuxUnitRegister
 from ampel.core.AmpelContext import AmpelContext
@@ -60,7 +61,7 @@ class LogCommand(AbsCoreCommand):
 		self.parsers = {}
 
 	# Mandatory implementation
-	def get_parser(self, sub_op: Optional[str] = None) -> Union[ArgumentParser, AmpelArgumentParser]:
+	def get_parser(self, sub_op: None | str = None) -> ArgumentParser | AmpelArgumentParser:
 
 		if sub_op in self.parsers:
 			return self.parsers[sub_op]
@@ -79,7 +80,7 @@ class LogCommand(AbsCoreCommand):
 		builder.notation_add_example_references()
 
 		# Required
-		builder.add_arg('required', 'config', type=str)
+		builder.add_arg('optional', 'config', type=str)
 		builder.add_arg('save.required', 'out', type=str)
 
 		# Optional
@@ -152,10 +153,10 @@ class LogCommand(AbsCoreCommand):
 
 
 	# Mandatory implementation
-	def run(self, args: Dict[str, Any], unknown_args: Sequence[str], sub_op: Optional[str] = None) -> None:
+	def run(self, args: dict[str, Any], unknown_args: Sequence[str], sub_op: None | str = None) -> None:
 
 		ctx: AmpelContext = self.get_context(args, unknown_args)
-		self.flag_strings: Dict = {}
+		self.flag_strings: dict = {}
 
 		if (args['custom_key'] and not args['custom_value']) or (args['custom_value'] and not args['custom_key']):
 			raise ValueError('Both parameter "--custom-key" and "--custom-value" must be used when either one is requested')
@@ -169,9 +170,7 @@ class LogCommand(AbsCoreCommand):
 			)()
 
 		matcher = LogsMatcher.new(**args)
-		loader = LogsLoader(
-			**{**args, 'datetime_ouput': 'date' if args['date_format'] else 'string'}
-		)
+		loader = LogsLoader(**(args | {'datetime_ouput': 'date' if args['date_format'] else 'string'})) # type: ignore[arg-type]
 
 		if args['no_resolve_stock']:
 			args['id_mapper'] = None

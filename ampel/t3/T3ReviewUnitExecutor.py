@@ -1,13 +1,14 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-core/ampel/t3/T3ReviewUnitExecutor.py
-# License           : BSD-3-Clause
-# Author            : vb <vbrinnel@physik.hu-berlin.de>
-# Date              : 12.12.2021
-# Last Modified Date: 14.12.2021
-# Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
+# File:                Ampel-core/ampel/t3/T3ReviewUnitExecutor.py
+# License:             BSD-3-Clause
+# Author:              valery brinnel <firstname.lastname@gmail.com>
+# Date:                12.12.2021
+# Last Modified Date:  14.12.2021
+# Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from typing import Optional, Generator, Annotated
+from typing import Annotated
+from collections.abc import Generator
 from ampel.types import Traceless, ChannelId
 from ampel.view.T3Store import T3Store
 from ampel.abstract.AbsT3ControlUnit import AbsT3ControlUnit
@@ -25,7 +26,7 @@ class T3ReviewUnitExecutor(AbsT3ControlUnit, T3DocBuilder):
 	logger: Traceless[AmpelLogger]
 
 	# Require single channel for now (super classes allow multi-channel)
-	channel: Optional[ChannelId] = None
+	channel: None | ChannelId = None
 
 	#: Unit must be a subclass of AbsT3Supplier
 	supply: Annotated[UnitModel, AbsT3Supplier]
@@ -34,7 +35,7 @@ class T3ReviewUnitExecutor(AbsT3ControlUnit, T3DocBuilder):
 	stage: Annotated[UnitModel, AbsT3Stager]
 
 
-	def process(self, t3s: T3Store) -> Optional[Generator[T3Document, None, None]]:
+	def process(self, t3s: T3Store) -> None | Generator[T3Document, None, None]:
 
 		try:
 
@@ -55,7 +56,7 @@ class T3ReviewUnitExecutor(AbsT3ControlUnit, T3DocBuilder):
 			if "T3DocBuilder" in self.context.config._config['unit'][self.stage.unit]['base']:
 				kwargs = {
 					k: getattr(self, k)
-					for k in T3DocBuilderModel._annots
+					for k in T3DocBuilderModel.get_model_keys()
 					if hasattr(self, k) and not (k in self._defaults and getattr(self, k) == self._defaults[k])
 				}
 			else:
@@ -75,6 +76,7 @@ class T3ReviewUnitExecutor(AbsT3ControlUnit, T3DocBuilder):
 				**kwargs
 			)
 
+			self.logger.info("Running stager", extra={'unit': self.stage.unit})
 			return stager.stage(supplier.supply(t3s), t3s)
 
 		except Exception as e:

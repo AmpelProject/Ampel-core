@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 16.06.2018
-# Last Modified Date: 11.11.2021
+# Last Modified Date: 28.12.2021
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from functools import cached_property
@@ -15,13 +15,14 @@ from pymongo import MongoClient, ReadPreference
 from pymongo.database import Database
 from pymongo.collection import Collection
 from pymongo.errors import ConfigurationError, DuplicateKeyError, OperationFailure, CollectionInvalid
-from typing import Sequence, Dict, List, Any, Union, Optional, Set
+from typing import Any
+from collections.abc import Sequence
 
 from ampel.types import ChannelId
 from ampel.mongo.utils import get_ids
 from ampel.log.AmpelLogger import AmpelLogger
 from ampel.config.AmpelConfig import AmpelConfig
-from ampel.base.AmpelBaseModel import AmpelBaseModel
+from ampel.base.AmpelUnit import AmpelUnit
 from ampel.secret.AmpelVault import AmpelVault
 from ampel.mongo.view.AbsMongoView import AbsMongoView
 from ampel.mongo.view.MongoOneView import MongoOneView
@@ -36,17 +37,17 @@ from ampel.mongo.model.MongoClientRoleModel import MongoClientRoleModel
 
 intcol = {'t0': 0, 't1': 1, 't2': 2, 't3': 3, 'stock': 4}
 
-class AmpelDB(AmpelBaseModel):
+class AmpelDB(AmpelUnit):
 	"""
 	Ampel stores information in a dedicated DB.
 	This class allows to create or retrieve the underlying database collections.
 	"""
 
 	prefix: str = 'Ampel'
-	databases: List[AmpelDBModel]
+	databases: Sequence[AmpelDBModel]
 	mongo_uri: str
 	mongo_options: MongoClientOptionsModel = MongoClientOptionsModel()
-	vault: Optional[AmpelVault]
+	vault: None | AmpelVault
 	require_exists: bool = False
 	one_db: bool = False
 	#: Route reads to secondaries of a replica set. This can increase
@@ -57,7 +58,7 @@ class AmpelDB(AmpelBaseModel):
 	@classmethod
 	def new(cls,
 		config: AmpelConfig,
-		vault: Optional[AmpelVault] = None,
+		vault: None | AmpelVault = None,
 		require_exists: bool = False,
 		one_db: bool = False
 	) -> 'AmpelDB':
@@ -78,14 +79,14 @@ class AmpelDB(AmpelBaseModel):
 
 		super().__init__(**kwargs) # type: ignore[call-arg]
 
-		self.col_config: Dict[str, AmpelColModel] = {
+		self.col_config: dict[str, AmpelColModel] = {
 			col.name: col
 			for db_config in self.databases
 			for col in db_config.collections
 		}
 
-		self.mongo_collections: Dict[str, Collection] = {}
-		self.mongo_clients: Dict[str, MongoClient] = {} # map role with client
+		self.mongo_collections: dict[str, dict[str, Collection]] = {}
+		self.mongo_clients: dict[str, MongoClient] = {} # map role with client
 
 		if self.require_exists and not self._get_pymongo_db("data", role="w").list_collection_names():
 			raise ValueError(f"Database(s) with prefix {self.prefix} do not exist")
@@ -100,11 +101,11 @@ class AmpelDB(AmpelBaseModel):
 		return self.get_collection('confid')
 
 	@cached_property
-	def trace_ids(self) -> Set[int]:
+	def trace_ids(self) -> set[int]:
 		return get_ids(self.col_trace_ids)
 	
 	@cached_property
-	def conf_ids(self) -> Set[int]:
+	def conf_ids(self) -> set[int]:
 		return get_ids(self.col_conf_ids)
 
 
@@ -125,13 +126,13 @@ class AmpelDB(AmpelBaseModel):
 			role = MongoClientRoleModel(r='logger', w='logger')
 		)
 
-		self.databases.append(db_config)
+		self.databases = list(self.databases) + [db_config]
 
 		for col in db_config.collections:
 			self.col_config[col.name] = col
 
 
-	def get_collection(self, col_name: Union[int, str], mode: str = 'w') -> Collection:
+	def get_collection(self, col_name: int | str, mode: str = 'w') -> Collection:
 		"""
 		:param mode: required permission level, either 'r' for read-only or 'rw' for read-write
 		If a collection does not exist, it will be created and the proper mongoDB indexes will be set.
@@ -218,7 +219,7 @@ class AmpelDB(AmpelBaseModel):
 		col_config: AmpelColModel,
 		db_name: str,
 		role: str,
-		logger: Optional['AmpelLogger'] = None
+		logger: 'None | AmpelLogger' = None
 	) -> Collection:
 		"""
 		:param resource_name: name of the AmpelConfig resource (resource.mongo) to be fed to MongoClient()
@@ -292,7 +293,7 @@ class AmpelDB(AmpelBaseModel):
 
 	def _create_index(self,
 		col: Collection,
-		index_data: Union[IndexModel, ShortIndexModel],
+		index_data: IndexModel | ShortIndexModel,
 		logger: 'AmpelLogger'
 	) -> None:
 
@@ -309,7 +310,7 @@ class AmpelDB(AmpelBaseModel):
 
 	def create_one_view(self,
 		channel: ChannelId,
-		logger: Optional['AmpelLogger'] = None,
+		logger: 'None | AmpelLogger' = None,
 		force: bool = False
 	) -> None:
 		self.create_view(
@@ -320,7 +321,7 @@ class AmpelDB(AmpelBaseModel):
 
 	def create_or_view(self,
 		channels: Sequence[ChannelId],
-		logger: Optional['AmpelLogger'] = None,
+		logger: 'None | AmpelLogger' = None,
 		force: bool = False
 	) -> None:
 
@@ -336,7 +337,7 @@ class AmpelDB(AmpelBaseModel):
 
 	def create_and_view(self,
 		channels: Sequence[ChannelId],
-		logger: Optional['AmpelLogger'] = None,
+		logger: 'None | AmpelLogger' = None,
 		force: bool = False
 	) -> None:
 
@@ -353,7 +354,7 @@ class AmpelDB(AmpelBaseModel):
 	def create_view(self,
 		view: AbsMongoView,
 		col_prefix: str,
-		logger: Optional['AmpelLogger'] = None,
+		logger: 'None | AmpelLogger' = None,
 		force: bool = False
 	) -> None:
 
@@ -380,23 +381,23 @@ class AmpelDB(AmpelBaseModel):
 			db.create_collection(f'{col_prefix}_{el}', viewOn=el, pipeline=agg)
 
 
-	def delete_one_view(self, channel: ChannelId, logger: Optional['AmpelLogger'] = None) -> None:
+	def delete_one_view(self, channel: ChannelId, logger: 'None | AmpelLogger' = None) -> None:
 		self.delete_view(str(channel), logger)
 
 
-	def delete_or_view(self, channels: Sequence[ChannelId], logger: Optional['AmpelLogger'] = None) -> None:
+	def delete_or_view(self, channels: Sequence[ChannelId], logger: 'None | AmpelLogger' = None) -> None:
 		if not isinstance(channels, collections.abc.Sequence) or len(channels) == 1:
 			raise ValueError("Incorrect argument")
 		self.delete_view("_OR_".join(map(str, channels)), logger)
 
 
-	def delete_and_view(self, channels: Sequence[ChannelId], logger: Optional['AmpelLogger'] = None) -> None:
+	def delete_and_view(self, channels: Sequence[ChannelId], logger: 'None | AmpelLogger' = None) -> None:
 		if not isinstance(channels, collections.abc.Sequence) or len(channels) == 1:
 			raise ValueError("Incorrect argument")
 		self.delete_view("_AND_".join(map(str, channels)), logger)
 
 
-	def delete_view(self, view_prefix: str, logger: Optional['AmpelLogger'] = None) -> Collection:
+	def delete_view(self, view_prefix: str, logger: 'None | AmpelLogger' = None) -> None:
 
 		db = self._get_pymongo_db("data", role="w")
 		for el in ("stock", "t0", "t1", "t2", "t3"):
@@ -421,7 +422,7 @@ class AmpelDB(AmpelBaseModel):
 				pass
 
 
-	def add_trace_id(self, trace_id: int, arg: Dict[str, Any]) -> None:
+	def add_trace_id(self, trace_id: int, arg: dict[str, Any]) -> None:
 
 		# Save trace id to external collection
 		if trace_id not in self.trace_ids:
@@ -435,7 +436,7 @@ class AmpelDB(AmpelBaseModel):
 		self.trace_ids.add(trace_id)
 
 
-	def add_conf_id(self, conf_id: int, arg: Dict[str, Any]) -> None:
+	def add_conf_id(self, conf_id: int, arg: dict[str, Any]) -> None:
 
 		# Save conf id to external collection
 		if conf_id not in self.conf_ids:
@@ -449,7 +450,7 @@ class AmpelDB(AmpelBaseModel):
 		self.conf_ids.add(conf_id)
 
 
-def provision_accounts(ampel_db: AmpelDB, auth: Dict[str, str] = {}) -> Dict[str, Any]:
+def provision_accounts(ampel_db: AmpelDB, auth: dict[str, Any] = {}) -> dict[str, Any]:
 	"""Create accounts required by the given Ampel configuration."""
 	roles = defaultdict(list)
 	for db in ampel_db.databases:
@@ -457,7 +458,7 @@ def provision_accounts(ampel_db: AmpelDB, auth: Dict[str, str] = {}) -> Dict[str
 		roles[db.role.r].append({"db": name, "role": "read"})
 		roles[db.role.w].append({"db": name, "role": "readWrite"})
 	users = dict()
-	admin = MongoClient(ampel_db.mongo_uri, **auth).get_database("admin")
+	admin: Database = MongoClient(ampel_db.mongo_uri, **auth).get_database("admin")
 	tag = secrets.token_hex(8)
 	for name, all_roles in roles.items():
 		username = f"{name}-{tag}"
@@ -467,11 +468,11 @@ def provision_accounts(ampel_db: AmpelDB, auth: Dict[str, str] = {}) -> Dict[str
 	return users
 
 
-def revoke_accounts(ampel_db: AmpelDB, auth: Dict[str, str] = {}) -> None:
+def revoke_accounts(ampel_db: AmpelDB, auth: dict[str, Any] = {}) -> None:
 	"""Delete accounts previously created with "provision"."""
 	if ampel_db.vault is None:
 		raise ValueError("No secrets vault configured")
-	admin = MongoClient(ampel_db.mongo_uri, **auth).get_database("admin")
+	admin: Database = MongoClient(ampel_db.mongo_uri, **auth).get_database("admin")
 	roles = {role for db in ampel_db.databases for role in db.role.dict().values()}
 	for role in roles:
 		if secret := ampel_db.vault.get_named_secret(f"mongo/{role}", dict):
@@ -480,20 +481,21 @@ def revoke_accounts(ampel_db: AmpelDB, auth: Dict[str, str] = {}) -> None:
 			raise ValueError(f"Unknown role '{role}'")
 
 
-def list_accounts(ampel_db: AmpelDB, auth: Dict[str, str] = {}) -> Dict[str, Any]:
+def list_accounts(ampel_db: AmpelDB, auth: dict[str, Any] = {}) -> dict[str, Any]:
 	"""List configured accounts and roles."""
-	admin = MongoClient(ampel_db.mongo_uri, **auth).get_database("admin")
-	return admin.command("usersInfo")
+	return MongoClient(ampel_db.mongo_uri, **auth) \
+		.get_database("admin") \
+		.command("usersInfo")
 
 
-def init_db(ampel_db: AmpelDB, auth: Dict[str, str] = {}) -> None:
+def init_db(ampel_db: AmpelDB, auth: dict[str, Any] = {}) -> None:
 	"""Initialize Ampel databases and collections."""
 	if auth:
 		print("="*40)
 		print("DANGEROUS THINGS ARE ABOUT TO HAPPEN!")
 		print("="*40)
 		if input(f"Do you really want to reinitialize databases {[ampel_db.prefix+'_'+db.name for db in ampel_db.databases]} on {ampel_db.mongo_uri}? All data will be lost. Type 'yessir' to proceed: ") == "yessir":
-			mc = MongoClient(ampel_db.mongo_uri, **auth)
+			mc: MongoClient = MongoClient(ampel_db.mongo_uri, **auth)
 			for db in ampel_db.databases:
 				name = f"{ampel_db.prefix}_{db.name}"
 				mc.drop_database(name)
@@ -517,7 +519,7 @@ def main() -> None:
 
 	parser = ArgumentParser(description="Manage access to Ampel databases")
 
-	def from_env(key) -> Optional[str]:
+	def from_env(key) -> None | str:
 		if fname := os.environ.get(key + '_FILE', None):
 			with open(fname, "r") as f:
 				return f.read().rstrip()

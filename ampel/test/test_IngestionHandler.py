@@ -1,6 +1,7 @@
 from collections import defaultdict
 import contextlib
-from typing import Any, Generator
+from typing import Any
+from collections.abc import Generator
 from ampel.config.AmpelConfig import AmpelConfig
 from ampel.content.MetaRecord import MetaRecord
 from ampel.enum.MetaActionCode import MetaActionCode
@@ -108,12 +109,13 @@ def test_no_directive(dev_context):
 
 @pytest.fixture
 def datapoints() -> list[DataPoint]:
-    return [{"id": i, "stock": "stockystock", "body": {"thing": i}} for i in range(3)]
+    return [
+        {"id": i, "stock": "stockystock", "body": {"thing": i}} # type: ignore[typeddict-item]
+        for i in range(3)
+    ]
 
 
-def test_minimal_directive(
-    dev_context: DevAmpelContext, datapoints: list[dict[str, Any]]
-):
+def test_minimal_directive(dev_context: DevAmpelContext, datapoints: list[dict[str, Any]]):
     """
     Minimal directive creates stock + t0 docs
     """
@@ -322,6 +324,7 @@ def test_t0_meta_append(
     handler.updates_buffer.push_updates(force=True)
 
     doc = mock_context.db.get_collection("t0").find_one({"id": datapoints[0]["id"]})
+    assert doc is not None
     assert doc["channel"] == ["SOME_CHANNEL"]
     assert set(tags).intersection(doc["tag"]), "initial datapoint tags set"
     assert set(doc["tag"]).difference(tags), "compiler adds its own tags"

@@ -1,17 +1,19 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-core/ampel/log/utils.py
-# License           : BSD-3-Clause
-# Author            : vb <vbrinnel@physik.hu-berlin.de>
-# Date              : 30.09.2018
-# Last Modified Date: 11.11.2021
-# Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
+# File:                Ampel-core/ampel/log/utils.py
+# License:             BSD-3-Clause
+# Author:              valery brinnel <firstname.lastname@gmail.com>
+# Date:                30.09.2018
+# Last Modified Date:  11.11.2021
+# Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 import sys, traceback
 from math import log2
 from bson import ObjectId
 from datetime import datetime
-from typing import Dict, Optional, Union, Any
+from typing import overload
+
+from ampel.types import JDict
 from ampel.core.AmpelDB import AmpelDB
 from ampel.util.collections import has_nested_type
 from ampel.log.AmpelLogger import AmpelLogger
@@ -25,8 +27,11 @@ exception_counter = AmpelMetricsRegistry.counter(
 )
 
 def log_exception(
-	logger: LoggerProtocol, exc: Optional[Exception] = None,
-	extra: Optional[Dict] = None, last: bool = False, msg: Optional[str] = None
+	logger: LoggerProtocol,
+	exc: None | Exception = None,
+	extra: None | dict = None,
+	last: bool = False,
+	msg: None | str = None
 ) -> None:
 	"""
 	:param last: whether to print only the last exception in the stack
@@ -77,9 +82,9 @@ def log_exception(
 def report_exception(
 	ampel_db: AmpelDB,
 	logger: AmpelLogger,
-	exc: Optional[Exception] = None,
-	process: Optional[str] = None,
-	info: Dict[str, Any] = None
+	exc: None | Exception = None,
+	process: None | str = None,
+	info: JDict = None
 ) -> None:
 	"""
 	:param tier: Ampel tier level (0, 1, 2, 3)
@@ -99,7 +104,7 @@ def report_exception(
 	# Feedback
 	log_exception(logger, exc, info)
 
-	trouble: Dict[str, Any] = {
+	trouble: JDict = {
 		'_id': ObjectId(),
 		'datetime': datetime.now().strftime('%d/%m/%Y %H:%M:%S'),
 		'tier': get_tier_from_logger(logger)
@@ -123,9 +128,10 @@ def report_exception(
 
 
 def report_error(
-	ampel_db: AmpelDB, logger: AmpelLogger,
-	msg: Optional[str] = None,
-	info: Optional[Dict[str, Any]] = None
+	ampel_db: AmpelDB,
+	logger: AmpelLogger,
+	msg: None | str = None,
+	info: None | JDict = None
 ) -> None:
 	"""
 	This method is used to report bad states or errors which are grave enough
@@ -143,7 +149,7 @@ def report_error(
 	import inspect
 	frame, filename, line_number, function_name, lines, index = inspect.stack()[1]
 
-	trouble: Dict[str, Union[None, int, str]] = {
+	trouble: dict[str, None | int | str | ObjectId] = {
 		'_id': ObjectId(),
 		'datetime': datetime.now().strftime('%d/%m/%Y %H:%M:%S'),
 		'tier': get_tier_from_logger(logger),
@@ -168,7 +174,7 @@ def report_error(
 	insert_trouble(trouble, ampel_db, logger)
 
 
-def get_tier_from_logger(logger: AmpelLogger) -> Optional[int]:
+def get_tier_from_logger(logger: AmpelLogger) -> None | int:
 
 	lb = LogFlag(logger.base_flag)
 	if LogFlag.T0 in lb:
@@ -183,7 +189,7 @@ def get_tier_from_logger(logger: AmpelLogger) -> Optional[int]:
 	return None
 
 
-def get_tier_from_log_flags(flags: Union[int, LogFlag]) -> int:
+def get_tier_from_log_flags(flags: int | LogFlag) -> int:
 	for i in (1, 2, 4, 8):
 		if i & flags.__int__():
 			return int(log2(i))
@@ -191,7 +197,7 @@ def get_tier_from_log_flags(flags: Union[int, LogFlag]) -> int:
 
 
 def insert_trouble(
-	trouble: Dict[str, Any], ampel_db: AmpelDB, logger: AmpelLogger
+	trouble: JDict, ampel_db: AmpelDB, logger: AmpelLogger
 ) -> None:
 
 	# Populate troubles collection
@@ -215,10 +221,10 @@ def insert_trouble(
 
 
 def safe_query_dict(
-	match: Dict[str, Any],
-	update: Optional[Dict[str, Any]] = None,
-	dict_key: Optional[str] = 'query'
-) -> Dict[str, Any]:
+	match: JDict,
+	update: None | JDict = None,
+	dict_key: None | str = 'query'
+) -> JDict:
 	u"""
 	| Builds a dict that can be passed as "extra" parameter to instances of AmpelLogger.
 	| Returned dict has the following structure:
@@ -250,7 +256,13 @@ def safe_query_dict(
 	return {dict_key: extra} if dict_key else extra
 
 
-def convert_dollars(arg: Dict[str, Any]) -> Dict[str, Any]:
+@overload
+def convert_dollars(arg: JDict) -> JDict:
+	...
+@overload
+def convert_dollars(arg: list[JDict]) -> list[JDict]:
+	...
+def convert_dollars(arg: JDict | list[JDict]) -> JDict | list[JDict]:
 	"""
 	MongoDB does not allow documents containing dollars in 'top level key' \
 	(raises InvalidDocument). In order to log DB queries commands, we substitute \
@@ -272,7 +284,7 @@ def convert_dollars(arg: Dict[str, Any]) -> Dict[str, Any]:
 				if "." in key:
 					arg[key.replace(".", "\u2219")] = arg.pop(key)
 
-		if not has_nested_type(arg, dict): # type: ignore
+		if not has_nested_type(arg, dict): # type: ignore[arg-type]
 			return arg
 
 		if not pblm_keys:
@@ -283,7 +295,7 @@ def convert_dollars(arg: Dict[str, Any]) -> Dict[str, Any]:
 
 	elif isinstance(arg, list):
 		if has_nested_type(arg, dict):
-			arg = arg.copy()
-			return [convert_dollars(el) for el in arg]
+			arg = arg.copy() # type: ignore[attr-defined]
+			return [convert_dollars(el) for el in arg] # type: ignore[arg-type]
 
 	return arg

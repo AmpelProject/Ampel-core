@@ -1,13 +1,13 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-core/ampel/ingest/T0Compiler.py
-# License           : BSD-3-Clause
-# Author            : vb <vbrinnel@physik.hu-berlin.de>
-# Date              : 11.05.2021
-# Last Modified Date: 25.11.2021
-# Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
+# File:                Ampel-core/ampel/ingest/T0Compiler.py
+# License:             BSD-3-Clause
+# Author:              valery brinnel <firstname.lastname@gmail.com>
+# Date:                11.05.2021
+# Last Modified Date:  25.11.2021
+# Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from typing import Dict, List, Optional, Set, Union, Tuple, Any
+from typing import Any
 from ampel.content.MetaRecord import MetaRecord
 from ampel.types import ChannelId, DataPointId
 from ampel.content.DataPoint import DataPoint
@@ -26,23 +26,23 @@ class T0Compiler(AbsCompiler):
 		super().__init__(**kwargs)
 
 		# We assume only the usage of only one shaper (that is only one tracid)
-		self.register: Dict[
+		self.register: dict[
 			DataPointId,
-			Tuple[
+			tuple[
 				DataPoint,
-				Set[ChannelId],
-				Optional[int],           # trace id
-				Optional[Dict[str, Any]] # meta extra
+				set[ChannelId],
+				None | int,           # trace id
+				None | dict[str, Any] # meta extra
 			]
 		] = {}
 
 
 	# Override
 	def add(self, # type: ignore[override]
-		dps: List[DataPoint],
+		dps: list[DataPoint],
 		channel: ChannelId,
-		trace_id: Optional[int],
-		extra: Optional[Dict[str, Any]] = None
+		trace_id: None | int,
+		extra: None | dict[str, Any] = None
 	) -> None:
 
 		r = self.register
@@ -55,7 +55,7 @@ class T0Compiler(AbsCompiler):
 
 
 	# Override
-	def commit(self, ingester: AbsDocIngester[DataPoint], now: Union[int, float], **kwargs) -> None:
+	def commit(self, ingester: AbsDocIngester[DataPoint], now: int | float, **kwargs) -> None:
 		"""
 		Note that we let the ingester handle 'ts' and 'updated' values
 		"""

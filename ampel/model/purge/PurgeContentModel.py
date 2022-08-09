@@ -1,17 +1,17 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-core/ampel/model/purge/PurgeContentModel.py
-# License           : BSD-3-Clause
-# Author            : vb <vbrinnel@physik.hu-berlin.de>
-# Date              : 18.06.2020
-# Last Modified Date: 18.06.2020
-# Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
+# File:                Ampel-core/ampel/model/purge/PurgeContentModel.py
+# License:             BSD-3-Clause
+# Author:              valery brinnel <firstname.lastname@gmail.com>
+# Date:                18.06.2020
+# Last Modified Date:  18.06.2020
+# Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from typing import Literal
-from ampel.model.StrictModel import StrictModel
+from ampel.base.AmpelBaseModel import AmpelBaseModel
 
 
-class PurgeContentModel(StrictModel):
+class PurgeContentModel(AmpelBaseModel):
 	"""
 	:param delay: time of inactivity in days after which entities will be purged
 	:param format: output format exported by ampel.

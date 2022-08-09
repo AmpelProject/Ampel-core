@@ -1,34 +1,32 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-core/ampel/config/collector/ResourceConfigCollector.py
-# License           : BSD-3-Clause
-# Author            : vb <vbrinnel@physik.hu-berlin.de>
-# Date              : 16.10.2019
-# Last Modified Date: 22.04.2020
-# Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
+# File:                Ampel-core/ampel/config/collector/ResourceConfigCollector.py
+# License:             BSD-3-Clause
+# Author:              valery brinnel <firstname.lastname@gmail.com>
+# Date:                16.10.2019
+# Last Modified Date:  22.04.2020
+# Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from typing import Dict, Any, Optional, Union
+from typing import Any
 from ampel.log.AmpelLogger import AmpelLogger, VERBOSE
 from ampel.config.collector.AbsDictConfigCollector import AbsDictConfigCollector
 
 
 class ResourceConfigCollector(AbsDictConfigCollector):
 
-	def __init__(self,
-		conf_section: str, content: Optional[Dict] = None,
-		logger: Optional[AmpelLogger] = None, verbose: bool = False
-	):
-		super().__init__(conf_section, content, logger, verbose)
+	def __init__(self, **kwargs):
+
+		super().__init__(**kwargs)
 
 		# Used to temporarily save distribution/source conf information of aliases
 		# (usefuly in case of conflicts)
-		self.tmp_resource: Dict[str, Any] = {}
+		self.tmp_resource: dict[str, Any] = {}
 
 
 	def add(self,
-		arg: Dict[str, Any],
+		arg: dict[str, Any],
 		dist_name: str,
-		version: Union[str, float, int],
+		version: str | float | int,
 		register_file: str
 	) -> None:
 		""" """
@@ -84,5 +82,5 @@ class ResourceConfigCollector(AbsDictConfigCollector):
 				self.error(
 					f"Error occured while loading resource {k} " +
 					self.distrib_hint(dist_name, register_file),
-					exc_info=e
+					exc_info = e
 				)

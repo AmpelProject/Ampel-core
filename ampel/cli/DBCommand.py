@@ -1,13 +1,14 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-core/ampel/cli/DBCommand.py
-# License           : BSD-3-Clause
-# Author            : vb <vbrinnel@physik.hu-berlin.de>
-# Date              : 14.03.2021
-# Last Modified Date: 06.10.2021
-# Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
+# File:                Ampel-core/ampel/cli/DBCommand.py
+# License:             BSD-3-Clause
+# Author:              valery brinnel <firstname.lastname@gmail.com>
+# Date:                14.03.2021
+# Last Modified Date:  12.07.2022
+# Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from typing import Optional, Sequence, Dict, Any, Union
+from typing import Any
+from collections.abc import Sequence
 from argparse import ArgumentParser # type: ignore[import]
 from ampel.core.AmpelDB import AmpelDB
 from ampel.core.AmpelContext import AmpelContext
@@ -38,7 +39,7 @@ class DBCommand(AbsCoreCommand):
 		self.parsers = {}
 
 	# Mandatory implementation
-	def get_parser(self, sub_op: Optional[str] = None) -> Union[ArgumentParser, AmpelArgumentParser]:
+	def get_parser(self, sub_op: None | str = None) -> ArgumentParser | AmpelArgumentParser:
 
 		if sub_op in self.parsers:
 			return self.parsers[sub_op]
@@ -55,7 +56,7 @@ class DBCommand(AbsCoreCommand):
 		builder.notation_add_example_references()
 
 		# Required
-		builder.add_arg("required", "config")
+		builder.add_arg("optional", "config")
 		builder.add_arg("import.required", "in")
 		builder.add_arg("export.required", "out")
 
@@ -88,7 +89,7 @@ class DBCommand(AbsCoreCommand):
 
 
 	# Mandatory implementation
-	def run(self, args: Dict[str, Any], unknown_args: Sequence[str], sub_op: Optional[str] = None) -> None:
+	def run(self, args: dict[str, Any], unknown_args: Sequence[str], sub_op: None | str = None) -> None:
 
 		if sub_op == "delete":  # cosmetic mainly
 			AmpelDB.create_collection = (lambda x: None) # type: ignore

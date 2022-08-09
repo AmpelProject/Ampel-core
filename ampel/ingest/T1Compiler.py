@@ -1,15 +1,15 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-core/ampel/ingest/T1Compiler.py
-# License           : BSD-3-Clause
-# Author            : vb <vbrinnel@physik.hu-berlin.de>
-# Date              : 01.01.2018
-# Last Modified Date: 21.11.2021
-# Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
+# File:                Ampel-core/ampel/ingest/T1Compiler.py
+# License:             BSD-3-Clause
+# Author:              valery brinnel <firstname.lastname@gmail.com>
+# Date:                01.01.2018
+# Last Modified Date:  21.11.2021
+# Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 import xxhash
 from struct import pack
-from typing import Optional, Dict, List, Union, Tuple, Set, Any, FrozenSet
+from typing import Any
 from ampel.types import ChannelId, DataPointId, StockId, UnitId, UBson
 from ampel.content.T1Document import T1Document
 from ampel.content.MetaActivity import MetaActivity
@@ -50,23 +50,23 @@ class T1Compiler(AbsCompiler):
 		self.hasher = getattr(xxhash, f'xxh{abs(self.hash_size)}_intdigest')
 
 		# Internal structure used for compiling documents
-		self.t1s: Dict[
-			Tuple[
-				Optional[UnitId],       # unit
-				Optional[int],          # config
+		self.t1s: dict[
+			tuple[
+				None | UnitId,          # unit
+				None | int,             # config
 				StockId,                # stock
-				Tuple[DataPointId, ...] # tuple(dps) [will be hashed into link]
+				tuple[DataPointId, ...] # tuple(dps) [will be hashed into link]
 			],
-			Tuple[
+			tuple[
 				int, 	                # link
-				Set[ChannelId],         # channels (doc)
+				set[ChannelId],         # channels (doc)
 				UBson,                  # body
-				Optional[int],          # code
-				Dict[
-					FrozenSet[Tuple[str, Any]], # key: traceid
-					Tuple[
+				None | int,             # code
+				dict[
+					frozenset[tuple[str, Any]], # key: traceid
+					tuple[
 						ActivityRegister,
-						Dict[str, Any]  # meta extra
+						dict[str, Any]  # meta extra
 					]
 				],
 			]
@@ -74,16 +74,16 @@ class T1Compiler(AbsCompiler):
 
 
 	def add(self, # type: ignore[override]
-		dps: List[DataPointId],
+		dps: list[DataPointId],
 		channel: ChannelId,
-		traceid: Dict[str, Any],
+		traceid: dict[str, Any],
 		stock: StockId = 0,
-		activity: Optional[Union[MetaActivity, List[MetaActivity]]] = None,
-		meta_extra: Optional[Dict[str, Any]] = None,
-		unit: Optional[UnitId] = None,
-		config: Optional[int] = None,
+		activity: None | MetaActivity | list[MetaActivity] = None,
+		meta_extra: None | dict[str, Any] = None,
+		unit: None | UnitId = None,
+		config: None | int = None,
 		body: UBson = None,
-		code: Optional[int] = None
+		code: None | int = None
 	) -> int:
 		"""
 		:param unit: potential AbsT1ComputeUnit subclass to be associated with this doc
@@ -139,7 +139,7 @@ class T1Compiler(AbsCompiler):
 		return a[0]
 
 
-	def commit(self, ingester: AbsDocIngester[T1Document], now: Union[int, float], **kwargs) -> None:
+	def commit(self, ingester: AbsDocIngester[T1Document], now: int | float, **kwargs) -> None:
 
 		# t1: (unit, config, stock, dps)
 		# t2: (link, {channels}, body, code, dict[traceid, (ActivityRegister, meta extra)])
@@ -147,13 +147,13 @@ class T1Compiler(AbsCompiler):
 		for t1, t2 in self.t1s.items():
 
 			# Note: mongodb maintains key order
-			d: T1Document = {'link': t2[0]}
+			d: T1Document = {'link': t2[0]} # type: ignore[typeddict-item]
 
 			if t1[0]:
-				d['unit'] = t1[0] # type: ignore[typeddict-item]
+				d['unit'] = t1[0]
 
 			if t1[1]:
-				d['config'] = t1[1] # type: ignore[typeddict-item]
+				d['config'] = t1[1]
 
 			d['stock'] = t1[2]
 

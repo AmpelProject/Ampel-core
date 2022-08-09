@@ -1,51 +1,64 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-core/ampel/cli/ConfigCommand.py
-# License           : BSD-3-Clause
-# Author            : vb <vbrinnel@physik.hu-berlin.de>
-# Date              : 17.07.2021
-# Last Modified Date: 12.10.2021
-# Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
+# File:                Ampel-core/ampel/cli/ConfigCommand.py
+# License:             BSD-3-Clause
+# Author:              valery brinnel <firstname.lastname@gmail.com>
+# Date:                17.07.2021
+# Last Modified Date:  16.07.2022
+# Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
+import os, shutil
+from time import time
+from typing import Any
+from appdirs import user_data_dir # type: ignore[import]
 from argparse import ArgumentParser
-from typing import Sequence, Dict, Any, Optional, Union
-from ampel.log.AmpelLogger import AmpelLogger
+from collections.abc import Sequence
+
+from ampel.log.AmpelLogger import AmpelLogger, DEBUG, INFO
 from ampel.cli.AbsCoreCommand import AbsCoreCommand
 from ampel.cli.AmpelArgumentParser import AmpelArgumentParser
 from ampel.cli.ArgParserBuilder import ArgParserBuilder
 from ampel.config.builder.DistConfigBuilder import DistConfigBuilder
-
+from ampel.config.builder.DisplayOptions import DisplayOptions
+from ampel.util.pretty import out_stack
 
 hlp = {
-	'config': 'Path to an ampel config file (yaml/json)',
+	"build": "Generates a new ampel config based on information" +
+		"\n from the currently installed ampel repositories",
+	"show": "Not implemented yet",
+	"install": "Sets a specified ampel config as the default one in current system (conda envs supported).\n" +
+		" As a consequence, the option '-config' of other CLI operations becomes optional",
+	'file': 'Path to an ampel config file (yaml/json)',
 	# Optional
 	'secrets': 'Path to a YAML secrets store in sops format',
-	'out': 'Path to file where config will be saved (printed to stdout otherwise)',
+	'out': 'Path to file where config will be saved',
 	'sign': 'Append truncated file signature (last 6 digits) to filename',
 	'stop-on-errors': 'by default, config building stops and raises an exception if an error occured.\n' +
 		'- 2: stop on errors\n' +
 		'- 1: ignore errors in first_pass_config only (will stop on morphing/scoping/template errors)\n' +
 		'- 0: ignore all errors',
 	'verbose': 'verbose',
-	'ext-resource': 'path to resource config file (yaml) to be integrated into the final ampel config'
+	'ext-resource': 'path to resource config file (yaml) to be integrated into the final ampel config',
+	'hide-module-not-found-errors': 'Hide corresponding exceptions stack',
+	'hide-stderr': 'Hide stderr messages arising during imports (from healpix for ex.)',
+	'no-provenance': 'Do not retrieve and save unit module dependencies'
 }
 
 
 class ConfigCommand(AbsCoreCommand):
-	"""
-	"""
+
 
 	def __init__(self):
 		self.parsers = {}
 
 
 	# Mandatory implementation
-	def get_parser(self, sub_op: Optional[str] = None) -> Union[ArgumentParser, AmpelArgumentParser]:
+	def get_parser(self, sub_op: None | str = None) -> ArgumentParser | AmpelArgumentParser:
 
 		if sub_op in self.parsers:
 			return self.parsers[sub_op]
 
-		sub_ops = ['build', 'show']
+		sub_ops = ['build', 'show', 'install']
 
 		if sub_op is None or sub_op not in sub_ops:
 			return AmpelArgumentParser.build_choice_help(
@@ -56,21 +69,36 @@ class ConfigCommand(AbsCoreCommand):
 		builder.add_parsers(sub_ops, hlp)
 
 		# Required args
-		builder.add_arg("build.required", "out")
+		builder.add_x_args(
+			"build.required",
+			{'name': 'out', 'type': str},
+			{
+				'name': 'install', 'action': "store_true",
+				'help': "Installs the generated config (conda envs are supported)"
+			}
+		)
 
 		# Optional args
-		builder.add_arg("optional", "secrets", default=None)
-		builder.add_arg('optional', 'verbose', action="store_true")
+		builder.add_arg("build.optional", "secrets", default=None)
+		builder.add_arg('build|show.optional', 'verbose', action="store_true")
 
-		builder.add_arg("build.optional", "sign", action="store_true")
+		builder.add_arg("build.optional", "sign", type=int, default=0)
 		builder.add_arg("build.optional", "ext-resource")
+		builder.add_arg("build.optional", "hide-module-not-found-errors", action="store_true")
+		builder.add_arg("build.optional", "hide-stderr", action="store_true")
+		builder.add_arg("build.optional", "no-provenance", action="store_true")
 		builder.add_arg("show.optional", "pretty", action="store_true")
 		builder.add_arg("build.optional", "stop-on-errors", default=2)
+		builder.add_arg("install.optional", "file", type=str)
+		builder.add_arg("install.optional", "build", action="store_true")
 
 		# Example
+		builder.add_example("build", "-install")
 		builder.add_example("build", "-out ampel_conf.yaml")
 		builder.add_example("build", "-out ampel_conf.yaml -sign -verbose")
 		builder.add_example("show", "-pretty -process -tier 0 -channel CHAN1")
+		builder.add_example("install", "-build")
+		builder.add_example("install", "-file ampel_conf.yml")
 
 		self.parsers.update(
 			builder.get()
@@ -81,26 +109,85 @@ class ConfigCommand(AbsCoreCommand):
 
 
 	# Mandatory implementation
-	def run(self, args: Dict[str, Any], unknown_args: Sequence[str], sub_op: Optional[str] = None) -> None:
+	def run(self, args: dict[str, Any], unknown_args: Sequence[str], sub_op: None | str = None) -> None:
+
+		logger = AmpelLogger.get_logger(
+			console={'level': DEBUG if args.get('verbose', False) else INFO}
+		)
 
 		if sub_op == 'build':
 
-			if not (verbose := args.get('verbose', False)):
-				AmpelLogger.get_logger().info(
-					"Building config, this might take a while... [use -verbose for details]"
-				)
+			logger.info("Building config [use -verbose for more details]")
 
-			cb = DistConfigBuilder(verbose=verbose)
+			# Fix ArgParserBuilder/ArgumentParser later
+			if not args.get('out') and not args.get('install'):
+				with out_stack():
+					raise ValueError("Argument 'out' or 'install' required\n")
+
+			start_time = time()
+			cb = DistConfigBuilder(
+				options = DisplayOptions(
+					verbose = args.get('verbose', False),
+					hide_stderr = args.get('hide_stderr', False),
+					hide_module_not_found_errors = args.get('hide_module_not_found_errors', False)
+				),
+				logger = logger
+			)
 
 			cb.load_distributions()
-
 			cb.build_config(
 				stop_on_errors = 0,
 				skip_default_processes=True,
 				config_validator = None,
-				save = args['out'],
-				ext_resource = args['ext_resource']
+				save = args.get('out') or self.get_installable_config_path(),
+				ext_resource = args.get('ext_resource'),
+				sign = args.get('sign', 0),
+				get_unit_env = not args.get('no_provenance', False),
 			)
 
-		else:
-			raise NotImplementedError("Not implemented yet")
+			dm = divmod(time() - start_time, 60)
+			logger.info(
+				"Total time required: %s minutes %s seconds\n" %
+				(round(dm[0]), round(dm[1]))
+			)
+
+			logger.flush()
+			return
+
+		if sub_op == 'install':
+
+			std_conf = self.get_installable_config_path()
+			if args['file'] and os.path.exists(args['file']):
+				shutil.copy(args['file'], std_conf)
+				logger.info(f"{args['file']} successfully set as standard config ({std_conf})")
+				return
+
+			elif args['build']:
+				args['out'] = std_conf
+				self.run(args, unknown_args, sub_op = 'build')
+				logger.info(f"New config built and installed ({std_conf})")
+				return
+
+			else:
+				raise ValueError("Please provide either 'file' or 'build' argument")
+
+		raise NotImplementedError("Not implemented yet")
+
+
+	def get_installable_config_path(self) -> str:
+
+		app_path = user_data_dir("ampel")
+		if not os.path.exists(app_path):
+			os.makedirs(app_path)
+
+		app_path = os.path.join(app_path, "conf")
+		if not os.path.exists(app_path):
+			os.makedirs(app_path)
+
+		env = os.environ.get('CONDA_DEFAULT_ENV')
+		if env:
+			app_path = os.path.join(app_path, env)
+			if not os.path.exists(app_path):
+				os.makedirs(app_path)
+
+		return os.path.join(app_path, "conf.yml")

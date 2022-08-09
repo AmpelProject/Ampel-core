@@ -1,17 +1,16 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-core/ampel/t3/stage/T3ChannelStager.py
-# License           : BSD-3-Clause
-# Author            : vb <vbrinnel@physik.hu-berlin.de>
-# Date              : 21.06.2020
-# Last Modified Date: 10.12.2021
-# Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
+# File:                Ampel-core/ampel/t3/stage/T3ChannelStager.py
+# License:             BSD-3-Clause
+# Author:              valery brinnel <firstname.lastname@gmail.com>
+# Date:                21.06.2020
+# Last Modified Date:  09.01.2022
+# Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from typing import Optional, Sequence, Generator
+from collections.abc import Generator, Sequence
 from ampel.types import ChannelId
 from ampel.view.T3Store import T3Store
 from ampel.struct.AmpelBuffer import AmpelBuffer
-from ampel.core.AmpelContext import AmpelContext
 from ampel.content.T3Document import T3Document
 from ampel.model.UnitModel import UnitModel
 from ampel.model.t3.T3ProjectionDirective import T3ProjectionDirective
@@ -32,14 +31,17 @@ class T3ChannelStager(AbsT3Stager):
 	execute: Sequence[UnitModel]
 
 
-	def __init__(self, context: AmpelContext, **kwargs) -> None:
+	def __init__(self, **kwargs) -> None:
 		"""
 		:param channel: channel name/id
 		:param execute: sequence of T3 units to be executed
 		"""
 
+		super().__init__(
+			**{k: v for k, v in kwargs.items() if k in self._annots}
+		)
+
 		self._stager = T3ProjectingStager(
-			context = context,
 			directives=[
 				T3ProjectionDirective(
 					filter = UnitModel(
@@ -60,5 +62,5 @@ class T3ChannelStager(AbsT3Stager):
 	def stage(self,
 		gen: Generator[AmpelBuffer, None, None],
 		t3s: T3Store
-	) -> Optional[Generator[T3Document, None, None]]:
+	) -> None | Generator[T3Document, None, None]:
 		return self._stager.stage(gen, t3s)

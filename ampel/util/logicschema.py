@@ -1,13 +1,14 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-interface/ampel/util/logicschema.py
-# License           : BSD-3-Clause
-# Author            : vb <vbrinnel@physik.hu-berlin.de>
-# Date              : 03.04.2021
-# Last Modified Date: 03.04.2021
-# Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
+# File:                Ampel-interface/ampel/util/logicschema.py
+# License:             BSD-3-Clause
+# Author:              valery brinnel <firstname.lastname@gmail.com>
+# Date:                03.04.2021
+# Last Modified Date:  03.04.2021
+# Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from typing import Union, Dict, Tuple, Type, Sequence, Literal, Any, Set
+from typing import Union, Literal, Any
+from collections.abc import Sequence
 from ampel.types import T, strict_iterable
 from ampel.model.operator.AllOf import AllOf
 from ampel.model.operator.AnyOf import AnyOf
@@ -15,7 +16,7 @@ from ampel.model.operator.OneOf import OneOf
 from ampel.util.collections import check_seq_inner_type
 
 
-def to_logical_dict(v, field_name: Union[int, str, Dict[str, Any]]) -> Dict[str, Any]:
+def to_logical_dict(v, field_name: int | str | dict[str, Any]) -> dict[str, Any]:
 	"""
 	Converts str/int into {'any_of': int/str}.
 	Checks structure in case dict is provided
@@ -148,12 +149,12 @@ def reduce_to_set(
 	arg: Union[
 		T,
 		# unsure if mypy understands unions of dicts with different key literals actually
-		Dict[Union[Literal['all_of'], Literal['one_of']], Sequence[T]],
-		Dict[Literal['any_of'], Union[Sequence[T], Dict[Literal['all_of'], Sequence[T]]]],
+		dict[Union[Literal['all_of', 'one_of']], Sequence[T]],
+		dict[Literal['any_of'], Union[Sequence[T], dict[Literal['all_of'], Sequence[T]]]],
 		AllOf[T], AnyOf[T], OneOf[T]
 	],
-	in_type: Tuple[Type, ...] = (str, int)
-) -> Set[T]:
+	in_type: tuple[type, ...] = (str, int)
+) -> set[T]:
 	"""
 	.. sourcecode:: python\n
 		for schema in (a,b,c,d,e):

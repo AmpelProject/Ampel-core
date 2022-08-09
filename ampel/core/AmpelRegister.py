@@ -1,21 +1,21 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-core/ampel/core/AmpelRegister.py
-# License           : BSD-3-Clause
-# Author            : vb <vbrinnel@physik.hu-berlin.de>
-# Date              : 16.05.2020
-# Last Modified Date: 04.03.2021
-# Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
+# File:                Ampel-core/ampel/core/AmpelRegister.py
+# License:             BSD-3-Clause
+# Author:              valery brinnel <firstname.lastname@gmail.com>
+# Date:                16.05.2020
+# Last Modified Date:  04.03.2021
+# Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 import bson
 from time import time
 from os.path import isdir, isfile
 from pathlib import Path
 from struct import calcsize
-from typing import BinaryIO, Optional, Literal, Dict, Any, List, Union, Tuple, TypedDict
+from typing import BinaryIO, Literal, Any, TypedDict
 
 from ampel.log.AmpelLogger import AmpelLogger, VERBOSE
-from ampel.base.AmpelBaseModel import AmpelBaseModel
+from ampel.base.AmpelUnit import AmpelUnit
 from ampel.util.hash import build_unsafe_dict_id
 from ampel.util.register import read_header, write_header, \
 	get_inner_file_handle, get_outer_file_handle, rescale_header
@@ -24,10 +24,10 @@ from ampel.util.register import read_header, write_header, \
 class HeaderInfo(TypedDict):
 	size: int
 	len: int
-	payload: Dict[str, Any]
+	payload: dict[str, Any]
 
 
-class AmpelRegister(AmpelBaseModel):
+class AmpelRegister(AmpelUnit):
 	""" # noqa: E101
 
 	General notes:
@@ -151,38 +151,38 @@ class AmpelRegister(AmpelBaseModel):
 	logger: AmpelLogger
 
 	#: save files in <path_base>/<file>
-	path_base: Optional[str]
+	path_base: None | str
 	#: save files in <path_base>/<path_extra(s)>/<file>
-	path_extra: Optional[List[str]]
+	path_extra: None | list[str]
 	#: prefix for each file
-	file_prefix: Optional[str]
+	file_prefix: None | str
 	#: ignore all other path options and use this file path
-	path_full: Optional[str]
+	path_full: None | str
 
-	file_cap: Optional[Dict[Literal['blocks'], int]]
+	file_cap: None | dict[Literal['blocks'], int]
 
 	#: use existing file handle
-	file_handle: Optional[BinaryIO]
+	file_handle: None | BinaryIO
 
 	#: compression scheme
-	compression: Optional[Literal['gz', 'bz2', 'xz']] = 'gz'
+	compression: None | Literal['gz', 'bz2', 'xz'] = 'gz'
 	#: compression level
-	compress_level: Optional[int]
+	compression_level: None | int
 
 	# General header options
-	new_header_size: Optional[Union[int, str]]
+	new_header_size: None | int | str
 
 	header_log_accesses: bool = False
 	header_count_blocks: bool = True
-	header_extra: Optional[Dict[str, Any]]
-	header_extra_base: Optional[Dict[str, Any]]
+	header_extra: None | dict[str, Any]
+	header_extra_base: None | dict[str, Any]
 	header_update_anyway: bool = False
 
 	# New header options
-	header_creation_size: Optional[int]
+	header_creation_size: None | int
 
 	# Which header key to check if file already exists
-	on_exist_check: Optional[List[Union[str, Tuple[str, str]]]] = ['struct']
+	on_exist_check: None | list[str | tuple[str, str]] = ['struct']
 	on_exist_strict_check: bool = False
 
 	def __init__(self, autoload: bool = True, **kwargs) -> None:
@@ -262,7 +262,7 @@ class AmpelRegister(AmpelBaseModel):
 		self.header_sig = build_unsafe_dict_id(self.header['payload'])
 
 
-	def check_rename(self, header: Dict[str, Any]) -> bool:
+	def check_rename(self, header: dict[str, Any]) -> bool:
 		""" override if needed """
 
 		if not self.file_cap:
@@ -283,7 +283,7 @@ class AmpelRegister(AmpelBaseModel):
 		return False
 
 
-	def rename_file(self, fh: BinaryIO, header: Dict[str, Any]) -> BinaryIO:
+	def rename_file(self, fh: BinaryIO, header: dict[str, Any]) -> BinaryIO:
 
 		fh.close()
 		self.file_index = header.get('findex', 0) + 1
@@ -340,7 +340,7 @@ class AmpelRegister(AmpelBaseModel):
 		])
 
 
-	def check_header(self, header: Dict[str, Any]) -> None:
+	def check_header(self, header: dict[str, Any]) -> None:
 		"""
 		:raises: ValueError is raised on mismatch between this instance value
 		and the header value for the provided key
@@ -370,9 +370,9 @@ class AmpelRegister(AmpelBaseModel):
 
 
 	def register_file_access(self,
-		header: Optional[Dict[str, Any]] = None,
-		use_this_time: Optional[float] = None,
-		new_blocks: Optional[int] = None,
+		header: None | dict[str, Any] = None,
+		use_this_time: None | float = None,
+		new_blocks: None | int = None,
 	) -> None:
 		"""
 		:param header: use provided header rather than self.header['payload']
@@ -402,7 +402,7 @@ class AmpelRegister(AmpelBaseModel):
 		"""
 
 		now = time()
-		hdr: Dict[str, Any] = {
+		hdr: dict[str, Any] = {
 			'struct': self.struct,
 			'ts': {'created': now}
 		}

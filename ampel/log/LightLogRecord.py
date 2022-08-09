@@ -1,14 +1,14 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-core/ampel/logging/LightLogRecord.py
-# License           : BSD-3-Clause
-# Author            : vb <vbrinnel@physik.hu-berlin.de>
-# Date              : 22.04.2020
-# Last Modified Date: 22.04.2020
-# Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
+# File:                Ampel-core/ampel/logging/LightLogRecord.py
+# License:             BSD-3-Clause
+# Author:              valery brinnel <firstname.lastname@gmail.com>
+# Date:                22.04.2020
+# Last Modified Date:  22.04.2020
+# Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from time import time
-from typing import Union, List, Any, Dict, Optional
+from typing import Any
 from ampel.types import ChannelId, StockId
 
 class LightLogRecord:
@@ -22,17 +22,17 @@ class LightLogRecord:
 	Out[]: 657 ns ± 6.51 ns per loop (mean ± std. dev. of 7 runs, 1000000 loops each)
 	"""
 
-	name: Union[int, str]
+	name: int | str
 	levelno: int
-	msg: Optional[Union[str, Dict[str, Any]]]
-	channel: Optional[Union[ChannelId, List[ChannelId]]]
-	stock: Optional[StockId]
-	extra: Optional[Dict[str, Any]]
+	msg: None | str | dict[str, Any]
+	channel: None | ChannelId | list[ChannelId]
+	stock: None | StockId
+	extra: None | dict[str, Any]
 
 	def __init__(self,
-		name: Union[int, str],
+		name: int | str,
 		levelno: int,
-		msg: Optional[Union[str, Dict[str, Any]]] = None
+		msg: None | str | dict[str, Any] = None
 	) -> None:
 
 		d = self.__dict__

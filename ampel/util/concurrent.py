@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-core/ampel/util/concurrent.py
-# License           : BSD-3-Clause
-# Author            : Jakob van Santen <jakob.van.santen@desy.de>
-# Date              : 07.08.2020
-# Last Modified Date: 07.08.2020
-# Last Modified By  : Jakob van Santen <jakob.van.santen@desy.de>
+# File:                Ampel-core/ampel/util/concurrent.py
+# License:             BSD-3-Clause
+# Author:              Jakob van Santen <jakob.van.santen@desy.de>
+# Date:                07.08.2020
+# Last Modified Date:  07.08.2020
+# Last Modified By:    Jakob van Santen <jakob.van.santen@desy.de>
 
 """
 Simple decorator for running a function in subprocess with asyncio, adapted
@@ -16,7 +16,7 @@ threads are needed to manage the process lifecycle.
 """
 
 import asyncio, io, itertools, os, signal, sys, traceback
-from typing import Any, Dict, Set
+from typing import Any
 from functools import wraps, partial
 from multiprocessing import reduction, spawn  # type: ignore
 from multiprocessing.context import set_spawning_popen
@@ -125,9 +125,9 @@ def spawn_main(read_fd, write_fd):
 class _Process:
     _counter = itertools.count(1)
     #: PIDs for active processes str -> (pid -> replica), used by AmpelProcessCollector
-    _active: Dict[str, Dict[int, int]] = {}
+    _active: dict[str, dict[int, int]] = {}
     #: Replica ids that can be recycled
-    _expired: Dict[str, Set[int]] = {}
+    _expired: dict[str, set[int]] = {}
 
     def __init__(self, target=None, name=None, timeout=3.0, args=(), kwargs={}):
         self._target = target
@@ -208,7 +208,7 @@ class _Process:
                     if isinstance(payload, BaseException):
                         raise payload
                     else:
-                        ret = reduction.pickle.loads(payload)
+                        ret = reduction.pickle.loads(payload) # type: ignore
                     if isinstance(ret, BaseException):
                         raise ret
                     else:

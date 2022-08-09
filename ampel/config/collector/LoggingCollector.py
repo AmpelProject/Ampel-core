@@ -1,13 +1,13 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-core/ampel/config/collector/LoggingCollector.py
-# License           : BSD-3-Clause
-# Author            : vb <vbrinnel@physik.hu-berlin.de>
-# Date              : 03.03.2020
-# Last Modified Date: 18.12.2021
-# Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
+# File:                Ampel-core/ampel/config/collector/LoggingCollector.py
+# License:             BSD-3-Clause
+# Author:              valery brinnel <firstname.lastname@gmail.com>
+# Date:                03.03.2020
+# Last Modified Date:  18.12.2021
+# Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from typing import Dict, Any, Union
+from typing import Any
 from ampel.config.collector.AbsDictConfigCollector import AbsDictConfigCollector
 from ampel.config.collector.ConfigCollector import ConfigCollector
 from ampel.log.handlers.AmpelStreamHandler import AmpelStreamHandler
@@ -18,9 +18,9 @@ from ampel.log import VERBOSE
 class LoggingCollector(AbsDictConfigCollector):
 
 	def add(self,
-		arg: Dict[str, Any],
+		arg: dict[str, Any],
 		dist_name: str,
-		version: Union[str, float, int],
+		version: str | float | int,
 		register_file: str
 	) -> None:
 

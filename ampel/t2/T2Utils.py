@@ -1,15 +1,16 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-core/ampel/t2/T2Utils.py
-# License           : BSD-3-Clause
-# Author            : vb <vbrinnel@physik.hu-berlin.de>
-# Date              : 10.03.2021
-# Last Modified Date: 16.09.2021
-# Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
+# File:                Ampel-core/ampel/t2/T2Utils.py
+# License:             BSD-3-Clause
+# Author:              valery brinnel <firstname.lastname@gmail.com>
+# Date:                10.03.2021
+# Last Modified Date:  16.09.2021
+# Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from datetime import datetime
 from pymongo.collection import Collection
-from typing import Optional, Any, Iterable, Union, Dict, Literal, Sequence
+from typing import Any, Literal
+from collections.abc import Iterable, Sequence
 
 from ampel.types import UnitId, Tag, StrictIterable, ChannelId, StockId
 from ampel.abstract.AbsIdMapper import AbsIdMapper
@@ -51,7 +52,7 @@ class T2Utils:
 		if cli:
 			jrec['extra'] = {'cli': True}
 
-		update: Dict[str, Any] = {
+		update: dict[str, Any] = {
 			"$set": {"code": DocumentCode.NEW},
 			"$push": {"journal": jrec}
 		}
@@ -71,17 +72,17 @@ class T2Utils:
 
 
 	def match_t2s(self,
-		unit: Optional[Union[UnitId, StrictIterable[UnitId]]] = None,
-		config: Optional[Union[str, int]] = None,
-		code: Optional[Union[int, Sequence[int]]] = None,
-		link: Optional[Union[str, Sequence[str]]] = None,
-		stock: Optional[Union[StockId, StrictIterable[StockId]]] = None,
-		channel: Optional[Union[ChannelId, Dict, AllOf[ChannelId], AnyOf[ChannelId], OneOf[ChannelId]]] = None,
-		tag: Optional[Dict[Literal['with', 'without'], Union[Tag, Dict, AllOf[Tag], AnyOf[Tag], OneOf[Tag]]]] = None,
-		custom: Optional[Dict[str, Any]] = None,
-		id_mapper: Optional[AbsIdMapper] = None,
+		unit: None | UnitId | StrictIterable[UnitId] = None,
+		config: None | str | int = None,
+		code: None | int | Sequence[int] = None,
+		link: None | str | Sequence[str] = None,
+		stock: None | StockId | StrictIterable[StockId] = None,
+		channel: None | ChannelId | dict | AllOf[ChannelId] | AnyOf[ChannelId] | OneOf[ChannelId] = None,
+		tag: None | dict[Literal['with', 'without'], Tag | dict | AllOf[Tag] | AnyOf[Tag] | OneOf[Tag]] = None,
+		custom: None | dict[str, Any] = None,
+		id_mapper: None | AbsIdMapper = None,
 		**kwargs
-	) -> Dict[str, Any]:
+	) -> dict[str, Any]:
 		"""
 		:param config: use string "null" to match null
 		:param link: hex encoded bytes

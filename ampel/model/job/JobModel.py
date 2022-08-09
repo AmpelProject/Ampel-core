@@ -167,12 +167,16 @@ class Parameter(BaseModel):
     name: str
     value: str
 
+class EnvSpec(BaseModel):
+    set: dict[str,str] = {}
+    check: dict[str,str] = {}
 
 class JobModel(BaseModel):
     name: str
     requirements: list[str] = []
+    env: dict[str,EnvSpec] = {}
     channel: list[dict[str, Any]] = []
-    alias: dict[Literal["t0", "t1", "t2", "t3"], Any] = {}
+    alias: dict[Literal["t0", "t1", "t2", "t3"], dict[str,Any]] = {}
     parameters: list[Parameter] = []
     mongo: MongoOpts = MongoOpts()
     task: list[Union[TemplateUnitModel, TaskUnitModel]]

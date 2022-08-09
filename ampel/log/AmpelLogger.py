@@ -1,16 +1,16 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-core/ampel/log/AmpelLogger.py
-# License           : BSD-3-Clause
-# Author            : vb <vbrinnel@physik.hu-berlin.de>
-# Date              : 27.09.2018
-# Last Modified Date: 18.12.2020
-# Last Modified By  : Jakob van Santen <jakob.van.santen@desy.de>
+# File:                Ampel-core/ampel/log/AmpelLogger.py
+# License:             BSD-3-Clause
+# Author:              valery brinnel <firstname.lastname@gmail.com>
+# Date:                27.09.2018
+# Last Modified Date:  20.04.2022
+# Last Modified By:    Jakob van Santen <jakob.van.santen@desy.de>
 
 import logging, sys, traceback
 from sys import _getframe
 from os.path import basename
-from typing import Dict, Optional, Union, Any, List, TYPE_CHECKING
+from typing import Any, TYPE_CHECKING
 from ampel.types import ChannelId
 from ampel.log.LightLogRecord import LightLogRecord
 from ampel.log.LogFlag import LogFlag
@@ -32,13 +32,13 @@ if TYPE_CHECKING:
 
 class AmpelLogger:
 
-	loggers: Dict[Union[int, str], 'AmpelLogger'] = {}
+	loggers: dict[int | str, 'AmpelLogger'] = {}
 	_counter: int = 0
 	verbose: int = 0
 
 
 	@classmethod
-	def get_logger(cls, name: Optional[Union[int, str]] = None, force_refresh: bool = False, **kwargs) -> 'AmpelLogger':
+	def get_logger(cls, name: None | int | str = None, force_refresh: bool = False, **kwargs) -> 'AmpelLogger':
 		"""
 		Creates or returns an instance of :obj:`AmpelLogger <ampel.log.AmpelLogger>`
 		that is registered in static dict 'loggers' using the provided name as key.
@@ -62,7 +62,7 @@ class AmpelLogger:
 
 
 	@staticmethod
-	def from_profile(context: 'AmpelContext', profile: str, run_id: Optional[int] = None, **kwargs) -> 'AmpelLogger':
+	def from_profile(context: 'AmpelContext', profile: str, run_id: None | int = None, **kwargs) -> 'AmpelLogger':
 
 		handlers = context.config.get(f'logging.{profile}', dict, raise_exc=True)
 		logger = AmpelLogger.get_logger(console=False, **kwargs)
@@ -87,7 +87,7 @@ class AmpelLogger:
 
 
 	@staticmethod
-	def get_console_level(context: 'AmpelContext', profile: str) -> Optional[int]:
+	def get_console_level(context: 'AmpelContext', profile: str) -> None | int:
 
 		handlers = context.config.get(f'logging.{profile}', dict, raise_exc=True)
 
@@ -108,12 +108,12 @@ class AmpelLogger:
 
 
 	def __init__(self,
-		name: Union[int, str] = 0,
-		base_flag: Optional[LogFlag] = None,
-		handlers: Optional[List[Union[LoggingHandlerProtocol, AggregatingLoggingHandlerProtocol]]] = None,
-		channel: Optional[Union[ChannelId, List[ChannelId]]] = None,
+		name: int | str = 0,
+		base_flag: None | LogFlag = None,
+		handlers: None | list[LoggingHandlerProtocol | AggregatingLoggingHandlerProtocol] = None,
+		channel: None | ChannelId | list[ChannelId] = None,
 		# See AmpelStreamHandler annotations for more details
-		console: Optional[Union[bool, Dict[str, Any]]] = True
+		console: None | bool | dict[str, Any] = True
 	) -> None:
 
 		self.name = name
@@ -162,7 +162,7 @@ class AmpelLogger:
 		self._auto_level()
 
 
-	def get_db_logging_handler(self) -> Optional['DBLoggingHandler']:
+	def get_db_logging_handler(self) -> 'None | DBLoggingHandler':
 		# avoid circular import
 		from ampel.mongo.update.var.DBLoggingHandler import DBLoggingHandler
 		for el in self.handlers:
@@ -173,39 +173,39 @@ class AmpelLogger:
 
 	def break_aggregation(self) -> None:
 		for el in self.handlers:
-			if isinstance(el, AggregatingLoggingHandlerProtocol):
+			if isinstance(el, (AggregatingLoggingHandlerProtocol, AmpelStreamHandler)):
 				el.break_aggregation()
 
 
-	def error(self, msg: Union[str, Dict[str, Any]], *args,
-		exc_info: Optional[Exception] = None,
-		extra: Optional[Dict[str, Any]] = None,
+	def error(self, msg: str | dict[str, Any], *args,
+		exc_info: None | Exception = None,
+		extra: None | dict[str, Any] = None,
 	):
 		self.log(ERROR, msg, *args, exc_info=exc_info, extra=extra)
 
 
-	def warn(self, msg: Union[str, Dict[str, Any]], *args,
-		extra: Optional[Dict[str, Any]] = None,
+	def warn(self, msg: str | dict[str, Any], *args,
+		extra: None | dict[str, Any] = None,
 	):
 		if self.level <= WARNING:
 			self.log(WARNING, msg, *args, extra=extra)
 
 
-	def info(self, msg: Optional[Union[str, Dict[str, Any]]], *args,
-		extra: Optional[Dict[str, Any]] = None,
+	def info(self, msg: None | str | dict[str, Any], *args,
+		extra: None | dict[str, Any] = None,
 	) -> None:
 		if self.level <= INFO:
 			self.log(INFO, msg, *args, extra=extra)
 
 
-	def debug(self, msg: Optional[Union[str, Dict[str, Any]]], *args,
-		extra: Optional[Dict[str, Any]] = None,
+	def debug(self, msg: None | str | dict[str, Any], *args,
+		extra: None | dict[str, Any] = None,
 	):
 		if self.level <= DEBUG:
 			self.log(DEBUG, msg, *args, extra=extra)
 
 
-	def handle(self, record: Union[LightLogRecord, logging.LogRecord]) -> None:
+	def handle(self, record: LightLogRecord | logging.LogRecord) -> None:
 		for h in self.handlers:
 			if record.levelno >= h.level:
 				h.handle(record)
@@ -217,9 +217,9 @@ class AmpelLogger:
 
 
 	def log(self,
-		lvl: int, msg: Optional[Union[str, Dict[str, Any]]], *args,
-		exc_info: Optional[Union[bool, Exception]] = None,
-		extra: Optional[Dict[str, Any]] = None,
+		lvl: int, msg: None | str | dict[str, Any], *args,
+		exc_info: None | bool | Exception = None,
+		extra: None | dict[str, Any] = None,
 	):
 
 		if args and isinstance(msg, str):
@@ -251,7 +251,7 @@ class AmpelLogger:
 				lines = traceback.format_exception(*sys.exc_info())
 			elif isinstance(exc_info, Exception):
 				lines = traceback.format_exception(
-					etype=type(exc_info), value=exc_info, tb=exc_info.__traceback__
+					type(exc_info), exc_info, exc_info.__traceback__
 				)
 			else:
 				lines = []

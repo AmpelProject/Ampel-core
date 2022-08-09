@@ -1,14 +1,15 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-core/ampel/log/LogsDumper.py
-# License           : BSD-3-Clause
-# Author            : vb <vbrinnel@physik.hu-berlin.de>
-# Date              : 17.03.2021
-# Last Modified Date: 17.03.2021
-# Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
+# File:                Ampel-core/ampel/log/LogsDumper.py
+# License:             BSD-3-Clause
+# Author:              valery brinnel <firstname.lastname@gmail.com>
+# Date:                17.03.2021
+# Last Modified Date:  17.03.2021
+# Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 import sys, json
-from typing import Dict, Optional, Sequence, IO
+from typing import IO
+from collections.abc import Sequence
 from ampel.abstract.AbsIdMapper import AbsIdMapper
 from ampel.log.LogFlag import LogFlag
 from ampel.log.AmpelLogger import AmpelLogger
@@ -20,11 +21,11 @@ from ampel.util.pretty import prettyjson
 class LogsDumper(AmpelFlexModel):
 	""" later """
 
-	out: Optional[str] = None
-	to_json: Optional[bool] = False
-	to_pretty_json: Optional[bool] = False
-	date_format: Optional[str] = None
-	id_mapper: Optional[AbsIdMapper] = None
+	out: None | str = None
+	to_json: None | bool = False
+	to_pretty_json: None | bool = False
+	date_format: None | str = None
+	id_mapper: None | AbsIdMapper = None
 	datetime_key: str = '_id'
 	resolve_flag: bool = True
 	main_separator: str = ' '
@@ -32,11 +33,11 @@ class LogsDumper(AmpelFlexModel):
 
 
 	def __init__(self, **kwargs) -> None:
-		self._flag_strings: Dict = {}
+		self._flag_strings: dict = {}
 		super().__init__(**kwargs)
 
 
-	def process(self, log_entries: Sequence[Dict]):
+	def process(self, log_entries: Sequence[dict]):
 
 		fd = open(self.out, "w") if self.out else sys.stdout
 
@@ -51,7 +52,7 @@ class LogsDumper(AmpelFlexModel):
 			fd.close()
 
 
-	def write_json(self, fd: IO, log_entries: Sequence[Dict]) -> None:
+	def write_json(self, fd: IO, log_entries: Sequence[dict]) -> None:
 
 		func = json.dumps if self.to_json else prettyjson
 
@@ -84,7 +85,7 @@ class LogsDumper(AmpelFlexModel):
 		fd.write(buf[:-2] + "\n]\n")
 
 
-	def write_txt(self, fd: IO, log_entries: Sequence[Dict]) -> None:
+	def write_txt(self, fd: IO, log_entries: Sequence[dict]) -> None:
 
 		for el in log_entries:
 
@@ -126,7 +127,7 @@ class LogsDumper(AmpelFlexModel):
 			fd.write(out + "\n")
 
 
-	def log_entries(self, log_entries: Sequence[Dict], logger: AmpelLogger) -> None:
+	def log_entries(self, log_entries: Sequence[dict], logger: AmpelLogger) -> None:
 		"""
 		Unsure when this could ever be required but it's there just in case
 		"""

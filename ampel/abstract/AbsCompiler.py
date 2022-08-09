@@ -1,46 +1,44 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-core/ampel/abstract/AbsCompiler.py
-# License           : BSD-3-Clause
-# Author            : vb <vbrinnel@physik.hu-berlin.de>
-# Date              : 07.05.2021
-# Last Modified Date: 21.11.2021
-# Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
+# File:                Ampel-core/ampel/abstract/AbsCompiler.py
+# License:             BSD-3-Clause
+# Author:              valery brinnel <firstname.lastname@gmail.com>
+# Date:                07.05.2021
+# Last Modified Date:  21.11.2021
+# Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from typing import Optional, Literal, Sequence, Union, Dict, FrozenSet, Tuple, Set, Any, List
-from ampel.types import Tag, ChannelId
+from typing import Literal, Any
+from ampel.types import OneOrMany, Tag, ChannelId
 from ampel.base.AmpelABC import AmpelABC
 from ampel.base.decorator import abstractmethod
-from ampel.base.AmpelBaseModel import AmpelBaseModel
+from ampel.base.AmpelUnit import AmpelUnit
 from ampel.abstract.AbsDocIngester import AbsDocIngester
 from ampel.content.MetaRecord import MetaRecord
 from ampel.content.MetaActivity import MetaActivity
 from ampel.enum.MetaActionCode import MetaActionCode
 
 
-# Type alias
-ActivityRegister = Dict[
-	FrozenSet[Tuple[str, Any]], # activity stripped out of channel
-	Union[
-		None, # activity is not channel-bound
-		Set[ChannelId] # will be added to MetaActivity during commit
-	]
+# Alias
+ActivityRegister = dict[
+    # activity stripped out of channel
+	frozenset[tuple[str, Any]],
+    # None: activity is not channel-bound, set[ChannelId]: will be added to MetaActivity during commit
+	None | set[ChannelId]
 ]
 
 
-class AbsCompiler(AmpelABC, AmpelBaseModel, abstract=True):
+class AbsCompiler(AmpelUnit, AmpelABC, abstract=True):
 
-	origin: Optional[int] = None
+	origin: None | int = None
 	tier: Literal[-1, 0, 1, 2, 3]
 	run_id: int
-	tag: Optional[Union[Tag, Sequence[Tag]]]
-
+	tag: None | OneOrMany[Tag]
 
 	def __init__(self, **kwargs) -> None:
 
 		super().__init__(**kwargs)
 		self._tag = None
-		self._ingest_tag_activity: Optional[MetaActivity] = None
+		self._ingest_tag_activity: None | MetaActivity = None
 
 		if self.tag:
 			self._ingest_tag_activity = {'action': MetaActionCode.ADD_INGEST_TAG}
@@ -58,19 +56,19 @@ class AbsCompiler(AmpelABC, AmpelBaseModel, abstract=True):
 
 
 	@abstractmethod
-	def commit(self, ingester: AbsDocIngester, now: Union[int, float], **kwargs) -> None:
+	def commit(self, ingester: AbsDocIngester, now: int | float, **kwargs) -> None:
 		...
 
 
 	def register_meta_info(self,
 		ar: ActivityRegister,
-		extra_register: Dict[str, Any], # meta_extra
+		extra_register: dict[str, Any], # meta_extra
 		channel: ChannelId,
-		activity: Optional[Union[MetaActivity, List[MetaActivity]]] = None,
-		meta_extra: Optional[Dict[str, Any]] = None
+		activity: None | MetaActivity | list[MetaActivity] = None,
+		meta_extra: None | dict[str, Any] = None
 	) -> None:
 		"""
-		Note: We could support the type List[Tuple[str, any]] for the parameter activity
+		Note: We could support the type list[tuple[str, any]] for the parameter activity
 		as the dict form is actually superfluous (frozenset(dict.items()) is used in the end)
 		but the performance gain is negligible (~80ns) and it complicates static typing
 		"""
@@ -145,7 +143,7 @@ class AbsCompiler(AmpelABC, AmpelBaseModel, abstract=True):
 
 
 	@staticmethod
-	def _metactivity_key(activity: MetaActivity, skip_keys: Optional[set[str]] = None) -> FrozenSet[tuple[str, Any]]:
+	def _metactivity_key(activity: MetaActivity, skip_keys: None | set[str] = None) -> frozenset[tuple[str, Any]]:
 		return frozenset(
 			(
 				k,
@@ -157,9 +155,9 @@ class AbsCompiler(AmpelABC, AmpelBaseModel, abstract=True):
 
 	def new_meta_info(self,
 		channel: ChannelId,
-		activity: Optional[Union[MetaActivity, List[MetaActivity]]] = None,
-		meta_extra: Optional[Dict[str, Any]] = None
-	) -> Tuple[ActivityRegister, Dict[str, Any]]: # activity register, meta_extra
+		activity: None | MetaActivity | list[MetaActivity] = None,
+		meta_extra: None | dict[str, Any] = None
+	) -> tuple[ActivityRegister, dict[str, Any]]: # activity register, meta_extra
 
 		ar: ActivityRegister = {}
 		add_chan_registered = False
@@ -189,14 +187,14 @@ class AbsCompiler(AmpelABC, AmpelBaseModel, abstract=True):
 
 
 	def build_meta(self,
-		d: Dict[
-			FrozenSet[Tuple[str, Any]], # key: traceid
-			Tuple[ActivityRegister, Dict[str, Any]] # activity register, meta_extra
+		d: dict[
+			frozenset[tuple[str, Any]], # key: traceid
+			tuple[ActivityRegister, dict[str, Any]] # activity register, meta_extra
 		],
-		now: Union[int, float]
-	) -> Tuple[List[MetaRecord], List[Tag]]:
+		now: int | float
+	) -> tuple[list[MetaRecord], list[Tag]]:
 
-		recs: List[MetaRecord] = []
+		recs: list[MetaRecord] = []
 		tags = set(self._tag) if self._tag else set()
 
 		# v[1]: dict[traceid, (activity register, meta_extra)]

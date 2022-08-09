@@ -4,11 +4,12 @@
 # License			: BSD-3-Clause
 # Author			: Jakob van Santen <jakob.van.santen@desy.de>
 # Date				: 02.08.2020
-# Last Modified Date: 02.08.2020
+# Last Modified Date:  02.08.2020
 # Last Modified By	: Jakob van Santen <jakob.van.santen@desy.de>
 
 from itertools import islice
-from typing import Sequence, Dict, List, Any, Union, Optional, Generator
+from typing import Any
+from collections.abc import Sequence, Generator
 
 from ampel.types import StockId
 from ampel.t3.supply.select.T3StockSelector import T3StockSelector
@@ -39,11 +40,11 @@ class T3FilteringStockSelector(T3StockSelector):
 		}
 	"""
 
-	t2_filter: Union[T2FilterModel, AllOf[T2FilterModel], AnyOf[T2FilterModel]]
+	t2_filter: T2FilterModel | AllOf[T2FilterModel] | AnyOf[T2FilterModel]
 	chunk_size: int = 200
 
 	# Override/Implement
-	def fetch(self) -> Generator[Dict[str,Any], None, None]:
+	def fetch(self) -> Generator[dict[str, Any], None, None]: # type: ignore[override]
 
 		# Execute query on T0 collection to get target stocks
 		if not (cursor := super().fetch()):
@@ -70,7 +71,7 @@ class T3FilteringStockSelector(T3StockSelector):
 
 
 
-	def _build_match(self, f: Union[T2FilterModel, AllOf[T2FilterModel], AnyOf[T2FilterModel]]) -> Dict[str, Any]:
+	def _build_match(self, f: T2FilterModel | AllOf[T2FilterModel] | AnyOf[T2FilterModel]) -> dict[str, Any]:
 		if isinstance(f, T2FilterModel):
 			return {f"{f.unit}.{k}": v for k, v in f.match.items()}
 		elif isinstance(f, AllOf):
@@ -81,14 +82,14 @@ class T3FilteringStockSelector(T3StockSelector):
 			raise TypeError()
 
 
-	def _t2_filter_pipeline(self, stock_ids: List[StockId]) -> List[Dict]:
+	def _t2_filter_pipeline(self, stock_ids: list[StockId]) -> list[dict]:
 		return self._t2_merge_pipeline(stock_ids) + [
 			{'$match': self._build_match(self.t2_filter)},
 			{'$replaceRoot': {'newRoot': {'stock': '$_id'}}}
 		]
 
 
-	def _t2_merge_pipeline(self, stock_ids: List[StockId]) -> List[Dict[str, Any]]:
+	def _t2_merge_pipeline(self, stock_ids: list[StockId]) -> list[dict[str, Any]]:
 		"""
 		Create a pipeline for the T2 collection that yields docs whose _id is
 		the stock id and whose remaining fields are the latest result for each
@@ -186,7 +187,7 @@ class T3FilteringStockSelector(T3StockSelector):
 			}
 		]
 
-def _all_units(filters: Union[T2FilterModel, AllOf[T2FilterModel], AnyOf[T2FilterModel]]) -> List[str]:
+def _all_units(filters: T2FilterModel | AllOf[T2FilterModel] | AnyOf[T2FilterModel]) -> list[str]:
 	"""
 	Get the set of all units involved in the selection
 	"""

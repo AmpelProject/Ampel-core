@@ -1,13 +1,13 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-core/ampel/cli/AbsStockCommand.py
-# License           : BSD-3-Clause
-# Author            : vb <vbrinnel@physik.hu-berlin.de>
-# Date              : 25.03.2021
-# Last Modified Date: 25.03.2021
-# Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
+# File:                Ampel-core/ampel/cli/AbsStockCommand.py
+# License:             BSD-3-Clause
+# Author:              valery brinnel <firstname.lastname@gmail.com>
+# Date:                25.03.2021
+# Last Modified Date:  25.03.2021
+# Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from typing import Dict, Any, Optional, Union, Literal
+from typing import Any, Literal
 from ampel.cli.ArgParserBuilder import ArgParserBuilder
 from ampel.cli.MaybeIntAction import MaybeIntAction
 from ampel.cli.LoadJSONAction import LoadJSONAction
@@ -27,7 +27,7 @@ class AbsStockCommand(AbsCoreCommand, abstract=True):
 	"""
 
 	@staticmethod
-	def get_select_args_help() -> Dict[str, str]:
+	def get_select_args_help() -> dict[str, str]:
 
 		return {
 			# Required
@@ -90,9 +90,9 @@ class AbsStockCommand(AbsCoreCommand, abstract=True):
 		builder.add_arg('match', "custom-match", metavar="#", action=LoadJSONAction)
 
 
-	def get_tag(self, args: Dict[str, Any]) -> Optional[Dict[Union[Literal['with'], Literal['without']], Dict]]:
+	def get_tag(self, args: dict[str, Any]) -> None | dict[Literal['with', 'without'], dict]:
 
-		tag: Optional[Dict[Union[Literal['with'], Literal['without']], Dict]] = None
+		tag: None | dict[Literal['with', 'without'], dict] = None
 		if args.get('with_tag'):
 			tag = {'with': args['with_tag']}
 		if args.get('without_tag'):
@@ -102,7 +102,7 @@ class AbsStockCommand(AbsCoreCommand, abstract=True):
 		return tag
 
 
-	def build_select_model(self, args: Dict[str, Any]) -> UnitModel:
+	def build_select_model(self, args: dict[str, Any]) -> UnitModel:
 
 		conf = {
 			"created": self.get_time_model("created", args),
@@ -123,9 +123,9 @@ class AbsStockCommand(AbsCoreCommand, abstract=True):
 		return UnitModel(unit="T3StockSelector", config=conf)
 
 
-	def get_time_model(self, prefix: str, args: Dict[str, Any]) -> TimeConstraintModel:
+	def get_time_model(self, prefix: str, args: dict[str, Any]) -> TimeConstraintModel:
 
-		d: Dict[str, Any] = {'after': None, 'before': None}
+		d: dict[str, Any] = {'after': None, 'before': None}
 
 		for when in ('after', 'before'):
 			if args.get(x := f"{prefix}_{when}_ts"):

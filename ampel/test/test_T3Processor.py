@@ -1,16 +1,17 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-core/ampel/test/test_T3Processor.py
-# License           : BSD-3-Clause
-# Author            : jvs
-# Date              : Unspecified
-# Last Modified Date: 10.12.2021
-# Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
+# File:                Ampel-core/ampel/test/test_T3Processor.py
+# License:             BSD-3-Clause
+# Author:              jvs
+# Date:                Unspecified
+# Last Modified Date:  25.07.2022
+# Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from typing import Generator, Optional
+from collections.abc import Generator
 from ampel.dev.DevAmpelContext import DevAmpelContext
 from ampel.struct.JournalAttributes import JournalAttributes
 from ampel.struct.StockAttributes import StockAttributes
+from ampel.enum.EventCode import EventCode
 from ampel.view.SnapView import SnapView
 from ampel.view.T3Store import T3Store
 import pytest
@@ -74,8 +75,9 @@ def test_unit_raises_error(
     t3.run()
     assert dev_context.db.get_collection("events").count_documents({}) == 1
     event = dev_context.db.get_collection("events").find_one({})
+    assert event
     assert event["run"] == 1
-    assert event["success"] == expect_success
+    assert event["code"] == EventCode.OK.value if expect_success else EventCode.EXCEPTION
 
 
 def test_view_generator(integration_context: DevAmpelContext, ingest_stock):
@@ -83,7 +85,7 @@ def test_view_generator(integration_context: DevAmpelContext, ingest_stock):
     class SendySend(AbsT3ReviewUnit):
         raise_on_process: bool = False
 
-        def process(self, gen: Generator[SnapView, T3Send, None], t3s: Optional[T3Store] = None):
+        def process(self, gen: Generator[SnapView, T3Send, None], t3s: None | T3Store = None):
             for view in gen:
                 gen.send(
                     (
@@ -131,6 +133,7 @@ def test_view_generator(integration_context: DevAmpelContext, ingest_stock):
     t3.run()
 
     stock = integration_context.db.get_collection("stock").find_one()
+    assert stock
     assert "TAGGYTAG" in stock["tag"]
     assert "floopsy" in stock["name"]
     assert len(entries := [jentry for jentry in stock["journal"] if jentry["tier"] == 3]) == 1

@@ -1,16 +1,17 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-core/ampel/aux/ComboDictModifier.py
-# License           : BSD-3-Clause
-# Author            : vb <vbrinnel@physik.hu-berlin.de>
-# Date              : 21.02.2020
-# Last Modified Date: 21.06.2020
-# Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
+# File:                Ampel-core/ampel/aux/ComboDictModifier.py
+# License:             BSD-3-Clause
+# Author:              valery brinnel <firstname.lastname@gmail.com>
+# Date:                21.02.2020
+# Last Modified Date:  21.06.2020
+# Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from typing import Dict, Sequence, Union, Literal, List, Optional, Callable, Container, Any, Set
+from typing import Literal, Any
+from collections.abc import Container, Callable, Sequence
 from ampel.abstract.AbsApplicable import AbsApplicable
 from ampel.base.AuxUnitRegister import AuxUnitRegister
-from ampel.model.StrictModel import StrictModel
+from ampel.base.AmpelBaseModel import AmpelBaseModel
 from ampel.log import AmpelLogger, VERBOSE
 from ampel.util.collections import to_set
 from ampel.view.ReadOnlyDict import ReadOnlyDict
@@ -21,7 +22,7 @@ class ComboDictModifier(AbsApplicable):
 	Note: cannot make different modifications of the same ast at different depth
 	"""
 
-	class DeleteModel(StrictModel):
+	class DeleteModel(AmpelBaseModel):
 		"""
 		ex: for a given dict instance *d*, the model:
 			{'op': 'delete', 'key': ['a', 'b.c']}
@@ -35,21 +36,21 @@ class ComboDictModifier(AbsApplicable):
 		def __init__(self, **kwargs):
 			if 'key' in kwargs and isinstance(kwargs['key'], str):
 				kwargs['key'] = [kwargs['key']]
-			StrictModel.__init__(self, **kwargs)
+			AmpelBaseModel.__init__(self, **kwargs)
 
 
-	class KeepOnlyModel(StrictModel):
+	class KeepOnlyModel(AmpelBaseModel):
 		"""
 		ex: for a given dict instance *d*, the model:
 		{'op': 'keep_only', 'key': 'a.b', 'keep': ['y', 'z']}
 		will keep only the keys 'y' and 'z' of d['a']['b']
 		"""
 		op: Literal['keep_only']
-		key: Optional[str]
-		keep: Union[int, str, Sequence[Union[int, str]]]
+		key: None | str
+		keep: int | str | Sequence[int | str]
 
 
-	class ClassModifyModel(StrictModel):
+	class ClassModifyModel(AmpelBaseModel):
 		"""
 		ex: for a given dict instance *d*, the model:
 			{'op': 'modify', 'key': 'a.b', 'unit': 'SetIntersector', config: {'value': [1, 2]}}
@@ -59,17 +60,17 @@ class ComboDictModifier(AbsApplicable):
 		op: Literal['modify']
 		key: str
 		unit: str
-		config: Dict[str, Any]
+		config: dict[str, Any]
 
 
-	class FuncModifyModel(StrictModel):
+	class FuncModifyModel(AmpelBaseModel):
 		op: Literal['modify']
 		key: str
 		func: Callable[[Any], Any]
 
 
 	logger: AmpelLogger
-	modifications: Sequence[Union[DeleteModel, KeepOnlyModel, ClassModifyModel, FuncModifyModel]]
+	modifications: Sequence[DeleteModel | KeepOnlyModel | ClassModifyModel | FuncModifyModel]
 
 	# Whether fields can be directly altered/modified or not
 	# If not, new dict instances must be created to modify existing dicts
@@ -95,18 +96,16 @@ class ComboDictModifier(AbsApplicable):
 		super().__init__(**kwargs)
 
 		# Dict ops on root dict keys
-		self._mods: Dict[str, List[Callable[[Any], Any]]] = {}
-		self._dels: Set[str] = set()
+		self._mods: dict[str, list[Callable[[Any], Any]]] = {}
+		self._dels: set[str] = set()
 		self._root_ko: Container[str] = set()
-		self._depth1_ko: Dict[str, Container[str]] = {}
+		self._depth1_ko: dict[str, Container[str]] = {}
 
 		# Mypy does not yet support recursive types
-		# RecursiveModType = Dict[str, Union[Callable[[Dict], Dict], "RecursiveModType"]]
-		# RecursiveDelType = Dict[str, Union[Dict[str, "RecursiveDelType"]]]
 
-		self._nested_dels: Dict[str, Any] = {}
-		self._nested_ko: Dict[str, Any] = {}
-		self._nested_mods: Dict[str, Any] = {}
+		self._nested_dels: dict[str, Any] = {}
+		self._nested_ko: dict[str, Any] = {}
+		self._nested_mods: dict[str, Any] = {}
 
 		for f in self.modifications:
 
@@ -196,7 +195,7 @@ class ComboDictModifier(AbsApplicable):
 			self._mods = {}
 
 
-		ops: Dict[str, Any] = {
+		ops: dict[str, Any] = {
 			# Ops handling non-nested keys
 			"apply_root_delete": self._dels,
 			"apply_root_modify": self._mods,
@@ -231,7 +230,7 @@ class ComboDictModifier(AbsApplicable):
 	# =========================================
 
 	# Delete dict elements at root level
-	def apply_root_delete(self, d: Dict) -> Dict:
+	def apply_root_delete(self, d: dict) -> dict:
 		""" deletes given keys of dict instance """
 
 		if self.unalterable:
@@ -246,7 +245,7 @@ class ComboDictModifier(AbsApplicable):
 
 
 	# "Keep only" specified dict keys at root level
-	def apply_root_keep_only(self, d: Dict) -> Dict:
+	def apply_root_keep_only(self, d: dict) -> dict:
 		"""
 		Deletes all but certain dict keys of a dict (at root level).
 		For example, applying model: {'op': 'delete', 'keep': ['a']}
@@ -258,7 +257,7 @@ class ComboDictModifier(AbsApplicable):
 
 
 	# "Keep only" for keys with depth equals 1
-	def apply_depth1_keep_only(self, d: Dict) -> Dict:
+	def apply_depth1_keep_only(self, d: dict) -> dict:
 		"""
 		Deletes all but certain dict keys for a given given root keys.
 		For example, applying model:
@@ -282,7 +281,7 @@ class ComboDictModifier(AbsApplicable):
 
 
 	# Modifications of dict elements at root level
-	def apply_root_modify(self, d: Dict) -> Dict:
+	def apply_root_modify(self, d: dict) -> dict:
 		""" Modifies root elements of dict instances """
 
 		if self.unalterable:
@@ -302,7 +301,7 @@ class ComboDictModifier(AbsApplicable):
 	# =====================================
 
 	# Delete nested dict elements of any depth
-	def apply_delete(self, d: Dict, deletions: Optional[Dict] = None) -> Dict:
+	def apply_delete(self, d: dict, deletions: None | dict = None) -> dict:
 		"""
 		Method apply_delete:
 		:param deletions: if None, self._nested_dels is used (set by constructor)
@@ -331,7 +330,7 @@ class ComboDictModifier(AbsApplicable):
 
 
 	# Delete nested dict elements of any depth
-	def apply_modify(self, d: Dict, modifications: Optional[Dict] = None) -> Dict:
+	def apply_modify(self, d: dict, modifications: None | dict = None) -> dict:
 		"""
 		Method apply_modify:
 		:param modifications: if None, self._nested_mods is used (set by constructor)
@@ -356,7 +355,7 @@ class ComboDictModifier(AbsApplicable):
 	# Keep only dict elements of any depth
 	######################################
 
-	def apply_keep_only(self, d: Dict, nested_map: Optional[Dict] = None) -> Dict:
+	def apply_keep_only(self, d: dict, nested_map: None | dict = None) -> dict:
 		"""
 		Method apply_keep_only:
 		:param nested_map: if None, self._nested_ko is used (set by constructor)
@@ -377,7 +376,7 @@ class ComboDictModifier(AbsApplicable):
 		return ReadOnlyDict(d) if self.freeze else d
 
 
-	def apply(self, d: Dict) -> Optional[Dict]:
+	def apply(self, d: dict) -> None | dict:
 		""" Modifies provided dict according to configured operations """
 		try:
 			for op in self.ops:

@@ -44,7 +44,6 @@ def dump(payload, tmpdir, name) -> Path:
 def vault(tmpdir):
     return dump({"foo": "bar"}, tmpdir, "secrets.yml")
 
-
 @pytest.fixture
 def secrets():
     return {
@@ -54,7 +53,6 @@ def secrets():
         "list": [1, 2, 3.5, "flerp"],
     }
 
-
 @pytest.fixture
 def dir_secret_store(tmpdir, secrets):
     parent_dir = Path(tmpdir) / "secrets"
@@ -63,14 +61,18 @@ def dir_secret_store(tmpdir, secrets):
         dump(v, parent_dir, k)
     return parent_dir
 
-
 @pytest.fixture
 def schema(tmpdir):
     return dump({"name": "job", "task": [{"unit": "Nonesuch"}]}, tmpdir, "schema.yml")
 
 
-def test_secrets(testing_config, vault: Path, schema: Path, mocker: MockerFixture):
-    new_context_unit = mocker.patch("ampel.core.UnitLoader.UnitLoader.new_context_unit")
+@pytest.fixture
+def mock_new_context_unit(mocker: MockerFixture):
+    mocker.patch("ampel.core.AmpelDB.AmpelDB.get_collection")
+    return mocker.patch("ampel.core.UnitLoader.UnitLoader.new_context_unit")
+
+
+def test_secrets(testing_config, vault: Path, schema: Path, mock_new_context_unit):
     assert (
         run(
             [
@@ -86,8 +88,8 @@ def test_secrets(testing_config, vault: Path, schema: Path, mocker: MockerFixtur
         )
         == None
     )
-    assert new_context_unit.call_count == 1
-    loader_vault: Optional[AmpelVault] = new_context_unit.call_args.kwargs[
+    assert mock_new_context_unit.call_count == 1
+    loader_vault: Optional[AmpelVault] = mock_new_context_unit.call_args.kwargs[
         "context"
     ].loader.vault
     assert loader_vault is not None
@@ -100,10 +102,9 @@ def test_resources_from_env(
     testing_config,
     vault: Path,
     schema: Path,
-    mocker: MockerFixture,
+    mock_new_context_unit,
     monkeypatch: pytest.MonkeyPatch,
 ):
-    new_context_unit = mocker.patch("ampel.core.UnitLoader.UnitLoader.new_context_unit")
     monkeypatch.setenv("AMPEL_CONFIG_resource.mongo", "flerp")
     monkeypatch.setenv("AMPEL_CONFIG_resource.herp", "37")
     assert (
@@ -121,7 +122,7 @@ def test_resources_from_env(
         )
         == None
     )
-    config: AmpelConfig = new_context_unit.call_args.kwargs["context"].config
+    config: AmpelConfig = mock_new_context_unit.call_args.kwargs["context"].config
     assert config.get("resource.mongo") == "flerp"
     assert config.get("resource.herp") == 37
 

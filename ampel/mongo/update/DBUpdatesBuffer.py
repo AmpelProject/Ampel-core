@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-core/ampel/mongo/update/DBUpdatesBuffer.py
-# License           : BSD-3-Clause
-# Author            : vb <vbrinnel@physik.hu-berlin.de>
-# Date              : 31.10.2018
-# Last Modified Date: 01.05.2020
-# Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
+# File:                Ampel-core/ampel/mongo/update/DBUpdatesBuffer.py
+# License:             BSD-3-Clause
+# Author:              valery brinnel <firstname.lastname@gmail.com>
+# Date:                31.10.2018
+# Last Modified Date:  22.04.2022
+# Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from time import time
 from math import inf
@@ -13,7 +13,8 @@ from multiprocessing.pool import ThreadPool
 from pymongo.errors import BulkWriteError
 from pymongo.collection import Collection
 from pymongo import UpdateOne, InsertOne, UpdateMany
-from typing import Dict, List, Any, Union, Callable, Optional, Iterable, Literal
+from typing import Any, Literal, Union, Mapping
+from collections.abc import Callable, Iterable
 
 from ampel.core.Schedulable import Schedulable
 from ampel.log.utils import report_exception, report_error, convert_dollars
@@ -83,14 +84,14 @@ class DBUpdatesBuffer(Schedulable):
 
 	def __init__(self,
 		ampel_db: AmpelDB,
-		run_id: Union[int, List[int]],
+		run_id: int | list[int],
 		logger: AmpelLogger,
-		error_callback: Optional[Callable[[], None]] = None,
+		error_callback: None | Callable[[], None] = None,
 		catch_signals: bool = True,
-		log_doc_ids: Optional[Iterable[int]] = None,
-		push_interval: Optional[float] = 3.,
-		max_size: Optional[int] = None,
-		threads: Optional[int] = None,
+		log_doc_ids: None | Iterable[int] = None,
+		push_interval: None | float = 3.,
+		max_size: None | int = None,
+		threads: None | int = None,
 		raise_exc: bool = False
 	):
 		"""
@@ -117,16 +118,16 @@ class DBUpdatesBuffer(Schedulable):
 		self._new_buffer()
 		self.error_callback = error_callback
 
-		self._cols: Dict[AmpelMainCol, Collection] = {
+		self._cols: dict[AmpelMainCol, Collection] = {
 			col_name: ampel_db.get_collection(col_name)
 			for col_name in self.db_ops.keys()
 		}
 
-		self.stats: Dict[AmpelMainCol, int] = {
+		self.stats: dict[AmpelMainCol, int] = {
 			'stock': 0, 't0': 0, 't1': 0, 't2': 0,
 		}
 
-		self._err_db_ops: Dict[str, Any] = {k: [] for k in self.db_ops.keys()}
+		self._err_db_ops: dict[str, Any] = {k: [] for k in self.db_ops.keys()}
 		self._ampel_db = ampel_db
 		self.run_id = run_id
 		self.logger = logger
@@ -157,7 +158,7 @@ class DBUpdatesBuffer(Schedulable):
 		""" Creates new buffer for pymongo operations """
 
 		# total number of updates (of all kinds/collections)
-		self.db_ops: Dict[AmpelMainCol, List[DBOp]] = {
+		self.db_ops: dict[AmpelMainCol, list[DBOp]] = {
 			't2': [], 't0': [], 'stock': [], 't1': []
 		}
 
@@ -172,7 +173,7 @@ class DBUpdatesBuffer(Schedulable):
 			self.thread_pool.join()
 
 
-	def add_updates(self, updates: Dict[AmpelMainCol, List[DBOp]]) -> None:
+	def add_updates(self, updates: dict[AmpelMainCol, list[DBOp]]) -> None:
 		"""
 		:raises: KeyError if dict key is unknown (known keys: stock, t0, t1, t2)
 		"""
@@ -180,7 +181,7 @@ class DBUpdatesBuffer(Schedulable):
 			self.db_ops[k] += v
 
 
-	def add_col_updates(self, col: AmpelMainCol, updates: List[DBOp]) -> None:
+	def add_col_updates(self, col: AmpelMainCol, updates: list[DBOp]) -> None:
 		""" :raises: KeyError if col is unknown (known cols: stock, t0, t1, t2) """
 		self.db_ops[col] += updates
 
@@ -265,7 +266,7 @@ class DBUpdatesBuffer(Schedulable):
 					self.call_bulk_write(col_name, db_ops[col_name])
 
 
-	def call_bulk_write(self, col_name: AmpelMainCol, db_ops: List, *, extra: Optional[Dict] = None) -> None:
+	def call_bulk_write(self, col_name: AmpelMainCol, db_ops: list, *, extra: None | dict = None) -> None:
 		"""
 		:param col_name: Ampel DB collection name (ex: stock, t0, t1, t2)
 		:param db_ops: list of pymongo operations
@@ -367,7 +368,7 @@ class DBUpdatesBuffer(Schedulable):
 
 					if dup_key_only:
 						self.logger.debug(
-							f"Race condition(s) recovered: {len(bwe.details.get('writeErrors'))}",
+							f"Race condition(s) recovered: {len(bwe.details.get('writeErrors', []))}",
 							extra=self._build_log_extra(col_name, db_ops, bwe.details, extra)
 						)
 
@@ -394,10 +395,11 @@ class DBUpdatesBuffer(Schedulable):
 
 
 	def _build_log_extra(self,
-		col_name: str, ops: List[DBOp],
-		bulk_api_result: Dict[str, Any],
-		extra: Optional[Dict[str, Any]] = None
-	) -> Dict[str, Any]:
+		col_name: str,
+		ops: list[DBOp],
+		bulk_api_result: Mapping[str, Any],
+		extra: None | dict[str, Any] = None
+	) -> dict[str, Any]:
 
 		ret = {
 			'col': intcol[col_name],
@@ -407,14 +409,15 @@ class DBUpdatesBuffer(Schedulable):
 		}
 
 		if self.log_doc_ids and ret['col'] in self.log_doc_ids:
+			op_filter = op._filter # type: ignore[name-defined]
 			if ret['col'] != 2:
-				ret['docs'] = [op._filter['_id'] for op in ops]
+				ret['docs'] = [op_filter['_id'] for op in ops]
 			else:
 				ret['docs'] = [
 					{
-						'unit': op._filter['unit'],
-						'config': op._filter['config'],
-						'link': op._filter['link']
+						'unit': op_filter['unit'],
+						'config': op_filter['config'],
+						'link': op_filter['link']
 					}
 					for op in ops
 				]

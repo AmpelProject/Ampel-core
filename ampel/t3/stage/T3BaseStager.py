@@ -1,14 +1,14 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-core/ampel/t3/stage/T3BaseStager.py
-# License           : BSD-3-Clause
-# Author            : vb <vbrinnel@physik.hu-berlin.de>
-# Date              : 08.12.2021
-# Last Modified Date: 19.12.2021
-# Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
+# File:                Ampel-core/ampel/t3/stage/T3BaseStager.py
+# License:             BSD-3-Clause
+# Author:              valery brinnel <firstname.lastname@gmail.com>
+# Date:                08.12.2021
+# Last Modified Date:  19.12.2021
+# Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from time import time
-from typing import Optional, Generator
+from collections.abc import Generator
 
 from ampel.types import ChannelId
 from ampel.view.T3Store import T3Store
@@ -28,10 +28,10 @@ class T3BaseStager(AbsT3Stager, T3DocBuilder, abstract=True):
 	"""
 
 	# Require single channel for now (T3DocBuilder allows multi-channel)
-	channel: Optional[ChannelId] = None
+	channel: None | ChannelId = None
 
 
-	def get_unit(self, unit_model: UnitModel, chan: Optional[ChannelId] = None) -> AbsT3ReviewUnit:
+	def get_unit(self, unit_model: UnitModel, chan: None | ChannelId = None) -> AbsT3ReviewUnit:
 		return self.context.loader.new_safe_logical_unit(
 			unit_model,
 			unit_type = AbsT3ReviewUnit,
@@ -53,7 +53,7 @@ class T3BaseStager(AbsT3Stager, T3DocBuilder, abstract=True):
 		ts = time()
 
 		try:
-			self.logger.info("Running T3unit", extra={'unit': t3_unit.__class__.__name__})
+			self.logger.info("Running T3 unit", extra={'unit': t3_unit.__class__.__name__})
 			if (ret := t3_unit.process(view_generator, t3s)) or self.save_stock_ids:
 				if x := self.handle_t3_result(t3_unit, ret, t3s, view_generator.get_stock_ids(), ts):
 					yield x

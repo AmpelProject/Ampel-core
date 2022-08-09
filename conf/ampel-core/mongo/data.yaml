@@ -27,9 +27,11 @@ collections:
   - field: stock
   - field: channel
   - field: code
+  - field: meta.ts
 - name: t3
   indexes:
   - field: process
+  - field: meta.ts
 role:
   r: logger
   w: writer

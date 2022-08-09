@@ -1,15 +1,16 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-core/ampel/cli/T3BufferBinaryExporter.py
-# License           : BSD-3-Clause
-# Author            : vb <vbrinnel@physik.hu-berlin.de>
-# Date              : 25.03.2021
-# Last Modified Date: 10.12.2021
-# Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
+# File:                Ampel-core/ampel/cli/T3BufferBinaryExporter.py
+# License:             BSD-3-Clause
+# Author:              valery brinnel <firstname.lastname@gmail.com>
+# Date:                25.03.2021
+# Last Modified Date:  10.12.2021
+# Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from bson import encode
 from io import BufferedWriter
-from typing import Optional, Union, BinaryIO, Generator
+from typing import BinaryIO
+from collections.abc import Generator
 
 from ampel.view.T3Store import T3Store
 from ampel.log.AmpelLogger import AmpelLogger
@@ -24,18 +25,18 @@ class T3BufferBinaryExporter(AbsT3Stager):
 	Exports AmpelBuffer instances as JSON (with base64 encoded bytes values) into file
 	"""
 
-	fd: Union[BufferedWriter, BinaryIO]
+	fd: BufferedWriter | BinaryIO
 	raise_exc: bool = True
 	update_journal: bool = False
 	close_fd: bool = True
 	verbose: bool = True
-	id_mapper: Optional[AbsIdMapper] = None
+	id_mapper: None | AbsIdMapper = None
 
 
 	def stage(self,
 		gen: Generator[AmpelBuffer, None, None],
 		t3s: T3Store
-	) -> Optional[Generator[T3Document, None, None]]:
+	) -> None | Generator[T3Document, None, None]:
 
 		logger = AmpelLogger.get_logger()
 

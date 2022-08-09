@@ -1,14 +1,16 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-core/ampel/t3/supply/complement/T3ExtJournalAppender.py
-# License           : BSD-3-Clause
-# Author            : vb <vbrinnel@physik.hu-berlin.de>
-# Date              : 17.06.2020
-# Last Modified Date: 14.12.2021
-# Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
+# File:                Ampel-core/ampel/t3/supply/complement/T3ExtJournalAppender.py
+# License:             BSD-3-Clause
+# Author:              valery brinnel <firstname.lastname@gmail.com>
+# Date:                17.06.2020
+# Last Modified Date:  28.02.2022
+# Last Modified By:    Marcus Fenner <mf@physik.hu-berlin.de>
 
 from pymongo import MongoClient
-from typing import Iterable, Optional, Union, List
+from pymongo.collection import Collection
+from typing import Optional
+from collections.abc import Iterable
 from ampel.types import StockId
 from ampel.aux.filter.SimpleDictArrayFilter import SimpleDictArrayFilter
 from ampel.content.JournalRecord import JournalRecord
@@ -30,24 +32,27 @@ class T3ExtJournalAppender(AbsBufferComplement):
 	db_name: str = "Ampel_data"
 	sort: bool = True
 	reverse: bool = True
-	filter_config: Optional[
-		Union[FilterCriterion, FlatAnyOf[FilterCriterion], AllOf[FilterCriterion]]
-	] = None
+	filter_config: None | FilterCriterion | FlatAnyOf[FilterCriterion] | AllOf[FilterCriterion] = None
 
 
 	def __init__(self, **kwargs) -> None:
 
-		super.__init__(**kwargs)
+		super().__init__(**kwargs)
 
 		if self.filter_config:
 			self.journal_filter: SimpleDictArrayFilter[JournalRecord] = SimpleDictArrayFilter(filters=self.filter_config)
 
-		self.col = MongoClient(self.context.config.get(f'resource.{self.mongo_resource}')) \
+		self.col: Collection = MongoClient(
+			**self.context.config.get(
+				f'resource.{self.mongo_resource}',
+				dict, raise_exc=True
+			)
+		) \
 			.get_database(self.db_name)\
 			.get_collection("stock")
 
 
-	def get_ext_journal(self, stock_id: StockId) -> Optional[List[JournalRecord]]:
+	def get_ext_journal(self, stock_id: StockId) -> None | list[JournalRecord]:
 
 		if ext_stock := next(self.col.find({'_id': stock_id}), None):
 			if self.journal_filter:

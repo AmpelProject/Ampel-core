@@ -1,14 +1,15 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-core/ampel/mongo/query/var/LogsMatcher.py
-# License           : BSD-3-Clause
-# Author            : vb <vbrinnel@physik.hu-berlin.de>
-# Date              : 29.11.2018
-# Last Modified Date: 26.03.2021
-# Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
+# File:                Ampel-core/ampel/mongo/query/var/LogsMatcher.py
+# License:             BSD-3-Clause
+# Author:              valery brinnel <firstname.lastname@gmail.com>
+# Date:                29.11.2018
+# Last Modified Date:  26.03.2021
+# Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 import collections.abc
-from typing import Dict, Any, Union, Sequence, Optional, get_args
+from typing import Any, get_args
+from collections.abc import Sequence
 from datetime import datetime
 from bson.objectid import ObjectId
 from ampel.types import ChannelId, StockId
@@ -25,13 +26,13 @@ class LogsMatcher:
 
 	@classmethod
 	def new(cls,
-		after: Optional[str] = None,
-		before: Optional[str] = None,
-		channel: Optional[Union[ChannelId, Sequence[ChannelId]]] = None,
-		stock: Optional[Union[StockId, Sequence[StockId]]] = None,
-		run: Optional[Union[int, Sequence[int], Dict[str, Any]]] = None,
-		custom: Optional[Dict[str, Any]] = None,
-		id_mapper: Optional[AbsIdMapper] = None,
+		after: None | str = None,
+		before: None | str = None,
+		channel: None | ChannelId | Sequence[ChannelId] = None,
+		stock: None | StockId | Sequence[StockId] = None,
+		run: None | int | Sequence[int] = None,
+		custom: None | dict[str, Any] = None,
+		id_mapper: None | AbsIdMapper = None,
 		flag: int = None,
 		**kwargs # ignored, added for cli convenience
 	) -> "LogsMatcher":
@@ -69,11 +70,11 @@ class LogsMatcher:
 
 
 	def __init__(self):
-		self.match: Dict[str, Any] = {}
+		self.match: dict[str, Any] = {}
 		self.id_mapper = None
 
 
-	def get_match_criteria(self) -> Dict[str, Any]:
+	def get_match_criteria(self) -> dict[str, Any]:
 		return self.match
 
 
@@ -88,7 +89,7 @@ class LogsMatcher:
 
 
 	def set_channel(self,
-		channel: Union[ChannelId, Sequence[ChannelId], AllOf[ChannelId], AnyOf[ChannelId], OneOf[ChannelId]],
+		channel: ChannelId | Sequence[ChannelId] | AllOf[ChannelId] | AnyOf[ChannelId] | OneOf[ChannelId],
 		compact_logs: bool = True
 	) -> 'LogsMatcher':
 
@@ -112,7 +113,7 @@ class LogsMatcher:
 
 
 	def set_stock(self,
-		stock_id: Union[StockId, Sequence[StockId]]
+		stock_id: StockId | Sequence[StockId]
 	) -> 'LogsMatcher':
 		if (
 			self.id_mapper and (
@@ -127,8 +128,8 @@ class LogsMatcher:
 		return self
 
 
-	def set_run(self, run_id: Union[int, Sequence[int], Dict[str, Any]]) -> 'LogsMatcher':
-		self.match['r'] = run_id if isinstance(run_id, (int, dict)) else {'$in': run_id}
+	def set_run(self, run_id: int | Sequence[int]) -> 'LogsMatcher':
+		self.match['r'] = run_id if isinstance(run_id, int) else {'$in': run_id}
 		return self
 
 
@@ -140,7 +141,7 @@ class LogsMatcher:
 		return self
 
 
-	def set_after(self, dt: Union[datetime, str]) -> 'LogsMatcher':
+	def set_after(self, dt: datetime | str) -> 'LogsMatcher':
 		"""
 		Note: time operation is greater than / *equals*
 		:param dt: either datetime object or string (datetime.fromisoformat is used)
@@ -148,7 +149,7 @@ class LogsMatcher:
 		return self._set_time_constraint(dt, '$gte')
 
 
-	def set_before(self, dt: Union[datetime, str]) -> 'LogsMatcher':
+	def set_before(self, dt: datetime | str) -> 'LogsMatcher':
 		"""
 		Note: time operation is before than / *equals*
 		:param dt: either datetime object or string (datetime.fromisoformat is used)
@@ -156,7 +157,7 @@ class LogsMatcher:
 		return self._set_time_constraint(dt, '$lte')
 
 
-	def _set_time_constraint(self, dt: Union[datetime, str], op: str) -> 'LogsMatcher':
+	def _set_time_constraint(self, dt: datetime | str, op: str) -> 'LogsMatcher':
 		"""
 		Note: time operation is greater than / *equals*
 		:param dt: either datetime object or string (datetime.fromisoformat is used)

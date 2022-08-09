@@ -1,31 +1,31 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-core/ampel/mongo/query/var/events.py
-# License           : BSD-3-Clause
-# Author            : vb <vbrinnel@physik.hu-berlin.de>
-# Date              : 11.07.2018
-# Last Modified Date: 20.06.2020
-# Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
+# File:                Ampel-core/ampel/mongo/query/var/events.py
+# License:             BSD-3-Clause
+# Author:              valery brinnel <firstname.lastname@gmail.com>
+# Date:                11.07.2018
+# Last Modified Date:  20.06.2020
+# Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from bson import ObjectId
 from pymongo.collection import Collection
 from datetime import datetime, timedelta
-from typing import Dict, Optional, List, Literal, Any, Union, overload
+from typing import Literal, Any, overload
 
 
 def build_query(
 	tier: Literal[0, 1, 2, 3] = 0,
-	process_name: Optional[str] = None,
-	lte_time: Optional[Union[dict, int, float]] = None,
-	gte_time: Optional[Union[dict, int, float]] = None
-) -> Dict[str, Any]:
+	process_name: None | str = None,
+	lte_time: None | dict | int | float = None,
+	gte_time: None | dict | int | float = None
+) -> dict[str, Any]:
 	"""
 	:param gte_time: unix timestamp or timedelta argument
 	:param lte_time: unix timestamp or timedelta argument
 	:returns: list of dict to be used as aggregation pipeline query parameters
 	"""
 
-	match: Dict[str, Any] = {}
+	match: dict[str, Any] = {}
 
 	if gte_time:
 		match['_id'] = {
@@ -49,23 +49,23 @@ def build_query(
 @overload
 def get_last_run(
 	col: Collection, process_name: str, require_success: bool,
-	gte_time: Optional[Union[dict, float]], timestamp: Literal[True]
-) -> Optional[Union[float]]:
+	gte_time: None | dict | float, timestamp: Literal[True]
+) -> None | float:
 	...
 
 @overload
 def get_last_run(
 	col: Collection, process_name: str, require_success: bool,
-	gte_time: Optional[Union[dict, float]], timestamp: Literal[False]
-) -> Optional[Union[ObjectId]]:
+	gte_time: None | dict | float, timestamp: Literal[False]
+) -> None | ObjectId:
 	...
 
 def get_last_run(
 	col: Collection, process_name: str,
 	require_success: bool,
-	gte_time: Optional[Union[dict, float]] = None,
+	gte_time: None | dict | float = None,
 	timestamp: bool = True
-) -> Optional[Union[float, ObjectId]]:
+) -> None | float | ObjectId:
 	"""
 	:param gte_time: unix timestamp or timedelta argument
 	"""
@@ -82,9 +82,9 @@ def get_last_run(
 
 
 def build_t0_stats_query(
-	gte_time: Optional[Union[dict, int, float]] = None,
-	lte_time: Optional[Union[dict, int, float]] = None
-) -> List[Dict]:
+	gte_time: None | dict | int | float = None,
+	lte_time: None | dict | int | float = None
+) -> list[dict]:
 	"""
 	:param gte_time: unix timestamp or timedelta argument
 	:param lte_time: unix timestamp or timedelta argument
@@ -106,7 +106,7 @@ def build_t0_stats_query(
 	]
 
 
-def _get_datetime(t: Union[int, float, dict]) -> datetime:
+def _get_datetime(t: int | float | dict) -> datetime:
 	if isinstance(t, (int, float)):
 		return datetime.fromtimestamp(t)
 	elif isinstance(t, dict):

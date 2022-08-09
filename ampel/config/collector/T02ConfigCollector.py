@@ -1,14 +1,14 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-core/ampel/config/collector/T02ConfigCollector.py
-# License           : BSD-3-Clause
-# Author            : vb <vbrinnel@physik.hu-berlin.de>
-# Date              : 28.10.2019
-# Last Modified Date: 23.05.2021
-# Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
+# File:                Ampel-core/ampel/config/collector/T02ConfigCollector.py
+# License:             BSD-3-Clause
+# Author:              valery brinnel <firstname.lastname@gmail.com>
+# Date:                28.10.2019
+# Last Modified Date:  23.05.2021
+# Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 import hashlib, json
-from typing import Dict, Any, Union, List
+from typing import Any
 from ampel.util.hash import build_unsafe_dict_id
 from ampel.util.mappings import dictify
 from ampel.config.collector.AbsDictConfigCollector import AbsDictConfigCollector
@@ -23,9 +23,9 @@ class T02ConfigCollector(AbsDictConfigCollector):
 	"""
 
 	def add(self,
-		arg: Dict[str, Any],
+		arg: dict[str, Any],
 		dist_name: str,
-		version: Union[str, float, int],
+		version: str | float | int,
 		register_file: str
 	) -> int:
 

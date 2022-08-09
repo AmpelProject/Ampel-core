@@ -1,13 +1,14 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-core/ampel/t3/stage/project/T3ChannelProjector.py
-# License           : BSD-3-Clause
-# Author            : vb <vbrinnel@physik.hu-berlin.de>
-# Date              : 07.01.2020
-# Last Modified Date: 22.11.2020
-# Last Modified By  : Jakob van Santen <jakob.van.santen@desy.de>
+# File:                Ampel-core/ampel/t3/stage/project/T3ChannelProjector.py
+# License:             BSD-3-Clause
+# Author:              valery brinnel <firstname.lastname@gmail.com>
+# Date:                07.01.2020
+# Last Modified Date:  22.11.2020
+# Last Modified By:    Jakob van Santen <jakob.van.santen@desy.de>
 
-from typing import Sequence, Any, Dict, List, Union, Optional, Set
+from typing import Any
+from collections.abc import Sequence
 from ampel.types import ChannelId
 from ampel.log import VERBOSE
 from ampel.util.logicschema import reduce_to_set
@@ -20,7 +21,7 @@ from ampel.t3.stage.project.T3BaseProjector import T3BaseProjector
 
 class T3ChannelProjector(T3BaseProjector):
 
-	channel: Union[ChannelId, AllOf[ChannelId], AnyOf[ChannelId], OneOf[ChannelId]]
+	channel: ChannelId | AllOf[ChannelId] | AnyOf[ChannelId] | OneOf[ChannelId]
 
 	# Whether to cast structures into immutables objects after modification
 	freeze: bool = True
@@ -43,7 +44,7 @@ class T3ChannelProjector(T3BaseProjector):
 		self.verbose = self.logger.verbose
 		if self.verbose:
 			self.logger.log(VERBOSE, f"Setting up channel project for '{self.channel}'")
-		self._channel_set: Set[ChannelId] = reduce_to_set(self.channel)
+		self._channel_set: set[ChannelId] = reduce_to_set(self.channel)
 
 		journal_modifier = ComboDictModifier(
 			logger = self.logger,
@@ -64,14 +65,14 @@ class T3ChannelProjector(T3BaseProjector):
 			self.add_func_projector(key, self.channel_projection, first=True) # type: ignore
 
 
-	def overwrite_root_channel(self, v: Sequence[ChannelId]) -> Optional[Sequence[ChannelId]]:
+	def overwrite_root_channel(self, v: Sequence[ChannelId]) -> None | Sequence[ChannelId]:
 		if subset := list(self._channel_set.intersection(v)):
 			return subset
 		else:
 			return None
 
 
-	def channel_projection(self, dicts: Sequence[Dict[str, Any]]) -> Sequence[Dict[str, Any]]:
+	def channel_projection(self, dicts: Sequence[dict[str, Any]]) -> Sequence[dict[str, Any]]:
 		"""
 		Filters out dict entries not associated with configured channel
 		Note: debug ouput handled by super class
@@ -79,7 +80,7 @@ class T3ChannelProjector(T3BaseProjector):
 
 		channel_set = self._channel_set
 		setitem = dict.__setitem__
-		ret: List[Dict] = []
+		ret: list[dict] = []
 
 		if not dicts:
 			return []

@@ -1,14 +1,14 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-core/ampel/secret/DictSecretProvider.py
-# License           : BSD-3-Clause
-# Author            : Jakob van Santen <jakob.van.santen@desy.de>
-# Date              : 14.08.2020
-# Last Modified Date: 07.09.2021
-# Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
+# File:                Ampel-core/ampel/secret/DictSecretProvider.py
+# License:             BSD-3-Clause
+# Author:              Jakob van Santen <jakob.van.santen@desy.de>
+# Date:                14.08.2020
+# Last Modified Date:  07.09.2021
+# Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 import subprocess, yaml
-from typing import Any, Dict, Type, get_args, _GenericAlias # type: ignore[attr-defined]
+from typing import Any, get_args, _GenericAlias # type: ignore[attr-defined]
 from ampel.abstract.AbsSecretProvider import AbsSecretProvider
 from ampel.secret.Secret import Secret
 from ampel.secret.NamedSecret import NamedSecret
@@ -38,12 +38,12 @@ class DictSecretProvider(AbsSecretProvider):
 		return cls(payload)
 
 
-	def __init__(self, items: Dict[str, Any]) -> None:
+	def __init__(self, items: dict[str, Any]) -> None:
 		""" """
-		self.store: Dict[str, Any] = dict(items)
+		self.store: dict[str, Any] = dict(items)
 
 
-	def tell(self, arg: Secret, ValueType: Type) -> bool:
+	def tell(self, arg: Secret, ValueType: type) -> bool:
 		"""
 		Potentially update an initialized Secret instance with
 		the actual sensitive information associable with it.

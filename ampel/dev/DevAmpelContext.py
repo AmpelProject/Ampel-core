@@ -1,13 +1,13 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-core/ampel/dev/DevAmpelContext.py
-# License           : BSD-3-Clause
-# Author            : vb <vbrinnel@physik.hu-berlin.de>
-# Date              : 10.06.2020
-# Last Modified Date: 16.11.2021
-# Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
+# File:                Ampel-core/ampel/dev/DevAmpelContext.py
+# License:             BSD-3-Clause
+# Author:              valery brinnel <firstname.lastname@gmail.com>
+# Date:                10.06.2020
+# Last Modified Date:  09.01.2022
+# Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from typing import Optional, Any, Dict, Union, List, Type
+from typing import Any
 from importlib import import_module
 from ampel.base.AuxUnitRegister import AuxUnitRegister
 from ampel.base.LogicalUnit import LogicalUnit
@@ -21,7 +21,7 @@ from ampel.model.ChannelModel import ChannelModel
 from ampel.log.AmpelLogger import AmpelLogger
 from ampel.util.freeze import recursive_unfreeze
 from ampel.util.hash import build_unsafe_dict_id
-from ampel.util.mappings import set_by_path, dictify
+from ampel.util.mappings import set_by_path
 from ampel.util.recursion import walk_and_process_dict
 
 
@@ -29,8 +29,8 @@ class DevAmpelContext(AmpelContext):
 
 
 	def __init__(self,
-		db_prefix: Optional[str] = None, purge_db: bool = False,
-		custom_conf: Optional[Dict[str, Any]] = None, **kwargs
+		db_prefix: None | str = None, purge_db: bool = False,
+		custom_conf: None | dict[str, Any] = None, **kwargs
 	) -> None:
 		"""
 		:db_prefix: customizes the db prefix name
@@ -56,7 +56,7 @@ class DevAmpelContext(AmpelContext):
 			self.db.init_db()
 
 
-	def add_channel(self, name: Union[int, str], access: List[str] = []):
+	def add_channel(self, name: int | str, access: list[str] = []):
 		cm = ChannelModel(channel=name, access=access, version=0)
 		conf = self._get_unprotected_conf()
 		for k, v in cm.__dict__.items():
@@ -64,12 +64,12 @@ class DevAmpelContext(AmpelContext):
 		self._set_new_conf(conf)
 
 
-	def register_units(self, *Classes: Type[LogicalUnit]) -> None:
+	def register_units(self, *Classes: type[LogicalUnit]) -> None:
 		for Class in Classes:
 			self.register_unit(Class)
 
 
-	def register_unit(self, Class: Type[LogicalUnit]) -> None:
+	def register_unit(self, Class: type[LogicalUnit]) -> None:
 
 		dict.__setitem__(
 			self.config._config['unit'],
@@ -94,17 +94,17 @@ class DevAmpelContext(AmpelContext):
 			AuxUnitRegister._dyn[Class.__name__] = Class
 
 
-	def gen_config_id(self, unit: str, arg: Dict[str, Any], logger: Optional[AmpelLogger] = None) -> int:
+	def gen_config_id(self, unit: str, arg: dict[str, Any], logger: None | AmpelLogger = None) -> int:
 
 		if logger is None:
 			logger = AmpelLogger.get_logger()
 
 		if self.loader._dyn_register and unit in self.loader._dyn_register:
 			Unit = self.loader._dyn_register[unit]
-			arg = dictify(Unit(**arg, logger=logger)._trace_content)
+			arg = Unit(**arg, logger=logger)._get_trace_content()
 		elif fqn := self.config._config['unit'][unit].get('fqn'):
 			Unit = getattr(import_module(fqn), fqn.split('.')[-1])
-			arg = dictify(Unit(**arg, logger=logger)._trace_content)
+			arg = Unit(**arg, logger=logger)._get_trace_content()
 		else:
 			logger.warn(
 				f"Unit {unit} not installed locally. Building *unsafe* conf dict hash: "
@@ -124,25 +124,25 @@ class DevAmpelContext(AmpelContext):
 		return conf_id
 
 
-	def _get_unprotected_conf(self) -> Dict[str, Any]:
+	def _get_unprotected_conf(self) -> dict[str, Any]:
 		if self.config.is_frozen():
 			return recursive_unfreeze(self.config._config) # type: ignore[arg-type]
 		return self.config._config
 
 
-	def _set_new_conf(self, conf: Dict[str, Any]) -> None:
+	def _set_new_conf(self, conf: dict[str, Any]) -> None:
 		self.config = AmpelConfig(conf, True)
 		self.db = AmpelDB.new(self.config, self.loader.vault, self.db.require_exists, self.db.one_db)
 		self.loader = UnitLoader(self.config, db=self.db, vault=self.loader.vault)
 
 
-	def hash_ingest_directive(self, config: Dict[str, Any], logger: AmpelLogger) -> Dict[str, Any]:
+	def hash_ingest_directive(self, config: dict[str, Any], logger: AmpelLogger) -> dict[str, Any]:
 
 		# Example of conf_dicts keys
 		# processor.config.directives.0.combine.0.state_t2.0
  		# processor.config.directives.0.combine.0.state_t2.0.config.t2_dependency.0
  		# processor.config.directives.0.point_t2.0
-		conf_dicts: Dict[str, Dict[str, Any]] = {}
+		conf_dicts: dict[str, dict[str, Any]] = {}
 
 		walk_and_process_dict(
 			arg = config,

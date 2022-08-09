@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-core/ampel/config/builder/ProcessMorpher.py
-# License           : BSD-3-Clause
-# Author            : vb <vbrinnel@physik.hu-berlin.de>
-# Date              : 16.10.2019
-# Last Modified Date: 16.11.2021
-# Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
+# File:                Ampel-core/ampel/config/builder/ProcessMorpher.py
+# License:             BSD-3-Clause
+# Author:              valery brinnel <firstname.lastname@gmail.com>
+# Date:                16.10.2019
+# Last Modified Date:  16.11.2021
+# Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 import json
 from typing import Any
@@ -286,15 +286,12 @@ class ProcessMorpher:
 			if isinstance(conf, dict):
 
 				if override := d.get("override"):
-					conf = {**conf, **override}
+					conf |= override
 
 				if fqn := out_config['unit'][t2_unit].get('fqn'):
-
-					T2Unit: LogicalUnit = getattr(import_module(fqn), fqn.split('.')[-1])
-					conf = T2Unit.validate(conf)
-
+					T2Unit = getattr(import_module(fqn), fqn.split('.')[-1])
+					conf = T2Unit.validate(conf) # dictify ?
 				else:
-
 					self.logger.warn(
 						f"T2 unit {t2_unit} not installed locally. "
 						f"Building *unsafe* conf dict hash: "

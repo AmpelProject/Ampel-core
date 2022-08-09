@@ -1,13 +1,13 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-core/ampel/mongo/query/stock.py
-# License           : BSD-3-Clause
-# Author            : vb <vbrinnel@physik.hu-berlin.de>
-# Date              : 13.01.2018
-# Last Modified Date: 20.06.2020
-# Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
+# File:                Ampel-core/ampel/mongo/query/stock.py
+# License:             BSD-3-Clause
+# Author:              valery brinnel <firstname.lastname@gmail.com>
+# Date:                13.01.2018
+# Last Modified Date:  20.06.2020
+# Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from typing import Dict, Optional, Union, Any, Literal
+from typing import Any, Literal
 
 from ampel.types import Tag
 from ampel.model.operator.AnyOf import AnyOf
@@ -19,11 +19,11 @@ from ampel.mongo.query.general import build_general_query
 
 
 def build_stock_query(
-	channel: Optional[Union[int, str, Dict, AllOf, AnyOf, OneOf]] = None,
-	tag: Optional[Dict[Literal['with', 'without'], Union[Tag, Dict, AllOf[Tag], AnyOf[Tag], OneOf[Tag]]]] = None,
-	time_created: Optional[QueryTimeModel] = None,
-	time_updated: Optional[QueryTimeModel] = None
-) -> Dict[str, Any]:
+	channel: None | int | str | dict | AllOf | AnyOf | OneOf = None,
+	tag: None | dict[Literal['with', 'without'], Tag | dict | AllOf[Tag] | AnyOf[Tag] | OneOf[Tag]] = None,
+	time_created: None | QueryTimeModel = None,
+	time_updated: None | QueryTimeModel = None
+) -> dict[str, Any]:
 	"""
 	:param channel: string (one channel only) or a dict schema \
 		(see :obj:`QueryMatchSchema <ampel.query.QueryMatchSchema>` \

@@ -90,12 +90,13 @@ b'HELLO WORLD\\n'
 from asyncio import StreamReader, StreamWriter, StreamReaderProtocol, BaseTransport, \
         get_running_loop, sleep
 from contextlib import contextmanager, asynccontextmanager
-from typing import Iterator, Tuple, Any, ContextManager, AsyncIterator
+from typing import Any, ContextManager, AsyncIterator
+from collections.abc import Iterator
 import os
 
 __pdoc__ = {} # type: ignore
 
-def aiopipe() -> Tuple["AioPipeReader", "AioPipeWriter"]:
+def aiopipe() -> tuple["AioPipeReader", "AioPipeWriter"]:
     """
     Create a new simplex multiprocess communication pipe.
 
@@ -105,7 +106,7 @@ def aiopipe() -> Tuple["AioPipeReader", "AioPipeWriter"]:
     rx, tx = os.pipe()
     return AioPipeReader(rx), AioPipeWriter(tx)
 
-def aioduplex() -> Tuple["AioDuplex", "AioDuplex"]:
+def aioduplex() -> tuple["AioDuplex", "AioDuplex"]:
     """
     Create a new duplex multiprocess communication pipe.
 
@@ -148,7 +149,7 @@ class AioPipeStream:
             # Allow event loop callbacks to run and handle closed transport.
             await sleep(0)
 
-    async def _open(self) -> Tuple[BaseTransport, Any]:
+    async def _open(self) -> tuple[BaseTransport, Any]:
         raise NotImplementedError()
 
     @contextmanager
@@ -266,7 +267,7 @@ class AioDuplex:
             yield self
 
     @asynccontextmanager
-    async def open(self) -> AsyncIterator[Tuple["StreamReader", "StreamWriter"]]:
+    async def open(self) -> AsyncIterator[tuple["StreamReader", "StreamWriter"]]:
         """
         Open this end of the duplex pipe on the current event loop.
 

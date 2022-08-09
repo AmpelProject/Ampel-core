@@ -1,17 +1,17 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-core/ampel/t3/stage/T3ThreadedStager.py
-# License           : BSD-3-Clause
-# Author            : vb <vbrinnel@physik.hu-berlin.de>
-# Date              : 17.04.2021
-# Last Modified Date: 14.12.2021
-# Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
+# File:                Ampel-core/ampel/t3/stage/T3ThreadedStager.py
+# License:             BSD-3-Clause
+# Author:              valery brinnel <firstname.lastname@gmail.com>
+# Date:                17.04.2021
+# Last Modified Date:  14.12.2021
+# Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from time import time
 from itertools import islice
 from multiprocessing import JoinableQueue
 from multiprocessing.pool import ThreadPool, AsyncResult
-from typing import Optional, Type, Iterable, Generator
+from collections.abc import Generator, Iterable
 
 from ampel.abstract.AbsT3ReviewUnit import AbsT3ReviewUnit
 from ampel.view.SnapView import SnapView
@@ -64,7 +64,7 @@ class T3ThreadedStager(T3BaseStager, abstract=True):
 				queues, generators, async_results = self.create_threaded_generators(pool, t3_units)
 
 				# Optimize by potentially grouping units associated with the same view type
-				qdict: dict[Type, list[JoinableQueue]] = {}
+				qdict: dict[type, list[JoinableQueue]] = {}
 				for unit in t3_units:
 					if unit.__class__._View not in qdict:
 						qdict[unit.__class__._View] = []
@@ -110,7 +110,7 @@ class T3ThreadedStager(T3BaseStager, abstract=True):
 	def create_threaded_generators(self,
 		pool: ThreadPool,
 		t3_units: list[AbsT3ReviewUnit],
-		t3s: Optional[T3Store] = None
+		t3s: None | T3Store = None
 	) -> tuple[
 		dict[AbsT3ReviewUnit, "JoinableQueue[SnapView]"],
 		list[ThreadedViewGenerator],
@@ -143,7 +143,7 @@ class T3ThreadedStager(T3BaseStager, abstract=True):
 		return queues, generators, async_results
 
 
-	def put_views(self, buffers: Iterable[AmpelBuffer], qdict: dict[Type, list[JoinableQueue]]) -> None:
+	def put_views(self, buffers: Iterable[AmpelBuffer], qdict: dict[type[SnapView], list[JoinableQueue]]) -> None:
 		"""
 		Note: code in here is not optimized for compactness but for execution speed
 		"""
@@ -158,7 +158,7 @@ class T3ThreadedStager(T3BaseStager, abstract=True):
 			vo = View.of
 
 			# In paranoia mode, we create a new view from the same buffer for each t3 unit
-			if self.paranoia:
+			if self.paranoia_level:
 				for ab in buffers:
 					for q in qs:
 						q.put(vo(ab, conf))
@@ -173,7 +173,7 @@ class T3ThreadedStager(T3BaseStager, abstract=True):
 
 			# Paranoia or say two units == two view types (non-optimizable)
 			itms = qdict.items()
-			if self.paranoia or all(len(x) == 1 for x in qdict.values()):
+			if self.paranoia_level or all(len(x) == 1 for x in qdict.values()):
 				for ab in buffers:
 					for View, qs in itms:
 						vo = View.of

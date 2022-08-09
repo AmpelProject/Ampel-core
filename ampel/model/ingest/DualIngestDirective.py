@@ -1,20 +1,20 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-core/ampel/model/ingest/DualIngestDirective.py
-# License           : BSD-3-Clause
-# Author            : vb <vbrinnel@physik.hu-berlin.de>
-# Date              : 20.05.2021
-# Last Modified Date: 21.05.2021
-# Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
+# File:                Ampel-core/ampel/model/ingest/DualIngestDirective.py
+# License:             BSD-3-Clause
+# Author:              valery brinnel <firstname.lastname@gmail.com>
+# Date:                20.05.2021
+# Last Modified Date:  21.05.2021
+# Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from typing import Optional, Literal, Dict
+from typing import Literal
 from ampel.types import ChannelId
-from ampel.model.StrictModel import StrictModel
 from ampel.model.ingest.IngestBody import IngestBody
 from ampel.model.ingest.FilterModel import FilterModel
+from ampel.base.AmpelBaseModel import AmpelBaseModel
 
 
-class DualIngestDirective(StrictModel):
+class DualIngestDirective(AmpelBaseModel):
 	"""
     channel
     filter
@@ -49,6 +49,6 @@ class DualIngestDirective(StrictModel):
 	channel: ChannelId
 
 	#: Potientially filter input datapoints
-	filter: Optional[FilterModel]
+	filter: None | FilterModel = None
 
-	ingest: Dict[Literal['new', 'known'], IngestBody]
+	ingest: dict[Literal['new', 'known'], IngestBody]

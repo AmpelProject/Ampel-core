@@ -1,15 +1,17 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-core/ampel/test/dummy.py
-# License           : BSD-3-Clause
-# Author            : jvs
-# Date              : Unspecified
-# Last Modified Date: 11.02.2021
-# Last Modified By  : jvs
+# File:                Ampel-core/ampel/test/dummy.py
+# License:             BSD-3-Clause
+# Author:              jvs
+# Date:                Unspecified
+# Last Modified Date:  11.02.2021
+# Last Modified By:    jvs
 
 import pathlib
 import time
-from typing import List, Optional, Sequence, Tuple, Union, Any
+from collections.abc import Sequence
+from typing import Any
+from ampel.core.EventHandler import EventHandler
 
 from ampel.struct.UnitResult import UnitResult
 from ampel.types import StockId, UBson
@@ -35,8 +37,12 @@ class Sleepy(AbsEventUnit):
 
     process_name: str = "ZZZzzzz"
 
-    def run(self):
+    def proceed(self, event_hdlr):
         time.sleep(1)
+    
+    # override run() so as to not touch the db
+    def run(self, event_hdlr):
+        return self.proceed(event_hdlr)
 
 
 class DummyMuxer(AbsT0Muxer):
@@ -45,16 +51,16 @@ class DummyMuxer(AbsT0Muxer):
     points_to_insert: int = 5
 
     def process(
-        self, dps: List[DataPoint], stock_id: Optional[StockId] = None
-    ) -> Tuple[Optional[List[DataPoint]], Optional[List[DataPoint]]]:
+        self, dps: list[DataPoint], stock_id: None | StockId = None
+    ) -> tuple[None | list[DataPoint], None | list[DataPoint]]:
         """
-        :returns: Tuple[datapoints to insert, datapoints to combine]
+        :returns: tuple[datapoints to insert, datapoints to combine]
             <datapoints to insert> will be provided to a T0 ingester
             <datapoints to combine> will potentially be provided to an underlying T1 combiner
         """
 
         new_dps: list[DataPoint] = [
-            {"id": i, "stock": stock_id or 0}
+            {"id": i, "stock": stock_id or 0} # type: ignore[typeddict-item]
             for i in range(dps[-1]["id"] + 1, dps[-1]["id"] + 1 + self.points_to_insert)
         ]
         assert self.points_to_insert == 5
@@ -82,14 +88,14 @@ class DummyStateT2Unit(AbsStateT2Unit):
 
 class DummyTiedStateT2Unit(AbsTiedStateT2Unit):
 
-    t2_dependency = [StateT2Dependency(unit="DummyStateT2Unit")]
+    t2_dependency = [StateT2Dependency(unit="DummyStateT2Unit")] # type: ignore
 
     def process(
         self,
         compound: T1Document,
         datapoints: Sequence[DataPoint],
         t2views: Sequence[T2DocView],
-    ) -> Union[UBson, UnitResult]:
+    ) -> UBson | UnitResult:
         assert t2views, "dependencies were found"
         assert len(t2views[-1].body or []) == 1
         data = t2views[-1].get_payload() or {}
@@ -111,7 +117,7 @@ class DummyOutputUnit(AbsEventUnit):
     value: str
     path: pathlib.Path
 
-    def run(self):
+    def proceed(self, event_hdlr: EventHandler) -> Any:
         self.path.write_text(self.value)
 
 class DummyInputUnit(AbsEventUnit):
@@ -119,5 +125,5 @@ class DummyInputUnit(AbsEventUnit):
     value: str
     expected_value: str
 
-    def run(self):
+    def proceed(self, event_hdlr: EventHandler) -> Any:
         assert self.value == self.expected_value

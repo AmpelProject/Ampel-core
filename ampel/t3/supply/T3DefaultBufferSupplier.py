@@ -1,13 +1,13 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-core/ampel/t3/supply/T3DefaultBufferSupplier.py
-# License           : BSD-3-Clause
-# Author            : vb <vbrinnel@physik.hu-berlin.de>
-# Date              : 14.07.2021
-# Last Modified Date: 13.12.2021
-# Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
+# File:                Ampel-core/ampel/t3/supply/T3DefaultBufferSupplier.py
+# License:             BSD-3-Clause
+# Author:              valery brinnel <firstname.lastname@gmail.com>
+# Date:                14.07.2021
+# Last Modified Date:  13.12.2021
+# Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from typing import List, Optional, Sequence, Generator
+from collections.abc import Generator, Sequence
 from ampel.abstract.AbsT3Supplier import AbsT3Supplier
 from ampel.abstract.AbsT3Selector import AbsT3Selector
 from ampel.abstract.AbsT3Loader import AbsT3Loader
@@ -33,7 +33,7 @@ class T3DefaultBufferSupplier(AbsT3Supplier[Generator[AmpelBuffer, None, None]])
 	load: UnitModel
 
 	#: Add external information to each :class:`~ampel.core.AmpelBuffer.AmpelBuffer`.
-	complement: Optional[Sequence[UnitModel]]
+	complement: None | Sequence[UnitModel]
 
 	#: number of stocks to load at once. Set to 0 to disable chunking
 	chunk_size: int = 1000
@@ -73,7 +73,7 @@ class T3DefaultBufferSupplier(AbsT3Supplier[Generator[AmpelBuffer, None, None]])
 		if self.complement:
 
 			# Spawn requested snapdata complementers
-			self.complementers: Optional[List[AbsBufferComplement]] = [
+			self.complementers: None | list[AbsBufferComplement] = [
 				self.context.loader \
 					.new_context_unit(
 						model = conf_el,

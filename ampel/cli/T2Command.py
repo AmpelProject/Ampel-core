@@ -1,15 +1,17 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-core/ampel/cli/T2Command.py
-# License           : BSD-3-Clause
-# Author            : vb <vbrinnel@physik.hu-berlin.de>
-# Date              : 16.03.2021
-# Last Modified Date: 13.12.2021
-# Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
+# File:                Ampel-core/ampel/cli/T2Command.py
+# License:             BSD-3-Clause
+# Author:              valery brinnel <firstname.lastname@gmail.com>
+# Date:                16.03.2021
+# Last Modified Date:  12.07.2022
+# Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
+from json import dumps
 from datetime import datetime
 from argparse import ArgumentParser
-from typing import Sequence, Dict, Any, Optional, Union
+from typing import Any
+from collections.abc import Sequence
 from ampel.core.EventHandler import EventHandler
 from ampel.core.AmpelContext import AmpelContext
 from ampel.abstract.AbsIdMapper import AbsIdMapper
@@ -17,6 +19,7 @@ from ampel.log.AmpelLogger import AmpelLogger
 from ampel.log.LogFlag import LogFlag
 from ampel.t2.T2Utils import T2Utils
 from ampel.util.pretty import prettyjson
+from ampel.util.serialize import walk_and_encode
 from ampel.content.T2Document import T2Document
 from ampel.cli.utils import maybe_load_idmapper
 from ampel.cli.AbsCoreCommand import AbsCoreCommand
@@ -43,7 +46,8 @@ hlp = {
 	"custom-match": "Custom mongodb match as JSON string (ex: {\"body.result.mychi2\": {\"$gt\": 1.0}})",
 	'no-resolve-stock': 'Keep stock as int when matching using id-mapper',
 	"resolve-config": "Translate 'config' field from int back to dict",
-	"human-times": "Translate timestamps to human-readable strings"
+	"human-times": "Translate timestamps to human-readable strings",
+	"pretty-json": "Prettify JSON output"
 }
 
 class T2Command(AbsCoreCommand):
@@ -52,7 +56,7 @@ class T2Command(AbsCoreCommand):
 		self.parsers = {}
 
 	# Mandatory implementation
-	def get_parser(self, sub_op: Optional[str] = None) -> Union[ArgumentParser, AmpelArgumentParser]:
+	def get_parser(self, sub_op: None | str = None) -> ArgumentParser | AmpelArgumentParser:
 
 		if sub_op in self.parsers:
 			return self.parsers[sub_op]
@@ -73,7 +77,7 @@ class T2Command(AbsCoreCommand):
 		builder.notation_add_example_references()
 
 		# Required
-		builder.add_arg('required', 'config')
+		builder.add_arg('optional', 'config')
 		builder.add_arg('save.required', 'out')
 
 		# Optional general
@@ -82,6 +86,7 @@ class T2Command(AbsCoreCommand):
 		builder.add_arg('optional', 'debug', action='count', default=0, help='Debug')
 		builder.add_arg('optional', 'dry-run', action='store_true')
 		builder.add_arg('optional', 'limit', action='store_true')
+		builder.add_arg('optional', 'pretty-json', action='store_true')
 
 		# Optional match criteria
 		builder.add_group('match', 'Optional T2 documents matching criteria')
@@ -122,7 +127,7 @@ class T2Command(AbsCoreCommand):
 
 
 	# Mandatory implementation
-	def run(self, args: Dict[str, Any], unknown_args: Sequence[str], sub_op: Optional[str] = None) -> None:
+	def run(self, args: dict[str, Any], unknown_args: Sequence[str], sub_op: None | str = None) -> None:
 
 		if sub_op is None:
 			raise ValueError("A sub-operation (show, save, reset, soft-reset) needs to be specified")
@@ -142,52 +147,67 @@ class T2Command(AbsCoreCommand):
 		self.convert_logical_args('tag', args)
 
 		# args['id_mapper'] is used for matching whereas id_mapper is potentially discarded for printing
-		id_mapper = None if args.get('no_resolve_stock', False) else args['id_mapper']
+		id_mapper = None if args['no_resolve_stock'] else args['id_mapper']
+		jsondump: Any = prettyjson if args['pretty_json'] else lambda x: dumps(walk_and_encode(x)) # type: ignore
 
 		if sub_op == 'show':
 
 			m = t2_utils.match_t2s(**args)
 			limit = args.get('limit', False)
 			if args.get('dry_run'):
-				c = col.count_documents(m)
+				count = col.count_documents(m)
 				if limit:
-					c = min(limit, c)
+					count = min(limit, count)
 				logger.info(
 					f"Query: {m}\n"
-					f"Number of matched documents: {c}\n"
+					f"Number of matched documents: {count}\n"
 					f"Exiting (dry-run)"
 				)
 				return
-			else:
-				c = col.find(m).limit(limit) if limit else col.find(m)
+
+			c = col.find(m).limit(limit) if limit else col.find(m)
 
 			if args['resolve_config'] or args['human_times'] or id_mapper:
 				resolve_config = args['resolve_config']
 				human_times = args['human_times']
 				for el in c:
 					self.morph_ret(ctx, el, resolve_config, human_times, id_mapper)
-					print(prettyjson(el))
+					print(jsondump(el))
 			else:
-				print(prettyjson(list(c)))
+				print(jsondump(list(c)))
 
 		elif sub_op == 'save':
 
-			c = t2_utils.get_t2s(col=col, **args)
+			cc = t2_utils.get_t2s(col=col, **args)
 			if args.get('dry_run'):
 				logger.info("Exiting (dry-run)")
 				return
 
 			resolve_config = args['resolve_config']
 			human_times = args['human_times']
+
 			with open(args['out'], 'w') as f:
-				f.write("[\n")
-				for el in c:
-					f.write(
-						prettyjson(
-							self.morph_ret(ctx, el, resolve_config, human_times, id_mapper)
-						) + ",\n"
+
+				if not cc:
+					f.write("[]")
+					return
+
+				f.write(
+					"[\n" + jsondump(
+						self.morph_ret( # type: ignore[operator]
+							ctx, cc[0], resolve_config, human_times, id_mapper # type: ignore[index]
+						)
 					)
-				f.write("]\n")
+				)
+
+				for el in cc[1:]: # type: ignore[index]
+					f.write(
+						",\n" +
+						jsondump(
+							self.morph_ret(ctx, el, resolve_config, human_times, id_mapper)
+						)
+					)
+				f.write("\n]")
 
 		# reset or soft-reset below
 		elif sub_op.endswith('reset'):
@@ -201,14 +221,14 @@ class T2Command(AbsCoreCommand):
 
 			if changed > 0:
 				# Add new doc in the 'events' collection
-				EventHandler('CLI', ctx.db, run_id=run_id, tier=-1)
+				EventHandler('CLI', ctx.db).register(run_id=run_id, tier=-1)
 
 
 	def morph_ret(self,
 		ctx: AmpelContext, doc: T2Document,
 		resolve_config: bool = False,
 		human_times: bool = False,
-		id_mapper: Optional[AbsIdMapper] = None
+		id_mapper: None | AbsIdMapper = None
 	) -> T2Document:
 
 		if resolve_config and doc['config']:

@@ -1,17 +1,18 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-core/ampel/t3/T3Processor.py
-# License           : BSD-3-Clause
-# Author            : vb <vbrinnel@physik.hu-berlin.de>
-# Date              : 26.02.2018
-# Last Modified Date: 17.12.2021
-# Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
+# File:                Ampel-core/ampel/t3/T3Processor.py
+# License:             BSD-3-Clause
+# Author:              valery brinnel <firstname.lastname@gmail.com>
+# Date:                26.02.2018
+# Last Modified Date:  25.07.2022
+# Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from importlib import import_module
-from typing import Any, Optional, Annotated
+from typing import Any, Annotated
 
 from ampel.types import OneOrMany
 from ampel.abstract.AbsEventUnit import AbsEventUnit
+from ampel.abstract.AbsT3Supplier import AbsT3Supplier
 from ampel.abstract.AbsT3ControlUnit import AbsT3ControlUnit
 from ampel.abstract.AbsProcessorTemplate import AbsProcessorTemplate
 from ampel.view.T3Store import T3Store
@@ -19,30 +20,15 @@ from ampel.view.T3DocView import T3DocView
 from ampel.model.UnitModel import UnitModel
 from ampel.model.t3.T3IncludeDirective import T3IncludeDirective
 from ampel.core.EventHandler import EventHandler
-from ampel.abstract.AbsT3Supplier import AbsT3Supplier
 from ampel.log import AmpelLogger, LogFlag, SHOUT
 
 
 class T3Processor(AbsEventUnit):
-	"""
-	:param update_events: Record this event in the events collection
-	:param extra_journal_tag:
-	  tag(s) to add to the :class:`~ampel.content.JournalRecord.JournalRecord`
-	  of each selected stock
+	""" """
 
-	.. note:: by default, :func:`run` add entries to the journals of selected
-	  stocks, store log records in the database, and records the invocation in
-	  the events collection. To run an "anonymous" event that does not change
-	  the state of the database:
-	
-	  - use a log_profile without db logging (profiles are defined under 'logging' in the ampel config)
-	  - set update_events = False (no update to the events collection)
-	  - set raise_exc = True (troubles collection will not be populated if an exception occurs)
-	"""
-
-	template: Optional[str] = None
-	include: Optional[T3IncludeDirective]
-	execute: OneOrMany[Annotated[UnitModel, AbsT3ControlUnit]]
+	template: None | str = None
+	include: None | T3IncludeDirective
+	execute: Annotated[OneOrMany[UnitModel], AbsT3ControlUnit]
 
 
 	def __init__(self, **kwargs) -> None:
@@ -53,7 +39,7 @@ class T3Processor(AbsEventUnit):
 			if ctx is None:
 				raise ValueError("Context required")
 
-			if kwargs['template'] not in ctx.config._config['template']:
+			if tpl_name not in ctx.config._config.get('template', []):
 				raise ValueError(f"Unknown process template: {tpl_name}")
 
 			fqn = ctx.config._config['template'][tpl_name]
@@ -62,34 +48,27 @@ class T3Processor(AbsEventUnit):
 			if not issubclass(Tpl, AbsProcessorTemplate):
 				raise ValueError(f"Unexpected template type: {Tpl}")
 
-			tpl = Tpl(**kwargs)
-			kwargs = tpl.get_model(ctx.config._config, kwargs).dict()
+			tpl = Tpl(
+				**{
+					k: v for k, v in kwargs.items()
+					if k not in AbsEventUnit._annots
+				}
+			)
+			kwargs.update(
+				tpl.get_model(ctx.config._config, kwargs).dict()['config']
+			)
 			kwargs['context'] = ctx
 
 		super().__init__(**kwargs)
-		self.update_events = True
 
 
-	def set_no_event(self) -> None:
-		""" run t3 process \"silently\" """
-		self.update_events = False
+	def proceed(self, event_hdlr: EventHandler) -> None:
 
-
-	def run(self) -> None:
-
-		event_hdlr = None
-		run_id = self.context.new_run_id()
-
+		event_hdlr.set_tier(3)
 		logger = AmpelLogger.from_profile(
-			self.context, self.log_profile, run_id,
+			self.context, self.log_profile, event_hdlr.get_run_id(),
 			base_flag = LogFlag.T3 | LogFlag.CORE | self.base_log_flag,
 			force_refresh = True
-		)
-
-		# Create event doc
-		event_hdlr = EventHandler(
-			self.process_name, self.context.db, tier=3, run_id=run_id,
-			raise_exc=self.raise_exc, dry_run=not self.update_events
 		)
 
 		try:
@@ -150,16 +129,13 @@ class T3Processor(AbsEventUnit):
 						if 'meta' not in t3d:
 							raise ValueError("Invalid T3Document")
 						t3d['meta']['traceid'] = {'t3processor': self._trace_id}
-						self.context.db.get_collection('t3').insert_one(t3d)
+						if event_hdlr.job_sig:
+							t3d['meta']['jobid'] = event_hdlr.job_sig
+						self.context.db.get_collection('t3').insert_one(t3d) # type: ignore[arg-type]
 
 
 		except Exception as e:
 			event_hdlr.handle_error(e, logger)
-
-		# Update event document
-		if event_hdlr:
-			event_hdlr.add_extra(success=True)
-			event_hdlr.update(logger)
 
 		# Feedback
 		logger.log(SHOUT, f'Done running {self.process_name}')

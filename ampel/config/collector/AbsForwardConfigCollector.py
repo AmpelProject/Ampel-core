@@ -1,17 +1,19 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-core/ampel/config/collector/AbsForwardConfigCollector.py
-# License           : BSD-3-Clause
-# Author            : vb <vbrinnel@physik.hu-berlin.de>
-# Date              : 16.10.2019
-# Last Modified Date: 02.03.2020
-# Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
+# File:                Ampel-core/ampel/config/collector/AbsForwardConfigCollector.py
+# License:             BSD-3-Clause
+# Author:              valery brinnel <firstname.lastname@gmail.com>
+# Date:                16.10.2019
+# Last Modified Date:  02.03.2020
+# Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from typing import List, Union, Optional, Sequence, Dict, Any, Type
+from typing import Any, Type
+from collections.abc import Sequence
 import ampel.config.builder.FirstPassConfig as fpc # avoid circular import issue
 from ampel.base.decorator import abstractmethod
 from ampel.base.AmpelABC import AmpelABC
 from ampel.log.AmpelLogger import AmpelLogger, VERBOSE
+from ampel.config.builder.DisplayOptions import DisplayOptions
 
 
 class AbsForwardConfigCollector(dict, AmpelABC, abstract=True):
@@ -21,19 +23,19 @@ class AbsForwardConfigCollector(dict, AmpelABC, abstract=True):
 		# Forward reference type hint to avoid cyclic import issues
 		root_config: 'fpc.FirstPassConfig',
 		conf_section: str,
-		target_collector_type: Type,
-		logger: Optional[AmpelLogger] = None,
-		verbose: bool = False,
+		options: DisplayOptions,
+		target_collector_type: type,
+		logger: None | AmpelLogger = None
 	) -> None:
 
 		self.has_error = False
-		self.verbose = verbose
+		self.verbose = options.verbose
 		self.root_config = root_config
 		self.conf_section = conf_section
 		self.target_collector_type = target_collector_type
 		self.logger = AmpelLogger.get_logger() if logger is None else logger
 
-		if verbose:
+		if self.verbose:
 			self.logger.log(VERBOSE,
 				f'Creating {self.__class__.__name__} collector '
 				f'for config section "{conf_section}"'
@@ -41,9 +43,9 @@ class AbsForwardConfigCollector(dict, AmpelABC, abstract=True):
 
 
 	def add(self,
-		arg: Union[Dict[str, Any], List[Any], str],
+		arg: dict[str, Any] | list[Any] | str,
 		dist_name: str,
-		version: Union[str, float, int],
+		version: str | float | int,
 		register_file: str,
 	) -> None:
 
@@ -74,14 +76,14 @@ class AbsForwardConfigCollector(dict, AmpelABC, abstract=True):
 
 	@abstractmethod
 	def get_path(self,
-		arg: Union[Dict[str, Any], str],
+		arg: dict[str, Any] | str,
 		dist_name: str,
-		version: Union[str, float, int],
+		version: str | float | int,
 		register_file: str,
-	) -> Optional[Sequence[Union[int, str]]]:
+	) -> None | Sequence[int | str]:
 		...
 
 
-	def error(self, msg: str, exc_info: Optional[Any] = None) -> None:
+	def error(self, msg: str, exc_info: None | Any = None) -> None:
 		self.logger.error(msg, exc_info=exc_info)
 		self.has_error = True

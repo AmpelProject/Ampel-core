@@ -1,20 +1,21 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-core/ampel/abstract/AbsWorker.py
-# License           : BSD-3-Clause
-# Author            : vb <vbrinnel@physik.hu-berlin.de>
-# Date              : 28.05.2021
-# Last Modified Date: 14.12.2021
-# Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
+# File:                Ampel-core/ampel/abstract/AbsWorker.py
+# License:             BSD-3-Clause
+# Author:              valery brinnel <firstname.lastname@gmail.com>
+# Date:                28.05.2021
+# Last Modified Date:  04.08.2022
+# Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 import gc, signal
 from math import ceil
 from time import time
-from typing import ClassVar, Optional, Tuple, List, Union, Dict, Any, Sequence, TypeVar, Generic, Literal
+from typing import ClassVar, Any, TypeVar, Generic, Literal
 
 from pymongo.write_concern import WriteConcern
 
 from ampel.types import UBson, Tag
+from ampel.types import OneOrMany, JDict, UBson, Tag
 from ampel.base.decorator import abstractmethod
 from ampel.base.LogicalUnit import LogicalUnit
 from ampel.mongo.utils import maybe_match_array
@@ -24,12 +25,14 @@ from ampel.content.MetaRecord import MetaRecord
 from ampel.content.T1Document import T1Document
 from ampel.content.T2Document import T2Document
 from ampel.enum.MetaActionCode import MetaActionCode
+from ampel.enum.EventCode import EventCode
 from ampel.log import AmpelLogger, LogFlag, VERBOSE, DEBUG
 from ampel.core.EventHandler import EventHandler
 from ampel.log.utils import report_exception, report_error
 from ampel.log.handlers.DefaultRecordBufferingHandler import DefaultRecordBufferingHandler
 from ampel.util.hash import build_unsafe_dict_id
 from ampel.abstract.AbsEventUnit import AbsEventUnit
+from ampel.abstract.AbsUnitResultAdapter import AbsUnitResultAdapter
 from ampel.model.UnitModel import UnitModel
 from ampel.mongo.update.MongoStockUpdater import MongoStockUpdater
 from ampel.mongo.utils import maybe_use_each
@@ -45,37 +48,46 @@ class AbsWorker(Generic[T], AbsEventUnit, abstract=True):
 	or :class:`T1 documents <ampel.content.T1Document.T1Document>`
 	"""
 
-	#: ids of the units to run. If not specified, any t1/t2 unit will be run.
-	unit_ids: Optional[List[str]]
+	#: Ids of the units to run. If not specified, any t1/t2 unit will be run.
+	unit_ids: None | list[str]
 
-	#: process only with the given code
-	code_match: Union[DocumentCode, Sequence[DocumentCode]] = [DocumentCode.NEW, DocumentCode.RERUN_REQUESTED]
+	#: Process only with the given code
+	code_match: OneOrMany[int] = [DocumentCode.NEW, DocumentCode.RERUN_REQUESTED]
 
-	#: max number of docs to process in :func:`run`
-	doc_limit: Optional[int]
+	#: Max number of docs to process in :func:`run`
+	doc_limit: None | int
 
-	#: tag(s) to add to the stock :class:`~ampel.content.JournalRecord.JournalRecord`
+	#: Tag(s) to add to the stock :class:`~ampel.content.JournalRecord.JournalRecord`
 	#: every time a document is processed
-	jtag: Optional[Union[Tag, Sequence[Tag]]]
+	jtag: None | OneOrMany[Tag]
 
-	#: tag(s) to add to the stock :class:`~ampel.content.MetaRecord.MetaRecord`
+	#: Tag(s) to add to the stock :class:`~ampel.content.MetaRecord.MetaRecord`
 	#: every time a document is processed
-	mtag: Optional[Union[Tag, Sequence[Tag]]]
+	mtag: None | OneOrMany[Tag]
 
-	#: create a 'beacon' document indicating the last time T2Processor was run
+	#: Create a 'beacon' document indicating the last time T2Processor was run
 	#: in the current configuration
 	send_beacon: bool = True
 
-	#: explicitly call :func:`gc.collect` after every document
-	garbage_collect: bool = True
+	#: Explicitly call :func:`gc.collect` after the processing of each t1/t2 document.
+	#: Turn this on if units do not clean up resources adequately,
+	#: but beware of the performance impact.
+	garbage_collect: bool = False
 
-	#: maximum number of processing attempts per document
+	#: Maximum number of processing attempts per document
 	max_try: int = 5
 
 	tier: ClassVar[Literal[1, 2]]
 
-	#: For later
-	database: str = "mongo"
+	#: Minimum age of documents to be matched (in seconds)
+	#: {'$expr': {'$lt': [{'$last': '$meta.ts'}, now - min_doc_age]}}
+	min_doc_age: None | float
+
+	#: One day, we might support different DBs
+	# database: str = "mongo"
+
+	#: Avoid 'burning' a run_id for nothing at the cost of a request
+	pre_check: bool = True
 
 	#: wait for majority acknowledgement of document updates. this introduces
 	#: significant extra latency for replicated mongo clusters.
@@ -91,14 +103,19 @@ class AbsWorker(Generic[T], AbsEventUnit, abstract=True):
 		self._loader = self.context.loader
 
 		# Prepare DB query dict
-		self.query: Dict[str, Any] = {
+		self.query: JDict = {
 			'code': self.code_match if isinstance(self.code_match, DocumentCode)
-			else maybe_match_array(self.code_match) # type: ignore[arg-type]
+				else maybe_match_array(self.code_match) # type: ignore[arg-type]
 		}
 
 		# Possibly restrict query to specified t2 units
 		if self.unit_ids:
 			self.query['unit'] = maybe_match_array(self.unit_ids)
+
+		if self.min_doc_age:
+			self.query['$expr'] = {
+				'$lt': [{'$last': '$meta.ts'}, time() - self.min_doc_age]
+			}
 
 		# Shortcut
 		self.col_stock = self._ampel_db.get_collection('stock', mode='r')
@@ -123,7 +140,10 @@ class AbsWorker(Generic[T], AbsEventUnit, abstract=True):
 
 		# _instances stores unit instances so that they can be re-used in run()
 		# Key: set(unit name + config), value: unit instance
-		self._instances: Dict[str, Any] = {}
+		self._instances: JDict = {}
+
+		self._adapters: dict[str, AbsUnitResultAdapter] = {}
+
 
 
 	@abstractmethod
@@ -133,20 +153,19 @@ class AbsWorker(Generic[T], AbsEventUnit, abstract=True):
 		...
 
 
-	def run(self, pre_check: bool = True) -> int:
+	def prepare(self, event_hdlr: EventHandler) -> None | EventCode:
+		""" :returns: number of t2 docs processed """
+		event_hdlr.set_tier(2)
+		if self.pre_check and self.col.count_documents(self.query) == 0:
+			return EventCode.PRE_CHECK_EXIT
+		return None
+
+
+	def proceed(self, event_hdlr: EventHandler) -> int:
 		""" :returns: number of t2 docs processed """
 
-		# Add new doc in the 'events' collection
-		event_hdlr = EventHandler(
-			self.process_name, self._ampel_db, tier=2,
-			run_id = -1, raise_exc = self.raise_exc
-		)
-
-		# Avoid 'burning' a run_id for nothing (at the cost of a request)
-		if pre_check and self.col.find_one(self.query, {"_id": 1}) is None:
-			return 0
-
-		run_id = self.context.new_run_id()
+		event_hdlr.set_tier(self.tier)
+		run_id = event_hdlr.get_run_id()
 
 		logger = AmpelLogger.from_profile(
 			self.context, self.log_profile, run_id,
@@ -182,7 +201,7 @@ class AbsWorker(Generic[T], AbsEventUnit, abstract=True):
 				update
 			)
 
-			# Cursor exhausted
+			# No match
 			if doc is None:
 				break
 			elif logger.verbose > 1:
@@ -198,17 +217,17 @@ class AbsWorker(Generic[T], AbsEventUnit, abstract=True):
 				gc.collect()
 		stock_updr.flush()
 
-		event_hdlr.update(logger, docs=self._doc_counter, run=run_id)
-
+		event_hdlr.add_extra(docs=self._doc_counter)
 		logger.flush()
 		self._instances.clear()
+
 		return self._doc_counter
 
 
 	def _processing_error(self,
 		logger: AmpelLogger, doc: T, body: UBson,
-		meta: MetaRecord, msg: Optional[str] = None,
-		extra: Optional[Dict[str, Any]] = None, exception: Optional[Exception] = None
+		meta: MetaRecord, msg: None | str = None,
+		extra: None | JDict = None, exception: None | Exception = None
 	) -> None:
 		"""
 		- Updates the t1/t2 document by appending a meta entry and
@@ -242,7 +261,7 @@ class AbsWorker(Generic[T], AbsEventUnit, abstract=True):
 
 		self.commit_update({'_id': doc['_id']}, meta, logger, code=DocumentCode.EXCEPTION) # type: ignore[typeddict-item]
 
-		info: Dict[str, Any] = (extra or {}) | meta | {'stock': doc['stock'], 'doc': doc}
+		info: JDict = (extra or {}) | meta | {'stock': doc['stock'], 'doc': doc}
 		if exception:
 			report_exception(self._ampel_db, logger=logger, exc=exception, info=info)
 		else:
@@ -250,12 +269,12 @@ class AbsWorker(Generic[T], AbsEventUnit, abstract=True):
 
 
 	def commit_update(self,
-		match: Dict[str, Any],
+		match: JDict,
 		meta: MetaRecord,
 		logger: AmpelLogger, *,
 		payload_op: Literal['$push', '$set'] = '$push',
 		body: UBson = None,
-		tag: Union[Tag, Sequence[Tag]] = None,
+		tag: None | OneOrMany[Tag] = None,
 		code: int = 0
 	) -> None:
 		"""
@@ -270,7 +289,7 @@ class AbsWorker(Generic[T], AbsEventUnit, abstract=True):
 				else:
 					logger.log(DEBUG, None, extra={"body": body})
 
-		upd: Dict[str, Any] = {
+		upd: JDict = {
 			'$set': {'code': code},
 			'$push': {'meta': meta}
 		}
@@ -303,11 +322,12 @@ class AbsWorker(Generic[T], AbsEventUnit, abstract=True):
 
 	def gen_meta(self,
 		run_id: int,
-		unit_trace_id: Optional[int],
-		duration: Union[int, float],
+		unit_trace_id: None | int,
+		duration: int | float,
 		action_code: MetaActionCode = MetaActionCode(0)
 	) -> MetaRecord:
-		return {
+
+		d: MetaRecord = {
 			'run': run_id,
 			'ts': int(time()),
 			'tier': self.tier,
@@ -319,6 +339,11 @@ class AbsWorker(Generic[T], AbsEventUnit, abstract=True):
 				f't{self.tier}unit': unit_trace_id
 			}
 		}
+
+		if self.job_sig:
+			d['jobid'] = self.job_sig
+
+		return d
 
 
 	def sig_exit(self, signum: int, frame) -> None:
@@ -357,7 +382,7 @@ class AbsWorker(Generic[T], AbsEventUnit, abstract=True):
 
 
 	def get_unit_instance(self,
-		doc: Union[T1Document, T2Document],
+		doc: T1Document | T2Document,
 		logger: AmpelLogger
 	) -> LogicalUnit:
 
@@ -388,7 +413,7 @@ class AbsWorker(Generic[T], AbsEventUnit, abstract=True):
 		return self._instances[k]
 
 
-def register_stats(tier: int) -> Tuple[Histogram, Counter]:
+def register_stats(tier: int) -> tuple[Histogram, Counter]:
 
 	hist = AmpelMetricsRegistry.histogram(
 		'latency',

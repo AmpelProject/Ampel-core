@@ -1,15 +1,16 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-core/ampel/core/DefaultProcessController.py
-# License           : BSD-3-Clause
-# Author            : vb <vbrinnel@physik.hu-berlin.de>
-# Date              : 06.04.2020
-# Last Modified Date: 17.04.2020
-# Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
+# File:                Ampel-core/ampel/core/DefaultProcessController.py
+# License:             BSD-3-Clause
+# Author:              valery brinnel <firstname.lastname@gmail.com>
+# Date:                06.04.2020
+# Last Modified Date:  17.04.2020
+# Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 import asyncio, datetime, logging, schedule
 from functools import partial
-from typing import Dict, Sequence, Any, Literal, Optional, Set
+from typing import Any, Literal
+from collections.abc import Sequence
 
 from ampel.util import concurrent
 from ampel.abstract.AbsEventUnit import AbsEventUnit
@@ -67,9 +68,9 @@ class DefaultProcessController(AbsProcessController):
 
 		# one top-level task per ProcessModel
 		# invocations of run_async_process
-		self._pending_schedules: Set[asyncio.Future] = set()
+		self._pending_schedules: set[asyncio.Future] = set()
 		# individual process replicas
-		self._processes: Dict[str, Set[asyncio.Task]] = dict()
+		self._processes: dict[str, set[asyncio.Task]] = dict()
 
 		self._prepare_isolated_processes()
 
@@ -118,7 +119,7 @@ class DefaultProcessController(AbsProcessController):
 
 	def update(self,
 		config: AmpelConfig,
-		vault: Optional[AmpelVault],
+		vault: None | AmpelVault,
 		processes: Sequence[ProcessModel]
 	) -> None:
 		self.config = config
@@ -139,7 +140,7 @@ class DefaultProcessController(AbsProcessController):
 			await task
 
 
-	def stop(self, name: Optional[str] = None) -> None:
+	def stop(self, name: None | str = None) -> None:
 		"""Stop scheduling new processes."""
 		self.scheduler.clear(tag=name)
 
@@ -232,7 +233,7 @@ class DefaultProcessController(AbsProcessController):
 				context = self.context,
 				sub_type = AbsEventUnit,
 			) \
-			.run()
+			.run(None)
 
 
 	async def run_async_process(self, pm: ProcessModel) -> Sequence:
@@ -286,9 +287,9 @@ class DefaultProcessController(AbsProcessController):
 	@staticmethod
 	@concurrent.process
 	def run_mp_process(
-		config: Dict[str, Any],
-		vault: Optional[AmpelVault],
-		p: Dict[str, Any],
+		config: dict[str, Any],
+		vault: None | AmpelVault,
+		p: dict[str, Any],
 	) -> Any:
 
 		pm = ProcessModel(**p)
@@ -313,4 +314,4 @@ class DefaultProcessController(AbsProcessController):
 			process_name = pm.name,
 		)
 
-		return processor.run()
+		return processor.run(None)

@@ -1,13 +1,14 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-core/ampel/aux/filter/SimpleDictArrayFilter.py
-# License           : BSD-3-Clause
-# Author            : vb <vbrinnel@physik.hu-berlin.de>
-# Date              : 14.01.2020
-# Last Modified Date: 18.06.2020
-# Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
+# File:                Ampel-core/ampel/aux/filter/SimpleDictArrayFilter.py
+# License:             BSD-3-Clause
+# Author:              valery brinnel <firstname.lastname@gmail.com>
+# Date:                14.01.2020
+# Last Modified Date:  18.06.2020
+# Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from typing import Mapping, Sequence, List, TypeVar
+from typing import TypeVar
+from collections.abc import Mapping, Sequence
 from ampel.model.aux.FilterCriterion import FilterCriterion
 from ampel.aux.filter.AbsLogicOperatorFilter import AbsLogicOperatorFilter
 
@@ -38,7 +39,7 @@ class SimpleDictArrayFilter(AbsLogicOperatorFilter[T]):
 	"""
 
 	@staticmethod
-	def _apply_filter(dicts: Sequence[T], f: FilterCriterion) -> List[T]:
+	def _apply_filter(dicts: Sequence[T], f: FilterCriterion) -> list[T]:
 
 		attr_name = f.attribute
 		if f.type:

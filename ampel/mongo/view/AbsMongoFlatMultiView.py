@@ -1,13 +1,14 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-core/ampel/mongo/view/AbsMongoFlatMultiView.py
-# License           : BSD-3-Clause
-# Author            : vb <vbrinnel@physik.hu-berlin.de>
-# Date              : 26.03.2021
-# Last Modified Date: 06.10.2021
-# Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
+# File:                Ampel-core/ampel/mongo/view/AbsMongoFlatMultiView.py
+# License:             BSD-3-Clause
+# Author:              valery brinnel <firstname.lastname@gmail.com>
+# Date:                26.03.2021
+# Last Modified Date:  06.10.2021
+# Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-from typing import List, Any, Dict, Sequence, Union
+from typing import Any
+from collections.abc import Sequence
 from ampel.types import ChannelId
 from ampel.base.decorator import abstractmethod
 from ampel.mongo.view.AbsMongoView import AbsMongoView
@@ -25,11 +26,11 @@ class AbsMongoFlatMultiView(AbsMongoView, abstract=True):
 
 
 	@abstractmethod
-	def get_first_match(self) -> Dict[str, Any]:
+	def get_first_match(self) -> dict[str, Any]:
 		...
 
 
-	def stock(self) -> List[Dict[str, Any]]:
+	def stock(self) -> list[dict[str, Any]]:
 
 		return [
 			self.get_first_match(),
@@ -46,7 +47,7 @@ class AbsMongoFlatMultiView(AbsMongoView, abstract=True):
 		]
 
 
-	def t0(self) -> List[Dict[str, Any]]:
+	def t0(self) -> list[dict[str, Any]]:
 
 		ret = [
 			{
@@ -63,7 +64,7 @@ class AbsMongoFlatMultiView(AbsMongoView, abstract=True):
 		return ret
 
 
-	def t1(self) -> List[Dict[str, Any]]:
+	def t1(self) -> list[dict[str, Any]]:
 
 		return [
 			self.get_first_match(),
@@ -76,7 +77,7 @@ class AbsMongoFlatMultiView(AbsMongoView, abstract=True):
 		]
 
 
-	def t2(self) -> List[Dict[str, Any]]:
+	def t2(self) -> list[dict[str, Any]]:
 
 		return [
 			self.get_first_match(),
@@ -89,7 +90,7 @@ class AbsMongoFlatMultiView(AbsMongoView, abstract=True):
 		]
 
 
-	def t3(self) -> List[Dict[str, Any]]:
+	def t3(self) -> list[dict[str, Any]]:
 
 		return [
 			self.get_first_match(),
@@ -102,7 +103,7 @@ class AbsMongoFlatMultiView(AbsMongoView, abstract=True):
 		]
 
 
-	def morph_journal(self, arg: str) -> Dict[str, Any]:
+	def morph_journal(self, arg: str) -> dict[str, Any]:
 		"""
 		If channel is an array, reduce its value to the intersection between
 		the defined channels and the requested one (should work with AND or OR channel projections).
@@ -166,7 +167,7 @@ class AbsMongoFlatMultiView(AbsMongoView, abstract=True):
 		}
 
 
-	def get_meta_cases(self, arg: str) -> List[Dict[str, Any]]:
+	def get_meta_cases(self, arg: str) -> list[dict[str, Any]]:
 		"""
 		Note that this method is used by MongoOrView but also by MongoAndView
 		because it does not make sense to require an "AND" connection for the

@@ -1,15 +1,16 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# File              : Ampel-core/ampel/mongo/query/t1.py
-# License           : BSD-3-Clause
-# Author            : vb <vbrinnel@physik.hu-berlin.de>
-# Date              : 13.01.2018
-# Last Modified Date: 20.06.2020
-# Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
+# File:                Ampel-core/ampel/mongo/query/t1.py
+# License:             BSD-3-Clause
+# Author:              valery brinnel <firstname.lastname@gmail.com>
+# Date:                13.01.2018
+# Last Modified Date:  20.06.2020
+# Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 import collections
 from bson.int64 import Int64
-from typing import Union, Sequence, Dict, Optional, Any, List
+from typing import Any
+from collections.abc import Sequence
 from ampel.types import StockId, ChannelId, StrictIterable
 from ampel.util.collections import check_seq_inner_type
 from ampel.model.operator.AnyOf import AnyOf
@@ -25,9 +26,9 @@ Especially: if a compound member is discarded, it should not be deleted
 """
 
 def latest_fast_query(
-	stock: Union[StockId, StrictIterable[StockId]],
-	channel: Optional[Union[ChannelId, Dict, AllOf[ChannelId], AnyOf[ChannelId], OneOf[ChannelId]]] = None
-) -> List[Dict]:
+	stock: StockId | StrictIterable[StockId],
+	channel: None | ChannelId | dict | AllOf[ChannelId] | AnyOf[ChannelId] | OneOf[ChannelId] = None
+) -> list[dict]:
 	"""
 	| **Must be used on transients whose compounds were solely created by T0** (i.e with no T3 compounds)
 	| Should perform faster than general_query.
@@ -104,9 +105,9 @@ def latest_fast_query(
 
 def latest_general_query(
 	single_stock: StockId,
-	project: Optional[Dict[str, Any]] = None,
-	channel: Optional[Union[ChannelId, Dict, AllOf[ChannelId], AnyOf[ChannelId], OneOf[ChannelId]]] = None
-) -> List[Dict[str, Any]]:
+	project: None | dict[str, Any] = None,
+	channel: None | ChannelId | dict | AllOf[ChannelId] | AnyOf[ChannelId] | OneOf[ChannelId] = None
+) -> list[dict[str, Any]]:
 	"""
 	| Should work with any ampel transients.
 	| A detailed explanation of each step of the aggregation \
@@ -163,7 +164,7 @@ def latest_general_query(
 	"""
 
 	# Robustness
-	if isinstance(single_stock, collections.Sequence) or \
+	if isinstance(single_stock, collections.abc.Sequence) or \
 		not isinstance(single_stock, (int, Int64, str)):
 		raise ValueError(
 			"Type of single_stock must be a string or an int (multi single_stock queries not supported)"
@@ -174,7 +175,7 @@ def latest_general_query(
 	if channel is not None:
 		apply_schema(query, 'channel', channel)
 
-	ret: List[Dict[str, Any]] = [
+	ret: list[dict[str, Any]] = [
 		{
 			'$match': query
 		},
