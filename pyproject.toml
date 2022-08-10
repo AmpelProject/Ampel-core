@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "ampel-core"
-version = "0.8.3-alpha.20"
+version = "0.8.3-alpha.21"
 description = "Alice in Modular Provenance-Enabled Land"
 authors = ["Valery Brinnel"]
 maintainers = ["Jakob van Santen <jakob.van.santen@desy.de>"]
@@ -44,7 +44,7 @@ ampel = 'ampel.cli.main:main'
 'buffer_Match_and_view_or_save_ampel_buffers' = 'ampel.cli.BufferCommand'
 
 [tool.poetry.dependencies]
-ampel-interface = {version = "^0.8.3-alpha.15"}
+ampel-interface = {version = "^0.8.3-alpha.16"}
 python = ">=3.10,<3.11"
 pymongo = "^4.0"
 pydantic = "1.9.0"
