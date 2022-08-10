@@ -65,10 +65,12 @@ def dir_secret_store(tmpdir, secrets):
 def schema(tmpdir):
     return dump({"name": "job", "task": [{"unit": "Nonesuch"}]}, tmpdir, "schema.yml")
 
+@pytest.fixture
+def mock_db(mocker: MockerFixture):
+    mocker.patch("ampel.core.AmpelDB.AmpelDB.get_collection")
 
 @pytest.fixture
-def mock_new_context_unit(mocker: MockerFixture):
-    mocker.patch("ampel.core.AmpelDB.AmpelDB.get_collection")
+def mock_new_context_unit(mocker: MockerFixture, mock_db):
     return mocker.patch("ampel.core.UnitLoader.UnitLoader.new_context_unit")
 
 
@@ -138,6 +140,7 @@ def test_dir_secrets(dir_secret_store, secrets):
 
 def test_parameter_interpolation(
     testing_config,
+    mock_db,
     vault: Path,
     tmpdir,
 ):
@@ -192,6 +195,7 @@ def test_parameter_interpolation(
 
 def test_expand_with(
     testing_config,
+    mock_db,
     vault: Path,
     tmpdir,
 ):
@@ -237,6 +241,7 @@ def test_expand_with(
 
 def test_input_artifacts(
     testing_config,
+    mock_db,
     vault: Path,
     tmpdir,
 ):

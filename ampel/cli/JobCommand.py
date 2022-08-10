@@ -290,10 +290,11 @@ class JobCommand(AbsCoreCommand):
 		ctx.config._config = recursive_freeze(config_dict)
 
 		logger.info("Saving job schema")
-		job_sig = build_unsafe_dict_id(job.dict(), size=-64)
+		job_dict = ujson.loads(job.json())
+		job_sig = build_unsafe_dict_id(job_dict, size=-64)
 		ctx.db.get_collection("jobid").update_one(
 			{'_id': job_sig},
-			{'$setOnInsert': job},
+			{'$setOnInsert': job_dict},
 			upsert=True
 		)
 

@@ -3,20 +3,21 @@ from functools import partial
 from pathlib import Path
 from typing import Any, Callable, Literal, Optional, Union
 
-from pydantic import BaseModel, validator, root_validator
+from pydantic import validator, root_validator
 
 from ampel.model.ChannelModel import ChannelModel
+from ampel.base.AmpelBaseModel import AmpelBaseModel
 from ampel.model.job.ExpressionParser import ExpressionParser
 from ampel.model.UnitModel import UnitModel
 from ampel.util.recursion import walk_and_process_dict
 
 
-class OutputParameterSource(BaseModel):
+class OutputParameterSource(AmpelBaseModel):
     default: Optional[str]
     path: Path
 
 
-class OutputParameter(BaseModel):
+class OutputParameter(AmpelBaseModel):
     name: str
     value_from: OutputParameterSource
 
@@ -27,21 +28,21 @@ class OutputParameter(BaseModel):
             return self.value_from.default
 
 
-class OutputArtifact(BaseModel):
+class OutputArtifact(AmpelBaseModel):
     name: str
     path: str
 
 
-class TaskOutputs(BaseModel):
+class TaskOutputs(AmpelBaseModel):
     parameters: list[OutputParameter] = []
     artifacts: list[OutputArtifact] = []
 
 
-class InputArtifactHttpSource(BaseModel):
+class InputArtifactHttpSource(AmpelBaseModel):
     url: str
 
 
-class InputArtifact(BaseModel):
+class InputArtifact(AmpelBaseModel):
     name: str
     path: Path
     http: InputArtifactHttpSource
@@ -65,24 +66,24 @@ class InputArtifact(BaseModel):
         return values
 
 
-class InputParameter(BaseModel):
+class InputParameter(AmpelBaseModel):
     name: str
     value: str
 
 
-class TaskInputs(BaseModel):
+class TaskInputs(AmpelBaseModel):
     parameters: list[InputParameter] = []
     artifacts: list[InputArtifact] = []
 
 
-class ExpandWithItems(BaseModel):
+class ExpandWithItems(AmpelBaseModel):
     items: list
 
     def __iter__(self):
         return iter(self.items)
 
 
-class BaseSequence(BaseModel):
+class BaseSequence(AmpelBaseModel):
     start: int = 0
     format: str = "%d"
 
@@ -101,7 +102,7 @@ class SequenceWithCount(BaseSequence):
         yield from range(self.start, self.start + self.count)
 
 
-class ExpandWithSequence(BaseModel):
+class ExpandWithSequence(AmpelBaseModel):
     sequence: Union[SequenceWithCount, SequenceWithEnd]
 
     def items(self):
@@ -141,7 +142,7 @@ class TaskUnitModel(UnitModel):
         return _parse_multiplier(values)
 
 
-class TemplateUnitModel(BaseModel):
+class TemplateUnitModel(AmpelBaseModel):
     title: str = ""
     template: str
     config: dict[str, Any]
@@ -158,20 +159,20 @@ class TemplateUnitModel(BaseModel):
         return _parse_multiplier(values)
 
 
-class MongoOpts(BaseModel):
+class MongoOpts(AmpelBaseModel):
     reset: bool = False
     prefix: str = "Ampel"
 
 
-class Parameter(BaseModel):
+class Parameter(AmpelBaseModel):
     name: str
     value: str
 
-class EnvSpec(BaseModel):
+class EnvSpec(AmpelBaseModel):
     set: dict[str,str] = {}
     check: dict[str,str] = {}
 
-class JobModel(BaseModel):
+class JobModel(AmpelBaseModel):
     name: str
     requirements: list[str] = []
     env: dict[str,EnvSpec] = {}
