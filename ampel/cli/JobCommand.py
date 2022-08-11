@@ -310,7 +310,10 @@ class JobCommand(AbsCoreCommand):
 					raise ValueError(f"Unknown process template: {model.template}")
 
 				fqn = ctx.config._config['template'][model.template]
-				class_name = fqn.split(".")[-1]
+				if ':' in fqn:
+					fqn, class_name = fqn.split(":")
+				else:
+					class_name = fqn.split(".")[-1]
 				Tpl = getattr(import_module(fqn), class_name)
 				if not issubclass(Tpl, AbsProcessorTemplate):
 					raise ValueError(f"Unexpected template type: {Tpl}")

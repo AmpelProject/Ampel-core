@@ -646,3 +646,5 @@ resource:
   ampel-ztf/kafka:
     broker: gregor
     group: samsa
+template:
+  dummy_processor: ampel.test.dummy:DummyProcessorTemplate

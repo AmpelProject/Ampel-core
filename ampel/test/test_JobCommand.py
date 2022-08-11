@@ -1,9 +1,12 @@
 import base64
+import json
 import sys
 from contextlib import contextmanager
 from os import path
 from pathlib import Path
 from typing import Optional
+from unittest.mock import MagicMock
+from ampel.model.job.JobModel import JobModel
 
 import pytest
 import yaml
@@ -67,7 +70,7 @@ def schema(tmpdir):
 
 @pytest.fixture
 def mock_db(mocker: MockerFixture):
-    mocker.patch("ampel.core.AmpelDB.AmpelDB.get_collection")
+    return mocker.patch("ampel.core.AmpelDB.AmpelDB.get_collection")
 
 @pytest.fixture
 def mock_new_context_unit(mocker: MockerFixture, mock_db):
@@ -304,3 +307,77 @@ def test_input_artifacts(
         )
         == None
     )
+
+
+def test_template_resolution(
+    testing_config,
+    mock_db: MagicMock,
+    vault: Path,
+    tmpdir,
+):
+
+    value = "flerpyherb"
+
+    path = tmpdir / "token"
+
+    schema = dump(
+        {
+            "name": "job",
+            "parameters": [
+                {
+                    "name": "expected_value",
+                    "value": value,
+                },
+                {
+                    "name": "url",
+                    "value": f"https://httpbin.org/base64/{base64.b64encode(value.encode()).decode()}",
+                },
+            ],
+            "task": [
+                {
+                    "template": "dummy_processor",
+                    "config": {
+                        "value": "{{ inputs.parameters.token }}",
+                        "expected_value": "{{ job.parameters.expected_value }}",
+                    },
+                    "inputs": {
+                        "parameters": [
+                            {"name": "token", "value": "{{ inputs.artifacts.token }}"}
+                        ],
+                        "artifacts": [
+                            {
+                                "name": "token",
+                                "path": str(path),
+                                "http": {"url": "{{ job.parameters.url }}"},
+                            }
+                        ],
+                    },
+                },
+            ],
+        },
+        tmpdir,
+        "schema.yml",
+    )
+
+    assert (
+        run(
+            [
+                "ampel",
+                "job",
+                "--config",
+                str(testing_config),
+                "--secrets",
+                str(vault),
+                "--schema",
+                str(schema),
+            ]
+        )
+        == None
+    )
+
+    update_one = mock_db().update_one
+    inserted_job_def = update_one.call_args_list[0].args[1]['$setOnInsert']
+    parsed_job_def = json.loads(JobModel(**yaml.safe_load((tmpdir / "schema.yml").open())).json())
+
+    assert inserted_job_def == parsed_job_def
+

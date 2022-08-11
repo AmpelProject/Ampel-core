@@ -11,7 +11,10 @@ import pathlib
 import time
 from collections.abc import Sequence
 from typing import Any
+from ampel.abstract.AbsProcessorTemplate import AbsProcessorTemplate
 from ampel.core.EventHandler import EventHandler
+from ampel.log.AmpelLogger import AmpelLogger
+from ampel.model.UnitModel import UnitModel
 
 from ampel.struct.UnitResult import UnitResult
 from ampel.types import StockId, UBson
@@ -39,7 +42,7 @@ class Sleepy(AbsEventUnit):
 
     def proceed(self, event_hdlr):
         time.sleep(1)
-    
+
     # override run() so as to not touch the db
     def run(self, event_hdlr):
         return self.proceed(event_hdlr)
@@ -60,7 +63,7 @@ class DummyMuxer(AbsT0Muxer):
         """
 
         new_dps: list[DataPoint] = [
-            {"id": i, "stock": stock_id or 0} # type: ignore[typeddict-item]
+            {"id": i, "stock": stock_id or 0}  # type: ignore[typeddict-item]
             for i in range(dps[-1]["id"] + 1, dps[-1]["id"] + 1 + self.points_to_insert)
         ]
         assert self.points_to_insert == 5
@@ -88,7 +91,7 @@ class DummyStateT2Unit(AbsStateT2Unit):
 
 class DummyTiedStateT2Unit(AbsTiedStateT2Unit):
 
-    t2_dependency = [StateT2Dependency(unit="DummyStateT2Unit")] # type: ignore
+    t2_dependency = [StateT2Dependency(unit="DummyStateT2Unit")]  # type: ignore
 
     def process(
         self,
@@ -120,6 +123,7 @@ class DummyOutputUnit(AbsEventUnit):
     def proceed(self, event_hdlr: EventHandler) -> Any:
         self.path.write_text(self.value)
 
+
 class DummyInputUnit(AbsEventUnit):
 
     value: str
@@ -127,3 +131,12 @@ class DummyInputUnit(AbsEventUnit):
 
     def proceed(self, event_hdlr: EventHandler) -> Any:
         assert self.value == self.expected_value
+
+
+class DummyProcessorTemplate(AbsProcessorTemplate):
+
+    value: str
+    expected_value: str
+
+    def get_model(self, config: dict[str, Any], logger: AmpelLogger) -> UnitModel:
+        return UnitModel(unit="DummyInputUnit", config=self.dict(exclude={'template'}))

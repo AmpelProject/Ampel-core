@@ -143,8 +143,8 @@ class TaskUnitModel(UnitModel):
 
 
 class TemplateUnitModel(AmpelBaseModel):
-    title: str = ""
     template: str
+    title: str = ""
     config: dict[str, Any]
     inputs: TaskInputs = TaskInputs()
     outputs: TaskOutputs = TaskOutputs()
