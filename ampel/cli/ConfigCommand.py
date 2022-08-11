@@ -4,10 +4,10 @@
 # License:             BSD-3-Clause
 # Author:              valery brinnel <firstname.lastname@gmail.com>
 # Date:                17.07.2021
-# Last Modified Date:  16.07.2022
+# Last Modified Date:  11.08.2022
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-import os, shutil
+import os, yaml, shutil
 from time import time
 from typing import Any
 from appdirs import user_data_dir # type: ignore[import]
@@ -20,18 +20,21 @@ from ampel.cli.AmpelArgumentParser import AmpelArgumentParser
 from ampel.cli.ArgParserBuilder import ArgParserBuilder
 from ampel.config.builder.DistConfigBuilder import DistConfigBuilder
 from ampel.config.builder.DisplayOptions import DisplayOptions
-from ampel.util.pretty import out_stack
+from ampel.util.pretty import out_stack, prettyjson
 
 hlp = {
 	"build": "Generates a new ampel config based on information" +
 		"\n from the currently installed ampel repositories",
-	"show": "Not implemented yet",
+	"show": "Show config / config path",
 	"install": "Sets a specified ampel config as the default one in current system (conda envs supported).\n" +
 		" As a consequence, the option '-config' of other CLI operations becomes optional",
 	'file': 'Path to an ampel config file (yaml/json)',
 	# Optional
 	'secrets': 'Path to a YAML secrets store in sops format',
+	'json': 'Show JSON encoded config',
+	'pretty': 'Show pretty JSON encoded config',
 	'out': 'Path to file where config will be saved',
+	'path': 'Show installed config path rather than config content',
 	'sign': 'Append truncated file signature (last 6 digits) to filename',
 	'stop-on-errors': 'by default, config building stops and raises an exception if an error occured.\n' +
 		'- 2: stop on errors\n' +
@@ -66,7 +69,8 @@ class ConfigCommand(AbsCoreCommand):
 			)
 
 		builder = ArgParserBuilder("config")
-		builder.add_parsers(sub_ops, hlp)
+		ps = builder.add_parsers(sub_ops, hlp)
+		ps[sub_ops.index('show')].args_not_required = True
 
 		# Required args
 		builder.add_x_args(
@@ -87,6 +91,11 @@ class ConfigCommand(AbsCoreCommand):
 		builder.add_arg("build.optional", "hide-module-not-found-errors", action="store_true")
 		builder.add_arg("build.optional", "hide-stderr", action="store_true")
 		builder.add_arg("build.optional", "no-provenance", action="store_true")
+		builder.add_x_args(
+			"show.optional",
+			dict(name='json', action='store_true'),
+			dict(name='path', action='store_true')
+		)
 		builder.add_arg("show.optional", "pretty", action="store_true")
 		builder.add_arg("build.optional", "stop-on-errors", default=2)
 		builder.add_arg("install.optional", "file", type=str)
@@ -96,7 +105,9 @@ class ConfigCommand(AbsCoreCommand):
 		builder.add_example("build", "-install")
 		builder.add_example("build", "-out ampel_conf.yaml")
 		builder.add_example("build", "-out ampel_conf.yaml -sign -verbose")
-		builder.add_example("show", "-pretty -process -tier 0 -channel CHAN1")
+		builder.add_example("show", "")
+		builder.add_example("show", "-path")
+		builder.add_example("show", "-json -pretty")
 		builder.add_example("install", "-build")
 		builder.add_example("install", "-file ampel_conf.yml")
 
@@ -170,6 +181,25 @@ class ConfigCommand(AbsCoreCommand):
 
 			else:
 				raise ValueError("Please provide either 'file' or 'build' argument")
+
+		if sub_op == 'show':
+			conf_path = self.get_installable_config_path()
+			if args['path']:
+				print(conf_path)
+				return
+			if not os.path.exists(conf_path):
+				logger.info(f"Config with path {conf_path} not found")
+				return
+			with open(conf_path, "r") as f:
+				if args['json']:
+					if args['pretty']:
+						print(prettyjson(yaml.safe_load(f.read())))
+					else:
+						print(yaml.safe_load(f.read()))
+				else:
+					for l in f.readlines():
+						print(l, end='')
+			return
 
 		raise NotImplementedError("Not implemented yet")
 
