@@ -603,6 +603,31 @@ unit:
       - AbsTiedStateT2Unit
       - AbsTiedT2Unit
       - LogicalUnit
+  DummyCompilerOptions:
+    fqn: ampel.test.dummy
+    version: 0.8.0a1
+    base:
+      - DummyCompilerOptions
+      - CompilerOptions
+  DummyInputUnit:
+    fqn: ampel.test.dummy
+    version: 0.8.0a1
+    base:
+      - AbsEventUnit
+  DummyOutputUnit:
+    fqn: ampel.test.dummy
+    version: 0.8.0a1
+    base:
+      - AbsEventUnit
+  DemoReviewT3Unit:
+    fqn: ampel.demo.DemoReviewT3Unit
+    version: 0.8.2a2
+    base:
+    - DemoReviewT3Unit
+    - AbsT3ReviewUnit
+    - LogicalUnit
+    distrib: ampel-core
+    file: /Users/jakob/Documents/ZTF/Ampel-v0.8/Ampel-core/conf/ampel-cor
 process:
   t0: {}
   t1: {}
@@ -621,3 +646,5 @@ resource:
   ampel-ztf/kafka:
     broker: gregor
     group: samsa
+template:
+  dummy_processor: ampel.test.dummy:DummyProcessorTemplate

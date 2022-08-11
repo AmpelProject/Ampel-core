@@ -80,7 +80,7 @@ def test_unit_raises_error(
     assert event["code"] == EventCode.OK.value if expect_success else EventCode.EXCEPTION
 
 
-def test_view_generator(dev_context: DevAmpelContext, ingest_stock):
+def test_view_generator(integration_context: DevAmpelContext, ingest_stock):
 
     class SendySend(AbsT3ReviewUnit):
         raise_on_process: bool = False
@@ -98,10 +98,10 @@ def test_view_generator(dev_context: DevAmpelContext, ingest_stock):
                     )
                 )
 
-    dev_context.register_unit(SendySend)
+    integration_context.register_unit(SendySend)
 
     t3 = T3Processor(
-        context=dev_context,
+        context=integration_context,
         raise_exc=True,
         process_name="t3",
         execute = [
@@ -132,10 +132,50 @@ def test_view_generator(dev_context: DevAmpelContext, ingest_stock):
     )
     t3.run()
 
-    stock = dev_context.db.get_collection("stock").find_one()
+    stock = integration_context.db.get_collection("stock").find_one()
     assert stock
     assert "TAGGYTAG" in stock["tag"]
     assert "floopsy" in stock["name"]
     assert len(entries := [jentry for jentry in stock["journal"] if jentry["tier"] == 3]) == 1
     jentry = entries[0]
     assert jentry["extra"] == {"foo": "bar"}
+
+def test_empty_generator(integration_context: DevAmpelContext, ingest_stock):
+    """
+    Empty selection returns cleanly, rather than raising
+    """ 
+    t3 = T3Processor(
+        context=integration_context,
+        raise_exc=True,
+        process_name="t3",
+        execute = [
+            {
+                "unit": "T3ReviewUnitExecutor",
+                "config": {
+                    "supply": {
+                        "unit": "T3DefaultBufferSupplier",
+                        "config": {
+                            "select": {
+                                "unit": "T3StockSelector",
+                                # ensure that no stocks will be selected
+                                "config": {"channel": "nonesuch"}
+                            },
+                            "load": {
+                                "unit": "T3SimpleDataLoader",
+                                "config": {
+                                    "directives": [{"col": "stock"}],
+                                }
+                            }
+                        }
+                    },
+                    "stage": {
+                        "unit": "T3SimpleStager",
+                        "config": {
+                            "execute": [{"unit": "DemoReviewT3Unit"}]
+                        }
+                    }
+                }
+            }
+        ]
+    )
+    t3.run()

@@ -8,9 +8,13 @@
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 import gc, signal
+from math import ceil
 from time import time
 from typing import ClassVar, Any, TypeVar, Generic, Literal
 
+from pymongo.write_concern import WriteConcern
+
+from ampel.types import UBson, Tag
 from ampel.types import OneOrMany, JDict, UBson, Tag
 from ampel.base.decorator import abstractmethod
 from ampel.base.LogicalUnit import LogicalUnit
@@ -85,6 +89,12 @@ class AbsWorker(Generic[T], AbsEventUnit, abstract=True):
 	#: Avoid 'burning' a run_id for nothing at the cost of a request
 	pre_check: bool = True
 
+	#: wait for majority acknowledgement of document updates. this introduces
+	#: significant extra latency for replicated mongo clusters.
+	wait_for_durable_write: bool = True
+
+	#: minimum number of stock document updates to commit at once
+	updates_buffer_size: int = 500
 
 	def __init__(self, **kwargs) -> None:
 
@@ -108,10 +118,17 @@ class AbsWorker(Generic[T], AbsEventUnit, abstract=True):
 			}
 
 		# Shortcut
-		self.col_stock = self._ampel_db.get_collection('stock')
-		self.col_t0 = self._ampel_db.get_collection('t0')
-		self.col_t1 = self._ampel_db.get_collection('t1')
-		self.col = self._ampel_db.get_collection(f't{self.tier}')
+		self.col_stock = self._ampel_db.get_collection('stock', mode='r')
+		self.col_t0 = self._ampel_db.get_collection('t0', mode='r')
+		self.col_t1 = self._ampel_db.get_collection('t1', mode='r')
+		self.col = self._ampel_db.get_collection(f't{self.tier}', mode='w')
+		if not self.wait_for_durable_write:
+			# Only wait for the primary to acknowledge (in-memory) write, rather
+			# than a majority of replica set members to acknowledge write to
+			# their journals. This has much lower latency, but can result in doc
+			# updates being lost if the primary goes down before the write can
+			# be replicated, but if this happens the doc can simply be rerun.
+			self.col = self.col.with_options(write_concern=WriteConcern(w=1, j=False))
 
 		if self.send_beacon:
 			self.create_beacon()
@@ -177,8 +194,12 @@ class AbsWorker(Generic[T], AbsEventUnit, abstract=True):
 		self._run = True
 		while self._run:
 
-			# get t1/t2 document (code is usually NEW or NEW_PRIO)
-			doc = self.col.find_one_and_update(self.query, update)
+			# get t1/t2 document (code is usually NEW or NEW_PRIO), excluding
+			# docs with retry times in the future
+			doc = self.col.find_one_and_update(
+				self.query | {'$expr': {'$not': {'$lte': [ceil(time()), {'$last': '$meta.retry_after'}]}}},
+				update
+			)
 
 			# No match
 			if doc is None:
@@ -194,6 +215,7 @@ class AbsWorker(Generic[T], AbsEventUnit, abstract=True):
 
 			if garbage_collect:
 				gc.collect()
+		stock_updr.flush()
 
 		event_hdlr.add_extra(docs=self._doc_counter)
 		logger.flush()

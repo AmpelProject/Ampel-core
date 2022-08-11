@@ -233,7 +233,7 @@ class DefaultProcessController(AbsProcessController):
 				context = self.context,
 				sub_type = AbsEventUnit,
 			) \
-			.run()
+			.run(None)
 
 
 	async def run_async_process(self, pm: ProcessModel) -> Sequence:
@@ -314,4 +314,4 @@ class DefaultProcessController(AbsProcessController):
 			process_name = pm.name,
 		)
 
-		return processor.run()
+		return processor.run(None)

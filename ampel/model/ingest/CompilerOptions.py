@@ -8,12 +8,12 @@
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from typing import Any
-from ampel.base.AmpelBaseModel import AmpelBaseModel
+from ampel.model.aux.AuxAliasableModel import AuxAliasableModel
 
 
 empty: dict[str, Any] = {}
 
-class CompilerOptions(AmpelBaseModel):
+class CompilerOptions(AuxAliasableModel):
 	"""
 	Will be merged with the options set by say IngestionHandlers (these will have priority).
 	Allows for example to set default tags for given documents or to define a custom AbsIdMapper

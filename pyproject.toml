@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "ampel-core"
-version = "0.8.3-alpha.20"
+version = "0.8.3-alpha.21"
 description = "Alice in Modular Provenance-Enabled Land"
 authors = ["Valery Brinnel"]
 maintainers = ["Jakob van Santen <jakob.van.santen@desy.de>"]
@@ -33,6 +33,7 @@ ampel = 'ampel.cli.main:main'
 
 [tool.poetry.plugins.cli]
 'job_Run_provided_job_file' = 'ampel.cli.JobCommand'
+'process_Run_single_task' = 'ampel.cli.ProcessCommand'
 'run_Run_selected_process(es)_from_config' = 'ampel.cli.RunCommand'
 'log_Select,_format_and_either_view_or_save_logs._Tail_mode_availabe' = 'ampel.cli.LogCommand'
 'view_Select,_load_and_save_fresh_"ampel_views"' = 'ampel.cli.ViewCommand'

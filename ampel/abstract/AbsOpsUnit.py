@@ -12,7 +12,7 @@ from ampel.base.AmpelABC import AmpelABC
 from ampel.base.decorator import abstractmethod
 from ampel.core.ContextUnit import ContextUnit
 from ampel.log.AmpelLogger import AmpelLogger
-
+from ampel.types import Traceless
 
 class AbsOpsUnit(AmpelABC, ContextUnit, abstract=True):
     """
@@ -20,7 +20,7 @@ class AbsOpsUnit(AmpelABC, ContextUnit, abstract=True):
     particular processing tier: collecting metrics, reporting exceptions, etc.
     """
 
-    logger: AmpelLogger
+    logger: Traceless[AmpelLogger]
 
     @abstractmethod
     def run(self, beacon: None | dict[str, Any] = None) -> None | dict[str, Any]:

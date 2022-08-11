@@ -18,9 +18,9 @@ from ampel.config.builder.AbsConfigTemplate import AbsConfigTemplate
 class AbsChannelTemplate(AbsConfigTemplate, ChannelModel, abstract=True):
 
 
-	@abstractmethod
 	def get_channel(self, logger: AmpelLogger) -> dict[str, Any]:
-		...
+		keys = ChannelModel.get_model_keys()
+		return {k: v for k,v in self.__dict__.items() if k in keys}
 
 	@abstractmethod
 	def get_processes(self, logger: AmpelLogger, first_pass_config: FirstPassConfig) -> list[dict[str, Any]]:

@@ -15,7 +15,7 @@ from ampel.model.ProcessModel import ProcessModel
 from ampel.util.recursion import walk_and_process_dict
 from ampel.util.mappings import dictify
 from ampel.util.hash import build_unsafe_dict_id
-from ampel.base.AmpelBaseModel import AmpelBaseModel
+from ampel.base.LogicalUnit import LogicalUnit
 
 
 class ProcessMorpher:

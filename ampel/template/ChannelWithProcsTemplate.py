@@ -13,7 +13,6 @@ from ampel.config.builder.FirstPassConfig import FirstPassConfig
 from ampel.abstract.AbsChannelTemplate import AbsChannelTemplate
 from ampel.model.ChannelModel import ChannelModel
 
-
 class ChannelWithProcsTemplate(AbsChannelTemplate):
 	""" Convenience class allowing channel definitions to include processes.  """
 

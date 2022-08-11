@@ -62,7 +62,7 @@ class EventHandler:
 		if tier:
 			doc['tier'] = tier
 
-		if run_id:
+		if run_id is not None:
 			self.set_run_id(run_id)
 			doc['run'] = run_id
 
@@ -79,7 +79,7 @@ class EventHandler:
 
 
 	def set_run_id(self, val: int) -> None:
-		if self.run_id:
+		if self.run_id is not None:
 			raise ValueError("run id already set")
 		self.run_id = val
 

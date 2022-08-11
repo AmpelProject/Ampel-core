@@ -35,6 +35,7 @@ hlp = {
 	"soft-reset": "Set the run state to NEW",
 	"config": "Path to an ampel config file (yaml/json)",
 	"secrets": "Path to a YAML secrets store in sops format",
+	"one-db": "Whether the target ampel DB was created with flag one-db",
 	'out': 'Path to file were output will be written (printed to stdout otherwise)',
 	"unit": "Unit id/name",
 	"limit": "Limit number of returned documents",
@@ -81,6 +82,7 @@ class T2Command(AbsCoreCommand):
 		builder.add_arg('save.required', 'out')
 
 		# Optional general
+		builder.add_arg('optional', 'one-db', action='store_true')
 		builder.add_arg('optional', 'secrets', default=None)
 		builder.add_arg('optional', 'id-mapper')
 		builder.add_arg('optional', 'debug', action='count', default=0, help='Debug')
@@ -132,7 +134,7 @@ class T2Command(AbsCoreCommand):
 		if sub_op is None:
 			raise ValueError("A sub-operation (show, save, reset, soft-reset) needs to be specified")
 
-		ctx = self.get_context(args, unknown_args, ContextClass=AmpelContext)
+		ctx = self.get_context(args, unknown_args, ContextClass=AmpelContext, one_db=args.get('one_db', False))
 		logger = AmpelLogger.from_profile(
 			ctx, 'console_debug' if args['debug'] else 'console_info',
 			base_flag=LogFlag.MANUAL_RUN

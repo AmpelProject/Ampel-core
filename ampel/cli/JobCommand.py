@@ -7,6 +7,9 @@
 # Last Modified Date:  05.08.2022
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
+import tarfile
+import tempfile
+import ujson
 import yaml, io, os, signal, sys, subprocess, platform
 from time import time
 from multiprocessing import Queue, Process
@@ -15,6 +18,7 @@ from argparse import ArgumentParser
 from importlib import import_module
 from typing import Any
 from collections.abc import Sequence
+from urllib.request import urlretrieve
 from ampel.abstract.AbsEventUnit import AbsEventUnit
 from ampel.abstract.AbsProcessorTemplate import AbsProcessorTemplate
 from ampel.model.UnitModel import UnitModel
@@ -28,18 +32,7 @@ from ampel.util.hash import build_unsafe_dict_id
 from ampel.cli.AbsCoreCommand import AbsCoreCommand, _maybe_int
 from ampel.cli.MaybeIntAction import MaybeIntAction
 from ampel.cli.AmpelArgumentParser import AmpelArgumentParser
-
-
-class TaskUnitModel(UnitModel):
-	title: None | str
-	multiplier: int = 1
-
-
-class TemplateUnitModel(AmpelBaseModel):
-	title: None | str
-	template: str
-	config: dict[str, Any]
-	multiplier: int = 1
+from ampel.model.job.JobModel import InputArtifact, JobModel, ChannelModel, TaskUnitModel, TemplateUnitModel
 
 
 class JobCommand(AbsCoreCommand):
@@ -94,6 +87,7 @@ class JobCommand(AbsCoreCommand):
 		parser.add_arg("debug", "optional", action="store_true")
 		parser.add_arg("keep-db", "optional", action="store_true")
 		parser.add_arg("reset-db", "optional", action="store_true")
+		parser.add_arg("max-parallel-tasks", "optional", type=int, default=os.cpu_count())
 		parser.add_arg("no-agg", "optional", action="store_true")
 		parser.add_arg("show-plots", "optional", action="store_true")
 
@@ -106,6 +100,51 @@ class JobCommand(AbsCoreCommand):
 		parser.add_example("job -schema job_part1.yaml job_part2.yaml -show-plots (requires ampel-plot)")
 		return parser
 
+	def _fetch_inputs(
+		self,
+		job: JobModel,
+		task: TaskUnitModel | TemplateUnitModel,
+		item: None | str | dict | list,
+		logger: AmpelLogger,
+	):
+		"""
+		Ensure that input artifacts exist
+		"""
+		for artifact in task.inputs.artifacts:
+			resolved_artifact = InputArtifact(**job.resolve_expressions(ujson.loads(artifact.json()), task, item))
+			if resolved_artifact.path.exists():
+				logger.info(f"Artifact {resolved_artifact.name} exists at {resolved_artifact.path}")
+			else:
+				logger.info(f"Fetching artifact {resolved_artifact.name} from {resolved_artifact.http.url} to {resolved_artifact.path}")
+				os.makedirs(resolved_artifact.path.parent, exist_ok=True)
+				with tempfile.NamedTemporaryFile(delete=False) as tf:
+					urlretrieve(resolved_artifact.http.url, tf.name)
+					try:
+						with tarfile.open(tf.name) as archive:
+							logger.info(f"{resolved_artifact.name} is a tarball; extracting")
+							os.makedirs(resolved_artifact.path)
+							archive.extractall(resolved_artifact.path)
+						os.unlink(tf.name)
+					except tarfile.ReadError:
+						os.rename(tf.name, resolved_artifact.path)
+
+	@staticmethod
+	def _patch_config(config_dict: dict[str,Any], job: JobModel, logger: AmpelLogger):
+		# Add channel(s)
+		for c in job.channel:
+			chan = ChannelModel(**c)
+			logger.info(f"Registering job channel '{chan.channel}'")
+			dict.__setitem__(config_dict['channel'], chan.channel, c)
+
+		# Add aliase(s)
+		for k, v in job.alias.items():
+			if 'alias' not in config_dict:
+				dict.__setitem__(config_dict, 'alias', {})
+			for kk, vv in v.items():
+				logger.info(f"Registering job alias '{kk}'")
+				if k not in config_dict['alias']:
+					dict.__setitem__(config_dict['alias'], k, {})
+				dict.__setitem__(config_dict['alias'][k], kk, vv)
 
 	# Mandatory implementation
 	def run(self, args: dict[str, Any], unknown_args: Sequence[str], sub_op: None | str = None) -> None:
@@ -132,26 +171,23 @@ class JobCommand(AbsCoreCommand):
 		else:
 			logger.info(f"Running job using schema {schema_descr}")
 
-		if "requirements" in job:
+		if job.requirements:
 			# TODO: check job repo requirements
 			pass
 
 		# Check or set env variable(s)
-		if "env" in job:
-			psys = platform.system().lower()
-			for psys in ('any', platform.system().lower()):
-				if psys in job['env']:
-					if 'check' in job['env'][psys]:
-						for k, v in job['env'][psys]['check'].items():
-							if k not in os.environ or (v and v != _maybe_int(os.environ[k])):
-								logger.info(f"Environment variable {k}={v} required")
-								return
-					if 'set' in job['env'][psys]:
-						for k, v in job['env'][psys]['set'].items():
-							logger.info(f"Setting local environment variable {k}={v}")
-							os.environ[k] = str(v)
+		psys = platform.system().lower()
+		for psys in ('any', platform.system().lower()):
+			if psys in job.env:
+				for k, v in job.env[psys].check.items():
+					if k not in os.environ or (v and v != _maybe_int(os.environ[k])):
+						logger.info(f"Environment variable {k}={v} required")
+						return					
+				for k, v in job.env[psys].set.items():
+					logger.info(f"Setting local environment variable {k}={v}")
+					os.environ[k] = str(v)
 
-		purge_db = get_by_path(job, 'mongo.reset') or args['reset_db']
+		purge_db = job.mongo.reset or args['reset_db']
 
 		if purge_db and args['keep_db']:
 			logger.info("Keeping existing databases ('-keep-db')")
@@ -166,8 +202,8 @@ class JobCommand(AbsCoreCommand):
 					purge_db = yes_no("Delete existing databases")
 
 				args['task'] = []
-				for i, td in enumerate(job['task']):
-					s = f" [{td['title']}]" if td['title'] else ""
+				for i, td in enumerate(job.task):
+					s = f" [{td.title}]" if td.title else ""
 					if yes_no(f"Process task #{i}" + s):
 						args['task'].append(i)
 			except KeyboardInterrupt:
@@ -177,7 +213,7 @@ class JobCommand(AbsCoreCommand):
 
 			if 'last' in args['task']:
 				args['task'].remove('last')
-				args['task'].append(len(job['task']) - 1)
+				args['task'].append(len(job.task) - 1)
 
 			if sum(args['task']) > 0 and not args['interactive'] and purge_db and not args['reset_db']:
 				logger.info("Ampel job file requires db reset but argument 'task' was provided")
@@ -190,48 +226,82 @@ class JobCommand(AbsCoreCommand):
 			freeze_config = False,
 			ContextClass = DevAmpelContext,
 			purge_db = purge_db,
-			db_prefix = get_by_path(job, 'mongo.prefix'),
+			db_prefix = job.mongo.prefix,
+			require_existing_db = False,
+			one_db = True
+		)
+
+		s = f"Running job {job.name}"
+		logger.info(s)
+
+		print(" " + "-"*len(s))
+
+		if job.requirements:
+			# TODO: check job repo requirements
+			pass
+
+		purge_db = job.mongo.reset or args['reset_db']
+
+		if purge_db and args['keep_db']:
+			logger.info("Keeping existing databases ('-keep-db')")
+			purge_db = False
+
+		if args['task'] and sum(args['task']) > 0 and purge_db and not args['reset_db']:
+			logger.info("Ampel job file requires db reset but with-task argument was provided")
+			logger.info("Please add argument -reset-db to confirm you are absolutely sure...")
+			return
+
+		if args['interactive']:
+
+			from ampel.util.getch import yes_no
+
+			try:
+				if purge_db:
+					purge_db = yes_no("Delete existing databases")
+
+				args['with_task'] = []
+				for i, td in enumerate(job.task):
+					s = f" [{td.title}]" if td.title else ""
+					if yes_no(f"Process task #{i}" + s):
+						args['with_task'].append(i)
+			except KeyboardInterrupt:
+				sys.exit()
+
+		# DevAmpelContext hashes automatically confid from potential IngestDirectives
+		ctx = self.get_context(
+			args, unknown_args, logger,
+			freeze_config = False,
+			ContextClass = DevAmpelContext,
+			purge_db = purge_db,
+			db_prefix = job.mongo.prefix,
 			require_existing_db = False,
 			one_db = True
 		)
 
 		config_dict = ctx.config._config
+		self._patch_config(config_dict, job, logger)
+		ctx.config._config = recursive_freeze(config_dict)
 
-		# Add channel(s)
-		for c in job.get("channel", []):
-			logger.info(f"Registering job channel '{c['name']}'")
-			dict.__setitem__(config_dict['channel'], c['name'], c)
-
-		# Add aliase(s)
-		for k, v in job.get("alias", {}).items():
-			if k not in ("t0", "t1", "t2", "t3"):
-				raise ValueError(f"Unrecognized alias: {k}")
-			if 'alias' not in config_dict:
-				dict.__setitem__(config_dict, 'alias', {})
-			for kk, vv in v.items():
-				logger.info(f"Registering job alias '{kk}'")
-				if k not in config_dict['alias']:
-					dict.__setitem__(config_dict['alias'], k, {})
-				dict.__setitem__(config_dict['alias'][k], kk, c)
+		# Ensure that job content saved in DB reflects options set dynamically
+		if args['task']:
+			for idx in sorted(args['task'], reverse=True):
+				del job.task[idx]
 
 		tds: list[dict[str, Any]] = []
-		for i, p in enumerate(job['task']):
+		process_name = job.name or schema_descr
 
-			if args['task'] and i not in args['task']:
-				logger.info(f"Skipping task(s) #{i} as requested")
-				continue
+		for i, model in enumerate(job.task):
 
-			if not isinstance(p, dict):
-				raise ValueError("Unsupported task definition (must be dict)")
+			if isinstance(model, TemplateUnitModel):
 
-			if 'template' in p:
-
-				model = TemplateUnitModel(**p)
 				if model.template not in ctx.config._config['template']:
 					raise ValueError(f"Unknown process template: {model.template}")
 
 				fqn = ctx.config._config['template'][model.template]
-				class_name = fqn.split(".")[-1]
+				if ':' in fqn:
+					fqn, class_name = fqn.split(":")
+				else:
+					class_name = fqn.split(".")[-1]
 				Tpl = getattr(import_module(fqn), class_name)
 				if not issubclass(Tpl, AbsProcessorTemplate):
 					raise ValueError(f"Unexpected template type: {Tpl}")
@@ -239,7 +309,7 @@ class JobCommand(AbsCoreCommand):
 				tpl = Tpl(**model.config)
 				morphed_um = tpl \
 					.get_model(ctx.config._config, model.dict()) \
-					.dict() | {'title': model.title, 'multiplier': model.multiplier}
+					.dict(exclude_unset=True)
 
 				if args.get('debug'):
 					from ampel.util.pretty import prettyjson
@@ -250,48 +320,56 @@ class JobCommand(AbsCoreCommand):
 				tds.append(morphed_um)
 
 			else:
-				tds.append(TaskUnitModel(**p).dict())
+				tds.append(model.dict(exclude={"inputs", "outputs", "expand_with"}, exclude_unset=True))
 
-			tds[-1]['_idx'] = i
-			logger.info(f"Registering job task#{i} with {tds[-1]['multiplier']}x multiplier")
-
-
-		# Ensure that job content saved in DB reflects options set dynamically
-		if args['task']:
-			for idx in sorted(args['task'], reverse=True):
-				del job['task'][idx]
-
-		ctx.config._config = recursive_freeze(config_dict)
+			logger.info(f"Registering job task#{i} with {len(list(model.expand_with)) if model.expand_with else 1}x multiplier")
 
 		logger.info("Saving job schema")
-		job_sig = build_unsafe_dict_id(job, size=-64)
+		# recreate JobModel with templates resolved
+		job_dict = ujson.loads(
+			JobModel(
+				**(
+					job.dict(exclude_unset=True) | # type: ignore[arg-type]
+					{
+						"task": [
+							td | task.dict(include={"inputs", "outputs", "expand_with", "title"}, exclude_unset=True)
+							for task, td in zip(job.task, tds)
+						]
+					}
+				)
+			).json(exclude_unset=True)
+		)
+		job_sig = build_unsafe_dict_id(job_dict, size=-64)
 		ctx.db.get_collection("jobid").update_one(
 			{'_id': job_sig},
-			{'$setOnInsert': job},
+			{'$setOnInsert': job_dict},
 			upsert=True
 		)
 
 		run_ids = []
-		process_name = job['name'] if 'name' in job else schema_descr
 
 		for i, task_dict in enumerate(tds):
 
-			job_idx = task_dict.pop('_idx')
-			idx = i if i == job_idx else f"{i} (#{job_idx} in original job)"
+			process_name = f"{job.name}#{i}"
 
 			if 'title' in task_dict:
-				self.print_chapter(task_dict['title'] if task_dict.get('title') else f"Task #{idx}", logger)
+				self.print_chapter(task_dict['title'] if task_dict.get('title') else f"Task #{i}", logger)
+				#process_name += f" [{task_dict['title']}]"
 				del task_dict['title']
 			elif i != 0:
-				self.print_chapter(f"Task #{idx}", logger)
+				self.print_chapter(f"Task #{i}", logger)
 
-			multiplier = task_dict.pop('multiplier')
+			if args['task'] is not None and i not in args['task']:
+				logger.info(f"Skipping task #{i} as requested")
+				continue
+
+			task_dict['override'] = task_dict.pop('override', {}) | {'raise_exc': True}
 
 			# Beacons have no real use in jobs (unlike prod)
 			if task_dict['unit'] == 'T2Worker' and 'send_beacon' not in task_dict['config']:
 				task_dict['config']['send_beacon'] = False
 
-			if multiplier > 1:
+			if (expand_with := job.task[i].expand_with) is not None:
 
 				ps = []
 				qs = []
@@ -300,30 +378,42 @@ class JobCommand(AbsCoreCommand):
 				signal.signal(signal.SIGTERM, signal_handler)
 
 				try:
-					for _ in range(multiplier):
+					for item in expand_with:
+
+						self._fetch_inputs(job, job.task[i], item, logger)
+
 						q: Queue = Queue()
 						p = Process(
 							target = run_mp_process,
-							args = (q, config_dict, task_dict, process_name, job_sig, i)
+							args = (
+								q,
+								config_dict,
+								job.resolve_expressions(
+									task_dict,
+									job.task[i],
+									item
+								),
+								process_name,
+							),
+							daemon = True,
 						)
-						p.deamon = True
 						p.start()
 						ps.append(p)
 						qs.append(q)
-
-					for j in range(multiplier):
-						ps[j].join()
-						run_id, ps_ret = qs[j].get()
-						run_ids.append(run_id)
-						if ps_ret:
-							logger.info(f"{task_dict['unit']}#{j} return value: {ps_ret}")
+					
+					for i, (p, q) in enumerate(zip(ps, qs)):
+						p.join()
+						if (m := q.get()):
+							logger.info(f"{task_dict['unit']}#{i} return value: {m}")
 				except KeyboardInterrupt:
 					sys.exit(1)
-
+			
 			else:
+				
+				self._fetch_inputs(job, job.task[i], None, logger)
 
 				proc = ctx.loader.new_context_unit(
-					model = UnitModel(**task_dict),
+					model = UnitModel(**job.resolve_expressions(task_dict, job.task[i])),
 					context = ctx,
 					process_name = process_name,
 					job_sig = job_sig,
@@ -342,7 +432,6 @@ class JobCommand(AbsCoreCommand):
 				x = proc.run(event_hdlr)
 				if event_hdlr.run_id:
 					run_ids.append(event_hdlr.run_id)
-
 				logger.info(f"{task_dict['unit']} return value: {x}")
 
 		dm = divmod(time() - start_time, 60)
@@ -356,7 +445,7 @@ class JobCommand(AbsCoreCommand):
 			cmd = [
 				'ampel', 'plot', 'show', '-stack', '100', '-png', '150',
 				'-t2', '-t3', '-base-path', 'body.plot', # to be improved later
-				'-one-db', '-db', job['mongo']['prefix'],
+				'-one-db', '-db', job.mongo.prefix,
 				'-job-id', f"\"{job_sig}\"", '-run-id', *[str(el) for el in run_ids],
 			]
 			if args.get('debug'):
@@ -382,13 +471,13 @@ class JobCommand(AbsCoreCommand):
 		schema_files: list[str],
 		logger: AmpelLogger,
 		compute_sig: bool = True
-	) -> tuple[dict, int]:
+	) -> tuple[JobModel, int]:
 
 		lines = io.StringIO()
 		for i, job_fname in enumerate(schema_files):
 
 			if not os.path.exists(job_fname):
-				raise ValueError(f"Job file not found: '{job_fname}'")
+				raise FileNotFoundError(f"Job file not found: '{job_fname}'")
 
 			with open(job_fname, "r") as f:
 				lines.write("\n".join(f.readlines()))
@@ -402,7 +491,7 @@ class JobCommand(AbsCoreCommand):
 			if k.startswith("_"):
 				del job[k]
 
-		return job, build_unsafe_dict_id(job, size=-64) if compute_sig else 0
+		return JobModel(**job), build_unsafe_dict_id(job, size=-64) if compute_sig else 0
 
 
 def run_mp_process(

@@ -8,6 +8,7 @@
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 import json, yaml, pkg_resources, os, re
+from functools import partial
 from pkg_resources import EggInfoDistribution, DistInfoDistribution # type: ignore[attr-defined]
 from typing import Any
 from collections.abc import Callable
@@ -91,7 +92,7 @@ class DistConfigBuilder(ConfigBuilder):
 			# ("controller", "processor", "unit", "alias", "process")
 			for unit_type in ("alias", "process"):
 				if tier_conf_file := self.get_conf_file(all_conf_files, f"{unit_type}.{ext}"):
-					self.load_tier_config_file(distrib, tier_conf_file, unit_type) # type: ignore
+					self.load_conf_using_func(distrib, tier_conf_file, partial(self.register_tier_conf, unit_type))
 
 			# Try to load templates from folder template (defined by 'Ampel-ZTF' for ex.)
 			if template_conf_files := self.get_conf_files(all_conf_files, "/template/"):
@@ -112,6 +113,24 @@ class DistConfigBuilder(ConfigBuilder):
 				f"Error occured while loading configuration files from the distribution '{dist_name}'",
 				exc_info=e
 			)
+
+
+	def register_tier_conf(self,
+		root_key: str,
+		d: dict[str,Any],
+		dist_name: str,
+		version: str,
+		file_rel_path: str,
+	):
+		for k in ("t0", "t1", "t2", "t3", "ops"):
+			if k in d:
+				self.first_pass_config[root_key][k].add(
+					d[k],
+					dist_name = dist_name,
+					version = version,
+					register_file = file_rel_path,
+				)
+
 
 
 	def load_conf_using_func(self,

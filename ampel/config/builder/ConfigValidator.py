@@ -35,8 +35,6 @@ class ConfigValidator(BaseConfigChecker):
 
             for tier, proc in self.iter_procs(ignore_inactive):
                 config = self.config["process"][tier][proc]
-                Processor = self.loader.get_class_by_name(config["processor"]['unit'], unit_type=AmpelUnit)
-                Processor._defaults['process_name'] = "ConfigValidator"
                 try:
                     ProcessModel(**config)
                 except Exception as exc:

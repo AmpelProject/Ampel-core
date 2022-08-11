@@ -8,7 +8,7 @@
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from typing import Any
-from ampel.types import ChannelId, OneOrMany
+from ampel.types import ChannelId, OneOrMany, Traceless
 from ampel.base.AmpelABC import AmpelABC
 from ampel.base.decorator import abstractmethod, defaultmethod
 from ampel.core.EventHandler import EventHandler
@@ -37,7 +37,7 @@ class AbsEventUnit(AmpelABC, ContextUnit, abstract=True):
 	"""
 
 	#: name of the associated process
-	process_name: str
+	process_name: Traceless[str]
 
 	#: hash of potentially underlying job schema
 	job_sig: None | int = None

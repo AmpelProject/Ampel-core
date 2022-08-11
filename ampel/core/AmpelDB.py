@@ -11,10 +11,10 @@ from functools import cached_property
 import secrets
 import collections.abc
 from collections import defaultdict  # type: ignore[attr-defined]
-from pymongo import MongoClient
+from pymongo import MongoClient, ReadPreference
 from pymongo.database import Database
 from pymongo.collection import Collection
-from pymongo.errors import ConfigurationError, DuplicateKeyError
+from pymongo.errors import ConfigurationError, DuplicateKeyError, OperationFailure, CollectionInvalid
 from typing import Any
 from collections.abc import Sequence
 
@@ -51,6 +51,9 @@ class AmpelDB(AmpelUnit):
 	vault: None | AmpelVault
 	require_exists: bool = False
 	one_db: bool = False
+	#: Route reads to secondaries of a replica set. This can increase
+	#: performance at the expense of consistency
+	read_from_secondary: bool = True
 
 
 	@classmethod
@@ -152,11 +155,21 @@ class AmpelDB(AmpelUnit):
 		db = self._get_pymongo_db(db_config.name, role=role)
 
 		if 'w' in mode and col_name not in db.list_collection_names():
-			self.mongo_collections[col_name][mode] = self.create_ampel_collection(
-				self.col_config[col_name], db_config.name, role
-			)
-		else:
-			self.mongo_collections[col_name][mode] = db.get_collection(col_name)
+			try:
+				self.create_ampel_collection(
+					self.col_config[col_name], db_config.name, role
+				)
+			except CollectionInvalid:
+				# raised when collection was created concurrently
+				...
+			except OperationFailure as exc:
+				# also raised when collection was created concurrently
+				if exc.code != 48: # NamespaceExists
+					raise
+		self.mongo_collections[col_name][mode] = db.get_collection(
+			col_name,
+			read_preference=ReadPreference.SECONDARY_PREFERRED if self.read_from_secondary else None
+		)
 
 		return self.mongo_collections[col_name][mode]
 

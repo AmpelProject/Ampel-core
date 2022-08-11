@@ -15,6 +15,7 @@ from ampel.core.AmpelDB import AmpelDB
 from ampel.config.AmpelConfig import AmpelConfig
 from ampel.secret.AmpelVault import AmpelVault
 from ampel.abstract.AbsCLIOperation import AbsCLIOperation
+from ampel.abstract.AbsSecretProvider import AbsSecretProvider
 from ampel.core.AmpelContext import AmpelContext
 from ampel.core.UnitLoader import UnitLoader
 from ampel.log.AmpelLogger import AmpelLogger
@@ -33,7 +34,8 @@ class AbsCoreCommand(AbsCLIOperation, abstract=True):
 		config_path: None | str,
 		unknown_args: Sequence[str],
 		logger: None | AmpelLogger = None,
-		freeze: bool = True
+		freeze: bool = True,
+		env_var_prefix: None | str = "AMPEL_CONFIG_",
 	) -> AmpelConfig:
 
 		if not config_path:
@@ -51,6 +53,14 @@ class AbsCoreCommand(AbsCLIOperation, abstract=True):
 
 		if logger is None:
 			logger = AmpelLogger.get_logger()
+
+		if env_var_prefix is not None:
+			for var, value in os.environ.items():
+				if var.startswith(env_var_prefix):
+					k = var[len(env_var_prefix):]
+					v = _maybe_int(value)
+					logger.info(f"Setting config parameter '{k}' from environment")
+					set_by_path(ampel_conf._config, k, v)
 
 		for k, v in self.get_custom_args(unknown_args):
 			if ampel_conf.get(".".join(k.split(".")[:-1])) is None:
@@ -88,9 +98,12 @@ class AbsCoreCommand(AbsCLIOperation, abstract=True):
 		vault = None
 		if args.get('secrets'):
 			from ampel.secret.DictSecretProvider import DictSecretProvider
-			vault = AmpelVault(
-				[DictSecretProvider.load(args['secrets'])]
-			)
+			from ampel.secret.DirSecretProvider import DirSecretProvider
+			if os.path.isdir(args['secrets']):
+				provider: AbsSecretProvider = DirSecretProvider(args['secrets'])
+			else:
+				provider = DictSecretProvider.load(args['secrets'])
+			vault = AmpelVault([provider])
 		return vault
 
 
