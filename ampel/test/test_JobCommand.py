@@ -47,6 +47,7 @@ def dump(payload, tmpdir, name) -> Path:
 def vault(tmpdir):
     return dump({"foo": "bar"}, tmpdir, "secrets.yml")
 
+
 @pytest.fixture
 def secrets():
     return {
@@ -56,6 +57,7 @@ def secrets():
         "list": [1, 2, 3.5, "flerp"],
     }
 
+
 @pytest.fixture
 def dir_secret_store(tmpdir, secrets):
     parent_dir = Path(tmpdir) / "secrets"
@@ -64,13 +66,16 @@ def dir_secret_store(tmpdir, secrets):
         dump(v, parent_dir, k)
     return parent_dir
 
+
 @pytest.fixture
 def schema(tmpdir):
     return dump({"name": "job", "task": [{"unit": "Nonesuch"}]}, tmpdir, "schema.yml")
 
+
 @pytest.fixture
 def mock_db(mocker: MockerFixture):
     return mocker.patch("ampel.core.AmpelDB.AmpelDB.get_collection")
+
 
 @pytest.fixture
 def mock_new_context_unit(mocker: MockerFixture, mock_db):
@@ -376,8 +381,14 @@ def test_template_resolution(
     )
 
     update_one = mock_db().update_one
-    inserted_job_def = update_one.call_args_list[0].args[1]['$setOnInsert']
-    parsed_job_def = json.loads(JobModel(**yaml.safe_load((tmpdir / "schema.yml").open())).json())
+    inserted_job_def = update_one.call_args_list[0].args[1]["$setOnInsert"]
+    parsed_job_def = json.loads(
+        JobModel(**yaml.safe_load((tmpdir / "schema.yml").open())).json(exclude_unset=True)
+    )
+    # fake template resolution
+    del parsed_job_def["task"][0]["template"]
+    parsed_job_def["task"][0]["unit"] = "DummyInputUnit"
 
-    assert inserted_job_def == parsed_job_def
-
+    assert (
+        inserted_job_def == parsed_job_def
+    ), "templates were resolved in job def inserted into db"

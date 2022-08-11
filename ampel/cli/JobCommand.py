@@ -279,26 +279,14 @@ class JobCommand(AbsCoreCommand):
 		)
 
 		config_dict = ctx.config._config
-
 		self._patch_config(config_dict, job, logger)
-		
+		ctx.config._config = recursive_freeze(config_dict)
+
 		# Ensure that job content saved in DB reflects options set dynamically
 		if args['task']:
 			for idx in sorted(args['task'], reverse=True):
 				del job.task[idx]
 
-		ctx.config._config = recursive_freeze(config_dict)
-
-		logger.info("Saving job schema")
-		job_dict = ujson.loads(job.json())
-		job_sig = build_unsafe_dict_id(job_dict, size=-64)
-		ctx.db.get_collection("jobid").update_one(
-			{'_id': job_sig},
-			{'$setOnInsert': job_dict},
-			upsert=True
-		)
-
-		run_ids = []
 		tds: list[dict[str, Any]] = []
 		process_name = job.name or schema_descr
 
@@ -321,7 +309,7 @@ class JobCommand(AbsCoreCommand):
 				tpl = Tpl(**model.config)
 				morphed_um = tpl \
 					.get_model(ctx.config._config, model.dict()) \
-					.dict()
+					.dict(exclude_unset=True)
 
 				if args.get('debug'):
 					from ampel.util.pretty import prettyjson
@@ -332,11 +320,33 @@ class JobCommand(AbsCoreCommand):
 				tds.append(morphed_um)
 
 			else:
-				tds.append(model.dict(exclude={"inputs", "outputs", "expand_with"}))
+				tds.append(model.dict(exclude={"inputs", "outputs", "expand_with"}, exclude_unset=True))
 
 			logger.info(f"Registering job task#{i} with {len(list(model.expand_with)) if model.expand_with else 1}x multiplier")
 
-		ctx.config._config = recursive_freeze(config_dict)
+		logger.info("Saving job schema")
+		# recreate JobModel with templates resolved
+		job_dict = ujson.loads(
+			JobModel(
+				**(
+					job.dict(exclude_unset=True) | # type: ignore[arg-type]
+					{
+						"task": [
+							td | task.dict(include={"inputs", "outputs", "expand_with", "title"}, exclude_unset=True)
+							for task, td in zip(job.task, tds)
+						]
+					}
+				)
+			).json(exclude_unset=True)
+		)
+		job_sig = build_unsafe_dict_id(job_dict, size=-64)
+		ctx.db.get_collection("jobid").update_one(
+			{'_id': job_sig},
+			{'$setOnInsert': job_dict},
+			upsert=True
+		)
+
+		run_ids = []
 
 		for i, task_dict in enumerate(tds):
 
@@ -353,7 +363,7 @@ class JobCommand(AbsCoreCommand):
 				logger.info(f"Skipping task #{i} as requested")
 				continue
 
-			task_dict['override'] = (task_dict.pop('override') or {}) | {'raise_exc': True}
+			task_dict['override'] = task_dict.pop('override', {}) | {'raise_exc': True}
 
 			# Beacons have no real use in jobs (unlike prod)
 			if task_dict['unit'] == 'T2Worker' and 'send_beacon' not in task_dict['config']:
