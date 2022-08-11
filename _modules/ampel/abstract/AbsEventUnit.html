@@ -5,7 +5,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>ampel.abstract.AbsEventUnit &#8212; ampel-core 0.8.3-alpha.20 documentation</title>
+    <title>ampel.abstract.AbsEventUnit &#8212; ampel-core 0.8.3-alpha.21 documentation</title>
     <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css" />
     <link rel="stylesheet" type="text/css" href="../../../_static/sphinxdoc.css" />
     <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
@@ -21,7 +21,7 @@
         <li class="right" style="margin-right: 10px">
           <a href="../../../genindex.html" title="General Index"
              accesskey="I">index</a></li>
-        <li class="nav-item nav-item-0"><a href="../../../index.html">ampel-core 0.8.3-alpha.20 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">ampel-core 0.8.3-alpha.21 documentation</a> &#187;</li>
           <li class="nav-item nav-item-1"><a href="../../index.html" accesskey="U">Module code</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">ampel.abstract.AbsEventUnit</a></li> 
       </ul>
@@ -43,7 +43,7 @@
 <span class="c1"># Last Modified By:    valery brinnel &lt;firstname.lastname@gmail.com&gt;</span>
 
 <span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Any</span>
-<span class="kn">from</span> <span class="nn">ampel.types</span> <span class="kn">import</span> <span class="n">ChannelId</span><span class="p">,</span> <span class="n">OneOrMany</span>
+<span class="kn">from</span> <span class="nn">ampel.types</span> <span class="kn">import</span> <span class="n">ChannelId</span><span class="p">,</span> <span class="n">OneOrMany</span><span class="p">,</span> <span class="n">Traceless</span>
 <span class="kn">from</span> <span class="nn">ampel.base.AmpelABC</span> <span class="kn">import</span> <span class="n">AmpelABC</span>
 <span class="kn">from</span> <span class="nn">ampel.base.decorator</span> <span class="kn">import</span> <span class="n">abstractmethod</span><span class="p">,</span> <span class="n">defaultmethod</span>
 <span class="kn">from</span> <span class="nn">ampel.core.EventHandler</span> <span class="kn">import</span> <span class="n">EventHandler</span>
@@ -72,7 +72,7 @@
 <span class="sd">	&quot;&quot;&quot;</span>
 
 	<span class="c1">#: name of the associated process</span>
-	<span class="n">process_name</span><span class="p">:</span> <span class="nb">str</span>
+	<span class="n">process_name</span><span class="p">:</span> <span class="n">Traceless</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>
 
 	<span class="c1">#: hash of potentially underlying job schema</span>
 	<span class="n">job_sig</span><span class="p">:</span> <span class="kc">None</span> <span class="o">|</span> <span class="nb">int</span> <span class="o">=</span> <span class="kc">None</span>
@@ -185,7 +185,7 @@
         <li class="right" style="margin-right: 10px">
           <a href="../../../genindex.html" title="General Index"
              >index</a></li>
-        <li class="nav-item nav-item-0"><a href="../../../index.html">ampel-core 0.8.3-alpha.20 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">ampel-core 0.8.3-alpha.21 documentation</a> &#187;</li>
           <li class="nav-item nav-item-1"><a href="../../index.html" >Module code</a> &#187;</li>
         <li class="nav-item nav-item-this"><a href="">ampel.abstract.AbsEventUnit</a></li> 
       </ul>
