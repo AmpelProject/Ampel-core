@@ -4,7 +4,7 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 16.06.2018
-# Last Modified Date: 28.12.2021
+# Last Modified Date: 11.08.2022
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
 from functools import cached_property
@@ -34,6 +34,7 @@ from ampel.mongo.model.IndexModel import IndexModel
 from ampel.mongo.model.ShortIndexModel import ShortIndexModel
 from ampel.mongo.model.MongoClientOptionsModel import MongoClientOptionsModel
 from ampel.mongo.model.MongoClientRoleModel import MongoClientRoleModel
+from ampel.util.collections import try_reduce
 
 intcol = {'t0': 0, 't1': 1, 't2': 2, 't3': 3, 'stock': 4}
 
@@ -220,8 +221,13 @@ class AmpelDB(AmpelUnit):
 			# Avoid cyclic import error
 			from ampel.log.AmpelLogger import AmpelLogger
 			logger = AmpelLogger.get_logger()
-			logger.info(f"Creating {db.name} -> {col_config.name}")
 
+		try:
+			dbinfo = "[" + str(try_reduce(list(db.client.nodes))) + "]"
+		except Exception as e:
+			dbinfo = ""
+
+		logger.info(f"Creating {db.name} -> {col_config.name} {dbinfo}")
 		col = db.create_collection(col_config.name, **col_config.args)
 
 		"""
