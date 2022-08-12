@@ -24,7 +24,7 @@ from ampel.model.job.utils import transform_expressions
 
 class JobModel(AmpelBaseModel):
 
-    name: str
+    name: None | str
     requirements: list[str] = []
     env: dict[str, EnvSpec] = {}
     channel: list[dict[str, Any]] = []
@@ -49,7 +49,7 @@ class JobModel(AmpelBaseModel):
         self,
         target: dict,
         task: TaskUnitModel | TemplateUnitModel,
-        item: None | str | dict | list = None,
+        item: None | str | dict | list = None
     ) -> dict:
         """
         Resolve any expressions of the form {{ expr }} found in string values of
@@ -89,6 +89,7 @@ class JobModel(AmpelBaseModel):
             },
             "item": item,
         }
+
         return transform_expressions(
             target,
             transformation=partial(ExpressionParser.evaluate, context=context),
