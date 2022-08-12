@@ -1,7 +1,7 @@
 import re
 from functools import partial
 from pathlib import Path
-from typing import Any, Callable, Literal, Optional, Union
+from typing import Any, Callable, Literal, Union
 
 from pydantic import validator, root_validator
 
@@ -13,7 +13,7 @@ from ampel.util.recursion import walk_and_process_dict
 
 
 class OutputParameterSource(AmpelBaseModel):
-    default: Optional[str]
+    default: None | str
     path: Path
 
 
@@ -21,7 +21,7 @@ class OutputParameter(AmpelBaseModel):
     name: str
     value_from: OutputParameterSource
 
-    def value(self) -> Optional[str]:
+    def value(self) -> None | str:
         try:
             return self.value_from.path.read_text()
         except FileNotFoundError:
@@ -47,7 +47,7 @@ class InputArtifact(AmpelBaseModel):
     path: Path
     http: InputArtifactHttpSource
 
-    def value(self) -> Optional[str]:
+    def value(self) -> None | str:
         try:
             return self.path.read_text()
         except FileNotFoundError:
@@ -103,7 +103,7 @@ class SequenceWithCount(BaseSequence):
 
 
 class ExpandWithSequence(AmpelBaseModel):
-    sequence: Union[SequenceWithCount, SequenceWithEnd]
+    sequence: SequenceWithCount | SequenceWithEnd
 
     def items(self):
         for i in self.sequence.items():
@@ -180,7 +180,7 @@ class JobModel(AmpelBaseModel):
     alias: dict[Literal["t0", "t1", "t2", "t3"], dict[str,Any]] = {}
     parameters: list[Parameter] = []
     mongo: MongoOpts = MongoOpts()
-    task: list[Union[TemplateUnitModel, TaskUnitModel]]
+    task: list[TemplateUnitModel | TaskUnitModel]
 
     @validator("channel", each_item=True)
     def get_channel(cls, v):
@@ -236,8 +236,8 @@ class JobModel(AmpelBaseModel):
     def resolve_expressions(
         self,
         target: dict,
-        task: Union[TaskUnitModel, TemplateUnitModel],
-        item: Union[None, str, dict, list] = None,
+        task: TaskUnitModel | TemplateUnitModel,
+        item: None | str | dict | list = None,
     ) -> dict:
         """
         Resolve any expressions of the form {{ expr }} found in string values of
