@@ -1,7 +1,7 @@
 
 <!DOCTYPE html>
 
-<html>
+<html lang="en">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
@@ -12,6 +12,7 @@
     <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
     <script src="_static/jquery.js"></script>
     <script src="_static/underscore.js"></script>
+    <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="_static/doctools.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
@@ -41,24 +42,24 @@
           <div class="body" role="main">
             
   <section id="structure">
-<h1>Structure<a class="headerlink" href="#structure" title="Permalink to this headline">¶</a></h1>
+<h1>Structure<a class="headerlink" href="#structure" title="Permalink to this heading">¶</a></h1>
 <section id="tiers">
-<h2>Tiers<a class="headerlink" href="#tiers" title="Permalink to this headline">¶</a></h2>
+<h2>Tiers<a class="headerlink" href="#tiers" title="Permalink to this heading">¶</a></h2>
 <p>Data processing is divided into 4 tiers.</p>
 <section id="tier-0-add">
-<span id="structure-t0"></span><h3>Tier 0: Add<a class="headerlink" href="#tier-0-add" title="Permalink to this headline">¶</a></h3>
+<span id="structure-t0"></span><h3>Tier 0: Add<a class="headerlink" href="#tier-0-add" title="Permalink to this heading">¶</a></h3>
 <p>Ingest (or reject) incoming <code class="xref py py-class docutils literal notranslate"><span class="pre">DataPoints</span></code>.</p>
 </section>
 <section id="tier-1-combine">
-<span id="structure-t1"></span><h3>Tier 1: Combine<a class="headerlink" href="#tier-1-combine" title="Permalink to this headline">¶</a></h3>
+<span id="structure-t1"></span><h3>Tier 1: Combine<a class="headerlink" href="#tier-1-combine" title="Permalink to this heading">¶</a></h3>
 <p>Creates <code class="xref py py-class docutils literal notranslate"><span class="pre">Compounds</span></code> documents, sometimes referred to as ‘states’, based on collections of <code class="xref py py-class docutils literal notranslate"><span class="pre">DataPoints</span></code>.</p>
 </section>
 <section id="tier-2-compute">
-<span id="structure-t2"></span><h3>Tier 2: Compute<a class="headerlink" href="#tier-2-compute" title="Permalink to this headline">¶</a></h3>
+<span id="structure-t2"></span><h3>Tier 2: Compute<a class="headerlink" href="#tier-2-compute" title="Permalink to this heading">¶</a></h3>
 <p>Compute derived quantities from newly added <code class="xref py py-class docutils literal notranslate"><span class="pre">StockRecords</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">DataPoints</span></code>, and <code class="xref py py-class docutils literal notranslate"><span class="pre">Compounds</span></code>.</p>
 </section>
 <section id="tier-3-react">
-<span id="structure-t3"></span><h3>Tier 3: React<a class="headerlink" href="#tier-3-react" title="Permalink to this headline">¶</a></h3>
+<span id="structure-t3"></span><h3>Tier 3: React<a class="headerlink" href="#tier-3-react" title="Permalink to this heading">¶</a></h3>
 <p>Perform action based on collections of Ampel objects.</p>
 <p>The default top level implementation provided by <code class="docutils literal notranslate"><span class="pre">ampel-core</span></code>
 is the class <a class="reference internal" href="api.html#ampel.t3.T3Processor.T3Processor" title="ampel.t3.T3Processor.T3Processor"><code class="xref py py-class docutils literal notranslate"><span class="pre">T3Processor</span></code></a>, which is capable of spawning and executing
@@ -85,7 +86,7 @@ The execution typically follows a 5-step process specified by the following fiel
 associated with a given entity across T1, T2 and T3 (and possibly T0 if already known at this point).</p>
 </div>
 <section id="context">
-<span id="t3-directive-context"></span><h4>context<a class="headerlink" href="#context" title="Permalink to this headline">¶</a></h4>
+<span id="t3-directive-context"></span><h4>context<a class="headerlink" href="#context" title="Permalink to this heading">¶</a></h4>
 <table class="docutils align-default">
 <colgroup>
 <col style="width: 35%" />
@@ -114,7 +115,7 @@ Note that the information gathered in this stage is not associated
 with individual ampel elements (each identified by a unique ‘stock ID’).</p>
 </section>
 <section id="select">
-<span id="t3-directive-select"></span><h4>select<a class="headerlink" href="#select" title="Permalink to this headline">¶</a></h4>
+<span id="t3-directive-select"></span><h4>select<a class="headerlink" href="#select" title="Permalink to this heading">¶</a></h4>
 <table class="docutils align-default">
 <colgroup>
 <col style="width: 35%" />
@@ -146,7 +147,7 @@ based on the information from the internal collection ‘t2’.
 The returned sequence of stock IDs is passed to the next stage.</p>
 </section>
 <section id="load">
-<span id="t3-directive-load"></span><h4>load<a class="headerlink" href="#load" title="Permalink to this headline">¶</a></h4>
+<span id="t3-directive-load"></span><h4>load<a class="headerlink" href="#load" title="Permalink to this heading">¶</a></h4>
 <table class="docutils align-default">
 <colgroup>
 <col style="width: 36%" />
@@ -175,7 +176,7 @@ The loaded documents are then included into <code class="xref py py-class docuti
 Note that all current implementations rely internally on the backend class <code class="xref py py-class docutils literal notranslate"><span class="pre">DBContentLoader</span></code>.</p>
 </section>
 <section id="complement">
-<span id="t3-directive-complement"></span><h4>complement<a class="headerlink" href="#complement" title="Permalink to this headline">¶</a></h4>
+<span id="t3-directive-complement"></span><h4>complement<a class="headerlink" href="#complement" title="Permalink to this heading">¶</a></h4>
 <table class="docutils align-default">
 <colgroup>
 <col style="width: 36%" />
@@ -211,7 +212,7 @@ Since the information only lives in the process memory
 there is no hard limitation wrt to data type / serialization property / size</p>
 </section>
 <section id="run">
-<span id="t3-directive-run"></span><h4>run<a class="headerlink" href="#run" title="Permalink to this headline">¶</a></h4>
+<span id="t3-directive-run"></span><h4>run<a class="headerlink" href="#run" title="Permalink to this heading">¶</a></h4>
 <p>The last stage executes t3 units according the provided configuration
 and using the various information loaded from previous stages.</p>
 <p>The default implementation <code class="xref py py-class docutils literal notranslate"><span class="pre">T3UnitRunner</span></code> provided by <code class="docutils literal notranslate"><span class="pre">ampel-core</span></code>
@@ -222,7 +223,7 @@ follows a 3-step process governed by the following sections from the configurati
 <li><p>execute</p></li>
 </ul>
 <section id="filter">
-<span id="t3-directive-run-filter"></span><h5>filter<a class="headerlink" href="#filter" title="Permalink to this headline">¶</a></h5>
+<span id="t3-directive-run-filter"></span><h5>filter<a class="headerlink" href="#filter" title="Permalink to this heading">¶</a></h5>
 <table class="docutils align-default">
 <colgroup>
 <col style="width: 37%" />
@@ -261,7 +262,7 @@ under the top-level setting <a class="reference internal" href="#t3-directive-ru
 and posts them to “#blue” and the second one sub-selects red entities and posts then to “#red”.</p>
 </section>
 <section id="project">
-<span id="t3-directive-run-project"></span><h5>project<a class="headerlink" href="#project" title="Permalink to this headline">¶</a></h5>
+<span id="t3-directive-run-project"></span><h5>project<a class="headerlink" href="#project" title="Permalink to this heading">¶</a></h5>
 <table class="docutils align-default">
 <colgroup>
 <col style="width: 37%" />
@@ -301,7 +302,7 @@ and posts them to “#blue” and the second one sub-selects red entities and po
 </div>
 </section>
 <section id="execute">
-<span id="t3-directive-run-execute"></span><h5>execute<a class="headerlink" href="#execute" title="Permalink to this headline">¶</a></h5>
+<span id="t3-directive-run-execute"></span><h5>execute<a class="headerlink" href="#execute" title="Permalink to this heading">¶</a></h5>
 <table class="docutils align-default">
 <colgroup>
 <col style="width: 39%" />
@@ -366,7 +367,7 @@ created each time the underlying process is run.</p>
     </form>
     </div>
 </div>
-<script>$('#searchbox').show(0);</script>
+<script>document.getElementById('searchbox').style.display = "block"</script>
         </div>
       </div>
       <div class="clearer"></div>
@@ -389,7 +390,7 @@ created each time the underlying process is run.</p>
     </div>
     <div class="footer" role="contentinfo">
         &#169; Copyright 2018-2021, Ampel Project.
-      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 4.5.0.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 5.1.1.
     </div>
   </body>
 </html>

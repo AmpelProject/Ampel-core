@@ -1,7 +1,7 @@
 
 <!DOCTYPE html>
 
-<html>
+<html lang="en">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
@@ -12,6 +12,7 @@
     <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
     <script src="_static/jquery.js"></script>
     <script src="_static/underscore.js"></script>
+    <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="_static/doctools.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
@@ -41,11 +42,11 @@
           <div class="body" role="main">
             
   <section id="running-the-automated-tests">
-<span id="testing"></span><h1>Running the automated tests<a class="headerlink" href="#running-the-automated-tests" title="Permalink to this headline">¶</a></h1>
+<span id="testing"></span><h1>Running the automated tests<a class="headerlink" href="#running-the-automated-tests" title="Permalink to this heading">¶</a></h1>
 <p>Ampel ships with a suite of automated tests. You should run these before
 pushing new code to GitHub.</p>
 <section id="why-test">
-<h2>Why test?<a class="headerlink" href="#why-test" title="Permalink to this headline">¶</a></h2>
+<h2>Why test?<a class="headerlink" href="#why-test" title="Permalink to this heading">¶</a></h2>
 <blockquote>
 <div><dl class="simple">
 <dt>Vertrauen ist gut. Kontrolle ist besser.</dt><dd><p>– German proverb</p>
@@ -68,7 +69,7 @@ of the entire project. This makes it harder for changes to accidentally break
 apparently unrelated parts of the codebase.</p>
 </section>
 <section id="expected-installation-layout">
-<h2>Expected installation layout<a class="headerlink" href="#expected-installation-layout" title="Permalink to this headline">¶</a></h2>
+<h2>Expected installation layout<a class="headerlink" href="#expected-installation-layout" title="Permalink to this heading">¶</a></h2>
 <p>Choose a root directory, e.g. on my machine, /Users/jakob/Documents/ZTF/Ampel.
 For simplicity, we will call this <cite>$AMPEL_ROOT</cite> from here on out. Clone any
 Ampel plugins you choose to use into subdirectories, e.g.:</p>
@@ -108,7 +109,7 @@ tests use Docker to provide single-use instances of the databases that Ampel
 interacts with.</p>
 </section>
 <section id="running-the-tests">
-<h2>Running the tests<a class="headerlink" href="#running-the-tests" title="Permalink to this headline">¶</a></h2>
+<h2>Running the tests<a class="headerlink" href="#running-the-tests" title="Permalink to this heading">¶</a></h2>
 <p>From <cite>$AMPEL_ROOT</cite>, <cite>pytest</cite> will discover and run all tests in the
 subdirectories named ‘<em>test</em>’. You’ll get a report of the tests as they run, e.g.:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span>(ampeltest) [jakob@znb34-w:ZTF/Ampel]$ pytest ampel-*/test                                                         (07-02 16:01)
@@ -131,7 +132,7 @@ ampel-core/test/test_t3_controller.py x.....                                    
 <p>Failures will produce a detailed traceback of exactly which assertion failed.</p>
 </section>
 <section id="test-coverage">
-<h2>Test coverage<a class="headerlink" href="#test-coverage" title="Permalink to this headline">¶</a></h2>
+<h2>Test coverage<a class="headerlink" href="#test-coverage" title="Permalink to this heading">¶</a></h2>
 <p>Tests can only help pinpoint errors if they actually run the code in question.
 Unless you were thorough enough to write your tests before the actual code they
 test, you are likely to not have tests that exercise every part of your code.
@@ -146,7 +147,7 @@ imported along with the fraction of lines that were executing during the test.
 Examining this listing will help you find places to put new tests.</p>
 </section>
 <section id="writing-good-tests">
-<h2>Writing (good) tests<a class="headerlink" href="#writing-good-tests" title="Permalink to this headline">¶</a></h2>
+<h2>Writing (good) tests<a class="headerlink" href="#writing-good-tests" title="Permalink to this heading">¶</a></h2>
 <p>Any Python file named ‘test/test_*.py’ will be searched for functions starting
 with <cite>test_</cite>. Use <cite>assert</cite> to document your assumptions about function return
 values and shared state.</p>
@@ -182,7 +183,7 @@ values and shared state.</p>
     </form>
     </div>
 </div>
-<script>$('#searchbox').show(0);</script>
+<script>document.getElementById('searchbox').style.display = "block"</script>
         </div>
       </div>
       <div class="clearer"></div>
@@ -205,7 +206,7 @@ values and shared state.</p>
     </div>
     <div class="footer" role="contentinfo">
         &#169; Copyright 2018-2021, Ampel Project.
-      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 4.5.0.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 5.1.1.
     </div>
   </body>
 </html>
