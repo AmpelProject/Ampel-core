@@ -110,11 +110,20 @@ class JobCommand(AbsCoreCommand):
 		Ensure that input artifacts exist
 		"""
 		for artifact in task.inputs.artifacts:
-			resolved_artifact = InputArtifact(**job.resolve_expressions(ujson.loads(artifact.json()), task, item))
+
+			resolved_artifact = InputArtifact(
+				**job.resolve_expressions(
+					ujson.loads(artifact.json()), task, item
+				)
+			)
+
 			if resolved_artifact.path.exists():
 				logger.info(f"Artifact {resolved_artifact.name} exists at {resolved_artifact.path}")
 			else:
-				logger.info(f"Fetching artifact {resolved_artifact.name} from {resolved_artifact.http.url} to {resolved_artifact.path}")
+				logger.info(
+					f"Fetching artifact {resolved_artifact.name} from "
+					f"{resolved_artifact.http.url} to {resolved_artifact.path}"
+				)
 				os.makedirs(resolved_artifact.path.parent, exist_ok=True)
 				with tempfile.NamedTemporaryFile(delete=False) as tf:
 					urlretrieve(resolved_artifact.http.url, tf.name)
@@ -126,6 +135,7 @@ class JobCommand(AbsCoreCommand):
 						os.unlink(tf.name)
 					except tarfile.ReadError:
 						os.rename(tf.name, resolved_artifact.path)
+
 
 	@staticmethod
 	def _patch_config(config_dict: dict[str, Any], job: JobModel, logger: AmpelLogger):
@@ -320,9 +330,18 @@ class JobCommand(AbsCoreCommand):
 				tds.append(morphed_um)
 
 			else:
-				tds.append(model.dict(exclude={"inputs", "outputs", "expand_with"}, exclude_unset=True))
+				tds.append(
+					model.dict(
+						exclude={"inputs", "outputs", "expand_with"},
+						exclude_unset=True
+					)
+				)
 
-			logger.info(f"Registering job task#{i} with {len(list(model.expand_with)) if model.expand_with else 1}x multiplier")
+			logger.info(
+				f"Registering job task#{i} with " +
+				str(len(list(model.expand_with)) if model.expand_with else 1) +
+				"x multiplier"
+			)
 
 		logger.info("Saving job schema")
 		# recreate JobModel with templates resolved
@@ -332,7 +351,10 @@ class JobCommand(AbsCoreCommand):
 					job.dict(exclude_unset=True) | # type: ignore[arg-type]
 					{
 						"task": [
-							td | task.dict(include={"inputs", "outputs", "expand_with", "title"}, exclude_unset=True)
+							td | task.dict(
+								include={"inputs", "outputs", "expand_with", "title"},
+								exclude_unset=True
+							)
 							for task, td in zip(job.task, tds)
 						]
 					}
@@ -432,6 +454,7 @@ class JobCommand(AbsCoreCommand):
 				x = proc.run(event_hdlr)
 				if event_hdlr.run_id:
 					run_ids.append(event_hdlr.run_id)
+
 				logger.info(f"{task_dict['unit']} return value: {x}")
 
 		dm = divmod(time() - start_time, 60)
