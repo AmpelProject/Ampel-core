@@ -1,9 +1,18 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+# File:                Ampel-core/ampel/model/job/ExpressionParser.py
+# License:             BSD-3-Clause
+# Author:              jvs
+# Date:                Unspecified
+# Last Modified Date:  13.08.2022
+# Last Modified By:    jvs
+
 import ast
 from pathlib import Path
-from typing import Any, Optional
-
+from typing import Any
 
 class ExpressionParser(ast.NodeVisitor):
+
     @classmethod
     def evaluate(cls, expression: str, context: dict) -> str:
         """Evaluate Argo-style template expressions"""
@@ -35,5 +44,3 @@ class ExpressionParser(ast.NodeVisitor):
             self._value = self._value.get(node.value)
         elif isinstance(self._value, list) and isinstance(node, ast.Num):
             self._value = self._value[node.value]
-
-

@@ -1,237 +1,49 @@
-import re
-from functools import partial
-from pathlib import Path
-from typing import Any, Callable, Literal, Union
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+# File:                Ampel-core/ampel/model/job/JobModel.py
+# License:             BSD-3-Clause
+# Author:              jvs
+# Date:                Unspecified
+# Last Modified Date:  13.08.2022
+# Last Modified By:    jvs
 
-from pydantic import validator, root_validator
+from functools import partial
+from typing import Any, Literal
+from pydantic import validator
 
 from ampel.model.ChannelModel import ChannelModel
 from ampel.base.AmpelBaseModel import AmpelBaseModel
 from ampel.model.job.ExpressionParser import ExpressionParser
-from ampel.model.UnitModel import UnitModel
-from ampel.util.recursion import walk_and_process_dict
+from ampel.model.job.MongoOpts import MongoOpts
+from ampel.model.job.TemplateUnitModel import TemplateUnitModel
+from ampel.model.job.TaskUnitModel import TaskUnitModel
+from ampel.model.job.EnvSpec import EnvSpec
+from ampel.model.job.Parameter import Parameter
+from ampel.model.job.utils import transform_expressions
 
-
-class OutputParameterSource(AmpelBaseModel):
-    default: None | str
-    path: Path
-
-
-class OutputParameter(AmpelBaseModel):
-    name: str
-    value_from: OutputParameterSource
-
-    def value(self) -> None | str:
-        try:
-            return self.value_from.path.read_text()
-        except FileNotFoundError:
-            return self.value_from.default
-
-
-class OutputArtifact(AmpelBaseModel):
-    name: str
-    path: str
-
-
-class TaskOutputs(AmpelBaseModel):
-    parameters: list[OutputParameter] = []
-    artifacts: list[OutputArtifact] = []
-
-
-class InputArtifactHttpSource(AmpelBaseModel):
-    url: str
-
-
-class InputArtifact(AmpelBaseModel):
-    name: str
-    path: Path
-    http: InputArtifactHttpSource
-
-    def value(self) -> None | str:
-        try:
-            return self.path.read_text()
-        except FileNotFoundError:
-            return None
-
-    @staticmethod
-    def _check_expression(expression: str):
-        """For compatibility with Argo, forbid use of {{ item }} in artifact specs"""
-        if expression == "item":
-            raise ValueError("artifact fields cannot reference {{ item }}")
-        return expression
-
-    @root_validator
-    def check_for_item(cls, values):
-        JobModel.transform_expressions(values, cls._check_expression)
-        return values
-
-
-class InputParameter(AmpelBaseModel):
-    name: str
-    value: str
-
-
-class TaskInputs(AmpelBaseModel):
-    parameters: list[InputParameter] = []
-    artifacts: list[InputArtifact] = []
-
-
-class ExpandWithItems(AmpelBaseModel):
-    items: list
-
-    def __iter__(self):
-        return iter(self.items)
-
-
-class BaseSequence(AmpelBaseModel):
-    start: int = 0
-    format: str = "%d"
-
-
-class SequenceWithEnd(BaseSequence):
-    end: int
-
-    def items(self):
-        yield from range(self.start, self.end)
-
-
-class SequenceWithCount(BaseSequence):
-    count: int
-
-    def items(self):
-        yield from range(self.start, self.start + self.count)
-
-
-class ExpandWithSequence(AmpelBaseModel):
-    sequence: SequenceWithCount | SequenceWithEnd
-
-    def items(self):
-        for i in self.sequence.items():
-            yield self.sequence.format % i
-
-    def __iter__(self):
-        return self.items()
-
-
-ExpandWith = Union[None, ExpandWithItems, ExpandWithSequence]
-
-
-def _parse_multiplier(values: dict[str, Any]) -> dict:
-    if not isinstance(multiplier := values.pop("multiplier", 1), int):
-        raise TypeError("multiplier must be an int")
-    if multiplier > 1:
-        assert (
-            "expand_with" not in values
-        ), "multiplier and expand_with may not be used together"
-        values |= {"expand_with": {"sequence": {"count": multiplier}}}
-    return values
-
-
-class TaskUnitModel(UnitModel):
-    title: str = ""
-    inputs: TaskInputs = TaskInputs()
-    outputs: TaskOutputs = TaskOutputs()
-    expand_with: ExpandWith = None
-
-    @validator("title", pre=True)
-    def populate_title(cls, v, values):
-        return v or values["unit"]
-
-    @root_validator(pre=True)
-    def parse_multiplier(cls, values):
-        return _parse_multiplier(values)
-
-
-class TemplateUnitModel(AmpelBaseModel):
-    template: str
-    title: str = ""
-    config: dict[str, Any]
-    inputs: TaskInputs = TaskInputs()
-    outputs: TaskOutputs = TaskOutputs()
-    expand_with: ExpandWith = None
-
-    @validator("title", pre=True)
-    def populate_title(cls, v, values):
-        return v or values["template"]
-
-    @root_validator(pre=True)
-    def parse_multiplier(cls, values):
-        return _parse_multiplier(values)
-
-
-class MongoOpts(AmpelBaseModel):
-    reset: bool = False
-    prefix: str = "Ampel"
-
-
-class Parameter(AmpelBaseModel):
-    name: str
-    value: str
-
-class EnvSpec(AmpelBaseModel):
-    set: dict[str,str] = {}
-    check: dict[str,str] = {}
 
 class JobModel(AmpelBaseModel):
+
     name: str
     requirements: list[str] = []
-    env: dict[str,EnvSpec] = {}
+    env: dict[str, EnvSpec] = {}
     channel: list[dict[str, Any]] = []
-    alias: dict[Literal["t0", "t1", "t2", "t3"], dict[str,Any]] = {}
+    alias: dict[Literal["t0", "t1", "t2", "t3"], dict[str, Any]] = {}
     parameters: list[Parameter] = []
     mongo: MongoOpts = MongoOpts()
     task: list[TemplateUnitModel | TaskUnitModel]
+
 
     @validator("channel", each_item=True)
     def get_channel(cls, v):
         # work around incompatible AmpelBaseModel validation
         if not isinstance(v, dict):
             raise TypeError("channel must be a dict")
-        if not "channel" in v:
+        if "channel" not in v:
             v["channel"] = v.pop("name")
         ChannelModel(**v)
         return v
 
-    @classmethod
-    def _transform_item(cls, v: str, transform: Callable[[str], str]) -> str:
-        chunks = []
-        pos = 0
-        for match in re.finditer(r"\{\{(.*?)\}\}", v):
-            if match.span()[0] > pos:
-                chunks.append(v[pos : match.span()[0]])
-            chunks.append(transform(match.groups()[0].strip()))
-            pos = match.span()[1]
-        if pos < len(v):
-            chunks.append(v[pos : len(v)])
-        return "".join(chunks)
-
-    @classmethod
-    def _transform_expressions_callback(cls, path, k, d, **kwargs):
-        for k, v in d.items():
-            if isinstance(v, str):
-                d[k] = cls._transform_item(v, kwargs["transform"])
-            elif isinstance(v, list):
-                d[k] = [
-                    cls._transform_item(vv, kwargs["transform"])
-                    if isinstance(vv, str)
-                    else vv
-                    for vv in v
-                ]
-
-    @classmethod
-    def transform_expressions(
-        cls, task_dict: dict, transformation: Callable[[str], str]
-    ) -> dict:
-        """
-        Replace any expressions of the form {{ expr }} with the result of
-        transformation(expr)
-        """
-        walk_and_process_dict(
-            task_dict,
-            callback=cls._transform_expressions_callback,
-            transform=transformation,
-        )
-        return task_dict
 
     def resolve_expressions(
         self,
@@ -277,7 +89,7 @@ class JobModel(AmpelBaseModel):
             },
             "item": item,
         }
-        return self.transform_expressions(
+        return transform_expressions(
             target,
             transformation=partial(ExpressionParser.evaluate, context=context),
         )
