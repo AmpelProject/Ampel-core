@@ -70,7 +70,7 @@ pytest-asyncio = "^0.18.3"
 pytest-mock = "^3.7.0"
 mongomock = "^4.0.0"
 httpx = "^0.23.0"
-types-setuptools = "^57.4.14"
+types-setuptools = "^64.0.0"
 types-PyYAML = "^6.0.7"
 
 [tool.poetry.extras]
