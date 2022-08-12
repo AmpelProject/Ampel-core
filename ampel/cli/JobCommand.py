@@ -4,16 +4,12 @@
 # License:             BSD-3-Clause
 # Author:              valery brinnel <firstname.lastname@gmail.com>
 # Date:                15.03.2021
-# Last Modified Date:  05.08.2022
+# Last Modified Date:  13.08.2022
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-import tarfile
-import tempfile
-import ujson
-import yaml, io, os, signal, sys, subprocess, platform
+import tarfile, tempfile, ujson, yaml, io, os, signal, sys, subprocess, platform
 from time import time
 from multiprocessing import Queue, Process
-from ampel.base.AmpelBaseModel import AmpelBaseModel
 from argparse import ArgumentParser
 from importlib import import_module
 from typing import Any
@@ -27,12 +23,15 @@ from ampel.dev.DevAmpelContext import DevAmpelContext
 from ampel.log.AmpelLogger import AmpelLogger
 from ampel.log.LogFlag import LogFlag
 from ampel.util.freeze import recursive_freeze
-from ampel.util.mappings import get_by_path
 from ampel.util.hash import build_unsafe_dict_id
 from ampel.cli.AbsCoreCommand import AbsCoreCommand, _maybe_int
 from ampel.cli.MaybeIntAction import MaybeIntAction
 from ampel.cli.AmpelArgumentParser import AmpelArgumentParser
-from ampel.model.job.JobModel import InputArtifact, JobModel, ChannelModel, TaskUnitModel, TemplateUnitModel
+from ampel.model.ChannelModel import ChannelModel
+from ampel.model.job.JobModel import JobModel
+from ampel.model.job.InputArtifact import InputArtifact
+from ampel.model.job.TaskUnitModel import TaskUnitModel
+from ampel.model.job.TemplateUnitModel import TemplateUnitModel
 
 
 class JobCommand(AbsCoreCommand):
@@ -129,7 +128,7 @@ class JobCommand(AbsCoreCommand):
 						os.rename(tf.name, resolved_artifact.path)
 
 	@staticmethod
-	def _patch_config(config_dict: dict[str,Any], job: JobModel, logger: AmpelLogger):
+	def _patch_config(config_dict: dict[str, Any], job: JobModel, logger: AmpelLogger):
 		# Add channel(s)
 		for c in job.channel:
 			chan = ChannelModel(**c)
@@ -145,6 +144,7 @@ class JobCommand(AbsCoreCommand):
 				if k not in config_dict['alias']:
 					dict.__setitem__(config_dict['alias'], k, {})
 				dict.__setitem__(config_dict['alias'][k], kk, vv)
+
 
 	# Mandatory implementation
 	def run(self, args: dict[str, Any], unknown_args: Sequence[str], sub_op: None | str = None) -> None:
@@ -182,7 +182,7 @@ class JobCommand(AbsCoreCommand):
 				for k, v in job.env[psys].check.items():
 					if k not in os.environ or (v and v != _maybe_int(os.environ[k])):
 						logger.info(f"Environment variable {k}={v} required")
-						return					
+						return
 				for k, v in job.env[psys].set.items():
 					logger.info(f"Setting local environment variable {k}={v}")
 					os.environ[k] = str(v)
