@@ -122,10 +122,9 @@ class JobCommand(AbsCoreCommand):
 		schema_descr = "|".join(
 			[os.path.basename(sf) for sf in args['schema']]
 		).replace(".yaml", "").replace(".yml", "")
+
 		if len(args['schema']) > 1:
 			logger.info(f"Running job using composed schema: {schema_descr}")
-		else:
-			logger.info(f"Running job using schema {schema_descr}")
 
 		if job.requirements:
 			# TODO: check job repo requirements
@@ -183,7 +182,7 @@ class JobCommand(AbsCoreCommand):
 				logger.info(f"Please install {try_reduce(missing)} to run this job\n")
 				return # raise ValueError ?
 
-		s = f"Running job {job.name}"
+		s = f"Running job {job.name or schema_descr}"
 		logger.info(s)
 
 		print(" " + "-"*len(s))
