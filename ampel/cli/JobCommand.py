@@ -126,10 +126,6 @@ class JobCommand(AbsCoreCommand):
 		if len(args['schema']) > 1:
 			logger.info(f"Running job using composed schema: {schema_descr}")
 
-		if job.requirements:
-			# TODO: check job repo requirements
-			pass
-
 		# Check or set env variable(s)
 		psys = platform.system().lower()
 		for psys in ('any', platform.system().lower()):
@@ -186,33 +182,6 @@ class JobCommand(AbsCoreCommand):
 		logger.info(s)
 
 		print(" " + "-"*len(s))
-
-		purge_db = job.mongo.reset or args['reset_db']
-
-		if purge_db and args['keep_db']:
-			logger.info("Keeping existing databases ('-keep-db')")
-			purge_db = False
-
-		if args['task'] and sum(args['task']) > 0 and purge_db and not args['reset_db']:
-			logger.info("Ampel job file requires db reset but with-task argument was provided")
-			logger.info("Please add argument -reset-db to confirm you are absolutely sure...")
-			return
-
-		if args['interactive']:
-
-			from ampel.util.getch import yes_no
-
-			try:
-				if purge_db:
-					purge_db = yes_no("Delete existing databases")
-
-				args['with_task'] = []
-				for i, td in enumerate(job.task):
-					s = f" [{td.title}]" if td.title else ""
-					if yes_no(f"Process task #{i}" + s):
-						args['with_task'].append(i)
-			except KeyboardInterrupt:
-				sys.exit()
 
 		# DevAmpelContext hashes automatically confid from potential IngestDirectives
 		ctx = self.get_context(
