@@ -24,6 +24,8 @@ from ampel.log.AmpelLogger import AmpelLogger
 from ampel.log.LogFlag import LogFlag
 from ampel.util.freeze import recursive_freeze
 from ampel.util.hash import build_unsafe_dict_id
+from ampel.util.distrib import get_dist_names
+from ampel.util.collections import try_reduce
 from ampel.cli.AbsCoreCommand import AbsCoreCommand, _maybe_int
 from ampel.cli.MaybeIntAction import MaybeIntAction
 from ampel.cli.AmpelArgumentParser import AmpelArgumentParser
@@ -174,14 +176,17 @@ class JobCommand(AbsCoreCommand):
 				logger.info("Please add argument -reset-db to confirm you are absolutely sure...")
 				return
 
+		if job.requirements:
+			dist_names = [el.lower() for el in get_dist_names()]
+			missing = [dist for dist in job.requirements if dist.lower() not in dist_names]
+			if missing:
+				logger.info(f"Please install {try_reduce(missing)} to run this job\n")
+				return # raise ValueError ?
+
 		s = f"Running job {job.name}"
 		logger.info(s)
 
 		print(" " + "-"*len(s))
-
-		if job.requirements:
-			# TODO: check job repo requirements
-			pass
 
 		purge_db = job.mongo.reset or args['reset_db']
 
