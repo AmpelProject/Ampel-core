@@ -26,7 +26,8 @@ from ampel.util.freeze import recursive_freeze
 from ampel.util.hash import build_unsafe_dict_id
 from ampel.util.distrib import get_dist_names
 from ampel.util.collections import try_reduce
-from ampel.cli.AbsCoreCommand import AbsCoreCommand, _maybe_int
+from ampel.cli.utils import get_user_data_config_path, _maybe_int
+from ampel.cli.AbsCoreCommand import AbsCoreCommand
 from ampel.cli.MaybeIntAction import MaybeIntAction
 from ampel.cli.AmpelArgumentParser import AmpelArgumentParser
 from ampel.model.ChannelModel import ChannelModel
@@ -177,6 +178,13 @@ class JobCommand(AbsCoreCommand):
 			if missing:
 				logger.info(f"Please install {try_reduce(missing)} to run this job\n")
 				return # raise ValueError ?
+
+		if not args['config'] and not os.path.exists(get_user_data_config_path()):
+			from ampel.util.getch import yes_no
+			if yes_no("Config seems to be missing, build and install"):
+				from ampel.cli.ConfigCommand import ConfigCommand
+				cc = ConfigCommand()
+				cc.run({'install': True}, unknown_args=[], sub_op = 'build')
 
 		s = f"Running job {job.name or schema_descr}"
 		logger.info(s)
