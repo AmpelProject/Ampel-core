@@ -99,62 +99,6 @@ class JobCommand(AbsCoreCommand):
 		parser.add_example("job -schema job_part1.yaml job_part2.yaml -show-plots (requires ampel-plot)")
 		return parser
 
-	def _fetch_inputs(
-		self,
-		job: JobModel,
-		task: TaskUnitModel | TemplateUnitModel,
-		item: None | str | dict | list,
-		logger: AmpelLogger,
-	):
-		"""
-		Ensure that input artifacts exist
-		"""
-		for artifact in task.inputs.artifacts:
-
-			resolved_artifact = InputArtifact(
-				**job.resolve_expressions(
-					ujson.loads(artifact.json()), task, item
-				)
-			)
-
-			if resolved_artifact.path.exists():
-				logger.info(f"Artifact {resolved_artifact.name} exists at {resolved_artifact.path}")
-			else:
-				logger.info(
-					f"Fetching artifact {resolved_artifact.name} from "
-					f"{resolved_artifact.http.url} to {resolved_artifact.path}"
-				)
-				os.makedirs(resolved_artifact.path.parent, exist_ok=True)
-				with tempfile.NamedTemporaryFile(delete=False) as tf:
-					urlretrieve(resolved_artifact.http.url, tf.name)
-					try:
-						with tarfile.open(tf.name) as archive:
-							logger.info(f"{resolved_artifact.name} is a tarball; extracting")
-							os.makedirs(resolved_artifact.path)
-							archive.extractall(resolved_artifact.path)
-						os.unlink(tf.name)
-					except tarfile.ReadError:
-						os.rename(tf.name, resolved_artifact.path)
-
-
-	@staticmethod
-	def _patch_config(config_dict: dict[str, Any], job: JobModel, logger: AmpelLogger):
-		# Add channel(s)
-		for c in job.channel:
-			chan = ChannelModel(**c)
-			logger.info(f"Registering job channel '{chan.channel}'")
-			dict.__setitem__(config_dict['channel'], chan.channel, c)
-
-		# Add aliase(s)
-		for k, v in job.alias.items():
-			if 'alias' not in config_dict:
-				dict.__setitem__(config_dict, 'alias', {})
-			for kk, vv in v.items():
-				logger.info(f"Registering job alias '{kk}'")
-				if k not in config_dict['alias']:
-					dict.__setitem__(config_dict['alias'], k, {})
-				dict.__setitem__(config_dict['alias'][k], kk, vv)
-
 
 	# Mandatory implementation
 	def run(self, args: dict[str, Any], unknown_args: Sequence[str], sub_op: None | str = None) -> None:
@@ -229,17 +173,6 @@ class JobCommand(AbsCoreCommand):
 				logger.info("Ampel job file requires db reset but argument 'task' was provided")
 				logger.info("Please add argument -reset-db to confirm you are absolutely sure...")
 				return
-
-		# DevAmpelContext hashes automatically confid from potential IngestDirectives
-		ctx = self.get_context(
-			args, unknown_args, logger,
-			freeze_config = False,
-			ContextClass = DevAmpelContext,
-			purge_db = purge_db,
-			db_prefix = job.mongo.prefix,
-			require_existing_db = False,
-			one_db = True
-		)
 
 		s = f"Running job {job.name}"
 		logger.info(s)
@@ -343,7 +276,6 @@ class JobCommand(AbsCoreCommand):
 				"x multiplier"
 			)
 
-		logger.info("Saving job schema")
 		# recreate JobModel with templates resolved
 		job_dict = ujson.loads(
 			JobModel(
@@ -361,6 +293,8 @@ class JobCommand(AbsCoreCommand):
 				)
 			).json(exclude_unset=True)
 		)
+
+		logger.info("Saving job schema")
 		job_sig = build_unsafe_dict_id(job_dict, size=-64)
 		ctx.db.get_collection("jobid").update_one(
 			{'_id': job_sig},
@@ -459,7 +393,7 @@ class JobCommand(AbsCoreCommand):
 
 		dm = divmod(time() - start_time, 60)
 		logger.info(
-			"Job processing done. Time required: %s minutes %s seconds\n" %
+			"Job processed. Time required: %s minutes %s seconds\n" %
 			(round(dm[0]), round(dm[1]))
 		)
 
@@ -481,7 +415,8 @@ class JobCommand(AbsCoreCommand):
 			print(r.stderr)
 
 
-	def print_chapter(self, msg: str, logger: AmpelLogger) -> None:
+	@staticmethod
+	def print_chapter(msg: str, logger: AmpelLogger) -> None:
 		logger.info(" ")
 		logger.info("=" * (space := (len(msg) + 4)))
 		logger.info("‖ " + msg + " ‖") # type: ignore
@@ -515,6 +450,63 @@ class JobCommand(AbsCoreCommand):
 				del job[k]
 
 		return JobModel(**job), build_unsafe_dict_id(job, size=-64) if compute_sig else 0
+
+
+	@staticmethod
+	def _fetch_inputs(
+		job: JobModel,
+		task: TaskUnitModel | TemplateUnitModel,
+		item: None | str | dict | list,
+		logger: AmpelLogger,
+	):
+		"""
+		Ensure that input artifacts exist
+		"""
+		for artifact in task.inputs.artifacts:
+
+			resolved_artifact = InputArtifact(
+				**job.resolve_expressions(
+					ujson.loads(artifact.json()), task, item
+				)
+			)
+
+			if resolved_artifact.path.exists():
+				logger.info(f"Artifact {resolved_artifact.name} exists at {resolved_artifact.path}")
+			else:
+				logger.info(
+					f"Fetching artifact {resolved_artifact.name} from "
+					f"{resolved_artifact.http.url} to {resolved_artifact.path}"
+				)
+				os.makedirs(resolved_artifact.path.parent, exist_ok=True)
+				with tempfile.NamedTemporaryFile(delete=False) as tf:
+					urlretrieve(resolved_artifact.http.url, tf.name)
+					try:
+						with tarfile.open(tf.name) as archive:
+							logger.info(f"{resolved_artifact.name} is a tarball; extracting")
+							os.makedirs(resolved_artifact.path)
+							archive.extractall(resolved_artifact.path)
+						os.unlink(tf.name)
+					except tarfile.ReadError:
+						os.rename(tf.name, resolved_artifact.path)
+
+
+	@staticmethod
+	def _patch_config(config_dict: dict[str, Any], job: JobModel, logger: AmpelLogger):
+		# Add channel(s)
+		for c in job.channel:
+			chan = ChannelModel(**c)
+			logger.info(f"Registering job channel '{chan.channel}'")
+			dict.__setitem__(config_dict['channel'], chan.channel, c)
+
+		# Add aliase(s)
+		for k, v in job.alias.items():
+			if 'alias' not in config_dict:
+				dict.__setitem__(config_dict, 'alias', {})
+			for kk, vv in v.items():
+				logger.info(f"Registering job alias '{kk}'")
+				if k not in config_dict['alias']:
+					dict.__setitem__(config_dict['alias'], k, {})
+				dict.__setitem__(config_dict['alias'][k], kk, vv)
 
 
 def run_mp_process(
