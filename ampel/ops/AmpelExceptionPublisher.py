@@ -10,8 +10,8 @@
 
 import datetime, json, socket
 from bson import ObjectId
-from slack import WebClient
-from slack.web.slack_response import SlackResponse
+from slack_sdk.web import WebClient
+from slack_sdk.web.slack_response import SlackResponse
 from typing import Any
 from ampel.abstract.AbsOpsUnit import AbsOpsUnit
 from ampel.secret.NamedSecret import NamedSecret

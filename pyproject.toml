@@ -53,7 +53,6 @@ schedule = "^1.0.0"
 yq = "^3.0.0"
 prometheus-client = ">=0.10,<0.12"
 psutil = "^5.8.0"
-slackclient = "^2.7"
 appdirs = "^1.4.4"
 fastapi = {version = ">=0.63,<0.69", optional = true}
 uvicorn = {version = ">=0.13.3,<0.16.0", optional = true, extras = ["standard"]}
@@ -61,6 +60,7 @@ Sphinx = {version = ">=5.1.1,<5.2.0", optional = true}
 sphinx-press-theme = {version = ">=0.5.1,<0.9.0", optional = true}
 sphinx-autodoc-typehints = {version = "^1.11.1", optional = true}
 tomlkit = {version = "^0.7.0", optional = true}
+slack-sdk = {version = "^3.18.1", optional = true}
 
 [tool.poetry.dev-dependencies]
 pytest = "^7.1.1"
@@ -76,6 +76,7 @@ types-PyYAML = "^6.0.7"
 [tool.poetry.extras]
 server = ["fastapi", "uvicorn"]
 docs = ["Sphinx", "sphinx-press-theme", "sphinx-autodoc-typehints", "tomlkit"]
+slack = ["slack_sdk"]
 
 [tool.isort]
 profile = "black"
