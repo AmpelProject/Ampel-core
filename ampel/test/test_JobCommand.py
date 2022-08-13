@@ -1,19 +1,13 @@
-import base64
-import json
-import sys
-from contextlib import contextmanager
-from os import path
+import base64, json, sys, pytest, yaml
 from pathlib import Path
 from typing import Optional
 from unittest.mock import MagicMock
-from ampel.model.job.JobModel import JobModel
-
-import pytest
-import yaml
 from pytest_mock import MockerFixture
+from contextlib import contextmanager
 
-from ampel.cli.JobCommand import JobCommand
 from ampel.cli.main import main
+from ampel.cli.utils import get_vault
+from ampel.model.job.JobModel import JobModel
 from ampel.config.AmpelConfig import AmpelConfig
 from ampel.secret.AmpelVault import AmpelVault
 
@@ -113,7 +107,7 @@ def test_resources_from_env(
     vault: Path,
     schema: Path,
     mock_new_context_unit,
-    monkeypatch: pytest.MonkeyPatch,
+    monkeypatch: pytest.MonkeyPatch
 ):
     monkeypatch.setenv("AMPEL_CONFIG_resource.mongo", "flerp")
     monkeypatch.setenv("AMPEL_CONFIG_resource.herp", "37")
@@ -138,8 +132,7 @@ def test_resources_from_env(
 
 
 def test_dir_secrets(dir_secret_store, secrets):
-    cli_op = JobCommand()
-    vault = cli_op.get_vault({"secrets": dir_secret_store})
+    vault = get_vault({"secrets": dir_secret_store})
     for k, v in secrets.items():
         assert vault.get_named_secret(k).get() == v
 
@@ -150,7 +143,7 @@ def test_parameter_interpolation(
     testing_config,
     mock_db,
     vault: Path,
-    tmpdir,
+    tmpdir
 ):
 
     value = "flerpyherp"

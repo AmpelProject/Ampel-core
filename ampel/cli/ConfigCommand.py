@@ -4,13 +4,12 @@
 # License:             BSD-3-Clause
 # Author:              valery brinnel <firstname.lastname@gmail.com>
 # Date:                17.07.2021
-# Last Modified Date:  11.08.2022
+# Last Modified Date:  14.08.2022
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 import os, yaml, shutil
 from time import time
 from typing import Any
-from appdirs import user_data_dir # type: ignore[import]
 from argparse import ArgumentParser
 from collections.abc import Sequence
 
@@ -18,6 +17,7 @@ from ampel.log.AmpelLogger import AmpelLogger, DEBUG, INFO
 from ampel.cli.AbsCoreCommand import AbsCoreCommand
 from ampel.cli.AmpelArgumentParser import AmpelArgumentParser
 from ampel.cli.ArgParserBuilder import ArgParserBuilder
+from ampel.cli.utils import get_user_data_config_path
 from ampel.config.builder.DistConfigBuilder import DistConfigBuilder
 from ampel.config.builder.DisplayOptions import DisplayOptions
 from ampel.util.pretty import out_stack, prettyjson
@@ -150,7 +150,7 @@ class ConfigCommand(AbsCoreCommand):
 				stop_on_errors = 0,
 				skip_default_processes=True,
 				config_validator = None,
-				save = args.get('out') or self.get_installable_config_path(),
+				save = args.get('out') or get_user_data_config_path(),
 				ext_resource = args.get('ext_resource'),
 				sign = args.get('sign', 0),
 				get_unit_env = not args.get('no_provenance', False),
@@ -167,7 +167,7 @@ class ConfigCommand(AbsCoreCommand):
 
 		if sub_op == 'install':
 
-			std_conf = self.get_installable_config_path()
+			std_conf = get_user_data_config_path()
 			if args['file'] and os.path.exists(args['file']):
 				shutil.copy(args['file'], std_conf)
 				logger.info(f"{args['file']} successfully set as standard config ({std_conf})")
@@ -183,7 +183,7 @@ class ConfigCommand(AbsCoreCommand):
 				raise ValueError("Please provide either 'file' or 'build' argument")
 
 		if sub_op == 'show':
-			conf_path = self.get_installable_config_path()
+			conf_path = get_user_data_config_path()
 			if args['path']:
 				print(conf_path)
 				return
@@ -202,22 +202,3 @@ class ConfigCommand(AbsCoreCommand):
 			return
 
 		raise NotImplementedError("Not implemented yet")
-
-
-	def get_installable_config_path(self) -> str:
-
-		app_path = user_data_dir("ampel")
-		if not os.path.exists(app_path):
-			os.makedirs(app_path)
-
-		app_path = os.path.join(app_path, "conf")
-		if not os.path.exists(app_path):
-			os.makedirs(app_path)
-
-		env = os.environ.get('CONDA_DEFAULT_ENV')
-		if env:
-			app_path = os.path.join(app_path, env)
-			if not os.path.exists(app_path):
-				os.makedirs(app_path)
-
-		return os.path.join(app_path, "conf.yml")

@@ -4,13 +4,80 @@
 # License:             BSD-3-Clause
 # Author:              valery brinnel <firstname.lastname@gmail.com>
 # Date:                24.03.2021
-# Last Modified Date:  14.05.2022
+# Last Modified Date:  14.08.2022
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
+import os
 from typing import Any
-from ampel.abstract.AbsIdMapper import AbsIdMapper
+from appdirs import user_data_dir # type: ignore[import]
+
+from ampel.core.AmpelDB import AmpelDB
+from ampel.secret.AmpelVault import AmpelVault
+from ampel.config.AmpelConfig import AmpelConfig
 from ampel.base.AuxUnitRegister import AuxUnitRegister
+from ampel.abstract.AbsIdMapper import AbsIdMapper
+from ampel.abstract.AbsSecretProvider import AbsSecretProvider
 from ampel.util.collections import check_seq_inner_type
+
+
+def get_vault(args: dict[str, Any]) -> None | AmpelVault:
+	vault = None
+	if args.get('secrets'):
+		from ampel.secret.DictSecretProvider import DictSecretProvider
+		from ampel.secret.DirSecretProvider import DirSecretProvider
+		if os.path.isdir(args['secrets']):
+			provider: AbsSecretProvider = DirSecretProvider(args['secrets'])
+		else:
+			provider = DictSecretProvider.load(args['secrets'])
+		vault = AmpelVault([provider])
+	return vault
+
+
+def get_db(
+	config: AmpelConfig,
+	vault: None | AmpelVault = None,
+	require_existing_db: bool = True,
+	one_db: bool = False
+) -> AmpelDB:
+
+	try:
+		return AmpelDB.new(
+			config,
+			vault,
+			require_exists = require_existing_db,
+			one_db = one_db
+		)
+	except Exception as e:
+		if "Databases with prefix" in str(e):
+			s = "Databases with prefix " + config.get('mongo.prefix', str, raise_exc=True) + " do not exist"
+			raise SystemExit("\n" + "="*len(s) + "\n" + s + "\n" + "="*len(s) + "\n")
+		raise e
+
+
+def get_user_data_config_path() -> str:
+
+	app_path = user_data_dir("ampel")
+	if not os.path.exists(app_path):
+		os.makedirs(app_path)
+
+	app_path = os.path.join(app_path, "conf")
+	if not os.path.exists(app_path):
+		os.makedirs(app_path)
+
+	env = os.environ.get('CONDA_DEFAULT_ENV')
+	if env:
+		app_path = os.path.join(app_path, env)
+		if not os.path.exists(app_path):
+			os.makedirs(app_path)
+
+	return os.path.join(app_path, "conf.yml")
+
+
+def _maybe_int(stringy):
+	try:
+		return int(stringy)
+	except Exception:
+		return stringy
 
 
 def maybe_load_idmapper(args: dict[str, Any]) -> None:
