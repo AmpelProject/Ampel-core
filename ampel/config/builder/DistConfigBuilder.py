@@ -4,7 +4,7 @@
 # License:             BSD-3-Clause
 # Author:              valery brinnel <firstname.lastname@gmail.com>
 # Date:                09.10.2019
-# Last Modified Date:  14.03.2021
+# Last Modified Date:  14.08.2022
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 import json, yaml, pkg_resources, os, re
@@ -117,7 +117,7 @@ class DistConfigBuilder(ConfigBuilder):
 
 	def register_tier_conf(self,
 		root_key: str,
-		d: dict[str,Any],
+		d: dict[str, Any],
 		dist_name: str,
 		version: str,
 		file_rel_path: str,
@@ -130,7 +130,6 @@ class DistConfigBuilder(ConfigBuilder):
 					version = version,
 					register_file = file_rel_path,
 				)
-
 
 
 	def load_conf_using_func(self,
@@ -233,17 +232,6 @@ class DistConfigBuilder(ConfigBuilder):
 				f"from distribution '{distrib.project_name}')",
 				exc_info=e
 			)
-
-
-	@staticmethod
-	def get_dist_names(distrib_prefix: str = "ampel-") -> list[str]:
-		"""
-		Get all installed distributions whose names start with the provided prefix
-		"""
-		return [
-			dist_name for dist_name in pkg_resources.AvailableDistributions() # type: ignore
-			if distrib_prefix in dist_name
-		]
 
 
 	@staticmethod
