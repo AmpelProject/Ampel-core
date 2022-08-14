@@ -212,7 +212,7 @@ class JobCommand(AbsCoreCommand):
 				del job.task[idx]
 
 		tds: list[dict[str, Any]] = []
-		process_name = job.name or schema_descr
+
 
 		for i, model in enumerate(job.task):
 
@@ -284,10 +284,9 @@ class JobCommand(AbsCoreCommand):
 		)
 
 		run_ids = []
-
 		for i, task_dict in enumerate(tds):
 
-			process_name = f"{job.name}#{i}"
+			process_name = f"{job.name or schema_descr}#{i}"
 
 			if 'title' in task_dict:
 				self.print_chapter(task_dict['title'] if task_dict.get('title') else f"Task #{i}", logger)
