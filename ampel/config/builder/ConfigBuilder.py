@@ -256,7 +256,7 @@ class ConfigBuilder:
 		out['channel'] = ChannelConfigCollector('channel', self.options, logger=self.logger)
 		morph_errors = []
 
-		# Fill it with (possibly transformed) channels
+		# Add (possibly transformed) channels
 		for chan_name, chan_dict in self.first_pass_config['channel'].items():
 
 			if not chan_dict.get('active', False):
