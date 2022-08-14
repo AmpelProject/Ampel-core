@@ -51,8 +51,9 @@ hlp = {
 class ConfigCommand(AbsCoreCommand):
 
 
-	def __init__(self):
-		self.parsers = {}
+	@staticmethod
+	def get_sub_ops() -> list[str]:
+		return ['build', 'show', 'install']
 
 
 	# Mandatory implementation
@@ -61,8 +62,7 @@ class ConfigCommand(AbsCoreCommand):
 		if sub_op in self.parsers:
 			return self.parsers[sub_op]
 
-		sub_ops = ['build', 'show', 'install']
-
+		sub_ops = self.get_sub_ops()
 		if sub_op is None or sub_op not in sub_ops:
 			return AmpelArgumentParser.build_choice_help(
 				'config', sub_ops, hlp, description = 'Build or show ampel config.'
@@ -116,7 +116,6 @@ class ConfigCommand(AbsCoreCommand):
 		)
 
 		return self.parsers[sub_op]
-
 
 
 	# Mandatory implementation

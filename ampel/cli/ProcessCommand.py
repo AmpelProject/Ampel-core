@@ -1,11 +1,16 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+# File:                Ampel-core/ampel/cli/ProcessCommand.py
+# License:             BSD-3-Clause
+# Author:              jvs
+# Date:                Unspecified
+# Last Modified Date:  14.08.2022
+# Last Modified By:    jvs
 
-import signal
-import traceback
+import signal, traceback, yaml
 from argparse import ArgumentParser
 from time import time
 from typing import Any, Optional, Sequence, Union
-
-import yaml
 
 from ampel.abstract.AbsEventUnit import AbsEventUnit
 from ampel.cli.AbsCoreCommand import AbsCoreCommand
@@ -29,6 +34,10 @@ class ProcessCommand(AbsCoreCommand):
 
     def __init__(self):
         self.parser = None
+
+    @staticmethod
+    def get_sub_ops() -> None | list[str]:
+        return None
 
     # Mandatory implementation
     def get_parser(

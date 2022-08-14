@@ -4,7 +4,7 @@
 # License:             BSD-3-Clause
 # Author:              valery brinnel <firstname.lastname@gmail.com>
 # Date:                25.03.2021
-# Last Modified Date:  12.07.2022
+# Last Modified Date:  14.08.2022
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 import sys
@@ -34,12 +34,12 @@ hlp = {
 }
 
 class BufferCommand(AbsStockCommand, AbsLoadCommand):
-	"""
-	TODO: implement
-	"""
 
-	def __init__(self):
-		self.parsers = {}
+
+	@staticmethod
+	def get_sub_ops() -> list[str]:
+		return ['show', 'save']
+
 
 	# Mandatory implementation
 	def get_parser(self, sub_op: None | str = None) -> ArgumentParser | AmpelArgumentParser:
@@ -47,7 +47,7 @@ class BufferCommand(AbsStockCommand, AbsLoadCommand):
 		if sub_op in self.parsers:
 			return self.parsers[sub_op]
 
-		sub_ops = ['show', 'save']
+		sub_ops = self.get_sub_ops()
 		if sub_op is None or sub_op not in sub_ops:
 			return AmpelArgumentParser.build_choice_help(
 				'buffer', sub_ops, hlp, description = 'Show or save ampel buffers.'

@@ -26,6 +26,8 @@ T = TypeVar("T", bound = AmpelContext)
 
 class AbsCoreCommand(AbsCLIOperation, abstract=True):
 
+	def __init__(self):
+		self.parsers = {}
 
 	def load_config(self,
 		config_path: None | str,

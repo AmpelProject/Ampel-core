@@ -131,7 +131,11 @@ class AbsStockCommand(AbsCoreCommand, abstract=True):
 			if args.get(x := f"{prefix}_{when}_ts"):
 				d[when] = UnixTimeModel(match_type='unix_time', value=args[x])
 			elif args.get(x := f"{prefix}_{when}_str"):
-				d[when] = TimeStringModel(match_type='time_string', dateTimeStr=args[x], dateTimeFormat="%Y%m%dT%H%M%S")
+				d[when] = TimeStringModel(
+					match_type='time_string',
+					dateTimeStr=args[x],
+					dateTimeFormat="%Y%m%dT%H%M%S"
+				)
 			elif args.get(x := f"{prefix}_{when}_delta"):
 				d[when] = TimeDeltaModel(match_type='time_delta', **args[x])
 			elif args.get(x := f"{prefix}_{when}_process"):

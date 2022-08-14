@@ -4,7 +4,7 @@
 # License:             BSD-3-Clause
 # Author:              valery brinnel <firstname.lastname@gmail.com>
 # Date:                14.03.2021
-# Last Modified Date:  23.03.2021
+# Last Modified Date:  14.08.2022
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from ampel.core.AmpelContext import AmpelContext
@@ -23,6 +23,10 @@ class RunCommand(AbsCoreCommand):
 
 	def __init__(self):
 		self.parser = None
+
+	@staticmethod
+	def get_sub_ops() -> None | list[str]:
+		return None
 
 	# Mandatory implementation
 	def get_parser(self, sub_op: None | str = None) -> ArgumentParser | AmpelArgumentParser:
@@ -59,7 +63,11 @@ class RunCommand(AbsCoreCommand):
 
 
 	# Mandatory implementation
-	def run(self, args: dict[str, Any], unknown_args: Sequence[str], sub_op: None | str = None) -> None:
+	def run(self,
+		args: dict[str, Any],
+		unknown_args: Sequence[str],
+		sub_op: None | str = None
+	) -> None:
 
 		ctx = self.get_context(args, unknown_args, ContextClass=AmpelContext)
 

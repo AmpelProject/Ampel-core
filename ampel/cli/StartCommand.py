@@ -4,7 +4,7 @@
 # License:             BSD-3-Clause
 # Author:              jvs, vb
 # Date:                13.03.2021
-# Last Modified Date:  23.03.2021
+# Last Modified Date:  14.08.2022
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 import logging, signal, asyncio
@@ -15,8 +15,8 @@ from ampel.abstract.AbsCLIOperation import AbsCLIOperation
 from ampel.core.AmpelController import AmpelController
 from ampel.cli.MaybeIntAction import MaybeIntAction
 from ampel.cli.AmpelArgumentParser import AmpelArgumentParser
-from ampel.log.AmpelLogger import AmpelLogger
-from ampel.log.LogFlag import LogFlag
+#from ampel.log.AmpelLogger import AmpelLogger
+#from ampel.log.LogFlag import LogFlag
 from ampel.secret.AmpelVault import AmpelVault
 from ampel.config.AmpelConfig import AmpelConfig
 
@@ -36,6 +36,10 @@ class ScheduleCommand(AbsCLIOperation):
 	"""
 	TODO: check (jvs ^^)
 	"""
+
+	@staticmethod
+	def get_sub_ops() -> None | list[str]:
+		return None
 
 	# Mandatory implementation
 	def get_parser(self, sub_op: None | str = None) -> ArgumentParser | AmpelArgumentParser:
@@ -58,13 +62,16 @@ class ScheduleCommand(AbsCLIOperation):
 		return parser
 
 
-
 	# Mandatory implementation
-	def run(self, args: dict[str, Any], unknown_args: Sequence[str], sub_op: None | str = None) -> None:
+	def run(self,
+		args: dict[str, Any],
+		unknown_args: Sequence[str],
+		sub_op: None | str = None
+	) -> None:
 
 		self.args = args
 		self.unknown_args = unknown_args
-		logger = AmpelLogger.get_logger(base_flag=LogFlag.MANUAL_RUN)
+		# logger = AmpelLogger.get_logger(base_flag=LogFlag.MANUAL_RUN)
 		config = AmpelConfig.load(args['config'])
 
 		if (secrets_file := args['secrets']):

@@ -38,8 +38,9 @@ class ViewCommand(AbsStockCommand, AbsLoadCommand):
 	TODO: implement
 	"""
 
-	def __init__(self):
-		self.parsers = {}
+	@staticmethod
+	def get_sub_ops() -> list[str]:
+		return ['show', 'save', 'feed']
 
 	# Mandatory implementation
 	def get_parser(self, sub_op: None | str = None) -> ArgumentParser | AmpelArgumentParser:
@@ -47,7 +48,7 @@ class ViewCommand(AbsStockCommand, AbsLoadCommand):
 		if sub_op in self.parsers:
 			return self.parsers[sub_op]
 
-		sub_ops = ['show', 'save', 'feed']
+		sub_ops = self.get_sub_ops()
 		if sub_op is None or sub_op not in sub_ops:
 			return AmpelArgumentParser.build_choice_help(
 				't2', sub_ops, hlp,

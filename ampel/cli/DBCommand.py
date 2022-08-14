@@ -4,7 +4,7 @@
 # License:             BSD-3-Clause
 # Author:              valery brinnel <firstname.lastname@gmail.com>
 # Date:                14.03.2021
-# Last Modified Date:  12.07.2022
+# Last Modified Date:  14.08.2022
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from typing import Any
@@ -35,8 +35,10 @@ hlp = {
 class DBCommand(AbsCoreCommand):
 
 
-	def __init__(self):
-		self.parsers = {}
+	@staticmethod
+	def get_sub_ops() -> list[str]:
+		return ["import", "export", "delete", "view"]
+
 
 	# Mandatory implementation
 	def get_parser(self, sub_op: None | str = None) -> ArgumentParser | AmpelArgumentParser:
@@ -44,7 +46,7 @@ class DBCommand(AbsCoreCommand):
 		if sub_op in self.parsers:
 			return self.parsers[sub_op]
 
-		sub_ops = ["import", "export", "delete", "view"]
+		sub_ops = self.get_sub_ops()
 		if sub_op is None or sub_op not in sub_ops:
 			return AmpelArgumentParser.build_choice_help(
 				"db", sub_ops, hlp, description = 'Import, export or delete ampel databases. Create or remove views.'
