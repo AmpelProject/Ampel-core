@@ -4,13 +4,13 @@
 # License:             BSD-3-Clause
 # Author:              valery brinnel <firstname.lastname@gmail.com>
 # Date:                15.03.2021
-# Last Modified Date:  13.08.2022
+# Last Modified Date:  14.08.2022
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 import tarfile, tempfile, ujson, yaml, io, os, signal, sys, subprocess, platform
 from time import time
 from multiprocessing import Queue, Process
-from argparse import ArgumentParser
+from argparse import ArgumentParser, REMAINDER
 from importlib import import_module
 from typing import Any
 from collections.abc import Sequence
@@ -57,6 +57,9 @@ class JobCommand(AbsCoreCommand):
 		except Exception:
 			pass
 
+	@staticmethod
+	def get_sub_ops() -> None | list[str]:
+		return None
 
 	# Mandatory implementation
 	def get_parser(self, sub_op: None | str = None) -> ArgumentParser | AmpelArgumentParser:
@@ -65,6 +68,7 @@ class JobCommand(AbsCoreCommand):
 			return self.parser
 
 		parser = AmpelArgumentParser("job")
+		parser.args_not_required = True
 		parser.set_help_descr({
 			"debug": "Debug",
 			#"verbose": "increases verbosity",
@@ -83,7 +87,7 @@ class JobCommand(AbsCoreCommand):
 
 		# Required
 		parser.add_arg("config", "optional", type=str)
-		parser.add_arg("schema", "required", nargs='+')
+		parser.add_arg("schema", "optional", nargs=REMAINDER)
 		parser.add_arg("task", "optional", action=MaybeIntAction, nargs='+')
 		parser.add_arg("interactive", "optional", action="store_true")
 		parser.add_arg("debug", "optional", action="store_true")
@@ -97,9 +101,10 @@ class JobCommand(AbsCoreCommand):
 		parser.add_arg("secrets", type=str)
 
 		# Example
-		parser.add_example("job schema job_file.yaml")
-		parser.add_example("job -schema job_file.yaml -keep-db -task last")
-		parser.add_example("job -schema job_part1.yaml job_part2.yaml -show-plots (requires ampel-plot)")
+		parser.add_example("job job_file.yaml")
+		parser.add_example("job job_part1.yaml job_part2.yaml")
+		parser.add_example("job -keep-db -task last job_file.yaml")
+		parser.add_example("job -show-plots job.yaml")
 		return parser
 
 
@@ -119,12 +124,13 @@ class JobCommand(AbsCoreCommand):
 		if isinstance(args['task'], (int, str)):
 			args['task'] = [args['task']]
 
-		job, _ = self.get_job_schema(args['schema'], logger, compute_sig=False)
+		schema_files = args['schema'] or unknown_args
+		job, _ = self.get_job_schema(schema_files, logger, compute_sig=False)
 		schema_descr = "|".join(
-			[os.path.basename(sf) for sf in args['schema']]
+			[os.path.basename(sf) for sf in schema_files]
 		).replace(".yaml", "").replace(".yml", "")
 
-		if len(args['schema']) > 1:
+		if len(schema_files) > 1:
 			logger.info(f"Running job using composed schema: {schema_descr}")
 
 		# Check or set env variable(s)
@@ -406,7 +412,7 @@ class JobCommand(AbsCoreCommand):
 
 	@classmethod
 	def get_job_schema(cls,
-		schema_files: list[str],
+		schema_files: Sequence[str],
 		logger: AmpelLogger,
 		compute_sig: bool = True
 	) -> tuple[JobModel, int]:
