@@ -4,7 +4,7 @@
 # License:             BSD-3-Clause
 # Author:              valery brinnel <firstname.lastname@gmail.com>
 # Date:                15.03.2021
-# Last Modified Date:  14.08.2022
+# Last Modified Date:  15.08.2022
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from argparse import ArgumentParser
@@ -133,7 +133,7 @@ class LogCommand(AbsCoreCommand):
 
 		# Examples
 		for el in sub_ops:
-			p = f"ampel log {el} -config ampel_conf.yaml "
+			p = f"ampel log {el} "
 			a = " -out /path/to/file.txt" if el == "save" else ""
 			builder.add_example(el, "-run-json '{\"$gt\": 12}'", ref="§", prepend=p, append=a)
 			builder.add_example(el, '-stock 85628462', prepend=p, append=a)
