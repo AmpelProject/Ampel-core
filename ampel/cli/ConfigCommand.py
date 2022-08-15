@@ -7,12 +7,18 @@
 # Last Modified Date:  14.08.2022
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-import os, yaml, shutil
+import os, subprocess, json, yaml, shutil
+from io import StringIO
+from pathlib import Path
 from time import time
-from typing import Any
-from argparse import ArgumentParser
-from collections.abc import Sequence
+from typing import Any, TextIO, Iterable
+from argparse import ArgumentParser, FileType
+from collections.abc import Sequence, Mapping
 
+from ampel.core.AmpelContext import AmpelContext
+from ampel.secret.AmpelVault import AmpelVault
+from ampel.secret.DictSecretProvider import DictSecretProvider
+from ampel.secret.PotemkinSecretProvider import PotemkinSecretProvider
 from ampel.log.AmpelLogger import AmpelLogger, DEBUG, INFO
 from ampel.cli.AbsCoreCommand import AbsCoreCommand
 from ampel.cli.AmpelArgumentParser import AmpelArgumentParser
@@ -53,7 +59,7 @@ class ConfigCommand(AbsCoreCommand):
 
 	@staticmethod
 	def get_sub_ops() -> list[str]:
-		return ['build', 'show', 'install']
+		return ['build', 'show', 'install', 'transform', 'validate']
 
 
 	# Mandatory implementation
@@ -101,6 +107,14 @@ class ConfigCommand(AbsCoreCommand):
 		builder.add_arg("install.optional", "file", type=str)
 		builder.add_arg("install.optional", "build", action="store_true")
 
+		builder.add_arg("validate.required", "file", type=FileType("r"))
+		builder.add_arg("validate.optional", "secrets", type=FileType("r"))
+
+		builder.add_arg("transform.required", "file", type=FileType("r"))
+		builder.add_arg("transform.required", "out", type=FileType("w"))
+		builder.add_arg("transform.required", "filter")
+		builder.add_arg("transform.optional", "validate", action="store_true")
+
 		# Example
 		builder.add_example("build", "-install")
 		builder.add_example("build", "-out ampel_conf.yaml")
@@ -117,6 +131,68 @@ class ConfigCommand(AbsCoreCommand):
 
 		return self.parsers[sub_op]
 
+	@classmethod
+	def _to_strict_json(cls, obj: Any) -> Any:
+		"""Get JSON-compliant representation of obj"""
+		if isinstance(obj, Mapping):
+			assert "__nonstring_keys" not in obj
+			doc = {str(k): cls._to_strict_json(v) for k, v in obj.items()}
+			nonstring_keys = {
+				str(k): cls._to_strict_json(k) for k in obj.keys() if not isinstance(k, str)
+			}
+			if nonstring_keys:
+				doc["__nonstring_keys"] = nonstring_keys
+			return doc
+		elif isinstance(obj, Iterable) and not isinstance(obj, str):
+			return [cls._to_strict_json(v) for v in obj]
+		elif isinstance(obj, int) and abs(obj) >> 53:
+			# use canonical BSON representation for ints larger than the precision
+			# of a double
+			return {"$numberLong": str(obj)}
+		else:
+			return obj
+
+	@staticmethod
+	def _from_strict_json(doc):
+		"""Invert to_strict_json()"""
+		if "$numberLong" in doc:
+			return int(doc["$numberLong"])
+		elif "__nonstring_keys" in doc:
+			nonstring_keys = doc.pop("__nonstring_keys")
+			return {nonstring_keys[k]: v for k, v in doc.items()}
+		else:
+			return doc
+
+	@staticmethod
+	def _load_dict(source: TextIO) -> dict[str, Any]:
+		if isinstance((payload := yaml.safe_load(source)), dict):
+			return payload
+		else:
+			raise TypeError("buf does not deserialize to a dict")
+
+	@classmethod
+	def _validate(cls, config_file: TextIO, secrets: None | TextIO = None) -> None:
+		from ampel.model.ChannelModel import ChannelModel
+		from ampel.model.ProcessModel import ProcessModel
+
+		ctx = AmpelContext.load(
+			cls._load_dict(config_file),
+			vault=AmpelVault(providers=[(
+				DictSecretProvider(cls._load_dict(secrets))
+				if secrets is not None
+				else PotemkinSecretProvider()
+			)]),
+		)
+		with ctx.loader.validate_unit_models():
+			for channel in ctx.config.get(
+				"channel", dict[str, Any], raise_exc=True
+			).values():
+				ChannelModel(**{k: v for k, v in channel.items() if k not in {"template"}})
+			for tier in range(3):
+				for process in ctx.config.get(
+					f"process.t{tier}", dict[str, Any], raise_exc=True
+				).values():
+					ProcessModel(**process)
 
 	# Mandatory implementation
 	def run(self, args: dict[str, Any], unknown_args: Sequence[str], sub_op: None | str = None) -> None:
@@ -199,5 +275,36 @@ class ConfigCommand(AbsCoreCommand):
 					for l in f.readlines():
 						print(l, end='')
 			return
+		
+		if sub_op == 'transform':
+			try:
+				with Path(args['filter']).open() as f:
+					jq_args = [f.read()]
+			except (FileNotFoundError, IsADirectoryError):
+				jq_args = [args['filter']]
+			# Use a custom transformation to losslessly round-trip from YAML to JSON,
+			# in particular:
+			# - wrap large ints to prevent truncation to double precision
+			# - preserve non-string keys
+			input_json = json.dumps(self._to_strict_json(yaml.safe_load(args['file'])))
+			config = json.loads(
+				subprocess.check_output(["jq"] + jq_args, input=input_json.encode()),
+				object_hook=self._from_strict_json,
+			)
+			with StringIO() as output_yaml:
+				yaml.dump(config, output_yaml, sort_keys=False)
+				if args['validate']:
+					output_yaml.seek(0)
+					self._validate(output_yaml)
+				output_yaml.seek(0)
+				args['out'].write(output_yaml.read())
+			return
+
+		if sub_op == 'validate':
+			self._validate(args['file'], args['secrets'])
+			return
 
 		raise NotImplementedError("Not implemented yet")
+
+
+
