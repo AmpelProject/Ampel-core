@@ -124,6 +124,10 @@ class JobCommand(AbsCoreCommand):
 			args['task'] = [args['task']]
 
 		schema_files = args['schema'] or unknown_args
+		if not schema_files:
+			self.get_parser().print_help()
+			return
+
 		job, _ = self.get_job_schema(schema_files, logger, compute_sig=False)
 		schema_descr = "|".join(
 			[os.path.basename(sf) for sf in schema_files]
