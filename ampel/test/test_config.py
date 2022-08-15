@@ -1,4 +1,6 @@
+from contextlib import nullcontext
 import io, pytest, yaml, subprocess, tempfile, os
+from pathlib import Path
 from argparse import Namespace
 
 from ampel.abstract.AbsEventUnit import AbsEventUnit
@@ -6,11 +8,13 @@ from ampel.base.BadConfig import BadConfig
 from ampel.config.builder.ConfigChecker import ConfigChecker
 from ampel.config.builder.ConfigValidator import ConfigValidator
 from ampel.core.UnitLoader import UnitLoader
-from ampel.config import cli
+from ampel.util.mappings import set_by_path
+
+from ampel.test.test_JobCommand import run
 
 
 def test_build_config():
-    tmp_file = os.path.join(tempfile.mkdtemp(), 'ampel_conf.yml')
+    tmp_file = os.path.join(tempfile.mkdtemp(), "ampel_conf.yml")
     io.BytesIO(subprocess.check_output(["ampel", "config", "build", "-out", tmp_file]))
     with open(tmp_file, "r") as f:
         config = yaml.safe_load(f)
@@ -75,14 +79,52 @@ def test_ConfigChecker(testing_config, monkeypatch):
 
 
 @pytest.mark.parametrize("doc", [{"bignumber": 1 << 57}, {1: 2}])
-def test_transform_config(doc):
+def test_transform_config(doc, tmpdir):
     """Transform preserves objects that are not representable in JSON"""
-    args = Namespace(
-        config_file=io.StringIO(), filter=".", output_file=io.StringIO(), validate=False
+    infile = Path(tmpdir / "in.yaml")
+    outfile = Path(tmpdir / "out.yaml")
+    yaml.dump(doc, infile.open("w"))
+    assert (
+        run(
+            [
+                "ampel",
+                "config",
+                "transform",
+                "--file",
+                str(infile),
+                "--out",
+                str(outfile),
+                "--filter",
+                ".",
+            ]
+        )
+        == None
     )
-    yaml.dump(doc, args.config_file)
-    args.config_file.seek(0)
-    cli.transform(args)
-    args.output_file.seek(0)
-    transformed_doc = yaml.safe_load(args.output_file)
+    transformed_doc = yaml.safe_load(outfile.open())
     assert transformed_doc == doc
+
+
+@pytest.mark.parametrize(
+    "patch,result", [({}, None), ({"channel.LONG_CHANNEL.purge": {}}, TypeError)]
+)
+def test_validate_config(testing_config, tmpdir, patch, result):
+    """Validate validates config"""
+    tmp_config = tmpdir / "patched_config.yml"
+    with testing_config.open() as f:
+        config = yaml.safe_load(f)
+    for path, item in patch.items():
+        set_by_path(config, path, item)
+    tmp_config.write_text(yaml.dump(config), "utf-8")
+    with pytest.raises(result) if result else nullcontext():
+        assert (
+            run(
+                [
+                    "ampel",
+                    "config",
+                    "validate",
+                    "--file",
+                    str(tmp_config),
+                ]
+            )
+            == result
+        )
