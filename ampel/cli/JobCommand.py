@@ -30,7 +30,6 @@ from ampel.cli.utils import get_user_data_config_path, _maybe_int
 from ampel.cli.AbsCoreCommand import AbsCoreCommand
 from ampel.cli.MaybeIntAction import MaybeIntAction
 from ampel.cli.AmpelArgumentParser import AmpelArgumentParser
-from ampel.model.ChannelModel import ChannelModel
 from ampel.model.job.JobModel import JobModel
 from ampel.model.job.InputArtifact import InputArtifact
 from ampel.model.job.TaskUnitModel import TaskUnitModel
@@ -146,9 +145,8 @@ class JobCommand(AbsCoreCommand):
 					os.environ[k] = str(v)
 
 		purge_db = job.mongo.reset or args['reset_db']
-
 		if purge_db and args['keep_db']:
-			logger.info("Keeping existing databases ('-keep-db')")
+			logger.info("Keeping existing databases as option '-keep-db' was specified")
 			purge_db = False
 
 		if args['interactive']:
@@ -479,10 +477,9 @@ class JobCommand(AbsCoreCommand):
 	@staticmethod
 	def _patch_config(config_dict: dict[str, Any], job: JobModel, logger: AmpelLogger):
 		# Add channel(s)
-		for c in job.channel:
-			chan = ChannelModel(**c)
+		for chan in job.channel:
 			logger.info(f"Registering job channel '{chan.channel}'")
-			dict.__setitem__(config_dict['channel'], chan.channel, c)
+			dict.__setitem__(config_dict['channel'], chan.channel, chan)
 
 		# Add aliase(s)
 		for k, v in job.alias.items():
