@@ -8,7 +8,6 @@
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from typing import Any
-from bson.codec_options import CodecOptions
 from ampel.cli.ArgParserBuilder import ArgParserBuilder
 from ampel.cli.AbsCoreCommand import AbsCoreCommand
 from ampel.model.UnitModel import UnitModel
@@ -18,8 +17,7 @@ arg_doc_mapping = {
 	'no_stock': "STOCK",
 	'no_t0': "DATAPOINT",
 	'no_t1': "COMPOUND",
-	'no_t2': "T2DOC",
-	'no_t3': "T3DOC"
+	'no_t2': "T2DOC"
 }
 
 class AbsLoadCommand(AbsCoreCommand, abstract=True):
@@ -42,7 +40,7 @@ class AbsLoadCommand(AbsCoreCommand, abstract=True):
 		builder.add_group('content', group_description)
 		builder.add_arg('content', 'latest', action='store_true')
 		builder.add_arg('content', 'no-stock', action='store_true')
-		for el in (0, 1, 2, 3):
+		for el in (0, 1, 2):
 			builder.add_arg('content', f'no-t{el}', action='store_true', help=f"Exclude t{el} documents from view")
 		builder.add_arg('content', 'no-plots', action='store_true')
 		builder.add_arg('content', 'no-logs', action='store_true', help="Exclude logs")
@@ -51,12 +49,11 @@ class AbsLoadCommand(AbsCoreCommand, abstract=True):
 		builder.add_all_note("Latest state means... [adequate description in a few words]")
 
 
-	def build_load_model(self, args: dict[str, Any], codec_options: None | CodecOptions = None) -> UnitModel:
+	def build_load_model(self, args: dict[str, Any]) -> UnitModel:
 		return UnitModel(
 			unit = "T3LatestStateDataLoader" if args.get("latest") else "T3SimpleDataLoader",
 			config = {
 				'channel': args['channel'],
-				'codec_options': codec_options,
 				'directives': [
 					v for k, v in arg_doc_mapping.items() if not args[k]
 				]
