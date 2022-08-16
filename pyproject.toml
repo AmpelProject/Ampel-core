@@ -31,10 +31,10 @@ ampel-db = 'ampel.db.AmpelDB:main'
 ampel = 'ampel.cli.main:main'
 
 [tool.poetry.plugins.cli]
-'job_Run_provided_job_file' = 'ampel.cli.JobCommand'
+'job_Run_schema_file(s)' = 'ampel.cli.JobCommand'
 'process_Run_single_task' = 'ampel.cli.ProcessCommand'
 'run_Run_selected_process(es)_from_config' = 'ampel.cli.RunCommand'
-'log_Select,_format_and_either_view_or_save_logs._Tail_mode_availabe' = 'ampel.cli.LogCommand'
+'log_Select,_format_and_either_view_(tail_mode_available)_or_save_logs' = 'ampel.cli.LogCommand'
 'view_Select,_load_and_save_fresh_"ampel_views"' = 'ampel.cli.ViewCommand'
 'db_Initialize,_dump,_delete_specific_databases_or_collections' = 'ampel.cli.DBCommand'
 'config_Build_or_update_config._Fetch_or_append_config_elements' = 'ampel.cli.ConfigCommand'
