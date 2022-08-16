@@ -131,6 +131,7 @@ class ConfigCommand(AbsCoreCommand):
 
 		return self.parsers[sub_op]
 
+
 	@classmethod
 	def _to_strict_json(cls, obj: Any) -> Any:
 		"""Get JSON-compliant representation of obj"""
@@ -152,6 +153,7 @@ class ConfigCommand(AbsCoreCommand):
 		else:
 			return obj
 
+
 	@staticmethod
 	def _from_strict_json(doc):
 		"""Invert to_strict_json()"""
@@ -163,6 +165,7 @@ class ConfigCommand(AbsCoreCommand):
 		else:
 			return doc
 
+
 	@staticmethod
 	def _load_dict(source: TextIO) -> dict[str, Any]:
 		if isinstance((payload := yaml.safe_load(source)), dict):
@@ -170,8 +173,10 @@ class ConfigCommand(AbsCoreCommand):
 		else:
 			raise TypeError("buf does not deserialize to a dict")
 
+
 	@classmethod
 	def _validate(cls, config_file: TextIO, secrets: None | TextIO = None) -> None:
+
 		from ampel.model.ChannelModel import ChannelModel
 		from ampel.model.ProcessModel import ProcessModel
 
@@ -183,6 +188,7 @@ class ConfigCommand(AbsCoreCommand):
 				else PotemkinSecretProvider()
 			)]),
 		)
+
 		with ctx.loader.validate_unit_models():
 			for channel in ctx.config.get(
 				"channel", dict[str, Any], raise_exc=True
@@ -238,9 +244,8 @@ class ConfigCommand(AbsCoreCommand):
 			)
 
 			logger.flush()
-			return
 
-		if sub_op == 'install':
+		elif sub_op == 'install':
 
 			std_conf = get_user_data_config_path()
 			if args['file'] and os.path.exists(args['file']):
@@ -257,7 +262,8 @@ class ConfigCommand(AbsCoreCommand):
 			else:
 				raise ValueError("Please provide either 'file' or 'build' argument")
 
-		if sub_op == 'show':
+		elif sub_op == 'show':
+
 			conf_path = get_user_data_config_path()
 			if args['path']:
 				print(conf_path)
@@ -274,14 +280,15 @@ class ConfigCommand(AbsCoreCommand):
 				else:
 					for l in f.readlines():
 						print(l, end='')
-			return
-		
-		if sub_op == 'transform':
+
+		elif sub_op == 'transform':
+
 			try:
 				with Path(args['filter']).open() as f:
 					jq_args = [f.read()]
 			except (FileNotFoundError, IsADirectoryError):
 				jq_args = [args['filter']]
+
 			# Use a custom transformation to losslessly round-trip from YAML to JSON,
 			# in particular:
 			# - wrap large ints to prevent truncation to double precision
@@ -291,6 +298,7 @@ class ConfigCommand(AbsCoreCommand):
 				subprocess.check_output(["jq"] + jq_args, input=input_json.encode()),
 				object_hook=self._from_strict_json,
 			)
+
 			with StringIO() as output_yaml:
 				yaml.dump(config, output_yaml, sort_keys=False)
 				if args['validate']:
@@ -298,13 +306,6 @@ class ConfigCommand(AbsCoreCommand):
 					self._validate(output_yaml)
 				output_yaml.seek(0)
 				args['out'].write(output_yaml.read())
-			return
 
-		if sub_op == 'validate':
+		elif sub_op == 'validate':
 			self._validate(args['file'], args['secrets'])
-			return
-
-		raise NotImplementedError("Not implemented yet")
-
-
-
