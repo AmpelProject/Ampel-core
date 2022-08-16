@@ -42,7 +42,7 @@ entry_points = {
 	'cli': [
 		'job Run job schema file(s) = ampel.cli.JobCommand',
 		'run Run selected process(es) from config = ampel.cli.RunCommand',
-		'log Select, format and either view or save logs. Tail mode availabe = ampel.cli.LogCommand',
+		'log Select, format and either view (tail mode available) or save logs = ampel.cli.LogCommand',
 		'view Select, load and save fresh "ampel views" = ampel.cli.ViewCommand',
 		'db Initialize, dump, delete specific databases or collections = ampel.cli.DBCommand',
 		'config Build, show or install config = ampel.cli.ConfigCommand',
