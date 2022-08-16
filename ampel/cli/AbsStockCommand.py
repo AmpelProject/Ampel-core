@@ -115,8 +115,8 @@ class AbsStockCommand(AbsCoreCommand, abstract=True):
 			conf['tag'] = self.get_tag(args)
 
 		if (stock := args.get('stock')):
-			conf['custom'] = {
-				'_id': stock if isinstance(stock, (int, bytes, str))
+			conf['custom'] = { # Hmmm, unsure about the necessity of 'custom' there, check later
+				'stock': stock if isinstance(stock, (int, bytes, str))
 					else maybe_match_array(stock)
 			}
 
