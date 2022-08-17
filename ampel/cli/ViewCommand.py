@@ -4,14 +4,12 @@
 # License:             BSD-3-Clause
 # Author:              valery brinnel <firstname.lastname@gmail.com>
 # Date:                15.03.2021
-# Last Modified Date:  24.03.2021
+# Last Modified Date:  17.08.2022
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-import sys
 from argparse import ArgumentParser
 from typing import Any
 from collections.abc import Sequence
-from ampel.log.AmpelLogger import AmpelLogger
 from ampel.log.LogFlag import LogFlag
 from ampel.cli.utils import maybe_load_idmapper
 from ampel.cli.ArgParserBuilder import ArgParserBuilder
@@ -31,6 +29,8 @@ hlp = {
 	'out': 'Path to file where serialized views will be saved (printed to stdout otherwise)',
 	'log-profile': 'One of: default, compact, headerless, verbose, debug',
 	'id-mapper': 'Convert stock ids using the provided id mapper (ex: ZTFIdMapper)',
+	"one-db": "Whether the target ampel DB was created with flag one-db",
+	"channel": "view for specified"
 }
 
 class ViewCommand(AbsStockCommand, AbsLoadCommand):
@@ -62,10 +62,11 @@ class ViewCommand(AbsStockCommand, AbsLoadCommand):
 		builder.add_parsers(sub_ops, hlp)
 
 		# Required args
-		builder.add_arg("optional", "config", type=str)
 		builder.add_arg("save.required", "out", default=True)
 
 		# Optional args
+		builder.add_arg("optional", "config", type=str)
+		builder.add_arg('optional', 'one-db', action='store_true')
 		builder.add_arg("optional", "secrets", default=None)
 		builder.add_arg('optional', 'id-mapper')
 		builder.add_arg('optional', 'debug', action="store_true")
@@ -79,7 +80,8 @@ class ViewCommand(AbsStockCommand, AbsLoadCommand):
 		self.add_load_args(builder, 'Views content arguments')
 
 		# Example
-		builder.add_example("show", "view show -config ampel_conf.yaml -stock 85628462 -no-t0 -out ZTFabcdef.json")
+		builder.add_example("show", "view show -channel CHAN1 -stock 85628462 -no-t0")
+		builder.add_example("save", "-stock 519059889 -mongo.prefix MyDB -one-db -no-t0 -channel CHAN1 -out file.txt -binary")
 		
 		self.parsers.update(
 			builder.get()
@@ -91,59 +93,62 @@ class ViewCommand(AbsStockCommand, AbsLoadCommand):
 	# Mandatory implementation
 	def run(self, args: dict[str, Any], unknown_args: Sequence[str], sub_op: None | str = None) -> None:
 
-		ctx = self.get_context(args, unknown_args, ContextClass=AmpelContext)
-		maybe_load_idmapper(args)
+		if not args['channel']:
+			print("Option 'channel' is required")
+			return
 
-		if sub_op == "save":
-			args["out"] = open(args["out"], "wb" if args.get('binary') else 'w')
-
-		logger = AmpelLogger.from_profile(
-			ctx, 'console_debug' if args['debug'] else 'console_info',
-			base_flag=LogFlag.MANUAL_RUN
+		ctx = self.get_context(
+			args, unknown_args,
+			ContextClass = AmpelContext,
+			one_db = args.get('one_db', False)
 		)
 
+		maybe_load_idmapper(args)
+
 		conf = {
-			'fd': open(args["out"], "wb" if args.get('binary') else 'w') \
-				if sub_op == "save" else sys.stdout,
+			'fd': args.get("out"),
 			'id_mapper': args["id_mapper"],
-			'verbose': sub_op == "save"
+			'verbose': sub_op == "save",
+			'binary': args.get('binary') or False
 		}
 
 		t3p = T3Processor(
 			context = ctx,
 			process_name = "ViewCommand",
+			template = "compact_t3",
 			base_log_flag = LogFlag.MANUAL_RUN,
 			log_profile = 'console_debug' if args.get('debug') else 'console_info',
-			update_journal = False,
-			update_events = False,
-			channel = args['channel'],
-			supply = UnitModel(
-				unit="T3DefaultBufferSupplier",
-				config={
-					"select": self.build_select_model(args),
-					"load": self.build_load_model(args),
-				},
-			),
-			stage = UnitModel(
-				unit="T3ProjectingStager",
-				config={
-					"directives": [
-						T3ProjectionDirective(
-							project=UnitModel(
-								unit="T3ChannelProjector",
-								config={"channel": args['channel']}
-							),
-							execute=[
-								UnitModel(
-									unit="T3BufferBinaryExporter" if args.get('binary') \
-									else "T3BufferTextExporter",
-									config=conf
-								)
+			execute = [
+				{
+					'supply': {
+						'unit': "T3DefaultBufferSupplier",
+						'config': {
+							'select': self.build_select_model(args),
+							'load': self.build_load_model(args)
+						}
+					},
+					'stage': {
+						'unit': "T3ProjectingStager",
+						'config': {
+							"keep_buffers": True, # quick n dirty
+							"directives": [
+								T3ProjectionDirective(
+									project=UnitModel(
+										unit="T3ChannelProjector",
+										config = {"channel": args['channel']}
+									),
+									execute=[
+										UnitModel(
+											unit="T3BufferExporterUnit",
+											config=conf
+										)
+									],
+								),
 							],
-						),
-					],
-				},
-			)
+						}
+					}
+				}
+			]
 		)
 
 		t3p.run()
