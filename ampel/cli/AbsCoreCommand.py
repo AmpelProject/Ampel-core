@@ -59,9 +59,10 @@ class AbsCoreCommand(AbsCLIOperation, abstract=True):
 					set_by_path(ampel_conf._config, k, v)
 
 		for k, v in self.get_custom_args(unknown_args):
+
 			if ampel_conf.get(".".join(k.split(".")[:-1])) is None:
-				logger.info(f"Cannot set ampel config parameter '{k}' (parent key does not exist)")
-				continue
+				with out_stack():
+					raise ValueError(f"Unknown config parameter '{k}'")
 
 			logger.info(f"Setting config parameter '{k}' value to: {v}")
 			set_by_path(ampel_conf._config, k, v)
@@ -86,7 +87,7 @@ class AbsCoreCommand(AbsCLIOperation, abstract=True):
 					try:
 						v = _maybe_int(next(it))
 					except StopIteration:
-						break
+						pass
 				yield k, v
 
 
