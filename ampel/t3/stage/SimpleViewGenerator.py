@@ -17,7 +17,12 @@ from ampel.t3.stage.BaseViewGenerator import BaseViewGenerator, T, T3Send
 
 class SimpleViewGenerator(BaseViewGenerator[T]):
 
-	def __init__(self, unit: AbsT3ReviewUnit, buffers: Iterable[AmpelBuffer], stock_updr: MongoStockUpdater) -> None:
+	def __init__(self,
+		unit: AbsT3ReviewUnit,
+		buffers: Iterable[AmpelBuffer],
+		stock_updr: MongoStockUpdater
+	) -> None:
+
 		super().__init__(unit_name = unit.__class__.__name__, stock_updr = stock_updr)
 		self.buffers = buffers
 		self.View = unit._View
