@@ -36,8 +36,8 @@ unit:
 - ampel.t3.stage.T3AggregatingStager
 - ampel.t3.stage.T3SequentialStager
 - ampel.t3.stage.T3DistributiveStager
-- ampel.cli.T3BufferTextExporter
-- ampel.cli.T3BufferBinaryExporter
+- ampel.cli.T3BufferExporterStager
+- ampel.cli.T3BufferExporterUnit
 - ampel.demo.DemoProcessor
 - ampel.ingest.ChainedT0Muxer
 

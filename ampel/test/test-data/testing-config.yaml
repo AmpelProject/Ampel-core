@@ -276,19 +276,19 @@ unit:
     distrib: ampel-core
     file: /Users/jakob/Documents/ZTF/Ampel-v0.8/Ampel-core/conf/ampel-core/ampel.yaml
     version: 0.8.0a1
-  T3BufferBinaryExporter:
-    fqn: ampel.cli.T3BufferBinaryExporter
+  T3BufferExporterStager:
+    fqn: ampel.cli.T3BufferExporterStager
     base:
-    - T3BufferBinaryExporter
+    - T3BufferExporterStager
     - AbsT3Stager
     - ContextUnit
     distrib: ampel-core
     file: /Users/jakob/Documents/ZTF/Ampel-v0.8/Ampel-core/conf/ampel-core/ampel.yaml
     version: 0.8.0a1
-  T3BufferTextExporter:
-    fqn: ampel.cli.T3BufferTextExporter
+  T3BufferExporterStager:
+    fqn: ampel.cli.T3BufferExporterStager
     base:
-    - T3BufferTextExporter
+    - T3BufferExporterStager
     - AbsT3Stager
     - ContextUnit
     distrib: ampel-core
