@@ -4,12 +4,11 @@
 # License:             BSD-3-Clause
 # Author:              valery brinnel <firstname.lastname@gmail.com>
 # Date:                06.12.2019
-# Last Modified Date:  03.04.2021
+# Last Modified Date:  16.08.2022
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from pymongo.cursor import Cursor
 from typing import Literal, Any
-
 from ampel.types import ChannelId, Tag
 from ampel.mongo.query.stock import build_stock_query
 from ampel.util.logicschema import to_logical_dict
@@ -20,6 +19,7 @@ from ampel.model.operator.AllOf import AllOf
 from ampel.model.operator.AnyOf import AnyOf
 from ampel.model.operator.OneOf import OneOf
 from ampel.model.time.TimeConstraintModel import TimeConstraintModel
+from ampel.util.collections import try_reduce
 
 
 class T3StockSelector(AbsT3Selector):
@@ -86,12 +86,15 @@ class T3StockSelector(AbsT3Selector):
 		if self.custom:
 			match_query.update(self.custom)
 
+		col = self.context.db.get_collection('stock')
+
 		if self.logger.verbose:
-			self.logger.log(VERBOSE, "Executing search query", extra=safe_query_dict(match_query))
+			self.logger.log(
+				VERBOSE,
+				f"Executing stock search query [{col.database.name} "
+				f"{try_reduce(list(col.database.client.nodes))}]",
+				extra=safe_query_dict(match_query)
+			)
 
 		# Execute 'find transients' query
-		cursor = self.context.db \
-			.get_collection('stock') \
-			.find(match_query, {'stock': 1})
-
-		return cursor
+		return col.find(match_query, {'stock': 1})

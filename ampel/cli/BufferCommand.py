@@ -4,7 +4,7 @@
 # License:             BSD-3-Clause
 # Author:              valery brinnel <firstname.lastname@gmail.com>
 # Date:                25.03.2021
-# Last Modified Date:  14.08.2022
+# Last Modified Date:  16.08.2022
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 import sys
@@ -18,7 +18,6 @@ from ampel.cli.ArgParserBuilder import ArgParserBuilder
 from ampel.cli.AbsStockCommand import AbsStockCommand
 from ampel.cli.AbsLoadCommand import AbsLoadCommand
 from ampel.cli.AmpelArgumentParser import AmpelArgumentParser
-from ampel.model.UnitModel import UnitModel
 from ampel.t3.T3Processor import T3Processor
 
 hlp = {
@@ -31,6 +30,7 @@ hlp = {
 	'binary': 'Store buffers as compact BSON structures',
 	'pretty': 'Show buffers using spacier prettyjson',
 	'getch': 'Wait for a key to be pressed in terminal before printing next buffer (not compatible with binary option)',
+	"one-db": "Whether the target ampel DB was created with flag one-db"
 }
 
 class BufferCommand(AbsStockCommand, AbsLoadCommand):
@@ -63,6 +63,7 @@ class BufferCommand(AbsStockCommand, AbsLoadCommand):
 		builder.add_arg("save.required", "out", default=True)
 
 		# Optional args
+		builder.add_arg('optional', 'one-db', action='store_true')
 		builder.add_arg("optional", "secrets", default=None)
 		builder.add_arg('optional', 'id-mapper')
 		builder.add_arg('optional', 'debug', action="store_true")
@@ -78,8 +79,9 @@ class BufferCommand(AbsStockCommand, AbsLoadCommand):
 		self.add_load_args(builder, 'Views content arguments')
 
 		# Example
-		builder.add_example("show", "-config ampel_conf.yaml -stock 85628462 -no-t0")
-		builder.add_example("save", "-config ampel_conf.yaml -stock 85628462 -no-t0 -out ZTFabcdef.json")
+		builder.add_example("show", "-stock 85628462 -no-t0")
+		builder.add_example("show", "-mongo.prefix MyDB -one-db -stock 519059889 -no-t0")
+		builder.add_example("save", "-stock 85628462 -no-t0 -out ZTFabcdef.json")
 		
 		self.parsers.update(
 			builder.get()
@@ -91,14 +93,20 @@ class BufferCommand(AbsStockCommand, AbsLoadCommand):
 	# Mandatory implementation
 	def run(self, args: dict[str, Any], unknown_args: Sequence[str], sub_op: None | str = None) -> None:
 
-		ctx: AmpelContext = self.get_context(args, unknown_args)
+		ctx = self.get_context(
+			args, unknown_args,
+			ContextClass = AmpelContext,
+			one_db = args.get('one_db', False)
+		)
+
 		maybe_load_idmapper(args)
 
 		conf = {
 			'fd': open(args["out"], "wb" if args.get('binary') else 'w') \
 				if sub_op == "save" else sys.stdout,
 			'id_mapper': args["id_mapper"],
-			'verbose': sub_op == "save"
+			'verbose': sub_op == "save",
+			'binary': args.get('binary') or False
 		}
 
 		if args.get('pretty'):
@@ -110,18 +118,24 @@ class BufferCommand(AbsStockCommand, AbsLoadCommand):
 		t3p = T3Processor(
 			context = ctx,
 			process_name = "BufferCommand",
+			template = "compact_t3",
 			base_log_flag = LogFlag.MANUAL_RUN,
 			log_profile = 'console_debug' if args.get('debug') else 'console_info',
-			update_journal = False,
-			update_events = False,
-			channel = args['channel'],
-			select = self.build_select_model(args),
-			load = self.build_load_model(args, codec_options=None),
-			stage = UnitModel(
-				unit="T3BufferBinaryExporter" if args.get('binary') \
-					else "T3BufferTextExporter",
-				config=conf
-			)
+			execute = [
+				{
+					'supply': {
+						'unit': "T3DefaultBufferSupplier",
+						'config': {
+							'select': self.build_select_model(args),
+							'load': self.build_load_model(args)
+						}
+					},
+					'stage': {
+						'unit': "T3BufferExporterStager",
+						'config': conf
+					}
+				}
+			]
 		)
 
 		t3p.run()
