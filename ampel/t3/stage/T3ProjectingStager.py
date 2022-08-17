@@ -4,7 +4,7 @@
 # License:             BSD-3-Clause
 # Author:              valery brinnel <firstname.lastname@gmail.com>
 # Date:                06.01.2020
-# Last Modified Date:  10.12.2021
+# Last Modified Date:  17.08.2022
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from time import time
@@ -17,6 +17,7 @@ from ampel.log import VERBOSE
 from ampel.types import StockId, UBson
 from ampel.t3.T3DocBuilder import AbsT3s
 from ampel.view.T3Store import T3Store
+from ampel.view.SnapView import SnapView
 from ampel.struct.UnitResult import UnitResult
 from ampel.struct.AmpelBuffer import AmpelBuffer
 from ampel.content.T3Document import T3Document
@@ -26,6 +27,7 @@ from ampel.abstract.AbsT3Projector import AbsT3Projector
 from ampel.base.AuxUnitRegister import AuxUnitRegister
 from ampel.t3.stage.T3ThreadedStager import T3ThreadedStager
 from ampel.t3.stage.SimpleViewGenerator import SimpleViewGenerator
+from ampel.t3.stage.NoViewGenerator import NoViewGenerator
 from ampel.model.t3.T3ProjectionDirective import T3ProjectionDirective
 
 
@@ -57,12 +59,18 @@ class T3ProjectingStager(T3ThreadedStager):
 	#: Processing specification
 	directives: Sequence[T3ProjectionDirective]
 
+	#: Quick n Dirty: do not cast ampel buffers into views (thereby violating typing declarations)
+	#: Added for the CLI operation 'ampel view show/save' as view casts are unnecessary in this case
+	keep_buffers: bool = False
+
 
 	def __init__(self, **kwargs) -> None:
 
 		super().__init__(**kwargs)
 		self.run_blocks: list[RunBlock] = []
 		debug = self.logger.verbose > 1
+		self.ViewGenerator: SimpleViewGenerator[SnapView] = NoViewGenerator if self.keep_buffers \
+			else SimpleViewGenerator # type: ignore
 
 		if debug:
 			self.logger.debug("Setting up T3ProjectingStager")
@@ -114,7 +122,7 @@ class T3ProjectingStager(T3ThreadedStager):
 			if len(self.run_blocks[0].units) == 1:
 				return self.proceed(
 					self.run_blocks[0].units[0],
-					SimpleViewGenerator(
+					self.ViewGenerator( # type: ignore[operator]
 						self.run_blocks[0].units[0],
 						self.projected_buffer_generator(self.run_blocks[0], gen),
 						self.stock_updr
