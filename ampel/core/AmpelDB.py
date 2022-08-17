@@ -237,7 +237,7 @@ class AmpelDB(AmpelUnit):
 
 		try:
 			dbinfo = "[" + str(try_reduce(list(db.client.nodes))) + "]"
-		except Exception as e:
+		except Exception:
 			dbinfo = ""
 
 		logger.info(f"Creating {db.name} -> {col_config.name} {dbinfo}")
