@@ -35,28 +35,35 @@ class RunCommand(AbsCoreCommand):
 			return self.parser
 
 		parser = AmpelArgumentParser("run")
+		#parser.args_not_required = True
 
 		# Help
 		parser.set_help_descr({
 			"config": "Path to an ampel config file (yaml/json)",
 			"process": "Process name(s) to run in the provided order (no regex)",
 			"secrets": "Path to a YAML secrets store in sops format",
+			"list": "List runnable processes",
 			"log-profile": "default, compact, headerless, verbose, debug, ..."
 		})
 
 		# Required
 		parser.add_arg("config", "optional", type=str)
-		parser.add_arg("process", "required", nargs="+", default=None)
+		parser.add_x_args(
+			'required',
+			{'name': 'process', 'nargs': "+", 'default': None},
+			{'name': 'list', 'action': "store_true"}
+		)
 
 		# Optional
+
 		parser.add_arg("secrets", type=str)
 		parser.add_arg("log-profile", type=str, default="default")
 
 		# Examples
-		p = "ampel run --config ampel_conf.yaml "
-		parser.add_example("-process process1 -log-profile verbose", prepend=p)
-		parser.add_example("-process my_process -process.t0.my_process.processor.config.parameter_a 9000", prepend=p)
-		parser.add_example("-process process1 process2 -db.prefix AmpelTest", prepend=p)
+		parser.add_example("run -list")
+		parser.add_example("run -process process1 -log-profile verbose")
+		parser.add_example("run -process process1 process2 -mongo.prefix AmpelTest")
+		parser.add_example("run -process my_process -process.t0.my_process.processor.config.parameter_a 9000")
 
 		self.parser = parser
 		return parser
@@ -70,6 +77,15 @@ class RunCommand(AbsCoreCommand):
 	) -> None:
 
 		ctx = self.get_context(args, unknown_args, ContextClass=AmpelContext)
+
+		if args.get('list'):
+			print("\nAvailable processes:")
+			for k in ("t0", "t1", "t2", "t3"):
+				print(f"\n====== T{k[1]} ======")
+				for k in ctx.config.get(f'process.{k}', dict[str, Any], raise_exc=True).keys():
+					print(" " + k)
+			print("")
+			return
 
 		pms: list[ProcessModel] = [
 			pm for el in args['process']
