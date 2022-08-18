@@ -126,7 +126,7 @@ def test_slow_dependency(
         raise_exc=True,
         process_name="t2",
         run_dependent_t2s=True,
-        backoff_on_retry={"jitter": False, "factor": 10},
+        backoff_on_retry=[{"jitter": False, "factor": 10}],
     )
 
     # num_docs = t2.run()
@@ -160,7 +160,7 @@ def test_slow_dependency(
     assert dependent_doc is not None
     meta = dependent_doc["meta"][-1]
     assert t2.backoff_on_retry is not None
-    assert meta["retry_after"] == meta["ts"] + t2.backoff_on_retry.factor
+    assert meta["retry_after"] == meta["ts"] + t2.backoff_on_retry[0].factor
     assert t2.run() == 0, "no more docs to run"
 
     # run upstream docs

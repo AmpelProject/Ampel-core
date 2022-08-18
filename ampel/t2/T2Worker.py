@@ -58,6 +58,12 @@ abs_t2 = (
 stat_latency, stat_count = register_stats(tier=2)
 
 class BackoffConfig(AmpelBaseModel):
+	code_match: Sequence[int] = [
+		DocumentCode.T2_PENDING_DEPENDENCY, # input t2 doc has not yet resolved
+		DocumentCode.T2_MISSING_DEPENDENCY, # input t2 docs not found
+		DocumentCode.T2_UNKNOWN_LINK, # input t1 doc not found
+		DocumentCode.T2_MISSING_INFO, # t0 docs not found
+	]
 	base: float = 2
 	factor: float = 1
 	jitter: bool = True
@@ -84,8 +90,17 @@ class T2Worker(AbsWorker[T2Document]):
 	run_dependent_t2s: bool = True
 	tier: ClassVar[Literal[2]] = 2
 
-	#: Add an exponentially increasing delay on T2_PENDING_DEPENDENCY
-	backoff_on_retry: None | BackoffConfig = BackoffConfig()
+	#: Add an exponentially increasing delay on codes that indicate temporary
+	#: failures. Different backoff strategies may be specified for different codes
+	backoff_on_retry: None | list[BackoffConfig] = [BackoffConfig()]
+
+	def __init__(self, **kwargs):
+		super().__init__(**kwargs)
+		self._backoff_on_retry = {
+			code: backoff
+			for backoff in (self.backoff_on_retry or [])
+			for code in backoff.code_match
+		}
 
 	def process_doc(self,
 		doc: T2Document,
@@ -172,9 +187,9 @@ class T2Worker(AbsWorker[T2Document]):
 					jrec['action'] |= JournalActionCode.T2_SET_CODE
 					# set retry time for missing dependencies, similar to
 					# https://github.com/litl/backoff
-					if self.backoff_on_retry and ret.code == DocumentCode.T2_PENDING_DEPENDENCY:
-						delay = self.backoff_on_retry.factor * (self.backoff_on_retry.base ** trials)
-						if self.backoff_on_retry.jitter:
+					if (backoff := self._backoff_on_retry.get(ret.code, None)):
+						delay = backoff.factor * (backoff.base ** trials)
+						if backoff.jitter:
 							delay = random.uniform(0, delay)
 						meta['retry_after'] = meta['ts'] + ceil(delay)
 
@@ -281,7 +296,7 @@ class T2Worker(AbsWorker[T2Document]):
 					self._ampel_db, msg='T1Document not found', logger=logger,
 					info={'id': t2_doc['link'], 'doc': t2_doc}
 				)
-				return None
+				return UnitResult(code=DocumentCode.T2_UNKNOWN_LINK)
 
 			# Datarights: suppress channel info (T3 uses instead a
 			# 'projection' procedure that should not be necessary here)
@@ -301,7 +316,7 @@ class T2Worker(AbsWorker[T2Document]):
 					self._ampel_db, msg='Datapoints not found',
 					logger=logger, info={'t1': t1_doc, 't2': t2_doc}
 				)
-				return None
+				return UnitResult(code=DocumentCode.T2_MISSING_INFO)
 
 			if len(dps) != len(set(t1_dps_ids)):
 				missing = sorted(
@@ -312,7 +327,7 @@ class T2Worker(AbsWorker[T2Document]):
 					self._ampel_db, msg='Some datapoints not found',
 					logger=logger, info={'t1': t1_doc, 't2': t2_doc, 'missing': missing}
 				)
-				return None
+				return UnitResult(code=DocumentCode.T2_MISSING_INFO)
 
 			for dp in dps:
 				if 'excl' in dp:
@@ -388,6 +403,7 @@ class T2Worker(AbsWorker[T2Document]):
 				self._ampel_db, msg='Stock doc not found',
 				logger=logger, info={'doc': t2_doc}
 			)
+			return UnitResult(code=DocumentCode.T2_UNKNOWN_LINK)
 
 		elif isinstance(t2_unit, (AbsPointT2Unit, AbsTiedPointT2Unit)):
 
@@ -413,6 +429,7 @@ class T2Worker(AbsWorker[T2Document]):
 				self._ampel_db, msg='Datapoint not found',
 				logger=logger, info={'doc': t2_doc}
 			)
+			return UnitResult(code=DocumentCode.T2_UNKNOWN_LINK)
 
 		else:
 
