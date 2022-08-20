@@ -4,7 +4,7 @@
 # License:             BSD-3-Clause
 # Author:              valery brinnel <firstname.lastname@gmail.com>
 # Date:                29.11.2018
-# Last Modified Date:  26.03.2021
+# Last Modified Date:  20.08.2022
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 import collections.abc
@@ -70,12 +70,12 @@ class LogsMatcher:
 
 
 	def __init__(self):
-		self.match: dict[str, Any] = {}
+		self.mcrit: dict[str, Any] = {}
 		self.id_mapper = None
 
 
 	def get_match_criteria(self) -> dict[str, Any]:
-		return self.match
+		return self.mcrit
 
 
 	def set_id_mapper(self, id_mapper: AbsIdMapper) -> None:
@@ -84,7 +84,7 @@ class LogsMatcher:
 
 	def set_flag(self, arg) -> 'LogsMatcher':
 		""" Mongo's operator "$bitsAllSet" is used """
-		self.match['f'] = {"$bitsAllSet": arg}
+		self.mcrit['f'] = {"$bitsAllSet": arg}
 		return self
 
 
@@ -97,7 +97,7 @@ class LogsMatcher:
 		if isinstance(channel, get_args(ChannelId)):
 			v: Any = channel
 		elif isinstance(channel, (dict, AllOf, AnyOf, OneOf)):
-			v = apply_schema(self.match, 'channel', channel)
+			v = apply_schema(self.mcrit, 'channel', channel)
 		elif isinstance(channel, collections.abc.Sequence):
 			v = {'$in': channel}
 		else:
@@ -105,9 +105,9 @@ class LogsMatcher:
 
 
 		if compact_logs:
-			self.match['$or'] = [{'c': v}, {'m.c': v}]
+			self.mcrit['$or'] = [{'c': v}, {'m.c': v}]
 		else:
-			self.match['c'] = v
+			self.mcrit['c'] = v
 
 		return self
 
@@ -121,23 +121,26 @@ class LogsMatcher:
 				check_seq_inner_type(stock_id, str)
 			)
 		):
-			self.match['s'] = self.id_mapper.to_ampel_id(stock_id) \
+			self.mcrit['s'] = self.id_mapper.to_ampel_id(stock_id) \
 				if isinstance(stock_id, str) else {'$in': self.id_mapper.to_ampel_id(stock_id)}
 		else:
-			self.match['s'] = stock_id if isinstance(stock_id, get_args(StockId)) else {'$in': stock_id}
+			self.mcrit['s'] = stock_id if isinstance(stock_id, get_args(StockId)) else {'$in': stock_id}
 		return self
 
 
-	def set_run(self, run_id: int | Sequence[int]) -> 'LogsMatcher':
-		self.match['r'] = run_id if isinstance(run_id, int) else {'$in': run_id}
+	def set_run(self, run_id: int | Sequence[int] | dict) -> 'LogsMatcher':
+		if isinstance(run_id, dict):
+			self.mcrit['r'] = run_id # enables -run-json '{"$gt": 1}'
+		else:
+			self.mcrit['r'] = run_id if isinstance(run_id, int) else {'$in': run_id}
 		return self
 
 
 	def set_custom(self, key: str, value: Any) -> 'LogsMatcher':
 		if (isinstance(value, collections.abc.Sequence) and not isinstance(value, str)):
-			self.match[key] = {'$in': value}
+			self.mcrit[key] = {'$in': value}
 		else:
-			self.match[key] = value
+			self.mcrit[key] = value
 		return self
 
 
@@ -170,9 +173,9 @@ class LogsMatcher:
 		else:
 			raise ValueError()
 
-		if "_id" not in self.match:
-			self.match["_id"] = {}
+		if "_id" not in self.mcrit:
+			self.mcrit["_id"] = {}
 
-		self.match["_id"][op] = ObjectId.from_datetime(dt)
+		self.mcrit["_id"][op] = ObjectId.from_datetime(dt)
 
 		return self
