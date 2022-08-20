@@ -16,6 +16,7 @@ from ampel.log.AmpelLogger import AmpelLogger
 from ampel.log.LightLogRecord import LightLogRecord
 from ampel.base.AmpelFlexModel import AmpelFlexModel
 from ampel.util.pretty import prettyjson
+from ampel.util.serialize import walk_and_encode
 
 
 class LogsDumper(AmpelFlexModel):
@@ -33,8 +34,8 @@ class LogsDumper(AmpelFlexModel):
 
 
 	def __init__(self, **kwargs) -> None:
-		self._flag_strings: dict = {}
 		super().__init__(**kwargs)
+		self._flag_strings: dict = {}
 
 
 	def process(self, log_entries: Sequence[dict]):
@@ -80,6 +81,7 @@ class LogsDumper(AmpelFlexModel):
 				el['f'] = self._flag_strings[el['f']]
 
 			fd.write(buf)
+			walk_and_encode(el)
 			buf = func(el) + ",\n" # type: ignore[operator]
 
 		fd.write(buf[:-2] + "\n]\n")
@@ -122,7 +124,7 @@ class LogsDumper(AmpelFlexModel):
 				out += self.main_separator + f'[{self.extra_separator.join(suffix)}]'
 
 			if el.get('m'):
-				out += self.main_separator + el['m']
+				out += self.main_separator + str(el['m'])
 
 			fd.write(out + "\n")
 
