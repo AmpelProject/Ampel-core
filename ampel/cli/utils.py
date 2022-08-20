@@ -9,8 +9,6 @@
 
 import os
 from typing import Any
-from appdirs import user_data_dir # type: ignore[import]
-
 from ampel.core.AmpelDB import AmpelDB
 from ampel.secret.AmpelVault import AmpelVault
 from ampel.config.AmpelConfig import AmpelConfig
@@ -52,25 +50,6 @@ def get_db(
 			s = "Databases with prefix " + config.get('mongo.prefix', str, raise_exc=True) + " do not exist"
 			raise SystemExit("\n" + "="*len(s) + "\n" + s + "\n" + "="*len(s) + "\n")
 		raise e
-
-
-def get_user_data_config_path() -> str:
-
-	app_path = user_data_dir("ampel")
-	if not os.path.exists(app_path):
-		os.makedirs(app_path)
-
-	app_path = os.path.join(app_path, "conf")
-	if not os.path.exists(app_path):
-		os.makedirs(app_path)
-
-	env = os.environ.get('CONDA_DEFAULT_ENV')
-	if env:
-		app_path = os.path.join(app_path, env)
-		if not os.path.exists(app_path):
-			os.makedirs(app_path)
-
-	return os.path.join(app_path, "conf.yml")
 
 
 def _maybe_int(stringy):
