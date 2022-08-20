@@ -62,28 +62,28 @@ class ProcessCommand(AbsCoreCommand):
             }
         )
 
-        # Required
-        parser.add_arg("config", "required", type=str)
-        parser.add_arg("schema", "required")
-        parser.add_arg("name", "required")
-        parser.add_arg("db", "required", type=str)
-        parser.add_arg("channel")
-        parser.add_arg("alias")
-        parser.add_arg("log-profile", default="prod")
-        parser.add_arg("debug", default=False, action="store_true")
+        parser.req("config")
+        parser.req("schema")
+        parser.req("name")
+        parser.req("db", type=str)
 
-        # Optional
-        parser.add_arg("secrets", type=str)
+        parser.opt("channel")
+        parser.opt("alias")
+        parser.opt("log-profile", default="prod")
+        parser.opt("debug", default=False, action="store_true")
+        parser.opt("secrets", type=str)
 
         # Example
-        parser.add_example("process -config ampel_conf.yaml schema task_file.yaml -db processing -name taskytask")
+        parser.example("process -config ampel_conf.yaml schema task_file.yaml -db processing -name taskytask")
         return parser
+
 
     def _get_context(self,
         args: dict[str, Any],
         unknown_args: Sequence[str],
         logger: AmpelLogger,
     ) -> DevAmpelContext:
+
         # DevAmpelContext hashes automatically confid from potential IngestDirectives
         ctx = super().get_context(
             args,
@@ -125,9 +125,8 @@ class ProcessCommand(AbsCoreCommand):
         
         return ctx
 
-    # Mandatory implementation
-    def run(
-        self,
+
+    def run(self,
         args: dict[str, Any],
         unknown_args: Sequence[str],
         sub_op: Optional[str] = None,

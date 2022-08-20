@@ -4,7 +4,7 @@
 # License:             BSD-3-Clause
 # Author:              valery brinnel <firstname.lastname@gmail.com>
 # Date:                16.03.2021
-# Last Modified Date:  14.08.2022
+# Last Modified Date:  20.08.2022
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from json import dumps
@@ -79,51 +79,54 @@ class T2Command(AbsCoreCommand):
 		builder.notation_add_example_references()
 
 		# Required
-		builder.add_arg('optional', 'config')
-		builder.add_arg('save.required', 'out')
+		builder.opt('config')
+		builder.req('out', sub_ops='save')
 
 		# Optional general
-		builder.add_arg('optional', 'one-db', action='store_true')
-		builder.add_arg('optional', 'secrets', default=None)
-		builder.add_arg('optional', 'id-mapper')
-		builder.add_arg('optional', 'debug', action='count', default=0, help='Debug')
-		builder.add_arg('optional', 'dry-run', action='store_true')
-		builder.add_arg('optional', 'limit', action='store_true')
-		builder.add_arg('optional', 'pretty-json', action='store_true')
+		builder.opt('one-db', action='store_true')
+		builder.opt('secrets', default=None)
+		builder.opt('id-mapper', sub_ops='show|save')
+		builder.opt('dry-run', action='store_true')
+		builder.opt('debug', action='count', default=0, help='Debug')
+		builder.opt('limit', sub_ops='show|save', action='store_true')
+		builder.opt('pretty-json', sub_ops='show|save', action='store_true')
 
 		# Optional match criteria
-		builder.add_group('match', 'Optional T2 documents matching criteria')
-		builder.add_arg('match', 'unit', nargs='+', action=MaybeIntAction)
-		builder.add_arg('match', 'unit-config', nargs='+', action=MaybeIntAction)
-		builder.add_arg('match', 'code', nargs='+', action=MaybeIntAction)
-		builder.add_arg('match', 'link', nargs='+')
-		builder.add_arg('match', 'stock', nargs='+', action=MaybeIntAction)
-		builder.create_logic_args('match', 'run', 'Run id', pos=0, ref='2')
-		builder.create_logic_args('match', 'channel', 'Channel', ref='2')
-		builder.create_logic_args('match', 'with-tag', 'Tag', ref='2', json=False)
-		builder.create_logic_args('match', 'without-tag', 'Tag', excl=True, ref='2', json=False)
-		builder.add_arg('match', 'custom-match', metavar='#', action=LoadJSONAction)
+		builder.add_group('match', 'Optional T2 documents matching criteria', sub_ops='all')
+		builder.arg('unit', group='match', nargs='+', action=MaybeIntAction)
+		builder.arg('unit-config', group='match', nargs='+', action=MaybeIntAction)
+		builder.arg('code', group='match', nargs='+', action=MaybeIntAction)
+		builder.arg('link', group='match', nargs='+')
+		builder.arg('stock', group='match', nargs='+', action=MaybeIntAction)
+		builder.logic_args('run', descr='Run id', group='match', pos=0, ref='2')
+		builder.logic_args('channel', descr='Channel', group='match', ref='2')
+		builder.logic_args('with-tag', descr='Tag', group='match', ref='2', json=False)
+		builder.logic_args('without-tag', descr='Tag', group='match', excl=True, ref='2', json=False)
+		builder.arg('custom-match', group='match', metavar='#', action=LoadJSONAction)
 
-		builder.add_group('show|save.format', 'Optional format parameters')
-		builder.add_arg('show|save.format', 'resolve-config', action='store_true')
-		builder.add_arg('show|save.format', 'human-times', action='store_true')
-		builder.add_arg('show|save.format', 'no-resolve-stock', action='store_true')
-		
+		builder.add_group('format', 'Optional format parameters', sub_ops='show|save')
+		builder.arg('resolve-config', group='format', sub_ops='show|save', action='store_true')
+		builder.arg('human-times', group='format', sub_ops='show|save', action='store_true')
+		builder.arg('no-resolve-stock', group='format', sub_ops='show|save', action='store_true')
 
-		builder.add_note('reset|soft-reset',
+		builder.note(
 			'Reset operations failing to match any t2 document will not be registered in\n' +
-			'in the event database but these will sliently increase the global run counter'
+			'in the event database but these will sliently increase the global run counter',
+			sub_ops='reset|soft-reset'
 		)
 
 		# Examples
 		for el in sub_ops:
 			p = f"ampel t2 {el} -config ampel_conf.yaml "
 			a = " -out /path/to/file" if el == "save" else ""
-			builder.add_example(el, '-unit T2SNCosmo -db.prefix AmpelTest', prepend=p, append=a)
-			builder.add_example(el, '-channel MY_CHANNEL -code -1', prepend=p, append=a)
-			builder.add_example(el, '-stock 122621027 122620210 -unit DemoTiedLightCurveT2Unit', prepend=p, append=a)
+			builder.example(el, '-unit T2SNCosmo -db.prefix AmpelTest', prepend=p, append=a)
+			builder.example(el, '-channel MY_CHANNEL -code -1', prepend=p, append=a)
+			builder.example(el, '-stock 122621027 122620210 -unit DemoTiedLightCurveT2Unit', prepend=p, append=a)
 
-		builder.add_example('show|save', '-db.prefix AmpelTest -human-times -stock ZTF20aaqubac -resolve-config -id-mapper ZTFIdMapper')
+		builder.example(
+			'show|save',
+			'-db.prefix AmpelTest -human-times -stock ZTF20aaqubac -resolve-config -id-mapper ZTFIdMapper'
+		)
 
 		self.parsers = builder.get()
 		return self.parsers[sub_op]

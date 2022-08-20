@@ -4,7 +4,7 @@
 # License:             BSD-3-Clause
 # Author:              valery brinnel <firstname.lastname@gmail.com>
 # Date:                25.03.2021
-# Last Modified Date:  29.03.2021
+# Last Modified Date:  20.08.2022
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from typing import Any
@@ -34,19 +34,26 @@ class AbsLoadCommand(AbsCoreCommand, abstract=True):
 			'no-logs': 'Exclude logs'
 		}
 
-	def add_load_args(self, builder: ArgParserBuilder, group_description: str) -> None:
+	def add_load_args(self,
+		builder: ArgParserBuilder,
+		group_description: str,
+		sub_ops: str = 'all'
+	) -> None:
 
 		# Content args
-		builder.add_group('content', group_description)
-		builder.add_arg('content', 'latest', action='store_true')
-		builder.add_arg('content', 'no-stock', action='store_true')
+		builder.add_group('content', group_description, sub_ops=sub_ops)
+		builder.arg('latest', group='content', sub_ops=sub_ops, action='store_true')
+		builder.arg('no-stock', group='content', sub_ops=sub_ops, action='store_true')
 		for el in (0, 1, 2):
-			builder.add_arg('content', f'no-t{el}', action='store_true', help=f"Exclude t{el} documents from view")
-		builder.add_arg('content', 'no-plots', action='store_true')
-		builder.add_arg('content', 'no-logs', action='store_true', help="Exclude logs")
+			builder.arg(
+				f'no-t{el}', group='content', sub_ops=sub_ops,
+				action='store_true', help=f"Exclude t{el} documents from view"
+			)
+		builder.arg('no-plots', group='content', sub_ops=sub_ops, action='store_true')
+		builder.arg('no-logs', group='content', sub_ops=sub_ops, action='store_true', help="Exclude logs")
 
 		# Note
-		builder.add_all_note("Latest state means... [adequate description in a few words]")
+		builder.note("Latest state means... [adequate description in a few words]")
 
 
 	def build_load_model(self, args: dict[str, Any]) -> UnitModel:

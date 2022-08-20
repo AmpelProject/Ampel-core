@@ -4,7 +4,7 @@
 # License:             BSD-3-Clause
 # Author:              jvs, vb
 # Date:                13.03.2021
-# Last Modified Date:  14.08.2022
+# Last Modified Date:  20.08.2022
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 import logging, signal, asyncio
@@ -34,7 +34,7 @@ h = {
 
 class ScheduleCommand(AbsCLIOperation):
 	"""
-	TODO: check (jvs ^^)
+	TODO: implement properly
 	"""
 
 	@staticmethod
@@ -45,19 +45,16 @@ class ScheduleCommand(AbsCLIOperation):
 	def get_parser(self, sub_op: None | str = None) -> ArgumentParser | AmpelArgumentParser:
 
 		parser = AmpelArgumentParser()
-		# Arguments description
 		parser.set_help_descr(h)
 
-		# Required
-		parser.add_arg("config", "optional", type=str)
-		parser.add_arg("process", "required", type=str, nargs="*", default=None)
+		parser.req("config")
+		parser.req("process", type=str, nargs="*", default=None)
 
-		# Optional
-		parser.add_arg("exclude", type=str, nargs="*", default=None)
-		parser.add_arg("tier", action=MaybeIntAction, choices=(0, 1, 2, 3, "ops"), default=None)
-		parser.add_arg("secrets", default=None)
-		parser.add_arg("skip-validation", action='store_true')
-		parser.add_arg("verbose", action="count", default=0)
+		parser.opt("exclude", type=str, nargs="*", default=None)
+		parser.opt("tier", action=MaybeIntAction, choices=(0, 1, 2, 3, "ops"), default=None)
+		parser.opt("secrets", default=None)
+		parser.opt("skip-validation", action='store_true')
+		parser.opt("verbose", action="count", default=0)
 
 		return parser
 

@@ -4,7 +4,7 @@
 # License:             BSD-3-Clause
 # Author:              valery brinnel <firstname.lastname@gmail.com>
 # Date:                14.03.2021
-# Last Modified Date:  14.08.2022
+# Last Modified Date:  20.08.2022
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from typing import Any
@@ -21,15 +21,16 @@ from ampel.log.LogFlag import LogFlag
 
 # Help parameter descriptions
 hlp = {
-	"import": "Import saved ampel databases",
-	"save": "Save a databases into file",
-	"delete": "Deletes all database starting with the provided prefix (ex: AmpelTest)",
-	"prefix": "Prefix of the collections to delete (ex: AmpelTest)",
-	"config": "Path to an ampel config file (yaml/json)",
-	"secrets": "Path to a YAML secrets store in sops format",
-	"log-profile": "One of: default, compact, headerless, verbose, debug",
-	"debug": "debug",
-	"force": "Delete potententially existing view before view creation",
+	'import': 'Import saved ampel databases',
+	'save': 'Save a databases into file',
+	'delete': 'Deletes all database starting with the provided prefix (ex: AmpelTest)',
+	'prefix': 'Prefix of the collections to delete (ex: AmpelTest)',
+	'config': 'Path to an ampel config file (yaml/json)',
+	'secrets': 'Path to a YAML secrets store in sops format',
+	'log-profile': 'One of: default, compact, headerless, verbose, debug',
+	'debug': 'debug',
+	'force': 'Delete potententially existing view before view creation',
+	'view': 'Create or discard collection views',
 }
 
 class DBCommand(AbsCoreCommand):
@@ -37,7 +38,7 @@ class DBCommand(AbsCoreCommand):
 
 	@staticmethod
 	def get_sub_ops() -> list[str]:
-		return ["import", "export", "delete", "view"]
+		return ['import', 'export', 'delete', 'view']
 
 
 	# Mandatory implementation
@@ -49,39 +50,44 @@ class DBCommand(AbsCoreCommand):
 		sub_ops = self.get_sub_ops()
 		if sub_op is None or sub_op not in sub_ops:
 			return AmpelArgumentParser.build_choice_help(
-				"db", sub_ops, hlp, description = 'Import, export or delete ampel databases. Create or remove views.'
+				'db', sub_ops, hlp, description = 'Import, export or delete ampel databases. Create or remove views.'
 			)
 
-		builder = ArgParserBuilder("db")
+		builder = ArgParserBuilder('db')
 		builder.add_parsers(sub_ops, hlp)
 		builder.notation_add_note_references()
 		builder.notation_add_example_references()
 
-		# Required
-		builder.add_arg("optional", "config")
-		builder.add_arg("import.required", "in")
-		builder.add_arg("export.required", "out")
+		builder.req('config')
+		builder.req('in', 'import')
+		builder.req('out', 'export')
 
-		builder.add_group('view', 'View arguments')
-		builder.add_x_args('view', {'name': 'create', 'action': 'store_true'}, {'name': 'discard', 'action': 'store_true'})
-		builder.add_x_args(
-			'view.required',
-			{'name': 'channel'},
-			{'name': 'channels-or', 'nargs': '+'},
-			{'name': 'channels-and', 'nargs': '+'}
+		builder.add_group('view', 'View arguments', sub_ops='view')
+		builder.xargs(
+			group='required', sub_ops='view', xargs = [
+				{'name': 'create', 'action': 'store_true'},
+				{'name': 'discard', 'action': 'store_true'}
+			]
+		)
+		builder.xargs(
+			group='required', sub_ops='view', xargs = [
+				{'name': 'channel'},
+				{'name': 'channels-or', 'nargs': '+'},
+				{'name': 'channels-and', 'nargs': '+'}
+			]
 		)
 
 		# Optional
-		builder.add_arg("optional", "secrets")
-		builder.add_arg('optional', 'debug', action="store_true")
-		builder.add_arg('view.optional', 'force', action="store_true")
+		builder.opt('secrets')
+		builder.opt('debug', action='store_true')
+		builder.opt('force', 'view', action='store_true')
 
-		builder.add_example("import", "-in /path/to/file")
-		builder.add_example("export", "-out /path/to/file")
-		builder.add_example("delete", "-mongo.prefix AmpelTest")
-		builder.add_example("view", "-create -channel CHAN1")
-		builder.add_example("view", "-create -channels-or CHAN1 CHAN2")
-		builder.add_example("view", "-discard -channel CHAN1")
+		builder.example('import', '-in /path/to/file')
+		builder.example('export', '-out /path/to/file')
+		builder.example('delete', '-mongo.prefix AmpelTest')
+		builder.example('view', '-create -channel CHAN1')
+		builder.example('view', '-create -channels-or CHAN1 CHAN2')
+		builder.example('view', '-discard -channel CHAN1')
 
 		self.parsers.update(
 			builder.get()
@@ -93,7 +99,7 @@ class DBCommand(AbsCoreCommand):
 	# Mandatory implementation
 	def run(self, args: dict[str, Any], unknown_args: Sequence[str], sub_op: None | str = None) -> None:
 
-		if sub_op == "delete":  # cosmetic mainly
+		if sub_op == 'delete':  # cosmetic mainly
 			AmpelDB.create_collection = (lambda x: None) # type: ignore
 
 		ctx: AmpelContext = self.get_context(args, unknown_args)
@@ -104,41 +110,41 @@ class DBCommand(AbsCoreCommand):
 			base_flag = LogFlag.MANUAL_RUN
 		)
 
-		if sub_op == "delete":
+		if sub_op == 'delete':
 
-			logger.info(f"Deleting databases with prefix {ctx.db.prefix}")
+			logger.info(f'Deleting databases with prefix {ctx.db.prefix}')
 			ctx.db.drop_all_databases()
-			logger.info("Done")
+			logger.info('Done')
 
-		elif sub_op == "view":
+		elif sub_op == 'view':
 
 			if 'create' not in args and 'discard' not in args:
-				logger.error("Either provide 'create' or 'discard' in combination with view command")
+				logger.error('Either provide "create" or "discard" in combination with view command')
 				return
 
 			try:
-				if x := args.get("channel"):
-					logger.info(f"{'Creating' if args['create'] else 'Removing'} view for channel {x}")
+				if x := args.get('channel'):
+					logger.info(f'{"Creating" if args["create"] else "Removing"} view for channel {x}')
 					db.create_one_view(x, logger, args['force']) if args['create'] else db.delete_one_view(x, logger)
-				elif x := args.get("channels_or"):
-					logger.info(f"{'Creating' if args['create'] else 'Removing'} view for channels {x}")
+				elif x := args.get('channels_or'):
+					logger.info(f'{"Creating" if args["create"] else "Removing"} view for channels {x}')
 					db.create_or_view(x, logger, args['force']) if args['create'] else db.delete_or_view(x, logger)
-				elif x := args.get("channels_and"):
-					logger.info(f"{'Creating' if args['create'] else 'Removing'} view for channels {x}")
+				elif x := args.get('channels_and'):
+					logger.info(f'{"Creating" if args["create"] else "Removing"} view for channels {x}')
 					db.create_and_view(x, logger, args['force']) if args['create'] else db.delete_and_view(x, logger)
 				else:
-					logger.error("Channel(s) required\n")
+					logger.error('Channel(s) required\n')
 					return
 			except Exception as e:
 				print(e)
-				if "already exists" in str(e):
-					#logger.info("View already exist")
+				if 'already exists' in str(e):
+					#logger.info('View already exist')
 					logger.info(str(e))
 				else:
 					raise e
 
-		elif sub_op == "export":
+		elif sub_op == 'export':
 			raise NotImplementedError()
 
-		elif sub_op == "import":
+		elif sub_op == 'import':
 			raise NotImplementedError()

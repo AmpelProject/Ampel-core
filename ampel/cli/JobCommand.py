@@ -4,7 +4,7 @@
 # License:             BSD-3-Clause
 # Author:              valery brinnel <firstname.lastname@gmail.com>
 # Date:                15.03.2021
-# Last Modified Date:  18.08.2022
+# Last Modified Date:  20.08.2022
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 import tarfile, tempfile, ujson, yaml, io, os, signal, sys, subprocess, platform
@@ -26,7 +26,8 @@ from ampel.util.freeze import recursive_freeze
 from ampel.util.hash import build_unsafe_dict_id
 from ampel.util.distrib import get_dist_names
 from ampel.util.collections import try_reduce
-from ampel.cli.utils import get_user_data_config_path, _maybe_int
+from ampel.cli.config import get_user_data_config_path
+from ampel.cli.utils import _maybe_int
 from ampel.cli.AbsCoreCommand import AbsCoreCommand
 from ampel.cli.MaybeIntAction import MaybeIntAction
 from ampel.cli.AmpelArgumentParser import AmpelArgumentParser
@@ -66,44 +67,41 @@ class JobCommand(AbsCoreCommand):
 		if self.parser:
 			return self.parser
 
-		parser = AmpelArgumentParser("job")
+		parser = AmpelArgumentParser('job')
 		parser.args_not_required = True
 		parser.set_help_descr({
-			"debug": "Debug",
-			#"verbose": "increases verbosity",
-			"config": "path to an ampel config file (yaml/json)",
-			"schema": "path to YAML job file (multiple files will be aggregated)",
-			"secrets": "path to a YAML secrets store in sops format",
-			"keep-db": "do not reset databases even if so requested by job file",
-			"reset-db": "reset databases even if not requested by job file",
-			"no-agg": "enables display of matplotlib plots via plt.show() for debugging",
-			"interactive": "you'll be asked for each task whether it should be run or skipped\n" + \
-				"and - if applicable - if the db should be reset. Option -task will be ignored.",
-			"task": "only execute task(s) with provided index(es) [starting with 0].\n" +
-					"Value 'last' is supported. Ignored if -interactive is used",
-			"show-plots": "show plots created by job (requires ampel-plot-cli)"
+			'debug': 'Debug',
+			#'verbose': 'increases verbosity',
+			'config': 'path to an ampel config file (yaml/json)',
+			'schema': 'path to YAML job file (multiple files will be aggregated)',
+			'secrets': 'path to a YAML secrets store in sops format',
+			'keep-db': 'do not reset databases even if so requested by job file',
+			'reset-db': 'reset databases even if not requested by job file',
+			'no-agg': 'enables display of matplotlib plots via plt.show() for debugging',
+			'interactive': 'you will be asked for each task whether it should be run or skipped\n' + \
+				'and - if applicable - if the db should be reset. Option -task will be ignored.',
+			'task': 'only execute task(s) with provided index(es) [starting with 0].\n' +
+					'Value "last" is supported. Ignored if -interactive is used',
+			'show-plots': 'show plots created by job (requires ampel-plot-cli)'
 		})
 
-		# Required
-		parser.add_arg("config", "optional", type=str)
-		parser.add_arg("schema", "optional", nargs=REMAINDER)
-		parser.add_arg("task", "optional", action=MaybeIntAction, nargs='+')
-		parser.add_arg("interactive", "optional", action="store_true")
-		parser.add_arg("debug", "optional", action="store_true")
-		parser.add_arg("keep-db", "optional", action="store_true")
-		parser.add_arg("reset-db", "optional", action="store_true")
-		parser.add_arg("max-parallel-tasks", "optional", type=int, default=os.cpu_count())
-		parser.add_arg("no-agg", "optional", action="store_true")
-		parser.add_arg("show-plots", "optional", action="store_true")
-
-		# Optional
-		parser.add_arg("secrets", type=str)
+		parser.arg('config', type=str)
+		parser.arg('schema', nargs=REMAINDER)
+		parser.arg('task', action=MaybeIntAction, nargs='+')
+		parser.arg('interactive', action='store_true')
+		parser.arg('debug', action='store_true')
+		parser.arg('keep-db', action='store_true')
+		parser.arg('reset-db', action='store_true')
+		parser.arg('max-parallel-tasks', type=int, default=os.cpu_count())
+		parser.arg('no-agg', action='store_true')
+		parser.arg('show-plots', action='store_true')
+		parser.arg('secrets', type=str)
 
 		# Example
-		parser.add_example("job job_file.yaml")
-		parser.add_example("job job_part1.yaml job_part2.yaml")
-		parser.add_example("job -keep-db -task last job_file.yaml")
-		parser.add_example("job -show-plots job.yaml")
+		parser.example('job job_file.yaml')
+		parser.example('job job_part1.yaml job_part2.yaml')
+		parser.example('job -keep-db -task last job_file.yaml')
+		parser.example('job -show-plots job.yaml')
 		return parser
 
 
@@ -129,12 +127,12 @@ class JobCommand(AbsCoreCommand):
 			return
 
 		job, _ = self.get_job_schema(schema_files, logger, compute_sig=False)
-		schema_descr = "|".join(
+		schema_descr = '|'.join(
 			[os.path.basename(sf) for sf in schema_files]
-		).replace(".yaml", "").replace(".yml", "")
+		).replace('.yaml', '').replace('.yml', '')
 
 		if len(schema_files) > 1:
-			logger.info(f"Running job using composed schema: {schema_descr}")
+			logger.info(f'Running job using composed schema: {schema_descr}')
 
 		# Check or set env variable(s)
 		psys = platform.system().lower()
@@ -142,15 +140,15 @@ class JobCommand(AbsCoreCommand):
 			if psys in job.env:
 				for k, v in job.env[psys].check.items():
 					if k not in os.environ or (v and v != _maybe_int(os.environ[k])):
-						logger.info(f"Environment variable {k}={v} required")
+						logger.info(f'Environment variable {k}={v} required')
 						return
 				for k, v in job.env[psys].set.items():
-					logger.info(f"Setting local environment variable {k}={v}")
+					logger.info(f'Setting local environment variable {k}={v}')
 					os.environ[k] = str(v)
 
 		purge_db = job.mongo.reset or args['reset_db']
 		if purge_db and args['keep_db']:
-			logger.info("Keeping existing databases as option '-keep-db' was specified")
+			logger.info('Keeping existing databases as option "-keep-db" was specified')
 			purge_db = False
 
 		if args['interactive']:
@@ -159,12 +157,12 @@ class JobCommand(AbsCoreCommand):
 
 			try:
 				if purge_db:
-					purge_db = yes_no("Delete existing databases")
+					purge_db = yes_no('Delete existing databases')
 
 				args['task'] = []
 				for i, td in enumerate(job.task):
-					s = f" [{td.title}]" if td.title else ""
-					if yes_no(f"Process task #{i}" + s):
+					s = f' [{td.title}]' if td.title else ''
+					if yes_no(f'Process task #{i}' + s):
 						args['task'].append(i)
 			except KeyboardInterrupt:
 				sys.exit()
@@ -176,28 +174,28 @@ class JobCommand(AbsCoreCommand):
 				args['task'].append(len(job.task) - 1)
 
 			if sum(args['task']) > 0 and not args['interactive'] and purge_db and not args['reset_db']:
-				logger.info("Ampel job file requires db reset but argument 'task' was provided")
-				logger.info("Please add argument -reset-db to confirm you are absolutely sure...")
+				logger.info('Ampel job file requires db reset but argument "task" was provided')
+				logger.info('Please add argument -reset-db to confirm you are absolutely sure...')
 				return
 
 		if job.requirements:
 			dist_names = [el.lower() for el in get_dist_names()]
 			missing = [dist for dist in job.requirements if dist.lower() not in dist_names]
 			if missing:
-				logger.info(f"Please install {try_reduce(missing)} to run this job\n")
+				logger.info(f'Please install {try_reduce(missing)} to run this job\n')
 				return # raise ValueError ?
 
 		if not args['config'] and not os.path.exists(get_user_data_config_path()):
 			from ampel.util.getch import yes_no
-			if yes_no("Config seems to be missing, build and install"):
+			if yes_no('Config seems to be missing, build and install'):
 				from ampel.cli.ConfigCommand import ConfigCommand
 				cc = ConfigCommand()
 				cc.run({'install': True}, unknown_args=[], sub_op = 'build')
 
-		s = f"Running job {job.name or schema_descr}"
+		s = f'Running job {job.name or schema_descr}'
 		logger.info(s)
 
-		print(" " + "-"*len(s))
+		print(' ' + '-'*len(s))
 
 		# DevAmpelContext hashes automatically confid from potential IngestDirectives
 		ctx = self.get_context(
@@ -220,23 +218,21 @@ class JobCommand(AbsCoreCommand):
 				del job.task[idx]
 
 		tds: list[dict[str, Any]] = []
-
-
 		for i, model in enumerate(job.task):
 
 			if isinstance(model, TemplateUnitModel):
 
 				if model.template not in ctx.config._config['template']:
-					raise ValueError(f"Unknown process template: {model.template}")
+					raise ValueError(f'Unknown process template: {model.template}')
 
 				fqn = ctx.config._config['template'][model.template]
 				if ':' in fqn:
-					fqn, class_name = fqn.split(":")
+					fqn, class_name = fqn.split(':')
 				else:
-					class_name = fqn.split(".")[-1]
+					class_name = fqn.split('.')[-1]
 				Tpl = getattr(import_module(fqn), class_name)
 				if not issubclass(Tpl, AbsProcessorTemplate):
-					raise ValueError(f"Unexpected template type: {Tpl}")
+					raise ValueError(f'Unexpected template type: {Tpl}')
 
 				tpl = Tpl(**model.config)
 				morphed_um = tpl \
@@ -245,7 +241,7 @@ class JobCommand(AbsCoreCommand):
 
 				if args.get('debug'):
 					from ampel.util.pretty import prettyjson
-					logger.info("Task model morphed by template:")
+					logger.info('Task model morphed by template:')
 					for el in prettyjson(morphed_um, indent=4).split('\n'):
 						logger.info(el)
 
@@ -254,15 +250,15 @@ class JobCommand(AbsCoreCommand):
 			else:
 				tds.append(
 					model.dict(
-						exclude={"inputs", "outputs", "expand_with"},
+						exclude={'inputs', 'outputs', 'expand_with'},
 						exclude_unset=True
 					)
 				)
 
 			logger.info(
-				f"Registering job task#{i} with " +
+				f'Registering job task#{i} with ' +
 				str(len(list(model.expand_with)) if model.expand_with else 1) +
-				"x multiplier"
+				'x multiplier'
 			)
 
 		# recreate JobModel with templates resolved
@@ -271,9 +267,9 @@ class JobCommand(AbsCoreCommand):
 				**(
 					job.dict(exclude_unset=True) | # type: ignore[arg-type]
 					{
-						"task": [
+						'task': [
 							td | task.dict(
-								include={"inputs", "outputs", "expand_with", "title"},
+								include={'inputs', 'outputs', 'expand_with', 'title'},
 								exclude_unset=True
 							)
 							for task, td in zip(job.task, tds)
@@ -283,9 +279,9 @@ class JobCommand(AbsCoreCommand):
 			).json(exclude_unset=True)
 		)
 
-		logger.info("Saving job schema")
+		logger.info('Saving job schema')
 		job_sig = build_unsafe_dict_id(job_dict, size=-64)
-		ctx.db.get_collection("jobid").update_one(
+		ctx.db.get_collection('jobid').update_one(
 			{'_id': job_sig},
 			{'$setOnInsert': job_dict},
 			upsert=True
@@ -294,17 +290,17 @@ class JobCommand(AbsCoreCommand):
 		run_ids = []
 		for i, task_dict in enumerate(tds):
 
-			process_name = f"{job.name or schema_descr}#{i}"
+			process_name = f'{job.name or schema_descr}#{i}'
 
 			if 'title' in task_dict:
-				self.print_chapter(task_dict['title'] if task_dict.get('title') else f"Task #{i}", logger)
-				#process_name += f" [{task_dict['title']}]"
+				self.print_chapter(task_dict['title'] if task_dict.get('title') else f'Task #{i}', logger)
+				#process_name += f' [{task_dict['title']}]'
 				del task_dict['title']
 			elif i != 0:
-				self.print_chapter(f"Task #{i}", logger)
+				self.print_chapter(f'Task #{i}', logger)
 
 			if args['task'] is not None and i not in args['task']:
-				logger.info(f"Skipping task #{i} as requested")
+				logger.info(f'Skipping task #{i} as requested')
 				continue
 
 			task_dict['override'] = task_dict.pop('override', {}) | {'raise_exc': True}
@@ -348,7 +344,7 @@ class JobCommand(AbsCoreCommand):
 					for i, (p, q) in enumerate(zip(ps, qs)):
 						p.join()
 						if (m := q.get()):
-							logger.info(f"{task_dict['unit']}#{i} return value: {m}")
+							logger.info(f'{task_dict["unit"]}#{i} return value: {m}')
 				except KeyboardInterrupt:
 					sys.exit(1)
 			
@@ -377,28 +373,28 @@ class JobCommand(AbsCoreCommand):
 				if event_hdlr.run_id:
 					run_ids.append(event_hdlr.run_id)
 
-				logger.info(f"{task_dict['unit']} return value: {x}")
+				logger.info(f'{task_dict["unit"]} return value: {x}')
 
 		dm = divmod(time() - start_time, 60)
 		logger.info(
-			"Job processed. Time required: %s minutes %s seconds\n" %
+			'Job processed. Time required: %s minutes %s seconds\n' %
 			(round(dm[0]), round(dm[1]))
 		)
 
-		if args.get("show_plots"):
+		if args.get('show_plots'):
 
 			cmd = [
 				'ampel', 'plot', 'show', '-stack', '100',
 				'-png', os.environ.get('AMPEL_PLOT_DPI', '150'),
 				'-t2', '-t3', '-base-path', 'body.plot', # to be improved later
 				'-one-db', '-db', job.mongo.prefix,
-				'-job-id', f"\"{job_sig}\"", '-run-id', *[str(el) for el in run_ids],
+				'-job-id', f'\'{job_sig}\'', '-run-id', *[str(el) for el in run_ids],
 			]
 			if args.get('debug'):
 				cmd.append('-debug')
 
-			print("-" * 40)
-			print(f"Executing command: {' '.join(cmd)}")
+			print('-' * 40)
+			print(f'Executing command: {" ".join(cmd)}')
 			r = subprocess.run(cmd, check=True, capture_output=True, text=True)
 			print(r.stdout)
 			print(r.stderr)
@@ -406,11 +402,11 @@ class JobCommand(AbsCoreCommand):
 
 	@staticmethod
 	def print_chapter(msg: str, logger: AmpelLogger) -> None:
-		logger.info(" ")
-		logger.info("=" * (space := (len(msg) + 4)))
-		logger.info("‖ " + msg + " ‖") # type: ignore
-		logger.info("=" * space)
-		logger.info(" ")
+		logger.info(' ')
+		logger.info('=' * (space := (len(msg) + 4)))
+		logger.info('‖ ' + msg + ' ‖') # type: ignore
+		logger.info('=' * space)
+		logger.info(' ')
 
 
 	@classmethod
@@ -424,10 +420,10 @@ class JobCommand(AbsCoreCommand):
 		for i, job_fname in enumerate(schema_files):
 
 			if not os.path.exists(job_fname):
-				raise FileNotFoundError(f"Job file not found: '{job_fname}'")
+				raise FileNotFoundError(f'Job file not found: "{job_fname}"')
 
-			with open(job_fname, "r") as f:
-				lines.write("\n".join(f.readlines()))
+			with open(job_fname, 'r') as f:
+				lines.write('\n'.join(f.readlines()))
 
 		lines.seek(0)
 		job = yaml.safe_load(lines)
@@ -435,7 +431,7 @@ class JobCommand(AbsCoreCommand):
 		for k in list(job.keys()):
 			# job keys starting with _ are used by own convention for yaml anchors
 			# and thus need not be included in the loaded job structure
-			if k.startswith("_"):
+			if k.startswith('_'):
 				del job[k]
 
 		return JobModel(**job), build_unsafe_dict_id(job, size=-64) if compute_sig else 0
@@ -460,18 +456,18 @@ class JobCommand(AbsCoreCommand):
 			)
 
 			if resolved_artifact.path.exists():
-				logger.info(f"Artifact {resolved_artifact.name} exists at {resolved_artifact.path}")
+				logger.info(f'Artifact {resolved_artifact.name} exists at {resolved_artifact.path}')
 			else:
 				logger.info(
-					f"Fetching artifact {resolved_artifact.name} from "
-					f"{resolved_artifact.http.url} to {resolved_artifact.path}"
+					f'Fetching artifact {resolved_artifact.name} from '
+					f'{resolved_artifact.http.url} to {resolved_artifact.path}'
 				)
 				os.makedirs(resolved_artifact.path.parent, exist_ok=True)
 				with tempfile.NamedTemporaryFile(delete=False) as tf:
 					urlretrieve(resolved_artifact.http.url, tf.name)
 					try:
 						with tarfile.open(tf.name) as archive:
-							logger.info(f"{resolved_artifact.name} is a tarball; extracting")
+							logger.info(f'{resolved_artifact.name} is a tarball; extracting')
 							os.makedirs(resolved_artifact.path)
 							archive.extractall(resolved_artifact.path)
 						os.unlink(tf.name)
@@ -483,7 +479,7 @@ class JobCommand(AbsCoreCommand):
 	def _patch_config(config_dict: dict[str, Any], job: JobModel, logger: AmpelLogger):
 		# Add channel(s)
 		for chan in job.channel:
-			logger.info(f"Registering job channel '{chan.channel}'")
+			logger.info(f'Registering job channel "{chan.channel}"')
 			dict.__setitem__(config_dict['channel'], chan.channel, chan)
 
 		# Add aliase(s)
@@ -491,7 +487,7 @@ class JobCommand(AbsCoreCommand):
 			if 'alias' not in config_dict:
 				dict.__setitem__(config_dict, 'alias', {})
 			for kk, vv in v.items():
-				logger.info(f"Registering job alias '{kk}'")
+				logger.info(f'Registering job alias "{kk}"')
 				if k not in config_dict['alias']:
 					dict.__setitem__(config_dict['alias'], k, {})
 				dict.__setitem__(config_dict['alias'][k], kk, vv)
@@ -504,7 +500,7 @@ def run_mp_process(
 	process_name: str,
 	job_sig: None | int = None,
 	task_nbr: None | int = None,
-	log_profile: str = "default"
+	log_profile: str = 'default'
 ) -> None:
 
 	try:
@@ -537,7 +533,7 @@ def run_mp_process(
 		import traceback
 		se = str(e)
 		queue.put(
-			"\n" + "#"*len(se) + "\n" + str(e) + "\n" + "#"*len(se) + "\n" +
+			'\n' + '#'*len(se) + '\n' + str(e) + '\n' + '#'*len(se) + '\n' +
 			''.join(traceback.format_exception(type(e), e, e.__traceback__))
 		)
 
@@ -545,6 +541,6 @@ def run_mp_process(
 def signal_handler(sig, frame):
 	#import traceback
 	print('Interrupt detected')
-	#print("Stack frames:")
+	#print('Stack frames:')
 	#traceback.print_stack(frame)
 	raise KeyboardInterrupt()

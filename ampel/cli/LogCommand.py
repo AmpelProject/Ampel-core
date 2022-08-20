@@ -4,7 +4,7 @@
 # License:             BSD-3-Clause
 # Author:              valery brinnel <firstname.lastname@gmail.com>
 # Date:                15.03.2021
-# Last Modified Date:  15.08.2022
+# Last Modified Date:  20.08.2022
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from argparse import ArgumentParser
@@ -49,6 +49,7 @@ hlp = {
 	'main-separator': 'Main separator (space by default, ex: 2021-03-16T22:11:09.000Z INFO...)',
 	'extra-separator': 'Extra separator (space by default, ex: [run=1 stock=9])',
 	'refresh-rate': 'Tail refresh interval in seconds (float, default: 1.0 second)',
+	"one-db": "Whether the target ampel DB was created with flag one-db",
 	'verbose': 'Increases verbosity'
 }
 
@@ -59,7 +60,7 @@ class LogCommand(AbsCoreCommand):
 
 	@staticmethod
 	def get_sub_ops() -> list[str]:
-		return ["show", "tail", "save"]
+		return ['show', 'tail', 'save']
 
 	# Mandatory implementation
 	def get_parser(self, sub_op: None | str = None) -> ArgumentParser | AmpelArgumentParser:
@@ -70,81 +71,95 @@ class LogCommand(AbsCoreCommand):
 		sub_ops = self.get_sub_ops()
 		if sub_op is None or sub_op not in sub_ops:
 			return AmpelArgumentParser.build_choice_help(
-				"log", sub_ops, hlp,
+				'log', sub_ops, hlp,
 				description = 'Match and view, export or tail AMPEL logs'
 			)
 
-		builder = ArgParserBuilder("log")
+		builder = ArgParserBuilder('log')
 		builder.add_parsers(sub_ops, hlp)
 
 		builder.notation_add_note_references()
 		builder.notation_add_example_references()
 
 		# Required
-		builder.add_arg('optional', 'config', type=str)
-		builder.add_arg('save.required', 'out', type=str)
+		builder.opt('config', type=str)
+		builder.req('out', 'save', type=str)
+		builder.opt('one-db', action='store_true')
 
 		# Optional
-		builder.add_arg('optional', 'secrets')
-		builder.add_arg('optional', 'id-mapper', type=str)
+		builder.opt('secrets')
+		builder.opt('id-mapper', type=str)
 
-		#parser.add_arg(g, 'tail', action='store', metavar='#', default=None, const=1.0, type=float, nargs='?')
-		builder.add_arg('optional', 'verbose', action='count', default=0)
-		builder.add_arg('optional', 'debug', action='count', default=0, help='Debug')
-		builder.add_arg('tail.optional', 'refresh-rate', action='store', metavar='#', const=1.0, nargs='?', type=float, default=1.0)
+		#parser.arg(g, 'tail', action='store', metavar='#', default=None, const=1.0, type=float, nargs='?')
+		builder.opt('verbose', action='count', default=0)
+		builder.opt('debug', action='count', default=0, help='Debug')
+		builder.opt(
+			'refresh-rate', 'tail', action='store', metavar='#',
+			const=1.0, nargs='?', type=float, default=1.0
+		)
 		
-
 		# Optional match criteria
-		builder.add_group('match', 'Optional matching criteria [&]')
-		builder.add_arg('show|save.match', 'after', type=str) # does not work with tail
-		builder.add_arg('show|save.match', 'before', type=str)
-		builder.add_arg('match', 'channel', action=MaybeIntAction, nargs='+')
-		builder.add_arg('match', 'stock', action=MaybeIntAction, nargs='+')
+		builder.add_group('match', 'Optional matching criteria [&]', sub_ops='all')
+		builder.arg('after', group='match', sub_ops='show|save', type=str) # does not work with tail
+		builder.arg('before', group='match', sub_ops='show|save', type=str)
+		builder.arg('channel', group='match', action=MaybeIntAction, nargs='+')
+		builder.arg('stock', group='match', action=MaybeIntAction, nargs='+')
 
-		builder.add_x_args('match',
-			{'name': 'run', 'action': MaybeIntAction, 'nargs': '+'},
-			{'name': 'run-json', 'action': LoadJSONAction, 'metavar': '#', 'dest': 'run'}
+		builder.xargs(
+			group='match', sub_ops='show|save', xargs = [
+				{'name': 'run', 'action': MaybeIntAction, 'nargs': '+'},
+				{'name': 'run-json', 'action': LoadJSONAction, 'metavar': '#', 'dest': 'run'}
+			]
 		)
-		builder.add_arg('match', 'flag', type=int, nargs=1)
-		builder.add_arg('match', 'custom-key', type=str)
-		builder.add_arg('match', 'custom-value', action=MaybeIntAction, nargs='+')
+		builder.arg('flag', group='match', type=int, nargs=1)
+		builder.arg('custom-key', group='match', type=str)
+		builder.arg('custom-value', group='match', action=MaybeIntAction, nargs='+')
 
-		builder.add_group('out', 'Optional output parameters')
-		builder.add_x_args('out',
-			{'name': 'to-json', 'action': 'store_true'},
-			{'name': 'to-pretty-json', 'action': 'store_true'}
+		builder.add_group('out', 'Optional output parameters', sub_ops='all')
+		builder.xargs(
+			group='out', sub_ops='all', xargs = [
+				{'name': 'to-json', 'action': 'store_true'},
+				{'name': 'to-pretty-json', 'action': 'store_true'}
+			]
 		)
 
-		builder.add_group('format', 'Optional global format parameters')
-		builder.add_arg('format', 'date-format', type=str)
-		builder.add_arg('format', 'no-resolve-flag', dest='resolve_flag', action='store_false')
-		builder.set_group_defaults('format', resolve_flag=True)
-		builder.add_arg('format', 'no-resolve-stock', action='store_true')
+		builder.add_group('format', 'Optional global format parameters', sub_ops='all')
+		builder.arg('date-format', group='format', type=str)
+		builder.arg('no-resolve-flag', group='format', dest='resolve_flag', action='store_false')
+		builder.set_group_defaults('format', sub_ops='all', resolve_flag=True)
+		builder.arg('no-resolve-stock', group='format', action='store_true')
 
-		builder.add_group('show|tail.format', 'Optional specific format parameters')
-		builder.add_arg('show|tail.format', 'main-separator', type=str, default=' ', const=' ', nargs='?')
-		builder.add_arg('show|tail.format', 'extra-separator', type=str, default=' ', const=' ', nargs='?')
+		builder.add_group('format2', 'Optional specific format parameters', sub_ops='all')
+		builder.arg(
+			'main-separator', group='format2', sub_ops='all',
+			type=str, default=' ', const=' ', nargs='?'
+		)
+		builder.arg(
+			'extra-separator', group='format2', sub_ops='all',
+			type=str, default=' ', const=' ', nargs='?'
+		)
 
 		# Notes
-		builder.hint_all_query_logic(ref="&")
-		builder.hint_time_format('show|save', ref="%")
-		builder.add_all_note('multi-values are OR-matched', 3, ref="o")
+		builder.hint_all_query_logic(ref='&')
+		builder.hint_time_format('show|save', ref='%')
+		builder.note('multi-values are OR-matched', ref='o')
 		builder.hint_all_config_override()
 
 		# Examples
 		for el in sub_ops:
-			p = f"ampel log {el} "
-			a = " -out /path/to/file.txt" if el == "save" else ""
-			builder.add_example(el, "-run-json '{\"$gt\": 12}'", ref="§", prepend=p, append=a)
-			builder.add_example(el, '-stock 85628462', prepend=p, append=a)
-			builder.add_example(el, '-run 8 -mongo.prefix AmpelTest', prepend=p, append=a)
-			if el != "tail":
-				builder.add_example(el, '-after 2020-11-03T12:12:00', prepend=p, append=a)
-			builder.add_example(el, '-stock ZTF17aaatbxz ZTF20aaquaxr -id-mapper ZTFIdMapper', prepend=p, append=a)
-			builder.add_example(el, '-custom-key a -custom-value 1150106945115015007 -to-pretty-json -no-resolve-flag', prepend=p, append=a)
-			builder.add_example(el, '-stock ZTF20aaquast -id-mapper ZTFIdMapper', prepend=p, append=a)
+			p = f'ampel log {el} '
+			a = ' -out /path/to/file.txt' if el == 'save' else ''
+			builder.example(el, "-run-json '{\"$gt\": 12}'", ref='§', prepend=p, append=a)
+			builder.example(el, '-stock 85628462', prepend=p, append=a)
+			builder.example(el, '-one-db -mongo.prefix MyDB -to-json', prepend=p, append=a)
+			builder.example(el, '-run 8 -mongo.prefix AmpelTest', prepend=p, append=a)
+			if el != 'tail':
+				builder.example(el, '-after 2020-11-03T12:12:00', prepend=p, append=a)
+			builder.example(el, '-stock ZTF17aaatbxz ZTF20aaquaxr -id-mapper ZTFIdMapper', prepend=p, append=a)
+			builder.example(el, '-custom-key unit -custom-value T3DemoSavePlot -to-pretty-json -no-resolve-flag', prepend=p, append=a)
+			builder.example(el, '-stock ZTF20aaquast -id-mapper ZTFIdMapper', prepend=p, append=a)
 
-		builder.add_example('tail', '-refresh-rate 10')
+		builder.example('tail', '-refresh-rate 10')
 
 		self.parsers.update(
 			builder.get()
@@ -156,11 +171,22 @@ class LogCommand(AbsCoreCommand):
 	# Mandatory implementation
 	def run(self, args: dict[str, Any], unknown_args: Sequence[str], sub_op: None | str = None) -> None:
 
-		ctx: AmpelContext = self.get_context(args, unknown_args)
+		ctx = self.get_context(
+			args, unknown_args,
+			ContextClass=AmpelContext,
+			one_db=args.get('one_db', False)
+		)
+
 		self.flag_strings: dict = {}
 
-		if (args['custom_key'] and not args['custom_value']) or (args['custom_value'] and not args['custom_key']):
-			raise ValueError('Both parameter "--custom-key" and "--custom-value" must be used when either one is requested')
+		if (
+			(args['custom_key'] and not args['custom_value']) or
+			(args['custom_value'] and not args['custom_key'])
+		):
+			raise ValueError(
+				'Both parameter "--custom-key" and "--custom-value"' +
+				' must be used when either one is requested'
+			)
 
 		if args['custom_key']:
 			args['custom'] = {args['custom_key']: args['custom_value']}
@@ -171,31 +197,37 @@ class LogCommand(AbsCoreCommand):
 			)()
 
 		matcher = LogsMatcher.new(**args)
-		loader = LogsLoader(**(args | {'datetime_ouput': 'date' if args['date_format'] else 'string'})) # type: ignore[arg-type]
+		loader = LogsLoader(
+			**(
+				args | # type: ignore[arg-type]
+				{'datetime_ouput': 'date' if args['date_format'] else 'string'}
+			)
+		)
 
 		if args['no_resolve_stock']:
 			args['id_mapper'] = None
 
 		ld = LogsDumper(**args)
 		col = ctx.db.get_collection('logs')
-		match = matcher.get_match_criteria()
+		mcrit = matcher.get_match_criteria()
 
-		if sub_op == "tail":
+		if sub_op == 'tail':
 			from bson.objectid import ObjectId
 			from datetime import datetime
 			import time
-			match['_id'] = {'$gte': ObjectId.from_datetime(datetime.utcnow())}
+			mcrit['_id'] = {'$gte': ObjectId.from_datetime(datetime.utcnow())}
 			ld.datetime_key = 'date'
 			loader.datetime_key = 'date'
 
 			while True:
-				log_entries = loader.fetch_logs(col, match)
+				log_entries = loader.fetch_logs(col, mcrit)
 				if log_entries:
 					next_match = log_entries[-1]['_id']
 					ld.process(log_entries) # type: ignore
-					match['_id'] = {'$gt': next_match}
+					mcrit['_id'] = {'$gt': next_match}
 				else:
 					time.sleep(args['refresh_rate'])
 
-		log_entries = loader.fetch_logs(col, match)
+		print(mcrit)
+		log_entries = loader.fetch_logs(col, mcrit)
 		ld.process(log_entries) # type: ignore

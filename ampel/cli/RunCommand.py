@@ -4,7 +4,7 @@
 # License:             BSD-3-Clause
 # Author:              valery brinnel <firstname.lastname@gmail.com>
 # Date:                14.03.2021
-# Last Modified Date:  14.08.2022
+# Last Modified Date:  20.08.2022
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from ampel.core.AmpelContext import AmpelContext
@@ -46,24 +46,20 @@ class RunCommand(AbsCoreCommand):
 			"log-profile": "default, compact, headerless, verbose, debug, ..."
 		})
 
-		# Required
-		parser.add_arg("config", "optional", type=str)
-		parser.add_x_args(
-			'required',
+		parser.xargs_req(
 			{'name': 'process', 'nargs': "+", 'default': None},
 			{'name': 'list', 'action': "store_true"}
 		)
 
-		# Optional
-
-		parser.add_arg("secrets", type=str)
-		parser.add_arg("log-profile", type=str, default="default")
+		parser.req("config")
+		parser.opt("secrets", type=str)
+		parser.opt("log-profile", type=str, default="default")
 
 		# Examples
-		parser.add_example("run -list")
-		parser.add_example("run -process process1 -log-profile verbose")
-		parser.add_example("run -process process1 process2 -mongo.prefix AmpelTest")
-		parser.add_example("run -process my_process -process.t0.my_process.processor.config.parameter_a 9000")
+		parser.example("run -list")
+		parser.example("run -process process1 -log-profile verbose")
+		parser.example("run -process process1 process2 -mongo.prefix AmpelTest")
+		parser.example("run -process my_process -process.t0.my_process.processor.config.parameter_a 9000")
 
 		self.parser = parser
 		return parser

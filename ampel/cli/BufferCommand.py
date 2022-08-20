@@ -30,7 +30,7 @@ hlp = {
 	'binary': 'Store buffers as compact BSON structures',
 	'pretty': 'Show buffers using spacier prettyjson',
 	'getch': 'Wait for a key to be pressed in terminal before printing next buffer (not compatible with binary option)',
-	"one-db": "Whether the target ampel DB was created with flag one-db"
+	'one-db': 'Whether the target ampel DB was created with flag one-db'
 }
 
 class BufferCommand(AbsStockCommand, AbsLoadCommand):
@@ -53,24 +53,22 @@ class BufferCommand(AbsStockCommand, AbsLoadCommand):
 				'buffer', sub_ops, hlp, description = 'Show or save ampel buffers.'
 			)
 
-		builder = ArgParserBuilder("buffer")
+		builder = ArgParserBuilder('buffer')
 		hlp.update(self.get_select_args_help())
 		hlp.update(self.get_load_args_help())
 		builder.add_parsers(sub_ops, hlp)
 
-		# Required args
-		builder.add_arg("optional", "config", type=str)
-		builder.add_arg("save.required", "out", default=True)
+		builder.req('config')
+		builder.req('out', 'save', default=True)
 
-		# Optional args
-		builder.add_arg('optional', 'one-db', action='store_true')
-		builder.add_arg("optional", "secrets", default=None)
-		builder.add_arg('optional', 'id-mapper')
-		builder.add_arg('optional', 'debug', action="store_true")
-		builder.add_arg("optional", "log-profile", default="default")
-		builder.add_arg("save.optional", "binary", action="store_true")
-		builder.add_arg("show.optional", "pretty", action="store_true")
-		builder.add_arg("show.optional", "getch", action="store_true")
+		builder.opt('one-db', action='store_true')
+		builder.opt('secrets', default=None)
+		builder.opt('id-mapper')
+		builder.opt('debug', action='store_true')
+		builder.opt('log-profile', default='default')
+		builder.opt('binary', 'save', action='store_true')
+		builder.opt('pretty', 'show', action='store_true')
+		builder.opt('getch', 'show', action='store_true')
 
 		# Selection args
 		self.add_selection_args(builder)
@@ -79,9 +77,9 @@ class BufferCommand(AbsStockCommand, AbsLoadCommand):
 		self.add_load_args(builder, 'Views content arguments')
 
 		# Example
-		builder.add_example("show", "-stock 85628462 -no-t0")
-		builder.add_example("show", "-mongo.prefix MyDB -one-db -stock 519059889 -no-t0")
-		builder.add_example("save", "-stock 85628462 -no-t0 -out ZTFabcdef.json")
+		builder.example('show', '-stock 85628462 -no-t0')
+		builder.example('show', '-mongo.prefix MyDB -one-db -stock 519059889 -no-t0')
+		builder.example('save', '-stock 85628462 -no-t0 -out ZTFabcdef.json')
 		
 		self.parsers.update(
 			builder.get()
@@ -102,10 +100,10 @@ class BufferCommand(AbsStockCommand, AbsLoadCommand):
 		maybe_load_idmapper(args)
 
 		conf = {
-			'fd': open(args["out"], "wb" if args.get('binary') else 'w') \
-				if sub_op == "save" else sys.stdout,
-			'id_mapper': args["id_mapper"],
-			'verbose': sub_op == "save",
+			'fd': open(args['out'], 'wb' if args.get('binary') else 'w') \
+				if sub_op == 'save' else sys.stdout,
+			'id_mapper': args['id_mapper'],
+			'verbose': sub_op == 'save',
 			'binary': args.get('binary') or False
 		}
 
@@ -117,21 +115,21 @@ class BufferCommand(AbsStockCommand, AbsLoadCommand):
 
 		t3p = T3Processor(
 			context = ctx,
-			process_name = "BufferCommand",
-			template = "compact_t3",
+			process_name = 'BufferCommand',
+			template = 'compact_t3',
 			base_log_flag = LogFlag.MANUAL_RUN,
 			log_profile = 'console_debug' if args.get('debug') else 'console_info',
 			execute = [
 				{
 					'supply': {
-						'unit': "T3DefaultBufferSupplier",
+						'unit': 'T3DefaultBufferSupplier',
 						'config': {
 							'select': self.build_select_model(args),
 							'load': self.build_load_model(args)
 						}
 					},
 					'stage': {
-						'unit': "T3BufferExporterStager",
+						'unit': 'T3BufferExporterStager',
 						'config': conf
 					}
 				}

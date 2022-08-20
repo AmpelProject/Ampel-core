@@ -18,7 +18,8 @@ from ampel.log.AmpelLogger import AmpelLogger
 from ampel.util.mappings import set_by_path
 from ampel.util.freeze import recursive_freeze
 from ampel.util.pretty import out_stack
-from ampel.cli.utils import get_vault, get_db, _maybe_int, get_user_data_config_path
+from ampel.cli.utils import get_vault, get_db, _maybe_int
+from ampel.cli.config import get_user_data_config_path
 
 custom_conf_patter = re.compile(r"^--[\w-]*(?:\.[\w-]+)*.*$")
 
@@ -87,7 +88,7 @@ class AbsCoreCommand(AbsCLIOperation, abstract=True):
 					try:
 						v = _maybe_int(next(it))
 					except StopIteration:
-						pass
+						v = None
 				yield k, v
 
 

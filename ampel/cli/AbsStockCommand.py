@@ -59,35 +59,54 @@ class AbsStockCommand(AbsCoreCommand, abstract=True):
 		}
 
 
-	def add_selection_args(self, builder: ArgParserBuilder) -> None:
+	def add_selection_args(self, builder: ArgParserBuilder, sub_ops: str = 'all') -> None:
 
 		# Selection args
-		builder.add_group('match', 'Stock selection arguments')
-		builder.add_arg('match', "stock", action=MaybeIntAction, nargs="+")
-		builder.add_x_args('match',
-			{'name': 'created-before-str'}, {'name': 'created-before-ts', 'type': int},
-			{'name': 'created-before-delta', 'action': LoadJSONAction},
-			{'name': 'created-before-process'}
+		builder.add_group('match', 'Stock selection arguments', sub_ops)
+		builder.arg('stock', group='match', sub_ops=sub_ops, action=MaybeIntAction, nargs='+')
+		builder.xargs(
+			group = 'match',
+			sub_ops = sub_ops,
+			xargs = [
+				{'name': 'created-before-str'}, {'name': 'created-before-ts', 'type': int},
+				{'name': 'created-before-delta', 'action': LoadJSONAction},
+				{'name': 'created-before-process'}
+			]
 		)
-		builder.add_x_args('match',
-			{'name': 'created-after-str'}, {'name': 'created-after-ts', 'type': int},
-			{'name': 'created-after-delta', 'action': LoadJSONAction},
-			{'name': 'created-after-process'}
+		builder.xargs(
+			group = 'match',
+			sub_ops = sub_ops,
+			xargs = [
+				{'name': 'created-after-str'}, {'name': 'created-after-ts', 'type': int},
+				{'name': 'created-after-delta', 'action': LoadJSONAction},
+				{'name': 'created-after-process'}
+			]
 		)
-		builder.add_x_args('match',
-			{'name': 'updated-before-str'}, {'name': 'updated-before-ts', 'type': int},
-			{'name': 'updated-before-delta', 'action': LoadJSONAction},
-			{'name': 'updated-before-process'}
+		builder.xargs(
+			group = 'match',
+			sub_ops = sub_ops,
+			xargs = [
+				{'name': 'updated-before-str'}, {'name': 'updated-before-ts', 'type': int},
+				{'name': 'updated-before-delta', 'action': LoadJSONAction},
+				{'name': 'updated-before-process'}
+			]
 		)
-		builder.add_x_args('match',
-			{'name': 'updated-after-str'}, {'name': 'updated-after-ts', 'type': int},
-			{'name': 'updated-after-delta', 'action': LoadJSONAction},
-			{'name': 'updated-after-process'}
+		builder.xargs(
+			group = 'match',
+			sub_ops = sub_ops,
+			xargs = [
+				{'name': 'updated-after-str'}, {'name': 'updated-after-ts', 'type': int},
+				{'name': 'updated-after-delta', 'action': LoadJSONAction},
+				{'name': 'updated-after-process'}
+			]
 		)
-		builder.create_logic_args('match', "channel", "Channel")
-		builder.create_logic_args('match', "with-tag", "Tag")
-		builder.create_logic_args('match', "without-tag", "Tag", excl=True)
-		builder.add_arg('match', "custom-match", metavar="#", action=LoadJSONAction)
+		builder.logic_args('channel', descr='Channel', group='match', sub_ops=sub_ops)
+		builder.logic_args('with-tag', descr='Tag', group='match', sub_ops=sub_ops)
+		builder.logic_args('without-tag', descr='Tag', group='match', sub_ops=sub_ops, excl=True)
+		builder.arg(
+			'custom-match', group='match', sub_ops=sub_ops,
+			metavar='#', action=LoadJSONAction
+		)
 
 
 	def get_tag(self, args: dict[str, Any]) -> None | dict[Literal['with', 'without'], dict]:
@@ -105,8 +124,8 @@ class AbsStockCommand(AbsCoreCommand, abstract=True):
 	def build_select_model(self, args: dict[str, Any]) -> UnitModel:
 
 		conf = {
-			"created": self.get_time_model("created", args),
-			"updated": self.get_time_model("updated", args),
+			'created': self.get_time_model('created', args),
+			'updated': self.get_time_model('updated', args),
 			'channel': args['channel'],
 			'custom': args['custom_match']
 		}
@@ -120,7 +139,7 @@ class AbsStockCommand(AbsCoreCommand, abstract=True):
 					else maybe_match_array(stock)
 			}
 
-		return UnitModel(unit="T3StockSelector", config=conf)
+		return UnitModel(unit='T3StockSelector', config=conf)
 
 
 	def get_time_model(self, prefix: str, args: dict[str, Any]) -> TimeConstraintModel:
@@ -128,17 +147,17 @@ class AbsStockCommand(AbsCoreCommand, abstract=True):
 		d: dict[str, Any] = {'after': None, 'before': None}
 
 		for when in ('after', 'before'):
-			if args.get(x := f"{prefix}_{when}_ts"):
+			if args.get(x := f'{prefix}_{when}_ts'):
 				d[when] = UnixTimeModel(match_type='unix_time', value=args[x])
-			elif args.get(x := f"{prefix}_{when}_str"):
+			elif args.get(x := f'{prefix}_{when}_str'):
 				d[when] = TimeStringModel(
 					match_type='time_string',
 					dateTimeStr=args[x],
-					dateTimeFormat="%Y%m%dT%H%M%S"
+					dateTimeFormat='%Y%m%dT%H%M%S'
 				)
-			elif args.get(x := f"{prefix}_{when}_delta"):
+			elif args.get(x := f'{prefix}_{when}_delta'):
 				d[when] = TimeDeltaModel(match_type='time_delta', **args[x])
-			elif args.get(x := f"{prefix}_{when}_process"):
+			elif args.get(x := f'{prefix}_{when}_process'):
 				d[when] = TimeLastRunModel(match_type='time_last_run', process_name=args[x])
 
 		return TimeConstraintModel(**d)
