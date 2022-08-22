@@ -4,7 +4,7 @@
 # License:             BSD-3-Clause
 # Author:              valery brinnel <firstname.lastname@gmail.com>
 # Date:                09.10.2019
-# Last Modified Date:  18.06.2020
+# Last Modified Date:  22.08.2022
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from typing import Any
@@ -17,7 +17,7 @@ from ampel.model.purge.PurgeModel import PurgeModel
 class ChannelModel(AmpelBaseModel):
 
 	channel: int | str
-	version: int | float | str
+	version: None | int | float | str
 	#purge: PurgeModel = PurgeModel(
 	#	content={'delay': 100, 'format': 'json', 'unify': True},
 	#	logs={'delay': 50, 'format': 'csv'}
