@@ -4,7 +4,7 @@
 # License:             BSD-3-Clause
 # Author:              valery brinnel <firstname.lastname@gmail.com>
 # Date:                15.03.2021
-# Last Modified Date:  20.08.2022
+# Last Modified Date:  22.08.2022
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 import tarfile, tempfile, ujson, yaml, io, os, signal, sys, subprocess, platform
@@ -82,20 +82,22 @@ class JobCommand(AbsCoreCommand):
 				'and - if applicable - if the db should be reset. Option -task will be ignored.',
 			'task': 'only execute task(s) with provided index(es) [starting with 0].\n' +
 					'Value "last" is supported. Ignored if -interactive is used',
-			'show-plots': 'show plots created by job (requires ampel-plot-cli)'
+			'show-plots': 'show plots created by job (requires ampel-plot-cli)',
+			'show-plots-cmd': 'show command required to show plots created by job (requires ampel-plot-cli)'
 		})
 
-		parser.arg('config', type=str)
-		parser.arg('schema', nargs=REMAINDER)
-		parser.arg('task', action=MaybeIntAction, nargs='+')
-		parser.arg('interactive', action='store_true')
-		parser.arg('debug', action='store_true')
-		parser.arg('keep-db', action='store_true')
-		parser.arg('reset-db', action='store_true')
-		parser.arg('max-parallel-tasks', type=int, default=os.cpu_count())
-		parser.arg('no-agg', action='store_true')
-		parser.arg('show-plots', action='store_true')
-		parser.arg('secrets', type=str)
+		parser.req('config', type=str)
+		parser.opt('schema', nargs=REMAINDER)
+		parser.opt('task', action=MaybeIntAction, nargs='+')
+		parser.opt('interactive', action='store_true')
+		parser.opt('debug', action='store_true')
+		parser.opt('keep-db', action='store_true')
+		parser.opt('reset-db', action='store_true')
+		parser.opt('max-parallel-tasks', type=int, default=os.cpu_count())
+		parser.opt('no-agg', action='store_true')
+		parser.opt('show-plots', action='store_true')
+		parser.opt('show-plots-cmd', action='store_true')
+		parser.opt('secrets', type=str)
 
 		# Example
 		parser.example('job job_file.yaml')
@@ -381,23 +383,28 @@ class JobCommand(AbsCoreCommand):
 			(round(dm[0]), round(dm[1]))
 		)
 
-		if args.get('show_plots'):
+		if args.get('show_plots') or args.get('show_plots_cmd'):
 
 			cmd = [
 				'ampel', 'plot', 'show', '-stack', '100',
 				'-png', os.environ.get('AMPEL_PLOT_DPI', '150'),
 				'-t2', '-t3', '-base-path', 'body.plot', # to be improved later
 				'-one-db', '-db', job.mongo.prefix,
-				'-job-id', f'\'{job_sig}\'', '-run-id', *[str(el) for el in run_ids],
+				'-run-id', *[str(el) for el in run_ids],
 			]
+
 			if args.get('debug'):
 				cmd.append('-debug')
 
-			print('-' * 40)
-			print(f'Executing command: {" ".join(cmd)}')
-			r = subprocess.run(cmd, check=True, capture_output=True, text=True)
-			print(r.stdout)
-			print(r.stderr)
+			print(
+				'%s\n%s command: %s' %
+				('-' * 40, 'Executing' if args.get('show_plots') else 'Plot', " ".join(cmd))
+			)
+
+			if args.get('show_plots'):
+				r = subprocess.run(cmd, check=True, capture_output=True, text=True)
+				print(r.stdout)
+				print(r.stderr)
 
 
 	@staticmethod
