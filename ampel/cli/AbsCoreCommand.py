@@ -4,7 +4,7 @@
 # License:             BSD-3-Clause
 # Author:              valery brinnel <firstname.lastname@gmail.com>
 # Date:                18.03.2021
-# Last Modified Date:  14.08.2022
+# Last Modified Date:  22.08.2022
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 import re, os
@@ -63,7 +63,7 @@ class AbsCoreCommand(AbsCLIOperation, abstract=True):
 
 			if ampel_conf.get(".".join(k.split(".")[:-1])) is None:
 				with out_stack():
-					raise ValueError(f"Unknown config parameter '{k}'")
+					raise ValueError(f"Unknown config parameter '{k}'\n")
 
 			logger.info(f"Setting config parameter '{k}' value to: {v}")
 			set_by_path(ampel_conf._config, k, v)
@@ -75,6 +75,9 @@ class AbsCoreCommand(AbsCLIOperation, abstract=True):
 
 
 	def get_custom_args(self, customizations: Sequence[str]) -> Iterator[tuple[str, Any]]:
+		"""
+		:raises: ValueError
+		"""
 
 		it = iter(customizations)
 		for el in it:
@@ -90,6 +93,9 @@ class AbsCoreCommand(AbsCLIOperation, abstract=True):
 					except StopIteration:
 						v = None
 				yield k, v
+			else:
+				with out_stack():
+					raise ValueError(f"Unknown argument: {el}\n")
 
 
 	def get_context(self,
