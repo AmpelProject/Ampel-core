@@ -10,7 +10,7 @@
 import tarfile, tempfile, ujson, yaml, io, os, signal, sys, subprocess, platform
 from time import time
 from multiprocessing import Queue, Process
-from argparse import ArgumentParser, REMAINDER
+from argparse import ArgumentParser
 from importlib import import_module
 from typing import Any
 from collections.abc import Sequence
@@ -35,6 +35,7 @@ from ampel.model.job.JobModel import JobModel
 from ampel.model.job.InputArtifact import InputArtifact
 from ampel.model.job.TaskUnitModel import TaskUnitModel
 from ampel.model.job.TemplateUnitModel import TemplateUnitModel
+from ampel.util.pretty import out_stack
 
 
 class JobCommand(AbsCoreCommand):
@@ -87,7 +88,7 @@ class JobCommand(AbsCoreCommand):
 		})
 
 		parser.req('config', type=str)
-		parser.opt('schema', nargs=REMAINDER)
+		parser.opt('schema', nargs='+')
 		parser.opt('task', action=MaybeIntAction, nargs='+')
 		parser.opt('interactive', action='store_true')
 		parser.opt('debug', action='store_true')
@@ -123,7 +124,13 @@ class JobCommand(AbsCoreCommand):
 		if isinstance(args['task'], (int, str)):
 			args['task'] = [args['task']]
 
-		schema_files = args['schema'] or unknown_args
+		schema_files = args['schema'] or [
+			unknown_args.pop(unknown_args.index(el)) # type: ignore[attr-defined]
+			for el in list(unknown_args)
+			# This might conflict with very special - yet never used - config overrides
+			if el.endswith('yml') or el.endswith('yaml')
+		]
+
 		if not schema_files:
 			self.get_parser().print_help()
 			return
@@ -427,7 +434,8 @@ class JobCommand(AbsCoreCommand):
 		for i, job_fname in enumerate(schema_files):
 
 			if not os.path.exists(job_fname):
-				raise FileNotFoundError(f'Job file not found: "{job_fname}"')
+				with out_stack():
+					raise FileNotFoundError(f'Job file not found: "{job_fname}"\n')
 
 			with open(job_fname, 'r') as f:
 				lines.write('\n'.join(f.readlines()))
