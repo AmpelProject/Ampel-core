@@ -4,10 +4,10 @@
 # License:             BSD-3-Clause
 # Author:              valery brinnel <firstname.lastname@gmail.com>
 # Date:                Unspecified
-# Last Modified Date:  16.07.2022
+# Last Modified Date:  23.08.2022
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-import sys, re, html
+import sys, re, html, math
 from math import isinf
 from contextlib import contextmanager
 
@@ -198,3 +198,18 @@ def out_stack():
 	print(" ")
 	yield
 	sys.tracebacklimit = default_value
+
+
+def human_format(num, precision=2, suffixes=['', 'K', 'M', 'G', 'T', 'P']):
+	"""
+	In []: human_format(1000000, precision=0)
+	Out[]: '1M'
+
+	In []: human_format(30000, precision=0)
+	Out[]: '30K'
+
+	In []: human_format(123456)
+	Out[]: '123.46K'
+	"""
+	m = int(math.log10(num) // 3)
+	return f'{num/1000.0**m:.{precision}f}{suffixes[m]}'
