@@ -4,7 +4,7 @@
 # License:             BSD-3-Clause
 # Author:              valery brinnel <firstname.lastname@gmail.com>
 # Date:                15.03.2021
-# Last Modified Date:  22.08.2022
+# Last Modified Date:  23.08.2022
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 import tarfile, tempfile, ujson, yaml, io, os, signal, sys, subprocess, platform
@@ -148,8 +148,15 @@ class JobCommand(AbsCoreCommand):
 		for psys in ('any', platform.system().lower()):
 			if psys in job.env:
 				for k, v in job.env[psys].check.items():
-					if k not in os.environ or (v and v != _maybe_int(os.environ[k])):
+					if k not in os.environ:
 						logger.info(f'Environment variable {k}={v} required')
+						return
+					elif v and v != _maybe_int(os.environ[k]):
+						logger.info(
+							f'Environment variable {k} value mismatch:\n'
+							f' required: {v} ({type(v)})\n'
+							f' set: {os.environ[k]}'
+						)
 						return
 				for k, v in job.env[psys].set.items():
 					logger.info(f'Setting local environment variable {k}={v}')
