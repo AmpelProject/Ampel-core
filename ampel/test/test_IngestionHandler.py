@@ -1,21 +1,18 @@
-from collections import defaultdict
-import contextlib
+import contextlib, pytest
 from typing import Any
+from collections import defaultdict
 from collections.abc import Generator
 from ampel.config.AmpelConfig import AmpelConfig
 from ampel.content.MetaRecord import MetaRecord
 from ampel.enum.MetaActionCode import MetaActionCode
 from ampel.util.freeze import recursive_unfreeze
 from pymongo.errors import DuplicateKeyError
-import pytest
 
 from ampel.content.DataPoint import DataPoint
 from ampel.dev.DevAmpelContext import DevAmpelContext
 from ampel.ingest.ChainedIngestionHandler import ChainedIngestionHandler, IngestBody
-
 from ampel.log.AmpelLogger import DEBUG, AmpelLogger
 from ampel.model.ingest.CompilerOptions import CompilerOptions
-
 from ampel.model.ingest.IngestDirective import IngestDirective
 from ampel.model.ingest.MuxModel import MuxModel
 from ampel.model.ingest.T1Combine import T1Combine
@@ -48,12 +45,13 @@ def single_source_directive(
     return IngestDirective(
         channel="TEST_CHANNEL",
         ingest=IngestBody(
-            stock_t2=[T2Compute(unit="DummyStockT2Unit")],
-            point_t2=[T2Compute(unit="DummyPointT2Unit")],
+            # https://github.com/python/mypy/issues/13421
+            stock_t2=[T2Compute(unit="DummyStockT2Unit")], # type: ignore[arg-type]
+            point_t2=[T2Compute(unit="DummyPointT2Unit")], # type: ignore[arg-type]
             combine=[
                 T1Combine(
                     unit=request.param,
-                    state_t2=[T2Compute(unit="DummyStateT2Unit")],
+                    state_t2=[T2Compute(unit="DummyStateT2Unit")], # type: ignore[arg-type]
                 )
             ],
         ),
@@ -68,14 +66,14 @@ def multiplex_directive(
     return IngestDirective(
         channel="TEST_CHANNEL",
         ingest=IngestBody(
-            stock_t2=[T2Compute(unit="DummyStockT2Unit")],
+            stock_t2=[T2Compute(unit="DummyStockT2Unit")], # type: ignore[arg-type]
             mux=MuxModel(
                 unit="DummyMuxer",  # type: ignore[arg-type]
-                insert={"point_t2": [T2Compute(unit="DummyPointT2Unit")]},
+                insert={"point_t2": [T2Compute(unit="DummyPointT2Unit")]}, # type: ignore[arg-type]
                 combine=[
                     T1Combine(
                         unit=request.param,
-                        state_t2=[T2Compute(unit="DummyStateT2Unit")],
+                        state_t2=[T2Compute(unit="DummyStateT2Unit")], # type: ignore[arg-type]
                     )
                 ],
             ),
