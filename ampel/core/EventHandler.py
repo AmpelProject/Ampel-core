@@ -4,7 +4,7 @@
 # License:             BSD-3-Clause
 # Author:              valery brinnel <firstname.lastname@gmail.com>
 # Date:                26.09.2018
-# Last Modified Date:  25.07.2022
+# Last Modified Date:  26.08.2022
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from time import time
@@ -28,7 +28,7 @@ class EventHandler:
 	def __init__(self,
 		process_name: str,
 		ampel_db: 'AmpelDB',
-		col_name: str = "events",
+		col_name: str = "event",
 		raise_exc = False,
 		dry_run: bool = False,
 		job_sig: None | int = None,

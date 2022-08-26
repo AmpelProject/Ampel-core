@@ -28,7 +28,7 @@ class AmpelExceptionPublisher(AbsOpsUnit):
     def __init__(self, **kwargs) -> None:
         super().__init__(**kwargs)
         self.slack = WebClient(self.slack_token.get())
-        self.troubles = self.context.db.get_collection("troubles", "r")
+        self.troubles = self.context.db.get_collection("trouble", "r")
 
     def t3_fields(self, doc: dict[str, Any]) -> list[dict[str, Any]]:
         fields = []

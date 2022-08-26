@@ -95,11 +95,11 @@ class AmpelDB(AmpelUnit):
 
 	@cached_property
 	def col_trace_ids(self) -> Collection:
-		return self.get_collection('traceid')
+		return self.get_collection('trace')
 	
 	@cached_property
 	def col_conf_ids(self) -> Collection:
-		return self.get_collection('confid')
+		return self.get_collection('conf')
 
 	@cached_property
 	def trace_ids(self) -> set[int]:
@@ -212,8 +212,8 @@ class AmpelDB(AmpelUnit):
 			for col_config in db_config.collections:
 				self.get_collection(col_config.name)
 
-		self.get_collection('traceid')
-		self.get_collection('confid')
+		self.get_collection('trace')
+		self.get_collection('conf')
 
 
 	def create_ampel_collection(self,

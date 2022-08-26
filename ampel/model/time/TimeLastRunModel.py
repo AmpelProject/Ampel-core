@@ -33,7 +33,7 @@ class TimeLastRunModel(AmpelBaseModel):
 	@staticmethod
 	def _query_events_col(ampel_db: AmpelDB, model: 'TimeLastRunModel') -> None | float:
 
-		col = ampel_db.get_collection('events')
+		col = ampel_db.get_collection('event')
 
 		# First query the last 10 days
 		res = get_last_run(

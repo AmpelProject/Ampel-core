@@ -203,7 +203,7 @@ def insert_trouble(
 	# Populate troubles collection
 	try:
 		ampel_db \
-			.get_collection('troubles') \
+			.get_collection('trouble') \
 			.insert_one(trouble)
 
 	except Exception as e:

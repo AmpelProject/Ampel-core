@@ -1,8 +1,8 @@
 name: ext
 collections:
-- name: confid
-- name: traceid
-- name: jobid
+- name: conf
+- name: trace
+- name: job
 - name: counter
 role:
   r: logger

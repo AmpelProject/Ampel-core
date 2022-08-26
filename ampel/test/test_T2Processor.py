@@ -68,7 +68,7 @@ def test_error_reporting(integration_context: DevAmpelContext):
     assert t2.run() == 1
     assert (doc := integration_context.db.get_collection("t2").find_one({})) # type: ignore[assignment]
     assert doc["code"] == DocumentCode.EXCEPTION
-    assert (trouble := integration_context.db.get_collection("troubles").find_one({}))
+    assert (trouble := integration_context.db.get_collection('trouble').find_one({}))
     assert trouble["channel"] == channels
 
 

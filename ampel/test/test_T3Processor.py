@@ -73,8 +73,8 @@ def test_unit_raises_error(
     dev_context.register_unit(Mutineer)
     t3 = T3Processor(context=dev_context, process_name="test", raise_exc=False, **mutineer_process(config))
     t3.run()
-    assert dev_context.db.get_collection("events").count_documents({}) == 1
-    event = dev_context.db.get_collection("events").find_one({})
+    assert dev_context.db.get_collection('event').count_documents({}) == 1
+    event = dev_context.db.get_collection('event').find_one({})
     assert event
     assert event["run"] == 1
     assert event["code"] == EventCode.OK.value if expect_success else EventCode.EXCEPTION

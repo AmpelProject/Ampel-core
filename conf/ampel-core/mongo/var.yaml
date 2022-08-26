@@ -1,6 +1,6 @@
 name: var
 collections:
-- name: logs
+- name: log
   indexes:
   - field: r
   - field: s
@@ -13,11 +13,11 @@ collections:
     storageEngine:
       wiredTiger:
         configString: block_compressor=zlib
-- name: events
+- name: event
   indexes:
 - name: beacon
   indexes:
-- name: troubles
+- name: trouble
   indexes:
 role:
   r: logger

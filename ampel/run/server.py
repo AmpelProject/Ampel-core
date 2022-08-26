@@ -638,7 +638,7 @@ async def query_event(
 @app.get("/events")
 @app.get("/events/{process}")
 def get_events(base_query: dict = Depends(query_event)):
-    cursor = context.db.get_collection("events").find(
+    cursor = context.db.get_collection('event').find(
         {"run": {"$exists": True}, **base_query}
     )
     return {
@@ -668,7 +668,7 @@ def get_logs(
                 operator.or_, [LogFlag.__members__[k.name] for k in flags]
             )
         }
-    cursor = context.db.get_collection("logs").find(query, {"r": 0})
+    cursor = context.db.get_collection('log').find(query, {"r": 0})
     translate_keys = {"_id", "f"}
     return {
         "logs": [
@@ -690,7 +690,7 @@ def get_logs(
 
 @app.get("/troubles")
 def get_troubles(base_query: dict = Depends(query_event)):
-    cursor = context.db.get_collection("troubles").find(base_query)
+    cursor = context.db.get_collection('trouble').find(base_query)
     return {
         "troubles": [
             {

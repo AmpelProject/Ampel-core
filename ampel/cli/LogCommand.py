@@ -208,7 +208,7 @@ class LogCommand(AbsCoreCommand):
 			args['id_mapper'] = None
 
 		ld = LogsDumper(**args)
-		col = ctx.db.get_collection('logs')
+		col = ctx.db.get_collection('log')
 		mcrit = matcher.get_match_criteria()
 
 		if sub_op == 'tail':

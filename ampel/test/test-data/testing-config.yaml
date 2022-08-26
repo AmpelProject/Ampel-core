@@ -8,11 +8,11 @@ mongo:
   databases:
   - name: ext
     collections:
-    - name: confid
+    - name: conf
       indexes: null
-    - name: traceid
+    - name: trace
       indexes: null
-    - name: jobid
+    - name: job
       indexes: null
     - name: counter
       indexes: null
@@ -21,7 +21,7 @@ mongo:
       w: logger
   - name: var
     collections:
-    - name: logs
+    - name: log
       indexes:
       - field: r
       - field: s
@@ -30,11 +30,11 @@ mongo:
       - field: c
         args:
           sparse: true
-    - name: events
+    - name: event
       indexes: null
     - name: beacon
       indexes: null
-    - name: troubles
+    - name: trouble
       indexes: null
     role:
       r: logger

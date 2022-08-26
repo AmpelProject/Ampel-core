@@ -26,7 +26,7 @@ class T3LogsAppender(AbsBufferComplement):
 	def __init__(self, **kwargs) -> None:
 		super().__init__(**kwargs)
 		self.log_loader = LogsLoader(**self.logs_loader_conf, read_only=True)
-		self.col = self.context.db.get_collection('logs')
+		self.col = self.context.db.get_collection('log')
 
 
 	def complement(self, it: Iterable[AmpelBuffer], t3s: T3Store) -> None:

@@ -297,7 +297,7 @@ class JobCommand(AbsCoreCommand):
 
 		logger.info('Saving job schema')
 		job_sig = build_unsafe_dict_id(job_dict, size=-64)
-		ctx.db.get_collection('jobid').update_one(
+		ctx.db.get_collection('job').update_one(
 			{'_id': job_sig},
 			{'$setOnInsert': job_dict},
 			upsert=True

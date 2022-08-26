@@ -39,7 +39,7 @@ class T3SessionAlertsNumber(AbsT3Supplier[dict]):
 
 		# Get number of alerts processed since last run
 		res = next(
-			self.context.db.get_collection('events').aggregate(
+			self.context.db.get_collection('event').aggregate(
 				build_t0_stats_query(gte_time=d[T3SessionLastRunTime.key])
 			),
 			None

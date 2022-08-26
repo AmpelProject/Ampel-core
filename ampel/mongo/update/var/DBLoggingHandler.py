@@ -56,7 +56,7 @@ class DBLoggingHandler(AmpelUnit):
 	__slots__ = "prev_record", "fields_check", "log_dicts", "oid_middle", "warn_lvl"
 
 	level: int
-	col_name: str = "logs"
+	col_name: str = "log"
 	aggregate_interval: float = 1.
 	expand_extra: bool = True
 	flush_len: int = 1000
@@ -294,7 +294,7 @@ class DBLoggingHandler(AmpelUnit):
 						print("In DB:")
 						print(db_rec)
 
-						self._ampel_db.get_collection('troubles').insert_one(
+						self._ampel_db.get_collection('trouble').insert_one(
 							{
 								'tier': get_tier_from_log_flags(db_rec['f']),
 								'location': 'DBLoggingHandler',
@@ -308,7 +308,7 @@ class DBLoggingHandler(AmpelUnit):
 					raise_exc = True
 					print("writeError dict entry: %s" % err_dict)
 
-					self._ampel_db.get_collection('troubles').insert_one(
+					self._ampel_db.get_collection('trouble').insert_one(
 						{
 							'location': 'DBLoggingHandler',
 							'msg': "non-E11000 writeError occured",
@@ -323,7 +323,7 @@ class DBLoggingHandler(AmpelUnit):
 
 			try:
 				from traceback import format_exc
-				self._ampel_db.get_collection('troubles').insert_one(
+				self._ampel_db.get_collection('trouble').insert_one(
 					{
 						'location': 'DBLoggingHandler',
 						'msg': "Exception occured in handle_bulk_write_error",

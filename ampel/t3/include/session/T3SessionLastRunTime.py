@@ -29,7 +29,7 @@ class T3SessionLastRunTime(AbsT3Supplier[dict]):
 		"""Add last run time (UNIX epoch) as "last_run". """
 
 		last_run = get_last_run(
-			self.context.db.get_collection('events'),
+			self.context.db.get_collection('event'),
 			require_success = True,
 			process_name = self.event_hdlr.process_name,
 			gte_time = self.lookup_range,
