@@ -8,8 +8,8 @@
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from typing import Generic
-from ampel.types import T, OneOrMany
-from ampel.model.UnitModel import UnitModel
+from ampel.types import OneOrMany
+from ampel.model.UnitModel import UnitModel, T
 from ampel.model.DPSelection import DPSelection
 
 class T2Compute(UnitModel[T], Generic[T]):
