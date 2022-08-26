@@ -667,45 +667,6 @@ if your time constraint is based on TimeLastRunModel</p>
 
 </dd></dl>
 
-<dl class="py class">
-<dt class="sig sig-object py" id="ampel.model.ingest.IngestDirective.IngestDirective">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">ampel.model.ingest.IngestDirective.</span></span><span class="sig-name descname"><span class="pre">IngestDirective</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/ampel/model/ingest/IngestDirective.html#IngestDirective"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ampel.model.ingest.IngestDirective.IngestDirective" title="Permalink to this definition">¶</a></dt>
-<dd><p>channel
-filter
-ingest</p>
-<blockquote>
-<div><p>stock_t2
-point_t2        &lt;- based on input dps list
-combine         &lt;- same</p>
-<blockquote>
-<div><p>state_t2      &lt;- based on dps list returned by combine
-point_t2      &lt;- same</p>
-</div></blockquote>
-<dl class="simple">
-<dt>mux             &lt;- based on input dps list</dt><dd><dl class="simple">
-<dt>insert</dt><dd><p>point_t2    &lt;- based on &lt;datapoints insert&gt; result from muxer (first list)</p>
-</dd>
-<dt>combine</dt><dd><p>state_t2    &lt;- based on &lt;datapoints combine&gt; result from muxer (second list)
-point_t2    &lt;- same</p>
-</dd>
-</dl>
-</dd>
-</dl>
-</div></blockquote>
-<dl class="py attribute">
-<dt class="sig sig-object py" id="ampel.model.ingest.IngestDirective.IngestDirective.channel">
-<span class="sig-name descname"><span class="pre">channel</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Union" title="(in Python v3.10)"><span class="pre">Union</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.10)"><span class="pre">int</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.10)"><span class="pre">str</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#ampel.model.ingest.IngestDirective.IngestDirective.channel" title="Permalink to this definition">¶</a></dt>
-<dd><p>Channel for which to create documents</p>
-</dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="ampel.model.ingest.IngestDirective.IngestDirective.filter">
-<span class="sig-name descname"><span class="pre">filter</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.10)"><span class="pre">None</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">ampel.model.ingest.FilterModel.FilterModel</span></em><a class="headerlink" href="#ampel.model.ingest.IngestDirective.IngestDirective.filter" title="Permalink to this definition">¶</a></dt>
-<dd><p>Potientially filter input datapoints</p>
-</dd></dl>
-
-</dd></dl>
-
 </section>
 <section id="templates">
 <h2>Templates<a class="headerlink" href="#templates" title="Permalink to this heading">¶</a></h2>
