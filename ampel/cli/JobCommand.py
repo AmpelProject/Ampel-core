@@ -7,7 +7,8 @@
 # Last Modified Date:  26.08.2022
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
-import tarfile, tempfile, ujson, yaml, io, os, signal, sys, subprocess, platform
+import tarfile, tempfile, ujson, yaml, io, os, signal, sys, \
+	subprocess, platform, shutil, filecmp
 from time import time
 from multiprocessing import Queue, Process
 from argparse import ArgumentParser
@@ -81,6 +82,7 @@ class JobCommand(AbsCoreCommand):
 			'no-agg': 'enables display of matplotlib plots via plt.show() for debugging',
 			'interactive': 'you will be asked for each task whether it should be run or skipped\n' + \
 				'and - if applicable - if the db should be reset. Option -task will be ignored.',
+			'edit': 'edit schema file(s) before execution (originals are kept as is)',
 			'task': 'only execute task(s) with provided index(es) [starting with 0].\n' +
 					'Value "last" is supported. Ignored if -interactive is used',
 			'show-plots': 'show plots created by job (requires ampel-plot-cli)',
@@ -92,6 +94,7 @@ class JobCommand(AbsCoreCommand):
 		parser.opt('task', action=MaybeIntAction, nargs='+')
 		parser.opt('interactive', action='store_true')
 		parser.opt('debug', action='store_true')
+		parser.opt('edit', action='store_true')
 		parser.opt('keep-db', action='store_true')
 		parser.opt('reset-db', action='store_true')
 		parser.opt('max-parallel-tasks', type=int, default=os.cpu_count())
@@ -135,7 +138,30 @@ class JobCommand(AbsCoreCommand):
 			self.get_parser().print_help()
 			return
 
+		tmp_files: list[str] = []
+		if args.get('edit'):
+
+			for sfile in list(schema_files):
+				fd, fname = tempfile.mkstemp()
+				shutil.copyfile(sfile, fname)
+				if subprocess.call(
+					os.environ.get('EDITOR', 'vi') + ' ' + fname,
+					shell=True
+				):
+					with out_stack():
+						raise ValueError("Cancelation requested during schema edition")
+
+				if filecmp.cmp(sfile, fname):
+					logger.info(f'Using original schema: {sfile}')
+					os.unlink(fname)
+					continue
+
+				schema_files[schema_files.index(sfile)] = fname
+				logger.info(f'Using modified schema: {fname}')
+
 		job, _ = self.get_job_schema(schema_files, logger, compute_sig=False)
+		for el in tmp_files:
+			os.unlink(el)
 		schema_descr = '|'.join(
 			[os.path.basename(sf) for sf in schema_files]
 		).replace('.yaml', '').replace('.yml', '')
