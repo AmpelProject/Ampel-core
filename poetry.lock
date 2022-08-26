@@ -8,7 +8,7 @@ python-versions = "*"
 
 [[package]]
 name = "ampel-interface"
-version = "0.8.3b4"
+version = "0.8.3b5"
 description = "Base classes for the Ampel analysis platform"
 category = "main"
 optional = false
@@ -21,7 +21,7 @@ ujson = ">=5.1.0,<6.0.0"
 xxhash = ">=3.0.0,<4.0.0"
 
 [package.extras]
-docs = ["tomlkit (>=0.11.0,<0.12.0)", "sphinx-autodoc-typehints (>=1.11.1,<2.0.0)", "Sphinx (>=5.0.0,<6.0.0)"]
+docs = ["Sphinx (>=5.0.0,<6.0.0)", "sphinx-autodoc-typehints (>=1.11.1,<2.0.0)", "tomlkit (>=0.11.0,<0.12.0)"]
 
 [[package]]
 name = "anyio"
@@ -919,7 +919,7 @@ slack = ["slack-sdk"]
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.10,<3.11"
-content-hash = "72da80a0f46e8d8af32b664f27883222c4d5165a4ca81573454ea139a37d4a50"
+content-hash = "e8514ed0a7ad86c5e514adb578f7cb70e29458784ad7ae5ca1df633754d303a6"
 
 [metadata.files]
 alabaster = [
