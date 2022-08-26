@@ -83,6 +83,7 @@ class JobCommand(AbsCoreCommand):
 			'interactive': 'you will be asked for each task whether it should be run or skipped\n' + \
 				'and - if applicable - if the db should be reset. Option -task will be ignored.',
 			'edit': 'edit schema file(s) before execution (originals are kept as is)',
+			'fzf': 'choose schema file using fzf (linux/max only, fzf command line utility must be installed)',
 			'task': 'only execute task(s) with provided index(es) [starting with 0].\n' +
 					'Value "last" is supported. Ignored if -interactive is used',
 			'show-plots': 'show plots created by job (requires ampel-plot-cli)',
@@ -95,6 +96,7 @@ class JobCommand(AbsCoreCommand):
 		parser.opt('interactive', action='store_true')
 		parser.opt('debug', action='store_true')
 		parser.opt('edit', action='store_true')
+		parser.opt('fzf', action='store_true')
 		parser.opt('keep-db', action='store_true')
 		parser.opt('reset-db', action='store_true')
 		parser.opt('max-parallel-tasks', type=int, default=os.cpu_count())
@@ -115,6 +117,7 @@ class JobCommand(AbsCoreCommand):
 	def run(self, args: dict[str, Any], unknown_args: Sequence[str], sub_op: None | str = None) -> None:
 
 		start_time = time()
+		psys = platform.system().lower()
 		logger = AmpelLogger.get_logger(base_flag=LogFlag.MANUAL_RUN)
 
 		if not args['no_agg']:
@@ -135,8 +138,28 @@ class JobCommand(AbsCoreCommand):
 		]
 
 		if not schema_files:
-			self.get_parser().print_help()
-			return
+			if psys.lower() != "windows" and args.get('fzf'):
+				if shutil.which('fzf') is None:
+					with out_stack():
+						raise ValueError("Option '-fzf' requires the fzf command line utility")
+				p1 = subprocess.Popen(
+					['find', '.', '-name', '*.yml', '-o', '-name', '*.yaml'],
+					stdout = subprocess.PIPE
+				)
+				p2 = subprocess.Popen('fzf', stdin=p1.stdout, stdout=subprocess.PIPE)
+				out, err = p2.communicate()
+				if err:
+					with out_stack():
+						raise ValueError("Error occured during fzf execution")
+				selection = out.decode('utf8').strip()
+				if selection:
+					schema_files = [selection]
+				else:
+					print("No schema selected")
+					return
+			else:
+				self.get_parser().print_help()
+				return
 
 		tmp_files: list[str] = []
 		if args.get('edit'):
@@ -170,7 +193,7 @@ class JobCommand(AbsCoreCommand):
 			logger.info(f'Running job using composed schema: {schema_descr}')
 
 		# Check or set env variable(s)
-		psys = platform.system().lower()
+
 		for psys in ('any', platform.system().lower()):
 			if psys in job.env:
 				for k, v in job.env[psys].check.items():
