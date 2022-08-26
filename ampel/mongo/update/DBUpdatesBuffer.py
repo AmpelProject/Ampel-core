@@ -409,18 +409,20 @@ class DBUpdatesBuffer(Schedulable):
 		}
 
 		if self.log_doc_ids and ret['col'] in self.log_doc_ids:
-			op_filter = op._filter # type: ignore[name-defined]
-			if ret['col'] != 2:
-				ret['docs'] = [op_filter['_id'] for op in ops]
-			else:
-				ret['docs'] = [
-					{
-						'unit': op_filter['unit'],
-						'config': op_filter['config'],
-						'link': op_filter['link']
-					}
-					for op in ops
-				]
+			try:
+				if ret['col'] != 2:
+					ret['docs'] = [op._filter['_id'] for op in ops] # type: ignore
+				else:
+					ret['docs'] = [
+						{
+							'unit': op._filter['unit'], # type: ignore
+							'config': op._filter['config'], # type: ignore
+							'link': op._filter['link'] # type: ignore
+						}
+						for op in ops
+					]
+			except Exception:
+				pass
 
 		if extra:
 			return {**extra, **ret}

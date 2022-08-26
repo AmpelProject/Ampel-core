@@ -10,7 +10,6 @@
 from pymongo import MongoClient
 from pymongo.collection import Collection
 from multiprocessing import Pool
-from collections.abc import Sequence
 from ampel.types import ChannelId, StockId, OneOrMany
 
 
