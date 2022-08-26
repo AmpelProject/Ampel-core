@@ -138,50 +138,53 @@ class JobCommand(AbsCoreCommand):
 			if el.endswith('yml') or el.endswith('yaml')
 		]
 
-		if not schema_files:
-			if psys.lower() != "windows" and args.get('fzf'):
-				if shutil.which('fzf') is None:
-					with out_stack():
-						raise ValueError("Option '-fzf' requires the fzf command line utility")
-				p1 = subprocess.Popen(
-					['find', '.', '-name', '*.yml', '-o', '-name', '*.yaml'],
-					stdout = subprocess.PIPE
-				)
-				p2 = subprocess.Popen('fzf', stdin=p1.stdout, stdout=subprocess.PIPE)
-				out, err = p2.communicate()
-				if err:
-					with out_stack():
-						raise ValueError("Error occured during fzf execution")
-				selection = out.decode('utf8').strip()
-				if selection:
-					schema_files = [selection]
-				else:
-					print("No schema selected")
-					return
+		if args.get('fzf') and not schema_files and psys.lower() != "windows":
+
+			if shutil.which('fzf') is None:
+				with out_stack():
+					raise ValueError("Option '-fzf' requires the fzf command line utility")
+
+			p1 = subprocess.Popen(
+				['find', '.', '-name', '*.yml', '-o', '-name', '*.yaml'],
+				stdout = subprocess.PIPE
+			)
+			p2 = subprocess.Popen('fzf', stdin=p1.stdout, stdout=subprocess.PIPE)
+			out, err = p2.communicate()
+
+			if err:
+				with out_stack():
+					raise ValueError("Error occured during fzf execution")
+
+			if (selection := out.decode('utf8').strip()):
+				schema_files = [selection]
 			else:
-				self.get_parser().print_help()
+				print("No schema selected")
 				return
 
 		tmp_files: list[str] = []
 		if args.get('edit'):
+	
+			if schema_files:
+				for sfile in list(schema_files):
+					fd, fname = tempfile.mkstemp(suffix='.yml')
+					shutil.copyfile(sfile, fname)
+					edit_job(fname)
 
-			for sfile in list(schema_files):
-				fd, fname = tempfile.mkstemp(suffix='.yml')
-				shutil.copyfile(sfile, fname)
-				if subprocess.call(
-					os.environ.get('EDITOR', 'vi') + ' ' + fname,
-					shell=True
-				):
-					with out_stack():
-						raise ValueError("Cancelation requested during schema edition")
+					if filecmp.cmp(sfile, fname):
+						logger.info(f'Using original schema: {sfile}')
+						os.unlink(fname)
+						continue
 
-				if filecmp.cmp(sfile, fname):
-					logger.info(f'Using original schema: {sfile}')
-					os.unlink(fname)
-					continue
+					schema_files[schema_files.index(sfile)] = fname
+					logger.info(f'Using modified schema: {fname}')
+			else:
+				schema_files = [
+					edit_job(tempfile.mkstemp(suffix='.yml')[1])
+				]
 
-				schema_files[schema_files.index(sfile)] = fname
-				logger.info(f'Using modified schema: {fname}')
+		if not schema_files:
+			self.get_parser().print_help()
+			return
 
 		job, _ = self.get_job_schema(schema_files, logger, compute_sig=False)
 		for el in tmp_files:
@@ -621,3 +624,17 @@ def signal_handler(sig, frame):
 	#print('Stack frames:')
 	#traceback.print_stack(frame)
 	raise KeyboardInterrupt()
+
+
+def edit_job(fname: str) -> str:
+	"""
+	:raises ValueError if data edition fails
+	"""
+	if subprocess.call(
+		os.environ.get('EDITOR', 'vi') + ' ' + fname,
+		shell=True
+	):
+		with out_stack():
+			raise ValueError("Cancelation requested during schema edition")
+
+	return fname
