@@ -166,7 +166,7 @@ class JobCommand(AbsCoreCommand):
 		if args.get('edit'):
 
 			for sfile in list(schema_files):
-				fd, fname = tempfile.mkstemp()
+				fd, fname = tempfile.mkstemp(suffix='.yml')
 				shutil.copyfile(sfile, fname)
 				if subprocess.call(
 					os.environ.get('EDITOR', 'vi') + ' ' + fname,
