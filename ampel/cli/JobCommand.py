@@ -110,6 +110,7 @@ class JobCommand(AbsCoreCommand):
 		parser.example('job job_part1.yaml job_part2.yaml')
 		parser.example('job -keep-db -task last job_file.yaml')
 		parser.example('job -show-plots job.yaml')
+		parser.example('job -fzf -edit')
 		return parser
 
 
@@ -449,7 +450,7 @@ class JobCommand(AbsCoreCommand):
 			runstr = ""
 
 		logger.info(f'Job processed {runstr}')
-		logger.info(f'Time required: {round(dm[0])} minutes {round(dm[1])} seconds')
+		logger.info(f'Time required: {round(dm[0])} minutes {round(dm[1])} seconds\n')
 
 		if args.get('show_plots') or args.get('show_plots_cmd'):
 
