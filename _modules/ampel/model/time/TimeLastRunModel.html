@@ -69,7 +69,7 @@
 	<span class="nd">@staticmethod</span>
 	<span class="k">def</span> <span class="nf">_query_events_col</span><span class="p">(</span><span class="n">ampel_db</span><span class="p">:</span> <span class="n">AmpelDB</span><span class="p">,</span> <span class="n">model</span><span class="p">:</span> <span class="s1">&#39;TimeLastRunModel&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span> <span class="o">|</span> <span class="nb">float</span><span class="p">:</span>
 
-		<span class="n">col</span> <span class="o">=</span> <span class="n">ampel_db</span><span class="o">.</span><span class="n">get_collection</span><span class="p">(</span><span class="s1">&#39;events&#39;</span><span class="p">)</span>
+		<span class="n">col</span> <span class="o">=</span> <span class="n">ampel_db</span><span class="o">.</span><span class="n">get_collection</span><span class="p">(</span><span class="s1">&#39;event&#39;</span><span class="p">)</span>
 
 		<span class="c1"># First query the last 10 days</span>
 		<span class="n">res</span> <span class="o">=</span> <span class="n">get_last_run</span><span class="p">(</span>
