@@ -4,7 +4,7 @@
 # License:             BSD-3-Clause
 # Author:              valery brinnel <firstname.lastname@gmail.com>
 # Date:                15.03.2021
-# Last Modified Date:  23.08.2022
+# Last Modified Date:  26.08.2022
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 import tarfile, tempfile, ujson, yaml, io, os, signal, sys, subprocess, platform
@@ -392,10 +392,15 @@ class JobCommand(AbsCoreCommand):
 				logger.info(f'{task_dict["unit"]} return value: {x}')
 
 		dm = divmod(time() - start_time, 60)
-		logger.info(
-			'Job processed. Time required: %s minutes %s seconds\n' %
-			(round(dm[0]), round(dm[1]))
-		)
+		if len(run_ids) == 1:
+			runstr = f" (run id: {run_ids[0]})"
+		elif len(run_ids) > 1:
+			runstr = " (run ids: " + " ".join([str(el) for el in run_ids]) + ")"
+		else:
+			runstr = ""
+
+		logger.info(f'Job processed {runstr}')
+		logger.info(f'Time required: {round(dm[0])} minutes {round(dm[1])} seconds')
 
 		if args.get('show_plots') or args.get('show_plots_cmd'):
 
