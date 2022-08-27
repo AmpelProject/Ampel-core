@@ -4,19 +4,18 @@
 # License           : BSD-3-Clause
 # Author            : vb <vbrinnel@physik.hu-berlin.de>
 # Date              : 16.06.2018
-# Last Modified Date: 11.08.2022
+# Last Modified Date: 27.08.2022
 # Last Modified By  : vb <vbrinnel@physik.hu-berlin.de>
 
+import secrets, collections.abc
+from typing import Any, Literal
 from functools import cached_property
-import secrets
-import collections.abc
 from collections import defaultdict  # type: ignore[attr-defined]
+from collections.abc import Sequence
 from pymongo import MongoClient, ReadPreference
 from pymongo.database import Database
 from pymongo.collection import Collection
 from pymongo.errors import ConfigurationError, DuplicateKeyError, OperationFailure, CollectionInvalid
-from typing import Any
-from collections.abc import Sequence
 
 from ampel.types import ChannelId
 from ampel.mongo.utils import get_ids
@@ -37,6 +36,11 @@ from ampel.mongo.model.MongoClientRoleModel import MongoClientRoleModel
 from ampel.util.collections import try_reduce
 
 intcol = {'t0': 0, 't1': 1, 't2': 2, 't3': 3, 'stock': 4}
+
+
+class UnknownDatabase(Exception):
+	pass
+
 
 class AmpelDB(AmpelUnit):
 	"""
@@ -60,16 +64,49 @@ class AmpelDB(AmpelUnit):
 	def new(cls,
 		config: AmpelConfig,
 		vault: None | AmpelVault = None,
-		require_exists: bool = False,
-		one_db: bool = False
+		require_exists: bool | str = False,
+		one_db: bool | Literal['auto'] = False
+	) -> 'AmpelDB':
+		"""
+		:param require_exists:
+		- False: AmpelDB instantiation will succeed even if underlying database(s) do not exist
+		- True: AmpelDB instantiation will fail unless underlying databases exist
+		- str: same as True but provided value overrides prefix value otherwise loaded from AmpelConfig
+		:param one_db: whether to create or load a single database rather than having
+		collections split in in three databases (data, var, ext).
+		If 'auto' is set (for which require_exists must be True), then AmpelDB will try
+		to load a databse in single mode and try again in multi-mode if it fails.
+		Note that ampel 'jobs' usually operate with one_db=True.
+		:raises: ValueError in case a required config entry is missing
+		"""
+		if one_db == 'auto':
+			if require_exists is False:
+				raise ValueError("Option 'one_db' cannot be set to 'auto' if require_exists is False")
+			try:
+				return cls._new(config, vault, require_exists, True)
+			except UnknownDatabase:
+				return cls._new(config, vault, require_exists, False)
+		return cls._new(config, vault, require_exists, one_db)
+
+
+	@classmethod
+	def _new(cls,
+		config: AmpelConfig,
+		vault: None | AmpelVault = None,
+		require_exists: bool | str = False,
+		one_db: bool = False,
 	) -> 'AmpelDB':
 		""" :raises: ValueError in case a required config entry is missing """
+		db_config = config.get('mongo', dict, raise_exc=True)
+		if isinstance(require_exists, str):
+			dict.__setitem__(db_config, 'prefix', require_exists)
+			require_exists = True
 		return cls(
 			mongo_uri = config.get('resource.mongo', str, raise_exc=True),
 			vault = vault,
 			require_exists = require_exists,
 			one_db = one_db,
-			**config.get('mongo', dict, raise_exc=True)
+			**db_config
 		)
 
 
@@ -90,7 +127,7 @@ class AmpelDB(AmpelUnit):
 		self.mongo_clients: dict[str, MongoClient] = {} # map role with client
 
 		if self.require_exists and not self._get_pymongo_db("data", role="w").list_collection_names():
-			raise ValueError(f"Database(s) with prefix {self.prefix} do not exist")
+			raise UnknownDatabase(f"Database(s) with prefix {self.prefix} do not exist")
 
 
 	@cached_property
