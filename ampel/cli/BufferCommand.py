@@ -4,7 +4,7 @@
 # License:             BSD-3-Clause
 # Author:              valery brinnel <firstname.lastname@gmail.com>
 # Date:                25.03.2021
-# Last Modified Date:  16.08.2022
+# Last Modified Date:  27.08.2022
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 import sys
@@ -24,13 +24,13 @@ hlp = {
 	'config': 'Path to an ampel config file (yaml/json)',
 	# Optional
 	'secrets': 'Path to a YAML secrets store in sops format',
+	'db': 'Database prefix. If set, "-mongo.prefix" value will be ignored',
 	'out': 'Path to file where serialized views will be saved (printed to stdout otherwise)',
 	'log-profile': 'One of: default, compact, headerless, verbose, debug',
 	'id-mapper': 'Convert stock ids using the provided id mapper (ex: ZTFIdMapper)',
 	'binary': 'Store buffers as compact BSON structures',
 	'pretty': 'Show buffers using spacier prettyjson',
-	'getch': 'Wait for a key to be pressed in terminal before printing next buffer (not compatible with binary option)',
-	'one-db': 'Whether the target ampel DB was created with flag one-db'
+	'getch': 'Wait for a key to be pressed in terminal before printing next buffer (not compatible with binary option)'
 }
 
 class BufferCommand(AbsStockCommand, AbsLoadCommand):
@@ -61,7 +61,6 @@ class BufferCommand(AbsStockCommand, AbsLoadCommand):
 		builder.req('config')
 		builder.req('out', 'save', default=True)
 
-		builder.opt('one-db', action='store_true')
 		builder.opt('secrets', default=None)
 		builder.opt('id-mapper')
 		builder.opt('debug', action='store_true')
@@ -78,7 +77,7 @@ class BufferCommand(AbsStockCommand, AbsLoadCommand):
 
 		# Example
 		builder.example('show', '-stock 85628462 -no-t0')
-		builder.example('show', '-mongo.prefix MyDB -one-db -stock 519059889 -no-t0')
+		builder.example('show', '-db MyDB -stock 519059889 -no-t0')
 		builder.example('save', '-stock 85628462 -no-t0 -out ZTFabcdef.json')
 		
 		self.parsers.update(
@@ -92,9 +91,8 @@ class BufferCommand(AbsStockCommand, AbsLoadCommand):
 	def run(self, args: dict[str, Any], unknown_args: Sequence[str], sub_op: None | str = None) -> None:
 
 		ctx = self.get_context(
-			args, unknown_args,
-			ContextClass = AmpelContext,
-			one_db = args.get('one_db', False)
+			args, unknown_args, ContextClass = AmpelContext,
+			require_existing_db = args['db'] or True, one_db='auto'
 		)
 
 		maybe_load_idmapper(args)

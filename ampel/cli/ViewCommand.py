@@ -4,7 +4,7 @@
 # License:             BSD-3-Clause
 # Author:              valery brinnel <firstname.lastname@gmail.com>
 # Date:                15.03.2021
-# Last Modified Date:  20.08.2022
+# Last Modified Date:  27.08.2022
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from argparse import ArgumentParser
@@ -26,10 +26,10 @@ hlp = {
 	'config': 'Path to an ampel config file (yaml/json)',
 	# Optional
 	'secrets': 'Path to a YAML secrets store in sops format',
+	'db': 'Database prefix. If set, "-mongo.prefix" value will be ignored',
 	'out': 'Path to file where serialized views will be saved (printed to stdout otherwise)',
 	'log-profile': 'One of: default, compact, headerless, verbose, debug',
 	'id-mapper': 'Convert stock ids using the provided id mapper (ex: ZTFIdMapper)',
-	'one-db': 'Whether the target ampel DB was created with flag one-db',
 	'channel': 'view for specified'
 }
 
@@ -66,7 +66,6 @@ class ViewCommand(AbsStockCommand, AbsLoadCommand):
 		builder.req('config')
 
 		# Optional args
-		builder.opt('one-db', action='store_true')
 		builder.opt('secrets', default=None)
 		builder.opt('id-mapper')
 		builder.opt('debug', action='store_true')
@@ -81,7 +80,7 @@ class ViewCommand(AbsStockCommand, AbsLoadCommand):
 
 		# Example
 		builder.example('show', 'view show -channel CHAN1 -stock 85628462 -no-t0')
-		builder.example('save', '-stock 519059889 -mongo.prefix MyDB -one-db -no-t0 -channel CHAN1 -out file.txt -binary')
+		builder.example('save', '-stock 519059889 -db MyDB -no-t0 -channel CHAN1 -out file.txt -binary')
 		
 		self.parsers.update(
 			builder.get()
@@ -98,9 +97,8 @@ class ViewCommand(AbsStockCommand, AbsLoadCommand):
 			return
 
 		ctx = self.get_context(
-			args, unknown_args,
-			ContextClass = AmpelContext,
-			one_db = args.get('one_db', False)
+			args, unknown_args, ContextClass = AmpelContext,
+			require_existing_db = args['db'] or True, one_db='auto'
 		)
 
 		maybe_load_idmapper(args)

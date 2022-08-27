@@ -4,11 +4,11 @@
 # License:             BSD-3-Clause
 # Author:              valery brinnel <firstname.lastname@gmail.com>
 # Date:                24.03.2021
-# Last Modified Date:  14.08.2022
+# Last Modified Date:  27.08.2022
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 import os
-from typing import Any
+from typing import Any, Literal
 from ampel.core.AmpelDB import AmpelDB
 from ampel.secret.AmpelVault import AmpelVault
 from ampel.config.AmpelConfig import AmpelConfig
@@ -34,8 +34,8 @@ def get_vault(args: dict[str, Any]) -> None | AmpelVault:
 def get_db(
 	config: AmpelConfig,
 	vault: None | AmpelVault = None,
-	require_existing_db: bool = True,
-	one_db: bool = False
+	require_existing_db: bool | str = True,
+	one_db: bool | Literal['auto'] = False,
 ) -> AmpelDB:
 
 	try:
@@ -47,7 +47,10 @@ def get_db(
 		)
 	except Exception as e:
 		if "Databases with prefix" in str(e):
-			s = "Databases with prefix " + config.get('mongo.prefix', str, raise_exc=True) + " do not exist"
+			s = "Databases with prefix " + (
+				require_existing_db if isinstance(require_existing_db, str) else
+				config.get('mongo.prefix', str, raise_exc=True)
+			) + " do not exist"
 			raise SystemExit("\n" + "="*len(s) + "\n" + s + "\n" + "="*len(s) + "\n")
 		raise e
 

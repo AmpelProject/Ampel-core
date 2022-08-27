@@ -461,8 +461,7 @@ class JobCommand(AbsCoreCommand):
 				'ampel', 'plot', 'show', '-stack', '100',
 				'-png', os.environ.get('AMPEL_PLOT_DPI', '150'),
 				'-t2', '-t3', '-base-path', 'body.plot', # to be improved later
-				'-one-db', '-db', job.mongo.prefix,
-				'-run-id', *[str(el) for el in run_ids],
+				'-db', job.mongo.prefix, '-run-id', *[str(el) for el in run_ids],
 			]
 
 			if args.get('debug'):

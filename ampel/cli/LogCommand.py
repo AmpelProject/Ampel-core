@@ -4,7 +4,7 @@
 # License:             BSD-3-Clause
 # Author:              valery brinnel <firstname.lastname@gmail.com>
 # Date:                15.03.2021
-# Last Modified Date:  20.08.2022
+# Last Modified Date:  27.08.2022
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from argparse import ArgumentParser
@@ -29,6 +29,7 @@ hlp = {
 	'tail': 'Like tail -f. Query interval can be customized with -refresh-rate (default: 1.0 second)\n',
 	'config': 'Path to an ampel config file (yaml/json)',
 	'secrets': 'Path to a YAML secrets store in sops format',
+	'db': 'Database prefix. If set, "-mongo.prefix" value will be ignored',
 	'after': 'Match logs emitted after the provided date-time string [%%]',
 	'before': 'Match logs emitted before the provided date-time string [%%]',
 	'stock': 'Stock id(s) [o]',
@@ -49,7 +50,6 @@ hlp = {
 	'main-separator': 'Main separator (space by default, ex: 2021-03-16T22:11:09.000Z INFO...)',
 	'extra-separator': 'Extra separator (space by default, ex: [run=1 stock=9])',
 	'refresh-rate': 'Tail refresh interval in seconds (float, default: 1.0 second)',
-	"one-db": "Whether the target ampel DB was created with flag one-db",
 	'verbose': 'Increases verbosity'
 }
 
@@ -84,10 +84,10 @@ class LogCommand(AbsCoreCommand):
 		# Required
 		builder.opt('config', type=str)
 		builder.req('out', 'save', type=str)
-		builder.opt('one-db', action='store_true')
 
 		# Optional
-		builder.opt('secrets')
+		builder.opt('secrets', default=None)
+		builder.opt('db', default=None)
 		builder.opt('id-mapper', type=str)
 
 		#parser.arg(g, 'tail', action='store', metavar='#', default=None, const=1.0, type=float, nargs='?')
@@ -151,8 +151,8 @@ class LogCommand(AbsCoreCommand):
 			a = ' -out /path/to/file.txt' if el == 'save' else ''
 			builder.example(el, "-run-json '{\"$gt\": 12}'", ref='§', prepend=p, append=a)
 			builder.example(el, '-stock 85628462', prepend=p, append=a)
-			builder.example(el, '-one-db -mongo.prefix MyDB -to-json', prepend=p, append=a)
-			builder.example(el, '-run 8 -mongo.prefix AmpelTest', prepend=p, append=a)
+			builder.example(el, '-db MyDB -to-json', prepend=p, append=a)
+			builder.example(el, '-run 8 -db AmpelTest', prepend=p, append=a)
 			if el != 'tail':
 				builder.example(el, '-after 2020-11-03T12:12:00', prepend=p, append=a)
 			builder.example(el, '-stock ZTF17aaatbxz ZTF20aaquaxr -id-mapper ZTFIdMapper', prepend=p, append=a)
@@ -172,9 +172,8 @@ class LogCommand(AbsCoreCommand):
 	def run(self, args: dict[str, Any], unknown_args: Sequence[str], sub_op: None | str = None) -> None:
 
 		ctx = self.get_context(
-			args, unknown_args,
-			ContextClass=AmpelContext,
-			one_db=args.get('one_db', False)
+			args, unknown_args, ContextClass=AmpelContext,
+			require_existing_db = args['db'] or True, one_db='auto'
 		)
 
 		self.flag_strings: dict = {}

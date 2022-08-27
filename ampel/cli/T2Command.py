@@ -4,7 +4,7 @@
 # License:             BSD-3-Clause
 # Author:              valery brinnel <firstname.lastname@gmail.com>
 # Date:                16.03.2021
-# Last Modified Date:  20.08.2022
+# Last Modified Date:  27.08.2022
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from json import dumps
@@ -35,8 +35,8 @@ hlp = {
 	"soft-reset": "Set the run state to NEW",
 	"config": "Path to an ampel config file (yaml/json)",
 	"secrets": "Path to a YAML secrets store in sops format",
-	"one-db": "Whether the target ampel DB was created with flag one-db",
 	'out': 'Path to file were output will be written (printed to stdout otherwise)',
+	'db': 'Database prefix. If set, "-mongo.prefix" value will be ignored',
 	"unit": "Unit id/name",
 	"limit": "Limit number of returned documents",
 	"unit-config": "Unit config (integer number). Use string 'null' to match null",
@@ -83,8 +83,8 @@ class T2Command(AbsCoreCommand):
 		builder.req('out', sub_ops='save')
 
 		# Optional general
-		builder.opt('one-db', action='store_true')
 		builder.opt('secrets', default=None)
+		builder.opt('db', default=None)
 		builder.opt('id-mapper', sub_ops='show|save')
 		builder.opt('dry-run', action='store_true')
 		builder.opt('debug', action='count', default=0, help='Debug')
@@ -119,13 +119,13 @@ class T2Command(AbsCoreCommand):
 		for el in sub_ops:
 			p = f"ampel t2 {el} -config ampel_conf.yaml "
 			a = " -out /path/to/file" if el == "save" else ""
-			builder.example(el, '-unit T2SNCosmo -db.prefix AmpelTest', prepend=p, append=a)
+			builder.example(el, '-unit T2SNCosmo -db AmpelTest', prepend=p, append=a)
 			builder.example(el, '-channel MY_CHANNEL -code -1', prepend=p, append=a)
 			builder.example(el, '-stock 122621027 122620210 -unit DemoTiedLightCurveT2Unit', prepend=p, append=a)
 
 		builder.example(
 			'show|save',
-			'-db.prefix AmpelTest -human-times -stock ZTF20aaqubac -resolve-config -id-mapper ZTFIdMapper'
+			'-db AmpelTest -human-times -stock ZTF20aaqubac -resolve-config -id-mapper ZTFIdMapper'
 		)
 
 		self.parsers = builder.get()
@@ -138,7 +138,11 @@ class T2Command(AbsCoreCommand):
 		if sub_op is None:
 			raise ValueError("A sub-operation (show, save, reset, soft-reset) needs to be specified")
 
-		ctx = self.get_context(args, unknown_args, ContextClass=AmpelContext, one_db=args.get('one_db', False))
+		ctx = self.get_context(
+			args, unknown_args, ContextClass=AmpelContext,
+			require_existing_db = args['db'] or True, one_db='auto'
+		)
+
 		logger = AmpelLogger.from_profile(
 			ctx, 'console_debug' if args['debug'] else 'console_info',
 			base_flag=LogFlag.MANUAL_RUN

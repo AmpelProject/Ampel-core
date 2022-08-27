@@ -4,11 +4,11 @@
 # License:             BSD-3-Clause
 # Author:              valery brinnel <firstname.lastname@gmail.com>
 # Date:                18.03.2021
-# Last Modified Date:  22.08.2022
+# Last Modified Date:  27.08.2022
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 import re, os
-from typing import Any, TypeVar
+from typing import Any, TypeVar, Literal
 from collections.abc import Sequence, Iterator
 from ampel.config.AmpelConfig import AmpelConfig
 from ampel.abstract.AbsCLIOperation import AbsCLIOperation
@@ -104,10 +104,13 @@ class AbsCoreCommand(AbsCLIOperation, abstract=True):
 		logger: None | AmpelLogger = None,
 		freeze_config: bool = True,
 		ContextClass: type[T] = AmpelContext, # type: ignore[assignment]
-		require_existing_db: bool = True,
-		one_db: bool = False,
+		require_existing_db: bool | str = True,
+		one_db: bool | Literal['auto'] = False,
 		**kwargs
 	) -> T:
+		"""
+		:require_existing_db: str typed values specify required database prefix
+		"""
 
 		if logger is None:
 			logger = AmpelLogger.get_logger()
