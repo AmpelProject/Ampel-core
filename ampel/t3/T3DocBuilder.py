@@ -4,7 +4,7 @@
 # License:             BSD-3-Clause
 # Author:              valery brinnel <firstname.lastname@gmail.com>
 # Date:                08.12.2021
-# Last Modified Date:  01.08.2022
+# Last Modified Date:  28.08.2022
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 from time import time
@@ -164,7 +164,7 @@ class T3DocBuilder(ContextUnit, T3DocBuilderModel):
 						self.adapters[res.adapter] = getattr(
 							import_module(f"ampel.core.adapter.{res.adapter}"),
 							res.adapter
-						)(context = self.context)
+						)(context=self.context, run_id=self.event_hdlr.get_run_id())
 					res = self.adapters[res.adapter].handle(res)
 
 				t3d['body'] = res.body
