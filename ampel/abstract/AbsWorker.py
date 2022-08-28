@@ -14,7 +14,6 @@ from typing import ClassVar, Any, TypeVar, Generic, Literal
 
 from pymongo.write_concern import WriteConcern
 
-from ampel.types import UBson, Tag
 from ampel.types import OneOrMany, JDict, UBson, Tag
 from ampel.base.decorator import abstractmethod
 from ampel.base.LogicalUnit import LogicalUnit
@@ -215,9 +214,10 @@ class AbsWorker(Generic[T], AbsEventUnit, abstract=True):
 
 			if garbage_collect:
 				gc.collect()
-		stock_updr.flush()
 
+		stock_updr.flush()
 		event_hdlr.add_extra(docs=self._doc_counter)
+
 		logger.flush()
 		self._instances.clear()
 
