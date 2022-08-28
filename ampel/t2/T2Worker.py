@@ -4,7 +4,7 @@
 # License:             BSD-3-Clause
 # Author:              valery brinnel <firstname.lastname@gmail.com>
 # Date:                24.05.2019
-# Last Modified Date:  17.05.2022
+# Last Modified Date:  28.08.2022
 # Last Modified By:    valery brinnel <firstname.lastname@gmail.com>
 
 import random
@@ -94,6 +94,7 @@ class T2Worker(AbsWorker[T2Document]):
 	#: failures. Different backoff strategies may be specified for different codes
 	backoff_on_retry: None | list[BackoffConfig] = [BackoffConfig()]
 
+
 	def __init__(self, **kwargs):
 		super().__init__(**kwargs)
 		self._backoff_on_retry = {
@@ -101,6 +102,7 @@ class T2Worker(AbsWorker[T2Document]):
 			for backoff in (self.backoff_on_retry or [])
 			for code in backoff.code_match
 		}
+
 
 	def process_doc(self,
 		doc: T2Document,
@@ -137,9 +139,10 @@ class T2Worker(AbsWorker[T2Document]):
 
 			# New (channel-less) journal entry for the associated stock document
 			trace_id = (
-				({'t2worker': self._trace_id} if self._trace_id is not None else {})
-				| ({'t2unit': t2_unit._trace_id} if t2_unit._trace_id is not None else {})
+				({'t2worker': self._trace_id} if self._trace_id else {}) |
+				({'t2unit': t2_unit._trace_id} if t2_unit._trace_id else {})
 			)
+
 			jrec = stock_updr.add_journal_record(
 				stock = doc['stock'],
 				channel = doc['channel'],
@@ -167,7 +170,7 @@ class T2Worker(AbsWorker[T2Document]):
 						self._adapters[ret.adapter] = getattr(
 							import_module(f"ampel.core.adapter.{ret.adapter}"),
 							ret.adapter
-						)(context = self.context)
+						)(context=self.context, run_id=stock_updr.run_id)
 					ret = self._adapters[ret.adapter].handle(ret)
 
 				if ret.body:
