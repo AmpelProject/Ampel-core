@@ -1,0 +1,178 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ampel.t3.select.T3StockSelector &#8212; ampel-core 0.7.6 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/sphinxdoc.css" />
+    <script data-url_root="../../../../" id="documentation_options" src="../../../../_static/documentation_options.js"></script>
+    <script src="../../../../_static/jquery.js"></script>
+    <script src="../../../../_static/underscore.js"></script>
+    <script src="../../../../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="nav-item nav-item-0"><a href="../../../../index.html">ampel-core 0.7.6 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../../index.html" accesskey="U">Module code</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">ampel.t3.select.T3StockSelector</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for ampel.t3.select.T3StockSelector</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/env python</span>
+<span class="c1"># -*- coding: utf-8 -*-</span>
+<span class="c1"># File              : Ampel-core/ampel/t3/select/T3StockSelector.py</span>
+<span class="c1"># License           : BSD-3-Clause</span>
+<span class="c1"># Author            : vb &lt;vbrinnel@physik.hu-berlin.de&gt;</span>
+<span class="c1"># Date              : 06.12.2019</span>
+<span class="c1"># Last Modified Date: 20.06.2020</span>
+<span class="c1"># Last Modified By  : vb &lt;vbrinnel@physik.hu-berlin.de&gt;</span>
+
+<span class="kn">from</span> <span class="nn">pymongo.cursor</span> <span class="kn">import</span> <span class="n">Cursor</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Union</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">Literal</span>
+
+<span class="kn">from</span> <span class="nn">ampel.type</span> <span class="kn">import</span> <span class="n">ChannelId</span><span class="p">,</span> <span class="n">Tag</span>
+<span class="kn">from</span> <span class="nn">ampel.db.query.stock</span> <span class="kn">import</span> <span class="n">build_stock_query</span>
+<span class="kn">from</span> <span class="nn">ampel.log.AmpelLogger</span> <span class="kn">import</span> <span class="n">AmpelLogger</span><span class="p">,</span> <span class="n">VERBOSE</span>
+<span class="kn">from</span> <span class="nn">ampel.log.utils</span> <span class="kn">import</span> <span class="n">safe_query_dict</span>
+<span class="kn">from</span> <span class="nn">ampel.t3.select.AbsT3Selector</span> <span class="kn">import</span> <span class="n">AbsT3Selector</span>
+<span class="kn">from</span> <span class="nn">ampel.model.operator.AllOf</span> <span class="kn">import</span> <span class="n">AllOf</span>
+<span class="kn">from</span> <span class="nn">ampel.model.operator.AnyOf</span> <span class="kn">import</span> <span class="n">AnyOf</span>
+<span class="kn">from</span> <span class="nn">ampel.model.operator.OneOf</span> <span class="kn">import</span> <span class="n">OneOf</span>
+<span class="kn">from</span> <span class="nn">ampel.model.time.TimeConstraintModel</span> <span class="kn">import</span> <span class="n">TimeConstraintModel</span>
+<span class="kn">from</span> <span class="nn">ampel.config.LogicSchemaUtils</span> <span class="kn">import</span> <span class="n">LogicSchemaUtils</span>
+
+
+<div class="viewcode-block" id="T3StockSelector"><a class="viewcode-back" href="../../../../api.html#ampel.t3.select.T3StockSelector.T3StockSelector">[docs]</a><span class="k">class</span> <span class="nc">T3StockSelector</span><span class="p">(</span><span class="n">AbsT3Selector</span><span class="p">):</span>
+	<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">	Default stock selector used by T3Processor</span>
+<span class="sd">	</span>
+<span class="sd">	Example configuration::</span>
+<span class="sd">	  </span>
+<span class="sd">	  {</span>
+<span class="sd">	     &quot;created&quot;: {&quot;after&quot;: {&quot;use&quot;: &quot;$timeDelta&quot;, &quot;arguments&quot;: {&quot;days&quot;: -40}}},</span>
+<span class="sd">	     &quot;modified&quot;: {&quot;after&quot;: {&quot;use&quot;: &quot;$timeDelta&quot;, &quot;arguments&quot;: {&quot;days&quot;: -1}}},</span>
+<span class="sd">	     &quot;channel&quot;: &quot;HU_GP_CLEAN&quot;,</span>
+<span class="sd">	     &quot;tags&quot;: {&quot;with&quot;: &quot;ZTF&quot;, &quot;without&quot;: &quot;HAS_ERROR&quot;}</span>
+<span class="sd">	  }</span>
+<span class="sd">	&quot;&quot;&quot;</span>
+
+	<span class="n">logger</span><span class="p">:</span> <span class="n">AmpelLogger</span>
+	<span class="c1">#: Select by creation time</span>
+	<span class="n">created</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">TimeConstraintModel</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+	<span class="c1">#: Select by modification time</span>
+	<span class="n">modified</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">TimeConstraintModel</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+	<span class="c1">#: Select by channel</span>
+	<span class="n">channel</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">ChannelId</span><span class="p">,</span> <span class="n">AnyOf</span><span class="p">[</span><span class="n">ChannelId</span><span class="p">],</span> <span class="n">AllOf</span><span class="p">[</span><span class="n">ChannelId</span><span class="p">],</span> <span class="n">OneOf</span><span class="p">[</span><span class="n">ChannelId</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span>
+	<span class="c1">#: Select by tag</span>
+	<span class="n">tag</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="n">Literal</span><span class="p">[</span><span class="s1">&#39;with&#39;</span><span class="p">,</span> <span class="s1">&#39;without&#39;</span><span class="p">],</span> <span class="n">Union</span><span class="p">[</span><span class="n">Tag</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">AllOf</span><span class="p">[</span><span class="n">Tag</span><span class="p">],</span> <span class="n">AnyOf</span><span class="p">[</span><span class="n">Tag</span><span class="p">],</span> <span class="n">OneOf</span><span class="p">[</span><span class="n">Tag</span><span class="p">]]]]</span> <span class="o">=</span> <span class="kc">None</span>
+
+
+	<span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+
+		<span class="k">if</span> <span class="s1">&#39;channel&#39;</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="p">:</span>
+			<span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;channel&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">LogicSchemaUtils</span><span class="o">.</span><span class="n">to_logical_struct</span><span class="p">(</span><span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;channel&#39;</span><span class="p">],</span> <span class="s1">&#39;channel&#39;</span><span class="p">)</span>
+
+		<span class="k">if</span> <span class="s1">&#39;tag&#39;</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="p">:</span>
+			<span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;tag&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+				<span class="n">k</span><span class="p">:</span> <span class="n">LogicSchemaUtils</span><span class="o">.</span><span class="n">to_logical_struct</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="s1">&#39;tag&#39;</span><span class="p">)</span>
+				<span class="k">for</span> <span class="n">k</span><span class="p">,</span><span class="n">v</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;tag&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+			<span class="p">}</span>
+
+		<span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+		<span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">logger</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+			<span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Parameter logger cannot be None&quot;</span><span class="p">)</span>
+
+
+	<span class="c1"># Override/Implement</span>
+<div class="viewcode-block" id="T3StockSelector.fetch"><a class="viewcode-back" href="../../../../api.html#ampel.t3.select.T3StockSelector.T3StockSelector.fetch">[docs]</a>	<span class="k">def</span> <span class="nf">fetch</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Cursor</span><span class="p">]:</span>
+
+		<span class="c1"># Build query for matching transients using criteria defined in config</span>
+		<span class="n">match_query</span> <span class="o">=</span> <span class="n">build_stock_query</span><span class="p">(</span>
+			<span class="n">channel</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">channel</span><span class="p">,</span>
+			<span class="n">tag</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">tag</span><span class="p">,</span>
+			<span class="n">time_created</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">created</span><span class="o">.</span><span class="n">get_query_model</span><span class="p">(</span><span class="n">db</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="o">.</span><span class="n">db</span><span class="p">)</span> \
+				<span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">created</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+			<span class="n">time_modified</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">modified</span><span class="o">.</span><span class="n">get_query_model</span><span class="p">(</span><span class="n">db</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="o">.</span><span class="n">db</span><span class="p">)</span> \
+				<span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">modified</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+		<span class="p">)</span>
+
+		<span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">verbose</span><span class="p">:</span>
+			<span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">VERBOSE</span><span class="p">,</span> <span class="s2">&quot;Executing search query&quot;</span><span class="p">,</span> <span class="n">extra</span><span class="o">=</span><span class="n">safe_query_dict</span><span class="p">(</span><span class="n">match_query</span><span class="p">))</span>
+
+		<span class="c1"># Execute &#39;find transients&#39; query</span>
+		<span class="n">cursor</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="o">.</span><span class="n">db</span> \
+			<span class="o">.</span><span class="n">get_collection</span><span class="p">(</span><span class="s1">&#39;stock&#39;</span><span class="p">)</span> \
+			<span class="o">.</span><span class="n">find</span><span class="p">(</span>
+				<span class="n">match_query</span><span class="p">,</span>
+				<span class="p">{</span><span class="s1">&#39;_id&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">},</span> <span class="c1"># indexed query</span>
+				<span class="n">no_cursor_timeout</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="c1"># allow query to live for &gt; 10 minutes</span>
+			<span class="p">)</span> \
+			<span class="o">.</span><span class="n">hint</span><span class="p">(</span><span class="s1">&#39;_id_1_channel_1&#39;</span><span class="p">)</span>
+
+		<span class="c1"># Count results</span>
+		<span class="k">if</span> <span class="n">cursor</span><span class="o">.</span><span class="n">count</span><span class="p">()</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+			<span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;No transient matches the given criteria&quot;</span><span class="p">)</span>
+			<span class="k">return</span> <span class="kc">None</span>
+
+		<span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+			<span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">cursor</span><span class="o">.</span><span class="n">count</span><span class="p">()</span><span class="si">}</span><span class="s2"> transients match search criteria&quot;</span>
+		<span class="p">)</span>
+
+		<span class="k">return</span> <span class="n">cursor</span></div></div>
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../../../index.html">
+              <img class="logo" src="../../../../_static/ampel.png" alt="Logo"/>
+            </a></p>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="nav-item nav-item-0"><a href="../../../../index.html">ampel-core 0.7.6 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../../index.html" >Module code</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">ampel.t3.select.T3StockSelector</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2018-2021, Ampel Project.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 4.0.2.
+    </div>
+  </body>
+</html>

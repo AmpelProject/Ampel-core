@@ -62,7 +62,7 @@ you may have. For example::
   unit:
     - ampel.contrib.groupname.t0.DecentFilterCopy
 
-The entries in `unit` are module names, i.e. :code:`ampel.contrib.groupname.t0.DecentFilterCopy` refers to the file ``ampel/contrib/groupname/t0/DecentFilterCopy.py``. This file must contain one class, with the same name as the module. For example, when :class:`~ampel.alert.AlertConsumer.AlertConsumer` requests instantiation of the unit named ``DecentFilterCopy``, the entry above will cause Ampel to do the equivalent of :code:`from ampel.contrib.groupname.t0.DecentFilterCopy import DecentFilterCopy`.
+The entries in `unit` are module names, i.e. :code:`ampel.contrib.groupname.t0.DecentFilterCopy` refers to the file ``ampel/contrib/groupname/t0/DecentFilterCopy.py``. This file must contain one class, with the same name as the module. For example, when :class:`~ampel.alert.AlertProcessor.AlertProcessor` requests instantiation of the unit named ``DecentFilterCopy``, the entry above will cause Ampel to do the equivalent of :code:`from ampel.contrib.groupname.t0.DecentFilterCopy import DecentFilterCopy`.
 
 Dictionaries can be either embedded directly into the top-level configuration
 file, or in standalone files named after the key. For example, `channel` key

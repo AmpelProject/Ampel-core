@@ -1,0 +1,1042 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ampel.t2.T2Processor &#8212; ampel-core 0.7.6 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/sphinxdoc.css" />
+    <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+    <script src="../../../_static/jquery.js"></script>
+    <script src="../../../_static/underscore.js"></script>
+    <script src="../../../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">ampel-core 0.7.6 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../index.html" accesskey="U">Module code</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">ampel.t2.T2Processor</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for ampel.t2.T2Processor</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/env python</span>
+<span class="c1"># -*- coding: utf-8 -*-</span>
+<span class="c1"># File              : Ampel-core/ampel/t2/T2Processor.py</span>
+<span class="c1"># License           : BSD-3-Clause</span>
+<span class="c1"># Author            : vb &lt;vbrinnel@physik.hu-berlin.de&gt;</span>
+<span class="c1"># Date              : 24.05.2019</span>
+<span class="c1"># Last Modified Date: 02.04.2021</span>
+<span class="c1"># Last Modified By  : vb &lt;vbrinnel@physik.hu-berlin.de&gt;</span>
+
+<span class="kn">import</span> <span class="nn">gc</span>
+<span class="kn">import</span> <span class="nn">random</span>
+<span class="kn">import</span> <span class="nn">signal</span>
+<span class="kn">from</span> <span class="nn">time</span> <span class="kn">import</span> <span class="n">time</span>
+<span class="kn">from</span> <span class="nn">bson</span> <span class="kn">import</span> <span class="n">ObjectId</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Union</span><span class="p">,</span> <span class="n">Type</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">cast</span><span class="p">,</span> <span class="n">overload</span>
+
+<span class="kn">import</span> <span class="nn">backoff</span>
+
+<span class="kn">from</span> <span class="nn">ampel.type</span> <span class="kn">import</span> <span class="n">DataPointId</span><span class="p">,</span> <span class="n">StockId</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">T2UnitResult</span><span class="p">,</span> <span class="n">Tag</span>
+<span class="kn">from</span> <span class="nn">ampel.db.query.utils</span> <span class="kn">import</span> <span class="n">match_array</span>
+<span class="kn">from</span> <span class="nn">ampel.util.collections</span> <span class="kn">import</span> <span class="n">try_reduce</span>
+<span class="kn">from</span> <span class="nn">ampel.log.utils</span> <span class="kn">import</span> <span class="n">convert_dollars</span>
+<span class="kn">from</span> <span class="nn">ampel.util.t1</span> <span class="kn">import</span> <span class="n">get_datapoint_ids</span>
+<span class="kn">from</span> <span class="nn">ampel.enum.T2RunState</span> <span class="kn">import</span> <span class="n">T2RunState</span>
+<span class="kn">from</span> <span class="nn">ampel.enum.T2SysRunState</span> <span class="kn">import</span> <span class="n">T2SysRunState</span>
+<span class="kn">from</span> <span class="nn">ampel.struct.T2BroadUnitResult</span> <span class="kn">import</span> <span class="n">T2BroadUnitResult</span>
+<span class="kn">from</span> <span class="nn">ampel.content.StockDocument</span> <span class="kn">import</span> <span class="n">StockDocument</span>
+<span class="kn">from</span> <span class="nn">ampel.content.DataPoint</span> <span class="kn">import</span> <span class="n">DataPoint</span>
+<span class="kn">from</span> <span class="nn">ampel.content.Compound</span> <span class="kn">import</span> <span class="n">Compound</span>
+<span class="kn">from</span> <span class="nn">ampel.content.T2Document</span> <span class="kn">import</span> <span class="n">T2Document</span>
+<span class="kn">from</span> <span class="nn">ampel.content.T2Record</span> <span class="kn">import</span> <span class="n">T2Record</span>
+<span class="kn">from</span> <span class="nn">ampel.content.JournalRecord</span> <span class="kn">import</span> <span class="n">JournalRecord</span>
+<span class="kn">from</span> <span class="nn">ampel.view.T2DocView</span> <span class="kn">import</span> <span class="n">T2DocView</span><span class="p">,</span> <span class="n">TYPE_POINT_T2</span><span class="p">,</span> <span class="n">TYPE_STOCK_T2</span><span class="p">,</span> <span class="n">TYPE_STATE_T2</span>
+<span class="kn">from</span> <span class="nn">ampel.log</span> <span class="kn">import</span> <span class="n">AmpelLogger</span><span class="p">,</span> <span class="n">DBEventDoc</span><span class="p">,</span> <span class="n">LogFlag</span><span class="p">,</span> <span class="n">VERBOSE</span>
+<span class="kn">from</span> <span class="nn">ampel.base.BadConfig</span> <span class="kn">import</span> <span class="n">BadConfig</span>
+<span class="kn">from</span> <span class="nn">ampel.log.utils</span> <span class="kn">import</span> <span class="n">report_exception</span><span class="p">,</span> <span class="n">report_error</span>
+<span class="kn">from</span> <span class="nn">ampel.log.handlers.DefaultRecordBufferingHandler</span> <span class="kn">import</span> <span class="n">DefaultRecordBufferingHandler</span>
+<span class="kn">from</span> <span class="nn">ampel.util.mappings</span> <span class="kn">import</span> <span class="n">build_unsafe_short_dict_id</span>
+<span class="kn">from</span> <span class="nn">ampel.abstract.AbsProcessorUnit</span> <span class="kn">import</span> <span class="n">AbsProcessorUnit</span>
+<span class="kn">from</span> <span class="nn">ampel.abstract.AbsStockT2Unit</span> <span class="kn">import</span> <span class="n">AbsStockT2Unit</span>
+<span class="kn">from</span> <span class="nn">ampel.abstract.AbsPointT2Unit</span> <span class="kn">import</span> <span class="n">AbsPointT2Unit</span>
+<span class="kn">from</span> <span class="nn">ampel.abstract.AbsStateT2Unit</span> <span class="kn">import</span> <span class="n">AbsStateT2Unit</span>
+<span class="kn">from</span> <span class="nn">ampel.abstract.AbsCustomStateT2Unit</span> <span class="kn">import</span> <span class="n">AbsCustomStateT2Unit</span>
+<span class="kn">from</span> <span class="nn">ampel.abstract.AbsTiedT2Unit</span> <span class="kn">import</span> <span class="n">AbsTiedT2Unit</span>
+<span class="kn">from</span> <span class="nn">ampel.abstract.AbsTiedPointT2Unit</span> <span class="kn">import</span> <span class="n">AbsTiedPointT2Unit</span>
+<span class="kn">from</span> <span class="nn">ampel.abstract.AbsTiedStateT2Unit</span> <span class="kn">import</span> <span class="n">AbsTiedStateT2Unit</span>
+<span class="kn">from</span> <span class="nn">ampel.abstract.AbsTiedStockT2Unit</span> <span class="kn">import</span> <span class="n">AbsTiedStockT2Unit</span>
+<span class="kn">from</span> <span class="nn">ampel.abstract.AbsTiedCustomStateT2Unit</span> <span class="kn">import</span> <span class="n">AbsTiedCustomStateT2Unit</span>
+<span class="kn">from</span> <span class="nn">ampel.model.UnitModel</span> <span class="kn">import</span> <span class="n">UnitModel</span>
+<span class="kn">from</span> <span class="nn">ampel.model.StateT2Dependency</span> <span class="kn">import</span> <span class="n">StateT2Dependency</span>
+<span class="kn">from</span> <span class="nn">ampel.model.StrictModel</span> <span class="kn">import</span> <span class="n">StrictModel</span>
+<span class="kn">from</span> <span class="nn">ampel.core.JournalUpdater</span> <span class="kn">import</span> <span class="n">JournalUpdater</span>
+<span class="kn">from</span> <span class="nn">ampel.metrics.AmpelMetricsRegistry</span> <span class="kn">import</span> <span class="n">AmpelMetricsRegistry</span>
+
+<span class="n">AbsT2</span> <span class="o">=</span> <span class="n">Union</span><span class="p">[</span>
+	<span class="n">AbsStockT2Unit</span><span class="p">,</span> <span class="n">AbsPointT2Unit</span><span class="p">,</span> <span class="n">AbsStateT2Unit</span><span class="p">,</span> <span class="n">AbsTiedPointT2Unit</span><span class="p">,</span>
+	<span class="n">AbsTiedStateT2Unit</span><span class="p">,</span> <span class="n">AbsCustomStateT2Unit</span><span class="p">[</span><span class="n">T</span><span class="p">],</span> <span class="n">AbsTiedCustomStateT2Unit</span><span class="p">[</span><span class="n">T</span><span class="p">],</span>
+<span class="p">]</span>
+
+<span class="n">stat_latency</span> <span class="o">=</span> <span class="n">AmpelMetricsRegistry</span><span class="o">.</span><span class="n">histogram</span><span class="p">(</span>
+	<span class="s2">&quot;latency&quot;</span><span class="p">,</span>
+	<span class="s2">&quot;Delay between T2 doc creation and processing&quot;</span><span class="p">,</span>
+	<span class="n">subsystem</span><span class="o">=</span><span class="s2">&quot;t2&quot;</span><span class="p">,</span>
+	<span class="n">unit</span><span class="o">=</span><span class="s2">&quot;seconds&quot;</span><span class="p">,</span>
+	<span class="n">labelnames</span><span class="o">=</span><span class="p">(</span><span class="s2">&quot;unit&quot;</span><span class="p">,</span> <span class="p">),</span>
+<span class="p">)</span>
+
+<span class="n">stat_count</span> <span class="o">=</span> <span class="n">AmpelMetricsRegistry</span><span class="o">.</span><span class="n">counter</span><span class="p">(</span>
+	<span class="s2">&quot;docs_processed&quot;</span><span class="p">,</span>
+	<span class="s2">&quot;Number of T2 documents processed&quot;</span><span class="p">,</span>
+	<span class="n">subsystem</span><span class="o">=</span><span class="s2">&quot;t2&quot;</span><span class="p">,</span>
+	<span class="n">labelnames</span><span class="o">=</span><span class="p">(</span><span class="s2">&quot;unit&quot;</span><span class="p">,</span> <span class="p">)</span>
+<span class="p">)</span>
+
+<span class="k">class</span> <span class="nc">BackoffConfig</span><span class="p">(</span><span class="n">StrictModel</span><span class="p">):</span>
+	<span class="n">base</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">2</span>
+	<span class="n">factor</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">1</span>
+	<span class="n">jitter</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>
+
+<div class="viewcode-block" id="T2Processor"><a class="viewcode-back" href="../../../api.html#ampel.t2.T2Processor.T2Processor">[docs]</a><span class="k">class</span> <span class="nc">T2Processor</span><span class="p">(</span><span class="n">AbsProcessorUnit</span><span class="p">):</span>
+	<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">	Fill results into pending :class:`T2 documents &lt;ampel.content.T2Document.T2Document&gt;`.</span>
+<span class="sd">	&quot;&quot;&quot;</span>
+
+	<span class="c1">#: ids of the t2 units to run. If not specified, any t2 unit will be run.</span>
+	<span class="n">t2_units</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span>
+	<span class="c1">#: process only those :class:`T2 documents &lt;ampel.content.T2Document.T2Document&gt;`</span>
+	<span class="c1">#: with the given :attr:`~ampel.content.T2Document.T2Document.status`</span>
+	<span class="n">run_state</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">T2SysRunState</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">T2SysRunState</span><span class="p">]]</span> <span class="o">=</span> <span class="p">[</span>
+		<span class="n">T2SysRunState</span><span class="o">.</span><span class="n">NEW</span><span class="p">,</span>
+		<span class="n">T2SysRunState</span><span class="o">.</span><span class="n">NEW_PRIO</span><span class="p">,</span>
+		<span class="n">T2SysRunState</span><span class="o">.</span><span class="n">PENDING_DEPENDENCY</span><span class="p">,</span>
+		<span class="n">T2SysRunState</span><span class="o">.</span><span class="n">RERUN_REQUESTED</span>
+	<span class="p">]</span>
+	<span class="c1">#: max number of t2 docs to process in :func:`run`</span>
+	<span class="n">doc_limit</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span>
+	<span class="c1">#: tag(s) to add to the stock :class:`~ampel.content.JournalRecord.JournalRecord`</span>
+	<span class="c1">#: every time a :class:`~ampel.content.T2Document.T2Document` is processed</span>
+	<span class="n">stock_jtag</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">Tag</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Tag</span><span class="p">]]]</span>
+	<span class="c1">#: create a &quot;beacon&quot; document indicating the last time T2Processor was run</span>
+	<span class="c1">#: in the current configuration</span>
+	<span class="n">send_beacon</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>
+	<span class="c1">#: explicitly call :func:`gc.collect` after every document</span>
+	<span class="n">garbage_collect</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>
+	<span class="c1">#: process dependencies of :class:`tied T2 units &lt;ampel.abtract.AbsTiedT2Unit.AbsTiedT2Unit&gt;`</span>
+	<span class="n">run_dependent_t2s</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+	<span class="c1">#: maximum number of processing attempts per document</span>
+	<span class="n">max_try</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">5</span>
+	<span class="c1">#: Add an exponentially increasing delay on PENDING_DEPENDENCY</span>
+	<span class="n">backoff_on_retry</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">BackoffConfig</span><span class="p">]</span> <span class="o">=</span> <span class="n">BackoffConfig</span><span class="p">()</span>
+
+	<span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+
+		<span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">_ampel_db</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="o">.</span><span class="n">db</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">_loader</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="o">.</span><span class="n">loader</span>
+
+		<span class="c1"># Ampel hashes unit class names in prod environment</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">hashes</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">optimize</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;general.optimize&#39;</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span>
+
+		<span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">optimize</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">optimize</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+			<span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">d</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;t2.unit.base&#39;</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span> <span class="c1"># type: ignore[union-attr]</span>
+				<span class="bp">self</span><span class="o">.</span><span class="n">hashes</span><span class="p">[</span><span class="n">d</span><span class="p">[</span><span class="s1">&#39;hash&#39;</span><span class="p">]]</span> <span class="o">=</span> <span class="n">k</span>
+
+		<span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">run_state</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>
+			<span class="bp">self</span><span class="o">.</span><span class="n">status_match</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">T2SysRunState</span><span class="p">,</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="n">T2SysRunState</span><span class="p">]]]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">run_state</span>
+		<span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">run_state</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+			<span class="bp">self</span><span class="o">.</span><span class="n">status_match</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;$in&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">run_state</span><span class="p">}</span>
+		<span class="k">else</span><span class="p">:</span> <span class="c1"># Could be a tuple (pymongo requires list)</span>
+			<span class="bp">self</span><span class="o">.</span><span class="n">status_match</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;$in&quot;</span><span class="p">:</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">run_state</span><span class="p">)}</span>
+
+		<span class="c1"># Prepare DB query dict</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">query</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;status&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">status_match</span><span class="p">}</span>
+
+		<span class="c1"># Possibly restrict query to specified t2 units</span>
+		<span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">t2_units</span><span class="p">:</span>
+			<span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">t2_units</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+				<span class="bp">self</span><span class="o">.</span><span class="n">query</span><span class="p">[</span><span class="s1">&#39;unit&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">t2_units</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+			<span class="k">else</span><span class="p">:</span>
+				<span class="bp">self</span><span class="o">.</span><span class="n">query</span><span class="p">[</span><span class="s1">&#39;unit&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;$in&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">t2_units</span><span class="p">}</span>
+
+		<span class="c1"># Shortcut</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">col_stock</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ampel_db</span><span class="o">.</span><span class="n">get_collection</span><span class="p">(</span><span class="s1">&#39;stock&#39;</span><span class="p">)</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">col_t0</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ampel_db</span><span class="o">.</span><span class="n">get_collection</span><span class="p">(</span><span class="s1">&#39;t0&#39;</span><span class="p">)</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">col_t1</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ampel_db</span><span class="o">.</span><span class="n">get_collection</span><span class="p">(</span><span class="s1">&#39;t1&#39;</span><span class="p">)</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">col_t2</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ampel_db</span><span class="o">.</span><span class="n">get_collection</span><span class="p">(</span><span class="s1">&#39;t2&#39;</span><span class="p">)</span>
+
+		<span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">send_beacon</span><span class="p">:</span>
+			<span class="bp">self</span><span class="o">.</span><span class="n">create_beacon</span><span class="p">()</span>
+
+		<span class="c1"># t2_instances stores unit instances so that they can be re-used in run()</span>
+		<span class="c1"># Key: run config id(unit name + &#39;_&#39; + run_config name), Value: unit instance</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">t2_instances</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">AbsT2</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+
+		<span class="bp">self</span><span class="o">.</span><span class="n">_run</span> <span class="o">=</span> <span class="kc">True</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">_doc_counter</span> <span class="o">=</span> <span class="mi">0</span>
+		<span class="n">signal</span><span class="o">.</span><span class="n">signal</span><span class="p">(</span><span class="n">signal</span><span class="o">.</span><span class="n">SIGTERM</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">sig_exit</span><span class="p">)</span>
+		<span class="n">signal</span><span class="o">.</span><span class="n">signal</span><span class="p">(</span><span class="n">signal</span><span class="o">.</span><span class="n">SIGINT</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">sig_exit</span><span class="p">)</span>
+
+
+	<span class="k">def</span> <span class="nf">sig_exit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">signum</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">frame</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+		<span class="sd">&quot;&quot;&quot; Executed when SIGTERM/SIGINT is caught. Stops doc processing in run() &quot;&quot;&quot;</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">_run</span> <span class="o">=</span> <span class="kc">False</span>
+
+
+	<span class="k">def</span> <span class="nf">create_beacon</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+		<span class="sd">&quot;&quot;&quot; Creates a beacon document if it does not exist yet &quot;&quot;&quot;</span>
+
+		<span class="n">args</span> <span class="o">=</span> <span class="p">{</span>
+			<span class="s1">&#39;class&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span>
+			<span class="s1">&#39;t2_units&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">t2_units</span><span class="p">,</span>
+			<span class="s1">&#39;run_state&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">status_match</span><span class="p">,</span>
+			<span class="s1">&#39;base_log_flag&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">base_log_flag</span><span class="o">.</span><span class="fm">__int__</span><span class="p">(),</span>
+			<span class="s1">&#39;doc_limit&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">doc_limit</span>
+		<span class="p">}</span>
+
+		<span class="bp">self</span><span class="o">.</span><span class="n">beacon_id</span> <span class="o">=</span> <span class="n">build_unsafe_short_dict_id</span><span class="p">(</span><span class="n">args</span><span class="p">)</span>
+
+		<span class="c1"># Create beacon doc if it does not exist yet</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">col_beacon</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ampel_db</span><span class="o">.</span><span class="n">get_collection</span><span class="p">(</span><span class="s1">&#39;beacon&#39;</span><span class="p">)</span>
+
+		<span class="c1"># Create specific beacon doc if it does not exist yet</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">col_beacon</span><span class="o">.</span><span class="n">update_one</span><span class="p">(</span>
+			<span class="p">{</span><span class="s1">&#39;_id&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">beacon_id</span><span class="p">},</span>
+			<span class="p">{</span>
+				<span class="s1">&#39;$setOnInsert&#39;</span><span class="p">:</span> <span class="p">{</span>
+					<span class="s1">&#39;class&#39;</span><span class="p">:</span> <span class="n">args</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;class&#39;</span><span class="p">),</span>
+					<span class="s1">&#39;config&#39;</span><span class="p">:</span> <span class="n">convert_dollars</span><span class="p">(</span><span class="n">args</span><span class="p">)</span>
+				<span class="p">},</span>
+				<span class="s1">&#39;$set&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;timestamp&#39;</span><span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="n">time</span><span class="p">())}</span>
+			<span class="p">},</span>
+			<span class="n">upsert</span><span class="o">=</span><span class="kc">True</span>
+		<span class="p">)</span>
+
+
+<div class="viewcode-block" id="T2Processor.run"><a class="viewcode-back" href="../../../api.html#ampel.t2.T2Processor.T2Processor.run">[docs]</a>	<span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pre_check</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+		<span class="sd">&quot;&quot;&quot; :returns: number of t2 docs processed &quot;&quot;&quot;</span>
+
+		<span class="c1"># Add new doc in the &#39;events&#39; collection</span>
+		<span class="n">event_doc</span> <span class="o">=</span> <span class="n">DBEventDoc</span><span class="p">(</span>
+			<span class="bp">self</span><span class="o">.</span><span class="n">_ampel_db</span><span class="p">,</span> <span class="n">process_name</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">process_name</span><span class="p">,</span> <span class="n">tier</span><span class="o">=</span><span class="mi">2</span>
+		<span class="p">)</span>
+
+		<span class="c1"># Exclude documents with a retry time in the future</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">query</span><span class="p">[</span><span class="s1">&#39;$expr&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;$not&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;$lt&#39;</span><span class="p">:</span> <span class="p">[</span><span class="n">time</span><span class="p">(),</span> <span class="p">{</span><span class="s1">&#39;$last&#39;</span><span class="p">:</span> <span class="s1">&#39;$body.retry_after&#39;</span><span class="p">}]}}</span>
+
+		<span class="c1"># Avoid &#39;burning&#39; a run_id for nothing (at the cost of a request)		</span>
+		<span class="k">if</span> <span class="n">pre_check</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">col_t2</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">query</span><span class="p">)</span><span class="o">.</span><span class="n">count</span><span class="p">()</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+			<span class="k">return</span> <span class="mi">0</span>
+
+		<span class="n">run_id</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">new_run_id</span><span class="p">()</span>
+
+		<span class="n">logger</span> <span class="o">=</span> <span class="n">AmpelLogger</span><span class="o">.</span><span class="n">from_profile</span><span class="p">(</span>
+			<span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">log_profile</span><span class="p">,</span> <span class="n">run_id</span><span class="p">,</span>
+			<span class="n">base_flag</span> <span class="o">=</span> <span class="n">LogFlag</span><span class="o">.</span><span class="n">T2</span> <span class="o">|</span> <span class="n">LogFlag</span><span class="o">.</span><span class="n">CORE</span> <span class="o">|</span> <span class="bp">self</span><span class="o">.</span><span class="n">base_log_flag</span>
+		<span class="p">)</span>
+
+		<span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">send_beacon</span><span class="p">:</span>
+			<span class="bp">self</span><span class="o">.</span><span class="n">col_beacon</span><span class="o">.</span><span class="n">update_one</span><span class="p">(</span>
+				<span class="p">{</span><span class="s1">&#39;_id&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">beacon_id</span><span class="p">},</span>
+				<span class="p">{</span><span class="s1">&#39;$set&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;timestamp&#39;</span><span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="n">time</span><span class="p">())}}</span>
+			<span class="p">)</span>
+
+		<span class="n">jupdater</span> <span class="o">=</span> <span class="n">JournalUpdater</span><span class="p">(</span>
+			<span class="n">ampel_db</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="o">.</span><span class="n">db</span><span class="p">,</span> <span class="n">tier</span> <span class="o">=</span> <span class="mi">2</span><span class="p">,</span> <span class="n">run_id</span> <span class="o">=</span> <span class="n">run_id</span><span class="p">,</span>
+			<span class="n">process_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">process_name</span><span class="p">,</span> <span class="n">logger</span> <span class="o">=</span> <span class="n">logger</span><span class="p">,</span>
+			<span class="n">raise_exc</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">raise_exc</span><span class="p">,</span> <span class="n">extra_tag</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">stock_jtag</span>
+		<span class="p">)</span>
+
+		<span class="c1"># Loop variables</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">_doc_counter</span> <span class="o">=</span> <span class="mi">0</span>
+		<span class="n">update</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;$set&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;status&#39;</span><span class="p">:</span> <span class="n">T2SysRunState</span><span class="o">.</span><span class="n">RUNNING</span><span class="p">}}</span>
+		<span class="n">doc_limit</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">doc_limit</span>
+		<span class="n">garbage_collect</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">garbage_collect</span>
+
+		<span class="c1"># Process t2 docs until next() returns None (breaks condition below)</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">_run</span> <span class="o">=</span> <span class="kc">True</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">_exception</span> <span class="o">=</span> <span class="kc">False</span>
+		<span class="k">while</span> <span class="bp">self</span><span class="o">.</span><span class="n">_run</span><span class="p">:</span>
+
+			<span class="c1"># get t2 document (status is usually NEW or NEW_PRIO)</span>
+			<span class="n">t2_doc</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">col_t2</span><span class="o">.</span><span class="n">find_one_and_update</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">query</span><span class="p">,</span> <span class="n">update</span><span class="p">)</span>
+
+			<span class="c1"># Cursor exhausted</span>
+			<span class="k">if</span> <span class="n">t2_doc</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+				<span class="k">break</span>
+			<span class="k">elif</span> <span class="n">logger</span><span class="o">.</span><span class="n">verbose</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+				<span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;T2 doc: </span><span class="si">{</span><span class="n">t2_doc</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+			<span class="bp">self</span><span class="o">.</span><span class="n">process_t2_doc</span><span class="p">(</span><span class="n">t2_doc</span><span class="p">,</span> <span class="n">logger</span><span class="p">,</span> <span class="n">jupdater</span><span class="p">)</span>
+
+			<span class="c1"># Check possibly defined doc_limit</span>
+			<span class="k">if</span> <span class="n">doc_limit</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_doc_counter</span> <span class="o">&gt;=</span> <span class="n">doc_limit</span><span class="p">:</span>
+				<span class="k">break</span>
+
+			<span class="k">if</span> <span class="n">garbage_collect</span><span class="p">:</span>
+				<span class="n">gc</span><span class="o">.</span><span class="n">collect</span><span class="p">()</span>
+
+		<span class="n">event_doc</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">logger</span><span class="p">,</span> <span class="n">docs</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_doc_counter</span><span class="p">,</span> <span class="n">run</span><span class="o">=</span><span class="n">run_id</span><span class="p">,</span> <span class="n">success</span><span class="o">=</span><span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_exception</span><span class="p">)</span>
+
+		<span class="n">logger</span><span class="o">.</span><span class="n">flush</span><span class="p">()</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">t2_instances</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+		<span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_doc_counter</span></div>
+
+
+	<span class="k">def</span> <span class="nf">process_t2_doc</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+		<span class="n">t2_doc</span><span class="p">:</span> <span class="n">T2Document</span><span class="p">,</span> <span class="n">logger</span><span class="p">:</span> <span class="n">AmpelLogger</span><span class="p">,</span> <span class="n">jupdater</span><span class="p">:</span> <span class="n">JournalUpdater</span>
+	<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">T2Record</span><span class="p">:</span> 
+
+		<span class="n">before_run</span> <span class="o">=</span> <span class="n">time</span><span class="p">()</span>
+
+		<span class="n">t2_unit</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_unit_instance</span><span class="p">(</span><span class="n">t2_doc</span><span class="p">,</span> <span class="n">logger</span><span class="p">)</span>
+
+		<span class="k">try</span><span class="p">:</span>
+
+			<span class="n">t2_rec</span><span class="p">:</span> <span class="n">T2Record</span> <span class="o">=</span> <span class="p">{</span>
+				<span class="s1">&#39;run&#39;</span><span class="p">:</span> <span class="n">jupdater</span><span class="o">.</span><span class="n">run_id</span><span class="p">,</span>
+			<span class="p">}</span>
+			<span class="n">j_rec</span><span class="p">:</span> <span class="n">JournalRecord</span> <span class="o">=</span> <span class="p">{}</span>
+
+			<span class="k">if</span> <span class="p">(</span><span class="n">trials</span> <span class="o">:=</span> <span class="nb">len</span><span class="p">(</span><span class="n">t2_doc</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;body&quot;</span><span class="p">,</span> <span class="p">[])))</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_try</span><span class="p">:</span>
+				<span class="n">ret</span><span class="p">:</span> <span class="n">T2UnitResult</span> <span class="o">=</span> <span class="n">T2SysRunState</span><span class="o">.</span><span class="n">TOO_MANY_TRIALS</span>
+			<span class="k">else</span><span class="p">:</span>
+				<span class="n">ret</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">run_t2_unit</span><span class="p">(</span><span class="n">t2_unit</span><span class="p">,</span> <span class="n">t2_doc</span><span class="p">,</span> <span class="n">logger</span><span class="p">,</span> <span class="n">jupdater</span><span class="p">)</span>
+
+			<span class="c1"># Used as timestamp and to compute duration below (using before_run)</span>
+			<span class="n">now</span> <span class="o">=</span> <span class="n">time</span><span class="p">()</span>
+
+			<span class="c1"># _id is an ObjectId, but declared as bytes in ampel-interface to avoid</span>
+			<span class="c1"># an explicit dependency on pymongo</span>
+			<span class="n">stat_latency</span><span class="o">.</span><span class="n">labels</span><span class="p">(</span><span class="n">t2_doc</span><span class="p">[</span><span class="s2">&quot;unit&quot;</span><span class="p">])</span><span class="o">.</span><span class="n">observe</span><span class="p">(</span>
+				<span class="n">now</span> <span class="o">-</span> <span class="n">cast</span><span class="p">(</span><span class="s2">&quot;ObjectId&quot;</span><span class="p">,</span> <span class="n">t2_doc</span><span class="p">[</span><span class="s2">&quot;_id&quot;</span><span class="p">])</span><span class="o">.</span><span class="n">generation_time</span><span class="o">.</span><span class="n">timestamp</span><span class="p">()</span>
+			<span class="p">)</span>
+			<span class="n">stat_count</span><span class="o">.</span><span class="n">labels</span><span class="p">(</span><span class="n">t2_doc</span><span class="p">[</span><span class="s2">&quot;unit&quot;</span><span class="p">])</span><span class="o">.</span><span class="n">inc</span><span class="p">()</span>
+			<span class="bp">self</span><span class="o">.</span><span class="n">_doc_counter</span> <span class="o">+=</span> <span class="mi">1</span>
+
+			<span class="c1"># New journal entry for the associated stock document</span>
+			<span class="n">j_rec</span> <span class="o">=</span> <span class="n">jupdater</span><span class="o">.</span><span class="n">add_record</span><span class="p">(</span>
+				<span class="n">stock</span> <span class="o">=</span> <span class="n">t2_doc</span><span class="p">[</span><span class="s1">&#39;stock&#39;</span><span class="p">],</span>
+				<span class="n">doc_id</span> <span class="o">=</span> <span class="n">t2_doc</span><span class="p">[</span><span class="s1">&#39;_id&#39;</span><span class="p">],</span>
+				<span class="n">unit</span> <span class="o">=</span> <span class="n">t2_doc</span><span class="p">[</span><span class="s1">&#39;unit&#39;</span><span class="p">],</span>
+				<span class="n">channel</span> <span class="o">=</span> <span class="n">try_reduce</span><span class="p">(</span><span class="n">t2_doc</span><span class="p">[</span><span class="s1">&#39;channel&#39;</span><span class="p">])</span>
+			<span class="p">)</span>
+
+			<span class="c1"># New t2 sub-result entry (later appended with additional values)</span>
+			<span class="n">t2_rec</span> <span class="o">=</span> <span class="p">{</span>
+				<span class="s1">&#39;ts&#39;</span><span class="p">:</span> <span class="n">j_rec</span><span class="p">[</span><span class="s1">&#39;ts&#39;</span><span class="p">],</span>
+				<span class="s1">&#39;run&#39;</span><span class="p">:</span> <span class="n">jupdater</span><span class="o">.</span><span class="n">run_id</span><span class="p">,</span>
+				<span class="s1">&#39;duration&#39;</span><span class="p">:</span> <span class="nb">round</span><span class="p">(</span><span class="n">now</span> <span class="o">-</span> <span class="n">before_run</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
+			<span class="p">}</span>
+
+			<span class="n">tag</span> <span class="o">=</span> <span class="kc">None</span>
+			<span class="k">if</span> <span class="n">v</span> <span class="o">:=</span> <span class="n">t2_unit</span><span class="o">.</span><span class="n">get_version</span><span class="p">():</span>
+				<span class="n">t2_rec</span><span class="p">[</span><span class="s1">&#39;version&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">v</span>
+
+			<span class="c1"># T2 units can return a T2RunState integer rather than a dict instance / tuple</span>
+			<span class="c1"># for example: T2RunState.ERROR, T2RunState.PENDING_DEPENDENCY, ...</span>
+			<span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ret</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>
+				<span class="k">if</span> <span class="n">ret</span> <span class="ow">in</span> <span class="n">T2SysRunState</span><span class="o">.</span><span class="n">__members__</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
+					<span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;T2Processor status: </span><span class="si">{</span><span class="n">ret</span><span class="si">}</span><span class="s1"> (</span><span class="si">{</span><span class="n">T2SysRunState</span><span class="p">(</span><span class="n">ret</span><span class="p">)</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s1">)&#39;</span><span class="p">)</span>
+				<span class="k">else</span><span class="p">:</span>
+					<span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;T2 unit returned int </span><span class="si">{</span><span class="n">ret</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+				<span class="n">doc_status</span> <span class="o">=</span> <span class="n">ret</span>
+				<span class="n">t2_rec</span><span class="p">[</span><span class="s1">&#39;status&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ret</span>
+				<span class="n">j_rec</span><span class="p">[</span><span class="s1">&#39;status&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ret</span>
+				<span class="c1"># set retry time for missing dependencies, similar to</span>
+				<span class="c1"># https://github.com/litl/backoff</span>
+				<span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">backoff_on_retry</span> <span class="ow">and</span> <span class="n">ret</span> <span class="o">==</span> <span class="n">T2SysRunState</span><span class="o">.</span><span class="n">PENDING_DEPENDENCY</span><span class="p">:</span>
+					<span class="n">delay</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">backoff_on_retry</span><span class="o">.</span><span class="n">factor</span> <span class="o">*</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">backoff_on_retry</span><span class="o">.</span><span class="n">base</span> <span class="o">**</span> <span class="n">trials</span><span class="p">)</span>
+					<span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">backoff_on_retry</span><span class="o">.</span><span class="n">jitter</span><span class="p">:</span>
+						<span class="n">delay</span> <span class="o">=</span> <span class="n">random</span><span class="o">.</span><span class="n">uniform</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">delay</span><span class="p">)</span>
+					<span class="n">t2_rec</span><span class="p">[</span><span class="s1">&#39;retry_after&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">t2_rec</span><span class="p">[</span><span class="s1">&#39;ts&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="nb">int</span><span class="p">(</span><span class="n">delay</span> <span class="o">+</span> <span class="mf">0.5</span><span class="p">)</span> <span class="c1"># type: ignore[misc]</span>
+
+
+			<span class="c1"># Unit returned just a dict result</span>
+			<span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ret</span><span class="p">,</span> <span class="p">(</span><span class="nb">dict</span><span class="p">,</span> <span class="nb">list</span><span class="p">)):</span>
+				<span class="n">doc_status</span> <span class="o">=</span> <span class="n">T2RunState</span><span class="o">.</span><span class="n">COMPLETED</span>
+				<span class="n">t2_rec</span><span class="p">[</span><span class="s1">&#39;result&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ret</span>
+				<span class="n">t2_rec</span><span class="p">[</span><span class="s1">&#39;status&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">T2RunState</span><span class="o">.</span><span class="n">COMPLETED</span>
+				<span class="n">j_rec</span><span class="p">[</span><span class="s1">&#39;status&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">T2RunState</span><span class="o">.</span><span class="n">COMPLETED</span>
+
+			<span class="c1"># Customizations request by T2 unit</span>
+			<span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ret</span><span class="p">,</span> <span class="n">T2BroadUnitResult</span><span class="p">):</span>
+				<span class="n">t2_rec</span><span class="p">[</span><span class="s1">&#39;result&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ret</span><span class="o">.</span><span class="n">rec_payload</span>
+				<span class="n">t2_rec</span><span class="p">[</span><span class="s1">&#39;status&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ret</span><span class="o">.</span><span class="n">rec_status</span>
+				<span class="n">doc_status</span> <span class="o">=</span> <span class="n">ret</span><span class="o">.</span><span class="n">doc_status</span>
+				<span class="n">tag</span> <span class="o">=</span> <span class="n">ret</span><span class="o">.</span><span class="n">doc_tag</span>
+
+				<span class="c1"># This just sets a default as journal status can be customized via j_tweak</span>
+				<span class="n">j_rec</span><span class="p">[</span><span class="s1">&#39;status&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">T2RunState</span><span class="o">.</span><span class="n">COMPLETED</span>
+
+				<span class="c1"># Custom JournalTweak returned by unit</span>
+				<span class="k">if</span> <span class="p">(</span><span class="n">j_tweak</span> <span class="o">:=</span> <span class="n">ret</span><span class="o">.</span><span class="n">stock_journal_tweak</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+
+					<span class="k">if</span> <span class="n">j_tweak</span><span class="o">.</span><span class="n">tag</span><span class="p">:</span>
+						<span class="n">t2_rec</span><span class="p">[</span><span class="s1">&#39;jup&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
+						<span class="n">JournalUpdater</span><span class="o">.</span><span class="n">include_tags</span><span class="p">(</span><span class="n">j_rec</span><span class="p">,</span> <span class="n">j_tweak</span><span class="o">.</span><span class="n">tag</span><span class="p">)</span>
+
+					<span class="k">if</span> <span class="n">j_tweak</span><span class="o">.</span><span class="n">status</span><span class="p">:</span>
+						<span class="n">t2_rec</span><span class="p">[</span><span class="s1">&#39;jup&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
+						<span class="n">j_rec</span><span class="p">[</span><span class="s1">&#39;status&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">j_tweak</span><span class="o">.</span><span class="n">status</span>
+
+					<span class="k">if</span> <span class="n">j_tweak</span><span class="o">.</span><span class="n">extra</span><span class="p">:</span>
+						<span class="n">t2_rec</span><span class="p">[</span><span class="s1">&#39;jup&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
+						<span class="n">j_rec</span><span class="p">[</span><span class="s1">&#39;extra&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">j_tweak</span><span class="o">.</span><span class="n">extra</span>
+
+			<span class="c1"># Unsupported object returned by unit</span>
+			<span class="k">else</span><span class="p">:</span>
+				<span class="n">doc_status</span> <span class="o">=</span> <span class="n">t2_rec</span><span class="p">[</span><span class="s1">&#39;status&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">j_rec</span><span class="p">[</span><span class="s1">&#39;status&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">T2RunState</span><span class="o">.</span><span class="n">ERROR</span>
+				<span class="bp">self</span><span class="o">.</span><span class="n">_processing_error</span><span class="p">(</span>
+					<span class="n">logger</span><span class="p">,</span> <span class="n">t2_doc</span><span class="o">=</span><span class="n">t2_doc</span><span class="p">,</span> <span class="n">t2_rec</span><span class="o">=</span><span class="n">t2_rec</span><span class="p">,</span> <span class="n">j_rec</span><span class="o">=</span><span class="n">j_rec</span><span class="p">,</span>
+					<span class="n">rec_msg</span><span class="o">=</span><span class="s1">&#39;Unit returned invalid content&#39;</span><span class="p">,</span>
+					<span class="n">report_msg</span><span class="o">=</span><span class="s1">&#39;Invalid content returned by T2 unit&#39;</span><span class="p">,</span>
+					<span class="n">extra</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;ret&#39;</span><span class="p">:</span> <span class="n">ret</span><span class="p">}</span>
+				<span class="p">)</span>
+
+			<span class="c1"># TODO: check that unit did not use system reserved status</span>
+
+			<span class="c1"># Empty payload returned, should not happen</span>
+			<span class="k">if</span> <span class="s1">&#39;result&#39;</span> <span class="ow">in</span> <span class="n">t2_rec</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">t2_rec</span><span class="p">[</span><span class="s1">&#39;result&#39;</span><span class="p">]:</span>
+				<span class="k">del</span> <span class="n">t2_rec</span><span class="p">[</span><span class="s1">&#39;result&#39;</span><span class="p">]</span>
+				<span class="n">logger</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
+					<span class="s2">&quot;T2 unit return empty content&quot;</span><span class="p">,</span>
+					<span class="n">extra</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;t2_doc&#39;</span><span class="p">:</span> <span class="n">t2_doc</span><span class="p">}</span>
+				<span class="p">)</span>
+
+			<span class="bp">self</span><span class="o">.</span><span class="n">push_t2_update</span><span class="p">(</span>
+				<span class="n">t2_doc</span><span class="p">[</span><span class="s1">&#39;_id&#39;</span><span class="p">],</span> <span class="n">t2_rec</span><span class="p">,</span> <span class="n">logger</span><span class="p">,</span>
+				<span class="n">tag</span><span class="o">=</span><span class="n">tag</span><span class="p">,</span> <span class="n">status</span><span class="o">=</span><span class="n">doc_status</span>
+			<span class="p">)</span>
+
+			<span class="c1"># Update stock document</span>
+			<span class="n">jupdater</span><span class="o">.</span><span class="n">flush</span><span class="p">()</span>
+
+		<span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+			<span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">raise_exc</span><span class="p">:</span>
+				<span class="k">raise</span> <span class="n">e</span>
+			<span class="bp">self</span><span class="o">.</span><span class="n">_processing_error</span><span class="p">(</span>
+				<span class="n">logger</span><span class="p">,</span> <span class="n">t2_doc</span><span class="o">=</span><span class="n">t2_doc</span><span class="p">,</span> <span class="n">t2_rec</span><span class="o">=</span><span class="n">t2_rec</span><span class="p">,</span> <span class="n">j_rec</span><span class="o">=</span><span class="n">j_rec</span><span class="p">,</span>
+				<span class="n">exception</span><span class="o">=</span><span class="n">e</span><span class="p">,</span> <span class="n">rec_msg</span><span class="o">=</span><span class="s1">&#39;An exception occured&#39;</span>
+			<span class="p">)</span>
+
+		<span class="k">return</span> <span class="n">t2_rec</span>
+
+
+	<span class="nd">@overload</span>
+	<span class="k">def</span> <span class="nf">load_input_docs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+		<span class="n">t2_unit</span><span class="p">:</span> <span class="n">AbsPointT2Unit</span><span class="p">,</span>
+		<span class="n">t2_doc</span><span class="p">:</span> <span class="n">T2Document</span><span class="p">,</span> <span class="n">logger</span><span class="p">:</span> <span class="n">AmpelLogger</span><span class="p">,</span> <span class="n">jupdater</span><span class="p">:</span> <span class="n">JournalUpdater</span>
+	<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="n">T2SysRunState</span><span class="p">,</span> <span class="n">DataPoint</span><span class="p">]:</span>
+		<span class="s2">&quot;&quot;</span>
+		<span class="o">...</span>
+
+	<span class="nd">@overload</span>
+	<span class="k">def</span> <span class="nf">load_input_docs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+		<span class="n">t2_unit</span><span class="p">:</span> <span class="n">AbsTiedPointT2Unit</span><span class="p">,</span>
+		<span class="n">t2_doc</span><span class="p">:</span> <span class="n">T2Document</span><span class="p">,</span> <span class="n">logger</span><span class="p">:</span> <span class="n">AmpelLogger</span><span class="p">,</span> <span class="n">jupdater</span><span class="p">:</span> <span class="n">JournalUpdater</span>
+	<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="n">T2SysRunState</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">DataPoint</span><span class="p">,</span> <span class="n">T2DocView</span><span class="p">]]:</span>
+		<span class="s2">&quot;&quot;</span>
+		<span class="o">...</span>
+
+	<span class="nd">@overload</span>
+	<span class="k">def</span> <span class="nf">load_input_docs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+		<span class="n">t2_unit</span><span class="p">:</span> <span class="n">AbsStateT2Unit</span><span class="p">,</span>
+		<span class="n">t2_doc</span><span class="p">:</span> <span class="n">T2Document</span><span class="p">,</span> <span class="n">logger</span><span class="p">:</span> <span class="n">AmpelLogger</span><span class="p">,</span> <span class="n">jupdater</span><span class="p">:</span> <span class="n">JournalUpdater</span><span class="p">,</span>
+	<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="n">Compound</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">DataPoint</span><span class="p">]]]:</span>
+		<span class="s2">&quot;&quot;</span>
+		<span class="o">...</span>
+
+
+	<span class="nd">@overload</span>
+	<span class="k">def</span> <span class="nf">load_input_docs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+		<span class="n">t2_unit</span><span class="p">:</span> <span class="n">AbsTiedStateT2Unit</span><span class="p">,</span>
+		<span class="n">t2_doc</span><span class="p">:</span> <span class="n">T2Document</span><span class="p">,</span> <span class="n">logger</span><span class="p">:</span> <span class="n">AmpelLogger</span><span class="p">,</span> <span class="n">jupdater</span><span class="p">:</span> <span class="n">JournalUpdater</span>
+	<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="n">T2SysRunState</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">Compound</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">DataPoint</span><span class="p">],</span> <span class="n">List</span><span class="p">[</span><span class="n">T2DocView</span><span class="p">]]]:</span>
+		<span class="s2">&quot;&quot;</span>
+		<span class="o">...</span>
+
+
+	<span class="nd">@overload</span>
+	<span class="k">def</span> <span class="nf">load_input_docs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+		<span class="n">t2_unit</span><span class="p">:</span> <span class="n">AbsCustomStateT2Unit</span><span class="p">[</span><span class="n">T</span><span class="p">],</span>
+		<span class="n">t2_doc</span><span class="p">:</span> <span class="n">T2Document</span><span class="p">,</span> <span class="n">logger</span><span class="p">:</span> <span class="n">AmpelLogger</span><span class="p">,</span> <span class="n">jupdater</span><span class="p">:</span> <span class="n">JournalUpdater</span>
+	<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="n">T</span><span class="p">]]:</span>
+		<span class="s2">&quot;&quot;</span>
+		<span class="o">...</span>
+
+
+	<span class="nd">@overload</span>
+	<span class="k">def</span> <span class="nf">load_input_docs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+		<span class="n">t2_unit</span><span class="p">:</span> <span class="n">AbsTiedCustomStateT2Unit</span><span class="p">[</span><span class="n">T</span><span class="p">],</span>
+		<span class="n">t2_doc</span><span class="p">:</span> <span class="n">T2Document</span><span class="p">,</span> <span class="n">logger</span><span class="p">:</span> <span class="n">AmpelLogger</span><span class="p">,</span> <span class="n">jupdater</span><span class="p">:</span> <span class="n">JournalUpdater</span>
+	<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="n">T2SysRunState</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">T</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="n">T2DocView</span><span class="p">]]]:</span>
+		<span class="s2">&quot;&quot;</span>
+		<span class="o">...</span>
+
+	<span class="nd">@overload</span>
+	<span class="k">def</span> <span class="nf">load_input_docs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+		<span class="n">t2_unit</span><span class="p">:</span> <span class="n">AbsStockT2Unit</span><span class="p">,</span>
+		<span class="n">t2_doc</span><span class="p">:</span> <span class="n">T2Document</span><span class="p">,</span> <span class="n">logger</span><span class="p">:</span> <span class="n">AmpelLogger</span><span class="p">,</span> <span class="n">jupdater</span><span class="p">:</span> <span class="n">JournalUpdater</span>
+	<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="s2">&quot;StockDocument&quot;</span><span class="p">]]:</span>
+		<span class="o">...</span>
+
+
+	<span class="c1"># NB: spell out union arg to ensure a common context for the TypeVar T</span>
+	<span class="k">def</span> <span class="nf">load_input_docs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+		<span class="n">t2_unit</span><span class="p">:</span> <span class="n">AbsT2</span><span class="p">,</span> <span class="n">t2_doc</span><span class="p">:</span> <span class="n">T2Document</span><span class="p">,</span>
+		<span class="n">logger</span><span class="p">:</span> <span class="n">AmpelLogger</span><span class="p">,</span> <span class="n">jupdater</span><span class="p">:</span> <span class="n">JournalUpdater</span>
+	<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span>
+		<span class="kc">None</span><span class="p">,</span>
+		<span class="n">T2SysRunState</span><span class="p">,</span>                                         <span class="c1"># Error / missing dependency</span>
+		<span class="n">DataPoint</span><span class="p">,</span>                                             <span class="c1"># point t2</span>
+		<span class="n">Tuple</span><span class="p">[</span><span class="n">DataPoint</span><span class="p">,</span> <span class="n">T2DocView</span><span class="p">],</span>                           <span class="c1"># tied point t2</span>
+		<span class="n">Tuple</span><span class="p">[</span><span class="s2">&quot;StockDocument&quot;</span><span class="p">],</span>                                <span class="c1"># stock t2</span>
+		<span class="n">Tuple</span><span class="p">[</span><span class="n">Compound</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">DataPoint</span><span class="p">]],</span>                  <span class="c1"># state t2</span>
+		<span class="n">Tuple</span><span class="p">[</span><span class="n">T</span><span class="p">],</span>                                              <span class="c1"># custom state t2 (T could be LightCurve)</span>
+		<span class="n">Tuple</span><span class="p">[</span><span class="n">Compound</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">DataPoint</span><span class="p">],</span> <span class="n">List</span><span class="p">[</span><span class="n">T2DocView</span><span class="p">]],</span> <span class="c1"># tied state t2</span>
+		<span class="n">Tuple</span><span class="p">[</span><span class="n">T</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="n">T2DocView</span><span class="p">]],</span>                             <span class="c1"># tied custom state t2</span>
+	<span class="p">]:</span>
+		<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">		Fetches documents required by `t2_unit`.</span>
+
+<span class="sd">		:param t2_unit: instance to fetch input docs for</span>
+<span class="sd">		:param t2_doc: document for which inputs are needed</span>
+<span class="sd">		:param logger: logger</span>
+<span class="sd">		:param jupdater: journal update service</span>
+
+<span class="sd">		Regarding tied T2s (unit depends on other T2s):</span>
+<span class="sd">		</span>
+<span class="sd">		- Dependent T2s will be executed if run_dependent_t2s is True.</span>
+<span class="sd">		- Note that the ingester ingests point and state t2s before state t2s so that the natural ordering</span>
+<span class="sd">		  of T2 docs to be processed fits rather well a setup with a single T2processor instance processing all T2s.</span>
+<span class="sd">		- For state t2s tied with other state t2s, putting the dependent units first in the AlertProcessor</span>
+<span class="sd">		  directives will make sure these are ingested first and thus processed first by T2Processor.</span>
+<span class="sd">		&quot;&quot;&quot;</span>
+
+		<span class="c1"># State bound T2 units require loading of compound doc and datapoints</span>
+		<span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span>
+			<span class="n">t2_unit</span><span class="p">,</span> <span class="p">(</span>
+				<span class="n">AbsStateT2Unit</span><span class="p">,</span>
+				<span class="n">AbsCustomStateT2Unit</span><span class="p">,</span>
+				<span class="n">AbsTiedStateT2Unit</span><span class="p">,</span>
+				<span class="n">AbsTiedCustomStateT2Unit</span>
+			<span class="p">)</span>
+		<span class="p">):</span>
+			<span class="n">datapoints</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">DataPoint</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+			<span class="c1"># If multiple links are avail, they should be all equivalent</span>
+			<span class="n">link</span> <span class="o">=</span> <span class="n">t2_doc</span><span class="p">[</span><span class="s1">&#39;link&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">t2_doc</span><span class="p">[</span><span class="s1">&#39;link&#39;</span><span class="p">],</span> <span class="nb">list</span><span class="p">)</span> <span class="k">else</span> <span class="n">t2_doc</span><span class="p">[</span><span class="s1">&#39;link&#39;</span><span class="p">]</span>
+			<span class="n">compound</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Compound</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">load_compound</span><span class="p">(</span><span class="n">link</span><span class="p">)</span>
+
+			<span class="c1"># compound doc must exist (None could mean an ingester bug)</span>
+			<span class="k">if</span> <span class="n">compound</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+				<span class="n">report_error</span><span class="p">(</span>
+					<span class="bp">self</span><span class="o">.</span><span class="n">_ampel_db</span><span class="p">,</span> <span class="n">msg</span><span class="o">=</span><span class="s1">&#39;Compound not found&#39;</span><span class="p">,</span> <span class="n">logger</span><span class="o">=</span><span class="n">logger</span><span class="p">,</span>
+					<span class="n">info</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;id&#39;</span><span class="p">:</span> <span class="n">t2_doc</span><span class="p">[</span><span class="s1">&#39;link&#39;</span><span class="p">],</span> <span class="s1">&#39;doc&#39;</span><span class="p">:</span> <span class="n">t2_doc</span><span class="p">}</span>
+				<span class="p">)</span>
+				<span class="k">return</span> <span class="kc">None</span>
+
+			<span class="c1"># Datarights: suppress channel info (T3 uses instead a</span>
+			<span class="c1"># &#39;projection&#39; technic that should not be necessary here)</span>
+			<span class="n">compound</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;channel&#39;</span><span class="p">)</span>
+
+			<span class="c1"># Datapoints marked as excluded in the compound won&#39;t be included</span>
+			<span class="n">dps_ids</span> <span class="o">=</span> <span class="n">get_datapoint_ids</span><span class="p">(</span><span class="n">compound</span><span class="p">,</span> <span class="n">logger</span><span class="p">)</span>
+			<span class="n">datapoints</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">load_datapoints</span><span class="p">(</span><span class="n">dps_ids</span><span class="p">)</span>
+
+			<span class="k">if</span> <span class="ow">not</span> <span class="n">datapoints</span><span class="p">:</span>
+				<span class="n">report_error</span><span class="p">(</span>
+					<span class="bp">self</span><span class="o">.</span><span class="n">_ampel_db</span><span class="p">,</span> <span class="n">msg</span><span class="o">=</span><span class="s1">&#39;Datapoints not found&#39;</span><span class="p">,</span> <span class="n">logger</span><span class="o">=</span><span class="n">logger</span><span class="p">,</span>
+					<span class="n">info</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;id&#39;</span><span class="p">:</span> <span class="n">compound</span><span class="p">,</span> <span class="s1">&#39;doc&#39;</span><span class="p">:</span> <span class="n">t2_doc</span><span class="p">}</span>
+				<span class="p">)</span>
+				<span class="k">return</span> <span class="kc">None</span>
+
+			<span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">datapoints</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">dps_ids</span><span class="p">):</span>
+				<span class="k">for</span> <span class="n">el</span> <span class="ow">in</span> <span class="nb">set</span><span class="p">(</span><span class="n">dps_ids</span><span class="p">)</span> <span class="o">-</span> <span class="p">{</span><span class="n">el</span><span class="p">[</span><span class="s1">&#39;_id&#39;</span><span class="p">]</span> <span class="k">for</span> <span class="n">el</span> <span class="ow">in</span> <span class="n">datapoints</span><span class="p">}:</span>
+					<span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Datapoint </span><span class="si">{</span><span class="n">el</span><span class="si">}</span><span class="s2"> referenced in compound not found&quot;</span><span class="p">)</span>
+				<span class="k">return</span> <span class="kc">None</span>
+
+			<span class="k">for</span> <span class="n">dp</span> <span class="ow">in</span> <span class="n">datapoints</span><span class="p">:</span>
+				<span class="n">dp</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;excl&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span> <span class="c1"># Channel based exclusion</span>
+				<span class="n">dp</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;extra&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+				<span class="n">dp</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;policy&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+
+			<span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">t2_unit</span><span class="p">,</span> <span class="n">AbsTiedT2Unit</span><span class="p">):</span>
+
+				<span class="n">queries</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="p">[]</span>
+
+				<span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">t2_unit</span><span class="p">,</span> <span class="n">AbsTiedCustomStateT2Unit</span><span class="p">):</span>
+					<span class="c1"># A LightCurve instance for example</span>
+					<span class="n">custom_state</span> <span class="o">=</span> <span class="n">t2_unit</span><span class="o">.</span><span class="n">build</span><span class="p">(</span><span class="n">compound</span><span class="p">,</span> <span class="n">datapoints</span><span class="p">)</span>
+
+				<span class="k">for</span> <span class="n">tied_model</span> <span class="ow">in</span> <span class="n">t2_unit</span><span class="o">.</span><span class="n">get_t2_dependencies</span><span class="p">():</span>
+
+					<span class="n">d</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">build_tied_t2_query</span><span class="p">(</span><span class="n">t2_unit</span><span class="p">,</span> <span class="n">tied_model</span><span class="p">,</span> <span class="n">t2_doc</span><span class="p">)</span>
+					<span class="k">if</span> <span class="n">d</span><span class="p">[</span><span class="s1">&#39;link&#39;</span><span class="p">]</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+
+						<span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">tied_model</span><span class="p">,</span> <span class="n">StateT2Dependency</span><span class="p">)</span> <span class="ow">and</span> <span class="n">tied_model</span><span class="o">.</span><span class="n">link_override</span><span class="p">:</span>
+							<span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">t2_unit</span><span class="p">,</span> <span class="n">AbsTiedCustomStateT2Unit</span><span class="p">):</span>
+								<span class="n">d</span><span class="p">[</span><span class="s1">&#39;link&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">t2_unit</span><span class="o">.</span><span class="n">get_link</span><span class="p">(</span><span class="n">tied_model</span><span class="o">.</span><span class="n">link_override</span><span class="p">,</span> <span class="n">custom_state</span><span class="p">)</span>
+							<span class="k">else</span><span class="p">:</span>
+								<span class="n">d</span><span class="p">[</span><span class="s1">&#39;link&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">t2_unit</span><span class="o">.</span><span class="n">get_link</span><span class="p">(</span> <span class="c1"># type: ignore[union-attr] # mypy forgot the first &quot;if&quot; of this method</span>
+									<span class="n">tied_model</span><span class="o">.</span><span class="n">link_override</span><span class="p">,</span> <span class="n">compound</span><span class="p">,</span> <span class="n">datapoints</span>
+								<span class="p">)</span>
+						<span class="k">else</span><span class="p">:</span>
+							<span class="n">d</span><span class="p">[</span><span class="s1">&#39;link&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">match_array</span><span class="p">(</span><span class="n">dps_ids</span><span class="p">)</span>
+
+					<span class="n">queries</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">d</span><span class="p">)</span>
+
+				<span class="n">tied_views</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">run_tied_queries</span><span class="p">(</span><span class="n">queries</span><span class="p">,</span> <span class="n">t2_doc</span><span class="p">,</span> <span class="n">jupdater</span><span class="p">,</span> <span class="n">logger</span><span class="p">)</span>
+
+				<span class="c1"># Dependency missing</span>
+				<span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">tied_views</span><span class="p">,</span> <span class="n">T2SysRunState</span><span class="p">):</span>
+					<span class="k">return</span> <span class="n">tied_views</span>
+
+				<span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">t2_unit</span><span class="p">,</span> <span class="n">AbsTiedStateT2Unit</span><span class="p">):</span>
+					<span class="k">return</span> <span class="p">(</span><span class="n">compound</span><span class="p">,</span> <span class="n">datapoints</span><span class="p">,</span> <span class="n">tied_views</span><span class="p">)</span>
+
+				<span class="c1"># instance of AbsTiedCustomStateT2Unit</span>
+				<span class="k">return</span> <span class="p">(</span><span class="n">custom_state</span><span class="p">,</span> <span class="n">tied_views</span><span class="p">)</span>
+
+			<span class="k">else</span><span class="p">:</span>
+
+				<span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">t2_unit</span><span class="p">,</span> <span class="n">AbsStateT2Unit</span><span class="p">):</span>
+					<span class="k">return</span> <span class="p">(</span><span class="n">compound</span><span class="p">,</span> <span class="n">datapoints</span><span class="p">)</span>
+
+				<span class="k">else</span><span class="p">:</span> <span class="c1"># instance of AbsCustomStateT2Unit</span>
+					<span class="k">return</span> <span class="p">(</span><span class="n">t2_unit</span><span class="o">.</span><span class="n">build</span><span class="p">(</span><span class="n">compound</span><span class="p">,</span> <span class="n">datapoints</span><span class="p">),</span> <span class="p">)</span>
+
+		<span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">t2_unit</span><span class="p">,</span> <span class="p">(</span><span class="n">AbsStockT2Unit</span><span class="p">,</span> <span class="n">AbsPointT2Unit</span><span class="p">,</span> <span class="n">AbsTiedPointT2Unit</span><span class="p">)):</span>
+
+			<span class="k">if</span> <span class="n">doc</span> <span class="o">:=</span> <span class="p">(</span>
+				<span class="bp">self</span><span class="o">.</span><span class="n">load_datapoint</span><span class="p">(</span><span class="n">t2_doc</span><span class="p">[</span><span class="s1">&#39;link&#39;</span><span class="p">])</span>
+				<span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">t2_unit</span><span class="p">,</span> <span class="n">AbsPointT2Unit</span><span class="p">)</span>
+				<span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">load_stock</span><span class="p">(</span><span class="n">t2_doc</span><span class="p">[</span><span class="s1">&#39;link&#39;</span><span class="p">])</span>
+			<span class="p">):</span>
+				<span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">t2_unit</span><span class="p">,</span> <span class="n">AbsTiedPointT2Unit</span><span class="p">):</span>
+
+					<span class="n">tied_views</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">run_tied_queries</span><span class="p">(</span>
+						<span class="p">[</span>
+							<span class="bp">self</span><span class="o">.</span><span class="n">build_tied_t2_query</span><span class="p">(</span><span class="n">t2_unit</span><span class="p">,</span> <span class="n">tied_model</span><span class="p">,</span> <span class="n">t2_doc</span><span class="p">)</span>
+							<span class="k">for</span> <span class="n">tied_model</span> <span class="ow">in</span> <span class="n">t2_unit</span><span class="o">.</span><span class="n">get_t2_dependencies</span><span class="p">()</span>
+						<span class="p">],</span>
+						<span class="n">t2_doc</span><span class="p">,</span> <span class="n">jupdater</span><span class="p">,</span> <span class="n">logger</span>
+					<span class="p">)</span>
+
+					<span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">tied_views</span><span class="p">,</span> <span class="n">T2SysRunState</span><span class="p">):</span>
+						<span class="k">return</span> <span class="n">tied_views</span>
+
+					<span class="k">return</span> <span class="p">(</span><span class="n">doc</span><span class="p">,</span> <span class="n">tied_views</span><span class="p">)</span>
+
+				<span class="k">return</span> <span class="p">(</span><span class="n">doc</span><span class="p">,</span> <span class="p">)</span>
+
+			<span class="n">report_error</span><span class="p">(</span>
+				<span class="bp">self</span><span class="o">.</span><span class="n">_ampel_db</span><span class="p">,</span> <span class="n">msg</span><span class="o">=</span><span class="s1">&#39;Datapoint not found&#39;</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">t2_unit</span><span class="p">,</span> <span class="p">(</span><span class="n">AbsTiedPointT2Unit</span><span class="p">,</span> <span class="n">AbsPointT2Unit</span><span class="p">))</span>
+				<span class="k">else</span> <span class="s1">&#39;Stock doc not found&#39;</span><span class="p">,</span> <span class="n">logger</span><span class="o">=</span><span class="n">logger</span><span class="p">,</span> <span class="n">info</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;doc&#39;</span><span class="p">:</span> <span class="n">t2_doc</span><span class="p">}</span>
+			<span class="p">)</span>
+
+			<span class="k">return</span> <span class="kc">None</span>
+
+		<span class="k">else</span><span class="p">:</span>
+
+			<span class="n">report_error</span><span class="p">(</span>
+				<span class="bp">self</span><span class="o">.</span><span class="n">_ampel_db</span><span class="p">,</span> <span class="n">msg</span><span class="o">=</span><span class="s1">&#39;Unknown T2 unit type&#39;</span><span class="p">,</span>
+				<span class="n">logger</span><span class="o">=</span><span class="n">logger</span><span class="p">,</span> <span class="n">info</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;doc&#39;</span><span class="p">:</span> <span class="n">t2_doc</span><span class="p">}</span>
+			<span class="p">)</span>
+
+			<span class="k">return</span> <span class="kc">None</span>
+
+
+	<span class="c1"># allow 10 seconds for input documents to become available</span>
+	<span class="nd">@backoff</span><span class="o">.</span><span class="n">on_predicate</span><span class="p">(</span><span class="n">backoff</span><span class="o">.</span><span class="n">expo</span><span class="p">,</span> <span class="n">max_time</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
+	<span class="k">def</span> <span class="nf">load_compound</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">link</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Compound</span><span class="p">]:</span>
+		<span class="k">return</span> <span class="nb">next</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">col_t1</span><span class="o">.</span><span class="n">find</span><span class="p">({</span><span class="s1">&#39;_id&#39;</span><span class="p">:</span> <span class="n">link</span><span class="p">}),</span> <span class="kc">None</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="T2Processor.load_datapoints"><a class="viewcode-back" href="../../../api.html#ampel.t2.T2Processor.T2Processor.load_datapoints">[docs]</a>	<span class="nd">@backoff</span><span class="o">.</span><span class="n">on_predicate</span><span class="p">(</span><span class="n">backoff</span><span class="o">.</span><span class="n">expo</span><span class="p">,</span> <span class="n">max_time</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
+	<span class="k">def</span> <span class="nf">load_datapoints</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dps_ids</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">DataPointId</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">DataPoint</span><span class="p">]:</span>
+		<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">		Load datapoints in the order they appear in dps_ids.</span>
+<span class="sd">		&quot;&quot;&quot;</span>
+		<span class="k">return</span> <span class="p">(</span>
+			<span class="nb">sorted</span><span class="p">(</span><span class="n">dps</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">dp</span><span class="p">:</span> <span class="n">dps_ids</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">dp</span><span class="p">[</span><span class="s2">&quot;_id&quot;</span><span class="p">]))</span>
+			<span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">dps</span> <span class="o">:=</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">col_t0</span><span class="o">.</span><span class="n">find</span><span class="p">({</span><span class="s1">&#39;_id&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;$in&quot;</span><span class="p">:</span> <span class="n">dps_ids</span><span class="p">}})))</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">dps_ids</span><span class="p">)</span>
+			<span class="k">else</span> <span class="nb">list</span><span class="p">()</span>
+		<span class="p">)</span></div>
+
+
+	<span class="nd">@backoff</span><span class="o">.</span><span class="n">on_predicate</span><span class="p">(</span><span class="n">backoff</span><span class="o">.</span><span class="n">expo</span><span class="p">,</span> <span class="n">max_time</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
+	<span class="k">def</span> <span class="nf">load_datapoint</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">link</span><span class="p">:</span> <span class="n">DataPointId</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">DataPoint</span><span class="p">]:</span>
+		<span class="k">return</span> <span class="nb">next</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">col_t0</span><span class="o">.</span><span class="n">find</span><span class="p">({</span><span class="s1">&#39;_id&#39;</span><span class="p">:</span> <span class="n">link</span><span class="p">}),</span> <span class="kc">None</span><span class="p">)</span>
+
+
+	<span class="nd">@backoff</span><span class="o">.</span><span class="n">on_predicate</span><span class="p">(</span><span class="n">backoff</span><span class="o">.</span><span class="n">expo</span><span class="p">,</span> <span class="n">max_time</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
+	<span class="k">def</span> <span class="nf">load_stock</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">link</span><span class="p">:</span> <span class="n">StockId</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">StockDocument</span><span class="p">]:</span>
+		<span class="k">return</span> <span class="nb">next</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">col_stock</span><span class="o">.</span><span class="n">find</span><span class="p">({</span><span class="s1">&#39;_id&#39;</span><span class="p">:</span> <span class="n">link</span><span class="p">}),</span> <span class="kc">None</span><span class="p">)</span>
+
+
+	<span class="k">def</span> <span class="nf">run_tied_queries</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+		<span class="n">queries</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]],</span>
+		<span class="n">t2_doc</span><span class="p">:</span> <span class="n">T2Document</span><span class="p">,</span>
+		<span class="n">jupdater</span><span class="p">:</span> <span class="n">JournalUpdater</span><span class="p">,</span>
+		<span class="n">logger</span><span class="p">:</span> <span class="n">AmpelLogger</span>
+	<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">T2SysRunState</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="n">T2DocView</span><span class="p">]]:</span>
+
+		<span class="n">t2_views</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">T2DocView</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+
+		<span class="k">for</span> <span class="n">query</span> <span class="ow">in</span> <span class="n">queries</span><span class="p">:</span>
+
+			<span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">run_dependent_t2s</span><span class="p">:</span>
+
+				<span class="n">processed_ids</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">ObjectId</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+
+				<span class="c1"># run pending dependencies</span>
+				<span class="k">while</span> <span class="p">(</span>
+					<span class="n">dep_t2_doc</span> <span class="o">:=</span> <span class="bp">self</span><span class="o">.</span><span class="n">col_t2</span><span class="o">.</span><span class="n">find_one_and_update</span><span class="p">(</span>
+						<span class="p">{</span><span class="s1">&#39;status&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">status_match</span><span class="p">,</span> <span class="o">**</span><span class="n">query</span><span class="p">},</span>
+						<span class="p">{</span><span class="s1">&#39;$set&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;status&#39;</span><span class="p">:</span> <span class="n">T2SysRunState</span><span class="o">.</span><span class="n">RUNNING</span><span class="p">}}</span>
+					<span class="p">)</span>
+				<span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+
+					<span class="k">if</span> <span class="ow">not</span> <span class="n">dep_t2_doc</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;body&#39;</span><span class="p">):</span>
+						<span class="n">dep_t2_doc</span><span class="p">[</span><span class="s1">&#39;body&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+
+					<span class="n">dep_t2_doc</span><span class="p">[</span><span class="s1">&#39;body&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+						<span class="bp">self</span><span class="o">.</span><span class="n">process_t2_doc</span><span class="p">(</span><span class="n">dep_t2_doc</span><span class="p">,</span> <span class="n">logger</span><span class="p">,</span> <span class="n">jupdater</span><span class="p">)</span>
+					<span class="p">)</span>
+
+					<span class="c1"># suppress channel info</span>
+					<span class="n">dep_t2_doc</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;channel&#39;</span><span class="p">)</span>
+					<span class="n">t2_views</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">view_from_record</span><span class="p">(</span><span class="n">dep_t2_doc</span><span class="p">))</span>
+					<span class="n">processed_ids</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">dep_t2_doc</span><span class="p">[</span><span class="s1">&#39;_id&#39;</span><span class="p">])</span>
+
+				<span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">processed_ids</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+					<span class="n">query</span><span class="p">[</span><span class="s1">&#39;_id&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;$nin&#39;</span><span class="p">:</span> <span class="n">processed_ids</span><span class="p">}</span>
+
+			<span class="c1"># collect dependencies</span>
+			<span class="k">for</span> <span class="n">dep_t2_doc</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">col_t2</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="n">query</span><span class="p">):</span>
+				<span class="c1"># suppress channel info</span>
+				<span class="n">dep_t2_doc</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;channel&#39;</span><span class="p">)</span>
+				<span class="n">t2_views</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">view_from_record</span><span class="p">(</span><span class="n">dep_t2_doc</span><span class="p">))</span>
+
+		<span class="k">for</span> <span class="n">view</span> <span class="ow">in</span> <span class="n">t2_views</span><span class="p">:</span>
+			<span class="k">if</span> <span class="n">view</span><span class="o">.</span><span class="n">get_payload</span><span class="p">()</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+				<span class="k">if</span> <span class="n">logger</span><span class="o">.</span><span class="n">verbose</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+					<span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Dependent T2 unit not run yet&quot;</span><span class="p">,</span> <span class="n">extra</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;t2_oid&#39;</span><span class="p">:</span> <span class="n">t2_doc</span><span class="p">[</span><span class="s1">&#39;_id&#39;</span><span class="p">]})</span>
+				<span class="k">return</span> <span class="n">T2SysRunState</span><span class="o">.</span><span class="n">PENDING_DEPENDENCY</span>
+
+		<span class="k">return</span> <span class="n">t2_views</span>
+
+
+	<span class="k">def</span> <span class="nf">view_from_record</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">doc</span><span class="p">:</span> <span class="n">T2Document</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">T2DocView</span><span class="p">:</span>
+		<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">		We might want to move this method elsewhere in the future</span>
+<span class="sd">		&quot;&quot;&quot;</span>
+
+		<span class="n">t2_unit_info</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;unit.base.</span><span class="si">{</span><span class="n">doc</span><span class="p">[</span><span class="s2">&quot;unit&quot;</span><span class="p">]</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">,</span> <span class="nb">dict</span><span class="p">)</span>
+		<span class="k">if</span> <span class="ow">not</span> <span class="n">t2_unit_info</span><span class="p">:</span>
+			<span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Unknown T2 unit </span><span class="si">{</span><span class="n">doc</span><span class="p">[</span><span class="s2">&quot;unit&quot;</span><span class="p">]</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+
+		<span class="k">if</span> <span class="s1">&#39;AbsStockT2Unit&#39;</span> <span class="ow">in</span> <span class="n">t2_unit_info</span><span class="p">[</span><span class="s1">&#39;base&#39;</span><span class="p">]:</span>
+			<span class="n">t2_type</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">TYPE_STOCK_T2</span>
+		<span class="k">elif</span> <span class="s1">&#39;AbsPointT2Unit&#39;</span> <span class="ow">in</span> <span class="n">t2_unit_info</span><span class="p">[</span><span class="s1">&#39;base&#39;</span><span class="p">]:</span>
+			<span class="n">t2_type</span> <span class="o">=</span> <span class="n">TYPE_POINT_T2</span>
+		<span class="k">else</span><span class="p">:</span> <span class="c1"># quick n dirty</span>
+			<span class="n">t2_type</span> <span class="o">=</span> <span class="n">TYPE_STATE_T2</span>
+
+		<span class="k">return</span> <span class="n">T2DocView</span><span class="p">(</span>
+			<span class="n">stock</span> <span class="o">=</span> <span class="n">doc</span><span class="p">[</span><span class="s1">&#39;stock&#39;</span><span class="p">],</span>
+			<span class="n">unit</span> <span class="o">=</span> <span class="n">doc</span><span class="p">[</span><span class="s1">&#39;unit&#39;</span><span class="p">],</span>
+			<span class="n">link</span> <span class="o">=</span> <span class="n">doc</span><span class="p">[</span><span class="s1">&#39;link&#39;</span><span class="p">],</span>
+			<span class="n">status</span> <span class="o">=</span> <span class="n">doc</span><span class="p">[</span><span class="s1">&#39;status&#39;</span><span class="p">],</span>
+			<span class="n">t2_type</span> <span class="o">=</span> <span class="n">t2_type</span><span class="p">,</span>
+			<span class="n">created</span> <span class="o">=</span> <span class="n">doc</span><span class="p">[</span><span class="s1">&#39;_id&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">generation_time</span><span class="o">.</span><span class="n">timestamp</span><span class="p">(),</span>
+			<span class="n">body</span> <span class="o">=</span> <span class="n">doc</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;body&#39;</span><span class="p">),</span>
+			<span class="n">config</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+				<span class="sa">f</span><span class="s1">&#39;confid.</span><span class="si">{</span><span class="n">doc</span><span class="p">[</span><span class="s2">&quot;config&quot;</span><span class="p">]</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">,</span> <span class="nb">dict</span>
+			<span class="p">)</span> <span class="k">if</span> <span class="n">doc</span><span class="p">[</span><span class="s1">&#39;config&#39;</span><span class="p">]</span> <span class="k">else</span> <span class="kc">None</span>
+		<span class="p">)</span>
+
+
+	<span class="k">def</span> <span class="nf">build_tied_t2_query</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+		<span class="n">t2_unit</span><span class="p">:</span> <span class="n">AbsT2</span><span class="p">,</span> <span class="n">tied_model</span><span class="p">:</span> <span class="n">UnitModel</span><span class="p">,</span> <span class="n">t2_doc</span><span class="p">:</span> <span class="n">T2Document</span>
+	<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+		<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">		This method handles &quot;default&quot; situations.</span>
+<span class="sd">		Callers must check returned &#39;link&#39;.</span>
+<span class="sd">		If None (state t2 linked with point t2), further handling is required</span>
+
+<span class="sd">		:raises:</span>
+<span class="sd">			- ValueError if functionality is not implemented yet</span>
+<span class="sd">			- BadConfig if what&#39;s requested is not possible (a point T2 cannot be linked with a state t2)</span>
+<span class="sd">	</span>
+<span class="sd">		:returns: link value to match or None if further handling is required (state t2 linked with point t2)</span>
+<span class="sd">		&quot;&quot;&quot;</span>
+
+		<span class="n">t2_unit_info</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+			<span class="sa">f</span><span class="s1">&#39;unit.base.</span><span class="si">{</span><span class="n">tied_model</span><span class="o">.</span><span class="n">unit</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">,</span> <span class="nb">dict</span>
+		<span class="p">)</span>
+
+		<span class="k">if</span> <span class="ow">not</span> <span class="n">t2_unit_info</span><span class="p">:</span>
+			<span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Unknown T2 unit </span><span class="si">{</span><span class="n">tied_model</span><span class="o">.</span><span class="n">unit</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+
+		<span class="n">d</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+			<span class="s1">&#39;unit&#39;</span><span class="p">:</span> <span class="n">tied_model</span><span class="o">.</span><span class="n">unit</span><span class="p">,</span>
+			<span class="s1">&#39;config&#39;</span><span class="p">:</span> <span class="n">tied_model</span><span class="o">.</span><span class="n">config</span><span class="p">,</span>
+			<span class="s1">&#39;channel&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;$in&quot;</span><span class="p">:</span> <span class="n">t2_doc</span><span class="p">[</span><span class="s1">&#39;channel&#39;</span><span class="p">]},</span>
+			<span class="s1">&#39;stock&#39;</span><span class="p">:</span> <span class="n">t2_doc</span><span class="p">[</span><span class="s1">&#39;stock&#39;</span><span class="p">],</span>
+		<span class="p">}</span>
+
+		<span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">t2_unit</span><span class="p">,</span> <span class="n">AbsTiedPointT2Unit</span><span class="p">):</span>
+
+			<span class="k">if</span> <span class="s1">&#39;AbsPointT2Unit&#39;</span> <span class="ow">in</span> <span class="n">t2_unit_info</span><span class="p">[</span><span class="s1">&#39;base&#39;</span><span class="p">]:</span>
+				<span class="n">d</span><span class="p">[</span><span class="s1">&#39;link&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">t2_doc</span><span class="p">[</span><span class="s1">&#39;link&#39;</span><span class="p">]</span>
+
+			<span class="k">elif</span> <span class="s1">&#39;AbsStockT2Unit&#39;</span> <span class="ow">in</span> <span class="n">t2_unit_info</span><span class="p">[</span><span class="s1">&#39;base&#39;</span><span class="p">]:</span>
+				<span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Not implemented yet&#39;</span><span class="p">)</span>
+
+			<span class="k">else</span><span class="p">:</span> <span class="c1"># State T2</span>
+				<span class="k">raise</span> <span class="n">BadConfig</span><span class="p">(</span><span class="s1">&#39;Tied point T2 cannot be linked with state T2s&#39;</span><span class="p">)</span>
+
+		<span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">t2_unit</span><span class="p">,</span> <span class="n">AbsTiedStockT2Unit</span><span class="p">):</span>
+
+			<span class="k">if</span> <span class="s1">&#39;AbsPointT2Unit&#39;</span> <span class="ow">in</span> <span class="n">t2_unit_info</span><span class="p">[</span><span class="s1">&#39;base&#39;</span><span class="p">]:</span>
+				<span class="k">raise</span> <span class="n">BadConfig</span><span class="p">(</span><span class="s1">&#39;Tied stock T2 cannot be linked with point T2s&#39;</span><span class="p">)</span>
+
+			<span class="k">elif</span> <span class="s1">&#39;AbsStockT2Unit&#39;</span> <span class="ow">in</span> <span class="n">t2_unit_info</span><span class="p">[</span><span class="s1">&#39;base&#39;</span><span class="p">]:</span>
+				<span class="n">d</span><span class="p">[</span><span class="s1">&#39;link&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">t2_doc</span><span class="p">[</span><span class="s1">&#39;stock&#39;</span><span class="p">]</span>
+
+			<span class="k">else</span><span class="p">:</span> <span class="c1"># State T2</span>
+				<span class="k">raise</span> <span class="n">BadConfig</span><span class="p">(</span><span class="s1">&#39;Tied stock T2 cannot be linked with state T2s&#39;</span><span class="p">)</span>
+
+		<span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">t2_unit</span><span class="p">,</span> <span class="p">(</span><span class="n">AbsTiedStateT2Unit</span><span class="p">,</span> <span class="n">AbsTiedCustomStateT2Unit</span><span class="p">)):</span>
+
+			<span class="k">if</span> <span class="s1">&#39;AbsPointT2Unit&#39;</span> <span class="ow">in</span> <span class="n">t2_unit_info</span><span class="p">[</span><span class="s1">&#39;base&#39;</span><span class="p">]:</span>
+				<span class="n">d</span><span class="p">[</span><span class="s1">&#39;link&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span> <span class="c1"># Further checks required (link_override check)</span>
+
+			<span class="k">elif</span> <span class="s1">&#39;AbsStockT2Unit&#39;</span> <span class="ow">in</span> <span class="n">t2_unit_info</span><span class="p">[</span><span class="s1">&#39;base&#39;</span><span class="p">]:</span>
+				<span class="n">d</span><span class="p">[</span><span class="s1">&#39;link&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">t2_doc</span><span class="p">[</span><span class="s1">&#39;stock&#39;</span><span class="p">]</span>
+
+			<span class="k">else</span><span class="p">:</span> <span class="c1"># State T2</span>
+				<span class="n">d</span><span class="p">[</span><span class="s1">&#39;link&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">t2_doc</span><span class="p">[</span><span class="s1">&#39;link&#39;</span><span class="p">]</span>
+
+		<span class="k">return</span> <span class="n">d</span>
+
+
+	<span class="k">def</span> <span class="nf">run_t2_unit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+		<span class="n">t2_unit</span><span class="p">:</span> <span class="n">AbsT2</span><span class="p">,</span> <span class="n">t2_doc</span><span class="p">:</span> <span class="n">T2Document</span><span class="p">,</span> <span class="n">logger</span><span class="p">:</span> <span class="n">AmpelLogger</span><span class="p">,</span> <span class="n">jupdater</span><span class="p">:</span> <span class="n">JournalUpdater</span><span class="p">,</span>
+	<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">T2UnitResult</span><span class="p">:</span>
+		<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">		Regarding the possible int return code:</span>
+<span class="sd">		usually, if an int is returned, it should be a T2RunState member</span>
+<span class="sd">		but let&#39;s not be too restrictive here</span>
+<span class="sd">		&quot;&quot;&quot;</span>
+
+		<span class="n">args</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">load_input_docs</span><span class="p">(</span><span class="n">t2_unit</span><span class="p">,</span> <span class="n">t2_doc</span><span class="p">,</span> <span class="n">logger</span><span class="p">,</span> <span class="n">jupdater</span><span class="p">)</span>
+
+		<span class="k">if</span> <span class="n">args</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+			<span class="k">return</span> <span class="n">T2RunState</span><span class="o">.</span><span class="n">ERROR</span>
+
+		<span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">args</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>
+			<span class="k">return</span> <span class="n">args</span>
+
+		<span class="n">ret</span> <span class="o">=</span> <span class="n">t2_unit</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">)</span>
+
+		<span class="k">if</span> <span class="n">t2_unit</span><span class="o">.</span><span class="n">_buf_hdlr</span><span class="o">.</span><span class="n">buffer</span><span class="p">:</span> <span class="c1"># type: ignore[union-attr]</span>
+			<span class="n">t2_unit</span><span class="o">.</span><span class="n">_buf_hdlr</span><span class="o">.</span><span class="n">forward</span><span class="p">(</span> <span class="c1"># type: ignore[union-attr]</span>
+				<span class="n">logger</span><span class="p">,</span> <span class="n">stock</span><span class="o">=</span><span class="n">t2_doc</span><span class="p">[</span><span class="s1">&#39;stock&#39;</span><span class="p">],</span> <span class="n">channel</span><span class="o">=</span><span class="n">t2_doc</span><span class="p">[</span><span class="s1">&#39;channel&#39;</span><span class="p">]</span>
+			<span class="p">)</span>
+
+		<span class="k">return</span> <span class="n">ret</span>
+
+
+	<span class="k">def</span> <span class="nf">_processing_error</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+		<span class="n">logger</span><span class="p">:</span> <span class="n">AmpelLogger</span><span class="p">,</span> <span class="n">t2_doc</span><span class="p">:</span> <span class="n">T2Document</span><span class="p">,</span> <span class="n">t2_rec</span><span class="p">:</span> <span class="n">T2Record</span><span class="p">,</span>
+		<span class="n">j_rec</span><span class="p">:</span> <span class="n">JournalRecord</span><span class="p">,</span> <span class="n">rec_msg</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">report_msg</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+		<span class="n">extra</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{},</span> <span class="n">exception</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="ne">Exception</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+	<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+		<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">		- Updates the t2 document by appending a T2Record and</span>
+<span class="sd">		updating &#39;status&#39; with value T2RunState.EXCEPTION if an exception</span>
+<span class="sd">		if provided through the parameter &#39;exception&#39; or with value</span>
+<span class="sd">		T2RunState.ERROR otherwise. The field  &#39;msg&#39; of the created</span>
+<span class="sd">		T2Record entry will be set to the value of parameter &#39;rec_msg&#39;.</span>
+
+<span class="sd">		- Updates the stock document by appending a JournalRecord to it</span>
+<span class="sd">		and by updating the &#39;modified&#39; timestamp</span>
+
+<span class="sd">		- Creates a &#39;trouble&#39; document in the troubles collection</span>
+<span class="sd">		to report the incident</span>
+<span class="sd">		&quot;&quot;&quot;</span>
+
+		<span class="n">t2_rec</span> <span class="o">=</span> <span class="n">t2_rec</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+		<span class="n">t2_rec</span><span class="p">[</span><span class="s1">&#39;msg&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">rec_msg</span>
+
+		<span class="bp">self</span><span class="o">.</span><span class="n">push_t2_update</span><span class="p">(</span>
+			<span class="n">t2_doc</span><span class="p">[</span><span class="s1">&#39;_id&#39;</span><span class="p">],</span> <span class="n">t2_rec</span><span class="p">,</span> <span class="n">logger</span><span class="p">,</span>
+			<span class="n">status</span> <span class="o">=</span> <span class="n">T2SysRunState</span><span class="o">.</span><span class="n">EXCEPTION</span> <span class="k">if</span> <span class="n">exception</span> <span class="k">else</span> <span class="n">T2RunState</span><span class="o">.</span><span class="n">ERROR</span>
+		<span class="p">)</span>
+
+		<span class="n">info</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+			<span class="o">**</span><span class="n">extra</span><span class="p">,</span>
+			<span class="s1">&#39;process&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">process_name</span><span class="p">,</span>
+			<span class="s1">&#39;run&#39;</span><span class="p">:</span> <span class="n">t2_rec</span><span class="p">[</span><span class="s1">&#39;run&#39;</span><span class="p">],</span>
+			<span class="s1">&#39;stock&#39;</span><span class="p">:</span> <span class="n">t2_doc</span><span class="p">[</span><span class="s1">&#39;stock&#39;</span><span class="p">],</span>
+			<span class="s1">&#39;doc&#39;</span><span class="p">:</span> <span class="n">t2_doc</span>
+		<span class="p">}</span>
+
+		<span class="k">if</span> <span class="n">exception</span><span class="p">:</span>
+			<span class="bp">self</span><span class="o">.</span><span class="n">_exception</span> <span class="o">=</span> <span class="kc">True</span>
+			<span class="n">report_exception</span><span class="p">(</span>
+				<span class="bp">self</span><span class="o">.</span><span class="n">_ampel_db</span><span class="p">,</span> <span class="n">logger</span><span class="o">=</span><span class="n">logger</span><span class="p">,</span>
+				<span class="n">exc</span><span class="o">=</span><span class="n">exception</span><span class="p">,</span> <span class="n">info</span><span class="o">=</span><span class="n">info</span>
+			<span class="p">)</span>
+		<span class="k">else</span><span class="p">:</span>
+			<span class="n">report_error</span><span class="p">(</span>
+				<span class="bp">self</span><span class="o">.</span><span class="n">_ampel_db</span><span class="p">,</span> <span class="n">logger</span><span class="o">=</span><span class="n">logger</span><span class="p">,</span>
+				<span class="n">msg</span><span class="o">=</span><span class="n">report_msg</span> <span class="k">if</span> <span class="n">report_msg</span> <span class="k">else</span> <span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="n">info</span><span class="o">=</span><span class="n">info</span>
+			<span class="p">)</span>
+
+
+	<span class="k">def</span> <span class="nf">push_t2_update</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+		<span class="n">t2_id</span><span class="p">:</span> <span class="n">ObjectId</span><span class="p">,</span> <span class="n">t2_rec</span><span class="p">:</span> <span class="n">T2Record</span><span class="p">,</span> <span class="n">logger</span><span class="p">:</span> <span class="n">AmpelLogger</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span>
+		<span class="n">tag</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">Tag</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="n">Tag</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">status</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">T2RunState</span><span class="o">.</span><span class="n">COMPLETED</span>
+	<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+		<span class="sd">&quot;&quot;&quot; Performs DB updates of the T2 doc and stock journal &quot;&quot;&quot;</span>
+
+		<span class="k">if</span> <span class="n">logger</span><span class="o">.</span><span class="n">verbose</span><span class="p">:</span>
+			<span class="n">logger</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">VERBOSE</span><span class="p">,</span> <span class="s1">&#39;Saving T2 unit result&#39;</span><span class="p">)</span>
+
+		<span class="n">setd</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;status&#39;</span><span class="p">:</span> <span class="n">status</span><span class="p">}</span>
+		<span class="k">if</span> <span class="n">tag</span><span class="p">:</span>
+			<span class="n">setd</span><span class="p">[</span><span class="s1">&#39;$addToSet&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;$each&#39;</span><span class="p">:</span> <span class="n">tag</span><span class="p">}</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">tag</span><span class="p">,</span> <span class="nb">list</span><span class="p">)</span> <span class="k">else</span> <span class="n">tag</span>
+
+		<span class="c1"># Update T2 document</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">col_t2</span><span class="o">.</span><span class="n">update_one</span><span class="p">(</span>
+			<span class="p">{</span><span class="s1">&#39;_id&#39;</span><span class="p">:</span> <span class="n">t2_id</span><span class="p">},</span>
+			<span class="p">{</span>
+				<span class="s1">&#39;$push&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;body&#39;</span><span class="p">:</span> <span class="n">t2_rec</span><span class="p">},</span>
+				<span class="s1">&#39;$set&#39;</span><span class="p">:</span> <span class="n">setd</span>
+			<span class="p">}</span>
+		<span class="p">)</span>
+
+
+	<span class="k">def</span> <span class="nf">get_unit_instance</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">t2_doc</span><span class="p">:</span> <span class="n">T2Document</span><span class="p">,</span> <span class="n">logger</span><span class="p">:</span> <span class="n">AmpelLogger</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AbsT2</span><span class="p">:</span>
+
+		<span class="n">k</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">t2_doc</span><span class="p">[</span><span class="s2">&quot;unit&quot;</span><span class="p">]</span><span class="si">}</span><span class="s1">_</span><span class="si">{</span><span class="n">t2_doc</span><span class="p">[</span><span class="s2">&quot;config&quot;</span><span class="p">]</span><span class="si">}</span><span class="s1">&#39;</span>
+
+		<span class="c1"># Check if T2 instance exists in this run</span>
+		<span class="k">if</span> <span class="n">k</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">t2_instances</span><span class="p">:</span>
+
+			<span class="k">if</span> <span class="s1">&#39;col&#39;</span> <span class="ow">in</span> <span class="n">t2_doc</span><span class="p">:</span>
+
+				<span class="k">if</span> <span class="s1">&#39;t0&#39;</span> <span class="ow">in</span> <span class="n">t2_doc</span><span class="p">[</span><span class="s1">&#39;col&#39;</span><span class="p">]:</span>  <span class="c1"># type: ignore[operator] # mypy inference issue</span>
+					<span class="n">sub_type</span><span class="p">:</span> <span class="n">Type</span><span class="p">[</span><span class="n">AbsT2</span><span class="p">]</span> <span class="o">=</span> <span class="n">AbsPointT2Unit</span>
+				<span class="k">elif</span> <span class="s1">&#39;stock&#39;</span> <span class="ow">in</span> <span class="n">t2_doc</span><span class="p">[</span><span class="s1">&#39;col&#39;</span><span class="p">]:</span> <span class="c1"># type: ignore[operator] # mypy inference issue</span>
+					<span class="n">sub_type</span> <span class="o">=</span> <span class="n">AbsStockT2Unit</span>
+				<span class="k">else</span><span class="p">:</span>
+					<span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Unsupported t2 unit type&#39;</span><span class="p">)</span>
+
+			<span class="k">else</span><span class="p">:</span>
+
+				<span class="n">bcs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span> <span class="c1"># type: ignore[call-overload] # improve AmpelConfig overloads</span>
+					<span class="sa">f</span><span class="s2">&quot;unit.base.</span><span class="si">{</span><span class="n">t2_doc</span><span class="p">[</span><span class="s1">&#39;unit&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">.base&quot;</span><span class="p">,</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">)</span>
+				<span class="p">)</span>
+
+				<span class="k">if</span> <span class="n">bcs</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+					<span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Unknown t2 unit: </span><span class="si">{</span><span class="n">t2_doc</span><span class="p">[</span><span class="s2">&quot;unit&quot;</span><span class="p">]</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+
+				<span class="k">if</span> <span class="s2">&quot;AbsStateT2Unit&quot;</span> <span class="ow">in</span> <span class="n">bcs</span><span class="p">:</span>
+					<span class="n">sub_type</span> <span class="o">=</span> <span class="n">AbsStateT2Unit</span>
+				<span class="k">elif</span> <span class="s2">&quot;AbsCustomStateT2Unit&quot;</span> <span class="ow">in</span> <span class="n">bcs</span><span class="p">:</span>
+					<span class="n">sub_type</span> <span class="o">=</span> <span class="n">AbsCustomStateT2Unit</span>
+				<span class="k">elif</span> <span class="s2">&quot;AbsTiedStateT2Unit&quot;</span> <span class="ow">in</span> <span class="n">bcs</span><span class="p">:</span>
+					<span class="n">sub_type</span> <span class="o">=</span> <span class="n">AbsTiedStateT2Unit</span>
+				<span class="k">elif</span> <span class="s2">&quot;AbsTiedCustomStateT2Unit&quot;</span> <span class="ow">in</span> <span class="n">bcs</span><span class="p">:</span>
+					<span class="n">sub_type</span> <span class="o">=</span> <span class="n">AbsTiedCustomStateT2Unit</span>
+				<span class="k">else</span><span class="p">:</span>
+					<span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Unsupported t2 unit (base classes: </span><span class="si">{</span><span class="n">bcs</span><span class="si">}</span><span class="s1">)&#39;</span><span class="p">)</span>
+
+			<span class="c1"># Create channel (buffering) logger</span>
+			<span class="n">buf_hdlr</span> <span class="o">=</span> <span class="n">DefaultRecordBufferingHandler</span><span class="p">(</span><span class="n">level</span><span class="o">=</span><span class="n">logger</span><span class="o">.</span><span class="n">level</span><span class="p">)</span>
+			<span class="n">buf_logger</span> <span class="o">=</span> <span class="n">AmpelLogger</span><span class="o">.</span><span class="n">get_logger</span><span class="p">(</span>
+				<span class="n">name</span> <span class="o">=</span> <span class="n">k</span><span class="p">,</span>
+				<span class="n">base_flag</span> <span class="o">=</span> <span class="p">(</span><span class="nb">getattr</span><span class="p">(</span><span class="n">logger</span><span class="p">,</span> <span class="s1">&#39;base_flag&#39;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span> <span class="o">&amp;</span> <span class="o">~</span><span class="n">LogFlag</span><span class="o">.</span><span class="n">CORE</span><span class="p">)</span> <span class="o">|</span> <span class="n">LogFlag</span><span class="o">.</span><span class="n">UNIT</span><span class="p">,</span>
+				<span class="n">console</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+				<span class="n">handlers</span> <span class="o">=</span> <span class="p">[</span><span class="n">buf_hdlr</span><span class="p">]</span>
+			<span class="p">)</span>
+
+			<span class="c1"># Instantiate t2 unit</span>
+			<span class="n">unit_instance</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_loader</span><span class="o">.</span><span class="n">new_base_unit</span><span class="p">(</span>
+				<span class="n">unit_model</span> <span class="o">=</span> <span class="n">UnitModel</span><span class="p">(</span>
+					<span class="n">unit</span> <span class="o">=</span> <span class="n">t2_doc</span><span class="p">[</span><span class="s1">&#39;unit&#39;</span><span class="p">]</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">t2_doc</span><span class="p">[</span><span class="s1">&#39;unit&#39;</span><span class="p">],</span> <span class="nb">str</span><span class="p">)</span>
+						<span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">hashes</span><span class="p">[</span><span class="n">t2_doc</span><span class="p">[</span><span class="s1">&#39;unit&#39;</span><span class="p">]],</span>
+					<span class="n">config</span> <span class="o">=</span> <span class="n">t2_doc</span><span class="p">[</span><span class="s1">&#39;config&#39;</span><span class="p">]</span>
+				<span class="p">),</span>
+				<span class="n">logger</span> <span class="o">=</span> <span class="n">buf_logger</span><span class="p">,</span>
+				<span class="n">sub_type</span> <span class="o">=</span> <span class="n">sub_type</span>
+			<span class="p">)</span>
+
+			<span class="c1"># Shortcut to avoid unit_instance.logger.handlers[?]</span>
+			<span class="nb">setattr</span><span class="p">(</span><span class="n">unit_instance</span><span class="p">,</span> <span class="s1">&#39;_buf_hdlr&#39;</span><span class="p">,</span> <span class="n">buf_hdlr</span><span class="p">)</span>
+			<span class="bp">self</span><span class="o">.</span><span class="n">t2_instances</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">unit_instance</span> <span class="c1"># type: ignore[assignment] # it&#39;s fine</span>
+
+		<span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">t2_instances</span><span class="p">[</span><span class="n">k</span><span class="p">]</span></div>
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../../index.html">
+              <img class="logo" src="../../../_static/ampel.png" alt="Logo"/>
+            </a></p>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="nav-item nav-item-0"><a href="../../../index.html">ampel-core 0.7.6 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../index.html" >Module code</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">ampel.t2.T2Processor</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2018-2021, Ampel Project.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 4.0.2.
+    </div>
+  </body>
+</html>

@@ -1,0 +1,245 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ampel.model.template.PeriodicSummaryT3 &#8212; ampel-core 0.7.6 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/sphinxdoc.css" />
+    <script data-url_root="../../../../" id="documentation_options" src="../../../../_static/documentation_options.js"></script>
+    <script src="../../../../_static/jquery.js"></script>
+    <script src="../../../../_static/underscore.js"></script>
+    <script src="../../../../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="nav-item nav-item-0"><a href="../../../../index.html">ampel-core 0.7.6 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../../index.html" accesskey="U">Module code</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">ampel.model.template.PeriodicSummaryT3</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for ampel.model.template.PeriodicSummaryT3</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/env python</span>
+<span class="c1"># -*- coding: utf-8 -*-</span>
+<span class="c1"># File              : Ampel-core/ampel/model/template/PeriodicSummaryT3.py</span>
+<span class="c1"># License           : BSD-3-Clause</span>
+<span class="c1"># Author            : Jakob van Santen &lt;jakob.van.santen@desy.de&gt;</span>
+<span class="c1"># Date              : 10.08.2020</span>
+<span class="c1"># Last Modified Date: 10.08.2020</span>
+<span class="c1"># Last Modified By  : Jakob van Santen &lt;jakob.van.santen@desy.de&gt;</span>
+
+<span class="kn">from</span> <span class="nn">logging</span> <span class="kn">import</span> <span class="n">Logger</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">Literal</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">,</span> <span class="n">Union</span><span class="p">,</span> <span class="n">List</span>
+
+<span class="kn">from</span> <span class="nn">ampel.abstract.AbsProcessTemplate</span> <span class="kn">import</span> <span class="n">AbsProcessTemplate</span>
+<span class="kn">from</span> <span class="nn">ampel.model.operator.AllOf</span> <span class="kn">import</span> <span class="n">AllOf</span>
+<span class="kn">from</span> <span class="nn">ampel.model.operator.AnyOf</span> <span class="kn">import</span> <span class="n">AnyOf</span>
+<span class="kn">from</span> <span class="nn">ampel.model.operator.OneOf</span> <span class="kn">import</span> <span class="n">OneOf</span>
+<span class="kn">from</span> <span class="nn">ampel.model.StrictModel</span> <span class="kn">import</span> <span class="n">StrictModel</span>
+<span class="kn">from</span> <span class="nn">ampel.model.t3.LoaderDirective</span> <span class="kn">import</span> <span class="n">LoaderDirective</span>
+<span class="kn">from</span> <span class="nn">ampel.model.t3.T2FilterModel</span> <span class="kn">import</span> <span class="n">T2FilterModel</span>
+<span class="kn">from</span> <span class="nn">ampel.model.UnitModel</span> <span class="kn">import</span> <span class="n">UnitModel</span>
+<span class="kn">from</span> <span class="nn">ampel.type</span> <span class="kn">import</span> <span class="n">ChannelId</span><span class="p">,</span> <span class="n">Tag</span>
+
+
+<div class="viewcode-block" id="FilterModel"><a class="viewcode-back" href="../../../../api.html#ampel.model.template.PeriodicSummaryT3.FilterModel">[docs]</a><span class="k">class</span> <span class="nc">FilterModel</span><span class="p">(</span><span class="n">StrictModel</span><span class="p">):</span>
+    <span class="c1">#: Filter based on T2 results</span>
+    <span class="n">t2</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">T2FilterModel</span><span class="p">,</span> <span class="n">AllOf</span><span class="p">[</span><span class="n">T2FilterModel</span><span class="p">],</span> <span class="n">AnyOf</span><span class="p">[</span><span class="n">T2FilterModel</span><span class="p">]]</span></div>
+
+<span class="n">UnitModelOrString</span> <span class="o">=</span> <span class="n">Union</span><span class="p">[</span><span class="n">UnitModel</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span>
+<span class="n">UnitModelSequence</span> <span class="o">=</span> <span class="n">Union</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="n">UnitModelOrString</span><span class="p">],</span> <span class="n">UnitModelOrString</span><span class="p">]</span>
+
+<div class="viewcode-block" id="PeriodicSummaryT3"><a class="viewcode-back" href="../../../../api.html#ampel.model.template.PeriodicSummaryT3.PeriodicSummaryT3">[docs]</a><span class="k">class</span> <span class="nc">PeriodicSummaryT3</span><span class="p">(</span><span class="n">AbsProcessTemplate</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    A T3 process that selects stocks modified since its last invocation, and</span>
+<span class="sd">    supplies them, to a sequence of AbsT3Units.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="c1">#: Process name.</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">tier</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span> <span class="o">=</span> <span class="mi">3</span>
+    <span class="n">active</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="c1">#: one or more `schedule &lt;https://schedule.readthedocs.io/en/stable/&gt;`_</span>
+    <span class="c1">#: expressions, e.g: ``every().day.at(&quot;15:00&quot;)`` or ``every(42).minutes``</span>
+    <span class="c1">#: </span>
+    <span class="c1">#: .. note:: all times are are expressed in UTC</span>
+    <span class="n">schedule</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span>
+    <span class="c1">#: Channel selection.</span>
+    <span class="n">channel</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span>
+        <span class="kc">None</span><span class="p">,</span> <span class="n">ChannelId</span><span class="p">,</span> <span class="n">AllOf</span><span class="p">[</span><span class="n">ChannelId</span><span class="p">],</span> <span class="n">AnyOf</span><span class="p">[</span><span class="n">ChannelId</span><span class="p">],</span> <span class="n">OneOf</span><span class="p">[</span><span class="n">ChannelId</span><span class="p">]</span>
+    <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">distrib</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>
+    <span class="n">source</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>
+    <span class="c1">#: Stock tag selection.</span>
+    <span class="n">tag</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span>
+        <span class="n">Dict</span><span class="p">[</span>
+            <span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;with&quot;</span><span class="p">,</span> <span class="s2">&quot;without&quot;</span><span class="p">],</span>
+            <span class="n">Union</span><span class="p">[</span><span class="n">Tag</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">AllOf</span><span class="p">[</span><span class="n">Tag</span><span class="p">],</span> <span class="n">AnyOf</span><span class="p">[</span><span class="n">Tag</span><span class="p">],</span> <span class="n">OneOf</span><span class="p">[</span><span class="n">Tag</span><span class="p">]],</span>
+        <span class="p">]</span>
+    <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="c1">#: Documents to load. If a string, should refer to an entry in the</span>
+    <span class="c1">#: ``alias.t3`` config section. See :ref:`t3-directive-load`.</span>
+    <span class="n">load</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span><span class="n">LoaderDirective</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="c1">#: Additional stock filters.</span>
+    <span class="nb">filter</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">FilterModel</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="c1">#: Complement stages. See :ref:`t3-directive-complement`.</span>
+    <span class="n">complement</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">UnitModelSequence</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="c1">#: Units to run. See :ref:`t3-directive-run-execute`.</span>
+    <span class="n">run</span><span class="p">:</span> <span class="n">UnitModelSequence</span>
+
+    <span class="k">def</span> <span class="nf">get_process</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">logger</span><span class="p">:</span> <span class="n">Logger</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+        <span class="n">directive</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;context&quot;</span><span class="p">:</span> <span class="p">[</span>
+                <span class="p">{</span><span class="s2">&quot;unit&quot;</span><span class="p">:</span> <span class="s2">&quot;T3AddAlertsNumber&quot;</span><span class="p">},</span>
+            <span class="p">],</span>
+            <span class="s2">&quot;select&quot;</span><span class="p">:</span> <span class="p">{</span>
+                <span class="s2">&quot;unit&quot;</span><span class="p">:</span> <span class="s2">&quot;T3StockSelector&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;config&quot;</span><span class="p">:</span> <span class="p">{</span>
+                    <span class="s2">&quot;modified&quot;</span><span class="p">:</span> <span class="p">{</span>
+                        <span class="s2">&quot;after&quot;</span><span class="p">:</span> <span class="p">{</span>
+                            <span class="s2">&quot;match_type&quot;</span><span class="p">:</span> <span class="s2">&quot;time_last_run&quot;</span><span class="p">,</span>
+                            <span class="s2">&quot;process_name&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+                        <span class="p">},</span>
+                        <span class="s2">&quot;before&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;match_type&quot;</span><span class="p">:</span> <span class="s2">&quot;time_delta&quot;</span><span class="p">},</span>
+                    <span class="p">},</span>
+                    <span class="s2">&quot;channel&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">channel</span><span class="p">,</span>
+                    <span class="s2">&quot;tag&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">tag</span><span class="p">,</span>
+                <span class="p">},</span>
+            <span class="p">},</span>
+            <span class="s2">&quot;load&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;unit&quot;</span><span class="p">:</span> <span class="s2">&quot;T3SimpleDataLoader&quot;</span><span class="p">,</span> <span class="s2">&quot;config&quot;</span><span class="p">:</span> <span class="p">{}},</span>
+            <span class="s2">&quot;run&quot;</span><span class="p">:</span> <span class="p">{</span>
+                <span class="s2">&quot;unit&quot;</span><span class="p">:</span> <span class="s2">&quot;T3UnitRunner&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;config&quot;</span><span class="p">:</span> <span class="p">{</span>
+                    <span class="s2">&quot;directives&quot;</span><span class="p">:</span> <span class="p">[{</span><span class="s2">&quot;execute&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_units</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">run</span><span class="p">)}]</span>
+                <span class="p">},</span>
+            <span class="p">},</span>
+        <span class="p">}</span>
+
+        <span class="c1"># Restrict stock selection according to T2 values</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">filter</span><span class="p">:</span>
+            <span class="n">directive</span><span class="p">[</span><span class="s2">&quot;select&quot;</span><span class="p">][</span><span class="s2">&quot;unit&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;T3FilteringStockSelector&quot;</span>
+            <span class="n">directive</span><span class="p">[</span><span class="s2">&quot;select&quot;</span><span class="p">][</span><span class="s2">&quot;config&quot;</span><span class="p">][</span><span class="s2">&quot;t2_filter&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">filter</span><span class="o">.</span><span class="n">t2</span><span class="o">.</span><span class="n">dict</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">channel</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="c1"># load only documents that pass channel selection</span>
+            <span class="n">directive</span><span class="p">[</span><span class="s2">&quot;load&quot;</span><span class="p">][</span><span class="s2">&quot;config&quot;</span><span class="p">][</span><span class="s2">&quot;channel&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">channel</span>
+            <span class="c1"># project subdocuments (e.g. stock journal) to channel selection</span>
+            <span class="n">directive</span><span class="p">[</span><span class="s2">&quot;run&quot;</span><span class="p">][</span><span class="s2">&quot;config&quot;</span><span class="p">][</span><span class="s2">&quot;directives&quot;</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="s2">&quot;project&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="s2">&quot;unit&quot;</span><span class="p">:</span> <span class="s2">&quot;T3ChannelProjector&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;config&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;channel&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">channel</span><span class="p">},</span>
+            <span class="p">}</span>
+    
+        <span class="c1"># Restrict document types to load</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">load</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">directive</span><span class="p">[</span><span class="s2">&quot;load&quot;</span><span class="p">][</span><span class="s2">&quot;config&quot;</span><span class="p">][</span><span class="s2">&quot;directives&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">load</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">del</span> <span class="n">directive</span><span class="p">[</span><span class="s2">&quot;load&quot;</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">complement</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">directive</span><span class="p">[</span><span class="s2">&quot;complement&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_units</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">complement</span><span class="p">)</span>
+
+        <span class="n">ret</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;tier&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">tier</span><span class="p">,</span>
+            <span class="s2">&quot;schedule&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">schedule</span><span class="p">,</span>
+            <span class="s2">&quot;active&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">active</span><span class="p">,</span>
+            <span class="s2">&quot;distrib&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">distrib</span><span class="p">,</span>
+            <span class="s2">&quot;source&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">source</span><span class="p">,</span>
+            <span class="s2">&quot;channel&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_channel_tag</span><span class="p">(),</span>
+            <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+            <span class="s2">&quot;processor&quot;</span><span class="p">:</span> <span class="p">{</span>
+                <span class="s2">&quot;unit&quot;</span><span class="p">:</span> <span class="s2">&quot;T3Processor&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;config&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;directives&quot;</span><span class="p">:</span> <span class="p">[</span><span class="n">directive</span><span class="p">]},</span>
+            <span class="p">},</span>
+        <span class="p">}</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_to_dict</span><span class="p">(</span><span class="n">ret</span><span class="p">)</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">_to_dict</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">item</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+            <span class="k">return</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_to_dict</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">item</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="k">return</span> <span class="p">[</span><span class="bp">cls</span><span class="o">.</span><span class="n">_to_dict</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">item</span><span class="p">]</span>
+        <span class="k">elif</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="s2">&quot;dict&quot;</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_to_dict</span><span class="p">(</span><span class="n">item</span><span class="o">.</span><span class="n">dict</span><span class="p">())</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">item</span>
+
+    <span class="k">def</span> <span class="nf">get_units</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">units</span><span class="p">:</span> <span class="n">UnitModelSequence</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span><span class="n">Any</span><span class="p">]]:</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">units</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="k">return</span> <span class="p">[</span><span class="n">UnitModel</span><span class="p">(</span><span class="n">unit</span><span class="o">=</span><span class="n">units</span><span class="p">)</span><span class="o">.</span><span class="n">dict</span><span class="p">()]</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">units</span><span class="p">,</span> <span class="n">UnitModel</span><span class="p">):</span>
+            <span class="k">return</span> <span class="p">[</span><span class="n">units</span><span class="o">.</span><span class="n">dict</span><span class="p">()]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">get_units</span><span class="p">(</span><span class="n">u</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">u</span> <span class="ow">in</span> <span class="n">units</span><span class="p">]</span>
+
+    <span class="k">def</span> <span class="nf">get_schedule</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">schedule</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="k">return</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">schedule</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">schedule</span>
+
+    <span class="k">def</span> <span class="nf">get_channel_tag</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get channel if single channel, otherwise None</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">channel</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">channel</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">channel</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span></div>
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../../../index.html">
+              <img class="logo" src="../../../../_static/ampel.png" alt="Logo"/>
+            </a></p>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="nav-item nav-item-0"><a href="../../../../index.html">ampel-core 0.7.6 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../../index.html" >Module code</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">ampel.model.template.PeriodicSummaryT3</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2018-2021, Ampel Project.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 4.0.2.
+    </div>
+  </body>
+</html>
