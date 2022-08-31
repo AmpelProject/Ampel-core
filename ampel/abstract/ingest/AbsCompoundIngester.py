@@ -54,7 +54,7 @@ class AbsCompoundIngester(Generic[T], AbsIngester, abstract=True):
 			if rec.levelno > WARNING:
 				logd['err'] = True
 			if hasattr(rec, 'extra'):
-				for k, v in rec.extra: # type: ignore
+				for k, v in (rec.extra or {}).items(): # type: ignore
 					logd['extra'][k] = v
 
 		if clear:

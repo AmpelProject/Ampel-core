@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "ampel-core"
-version = "0.7.5"
+version = "0.7.6"
 description = "Asynchronous and Modular Platform with Execution Layers"
 authors = [
     "Valery Brinnel"
